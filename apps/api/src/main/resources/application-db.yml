@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: ${APP_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/qihang_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
+    username: ${APP_DATASOURCE_USERNAME:root}
+    password: ${APP_DATASOURCE_PASSWORD:}
+  flyway:
+    enabled: true
+    locations: ${APP_FLYWAY_LOCATIONS:filesystem:../../database/flyway/sql}
+    baseline-on-migrate: false

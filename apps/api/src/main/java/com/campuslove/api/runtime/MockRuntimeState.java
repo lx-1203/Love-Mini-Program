@@ -1,0 +1,263 @@
+package com.campuslove.api.runtime;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.stereotype.Component;
+
+@Component
+public class MockRuntimeState {
+
+  private boolean loggedIn;
+  private boolean phoneBound;
+  private boolean profileCompleted;
+  private boolean campusVerified;
+  private boolean scheduleCompleted;
+  private String displayName = "星野";
+  private String campusName;
+  private LoginHeroData loginHero = new LoginHeroData(
+      "video",
+      null,
+      null,
+      "campus-night",
+      "校园恋爱",
+      "先从推荐的人、讨论圈、活动和临时聊天开始认识彼此。",
+      true
+  );
+
+  private BasicProfileData basicProfile = new BasicProfileData(
+      "星野",
+      "安静、好奇，更喜欢一对一慢慢聊。",
+      "大三",
+      "她/她"
+  );
+
+  private CampusProfileData campusProfile = new CampusProfileData(
+      "广州",
+      "南校区",
+      "工业设计",
+      "draft"
+  );
+
+  private ScheduleProfileData scheduleProfile = new ScheduleProfileData(
+      "图书馆和北草坪",
+      List.of("今晚", "本周"),
+      List.of(
+          new ScheduleBlockData("b-1", "周一", "09:00", "10:30", "设计课"),
+          new ScheduleBlockData("b-2", "周三", "14:00", "15:30", "专题讨论")
+      )
+  );
+
+  private final List<RecommendedPersonData> recommendedPeople = List.of(
+      new RecommendedPersonData(
+          "person-1",
+          "林安",
+          "林",
+          "工业设计大三，偏好低压力的第一轮聊天。",
+          "共同兴趣：电影夜和安静的咖啡馆路线",
+          "合适时间：今晚 19:00 之后"
+      ),
+      new RecommendedPersonData(
+          "person-2",
+          "周沐",
+          "周",
+          "更适合从音乐话题切入，再配一段短距离校园散步。",
+          "节奏接近：更喜欢短时见面和明确时段",
+          "合适时间：周五 16:00-18:00"
+      ),
+      new RecommendedPersonData(
+          "person-3",
+          "许诺",
+          "许",
+          "喜欢直接定计划、边界清楚、气氛放松的咖啡聊天。",
+          "共同偏好：校园人多时也接受室内兜底",
+          "合适时间：周末下午"
+      )
+  );
+
+  private final List<DiscussionRecommendationData> discussionRecommendations = List.of(
+      new DiscussionRecommendationData(
+          "d-1",
+          "大家怎么平衡恋爱和考试周？",
+          "一条很实用的讨论串，边界清楚，安排也容易落地。",
+          "412 人收藏"
+      ),
+      new DiscussionRecommendationData(
+          "d-2",
+          "第一次校园咖啡散步，怎样才会更自然？",
+          "大家在分享路线、时间点和不生硬的开场方式。",
+          "热度上升"
+      )
+  );
+
+  private final List<ActivityRecommendationData> activityRecommendations = List.of(
+      new ActivityRecommendationData(
+          "a-1",
+          "图书馆南门咖啡散步",
+          "南门咖啡馆",
+          "周四 19:00-20:00"
+      ),
+      new ActivityRecommendationData(
+          "a-2",
+          "电影社轻松线下碰面",
+          "影像楼 B 厅",
+          "周六 15:00-17:00"
+      )
+  );
+
+  public synchronized SessionSnapshot currentSession() {
+    return new SessionSnapshot(
+        "user-1001",
+        loggedIn,
+        "wechat",
+        displayName,
+        phoneBound,
+        profileCompleted,
+        campusVerified,
+        scheduleCompleted,
+        campusName
+    );
+  }
+
+  public synchronized SessionSnapshot loginWithWechat() {
+    loggedIn = true;
+    return currentSession();
+  }
+
+  public synchronized LoginHeroData loginHero() {
+    return loginHero;
+  }
+
+  public synchronized BasicProfileData basicProfile() {
+    return basicProfile;
+  }
+
+  public synchronized BasicProfileData saveBasicProfile(BasicProfileData profile) {
+    basicProfile = profile;
+    displayName = profile.nickname();
+    profileCompleted = true;
+    return basicProfile;
+  }
+
+  public synchronized CampusProfileData campusProfile() {
+    return campusProfile;
+  }
+
+  public synchronized CampusProfileData saveCampusProfile(CampusProfileData profile) {
+    campusProfile = profile;
+    campusVerified = true;
+    campusName = profile.campusName();
+    return campusProfile;
+  }
+
+  public synchronized ScheduleProfileData scheduleProfile() {
+    return scheduleProfile;
+  }
+
+  public synchronized ScheduleProfileData saveScheduleProfile(ScheduleProfileData profile) {
+    scheduleProfile = new ScheduleProfileData(
+        profile.preferredCampusArea(),
+        List.copyOf(profile.preferredTimeWindows()),
+        List.copyOf(profile.courseBlocks())
+    );
+    scheduleCompleted = true;
+    return scheduleProfile;
+  }
+
+  public List<RecommendedPersonData> recommendedPeople() {
+    return recommendedPeople;
+  }
+
+  public List<DiscussionRecommendationData> discussionRecommendations() {
+    return discussionRecommendations;
+  }
+
+  public List<ActivityRecommendationData> activityRecommendations() {
+    return activityRecommendations;
+  }
+
+  public record SessionSnapshot(
+      String userId,
+      boolean loggedIn,
+      String loginMethod,
+      String displayName,
+      boolean phoneBound,
+      boolean profileCompleted,
+      boolean campusVerified,
+      boolean scheduleCompleted,
+      String campusName
+  ) {
+  }
+
+  public record LoginHeroData(
+      String heroMode,
+      String heroVideoUrl,
+      String heroPosterUrl,
+      String heroAnimationTheme,
+      String heroTitle,
+      String heroSubtitle,
+      boolean videoFallbackToAnimation
+  ) {
+  }
+
+  public record BasicProfileData(
+      String nickname,
+      String bio,
+      String grade,
+      String pronouns
+  ) {
+  }
+
+  public record CampusProfileData(
+      String city,
+      String campusName,
+      String department,
+      String verificationStatus
+  ) {
+  }
+
+  public record ScheduleBlockData(
+      String id,
+      String weekday,
+      String start,
+      String end,
+      String label
+  ) {
+  }
+
+  public record ScheduleProfileData(
+      String preferredCampusArea,
+      List<String> preferredTimeWindows,
+      List<ScheduleBlockData> courseBlocks
+  ) {
+    public ScheduleProfileData {
+      preferredTimeWindows = List.copyOf(preferredTimeWindows);
+      courseBlocks = List.copyOf(new ArrayList<>(courseBlocks));
+    }
+  }
+
+  public record RecommendedPersonData(
+      String id,
+      String name,
+      String initials,
+      String headline,
+      String commonGround,
+      String availability
+  ) {
+  }
+
+  public record DiscussionRecommendationData(
+      String id,
+      String title,
+      String summary,
+      String heatLabel
+  ) {
+  }
+
+  public record ActivityRecommendationData(
+      String id,
+      String title,
+      String location,
+      String scheduleText
+  ) {
+  }
+}

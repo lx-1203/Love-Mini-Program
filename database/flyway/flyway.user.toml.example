@@ -1,0 +1,13 @@
+[environments.default]
+# Replace this with your real JDBC URL.
+# MySQL example:
+url = "jdbc:mysql://127.0.0.1:3306/your_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai"
+
+# PostgreSQL example:
+# url = "jdbc:postgresql://127.0.0.1:5432/your_database"
+
+# SQL Server example:
+# url = "jdbc:sqlserver://127.0.0.1:1433;databaseName=your_database;encrypt=true;trustServerCertificate=true"
+
+user = "your_user"
+password = "change_me"

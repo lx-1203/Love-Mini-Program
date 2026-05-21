@@ -1,0 +1,1196 @@
+openapi: 3.0.3
+info:
+  title: Campus Love Phase 1 Rebased API
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /app-config/login-hero:
+    get:
+      summary: Get login hero configuration
+      operationId: getLoginHeroConfig
+      responses:
+        '200':
+          description: Login hero config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginHeroConfig'
+  /auth/me:
+    get:
+      summary: Get current session
+      operationId: getCurrentSession
+      responses:
+        '200':
+          description: Session state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSession'
+  /auth/wechat-login:
+    post:
+      summary: Exchange a WeChat login code for a session snapshot
+      operationId: loginWithWechat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+      responses:
+        '200':
+          description: Logged-in session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSession'
+  /profile/basic:
+    get:
+      summary: Get the basic profile draft
+      operationId: getBasicProfile
+      responses:
+        '200':
+          description: Basic profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicProfile'
+    put:
+      summary: Save the basic profile draft
+      operationId: saveBasicProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BasicProfileRequest'
+      responses:
+        '200':
+          description: Saved basic profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicProfile'
+  /profile/campus:
+    get:
+      summary: Get campus profile state
+      operationId: getCampusProfile
+      responses:
+        '200':
+          description: Campus profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampusProfile'
+    put:
+      summary: Save campus profile
+      operationId: saveCampusProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampusProfileRequest'
+      responses:
+        '200':
+          description: Saved campus profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampusProfile'
+  /profile/schedule:
+    get:
+      summary: Get schedule preferences
+      operationId: getScheduleProfile
+      responses:
+        '200':
+          description: Schedule settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleProfile'
+    put:
+      summary: Save schedule preferences
+      operationId: saveScheduleProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleProfileRequest'
+      responses:
+        '200':
+          description: Saved schedule settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleProfile'
+  /home/dashboard:
+    get:
+      summary: Get the home dashboard payload with schedule, AI plan fallback, recommendations, and activity entry
+      operationId: getHomeDashboard
+      responses:
+        '200':
+          description: Home dashboard, including the launch-scope aiPlan module inside the dashboard payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeDashboard'
+  /chat/overview:
+    get:
+      summary: Get the chat landing payload with session list and empty-state recommendations
+      operationId: getChatOverview
+      responses:
+        '200':
+          description: Chat overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatOverview'
+  /matches/form-config:
+    get:
+      summary: Get compatibility match form configuration
+      operationId: getMatchFormConfig
+      responses:
+        '200':
+          description: Match form config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchFormConfig'
+  /matches:
+    post:
+      summary: Create a compatibility topic-first match ticket
+      operationId: createMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchRequest'
+      responses:
+        '200':
+          description: Match result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResult'
+  /matches/quick:
+    post:
+      summary: Create a compatibility quick match ticket
+      operationId: createQuickMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickMatchRequest'
+      responses:
+        '200':
+          description: Match result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResult'
+  /matches/{id}:
+    get:
+      summary: Get a compatibility match result by id
+      operationId: getMatchResult
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Match result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResult'
+  /_debug/matches/next-status/{queueStatus}:
+    post:
+      summary: Stage the next mock match result status for local QA
+      operationId: setNextMatchQueueStatus
+      parameters:
+        - in: path
+          name: queueStatus
+          required: true
+          schema:
+            type: string
+            enum: [queued, connected, expired]
+      responses:
+        '200':
+          description: Debug match status staged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugNextMatchStatusResponse'
+  /_debug/errors/{status}:
+    post:
+      summary: Simulate a mock API error response for local QA
+      operationId: simulateDebugError
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            type: integer
+            enum: [400, 404, 500]
+      responses:
+        '400':
+          description: Bad request error shape
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugErrorResponse'
+        '404':
+          description: Not found error shape
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugErrorResponse'
+        '500':
+          description: Server error shape
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugErrorResponse'
+  /temp-chat/sessions:
+    post:
+      summary: Create or reuse a temporary chat session from a recommendation or compatibility match
+      operationId: createTempChatSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTempChatSessionRequest'
+      responses:
+        '200':
+          description: Temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+  /temp-chat/sessions/{id}:
+    get:
+      summary: Get a temporary chat session
+      operationId: getTempChatSession
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+  /temp-chat/sessions/{id}/messages:
+    post:
+      summary: Send a message to a temporary chat session
+      operationId: sendTempChatMessage
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageRequest'
+      responses:
+        '200':
+          description: Updated temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+  /temp-chat/sessions/{id}/contact-exchange/respond:
+    post:
+      summary: Respond to a contact exchange prompt
+      operationId: respondToContactExchange
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactExchangeDecisionRequest'
+      responses:
+        '200':
+          description: Updated temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+  /temp-chat/sessions/{id}/end:
+    post:
+      summary: End a temporary chat session
+      operationId: endTempChatSession
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+  /temp-chat/sessions/{id}/pin:
+    post:
+      summary: Pin a temporary chat session in the overview list
+      operationId: pinTempChatSession
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated chat session summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionSummary'
+  /temp-chat/sessions/{id}/unpin:
+    post:
+      summary: Remove a temporary chat session pin in the overview list
+      operationId: unpinTempChatSession
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated chat session summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionSummary'
+  /temp-chat/sessions/{id}/read:
+    post:
+      summary: Mark a temporary chat session as read
+      operationId: markTempChatSessionRead
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated chat session summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionSummary'
+  /recommendations/discussions:
+    get:
+      summary: Get discussion recommendations
+      operationId: getDiscussionRecommendations
+      responses:
+        '200':
+          description: Discussion recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DiscussionRecommendation'
+  /recommendations/activities:
+    get:
+      summary: Get activity recommendations
+      operationId: getActivityRecommendations
+      responses:
+        '200':
+          description: Activity recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityRecommendation'
+  /feedback/issues:
+    post:
+      summary: Submit a feedback ticket
+      operationId: createFeedbackIssue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionRecord'
+  /feedback/suggestions:
+    post:
+      summary: Submit a product suggestion
+      operationId: createSuggestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionRecord'
+  /feedback/activity-proposals:
+    post:
+      summary: Submit an activity proposal
+      operationId: createActivityProposal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionRecord'
+  /feedback/my-submissions:
+    get:
+      summary: List current user submissions
+      operationId: listMySubmissions
+      parameters:
+        - in: query
+          name: type
+          required: false
+          schema:
+            $ref: '#/components/schemas/SubmissionType'
+      responses:
+        '200':
+          description: Submission list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubmissionRecord'
+  /admin/feedback:
+    get:
+      summary: List feedback and suggestion submissions for operations
+      operationId: listAdminFeedback
+      responses:
+        '200':
+          description: Admin-facing submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubmissionRecord'
+  /admin/activity-proposals/{id}/convert:
+    post:
+      summary: Convert a proposal into an activity draft
+      operationId: convertActivityProposal
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Converted proposal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionRecord'
+components:
+  schemas:
+    LoginHeroConfig:
+      type: object
+      properties:
+        heroMode:
+          type: string
+          enum: [animation, video]
+        heroVideoUrl:
+          type: string
+          nullable: true
+        heroPosterUrl:
+          type: string
+          nullable: true
+        heroAnimationTheme:
+          type: string
+        heroTitle:
+          type: string
+        heroSubtitle:
+          type: string
+        videoFallbackToAnimation:
+          type: boolean
+      required:
+        - heroMode
+        - heroAnimationTheme
+        - heroTitle
+        - heroSubtitle
+        - videoFallbackToAnimation
+    UserSession:
+      type: object
+      properties:
+        userId:
+          type: string
+        loggedIn:
+          type: boolean
+        loginMethod:
+          type: string
+          enum: [wechat, phone]
+        displayName:
+          type: string
+        phoneBound:
+          type: boolean
+        profileCompleted:
+          type: boolean
+        campusVerified:
+          type: boolean
+        scheduleCompleted:
+          type: boolean
+        campusName:
+          type: string
+          nullable: true
+        featureFlags:
+          type: object
+          additionalProperties:
+            type: boolean
+      required:
+        - userId
+        - loggedIn
+        - loginMethod
+        - displayName
+        - phoneBound
+        - profileCompleted
+        - campusVerified
+        - scheduleCompleted
+        - featureFlags
+    WechatLoginRequest:
+      type: object
+      properties:
+        code:
+          type: string
+      required:
+        - code
+    BasicProfile:
+      type: object
+      properties:
+        nickname:
+          type: string
+        bio:
+          type: string
+        grade:
+          type: string
+        pronouns:
+          type: string
+      required:
+        - nickname
+        - bio
+        - grade
+        - pronouns
+    BasicProfileRequest:
+      allOf:
+        - $ref: '#/components/schemas/BasicProfile'
+    CampusProfile:
+      type: object
+      properties:
+        city:
+          type: string
+        campusName:
+          type: string
+        department:
+          type: string
+        verificationStatus:
+          type: string
+          enum: [draft, pending, verified]
+      required:
+        - city
+        - campusName
+        - department
+        - verificationStatus
+    CampusProfileRequest:
+      type: object
+      properties:
+        city:
+          type: string
+        campusName:
+          type: string
+        department:
+          type: string
+      required:
+        - city
+        - campusName
+        - department
+    ScheduleBlock:
+      type: object
+      properties:
+        id:
+          type: string
+        weekday:
+          type: string
+        start:
+          type: string
+        end:
+          type: string
+        label:
+          type: string
+      required:
+        - id
+        - weekday
+        - start
+        - end
+        - label
+    ScheduleProfile:
+      type: object
+      properties:
+        preferredCampusArea:
+          type: string
+        preferredTimeWindows:
+          type: array
+          items:
+            type: string
+        courseBlocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleBlock'
+      required:
+        - preferredCampusArea
+        - preferredTimeWindows
+        - courseBlocks
+    ScheduleProfileRequest:
+      allOf:
+        - $ref: '#/components/schemas/ScheduleProfile'
+    HomeCard:
+      type: object
+      description: Generic homepage card model for schedule, free-slot, and aiPlan modules.
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        meta:
+          type: string
+        actionLabel:
+          type: string
+          nullable: true
+      required:
+        - id
+        - title
+        - subtitle
+        - meta
+    RecommendedPersonSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        initials:
+          type: string
+        headline:
+          type: string
+        commonGround:
+          type: string
+        availability:
+          type: string
+      required:
+        - id
+        - name
+        - initials
+        - headline
+        - commonGround
+        - availability
+    ActivityPreviewItem:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        meta:
+          type: string
+      required:
+        - id
+        - title
+        - subtitle
+        - meta
+    ActivityPreview:
+      type: object
+      properties:
+        title:
+          type: string
+        subtitle:
+          type: string
+        actionLabel:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityPreviewItem'
+        pulseTitle:
+          type: string
+          nullable: true
+        pulseMeta:
+          type: string
+          nullable: true
+      required:
+        - title
+        - subtitle
+        - actionLabel
+        - items
+    HomeDashboard:
+      type: object
+      description: Homepage dashboard payload. In Phase 0/1, AI planning stays inside this payload as aiPlan instead of a standalone AI endpoint.
+      properties:
+        scheduleSummary:
+          $ref: '#/components/schemas/HomeCard'
+        freeSlots:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomeCard'
+        aiPlan:
+          description: Launch-scope AI planning module. When chat_ai_enabled is false, this still returns stable fallback guidance copy.
+          allOf:
+            - $ref: '#/components/schemas/HomeCard'
+        recommendedPeople:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendedPersonSummary'
+        peopleLead:
+          type: string
+        activityPreview:
+          $ref: '#/components/schemas/ActivityPreview'
+      required:
+        - scheduleSummary
+        - freeSlots
+        - aiPlan
+        - recommendedPeople
+        - peopleLead
+        - activityPreview
+    ChatOverview:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatSessionSummary'
+        emptyStateLead:
+          type: string
+        recommendedPeople:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendedPersonSummary'
+      required:
+        - sessions
+        - emptyStateLead
+        - recommendedPeople
+    ChatSessionSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        recommendedPersonId:
+          type: string
+        partnerName:
+          type: string
+        partnerHeadline:
+          type: string
+        availabilityHint:
+          type: string
+        phase:
+          type: string
+          enum: [matching, active, closing, closed]
+        closesAt:
+          type: string
+        closedReason:
+          type: string
+          enum: [expired, ended]
+          nullable: true
+        lastMessagePreview:
+          type: string
+        lastMessageSentAt:
+          type: string
+          nullable: true
+        contactExchangeStatus:
+          type: string
+          enum: [idle, pending, accepted-by-self, accepted-by-peer, completed, rejected]
+        pinned:
+          type: boolean
+        unreadCount:
+          type: integer
+          minimum: 0
+      required:
+        - id
+        - recommendedPersonId
+        - partnerName
+        - partnerHeadline
+        - availabilityHint
+        - phase
+        - closesAt
+        - lastMessagePreview
+        - contactExchangeStatus
+        - pinned
+        - unreadCount
+    MatchOption:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+      required:
+        - id
+        - label
+    MatchFormField:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [single-select, multi-select, stepper]
+        label:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchOption'
+        min:
+          type: integer
+          nullable: true
+        max:
+          type: integer
+          nullable: true
+      required:
+        - id
+        - kind
+        - label
+        - options
+    MatchFormSection:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchFormField'
+      required:
+        - id
+        - title
+        - fields
+    MatchFormConfig:
+      type: object
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchFormSection'
+      required:
+        - sections
+    MatchRequest:
+      type: object
+      properties:
+        matchIntent:
+          type: string
+        topicIds:
+          type: array
+          items:
+            type: string
+        timeWindow:
+          type: string
+        durationMinutes:
+          type: integer
+      required:
+        - matchIntent
+        - topicIds
+        - timeWindow
+        - durationMinutes
+    QuickMatchRequest:
+      type: object
+      properties:
+        durationMinutes:
+          type: integer
+      required:
+        - durationMinutes
+    MatchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        queueStatus:
+          type: string
+          enum: [queued, connected, expired]
+        topicLabel:
+          type: string
+        partnerHeadline:
+          type: string
+        countdownMinutes:
+          type: integer
+        recommendedPrompt:
+          type: string
+        tempChatSessionId:
+          type: string
+          nullable: true
+      required:
+        - id
+        - queueStatus
+        - topicLabel
+        - partnerHeadline
+        - countdownMinutes
+        - recommendedPrompt
+    CreateTempChatSessionRequest:
+      type: object
+      properties:
+        recommendedPersonId:
+          type: string
+          nullable: true
+        matchId:
+          type: string
+          nullable: true
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        sender:
+          type: string
+          enum: [self, peer, system]
+        kind:
+          type: string
+          enum: [text, voice, emoji, system]
+        body:
+          type: string
+        sentAt:
+          type: string
+        durationSeconds:
+          type: integer
+          nullable: true
+      required:
+        - id
+        - sender
+        - kind
+        - body
+        - sentAt
+    ChatMessageRequest:
+      type: object
+      properties:
+        sender:
+          type: string
+          enum: [self, peer]
+        kind:
+          type: string
+          enum: [text, voice, emoji]
+        body:
+          type: string
+        durationSeconds:
+          type: integer
+          nullable: true
+      required:
+        - sender
+        - kind
+        - body
+    ContactExchangeState:
+      type: object
+      properties:
+        proposer:
+          type: string
+          enum: [self, peer]
+          nullable: true
+        status:
+          type: string
+          enum: [idle, pending, accepted-by-self, accepted-by-peer, completed, rejected]
+      required:
+        - status
+    ContactExchangeDecisionRequest:
+      type: object
+      properties:
+        actor:
+          type: string
+          enum: [self, peer]
+        decision:
+          type: string
+          enum: [accepted, rejected]
+      required:
+        - actor
+        - decision
+    TempChatSession:
+      type: object
+      properties:
+        id:
+          type: string
+        recommendedPersonId:
+          type: string
+        partnerName:
+          type: string
+        partnerHeadline:
+          type: string
+        availabilityHint:
+          type: string
+        phase:
+          type: string
+          enum: [matching, active, closing, closed]
+        closesAt:
+          type: string
+        closedReason:
+          type: string
+          enum: [expired, ended]
+          nullable: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        contactExchange:
+          $ref: '#/components/schemas/ContactExchangeState'
+      required:
+        - id
+        - recommendedPersonId
+        - partnerName
+        - partnerHeadline
+        - availabilityHint
+        - phase
+        - closesAt
+        - messages
+        - contactExchange
+    DiscussionRecommendation:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        heatLabel:
+          type: string
+      required:
+        - id
+        - title
+        - summary
+        - heatLabel
+    ActivityRecommendation:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        location:
+          type: string
+        scheduleText:
+          type: string
+      required:
+        - id
+        - title
+        - location
+        - scheduleText
+    SubmissionType:
+      type: string
+      enum: [feedback, suggestion, activity_proposal]
+    SubmissionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        contactWechat:
+          type: string
+          nullable: true
+        attachments:
+          type: array
+          items:
+            type: string
+        expectedCity:
+          type: string
+          nullable: true
+        expectedCampus:
+          type: string
+          nullable: true
+      required:
+        - title
+        - content
+    SubmissionRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          $ref: '#/components/schemas/SubmissionType'
+        title:
+          type: string
+        status:
+          type: string
+          enum: [submitted, processing, reviewed, planned, converted]
+        latestReplySummary:
+          type: string
+        submittedAt:
+          type: string
+        convertedActivityId:
+          type: integer
+          format: int64
+          nullable: true
+      required:
+        - id
+        - type
+        - title
+        - status
+        - latestReplySummary
+        - submittedAt
+    DebugNextMatchStatusResponse:
+      type: object
+      properties:
+        nextQueueStatus:
+          type: string
+          enum: [queued, connected, expired]
+      required:
+        - nextQueueStatus
+    DebugErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message

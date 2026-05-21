@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: campus-love-api
+  profiles:
+    default: mock
+server:
+  port: ${APP_PORT:8080}

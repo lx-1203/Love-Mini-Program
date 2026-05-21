@@ -1,0 +1,155 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+    }
+  },
+  "globalStyle": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#f4f7fb",
+    "backgroundTextStyle": "dark"
+  },
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "校园恋爱"
+      }
+    },
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/discussions/index",
+      "style": {
+        "navigationBarTitleText": "讨论圈"
+      }
+    },
+    {
+      "path": "pages/match/index",
+      "style": {
+        "navigationBarTitleText": "匹配"
+      }
+    },
+    {
+      "path": "pages/activities/index",
+      "style": {
+        "navigationBarTitleText": "活动"
+      }
+    },
+    {
+      "path": "pages/chat/index",
+      "style": {
+        "navigationBarTitleText": "聊天"
+      }
+    },
+    {
+      "path": "pages/chat-session/index",
+      "style": {
+        "navigationBarTitleText": "临时聊天"
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    }
+  ],
+  "subPackages": [
+    {
+      "root": "subpackages/setup",
+      "pages": [
+        {
+          "path": "profile/index",
+          "style": {
+            "navigationBarTitleText": "基础资料"
+          }
+        },
+        {
+          "path": "campus/index",
+          "style": {
+            "navigationBarTitleText": "学校信息"
+          }
+        },
+        {
+          "path": "schedule/index",
+          "style": {
+            "navigationBarTitleText": "时间安排"
+          }
+        }
+      ]
+    },
+    {
+      "root": "subpackages/support",
+      "pages": [
+        {
+          "path": "feedback/index",
+          "style": {
+            "navigationBarTitleText": "反馈中心"
+          }
+        }
+      ]
+    },
+    {
+      "root": "subpackages/discover",
+      "pages": [
+        {
+          "path": "discussions/index",
+          "style": {
+            "navigationBarTitleText": "讨论圈"
+          }
+        },
+        {
+          "path": "activities/index",
+          "style": {
+            "navigationBarTitleText": "活动"
+          }
+        }
+      ]
+    }
+  ],
+  "tabBar": {
+    "custom": true,
+    "color": "#64748b",
+    "selectedColor": "#1d4ed8",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "assets/icons/home.svg",
+        "selectedIconPath": "assets/icons/home-active.svg"
+      },
+      {
+        "pagePath": "pages/discussions/index",
+        "text": "讨论圈",
+        "iconPath": "assets/icons/discussion.svg",
+        "selectedIconPath": "assets/icons/discussion-active.svg"
+      },
+      {
+        "pagePath": "pages/match/index",
+        "text": "匹配",
+        "iconPath": "assets/icons/match.svg",
+        "selectedIconPath": "assets/icons/match-active.svg"
+      },
+      {
+        "pagePath": "pages/chat/index",
+        "text": "聊天",
+        "iconPath": "assets/icons/chat.svg",
+        "selectedIconPath": "assets/icons/chat-active.svg"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "assets/icons/profile.svg",
+        "selectedIconPath": "assets/icons/profile-active.svg"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "@campus-love/admin",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Future admin console workspace for moderation, feedback triage, and activity proposal review."
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@campus-love/client",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Uni-app client workspace for the campus love app.",
+  "type": "module",
+  "scripts": {
+    "dev:h5": "uni --platform h5",
+    "dev:h5:real": "uni --platform h5 --mode real",
+    "build:h5": "uni build --platform h5",
+    "build:h5:real": "uni build --platform h5 --mode real",
+    "typecheck": "vue-tsc --noEmit",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "generate:openapi": "openapi-typescript ../../docs/openapi/feedback-growth-and-auth.yaml -o src/services/generated/api-types.ts"
+  },
+  "dependencies": {
+    "@dcloudio/types": "3.4.31",
+    "@dcloudio/uni-app": "npm:@dcloudio/uni-app@vue3",
+    "@dcloudio/uni-h5": "npm:@dcloudio/uni-h5@vue3",
+    "@dcloudio/uni-ui": "^1.5.12",
+    "@dcloudio/vite-plugin-uni": "npm:@dcloudio/vite-plugin-uni@vue3",
+    "pinia": "2.3.1",
+    "vue": "3.5.34"
+  },
+  "devDependencies": {
+    "sass-embedded": "^1.93.3",
+    "typescript": "5.9.3",
+    "vite": "^8.0.13",
+    "vitest": "^4.1.6",
+    "vue-tsc": "^3.2.9"
+  }
+}

@@ -1,0 +1,46 @@
+# =============================================================================
+# CODEOWNERS for Campus Love Miniapp
+# =============================================================================
+# 
+# Review Rules:
+# - auth, matches, temp-chat, school-verifications, database/flyway: 2 approvals
+#   required, at least 1 must be non-author
+# - All other paths: 1 approval required
+# - Emergency hotfix: 1 approval allows merge, but 2nd review must be completed
+#   within 2 hours with regression notes
+# - squash merge only for feature/fix/docs/chore branches
+# =============================================================================
+# Sync these teams with your GitHub or Gitee org before enabling strict enforcement.
+* @campus-love/maintainers
+
+# === Governance (release managers + maintainers) ===
+/.github/ @campus-love/release-managers @campus-love/maintainers
+/.github/workflows/ @campus-love/release-managers @campus-love/backend-owners
+
+# === Dual-Review Paths (auth/match/temp-chat/database) ===
+# These paths require 2 approvals, at least 1 non-author
+/apps/api/src/main/java/com/campuslove/api/auth/ @campus-love/backend-owners @campus-love/maintainers
+/apps/api/src/main/java/com/campuslove/api/match/ @campus-love/backend-owners @campus-love/maintainers
+/apps/api/src/main/java/com/campuslove/api/chat/ @campus-love/backend-owners @campus-love/maintainers
+/database/flyway/ @campus-love/backend-owners @campus-love/release-managers
+
+# === Client (miniapp owners + maintainers) ===
+/apps/client/ @campus-love/client-owners @campus-love/maintainers
+
+# === API (backend owners + maintainers) ===
+/apps/api/ @campus-love/backend-owners @campus-love/maintainers
+
+# === Admin (backend owners + maintainers) ===
+/apps/admin/ @campus-love/backend-owners @campus-love/maintainers
+
+# === OpenAPI contracts (backend + client, joint sign-off) ===
+/docs/openapi/ @campus-love/backend-owners @campus-love/client-owners
+
+# === Docs (product owners + maintainers) ===
+/docs/ @campus-love/product-owners @campus-love/maintainers
+
+# === Tests (QA owners + maintainers) ===
+/tests/ @campus-love/qa-owners @campus-love/maintainers
+
+# === Tools (maintainers) ===
+/tools/ @campus-love/maintainers

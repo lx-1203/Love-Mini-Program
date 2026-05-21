@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>校园恋爱社区 - Product Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="M4.5 10.5 12 4l7.5 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-3.8v-5.4H9.8V20H6a1.5 1.5 0 0 1-1.5-1.5v-8Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="i-circle" viewBox="0 0 24 24">
+      <path d="M7.5 8.5a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0Zm-2 10.5a6.5 6.5 0 0 1 13 0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+      <path d="M18.2 17.3a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8Z" fill="none" stroke="currentColor" stroke-width="1.75"></path>
+    </symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24">
+      <path d="M6 17.8V7.8A2.8 2.8 0 0 1 8.8 5h6.4A2.8 2.8 0 0 1 18 7.8v5.4a2.8 2.8 0 0 1-2.8 2.8H11l-5 3.8Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="i-plan" viewBox="0 0 24 24">
+      <path d="M4.5 7.5h15M7.5 4.5v6M16.5 4.5v6M5.8 19.5h12.4A1.3 1.3 0 0 0 19.5 18V7.8A1.3 1.3 0 0 0 18.2 6.5H5.8A1.3 1.3 0 0 0 4.5 7.8V18a1.3 1.3 0 0 0 1.3 1.5Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"></path>
+      <path d="m8 13 2.2 2.2L16 9.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="i-user" viewBox="0 0 24 24">
+      <circle cx="12" cy="8.5" r="4" fill="none" stroke="currentColor" stroke-width="1.75"></circle>
+      <path d="M5.5 19a6.5 6.5 0 0 1 13 0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.75"></circle>
+      <path d="M16 16 20.5 20.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24">
+      <path d="M7.2 9.3a4.8 4.8 0 1 1 9.6 0v4l1.6 2.4H5.6l1.6-2.4v-4Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+      <path d="M10.2 18.4a2 2 0 0 0 3.6 0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M12 3.5 19 6v5.8c0 4.4-2.8 7.4-7 8.7-4.2-1.3-7-4.3-7-8.7V6l7-2.5Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+      <path d="m9.2 12.4 1.9 1.9 4-4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24">
+      <path d="M12 20.2s5.8-4.8 5.8-10.2A5.8 5.8 0 1 0 6.2 10c0 5.4 5.8 10.2 5.8 10.2Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+      <circle cx="12" cy="10.1" r="2.1" fill="none" stroke="currentColor" stroke-width="1.75"></circle>
+    </symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24">
+      <path d="M12 20.3 4.8 13.7a4.5 4.5 0 0 1 6.3-6.4L12 8.2l.9-.9a4.5 4.5 0 0 1 6.3 6.4L12 20.3Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="i-ticket" viewBox="0 0 24 24">
+      <path d="M4.5 8.2A2.7 2.7 0 0 0 7 5.5h10A2.7 2.7 0 0 0 19.5 8.2v1.3a2.3 2.3 0 0 1 0 4.6v1.7A2.7 2.7 0 0 0 17 18.5H7a2.7 2.7 0 0 0-2.5-2.7v-1.7a2.3 2.3 0 0 1 0-4.6V8.2Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+      <path d="M12 7.5v9" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-dasharray="2.2 2.2"></path>
+    </symbol>
+    <symbol id="i-more" viewBox="0 0 24 24">
+      <circle cx="6" cy="12" r="1.7" fill="currentColor"></circle>
+      <circle cx="12" cy="12" r="1.7" fill="currentColor"></circle>
+      <circle cx="18" cy="12" r="1.7" fill="currentColor"></circle>
+    </symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24">
+      <path d="M9 5.8 15.2 12 9 18.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24">
+      <path d="M7.4 7.2 8.7 5h6.6l1.3 2.2H19a1.8 1.8 0 0 1 1.8 1.8v8a1.8 1.8 0 0 1-1.8 1.8H5A1.8 1.8 0 0 1 3.2 17V9A1.8 1.8 0 0 1 5 7.2h2.4Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+      <circle cx="12" cy="12.4" r="3.4" fill="none" stroke="currentColor" stroke-width="1.75"></circle>
+    </symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24">
+      <rect x="7.3" y="3.8" width="9.4" height="16.4" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.75"></rect>
+      <path d="M10 17.1h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="i-wechat" viewBox="0 0 24 24">
+      <path d="M9.4 5.3c-3.7 0-6.7 2.4-6.7 5.5 0 1.8 1 3.3 2.5 4.3L4.5 18l3.1-1.5c.6.1 1.2.2 1.8.2 3.7 0 6.7-2.4 6.7-5.5S13.1 5.3 9.4 5.3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M15.9 9.3c3 0 5.4 1.9 5.4 4.4 0 1.4-.8 2.7-2.1 3.5l.5 2.1-2.4-1.1a7 7 0 0 1-1.4.1c-3 0-5.4-1.9-5.4-4.4s2.4-4.6 5.4-4.6Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <circle cx="7.5" cy="10.7" r="1" fill="currentColor"></circle>
+      <circle cx="11.4" cy="10.7" r="1" fill="currentColor"></circle>
+      <circle cx="14.3" cy="13.8" r="1" fill="currentColor"></circle>
+      <circle cx="17.9" cy="13.8" r="1" fill="currentColor"></circle>
+    </symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24">
+      <path d="M8 10.2a4 4 0 1 1 8 0c0 1.6-.7 2.5-1.8 3.7-.7.8-1.2 1.7-1.2 2.7h-2c0-1-.5-2-1.2-2.7C8.7 12.7 8 11.8 8 10.2Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+      <path d="M10 19h4M10.6 21h2.8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24">
+      <path d="M6 20.2V4.8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+      <path d="M6.8 5.2h9.4l-1.7 3 1.7 3H6.8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="i-clipboard" viewBox="0 0 24 24">
+      <path d="M9.2 5.5h5.6M9 4h6a1.5 1.5 0 0 1 1.5 1.5V7H7.5V5.5A1.5 1.5 0 0 1 9 4Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+      <path d="M7.3 7h9.4a1.7 1.7 0 0 1 1.7 1.7v9a1.7 1.7 0 0 1-1.7 1.7H7.3a1.7 1.7 0 0 1-1.7-1.7v-9A1.7 1.7 0 0 1 7.3 7Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="i-question" viewBox="0 0 24 24">
+      <path d="M9.4 9.1a2.6 2.6 0 1 1 4.5 1.8c-.6.7-1.5 1.2-1.7 2.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path>
+      <circle cx="12" cy="17.5" r="1" fill="currentColor"></circle>
+      <circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="1.75"></circle>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="m5.5 12.8 4.1 4.1 8.9-9.4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+  </svg>
+
+  <main class="stage">
+    <section class="phones">
+      <article class="phone">
+        <div class="screen login-screen">
+          <div class="status-bar status-bar-light">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+          <section class="login-hero" data-login-hero data-media-state="animation">
+            <div class="login-hero-media">
+              <video id="loginHeroVideo" class="hero-video" muted playsinline loop preload="metadata"></video>
+              <div class="hero-animation">
+                <div class="hero-grid">
+                  <article class="hero-panel hero-panel-large">
+                    <span class="capsule capsule-ghost">公开问答</span>
+                    <strong>第一次和同校的人见面，聊什么不尴尬？</strong>
+                    <span>214 个回答 · 36 人收藏</span>
+                  </article>
+                  <article class="hero-panel hero-panel-compact">
+                    <span class="capsule capsule-ghost">本校活动</span>
+                    <strong>毕业展夜场慢逛</strong>
+                    <span>周五 20:00 · 已实名可报名</span>
+                  </article>
+                  <article class="hero-panel hero-panel-compact">
+                    <span class="capsule capsule-ghost">同城关系</span>
+                    <strong>广州 · 晚饭后空档</strong>
+                    <span>内容认识人，活动见真人</span>
+                  </article>
+                </div>
+              </div>
+              <div class="hero-scrim"></div>
+            </div>
+            <div class="hero-mode-switch">
+              <button class="mode-chip is-active" type="button" data-hero-mode="animation">动画</button>
+              <button class="mode-chip" type="button" data-hero-mode="video">视频</button>
+            </div>
+            <div class="login-copy">
+              <span class="capsule capsule-soft">手机号绑定必需</span>
+              <h1 id="loginHeroTitle">欢迎来到校园恋爱社区</h1>
+              <p id="loginHeroSubtitle">内容认识人，活动认识人，再把关系慢慢聊出来。</p>
+              <div class="flow-list">
+                <div class="flow-step">
+                  <svg><use href="#i-phone"></use></svg>
+                  <div>
+                    <strong>先完成手机号绑定</strong>
+                    <span>微信可登录，但手机号是后续所有功能的入口门槛。</span>
+                  </div>
+                </div>
+                <div class="flow-step">
+                  <svg><use href="#i-shield"></use></svg>
+                  <div>
+                    <strong>再做实名与校园认证</strong>
+                    <span>实名后可参与公开社区，校园认证后解锁校圈、活动和私聊。</span>
+                  </div>
+                </div>
+              </div>
+              <div class="login-actions">
+                <button class="primary-button login-button" type="button">
+                  <svg><use href="#i-wechat"></use></svg>
+                  <span>微信登录</span>
+                </button>
+                <button class="secondary-button login-button" type="button">
+                  <svg><use href="#i-phone"></use></svg>
+                  <span>手机号登录</span>
+                </button>
+              </div>
+              <p class="hero-mode-hint" id="heroModeHint">当前为动画欢迎页，后续可切换为平台级视频主视觉。</p>
+              <p class="agreement-line">登录即代表你同意用户协议、隐私政策，并接受实名与校园认证规则。</p>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+          <header class="screen-head">
+            <div>
+              <h1>首页</h1>
+              <p>华南理工大学 · 广州 · 已完成手机号绑定</p>
+            </div>
+            <div class="head-actions">
+              <button class="ghost-icon" type="button" aria-label="搜索"><svg><use href="#i-search"></use></svg></button>
+              <button class="ghost-icon" type="button" aria-label="通知"><svg><use href="#i-bell"></use></svg></button>
+            </div>
+          </header>
+          <div class="content">
+            <section class="overview-card schedule-card">
+              <div class="module-head module-head-tight">
+                <div>
+                  <span class="capsule capsule-teal">课表推荐</span>
+                  <h2>默认先按你的课表和空档排首页</h2>
+                </div>
+                <span class="tiny-badge badge-teal">默认首页</span>
+              </div>
+              <div class="schedule-summary">
+                <div>
+                  <strong>今日课表</strong>
+                  <span>1-2 节《线性代数》09:50 结束，14:30-18:10 是今天最长空档，20:10 后适合参加活动或继续聊天。</span>
+                </div>
+                <span class="tiny-badge badge-coral">空档已识别</span>
+              </div>
+              <div class="chip-row">
+                <span class="chip">09:50 后空闲</span>
+                <span class="chip">14:30-18:10 长空档</span>
+                <span class="chip">20:10 后可社交</span>
+              </div>
+              <div class="schedule-timeline">
+                <article class="schedule-row">
+                  <span class="schedule-time">08:00</span>
+                  <div class="schedule-body">
+                    <strong>出门去逸夫楼</strong>
+                    <span>系统已按你常用路线预留通勤时间。</span>
+                  </div>
+                </article>
+                <article class="schedule-row">
+                  <span class="schedule-time">09:50</span>
+                  <div class="schedule-body">
+                    <strong>上午课程结束</strong>
+                    <span>可切到公开问答、回复关注内容，或者安排一场短时咖啡局。</span>
+                  </div>
+                </article>
+                <article class="schedule-row">
+                  <span class="schedule-time">20:10</span>
+                  <div class="schedule-body">
+                    <strong>晚间推荐窗口</strong>
+                    <span>优先展示今晚仍可参加的本校活动，以及你关注对象的最新动态。</span>
+                  </div>
+                </article>
+              </div>
+              <div class="quick-setting-row">
+                <button class="quick-setting-button" type="button">课表设置</button>
+                <button class="quick-setting-button" type="button">推荐偏好</button>
+                <button class="quick-setting-button" type="button">关注管理</button>
+              </div>
+            </section>
+
+            <section class="module">
+              <div class="module-head">
+                <h3>我的关注</h3>
+                <button class="text-link" type="button">管理</button>
+              </div>
+              <div class="focus-grid">
+                <article class="focus-card">
+                  <span class="capsule capsule-soft">关注问题</span>
+                  <strong>第一次和同校的人见面，聊什么不尴尬？</strong>
+                  <span>214 个回答 · 你已关注 · 上午空档可继续看</span>
+                </article>
+                <article class="focus-card">
+                  <span class="capsule capsule-soft">关注的人</span>
+                  <strong>夏天的风今晚 20:10 后也有空</strong>
+                  <span>共同收藏 2 条 · 最近也在看毕业展夜场</span>
+                </article>
+                <article class="focus-card">
+                  <span class="capsule capsule-soft">关注活动</span>
+                  <strong>毕业展夜场慢逛</strong>
+                  <span>你已收藏 · 05.25 20:00 · 仍可报名</span>
+                </article>
+                <article class="focus-card">
+                  <span class="capsule capsule-soft">关注帖子</span>
+                  <strong>图书馆南门咖啡破冰局回顾</strong>
+                  <span>下午长空档适合回看和继续互动</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="module">
+              <div class="module-head">
+                <h3>活动快捷入口</h3>
+                <button class="text-link" type="button">全部活动</button>
+              </div>
+              <div class="entry-row">
+                <div class="entry-card">
+                  <svg><use href="#i-ticket"></use></svg>
+                  <strong>本校活动</strong>
+                  <span>优先看与你课表不冲突的局</span>
+                </div>
+                <div class="entry-card">
+                  <svg><use href="#i-heart"></use></svg>
+                  <strong>收藏活动</strong>
+                  <span>把已关注活动直接提到首页</span>
+                </div>
+                <div class="entry-card">
+                  <svg><use href="#i-plan"></use></svg>
+                  <strong>今晚可参加</strong>
+                  <span>20:10 后还能赶上的活动入口</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="module">
+              <div class="module-head">
+                <h3>课表空档推荐</h3>
+                <button class="text-link" type="button">刷新推荐</button>
+              </div>
+              <div class="activity-list">
+                <article class="activity-card">
+                  <div class="media media-green"><span class="media-tag">上午空档</span></div>
+                  <strong>高赞问答速览</strong>
+                  <span>09:50 后可看</span>
+                  <span>把你关注的问题顶到首页</span>
+                </article>
+                <article class="activity-card">
+                  <div class="media media-blue"><span class="media-tag">低压力</span></div>
+                  <strong>毕业展夜场慢逛</strong>
+                  <span>20:10 后可参加</span>
+                  <span>设计学院展厅</span>
+                </article>
+                <article class="activity-card">
+                  <div class="media media-cafe"><span class="media-tag">下午长空档</span></div>
+                  <strong>图书馆南门咖啡破冰</strong>
+                  <span>14:30 后可约</span>
+                  <span>步行 8 分钟</span>
+                </article>
+                <article class="activity-card">
+                  <div class="media media-gold"><span class="media-tag">晚间局</span></div>
+                  <strong>十佳歌手决赛</strong>
+                  <span>05.24 19:00</span>
+                  <span>学生活动中心</span>
+                </article>
+              </div>
+            </section>
+          </div>
+          <nav class="tabbar">
+            <button class="tab-item is-active" type="button"><svg><use href="#i-home"></use></svg><span>首页</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-circle"></use></svg><span>社区</span></button>
+            <button class="tab-item tab-chat" type="button"><svg><use href="#i-chat"></use></svg><span>聊天</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-plan"></use></svg><span>活动</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-user"></use></svg><span>我的</span></button>
+          </nav>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+          <header class="screen-head">
+            <div>
+              <h1>社区</h1>
+              <p>公开问答 + 帖子双轨 · 像知乎一样沉淀关系</p>
+            </div>
+            <button class="ghost-icon" type="button" aria-label="更多"><svg><use href="#i-more"></use></svg></button>
+          </header>
+          <div class="content">
+            <section class="permission-card">
+              <div class="auth-text">
+                <svg><use href="#i-shield"></use></svg>
+                <div>
+                  <strong>实名后可参与公开社区</strong>
+                  <span>校园认证通过后，可进入本校话题、校内活动和私聊。</span>
+                </div>
+              </div>
+              <span class="tiny-badge badge-teal">已实名</span>
+            </section>
+
+            <section class="segmented">
+              <button class="segmented-item is-active" type="button">推荐</button>
+              <button class="segmented-item" type="button">问答</button>
+              <button class="segmented-item" type="button">帖子</button>
+            </section>
+
+            <article class="qa-card">
+              <div class="qa-top">
+                <span class="capsule capsule-soft">问题</span>
+                <em>10 分钟前 · 恋爱答疑</em>
+              </div>
+              <h3>第一次和同校的人见面，聊什么不尴尬？</h3>
+              <p>大家都怎么从公开社区里的互动，平滑过渡到线下见面？</p>
+              <div class="answer-preview">
+                <strong>高赞回答</strong>
+                <p>先聊共同校园场景，比如食堂、图书馆、最近活动，再把话题转到兴趣和最近空档，不要一开始就像面试。</p>
+              </div>
+              <div class="post-foot">
+                <span class="chip chip-soft">214 个回答</span>
+                <div class="post-actions">
+                  <span>收藏 76</span>
+                  <span>关注 39</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="post-card">
+              <div class="post-head">
+                <div class="post-user">
+                  <div class="avatar avatar-photo avatar-blue"></div>
+                  <div>
+                    <strong>鹿鸣</strong>
+                    <span>公开帖子 · 同城关系</span>
+                  </div>
+                </div>
+                <em>27 分钟前</em>
+              </div>
+              <p>想认真认识人的话，我更推荐先从公开活动开始。一起看展或者喝咖啡，比一上来就单独见面轻松很多。</p>
+              <div class="gallery-three">
+                <span class="gallery-one"></span>
+                <span class="gallery-two"></span>
+                <span class="gallery-three-item"></span>
+              </div>
+              <div class="post-foot">
+                <span class="chip chip-soft">公开帖子</span>
+                <div class="post-actions">
+                  <span>赞 58</span>
+                  <span>评论 14</span>
+                </div>
+              </div>
+            </article>
+
+            <section class="topic-grid">
+              <article class="topic-card">
+                <div class="interest-icon teal">答</div>
+                <strong>恋爱答疑</strong>
+                <span>首次见面、聊天边界、关系推进</span>
+              </article>
+              <article class="topic-card">
+                <div class="interest-icon coral">帖</div>
+                <strong>同城关系</strong>
+                <span>异校同城、下课后空档、慢认识</span>
+              </article>
+              <article class="topic-card">
+                <div class="interest-icon gold">校</div>
+                <strong>本校问答</strong>
+                <span>校园认证后可见</span>
+              </article>
+              <article class="topic-card">
+                <div class="interest-icon blue">活</div>
+                <strong>活动实录</strong>
+                <span>真实感受、活动氛围、回访建议</span>
+              </article>
+            </section>
+          </div>
+          <nav class="tabbar">
+            <button class="tab-item" type="button"><svg><use href="#i-home"></use></svg><span>首页</span></button>
+            <button class="tab-item is-active" type="button"><svg><use href="#i-circle"></use></svg><span>社区</span></button>
+            <button class="tab-item tab-chat" type="button"><svg><use href="#i-chat"></use></svg><span>聊天</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-plan"></use></svg><span>活动</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-user"></use></svg><span>我的</span></button>
+          </nav>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+          <header class="screen-head">
+            <div>
+              <h1>活动</h1>
+              <p>官方活动 · 恋爱破冰局 · 兴趣局 · 组队活动</p>
+            </div>
+            <button class="ghost-icon" type="button" aria-label="搜索"><svg><use href="#i-search"></use></svg></button>
+          </header>
+          <div class="content">
+            <div class="chip-row chip-row-wrap">
+              <span class="chip chip-active">推荐</span>
+              <span class="chip">本校</span>
+              <span class="chip">同城</span>
+              <span class="chip">恋爱破冰局</span>
+              <span class="chip">兴趣局</span>
+            </div>
+
+            <article class="event-card">
+              <div class="event-cover media media-gold"><span class="media-tag">会员优先</span></div>
+              <div class="event-body">
+                <div class="event-head">
+                  <strong>华工十佳歌手决赛</strong>
+                  <span class="tiny-badge badge-gold">官方活动</span>
+                </div>
+                <p>05.24 19:00 · 学生活动中心 · 双人票可选 · 已实名可报名</p>
+                <div class="chip-row">
+                  <span class="chip chip-soft">热门</span>
+                  <span class="chip chip-soft">双人票</span>
+                  <span class="chip chip-soft">会员优先锁位</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="event-card">
+              <div class="event-cover media media-cafe"><span class="media-tag">低压力</span></div>
+              <div class="event-body">
+                <div class="event-head">
+                  <strong>南门咖啡破冰局</strong>
+                  <span class="tiny-badge badge-teal">恋爱破冰局</span>
+                </div>
+                <p>周六 19:30 · 2-4 人 · 实名必需 · 校园认证用户优先</p>
+                <div class="chip-row">
+                  <span class="chip chip-soft">先从内容认识</span>
+                  <span class="chip chip-soft">适合第一次线下见面</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="event-card">
+              <div class="event-cover media media-blue"><span class="media-tag">公开报名</span></div>
+              <div class="event-body">
+                <div class="event-head">
+                  <strong>毕业展夜场慢逛</strong>
+                  <span class="tiny-badge badge-coral">兴趣局</span>
+                </div>
+                <p>设计学院展厅 · 门票 ¥0 · 一起看展更容易开启聊天</p>
+                <div class="chip-row">
+                  <span class="chip chip-soft">展览</span>
+                  <span class="chip chip-soft">摄影</span>
+                  <span class="chip chip-soft">慢节奏</span>
+                </div>
+              </div>
+            </article>
+
+            <section class="sheet-card">
+              <div class="sheet-head">
+                <div>
+                  <strong>想发起新活动？</strong>
+                  <span>到“我的”里推荐举办活动，运营审核后转正式活动草稿。</span>
+                </div>
+                <svg class="sheet-icon"><use href="#i-flag"></use></svg>
+              </div>
+              <div class="sheet-actions">
+                <button class="secondary-button" type="button">稍后再说</button>
+                <button class="primary-button small" type="button">去提交中心</button>
+              </div>
+            </section>
+          </div>
+          <nav class="tabbar">
+            <button class="tab-item" type="button"><svg><use href="#i-home"></use></svg><span>首页</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-circle"></use></svg><span>社区</span></button>
+            <button class="tab-item tab-chat" type="button"><svg><use href="#i-chat"></use></svg><span>聊天</span></button>
+            <button class="tab-item is-active" type="button"><svg><use href="#i-plan"></use></svg><span>活动</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-user"></use></svg><span>我的</span></button>
+          </nav>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+          <header class="screen-head chat-head">
+            <button class="ghost-icon" type="button" aria-label="返回"><svg><use href="#i-arrow"></use></svg></button>
+            <div class="chat-title">
+              <strong>拾柒</strong>
+              <span>共同空档 · 今天 20:10 后</span>
+            </div>
+            <button class="ghost-icon" type="button" aria-label="更多"><svg><use href="#i-more"></use></svg></button>
+          </header>
+          <div class="content chat-content">
+            <div class="context-card">
+              <span>你们都收藏了：毕业展夜场 · 图书馆南门咖啡破冰局</span>
+            </div>
+            <div class="message-list">
+              <div class="message left">你刚看了那个“第一次见面聊什么”的问题吗？高赞回答还挺靠谱的。</div>
+              <div class="message right">看了，我觉得先一起去活动再慢慢聊会自然很多。</div>
+              <div class="message left">那今晚毕业展结束后，如果还早，可以顺路去南门坐一会儿。</div>
+              <div class="message right">可以呀，我 20:10 后有空，到时候你到了跟我说一声。</div>
+              <div class="message left">好，我先把活动票锁一下。</div>
+            </div>
+            <div class="action-row">
+              <button class="soft-action" type="button">共享活动</button>
+              <button class="soft-action" type="button">查看资料</button>
+              <button class="soft-action" type="button">设置提醒</button>
+            </div>
+          </div>
+          <div class="input-bar">
+            <button class="ghost-icon" type="button" aria-label="更多"><svg><use href="#i-circle"></use></svg></button>
+            <div class="input-shell">输入消息</div>
+            <button class="ghost-icon" type="button" aria-label="表情"><svg><use href="#i-heart"></use></svg></button>
+            <button class="send-button" type="button">发送</button>
+          </div>
+          <nav class="tabbar">
+            <button class="tab-item" type="button"><svg><use href="#i-home"></use></svg><span>首页</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-circle"></use></svg><span>社区</span></button>
+            <button class="tab-item tab-chat is-active" type="button"><svg><use href="#i-chat"></use></svg><span>聊天</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-plan"></use></svg><span>活动</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-user"></use></svg><span>我的</span></button>
+          </nav>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+          <header class="screen-head">
+            <div>
+              <h1>我的</h1>
+              <p>手机号已绑定 · 已实名 · 华南理工大学已认证</p>
+            </div>
+            <div class="head-actions">
+              <button class="ghost-icon" type="button" aria-label="搜索"><svg><use href="#i-search"></use></svg></button>
+              <button class="ghost-icon" type="button" aria-label="通知"><svg><use href="#i-bell"></use></svg></button>
+            </div>
+          </header>
+          <div class="content">
+            <section class="profile-card">
+              <div class="avatar avatar-large avatar-photo avatar-coral"></div>
+              <div>
+                <strong>夏天的风</strong>
+                <span>华南理工大学 · 本科 · 大三 · 广州天河</span>
+              </div>
+              <span class="tiny-badge badge-teal">全链路已开通</span>
+            </section>
+
+            <section class="identity-grid">
+              <article class="identity-card">
+                <svg><use href="#i-phone"></use></svg>
+                <strong>手机号绑定</strong>
+                <span>所有提交与互动都依赖手机号账号。</span>
+              </article>
+              <article class="identity-card">
+                <svg><use href="#i-shield"></use></svg>
+                <strong>实名通过</strong>
+                <span>可参与公开问答、帖子、活动报名。</span>
+              </article>
+              <article class="identity-card">
+                <svg><use href="#i-check"></use></svg>
+                <strong>校园认证</strong>
+                <span>已解锁本校圈、校内活动和私聊。</span>
+              </article>
+            </section>
+
+            <section class="vip-card">
+              <div class="vip-top">
+                <div>
+                  <span class="vip-label">成长权益</span>
+                  <strong>会员与活动权益</strong>
+                </div>
+                <button class="dark-button" type="button">查看权益</button>
+              </div>
+              <div class="vip-grid">
+                <article>
+                  <strong>同校优先曝光</strong>
+                  <span>更容易进入高质量推荐流</span>
+                </article>
+                <article>
+                  <strong>热门活动优先锁位</strong>
+                  <span>本校票券和热门局先上车</span>
+                </article>
+                <article>
+                  <strong>票券与折扣</strong>
+                  <span>咖啡券、双人票、轻消费优惠</span>
+                </article>
+                <article>
+                  <strong>活动提案回访</strong>
+                  <span>被采纳后优先通知与回访</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="module">
+              <div class="module-head">
+                <h3>用户提交中心</h3>
+                <button class="text-link" type="button">查看全部</button>
+              </div>
+              <div class="submission-grid">
+                <article class="submission-entry">
+                  <div class="entry-icon">
+                    <svg><use href="#i-clipboard"></use></svg>
+                  </div>
+                  <strong>问题反馈</strong>
+                  <span>Bug、异常、投诉和体验问题</span>
+                </article>
+                <article class="submission-entry">
+                  <div class="entry-icon">
+                    <svg><use href="#i-bulb"></use></svg>
+                  </div>
+                  <strong>功能建议</strong>
+                  <span>产品想法、社区机制和新功能建议</span>
+                </article>
+                <article class="submission-entry submission-entry-wide">
+                  <div class="entry-icon">
+                    <svg><use href="#i-flag"></use></svg>
+                  </div>
+                  <div>
+                    <strong>推荐举办活动</strong>
+                    <span>实名后可提交，校内活动建议需校园认证。</span>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section class="module">
+              <div class="module-head">
+                <h3>提交记录</h3>
+              </div>
+              <div class="ticket-list compact-ticket-list" id="profileSubmissionSummary"></div>
+            </section>
+          </div>
+          <nav class="tabbar">
+            <button class="tab-item" type="button"><svg><use href="#i-home"></use></svg><span>首页</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-circle"></use></svg><span>社区</span></button>
+            <button class="tab-item tab-chat" type="button"><svg><use href="#i-chat"></use></svg><span>聊天</span></button>
+            <button class="tab-item" type="button"><svg><use href="#i-plan"></use></svg><span>活动</span></button>
+            <button class="tab-item is-active" type="button"><svg><use href="#i-user"></use></svg><span>我的</span></button>
+          </nav>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+          <header class="screen-head chat-head">
+            <button class="ghost-icon" type="button" aria-label="返回"><svg><use href="#i-arrow"></use></svg></button>
+            <div class="chat-title">
+              <strong>提交中心</strong>
+              <span>问题反馈 / 功能建议 / 推荐举办活动</span>
+            </div>
+            <button class="ghost-icon" type="button" aria-label="更多"><svg><use href="#i-more"></use></svg></button>
+          </header>
+          <div class="content submission-content">
+            <section class="segmented submission-tabs" id="submissionFilterButtons">
+              <button class="segmented-item is-active" type="button" data-ticket-filter="feedback">问题反馈</button>
+              <button class="segmented-item" type="button" data-ticket-filter="suggestion">功能建议</button>
+              <button class="segmented-item" type="button" data-ticket-filter="activity_proposal">活动提案</button>
+            </section>
+
+            <section class="composer-card">
+              <div class="module-head module-head-tight">
+                <div>
+                  <h3 id="composerTitle">问题反馈</h3>
+                  <p class="support-copy" id="composerHint">用于提交 Bug、异常、投诉和体验问题。</p>
+                </div>
+                <span class="tiny-badge badge-teal" id="composerGate">已绑定手机号可提交</span>
+              </div>
+              <div class="field-stack">
+                <label class="field-block">
+                  <span>标题</span>
+                  <div class="field-shell">例如：首页视频切换后没有回退到动画模式</div>
+                </label>
+                <label class="field-block">
+                  <span>详细描述</span>
+                  <div class="field-shell field-shell-large">请补充出现问题的页面、时间、账号状态，以及你原本希望发生什么。</div>
+                </label>
+                <label class="field-block">
+                  <span>图片附件</span>
+                  <div class="attachment-row">
+                    <span class="attachment-chip">截图 1</span>
+                    <span class="attachment-chip">截图 2</span>
+                    <span class="attachment-chip">可继续添加</span>
+                  </div>
+                </label>
+                <label class="field-block">
+                  <span>联系方式回填</span>
+                  <div class="field-shell">手机号已回填，可补充微信号方便跟进</div>
+                </label>
+              </div>
+              <div class="sheet-actions">
+                <button class="secondary-button" type="button">暂存草稿</button>
+                <button class="primary-button small" type="button">提交</button>
+              </div>
+            </section>
+
+            <section class="module">
+              <div class="module-head">
+                <h3>提交记录</h3>
+                <button class="text-link" type="button">最近 30 天</button>
+              </div>
+              <div class="ticket-list" id="submissionHistory"></div>
+            </section>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>

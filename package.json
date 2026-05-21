@@ -1,0 +1,28 @@
+{
+  "name": "campus-love-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/client",
+    "apps/admin"
+  ],
+  "scripts": {
+    "api:dev": "node tools/run-api-wrapper.cjs spring-boot:run -Dspring-boot.run.profiles=mock",
+    "api:test": "node tools/run-api-wrapper.cjs test",
+    "client:dev:h5": "npm --workspace apps/client run dev:h5",
+    "client:dev:h5:real": "npm --workspace apps/client run dev:h5:real",
+    "generate:openapi": "npm --workspace apps/client run generate:openapi",
+    "lint:openapi": "node tools/lint-openapi.mjs docs/openapi/feedback-growth-and-auth.yaml",
+    "lint:openapi:spectral": "spectral lint \"docs/openapi/*.yaml\"",
+    "test:prototype": "node tests/prototype-contract.spec.mjs",
+    "test:structure": "node tests/project-structure.spec.mjs",
+    "test:client": "npm run generate:openapi && npm --workspace apps/client run test:unit",
+    "test": "npm run test:prototype && npm run test:structure && npm run test:client",
+    "verify:client-builds": "node tools/verify-client-builds.mjs",
+    "verify:phase01": "npm run test && npm run lint:openapi && npm run lint:openapi:spectral && npm --workspace apps/client run typecheck && npm run verify:client-builds && npm run api:test"
+  },
+  "devDependencies": {
+    "@stoplight/spectral-cli": "^6.15.0",
+    "openapi-typescript": "^7.13.0"
+  }
+}

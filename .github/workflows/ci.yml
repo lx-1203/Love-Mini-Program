@@ -1,0 +1,101 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/*'
+      - 'hotfix/*'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-phase01:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run prototype and structure tests
+        run: npm test
+
+      - name: Run OpenAPI contract lint
+        run: npm run lint:openapi
+
+      - name: Run Spectral lint
+        run: npm run lint:openapi:spectral
+
+      - name: Run client typecheck
+        run: npm --workspace apps/client run typecheck
+
+      - name: Run client builds
+        run: npm run verify:client-builds
+
+      - name: Run Spring API tests
+        run: npm run api:test
+
+  flyway-validate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: campus_love_ci
+          MYSQL_USER: campus_love
+          MYSQL_PASSWORD: campus_love
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Flyway migrate on disposable database
+        run: |
+          docker run --rm --network host \
+            -v "${{ github.workspace }}:/workspace" \
+            redgate/flyway:12.6.1-alpine \
+            -configFiles=/workspace/database/flyway/flyway.toml \
+            -url="jdbc:mysql://127.0.0.1:3306/campus_love_ci?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" \
+            -user=campus_love \
+            -password=campus_love \
+            migrate
+
+      - name: Flyway validate on disposable database
+        run: |
+          docker run --rm --network host \
+            -v "${{ github.workspace }}:/workspace" \
+            redgate/flyway:12.6.1-alpine \
+            -configFiles=/workspace/database/flyway/flyway.toml \
+            -url="jdbc:mysql://127.0.0.1:3306/campus_love_ci?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" \
+            -user=campus_love \
+            -password=campus_love \
+            validate
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

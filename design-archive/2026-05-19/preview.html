@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>校园恋爱 - UI预览</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* 品牌色 - 天蓝色系 */
+      --brand-50: #E8F4FD;
+      --brand-100: #C5E5F8;
+      --brand-200: #9DD4F3;
+      --brand-300: #6CBFED;
+      --brand-400: #3B9DE5;
+      --brand-500: #2A8BD4;
+      --brand-600: #1E77B8;
+
+      /* 辅助色 - 浅青色 */
+      --secondary-50: #E8F9FC;
+      --secondary-100: #C5F0F7;
+      --secondary-200: #9DE4F0;
+      --secondary-300: #6CD5E8;
+      --secondary-400: #5BC0DE;
+      --secondary-500: #4AABC8;
+
+      /* 强调色 - 暖橙色 */
+      --accent-400: #FF8C42;
+      --accent-500: #E87A35;
+
+      /* 中性色 */
+      --neutral-0: #FFFFFF;
+      --neutral-50: #F7F9FC;
+      --neutral-100: #EEF1F6;
+      --neutral-200: #DDE2EB;
+      --neutral-300: #C4CBD8;
+      --neutral-400: #9BA3B4;
+      --neutral-500: #6E7687;
+      --neutral-600: #4A5060;
+      --neutral-700: #2D323E;
+      --neutral-800: #1A1D26;
+      --neutral-900: #0D0F14;
+
+      /* 文本色 */
+      --text-primary: #1A1D26;
+      --text-secondary: #4A5060;
+      --text-tertiary: #6E7687;
+      --text-quaternary: #9BA3B4;
+      --text-inverse: #FFFFFF;
+
+      /* 背景色 */
+      --bg-page: #F7F9FC;
+      --bg-container: #FFFFFF;
+      --bg-surface: #EEF1F6;
+      --bg-brand: #E8F4FD;
+      --bg-secondary: #E8F9FC;
+
+      /* 阴影 */
+      --shadow-xs: 0 1px 2px rgba(26, 29, 38, 0.04);
+      --shadow-sm: 0 2px 8px rgba(26, 29, 38, 0.06);
+      --shadow-md: 0 8px 24px rgba(26, 29, 38, 0.08);
+      --shadow-lg: 0 16px 40px rgba(26, 29, 38, 0.10);
+      --shadow-brand: 0 8px 24px rgba(59, 157, 229, 0.25);
+
+      /* 圆角 */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-full: 9999px;
+
+      /* 字体 */
+      --font-sans: 'Noto Sans SC', 'PingFang SC', sans-serif;
+      --font-display: 'ZCOOL XiaoWei', serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: #e8e8e8;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 40px 20px;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    /* 手机外框 */
+    .phone {
+      width: 375px;
+      height: 812px;
+      background: var(--neutral-800);
+      border-radius: 48px;
+      padding: 12px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.25), 0 10px 30px rgba(0,0,0,0.15);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .phone::before {
+      content: '';
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 28px;
+      background: var(--neutral-800);
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-page);
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 状态栏 */
+    .status-bar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      padding-top: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* 内容滚动区 */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px;
+      padding-bottom: 100px;
+    }
+
+    .content::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* ===== 首页样式 ===== */
+    .welcome-card {
+      background: linear-gradient(135deg, #3B9DE5 0%, #5BC0DE 50%, #6CD5E8 100%);
+      border-radius: var(--radius-xl);
+      padding: 28px 24px;
+      margin-top: 8px;
+      margin-bottom: 20px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-brand);
+    }
+
+    .welcome-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 200px;
+      height: 200px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+
+    .welcome-card::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -10%;
+      width: 150px;
+      height: 150px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+    }
+
+    .welcome-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 400;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .welcome-subtitle {
+      font-size: 13px;
+      opacity: 0.9;
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 卡片基础 */
+    .card {
+      background: var(--bg-container);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .card-subtitle {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    .card-more {
+      font-size: 13px;
+      color: var(--brand-400);
+      font-weight: 500;
+    }
+
+    /* 时间轴课表 */
+    .timeline-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--neutral-100);
+    }
+
+    .timeline-item:last-child {
+      border-bottom: none;
+    }
+
+    .timeline-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .timeline-dot.past {
+      background: var(--neutral-300);
+    }
+
+    .timeline-dot.current {
+      background: var(--accent-400);
+      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
+    }
+
+    .timeline-dot.upcoming {
+      background: var(--secondary-400);
+    }
+
+    .timeline-content {
+      flex: 1;
+    }
+
+    .timeline-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .timeline-name.past {
+      color: var(--text-quaternary);
+    }
+
+    .timeline-meta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    .timeline-status {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      background: var(--accent-50);
+      color: var(--accent-500);
+      font-weight: 500;
+    }
+
+    /* 推荐的人 */
+    .person-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      margin-bottom: 10px;
+      transition: transform 0.16s ease;
+      cursor: pointer;
+    }
+
+    .person-card:active {
+      transform: scale(0.98);
+    }
+
+    .person-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .person-info {
+      flex: 1;
+    }
+
+    .person-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .person-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .match-score {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: var(--brand-50);
+      color: var(--brand-500);
+      font-weight: 600;
+    }
+
+    .person-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    .person-arrow {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* 标签 */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 13px;
+      font-weight: 500;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .tag-brand {
+      background: var(--brand-50);
+      color: var(--brand-500);
+    }
+
+    .tag-secondary {
+      background: var(--secondary-50);
+      color: var(--secondary-500);
+    }
+
+    .tag-accent {
+      background: #FFF8E8;
+      color: var(--accent-500);
+    }
+
+    /* 活动卡片 */
+    .activity-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .activity-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .activity-card {
+      min-width: 160px;
+      height: 100px;
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .activity-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+    }
+
+    .activity-card:nth-child(1) {
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+    }
+
+    .activity-card:nth-child(2) {
+      background: linear-gradient(135deg, #5BC0DE, #6CD5E8);
+    }
+
+    .activity-card:nth-child(3) {
+      background: linear-gradient(135deg, #FF8C42, #3B9DE5);
+    }
+
+    .activity-title {
+      font-size: 14px;
+      font-weight: 600;
+      position: relative;
+      z-index: 1;
+    }
+
+    .activity-time {
+      font-size: 11px;
+      opacity: 0.85;
+      margin-top: 3px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* TabBar - 5选项+中央突出按钮 */
+    .tabbar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 84px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--neutral-100);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 8px 16px 0;
+      border-radius: 0 0 40px 40px;
+    }
+
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 0;
+      cursor: pointer;
+      transition: transform 0.16s ease;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tab-item:active {
+      transform: scale(0.92);
+    }
+
+    .tab-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .tab-icon.active {
+      color: var(--brand-400);
+    }
+
+    .tab-icon.inactive {
+      color: var(--text-quaternary);
+    }
+
+    .tab-label {
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .tab-label.active {
+      color: var(--brand-400);
+      font-weight: 600;
+    }
+
+    .tab-label.inactive {
+      color: var(--text-quaternary);
+    }
+
+    /* 中央突出按钮 - 匹配 */
+    .tab-center-wrap {
+      position: relative;
+      top: -20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .tab-center-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: white;
+      box-shadow: 0 6px 20px rgba(59, 157, 229, 0.4);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 3px solid white;
+    }
+
+    .tab-center-btn:active {
+      transform: scale(0.92);
+      box-shadow: 0 3px 12px rgba(59, 157, 229, 0.3);
+    }
+
+    .tab-center-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--brand-400);
+      margin-top: 4px;
+    }
+
+    /* ===== 匹配页样式 ===== */
+    .match-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 30px;
+      border-radius: var(--radius-xl);
+      margin-top: 8px;
+      margin-bottom: 20px;
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      transition: all 0.4s ease;
+    }
+
+    .match-hero.idle {
+      background: linear-gradient(135deg, #3B9DE5 0%, #5BC0DE 100%);
+    }
+
+    .match-hero.queued {
+      background: linear-gradient(135deg, #5BC0DE 0%, #6CD5E8 100%);
+    }
+
+    .match-hero.connected {
+      background: linear-gradient(135deg, #3B9DE5 0%, #5BC0DE 100%);
+    }
+
+    .match-icon {
+      font-size: 56px;
+      margin-bottom: 16px;
+    }
+
+    .match-icon.pulse {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .match-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .match-subtitle {
+      font-size: 13px;
+      opacity: 0.9;
+      line-height: 1.5;
+    }
+
+    .match-progress {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 2px;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+
+    .match-progress-fill {
+      height: 100%;
+      background: rgba(255,255,255,0.9);
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    /* 匹配详情 */
+    .match-detail-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    /* 底部按钮 */
+    .bottom-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      height: 52px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      box-shadow: var(--shadow-brand);
+      cursor: pointer;
+      transition: all 0.16s ease;
+      z-index: 5;
+    }
+
+    .bottom-btn:active {
+      transform: scale(0.96);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* ===== 聊天页样式 ===== */
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--neutral-100);
+    }
+
+    .chat-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .chat-name {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .chat-status {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .chat-countdown {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .countdown-ring {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: conic-gradient(var(--brand-400) 75%, var(--neutral-200) 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .countdown-inner {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* 消息气泡 */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-messages::-webkit-scrollbar {
+      display: none;
+    }
+
+    .bubble {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bubble-self {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bubble-peer {
+      align-self: flex-start;
+      background: white;
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .bubble-system {
+      align-self: center;
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      color: white;
+      font-size: 12px;
+      padding: 8px 16px;
+    }
+
+    .bubble-meta {
+      font-size: 10px;
+      margin-top: 4px;
+      opacity: 0.7;
+    }
+
+    /* 语音胶囊 */
+    .voice-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.2);
+    }
+
+    .voice-waves {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 16px;
+    }
+
+    .voice-wave {
+      width: 3px;
+      background: currentColor;
+      border-radius: 2px;
+      opacity: 0.5;
+    }
+
+    .voice-wave:nth-child(1) { height: 8px; }
+    .voice-wave:nth-child(2) { height: 14px; }
+    .voice-wave:nth-child(3) { height: 10px; }
+    .voice-wave:nth-child(4) { height: 16px; }
+    .voice-wave:nth-child(5) { height: 12px; }
+
+    /* 输入区 */
+    .chat-input-area {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 10px 16px 30px;
+      background: white;
+      border-top: 1px solid var(--neutral-100);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 0 0 40px 40px;
+    }
+
+    .input-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .chat-input {
+      flex: 1;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      border: none;
+      padding: 0 14px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .chat-input::placeholder {
+      color: var(--text-quaternary);
+    }
+
+    .send-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--text-quaternary);
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+
+    .send-btn.active {
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      color: white;
+    }
+
+    /* ===== 个人中心样式 ===== */
+    .profile-hero {
+      background: linear-gradient(135deg, #3B9DE5 0%, #5BC0DE 50%, #6CD5E8 100%);
+      border-radius: var(--radius-xl);
+      padding: 28px 24px;
+      margin-top: 8px;
+      margin-bottom: 20px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .profile-hero::before {
+      content: '';
+      position: absolute;
+      top: -30%;
+      right: -10%;
+      width: 180px;
+      height: 180px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .profile-avatar-wrap {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: conic-gradient(white 75%, rgba(255,255,255,0.3) 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px;
+    }
+
+    .profile-avatar {
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brand-400);
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .profile-info {
+      flex: 1;
+    }
+
+    .profile-name {
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .verified-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.25);
+      font-weight: 500;
+    }
+
+    .profile-meta {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+
+    .profile-completion {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+
+    /* 菜单列表 */
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--neutral-100);
+      cursor: pointer;
+      transition: background 0.16s ease;
+    }
+
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+
+    .menu-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .menu-icon.brand { background: var(--brand-50); }
+    .menu-icon.secondary { background: var(--secondary-50); }
+    .menu-icon.accent { background: #FFF2E8; }
+
+    .menu-content {
+      flex: 1;
+    }
+
+    .menu-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .menu-desc {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    .menu-arrow {
+      font-size: 18px;
+      color: var(--text-quaternary);
+    }
+
+    .logout {
+      text-align: center;
+      padding: 20px;
+      color: var(--brand-500);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* 标签页切换 */
+    .preview-tabs {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      background: white;
+      padding: 6px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+
+    .preview-tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all 0.16s ease;
+    }
+
+    .preview-tab.active {
+      background: linear-gradient(135deg, #3B9DE5, #5BC0DE);
+      color: white;
+    }
+
+    .page-preview {
+      display: none;
+    }
+
+    .page-preview.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部切换标签 -->
+  <div class="preview-tabs">
+    <button class="preview-tab active" onclick="showPage('home')">首页</button>
+    <button class="preview-tab" onclick="showPage('match')">匹配</button>
+    <button class="preview-tab" onclick="showPage('chat')">聊天</button>
+    <button class="preview-tab" onclick="showPage('profile')">我的</button>
+  </div>
+
+  <!-- 首页预览 -->
+  <div class="phone">
+    <div class="screen">
+      <div class="status-bar">
+        <span>9:41</span>
+        <span>校园恋爱</span>
+        <span>📶 🔋</span>
+      </div>
+
+      <div class="content">
+        <!-- 欢迎卡片 -->
+        <div class="welcome-card">
+          <div class="welcome-title">下午好，同学</div>
+          <div class="welcome-subtitle">今天有 3 节课，2 个空闲时段可以认识新朋友 ✨</div>
+        </div>
+
+        <!-- 今日课表 -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">今日课表</div>
+              <div class="card-subtitle">基于你的空闲时间推荐</div>
+            </div>
+            <span class="card-more">查看全部 ›</span>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot past"></div>
+            <div class="timeline-content">
+              <div class="timeline-name past">高等数学</div>
+              <div class="timeline-meta">08:00-09:35 · A-101</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot current"></div>
+            <div class="timeline-content">
+              <div class="timeline-name">英语</div>
+              <div class="timeline-meta">10:00-11:35 · B-203</div>
+            </div>
+            <div class="timeline-status">进行中</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot upcoming"></div>
+            <div class="timeline-content">
+              <div class="timeline-name">数据结构</div>
+              <div class="timeline-meta">14:00-15:35 · C-305</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 完善资料 -->
+        <div class="card" style="background: linear-gradient(135deg, #3B9DE5, #5BC0DE); color: white;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="color: white;">完善资料</div>
+              <div class="card-subtitle" style="color: rgba(255,255,255,0.8);">资料完整度 60%，完善后匹配更精准</div>
+            </div>
+          </div>
+          <div>
+            <span class="tag tag-secondary">基础资料 ✓</span>
+            <span class="tag tag-secondary">学校认证 ✓</span>
+            <span class="tag tag-accent">课表导入</span>
+            <span class="tag" style="background: rgba(255,255,255,0.2); color: white;">兴趣标签</span>
+          </div>
+        </div>
+
+        <!-- 推荐的人 -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">推荐的人</div>
+              <div class="card-subtitle">基于课表重叠与兴趣匹配</div>
+            </div>
+          </div>
+          <div class="person-card">
+            <div class="person-avatar">雨</div>
+            <div class="person-info">
+              <div class="person-name-row">
+                <span class="person-name">小雨</span>
+                <span class="match-score">92° 匹配</span>
+              </div>
+              <div class="person-meta">计算机学院 · 摄影 · 音乐</div>
+            </div>
+            <div class="person-arrow">→</div>
+          </div>
+          <div class="person-card">
+            <div class="person-avatar" style="background: linear-gradient(135deg, #5BC0DE, #6CD5E8);">杰</div>
+            <div class="person-info">
+              <div class="person-name-row">
+                <span class="person-name">阿杰</span>
+                <span class="match-score" style="background: var(--secondary-50); color: var(--secondary-500);">87° 匹配</span>
+              </div>
+              <div class="person-meta">经管学院 · 篮球 · 旅行</div>
+            </div>
+            <div class="person-arrow" style="background: linear-gradient(135deg, #5BC0DE, #6CD5E8);">→</div>
+          </div>
+        </div>
+
+        <!-- 讨论热度 -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">讨论热度</div>
+              <div class="card-subtitle">大家都在聊什么</div>
+            </div>
+          </div>
+          <div>
+            <span class="tag tag-brand">期末复习搭子 <span style="opacity:0.6">128</span></span>
+            <span class="tag tag-brand">周末电影约 <span style="opacity:0.6">86</span></span>
+            <span class="tag tag-brand">摄影交流 <span style="opacity:0.6">64</span></span>
+          </div>
+        </div>
+
+        <!-- 校园活动 -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">校园活动</div>
+              <div class="card-subtitle">发现身边的精彩</div>
+            </div>
+          </div>
+          <div class="activity-scroll">
+            <div class="activity-card">
+              <div class="activity-title">周末电影夜</div>
+              <div class="activity-time">周五 19:00</div>
+            </div>
+            <div class="activity-card">
+              <div class="activity-title">图书馆自习组</div>
+              <div class="activity-time">每天 14:00</div>
+            </div>
+            <div class="activity-card">
+              <div class="activity-title">校园音乐节</div>
+              <div class="activity-time">下周六 18:00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TabBar - 5选项，中央突出匹配按钮 -->
+      <div class="tabbar">
+        <div class="tab-item">
+          <div class="tab-icon active">🏠</div>
+          <span class="tab-label active">首页</span>
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon inactive">💬</div>
+          <span class="tab-label inactive">讨论圈</span>
+        </div>
+        <div class="tab-center-wrap">
+          <div class="tab-center-btn">💫</div>
+          <span class="tab-center-label">匹配</span>
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon inactive">🎉</div>
+          <span class="tab-label inactive">活动</span>
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon inactive">👤</div>
+          <span class="tab-label inactive">我的</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 匹配页预览 -->
+  <div class="phone" id="page-match" style="display:none">
+    <div class="screen">
+      <div class="status-bar">
+        <span>9:41</span>
+        <span>匹配</span>
+        <span>📶 🔋</span>
+      </div>
+
+      <div class="content">
+        <div class="match-hero idle">
+          <div class="match-icon">💫</div>
+          <div class="match-title">开始匹配</div>
+          <div class="match-subtitle">基于你的课表和兴趣<br>找到志同道合的同学</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">最近匹配</div>
+              <div class="card-subtitle">查看历史记录</div>
+            </div>
+          </div>
+          <div class="person-card">
+            <div class="person-avatar" style="background: var(--neutral-300);">?</div>
+            <div class="person-info">
+              <div class="person-name">匹配已过期</div>
+              <div class="person-meta">2天前</div>
+            </div>
+          </div>
+          <div class="person-card">
+            <div class="person-avatar" style="background: var(--neutral-300);">?</div>
+            <div class="person-info">
+              <div class="person-name">已结束聊天</div>
+              <div class="person-meta">5天前</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="bottom-btn">立即匹配</button>
+
+      <!-- TabBar - 匹配页状态 -->
+      <div class="tabbar">
+        <div class="tab-item">
+          <div class="tab-icon inactive">🏠</div>
+          <span class="tab-label inactive">首页</span>
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon inactive">💬</div>
+          <span class="tab-label inactive">讨论圈</span>
+        </div>
+        <div class="tab-center-wrap">
+          <div class="tab-center-btn">💫</div>
+          <span class="tab-center-label">匹配</span>
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon inactive">🎉</div>
+          <span class="tab-label inactive">活动</span>
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon inactive">👤</div>
+          <span class="tab-label inactive">我的</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 聊天页预览 -->
+  <div class="phone" id="page-chat" style="display:none">
+    <div class="screen">
+      <div class="chat-header">
+        <div class="chat-user">
+          <div style="font-size: 20px; margin-right: 4px;">‹</div>
+          <div class="chat-avatar">雨</div>
+          <div>
+            <div class="chat-name">小雨</div>
+            <div class="chat-status">计算机学院 · 在线</div>
+          </div>
+        </div>
+        <div class="chat-countdown">
+          <div class="countdown-ring">
+            <div class="countdown-inner">18</div>
+          </div>
+          <span style="font-size: 11px; color: var(--text-tertiary);">h</span>
+        </div>
+      </div>
+
+      <div class="chat-messages">
+        <div class="bubble bubble-system">你们已成功匹配，开始聊天吧！</div>
+
+        <div class="bubble bubble-peer">
+          你好呀，看到你也喜欢摄影 📷
+          <div class="bubble-meta">14:02</div>
+        </div>
+
+        <div class="bubble bubble-self">
+          对呀！你平时拍什么类型比较多？
+          <div class="bubble-meta">14:03 已读</div>
+        </div>
+
+        <div class="bubble bubble-peer">
+          <div class="voice-pill">
+            <span>▶</span>
+            <div class="voice-waves">
+              <div class="voice-wave"></div>
+              <div class="voice-wave"></div>
+              <div class="voice-wave"></div>
+              <div class="voice-wave"></div>
+              <div class="voice-wave"></div>
+            </div>
+            <span>8"</span>
+          </div>
+          <div class="bubble-meta">14:05</div>
+        </div>
+
+        <div class="bubble bubble-self">
+          哈哈，我也觉得校园里的光影特别好看 ✨
+          <div class="bubble-meta">14:06 已送达</div>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="input-btn">🎤</div>
+        <input class="chat-input" placeholder="说点什么..." />
+        <div class="send-btn">↑</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 个人中心预览 -->
+  <div class="phone" id="page-profile" style="display:none">
+    <div class="screen">
+      <div class="status-bar">
+        <span>9:41</span>
+        <span>我的</span>
+        <span>📶 🔋</span>
+      </div>
+
+      <div class="content">
+        <div class="profile-hero">
+          <div class="profile-header">
+            <div class="profile-avatar-wrap">
+              <div class="profile-avatar">明</div>
+            </div>
+            <div class="profile-info">
+              <div class="profile-name">
+                小明
+                <span class="verified-badge">已认证</span>
+              </div>
+              <div class="profile-meta">计算机学院 · 大二</div>
+              <div class="profile-completion">资料完成度 75%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom: 4px;">个人设置</div>
+
+          <div class="menu-item">
+            <div class="menu-icon brand">👤</div>
+            <div class="menu-content">
+              <div class="menu-title">基础资料</div>
+              <div class="menu-desc">昵称、头像、个性签名</div>
+            </div>
+            <span class="menu-arrow">›</span>
+          </div>
+
+          <div class="menu-item">
+            <div class="menu-icon secondary">🏫</div>
+            <div class="menu-content">
+              <div class="menu-title">学校认证</div>
+              <div class="menu-desc">海南大学 · 已认证</div>
+            </div>
+            <span class="menu-arrow">›</span>
+          </div>
+
+          <div class="menu-item">
+            <div class="menu-icon accent">📅</div>
+            <div class="menu-content">
+              <div class="menu-title">课表管理</div>
+              <div class="menu-desc">导入或手动编辑课表</div>
+            </div>
+            <span class="menu-arrow">›</span>
+          </div>
+
+          <div class="menu-item">
+            <div class="menu-icon brand">🏷️</div>
+            <div class="menu-content">
+              <div class="menu-title">兴趣标签</div>
+              <div class="menu-desc">摄影、音乐、旅行</div>
+            </div>
+            <span class="menu-arrow">›</span>
+          </div>
+
+          <div class="menu-item">
+            <div class="menu-icon secondary">💬</div>
+            <div class="menu-content">
+              <div class="menu-title">聊天设置</div>
+              <div class="menu-desc">消息通知、隐私设置</div>
+            </div>
+            <span class="menu-arrow">›</span>
+          </div>
+
+          <div class="menu-item">
+            <div class="menu-icon accent">📋</div>
+            <div class="menu-content">
+              <div class="menu-title">反馈建议</div>
+              <div class="menu-desc">帮助我们做得更好</div>
+            </div>
+            <span class="menu-arrow">›</span>
+          </div>
+        </div>
+
+        <div class="logout">退出登录</div>
+      </div>
+
+      <!-- TabBar - 个人中心状态 -->
+      <div class="tabbar">
+        <div class="tab-item">
+          <div class="tab-icon inactive">🏠</div>
+          <span class="tab-label inactive">首页</span>
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon inactive">💬</div>
+          <span class="tab-label inactive">讨论圈</span>
+        </div>
+        <div class="tab-center-wrap">
+          <div class="tab-center-btn">💫</div>
+          <span class="tab-center-label">匹配</span>
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon inactive">🎉</div>
+          <span class="tab-label inactive">活动</span>
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon active">👤</div>
+          <span class="tab-label active">我的</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showPage(page) {
+      document.querySelectorAll('.phone').forEach(p => p.style.display = 'none');
+      document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+
+      if (page === 'home') {
+        document.querySelector('.phone').style.display = 'block';
+      } else {
+        document.getElementById('page-' + page).style.display = 'block';
+      }
+
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>
