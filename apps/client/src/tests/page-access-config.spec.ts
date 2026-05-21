@@ -2,20 +2,20 @@ import { describe, expect, it } from "vitest";
 import { chatPageRequirements, homePageRequirements } from "../config/page-access";
 
 describe("page access config", () => {
-  it("keeps the home page open to any logged-in user", () => {
+  it("requires profile for home page (Day 1 tightening)", () => {
     expect(homePageRequirements).toEqual({
       requiresAuth: true,
-      requiresProfile: false,
+      requiresProfile: true,
       requiresCampus: false,
       requiresSchedule: false,
     });
   });
 
-  it("keeps the chat list open to any logged-in user", () => {
+  it("requires profile + campus for chat page (Day 1 tightening)", () => {
     expect(chatPageRequirements).toEqual({
       requiresAuth: true,
-      requiresProfile: false,
-      requiresCampus: false,
+      requiresProfile: true,
+      requiresCampus: true,
       requiresSchedule: false,
     });
   });

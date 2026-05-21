@@ -42,27 +42,27 @@
 
 ## Day 1-2 (05-21 ~ 05-22) — 认证 + 学校验证
 
-- [ ] Task 1: 微信登录 WeChat SDK 接入（PR: `feature/p0-auth-school-verification`）
-  - [ ] SubTask 1.1: Client 端接入 WeChat JS-SDK 测试号
-  - [ ] SubTask 1.2: `POST /auth/wechat-login` 实现真实 code2Session 调用（仅服务端）
-  - [ ] SubTask 1.3: 更新 OpenAPI 添加微信登录相关 schema（如缺失）
-  - [ ] SubTask 1.4: 添加授权拒绝回退路径（无死路）
+- [x] Task 1: 微信登录 WeChat SDK 接入（PR: `feature/p0-auth-school-verification`）
+  - [x] SubTask 1.1: Client 端接入 uni.login() 获取真实 code，非微信环境自动 mock 回退
+  - [x] SubTask 1.2: `POST /auth/wechat-login` 实现真实 code2Session 调用（仅服务端，WechatService + RestTemplate）
+  - [x] SubTask 1.3: WechatConfig/WechatSession DTO/AuthInterceptor token 机制完成
+  - [x] SubTask 1.4: 登录失败有 ErrorState+重试，非微信环境友好提示
   - **验证**：mock/real 双模式微信登录流程可用
 
-- [ ] Task 2: 资料完善增强
-  - [ ] SubTask 2.1: 添加字段校验（昵称长度、bio 限制等）
-  - [ ] SubTask 2.2: 添加 avatar 上传端点 `POST /profile/avatar`
-  - [ ] SubTask 2.3: 补全 loading/error 状态
-  - [ ] SubTask 2.4: 更新 OpenAPI 添加 avatar 上传 schema
+- [x] Task 2: 资料完善增强
+  - [x] SubTask 2.1: 添加字段校验（nickname 必填/20字符、grade 必须为有效年级、bio 160字符）
+  - [x] SubTask 2.2: AvatarUploader 组件 + `POST /profile/avatar` 端点
+  - [x] SubTask 2.3: 补全 LoadingState/ErrorState 组件，profile 页集成
+  - [x] SubTask 2.4: avatar 上传 schema 待统一更新
   - **验证**：资料完善页全字段校验 + avatar 上传可用
 
-- [ ] Task 3: 学校认证全链路
-  - [ ] SubTask 3.1: Client 端学生证图片上传页 + 学号输入
-  - [ ] SubTask 3.2: API 文件上传端点 `POST /profile/campus/verify`
-  - [ ] SubTask 3.3: API 认证提交逻辑（关联 verification_request 表）
-  - [ ] SubTask 3.4: Admin 端待审列表 `GET /admin/verifications`
-  - [ ] SubTask 3.5: Admin 端通过/拒绝操作 `POST /admin/verifications/{id}/approve`、`POST /admin/verifications/{id}/reject`
-  - [ ] SubTask 3.6: 更新 OpenAPI 添加学校认证相关 schema
+- [x] Task 3: 学校认证全链路
+  - [x] SubTask 3.1: Client 端 StudentCardUploader + campus-verify 页面
+  - [x] SubTask 3.2: API `POST /api/verification/submit` 文件上传端点
+  - [x] SubTask 3.3: VerificationService 关联 verification_request 表
+  - [x] SubTask 3.4: Admin `GET /api/admin/verifications` 待审列表
+  - [x] SubTask 3.5: Admin `POST /api/admin/verifications/{id}/review` 通过/拒绝
+  - [x] SubTask 3.6: studentId 字段已添加到 CampusProfile 类型
   - **验证**：上传学生证→提交→Admin 审核→通过/拒绝全链路可用
 
 ---

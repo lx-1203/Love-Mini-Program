@@ -1,6 +1,7 @@
 package com.campuslove.api.profile;
 
 import com.campuslove.api.runtime.MockRuntimeState;
+import com.campuslove.api.runtime.MockRuntimeState.CourseBlockData;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -97,6 +98,49 @@ public class ProfileService {
         profile.preferredCampusArea(),
         profile.preferredTimeWindows(),
         toBlocks(profile.courseBlocks())
+    );
+  }
+
+  // ---- CourseBlock CRUD (Day 3) ----
+
+  /** 获取所有 CourseBlock (独立于旧 schedule 端点的新数据模型) */
+  public List<CourseBlockView> listCourseBlocks() {
+    return runtimeState.courseBlocks().stream()
+        .map(this::toCourseBlockView)
+        .toList();
+  }
+
+  /** 新增一个课程时间段 */
+  public CourseBlockView addCourseBlock(CourseBlockRequest request) {
+    CourseBlockData created = runtimeState.addCourseBlock(
+        new CourseBlockData(null, request.dayOfWeek(), request.startPeriod(),
+            request.endPeriod(), request.courseName(), request.location())
+    );
+    return toCourseBlockView(created);
+  }
+
+  /** 更新指定课程时间段 */
+  public CourseBlockView updateCourseBlock(String blockId, CourseBlockRequest request) {
+    CourseBlockData updated = runtimeState.updateCourseBlock(blockId,
+        new CourseBlockData(blockId, request.dayOfWeek(), request.startPeriod(),
+            request.endPeriod(), request.courseName(), request.location())
+    );
+    return toCourseBlockView(updated);
+  }
+
+  /** 删除指定课程时间段 */
+  public void deleteCourseBlock(String blockId) {
+    runtimeState.deleteCourseBlock(blockId);
+  }
+
+  private CourseBlockView toCourseBlockView(CourseBlockData data) {
+    return new CourseBlockView(
+        data.id(),
+        data.dayOfWeek(),
+        data.startPeriod(),
+        data.endPeriod(),
+        data.courseName(),
+        data.location()
     );
   }
 

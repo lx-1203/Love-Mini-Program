@@ -13,77 +13,82 @@ const dashboard = {
     {
       id: "free-1",
       title: "今晚 19:00-20:30",
-      subtitle: "北草坪和咖啡馆都可以安排。",
-      meta: "适合轻松散步或喝杯咖啡",
+      subtitle: "适合轻松聊天",
+      meta: "北草坪",
       actionLabel: "用于推荐",
     },
   ],
   aiPlan: {
     id: "ai-plan",
-    title: "人工编辑兜底计划",
-    subtitle: "当前 AI 关闭，所以首页展示静态推荐块。",
-    meta: "当前开关 chat_ai_enabled = false",
+    title: "今日安排",
+    subtitle: "基于课表空闲时段",
+    meta: "规则引擎驱动",
     actionLabel: null,
   },
-  recommendedPeople: [
+  recommendedPeople: [],
+  recommendations: [
     {
-      id: "person-1",
-      name: "林安",
-      initials: "林",
-      headline: "工业设计大三，偏好低压力的第一轮聊天。",
-      commonGround: "共同兴趣：电影夜和安静的咖啡馆路线",
-      availability: "合适时间：今晚 19:00 之后",
+      userId: "ru-1",
+      displayName: "同学A",
+      avatarInitials: "A",
+      headline: "大三，喜欢咖啡散步",
+      score: 85,
+      matchedTopics: ["同校", "同城"],
+      school: "南校区",
+      city: "广州",
+    },
+    {
+      userId: "ru-2",
+      displayName: "同学B",
+      avatarInitials: "B",
+      headline: "大二，热爱电影",
+      score: 78,
+      matchedTopics: ["同城"],
+      school: "北校区",
+      city: "广州",
     },
   ],
   peopleLead: "把推荐位作为进入聊天的主入口。",
   activityPreview: {
     title: "活动入口",
-    subtitle: "先看近期小活动，再决定是否去匹配或提交新的活动提案。",
+    subtitle: "近期小活动",
     actionLabel: "查看活动",
-    items: [
-      {
-        id: "a-1",
-        title: "图书馆南门咖啡散步",
-        subtitle: "南门咖啡馆",
-        meta: "周四 19:00-20:00",
-      },
-    ],
-    pulseTitle: "大家怎么平衡恋爱和考试周？",
-    pulseMeta: "412 人收藏",
+    items: [],
+    pulseTitle: null,
+    pulseMeta: null,
   },
 };
 
 describe("toHomePageView", () => {
-  it("rebuilds the home surface into schedule, people, and activity sections", () => {
+  it("rebuilds the home surface into schedule cards and recommendation cards", () => {
     const view = toHomePageView(dashboard, {
       profileCompleted: false,
       campusCompleted: false,
       scheduleCompleted: false,
     });
 
-    expect(view.sectionOrder).toEqual(["schedule", "people", "activity"]);
     expect(view.setupTasks.map((task) => task.id)).toEqual([
       "profile",
       "campus",
       "schedule",
     ]);
-    expect(view.recommendedPeople).toHaveLength(1);
-    expect(view.recommendedPeople[0]?.action.mode).toBe("complete-setup");
-    expect(view.peopleLead).toBe("把推荐位作为进入聊天的主入口。");
-    expect(view.activityPreview.actionLabel).toBe("查看活动");
+    // schedule cards include schedule summary + free slots (without aiPlan)
+    expect(view.scheduleCards).toHaveLength(2);
+    expect(view.recommendationCards).toHaveLength(2);
+    expect(view.recommendationCards[0]?.displayName).toBe("同学A");
+    expect(view.recommendationCards[0]?.score).toBe(85);
+    expect(view.recommendationCards[0]?.matchedTopics).toEqual(["同校", "同城"]);
   });
 
-  it("switches recommendation actions to chat once setup is complete", () => {
-    const view = toHomePageView(dashboard, {
+  it("returns empty recommendation cards when array is empty", () => {
+    const emptyDashboard = { ...dashboard, recommendations: [] };
+    const view = toHomePageView(emptyDashboard, {
       profileCompleted: true,
       campusCompleted: true,
       scheduleCompleted: true,
     });
 
     expect(view.setupTasks).toEqual([]);
-    expect(view.recommendedPeople.every((person) => person.action.mode === "go-chat")).toBe(true);
-    expect(view.recommendedPeople.every((person) => person.action.label === "去聊天")).toBe(
-      true
-    );
+    expect(view.recommendationCards).toEqual([]);
   });
 });

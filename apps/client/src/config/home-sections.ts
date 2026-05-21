@@ -1,7 +1,7 @@
 export type HomeSectionId =
   | "schedule-summary"
   | "free-slots"
-  | "ai-plan"
+  | "recommendations"
   | "match-entry"
   | "discussion-feed"
   | "activity-feed";
@@ -27,9 +27,9 @@ export const homeSectionConfigs: HomeSectionConfig[] = [
     accent: "teal",
   },
   {
-    id: "ai-plan",
-    title: "今日计划",
-    subtitle: "AI 关闭时也有稳定兜底",
+    id: "recommendations",
+    title: "今日推荐人选",
+    subtitle: "基于课表和兴趣偏好，规则引擎匹配",
     accent: "amber",
   },
   {

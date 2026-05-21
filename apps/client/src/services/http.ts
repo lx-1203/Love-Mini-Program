@@ -3,7 +3,7 @@ import { AppApiError, toAppApiError } from "./api-error";
 
 export interface RequestOptions<TBody = unknown> {
   url: string;
-  method?: "GET" | "POST" | "PUT";
+  method?: "GET" | "POST" | "PUT" | "DELETE";
   data?: TBody;
 }
 

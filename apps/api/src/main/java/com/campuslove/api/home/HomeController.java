@@ -21,13 +21,11 @@ public class HomeController {
   }
 }
 
+/** 首页仪表盘响应: { scheduleSummary, recommendations, matchStatus } */
 record HomeDashboardView(
     HomeCardView scheduleSummary,
-    List<HomeCardView> freeSlots,
-    HomeCardView aiPlan,
-    List<RecommendedPersonSummaryView> recommendedPeople,
-    String peopleLead,
-    ActivityPreviewView activityPreview
+    List<RecommendedPersonSummaryView> recommendations,
+    String matchStatus
 ) {
 }
 
@@ -40,30 +38,13 @@ record HomeCardView(
 ) {
 }
 
+/** 推荐用户摘要卡片 */
 record RecommendedPersonSummaryView(
     String id,
     String name,
     String initials,
-    String headline,
-    String commonGround,
-    String availability
-) {
-}
-
-record ActivityPreviewView(
-    String title,
-    String subtitle,
-    String actionLabel,
-    List<ActivityPreviewItemView> items,
-    String pulseTitle,
-    String pulseMeta
-) {
-}
-
-record ActivityPreviewItemView(
-    String id,
-    String title,
-    String subtitle,
-    String meta
+    String reason,
+    String school,
+    String grade
 ) {
 }

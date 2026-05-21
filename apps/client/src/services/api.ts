@@ -95,6 +95,38 @@ export const clientApi = {
       data: payload,
     });
   },
+  /** 添加单个课程块 */
+  async addCourseBlock(userId: string, block: Schemas["CourseBlockRequest"]) {
+    if (useMock()) {
+      return mockFixtures.addCourseBlock(userId, block);
+    }
+    return request<Schemas["ScheduleBlock"], Schemas["CourseBlockRequest"]>({
+      url: "/profile/schedule/blocks",
+      method: "POST",
+      data: block,
+    });
+  },
+  /** 更新指定课程块 */
+  async updateCourseBlock(userId: string, blockId: string, block: Schemas["CourseBlockRequest"]) {
+    if (useMock()) {
+      return mockFixtures.updateCourseBlock(userId, blockId, block);
+    }
+    return request<Schemas["ScheduleBlock"], Schemas["CourseBlockRequest"]>({
+      url: `/profile/schedule/blocks/${blockId}`,
+      method: "PUT",
+      data: block,
+    });
+  },
+  /** 删除指定课程块 */
+  async deleteCourseBlock(userId: string, blockId: string) {
+    if (useMock()) {
+      return mockFixtures.deleteCourseBlock(userId, blockId);
+    }
+    return request<{ success: true }>({
+      url: `/profile/schedule/blocks/${blockId}`,
+      method: "DELETE",
+    });
+  },
   async getHomeDashboard() {
     if (useMock()) {
       return mockFixtures.getHomeDashboard();

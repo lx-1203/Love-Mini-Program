@@ -116,7 +116,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the home dashboard payload with schedule, AI plan fallback, recommendations, and activity entry */
+        /** Get the home dashboard payload with schedule, recommendations, and activity entry */
         get: operations["getHomeDashboard"];
         put?: never;
         post?: never;
@@ -583,13 +583,33 @@ export interface components {
             end: string;
             label: string;
         };
+        /** @description Course block used as request payload (without id) */
+        CourseBlockRequest: {
+            weekday: string;
+            start: string;
+            end: string;
+            label: string;
+            location?: string | null;
+        };
         ScheduleProfile: {
             preferredCampusArea: string;
             preferredTimeWindows: string[];
             courseBlocks: components["schemas"]["ScheduleBlock"][];
         };
         ScheduleProfileRequest: components["schemas"]["ScheduleProfile"];
-        /** @description Generic homepage card model for schedule, free-slot, and aiPlan modules. */
+        /** @description A recommended user with match score and topic matches */
+        RecommendationUser: {
+            userId: string;
+            displayName: string;
+            avatarInitials: string;
+            headline: string;
+            /** Format: int32 */
+            score: number;
+            matchedTopics: string[];
+            school: string;
+            city: string;
+        };
+        /** @description Generic homepage card model for schedule summary modules. */
         HomeCard: {
             id: string;
             title: string;
@@ -619,13 +639,14 @@ export interface components {
             pulseTitle?: string | null;
             pulseMeta?: string | null;
         };
-        /** @description Homepage dashboard payload. In Phase 0/1, AI planning stays inside this payload as aiPlan instead of a standalone AI endpoint. */
+        /** @description Homepage dashboard payload. */
         HomeDashboard: {
             scheduleSummary: components["schemas"]["HomeCard"];
             freeSlots: components["schemas"]["HomeCard"][];
-            /** @description Launch-scope AI planning module. When chat_ai_enabled is false, this still returns stable fallback guidance copy. */
             aiPlan: components["schemas"]["HomeCard"];
             recommendedPeople: components["schemas"]["RecommendedPersonSummary"][];
+            /** @description Daily recommendation candidates with computed scores and topic matches */
+            recommendations: components["schemas"]["RecommendationUser"][];
             peopleLead: string;
             activityPreview: components["schemas"]["ActivityPreview"];
         };
@@ -996,7 +1017,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Home dashboard, including the launch-scope aiPlan module inside the dashboard payload */
+            /** @description Home dashboard with rule-based recommendation engine (Day 3) */
             200: {
                 headers: {
                     [name: string]: unknown;
