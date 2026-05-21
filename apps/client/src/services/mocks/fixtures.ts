@@ -21,6 +21,7 @@ type SubmissionType = Schemas["SubmissionType"];
 type DiscussionRecommendation = Schemas["DiscussionRecommendation"];
 type ActivityRecommendation = Schemas["ActivityRecommendation"];
 type RecommendedPersonSummary = Schemas["RecommendedPersonSummary"];
+type VerificationStatus = Schemas["VerificationStatus"];
 
 const recommendedPeople: RecommendedPersonSummary[] = homeRecommendedPeople.map((person) => ({
   id: person.id,
@@ -97,6 +98,7 @@ let campusProfile: CampusProfile = {
   city: "广州",
   campusName: "南校区",
   department: "工业设计",
+  studentId: "2024001234",
   verificationStatus: "draft",
 };
 
@@ -205,6 +207,10 @@ let tempChatSessionMetaById: Record<
 > = {};
 
 let submissionSeed = 1000;
+let verificationStatus: VerificationStatus = {
+  status: "pending",
+};
+let avatarUrl = "";
 let submissions: SubmissionRecord[] = [
   {
     id: 1,
@@ -687,5 +693,23 @@ export const mockFixtures = {
     };
     submissions = [record, ...submissions];
     return clone(record);
+  },
+  uploadAvatar(_filePath: string): { avatarUrl: string } {
+    // mock：模拟上传后返回一个本地占位 URL
+    avatarUrl = `/tmp-avatar-${Date.now()}.png`;
+    return { avatarUrl };
+  },
+  submitVerification(_filePath: string, studentId: string): VerificationStatus {
+    // mock：提交后将 campusProfile 的 studentId 和状态同步更新
+    campusProfile = {
+      ...campusProfile,
+      studentId,
+      verificationStatus: "pending",
+    };
+    verificationStatus = { status: "pending" };
+    return clone(verificationStatus);
+  },
+  getVerificationStatus(): VerificationStatus {
+    return clone(verificationStatus);
   },
 };

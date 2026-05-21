@@ -560,13 +560,21 @@ export interface components {
             city: string;
             campusName: string;
             department: string;
+            studentId: string;
             /** @enum {string} */
             verificationStatus: "draft" | "pending" | "verified";
+            verificationRejectionReason?: string | null;
         };
         CampusProfileRequest: {
             city: string;
             campusName: string;
             department: string;
+            studentId: string;
+        };
+        VerificationStatus: {
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected";
+            rejectionReason?: string | null;
         };
         ScheduleBlock: {
             id: string;

@@ -77,6 +77,12 @@
           }
         },
         {
+          "path": "campus-verify/index",
+          "style": {
+            "navigationBarTitleText": "校园认证"
+          }
+        },
+        {
           "path": "schedule/index",
           "style": {
             "navigationBarTitleText": "时间安排"
