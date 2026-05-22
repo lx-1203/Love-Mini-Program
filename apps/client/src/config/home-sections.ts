@@ -1,7 +1,17 @@
+/**
+ * @deprecated 首页区块配置已废弃。
+ * AI 计划区块已移除，匹配逻辑已融入卡片喜欢系统。
+ * 迁移路径：
+ *   - home → discover（寻觅页）
+ *   - 匹配 → likes + discover（喜欢+寻觅）
+ *   - 课表编辑器 → profile（资料字段）
+ *   - AI 计划 → 规则引擎推荐（discover）
+ * 本文件保留仅用于回滚参考。
+ */
 export type HomeSectionId =
   | "schedule-summary"
   | "free-slots"
-  | "recommendations"
+  | "ai-plan"
   | "match-entry"
   | "discussion-feed"
   | "activity-feed";
@@ -27,9 +37,9 @@ export const homeSectionConfigs: HomeSectionConfig[] = [
     accent: "teal",
   },
   {
-    id: "recommendations",
-    title: "今日推荐人选",
-    subtitle: "基于课表和兴趣偏好，规则引擎匹配",
+    id: "ai-plan",
+    title: "今日计划",
+    subtitle: "AI 关闭时也有稳定兜底",
     accent: "amber",
   },
   {

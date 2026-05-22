@@ -11,7 +11,7 @@ export interface ChatRecommendationActionView {
   target: string;
 }
 
-export type ChatRecommendedPersonView = Schemas["ChatOverview"]["recommendedPeople"][number] & {
+export type ChatRecommendedPersonView = Schemas["RecommendedPersonSummary"] & {
   action: ChatRecommendationActionView;
 };
 

@@ -68,7 +68,7 @@ async function handleRecommendation(
   <AppShell
     title="聊天"
     subtitle="已建立的临时会话会出现在这里，没有会话时继续从推荐的人进入。"
-    current-tab="chat"
+    current-tab="messages"
   >
     <SectionCard title="会话列表" subtitle="24 小时倒计时和交换状态都收敛在会话卡片里。">
       <view v-if="chatStore.loadingOverview" class="empty-state">正在加载聊天列表...</view>

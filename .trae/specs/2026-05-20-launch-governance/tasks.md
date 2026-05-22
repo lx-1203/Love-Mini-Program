@@ -2,67 +2,67 @@
 
 ## Day 0 (05-20) — 治理底座
 
-- [x] Task 0.1: 初始化 Git 仓库并创建 main 分支
-  - [x] SubTask 0.1.1: `git add -A` + `git commit -m "chore: initial monorepo skeleton"`
-  - [x] SubTask 0.1.2: `git branch -M main`
-  - [x] SubTask 0.1.3: main 分支已就绪
-  - **验证**：已完成
+- [ ] Task 0.1: 初始化 Git 仓库并创建 main 分支
+  - [ ] SubTask 0.1.1: `git init` + `git add -A` + `git commit -m "chore: initial monorepo skeleton"`
+  - [ ] SubTask 0.1.2: `git branch -M main`
+  - [ ] SubTask 0.1.3: 推送 `main` 到远程仓库
+  - **验证**：远程仓库可见 main 分支，包含全部代码
 
-- [x] Task 0.2: 配置 GitHub 受保护分支规则 **（需手动在 GitHub UI 操作）**
-  - [x] SubTask 0.2.1: Settings → Branches → Add rule for `main`
-  - [x] SubTask 0.2.2: Require PR + approvals (auth/match/temp-chat/database = 2, others = 1)
-  - [x] SubTask 0.2.3: Require status checks: npm test / mvn test / flyway validate / spectral lint / gitleaks
-  - [x] SubTask 0.2.4: Do not allow bypassing
-  - [x] SubTask 0.2.5: No force-push, no direct push
-  - **验证**：需手动在 GitHub 仓库 Settings 中配置
+- [ ] Task 0.2: 配置 GitHub 受保护分支规则
+  - [ ] SubTask 0.2.1: 在仓库 Settings → Branches 添加 `main` 保护规则
+  - [ ] SubTask 0.2.2: 勾选 "Require a pull request before merging"、"Require approvals"（auth/match/temp-chat/database 路径 2 人审，其他 1 人审）
+  - [ ] SubTask 0.2.3: 勾选 "Require status checks to pass before merging"（npm test / mvn test / flyway validate / spectral lint / gitleaks）
+  - [ ] SubTask 0.2.4: 勾选 "Do not allow bypassing the above settings"（禁止管理员绕过）
+  - [ ] SubTask 0.2.5: 禁止 force-push、禁止直推
+  - **验证**：尝试直推 main 被拒绝
 
-- [x] Task 0.3: 确认 CI status checks 为 blocking
-  - [x] SubTask 0.3.1: `ci.yml` 包含 verify-phase01、flyway-validate、secret-scan 三个 Job
-  - [x] SubTask 0.3.2: CI 在 PR 触发时全部通过才允许合并（需配合 Task 0.2 GitHub UI 设置）
-  - [x] SubTask 0.3.3: CI 已完整
-  - **验证**：CI 配置完整
+- [ ] Task 0.3: 确认 CI status checks 为 blocking
+  - [ ] SubTask 0.3.1: 确认 `.github/workflows/ci.yml` 包含 verify-phase01、flyway-validate、secret-scan 三个 job
+  - [ ] SubTask 0.3.2: 确认 CI 在 PR 触发时全部通过才允许合并
+  - [ ] SubTask 0.3.3: 如 CI 不存在则补全（当前已有完整 ci.yml）
+  - **验证**：创建一个测试 PR，确认 CI 运行且不绿不能合
 
-- [x] Task 0.4: 新增 Flyway 迁移 `V2026.05.20.0000__school_verification.sql`
-  - [x] SubTask 0.4.1: `database/flyway/sql/V2026.05.20.0000__school_verification.sql` 已创建
-  - [x] SubTask 0.4.2: `verification_request` 表：id(BIGINT PK)、user_id、student_id、image_path、status(pending/approved/rejected)、review_notes、reviewed_by、reviewed_at、created_at、updated_at
-  - [x] SubTask 0.4.3: 待 Day 1-2 统一更新 OpenAPI
-  - **验证**：SQL 文件已创建
+- [ ] Task 0.4: 新增 Flyway 迁移 `V2026.05.20.0000__school_verification.sql`
+  - [ ] SubTask 0.4.1: 创建 `database/flyway/sql/V2026.05.20.0000__school_verification.sql`
+  - [ ] SubTask 0.4.2: 定义 `verification_request` 表：`id`(bigint PK)、`user_id`(varchar)、`student_id`(varchar)、`image_path`(varchar)、`status`(enum: pending/approved/rejected)、`review_notes`(varchar)、`created_at`、`updated_at`
+  - [ ] SubTask 0.4.3: 更新 OpenAPI 添加 `SchoolVerification` schema（如需要新接口）
+  - **验证**：`run-flyway.cmd migrate` 成功创建表
 
-- [x] Task 0.5: 升级 PR 模板
-  - [x] SubTask 0.5.1: `.github/pull_request_template.md` 已包含 Phase、模块、用户影响、DB/Flyway 影响、隐私/安全影响、回滚方案、验证证据、Scope Check
-  - [x] SubTask 0.5.2: 已添加 PR 标题格式和 500 行上限说明
-  - **验证**：PR 模板包含所有强制字段
+- [ ] Task 0.5: 升级 PR 模板
+  - [ ] SubTask 0.5.1: 更新 `.github/pull_request_template.md`，补充 Phase、模块、用户影响、DB/Flyway 影响、隐私/安全影响、回滚方案、验证证据、"是否触及非首发范围"字段
+  - [ ] SubTask 0.5.2: 添加 PR 标题格式校验 `<type>(<scope>): <summary>` 和 500 行上限说明
+  - **验证**：新 PR 模板包含所有强制字段
 
-- [x] Task 0.6: 强化 CODEOWNERS
-  - [x] SubTask 0.6.1: `apps/admin/**` 路径已添加
-  - [x] SubTask 0.6.2: 双审路径和紧急热修例外规则已注释说明
-  - **验证**：CODEOWNERS 覆盖所有关键路径
+- [ ] Task 0.6: 强化 CODEOWNERS
+  - [ ] SubTask 0.6.1: 补充 `apps/admin/**` 路径所有权
+  - [ ] SubTask 0.6.2: 添加注释说明双审路径和紧急热修例外规则
+  - **验证**：`.github/CODEOWNERS` 覆盖所有关键路径
 
 ---
 
 ## Day 1-2 (05-21 ~ 05-22) — 认证 + 学校验证
 
-- [x] Task 1: 微信登录 WeChat SDK 接入（PR: `feature/p0-auth-school-verification`）
-  - [x] SubTask 1.1: Client 端接入 uni.login() 获取真实 code，非微信环境自动 mock 回退
-  - [x] SubTask 1.2: `POST /auth/wechat-login` 实现真实 code2Session 调用（仅服务端，WechatService + RestTemplate）
-  - [x] SubTask 1.3: WechatConfig/WechatSession DTO/AuthInterceptor token 机制完成
-  - [x] SubTask 1.4: 登录失败有 ErrorState+重试，非微信环境友好提示
+- [ ] Task 1: 微信登录 WeChat SDK 接入（PR: `feature/p0-auth-school-verification`）
+  - [ ] SubTask 1.1: Client 端接入 WeChat JS-SDK 测试号
+  - [ ] SubTask 1.2: `POST /auth/wechat-login` 实现真实 code2Session 调用（仅服务端）
+  - [ ] SubTask 1.3: 更新 OpenAPI 添加微信登录相关 schema（如缺失）
+  - [ ] SubTask 1.4: 添加授权拒绝回退路径（无死路）
   - **验证**：mock/real 双模式微信登录流程可用
 
-- [x] Task 2: 资料完善增强
-  - [x] SubTask 2.1: 添加字段校验（nickname 必填/20字符、grade 必须为有效年级、bio 160字符）
-  - [x] SubTask 2.2: AvatarUploader 组件 + `POST /profile/avatar` 端点
-  - [x] SubTask 2.3: 补全 LoadingState/ErrorState 组件，profile 页集成
-  - [x] SubTask 2.4: avatar 上传 schema 待统一更新
+- [ ] Task 2: 资料完善增强
+  - [ ] SubTask 2.1: 添加字段校验（昵称长度、bio 限制等）
+  - [ ] SubTask 2.2: 添加 avatar 上传端点 `POST /profile/avatar`
+  - [ ] SubTask 2.3: 补全 loading/error 状态
+  - [ ] SubTask 2.4: 更新 OpenAPI 添加 avatar 上传 schema
   - **验证**：资料完善页全字段校验 + avatar 上传可用
 
-- [x] Task 3: 学校认证全链路
-  - [x] SubTask 3.1: Client 端 StudentCardUploader + campus-verify 页面
-  - [x] SubTask 3.2: API `POST /api/verification/submit` 文件上传端点
-  - [x] SubTask 3.3: VerificationService 关联 verification_request 表
-  - [x] SubTask 3.4: Admin `GET /api/admin/verifications` 待审列表
-  - [x] SubTask 3.5: Admin `POST /api/admin/verifications/{id}/review` 通过/拒绝
-  - [x] SubTask 3.6: studentId 字段已添加到 CampusProfile 类型
+- [ ] Task 3: 学校认证全链路
+  - [ ] SubTask 3.1: Client 端学生证图片上传页 + 学号输入
+  - [ ] SubTask 3.2: API 文件上传端点 `POST /profile/campus/verify`
+  - [ ] SubTask 3.3: API 认证提交逻辑（关联 verification_request 表）
+  - [ ] SubTask 3.4: Admin 端待审列表 `GET /admin/verifications`
+  - [ ] SubTask 3.5: Admin 端通过/拒绝操作 `POST /admin/verifications/{id}/approve`、`POST /admin/verifications/{id}/reject`
+  - [ ] SubTask 3.6: 更新 OpenAPI 添加学校认证相关 schema
   - **验证**：上传学生证→提交→Admin 审核→通过/拒绝全链路可用
 
 ---

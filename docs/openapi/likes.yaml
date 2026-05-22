@@ -1,0 +1,397 @@
+openapi: 3.0.3
+info:
+  title: Campus Love - Likes & Visitors API
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /likes/{userId}:
+    post:
+      summary: Like a user
+      operationId: likeUser
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: Target user ID to like
+      responses:
+        '200':
+          description: Like recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: Unlike a user
+      operationId: unlikeUser
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: Target user ID to unlike
+      responses:
+        '200':
+          description: Like removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /likes/me:
+    get:
+      summary: Get users who liked me
+      operationId: getMyLikers
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - in: query
+          name: pageSize
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Items per page
+      responses:
+        '200':
+          description: List of users who liked me
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /visitors:
+    get:
+      summary: Get visitor list
+      operationId: getVisitors
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - in: query
+          name: pageSize
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Items per page
+      responses:
+        '200':
+          description: List of visitors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitorListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /heart-signals:
+    get:
+      summary: Get heart signal list
+      operationId: getHeartSignals
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [pending, accepted, rejected, all]
+            default: all
+          description: Filter by signal status
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - in: query
+          name: pageSize
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Items per page
+      responses:
+        '200':
+          description: List of heart signals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeartSignalListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /heart-signals/{id}/accept:
+    post:
+      summary: Accept a heart signal
+      operationId: acceptHeartSignal
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Heart signal ID
+      responses:
+        '200':
+          description: Heart signal accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeartSignalActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    LikeActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        liked:
+          type: boolean
+        mutualLike:
+          type: boolean
+          description: Whether the like is mutual (both users like each other)
+        matchCreated:
+          type: boolean
+          description: Whether a match was created due to mutual like
+      required:
+        - success
+        - liked
+        - mutualLike
+        - matchCreated
+    LikeUserItem:
+      type: object
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        headline:
+          type: string
+        likedAt:
+          type: string
+          format: date-time
+        isMutual:
+          type: boolean
+      required:
+        - userId
+        - nickname
+        - headline
+        - likedAt
+        - isMutual
+    LikeListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LikeUserItem'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+    VisitorItem:
+      type: object
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        headline:
+          type: string
+        visitedAt:
+          type: string
+          format: date-time
+        visitCount:
+          type: integer
+          minimum: 1
+          description: Total number of visits from this user
+      required:
+        - userId
+        - nickname
+        - headline
+        - visitedAt
+        - visitCount
+    VisitorListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisitorItem'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+    HeartSignalStatus:
+      type: string
+      enum: [pending, accepted, rejected]
+    HeartSignalItem:
+      type: object
+      properties:
+        id:
+          type: string
+        fromUser:
+          $ref: '#/components/schemas/LikeUserItem'
+        status:
+          $ref: '#/components/schemas/HeartSignalStatus'
+        createdAt:
+          type: string
+          format: date-time
+        message:
+          type: string
+          nullable: true
+      required:
+        - id
+        - fromUser
+        - status
+        - createdAt
+    HeartSignalListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeartSignalItem'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+    HeartSignalActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        signalId:
+          type: string
+        status:
+          $ref: '#/components/schemas/HeartSignalStatus'
+        matchCreated:
+          type: boolean
+          description: Whether a match was created after accepting
+      required:
+        - success
+        - signalId
+        - status
+        - matchCreated
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

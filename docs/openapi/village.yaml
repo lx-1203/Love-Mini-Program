@@ -1,0 +1,510 @@
+openapi: 3.0.3
+info:
+  title: Campus Love - Village Community API
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /posts:
+    get:
+      summary: Get post list
+      operationId: getPosts
+      parameters:
+        - in: query
+          name: category
+          required: false
+          schema:
+            type: string
+            enum: [all, dating, study, life, activity, help]
+            default: all
+          description: Post category filter
+        - in: query
+          name: tag
+          required: false
+          schema:
+            type: string
+          description: Tag filter
+        - in: query
+          name: sortBy
+          required: false
+          schema:
+            type: string
+            enum: [latest, hottest, recommended]
+            default: latest
+          description: Sort order
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - in: query
+          name: pageSize
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Items per page
+      responses:
+        '200':
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Publish a post
+      operationId: createPost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '200':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /posts/{id}:
+    get:
+      summary: Get post detail
+      operationId: getPostDetail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Post ID
+      responses:
+        '200':
+          description: Post detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /posts/{id}/like:
+    post:
+      summary: Like a post
+      operationId: likePost
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Post ID
+      responses:
+        '200':
+          description: Post liked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostLikeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /posts/{id}/comments:
+    get:
+      summary: Get comment list for a post
+      operationId: getPostComments
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Post ID
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - in: query
+          name: pageSize
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Items per page
+      responses:
+        '200':
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Publish a comment
+      operationId: createComment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Post ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '200':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    PostAuthor:
+      type: object
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        campusName:
+          type: string
+      required:
+        - userId
+        - nickname
+        - campusName
+    PostSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        author:
+          $ref: '#/components/schemas/PostAuthor'
+        category:
+          type: string
+          enum: [dating, study, life, activity, help]
+        tags:
+          type: array
+          items:
+            type: string
+        likeCount:
+          type: integer
+          minimum: 0
+        commentCount:
+          type: integer
+          minimum: 0
+        viewCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        isHot:
+          type: boolean
+      required:
+        - id
+        - title
+        - summary
+        - author
+        - category
+        - tags
+        - likeCount
+        - commentCount
+        - viewCount
+        - createdAt
+        - isHot
+    PostDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        author:
+          $ref: '#/components/schemas/PostAuthor'
+        category:
+          type: string
+          enum: [dating, study, life, activity, help]
+        tags:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: string
+        likeCount:
+          type: integer
+          minimum: 0
+        commentCount:
+          type: integer
+          minimum: 0
+        viewCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        isLiked:
+          type: boolean
+        isAuthor:
+          type: boolean
+      required:
+        - id
+        - title
+        - content
+        - author
+        - category
+        - tags
+        - images
+        - likeCount
+        - commentCount
+        - viewCount
+        - createdAt
+        - updatedAt
+        - isLiked
+        - isAuthor
+    CreatePostRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        category:
+          type: string
+          enum: [dating, study, life, activity, help]
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 20
+          maxItems: 10
+        images:
+          type: array
+          items:
+            type: string
+          maxItems: 9
+      required:
+        - title
+        - content
+        - category
+    PostListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostSummary'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+    PostLikeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        liked:
+          type: boolean
+        likeCount:
+          type: integer
+          minimum: 0
+      required:
+        - success
+        - liked
+        - likeCount
+    CommentAuthor:
+      type: object
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+      required:
+        - userId
+        - nickname
+    CommentItem:
+      type: object
+      properties:
+        id:
+          type: string
+        postId:
+          type: string
+        parentId:
+          type: string
+          nullable: true
+        author:
+          $ref: '#/components/schemas/CommentAuthor'
+        content:
+          type: string
+        likeCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        isAuthor:
+          type: boolean
+        replyTo:
+          type: string
+          nullable: true
+          description: Nickname of the user being replied to
+      required:
+        - id
+        - postId
+        - author
+        - content
+        - likeCount
+        - createdAt
+        - isAuthor
+    CreateCommentRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        parentId:
+          type: string
+          nullable: true
+          description: Parent comment ID for nested replies
+      required:
+        - content
+    CommentListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentItem'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

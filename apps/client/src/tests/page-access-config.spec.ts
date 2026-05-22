@@ -1,21 +1,54 @@
 import { describe, expect, it } from "vitest";
-import { chatPageRequirements, homePageRequirements } from "../config/page-access";
+import {
+  discoverPageRequirements,
+  likesPageRequirements,
+  villagePageRequirements,
+  messagesPageRequirements,
+  profilePageRequirements,
+} from "../config/page-access";
 
 describe("page access config", () => {
-  it("requires profile for home page (Day 1 tightening)", () => {
-    expect(homePageRequirements).toEqual({
+  it("keeps the discover page open to any logged-in user", () => {
+    expect(discoverPageRequirements).toEqual({
       requiresAuth: true,
-      requiresProfile: true,
+      requiresProfile: false,
       requiresCampus: false,
       requiresSchedule: false,
     });
   });
 
-  it("requires profile + campus for chat page (Day 1 tightening)", () => {
-    expect(chatPageRequirements).toEqual({
+  it("keeps the likes page open to any logged-in user", () => {
+    expect(likesPageRequirements).toEqual({
       requiresAuth: true,
-      requiresProfile: true,
-      requiresCampus: true,
+      requiresProfile: false,
+      requiresCampus: false,
+      requiresSchedule: false,
+    });
+  });
+
+  it("keeps the village page open to any logged-in user", () => {
+    expect(villagePageRequirements).toEqual({
+      requiresAuth: true,
+      requiresProfile: false,
+      requiresCampus: false,
+      requiresSchedule: false,
+    });
+  });
+
+  it("keeps the messages page open to any logged-in user", () => {
+    expect(messagesPageRequirements).toEqual({
+      requiresAuth: true,
+      requiresProfile: false,
+      requiresCampus: false,
+      requiresSchedule: false,
+    });
+  });
+
+  it("keeps the profile page open to any logged-in user", () => {
+    expect(profilePageRequirements).toEqual({
+      requiresAuth: true,
+      requiresProfile: false,
+      requiresCampus: false,
       requiresSchedule: false,
     });
   });

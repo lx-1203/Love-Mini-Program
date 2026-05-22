@@ -91,8 +91,8 @@ class PhaseOneFlowApiTest {
   void homeChatAndFeedbackFlowsRetainMutableState() throws Exception {
     mockMvc.perform(get("/api/home/dashboard"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.recommendations.length()").value(10))
-        .andExpect(jsonPath("$.matchStatus").isNotEmpty());
+        .andExpect(jsonPath("$.recommendedPeople.length()").value(3))
+        .andExpect(jsonPath("$.activityPreview.items.length()").value(2));
 
     mockMvc.perform(get("/api/chat/overview"))
         .andExpect(status().isOk())

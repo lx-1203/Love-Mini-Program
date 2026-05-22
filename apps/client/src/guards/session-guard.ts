@@ -51,7 +51,7 @@ export function resolveSessionAccess(
   if (requirements.featureFlag && !snapshot.featureFlags[requirements.featureFlag]) {
     return {
       allowed: false,
-      redirectTo: "/pages/home/index",
+      redirectTo: "/pages/discover/index",
     };
   }
 

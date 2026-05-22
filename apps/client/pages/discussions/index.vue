@@ -37,7 +37,7 @@ function openPath(url: string) {
   <AppShell
     title="讨论圈"
     subtitle="先看大家最近真的在聊什么，再决定从哪里开始建立联系。"
-    current-tab="discussions"
+    current-tab="likes"
   >
     <SectionCard title="正在讨论" subtitle="先看大家最近真正在聊什么。">
       <view v-if="loading" class="empty-state">正在加载讨论内容...</view>

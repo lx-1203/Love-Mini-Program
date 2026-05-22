@@ -1,4 +1,8 @@
 export const statusCopyMap = {
+  aiPlan: {
+    enabled: "AI 计划已就绪",
+    fallback: "当前使用人工编辑兜底方案",
+  },
   match: {
     open: "可开始匹配",
     queued: "等待对方加入",

@@ -1,44 +1,30 @@
 import type { PageRequirements } from "../guards/session-guard";
 
-export const homePageRequirements: PageRequirements = {
+export const discoverPageRequirements: PageRequirements = {
   requiresAuth: true,
-  requiresProfile: true,
+  requiresProfile: false,
   requiresCampus: false,
   requiresSchedule: false,
 };
 
-export const discussionsPageRequirements: PageRequirements = {
+export const likesPageRequirements: PageRequirements = {
   requiresAuth: true,
-  requiresProfile: true,
+  requiresProfile: false,
   requiresCampus: false,
   requiresSchedule: false,
 };
 
-export const matchPageRequirements: PageRequirements = {
+export const villagePageRequirements: PageRequirements = {
   requiresAuth: true,
-  requiresProfile: true,
-  requiresCampus: true,
-  requiresSchedule: false,
-};
-
-export const activitiesPageRequirements: PageRequirements = {
-  requiresAuth: true,
-  requiresProfile: true,
+  requiresProfile: false,
   requiresCampus: false,
   requiresSchedule: false,
 };
 
-export const chatPageRequirements: PageRequirements = {
+export const messagesPageRequirements: PageRequirements = {
   requiresAuth: true,
-  requiresProfile: true,
-  requiresCampus: true,
-  requiresSchedule: false,
-};
-
-export const chatSessionPageRequirements: PageRequirements = {
-  requiresAuth: true,
-  requiresProfile: true,
-  requiresCampus: true,
+  requiresProfile: false,
+  requiresCampus: false,
   requiresSchedule: false,
 };
 
@@ -48,3 +34,9 @@ export const profilePageRequirements: PageRequirements = {
   requiresCampus: false,
   requiresSchedule: false,
 };
+
+/** @deprecated 旧首页配置，待移除 */
+export const homePageRequirements: PageRequirements = discoverPageRequirements;
+
+/** @deprecated 旧聊天页配置，待移除 */
+export const chatPageRequirements: PageRequirements = messagesPageRequirements;

@@ -128,25 +128,25 @@ assert.equal(typeof clientPackageJson.scripts["build:h5:real"], "string");
 const pagesJson = JSON.parse(
   readFileSync(new URL("../apps/client/pages.json", import.meta.url), "utf8")
 );
-assert.equal(pagesJson.pages.length, 8, "main package should contain eight root pages");
+assert.equal(pagesJson.pages.length, 9, "main package should contain nine root pages");
 assert.equal(pagesJson.subPackages.length, 3, "client should use three subpackages");
 assert.ok(pagesJson.tabBar, "tab bar should be configured");
 assert.ok(pagesJson.easycom, "easycom should be configured for uni-ui");
 assert.deepEqual(
   pagesJson.tabBar.list.map((item) => item.text),
-  ["首页", "讨论圈", "匹配", "聊天", "我的"],
-  "tab bar should follow the locked Chinese IA order"
+  ["寻觅", "喜欢", "村口", "消息", "我的"],
+  "tab bar should follow the reconstructed social IA order"
 );
 assert.deepEqual(
   pagesJson.tabBar.list.map((item) => item.pagePath),
   [
-    "pages/home/index",
-    "pages/discussions/index",
-    "pages/match/index",
-    "pages/chat/index",
+    "pages/discover/index",
+    "pages/likes/index",
+    "pages/village/index",
+    "pages/messages/index",
     "pages/profile/index",
   ],
-  "tab bar paths should match the five primary tabs"
+  "tab bar paths should match the five reconstructed primary tabs"
 );
 
 const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");

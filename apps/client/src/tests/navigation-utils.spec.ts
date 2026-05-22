@@ -18,16 +18,16 @@ describe("navigation utils", () => {
   });
 
   it("detects tab bar paths", () => {
-    expect(isTabPath("/pages/home/index")).toBe(true);
-    expect(isTabPath("pages/chat/index")).toBe(true);
+    expect(isTabPath("/pages/discover/index")).toBe(true);
+    expect(isTabPath("pages/messages/index")).toBe(true);
     expect(isTabPath("/pages/chat-session/index")).toBe(false);
     expect(isTabPath("/subpackages/setup/schedule/index")).toBe(false);
   });
 
   it("opens tab pages with switchTab", () => {
-    openAppPath("/pages/home/index");
+    openAppPath("/pages/discover/index");
 
-    expect(switchTab).toHaveBeenCalledWith({ url: "/pages/home/index" });
+    expect(switchTab).toHaveBeenCalledWith({ url: "/pages/discover/index" });
     expect(navigateTo).not.toHaveBeenCalled();
   });
 
@@ -39,9 +39,9 @@ describe("navigation utils", () => {
   });
 
   it("replaces tab pages with switchTab", () => {
-    replaceAppPath("/pages/home/index");
+    replaceAppPath("/pages/discover/index");
 
-    expect(switchTab).toHaveBeenCalledWith({ url: "/pages/home/index" });
+    expect(switchTab).toHaveBeenCalledWith({ url: "/pages/discover/index" });
     expect(redirectTo).not.toHaveBeenCalled();
   });
 

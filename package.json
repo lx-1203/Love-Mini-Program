@@ -12,7 +12,7 @@
     "client:dev:h5": "npm --workspace apps/client run dev:h5",
     "client:dev:h5:real": "npm --workspace apps/client run dev:h5:real",
     "generate:openapi": "npm --workspace apps/client run generate:openapi",
-    "lint:openapi": "node tools/lint-openapi.mjs docs/openapi/feedback-growth-and-auth.yaml",
+    "lint:openapi": "node tools/lint-openapi.mjs docs/openapi/feedback-growth-and-auth.yaml docs/openapi/likes.yaml docs/openapi/village.yaml docs/openapi/recommendations.yaml docs/openapi/users.yaml",
     "lint:openapi:spectral": "spectral lint \"docs/openapi/*.yaml\"",
     "test:prototype": "node tests/prototype-contract.spec.mjs",
     "test:structure": "node tests/project-structure.spec.mjs",

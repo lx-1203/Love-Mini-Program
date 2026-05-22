@@ -1,4 +1,13 @@
 <script setup lang="ts">
+/**
+ * @deprecated 此首页页面已废弃。所有功能已拆分到新模块。
+ * 迁移路径：
+ *   - 首页（home） → discover（寻觅页）作为新的主入口
+ *   - AI 计划 → 已移除，由规则引擎推荐（discover）替代
+ *   - 课表编辑器 → profile 资料字段（可显示但不可编辑）
+ *   - 匹配 → likes（喜欢） + discover（寻觅）
+ * 本文件保留仅用于回滚参考。
+ */
 import { ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import AppShell from "../../src/components/layout/AppShell.vue";
@@ -24,11 +33,16 @@ function openPath(url: string) {
   openAppPath(url);
 }
 
-/** 从推荐卡片发起匹配：创建临时聊天会话 */
-async function startMatchFromRecommendation(userId: string) {
-  creatingSessionId.value = userId;
+async function handleRecommendation(personId: string, target: string, mode: "complete-setup" | "go-chat") {
+  if (mode === "complete-setup") {
+    openPath(target);
+    return;
+  }
+
+  creatingSessionId.value = personId;
+
   try {
-    const session = await chatStore.startFromRecommendation(userId);
+    const session = await chatStore.startFromRecommendation(personId);
     if (session) {
       openPath(`/pages/chat-session/index?sessionId=${session.id}`);
     }
@@ -36,22 +50,14 @@ async function startMatchFromRecommendation(userId: string) {
     creatingSessionId.value = null;
   }
 }
-
-/** 计算评分颜色：高分为绿，中等为橙，低分为灰 */
-function scoreClass(score: number): string {
-  if (score >= 75) return "score-high";
-  if (score >= 60) return "score-mid";
-  return "score-low";
-}
 </script>
 
 <template>
   <AppShell
     title="首页"
-    subtitle="查看今日课表、推荐人选和活动入口。"
-    current-tab="home"
+    subtitle="查看今日时间、推荐对象和活动入口。"
+    current-tab="discover"
   >
-    <!-- 基础设置引导 -->
     <SectionCard
       v-if="homeStore.pageView?.setupTasks.length"
       title="完成基础设置"
@@ -66,9 +72,8 @@ function scoreClass(score: number): string {
       </view>
     </SectionCard>
 
-    <!-- 课表与空闲时段 -->
     <SectionCard
-      title="课表与空闲时段"
+      title="课表与今日安排"
       subtitle="每条推荐都应该落在你真实可用的时间上。"
     >
       <view v-if="homeStore.loading" class="empty-state">正在加载首页内容...</view>
@@ -85,65 +90,36 @@ function scoreClass(score: number): string {
       </view>
     </SectionCard>
 
-    <!-- 今日推荐人选 -->
     <SectionCard
-      title="今日推荐人选"
-      :subtitle="homeStore.pageView?.recommendationCards.length
-        ? `已为你找到 ${homeStore.pageView.recommendationCards.length} 位匹配度较高的同学`
-        : '基于你的课表和兴趣偏好智能推荐'"
+      title="推荐的人"
+      :subtitle="homeStore.pageView?.peopleLead || '把推荐位作为进入聊天的主入口。'"
     >
-      <!-- 加载态 -->
-      <view v-if="homeStore.loading" class="empty-state">正在加载推荐...</view>
-      <!-- 错误态 -->
-      <view v-else-if="homeStore.errorMessage" class="empty-state">
-        {{ homeStore.errorMessage }}
-      </view>
-      <!-- 空态 -->
-      <view
-        v-else-if="!homeStore.pageView || homeStore.pageView.recommendationCards.length === 0"
-        class="empty-state empty-action"
-      >
-        <text class="empty-text">暂无推荐人选，完善课表后获取更准确的匹配</text>
-        <button class="inline-action" @click="openPath('/subpackages/setup/schedule/index')">
-          去完善课表
-        </button>
-      </view>
-      <!-- 推荐列表 -->
-      <view v-else class="recommendation-list">
+      <view v-if="homeStore.pageView" class="section-stack">
         <view
-          v-for="rec in homeStore.pageView.recommendationCards"
-          :key="rec.userId"
-          class="rec-card"
+          v-for="person in homeStore.pageView.recommendedPeople"
+          :key="person.id"
+          class="person-row"
         >
-          <view class="rec-header">
-            <view class="avatar avatar--rec">{{ rec.avatarInitials }}</view>
-            <view class="rec-info">
-              <text class="row-title">{{ rec.displayName }}</text>
-              <text class="row-subtitle">{{ rec.headline }}</text>
-            </view>
-            <view class="score-badge" :class="scoreClass(rec.score)">
-              <text class="score-label">匹配度</text>
-              <text class="score-value">{{ rec.score }}%</text>
+          <view class="person-head">
+            <view class="avatar">{{ person.initials }}</view>
+            <view class="copy-block">
+              <text class="row-title">{{ person.name }}</text>
+              <text class="row-subtitle">{{ person.headline }}</text>
             </view>
           </view>
-          <!-- 话题标签 -->
-          <view class="topic-tags">
-            <view v-for="topic in rec.matchedTopics" :key="topic" class="topic-tag">
-              {{ topic }}
-            </view>
-          </view>
+          <text class="row-meta">{{ person.commonGround }}</text>
+          <text class="row-meta">{{ person.availability }}</text>
           <button
             class="block-action"
-            :disabled="creatingSessionId === rec.userId"
-            @click="startMatchFromRecommendation(rec.userId)"
+            :disabled="creatingSessionId === person.id"
+            @click="handleRecommendation(person.id, person.action.target, person.action.mode)"
           >
-            {{ creatingSessionId === rec.userId ? "正在创建会话..." : "发起匹配" }}
+            {{ creatingSessionId === person.id ? "正在创建会话..." : person.action.label }}
           </button>
         </view>
       </view>
     </SectionCard>
 
-    <!-- 活动入口 -->
     <SectionCard
       title="活动入口"
       subtitle="先看时间清楚、地点明确的小活动，再决定下一步。"
@@ -191,6 +167,7 @@ function scoreClass(score: number): string {
 
 .setup-row,
 .info-row,
+.person-row,
 .activity-entry {
   display: grid;
   gap: 10rpx;
@@ -200,9 +177,17 @@ function scoreClass(score: number): string {
 
 .setup-row:first-child,
 .info-row:first-child,
+.person-row:first-child,
 .activity-entry:first-child {
   padding-top: 0;
   border-top: 0;
+}
+
+.person-head {
+  display: grid;
+  grid-template-columns: 76rpx minmax(0, 1fr);
+  gap: 16rpx;
+  align-items: center;
 }
 
 .copy-block {
@@ -222,13 +207,6 @@ function scoreClass(score: number): string {
   font-weight: 700;
 }
 
-.avatar--rec {
-  width: 88rpx;
-  height: 88rpx;
-  font-size: 28rpx;
-  flex-shrink: 0;
-}
-
 .row-title {
   font-size: 28rpx;
   font-weight: 600;
@@ -242,33 +220,13 @@ function scoreClass(score: number): string {
   line-height: 1.6;
 }
 
-.empty-action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20rpx;
-  padding: 40rpx 0;
-}
-
-.empty-text {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
-  text-align: center;
-}
-
 .inline-action,
-.block-action--secondary {
-  background: #fff;
-  color: var(--td-text-color-primary);
-  border: 1px solid var(--td-border-level-1-color);
-}
-
 .block-action {
+  height: 80rpx;
   border: 0;
   border-radius: 18rpx;
   font-size: 24rpx;
   font-weight: 700;
-  padding: 16rpx 28rpx;
 }
 
 .inline-action,
@@ -289,87 +247,5 @@ function scoreClass(score: number): string {
 
 .info-row--quiet {
   background: rgba(255, 255, 255, 0.56);
-}
-
-/* 推荐卡片 */
-.recommendation-list {
-  display: grid;
-  gap: 20rpx;
-}
-
-.rec-card {
-  padding: 22rpx 0;
-  border-top: 1px solid var(--td-border-level-1-color);
-  display: grid;
-  gap: 14rpx;
-}
-
-.rec-card:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.rec-header {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.rec-info {
-  flex: 1;
-  display: grid;
-  gap: 6rpx;
-  min-width: 0;
-}
-
-/* 匹配度徽章 */
-.score-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10rpx 16rpx;
-  border-radius: 16rpx;
-  flex-shrink: 0;
-}
-
-.score-label {
-  font-size: 18rpx;
-  color: inherit;
-}
-
-.score-value {
-  font-size: 26rpx;
-  font-weight: 800;
-  color: inherit;
-}
-
-.score-high {
-  background: #e6f9ee;
-  color: #07a85f;
-}
-
-.score-mid {
-  background: #fff7e6;
-  color: #d48806;
-}
-
-.score-low {
-  background: #f5f5f5;
-  color: #8c8c8c;
-}
-
-/* 话题标签 */
-.topic-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10rpx;
-}
-
-.topic-tag {
-  padding: 6rpx 16rpx;
-  border-radius: 12rpx;
-  background: var(--td-brand-color-1);
-  color: var(--td-brand-color-7);
-  font-size: 22rpx;
 }
 </style>

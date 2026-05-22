@@ -2,6 +2,8 @@ package com.campuslove.api.discover;
 
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,6 +25,16 @@ public class RecommendationController {
   @GetMapping("/activities")
   public List<ActivityRecommendationView> getActivities() {
     return recommendationService.getActivities();
+  }
+
+  @GetMapping("/preferences")
+  public RecommendationPreferencesView getPreferences() {
+    return recommendationService.getPreferences();
+  }
+
+  @PutMapping("/preferences")
+  public RecommendationPreferencesView updatePreferences(@RequestBody RecommendationPreferencesView prefs) {
+    return recommendationService.updatePreferences(prefs);
   }
 }
 

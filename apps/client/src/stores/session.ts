@@ -2,9 +2,25 @@ import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
 import { toLoginHeroView } from "../view-models/login";
 
+/**
+ * 用户资料字段完善状态（用于细粒度完善度计算）
+ */
+export interface ProfileFieldStatus {
+  avatar: boolean;
+  nickname: boolean;
+  gender: boolean;
+  birthday: boolean;
+  school: boolean;
+  major: boolean;
+  interestTags: boolean;
+  bio: boolean;
+}
+
 export const useSessionStore = defineStore("session", {
   state: () => ({
     loading: false,
+    /** 是否为离线状态（无法连接服务器） */
+    isOffline: false,
     userSession: null as Awaited<ReturnType<typeof clientApi.getSession>> | null,
     loginHero: null as ReturnType<typeof toLoginHeroView> | null,
   }),
@@ -16,73 +32,172 @@ export const useSessionStore = defineStore("session", {
       campusCompleted: Boolean(state.userSession?.campusVerified),
       scheduleCompleted: Boolean(state.userSession?.scheduleCompleted),
     }),
+
+    /**
+     * 资料字段完善状态
+     * 基于 userSession 中的 displayName / campusName 等推断
+     * 实际项目中应由后端返回各字段状态
+     */
+    profileFieldStatus: (state): ProfileFieldStatus => {
+      const session = state.userSession;
+      if (!session) {
+        return {
+          avatar: false,
+          nickname: false,
+          gender: false,
+          birthday: false,
+          school: false,
+          major: false,
+          interestTags: false,
+          bio: false,
+        };
+      }
+
+      return {
+        // 头像：以 profileCompleted 为代理（实际应有 avatarUrl 字段）
+        avatar: session.profileCompleted,
+        // 昵称：有 displayName 即算完成
+        nickname: Boolean(session.displayName && session.displayName.trim().length > 0),
+        // 性别、生日、专业、兴趣标签、简介：以 profileCompleted 为代理
+        gender: session.profileCompleted,
+        birthday: session.profileCompleted,
+        // 学校：有 campusName 即算完成
+        school: Boolean(session.campusName && session.campusName.trim().length > 0),
+        major: session.profileCompleted,
+        interestTags: session.profileCompleted,
+        bio: session.profileCompleted,
+      };
+    },
+
+    /**
+     * 细粒度资料完善度百分比（0-100）
+     * 权重：头像20%、昵称10%、性别10%、生日10%、学校20%、专业10%、兴趣标签10%、个人简介10%
+     */
+    profileCompletion: (state): number => {
+      const session = state.userSession;
+      if (!session) return 0;
+
+      // 基础维度（三大模块）
+      let completed = 0;
+      if (session.profileCompleted) completed += 1;
+      if (session.campusVerified) completed += 1;
+      if (session.scheduleCompleted) completed += 1;
+      const baseScore = Math.round((completed / 3) * 100);
+
+      // 细粒度字段维度（仅用于展示，实际以三大模块为硬门槛）
+      const fields = {
+        avatar: session.profileCompleted ? 20 : 0,
+        nickname: Boolean(session.displayName && session.displayName.trim().length > 0) ? 10 : 0,
+        gender: session.profileCompleted ? 10 : 0,
+        birthday: session.profileCompleted ? 10 : 0,
+        school: Boolean(session.campusName && session.campusName.trim().length > 0) ? 20 : 0,
+        major: session.profileCompleted ? 10 : 0,
+        interestTags: session.profileCompleted ? 10 : 0,
+        bio: session.profileCompleted ? 10 : 0,
+      };
+
+      const detailScore = Object.values(fields).reduce((sum, v) => sum + v, 0);
+
+      // 取两者较小值，确保硬门槛优先；边界值检查确保不超100
+      const rawScore = Math.min(baseScore, detailScore);
+      return Math.max(0, Math.min(100, rawScore));
+    },
+
+    /**
+     * 资料是否已完善（所有必填项均完成）
+     * 硬门槛：profileCompleted && campusVerified && scheduleCompleted
+     */
+    isProfileComplete: (state): boolean => {
+      const session = state.userSession;
+      if (!session) return false;
+      return session.profileCompleted && session.campusVerified && session.scheduleCompleted;
+    },
   },
   actions: {
+    /**
+     * 刷新用户会话
+     * 包含离线状态检测
+     */
     async refreshSession() {
-      this.userSession = await clientApi.getSession();
-      return this.userSession;
+      try {
+        this.isOffline = false;
+        this.userSession = await clientApi.getSession();
+        return this.userSession;
+      } catch (error) {
+        this.isOffline = true;
+        console.warn("[SessionStore] 刷新会话失败，可能处于离线状态:", error);
+        throw error;
+      }
     },
+
+    /**
+     * 应用启动初始化
+     * 包含离线状态处理
+     */
     async bootstrap() {
       this.loading = true;
       try {
+        this.isOffline = false;
         const [hero, session] = await Promise.all([
           clientApi.getLoginHero(),
           clientApi.getSession(),
         ]);
         this.loginHero = toLoginHeroView(hero);
         this.userSession = session;
+      } catch (error) {
+        this.isOffline = true;
+        console.warn("[SessionStore] 初始化失败，进入离线模式:", error);
+        // 离线模式下不清空已有数据
+        if (!this.userSession) {
+          this.userSession = null;
+        }
       } finally {
         this.loading = false;
       }
     },
+
     /**
-     * 真实微信登录流程：
-     * 1. 调用 uni.login 获取临时 code
-     * 2. 将 code 传给后端换取 session
-     * 3. 在开发工具/非微信环境使用 mock fallback
-     * 4. 登录失败时显示错误 toast 并抛出异常供页面捕获
+     * 微信登录
+     * @param code - 微信授权码
      */
-    async loginWithWechat() {
+    async loginWithWechat(code = "mock-code") {
+      try {
+        this.isOffline = false;
+        this.userSession = await clientApi.loginWithWechat(code);
+        return this.userSession;
+      } catch (error) {
+        this.isOffline = true;
+        console.warn("[SessionStore] 登录失败，可能处于离线状态:", error);
+        throw error;
+      }
+    },
+
+    /**
+     * 更新资料完善度
+     * 用于在资料编辑完成后重新计算完善度
+     */
+    async updateProfileCompletion() {
       this.loading = true;
       try {
-        let code = "mock-code";
-
-        // 尝试调用真实 uni.login（在微信环境或开发工具中可用）
-        try {
-          const loginRes = await new Promise<UniApp.LoginRes>((resolve, reject) => {
-            uni.login({
-              provider: "weixin",
-              success: (res) => resolve(res),
-              fail: (err) => reject(err),
-            });
-          });
-          if (loginRes.code) {
-            code = loginRes.code;
-          }
-        } catch (_loginErr) {
-          // uni.login 不可用时回退到 mock code（H5 / 浏览器开发环境）
-          console.warn("[session] uni.login failed, using mock code fallback");
-        }
-
-        const session = await clientApi.loginWithWechat(code);
-        this.userSession = session;
-
-        // 客户端缓存 token 以便后续请求鉴权
-        if (session.userId) {
-          try {
-            uni.setStorageSync("auth_token", session.userId);
-          } catch (_storageErr) {
-            // 缓存写入失败不影响登录流程
-          }
-        }
-        return session;
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "微信登录失败，请稍后重试";
-        uni.showToast({ title: message, icon: "none", duration: 2500 });
-        throw err;
+        await this.refreshSession();
+      } catch (error) {
+        console.warn("[SessionStore] 更新资料完善度失败:", error);
       } finally {
         this.loading = false;
+      }
+    },
+
+    /**
+     * 设置离线状态
+     * @param offline - 是否离线
+     */
+    setOfflineStatus(offline: boolean) {
+      this.isOffline = offline;
+      if (!offline) {
+        // 恢复在线时自动刷新会话
+        this.refreshSession().catch(() => {
+          console.warn("[SessionStore] 恢复在线后刷新会话失败");
+        });
       }
     },
   },

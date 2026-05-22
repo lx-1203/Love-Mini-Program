@@ -25,27 +25,13 @@ export const clientApi = {
   },
   async loginWithWechat(code: string) {
     if (useMock()) {
-      const session = await mockFixtures.loginWithWechat();
-      // mock 模式下也缓存 token 以保持体验一致
-      try {
-        uni.setStorageSync("auth_token", session.userId);
-      } catch (_e) {
-        // 忽略缓存写入失败
-      }
-      return session;
+      return mockFixtures.loginWithWechat();
     }
-    const session = await request<Schemas["UserSession"], Schemas["WechatLoginRequest"]>({
+    return request<Schemas["UserSession"], Schemas["WechatLoginRequest"]>({
       url: "/auth/wechat-login",
       method: "POST",
       data: { code },
     });
-    // 真实环境下缓存 token 并设置为默认请求头
-    try {
-      uni.setStorageSync("auth_token", session.userId);
-    } catch (_e) {
-      // 忽略缓存写入失败
-    }
-    return session;
   },
   async getBasicProfile() {
     if (useMock()) {
@@ -93,38 +79,6 @@ export const clientApi = {
       url: "/profile/schedule",
       method: "PUT",
       data: payload,
-    });
-  },
-  /** 添加单个课程块 */
-  async addCourseBlock(userId: string, block: Schemas["CourseBlockRequest"]) {
-    if (useMock()) {
-      return mockFixtures.addCourseBlock(userId, block);
-    }
-    return request<Schemas["ScheduleBlock"], Schemas["CourseBlockRequest"]>({
-      url: "/profile/schedule/blocks",
-      method: "POST",
-      data: block,
-    });
-  },
-  /** 更新指定课程块 */
-  async updateCourseBlock(userId: string, blockId: string, block: Schemas["CourseBlockRequest"]) {
-    if (useMock()) {
-      return mockFixtures.updateCourseBlock(userId, blockId, block);
-    }
-    return request<Schemas["ScheduleBlock"], Schemas["CourseBlockRequest"]>({
-      url: `/profile/schedule/blocks/${blockId}`,
-      method: "PUT",
-      data: block,
-    });
-  },
-  /** 删除指定课程块 */
-  async deleteCourseBlock(userId: string, blockId: string) {
-    if (useMock()) {
-      return mockFixtures.deleteCourseBlock(userId, blockId);
-    }
-    return request<{ success: true }>({
-      url: `/profile/schedule/blocks/${blockId}`,
-      method: "DELETE",
     });
   },
   async getHomeDashboard() {
@@ -315,71 +269,5 @@ export const clientApi = {
       method: "POST",
       data: payload,
     });
-  },
-  /**
-   * 头像上传：使用 uni.uploadFile 将本地临时文件上传到 /profile/avatar
-   * 返回上传后的头像 URL
-   */
-  async uploadAvatar(filePath: string): Promise<{ avatarUrl: string }> {
-    if (useMock()) {
-      return mockFixtures.uploadAvatar(filePath);
-    }
-    return new Promise<{ avatarUrl: string }>((resolve, reject) => {
-      uni.uploadFile({
-        url: `${appEnv.apiBaseUrl}/profile/avatar`,
-        filePath,
-        name: "file",
-        success: (res) => {
-          try {
-            const data = JSON.parse(res.data as string) as { avatarUrl: string };
-            resolve(data);
-          } catch (_parseErr) {
-            reject(new Error("头像上传响应解析失败"));
-          }
-        },
-        fail: (err) => {
-          reject(new Error(err.errMsg || "头像上传失败"));
-        },
-      });
-    });
-  },
-  /**
-   * 学生证认证提交：上传学生证图片 + 学号
-   */
-  async submitVerification(
-    filePath: string,
-    studentId: string
-  ): Promise<Schemas["VerificationStatus"]> {
-    if (useMock()) {
-      return mockFixtures.submitVerification(filePath, studentId);
-    }
-    return new Promise<Schemas["VerificationStatus"]>((resolve, reject) => {
-      uni.uploadFile({
-        url: `${appEnv.apiBaseUrl}/profile/verification`,
-        filePath,
-        name: "file",
-        formData: { studentId },
-        success: (res) => {
-          try {
-            const data = JSON.parse(res.data as string) as Schemas["VerificationStatus"];
-            resolve(data);
-          } catch (_parseErr) {
-            reject(new Error("认证提交响应解析失败"));
-          }
-        },
-        fail: (err) => {
-          reject(new Error(err.errMsg || "认证提交失败"));
-        },
-      });
-    });
-  },
-  /**
-   * 获取当前认证状态
-   */
-  async getVerificationStatus(): Promise<Schemas["VerificationStatus"]> {
-    if (useMock()) {
-      return mockFixtures.getVerificationStatus();
-    }
-    return request<Schemas["VerificationStatus"]>({ url: "/profile/verification" });
   },
 };

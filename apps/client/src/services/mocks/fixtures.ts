@@ -21,8 +21,6 @@ type SubmissionType = Schemas["SubmissionType"];
 type DiscussionRecommendation = Schemas["DiscussionRecommendation"];
 type ActivityRecommendation = Schemas["ActivityRecommendation"];
 type RecommendedPersonSummary = Schemas["RecommendedPersonSummary"];
-type RecommendationUser = Schemas["RecommendationUser"];
-type VerificationStatus = Schemas["VerificationStatus"];
 
 const recommendedPeople: RecommendedPersonSummary[] = homeRecommendedPeople.map((person) => ({
   id: person.id,
@@ -32,70 +30,6 @@ const recommendedPeople: RecommendedPersonSummary[] = homeRecommendedPeople.map(
   commonGround: person.commonGround,
   availability: person.availability,
 }));
-
-/** 今日推荐人选 - 规则引擎生成，带匹配评分和话题标签 */
-const recommendationUsers: RecommendationUser[] = [
-  {
-    userId: "ru-1",
-    displayName: "同学A",
-    avatarInitials: "A",
-    headline: "大三，工业设计，喜欢咖啡散步",
-    score: 85,
-    matchedTopics: ["同校", "同城", "空闲时间匹配"],
-    school: "南校区",
-    city: "广州",
-  },
-  {
-    userId: "ru-2",
-    displayName: "同学B",
-    avatarInitials: "B",
-    headline: "大二，计算机科学，热爱电影",
-    score: 78,
-    matchedTopics: ["同城", "电影", "音乐"],
-    school: "北校区",
-    city: "广州",
-  },
-  {
-    userId: "ru-3",
-    displayName: "同学C",
-    avatarInitials: "C",
-    headline: "大三，金融系，喜欢户外运动",
-    score: 72,
-    matchedTopics: ["同校", "运动", "美食"],
-    school: "南校区",
-    city: "广州",
-  },
-  {
-    userId: "ru-4",
-    displayName: "同学D",
-    avatarInitials: "D",
-    headline: "研一，心理学，热爱阅读和音乐",
-    score: 68,
-    matchedTopics: ["同城", "音乐", "空闲时间匹配"],
-    school: "东校区",
-    city: "广州",
-  },
-  {
-    userId: "ru-5",
-    displayName: "同学E",
-    avatarInitials: "E",
-    headline: "大四，美术设计，想找人一起看展",
-    score: 63,
-    matchedTopics: ["同校", "同城"],
-    school: "南校区",
-    city: "广州",
-  },
-  {
-    userId: "ru-6",
-    displayName: "同学F",
-    avatarInitials: "F",
-    headline: "研二，教育学，喜欢安静的咖啡馆",
-    score: 55,
-    matchedTopics: ["同城", "电影"],
-    school: "西校区",
-    city: "广州",
-  },
-];
 
 const discussionRecommendations: DiscussionRecommendation[] = [
   {
@@ -163,7 +97,6 @@ let campusProfile: CampusProfile = {
   city: "广州",
   campusName: "南校区",
   department: "工业设计",
-  studentId: "2024001234",
   verificationStatus: "draft",
 };
 
@@ -272,10 +205,6 @@ let tempChatSessionMetaById: Record<
 > = {};
 
 let submissionSeed = 1000;
-let verificationStatus: VerificationStatus = {
-  status: "pending",
-};
-let avatarUrl = "";
 let submissions: SubmissionRecord[] = [
   {
     id: 1,
@@ -352,13 +281,12 @@ function buildHomeDashboard(): HomeDashboard {
     ],
     aiPlan: {
       id: "ai-plan",
-      title: "今日安排",
-      subtitle: "基于课表空闲时段推荐的活动和匹配建议。",
-      meta: "规则引擎驱动，基于课表和偏好",
+      title: "人工编辑兜底计划",
+      subtitle: "当前 AI 关闭，所以首页展示静态推荐块。",
+      meta: "当前开关 chat_ai_enabled = false",
       actionLabel: null,
     },
     recommendedPeople: clone(recommendedPeople),
-    recommendations: clone(recommendationUsers),
     peopleLead: "把推荐位作为进入聊天的主入口。",
     activityPreview: {
       title: "活动入口",
@@ -394,19 +322,19 @@ function toTopicLabel(topicId?: string) {
 
 function resolveRecommendedPerson(payload: CreateTempChatSessionRequest) {
   if (payload.recommendedPersonId) {
-    return homeRecommendedPeople.find((person) => person.id === payload.recommendedPersonId) ?? homeRecommendedPeople[0];
+    return recommendedPeople.find((person) => person.id === payload.recommendedPersonId) ?? recommendedPeople[0];
   }
 
-  if (!homeRecommendedPeople.length) {
+  if (!recommendedPeople.length) {
     throw new Error("No recommended people configured");
   }
 
-  const index = Math.abs((payload.matchId || "fallback").length) % homeRecommendedPeople.length;
-  return homeRecommendedPeople[index];
+  const index = Math.abs((payload.matchId || "fallback").length) % recommendedPeople.length;
+  return recommendedPeople[index];
 }
 
 function createSessionView(
-  person: { id: string; name: string; initials: string; headline: string; availability: string },
+  person: RecommendedPersonSummary,
   sessionId: string
 ): TempChatSession {
   return {
@@ -465,7 +393,7 @@ function ensureSession(id: string): TempChatSession {
     return existing;
   }
 
-  const fallback = createSessionView(homeRecommendedPeople[0]!, id);
+  const fallback = createSessionView(recommendedPeople[0]!, id);
   saveSession(fallback);
   return fallback;
 }
@@ -535,14 +463,7 @@ function buildChatOverview(): ChatOverview {
       })
       .map((item) => toChatSessionSummary(item)),
     emptyStateLead: "还没有临时会话时，继续从推荐的人进入。",
-    recommendedPeople: clone(homeRecommendedPeople).map((p) => ({
-      id: p.id,
-      name: p.name,
-      initials: p.initials,
-      headline: p.headline,
-      commonGround: p.commonGround,
-      availability: p.availability,
-    })),
+    recommendedPeople: clone(recommendedPeople),
   };
 }
 
@@ -597,50 +518,6 @@ export const mockFixtures = {
       scheduleCompleted: true,
     };
     return clone(scheduleProfile);
-  },
-  /** 添加单个课表块，返回新增的块（含 id） */
-  addCourseBlock(userId: string, block: Schemas["CourseBlockRequest"]): Schemas["ScheduleBlock"] {
-    const newBlock: Schemas["ScheduleBlock"] = {
-      id: `b-${Date.now()}`,
-      weekday: block.weekday,
-      start: block.start,
-      end: block.end,
-      label: block.label,
-    };
-    scheduleProfile = {
-      ...scheduleProfile,
-      courseBlocks: [...scheduleProfile.courseBlocks, newBlock],
-    };
-    return clone(newBlock);
-  },
-  /** 更新指定课表块 */
-  updateCourseBlock(
-    userId: string,
-    blockId: string,
-    block: Schemas["CourseBlockRequest"]
-  ): Schemas["ScheduleBlock"] {
-    const updated: Schemas["ScheduleBlock"] = {
-      id: blockId,
-      weekday: block.weekday,
-      start: block.start,
-      end: block.end,
-      label: block.label,
-    };
-    scheduleProfile = {
-      ...scheduleProfile,
-      courseBlocks: scheduleProfile.courseBlocks.map((b) =>
-        b.id === blockId ? updated : b
-      ),
-    };
-    return clone(updated);
-  },
-  /** 删除指定课表块 */
-  deleteCourseBlock(userId: string, blockId: string): { success: true } {
-    scheduleProfile = {
-      ...scheduleProfile,
-      courseBlocks: scheduleProfile.courseBlocks.filter((b) => b.id !== blockId),
-    };
-    return { success: true };
   },
   getHomeDashboard(): HomeDashboard {
     return clone(buildHomeDashboard());
@@ -810,23 +687,5 @@ export const mockFixtures = {
     };
     submissions = [record, ...submissions];
     return clone(record);
-  },
-  uploadAvatar(_filePath: string): { avatarUrl: string } {
-    // mock：模拟上传后返回一个本地占位 URL
-    avatarUrl = `/tmp-avatar-${Date.now()}.png`;
-    return { avatarUrl };
-  },
-  submitVerification(_filePath: string, studentId: string): VerificationStatus {
-    // mock：提交后将 campusProfile 的 studentId 和状态同步更新
-    campusProfile = {
-      ...campusProfile,
-      studentId,
-      verificationStatus: "pending",
-    };
-    verificationStatus = { status: "pending" };
-    return clone(verificationStatus);
-  },
-  getVerificationStatus(): VerificationStatus {
-    return clone(verificationStatus);
   },
 };

@@ -1,3 +1,12 @@
+/**
+ * @deprecated 首页 Store 已废弃。
+ * 迁移路径：
+ *   - home → discover（寻觅页）作为新的主入口
+ *   - AI 计划 → 已移除，由规则引擎推荐（discover）替代
+ *   - 课表编辑器 → profile 资料字段（可显示但不可编辑）
+ *   - 匹配 → likes（喜欢） + discover（寻觅）
+ * 本文件保留仅用于回滚参考。
+ */
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
 import { useSessionStore } from "./session";

@@ -1,3 +1,11 @@
+/**
+ * @deprecated 匹配表单配置已废弃。
+ * 原匹配逻辑已融入卡片喜欢系统，匹配筛选功能已迁移到寻觅页。
+ * 迁移路径：
+ *   - match → likes（喜欢） + discover（寻觅）
+ *   - 话题匹配/一键速配 → discover 卡片右滑喜欢系统
+ * 本文件保留仅用于回滚参考。
+ */
 export interface MatchFieldOption {
   id: string;
   label: string;

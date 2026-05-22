@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: Campus Love - Users API
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /users/{id}/profile-completion:
+    get:
+      summary: Get user profile completion percentage
+      operationId: getProfileCompletion
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        '200':
+          description: Profile completion details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileCompletionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /users/{id}/follow:
+    post:
+      summary: Follow a user
+      operationId: followUser
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Target user ID to follow
+      responses:
+        '200':
+          description: Follow action successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: Unfollow a user
+      operationId: unfollowUser
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Target user ID to unfollow
+      responses:
+        '200':
+          description: Unfollow action successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    ProfileCompletionField:
+      type: object
+      properties:
+        fieldName:
+          type: string
+          description: Name of the profile field
+        completed:
+          type: boolean
+          description: Whether this field is completed
+        weight:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Weight percentage of this field in total completion
+      required:
+        - fieldName
+        - completed
+        - weight
+    ProfileCompletionResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+        completionPercentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Overall profile completion percentage
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileCompletionField'
+        missingFields:
+          type: array
+          items:
+            type: string
+          description: List of field names that are not completed yet
+        canPublishProfile:
+          type: boolean
+          description: Whether the profile is complete enough to be published
+      required:
+        - userId
+        - completionPercentage
+        - fields
+        - missingFields
+        - canPublishProfile
+    FollowActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        userId:
+          type: string
+        following:
+          type: boolean
+          description: Current follow status after the action
+        followerCount:
+          type: integer
+          minimum: 0
+          description: Target user's follower count after the action
+        followingCount:
+          type: integer
+          minimum: 0
+          description: Current user's following count after the action
+      required:
+        - success
+        - userId
+        - following
+        - followerCount
+        - followingCount
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

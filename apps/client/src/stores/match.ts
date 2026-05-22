@@ -1,3 +1,10 @@
+/**
+ * @deprecated 匹配 Store 已废弃。原匹配逻辑已融入卡片喜欢系统和寻觅页。
+ * 迁移路径：
+ *   - match → likes（喜欢/被喜欢）+ discover（寻觅页滑动卡片）
+ *   - 话题匹配/一键速配 → discover 卡片右滑喜欢系统
+ * 本文件保留仅用于回滚参考。
+ */
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
 import { toMatchSummary } from "../view-models/match";

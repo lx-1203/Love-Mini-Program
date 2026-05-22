@@ -1,0 +1,369 @@
+openapi: 3.0.3
+info:
+  title: Campus Love - Recommendations API
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /recommendations/cards:
+    get:
+      summary: Get recommendation card list
+      operationId: getRecommendationCards
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          description: Number of cards to return
+        - in: query
+          name: excludeIds
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          description: User IDs to exclude from recommendations
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: List of recommendation cards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationCardListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/cards/{id}/pass:
+    post:
+      summary: Pass (reject) a recommendation card
+      operationId: passRecommendationCard
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Recommendation card ID (user ID)
+      responses:
+        '200':
+          description: Card passed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/cards/{id}/like:
+    post:
+      summary: Like a recommendation card
+      operationId: likeRecommendationCard
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Recommendation card ID (user ID)
+      responses:
+        '200':
+          description: Card liked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/cards/history:
+    get:
+      summary: Get recommendation history (cards already viewed)
+      operationId: getRecommendationHistory
+      parameters:
+        - in: query
+          name: action
+          required: false
+          schema:
+            type: string
+            enum: [all, liked, passed]
+            default: all
+          description: Filter by action taken
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - in: query
+          name: pageSize
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Items per page
+      responses:
+        '200':
+          description: Recommendation history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationHistoryListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/preferences:
+    get:
+      summary: Get recommendation preferences
+      operationId: getRecommendationPreferences
+      responses:
+        '200':
+          description: User recommendation preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      summary: Update recommendation preferences
+      operationId: updateRecommendationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationPreferences'
+      responses:
+        '200':
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationPreferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    RecommendationCard:
+      type: object
+      properties:
+        id:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        gender:
+          type: string
+          enum: [male, female, other]
+        age:
+          type: integer
+          minimum: 16
+          maximum: 100
+        campusName:
+          type: string
+        department:
+          type: string
+        grade:
+          type: string
+        bio:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        photos:
+          type: array
+          items:
+            type: string
+        commonGround:
+          type: string
+          description: Description of common interests or connections
+        matchScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Compatibility match score
+        lastActive:
+          type: string
+          format: date-time
+      required:
+        - id
+        - nickname
+        - gender
+        - campusName
+        - bio
+        - tags
+        - photos
+        - commonGround
+        - matchScore
+        - lastActive
+    RecommendationCardListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendationCard'
+        hasMore:
+          type: boolean
+        dailyQuota:
+          type: integer
+          minimum: 0
+          description: Remaining daily swipe quota
+      required:
+        - items
+        - hasMore
+        - dailyQuota
+    CardActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        cardId:
+          type: string
+        action:
+          type: string
+          enum: [pass, like]
+        mutualLike:
+          type: boolean
+          description: Whether the like is mutual
+        matchCreated:
+          type: boolean
+          description: Whether a match was created due to mutual like
+      required:
+        - success
+        - cardId
+        - action
+        - mutualLike
+        - matchCreated
+    RecommendationHistoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        headline:
+          type: string
+        action:
+          type: string
+          enum: [liked, passed]
+        actionAt:
+          type: string
+          format: date-time
+        isMutual:
+          type: boolean
+      required:
+        - id
+        - nickname
+        - headline
+        - action
+        - actionAt
+        - isMutual
+    RecommendationHistoryListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendationHistoryItem'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+    RecommendationPreferences:
+      type: object
+      properties:
+        dailyNotifyTime:
+          type: string
+          description: Daily recommendation notification time (e.g., "10:00", "12:00", "14:00", "18:00")
+          default: "12:00"
+        scope:
+          type: string
+          description: Recommendation scope
+          enum:
+            - campus_first
+            - city
+            - unlimited
+          default: campus_first
+      required:
+        - dailyNotifyTime
+        - scope
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

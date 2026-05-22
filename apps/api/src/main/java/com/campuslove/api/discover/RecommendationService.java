@@ -34,4 +34,26 @@ public class RecommendationService {
         ))
         .toList();
   }
+
+  /**
+   * 获取推荐偏好设置，返回默认值。
+   */
+  public RecommendationPreferencesView getPreferences() {
+    return new RecommendationPreferencesView("12:00", "campus_first");
+  }
+
+  /**
+   * 更新推荐偏好设置（mock 实现，直接返回输入值）。
+   */
+  public RecommendationPreferencesView updatePreferences(RecommendationPreferencesView prefs) {
+    if (prefs == null || prefs.dailyNotifyTime() == null || prefs.scope() == null) {
+      throw new IllegalArgumentException("dailyNotifyTime and scope are required");
+    }
+    return prefs;
+  }
 }
+
+record RecommendationPreferencesView(
+    String dailyNotifyTime,
+    String scope
+) {}

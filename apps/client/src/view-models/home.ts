@@ -24,17 +24,9 @@ export interface HomeRecommendationActionView {
   target: string;
 }
 
-/** 首页推荐卡片 - 含匹配评分和话题标签 */
-export interface RecommendationCardView {
-  userId: string;
-  displayName: string;
-  avatarInitials: string;
-  headline: string;
-  score: number;
-  matchedTopics: string[];
-  school: string;
-  city: string;
-}
+export type HomeRecommendedPersonView = Schemas["RecommendedPersonSummary"] & {
+  action: HomeRecommendationActionView;
+};
 
 export interface HomeActivityPreviewView {
   title: string;
@@ -46,10 +38,10 @@ export interface HomeActivityPreviewView {
 }
 
 export interface HomePageView {
+  sectionOrder: Array<"schedule" | "people" | "activity">;
   setupTasks: HomeSetupTaskView[];
   scheduleCards: HomeSectionItemView[];
-  /** 今日推荐人选 - 规则引擎推荐，含评分和话题 */
-  recommendationCards: RecommendationCardView[];
+  recommendedPeople: HomeRecommendedPersonView[];
   peopleLead: string;
   activityPreview: HomeActivityPreviewView;
 }
@@ -108,25 +100,41 @@ export function getHomeSetupTasks(completion: HomeCompletionState): HomeSetupTas
   return tasks;
 }
 
+function getRecommendationAction(completion: HomeCompletionState): HomeRecommendationActionView {
+  const tasks = getHomeSetupTasks(completion);
+
+  if (tasks.length > 0) {
+    return {
+      label: "先完成设置",
+      mode: "complete-setup",
+      target: tasks[0]!.path,
+    };
+  }
+
+  return {
+    label: "去聊天",
+    mode: "go-chat",
+    target: "/pages/chat/index",
+  };
+}
+
 export function toHomePageView(
   dashboard: Schemas["HomeDashboard"],
   completion: HomeCompletionState
 ): HomePageView {
+  const action = getRecommendationAction(completion);
+
   return {
+    sectionOrder: ["schedule", "people", "activity"],
     setupTasks: getHomeSetupTasks(completion),
     scheduleCards: [
-      toCardItem(dashboard.scheduleSummary, "课表", "brand"),
+      toCardItem(dashboard.scheduleSummary, "今日", "brand"),
       ...dashboard.freeSlots.map((item) => toCardItem(item, "空档", "success")),
+      // AI 计划卡片已移除（Phase 7），由规则引擎推荐（discover）替代
     ],
-    recommendationCards: (dashboard.recommendations ?? []).map((rec) => ({
-      userId: rec.userId,
-      displayName: rec.displayName,
-      avatarInitials: rec.avatarInitials,
-      headline: rec.headline,
-      score: rec.score,
-      matchedTopics: rec.matchedTopics,
-      school: rec.school,
-      city: rec.city,
+    recommendedPeople: dashboard.recommendedPeople.map((person) => ({
+      ...person,
+      action,
     })),
     peopleLead: dashboard.peopleLead,
     activityPreview: {

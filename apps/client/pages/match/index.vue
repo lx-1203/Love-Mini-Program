@@ -1,4 +1,11 @@
 <script setup lang="ts">
+/**
+ * @deprecated 此匹配页面已废弃。原匹配逻辑已融入卡片喜欢系统和寻觅页。
+ * 迁移路径：
+ *   - match → likes（喜欢/被喜欢）+ discover（寻觅页滑动卡片）
+ *   - 话题匹配/一键速配 → discover 卡片右滑喜欢系统
+ * 本文件保留仅用于回滚参考。
+ */
 import { computed, ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import AppShell from "../../src/components/layout/AppShell.vue";
@@ -130,7 +137,7 @@ function fieldSummary(field: NonNullable<typeof secondSection.value>["fields"][n
   <AppShell
     title="匹配"
     subtitle="这里是主发起入口，确认节奏后直接进入临时聊天。"
-    current-tab="match"
+    current-tab="village"
   >
     <SectionCard title="快速开始" subtitle="先定聊天时长，系统会按当前偏好帮你接上合适的人。">
       <view class="quick-grid">
