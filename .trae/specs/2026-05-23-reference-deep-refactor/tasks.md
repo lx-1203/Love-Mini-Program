@@ -2,108 +2,108 @@
 
 ## Phase 1: P0致命项 — RealProfileService完整实现
 
-- [ ] Task 1.1: 实现RealProfileService基本资料查询与保存
-  - [ ] SubTask 1.1.1: 实现 `getBasicProfile(userId)` — 从user_basic_profile表查询基本资料（头像/昵称/bio/性别/生日/兴趣标签），无记录返回空模板
-  - [ ] SubTask 1.1.2: 实现 `saveBasicProfile(userId, data)` — 更新user_basic_profile表，重新计算profileCompletion字段
-  - [ ] SubTask 1.1.3: 验证基本资料查询和保存链路：前端编辑页 → API调用 → 数据库更新 → 返回确认
+- [x] Task 1.1: 实现RealProfileService基本资料查询与保存
+  - [x] SubTask 1.1.1: 实现 `getBasicProfile(userId)` — 从user_basic_profile表查询基本资料（头像/昵称/bio/性别/生日/兴趣标签），无记录返回空模板
+  - [x] SubTask 1.1.2: 实现 `saveBasicProfile(userId, data)` — 更新user_basic_profile表，重新计算profileCompletion字段
+  - [x] SubTask 1.1.3: 验证基本资料查询和保存链路：前端编辑页 → API调用 → 数据库更新 → 返回确认
   - **验证**：Real模式下基本资料可查询和保存，profileCompletion正确更新
 
-- [ ] Task 1.2: 实现RealProfileService校区资料查询与保存
-  - [ ] SubTask 1.2.1: 实现 `getCampusProfile(userId)` — 从user_campus_profile表查询校区资料（学校/专业/年级/学号/认证状态）
-  - [ ] SubTask 1.2.2: 实现 `saveCampusProfile(userId, data)` — 更新user_campus_profile表，重新计算认证状态和profileCompletion
-  - [ ] SubTask 1.2.3: 验证校区资料查询和保存链路：前端校区页 → API调用 → 数据库更新 → 认证状态更新
+- [x] Task 1.2: 实现RealProfileService校区资料查询与保存
+  - [x] SubTask 1.2.1: 实现 `getCampusProfile(userId)` — 从user_campus_profile表查询校区资料（学校/专业/年级/学号/认证状态）
+  - [x] SubTask 1.2.2: 实现 `saveCampusProfile(userId, data)` — 更新user_campus_profile表，重新计算认证状态和profileCompletion
+  - [x] SubTask 1.2.3: 验证校区资料查询和保存链路：前端校区页 → API调用 → 数据库更新 → 认证状态更新
   - **验证**：Real模式下校区资料可查询和保存，认证状态正确更新
 
-- [ ] Task 1.3: 实现RealProfileService日程资料查询与保存
-  - [ ] SubTask 1.3.1: 实现 `getScheduleProfile(userId)` — 从user_schedule_profile表查询日程资料（空闲时间段）
-  - [ ] SubTask 1.3.2: 实现 `saveScheduleProfile(userId, data)` — 更新user_schedule_profile表，重新计算profileCompletion
-  - [ ] SubTask 1.3.3: 验证日程资料查询和保存链路：前端日程页 → API调用 → 数据库更新
+- [x] Task 1.3: 实现RealProfileService日程资料查询与保存
+  - [x] SubTask 1.3.1: 实现 `getScheduleProfile(userId)` — 从user_schedule_profile表查询日程资料（空闲时间段）
+  - [x] SubTask 1.3.2: 实现 `saveScheduleProfile(userId, data)` — 更新user_schedule_profile表，重新计算profileCompletion
+  - [x] SubTask 1.3.3: 验证日程资料查询和保存链路：前端日程页 → API调用 → 数据库更新
   - **验证**：Real模式下日程资料可查询和保存
 
-- [ ] Task 1.4: 实现RealProfileService个人统计查询
-  - [ ] SubTask 1.4.1: 实现 `getProfileStats(userId)` — 从数据库计算关注数、粉丝数、获赞数、帖子数
-  - [ ] SubTask 1.4.2: 关注数从user_follows表count(follower_id)计算
-  - [ ] SubTask 1.4.3: 粉丝数从user_follows表count(following_id)计算
-  - [ ] SubTask 1.4.4: 获赞数从post_likes表关联posts表计算
-  - [ ] SubTask 1.4.5: 帖子数从posts表count(author_id)计算
-  - [ ] SubTask 1.4.6: 验证个人统计查询：前端"我的"页 → API调用 → 返回真实统计
+- [x] Task 1.4: 实现RealProfileService个人统计查询
+  - [x] SubTask 1.4.1: 实现 `getProfileStats(userId)` — 从数据库计算关注数、粉丝数、获赞数、帖子数
+  - [x] SubTask 1.4.2: 关注数从user_follows表count(follower_id)计算
+  - [x] SubTask 1.4.3: 粉丝数从user_follows表count(following_id)计算
+  - [x] SubTask 1.4.4: 获赞数从post_likes表关联posts表计算
+  - [x] SubTask 1.4.5: 帖子数从posts表count(author_id)计算
+  - [x] SubTask 1.4.6: 验证个人统计查询：前端"我的"页 → API调用 → 返回真实统计
   - **验证**：Real模式下个人统计从数据库真实计算，非硬编码
 
 ---
 
 ## Phase 2: P0阻塞项 — RealFeedbackService + 页面路由修复
 
-- [ ] Task 2.1: 实现RealFeedbackService反馈提交与查询
-  - [ ] SubTask 2.1.1: 实现 `submit(userId, request)` — 创建Feedback记录，持久化到数据库
-  - [ ] SubTask 2.1.2: 实现 `listMine(userId)` — 查询该用户的所有反馈记录，含提交时间/类型/状态/回复
-  - [ ] SubTask 2.1.3: 实现 `listAdminFeedback()` — 管理员查看所有反馈，支持按类型和状态筛选
-  - [ ] SubTask 2.1.4: 实现 `convertProposal(feedbackId)` — 将活动提案转为正式Activity记录，更新提案状态
-  - [ ] SubTask 2.1.5: 验证反馈完整链路：提交反馈 → 查询历史 → 管理员审核 → 提案转换
+- [x] Task 2.1: 实现RealFeedbackService反馈提交与查询
+  - [x] SubTask 2.1.1: 实现 `submit(userId, request)` — 创建Feedback记录，持久化到数据库
+  - [x] SubTask 2.1.2: 实现 `listMine(userId)` — 查询该用户的所有反馈记录，含提交时间/类型/状态/回复
+  - [x] SubTask 2.1.3: 实现 `listAdminFeedback()` — 管理员查看所有反馈，支持按类型和状态筛选
+  - [x] SubTask 2.1.4: 实现 `convertProposal(feedbackId)` — 将活动提案转为正式Activity记录，更新提案状态
+  - [x] SubTask 2.1.5: 验证反馈完整链路：提交反馈 → 查询历史 → 管理员审核 → 提案转换
   - **验证**：Real模式下反馈功能完整可用
 
-- [ ] Task 2.2: 修复chat/chat-session页面路由注册
-  - [ ] SubTask 2.2.1: 在pages.json主包中注册chat页面路由（path: "pages/chat/index"）
-  - [ ] SubTask 2.2.2: 在pages.json主包中注册chat-session页面路由（path: "pages/chat-session/index"）
-  - [ ] SubTask 2.2.3: 验证页面路由：点击临时聊天入口 → 正常导航到chat-session页面
-  - [ ] SubTask 2.2.4: 验证页面路由：点击消息页聊天入口 → 正常导航到chat页面
+- [x] Task 2.2: 修复chat/chat-session页面路由注册
+  - [x] SubTask 2.2.1: 在pages.json主包中注册chat页面路由（path: "pages/chat/index"）
+  - [x] SubTask 2.2.2: 在pages.json主包中注册chat-session页面路由（path: "pages/chat-session/index"）
+  - [x] SubTask 2.2.3: 验证页面路由：点击临时聊天入口 → 正常导航到chat-session页面
+  - [x] SubTask 2.2.4: 验证页面路由：点击消息页聊天入口 → 正常导航到chat页面
   - **验证**：chat和chat-session页面可通过路由正常访问
 
 ---
 
 ## Phase 3: P1核心项 — Store Mock模式 + RealAppConfigService
 
-- [ ] Task 3.1: 为chat.ts添加Mock模式支持
-  - [ ] SubTask 3.1.1: 在chat.ts中添加useMock()判断分支
-  - [ ] SubTask 3.1.2: 创建本地Mock聊天数据（会话列表+消息列表+临时聊天）
-  - [ ] SubTask 3.1.3: Mock模式下返回本地数据，不调用后端API
-  - [ ] SubTask 3.1.4: 验证Mock模式下聊天界面正常展示
+- [x] Task 3.1: 为chat.ts添加Mock模式支持
+  - [x] SubTask 3.1.1: 在chat.ts中添加useMock()判断分支
+  - [x] SubTask 3.1.2: 创建本地Mock聊天数据（会话列表+消息列表+临时聊天）
+  - [x] SubTask 3.1.3: Mock模式下返回本地数据，不调用后端API
+  - [x] SubTask 3.1.4: 验证Mock模式下聊天界面正常展示
   - **验证**：chat.ts在Mock模式下正常工作
 
-- [ ] Task 3.2: 为session.ts添加Mock模式支持
-  - [ ] SubTask 3.2.1: 在session.ts中添加useMock()判断分支
-  - [ ] SubTask 3.2.2: 创建本地Mock会话数据（用户信息+登录状态+资料完善度）
-  - [ ] SubTask 3.2.3: Mock模式下返回本地数据，不调用后端API
-  - [ ] SubTask 3.2.4: 验证Mock模式下会话管理正常工作
+- [x] Task 3.2: 为session.ts添加Mock模式支持
+  - [x] SubTask 3.2.1: 在session.ts中添加useMock()判断分支
+  - [x] SubTask 3.2.2: 创建本地Mock会话数据（用户信息+登录状态+资料完善度）
+  - [x] SubTask 3.2.3: Mock模式下返回本地数据，不调用后端API
+  - [x] SubTask 3.2.4: 验证Mock模式下会话管理正常工作
   - **验证**：session.ts在Mock模式下正常工作
 
-- [ ] Task 3.3: 实现RealAppConfigService.getLoginHeroConfig()
-  - [ ] SubTask 3.3.1: 实现 `getLoginHeroConfig()` — 从数据库或配置中返回登录页主视觉文案和图片URL
-  - [ ] SubTask 3.3.2: 若数据库无配置，返回默认值（不抛异常）
-  - [ ] SubTask 3.3.3: 验证登录页主视觉配置正常加载
+- [x] Task 3.3: 实现RealAppConfigService.getLoginHeroConfig()
+  - [x] SubTask 3.3.1: 实现 `getLoginHeroConfig()` — 从数据库或配置中返回登录页主视觉文案和图片URL
+  - [x] SubTask 3.3.2: 若数据库无配置，返回默认值（不抛异常）
+  - [x] SubTask 3.3.3: 验证登录页主视觉配置正常加载
   - **验证**：RealAppConfigService.getLoginHeroConfig()不抛异常，返回有效配置
 
 ---
 
 ## Phase 4: P1性能与质量项 — 推荐优化 + 硬编码修复 + 视图字段补全
 
-- [ ] Task 4.1: 优化RealRecommendationService查询性能
-  - [ ] SubTask 4.1.1: 替换 `userRepository.findAll()` 为分页查询（PageRequest + Specification）
-  - [ ] SubTask 4.1.2: 添加排除条件：排除已喜欢/已有信号的用户
-  - [ ] SubTask 4.1.3: 限制查询数量（如每次最多查询100个候选用户）
-  - [ ] SubTask 4.1.4: 验证推荐查询性能：大数据量下响应时间<500ms
+- [x] Task 4.1: 优化RealRecommendationService查询性能
+  - [x] SubTask 4.1.1: 替换 `userRepository.findAll()` 为分页查询（PageRequest + Specification）
+  - [x] SubTask 4.1.2: 添加排除条件：排除已喜欢/已有信号的用户
+  - [x] SubTask 4.1.3: 限制查询数量（如每次最多查询100个候选用户）
+  - [x] SubTask 4.1.4: 验证推荐查询性能：大数据量下响应时间<500ms
   - **验证**：推荐查询不再全表扫描，性能显著提升
 
-- [ ] Task 4.2: 修复RealVillageService硬编码userId
-  - [ ] SubTask 4.2.1: 修复 `createPost()` Phase 1方法：从SecurityContext获取当前用户ID
-  - [ ] SubTask 4.2.2: 修复 `likePost()` Phase 1方法：从SecurityContext获取当前用户ID
-  - [ ] SubTask 4.2.3: 修复 `createComment()` Phase 1方法：从SecurityContext获取当前用户ID
-  - [ ] SubTask 4.2.4: 修复 `sharePost()` Phase 1方法：从SecurityContext获取当前用户ID
-  - [ ] SubTask 4.2.5: 验证操作归属正确用户：不同用户操作归属各自ID
+- [x] Task 4.2: 修复RealVillageService硬编码userId
+  - [x] SubTask 4.2.1: 修复 `createPost()` Phase 1方法：从SecurityContext获取当前用户ID
+  - [x] SubTask 4.2.2: 修复 `likePost()` Phase 1方法：从SecurityContext获取当前用户ID
+  - [x] SubTask 4.2.3: 修复 `createComment()` Phase 1方法：从SecurityContext获取当前用户ID
+  - [x] SubTask 4.2.4: 修复 `sharePost()` Phase 1方法：从SecurityContext获取当前用户ID
+  - [x] SubTask 4.2.5: 验证操作归属正确用户：不同用户操作归属各自ID
   - **验证**：所有操作归属当前登录用户，不再硬编码userId=1L
 
-- [ ] Task 4.3: 补全前端视图类型缺失字段
-  - [ ] SubTask 4.3.1: HeartSignalView添加fromUserName和fromUserAvatar字段
-  - [ ] SubTask 4.3.2: PostSummaryView添加isLiked、isFollowed、isShared字段
-  - [ ] SubTask 4.3.3: ConversationView添加headline、pinned、phase、sessionType字段
-  - [ ] SubTask 4.3.4: DailyQuestionView添加category、answerCount字段
-  - [ ] SubTask 4.3.5: CircleView添加topicCount字段
-  - [ ] SubTask 4.3.6: 验证前端视图类型与后端返回数据一致
+- [x] Task 4.3: 补全前端视图类型缺失字段
+  - [x] SubTask 4.3.1: HeartSignalView添加fromUserName和fromUserAvatar字段
+  - [x] SubTask 4.3.2: PostSummaryView添加isLiked、isFollowed、isShared字段
+  - [x] SubTask 4.3.3: ConversationView添加headline、pinned、phase、sessionType字段
+  - [x] SubTask 4.3.4: DailyQuestionView添加category、answerCount字段
+  - [x] SubTask 4.3.5: CircleView添加topicCount字段
+  - [x] SubTask 4.3.6: 验证前端视图类型与后端返回数据一致
   - **验证**：前端视图类型字段完整，与后端数据模型一致
 
-- [ ] Task 4.4: 对齐两套页面目录
-  - [ ] SubTask 4.4.1: 确认apps/client/pages/和apps/client/src/pages/的差异
-  - [ ] SubTask 4.4.2: 将缺失的circles/和daily-question/页面同步到pages/目录（或统一编译配置）
-  - [ ] SubTask 4.4.3: 验证编译后所有页面可正常访问
+- [x] Task 4.4: 对齐两套页面目录
+  - [x] SubTask 4.4.1: 确认apps/client/pages/和apps/client/src/pages/的差异
+  - [x] SubTask 4.4.2: 将缺失的circles/和daily-question/页面同步到pages/目录（或统一编译配置）
+  - [x] SubTask 4.4.3: 验证编译后所有页面可正常访问
   - **验证**：两套页面目录一致，编译无遗漏
 
 ---

@@ -3,104 +3,104 @@
 ## Phase 1: P0致命项 — RealProfileService完整实现
 
 ### 基本资料
-- [ ] getBasicProfile()从user_basic_profile表查询基本资料
-- [ ] getBasicProfile()无记录时返回空资料模板（非抛异常）
-- [ ] saveBasicProfile()更新user_basic_profile表
-- [ ] saveBasicProfile()重新计算profileCompletion字段
-- [ ] 前端资料编辑页 → API调用 → 数据库更新 → 返回确认 完整链路
+- [x] getBasicProfile()从user_basic_profile表查询基本资料
+- [x] getBasicProfile()无记录时返回空资料模板（非抛异常）
+- [x] saveBasicProfile()更新user_basic_profile表
+- [x] saveBasicProfile()重新计算profileCompletion字段
+- [x] 前端资料编辑页 → API调用 → 数据库更新 → 返回确认 完整链路
 
 ### 校区资料
-- [ ] getCampusProfile()从user_campus_profile表查询校区资料
-- [ ] getCampusProfile()无记录时返回空资料模板
-- [ ] saveCampusProfile()更新user_campus_profile表
-- [ ] saveCampusProfile()重新计算认证状态和profileCompletion
-- [ ] 前端校区页 → API调用 → 数据库更新 → 认证状态更新 完整链路
+- [x] getCampusProfile()从user_campus_profile表查询校区资料
+- [x] getCampusProfile()无记录时返回空资料模板
+- [x] saveCampusProfile()更新user_campus_profile表
+- [x] saveCampusProfile()重新计算认证状态和profileCompletion
+- [x] 前端校区页 → API调用 → 数据库更新 → 认证状态更新 完整链路
 
 ### 日程资料
-- [ ] getScheduleProfile()从user_schedule_profile表查询日程资料
-- [ ] getScheduleProfile()无记录时返回空资料模板
-- [ ] saveScheduleProfile()更新user_schedule_profile表
-- [ ] saveScheduleProfile()重新计算profileCompletion
-- [ ] 前端日程页 → API调用 → 数据库更新 完整链路
+- [x] getScheduleProfile()从user_schedule_profile表查询日程资料
+- [x] getScheduleProfile()无记录时返回空资料模板
+- [x] saveScheduleProfile()更新user_schedule_profile表
+- [x] saveScheduleProfile()重新计算profileCompletion
+- [x] 前端日程页 → API调用 → 数据库更新 完整链路
 
 ### 个人统计
-- [ ] getProfileStats()从数据库计算关注数（user_follows表）
-- [ ] getProfileStats()从数据库计算粉丝数（user_follows表）
-- [ ] getProfileStats()从数据库计算获赞数（post_likes表）
-- [ ] getProfileStats()从数据库计算帖子数（posts表）
-- [ ] 个人统计为真实计算值（非硬编码）
+- [x] getProfileStats()从数据库计算关注数（user_follows表）
+- [x] getProfileStats()从数据库计算粉丝数（user_follows表）
+- [x] getProfileStats()从数据库计算获赞数（post_likes表）
+- [x] getProfileStats()从数据库计算帖子数（posts表）
+- [x] 个人统计为真实计算值（非硬编码）
 
 ---
 
 ## Phase 2: P0阻塞项 — RealFeedbackService + 页面路由修复
 
 ### 反馈服务
-- [ ] submit()创建Feedback记录，持久化到数据库
-- [ ] listMine()查询该用户的所有反馈记录
-- [ ] listAdminFeedback()管理员查看所有反馈，支持筛选
-- [ ] convertProposal()将活动提案转为正式Activity记录
-- [ ] 提案转换后提案状态更新为"已采纳"
-- [ ] 提案转换后提案者收到通知
+- [x] submit()创建Feedback记录，持久化到数据库
+- [x] listMine()查询该用户的所有反馈记录
+- [x] listAdminFeedback()管理员查看所有反馈，支持筛选
+- [x] convertProposal()将活动提案转为正式Activity记录
+- [x] 提案转换后提案状态更新为"已采纳"
+- [x] 提案转换后提案者收到通知
 
 ### 页面路由
-- [ ] pages.json中注册chat页面路由
-- [ ] pages.json中注册chat-session页面路由
-- [ ] 点击临时聊天入口可正常导航到chat-session页面
-- [ ] 点击消息页聊天入口可正常导航到chat页面
-- [ ] 页面导航不出现"页面未注册"错误
+- [x] pages.json中注册chat页面路由
+- [x] pages.json中注册chat-session页面路由
+- [x] 点击临时聊天入口可正常导航到chat-session页面
+- [x] 点击消息页聊天入口可正常导航到chat页面
+- [x] 页面导航不出现"页面未注册"错误
 
 ---
 
 ## Phase 3: P1核心项 — Store Mock模式 + RealAppConfigService
 
 ### chat.ts Mock模式
-- [ ] chat.ts包含useMock()判断分支
-- [ ] Mock模式下返回本地Mock聊天数据
-- [ ] Mock模式下不调用后端API
-- [ ] Mock模式下聊天界面正常展示
+- [x] chat.ts包含useMock()判断分支
+- [x] Mock模式下返回本地Mock聊天数据
+- [x] Mock模式下不调用后端API
+- [x] Mock模式下聊天界面正常展示
 
 ### session.ts Mock模式
-- [ ] session.ts包含useMock()判断分支
-- [ ] Mock模式下返回本地Mock会话数据
-- [ ] Mock模式下不调用后端API
-- [ ] Mock模式下会话管理正常工作
+- [x] session.ts包含useMock()判断分支
+- [x] Mock模式下返回本地Mock会话数据
+- [x] Mock模式下不调用后端API
+- [x] Mock模式下会话管理正常工作
 
 ### RealAppConfigService
-- [ ] getLoginHeroConfig()返回登录页主视觉配置
-- [ ] getLoginHeroConfig()不抛UnsupportedOperationException
-- [ ] 数据库无配置时返回默认值
-- [ ] 登录页主视觉正常加载
+- [x] getLoginHeroConfig()返回登录页主视觉配置
+- [x] getLoginHeroConfig()不抛UnsupportedOperationException
+- [x] 数据库无配置时返回默认值
+- [x] 登录页主视觉正常加载
 
 ---
 
 ## Phase 4: P1性能与质量项
 
 ### 推荐查询优化
-- [ ] RealRecommendationService不再使用findAll()全表扫描
-- [ ] 使用分页查询（PageRequest + Specification）
-- [ ] 排除已喜欢/已有信号的用户
-- [ ] 限制查询数量，避免全表扫描
-- [ ] 大数据量下推荐响应时间<500ms
+- [x] RealRecommendationService不再使用findAll()全表扫描
+- [x] 使用分页查询（PageRequest + Specification）
+- [x] 排除已喜欢/已有信号的用户
+- [x] 限制查询数量，避免全表扫描
+- [x] 大数据量下推荐响应时间<500ms
 
 ### 硬编码修复
-- [ ] createPost()操作归属当前登录用户（非userId=1L）
-- [ ] likePost()操作归属当前登录用户
-- [ ] createComment()操作归属当前登录用户
-- [ ] sharePost()操作归属当前登录用户
-- [ ] 不同用户操作正确归属各自ID
+- [x] createPost()操作归属当前登录用户（非userId=1L）
+- [x] likePost()操作归属当前登录用户
+- [x] createComment()操作归属当前登录用户
+- [x] sharePost()操作归属当前登录用户
+- [x] 不同用户操作正确归属各自ID
 
 ### 视图类型字段补全
-- [ ] HeartSignalView包含fromUserName和fromUserAvatar
-- [ ] PostSummaryView包含isLiked、isFollowed、isShared
-- [ ] ConversationView包含headline、pinned、phase、sessionType
-- [ ] DailyQuestionView包含category、answerCount
-- [ ] CircleView包含topicCount
-- [ ] 前端视图类型与后端返回数据一致
+- [x] HeartSignalView包含fromUserName和fromUserAvatar
+- [x] PostSummaryView包含isLiked、isFollowed、isShared
+- [x] ConversationView包含headline、pinned、phase、sessionType
+- [x] DailyQuestionView包含category、answerCount
+- [x] CircleView包含topicCount
+- [x] 前端视图类型与后端返回数据一致
 
 ### 页面目录对齐
-- [ ] apps/client/pages/和apps/client/src/pages/差异已确认
-- [ ] 缺失的circles/和daily-question/页面已同步
-- [ ] 编译后所有页面可正常访问
+- [x] apps/client/pages/和apps/client/src/pages/差异已确认
+- [x] 缺失的circles/和daily-question/页面已同步
+- [x] 编译后所有页面可正常访问
 
 ---
 
