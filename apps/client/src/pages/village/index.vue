@@ -67,8 +67,36 @@ const currentFilters = computed<PostFilters>(() => {
   };
 });
 
+/** 当前用户的学校名称 */
+const currentCampusName = computed(() => {
+  return sessionStore.userSession?.campusName ?? "";
+});
+
+/**
+ * 同校优先排序：同校帖子排在最前面
+ * 仅在"同城"tab（activeTab === 'local'）时生效
+ */
+function sortBySameCampus(posts: PostItem[]): PostItem[] {
+  if (!currentCampusName.value) return posts;
+  const same: PostItem[] = [];
+  const other: PostItem[] = [];
+  for (const post of posts) {
+    if (post.author.campusName === currentCampusName.value) {
+      same.push(post);
+    } else {
+      other.push(post);
+    }
+  }
+  return [...same, ...other];
+}
+
 const displayPosts = computed<PostItem[]>(() => {
-  return villageStore.filteredPosts(currentFilters.value);
+  const posts = villageStore.filteredPosts(currentFilters.value);
+  // 同城 tab 时启用同校优先排序
+  if (activeTab.value === "local") {
+    return sortBySameCampus(posts);
+  }
+  return posts;
 });
 
 /* ========== 下拉刷新 / 加载更多 ========== */
@@ -121,9 +149,9 @@ async function handleLike(postId: string) {
 }
 
 /* ========== 关注 ========== */
-async function handleFollow(postId: string) {
+async function handleFollow(userId: string) {
   try {
-    await villageStore.followUser(postId);
+    await villageStore.followUser(userId);
   } catch {
     // 错误已由 store 设置
   }
@@ -248,7 +276,14 @@ onMounted(() => {
                 <text v-else class="user-avatar__char">{{ post.author.name[0] }}</text>
               </view>
               <view class="user-info">
-                <text class="user-info__name">{{ post.author.name }}</text>
+                <view class="user-info__name-row">
+                  <text class="user-info__name">{{ post.author.name }}</text>
+                  <!-- 同校校友标签 -->
+                  <text
+                    v-if="post.author.campusName && post.author.campusName === currentCampusName"
+                    class="user-info__campus-badge"
+                  >校友</text>
+                </view>
                 <text class="user-info__headline">{{ post.author.headline }}</text>
               </view>
             </view>
@@ -256,7 +291,7 @@ onMounted(() => {
             <view
               class="follow-chip"
               :class="{ 'follow-chip--active': post.isFollowed }"
-              @tap.stop="handleFollow(post.id)"
+              @tap.stop="handleFollow(post.author.userId)"
             >
               <text class="follow-chip__text">
                 {{ post.isFollowed ? "已关注" : "+ 关注" }}
@@ -607,11 +642,29 @@ onMounted(() => {
   min-width: 0;
 }
 
+.user-info__name-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
 .user-info__name {
   font-size: 30rpx;
   font-weight: 600;
   color: var(--td-text-color-primary);
   line-height: 1.2;
+}
+
+/* 同校校友标签 */
+.user-info__campus-badge {
+  font-size: 20rpx;
+  color: #ffffff;
+  background: var(--td-brand-color-7);
+  padding: 2rpx 12rpx;
+  border-radius: 999px;
+  font-weight: 600;
+  line-height: 1.6;
+  flex-shrink: 0;
 }
 
 .user-info__headline {

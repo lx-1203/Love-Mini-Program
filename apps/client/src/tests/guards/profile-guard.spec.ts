@@ -47,9 +47,8 @@ describe("profile-guard", () => {
   });
 
   it("isPageLocked returns false for non-locked pages", () => {
-    expect(isPageLocked("/pages/home/index")).toBe(false);
+    expect(isPageLocked("/pages/discover/index")).toBe(false);
     expect(isPageLocked("/pages/login/index")).toBe(false);
-    expect(isPageLocked("/pages/match/index")).toBe(false);
     expect(isPageLocked("/subpackages/setup/profile/index")).toBe(false);
   });
 
@@ -94,7 +93,7 @@ describe("profile-guard", () => {
     }));
 
     // RESOLVE check: even with default mock (incomplete), test non-locked pages
-    const result = resolveProfileGuard("/pages/home/index");
+    const result = resolveProfileGuard("/pages/discover/index");
     expect(result.allowed).toBe(true);
     expect(result.completionPercent).toBe(33);
   });

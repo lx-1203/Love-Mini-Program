@@ -2,9 +2,11 @@ package com.campuslove.api.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("mock")
 public class MockRuntimeState {
 
   private boolean loggedIn;
@@ -30,6 +32,8 @@ public class MockRuntimeState {
       "大三",
       "她/她"
   );
+
+  private ProfileStatsData profileStats = new ProfileStatsData(28, 16, 104);
 
   private CampusProfileData campusProfile = new CampusProfileData(
       "广州",
@@ -94,13 +98,23 @@ public class MockRuntimeState {
           "a-1",
           "图书馆南门咖啡散步",
           "南门咖啡馆",
-          "周四 19:00-20:00"
+          "周四 19:00-20:00",
+          "轻松的咖啡散步活动，适合初次见面，环境舒适低压，可以自然地开启对话。",
+          12,
+          List.of("https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop",
+              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop",
+              "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=64&h=64&fit=crop")
       ),
       new ActivityRecommendationData(
           "a-2",
           "电影社轻松线下碰面",
           "影像楼 B 厅",
-          "周六 15:00-17:00"
+          "周六 15:00-17:00",
+          "电影社组织的线下交流活动，边看电影边聊天，氛围轻松不拘束。",
+          8,
+          List.of("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64&fit=crop",
+              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=64&h=64&fit=crop",
+              "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=64&h=64&fit=crop")
       )
   );
 
@@ -129,6 +143,10 @@ public class MockRuntimeState {
 
   public synchronized BasicProfileData basicProfile() {
     return basicProfile;
+  }
+
+  public synchronized ProfileStatsData profileStats() {
+    return profileStats;
   }
 
   public synchronized BasicProfileData saveBasicProfile(BasicProfileData profile) {
@@ -207,6 +225,13 @@ public class MockRuntimeState {
   ) {
   }
 
+  public record ProfileStatsData(
+      int followingCount,
+      int followersCount,
+      int likesCount
+  ) {
+  }
+
   public record CampusProfileData(
       String city,
       String campusName,
@@ -257,7 +282,13 @@ public class MockRuntimeState {
       String id,
       String title,
       String location,
-      String scheduleText
+      String scheduleText,
+      String description,
+      int enrollmentCount,
+      List<String> participantAvatars
   ) {
+    public ActivityRecommendationData {
+      participantAvatars = List.copyOf(participantAvatars);
+    }
   }
 }

@@ -110,10 +110,10 @@
 
 ## Phase 5: P2清理 + 全链路验证 + 回归测试
 
-- [ ] Task 5.1: 代码清理
-  - [ ] SubTask 5.1.1: 统一@Profile注解风格：移除RealCircleService和RealDailyQuestionService多余的@Primary
+- [x] Task 5.1: 代码清理
+  - [x] SubTask 5.1.1: 统一@Profile注解风格：移除RealCircleService和RealDailyQuestionService多余的@Primary
   - [ ] SubTask 5.1.2: 统一RealNotificationService方法签名：Phase 1方法userId从String改为Long
-  - [ ] SubTask 5.1.3: 清理RealHomeService.getDashboard()的UnsupportedOperationException
+  - [x] SubTask 5.1.3: 清理RealHomeService.getDashboard()的UnsupportedOperationException
   - **验证**：代码风格统一，无冗余注解
 
 - [ ] Task 5.2: 全链路验证（Real模式）

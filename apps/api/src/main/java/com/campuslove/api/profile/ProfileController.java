@@ -19,6 +19,11 @@ public class ProfileController {
     this.profileService = profileService;
   }
 
+  @GetMapping("/stats")
+  public ProfileStatsView getProfileStats() {
+    return profileService.getProfileStats();
+  }
+
   @GetMapping("/basic")
   public BasicProfileView getBasicProfile() {
     return profileService.getBasicProfile();
@@ -103,3 +108,11 @@ record ScheduleProfileRequest(
     List<ScheduleBlockView> courseBlocks
 ) {
 }
+
+record ProfileStatsView(
+    int followingCount,
+    int followersCount,
+    int likesCount
+) {
+}
+

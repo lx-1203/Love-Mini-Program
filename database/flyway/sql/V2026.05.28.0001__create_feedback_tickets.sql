@@ -1,0 +1,20 @@
+-- 反馈工单表
+CREATE TABLE IF NOT EXISTS feedback_tickets (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id BIGINT UNSIGNED NOT NULL COMMENT '提交用户 ID',
+    type VARCHAR(32) NOT NULL COMMENT '反馈类型: FEEDBACK / SUGGESTION / ACTIVITY_PROPOSAL',
+    title VARCHAR(256) NOT NULL COMMENT '反馈标题',
+    content TEXT NOT NULL COMMENT '反馈内容',
+    contact_wechat VARCHAR(64) DEFAULT NULL COMMENT '联系微信',
+    attachments JSON DEFAULT NULL COMMENT '附件列表（JSON 格式）',
+    expected_city VARCHAR(64) DEFAULT NULL COMMENT '期望城市',
+    expected_campus VARCHAR(128) DEFAULT NULL COMMENT '期望校区',
+    status VARCHAR(32) NOT NULL DEFAULT 'SUBMITTED' COMMENT '提交状态: SUBMITTED / PROCESSING / REVIEWED / PLANNED / CONVERTED',
+    latest_reply_summary VARCHAR(512) DEFAULT NULL COMMENT '最新回复摘要',
+    converted_activity_id BIGINT UNSIGNED DEFAULT NULL COMMENT '转换后的活动 ID',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_feedback_user_id (user_id),
+    KEY idx_feedback_type (type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='反馈工单表';

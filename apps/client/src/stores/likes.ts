@@ -1,10 +1,94 @@
 import { defineStore } from "pinia";
 import { appEnv } from "../services/env";
+import { request } from "../services/http";
+import { useSessionStore } from "./session";
 
 /**
  * 心动信号状态
  */
 export type HeartSignalStatus = "pending" | "accepted" | "expired";
+
+/**
+ * 后端 LikedUserView 类型
+ * 对应后端 record LikedUserView(Long userId, String nickname, String avatarUrl, String campusName, String likedAt)
+ */
+export interface LikedUserView {
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+  campusName: string;
+  likedAt: string;
+}
+
+/**
+ * 后端 VisitorView 类型
+ * 对应后端 record VisitorView(Long visitorId, String nickname, String avatarUrl, String campusName, String visitedAt)
+ */
+export interface VisitorView {
+  visitorId: number;
+  nickname: string;
+  avatarUrl: string;
+  campusName: string;
+  visitedAt: string;
+}
+
+/**
+ * 后端 HeartSignalView 类型
+ * 对应后端 record HeartSignalView(Long id, Long userAId, Long userBId, String status, String expiresAt, String createdAt)
+ */
+export interface HeartSignalView {
+  id: number;
+  userAId: number;
+  userBId: number;
+  status: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+/**
+ * 将后端 LikedUserView 映射为前端 LikeRecord
+ */
+function mapToLikeRecord(raw: LikedUserView): LikeRecord {
+  return {
+    id: String(raw.userId),
+    userId: String(raw.userId),
+    name: raw.nickname,
+    avatar: raw.avatarUrl || "",
+    headline: raw.campusName || "",
+    likedAt: raw.likedAt,
+  };
+}
+
+/**
+ * 将后端 VisitorView 映射为前端 VisitorRecord
+ */
+function mapToVisitorRecord(raw: VisitorView): VisitorRecord {
+  return {
+    id: String(raw.visitorId),
+    userId: String(raw.visitorId),
+    name: raw.nickname,
+    avatar: raw.avatarUrl || "",
+    headline: raw.campusName || "",
+    visitedAt: raw.visitedAt,
+    isNew: false, // 后端 VisitorView 无 isNew 字段，默认为 false
+  };
+}
+
+/**
+ * 将后端 HeartSignalView 映射为前端 HeartSignal
+ */
+function mapToHeartSignal(raw: HeartSignalView): HeartSignal {
+  return {
+    id: String(raw.id),
+    fromUserId: String(raw.userAId),
+    fromUserName: "", // 后端 HeartSignalView 无用户名，需额外查询或前端补充
+    fromUserAvatar: "", // 后端 HeartSignalView 无头像，需额外查询或前端补充
+    toUserId: String(raw.userBId),
+    status: (raw.status === "accepted" ? "accepted" : raw.status === "expired" ? "expired" : "pending") as HeartSignalStatus,
+    sentAt: raw.createdAt,
+    expiresAt: raw.expiresAt,
+  };
+}
 
 /**
  * 喜欢记录
@@ -208,7 +292,6 @@ export const useLikesStore = defineStore("likes", {
     /** 当前用户 ID（从 session 获取，mock 模式下默认 user-1001） */
     currentUserId(): string {
       try {
-        const { useSessionStore } = require("../stores/session");
         const sessionStore = useSessionStore();
         return sessionStore.userSession?.userId ?? "user-1001";
       } catch {
@@ -237,8 +320,16 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: GET /api/matches/liked-me?userId={userId}
+        const likedByData = await request<LikedUserView[]>({
+          url: `/matches/liked-me?userId=${this.currentUserId}`,
+          method: "GET",
+        });
+        this.likedBy = likedByData.map(mapToLikeRecord);
+
+        // 后端目前没有 my-likes 端点，liked-me 返回的是"喜欢我的"
+        // "我喜欢的"列表暂时为空，待后端新增 my-likes 端点后补充
+        this.likes = [];
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载喜欢列表失败";
         // 异常时确保列表不为 undefined
@@ -262,8 +353,12 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: GET /api/matches/visitors?userId={userId}
+        const data = await request<VisitorView[]>({
+          url: `/matches/visitors?userId=${this.currentUserId}`,
+          method: "GET",
+        });
+        this.visitors = data.map(mapToVisitorRecord);
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载访客记录失败";
         this.visitors = [];
@@ -312,8 +407,26 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: POST /api/matches/like
+        // 后端请求体: { userId: Long, targetUserId: Long }
+        await request<HeartSignalView>({
+          url: "/matches/like",
+          method: "POST",
+          data: {
+            userId: this.currentUserId,
+            targetUserId: userId,
+          },
+        });
+
+        // 更新本地状态
+        const target = this.likedBy.find((item) => item.userId === userId);
+        if (target) {
+          this.likes.push({
+            ...target,
+            id: `like-${Date.now()}`,
+            likedAt: new Date().toISOString(),
+          });
+        }
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "喜欢用户失败";
         throw error;
@@ -339,8 +452,18 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: POST /api/matches/cancel-like
+        // 后端请求体: { userId: Long, targetUserId: Long }
+        await request<void>({
+          url: "/matches/cancel-like",
+          method: "POST",
+          data: {
+            userId: this.currentUserId,
+            targetUserId: userId,
+          },
+        });
+
+        this.likes = this.likes.filter((item) => item.userId !== userId);
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "取消喜欢失败";
         throw error;
@@ -452,8 +575,12 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: GET /api/matches/heart-signals?userId={userId}
+        const data = await request<HeartSignalView[]>({
+          url: `/matches/heart-signals?userId=${this.currentUserId}`,
+          method: "GET",
+        });
+        this.heartSignals = data.map(mapToHeartSignal);
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载心动信号失败";
       } finally {
@@ -477,8 +604,16 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: POST /api/matches/heart-signals/{signalId}/accept?userId={userId}
+        await request<void>({
+          url: `/matches/heart-signals/${signalId}/accept?userId=${this.currentUserId}`,
+          method: "POST",
+        });
+
+        const signal = this.heartSignals.find((s) => s.id === signalId);
+        if (signal) {
+          signal.status = "accepted";
+        }
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "接受心动信号失败";
         throw error;

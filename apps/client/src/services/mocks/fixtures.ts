@@ -6,6 +6,7 @@ type Schemas = components["schemas"];
 type LoginHeroConfig = Schemas["LoginHeroConfig"];
 type UserSession = Schemas["UserSession"];
 type BasicProfile = Schemas["BasicProfile"];
+type ProfileStats = Schemas["ProfileStats"];
 type CampusProfile = Schemas["CampusProfile"];
 type ScheduleProfile = Schemas["ScheduleProfile"];
 type HomeDashboard = Schemas["HomeDashboard"];
@@ -21,6 +22,15 @@ type SubmissionType = Schemas["SubmissionType"];
 type DiscussionRecommendation = Schemas["DiscussionRecommendation"];
 type ActivityRecommendation = Schemas["ActivityRecommendation"];
 type RecommendedPersonSummary = Schemas["RecommendedPersonSummary"];
+type CheckInStatus = {
+  checkedIn: boolean;
+  consecutiveDays: number;
+};
+type CheckInResult = {
+  checkInDate: string;
+  consecutiveDays: number;
+  extraRecommendations: number;
+};
 
 const recommendedPeople: RecommendedPersonSummary[] = homeRecommendedPeople.map((person) => ({
   id: person.id,
@@ -91,6 +101,12 @@ let basicProfile: BasicProfile = {
   bio: "安静、好奇，更喜欢一对一慢慢聊。",
   grade: "大三",
   pronouns: "她/她",
+};
+
+let profileStats: ProfileStats = {
+  followingCount: 28,
+  followersCount: 16,
+  likesCount: 104,
 };
 
 let campusProfile: CampusProfile = {
@@ -225,6 +241,12 @@ let submissions: SubmissionRecord[] = [
     convertedActivityId: null,
   },
 ];
+
+/** 签到 mock 状态（默认为未签到） */
+let checkInStatus: CheckInStatus = {
+  checkedIn: false,
+  consecutiveDays: 3,
+};
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -484,6 +506,9 @@ export const mockFixtures = {
   getBasicProfile(): BasicProfile {
     return clone(basicProfile);
   },
+  getProfileStats(): ProfileStats {
+    return clone(profileStats);
+  },
   saveBasicProfile(payload: BasicProfile): BasicProfile {
     basicProfile = clone(payload);
     session = {
@@ -687,5 +712,19 @@ export const mockFixtures = {
     };
     submissions = [record, ...submissions];
     return clone(record);
+  },
+  getCheckInStatus(): CheckInStatus {
+    return clone(checkInStatus);
+  },
+  checkIn(): CheckInResult {
+    checkInStatus = {
+      checkedIn: true,
+      consecutiveDays: checkInStatus.consecutiveDays + 1,
+    };
+    return {
+      checkInDate: new Date().toISOString().split("T")[0],
+      consecutiveDays: checkInStatus.consecutiveDays,
+      extraRecommendations: 3,
+    };
   },
 };

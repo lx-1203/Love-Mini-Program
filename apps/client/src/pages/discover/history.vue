@@ -17,73 +17,35 @@ const passedCards = computed(() => discoverStore.passedCards);
 /** 今日是否已使用挽回 */
 const hasRewoundToday = computed(() => discoverStore.hasRewoundToday);
 
-/** 获取卡片详情（从 mock 数据中查找） */
+/**
+ * 获取卡片详情。
+ * 从 discover store 的 cards 列表和 viewedCards 记录中查找对应的卡片信息。
+ */
 function getCardDetail(cardId: string) {
-  // 由于历史记录只保存了 cardId，需要在 mock 数据中查找对应的卡片信息
-  // 实际项目中可以通过 API 获取卡片详情，这里通过 store 的 cards 和 mock 数据推断
-  const allMockCards = [
-    {
-      id: "card-1",
-      userId: "user-4001",
-      name: "夏言",
+  // 优先从当前卡片列表中查找
+  const currentCard = discoverStore.cards.find((c) => c.id === cardId);
+  if (currentCard) {
+    return currentCard;
+  }
+
+  // 从 viewedCards 中查找 userId，构建简略信息
+  const viewedRecord = discoverStore.viewedCards.find((v) => v.cardId === cardId);
+  if (viewedRecord) {
+    return {
+      id: viewedRecord.cardId,
+      userId: viewedRecord.userId,
+      name: "用户",
       avatar: "",
-      headline: "大三 · 心理学",
-      bio: "喜欢听人讲故事，也擅长保守秘密。想认识有趣的人。",
-      tags: ["咖啡", "电影", "夜跑"],
-      commonGround: "你们都选了电影话题",
-      availability: "今晚 19:00-21:00",
-      images: [],
-    },
-    {
-      id: "card-2",
-      userId: "user-4002",
-      name: "顾北",
-      avatar: "",
-      headline: "研一 · 建筑学",
-      bio: "画图狗一只，偶尔弹吉他。想找个人一起探店。",
-      tags: ["美食", "音乐", "探店"],
-      commonGround: "你们都选了美食话题",
-      availability: "周末下午",
-      images: [],
-    },
-    {
-      id: "card-3",
-      userId: "user-4003",
-      name: "林溪",
-      avatar: "",
-      headline: "大二 · 外语学院",
-      bio: "最近在学日语，想找个语伴。也喜欢看展。",
-      tags: ["语言", "看展", "摄影"],
-      commonGround: "你们都选了摄影话题",
-      availability: "周三、周五晚上",
-      images: [],
-    },
-    {
-      id: "card-4",
-      userId: "user-4004",
-      name: "周屿",
-      avatar: "",
-      headline: "大四 · 计算机",
-      bio: "即将毕业，想在校园里留下一些美好回忆。",
-      tags: ["游戏", "篮球", "旅行"],
-      commonGround: "你们都选了运动话题",
-      availability: "每天傍晚",
-      images: [],
-    },
-    {
-      id: "card-5",
-      userId: "user-4005",
-      name: "沈念",
-      avatar: "",
-      headline: "大一 · 新闻传播",
-      bio: "刚来学校不久，想多认识一些朋友。",
-      tags: ["阅读", "写作", "咖啡"],
-      commonGround: "你们都选了咖啡话题",
-      availability: "下午没课的时候",
-      images: [],
-    },
-  ];
-  return allMockCards.find((c) => c.id === cardId) || null;
+      headline: "",
+      bio: "",
+      tags: [] as string[],
+      commonGround: "",
+      availability: "",
+      images: [] as string[],
+    };
+  }
+
+  return null;
 }
 
 /** 判断是否为最后一张已拒绝卡片（只有最后一张可挽回） */

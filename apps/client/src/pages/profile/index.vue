@@ -4,12 +4,14 @@
  * 展示用户头像、昵称、学校、数据统计、资料完善度、功能菜单入口
  * 资料未完善时展示 LockScreen 锁定页面
  */
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useSessionStore } from "../../stores/session";
+import { useProfileStore } from "../../stores/profile";
 import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
 
 const sessionStore = useSessionStore();
+const profileStore = useProfileStore();
 
 /** 资料是否已完善（三个硬门槛全部完成） */
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
@@ -26,27 +28,31 @@ const avatarInitial = computed(() => {
   return name ? name.charAt(0).toUpperCase() : "?";
 });
 
-/** 个人简介（暂无后端字段，使用占位文案） */
+/** 个人简介（从 basicProfile 获取 bio 字段） */
 const bio = computed(() => {
-  const session = userInfo.value;
-  if (!session) return "这个人很懒，什么都没写";
-  // 实际项目中应由后端返回 bio 字段
-  return session.displayName ? "保持热爱，奔赴山海" : "这个人很懒，什么都没写";
+  const profileBio = profileStore.basicProfile?.bio;
+  if (profileBio && profileBio.trim().length > 0) {
+    return profileBio;
+  }
+  return "这个人很懒，什么都没写";
 });
 
 /**
- * 数据统计项（当前使用硬编码占位，后续对接后端统计数据）
+ * 数据统计项（从 profileStats 获取真实数据）
  */
 interface StatItem {
   label: string;
   value: number | string;
 }
 
-const stats = computed<StatItem[]>(() => [
-  { label: "关注", value: 28 },
-  { label: "粉丝", value: 16 },
-  { label: "获赞", value: 104 },
-]);
+const stats = computed<StatItem[]>(() => {
+  const s = profileStore.profileStats;
+  return [
+    { label: "关注", value: s?.followingCount ?? 0 },
+    { label: "粉丝", value: s?.followersCount ?? 0 },
+    { label: "获赞", value: s?.likesCount ?? 0 },
+  ];
+});
 
 /**
  * 功能菜单项配置
@@ -59,6 +65,11 @@ interface MenuItem {
 }
 
 const menuItems = computed<MenuItem[]>(() => [
+  {
+    icon: "💫",
+    label: "兴趣圈",
+    path: "/pages/circles/index",
+  },
   {
     icon: "🎯",
     label: "推荐计划设置",
@@ -113,6 +124,11 @@ function goToProfileSetup() {
 
 /** 应用版本号（当前硬编码，后续可从配置文件读取） */
 const appVersion = "v1.0.0";
+
+/** 页面加载时获取统计数据 */
+onMounted(() => {
+  profileStore.loadStats();
+});
 </script>
 
 <template>

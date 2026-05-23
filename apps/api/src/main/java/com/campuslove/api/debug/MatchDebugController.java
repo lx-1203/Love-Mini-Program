@@ -2,6 +2,7 @@ package com.campuslove.api.debug;
 
 import com.campuslove.api.match.MatchService;
 import java.util.Map;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/_debug/matches")
+@Profile("mock")
 public class MatchDebugController {
 
   private final MatchService matchService;

@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
 import { appEnv } from "../services/env";
+import { request } from "../services/http";
+import { useSessionStore } from "./session";
 
 /**
  * 帖子分类
@@ -18,6 +20,10 @@ export interface PostAuthor {
   name: string;
   avatar: string;
   headline: string;
+  /** 所属学校名称，用于同校匹配 */
+  campusName?: string;
+  /** 兴趣标签列表 */
+  interests?: string[];
 }
 
 /**
@@ -33,8 +39,12 @@ export interface PostItem {
   tags: string[];
   likes: number;
   comments: number;
+  /** 转发次数 */
+  shares: number;
   isLiked: boolean;
   isFollowed: boolean;
+  /** 当前用户是否已转发 */
+  isShared: boolean;
   createdAt: string;
 }
 
@@ -76,6 +86,10 @@ export interface VillageState {
   loading: boolean;
   /** 错误信息 */
   errorMessage: string | null;
+  /** 当前页码（从1开始） */
+  page: number;
+  /** 是否还有更多数据可加载 */
+  hasMore: boolean;
 }
 
 /* ========== Mock 数据 ========== */
@@ -95,30 +109,40 @@ const mockAuthors: PostAuthor[] = [
     name: "小鹿",
     avatar: "",
     headline: "94年 · 北京 · 年薪30w+ · 985硕士",
+    campusName: "北京大学",
+    interests: ["阅读", "旅行", "志愿者"],
   },
   {
     userId: "user-3002",
     name: "阿泽",
     avatar: "",
     headline: "96年 · 上海 · 互联网大厂 · 本科",
+    campusName: "复旦大学",
+    interests: ["徒步", "户外", "摄影"],
   },
   {
     userId: "user-3003",
     name: "橙子",
     avatar: "",
     headline: "95年 · 杭州 · 设计师 · 硕士",
+    campusName: "浙江大学",
+    interests: ["设计", "美食", "旅行"],
   },
   {
     userId: "user-3004",
     name: "南风",
     avatar: "",
     headline: "97年 · 深圳 · 产品经理 · 本科",
+    campusName: "北京大学",
+    interests: ["产品", "运动", "音乐"],
   },
   {
     userId: "user-3005",
     name: "北岛",
     avatar: "",
     headline: "93年 · 成都 · 创业者 · 博士",
+    campusName: "四川大学",
+    interests: ["创业", "摄影", "读书"],
   },
 ];
 
@@ -134,8 +158,10 @@ const mockPosts: PostItem[] = [
     tags: ["#这是一条520交友启事", "#诚意征友"],
     likes: 128,
     comments: 32,
+    shares: 15,
     isLiked: false,
     isFollowed: false,
+    isShared: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
   },
   {
@@ -149,8 +175,10 @@ const mockPosts: PostItem[] = [
     tags: ["#周末徒步", "#西湖", "#户外"],
     likes: 45,
     comments: 18,
+    shares: 8,
     isLiked: true,
     isFollowed: true,
+    isShared: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
   {
@@ -164,8 +192,10 @@ const mockPosts: PostItem[] = [
     tags: ["#四川老乡", "#杭州", "#火锅"],
     likes: 89,
     comments: 56,
+    shares: 23,
     isLiked: false,
     isFollowed: false,
+    isShared: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
   },
   {
@@ -179,8 +209,10 @@ const mockPosts: PostItem[] = [
     tags: ["#蒙面话题", "#相亲", "#三观"],
     likes: 234,
     comments: 89,
+    shares: 42,
     isLiked: false,
     isFollowed: false,
+    isShared: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
   },
   {
@@ -194,8 +226,10 @@ const mockPosts: PostItem[] = [
     tags: ["#创业", "#征友", "#摄影"],
     likes: 167,
     comments: 43,
+    shares: 19,
     isLiked: true,
     isFollowed: false,
+    isShared: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
   },
   {
@@ -209,8 +243,10 @@ const mockPosts: PostItem[] = [
     tags: ["#读书分享", "#亲密关系"],
     likes: 67,
     comments: 12,
+    shares: 6,
     isLiked: false,
     isFollowed: false,
+    isShared: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
   },
 ];
@@ -254,6 +290,170 @@ const mockComments: CommentItem[] = [
   },
 ];
 
+/**
+ * 后端 PostSummaryView 类型
+ * 对应后端 record PostSummaryView
+ */
+export interface PostSummaryView {
+  id: number;
+  title: string;
+  summary: string;
+  author: PostAuthorView;
+  category: string;
+  tags: string[];
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  createdAt: string;
+  isHot: boolean;
+  isAlumni: boolean;
+}
+
+/**
+ * 后端 PostAuthorView 类型
+ * 对应后端 record PostAuthorView(Long userId, String nickname, String avatarUrl, String campusName)
+ */
+export interface PostAuthorView {
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+  campusName: string;
+}
+
+/**
+ * 后端 PostDetailView 类型
+ * 对应后端 record PostDetailView
+ */
+export interface PostDetailView {
+  id: number;
+  title: string;
+  content: string;
+  author: PostAuthorView;
+  category: string;
+  tags: string[];
+  images: string[];
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  createdAt: string;
+  updatedAt: string;
+  isLiked: boolean;
+  isAuthor: boolean;
+  isAlumni: boolean;
+}
+
+/**
+ * 后端 PostListResponse 类型
+ * 对应后端 record PostListResponse(List<PostSummaryView> items, int total, int page, int pageSize)
+ */
+export interface PostListResponse {
+  items: PostSummaryView[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * 后端 CommentItemView 类型
+ * 对应后端 record CommentItemView
+ */
+export interface CommentItemView {
+  id: number;
+  postId: number;
+  parentId: number | null;
+  author: CommentAuthorView;
+  content: string;
+  likeCount: number;
+  createdAt: string;
+  isAuthor: boolean;
+  replyTo: string | null;
+}
+
+/**
+ * 后端 CommentAuthorView 类型
+ */
+export interface CommentAuthorView {
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+}
+
+/**
+ * 后端 CommentListResponse 类型
+ */
+export interface CommentListResponse {
+  items: CommentItemView[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * 后端 PostLikeResponse 类型
+ */
+export interface PostLikeResponse {
+  success: boolean;
+  liked: boolean;
+  likeCount: number;
+}
+
+/**
+ * 后端 ShareView 类型
+ */
+export interface ShareView {
+  id: number;
+  postId: number;
+  shareCount: number;
+}
+
+/**
+ * 将后端 PostSummaryView 映射为前端 PostItem
+ */
+function mapToPostItem(raw: PostSummaryView): PostItem {
+  return {
+    id: String(raw.id),
+    author: {
+      userId: String(raw.author.userId),
+      name: raw.author.nickname,
+      avatar: raw.author.avatarUrl || "",
+      headline: raw.author.campusName || "",
+      campusName: raw.author.campusName,
+    },
+    categoryId: raw.category,
+    title: raw.title,
+    content: raw.summary,
+    images: [],
+    tags: raw.tags,
+    likes: raw.likeCount,
+    comments: raw.commentCount,
+    shares: raw.shareCount,
+    isLiked: false, // PostSummaryView 无 isLiked 字段
+    isFollowed: false, // PostSummaryView 无 isFollowed 字段
+    isShared: false, // PostSummaryView 无 isShared 字段
+    createdAt: raw.createdAt,
+  };
+}
+
+/**
+ * 将后端 CommentItemView 映射为前端 CommentItem
+ */
+function mapToCommentItem(raw: CommentItemView): CommentItem {
+  return {
+    id: String(raw.id),
+    postId: String(raw.postId),
+    author: {
+      userId: String(raw.author.userId),
+      name: raw.author.nickname,
+      avatar: raw.author.avatarUrl || "",
+      headline: "",
+    },
+    content: raw.content,
+    likes: raw.likeCount,
+    isLiked: false, // CommentItemView 无 isLiked 字段
+    createdAt: raw.createdAt,
+  };
+}
+
 /** 内容最大长度 */
 const MAX_CONTENT_LENGTH = 500;
 /** 图片最大数量 */
@@ -294,6 +494,8 @@ export const useVillageStore = defineStore("village", {
     categories: [],
     loading: false,
     errorMessage: null,
+    page: 1,
+    hasMore: true,
   }),
 
   getters: {
@@ -335,10 +537,11 @@ export const useVillageStore = defineStore("village", {
 
   actions: {
     /**
-     * 获取帖子列表（支持筛选）
+     * 获取帖子列表（支持筛选和分页）
      * @param filters - 筛选条件
+     * @param reset - 是否重置列表（默认true，传false则追加数据）
      */
-    async fetchPosts(filters?: PostFilters) {
+    async fetchPosts(filters?: PostFilters, reset: boolean = true) {
       this.loading = true;
       this.errorMessage = null;
 
@@ -369,17 +572,54 @@ export const useVillageStore = defineStore("village", {
             );
           }
 
-          this.posts = result;
+          this.posts = reset ? result : [...this.posts, ...result];
+          this.hasMore = false;
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: GET /api/posts
+        // 后端参数: category, tag, sortBy, page, pageSize
+        const params: Record<string, string> = {};
+        if (filters?.categoryId && filters.categoryId !== "cat-all") {
+          params.category = filters.categoryId; // 后端参数名为 category，非 categoryId
+        }
+        if (filters?.keyword) {
+          params.tag = filters.keyword; // 后端用 tag 做关键词过滤
+        }
+        if (filters?.sortBy) {
+          params.sortBy = filters.sortBy;
+        }
+        const currentPage = reset ? 1 : this.page;
+        params.page = String(currentPage);
+        params.pageSize = "20";
+
+        const data = await request<PostListResponse>({
+          url: `/posts?${new URLSearchParams(params).toString()}`,
+          method: "GET",
+        });
+
+        const newPosts = data.items.map(mapToPostItem);
+        this.posts = reset ? newPosts : [...this.posts, ...newPosts];
+        this.page = currentPage;
+        // 当返回数据不足一页时，说明没有更多数据
+        this.hasMore = data.items.length >= 20;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载帖子失败";
       } finally {
         this.loading = false;
       }
+    },
+
+    /**
+     * 加载更多帖子（分页加载下一页）
+     * @param filters - 筛选条件
+     */
+    async loadMore(filters?: PostFilters) {
+      if (!this.hasMore || this.loading) {
+        return;
+      }
+      this.page += 1;
+      await this.fetchPosts(filters, false);
     },
 
     /**
@@ -435,16 +675,54 @@ export const useVillageStore = defineStore("village", {
             tags: data.tags ?? [],
             likes: 0,
             comments: 0,
+            shares: 0,
             isLiked: false,
             isFollowed: false,
+            isShared: false,
             createdAt: new Date().toISOString(),
           };
           this.posts.unshift(newPost);
           return newPost;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: POST /api/posts
+        // 后端请求体: CreatePostRequest(title, content, category, tags, images)
+        const result = await request<PostDetailView, { title: string; content: string; category: string; tags: string[]; images: string[] }>({
+          url: "/posts",
+          method: "POST",
+          data: {
+            title: data.title || "",
+            content: data.content,
+            category: data.categoryId,
+            tags: data.tags ?? [],
+            images: data.images ?? [],
+          },
+        });
+        // 将后端 PostDetailView 映射为前端 PostItem
+        const newPost: PostItem = {
+          id: String(result.id),
+          author: {
+            userId: String(result.author.userId),
+            name: result.author.nickname,
+            avatar: result.author.avatarUrl || "",
+            headline: result.author.campusName || "",
+            campusName: result.author.campusName,
+          },
+          categoryId: result.category,
+          title: result.title,
+          content: result.content,
+          images: result.images,
+          tags: result.tags,
+          likes: result.likeCount,
+          comments: result.commentCount,
+          shares: result.shareCount,
+          isLiked: result.isLiked,
+          isFollowed: false,
+          isShared: false,
+          createdAt: result.createdAt,
+        };
+        this.posts.unshift(newPost);
+        return newPost;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "发布帖子失败";
         throw error;
@@ -483,8 +761,23 @@ export const useVillageStore = defineStore("village", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: POST /api/posts/{postId}/like
+        // 后端返回 PostLikeResponse(success, liked, likeCount)
+        const result = await request<PostLikeResponse>({
+          url: `/posts/${postId}/like`,
+          method: "POST",
+        });
+
+        // 根据后端返回的实际状态更新本地
+        const post = this.posts.find((p) => p.id === postId);
+        if (post) {
+          post.isLiked = result.liked;
+          post.likes = result.likeCount;
+        }
+        if (this.currentPost?.id === postId) {
+          this.currentPost.isLiked = result.liked;
+          this.currentPost.likes = result.likeCount;
+        }
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "点赞操作失败";
         throw error;
@@ -493,25 +786,63 @@ export const useVillageStore = defineStore("village", {
 
     /**
      * 关注/取消关注用户
-     * @param postId - 帖子 ID
+     * @param userId - 目标用户 ID（被关注者）
      */
-    async followUser(postId: string) {
+    async followUser(userId: string) {
       this.errorMessage = null;
 
       try {
         if (useMock()) {
-          const post = this.posts.find((p) => p.id === postId);
-          if (post) {
-            post.isFollowed = !post.isFollowed;
-          }
-          if (this.currentPost?.id === postId) {
-            this.currentPost.isFollowed = !this.currentPost.isFollowed;
+          // Mock 模式：更新所有该用户的帖子的 isFollowed 状态
+          const isCurrentlyFollowed = this.posts.find(
+            (p) => p.author.userId === userId
+          )?.isFollowed ?? false;
+          const newFollowedState = !isCurrentlyFollowed;
+
+          this.posts.forEach((post) => {
+            if (post.author.userId === userId) {
+              post.isFollowed = newFollowedState;
+            }
+          });
+          if (this.currentPost?.author.userId === userId) {
+            this.currentPost.isFollowed = newFollowedState;
           }
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 判断当前是否已关注，决定调用关注还是取关 API
+        const isCurrentlyFollowed = this.posts.find(
+          (p) => p.author.userId === userId
+        )?.isFollowed ?? false;
+
+        // 获取当前用户 ID
+        const sessionStore = useSessionStore();
+        const currentUserId = sessionStore.userSession?.userId ?? "";
+
+        if (isCurrentlyFollowed) {
+          // 取关：DELETE /api/users/{userId}/follow?userId={currentUserId}
+          await request<void>({
+            url: `/users/${userId}/follow?userId=${currentUserId}`,
+            method: "DELETE",
+          });
+        } else {
+          // 关注：POST /api/users/{userId}/follow?userId={currentUserId}
+          await request<void>({
+            url: `/users/${userId}/follow?userId=${currentUserId}`,
+            method: "POST",
+          });
+        }
+
+        // 更新本地状态：该用户所有帖子的 isFollowed 统一更新
+        const newFollowedState = !isCurrentlyFollowed;
+        this.posts.forEach((post) => {
+          if (post.author.userId === userId) {
+            post.isFollowed = newFollowedState;
+          }
+        });
+        if (this.currentPost?.author.userId === userId) {
+          this.currentPost.isFollowed = newFollowedState;
+        }
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "关注操作失败";
         throw error;
@@ -572,10 +903,88 @@ export const useVillageStore = defineStore("village", {
           return newComment;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: POST /api/posts/{postId}/comments
+        // 后端请求体: CreateCommentRequest(content, parentId)
+        const result = await request<CommentItemView, { content: string }>({
+          url: `/posts/${postId}/comments`,
+          method: "POST",
+          data: { content },
+        });
+        const mappedComment = mapToCommentItem(result);
+        this.comments.push(mappedComment);
+
+        const post = this.posts.find((p) => p.id === postId);
+        if (post) {
+          post.comments += 1;
+        }
+        if (this.currentPost?.id === postId) {
+          this.currentPost.comments += 1;
+        }
+        return result;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "评论失败";
+        throw error;
+      }
+    },
+
+    /**
+     * 转发帖子
+     * @param postId - 帖子 ID
+     * @param comment - 转发的附加评论（可选）
+     */
+    async sharePost(postId: string, comment?: string) {
+      this.errorMessage = null;
+
+      try {
+        // postId 校验
+        if (!postId || postId.trim().length === 0) {
+          this.errorMessage = "帖子 ID 无效";
+          throw new Error("帖子 ID 无效");
+        }
+
+        if (useMock()) {
+          const post = this.posts.find((p) => p.id === postId);
+          if (!post) {
+            this.errorMessage = "帖子不存在";
+            throw new Error("帖子不存在");
+          }
+
+          // 如果已转发则不再累加（幂等保护）
+          if (post.isShared) {
+            this.errorMessage = "您已转发过该帖子";
+            throw new Error("您已转发过该帖子");
+          }
+
+          post.isShared = true;
+          post.shares += 1;
+
+          if (this.currentPost?.id === postId) {
+            this.currentPost.isShared = true;
+            this.currentPost.shares += 1;
+          }
+          return;
+        }
+
+        // 调用后端 API: POST /api/posts/{postId}/share
+        // 后端请求体: SharePostRequest(comment)
+        const result = await request<ShareView>({
+          url: `/posts/${postId}/share`,
+          method: "POST",
+          data: comment ? { comment } : { comment: "" },
+        });
+
+        // 更新本地状态
+        const post = this.posts.find((p) => p.id === postId);
+        if (post && !post.isShared) {
+          post.isShared = true;
+          post.shares = result.shareCount;
+        }
+        if (this.currentPost?.id === postId && !this.currentPost.isShared) {
+          this.currentPost.isShared = true;
+          this.currentPost.shares = result.shareCount;
+        }
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "转发操作失败";
         throw error;
       }
     },
@@ -594,8 +1003,13 @@ export const useVillageStore = defineStore("village", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: GET /api/posts/{postId}/comments
+        // 后端返回 CommentListResponse(items, total, page, pageSize)
+        const data = await request<CommentListResponse>({
+          url: `/posts/${postId}/comments`,
+          method: "GET",
+        });
+        this.comments = data.items.map(mapToCommentItem);
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载评论失败";
       } finally {

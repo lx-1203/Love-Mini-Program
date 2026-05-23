@@ -1,149 +1,124 @@
 package com.campuslove.api.match;
 
-import java.util.LinkedHashMap;
+import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import org.springframework.stereotype.Service;
 
-@Service
-public class MatchService {
+/**
+ * 匹配服务接口。
+ * 提供匹配表单配置获取、创建匹配、快速匹配、查询匹配结果等功能。
+ * Phase 2 新增：喜欢/心动信号/访客等社交功能。
+ */
+public interface MatchService {
 
-  private final AtomicLong ids = new AtomicLong(1);
-  private final Map<String, MatchResultView> matches = new LinkedHashMap<>();
-  private String nextQueueStatus;
+    /**
+     * 获取匹配表单配置。
+     *
+     * @return 匹配表单配置视图
+     */
+    MatchFormConfigView getFormConfig();
 
-  public MatchFormConfigView getFormConfig() {
-    return new MatchFormConfigView(List.of(
-        new MatchFormSectionView(
-            "intent",
-            "匹配目标",
-            List.of(new MatchFormFieldView(
-                "matchIntent",
-                "single-select",
-                "从什么开始",
-                List.of(
-                    new MatchOptionView("topic", "话题匹配"),
-                    new MatchOptionView("coffee", "咖啡散步"),
-                    new MatchOptionView("study", "自习搭子")
-                ),
-                null,
-                null
-            ))
-        ),
-        new MatchFormSectionView(
-            "filters",
-            "筛选条件",
-            List.of(
-                new MatchFormFieldView(
-                    "topicIds",
-                    "multi-select",
-                    "话题",
-                    List.of(
-                        new MatchOptionView("music", "音乐"),
-                        new MatchOptionView("film", "电影"),
-                        new MatchOptionView("sports", "运动"),
-                        new MatchOptionView("food", "美食")
-                    ),
-                    null,
-                    null
-                ),
-                new MatchFormFieldView(
-                    "timeWindow",
-                    "single-select",
-                    "时间",
-                    List.of(
-                        new MatchOptionView("today-evening", "今晚"),
-                        new MatchOptionView("tomorrow", "明天"),
-                        new MatchOptionView("this-week", "本周")
-                    ),
-                    null,
-                    null
-                ),
-                new MatchFormFieldView(
-                    "durationMinutes",
-                    "stepper",
-                    "聊天时长",
-                    List.of(),
-                    15,
-                    60
-                )
-            )
-        )
-    ));
-  }
+    /**
+     * 创建匹配。
+     *
+     * @param request 匹配请求
+     * @return 匹配结果视图
+     */
+    MatchResultView createMatch(MatchRequest request);
 
-  public MatchResultView createMatch(MatchRequest request) {
-    return saveMatch(
-        nextMatchId(),
-        request.topicIds() == null || request.topicIds().isEmpty()
-            ? "话题"
-            : toTopicLabel(request.topicIds().get(0)),
-        request.durationMinutes()
-    );
-  }
+    /**
+     * 快速匹配。
+     *
+     * @param request 快速匹配请求
+     * @return 匹配结果视图
+     */
+    MatchResultView createQuickMatch(QuickMatchRequest request);
 
-  public MatchResultView createQuickMatch(QuickMatchRequest request) {
-    return saveMatch(nextMatchId(), "快速匹配", request.durationMinutes());
-  }
+    /**
+     * 获取匹配详情。
+     *
+     * @param id 匹配 ID
+     * @return 匹配结果视图
+     */
+    MatchResultView getMatch(String id);
 
-  public MatchResultView getMatch(String id) {
-    return matches.getOrDefault(
-        id,
-        new MatchResultView(
-            id,
-            "connected",
-            "音乐",
-            "大二，喜欢低压力的第一次见面。",
-            20,
-            "可以先问问，对方心里最轻松的一次校园初见应该是什么样。",
-            "session-" + id
-        )
-    );
-  }
+    /**
+     * 设置下一次匹配的强制排队状态。
+     *
+     * @param forceQueued 是否强制排队
+     */
+    void setForceQueued(boolean forceQueued);
 
-  public void setForceQueued(boolean forceQueued) {
-    this.nextQueueStatus = forceQueued ? "queued" : null;
-  }
+    /**
+     * 设置下一次匹配的排队状态。
+     *
+     * @param queueStatus 排队状态值（queued/connected/expired）
+     */
+    void setNextQueueStatus(String queueStatus);
 
-  public void setNextQueueStatus(String queueStatus) {
-    this.nextQueueStatus = switch (queueStatus) {
-      case "queued", "connected", "expired" -> queueStatus;
-      default -> throw new IllegalArgumentException("Unsupported queue status: " + queueStatus);
-    };
-  }
+    // ---- Phase 2 新增：社交功能 ----
 
-  private MatchResultView saveMatch(String id, String topicLabel, Integer durationMinutes) {
-    String queueStatus = nextQueueStatus == null ? "connected" : nextQueueStatus;
-    nextQueueStatus = null;
-    Integer countdownMinutes = "expired".equals(queueStatus)
-        ? 0
-        : durationMinutes == null ? 20 : durationMinutes;
+    /**
+     * 喜欢用户。如果双方互相喜欢，则创建心动信号。
+     *
+     * @param userId       当前用户 ID
+     * @param targetUserId 目标用户 ID
+     * @return 心动信号视图（如果互相喜欢），否则返回 null
+     */
+    HeartSignalView likeUser(Long userId, Long targetUserId);
 
-    MatchResultView result = new MatchResultView(
-        id,
-        queueStatus,
-        topicLabel,
-        "大二，喜欢低压力的第一次见面。",
-        countdownMinutes,
-        "可以先问问，对方心里最轻松的一次校园初见应该是什么样。",
-        "connected".equals(queueStatus) ? "session-" + id : null
-    );
-    matches.put(id, result);
-    return result;
-  }
+    /**
+     * 取消喜欢。
+     *
+     * @param userId       当前用户 ID
+     * @param targetUserId 目标用户 ID
+     */
+    void cancelLike(Long userId, Long targetUserId);
 
-  private String toTopicLabel(String topicId) {
-    return switch (topicId) {
-      case "music" -> "音乐";
-      case "film" -> "电影";
-      case "sports" -> "运动";
-      case "food" -> "美食";
-      default -> topicId;
-    };
-  }
+    /**
+     * 获取喜欢我的用户列表。
+     *
+     * @param userId 当前用户 ID
+     * @return 喜欢我的用户视图列表
+     */
+    List<LikedUserView> getLikedMe(Long userId);
 
-  private String nextMatchId() {
-    return "match-" + ids.incrementAndGet();
-  }
+    /**
+     * 获取访客列表。
+     *
+     * @param userId 当前用户 ID
+     * @return 访客视图列表
+     */
+    List<VisitorView> getVisitors(Long userId);
+
+    /**
+     * 记录访客（同一访客对同一用户每天只记录一次）。
+     *
+     * @param visitorId     访客用户 ID
+     * @param visitedUserId 被访用户 ID
+     */
+    void recordVisit(Long visitorId, Long visitedUserId);
+
+    /**
+     * 获取待处理的心动信号列表。
+     *
+     * @param userId 当前用户 ID
+     * @return 心动信号视图列表
+     */
+    List<HeartSignalView> getHeartSignals(Long userId);
+
+    /**
+     * 接受心动信号。
+     *
+     * @param signalId 心动信号 ID
+     * @param userId   当前用户 ID（用于验证）
+     */
+    void acceptHeartSignal(Long signalId, Long userId);
+
+    /**
+     * 拒绝心动信号。
+     *
+     * @param signalId 心动信号 ID
+     * @param userId   当前用户 ID（用于验证）
+     */
+    void declineHeartSignal(Long signalId, Long userId);
 }

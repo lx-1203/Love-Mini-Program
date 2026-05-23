@@ -5,3 +5,11 @@ spring:
     default: mock
 server:
   port: ${APP_PORT:8080}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:campus-love-dev-secret-key-change-in-production}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  wechat:
+    app-id: ${WECHAT_APP_ID:}
+    app-secret: ${WECHAT_APP_SECRET:}

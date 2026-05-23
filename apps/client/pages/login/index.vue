@@ -10,7 +10,7 @@ const { loginHero, loading } = storeToRefs(sessionStore);
 
 async function login() {
   await sessionStore.loginWithWechat();
-  replaceAppPath("/pages/home/index");
+  replaceAppPath("/pages/discover/index");
 }
 </script>
 

@@ -73,6 +73,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/profile/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get profile statistics */
+        get: operations["getProfileStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/profile/campus": {
         parameters: {
             query?: never;
@@ -556,6 +573,11 @@ export interface components {
             pronouns: string;
         };
         BasicProfileRequest: components["schemas"]["BasicProfile"];
+        ProfileStats: {
+            followingCount: number;
+            followersCount: number;
+            likesCount: number;
+        };
         CampusProfile: {
             city: string;
             campusName: string;
@@ -863,6 +885,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BasicProfile"];
+                };
+            };
+        };
+    };
+    getProfileStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Profile statistics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileStats"];
                 };
             };
         };

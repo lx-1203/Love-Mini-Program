@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from "vue";
+import { onMounted, ref } from "vue";
 import AppShell from "../../../src/components/layout/AppShell.vue";
 import SectionCard from "../../../src/components/common/SectionCard.vue";
 import BottomActionBar from "../../../src/components/common/BottomActionBar.vue";
+import { request } from "../../../src/services/http";
+import { appEnv } from "../../../src/services/env";
+import { useSessionStore } from "../../../src/stores/session";
+
+// ==================== 类型定义 ====================
+
+/** 推荐偏好响应 */
+interface RecommendationPreferences {
+  dailyNotifyTime: string;
+  scope: string;
+}
 
 // ==================== 状态定义 ====================
 
@@ -10,7 +21,6 @@ import BottomActionBar from "../../../src/components/common/BottomActionBar.vue"
 const loading = ref(true);
 /** 错误状态 */
 const error = ref(false);
-
 /** 每日推荐时间 */
 const dailyNotifyTime = ref("12:00");
 /** 推荐范围 */
@@ -35,17 +45,30 @@ const scopeOptions = [
 
 // ==================== 数据获取 ====================
 
-/** 模拟获取偏好设置 */
+/** 获取偏好设置 */
 async function fetchPreferences() {
   loading.value = true;
   error.value = false;
   try {
-    await new Promise<void>((resolve) => setTimeout(resolve, 300));
-    // 模拟默认数据
+    const sessionStore = useSessionStore();
+    const userId = sessionStore.userSession?.userId;
+
+    if (userId) {
+      // 从后端 API 获取偏好设置
+      const data = await request<RecommendationPreferences>({
+        url: `/recommendations/preferences/${userId}`,
+      });
+      dailyNotifyTime.value = data.dailyNotifyTime || "12:00";
+      scope.value = (data.scope as "campus_first" | "city" | "unlimited") || "campus_first";
+    } else {
+      // 未登录时使用默认值
+      dailyNotifyTime.value = "12:00";
+      scope.value = "campus_first";
+    }
+  } catch {
+    // API 调用失败时使用默认值
     dailyNotifyTime.value = "12:00";
     scope.value = "campus_first";
-  } catch {
-    error.value = true;
   } finally {
     loading.value = false;
   }
@@ -63,9 +86,24 @@ async function savePreferences() {
   if (saving.value) return;
   saving.value = true;
   try {
-    // 模拟保存 API
-    await new Promise<void>((resolve) => setTimeout(resolve, 300));
+    const sessionStore = useSessionStore();
+    const userId = sessionStore.userSession?.userId;
+
+    if (userId) {
+      // 调用后端 API 保存偏好设置
+      await request<RecommendationPreferences, { dailyNotifyTime: string; scope: string }>({
+        url: `/recommendations/preferences/${userId}`,
+        method: "PUT",
+        data: {
+          dailyNotifyTime: dailyNotifyTime.value,
+          scope: scope.value,
+        },
+      });
+    }
+
     uni.showToast({ title: "保存成功", icon: "success" });
+  } catch {
+    uni.showToast({ title: "保存失败，请重试", icon: "none" });
   } finally {
     saving.value = false;
   }
@@ -84,11 +122,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppShell title="推荐计划" :show-tab-bar="false">
+  <AppShell title="推荐计划设置" :show-tab-bar="false">
     <!-- 加载状态 -->
     <SectionCard v-if="loading" title="加载中..." compact>
       <view class="loading-container">
-        <text class="loading-text">正在获取推荐偏好设置…</text>
+        <text class="loading-text">正在获取推荐偏好设置...</text>
       </view>
     </SectionCard>
 
@@ -103,7 +141,7 @@ onMounted(() => {
     <!-- 正常表单 -->
     <template v-else>
       <!-- 每日推荐时间 -->
-      <SectionCard title="每日推荐时间" subtitle="每天在这个时间为你刷新推荐卡片" compact>
+      <SectionCard title="推荐时间" subtitle="每天在这个时间为你刷新推荐卡片" compact>
         <view class="option-group">
           <view
             v-for="opt in timeOptions"
@@ -134,7 +172,7 @@ onMounted(() => {
 
       <!-- 保存按钮 -->
       <BottomActionBar
-        :primary-label="saving ? '保存中…' : '保存'"
+        :primary-label="saving ? '保存中...' : '保存'"
         @primary="savePreferences"
       />
     </template>

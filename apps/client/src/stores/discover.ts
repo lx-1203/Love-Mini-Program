@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
 import { appEnv } from "../services/env";
+import { request } from "../services/http";
+import { useSessionStore } from "./session";
 
 /**
  * 推荐卡片用户信息
@@ -15,6 +17,8 @@ export interface DiscoverCard {
   commonGround: string;
   availability: string;
   images: string[];
+  /** 所属学校名称，用于同校匹配加权 */
+  campusName?: string;
 }
 
 /**
@@ -60,6 +64,45 @@ export interface DiscoverState {
   errorMessage: string | null;
 }
 
+/* ========== 后端视图类型 ========== */
+
+/**
+ * 后端 RecommendedPersonView 类型
+ * 对应后端 record RecommendedPersonView(Long id, String name, String initials, String headline, String commonGround, String availability, String campusName, String avatarUrl, List<String> tags)
+ */
+export interface RecommendedPersonView {
+  id: number;
+  name: string;
+  initials: string;
+  headline: string;
+  commonGround: string;
+  availability: string;
+  campusName: string;
+  avatarUrl: string;
+  tags: string[];
+}
+
+/**
+ * 将后端 RecommendedPersonView 映射为前端 DiscoverCard
+ * @param raw - 后端返回的推荐人物视图
+ * @returns 前端 DiscoverCard 对象
+ */
+function mapToDiscoverCard(raw: RecommendedPersonView): DiscoverCard {
+  return {
+    id: String(raw.id),
+    userId: String(raw.id),
+    name: raw.name,
+    avatar: raw.avatarUrl || "",
+    headline: raw.headline,
+    bio: "", // 后端 RecommendedPersonView 无 bio 字段
+    tags: raw.tags,
+    commonGround: raw.commonGround,
+    availability: raw.availability,
+    images: [], // 后端 RecommendedPersonView 无 images 字段
+    campusName: raw.campusName,
+  };
+}
+
 /* ========== Mock 数据 ========== */
 
 const mockCards: DiscoverCard[] = [
@@ -73,6 +116,7 @@ const mockCards: DiscoverCard[] = [
     tags: ["咖啡", "电影", "夜跑", "心理学", "猫奴"],
     commonGround: "你们都选了电影话题",
     availability: "今晚 19:00-21:00",
+    campusName: "北京大学",
     images: [
       "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&h=1200&fit=crop",
     ],
@@ -87,6 +131,7 @@ const mockCards: DiscoverCard[] = [
     tags: ["美食", "音乐", "探店", "建筑", "胶片"],
     commonGround: "你们都选了美食话题",
     availability: "周末下午",
+    campusName: "清华大学",
     images: [
       "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&h=1200&fit=crop",
     ],
@@ -101,6 +146,7 @@ const mockCards: DiscoverCard[] = [
     tags: ["语言", "看展", "摄影", "日系", "手账"],
     commonGround: "你们都选了摄影话题",
     availability: "周三、周五晚上",
+    campusName: "复旦大学",
     images: [
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&h=1200&fit=crop",
     ],
@@ -115,6 +161,7 @@ const mockCards: DiscoverCard[] = [
     tags: ["游戏", "篮球", "旅行", "编程", "火锅"],
     commonGround: "你们都选了运动话题",
     availability: "每天傍晚",
+    campusName: "浙江大学",
     images: [
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1200&fit=crop",
     ],
@@ -129,6 +176,7 @@ const mockCards: DiscoverCard[] = [
     tags: ["阅读", "写作", "咖啡", "新闻", "民谣"],
     commonGround: "你们都选了咖啡话题",
     availability: "下午没课的时候",
+    campusName: "中国人民大学",
     images: [
       "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&h=1200&fit=crop",
     ],
@@ -143,6 +191,7 @@ const mockCards: DiscoverCard[] = [
     tags: ["辩论", "古典音乐", "阅读", "法学", "博物馆"],
     commonGround: "你们都选了阅读话题",
     availability: "周二、周四晚上",
+    campusName: "南京大学",
     images: [
       "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&h=1200&fit=crop",
     ],
@@ -157,6 +206,7 @@ const mockCards: DiscoverCard[] = [
     tags: ["户外", "露营", "爬山", "医学", "纪录片"],
     commonGround: "你们都选了户外话题",
     availability: "周末全天",
+    campusName: "武汉大学",
     images: [
       "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&h=1200&fit=crop",
     ],
@@ -351,7 +401,27 @@ export const useDiscoverStore = defineStore("discover", {
           if (useMock()) {
             // 过滤掉已查看的卡片
             const viewedIds = new Set(this.viewedCards.map((v) => v.cardId));
-            const availableCards = mockCards.filter((card) => !viewedIds.has(card.id));
+            let availableCards = mockCards.filter((card) => !viewedIds.has(card.id));
+
+            // 同校加权：优先展示同校用户
+            try {
+              const sessionStore = useSessionStore();
+              const myCampus = sessionStore.userSession?.campusName ?? "";
+              if (myCampus) {
+                const sameCampus: DiscoverCard[] = [];
+                const otherCampus: DiscoverCard[] = [];
+                for (const card of availableCards) {
+                  if (card.campusName === myCampus) {
+                    sameCampus.push(card);
+                  } else {
+                    otherCampus.push(card);
+                  }
+                }
+                availableCards = [...sameCampus, ...otherCampus];
+              }
+            } catch {
+              // session store 不可用时忽略，不影响正常流程
+            }
 
             this.cards = availableCards;
             this.hasMore = availableCards.length > 0 && !this.isLimitReached;
@@ -361,8 +431,23 @@ export const useDiscoverStore = defineStore("discover", {
             return;
           }
 
-          // TODO: real API integration
-          throw new Error("Real API not implemented");
+          // 调用后端 API: GET /api/recommendations/people?userId={userId}
+          // 后端返回 RecommendedPersonView 列表，需映射为前端 DiscoverCard
+          try {
+            const sessionStore = useSessionStore();
+            const userId = sessionStore.userSession?.userId ?? "";
+            const rawData = await request<RecommendedPersonView[]>({
+              url: `/recommendations/people?userId=${userId}`,
+              method: "GET",
+            });
+            // 将后端 RecommendedPersonView 映射为前端 DiscoverCard
+            this.cards = rawData.map((item) => mapToDiscoverCard(item));
+            this.hasMore = rawData.length > 0 && !this.isLimitReached;
+            this.syncHistoryCards();
+          } catch (apiError) {
+            // API 调用失败时抛出，由外层 withRetry 处理重试
+            throw apiError;
+          }
         });
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载推荐失败，请稍后重试";
@@ -422,8 +507,23 @@ export const useDiscoverStore = defineStore("discover", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 左滑（不感兴趣）目前后端无专门的 pass/dislike 端点
+        // 推荐算法会在下次请求时自动排除已查看用户，此处仅做本地记录
+        // 如果后续后端新增 pass 端点，可在此处添加 API 调用
+
+        const record: ViewedCardRecord = {
+          cardId,
+          userId: card.userId,
+          direction: "left",
+          viewedAt: new Date().toISOString(),
+        };
+
+        this.viewedCards.push(record);
+        this.cards = this.cards.filter((c) => c.id !== cardId);
+        this.hasMore = this.cards.length > 0 && !this.isLimitReached;
+
+        this.syncHistoryCards();
+        this.saveToStorage();
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "操作失败";
         throw error;
@@ -473,8 +573,32 @@ export const useDiscoverStore = defineStore("discover", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 调用后端 API: POST /api/matches/like
+        // 右滑（喜欢）对应后端的 likeUser 操作
+        const sessionStore = useSessionStore();
+        const currentUserId = sessionStore.userSession?.userId ?? "";
+        await request<void>({
+          url: "/matches/like",
+          method: "POST",
+          data: {
+            userId: currentUserId,
+            targetUserId: card.userId,
+          },
+        });
+
+        const record: ViewedCardRecord = {
+          cardId,
+          userId: card.userId,
+          direction: "right",
+          viewedAt: new Date().toISOString(),
+        };
+
+        this.viewedCards.push(record);
+        this.cards = this.cards.filter((c) => c.id !== cardId);
+        this.hasMore = this.cards.length > 0 && !this.isLimitReached;
+
+        this.syncHistoryCards();
+        this.saveToStorage();
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "操作失败";
         throw error;
@@ -514,8 +638,27 @@ export const useDiscoverStore = defineStore("discover", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 反悔操作：目前后端无专门的 rewind 端点
+        // 仅做本地状态回退，不调用后端 API
+        // 如果后续后端新增 rewind 端点，可在此处添加 API 调用
+
+        // 从已查看列表中移除最后一条记录
+        const lastViewed = this.viewedCards[this.viewedCards.length - 1];
+        if (lastViewed && lastViewed.cardId === cardId) {
+          this.viewedCards.pop();
+        }
+
+        // 将卡片重新放回列表头部
+        const card = this.cards.find((c) => c.id === cardId);
+        if (!card) {
+          // 如果卡片不在当前列表中，需要重新获取
+          await this.fetchCards();
+        }
+
+        this.hasMore = true;
+        this.hasRewoundToday = true;
+        this.syncHistoryCards();
+        this.saveToStorage();
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "挽回失败";
         throw error;

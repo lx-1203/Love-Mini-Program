@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
 import { appEnv } from "../services/env";
+import { request } from "../services/http";
+import { useSessionStore } from "./session";
 
 /**
  * 会话类型
@@ -51,12 +53,16 @@ export interface MessageHeartSignal {
  */
 export interface SystemNotification {
   id: string;
-  type: "system" | "match" | "like" | "activity";
+  type: "system" | "match" | "like" | "activity" | "follow" | "interaction_like" | "comment" | "visitor" | "interaction_match";
   title: string;
   content: string;
   isRead: boolean;
   createdAt: string;
   actionUrl?: string | null;
+  /** 触发用户 ID（互动类型通知用于跳转用户资料） */
+  triggerUserId?: string | null;
+  /** 关联资源 ID（帖子等，用于跳转帖子详情） */
+  resourceId?: string | null;
 }
 
 /**
@@ -88,6 +94,133 @@ export interface MessagesState {
   loading: boolean;
   /** 错误信息 */
   errorMessage: string | null;
+}
+
+/* ========== 后端视图类型 ========== */
+
+/**
+ * 后端 ConversationView 类型
+ * 对应后端 record ConversationView(Long id, String conversationUid, Long userAId, Long userBId, String otherUserName, String otherUserAvatar, String lastMessagePreview, String lastMessageAt, int unreadCount)
+ */
+export interface ConversationView {
+  id: number;
+  conversationUid: string;
+  userAId: number;
+  userBId: number;
+  otherUserName: string;
+  otherUserAvatar: string;
+  lastMessagePreview: string;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+/**
+ * 后端 MessageView 类型
+ * 对应后端 record MessageView(Long id, Long conversationId, Long senderId, String content, String messageKind, boolean isRead, String createdAt)
+ */
+export interface BackendMessageView {
+  id: number;
+  conversationId: number;
+  senderId: number;
+  content: string;
+  messageKind: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+/**
+ * 后端 NotificationView 类型
+ * 对应后端 record NotificationView(Long id, String type, NotificationSourceUserView sourceUser, Long referenceId, String referenceType, boolean isRead, String createdAt, String summary)
+ */
+export interface BackendNotificationView {
+  id: number;
+  type: string;
+  sourceUser: {
+    displayName: string;
+    avatar: string;
+  } | null;
+  referenceId: number | null;
+  referenceType: string | null;
+  isRead: boolean;
+  createdAt: string;
+  summary: string;
+}
+
+/**
+ * 后端 UnreadCountView 类型
+ */
+export interface UnreadCountView {
+  count: number;
+}
+
+/**
+ * 将后端 ConversationView 映射为前端 MessageSession
+ */
+function mapToMessageSession(raw: ConversationView): MessageSession {
+  const sessionStore = useSessionStore();
+  const currentUserId = sessionStore.userSession?.userId ?? "";
+  return {
+    id: String(raw.id),
+    partnerId: String(raw.userBId),
+    partnerName: raw.otherUserName,
+    partnerAvatar: raw.otherUserAvatar || "",
+    partnerHeadline: "", // 后端 ConversationView 无 headline 字段
+    lastMessagePreview: raw.lastMessagePreview,
+    lastMessageSentAt: raw.lastMessageAt,
+    unreadCount: raw.unreadCount,
+    pinned: false, // 后端 ConversationView 无 pinned 字段
+    phase: "active" as const, // 后端 ConversationView 无 phase 字段
+    sessionType: "private" as const, // 后端 ConversationView 无 sessionType 字段
+    closesAt: null,
+    closedReason: null,
+  };
+}
+
+/**
+ * 将后端 MessageView 映射为前端 MessageItem
+ */
+function mapToMessageItem(raw: BackendMessageView): MessageItem {
+  const sessionStore = useSessionStore();
+  const currentUserId = sessionStore.userSession?.userId ?? "";
+  return {
+    id: String(raw.id),
+    sessionId: String(raw.conversationId),
+    sender: String(raw.senderId) === currentUserId ? "self" : "peer",
+    kind: raw.messageKind === "voice" ? "voice" : raw.messageKind === "emoji" ? "emoji" : "text",
+    body: raw.content,
+    sentAt: raw.createdAt,
+  };
+}
+
+/**
+ * 将后端 NotificationView 映射为前端 SystemNotification
+ */
+function mapToSystemNotification(raw: BackendNotificationView): SystemNotification {
+  return {
+    id: String(raw.id),
+    type: mapNotificationType(raw.type),
+    title: raw.summary,
+    content: raw.summary,
+    isRead: raw.isRead,
+    createdAt: raw.createdAt,
+    actionUrl: null,
+    triggerUserId: raw.sourceUser ? String(raw.sourceUser) : null,
+    resourceId: raw.referenceId ? String(raw.referenceId) : null,
+  };
+}
+
+/**
+ * 将后端通知类型映射为前端通知类型
+ */
+function mapNotificationType(backendType: string): SystemNotification["type"] {
+  const typeMap: Record<string, SystemNotification["type"]> = {
+    "follow": "follow",
+    "like": "like",
+    "comment": "comment",
+    "visitor": "visitor",
+    "match": "interaction_match",
+  };
+  return typeMap[backendType] || "system";
 }
 
 /* ========== Mock 数据 ========== */
@@ -258,6 +391,59 @@ const mockNotifications: SystemNotification[] = [
     createdAt: "2026-05-19T09:30:00Z",
     actionUrl: "/pages/likes/index",
   },
+  // ===== 互动类型通知 =====
+  {
+    id: "notif-4",
+    type: "follow",
+    title: "新的关注",
+    content: "苏晴关注了你",
+    isRead: false,
+    createdAt: "2026-05-21T10:00:00Z",
+    triggerUserId: "user-2003",
+    actionUrl: "/pages/profile/index?userId=user-2003",
+  },
+  {
+    id: "notif-6",
+    type: "comment",
+    title: "新的评论",
+    content: "林夕评论了你的帖子：\"写得真好！\"",
+    isRead: false,
+    createdAt: "2026-05-20T20:30:00Z",
+    triggerUserId: "user-2001",
+    resourceId: "post-42",
+    actionUrl: "/pages/post/detail?id=post-42",
+  },
+  {
+    id: "notif-7",
+    type: "visitor",
+    title: "新的访客",
+    content: "顾北访问了你的主页",
+    isRead: true,
+    createdAt: "2026-05-20T16:00:00Z",
+    triggerUserId: "user-2002",
+    actionUrl: "/pages/profile/index?userId=user-2002",
+  },
+  {
+    id: "notif-8",
+    type: "interaction_match",
+    title: "双向喜欢",
+    content: "你和夏言互相喜欢了，快去看看",
+    isRead: false,
+    createdAt: "2026-05-21T08:45:00Z",
+    triggerUserId: "user-4001",
+    actionUrl: "/pages/messages/index",
+  },
+  {
+    id: "notif-9",
+    type: "interaction_like",
+    title: "新的赞",
+    content: "周屿赞了你的帖子",
+    isRead: false,
+    createdAt: "2026-05-21T09:15:00Z",
+    triggerUserId: "user-4004",
+    resourceId: "post-58",
+    actionUrl: "/pages/post/detail?id=post-58",
+  },
 ];
 
 function useMock() {
@@ -383,8 +569,21 @@ export const useMessagesStore = defineStore("messages", {
               return;
             }
 
-            // TODO: real API integration
-            throw new Error("Real API not implemented");
+            // 调用后端 API: GET /api/messages/conversations?userId={userId}
+            const sessionStore = useSessionStore();
+            const userId = sessionStore.userSession?.userId ?? "";
+            const data = await request<ConversationView[]>({
+              url: `/messages/conversations?userId=${userId}`,
+              method: "GET",
+            });
+            this.sessions = data.map(mapToMessageSession).sort((a, b) => {
+              if (a.pinned !== b.pinned) {
+                return a.pinned ? -1 : 1;
+              }
+              const aTime = a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0;
+              const bTime = b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0;
+              return bTime - aTime;
+            });
           })(),
           ASYNC_TIMEOUT_MS,
           "加载会话列表超时"
@@ -417,8 +616,19 @@ export const useMessagesStore = defineStore("messages", {
               return;
             }
 
-            // TODO: real API integration
-            throw new Error("Real API not implemented");
+            // 调用后端 API: GET /api/messages/conversations/{sessionId}/messages?userId={userId}
+            const sessionStore = useSessionStore();
+            const userId = sessionStore.userSession?.userId ?? "";
+            const data = await request<BackendMessageView[]>({
+              url: `/messages/conversations/${sessionId}/messages?userId=${userId}`,
+              method: "GET",
+            });
+            this.currentMessages = data.map(mapToMessageItem);
+
+            const session = this.sessions.find((s) => s.id === sessionId);
+            if (session) {
+              session.unreadCount = 0;
+            }
           })(),
           ASYNC_TIMEOUT_MS,
           "加载消息超时"
@@ -478,8 +688,24 @@ export const useMessagesStore = defineStore("messages", {
               return newMessage;
             }
 
-            // TODO: real API integration
-            throw new Error("Real API not implemented");
+            // 调用后端 API: POST /api/messages/conversations/{sessionId}/messages
+            // 后端请求体: SendMessageRequest(senderId, content, kind)
+            const sessionStore = useSessionStore();
+            const senderId = sessionStore.userSession?.userId ?? "";
+            const result = await request<BackendMessageView, { senderId: string; content: string; kind: string }>({
+              url: `/messages/conversations/${sessionId}/messages`,
+              method: "POST",
+              data: { senderId, content, kind: "text" },
+            });
+            const mappedResult = mapToMessageItem(result);
+            this.currentMessages.push(mappedResult);
+
+            const session = this.sessions.find((s) => s.id === sessionId);
+            if (session) {
+              session.lastMessagePreview = content;
+              session.lastMessageSentAt = mappedResult.sentAt;
+            }
+            return mappedResult;
           })(),
           ASYNC_TIMEOUT_MS,
           "发送消息超时，请重试"
@@ -505,8 +731,14 @@ export const useMessagesStore = defineStore("messages", {
               return;
             }
 
-            // TODO: real API integration
-            throw new Error("Real API not implemented");
+            // 调用后端 API: GET /api/matches/heart-signals?userId={userId}
+            const sessionStore = useSessionStore();
+            const userId = sessionStore.userSession?.userId ?? "";
+            const data = await request<MessageHeartSignal[]>({
+              url: `/matches/heart-signals?userId=${userId}`,
+              method: "GET",
+            });
+            this.heartSignals = data;
           })(),
           ASYNC_TIMEOUT_MS,
           "加载心动信号超时"
@@ -522,7 +754,7 @@ export const useMessagesStore = defineStore("messages", {
      * 接受心动信号并创建私信会话
      * @param signalId - 心动信号 ID
      */
-    async acceptHeartSignal(signalId: string) {
+    async acceptHeartSignal(signalId: string): Promise<MessageSession | null> {
       this.errorMessage = null;
 
       try {
@@ -532,8 +764,8 @@ export const useMessagesStore = defineStore("messages", {
           throw new Error("心动信号 ID 无效");
         }
 
-        await withTimeout(
-          (async () => {
+        return await withTimeout(
+          (async (): Promise<MessageSession | null> => {
             if (useMock()) {
               const signal = this.heartSignals.find((s) => s.id === signalId);
               if (!signal) {
@@ -578,8 +810,29 @@ export const useMessagesStore = defineStore("messages", {
               return newSession;
             }
 
-            // TODO: real API integration
-            throw new Error("Real API not implemented");
+            // 调用后端 API: POST /api/matches/heart-signals/{signalId}/accept?userId={userId}
+            const sessionStore = useSessionStore();
+            const userId = sessionStore.userSession?.userId ?? "";
+            await request<void>({
+              url: `/matches/heart-signals/${signalId}/accept?userId=${userId}`,
+              method: "POST",
+            });
+
+            // 更新心动信号状态
+            const signal = this.heartSignals.find((s) => s.id === signalId);
+            if (signal) {
+              signal.status = "accepted";
+            }
+
+            // 后端 acceptHeartSignal 返回 void，不返回 session
+            // 需要刷新会话列表来获取新创建的会话
+            await this.fetchSessions();
+
+            // 从刷新后的会话列表中查找新创建的会话
+            const newSession = this.sessions.find(
+              (s) => s.sessionType === "private" && s.partnerId === signal?.fromUserId
+            ) ?? null;
+            return newSession;
           })(),
           ASYNC_TIMEOUT_MS,
           "接受心动信号超时，请重试"
@@ -591,7 +844,7 @@ export const useMessagesStore = defineStore("messages", {
     },
 
     /**
-     * 获取系统通知
+     * 获取系统通知（GET /api/notifications）
      */
     async fetchNotifications() {
       this.loading = true;
@@ -607,8 +860,16 @@ export const useMessagesStore = defineStore("messages", {
               return;
             }
 
-            // TODO: real API integration
-            throw new Error("Real API not implemented");
+            // 调用后端 API: GET /api/notifications
+            // 后端返回 NotificationView 列表
+            const data = await request<BackendNotificationView[]>({
+              url: "/notifications",
+              method: "GET",
+            });
+
+            this.notifications = data.map(mapToSystemNotification).sort(
+              (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
+            );
           })(),
           ASYNC_TIMEOUT_MS,
           "加载通知超时"
@@ -624,10 +885,29 @@ export const useMessagesStore = defineStore("messages", {
      * 标记通知为已读
      * @param notificationId - 通知 ID
      */
-    markNotificationRead(notificationId: string) {
-      const notification = this.notifications.find((n) => n.id === notificationId);
-      if (notification) {
+    async markNotificationRead(notificationId: string) {
+      try {
+        const notification = this.notifications.find((n) => n.id === notificationId);
+        if (!notification) return;
+        if (notification.isRead) return;
+
+        if (useMock()) {
+          notification.isRead = true;
+          return;
+        }
+
+        // 调用后端 API: PUT /api/notifications/{id}/read
+        await withTimeout(
+          request<void>({
+            url: `/notifications/${notificationId}/read`,
+            method: "PUT",
+          }),
+          ASYNC_TIMEOUT_MS,
+          "标记通知已读超时"
+        );
         notification.isRead = true;
+      } catch {
+        // 静默失败，不阻塞 UI
       }
     },
 
@@ -638,6 +918,34 @@ export const useMessagesStore = defineStore("messages", {
       this.notifications.forEach((n) => {
         n.isRead = true;
       });
+    },
+
+    /**
+     * 获取未读通知数量（独立 API：GET /api/notifications/unread-count）
+     */
+    async fetchUnreadNotificationCount() {
+      try {
+        if (useMock()) {
+          // mock 模式下从本地 notifications 计算
+          const count = this.notifications.filter((n) => !n.isRead).length;
+          return count;
+        }
+
+        // 调用后端 API: GET /api/notifications/unread-count
+        // 后端返回 UnreadCountView(count)
+        const result = await withTimeout(
+          request<UnreadCountView>({
+            url: "/notifications/unread-count",
+            method: "GET",
+          }),
+          ASYNC_TIMEOUT_MS,
+          "获取未读通知数量超时"
+        );
+        return result.count ?? 0;
+      } catch {
+        // 静默失败，返回 0
+        return 0;
+      }
     },
 
     /**
@@ -657,8 +965,14 @@ export const useMessagesStore = defineStore("messages", {
           return;
         }
 
-        // TODO: real API integration
-        throw new Error("Real API not implemented");
+        // 置顶操作：后端 PrivateMessageController 无专门的 pin 端点
+        // 仅做本地状态更新，不调用后端 API
+        // 如果后续后端新增 pin 端点，可在此处添加 API 调用
+
+        const session = this.sessions.find((s) => s.id === sessionId);
+        if (session) {
+          session.pinned = pinned;
+        }
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "置顶操作失败";
         throw error;

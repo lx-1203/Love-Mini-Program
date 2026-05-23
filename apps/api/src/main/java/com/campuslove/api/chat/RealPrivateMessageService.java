@@ -1,0 +1,260 @@
+package com.campuslove.api.chat;
+
+import com.campuslove.api.entity.PrivateConversation;
+import com.campuslove.api.entity.PrivateMessage;
+import com.campuslove.api.entity.User;
+import com.campuslove.api.repository.PrivateConversationRepository;
+import com.campuslove.api.repository.PrivateMessageRepository;
+import com.campuslove.api.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 真实私信服务实现。
+ * 在 real profile 下激活，使用 Repository 实现数据库查询。
+ * 提供私信会话管理、消息发送、消息读取等功能。
+ */
+@Profile("real")
+@Service
+public class RealPrivateMessageService implements PrivateMessageService {
+
+    private final PrivateConversationRepository conversationRepository;
+    private final PrivateMessageRepository messageRepository;
+    private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+
+    public RealPrivateMessageService(
+            PrivateConversationRepository conversationRepository,
+            PrivateMessageRepository messageRepository,
+            UserRepository userRepository,
+            SimpMessagingTemplate messagingTemplate) {
+        this.conversationRepository = conversationRepository;
+        this.messageRepository = messageRepository;
+        this.userRepository = userRepository;
+        this.messagingTemplate = messagingTemplate;
+    }
+
+    /**
+     * 获取用户的会话列表。
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<ConversationView> getConversations(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+
+        List<PrivateConversation> conversations =
+                conversationRepository.findByUserAIdOrUserBIdOrderByLastMessageAtDesc(userId, userId);
+
+        return conversations.stream()
+                .map(conv -> toConversationView(conv, userId))
+                .toList();
+    }
+
+    /**
+     * 创建或获取两个用户之间的会话。
+     * 如果已存在会话，则返回已有会话；否则创建新会话。
+     */
+    @Override
+    @Transactional
+    public ConversationView createOrGetConversation(Long userAId, Long userBId) {
+        if (userAId == null || userBId == null) {
+            throw new IllegalArgumentException("userAId and userBId are required");
+        }
+        if (userAId.equals(userBId)) {
+            throw new IllegalArgumentException("Cannot create conversation with yourself");
+        }
+
+        // 查找已有会话
+        Optional<PrivateConversation> existing = conversationRepository.findByUserPair(userAId, userBId);
+        if (existing.isPresent()) {
+            return toConversationView(existing.get(), userAId);
+        }
+
+        // 创建新会话
+        LocalDateTime now = LocalDateTime.now();
+        PrivateConversation conversation = new PrivateConversation();
+        conversation.setConversationUid(generateConversationUid(userAId, userBId));
+        conversation.setUserAId(userAId);
+        conversation.setUserBId(userBId);
+        conversation.setCreatedAt(now);
+        conversation.setUpdatedAt(now);
+
+        conversationRepository.save(conversation);
+        return toConversationView(conversation, userAId);
+    }
+
+    /**
+     * 在指定会话中发送消息。
+     */
+    @Override
+    @Transactional
+    public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind) {
+        if (conversationId == null || senderId == null) {
+            throw new IllegalArgumentException("conversationId and senderId are required");
+        }
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("content is required");
+        }
+
+        PrivateConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
+
+        // 验证发送者是否是会话参与者
+        if (!conversation.getUserAId().equals(senderId) && !conversation.getUserBId().equals(senderId)) {
+            throw new IllegalArgumentException("Sender is not a participant of this conversation");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 创建消息
+        PrivateMessage message = new PrivateMessage();
+        message.setConversation(conversation);
+        message.setSenderId(senderId);
+        message.setContent(content);
+        message.setMessageKind(kind != null ? kind : "text");
+        message.setIsRead(false);
+        message.setCreatedAt(now);
+
+        messageRepository.save(message);
+
+        // 更新会话的最后消息信息
+        String preview = content.length() > 50 ? content.substring(0, 50) + "..." : content;
+        conversation.setLastMessagePreview(preview);
+        conversation.setLastMessageAt(now);
+        conversation.setUpdatedAt(now);
+        conversationRepository.save(conversation);
+
+        MessageView messageView = toMessageView(message);
+
+        // 通过 WebSocket 推送消息给接收者
+        Long recipientId = conversation.getUserAId().equals(senderId)
+                ? conversation.getUserBId()
+                : conversation.getUserAId();
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(recipientId),
+                "/queue/messages",
+                messageView
+        );
+
+        return messageView;
+    }
+
+    /**
+     * 获取指定会话的消息列表（分页），同时标记消息为已读。
+     */
+    @Override
+    @Transactional
+    public List<MessageView> getMessages(Long conversationId, Long userId, Pageable pageable) {
+        if (conversationId == null || userId == null) {
+            throw new IllegalArgumentException("conversationId and userId are required");
+        }
+
+        // 验证用户是否是会话参与者
+        PrivateConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
+
+        if (!conversation.getUserAId().equals(userId) && !conversation.getUserBId().equals(userId)) {
+            throw new IllegalArgumentException("User is not a participant of this conversation");
+        }
+
+        // 获取消息列表（倒序分页，最新消息在前）
+        Page<PrivateMessage> messagePage = messageRepository.findByConversationIdOrderByCreatedAtDesc(
+                conversationId, pageable);
+
+        // 标记非自己的未读消息为已读
+        markAsRead(conversationId, userId);
+
+        return messagePage.getContent().stream()
+                .map(this::toMessageView)
+                .toList();
+    }
+
+    /**
+     * 标记指定会话中所有未读消息为已读。
+     */
+    @Override
+    @Transactional
+    public void markAsRead(Long conversationId, Long userId) {
+        if (conversationId == null || userId == null) {
+            throw new IllegalArgumentException("conversationId and userId are required");
+        }
+
+        // 查找该会话中由对方发送的未读消息
+        List<PrivateMessage> unreadMessages = messageRepository
+                .findByConversationIdOrderByCreatedAtAsc(conversationId)
+                .stream()
+                .filter(msg -> !msg.getSenderId().equals(userId) && !msg.getIsRead())
+                .toList();
+
+        for (PrivateMessage msg : unreadMessages) {
+            msg.setIsRead(true);
+            messageRepository.save(msg);
+        }
+    }
+
+    // ---- 私有辅助方法 ----
+
+    /**
+     * 将 PrivateConversation 实体转换为 ConversationView。
+     */
+    private ConversationView toConversationView(PrivateConversation conv, Long currentUserId) {
+        // 确定对方用户 ID
+        Long otherUserId = conv.getUserAId().equals(currentUserId) ? conv.getUserBId() : conv.getUserAId();
+
+        // 获取对方用户信息
+        User otherUser = userRepository.findById(otherUserId).orElse(null);
+        String otherUserName = otherUser != null ? otherUser.getNickname() : "未知用户";
+        String otherUserAvatar = otherUser != null ? otherUser.getAvatarUrl() : null;
+
+        // 计算未读消息数
+        int unreadCount = (int) messageRepository.countByConversationIdAndSenderIdNotAndIsRead(
+                conv.getId(), currentUserId, false);
+
+        return new ConversationView(
+                conv.getId(),
+                conv.getConversationUid(),
+                conv.getUserAId(),
+                conv.getUserBId(),
+                otherUserName,
+                otherUserAvatar,
+                conv.getLastMessagePreview(),
+                conv.getLastMessageAt() != null ? conv.getLastMessageAt().toString() : null,
+                unreadCount
+        );
+    }
+
+    /**
+     * 将 PrivateMessage 实体转换为 MessageView。
+     */
+    private MessageView toMessageView(PrivateMessage message) {
+        return new MessageView(
+                message.getId(),
+                message.getConversation().getId(),
+                message.getSenderId(),
+                message.getContent(),
+                message.getMessageKind(),
+                message.getIsRead(),
+                message.getCreatedAt().toString()
+        );
+    }
+
+    /**
+     * 生成会话唯一标识。
+     * 使用两个用户 ID 的排序组合来确保唯一性。
+     */
+    private String generateConversationUid(Long userAId, Long userBId) {
+        long min = Math.min(userAId, userBId);
+        long max = Math.max(userAId, userBId);
+        return "conv-" + min + "-" + max + "-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+}

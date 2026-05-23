@@ -53,9 +53,9 @@ function openPath(url: string) {
 
     <SectionCard title="下一步" subtitle="看到合适的话题后，可以直接去匹配或反馈新的讨论建议。">
       <BottomActionBar
-        primary-label="去匹配"
+        primary-label="去寻觅"
         secondary-label="反馈讨论建议"
-        @primary="openPath('/pages/match/index')"
+        @primary="openPath('/pages/discover/index')"
         @secondary="openPath('/subpackages/support/feedback/index')"
       />
     </SectionCard>

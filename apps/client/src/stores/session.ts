@@ -1,6 +1,46 @@
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
+import { appEnv } from "../services/env";
 import { toLoginHeroView } from "../view-models/login";
+import type { components } from "../services/generated/api-types";
+
+type Schemas = components["schemas"];
+type UserSession = Schemas["UserSession"];
+type LoginHeroConfig = Schemas["LoginHeroConfig"];
+
+/** 判断当前是否为 Mock 模式 */
+function useMock() {
+  return appEnv.apiMode === "mock";
+}
+
+/* ========== Mock 数据 ========== */
+
+/** Mock 用户会话数据 */
+const mockUserSession: UserSession = {
+  userId: "1",
+  loggedIn: true,
+  loginMethod: "wechat",
+  displayName: "测试用户",
+  phoneBound: false,
+  profileCompleted: true,
+  campusVerified: true,
+  scheduleCompleted: true,
+  campusName: "北京大学",
+  featureFlags: {
+    chat_ai_enabled: false,
+  },
+};
+
+/** Mock 登录主视觉配置 */
+const mockLoginHero: LoginHeroConfig = {
+  heroMode: "animation",
+  heroVideoUrl: null,
+  heroPosterUrl: null,
+  heroAnimationTheme: "romantic",
+  heroTitle: "遇见对的人",
+  heroSubtitle: "校园恋爱，从这里开始",
+  videoFallbackToAnimation: true,
+};
 
 /**
  * 用户资料字段完善状态（用于细粒度完善度计算）
@@ -121,7 +161,14 @@ export const useSessionStore = defineStore("session", {
     async refreshSession() {
       try {
         this.isOffline = false;
-        this.userSession = await clientApi.getSession();
+
+        if (useMock()) {
+          // Mock 模式：使用本地硬编码的用户会话数据
+          this.userSession = { ...mockUserSession };
+        } else {
+          this.userSession = await clientApi.getSession();
+        }
+
         return this.userSession;
       } catch (error) {
         this.isOffline = true;
@@ -138,12 +185,19 @@ export const useSessionStore = defineStore("session", {
       this.loading = true;
       try {
         this.isOffline = false;
-        const [hero, session] = await Promise.all([
-          clientApi.getLoginHero(),
-          clientApi.getSession(),
-        ]);
-        this.loginHero = toLoginHeroView(hero);
-        this.userSession = session;
+
+        if (useMock()) {
+          // Mock 模式：使用本地硬编码的登录主视觉和用户会话数据
+          this.loginHero = toLoginHeroView({ ...mockLoginHero });
+          this.userSession = { ...mockUserSession };
+        } else {
+          const [hero, session] = await Promise.all([
+            clientApi.getLoginHero(),
+            clientApi.getSession(),
+          ]);
+          this.loginHero = toLoginHeroView(hero);
+          this.userSession = session;
+        }
       } catch (error) {
         this.isOffline = true;
         console.warn("[SessionStore] 初始化失败，进入离线模式:", error);
@@ -163,7 +217,14 @@ export const useSessionStore = defineStore("session", {
     async loginWithWechat(code = "mock-code") {
       try {
         this.isOffline = false;
-        this.userSession = await clientApi.loginWithWechat(code);
+
+        if (useMock()) {
+          // Mock 模式：模拟登录成功，返回已登录的用户会话数据
+          this.userSession = { ...mockUserSession, loggedIn: true };
+        } else {
+          this.userSession = await clientApi.loginWithWechat(code);
+        }
+
         return this.userSession;
       } catch (error) {
         this.isOffline = true;

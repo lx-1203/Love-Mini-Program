@@ -22,7 +22,7 @@ onMounted(async () => {
 
 async function save() {
   await profileStore.saveScheduleProfile({ ...form });
-  replaceAppPath("/pages/home/index");
+  replaceAppPath("/pages/discover/index");
 }
 </script>
 

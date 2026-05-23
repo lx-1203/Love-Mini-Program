@@ -289,20 +289,21 @@ describe("village store", () => {
   // ------------------------------------------------------------------
   // followUser
   // ------------------------------------------------------------------
-  it("followUser toggles isFollowed flag", async () => {
+  it("followUser toggles isFollowed flag by userId", async () => {
     const store = useVillageStore();
     await store.fetchPosts();
 
     const post = store.posts[0];
+    const userId = post.author.userId;
     const initialFollowed = post.isFollowed;
 
-    await store.followUser(post.id);
-    expect(store.posts.find((p) => p.id === post.id)!.isFollowed).toBe(
+    await store.followUser(userId);
+    expect(store.posts.find((p) => p.author.userId === userId)!.isFollowed).toBe(
       !initialFollowed
     );
 
-    await store.followUser(post.id);
-    expect(store.posts.find((p) => p.id === post.id)!.isFollowed).toBe(
+    await store.followUser(userId);
+    expect(store.posts.find((p) => p.author.userId === userId)!.isFollowed).toBe(
       initialFollowed
     );
   });

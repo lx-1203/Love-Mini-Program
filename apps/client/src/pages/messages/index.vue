@@ -136,14 +136,81 @@ function formatTime(isoString: string | null): string {
 function getNotificationIcon(type: string): string {
   switch (type) {
     case "match":
-      return "💕";
+    case "interaction_match":
+      return "💝";
     case "like":
+    case "interaction_like":
       return "❤️";
+    case "comment":
+      return "💬";
+    case "follow":
+      return "👤";
+    case "visitor":
+      return "👀";
     case "activity":
       return "🎉";
     default:
       return "📢";
   }
+}
+
+/**
+ * 处理通知点击，根据类型跳转到不同页面
+ * - 关注/访客 → 跳转到对应用户资料
+ * - 点赞/评论 → 跳转到对应帖子详情
+ * - 匹配 → 跳转到消息页（私信标签）
+ * - 其他 → 使用 actionUrl 跳转
+ */
+async function handleNotificationClick(notification: {
+  id: string;
+  type: string;
+  isRead: boolean;
+  actionUrl?: string | null;
+  triggerUserId?: string | null;
+  resourceId?: string | null;
+}) {
+  // 标记已读
+  await messagesStore.markNotificationRead(notification.id);
+
+  // 根据类型决定跳转目标
+  const type = notification.type;
+  if (type === "follow" || type === "visitor") {
+    // 跳转到用户资料页
+    const userId = notification.triggerUserId;
+    if (userId) {
+      openAppPath(`/pages/profile/index?userId=${userId}`);
+    }
+    return;
+  }
+
+  if (type === "interaction_like" || type === "comment") {
+    // 跳转到帖子详情页
+    const postId = notification.resourceId;
+    if (postId) {
+      openAppPath(`/pages/post/detail?id=${postId}`);
+    }
+    return;
+  }
+
+  if (type === "interaction_match" || type === "match") {
+    // 跳转到消息页（默认私信标签）
+    openAppPath("/pages/messages/index");
+    return;
+  }
+
+  // 其他类型使用 actionUrl
+  if (notification.actionUrl) {
+    openAppPath(notification.actionUrl);
+  }
+}
+
+/** 判断心动信号是否即将过期（<2小时） */
+function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): boolean {
+  if (signal.status === "expired") return false;
+  const expiresAt = Date.parse(signal.expiresAt);
+  const now = Date.now();
+  const remainingMs = expiresAt - now;
+  return remainingMs > 0 && remainingMs < 2 * 60 * 60 * 1000;
 }
 </script>
 
@@ -174,6 +241,7 @@ function getNotificationIcon(type: string): string {
           v-for="signal in messagesStore.pendingHeartSignals"
           :key="signal.id"
           class="heart-signal-card"
+          :class="{ 'heart-signal-card--expiring': isSignalExpiringSoon(signal) }"
         >
           <view class="heart-signal-card__left">
             <view class="heart-signal-card__avatar">
@@ -315,7 +383,7 @@ function getNotificationIcon(type: string): string {
           :key="notification.id"
           class="notification-row"
           :class="{ 'notification-row--unread': !notification.isRead }"
-          @click="messagesStore.markNotificationRead(notification.id); notification.actionUrl && openAppPath(notification.actionUrl)"
+          @click="handleNotificationClick(notification)"
         >
           <view class="notification-row__icon">{{ getNotificationIcon(notification.type) }}</view>
           <view class="notification-row__content">
@@ -390,6 +458,25 @@ function getNotificationIcon(type: string): string {
   border-radius: 24rpx;
   background: linear-gradient(135deg, #fef3f2 0%, #fff1f2 100%);
   border: 1px solid rgba(244, 63, 94, 0.12);
+}
+
+/* ===== 心动信号即将过期（<2小时）警告样式 ===== */
+.heart-signal-card--expiring {
+  border-color: var(--td-error-color);
+  border-width: 2px;
+  animation: heart-signal-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes heart-signal-blink {
+  0%,
+  100% {
+    border-color: var(--td-error-color);
+    box-shadow: 0 0 0 rpx rgba(244, 63, 94, 0);
+  }
+  50% {
+    border-color: rgba(244, 63, 94, 0.3);
+    box-shadow: 0 0 16rpx rgba(244, 63, 94, 0.25);
+  }
 }
 
 .heart-signal-card__left {

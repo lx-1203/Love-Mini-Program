@@ -64,6 +64,48 @@
       "style": {
         "navigationBarTitleText": "我的"
       }
+    },
+    {
+      "path": "pages/circles/index",
+      "style": {
+        "navigationBarTitleText": "兴趣圈"
+      }
+    },
+    {
+      "path": "pages/circles/topics",
+      "style": {
+        "navigationBarTitleText": "话题列表"
+      }
+    },
+    {
+      "path": "pages/circles/topic-detail",
+      "style": {
+        "navigationBarTitleText": "话题详情"
+      }
+    },
+    {
+      "path": "pages/circles/post-topic",
+      "style": {
+        "navigationBarTitleText": "发布话题"
+      }
+    },
+    {
+      "path": "pages/daily-question/index",
+      "style": {
+        "navigationBarTitleText": "每日一问"
+      }
+    },
+    {
+      "path": "pages/chat/index",
+      "style": {
+        "navigationBarTitleText": "聊天"
+      }
+    },
+    {
+      "path": "pages/chat-session/index",
+      "style": {
+        "navigationBarTitleText": "会话"
+      }
     }
   ],
   "subPackages": [

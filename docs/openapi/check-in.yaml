@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: Campus Love - Check-in API
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /check-in:
+    post:
+      summary: Daily check-in
+      operationId: checkIn
+      responses:
+        '200':
+          description: Check-in result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /check-in/status:
+    get:
+      summary: Get today's check-in status
+      operationId: getCheckInStatus
+      responses:
+        '200':
+          description: Check-in status for today
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInStatusView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    CheckInView:
+      type: object
+      properties:
+        checkInDate:
+          type: string
+          format: date
+          description: Check-in date (ISO format)
+        consecutiveDays:
+          type: integer
+          minimum: 0
+          description: Consecutive check-in days
+        extraRecommendations:
+          type: integer
+          minimum: 0
+          description: Extra daily recommendations granted for checking in
+      required:
+        - checkInDate
+        - consecutiveDays
+        - extraRecommendations
+    CheckInStatusView:
+      type: object
+      properties:
+        checkedIn:
+          type: boolean
+          description: Whether user has checked in today
+        consecutiveDays:
+          type: integer
+          minimum: 0
+          description: Consecutive check-in days (0 if not checked in today)
+      required:
+        - checkedIn
+        - consecutiveDays
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

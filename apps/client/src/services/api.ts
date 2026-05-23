@@ -1,7 +1,7 @@
 import type { components } from "./generated/api-types";
 import { mockFixtures } from "./mocks/fixtures";
 import { appEnv } from "./env";
-import { request } from "./http";
+import { request, setToken, setRefreshToken, clearTokens } from "./http";
 
 type Schemas = components["schemas"];
 type SubmissionType = Schemas["SubmissionType"];
@@ -27,17 +27,32 @@ export const clientApi = {
     if (useMock()) {
       return mockFixtures.loginWithWechat();
     }
-    return request<Schemas["UserSession"], Schemas["WechatLoginRequest"]>({
+    const result = await request<Schemas["UserSession"], Schemas["WechatLoginRequest"]>({
       url: "/auth/wechat-login",
       method: "POST",
       data: { code },
     });
+    // 登录成功后，将 token 保存到本地存储
+    // 后端 UserSession 中可能包含 token 信息，按约定保存
+    if ((result as Record<string, unknown>).token) {
+      setToken((result as Record<string, unknown>).token as string);
+    }
+    if ((result as Record<string, unknown>).refreshToken) {
+      setRefreshToken((result as Record<string, unknown>).refreshToken as string);
+    }
+    return result;
   },
   async getBasicProfile() {
     if (useMock()) {
       return mockFixtures.getBasicProfile();
     }
     return request<Schemas["BasicProfile"]>({ url: "/profile/basic" });
+  },
+  async getProfileStats() {
+    if (useMock()) {
+      return mockFixtures.getProfileStats();
+    }
+    return request<Schemas["ProfileStats"]>({ url: "/profile/stats" });
   },
   async saveBasicProfile(payload: Schemas["BasicProfileRequest"]) {
     if (useMock()) {
@@ -270,4 +285,42 @@ export const clientApi = {
       data: payload,
     });
   },
+  async getCheckInStatus() {
+    if (useMock()) {
+      return mockFixtures.getCheckInStatus();
+    }
+    return request<CheckInStatusResponse>({ url: "/check-in/status" });
+  },
+  async checkIn() {
+    if (useMock()) {
+      return mockFixtures.checkIn();
+    }
+    return request<CheckInResultResponse>({
+      url: "/check-in",
+      method: "POST",
+    });
+  },
+
+  /**
+   * 登出：清除本地 Token 并跳转登录页。
+   */
+  logout() {
+    clearTokens();
+    uni.reLaunch({
+      url: "/pages/login/index",
+    });
+  },
 };
+
+/** 签到状态响应（GET /api/check-in/status） */
+export interface CheckInStatusResponse {
+  checkedIn: boolean;
+  consecutiveDays: number;
+}
+
+/** 签到结果响应（POST /api/check-in） */
+export interface CheckInResultResponse {
+  checkInDate: string;
+  consecutiveDays: number;
+  extraRecommendations: number;
+}

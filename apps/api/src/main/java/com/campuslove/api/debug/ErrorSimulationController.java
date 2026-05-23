@@ -1,6 +1,7 @@
 package com.campuslove.api.debug;
 
 import java.util.Map;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/_debug/errors")
+@Profile("mock")
 public class ErrorSimulationController {
 
   @PostMapping("/{status}")

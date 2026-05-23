@@ -1,12 +1,13 @@
 <script setup lang="ts">
 /**
- * 寻觅页 - 卡片推荐
- * 展示个性化用户卡片推荐，支持滑动浏览
+ * 寻觅页 - 卡片推荐 + 签到入口
+ * 展示个性化用户卡片推荐，支持滑动浏览和每日签到
  */
 import { onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useDiscoverStore } from "../../stores/discover";
 import { useActivityStore } from "../../stores/activity";
+import { useCheckInStore } from "../../stores/checkin";
 import { openAppPath } from "../../utils/navigation";
 import CardSwiper from "../../components/discover/CardSwiper.vue";
 import type { SwipeDirection } from "../../stores/discover";
@@ -15,6 +16,7 @@ const discoverStore = useDiscoverStore();
 const { cards, remainingCount, hasMore, loading, errorMessage } = storeToRefs(discoverStore);
 
 const activityStore = useActivityStore();
+const checkInStore = useCheckInStore();
 
 /**
  * 处理滑动事件
@@ -41,9 +43,21 @@ async function reloadCards() {
   await discoverStore.fetchCards();
 }
 
+/**
+ * 处理签到
+ */
+async function handleCheckIn() {
+  try {
+    await checkInStore.checkIn();
+  } catch {
+    // 错误已在 checkInStore 的 errorMessage 中展示
+  }
+}
+
 onMounted(() => {
   void discoverStore.fetchCards();
   void activityStore.fetchActivities();
+  void checkInStore.fetchStatus();
 });
 </script>
 
@@ -55,6 +69,55 @@ onMounted(() => {
       <view class="discover-header__meta">
         <text class="discover-header__count">今日剩余 {{ remainingCount }} 次</text>
       </view>
+    </view>
+
+    <!-- 签到卡片：今日未签到时展示 -->
+    <view v-if="!checkInStore.checkedIn && !checkInStore.loading" class="checkin-card">
+      <view class="checkin-card__left">
+        <text class="checkin-card__icon">📅</text>
+        <view class="checkin-card__info">
+          <text class="checkin-card__title">今日签到</text>
+          <text class="checkin-card__desc">获取更多推荐机会</text>
+        </view>
+      </view>
+      <button
+        class="checkin-card__btn"
+        :disabled="checkInStore.checkingIn"
+        @click="handleCheckIn"
+      >
+        {{ checkInStore.checkingIn ? "签到中..." : "立即签到" }}
+      </button>
+    </view>
+
+    <!-- 签到成功提示 -->
+    <view v-if="checkInStore.showSuccessAnimation" class="checkin-success">
+      <text class="checkin-success__icon">✅</text>
+      <view class="checkin-success__info">
+        <text class="checkin-success__title">签到成功</text>
+        <text class="checkin-success__count">{{ checkInStore.extraRecommendationsText }}</text>
+        <text v-if="checkInStore.consecutiveDaysText" class="checkin-success__streak">
+          {{ checkInStore.consecutiveDaysText }}
+        </text>
+      </view>
+    </view>
+
+    <!-- 每日一问入口：签到后展示 -->
+    <view
+      v-if="checkInStore.checkedIn && !checkInStore.showSuccessAnimation"
+      class="daily-question-card"
+      @click="openAppPath('/pages/daily-question/index')"
+    >
+      <view class="daily-question-card__left">
+        <text class="daily-question-card__icon">💡</text>
+        <view class="daily-question-card__info">
+          <text class="daily-question-card__title">每日一问</text>
+          <text class="daily-question-card__desc">今日话题：你理想中的第一次约会是什么样？</text>
+          <text v-if="checkInStore.consecutiveDaysText" class="daily-question-card__streak">
+            {{ checkInStore.consecutiveDaysText }}
+          </text>
+        </view>
+      </view>
+      <text class="daily-question-card__arrow">›</text>
     </view>
 
     <!-- 错误提示 -->
@@ -144,6 +207,198 @@ onMounted(() => {
   padding: 8rpx 20rpx;
   border-radius: 999px;
   box-shadow: var(--td-shadow-1);
+}
+
+/* ========== 签到卡片 ========== */
+.checkin-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 32rpx 16rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.06), rgba(29, 78, 216, 0.02));
+  border: 1px solid rgba(29, 78, 216, 0.12);
+}
+
+.checkin-card__left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.checkin-card__icon {
+  font-size: 40rpx;
+  flex-shrink: 0;
+}
+
+.checkin-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.checkin-card__title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--td-text-color-primary);
+}
+
+.checkin-card__desc {
+  font-size: 24rpx;
+  color: var(--td-text-color-secondary);
+}
+
+.checkin-card__btn {
+  min-width: 160rpx;
+  height: 64rpx;
+  padding: 0 24rpx;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--td-brand-color-7), var(--td-brand-color-6));
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 64rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.checkin-card__btn:disabled {
+  background: var(--td-bg-color-component-disabled);
+  color: var(--td-text-color-disabled);
+}
+
+/* ========== 签到成功提示（缩放+渐变动画） ========== */
+.checkin-success {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 0 32rpx 16rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.02));
+  border: 1px solid rgba(34, 197, 94, 0.18);
+  animation: checkin-success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes checkin-success-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.checkin-success__icon {
+  font-size: 40rpx;
+  flex-shrink: 0;
+  animation: checkin-success-bounce 0.6s ease 0.1s both;
+}
+
+@keyframes checkin-success-bounce {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.checkin-success__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.checkin-success__title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.checkin-success__count {
+  font-size: 24rpx;
+  color: var(--td-text-color-secondary);
+  font-weight: 600;
+}
+
+.checkin-success__streak {
+  font-size: 22rpx;
+  color: var(--td-text-color-placeholder);
+}
+
+/* ========== 每日一问入口卡片 ========== */
+.daily-question-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 32rpx 16rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: var(--td-bg-color-container);
+  box-shadow: var(--td-shadow-1);
+  transition: transform 0.2s ease;
+}
+
+.daily-question-card:active {
+  transform: scale(0.98);
+}
+
+.daily-question-card__left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.daily-question-card__icon {
+  font-size: 40rpx;
+  flex-shrink: 0;
+}
+
+.daily-question-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.daily-question-card__title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--td-text-color-primary);
+}
+
+.daily-question-card__desc {
+  font-size: 24rpx;
+  color: var(--td-text-color-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-question-card__streak {
+  font-size: 22rpx;
+  color: var(--td-brand-color-7);
+  font-weight: 500;
+  margin-top: 2rpx;
+}
+
+.daily-question-card__arrow {
+  font-size: 40rpx;
+  color: var(--td-text-color-placeholder);
+  font-weight: 300;
+  flex-shrink: 0;
 }
 
 /* ========== 错误提示 ========== */

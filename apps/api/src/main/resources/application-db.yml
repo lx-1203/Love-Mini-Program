@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    include: real
   datasource:
     url: ${APP_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/qihang_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
     username: ${APP_DATASOURCE_USERNAME:root}
@@ -7,3 +9,10 @@ spring:
     enabled: true
     locations: ${APP_FLYWAY_LOCATIONS:filesystem:../../database/flyway/sql}
     baseline-on-migrate: false
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
