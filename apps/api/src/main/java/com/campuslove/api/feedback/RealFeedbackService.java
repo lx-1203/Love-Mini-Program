@@ -26,9 +26,6 @@ public class RealFeedbackService implements FeedbackService {
     private static final Logger log = LoggerFactory.getLogger(RealFeedbackService.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    /** Phase 1 兼容：未集成 Spring Security 时的默认用户 ID */
-    private static final Long DEFAULT_USER_ID = 1L;
-
     private final FeedbackRepository feedbackRepository;
     private final ObjectMapper objectMapper;
 
@@ -40,6 +37,7 @@ public class RealFeedbackService implements FeedbackService {
     /**
      * 提交反馈。
      * 创建 Feedback 记录并保存到数据库，返回提交记录视图。
+     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
      *
      * @param type    反馈类型
      * @param request 反馈提交请求
@@ -48,10 +46,11 @@ public class RealFeedbackService implements FeedbackService {
     @Override
     @Transactional
     public SubmissionRecordView submit(FeedbackTicketType type, FeedbackSubmissionRequest request) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
         LocalDateTime now = LocalDateTime.now();
 
         Feedback feedback = new Feedback();
-        feedback.setUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID));
+        feedback.setUserId(currentUserId);
         feedback.setType(type);
         feedback.setTitle(request.title());
         feedback.setContent(request.content());
@@ -73,7 +72,7 @@ public class RealFeedbackService implements FeedbackService {
         }
 
         Feedback saved = feedbackRepository.save(feedback);
-        log.info("用户 {} 提交反馈，类型: {}，ID: {}", SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID), type, saved.getId());
+        log.info("用户 {} 提交反馈，类型: {}，ID: {}", currentUserId, type, saved.getId());
 
         return toView(saved);
     }
@@ -81,17 +80,19 @@ public class RealFeedbackService implements FeedbackService {
     /**
      * 查询当前用户的提交记录。
      * 支持按 type 过滤，若 type 为 null 则返回该用户所有反馈。
+     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
      *
      * @param type 反馈类型（可选过滤）
      * @return 提交记录列表
      */
     @Override
     public List<SubmissionRecordView> listMine(FeedbackTicketType type) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
         List<Feedback> feedbacks;
         if (type != null) {
-            feedbacks = feedbackRepository.findByUserIdAndTypeOrderByCreatedAtDesc(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID), type);
+            feedbacks = feedbackRepository.findByUserIdAndTypeOrderByCreatedAtDesc(currentUserId, type);
         } else {
-            feedbacks = feedbackRepository.findByUserIdOrderByCreatedAtDesc(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID));
+            feedbacks = feedbackRepository.findByUserIdOrderByCreatedAtDesc(currentUserId);
         }
         return feedbacks.stream().map(this::toView).toList();
     }

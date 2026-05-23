@@ -2,6 +2,10 @@ package com.campuslove.api.village;
 
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.chat.InteractionEventService;
+import com.campuslove.api.entity.Activity;
+import com.campuslove.api.entity.Activity.ActivityStatus;
+import com.campuslove.api.entity.CircleTopic;
 import com.campuslove.api.entity.Comment;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
@@ -13,6 +17,8 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserFollow;
 import com.campuslove.api.repository.CommentRepository;
+import com.campuslove.api.repository.ActivityRepository;
+import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.PostCategoryRepository;
 import com.campuslove.api.repository.PostLikeRepository;
 import com.campuslove.api.repository.PostRepository;
@@ -45,9 +51,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RealVillageService implements VillageService {
 
-    /** Phase 1 兼容：未集成 Spring Security 时的默认用户 ID */
-    private static final Long DEFAULT_USER_ID = 1L;
-
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final PostShareRepository postShareRepository;
@@ -57,6 +60,9 @@ public class RealVillageService implements VillageService {
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final UserFollowRepository userFollowRepository;
     private final ObjectMapper objectMapper;
+    private final InteractionEventService interactionEventService;
+    private final ActivityRepository activityRepository;
+    private final CircleTopicRepository circleTopicRepository;
 
     public RealVillageService(
             PostRepository postRepository,
@@ -67,7 +73,10 @@ public class RealVillageService implements VillageService {
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
             UserFollowRepository userFollowRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            InteractionEventService interactionEventService,
+            ActivityRepository activityRepository,
+            CircleTopicRepository circleTopicRepository) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.postShareRepository = postShareRepository;
@@ -77,6 +86,9 @@ public class RealVillageService implements VillageService {
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userFollowRepository = userFollowRepository;
         this.objectMapper = objectMapper;
+        this.interactionEventService = interactionEventService;
+        this.activityRepository = activityRepository;
+        this.circleTopicRepository = circleTopicRepository;
     }
 
     // ---- Phase 1 兼容方法（委托给 Phase 2 实现，userId 由 Controller 传入） ----
@@ -117,9 +129,8 @@ public class RealVillageService implements VillageService {
     @Override
     @Transactional
     public PostLikeResponse likePost(Long id) {
-        // Phase 1 兼容：当前无 Spring Security 上下文，使用默认用户 ID
-        // Controller 已直接调用 Phase 2 的 likePost(userId, id)，此方法仅作接口兼容
-        return likePost(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID), id);
+        // Phase 2: 从 SecurityContext 获取当前用户ID，未认证时抛出 401 异常
+        return likePost(SecurityUtils.getCurrentUserId(), id);
     }
 
     @Override
@@ -226,6 +237,14 @@ public class RealVillageService implements VillageService {
             PostLike postLike = new PostLike(userId, postId);
             postLikeRepository.save(postLike);
             post.setLikesCount(post.getLikesCount() + 1);
+
+            // 记录互动事件：通知帖子作者有人点赞
+            if (!userId.equals(post.getAuthorId())) {
+                interactionEventService.recordEvent(
+                        post.getAuthorId(), userId, "POST_LIKED", postId, "POST",
+                        "有人赞了你的帖子"
+                );
+            }
         }
 
         post.setUpdatedAt(LocalDateTime.now());
@@ -261,6 +280,14 @@ public class RealVillageService implements VillageService {
         post.setCommentsCount(post.getCommentsCount() + 1);
         post.setUpdatedAt(now);
         postRepository.save(post);
+
+        // 记录互动事件：通知帖子作者有人评论
+        if (!userId.equals(post.getAuthorId())) {
+            interactionEventService.recordEvent(
+                    post.getAuthorId(), userId, "POST_COMMENTED", postId, "POST",
+                    "有人评论了你的帖子"
+            );
+        }
 
         return toCommentItemView(comment);
     }
@@ -308,6 +335,125 @@ public class RealVillageService implements VillageService {
                         cat.getIcon(),
                         cat.getSortOrder()
                 ))
+                .toList();
+    }
+
+    // ---- 同校动态流 ----
+
+    /**
+     * 聚合同校动态流。
+     * 获取用户所在学校（从 UserCampusProfile 查询），
+     * 聚合同校用户最新帖子（限制 10 条）、同校即将开始的活动（限制 5 条）、
+     * 兴趣圈最新话题（限制 5 条），按时间倒序混合排列。
+     *
+     * @param userId 当前用户 ID
+     * @param page   页码（从 0 开始）
+     * @param size   每页大小
+     * @return 同校动态流视图
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public CampusFeedView getCampusFeed(Long userId, int page, int size) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId 不能为空");
+        }
+
+        // 获取用户所在学校
+        String campusName = userCampusProfileRepository.findByUserId(userId)
+                .map(UserCampusProfile::getCampusName)
+                .orElse("");
+
+        // 1. 聚合同校用户最新帖子（限制 10 条）
+        List<PostSummaryView> posts = getCampusPosts(campusName);
+
+        // 2. 聚合同校即将开始的活动（限制 5 条）
+        List<CampusActivityView> activities = getCampusActivities(campusName);
+
+        // 3. 聚合兴趣圈最新话题（限制 5 条）
+        List<CampusTopicView> topics = getCampusTopics();
+
+        return new CampusFeedView(campusName, posts, activities, topics);
+    }
+
+    /**
+     * 获取同校用户最新帖子（限制 10 条）。
+     * 查询所有活跃帖子，筛选同校作者的帖子。
+     *
+     * @param campusName 校区名称
+     * @return 帖子摘要视图列表
+     */
+    private List<PostSummaryView> getCampusPosts(String campusName) {
+        Page<Post> postPage = postRepository.findByStatusOrderByCreatedAtDesc(
+                PostStatus.active, PageRequest.of(0, 50));
+
+        List<Post> campusPosts = new ArrayList<>();
+        for (Post post : postPage.getContent()) {
+            if (campusPosts.size() >= 10) {
+                break;
+            }
+            if (!campusName.isEmpty() && isSameCampus(post.getAuthorId(), campusName)) {
+                campusPosts.add(post);
+            }
+        }
+
+        return campusPosts.stream()
+                .map(post -> toPostSummaryView(post, campusName))
+                .toList();
+    }
+
+    /**
+     * 获取同校即将开始的活动（限制 5 条）。
+     * 按校区名称和 upcoming 状态查询活动。
+     *
+     * @param campusName 校区名称
+     * @return 活动简要视图列表
+     */
+    private List<CampusActivityView> getCampusActivities(String campusName) {
+        if (campusName.isEmpty()) {
+            return List.of();
+        }
+
+        Page<Activity> activityPage = activityRepository
+                .findByCampusNameAndStatusOrderByActivityDateAsc(
+                        campusName, ActivityStatus.upcoming, PageRequest.of(0, 5));
+
+        return activityPage.getContent().stream()
+                .map(activity -> new CampusActivityView(
+                        activity.getId(),
+                        activity.getTitle(),
+                        activity.getScheduleText(),
+                        activity.getLocation(),
+                        activity.getEnrollmentCount(),
+                        activity.getStatus().name()
+                ))
+                .toList();
+    }
+
+    /**
+     * 获取兴趣圈最新话题（限制 5 条）。
+     * 按创建时间倒序查询所有话题。
+     *
+     * @return 话题简要视图列表
+     */
+    private List<CampusTopicView> getCampusTopics() {
+        Page<CircleTopic> topicPage = circleTopicRepository
+                .findAllByOrderByCreatedAtDesc(PageRequest.of(0, 5));
+
+        return topicPage.getContent().stream()
+                .map(topic -> {
+                    String authorName = userRepository.findById(topic.getAuthorId())
+                            .map(User::getNickname)
+                            .orElse(DisplayConstants.UNKNOWN_USER);
+                    return new CampusTopicView(
+                            topic.getId(),
+                            topic.getCircle().getId(),
+                            topic.getCircle().getName(),
+                            topic.getTitle(),
+                            authorName,
+                            topic.getReplyCount() != null ? topic.getReplyCount() : 0,
+                            topic.getCreatedAt().toString()
+                    );
+                })
                 .toList();
     }
 

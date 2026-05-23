@@ -2,6 +2,7 @@ package com.campuslove.api.profile;
 
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.Notification.NotificationType;
 import com.campuslove.api.entity.Notification.ReferenceType;
@@ -42,9 +43,6 @@ public class RealProfileService implements ProfileService {
 
     private static final Logger log = LoggerFactory.getLogger(RealProfileService.class);
 
-    /** Phase 1 兼容：未集成 Spring Security 时的默认用户 ID */
-    private static final Long DEFAULT_USER_ID = 1L;
-
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
     private final NotificationRepository notificationRepository;
@@ -54,6 +52,7 @@ public class RealProfileService implements ProfileService {
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
     private final ObjectMapper objectMapper;
+    private final InteractionEventService interactionEventService;
 
     public RealProfileService(
             UserRepository userRepository,
@@ -64,7 +63,8 @@ public class RealProfileService implements ProfileService {
             UserScheduleProfileRepository userScheduleProfileRepository,
             PostRepository postRepository,
             PostLikeRepository postLikeRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            InteractionEventService interactionEventService) {
         this.userRepository = userRepository;
         this.userFollowRepository = userFollowRepository;
         this.notificationRepository = notificationRepository;
@@ -74,6 +74,7 @@ public class RealProfileService implements ProfileService {
         this.postRepository = postRepository;
         this.postLikeRepository = postLikeRepository;
         this.objectMapper = objectMapper;
+        this.interactionEventService = interactionEventService;
     }
 
     // ---- 基本资料 ----
@@ -81,11 +82,13 @@ public class RealProfileService implements ProfileService {
     /**
      * 获取当前用户的基本资料。
      * 从 UserBasicProfileRepository 查询，若无记录则返回空模板。
+     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
      */
     @Override
     @Transactional(readOnly = true)
     public BasicProfileView getBasicProfile() {
-        return userBasicProfileRepository.findByUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        return userBasicProfileRepository.findByUserId(currentUserId)
                 .map(profile -> new BasicProfileView(
                         profile.getNickname(),
                         profile.getBio(),
@@ -98,17 +101,19 @@ public class RealProfileService implements ProfileService {
      * 保存当前用户的基本资料。
      * 存在则更新，不存在则创建。同时同步更新 User 表的对应字段，
      * 并重新计算 profileCompletion。
+     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
      */
     @Override
     @Transactional
     public BasicProfileView saveBasicProfile(BasicProfileRequest request) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
         LocalDateTime now = LocalDateTime.now();
 
         // 查找现有记录，存在则更新，不存在则创建
-        UserBasicProfile profile = userBasicProfileRepository.findByUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
+        UserBasicProfile profile = userBasicProfileRepository.findByUserId(currentUserId)
                 .orElseGet(() -> {
                     UserBasicProfile newProfile = new UserBasicProfile();
-                    newProfile.setUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID));
+                    newProfile.setUserId(currentUserId);
                     newProfile.setCreatedAt(now);
                     return newProfile;
                 });
@@ -121,8 +126,8 @@ public class RealProfileService implements ProfileService {
         userBasicProfileRepository.save(profile);
 
         // 同步更新 User 表的 nickname / bio / gradeLabel / pronouns
-        User user = userRepository.findById(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID)));
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
         user.setNickname(request.nickname());
         user.setBio(request.bio());
         user.setGradeLabel(request.grade());
@@ -130,7 +135,7 @@ public class RealProfileService implements ProfileService {
         user.setUpdatedAt(now);
 
         // 重新计算资料完善度并保存
-        user.setProfileCompletion(calculateProfileCompletion(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID)));
+        user.setProfileCompletion(calculateProfileCompletion(currentUserId));
         userRepository.save(user);
 
         return new BasicProfileView(
@@ -145,11 +150,13 @@ public class RealProfileService implements ProfileService {
     /**
      * 获取当前用户的校园资料。
      * 从 UserCampusProfileRepository 查询，若无记录则返回空模板（verificationStatus 为 "draft"）。
+     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
      */
     @Override
     @Transactional(readOnly = true)
     public CampusProfileView getCampusProfile() {
-        return userCampusProfileRepository.findByUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        return userCampusProfileRepository.findByUserId(currentUserId)
                 .map(profile -> new CampusProfileView(
                         profile.getCityName(),
                         profile.getCampusName(),
@@ -162,17 +169,19 @@ public class RealProfileService implements ProfileService {
      * 保存当前用户的校园资料。
      * 存在则更新，不存在则创建（verificationStatus 设为 "pending"）。
      * 更新后重新计算 profileCompletion。
+     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
      */
     @Override
     @Transactional
     public CampusProfileView saveCampusProfile(CampusProfileRequest request) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
         LocalDateTime now = LocalDateTime.now();
 
         // 查找现有记录，存在则更新，不存在则创建
-        UserCampusProfile profile = userCampusProfileRepository.findByUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
+        UserCampusProfile profile = userCampusProfileRepository.findByUserId(currentUserId)
                 .orElseGet(() -> {
                     UserCampusProfile newProfile = new UserCampusProfile();
-                    newProfile.setUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID));
+                    newProfile.setUserId(currentUserId);
                     newProfile.setCreatedAt(now);
                     return newProfile;
                 });
@@ -188,9 +197,9 @@ public class RealProfileService implements ProfileService {
         userCampusProfileRepository.save(profile);
 
         // 重新计算资料完善度
-        User user = userRepository.findById(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID)));
-        user.setProfileCompletion(calculateProfileCompletion(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID)));
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+        user.setProfileCompletion(calculateProfileCompletion(currentUserId));
         user.setUpdatedAt(now);
         userRepository.save(user);
 
@@ -207,11 +216,13 @@ public class RealProfileService implements ProfileService {
      * 获取当前用户的日程资料。
      * 从 UserScheduleProfileRepository 查询，若无记录则返回空模板。
      * 需要解析 preferredTimeWindowJson 和 courseBlockJson 为对应的 Java 类型。
+     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
      */
     @Override
     @Transactional(readOnly = true)
     public ScheduleProfileView getScheduleProfile() {
-        return userScheduleProfileRepository.findByUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        return userScheduleProfileRepository.findByUserId(currentUserId)
                 .map(profile -> {
                     // 解析偏好时间窗口 JSON → List<String>
                     List<String> preferredTimeWindows = parseJsonToList(
@@ -234,10 +245,12 @@ public class RealProfileService implements ProfileService {
      * 存在则更新，不存在则创建。
      * 需要将 preferredTimeWindows 和 courseBlocks 序列化为 JSON 字符串。
      * 更新后重新计算 profileCompletion。
+     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
      */
     @Override
     @Transactional
     public ScheduleProfileView saveScheduleProfile(ScheduleProfileRequest request) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
         LocalDateTime now = LocalDateTime.now();
 
         // 序列化 preferredTimeWindows 和 courseBlocks 为 JSON
@@ -247,10 +260,10 @@ public class RealProfileService implements ProfileService {
                 request.courseBlocks() != null ? request.courseBlocks() : List.of());
 
         // 查找现有记录，存在则更新，不存在则创建
-        UserScheduleProfile profile = userScheduleProfileRepository.findByUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
+        UserScheduleProfile profile = userScheduleProfileRepository.findByUserId(currentUserId)
                 .orElseGet(() -> {
                     UserScheduleProfile newProfile = new UserScheduleProfile();
-                    newProfile.setUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID));
+                    newProfile.setUserId(currentUserId);
                     newProfile.setCreatedAt(now);
                     return newProfile;
                 });
@@ -262,9 +275,9 @@ public class RealProfileService implements ProfileService {
         userScheduleProfileRepository.save(profile);
 
         // 重新计算资料完善度
-        User user = userRepository.findById(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID)));
-        user.setProfileCompletion(calculateProfileCompletion(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID)));
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+        user.setProfileCompletion(calculateProfileCompletion(currentUserId));
         user.setUpdatedAt(now);
         userRepository.save(user);
 
@@ -286,15 +299,17 @@ public class RealProfileService implements ProfileService {
      * 获取当前用户的统计数据。
      * followingCount 和 followersCount 来自 User 表，
      * likesCount 通过统计用户所有帖子的获赞总数计算。
+     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
      */
     @Override
     @Transactional(readOnly = true)
     public ProfileStatsView getProfileStats() {
-        User user = userRepository.findById(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID))
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID)));
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
 
         // 统计用户所有帖子的总获赞数
-        int likesCount = calculateTotalLikesCount(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID));
+        int likesCount = calculateTotalLikesCount(currentUserId);
 
         return new ProfileStatsView(
                 user.getFollowingCount(),
@@ -360,6 +375,12 @@ public class RealProfileService implements ProfileService {
         notification.setIsRead(false);
         notification.setCreatedAt(now);
         notificationRepository.save(notification);
+
+        // 记录互动事件：通知被关注用户
+        interactionEventService.recordEvent(
+                targetUserId, userId, "NEW_FOLLOW", userId, "USER",
+                "有人关注了你"
+        );
 
         return new FollowView(true, userId, targetUserId,
                 follower.getFollowingCount(), target.getFollowersCount());

@@ -18,9 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class MatchController {
 
   private final MatchService matchService;
+  private final IcebreakerService icebreakerService;
 
-  public MatchController(MatchService matchService) {
+  public MatchController(MatchService matchService, IcebreakerService icebreakerService) {
     this.matchService = matchService;
+    this.icebreakerService = icebreakerService;
   }
 
   @GetMapping("/form-config")
@@ -167,6 +169,25 @@ public class MatchController {
   public ResponseEntity<Void> markVisitorRead(@PathVariable("id") Long id) {
     matchService.markVisitorRead(id);
     return ResponseEntity.ok().build();
+  }
+
+  // ---- 破冰引导 ----
+
+  /**
+   * 获取匹配对的破冰话题推荐。
+   * GET /api/matches/{matchId}/icebreakers
+   *
+   * @param matchId 匹配记录 ID（HeartSignal ID）
+   * @return 破冰话题列表（最多 3 个）
+   */
+  @GetMapping("/{matchId}/icebreakers")
+  public ResponseEntity<List<IcebreakerView>> getIcebreakers(@PathVariable("matchId") Long matchId) {
+    try {
+      List<IcebreakerView> icebreakers = icebreakerService.getIcebreakers(matchId);
+      return ResponseEntity.ok(icebreakers);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    }
   }
 }
 

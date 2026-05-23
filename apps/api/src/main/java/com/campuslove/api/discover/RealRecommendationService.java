@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -116,9 +117,11 @@ public class RealRecommendationService implements RecommendationService {
     public List<DiscussionRecommendationView> getDiscussions() {
         List<ScoredDiscussion> scoredDiscussions = new ArrayList<>();
 
-        // 1. 从 CircleTopic 获取热门话题
+        // 1. 从 CircleTopic 获取热门话题（分页查询，按创建时间倒序，默认每页20条）
         try {
-            List<CircleTopic> topics = circleTopicRepository.findAll();
+            List<CircleTopic> topics = circleTopicRepository.findAll(
+                    PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt")))
+                    .getContent();
             for (CircleTopic topic : topics) {
                 // 话题热度 = 回复数 * 3（话题没有点赞数，以回复数为主要指标）
                 int heatScore = (topic.getReplyCount() != null ? topic.getReplyCount() : 0) * 3;
@@ -292,19 +295,90 @@ public class RealRecommendationService implements RecommendationService {
         );
     }
 
+    /**
+     * 获取推荐偏好设置（无用户上下文版本）。
+     * @deprecated 无法获取用户特定偏好，仅返回默认值。
+     *             请使用 {@link #getPreferences(Long)} 从数据库读取用户持久化偏好。
+     */
     @Override
+    @Deprecated
     public RecommendationPreferencesView getPreferences() {
-        // 无参版本：返回默认值
+        // 无用户上下文，返回默认偏好（同校优先 / 中午12点刷新）
         return new RecommendationPreferencesView("12:00", "campus_first");
     }
 
+    /**
+     * 更新推荐偏好设置（无用户上下文版本）。
+     * @deprecated 无法持久化偏好，因为没有用户 ID。
+     *             请使用 {@link #updatePreferences(Long, RecommendationPreference)} 持久化用户偏好。
+     * @throws UnsupportedOperationException 始终抛出，提示使用带 userId 的版本
+     */
     @Override
+    @Deprecated
     public RecommendationPreferencesView updatePreferences(RecommendationPreferencesView prefs) {
-        // 无用户上下文版本：直接返回传入值
-        if (prefs == null || prefs.dailyNotifyTime() == null || prefs.scope() == null) {
-            throw new IllegalArgumentException("dailyNotifyTime and scope are required");
+        throw new UnsupportedOperationException(
+                "无用户上下文，无法持久化偏好。请使用 updatePreferences(Long userId, RecommendationPreference data) 方法");
+    }
+
+    /**
+     * 更新指定用户的推荐偏好设置（持久化到数据库）。
+     * 根据用户 ID 查找已有偏好记录，存在则更新，不存在则新建后保存。
+     * 偏好会影响推荐排序：同校优先(campus_first)时校区匹配用户排序靠前。
+     *
+     * @param userId 用户 ID，不能为空
+     * @param data   推荐偏好实体数据，包含 preferredTime 和 scope 字段
+     * @return 更新后的推荐偏好视图
+     * @throws IllegalArgumentException 参数校验失败时抛出
+     */
+    @Override
+    @Transactional
+    public RecommendationPreferencesView updatePreferences(Long userId, RecommendationPreference data) {
+        // 参数校验
+        if (userId == null) {
+            throw new IllegalArgumentException("userId 不能为空");
         }
-        return prefs;
+        if (data == null) {
+            throw new IllegalArgumentException("偏好数据不能为空");
+        }
+        if (data.getPreferredTime() == null || data.getPreferredTime().isBlank()) {
+            throw new IllegalArgumentException("推荐时间偏好(preferredTime)不能为空");
+        }
+        if (data.getScope() == null || data.getScope().isBlank()) {
+            throw new IllegalArgumentException("推荐范围(scope)不能为空");
+        }
+
+        // 校验 scope 取值范围
+        Set<String> validScopes = Set.of("campus_first", "city", "unlimited");
+        if (!validScopes.contains(data.getScope())) {
+            throw new IllegalArgumentException(
+                    "推荐范围(scope)无效，有效值: campus_first, city, unlimited，当前值: " + data.getScope());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        try {
+            // 查找已有偏好记录，存在则更新，不存在则新建
+            RecommendationPreference pref = recommendationPreferenceRepository.findByUserId(userId)
+                    .orElseGet(() -> {
+                        RecommendationPreference newPref = new RecommendationPreference();
+                        newPref.setUserId(userId);
+                        newPref.setCreatedAt(now);
+                        return newPref;
+                    });
+
+            // 更新偏好字段
+            pref.setPreferredTime(data.getPreferredTime());
+            pref.setScope(data.getScope());
+            pref.setUpdatedAt(now);
+
+            // 持久化到数据库
+            recommendationPreferenceRepository.save(pref);
+
+            return new RecommendationPreferencesView(pref.getPreferredTime(), pref.getScope());
+        } catch (Exception e) {
+            // 数据库操作异常时，包装为运行时异常向上抛出
+            throw new RuntimeException("保存推荐偏好失败，用户ID: " + userId, e);
+        }
     }
 
     // ---- Phase 2 核心实现：人物推荐 ----

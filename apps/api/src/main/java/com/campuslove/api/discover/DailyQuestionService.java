@@ -51,31 +51,3 @@ public interface DailyQuestionService {
      */
     boolean hasAnswered(Long userId, Long questionId);
 }
-
-/**
- * 每日一问问题视图。
- */
-record DailyQuestionView(
-    Long id,
-    LocalDate questionDate,
-    String questionText,
-    boolean hasAnswered,
-    /** 问题分类 */
-    String category,
-    /** 回答数量 */
-    int answerCount
-) {}
-
-/**
- * 每日一问回答视图。
- */
-record DailyAnswerView(
-    Long id,
-    Long userId,
-    String authorName,
-    String content,
-    boolean isAnonymous,
-    java.time.LocalDateTime createdAt,
-    /** 回答者头像 URL（匿名时为空） */
-    String avatarUrl
-) {}

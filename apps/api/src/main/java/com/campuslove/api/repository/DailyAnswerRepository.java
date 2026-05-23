@@ -44,4 +44,13 @@ public interface DailyAnswerRepository extends JpaRepository<DailyAnswer, Long> 
      * @return 回答数量
      */
     long countByQuestionId(Long questionId);
+
+    /**
+     * 根据用户 ID 查询回答列表，按创建时间倒序。
+     * 用于破冰引导功能中查找用户最近回答的每日一问。
+     *
+     * @param userId 用户 ID
+     * @return 回答列表
+     */
+    java.util.List<DailyAnswer> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

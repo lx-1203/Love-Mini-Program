@@ -465,27 +465,13 @@ public class RealTempChatService implements TempChatService {
 
     /**
      * 解析当前用户 ID。
-     * 优先从请求参数 userId 获取，回退到默认值 1L。
-     * 后续集成 Spring Security 后可从 SecurityContextHolder 获取。
+     * Phase 2: 统一从 SecurityContext 获取当前用户ID，未认证时抛出 401 异常。
+     * 不再回退到默认值 1L。
      *
      * @return 当前用户 ID
      */
     private Long resolveCurrentUserId() {
-        // 尝试从当前 HTTP 请求的参数中获取 userId
-        try {
-            jakarta.servlet.http.HttpServletRequest request =
-                    ((org.springframework.web.context.request.ServletRequestAttributes)
-                            org.springframework.web.context.request.RequestContextHolder.getRequestAttributes())
-                    .getRequest();
-            String userIdParam = request.getParameter("userId");
-            if (userIdParam != null && !userIdParam.isBlank()) {
-                return Long.parseLong(userIdParam);
-            }
-        } catch (Exception e) {
-            // 非请求上下文或参数解析失败，使用默认值
-        }
-        // 从 SecurityContext 获取当前用户 ID，未认证时回退到默认值 1L
-        return SecurityUtils.getCurrentUserIdOrDefault(1L);
+        return SecurityUtils.getCurrentUserId();
     }
 
     /**

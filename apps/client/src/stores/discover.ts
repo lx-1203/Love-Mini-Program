@@ -2,6 +2,10 @@ import { defineStore } from "pinia";
 import { appEnv } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import type { components } from "../services/generated/api-types";
+
+/** 从 api-types 中提取在线状态视图类型 */
+type OnlineStatusView = components["schemas"]["OnlineStatusView"];
 
 /**
  * 推荐卡片用户信息
@@ -19,6 +23,8 @@ export interface DiscoverCard {
   images: string[];
   /** 所属学校名称，用于同校匹配加权 */
   campusName?: string;
+  /** 在线状态：online-在线 / away-离开 / offline-离线 */
+  onlineStatus?: "online" | "away" | "offline";
 }
 
 /**
@@ -62,6 +68,8 @@ export interface DiscoverState {
   loading: boolean;
   /** 错误信息 */
   errorMessage: string | null;
+  /** 在线状态映射表：userId -> 在线状态 */
+  onlineStatusMap: Record<string, "online" | "away" | "offline">;
 }
 
 /* ========== 后端视图类型 ========== */
@@ -91,7 +99,7 @@ export interface RecommendedPersonView {
  * @param raw - 后端返回的推荐人物视图
  * @returns 前端 DiscoverCard 对象
  */
-function mapToDiscoverCard(raw: RecommendedPersonView): DiscoverCard {
+function mapToDiscoverCard(raw: RecommendedPersonView, onlineStatus?: "online" | "away" | "offline"): DiscoverCard {
   return {
     id: String(raw.id),
     userId: String(raw.id),
@@ -104,6 +112,7 @@ function mapToDiscoverCard(raw: RecommendedPersonView): DiscoverCard {
     availability: raw.availability,
     images: raw.images || [],
     campusName: raw.campusName,
+    onlineStatus,
   };
 }
 
@@ -121,6 +130,7 @@ const mockCards: DiscoverCard[] = [
     commonGround: "你们都选了电影话题",
     availability: "今晚 19:00-21:00",
     campusName: "北京大学",
+    onlineStatus: "online",
     images: [
       "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&h=1200&fit=crop",
     ],
@@ -136,6 +146,7 @@ const mockCards: DiscoverCard[] = [
     commonGround: "你们都选了美食话题",
     availability: "周末下午",
     campusName: "清华大学",
+    onlineStatus: "away",
     images: [
       "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&h=1200&fit=crop",
     ],
@@ -151,6 +162,7 @@ const mockCards: DiscoverCard[] = [
     commonGround: "你们都选了摄影话题",
     availability: "周三、周五晚上",
     campusName: "复旦大学",
+    onlineStatus: "offline",
     images: [
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&h=1200&fit=crop",
     ],
@@ -343,6 +355,7 @@ export const useDiscoverStore = defineStore("discover", {
       hasMore: true,
       loading: false,
       errorMessage: null,
+      onlineStatusMap: {},
     };
   },
 
@@ -757,6 +770,53 @@ export const useDiscoverStore = defineStore("discover", {
         }));
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载推荐历史失败";
+      }
+    },
+
+    /**
+     * 查询在线状态
+     * 根据推荐卡片中的用户 ID 列表，批量查询在线状态并更新到卡片数据中
+     * Mock 模式提供本地测试数据，Real 模式调用 GET /api/online-status?userIds=xxx
+     */
+    async fetchOnlineStatus() {
+      this.errorMessage = null;
+
+      try {
+        // 收集当前卡片中所有用户 ID
+        const userIds = this.cards.map((c) => c.userId);
+        if (userIds.length === 0) return;
+
+        if (useMock()) {
+          // Mock 模式：从本地卡片数据中提取已有的 onlineStatus，构建映射表
+          const statusMap: Record<string, "online" | "away" | "offline"> = {};
+          for (const card of this.cards) {
+            if (card.onlineStatus) {
+              statusMap[card.userId] = card.onlineStatus;
+            }
+          }
+          this.onlineStatusMap = statusMap;
+          return;
+        }
+
+        // 调用后端 API: GET /api/online-status?userIds=xxx,xxx
+        const data = await request<OnlineStatusView[]>({
+          url: `/online-status?userIds=${userIds.join(",")}`,
+          method: "GET",
+        });
+
+        // 构建在线状态映射表
+        const statusMap: Record<string, "online" | "away" | "offline"> = {};
+        for (const item of data) {
+          statusMap[String(item.userId)] = item.status;
+        }
+        this.onlineStatusMap = statusMap;
+
+        // 同步更新卡片中的 onlineStatus 字段
+        for (const card of this.cards) {
+          card.onlineStatus = statusMap[card.userId] ?? "offline";
+        }
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "查询在线状态失败";
       }
     },
   },

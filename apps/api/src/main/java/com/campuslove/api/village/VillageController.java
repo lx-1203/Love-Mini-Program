@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -106,6 +107,25 @@ public class VillageController {
       @RequestParam(name = "userId") Long userId,
       @Valid @RequestBody SharePostRequest request) {
     return villageService.sharePost(userId, id, request.comment());
+  }
+
+  // ---------- 同校动态流 ----------
+
+  /**
+   * 获取同校动态流。
+   * 聚合同校用户最新帖子、即将开始的活动、兴趣圈最新话题。
+   */
+  @GetMapping("/campus-feed")
+  public ResponseEntity<CampusFeedView> getCampusFeed(
+      @RequestParam(name = "userId") Long userId,
+      @RequestParam(name = "page", defaultValue = "0") int page,
+      @RequestParam(name = "size", defaultValue = "20") int size) {
+    try {
+      CampusFeedView feed = villageService.getCampusFeed(userId, page, size);
+      return ResponseEntity.ok(feed);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    }
   }
 }
 
@@ -247,4 +267,44 @@ record PostCategoryView(
     String code,
     String icon,
     int sortOrder
+) {}
+
+/**
+ * 同校动态流视图。
+ *
+ * @param campusName 校区名称
+ * @param posts      同校最新帖子列表
+ * @param activities 同校即将开始的活动列表
+ * @param topics     同校兴趣圈最新话题列表
+ */
+record CampusFeedView(
+    String campusName,
+    List<PostSummaryView> posts,
+    List<CampusActivityView> activities,
+    List<CampusTopicView> topics
+) {}
+
+/**
+ * 同校动态流中的活动简要视图。
+ */
+record CampusActivityView(
+    Long id,
+    String title,
+    String scheduleText,
+    String location,
+    int enrollmentCount,
+    String status
+) {}
+
+/**
+ * 同校动态流中的话题简要视图。
+ */
+record CampusTopicView(
+    Long id,
+    Long circleId,
+    String circleName,
+    String title,
+    String authorName,
+    int replyCount,
+    String createdAt
 ) {}

@@ -22,7 +22,8 @@ public class MockPrivateMessageService implements PrivateMessageService {
     public ConversationView createOrGetConversation(Long userAId, Long userBId) {
         return new ConversationView(
             1L, "conv-1", userAId, userBId,
-            "Mock用户", null, null, null, 0
+            "Mock用户", null, null, null, 0,
+            null, false, "matching", "private"
         );
     }
 

@@ -1,6 +1,7 @@
 package com.campuslove.api.repository;
 
 import com.campuslove.api.entity.CircleTopic;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,4 +28,13 @@ public interface CircleTopicRepository extends JpaRepository<CircleTopic, Long> 
      * @return 话题数量
      */
     long countByCircleId(Long circleId);
+
+    /**
+     * 查询所有话题，按创建时间倒序排列。
+     * 用于同校动态流中聚合最新话题。
+     *
+     * @param pageable 分页参数
+     * @return 分页话题列表
+     */
+    Page<CircleTopic> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

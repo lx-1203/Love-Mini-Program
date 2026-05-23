@@ -125,7 +125,8 @@ public class MockDailyQuestionService implements DailyQuestionService {
         "林安",
         "希望是傍晚在校园里散步，聊聊天，去图书馆旁边的咖啡馆坐一坐。不用太复杂，轻松自然就好。",
         false,
-        LocalDateTime.now().minusHours(1)
+        LocalDateTime.now().minusHours(1),
+        null
     ));
 
     mockAnswers.add(new DailyAnswerView(
@@ -134,7 +135,8 @@ public class MockDailyQuestionService implements DailyQuestionService {
         "周沐",
         "一起去逛书店或者看一场展览吧，安静又有话题可以聊。",
         false,
-        LocalDateTime.now().minusHours(2)
+        LocalDateTime.now().minusHours(2),
+        null
     ));
 
     mockAnswers.add(new DailyAnswerView(
@@ -143,14 +145,15 @@ public class MockDailyQuestionService implements DailyQuestionService {
         DisplayConstants.ANONYMOUS_USER,
         "想在操场看星星，带两杯奶茶，随便聊聊各自的专业和兴趣。",
         true,
-        LocalDateTime.now().minusHours(3)
+        LocalDateTime.now().minusHours(3),
+        null
     ));
 
     return mockAnswers;
   }
 
   private DailyQuestionView toQuestionView(Long id, QuestionState state, boolean hasAnswered) {
-    return new DailyQuestionView(id, state.questionDate(), state.questionText(), hasAnswered);
+    return new DailyQuestionView(id, state.questionDate(), state.questionText(), hasAnswered, null, 0);
   }
 
   private DailyAnswerView toAnswerView(AnswerState state) {
@@ -162,7 +165,8 @@ public class MockDailyQuestionService implements DailyQuestionService {
         displayName,
         state.content,
         state.isAnonymous,
-        LocalDateTime.now()
+        LocalDateTime.now(),
+        null
     );
   }
 

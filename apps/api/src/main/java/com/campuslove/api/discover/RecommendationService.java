@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.entity.RecommendationPreference;
 import java.util.List;
 
 /**
@@ -54,8 +55,21 @@ public interface RecommendationService {
      *
      * @param prefs 推荐偏好视图
      * @return 更新后的推荐偏好视图
+     * @deprecated 无法持久化偏好，请使用 {@link #updatePreferences(Long, RecommendationPreference)}
      */
+    @Deprecated
     RecommendationPreferencesView updatePreferences(RecommendationPreferencesView prefs);
+
+    /**
+     * 更新指定用户的推荐偏好设置（持久化到数据库）。
+     * 根据用户 ID 查找已有偏好记录，存在则更新，不存在则新建。
+     * 偏好会影响推荐排序：同校优先时校区匹配用户排序靠前。
+     *
+     * @param userId 用户 ID
+     * @param data   推荐偏好实体数据（preferredTime、scope 等字段）
+     * @return 更新后的推荐偏好视图
+     */
+    RecommendationPreferencesView updatePreferences(Long userId, RecommendationPreference data);
 
     // ---- Phase 2 新增：人物推荐 ----
 

@@ -2,6 +2,7 @@ package com.campuslove.api.match;
 
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.MatchConfig;
+import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.entity.HeartSignal;
 import com.campuslove.api.entity.HeartSignal.SignalStatus;
 import com.campuslove.api.entity.Like;
@@ -61,6 +62,7 @@ public class RealMatchService implements MatchService {
     private final UserScheduleProfileRepository userScheduleProfileRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
+    private final InteractionEventService interactionEventService;
 
     public RealMatchService(
             MatchConfig matchConfig,
@@ -73,7 +75,8 @@ public class RealMatchService implements MatchService {
             UserBasicProfileRepository userBasicProfileRepository,
             UserScheduleProfileRepository userScheduleProfileRepository,
             SimpMessagingTemplate messagingTemplate,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            InteractionEventService interactionEventService) {
         this.matchConfig = matchConfig;
         this.likeRepository = likeRepository;
         this.heartSignalRepository = heartSignalRepository;
@@ -85,6 +88,7 @@ public class RealMatchService implements MatchService {
         this.userScheduleProfileRepository = userScheduleProfileRepository;
         this.messagingTemplate = messagingTemplate;
         this.objectMapper = objectMapper;
+        this.interactionEventService = interactionEventService;
     }
 
     // ---- Phase 1 存根方法 ----
@@ -321,6 +325,12 @@ public class RealMatchService implements MatchService {
             likeRepository.save(like);
         }
 
+        // 记录互动事件：通知被喜欢的用户
+        interactionEventService.recordEvent(
+                targetUserId, userId, "NEW_LIKE", null, "USER",
+                "有人喜欢了你"
+        );
+
         // 检查是否互相喜欢
         Optional<Like> reverseLike = likeRepository.findByUserIdAndTargetUserId(targetUserId, userId);
         if (reverseLike.isPresent() && reverseLike.get().getStatus() == LikeStatus.active) {
@@ -460,6 +470,12 @@ public class RealMatchService implements MatchService {
             visitor.setVisitedUserId(visitedUserId);
             visitor.setCreatedAt(LocalDateTime.now());
             visitorRepository.save(visitor);
+
+            // 记录互动事件：通知被访问的用户
+            interactionEventService.recordEvent(
+                    visitedUserId, visitorId, "NEW_VISITOR", null, "USER",
+                    "有人查看了你的资料"
+            );
         }
     }
 

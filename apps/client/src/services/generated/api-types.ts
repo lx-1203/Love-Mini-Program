@@ -796,6 +796,40 @@ export interface components {
             error: string;
             message: string;
         };
+        /** 在线状态视图 */
+        OnlineStatusView: {
+            userId: number;
+            /** @enum {string} */
+            status: "online" | "away" | "offline";
+            lastHeartbeat: string;
+        };
+        /** 破冰话题视图 */
+        IcebreakerView: {
+            topics: string[];
+            matchId: number;
+            /** @enum {string} */
+            basedOn: "common_interests" | "common_answers" | "general";
+        };
+        /** 互动事件视图 */
+        InteractionEventView: {
+            id: number;
+            /** @enum {string} */
+            eventType: "NEW_LIKE" | "NEW_VISITOR" | "NEW_FOLLOW" | "POST_LIKED" | "POST_COMMENTED" | "TOPIC_REPLIED";
+            triggerUserId: number;
+            triggerUserName: string;
+            triggerUserAvatar: string;
+            referenceId: number;
+            referenceType: string;
+            summary: string;
+            isRead: boolean;
+            createdAt: string;
+        };
+        /** 同校动态流视图 */
+        CampusFeedView: {
+            posts: Record<string, unknown>[];
+            activities: Record<string, unknown>[];
+            topics: Record<string, unknown>[];
+        };
     };
     responses: never;
     parameters: never;

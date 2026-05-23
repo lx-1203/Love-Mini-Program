@@ -2,6 +2,10 @@ import { defineStore } from "pinia";
 import { appEnv } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import type { components } from "../services/generated/api-types";
+
+/** 从 api-types 中提取互动事件视图类型 */
+type InteractionEventView = components["schemas"]["InteractionEventView"];
 
 /**
  * 会话类型
@@ -66,6 +70,32 @@ export interface SystemNotification {
 }
 
 /**
+ * 互动事件
+ * 用于互动提醒增强功能，展示更丰富的互动信息
+ */
+export interface InteractionEvent {
+  id: number;
+  /** 事件类型 */
+  eventType: "NEW_LIKE" | "NEW_VISITOR" | "NEW_FOLLOW" | "POST_LIKED" | "POST_COMMENTED" | "TOPIC_REPLIED";
+  /** 触发用户 ID */
+  triggerUserId: number;
+  /** 触发用户名称 */
+  triggerUserName: string;
+  /** 触发用户头像 */
+  triggerUserAvatar: string;
+  /** 关联资源 ID */
+  referenceId: number;
+  /** 关联资源类型 */
+  referenceType: string;
+  /** 事件摘要 */
+  summary: string;
+  /** 是否已读 */
+  isRead: boolean;
+  /** 事件创建时间 */
+  createdAt: string;
+}
+
+/**
  * 消息项
  */
 export interface MessageItem {
@@ -90,6 +120,12 @@ export interface MessagesState {
   heartSignals: MessageHeartSignal[];
   /** 系统通知列表 */
   notifications: SystemNotification[];
+  /** 互动事件列表 */
+  interactionEvents: InteractionEvent[];
+  /** 互动事件当前页码 */
+  interactionEventPage: number;
+  /** 互动事件是否还有更多 */
+  interactionEventHasMore: boolean;
   /** 是否正在加载 */
   loading: boolean;
   /** 错误信息 */
@@ -458,6 +494,84 @@ function useMock() {
   return appEnv.apiMode === "mock";
 }
 
+/* ========== 互动事件 Mock 数据 ========== */
+
+/** Mock 互动事件列表 */
+const mockInteractionEvents: InteractionEvent[] = [
+  {
+    id: 1,
+    eventType: "NEW_LIKE",
+    triggerUserId: 4001,
+    triggerUserName: "夏言",
+    triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Xiayan&backgroundColor=b6e3f4",
+    referenceId: 0,
+    referenceType: "profile",
+    summary: "夏言喜欢了你",
+    isRead: false,
+    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 2,
+    eventType: "NEW_VISITOR",
+    triggerUserId: 4002,
+    triggerUserName: "顾北",
+    triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Gubei&backgroundColor=c0aede",
+    referenceId: 0,
+    referenceType: "profile",
+    summary: "顾北访问了你的主页",
+    isRead: false,
+    createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 3,
+    eventType: "NEW_FOLLOW",
+    triggerUserId: 4003,
+    triggerUserName: "林溪",
+    triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Linxi&backgroundColor=ffdfbf",
+    referenceId: 0,
+    referenceType: "profile",
+    summary: "林溪关注了你",
+    isRead: true,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 4,
+    eventType: "POST_LIKED",
+    triggerUserId: 4004,
+    triggerUserName: "周屿",
+    triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Zhouyu&backgroundColor=d1d4f9",
+    referenceId: 42,
+    referenceType: "post",
+    summary: "周屿赞了你的帖子",
+    isRead: false,
+    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 5,
+    eventType: "POST_COMMENTED",
+    triggerUserId: 4001,
+    triggerUserName: "夏言",
+    triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Xiayan&backgroundColor=b6e3f4",
+    referenceId: 42,
+    referenceType: "post",
+    summary: "夏言评论了你的帖子：\"写得真好！\"",
+    isRead: false,
+    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 6,
+    eventType: "TOPIC_REPLIED",
+    triggerUserId: 4005,
+    triggerUserName: "沈念",
+    triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Shennian&backgroundColor=ffd5dc",
+    referenceId: 15,
+    referenceType: "topic",
+    summary: "沈念回复了你的话题",
+    isRead: true,
+    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
 /** 异步操作超时时间（毫秒） */
 const ASYNC_TIMEOUT_MS = 15000;
 
@@ -497,6 +611,9 @@ export const useMessagesStore = defineStore("messages", {
     currentMessages: [],
     heartSignals: [],
     notifications: [],
+    interactionEvents: [],
+    interactionEventPage: 1,
+    interactionEventHasMore: true,
     loading: false,
     errorMessage: null,
   }),
@@ -529,6 +646,10 @@ export const useMessagesStore = defineStore("messages", {
     /** 临时匿名会话 */
     tempSessions: (state): MessageSession[] => {
       return state.sessions.filter((s) => s.sessionType === "temp_anonymous");
+    },
+    /** 未读互动事件数量 */
+    unreadInteractionEventCount: (state): number => {
+      return state.interactionEvents.filter((e) => !e.isRead).length;
     },
   },
 
@@ -1065,6 +1186,170 @@ export const useMessagesStore = defineStore("messages", {
      */
     clearCurrentMessages() {
       this.currentMessages = [];
+    },
+
+    /**
+     * 加载互动事件列表
+     * 支持分页加载，首次加载重置列表，后续追加数据
+     * Mock 模式提供本地测试数据，Real 模式调用 GET /api/interactions?page={page}
+     * @param page - 页码（从1开始）
+     */
+    async loadInteractionEvents(page: number = 1) {
+      this.loading = true;
+      this.errorMessage = null;
+
+      try {
+        await withTimeout(
+          (async () => {
+            if (useMock()) {
+              // Mock 模式：使用本地硬编码的互动事件数据
+              const allEvents = [...mockInteractionEvents].sort(
+                (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
+              );
+              // Mock 模式不分页，直接返回全部数据
+              if (page === 1) {
+                this.interactionEvents = allEvents;
+              } else {
+                this.interactionEvents = [...this.interactionEvents, ...allEvents];
+              }
+              this.interactionEventPage = page;
+              this.interactionEventHasMore = false;
+              return;
+            }
+
+            // 调用后端 API: GET /api/interactions?page={page}&pageSize=20
+            const data = await request<InteractionEventView[]>({
+              url: `/interactions?page=${page}&pageSize=20`,
+              method: "GET",
+            });
+
+            // 将后端 InteractionEventView 映射为前端 InteractionEvent
+            const mappedEvents: InteractionEvent[] = data.map((item) => ({
+              id: item.id,
+              eventType: item.eventType,
+              triggerUserId: item.triggerUserId,
+              triggerUserName: item.triggerUserName,
+              triggerUserAvatar: item.triggerUserAvatar,
+              referenceId: item.referenceId,
+              referenceType: item.referenceType,
+              summary: item.summary,
+              isRead: item.isRead,
+              createdAt: item.createdAt,
+            }));
+
+            if (page === 1) {
+              this.interactionEvents = mappedEvents;
+            } else {
+              this.interactionEvents = [...this.interactionEvents, ...mappedEvents];
+            }
+            this.interactionEventPage = page;
+            // 返回数据不足一页时，说明没有更多数据
+            this.interactionEventHasMore = mappedEvents.length >= 20;
+          })(),
+          ASYNC_TIMEOUT_MS,
+          "加载互动事件超时"
+        );
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "加载互动事件失败";
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * 获取未读互动事件数
+     * Mock 模式从本地数据计算，Real 模式调用 GET /api/interactions/unread-count
+     * @returns 未读互动事件数量
+     */
+    async getUnreadInteractionCount(): Promise<number> {
+      try {
+        if (useMock()) {
+          // Mock 模式：从本地互动事件列表中统计未读数
+          return this.interactionEvents.filter((e) => !e.isRead).length;
+        }
+
+        // 调用后端 API: GET /api/interactions/unread-count
+        const result = await withTimeout(
+          request<{ count: number }>({
+            url: "/interactions/unread-count",
+            method: "GET",
+          }),
+          ASYNC_TIMEOUT_MS,
+          "获取未读互动事件数超时"
+        );
+        return result.count ?? 0;
+      } catch {
+        // 静默失败，返回本地计算的未读数
+        return this.interactionEvents.filter((e) => !e.isRead).length;
+      }
+    },
+
+    /**
+     * 标记单个互动事件为已读
+     * Mock 模式直接更新本地状态，Real 模式调用 PUT /api/interactions/{eventId}/read
+     * @param eventId - 互动事件 ID
+     */
+    async markInteractionRead(eventId: number) {
+      try {
+        // 本地状态查找
+        const event = this.interactionEvents.find((e) => e.id === eventId);
+        if (!event || event.isRead) return;
+
+        if (useMock()) {
+          // Mock 模式：直接更新本地状态
+          event.isRead = true;
+          return;
+        }
+
+        // 调用后端 API: PUT /api/interactions/{eventId}/read
+        await withTimeout(
+          request<void>({
+            url: `/interactions/${eventId}/read`,
+            method: "PUT",
+          }),
+          ASYNC_TIMEOUT_MS,
+          "标记互动事件已读超时"
+        );
+        event.isRead = true;
+      } catch {
+        // 静默失败，不阻塞 UI
+      }
+    },
+
+    /**
+     * 标记所有互动事件为已读
+     * Mock 模式直接更新本地状态，Real 模式调用 PUT /api/interactions/read-all
+     */
+    async markAllInteractionsRead() {
+      try {
+        if (useMock()) {
+          // Mock 模式：直接更新本地所有互动事件为已读
+          this.interactionEvents.forEach((e) => {
+            e.isRead = true;
+          });
+          return;
+        }
+
+        // 调用后端 API: PUT /api/interactions/read-all
+        await withTimeout(
+          request<void>({
+            url: "/interactions/read-all",
+            method: "PUT",
+          }),
+          ASYNC_TIMEOUT_MS,
+          "标记全部互动事件已读超时"
+        );
+
+        // 更新本地状态
+        this.interactionEvents.forEach((e) => {
+          e.isRead = true;
+        });
+      } catch {
+        // 静默失败，本地状态仍更新
+        this.interactionEvents.forEach((e) => {
+          e.isRead = true;
+        });
+      }
     },
   },
 });

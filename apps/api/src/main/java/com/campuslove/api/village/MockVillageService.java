@@ -196,12 +196,12 @@ public class MockVillageService implements VillageService {
 
   @Override
   public CommentItemView commentPost(Long userId, Long postId, String content) {
-    return createComment(postId, new CreateCommentRequest(content, null));
+    return createComment(userId, postId, new CreateCommentRequest(content, null));
   }
 
   @Override
   public ShareView sharePost(Long userId, Long postId, String comment) {
-    return sharePost(postId, new SharePostRequest(comment));
+    return sharePost(userId, postId, new SharePostRequest(comment));
   }
 
   // ---- Phase 2 新增：帖子分类 ----
@@ -215,6 +215,14 @@ public class MockVillageService implements VillageService {
         new PostCategoryView(4L, "活动", "activity", "calendar", 4),
         new PostCategoryView(5L, "求助", "help", "help-circle", 5)
     );
+  }
+
+  // ---- 同校动态流 ----
+
+  @Override
+  public CampusFeedView getCampusFeed(Long userId, int page, int size) {
+    // Mock 实现：返回空动态流
+    return new CampusFeedView("南校区", List.of(), List.of(), List.of());
   }
 
   private PostData findPost(Long id) {

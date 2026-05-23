@@ -50,7 +50,8 @@ public class MockCircleService implements CircleService {
               circle.icon,
               circle.description,
               circle.memberCount,
-              joined
+              joined,
+              0
           );
         })
         .toList();

@@ -2,6 +2,10 @@ import { defineStore } from "pinia";
 import { appEnv } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import type { components } from "../services/generated/api-types";
+
+/** 从 api-types 中提取同校动态流视图类型 */
+type CampusFeedView = components["schemas"]["CampusFeedView"];
 
 /**
  * 帖子分类
@@ -90,6 +94,14 @@ export interface VillageState {
   page: number;
   /** 是否还有更多数据可加载 */
   hasMore: boolean;
+  /** 同校动态流 - 帖子列表 */
+  campusFeedPosts: PostItem[];
+  /** 同校动态流 - 活动列表 */
+  campusFeedActivities: Record<string, unknown>[];
+  /** 同校动态流 - 话题列表 */
+  campusFeedTopics: Record<string, unknown>[];
+  /** 同校动态流是否正在加载 */
+  loadingCampusFeed: boolean;
 }
 
 /* ========== Mock 数据 ========== */
@@ -496,6 +508,10 @@ export const useVillageStore = defineStore("village", {
     errorMessage: null,
     page: 1,
     hasMore: true,
+    campusFeedPosts: [],
+    campusFeedActivities: [],
+    campusFeedTopics: [],
+    loadingCampusFeed: false,
   }),
 
   getters: {
@@ -1070,6 +1086,112 @@ export const useVillageStore = defineStore("village", {
     clearCurrentPost() {
       this.currentPost = null;
       this.comments = [];
+    },
+
+    /**
+     * 加载同校动态流
+     * 获取当前用户所在学校的帖子、活动和话题聚合数据
+     * Mock 模式提供本地测试数据，Real 模式调用 GET /api/campus/feed
+     */
+    async loadCampusFeed() {
+      this.loadingCampusFeed = true;
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          // Mock 模式：从本地 mockPosts 中筛选同校帖子作为动态流
+          // 获取当前用户学校信息
+          let myCampus = "";
+          try {
+            const sessionStore = useSessionStore();
+            myCampus = sessionStore.userSession?.campusName ?? "";
+          } catch {
+            // session store 不可用时忽略
+          }
+
+          // 筛选同校帖子，如果没有学校信息则使用全部帖子
+          const campusPosts = myCampus
+            ? mockPosts.filter((p) => p.author.campusName === myCampus)
+            : mockPosts.slice(0, 3);
+
+          this.campusFeedPosts = campusPosts;
+          this.campusFeedActivities = [
+            {
+              id: "activity-1",
+              title: "周末校园电影放映",
+              location: "学生活动中心",
+              scheduleText: "本周六 19:00",
+            },
+            {
+              id: "activity-2",
+              title: "社团招新嘉年华",
+              location: "操场",
+              scheduleText: "下周三 14:00-17:00",
+            },
+          ];
+          this.campusFeedTopics = [
+            {
+              id: "topic-1",
+              title: "期末考试复习经验分享",
+              heatLabel: "热门",
+            },
+            {
+              id: "topic-2",
+              title: "校园周边美食推荐",
+              heatLabel: "讨论中",
+            },
+            {
+              id: "topic-3",
+              title: "毕业季租房避坑指南",
+              heatLabel: "新话题",
+            },
+          ];
+          return;
+        }
+
+        // 调用后端 API: GET /api/campus/feed
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId ?? "";
+        const data = await request<CampusFeedView>({
+          url: `/campus/feed?userId=${userId}`,
+          method: "GET",
+        });
+
+        // 将后端 CampusFeedView 中的帖子映射为前端 PostItem
+        // posts 字段为 Record<string, unknown>[]，需要逐条映射
+        this.campusFeedPosts = (data.posts ?? []).map((raw) => {
+          const author = (raw.author ?? {}) as Record<string, unknown>;
+          return {
+            id: String(raw.id ?? ""),
+            author: {
+              userId: String(author.userId ?? ""),
+              name: String(author.nickname ?? author.name ?? ""),
+              avatar: String(author.avatarUrl ?? author.avatar ?? ""),
+              headline: String(author.campusName ?? author.headline ?? ""),
+              campusName: String(author.campusName ?? ""),
+            },
+            categoryId: String(raw.category ?? raw.categoryId ?? ""),
+            title: String(raw.title ?? ""),
+            content: String(raw.summary ?? raw.content ?? ""),
+            images: (raw.images ?? []) as string[],
+            tags: (raw.tags ?? []) as string[],
+            likes: Number(raw.likeCount ?? raw.likes ?? 0),
+            comments: Number(raw.commentCount ?? raw.comments ?? 0),
+            shares: Number(raw.shareCount ?? raw.shares ?? 0),
+            isLiked: Boolean(raw.isLiked ?? false),
+            isFollowed: Boolean(raw.isFollowed ?? false),
+            isShared: Boolean(raw.isShared ?? false),
+            createdAt: String(raw.createdAt ?? new Date().toISOString()),
+          };
+        });
+
+        this.campusFeedActivities = data.activities ?? [];
+        this.campusFeedTopics = data.topics ?? [];
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "加载同校动态失败";
+      } finally {
+        this.loadingCampusFeed = false;
+      }
     },
   },
 });

@@ -15,9 +15,14 @@ public class HomeController {
     this.homeService = homeService;
   }
 
+  /**
+   * 获取首页仪表盘数据。
+   * 支持传入 userId 以获取个性化推荐数据，userId 为可选参数。
+   */
   @GetMapping("/dashboard")
-  public HomeDashboardView getDashboard() {
-    return homeService.getDashboard();
+  public HomeDashboardView getDashboard(
+      @org.springframework.web.bind.annotation.RequestParam(name = "userId", required = false) Long userId) {
+    return homeService.getDashboard(userId);
   }
 }
 

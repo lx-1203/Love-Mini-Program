@@ -19,8 +19,20 @@ public class MockHomeService implements HomeService {
     this.runtimeState = runtimeState;
   }
 
+  /**
+   * 获取首页仪表盘视图（兼容无 userId 调用）。
+   */
   @Override
   public HomeDashboardView getDashboard() {
+    return getDashboard(null);
+  }
+
+  /**
+   * 获取首页仪表盘视图。
+   * Mock 实现忽略 userId，始终返回固定的模拟数据。
+   */
+  @Override
+  public HomeDashboardView getDashboard(Long userId) {
     MockRuntimeState.ScheduleProfileData schedule = runtimeState.scheduleProfile();
     int savedBlocks = schedule.courseBlocks().size();
     MockRuntimeState.DiscussionRecommendationData discussionPulse =

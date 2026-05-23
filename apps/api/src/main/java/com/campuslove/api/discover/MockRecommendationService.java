@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.entity.RecommendationPreference;
 import com.campuslove.api.runtime.MockRuntimeState;
 import java.time.LocalDate;
 import java.util.List;
@@ -131,6 +132,18 @@ public class MockRecommendationService implements RecommendationService {
       throw new IllegalArgumentException("preferredTime and scope are required");
     }
     return new RecommendationPreferencesView(preferredTime, scope);
+  }
+
+  @Override
+  public RecommendationPreferencesView updatePreferences(Long userId, RecommendationPreference data) {
+    // Mock 实现：不持久化，直接返回传入的偏好数据
+    if (userId == null) {
+      throw new IllegalArgumentException("userId 不能为空");
+    }
+    if (data == null) {
+      throw new IllegalArgumentException("偏好数据不能为空");
+    }
+    return new RecommendationPreferencesView(data.getPreferredTime(), data.getScope());
   }
 
   @Override

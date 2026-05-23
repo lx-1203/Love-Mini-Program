@@ -4,12 +4,15 @@ import { useSessionStore } from "./session";
 import { toChatOverviewView, toChatSessionView } from "../view-models/chat";
 import { createChatTransport } from "../features/chat/transport";
 import { appEnv } from "../services/env";
+import { request } from "../services/http";
 import type { components } from "../services/generated/api-types";
 
 type Schemas = components["schemas"];
 type ChatOverview = Schemas["ChatOverview"];
 type ChatSessionSummary = Schemas["ChatSessionSummary"];
 type TempChatSession = Schemas["TempChatSession"];
+/** 破冰话题视图类型 */
+type IcebreakerView = Schemas["IcebreakerView"];
 
 /** 判断当前是否为 Mock 模式 */
 function useMock() {
@@ -192,6 +195,10 @@ export const useChatStore = defineStore("chat", {
     overview: null as Awaited<ReturnType<typeof clientApi.getChatOverview>> | null,
     overviewView: null as ReturnType<typeof toChatOverviewView> | null,
     activeSession: null as ReturnType<typeof toChatSessionView> | null,
+    /** 当前匹配的破冰话题列表 */
+    icebreakerTopics: [] as string[],
+    /** 破冰话题加载中 */
+    loadingIcebreakers: false,
   }),
   actions: {
     async loadOverview() {
@@ -473,6 +480,114 @@ export const useChatStore = defineStore("chat", {
       const session = await chatTransport.endSession(this.activeSession.id);
       this.activeSession = toChatSessionView(session);
       await this.loadOverview();
+    },
+
+    /**
+     * 加载破冰话题
+     * 根据匹配 ID 获取推荐破冰话题列表，用于引导用户开始对话
+     * Mock 模式提供本地测试数据，Real 模式调用 GET /api/matches/{matchId}/icebreakers
+     * @param matchId - 匹配 ID
+     */
+    async loadIcebreakers(matchId: number) {
+      this.loadingIcebreakers = true;
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          // Mock 模式：根据 matchId 返回预设的破冰话题
+          const mockIcebreakers: Record<number, string[]> = {
+            1: [
+              "你们都喜欢看电影，最近有什么好片推荐吗？",
+              "看到你也喜欢咖啡，你最喜欢哪种咖啡？",
+              "你们有共同的朋友圈，要不要聊聊校园生活？",
+            ],
+            2: [
+              "你们都选了美食话题，有没有推荐的校园美食？",
+              "看到你也喜欢摄影，平时用什么相机？",
+              "你们都在同一个城市，周末有什么好去处？",
+            ],
+          };
+          this.icebreakerTopics = mockIcebreakers[matchId] ?? [
+            "嗨，很高兴认识你！",
+            "你们有共同的兴趣，聊聊看？",
+            "最近有什么有趣的事想分享吗？",
+          ];
+          return;
+        }
+
+        // 调用后端 API: GET /api/matches/{matchId}/icebreakers
+        const data = await request<IcebreakerView>({
+          url: `/matches/${matchId}/icebreakers`,
+          method: "GET",
+        });
+        this.icebreakerTopics = data.topics ?? [];
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "加载破冰话题失败";
+      } finally {
+        this.loadingIcebreakers = false;
+      }
+    },
+
+    /**
+     * 发送破冰话题到对话
+     * 将选中的破冰话题作为消息发送到当前活跃会话中
+     * Mock 模式直接追加消息，Real 模式调用 POST /api/matches/{matchId}/icebreakers/send
+     * @param matchId - 匹配 ID
+     * @param topic - 选中的破冰话题内容
+     */
+    async sendIcebreaker(matchId: number, topic: string) {
+      this.errorMessage = null;
+
+      try {
+        // 参数校验
+        if (!topic || topic.trim().length === 0) {
+          this.errorMessage = "破冰话题内容不能为空";
+          throw new Error("破冰话题内容不能为空");
+        }
+
+        if (!this.activeSession) {
+          this.errorMessage = "当前没有活跃会话";
+          throw new Error("当前没有活跃会话");
+        }
+
+        if (useMock()) {
+          // Mock 模式：在本地会话中追加破冰消息
+          const sessionId = this.activeSession.id;
+          const currentSession = mockSessionMap[sessionId] ?? mockSession1;
+          const updatedSession: TempChatSession = {
+            ...currentSession,
+            phase: "active",
+            messages: [
+              ...currentSession.messages,
+              {
+                id: `m-ice-${Date.now()}`,
+                sender: "self" as const,
+                kind: "text" as const,
+                body: topic,
+                sentAt: new Date().toISOString(),
+                durationSeconds: null,
+              },
+            ],
+          };
+          mockSessionMap[sessionId] = updatedSession;
+          this.activeSession = toChatSessionView(updatedSession);
+          await this.loadOverview();
+          return;
+        }
+
+        // 调用后端 API: POST /api/matches/{matchId}/icebreakers/send
+        await request<void, { topic: string }>({
+          url: `/matches/${matchId}/icebreakers/send`,
+          method: "POST",
+          data: { topic },
+        });
+
+        // 发送成功后，将话题作为普通消息追加到当前会话
+        await this.sendText(topic);
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "发送破冰话题失败";
+        throw error;
+      }
     },
   },
 });

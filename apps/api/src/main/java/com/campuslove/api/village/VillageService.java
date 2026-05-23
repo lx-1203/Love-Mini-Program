@@ -137,4 +137,18 @@ public interface VillageService {
      * @return 分类视图列表
      */
     List<PostCategoryView> getCategories();
+
+    // ---- 同校动态流 ----
+
+    /**
+     * 聚合同校动态流。
+     * 获取用户所在学校，聚合同校用户最新帖子、即将开始的活动、
+     * 兴趣圈最新话题，按时间倒序混合排列。
+     *
+     * @param userId 当前用户 ID
+     * @param page   页码（从 0 开始）
+     * @param size   每页大小
+     * @return 同校动态流视图
+     */
+    CampusFeedView getCampusFeed(Long userId, int page, int size);
 }

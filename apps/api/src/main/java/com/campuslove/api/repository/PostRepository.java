@@ -63,4 +63,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @return 该作者的所有帖子列表
      */
     List<Post> findByAuthorId(Long authorId);
+
+    /**
+     * 根据状态查询帖子，按点赞数倒序分页。
+     * 用于首页聚合"村口热门帖子"场景。
+     *
+     * @param status   帖子状态
+     * @param pageable 分页参数
+     * @return 分页帖子列表（按点赞数从高到低）
+     */
+    Page<Post> findByStatusOrderByLikesCountDesc(PostStatus status, Pageable pageable);
 }

@@ -2,6 +2,7 @@ package com.campuslove.api.discover;
 
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleReply;
+import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.CircleTopic;
 import com.campuslove.api.entity.InterestCircle;
@@ -49,6 +50,7 @@ public class RealCircleService implements CircleService {
     private final CircleReplyRepository circleReplyRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final InteractionEventService interactionEventService;
 
     /**
      * 构造函数，注入所有必要的 Repository 和工具类。
@@ -59,6 +61,7 @@ public class RealCircleService implements CircleService {
      * @param circleReplyRepository     圈子回复 Repository
      * @param userRepository            用户 Repository
      * @param objectMapper              JSON 序列化工具
+     * @param interactionEventService   互动事件服务
      */
     public RealCircleService(
             InterestCircleRepository interestCircleRepository,
@@ -66,13 +69,15 @@ public class RealCircleService implements CircleService {
             CircleTopicRepository circleTopicRepository,
             CircleReplyRepository circleReplyRepository,
             UserRepository userRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            InteractionEventService interactionEventService) {
         this.interestCircleRepository = interestCircleRepository;
         this.circleMembershipRepository = circleMembershipRepository;
         this.circleTopicRepository = circleTopicRepository;
         this.circleReplyRepository = circleReplyRepository;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        this.interactionEventService = interactionEventService;
     }
 
     // ==================== 圈子列表 ====================
@@ -351,6 +356,14 @@ public class RealCircleService implements CircleService {
         // 更新话题回复数
         topic.setReplyCount(topic.getReplyCount() + 1);
         circleTopicRepository.save(topic);
+
+        // 记录互动事件：通知话题作者有人回复
+        if (!authorId.equals(topic.getAuthorId())) {
+            interactionEventService.recordEvent(
+                    topic.getAuthorId(), authorId, "TOPIC_REPLIED", topicId, "TOPIC",
+                    "有人回复了你的话题"
+            );
+        }
 
         log.info("回复创建成功, replyId={}, topicId={}, 当前回复数={}",
                 reply.getId(), topicId, topic.getReplyCount());
