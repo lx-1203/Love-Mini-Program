@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -39,7 +38,6 @@ import org.springframework.transaction.annotation.Transactional;
  * 会话具有 24h 自动过期机制。
  */
 @Profile("real")
-@Primary
 @Service
 public class RealTempChatService implements TempChatService {
 

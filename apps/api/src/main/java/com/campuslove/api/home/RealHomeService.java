@@ -22,10 +22,10 @@ import org.springframework.stereotype.Service;
 
 /**
  * 真实首页服务实现。
- * 在 db profile 下激活，从各个子服务聚合真实数据返回首页仪表盘视图。
+ * 在 real profile 下激活，从各个子服务聚合真实数据返回首页仪表盘视图。
  * 每个子服务调用均有独立的错误处理，单个服务异常不会影响其他数据的聚合。
  */
-@Profile("db")
+@Profile("real")
 @Service
 public class RealHomeService implements HomeService {
 

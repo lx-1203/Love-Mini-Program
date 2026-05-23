@@ -42,13 +42,11 @@ public class RealNotificationService implements NotificationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<NotificationView> getNotifications(String userId) {
-        // Phase 1 兼容：尝试将字符串 ID 转为 Long
-        Long uid = parseUserId(userId);
-        if (uid == null) {
+    public List<NotificationView> getNotifications(Long userId) {
+        if (userId == null) {
             return List.of();
         }
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(uid, Pageable.unpaged())
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, Pageable.unpaged())
                 .getContent().stream()
                 .map(this::toNotificationView)
                 .toList();
@@ -68,12 +66,11 @@ public class RealNotificationService implements NotificationService {
 
     @Override
     @Transactional(readOnly = true)
-    public UnreadCountView getUnreadCount(String userId) {
-        Long uid = parseUserId(userId);
-        if (uid == null) {
+    public UnreadCountView getUnreadCount(Long userId) {
+        if (userId == null) {
             return new UnreadCountView(0);
         }
-        long count = notificationRepository.countByUserIdAndIsRead(uid, false);
+        long count = notificationRepository.countByUserIdAndIsRead(userId, false);
         return new UnreadCountView(count);
     }
 
@@ -235,21 +232,4 @@ public class RealNotificationService implements NotificationService {
         };
     }
 
-    /**
-     * 尝试将字符串用户 ID 转为 Long。
-     */
-    private Long parseUserId(String userId) {
-        if (userId == null || userId.isBlank()) {
-            return null;
-        }
-        try {
-            // 处理 "user-1001" 格式
-            if (userId.startsWith("user-")) {
-                return Long.parseLong(userId.substring(5));
-            }
-            return Long.parseLong(userId);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
 }

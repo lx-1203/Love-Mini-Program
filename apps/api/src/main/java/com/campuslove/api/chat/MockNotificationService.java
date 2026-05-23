@@ -22,13 +22,13 @@ public class MockNotificationService implements NotificationService {
   private final Map<Long, NotificationState> notificationsById = new LinkedHashMap<>();
 
   @Override
-  public List<NotificationView> getNotifications(String userId) {
-    if (userId == null || userId.isBlank()) {
+  public List<NotificationView> getNotifications(Long userId) {
+    if (userId == null) {
       throw new IllegalArgumentException("userId is required");
     }
 
     if (notificationsById.isEmpty()) {
-      buildMockNotifications(userId);
+      buildMockNotifications(String.valueOf(userId));
     }
 
     return notificationsById.values().stream()
@@ -54,13 +54,13 @@ public class MockNotificationService implements NotificationService {
   }
 
   @Override
-  public UnreadCountView getUnreadCount(String userId) {
-    if (userId == null || userId.isBlank()) {
+  public UnreadCountView getUnreadCount(Long userId) {
+    if (userId == null) {
       throw new IllegalArgumentException("userId is required");
     }
 
     if (notificationsById.isEmpty()) {
-      buildMockNotifications(userId);
+      buildMockNotifications(String.valueOf(userId));
     }
 
     long unreadCount = notificationsById.values().stream()

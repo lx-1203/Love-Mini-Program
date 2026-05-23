@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -31,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Profile("real")
 @Service
-@Primary
 public class RealCheckInService implements CheckInService {
 
     private static final Logger log = LoggerFactory.getLogger(RealCheckInService.class);

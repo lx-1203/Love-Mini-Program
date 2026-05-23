@@ -16,7 +16,7 @@ public interface NotificationService {
      * @param userId 用户 ID
      * @return 通知视图列表
      */
-    List<NotificationView> getNotifications(String userId);
+    List<NotificationView> getNotifications(Long userId);
 
     /**
      * 标记指定通知为已读。
@@ -31,7 +31,7 @@ public interface NotificationService {
      * @param userId 用户 ID
      * @return 未读数视图
      */
-    UnreadCountView getUnreadCount(String userId);
+    UnreadCountView getUnreadCount(Long userId);
 
     // ---- Phase 2 新增方法 ----
 
