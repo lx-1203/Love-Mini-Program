@@ -1,5 +1,6 @@
 package com.campuslove.api.feedback;
 
+import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Feedback;
 import com.campuslove.api.repository.FeedbackRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,8 +26,8 @@ public class RealFeedbackService implements FeedbackService {
     private static final Logger log = LoggerFactory.getLogger(RealFeedbackService.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    /** Phase 1 兼容：当前用户 ID 暂时硬编码为 1L */
-    private static final Long CURRENT_USER_ID = 1L;
+    /** Phase 1 兼容：未集成 Spring Security 时的默认用户 ID */
+    private static final Long DEFAULT_USER_ID = 1L;
 
     private final FeedbackRepository feedbackRepository;
     private final ObjectMapper objectMapper;
@@ -50,7 +51,7 @@ public class RealFeedbackService implements FeedbackService {
         LocalDateTime now = LocalDateTime.now();
 
         Feedback feedback = new Feedback();
-        feedback.setUserId(CURRENT_USER_ID);
+        feedback.setUserId(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID));
         feedback.setType(type);
         feedback.setTitle(request.title());
         feedback.setContent(request.content());
@@ -72,7 +73,7 @@ public class RealFeedbackService implements FeedbackService {
         }
 
         Feedback saved = feedbackRepository.save(feedback);
-        log.info("用户 {} 提交反馈，类型: {}，ID: {}", CURRENT_USER_ID, type, saved.getId());
+        log.info("用户 {} 提交反馈，类型: {}，ID: {}", SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID), type, saved.getId());
 
         return toView(saved);
     }
@@ -88,9 +89,9 @@ public class RealFeedbackService implements FeedbackService {
     public List<SubmissionRecordView> listMine(FeedbackTicketType type) {
         List<Feedback> feedbacks;
         if (type != null) {
-            feedbacks = feedbackRepository.findByUserIdAndTypeOrderByCreatedAtDesc(CURRENT_USER_ID, type);
+            feedbacks = feedbackRepository.findByUserIdAndTypeOrderByCreatedAtDesc(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID), type);
         } else {
-            feedbacks = feedbackRepository.findByUserIdOrderByCreatedAtDesc(CURRENT_USER_ID);
+            feedbacks = feedbackRepository.findByUserIdOrderByCreatedAtDesc(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID));
         }
         return feedbacks.stream().map(this::toView).toList();
     }

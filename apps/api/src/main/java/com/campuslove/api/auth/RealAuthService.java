@@ -1,6 +1,7 @@
 package com.campuslove.api.auth;
 
 import com.campuslove.api.config.JwtTokenProvider;
+import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserScheduleProfile;
@@ -120,7 +121,7 @@ public class RealAuthService implements AuthService {
                 // 创建新用户
                 user = new User();
                 user.setOpenid(openid);
-                user.setNickname("新用户");
+                user.setNickname(DisplayConstants.NEW_USER);
                 user.setProfileCompletion(0);
                 user.setFollowingCount(0);
                 user.setFollowersCount(0);
@@ -184,7 +185,7 @@ public class RealAuthService implements AuthService {
         boolean phoneBound = user.getPhone() != null && !user.getPhone().isBlank();
 
         // displayName: 使用用户昵称
-        String displayName = user.getNickname() != null ? user.getNickname() : "新用户";
+        String displayName = user.getNickname() != null ? user.getNickname() : DisplayConstants.NEW_USER;
 
         return new UserSessionView(
                 String.valueOf(userId),

@@ -40,9 +40,9 @@ public class UserBasicProfile {
     @Column(name = "pronouns", nullable = false, length = 32)
     private String pronouns;
 
-    /** 兴趣标签列表（JSON数组格式，如 ["摄影","篮球","阅读"]） */
-    @Column(name = "interest_tags", columnDefinition = "JSON")
-    private String interestTags;
+    /** 兴趣标签列表（JSON数组格式，如 ["摄影","篮球","阅读"]，默认空数组） */
+    @Column(name = "interest_tags", columnDefinition = "JSON DEFAULT '[]'")
+    private String interestTags = "[]";
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -1,15 +1,19 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.Comment;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
+import com.campuslove.api.entity.PostCategoryEntity;
 import com.campuslove.api.entity.PostLike;
 import com.campuslove.api.entity.PostShare;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserFollow;
 import com.campuslove.api.repository.CommentRepository;
+import com.campuslove.api.repository.PostCategoryRepository;
 import com.campuslove.api.repository.PostLikeRepository;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.PostShareRepository;
@@ -41,13 +45,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RealVillageService implements VillageService {
 
-    /** 默认用户 ID，Phase 1 兼容方法在无用户上下文时使用 */
+    /** Phase 1 兼容：未集成 Spring Security 时的默认用户 ID */
     private static final Long DEFAULT_USER_ID = 1L;
 
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final PostShareRepository postShareRepository;
     private final PostLikeRepository postLikeRepository;
+    private final PostCategoryRepository postCategoryRepository;
     private final UserRepository userRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final UserFollowRepository userFollowRepository;
@@ -58,6 +63,7 @@ public class RealVillageService implements VillageService {
             CommentRepository commentRepository,
             PostShareRepository postShareRepository,
             PostLikeRepository postLikeRepository,
+            PostCategoryRepository postCategoryRepository,
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
             UserFollowRepository userFollowRepository,
@@ -66,6 +72,7 @@ public class RealVillageService implements VillageService {
         this.commentRepository = commentRepository;
         this.postShareRepository = postShareRepository;
         this.postLikeRepository = postLikeRepository;
+        this.postCategoryRepository = postCategoryRepository;
         this.userRepository = userRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userFollowRepository = userFollowRepository;
@@ -112,7 +119,7 @@ public class RealVillageService implements VillageService {
     public PostLikeResponse likePost(Long id) {
         // Phase 1 兼容：当前无 Spring Security 上下文，使用默认用户 ID
         // Controller 已直接调用 Phase 2 的 likePost(userId, id)，此方法仅作接口兼容
-        return likePost(DEFAULT_USER_ID, id);
+        return likePost(SecurityUtils.getCurrentUserIdOrDefault(DEFAULT_USER_ID), id);
     }
 
     @Override
@@ -282,6 +289,26 @@ public class RealVillageService implements VillageService {
         postRepository.save(post);
 
         return new ShareView(share.getId(), postId, post.getShareCount());
+    }
+
+    // ---- Phase 2 新增：帖子分类 ----
+
+    /**
+     * 获取帖子分类列表（仅返回已启用的分类）。
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostCategoryView> getCategories() {
+        List<PostCategoryEntity> categories = postCategoryRepository.findByIsActiveTrueOrderBySortOrderAsc();
+        return categories.stream()
+                .map(cat -> new PostCategoryView(
+                        cat.getId(),
+                        cat.getName(),
+                        cat.getCode(),
+                        cat.getIcon(),
+                        cat.getSortOrder()
+                ))
+                .toList();
     }
 
     // ---- 私有辅助方法 ----
@@ -481,7 +508,7 @@ public class RealVillageService implements VillageService {
         User author = userRepository.findById(comment.getAuthorId()).orElse(null);
         CommentAuthorView authorView = new CommentAuthorView(
                 comment.getAuthorId(),
-                author != null ? author.getNickname() : "未知用户",
+                author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER,
                 author != null ? author.getAvatarUrl() : null
         );
 
@@ -503,7 +530,7 @@ public class RealVillageService implements VillageService {
      */
     private PostAuthorView getPostAuthorView(Long authorId) {
         User author = userRepository.findById(authorId).orElse(null);
-        String nickname = author != null ? author.getNickname() : "未知用户";
+        String nickname = author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatarUrl = author != null ? author.getAvatarUrl() : null;
         String campusName = userCampusProfileRepository.findByUserId(authorId)
                 .map(UserCampusProfile::getCampusName)

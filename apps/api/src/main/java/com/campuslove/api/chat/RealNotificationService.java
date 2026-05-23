@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.Notification.NotificationType;
 import com.campuslove.api.entity.Notification.ReferenceType;
@@ -203,7 +204,7 @@ public class RealNotificationService implements NotificationService {
     private NotificationView toNotificationView(Notification notification) {
         // 获取源用户信息
         User sourceUser = userRepository.findById(notification.getSourceUserId()).orElse(null);
-        String displayName = sourceUser != null ? sourceUser.getNickname() : "未知用户";
+        String displayName = sourceUser != null ? sourceUser.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatar = sourceUser != null ? sourceUser.getAvatarUrl() : null;
 
         String summary = buildSummary(notification.getType().name(), displayName);

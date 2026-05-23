@@ -100,7 +100,7 @@ export interface MessagesState {
 
 /**
  * 后端 ConversationView 类型
- * 对应后端 record ConversationView(Long id, String conversationUid, Long userAId, Long userBId, String otherUserName, String otherUserAvatar, String lastMessagePreview, String lastMessageAt, int unreadCount)
+ * 对应后端 record ConversationView(Long id, String conversationUid, Long userAId, Long userBId, String otherUserName, String otherUserAvatar, String lastMessagePreview, String lastMessageAt, int unreadCount, String headline, Boolean pinned, String phase, String sessionType)
  */
 export interface ConversationView {
   id: number;
@@ -112,6 +112,14 @@ export interface ConversationView {
   lastMessagePreview: string;
   lastMessageAt: string;
   unreadCount: number;
+  /** 对方用户简介/标题 */
+  headline: string;
+  /** 是否置顶 */
+  pinned: boolean;
+  /** 会话阶段：matching/active/closing/closed */
+  phase: string;
+  /** 会话类型：private/temp_anonymous */
+  sessionType: string;
 }
 
 /**
@@ -164,13 +172,13 @@ function mapToMessageSession(raw: ConversationView): MessageSession {
     partnerId: String(raw.userBId),
     partnerName: raw.otherUserName,
     partnerAvatar: raw.otherUserAvatar || "",
-    partnerHeadline: "", // 后端 ConversationView 无 headline 字段
+    partnerHeadline: raw.headline || "",
     lastMessagePreview: raw.lastMessagePreview,
     lastMessageSentAt: raw.lastMessageAt,
     unreadCount: raw.unreadCount,
-    pinned: false, // 后端 ConversationView 无 pinned 字段
-    phase: "active" as const, // 后端 ConversationView 无 phase 字段
-    sessionType: "private" as const, // 后端 ConversationView 无 sessionType 字段
+    pinned: raw.pinned ?? false,
+    phase: (raw.phase || "active") as MessageSession["phase"],
+    sessionType: (raw.sessionType || "private") as SessionType,
     closesAt: null,
     closedReason: null,
   };
@@ -913,11 +921,37 @@ export const useMessagesStore = defineStore("messages", {
 
     /**
      * 标记所有通知为已读
+     * Real 模式调用 PUT /api/notifications/read-all
      */
-    markAllNotificationsRead() {
-      this.notifications.forEach((n) => {
-        n.isRead = true;
-      });
+    async markAllNotificationsRead() {
+      try {
+        if (useMock()) {
+          this.notifications.forEach((n) => {
+            n.isRead = true;
+          });
+          return;
+        }
+
+        // 调用后端 API: PUT /api/notifications/read-all
+        await withTimeout(
+          request<void>({
+            url: "/notifications/read-all",
+            method: "PUT",
+          }),
+          ASYNC_TIMEOUT_MS,
+          "标记全部已读超时"
+        );
+
+        // 更新本地状态
+        this.notifications.forEach((n) => {
+          n.isRead = true;
+        });
+      } catch {
+        // 静默失败，本地状态仍更新
+        this.notifications.forEach((n) => {
+          n.isRead = true;
+        });
+      }
     },
 
     /**
@@ -965,9 +999,17 @@ export const useMessagesStore = defineStore("messages", {
           return;
         }
 
-        // 置顶操作：后端 PrivateMessageController 无专门的 pin 端点
-        // 仅做本地状态更新，不调用后端 API
-        // 如果后续后端新增 pin 端点，可在此处添加 API 调用
+        // 调用后端 API: PUT /api/messages/conversations/{sessionId}/pin?pinned={pinned}
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId ?? "";
+        await withTimeout(
+          request<void>({
+            url: `/messages/conversations/${sessionId}/pin?pinned=${pinned}&userId=${userId}`,
+            method: "PUT",
+          }),
+          ASYNC_TIMEOUT_MS,
+          "置顶操作超时"
+        );
 
         const session = this.sessions.find((s) => s.id === sessionId);
         if (session) {
@@ -975,6 +1017,45 @@ export const useMessagesStore = defineStore("messages", {
         }
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "置顶操作失败";
+        throw error;
+      }
+    },
+
+    /**
+     * 拒绝心动信号
+     * @param signalId - 心动信号 ID
+     */
+    async declineHeartSignal(signalId: string) {
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          const signal = this.heartSignals.find((s) => s.id === signalId);
+          if (signal) {
+            signal.status = "expired";
+          }
+          return;
+        }
+
+        // 调用后端 API: POST /api/matches/heart-signals/{signalId}/decline?userId={userId}
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId ?? "";
+        await withTimeout(
+          request<void>({
+            url: `/matches/heart-signals/${signalId}/decline?userId=${userId}`,
+            method: "POST",
+          }),
+          ASYNC_TIMEOUT_MS,
+          "拒绝心动信号超时"
+        );
+
+        // 更新本地状态
+        const signal = this.heartSignals.find((s) => s.id === signalId);
+        if (signal) {
+          signal.status = "expired";
+        }
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "拒绝心动信号失败";
         throw error;
       }
     },

@@ -153,7 +153,9 @@ record CircleView(
     String icon,
     String description,
     int memberCount,
-    boolean isJoined
+    boolean isJoined,
+    /** 话题数量 */
+    int topicCount
 ) {
 }
 

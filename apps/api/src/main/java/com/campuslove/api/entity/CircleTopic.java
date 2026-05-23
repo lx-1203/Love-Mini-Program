@@ -40,9 +40,9 @@ public class CircleTopic {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    /** 图片 URL 数组（JSON） */
-    @Column(name = "images", columnDefinition = "JSON")
-    private String images;
+    /** 图片 URL 数组（JSON，默认空数组） */
+    @Column(name = "images", columnDefinition = "JSON DEFAULT '[]'")
+    private String images = "[]";
 
     /** 回复数 */
     @Column(name = "reply_count", nullable = false)

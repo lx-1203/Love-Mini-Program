@@ -7,7 +7,7 @@ import { useSessionStore } from "./session";
 
 /**
  * 后端 CircleView 类型
- * 对应后端 record CircleView(Long id, String name, String icon, String description, int memberCount, boolean isJoined)
+ * 对应后端 record CircleView(Long id, String name, String icon, String description, int memberCount, boolean isJoined, int topicCount)
  */
 export interface BackendCircleView {
   id: number;
@@ -16,6 +16,8 @@ export interface BackendCircleView {
   description: string;
   memberCount: number;
   isJoined: boolean;
+  /** 话题数量 */
+  topicCount: number;
 }
 
 /**
@@ -68,7 +70,7 @@ function mapToCircleItem(raw: BackendCircleView): CircleItem {
     icon: raw.icon,
     description: raw.description,
     memberCount: raw.memberCount,
-    topicCount: 0, // 后端 CircleView 无 topicCount 字段
+    topicCount: raw.topicCount ?? 0,
     isJoined: raw.isJoined,
   };
 }
@@ -828,6 +830,50 @@ export const useCircleStore = defineStore("circle", {
     clearCurrentTopic() {
       this.currentTopic = null;
       this.replies = [];
+    },
+
+    /**
+     * 获取所有圈子的精选话题（用于村口"兴趣"分类）
+     * Real 模式调用 GET /api/circles/featured
+     * @param page - 页码（从 1 开始）
+     */
+    async fetchFeaturedTopics(page = 1) {
+      this.loading = true;
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          // Mock 模式下复用已有话题数据
+          const allTopics = Object.values(mockTopics).flat();
+          if (page === 1) {
+            this.currentTopics = [...allTopics];
+          } else {
+            this.topicHasMore = false;
+          }
+          this.topicPage = page;
+          this.topicHasMore = allTopics.length >= TOPIC_PAGE_SIZE;
+          return;
+        }
+
+        // 调用后端 API: GET /api/circles/featured?page={page}&size={size}
+        const data = await request<{ content: BackendCircleTopicView[]; totalElements: number; number: number; size: number }>({
+          url: `/circles/featured?page=${page - 1}&size=${TOPIC_PAGE_SIZE}`,
+          method: "GET",
+        });
+
+        const mappedTopics = data.content.map(mapToTopicItem);
+        if (page === 1) {
+          this.currentTopics = mappedTopics;
+        } else {
+          this.currentTopics.push(...mappedTopics);
+        }
+        this.topicPage = page;
+        this.topicHasMore = data.content.length >= TOPIC_PAGE_SIZE;
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "加载精选话题失败";
+      } finally {
+        this.loading = false;
+      }
     },
   },
 });

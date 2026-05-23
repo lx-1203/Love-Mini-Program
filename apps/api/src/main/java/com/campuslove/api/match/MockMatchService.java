@@ -201,4 +201,27 @@ public class MockMatchService implements MatchService {
   public void declineHeartSignal(Long signalId, Long userId) {
     // Mock 实现：无操作
   }
+
+  // ---- Phase 2 新增：左滑/反悔/我喜欢的/访客已读 ----
+
+  @Override
+  public void passUser(Long userId, Long passedUserId) {
+    // Mock 实现：无操作
+  }
+
+  @Override
+  public RewindResultView rewind(Long userId) {
+    // Mock 实现：返回失败（无 pass 记录可撤销）
+    return new RewindResultView(false, "没有可撤销的 pass 记录");
+  }
+
+  @Override
+  public List<LikedUserView> getMyLikes(Long userId) {
+    return List.of();
+  }
+
+  @Override
+  public void markVisitorRead(Long visitorId) {
+    // Mock 实现：无操作
+  }
 }

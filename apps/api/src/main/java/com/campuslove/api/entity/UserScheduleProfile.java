@@ -28,13 +28,13 @@ public class UserScheduleProfile {
     @Column(name = "preferred_campus_area", nullable = false, length = 128)
     private String preferredCampusArea;
 
-    /** 偏好时间窗口 JSON */
-    @Column(name = "preferred_time_window_json", nullable = false, columnDefinition = "JSON")
-    private String preferredTimeWindowJson;
+    /** 偏好时间窗口 JSON（默认空数组） */
+    @Column(name = "preferred_time_window_json", nullable = false, columnDefinition = "JSON DEFAULT '[]'")
+    private String preferredTimeWindowJson = "[]";
 
-    /** 课程安排 JSON */
-    @Column(name = "course_block_json", nullable = false, columnDefinition = "JSON")
-    private String courseBlockJson;
+    /** 课程安排 JSON（默认空数组） */
+    @Column(name = "course_block_json", nullable = false, columnDefinition = "JSON DEFAULT '[]'")
+    private String courseBlockJson = "[]";
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

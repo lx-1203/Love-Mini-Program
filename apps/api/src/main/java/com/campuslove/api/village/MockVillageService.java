@@ -204,6 +204,19 @@ public class MockVillageService implements VillageService {
     return sharePost(postId, new SharePostRequest(comment));
   }
 
+  // ---- Phase 2 新增：帖子分类 ----
+
+  @Override
+  public List<PostCategoryView> getCategories() {
+    return List.of(
+        new PostCategoryView(1L, "约会", "dating", "heart", 1),
+        new PostCategoryView(2L, "学习", "study", "book", 2),
+        new PostCategoryView(3L, "生活", "life", "coffee", 3),
+        new PostCategoryView(4L, "活动", "activity", "calendar", 4),
+        new PostCategoryView(5L, "求助", "help", "help-circle", 5)
+    );
+  }
+
   private PostData findPost(Long id) {
     return posts.stream()
         .filter(p -> p.id.equals(id))

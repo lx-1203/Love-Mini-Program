@@ -68,7 +68,7 @@ export interface DiscoverState {
 
 /**
  * 后端 RecommendedPersonView 类型
- * 对应后端 record RecommendedPersonView(Long id, String name, String initials, String headline, String commonGround, String availability, String campusName, String avatarUrl, List<String> tags)
+ * 对应后端 record RecommendedPersonView(Long id, String name, String initials, String headline, String commonGround, String availability, String campusName, String avatarUrl, List<String> tags, String bio, List<String> images)
  */
 export interface RecommendedPersonView {
   id: number;
@@ -80,6 +80,10 @@ export interface RecommendedPersonView {
   campusName: string;
   avatarUrl: string;
   tags: string[];
+  /** 个人简介 */
+  bio: string;
+  /** 用户图片列表 */
+  images: string[];
 }
 
 /**
@@ -94,11 +98,11 @@ function mapToDiscoverCard(raw: RecommendedPersonView): DiscoverCard {
     name: raw.name,
     avatar: raw.avatarUrl || "",
     headline: raw.headline,
-    bio: "", // 后端 RecommendedPersonView 无 bio 字段
+    bio: raw.bio || "",
     tags: raw.tags,
     commonGround: raw.commonGround,
     availability: raw.availability,
-    images: [], // 后端 RecommendedPersonView 无 images 字段
+    images: raw.images || [],
     campusName: raw.campusName,
   };
 }
@@ -507,9 +511,18 @@ export const useDiscoverStore = defineStore("discover", {
           return;
         }
 
-        // 左滑（不感兴趣）目前后端无专门的 pass/dislike 端点
-        // 推荐算法会在下次请求时自动排除已查看用户，此处仅做本地记录
-        // 如果后续后端新增 pass 端点，可在此处添加 API 调用
+        // 左滑（不感兴趣）：调用后端 pass 端点
+        // POST /api/matches/pass
+        const sessionStore = useSessionStore();
+        const currentUserId = sessionStore.userSession?.userId ?? "";
+        await request<void>({
+          url: "/matches/pass",
+          method: "POST",
+          data: {
+            userId: currentUserId,
+            passedUserId: card.userId,
+          },
+        });
 
         const record: ViewedCardRecord = {
           cardId,
@@ -638,9 +651,15 @@ export const useDiscoverStore = defineStore("discover", {
           return;
         }
 
-        // 反悔操作：目前后端无专门的 rewind 端点
-        // 仅做本地状态回退，不调用后端 API
-        // 如果后续后端新增 rewind 端点，可在此处添加 API 调用
+        // 反悔操作：调用后端 rewind 端点
+        // POST /api/matches/rewind
+        const sessionStore = useSessionStore();
+        const currentUserId = sessionStore.userSession?.userId ?? "";
+        await request<{ success: boolean; message: string }>({
+          url: "/matches/rewind",
+          method: "POST",
+          data: { userId: currentUserId },
+        });
 
         // 从已查看列表中移除最后一条记录
         const lastViewed = this.viewedCards[this.viewedCards.length - 1];
@@ -705,6 +724,40 @@ export const useDiscoverStore = defineStore("discover", {
       this.nextRefreshTime = getNextNoonString();
       this.hasMore = true;
       this.saveToStorage();
+    },
+
+    /**
+     * 从后端获取推荐历史
+     * Real 模式调用 GET /api/recommendations/history?userId={userId}
+     */
+    async loadHistory() {
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          // Mock 模式下使用本地记录
+          this.syncHistoryCards();
+          return;
+        }
+
+        // 调用后端 API: GET /api/recommendations/history?userId={userId}
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId ?? "";
+        const rawData = await request<RecommendedPersonView[]>({
+          url: `/recommendations/history?userId=${userId}`,
+          method: "GET",
+        });
+
+        // 将后端数据映射为 ViewedCardRecord（方向统一为 right，表示历史记录）
+        this.historyCards = rawData.map((item) => ({
+          cardId: String(item.id),
+          userId: String(item.id),
+          direction: "right" as SwipeDirection,
+          viewedAt: new Date().toISOString(),
+        }));
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "加载推荐历史失败";
+      }
     },
   },
 });

@@ -40,13 +40,13 @@ public class Post {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    /** 图片 URL 数组（JSON） */
-    @Column(name = "images", columnDefinition = "JSON")
-    private String images;
+    /** 图片 URL 数组（JSON，默认空数组） */
+    @Column(name = "images", columnDefinition = "JSON DEFAULT '[]'")
+    private String images = "[]";
 
-    /** 话题标签数组（JSON） */
-    @Column(name = "tags", columnDefinition = "JSON")
-    private String tags;
+    /** 话题标签数组（JSON，默认空数组） */
+    @Column(name = "tags", columnDefinition = "JSON DEFAULT '[]'")
+    private String tags = "[]";
 
     /** 分类 */
     @Enumerated(EnumType.STRING)

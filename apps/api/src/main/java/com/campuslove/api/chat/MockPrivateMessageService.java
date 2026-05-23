@@ -42,4 +42,11 @@ public class MockPrivateMessageService implements PrivateMessageService {
     public void markAsRead(Long conversationId, Long userId) {
         // Mock 实现：无操作
     }
+
+    // ---- Phase 2 新增：会话置顶 ----
+
+    @Override
+    public void pinConversation(Long conversationId, boolean pinned, Long userId) {
+        // Mock 实现：无操作
+    }
 }

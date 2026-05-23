@@ -46,7 +46,7 @@ public class VillageController {
    */
   @PostMapping
   public PostDetailView createPost(
-      @RequestParam(name = "userId", required = false, defaultValue = "1") Long userId,
+      @RequestParam(name = "userId") Long userId,
       @Valid @RequestBody CreatePostRequest request) {
     return villageService.createPost(userId, request.content(), request.images(), request.tags(), request.category());
   }
@@ -67,7 +67,7 @@ public class VillageController {
   @PostMapping("/{id}/like")
   public PostLikeResponse likePost(
       @PathVariable("id") Long id,
-      @RequestParam(name = "userId", required = false, defaultValue = "1") Long userId) {
+      @RequestParam(name = "userId") Long userId) {
     return villageService.likePost(userId, id);
   }
 
@@ -90,7 +90,7 @@ public class VillageController {
   @PostMapping("/{id}/comments")
   public CommentItemView createComment(
       @PathVariable("id") Long id,
-      @RequestParam(name = "userId", required = false, defaultValue = "1") Long userId,
+      @RequestParam(name = "userId") Long userId,
       @Valid @RequestBody CreateCommentRequest request) {
     return villageService.commentPost(userId, id, request.content());
   }
@@ -103,7 +103,7 @@ public class VillageController {
   @PostMapping("/{id}/share")
   public ShareView sharePost(
       @PathVariable("id") Long id,
-      @RequestParam(name = "userId", required = false, defaultValue = "1") Long userId,
+      @RequestParam(name = "userId") Long userId,
       @Valid @RequestBody SharePostRequest request) {
     return villageService.sharePost(userId, id, request.comment());
   }
@@ -237,3 +237,14 @@ record SharePostRequest(
  */
 record ShareView(Long id, Long postId, int shareCount) {
 }
+
+/**
+ * 帖子分类视图。
+ */
+record PostCategoryView(
+    Long id,
+    String name,
+    String code,
+    String icon,
+    int sortOrder
+) {}

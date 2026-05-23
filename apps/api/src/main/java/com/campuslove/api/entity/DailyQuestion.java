@@ -29,6 +29,10 @@ public class DailyQuestion {
     @Column(name = "question_text", nullable = false, length = 500)
     private String questionText;
 
+    /** 问题分类（如：恋爱、生活、趣味等） */
+    @Column(name = "category", length = 32)
+    private String category;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -57,6 +61,14 @@ public class DailyQuestion {
 
     public void setQuestionText(String questionText) {
         this.questionText = questionText;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public LocalDateTime getCreatedAt() {

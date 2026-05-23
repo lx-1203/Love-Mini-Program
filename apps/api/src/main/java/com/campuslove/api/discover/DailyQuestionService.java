@@ -59,7 +59,11 @@ record DailyQuestionView(
     Long id,
     LocalDate questionDate,
     String questionText,
-    boolean hasAnswered
+    boolean hasAnswered,
+    /** 问题分类 */
+    String category,
+    /** 回答数量 */
+    int answerCount
 ) {}
 
 /**
@@ -71,5 +75,7 @@ record DailyAnswerView(
     String authorName,
     String content,
     boolean isAnonymous,
-    java.time.LocalDateTime createdAt
+    java.time.LocalDateTime createdAt,
+    /** 回答者头像 URL（匿名时为空） */
+    String avatarUrl
 ) {}

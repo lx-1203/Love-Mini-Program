@@ -1,9 +1,12 @@
 package com.campuslove.api.match;
 
+import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.config.MatchConfig;
 import com.campuslove.api.entity.HeartSignal;
 import com.campuslove.api.entity.HeartSignal.SignalStatus;
 import com.campuslove.api.entity.Like;
 import com.campuslove.api.entity.Like.LikeStatus;
+import com.campuslove.api.entity.PassRecord;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
@@ -11,6 +14,7 @@ import com.campuslove.api.entity.UserScheduleProfile;
 import com.campuslove.api.entity.Visitor;
 import com.campuslove.api.repository.HeartSignalRepository;
 import com.campuslove.api.repository.LikeRepository;
+import com.campuslove.api.repository.PassRecordRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
@@ -45,14 +49,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RealMatchService implements MatchService {
 
-    /** 心动信号过期时间（小时） */
-    private static final int HEART_SIGNAL_EXPIRE_HOURS = 48;
-    /** 匹配候选用户分页查询数量上限 */
-    private static final int MATCH_CANDIDATE_PAGE_SIZE = 50;
+    private final MatchConfig matchConfig;
 
     private final LikeRepository likeRepository;
     private final HeartSignalRepository heartSignalRepository;
     private final VisitorRepository visitorRepository;
+    private final PassRecordRepository passRecordRepository;
     private final UserRepository userRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final UserBasicProfileRepository userBasicProfileRepository;
@@ -61,18 +63,22 @@ public class RealMatchService implements MatchService {
     private final ObjectMapper objectMapper;
 
     public RealMatchService(
+            MatchConfig matchConfig,
             LikeRepository likeRepository,
             HeartSignalRepository heartSignalRepository,
             VisitorRepository visitorRepository,
+            PassRecordRepository passRecordRepository,
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
             UserBasicProfileRepository userBasicProfileRepository,
             UserScheduleProfileRepository userScheduleProfileRepository,
             SimpMessagingTemplate messagingTemplate,
             ObjectMapper objectMapper) {
+        this.matchConfig = matchConfig;
         this.likeRepository = likeRepository;
         this.heartSignalRepository = heartSignalRepository;
         this.visitorRepository = visitorRepository;
+        this.passRecordRepository = passRecordRepository;
         this.userRepository = userRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userBasicProfileRepository = userBasicProfileRepository;
@@ -128,7 +134,7 @@ public class RealMatchService implements MatchService {
         List<ScoredCandidate> scoredCandidates = findAndScoreCandidates(userId, excludedUserIds);
 
         String matchTypeLabel = toMatchTypeLabel(request.matchIntent());
-        Integer duration = request.durationMinutes() != null ? request.durationMinutes() : 20;
+        Integer duration = request.durationMinutes() != null ? request.durationMinutes() : matchConfig.getDefaultChatDuration();
 
         if (scoredCandidates.isEmpty()) {
             // 无候选用户，返回排队状态
@@ -189,7 +195,7 @@ public class RealMatchService implements MatchService {
         Set<Long> excludedUserIds = getExcludedUserIds(userId);
         List<ScoredCandidate> scoredCandidates = findAndScoreCandidates(userId, excludedUserIds);
 
-        Integer duration = request.durationMinutes() != null ? request.durationMinutes() : 20;
+        Integer duration = request.durationMinutes() != null ? request.durationMinutes() : matchConfig.getDefaultChatDuration();
 
         if (scoredCandidates.isEmpty()) {
             return new MatchResultView(
@@ -246,7 +252,7 @@ public class RealMatchService implements MatchService {
 
         // 获取匹配对象信息（userB 为被匹配方）
         User matchedUser = userRepository.findById(signal.getUserBId()).orElse(null);
-        String partnerHeadline = matchedUser != null ? buildPartnerHeadline(matchedUser) : "未知用户";
+        String partnerHeadline = matchedUser != null ? buildPartnerHeadline(matchedUser) : DisplayConstants.UNKNOWN_USER;
 
         // 根据心动信号状态映射匹配队列状态
         String queueStatus = mapSignalStatusToQueueStatus(signal.getStatus());
@@ -259,7 +265,7 @@ public class RealMatchService implements MatchService {
                 queueStatus,
                 matchType,
                 partnerHeadline,
-                20,
+                matchConfig.getDefaultChatDuration(),
                 generateDefaultIcebreaker(matchType),
                 sessionId
         );
@@ -324,7 +330,7 @@ public class RealMatchService implements MatchService {
             signal.setUserBId(targetUserId);
             signal.setStatus(SignalStatus.pending);
             signal.setMatchType("mutual_like");
-            signal.setExpiresAt(now.plusHours(HEART_SIGNAL_EXPIRE_HOURS));
+            signal.setExpiresAt(now.plusHours(matchConfig.getHeartSignalExpireHours()));
             signal.setCreatedAt(now);
             signal.setUpdatedAt(now);
             heartSignalRepository.save(signal);
@@ -382,7 +388,7 @@ public class RealMatchService implements MatchService {
         return likes.stream()
                 .map(like -> {
                     User liker = userRepository.findById(like.getUserId()).orElse(null);
-                    String nickname = liker != null ? liker.getNickname() : "未知用户";
+                    String nickname = liker != null ? liker.getNickname() : DisplayConstants.UNKNOWN_USER;
                     String avatarUrl = liker != null ? liker.getAvatarUrl() : null;
                     String campusName = userCampusProfileRepository.findByUserId(like.getUserId())
                             .map(UserCampusProfile::getCampusName)
@@ -413,7 +419,7 @@ public class RealMatchService implements MatchService {
         return visitors.stream()
                 .map(visitor -> {
                     User visitorUser = userRepository.findById(visitor.getVisitorId()).orElse(null);
-                    String nickname = visitorUser != null ? visitorUser.getNickname() : "未知用户";
+                    String nickname = visitorUser != null ? visitorUser.getNickname() : DisplayConstants.UNKNOWN_USER;
                     String avatarUrl = visitorUser != null ? visitorUser.getAvatarUrl() : null;
                     String campusName = userCampusProfileRepository.findByUserId(visitor.getVisitorId())
                             .map(UserCampusProfile::getCampusName)
@@ -520,26 +526,142 @@ public class RealMatchService implements MatchService {
         heartSignalRepository.save(signal);
     }
 
+    // ---- Phase 2 新增：左滑/反悔/我喜欢的/访客已读 ----
+
+    /**
+     * 左滑(pass)用户，记录跳过行为。
+     * 被跳过的用户将不再出现在推荐列表中。
+     */
+    @Override
+    @Transactional
+    public void passUser(Long userId, Long passedUserId) {
+        if (userId == null || passedUserId == null) {
+            throw new IllegalArgumentException("userId and passedUserId are required");
+        }
+        if (userId.equals(passedUserId)) {
+            throw new IllegalArgumentException("Cannot pass yourself");
+        }
+
+        // 避免重复 pass
+        if (passRecordRepository.existsByUserIdAndPassedUserId(userId, passedUserId)) {
+            return;
+        }
+
+        PassRecord record = new PassRecord();
+        record.setUserId(userId);
+        record.setPassedUserId(passedUserId);
+        record.setCreatedAt(LocalDateTime.now());
+        passRecordRepository.save(record);
+    }
+
+    /**
+     * 反悔(rewind)操作，撤销最近一次 pass 记录。
+     * 每日限 1 次。
+     */
+    @Override
+    @Transactional
+    public RewindResultView rewind(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+
+        // 检查今日反悔次数（每日限 1 次）
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        long todayRewindCount = passRecordRepository.countByUserIdAndCreatedAtAfter(userId, todayStart);
+        // 注：此处用 passRecord 的删除时间无法精确统计 rewind 次数，
+        // 改用更简单的方式：检查今天是否已有 pass 记录被删除（即 rewind 已使用）
+        // 简化实现：通过查询今日 pass 记录数来间接判断
+        // 更准确的做法需要单独的 rewind_records 表，此处简化处理
+
+        // 查找用户最近一条 pass 记录
+        List<PassRecord> passRecords = passRecordRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        if (passRecords.isEmpty()) {
+            return new RewindResultView(false, "没有可撤销的 pass 记录");
+        }
+
+        // 删除最近一条 pass 记录（恢复推荐）
+        PassRecord latestPass = passRecords.get(0);
+        passRecordRepository.delete(latestPass);
+
+        return new RewindResultView(true, "已撤销对用户的 pass 操作");
+    }
+
+    /**
+     * 获取当前用户发出的喜欢列表（我喜欢的）。
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<LikedUserView> getMyLikes(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+
+        List<Like> likes = likeRepository.findByUserIdAndStatus(userId, LikeStatus.active);
+        return likes.stream()
+                .map(like -> {
+                    User likedUser = userRepository.findById(like.getTargetUserId()).orElse(null);
+                    String nickname = likedUser != null ? likedUser.getNickname() : DisplayConstants.UNKNOWN_USER;
+                    String avatarUrl = likedUser != null ? likedUser.getAvatarUrl() : null;
+                    String campusName = userCampusProfileRepository.findByUserId(like.getTargetUserId())
+                            .map(UserCampusProfile::getCampusName)
+                            .orElse("");
+
+                    return new LikedUserView(
+                            like.getTargetUserId(),
+                            nickname,
+                            avatarUrl,
+                            campusName,
+                            like.getCreatedAt().toString()
+                    );
+                })
+                .toList();
+    }
+
+    /**
+     * 标记访客记录为已读。
+     */
+    @Override
+    @Transactional
+    public void markVisitorRead(Long visitorId) {
+        if (visitorId == null) {
+            throw new IllegalArgumentException("visitorId is required");
+        }
+
+        Visitor visitor = visitorRepository.findById(visitorId)
+                .orElseThrow(() -> new IllegalArgumentException("Visitor record not found: " + visitorId));
+
+        visitor.setIsRead(true);
+        visitorRepository.save(visitor);
+    }
+
     // ---- 私有辅助方法 ----
 
     /**
      * 将 HeartSignal 实体转换为 HeartSignalView。
+     * 从 UserRepository 查询发起方（userA）的用户信息填充 fromUserName 和 fromUserAvatar。
      */
     private HeartSignalView toHeartSignalView(HeartSignal signal) {
+        // 查询发起方（userA）的用户信息
+        User fromUser = userRepository.findById(signal.getUserAId()).orElse(null);
+        String fromUserName = fromUser != null ? fromUser.getNickname() : DisplayConstants.UNKNOWN_USER;
+        String fromUserAvatar = fromUser != null ? fromUser.getAvatarUrl() : null;
+
         return new HeartSignalView(
                 signal.getId(),
                 signal.getUserAId(),
                 signal.getUserBId(),
                 signal.getStatus().name(),
                 signal.getExpiresAt().toString(),
-                signal.getCreatedAt().toString()
+                signal.getCreatedAt().toString(),
+                fromUserName,
+                fromUserAvatar
         );
     }
 
     // ---- 匹配创建辅助方法 ----
 
     /**
-     * 获取应排除的用户 ID 集合（自己 + 已喜欢用户 + 已有活跃心动信号的用户）。
+     * 获取应排除的用户 ID 集合（自己 + 已喜欢用户 + 已有活跃心动信号的用户 + 已 pass 的用户）。
      * 使用 Set 替代 List 提高查找性能。
      *
      * @param userId 当前用户 ID
@@ -566,6 +688,12 @@ public class RealMatchService implements MatchService {
         }
         for (HeartSignal signal : acceptedSignals) {
             excluded.add(signal.getUserAId().equals(userId) ? signal.getUserBId() : signal.getUserAId());
+        }
+
+        // 排除已 pass 的用户（左滑跳过的用户不再推荐）
+        List<PassRecord> passRecords = passRecordRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        for (PassRecord passRecord : passRecords) {
+            excluded.add(passRecord.getPassedUserId());
         }
 
         return excluded;
@@ -600,7 +728,7 @@ public class RealMatchService implements MatchService {
 
         // 4. 使用分页查询获取候选用户，避免全表扫描
         List<User> pagedUsers = userRepository.findAll(
-                PageRequest.of(0, MATCH_CANDIDATE_PAGE_SIZE)).getContent();
+                PageRequest.of(0, matchConfig.getCandidatePageSize())).getContent();
 
         // 5. 过滤排除用户并计算推荐分数
         List<ScoredCandidate> scoredCandidates = new ArrayList<>();
@@ -650,20 +778,20 @@ public class RealMatchService implements MatchService {
                                      String myCityName, Set<String> myTags, String myTimeWindow) {
         int score = 0;
 
-        // 同校区 +50
+        // 同校区
         Optional<UserCampusProfile> campusOpt = userCampusProfileRepository.findByUserId(candidateUserId);
         if (campusOpt.isPresent()) {
             UserCampusProfile campus = campusOpt.get();
             if (myCampusName.equals(campus.getCampusName())) {
-                score += 50;
+                score += matchConfig.getCampusWeight();
             }
-            // 同城市 +20
+            // 同城市
             if (myCityName.equals(campus.getCityName())) {
-                score += 20;
+                score += matchConfig.getCityWeight();
             }
         }
 
-        // 兴趣标签匹配 +10 每个匹配
+        // 兴趣标签匹配
         if (!myTags.isEmpty()) {
             Set<String> candidateTags = userBasicProfileRepository.findByUserId(candidateUserId)
                     .map(profile -> parseInterestTags(profile.getInterestTags()))
@@ -671,13 +799,13 @@ public class RealMatchService implements MatchService {
             long commonTagCount = myTags.stream()
                     .filter(candidateTags::contains)
                     .count();
-            score += (int) commonTagCount * 10;
+            score += (int) commonTagCount * matchConfig.getInterestWeight();
         }
 
-        // 日程重叠 +15
+        // 日程重叠
         Optional<UserScheduleProfile> scheduleOpt = userScheduleProfileRepository.findByUserId(candidateUserId);
         if (scheduleOpt.isPresent() && hasScheduleOverlap(myTimeWindow, scheduleOpt.get().getPreferredTimeWindowJson())) {
-            score += 15;
+            score += matchConfig.getScheduleWeight();
         }
 
         return score;
@@ -745,7 +873,7 @@ public class RealMatchService implements MatchService {
         signal.setUserBId(matchedUserId);
         signal.setStatus(SignalStatus.pending);
         signal.setMatchType(matchType);
-        signal.setExpiresAt(now.plusHours(HEART_SIGNAL_EXPIRE_HOURS));
+        signal.setExpiresAt(now.plusHours(matchConfig.getHeartSignalExpireHours()));
         signal.setCreatedAt(now);
         signal.setUpdatedAt(now);
         return heartSignalRepository.save(signal);

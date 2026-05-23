@@ -40,6 +40,10 @@ public class PrivateConversation {
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;
 
+    /** 是否置顶 */
+    @Column(name = "pinned", nullable = false)
+    private Boolean pinned = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -95,6 +99,14 @@ public class PrivateConversation {
 
     public void setLastMessageAt(LocalDateTime lastMessageAt) {
         this.lastMessageAt = lastMessageAt;
+    }
+
+    public Boolean getPinned() {
+        return pinned;
+    }
+
+    public void setPinned(Boolean pinned) {
+        this.pinned = pinned;
     }
 
     public LocalDateTime getCreatedAt() {

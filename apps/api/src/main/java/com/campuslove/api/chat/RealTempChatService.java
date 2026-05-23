@@ -1,5 +1,8 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.config.ChatConfig;
+import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.discover.RecommendationService;
 import com.campuslove.api.discover.RecommendedPersonView;
 import com.campuslove.api.entity.TempChatContactExchange;
@@ -42,8 +45,7 @@ public class RealTempChatService implements TempChatService {
 
     private static final Logger log = LoggerFactory.getLogger(RealTempChatService.class);
 
-    /** 临时会话过期时间（小时） */
-    private static final int SESSION_EXPIRE_HOURS = 24;
+    private final ChatConfig chatConfig;
 
     /** 已关闭/已过期的会话阶段列表，用于排除不可用会话 */
     private static final List<SessionPhase> INACTIVE_PHASES = List.of(SessionPhase.closed, SessionPhase.expired);
@@ -59,6 +61,7 @@ public class RealTempChatService implements TempChatService {
     private final SimpMessagingTemplate messagingTemplate;
 
     public RealTempChatService(
+            ChatConfig chatConfig,
             TempChatSessionRepository sessionRepository,
             TempChatMessageRepository messageRepository,
             TempChatContactExchangeRepository contactExchangeRepository,
@@ -68,6 +71,7 @@ public class RealTempChatService implements TempChatService {
             UserScheduleProfileRepository userScheduleProfileRepository,
             RecommendationService recommendationService,
             SimpMessagingTemplate messagingTemplate) {
+        this.chatConfig = chatConfig;
         this.sessionRepository = sessionRepository;
         this.messageRepository = messageRepository;
         this.contactExchangeRepository = contactExchangeRepository;
@@ -171,7 +175,7 @@ public class RealTempChatService implements TempChatService {
         session.setRecommendedPersonId(recommendedPersonId);
         session.setMatchId(matchId);
         session.setPhase(SessionPhase.matching);
-        session.setClosesAt(now.plusHours(SESSION_EXPIRE_HOURS));
+        session.setClosesAt(now.plusHours(chatConfig.getSessionExpireHours()));
         session.setIsPinned(false);
         session.setUserAUnreadCount(0);
         session.setUserBUnreadCount(0);
@@ -480,8 +484,8 @@ public class RealTempChatService implements TempChatService {
         } catch (Exception e) {
             // 非请求上下文或参数解析失败，使用默认值
         }
-        // TODO: 集成 Spring Security 后从 SecurityContextHolder 获取当前用户 ID
-        return 1L;
+        // 从 SecurityContext 获取当前用户 ID，未认证时回退到默认值 1L
+        return SecurityUtils.getCurrentUserIdOrDefault(1L);
     }
 
     /**
@@ -694,7 +698,7 @@ public class RealTempChatService implements TempChatService {
         UserCampusProfile campusProfile = userCampusProfileRepository.findByUserId(partnerId).orElse(null);
         UserScheduleProfile scheduleProfile = userScheduleProfileRepository.findByUserId(partnerId).orElse(null);
 
-        String name = partner != null ? partner.getNickname() : "未知用户";
+        String name = partner != null ? partner.getNickname() : DisplayConstants.UNKNOWN_USER;
         String headline = buildHeadline(basicProfile, campusProfile);
         String availability = buildAvailability(scheduleProfile);
 

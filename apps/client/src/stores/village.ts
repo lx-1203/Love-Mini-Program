@@ -1019,10 +1019,49 @@ export const useVillageStore = defineStore("village", {
 
     /**
      * 设置当前查看的帖子
+     * Real 模式下调用 GET /api/posts/{id} 获取完整详情
      * @param postId - 帖子 ID
      */
-    setCurrentPost(postId: string) {
-      this.currentPost = this.posts.find((p) => p.id === postId) ?? null;
+    async setCurrentPost(postId: string) {
+      if (useMock()) {
+        this.currentPost = this.posts.find((p) => p.id === postId) ?? null;
+        return;
+      }
+
+      // 调用后端 API: GET /api/posts/{postId}
+      // 获取帖子完整详情，替代本地列表查找
+      try {
+        const data = await request<PostDetailView>({
+          url: `/posts/${postId}`,
+          method: "GET",
+        });
+
+        this.currentPost = {
+          id: String(data.id),
+          author: {
+            userId: String(data.author.userId),
+            name: data.author.nickname,
+            avatar: data.author.avatarUrl || "",
+            headline: data.author.campusName || "",
+            campusName: data.author.campusName,
+          },
+          categoryId: data.category,
+          title: data.title,
+          content: data.content,
+          images: data.images,
+          tags: data.tags,
+          likes: data.likeCount,
+          comments: data.commentCount,
+          shares: data.shareCount,
+          isLiked: data.isLiked,
+          isFollowed: false,
+          isShared: false,
+          createdAt: data.createdAt,
+        };
+      } catch (error) {
+        // API 调用失败时回退到本地列表查找
+        this.currentPost = this.posts.find((p) => p.id === postId) ?? null;
+      }
     },
 
     /**

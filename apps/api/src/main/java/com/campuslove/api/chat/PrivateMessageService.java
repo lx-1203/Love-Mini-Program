@@ -55,4 +55,15 @@ public interface PrivateMessageService {
      * @param userId         当前用户 ID
      */
     void markAsRead(Long conversationId, Long userId);
+
+    // ---- Phase 2 新增：会话置顶 ----
+
+    /**
+     * 设置会话置顶状态。
+     *
+     * @param conversationId 会话 ID
+     * @param pinned         是否置顶
+     * @param userId         当前用户 ID（用于验证）
+     */
+    void pinConversation(Long conversationId, boolean pinned, Long userId);
 }

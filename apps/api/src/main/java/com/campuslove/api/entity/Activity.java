@@ -52,9 +52,9 @@ public class Activity {
     @Column(name = "enrollment_count", nullable = false)
     private Integer enrollmentCount = 0;
 
-    /** 参与者头像列表（JSON 格式） */
-    @Column(name = "participant_avatars", columnDefinition = "JSON")
-    private String participantAvatars;
+    /** 参与者头像列表（JSON 格式，默认空数组） */
+    @Column(name = "participant_avatars", columnDefinition = "JSON DEFAULT '[]'")
+    private String participantAvatars = "[]";
 
     /** 活动状态：upcoming / ongoing / ended */
     @Column(name = "status", nullable = false)

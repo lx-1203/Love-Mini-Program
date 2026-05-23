@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
 import com.campuslove.api.entity.ActivityEnrollment;
@@ -8,6 +9,7 @@ import com.campuslove.api.entity.HeartSignal;
 import com.campuslove.api.entity.HeartSignal.SignalStatus;
 import com.campuslove.api.entity.Like;
 import com.campuslove.api.entity.Like.LikeStatus;
+import com.campuslove.api.entity.PassRecord;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostStatus;
 import com.campuslove.api.entity.RecommendationPreference;
@@ -20,6 +22,7 @@ import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.HeartSignalRepository;
 import com.campuslove.api.repository.LikeRepository;
+import com.campuslove.api.repository.PassRecordRepository;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.RecommendationPreferenceRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
@@ -53,12 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RealRecommendationService implements RecommendationService {
 
-    /** 每日推荐上限 */
-    private static final int DAILY_LIMIT = 10;
-    /** 讨论推荐返回数量上限 */
-    private static final int DISCUSSION_LIMIT = 10;
-    /** 候选用户分页查询数量上限，避免全表扫描 */
-    private static final int CANDIDATE_PAGE_SIZE = 200;
+    private final RecommendationConfig recommendationConfig;
 
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
@@ -71,9 +69,11 @@ public class RealRecommendationService implements RecommendationService {
     private final CircleTopicRepository circleTopicRepository;
     private final PostRepository postRepository;
     private final HeartSignalRepository heartSignalRepository;
+    private final PassRecordRepository passRecordRepository;
     private final ObjectMapper objectMapper;
 
     public RealRecommendationService(
+            RecommendationConfig recommendationConfig,
             UserRepository userRepository,
             LikeRepository likeRepository,
             UserCampusProfileRepository userCampusProfileRepository,
@@ -85,7 +85,9 @@ public class RealRecommendationService implements RecommendationService {
             CircleTopicRepository circleTopicRepository,
             PostRepository postRepository,
             HeartSignalRepository heartSignalRepository,
+            PassRecordRepository passRecordRepository,
             ObjectMapper objectMapper) {
+        this.recommendationConfig = recommendationConfig;
         this.userRepository = userRepository;
         this.likeRepository = likeRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
@@ -97,6 +99,7 @@ public class RealRecommendationService implements RecommendationService {
         this.circleTopicRepository = circleTopicRepository;
         this.postRepository = postRepository;
         this.heartSignalRepository = heartSignalRepository;
+        this.passRecordRepository = passRecordRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -164,7 +167,7 @@ public class RealRecommendationService implements RecommendationService {
         scoredDiscussions.sort(Comparator.comparingInt(ScoredDiscussion::heatScore).reversed());
 
         return scoredDiscussions.stream()
-                .limit(DISCUSSION_LIMIT)
+                .limit(recommendationConfig.getDiscussionLimit())
                 .map(sd -> new DiscussionRecommendationView(sd.id(), sd.title(), sd.summary(), sd.heatLabel()))
                 .toList();
     }
@@ -369,9 +372,19 @@ public class RealRecommendationService implements RecommendationService {
             // HeartSignal 查询失败时忽略，不影响主流程
         }
 
+        // 5.2 获取已 pass 的用户 ID 列表（排除左滑跳过的用户）
+        try {
+            List<PassRecord> passRecords = passRecordRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            for (PassRecord record : passRecords) {
+                excludedUserIds.add(record.getPassedUserId());
+            }
+        } catch (Exception e) {
+            // PassRecord 查询失败时忽略，不影响主流程
+        }
+
         // 6. 使用分页查询候选用户，避免全表扫描
         List<User> allUsers = userRepository.findAll(
-                PageRequest.of(0, CANDIDATE_PAGE_SIZE)).getContent();
+                PageRequest.of(0, recommendationConfig.getCandidatePageSize())).getContent();
 
         // 7. 根据推荐范围过滤
         String scope = pref.getScope();
@@ -392,7 +405,7 @@ public class RealRecommendationService implements RecommendationService {
 
         // 9. 取前 DAILY_LIMIT 个
         List<ScoredUser> topResults = scoredUsers.stream()
-                .limit(DAILY_LIMIT)
+                .limit(recommendationConfig.getDailyLimit())
                 .toList();
 
         // 10. 转换为视图
@@ -489,7 +502,7 @@ public class RealRecommendationService implements RecommendationService {
 
         // 3. 转换为视图，限制返回数量
         return historyUsers.stream()
-                .limit(DAILY_LIMIT)
+                .limit(recommendationConfig.getDailyLimit())
                 .map(this::toRecommendedPersonView)
                 .toList();
     }
@@ -534,36 +547,36 @@ public class RealRecommendationService implements RecommendationService {
                                 String myCityName, Set<String> myTags, String myTimeWindow) {
         int score = 0;
 
-        // 同校区 +50
+        // 同校区
         Optional<UserCampusProfile> campusOpt = userCampusProfileRepository.findByUserId(candidateUserId);
         if (campusOpt.isPresent()) {
             UserCampusProfile campus = campusOpt.get();
             if (myCampusName.equals(campus.getCampusName())) {
-                score += 50;
+                score += recommendationConfig.getCampusWeight();
             }
-            // 同城市 +20
+            // 同城市
             if (myCityName.equals(campus.getCityName())) {
-                score += 20;
+                score += recommendationConfig.getCityWeight();
             }
         }
 
-        // 兴趣标签匹配 +10 每个匹配
+        // 兴趣标签匹配
         // 从候选用户的 UserBasicProfile 中解析 interest_tags JSON 字段
         if (!myTags.isEmpty()) {
             Set<String> candidateTags = userBasicProfileRepository.findByUserId(candidateUserId)
                     .map(profile -> parseInterestTags(profile.getInterestTags()))
                     .orElse(Collections.emptySet());
-            // 计算两个标签集合的交集数量，每个共同标签 +10 分
+            // 计算两个标签集合的交集数量，每个共同标签加分
             long commonTagCount = myTags.stream()
                     .filter(candidateTags::contains)
                     .count();
-            score += (int) commonTagCount * 10;
+            score += (int) commonTagCount * recommendationConfig.getInterestWeight();
         }
 
-        // 日程重叠 +15
+        // 日程重叠
         Optional<UserScheduleProfile> scheduleOpt = userScheduleProfileRepository.findByUserId(candidateUserId);
         if (scheduleOpt.isPresent() && hasScheduleOverlap(myTimeWindow, scheduleOpt.get().getPreferredTimeWindowJson())) {
-            score += 15;
+            score += recommendationConfig.getScheduleWeight();
         }
 
         return score;
@@ -635,6 +648,14 @@ public class RealRecommendationService implements RecommendationService {
                 .map(stream -> stream.toList())
                 .orElse(List.of());
 
+        // 获取个人简介（从 UserBasicProfile 的 bio 字段获取，若为空则使用 User 的 bio）
+        String bio = userBasicProfileRepository.findByUserId(user.getId())
+                .map(profile -> profile.getBio() != null ? profile.getBio() : "")
+                .orElse(user.getBio() != null ? user.getBio() : "");
+
+        // 获取用户图片列表（暂传空列表，后续迭代补充图片存储功能）
+        List<String> images = Collections.emptyList();
+
         // 计算共同点（简化实现）
         String commonGround = "";
 
@@ -652,7 +673,9 @@ public class RealRecommendationService implements RecommendationService {
                 availability,
                 campusName,
                 user.getAvatarUrl(),
-                tags
+                tags,
+                bio,
+                images
         );
     }
 

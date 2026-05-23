@@ -8,8 +8,31 @@ server:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:campus-love-dev-secret-key-change-in-production}
+    # JWT 签名密钥：必须通过环境变量 JWT_SECRET 设置，不允许使用默认值。
+    # 启动时若未设置或使用了不安全的默认值，应用将拒绝启动。
+    # 生成安全密钥示例：openssl rand -base64 48
+    secret: ${JWT_SECRET:}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   wechat:
     app-id: ${WECHAT_APP_ID:}
     app-secret: ${WECHAT_APP_SECRET:}
+  recommendation:
+    daily-limit: 10
+    discussion-limit: 10
+    candidate-page-size: 200
+    campus-weight: 50
+    city-weight: 20
+    interest-weight: 10
+    schedule-weight: 15
+  match:
+    heart-signal-expire-hours: 48
+    candidate-page-size: 50
+    default-chat-duration: 20
+    campus-weight: 50
+    city-weight: 20
+    interest-weight: 10
+    schedule-weight: 15
+  chat:
+    session-expire-hours: 24
+  checkin:
+    extra-quota-per-check-in: 3

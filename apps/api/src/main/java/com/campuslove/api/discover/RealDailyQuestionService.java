@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.DailyAnswer;
 import com.campuslove.api.entity.DailyQuestion;
 import com.campuslove.api.entity.User;
@@ -28,8 +29,8 @@ public class RealDailyQuestionService implements DailyQuestionService {
 
     private static final Logger log = LoggerFactory.getLogger(RealDailyQuestionService.class);
 
-    /** 匿名用户显示名称 */
-    private static final String ANONYMOUS_DISPLAY_NAME = "匿名用户";
+    /** 匿名用户显示名称（从统一常量类引用） */
+    private static final String ANONYMOUS_DISPLAY_NAME = DisplayConstants.ANONYMOUS_USER;
 
     private final DailyQuestionRepository dailyQuestionRepository;
     private final DailyAnswerRepository dailyAnswerRepository;
@@ -191,24 +192,33 @@ public class RealDailyQuestionService implements DailyQuestionService {
 
     /**
      * 将 DailyQuestion 实体转换为 DailyQuestionView。
+     * 填充问题分类和回答数量。
      *
      * @param question   问题实体
      * @param hasAnswered 当前用户是否已回答
      * @return 问题视图
      */
     private DailyQuestionView toQuestionView(DailyQuestion question, boolean hasAnswered) {
+        // 获取问题分类（若实体无分类则默认为空字符串）
+        String category = question.getCategory() != null ? question.getCategory() : "";
+
+        // 统计回答数量
+        long answerCount = dailyAnswerRepository.countByQuestionId(question.getId());
+
         return new DailyQuestionView(
                 question.getId(),
                 question.getQuestionDate(),
                 question.getQuestionText(),
-                hasAnswered
+                hasAnswered,
+                category,
+                (int) answerCount
         );
     }
 
     /**
      * 将 DailyAnswer 实体转换为 DailyAnswerView。
-     * 匿名回答显示"匿名用户"，userId 置为 null；
-     * 非匿名回答显示真实用户昵称和 userId。
+     * 匿名回答显示"匿名用户"，userId 置为 null，头像为空；
+     * 非匿名回答显示真实用户昵称、userId 和头像。
      *
      * @param answer 回答实体
      * @return 回答视图
@@ -222,13 +232,15 @@ public class RealDailyQuestionService implements DailyQuestionService {
                     ANONYMOUS_DISPLAY_NAME,
                     answer.getContent(),
                     true,
-                    answer.getCreatedAt()
+                    answer.getCreatedAt(),
+                    "" // 匿名回答不显示头像
             );
         }
 
         // 非匿名回答：查询真实用户信息
         User user = userRepository.findById(answer.getUserId()).orElse(null);
-        String authorName = user != null ? user.getNickname() : "未知用户";
+        String authorName = user != null ? user.getNickname() : DisplayConstants.UNKNOWN_USER;
+        String avatarUrl = user != null ? user.getAvatarUrl() : "";
 
         return new DailyAnswerView(
                 answer.getId(),
@@ -236,7 +248,8 @@ public class RealDailyQuestionService implements DailyQuestionService {
                 authorName,
                 answer.getContent(),
                 false,
-                answer.getCreatedAt()
+                answer.getCreatedAt(),
+                avatarUrl
         );
     }
 }

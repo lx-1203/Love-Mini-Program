@@ -3,6 +3,7 @@ package com.campuslove.api.chat;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,7 +33,7 @@ public class PrivateMessageController {
      */
     @GetMapping("/conversations")
     public List<ConversationView> getConversations(
-            @RequestParam(name = "userId", defaultValue = "1") Long userId) {
+            @RequestParam(name = "userId") Long userId) {
         return privateMessageService.getConversations(userId);
     }
 
@@ -52,7 +53,7 @@ public class PrivateMessageController {
     @GetMapping("/conversations/{id}/messages")
     public List<MessageView> getMessages(
             @PathVariable("id") Long conversationId,
-            @RequestParam(name = "userId", defaultValue = "1") Long userId,
+            @RequestParam(name = "userId") Long userId,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -80,6 +81,21 @@ public class PrivateMessageController {
             @PathVariable("id") Long conversationId,
             @RequestParam(name = "userId", defaultValue = "1") Long userId) {
         privateMessageService.markAsRead(conversationId, userId);
+    }
+
+    // ---- Phase 2 新增：会话置顶 ----
+
+    /**
+     * 设置会话置顶状态。
+     * PUT /api/messages/conversations/{id}/pin
+     */
+    @PutMapping("/conversations/{id}/pin")
+    public ResponseEntity<Void> pinConversation(
+            @PathVariable("id") Long conversationId,
+            @RequestParam boolean pinned,
+            @RequestParam(name = "userId", defaultValue = "1") Long userId) {
+        privateMessageService.pinConversation(conversationId, pinned, userId);
+        return ResponseEntity.ok().build();
     }
 }
 

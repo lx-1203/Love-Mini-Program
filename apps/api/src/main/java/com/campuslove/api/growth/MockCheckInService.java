@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.config.CheckInConfig;
 import java.time.LocalDate;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.context.annotation.Profile;
@@ -13,8 +14,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class MockCheckInService implements CheckInService {
 
-  /** 签到奖励的额外推荐配额 */
-  private static final int EXTRA_QUOTA_PER_CHECKIN = 3;
+  private final CheckInConfig checkInConfig;
 
   /** 用户最后一次签到日期缓存 */
   private final ConcurrentHashMap<Long, LocalDate> lastCheckInDateMap = new ConcurrentHashMap<>();
@@ -24,6 +24,15 @@ public class MockCheckInService implements CheckInService {
 
   /** 用户额外推荐配额缓存 */
   private final ConcurrentHashMap<Long, Integer> extraQuotaMap = new ConcurrentHashMap<>();
+
+  /**
+   * 构造函数，注入签到配置。
+   *
+   * @param checkInConfig 签到配置
+   */
+  public MockCheckInService(CheckInConfig checkInConfig) {
+    this.checkInConfig = checkInConfig;
+  }
 
   @Override
   public CheckInResultView checkIn(Long userId) {
@@ -53,7 +62,7 @@ public class MockCheckInService implements CheckInService {
     consecutiveDaysMap.put(userId, consecutiveDays);
 
     // 增加额外推荐配额
-    int newExtraQuota = extraQuotaMap.merge(userId, EXTRA_QUOTA_PER_CHECKIN, Integer::sum);
+    int newExtraQuota = extraQuotaMap.merge(userId, checkInConfig.getExtraQuotaPerCheckIn(), Integer::sum);
 
     return new CheckInResultView(true, consecutiveDays, newExtraQuota);
   }

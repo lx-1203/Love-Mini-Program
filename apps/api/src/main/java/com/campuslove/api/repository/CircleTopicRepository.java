@@ -19,4 +19,12 @@ public interface CircleTopicRepository extends JpaRepository<CircleTopic, Long> 
      * @return 分页话题列表
      */
     Page<CircleTopic> findByCircleIdOrderByIsPinnedDescCreatedAtDesc(Long circleId, Pageable pageable);
+
+    /**
+     * 根据圈子 ID 统计话题数量。
+     *
+     * @param circleId 圈子 ID
+     * @return 话题数量
+     */
+    long countByCircleId(Long circleId);
 }

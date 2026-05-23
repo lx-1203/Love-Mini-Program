@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.config.DisplayConstants;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -139,7 +140,7 @@ public class MockDailyQuestionService implements DailyQuestionService {
     mockAnswers.add(new DailyAnswerView(
         1003L,
         null,
-        "匿名用户",
+        DisplayConstants.ANONYMOUS_USER,
         "想在操场看星星，带两杯奶茶，随便聊聊各自的专业和兴趣。",
         true,
         LocalDateTime.now().minusHours(3)
@@ -153,7 +154,7 @@ public class MockDailyQuestionService implements DailyQuestionService {
   }
 
   private DailyAnswerView toAnswerView(AnswerState state) {
-    String displayName = state.isAnonymous ? "匿名用户" : "Mock用户";
+    String displayName = state.isAnonymous ? DisplayConstants.ANONYMOUS_USER : "Mock用户";
     Long displayUserId = state.isAnonymous ? null : state.userId;
     return new DailyAnswerView(
         state.id,

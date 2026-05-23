@@ -45,9 +45,9 @@ public class Feedback {
     @Column(name = "contact_wechat", length = 64)
     private String contactWechat;
 
-    /** 附件列表（JSON 格式，可空） */
-    @Column(name = "attachments", columnDefinition = "JSON")
-    private String attachments;
+    /** 附件列表（JSON 格式，可空，默认空数组） */
+    @Column(name = "attachments", columnDefinition = "JSON DEFAULT '[]'")
+    private String attachments = "[]";
 
     /** 期望城市（可空） */
     @Column(name = "expected_city", length = 64)

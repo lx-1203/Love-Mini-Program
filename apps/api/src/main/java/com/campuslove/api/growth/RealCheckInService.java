@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.config.CheckInConfig;
 import com.campuslove.api.entity.CheckIn;
 import com.campuslove.api.repository.CheckInRepository;
 import java.time.LocalDate;
@@ -35,8 +36,7 @@ public class RealCheckInService implements CheckInService {
 
     private static final Logger log = LoggerFactory.getLogger(RealCheckInService.class);
 
-    /** 签到奖励的额外推荐配额 */
-    private static final int EXTRA_QUOTA_PER_CHECKIN = 3;
+    private final CheckInConfig checkInConfig;
 
     private final CheckInRepository checkInRepository;
 
@@ -45,7 +45,8 @@ public class RealCheckInService implements CheckInService {
      *
      * @param checkInRepository 签到记录数据访问层
      */
-    public RealCheckInService(CheckInRepository checkInRepository) {
+    public RealCheckInService(CheckInConfig checkInConfig, CheckInRepository checkInRepository) {
+        this.checkInConfig = checkInConfig;
         this.checkInRepository = checkInRepository;
     }
 
@@ -103,7 +104,7 @@ public class RealCheckInService implements CheckInService {
         }
 
         // 签到成功后，额外推荐配额+3
-        int extraQuota = calculateTotalExtraQuota(userId) + EXTRA_QUOTA_PER_CHECKIN;
+        int extraQuota = calculateTotalExtraQuota(userId) + checkInConfig.getExtraQuotaPerCheckIn();
 
         return new CheckInResultView(true, consecutiveDays, extraQuota);
     }
@@ -254,6 +255,6 @@ public class RealCheckInService implements CheckInService {
         // 每次签到（连续中的每一天）都贡献 EXTRA_QUOTA_PER_CHECKIN 配额
         // 注意：这里简化为最近一次签到的连续天数 * 单次奖励
         // 实际业务中可能需要独立追踪已使用/剩余配额
-        return latestCheckIn.get().getConsecutiveDays() * EXTRA_QUOTA_PER_CHECKIN;
+        return latestCheckIn.get().getConsecutiveDays() * checkInConfig.getExtraQuotaPerCheckIn();
     }
 }

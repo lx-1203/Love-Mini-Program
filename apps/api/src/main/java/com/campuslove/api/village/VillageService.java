@@ -128,4 +128,13 @@ public interface VillageService {
      * @return 转发视图
      */
     ShareView sharePost(Long userId, Long postId, String comment);
+
+    // ---- Phase 2 新增：帖子分类 ----
+
+    /**
+     * 获取帖子分类列表（仅返回已启用的分类）。
+     *
+     * @return 分类视图列表
+     */
+    List<PostCategoryView> getCategories();
 }

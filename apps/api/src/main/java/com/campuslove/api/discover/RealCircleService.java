@@ -2,6 +2,7 @@ package com.campuslove.api.discover;
 
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleReply;
+import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.CircleTopic;
 import com.campuslove.api.entity.InterestCircle;
 import com.campuslove.api.entity.User;
@@ -103,14 +104,19 @@ public class RealCircleService implements CircleService {
         // 转换为视图对象
         final List<Long> finalJoinedCircleIds = joinedCircleIds;
         return circles.stream()
-                .map(circle -> new CircleView(
-                        circle.getId(),
-                        circle.getName(),
-                        circle.getIcon(),
-                        circle.getDescription(),
-                        circle.getMemberCount() != null ? circle.getMemberCount() : 0,
-                        finalJoinedCircleIds.contains(circle.getId())
-                ))
+                .map(circle -> {
+                    // 查询每个圈子的话题数量
+                    long topicCount = circleTopicRepository.countByCircleId(circle.getId());
+                    return new CircleView(
+                            circle.getId(),
+                            circle.getName(),
+                            circle.getIcon(),
+                            circle.getDescription(),
+                            circle.getMemberCount() != null ? circle.getMemberCount() : 0,
+                            finalJoinedCircleIds.contains(circle.getId()),
+                            (int) topicCount
+                    );
+                })
                 .toList();
     }
 
@@ -452,12 +458,12 @@ public class RealCircleService implements CircleService {
      */
     private String getAuthorName(Long userId) {
         if (userId == null) {
-            return "未知用户";
+            return DisplayConstants.UNKNOWN_USER;
         }
         return userRepository.findById(userId)
                 .map(User::getNickname)
                 .filter(name -> name != null && !name.isBlank())
-                .orElse("未知用户");
+                .orElse(DisplayConstants.UNKNOWN_USER);
     }
 
     /**

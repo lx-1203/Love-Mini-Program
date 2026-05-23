@@ -34,7 +34,7 @@ export interface VisitorView {
 
 /**
  * 后端 HeartSignalView 类型
- * 对应后端 record HeartSignalView(Long id, Long userAId, Long userBId, String status, String expiresAt, String createdAt)
+ * 对应后端 record HeartSignalView(Long id, Long userAId, Long userBId, String status, String expiresAt, String createdAt, String fromUserName, String fromUserAvatar)
  */
 export interface HeartSignalView {
   id: number;
@@ -43,6 +43,10 @@ export interface HeartSignalView {
   status: string;
   expiresAt: string;
   createdAt: string;
+  /** 发起方用户名称 */
+  fromUserName: string;
+  /** 发起方用户头像 */
+  fromUserAvatar: string;
 }
 
 /**
@@ -81,8 +85,8 @@ function mapToHeartSignal(raw: HeartSignalView): HeartSignal {
   return {
     id: String(raw.id),
     fromUserId: String(raw.userAId),
-    fromUserName: "", // 后端 HeartSignalView 无用户名，需额外查询或前端补充
-    fromUserAvatar: "", // 后端 HeartSignalView 无头像，需额外查询或前端补充
+    fromUserName: raw.fromUserName || "",
+    fromUserAvatar: raw.fromUserAvatar || "",
     toUserId: String(raw.userBId),
     status: (raw.status === "accepted" ? "accepted" : raw.status === "expired" ? "expired" : "pending") as HeartSignalStatus,
     sentAt: raw.createdAt,
@@ -327,9 +331,12 @@ export const useLikesStore = defineStore("likes", {
         });
         this.likedBy = likedByData.map(mapToLikeRecord);
 
-        // 后端目前没有 my-likes 端点，liked-me 返回的是"喜欢我的"
-        // "我喜欢的"列表暂时为空，待后端新增 my-likes 端点后补充
-        this.likes = [];
+        // 调用后端 API: GET /api/matches/my-likes?userId={userId}
+        const myLikesData = await request<LikedUserView[]>({
+          url: `/matches/my-likes?userId=${this.currentUserId}`,
+          method: "GET",
+        });
+        this.likes = myLikesData.map(mapToLikeRecord);
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载喜欢列表失败";
         // 异常时确保列表不为 undefined
@@ -526,7 +533,7 @@ export const useLikesStore = defineStore("likes", {
         fromUserId: targetUser.userId,
         fromUserName: targetUser.name,
         fromUserAvatar: targetUser.avatar,
-        toUserId: "user-1001", // 当前用户 ID（实际应从 session 获取）
+        toUserId: this.currentUserId, // 从 session store 获取当前用户 ID
         status: "pending",
         sentAt: now.toISOString(),
         expiresAt: expiresAt.toISOString(),

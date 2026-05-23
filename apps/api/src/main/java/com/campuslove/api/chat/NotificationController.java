@@ -30,7 +30,7 @@ public class NotificationController {
    */
   @GetMapping
   public List<NotificationView> getNotifications(
-          @RequestParam(name = "userId", required = false, defaultValue = "1") Long userId) {
+          @RequestParam(name = "userId") Long userId) {
     return notificationService.getNotifications(String.valueOf(userId));
   }
 
@@ -49,7 +49,7 @@ public class NotificationController {
    */
   @GetMapping("/unread-count")
   public UnreadCountView getUnreadCount(
-          @RequestParam(name = "userId", required = false, defaultValue = "1") Long userId) {
+          @RequestParam(name = "userId") Long userId) {
     return notificationService.getUnreadCount(String.valueOf(userId));
   }
 

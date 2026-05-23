@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.PrivateConversation;
 import com.campuslove.api.entity.PrivateMessage;
 import com.campuslove.api.entity.User;
@@ -202,10 +203,36 @@ public class RealPrivateMessageService implements PrivateMessageService {
         }
     }
 
+    // ---- Phase 2 新增：会话置顶 ----
+
+    /**
+     * 设置会话置顶状态。
+     */
+    @Override
+    @Transactional
+    public void pinConversation(Long conversationId, boolean pinned, Long userId) {
+        if (conversationId == null || userId == null) {
+            throw new IllegalArgumentException("conversationId and userId are required");
+        }
+
+        PrivateConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
+
+        // 验证用户是否是会话参与者
+        if (!conversation.getUserAId().equals(userId) && !conversation.getUserBId().equals(userId)) {
+            throw new IllegalArgumentException("User is not a participant of this conversation");
+        }
+
+        conversation.setPinned(pinned);
+        conversation.setUpdatedAt(LocalDateTime.now());
+        conversationRepository.save(conversation);
+    }
+
     // ---- 私有辅助方法 ----
 
     /**
      * 将 PrivateConversation 实体转换为 ConversationView。
+     * 填充对方用户信息、未读数、置顶状态、会话阶段和类型等字段。
      */
     private ConversationView toConversationView(PrivateConversation conv, Long currentUserId) {
         // 确定对方用户 ID
@@ -213,12 +240,41 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
         // 获取对方用户信息
         User otherUser = userRepository.findById(otherUserId).orElse(null);
-        String otherUserName = otherUser != null ? otherUser.getNickname() : "未知用户";
+        String otherUserName = otherUser != null ? otherUser.getNickname() : DisplayConstants.UNKNOWN_USER;
         String otherUserAvatar = otherUser != null ? otherUser.getAvatarUrl() : null;
+
+        // 获取对方用户简介（从 User 的 bio 字段拼接年级和简介）
+        String headline = "";
+        if (otherUser != null) {
+            StringBuilder sb = new StringBuilder();
+            if (otherUser.getGradeLabel() != null && !otherUser.getGradeLabel().isBlank()) {
+                sb.append(otherUser.getGradeLabel());
+            }
+            if (otherUser.getBio() != null && !otherUser.getBio().isBlank()) {
+                if (!sb.isEmpty()) {
+                    sb.append(" · ");
+                }
+                // 截取简介前 20 字符
+                String bio = otherUser.getBio().length() > 20
+                        ? otherUser.getBio().substring(0, 20) + "..."
+                        : otherUser.getBio();
+                sb.append(bio);
+            }
+            headline = sb.toString();
+        }
 
         // 计算未读消息数
         int unreadCount = (int) messageRepository.countByConversationIdAndSenderIdNotAndIsRead(
                 conv.getId(), currentUserId, false);
+
+        // 获取置顶状态
+        Boolean pinned = conv.getPinned() != null ? conv.getPinned() : false;
+
+        // 会话阶段：有消息为 active，无消息为 matching
+        String phase = conv.getLastMessageAt() != null ? "active" : "matching";
+
+        // 会话类型：默认为 private（临时匿名会话后续迭代支持）
+        String sessionType = "private";
 
         return new ConversationView(
                 conv.getId(),
@@ -229,7 +285,11 @@ public class RealPrivateMessageService implements PrivateMessageService {
                 otherUserAvatar,
                 conv.getLastMessagePreview(),
                 conv.getLastMessageAt() != null ? conv.getLastMessageAt().toString() : null,
-                unreadCount
+                unreadCount,
+                headline,
+                pinned,
+                phase,
+                sessionType
         );
     }
 

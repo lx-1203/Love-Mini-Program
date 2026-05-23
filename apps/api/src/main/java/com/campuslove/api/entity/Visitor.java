@@ -28,6 +28,10 @@ public class Visitor {
     @Column(name = "visited_user_id", nullable = false)
     private Long visitedUserId;
 
+    /** 是否已读 */
+    @Column(name = "is_read", nullable = false)
+    private Boolean isRead = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -56,6 +60,14 @@ public class Visitor {
 
     public void setVisitedUserId(Long visitedUserId) {
         this.visitedUserId = visitedUserId;
+    }
+
+    public Boolean getIsRead() {
+        return isRead;
+    }
+
+    public void setIsRead(Boolean isRead) {
+        this.isRead = isRead;
     }
 
     public LocalDateTime getCreatedAt() {

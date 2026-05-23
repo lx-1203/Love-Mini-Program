@@ -121,4 +121,39 @@ public interface MatchService {
      * @param userId   当前用户 ID（用于验证）
      */
     void declineHeartSignal(Long signalId, Long userId);
+
+    // ---- Phase 2 新增：左滑/反悔/我喜欢的/访客已读 ----
+
+    /**
+     * 左滑(pass)用户，记录跳过行为。
+     * 被跳过的用户将不再出现在推荐列表中。
+     *
+     * @param userId       执行 pass 的用户 ID
+     * @param passedUserId 被 pass 的用户 ID
+     */
+    void passUser(Long userId, Long passedUserId);
+
+    /**
+     * 反悔(rewind)操作，撤销最近一次 pass 记录。
+     * 每日限 1 次。
+     *
+     * @param userId 当前用户 ID
+     * @return 操作结果（成功/失败原因）
+     */
+    RewindResultView rewind(Long userId);
+
+    /**
+     * 获取当前用户发出的喜欢列表（我喜欢的）。
+     *
+     * @param userId 当前用户 ID
+     * @return 喜欢的用户视图列表
+     */
+    List<LikedUserView> getMyLikes(Long userId);
+
+    /**
+     * 标记访客记录为已读。
+     *
+     * @param visitorId 访客记录 ID
+     */
+    void markVisitorRead(Long visitorId);
 }

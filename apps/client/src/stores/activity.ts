@@ -152,8 +152,9 @@ export const useActivityStore = defineStore("activity", {
     },
 
     /**
-     * 报名活动
-     * 调用 POST /api/activities/{activityId}/enroll
+     * 报名/取消报名活动
+     * 报名调用 POST /api/activities/{activityId}/enroll
+     * 取消报名调用 DELETE /api/activities/{activityId}/enroll
      * 后端请求体: ActivityEnrollRequest(userId)
      * @param activityId - 活动 ID
      */
@@ -180,21 +181,80 @@ export const useActivityStore = defineStore("activity", {
         const sessionStore = useSessionStore();
         const userId = sessionStore.userSession?.userId ?? "";
 
-        // 调用后端 API: POST /api/activities/{activityId}/enroll
-        // 后端请求体: { userId: Long }
-        const result = await request<{ activityId: number; enrolled: boolean; enrollmentCount: number }>({
-          url: `/activities/${activityId}/enroll`,
-          method: "POST",
-          data: { userId },
-        });
-        // 根据后端返回更新本地状态
-        activity.isEnrolled = result.enrolled;
-        activity.enrollmentCount = result.enrollmentCount;
+        if (activity.isEnrolled) {
+          // 取消报名：调用 DELETE /api/activities/{activityId}/enroll
+          const result = await request<{ activityId: number; enrolled: boolean; enrollmentCount: number }>({
+            url: `/activities/${activityId}/enroll`,
+            method: "DELETE",
+            data: { userId },
+          });
+          activity.isEnrolled = result.enrolled;
+          activity.enrollmentCount = result.enrollmentCount;
+        } else {
+          // 报名：调用 POST /api/activities/{activityId}/enroll
+          const result = await request<{ activityId: number; enrolled: boolean; enrollmentCount: number }>({
+            url: `/activities/${activityId}/enroll`,
+            method: "POST",
+            data: { userId },
+          });
+          activity.isEnrolled = result.enrolled;
+          activity.enrollmentCount = result.enrollmentCount;
+        }
       } catch (error) {
         this.errorMessage =
           error instanceof Error ? error.message : "报名操作失败";
       } finally {
         this.enrolling = false;
+      }
+    },
+
+    /**
+     * 获取活动详情
+     * Real 模式调用 GET /api/activities/{id}
+     * @param activityId - 活动 ID
+     */
+    async fetchActivityDetail(activityId: string): Promise<ActivityItem | null> {
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          return this.activities.find((a) => a.id === activityId) ?? null;
+        }
+
+        // 调用后端 API: GET /api/activities/{activityId}
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId ?? "";
+        const data = await request<{
+          id: number;
+          title: string;
+          location: string;
+          scheduleText: string;
+          description: string;
+          enrollmentCount: number;
+          participantAvatars: string[];
+          status: string;
+          activityDate: string;
+          isEnrolled: boolean;
+        }>({
+          url: `/activities/${activityId}?userId=${userId}`,
+          method: "GET",
+        });
+
+        return {
+          id: String(data.id),
+          title: data.title,
+          location: data.location,
+          scheduleText: data.scheduleText,
+          date: data.activityDate ?? "",
+          enrollCount: data.enrollmentCount,
+          description: data.description,
+          enrollmentCount: data.enrollmentCount,
+          participantAvatars: data.participantAvatars,
+          isEnrolled: data.isEnrolled,
+        };
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "获取活动详情失败";
+        return null;
       }
     },
 

@@ -7,18 +7,22 @@ import { useSessionStore } from "./session";
 
 /**
  * 后端 DailyQuestionView 类型
- * 对应后端 record DailyQuestionView(Long id, LocalDate questionDate, String questionText, boolean hasAnswered)
+ * 对应后端 record DailyQuestionView(Long id, LocalDate questionDate, String questionText, boolean hasAnswered, String category, int answerCount)
  */
 export interface BackendDailyQuestionView {
   id: number;
   questionDate: string;
   questionText: string;
   hasAnswered: boolean;
+  /** 问题分类 */
+  category: string;
+  /** 回答数量 */
+  answerCount: number;
 }
 
 /**
  * 后端 DailyAnswerView 类型
- * 对应后端 record DailyAnswerView(Long id, Long userId, String authorName, String content, boolean isAnonymous, LocalDateTime createdAt)
+ * 对应后端 record DailyAnswerView(Long id, Long userId, String authorName, String content, boolean isAnonymous, LocalDateTime createdAt, String avatarUrl)
  */
 export interface BackendDailyAnswerView {
   id: number;
@@ -27,6 +31,8 @@ export interface BackendDailyAnswerView {
   content: string;
   isAnonymous: boolean;
   createdAt: string;
+  /** 回答者头像 URL */
+  avatarUrl: string;
 }
 
 /**
@@ -36,9 +42,9 @@ function mapToDailyQuestion(raw: BackendDailyQuestionView): DailyQuestion {
   return {
     id: String(raw.id),
     question: raw.questionText,
-    category: "", // 后端 DailyQuestionView 无 category 字段
+    category: raw.category || "",
     date: raw.questionDate,
-    answerCount: 0, // 后端 DailyQuestionView 无 answerCount 字段
+    answerCount: raw.answerCount ?? 0,
     hasAnswered: raw.hasAnswered,
   };
 }
@@ -52,10 +58,10 @@ function mapToDailyAnswer(raw: BackendDailyAnswerView, questionId?: string): Dai
     questionId: questionId ?? "",
     userId: String(raw.userId),
     userName: raw.isAnonymous ? "" : raw.authorName,
-    userAvatar: "", // 后端 DailyAnswerView 无 avatarUrl 字段
+    userAvatar: raw.isAnonymous ? "" : (raw.avatarUrl || ""),
     isAnonymous: raw.isAnonymous,
     authorName: raw.isAnonymous ? "" : raw.authorName,
-    authorAvatar: "", // 后端 DailyAnswerView 无 avatarUrl 字段
+    authorAvatar: raw.isAnonymous ? "" : (raw.avatarUrl || ""),
     content: raw.content,
     createdAt: raw.createdAt,
   };

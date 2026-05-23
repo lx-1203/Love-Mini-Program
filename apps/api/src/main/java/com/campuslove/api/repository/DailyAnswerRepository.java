@@ -36,4 +36,12 @@ public interface DailyAnswerRepository extends JpaRepository<DailyAnswer, Long> 
      * @return 是否存在回答
      */
     boolean existsByQuestionIdAndUserId(Long questionId, Long userId);
+
+    /**
+     * 根据问题 ID 统计回答数量。
+     *
+     * @param questionId 问题 ID
+     * @return 回答数量
+     */
+    long countByQuestionId(Long questionId);
 }

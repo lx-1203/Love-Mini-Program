@@ -3,9 +3,11 @@ package com.campuslove.api.match;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -117,6 +119,54 @@ public class MatchController {
           @PathVariable("id") Long signalId,
           @RequestParam(name = "userId") Long userId) {
     matchService.declineHeartSignal(signalId, userId);
+  }
+
+  // ---- Phase 2 新增：左滑/反悔/我喜欢的/访客已读 ----
+
+  /**
+   * 左滑(pass)用户。
+   * POST /api/matches/pass
+   */
+  @PostMapping("/pass")
+  public ResponseEntity<Void> passUser(
+          @RequestParam(name = "userId", defaultValue = "1") Long userId,
+          @RequestParam(name = "passedUserId") Long passedUserId) {
+    matchService.passUser(userId, passedUserId);
+    return ResponseEntity.ok().build();
+  }
+
+  /**
+   * 反悔(rewind)操作，撤销最近一次 pass。
+   * POST /api/matches/rewind
+   */
+  @PostMapping("/rewind")
+  public ResponseEntity<RewindResultView> rewind(
+          @RequestParam(name = "userId", defaultValue = "1") Long userId) {
+    RewindResultView result = matchService.rewind(userId);
+    if (result.success()) {
+      return ResponseEntity.ok(result);
+    }
+    return ResponseEntity.badRequest().body(result);
+  }
+
+  /**
+   * 获取我喜欢的用户列表。
+   * GET /api/matches/my-likes
+   */
+  @GetMapping("/my-likes")
+  public ResponseEntity<List<LikedUserView>> getMyLikes(
+          @RequestParam(name = "userId", defaultValue = "1") Long userId) {
+    return ResponseEntity.ok(matchService.getMyLikes(userId));
+  }
+
+  /**
+   * 标记访客记录为已读。
+   * PUT /api/matches/visitors/{id}/read
+   */
+  @PutMapping("/visitors/{id}/read")
+  public ResponseEntity<Void> markVisitorRead(@PathVariable("id") Long id) {
+    matchService.markVisitorRead(id);
+    return ResponseEntity.ok().build();
   }
 }
 
