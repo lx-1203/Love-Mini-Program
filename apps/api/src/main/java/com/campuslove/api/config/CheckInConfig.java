@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.checkin")
 public class CheckInConfig {
 
-    /** 每次签到奖励的额外推荐配额 */
-    private int extraQuotaPerCheckIn = 3;
+    /** 每次签到奖励的额外推荐配额（签到权益 +5） */
+    private int extraQuotaPerCheckIn = 5;
 
     public int getExtraQuotaPerCheckIn() {
         return extraQuotaPerCheckIn;

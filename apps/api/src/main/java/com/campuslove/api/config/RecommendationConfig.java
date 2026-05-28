@@ -34,6 +34,21 @@ public class RecommendationConfig {
     /** 日程重叠权重 */
     private int scheduleWeight = 15;
 
+    /** 同校百分比加成（乘数，默认 0.30 即+30%） */
+    private double sameSchoolBoostPercent = 0.30;
+
+    /** 同专业额外加分 */
+    private int sameMajorWeight = 20;
+
+    /** 共同兴趣圈每个加分 */
+    private int commonCircleWeight = 5;
+
+    /** 共同每日一问回答每个加分 */
+    private int commonDailyAnswerWeight = 3;
+
+    /** 同校百分比加成启用开关 */
+    private boolean sameSchoolBoostEnabled = true;
+
     public int getDailyLimit() {
         return dailyLimit;
     }
@@ -88,5 +103,45 @@ public class RecommendationConfig {
 
     public void setScheduleWeight(int scheduleWeight) {
         this.scheduleWeight = scheduleWeight;
+    }
+
+    public double getSameSchoolBoostPercent() {
+        return sameSchoolBoostPercent;
+    }
+
+    public void setSameSchoolBoostPercent(double sameSchoolBoostPercent) {
+        this.sameSchoolBoostPercent = sameSchoolBoostPercent;
+    }
+
+    public int getSameMajorWeight() {
+        return sameMajorWeight;
+    }
+
+    public void setSameMajorWeight(int sameMajorWeight) {
+        this.sameMajorWeight = sameMajorWeight;
+    }
+
+    public int getCommonCircleWeight() {
+        return commonCircleWeight;
+    }
+
+    public void setCommonCircleWeight(int commonCircleWeight) {
+        this.commonCircleWeight = commonCircleWeight;
+    }
+
+    public int getCommonDailyAnswerWeight() {
+        return commonDailyAnswerWeight;
+    }
+
+    public void setCommonDailyAnswerWeight(int commonDailyAnswerWeight) {
+        this.commonDailyAnswerWeight = commonDailyAnswerWeight;
+    }
+
+    public boolean isSameSchoolBoostEnabled() {
+        return sameSchoolBoostEnabled;
+    }
+
+    public void setSameSchoolBoostEnabled(boolean sameSchoolBoostEnabled) {
+        this.sameSchoolBoostEnabled = sameSchoolBoostEnabled;
     }
 }

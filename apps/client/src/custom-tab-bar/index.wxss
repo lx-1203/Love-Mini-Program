@@ -1,0 +1,76 @@
+.tab-bar {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 24rpx;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12rpx;
+  align-items: end;
+  padding: 18rpx 16rpx 16rpx;
+  border: 1px solid var(--td-border-level-1-color);
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.tab-bar__item {
+  display: grid;
+  justify-items: center;
+  gap: 6rpx;
+  min-height: 88rpx;
+  padding: 8rpx 0;
+  border: 0;
+  background: transparent;
+  color: var(--td-text-color-secondary, #475569);
+  font-size: 20rpx;
+  line-height: 1;
+}
+
+.tab-bar__item--active {
+  color: var(--td-brand-color-7, #1d4ed8);
+}
+
+.tab-bar__item--prominent {
+  min-height: 112rpx;
+  margin-top: -30rpx;
+  padding: 14rpx 0 10rpx;
+  border: 1px solid rgba(29, 78, 216, 0.18);
+  border-radius: 24rpx;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.tab-bar__item--prominent.tab-bar__item--active {
+  border-color: rgba(29, 78, 216, 0.3);
+  background: rgba(239, 246, 255, 0.92);
+}
+
+.tab-bar__icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
+}
+
+.tab-bar__item--prominent .tab-bar__icon-wrap {
+  width: 72rpx;
+  height: 72rpx;
+}
+
+.tab-bar__icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.tab-bar__item--prominent .tab-bar__icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.tab-bar__label {
+  font-size: 20rpx;
+  font-weight: 600;
+}

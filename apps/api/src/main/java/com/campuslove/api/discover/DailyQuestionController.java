@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 每日一问 Controller。
  * 提供获取今日问题、提交回答、查看回答列表的 API。
+ * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
 @RequestMapping("/api/daily-question")
@@ -32,8 +34,8 @@ public class DailyQuestionController {
    * GET /api/daily-question/today
    */
   @GetMapping("/today")
-  public DailyQuestionView getTodayQuestion(
-      @RequestParam(name = "userId", required = false) Long userId) {
+  public DailyQuestionView getTodayQuestion() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return dailyQuestionService.getTodayQuestion(userId);
   }
 
@@ -43,8 +45,9 @@ public class DailyQuestionController {
    */
   @PostMapping("/answer")
   public DailyAnswerView submitAnswer(@Valid @RequestBody DailyAnswerRequest request) {
+    Long userId = SecurityUtils.getCurrentUserId();
     return dailyQuestionService.submitAnswer(
-        request.userId(),
+        userId,
         request.questionId(),
         request.content(),
         request.isAnonymous() != null && request.isAnonymous()
@@ -58,9 +61,9 @@ public class DailyQuestionController {
   @GetMapping("/answers")
   public Page<DailyAnswerView> getAnswers(
       @RequestParam("questionId") Long questionId,
-      @RequestParam(name = "userId", required = false) Long userId,
       @RequestParam(name = "page", required = false, defaultValue = "0") int page,
       @RequestParam(name = "size", required = false, defaultValue = "20") int size) {
+    Long userId = SecurityUtils.getCurrentUserId();
     Pageable pageable = PageRequest.of(page, size);
     return dailyQuestionService.getAnswers(questionId, userId, pageable);
   }
@@ -70,9 +73,9 @@ public class DailyQuestionController {
 
 /**
  * 每日一问回答请求。
+ * userId 由 SecurityUtils 自动获取，不再从请求体传入。
  */
 record DailyAnswerRequest(
-    Long userId,
     Long questionId,
     @NotBlank @Size(max = 2000) String content,
     Boolean isAnonymous

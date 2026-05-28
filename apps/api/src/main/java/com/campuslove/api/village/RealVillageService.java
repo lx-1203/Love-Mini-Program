@@ -2,6 +2,7 @@ package com.campuslove.api.village;
 
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
@@ -14,7 +15,9 @@ import com.campuslove.api.entity.PostCategoryEntity;
 import com.campuslove.api.entity.PostLike;
 import com.campuslove.api.entity.PostShare;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
+import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.entity.UserFollow;
 import com.campuslove.api.repository.CommentRepository;
 import com.campuslove.api.repository.ActivityRepository;
@@ -59,10 +62,12 @@ public class RealVillageService implements VillageService {
     private final UserRepository userRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final UserFollowRepository userFollowRepository;
+    private final UserBasicProfileRepository userBasicProfileRepository;
     private final ObjectMapper objectMapper;
     private final InteractionEventService interactionEventService;
     private final ActivityRepository activityRepository;
     private final CircleTopicRepository circleTopicRepository;
+    private final SensitiveWordFilter sensitiveWordFilter;
 
     public RealVillageService(
             PostRepository postRepository,
@@ -73,10 +78,12 @@ public class RealVillageService implements VillageService {
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
             UserFollowRepository userFollowRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
             ObjectMapper objectMapper,
             InteractionEventService interactionEventService,
             ActivityRepository activityRepository,
-            CircleTopicRepository circleTopicRepository) {
+            CircleTopicRepository circleTopicRepository,
+            SensitiveWordFilter sensitiveWordFilter) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.postShareRepository = postShareRepository;
@@ -85,10 +92,12 @@ public class RealVillageService implements VillageService {
         this.userRepository = userRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userFollowRepository = userFollowRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
         this.objectMapper = objectMapper;
         this.interactionEventService = interactionEventService;
         this.activityRepository = activityRepository;
         this.circleTopicRepository = circleTopicRepository;
+        this.sensitiveWordFilter = sensitiveWordFilter;
     }
 
     // ---- Phase 1 兼容方法（委托给 Phase 2 实现，userId 由 Controller 传入） ----
@@ -96,7 +105,18 @@ public class RealVillageService implements VillageService {
     @Override
     @Transactional(readOnly = true)
     public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize) {
+        return getPosts(category, tag, sortBy, page, pageSize, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize, Long userId) {
         Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // 校园分类：需要 userId 筛选与当前用户同校的帖子
+        if ("campus".equals(category)) {
+            return getCampusCategoryPosts(userId, pageable);
+        }
 
         Page<Post> postPage;
         if (category != null && !"all".equals(category)) {
@@ -199,12 +219,16 @@ public class RealVillageService implements VillageService {
             throw new IllegalArgumentException("content is required");
         }
 
+        // 敏感词过滤：过滤帖子内容和标签
+        String filteredContent = sensitiveWordFilter.filterWithLog(content, userId, "POST");
+        List<String> filteredTags = filterTagList(tags, userId);
+
         LocalDateTime now = LocalDateTime.now();
         Post post = new Post();
         post.setAuthorId(userId);
-        post.setContent(content);
+        post.setContent(filteredContent);
         post.setImages(toJsonString(images));
-        post.setTags(toJsonString(tags));
+        post.setTags(toJsonString(filteredTags));
         post.setCategory(category != null ? PostCategory.valueOf(category) : PostCategory.all);
         post.setLikesCount(0);
         post.setCommentsCount(0);
@@ -373,6 +397,48 @@ public class RealVillageService implements VillageService {
         List<CampusTopicView> topics = getCampusTopics();
 
         return new CampusFeedView(campusName, posts, activities, topics);
+    }
+
+    /**
+     * 获取同校分类帖子（当用户选择"校园"Tab时调用）。
+     * 查询所有活跃帖子，通过 authorId 匹配当前用户的 campusName 进行筛选。
+     *
+     * @param userId   当前用户 ID
+     * @param pageable 分页参数
+     * @return 帖子列表响应
+     */
+    private PostListResponse getCampusCategoryPosts(Long userId, Pageable pageable) {
+        if (userId == null) {
+            return new PostListResponse(List.of(), 0,
+                    pageable.getPageNumber() + 1, pageable.getPageSize());
+        }
+
+        // 获取当前用户的校区名称
+        String myCampusName = userCampusProfileRepository.findByUserId(userId)
+                .map(UserCampusProfile::getCampusName)
+                .orElse("");
+        if (myCampusName.isEmpty()) {
+            return new PostListResponse(List.of(), 0,
+                    pageable.getPageNumber() + 1, pageable.getPageSize());
+        }
+
+        // 查询所有活跃帖子并筛选同校作者
+        Page<Post> postPage = postRepository.findByStatusOrderByCreatedAtDesc(
+                PostStatus.active, pageable);
+
+        List<Post> campusPosts = new ArrayList<>();
+        for (Post post : postPage.getContent()) {
+            if (isSameCampus(post.getAuthorId(), myCampusName)) {
+                campusPosts.add(post);
+            }
+        }
+
+        List<PostSummaryView> items = campusPosts.stream()
+                .map(post -> toPostSummaryView(post, myCampusName))
+                .toList();
+
+        return new PostListResponse(items, (int) postPage.getTotalElements(),
+                pageable.getPageNumber() + 1, pageable.getPageSize());
     }
 
     /**
@@ -719,5 +785,159 @@ public class RealVillageService implements VillageService {
     private static String truncate(String text, int maxLen) {
         if (text == null) return null;
         return text.length() <= maxLen ? text : text.substring(0, maxLen) + "...";
+    }
+
+    /**
+     * 过滤标签列表中的敏感词。
+     * 对每个标签进行敏感词过滤，移除非空过滤结果。
+     *
+     * @param tags   原始标签列表（可为 null）
+     * @param userId 用户 ID（用于日志记录）
+     * @return 过滤后的标签列表
+     */
+    private List<String> filterTagList(List<String> tags, Long userId) {
+        if (tags == null || tags.isEmpty()) {
+            return tags;
+        }
+        List<String> filtered = new ArrayList<>();
+        for (String tag : tags) {
+            String filteredTag = sensitiveWordFilter.filterWithLog(tag, userId, "POST_TAG");
+            if (filteredTag != null && !filteredTag.isBlank()) {
+                filtered.add(filteredTag);
+            }
+        }
+        return filtered;
+    }
+
+    // ---- 相似作者推荐 ----
+
+    /**
+     * 获取与帖子作者相似的推荐用户。
+     * 基于兴趣标签重叠度和同校关系计算相似度分数，推荐 1-2 位最相似的用户。
+     * 排除已关注的用户和当前用户自身。
+     *
+     * @param postId 帖子 ID
+     * @param userId 当前用户 ID
+     * @return 相似作者推荐响应
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public SimilarAuthorsResponse getSimilarAuthors(Long postId, Long userId) {
+        if (postId == null || userId == null) {
+            throw new IllegalArgumentException("postId and userId are required");
+        }
+
+        // 1. 查找帖子，获取帖子作者
+        Post post = findPostOrThrow(postId);
+        Long postAuthorId = post.getAuthorId();
+
+        // 2. 获取帖子作者的校区和兴趣标签
+        String authorCampus = userCampusProfileRepository.findByUserId(postAuthorId)
+                .map(UserCampusProfile::getCampusName)
+                .orElse("");
+
+        List<String> authorInterests = userBasicProfileRepository.findByUserId(postAuthorId)
+                .map(UserBasicProfile::getInterestTags)
+                .map(this::parseJsonToList)
+                .orElse(List.of());
+
+        // 3. 获取当前用户已关注的用户ID列表（用于排除）
+        List<Long> followedUserIds = userFollowRepository.findByFollowerId(userId).stream()
+                .map(UserFollow::getFollowingId)
+                .toList();
+
+        // 4. 获取所有用户，计算相似度分数
+        List<User> allUsers = userRepository.findAll();
+
+        // 按相似度评分排序的候选列表
+        record CandidateScore(Long candidateId, int score) {}
+
+        List<CandidateScore> candidates = new ArrayList<>();
+        for (User candidate : allUsers) {
+            Long candidateId = candidate.getId();
+
+            // 排除：帖子作者自身、当前用户自身、已关注的用户
+            if (candidateId.equals(postAuthorId)
+                    || candidateId.equals(userId)
+                    || followedUserIds.contains(candidateId)) {
+                continue;
+            }
+
+            int score = 0;
+
+            // 同校加分
+            boolean isSameCampus = userCampusProfileRepository.findByUserId(candidateId)
+                    .map(cp -> authorCampus.equals(cp.getCampusName()))
+                    .orElse(false);
+            if (isSameCampus) {
+                score += 1;
+            }
+
+            // 兴趣标签重叠加分
+            List<String> candidateInterests = userBasicProfileRepository.findByUserId(candidateId)
+                    .map(UserBasicProfile::getInterestTags)
+                    .map(this::parseJsonToList)
+                    .orElse(List.of());
+
+            long commonInterestCount = candidateInterests.stream()
+                    .filter(authorInterests::contains)
+                    .count();
+            score += (int) commonInterestCount;
+
+            // 只有有相似度（同校或有共同兴趣）的用户才纳入候选
+            if (score > 0) {
+                candidates.add(new CandidateScore(candidateId, score));
+            }
+        }
+
+        // 5. 按分数降序排列，取前 2 位
+        List<SimilarAuthorView> similarAuthors = candidates.stream()
+                .sorted((a, b) -> Integer.compare(b.score(), a.score()))
+                .limit(2)
+                .map(cs -> buildSimilarAuthorView(cs.candidateId(), authorCampus, authorInterests, userId))
+                .toList();
+
+        return new SimilarAuthorsResponse(similarAuthors);
+    }
+
+    /**
+     * 构建相似作者视图。
+     *
+     * @param candidateId     候选用户 ID
+     * @param authorCampus    帖子作者的校区名称
+     * @param authorInterests 帖子作者的兴趣标签列表
+     * @param currentUserId   当前用户 ID
+     * @return 相似作者视图
+     */
+    private SimilarAuthorView buildSimilarAuthorView(
+            Long candidateId, String authorCampus,
+            List<String> authorInterests, Long currentUserId) {
+
+        User user = userRepository.findById(candidateId).orElse(null);
+        String nickname = user != null ? user.getNickname() : DisplayConstants.UNKNOWN_USER;
+        String avatarUrl = user != null ? user.getAvatarUrl() : null;
+        String headline = user != null ? user.getBio() : "";
+
+        String candidateCampus = userCampusProfileRepository.findByUserId(candidateId)
+                .map(UserCampusProfile::getCampusName)
+                .orElse("");
+        boolean isAlumni = !authorCampus.isEmpty() && authorCampus.equals(candidateCampus);
+
+        // 计算共同兴趣标签
+        List<String> candidateInterests = userBasicProfileRepository.findByUserId(candidateId)
+                .map(UserBasicProfile::getInterestTags)
+                .map(this::parseJsonToList)
+                .orElse(List.of());
+        List<String> commonInterests = candidateInterests.stream()
+                .filter(authorInterests::contains)
+                .toList();
+
+        boolean isFollowed = userFollowRepository.existsByFollowerIdAndFollowingId(currentUserId, candidateId);
+
+        return new SimilarAuthorView(
+                candidateId, nickname, avatarUrl,
+                candidateCampus, headline, isAlumni,
+                commonInterests, isFollowed
+        );
     }
 }

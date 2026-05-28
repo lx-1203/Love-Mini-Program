@@ -4,7 +4,9 @@ import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
 import com.campuslove.api.entity.ActivityEnrollment;
+import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleTopic;
+import com.campuslove.api.entity.DailyAnswer;
 import com.campuslove.api.entity.HeartSignal;
 import com.campuslove.api.entity.HeartSignal.SignalStatus;
 import com.campuslove.api.entity.Like;
@@ -19,7 +21,9 @@ import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserScheduleProfile;
 import com.campuslove.api.repository.ActivityEnrollmentRepository;
 import com.campuslove.api.repository.ActivityRepository;
+import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
+import com.campuslove.api.repository.DailyAnswerRepository;
 import com.campuslove.api.repository.HeartSignalRepository;
 import com.campuslove.api.repository.LikeRepository;
 import com.campuslove.api.repository.PassRecordRepository;
@@ -71,6 +75,8 @@ public class RealRecommendationService implements RecommendationService {
     private final PostRepository postRepository;
     private final HeartSignalRepository heartSignalRepository;
     private final PassRecordRepository passRecordRepository;
+    private final CircleMembershipRepository circleMembershipRepository;
+    private final DailyAnswerRepository dailyAnswerRepository;
     private final ObjectMapper objectMapper;
 
     public RealRecommendationService(
@@ -87,6 +93,8 @@ public class RealRecommendationService implements RecommendationService {
             PostRepository postRepository,
             HeartSignalRepository heartSignalRepository,
             PassRecordRepository passRecordRepository,
+            CircleMembershipRepository circleMembershipRepository,
+            DailyAnswerRepository dailyAnswerRepository,
             ObjectMapper objectMapper) {
         this.recommendationConfig = recommendationConfig;
         this.userRepository = userRepository;
@@ -101,6 +109,8 @@ public class RealRecommendationService implements RecommendationService {
         this.postRepository = postRepository;
         this.heartSignalRepository = heartSignalRepository;
         this.passRecordRepository = passRecordRepository;
+        this.circleMembershipRepository = circleMembershipRepository;
+        this.dailyAnswerRepository = dailyAnswerRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -303,8 +313,8 @@ public class RealRecommendationService implements RecommendationService {
     @Override
     @Deprecated
     public RecommendationPreferencesView getPreferences() {
-        // 无用户上下文，返回默认偏好（同校优先 / 中午12点刷新）
-        return new RecommendationPreferencesView("12:00", "campus_first");
+        // 无用户上下文，返回默认偏好（同校优先 / 中午12点刷新 / 启用校园优先）
+        return new RecommendationPreferencesView("12:00", "campus_first", true);
     }
 
     /**
@@ -369,12 +379,17 @@ public class RealRecommendationService implements RecommendationService {
             // 更新偏好字段
             pref.setPreferredTime(data.getPreferredTime());
             pref.setScope(data.getScope());
+            // campusPriority 可为 null，保持数据库已有值不变
+            if (data.getCampusPriority() != null) {
+                pref.setCampusPriority(data.getCampusPriority());
+            }
             pref.setUpdatedAt(now);
 
             // 持久化到数据库
             recommendationPreferenceRepository.save(pref);
 
-            return new RecommendationPreferencesView(pref.getPreferredTime(), pref.getScope());
+            return new RecommendationPreferencesView(
+                    pref.getPreferredTime(), pref.getScope(), pref.getCampusPriority());
         } catch (Exception e) {
             // 数据库操作异常时，包装为运行时异常向上抛出
             throw new RuntimeException("保存推荐偏好失败，用户ID: " + userId, e);
@@ -389,7 +404,11 @@ public class RealRecommendationService implements RecommendationService {
      * - 同校区 (campus_first): +50 权重
      * - 同城市: +20 权重
      * - 兴趣标签匹配: +10 每个匹配
+     * - 同专业: +20 权重
+     * - 共同兴趣圈: +5 每个
+     * - 共同每日一问: +3 每个
      * - 日程重叠: +15 权重
+     * - 校园优先: 同校用户总分+30%
      * - 根据用户 RecommendationPreference.scope 设置过滤范围
      * - 每日最多返回 10 个推荐
      */
@@ -400,10 +419,11 @@ public class RealRecommendationService implements RecommendationService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        // 1. 获取当前用户的校区和城市信息
+        // 1. 获取当前用户的校区、城市和专业信息
         Optional<UserCampusProfile> myCampusOpt = userCampusProfileRepository.findByUserId(userId);
         String myCampusName = myCampusOpt.map(UserCampusProfile::getCampusName).orElse("");
         String myCityName = myCampusOpt.map(UserCampusProfile::getCityName).orElse("");
+        String myDepartmentName = myCampusOpt.map(UserCampusProfile::getDepartmentName).orElse("");
 
         // 2. 获取当前用户的日程偏好
         Optional<UserScheduleProfile> myScheduleOpt = userScheduleProfileRepository.findByUserId(userId);
@@ -414,7 +434,31 @@ public class RealRecommendationService implements RecommendationService {
                 .map(profile -> parseInterestTags(profile.getInterestTags()))
                 .orElse(Collections.emptySet());
 
-        // 4. 获取推荐偏好
+        // 4. 批量查询当前用户加入的兴趣圈 ID 列表（用于计算共同圈）
+        Set<Long> tempMyCircleIds;
+        try {
+            List<CircleMembership> myMemberships = circleMembershipRepository.findByUserId(userId);
+            tempMyCircleIds = myMemberships.stream()
+                    .map(m -> m.getCircle().getId())
+                    .collect(Collectors.toSet());
+        } catch (Exception e) {
+            tempMyCircleIds = Collections.emptySet();
+        }
+        final Set<Long> myCircleIds = tempMyCircleIds;
+
+        // 5. 批量查询当前用户回答过的每日一问 questionId 列表（用于计算共同回答）
+        Set<Long> tempAnswerQuestionIds;
+        try {
+            List<DailyAnswer> myAnswers = dailyAnswerRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            tempAnswerQuestionIds = myAnswers.stream()
+                    .map(a -> a.getQuestion().getId())
+                    .collect(Collectors.toSet());
+        } catch (Exception e) {
+            tempAnswerQuestionIds = Collections.emptySet();
+        }
+        final Set<Long> myAnswerQuestionIds = tempAnswerQuestionIds;
+
+        // 6. 获取推荐偏好
         RecommendationPreference pref = recommendationPreferenceRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     RecommendationPreference defaultPref = new RecommendationPreference();
@@ -423,8 +467,9 @@ public class RealRecommendationService implements RecommendationService {
                     defaultPref.setScope("campus_first");
                     return defaultPref;
                 });
+        boolean campusPriorityEnabled = pref.getCampusPriority() != null ? pref.getCampusPriority() : true;
 
-        // 5. 获取已喜欢/已跳过的用户 ID 列表（排除这些用户）
+        // 7. 获取已喜欢/已跳过的用户 ID 列表（排除这些用户）
         List<Like> myLikes = likeRepository.findByUserIdAndStatusIn(userId,
                 List.of(LikeStatus.active));
         Set<Long> excludedUserIds = myLikes.stream()
@@ -432,7 +477,7 @@ public class RealRecommendationService implements RecommendationService {
                 .collect(Collectors.toSet());
         excludedUserIds.add(userId); // 排除自己
 
-        // 5.1 获取已有心动信号的用户 ID 列表（排除已产生双向信号的用户，避免重复推荐）
+        // 7.1 获取已有心动信号的用户 ID 列表（排除已产生双向信号的用户，避免重复推荐）
         try {
             List<HeartSignal> mySignals = heartSignalRepository
                     .findByUserAIdOrUserBIdAndStatus(userId, userId, SignalStatus.accepted);
@@ -446,7 +491,7 @@ public class RealRecommendationService implements RecommendationService {
             // HeartSignal 查询失败时忽略，不影响主流程
         }
 
-        // 5.2 获取已 pass 的用户 ID 列表（排除左滑跳过的用户）
+        // 7.2 获取已 pass 的用户 ID 列表（排除左滑跳过的用户）
         try {
             List<PassRecord> passRecords = passRecordRepository.findByUserIdOrderByCreatedAtDesc(userId);
             for (PassRecord record : passRecords) {
@@ -456,35 +501,37 @@ public class RealRecommendationService implements RecommendationService {
             // PassRecord 查询失败时忽略，不影响主流程
         }
 
-        // 6. 使用分页查询候选用户，避免全表扫描
+        // 8. 使用分页查询候选用户，避免全表扫描
         List<User> allUsers = userRepository.findAll(
                 PageRequest.of(0, recommendationConfig.getCandidatePageSize())).getContent();
 
-        // 7. 根据推荐范围过滤
+        // 9. 根据推荐范围过滤
         String scope = pref.getScope();
         List<User> candidates = allUsers.stream()
                 .filter(u -> !excludedUserIds.contains(u.getId()))
                 .filter(u -> filterByScope(u.getId(), scope, myCampusName, myCityName))
                 .toList();
 
-        // 8. 加权排序
+        // 10. 加权排序
         List<ScoredUser> scoredUsers = new ArrayList<>();
         for (User candidate : candidates) {
-            int score = calculateScore(candidate.getId(), myCampusName, myCityName, myTags, myTimeWindow);
+            int score = calculateScore(
+                    candidate.getId(), myCampusName, myCityName, myTags, myTimeWindow,
+                    myDepartmentName, myCircleIds, myAnswerQuestionIds, campusPriorityEnabled);
             scoredUsers.add(new ScoredUser(candidate, score));
         }
 
         // 按分数降序排序
         scoredUsers.sort(Comparator.comparingInt(ScoredUser::score).reversed());
 
-        // 9. 取前 DAILY_LIMIT 个
+        // 11. 取前 DAILY_LIMIT 个
         List<ScoredUser> topResults = scoredUsers.stream()
                 .limit(recommendationConfig.getDailyLimit())
                 .toList();
 
-        // 10. 转换为视图
+        // 12. 转换为视图，携带同校/同专业/共同圈等标记
         return topResults.stream()
-                .map(su -> toRecommendedPersonView(su.user()))
+                .map(su -> toRecommendedPersonView(su.user(), myCampusName, myDepartmentName, myCircleIds))
                 .toList();
     }
 
@@ -495,13 +542,14 @@ public class RealRecommendationService implements RecommendationService {
             throw new IllegalArgumentException("userId is required");
         }
         return recommendationPreferenceRepository.findByUserId(userId)
-                .map(pref -> new RecommendationPreferencesView(pref.getPreferredTime(), pref.getScope()))
-                .orElse(new RecommendationPreferencesView("12:00", "campus_first"));
+                .map(pref -> new RecommendationPreferencesView(
+                        pref.getPreferredTime(), pref.getScope(), pref.getCampusPriority()))
+                .orElse(new RecommendationPreferencesView("12:00", "campus_first", true));
     }
 
     @Override
     @Transactional
-    public RecommendationPreferencesView savePreferences(Long userId, String preferredTime, String scope) {
+    public RecommendationPreferencesView savePreferences(Long userId, String preferredTime, String scope, Boolean campusPriority) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
@@ -523,10 +571,11 @@ public class RealRecommendationService implements RecommendationService {
 
         pref.setPreferredTime(preferredTime);
         pref.setScope(scope);
+        pref.setCampusPriority(campusPriority != null ? campusPriority : true);
         pref.setUpdatedAt(now);
 
         recommendationPreferenceRepository.save(pref);
-        return new RecommendationPreferencesView(preferredTime, scope);
+        return new RecommendationPreferencesView(preferredTime, scope, pref.getCampusPriority());
     }
 
     /**
@@ -540,6 +589,22 @@ public class RealRecommendationService implements RecommendationService {
     public List<RecommendedPersonView> getHistory(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
+        }
+
+        // 预加载当前用户的校区和专业信息（用于标记同校/同专业）
+        Optional<UserCampusProfile> myCampusOpt = userCampusProfileRepository.findByUserId(userId);
+        String myCampusName = myCampusOpt.map(UserCampusProfile::getCampusName).orElse("");
+        String myDepartmentName = myCampusOpt.map(UserCampusProfile::getDepartmentName).orElse("");
+
+        // 预加载当前用户的兴趣圈 ID（用于计算共同圈）
+        Set<Long> myCircleIds;
+        try {
+            List<CircleMembership> myMemberships = circleMembershipRepository.findByUserId(userId);
+            myCircleIds = myMemberships.stream()
+                    .map(m -> m.getCircle().getId())
+                    .collect(Collectors.toSet());
+        } catch (Exception e) {
+            myCircleIds = Collections.emptySet();
         }
 
         // 用于去重，避免同一用户出现多次
@@ -575,9 +640,12 @@ public class RealRecommendationService implements RecommendationService {
         }
 
         // 3. 转换为视图，限制返回数量
+        final String fMyCampusName = myCampusName;
+        final String fMyDepartmentName = myDepartmentName;
+        final Set<Long> fMyCircleIds = myCircleIds;
         return historyUsers.stream()
                 .limit(recommendationConfig.getDailyLimit())
-                .map(this::toRecommendedPersonView)
+                .map(u -> toRecommendedPersonView(u, fMyCampusName, fMyDepartmentName, fMyCircleIds))
                 .toList();
     }
 
@@ -616,21 +684,49 @@ public class RealRecommendationService implements RecommendationService {
 
     /**
      * 计算候选用户的推荐权重分数。
+     * 加权维度包括：同校区、同城市、同专业、兴趣标签匹配、共同兴趣圈、
+     * 共同每日一问、日程重叠，以及校园优先的同校百分比加成。
+     *
+     * @param candidateUserId        候选用户 ID
+     * @param myCampusName           当前用户校区名称
+     * @param myCityName             当前用户城市名称
+     * @param myTags                 当前用户兴趣标签集合
+     * @param myTimeWindow           当前用户时间窗口 JSON
+     * @param myDepartmentName       当前用户专业/院系名称
+     * @param myCircleIds            当前用户加入的兴趣圈 ID 集合
+     * @param myAnswerQuestionIds    当前用户回答过的每日一问 questionId 集合
+     * @param campusPriorityEnabled  校园优先开关
+     * @return 加权后的推荐分数
      */
     private int calculateScore(Long candidateUserId, String myCampusName,
-                                String myCityName, Set<String> myTags, String myTimeWindow) {
+                                String myCityName, Set<String> myTags, String myTimeWindow,
+                                String myDepartmentName, Set<Long> myCircleIds,
+                                Set<Long> myAnswerQuestionIds, boolean campusPriorityEnabled) {
         int score = 0;
+        boolean isSameCampus = false;
 
-        // 同校区
+        // 同校区 + 同城市 + 同专业
         Optional<UserCampusProfile> campusOpt = userCampusProfileRepository.findByUserId(candidateUserId);
         if (campusOpt.isPresent()) {
             UserCampusProfile campus = campusOpt.get();
-            if (myCampusName.equals(campus.getCampusName())) {
+
+            // 同校区判断并加分
+            if (myCampusName != null && !myCampusName.isBlank()
+                    && myCampusName.equals(campus.getCampusName())) {
                 score += recommendationConfig.getCampusWeight();
+                isSameCampus = true;
             }
+
             // 同城市
-            if (myCityName.equals(campus.getCityName())) {
+            if (myCityName != null && !myCityName.isBlank()
+                    && myCityName.equals(campus.getCityName())) {
                 score += recommendationConfig.getCityWeight();
+            }
+
+            // 同专业：比较 departmentName（院系/专业）
+            if (myDepartmentName != null && !myDepartmentName.isBlank()
+                    && myDepartmentName.equals(campus.getDepartmentName())) {
+                score += recommendationConfig.getSameMajorWeight();
             }
         }
 
@@ -647,10 +743,52 @@ public class RealRecommendationService implements RecommendationService {
             score += (int) commonTagCount * recommendationConfig.getInterestWeight();
         }
 
+        // 共同兴趣圈：查询候选用户加入的圈子，计算交集
+        if (!myCircleIds.isEmpty()) {
+            try {
+                List<CircleMembership> candidateMemberships =
+                        circleMembershipRepository.findByUserId(candidateUserId);
+                Set<Long> candidateCircleIds = candidateMemberships.stream()
+                        .map(m -> m.getCircle().getId())
+                        .collect(Collectors.toSet());
+                // 计算交集
+                long commonCircleCount = myCircleIds.stream()
+                        .filter(candidateCircleIds::contains)
+                        .count();
+                score += (int) commonCircleCount * recommendationConfig.getCommonCircleWeight();
+            } catch (Exception e) {
+                // 查询失败不影响主流程
+            }
+        }
+
+        // 共同每日一问回答：查询候选用户的回答，计算共同问题数
+        if (!myAnswerQuestionIds.isEmpty()) {
+            try {
+                List<DailyAnswer> candidateAnswers =
+                        dailyAnswerRepository.findByUserIdOrderByCreatedAtDesc(candidateUserId);
+                Set<Long> candidateQuestionIds = candidateAnswers.stream()
+                        .map(a -> a.getQuestion().getId())
+                        .collect(Collectors.toSet());
+                // 计算交集
+                long commonAnswerCount = myAnswerQuestionIds.stream()
+                        .filter(candidateQuestionIds::contains)
+                        .count();
+                score += (int) commonAnswerCount * recommendationConfig.getCommonDailyAnswerWeight();
+            } catch (Exception e) {
+                // 查询失败不影响主流程
+            }
+        }
+
         // 日程重叠
         Optional<UserScheduleProfile> scheduleOpt = userScheduleProfileRepository.findByUserId(candidateUserId);
         if (scheduleOpt.isPresent() && hasScheduleOverlap(myTimeWindow, scheduleOpt.get().getPreferredTimeWindowJson())) {
             score += recommendationConfig.getScheduleWeight();
+        }
+
+        // 校园优先：同校用户总分加成+30%
+        if (campusPriorityEnabled && isSameCampus
+                && recommendationConfig.isSameSchoolBoostEnabled()) {
+            score = (int) Math.round(score * (1.0 + recommendationConfig.getSameSchoolBoostPercent()));
         }
 
         return score;
@@ -704,8 +842,16 @@ public class RealRecommendationService implements RecommendationService {
 
     /**
      * 将 User 实体转换为 RecommendedPersonView。
+     * 携带同校/同专业/共同兴趣圈等推荐维度的标记信息。
+     *
+     * @param user             用户实体
+     * @param myCampusName     当前用户校区名称
+     * @param myDepartmentName 当前用户专业/院系名称
+     * @param myCircleIds      当前用户加入的兴趣圈 ID 集合
+     * @return 推荐人物视图
      */
-    private RecommendedPersonView toRecommendedPersonView(User user) {
+    private RecommendedPersonView toRecommendedPersonView(User user,
+            String myCampusName, String myDepartmentName, Set<Long> myCircleIds) {
         String name = user.getNickname() != null ? user.getNickname() : "";
         String initials = extractInitials(name);
         String headline = user.getBio() != null ? user.getBio() : "";
@@ -738,6 +884,37 @@ public class RealRecommendationService implements RecommendationService {
                 .map(UserScheduleProfile::getPreferredCampusArea)
                 .orElse("");
 
+        // ---- 新增推荐维度标记 ----
+
+        // 同校判断：比较 campusName
+        boolean isSameSchool = false;
+        Optional<UserCampusProfile> campusOpt = userCampusProfileRepository.findByUserId(user.getId());
+        if (campusOpt.isPresent() && myCampusName != null && !myCampusName.isBlank()) {
+            isSameSchool = myCampusName.equals(campusOpt.get().getCampusName());
+        }
+
+        // 同专业判断：比较 departmentName
+        boolean isSameMajor = false;
+        if (campusOpt.isPresent() && myDepartmentName != null && !myDepartmentName.isBlank()) {
+            isSameMajor = myDepartmentName.equals(campusOpt.get().getDepartmentName());
+        }
+
+        // 共同兴趣圈数量
+        int commonCircleCount = 0;
+        if (!myCircleIds.isEmpty()) {
+            try {
+                List<CircleMembership> memberships = circleMembershipRepository.findByUserId(user.getId());
+                Set<Long> candidateCircleIds = memberships.stream()
+                        .map(m -> m.getCircle().getId())
+                        .collect(Collectors.toSet());
+                commonCircleCount = (int) myCircleIds.stream()
+                        .filter(candidateCircleIds::contains)
+                        .count();
+            } catch (Exception e) {
+                // 查询失败时保持为 0
+            }
+        }
+
         return new RecommendedPersonView(
                 user.getId(),
                 name,
@@ -749,7 +926,10 @@ public class RealRecommendationService implements RecommendationService {
                 user.getAvatarUrl(),
                 tags,
                 bio,
-                images
+                images,
+                isSameSchool,
+                isSameMajor,
+                commonCircleCount
         );
     }
 

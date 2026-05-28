@@ -20,7 +20,7 @@ public class Post {
 
     /** 帖子分类枚举 */
     public enum PostCategory {
-        all, interest, sincere, hometown, anonymous, latest
+        all, interest, sincere, hometown, anonymous, latest, campus
     }
 
     /** 帖子状态枚举 */
@@ -50,7 +50,7 @@ public class Post {
 
     /** 分类 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "category", nullable = false, columnDefinition = "ENUM('all','interest','sincere','hometown','anonymous','latest') DEFAULT 'all'")
+    @Column(name = "category", nullable = false, columnDefinition = "ENUM('all','interest','sincere','hometown','anonymous','latest','campus') DEFAULT 'all'")
     private PostCategory category = PostCategory.all;
 
     /** 点赞数 */

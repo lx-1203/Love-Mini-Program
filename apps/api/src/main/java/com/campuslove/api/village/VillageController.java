@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 村口帖子与转发控制器。
  * 提供帖子列表、详情、发布、点赞、评论以及转发等接口。
+ * 写操作的用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
 @RequestMapping("/api/posts")
@@ -31,6 +33,7 @@ public class VillageController {
 
   /**
    * 获取帖子列表（支持分类、标签、排序、分页）。
+   * 当 category=campus 时，从JWT认证上下文获取 userId 用于校园筛选。
    */
   @GetMapping
   public PostListResponse getPosts(
@@ -39,7 +42,17 @@ public class VillageController {
       @RequestParam(name = "sortBy", required = false, defaultValue = "latest") String sortBy,
       @RequestParam(name = "page", required = false, defaultValue = "1") int page,
       @RequestParam(name = "pageSize", required = false, defaultValue = "20") int pageSize) {
-    return villageService.getPosts(category, tag, sortBy, page, pageSize);
+    // 校园分类需要从认证上下文获取 userId
+    Long userId = null;
+    if ("campus".equals(category)) {
+      try {
+        userId = SecurityUtils.getCurrentUserId();
+      } catch (Exception e) {
+        // 未认证时返回空列表
+        return new PostListResponse(List.of(), 0, page, pageSize);
+      }
+    }
+    return villageService.getPosts(category, tag, sortBy, page, pageSize, userId);
   }
 
   /**
@@ -47,8 +60,8 @@ public class VillageController {
    */
   @PostMapping
   public PostDetailView createPost(
-      @RequestParam(name = "userId") Long userId,
       @Valid @RequestBody CreatePostRequest request) {
+    Long userId = SecurityUtils.getCurrentUserId();
     return villageService.createPost(userId, request.content(), request.images(), request.tags(), request.category());
   }
 
@@ -66,9 +79,8 @@ public class VillageController {
    * 点赞帖子。
    */
   @PostMapping("/{id}/like")
-  public PostLikeResponse likePost(
-      @PathVariable("id") Long id,
-      @RequestParam(name = "userId") Long userId) {
+  public PostLikeResponse likePost(@PathVariable("id") Long id) {
+    Long userId = SecurityUtils.getCurrentUserId();
     return villageService.likePost(userId, id);
   }
 
@@ -91,8 +103,8 @@ public class VillageController {
   @PostMapping("/{id}/comments")
   public CommentItemView createComment(
       @PathVariable("id") Long id,
-      @RequestParam(name = "userId") Long userId,
       @Valid @RequestBody CreateCommentRequest request) {
+    Long userId = SecurityUtils.getCurrentUserId();
     return villageService.commentPost(userId, id, request.content());
   }
 
@@ -104,8 +116,8 @@ public class VillageController {
   @PostMapping("/{id}/share")
   public ShareView sharePost(
       @PathVariable("id") Long id,
-      @RequestParam(name = "userId") Long userId,
       @Valid @RequestBody SharePostRequest request) {
+    Long userId = SecurityUtils.getCurrentUserId();
     return villageService.sharePost(userId, id, request.comment());
   }
 
@@ -117,12 +129,34 @@ public class VillageController {
    */
   @GetMapping("/campus-feed")
   public ResponseEntity<CampusFeedView> getCampusFeed(
-      @RequestParam(name = "userId") Long userId,
       @RequestParam(name = "page", defaultValue = "0") int page,
       @RequestParam(name = "size", defaultValue = "20") int size) {
+    Long userId = SecurityUtils.getCurrentUserId();
     try {
       CampusFeedView feed = villageService.getCampusFeed(userId, page, size);
       return ResponseEntity.ok(feed);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    }
+  }
+
+  // ---------- 相似作者推荐 ----------
+
+  /**
+   * 获取与帖子作者相似的推荐用户。
+   * 基于兴趣标签重叠度和同校关系推荐 1-2 位最相似的用户，
+   * 排除已关注的用户和当前用户自身。
+   *
+   * @param postId 帖子 ID
+   * @return 相似作者推荐响应（1-2 位用户）
+   */
+  @GetMapping("/{id}/similar-authors")
+  public ResponseEntity<SimilarAuthorsResponse> getSimilarAuthors(
+      @PathVariable("id") Long postId) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    try {
+      SimilarAuthorsResponse response = villageService.getSimilarAuthors(postId, userId);
+      return ResponseEntity.ok(response);
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();
     }
@@ -135,25 +169,6 @@ public class VillageController {
  * 帖子列表响应。
  */
 record PostListResponse(List<PostSummaryView> items, int total, int page, int pageSize) {
-}
-
-/**
- * 帖子摘要视图。
- */
-record PostSummaryView(
-    Long id,
-    String title,
-    String summary,
-    PostAuthorView author,
-    String category,
-    List<String> tags,
-    int likeCount,
-    int commentCount,
-    int shareCount,
-    String createdAt,
-    boolean isHot,
-    boolean isAlumni
-) {
 }
 
 /**
@@ -175,17 +190,6 @@ record PostDetailView(
     boolean isLiked,
     boolean isAuthor,
     boolean isAlumni
-) {
-}
-
-/**
- * 帖子作者视图。
- */
-record PostAuthorView(
-    Long userId,
-    String nickname,
-    String avatarUrl,
-    String campusName
 ) {
 }
 
@@ -307,4 +311,37 @@ record CampusTopicView(
     String authorName,
     int replyCount,
     String createdAt
+) {}
+
+// ---- 相似作者推荐 ----
+
+/**
+ * 相似作者推荐响应。
+ */
+record SimilarAuthorsResponse(
+    /** 推荐的相似作者列表 */
+    List<SimilarAuthorView> authors
+) {}
+
+/**
+ * 相似作者视图。
+ * 包含作者基础信息、同校关系、共同兴趣及是否已关注等字段。
+ */
+record SimilarAuthorView(
+    /** 用户 ID */
+    Long userId,
+    /** 昵称 */
+    String nickname,
+    /** 头像 URL */
+    String avatarUrl,
+    /** 校区名称 */
+    String campusName,
+    /** 个性签名/一句话介绍 */
+    String headline,
+    /** 是否同校 */
+    boolean isAlumni,
+    /** 共同的兴趣标签 */
+    List<String> commonInterests,
+    /** 当前用户是否已关注该推荐作者 */
+    boolean isFollowed
 ) {}

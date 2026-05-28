@@ -20,6 +20,10 @@ export interface ActivityItem {
   /** 已报名用户头像列表 */
   participantAvatars?: string[];
   isEnrolled?: boolean;
+  /** 活动状态：open=报名中, ongoing=进行中, upcoming=预告 */
+  status?: "open" | "ongoing" | "upcoming";
+  /** 活动封面图 */
+  coverImage?: string;
 }
 
 /* ========== Mock 数据 ========== */
@@ -36,6 +40,8 @@ const mockActivities: ActivityItem[] = [
     enrollmentCount: 12,
     participantAvatars: [],
     isEnrolled: false,
+    status: "open",
+    coverImage: "https://picsum.photos/300/200?random=20",
   },
   {
     id: "a-2",
@@ -48,6 +54,36 @@ const mockActivities: ActivityItem[] = [
     enrollmentCount: 8,
     participantAvatars: [],
     isEnrolled: false,
+    status: "upcoming",
+    coverImage: "https://picsum.photos/300/200?random=21",
+  },
+  {
+    id: "a-3",
+    title: "周末篮球友谊赛",
+    location: "体育馆",
+    scheduleText: "周日 10:00-12:00",
+    date: "2026-05-25",
+    enrollCount: 20,
+    description: "篮球爱好者集合，友谊第一比赛第二",
+    enrollmentCount: 20,
+    participantAvatars: [],
+    isEnrolled: true,
+    status: "ongoing",
+    coverImage: "https://picsum.photos/300/200?random=22",
+  },
+  {
+    id: "a-4",
+    title: "校园音乐节",
+    location: "大礼堂",
+    scheduleText: "下周五 19:00-21:00",
+    date: "2026-05-29",
+    enrollCount: 56,
+    description: "校园歌手大赛决赛，精彩不容错过",
+    enrollmentCount: 56,
+    participantAvatars: [],
+    isEnrolled: false,
+    status: "open",
+    coverImage: "https://picsum.photos/300/200?random=23",
   },
 ];
 

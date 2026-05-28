@@ -32,6 +32,10 @@ public class RecommendationPreference {
     @Column(name = "scope", nullable = false, length = 32)
     private String scope = "campus_first";
 
+    /** 校园优先：启用后同校用户的推荐权重+30%并排序靠前 */
+    @Column(name = "campus_priority", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 1")
+    private Boolean campusPriority = true;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -71,6 +75,14 @@ public class RecommendationPreference {
 
     public void setScope(String scope) {
         this.scope = scope;
+    }
+
+    public Boolean getCampusPriority() {
+        return campusPriority;
+    }
+
+    public void setCampusPriority(Boolean campusPriority) {
+        this.campusPriority = campusPriority;
     }
 
     public LocalDateTime getCreatedAt() {

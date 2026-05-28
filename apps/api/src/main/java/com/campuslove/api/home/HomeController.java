@@ -1,10 +1,15 @@
 package com.campuslove.api.home;
 
+import com.campuslove.api.config.SecurityUtils;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 首页控制器。
+ * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
+ */
 @RestController
 @RequestMapping("/api/home")
 public class HomeController {
@@ -17,11 +22,11 @@ public class HomeController {
 
   /**
    * 获取首页仪表盘数据。
-   * 支持传入 userId 以获取个性化推荐数据，userId 为可选参数。
+   * 从JWT认证上下文获取用户ID以提供个性化推荐数据。
    */
   @GetMapping("/dashboard")
-  public HomeDashboardView getDashboard(
-      @org.springframework.web.bind.annotation.RequestParam(name = "userId", required = false) Long userId) {
+  public HomeDashboardView getDashboard() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return homeService.getDashboard(userId);
   }
 }

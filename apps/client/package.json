@@ -9,16 +9,19 @@
     "dev:h5:real": "uni --platform h5 --mode real",
     "build:h5": "uni build --platform h5",
     "build:h5:real": "uni build --platform h5 --mode real",
+    "dev:mp-weixin": "uni --platform mp-weixin",
+    "build:mp-weixin": "uni build --platform mp-weixin",
     "typecheck": "vue-tsc --noEmit",
     "test:unit": "vitest run --config vitest.config.ts",
     "generate:openapi": "openapi-typescript ../../docs/openapi/feedback-growth-and-auth.yaml -o src/services/generated/api-types.ts"
   },
   "dependencies": {
     "@dcloudio/types": "3.4.31",
-    "@dcloudio/uni-app": "npm:@dcloudio/uni-app@vue3",
-    "@dcloudio/uni-h5": "npm:@dcloudio/uni-h5@vue3",
+    "@dcloudio/uni-app": "^3.0.0-alpha-1000920260525813",
+    "@dcloudio/uni-h5": "^3.0.0-alpha-1000920260525813",
+    "@dcloudio/uni-mp-weixin": "^3.0.0-alpha-1000920260525813",
     "@dcloudio/uni-ui": "^1.5.12",
-    "@dcloudio/vite-plugin-uni": "npm:@dcloudio/vite-plugin-uni@vue3",
+    "@dcloudio/vite-plugin-uni": "^3.0.0-alpha-1000920260525813",
     "pinia": "2.3.1",
     "vue": "3.5.34"
   },

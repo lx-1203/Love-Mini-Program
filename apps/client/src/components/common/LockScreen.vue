@@ -95,7 +95,7 @@ function goToProfileSetup() {
   justify-content: center;
   min-height: 100vh;
   padding: 48rpx 40rpx;
-  background: linear-gradient(180deg, #f4f7fb 0%, #eef2ff 100%);
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 60%, #f8fafc 100%);
   position: relative;
   overflow: hidden;
 }
@@ -125,7 +125,7 @@ function goToProfileSetup() {
 
 .blur-avatar--left {
   transform: translateX(30rpx) scale(0.9);
-  background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+  background: linear-gradient(135deg, #93c5fd, #60a5fa);
 }
 
 .blur-avatar--center {
@@ -141,7 +141,7 @@ function goToProfileSetup() {
   background: linear-gradient(135deg, #fbcfe8, #f9a8d4);
 }
 
-/* ========== 插画区域 ========== */
+/* ========== 插画区域 - 校园情侣风格 ========== */
 .lock-screen__illustration {
   position: relative;
   z-index: 1;
@@ -159,9 +159,9 @@ function goToProfileSetup() {
 .phone {
   width: 120rpx;
   height: 200rpx;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   background: #ffffff;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8rpx 32rpx rgba(37, 99, 235, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -171,7 +171,7 @@ function goToProfileSetup() {
 .phone-screen {
   width: 96rpx;
   height: 160rpx;
-  border-radius: 12rpx;
+  border-radius: 16rpx;
   background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
   display: flex;
   align-items: center;
@@ -234,12 +234,12 @@ function goToProfileSetup() {
   width: 100%;
   height: 96rpx;
   border-radius: 48rpx;
-  background: linear-gradient(135deg, var(--td-brand-color-7), var(--td-brand-color-6));
+  background: linear-gradient(135deg, var(--td-brand-color-6), var(--td-brand-color-7));
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(29, 78, 216, 0.25);
+  box-shadow: 0 8rpx 24rpx rgba(37, 99, 235, 0.25);
   transition: transform 0.2s ease;
 }
 

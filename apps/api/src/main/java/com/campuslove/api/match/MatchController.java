@@ -1,5 +1,6 @@
 package com.campuslove.api.match;
 
+import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
@@ -13,6 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 匹配控制器。
+ * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
+ */
 @RestController
 @RequestMapping("/api/matches")
 public class MatchController {
@@ -52,8 +57,9 @@ public class MatchController {
    * POST /api/matches/like
    */
   @PostMapping("/like")
-  public HeartSignalView likeUser(@RequestBody LikeUserRequest request) {
-    return matchService.likeUser(request.userId(), request.targetUserId());
+  public HeartSignalView likeUser(@RequestBody LikeTargetRequest request) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    return matchService.likeUser(userId, request.targetUserId());
   }
 
   /**
@@ -61,8 +67,9 @@ public class MatchController {
    * POST /api/matches/cancel-like
    */
   @PostMapping("/cancel-like")
-  public void cancelLike(@RequestBody LikeUserRequest request) {
-    matchService.cancelLike(request.userId(), request.targetUserId());
+  public void cancelLike(@RequestBody LikeTargetRequest request) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    matchService.cancelLike(userId, request.targetUserId());
   }
 
   /**
@@ -70,7 +77,8 @@ public class MatchController {
    * GET /api/matches/liked-me
    */
   @GetMapping("/liked-me")
-  public List<LikedUserView> getLikedMe(@RequestParam(name = "userId") Long userId) {
+  public List<LikedUserView> getLikedMe() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return matchService.getLikedMe(userId);
   }
 
@@ -79,7 +87,8 @@ public class MatchController {
    * GET /api/matches/visitors
    */
   @GetMapping("/visitors")
-  public List<VisitorView> getVisitors(@RequestParam(name = "userId") Long userId) {
+  public List<VisitorView> getVisitors() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return matchService.getVisitors(userId);
   }
 
@@ -88,8 +97,9 @@ public class MatchController {
    * POST /api/matches/visit
    */
   @PostMapping("/visit")
-  public void recordVisit(@RequestBody VisitRequest request) {
-    matchService.recordVisit(request.visitorId(), request.visitedUserId());
+  public void recordVisit(@RequestBody VisitTargetRequest request) {
+    Long visitorId = SecurityUtils.getCurrentUserId();
+    matchService.recordVisit(visitorId, request.visitedUserId());
   }
 
   /**
@@ -97,7 +107,8 @@ public class MatchController {
    * GET /api/matches/heart-signals
    */
   @GetMapping("/heart-signals")
-  public List<HeartSignalView> getHeartSignals(@RequestParam(name = "userId") Long userId) {
+  public List<HeartSignalView> getHeartSignals() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return matchService.getHeartSignals(userId);
   }
 
@@ -106,9 +117,8 @@ public class MatchController {
    * POST /api/matches/heart-signals/{id}/accept
    */
   @PostMapping("/heart-signals/{id}/accept")
-  public void acceptHeartSignal(
-          @PathVariable("id") Long signalId,
-          @RequestParam(name = "userId") Long userId) {
+  public void acceptHeartSignal(@PathVariable("id") Long signalId) {
+    Long userId = SecurityUtils.getCurrentUserId();
     matchService.acceptHeartSignal(signalId, userId);
   }
 
@@ -117,9 +127,8 @@ public class MatchController {
    * POST /api/matches/heart-signals/{id}/decline
    */
   @PostMapping("/heart-signals/{id}/decline")
-  public void declineHeartSignal(
-          @PathVariable("id") Long signalId,
-          @RequestParam(name = "userId") Long userId) {
+  public void declineHeartSignal(@PathVariable("id") Long signalId) {
+    Long userId = SecurityUtils.getCurrentUserId();
     matchService.declineHeartSignal(signalId, userId);
   }
 
@@ -131,8 +140,8 @@ public class MatchController {
    */
   @PostMapping("/pass")
   public ResponseEntity<Void> passUser(
-          @RequestParam(name = "userId", defaultValue = "1") Long userId,
           @RequestParam(name = "passedUserId") Long passedUserId) {
+    Long userId = SecurityUtils.getCurrentUserId();
     matchService.passUser(userId, passedUserId);
     return ResponseEntity.ok().build();
   }
@@ -142,8 +151,8 @@ public class MatchController {
    * POST /api/matches/rewind
    */
   @PostMapping("/rewind")
-  public ResponseEntity<RewindResultView> rewind(
-          @RequestParam(name = "userId", defaultValue = "1") Long userId) {
+  public ResponseEntity<RewindResultView> rewind() {
+    Long userId = SecurityUtils.getCurrentUserId();
     RewindResultView result = matchService.rewind(userId);
     if (result.success()) {
       return ResponseEntity.ok(result);
@@ -156,8 +165,8 @@ public class MatchController {
    * GET /api/matches/my-likes
    */
   @GetMapping("/my-likes")
-  public ResponseEntity<List<LikedUserView>> getMyLikes(
-          @RequestParam(name = "userId", defaultValue = "1") Long userId) {
+  public ResponseEntity<List<LikedUserView>> getMyLikes() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return ResponseEntity.ok(matchService.getMyLikes(userId));
   }
 
@@ -238,17 +247,17 @@ record MatchResultView(
 }
 
 /**
- * 喜欢用户请求体。
+ * 喜欢目标用户请求体。
+ * userId 由 SecurityUtils 自动获取，只需传入目标用户ID。
  */
-record LikeUserRequest(
-    Long userId,
+record LikeTargetRequest(
     Long targetUserId
 ) {}
 
 /**
- * 访客记录请求体。
+ * 访问目标用户请求体。
+ * visitorId 由 SecurityUtils 自动获取，只需传入被访问用户ID。
  */
-record VisitRequest(
-    Long visitorId,
+record VisitTargetRequest(
     Long visitedUserId
 ) {}

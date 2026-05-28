@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 /**
  * Mock 互动通知服务实现。
  * 在 mock profile 下激活，使用内存存储返回模拟通知数据。
+ * Phase 3 更新：支持 signalType 分类筛选。
  */
 @Profile("mock")
 @Service
@@ -122,6 +123,7 @@ public class MockNotificationService implements NotificationService {
 
   private NotificationView toNotificationView(NotificationState state) {
     String summary = buildSummary(state.type(), state.sourceUserName());
+    String signalType = RealNotificationService.determineSignalType(state.type());
     return new NotificationView(
         state.id(),
         state.type(),
@@ -130,7 +132,8 @@ public class MockNotificationService implements NotificationService {
         state.referenceType(),
         state.isRead(),
         state.createdAt(),
-        summary
+        summary,
+        signalType
     );
   }
 
@@ -162,17 +165,19 @@ public class MockNotificationService implements NotificationService {
   @Override
   public List<NotificationView> getNotifications(Long userId, Boolean unreadOnly, Pageable pageable) {
     // Mock 实现：委托给原有方法
-    return getNotifications(String.valueOf(userId));
+    return getNotifications(userId);
   }
 
   @Override
-  public long getUnreadCount(Long userId) {
-    if (userId == null) {
-      return 0;
+  public List<NotificationView> getNotifications(Long userId, Boolean unreadOnly, String signalType, Pageable pageable) {
+    // Mock 实现：先获取全部通知，再按 signalType 过滤
+    List<NotificationView> allViews = getNotifications(userId);
+    if (signalType != null && !signalType.isBlank()) {
+      return allViews.stream()
+          .filter(view -> signalType.equals(view.signalType()))
+          .toList();
     }
-    return notificationsById.values().stream()
-        .filter(n -> !n.isRead())
-        .count();
+    return allViews;
   }
 
   @Override
@@ -198,4 +203,5 @@ public class MockNotificationService implements NotificationService {
   public void createNotification(Long userId, String type, Long sourceUserId, Long referenceId, String referenceType) {
     // Mock 实现：无操作
   }
+
 }

@@ -2,11 +2,12 @@
 /**
  * 消息页 - 私信+心动信号+系统通知
  * 展示私信聊天列表、心动信号通知和系统通知
+ * Phase 3 新增：社交信号/内容信号分类筛选
  */
-import { computed, ref } from "vue";
+import { computed, ref, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useSessionStore } from "../../stores/session";
-import { useMessagesStore } from "../../stores/messages";
+import { useMessagesStore, type NotificationFilterType, type SystemNotification } from "../../stores/messages";
 import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
 
@@ -20,6 +21,9 @@ const completionPercent = computed(() => sessionStore.profileCompletion);
 
 /** 当前选中的标签页：private | notifications */
 const activeTab = ref<"private" | "notifications">("private");
+
+/** 通知信号筛选类型：all | social | content */
+const signalFilter = ref<NotificationFilterType>("all");
 
 /** 倒计时显示文本映射 */
 const countdownMap = ref<Record<string, string>>({});
@@ -43,8 +47,11 @@ const tempSessionList = computed(() => {
   return messagesStore.sessions.filter((s) => s.sessionType === "temp_anonymous");
 });
 
-/** 系统通知列表 */
-const notificationList = computed(() => messagesStore.notifications);
+/**
+ * 系统通知列表
+ * Phase 3：使用 filteredNotifications getter，自动根据 filterType 过滤
+ */
+const notificationList = computed(() => messagesStore.filteredNotifications);
 
 /** 是否显示空状态 */
 const showEmptyState = computed(() => {
@@ -59,6 +66,13 @@ onShow(() => {
   if (isUnlocked.value) {
     void messagesStore.bootstrap();
     startCountdownTimers();
+  }
+});
+
+onUnmounted(() => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
   }
 });
 
@@ -95,6 +109,15 @@ function updateCountdowns() {
 }
 
 /**
+ * 切换通知信号筛选类型
+ */
+function switchSignalFilter(type: NotificationFilterType) {
+  if (signalFilter.value === type) return;
+  signalFilter.value = type;
+  void messagesStore.setFilterType(type);
+}
+
+/**
  * 跳转到聊天详情页
  */
 function openSession(sessionId: string) {
@@ -111,7 +134,6 @@ async function handleHeartSignalChat(signalId: string) {
       openSession(session.id);
     }
   } catch {
-    // 错误已在 store 中记录，可在此处展示 toast
     uni.showToast({ title: messagesStore.errorMessage || "操作失败", icon: "none" });
   }
 }
@@ -131,74 +153,91 @@ function formatTime(isoString: string | null): string {
 }
 
 /**
- * 获取通知类型图标
+ * Phase 3：根据 signalType 获取通知图标
+ * 社交信号：红心/火焰等温暖图标
+ * 内容信号：评论/点赞等中性图标
  */
-function getNotificationIcon(type: string): string {
-  switch (type) {
-    case "match":
-    case "interaction_match":
-      return "💝";
-    case "like":
-    case "interaction_like":
-      return "❤️";
+function getNotificationIcon(notification: SystemNotification): string {
+  // 优先按 signalType 分类
+  if (notification.signalType === "SOCIAL") {
+    switch (notification.type) {
+      case "match":
+      case "interaction_match":
+        return "💝";
+      case "like":
+        return "🔥";
+      case "visitor":
+        return "👀";
+      default:
+        return "❤️";
+    }
+  }
+  // CONTENT 信号
+  switch (notification.type) {
     case "comment":
       return "💬";
     case "follow":
       return "👤";
-    case "visitor":
-      return "👀";
-    case "activity":
-      return "🎉";
+    case "interaction_like":
+      return "👍";
     default:
-      return "📢";
+      return "📝";
   }
 }
 
 /**
- * 处理通知点击，根据类型跳转到不同页面
- * - 关注/访客 → 跳转到对应用户资料
- * - 点赞/评论 → 跳转到对应帖子详情
- * - 匹配 → 跳转到消息页（私信标签）
- * - 其他 → 使用 actionUrl 跳转
+ * Phase 3：获取通知信号类型对应的 CSS class
  */
-async function handleNotificationClick(notification: {
-  id: string;
-  type: string;
-  isRead: boolean;
-  actionUrl?: string | null;
-  triggerUserId?: string | null;
-  resourceId?: string | null;
-}) {
+function getSignalClass(notification: SystemNotification): string {
+  return notification.signalType === "SOCIAL" ? "signal-social" : "signal-content";
+}
+
+/**
+ * Phase 3：获取信号类型标签文本
+ */
+function getSignalLabel(notification: SystemNotification): string {
+  return notification.signalType === "SOCIAL" ? "社交信号" : "内容信号";
+}
+
+/**
+ * Phase 3：获取通知操作按钮文本
+ * 社交信号 → "立即查看"（红色强调）
+ * 内容信号 → "查看详情"（蓝色）
+ */
+function getActionLabel(notification: SystemNotification): string {
+  return notification.signalType === "SOCIAL" ? "立即查看" : "查看详情";
+}
+
+/**
+ * 处理通知点击，根据类型跳转到不同页面
+ */
+async function handleNotificationClick(notification: SystemNotification) {
   // 标记已读
   await messagesStore.markNotificationRead(notification.id);
 
-  // 根据类型决定跳转目标
   const type = notification.type;
   if (type === "follow" || type === "visitor") {
-    // 跳转到用户资料页
-    const userId = notification.triggerUserId;
-    if (userId) {
-      openAppPath(`/pages/profile/index?userId=${userId}`);
+    if (type === "visitor") {
+      openAppPath("/pages/likes/index");
+    } else {
+      openAppPath("/pages/messages/index");
     }
     return;
   }
 
-  if (type === "interaction_like" || type === "comment") {
-    // 跳转到帖子详情页
+  if (type === "interaction_like" || type === "comment" || type === "like") {
     const postId = notification.resourceId;
     if (postId) {
-      openAppPath(`/pages/post/detail?id=${postId}`);
+      openAppPath(`/pages/village/detail?id=${postId}`);
     }
     return;
   }
 
   if (type === "interaction_match" || type === "match") {
-    // 跳转到消息页（默认私信标签）
     openAppPath("/pages/messages/index");
     return;
   }
 
-  // 其他类型使用 actionUrl
   if (notification.actionUrl) {
     openAppPath(notification.actionUrl);
   }
@@ -271,7 +310,7 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
         </view>
       </view>
 
-      <!-- 分类标签 -->
+      <!-- 主分类标签：私信 / 系统通知 -->
       <view class="messages-tabs">
         <view
           class="messages-tabs__item"
@@ -299,6 +338,31 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
         </view>
       </view>
 
+      <!-- Phase 3：通知信号分类筛选 Tab -->
+      <view v-if="activeTab === 'notifications'" class="signal-filter-tabs">
+        <view
+          class="signal-filter-tabs__item"
+          :class="{ 'signal-filter-tabs__item--active': signalFilter === 'all' }"
+          @click="switchSignalFilter('all')"
+        >
+          <text class="signal-filter-tabs__text">全部</text>
+        </view>
+        <view
+          class="signal-filter-tabs__item signal-filter-tabs__item--social"
+          :class="{ 'signal-filter-tabs__item--active': signalFilter === 'social' }"
+          @click="switchSignalFilter('social')"
+        >
+          <text class="signal-filter-tabs__text">社交信号</text>
+        </view>
+        <view
+          class="signal-filter-tabs__item signal-filter-tabs__item--content"
+          :class="{ 'signal-filter-tabs__item--active': signalFilter === 'content' }"
+          @click="switchSignalFilter('content')"
+        >
+          <text class="signal-filter-tabs__text">内容信号</text>
+        </view>
+      </view>
+
       <!-- 加载状态 -->
       <view v-if="messagesStore.loading" class="messages-loading">
         <text class="messages-loading__text">加载中...</text>
@@ -318,7 +382,6 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
 
       <!-- 私信列表 -->
       <view v-else-if="activeTab === 'private'" class="session-list">
-        <!-- 私信会话 -->
         <view
           v-for="session in privateSessionList"
           :key="session.id"
@@ -376,24 +439,60 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
         </view>
       </view>
 
-      <!-- 系统通知列表 -->
+      <!-- Phase 3：系统通知列表（含信号分类样式） -->
       <view v-else-if="activeTab === 'notifications'" class="notification-list">
         <view
           v-for="notification in notificationList"
           :key="notification.id"
           class="notification-row"
-          :class="{ 'notification-row--unread': !notification.isRead }"
+          :class="[
+            { 'notification-row--unread': !notification.isRead },
+            getSignalClass(notification)
+          ]"
           @click="handleNotificationClick(notification)"
         >
-          <view class="notification-row__icon">{{ getNotificationIcon(notification.type) }}</view>
+          <!-- 信号类型图标 -->
+          <view
+            class="notification-row__icon"
+            :class="`notification-row__icon--${notification.signalType === 'SOCIAL' ? 'social' : 'content'}`"
+          >
+            {{ getNotificationIcon(notification) }}
+          </view>
+
+          <!-- 通知内容区 -->
           <view class="notification-row__content">
             <view class="notification-row__top">
-              <text class="notification-row__title">{{ notification.title }}</text>
+              <!-- 信号类型标签 + 标题 -->
+              <view class="notification-row__title-row">
+                <text
+                  class="notification-row__signal-tag"
+                  :class="`notification-row__signal-tag--${notification.signalType === 'SOCIAL' ? 'social' : 'content'}`"
+                >
+                  {{ getSignalLabel(notification) }}
+                </text>
+                <text class="notification-row__title">{{ notification.title }}</text>
+              </view>
               <text class="notification-row__time">{{ formatTime(notification.createdAt) }}</text>
             </view>
             <text class="notification-row__body">{{ notification.content }}</text>
+
+            <!-- Phase 3：差异化操作按钮 -->
+            <view class="notification-row__action">
+              <text
+                class="notification-row__action-btn"
+                :class="`notification-row__action-btn--${notification.signalType === 'SOCIAL' ? 'social' : 'content'}`"
+              >
+                {{ getActionLabel(notification) }}
+              </text>
+            </view>
           </view>
-          <view v-if="!notification.isRead" class="notification-row__dot" />
+
+          <!-- 未读标记点（根据信号类型显示不同颜色） -->
+          <view
+            v-if="!notification.isRead"
+            class="notification-row__dot"
+            :class="`notification-row__dot--${notification.signalType === 'SOCIAL' ? 'social' : 'content'}`"
+          />
         </view>
       </view>
     </template>
@@ -460,7 +559,6 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
   border: 1px solid rgba(244, 63, 94, 0.12);
 }
 
-/* ===== 心动信号即将过期（<2小时）警告样式 ===== */
 .heart-signal-card--expiring {
   border-color: var(--td-error-color);
   border-width: 2px;
@@ -468,8 +566,7 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
 }
 
 @keyframes heart-signal-blink {
-  0%,
-  100% {
+  0%, 100% {
     border-color: var(--td-error-color);
     box-shadow: 0 0 0 rpx rgba(244, 63, 94, 0);
   }
@@ -568,11 +665,11 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
   color: var(--td-text-color-disabled);
 }
 
-/* ========== 分类标签 ========== */
+/* ========== 主分类标签 ========== */
 .messages-tabs {
   display: flex;
   gap: 32rpx;
-  margin-bottom: 24rpx;
+  margin-bottom: 16rpx;
   border-bottom: 1px solid var(--td-border-level-1-color);
 }
 
@@ -621,6 +718,48 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
   font-size: 20rpx;
   font-weight: 700;
   color: #fff;
+}
+
+/* ========== Phase 3：信号分类筛选 Tab ========== */
+.signal-filter-tabs {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+  padding: 4rpx 0;
+}
+
+.signal-filter-tabs__item {
+  position: relative;
+  padding: 10rpx 24rpx;
+  border-radius: 999px;
+  background: var(--td-bg-color-secondarycontainer);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.signal-filter-tabs__text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--td-text-color-secondary);
+  transition: color 0.2s ease;
+}
+
+.signal-filter-tabs__item--active {
+  background: var(--td-brand-color-7);
+}
+
+.signal-filter-tabs__item--active .signal-filter-tabs__text {
+  color: #fff;
+}
+
+/* 社交信号 active 态：红色主题 */
+.signal-filter-tabs__item--social.signal-filter-tabs__item--active {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+}
+
+/* 内容信号 active 态：蓝色主题 */
+.signal-filter-tabs__item--content.signal-filter-tabs__item--active {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
 
 /* ========== 加载与错误状态 ========== */
@@ -806,7 +945,7 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
   color: #64748b;
 }
 
-/* ========== 通知列表 ========== */
+/* ========== Phase 3：通知列表 ========== */
 .notification-list {
   display: grid;
   gap: 2rpx;
@@ -833,6 +972,17 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
   background: rgba(29, 78, 216, 0.02);
 }
 
+/* 社交信号未读行高亮 */
+.notification-row--unread.signal-social {
+  background: rgba(244, 63, 94, 0.03);
+}
+
+/* 内容信号未读行高亮 */
+.notification-row--unread.signal-content {
+  background: rgba(59, 130, 246, 0.03);
+}
+
+/* ===== 通知图标（Phase 3：按信号类型区分背景色） ===== */
 .notification-row__icon {
   width: 72rpx;
   height: 72rpx;
@@ -845,6 +995,17 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
   flex-shrink: 0;
 }
 
+.notification-row__icon--social {
+  background: linear-gradient(135deg, #fef3f2, #fff1f2);
+  border: 1px solid rgba(244, 63, 94, 0.12);
+}
+
+.notification-row__icon--content {
+  background: linear-gradient(135deg, #eff6ff, #eef2ff);
+  border: 1px solid rgba(59, 130, 246, 0.12);
+}
+
+/* ===== 通知内容区 ===== */
 .notification-row__content {
   flex: 1;
   display: flex;
@@ -856,14 +1017,45 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
 .notification-row__top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 16rpx;
+}
+
+.notification-row__title-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Phase 3：信号类型标签 */
+.notification-row__signal-tag {
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  flex-shrink: 0;
+  line-height: 1.6;
+}
+
+.notification-row__signal-tag--social {
+  background: rgba(244, 63, 94, 0.1);
+  color: #e11d48;
+}
+
+.notification-row__signal-tag--content {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
 }
 
 .notification-row__title {
   font-size: 28rpx;
   font-weight: 600;
   color: var(--td-text-color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notification-row__time {
@@ -878,12 +1070,57 @@ function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): bo
   line-height: 1.5;
 }
 
+/* Phase 3：操作按钮区域 */
+.notification-row__action {
+  display: flex;
+  margin-top: 6rpx;
+}
+
+.notification-row__action-btn {
+  font-size: 24rpx;
+  font-weight: 600;
+  padding: 8rpx 20rpx;
+  border-radius: 999px;
+  line-height: 1.4;
+  transition: opacity 0.2s ease;
+}
+
+/* 社交信号按钮：红色强调 */
+.notification-row__action-btn--social {
+  background: rgba(244, 63, 94, 0.1);
+  color: #e11d48;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+.notification-row__action-btn--social:active {
+  background: rgba(244, 63, 94, 0.2);
+}
+
+/* 内容信号按钮：蓝色 */
+.notification-row__action-btn--content {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.notification-row__action-btn--content:active {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* Phase 3：未读标记点（按信号类型区分颜色） */
 .notification-row__dot {
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background: var(--td-error-color);
   flex-shrink: 0;
   margin-top: 8rpx;
+}
+
+.notification-row__dot--social {
+  background: #e11d48;
+}
+
+.notification-row__dot--content {
+  background: #2563eb;
 }
 </style>

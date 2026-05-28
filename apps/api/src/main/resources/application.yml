@@ -36,3 +36,21 @@ app:
     session-expire-hours: 24
   checkin:
     extra-quota-per-check-in: 3
+  content-filter:
+    enabled: true
+    keywords:
+      - 赌博
+      - 色情
+      - 违法
+      - 毒品
+      - 枪支
+      - 暴力
+      - 诈骗
+      - 传销
+      - 裸聊
+      - 约炮
+      - 嫖娼
+      - 卖淫
+      - 赌博网站
+      - 六合彩
+      - 博彩

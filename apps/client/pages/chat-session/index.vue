@@ -19,6 +19,7 @@ const chatStore = useChatStore();
 
 const draft = ref("");
 const sessionId = ref<string | null>(null);
+const targetUserId = ref<string | null>(null);
 const pageErrorMessage = ref<string | null>(null);
 const tempCountdown = ref("");
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
@@ -28,6 +29,24 @@ usePageAccess(chatPageRequirements);
 onLoad((query) => {
   if (query && typeof query.sessionId === "string" && query.sessionId.trim().length > 0) {
     sessionId.value = query.sessionId;
+    pageErrorMessage.value = null;
+    return;
+  }
+
+  // 支持通过 userId 参数查找或创建会话
+  if (query && typeof query.userId === "string" && query.userId.trim().length > 0) {
+    const rawUserId = query.userId.trim();
+    targetUserId.value = rawUserId;
+    const existingSession = messagesStore.sessions.find(
+      (s) => s.partnerId === rawUserId && s.sessionType === "private"
+    );
+    if (existingSession) {
+      sessionId.value = existingSession.id;
+      pageErrorMessage.value = null;
+      return;
+    }
+    // Mock 模式下无现有会话时，使用 userId 作为临时标识
+    sessionId.value = `session-${rawUserId}`;
     pageErrorMessage.value = null;
     return;
   }
@@ -81,6 +100,13 @@ const isSessionClosed = computed(() => {
 const pageTitle = computed(() => {
   if (isTempSession.value) return "24小时临时聊天";
   if (isPrivateSession.value) return currentSession.value?.partnerName || "私信";
+  // 通过 userId 导航但无现有会话时，标明目标用户
+  if (targetUserId.value) {
+    const partnerName = messagesStore.sessions.find(
+      (s) => s.partnerId === targetUserId.value && s.sessionType === "private"
+    )?.partnerName;
+    return partnerName || "对话中";
+  }
   return chatStore.activeSession?.partnerName || "聊天";
 });
 

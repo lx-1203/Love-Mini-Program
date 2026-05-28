@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 话题圈 / 兴趣圈控制器。
  * 提供圈子列表、加入/退出、话题浏览与发布、回复浏览与发布等接口。
+ * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
 @RequestMapping("/api/circles")
@@ -38,8 +40,8 @@ public class CircleController {
    * GET /api/circles
    */
   @GetMapping
-  public List<CircleView> getCircles(
-      @RequestParam(name = "userId", required = false) Long userId) {
+  public List<CircleView> getCircles() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return circleService.getCircles(userId);
   }
 
@@ -48,10 +50,9 @@ public class CircleController {
    * POST /api/circles/{id}/join
    */
   @PostMapping("/{id}/join")
-  public CircleMembershipView joinCircle(
-      @PathVariable("id") Long circleId,
-      @RequestBody JoinCircleRequest request) {
-    return circleService.joinCircle(request.userId(), circleId);
+  public CircleMembershipView joinCircle(@PathVariable("id") Long circleId) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    return circleService.joinCircle(userId, circleId);
   }
 
   /**
@@ -59,10 +60,9 @@ public class CircleController {
    * DELETE /api/circles/{id}/join
    */
   @DeleteMapping("/{id}/join")
-  public CircleMembershipView leaveCircle(
-      @PathVariable("id") Long circleId,
-      @RequestBody JoinCircleRequest request) {
-    return circleService.leaveCircle(request.userId(), circleId);
+  public CircleMembershipView leaveCircle(@PathVariable("id") Long circleId) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    return circleService.leaveCircle(userId, circleId);
   }
 
   // ---------- 话题 ----------
@@ -88,7 +88,8 @@ public class CircleController {
   public CircleTopicView createTopic(
       @PathVariable("id") Long circleId,
       @Valid @RequestBody CreateTopicRequest request) {
-    return circleService.createTopic(circleId, request.authorId(), request.title(),
+    Long authorId = SecurityUtils.getCurrentUserId();
+    return circleService.createTopic(circleId, authorId, request.title(),
         request.content(), request.images());
   }
 
@@ -124,7 +125,8 @@ public class CircleController {
   public CircleReplyView createReply(
       @PathVariable("id") Long topicId,
       @Valid @RequestBody CreateReplyRequest request) {
-    return circleService.replyToTopic(topicId, request.authorId(), request.content());
+    Long authorId = SecurityUtils.getCurrentUserId();
+    return circleService.replyToTopic(topicId, authorId, request.content());
   }
 
   // ---------- 精选话题 ----------
@@ -201,18 +203,10 @@ record CircleReplyView(
 }
 
 /**
- * 加入/退出圈子请求体。
- */
-record JoinCircleRequest(
-    Long userId
-) {
-}
-
-/**
  * 发布话题请求体。
+ * authorId 由 SecurityUtils 自动获取，不再从请求体传入。
  */
 record CreateTopicRequest(
-    Long authorId,
     @NotBlank @Size(max = 200) String title,
     @NotBlank @Size(max = 5000) String content,
     List<String> images
@@ -221,9 +215,9 @@ record CreateTopicRequest(
 
 /**
  * 发表回复请求体。
+ * authorId 由 SecurityUtils 自动获取，不再从请求体传入。
  */
 record CreateReplyRequest(
-    Long authorId,
     @NotBlank @Size(max = 1000) String content
 ) {
 }

@@ -197,6 +197,13 @@ export const useChatStore = defineStore("chat", {
     activeSession: null as ReturnType<typeof toChatSessionView> | null,
     /** 当前匹配的破冰话题列表 */
     icebreakerTopics: [] as string[],
+    /** 基于对方资料的破冰话题项（含 id、content、category、source） */
+    icebreakerItems: [] as Array<{
+      id: number;
+      content: string;
+      category: string;
+      source: string;
+    }>,
     /** 破冰话题加载中 */
     loadingIcebreakers: false,
   }),
@@ -587,6 +594,20 @@ export const useChatStore = defineStore("chat", {
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "发送破冰话题失败";
         throw error;
+      }
+    },
+
+    async fetchIcebreakers(peerUserId: number) {
+      this.loadingIcebreakers = true;
+      this.errorMessage = null;
+      try {
+        const data = await clientApi.getIcebreakers(peerUserId);
+        this.icebreakerItems = data.items ?? [];
+        this.icebreakerTopics = (data.items ?? []).slice(0, 3).map((item) => item.content);
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "加载破冰话题失败";
+      } finally {
+        this.loadingIcebreakers = false;
       }
     },
   },

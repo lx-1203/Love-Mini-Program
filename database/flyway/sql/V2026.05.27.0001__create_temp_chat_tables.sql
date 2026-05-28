@@ -1,3 +1,8 @@
+-- 先删除 Phase0 创建的旧结构，确保 Phase2 新结构生效
+DROP TABLE IF EXISTS temp_chat_contact_exchange;
+DROP TABLE IF EXISTS temp_chat_message;
+DROP TABLE IF EXISTS temp_chat_session;
+
 -- 临时聊天会话表
 CREATE TABLE IF NOT EXISTS temp_chat_session (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

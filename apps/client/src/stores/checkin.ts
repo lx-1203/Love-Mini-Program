@@ -18,7 +18,8 @@ export interface CheckInStatus {
 
 /**
  * 签到结果 - 与后端 CheckInResultView 对齐
- * 后端字段: success, consecutiveDays, extraQuota
+ * 后端字段: success, consecutiveDays, extraQuota, extraRecommendQuota,
+ *          hotTopicsUnlocked, newUsersUnlocked, hotTopicCount, newUserCount
  */
 export interface CheckInResult {
   /** 签到日期 */
@@ -27,6 +28,16 @@ export interface CheckInResult {
   consecutiveDays: number;
   /** 签到获取的额外推荐次数（后端字段名: extraQuota） */
   extraRecommendations: number;
+  /** 今日额外推荐配额（签到权益 +5） */
+  extraRecommendQuota: number;
+  /** 热门话题是否已解锁 */
+  hotTopicsUnlocked: boolean;
+  /** 新入圈用户是否已解锁 */
+  newUsersUnlocked: boolean;
+  /** 热门话题数量 */
+  hotTopicCount: number;
+  /** 新入圈用户数量 */
+  newUserCount: number;
 }
 
 /**
@@ -45,6 +56,11 @@ interface BackendCheckInResultView {
   success: boolean;
   consecutiveDays: number;
   extraQuota: number;
+  extraRecommendQuota: number;
+  hotTopicsUnlocked: boolean;
+  newUsersUnlocked: boolean;
+  hotTopicCount: number;
+  newUserCount: number;
 }
 
 /**
@@ -57,6 +73,16 @@ export interface CheckInState {
   consecutiveDays: number;
   /** 签到获取的额外推荐次数 */
   extraRecommendations: number;
+  /** 今日额外推荐配额（签到权益 +5） */
+  extraRecommendQuota: number;
+  /** 热门话题是否已解锁 */
+  hotTopicsUnlocked: boolean;
+  /** 新入圈用户是否已解锁 */
+  newUsersUnlocked: boolean;
+  /** 热门话题数量 */
+  hotTopicCount: number;
+  /** 新入圈用户数量 */
+  newUserCount: number;
   /** 是否正在加载 */
   loading: boolean;
   /** 是否正在签到中 */
@@ -112,13 +138,18 @@ async function withTimeout<T>(
  * 签到 Store
  *
  * 管理每日签到功能，包括签到状态查询、执行签到。
- * 签到成功后提供额外推荐次数和连续签到天数展示。
+ * 签到成功后提供额外推荐次数、连续签到天数、热门话题、新入圈用户等权益展示。
  */
 export const useCheckInStore = defineStore("checkin", {
   state: (): CheckInState => ({
     checkedIn: false,
     consecutiveDays: 0,
     extraRecommendations: 0,
+    extraRecommendQuota: 0,
+    hotTopicsUnlocked: false,
+    newUsersUnlocked: false,
+    hotTopicCount: 0,
+    newUserCount: 0,
     loading: false,
     checkingIn: false,
     showSuccessAnimation: false,
@@ -139,6 +170,24 @@ export const useCheckInStore = defineStore("checkin", {
     extraRecommendationsText: (state): string => {
       if (state.extraRecommendations <= 0) return "";
       return `今日剩余次数+${state.extraRecommendations}`;
+    },
+
+    /** 签到权益-推荐配额展示文本 */
+    extraQuotaText: (state): string => {
+      if (state.extraRecommendQuota <= 0) return "";
+      return `今日额外推荐配额 +${state.extraRecommendQuota}`;
+    },
+
+    /** 热门话题入口展示文本 */
+    hotTopicsText: (state): string => {
+      if (!state.hotTopicsUnlocked || state.hotTopicCount <= 0) return "";
+      return `今日热门话题 (${state.hotTopicCount})`;
+    },
+
+    /** 新入圈用户入口展示文本 */
+    newUsersText: (state): string => {
+      if (!state.newUsersUnlocked || state.newUserCount <= 0) return "";
+      return `新入圈用户 (${state.newUserCount})`;
     },
   },
 
@@ -200,13 +249,18 @@ export const useCheckInStore = defineStore("checkin", {
                 consecutiveDays: mockCheckInStatus.checkedIn
                   ? mockCheckInStatus.consecutiveDays
                   : mockCheckInStatus.consecutiveDays + 1,
-                extraRecommendations: 3,
+                extraRecommendations: 5,
               };
 
               return {
                 checkInDate: new Date().toISOString().split("T")[0],
-                extraRecommendations: 3,
+                extraRecommendations: 5,
                 consecutiveDays: mockCheckInStatus.consecutiveDays,
+                extraRecommendQuota: 5,
+                hotTopicsUnlocked: true,
+                newUsersUnlocked: true,
+                hotTopicCount: 3,
+                newUserCount: 2,
               };
             }
 
@@ -218,11 +272,16 @@ export const useCheckInStore = defineStore("checkin", {
               method: "POST",
             });
 
-            // 映射后端字段到前端字段
+            // 映射后端字段到前端字段（含签到权益）
             return {
               checkInDate: new Date().toISOString().split("T")[0],
               consecutiveDays: data.consecutiveDays,
               extraRecommendations: data.extraQuota,
+              extraRecommendQuota: data.extraRecommendQuota,
+              hotTopicsUnlocked: data.hotTopicsUnlocked,
+              newUsersUnlocked: data.newUsersUnlocked,
+              hotTopicCount: data.hotTopicCount,
+              newUserCount: data.newUserCount,
             };
           })(),
           ASYNC_TIMEOUT_MS,
@@ -233,6 +292,11 @@ export const useCheckInStore = defineStore("checkin", {
         this.checkedIn = true;
         this.consecutiveDays = result.consecutiveDays;
         this.extraRecommendations = result.extraRecommendations;
+        this.extraRecommendQuota = result.extraRecommendQuota;
+        this.hotTopicsUnlocked = result.hotTopicsUnlocked;
+        this.newUsersUnlocked = result.newUsersUnlocked;
+        this.hotTopicCount = result.hotTopicCount;
+        this.newUserCount = result.newUserCount;
 
         // 触发签到成功动画
         this.showSuccessAnimation = true;

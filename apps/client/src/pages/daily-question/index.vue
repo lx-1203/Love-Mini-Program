@@ -51,8 +51,8 @@ function goBack() {
   uni.navigateBack();
 }
 
-onMounted(() => {
-  void dailyQuestionStore.fetchTodayQuestion();
+onMounted(async () => {
+  await dailyQuestionStore.fetchTodayQuestion();
   if (todayQuestion.value) {
     void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, 1);
   }

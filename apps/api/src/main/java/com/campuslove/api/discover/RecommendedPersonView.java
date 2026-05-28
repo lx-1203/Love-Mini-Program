@@ -19,5 +19,11 @@ public record RecommendedPersonView(
     /** 个人简介 */
     String bio,
     /** 用户图片列表 */
-    List<String> images
+    List<String> images,
+    /** 是否同校 */
+    boolean isSameSchool,
+    /** 是否同专业 */
+    boolean isSameMajor,
+    /** 共同兴趣圈数量 */
+    int commonCircleCount
 ) {}

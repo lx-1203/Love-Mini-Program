@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.config.SecurityUtils;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 私信控制器。
  * 提供私信会话管理、消息发送、消息读取等 API。
+ * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
 @RequestMapping("/api/messages")
@@ -32,8 +34,8 @@ public class PrivateMessageController {
      * GET /api/messages/conversations
      */
     @GetMapping("/conversations")
-    public List<ConversationView> getConversations(
-            @RequestParam(name = "userId") Long userId) {
+    public List<ConversationView> getConversations() {
+        Long userId = SecurityUtils.getCurrentUserId();
         return privateMessageService.getConversations(userId);
     }
 
@@ -43,7 +45,8 @@ public class PrivateMessageController {
      */
     @PostMapping("/conversations")
     public ConversationView createConversation(@RequestBody CreateConversationRequest request) {
-        return privateMessageService.createOrGetConversation(request.userAId(), request.userBId());
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        return privateMessageService.createOrGetConversation(currentUserId, request.userBId());
     }
 
     /**
@@ -53,9 +56,9 @@ public class PrivateMessageController {
     @GetMapping("/conversations/{id}/messages")
     public List<MessageView> getMessages(
             @PathVariable("id") Long conversationId,
-            @RequestParam(name = "userId") Long userId,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
+        Long userId = SecurityUtils.getCurrentUserId();
         Pageable pageable = PageRequest.of(page, size);
         return privateMessageService.getMessages(conversationId, userId, pageable);
     }
@@ -68,8 +71,9 @@ public class PrivateMessageController {
     public MessageView sendMessage(
             @PathVariable("id") Long conversationId,
             @RequestBody SendMessageRequest request) {
+        Long senderId = SecurityUtils.getCurrentUserId();
         return privateMessageService.sendMessage(
-                conversationId, request.senderId(), request.content(), request.kind());
+                conversationId, senderId, request.content(), request.kind());
     }
 
     /**
@@ -77,9 +81,8 @@ public class PrivateMessageController {
      * PUT /api/messages/conversations/{id}/read
      */
     @PutMapping("/conversations/{id}/read")
-    public void markAsRead(
-            @PathVariable("id") Long conversationId,
-            @RequestParam(name = "userId", defaultValue = "1") Long userId) {
+    public void markAsRead(@PathVariable("id") Long conversationId) {
+        Long userId = SecurityUtils.getCurrentUserId();
         privateMessageService.markAsRead(conversationId, userId);
     }
 
@@ -92,8 +95,8 @@ public class PrivateMessageController {
     @PutMapping("/conversations/{id}/pin")
     public ResponseEntity<Void> pinConversation(
             @PathVariable("id") Long conversationId,
-            @RequestParam boolean pinned,
-            @RequestParam(name = "userId", defaultValue = "1") Long userId) {
+            @RequestParam boolean pinned) {
+        Long userId = SecurityUtils.getCurrentUserId();
         privateMessageService.pinConversation(conversationId, pinned, userId);
         return ResponseEntity.ok().build();
     }
@@ -101,17 +104,17 @@ public class PrivateMessageController {
 
 /**
  * 创建会话请求体。
+ * userAId 由 SecurityUtils 自动获取，只需传入对方用户ID。
  */
 record CreateConversationRequest(
-    Long userAId,
     Long userBId
 ) {}
 
 /**
  * 发送消息请求体。
+ * senderId 由 SecurityUtils 自动获取，只需传入内容和类型。
  */
 record SendMessageRequest(
-    Long senderId,
     String content,
     String kind
 ) {}

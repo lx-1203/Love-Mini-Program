@@ -73,4 +73,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @return 分页帖子列表（按点赞数从高到低）
      */
     Page<Post> findByStatusOrderByLikesCountDesc(PostStatus status, Pageable pageable);
+
+    /**
+     * 根据 ID 列表和状态查询帖子，按创建时间倒序分页。
+     * 用于标签聚合场景，查询特定标签下的帖子列表。
+     *
+     * @param ids     帖子 ID 列表
+     * @param status  帖子状态
+     * @param pageable 分页参数
+     * @return 分页帖子列表
+     */
+    Page<Post> findByIdInAndStatusOrderByCreatedAtDesc(List<Long> ids, PostStatus status, Pageable pageable);
 }

@@ -20,10 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
  * 真实互动通知服务实现。
  * 在 real profile 下激活，使用 Repository 实现数据库查询。
  * 提供通知列表、标记已读、未读计数、创建通知等功能。
+ * Phase 3 新增：signalType 社交/内容信号分类筛选。
  */
 @Profile("real")
 @Service
 public class RealNotificationService implements NotificationService {
+
+    /** 社交信号类型：喜欢/访客/心动信号/匹配 */
+    public static final String SIGNAL_TYPE_SOCIAL = "SOCIAL";
+    /** 内容信号类型：评论/点赞/关注/回复 */
+    public static final String SIGNAL_TYPE_CONTENT = "CONTENT";
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -100,15 +106,28 @@ public class RealNotificationService implements NotificationService {
     }
 
     /**
-     * 获取指定用户的未读通知数。
+     * 获取指定用户的通知列表（分页，支持未读过滤和信号类型筛选）。
+     * Phase 3 新增：按社交信号(SOCIAL)/内容信号(CONTENT)分类筛选。
+     * 先查询数据库获取全部通知，再在内存中按 signalType 过滤。
      */
     @Override
     @Transactional(readOnly = true)
-    public long getUnreadCount(Long userId) {
+    public List<NotificationView> getNotifications(Long userId, Boolean unreadOnly, String signalType, Pageable pageable) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
-        return notificationRepository.countByUserIdAndIsRead(userId, false);
+
+        // 先获取全部通知
+        List<NotificationView> allViews = getNotifications(userId, unreadOnly, pageable);
+
+        // 如果指定了 signalType，进行内存过滤
+        if (signalType != null && !signalType.isBlank()) {
+            return allViews.stream()
+                    .filter(view -> signalType.equals(view.signalType()))
+                    .toList();
+        }
+
+        return allViews;
     }
 
     /**
@@ -196,7 +215,29 @@ public class RealNotificationService implements NotificationService {
     // ---- 私有辅助方法 ----
 
     /**
+     * 根据通知类型判断信号分类。
+     * <ul>
+     *   <li>SOCIAL（社交信号）：match(匹配)、visitor(访客)、like(喜欢) -- 人与人的直接互动</li>
+     *   <li>CONTENT（内容信号）：comment(评论)、follow(关注) -- 内容/关系层面的互动</li>
+     * </ul>
+     *
+     * @param type 通知类型字符串
+     * @return "SOCIAL" 或 "CONTENT"
+     */
+    static String determineSignalType(String type) {
+        if (type == null) {
+            return SIGNAL_TYPE_SOCIAL;
+        }
+        return switch (type) {
+            case "match", "visitor", "like" -> SIGNAL_TYPE_SOCIAL;
+            case "comment", "follow" -> SIGNAL_TYPE_CONTENT;
+            default -> SIGNAL_TYPE_SOCIAL;
+        };
+    }
+
+    /**
      * 将 Notification 实体转换为 NotificationView。
+     * Phase 3 更新：增加 signalType 字段。
      */
     private NotificationView toNotificationView(Notification notification) {
         // 获取源用户信息
@@ -204,17 +245,20 @@ public class RealNotificationService implements NotificationService {
         String displayName = sourceUser != null ? sourceUser.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatar = sourceUser != null ? sourceUser.getAvatarUrl() : null;
 
-        String summary = buildSummary(notification.getType().name(), displayName);
+        String type = notification.getType().name();
+        String summary = buildSummary(type, displayName);
+        String signalType = determineSignalType(type);
 
         return new NotificationView(
                 notification.getId(),
-                notification.getType().name(),
+                type,
                 new NotificationSourceUserView(displayName, avatar),
                 notification.getReferenceId(),
                 notification.getReferenceType() != null ? notification.getReferenceType().name() : null,
                 notification.getIsRead(),
                 notification.getCreatedAt().toString(),
-                summary
+                summary,
+                signalType
         );
     }
 

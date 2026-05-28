@@ -1,35 +1,72 @@
 :root {
+  /* 品牌色 - 校园蓝 */
   --td-brand-color-1: #eff6ff;
   --td-brand-color-2: #dbeafe;
   --td-brand-color-3: #bfdbfe;
+  --td-brand-color-4: #93c5fd;
+  --td-brand-color-5: #60a5fa;
   --td-brand-color-6: #2563eb;
   --td-brand-color-7: #1d4ed8;
-  --td-success-color: #0f766e;
-  --td-warning-color: #b45309;
-  --td-error-color: #be123c;
-  --td-text-color-primary: #0f172a;
-  --td-text-color-secondary: #475569;
+  --td-brand-color-8: #1e40af;
+  --td-brand-color-9: #1e3a8a;
+
+  /* 语义色 */
+  --td-success-color: #10b981;
+  --td-warning-color: #f59e0b;
+  --td-error-color: #ef4444;
+  --td-info-color: #3b82f6;
+
+  /* 文本色 */
+  --td-text-color-primary: #1e293b;
+  --td-text-color-secondary: #64748b;
   --td-text-color-placeholder: #94a3b8;
+  --td-text-color-disabled: #cbd5e1;
+
+  /* 背景色 */
   --td-bg-color-container: #ffffff;
-  --td-bg-app-page: #f4f7fb;
-  --td-bg-color-surface: #e2e8f0;
-  --td-border-level-1-color: #dbe2ea;
+  --td-bg-app-page: #f8fafc;
+  --td-bg-color-surface: #f1f5f9;
+  --td-bg-color-secondary: #e2e8f0;
+
+  /* 边框 */
+  --td-border-level-1-color: #e2e8f0;
+  --td-border-level-2-color: #cbd5e1;
+
+  /* 圆角 */
   --td-radius-small: 8px;
   --td-radius-medium: 12px;
   --td-radius-large: 16px;
-  --td-shadow-1: 0 10px 30px rgba(15, 23, 42, 0.06);
-  --td-shadow-2: 0 18px 40px rgba(15, 23, 42, 0.08);
-  --td-font-title-large: 28px;
-  --td-font-title-medium: 20px;
-  --td-font-body-medium: 14px;
-  --td-font-body-small: 12px;
+  --td-radius-xl: 24px;
+  --td-radius-full: 9999px;
+
+  /* 阴影 - 现代柔和 */
+  --td-shadow-1: 0 1px 3px rgba(37, 99, 235, 0.06), 0 1px 2px rgba(37, 99, 235, 0.04);
+  --td-shadow-2: 0 4px 12px rgba(37, 99, 235, 0.08), 0 2px 4px rgba(37, 99, 235, 0.04);
+  --td-shadow-3: 0 8px 24px rgba(37, 99, 235, 0.10), 0 4px 8px rgba(37, 99, 235, 0.06);
+
+  /* 字体 */
+  --td-font-title-large: 32px;
+  --td-font-title-medium: 24px;
+  --td-font-title-small: 20px;
+  --td-font-body-medium: 16px;
+  --td-font-body-small: 14px;
+  --td-font-caption: 12px;
+
+  /* 间距 */
   --td-spacing-1: 4px;
   --td-spacing-2: 8px;
   --td-spacing-3: 12px;
   --td-spacing-4: 16px;
   --td-spacing-5: 20px;
   --td-spacing-6: 24px;
+  --td-spacing-7: 32px;
+  --td-spacing-8: 40px;
+
+  /* 层级 */
   --td-z-modal: 1000;
+
+  /* 动效 */
   --td-duration-fast: 160ms;
   --td-duration-base: 240ms;
+  --td-duration-slow: 400ms;
 }

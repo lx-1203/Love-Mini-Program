@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * 村口页 - UGC社区
- * 用户生成内容社区，展示帖子动态、支持分类筛选、点赞关注等互动功能
+ * 村口页 - UGC社区（六分类版）
+ * 用户生成内容社区，展示帖子动态、支持六分类筛选、点赞关注等互动功能
  */
 import { ref, computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
@@ -20,83 +20,108 @@ const { loading, errorMessage, categories } = storeToRefs(villageStore);
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
 const completionPercent = computed(() => sessionStore.profileCompletion);
 
-/* ========== Tab 状态 ========== */
-type FeedTab = "follow" | "local" | "discover";
-const activeTab = ref<FeedTab>("discover");
-const tabs: { key: FeedTab; label: string }[] = [
-  { key: "follow", label: "关注" },
-  { key: "local", label: "同城" },
-  { key: "discover", label: "发现" },
-];
+/* ========== localStorage 键名 ========== */
+const LAST_CATEGORY_KEY = "village_last_category";
 
-/* ========== 分类筛选 ========== */
-const selectedCategory = ref<string>("cat-all");
-
-/** 分类数据：合并 categories 或使用后备 */
-const displayCategories = computed(() => {
-  if (categories.value.length > 0) return categories.value;
-  return [
-    { id: "cat-all", name: "全部", icon: "grid" },
-    { id: "cat-interest", name: "兴趣圈", icon: "heart" },
-    { id: "cat-sincere", name: "诚意帖", icon: "star" },
-    { id: "cat-hometown", name: "同乡", icon: "location" },
-    { id: "cat-mask", name: "蒙面", icon: "eye-off" },
-    { id: "cat-latest", name: "最新", icon: "time" },
-  ];
-});
-
-/** 分类图标映射（emoji 作为后备图标） */
-const categoryIconMap: Record<string, string> = {
-  "cat-all": "🔥",
-  "cat-interest": "💝",
-  "cat-sincere": "⭐",
-  "cat-hometown": "🏠",
-  "cat-mask": "🎭",
-  "cat-latest": "🆕",
-};
-
-function getCategoryIcon(id: string): string {
-  return categoryIconMap[id] || "📌";
+/* ========== 六分类数据结构 ========== */
+interface VillageCategory {
+  id: string;
+  name: string;
+  icon: string;
+  backendKey: string;
+  /** 是否需要校园认证才能显示 */
+  requireCampus?: boolean;
+  /** 默认排序方式 */
+  defaultSort?: "latest" | "hot";
 }
 
-/* ========== 筛选后的帖子 ========== */
-const currentFilters = computed<PostFilters>(() => {
-  return {
-    categoryId: selectedCategory.value,
-    sortBy: activeTab.value === "discover" ? "hot" : "latest",
-  };
+/** 六分类常量定义 */
+const CATEGORY_CONFIG: VillageCategory[] = [
+  { id: "cat-all", name: "全部", icon: "🔥", backendKey: "all", defaultSort: "hot" },
+  { id: "cat-interest", name: "兴趣圈", icon: "💝", backendKey: "interest", defaultSort: "latest" },
+  { id: "cat-sincere", name: "诚意帖", icon: "⭐", backendKey: "sincere", defaultSort: "latest" },
+  { id: "cat-hometown", name: "同乡", icon: "🏠", backendKey: "hometown", defaultSort: "latest" },
+  { id: "cat-campus", name: "校园", icon: "🎓", backendKey: "campus", requireCampus: true, defaultSort: "latest" },
+  { id: "cat-latest", name: "最新", icon: "🆕", backendKey: "latest", defaultSort: "latest" },
+];
+
+/** 判断用户是否已完成校园认证 */
+const isCampusVerified = computed(() => {
+  return sessionStore.userSession?.campusVerified ?? false;
 });
 
-/** 当前用户的学校名称 */
+/** 当前用户 campusName */
 const currentCampusName = computed(() => {
   return sessionStore.userSession?.campusName ?? "";
 });
 
-/**
- * 同校优先排序：同校帖子排在最前面
- * 仅在"同城"tab（activeTab === 'local'）时生效
- */
-function sortBySameCampus(posts: PostItem[]): PostItem[] {
-  if (!currentCampusName.value) return posts;
-  const same: PostItem[] = [];
-  const other: PostItem[] = [];
-  for (const post of posts) {
-    if (post.author.campusName === currentCampusName.value) {
-      same.push(post);
-    } else {
-      other.push(post);
+/** 当前用户 userId */
+const currentUserId = computed(() => {
+  return sessionStore.userSession?.userId ?? "";
+});
+
+/** 根据校园认证状态过滤可见分类 */
+const displayCategories = computed<VillageCategory[]>(() => {
+  return CATEGORY_CONFIG.filter((cat) => {
+    if (cat.requireCampus) return isCampusVerified.value;
+    return true;
+  });
+});
+
+/** 从 localStorage 读取上次选择的分类，默认 "全部" */
+function getLastCategory(): string {
+  try {
+    const saved = uni.getStorageSync(LAST_CATEGORY_KEY);
+    if (saved && typeof saved === "string") {
+      // 验证是否在可见分类中
+      const visibleIds = displayCategories.value.map((c) => c.id);
+      if (visibleIds.includes(saved)) return saved;
     }
+  } catch {
+    // 读取失败时忽略
   }
-  return [...same, ...other];
+  return "cat-all";
 }
 
-const displayPosts = computed<PostItem[]>(() => {
-  const posts = villageStore.filteredPosts(currentFilters.value);
-  // 同城 tab 时启用同校优先排序
-  if (activeTab.value === "local") {
-    return sortBySameCampus(posts);
+/** 保存分类到 localStorage */
+function saveLastCategory(catId: string) {
+  try {
+    uni.setStorageSync(LAST_CATEGORY_KEY, catId);
+  } catch {
+    // 保存失败时忽略
   }
-  return posts;
+}
+
+/* ========== 当前选中的分类 ========== */
+const selectedCategory = ref<string>(getLastCategory());
+
+/** 当前分类配置 */
+const currentCategoryConfig = computed<VillageCategory | undefined>(() => {
+  return CATEGORY_CONFIG.find((c) => c.id === selectedCategory.value);
+});
+
+/* ========== 筛选条件 ========== */
+const currentFilters = computed<PostFilters>(() => {
+  const config = currentCategoryConfig.value;
+  return {
+    categoryId: selectedCategory.value,
+    sortBy: config?.defaultSort ?? "latest",
+    // 校园分类需要传 userId
+    userId: selectedCategory.value === "cat-campus" ? currentUserId.value : undefined,
+  };
+});
+
+/* ========== 分类切换 ========== */
+function selectCategory(catId: string) {
+  if (selectedCategory.value === catId) return;
+  selectedCategory.value = catId;
+  saveLastCategory(catId);
+  void villageStore.fetchPosts(currentFilters.value);
+}
+
+/* ========== 筛选后的帖子 ========== */
+const displayPosts = computed<PostItem[]>(() => {
+  return villageStore.filteredPosts(currentFilters.value);
 });
 
 /* ========== 下拉刷新 / 加载更多 ========== */
@@ -123,20 +148,6 @@ async function onLoadMore() {
   } finally {
     isLoadingMore.value = false;
   }
-}
-
-/* ========== 切换分类 ========== */
-function selectCategory(catId: string) {
-  if (selectedCategory.value === catId) return;
-  selectedCategory.value = catId;
-  void villageStore.fetchPosts(currentFilters.value);
-}
-
-/* ========== 切换 Tab ========== */
-function switchTab(tab: FeedTab) {
-  if (activeTab.value === tab) return;
-  activeTab.value = tab;
-  void villageStore.fetchPosts(currentFilters.value);
 }
 
 /* ========== 点赞 ========== */
@@ -168,6 +179,13 @@ function goToPost() {
   openAppPath("/pages/village/post");
 }
 
+/* ========== 跳转标签聚合页 ========== */
+function goToTagPosts(tagName: string) {
+  // 去掉 # 前缀，传递原始标签名
+  const cleanTag = tagName.startsWith("#") ? tagName.slice(1) : tagName;
+  openAppPath(`/pages/village/tag-posts?tagName=${encodeURIComponent(cleanTag)}`);
+}
+
 /* ========== 初始化 ========== */
 onMounted(() => {
   if (isUnlocked.value) {
@@ -193,32 +211,18 @@ onMounted(() => {
         <text class="village-header__subtitle">校园恋爱社区</text>
       </view>
 
-      <!-- ===== 顶部 Tab（关注 / 同城 / 发现） ===== -->
-      <view class="tab-bar">
-        <view
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="tab-bar__item"
-          :class="{ 'tab-bar__item--active': activeTab === tab.key }"
-          @tap="switchTab(tab.key)"
-        >
-          <text class="tab-bar__text">{{ tab.label }}</text>
-          <view v-if="activeTab === tab.key" class="tab-bar__indicator" />
-        </view>
-      </view>
-
-      <!-- ===== 分类筛选横向滚动条 ===== -->
-      <scroll-view class="category-bar" scroll-x :show-scrollbar="false" :enhanced="true">
-        <view class="category-bar__inner">
+      <!-- ===== 六分类横向滚动 Tab ===== -->
+      <scroll-view class="category-tab-bar" scroll-x :show-scrollbar="false" :enhanced="true">
+        <view class="category-tab-bar__inner">
           <view
             v-for="cat in displayCategories"
             :key="cat.id"
-            class="category-chip"
-            :class="{ 'category-chip--active': selectedCategory === cat.id }"
+            class="category-tab"
+            :class="{ 'category-tab--active': selectedCategory === cat.id }"
             @tap="selectCategory(cat.id)"
           >
-            <text class="category-chip__icon">{{ getCategoryIcon(cat.id) }}</text>
-            <text class="category-chip__name">{{ cat.name }}</text>
+            <text class="category-tab__icon">{{ cat.icon }}</text>
+            <text class="category-tab__name">{{ cat.name }}</text>
           </view>
         </view>
       </scroll-view>
@@ -317,11 +321,12 @@ onMounted(() => {
           </view>
 
           <!-- 标签 -->
-          <view v-if="post.tags.length > 0" class="post-card__tags" @tap.stop>
+          <view v-if="post.tags.length > 0" class="post-card__tags">
             <text
               v-for="tag in post.tags"
               :key="tag"
               class="post-card__tag"
+              @tap.stop="goToTagPosts(tag)"
             >{{ tag }}</text>
           </view>
 
@@ -407,64 +412,25 @@ onMounted(() => {
 }
 
 /* ================================================================
-   Tab 栏（关注 / 同城 / 发现）
+   六分类横向滚动 Tab 栏
    ================================================================ */
-.tab-bar {
-  display: flex;
-  gap: 8rpx;
-  padding: 0 32rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
-}
-
-.tab-bar__item {
-  position: relative;
-  padding: 20rpx 28rpx 16rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8rpx;
-}
-
-.tab-bar__text {
-  font-size: 30rpx;
-  color: var(--td-text-color-secondary);
-  font-weight: 500;
-  transition: color 160ms ease;
-}
-
-.tab-bar__item--active .tab-bar__text {
-  color: var(--td-text-color-primary);
-  font-weight: 700;
-}
-
-.tab-bar__indicator {
-  width: 40rpx;
-  height: 6rpx;
-  border-radius: 3rpx;
-  background: var(--td-brand-color-7);
-}
-
-/* ================================================================
-   分类筛选栏（横向滚动）
-   ================================================================ */
-.category-bar {
+.category-tab-bar {
   background: var(--td-bg-color-container);
   border-bottom: 1rpx solid var(--td-border-level-1-color);
   white-space: nowrap;
 }
 
-.category-bar__inner {
+.category-tab-bar__inner {
   display: flex;
-  gap: 16rpx;
-  padding: 20rpx 32rpx;
+  gap: 12rpx;
+  padding: 16rpx 32rpx;
 }
 
-.category-chip {
+.category-tab {
   display: inline-flex;
   align-items: center;
   gap: 8rpx;
-  padding: 14rpx 24rpx;
+  padding: 18rpx 28rpx;
   border-radius: 999px;
   background: var(--td-bg-app-page);
   border: 2rpx solid transparent;
@@ -472,26 +438,27 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.category-chip--active {
+.category-tab--active {
   background: var(--td-brand-color-1);
   border-color: var(--td-brand-color-7);
+  box-shadow: 0 2rpx 8rpx rgba(29, 78, 216, 0.12);
 }
 
-.category-chip__icon {
-  font-size: 24rpx;
+.category-tab__icon {
+  font-size: 26rpx;
   line-height: 1;
 }
 
-.category-chip__name {
-  font-size: 26rpx;
+.category-tab__name {
+  font-size: 28rpx;
   color: var(--td-text-color-secondary);
   font-weight: 500;
   white-space: nowrap;
 }
 
-.category-chip--active .category-chip__name {
+.category-tab--active .category-tab__name {
   color: var(--td-brand-color-7);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* ================================================================

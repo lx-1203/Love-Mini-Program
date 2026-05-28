@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 真实认证服务实现。
@@ -98,13 +99,14 @@ public class RealAuthService implements AuthService {
     }
 
     @Override
+    @Transactional
     public UserSessionView loginWithWechat(String code) {
         // 1. 调用微信接口，用 code 换取 openid
         WeChatClient.WeChatSessionResponse session;
         try {
             session = weChatClient.code2Session(code);
         } catch (WeChatClient.WeChatAuthException ex) {
-            log.error("WeChat auth failed for code={}: {}", code, ex.getMessage());
+            log.error("WeChat auth failed for code(length={}): {}", code != null ? code.length() : 0, ex.getMessage());
             throw ex;
         }
 
@@ -116,7 +118,7 @@ public class RealAuthService implements AuthService {
             Optional<User> existingUser = userRepository.findByOpenid(openid);
             if (existingUser.isPresent()) {
                 user = existingUser.get();
-                log.info("已有用户登录: userId={}, openid={}", user.getId(), openid);
+                log.info("已有用户登录: userId={}, openid={}", user.getId(), maskOpenid(openid));
             } else {
                 // 创建新用户
                 user = new User();
@@ -129,7 +131,7 @@ public class RealAuthService implements AuthService {
                 user.setCreatedAt(now);
                 user.setUpdatedAt(now);
                 user = userRepository.save(user);
-                log.info("创建新用户: userId={}, openid={}", user.getId(), openid);
+                log.info("创建新用户: userId={}, openid={}", user.getId(), maskOpenid(openid));
             }
         } catch (Exception ex) {
             log.error("查找/创建用户失败, openid={}: {}", openid, ex.getMessage(), ex);
@@ -141,6 +143,13 @@ public class RealAuthService implements AuthService {
 
         // 4. 返回会话视图
         return buildSessionView(user, jwtToken);
+    }
+
+    private String maskOpenid(String openid) {
+        if (openid == null || openid.length() <= 8) {
+            return "****";
+        }
+        return openid.substring(0, 4) + "****" + openid.substring(openid.length() - 4);
     }
 
     /**

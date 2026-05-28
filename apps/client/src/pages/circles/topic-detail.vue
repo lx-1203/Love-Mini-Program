@@ -2,12 +2,16 @@
 /**
  * 话题详情页
  * 展示话题完整内容、作者信息、回复列表，底部回复输入框
+ * 支持从回复直接"打招呼"跳转到私信会话
  */
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
-import { useCircleStore, formatCircleTime } from "../../stores/circle";
+import { useCircleStore, formatCircleTime, type ReplyItem } from "../../stores/circle";
+import { useSessionStore } from "../../stores/session";
+import { openAppPath } from "../../utils/navigation";
 
 const circleStore = useCircleStore();
+const sessionStore = useSessionStore();
 const { currentTopic, replies, loading } = storeToRefs(circleStore);
 
 /** 回复内容 */
@@ -16,6 +20,9 @@ const replyContent = ref("");
 const isSubmitting = ref(false);
 /** 话题 ID */
 const topicId = ref("");
+
+/** 当前登录用户 ID */
+const currentUserId = computed(() => sessionStore.userSession?.userId ?? "");
 
 /**
  * 提交回复
@@ -36,6 +43,33 @@ async function submitReply() {
   } finally {
     isSubmitting.value = false;
   }
+}
+
+/**
+ * 向回复者发起"打招呼"，跳转到私信会话页并预填破冰文案
+ * @param reply - 目标回复项
+ */
+function sayHello(reply: ReplyItem) {
+  if (!currentTopic.value || !reply.author.userId) return;
+
+  const topicTitle = currentTopic.value.title;
+
+  // 基于话题上下文生成破冰文案
+  const prefillMessage = `看到你在「${topicTitle}」下的回复，觉得很有共鸣！`;
+
+  // 引用上下文：话题标题 + 回复内容 + 回复者名
+  const quoteContext = JSON.stringify({
+    topicTitle,
+    topicId: topicId.value,
+    replyId: reply.id,
+    replyContent: reply.content,
+    replyAuthorName: reply.author.name,
+  });
+
+  // 跳转到私信会话页，携带目标用户 ID、预填消息和引用上下文
+  openAppPath(
+    `/pages/chat-session/index?userId=${reply.author.userId}&prefillMessage=${encodeURIComponent(prefillMessage)}&quoteContext=${encodeURIComponent(quoteContext)}`
+  );
 }
 
 /**
@@ -137,12 +171,22 @@ onMounted(() => {
               />
               <text v-else class="reply-avatar__char">{{ reply.author.name[0] }}</text>
             </view>
-            <view class="reply-content">
-              <view class="reply-header">
-                <text class="reply-author">{{ reply.author.name }}</text>
-                <text class="reply-time">{{ formatCircleTime(reply.createdAt) }}</text>
+            <view class="reply-body">
+              <view class="reply-content">
+                <view class="reply-header">
+                  <text class="reply-author">{{ reply.author.name }}</text>
+                  <text class="reply-time">{{ formatCircleTime(reply.createdAt) }}</text>
+                </view>
+                <text class="reply-text">{{ reply.content }}</text>
               </view>
-              <text class="reply-text">{{ reply.content }}</text>
+              <!-- 打招呼按钮：不显示在自己回复上 -->
+              <view
+                v-if="reply.author.userId !== currentUserId"
+                class="reply-say-hello"
+                @tap.stop="sayHello(reply)"
+              >
+                <text class="reply-say-hello__text">打个招呼</text>
+              </view>
             </view>
           </view>
         </view>
@@ -424,6 +468,14 @@ onMounted(() => {
   color: var(--td-brand-color-7);
 }
 
+.reply-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
 .reply-content {
   flex: 1;
   min-width: 0;
@@ -451,6 +503,27 @@ onMounted(() => {
   font-size: 26rpx;
   color: var(--td-text-color-secondary);
   line-height: 1.6;
+}
+
+/* ========== 打招呼按钮 ========== */
+.reply-say-hello {
+  align-self: flex-start;
+  padding: 8rpx 20rpx;
+  border-radius: 999px;
+  background: var(--td-bg-app-page);
+  border: 1rpx solid var(--td-border-level-1-color);
+  transition: background 160ms ease;
+}
+
+.reply-say-hello:active {
+  background: var(--td-brand-color-1);
+  border-color: var(--td-brand-color-3);
+}
+
+.reply-say-hello__text {
+  font-size: 22rpx;
+  color: var(--td-brand-color-7);
+  font-weight: 500;
 }
 
 .replies-empty {

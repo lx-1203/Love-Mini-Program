@@ -59,21 +59,23 @@ function switchTab(tab: TabType) {
 }
 
 /**
- * 跳转到用户详情页
+ * 跳转到用户详情页（功能开发中）
  * @param userId - 用户 ID
  */
 function goToUserDetail(userId: string) {
-  uni.navigateTo({
-    url: `/pages/user-detail/index?userId=${userId}`,
+  uni.showToast({
+    title: "用户详情功能开发中",
+    icon: "none",
   });
 }
 
 /**
- * 跳转到心动信号页
+ * 跳转到心动信号页（功能开发中）
  */
 function goToHeartSignals() {
-  uni.navigateTo({
-    url: "/pages/heart-signals/index",
+  uni.showToast({
+    title: "心动信号功能开发中",
+    icon: "none",
   });
 }
 

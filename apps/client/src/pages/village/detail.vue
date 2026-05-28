@@ -2,15 +2,20 @@
 /**
  * 帖子详情页
  * 展示完整帖子内容、评论列表和互动功能
- * 包含作者交互卡片（关注/私信）和转发功能
+ * 包含作者交互卡片（关注/私信/校友标签）、相似作者推荐和转发功能
  */
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
+import { useMessagesStore } from "../../stores/messages";
+import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
 
 const villageStore = useVillageStore();
-const { currentPost, comments, loading } = storeToRefs(villageStore);
+const messagesStore = useMessagesStore();
+const sessionStore = useSessionStore();
+const { currentPost, comments, loading, similarAuthors, loadingSimilarAuthors } = storeToRefs(villageStore);
 
 /** 评论输入内容 */
 const commentContent = ref("");
@@ -28,6 +33,14 @@ const isSharing = ref(false);
  */
 function goBack() {
   uni.navigateBack();
+}
+
+/**
+ * 跳转标签聚合页
+ */
+function goToTagPosts(tagName: string) {
+  const cleanTag = tagName.startsWith("#") ? tagName.slice(1) : tagName;
+  openAppPath(`/pages/village/tag-posts?tagName=${encodeURIComponent(cleanTag)}`);
 }
 
 /**
@@ -76,12 +89,31 @@ async function submitComment() {
 }
 
 /**
+ * 点赞/取消点赞评论
+ */
+async function handleCommentLike(commentId: string) {
+  try {
+    await villageStore.likeComment(commentId);
+  } catch (error) {
+    console.error("评论点赞失败:", error);
+  }
+}
+
+/**
  * 私信用户 - 跳转到聊天会话页
  */
 function sendMessage() {
   if (!currentPost.value) return;
-  // 跳转到私信会话页（后续可携带目标用户 ID 参数）
-  openAppPath("/pages/chat-session/index");
+  // 查找与该作者的现有会话
+  const targetUserId = currentPost.value.author.userId;
+  const existingSession = messagesStore.sessions.find(
+    (s) => s.partnerId === targetUserId && s.sessionType === "private"
+  );
+  if (existingSession) {
+    openAppPath(`/pages/chat-session/index?sessionId=${existingSession.id}`);
+  } else {
+    openAppPath(`/pages/chat-session/index?userId=${targetUserId}`);
+  }
 }
 
 /**
@@ -123,9 +155,56 @@ async function confirmShare() {
   }
 }
 
-onMounted(() => {
+/**
+ * 关注/取消关注相似作者
+ */
+async function handleFollowSimilarAuthor(userId: string) {
+  try {
+    await villageStore.followUser(userId);
+    // 同步更新相似作者列表中的 isFollowed 状态
+    const author = similarAuthors.value.find((a) => a.userId === userId);
+    if (author) {
+      author.isFollowed = !author.isFollowed;
+    }
+  } catch (error) {
+    console.error("关注相似作者失败:", error);
+  }
+}
+
+/**
+ * 私信相似作者
+ */
+function sendMessageToSimilarAuthor(userId: string) {
+  const existingSession = messagesStore.sessions.find(
+    (s) => s.partnerId === userId && s.sessionType === "private"
+  );
+  if (existingSession) {
+    openAppPath(`/pages/chat-session/index?sessionId=${existingSession.id}`);
+  } else {
+    openAppPath(`/pages/chat-session/index?userId=${userId}`);
+  }
+}
+
+onLoad((query) => {
+  // 支持通过 URL id 参数加载帖子（从通知、分享等入口进入）
+  const postId = query?.id;
+  if (postId && typeof postId === "string" && postId.trim().length > 0) {
+    // 如果 currentPost 尚未设置或 ID 不匹配，主动加载
+    if (!currentPost.value || currentPost.value.id !== postId) {
+      void villageStore.setCurrentPost(postId).then(() => {
+        if (currentPost.value) {
+          void villageStore.fetchComments(currentPost.value.id);
+          void villageStore.fetchSimilarAuthors(currentPost.value.id);
+        }
+      });
+      return;
+    }
+  }
+
+  // 已有 currentPost（通过 setCurrentPost 导航而来），加载评论
   if (currentPost.value) {
     void villageStore.fetchComments(currentPost.value.id);
+    void villageStore.fetchSimilarAuthors(currentPost.value.id);
   }
 });
 </script>
@@ -157,7 +236,14 @@ onMounted(() => {
             <text v-else class="author-avatar__char">{{ currentPost.author.name[0] }}</text>
           </view>
           <view class="author-info">
-            <text class="author-info__name">{{ currentPost.author.name }}</text>
+            <view class="author-info__name-row">
+              <text class="author-info__name">{{ currentPost.author.name }}</text>
+              <!-- 校友标签 -->
+              <view v-if="currentPost.isAlumni" class="identity-tag identity-tag--alumni">
+                <text class="identity-tag__icon">&#127979;</text>
+                <text class="identity-tag__text">校友</text>
+              </view>
+            </view>
             <text class="author-info__headline">{{ currentPost.author.headline }}</text>
           </view>
         </view>
@@ -213,7 +299,12 @@ onMounted(() => {
 
           <!-- 话题标签 -->
           <view v-if="currentPost.tags.length > 0" class="post-tags">
-            <text v-for="(tag, idx) in currentPost.tags" :key="idx" class="post-tag">{{ tag }}</text>
+            <text
+              v-for="(tag, idx) in currentPost.tags"
+              :key="idx"
+              class="post-tag"
+              @tap="goToTagPosts(tag)"
+            >{{ tag }}</text>
           </view>
         </view>
 
@@ -264,7 +355,11 @@ onMounted(() => {
               </view>
               <text class="comment-text">{{ comment.content }}</text>
               <view class="comment-actions">
-                <view class="comment-like" :class="{ 'comment-like--active': comment.isLiked }">
+                <view
+                  class="comment-like"
+                  :class="{ 'comment-like--active': comment.isLiked }"
+                  @tap.stop="handleCommentLike(comment.id)"
+                >
                   <text class="comment-like__icon">赞</text>
                   <text v-if="comment.likes > 0" class="comment-like__count">{{ comment.likes }}</text>
                 </view>
@@ -276,6 +371,69 @@ onMounted(() => {
         <!-- 空状态 -->
         <view v-else class="comments-empty">
           <text class="comments-empty__text">暂无评论，快来抢沙发吧</text>
+        </view>
+      </view>
+
+      <!-- ===== 相似作者推荐 ===== -->
+      <view v-if="similarAuthors.length > 0" class="similar-authors-section">
+        <view class="similar-authors-header">
+          <text class="similar-authors-title">你可能还想认识</text>
+          <text class="similar-authors-subtitle">兴趣相投的同学</text>
+        </view>
+
+        <view class="similar-authors-list">
+          <view
+            v-for="author in similarAuthors"
+            :key="author.userId"
+            class="similar-author-card"
+          >
+            <view class="similar-author-main">
+              <view class="similar-author-avatar">
+                <image
+                  v-if="author.avatar"
+                  class="similar-author-avatar__img"
+                  :src="author.avatar"
+                  mode="aspectFill"
+                />
+                <text v-else class="similar-author-avatar__char">{{ author.name[0] }}</text>
+              </view>
+              <view class="similar-author-info">
+                <view class="similar-author-name-row">
+                  <text class="similar-author-name">{{ author.name }}</text>
+                  <!-- 同校标签 -->
+                  <view v-if="author.isAlumni" class="identity-tag identity-tag--alumni">
+                    <text class="identity-tag__icon">&#127979;</text>
+                    <text class="identity-tag__text">校友</text>
+                  </view>
+                </view>
+                <text class="similar-author-headline">{{ author.headline }}</text>
+                <!-- 共同兴趣 -->
+                <view v-if="author.commonInterests.length > 0" class="similar-author-interests">
+                  <text class="common-interest-label">共同兴趣：</text>
+                  <text
+                    v-for="(interest, idx) in author.commonInterests"
+                    :key="interest"
+                    class="common-interest-chip"
+                  >{{ interest }}{{ idx < author.commonInterests.length - 1 ? "、" : "" }}</text>
+                </view>
+              </view>
+            </view>
+            <!-- 操作按钮 -->
+            <view class="similar-author-actions">
+              <view
+                class="action-btn action-btn--follow"
+                :class="{ 'action-btn--follow-active': author.isFollowed }"
+                @tap="handleFollowSimilarAuthor(author.userId)"
+              >
+                <text class="action-btn__text">
+                  {{ author.isFollowed ? "已关注" : "+ 关注" }}
+                </text>
+              </view>
+              <view class="action-btn action-btn--message" @tap="sendMessageToSimilarAuthor(author.userId)">
+                <text class="action-btn__text">私信</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
 
@@ -470,6 +628,38 @@ onMounted(() => {
   color: var(--td-text-color-primary);
 }
 
+/* 身份标签（校友等） */
+.identity-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.identity-tag--alumni {
+  background: var(--td-brand-color-1);
+  border: 1rpx solid var(--td-brand-color-2);
+}
+
+.identity-tag__icon {
+  font-size: 22rpx;
+}
+
+.identity-tag__text {
+  font-size: 22rpx;
+  color: var(--td-brand-color-7);
+  font-weight: 600;
+}
+
+.author-info__name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 6rpx;
+}
+
 .author-info__headline {
   font-size: 24rpx;
   color: var(--td-text-color-placeholder);
@@ -645,6 +835,172 @@ onMounted(() => {
   margin: 0 24rpx;
   border-radius: 20rpx;
 }
+
+/* ================================================================
+   相似作者推荐
+   ================================================================ */
+.similar-authors-section {
+  background: var(--td-bg-color-container);
+  padding: 28rpx 32rpx;
+  margin: 16rpx 24rpx 0;
+  border-radius: 20rpx;
+}
+
+.similar-authors-header {
+  margin-bottom: 24rpx;
+}
+
+.similar-authors-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--td-text-color-primary);
+  display: block;
+}
+
+.similar-authors-subtitle {
+  font-size: 24rpx;
+  color: var(--td-text-color-placeholder);
+  margin-top: 6rpx;
+  display: block;
+}
+
+.similar-authors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.similar-author-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 24rpx;
+  background: var(--td-bg-app-page);
+  border-radius: 16rpx;
+}
+
+.similar-author-main {
+  display: flex;
+  gap: 20rpx;
+  align-items: flex-start;
+}
+
+.similar-author-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.similar-author-avatar__img {
+  width: 100%;
+  height: 100%;
+}
+
+.similar-author-avatar__char {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--td-brand-color-7);
+}
+
+.similar-author-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.similar-author-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 6rpx;
+}
+
+.similar-author-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--td-text-color-primary);
+}
+
+.similar-author-headline {
+  font-size: 24rpx;
+  color: var(--td-text-color-placeholder);
+  display: block;
+  margin-bottom: 10rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.similar-author-interests {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4rpx;
+}
+
+.common-interest-label {
+  font-size: 24rpx;
+  color: var(--td-text-color-secondary);
+}
+
+.common-interest-chip {
+  font-size: 24rpx;
+  color: var(--td-brand-color-7);
+  font-weight: 500;
+}
+
+.similar-author-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.similar-author-actions .action-btn--follow,
+.similar-author-actions .action-btn--message {
+  flex: 1;
+  padding: 14rpx 0;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.similar-author-actions .action-btn--follow {
+  background: var(--td-brand-color-7);
+}
+
+.similar-author-actions .action-btn--follow-active {
+  background: var(--td-bg-color-surface);
+  border: 1rpx solid var(--td-border-level-1-color);
+}
+
+.similar-author-actions .action-btn--message {
+  background: var(--td-bg-color-surface);
+  border: 1rpx solid var(--td-border-level-1-color);
+}
+
+.similar-author-actions .action-btn__text {
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+.similar-author-actions .action-btn--follow .action-btn__text {
+  color: #ffffff;
+}
+
+.similar-author-actions .action-btn--follow-active .action-btn__text {
+  color: var(--td-text-color-placeholder);
+}
+
+.similar-author-actions .action-btn--message .action-btn__text {
+  color: var(--td-text-color-primary);
+}
+
+/* ========== 评论区 ========== */
 
 .comments-header {
   display: flex;

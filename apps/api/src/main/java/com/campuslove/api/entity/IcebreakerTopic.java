@@ -24,9 +24,17 @@ public class IcebreakerTopic {
     @Column(name = "content", nullable = false, length = 200)
     private String content;
 
-    /** 话题分类（interests / campus / lifestyle / daily / fun / romantic） */
+    /** 话题分类（interests / campus / lifestyle / daily / fun / romantic / circles / general） */
     @Column(name = "category", nullable = false, length = 50)
     private String category;
+
+    /** 触发条件（common_interest / same_school / common_answer / common_circle / same_profession / mutual_like） */
+    @Column(name = "trigger_condition", length = 100)
+    private String triggerCondition;
+
+    /** 使用次数 */
+    @Column(name = "usage_count", nullable = false)
+    private Integer usageCount = 0;
 
     /** 是否启用 */
     @Column(name = "is_active", nullable = false)
@@ -35,6 +43,10 @@ public class IcebreakerTopic {
     /** 创建时间 */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /** 更新时间 */
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
     public IcebreakerTopic() {
     }
@@ -63,6 +75,22 @@ public class IcebreakerTopic {
         this.category = category;
     }
 
+    public String getTriggerCondition() {
+        return triggerCondition;
+    }
+
+    public void setTriggerCondition(String triggerCondition) {
+        this.triggerCondition = triggerCondition;
+    }
+
+    public Integer getUsageCount() {
+        return usageCount;
+    }
+
+    public void setUsageCount(Integer usageCount) {
+        this.usageCount = usageCount;
+    }
+
     public Boolean getIsActive() {
         return isActive;
     }
@@ -77,5 +105,13 @@ public class IcebreakerTopic {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

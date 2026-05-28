@@ -1,11 +1,15 @@
 package com.campuslove.api.chat;
 
 import com.campuslove.api.match.HeartSignalView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.security.Principal;
 import java.util.Map;
 
 /**
@@ -17,9 +21,15 @@ import java.util.Map;
  * - 私信: /user/{userId}/queue/messages
  * - 心动信号: /user/{userId}/queue/signals
  * - 通知: /user/{userId}/queue/notifications
+ *
+ * 安全控制:
+ * - senderId 从 STOMP 认证用户中获取，不信任客户端 payload
+ * - 禁止给自己发送消息
  */
 @Controller
 public class MessageWebSocketHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(MessageWebSocketHandler.class);
 
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -33,17 +43,44 @@ public class MessageWebSocketHandler {
      *
      * 消息体需包含:
      * - conversationId: 会话 ID
-     * - senderId: 发送者 ID
      * - recipientId: 接收者 ID
      * - content: 消息内容
      * - kind: 消息类型 (text/image/voice)
+     *
+     * 安全说明:
+     * - senderId 从 STOMP 认证用户（Principal）中获取，不使用 payload 中的值
+     * - 验证发送者不能给自己发消息
      */
     @MessageMapping("/chat/send")
-    public void handleChatMessage(@Payload Map<String, Object> payload) {
-        String recipientId = extractString(payload, "recipientId");
-        if (recipientId == null || recipientId.isBlank()) {
+    public void handleChatMessage(@Payload Map<String, Object> payload,
+                                  SimpMessageHeaderAccessor headerAccessor) {
+        // 从 STOMP 认证用户中获取 senderId，不信任客户端 payload
+        Principal user = headerAccessor.getUser();
+        if (user == null) {
+            log.warn("WebSocket SEND 拒绝: 用户未认证，无法发送消息");
             return;
         }
+
+        String senderId = user.getName();
+        if (senderId == null || senderId.isBlank()) {
+            log.warn("WebSocket SEND 拒绝: 无法获取认证用户ID");
+            return;
+        }
+
+        String recipientId = extractString(payload, "recipientId");
+        if (recipientId == null || recipientId.isBlank()) {
+            log.warn("WebSocket SEND 拒绝: 缺少 recipientId, senderId={}", senderId);
+            return;
+        }
+
+        // 验证发送者不能给自己发消息
+        if (senderId.equals(recipientId)) {
+            log.warn("WebSocket SEND 拒绝: 发送者不能给自己发消息, userId={}", senderId);
+            return;
+        }
+
+        // 将认证后的 senderId 覆盖到 payload，确保数据可信
+        payload.put("senderId", senderId);
 
         // 将消息推送到接收者的私信队列
         messagingTemplate.convertAndSendToUser(

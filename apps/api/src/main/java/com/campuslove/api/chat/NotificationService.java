@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
  * 互动通知服务接口。
  * 提供获取通知列表、标记已读、获取未读数等功能。
  * Phase 2 新增：分页查询、全部标记已读、创建通知等方法。
+ * Phase 3 新增：signalType 社交/内容信号分类筛选。
  */
 public interface NotificationService {
 
@@ -46,12 +47,16 @@ public interface NotificationService {
     List<NotificationView> getNotifications(Long userId, Boolean unreadOnly, Pageable pageable);
 
     /**
-     * 获取指定用户的未读通知数。
+     * 获取指定用户的通知列表（分页，支持未读过滤和信号类型筛选）。
+     * Phase 3 新增：按社交/内容信号分类筛选。
      *
-     * @param userId 用户 ID
-     * @return 未读数
+     * @param userId      用户 ID
+     * @param unreadOnly  是否仅显示未读
+     * @param signalType  信号类型筛选："SOCIAL"（社交信号）/ "CONTENT"（内容信号），为 null 时不筛选
+     * @param pageable    分页参数
+     * @return 通知视图列表
      */
-    long getUnreadCount(Long userId);
+    List<NotificationView> getNotifications(Long userId, Boolean unreadOnly, String signalType, Pageable pageable);
 
     /**
      * 标记指定通知为已读（带用户验证）。
@@ -82,6 +87,7 @@ public interface NotificationService {
 
 /**
  * 通知列表项视图。
+ * Phase 3 新增 signalType 字段，用于区分社交信号(SOCIAL)和内容信号(CONTENT)。
  */
 record NotificationView(
     Long id,
@@ -91,7 +97,8 @@ record NotificationView(
     String referenceType,
     boolean isRead,
     String createdAt,
-    String summary
+    String summary,
+    String signalType
 ) {}
 
 /**

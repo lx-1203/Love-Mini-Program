@@ -9,21 +9,21 @@ export const discoverPageRequirements: PageRequirements = {
 
 export const likesPageRequirements: PageRequirements = {
   requiresAuth: true,
-  requiresProfile: false,
+  requiresProfile: true,
   requiresCampus: false,
   requiresSchedule: false,
 };
 
 export const villagePageRequirements: PageRequirements = {
   requiresAuth: true,
-  requiresProfile: false,
+  requiresProfile: true,
   requiresCampus: false,
   requiresSchedule: false,
 };
 
 export const messagesPageRequirements: PageRequirements = {
   requiresAuth: true,
-  requiresProfile: false,
+  requiresProfile: true,
   requiresCampus: false,
   requiresSchedule: false,
 };

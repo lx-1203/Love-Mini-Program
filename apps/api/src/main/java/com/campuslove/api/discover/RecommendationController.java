@@ -1,18 +1,18 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.config.SecurityUtils;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 推荐控制器。
  * 提供讨论推荐、活动推荐、推荐偏好、人物推荐等 API。
  * 活动详情和报名功能已迁移至 ActivityController。
+ * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
 @RequestMapping("/api")
@@ -51,30 +51,30 @@ public class RecommendationController {
    * GET /api/recommendations/people
    */
   @GetMapping("/recommendations/people")
-  public List<RecommendedPersonView> getRecommendations(
-          @RequestParam(name = "userId") Long userId) {
+  public List<RecommendedPersonView> getRecommendations() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return recommendationService.getRecommendations(userId);
   }
 
   /**
-   * 获取推荐偏好设置（带用户 ID）。
-   * GET /api/recommendations/preferences/{userId}
+   * 获取推荐偏好设置。
+   * GET /api/recommendations/preferences/me
    */
-  @GetMapping("/recommendations/preferences/{userId}")
-  public RecommendationPreferencesView getPreferencesByUserId(
-          @PathVariable("userId") Long userId) {
+  @GetMapping("/recommendations/preferences/me")
+  public RecommendationPreferencesView getPreferencesByUserId() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return recommendationService.getPreferences(userId);
   }
 
   /**
    * 保存推荐偏好设置。
-   * PUT /api/recommendations/preferences/{userId}
+   * PUT /api/recommendations/preferences/me
    */
-  @PutMapping("/recommendations/preferences/{userId}")
+  @PutMapping("/recommendations/preferences/me")
   public RecommendationPreferencesView savePreferences(
-          @PathVariable("userId") Long userId,
           @RequestBody SavePreferencesRequest request) {
-    return recommendationService.savePreferences(userId, request.preferredTime(), request.scope());
+    Long userId = SecurityUtils.getCurrentUserId();
+    return recommendationService.savePreferences(userId, request.preferredTime(), request.scope(), request.campusPriority());
   }
 
   /**
@@ -82,8 +82,8 @@ public class RecommendationController {
    * GET /api/recommendations/history
    */
   @GetMapping("/recommendations/history")
-  public List<RecommendedPersonView> getHistory(
-          @RequestParam(name = "userId") Long userId) {
+  public List<RecommendedPersonView> getHistory() {
+    Long userId = SecurityUtils.getCurrentUserId();
     return recommendationService.getHistory(userId);
   }
 }
@@ -111,7 +111,9 @@ record ActivityRecommendationView(
 
 record RecommendationPreferencesView(
     String dailyNotifyTime,
-    String scope
+    String scope,
+    /** 校园优先：同校用户排序靠前 */
+    Boolean campusPriority
 ) {
 }
 
@@ -138,5 +140,7 @@ record ActivityEnrollmentView(
  */
 record SavePreferencesRequest(
     String preferredTime,
-    String scope
+    String scope,
+    /** 校园优先：同校用户推荐权重+30% */
+    Boolean campusPriority
 ) {}

@@ -37,9 +37,17 @@ public class PrivateMessage {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    /** 消息类型: text / image / voice 等 */
+    /** 消息类型: text / image / voice / quote 等 */
     @Column(name = "message_kind", nullable = false, length = 16)
     private String messageKind = "text";
+
+    /**
+     * 引用上下文（JSON 格式）。
+     * 当 messageKind 为 "quote" 时，存储引用来源信息。
+     * 例如：{"topicTitle":"...","topicId":"...","replyId":"...","replyContent":"...","replyAuthorName":"..."}
+     */
+    @Column(name = "quote_context", columnDefinition = "TEXT")
+    private String quoteContext;
 
     /** 是否已读 */
     @Column(name = "is_read", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
@@ -89,6 +97,14 @@ public class PrivateMessage {
 
     public void setMessageKind(String messageKind) {
         this.messageKind = messageKind;
+    }
+
+    public String getQuoteContext() {
+        return quoteContext;
+    }
+
+    public void setQuoteContext(String quoteContext) {
+        this.quoteContext = quoteContext;
     }
 
     public Boolean getIsRead() {

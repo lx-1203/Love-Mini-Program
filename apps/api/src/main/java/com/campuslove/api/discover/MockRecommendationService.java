@@ -104,7 +104,7 @@ public class MockRecommendationService implements RecommendationService {
 
   @Override
   public RecommendationPreferencesView getPreferences() {
-    return new RecommendationPreferencesView("12:00", "campus_first");
+    return new RecommendationPreferencesView("12:00", "campus_first", true);
   }
 
   @Override
@@ -123,15 +123,15 @@ public class MockRecommendationService implements RecommendationService {
 
   @Override
   public RecommendationPreferencesView getPreferences(Long userId) {
-    return new RecommendationPreferencesView("12:00", "campus_first");
+    return new RecommendationPreferencesView("12:00", "campus_first", true);
   }
 
   @Override
-  public RecommendationPreferencesView savePreferences(Long userId, String preferredTime, String scope) {
+  public RecommendationPreferencesView savePreferences(Long userId, String preferredTime, String scope, Boolean campusPriority) {
     if (preferredTime == null || scope == null) {
       throw new IllegalArgumentException("preferredTime and scope are required");
     }
-    return new RecommendationPreferencesView(preferredTime, scope);
+    return new RecommendationPreferencesView(preferredTime, scope, campusPriority != null ? campusPriority : true);
   }
 
   @Override
@@ -143,7 +143,7 @@ public class MockRecommendationService implements RecommendationService {
     if (data == null) {
       throw new IllegalArgumentException("偏好数据不能为空");
     }
-    return new RecommendationPreferencesView(data.getPreferredTime(), data.getScope());
+    return new RecommendationPreferencesView(data.getPreferredTime(), data.getScope(), data.getCampusPriority());
   }
 
   @Override

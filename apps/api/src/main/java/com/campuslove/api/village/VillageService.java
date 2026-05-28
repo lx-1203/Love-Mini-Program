@@ -16,6 +16,13 @@ public interface VillageService {
     PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize);
 
     /**
+     * 获取帖子列表（支持分类、标签、排序、分页，含 userId 用于校园筛选）。
+     *
+     * @param userId 当前用户 ID，仅当 category=campus 时需要
+     */
+    PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize, Long userId);
+
+    /**
      * 获取帖子详情。
      */
     PostDetailView getPostDetail(Long id);
@@ -151,4 +158,17 @@ public interface VillageService {
      * @return 同校动态流视图
      */
     CampusFeedView getCampusFeed(Long userId, int page, int size);
+
+    // ---- 相似作者推荐 ----
+
+    /**
+     * 获取与帖子作者相似的推荐用户。
+     * 基于兴趣标签重叠度和同校关系推荐 1-2 位最相似的用户，
+     * 排除已关注的用户和当前用户自身。
+     *
+     * @param postId 帖子 ID（用于获取帖子作者信息作为匹配基准）
+     * @param userId 当前用户 ID（用于排除已关注和自身）
+     * @return 相似作者推荐响应
+     */
+    SimilarAuthorsResponse getSimilarAuthors(Long postId, Long userId);
 }

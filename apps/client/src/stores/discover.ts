@@ -25,6 +25,12 @@ export interface DiscoverCard {
   campusName?: string;
   /** 在线状态：online-在线 / away-离开 / offline-离线 */
   onlineStatus?: "online" | "away" | "offline";
+  /** 是否同校 */
+  isSameSchool?: boolean;
+  /** 是否同专业 */
+  isSameMajor?: boolean;
+  /** 共同兴趣圈数量 */
+  commonCircleCount?: number;
 }
 
 /**
@@ -76,7 +82,7 @@ export interface DiscoverState {
 
 /**
  * 后端 RecommendedPersonView 类型
- * 对应后端 record RecommendedPersonView(Long id, String name, String initials, String headline, String commonGround, String availability, String campusName, String avatarUrl, List<String> tags, String bio, List<String> images)
+ * 对应后端 record RecommendedPersonView(Long id, String name, String initials, String headline, String commonGround, String availability, String campusName, String avatarUrl, List<String> tags, String bio, List<String> images, boolean isSameSchool, boolean isSameMajor, int commonCircleCount)
  */
 export interface RecommendedPersonView {
   id: number;
@@ -92,6 +98,12 @@ export interface RecommendedPersonView {
   bio: string;
   /** 用户图片列表 */
   images: string[];
+  /** 是否同校 */
+  isSameSchool: boolean;
+  /** 是否同专业 */
+  isSameMajor: boolean;
+  /** 共同兴趣圈数量 */
+  commonCircleCount: number;
 }
 
 /**
@@ -113,6 +125,9 @@ function mapToDiscoverCard(raw: RecommendedPersonView, onlineStatus?: "online" |
     images: raw.images || [],
     campusName: raw.campusName,
     onlineStatus,
+    isSameSchool: raw.isSameSchool ?? false,
+    isSameMajor: raw.isSameMajor ?? false,
+    commonCircleCount: raw.commonCircleCount ?? 0,
   };
 }
 

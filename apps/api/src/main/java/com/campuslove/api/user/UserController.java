@@ -1,7 +1,6 @@
 package com.campuslove.api.user;
 
-import com.campuslove.api.user.FollowUserView;
-import com.campuslove.api.user.FollowView;
+import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.profile.ProfileService;
 import java.util.List;
 import java.util.Map;
@@ -12,12 +11,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 用户关注关系与在线状态控制器。
  * 提供关注、取关、查询粉丝列表、查询关注列表、判断关注状态、在线状态查询等接口。
+ * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
 @RequestMapping("/api/users")
@@ -33,31 +32,27 @@ public class UserController {
 
     /**
      * 关注用户。
-     * POST /api/users/{id}/follow?userId=xxx
+     * POST /api/users/{id}/follow
      *
-     * @param id     目标用户 ID（被关注者）
-     * @param userId 当前用户 ID（关注者）
+     * @param id 目标用户 ID（被关注者）
      * @return 关注操作结果
      */
     @PostMapping("/{id}/follow")
-    public FollowView followUser(
-            @PathVariable("id") Long id,
-            @RequestParam("userId") Long userId) {
+    public FollowView followUser(@PathVariable("id") Long id) {
+        Long userId = SecurityUtils.getCurrentUserId();
         return profileService.followUser(userId, id);
     }
 
     /**
      * 取消关注用户。
-     * DELETE /api/users/{id}/follow?userId=xxx
+     * DELETE /api/users/{id}/follow
      *
-     * @param id     目标用户 ID（被关注者）
-     * @param userId 当前用户 ID（关注者）
+     * @param id 目标用户 ID（被关注者）
      * @return 取关操作结果
      */
     @DeleteMapping("/{id}/follow")
-    public FollowView unfollowUser(
-            @PathVariable("id") Long id,
-            @RequestParam("userId") Long userId) {
+    public FollowView unfollowUser(@PathVariable("id") Long id) {
+        Long userId = SecurityUtils.getCurrentUserId();
         return profileService.unfollowUser(userId, id);
     }
 
@@ -87,16 +82,14 @@ public class UserController {
 
     /**
      * 查询当前用户是否关注了目标用户。
-     * GET /api/users/{id}/is-following?userId=xxx
+     * GET /api/users/{id}/is-following
      *
-     * @param id     目标用户 ID
-     * @param userId 当前用户 ID
+     * @param id 目标用户 ID
      * @return 是否已关注
      */
     @GetMapping("/{id}/is-following")
-    public ResponseEntity<IsFollowingView> isFollowing(
-            @PathVariable("id") Long id,
-            @RequestParam("userId") Long userId) {
+    public ResponseEntity<IsFollowingView> isFollowing(@PathVariable("id") Long id) {
+        Long userId = SecurityUtils.getCurrentUserId();
         boolean following = profileService.isFollowing(userId, id);
         return ResponseEntity.ok(new IsFollowingView(following));
     }

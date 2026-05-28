@@ -135,6 +135,23 @@ export const clientApi = {
       method: "POST",
     });
   },
+  /**
+   * 获取基于对方资料的破冰话题列表（私信场景）。
+   * 返回结构化的破冰话题，含 id、content、category、source 字段。
+   * Mock 模式下返回本地硬编码数据。
+   * @param peerUserId - 对方的用户 ID
+   */
+  async getIcebreakers(peerUserId: number) {
+    if (useMock()) {
+      return mockFixtures.getIcebreakers(peerUserId);
+    }
+    return request<{
+      items: Array<{ id: number; content: string; category: string; source: string }>;
+    }>({
+      url: `/api/match/icebreakers/profile/${peerUserId}`,
+    });
+  },
+
   async getDiscussionRecommendations() {
     if (useMock()) {
       return mockFixtures.getDiscussionRecommendations();
@@ -302,12 +319,57 @@ export const clientApi = {
   },
 
   /**
+   * 获取社交升温进度数据。
+   * Mock 模式下返回本地硬编码数据。
+   */
+  async getSocialProgress() {
+    if (useMock()) {
+      return mockFixtures.getSocialProgress();
+    }
+    return request<{
+      currentTier: string;
+      tierLabel: string;
+      exposureCount: number;
+      likeCount: number;
+      matchCount: number;
+      chatCount: number;
+      circleCount: number;
+      activityCount: number;
+      nextAction: string;
+      progressPercentage: number;
+    }>({ url: "/api/growth/social-progress" });
+  },
+
+  /**
    * 登出：清除本地 Token 并跳转登录页。
    */
   logout() {
     clearTokens();
     uni.reLaunch({
       url: "/pages/login/index",
+    });
+  },
+
+  /**
+   * 检查内容是否包含敏感词。
+   * 在用户提交内容（发帖/评论/私信等）前调用，提示用户修改。
+   * 服务端仍会对所有内容进行过滤（替换为 ***），此 API 仅用于前端实时提示。
+   *
+   * @param content 待检查的内容
+   * @returns 包含敏感词提示的结果
+   */
+  async checkSensitiveWords(content: string) {
+    if (useMock()) {
+      // Mock 模式下返回无敏感词
+      return { hasSensitiveWords: false, filteredWords: [] as string[] };
+    }
+    return request<{
+      hasSensitiveWords: boolean;
+      filteredWords: string[];
+    }>({
+      url: "/content-filter/check",
+      method: "POST",
+      data: { content },
     });
   },
 };
@@ -323,4 +385,9 @@ export interface CheckInResultResponse {
   checkInDate: string;
   consecutiveDays: number;
   extraRecommendations: number;
+  extraRecommendQuota: number;
+  hotTopicsUnlocked: boolean;
+  newUsersUnlocked: boolean;
+  hotTopicCount: number;
+  newUserCount: number;
 }

@@ -1,5 +1,6 @@
 package com.campuslove.api.feedback;
 
+import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 反馈控制器。
+ * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
+ */
 @RestController
 public class FeedbackController {
 
@@ -43,6 +48,7 @@ public class FeedbackController {
   public List<SubmissionRecordView> listMySubmissions(
       @RequestParam(name = "type", required = false) FeedbackTicketType type
   ) {
+    // listMine 内部已通过 SecurityUtils 获取当前用户ID
     return feedbackService.listMine(type);
   }
 

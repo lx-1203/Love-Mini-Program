@@ -1,0 +1,18 @@
+<view class="tab-bar">
+  <view
+    wx:for="{{tabs}}"
+    wx:key="id"
+    class="tab-bar__item {{item.prominent ? 'tab-bar__item--prominent' : ''}} {{index === selected ? 'tab-bar__item--active' : ''}}"
+    data-index="{{index}}"
+    bindtap="switchTab"
+  >
+    <view class="tab-bar__icon-wrap">
+      <image
+        class="tab-bar__icon"
+        src="{{index === selected ? item.activeIconPath : item.iconPath}}"
+        mode="aspectFit"
+      />
+    </view>
+    <text class="tab-bar__label">{{item.label}}</text>
+  </view>
+</view>

@@ -1,0 +1,20 @@
+-- 用户表
+-- 在所有其他迁移之前执行，提供用户基础数据表
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    openid VARCHAR(128) NOT NULL,
+    nickname VARCHAR(64) NOT NULL DEFAULT '新同学',
+    avatar_url VARCHAR(512) DEFAULT NULL,
+    bio TEXT DEFAULT NULL,
+    grade_label VARCHAR(32) DEFAULT NULL,
+    pronouns VARCHAR(32) DEFAULT NULL,
+    phone VARCHAR(32) DEFAULT NULL,
+    profile_completion INT NOT NULL DEFAULT 0,
+    interest_tags JSON DEFAULT NULL,
+    following_count INT NOT NULL DEFAULT 0,
+    followers_count INT NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_users_openid (openid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户表';

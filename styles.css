@@ -5,7 +5,7 @@
   --bg-dark: #101727;
   --text-primary: #1f2430;
   --text-secondary: #5d667a;
-  --text-tertiary: #8a92a3;
+  --text-tertiary: #6b7280;
   --line-default: #e7eaf0;
   --primary-main: #ee5c7b;
   --primary-soft: #fff1f4;
@@ -163,8 +163,8 @@ button {
 }
 
 .ghost-icon {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -250,9 +250,12 @@ button {
 }
 
 .text-link {
-  color: var(--text-tertiary);
-  font-size: 12px;
+  color: var(--accent-teal);
+  font-size: 13px;
   font-weight: 500;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .capsule,
@@ -675,7 +678,7 @@ button {
 }
 
 .quick-setting-button {
-  height: 40px;
+  height: 44px;
   border-radius: 12px;
   background: #fff;
   color: var(--text-secondary);

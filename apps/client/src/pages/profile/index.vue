@@ -1,17 +1,20 @@
 <script setup lang="ts">
 /**
  * 个人中心 - 我的
- * 展示用户头像、昵称、学校、数据统计、资料完善度、功能菜单入口
+ * 展示用户头像、昵称、学校、数据统计、资料完善度、社交升温进度、功能菜单入口
  * 资料未完善时展示 LockScreen 锁定页面
  */
 import { computed, onMounted } from "vue";
 import { useSessionStore } from "../../stores/session";
 import { useProfileStore } from "../../stores/profile";
+import { useSocialProgressStore } from "../../stores/social-progress";
 import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
+import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
 
 const sessionStore = useSessionStore();
 const profileStore = useProfileStore();
+const socialProgressStore = useSocialProgressStore();
 
 /** 资料是否已完善（三个硬门槛全部完成） */
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
@@ -66,29 +69,29 @@ interface MenuItem {
 
 const menuItems = computed<MenuItem[]>(() => [
   {
-    icon: "💫",
-    label: "兴趣圈",
-    path: "/pages/circles/index",
+    icon: "📝",
+    label: "我的动态",
+    path: "/subpackages/profile/posts/index",
   },
   {
     icon: "🎯",
-    label: "推荐计划设置",
-    path: "/subpackages/setup/recommend-pref/index",
+    label: "情感实验室",
+    path: "/subpackages/profile/lab/index",
   },
   {
-    icon: "🏫",
-    label: "学校认证",
-    path: "/subpackages/setup/campus/index",
+    icon: "🎁",
+    label: "推荐给好友",
+    action: () => {
+      uni.showShareMenu({
+        withShareTicket: true,
+        menus: ["shareAppMessage", "shareTimeline"],
+      });
+    },
   },
   {
-    icon: "📅",
-    label: "时间安排",
-    path: "/subpackages/setup/schedule/index",
-  },
-  {
-    icon: "💬",
-    label: "反馈中心",
-    path: "/subpackages/support/feedback/index",
+    icon: "⚙️",
+    label: "设置",
+    path: "/subpackages/profile/settings/index",
   },
   {
     icon: "ℹ️",
@@ -122,12 +125,16 @@ function goToProfileSetup() {
   openAppPath("/subpackages/setup/profile/index");
 }
 
-/** 应用版本号（当前硬编码，后续可从配置文件读取） */
-const appVersion = "v1.0.0";
+/** 应用版本号 */
+const appVersion = import.meta.env.VITE_APP_VERSION ?? "v1.0.0";
+
+/** 是否为开发环境（Vite 编译期替换，避免在模板中直接使用 import.meta） */
+const isDev = import.meta.env.DEV;
 
 /** 页面加载时获取统计数据 */
 onMounted(() => {
   profileStore.loadStats();
+  socialProgressStore.fetchProgress();
 });
 </script>
 
@@ -184,6 +191,22 @@ onMounted(() => {
           <text class="stats-row__value">{{ stat.value }}</text>
           <text class="stats-row__label">{{ stat.label }}</text>
         </view>
+      </view>
+
+      <!-- 高级会员卡片 -->
+      <view class="vip-card" @tap="openAppPath('/subpackages/vip/index')">
+        <view class="vip-card__left">
+          <text class="vip-card__title">⭐ 高级会员</text>
+          <text class="vip-card__subtitle">解锁空档查看 · 优先推荐 · 隐身浏览</text>
+        </view>
+        <view class="vip-card__btn">
+          <text>立即开通</text>
+        </view>
+      </view>
+
+      <!-- 社交升温进度追踪 -->
+      <view class="social-progress-section">
+        <SocialProgressIndicator />
       </view>
 
       <!-- 资料完善度卡片 -->
@@ -246,6 +269,11 @@ onMounted(() => {
         <text class="footer-version__text">{{ appVersion }}</text>
       </view>
 
+      <!-- [DEV-MODE] 开发者模式入口按钮 - 生产构建时移除 -->
+      <view v-if="isDev" class="dev-entry" @tap="openAppPath('/pages/dev/index')">
+        <text class="dev-entry__text">DEV</text>
+      </view>
+
       <!-- 底部安全区占位 -->
       <view class="safe-bottom" />
     </template>
@@ -258,7 +286,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--td-bg-color-page, #f5f6fa);
+  background-color: var(--td-bg-app-page);
   box-sizing: border-box;
 }
 
@@ -279,9 +307,10 @@ onMounted(() => {
   align-items: center;
   margin: 0 32rpx 24rpx;
   padding: 36rpx 32rpx;
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+  box-shadow: var(--td-shadow-1);
+  border: 1px solid var(--td-border-level-1-color);
   position: relative;
 }
 
@@ -295,10 +324,12 @@ onMounted(() => {
   width: 140rpx;
   height: 140rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--td-brand-color-6) 0%, var(--td-brand-color-7) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 4rpx solid #ffffff;
+  box-shadow: 0 4rpx 16rpx rgba(37, 99, 235, 0.2);
 }
 
 .profile-card__avatar-text {
@@ -315,7 +346,7 @@ onMounted(() => {
   width: 28rpx;
   height: 28rpx;
   border-radius: 50%;
-  background: #22c55e;
+  background: #10b981;
   border: 4rpx solid #ffffff;
 }
 
@@ -330,7 +361,7 @@ onMounted(() => {
 .profile-card__name {
   font-size: 36rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary, #1a1a2e);
+  color: var(--td-text-color-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -338,7 +369,7 @@ onMounted(() => {
 
 .profile-card__campus {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary, #6b7280);
+  color: var(--td-text-color-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -346,7 +377,7 @@ onMounted(() => {
 
 .profile-card__bio {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder, #9ca3af);
+  color: var(--td-text-color-placeholder);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -359,7 +390,8 @@ onMounted(() => {
   gap: 6rpx;
   padding: 12rpx 24rpx;
   border-radius: 32rpx;
-  background: var(--td-bg-color-container, #f3f4f6);
+  background: var(--td-brand-color-1);
+  border: 1px solid var(--td-brand-color-3);
   margin-left: 16rpx;
 }
 
@@ -373,7 +405,7 @@ onMounted(() => {
 
 .profile-card__edit-text {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary, #6b7280);
+  color: var(--td-brand-color-6);
   font-weight: 500;
 }
 
@@ -384,7 +416,8 @@ onMounted(() => {
   padding: 32rpx 0;
   background: #ffffff;
   border-radius: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+  box-shadow: var(--td-shadow-1);
+  border: 1px solid var(--td-border-level-1-color);
 }
 
 .stats-row__item {
@@ -402,20 +435,66 @@ onMounted(() => {
     top: 20%;
     height: 60%;
     width: 2rpx;
-    background: var(--td-border-level-2-color, #f3f4f6);
+    background: var(--td-border-level-1-color);
   }
 }
 
 .stats-row__value {
   font-size: 40rpx;
   font-weight: 800;
-  color: var(--td-text-color-primary, #1a1a2e);
+  color: var(--td-text-color-primary);
   line-height: 1;
 }
 
 .stats-row__label {
   font-size: 24rpx;
-  color: var(--td-text-color-secondary, #6b7280);
+  color: var(--td-text-color-secondary);
+}
+
+/* ==================== 会员卡片 ==================== */
+.vip-card {
+  margin: 0 32rpx 24rpx;
+  padding: 32rpx;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-radius: 24rpx;
+  box-shadow: var(--td-shadow-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vip-card__left {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.vip-card__title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.vip-card__subtitle {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.vip-card__btn {
+  padding: 12rpx 28rpx;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.vip-card__btn text {
+  font-size: 26rpx;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* ==================== 社交升温进度区块 ==================== */
+.social-progress-section {
+  margin: 0 32rpx 24rpx;
 }
 
 /* ==================== 资料完善度卡片 ==================== */
@@ -424,7 +503,8 @@ onMounted(() => {
   padding: 28rpx 32rpx;
   background: #ffffff;
   border-radius: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+  box-shadow: var(--td-shadow-1);
+  border: 1px solid var(--td-border-level-1-color);
 }
 
 .completion-card__header {
@@ -437,13 +517,13 @@ onMounted(() => {
 .completion-card__title {
   font-size: 28rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary, #1a1a2e);
+  color: var(--td-text-color-primary);
 }
 
 .completion-card__percent {
   font-size: 28rpx;
   font-weight: 700;
-  color: var(--td-brand-color, #667eea);
+  color: var(--td-brand-color-6);
 }
 
 .completion-card__bar-wrap {
@@ -454,14 +534,14 @@ onMounted(() => {
   width: 100%;
   height: 12rpx;
   border-radius: 6rpx;
-  background: var(--td-bg-color-component, #e5e7eb);
+  background: var(--td-bg-color-surface);
   overflow: hidden;
 }
 
 .completion-card__bar-fill {
   height: 100%;
   border-radius: 6rpx;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, var(--td-brand-color-6) 0%, var(--td-brand-color-7) 100%);
   transition: width 0.4s ease;
 }
 
@@ -471,7 +551,7 @@ onMounted(() => {
   gap: 8rpx;
   padding: 16rpx 20rpx;
   border-radius: 16rpx;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+  background: var(--td-brand-color-1);
 }
 
 .completion-card__action:active {
@@ -485,13 +565,13 @@ onMounted(() => {
 .completion-card__action-text {
   flex: 1;
   font-size: 26rpx;
-  color: var(--td-brand-color, #667eea);
+  color: var(--td-brand-color-6);
   font-weight: 500;
 }
 
 .completion-card__action-arrow {
   font-size: 28rpx;
-  color: var(--td-brand-color, #667eea);
+  color: var(--td-brand-color-6);
   font-weight: 600;
 }
 
@@ -502,7 +582,7 @@ onMounted(() => {
 
 .completion-card__done-text {
   font-size: 26rpx;
-  color: var(--td-success-color, #22c55e);
+  color: var(--td-success-color);
   font-weight: 500;
 }
 
@@ -514,7 +594,7 @@ onMounted(() => {
 .menu-section__title {
   display: block;
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder, #9ca3af);
+  color: var(--td-text-color-placeholder);
   font-weight: 500;
   margin-bottom: 16rpx;
   padding-left: 8rpx;
@@ -523,7 +603,8 @@ onMounted(() => {
 .menu-list {
   background: #ffffff;
   border-radius: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+  box-shadow: var(--td-shadow-1);
+  border: 1px solid var(--td-border-level-1-color);
   overflow: hidden;
 }
 
@@ -532,10 +613,10 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 28rpx 32rpx;
-  border-bottom: 1rpx solid var(--td-border-level-1-color, #f3f4f6);
+  border-bottom: 1rpx solid var(--td-border-level-1-color);
 
   &:active {
-    background: var(--td-bg-color-container-active, #f9fafb);
+    background: var(--td-bg-color-surface);
   }
 
   &--last {
@@ -557,13 +638,13 @@ onMounted(() => {
 
 .menu-list__label {
   font-size: 28rpx;
-  color: var(--td-text-color-primary, #1a1a2e);
+  color: var(--td-text-color-primary);
   font-weight: 500;
 }
 
 .menu-list__arrow {
   font-size: 36rpx;
-  color: var(--td-text-color-placeholder, #c5c5c5);
+  color: var(--td-text-color-placeholder);
   font-weight: 300;
 }
 
@@ -576,6 +657,27 @@ onMounted(() => {
 
 .footer-version__text {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder, #c5c5c5);
+  color: var(--td-text-color-placeholder);
+}
+
+/* ==================== [DEV-MODE] 开发者入口 - 删除时移除此块 ==================== */
+.dev-entry {
+  display: flex;
+  justify-content: center;
+  padding: 24rpx 0;
+}
+
+.dev-entry:active {
+  opacity: 0.6;
+}
+
+.dev-entry__text {
+  font-size: 24rpx;
+  font-weight: 800;
+  color: #ffffff;
+  background: #ef4444;
+  padding: 10rpx 32rpx;
+  border-radius: 12rpx;
+  letter-spacing: 4rpx;
 }
 </style>

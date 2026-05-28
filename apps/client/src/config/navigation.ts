@@ -1,4 +1,4 @@
-export type AppTabId = "discover" | "likes" | "village" | "messages" | "profile";
+export type AppTabId = "home" | "circle" | "chat" | "shop" | "campus" | "profile";
 
 export interface AppTab {
   id: AppTabId;
@@ -11,39 +11,45 @@ export interface AppTab {
 
 export const appTabs: AppTab[] = [
   {
-    id: "discover",
-    label: "寻觅",
-    path: "/pages/discover/index",
-    iconPath: "/assets/icons/discover.svg",
-    activeIconPath: "/assets/icons/discover-active.svg",
+    id: "home",
+    label: "首页",
+    path: "/pages/home/index",
+    iconPath: "static/assets/icons/home.png",
+    activeIconPath: "static/assets/icons/home-active.png",
   },
   {
-    id: "likes",
-    label: "喜欢",
-    path: "/pages/likes/index",
-    iconPath: "/assets/icons/likes.svg",
-    activeIconPath: "/assets/icons/likes-active.svg",
+    id: "circle",
+    label: "圈子",
+    path: "/pages/circle/index",
+    iconPath: "static/assets/icons/circle.png",
+    activeIconPath: "static/assets/icons/circle-active.png",
   },
   {
-    id: "village",
-    label: "村口",
-    path: "/pages/village/index",
-    iconPath: "/assets/icons/village.svg",
-    activeIconPath: "/assets/icons/village-active.svg",
-    prominent: true,
+    id: "chat",
+    label: "聊天",
+    path: "/pages/chat/index",
+    iconPath: "static/assets/icons/chat.png",
+    activeIconPath: "static/assets/icons/chat-active.png",
   },
   {
-    id: "messages",
-    label: "消息",
-    path: "/pages/messages/index",
-    iconPath: "/assets/icons/messages.svg",
-    activeIconPath: "/assets/icons/messages-active.svg",
+    id: "shop",
+    label: "逛逛",
+    path: "/pages/shop/index",
+    iconPath: "static/assets/icons/shop.png",
+    activeIconPath: "static/assets/icons/shop-active.png",
+  },
+  {
+    id: "campus",
+    label: "校园",
+    path: "/pages/campus/index",
+    iconPath: "static/assets/icons/village.png",
+    activeIconPath: "static/assets/icons/village-active.png",
   },
   {
     id: "profile",
     label: "我的",
     path: "/pages/profile/index",
-    iconPath: "/assets/icons/profile.svg",
-    activeIconPath: "/assets/icons/profile-active.svg",
+    iconPath: "static/assets/icons/profile.png",
+    activeIconPath: "static/assets/icons/profile-active.png",
   },
 ];

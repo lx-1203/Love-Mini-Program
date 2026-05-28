@@ -96,9 +96,10 @@ public interface RecommendationService {
      * @param userId           用户 ID
      * @param preferredTime    推荐时间偏好
      * @param scope            推荐范围
+     * @param campusPriority   校园优先开关
      * @return 更新后的推荐偏好视图
      */
-    RecommendationPreferencesView savePreferences(Long userId, String preferredTime, String scope);
+    RecommendationPreferencesView savePreferences(Long userId, String preferredTime, String scope, Boolean campusPriority);
 
     /**
      * 获取今日已查看的推荐历史。

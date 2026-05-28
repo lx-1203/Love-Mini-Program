@@ -8,6 +8,7 @@ import { storeToRefs } from "pinia";
 import { useDiscoverStore } from "../../stores/discover";
 import { useActivityStore } from "../../stores/activity";
 import { useCheckInStore } from "../../stores/checkin";
+import { useDailyQuestionStore } from "../../stores/daily-question";
 import { openAppPath } from "../../utils/navigation";
 import CardSwiper from "../../components/discover/CardSwiper.vue";
 import type { SwipeDirection } from "../../stores/discover";
@@ -17,6 +18,7 @@ const { cards, remainingCount, hasMore, loading, errorMessage } = storeToRefs(di
 
 const activityStore = useActivityStore();
 const checkInStore = useCheckInStore();
+const dailyQuestionStore = useDailyQuestionStore();
 
 /**
  * 处理滑动事件
@@ -101,6 +103,52 @@ onMounted(() => {
       </view>
     </view>
 
+    <!-- 签到权益卡片：签到成功后展示权益入口 -->
+    <view v-if="checkInStore.checkedIn && !checkInStore.showSuccessAnimation" class="benefits-section">
+      <!-- 推荐配额权益 -->
+      <view v-if="checkInStore.extraQuotaText" class="benefit-card benefit-card--quota">
+        <view class="benefit-card__left">
+          <text class="benefit-card__icon">🎯</text>
+          <view class="benefit-card__info">
+            <text class="benefit-card__title">推荐配额提升</text>
+            <text class="benefit-card__desc">{{ checkInStore.extraQuotaText }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 热门话题入口（可点击跳转） -->
+      <view
+        v-if="checkInStore.hotTopicsText"
+        class="benefit-card benefit-card--clickable"
+        @click="openAppPath('/pages/village/index?tab=hot')"
+      >
+        <view class="benefit-card__left">
+          <text class="benefit-card__icon">🔥</text>
+          <view class="benefit-card__info">
+            <text class="benefit-card__title">热门话题</text>
+            <text class="benefit-card__desc">{{ checkInStore.hotTopicsText }}</text>
+          </view>
+        </view>
+        <text class="benefit-card__arrow">›</text>
+      </view>
+
+      <!-- 新入圈用户入口（可点击跳转） -->
+      <view
+        v-if="checkInStore.newUsersText"
+        class="benefit-card benefit-card--clickable"
+        @click="openAppPath('/pages/circle/index')"
+      >
+        <view class="benefit-card__left">
+          <text class="benefit-card__icon">👋</text>
+          <view class="benefit-card__info">
+            <text class="benefit-card__title">新入圈用户</text>
+            <text class="benefit-card__desc">{{ checkInStore.newUsersText }}</text>
+          </view>
+        </view>
+        <text class="benefit-card__arrow">›</text>
+      </view>
+    </view>
+
     <!-- 每日一问入口：签到后展示 -->
     <view
       v-if="checkInStore.checkedIn && !checkInStore.showSuccessAnimation"
@@ -111,7 +159,7 @@ onMounted(() => {
         <text class="daily-question-card__icon">💡</text>
         <view class="daily-question-card__info">
           <text class="daily-question-card__title">每日一问</text>
-          <text class="daily-question-card__desc">今日话题：你理想中的第一次约会是什么样？</text>
+          <text class="daily-question-card__desc">{{ dailyQuestionStore.todayQuestion?.question ?? "今日话题：你理想中的第一次约会是什么样？" }}</text>
           <text v-if="checkInStore.consecutiveDaysText" class="daily-question-card__streak">
             {{ checkInStore.consecutiveDaysText }}
           </text>
@@ -147,7 +195,7 @@ onMounted(() => {
         <text class="activity-recommend__subtitle">从线下活动开始，轻松认识新朋友</text>
       </view>
       <view class="activity-list">
-        <view v-for="item in activityStore.activities.slice(0, 3)" :key="item.id" class="activity-card" @tap="openAppPath('/pages/activities/index')">
+        <view v-for="item in activityStore.activities.slice(0, 3)" :key="item.id" class="activity-card" @tap="openAppPath('/subpackages/discover/activities/index')">
           <view class="activity-card__info">
             <text class="activity-card__title">{{ item.title }}</text>
             <text class="activity-card__location">📍 {{ item.location }}</text>
@@ -156,7 +204,7 @@ onMounted(() => {
           <view class="activity-card__arrow">›</view>
         </view>
       </view>
-      <view class="activity-recommend__more" @tap="openAppPath('/pages/activities/index')">
+      <view class="activity-recommend__more" @tap="openAppPath('/subpackages/discover/activities/index')">
         <text class="activity-recommend__more-text">查看更多活动</text>
       </view>
     </view>
@@ -334,6 +382,75 @@ onMounted(() => {
 .checkin-success__streak {
   font-size: 22rpx;
   color: var(--td-text-color-placeholder);
+}
+
+/* ========== 签到权益卡片区域 ========== */
+.benefits-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin: 0 32rpx 16rpx;
+}
+
+.benefit-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  background: var(--td-bg-color-container);
+  box-shadow: var(--td-shadow-1);
+}
+
+.benefit-card--clickable {
+  transition: transform 0.2s ease;
+}
+
+.benefit-card--clickable:active {
+  transform: scale(0.98);
+}
+
+.benefit-card--quota {
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.04), rgba(29, 78, 216, 0.01));
+  border: 1px solid rgba(29, 78, 216, 0.08);
+}
+
+.benefit-card__left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.benefit-card__icon {
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.benefit-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.benefit-card__title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--td-text-color-primary);
+}
+
+.benefit-card__desc {
+  font-size: 24rpx;
+  color: var(--td-text-color-secondary);
+}
+
+.benefit-card__arrow {
+  font-size: 36rpx;
+  color: var(--td-text-color-placeholder);
+  font-weight: 300;
+  flex-shrink: 0;
 }
 
 /* ========== 每日一问入口卡片 ========== */

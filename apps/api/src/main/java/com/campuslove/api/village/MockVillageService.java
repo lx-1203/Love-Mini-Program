@@ -37,10 +37,23 @@ public class MockVillageService implements VillageService {
 
   @Override
   public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize) {
+    return getPosts(category, tag, sortBy, page, pageSize, null);
+  }
+
+  @Override
+  public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize, Long userId) {
     List<PostData> filtered = posts.stream()
         .filter(p -> category == null || "all".equals(category) || p.category.equals(category))
         .filter(p -> tag == null || (p.tags != null && p.tags.contains(tag)))
         .toList();
+
+    // 校园分类：按 campus 进行筛选
+    if ("campus".equals(category)) {
+      String mockCampusName = "南校区";
+      filtered = filtered.stream()
+          .filter(p -> mockCampusName.equals(p.authorCampus))
+          .toList();
+    }
 
     List<PostData> sorted = switch (sortBy == null ? "latest" : sortBy) {
       case "hottest" -> filtered.stream()
@@ -219,11 +232,36 @@ public class MockVillageService implements VillageService {
 
   // ---- 同校动态流 ----
 
-  @Override
-  public CampusFeedView getCampusFeed(Long userId, int page, int size) {
-    // Mock 实现：返回空动态流
-    return new CampusFeedView("南校区", List.of(), List.of(), List.of());
-  }
+    @Override
+    public CampusFeedView getCampusFeed(Long userId, int page, int size) {
+        // Mock 实现：返回空动态流
+        return new CampusFeedView("南校区", List.of(), List.of(), List.of());
+    }
+
+    // ---- 相似作者推荐 ----
+
+    @Override
+    public SimilarAuthorsResponse getSimilarAuthors(Long postId, Long userId) {
+        if (postId == null || userId == null) {
+            throw new IllegalArgumentException("postId and userId are required");
+        }
+
+        // Mock 数据：返回 2 个不同的相似作者
+        List<SimilarAuthorView> authors = List.of(
+            new SimilarAuthorView(
+                1003L, "周沐", null, "南校区",
+                "大二计算机 · 喜欢学习和徒步",
+                true, List.of("学习", "高数"), false
+            ),
+            new SimilarAuthorView(
+                1004L, "许诺", null, "北校区",
+                "摄影爱好者 · 周末出去走走",
+                false, List.of("摄影", "旅行"), false
+            )
+        );
+
+        return new SimilarAuthorsResponse(authors);
+    }
 
   private PostData findPost(Long id) {
     return posts.stream()

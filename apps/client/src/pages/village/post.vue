@@ -2,10 +2,13 @@
 /**
  * 发帖页
  * 支持文字输入、图片上传、话题标签和分类选择
+ * 新增：预置话题标签选择器，支持横向滚动多选（最多3个）
  */
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useVillageStore } from "../../stores/village";
 import { openAppPath } from "../../utils/navigation";
+import { request } from "../../services/http";
+import { appEnv } from "../../services/env";
 
 const villageStore = useVillageStore();
 
@@ -20,10 +23,17 @@ const tags = ref<string[]>([]);
 /** 选中的分类 */
 const selectedCategory = ref("cat-sincere");
 
+/** 预置话题标签列表 */
+const presetTags = ref<string[]>([]);
+/** 选中的预置标签（#话题名 格式） */
+const selectedPresetTags = ref<string[]>([]);
+
 /** 最大字数 */
 const MAX_LENGTH = 500;
 /** 最大图片数 */
 const MAX_IMAGES = 9;
+/** 预置标签最大选择数 */
+const MAX_PRESET_TAGS = 3;
 
 /** 当前字数 */
 const currentLength = computed(() => content.value.length);
@@ -39,7 +49,78 @@ const categoryOptions = [
 ];
 
 /**
- * 选择图片上传
+ * 加载预置话题标签（从后端获取）
+ */
+async function loadPresetTags() {
+  try {
+    if (appEnv.apiMode === "mock") {
+      // Mock 模式下使用本地预置标签
+      presetTags.value = [
+        "校园日常", "兴趣分享", "找搭子", "求助",
+        "表白墙", "校友动态", "生活记录", "技术交流",
+      ];
+      return;
+    }
+    // Real 模式下从后端 API 获取
+    const data = await request<string[]>({
+      url: "/post-tags",
+      method: "GET",
+    });
+    presetTags.value = data;
+  } catch {
+    // 加载失败时使用默认列表
+    presetTags.value = [
+      "校园日常", "兴趣分享", "找搭子", "求助",
+      "表白墙", "校友动态", "生活记录", "技术交流",
+    ];
+  }
+}
+
+/**
+ * 切换预置标签选中状态
+ */
+function togglePresetTag(tagName: string) {
+  const tag = "#" + tagName;
+  const idx = selectedPresetTags.value.indexOf(tag);
+  if (idx >= 0) {
+    // 已选中，取消选中
+    selectedPresetTags.value.splice(idx, 1);
+  } else {
+    // 未选中，检查数量限制
+    if (selectedPresetTags.value.length >= MAX_PRESET_TAGS) {
+      uni.showToast({ title: `最多选择${MAX_PRESET_TAGS}个话题标签`, icon: "none" });
+      return;
+    }
+    selectedPresetTags.value.push(tag);
+  }
+}
+
+onMounted(() => {
+  loadPresetTags();
+});
+
+/**
+ * 上传图片到服务器（仅 real 模式使用）
+ * 上传单个临时文件，返回服务器 URL
+ */
+async function uploadImage(tempPath: string): Promise<string> {
+  // real 模式：调用上传 API
+  try {
+    const res = await uni.uploadFile({
+      url: "/api/upload",
+      filePath: tempPath,
+      name: "file",
+    });
+    const data = JSON.parse(res.data);
+    return data.url ?? data.path ?? tempPath;
+  } catch {
+    // 上传失败时回退到临时路径（mock 模式行为）
+    return tempPath;
+  }
+}
+
+/**
+ * 选择图片
  */
 function chooseImage() {
   if (images.value.length >= MAX_IMAGES) {
@@ -123,12 +204,15 @@ async function submitPost() {
   }
 
   try {
+    // 合并预置标签和自定义标签
+    const allTags = [...selectedPresetTags.value, ...tags.value];
+
     await villageStore.createPost({
       categoryId: selectedCategory.value,
       title: "",
       content: content.value.trim(),
       images: images.value,
-      tags: tags.value,
+      tags: allTags,
     });
 
     uni.showToast({ title: "发布成功", icon: "success" });
@@ -196,6 +280,27 @@ function goBack() {
       <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
         <text>{{ currentLength }}/{{ MAX_LENGTH }}</text>
       </view>
+    </view>
+
+    <!-- 预置话题标签选择器 -->
+    <view class="preset-tags-section">
+      <view class="section-header">
+        <text class="section-label">话题标签</text>
+        <text class="section-hint">最多选择{{ MAX_PRESET_TAGS }}个</text>
+      </view>
+      <scroll-view class="preset-tags-scroll" scroll-x :show-scrollbar="false" :enhanced="true">
+        <view class="preset-tags-inner">
+          <view
+            v-for="tag in presetTags"
+            :key="tag"
+            class="preset-tag-chip"
+            :class="{ 'preset-tag-chip--active': selectedPresetTags.includes('#' + tag) }"
+            @tap="togglePresetTag(tag)"
+          >
+            <text class="preset-tag-chip__text">#{{ tag }}</text>
+          </view>
+        </view>
+      </scroll-view>
     </view>
 
     <!-- 图片上传区 -->
@@ -378,6 +483,63 @@ function goBack() {
 
 .content-count--over {
   color: var(--td-error-color);
+}
+
+/* ========== 预置话题标签选择器 ========== */
+.preset-tags-section {
+  padding: 24rpx 32rpx;
+  background: var(--td-bg-color-container);
+  margin-bottom: 16rpx;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.section-hint {
+  font-size: 22rpx;
+  color: var(--td-text-color-placeholder);
+}
+
+.preset-tags-scroll {
+  white-space: nowrap;
+}
+
+.preset-tags-inner {
+  display: flex;
+  gap: 16rpx;
+  padding: 4rpx 0;
+}
+
+.preset-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 14rpx 28rpx;
+  border-radius: 999px;
+  background: var(--td-bg-app-page);
+  border: 2rpx solid transparent;
+  transition: all 160ms ease;
+  flex-shrink: 0;
+}
+
+.preset-tag-chip--active {
+  background: var(--td-brand-color-1);
+  border-color: var(--td-brand-color-7);
+}
+
+.preset-tag-chip__text {
+  font-size: 26rpx;
+  color: var(--td-text-color-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.preset-tag-chip--active .preset-tag-chip__text {
+  color: var(--td-brand-color-7);
+  font-weight: 600;
 }
 
 /* ========== 图片上传区 ========== */

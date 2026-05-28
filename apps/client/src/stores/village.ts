@@ -49,6 +49,8 @@ export interface PostItem {
   isFollowed: boolean;
   /** 当前用户是否已转发 */
   isShared: boolean;
+  /** 作者是否与当前用户同校 */
+  isAlumni: boolean;
   createdAt: string;
 }
 
@@ -66,12 +68,31 @@ export interface CommentItem {
 }
 
 /**
+ * 相似作者推荐项
+ */
+export interface SimilarAuthor {
+  userId: string;
+  name: string;
+  avatar: string;
+  campusName: string;
+  headline: string;
+  /** 是否同校 */
+  isAlumni: boolean;
+  /** 共同兴趣标签 */
+  commonInterests: string[];
+  /** 当前用户是否已关注 */
+  isFollowed: boolean;
+}
+
+/**
  * 帖子筛选条件
  */
 export interface PostFilters {
   categoryId?: string;
   keyword?: string;
   sortBy?: "latest" | "hot";
+  /** 当前用户 ID，用于校园分类筛选 */
+  userId?: string;
 }
 
 /**
@@ -102,6 +123,10 @@ export interface VillageState {
   campusFeedTopics: Record<string, unknown>[];
   /** 同校动态流是否正在加载 */
   loadingCampusFeed: boolean;
+  /** 相似作者推荐列表 */
+  similarAuthors: SimilarAuthor[];
+  /** 相似作者推荐是否正在加载 */
+  loadingSimilarAuthors: boolean;
 }
 
 /* ========== Mock 数据 ========== */
@@ -111,7 +136,7 @@ const mockCategories: PostCategory[] = [
   { id: "cat-interest", name: "兴趣圈", icon: "heart" },
   { id: "cat-sincere", name: "诚意帖", icon: "star" },
   { id: "cat-hometown", name: "同乡", icon: "location" },
-  { id: "cat-mask", name: "蒙面", icon: "eye-off" },
+  { id: "cat-campus", name: "校园", icon: "school" },
   { id: "cat-latest", name: "最新", icon: "time" },
 ];
 
@@ -174,6 +199,7 @@ const mockPosts: PostItem[] = [
     isLiked: false,
     isFollowed: false,
     isShared: false,
+    isAlumni: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
   },
   {
@@ -191,6 +217,7 @@ const mockPosts: PostItem[] = [
     isLiked: true,
     isFollowed: true,
     isShared: true,
+    isAlumni: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
   {
@@ -208,6 +235,7 @@ const mockPosts: PostItem[] = [
     isLiked: false,
     isFollowed: false,
     isShared: false,
+    isAlumni: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
   },
   {
@@ -225,6 +253,7 @@ const mockPosts: PostItem[] = [
     isLiked: false,
     isFollowed: false,
     isShared: false,
+    isAlumni: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
   },
   {
@@ -242,6 +271,7 @@ const mockPosts: PostItem[] = [
     isLiked: true,
     isFollowed: false,
     isShared: false,
+    isAlumni: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
   },
   {
@@ -259,6 +289,7 @@ const mockPosts: PostItem[] = [
     isLiked: false,
     isFollowed: false,
     isShared: false,
+    isAlumni: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
   },
 ];
@@ -442,6 +473,7 @@ function mapToPostItem(raw: PostSummaryView): PostItem {
     isLiked: false, // PostSummaryView 无 isLiked 字段
     isFollowed: false, // PostSummaryView 无 isFollowed 字段
     isShared: false, // PostSummaryView 无 isShared 字段
+    isAlumni: raw.isAlumni ?? false,
     createdAt: raw.createdAt,
   };
 }
@@ -512,6 +544,8 @@ export const useVillageStore = defineStore("village", {
     campusFeedActivities: [],
     campusFeedTopics: [],
     loadingCampusFeed: false,
+    similarAuthors: [],
+    loadingSimilarAuthors: false,
   }),
 
   getters: {
@@ -521,7 +555,20 @@ export const useVillageStore = defineStore("village", {
         let result = [...state.posts];
 
         if (filters?.categoryId && filters.categoryId !== "cat-all") {
-          result = result.filter((post) => post.categoryId === filters.categoryId);
+          if (filters.categoryId === "cat-campus") {
+            // 校园分类：按同校筛选
+            try {
+              const sessionStore = useSessionStore();
+              const myCampus = sessionStore.userSession?.campusName ?? "";
+              if (myCampus) {
+                result = result.filter((post) => post.author.campusName === myCampus);
+              }
+            } catch {
+              // 无法获取 sessionStore 时忽略
+            }
+          } else {
+            result = result.filter((post) => post.categoryId === filters.categoryId);
+          }
         }
 
         if (filters?.keyword) {
@@ -568,7 +615,22 @@ export const useVillageStore = defineStore("village", {
           let result = [...mockPosts];
 
           if (filters?.categoryId && filters.categoryId !== "cat-all") {
-            result = result.filter((post) => post.categoryId === filters.categoryId);
+            // 校园分类：按用户 campusName 筛选
+            if (filters.categoryId === "cat-campus") {
+              try {
+                const sessionStore = useSessionStore();
+                const myCampus = sessionStore.userSession?.campusName ?? "";
+                if (myCampus) {
+                  result = result.filter((post) => post.author.campusName === myCampus);
+                } else {
+                  result = [];
+                }
+              } catch {
+                result = [];
+              }
+            } else {
+              result = result.filter((post) => post.categoryId === filters.categoryId);
+            }
           }
 
           if (filters?.keyword) {
@@ -594,16 +656,24 @@ export const useVillageStore = defineStore("village", {
         }
 
         // 调用后端 API: GET /api/posts
-        // 后端参数: category, tag, sortBy, page, pageSize
+        // 后端参数: category, tag, sortBy, page, pageSize, userId
         const params: Record<string, string> = {};
         if (filters?.categoryId && filters.categoryId !== "cat-all") {
-          params.category = filters.categoryId; // 后端参数名为 category，非 categoryId
+          // 去掉 "cat-" 前缀，转换为后端分类名
+          const backendCategory = filters.categoryId.startsWith("cat-")
+            ? filters.categoryId.substring(4)
+            : filters.categoryId;
+          params.category = backendCategory;
         }
         if (filters?.keyword) {
-          params.tag = filters.keyword; // 后端用 tag 做关键词过滤
+          params.tag = filters.keyword;
         }
         if (filters?.sortBy) {
           params.sortBy = filters.sortBy;
+        }
+        // 校园分类需要传 userId
+        if (filters?.userId && filters.categoryId === "cat-campus") {
+          params.userId = filters.userId;
         }
         const currentPage = reset ? 1 : this.page;
         params.page = String(currentPage);
@@ -695,6 +765,7 @@ export const useVillageStore = defineStore("village", {
             isLiked: false,
             isFollowed: false,
             isShared: false,
+            isAlumni: false,
             createdAt: new Date().toISOString(),
           };
           this.posts.unshift(newPost);
@@ -735,6 +806,7 @@ export const useVillageStore = defineStore("village", {
           isLiked: result.isLiked,
           isFollowed: false,
           isShared: false,
+          isAlumni: result.isAlumni ?? false,
           createdAt: result.createdAt,
         };
         this.posts.unshift(newPost);
@@ -944,6 +1016,49 @@ export const useVillageStore = defineStore("village", {
     },
 
     /**
+     * 点赞/取消点赞评论
+     * @param commentId - 评论 ID（toggle 操作）
+     */
+    async likeComment(commentId: string) {
+      this.errorMessage = null;
+
+      try {
+        if (!commentId || commentId.trim().length === 0) {
+          this.errorMessage = "评论 ID 无效";
+          throw new Error("评论 ID 无效");
+        }
+
+        if (useMock()) {
+          const comment = this.comments.find((c) => c.id === commentId);
+          if (!comment) {
+            this.errorMessage = "评论不存在";
+            throw new Error("评论不存在");
+          }
+
+          // toggle 点赞状态
+          comment.isLiked = !comment.isLiked;
+          comment.likes += comment.isLiked ? 1 : -1;
+          return;
+        }
+
+        // 调用后端 API: POST /api/posts/comments/{commentId}/like
+        await request<void>({
+          url: `/posts/comments/${commentId}/like`,
+          method: "POST",
+        });
+
+        const comment = this.comments.find((c) => c.id === commentId);
+        if (comment) {
+          comment.isLiked = !comment.isLiked;
+          comment.likes += comment.isLiked ? 1 : -1;
+        }
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "点赞评论失败";
+        throw error;
+      }
+    },
+
+    /**
      * 转发帖子
      * @param postId - 帖子 ID
      * @param comment - 转发的附加评论（可选）
@@ -1072,6 +1187,7 @@ export const useVillageStore = defineStore("village", {
           isLiked: data.isLiked,
           isFollowed: false,
           isShared: false,
+          isAlumni: data.isAlumni ?? false,
           createdAt: data.createdAt,
         };
       } catch (error) {
@@ -1181,6 +1297,7 @@ export const useVillageStore = defineStore("village", {
             isLiked: Boolean(raw.isLiked ?? false),
             isFollowed: Boolean(raw.isFollowed ?? false),
             isShared: Boolean(raw.isShared ?? false),
+            isAlumni: Boolean(raw.isAlumni ?? false),
             createdAt: String(raw.createdAt ?? new Date().toISOString()),
           };
         });
@@ -1191,6 +1308,70 @@ export const useVillageStore = defineStore("village", {
         this.errorMessage = error instanceof Error ? error.message : "加载同校动态失败";
       } finally {
         this.loadingCampusFeed = false;
+      }
+    },
+
+    /**
+     * 获取相似作者推荐。
+     * 基于帖子作者的校区和兴趣标签，推荐 1-2 位相似用户。
+     * Mock 模式返回本地模拟数据，Real 模式调用 GET /api/posts/{postId}/similar-authors
+     *
+     * @param postId - 帖子 ID
+     */
+    async fetchSimilarAuthors(postId: string) {
+      this.loadingSimilarAuthors = true;
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          // Mock 数据：返回 2 个相似作者
+          this.similarAuthors = [
+            {
+              userId: "user-3004",
+              name: "南风",
+              avatar: "",
+              campusName: "北京大学",
+              headline: "97年 · 深圳 · 产品经理 · 本科",
+              isAlumni: true,
+              commonInterests: ["阅读", "旅行"],
+              isFollowed: false,
+            },
+            {
+              userId: "user-3005",
+              name: "北岛",
+              avatar: "",
+              campusName: "四川大学",
+              headline: "93年 · 成都 · 创业者 · 博士",
+              isAlumni: false,
+              commonInterests: ["阅读"],
+              isFollowed: false,
+            },
+          ];
+          return;
+        }
+
+        // 调用后端 API: GET /api/posts/{postId}/similar-authors?userId={userId}
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId ?? "";
+        const data = await request<{ authors: SimilarAuthor[] }>({
+          url: `/posts/${postId}/similar-authors?userId=${userId}`,
+          method: "GET",
+        });
+
+        this.similarAuthors = (data.authors ?? []).map((a) => ({
+          userId: String(a.userId ?? ""),
+          name: String(a.nickname ?? a.name ?? ""),
+          avatar: String(a.avatarUrl ?? a.avatar ?? ""),
+          campusName: String(a.campusName ?? ""),
+          headline: String(a.headline ?? ""),
+          isAlumni: Boolean(a.isAlumni ?? false),
+          commonInterests: Array.isArray(a.commonInterests) ? a.commonInterests : [],
+          isFollowed: Boolean(a.isFollowed ?? false),
+        }));
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "加载相似作者失败";
+      } finally {
+        this.loadingSimilarAuthors = false;
       }
     },
   },

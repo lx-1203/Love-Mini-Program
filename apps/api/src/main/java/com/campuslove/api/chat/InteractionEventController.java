@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.config.SecurityUtils;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 互动提醒增强控制器。
  * 提供互动事件列表查询、未读数获取、标记已读等接口。
+ * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
 @RequestMapping("/api/notifications/interactions")
@@ -26,18 +28,17 @@ public class InteractionEventController {
 
     /**
      * 查询互动事件列表（分页）。
-     * GET /api/notifications/interactions?userId=xxx&page=0&size=20
+     * GET /api/notifications/interactions?page=0&size=20
      *
-     * @param userId 用户 ID
      * @param page   页码（从 0 开始，默认 0）
      * @param size   每页大小（默认 20）
      * @return 互动事件视图列表
      */
     @GetMapping
     public ResponseEntity<List<InteractionEventView>> getInteractionEvents(
-            @RequestParam("userId") Long userId,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
+        Long userId = SecurityUtils.getCurrentUserId();
         try {
             List<InteractionEventView> events = interactionEventService.getInteractionEvents(userId, page, size);
             return ResponseEntity.ok(events);
@@ -48,13 +49,13 @@ public class InteractionEventController {
 
     /**
      * 获取未读互动事件数。
-     * GET /api/notifications/interactions/unread-count?userId=xxx
+     * GET /api/notifications/interactions/unread-count
      *
-     * @param userId 用户 ID
      * @return 未读互动事件数
      */
     @GetMapping("/unread-count")
-    public ResponseEntity<Map<String, Long>> getUnreadCount(@RequestParam("userId") Long userId) {
+    public ResponseEntity<Map<String, Long>> getUnreadCount() {
+        Long userId = SecurityUtils.getCurrentUserId();
         try {
             long count = interactionEventService.getUnreadCount(userId);
             return ResponseEntity.ok(Map.of("count", count));
@@ -65,16 +66,14 @@ public class InteractionEventController {
 
     /**
      * 标记指定互动事件为已读。
-     * PUT /api/notifications/interactions/{eventId}/read?userId=xxx
+     * PUT /api/notifications/interactions/{eventId}/read
      *
      * @param eventId 事件 ID
-     * @param userId  用户 ID（用于验证）
      * @return 操作结果
      */
     @PutMapping("/{eventId}/read")
-    public ResponseEntity<Void> markAsRead(
-            @PathVariable("eventId") Long eventId,
-            @RequestParam("userId") Long userId) {
+    public ResponseEntity<Void> markAsRead(@PathVariable("eventId") Long eventId) {
+        Long userId = SecurityUtils.getCurrentUserId();
         try {
             interactionEventService.markAsRead(eventId, userId);
             return ResponseEntity.ok().build();
@@ -85,13 +84,13 @@ public class InteractionEventController {
 
     /**
      * 标记所有互动事件为已读。
-     * PUT /api/notifications/interactions/read-all?userId=xxx
+     * PUT /api/notifications/interactions/read-all
      *
-     * @param userId 用户 ID
      * @return 操作结果
      */
     @PutMapping("/read-all")
-    public ResponseEntity<Void> markAllAsRead(@RequestParam("userId") Long userId) {
+    public ResponseEntity<Void> markAllAsRead() {
+        Long userId = SecurityUtils.getCurrentUserId();
         try {
             interactionEventService.markAllAsRead(userId);
             return ResponseEntity.ok().build();

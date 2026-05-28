@@ -47,7 +47,9 @@ public class MockCheckInService implements CheckInService {
     if (lastDate != null && lastDate.equals(today)) {
       int consecutiveDays = consecutiveDaysMap.getOrDefault(userId, 1);
       int extraQuota = extraQuotaMap.getOrDefault(userId, 0);
-      return new CheckInResultView(false, consecutiveDays, extraQuota);
+      int extraRecommendQuota = checkInConfig.getExtraQuotaPerCheckIn();
+      return new CheckInResultView(false, consecutiveDays, extraQuota,
+          extraRecommendQuota, true, true, 3, 2);
     }
 
     // 计算连续天数
@@ -64,7 +66,10 @@ public class MockCheckInService implements CheckInService {
     // 增加额外推荐配额
     int newExtraQuota = extraQuotaMap.merge(userId, checkInConfig.getExtraQuotaPerCheckIn(), Integer::sum);
 
-    return new CheckInResultView(true, consecutiveDays, newExtraQuota);
+    // Mock 权益数据：热门话题3条，新入圈用户2人
+    int extraRecommendQuota = checkInConfig.getExtraQuotaPerCheckIn();
+    return new CheckInResultView(true, consecutiveDays, newExtraQuota,
+        extraRecommendQuota, true, true, 3, 2);
   }
 
   @Override

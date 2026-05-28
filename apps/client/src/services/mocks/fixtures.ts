@@ -30,6 +30,11 @@ type CheckInResult = {
   checkInDate: string;
   consecutiveDays: number;
   extraRecommendations: number;
+  extraRecommendQuota: number;
+  hotTopicsUnlocked: boolean;
+  newUsersUnlocked: boolean;
+  hotTopicCount: number;
+  newUserCount: number;
 };
 
 const recommendedPeople: RecommendedPersonSummary[] = homeRecommendedPeople.map((person) => ({
@@ -724,7 +729,77 @@ export const mockFixtures = {
     return {
       checkInDate: new Date().toISOString().split("T")[0],
       consecutiveDays: checkInStatus.consecutiveDays,
-      extraRecommendations: 3,
+      extraRecommendations: 5,
+      extraRecommendQuota: 5,
+      hotTopicsUnlocked: true,
+      newUsersUnlocked: true,
+      hotTopicCount: 3,
+      newUserCount: 2,
     };
+  },
+
+  /** 破冰话题 Mock 数据 */
+  getIcebreakers(peerUserId: number): {
+    items: Array<{ id: number; content: string; category: string; source: string }>;
+  } {
+    const icebreakerPool: Record<number, Array<{ id: number; content: string; category: string; source: string }>> = {
+      1: [
+        { id: 101, content: "看到你也喜欢看电影，最近有什么好片推荐吗？", category: "兴趣爱好", source: "profile_interests" },
+        { id: 102, content: "听说你也爱喝咖啡，学校附近哪家咖啡馆最值得去？", category: "校园生活", source: "profile_interests" },
+        { id: 103, content: "你的专业听起来很有趣，平时课程压力大吗？", category: "学业交流", source: "profile_department" },
+        { id: 104, content: "看到你的课表里有设计课，觉得很厉害！", category: "学业交流", source: "profile_schedule" },
+        { id: 105, content: "周末有计划吗？要不要一起去图书馆？", category: "邀约", source: "common_ground" },
+      ],
+      2: [
+        { id: 201, content: "你也选了美食话题，校园食堂哪个窗口最好吃？", category: "校园生活", source: "profile_interests" },
+        { id: 202, content: "看到你喜欢摄影，平时用什么设备拍照呀？", category: "兴趣爱好", source: "profile_interests" },
+        { id: 203, content: "你们都在同一个城市，周末有什么好去处推荐吗？", category: "邀约", source: "common_ground" },
+        { id: 204, content: "你最喜欢什么类型的音乐？最近有在听什么歌吗？", category: "兴趣爱好", source: "profile_interests" },
+        { id: 205, content: "如果用一个词形容你的大学生活，会是什么？", category: "校园生活", source: "general" },
+      ],
+      3: [
+        { id: 301, content: "你也喜欢运动！平时跑步还是打球多？", category: "兴趣爱好", source: "profile_interests" },
+        { id: 302, content: "你们学校的操场晚上开放吗？想约跑步", category: "邀约", source: "common_ground" },
+        { id: 303, content: "日语系听起来好棒，学日语多久了？", category: "学业交流", source: "profile_department" },
+        { id: 304, content: "周三傍晚有空吗？想找个自习搭子", category: "邀约", source: "profile_schedule" },
+        { id: 305, content: "你日常喜欢追剧还是看电影多一点？", category: "兴趣爱好", source: "general" },
+      ],
+    };
+    const defaultIcebreakers = [
+      { id: 901, content: "嗨，很高兴认识你！最近过得怎么样？", category: "破冰", source: "general" },
+      { id: 902, content: "看到你也在这个校园，好巧！平时喜欢去哪里逛？", category: "校园生活", source: "common_ground" },
+      { id: 903, content: "你平时喜欢做什么？有什么特别的兴趣爱好吗？", category: "兴趣爱好", source: "general" },
+      { id: 904, content: "如果用一个词形容你的大学生活，会是什么？", category: "校园生活", source: "general" },
+      { id: 905, content: "最近有什么有意思的事情想分享吗？", category: "日常", source: "general" },
+    ];
+    const items = icebreakerPool[peerUserId] ?? defaultIcebreakers;
+    return clone({ items });
+  },
+
+  /** 社交升温进度 Mock 数据 */
+  getSocialProgress(): {
+    currentTier: string;
+    tierLabel: string;
+    exposureCount: number;
+    likeCount: number;
+    matchCount: number;
+    chatCount: number;
+    circleCount: number;
+    activityCount: number;
+    nextAction: string;
+    progressPercentage: number;
+  } {
+    return clone({
+      currentTier: 'L2_ATTENTION',
+      tierLabel: '表达喜欢',
+      exposureCount: 15,
+      likeCount: 4,
+      matchCount: 0,
+      chatCount: 0,
+      circleCount: 0,
+      activityCount: 0,
+      nextAction: '继续浏览推荐，发现更多心动',
+      progressPercentage: 33,
+    });
   },
 };

@@ -7,7 +7,7 @@
   },
   "globalStyle": {
     "navigationStyle": "custom",
-    "backgroundColor": "#f4f7fb",
+    "backgroundColor": "#f8fafc",
     "backgroundTextStyle": "dark"
   },
   "pages": [
@@ -15,6 +15,36 @@
       "path": "pages/login/index",
       "style": {
         "navigationBarTitleText": "校园恋爱"
+      }
+    },
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/circle/index",
+      "style": {
+        "navigationBarTitleText": "圈子"
+      }
+    },
+    {
+      "path": "pages/chat/index",
+      "style": {
+        "navigationBarTitleText": "聊天"
+      }
+    },
+    {
+      "path": "pages/shop/index",
+      "style": {
+        "navigationBarTitleText": "逛逛"
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "我的"
       }
     },
     {
@@ -54,15 +84,15 @@
       }
     },
     {
-      "path": "pages/messages/index",
+      "path": "pages/village/tag-posts",
       "style": {
-        "navigationBarTitleText": "消息"
+        "navigationBarTitleText": "话题帖子"
       }
     },
     {
-      "path": "pages/profile/index",
+      "path": "pages/messages/index",
       "style": {
-        "navigationBarTitleText": "我的"
+        "navigationBarTitleText": "消息"
       }
     },
     {
@@ -96,15 +126,39 @@
       }
     },
     {
-      "path": "pages/chat/index",
-      "style": {
-        "navigationBarTitleText": "聊天"
-      }
-    },
-    {
       "path": "pages/chat-session/index",
       "style": {
         "navigationBarTitleText": "会话"
+      }
+    },
+    {
+      "path": "pages/dev/index",
+      "style": {
+        "navigationBarTitleText": "DEV"
+      }
+    },
+    {
+      "path": "pages/campus/index",
+      "style": {
+        "navigationBarTitleText": "校园"
+      }
+    },
+    {
+      "path": "pages/campus/topic-detail",
+      "style": {
+        "navigationBarTitleText": "话题详情"
+      }
+    },
+    {
+      "path": "pages/campus/post-topic",
+      "style": {
+        "navigationBarTitleText": "发布话题"
+      }
+    },
+    {
+      "path": "pages/campus/certification",
+      "style": {
+        "navigationBarTitleText": "学生认证"
       }
     }
   ],
@@ -170,39 +224,45 @@
   "tabBar": {
     "custom": true,
     "color": "#64748b",
-    "selectedColor": "#1d4ed8",
+    "selectedColor": "#2563eb",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
       {
-        "pagePath": "pages/discover/index",
-        "text": "寻觅",
-        "iconPath": "assets/icons/discover.svg",
-        "selectedIconPath": "assets/icons/discover-active.svg"
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "static/assets/icons/home.png",
+        "selectedIconPath": "static/assets/icons/home-active.png"
       },
       {
-        "pagePath": "pages/likes/index",
-        "text": "喜欢",
-        "iconPath": "assets/icons/likes.svg",
-        "selectedIconPath": "assets/icons/likes-active.svg"
+        "pagePath": "pages/circle/index",
+        "text": "圈子",
+        "iconPath": "static/assets/icons/circle.png",
+        "selectedIconPath": "static/assets/icons/circle-active.png"
       },
       {
-        "pagePath": "pages/village/index",
-        "text": "村口",
-        "iconPath": "assets/icons/village.svg",
-        "selectedIconPath": "assets/icons/village-active.svg"
+        "pagePath": "pages/chat/index",
+        "text": "聊天",
+        "iconPath": "static/assets/icons/chat.png",
+        "selectedIconPath": "static/assets/icons/chat-active.png"
       },
       {
-        "pagePath": "pages/messages/index",
-        "text": "消息",
-        "iconPath": "assets/icons/messages.svg",
-        "selectedIconPath": "assets/icons/messages-active.svg"
+        "pagePath": "pages/shop/index",
+        "text": "逛逛",
+        "iconPath": "static/assets/icons/shop.png",
+        "selectedIconPath": "static/assets/icons/shop-active.png"
+      },
+      {
+        "pagePath": "pages/campus/index",
+        "text": "校园",
+        "iconPath": "static/assets/icons/village.png",
+        "selectedIconPath": "static/assets/icons/village-active.png"
       },
       {
         "pagePath": "pages/profile/index",
         "text": "我的",
-        "iconPath": "assets/icons/profile.svg",
-        "selectedIconPath": "assets/icons/profile-active.svg"
+        "iconPath": "static/assets/icons/profile.png",
+        "selectedIconPath": "static/assets/icons/profile-active.png"
       }
     ]
   }

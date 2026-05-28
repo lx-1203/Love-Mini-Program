@@ -1,6 +1,7 @@
 package com.campuslove.api.chat;
 
 import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.PrivateConversation;
 import com.campuslove.api.entity.PrivateMessage;
 import com.campuslove.api.entity.User;
@@ -31,16 +32,19 @@ public class RealPrivateMessageService implements PrivateMessageService {
     private final PrivateMessageRepository messageRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final SensitiveWordFilter sensitiveWordFilter;
 
     public RealPrivateMessageService(
             PrivateConversationRepository conversationRepository,
             PrivateMessageRepository messageRepository,
             UserRepository userRepository,
-            SimpMessagingTemplate messagingTemplate) {
+            SimpMessagingTemplate messagingTemplate,
+            SensitiveWordFilter sensitiveWordFilter) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
+        this.sensitiveWordFilter = sensitiveWordFilter;
     }
 
     /**
@@ -117,19 +121,29 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
         LocalDateTime now = LocalDateTime.now();
 
+        String resolvedKind = kind != null ? kind : "text";
+
+        // 敏感词过滤：过滤私信内容
+        String filteredContent = sensitiveWordFilter.filterWithLog(content, senderId, "MESSAGE");
+
         // 创建消息
         PrivateMessage message = new PrivateMessage();
         message.setConversation(conversation);
         message.setSenderId(senderId);
-        message.setContent(content);
-        message.setMessageKind(kind != null ? kind : "text");
+        message.setContent(filteredContent);
+        message.setMessageKind(resolvedKind);
         message.setIsRead(false);
         message.setCreatedAt(now);
 
         messageRepository.save(message);
 
-        // 更新会话的最后消息信息
-        String preview = content.length() > 50 ? content.substring(0, 50) + "..." : content;
+        // 更新会话的最后消息信息：quote 类型提取纯文本摘要
+        String preview;
+        if ("quote".equals(resolvedKind)) {
+            preview = buildQuotePreview(filteredContent);
+        } else {
+            preview = filteredContent.length() > 50 ? filteredContent.substring(0, 50) + "..." : filteredContent;
+        }
         conversation.setLastMessagePreview(preview);
         conversation.setLastMessageAt(now);
         conversation.setUpdatedAt(now);
@@ -304,8 +318,39 @@ public class RealPrivateMessageService implements PrivateMessageService {
                 message.getContent(),
                 message.getMessageKind(),
                 message.getIsRead(),
-                message.getCreatedAt().toString()
+                message.getCreatedAt().toString(),
+                message.getQuoteContext()
         );
+    }
+
+    /**
+     * 构建 quote 类型消息的预览文本。
+     * 如果 content 是 JSON 格式的 quote body，尝试提取其中的文本部分；
+     * 否则直接截取前 50 个字符。
+     *
+     * @param content 消息内容（可能为 JSON）
+     * @return 预览文本
+     */
+    private String buildQuotePreview(String content) {
+        if (content == null || content.isBlank()) {
+            return "[引用消息]";
+        }
+        // 尝试从 JSON 格式的 quote body 中提取 text 字段
+        // 格式: {"text":"消息正文","quoteContext":{...}}
+        try {
+            int textStart = content.indexOf("\"text\":\"");
+            if (textStart >= 0) {
+                int valueStart = textStart + 8;
+                int valueEnd = content.indexOf("\"", valueStart);
+                if (valueEnd > valueStart) {
+                    String text = content.substring(valueStart, valueEnd);
+                    return text.length() > 50 ? text.substring(0, 50) + "..." : text;
+                }
+            }
+        } catch (Exception e) {
+            // JSON 解析失败，回退到截取
+        }
+        return content.length() > 50 ? content.substring(0, 50) + "..." : content;
     }
 
     /**

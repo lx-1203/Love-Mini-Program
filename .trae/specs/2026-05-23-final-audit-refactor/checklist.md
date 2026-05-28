@@ -54,5 +54,5 @@
 - [x] 无游戏化元素和购物功能
 
 ## Git提交
-- [ ] 所有更新的Spec文件已git add
-- [ ] Git commit信息规范，变更记录完整
+- [x] 所有更新的Spec文件已git add
+- [x] Git commit信息规范，变更记录完整
