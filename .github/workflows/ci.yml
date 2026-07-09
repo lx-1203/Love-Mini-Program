@@ -73,8 +73,10 @@ jobs:
         run: |
           docker run --rm --network host \
             -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
             redgate/flyway:12.6.1-alpine \
             -configFiles=/workspace/database/flyway/flyway.toml \
+            -locations=filesystem:/workspace/database/flyway/sql \
             -url="jdbc:mysql://127.0.0.1:3306/campus_love_ci?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" \
             -user=campus_love \
             -password=campus_love \
@@ -84,8 +86,10 @@ jobs:
         run: |
           docker run --rm --network host \
             -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
             redgate/flyway:12.6.1-alpine \
             -configFiles=/workspace/database/flyway/flyway.toml \
+            -locations=filesystem:/workspace/database/flyway/sql \
             -url="jdbc:mysql://127.0.0.1:3306/campus_love_ci?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" \
             -user=campus_love \
             -password=campus_love \
