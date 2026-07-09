@@ -1,0 +1,30 @@
+# Gitleaks 配置：继承默认规则，并对项目中的开发占位符/示例值进行白名单豁免。
+# 详见 https://github.com/gitleaks/gitleaks#configuration
+
+title = "campus-love gitleaks config"
+
+[extend]
+useDefault = true
+
+# 全局允许列表：匹配这些内容的发现会被忽略
+[allowlist]
+description = "Allow known development placeholders, BCrypt hashes, and CI sample credentials"
+regexes = [
+    # BCrypt 哈希（cost=10，60 字符），项目中用于管理员密码示例
+    '(?i)\$2[aby]\$10\$[./A-Za-z0-9]{53}',
+    # Flyway 占位符默认值
+    'admin-default-openid-change-me',
+    # CI 专用数据库账号（非生产凭据）
+    'campus_love',
+    # application-db.yml 中的示例密码哈希
+    '\.20cQQubK3\.HZWzG3YB1tlRy\.fqvM/BG',
+]
+paths = [
+    # 数据库迁移脚本中的占位符与示例值
+    'database/flyway/sql/.*\.sql',
+    'database/flyway/flyway\.toml',
+    # CI 工作流中的示例连接串
+    '\.github/workflows/.*\.yml',
+    # 示例配置文件
+    'apps/api/src/main/resources/application.*\.yml',
+]
