@@ -30,7 +30,7 @@ import java.util.Map;
  *
  * 安全控制:
  * - STOMP 通道拦截器: CONNECT 阶段校验 JWT，SUBSCRIBE 阶段校验路径权限
- * - 握手拦截器: 在 HTTP 握手阶段预校验 JWT 令牌
+ * - 握手拦截器: 在 HTTP 握手阶段预校验 JWT 令牌（从 Sec-WebSocket-Protocol 子协议提取）
  * - Origin 限制: 仅允许 localhost 和 127.0.0.1 来源
  */
 @Configuration
@@ -44,6 +44,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     /** Bearer 前缀 */
     private static final String BEARER_PREFIX = "Bearer ";
+
+    /** Sec-WebSocket-Protocol 请求头名称（用于 WebSocket 子协议协商） */
+    private static final String SEC_WEBSOCKET_PROTOCOL_HEADER = "Sec-WebSocket-Protocol";
+
+    /** WebSocket 子协议中传递 token 时使用的前缀 */
+    private static final String BEARER_PROTOCOL_PREFIX = "bearer.";
 
     private JwtChannelInterceptor jwtChannelInterceptor;
 
@@ -104,9 +110,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      * 在 HTTP 升级为 WebSocket 之前验证 JWT 令牌有效性，
      * 防止未认证的客户端建立 WebSocket 连接。
      *
-     * 令牌获取来源:
-     * 1. URL 查询参数 token
-     * 2. Authorization 请求头 (Bearer token)
+     * 令牌获取来源（Phase 3 任务 15 重构，移除 URL 参数支持）:
+     * 1. Sec-WebSocket-Protocol 子协议头（格式: bearer.{token}）—— 浏览器/小程序无法设置自定义 HTTP 头时的标准方案
+     * 2. Authorization 请求头 (Bearer token) —— 非 WebSocket 场景或支持自定义头的环境
+     *
+     * 安全说明:
+     * - 不再从 URL 查询参数 token 提取，避免 token 出现在访问日志、Referer、浏览器历史中
+     * - 子协议方案兼容小程序（uni.connectSocket）和 H5 环境
      *
      * 验证成功后将 userId 存入 WebSocketSession 属性和 STOMP header，
      * 供后续 JwtChannelInterceptor 使用。
@@ -165,19 +175,39 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         /**
          * 从 HTTP 请求中提取 JWT 令牌。
          *
-         * 提取优先级:
-         * 1. URL 查询参数 token（适用于 WebSocket 连接场景）
+         * 提取优先级（Phase 3 任务 15 重构，移除 URL 参数支持）:
+         * 1. Sec-WebSocket-Protocol 子协议头（格式: bearer.{token}）
+         *    - 浏览器/小程序 WebSocket 客户端无法设置自定义 HTTP 头，子协议是标准方案
+         *    - 客户端通过 uni.connectSocket({ protocols: [earer.{token}] }) 传递
          * 2. Authorization 请求头 (Bearer token)
+         *    - 适用于支持自定义 HTTP 头的环境（如 SockJS fallback 的 XHR 请求）
+         *
+         * 安全说明:
+         * - 不再从 URL 查询参数 token 提取，避免 token 泄漏到日志/Referer/浏览器历史
          */
         private String extractTokenFromRequest(ServerHttpRequest request) {
-            // 优先从 URL 查询参数提取（WebSocket 客户端通常通过 URL 传 token）
-            if (request instanceof ServletServerHttpRequest servletRequest) {
-                String tokenParam = servletRequest.getServletRequest().getParameter("token");
-                if (tokenParam != null && !tokenParam.isBlank()) {
-                    return tokenParam.trim();
+            // 1. 优先从 Sec-WebSocket-Protocol 子协议头提取 token
+            //    客户端通过 protocols: [earer.{token}] 设置，服务端从该头读取
+            List<String> protocolHeaders = request.getHeaders().get(SEC_WEBSOCKET_PROTOCOL_HEADER);
+            if (protocolHeaders != null && !protocolHeaders.isEmpty()) {
+                for (String protocolValue : protocolHeaders) {
+                    if (protocolValue == null) continue;
+                    // Sec-WebSocket-Protocol 可能是逗号分隔的多个子协议
+                    String[] parts = protocolValue.split(",");
+                    for (String part : parts) {
+                        String trimmed = part.trim();
+                        if (trimmed.startsWith(BEARER_PROTOCOL_PREFIX)) {
+                            String token = trimmed.substring(BEARER_PROTOCOL_PREFIX.length()).trim();
+                            if (!token.isBlank()) {
+                                return token;
+                            }
+                        }
+                    }
                 }
+            }
 
-                // 其次从 Authorization header 提取
+            // 2. 其次从 Authorization header 提取（支持自定义头的环境）
+            if (request instanceof ServletServerHttpRequest servletRequest) {
                 String authHeader = servletRequest.getServletRequest().getHeader(AUTH_HEADER);
                 if (authHeader != null && !authHeader.isBlank()) {
                     if (authHeader.startsWith(BEARER_PREFIX)) {

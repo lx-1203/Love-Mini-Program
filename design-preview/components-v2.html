@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>校园恋爱 · 组件设计 V2</title>
+<style>
+/* ================================================================
+   DESIGN TOKENS — 优化版   ================================================================ */
+:root {
+  /* 品牌色（青藤绿系）*/
+  --brand-400: #3FCF8E;
+  --brand-500: #2DB97A;
+  --brand-600: #25A86D;
+  --brand-100: #D1FAE5;
+  --brand-50:  #F0FDF4;
+  --brand-gradient: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
+
+  /* 中性色（BlueGray 调，含 12% 蓝调倾向）*/
+  --gray-0:   #FFFFFF;
+  --gray-50:  #F4F6FA;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1F2329;
+  --gray-900: #0E1116;
+
+  /* 语义色 */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error:   #E5454D;
+  --info:    #3FCF8E;
+
+  /* 强调色（活力橙）*/
+  --accent:      #F97316;
+  --accent-soft: #FFF7ED;
+
+  /* 粉色（偏爱喜欢）*/
+  --pink:      #EC4899;
+  --pink-soft: #FDF2F8;
+
+  /* 页面背景 */
+  --bg-page:     #F4F6FA;
+  --bg-card:     #FFFFFF;
+  --bg-surface:  #F1F5F9;
+  --bg-overlay:  rgba(15, 23, 42, 0.45);
+
+  /* 排版 */
+  --font: -apple-system, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --display: 40px;
+  --h1:      32px;
+  --h2:      26px;
+  --h3:      20px;
+  --body:    16px;
+  --small:   13px;
+  --caption: 11px;
+  --lh-tight:  1.2;
+  --lh-normal: 1.5;
+
+  /* 间距（4px 网格）*/
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* 圆角层级 */
+  --r-sm:  8px;
+  --r-md:  12px;
+  --r-lg:  16px;
+  --r-xl:  20px;
+  --r-full: 9999px;
+
+  /* 阴影层级 */
+  --shadow-xs:  0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-sm:  0 2px 8px rgba(15, 23, 42, 0.04);
+  --shadow-md:  0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-lg:  0 8px 32px rgba(15, 23, 42, 0.08);
+
+  /* 动效 */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast:   120ms;
+  --dur-normal: 200ms;
+  --dur-slow:   350ms;
+}
+
+/* ================================================================
+   基础样式
+   ================================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--font);
+  background: var(--bg-page);
+  color: var(--gray-800);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ================================================================
+   椤甸潰甯冨眬
+   ================================================================ */
+.page-wrap {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+.page-title {
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gray-800);
+  letter-spacing: -0.02em;
+}
+.page-sub {
+  text-align: center;
+  font-size: var(--small);
+  color: var(--gray-400);
+  margin-bottom: 32px;
+}
+
+/* ================================================================
+   手机框架
+   ================================================================ */
+.phone {
+  width: 375px;
+  margin: 0 auto 32px;
+  background: var(--bg-card);
+  border-radius: 28px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border: 1px solid var(--gray-100);
+}
+.phone-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px 8px;
+  font-size: var(--small);
+  font-weight: 600;
+  color: var(--gray-700);
+}
+.phone-bar .icons { display: flex; gap: 5px; font-size: 12px; }
+.phone-body { padding: 0 16px 20px; }
+
+/* 组件标题 */
+.comp-head {
+  text-align: center;
+  padding: 20px 0 4px;
+}
+.comp-head h3 {
+  font-size: var(--h3);
+  font-weight: 700;
+  color: var(--brand-500);
+}
+.comp-head small {
+  display: block;
+  font-size: var(--caption);
+  font-weight: 400;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+/* 鍒嗛殧绾?*/
+.sep { height: 1px; background: var(--gray-200); margin: 0 16px; }
+
+/* ================================================================
+   组件：卡片基础
+   ================================================================ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 1px solid var(--gray-100);
+}
+
+/* ================================================================
+   组件1：DiscoverCard
+   ================================================================ */
+.dcard-photo {
+  position: relative;
+  height: 260px;
+  background: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
+  overflow: hidden;
+}
+.dcard-photo::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to top, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 100%);
+}
+.dcard-photo .photo-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 56px;
+  opacity: 0.25;
+}
+.dcard-badge {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--r-full);
+  padding: 4px 10px;
+  font-size: var(--caption);
+  font-weight: 600;
+  color: var(--brand-400);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: var(--shadow-xs);
+}
+.dcard-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+.dcard-info { padding: var(--sp-4) var(--sp-5) var(--sp-3); }
+.dcard-row1 {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.dcard-name {
+  font-size: var(--h3);
+  font-weight: 700;
+  color: var(--gray-800);
+  letter-spacing: -0.01em;
+}
+.dcard-age {
+  font-size: var(--body);
+  font-weight: 400;
+  color: var(--gray-500);
+}
+.dcard-city {
+  font-size: var(--small);
+  color: var(--gray-400);
+  margin-left: auto;
+}
+.dcard-edu {
+  margin-top: var(--sp-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--brand-50);
+  border: 1px solid var(--brand-100);
+  border-radius: var(--r-sm);
+  padding: 3px 10px;
+  font-size: var(--caption);
+  font-weight: 600;
+  color: var(--brand-500);
+}
+.dcard-edu .ck {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--brand-400);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+}
+.dcard-meta {
+  margin-top: var(--sp-2);
+  font-size: var(--small);
+  color: var(--gray-400);
+}
+.dcard-bio {
+  margin-top: var(--sp-2);
+  font-size: var(--small);
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+.dcard-tags {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}
+.tag-sm {
+  background: var(--brand-50);
+  color: var(--brand-500);
+  font-size: var(--caption);
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: var(--r-sm);
+  transition: background var(--dur-normal) var(--ease);
+}
+.dcard-voice {
+  margin-top: var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  background: var(--brand-50);
+  border: 1px solid var(--brand-100);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  color: var(--brand-500);
+  transition: background var(--dur-normal) var(--ease);
+  cursor: pointer;
+}
+.dcard-voice:hover { background: var(--brand-100); }
+.dcard-voice .ico { font-size: 16px; }
+.dcard-voice .txt { font-size: var(--small); flex: 1; }
+.dcard-voice .bars {
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  height: 16px;
+}
+.dcard-voice .bars span {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--brand-400);
+  opacity: 0.3;
+  transition: height 0.3s var(--ease);
+}
+.dcard-voice .bars span:nth-child(2) { height: 14px; opacity: 0.7; }
+.dcard-voice .bars span:nth-child(4) { height: 10px; opacity: 0.5; }
+.dcard-voice:hover .bars span { opacity: 0.7; }
+.dcard-voice:hover .bars span:nth-child(2) { height: 16px; }
+
+/* 搴曢儴鎿嶄綔 */
+.dcard-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-3) 0 var(--sp-5);
+}
+.act-btn {
+  display: grid;
+  place-items: center;
+  border: none;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-normal) var(--ease);
+}
+.act-btn:active { transform: scale(0.92); }
+.act-btn--sm {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--gray-100);
+  color: var(--gray-400);
+  font-size: 20px;
+  border: 1px solid var(--gray-200);
+}
+.act-btn--md {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--brand-400);
+  color: #fff;
+  font-size: 22px;
+  box-shadow: 0 4px 16px rgba(91, 127, 255, 0.25);
+}
+.act-btn--md:hover {
+  background: var(--brand-500);
+  box-shadow: 0 6px 24px rgba(91, 127, 255, 0.35);
+}
+.act-btn--heart {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--pink);
+  color: #fff;
+  font-size: 22px;
+  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.25);
+}
+.act-btn--heart:hover {
+  background: #DB2777;
+  box-shadow: 0 6px 24px rgba(236, 72, 153, 0.35);
+}
+.act-btn--heart::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--pink);
+  opacity: 0;
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+
+/* ================================================================
+   组件2：ProfileDetailCard
+   ================================================================ */
+.pcard-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--sp-6) var(--sp-5) var(--sp-4);
+}
+.avatar-ring {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  padding: 3px;
+  border: 2px solid var(--brand-100);
+  background: var(--bg-card);
+}
+.avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+.pcard-name {
+  margin-top: var(--sp-2);
+  font-size: var(--h2);
+  font-weight: 700;
+  color: var(--gray-800);
+  letter-spacing: -0.01em;
+}
+.pcard-city {
+  margin-top: 2px;
+  font-size: var(--small);
+  color: var(--gray-400);
+}
+.pcard-cert {
+  margin-top: var(--sp-3);
+  display: flex;
+  gap: var(--sp-2);
+  background: var(--brand-50);
+  border-radius: var(--r-md);
+  padding: 8px var(--sp-3);
+}
+.cert-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--caption);
+  font-weight: 500;
+  color: var(--brand-500);
+}
+.cert-item .ck {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--brand-400);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+/* 淇℃伅缃戞牸 */
+.pcard-section {
+  padding: 0 var(--sp-5);
+}
+.section-title {
+  font-size: var(--small);
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: var(--sp-2);
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+.info-cell {
+  background: var(--gray-50);
+  padding: 10px var(--sp-3);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--gray-100);
+}
+.info-label {
+  font-size: var(--caption);
+  color: var(--gray-400);
+  margin-bottom: 2px;
+}
+.info-value {
+  font-size: var(--small);
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+/* 关于我*/
+.pcard-bio-box {
+  background: var(--gray-50);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--gray-100);
+}
+.pcard-bio-text {
+  font-size: var(--small);
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+/* 相册 */
+.pcard-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+}
+.gallery-item {
+  aspect-ratio: 1;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: #fff;
+  transition: transform var(--dur-normal) var(--ease);
+  cursor: pointer;
+}
+.gallery-item:hover { transform: scale(1.05); }
+
+/* 按钮 */
+.pcard-btns {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+}
+.btn {
+  flex: 1;
+  padding: var(--sp-3) 0;
+  border-radius: var(--r-full);
+  font-size: var(--small);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease);
+  border: none;
+}
+.btn--outline {
+  background: transparent;
+  border: 1.5px solid var(--gray-200);
+  color: var(--gray-500);
+}
+.btn--outline:hover {
+  border-color: var(--brand-400);
+  color: var(--brand-500);
+  background: var(--brand-50);
+}
+.btn--primary {
+  background: var(--brand-400);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(91, 127, 255, 0.2);
+}
+.btn--primary:hover {
+  background: var(--brand-500);
+  box-shadow: 0 4px 16px rgba(91, 127, 255, 0.3);
+}
+.btn--primary:active { transform: scale(0.97); }
+
+/* ================================================================
+   组件3：VillagePostCard
+   ================================================================ */
+.vpost-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.vpost-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+.vpost-meta { flex: 1; }
+.vpost-name {
+  font-size: var(--body);
+  font-weight: 600;
+  color: var(--gray-800);
+}
+.vpost-time {
+  font-size: var(--caption);
+  color: var(--gray-400);
+  margin-top: 1px;
+}
+.vpost-follow {
+  padding: 5px 14px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--brand-400);
+  font-size: var(--caption);
+  font-weight: 500;
+  color: var(--brand-400);
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease);
+  background: transparent;
+}
+.vpost-follow:hover {
+  background: var(--brand-400);
+  color: #fff;
+}
+.vpost-content {
+  margin-top: var(--sp-3);
+  font-size: var(--body);
+  color: var(--gray-600);
+  line-height: var(--lh-normal);
+}
+.vpost-images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-top: var(--sp-3);
+}
+.vpost-images .img-placeholder {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  color: #fff;
+  transition: transform var(--dur-normal) var(--ease);
+  cursor: pointer;
+}
+.vpost-images .img-placeholder:hover { transform: scale(1.05); }
+.vpost-topics {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}
+.topic-tag {
+  background: var(--gray-50);
+  color: var(--gray-500);
+  font-size: var(--caption);
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--gray-200);
+}
+.vpost-actions {
+  display: flex;
+  gap: var(--sp-5);
+  padding-top: var(--sp-3);
+  margin-top: var(--sp-3);
+  border-top: 1px solid var(--gray-100);
+}
+.vpost-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--small);
+  color: var(--gray-400);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
+}
+.vpost-action:hover { color: var(--brand-400); }
+.vpost-action .icon { font-size: 16px; }
+.vpost-action--liked { color: var(--brand-400); }
+
+.vpost-comment {
+  margin-top: var(--sp-3);
+  background: var(--gray-50);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  border: 1px solid var(--gray-100);
+}
+.comment-author {
+  font-size: var(--small);
+  font-weight: 600;
+  color: var(--gray-700);
+}
+.comment-text {
+  font-size: var(--small);
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+.comment-replies {
+  font-size: var(--caption);
+  color: var(--gray-400);
+  margin-top: 4px;
+}
+
+/* ================================================================
+   组件4：MessageRow
+   ================================================================ */
+.msg-item {
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--gray-100);
+  transition: background var(--dur-normal) var(--ease);
+  cursor: pointer;
+}
+.msg-item:hover { background: var(--gray-50); }
+.msg-item:last-child { border-bottom: none; }
+.msg-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.msg-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  position: relative;
+}
+.msg-avatar .online {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--success);
+  border: 2px solid #fff;
+}
+.msg-info { flex: 1; min-width: 0; }
+.msg-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.msg-name {
+  font-size: var(--body);
+  font-weight: 600;
+  color: var(--gray-800);
+}
+.msg-badge {
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--brand-500);
+  background: var(--brand-100);
+}
+.msg-badge--pink {
+  color: var(--pink);
+  background: var(--pink-soft);
+}
+.msg-time {
+  font-size: var(--caption);
+  color: var(--gray-400);
+  flex-shrink: 0;
+}
+.msg-preview {
+  font-size: var(--small);
+  color: var(--gray-400);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.msg-unread {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--error);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* 24h 倒计时 */
+.msg-countdown {
+  margin-top: var(--sp-2);
+  background: var(--brand-50);
+  border-radius: var(--r-sm);
+  padding: 8px var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.msg-countdown .cd-label {
+  font-size: var(--caption);
+  color: var(--gray-500);
+}
+.msg-countdown .cd-time {
+  font-size: var(--small);
+  font-weight: 700;
+  color: var(--brand-500);
+  margin-left: auto;
+}
+.msg-countdown .cd-bar {
+  width: 80px;
+  height: 4px;
+  background: var(--brand-100);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.msg-countdown .cd-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--brand-400);
+  transition: width 1s linear;
+}
+
+/* ================================================================
+   组件5：InterestTag 系统
+   ================================================================ */
+.tag-section {
+  margin-bottom: var(--sp-5);
+}
+.tag-section-title {
+  font-size: var(--small);
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: var(--sp-2);
+}
+.tag-row {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.tag {
+  padding: 5px 14px;
+  border-radius: var(--r-sm);
+  font-size: var(--caption);
+  font-weight: 500;
+  transition: all var(--dur-normal) var(--ease);
+  cursor: pointer;
+  border: none;
+}
+.tag--gray {
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+.tag--blue {
+  background: var(--brand-50);
+  color: var(--brand-500);
+  border: 1px solid var(--brand-100);
+}
+.tag--blue:hover { background: var(--brand-100); }
+.tag--blue-active {
+  background: var(--brand-400);
+  color: #fff;
+  border: 1px solid var(--brand-400);
+}
+.tag--pill {
+  border-radius: var(--r-full);
+}
+.tag--status {
+  background: var(--brand-400);
+  color: #fff;
+  border-radius: var(--r-full);
+  font-size: var(--caption);
+  font-weight: 500;
+}
+.tag--topic {
+  background: var(--gray-50);
+  color: var(--gray-500);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--gray-200);
+}
+.tag--cert {
+  background: var(--brand-50);
+  color: var(--brand-500);
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+}
+.tag--cert .ck {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--brand-400);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+.tag--more {
+  background: var(--brand-100);
+  color: var(--gray-500);
+  border-radius: var(--r-full);
+}
+
+/* ================================================================
+   组件6：MatchAnimation
+   ================================================================ */
+.match-step {
+  padding: var(--sp-5) var(--sp-5);
+  text-align: center;
+}
+.match-step + .match-step {
+  border-top: 1px solid var(--gray-100);
+}
+.match-label {
+  font-size: var(--small);
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: var(--sp-3);
+}
+.match-faces {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+}
+.match-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+.match-heart {
+  font-size: 24px;
+  animation: pulse-heart 1.5s ease-in-out infinite;
+}
+.match-status {
+  margin-top: var(--sp-3);
+  font-size: var(--small);
+  font-weight: 500;
+}
+.match-status--waiting { color: var(--gray-400); }
+.match-status--love { color: var(--pink); }
+.match-desc {
+  font-size: var(--caption);
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+.match-success-box {
+  background: linear-gradient(135deg, var(--brand-50) 0%, var(--pink-soft) 100%);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6) var(--sp-5);
+}
+.match-title {
+  font-size: var(--h2);
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-top: var(--sp-3);
+}
+.match-sub {
+  font-size: var(--small);
+  color: var(--gray-500);
+  margin-top: var(--sp-1);
+}
+.match-btns {
+  display: flex;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+/* ================================================================
+   鍔ㄧ敾
+   ================================================================ */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes ring-pulse {
+  0%, 100% { transform: scale(1); opacity: 0; }
+  50% { transform: scale(1.15); opacity: 0.4; }
+}
+@keyframes pulse-heart {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeInUp 0.4s var(--ease) both;
+}
+
+/* ================================================================
+   色板展示
+   ================================================================ */
+.palette-wrap {
+  max-width: 375px;
+  margin: 32px auto;
+  background: var(--bg-card);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-md);
+  padding: var(--sp-6);
+  border: 1px solid var(--gray-100);
+}
+.palette-title {
+  text-align: center;
+  font-size: var(--h3);
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: var(--sp-5);
+}
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-3);
+}
+.palette-chip { text-align: center; }
+.palette-swatch {
+  height: 48px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--gray-100);
+}
+.palette-label {
+  font-size: var(--caption);
+  color: var(--gray-400);
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+/* ================================================================
+   对比标签
+   ================================================================ */
+.comparison {
+  max-width: 375px;
+  margin: 0 auto 32px;
+  padding: 16px;
+  background: var(--brand-50);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--brand-100);
+}
+.comparison h4 {
+  font-size: var(--small);
+  font-weight: 600;
+  color: var(--brand-500);
+  margin-bottom: var(--sp-3);
+}
+.comparison table {
+  width: 100%;
+  font-size: var(--caption);
+  border-collapse: collapse;
+}
+.comparison td, .comparison th {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--brand-100);
+  color: var(--gray-600);
+}
+.comparison th { font-weight: 600; color: var(--gray-700); }
+.comparison .before { color: var(--gray-400); }
+.comparison .after { color: var(--brand-500); font-weight: 600; }
+
+</style>
+</head>
+<body>
+<div class="page-wrap">
+  <h1 class="page-title">校园恋爱 · 组件设计 V2</h1>
+  <p class="page-sub">清蓝轻适配 · 6 组件 · 对标青藤之恋 · 2026</p>
+
+  <!-- ============================================================
+       组件1: DiscoverCard
+       ============================================================ -->
+  <div class="phone fade-in">
+    <div class="phone-bar">
+      <span>9:41</span>
+      <div class="icons"><span>📶</span><span>📶</span><span>🔋</span></div>
+    </div>
+    <div class="phone-body" style="padding:0">
+      <div class="comp-head">
+        <h3>DiscoverCard</h3>
+        <small>发现卡片 · 对标 #141</small>
+      </div>
+
+      <div style="margin:0 12px 12px" class="card">
+        <div class="dcard-photo">
+          <div class="photo-icon">📷</div>
+          <div class="dcard-badge"><span class="dot"></span>宸茶璇?/div>
+        </div>
+        <div class="dcard-info">
+          <div class="dcard-row1">
+            <span class="dcard-name">李明</span>
+            <span class="dcard-age">24</span>
+            <span class="dcard-city">广州</span>
+          </div>
+          <div class="dcard-edu">
+            <span class="ck">✓</span>华南理工 硕士
+          </div>
+          <div class="dcard-meta">双子座·IT/互联网·178cm</div>
+          <div class="dcard-bio">喜欢摄影和旅行，周末喜欢去城市角落拍照。</div>
+          <div class="dcard-tags">
+            <span class="tag-sm">摄影</span>
+            <span class="tag-sm">旅行</span>
+            <span class="tag-sm">音乐</span>
+            <span class="tag-sm">美食</span>
+          </div>
+          <div class="dcard-voice">
+            <span class="ico">🎵</span>
+            <span class="txt">点击听TA的声音· 3"</span>
+            <div class="bars">
+              <span style="height:6px"></span>
+              <span style="height:14px"></span>
+              <span style="height:8px"></span>
+              <span style="height:12px"></span>
+              <span style="height:5px"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dcard-actions">
+        <button class="act-btn act-btn--sm" title="跳过">×</button>
+        <button class="act-btn act-btn--md" title="超级喜欢">猸?/button>
+        <button class="act-btn act-btn--heart" title="喜欢">♥</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       组件2: ProfileDetailCard
+       ============================================================ -->
+  <div class="phone fade-in">
+    <div class="phone-bar">
+      <span>9:41</span>
+      <div class="icons"><span>📶</span><span>📶</span><span>🔋</span></div>
+    </div>
+    <div class="phone-body" style="padding:0">
+      <div class="comp-head">
+        <h3>ProfileDetailCard</h3>
+        <small>个人资料卡 · 对标 #151</small>
+      </div>
+
+      <div style="margin:0 12px 12px" class="card">
+        <div class="pcard-avatar">
+          <div class="avatar-ring">
+            <div class="avatar-inner">李</div>
+          </div>
+          <div class="pcard-name">李明</div>
+          <div class="pcard-city">📍 广州 · 华南理工大学</div>
+          <div class="pcard-cert">
+            <div class="cert-item"><span class="ck">✓</span>手机认证</div>
+            <div class="cert-item"><span class="ck">鉁?/span>瀛︿俊缃戣璇?/div>
+          </div>
+        </div>
+
+        <div class="pcard-section">
+          <div class="section-title">基础信息</div>
+          <div class="info-grid">
+            <div class="info-cell"><div class="info-label">星座</div><div class="info-value">双子座</div></div>
+            <div class="info-cell"><div class="info-label">职业</div><div class="info-value">IT/互联网</div></div>
+            <div class="info-cell"><div class="info-label">身高</div><div class="info-value">178cm</div></div>
+            <div class="info-cell"><div class="info-label">学历</div><div class="info-value">本科</div></div>
+          </div>
+        </div>
+
+        <div class="pcard-section" style="margin-top:var(--sp-4)">
+          <div class="section-title">关于我</div>
+          <div class="pcard-bio-box">
+            <div class="pcard-bio-text">喜欢摄影和旅行，周末喜欢去城市角落拍照。养了一只猫，是个猫奴🐱</div>
+          </div>
+        </div>
+
+        <div class="pcard-section" style="margin-top:var(--sp-4)">
+          <div class="section-title">兴趣标签</div>
+          <div class="dcard-tags">
+            <span class="tag-sm">📷 摄影</span>
+            <span class="tag-sm">🏷 旅行</span>
+            <span class="tag-sm">🎵 音乐</span>
+            <span class="tag-sm">🎀 草莓</span>
+          </div>
+        </div>
+
+        <div class="pcard-section" style="margin-top:var(--sp-4)">
+          <div class="section-title">相册</div>
+          <div class="pcard-gallery">
+            <div class="gallery-item" style="background:linear-gradient(135deg,#3FCF8E,#7CD9A6)">🌅</div>
+            <div class="gallery-item" style="background:linear-gradient(135deg,#7CD9A6,#9BB8FF)">🌃</div>
+            <div class="gallery-item" style="background:linear-gradient(135deg,#9BB8FF,#A7F3D0)">🎨</div>
+            <div class="gallery-item" style="background:linear-gradient(135deg,#A7F3D0,#3FCF8E)">🏞</div>
+          </div>
+        </div>
+
+        <div class="pcard-btns">
+          <button class="btn btn--outline">×跳过</button>
+          <button class="btn btn--primary">♥喜欢TA</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       组件3: VillagePostCard
+       ============================================================ -->
+  <div class="phone fade-in">
+    <div class="phone-bar">
+      <span>9:41</span>
+      <div class="icons"><span>📶</span><span>📶</span><span>🔋</span></div>
+    </div>
+    <div class="phone-body" style="padding:0">
+      <div class="comp-head">
+        <h3>VillagePostCard</h3>
+        <small>社区帖子卡 · 对标 #143</small>
+      </div>
+
+      <div style="margin:0 12px 12px" class="card">
+        <div style="padding:var(--sp-4) var(--sp-5)">
+          <div class="vpost-header">
+            <div class="vpost-avatar" style="background:var(--brand-gradient)">李</div>
+            <div class="vpost-meta">
+              <div class="vpost-name">李明</div>
+              <div class="vpost-time">2小时前·华南理工</div>
+            </div>
+            <button class="vpost-follow">+ 关注</button>
+          </div>
+
+          <div class="vpost-content">周末去广州塔拍照，有一起的吗？📳</div>
+
+          <div class="vpost-images">
+            <div class="img-placeholder" style="background:linear-gradient(135deg,#3FCF8E,#7CD9A6)">🌅</div>
+            <div class="img-placeholder" style="background:linear-gradient(135deg,#7CD9A6,#9BB8FF)">🌄</div>
+            <div class="img-placeholder" style="background:linear-gradient(135deg,#9BB8FF,#A7F3D0)">🌇</div>
+          </div>
+
+          <div class="vpost-topics">
+            <span class="topic-tag">#摄影</span>
+            <span class="topic-tag">#广州</span>
+            <span class="topic-tag">#周末活动</span>
+          </div>
+
+          <div class="vpost-actions">
+            <div class="vpost-action vpost-action--liked"><span class="icon">♥</span> 42</div>
+            <div class="vpost-action"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span> 12</div>
+            <div class="vpost-action"><span class="icon">↗</span> 8</div>
+          </div>
+
+          <div class="vpost-comment">
+            <div><span class="comment-author">小王</span> <span class="comment-text">：我也想去！下次约一起</span></div>
+            <div class="comment-replies">鍥炲 5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       组件4: MessageRow
+       ============================================================ -->
+  <div class="phone fade-in">
+    <div class="phone-bar">
+      <span>9:41</span>
+      <div class="icons"><span>📶</span><span>📶</span><span>🔋</span></div>
+    </div>
+    <div class="phone-body" style="padding:0">
+      <div class="comp-head">
+        <h3>MessageRow</h3>
+        <small>消息列表页 · 对标 #144</small>
+      </div>
+
+      <div style="margin:0 12px 12px" class="card">
+        <!-- 消息1：普通消息 未读 -->
+        <div class="msg-item">
+          <div class="msg-row">
+            <div class="msg-avatar" style="background:linear-gradient(135deg,#3FCF8E,#7CD9A6)">
+              李              <span class="online"></span>
+            </div>
+            <div class="msg-info">
+              <div class="msg-top">
+                <span class="msg-name">李明</span>
+                <span class="msg-time">2分钟前</span>
+              </div>
+              <div class="msg-preview">喜欢摄影和旅行，周末喜欢去城市角落拍照。</div>
+            </div>
+            <div class="msg-unread">3</div>
+          </div>
+          <div class="msg-countdown">
+            <span class="ico" style="font-size:14px">💌</span>
+            <span class="cd-label">心信号 · 礼物</span>
+            <span class="cd-time">23:59</span>
+            <div class="cd-bar"><div class="cd-bar-fill" style="width:95%"></div></div>
+          </div>
+        </div>
+
+        <!-- 消息2：匹配事件 -->
+        <div class="msg-item">
+          <div class="msg-row">
+            <div class="msg-avatar" style="background:linear-gradient(135deg,#FF8C42,#EC4899)">晓</div>
+            <div class="msg-info">
+              <div class="msg-top">
+                <span class="msg-name">小红 <span class="msg-badge--pink" style="display:inline">💞 匹配成功</span></span>
+                <span class="msg-time">昨天</span>
+              </div>
+              <div class="msg-preview">我们匹配成功！开始聊天吧~</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 娑堟伅3锛氬凡璇?-->
+        <div class="msg-item">
+          <div class="msg-row">
+            <div class="msg-avatar" style="background:linear-gradient(135deg,#7CD9A6,#9BB8FF)">晓</div>
+            <div class="msg-info">
+              <div class="msg-top">
+                <span class="msg-name">小雅</span>
+                <span class="msg-time">周三</span>
+              </div>
+              <div class="msg-preview" style="color:var(--gray-300)">好的，下次一起吧 ❤️</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       组件5: InterestTag 系统
+       ============================================================ -->
+  <div class="phone fade-in">
+    <div class="phone-bar">
+      <span>9:41</span>
+      <div class="icons"><span>📶</span><span>📶</span><span>🔋</span></div>
+    </div>
+    <div class="phone-body" style="padding:0">
+      <div class="comp-head">
+        <h3>InterestTag 系统</h3>
+        <small>兴趣标签体系 · 对标 #145</small>
+      </div>
+
+      <div style="margin:0 12px 12px" class="card" style="padding:var(--sp-5) var(--sp-5)">
+        <div class="tag-section">
+          <div class="tag-section-title">属性标签</div>
+          <div class="tag-row">
+            <span class="tag tag--gray">双子座</span>
+            <span class="tag tag--gray">IT/互联网</span>
+            <span class="tag tag--gray">178cm</span>
+            <span class="tag tag--gray">本科</span>
+          </div>
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-section-title">兴趣标签（可多选）</div>
+          <div class="tag-row">
+            <span class="tag tag--blue-active tag--pill">📷 摄影 ✓</span>
+            <span class="tag tag--blue tag--pill">🏷 旅行</span>
+            <span class="tag tag--blue-active tag--pill">🎵 音乐 ✓</span>
+            <span class="tag tag--blue tag--pill">🎀 草莓</span>
+            <span class="tag tag--blue tag--pill">🏞 美食控</span>
+            <span class="tag tag--blue tag--pill">🍱 看书</span>
+            <span class="tag tag--more tag--pill">+3</span>
+          </div>
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-section-title">状态标签</div>
+          <div class="tag-row">
+            <span class="tag tag--status">✨ 今日活跃</span>
+            <span class="tag tag--pill tag--blue" style="border:none">刚刚在线</span>
+          </div>
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-section-title">话题标签</div>
+          <div class="tag-row">
+            <span class="tag tag--topic">#摄影</span>
+            <span class="tag tag--topic">#周末活动</span>
+            <span class="tag tag--topic">#广州</span>
+          </div>
+        </div>
+
+        <div class="tag-section" style="margin-bottom:0">
+          <div class="tag-section-title">认证标签</div>
+          <div class="tag-row">
+            <div class="tag tag--cert"><span class="ck">✓</span>身份已认证</div>
+            <div class="tag tag--cert"><span class="ck">鉁?/span>瀛︿俊缃戣璇?/div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       组件6: MatchAnimation
+       ============================================================ -->
+  <div class="phone fade-in">
+    <div class="phone-bar">
+      <span>9:41</span>
+      <div class="icons"><span>📶</span><span>📶</span><span>🔋</span></div>
+    </div>
+    <div class="phone-body" style="padding:0">
+      <div class="comp-head">
+        <h3>MatchAnimation</h3>
+        <small>匹配动效 · 对标 #142</small>
+      </div>
+
+      <div style="margin:0 12px 12px" class="card">
+        <div class="match-step">
+          <div class="match-label">① 发送喜欢信号</div>
+          <div class="match-faces">
+            <div class="match-avatar" style="background:var(--brand-gradient)">李</div>
+            <span class="match-heart">♥</span>
+            <div class="match-avatar" style="background:var(--gray-200);color:var(--gray-400)">?</div>
+          </div>
+          <div class="match-status match-status--waiting" style="margin-top:var(--sp-3)">已发送 · 等待回应...</div>
+          <div class="match-desc">对方收到后会通知你</div>
+        </div>
+
+        <div class="match-step">
+          <div class="match-label">① 匹配成功 ✓</div>
+          <div class="match-success-box">
+            <div class="match-faces">
+              <div class="match-avatar" style="background:var(--brand-gradient);animation:slideLeft 0.8s ease-out">李</div>
+              <span class="match-heart" style="font-size:20px">💕</span>
+              <div class="match-avatar" style="background:linear-gradient(135deg,#FF8C42,#EC4899);animation:slideRight 0.8s ease-out">晓</div>
+            </div>
+            <div class="match-title">你们互相喜欢~</div>
+            <div class="match-sub">开始聊天吧 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+            <div class="match-btns">
+              <button class="btn btn--primary" style="flex:1">发消息</button>
+              <button class="btn btn--outline" style="flex:1">再看眼</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       V1 vs V2 瀵规瘮
+       ============================================================ -->
+  <div class="comparison fade-in">
+    <h4>优化对比 V1 → V2</h4>
+    <table>
+      <tr><th>维度</th><th class="before">V1</th><th class="after">V2</th></tr>
+      <tr><td>主色</td><td class="before">#3FCF8E 冷蓝</td><td class="after">#3FCF8E 暖蓝</td></tr>
+      /* 中性色（BlueGray 调，含 12% 蓝调倾向）*/
+
+      <tr><td>阴影</td><td class="before">统一 10%</td><td class="after">3 级分层 4/6/8%</td></tr>
+      <tr><td>圆角</td><td class="before">统一 20px</td><td class="after">8/12/16/20 分级</td></tr>
+      <tr><td>渐变</td><td class="before">按钮+卡片都用</td><td class="after">仅主元素用，按钮白色</td></tr>
+      <tr><td>间距</td><td class="before">8/10/12 混用</td><td class="after">4px 网格 8/12/16/24</td></tr>
+      <tr><td>交互反馈</td><td class="before">无</td><td class="after">按压/涟漪/缩放</td></tr>
+    </table>
+  </div>
+
+  <!-- ============================================================
+       色板
+       ============================================================ -->
+  <div class="palette-wrap fade-in">
+    <div class="palette-title">色板总览</div>
+    <div class="palette-grid">
+      <div class="palette-chip"><div class="palette-swatch" style="background:#3FCF8E"></div><div class="palette-label">#3FCF8E<br>品牌主色</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#2DB97A"></div><div class="palette-label">#2DB97A<br>交互色</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#7CD9A6"></div><div class="palette-label">#7CD9A6<br>品牌绿</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#D1FAE5"></div><div class="palette-label">#D1FAE5<br>品牌100</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#F0FDF4"></div><div class="palette-label">#F0FDF4<br>品牌50</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#F8FAFC"></div><div class="palette-label">#F8FAFC<br>页面背景</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#F1F5F9"></div><div class="palette-label">#F1F5F9<br>表面</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#E2E8F0"></div><div class="palette-label">#E2E8F0<br>边框</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#EC4899"></div><div class="palette-label">#EC4899<br>粉色</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#10B981"></div><div class="palette-label">#10B981<br>成功</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#EF4444"></div><div class="palette-label">#EF4444<br>错误</div></div>
+      <div class="palette-chip"><div class="palette-swatch" style="background:#F97316"></div><div class="palette-label">#F97316<br>强调</div></div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes slideLeft {
+      from { transform: translateX(40px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideRight {
+      from { transform: translateX(-40px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+
+</div>
+</body>
+</html>
+

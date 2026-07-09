@@ -53,6 +53,14 @@ public class PrivateMessage {
     @Column(name = "is_read", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean isRead = false;
 
+    /** 是否已撤回（仅发送者本人可在 2 分钟内撤回） */
+    @Column(name = "recalled", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    private Boolean recalled = false;
+
+    /** 投递状态：sent（已发送）/ delivered（已送达）/ read（已读） */
+    @Column(name = "delivery_status", nullable = false, length = 16)
+    private String deliveryStatus = "sent";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -121,5 +129,21 @@ public class PrivateMessage {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Boolean getRecalled() {
+        return recalled;
+    }
+
+    public void setRecalled(Boolean recalled) {
+        this.recalled = recalled;
+    }
+
+    public String getDeliveryStatus() {
+        return deliveryStatus;
+    }
+
+    public void setDeliveryStatus(String deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
     }
 }

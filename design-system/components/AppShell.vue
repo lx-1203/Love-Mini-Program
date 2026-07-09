@@ -113,7 +113,7 @@ function switchTab(path: string) {
         <view class="shell__tab-icon-wrap">
           <image
             class="shell__tab-icon"
-            :src="tab.id === props.currentTab ? tab.activeIconPath : tab.iconPath"
+            :src="tab.id === props.currentTab ? tab.selectedIconPath : tab.iconPath"
             mode="aspectFit"
           />
         </view>

@@ -83,6 +83,20 @@ public interface RecommendationService {
     List<RecommendedPersonView> getRecommendations(Long userId);
 
     /**
+     * 获取推荐人物列表（带筛选参数）。
+     * 在原有加权排序基础上，应用 {@link RecommendationFilter} 中的筛选条件
+     * （身高范围、学历、感情状态、籍贯、未来城市、关键词模糊匹配）。
+     *
+     * <p>当 filter 为 null 或 {@link RecommendationFilter#isEmpty()} 返回 true 时，
+     * 行为应与 {@link #getRecommendations(Long)} 完全一致，保证向后兼容。</p>
+     *
+     * @param userId 当前用户 ID
+     * @param filter 筛选参数，可空
+     * @return 推荐人物视图列表
+     */
+    List<RecommendedPersonView> getRecommendations(Long userId, RecommendationFilter filter);
+
+    /**
      * 获取指定用户的推荐偏好设置。
      *
      * @param userId 用户 ID

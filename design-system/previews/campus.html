@@ -1,0 +1,253 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>鏍″洯璇濋 鈥?鏍″洯鎭嬬埍灏忕▼搴?/title>
+  <style>
+    :root {
+      --brand-50: #F0FDF4; --brand-100: #D1FAE5; --brand-200: #A7F3D0;
+      --brand-300: #6EE7B7; --brand-400: #3FCF8E; --brand-500: #2DB97A;
+      --brand-600: #25A86D; --brand-700: #1E8C5A;
+      --pink-50: #FDF2F8; --pink-400: #F472B6; --pink-500: #EC4899;
+      --orange-50: #FFF7ED; --orange-100: #FFEDD5; --orange-400: #FB923C;
+      --success: #10B981; --warning: #F59E0B;
+      --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0;
+      --gray-300: #CBD5E1; --gray-400: #94A3B8; --gray-500: #64748B;
+      --gray-600: #475569; --gray-700: #334155; --gray-800: #1E293B;
+      --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 20px; --space-6: 24px;
+      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+      --radius-xl: 20px; --radius-full: 9999px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+      --text-h3: 18px; --text-body: 16px; --text-body-sm: 14px;
+      --text-caption: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--gray-50); color: var(--gray-800);
+      width: 375px; min-height: 100vh; margin: 0 auto;
+      overflow-x: hidden; -webkit-font-smoothing: antialiased;
+    }
+    .status-bar { height: 44px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); font-size: var(--text-caption); color: var(--gray-700); }
+    .status-bar .time { font-weight: 600; }
+    .status-bar .icons { display: flex; gap: 4px; align-items: center; }
+    .status-bar .icons svg { width: 16px; height: 16px; }
+    .nav-bar { height: 48px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); border-bottom: 1px solid var(--gray-200); }
+    .nav-bar h1 { font-size: var(--text-h3); font-weight: 600; }
+    .nav-bar .school-info { display: flex; align-items: center; gap: 4px; font-size: var(--text-caption); color: var(--gray-500); }
+    .nav-bar .verified-badge { background: var(--success); color: #fff; font-size: 10px; padding: 2px 8px; border-radius: var(--radius-full); font-weight: 600; }
+    .nav-bar .pending-badge { background: var(--warning); color: #fff; font-size: 10px; padding: 2px 8px; border-radius: var(--radius-full); font-weight: 600; }
+    .page-content { padding-bottom: 80px; }
+    /* 瀛︽牎璁よ瘉鍗＄墖 */
+    .cert-card { margin: var(--space-4); padding: var(--space-4); background: linear-gradient(135deg, var(--brand-50), #fff); border-radius: var(--radius-md); border: 1px solid var(--brand-200); display: flex; align-items: center; gap: var(--space-3); }
+    .cert-card .icon { width: 48px; height: 48px; background: var(--brand-400); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .cert-card .icon svg { width: 24px; height: 24px; color: #fff; }
+    .cert-card .info { flex: 1; }
+    .cert-card .info .title { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-800); margin-bottom: 2px; }
+    .cert-card .info .desc { font-size: var(--text-caption); color: var(--gray-500); }
+    .cert-card .action { color: var(--brand-500); font-size: var(--text-caption); font-weight: 600; }
+    /* 鍒嗙被 Tab */
+    .category-tabs { display: flex; padding: 0 var(--space-4); gap: var(--space-2); overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--gray-200); background: #fff; }
+    .category-tabs::-webkit-scrollbar { display: none; }
+    .category-tab { flex: 0 0 auto; padding: var(--space-3) var(--space-4); font-size: var(--text-body-sm); color: var(--gray-500); border: none; background: none; cursor: pointer; position: relative; white-space: nowrap; }
+    .category-tab.active { color: var(--brand-600); font-weight: 600; }
+    .category-tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 24px; height: 3px; background: var(--brand-400); border-radius: var(--radius-full); }
+    /* 璇濋鍒楄〃 */
+    .topic-list { padding: var(--space-3) var(--space-4); }
+    .topic-card { background: #fff; border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-3); box-shadow: var(--shadow-sm); cursor: pointer; }
+    .topic-card:active { transform: scale(0.98); transition: transform 0.1s; }
+    .topic-card .topic-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+    .topic-card .topic-avatar { width: 36px; height: 36px; border-radius: var(--radius-full); object-fit: cover; }
+    .topic-card .topic-meta { flex: 1; }
+    .topic-card .topic-meta .author { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-700); }
+    .topic-card .topic-meta .time { font-size: var(--text-caption); color: var(--gray-400); }
+    .topic-card .topic-tag { font-size: 10px; padding: 2px 8px; border-radius: var(--radius-full); font-weight: 500; }
+    .topic-card .topic-tag.course { background: var(--brand-50); color: var(--brand-600); }
+    .topic-card .topic-tag.club { background: var(--pink-50); color: var(--pink-500); }
+    .topic-card .topic-tag.activity { background: var(--orange-50); color: var(--orange-400); }
+    .topic-card .topic-tag.study { background: #F0F9FF; color: #3B82F6; }
+    .topic-card .topic-tag.life { background: #F5F3FF; color: #8B5CF6; }
+    .topic-card .topic-tag.alumni { background: var(--gray-100); color: var(--gray-600); }
+    .topic-card .topic-title { font-size: var(--text-body); font-weight: 600; color: var(--gray-800); margin-bottom: var(--space-2); line-height: 1.4; }
+    .topic-card .topic-content { font-size: var(--text-body-sm); color: var(--gray-600); line-height: 1.6; margin-bottom: var(--space-3); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .topic-card .topic-images { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
+    .topic-card .topic-images .img { width: 100px; height: 75px; border-radius: var(--radius-sm); background: var(--gray-100); object-fit: cover; }
+    .topic-card .topic-footer { display: flex; align-items: center; gap: var(--space-5); }
+    .topic-card .topic-footer .action { display: flex; align-items: center; gap: 4px; font-size: var(--text-caption); color: var(--gray-400); }
+    .topic-card .topic-footer .action svg { width: 16px; height: 16px; }
+    .topic-card .topic-footer .action.liked { color: var(--pink-500); }
+    /* 鎮诞鍙戝竷鎸夐挳 */
+    .fab { position: fixed; bottom: 80px; right: calc(50% - 187px + 20px); width: 56px; height: 56px; background: linear-gradient(135deg, var(--brand-400), var(--brand-500)); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(45,212,191,0.4); border: none; cursor: pointer; z-index: 10; }
+    .fab svg { width: 24px; height: 24px; color: #fff; }
+    .fab:active { transform: scale(0.9); }
+    /* 搴曢儴 TabBar */
+    .tab-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; height: 56px; background: #fff; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--gray-200); padding-bottom: env(safe-area-inset-bottom); }
+    .tab-bar .tab { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 12px; }
+    .tab-bar .tab svg { width: 24px; height: 24px; color: var(--gray-400); transition: color 0.2s; }
+    .tab-bar .tab span { font-size: 10px; color: var(--gray-400); transition: color 0.2s; }
+    .tab-bar .tab.active svg { color: var(--brand-400); transform: scale(1.1); }
+    .tab-bar .tab.active span { color: var(--brand-400); font-weight: 600; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-in { animation: fadeInUp 0.3s ease-out forwards; }
+  </style>
+</head>
+<body>
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="1" y="6" width="4" height="12" rx="1"/><rect x="7" y="4" width="4" height="14" rx="1"/><rect x="13" y="2" width="4" height="16" rx="1"/><rect x="19" y="0" width="4" height="18" rx="1" opacity=".3"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="10" x2="23" y2="14"/></svg>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <h1>鏍″洯璇濋</h1>
+    <div class="school-info">
+      鍖椾含澶у
+      <span class="verified-badge">宸茶璇?/span>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="cert-card animate-in">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+      </div>
+      <div class="info">
+        <div class="title">馃帗 鏍″洯璁よ瘉</div>
+        <div class="desc">璁よ瘉鍚庡彲鍙戝竷璇濋锛屽弬涓庢牎鍥ぞ浜?/div>
+      </div>
+      <div class="action">鍘昏璇?鈥?/div>
+    </div>
+
+    <div class="category-tabs animate-in">
+      <button class="category-tab active">馃摎 璇剧▼浜ゆ崲</button>
+      <button class="category-tab">馃 绀惧洟鎷涙柊</button>
+      <button class="category-tab">馃帀 鏍″洯娲诲姩</button>
+      <button class="category-tab">馃摉 瀛︿範浜掑姪</button>
+      <button class="category-tab">馃崪 鐢熸椿鏈嶅姟</button>
+      <button class="category-tab">馃懆鈥嶐煄?鏍″弸鍔ㄦ€?/button>
+    </div>
+
+    <div class="topic-list">
+      <div class="topic-card animate-in">
+        <div class="topic-header">
+          <img class="topic-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="">
+          <div class="topic-meta">
+            <div class="author">鏋楀皬闆?/div>
+            <div class="time">2灏忔椂鍓?/div>
+          </div>
+          <span class="topic-tag course">璇剧▼浜ゆ崲</span>
+        </div>
+        <div class="topic-title">鏈変汉瑕佹崲鍛ㄤ笁涓嬪崍鐨勩€婃暟鎹粨鏋勩€嬪悧锛?/div>
+        <div class="topic-content">鎴戝懆涓変笅鍗堟湁浜嬶紝鎯虫崲鍒板懆鍥涙垨鑰呭懆浜斻€傛湁鎰忓悜鐨勫悓瀛︾淇℃垜锛岃绋嬩唬鐮佹槸CS201锛屽鍒?鍒嗐€?/div>
+        <div class="topic-footer">
+          <span class="action liked">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            28
+          </span>
+          <span class="action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            12
+          </span>
+          <span class="action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            鍒嗕韩
+          </span>
+        </div>
+      </div>
+
+      <div class="topic-card animate-in">
+        <div class="topic-header">
+          <img class="topic-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=ffdfbf" alt="">
+          <div class="topic-meta">
+            <div class="author">寮犳槑杩?/div>
+            <div class="time">5灏忔椂鍓?/div>
+          </div>
+          <span class="topic-tag club">绀惧洟鎷涙柊</span>
+        </div>
+        <div class="topic-title">馃幁 璇濆墽绀炬槬瀛ｆ嫑鏂帮紒闆跺熀纭€涔熷彲浠ュ弬鍔?/div>
+        <div class="topic-content">鎴戜滑璇濆墽绀炬鍦ㄦ嫑鏂版垚鍛橈紝涓嶉渶瑕佷换浣曡〃婕旂粡楠岋紒姣忓懆涓夋櫄涓婃帓缁冿紝鏈鏈熶細鎺掓紨銆婃殫鎭嬫鑺辨簮銆嬨€傛劅鍏磋叮鐨勫悓瀛︽潵鍔犲叆鎴戜滑鍚э綖</div>
+        <div class="topic-footer">
+          <span class="action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            45
+          </span>
+          <span class="action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            23
+          </span>
+          <span class="action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            鍒嗕韩
+          </span>
+        </div>
+      </div>
+
+      <div class="topic-card animate-in">
+        <div class="topic-header">
+          <img class="topic-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mia&backgroundColor=c0aede" alt="">
+          <div class="topic-meta">
+            <div class="author">鐜嬫€濈惇</div>
+            <div class="time">鏄ㄥぉ</div>
+          </div>
+          <span class="topic-tag activity">鏍″洯娲诲姩</span>
+        </div>
+        <div class="topic-title">馃幍 鏈懆鏈牎鍥煶涔愯妭锛佸厤璐瑰弬鍔?/div>
+        <div class="topic-content">鍛ㄥ叚涓嬪崍2鐐癸紝鐧惧勾璁插爞锛屾湁涔愰槦琛ㄦ紨鍜屾牎鍥瓕鎵嬪ぇ璧涖€傚嚟瀛︾敓璇佸厤璐瑰叆鍦猴紝杩樻湁鎶藉娲诲姩锛?/div>
+        <div class="topic-images">
+          <div class="img" style="background: linear-gradient(135deg, var(--orange-50), var(--pink-50));"></div>
+          <div class="img" style="background: linear-gradient(135deg, var(--brand-50), #F0F9FF);"></div>
+          <div class="img" style="background: linear-gradient(135deg, #F5F3FF, var(--pink-50));"></div>
+        </div>
+        <div class="topic-footer">
+          <span class="action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            128
+          </span>
+          <span class="action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            56
+          </span>
+          <span class="action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            鍒嗕韩
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="fab">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <div class="tab-bar">
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>棣栭〉</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>瀵昏</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>鑱婂ぉ</span>
+    </div>
+    <div class="tab active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>鏍″洯</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>鎴戠殑</span>
+    </div>
+  </div>
+</body>
+</html>
+

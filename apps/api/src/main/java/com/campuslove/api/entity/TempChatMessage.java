@@ -44,6 +44,18 @@ public class TempChatMessage {
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
 
+    /** 是否已撤回（仅发送者本人可在 2 分钟内撤回） */
+    @Column(name = "recalled", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    private Boolean recalled = false;
+
+    /** 投递状态：sent（已发送）/ delivered（已送达）/ read（已读） */
+    @Column(name = "delivery_status", nullable = false, length = 16)
+    private String deliveryStatus = "sent";
+
+    /** 引用消息 JSON 快照，当引用回复时携带被引用消息的摘要 */
+    @Column(name = "quote_snapshot", columnDefinition = "TEXT")
+    private String quoteSnapshot;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -104,5 +116,29 @@ public class TempChatMessage {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Boolean getRecalled() {
+        return recalled;
+    }
+
+    public void setRecalled(Boolean recalled) {
+        this.recalled = recalled;
+    }
+
+    public String getDeliveryStatus() {
+        return deliveryStatus;
+    }
+
+    public void setDeliveryStatus(String deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
+    }
+
+    public String getQuoteSnapshot() {
+        return quoteSnapshot;
+    }
+
+    public void setQuoteSnapshot(String quoteSnapshot) {
+        this.quoteSnapshot = quoteSnapshot;
     }
 }

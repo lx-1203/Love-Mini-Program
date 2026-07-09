@@ -2,6 +2,8 @@ package com.campuslove.api.village;
 
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -40,8 +42,8 @@ public class VillageController {
       @RequestParam(name = "category", required = false) String category,
       @RequestParam(name = "tag", required = false) String tag,
       @RequestParam(name = "sortBy", required = false, defaultValue = "latest") String sortBy,
-      @RequestParam(name = "page", required = false, defaultValue = "1") int page,
-      @RequestParam(name = "pageSize", required = false, defaultValue = "20") int pageSize) {
+      @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
+      @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
     // 校园分类需要从认证上下文获取 userId
     Long userId = null;
     if ("campus".equals(category)) {

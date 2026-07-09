@@ -65,7 +65,7 @@ public class RealCampusService implements CampusService {
     // ---- 校园话题 ----
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public CampusTopicView getCampusTopic(Long topicId) {
         CampusTopic topic = findTopicOrThrow(topicId);
 

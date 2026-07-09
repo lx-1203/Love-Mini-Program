@@ -57,4 +57,10 @@ public interface TempChatService {
      * 标记指定会话为已读。
      */
     ChatSessionSummaryView markSessionRead(String id);
+
+    /**
+     * 撤回指定会话中的某条消息。
+     * 仅发送者本人可在发送后 2 分钟内撤回。
+     */
+    TempChatSessionView recallMessage(String sessionId, String messageId);
 }

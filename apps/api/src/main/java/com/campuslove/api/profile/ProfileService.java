@@ -3,10 +3,14 @@ package com.campuslove.api.profile;
 import com.campuslove.api.user.FollowUserView;
 import com.campuslove.api.user.FollowView;
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 个人资料服务接口。
  * 提供基本资料、校园资料、课表资料的获取与保存功能，以及关注关系管理。
+ *
+ * <p>Phase B 扩展：新增媒体绑定方法（背景图/照片墙/视频/半身照），
+ * 用于 ProfileController 的多部分上传端点。</p>
  */
 public interface ProfileService {
 
@@ -24,6 +28,53 @@ public interface ProfileService {
      * @return 基本资料视图
      */
     BasicProfileView saveBasicProfile(BasicProfileRequest request);
+
+    /**
+     * 上传个人主页背景图。
+     * 调用 MediaStorageService 以 type="background" 存储，
+     * 将返回的 URL 写入 UserBasicProfile.profileBackgroundUrl。
+     *
+     * @param file multipart 图片文件
+     * @return 更新后的基本资料视图（包含新背景图 URL）
+     */
+    BasicProfileView uploadBackground(MultipartFile file);
+
+    /**
+     * 上传照片墙图片到指定索引。
+     * 索引范围 0-5，若该位置已有照片则覆盖；超过 6 张返回 400。
+     *
+     * @param file  multipart 图片文件
+     * @param index 照片墙索引（0-5）
+     * @return 更新后的基本资料视图
+     */
+    BasicProfileView uploadPhoto(MultipartFile file, int index);
+
+    /**
+     * 删除指定索引的照片墙图片。
+     * 索引越界返回 400。
+     *
+     * @param index 照片墙索引（0-5）
+     * @return 更新后的基本资料视图
+     */
+    BasicProfileView deletePhoto(int index);
+
+    /**
+     * 上传个人视频。
+     * 校验视频格式与大小，写入 personalVideoUrl。
+     *
+     * @param file multipart 视频文件
+     * @return 更新后的基本资料视图
+     */
+    BasicProfileView uploadVideo(MultipartFile file);
+
+    /**
+     * 上传半身照。
+     * 写入 halfBodyPhotoUrl，用于推荐卡片大图。
+     *
+     * @param file multipart 图片文件
+     * @return 更新后的基本资料视图
+     */
+    BasicProfileView uploadHalfBody(MultipartFile file);
 
     /**
      * 获取校园资料。

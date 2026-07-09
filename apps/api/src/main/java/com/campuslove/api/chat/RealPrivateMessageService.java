@@ -196,6 +196,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
     /**
      * 标记指定会话中所有未读消息为已读。
+     * 使用批量更新提高性能。
      */
     @Override
     @Transactional
@@ -204,17 +205,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
             throw new IllegalArgumentException("conversationId and userId are required");
         }
 
-        // 查找该会话中由对方发送的未读消息
-        List<PrivateMessage> unreadMessages = messageRepository
-                .findByConversationIdOrderByCreatedAtAsc(conversationId)
-                .stream()
-                .filter(msg -> !msg.getSenderId().equals(userId) && !msg.getIsRead())
-                .toList();
-
-        for (PrivateMessage msg : unreadMessages) {
-            msg.setIsRead(true);
-            messageRepository.save(msg);
-        }
+        // 使用批量更新标记未读消息为已读
+        messageRepository.markAsReadByConversationAndSenderNot(conversationId, userId);
     }
 
     // ---- Phase 2 新增：会话置顶 ----

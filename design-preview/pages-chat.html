@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>聊天页 — 校园恋爱小程序</title>
+<style>
+:root {
+  --brand: #3FCF8E;
+  --brand-dark: #2DB97A;
+  --brand-light: #D1F0E0;
+  --brand-50: #E8F8F0;
+  --gray-0: #FFFFFF;
+  --gray-50: #F4F6FA;
+  --gray-100: #EEF0F4;
+  --gray-200: #E2E8F0;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-700: #334155;
+  --gray-800: #1F2329;
+  --text-primary: #1F2329;
+  --text-secondary: #5B6470;
+  --text-tertiary: #9AA1AB;
+  --bubble-other: #F0F2F5;
+  --bubble-self: #3FCF8E;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--gray-50);
+  width: 375px;
+  min-height: 100vh;
+  margin: 0 auto;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+.phone-frame {
+  width: 375px;
+  min-height: 812px;
+  height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--gray-50);
+}
+.status-bar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--gray-0);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.status-bar .icons { display: flex; gap: 4px; align-items: center; }
+.status-bar .icons svg { width: 16px; height: 16px; stroke: var(--text-primary); fill: none; stroke-width: 1.5; }
+
+/* 导航栏 */
+.nav-bar {
+  height: 48px;
+  background: var(--gray-0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.nav-bar .left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nav-bar .back-btn {
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.nav-bar .back-btn svg { width: 24px; height: 24px; stroke: var(--text-primary); fill: none; stroke-width: 1.5; }
+.nav-bar .user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-bar .user-info .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.nav-bar .user-info .name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.nav-bar .user-info .status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.nav-bar .user-info .status .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--brand);
+  border-radius: 50%;
+}
+.nav-bar .right .icon-btn {
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.nav-bar .right .icon-btn svg { width: 24px; height: 24px; stroke: var(--text-secondary); fill: none; stroke-width: 1.5; }
+
+/* 消息区域 */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 时间戳 */
+.timestamp {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* 消息气泡 */
+.message {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 80%;
+}
+.message.other {
+  align-self: flex-start;
+}
+.message.self {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.message .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.message .bubble {
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.message.other .bubble {
+  background: var(--bubble-other);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+}
+.message.self .bubble {
+  background: var(--bubble-self);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+/* 输入区域 */
+.input-area {
+  height: 56px;
+  background: var(--gray-0);
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+}
+.input-area .icon-btn {
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.input-area .icon-btn svg { width: 24px; height: 24px; stroke: var(--text-secondary); fill: none; stroke-width: 1.5; }
+.input-area .input-box {
+  flex: 1;
+  height: 36px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-100);
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+}
+.input-area .input-box::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* 安全区 */
+.safe-area {
+  height: 34px;
+  background: var(--gray-0);
+}
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>
+    </div>
+  </div>
+
+  <!-- 导航栏 -->
+  <div class="nav-bar">
+    <div class="left">
+      <button class="back-btn">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="user-info">
+        <div class="avatar">抢</div>
+        <div>
+          <div class="name">抢滨</div>
+          <div class="status">
+            <span class="dot"></span>
+            在线
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 消息区域 -->
+  <div class="chat-messages">
+    <div class="timestamp">11:21</div>
+    
+    <div class="message other">
+      <div class="avatar">抢</div>
+      <div class="bubble">你好呀，最近在忙什么呢？</div>
+    </div>
+    
+    <div class="message self">
+      <div class="bubble">最近在准备期末考试，有点忙～</div>
+    </div>
+    
+    <div class="timestamp">11:27</div>
+    
+    <div class="message other">
+      <div class="avatar">抢</div>
+      <div class="bubble">辛苦了，考完试一起去吃饭吧！</div>
+    </div>
+    
+    <div class="message self">
+      <div class="bubble">好呀，考完试约起来！</div>
+    </div>
+    
+    <div class="message other">
+      <div class="avatar">抢</div>
+      <div class="bubble">听说学校新开了一家火锅店，评价很好，要不要去试试？</div>
+    </div>
+    
+    <div class="message self">
+      <div class="bubble">可以呀，什么时候去？</div>
+    </div>
+    
+    <div class="message other">
+      <div class="avatar">抢</div>
+      <div class="bubble">下周三晚上怎么样？刚好考完最后一门</div>
+    </div>
+    
+    <div class="message self">
+      <div class="bubble">没问题，就这么定了！<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+    </div>
+  </div>
+
+  <!-- 输入区域 -->
+  <div class="input-area">
+    <button class="icon-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+    <input type="text" class="input-box" placeholder="输入消息">
+    <button class="icon-btn">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+    </button>
+    <button class="icon-btn">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- 安全区 -->
+  <div class="safe-area"></div>
+</div>
+
+</body>
+</html>

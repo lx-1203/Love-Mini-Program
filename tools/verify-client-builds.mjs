@@ -2,7 +2,6 @@ import { spawn } from "node:child_process";
 
 const warningMatchers = [
   /resolve\.alias.*customResolver/iu,
-  /Sass @import rules are deprecated/iu,
 ];
 
 const builds = [

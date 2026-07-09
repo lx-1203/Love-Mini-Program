@@ -85,13 +85,33 @@ public class MockTempChatService implements TempChatService {
     }
 
     List<ChatMessageView> messages = new ArrayList<>(current.session().messages());
+
+    // 构建引用快照
+    String qRef = request.quoteRef();
+    String qBody = null;
+    String qSender = null;
+    if (hasText(qRef)) {
+      for (ChatMessageView m : messages) {
+        if (qRef.equals(m.id())) {
+          qBody = m.body();
+          qSender = m.sender();
+          break;
+        }
+      }
+    }
+
     messages.add(new ChatMessageView(
         "m-" + Instant.now().toEpochMilli(),
         request.sender(),
         request.kind(),
         request.body(),
         Instant.now().toString(),
-        request.durationSeconds()
+        request.durationSeconds(),
+        false,
+        "sent",
+        qRef,
+        qBody,
+        qSender
     ));
 
     TempChatSessionView updated = new TempChatSessionView(
@@ -201,15 +221,42 @@ public class MockTempChatService implements TempChatService {
   @Override
   public ChatSessionSummaryView markSessionRead(String id) {
     SessionState current = getSessionState(id);
-    SessionState updated = new SessionState(
-        current.person(),
-        current.session(),
-        current.updatedAt(),
-        current.pinned(),
-        0
+    // 同时将对方发送的消息 deliveryStatus 更新为 "read"
+    List<ChatMessageView> updatedMessages = current.session().messages().stream()
+        .map(m -> "peer".equals(m.sender()) && "delivered".equals(m.deliveryStatus())
+            ? new ChatMessageView(m.id(), m.sender(), m.kind(), m.body(), m.sentAt(),
+                m.durationSeconds(), m.recalled(), "read", m.quoteRef(), m.quoteBody(), m.quoteSender())
+            : m)
+        .toList();
+    TempChatSessionView updatedSession = new TempChatSessionView(
+        id, current.person().id(), current.person().name(), current.person().headline(),
+        current.person().availability(), current.session().phase(), current.session().closesAt(),
+        current.session().closedReason(), updatedMessages, current.session().contactExchange()
     );
+    SessionState updated = new SessionState(current.person(), updatedSession, current.updatedAt(), current.pinned(), 0);
     sessionsById.put(id, updated);
     return toSummary(updated);
+  }
+
+  @Override
+  public TempChatSessionView recallMessage(String sessionId, String messageId) {
+    SessionState current = getSessionState(sessionId);
+
+    List<ChatMessageView> messages = current.session().messages().stream()
+        .map(m -> messageId.equals(m.id())
+            ? new ChatMessageView(m.id(), m.sender(), m.kind(),
+                "[已撤回]", m.sentAt(), m.durationSeconds(),
+                true, m.deliveryStatus(), m.quoteRef(), m.quoteBody(), m.quoteSender())
+            : m)
+        .toList();
+
+    TempChatSessionView updated = new TempChatSessionView(
+        sessionId, current.person().id(), current.person().name(), current.person().headline(),
+        current.person().availability(), current.session().phase(), current.session().closesAt(),
+        current.session().closedReason(), messages, current.session().contactExchange()
+    );
+    saveState(sessionId, current.person(), updated, current.pinned(), current.unreadCount());
+    return updated;
   }
 
   private SessionState getSessionState(String id) {
@@ -298,6 +345,9 @@ public class MockTempChatService implements TempChatService {
   }
 
   private String toPreview(ChatMessageView message) {
+    if (message.recalled()) {
+      return "[已撤回]";
+    }
     return switch (message.kind()) {
       case "voice" -> "语音消息";
       case "emoji" -> "表情消息";

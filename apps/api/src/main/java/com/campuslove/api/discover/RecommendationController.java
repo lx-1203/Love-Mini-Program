@@ -1,11 +1,16 @@
 package com.campuslove.api.discover;
 
 import com.campuslove.api.config.SecurityUtils;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -49,11 +54,54 @@ public class RecommendationController {
   /**
    * 获取推荐人物列表。
    * GET /api/recommendations/people
+   *
+   * <p>Phase B - Task B2 扩展：支持以下查询参数（均为可选）：</p>
+   * <ul>
+   *   <li>{@code heightMin} / {@code heightMax} —— 身高范围（闭区间）</li>
+   *   <li>{@code educationLevel} —— 学历多选（逗号分隔，如 bachelor,master）</li>
+   *   <li>{@code relationshipStatus} —— 感情状态多选（逗号分隔）</li>
+   *   <li>{@code hometownProvince} / {@code hometownCity} —— 籍贯省/市</li>
+   *   <li>{@code futureCity} —— 未来定居城市</li>
+   *   <li>{@code keyword} —— 模糊匹配 nickname/bio/interestTags</li>
+   * </ul>
+   * <p>无参数时返回全部推荐（向后兼容）。</p>
    */
   @GetMapping("/recommendations/people")
-  public List<RecommendedPersonView> getRecommendations() {
+  public List<RecommendedPersonView> getRecommendations(
+          @RequestParam(value = "heightMin", required = false) Integer heightMin,
+          @RequestParam(value = "heightMax", required = false) Integer heightMax,
+          @RequestParam(value = "educationLevel", required = false) String educationLevel,
+          @RequestParam(value = "relationshipStatus", required = false) String relationshipStatus,
+          @RequestParam(value = "hometownProvince", required = false) String hometownProvince,
+          @RequestParam(value = "hometownCity", required = false) String hometownCity,
+          @RequestParam(value = "futureCity", required = false) String futureCity,
+          @RequestParam(value = "keyword", required = false) String keyword) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return recommendationService.getRecommendations(userId);
+    RecommendationFilter filter = new RecommendationFilter(
+            heightMin,
+            heightMax,
+            parseCsvToSet(educationLevel),
+            parseCsvToSet(relationshipStatus),
+            hometownProvince,
+            hometownCity,
+            futureCity,
+            keyword
+    );
+    return recommendationService.getRecommendations(userId, filter);
+  }
+
+  /**
+   * 将逗号分隔的字符串解析为去重、去空白的 Set。
+   * null 或空字符串返回空 Set。
+   */
+  private Set<String> parseCsvToSet(String csv) {
+    if (csv == null || csv.isBlank()) {
+      return java.util.Collections.emptySet();
+    }
+    return Arrays.stream(csv.split(","))
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   /**

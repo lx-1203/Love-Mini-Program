@@ -1,0 +1,73 @@
+{
+  "results": [
+    {
+      "name": "S01: 微信登录",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"userId\":\"user-1001\",\"loggedIn\":true,\"loginMethod\":\"wechat\",\"displayName\":\"星野\",\"phoneBound\":false,\""
+    },
+    {
+      "name": "S01b: 获取首页仪表盘",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"scheduleSummary\":{\"id\":\"schedule-summary\",\"title\":\"已保存 2 个课表块\",\"subtitle\":\"你大部分的空闲时间仍然会从 18:30 之后开"
+    },
+    {
+      "name": "S02: 首页推荐人选",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"scheduleSummary\":{\"id\":\"schedule-summary\",\"title\":\"已保存 2 个课表块\",\"subtitle\":\"你大部分的空闲时间仍然会从 18:30 之后开"
+    },
+    {
+      "name": "S03: 创建临时聊天会话",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"id\":\"session-1\",\"recommendedPersonId\":\"person-1\",\"partnerName\":\"林安\",\"partnerHeadline\":\"工业设计大三，偏好低压"
+    },
+    {
+      "name": "S04: 获取聊天概览列表",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"sessions\":[{\"id\":\"session-1\",\"recommendedPersonId\":\"person-1\",\"partnerName\":\"林安\",\"partnerHeadline\""
+    },
+    {
+      "name": "S05: 发送文字消息",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"id\":\"session-1\",\"recommendedPersonId\":\"person-1\",\"partnerName\":\"林安\",\"partnerHeadline\":\"工业设计大三，偏好低压"
+    },
+    {
+      "name": "S06: 申请联系方式交换",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"id\":\"session-1\",\"recommendedPersonId\":\"person-1\",\"partnerName\":\"林安\",\"partnerHeadline\":\"工业设计大三，偏好低压"
+    },
+    {
+      "name": "S07: 结束会话",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"id\":\"session-1\",\"recommendedPersonId\":\"person-1\",\"partnerName\":\"林安\",\"partnerHeadline\":\"工业设计大三，偏好低压"
+    },
+    {
+      "name": "S08: 会话列表状态",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"sessions\":[{\"id\":\"session-1\",\"recommendedPersonId\":\"person-1\",\"partnerName\":\"林安\",\"partnerHeadline\""
+    },
+    {
+      "name": "S09: 获取匹配配置",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"sections\":[{\"id\":\"intent\",\"title\":\"匹配目标\",\"fields\":[{\"id\":\"matchIntent\",\"kind\":\"single-select\",\"lab"
+    },
+    {
+      "name": "S10: 个人资料",
+      "pass": true,
+      "status": 200,
+      "detail": "{\"nickname\":\"星野\",\"bio\":\"安静、好奇，更喜欢一对一慢慢聊。\",\"grade\":\"大三\",\"pronouns\":\"她/她\"}"
+    }
+  ],
+  "passed": 11,
+  "failed": 0,
+  "timestamp": "2026-06-19T07:31:13.988Z"
+}

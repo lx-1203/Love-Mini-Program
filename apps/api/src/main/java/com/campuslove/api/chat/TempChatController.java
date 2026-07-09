@@ -66,6 +66,14 @@ public class TempChatController {
   public ChatSessionSummaryView markSessionRead(@PathVariable("id") String id) {
     return tempChatService.markSessionRead(id);
   }
+
+  @PostMapping("/{id}/messages/{messageId}/recall")
+  public TempChatSessionView recallMessage(
+      @PathVariable("id") String id,
+      @PathVariable("messageId") String messageId
+  ) {
+    return tempChatService.recallMessage(id, messageId);
+  }
 }
 
 record CreateTempChatSessionRequest(
@@ -102,16 +110,32 @@ record ChatMessageView(
     String kind,
     String body,
     String sentAt,
-    Integer durationSeconds
+    Integer durationSeconds,
+    boolean recalled,
+    String deliveryStatus,
+    String quoteRef,
+    String quoteBody,
+    String quoteSender
 ) {
+  /** 兼容旧调用方式（无新增字段）的工厂方法 */
+  public static ChatMessageView of(String id, String sender, String kind, String body,
+                                    String sentAt, Integer durationSeconds) {
+    return new ChatMessageView(id, sender, kind, body, sentAt, durationSeconds,
+        false, "sent", null, null, null);
+  }
 }
 
 record ChatMessageRequest(
     @NotBlank String sender,
     @NotBlank String kind,
     @NotBlank String body,
-    Integer durationSeconds
+    Integer durationSeconds,
+    String quoteRef
 ) {
+  /** 兼容旧调用（无 quoteRef） */
+  public ChatMessageRequest withoutQuote() {
+    return new ChatMessageRequest(sender, kind, body, durationSeconds, null);
+  }
 }
 
 record ContactExchangeStateView(String proposer, String status) {

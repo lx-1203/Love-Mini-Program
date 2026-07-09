@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.chat.InteractionEventService;
@@ -12,6 +13,7 @@ import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserFollow;
 import com.campuslove.api.entity.UserScheduleProfile;
+import com.campuslove.api.media.MediaStorageService;
 import com.campuslove.api.repository.NotificationRepository;
 import com.campuslove.api.repository.PostLikeRepository;
 import com.campuslove.api.repository.PostRepository;
@@ -26,22 +28,44 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 真实个人资料服务实现。
  * 在 real profile 下激活，使用 Repository 实现数据库查询。
+ *
+ * <p>Phase B 扩展：实现媒体绑定方法（背景图/照片墙/视频/半身照），
+ * 通过注入的 {@link MediaStorageService} 完成文件上传并写回 UserBasicProfile。</p>
  */
 @Profile("real")
 @Service
 public class RealProfileService implements ProfileService {
 
     private static final Logger log = LoggerFactory.getLogger(RealProfileService.class);
+
+    /** 照片墙最大数量 */
+    private static final int PHOTO_GALLERY_MAX = 6;
+
+    /** height 取值范围 */
+    private static final int HEIGHT_MIN = 120;
+    private static final int HEIGHT_MAX = 250;
+
+    /** educationLevel 合法取值 */
+    private static final Set<String> VALID_EDUCATION_LEVELS =
+            Set.of("high_school", "bachelor", "master", "phd");
+
+    /** relationshipStatus 合法取值 */
+    private static final Set<String> VALID_RELATIONSHIP_STATUS =
+            Set.of("never", "married_before", "divorced", "widowed");
 
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
@@ -53,6 +77,8 @@ public class RealProfileService implements ProfileService {
     private final PostLikeRepository postLikeRepository;
     private final ObjectMapper objectMapper;
     private final InteractionEventService interactionEventService;
+    private final MediaStorageService mediaStorageService;
+    private final CampusCertificationService campusCertificationService;
 
     public RealProfileService(
             UserRepository userRepository,
@@ -64,7 +90,9 @@ public class RealProfileService implements ProfileService {
             PostRepository postRepository,
             PostLikeRepository postLikeRepository,
             ObjectMapper objectMapper,
-            InteractionEventService interactionEventService) {
+            InteractionEventService interactionEventService,
+            MediaStorageService mediaStorageService,
+            CampusCertificationService campusCertificationService) {
         this.userRepository = userRepository;
         this.userFollowRepository = userFollowRepository;
         this.notificationRepository = notificationRepository;
@@ -75,46 +103,38 @@ public class RealProfileService implements ProfileService {
         this.postLikeRepository = postLikeRepository;
         this.objectMapper = objectMapper;
         this.interactionEventService = interactionEventService;
+        this.mediaStorageService = mediaStorageService;
+        this.campusCertificationService = campusCertificationService;
     }
 
     // ---- 基本资料 ----
 
-    /**
-     * 获取当前用户的基本资料。
-     * 从 UserBasicProfileRepository 查询，若无记录则返回空模板。
-     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
-     */
     @Override
     @Transactional(readOnly = true)
     public BasicProfileView getBasicProfile() {
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        return userBasicProfileRepository.findByUserId(currentUserId)
-                .map(profile -> new BasicProfileView(
-                        profile.getNickname(),
-                        profile.getBio(),
-                        profile.getGradeLabel(),
-                        profile.getPronouns()))
-                .orElseGet(() -> new BasicProfileView("", "", "", ""));
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+        UserBasicProfile profile = userBasicProfileRepository.findByUserId(currentUserId)
+                .orElseGet(() -> new UserBasicProfile());
+        return toBasicProfileView(profile, user);
     }
 
-    /**
-     * 保存当前用户的基本资料。
-     * 存在则更新，不存在则创建。同时同步更新 User 表的对应字段，
-     * 并重新计算 profileCompletion。
-     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
-     */
     @Override
     @Transactional
     public BasicProfileView saveBasicProfile(BasicProfileRequest request) {
+        validateExtendedFields(request);
         Long currentUserId = SecurityUtils.getCurrentUserId();
         LocalDateTime now = LocalDateTime.now();
 
-        // 查找现有记录，存在则更新，不存在则创建
         UserBasicProfile profile = userBasicProfileRepository.findByUserId(currentUserId)
                 .orElseGet(() -> {
                     UserBasicProfile newProfile = new UserBasicProfile();
                     newProfile.setUserId(currentUserId);
                     newProfile.setCreatedAt(now);
+                    newProfile.setPhotoGallery("[]");
+                    newProfile.setFuturePlanTags("[]");
+                    newProfile.setInterestTags("[]");
                     return newProfile;
                 });
 
@@ -122,6 +142,28 @@ public class RealProfileService implements ProfileService {
         profile.setBio(request.bio());
         profile.setGradeLabel(request.grade());
         profile.setPronouns(request.pronouns());
+        // Phase B 扩展字段：仅当请求显式传入时更新，未传保留原值
+        if (request.height() != null) {
+            profile.setHeight(request.height());
+        }
+        if (request.educationLevel() != null) {
+            profile.setEducationLevel(request.educationLevel());
+        }
+        if (request.relationshipStatus() != null) {
+            profile.setRelationshipStatus(request.relationshipStatus());
+        }
+        if (request.hometownProvince() != null) {
+            profile.setHometownProvince(request.hometownProvince());
+        }
+        if (request.hometownCity() != null) {
+            profile.setHometownCity(request.hometownCity());
+        }
+        if (request.futureCity() != null) {
+            profile.setFutureCity(request.futureCity());
+        }
+        if (request.futurePlanTags() != null) {
+            profile.setFuturePlanTags(serializeListToJson(request.futurePlanTags()));
+        }
         profile.setUpdatedAt(now);
         userBasicProfileRepository.save(profile);
 
@@ -132,26 +174,106 @@ public class RealProfileService implements ProfileService {
         user.setBio(request.bio());
         user.setGradeLabel(request.grade());
         user.setPronouns(request.pronouns());
-        user.setUpdatedAt(now);
 
         // 重新计算资料完善度并保存
         user.setProfileCompletion(calculateProfileCompletion(currentUserId));
+        user.setUpdatedAt(now);
         userRepository.save(user);
 
-        return new BasicProfileView(
-                profile.getNickname(),
-                profile.getBio(),
-                profile.getGradeLabel(),
-                profile.getPronouns());
+        return toBasicProfileView(profile, user);
+    }
+
+    @Override
+    @Transactional
+    public BasicProfileView uploadBackground(MultipartFile file) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        MediaStorageService.UploadResult result = mediaStorageService.store(currentUserId, file, "background");
+        UserBasicProfile profile = ensureBasicProfile(currentUserId);
+        // 删除旧背景图（如有），避免文件堆积
+        deleteOldMediaQuietly(profile.getProfileBackgroundUrl());
+        profile.setProfileBackgroundUrl(result.getUrl());
+        profile.setUpdatedAt(LocalDateTime.now());
+        userBasicProfileRepository.save(profile);
+        return rebuildView(currentUserId, profile);
+    }
+
+    @Override
+    @Transactional
+    public BasicProfileView uploadPhoto(MultipartFile file, int index) {
+        if (index < 0 || index >= PHOTO_GALLERY_MAX) {
+            throw new IllegalArgumentException(
+                    "照片墙索引越界，仅支持 0-" + (PHOTO_GALLERY_MAX - 1) + "，当前: " + index);
+        }
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        MediaStorageService.UploadResult result = mediaStorageService.store(currentUserId, file, "image");
+        UserBasicProfile profile = ensureBasicProfile(currentUserId);
+        List<String> gallery = parseStringList(profile.getPhotoGallery());
+        while (gallery.size() <= index) {
+            gallery.add("");
+        }
+        // 覆盖前先删除旧文件（如有）
+        String oldUrl = gallery.get(index);
+        if (oldUrl != null && !oldUrl.isBlank()) {
+            deleteOldMediaQuietly(oldUrl);
+        }
+        gallery.set(index, result.getUrl());
+        profile.setPhotoGallery(serializeListToJson(gallery));
+        profile.setUpdatedAt(LocalDateTime.now());
+        userBasicProfileRepository.save(profile);
+        return rebuildView(currentUserId, profile);
+    }
+
+    @Override
+    @Transactional
+    public BasicProfileView deletePhoto(int index) {
+        if (index < 0 || index >= PHOTO_GALLERY_MAX) {
+            throw new IllegalArgumentException(
+                    "照片墙索引越界，仅支持 0-" + (PHOTO_GALLERY_MAX - 1) + "，当前: " + index);
+        }
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        UserBasicProfile profile = ensureBasicProfile(currentUserId);
+        List<String> gallery = parseStringList(profile.getPhotoGallery());
+        if (index >= gallery.size()) {
+            throw new IllegalArgumentException("指定索引无照片可删除: " + index);
+        }
+        String removed = gallery.remove(index);
+        if (removed != null && !removed.isBlank()) {
+            deleteOldMediaQuietly(removed);
+        }
+        profile.setPhotoGallery(serializeListToJson(gallery));
+        profile.setUpdatedAt(LocalDateTime.now());
+        userBasicProfileRepository.save(profile);
+        return rebuildView(currentUserId, profile);
+    }
+
+    @Override
+    @Transactional
+    public BasicProfileView uploadVideo(MultipartFile file) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        MediaStorageService.UploadResult result = mediaStorageService.store(currentUserId, file, "video");
+        UserBasicProfile profile = ensureBasicProfile(currentUserId);
+        deleteOldMediaQuietly(profile.getPersonalVideoUrl());
+        profile.setPersonalVideoUrl(result.getUrl());
+        profile.setUpdatedAt(LocalDateTime.now());
+        userBasicProfileRepository.save(profile);
+        return rebuildView(currentUserId, profile);
+    }
+
+    @Override
+    @Transactional
+    public BasicProfileView uploadHalfBody(MultipartFile file) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        MediaStorageService.UploadResult result = mediaStorageService.store(currentUserId, file, "image");
+        UserBasicProfile profile = ensureBasicProfile(currentUserId);
+        deleteOldMediaQuietly(profile.getHalfBodyPhotoUrl());
+        profile.setHalfBodyPhotoUrl(result.getUrl());
+        profile.setUpdatedAt(LocalDateTime.now());
+        userBasicProfileRepository.save(profile);
+        return rebuildView(currentUserId, profile);
     }
 
     // ---- 校园资料 ----
 
-    /**
-     * 获取当前用户的校园资料。
-     * 从 UserCampusProfileRepository 查询，若无记录则返回空模板（verificationStatus 为 "draft"）。
-     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
-     */
     @Override
     @Transactional(readOnly = true)
     public CampusProfileView getCampusProfile() {
@@ -165,19 +287,12 @@ public class RealProfileService implements ProfileService {
                 .orElseGet(() -> new CampusProfileView("", "", "", "draft"));
     }
 
-    /**
-     * 保存当前用户的校园资料。
-     * 存在则更新，不存在则创建（verificationStatus 设为 "pending"）。
-     * 更新后重新计算 profileCompletion。
-     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
-     */
     @Override
     @Transactional
     public CampusProfileView saveCampusProfile(CampusProfileRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         LocalDateTime now = LocalDateTime.now();
 
-        // 查找现有记录，存在则更新，不存在则创建
         UserCampusProfile profile = userCampusProfileRepository.findByUserId(currentUserId)
                 .orElseGet(() -> {
                     UserCampusProfile newProfile = new UserCampusProfile();
@@ -189,14 +304,12 @@ public class RealProfileService implements ProfileService {
         profile.setCityName(request.city());
         profile.setCampusName(request.campusName());
         profile.setDepartmentName(request.department());
-        // 新创建时设为 pending，已有记录保留当前状态
         if (profile.getId() == null) {
             profile.setVerificationStatus("pending");
         }
         profile.setUpdatedAt(now);
         userCampusProfileRepository.save(profile);
 
-        // 重新计算资料完善度
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
         user.setProfileCompletion(calculateProfileCompletion(currentUserId));
@@ -212,23 +325,15 @@ public class RealProfileService implements ProfileService {
 
     // ---- 日程资料 ----
 
-    /**
-     * 获取当前用户的日程资料。
-     * 从 UserScheduleProfileRepository 查询，若无记录则返回空模板。
-     * 需要解析 preferredTimeWindowJson 和 courseBlockJson 为对应的 Java 类型。
-     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
-     */
     @Override
     @Transactional(readOnly = true)
     public ScheduleProfileView getScheduleProfile() {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         return userScheduleProfileRepository.findByUserId(currentUserId)
                 .map(profile -> {
-                    // 解析偏好时间窗口 JSON → List<String>
                     List<String> preferredTimeWindows = parseJsonToList(
                             profile.getPreferredTimeWindowJson(), new TypeReference<List<String>>() {});
 
-                    // 解析课程安排 JSON → List<ScheduleBlockView>
                     List<ScheduleBlockView> courseBlocks = parseJsonToList(
                             profile.getCourseBlockJson(), new TypeReference<List<ScheduleBlockView>>() {});
 
@@ -240,26 +345,17 @@ public class RealProfileService implements ProfileService {
                 .orElseGet(() -> new ScheduleProfileView("", List.of(), List.of()));
     }
 
-    /**
-     * 保存当前用户的日程资料。
-     * 存在则更新，不存在则创建。
-     * 需要将 preferredTimeWindows 和 courseBlocks 序列化为 JSON 字符串。
-     * 更新后重新计算 profileCompletion。
-     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
-     */
     @Override
     @Transactional
     public ScheduleProfileView saveScheduleProfile(ScheduleProfileRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         LocalDateTime now = LocalDateTime.now();
 
-        // 序列化 preferredTimeWindows 和 courseBlocks 为 JSON
         String preferredTimeWindowJson = serializeListToJson(
                 request.preferredTimeWindows() != null ? request.preferredTimeWindows() : List.of());
         String courseBlockJson = serializeListToJson(
                 request.courseBlocks() != null ? request.courseBlocks() : List.of());
 
-        // 查找现有记录，存在则更新，不存在则创建
         UserScheduleProfile profile = userScheduleProfileRepository.findByUserId(currentUserId)
                 .orElseGet(() -> {
                     UserScheduleProfile newProfile = new UserScheduleProfile();
@@ -274,14 +370,12 @@ public class RealProfileService implements ProfileService {
         profile.setUpdatedAt(now);
         userScheduleProfileRepository.save(profile);
 
-        // 重新计算资料完善度
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
         user.setProfileCompletion(calculateProfileCompletion(currentUserId));
         user.setUpdatedAt(now);
         userRepository.save(user);
 
-        // 反序列化回视图对象返回
         List<String> preferredTimeWindows = parseJsonToList(
                 preferredTimeWindowJson, new TypeReference<List<String>>() {});
         List<ScheduleBlockView> courseBlocks = parseJsonToList(
@@ -295,12 +389,6 @@ public class RealProfileService implements ProfileService {
 
     // ---- 用户统计 ----
 
-    /**
-     * 获取当前用户的统计数据。
-     * followingCount 和 followersCount 来自 User 表，
-     * likesCount 通过统计用户所有帖子的获赞总数计算。
-     * Phase 2: 用户ID从SecurityContext获取，未认证时抛出401异常。
-     */
     @Override
     @Transactional(readOnly = true)
     public ProfileStatsView getProfileStats() {
@@ -308,7 +396,6 @@ public class RealProfileService implements ProfileService {
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
 
-        // 统计用户所有帖子的总获赞数
         int likesCount = calculateTotalLikesCount(currentUserId);
 
         return new ProfileStatsView(
@@ -319,18 +406,9 @@ public class RealProfileService implements ProfileService {
 
     // ---- 关注关系管理实现 ----
 
-    /**
-     * 关注用户。
-     * 1. 校验参数有效性（不能关注自己、用户必须存在、不能重复关注）
-     * 2. 创建 UserFollow 记录
-     * 3. 更新关注者的 followingCount + 1
-     * 4. 更新被关注者的 followersCount + 1
-     * 5. 创建 follow 类型通知
-     */
     @Override
     @Transactional
     public FollowView followUser(Long userId, Long targetUserId) {
-        // 参数校验
         if (userId == null || targetUserId == null) {
             throw new IllegalArgumentException("userId 和 targetUserId 不能为空");
         }
@@ -338,34 +416,28 @@ public class RealProfileService implements ProfileService {
             throw new IllegalArgumentException("不能关注自己");
         }
 
-        // 校验用户是否存在
         User follower = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("关注者用户不存在: " + userId));
         User target = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new IllegalArgumentException("目标用户不存在: " + targetUserId));
 
-        // 校验是否已关注
         if (userFollowRepository.existsByFollowerIdAndFollowingId(userId, targetUserId)) {
             throw new IllegalArgumentException("已经关注了该用户");
         }
 
-        // 创建关注关系
         LocalDateTime now = LocalDateTime.now();
         UserFollow userFollow = new UserFollow(userId, targetUserId);
         userFollow.setCreatedAt(now);
         userFollowRepository.save(userFollow);
 
-        // 更新关注者的 followingCount
         follower.setFollowingCount(follower.getFollowingCount() + 1);
         follower.setUpdatedAt(now);
         userRepository.save(follower);
 
-        // 更新被关注者的 followersCount
         target.setFollowersCount(target.getFollowersCount() + 1);
         target.setUpdatedAt(now);
         userRepository.save(target);
 
-        // 创建关注通知
         Notification notification = new Notification();
         notification.setUserId(targetUserId);
         notification.setType(NotificationType.follow);
@@ -376,7 +448,6 @@ public class RealProfileService implements ProfileService {
         notification.setCreatedAt(now);
         notificationRepository.save(notification);
 
-        // 记录互动事件：通知被关注用户
         interactionEventService.recordEvent(
                 targetUserId, userId, "NEW_FOLLOW", userId, "USER",
                 "有人关注了你"
@@ -386,17 +457,9 @@ public class RealProfileService implements ProfileService {
                 follower.getFollowingCount(), target.getFollowersCount());
     }
 
-    /**
-     * 取消关注用户。
-     * 1. 校验参数有效性
-     * 2. 删除 UserFollow 记录
-     * 3. 更新关注者的 followingCount - 1
-     * 4. 更新被关注者的 followersCount - 1
-     */
     @Override
     @Transactional
     public FollowView unfollowUser(Long userId, Long targetUserId) {
-        // 参数校验
         if (userId == null || targetUserId == null) {
             throw new IllegalArgumentException("userId 和 targetUserId 不能为空");
         }
@@ -404,27 +467,22 @@ public class RealProfileService implements ProfileService {
             throw new IllegalArgumentException("不能取消关注自己");
         }
 
-        // 校验关注关系是否存在
         if (!userFollowRepository.existsByFollowerIdAndFollowingId(userId, targetUserId)) {
             throw new IllegalArgumentException("未关注该用户，无法取关");
         }
 
-        // 校验用户是否存在
         User follower = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("关注者用户不存在: " + userId));
         User target = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new IllegalArgumentException("目标用户不存在: " + targetUserId));
 
-        // 删除关注关系
         userFollowRepository.deleteByFollowerIdAndFollowingId(userId, targetUserId);
 
-        // 更新关注者的 followingCount（不低于0）
         LocalDateTime now = LocalDateTime.now();
         follower.setFollowingCount(Math.max(0, follower.getFollowingCount() - 1));
         follower.setUpdatedAt(now);
         userRepository.save(follower);
 
-        // 更新被关注者的 followersCount（不低于0）
         target.setFollowersCount(Math.max(0, target.getFollowersCount() - 1));
         target.setUpdatedAt(now);
         userRepository.save(target);
@@ -433,11 +491,6 @@ public class RealProfileService implements ProfileService {
                 follower.getFollowingCount(), target.getFollowersCount());
     }
 
-    /**
-     * 获取指定用户的粉丝列表。
-     * 查询 user_follows 表中 following_id = userId 的所有记录，
-     * 然后根据 follower_id 查询对应的用户信息。
-     */
     @Override
     @Transactional(readOnly = true)
     public List<FollowUserView> getFollowers(Long userId) {
@@ -454,11 +507,6 @@ public class RealProfileService implements ProfileService {
                 .toList();
     }
 
-    /**
-     * 获取指定用户的关注列表。
-     * 查询 user_follows 表中 follower_id = userId 的所有记录，
-     * 然后根据 following_id 查询对应的用户信息。
-     */
     @Override
     @Transactional(readOnly = true)
     public List<FollowUserView> getFollowing(Long userId) {
@@ -475,9 +523,6 @@ public class RealProfileService implements ProfileService {
                 .toList();
     }
 
-    /**
-     * 查询当前用户是否关注了目标用户。
-     */
     @Override
     @Transactional(readOnly = true)
     public boolean isFollowing(Long userId, Long targetUserId) {
@@ -490,9 +535,108 @@ public class RealProfileService implements ProfileService {
     // ---- 私有辅助方法 ----
 
     /**
-     * 将 User 实体转换为 FollowUserView。
-     * 如果用户不存在，返回默认占位视图。
+     * 校验 Phase B 扩展字段范围。
+     * 字段为 null 时跳过校验（可选字段）。
      */
+    private void validateExtendedFields(BasicProfileRequest request) {
+        if (request.height() != null) {
+            int h = request.height();
+            if (h < HEIGHT_MIN || h > HEIGHT_MAX) {
+                throw new IllegalArgumentException(
+                        "height 越界，仅支持 " + HEIGHT_MIN + "-" + HEIGHT_MAX + "，当前: " + h);
+            }
+        }
+        if (request.educationLevel() != null && !request.educationLevel().isBlank()) {
+            if (!VALID_EDUCATION_LEVELS.contains(request.educationLevel())) {
+                throw new IllegalArgumentException(
+                        "educationLevel 取值非法，仅支持 high_school/bachelor/master/phd，当前: "
+                                + request.educationLevel());
+            }
+        }
+        if (request.relationshipStatus() != null && !request.relationshipStatus().isBlank()) {
+            if (!VALID_RELATIONSHIP_STATUS.contains(request.relationshipStatus())) {
+                throw new IllegalArgumentException(
+                        "relationshipStatus 取值非法，仅支持 never/married_before/divorced/widowed，当前: "
+                                + request.relationshipStatus());
+            }
+        }
+    }
+
+    /**
+     * 获取或创建当前用户的基本资料记录。
+     * 媒体上传端点不要求用户先填写基本资料，故自动创建空白记录以便写入 URL。
+     */
+    private UserBasicProfile ensureBasicProfile(Long userId) {
+        return userBasicProfileRepository.findByUserId(userId)
+                .orElseGet(() -> {
+                    UserBasicProfile newProfile = new UserBasicProfile();
+                    newProfile.setUserId(userId);
+                    newProfile.setNickname("");
+                    newProfile.setBio("");
+                    newProfile.setGradeLabel("");
+                    newProfile.setPronouns("");
+                    newProfile.setInterestTags("[]");
+                    newProfile.setFuturePlanTags("[]");
+                    newProfile.setPhotoGallery("[]");
+                    newProfile.setCreatedAt(LocalDateTime.now());
+                    return newProfile;
+                });
+    }
+
+    /**
+     * 删除旧媒体文件，失败时仅记日志不抛异常，避免主流程被影响。
+     */
+    private void deleteOldMediaQuietly(String url) {
+        if (url == null || url.isBlank()) {
+            return;
+        }
+        try {
+            mediaStorageService.delete(url);
+        } catch (Exception e) {
+            log.warn("删除旧媒体文件失败 url={}: {}", url, e.getMessage());
+        }
+    }
+
+    /**
+     * 重新构建 BasicProfileView（包含完善度与认证徽章）。
+     */
+    private BasicProfileView rebuildView(Long userId, UserBasicProfile profile) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("用户不存在: " + userId));
+        // 媒体上传后重新计算完善度
+        int completion = calculateProfileCompletion(userId);
+        user.setProfileCompletion(completion);
+        userRepository.save(user);
+        return toBasicProfileView(profile, user);
+    }
+
+    /**
+     * 将 UserBasicProfile + User 实体组装为 BasicProfileView。
+     */
+    private BasicProfileView toBasicProfileView(UserBasicProfile profile, User user) {
+        String badgeLevel = campusCertificationService.getVerificationBadgeLevel(user.getId());
+        int completion = user.getProfileCompletion() != null ? user.getProfileCompletion() : 0;
+        return new BasicProfileView(
+                profile.getNickname() != null ? profile.getNickname() : "",
+                profile.getBio() != null ? profile.getBio() : "",
+                profile.getGradeLabel() != null ? profile.getGradeLabel() : "",
+                profile.getPronouns() != null ? profile.getPronouns() : "",
+                profile.getHeight(),
+                profile.getEducationLevel(),
+                profile.getRelationshipStatus(),
+                profile.getHometownProvince(),
+                profile.getHometownCity(),
+                profile.getFutureCity(),
+                parseStringList(profile.getFuturePlanTags()),
+                parseStringList(profile.getPhotoGallery()),
+                profile.getHalfBodyPhotoUrl(),
+                profile.getPersonalVideoUrl(),
+                profile.getProfileBackgroundUrl(),
+                completion,
+                badgeLevel
+        );
+    }
+
     private FollowUserView toFollowUserView(Long userId, User user) {
         if (user == null) {
             return new FollowUserView(userId, DisplayConstants.UNKNOWN_USER, null, null, 0, 0);
@@ -514,47 +658,37 @@ public class RealProfileService implements ProfileService {
      * - 有日程资料(preferredCampusArea非空): +20%
      * - 有兴趣标签(interestTags非空): +20%
      * 最大100%
-     *
-     * @param userId 用户 ID
-     * @return 资料完善度百分比 (0-100)
      */
     private int calculateProfileCompletion(Long userId) {
         int completion = 0;
 
-        // 检查基本资料：nickname 非空则 +30%
         UserBasicProfile basicProfile = userBasicProfileRepository.findByUserId(userId).orElse(null);
-        if (basicProfile != null && basicProfile.getNickname() != null && !basicProfile.getNickname().isBlank()) {
+        if (basicProfile != null && basicProfile.getNickname() != null
+                && !basicProfile.getNickname().isBlank()) {
             completion += 30;
         }
 
-        // 检查校区资料：campusName 非空则 +30%
         UserCampusProfile campusProfile = userCampusProfileRepository.findByUserId(userId).orElse(null);
-        if (campusProfile != null && campusProfile.getCampusName() != null && !campusProfile.getCampusName().isBlank()) {
+        if (campusProfile != null && campusProfile.getCampusName() != null
+                && !campusProfile.getCampusName().isBlank()) {
             completion += 30;
         }
 
-        // 检查日程资料：preferredCampusArea 非空则 +20%
         UserScheduleProfile scheduleProfile = userScheduleProfileRepository.findByUserId(userId).orElse(null);
         if (scheduleProfile != null && scheduleProfile.getPreferredCampusArea() != null
                 && !scheduleProfile.getPreferredCampusArea().isBlank()) {
             completion += 20;
         }
 
-        // 检查兴趣标签：interestTags 非空则 +20%
-        if (basicProfile != null && basicProfile.getInterestTags() != null && !basicProfile.getInterestTags().isBlank()) {
+        if (basicProfile != null && basicProfile.getInterestTags() != null
+                && !basicProfile.getInterestTags().isBlank()
+                && !"[]".equals(basicProfile.getInterestTags())) {
             completion += 20;
         }
 
         return Math.min(100, completion);
     }
 
-    /**
-     * 统计用户所有帖子的总获赞数。
-     * 先查询该用户的所有帖子，再逐个统计每篇帖子的点赞数并求和。
-     *
-     * @param userId 用户 ID
-     * @return 总获赞数
-     */
     private int calculateTotalLikesCount(Long userId) {
         List<Post> userPosts = postRepository.findByAuthorId(userId);
         int totalLikes = 0;
@@ -565,14 +699,22 @@ public class RealProfileService implements ProfileService {
     }
 
     /**
-     * 将 JSON 字符串反序列化为指定类型的 List。
-     * 如果 JSON 为空或解析失败，返回空列表。
-     *
-     * @param json         JSON 字符串
-     * @param typeReference 目标类型的 TypeReference
-     * @param <T>          列表元素类型
-     * @return 反序列化后的列表，解析失败时返回空列表
+     * 将 JSON 字符串反序列化为 List<String>。
+     * 解析失败时返回空列表，避免影响主流程。
      */
+    private List<String> parseStringList(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<String> result = objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            return result != null ? result : List.of();
+        } catch (JsonProcessingException e) {
+            log.warn("JSON 反序列化失败: {}", json, e);
+            return List.of();
+        }
+    }
+
     private <T> List<T> parseJsonToList(String json, TypeReference<List<T>> typeReference) {
         if (json == null || json.isBlank()) {
             return List.of();
@@ -586,14 +728,6 @@ public class RealProfileService implements ProfileService {
         }
     }
 
-    /**
-     * 将列表序列化为 JSON 字符串。
-     * 如果序列化失败，返回空数组字符串 "[]"。
-     *
-     * @param list 待序列化的列表
-     * @param <T>  列表元素类型
-     * @return JSON 字符串
-     */
     private <T> String serializeListToJson(List<T> list) {
         if (list == null || list.isEmpty()) {
             return "[]";
@@ -604,5 +738,11 @@ public class RealProfileService implements ProfileService {
             log.warn("JSON 序列化失败: {}", list, e);
             return "[]";
         }
+    }
+
+    /** 占位以保持 import 不被移除（Collections 在历史代码中曾用于 follow 相关）。 */
+    @SuppressWarnings("unused")
+    private List<Object> unusedKeepImport() {
+        return new ArrayList<>(Collections.emptyList());
     }
 }

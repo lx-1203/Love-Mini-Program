@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>圈子页 — 校园恋爱小程序</title>
+<style>
+:root {
+  --brand: #3FCF8E;
+  --brand-dark: #2DB97A;
+  --brand-light: #D1F0E0;
+  --brand-50: #E8F8F0;
+  --gray-0: #FFFFFF;
+  --gray-50: #F4F6FA;
+  --gray-100: #EEF0F4;
+  --gray-200: #E2E8F0;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-700: #334155;
+  --gray-800: #1F2329;
+  --text-primary: #1F2329;
+  --text-secondary: #5B6470;
+  --text-tertiary: #9AA1AB;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--gray-50);
+  width: 375px;
+  min-height: 100vh;
+  margin: 0 auto;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+.phone-frame {
+  width: 375px;
+  min-height: 812px;
+  position: relative;
+  background: var(--gray-50);
+}
+.status-bar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--gray-0);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.status-bar .icons { display: flex; gap: 4px; align-items: center; }
+.status-bar .icons svg { width: 16px; height: 16px; stroke: var(--text-primary); fill: none; stroke-width: 1.5; }
+
+/* 导航栏 */
+.nav-bar {
+  height: 48px;
+  background: var(--gray-0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.nav-bar .left .back-btn {
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.nav-bar .left .back-btn svg { width: 24px; height: 24px; stroke: var(--text-primary); fill: none; stroke-width: 1.5; }
+.nav-bar .title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.nav-bar .right { display: flex; gap: 12px; }
+.nav-bar .right .icon-btn {
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.nav-bar .right .icon-btn svg { width: 24px; height: 24px; stroke: var(--text-secondary); fill: none; stroke-width: 1.5; }
+
+/* 学校选择器 */
+.school-selector {
+  padding: 12px 16px;
+  background: var(--gray-0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.school-selector .school {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.school-selector .school svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+/* Tab */
+.tab-section {
+  padding: 0 16px;
+  background: var(--gray-0);
+  border-bottom: 1px solid var(--gray-100);
+}
+.tabs {
+  display: flex;
+  gap: 24px;
+}
+.tab {
+  padding: 12px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: relative;
+}
+.tab.active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--brand);
+  border-radius: 1px;
+}
+
+/* 帖子列表 */
+.post-list {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.post-card {
+  background: var(--gray-0);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.04);
+}
+.post-card .user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.post-card .user-info .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.post-card .user-info .name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.post-card .user-info .school {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.post-card .user-info .time {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.post-card .content {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.post-card .images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.post-card .images .img {
+  aspect-ratio: 1;
+  background: var(--gray-100);
+  border-radius: 8px;
+}
+.post-card .location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(63,207,142,0.1);
+  color: var(--brand);
+  border-radius: 12px;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+.post-card .location svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+.post-card .actions {
+  display: flex;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-100);
+}
+.post-card .actions .action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.post-card .actions .action svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+/* TabBar */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 375px;
+  height: 49px;
+  background: var(--gray-0);
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.tab-item svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-tertiary);
+  fill: none;
+  stroke-width: 1.5;
+}
+.tab-item span {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.tab-item.active svg {
+  stroke: var(--brand);
+  fill: var(--brand);
+}
+.tab-item.active span {
+  color: var(--brand);
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>
+    </div>
+  </div>
+
+  <!-- 导航栏 -->
+  <div class="nav-bar">
+    <div class="left">
+      <button class="back-btn">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+    </div>
+    <div class="title">圈子</div>
+    <div class="right">
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 学校选择器 -->
+  <div class="school-selector">
+    <div class="school">
+      华南理工大学 · 本校限定
+      <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </div>
+
+  <!-- Tab -->
+  <div class="tab-section">
+    <div class="tabs">
+      <span class="tab active">最新</span>
+      <span class="tab">关注</span>
+    </div>
+  </div>
+
+  <!-- 帖子列表 -->
+  <div class="post-list">
+    <div class="post-card">
+      <div class="user-info">
+        <div class="avatar">拾</div>
+        <div>
+          <div class="name">拾柒</div>
+          <div class="school">计算机学院 · 大二</div>
+        </div>
+        <span class="time">10分钟前</span>
+      </div>
+      <div class="content">今天图书馆偶遇了一只超可爱的猫咪，感觉整个下午都变得美好了～有没有人知道这是谁的猫咪呀？</div>
+      <div class="images">
+        <div class="img"></div>
+        <div class="img"></div>
+        <div class="img"></div>
+      </div>
+      <div class="location">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        图书馆 · 三楼自习区
+      </div>
+      <div class="actions">
+        <span class="action"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 128</span>
+        <span class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 32</span>
+        <span class="action"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
+      </div>
+    </div>
+
+    <div class="post-card">
+      <div class="user-info">
+        <div class="avatar">林</div>
+        <div>
+          <div class="name">林同学</div>
+          <div class="school">经管学院 · 大二</div>
+        </div>
+        <span class="time">30分钟前</span>
+      </div>
+      <div class="content">求推荐学校附近好吃的餐厅，想请室友吃饭～</div>
+      <div class="actions">
+        <span class="action"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 56</span>
+        <span class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 18</span>
+        <span class="action"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TabBar -->
+  <div class="tab-bar">
+    <div class="tab-item">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>首页</span>
+    </div>
+    <div class="tab-item active">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>圈子</span>
+    </div>
+    <div class="tab-item">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <span>发现</span>
+    </div>
+    <div class="tab-item">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <span>消息</span>
+    </div>
+    <div class="tab-item">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>我的</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

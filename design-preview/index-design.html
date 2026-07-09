@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>校园恋爱 · 设计稿索引</title>
+<style>
+:root {
+  --brand: #3FCF8E;
+  --brand-hover: #2DB97A;
+  --brand-active: #25A06A;
+  --brand-light: #D1F0E0;
+  --brand-50: #E8F8F0;
+  --brand-gradient: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
+  --pink: #EC4899;
+  --pink-soft: #FDF2F8;
+  --success: #10B981;
+  --error: #E5454D;
+  --warning: #F59E0B;
+  --gray-0: #FFFFFF;
+  --gray-50: #F4F6FA;
+  --gray-100: #EEF0F4;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1F2329;
+  --gray-900: #0E1116;
+  --font: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --shadow-sm: 0 2px 8px rgba(15,23,42,0.04);
+  --shadow-md: 0 4px 16px rgba(15,23,42,0.06);
+  --shadow-lg: 0 8px 32px rgba(15,23,42,0.08);
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-full: 9999px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: var(--font);
+  background: var(--gray-50);
+  color: var(--gray-800);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+}
+.hero {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.hero h1 {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+.hero p {
+  font-size: 16px;
+  color: var(--gray-500);
+  max-width: 600px;
+  margin: 0 auto;
+}
+.hero .tags {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.hero .tag {
+  padding: 6px 14px;
+  border-radius: var(--r-full);
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--brand-50);
+  color: var(--brand);
+  border: 1px solid var(--brand-light);
+}
+.design-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+.design-card {
+  background: var(--gray-0);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+.design-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.design-card .preview {
+  height: 200px;
+  background: var(--gray-100);
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+}
+.design-card .preview svg {
+  width: 64px;
+  height: 64px;
+  stroke: var(--brand);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.design-card .preview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(63,207,142,0.1) 0%, rgba(124,217,166,0.05) 100%);
+}
+.design-card .info {
+  padding: 16px;
+}
+.design-card .title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 4px;
+}
+.design-card .desc {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-bottom: 12px;
+}
+.design-card .meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.design-card .meta-item {
+  font-size: 11px;
+  color: var(--gray-400);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.design-card .meta-item svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  fill: none;
+}
+.design-card .status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-size: 10px;
+  font-weight: 600;
+}
+.design-card .status--done {
+  background: rgba(16,185,129,0.1);
+  color: var(--success);
+}
+.design-card .status--progress {
+  background: rgba(245,158,11,0.1);
+  color: var(--warning);
+}
+.design-card .theme-toggle {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+.design-card .theme-btn {
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-size: 10px;
+  font-weight: 500;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-0);
+  color: var(--gray-500);
+}
+.design-card .theme-btn.active {
+  background: var(--brand-50);
+  color: var(--brand);
+  border-color: var(--brand-light);
+}
+.footer {
+  text-align: center;
+  padding: 32px 0;
+  border-top: 1px solid var(--gray-100);
+}
+.footer p {
+  font-size: 13px;
+  color: var(--gray-400);
+}
+.footer .version {
+  font-weight: 600;
+  color: var(--brand);
+}
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+}
+.stat-card {
+  background: var(--gray-0);
+  border-radius: var(--r-lg);
+  padding: 20px 32px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  min-width: 120px;
+}
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--brand);
+}
+.stat-label {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="hero">
+    <h1>校园恋爱 · 设计稿</h1>
+    <p>高保真移动端UI设计，基于参考图对齐，支持uni-app开发</p>
+    <div class="tags">
+      <span class="tag">青藤融入版 v3.0.0</span>
+      <span class="tag">微信小程序</span>
+      <span class="tag">校园社交</span>
+      <span class="tag">卡片式设计</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-value">6</div>
+      <div class="stat-label">核心页面</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">15</div>
+      <div class="stat-label">组件模块</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">2</div>
+      <div class="stat-label">主题模式</div>
+    </div>
+  </div>
+
+  <div class="design-grid">
+    <a href="login.html" class="design-card">
+      <div class="preview">
+        <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+      </div>
+      <div class="info">
+        <div class="title">登录页</div>
+        <div class="desc">实景图占70%高度，微信/手机号登录双按钮</div>
+        <div class="meta">
+          <span class="meta-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 375px</span>
+          <span class="status status--done">已完成</span>
+        </div>
+        <div class="theme-toggle">
+          <span class="theme-btn active">浅色</span>
+          <span class="theme-btn">深色</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="pages-core3.html" class="design-card">
+      <div class="preview">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div class="info">
+        <div class="title">首页</div>
+        <div class="desc">5模块瀑布布局，校园圈/课表/校园墙/逛逛/推荐</div>
+        <div class="meta">
+          <span class="meta-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 375px</span>
+          <span class="meta-item"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> 5模块</span>
+          <span class="status status--done">已完成</span>
+        </div>
+        <div class="theme-toggle">
+          <span class="theme-btn active">浅色</span>
+          <span class="theme-btn">深色</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="pages-village.html" class="design-card">
+      <div class="preview">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="info">
+        <div class="title">圈子页</div>
+        <div class="desc">学校选择器+最新/关注Tab+帖子卡片列表</div>
+        <div class="meta">
+          <span class="meta-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 375px</span>
+          <span class="status status--done">已完成</span>
+        </div>
+        <div class="theme-toggle">
+          <span class="theme-btn active">浅色</span>
+          <span class="theme-btn">深色</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="pages-chat.html" class="design-card">
+      <div class="preview">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="info">
+        <div class="title">聊天页</div>
+        <div class="desc">气泡IM，对方有头像/自己无头像，底部输入条</div>
+        <div class="meta">
+          <span class="meta-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 375px</span>
+          <span class="status status--done">已完成</span>
+        </div>
+        <div class="theme-toggle">
+          <span class="theme-btn active">浅色</span>
+          <span class="theme-btn">深色</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="pages-profile.html" class="design-card">
+      <div class="preview">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="info">
+        <div class="title">个人中心/会员页</div>
+        <div class="desc">VIP金棕渐变横幅+8格宫格+人物推荐</div>
+        <div class="meta">
+          <span class="meta-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 375px</span>
+          <span class="status status--done">已完成</span>
+        </div>
+        <div class="theme-toggle">
+          <span class="theme-btn active">浅色</span>
+          <span class="theme-btn">深色</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="activity-modal.html" class="design-card">
+      <div class="preview">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+      </div>
+      <div class="info">
+        <div class="title">活动弹层</div>
+        <div class="desc">黑色半透明遮罩+居中卡片+圆点指示器</div>
+        <div class="meta">
+          <span class="meta-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 375px</span>
+          <span class="status status--done">已完成</span>
+        </div>
+        <div class="theme-toggle">
+          <span class="theme-btn active">浅色</span>
+          <span class="theme-btn">深色</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="pages-discover.html" class="design-card">
+      <div class="preview">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <div class="info">
+        <div class="title">逛逛页</div>
+        <div class="desc">搜索+分类胶囊+精选推荐商品卡片</div>
+        <div class="meta">
+          <span class="meta-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 375px</span>
+          <span class="status status--done">已完成</span>
+        </div>
+        <div class="theme-toggle">
+          <span class="theme-btn active">浅色</span>
+          <span class="theme-btn">深色</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="components-v2.html" class="design-card">
+      <div class="preview">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <div class="info">
+        <div class="title">组件库</div>
+        <div class="desc">按钮/卡片/徽章/气泡等可复用组件</div>
+        <div class="meta">
+          <span class="meta-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 15组件</span>
+          <span class="status status--done">已完成</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="footer">
+    <p>校园恋爱小程序设计稿 · <span class="version">v3.0.0</span> · 青藤融入版</p>
+    <p style="margin-top:8px">主色 #3FCF8E · VIP金棕 #C9A36A→#E8C98A · 价格红 #E5454D</p>
+  </div>
+</div>
+
+</body>
+</html>

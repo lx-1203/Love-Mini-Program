@@ -39,4 +39,23 @@ public interface CampusCertificationService {
      * @return 认证视图
      */
     CampusCertificationView reviewCertification(Long certId, String status, Long reviewerId, String reviewComment);
+
+    /**
+     * 查询用户的认证徽章级别（Phase B - Task B3）。
+     *
+     * <p>徽章级别取值：</p>
+     * <ul>
+     *   <li>{@code "school"} —— 校园认证已通过（status=APPROVED）</li>
+     *   <li>{@code "email"} —— 仅邮箱认证通过（暂未实现，预留枚举）</li>
+     *   <li>{@code "idcard"} —— 仅身份证认证通过（暂未实现，预留枚举）</li>
+     *   <li>{@code "none"} —— 均未认证或认证未通过</li>
+     * </ul>
+     *
+     * <p>当前阶段仅校园认证已落地，email/idcard 认证体系未接入，
+     * 故实现中只可能返回 "school" 或 "none"。其余取值为向前兼容预留。</p>
+     *
+     * @param userId 用户 ID
+     * @return 徽章级别字符串（school/email/idcard/none）
+     */
+    String getVerificationBadgeLevel(Long userId);
 }

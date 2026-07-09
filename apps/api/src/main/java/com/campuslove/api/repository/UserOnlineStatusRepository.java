@@ -52,4 +52,12 @@ public interface UserOnlineStatusRepository extends JpaRepository<UserOnlineStat
      * @return 在线用户数
      */
     long countByUserIdInAndStatus(List<Long> userIds, OnlineStatus status);
+
+    /**
+     * 统计最后心跳时间在指定时间之后的用户数（用于 DAU/MAU 近似统计）。
+     *
+     * @param threshold 心跳阈值时间
+     * @return 心跳时间晚于阈值的用户数
+     */
+    long countByLastHeartbeatAfter(LocalDateTime threshold);
 }

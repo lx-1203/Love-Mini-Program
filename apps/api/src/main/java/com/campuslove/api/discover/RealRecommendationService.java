@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
@@ -78,6 +79,7 @@ public class RealRecommendationService implements RecommendationService {
     private final CircleMembershipRepository circleMembershipRepository;
     private final DailyAnswerRepository dailyAnswerRepository;
     private final ObjectMapper objectMapper;
+    private final CampusCertificationService campusCertificationService;
 
     public RealRecommendationService(
             RecommendationConfig recommendationConfig,
@@ -95,7 +97,8 @@ public class RealRecommendationService implements RecommendationService {
             PassRecordRepository passRecordRepository,
             CircleMembershipRepository circleMembershipRepository,
             DailyAnswerRepository dailyAnswerRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            CampusCertificationService campusCertificationService) {
         this.recommendationConfig = recommendationConfig;
         this.userRepository = userRepository;
         this.likeRepository = likeRepository;
@@ -112,6 +115,7 @@ public class RealRecommendationService implements RecommendationService {
         this.circleMembershipRepository = circleMembershipRepository;
         this.dailyAnswerRepository = dailyAnswerRepository;
         this.objectMapper = objectMapper;
+        this.campusCertificationService = campusCertificationService;
     }
 
     // ---- Phase 1 存根方法（暂未实现，后续迭代补充） ----
@@ -512,27 +516,158 @@ public class RealRecommendationService implements RecommendationService {
                 .filter(u -> filterByScope(u.getId(), scope, myCampusName, myCityName))
                 .toList();
 
-        // 10. 加权排序
+        // 10. 批量预加载候选用户的关联数据，避免 N+1 查询
+        List<Long> candidateIds = candidates.stream().map(User::getId).toList();
+        Map<Long, UserCampusProfile> campusProfileMap = userCampusProfileRepository.findByUserIdIn(candidateIds)
+                .stream().collect(Collectors.toMap(UserCampusProfile::getUserId, p -> p));
+        Map<Long, UserBasicProfile> basicProfileMap = userBasicProfileRepository.findByUserIdIn(candidateIds)
+                .stream().collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p));
+        Map<Long, List<CircleMembership>> membershipMap = candidateIds.stream()
+                .collect(Collectors.toMap(id -> id, id -> {
+                    try {
+                        return circleMembershipRepository.findByUserId(id);
+                    } catch (Exception e) {
+                        return List.of();
+                    }
+                }));
+
+        // 11. 加权排序（使用预加载的数据）
         List<ScoredUser> scoredUsers = new ArrayList<>();
         for (User candidate : candidates) {
-            int score = calculateScore(
+            UserCampusProfile campusProfile = campusProfileMap.get(candidate.getId());
+            UserBasicProfile basicProfile = basicProfileMap.get(candidate.getId());
+            List<CircleMembership> memberships = membershipMap.getOrDefault(candidate.getId(), List.of());
+            int score = calculateScoreOptimized(
                     candidate.getId(), myCampusName, myCityName, myTags, myTimeWindow,
-                    myDepartmentName, myCircleIds, myAnswerQuestionIds, campusPriorityEnabled);
+                    myDepartmentName, myCircleIds, myAnswerQuestionIds, campusPriorityEnabled,
+                    campusProfile, basicProfile, memberships);
             scoredUsers.add(new ScoredUser(candidate, score));
         }
 
         // 按分数降序排序
         scoredUsers.sort(Comparator.comparingInt(ScoredUser::score).reversed());
 
-        // 11. 取前 DAILY_LIMIT 个
+        // 12. 取前 DAILY_LIMIT 个
         List<ScoredUser> topResults = scoredUsers.stream()
                 .limit(recommendationConfig.getDailyLimit())
                 .toList();
 
-        // 12. 转换为视图，携带同校/同专业/共同圈等标记
+        // 13. 转换为视图，携带同校/同专业/共同圈等标记（使用预加载的数据）
         return topResults.stream()
-                .map(su -> toRecommendedPersonView(su.user(), myCampusName, myDepartmentName, myCircleIds))
+                .map(su -> toRecommendedPersonViewOptimized(
+                        su.user(), myCampusName, myDepartmentName, myCircleIds,
+                        campusProfileMap.get(su.user().getId()),
+                        basicProfileMap.get(su.user().getId()),
+                        membershipMap.getOrDefault(su.user().getId(), List.of())))
                 .toList();
+    }
+
+    /**
+     * 获取推荐人物列表（带筛选参数）。
+     * Phase B - Task B2：
+     * <ul>
+     *   <li>filter 为 null 或 {@link RecommendationFilter#isEmpty()} 时，委托 {@link #getRecommendations(Long)}，保证向后兼容。</li>
+     *   <li>否则在已排序的推荐结果上应用 in-memory filter，过滤掉不符合筛选条件的候选。</li>
+     * </ul>
+     *
+     * <p>实现说明：先复用既有加权排序逻辑，再在视图层应用筛选，避免重复实现排序算法。
+     * 注意：会在 dailyLimit 之后再过滤，可能导致返回数量少于 dailyLimit；这是可接受的，
+     * 因为筛选条件会缩小候选池，强行补足反而会让低分用户混入结果。</p>
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<RecommendedPersonView> getRecommendations(Long userId, RecommendationFilter filter) {
+        List<RecommendedPersonView> recommendations = getRecommendations(userId);
+        if (filter == null || filter.isEmpty()) {
+            return recommendations;
+        }
+        return recommendations.stream()
+                .filter(view -> matchesFilter(view, filter))
+                .toList();
+    }
+
+    /**
+     * 判断单个推荐视图是否满足筛选条件。
+     * 任一维度不满足即返回 false；所有激活的维度都通过才返回 true。
+     *
+     * <p>实现策略：</p>
+     * <ul>
+     *   <li>视图已暴露的字段（height/educationLevel/keyword 命中 name|bio|tags）：直接在视图层判定</li>
+     *   <li>视图未暴露的字段（relationshipStatus/hometownProvince/hometownCity/futureCity）：
+     *       通过 userBasicProfileRepository 重新查询该用户的 BasicProfile 进行判定。
+     *       虽然存在 N+1 查询，但 dailyLimit 上限为 10，性能损耗可接受。</li>
+     * </ul>
+     *
+     * <p>可见性为包级（package-private）以便单元测试直接覆盖筛选维度组合，
+     * 避免测试时需要构造完整的 17 个依赖 mock。</p>
+     */
+    boolean matchesFilter(RecommendedPersonView view, RecommendationFilter filter) {
+        // 1. height 范围（视图已暴露）
+        if (filter.heightMin() != null) {
+            if (view.height() == null || view.height() < filter.heightMin()) {
+                return false;
+            }
+        }
+        if (filter.heightMax() != null) {
+            if (view.height() == null || view.height() > filter.heightMax()) {
+                return false;
+            }
+        }
+        // 2. educationLevel 多选（视图已暴露）
+        if (!filter.educationLevels().isEmpty()) {
+            if (view.educationLevel() == null
+                    || !filter.educationLevels().contains(view.educationLevel())) {
+                return false;
+            }
+        }
+        // 3. keyword 模糊匹配 name/bio/tags（视图已暴露）
+        if (filter.keyword() != null) {
+            String kw = filter.keyword().toLowerCase();
+            boolean inName = view.name() != null && view.name().toLowerCase().contains(kw);
+            boolean inBio = view.bio() != null && view.bio().toLowerCase().contains(kw);
+            boolean inTags = view.tags() != null && view.tags().stream()
+                    .anyMatch(t -> t != null && t.toLowerCase().contains(kw));
+            if (!(inName || inBio || inTags)) {
+                return false;
+            }
+        }
+        // 4. 视图未暴露的字段：DB 回查
+        boolean needDbLookup = !filter.relationshipStatuses().isEmpty()
+                || filter.hometownProvince() != null
+                || filter.hometownCity() != null
+                || filter.futureCity() != null;
+        if (needDbLookup) {
+            UserBasicProfile bp = userBasicProfileRepository.findByUserId(view.id())
+                    .orElse(null);
+            if (bp == null) {
+                return false;
+            }
+            if (!filter.relationshipStatuses().isEmpty()) {
+                if (bp.getRelationshipStatus() == null
+                        || !filter.relationshipStatuses().contains(bp.getRelationshipStatus())) {
+                    return false;
+                }
+            }
+            if (filter.hometownProvince() != null) {
+                if (bp.getHometownProvince() == null
+                        || !filter.hometownProvince().equals(bp.getHometownProvince())) {
+                    return false;
+                }
+            }
+            if (filter.hometownCity() != null) {
+                if (bp.getHometownCity() == null
+                        || !filter.hometownCity().equals(bp.getHometownCity())) {
+                    return false;
+                }
+            }
+            if (filter.futureCity() != null) {
+                if (bp.getFutureCity() == null
+                        || !filter.futureCity().equals(bp.getFutureCity())) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override
@@ -861,15 +996,19 @@ public class RealRecommendationService implements RecommendationService {
                 .map(UserCampusProfile::getCampusName)
                 .orElse("");
 
+        // 获取 BasicProfile（一次性查询，复用给所有 Phase B 字段）
+        Optional<UserBasicProfile> basicProfileOpt = userBasicProfileRepository.findByUserId(user.getId());
+        UserBasicProfile basicProfile = basicProfileOpt.orElse(null);
+
         // 获取用户标签（从 UserBasicProfile 的 interest_tags 字段解析）
-        List<String> tags = userBasicProfileRepository.findByUserId(user.getId())
+        List<String> tags = basicProfileOpt
                 .map(profile -> parseInterestTags(profile.getInterestTags()))
                 .map(Set::stream)
                 .map(stream -> stream.toList())
                 .orElse(List.of());
 
         // 获取个人简介（从 UserBasicProfile 的 bio 字段获取，若为空则使用 User 的 bio）
-        String bio = userBasicProfileRepository.findByUserId(user.getId())
+        String bio = basicProfileOpt
                 .map(profile -> profile.getBio() != null ? profile.getBio() : "")
                 .orElse(user.getBio() != null ? user.getBio() : "");
 
@@ -915,6 +1054,16 @@ public class RealRecommendationService implements RecommendationService {
             }
         }
 
+        // ---- Phase B - Task B2 新增字段（从 BasicProfile 提取） ----
+        Integer height = basicProfile != null ? basicProfile.getHeight() : null;
+        String educationLevel = basicProfile != null ? basicProfile.getEducationLevel() : null;
+        List<String> photoGallery = basicProfile != null
+                ? parseStringList(basicProfile.getPhotoGallery())
+                : List.of();
+        String halfBodyPhotoUrl = basicProfile != null ? basicProfile.getHalfBodyPhotoUrl() : null;
+        String personalVideoUrl = basicProfile != null ? basicProfile.getPersonalVideoUrl() : null;
+        String verificationBadgeLevel = resolveBadgeLevelSafe(user.getId());
+
         return new RecommendedPersonView(
                 user.getId(),
                 name,
@@ -929,7 +1078,13 @@ public class RealRecommendationService implements RecommendationService {
                 images,
                 isSameSchool,
                 isSameMajor,
-                commonCircleCount
+                commonCircleCount,
+                height,
+                educationLevel,
+                photoGallery,
+                halfBodyPhotoUrl,
+                personalVideoUrl,
+                verificationBadgeLevel
         );
     }
 
@@ -967,14 +1122,199 @@ public class RealRecommendationService implements RecommendationService {
      * @return 头像 URL 列表
      */
     private List<String> parseParticipantAvatars(String json) {
+        return parseStringList(json);
+    }
+
+    /**
+     * 解析 JSON 字符串数组为 List<String>（Phase B - Task B2）。
+     * 用于 photoGallery / futurePlanTags 等字段的解析。
+     * 解析失败或 null 时返回空列表，不影响主流程。
+     *
+     * @param json JSON 字符串，例如 ["url1","url2"]
+     * @return 字符串列表，永不为 null
+     */
+    private List<String> parseStringList(String json) {
         if (json == null || json.isBlank()) {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            List<String> result = objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            return result != null ? result : Collections.emptyList();
         } catch (JsonProcessingException e) {
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * 安全查询认证徽章级别（Phase B - Task B3）。
+     * 委托 CampusCertificationService，捕获异常以避免推荐流程被认证查询失败影响。
+     *
+     * @param userId 用户 ID
+     * @return 徽章级别（school/email/idcard/none），失败时降级为 "none"
+     */
+    private String resolveBadgeLevelSafe(Long userId) {
+        try {
+            return campusCertificationService.getVerificationBadgeLevel(userId);
+        } catch (Exception e) {
+            // 认证查询失败不影响推荐列表生成
+            return "none";
+        }
+    }
+
+    /**
+     * 优化版本：计算候选用户的推荐权重分数（使用预加载的数据）。
+     * 避免 N+1 查询问题。
+     */
+    private int calculateScoreOptimized(Long candidateUserId, String myCampusName,
+                                         String myCityName, Set<String> myTags, String myTimeWindow,
+                                         String myDepartmentName, Set<Long> myCircleIds,
+                                         Set<Long> myAnswerQuestionIds, boolean campusPriorityEnabled,
+                                         UserCampusProfile campusProfile, UserBasicProfile basicProfile,
+                                         List<CircleMembership> memberships) {
+        int score = 0;
+
+        // 同校区 + 同城市 + 同专业
+        if (campusProfile != null) {
+            // 同校区判断并加分
+            if (myCampusName != null && !myCampusName.isBlank()
+                    && myCampusName.equals(campusProfile.getCampusName())) {
+                score += recommendationConfig.getCampusWeight();
+            }
+
+            // 同城市
+            if (myCityName != null && !myCityName.isBlank()
+                    && myCityName.equals(campusProfile.getCityName())) {
+                score += recommendationConfig.getCityWeight();
+            }
+
+            // 同专业
+            if (myDepartmentName != null && !myDepartmentName.isBlank()
+                    && myDepartmentName.equals(campusProfile.getDepartmentName())) {
+                score += recommendationConfig.getSameMajorWeight();
+            }
+        }
+
+        // 兴趣标签匹配（使用预加载的 basicProfile）
+        if (!myTags.isEmpty() && basicProfile != null) {
+            Set<String> candidateTags = parseInterestTags(basicProfile.getInterestTags());
+            long commonTagCount = myTags.stream()
+                    .filter(candidateTags::contains)
+                    .count();
+            score += (int) commonTagCount * recommendationConfig.getInterestWeight();
+        }
+
+        // 共同兴趣圈（使用预加载的 memberships）
+        if (!myCircleIds.isEmpty()) {
+            Set<Long> candidateCircleIds = memberships.stream()
+                    .map(m -> m.getCircle().getId())
+                    .collect(Collectors.toSet());
+            long commonCircleCount = myCircleIds.stream()
+                    .filter(candidateCircleIds::contains)
+                    .count();
+            score += (int) commonCircleCount * recommendationConfig.getCircleWeight();
+        }
+
+        // 校园优先加成
+        if (campusPriorityEnabled && campusProfile != null
+                && myCampusName != null && !myCampusName.isBlank()
+                && myCampusName.equals(campusProfile.getCampusName())) {
+            score = (int) (score * 1.3);
+        }
+
+        return score;
+    }
+
+    /**
+     * 优化版本：将 User 实体转换为推荐人物视图（使用预加载的数据）。
+     * 避免 N+1 查询问题。
+     */
+    private RecommendedPersonView toRecommendedPersonViewOptimized(User user,
+            String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
+            UserCampusProfile campusProfile, UserBasicProfile basicProfile,
+            List<CircleMembership> memberships) {
+        String name = user.getNickname() != null ? user.getNickname() : "";
+        String initials = extractInitials(name);
+        String headline = user.getBio() != null ? user.getBio() : "";
+
+        // 使用预加载的校区名称
+        String campusName = campusProfile != null ? campusProfile.getCampusName() : "";
+
+        // 使用预加载的用户标签
+        List<String> tags = basicProfile != null
+                ? parseInterestTags(basicProfile.getInterestTags()).stream().toList()
+                : List.of();
+
+        // 使用预加载的个人简介
+        String bio = basicProfile != null && basicProfile.getBio() != null
+                ? basicProfile.getBio()
+                : (user.getBio() != null ? user.getBio() : "");
+
+        // 获取用户图片列表（暂传空列表，后续迭代补充图片存储功能）
+        List<String> images = Collections.emptyList();
+
+        // 计算共同点（简化实现）
+        String commonGround = "";
+
+        // 计算可用时间（简化实现）
+        String availability = "";
+
+        // ---- 新增推荐维度标记 ----
+
+        // 同校判断：比较 campusName
+        boolean isSameSchool = false;
+        if (campusProfile != null && myCampusName != null && !myCampusName.isBlank()) {
+            isSameSchool = myCampusName.equals(campusProfile.getCampusName());
+        }
+
+        // 同专业判断：比较 departmentName
+        boolean isSameMajor = false;
+        if (campusProfile != null && myDepartmentName != null && !myDepartmentName.isBlank()) {
+            isSameMajor = myDepartmentName.equals(campusProfile.getDepartmentName());
+        }
+
+        // 共同兴趣圈数量（使用预加载的 memberships）
+        int commonCircleCount = 0;
+        if (!myCircleIds.isEmpty()) {
+            Set<Long> candidateCircleIds = memberships.stream()
+                    .map(m -> m.getCircle().getId())
+                    .collect(Collectors.toSet());
+            commonCircleCount = (int) myCircleIds.stream()
+                    .filter(candidateCircleIds::contains)
+                    .count();
+        }
+
+        // ---- Phase B - Task B2 新增字段（使用预加载的 basicProfile） ----
+        Integer height = basicProfile != null ? basicProfile.getHeight() : null;
+        String educationLevel = basicProfile != null ? basicProfile.getEducationLevel() : null;
+        List<String> photoGallery = basicProfile != null
+                ? parseStringList(basicProfile.getPhotoGallery())
+                : List.of();
+        String halfBodyPhotoUrl = basicProfile != null ? basicProfile.getHalfBodyPhotoUrl() : null;
+        String personalVideoUrl = basicProfile != null ? basicProfile.getPersonalVideoUrl() : null;
+        String verificationBadgeLevel = resolveBadgeLevelSafe(user.getId());
+
+        return new RecommendedPersonView(
+                user.getId(),
+                name,
+                initials,
+                headline,
+                commonGround,
+                availability,
+                campusName,
+                user.getAvatarUrl(),
+                tags,
+                bio,
+                images,
+                isSameSchool,
+                isSameMajor,
+                commonCircleCount,
+                height,
+                educationLevel,
+                photoGallery,
+                halfBodyPhotoUrl,
+                personalVideoUrl,
+                verificationBadgeLevel
+        );
     }
 
     /**

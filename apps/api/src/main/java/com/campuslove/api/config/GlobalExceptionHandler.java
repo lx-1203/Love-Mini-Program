@@ -1,5 +1,6 @@
 package com.campuslove.api.config;
 
+import com.campuslove.api.media.MediaSizeLimitExceededException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * 全局异常处理器。
@@ -62,6 +64,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理媒体文件大小超限异常。
+     * 当上传的图片或视频超过规定大小时触发，返回 413 Payload Too Large。
+     */
+    @ExceptionHandler(MediaSizeLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleMediaSizeLimitExceeded(
+            MediaSizeLimitExceededException ex) {
+        log.warn("媒体文件大小超限: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Payload Too Large",
+                ex.getMessage());
+    }
+
+    /**
      * 处理访问拒绝异常。
      * 当用户无权限访问资源时触发，返回 403 Forbidden。
      */
@@ -70,6 +84,20 @@ public class GlobalExceptionHandler {
             AccessDeniedException ex) {
         log.warn("访问被拒绝: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", "您没有权限执行此操作");
+    }
+
+    /**
+     * 处理 Spring ResponseStatusException。
+     * 将其转换为标准错误响应格式。
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(
+            ResponseStatusException ex) {
+        log.warn("请求错误: {} - {}", ex.getStatusCode(), ex.getReason());
+        return buildErrorResponse(
+                HttpStatus.valueOf(ex.getStatusCode().value()),
+                "Error",
+                ex.getReason() != null ? ex.getReason() : "请求错误");
     }
 
     /**

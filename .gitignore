@@ -8,7 +8,6 @@ Thumbs.db
 *.log
 .env
 .env.*
-!apps/client/.env.real
 target/
 out/
 coverage/
@@ -16,3 +15,79 @@ package-lock.json
 
 # Local database secrets
 database/flyway/flyway.user.toml
+
+# ===== 个人本地凭据与覆盖 =====
+# 客户端本地覆盖（保留 .env.example 作为模板）
+apps/client/.env
+apps/client/.env.development
+apps/client/.env.development.local
+apps/client/.env.production
+apps/client/.env.production.local
+apps/client/.env.real
+apps/client/.env.local
+# 管理员本地覆盖
+apps/admin/.env
+apps/admin/.env.development
+apps/admin/.env.development.local
+apps/admin/.env.production
+apps/admin/.env.production.local
+apps/admin/.env.local
+# API 本地覆盖（保留 .env.example）
+apps/api/.env
+
+# ===== IDE / 编辑器状态 =====
+.hbuilderx/
+.codegraph/
+.reasonix/
+.superpowers/
+
+# ===== 个人图片与资料 =====
+# 个人微信图片与参考图
+/2/
+/参考/
+# AI 生成图
+ChatGPT Image *.png
+# 调试截图
+test-screenshots/
+.trae/screenshots/
+# 根目录调试截图
+/[a-z]*-page.png
+/devtools-*.png
+/desktop-screenshot*.png
+/screenshot-*.png
+/ss-*.png
+/usability-*.png
+/ref_img.png
+/fullscreen-screenshot.png
+
+# ===== 个人调试工具与脚本 =====
+/compress-images.js
+/check-encoding.js
+/check-pages-json.cjs
+/debug-e0.cjs
+/fix-encoding.js
+/fix-encoding-v2.js
+/DevToolsCtrl.cs
+/DevToolsCtrl.dll
+/ListWindows.cs
+/ListWindows.exe
+/ReviewApp.cs
+/ReviewApp.exe
+/ReviewApp2.cs
+/ReviewApp2.exe
+/ScreenshotTest.cs
+/ScreenshotTest.exe
+
+# ===== 二进制工具与压缩包 =====
+tools/flyway-*/
+tools/flyway-commandline-*.zip
+/design-preview.7z
+
+# ===== 构建产物 =====
+apps/client/dist/
+apps/client/dist/build/
+apps/client/tmp-*.png
+apps/api/target/
+
+# ===== 残留空文件 =====
+/nul

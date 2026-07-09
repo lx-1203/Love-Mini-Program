@@ -1,6 +1,7 @@
 package com.campuslove.api.repository;
 
 import com.campuslove.api.entity.InteractionEvent;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,4 +48,21 @@ public interface InteractionEventRepository extends JpaRepository<InteractionEve
      * @return 未读互动事件列表
      */
     List<InteractionEvent> findByUserIdAndIsRead(Long userId, Boolean isRead);
+
+    /**
+     * 统计指定时间之后发生的互动事件数（用于活跃度统计中的"互动数"指标）。
+     *
+     * @param since 起始时间
+     * @return 互动事件数
+     */
+    long countByCreatedAtAfter(LocalDateTime since);
+
+    /**
+     * 统计指定时间范围内的互动事件数。
+     *
+     * @param from 起始时间
+     * @param to   结束时间
+     * @return 互动事件数
+     */
+    long countByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
 }

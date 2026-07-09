@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>首页 — 校园恋爱小程序</title>
+  <style>
+    :root {
+      /* 品牌色 - 青藤绿 */
+      --brand-50: #E8F8F0; --brand-100: #D1F0E0; --brand-200: #A3E0C0;
+      --brand-300: #7CD9A6; --brand-400: #3FCF8E; --brand-500: #2DB97A;
+      --brand-600: #25A06A; --brand-700: #1D8A5A;
+      /* 辅助色 */
+      --pink-50: #FDF2F8; --pink-100: #FCE7F3; --pink-400: #F472B6;
+      --pink-500: #EC4899; --pink-600: #DB2777;
+      --orange-50: #FFF7ED; --orange-100: #FFEDD5; --orange-400: #FB923C;
+      /* 中性色 */
+      --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0;
+      --gray-300: #CBD5E1; --gray-400: #94A3B8; --gray-500: #64748B;
+      --gray-600: #475569; --gray-700: #334155; --gray-800: #1E293B;
+      /* 间距 */
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+      /* 圆角 */
+      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+      --radius-xl: 20px; --radius-full: 9999px;
+      /* 阴影 */
+      --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+      --shadow-brand: 0 4px 16px rgba(45,212,191,0.25);
+      /* 字体 */
+      --text-h1: 28px; --text-h2: 22px; --text-h3: 18px;
+      --text-body: 16px; --text-body-sm: 14px; --text-caption: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--gray-50); color: var(--gray-800);
+      width: 375px; min-height: 100vh; margin: 0 auto;
+      overflow-x: hidden; -webkit-font-smoothing: antialiased;
+    }
+    /* 状态栏 */
+    .status-bar { height: 44px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); font-size: var(--text-caption); color: var(--gray-700); }
+    .status-bar .time { font-weight: 600; }
+    .status-bar .icons { display: flex; gap: 4px; align-items: center; }
+    .status-bar .icons svg { width: 16px; height: 16px; }
+    /* 导航栏 */
+    .nav-bar { height: 48px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); border-bottom: 1px solid var(--gray-200); }
+    .nav-bar .left { display: flex; align-items: center; gap: var(--space-2); }
+    .nav-bar .school-tag { background: var(--brand-50); color: var(--brand-600); font-size: var(--text-body-sm); font-weight: 600; padding: 4px 12px; border-radius: var(--radius-full); display: flex; align-items: center; gap: 4px; }
+    .nav-bar .school-tag svg { width: 14px; height: 14px; }
+    .nav-bar .right { display: flex; gap: var(--space-3); }
+    .nav-bar .right .icon-btn { width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--gray-50); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; position: relative; }
+    .nav-bar .right .icon-btn svg { width: 20px; height: 20px; color: var(--gray-600); }
+    .nav-bar .right .icon-btn .badge { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background: var(--pink-500); border-radius: 50%; }
+    /* 页面内容 */
+    .page-content { padding-bottom: 80px; }
+    /* 欢迎横幅 */
+    .welcome-banner { margin: var(--space-4); padding: var(--space-5); background: linear-gradient(135deg, var(--brand-400) 0%, var(--brand-500) 100%); border-radius: var(--radius-lg); color: #fff; position: relative; overflow: hidden; }
+    .welcome-banner::after { content: ''; position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.15); border-radius: 50%; }
+    .welcome-banner h2 { font-size: var(--text-h2); font-weight: 700; margin-bottom: var(--space-1); }
+    .welcome-banner p { font-size: var(--text-body-sm); opacity: 0.9; }
+    .welcome-banner .emoji { font-size: 24px; margin-right: var(--space-2); }
+    /* 社交升温进度 */
+    .social-progress { margin: 0 var(--space-4) var(--space-4); background: #fff; border-radius: var(--radius-md); padding: var(--space-4); box-shadow: var(--shadow-sm); }
+    .social-progress .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
+    .social-progress .progress-header h3 { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-700); }
+    .social-progress .progress-header span { font-size: var(--text-caption); color: var(--brand-500); font-weight: 600; }
+    .progress-bar { height: 8px; background: var(--gray-200); border-radius: var(--radius-full); overflow: hidden; }
+    .progress-bar .fill { height: 100%; background: linear-gradient(90deg, var(--brand-400), var(--brand-500)); border-radius: var(--radius-full); width: 65%; transition: width 0.5s ease; }
+    .progress-steps { display: flex; justify-content: space-between; margin-top: var(--space-2); }
+    .progress-steps .step { text-align: center; font-size: 10px; color: var(--gray-400); }
+    .progress-steps .step.active { color: var(--brand-500); font-weight: 600; }
+    .progress-steps .step.done { color: var(--success); }
+    /* 区块标题 */
+    .section { margin-bottom: var(--space-5); }
+    .section-header { display: flex; justify-content: space-between; align-items: center; padding: 0 var(--space-4); margin-bottom: var(--space-3); }
+    .section-header h3 { font-size: var(--text-h3); font-weight: 600; color: var(--gray-800); }
+    .section-header .more { font-size: var(--text-caption); color: var(--gray-400); text-decoration: none; }
+    /* 推荐人物横向滚动 */
+    .people-scroll { display: flex; gap: var(--space-3); padding: 0 var(--space-4); overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .people-scroll::-webkit-scrollbar { display: none; }
+    .person-card { flex: 0 0 140px; scroll-snap-align: start; background: #fff; border-radius: var(--radius-md); padding: var(--space-3); box-shadow: var(--shadow-sm); transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
+    .person-card:active { transform: scale(0.97); }
+    .person-card .avatar { width: 80px; height: 80px; border-radius: var(--radius-full); margin: 0 auto var(--space-2); object-fit: cover; border: 3px solid var(--brand-100); }
+    .person-card .name { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-800); text-align: center; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .person-card .school { font-size: var(--text-caption); color: var(--gray-400); text-align: center; margin-bottom: var(--space-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .person-card .tags { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+    .person-card .tag { font-size: 10px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--brand-50); color: var(--brand-600); }
+    .person-card .tag.pink { background: var(--pink-50); color: var(--pink-600); }
+    .person-card .match-rate { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: var(--space-2); font-size: var(--text-caption); color: var(--brand-500); font-weight: 600; }
+    .person-card .match-rate svg { width: 12px; height: 12px; }
+    /* 活动预览 */
+    .activity-scroll { display: flex; gap: var(--space-3); padding: 0 var(--space-4); overflow-x: auto; scrollbar-width: none; }
+    .activity-scroll::-webkit-scrollbar { display: none; }
+    .activity-card { flex: 0 0 280px; background: #fff; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; }
+    .activity-card .cover { width: 100%; height: 120px; object-fit: cover; background: linear-gradient(135deg, var(--orange-50), var(--pink-50)); display: flex; align-items: center; justify-content: center; }
+    .activity-card .cover .icon { font-size: 40px; }
+    .activity-card .info { padding: var(--space-3); }
+    .activity-card .info .title { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-800); margin-bottom: 4px; }
+    .activity-card .info .meta { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-caption); color: var(--gray-400); }
+    .activity-card .info .meta .dot { width: 4px; height: 4px; background: var(--gray-300); border-radius: 50%; }
+    .activity-card .info .join-btn { margin-top: var(--space-2); display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-caption); color: var(--orange-400); font-weight: 600; }
+    /* 讨论热度 */
+    .heat-list { padding: 0 var(--space-4); }
+    .heat-item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--gray-100); }
+    .heat-item:last-child { border-bottom: none; }
+    .heat-item .rank { width: 24px; height: 24px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: var(--text-caption); font-weight: 700; }
+    .heat-item .rank.top1 { background: var(--orange-400); color: #fff; }
+    .heat-item .rank.top2 { background: var(--gray-400); color: #fff; }
+    .heat-item .rank.top3 { background: var(--orange-100); color: var(--orange-400); }
+    .heat-item .rank.normal { background: var(--gray-100); color: var(--gray-500); }
+    .heat-item .content { flex: 1; }
+    .heat-item .content .title { font-size: var(--text-body-sm); color: var(--gray-800); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .heat-item .content .count { font-size: var(--text-caption); color: var(--gray-400); }
+    /* 底部 TabBar */
+    .tab-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; height: 56px; background: #fff; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--gray-200); padding-bottom: env(safe-area-inset-bottom); }
+    .tab-bar .tab { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 12px; }
+    .tab-bar .tab svg { width: 24px; height: 24px; color: var(--gray-400); transition: color 0.2s; }
+    .tab-bar .tab span { font-size: 10px; color: var(--gray-400); transition: color 0.2s; }
+    .tab-bar .tab.active svg { color: var(--brand-400); transform: scale(1.1); }
+    .tab-bar .tab.active span { color: var(--brand-400); font-weight: 600; }
+    /* 动画 */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-in { animation: fadeInUp 0.3s ease-out forwards; }
+    .delay-1 { animation-delay: 0.05s; opacity: 0; }
+    .delay-2 { animation-delay: 0.1s; opacity: 0; }
+    .delay-3 { animation-delay: 0.15s; opacity: 0; }
+    .delay-4 { animation-delay: 0.2s; opacity: 0; }
+  </style>
+</head>
+<body>
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="1" y="6" width="4" height="12" rx="1"/><rect x="7" y="4" width="4" height="14" rx="1"/><rect x="13" y="2" width="4" height="16" rx="1"/><rect x="19" y="0" width="4" height="18" rx="1" opacity=".3"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="10" x2="23" y2="14"/></svg>
+    </div>
+  </div>
+
+  <!-- 导航栏 -->
+  <div class="nav-bar">
+    <div class="left">
+      <div class="school-tag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/></svg>
+        北京大学
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+    <div class="right">
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="badge"></span>
+      </button>
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 页面内容 -->
+  <div class="page-content">
+    <!-- 欢迎横幅 -->
+    <div class="welcome-banner animate-in">
+      <h2><span class="emoji">🌸</span>早安，同学</h2>
+      <p>今天有 3 位新同学加入校园</p>
+    </div>
+
+    <!-- 社交升温进度 -->
+    <div class="social-progress animate-in delay-1">
+      <div class="progress-header">
+        <h3>🔥 社交升温进度</h3>
+        <span>65%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="fill"></div>
+      </div>
+      <div class="progress-steps">
+        <span class="step done">✓ 完善资料</span>
+        <span class="step done">✓ 开始互动</span>
+        <span class="step active">💬 深入交流</span>
+        <span class="step">🎯 建立连接</span>
+      </div>
+    </div>
+
+    <!-- 推荐的人 -->
+    <div class="section animate-in delay-2">
+      <div class="section-header">
+        <h3>✨ 为你推荐</h3>
+        <a class="more" href="#">查看更多 ›</a>
+      </div>
+      <div class="people-scroll">
+        <div class="person-card">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="">
+          <div class="name">林小雨</div>
+          <div class="school">北京大学 · 大三</div>
+          <div class="tags"><span class="tag">摄影</span><span class="tag pink">阅读</span></div>
+          <div class="match-rate">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            92% 匹配
+          </div>
+        </div>
+        <div class="person-card">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=ffdfbf" alt="">
+          <div class="name">张明远</div>
+          <div class="school">清华大学 · 研一</div>
+          <div class="tags"><span class="tag">编程</span><span class="tag">篮球</span></div>
+          <div class="match-rate">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            87% 匹配
+          </div>
+        </div>
+        <div class="person-card">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mia&backgroundColor=c0aede" alt="">
+          <div class="name">王思琪</div>
+          <div class="school">复旦大学 · 大二</div>
+          <div class="tags"><span class="tag pink">音乐</span><span class="tag">旅行</span></div>
+          <div class="match-rate">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            83% 匹配
+          </div>
+        </div>
+        <div class="person-card">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Leo&backgroundColor=d1d4f9" alt="">
+          <div class="name">陈浩然</div>
+          <div class="school">浙江大学 · 大四</div>
+          <div class="tags"><span class="tag">吉他</span><span class="tag">电影</span></div>
+          <div class="match-rate">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            78% 匹配
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 热门活动 -->
+    <div class="section animate-in delay-3">
+      <div class="section-header">
+        <h3>🎉 热门活动</h3>
+        <a class="more" href="#">全部活动 ›</a>
+      </div>
+      <div class="activity-scroll">
+        <div class="activity-card">
+          <div class="cover"><span class="icon">🎵</span></div>
+          <div class="info">
+            <div class="title">周末校园音乐节</div>
+            <div class="meta">
+              <span>本周六 14:00</span>
+              <span class="dot"></span>
+              <span>北大百年讲堂</span>
+              <span class="dot"></span>
+              <span>已报名 128 人</span>
+            </div>
+            <div class="join-btn">查看详情 →</div>
+          </div>
+        </div>
+        <div class="activity-card">
+          <div class="cover" style="background: linear-gradient(135deg, var(--brand-50), var(--pink-50));"><span class="icon">📚</span></div>
+          <div class="info">
+            <div class="title">读书分享会·春天的诗</div>
+            <div class="meta">
+              <span>下周三 19:00</span>
+              <span class="dot"></span>
+              <span>图书馆报告厅</span>
+              <span class="dot"></span>
+              <span>已报名 56 人</span>
+            </div>
+            <div class="join-btn">查看详情 →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 讨论热度 -->
+    <div class="section animate-in delay-4">
+      <div class="section-header">
+        <h3>🔥 热门讨论</h3>
+        <a class="more" href="#">更多 ›</a>
+      </div>
+      <div class="heat-list">
+        <div class="heat-item">
+          <div class="rank top1">1</div>
+          <div class="content">
+            <div class="title">有没有一起自习的同学？图书馆三楼见</div>
+            <div class="count">328 讨论 · 45 回复</div>
+          </div>
+        </div>
+        <div class="heat-item">
+          <div class="rank top2">2</div>
+          <div class="content">
+            <div class="title">推荐一首适合春天听的歌 🎧</div>
+            <div class="count">256 讨论 · 38 回复</div>
+          </div>
+        </div>
+        <div class="heat-item">
+          <div class="rank top3">3</div>
+          <div class="content">
+            <div class="title">食堂新出的奶茶好喝吗？</div>
+            <div class="count">189 讨论 · 27 回复</div>
+          </div>
+        </div>
+        <div class="heat-item">
+          <div class="rank normal">4</div>
+          <div class="content">
+            <div class="title">周末有什么好玩的活动推荐？</div>
+            <div class="count">142 讨论 · 19 回复</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部 TabBar -->
+  <div class="tab-bar">
+    <div class="tab active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>首页</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>寻觅</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>聊天</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>校园</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>我的</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -405,6 +405,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatSessionSummary'
+  /temp-chat/sessions/{id}/messages/{messageId}/recall:
+    post:
+      summary: Recall a message in a temporary chat session
+      operationId: recallTempChatMessage
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated chat session with recalled message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
   /recommendations/discussions:
     get:
       summary: Get discussion recommendations
@@ -1004,6 +1026,25 @@ components:
         durationSeconds:
           type: integer
           nullable: true
+        recalled:
+          type: boolean
+          default: false
+        deliveryStatus:
+          type: string
+          enum: [sent, delivered, read]
+          default: sent
+        quoteRef:
+          type: string
+          nullable: true
+          description: 引用消息的ID
+        quoteBody:
+          type: string
+          nullable: true
+          description: 被引用消息的内容快照
+        quoteSender:
+          type: string
+          nullable: true
+          description: 被引用消息的发送者
       required:
         - id
         - sender
@@ -1024,6 +1065,10 @@ components:
         durationSeconds:
           type: integer
           nullable: true
+        quoteRef:
+          type: string
+          nullable: true
+          description: 引用消息的ID（可选）
       required:
         - sender
         - kind

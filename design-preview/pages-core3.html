@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>校园恋爱 · 产品级 UI · 登录/首页/聊天</title>
+<style>
+:root {
+  --brand: #3FCF8E;
+  --brand-hover: #2DB97A;
+  --brand-active: #25A86D;
+  --brand-light: #D1FAE5;
+  --brand-50: #F0FDF4;
+  --brand-gradient: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
+  --pink: #EC4899;
+  --pink-soft: #FDF2F8;
+  --success: #10B981;
+  --error: #E5454D;
+  --warning: #F59E0B;
+  --gray-0: #FFFFFF;
+  --gray-50: #F4F6FA;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1F2329;
+  --gray-900: #0E1116;
+  --font: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --shadow-sm: 0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.04);
+  --shadow-md: 0 4px 16px rgba(15,23,42,0.06);
+  --shadow-lg: 0 8px 32px rgba(15,23,42,0.08);
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-full: 9999px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: var(--font);
+  background: var(--gray-50);
+  color: var(--gray-800);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+.page-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  justify-content: center;
+  padding: 32px 16px 64px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+.page-col { flex: 0 0 auto; }
+.page-label {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-400);
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+.page-label span {
+  color: var(--brand);
+}
+.phone {
+  width: 375px;
+  background: var(--gray-0);
+  border-radius: 28px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border: 1px solid var(--gray-100);
+  position: relative;
+}
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+.status-bar .right { display:flex; gap:5px; font-size:12px; }
+
+/* ===================== LOGIN PAGE ===================== */
+.login-page {
+  min-height: 812px;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--brand-50) 0%, var(--gray-0) 40%);
+}
+.login-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 32px;
+}
+.login-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: var(--brand-gradient);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 32px rgba(91,127,255,0.25);
+  margin-bottom: 16px;
+}
+.login-logo svg { width:36px; height:36px; fill:#fff; }
+.login-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gray-800);
+  letter-spacing: -0.02em;
+}
+.login-sub {
+  font-size: 14px;
+  color: var(--gray-400);
+  margin-top: 4px;
+  text-align: center;
+  line-height: 1.5;
+}
+.login-illustration {
+  width: 200px;
+  height: 160px;
+  margin: 24px auto 0;
+  background: linear-gradient(135deg, var(--brand-light) 0%, var(--brand-50) 100%);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.login-illustration::before {
+  content: '';
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--brand);
+  opacity: 0.08;
+  top: 20px;
+  left: -20px;
+}
+.login-illustration::after {
+  content: '';
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--pink);
+  opacity: 0.06;
+  bottom: 10px;
+  right: -10px;
+}
+.login-illustration .emoji {
+  font-size: 48px;
+  z-index: 1;
+}
+.login-bottom {
+  padding: 0 24px 34px;
+}
+.login-btn {
+  width: 100%;
+  padding: 14px 0;
+  border-radius: var(--r-full);
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.login-btn:active { transform: scale(0.97); }
+.login-btn--wechat {
+  background: #07C160;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(7,193,96,0.2);
+}
+.login-btn--wechat:hover {
+  background: #06AE56;
+  box-shadow: 0 6px 24px rgba(7,193,96,0.3);
+}
+.login-btn--wechat svg { width:18px; height:18px; fill:#fff; }
+.login-btn--phone {
+  background: transparent;
+  color: var(--gray-500);
+  border: 1.5px solid var(--gray-200);
+  margin-top: 12px;
+}
+.login-btn--phone:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-50);
+}
+.login-terms {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--gray-400);
+  line-height: 1.6;
+}
+.login-terms a {
+  color: var(--brand);
+  text-decoration: none;
+}
+.login-terms a:hover { text-decoration: underline; }
+
+/* ===================== HOME PAGE ===================== */
+.home-page { min-height: 812px; background: var(--gray-50); }
+.home-header {
+  padding: 8px 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.home-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.home-header-left .school {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.home-header-left .badge {
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--brand-50);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--brand-light);
+}
+.home-header-right {
+  display: flex;
+  gap: 12px;
+}
+.home-header-right .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gray-100);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.home-header-right .icon-btn:hover { background: var(--brand-light); }
+.home-header-right .icon-btn .dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--error);
+  border: 2px solid #fff;
+}
+
+/* Welcome Banner */
+.welcome-banner {
+  margin: 16px 16px 0;
+  background: var(--brand-gradient);
+  border-radius: var(--r-xl);
+  padding: 20px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.welcome-banner::before {
+  content: '';
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  top: -40px;
+  right: -30px;
+}
+.welcome-banner .greeting {
+  font-size: 20px;
+  font-weight: 700;
+  position: relative;
+}
+.welcome-banner .sub-text {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-top: 4px;
+  position: relative;
+  line-height: 1.5;
+}
+.welcome-banner .banner-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  position: relative;
+}
+.welcome-banner .banner-tag {
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Activity Section */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px 12px;
+}
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.section-more {
+  font-size: 13px;
+  color: var(--gray-400);
+  cursor: pointer;
+}
+.section-more:hover { color: var(--brand); }
+.activity-scroll {
+  display: flex;
+  gap: 12px;
+  padding: 0 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.activity-scroll::-webkit-scrollbar { display: none; }
+.activity-card {
+  min-width: 240px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--gray-0);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-100);
+  scroll-snap-align: start;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+.activity-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.activity-card .cover {
+  height: 120px;
+  background: linear-gradient(135deg, var(--brand-light) 0%, var(--brand-50) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  position: relative;
+}
+.activity-card .cover .tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  background: var(--brand);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+}
+.activity-card .info {
+  padding: 12px;
+}
+.activity-card .info .name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 4px;
+}
+.activity-card .info .meta {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--gray-400);
+}
+.activity-card .info .meta span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Recommend People */
+.people-scroll {
+  display: flex;
+  gap: 12px;
+  padding: 0 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.people-scroll::-webkit-scrollbar { display: none; }
+.person-card {
+  min-width: 160px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--gray-0);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-100);
+  text-align: center;
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.person-card:hover { transform: translateY(-2px); }
+.person-card .avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 auto 8px;
+  border: 2px solid var(--brand-light);
+}
+.person-card .name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+.person-card .school-info {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+.person-card .match-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--brand-50);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+.person-card .tags {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.person-card .tags span {
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  background: var(--gray-100);
+  color: var(--gray-500);
+  font-size: 10px;
+}
+
+/* Campus Wall */
+.wall-card {
+  margin: 0 16px 12px;
+  background: var(--gray-0);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-100);
+}
+.wall-card .wall-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wall-card .wall-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.wall-card .wall-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+.wall-card .wall-time {
+  font-size: 11px;
+  color: var(--gray-400);
+}
+.wall-card .wall-text {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+.wall-card .wall-images {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 4px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-top: 8px;
+}
+.wall-card .wall-images .img {
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, var(--brand-light), var(--brand-50));
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+.wall-card .wall-actions {
+  display: flex;
+  gap: 24px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--gray-100);
+}
+.wall-card .wall-action {
+  font-size: 12px;
+  color: var(--gray-400);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.wall-card .wall-action:hover { color: var(--brand); }
+
+/* Tab Bar */
+.tabbar {
+  position: sticky;
+  bottom: 0;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  padding: 6px 0 28px;
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  color: var(--gray-400);
+}
+.tab-item.active { color: var(--brand); }
+.tab-item .tab-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+.tab-item.active .tab-icon {
+  background: var(--brand-50);
+  border-radius: var(--r-full);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+}
+.tab-item .tab-label {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* ===================== CHAT PAGE ===================== */
+.chat-page { min-height: 812px; background: var(--gray-50); }
+.chat-header {
+  padding: 8px 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chat-header .title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.chat-header .icons {
+  display: flex;
+  gap: 12px;
+}
+.chat-header .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gray-100);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  color: var(--gray-500);
+  cursor: pointer;
+}
+
+/* Chat List */
+.chat-list { margin-top: 8px; }
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--gray-100);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  position: relative;
+}
+.chat-item:hover { background: var(--gray-50); }
+.chat-item:last-child { border-bottom: none; }
+.chat-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  position: relative;
+}
+.chat-avatar .online-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--success);
+  border: 2.5px solid #fff;
+}
+.chat-content {
+  flex: 1;
+  min-width: 0;
+}
+.chat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.chat-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+.chat-time {
+  font-size: 12px;
+  color: var(--gray-400);
+  flex-shrink: 0;
+}
+.chat-msg {
+  font-size: 14px;
+  color: var(--gray-400);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-badge {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--error);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+/* Heart Signal Banner */
+.heart-signal {
+  margin: 12px 20px;
+  background: var(--brand-50);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  border: 1px solid var(--brand-light);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.heart-signal .signal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--brand);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.heart-signal .signal-info { flex:1; }
+.heart-signal .signal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+.heart-signal .signal-sub {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+.heart-signal .signal-time {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--brand);
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+
+/* Chat Bubble Preview */
+.chat-bubble-preview {
+  display: flex;
+  gap: 10px;
+  padding: 12px 20px;
+}
+.bubble-left {
+  max-width: 70%;
+  background: var(--gray-0);
+  border-radius: 16px 16px 16px 4px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--gray-700);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-100);
+  line-height: 1.5;
+}
+.bubble-right {
+  max-width: 70%;
+  background: var(--brand);
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #fff;
+  margin-left: auto;
+  line-height: 1.5;
+}
+
+/* Input Bar */
+.input-bar {
+  position: sticky;
+  bottom: 0;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--gray-100);
+  padding: 10px 16px 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.input-bar .input-field {
+  flex: 1;
+  height: 40px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--r-full);
+  padding: 0 16px;
+  font-size: 14px;
+  color: var(--gray-800);
+  background: var(--gray-50);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.input-bar .input-field:focus {
+  border-color: var(--brand);
+  background: var(--gray-0);
+}
+.input-bar .input-field::placeholder {
+  color: var(--gray-300);
+}
+.input-bar .send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--brand);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+.input-bar .send-btn:hover { background: var(--brand-hover); }
+
+/* Animations */
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(12px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.4s ease both; }
+.fade-in-d1 { animation-delay: 0.1s; }
+.fade-in-d2 { animation-delay: 0.2s; }
+.fade-in-d3 { animation-delay: 0.3s; }
+
+/* Component Legend */
+.legend {
+  max-width: 375px;
+  margin: 0 auto 32px;
+  background: var(--gray-0);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-100);
+}
+.legend h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 8px;
+}
+.legend table { width:100%; font-size:11px; border-collapse:collapse; }
+.legend td {
+  padding: 4px 0;
+  color: var(--gray-500);
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: top;
+}
+.legend td:first-child {
+  font-weight: 600;
+  color: var(--gray-700);
+  width: 120px;
+  padding-right: 8px;
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     PAGE 1: LOGIN
+     ============================================================ -->
+<div class="page-grid">
+<div class="page-col">
+<div class="page-label">①<span>登录页</span> · Login Page</div>
+<div class="phone fade-in">
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="right"><span>📶</span><span>📶</span><span>🔋</span></div>
+  </div>
+
+  <div class="login-page">
+    <div class="login-hero">
+      <div class="login-logo fade-in fade-in-d1">
+        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </div>
+      <div class="login-title fade-in fade-in-d1">校园恋爱</div>
+      <div class="login-sub fade-in fade-in-d2">在校园里，自然地遇见对的人</div>
+    </div>
+
+    <div class="login-illustration fade-in fade-in-d2">
+      <span class="emoji">🏫</span>
+    </div>
+
+    <div class="login-bottom">
+      <button class="login-btn login-btn--wechat fade-in fade-in-d3">
+        <svg viewBox="0 0 24 24"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.295.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178A1.17 1.17 0 014.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178 1.17 1.17 0 01-1.162-1.178c0-.651.52-1.18 1.162-1.18zm3.165 4.36c-1.59-.055-3.126.463-4.33 1.43-1.2 1.015-1.91 2.43-1.91 3.94 0 1.262.53 2.44 1.47 3.33.94.88 2.2 1.41 3.57 1.47.25.01.51.01.76 0a7.78 7.78 0 002.23-.36.65.65 0 01.54.07l1.44.84a.25.25 0 00.12.04.22.22 0 00.22-.22c0-.05-.02-.1-.04-.15l-.29-1.11a.45.45 0 01.16-.51C21.35 16.78 22 15.34 22 13.75c0-3.12-2.78-5.63-6.24-6.06-.38-.05-.76-.07-1.14-.07zm-2.18 2.76c.49 0 .89.4.89.9a.895.895 0 01-1.79 0c0-.5.4-.9.9-.9zm4.36 0c.49 0 .89.4.89.9a.895.895 0 01-1.79 0c0-.5.4-.9.9-.9z"/></svg>
+        微信一键登录      </button>
+      <button class="login-btn login-btn--phone fade-in fade-in-d3">
+        手机号登录      </button>
+      <div class="login-terms fade-in fade-in-d3">
+        登录即同意《<a href="#">用户协议</a>》和《<a href="#">隐私政策</a>》
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <h4>组件切分</h4>
+  <table>
+    <tr><td>login-logo</td><td>品牌 Logo（72×72，圆角 20px，蓝色渐变+阴影）</td></tr>
+    <tr><td>login-title</td><td>产品名（24px，粗体，深灰）</td></tr>
+    <tr><td>login-sub</td><td>副标题（14px，浅灰）</td></tr>
+    <tr><td>login-illustration</td><td>插画区（200×160，浅蓝底，校园元素）</td></tr>
+    <tr><td>login-btn--wechat</td><td>微信按钮（绿色#07C160，胶囊形，图标+文字）</td></tr>
+    <tr><td>login-btn--phone</td><td>手机按钮（白底+灰边框，hover 蓝色）</td></tr>
+    <tr><td>login-terms</td><td>协议文字（11px，浅灰，链接蓝色）</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ============================================================
+     PAGE 2: HOME
+     ============================================================ -->
+<div class="page-col">
+<div class="page-label">②<span>首页</span> · Home Feed</div>
+<div class="phone fade-in">
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="right"><span>📶</span><span>📶</span><span>🔋</span></div>
+  </div>
+
+  <div class="home-page">
+    <!-- Header -->
+    <div class="home-header">
+      <div class="home-header-left">
+        <span class="school">华南理工</span>
+        <span class="badge">本校限定</span>
+      </div>
+      <div class="home-header-right">
+        <div class="icon-btn" style="position:relative"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <div class="icon-btn" style="position:relative"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="dot" style="position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:var(--error);border:1.5px solid #fff"></span></div>
+      </div>
+    </div>
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner fade-in fade-in-d1">
+      <div class="greeting">下午好，同学 ⭐✨</div>
+      <div class="sub-text">今天有 3 节课，2 个空闲时段可以认识新朋友</div>
+      <div class="banner-tags">
+        <span class="banner-tag">📉 上午空闲</span>
+        <span class="banner-tag">🔼 下午空闲</span>
+      </div>
+    </div>
+
+    <!-- Activities -->
+    <div class="section-header">
+      <span class="section-title">校园活动</span>
+      <span class="section-more">查看全部 →</span>
+    </div>
+    <div class="activity-scroll">
+      <div class="activity-card fade-in fade-in-d2">
+        <div class="cover">
+          <span class="tag">本周</span>
+          🎬
+        </div>
+        <div class="info">
+          <div class="name">周末电影</div>
+          <div class="meta">
+            <span>🕲 周五 19:00</span>
+            <span>📍 学生活动中心</span>
+          </div>
+        </div>
+      </div>
+      <div class="activity-card fade-in fade-in-d2">
+        <div class="cover" style="background:linear-gradient(135deg,#D1FAE5,#F0FDF4)">
+          📚
+        </div>
+        <div class="info">
+          <div class="name">图书馆自习组队</div>
+          <div class="meta">
+            <span>🕲 每天 14:00</span>
+            <span>📍 图书馆 3F</span>
+          </div>
+        </div>
+      </div>
+      <div class="activity-card fade-in fade-in-d2">
+        <div class="cover" style="background:linear-gradient(135deg,#FDF2F8,#FCE7F3)">
+          🎵
+        </div>
+        <div class="info">
+          <div class="name">校园音乐节</div>
+          <div class="meta">
+            <span>🕲 下周六 18:00</span>
+            <span>📍 大操场</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommended People -->
+    <div class="section-header">
+      <span class="section-title">推荐的人</span>
+      <span class="section-more">更多 →</span>
+    </div>
+    <div class="people-scroll">
+      <div class="person-card fade-in fade-in-d2">
+        <div class="avatar">小</div>
+        <div class="name">小雨</div>
+        <div class="school-info">计算机学院·大三</div>
+        <div class="match-badge">92% 匹配</div>
+        <div class="tags">
+          <span>摄影</span>
+          <span>音乐</span>
+        </div>
+      </div>
+      <div class="person-card fade-in fade-in-d2">
+        <div class="avatar" style="background:linear-gradient(135deg,#EC4899,#F97316)">阿</div>
+        <div class="name">阿杰</div>
+        <div class="school-info">经济学院 · 大四</div>
+        <div class="match-badge">87% 匹配</div>
+        <div class="tags">
+          <span>篮球</span>
+          <span>旅行</span>
+        </div>
+      </div>
+      <div class="person-card fade-in fade-in-d2">
+        <div class="avatar" style="background:linear-gradient(135deg,#7CD9A6,#3FCF8E)">小</div>
+        <div class="name">小雅</div>
+        <div class="school-info">艺术学院 · 大二</div>
+        <div class="match-badge">84% 匹配</div>
+        <div class="tags">
+          <span>绘画</span>
+          <span>猫</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campus Wall -->
+    <div class="section-header">
+      <span class="section-title">校园墙</span>
+      <span class="section-more">发帖 →</span>
+    </div>
+    <div class="wall-card fade-in fade-in-d3">
+      <div class="wall-header">
+        <div class="wall-avatar">李</div>
+        <div>
+          <div class="wall-name">李明</div>
+          <div class="wall-time">2小时前·计算机学院</div>
+        </div>
+      </div>
+      <div class="wall-text">周末去广州塔拍照，有一起的吗？📳</div>
+      <div class="wall-images">
+        <div class="img">📷</div>
+        <div class="img">🌆</div>
+        <div class="img">🌃</div>
+      </div>
+      <div class="wall-actions">
+        <div class="wall-action">♥ 42</div>
+        <div class="wall-action"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 12</div>
+        <div class="wall-action">↗ 8</div>
+      </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tabbar">
+      <div class="tab-item active">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <span class="tab-label">首页</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+        <span class="tab-label">圈子</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+        <span class="tab-label">匹配</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg></div>
+        <span class="tab-label">消息</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <span class="tab-label">我的</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <h4>组件切分</h4>
+  <table>
+    <tr><td>home-header</td><td>顶部导航（校名+限定标签+搜索/通知）</td></tr>
+    <tr><td>welcome-banner</td><td>欢迎横幅（蓝色渐变，气泡装饰，标签行）</td></tr>
+    <tr><td>activity-scroll</td><td>活动横滚（140px 宽卡片，封面+信息）</td></tr>
+    <tr><td>people-scroll</td><td>推荐人横滚（160px 宽卡片，头像+匹配度+标签）</td></tr>
+    <tr><td>wall-card</td><td>校园墙帖子（头像+内容+三图+互动栏）</td></tr>
+    <tr><td>tabbar</td><td>底部导航（5 tab，选中蓝色高亮）</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ============================================================
+     PAGE 3: CHAT
+     ============================================================ -->
+<div class="page-col">
+<div class="page-label">③<span>聊天页</span> · Chat List</div>
+<div class="phone fade-in">
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="right"><span>📶</span><span>📶</span><span>🔋</span></div>
+  </div>
+
+  <div class="chat-page">
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="title">消息</div>
+      <div class="icons">
+        <div class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <div class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      </div>
+    </div>
+
+    <!-- Heart Signal -->
+    <div class="heart-signal fade-in fade-in-d1">
+      <div class="signal-icon">💌</div>
+      <div class="signal-info">
+        <div class="signal-title">心信号·今日推荐</div>
+        <div class="signal-sub">系统为你推荐了 3 位有缘人</div>
+      </div>
+      <div class="signal-time">23:59</div>
+    </div>
+
+    <!-- Chat List -->
+    <div class="chat-list">
+      <div class="chat-item fade-in fade-in-d2">
+        <div class="chat-avatar" style="background:linear-gradient(135deg,#3FCF8E,#7CD9A6)">
+          李          <span class="online-dot"></span>
+        </div>
+        <div class="chat-content">
+          <div class="chat-top">
+            <span class="chat-name">李明</span>
+            <span class="chat-time">2分钟前</span>
+          </div>
+          <div class="chat-msg">周末去广州塔拍照，有一起的吗？</div>
+        </div>
+        <div class="chat-badge">3</div>
+      </div>
+
+      <div class="chat-item fade-in fade-in-d2">
+        <div class="chat-avatar" style="background:linear-gradient(135deg,#EC4899,#F97316)">小</div>
+        <div class="chat-content">
+          <div class="chat-top">
+            <span class="chat-name">小红 <span style="font-size:11px;color:var(--pink);font-weight:500">💞 匹配成功</span></span>
+            <span class="chat-time">昨天</span>
+          </div>
+          <div class="chat-msg">我们匹配成功！开始聊天吧~</div>
+        </div>
+      </div>
+
+      <div class="chat-item fade-in fade-in-d2">
+        <div class="chat-avatar" style="background:linear-gradient(135deg,#7CD9A6,#9BB8FF)">小</div>
+        <div class="chat-content">
+          <div class="chat-top">
+            <span class="chat-name">小雅</span>
+            <span class="chat-time">周三</span>
+          </div>
+          <div class="chat-msg" style="color:var(--gray-300)">好的，下次一起吧 😉</div>
+        </div>
+      </div>
+
+      <div class="chat-item fade-in fade-in-d3">
+        <div class="chat-avatar" style="background:linear-gradient(135deg,#10B981,#3FCF8E)">阿</div>
+        <div class="chat-content">
+          <div class="chat-top">
+            <span class="chat-name">阿杰</span>
+            <span class="chat-time">周一</span>
+          </div>
+          <div class="chat-msg">图书馆自习组队吗？</div>
+        </div>
+      </div>
+
+      <div class="chat-item fade-in fade-in-d3">
+        <div class="chat-avatar" style="background:linear-gradient(135deg,#F59E0B,#EC4899)">小</div>
+        <div class="chat-content">
+          <div class="chat-top">
+            <span class="chat-name">小萌</span>
+            <span class="chat-time">上周</span>
+          </div>
+          <div class="chat-msg" style="color:var(--gray-300)">你也是计算机学院的吗？</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tabbar">
+      <div class="tab-item">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <span class="tab-label">首页</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+        <span class="tab-label">圈子</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+        <span class="tab-label">匹配</span>
+      </div>
+      <div class="tab-item active">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg></div>
+        <span class="tab-label">消息</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <span class="tab-label">我的</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <h4>组件切分</h4>
+  <table>
+    <tr><td>chat-header</td><td>顶部导航（标题+搜索/添加）</td></tr>
+    <tr><td>heart-signal</td><td>心信号横幅（图标+信息+倒计时）</td></tr>
+    <tr><td>chat-item</td><td>消息行（头像+在线点+内容+时间+未读角标）</td></tr>
+    <tr><td>chat-avatar</td><td>头像（52×52 圆形，蓝色渐变）</td></tr>
+    <tr><td>chat-badge</td><td>未读角标（红色，脉冲效果）</td></tr>
+    <tr><td>tabbar</td><td>底部导航（5 tab，消息页高亮消息）</td></tr>
+  </table>
+</div>
+</div>
+
+</div>
+
+<!-- ============================================================
+     AI PROMPT REFERENCE
+     ============================================================ -->
+<div style="max-width:750px;margin:32px auto 64px;padding:24px;background:var(--gray-0);border-radius:var(--r-xl);box-shadow:var(--shadow-md);border:1px solid var(--gray-100);">
+  <h2 style="font-size:20px;font-weight:700;color:var(--gray-800);margin-bottom:16px;">AI UI Prompt 模板（万能）</h2>
+  <pre style="background:var(--gray-50);padding:16px;border-radius:var(--r-md);font-size:12px;color:var(--gray-600);line-height:1.7;white-space:pre-wrap;word-break:break-all;border:1px solid var(--gray-100);">中国大学校园恋爱社交微信小程序，高保真移动端UI设计，真实可落地产品界面，不是插画，不是海报，不是营销落地页。
+产品定位：基于真实校园场景的轻社交产品，同校限制，强调自然认识，低压力恋爱氛围，
+具有校园纪实感、空气感、年轻化、真实大学生活感。
+瑙嗚椋庢牸锛?soft blue and white color palette,
+light glassmorphism,
+minimal chinese mobile UI,
+large white spacing,
+premium WeChat mini program aesthetic,
+soft daylight,
+real campus photography,
+high-end lifestyle UI,
+clean card layout,
+modern chinese app design,
+young and trustworthy atmosphere.
+
+页面结构：【填写页面结构】
+UI要求：真实微信小程序界面，
+真实产品级UI，组件化布局，开发可还原，信息层级清晰，统一Design System，圆角卡片，柔和阴影，真实状态栏，底部TabBar，支持uni-app开发。
+设计规则：NO poster,
+NO landing page,
+NO dribbble shot,
+NO cyberpunk,
+NO gaming style,
+NO exaggerated gradients,
+NO illustration-only interface.
+
+输出要求：high fidelity mobile UI mockup,
+pixel perfect,
+developer-ready interface,
+8k detail,
+clean typography,
+premium branding,
+strong visual consistency,
+realistic Chinese mini program design.</pre>
+</div>
+
+</body>
+</html>
+

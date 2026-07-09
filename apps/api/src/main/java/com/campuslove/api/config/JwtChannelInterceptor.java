@@ -21,6 +21,11 @@ import java.util.List;
  * - CONNECT: 必须携带有效 JWT，验证成功后将用户信息写入 header
  * - SUBSCRIBE: 只允许订阅 /user/{自身userId}/queue/** 和 /topic/**
  * - 其他命令: 直接放行
+ *
+ * Token 提取说明（Phase 3 任务 15）:
+ * - 客户端通过 STOMP CONNECT 帧的 Authorization header (Bearer token) 传递 token
+ * - 兼容 token 原生 header 作为后备（直接传 token 字符串，无 Bearer 前缀）
+ * - 不从 URL 查询参数提取 token（已由 WebSocketConfig.JwtHandshakeInterceptor 在握手阶段处理）
  */
 @Component
 public class JwtChannelInterceptor implements ChannelInterceptor {
@@ -180,11 +185,13 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     }
 
     /**
-     * 从 STOMP header 中提取 JWT 令牌。
+     * 从 STOMP CONNECT 帧的 nativeHeaders 中提取 JWT 令牌。
      *
-     * 提取优先级:
-     * 1. Authorization header (Bearer token 格式)
+     * 提取优先级（Phase 3 任务 15）:
+     * 1. Authorization header (Bearer token 格式) —— 客户端 STOMP CONNECT 帧主推方式
      * 2. token 原生 header (兼容直接传 token 字符串的场景)
+     *
+     * 注意: 不从 URL 查询参数提取 token，URL 参数方式已在 Phase 3 任务 15 中移除。
      */
     private String extractToken(StompHeaderAccessor accessor) {
         // 优先从 Authorization header 提取

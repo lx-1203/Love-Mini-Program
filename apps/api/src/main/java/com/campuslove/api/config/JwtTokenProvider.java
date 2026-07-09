@@ -81,4 +81,47 @@ public class JwtTokenProvider {
     public boolean validateToken(String token) {
         return getUserIdFromToken(token) != null;
     }
+
+    /**
+     * 检查令牌是否有效（包括未过期）。
+     * 与 validateToken 不同，此方法会捕获并处理过期异常。
+     *
+     * @param token JWT 令牌字符串
+     * @return true 表示令牌有效且未过期
+     */
+    public boolean isTokenValid(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(signingKey)
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
+        } catch (ExpiredJwtException ex) {
+            log.debug("Token expired: {}", ex.getMessage());
+            return false;
+        } catch (JwtException ex) {
+            log.debug("Invalid token: {}", ex.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 从令牌中提取过期时间。
+     *
+     * @param token JWT 令牌字符串
+     * @return 过期时间，如果令牌无效则返回 null
+     */
+    public Date getExpirationFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(signingKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return claims.getExpiration();
+        } catch (JwtException ex) {
+            log.warn("Failed to extract expiration from token: {}", ex.getMessage());
+            return null;
+        }
+    }
 }

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>登录页 — 校园恋爱小程序</title>
+<style>
+:root {
+  --brand: #3FCF8E;
+  --brand-dark: #2DB97A;
+  --brand-light: #D1F0E0;
+  --brand-50: #E8F8F0;
+  --gray-50: #F4F6FA;
+  --gray-100: #EEF0F4;
+  --gray-200: #E2E8F0;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-700: #334155;
+  --gray-800: #1F2329;
+  --gray-900: #0E1116;
+  --text-primary: #1F2329;
+  --text-secondary: #5B6470;
+  --text-tertiary: #9AA1AB;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--gray-900);
+  width: 375px;
+  min-height: 100vh;
+  margin: 0 auto;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+.phone-frame {
+  width: 375px;
+  min-height: 812px;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: var(--gray-900);
+}
+.status-bar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+.status-bar .time { font-weight: 600; }
+.status-bar .icons { display: flex; gap: 4px; align-items: center; }
+.status-bar .icons svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 1.5; }
+
+.login-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 实景图区域 - 70%高度 */
+.hero-section {
+  flex: 7;
+  position: relative;
+  overflow: hidden;
+}
+.hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: linear-gradient(180deg, #1a3a2a 0%, #2d5a3d 50%, #1a3a2a 100%);
+  position: relative;
+}
+.hero-image::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(to top, rgba(14,17,22,1) 0%, transparent 100%);
+}
+.hero-content {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  right: 24px;
+  z-index: 5;
+}
+.hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+.hero-title span {
+  display: block;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--brand);
+}
+.hero-subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-subtitle .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--brand);
+  border-radius: 50%;
+}
+
+/* 按钮区域 - 15%高度 */
+.button-section {
+  flex: 3;
+  padding: 0 24px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.btn-primary {
+  width: 100%;
+  height: 48px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-primary svg {
+  width: 20px;
+  height: 20px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 1.5;
+}
+.btn-secondary {
+  width: 100%;
+  height: 48px;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.agreement {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-top: 8px;
+}
+.agreement a {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+/* 页面指示器 */
+.page-indicator {
+  position: absolute;
+  bottom: 180px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+.page-indicator .dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+}
+.page-indicator .dot.active {
+  width: 20px;
+  border-radius: 3px;
+  background: var(--brand);
+}
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="login-container">
+    <!-- 实景图区域 -->
+    <div class="hero-section">
+      <div class="hero-image"></div>
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Hello!
+          <span>在华工，遇见同校的你</span>
+        </h1>
+        <p class="hero-subtitle">
+          <span class="dot"></span>
+          华南理工大学 · 本校限定
+        </p>
+      </div>
+    </div>
+
+    <!-- 按钮区域 -->
+    <div class="button-section">
+      <button class="btn-primary">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l7 4.5-7 4.5z"/></svg>
+        微信登录
+      </button>
+      <button class="btn-secondary">手机号登录</button>
+      <p class="agreement">
+        已有校缘并同意《<a href="#">用户协议</a>》和《<a href="#">隐私政策</a>》
+      </p>
+    </div>
+  </div>
+
+  <!-- 页面指示器 -->
+  <div class="page-indicator">
+    <span class="dot active"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+  </div>
+
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

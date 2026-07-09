@@ -23,6 +23,13 @@ public class MockCampusCertificationService implements CampusCertificationServic
     private final AtomicLong idSeq = new AtomicLong(1);
     private final Map<Long, CampusCertificationView> store = new LinkedHashMap<>();
 
+    /**
+     * 用户邮箱/身份证认证标志内存存储（Phase B - Task B3.3/B3.4）。
+     * key: userId；value: [emailVerified, idCardVerified]。
+     * 默认空，未设置时视为 false（none 级别）。
+     */
+    private final Map<Long, boolean[]> verificationFlags = new LinkedHashMap<>();
+
     public MockCampusCertificationService() {
         // 预置一条模拟认证记录：用户 1 正在审核中
         CampusCertificationView seed = new CampusCertificationView(
@@ -130,5 +137,53 @@ public class MockCampusCertificationService implements CampusCertificationServic
                 LocalDateTime.now()
         );
         return result;
+    }
+
+    /**
+     * 查询用户的认证徽章级别（Phase B - Task B3.3/B3.4）。
+     *
+     * <p>判定逻辑（优先级：school > email > idcard > none）：</p>
+     * <ol>
+     *   <li>从内存存储中查询用户的校园认证记录，若 status=APPROVED，则返回 "school"</li>
+     *   <li>否则查询 verificationFlags 中 emailVerified 标志，true 时返回 "email"</li>
+     *   <li>否则查询 verificationFlags 中 idCardVerified 标志，true 时返回 "idcard"</li>
+     *   <li>否则返回 "none"</li>
+     * </ol>
+     *
+     * @param userId 用户 ID，null 时直接返回 "none"
+     * @return 徽章级别字符串（school/email/idcard/none）
+     */
+    @Override
+    public String getVerificationBadgeLevel(Long userId) {
+        if (userId == null) {
+            return "none";
+        }
+        // 1. 校园认证 APPROVED 优先级最高
+        CampusCertificationView view = store.get(userId);
+        if (view != null && STATUS_APPROVED.equals(view.getStatus())) {
+            return "school";
+        }
+        // 2. 邮箱认证次之；3. 身份证认证再次之
+        boolean[] flags = verificationFlags.get(userId);
+        if (flags != null) {
+            if (flags.length >= 1 && flags[0]) {
+                return "email";
+            }
+            if (flags.length >= 2 && flags[1]) {
+                return "idcard";
+            }
+        }
+        return "none";
+    }
+
+    /**
+     * 设置用户的邮箱/身份证认证标志（仅供测试与 mock 场景使用）。
+     *
+     * @param userId        用户 ID
+     * @param emailVerified 邮箱认证标志
+     * @param idCardVerified 身份证认证标志
+     */
+    public void setVerificationFlags(Long userId, boolean emailVerified, boolean idCardVerified) {
+        verificationFlags.put(userId, new boolean[]{emailVerified, idCardVerified});
     }
 }

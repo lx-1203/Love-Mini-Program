@@ -267,7 +267,27 @@ public class RealTempChatService implements TempChatService {
         message.setKind(request.kind());
         message.setBody(request.body());
         message.setDurationSeconds(request.durationSeconds());
+        message.setDeliveryStatus("sent");
+        message.setRecalled(false);
         message.setCreatedAt(now);
+
+        // 处理引用回复
+        if (request.quoteRef() != null && !request.quoteRef().isBlank()) {
+            try {
+                Long quotedMsgId = Long.parseLong(request.quoteRef());
+                messageRepository.findById(quotedMsgId).ifPresent(quoted -> {
+                    String snapshot = String.format(
+                        "{\"id\":\"%s\",\"body\":\"%s\",\"sender\":\"%s\"}",
+                        quoted.getId(),
+                        quoted.getBody().replace("\"", "\\\""),
+                        quoted.getSender()
+                    );
+                    message.setQuoteSnapshot(snapshot);
+                });
+            } catch (NumberFormatException ignored) {
+                // quoteRef 非法数字时忽略
+            }
+        }
 
         messageRepository.save(message);
 
@@ -289,7 +309,7 @@ public class RealTempChatService implements TempChatService {
 
         // 通过 WebSocket 推送消息给对方
         Long recipientId = isPeerMessage ? session.getUserAId() : session.getUserBId();
-        ChatMessageView messageView = new ChatMessageView(
+        ChatMessageView messageView = ChatMessageView.of(
                 String.valueOf(message.getId()),
                 message.getSender(),
                 message.getKind(),
@@ -457,6 +477,47 @@ public class RealTempChatService implements TempChatService {
 
         log.debug("会话 {} 已被用户 {} 标记为已读", id, currentUserId);
         return toSummary(session, currentUserId);
+    }
+
+    @Override
+    @Transactional
+    public TempChatSessionView recallMessage(String sessionId, String messageId) {
+        Long currentUserId = resolveCurrentUserId();
+        TempChatSession session = resolveSession(sessionId);
+
+        Long msgId;
+        try {
+            msgId = Long.parseLong(messageId);
+        } catch (NumberFormatException e) {
+            log.warn("非法消息ID: {}", messageId);
+            return toSessionView(session, currentUserId);
+        }
+
+        TempChatMessage message = messageRepository.findById(msgId)
+            .filter(m -> m.getSession().getId().equals(session.getId()))
+            .orElse(null);
+
+        if (message == null) {
+            log.warn("消息 {} 不属于会话 {}", messageId, sessionId);
+            return toSessionView(session, currentUserId);
+        }
+
+        // 仅发送者本人可撤回，且 2 分钟内
+        if (!message.getSender().equals("self") && !message.getSender().equals("peer")) {
+            log.debug("系统消息不可撤回: {}", messageId);
+            return toSessionView(session, currentUserId);
+        }
+        if (message.getCreatedAt() != null && message.getCreatedAt().isBefore(LocalDateTime.now().minusMinutes(2))) {
+            log.debug("消息 {} 已超过2分钟撤回时限", messageId);
+            return toSessionView(session, currentUserId);
+        }
+
+        message.setRecalled(true);
+        message.setBody("[已撤回]");
+        messageRepository.save(message);
+
+        log.debug("消息 {} 已被撤回 (会话 {})", messageId, sessionId);
+        return toSessionView(session, currentUserId);
     }
 
     // ---- 私有辅助方法 ----
@@ -666,7 +727,12 @@ public class RealTempChatService implements TempChatService {
                 message.getKind(),
                 message.getBody(),
                 message.getCreatedAt().toString(),
-                message.getDurationSeconds()
+                message.getDurationSeconds(),
+                Boolean.TRUE.equals(message.getRecalled()),
+                message.getDeliveryStatus() != null ? message.getDeliveryStatus() : "sent",
+                null,
+                null,
+                null
         );
     }
 

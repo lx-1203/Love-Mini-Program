@@ -1,0 +1,184 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>鑱婂ぉ璇︽儏 鈥?鏍″洯鎭嬬埍灏忕▼搴?/title>
+  <style>
+    :root {
+      --brand-50: #F0FDF4; --brand-100: #D1FAE5; --brand-200: #A7F3D0;
+      --brand-300: #6EE7B7; --brand-400: #3FCF8E; --brand-500: #2DB97A;
+      --brand-600: #25A86D; --brand-700: #1E8C5A;
+      --pink-50: #FDF2F8; --pink-100: #FCE7F3; --pink-400: #F472B6;
+      --pink-500: #EC4899; --pink-600: #DB2777;
+      --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0;
+      --gray-300: #CBD5E1; --gray-400: #94A3B8; --gray-500: #64748B;
+      --gray-600: #475569; --gray-700: #334155; --gray-800: #1E293B;
+      --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 20px; --space-6: 24px;
+      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --text-h3: 18px; --text-body: 16px; --text-body-sm: 14px;
+      --text-caption: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--gray-50); color: var(--gray-800);
+      width: 375px; min-height: 100vh; margin: 0 auto;
+      overflow-x: hidden; -webkit-font-smoothing: antialiased;
+    }
+    .status-bar { height: 44px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); font-size: var(--text-caption); color: var(--gray-700); }
+    .status-bar .time { font-weight: 600; }
+    .status-bar .icons { display: flex; gap: 4px; align-items: center; }
+    .status-bar .icons svg { width: 16px; height: 16px; }
+    .chat-header { height: 48px; background: #fff; display: flex; align-items: center; padding: 0 var(--space-4); border-bottom: 1px solid var(--gray-200); gap: var(--space-3); }
+    .chat-header .back { width: 32px; height: 32px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; border: none; background: none; cursor: pointer; }
+    .chat-header .back svg { width: 20px; height: 20px; color: var(--gray-600); }
+    .chat-header .user-info { flex: 1; display: flex; align-items: center; gap: var(--space-2); }
+    .chat-header .avatar { width: 36px; height: 36px; border-radius: var(--radius-full); object-fit: cover; }
+    .chat-header .name { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-800); }
+    .chat-header .status { font-size: var(--text-caption); color: var(--success); }
+    .chat-header .more { width: 32px; height: 32px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; border: none; background: none; cursor: pointer; }
+    .chat-header .more svg { width: 20px; height: 20px; color: var(--gray-600); }
+    /* 鑱婂ぉ鍐呭鍖?*/
+    .chat-content { flex: 1; padding: var(--space-4); overflow-y: auto; padding-bottom: 100px; }
+    /* 鏃堕棿鎴?*/
+    .time-divider { text-align: center; margin: var(--space-4) 0; }
+    .time-divider span { font-size: var(--text-caption); color: var(--gray-400); background: var(--gray-100); padding: 4px 12px; border-radius: var(--radius-full); }
+    /* 娑堟伅姘旀场 */
+    .message-row { display: flex; margin-bottom: var(--space-3); gap: var(--space-2); }
+    .message-row.sent { flex-direction: row-reverse; }
+    .message-row .avatar { width: 36px; height: 36px; border-radius: var(--radius-full); object-fit: cover; flex-shrink: 0; }
+    .message-row .bubble { max-width: 240px; padding: var(--space-3); border-radius: var(--radius-lg); font-size: var(--text-body-sm); line-height: 1.5; position: relative; }
+    .message-row.received .bubble { background: #fff; color: var(--gray-800); border-bottom-left-radius: 4px; box-shadow: var(--shadow-sm); }
+    .message-row.sent .bubble { background: var(--brand-400); color: #fff; border-bottom-right-radius: 4px; }
+    .message-row .bubble .time { font-size: 10px; color: var(--gray-400); margin-top: 4px; }
+    .message-row.sent .bubble .time { color: rgba(255,255,255,0.7); }
+    /* 鐮村啺寤鸿 */
+    .icebreaker-section { padding: var(--space-3) 0; }
+    .icebreaker-label { font-size: var(--text-caption); color: var(--gray-400); text-align: center; margin-bottom: var(--space-2); }
+    .icebreaker-list { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
+    .icebreaker-chip { background: #fff; border: 1px solid var(--brand-200); color: var(--brand-600); font-size: var(--text-caption); padding: 6px 14px; border-radius: var(--radius-full); cursor: pointer; }
+    .icebreaker-chip:active { background: var(--brand-50); }
+    /* 蹇冨姩淇″彿 */
+    .heart-signal { display: flex; align-items: center; justify-content: center; gap: var(--space-2); margin: var(--space-3) 0; font-size: var(--text-caption); color: var(--pink-500); }
+    .heart-signal svg { width: 16px; height: 16px; }
+    /* 杈撳叆鍖哄煙 */
+    .chat-input-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; background: #fff; border-top: 1px solid var(--gray-200); padding: var(--space-3) var(--space-4); padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: var(--space-2); }
+    .chat-input-bar .voice-btn { width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--gray-100); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+    .chat-input-bar .voice-btn svg { width: 20px; height: 20px; color: var(--gray-500); }
+    .chat-input-bar .input-wrap { flex: 1; height: 40px; background: var(--gray-100); border-radius: var(--radius-full); padding: 0 var(--space-4); display: flex; align-items: center; }
+    .chat-input-bar .input-wrap input { width: 100%; border: none; background: none; font-size: var(--text-body-sm); color: var(--gray-800); outline: none; }
+    .chat-input-bar .input-wrap input::placeholder { color: var(--gray-400); }
+    .chat-input-bar .emoji-btn { width: 36px; height: 36px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; border: none; background: none; cursor: pointer; }
+    .chat-input-bar .emoji-btn svg { width: 22px; height: 22px; color: var(--gray-500); }
+    .chat-input-bar .send-btn { width: 40px; height: 40px; border-radius: var(--radius-full); background: var(--brand-400); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+    .chat-input-bar .send-btn svg { width: 20px; height: 20px; color: #fff; }
+    .chat-input-bar .send-btn:active { transform: scale(0.9); }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-in { animation: fadeInUp 0.3s ease-out forwards; }
+  </style>
+</head>
+<body style="display: flex; flex-direction: column; height: 100vh;">
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="1" y="6" width="4" height="12" rx="1"/><rect x="7" y="4" width="4" height="14" rx="1"/><rect x="13" y="2" width="4" height="16" rx="1"/><rect x="19" y="0" width="4" height="18" rx="1" opacity=".3"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="10" x2="23" y2="14"/></svg>
+    </div>
+  </div>
+
+  <div class="chat-header">
+    <button class="back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+    </button>
+    <div class="user-info">
+      <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="">
+      <div>
+        <div class="name">鏋楀皬闆?/div>
+        <div class="status">鍦ㄧ嚎</div>
+      </div>
+    </div>
+    <button class="more">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    </button>
+  </div>
+
+  <div class="chat-content">
+    <div class="time-divider animate-in"><span>浠婂ぉ 10:20</span></div>
+
+    <div class="message-row received animate-in">
+      <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="">
+      <div class="bubble">
+        <div>鍡紒鐪嬪埌浣犱篃鍠滄鎽勫奖锛屾渶杩戞湁鍘讳粈涔堟湁瓒ｇ殑鍦版柟鍚楋紵馃摲</div>
+        <div class="time">10:20</div>
+      </div>
+    </div>
+
+    <div class="message-row sent animate-in">
+      <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Me&backgroundColor=d1d4f9" alt="">
+      <div class="bubble">
+        <div>涓婂懆鍘讳簡鏁呭锛屾媿浜嗕竴浜涜妤肩殑鐓х墖锛屽厜绾跨壒鍒ソ锛?/div>
+        <div class="time">10:22</div>
+      </div>
+    </div>
+
+    <div class="message-row received animate-in">
+      <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="">
+      <div class="bubble">
+        <div>鍝囷紒鎴戜篃瓒呭枩娆㈡晠瀹紒瑙掓ゼ鐨勬棩钀界湡鐨勭粷缇?馃寘</div>
+        <div class="time">10:23</div>
+      </div>
+    </div>
+
+    <div class="message-row sent animate-in">
+      <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Me&backgroundColor=d1d4f9" alt="">
+      <div class="bubble">
+        <div>瀵癸紒閭ｅぉ杩愭皵濂斤紝杩橀亣鍒颁簡褰╄櫣 馃寛</div>
+        <div class="time">10:25</div>
+      </div>
+    </div>
+
+    <div class="heart-signal animate-in">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      馃挄 浣犱滑浜掔浉鍠滄浜嗭紒
+    </div>
+
+    <div class="message-row received animate-in">
+      <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="">
+      <div class="bubble">
+        <div>浠婃櫄涓€璧峰幓鍥句功棣嗗悧锛燄煋?鍙互涓€璧疯嚜涔狅紝鐒跺悗鍘婚鍫傚悆楗?/div>
+        <div class="time">10:30</div>
+      </div>
+    </div>
+
+    <div class="icebreaker-section animate-in">
+      <div class="icebreaker-label">馃挕 璇曡瘯杩欎簺璇濋</div>
+      <div class="icebreaker-list">
+        <div class="icebreaker-chip">馃摎 鏈€杩戝湪璇讳粈涔堜功锛?/div>
+        <div class="icebreaker-chip">馃幍 鎺ㄨ崘涓€棣栨瓕</div>
+        <div class="icebreaker-chip">馃崪 椋熷爞鍝釜绐楀彛濂藉悆锛?/div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input-bar">
+    <button class="voice-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+    <div class="input-wrap">
+      <input placeholder="杈撳叆娑堟伅...">
+    </div>
+    <button class="emoji-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+    </button>
+    <button class="send-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+    </button>
+  </div>
+</body>
+</html>
+

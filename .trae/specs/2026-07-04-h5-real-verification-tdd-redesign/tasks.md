@@ -1,0 +1,263 @@
+# Tasks - H5 真实浏览器验证 + TDD 严格重做
+
+## Phase A: 真实浏览器基线建立（agent-browser + Chrome DevTools MCP）
+- [ ] Task A1: 启动 H5 dev server
+  - [ ] SubTask A1.1: 执行 `pnpm --filter client dev:h5`，确认 H5 服务在 `http://localhost:5173` 可访问
+  - [ ] SubTask A1.2: 创建 `.trae/screenshots/2026-07-04-real-baseline/` 截图归档目录
+- [ ] Task A2: 使用 Chrome DevTools MCP 建立基线
+  - [ ] SubTask A2.1: 调用 `mcp_Chrome_DevTools_MCP.new_page` 创建浏览器页面
+  - [ ] SubTask A2.2: 调用 `navigate_page` 访问登录页 → `take_screenshot` 归档 `01-login-baseline.png`
+  - [ ] SubTask A2.3: 调用 `navigate_page` 访问首页 → `take_screenshot` 归档 `02-home-baseline.png`
+  - [ ] SubTask A2.4: 调用 `navigate_page` 访问寻觅页 → `take_screenshot` 归档 `03-discover-baseline.png`
+  - [ ] SubTask A2.5: 调用 `navigate_page` 访问喜欢页 → `take_screenshot` 归档 `04-likes-baseline.png`
+  - [ ] SubTask A2.6: 调用 `navigate_page` 访问村口页 → `take_screenshot` 归档 `05-village-baseline.png`
+  - [ ] SubTask A2.7: 调用 `navigate_page` 访问消息页 → `take_screenshot` 归档 `06-messages-baseline.png`
+  - [ ] SubTask A2.8: 调用 `navigate_page` 访问聊天会话页 → `take_screenshot` 归档 `07-chat-baseline.png`
+  - [ ] SubTask A2.9: 调用 `navigate_page` 访问个人主页 → `take_screenshot` 归档 `08-profile-baseline.png`
+- [ ] Task A3: 收集浏览器控制台与网络错误
+  - [ ] SubTask A3.1: 每个页面调用 `list_console_messages` 收集 console 错误
+  - [ ] SubTask A3.2: 每个页面调用 `list_network_requests` 收集 4XX/5XX 请求
+  - [ ] SubTask A3.3: 汇总错误清单到 `.trae/screenshots/2026-07-04-real-baseline/real-baseline-report.md`
+- [ ] Task A4: 用户反馈问题对齐
+  - [ ] SubTask A4.1: 在基线截图中标记「图片未显示」「内容消失」「签到标签缺失」等问题位置
+  - [ ] SubTask A4.2: 列出 11 项用户反馈问题对应的基线截图证据
+- [ ] Task A5: 修复 TypeError 阻塞 5 页（home/likes/village/messages/chat）— TDD 前置阻塞修复
+  - [ ] SubTask A5.1: TDD Red — 在 `apps/client/src/tests/pages/home.spec.ts` 写失败用例「渲染 home 页 SHALL NOT 抛出 `Cannot assign to read only property` 错误，SHALL 渲染出根容器」
+  - [ ] SubTask A5.2: TDD Red — 在 `apps/client/src/tests/pages/likes.spec.ts` 写失败用例「渲染 likes 页 SHALL NOT 抛出 readonly property 错误」
+  - [ ] SubTask A5.3: TDD Red — 在 `apps/client/src/tests/pages/village.spec.ts` 写失败用例「渲染 village 页 SHALL NOT 抛出 readonly property 错误」
+  - [ ] SubTask A5.4: TDD Red — 在 `apps/client/src/tests/pages/messages.spec.ts` 写失败用例「渲染 messages 页 SHALL NOT 抛出 readonly property 错误」
+  - [ ] SubTask A5.5: TDD Red — 在 `apps/client/src/tests/pages/chat.spec.ts` 写失败用例「渲染 chat 页 SHALL NOT 抛出 readonly property 错误」
+  - [ ] SubTask A5.6: 执行 `pnpm --filter client test:unit -- home.spec likes.spec village.spec messages.spec chat.spec` 观看测试失败（RED 验证）
+  - [ ] SubTask A5.7: 根因调查 — Grep `\.(push|splice|pop|shift|unshift)\(` 在 `apps/client/src/` 中查找对 const 常量数组/对象的修改
+  - [ ] SubTask A5.8: 根因调查 — Grep `Object\.freeze`、`readonly`、`storeToRefs` 在 `apps/client/src/` 中查找 readonly 来源
+  - [ ] SubTask A5.9: 根因调查 — 重点排查 5 个出错页面共同 import 的 SafeImage、IMAGE_PATHS、SocialProgressIndicator、SocialOnboardingOverlay、useSocialProgressStore、TIER_META、TIER_ORDER
+  - [ ] SubTask A5.10: 必要时使用 Chrome DevTools MCP 访问 `http://localhost:5174/#/pages/home/index` 捕获完整 stack trace
+  - [ ] SubTask A5.11: TDD Green — 最小修复（不重构无关代码）， SHALL NOT 引入 mp-weixin 不兼容语法（`import.meta.env.DEV`、`backdrop-filter`、`position: sticky`、`:hover`、optional catch binding）
+  - [ ] SubTask A5.12: 执行 `pnpm --filter client test:unit -- home.spec likes.spec village.spec messages.spec chat.spec` 验证 5 个 spec 全部通过（GREEN 验证）
+  - [ ] SubTask A5.13: 浏览器验证 — 用 Chrome DevTools MCP 重新访问 5 个页面，`list_console_messages` 确认无 TypeError
+  - [ ] SubTask A5.14: 浏览器验证 — `take_screenshot` 归档到 `.trae/screenshots/2026-07-04-real-baseline/02-home-after-fix.png`、`04-likes-after-fix.png`、`05-village-after-fix.png`、`06-messages-after-fix.png`、`07-chat-after-fix.png`
+  - [ ] SubTask A5.15: 执行 `pnpm --filter client test:unit` 确认全套测试无回归
+
+## Phase B: 图片真实加载修复（TDD）
+- [ ] Task B1: TDD Red - SafeImage 降级测试
+  - [ ] SubTask B1.1: 在 `apps/client/src/tests/components/SafeImage.spec.ts` 写失败用例「src 不存在时 SHALL 200ms 内降级显示 default-avatar.png」
+  - [ ] SubTask B1.2: 写失败用例「加载失败 SHALL 触发 onError 回调」
+  - [ ] SubTask B1.3: 写失败用例「加载中 SHALL 显示灰色背景占位」
+  - [ ] SubTask B1.4: 执行 `pnpm --filter client test:unit -- SafeImage` 观看测试失败
+- [ ] Task B2: TDD Green - 实现 SafeImage 降级
+  - [ ] SubTask B2.1: 增强 `apps/client/src/components/common/SafeImage.vue` onError 链路
+  - [ ] SubTask B2.2: 添加加载占位骨架（灰色背景）
+  - [ ] SubTask B2.3: 触发 onError 回调 + console.warn
+  - [ ] SubTask B2.4: 执行测试验证通过
+- [ ] Task B3: TDD Refactor - 抽取 useImageFallback
+  - [ ] SubTask B3.1: 抽取 composable `apps/client/src/composables/useImageFallback.ts`
+  - [ ] SubTask B3.2: SafeImage 使用 composable，保持测试通过
+- [ ] Task B4: 审计与补齐图片资源
+  - [ ] SubTask B4.1: 列出 `apps/client/src/static/assets/images/` 所有子目录与文件
+  - [ ] SubTask B4.2: 列出 `apps/client/src/static/assets/avatars/` 所有文件
+  - [ ] SubTask B4.3: 计算每个图片 MD5，标记重复或小于 10KB 的占位文件
+  - [ ] SubTask B4.4: 使用 `scripts/download-unique-images.mjs` 补齐 posters/posts/activities/products/banners
+  - [ ] SubTask B4.5: 下载 12 张唯一头像 avatar-1.jpg ~ avatar-12.jpg
+- [ ] Task B5: 修复图片路径配置
+  - [ ] SubTask B5.1: 修复 `apps/client/src/config/images.ts` 路径与文件名一致
+  - [ ] SubTask B5.2: 修复 `apps/client/src/services/mocks/fixtures.ts` avatar/images 字段
+  - [ ] SubTask B5.3: 修复 `apps/client/src/config/assets-index.ts` 资源索引
+- [ ] Task B6: 真实浏览器验证图片加载
+  - [ ] SubTask B6.1: 用 Chrome DevTools MCP 访问首页，`list_network_requests` 验证所有图片 200
+  - [ ] SubTask B6.2: 用 Chrome DevTools MCP 访问寻觅页，验证头像与图片
+  - [ ] SubTask B6.3: 用 Chrome DevTools MCP 访问村口页，验证帖子图片
+  - [ ] SubTask B6.4: 用 Chrome DevTools MCP 访问个人主页，验证头像
+  - [ ] SubTask B6.5: `list_console_messages` 确认无 404 错误
+
+## Phase C: 按钮点击响应与内容保持修复（TDD）
+- [ ] Task C1: TDD Red - 按钮响应测试
+  - [ ] SubTask C1.1: 在 `apps/client/src/tests/pages/discover.spec.ts` 写失败用例「点击喜欢按钮后当前卡片 SHALL 滑出，下一张卡片 SHALL 300ms 内可见」
+  - [ ] SubTask C1.2: 写失败用例「点击查看喜欢列表后，likes 页 SHALL 500ms 内渲染至少 1 项」
+  - [ ] SubTask C1.3: 写失败用例「快速切换 Tab 5 次，页面内容 SHALL NOT 空白」
+  - [ ] SubTask C1.4: 执行测试观看失败
+- [ ] Task C2: TDD Green - 修复按钮响应
+  - [ ] SubTask C2.1: 修复 `pages/discover/index.vue` 喜欢按钮逻辑
+  - [ ] SubTask C2.2: 修复 `pages/likes/index.vue` onShow 数据加载
+  - [ ] SubTask C2.3: 移除所有 `pageVisible.value = false; setTimeout(...)` 模式
+  - [ ] SubTask C2.4: 在 `theme/global.css` 定义 `@keyframes pageFadeIn`
+  - [ ] SubTask C2.5: 所有 tab 页面根元素添加 `.page-fade-in` class，onShow 时重新触发动画
+  - [ ] SubTask C2.6: 执行测试验证通过
+- [ ] Task C3: 真实浏览器验证按钮响应
+  - [ ] SubTask C3.1: 用 Chrome DevTools MCP `click` 点击首页所有按钮，验证跳转
+  - [ ] SubTask C3.2: 用 `click` 点击寻觅页「喜欢」按钮，`take_screenshot` 验证卡片滑出
+  - [ ] SubTask C3.3: 用 `click` 点击「立即签到」按钮，验证签到流程
+  - [ ] SubTask C3.4: 用 `click` 验证跳转后目标页内容正常显示
+
+## Phase D: 签到标签与匹配功能 TDD 完整实现
+- [ ] Task D1: TDD Red - 签到标签测试
+  - [ ] SubTask D1.1: 在 `tests/stores/checkin.spec.ts` 写「未签到时 checkedIn === false, loading === false」
+  - [ ] SubTask D1.2: 写「fetchStatus 后 100ms 内 loading === false」
+  - [ ] SubTask D1.3: 写「checkIn 后 showSuccessAnimation === true 持续 3 秒」
+  - [ ] SubTask D1.4: 写「3 秒后 benefits-section 可见」
+  - [ ] SubTask D1.5: 在 `tests/pages/discover.spec.ts` 写「未签到时签到卡片可见，签到后徽章变为已签到」
+  - [ ] SubTask D1.6: 执行测试观看失败
+- [ ] Task D2: TDD Green - 修复签到逻辑
+  - [ ] SubTask D2.1: 修复 `stores/checkin.ts` fetchStatus 时序
+  - [ ] SubTask D2.2: 修复 `pages/discover/index.vue` 签到卡片渲染条件
+  - [ ] SubTask D2.3: 实现签到徽章双向状态（今日签到 / 已签到）
+  - [ ] SubTask D2.4: 实现 showSuccessAnimation 3 秒自动切换 benefits
+  - [ ] SubTask D2.5: 执行测试验证通过
+- [ ] Task D3: TDD Red - 匹配功能测试
+  - [ ] SubTask D3.1: 在 `tests/stores/discover.spec.ts` 写「mock 模式 swipeRight 10 次至少 2 次 matched = true」
+  - [ ] SubTask D3.2: 写「匹配成功后 matchedDialogVisible === true」
+  - [ ] SubTask D3.3: 写「1.5 秒后自动跳转 likes 页」
+  - [ ] SubTask D3.4: 写「喜欢列表显示已匹配用户在匹配分区」
+  - [ ] SubTask D3.5: 执行测试观看失败
+- [ ] Task D4: TDD Green - 实现匹配功能（**BREAKING**）
+  - [ ] SubTask D4.1: 重写 `stores/discover.ts` swipeRight，30% 概率 matched = true
+  - [ ] SubTask D4.2: 修复 `components/discover/CardSwiper.vue` 滑动事件绑定
+  - [ ] SubTask D4.3: 实现匹配成功 toast + 双头像碰撞动画
+  - [ ] SubTask D4.4: 实现 1.5 秒后跳转 likes 页
+  - [ ] SubTask D4.5: 修复匹配历史记录联动
+  - [ ] SubTask D4.6: 执行测试验证通过
+- [ ] Task D5: 真实浏览器验证签到与匹配
+  - [ ] SubTask D5.1: 用 Chrome DevTools MCP 进入寻觅页，截图验证签到卡片显示
+  - [ ] SubTask D5.2: `click` 点击「立即签到」，截图验证签到成功动画
+  - [ ] SubTask D5.3: 等 3 秒，截图验证 benefits-section
+  - [ ] SubTask D5.4: `click` 右滑卡片 10 次，截图验证匹配成功 toast
+  - [ ] SubTask D5.5: 等 1.5 秒，截图验证跳转 likes 页
+
+## Phase E: 按钮视觉反馈动画真实捕获（agent-browser）
+- [ ] Task E1: TDD Red - 按钮动画测试
+  - [ ] SubTask E1.1: 在 `tests/components/Button.spec.ts` 写「点击时 ripple 元素 SHALL 出现并扩散」
+  - [ ] SubTask E1.2: 写「点击时 scale SHALL 0.94，松开 SHALL 回弹」
+  - [ ] SubTask E1.3: 写「loading 状态 SHALL 显示 spinner」
+  - [ ] SubTask E1.4: 执行测试观看失败
+- [ ] Task E2: TDD Green - 增强按钮动画
+  - [ ] SubTask E2.1: 增强 `components/common/Button.vue` ripple 实现
+  - [ ] SubTask E2.2: 添加 `:active` scale(0.94) 反馈
+  - [ ] SubTask E2.3: 添加 loading spinner 样式
+  - [ ] SubTask E2.4: 执行测试验证通过
+- [ ] Task E3: 增强 TabBar 切换动画
+  - [ ] SubTask E3.1: `components/layout/TabBar.vue` 图标 scale(1.15) + 颜色过渡
+  - [ ] SubTask E3.2: 顶部 4rpx 品牌色指示条展开动画
+  - [ ] SubTask E3.3: `custom-tab-bar/index.js` 同步动画
+  - [ ] SubTask E3.4: 切换时触发 `uni.vibrateShort` 触觉反馈
+- [ ] Task E4: 增强 press-feedback 工具类
+  - [ ] SubTask E4.1: 添加 box-shadow + 透明度变化
+  - [ ] SubTask E4.2: 添加 transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1)
+- [ ] Task E5: 真实浏览器捕获动画中间帧
+  - [ ] SubTask E5.1: 用 Chrome DevTools MCP `click` + 100ms 间隔连续 `take_screenshot` 捕获 ripple
+  - [ ] SubTask E5.2: 截图归档到 `.trae/screenshots/2026-07-04-animations/01-button-ripple-*.png`
+  - [ ] SubTask E5.3: `click` Tab + 50ms 间隔截图捕获指示条展开
+  - [ ] SubTask E5.4: 截图归档到 `02-tab-indicator-*.png`
+
+## Phase F: 页面切换动画真实捕获（agent-browser）
+- [ ] Task F1: TDD Red - 页面切换动画测试
+  - [ ] SubTask F1.1: 写「Tab 切换时页面 SHALL 350ms 内从 translateY(24rpx) opacity:0 过渡到 translateY(0) opacity:1」
+  - [ ] SubTask F1.2: 写「快速切换 5 次 SHALL NOT 闪烁或内容消失」
+  - [ ] SubTask F1.3: 执行测试观看失败
+- [ ] Task F2: TDD Green - 实现页面切换动画
+  - [ ] SubTask F2.1: `theme/global.css` 定义 `@keyframes pageFadeIn`
+  - [ ] SubTask F2.2: 所有 tab 页面根元素添加 `.page-fade-in` class
+  - [ ] SubTask F2.3: `onShow` 时移除并重新添加 class 触发动画
+  - [ ] SubTask F2.4: 添加 stagger 100ms 错位入场动画
+  - [ ] SubTask F2.5: 执行测试验证通过
+- [ ] Task F3: 真实浏览器捕获页面切换动画
+  - [ ] SubTask F3.1: 用 Chrome DevTools MCP `click` Tab + 50ms 间隔连续 `take_screenshot`
+  - [ ] SubTask F3.2: 截图归档到 `.trae/screenshots/2026-07-04-animations/03-page-fade-*.png`
+  - [ ] SubTask F3.3: 快速切换 Tab 5 次，截图验证内容不消失
+
+## Phase G: 视觉层级与边缘强化（frontend-skill + web-design-guidelines）
+- [ ] Task G1: TDD Red - 视觉层级测试
+  - [ ] SubTask G1.1: 在 `tests/visual/layering.spec.ts` 写「SectionCard SHALL 有 border 1rpx solid rgba(15,23,42,0.08)」
+  - [ ] SubTask G1.2: 写「SectionCard SHALL 有 box-shadow 0 1rpx 4rpx rgba(15,23,42,0.04)」
+  - [ ] SubTask G1.3: 写「卡片标题左侧 SHALL 有 4rpx×60rpx 品牌色渐变竖线」
+  - [ ] SubTask G1.4: 写「图片 SHALL 有 16rpx 圆角与 box-shadow」
+  - [ ] SubTask G1.5: 执行测试观看失败
+- [ ] Task G2: TDD Green - 实现视觉层级系统
+  - [ ] SubTask G2.1: `theme/design-variables.scss` 定义 `--c-elevation-1/2/3` + `--c-border-card` + `--c-border-card-brand`
+  - [ ] SubTask G2.2: `components/common/SectionCard.vue` 应用 elevation-1 + border-card
+  - [ ] SubTask G2.3: `components/common/Card.vue`、`components/home/PersonCard.vue` 同步应用
+  - [ ] SubTask G2.4: 所有 `<image>` 添加 16rpx 圆角 + box-shadow
+  - [ ] SubTask G2.5: 卡片标题左侧添加 4rpx×60rpx 品牌色渐变竖线
+  - [ ] SubTask G2.6: 执行测试验证通过
+- [ ] Task G3: frontend-skill 视觉原则校验
+  - [ ] SubTask G3.1: 每个页面单一视觉重心校验（寻觅页=卡片堆，首页=推荐海报，村口页=帖子流）
+  - [ ] SubTask G3.2: image-led hierarchy 校验（所有 section 有真实图片锚点，无纯文字卡片）
+  - [ ] SubTask G3.3: 克制配色校验（蓝色 #5B7FFF 为唯一强调色，其余 slate 灰阶）
+  - [ ] SubTask G3.4: 卡片仅在「卡片本身是交互对象」时使用
+- [ ] Task G4: web-design-guidelines 校验
+  - [ ] SubTask G4.1: 触控目标 ≥ 44×44px 校验
+  - [ ] SubTask G4.2: 文本对比度 ≥ 4.5:1 校验（WCAG AA）
+  - [ ] SubTask G4.3: 焦点状态可见校验（`:focus-visible` outline）
+  - [ ] SubTask G4.4: 图片 alt 文本校验
+  - [ ] SubTask G4.5: mp-weixin `:hover` 改 `hover-class`
+- [ ] Task G5: 真实浏览器验证视觉层级
+  - [ ] SubTask G5.1: 用 Chrome DevTools MCP 截图所有页面，验证卡片边缘清晰
+  - [ ] SubTask G5.2: 截图验证图片分割明显
+  - [ ] SubTask G5.3: 截图验证品牌色竖线显示
+
+## Phase H: 个人主页功能 TDD 完整实现
+- [ ] Task H1: TDD Red - 个人主页测试
+  - [ ] SubTask H1.1: 在 `tests/pages/profile.spec.ts` 写「进入 profile 页 SHALL 渲染用户卡片（头像+昵称+学校+签名）」
+  - [ ] SubTask H1.2: 写「SHALL 显示 VIP 状态」
+  - [ ] SubTask H1.3: 写「SHALL 显示我的动态列表」
+  - [ ] SubTask H1.4: 写「SHALL 显示 7 个功能入口（喜欢/匹配/设置/反馈/关于/认证/VIP）」
+  - [ ] SubTask H1.5: 写「点击每个功能入口 SHALL 跳转对应页面，按钮 SHALL 有 press-feedback」
+  - [ ] SubTask H1.6: 执行测试观看失败
+- [ ] Task H2: TDD Green - 实现个人主页
+  - [ ] SubTask H2.1: 重写 `pages/profile/index.vue` 用户信息卡片
+  - [ ] SubTask H2.2: 添加 VIP 状态展示
+  - [ ] SubTask H2.3: 添加我的动态列表
+  - [ ] SubTask H2.4: 添加 7 个功能入口
+  - [ ] SubTask H2.5: 修复 `stores/profile.ts` onShow 加载逻辑
+  - [ ] SubTask H2.6: 修复 `view-models/profile.ts` 数据转换
+  - [ ] SubTask H2.7: 所有功能入口添加 press-feedback
+  - [ ] SubTask H2.8: 执行测试验证通过
+- [ ] Task H3: 真实浏览器验证个人主页
+  - [ ] SubTask H3.1: 用 Chrome DevTools MCP 访问个人主页，截图验证功能完整
+  - [ ] SubTask H3.2: `click` 点击每个功能入口，验证跳转正确
+  - [ ] SubTask H3.3: 截图归档到 `.trae/screenshots/2026-07-04-real-after/08-profile-after.png`
+
+## Phase I: mp-weixin 适配后置
+- [ ] Task I1: 检查 mp-weixin 不兼容语法
+  - [ ] SubTask I1.1: Grep `import.meta.env.DEV` 引用，全部移除
+  - [ ] SubTask I1.2: Grep `backdrop-filter` 引用，降级到 `background-color: rgba(255,255,255,0.85)`
+  - [ ] SubTask I1.3: Grep `position: sticky` 引用，改用 `fixed` + 占位
+  - [ ] SubTask I1.4: Grep `:hover` 伪类，改用 `hover-class`
+  - [ ] SubTask I1.5: Grep optional catch binding `catch {`，改 `catch (e) {`
+- [ ] Task I2: 执行 mp-weixin 编译
+  - [ ] SubTask I2.1: 执行 `pnpm --filter client build:mp-weixin`
+  - [ ] SubTask I2.2: 验证编译无错误
+  - [ ] SubTask I2.3: 检查构建产物中无禁用语法
+- [ ] Task I3: mp-weixin 真机验证
+  - [ ] SubTask I3.1: 在微信开发者工具中打开 `apps/client/dist/build/mp-weixin/`
+  - [ ] SubTask I3.2: 截图 8 个核心页面归档到 `.trae/screenshots/2026-07-04-mp-weixin-final/`
+  - [ ] SubTask I3.3: 验证所有页面图片显示、按钮响应、签到/匹配功能正常
+  - [ ] SubTask I3.4: 验证无控制台错误
+
+## Phase J: 最终验证报告
+- [ ] Task J1: 生成 H5 真实浏览器验证报告
+  - [ ] SubTask J1.1: 汇总所有 H5 修复前后截图对比
+  - [ ] SubTask J1.2: 生成 `.trae/screenshots/2026-07-04-real-after/h5-real-verification-report.md`
+  - [ ] SubTask J1.3: 记录每个页面验证状态与修复内容
+- [ ] Task J2: 生成 mp-weixin 最终验证报告
+  - [ ] SubTask J2.1: 汇总 mp-weixin 构建产物与真机截图
+  - [ ] SubTask J2.2: 生成 `.trae/screenshots/2026-07-04-mp-weixin-final/mp-weixin-final-verification-report.md`
+  - [ ] SubTask J2.3: 记录每个页面验证状态与修复内容
+- [ ] Task J3: TDD 测试套件最终验证
+  - [ ] SubTask J3.1: 执行 `pnpm --filter client test:unit`，所有测试通过
+  - [ ] SubTask J3.2: 输出测试覆盖率报告
+  - [ ] SubTask J3.3: 记录所有 TDD Red-Green-Refactor 执行证据
+
+# Task Dependencies
+- [Task A5] depends on [Task A2]（修复 TypeError 前需要先用 Chrome DevTools MCP 看到真实错误）
+- [Phase B] depends on [Task A5]（TypeError 阻塞不修复，后续图片/按钮验证均无意义）
+- [Phase C] depends on [Phase B]（图片显示后再验证按钮跳转后内容）
+- [Phase D] depends on [Phase C]（按钮响应修复后再验证签到/匹配功能）
+- [Phase E] depends on [Phase D]（功能修复后再验证按钮动画）
+- [Phase F] depends on [Phase E]（按钮动画后再验证页面切换动画）
+- [Phase G] depends on [Phase F]（页面动画后再验证视觉层级）
+- [Phase H] depends on [Phase G]（视觉层级后再完善个人主页）
+- [Phase I] depends on [Phase H]（H5 全部通过后再适配 mp-weixin）
+- [Phase J] depends on [Phase I]（mp-weixin 验证后做最终报告）
+
+# Parallelizable Work
+- [Phase E] 按钮动画验证 与 [Phase F] 页面动画验证 可并行（不同组件）
+- [Phase H] 个人主页完善 与 [Phase G] 视觉层级验证 可并行（不同文件）

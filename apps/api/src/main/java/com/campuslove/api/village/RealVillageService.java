@@ -156,16 +156,15 @@ public class RealVillageService implements VillageService {
     @Override
     @Transactional(readOnly = true)
     public CommentListResponse getComments(Long postId, int page, int pageSize) {
-        List<Comment> allComments = commentRepository.findByPostIdOrderByCreatedAtDesc(postId);
-        int from = (page - 1) * pageSize;
-        int to = Math.min(from + pageSize, allComments.size());
-        List<Comment> pageItems = from < allComments.size() ? allComments.subList(from, to) : List.of();
+        // 使用数据库分页而非内存分页，避免 OOM 风险
+        Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Comment> commentPage = commentRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
 
-        List<CommentItemView> items = pageItems.stream()
+        List<CommentItemView> items = commentPage.getContent().stream()
                 .map(this::toCommentItemView)
                 .toList();
 
-        return new CommentListResponse(items, allComments.size(), page, pageSize);
+        return new CommentListResponse(items, (int) commentPage.getTotalElements(), page, pageSize);
     }
 
     @Override
@@ -206,7 +205,14 @@ public class RealVillageService implements VillageService {
     @Transactional(readOnly = true)
     public PostDetailView getPost(Long postId) {
         Post post = findPostOrThrow(postId);
-        return toPostDetailView(post);
+        // 尝试获取当前用户 ID（未认证时返回 null）
+        Long currentUserId = null;
+        try {
+            currentUserId = SecurityUtils.getCurrentUserId();
+        } catch (Exception e) {
+            // 未认证用户查看帖子，isLiked/isAuthor 均为 false
+        }
+        return toPostDetailView(post, currentUserId);
     }
 
     @Override
@@ -238,7 +244,8 @@ public class RealVillageService implements VillageService {
         post.setUpdatedAt(now);
 
         postRepository.save(post);
-        return toPostDetailView(post);
+        // 创建者查看自己的帖子，isAuthor 应为 true
+        return toPostDetailView(post, userId);
     }
 
     @Override
@@ -688,11 +695,33 @@ public class RealVillageService implements VillageService {
 
     /**
      * 将 Post 实体转换为 PostDetailView。
+     * 根据当前用户 ID 判断 isLiked 和 isAuthor 状态。
      */
-    private PostDetailView toPostDetailView(Post post) {
+    private PostDetailView toPostDetailView(Post post, Long currentUserId) {
         PostAuthorView author = getPostAuthorView(post.getAuthorId());
         List<String> tags = parseJsonToList(post.getTags());
         List<String> images = parseJsonToList(post.getImages());
+
+        // 判断当前用户是否已点赞
+        boolean isLiked = false;
+        if (currentUserId != null) {
+            isLiked = postLikeRepository.existsByUserIdAndPostId(currentUserId, post.getId());
+        }
+
+        // 判断当前用户是否为帖子作者
+        boolean isAuthor = currentUserId != null && currentUserId.equals(post.getAuthorId());
+
+        // 判断是否为校友（简化实现：通过 campusName 判断）
+        boolean isAlumni = false;
+        if (currentUserId != null) {
+            String currentUserCampus = userCampusProfileRepository.findByUserId(currentUserId)
+                    .map(UserCampusProfile::getCampusName)
+                    .orElse("");
+            String authorCampus = userCampusProfileRepository.findByUserId(post.getAuthorId())
+                    .map(UserCampusProfile::getCampusName)
+                    .orElse("");
+            isAlumni = !currentUserCampus.isBlank() && currentUserCampus.equals(authorCampus);
+        }
 
         return new PostDetailView(
                 post.getId(),
@@ -707,10 +736,17 @@ public class RealVillageService implements VillageService {
                 post.getShareCount(),
                 post.getCreatedAt().toString(),
                 post.getUpdatedAt().toString(),
-                false,
-                false,
-                false
+                isLiked,
+                isAuthor,
+                isAlumni
         );
+    }
+
+    /**
+     * 将 Post 实体转换为 PostDetailView（无用户上下文版本）。
+     */
+    private PostDetailView toPostDetailView(Post post) {
+        return toPostDetailView(post, null);
     }
 
     /**

@@ -1,0 +1,266 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>鑱婂ぉ 鈥?鏍″洯鎭嬬埍灏忕▼搴?/title>
+  <style>
+    :root {
+      --brand-50: #F0FDF4; --brand-100: #D1FAE5; --brand-200: #A7F3D0;
+      --brand-300: #6EE7B7; --brand-400: #3FCF8E; --brand-500: #2DB97A;
+      --brand-600: #25A86D; --brand-700: #1E8C5A;
+      --pink-50: #FDF2F8; --pink-400: #F472B6; --pink-500: #EC4899;
+      --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0;
+      --gray-300: #CBD5E1; --gray-400: #94A3B8; --gray-500: #64748B;
+      --gray-600: #475569; --gray-700: #334155; --gray-800: #1E293B;
+      --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 20px; --space-6: 24px;
+      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --text-h3: 18px; --text-body: 16px; --text-body-sm: 14px;
+      --text-caption: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--gray-50); color: var(--gray-800);
+      width: 375px; min-height: 100vh; margin: 0 auto;
+      overflow-x: hidden; -webkit-font-smoothing: antialiased;
+    }
+    .status-bar { height: 44px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); font-size: var(--text-caption); color: var(--gray-700); }
+    .status-bar .time { font-weight: 600; }
+    .status-bar .icons { display: flex; gap: 4px; align-items: center; }
+    .status-bar .icons svg { width: 16px; height: 16px; }
+    .nav-bar { height: 48px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); border-bottom: 1px solid var(--gray-200); }
+    .nav-bar h1 { font-size: var(--text-h3); font-weight: 600; }
+    .nav-bar .right { display: flex; gap: var(--space-3); }
+    .nav-bar .icon-btn { width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--gray-50); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+    .nav-bar .icon-btn svg { width: 20px; height: 20px; color: var(--gray-600); }
+    .page-content { padding-bottom: 80px; }
+    /* 鎼滅储鏍?*/
+    .search-bar { padding: var(--space-3) var(--space-4); }
+    .search-input { width: 100%; height: 40px; background: var(--gray-100); border: none; border-radius: var(--radius-full); padding: 0 var(--space-4) 0 40px; font-size: var(--text-body-sm); color: var(--gray-800); outline: none; }
+    .search-input::placeholder { color: var(--gray-400); }
+    .search-wrapper { position: relative; }
+    .search-wrapper svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--gray-400); }
+    /* 璇濋鎺ㄨ崘 */
+    .topic-bar { padding: 0 var(--space-4) var(--space-3); display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; }
+    .topic-bar::-webkit-scrollbar { display: none; }
+    .topic-chip { flex: 0 0 auto; background: var(--brand-50); color: var(--brand-600); font-size: var(--text-caption); font-weight: 500; padding: 6px 14px; border-radius: var(--radius-full); border: none; cursor: pointer; white-space: nowrap; }
+    /* 浼氳瘽鍒楄〃 */
+    .conversation-list { padding: 0 var(--space-4); }
+    .conversation-item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--gray-100); cursor: pointer; }
+    .conversation-item:active { background: var(--gray-50); margin: 0 calc(var(--space-4) * -1); padding: var(--space-3) var(--space-4); }
+    .conversation-item:last-child { border-bottom: none; }
+    .conversation-item .avatar-wrap { position: relative; flex-shrink: 0; }
+    .conversation-item .avatar { width: 52px; height: 52px; border-radius: var(--radius-full); object-fit: cover; }
+    .conversation-item .avatar .online-dot { position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; background: var(--success); border: 2px solid #fff; border-radius: 50%; }
+    .conversation-item .content { flex: 1; min-width: 0; }
+    .conversation-item .content .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .conversation-item .content .name { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-800); }
+    .conversation-item .content .time { font-size: var(--text-caption); color: var(--gray-400); }
+    .conversation-item .content .bottom-row { display: flex; justify-content: space-between; align-items: center; }
+    .conversation-item .content .message { font-size: var(--text-caption); color: var(--gray-500); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .conversation-item .content .badge { min-width: 18px; height: 18px; background: var(--pink-400); color: #fff; font-size: 10px; font-weight: 600; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .conversation-item .official-tag { font-size: 10px; color: var(--brand-500); background: var(--brand-50); padding: 1px 6px; border-radius: var(--radius-full); margin-left: 4px; }
+    /* 鍒嗛殧鏍囬 */
+    .list-header { padding: var(--space-4) 0 var(--space-2); font-size: var(--text-caption); color: var(--gray-400); font-weight: 500; }
+    /* 鍖归厤鎴愬姛鎻愮ず */
+    .match-section { padding: var(--space-4); }
+    .match-card { background: linear-gradient(135deg, var(--brand-50), var(--pink-50)); border-radius: var(--radius-md); padding: var(--space-4); display: flex; align-items: center; gap: var(--space-3); }
+    .match-card .icon { width: 48px; height: 48px; background: linear-gradient(135deg, var(--pink-400), var(--pink-500)); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .match-card .icon svg { width: 24px; height: 24px; color: #fff; }
+    .match-card .info { flex: 1; }
+    .match-card .info .title { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-800); margin-bottom: 2px; }
+    .match-card .info .desc { font-size: var(--text-caption); color: var(--gray-500); }
+    .match-card .action { font-size: var(--text-caption); color: var(--pink-500); font-weight: 600; }
+    /* 搴曢儴 TabBar */
+    .tab-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; height: 56px; background: #fff; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--gray-200); padding-bottom: env(safe-area-inset-bottom); }
+    .tab-bar .tab { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 12px; position: relative; }
+    .tab-bar .tab svg { width: 24px; height: 24px; color: var(--gray-400); transition: color 0.2s; }
+    .tab-bar .tab span { font-size: 10px; color: var(--gray-400); transition: color 0.2s; }
+    .tab-bar .tab.active svg { color: var(--brand-400); transform: scale(1.1); }
+    .tab-bar .tab.active span { color: var(--brand-400); font-weight: 600; }
+    .tab-bar .tab .tab-badge { position: absolute; top: 0; right: 4px; min-width: 16px; height: 16px; background: var(--pink-400); color: #fff; font-size: 9px; font-weight: 600; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-in { animation: fadeInUp 0.3s ease-out forwards; }
+  </style>
+</head>
+<body>
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="1" y="6" width="4" height="12" rx="1"/><rect x="7" y="4" width="4" height="14" rx="1"/><rect x="13" y="2" width="4" height="16" rx="1"/><rect x="19" y="0" width="4" height="18" rx="1" opacity=".3"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="10" x2="23" y2="14"/></svg>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <h1>娑堟伅</h1>
+    <div class="right">
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </button>
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="search-bar animate-in">
+      <div class="search-wrapper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="search-input" placeholder="鎼滅储鑱旂郴浜?..">
+      </div>
+    </div>
+
+    <div class="topic-bar animate-in">
+      <button class="topic-chip">馃挰 鍛ㄦ湯鏈変粈涔堝畨鎺掞紵</button>
+      <button class="topic-chip">馃摎 鎺ㄨ崘涓€鏈ソ涔?/button>
+      <button class="topic-chip">鈽?涓€璧蜂笂鑷範鍚楋紵</button>
+      <button class="topic-chip">馃崪 椋熷爞鍝釜绐楀彛濂藉悆锛?/button>
+    </div>
+
+    <div class="match-section animate-in">
+      <div class="match-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </div>
+        <div class="info">
+          <div class="title">馃挄 2 浣嶆柊鍖归厤</div>
+          <div class="desc">浣犱滑浜掔浉鍠滄浜嗭紒蹇幓鎵撲釜鎷涘懠鍚?/div>
+        </div>
+        <div class="action">鏌ョ湅 鈥?/div>
+      </div>
+    </div>
+
+    <div class="conversation-list animate-in">
+      <div class="list-header">鏈€杩戞秷鎭?/div>
+
+      <div class="conversation-item">
+        <div class="avatar-wrap">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="">
+          <span class="online-dot"></span>
+        </div>
+        <div class="content">
+          <div class="top-row">
+            <span class="name">鏋楀皬闆?/span>
+            <span class="time">10:30</span>
+          </div>
+          <div class="bottom-row">
+            <span class="message">浠婃櫄涓€璧峰幓鍥句功棣嗗悧锛燄煋?/span>
+            <span class="badge">2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="conversation-item">
+        <div class="avatar-wrap">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=ffdfbf" alt="">
+        </div>
+        <div class="content">
+          <div class="top-row">
+            <span class="name">寮犳槑杩?/span>
+            <span class="time">鏄ㄥぉ</span>
+          </div>
+          <div class="bottom-row">
+            <span class="message">濂界殑锛屾槑澶╄锛侌煈?/span>
+          </div>
+        </div>
+      </div>
+
+      <div class="conversation-item">
+        <div class="avatar-wrap">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mia&backgroundColor=c0aede" alt="">
+          <span class="online-dot"></span>
+        </div>
+        <div class="content">
+          <div class="top-row">
+            <span class="name">鏍″洯娲诲姩鍔╂墜<span class="official-tag">瀹樻柟</span></span>
+            <span class="time">鏄ㄥぉ</span>
+          </div>
+          <div class="bottom-row">
+            <span class="message">鎮ㄦ姤鍚嶇殑銆屽懆鏈煶涔愯妭銆嶅嵆灏嗗紑濮?/span>
+            <span class="badge">1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="conversation-item">
+        <div class="avatar-wrap">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Leo&backgroundColor=d1d4f9" alt="">
+        </div>
+        <div class="content">
+          <div class="top-row">
+            <span class="name">闄堟旦鐒?/span>
+            <span class="time">鍛ㄤ竴</span>
+          </div>
+          <div class="bottom-row">
+            <span class="message">璋㈣阿浣犵殑璧勬枡鍒嗕韩锛侌煋?/span>
+          </div>
+        </div>
+      </div>
+
+      <div class="conversation-item">
+        <div class="avatar-wrap">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe&backgroundColor=ffd5dc" alt="">
+        </div>
+        <div class="content">
+          <div class="top-row">
+            <span class="name">璧甸洦钀?/span>
+            <span class="time">涓婂懆浜?/span>
+          </div>
+          <div class="bottom-row">
+            <span class="message">閭ｄ釜娲诲姩鐪熺殑濂芥湁瓒ｏ紒馃幍</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-header">绯荤粺閫氱煡</div>
+
+      <div class="conversation-item">
+        <div class="avatar-wrap">
+          <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Notification&backgroundColor=e0f2fe" alt="" style="background: var(--brand-50);">
+        </div>
+        <div class="content">
+          <div class="top-row">
+            <span class="name">浜掑姩鎻愰啋</span>
+            <span class="time">3澶╁墠</span>
+          </div>
+          <div class="bottom-row">
+            <span class="message">鏈?5 浣嶅悓瀛︾粰浣犵偣浜嗚禐 鉂わ笍</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>棣栭〉</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>瀵昏</span>
+    </div>
+    <div class="tab active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>鑱婂ぉ</span>
+      <span class="tab-badge">3</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>鏍″洯</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>鎴戠殑</span>
+    </div>
+  </div>
+</body>
+</html>
+

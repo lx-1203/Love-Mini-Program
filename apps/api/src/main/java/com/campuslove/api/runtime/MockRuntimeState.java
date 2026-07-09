@@ -30,7 +30,18 @@ public class MockRuntimeState {
       "星野",
       "安静、好奇，更喜欢一对一慢慢聊。",
       "大三",
-      "她/她"
+      "她/她",
+      168,
+      "bachelor",
+      "never",
+      "广东省",
+      "广州市",
+      "广州市",
+      List.of("买房", "养猫"),
+      List.of("/uploads/mock/photo-1.jpg"),
+      "/uploads/mock/half.jpg",
+      "/uploads/mock/intro.mp4",
+      "/uploads/mock/bg.jpg"
   );
 
   private ProfileStatsData profileStats = new ProfileStatsData(28, 16, 104);
@@ -58,7 +69,15 @@ public class MockRuntimeState {
           "林",
           "工业设计大三，偏好低压力的第一轮聊天。",
           "共同兴趣：电影夜和安静的咖啡馆路线",
-          "合适时间：今晚 19:00 之后"
+          "合适时间：今晚 19:00 之后",
+          168,
+          "bachelor",
+          "never",
+          "广东省",
+          "广州市",
+          "广州市",
+          "工业设计大三，偏好低压力的第一轮聊天。",
+          List.of("电影", "咖啡馆")
       ),
       new RecommendedPersonData(
           "person-2",
@@ -66,7 +85,15 @@ public class MockRuntimeState {
           "周",
           "更适合从音乐话题切入，再配一段短距离校园散步。",
           "节奏接近：更喜欢短时见面和明确时段",
-          "合适时间：周五 16:00-18:00"
+          "合适时间：周五 16:00-18:00",
+          175,
+          "master",
+          "never",
+          "北京市",
+          "北京市",
+          "北京市",
+          "更喜欢从音乐话题切入，再配一段短距离校园散步。",
+          List.of("音乐", "散步")
       ),
       new RecommendedPersonData(
           "person-3",
@@ -74,7 +101,47 @@ public class MockRuntimeState {
           "许",
           "喜欢直接定计划、边界清楚、气氛放松的咖啡聊天。",
           "共同偏好：校园人多时也接受室内兜底",
-          "合适时间：周末下午"
+          "合适时间：周末下午",
+          180,
+          "bachelor",
+          "divorced",
+          "江苏省",
+          "南京市",
+          "上海市",
+          "喜欢直接定计划、边界清楚、气氛放松的咖啡聊天。",
+          List.of("咖啡", "摄影")
+      ),
+      new RecommendedPersonData(
+          "person-4",
+          "苏璃",
+          "苏",
+          "心理学硕士，喜欢深度的对话与长期规划的话题。",
+          "共同兴趣：阅读与城市规划",
+          "合适时间：周末上午",
+          162,
+          "master",
+          "never",
+          "上海市",
+          "上海市",
+          "上海市",
+          "心理学硕士，喜欢深度的对话与长期规划的话题。",
+          List.of("阅读", "心理学")
+      ),
+      new RecommendedPersonData(
+          "person-5",
+          "夏野",
+          "夏",
+          "建筑学大五，未来想去成都定居，喜欢户外运动与城市探索。",
+          "共同兴趣：户外运动与城市探索",
+          "合适时间：周六全天",
+          185,
+          "phd",
+          "widowed",
+          "四川省",
+          "成都市",
+          "成都市",
+          "建筑学大五，未来想去成都定居，喜欢户外运动与城市探索。",
+          List.of("户外", "建筑", "摄影")
       )
   );
 
@@ -150,8 +217,26 @@ public class MockRuntimeState {
   }
 
   public synchronized BasicProfileData saveBasicProfile(BasicProfileData profile) {
-    basicProfile = profile;
-    displayName = profile.nickname();
+    // 保留既有媒体字段（照片墙/视频/背景图/半身照），避免保存基本资料时被清空
+    BasicProfileData merged = new BasicProfileData(
+        profile.nickname(),
+        profile.bio(),
+        profile.grade(),
+        profile.pronouns(),
+        profile.height(),
+        profile.educationLevel(),
+        profile.relationshipStatus(),
+        profile.hometownProvince(),
+        profile.hometownCity(),
+        profile.futureCity(),
+        profile.futurePlanTags(),
+        profile.photoGallery() != null ? profile.photoGallery() : basicProfile.photoGallery(),
+        profile.halfBodyPhotoUrl() != null ? profile.halfBodyPhotoUrl() : basicProfile.halfBodyPhotoUrl(),
+        profile.personalVideoUrl() != null ? profile.personalVideoUrl() : basicProfile.personalVideoUrl(),
+        profile.profileBackgroundUrl() != null ? profile.profileBackgroundUrl() : basicProfile.profileBackgroundUrl()
+    );
+    basicProfile = merged;
+    displayName = merged.nickname();
     profileCompleted = true;
     return basicProfile;
   }
@@ -221,8 +306,23 @@ public class MockRuntimeState {
       String nickname,
       String bio,
       String grade,
-      String pronouns
+      String pronouns,
+      Integer height,
+      String educationLevel,
+      String relationshipStatus,
+      String hometownProvince,
+      String hometownCity,
+      String futureCity,
+      List<String> futurePlanTags,
+      List<String> photoGallery,
+      String halfBodyPhotoUrl,
+      String personalVideoUrl,
+      String profileBackgroundUrl
   ) {
+    public BasicProfileData {
+      futurePlanTags = futurePlanTags == null ? List.of() : List.copyOf(futurePlanTags);
+      photoGallery = photoGallery == null ? List.of() : List.copyOf(photoGallery);
+    }
   }
 
   public record ProfileStatsData(
@@ -266,8 +366,19 @@ public class MockRuntimeState {
       String initials,
       String headline,
       String commonGround,
-      String availability
+      String availability,
+      Integer height,
+      String educationLevel,
+      String relationshipStatus,
+      String hometownProvince,
+      String hometownCity,
+      String futureCity,
+      String bio,
+      List<String> interestTags
   ) {
+    public RecommendedPersonData {
+      interestTags = interestTags == null ? List.of() : List.copyOf(interestTags);
+    }
   }
 
   public record DiscussionRecommendationData(

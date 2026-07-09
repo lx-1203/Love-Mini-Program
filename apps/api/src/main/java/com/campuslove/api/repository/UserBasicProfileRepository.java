@@ -1,6 +1,7 @@
 package com.campuslove.api.repository;
 
 import com.campuslove.api.entity.UserBasicProfile;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -17,4 +18,13 @@ public interface UserBasicProfileRepository extends JpaRepository<UserBasicProfi
      * @return 匹配的基础资料（可能为空）
      */
     Optional<UserBasicProfile> findByUserId(Long userId);
+
+    /**
+     * 根据多个用户 ID 批量查询基础资料。
+     * 用于批量预加载，避免 N+1 查询问题。
+     *
+     * @param userIds 用户 ID 列表
+     * @return 基础资料列表
+     */
+    List<UserBasicProfile> findByUserIdIn(List<Long> userIds);
 }

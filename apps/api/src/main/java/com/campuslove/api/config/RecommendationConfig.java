@@ -46,6 +46,9 @@ public class RecommendationConfig {
     /** 共同每日一问回答每个加分 */
     private int commonDailyAnswerWeight = 3;
 
+    /** 兴趣圈权重 */
+    private int circleWeight = 8;
+
     /** 同校百分比加成启用开关 */
     private boolean sameSchoolBoostEnabled = true;
 
@@ -135,6 +138,14 @@ public class RecommendationConfig {
 
     public void setCommonDailyAnswerWeight(int commonDailyAnswerWeight) {
         this.commonDailyAnswerWeight = commonDailyAnswerWeight;
+    }
+
+    public int getCircleWeight() {
+        return circleWeight;
+    }
+
+    public void setCircleWeight(int circleWeight) {
+        this.circleWeight = circleWeight;
     }
 
     public boolean isSameSchoolBoostEnabled() {

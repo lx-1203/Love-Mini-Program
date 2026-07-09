@@ -3,10 +3,13 @@ package com.campuslove.api.repository;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
+import com.campuslove.api.entity.Post.AuditStatus;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * 帖子 Repository。
@@ -84,4 +87,31 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @return 分页帖子列表
      */
     Page<Post> findByIdInAndStatusOrderByCreatedAtDesc(List<Long> ids, PostStatus status, Pageable pageable);
+
+    /**
+     * 管理后台 - 多条件分页查询帖子。
+     * <p>所有筛选条件均可为 null（不参与筛选），按创建时间倒序排列。</p>
+     * <p>此查询不限制 PostStatus，便于管理员查看包含已删除/隐藏在内的所有帖子。</p>
+     *
+     * @param auditStatus 审核状态筛选（pending/approved/rejected），null 表示不筛选
+     * @param status      帖子状态筛选（active/deleted/hidden），null 表示不筛选
+     * @param category    帖子分类筛选，null 表示不筛选
+     * @param authorId    作者用户 ID 筛选，null 表示不筛选
+     * @param pageable    分页参数
+     * @return 分页帖子列表
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE (:auditStatus IS NULL OR p.auditStatus = :auditStatus)
+              AND (:status IS NULL OR p.status = :status)
+              AND (:category IS NULL OR p.category = :category)
+              AND (:authorId IS NULL OR p.authorId = :authorId)
+            ORDER BY p.createdAt DESC
+            """)
+    Page<Post> searchForAdmin(
+            @Param("auditStatus") AuditStatus auditStatus,
+            @Param("status") PostStatus status,
+            @Param("category") PostCategory category,
+            @Param("authorId") Long authorId,
+            Pageable pageable);
 }

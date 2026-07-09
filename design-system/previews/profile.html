@@ -1,0 +1,306 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>涓汉涓績 鈥?鏍″洯鎭嬬埍灏忕▼搴?/title>
+  <style>
+    :root {
+      --brand-50: #F0FDF4; --brand-100: #D1FAE5; --brand-200: #A7F3D0;
+      --brand-300: #6EE7B7; --brand-400: #3FCF8E; --brand-500: #2DB97A;
+      --brand-600: #25A86D; --brand-700: #1E8C5A;
+      --pink-50: #FDF2F8; --pink-400: #F472B6; --pink-500: #EC4899;
+      --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0;
+      --gray-300: #CBD5E1; --gray-400: #94A3B8; --gray-500: #64748B;
+      --gray-600: #475569; --gray-700: #334155; --gray-800: #1E293B;
+      --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 20px; --space-6: 24px; --space-8: 32px;
+      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+      --text-h3: 18px; --text-body: 16px; --text-body-sm: 14px;
+      --text-caption: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--gray-50); color: var(--gray-800);
+      width: 375px; min-height: 100vh; margin: 0 auto;
+      overflow-x: hidden; -webkit-font-smoothing: antialiased;
+    }
+    .status-bar { height: 44px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); font-size: var(--text-caption); color: var(--gray-700); }
+    .status-bar .time { font-weight: 600; }
+    .status-bar .icons { display: flex; gap: 4px; align-items: center; }
+    .status-bar .icons svg { width: 16px; height: 16px; }
+    .nav-bar { height: 48px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); border-bottom: 1px solid var(--gray-200); }
+    .nav-bar h1 { font-size: var(--text-h3); font-weight: 600; }
+    .nav-bar .icon-btn { width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--gray-50); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+    .nav-bar .icon-btn svg { width: 20px; height: 20px; color: var(--gray-600); }
+    .page-content { padding-bottom: 80px; }
+    /* 澶撮儴鍖哄煙 */
+    .profile-header { background: linear-gradient(180deg, var(--brand-100) 0%, #fff 100%); padding: var(--space-6) var(--space-4) var(--space-4); text-align: center; }
+    .avatar-container { position: relative; display: inline-block; margin-bottom: var(--space-3); }
+    .avatar-large { width: 96px; height: 96px; border-radius: var(--radius-full); object-fit: cover; border: 4px solid #fff; box-shadow: var(--shadow-md); }
+    .avatar-edit { position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; background: var(--brand-400); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; border: 2px solid #fff; cursor: pointer; }
+    .avatar-edit svg { width: 14px; height: 14px; color: #fff; }
+    .profile-name { font-size: 22px; font-weight: 700; color: var(--gray-800); margin-bottom: 4px; }
+    .profile-school { font-size: var(--text-body-sm); color: var(--gray-500); margin-bottom: var(--space-2); display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .profile-school .verified { background: var(--brand-400); color: #fff; font-size: 10px; padding: 2px 8px; border-radius: var(--radius-full); font-weight: 600; }
+    .profile-bio { font-size: var(--text-body-sm); color: var(--gray-600); max-width: 280px; margin: 0 auto var(--space-3); line-height: 1.5; }
+    .profile-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-bottom: var(--space-4); }
+    .profile-tags .tag { font-size: 11px; padding: 4px 12px; border-radius: var(--radius-full); background: rgba(255,255,255,0.8); color: var(--brand-600); backdrop-filter: blur(4px); }
+    /* 鏁版嵁缁熻 */
+    .stats-row { display: flex; justify-content: space-around; padding: var(--space-4); background: #fff; border-bottom: 1px solid var(--gray-100); }
+    .stat-item { text-align: center; }
+    .stat-item .value { font-size: 22px; font-weight: 700; color: var(--gray-800); font-variant-numeric: tabular-nums; }
+    .stat-item .label { font-size: var(--text-caption); color: var(--gray-400); margin-top: 2px; }
+    /* 璧勬枡瀹屽杽搴?*/
+    .completion-card { margin: var(--space-4); padding: var(--space-4); background: #fff; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+    .completion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
+    .completion-header h3 { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-700); }
+    .completion-header span { font-size: var(--text-caption); color: var(--brand-500); font-weight: 600; }
+    .completion-bar { height: 8px; background: var(--gray-200); border-radius: var(--radius-full); overflow: hidden; margin-bottom: var(--space-3); }
+    .completion-bar .fill { height: 100%; background: linear-gradient(90deg, var(--brand-400), var(--brand-500)); border-radius: var(--radius-full); width: 75%; }
+    .completion-items { display: flex; gap: var(--space-3); }
+    .completion-item { flex: 1; display: flex; align-items: center; gap: 4px; font-size: var(--text-caption); }
+    .completion-item .check { width: 16px; height: 16px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; }
+    .completion-item .check.done { background: var(--brand-400); color: #fff; }
+    .completion-item .check.done svg { width: 10px; height: 10px; }
+    .completion-item .check.pending { background: var(--gray-200); color: var(--gray-400); }
+    .completion-item .check.pending svg { width: 10px; height: 10px; }
+    .completion-item .text.done { color: var(--gray-700); }
+    .completion-item .text.pending { color: var(--gray-400); }
+    /* 鍔熻兘鑿滃崟 */
+    .menu-section { margin: 0 var(--space-4); }
+    .menu-section .section-title { font-size: var(--text-caption); color: var(--gray-400); font-weight: 500; margin-bottom: var(--space-2); padding-left: var(--space-2); }
+    .menu-card { background: #fff; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .menu-item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--gray-100); cursor: pointer; }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:active { background: var(--gray-50); }
+    .menu-item .icon { width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .menu-item .icon svg { width: 20px; height: 20px; }
+    .menu-item .icon.green { background: var(--brand-50); color: var(--brand-500); }
+    .menu-item .icon.pink { background: var(--pink-50); color: var(--pink-500); }
+    .menu-item .icon.blue { background: #F0F9FF; color: #3B82F6; }
+    .menu-item .icon.orange { background: #FFF7ED; color: var(--orange-400); }
+    .menu-item .icon.purple { background: #F5F3FF; color: #8B5CF6; }
+    .menu-item .content { flex: 1; }
+    .menu-item .content .label { font-size: var(--text-body-sm); color: var(--gray-700); }
+    .menu-item .content .desc { font-size: var(--text-caption); color: var(--gray-400); margin-top: 2px; }
+    .menu-item .arrow { color: var(--gray-300); }
+    .menu-item .arrow svg { width: 16px; height: 16px; }
+    /* 绀句氦鍗囨俯杩涘害 */
+    .social-progress-card { margin: var(--space-4); padding: var(--space-4); background: linear-gradient(135deg, var(--brand-50), #fff); border-radius: var(--radius-md); border: 1px solid var(--brand-200); }
+    .social-progress-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+    .social-progress-header .icon { font-size: 20px; }
+    .social-progress-header h3 { font-size: var(--text-body-sm); font-weight: 600; color: var(--gray-700); }
+    .social-progress-header span { margin-left: auto; font-size: var(--text-caption); color: var(--brand-500); font-weight: 600; }
+    .social-progress-bar { height: 8px; background: var(--gray-200); border-radius: var(--radius-full); overflow: hidden; }
+    .social-progress-bar .fill { height: 100%; background: linear-gradient(90deg, var(--brand-400), var(--pink-400)); border-radius: var(--radius-full); width: 65%; }
+    /* 搴曢儴 TabBar */
+    .tab-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; height: 56px; background: #fff; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--gray-200); padding-bottom: env(safe-area-inset-bottom); }
+    .tab-bar .tab { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 12px; }
+    .tab-bar .tab svg { width: 24px; height: 24px; color: var(--gray-400); transition: color 0.2s; }
+    .tab-bar .tab span { font-size: 10px; color: var(--gray-400); transition: color 0.2s; }
+    .tab-bar .tab.active svg { color: var(--brand-400); transform: scale(1.1); }
+    .tab-bar .tab.active span { color: var(--brand-400); font-weight: 600; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-in { animation: fadeInUp 0.3s ease-out forwards; }
+  </style>
+</head>
+<body>
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="1" y="6" width="4" height="12" rx="1"/><rect x="7" y="4" width="4" height="14" rx="1"/><rect x="13" y="2" width="4" height="16" rx="1"/><rect x="19" y="0" width="4" height="18" rx="1" opacity=".3"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="10" x2="23" y2="14"/></svg>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <h1>鎴戠殑</h1>
+    <button class="icon-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+
+  <div class="page-content">
+    <!-- 澶撮儴鍖哄煙 -->
+    <div class="profile-header animate-in">
+      <div class="avatar-container">
+        <img class="avatar-large" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="">
+        <div class="avatar-edit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+      </div>
+      <div class="profile-name">鏋楀皬闆?/div>
+      <div class="profile-school">鍖椾含澶у 路 澶т笁 <span class="verified">宸茶璇?/span></div>
+      <div class="profile-bio">鍠滄鎽勫奖鍜岄槄璇伙紝鍛ㄦ湯缁忓父鍘绘晠瀹媿寤虹瓚銆傛兂鎵句竴涓竴璧锋帰绱㈠煄甯傝钀界殑浜恒€?/div>
+      <div class="profile-tags">
+        <span class="tag">馃摲 鎽勫奖</span>
+        <span class="tag">馃摉 闃呰</span>
+        <span class="tag">馃彌锔?寤虹瓚</span>
+        <span class="tag">鈽?鍜栧暋</span>
+      </div>
+    </div>
+
+    <!-- 鏁版嵁缁熻 -->
+    <div class="stats-row animate-in">
+      <div class="stat-item">
+        <div class="value">128</div>
+        <div class="label">鍏虫敞</div>
+      </div>
+      <div class="stat-item">
+        <div class="value">256</div>
+        <div class="label">绮変笣</div>
+      </div>
+      <div class="stat-item">
+        <div class="value">1,024</div>
+        <div class="label">鑾疯禐</div>
+      </div>
+    </div>
+
+    <!-- 璧勬枡瀹屽杽搴?-->
+    <div class="completion-card animate-in">
+      <div class="completion-header">
+        <h3>馃摑 璧勬枡瀹屽杽搴?/h3>
+        <span>75%</span>
+      </div>
+      <div class="completion-bar">
+        <div class="fill"></div>
+      </div>
+      <div class="completion-items">
+        <div class="completion-item">
+          <div class="check done">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20,6 9,17 4,12"/></svg>
+          </div>
+          <span class="text done">鍩烘湰璧勬枡</span>
+        </div>
+        <div class="completion-item">
+          <div class="check done">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20,6 9,17 4,12"/></svg>
+          </div>
+          <span class="text done">鏍″洯璁よ瘉</span>
+        </div>
+        <div class="completion-item">
+          <div class="check pending">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <span class="text pending">鍏磋叮鏍囩</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 绀句氦鍗囨俯杩涘害 -->
+    <div class="social-progress-card animate-in">
+      <div class="social-progress-header">
+        <span class="icon">馃敟</span>
+        <h3>绀句氦鍗囨俯杩涘害</h3>
+        <span>65%</span>
+      </div>
+      <div class="social-progress-bar">
+        <div class="fill"></div>
+      </div>
+    </div>
+
+    <!-- 鍔熻兘鑿滃崟 -->
+    <div class="menu-section animate-in">
+      <div class="section-title">鎴戠殑鍐呭</div>
+      <div class="menu-card">
+        <div class="menu-item">
+          <div class="icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="content">
+            <div class="label">鎴戠殑鍔ㄦ€?/div>
+            <div class="desc">鏌ョ湅浣犲彂甯冪殑璇濋鍜屼簰鍔?/div>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div>
+        </div>
+        <div class="menu-item">
+          <div class="icon pink">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </div>
+          <div class="content">
+            <div class="label">鎯呮劅瀹為獙瀹?/div>
+            <div class="desc">娴嬭瘯浣犵殑鎭嬬埍鍖归厤搴?/div>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div>
+        </div>
+        <div class="menu-item">
+          <div class="icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="content">
+            <div class="label">鏀惰棌</div>
+            <div class="desc">浣犳敹钘忕殑璇濋鍜屾椿鍔?/div>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-section animate-in" style="margin-top: var(--space-4);">
+      <div class="section-title">璁剧疆</div>
+      <div class="menu-card">
+        <div class="menu-item">
+          <div class="icon orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="content">
+            <div class="label">闅愮璁剧疆</div>
+            <div class="desc">绠＄悊浣犵殑闅愮鍜屽彲瑙佹€?/div>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div>
+        </div>
+        <div class="menu-item">
+          <div class="icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <div class="content">
+            <div class="label">閫氱敤璁剧疆</div>
+            <div class="desc">閫氱煡銆佽瑷€銆佷富棰?/div>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div>
+        </div>
+        <div class="menu-item">
+          <div class="icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div class="content">
+            <div class="label">甯姪涓庡弽棣?/div>
+            <div class="desc">甯歌闂鍜岃仈绯诲鏈?/div>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>棣栭〉</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>瀵昏</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>鑱婂ぉ</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>鏍″洯</span>
+    </div>
+    <div class="tab active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>鎴戠殑</span>
+    </div>
+  </div>
+</body>
+</html>
+

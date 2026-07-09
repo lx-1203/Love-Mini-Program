@@ -1,7 +1,9 @@
 package com.campuslove.api.campus;
 
 import com.campuslove.api.entity.CampusCertification;
+import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.repository.CampusCertificationRepository;
+import com.campuslove.api.repository.UserBasicProfileRepository;
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -28,9 +30,13 @@ public class RealCampusCertificationService implements CampusCertificationServic
     private static final String STATUS_REJECTED = "REJECTED";
 
     private final CampusCertificationRepository campusCertificationRepository;
+    private final UserBasicProfileRepository userBasicProfileRepository;
 
-    public RealCampusCertificationService(CampusCertificationRepository campusCertificationRepository) {
+    public RealCampusCertificationService(
+            CampusCertificationRepository campusCertificationRepository,
+            UserBasicProfileRepository userBasicProfileRepository) {
         this.campusCertificationRepository = campusCertificationRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
     }
 
     /**
@@ -141,6 +147,45 @@ public class RealCampusCertificationService implements CampusCertificationServic
         CampusCertification saved = campusCertificationRepository.save(certification);
         log.info("审核人 {} 将认证记录 id={} 审核为: {}", reviewerId, certId, status);
         return toView(saved);
+    }
+
+    /**
+     * 查询用户的认证徽章级别（Phase B - Task B3.3/B3.4）。
+     *
+     * <p>判定逻辑（优先级：school > email > idcard > none）：</p>
+     * <ol>
+     *   <li>查询用户的校园认证记录，若 status=APPROVED，则返回 "school"</li>
+     *   <li>否则查询 user_basic_profile.email_verified，若为 true 则返回 "email"</li>
+     *   <li>否则查询 user_basic_profile.id_card_verified，若为 true 则返回 "idcard"</li>
+     *   <li>否则返回 "none"</li>
+     * </ol>
+     *
+     * @param userId 用户 ID，null 时直接返回 "none"
+     * @return 徽章级别字符串（school/email/idcard/none）
+     */
+    @Override
+    public String getVerificationBadgeLevel(Long userId) {
+        if (userId == null) {
+            return "none";
+        }
+        // 1. 校园认证 APPROVED 优先级最高
+        Optional<CampusCertification> existingOpt = campusCertificationRepository.findByUserId(userId);
+        if (existingOpt.isPresent() && STATUS_APPROVED.equals(existingOpt.get().getStatus())) {
+            return "school";
+        }
+        // 2. 邮箱认证次之
+        Optional<UserBasicProfile> bpOpt = userBasicProfileRepository.findByUserId(userId);
+        if (bpOpt.isPresent()) {
+            UserBasicProfile bp = bpOpt.get();
+            if (Boolean.TRUE.equals(bp.getEmailVerified())) {
+                return "email";
+            }
+            // 3. 身份证认证再次之
+            if (Boolean.TRUE.equals(bp.getIdCardVerified())) {
+                return "idcard";
+            }
+        }
+        return "none";
     }
 
     /**

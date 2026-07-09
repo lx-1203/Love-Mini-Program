@@ -3,10 +3,21 @@ spring:
     name: campus-love-api
   profiles:
     default: mock
+  # Multipart 文件上传配置：允许上传最大 50MB 的单文件、50MB 的整体请求
+  # 与媒体上传校验逻辑（视频 ≤50MB）保持一致
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 server:
   port: ${APP_PORT:8080}
 
 app:
+  # 媒体存储配置（Phase A - Task A3）
+  # storageRoot: 本地存储根目录，相对路径基于应用工作目录
+  # URL 访问路径前缀 /uploads/** 由 WebConfig 静态资源映射
+  media:
+    storage-root: ${APP_MEDIA_STORAGE_ROOT:./uploads}
   jwt:
     # JWT 签名密钥：必须通过环境变量 JWT_SECRET 设置，不允许使用默认值。
     # 启动时若未设置或使用了不安全的默认值，应用将拒绝启动。

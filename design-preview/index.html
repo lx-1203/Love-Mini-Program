@@ -5,25 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no">
   <meta name="description" content="校园恋爱小程序 UI 设计预览 - 包含首页、匹配、聊天、个人中心四个核心页面的设计稿展示。">
   <title>校园恋爱 - UI预览</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* 品牌色 - 天蓝色系 */
-      --brand-50: #E8F4FD;
-      --brand-100: #C5E5F8;
-      --brand-200: #9DD4F3;
-      --brand-300: #6CBFED;
-      --brand-400: #3B9DE5;
-      --brand-500: #2A8BD4;
-      --brand-600: #1E77B8;
+      /* 品牌色 - 青藤绿系 */
+      --brand-50: #F0FDF4;
+      --brand-100: #D1FAE5;
+      --brand-200: #A7F3D0;
+      --brand-300: #6EE7B7;
+      --brand-400: #3FCF8E;
+      --brand-500: #2DB97A;
+      --brand-600: #25A86D;
 
-      /* 辅助色 - 浅青色 */
-      --secondary-50: #E8F9FC;
-      --secondary-100: #C5F0F7;
-      --secondary-200: #9DE4F0;
-      --secondary-300: #6CD5E8;
-      --secondary-400: #5BC0DE;
-      --secondary-500: #4AABC8;
+      /* 辅助色 - 浅绿色 */
+      --secondary-50: #F0FDF4;
+      --secondary-100: #D1FAE5;
+      --secondary-200: #A7F3D0;
+      --secondary-300: #6EE7B7;
+      --secondary-400: #3FCF8E;
+      --secondary-500: #2DB97A;
 
       /* 强调色 - 暖橙色 */
       --accent-400: #FF8C42;
@@ -31,22 +30,22 @@
 
       /* 中性色 */
       --neutral-0: #FFFFFF;
-      --neutral-50: #F7F9FC;
-      --neutral-100: #EEF1F6;
-      --neutral-200: #DDE2EB;
-      --neutral-300: #C4CBD8;
-      --neutral-400: #9BA3B4;
-      --neutral-500: #6E7687;
-      --neutral-600: #4A5060;
-      --neutral-700: #2D323E;
-      --neutral-800: #1A1D26;
-      --neutral-900: #0D0F14;
+      --neutral-50: #F4F6FA;
+      --neutral-100: #F1F5F9;
+      --neutral-200: #E2E8F0;
+      --neutral-300: #CBD5E1;
+      --neutral-400: #94A3B8;
+      --neutral-500: #64748B;
+      --neutral-600: #475569;
+      --neutral-700: #334155;
+      --neutral-800: #1F2329;
+      --neutral-900: #0E1116;
 
       /* 文本色 */
-      --text-primary: #1A1D26;
-      --text-secondary: #4A5060;
-      --text-tertiary: #6E7687;
-      --text-quaternary: #9BA3B4;
+      --text-primary: #1F2329;
+      --text-secondary: #5B6470;
+      --text-tertiary: #9AA1AB;
+      --text-quaternary: #CBD5E1;
       --text-inverse: #FFFFFF;
 
       /* 背景色 */
@@ -71,8 +70,8 @@
       --radius-full: 9999px;
 
       /* 字体 */
-      --font-sans: 'Noto Sans SC', 'PingFang SC', sans-serif;
-      --font-display: 'ZCOOL XiaoWei', serif;
+      --font-sans: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --font-display: "PingFang SC", "Noto Sans SC", serif;
     }
 
     * {
@@ -1180,10 +1179,10 @@
 <body>
   <!-- 顶部切换标签 -->
   <div class="preview-tabs">
-    <button class="preview-tab active" onclick="showPage('home')">首页</button>
-    <button class="preview-tab" onclick="showPage('match')">匹配</button>
-    <button class="preview-tab" onclick="showPage('chat')">聊天</button>
-    <button class="preview-tab" onclick="showPage('profile')">我的</button>
+    <button class="preview-tab active" onclick="showPage('home', this)">首页</button>
+    <button class="preview-tab" onclick="showPage('match', this)">匹配</button>
+    <button class="preview-tab" onclick="showPage('chat', this)">聊天</button>
+    <button class="preview-tab" onclick="showPage('profile', this)">我的</button>
   </div>
 
   <!-- 首页预览 -->
@@ -1326,23 +1325,23 @@
       <!-- TabBar - 5选项，中央突出匹配按钮 -->
       <div class="tabbar">
         <div class="tab-item">
-          <div class="tab-icon active">🏠</div>
+          <div class="tab-icon active"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
           <span class="tab-label active">首页</span>
         </div>
         <div class="tab-item">
-          <div class="tab-icon inactive">💬</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
           <span class="tab-label inactive">讨论圈</span>
         </div>
         <div class="tab-center-wrap">
-          <div class="tab-center-btn">💫</div>
+          <div class="tab-center-btn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
           <span class="tab-center-label">匹配</span>
         </div>
         <div class="tab-item">
-          <div class="tab-icon inactive">🎉</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
           <span class="tab-label inactive">活动</span>
         </div>
         <div class="tab-item">
-          <div class="tab-icon inactive">👤</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
           <span class="tab-label inactive">我的</span>
         </div>
       </div>
@@ -1360,7 +1359,7 @@
 
       <div class="content">
         <div class="match-hero idle">
-          <div class="match-icon">💫</div>
+          <div class="match-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
           <div class="match-title">开始匹配</div>
           <div class="match-subtitle">基于你的课表和兴趣<br>找到志同道合的同学</div>
         </div>
@@ -1394,23 +1393,23 @@
       <!-- TabBar - 匹配页状态 -->
       <div class="tabbar">
         <div class="tab-item">
-          <div class="tab-icon inactive">🏠</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
           <span class="tab-label inactive">首页</span>
         </div>
         <div class="tab-item">
-          <div class="tab-icon inactive">💬</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
           <span class="tab-label inactive">讨论圈</span>
         </div>
         <div class="tab-center-wrap">
-          <div class="tab-center-btn">💫</div>
+          <div class="tab-center-btn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
           <span class="tab-center-label">匹配</span>
         </div>
         <div class="tab-item">
-          <div class="tab-icon inactive">🎉</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
           <span class="tab-label inactive">活动</span>
         </div>
         <div class="tab-item">
-          <div class="tab-icon inactive">👤</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
           <span class="tab-label inactive">我的</span>
         </div>
       </div>
@@ -1556,7 +1555,7 @@
           <div class="card-title" style="margin-bottom: 4px;">个人设置</div>
 
           <div class="menu-item">
-            <div class="menu-icon brand">👤</div>
+            <div class="menu-icon brand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
             <div class="menu-content">
               <div class="menu-title">基础资料</div>
               <div class="menu-desc">昵称、头像、个性签名</div>
@@ -1592,7 +1591,7 @@
           </div>
 
           <div class="menu-item">
-            <div class="menu-icon secondary">💬</div>
+            <div class="menu-icon secondary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
             <div class="menu-content">
               <div class="menu-title">聊天设置</div>
               <div class="menu-desc">消息通知、隐私设置</div>
@@ -1616,23 +1615,23 @@
       <!-- TabBar - 个人中心状态 -->
       <div class="tabbar">
         <div class="tab-item">
-          <div class="tab-icon inactive">🏠</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
           <span class="tab-label inactive">首页</span>
         </div>
         <div class="tab-item">
-          <div class="tab-icon inactive">💬</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
           <span class="tab-label inactive">讨论圈</span>
         </div>
         <div class="tab-center-wrap">
-          <div class="tab-center-btn">💫</div>
+          <div class="tab-center-btn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
           <span class="tab-center-label">匹配</span>
         </div>
         <div class="tab-item">
-          <div class="tab-icon inactive">🎉</div>
+          <div class="tab-icon inactive"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
           <span class="tab-label inactive">活动</span>
         </div>
         <div class="tab-item">
-          <div class="tab-icon active">👤</div>
+          <div class="tab-icon active"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
           <span class="tab-label active">我的</span>
         </div>
       </div>
@@ -1640,7 +1639,7 @@
   </div>
 
   <script>
-    function showPage(page) {
+    function showPage(page, el) {
       document.querySelectorAll('.phone').forEach(p => p.style.display = 'none');
       document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
 
@@ -1650,7 +1649,8 @@
         document.getElementById('page-' + page).style.display = 'block';
       }
 
-      event.target.classList.add('active');
+      if (!el) el = document.querySelector('.preview-tab[onclick*="'+page+'"], .preview-tab.active');
+      el.classList.add('active');
     }
   </script>
 </body>

@@ -17,7 +17,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
+@SpringBootTest(properties = "JWT_SECRET=test-jwt-secret-for-phase-one-flow-tests-32-chars-min")
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class PhaseOneFlowApiTest {
@@ -89,15 +89,25 @@ class PhaseOneFlowApiTest {
 
   @Test
   void homeChatAndFeedbackFlowsRetainMutableState() throws Exception {
+    mockMvc.perform(post("/api/auth/wechat-login")
+            .contentType(APPLICATION_JSON)
+            .content("""
+                {
+                  "code": "wechat-code"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.loggedIn").value(true));
+
     mockMvc.perform(get("/api/home/dashboard"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.recommendedPeople.length()").value(3))
+        .andExpect(jsonPath("$.recommendedPeople.length()").value(5))
         .andExpect(jsonPath("$.activityPreview.items.length()").value(2));
 
     mockMvc.perform(get("/api/chat/overview"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.sessions.length()").value(0))
-        .andExpect(jsonPath("$.recommendedPeople.length()").value(3));
+        .andExpect(jsonPath("$.recommendedPeople.length()").value(5));
 
     MvcResult createdSession = mockMvc.perform(post("/api/temp-chat/sessions")
             .contentType(APPLICATION_JSON)

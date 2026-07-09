@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>首页 — 校园恋爱小程序</title>
+<style>
+:root {
+  --brand: #3FCF8E;
+  --brand-dark: #2DB97A;
+  --brand-light: #D1F0E0;
+  --brand-50: #E8F8F0;
+  --brand-gradient: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
+  --pink: #EC4899;
+  --success: #10B981;
+  --error: #E5454D;
+  --warning: #F59E0B;
+  --gray-0: #FFFFFF;
+  --gray-50: #F4F6FA;
+  --gray-100: #EEF0F4;
+  --gray-200: #E2E8F0;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-700: #334155;
+  --gray-800: #1F2329;
+  --text-primary: #1F2329;
+  --text-secondary: #5B6470;
+  --text-tertiary: #9AA1AB;
+  --state-signup-bg: #7CD9A6;
+  --state-signup-text: #1A7A4A;
+  --state-ongoing-bg: #FFD479;
+  --state-ongoing-text: #8A5A00;
+  --state-preview-bg: #B7C4FF;
+  --state-preview-text: #3B47B7;
+  --price: #E5454D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--gray-50);
+  width: 375px;
+  min-height: 100vh;
+  margin: 0 auto;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+.phone-frame {
+  width: 375px;
+  min-height: 812px;
+  position: relative;
+  background: var(--gray-50);
+}
+.status-bar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--gray-0);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.status-bar .icons { display: flex; gap: 4px; align-items: center; }
+.status-bar .icons svg { width: 16px; height: 16px; stroke: var(--text-primary); fill: none; stroke-width: 1.5; }
+
+/* 导航栏 */
+.nav-bar {
+  height: 48px;
+  background: var(--gray-0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.nav-bar .left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.school-tag {
+  background: var(--brand-50);
+  color: var(--brand-dark);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.school-tag svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+.nav-bar .right { display: flex; gap: 12px; }
+.nav-bar .right .icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--gray-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  position: relative;
+}
+.nav-bar .right .icon-btn svg { width: 20px; height: 20px; stroke: var(--text-secondary); fill: none; stroke-width: 1.5; }
+.nav-bar .right .icon-btn .badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background: var(--pink);
+  border-radius: 50%;
+}
+
+/* 页面内容 */
+.page-content { padding-bottom: 140px; }
+
+/* 模块通用 */
+.section {
+  margin: 12px 16px;
+  background: var(--gray-0);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.04);
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.section-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.section-header .more {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.section-header .more svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+/* 校园圈活动 */
+.activity-cards {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.activity-cards::-webkit-scrollbar { display: none; }
+.activity-card {
+  flex: 0 0 140px;
+  background: var(--gray-0);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--gray-100);
+}
+.activity-card .cover {
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(135deg, var(--brand-50) 0%, var(--brand-light) 100%);
+  position: relative;
+}
+.activity-card .cover .status-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+.activity-card .cover .status-badge.signup {
+  background: var(--state-signup-bg);
+  color: var(--state-signup-text);
+}
+.activity-card .cover .status-badge.ongoing {
+  background: var(--state-ongoing-bg);
+  color: var(--state-ongoing-text);
+}
+.activity-card .cover .status-badge.preview {
+  background: var(--state-preview-bg);
+  color: var(--state-preview-text);
+}
+.activity-card .info {
+  padding: 8px;
+}
+.activity-card .info .title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-card .info .meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+.activity-card .info .avatars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.activity-card .info .avatars .avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--brand-light);
+  border: 1px solid var(--gray-0);
+}
+.activity-card .info .avatars .count {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+/* 课表空闲 */
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.schedule-date {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+.schedule-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.schedule-col .day {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+.schedule-col .day.today {
+  color: var(--brand);
+  font-weight: 600;
+}
+.course-block {
+  padding: 6px 4px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+}
+.course-block.math { background: #E8F8F0; color: #1A7A4A; }
+.course-block.physics { background: #E8F0F8; color: #1A4A7A; }
+.course-block.english { background: #F8F0E8; color: #7A4A1A; }
+.course-block.program { background: #F0E8F8; color: #4A1A7A; }
+.course-block.data { background: #F8F8E8; color: #7A7A1A; }
+
+/* 校园墙 */
+.wall-tabs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.wall-tabs .tab {
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding-bottom: 4px;
+}
+.wall-tabs .tab.active {
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom: 2px solid var(--brand);
+}
+.wall-card {
+  background: var(--gray-0);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid var(--gray-100);
+}
+.wall-card .user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.wall-card .user-info .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.wall-card .user-info .name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.wall-card .user-info .school {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.wall-card .user-info .time {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.wall-card .content {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.wall-card .images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.wall-card .images .img {
+  aspect-ratio: 1;
+  background: var(--gray-100);
+  border-radius: 8px;
+}
+.wall-card .location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(63,207,142,0.1);
+  color: var(--brand);
+  border-radius: 12px;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.wall-card .location svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+.wall-card .actions {
+  display: flex;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--gray-100);
+}
+.wall-card .actions .action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.wall-card .actions .action svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+/* 顺手可买 */
+.product-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.product-card {
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  background: var(--gray-0);
+  border-radius: 12px;
+  border: 1px solid var(--gray-100);
+}
+.product-card .thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: var(--gray-100);
+  position: relative;
+  flex-shrink: 0;
+}
+.product-card .thumb .badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  padding: 2px 6px;
+  background: var(--warning);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 4px;
+}
+.product-card .info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.product-card .info .title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.product-card .info .meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.product-card .info .price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.product-card .info .price {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--price);
+}
+.product-card .info .sales {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* 可能认识 */
+.people-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.people-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: var(--gray-0);
+  border-radius: 12px;
+  border: 1px solid var(--gray-100);
+}
+.people-card .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.people-card .info {
+  flex: 1;
+}
+.people-card .info .name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.people-card .info .school {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.people-card .info .common {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.people-card .btn-greet {
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--brand);
+  border: 1px solid var(--brand);
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Sticky Activity Banner */
+.sticky-banner {
+  position: fixed;
+  bottom: calc(49px + 16px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 343px;
+  height: 64px;
+  background: var(--gray-0);
+  border-radius: 24px;
+  box-shadow: 0 4px 16px rgba(15,23,42,.1);
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 12px;
+  z-index: 100;
+}
+.sticky-banner .thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--brand-50) 0%, var(--brand-light) 100%);
+  flex-shrink: 0;
+}
+.sticky-banner .info {
+  flex: 1;
+}
+.sticky-banner .info .title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sticky-banner .info .meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.sticky-banner .btn-see {
+  padding: 8px 16px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sticky-banner .btn-close {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: var(--gray-400);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* TabBar */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 375px;
+  height: 49px;
+  background: var(--gray-0);
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.tab-item svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-tertiary);
+  fill: none;
+  stroke-width: 1.5;
+}
+.tab-item span {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.tab-item.active svg {
+  stroke: var(--brand);
+  fill: var(--brand);
+}
+.tab-item.active span {
+  color: var(--brand);
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>
+    </div>
+  </div>
+
+  <!-- 导航栏 -->
+  <div class="nav-bar">
+    <div class="left">
+      <div class="school-tag">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        本校限定 · 华南理工大学 ▾
+      </div>
+    </div>
+    <div class="right">
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="badge"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 页面内容 -->
+  <div class="page-content">
+    <!-- 校园圈活动 -->
+    <div class="section">
+      <div class="section-header">
+        <h3>校园圈活动</h3>
+        <span class="more">全部 <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </div>
+      <div class="activity-cards">
+        <div class="activity-card">
+          <div class="cover">
+            <span class="status-badge signup">报名中</span>
+          </div>
+          <div class="info">
+            <div class="title">校园歌手大赛</div>
+            <div class="meta">5月20日 19:00</div>
+            <div class="avatars">
+              <div class="avatar"></div>
+              <div class="avatar"></div>
+              <span class="count">+32人</span>
+            </div>
+          </div>
+        </div>
+        <div class="activity-card">
+          <div class="cover">
+            <span class="status-badge ongoing">进行中</span>
+          </div>
+          <div class="info">
+            <div class="title">篮球友谊赛</div>
+            <div class="meta">5月18日 14:00</div>
+            <div class="avatars">
+              <div class="avatar"></div>
+              <div class="avatar"></div>
+              <span class="count">+16人</span>
+            </div>
+          </div>
+        </div>
+        <div class="activity-card">
+          <div class="cover">
+            <span class="status-badge preview">预告</span>
+          </div>
+          <div class="info">
+            <div class="title">读书分享会</div>
+            <div class="meta">5月25日 10:00</div>
+            <div class="avatars">
+              <div class="avatar"></div>
+              <span class="count">+8人</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 课表空闲 -->
+    <div class="section">
+      <div class="section-header">
+        <h3>课表空闲</h3>
+        <span class="more">本周课表 <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </div>
+      <div class="schedule-header">
+        <span class="schedule-date">今天 周二 05/20</span>
+      </div>
+      <div class="schedule-grid">
+        <div class="schedule-col">
+          <div class="day">周一</div>
+          <div class="course-block math">高数B</div>
+          <div class="course-block physics">大学物理</div>
+        </div>
+        <div class="schedule-col">
+          <div class="day today">周二</div>
+          <div class="course-block english">英语</div>
+          <div class="course-block program">程序设计</div>
+        </div>
+        <div class="schedule-col">
+          <div class="day">周三</div>
+          <div class="course-block data">数据结构</div>
+          <div class="course-block math">线性代数</div>
+        </div>
+        <div class="schedule-col">
+          <div class="day">周四</div>
+          <div class="course-block physics">体育</div>
+          <div class="course-block program">晚自习</div>
+        </div>
+        <div class="schedule-col">
+          <div class="day">周五</div>
+          <div class="course-block english">英语</div>
+          <div class="course-block math">高数B</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 校园墙 -->
+    <div class="section">
+      <div class="section-header">
+        <h3>校园墙</h3>
+        <button class="btn-greet" style="padding:4px 12px;font-size:12px;">发一条</button>
+      </div>
+      <div class="wall-tabs">
+        <span class="tab active">最新</span>
+        <span class="tab">关注</span>
+      </div>
+      <div class="wall-card">
+        <div class="user-info">
+          <div class="avatar">拾</div>
+          <div>
+            <div class="name">拾柒</div>
+            <div class="school">计算机学院 · 大二</div>
+          </div>
+          <span class="time">10分钟前</span>
+        </div>
+        <div class="content">今天图书馆偶遇了一只超可爱的猫咪，感觉整个下午都变得美好了～有没有人知道这是谁的猫咪呀？</div>
+        <div class="images">
+          <div class="img"></div>
+          <div class="img"></div>
+          <div class="img"></div>
+        </div>
+        <div class="location">
+          <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          图书馆 · 三楼自习区
+        </div>
+        <div class="actions">
+          <span class="action"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 128</span>
+          <span class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 32</span>
+          <span class="action"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顺手可买 -->
+    <div class="section">
+      <div class="section-header">
+        <h3>顺手可买</h3>
+        <span class="more">更多 <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </div>
+      <div class="product-cards">
+        <div class="product-card">
+          <div class="thumb">
+            <span class="badge">校内</span>
+          </div>
+          <div class="info">
+            <div class="title">二手教材《高等数学》</div>
+            <div class="meta">5月18日 · 教材教辅</div>
+            <div class="price-row">
+              <span class="price">¥9.9</span>
+              <span class="sales">已售 324</span>
+            </div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="thumb">
+            <span class="badge">校内</span>
+          </div>
+          <div class="info">
+            <div class="title">校园文创明信片套装</div>
+            <div class="meta">5月15日 · 文创周边</div>
+            <div class="price-row">
+              <span class="price">¥18</span>
+              <span class="sales">已售 156</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 可能认识 -->
+    <div class="section">
+      <div class="section-header">
+        <h3>可能认识</h3>
+        <span class="more">换一批 <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </div>
+      <div class="people-cards">
+        <div class="people-card">
+          <div class="avatar">林</div>
+          <div class="info">
+            <div class="name">林同学</div>
+            <div class="school">经管学院 · 大二</div>
+            <div class="common">Q 3 个共同圈子</div>
+          </div>
+          <button class="btn-greet">打个招呼</button>
+        </div>
+        <div class="people-card">
+          <div class="avatar">张</div>
+          <div class="info">
+            <div class="name">张同学</div>
+            <div class="school">计算机学院 · 大三</div>
+            <div class="common">Q 5 个共同圈子</div>
+          </div>
+          <button class="btn-greet">打个招呼</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky Activity Banner -->
+  <div class="sticky-banner">
+    <div class="thumb"></div>
+    <div class="info">
+      <div class="title">校园电影节《蓝色夏天》放映</div>
+      <div class="meta">5月22日 19:00 · 大礼堂</div>
+    </div>
+    <button class="btn-see">去看看</button>
+    <button class="btn-close">×</button>
+  </div>
+
+  <!-- TabBar -->
+  <div class="tab-bar">
+    <div class="tab-item active">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>首页</span>
+    </div>
+    <div class="tab-item">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>圈子</span>
+    </div>
+    <div class="tab-item">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <span>发现</span>
+    </div>
+    <div class="tab-item">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <span>消息</span>
+    </div>
+    <div class="tab-item">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>我的</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

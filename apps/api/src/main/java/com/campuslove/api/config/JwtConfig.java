@@ -51,7 +51,9 @@ public class JwtConfig {
                     + "请通过环境变量 JWT_SECRET 设置一个安全的随机密钥后重新启动。");
         }
         if (secret.length() < 32) {
-            log.warn("JWT 密钥长度不足 32 字节，建议使用至少 32 字符的随机密钥以保障安全性。");
+            throw new IllegalStateException(
+                    "JWT_SECRET 长度必须 >= 32 字符以满足 HS256 安全要求（当前长度: "
+                    + secret.length() + "）。请通过环境变量 JWT_SECRET 设置更长的随机密钥。");
         }
         log.info("JWT 密钥校验通过，密钥长度: {} 字符", secret.length());
     }

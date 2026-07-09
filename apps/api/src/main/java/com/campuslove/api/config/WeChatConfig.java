@@ -19,6 +19,16 @@ public class WeChatConfig {
      */
     private String appSecret;
 
+    /**
+     * 社交摘要推送模板ID。
+     */
+    private String socialDigestTemplateId = "";
+
+    /**
+     * 推荐刷新推送模板ID。
+     */
+    private String recommendRefreshTemplateId = "";
+
     public String getAppId() {
         return appId;
     }
@@ -33,5 +43,21 @@ public class WeChatConfig {
 
     public void setAppSecret(String appSecret) {
         this.appSecret = appSecret;
+    }
+
+    public String getSocialDigestTemplateId() {
+        return socialDigestTemplateId;
+    }
+
+    public void setSocialDigestTemplateId(String socialDigestTemplateId) {
+        this.socialDigestTemplateId = socialDigestTemplateId;
+    }
+
+    public String getRecommendRefreshTemplateId() {
+        return recommendRefreshTemplateId;
+    }
+
+    public void setRecommendRefreshTemplateId(String recommendRefreshTemplateId) {
+        this.recommendRefreshTemplateId = recommendRefreshTemplateId;
     }
 }
