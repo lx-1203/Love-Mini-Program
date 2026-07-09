@@ -84,6 +84,9 @@ tools/flyway-*/
 tools/flyway-commandline-*.zip
 /design-preview.7z
 
+# ===== 大体积媒体资源（由构建/CDN提供） =====
+apps/client/src/static/assets/videos/
+
 # ===== 构建产物 =====
 apps/client/dist/
 apps/client/dist/build/
@@ -92,3 +95,7 @@ apps/api/target/
 
 # ===== 残留空文件 =====
 /nul
+
+# ===== 临时操作文件（不提交） =====
+.trae/documents/github-ssh-key-to-add.txt
+/github-ssh-key-to-add.txt
