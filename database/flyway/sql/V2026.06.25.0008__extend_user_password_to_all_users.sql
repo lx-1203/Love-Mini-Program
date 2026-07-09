@@ -26,8 +26,18 @@
 -- ============================================================
 
 -- 1. 幂等确保 password 字段存在（如 V2026.06.25.0002 已执行则跳过）
-ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS password VARCHAR(100) DEFAULT NULL COMMENT '密码 BCrypt 哈希，管理员与密码登录用户使用，微信登录用户为 NULL';
+-- MySQL 8.0 不支持 ADD COLUMN IF NOT EXISTS，使用 INFORMATION_SCHEMA 动态 SQL 实现幂等。
+SET @add_password_sql = IF(
+    EXISTS(
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'password'
+    ),
+    'SELECT 1',
+    "ALTER TABLE users ADD COLUMN password VARCHAR(100) DEFAULT NULL COMMENT '密码 BCrypt 哈希，管理员与密码登录用户使用，微信登录用户为 NULL'"
+);
+PREPARE stmt FROM @add_password_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- 2. 更新列注释以反映扩展后的语义（不影响数据，仅修改元数据）
 ALTER TABLE users

@@ -1,10 +1,9 @@
 [flyway]
 locations = ["filesystem:./database/flyway/sql"]
 validateMigrationNaming = true
-placeholderPrefix = "#["
-placeholderSuffix = "]"
+# 使用双下划线占位符，避免与 MySQL 单行注释 # 冲突。
 
 [flyway.placeholders]
-admin-openid = "admin-default-openid-change-me"
-admin-nickname = "系统管理员"
-admin-password-hash = ".20cQQubK3.HZWzG3YB1tlRy.fqvM/BG"
+admin_openid = "admin-default-openid-change-me"
+admin_nickname = "系统管理员"
+admin_password_hash = ".20cQQubK3.HZWzG3YB1tlRy.fqvM/BG"

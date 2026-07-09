@@ -13,7 +13,7 @@
 --
 -- 注意事项：
 --   * BCrypt 哈希格式为 $2a$10$...（cost=10），无法逆推明文。
---   * 默认哈希值由 Flyway placeholder #[admin-password-hash] 提供，
+--   * 默认哈希值由 Flyway placeholder __admin_password_hash__ 提供，
 --     可通过环境变量 ADMIN_PASSWORD_HASH 覆盖。
 --   * ⚠️ 安全警告：默认密码 "Admin@2026" 仅用于初始化，
 --     管理员首次登录后必须立即修改密码！
@@ -26,13 +26,13 @@
 
 -- 1. 为 users 表新增 password 字段（仅管理员账号使用）
 ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS password VARCHAR(100) DEFAULT NULL COMMENT '管理员密码 BCrypt 哈希，普通用户为 NULL';
+    ADD COLUMN password VARCHAR(100) DEFAULT NULL COMMENT '管理员密码 BCrypt 哈希，普通用户为 NULL';
 
 -- 2. 为现有管理员账号初始化 BCrypt 哈希
---    使用 Flyway placeholder #[admin-password-hash]，默认值见 application-db.yml
+--    使用 Flyway placeholder __admin_password_hash__，默认值见 application-db.yml
 --    仅更新 password 为空的管理员账号，避免覆盖已设置的密码
 UPDATE users
-SET password = #[admin-password-hash],
+SET password = __admin_password_hash__,
     updated_at = NOW()
 WHERE role = 'ADMIN'
   AND (password IS NULL OR password = '');

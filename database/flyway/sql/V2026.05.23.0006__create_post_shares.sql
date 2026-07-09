@@ -12,4 +12,4 @@ CREATE TABLE IF NOT EXISTS post_shares (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='帖子转发记录表';
 
 ALTER TABLE posts
-    ADD COLUMN IF NOT EXISTS share_count INT NOT NULL DEFAULT 0 COMMENT '转发数' AFTER comments_count;
+    ADD COLUMN share_count INT NOT NULL DEFAULT 0 COMMENT '转发数' AFTER comments_count;

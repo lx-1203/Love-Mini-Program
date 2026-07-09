@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS private_conversations (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uk_private_conversations_uid (conversation_uid),
-    UNIQUE KEY uk_private_conversations_users (LEAST(user_a_id, user_b_id), GREATEST(user_a_id, user_b_id)),
+    UNIQUE KEY uk_private_conversations_users ((LEAST(user_a_id, user_b_id)), (GREATEST(user_a_id, user_b_id))),
     KEY idx_private_conversations_user_a (user_a_id),
     KEY idx_private_conversations_user_b (user_b_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='私信会话表';

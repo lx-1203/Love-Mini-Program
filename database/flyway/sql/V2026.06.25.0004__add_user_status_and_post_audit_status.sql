@@ -25,21 +25,21 @@
 
 -- users 表新增 status 字段
 ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS status VARCHAR(16) NOT NULL DEFAULT 'active' COMMENT '账号状态: active/disabled';
+    ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'active' COMMENT '账号状态: active/disabled';
 
 -- 兜底：为存量用户回填默认值（ADD COLUMN ... DEFAULT 已覆盖新行，此处保证存量数据）
 UPDATE users SET status = 'active' WHERE status IS NULL OR status = '';
 
 -- posts 表新增 audit_status 字段及审核元信息
 ALTER TABLE posts
-    ADD COLUMN IF NOT EXISTS audit_status VARCHAR(16) NOT NULL DEFAULT 'approved' COMMENT '审核状态: pending/approved/rejected',
-    ADD COLUMN IF NOT EXISTS audit_remark VARCHAR(500) DEFAULT NULL COMMENT '审核备注（拒绝原因等）',
-    ADD COLUMN IF NOT EXISTS auditor_id BIGINT UNSIGNED DEFAULT NULL COMMENT '审核人用户 ID',
-    ADD COLUMN IF NOT EXISTS audited_at DATETIME DEFAULT NULL COMMENT '审核时间';
+    ADD COLUMN audit_status VARCHAR(16) NOT NULL DEFAULT 'approved' COMMENT '审核状态: pending/approved/rejected',
+    ADD COLUMN audit_remark VARCHAR(500) DEFAULT NULL COMMENT '审核备注（拒绝原因等）',
+    ADD COLUMN auditor_id BIGINT UNSIGNED DEFAULT NULL COMMENT '审核人用户 ID',
+    ADD COLUMN audited_at DATETIME DEFAULT NULL COMMENT '审核时间';
 
 -- 兜底：为存量帖子回填默认值（视为已审核通过）
 UPDATE posts SET audit_status = 'approved' WHERE audit_status IS NULL OR audit_status = '';
 
 -- 为筛选场景添加索引
-CREATE INDEX IF NOT EXISTS idx_users_status ON users (status);
-CREATE INDEX IF NOT EXISTS idx_posts_audit_status ON posts (audit_status);
+CREATE INDEX idx_users_status ON users (status);
+CREATE INDEX idx_posts_audit_status ON posts (audit_status);

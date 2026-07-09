@@ -16,20 +16,17 @@ spring:
     # 可通过环境变量 APP_FLYWAY_LOCATIONS 覆盖（如需禁用某个位置）。
     locations: ${APP_FLYWAY_LOCATIONS:filesystem:../../database/flyway/sql,classpath:db/migration}
     baseline-on-migrate: false
-    # 迁移脚本占位符前缀改为 #[，避免与 Spring 属性占位符 ${...} 冲突。
-    placeholder-prefix: "#["
-    placeholder-suffix: "]"
-    # 迁移脚本占位符默认值，可由环境变量 ADMIN_OPENID / ADMIN_NICKNAME 覆盖。
+    # 使用双下划线占位符，避免与 MySQL 单行注释 # 以及 Spring ${...} 冲突。
     # 用于 V2026.06.25.0001__add_user_role_and_init_admin.sql 初始化管理员账号。
     placeholders:
-      admin-openid: ${ADMIN_OPENID:admin-default-openid-change-me}
-      admin-nickname: ${ADMIN_NICKNAME:系统管理员}
+      admin_openid: ${ADMIN_OPENID:admin-default-openid-change-me}
+      admin_nickname: ${ADMIN_NICKNAME:系统管理员}
       # 管理员密码 BCrypt 哈希，默认明文为 'Admin@2026'。
       # ⚠️ 默认哈希为示例值（对应明文 'password'），仅用于开发/测试。
       # 生产环境必须通过环境变量 ADMIN_PASSWORD_HASH 配置 'Admin@2026' 的 BCrypt 哈希。
       # 生成方法：调用 PasswordEncoderConfig.encodePassword("Admin@2026")
       # 首次登录后必须立即修改密码。
-      admin-password-hash: ${ADMIN_PASSWORD_HASH:.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG}
+      admin_password_hash: ${ADMIN_PASSWORD_HASH:.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG}
   jpa:
     hibernate:
       ddl-auto: validate

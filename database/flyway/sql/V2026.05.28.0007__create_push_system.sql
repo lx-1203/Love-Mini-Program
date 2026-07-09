@@ -2,8 +2,8 @@
 -- 推送偏好表 + 推送摘要表，支持社交动态摘要推送和推荐刷新通知
 
 CREATE TABLE IF NOT EXISTS push_preferences (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL UNIQUE,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL UNIQUE,
     push_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     push_frequency INT NOT NULL DEFAULT 1 COMMENT '每日最大推送次数',
     active_hours VARCHAR(50) COMMENT '活跃时段,如 10-12,14-16,20-22',
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS push_preferences (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='推送偏好设置表';
 
 CREATE TABLE IF NOT EXISTS push_summaries (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
     summary_type VARCHAR(50) NOT NULL COMMENT 'social_digest/recommend_refresh',
     title VARCHAR(200) NOT NULL,
     content TEXT,

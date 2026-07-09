@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS heart_signals (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_heart_signals_users (LEAST(user_a_id, user_b_id), GREATEST(user_a_id, user_b_id)),
+    UNIQUE KEY uk_heart_signals_users ((LEAST(user_a_id, user_b_id)), (GREATEST(user_a_id, user_b_id))),
     KEY idx_heart_signals_user_a (user_a_id),
     KEY idx_heart_signals_user_b (user_b_id),
     KEY idx_heart_signals_expires_at (expires_at)

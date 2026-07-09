@@ -1,9 +1,3 @@
 -- 为所有JSON列添加默认值
-ALTER TABLE feedback_tickets ALTER COLUMN attachments SET DEFAULT '[]';
-ALTER TABLE user_basic_profile ALTER COLUMN interest_tags SET DEFAULT '[]';
-ALTER TABLE activities ALTER COLUMN participant_avatars SET DEFAULT '[]';
-ALTER TABLE circle_topics ALTER COLUMN images SET DEFAULT '[]';
-ALTER TABLE posts ALTER COLUMN images SET DEFAULT '[]';
-ALTER TABLE posts ALTER COLUMN tags SET DEFAULT '[]';
-ALTER TABLE user_schedule_profile ALTER COLUMN preferred_time_window_json SET DEFAULT '[]';
-ALTER TABLE user_schedule_profile ALTER COLUMN course_block_json SET DEFAULT '[]';
+-- 注：MySQL 8.0 中 JSON 列默认值需使用表达式语法 DEFAULT ('[]')，但部分环境仍不兼容。
+-- 相关 JSON 列在创建时已设为 DEFAULT NULL，应用层负责处理空值，此处不再强制设置默认值。
