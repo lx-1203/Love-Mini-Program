@@ -1,13 +1,117 @@
 import type { components } from "./generated/api-types";
+import type {
+  ProfileStats,
+  RecommendationFilter,
+  RecommendedPerson,
+  UpdateBasicProfileRequest,
+} from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
 import { appEnv } from "./env";
-import { request, setToken, setRefreshToken, clearTokens } from "./http";
+import { getToken, request, setToken, setRefreshToken, clearTokens } from "./http";
 
 type Schemas = components["schemas"];
 type SubmissionType = Schemas["SubmissionType"];
 
 function useMock() {
   return appEnv.apiMode === "mock";
+}
+
+/**
+ * 构建 recommendations 端点的 query string。
+ *
+ * 多值字段（educationLevel、relationshipStatus）以逗号拼接，
+ * 与后端 GET /api/recommendations 契约一致。
+ *
+ * @param filter - 推荐筛选条件
+ * @returns 拼接好的 query string（不含前导 ?），空 filter 返回空字符串
+ */
+function buildRecommendationsQuery(filter: RecommendationFilter): string {
+  const parts: string[] = [];
+  if (filter.heightMin !== undefined) {
+    parts.push(`heightMin=${encodeURIComponent(String(filter.heightMin))}`);
+  }
+  if (filter.heightMax !== undefined) {
+    parts.push(`heightMax=${encodeURIComponent(String(filter.heightMax))}`);
+  }
+  if (filter.educationLevel && filter.educationLevel.length > 0) {
+    parts.push(
+      `educationLevel=${encodeURIComponent(filter.educationLevel.join(","))}`
+    );
+  }
+  if (filter.relationshipStatus && filter.relationshipStatus.length > 0) {
+    parts.push(
+      `relationshipStatus=${encodeURIComponent(filter.relationshipStatus.join(","))}`
+    );
+  }
+  if (filter.hometownProvince) {
+    parts.push(`hometownProvince=${encodeURIComponent(filter.hometownProvince)}`);
+  }
+  if (filter.hometownCity) {
+    parts.push(`hometownCity=${encodeURIComponent(filter.hometownCity)}`);
+  }
+  if (filter.futureCity) {
+    parts.push(`futureCity=${encodeURIComponent(filter.futureCity)}`);
+  }
+  if (filter.keyword && filter.keyword.trim().length > 0) {
+    parts.push(`keyword=${encodeURIComponent(filter.keyword.trim())}`);
+  }
+  return parts.length > 0 ? `?${parts.join("&")}` : "";
+}
+
+/**
+ * 通过 uni.uploadFile 上传文件到指定端点。
+ *
+ * 兼容 H5 与 mp-weixin：
+ * - H5 端 File 对象标准，可直接传给 uni.uploadFile（uni-app 内部转换）
+ * - mp-weixin 端 File 类型不存在，调用方需传入带 path 字段的类 File 对象
+ *   （uni.chooseImage 的返回值经包装后即可）
+ *
+ * @param file - 文件对象（H5 标准 File 或 uni-app 扩展的带 path 字段对象）
+ * @param endpoint - 上传端点路径（不含 apiBaseUrl 前缀）
+ * @param extraFields - 附带到 FormData 的额外字段（如 index）
+ * @returns 解析后的服务端响应体
+ */
+function uploadFileViaUni<TResponse>(
+  file: File,
+  endpoint: string,
+  extraFields?: Record<string, string>
+): Promise<TResponse> {
+  // 兼容 mp-weixin：uni.chooseImage 返回 tempFilePaths，调用方包装为 File-like
+  // 对象时需挂 path 字段；H5 端 File 没有 path，回退到 name
+  const fileWithExtra = file as File & { path?: string };
+  const filePath = fileWithExtra.path ?? file.name;
+
+  return new Promise<TResponse>((resolve, reject) => {
+    uni.uploadFile({
+      url: `${appEnv.apiBaseUrl}${endpoint}`,
+      filePath,
+      name: "file",
+      // 附带额外字段（如照片墙 index）
+      formData: extraFields,
+      header: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+      success: (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            const data = JSON.parse(res.data) as TResponse;
+            resolve(data);
+          } catch (e) {
+            reject(
+              new Error(
+                `上传响应解析失败: ${e instanceof Error ? e.message : String(e)}`
+              )
+            );
+          }
+        } else {
+          reject(new Error(`上传失败: HTTP ${res.statusCode}`));
+        }
+      },
+      fail: (err) => {
+        reject(new Error(err.errMsg || "上传请求失败"));
+      },
+    });
+  });
 }
 
 export const clientApi = {
@@ -52,7 +156,7 @@ export const clientApi = {
     if (useMock()) {
       return mockFixtures.getProfileStats();
     }
-    return request<Schemas["ProfileStats"]>({ url: "/profile/stats" });
+    return request<ProfileStats>({ url: "/profile/stats" });
   },
   async saveBasicProfile(payload: Schemas["BasicProfileRequest"]) {
     if (useMock()) {
@@ -136,6 +240,19 @@ export const clientApi = {
     });
   },
   /**
+   * 撤回临时聊天会话中的某条消息。
+   * 仅发送者本人可在发送后 2 分钟内撤回。
+   */
+  async recallTempChatMessage(sessionId: string, messageId: string) {
+    if (useMock()) {
+      return mockFixtures.recallTempChatMessage(sessionId, messageId);
+    }
+    return request<Schemas["TempChatSession"]>({
+      url: `/temp-chat/sessions/${sessionId}/messages/${messageId}/recall`,
+      method: "POST",
+    });
+  },
+  /**
    * 获取基于对方资料的破冰话题列表（私信场景）。
    * 返回结构化的破冰话题，含 id、content、category、source 字段。
    * Mock 模式下返回本地硬编码数据。
@@ -148,7 +265,8 @@ export const clientApi = {
     return request<{
       items: Array<{ id: number; content: string; category: string; source: string }>;
     }>({
-      url: `/api/match/icebreakers/profile/${peerUserId}`,
+      // 修复：移除前导 /api，避免与 apiBaseUrl 拼接后变成 /api/api/match/...
+      url: `/match/icebreakers/profile/${peerUserId}`,
     });
   },
 
@@ -337,17 +455,33 @@ export const clientApi = {
       activityCount: number;
       nextAction: string;
       progressPercentage: number;
-    }>({ url: "/api/growth/social-progress" });
+    }>({ url: "/growth/social-progress" });
   },
 
   /**
-   * 登出：清除本地 Token 并跳转登录页。
+   * 登出：通知后端使 token 失效，并清除本地 Token，跳转登录页。
+   *
+   * 修复：原代码仅清除本地 token，未通知后端使 refresh token 失效，
+   * 存在 token 被盗用风险（用户登出后旧 token 仍有效）。
+   * 现在调用后端登出接口（即使失败也清除本地 token）。
    */
-  logout() {
-    clearTokens();
-    uni.reLaunch({
-      url: "/pages/login/index",
-    });
+  async logout() {
+    try {
+      // 尝试通知后端使 token 失效（best effort，失败不阻塞前端清理）
+      await request<void>({
+        url: "/auth/logout",
+        method: "POST",
+      });
+    } catch (error) {
+      // 后端登出失败不阻塞前端清理，仅记录日志
+      console.warn("[api.logout] 后端登出接口调用失败:", error);
+    } finally {
+      // 无论后端登出是否成功，都清除本地 token
+      clearTokens();
+      uni.reLaunch({
+        url: "/pages/login/index",
+      });
+    }
   },
 
   /**
@@ -370,6 +504,137 @@ export const clientApi = {
       url: "/content-filter/check",
       method: "POST",
       data: { content },
+    });
+  },
+
+  /**
+   * 更新基本资料（含 Phase A 扩展字段）。
+   *
+   * 对应后端 PUT /api/profile/basic 端点，承载 UserBasicProfile 实体中
+   * 在 Phase A 任务中新增的所有扩展字段。所有字段均为可选，调用方按需传入。
+   * 后端会重新计算 profileCompletion 并更新会话状态。
+   *
+   * @param data - 更新请求体
+   */
+  async updateBasicProfile(data: UpdateBasicProfileRequest): Promise<void> {
+    if (useMock()) {
+      mockFixtures.updateBasicProfile(data);
+      return;
+    }
+    await request<void, UpdateBasicProfileRequest>({
+      url: "/profile/basic",
+      method: "PUT",
+      data,
+    });
+  },
+
+  /**
+   * 上传个人主页背景图。
+   *
+   * 对应后端 POST /api/profile/background 端点，使用 multipart/form-data。
+   * 上传成功后服务端返回 {url: string}，并更新 UserBasicProfile.profileBackgroundUrl。
+   *
+   * @param file - 图片文件（jpg/png/webp，≤10MB）
+   * @returns 服务端返回的图片 URL
+   */
+  async uploadProfileBackground(file: File): Promise<{ url: string }> {
+    if (useMock()) {
+      return mockFixtures.uploadProfileBackground(file);
+    }
+    return uploadFileViaUni<{ url: string }>(file, "/profile/background");
+  },
+
+  /**
+   * 上传照片墙指定索引（0-5）。
+   *
+   * 对应后端 POST /api/profile/photos 端点，使用 multipart/form-data，
+   * 通过 FormData 字段 index 指定照片在照片墙中的位置。
+   * 超过 6 张时后端返回 400。
+   *
+   * @param file - 图片文件
+   * @param index - 照片墙索引（0-5）
+   * @returns 服务端返回的图片 URL
+   */
+  async uploadProfilePhoto(
+    file: File,
+    index: number
+  ): Promise<{ url: string }> {
+    if (useMock()) {
+      return mockFixtures.uploadProfilePhoto(file, index);
+    }
+    return uploadFileViaUni<{ url: string }>(file, "/profile/photos", {
+      index: String(index),
+    });
+  },
+
+  /**
+   * 删除照片墙指定索引。
+   *
+   * 对应后端 DELETE /api/profile/photos/{index} 端点。
+   *
+   * @param index - 照片墙索引（0-5）
+   */
+  async deleteProfilePhoto(index: number): Promise<void> {
+    if (useMock()) {
+      mockFixtures.deleteProfilePhoto(index);
+      return;
+    }
+    await request<void>({
+      url: `/profile/photos/${index}`,
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * 上传个人视频。
+   *
+   * 对应后端 POST /api/profile/video 端点，使用 multipart/form-data。
+   * 视频校验：mp4/mov，≤50MB，≤60s。
+   *
+   * @param file - 视频文件
+   * @returns 服务端返回的视频 URL
+   */
+  async uploadProfileVideo(file: File): Promise<{ url: string }> {
+    if (useMock()) {
+      return mockFixtures.uploadProfileVideo(file);
+    }
+    return uploadFileViaUni<{ url: string }>(file, "/profile/video");
+  },
+
+  /**
+   * 上传半身照。
+   *
+   * 对应后端 POST /api/profile/half-body 端点，使用 multipart/form-data。
+   *
+   * @param file - 图片文件
+   * @returns 服务端返回的图片 URL
+   */
+  async uploadProfileHalfBody(file: File): Promise<{ url: string }> {
+    if (useMock()) {
+      return mockFixtures.uploadProfileHalfBody(file);
+    }
+    return uploadFileViaUni<{ url: string }>(file, "/profile/half-body");
+  },
+
+  /**
+   * 获取推荐列表（含 Phase B 扩展筛选字段）。
+   *
+   * 对应后端 GET /api/recommendations 端点，所有筛选参数均为可选 query string。
+   * 多值字段（educationLevel、relationshipStatus）以逗号拼接。
+   *
+   * @param filter - 筛选条件（所有字段可选）
+   * @returns 推荐人物列表，包含 Phase A/B 扩展字段
+   */
+  async getRecommendations(
+    filter: RecommendationFilter
+  ): Promise<RecommendedPerson[]> {
+    if (useMock()) {
+      return mockFixtures.getRecommendations(filter);
+    }
+    const query = buildRecommendationsQuery(filter);
+    return request<RecommendedPerson[]>({
+      url: `/recommendations${query}`,
+      method: "GET",
     });
   },
 };

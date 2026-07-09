@@ -4,7 +4,8 @@
  * 列表视图：展示所有活动卡片，支持下拉刷新、上拉加载更多
  * 日历视图：以月历形式展示活动分布，高亮有活动日期，点击查看当日活动详情
  */
-import { ref, computed, onShow, onUnload } from "@dcloudio/uni-app";
+import { ref, computed } from "vue";
+import { onShow, onUnload } from "@dcloudio/uni-app";
 import AppShell from "../../src/components/layout/AppShell.vue";
 import SectionCard from "../../src/components/common/SectionCard.vue";
 import BottomActionBar from "../../src/components/common/BottomActionBar.vue";
@@ -110,6 +111,13 @@ const activitiesByDate = computed<Record<string, ActivityItem[]>>(() => {
 const activeDates = computed<Set<string>>(() => {
   return new Set(Object.keys(activitiesByDate.value));
 });
+
+/** 获取某日总报名人数 */
+function getDateEnrollCount(dateStr: string): number {
+  const acts = activitiesByDate.value[dateStr];
+  if (!acts) return 0;
+  return acts.reduce((sum: number, a: ActivityItem) => sum + (a.enrollCount ?? a.enrollmentCount ?? 0), 0);
+}
 
 /**
  * 日历网格数据
@@ -420,7 +428,7 @@ function formatDateLabel(dateStr: string): string {
               class="calendar-cell__count"
             >
               <text class="calendar-cell__count-text">
-                {{ activitiesByDate[cell.dateStr].reduce((sum, a) => sum + (a.enrollCount ?? a.enrollmentCount ?? 0), 0) }}人
+                {{ getDateEnrollCount(cell.dateStr) }}人
               </text>
             </view>
           </view>

@@ -3,10 +3,15 @@
  * 兴趣圈话题列表页
  * 展示指定兴趣圈下的话题列表，支持下拉刷新和加载更多
  */
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCircleStore, formatCircleTime } from "../../stores/circle";
 import { openAppPath } from "../../utils/navigation";
+import { IMAGE_PATHS } from "../../config/images";
+
+/** Emoji 替换 SVG 图标路径 */
+const chatIcon = IMAGE_PATHS.ICONS_EMOJI.CHAT;
 
 const circleStore = useCircleStore();
 const { currentTopics, loading, errorMessage, topicHasMore } = storeToRefs(circleStore);
@@ -20,13 +25,13 @@ const isRefreshing = ref(false);
 /** 加载更多中 */
 const isLoadingMore = ref(false);
 
-/**
- * 页面加载时获取参数
- */
-function onLoad(query: Record<string, string>) {
-  circleId.value = query.circleId || "";
-  circleName.value = decodeURIComponent(query.circleName || "");
-}
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
 
 /**
  * 刷新话题列表
@@ -63,6 +68,16 @@ function goToDetail(topicId: string) {
 }
 
 /**
+ * 跳转到话题作者的个人主页（F1.3）
+ * 头像点击事件使用 @tap.stop 阻止冒泡，避免触发话题卡片整体的 goToDetail
+ * @param authorId - 作者 userId
+ */
+function goToAuthorProfile(authorId: string) {
+  if (!authorId) return;
+  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(authorId)}`);
+}
+
+/**
  * 发布新话题
  */
 function goToPostTopic() {
@@ -76,15 +91,11 @@ function goBack() {
   uni.navigateBack();
 }
 
-onMounted(() => {
-  // uni-app 页面通过 onLoad 获取参数，这里用兼容方式
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1];
-  const options = (currentPage as { options?: Record<string, string> })?.options ?? {};
-  onLoad(options);
-
+onLoad((query) => {
+  circleId.value = query.circleId || "";
+  circleName.value = decodeURIComponent(query.circleName || "");
+  
   if (circleId.value) {
-    // 从兴趣圈列表中获取名称
     const circle = circleStore.circles.find((c) => c.id === circleId.value);
     if (circle) {
       circleName.value = circle.name;
@@ -95,10 +106,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="topics-page">
+  <view class="topics-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="topics-header">
-      <view class="topics-header__back" @tap="goBack">
+      <view class="topics-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">返回</text>
       </view>
       <text class="topics-header__title">{{ circleName || '话题列表' }}</text>
@@ -113,9 +124,9 @@ onMounted(() => {
 
     <!-- 错误状态 -->
     <view v-else-if="errorMessage && currentTopics.length === 0" class="topics-state">
-      <text class="topics-state__icon">😥</text>
+      <view class="error-icon">😔</view>
       <text class="topics-state__text">{{ errorMessage }}</text>
-      <view class="topics-state__btn" @tap="onRefresh">
+      <view class="topics-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="onRefresh">
         <text class="topics-state__btn-text">重试</text>
       </view>
     </view>
@@ -132,7 +143,7 @@ onMounted(() => {
     >
       <!-- 空状态 -->
       <view v-if="currentTopics.length === 0" class="topics-empty">
-        <text class="topics-empty__icon">📝</text>
+        <image class="topics-empty__icon" :src="chatIcon" mode="aspectFit" />
         <text class="topics-empty__title">暂无话题</text>
         <text class="topics-empty__desc">来发第一个话题吧</text>
       </view>
@@ -141,7 +152,7 @@ onMounted(() => {
       <view
         v-for="topic in currentTopics"
         :key="topic.id"
-        class="topic-card"
+        class="topic-card list-item"
         @tap="goToDetail(topic.id)"
       >
         <!-- 话题标题 -->
@@ -153,7 +164,10 @@ onMounted(() => {
         <!-- 底部信息 -->
         <view class="topic-card__footer">
           <view class="topic-card__author">
-            <view class="topic-card__avatar">
+            <view
+              class="topic-card__avatar"
+              @tap.stop="goToAuthorProfile(topic.author.userId)"
+            >
               <image
                 v-if="topic.author.avatar"
                 class="topic-card__avatar-img"
@@ -165,7 +179,8 @@ onMounted(() => {
             <text class="topic-card__name">{{ topic.author.name }}</text>
           </view>
           <view class="topic-card__meta">
-            <text class="topic-card__replies">💬 {{ topic.replyCount }}</text>
+            <image class="topic-card__reply-icon" :src="chatIcon" mode="aspectFit" />
+            <text class="topic-card__replies">{{ topic.replyCount }}</text>
             <text class="topic-card__time">{{ formatCircleTime(topic.createdAt) }}</text>
           </view>
         </view>
@@ -185,7 +200,7 @@ onMounted(() => {
     </scroll-view>
 
     <!-- 浮动发帖按钮 (FAB) -->
-    <view class="fab" @tap="goToPostTopic">
+    <view class="fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPostTopic">
       <text class="fab__icon">+</text>
     </view>
   </view>
@@ -197,7 +212,7 @@ onMounted(() => {
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
   overflow: hidden;
 }
 
@@ -206,26 +221,33 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  padding: calc(env(safe-area-inset-top) + var(--sp-6)) var(--sp-8) var(--sp-6);
+  background: var(--c-gradient-brand);
   z-index: 10;
 }
 
 .topics-header__back {
-  padding: 8rpx 0;
-  min-width: 80rpx;
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.15s ease;
+}
+
+.topics-header__back:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .back-icon {
-  font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-lg);
+  color: var(--c-neutral-0);
+  font-weight: 500;
 }
 
 .topics-header__title {
-  font-size: 34rpx;
+  font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-neutral-0);
 }
 
 .topics-header__spacer {
@@ -239,15 +261,15 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24rpx;
+  gap: var(--sp-6);
   padding: 80rpx 40rpx;
 }
 
 .loading-spinner {
   width: 44rpx;
   height: 44rpx;
-  border: 4rpx solid var(--td-border-level-1-color);
-  border-top-color: var(--td-brand-color-7);
+  border: 4rpx solid var(--c-border-default);
+  border-top-color: var(--c-brand-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -258,25 +280,33 @@ onMounted(() => {
   }
 }
 
-.topics-state__icon {
-  font-size: 80rpx;
+.error-icon {
+  font-size: var(--fs-3xl);
+  opacity: 0.6;
+  color: var(--c-text-tertiary);
 }
 
 .topics-state__text {
-  font-size: 28rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-lg);
+  color: var(--c-text-tertiary);
   text-align: center;
 }
 
 .topics-state__btn {
-  padding: 16rpx 48rpx;
-  border-radius: 999px;
-  background: var(--td-brand-color-7);
+  padding: 18rpx 48rpx;
+  border-radius: var(--r-full);
+  background: var(--c-gradient-float-btn);
+  box-shadow: var(--s-brand);
+  transition: all 0.15s ease;
+}
+
+.topics-state__btn:active {
+  transform: scale(0.96);
 }
 
 .topics-state__btn-text {
-  font-size: 28rpx;
-  color: #ffffff;
+  font-size: var(--fs-lg);
+  color: var(--c-neutral-0);
   font-weight: 600;
 }
 
@@ -285,51 +315,56 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20rpx;
+  gap: var(--sp-5);
   padding: 120rpx 40rpx;
 }
 
 .topics-empty__icon {
-  font-size: 88rpx;
+  width: 88rpx;
+  height: 88rpx;
+  opacity: 0.6;
+  color: var(--c-text-tertiary);
 }
 
 .topics-empty__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl);
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .topics-empty__desc {
-  font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
 }
 
 /* ========== 话题列表 ========== */
 .topics-list {
   flex: 1;
   overflow-y: auto;
+  padding: var(--sp-5) 0;
 }
 
 .topic-card {
   display: flex;
   flex-direction: column;
-  gap: 14rpx;
-  margin: 12rpx 24rpx;
-  padding: 24rpx 28rpx;
-  background: var(--td-bg-color-container);
-  border-radius: 20rpx;
-  box-shadow: var(--td-shadow-1, 0 2rpx 12rpx rgba(0, 0, 0, 0.04));
-  transition: transform 120ms ease;
+  gap: var(--sp-4);
+  margin: var(--sp-3) var(--sp-6);
+  padding: var(--sp-7);
+  background: var(--c-neutral-0);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
+  transition: all 0.15s ease;
 }
 
 .topic-card:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
+  box-shadow: var(--s-md);
 }
 
 .topic-card__title {
-  font-size: 30rpx;
+  font-size: var(--fs-xl);
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -337,8 +372,8 @@ onMounted(() => {
 }
 
 .topic-card__content {
-  font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-md);
+  color: var(--c-text-secondary);
   line-height: 1.6;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -350,22 +385,22 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 12rpx;
-  border-top: 1rpx solid var(--td-border-level-1-color);
+  padding-top: var(--sp-4);
+  border-top: 1rpx solid var(--c-border-default);
 }
 
 .topic-card__author {
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  gap: var(--sp-3);
 }
 
 .topic-card__avatar {
-  width: 40rpx;
-  height: 40rpx;
+  width: 44rpx;
+  height: 44rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -378,31 +413,38 @@ onMounted(() => {
 }
 
 .topic-card__avatar-char {
-  font-size: 20rpx;
+  font-size: var(--fs-sm);
   font-weight: 600;
-  color: var(--td-brand-color-7);
+  color: var(--c-brand-500);
 }
 
 .topic-card__name {
-  font-size: 24rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-base);
+  color: var(--c-text-secondary);
   font-weight: 500;
 }
 
 .topic-card__meta {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: var(--sp-4);
+}
+
+.topic-card__reply-icon {
+  width: 24rpx;
+  height: 24rpx;
+  color: var(--c-text-tertiary);
+  flex-shrink: 0;
 }
 
 .topic-card__replies {
-  font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
 }
 
 .topic-card__time {
-  font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
 }
 
 /* ========== 加载更多 ========== */
@@ -410,13 +452,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
-  padding: 32rpx 0;
+  gap: var(--sp-3);
+  padding: var(--sp-8) 0;
 }
 
 .load-more__text {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-base);
+  color: var(--c-text-tertiary);
 }
 
 .feed-bottom-spacer {
@@ -428,28 +470,28 @@ onMounted(() => {
   position: fixed;
   right: 40rpx;
   bottom: calc(env(safe-area-inset-bottom) + 120rpx);
-  width: 104rpx;
-  height: 104rpx;
+  width: 112rpx;
+  height: 112rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--td-brand-color-7), var(--td-brand-color-5));
+  background: var(--c-gradient-float-btn);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 28rpx rgba(29, 78, 216, 0.35);
+  box-shadow: var(--s-float-btn);
   z-index: 99;
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition: all 0.15s ease;
 }
 
 .fab:active {
   transform: scale(0.92);
-  box-shadow: 0 4rpx 16rpx rgba(29, 78, 216, 0.25);
+  box-shadow: var(--s-brand-md);
 }
 
 .fab__icon {
-  font-size: 52rpx;
-  color: #ffffff;
+  font-size: var(--fs-6xl);
+  color: var(--c-neutral-0);
   font-weight: 300;
   line-height: 1;
-  margin-top: -2rpx;
+  margin-top: -4rpx;
 }
 </style>

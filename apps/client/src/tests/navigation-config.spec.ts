@@ -6,27 +6,27 @@ import runtimePagesJson from "../pages.json";
 describe("app tab navigation", () => {
   it("keeps the final five tabs in the expected order", () => {
     expect(appTabs.map((tab) => tab.id)).toEqual([
-      "discover",
-      "likes",
+      "home",
       "village",
-      "messages",
+      "discover",
+      "chat",
       "profile",
     ]);
     expect(appTabs.map((tab) => tab.path)).toEqual([
-      "/pages/discover/index",
-      "/pages/likes/index",
+      "/pages/home/index",
       "/pages/village/index",
-      "/pages/messages/index",
+      "/pages/discover/index",
+      "/pages/chat/index",
       "/pages/profile/index",
     ]);
   });
 
   it("matches the uni-app tabBar configuration", () => {
     const expectedTabPaths = [
-      "pages/discover/index",
-      "pages/likes/index",
+      "pages/home/index",
       "pages/village/index",
-      "pages/messages/index",
+      "pages/discover/index",
+      "pages/chat/index",
       "pages/profile/index",
     ];
 

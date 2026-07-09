@@ -5,6 +5,7 @@
  * 新增：预置话题标签选择器，支持横向滚动多选（最多3个）
  */
 import { ref, computed, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { useVillageStore } from "../../stores/village";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
@@ -27,6 +28,14 @@ const selectedCategory = ref("cat-sincere");
 const presetTags = ref<string[]>([]);
 /** 选中的预置标签（#话题名 格式） */
 const selectedPresetTags = ref<string[]>([]);
+
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
 
 /** 最大字数 */
 const MAX_LENGTH = 500;
@@ -67,7 +76,7 @@ async function loadPresetTags() {
       method: "GET",
     });
     presetTags.value = data;
-  } catch {
+  } catch (_e) {
     // 加载失败时使用默认列表
     presetTags.value = [
       "校园日常", "兴趣分享", "找搭子", "求助",
@@ -113,7 +122,7 @@ async function uploadImage(tempPath: string): Promise<string> {
     });
     const data = JSON.parse(res.data);
     return data.url ?? data.path ?? tempPath;
-  } catch {
+  } catch (_e) {
     // 上传失败时回退到临时路径（mock 模式行为）
     return tempPath;
   }
@@ -236,10 +245,10 @@ function goBack() {
 </script>
 
 <template>
-  <view class="post-page">
+  <view class="post-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="post-header">
-      <view class="post-header__back" @tap="goBack">
+      <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">返回</text>
       </view>
       <text class="post-header__title">发布帖子</text>
@@ -259,7 +268,7 @@ function goBack() {
         <view
           v-for="cat in categoryOptions"
           :key="cat.id"
-          class="category-option"
+          class="category-option list-item"
           :class="{ 'category-option--active': selectedCategory === cat.id }"
           @tap="selectedCategory = cat.id"
         >
@@ -293,7 +302,7 @@ function goBack() {
           <view
             v-for="tag in presetTags"
             :key="tag"
-            class="preset-tag-chip"
+            class="preset-tag-chip list-item"
             :class="{ 'preset-tag-chip--active': selectedPresetTags.includes('#' + tag) }"
             @tap="togglePresetTag(tag)"
           >
@@ -309,16 +318,19 @@ function goBack() {
         <view
           v-for="(img, idx) in images"
           :key="idx"
-          class="image-item"
+          class="image-item list-item"
         >
-          <image class="image-item__img" :src="img" mode="aspectFill" />
+          <image class="image-item__img" :src="img" mode="aspectFill"
+        lazy-load />
           <view class="image-item__remove" @tap="removeImage(idx)">
             <text class="remove-icon">x</text>
           </view>
         </view>
         <view
           v-if="images.length < MAX_IMAGES"
-          class="image-upload"
+          class="image-upload press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
           @tap="chooseImage"
         >
           <text class="upload-icon">+</text>
@@ -338,7 +350,7 @@ function goBack() {
           confirm-type="done"
           @confirm="onTagConfirm"
         />
-        <view class="tag-add-btn" @tap="addTag">
+        <view class="tag-add-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="addTag">
           <text class="tag-add-text">添加</text>
         </view>
       </view>
@@ -346,7 +358,7 @@ function goBack() {
         <view
           v-for="(tag, idx) in tags"
           :key="idx"
-          class="tag-chip"
+          class="tag-chip list-item"
         >
           <text class="tag-chip__text">{{ tag }}</text>
           <text class="tag-chip__remove" @tap="removeTag(idx)">x</text>
@@ -357,11 +369,23 @@ function goBack() {
 </template>
 
 <style scoped lang="scss">
+$green-primary: #3FCF8E;
+$green-light: #E8F9F4;
+$pink-primary: #EC4899;
+$pink-light: #FFF0F5;
+$bg-page: #F4F6FA;
+$text-primary: #1A1A2E;
+$text-secondary: #8E8E9E;
+$text-tertiary: #B8B8C8;
+$divider: #EEF0F5;
+$white: #FFFFFF;
+$red-badge: #FF4757;
+
 .post-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: $bg-page;
   padding-top: calc(env(safe-area-inset-top) + 24rpx);
 }
 
@@ -371,7 +395,7 @@ function goBack() {
   align-items: center;
   justify-content: space-between;
   padding: 0 32rpx 24rpx;
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  background: $white;
 }
 
 .post-header__back {
@@ -380,52 +404,61 @@ function goBack() {
 
 .back-icon {
   font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
 }
 
 .post-header__title {
-  font-size: 34rpx;
+  font-size: 36rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .post-header__submit {
-  padding: 12rpx 32rpx;
+  padding: 14rpx 36rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary 0%, #2DB87A 100%);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.post-header__submit:active {
+  transform: scale(0.96);
 }
 
 .post-header__submit[disabled] {
-  background: var(--td-bg-color-surface);
+  background: $divider;
+  box-shadow: none;
 }
 
 .submit-text {
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #ffffff;
   font-weight: 600;
 }
 
 .post-header__submit[disabled] .submit-text {
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 /* ========== 分类选择 ========== */
 .category-section {
-  padding: 24rpx 32rpx;
-  background: var(--td-bg-color-container);
-  margin-bottom: 16rpx;
+  padding: 28rpx 32rpx;
+  background: $white;
+  margin: 16rpx 24rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
 .section-label {
   display: block;
-  font-size: 26rpx;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-  margin-bottom: 16rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: $text-primary;
+  margin-bottom: 20rpx;
 }
 
 .category-options {
@@ -435,41 +468,48 @@ function goBack() {
 }
 
 .category-option {
-  padding: 14rpx 32rpx;
+  padding: 16rpx 32rpx;
   border-radius: 999px;
-  background: var(--td-bg-app-page);
+  background: $bg-page;
   border: 2rpx solid transparent;
-  transition: all 160ms ease;
+  transition: all 0.15s ease;
+}
+
+.category-option:active {
+  transform: scale(0.96);
 }
 
 .category-option--active {
-  background: var(--td-brand-color-1);
-  border-color: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-light 0%, #F0FBF7 100%);
+  border-color: $green-primary;
 }
 
 .category-option__text {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
   font-weight: 500;
 }
 
 .category-option--active .category-option__text {
-  color: var(--td-brand-color-7);
+  color: $green-primary;
+  font-weight: 600;
 }
 
 /* ========== 文字输入区 ========== */
 .content-section {
-  padding: 24rpx 32rpx;
-  background: var(--td-bg-color-container);
-  margin-bottom: 16rpx;
+  padding: 28rpx 32rpx;
+  background: $white;
+  margin: 0 24rpx 16rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
 .content-input {
   width: 100%;
   min-height: 240rpx;
   font-size: 30rpx;
-  color: var(--td-text-color-primary);
-  line-height: 1.7;
+  color: $text-primary;
+  line-height: 1.8;
   background: transparent;
 }
 
@@ -478,30 +518,35 @@ function goBack() {
   justify-content: flex-end;
   margin-top: 12rpx;
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .content-count--over {
-  color: var(--td-error-color);
+  color: $red-badge;
 }
 
 /* ========== 预置话题标签选择器 ========== */
 .preset-tags-section {
-  padding: 24rpx 32rpx;
-  background: var(--td-bg-color-container);
-  margin-bottom: 16rpx;
+  padding: 28rpx 32rpx;
+  background: $white;
+  margin: 0 24rpx 16rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16rpx;
+  margin-bottom: 20rpx;
 }
 
 .section-hint {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $pink-primary;
+  background: $pink-light;
+  padding: 6rpx 14rpx;
+  border-radius: 999px;
 }
 
 .preset-tags-scroll {
@@ -519,48 +564,55 @@ function goBack() {
   align-items: center;
   padding: 14rpx 28rpx;
   border-radius: 999px;
-  background: var(--td-bg-app-page);
+  background: $bg-page;
   border: 2rpx solid transparent;
-  transition: all 160ms ease;
+  transition: all 0.15s ease;
   flex-shrink: 0;
 }
 
+.preset-tag-chip:active {
+  transform: scale(0.96);
+}
+
 .preset-tag-chip--active {
-  background: var(--td-brand-color-1);
-  border-color: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-light 0%, $pink-light 100%);
+  border-color: $green-primary;
 }
 
 .preset-tag-chip__text {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .preset-tag-chip--active .preset-tag-chip__text {
-  color: var(--td-brand-color-7);
+  color: $green-primary;
   font-weight: 600;
 }
 
 /* ========== 图片上传区 ========== */
 .images-section {
-  padding: 24rpx 32rpx;
-  background: var(--td-bg-color-container);
-  margin-bottom: 16rpx;
+  padding: 28rpx 32rpx;
+  background: $white;
+  margin: 0 24rpx 16rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
 .images-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 16rpx;
 }
 
 .image-item {
   position: relative;
+  width: calc((100% - 32rpx) / 3);
   aspect-ratio: 1;
-  border-radius: var(--td-radius-small);
+  border-radius: 16rpx;
   overflow: hidden;
-  background: var(--td-bg-app-page);
+  background: $bg-page;
 }
 
 .image-item__img {
@@ -572,8 +624,8 @@ function goBack() {
   position: absolute;
   top: 8rpx;
   right: 8rpx;
-  width: 36rpx;
-  height: 36rpx;
+  width: 40rpx;
+  height: 40rpx;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
@@ -582,37 +634,49 @@ function goBack() {
 }
 
 .remove-icon {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #ffffff;
+  font-weight: 600;
 }
 
 .image-upload {
+  width: calc((100% - 32rpx) / 3);
   aspect-ratio: 1;
-  border-radius: var(--td-radius-small);
-  border: 2rpx dashed var(--td-border-level-1-color);
+  border-radius: 16rpx;
+  border: 2rpx dashed $divider;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  background: var(--td-bg-app-page);
+  background: $bg-page;
+  transition: all 0.15s ease;
+}
+
+.image-upload:active {
+  transform: scale(0.96);
+  border-color: $green-primary;
+  background: $green-light;
 }
 
 .upload-icon {
-  font-size: 48rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: 56rpx;
+  color: $text-tertiary;
   font-weight: 300;
 }
 
 .upload-text {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 /* ========== 话题标签区 ========== */
 .tags-section {
-  padding: 24rpx 32rpx;
-  background: var(--td-bg-color-container);
+  padding: 28rpx 32rpx;
+  background: $white;
+  margin: 0 24rpx 24rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   flex: 1;
 }
 
@@ -624,51 +688,64 @@ function goBack() {
 
 .tag-input {
   flex: 1;
-  padding: 16rpx 24rpx;
-  border-radius: var(--td-radius-medium);
-  background: var(--td-bg-app-page);
+  padding: 18rpx 24rpx;
+  border-radius: 16rpx;
+  background: $bg-page;
   font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .tag-add-btn {
-  padding: 16rpx 32rpx;
-  border-radius: var(--td-radius-medium);
-  background: var(--td-brand-color-7);
+  padding: 18rpx 32rpx;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, $pink-primary 0%, #FF6B9D 100%);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(236, 72, 153, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.tag-add-btn:active {
+  transform: scale(0.96);
 }
 
 .tag-add-text {
   font-size: 26rpx;
   color: #ffffff;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  gap: 12rpx;
 }
 
 .tag-chip {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  padding: 10rpx 20rpx;
+  padding: 12rpx 20rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-1);
+  background: $green-light;
+  transition: transform 0.15s ease;
+}
+
+.tag-chip:active {
+  transform: scale(0.96);
 }
 
 .tag-chip__text {
   font-size: 24rpx;
-  color: var(--td-brand-color-7);
+  color: $green-primary;
+  font-weight: 500;
 }
 
 .tag-chip__remove {
-  font-size: 22rpx;
-  color: var(--td-brand-color-6);
+  font-size: 24rpx;
+  color: $pink-primary;
   padding: 0 4rpx;
+  font-weight: 600;
 }
 </style>

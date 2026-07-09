@@ -41,7 +41,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: false,
     status: "open",
-    coverImage: "https://picsum.photos/300/200?random=20",
+    coverImage: "/static/assets/images/activities/activity-study.jpg",
   },
   {
     id: "a-2",
@@ -55,7 +55,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: false,
     status: "upcoming",
-    coverImage: "https://picsum.photos/300/200?random=21",
+    coverImage: "/static/assets/images/banners/village-banner.jpg",
   },
   {
     id: "a-3",
@@ -69,7 +69,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: true,
     status: "ongoing",
-    coverImage: "https://picsum.photos/300/200?random=22",
+    coverImage: "/static/assets/images/activities/activity-sports.jpg",
   },
   {
     id: "a-4",
@@ -83,7 +83,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: false,
     status: "open",
-    coverImage: "https://picsum.photos/300/200?random=23",
+    coverImage: "/static/assets/images/products/ticket-1.jpg",
   },
 ];
 

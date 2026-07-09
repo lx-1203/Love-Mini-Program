@@ -21,8 +21,25 @@ onMounted(async () => {
 });
 
 async function save() {
-  await profileStore.saveScheduleProfile({ ...form });
-  replaceAppPath("/pages/discover/index");
+  // 修复：添加输入验证
+  if (!form.preferredCampusArea.trim()) {
+    uni.showToast({ title: "请输入偏好地点", icon: "none" });
+    return;
+  }
+  // 确保 preferredTimeWindows 至少有一项且非空
+  const validWindows = (form.preferredTimeWindows || []).filter((w: string) => w && w.trim());
+  if (validWindows.length === 0) {
+    uni.showToast({ title: "请至少添加一个时间窗口", icon: "none" });
+    return;
+  }
+
+  try {
+    await profileStore.saveScheduleProfile({ ...form });
+    replaceAppPath("/pages/discover/index");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "保存失败，请稍后重试";
+    uni.showToast({ title: message, icon: "none" });
+  }
 }
 </script>
 
@@ -45,10 +62,13 @@ async function save() {
 .field {
   width: 100%;
   min-height: 88rpx;
-  padding: 18rpx;
+  padding: var(--sp-4) var(--sp-4);
   box-sizing: border-box;
-  border-radius: 18rpx;
-  background: var(--td-bg-app-page);
+  border-radius: var(--r-lg);
+  background: var(--c-bg-page);
+  font-size: var(--fs-lg);
+  color: var(--c-text-primary);
+  border: var(--c-border-card);
 }
 
 .field--textarea {

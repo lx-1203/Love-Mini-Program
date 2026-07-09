@@ -18,17 +18,21 @@ defineProps<{
   align-items: center;
   gap: 12rpx;
   width: fit-content;
-  padding: 14rpx 18rpx;
-  border-radius: 18rpx;
-  background: var(--td-brand-color-1);
-  color: var(--td-brand-color-7);
+  padding: 16rpx 22rpx;
+  border-radius: 20rpx 4rpx 20rpx 20rpx;
+  background: var(--c-bg-brand);
+  color: var(--c-brand-700);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
+  transition: opacity 200ms ease;
+  font-size: 26rpx;
 }
 
 .voice--expired {
-  opacity: 0.54;
+  opacity: 0.48;
 }
 
 .voice__icon {
   font-weight: 700;
+  font-size: 28rpx;
 }
 </style>

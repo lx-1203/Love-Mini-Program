@@ -104,6 +104,13 @@ export interface LikeRecord {
   avatar: string;
   headline: string;
   likedAt: string;
+  /**
+   * 认证徽章级别：none/email/idcard/school（Phase D3 新增）。
+   * 后端 LikedUserView 暂未返回此字段，由前端可选消费：
+   * - 字段存在且非 "none" 时，VerificationBadge 渲染对应徽章
+   * - 字段为 "none" 或 undefined 时，不渲染任何内容（避免对方资料上显示"去认证"CTA）
+   */
+  verificationBadgeLevel?: string;
 }
 
 /**
@@ -117,6 +124,11 @@ export interface VisitorRecord {
   headline: string;
   visitedAt: string;
   isNew: boolean;
+  /**
+   * 认证徽章级别：none/email/idcard/school（Phase D3 新增）。
+   * 与 LikeRecord.verificationBadgeLevel 同义，用于访客卡片渲染徽章。
+   */
+  verificationBadgeLevel?: string;
 }
 
 /**
@@ -158,7 +170,7 @@ const mockLikes: LikeRecord[] = [
     id: "like-1",
     userId: "user-2001",
     name: "林夕",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Linxi&backgroundColor=c0aede",
+    avatar: "/static/default-avatar.png",
     headline: "中山大学 · 大二 · 喜欢电影和咖啡",
     likedAt: "2026-05-20T14:30:00Z",
   },
@@ -166,7 +178,7 @@ const mockLikes: LikeRecord[] = [
     id: "like-2",
     userId: "user-2002",
     name: "陈默",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Chenmo&backgroundColor=d1d4f9",
+    avatar: "/static/default-avatar.png",
     headline: "华南理工 · 大三 · 自习搭子",
     likedAt: "2026-05-19T10:15:00Z",
   },
@@ -177,23 +189,25 @@ const mockLikedBy: LikeRecord[] = [
     id: "like-3",
     userId: "user-2003",
     name: "苏晴",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Suqing&backgroundColor=ffdfbf",
+    avatar: "/static/default-avatar.png",
     headline: "中山大学 · 大一 · 摄影爱好者",
     likedAt: "2026-05-20T16:45:00Z",
+    verificationBadgeLevel: "school",
   },
   {
     id: "like-4",
     userId: "user-2004",
     name: "周然",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Zhouran&backgroundColor=c0aede",
+    avatar: "/static/default-avatar.png",
     headline: "华南理工 · 研一 · 喜欢夜跑",
     likedAt: "2026-05-18T09:20:00Z",
+    verificationBadgeLevel: "email",
   },
   {
     id: "like-5",
     userId: "user-2006",
     name: "叶知秋",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Yezhiqu&backgroundColor=b6e3f4",
+    avatar: "/static/default-avatar.png",
     headline: "暨南大学 · 大二 · 文学系",
     likedAt: "2026-05-17T20:10:00Z",
   },
@@ -201,9 +215,10 @@ const mockLikedBy: LikeRecord[] = [
     id: "like-6",
     userId: "user-2007",
     name: "沈星河",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Shenxinghe&backgroundColor=d1d4f9",
+    avatar: "/static/default-avatar.png",
     headline: "广东工业 · 大三 · 篮球队",
     likedAt: "2026-05-16T14:00:00Z",
+    verificationBadgeLevel: "idcard",
   },
 ];
 
@@ -212,16 +227,17 @@ const mockVisitors: VisitorRecord[] = [
     id: "visit-1",
     userId: "user-2003",
     name: "苏晴",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Suqing&backgroundColor=ffdfbf",
+    avatar: "/static/default-avatar.png",
     headline: "中山大学 · 大一 · 摄影爱好者",
     visitedAt: "2026-05-20T16:45:00Z",
     isNew: true,
+    verificationBadgeLevel: "school",
   },
   {
     id: "visit-2",
     userId: "user-2005",
     name: "顾言",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Guyan&backgroundColor=ffd5dc",
+    avatar: "/static/default-avatar.png",
     headline: "星海音乐 · 大二 · 音乐社",
     visitedAt: "2026-05-19T08:00:00Z",
     isNew: false,
@@ -230,10 +246,11 @@ const mockVisitors: VisitorRecord[] = [
     id: "visit-3",
     userId: "user-2008",
     name: "江晚吟",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jiangwanyin&backgroundColor=ffdfbf",
+    avatar: "/static/default-avatar.png",
     headline: "华南师范 · 大一 · 舞蹈队",
     visitedAt: "2026-05-15T18:30:00Z",
     isNew: false,
+    verificationBadgeLevel: "email",
   },
 ];
 
@@ -242,7 +259,7 @@ const mockHeartSignals: HeartSignal[] = [
     id: "signal-1",
     fromUserId: "user-2003",
     fromUserName: "苏晴",
-    fromUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Suqing&backgroundColor=ffdfbf",
+    fromUserAvatar: "/static/default-avatar.png",
     toUserId: "user-1001",
     status: "pending",
     sentAt: "2026-05-20T16:45:00Z",
@@ -252,7 +269,7 @@ const mockHeartSignals: HeartSignal[] = [
     id: "signal-2",
     fromUserId: "user-2006",
     fromUserName: "叶知秋",
-    fromUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Yezhiqu&backgroundColor=b6e3f4",
+    fromUserAvatar: "/static/default-avatar.png",
     toUserId: "user-1001",
     status: "pending",
     sentAt: "2026-05-17T20:10:00Z",
@@ -298,7 +315,7 @@ export const useLikesStore = defineStore("likes", {
       try {
         const sessionStore = useSessionStore();
         return sessionStore.userSession?.userId ?? "user-1001";
-      } catch {
+      } catch (_e) {
         return "user-1001";
       }
     },
@@ -636,6 +653,38 @@ export const useLikesStore = defineStore("likes", {
       if (visitor) {
         visitor.isNew = false;
       }
+    },
+
+    /**
+     * 添加匹配用户到「喜欢我的」列表
+     * 由 discover store 在匹配成功时调用，使喜欢页能展示已匹配用户。
+     * 若该用户已在列表中，则不重复添加。
+     * @param user - 匹配用户基础信息
+     */
+    addMatchedUser(user: {
+      userId: string;
+      name: string;
+      avatar: string;
+      headline: string;
+    }) {
+      // 参数校验
+      if (!user || !user.userId) return;
+
+      // 已存在则跳过，避免重复
+      const existing = this.likedBy.find((item) => item.userId === user.userId);
+      if (existing) return;
+
+      const newRecord: LikeRecord = {
+        id: `match-${user.userId}-${Date.now()}`,
+        userId: user.userId,
+        name: user.name,
+        avatar: user.avatar || "",
+        headline: user.headline || "",
+        likedAt: new Date().toISOString(),
+      };
+
+      // 插入列表头部，确保最新匹配优先展示
+      this.likedBy.unshift(newRecord);
     },
   },
 });

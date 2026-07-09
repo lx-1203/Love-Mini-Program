@@ -18,32 +18,42 @@ defineProps<{
 
 <style scoped lang="scss">
 .card {
-  display: grid;
-  gap: 14rpx;
-  padding: 28rpx;
-  border-radius: 24rpx;
-  background: var(--td-bg-color-container);
-  box-shadow: var(--td-shadow-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-8);
+  border-radius: var(--r-xl);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  box-shadow: var(--c-elevation-1);
+  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:active {
+  box-shadow: var(--c-elevation-2);
+  border: var(--c-border-card-brand);
 }
 
 .card--compact {
-  padding: 24rpx;
+  padding: var(--sp-7);
 }
 
 .card__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .card__subtitle {
   font-size: 24rpx;
   line-height: 1.6;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
 }
 
 .card__body {
-  display: grid;
-  gap: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
 }
 </style>

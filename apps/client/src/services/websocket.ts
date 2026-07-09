@@ -16,6 +16,11 @@
  *   - 私信: /user/{userId}/queue/messages
  *   - 心动信号: /user/{userId}/queue/signals
  *   - 通知: /user/{userId}/queue/notifications
+ *
+ * Token 传递方式（Phase 3 任务 15）:
+ * - HTTP 握手阶段: 通过 WebSocket 子协议（Sec-WebSocket-Protocol 头）传递 `bearer.${token}`
+ * - STOMP 会话阶段: 通过 CONNECT 帧 Authorization header 传递 `Bearer ${token}`
+ * - 不再使用 URL 查询参数 `?token=xxx`，避免 token 泄漏到日志/Referer/浏览器历史
  */
 import { appEnv } from "./env";
 import { getToken } from "./http";
@@ -256,7 +261,15 @@ class WebSocketClient {
    * 建立 WebSocket 连接，成功后发送 STOMP CONNECT 帧，
    * 收到 CONNECTED 响应后自动订阅用户私有频道。
    *
-   * @param token - 认证 token（JWT），用于在连接 URL 中传递认证信息
+   * token 传递方式（Phase 3 任务 15 重构）:
+   * 1. WebSocket 子协议（Sec-WebSocket-Protocol 头）: `bearer.${token}`，用于 HTTP 握手阶段校验
+   * 2. STOMP CONNECT 帧 Authorization header: `Bearer ${token}`，用于 STOMP 会话认证
+   *
+   * 安全说明:
+   * - 不再通过 URL 查询参数 `?token=xxx` 传递，避免 token 出现在日志、Referer、浏览器历史中
+   * - 子协议方案兼容小程序（uni.connectSocket）和 H5 环境
+   *
+   * @param token - 认证 token（JWT）
    */
   connect(token: string): void {
     if (this.connectionState === "connected" || this.connectionState === "connecting") {
@@ -274,18 +287,24 @@ class WebSocketClient {
     this.stompSessionReady = false;
     this.setConnectionState("connecting");
 
-    // 构建 WebSocket URL
+    // 构建 WebSocket URL（不再附带 token 查询参数，避免 token 泄漏到日志/Referer/历史）
     // 后端 WebSocketConfig 注册的端点是 /ws，支持 SockJS 降级
     // uni-app 不支持 SockJS，直接使用原生 WebSocket 连接
     // Spring 在 /ws 端点也支持原生 WebSocket（通过 /ws/websocket 路径）
     const baseUrl = appEnv.apiBaseUrl.replace(/^http/, "ws");
-    const wsUrl = `${baseUrl}/ws/websocket?token=${encodeURIComponent(token)}`;
+    const wsUrl = `${baseUrl}/ws/websocket`;
+
+    // 通过 WebSocket 子协议（Sec-WebSocket-Protocol 头）传递 token
+    // 后端 JwtHandshakeInterceptor 从该头提取 token 完成 HTTP 握手阶段认证
+    // 使用 `bearer.` 前缀以区分业务子协议（如 STOMP 自身的 v12.stomp）
+    const protocols = [`bearer.${token}`];
 
     console.log("[WebSocket] 正在连接:", wsUrl);
 
     try {
       this.socketTask = uni.connectSocket({
         url: wsUrl,
+        protocols,
         success: () => {
           console.log("[WebSocket] 连接请求已发送");
         },
@@ -341,7 +360,7 @@ class WebSocketClient {
             // 发送失败时静默处理，继续关闭连接
           },
         });
-      } catch {
+      } catch (_e) {
         // DISCONNECT 帧发送失败，继续关闭
       }
     }
@@ -460,7 +479,7 @@ class WebSocketClient {
             // 发送失败时静默处理
           },
         });
-      } catch {
+      } catch (_e) {
         // 静默处理
       }
     }
@@ -513,17 +532,19 @@ class WebSocketClient {
    * WebSocket 连接打开回调
    *
    * 连接建立后，发送 STOMP CONNECT 帧进行握手。
+   * token 通过 STOMP CONNECT 帧的 Authorization header 传递，
+   * 后端 JwtChannelInterceptor 在 CONNECT 阶段提取并校验。
    */
   private onSocketOpen(): void {
     console.log("[WebSocket] TCP 连接已建立，发送 STOMP CONNECT 帧");
 
     // 发送 STOMP CONNECT 帧
+    // Authorization header 用于 STOMP 会话级认证（JwtChannelInterceptor 提取）
     const connectFrame = buildFrame(
       "CONNECT",
       {
         "accept-version": STOMP_VERSION,
         "heart-beat": `${HEARTBEAT_INTERVAL_MS},${HEARTBEAT_INTERVAL_MS}`,
-        // 通过 header 传递 token（部分 Spring 配置支持）
         Authorization: `Bearer ${this.currentToken}`,
       },
       ""
@@ -549,6 +570,9 @@ class WebSocketClient {
    * 解析 STOMP 帧，根据命令类型分发处理。
    */
   private onSocketMessage(res: UniApp.OnSocketMessageCallbackResult): void {
+    // 修复：收到任何消息都说明连接正常，重置心跳超时定时器，避免误判重连
+    this.resetHeartbeatTimeout();
+
     try {
       const rawData = res.data as string;
       const frames = parseFrames(rawData);
@@ -559,6 +583,26 @@ class WebSocketClient {
     } catch (error) {
       console.warn("[WebSocket] 消息处理异常:", error, res.data);
     }
+  }
+
+  /**
+   * 重置心跳超时定时器
+   *
+   * 每次收到服务器消息时调用，清除当前的超时定时器并重新计时。
+   * 避免服务器正常推送消息时仍触发心跳超时误判。
+   */
+  private resetHeartbeatTimeout(): void {
+    if (this.heartbeatTimeoutTimer) {
+      clearTimeout(this.heartbeatTimeoutTimer);
+      this.heartbeatTimeoutTimer = null;
+    }
+    // 重新设置超时检测：若在 HEARTBEAT_TIMEOUT_MS 内未再收到任何消息，则判定为心跳超时
+    this.heartbeatTimeoutTimer = setTimeout(() => {
+      console.warn("[WebSocket] 心跳超时，将重连");
+      this.stompSessionReady = false;
+      this.cleanup();
+      this.handleReconnect();
+    }, HEARTBEAT_TIMEOUT_MS);
   }
 
   /**
@@ -644,11 +688,26 @@ class WebSocketClient {
     // 启动心跳
     this.startHeartbeat();
 
+    // 修复：重连前先清理旧的订阅状态，避免重复订阅导致回调累积、单条消息被处理多次
+    this.clearAllSubscriptions();
+
     // 重新订阅所有待重播的频道
     this.resubscribeAll();
 
     // 订阅用户私有频道并集成 Pinia Store
     this.setupUserSubscriptions();
+  }
+
+  /**
+   * 清理所有订阅状态
+   *
+   * 在重连成功后、重新订阅前调用，确保 channelCallbacks Map 不会累积重复回调。
+   * 注意：此方法仅清理本地状态映射，不发送 UNSUBSCRIBE 帧（连接已重建）。
+   */
+  private clearAllSubscriptions(): void {
+    this.subscriptions.clear();
+    this.channelCallbacks.clear();
+    this.pendingSubscriptions.clear();
   }
 
   /**
@@ -908,7 +967,7 @@ class WebSocketClient {
         ) {
           messagesStore.heartSignals.push(msgSignal);
         }
-      } catch {
+      } catch (_e) {
         // 静默处理
       }
 
@@ -1008,11 +1067,15 @@ class WebSocketClient {
             console.warn("[WebSocket] 心跳发送失败:", err);
           },
         });
-      } catch {
+      } catch (_e) {
         // 心跳发送异常，静默处理
       }
 
-      // 设置心跳超时检测
+      // 设置心跳超时检测：若 HEARTBEAT_TIMEOUT_MS 内未收到任何服务器消息，则判定为超时重连
+      // 注意：onSocketMessage 收到消息时会重置此定时器
+      if (this.heartbeatTimeoutTimer) {
+        clearTimeout(this.heartbeatTimeoutTimer);
+      }
       this.heartbeatTimeoutTimer = setTimeout(() => {
         console.warn("[WebSocket] 心跳超时，将重连");
         this.stompSessionReady = false;
@@ -1030,13 +1093,7 @@ class WebSocketClient {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
-    this.resetHeartbeatTimeout();
-  }
-
-  /**
-   * 重置心跳超时（收到服务器消息时调用）
-   */
-  private resetHeartbeatTimeout(): void {
+    // 清除心跳超时定时器（停止心跳时不再需要超时检测）
     if (this.heartbeatTimeoutTimer) {
       clearTimeout(this.heartbeatTimeoutTimer);
       this.heartbeatTimeoutTimer = null;
@@ -1088,7 +1145,7 @@ class WebSocketClient {
           code: 1000,
           reason: "客户端主动关闭",
         });
-      } catch {
+      } catch (_e) {
         // 关闭失败时静默处理
       }
       this.socketTask = null;

@@ -7,7 +7,7 @@
   },
   "globalStyle": {
     "navigationStyle": "custom",
-    "backgroundColor": "#f4f7fb",
+    "backgroundColor": "#f8fafc",
     "backgroundTextStyle": "dark"
   },
   "pages": [
@@ -15,6 +15,12 @@
       "path": "pages/login/index",
       "style": {
         "navigationBarTitleText": "校园恋爱"
+      }
+    },
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationBarTitleText": "首页"
       }
     },
     {
@@ -27,6 +33,14 @@
       "path": "pages/discover/history",
       "style": {
         "navigationBarTitleText": "今日已看"
+      }
+    },
+    {
+      "path": "pages/discover/video-player",
+      "style": {
+        "navigationBarTitleText": "个人视频",
+        "navigationBarBackgroundColor": "#000000",
+        "navigationBarTextStyle": "white"
       }
     },
     {
@@ -169,40 +183,40 @@
   ],
   "tabBar": {
     "custom": true,
-    "color": "#64748b",
-    "selectedColor": "#1d4ed8",
+    "color": "#9AA1AB",
+    "selectedColor": "#3FCF8E",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
       {
-        "pagePath": "pages/discover/index",
-        "text": "寻觅",
-        "iconPath": "assets/icons/discover.svg",
-        "selectedIconPath": "assets/icons/discover-active.svg"
-      },
-      {
-        "pagePath": "pages/likes/index",
-        "text": "喜欢",
-        "iconPath": "assets/icons/likes.svg",
-        "selectedIconPath": "assets/icons/likes-active.svg"
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "static/assets/icons/tabbar/home-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/home-active.png"
       },
       {
         "pagePath": "pages/village/index",
-        "text": "村口",
-        "iconPath": "assets/icons/village.svg",
-        "selectedIconPath": "assets/icons/village-active.svg"
+        "text": "圈子",
+        "iconPath": "static/assets/icons/tabbar/village-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/village-active.png"
       },
       {
-        "pagePath": "pages/messages/index",
+        "pagePath": "pages/discover/index",
+        "text": "匹配",
+        "iconPath": "static/assets/icons/tabbar/discover-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/discover-active.png"
+      },
+      {
+        "pagePath": "pages/chat/index",
         "text": "消息",
-        "iconPath": "assets/icons/messages.svg",
-        "selectedIconPath": "assets/icons/messages-active.svg"
+        "iconPath": "static/assets/icons/tabbar/chat-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/chat-active.png"
       },
       {
         "pagePath": "pages/profile/index",
         "text": "我的",
-        "iconPath": "assets/icons/profile.svg",
-        "selectedIconPath": "assets/icons/profile-active.svg"
+        "iconPath": "static/assets/icons/tabbar/profile-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/profile-active.png"
       }
     ]
   }

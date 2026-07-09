@@ -17,28 +17,28 @@ describe("page access config", () => {
     });
   });
 
-  it("keeps the likes page open to any logged-in user", () => {
+  it("keeps the likes page requiring profile completion", () => {
     expect(likesPageRequirements).toEqual({
       requiresAuth: true,
-      requiresProfile: false,
+      requiresProfile: true,
       requiresCampus: false,
       requiresSchedule: false,
     });
   });
 
-  it("keeps the village page open to any logged-in user", () => {
+  it("keeps the village page requiring profile completion", () => {
     expect(villagePageRequirements).toEqual({
       requiresAuth: true,
-      requiresProfile: false,
+      requiresProfile: true,
       requiresCampus: false,
       requiresSchedule: false,
     });
   });
 
-  it("keeps the messages page open to any logged-in user", () => {
+  it("keeps the messages page requiring profile completion", () => {
     expect(messagesPageRequirements).toEqual({
       requiresAuth: true,
-      requiresProfile: false,
+      requiresProfile: true,
       requiresCampus: false,
       requiresSchedule: false,
     });

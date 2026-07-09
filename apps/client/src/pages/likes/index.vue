@@ -3,16 +3,25 @@
  * 喜欢页 - 双向喜欢 / 访客
  * 展示「喜欢我的」用户列表和「访客」记录，支持切换标签页
  */
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useLikesStore } from "../../stores/likes";
 import { useSessionStore } from "../../stores/session";
 import LockScreen from "../../components/common/LockScreen.vue";
+import SafeImage from "../../components/common/SafeImage.vue";
+import VerificationBadge from "../../components/common/VerificationBadge.vue";
+import { usePageAccess } from "../../composables/usePageAccess";
+import { likesPageRequirements } from "../../config/page-access";
+import { IMAGE_PATHS } from "../../config/images";
 
 type TabType = "likedBy" | "visitors";
 
 const likesStore = useLikesStore();
 const sessionStore = useSessionStore();
+
+// Phase 4 任务 20：接入页面访问守卫，触发 UnlockGuideModal 引导（替代静默重定向）
+usePageAccess(likesPageRequirements);
 const { likedBy, visitors, loading, heartSignals } = storeToRefs(likesStore);
 
 /** 当前激活的标签页 */
@@ -85,10 +94,35 @@ onMounted(() => {
     void likesStore.fetchHeartSignals();
   }
 });
+
+/**
+ * 监听解锁状态变化：sessionStore 异步加载完成后 isUnlocked 由 false 变 true，
+ * 此时若列表为空则自动加载，避免从 discover 跳转过来时内容为空白。
+ */
+watch(
+  isUnlocked,
+  (newVal, oldVal) => {
+    if (newVal && !oldVal && likedBy.value.length === 0) {
+      void likesStore.fetchLikes();
+      void likesStore.fetchHeartSignals();
+    }
+  }
+);
+
+/**
+ * 页面再次显示时（如从 discover 匹配成功跳转过来）：
+ * 已解锁且列表为空则补加载，确保数据可见。
+ */
+onShow(() => {
+  if (isUnlocked.value && likedBy.value.length === 0 && !loading.value) {
+    void likesStore.fetchLikes();
+    void likesStore.fetchHeartSignals();
+  }
+});
 </script>
 
 <template>
-  <view class="likes-page">
+  <view class="likes-page page-fade-in">
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"
@@ -98,16 +132,21 @@ onMounted(() => {
 
     <!-- 已完善资料：显示正常内容 -->
     <template v-else>
+      <!-- 页面顶部渐变氛围 -->
+      <view class="likes-header-overlay" />
+      
       <!-- 页面头部 -->
       <view class="likes-header">
         <text class="likes-header__title">喜欢</text>
         <!-- 心动信号入口 -->
         <view
           v-if="hasHeartSignal"
-          class="likes-header__signal"
+          class="likes-header__signal press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
           @tap="goToHeartSignals"
         >
-          <text class="likes-header__signal-icon">💖</text>
+          <SafeImage :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL" custom-class="likes-header__signal-icon" mode="aspectFit" />
           <text class="likes-header__signal-text">心动信号</text>
           <view class="likes-header__signal-badge" />
         </view>
@@ -116,8 +155,10 @@ onMounted(() => {
       <!-- 标签页切换 -->
       <view class="likes-tabs">
         <view
-          class="likes-tabs__item"
+          class="likes-tabs__item press-feedback"
           :class="{ 'likes-tabs__item--active': activeTab === 'likedBy' }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
           @tap="switchTab('likedBy')"
         >
           <text class="likes-tabs__text">喜欢我的</text>
@@ -126,8 +167,10 @@ onMounted(() => {
           </view>
         </view>
         <view
-          class="likes-tabs__item"
+          class="likes-tabs__item press-feedback"
           :class="{ 'likes-tabs__item--active': activeTab === 'visitors' }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
           @tap="switchTab('visitors')"
         >
           <text class="likes-tabs__text">访客</text>
@@ -135,14 +178,6 @@ onMounted(() => {
             <text class="likes-tabs__badge-text">{{ visitors.length }}</text>
           </view>
         </view>
-        <!-- 底部指示条 -->
-        <view
-          class="likes-tabs__indicator"
-          :class="{
-            'likes-tabs__indicator--left': activeTab === 'likedBy',
-            'likes-tabs__indicator--right': activeTab === 'visitors',
-          }"
-        />
       </view>
 
       <!-- 加载状态 -->
@@ -153,17 +188,20 @@ onMounted(() => {
 
       <!-- 喜欢我的列表 -->
       <template v-else-if="activeTab === 'likedBy'">
-        <view v-if="likedBy.length === 0" class="likes-empty">
-          <view class="likes-empty__icon">💌</view>
+        <view v-if="likedBy.length === 0" class="likes-empty card-base">
+          <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.HEART" custom-class="likes-empty__icon" mode="aspectFit" />
           <text class="likes-empty__title">还没有人喜欢我</text>
           <text class="likes-empty__subtitle">多去看看推荐的人，增加曝光机会吧</text>
         </view>
 
         <view v-else class="likes-list">
           <view
-            v-for="item in likedBy"
+            v-for="(item, idx) in likedBy"
             :key="item.id"
-            class="likes-card"
+            class="likes-card list-item animate-fade-in press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            :style="{ animationDelay: idx * 60 + 'ms' }"
             @tap="goToUserDetail(item.userId)"
           >
             <view class="likes-card__avatar-wrap">
@@ -172,6 +210,7 @@ onMounted(() => {
                 class="likes-card__avatar"
                 :src="item.avatar"
                 mode="aspectFill"
+                lazy-load
               />
               <view v-else class="likes-card__avatar-placeholder">
                 <text class="likes-card__avatar-initial">{{ item.name.charAt(0) }}</text>
@@ -179,7 +218,15 @@ onMounted(() => {
             </view>
             <view class="likes-card__info">
               <view class="likes-card__row">
-                <text class="likes-card__name">{{ item.name }}</text>
+                <view class="likes-card__name-wrap">
+                  <text class="likes-card__name">{{ item.name }}</text>
+                  <VerificationBadge
+                    v-if="item.verificationBadgeLevel && item.verificationBadgeLevel !== 'none'"
+                    :level="(item.verificationBadgeLevel as 'school' | 'email' | 'idcard')"
+                    size="sm"
+                    :show-cta-when-none="false"
+                  />
+                </view>
                 <text class="likes-card__time">{{ formatTime(item.likedAt) }}</text>
               </view>
               <text class="likes-card__headline">{{ item.headline }}</text>
@@ -193,17 +240,20 @@ onMounted(() => {
 
       <!-- 访客列表 -->
       <template v-else-if="activeTab === 'visitors'">
-        <view v-if="visitors.length === 0" class="likes-empty">
-          <view class="likes-empty__icon">👀</view>
+        <view v-if="visitors.length === 0" class="likes-empty card-base">
+          <SafeImage :src="IMAGE_PATHS.ICONS_SOCIAL.VISITOR" custom-class="likes-empty__icon" mode="aspectFit" />
           <text class="likes-empty__title">暂无访客</text>
           <text class="likes-empty__subtitle">完善资料，让更多人发现你</text>
         </view>
 
         <view v-else class="likes-list">
           <view
-            v-for="item in visitors"
+            v-for="(item, idx) in visitors"
             :key="item.id"
-            class="likes-card"
+            class="likes-card list-item animate-fade-in press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            :style="{ animationDelay: idx * 60 + 'ms' }"
             @tap="goToUserDetail(item.userId)"
           >
             <view class="likes-card__avatar-wrap">
@@ -212,6 +262,7 @@ onMounted(() => {
                 class="likes-card__avatar"
                 :src="item.avatar"
                 mode="aspectFill"
+                lazy-load
               />
               <view v-else class="likes-card__avatar-placeholder">
                 <text class="likes-card__avatar-initial">{{ item.name.charAt(0) }}</text>
@@ -221,7 +272,15 @@ onMounted(() => {
             </view>
             <view class="likes-card__info">
               <view class="likes-card__row">
-                <text class="likes-card__name">{{ item.name }}</text>
+                <view class="likes-card__name-wrap">
+                  <text class="likes-card__name">{{ item.name }}</text>
+                  <VerificationBadge
+                    v-if="item.verificationBadgeLevel && item.verificationBadgeLevel !== 'none'"
+                    :level="(item.verificationBadgeLevel as 'school' | 'email' | 'idcard')"
+                    size="sm"
+                    :show-cta-when-none="false"
+                  />
+                </view>
                 <text class="likes-card__time">{{ formatTime(item.visitedAt) }}</text>
               </view>
               <text class="likes-card__headline">{{ item.headline }}</text>
@@ -241,10 +300,22 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--td-bg-app-page);
-  padding: 24rpx 32rpx;
-  padding-top: calc(env(safe-area-inset-top) + 24rpx);
+  background: var(--c-gradient-page);
+  padding: var(--sp-6) var(--sp-8);
+  padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
   box-sizing: border-box;
+  position: relative;
+}
+
+.likes-header-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 300rpx;
+  background: var(--c-gradient-brand-overlay);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ========== 页面头部 ========== */
@@ -252,47 +323,77 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24rpx;
+  margin-bottom: var(--section-gap);
+  position: relative;
+  z-index: 1;
 }
 
 .likes-header__title {
-  font-size: 40rpx;
+  font-size: var(--fs-5xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
+  // #ifdef H5
+  background: linear-gradient(135deg, var(--c-brand), var(--c-romance-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  // #endif
+  // #ifndef H5
+  color: var(--c-brand);
+  // #endif
 }
 
 .likes-header__signal {
   display: flex;
   align-items: center;
-  gap: 8rpx;
-  padding: 12rpx 20rpx;
-  background: linear-gradient(135deg, #fce7f3, #fbcfe8);
-  border-radius: 999px;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-6);
+  background: linear-gradient(135deg, var(--c-romance-50), var(--c-romance-100));
+  border-radius: var(--r-full);
+  transition: all 0.15s ease;
+  box-shadow: var(--s-romance);
+}
+
+.likes-header__signal:active {
+  transform: scale(0.96);
 }
 
 .likes-header__signal-icon {
-  font-size: 28rpx;
+  width: var(--sp-8);
+  height: var(--sp-8);
 }
 
 .likes-header__signal-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base);
   font-weight: 600;
-  color: #be185d;
+  color: var(--c-romance-500);
 }
 
 .likes-header__signal-badge {
-  width: 16rpx;
-  height: 16rpx;
-  border-radius: 50%;
-  background: #ef4444;
+  width: var(--sp-4);
+  height: var(--sp-4);
+  border-radius: var(--r-full);
+  background: var(--c-romance-500);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
 }
 
 /* ========== 标签页 ========== */
 .likes-tabs {
   position: relative;
   display: flex;
-  margin-bottom: 24rpx;
-  border-bottom: 2rpx solid var(--td-border-level-1-color);
+  margin-bottom: var(--section-gap);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  padding: var(--sp-2);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
+  position: relative;
+  z-index: 1;
 }
 
 .likes-tabs__item {
@@ -300,57 +401,57 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
-  padding: 24rpx 0;
+  gap: var(--sp-3);
+  padding: var(--sp-5) 0;
   position: relative;
-  cursor: pointer;
+  border-radius: var(--r-lg);
+  transition: all 0.25s ease;
+}
+
+.likes-tabs__item:active {
+  transform: scale(0.98);
 }
 
 .likes-tabs__text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl);
   font-weight: 500;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
   transition: color 0.2s ease;
 }
 
+.likes-tabs__item--active {
+  background: var(--c-gradient-brand);
+  box-shadow: var(--s-brand);
+}
+
 .likes-tabs__item--active .likes-tabs__text {
-  color: var(--td-text-color-primary);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
 .likes-tabs__badge {
-  min-width: 36rpx;
-  height: 36rpx;
-  padding: 0 10rpx;
-  border-radius: 999px;
-  background: var(--td-brand-color-7);
+  min-width: var(--sp-9);
+  height: var(--sp-9);
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.likes-tabs__item:not(.likes-tabs__item--active) .likes-tabs__badge {
+  background: var(--c-romance-50);
+}
+
 .likes-tabs__badge-text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm);
   font-weight: 600;
-  color: #ffffff;
+  color: var(--c-text-inverse);
 }
 
-.likes-tabs__indicator {
-  position: absolute;
-  bottom: -2rpx;
-  width: 60rpx;
-  height: 4rpx;
-  border-radius: 4rpx;
-  background: var(--td-brand-color-7);
-  transition: left 0.3s ease;
-}
-
-.likes-tabs__indicator--left {
-  left: calc(25% - 30rpx);
-}
-
-.likes-tabs__indicator--right {
-  left: calc(75% - 30rpx);
+.likes-tabs__item:not(.likes-tabs__item--active) .likes-tabs__badge-text {
+  color: var(--c-romance-500);
 }
 
 /* ========== 加载状态 ========== */
@@ -360,28 +461,28 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24rpx;
-  padding: 120rpx 0;
+  gap: var(--sp-6);
+  padding: var(--sp-10) 0;
+  position: relative;
+  z-index: 1;
 }
 
 .likes-loading__spinner {
-  width: 48rpx;
-  height: 48rpx;
-  border: 4rpx solid var(--td-border-level-1-color);
-  border-top-color: var(--td-brand-color-7);
-  border-radius: 50%;
+  width: var(--sp-10);
+  height: var(--sp-10);
+  border: var(--sp-1) solid var(--c-neutral-100);
+  border-top-color: var(--c-brand);
+  border-radius: var(--r-full);
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .likes-loading__text {
-  font-size: 28rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-lg);
+  color: var(--c-text-tertiary);
 }
 
 /* ========== 空状态 ========== */
@@ -391,48 +492,72 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20rpx;
-  padding: 160rpx 40rpx;
+  gap: var(--sp-5);
+  padding: var(--sp-10) var(--sp-10);
+  margin-top: var(--sp-5);
+  position: relative;
+  z-index: 1;
 }
 
 .likes-empty__icon {
-  font-size: 96rpx;
-  margin-bottom: 16rpx;
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: var(--sp-5);
+  opacity: 0.5;
 }
 
 .likes-empty__title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+  color: var(--c-text-primary);
 }
 
 .likes-empty__subtitle {
-  font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
   text-align: center;
+  line-height: 1.6;
 }
 
 /* ========== 列表 ========== */
 .likes-list {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: var(--section-gap);
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== 列表过渡动画 ========== */
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.3s ease;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(var(--sp-5));
+}
+.list-move {
+  transition: transform 0.3s ease;
 }
 
 /* ========== 卡片 ========== */
 .likes-card {
   display: flex;
   align-items: center;
-  gap: 24rpx;
-  padding: 24rpx;
-  background: #ffffff;
-  border-radius: var(--td-radius-large);
-  box-shadow: var(--td-shadow-1);
-  transition: transform 0.15s ease;
+  gap: var(--sp-6);
+  padding: var(--sp-7);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  border: var(--c-border-card);
+  box-shadow: var(--s-card-soft);
+  transition: all 0.15s ease;
 }
 
 .likes-card:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
+  box-shadow: var(--card-shadow-active);
 }
 
 .likes-card__avatar-wrap {
@@ -441,44 +566,47 @@ onMounted(() => {
 }
 
 .likes-card__avatar {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  background: var(--td-bg-color-secondarycontainer);
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-page);
+  border: var(--sp-1) solid var(--c-bg-brand);
 }
 
 .likes-card__avatar-placeholder {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--td-brand-color-3), var(--td-brand-color-5));
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-100));
   display: flex;
   align-items: center;
   justify-content: center;
+  border: var(--sp-1) solid var(--c-bg-brand);
 }
 
 .likes-card__avatar-initial {
-  font-size: 36rpx;
-  font-weight: 600;
-  color: var(--td-brand-color-7);
+  font-size: var(--fs-4xl);
+  font-weight: 700;
+  color: var(--c-brand);
 }
 
 .likes-card__new-dot {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 20rpx;
-  height: 20rpx;
-  border-radius: 50%;
-  background: #ef4444;
-  border: 4rpx solid #ffffff;
+  top: var(--sp-1);
+  right: var(--sp-1);
+  width: var(--sp-6);
+  height: var(--sp-6);
+  border-radius: var(--r-full);
+  background: var(--c-romance-500);
+  border: var(--sp-1) solid var(--c-bg-container);
+  box-shadow: var(--s-romance);
 }
 
 .likes-card__info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: var(--sp-2);
   min-width: 0;
 }
 
@@ -486,24 +614,41 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: var(--sp-4);
+}
+
+/* 昵称 + 认证徽章包裹（Phase D3） */
+.likes-card__name-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  flex: 1;
 }
 
 .likes-card__name {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .likes-card__time {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-base);
+  color: var(--c-text-tertiary);
   flex-shrink: 0;
+  background: var(--c-neutral-50);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-full);
 }
 
 .likes-card__headline {
-  font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-md);
+  color: var(--c-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -511,11 +656,19 @@ onMounted(() => {
 
 .likes-card__arrow {
   flex-shrink: 0;
-  padding-left: 8rpx;
+  padding-left: var(--sp-2);
+  width: var(--sp-10);
+  height: var(--sp-10);
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-bg-brand), rgba(63, 207, 142, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .likes-card__arrow-icon {
-  font-size: 36rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-3xl);
+  color: var(--c-brand);
+  font-weight: 600;
 }
 </style>

@@ -10,12 +10,23 @@
  * - 认证状态展示（审核中/已认证/未通过）
  */
 import { ref, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCampusStore, CERT_STATUS_MAP } from "../../stores/campus";
 import type { CertificationStatus } from "../../stores/campus";
+import { IMAGE_PATHS } from "../../config/images";
+import SafeImage from "../../components/common/SafeImage.vue";
 
 const campusStore = useCampusStore();
 const { certificationStatus, certificationInfo, loading } = storeToRefs(campusStore);
+
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
 
 /** 学校名称 */
 const schoolName = ref("");
@@ -70,7 +81,7 @@ async function submitCert() {
       studentCardUrl: studentCardUrl.value,
     });
     uni.showToast({ title: "提交成功，请等待审核", icon: "success" });
-  } catch {
+  } catch (_e) {
     uni.showToast({
       title: campusStore.errorMessage || "提交失败",
       icon: "none",
@@ -109,13 +120,13 @@ function statusCardClass(status: CertificationStatus): string {
 function statusIcon(status: CertificationStatus): string {
   switch (status) {
     case "verified":
-      return "✅";
+      return IMAGE_PATHS.ICONS_COMMON.CHECK;
     case "pending":
-      return "⏳";
+      return "";
     case "rejected":
-      return "❌";
+      return IMAGE_PATHS.ICONS_COMMON.CLOSE;
     default:
-      return "📝";
+      return IMAGE_PATHS.ICONS_COMMON.EDIT;
   }
 }
 
@@ -125,10 +136,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="cert-page">
+  <view class="cert-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="cert-header">
-      <view class="cert-header__back" @tap="goBack">
+      <view class="cert-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">返回</text>
       </view>
       <text class="cert-header__title">学生认证</text>
@@ -161,7 +172,7 @@ onMounted(() => {
       <template v-if="certificationStatus === 'unverified' || certificationStatus === 'rejected'">
         <!-- 说明卡片 -->
         <view class="info-card">
-          <text class="info-card__icon">🎓</text>
+          <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="info-card__icon" mode="aspectFit" />
           <text class="info-card__title">为什么要认证？</text>
           <view class="info-card__list">
             <text class="info-card__item">• 解锁校园话题讨论</text>
@@ -200,8 +211,8 @@ onMounted(() => {
               确保照片清晰，包含学校名称、姓名、学号等信息
             </text>
 
-            <view v-if="!studentCardUrl" class="upload-area" @tap="uploadStudentCard">
-              <text class="upload-icon">📷</text>
+            <view v-if="!studentCardUrl" class="upload-area press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadStudentCard">
+              <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CAMERA" custom-class="upload-icon" mode="aspectFit" />
               <text class="upload-text">点击上传学生证照片</text>
               <text class="upload-sub">支持拍照或从相册选择</text>
             </view>
@@ -213,10 +224,10 @@ onMounted(() => {
                 mode="aspectFill"
               />
               <view class="upload-preview__actions">
-                <view class="upload-preview__reupload" @tap="uploadStudentCard">
+                <view class="upload-preview__reupload press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadStudentCard">
                   <text class="reupload-text">重新上传</text>
                 </view>
-                <view class="upload-preview__remove" @tap="studentCardUrl = ''">
+                <view class="upload-preview__remove press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="studentCardUrl = ''">
                   <text class="remove-icon">x</text>
                 </view>
               </view>
@@ -225,8 +236,10 @@ onMounted(() => {
 
           <!-- 提交按钮 -->
           <view
-            class="submit-btn"
+            class="submit-btn press-feedback"
             :class="{ 'submit-btn--disabled': isSubmitting }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
             @tap="submitCert"
           >
             <text class="submit-btn__text">
@@ -267,7 +280,7 @@ onMounted(() => {
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: var(--c-gradient-page);
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -275,26 +288,32 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
-  z-index: 10;
+  padding: calc(env(safe-area-inset-top) + var(--sp-6)) var(--sp-8) var(--sp-6);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
+  z-index: var(--z-header);
 }
 
 .cert-header__back {
-  padding: 8rpx 0;
-  min-width: 80rpx;
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.cert-header__back:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .back-icon {
-  font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-base);
+  color: var(--c-text-inverse);
+  font-weight: 500;
 }
 
 .cert-header__title {
-  font-size: 34rpx;
+  font-size: var(--fs-2xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-inverse);
 }
 
 .cert-header__spacer {
@@ -304,41 +323,47 @@ onMounted(() => {
 /* ========== 内容区 ========== */
 .cert-body {
   flex: 1;
-  padding: 20rpx 24rpx 40rpx;
+  padding: var(--sp-6);
 }
 
 /* ========== 认证状态卡片 ========== */
 .status-card {
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  padding: 28rpx 28rpx;
-  border-radius: 20rpx;
-  margin-bottom: 24rpx;
+  gap: var(--sp-5);
+  padding: var(--sp-7);
+  border-radius: var(--r-xl);
+  margin-bottom: var(--sp-6);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
+}
+
+.status-card:active {
+  transform: scale(0.98);
 }
 
 .status-card--pending {
-  background: linear-gradient(135deg, #fefce8, #fef9c3);
-  border: 1rpx solid rgba(251, 191, 36, 0.3);
+  background: linear-gradient(135deg, #FEF9C3, #FEF3C7);
+  border: 2rpx solid rgba(201, 163, 106, 0.3);
 }
 
 .status-card--verified {
-  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-  border: 1rpx solid rgba(34, 197, 94, 0.3);
+  background: linear-gradient(135deg, var(--c-bg-brand), #DCFCE7);
+  border: 2rpx solid rgba(63, 207, 142, 0.3);
 }
 
 .status-card--rejected {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
-  border: 1rpx solid rgba(239, 68, 68, 0.3);
+  background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
+  border: 2rpx solid rgba(229, 69, 77, 0.3);
 }
 
 .status-card--unverified {
-  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-  border: 1rpx solid var(--td-border-level-1-color);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
 }
 
 .status-card__icon {
-  font-size: 48rpx;
+  font-size: var(--fs-4xl);
   flex-shrink: 0;
 }
 
@@ -346,53 +371,55 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: var(--sp-2);
   min-width: 0;
 }
 
 .status-card__title {
-  font-size: 32rpx;
+  font-size: var(--fs-xl);
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .status-card__desc {
-  font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-md);
+  color: var(--c-text-secondary);
   line-height: 1.5;
 }
 
 /* ========== 说明卡片 ========== */
 .info-card {
-  padding: 28rpx 28rpx;
-  background: var(--td-bg-color-container);
-  border-radius: 20rpx;
-  margin-bottom: 24rpx;
+  padding: var(--sp-7);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  margin-bottom: var(--sp-6);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
 }
 
 .info-card__icon {
-  font-size: 48rpx;
+  font-size: var(--fs-4xl);
   display: block;
-  margin-bottom: 12rpx;
+  margin-bottom: var(--sp-3);
 }
 
 .info-card__title {
-  font-size: 30rpx;
+  font-size: var(--fs-lg);
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   display: block;
-  margin-bottom: 16rpx;
+  margin-bottom: var(--sp-4);
 }
 
 .info-card__list {
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
+  gap: var(--sp-2);
 }
 
 .info-card__item {
-  font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-md);
+  color: var(--c-text-secondary);
   line-height: 1.5;
 }
 
@@ -400,35 +427,39 @@ onMounted(() => {
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: var(--sp-5);
 }
 
 .form-group {
-  background: var(--td-bg-color-container);
-  padding: 24rpx 28rpx;
-  border-radius: 20rpx;
+  background: var(--c-bg-container);
+  padding: var(--sp-7);
+  border-radius: var(--r-xl);
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--sp-4);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
 }
 
 .form-label {
-  font-size: 28rpx;
+  font-size: var(--fs-md);
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .form-hint {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
   line-height: 1.5;
 }
 
 .form-input {
-  padding: 16rpx 0;
-  font-size: 30rpx;
-  color: var(--td-text-color-primary);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  padding: var(--sp-5) var(--sp-6);
+  font-size: var(--fs-lg);
+  color: var(--c-text-primary);
+  border-radius: var(--r-md);
+  background: var(--c-bg-page);
+  border: 2rpx solid transparent;
 }
 
 /* ========== 上传区域 ========== */
@@ -437,33 +468,40 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
-  padding: 60rpx 20rpx;
-  border-radius: 16rpx;
-  border: 2rpx dashed var(--td-border-level-2-color);
-  background: var(--td-bg-app-page);
+  gap: var(--sp-3);
+  padding: 60rpx var(--sp-5);
+  border-radius: var(--r-lg);
+  border: 2rpx dashed var(--c-border-default);
+  background: var(--c-bg-page);
+}
+
+.upload-area:active {
+  transform: scale(0.98);
+  border-color: var(--c-brand);
+  background: var(--c-bg-brand);
 }
 
 .upload-icon {
-  font-size: 56rpx;
+  width: 56rpx;
+  height: 56rpx;
 }
 
 .upload-text {
-  font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  font-size: var(--fs-md);
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
 .upload-sub {
-  font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
 }
 
 /* ========== 上传预览 ========== */
 .upload-preview {
-  border-radius: 16rpx;
+  border-radius: var(--r-lg);
   overflow: hidden;
-  background: var(--td-bg-app-page);
+  background: var(--c-bg-page);
 }
 
 .upload-preview__img {
@@ -475,89 +513,106 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16rpx 20rpx;
+  padding: var(--sp-4) var(--sp-5);
 }
 
 .upload-preview__reupload {
-  padding: 10rpx 24rpx;
-  border-radius: 999px;
-  background: var(--td-bg-app-page);
-  border: 1rpx solid var(--td-border-level-1-color);
+  padding: var(--sp-3) var(--sp-7);
+  border-radius: var(--r-full);
+  background: var(--c-bg-brand);
+}
+
+.upload-preview__reupload:active {
+  transform: scale(0.96);
 }
 
 .reupload-text {
-  font-size: 24rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-sm);
+  color: var(--c-brand);
+  font-weight: 500;
 }
 
 .upload-preview__remove {
-  width: 44rpx;
-  height: 44rpx;
+  width: 48rpx;
+  height: 48rpx;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(229, 69, 77, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.upload-preview__remove:active {
+  transform: scale(0.9);
+}
+
 .remove-icon {
-  font-size: 24rpx;
-  color: var(--td-error-color);
+  font-size: var(--fs-sm);
+  color: var(--c-error);
   font-weight: 700;
 }
 
 /* ========== 提交按钮 ========== */
 .submit-btn {
   width: 100%;
-  padding: 26rpx 0;
-  border-radius: 16rpx;
-  background: var(--td-brand-color-7);
+  padding: var(--sp-7) 0;
+  border-radius: var(--r-xl);
+  background: var(--c-gradient-float-btn);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 12rpx;
+  margin-top: var(--sp-2);
+  box-shadow: var(--s-float-btn);
+}
+
+.submit-btn:active {
+  transform: scale(0.96);
+  box-shadow: var(--s-brand-md);
 }
 
 .submit-btn--disabled {
-  background: var(--td-bg-color-component-disabled);
+  background: var(--c-neutral-200);
+  box-shadow: none;
   pointer-events: none;
 }
 
 .submit-btn__text {
-  font-size: 32rpx;
-  color: #ffffff;
+  font-size: var(--fs-xl);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
 .submit-btn--disabled .submit-btn__text {
-  color: var(--td-text-color-disabled);
+  color: var(--c-text-tertiary);
 }
 
 /* ========== 隐私提示 ========== */
 .privacy-tip {
   display: flex;
   justify-content: center;
-  padding: 16rpx 0;
+  padding: var(--sp-4) 0;
 }
 
 .privacy-tip__text {
-  font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
   text-align: center;
 }
 
 /* ========== 已认证信息卡片 ========== */
 .verified-info {
-  margin-top: 8rpx;
+  margin-top: var(--sp-2);
 }
 
 .verified-card {
-  padding: 28rpx 28rpx;
-  background: var(--td-bg-color-container);
-  border-radius: 20rpx;
+  padding: var(--sp-7);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: var(--sp-5);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
 }
 
 .verified-card__row {
@@ -567,18 +622,18 @@ onMounted(() => {
 }
 
 .verified-label {
-  font-size: 28rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
 }
 
 .verified-value {
-  font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  font-size: var(--fs-md);
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
 .verified-card__divider {
   height: 1rpx;
-  background: var(--td-border-level-1-color);
+  background: var(--c-border-light);
 }
 </style>

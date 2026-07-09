@@ -86,7 +86,7 @@ const emit = defineEmits<{
   background: linear-gradient(
     135deg,
     rgba(37, 99, 235, 0.04),
-    rgba(244, 63, 94, 0.03)
+    rgba(91, 127, 255, 0.03)
   );
   border-bottom: 1px solid rgba(37, 99, 235, 0.06);
 }
@@ -102,7 +102,7 @@ const emit = defineEmits<{
 .icebreaker__label {
   font-size: 26rpx;
   font-weight: 700;
-  color: var(--td-brand-color-6);
+  color: var(--c-brand);
   letter-spacing: 0.5rpx;
 }
 
@@ -114,7 +114,7 @@ const emit = defineEmits<{
 
 .icebreaker__loading-hint {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
 }
 
 .icebreaker__refresh-btn {
@@ -134,12 +134,12 @@ const emit = defineEmits<{
 .icebreaker__refresh-icon {
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--td-brand-color-6);
+  color: var(--c-brand);
 }
 
 .icebreaker__refresh-text {
   font-size: 22rpx;
-  color: var(--td-brand-color-6);
+  color: var(--c-brand);
   font-weight: 600;
 }
 
@@ -161,18 +161,18 @@ const emit = defineEmits<{
   display: flex;
   flex-direction: column;
   gap: 10rpx;
-  padding: 20rpx 22rpx;
-  border-radius: 18rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 24rpx;
   background: #ffffff;
-  border: 1px solid rgba(37, 99, 235, 0.1);
+  border: 1rpx solid rgba(37, 99, 235, 0.08);
   box-shadow: 0 2rpx 12rpx rgba(37, 99, 235, 0.04);
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .icebreaker__card:active {
   transform: scale(0.97);
-  border-color: var(--td-brand-color-3);
-  box-shadow: 0 4rpx 16rpx rgba(37, 99, 235, 0.08);
+  border-color: var(--c-brand-200);
+  box-shadow: 0 4rpx 16rpx rgba(37, 99, 235, 0.06);
 }
 
 .icebreaker__card-badge {
@@ -185,13 +185,13 @@ const emit = defineEmits<{
 
 .icebreaker__card-badge-text {
   font-size: 20rpx;
-  color: var(--td-brand-color-6);
+  color: var(--c-brand);
   font-weight: 600;
 }
 
 .icebreaker__card-content {
   font-size: 26rpx;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   line-height: 1.55;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -201,7 +201,7 @@ const emit = defineEmits<{
 
 .icebreaker__card-hint {
   font-size: 20rpx;
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
 }
 
 /* ========== 加载骨架 ========== */
@@ -256,6 +256,6 @@ const emit = defineEmits<{
 
 .icebreaker__empty-text {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
 }
 </style>

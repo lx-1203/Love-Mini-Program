@@ -1,15 +1,27 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 聊天页 - 会话列表
  */
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { openAppPath } from "../../utils/navigation";
+import Skeleton from "../../components/common/Skeleton.vue";
+import { IMAGE_PATHS } from "../../config/images";
+import SafeImage from "../../components/common/SafeImage.vue";
+
+/** SVG 图标资源路径 */
+const iconSrc = {
+  message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
+} as const;
+
+// 加载状态
+const loading = ref(true);
 
 // 会话列表（模拟）
 const conversations = ref([
   {
     id: "1",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=10",
+    avatar: "/static/default-avatar.png",
     nickname: "小红",
     lastMessage: "今晚一起去图书馆吗？",
     time: "10:30",
@@ -18,7 +30,7 @@ const conversations = ref([
   },
   {
     id: "2",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=11",
+    avatar: "/static/default-avatar.png",
     nickname: "小明",
     lastMessage: "好的，明天见！",
     time: "昨天",
@@ -27,7 +39,7 @@ const conversations = ref([
   },
   {
     id: "3",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=12",
+    avatar: "/static/default-avatar.png",
     nickname: "校园活动助手",
     lastMessage: "您报名的「周末音乐节」即将开始",
     time: "昨天",
@@ -37,7 +49,7 @@ const conversations = ref([
   },
   {
     id: "4",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=13",
+    avatar: "/static/default-avatar.png",
     nickname: "阿杰",
     lastMessage: "谢谢你的资料分享！",
     time: "周一",
@@ -55,26 +67,44 @@ const topicSuggestions = ref([
 ]);
 
 function goToChat(conversationId: string) {
-  openAppPath(`/subpackages/chat/detail/index?id=${conversationId}`);
+  openAppPath(`/pages/chat-session/index?sessionId=${conversationId}`);
 }
+
+// 模拟加载
+onMounted(() => {
+  setTimeout(() => {
+    loading.value = false;
+  }, 800);
+});
 </script>
 
 <template>
-  <view class="chat-page">
+  <view class="chat-page page-bottom-safe page-fade-in">
+    <!-- 页面顶部渐变氛围 -->
+    <view class="chat-header-overlay" />
+    
     <!-- 页面标题 -->
     <view class="chat-header">
-      <text class="chat-header__title">聊天</text>
+      <view class="chat-header__title-area">
+        <text class="chat-header__title">聊天</text>
+        <text class="chat-header__subtitle">与匹配对象的消息</text>
+      </view>
     </view>
 
     <!-- 话题推荐助手 -->
     <view class="topic-assistant">
-      <text class="topic-assistant__label">💡 话题推荐</text>
+      <view class="topic-assistant__label">
+        <SafeImage :src="iconSrc.message" custom-class="topic-assistant__label-icon" mode="aspectFit" />
+        <text>话题推荐</text>
+      </view>
       <scroll-view scroll-x class="topic-scroll" show-scrollbar="false">
         <view class="topic-list">
           <view
             v-for="(topic, index) in topicSuggestions"
             :key="index"
-            class="topic-tag"
+            class="topic-tag press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
           >
             <text class="topic-tag__text">{{ topic }}</text>
           </view>
@@ -84,15 +114,23 @@ function goToChat(conversationId: string) {
 
     <!-- 会话列表 -->
     <scroll-view scroll-y class="chat-scroll">
-      <view class="conversation-list">
+      <!-- 骨架屏加载 -->
+      <view v-if="loading" class="conversation-list">
+        <Skeleton variant="list" :count="4" />
+      </view>
+
+      <!-- 正常内容 -->
+      <view v-else class="conversation-list card-base">
         <view
           v-for="conv in conversations"
           :key="conv.id"
-          class="conversation-item"
-          @click="goToChat(conv.id)"
+          class="conversation-item press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="goToChat(conv.id)"
         >
           <view class="conversation-item__avatar-wrap">
-            <image class="conversation-item__avatar" :src="conv.avatar" mode="aspectFill" />
+            <SafeImage :src="conv.avatar" custom-class="conversation-item__avatar" mode="aspectFill" />
             <view v-if="conv.online" class="conversation-item__online" />
           </view>
           <view class="conversation-item__content">
@@ -124,37 +162,75 @@ function goToChat(conversationId: string) {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
-  background-color: var(--td-bg-app-page);
+  height: 100%;
+  background: var(--c-gradient-page);
+  position: relative;
+}
+
+.chat-header-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 300rpx;
+  background: var(--c-gradient-brand-overlay);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ========== 页面标题 ========== */
 .chat-header {
-  padding: 24rpx 32rpx;
-  padding-top: calc(env(safe-area-inset-top) + 24rpx);
-  background: linear-gradient(to bottom, var(--td-bg-app-page), transparent);
+  padding: var(--sp-6) var(--sp-8) var(--sp-5);
+  padding-top: calc(constant(safe-area-inset-top) + var(--sp-6));
+  padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
   z-index: 10;
+  position: relative;
+}
+
+.chat-header__title-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
 }
 
 .chat-header__title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: var(--td-text-color-primary);
+  font-size: var(--fs-6xl);
+  font-weight: 800;
+  color: var(--c-text-primary);
+  letter-spacing: 1rpx;
+  line-height: 1.2;
+}
+
+.chat-header__subtitle {
+  font-size: var(--fs-base);
+  color: var(--c-text-tertiary);
+  font-weight: 400;
 }
 
 /* ========== 话题推荐助手 ========== */
 .topic-assistant {
-  padding: 16rpx 32rpx;
-  background: linear-gradient(135deg, var(--td-brand-color-1), rgba(37, 99, 235, 0.05));
-  border-bottom: 1px solid var(--td-border-level-1-color);
+  padding: var(--sp-5) var(--sp-6);
+  margin: 0 var(--sp-8) var(--sp-5);
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-romance-50) 100%);
+  border-radius: var(--r-xl);
+  position: relative;
+  z-index: 1;
 }
 
 .topic-assistant__label {
-  font-size: 24rpx;
-  color: var(--td-brand-color-6);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-base);
+  color: var(--c-brand);
   font-weight: 600;
-  margin-bottom: 12rpx;
-  display: block;
+  margin-bottom: var(--sp-3);
+}
+
+.topic-assistant__label-icon {
+  width: var(--sp-7);
+  height: var(--sp-7);
+  opacity: 0.7;
 }
 
 .topic-scroll {
@@ -163,46 +239,72 @@ function goToChat(conversationId: string) {
 
 .topic-list {
   display: flex;
-  gap: 12rpx;
-  padding-right: 32rpx;
+  gap: var(--sp-3);
+  padding-right: 0;
 }
 
 .topic-tag {
   flex-shrink: 0;
-  padding: 10rpx 20rpx;
-  border-radius: 999px;
-  background: #ffffff;
-  border: 1px solid var(--td-brand-color-3);
+  padding: var(--sp-3) var(--sp-6);
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  box-shadow: var(--s-sm);
+  transition: transform 0.15s ease;
+}
+
+.topic-tag:active {
+  transform: scale(0.96);
 }
 
 .topic-tag__text {
-  font-size: 24rpx;
-  color: var(--td-brand-color-6);
+  font-size: var(--fs-base);
+  color: var(--c-brand);
+  font-weight: 500;
 }
 
 /* ========== 滚动区域 ========== */
 .chat-scroll {
   flex: 1;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 /* ========== 会话列表 ========== */
 .conversation-list {
   display: flex;
   flex-direction: column;
+  margin: 0 var(--sp-8);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
 }
 
 .conversation-item {
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  padding: 24rpx 32rpx;
-  background: #ffffff;
-  border-bottom: 1px solid var(--td-border-level-1-color);
+  gap: var(--sp-5);
+  padding: var(--sp-6) var(--sp-8);
+  background: var(--c-bg-container);
+  position: relative;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.conversation-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 140rpx;
+  right: 0;
+  bottom: 0;
+  height: 1rpx;
+  background: var(--c-divider-light);
 }
 
 .conversation-item:active {
-  background: var(--td-bg-color-surface);
+  background: var(--c-neutral-50);
+  transform: scale(0.98);
 }
 
 .conversation-item__avatar-wrap {
@@ -213,19 +315,21 @@ function goToChat(conversationId: string) {
 .conversation-item__avatar {
   width: 88rpx;
   height: 88rpx;
-  border-radius: 50%;
-  background: var(--td-bg-color-surface);
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand));
+  border: var(--sp-1) solid var(--c-bg-container);
+  box-shadow: var(--s-brand-sm);
 }
 
 .conversation-item__online {
   position: absolute;
-  bottom: 4rpx;
-  right: 4rpx;
-  width: 20rpx;
-  height: 20rpx;
-  border-radius: 50%;
-  background: #10b981;
-  border: 3rpx solid #ffffff;
+  bottom: var(--sp-1);
+  right: var(--sp-1);
+  width: var(--sp-5);
+  height: var(--sp-5);
+  border-radius: var(--r-full);
+  background: var(--c-success);
+  border: var(--sp-1) solid var(--c-bg-container);
 }
 
 .conversation-item__content {
@@ -233,7 +337,7 @@ function goToChat(conversationId: string) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: var(--sp-2);
 }
 
 .conversation-item__top {
@@ -243,14 +347,14 @@ function goToChat(conversationId: string) {
 }
 
 .conversation-item__name {
-  font-size: 30rpx;
+  font-size: var(--fs-xl);
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .conversation-item__time {
-  font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
 }
 
 .conversation-item__bottom {
@@ -260,47 +364,47 @@ function goToChat(conversationId: string) {
 }
 
 .conversation-item__message {
-  font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-base);
+  color: var(--c-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  margin-right: 16rpx;
+  margin-right: var(--sp-4);
 }
 
 .conversation-item__badge {
-  min-width: 36rpx;
-  height: 36rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--td-brand-color-6), var(--td-brand-color-7));
+  min-width: var(--sp-9);
+  height: var(--sp-9);
+  border-radius: var(--r-full);
+  background: var(--c-error);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 8rpx;
+  padding: 0 var(--sp-2);
 }
 
 .conversation-item__badge-text {
-  font-size: 22rpx;
-  color: #ffffff;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  color: var(--c-text-inverse);
+  font-weight: 700;
 }
 
 .conversation-item__official {
   flex-shrink: 0;
-  padding: 4rpx 12rpx;
-  border-radius: 8rpx;
-  background: var(--td-brand-color-1);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-bg-brand);
 }
 
 .conversation-item__official text {
-  font-size: 20rpx;
-  color: var(--td-brand-color-6);
+  font-size: var(--fs-xs);
+  color: var(--c-brand);
   font-weight: 600;
 }
 
 /* ========== 底部留白 ========== */
 .chat-footer {
-  height: 40rpx;
+  height: var(--sp-10);
 }
 </style>

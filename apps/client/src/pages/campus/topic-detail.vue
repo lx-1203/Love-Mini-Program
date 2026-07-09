@@ -10,11 +10,20 @@
  * - 底部回复输入框
  */
 import { ref, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime } from "../../stores/campus";
 
 const campusStore = useCampusStore();
 const { currentTopic, replies, loading } = storeToRefs(campusStore);
+
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
 
 /** 回复内容 */
 const replyContent = ref("");
@@ -40,7 +49,7 @@ async function submitReply() {
     );
     replyContent.value = "";
     uni.showToast({ title: "回复成功", icon: "success" });
-  } catch {
+  } catch (_e) {
     uni.showToast({
       title: campusStore.errorMessage || "回复失败",
       icon: "none",
@@ -80,10 +89,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="detail-page">
+  <view class="detail-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
-      <view class="detail-header__back" @tap="goBack">
+      <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">返回</text>
       </view>
       <text class="detail-header__title">话题详情</text>
@@ -145,7 +154,7 @@ onMounted(() => {
           <view
             v-for="reply in replies"
             :key="reply.id"
-            class="reply-item"
+            class="reply-item list-item"
           >
             <view class="reply-avatar">
               <image
@@ -153,6 +162,7 @@ onMounted(() => {
                 class="reply-avatar__img"
                 :src="reply.author.avatar"
                 mode="aspectFill"
+        lazy-load
               />
               <text v-else class="reply-avatar__char">
                 {{ getDisplayName(reply.isAnonymous, reply.author.name)[0] }}
@@ -183,7 +193,7 @@ onMounted(() => {
     <!-- 话题不存在 -->
     <view v-else-if="!loading" class="empty-state">
       <text class="empty-state__text">话题不存在或已被删除</text>
-      <view class="empty-state__back" @tap="goBack">
+      <view class="empty-state__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-text">返回</text>
       </view>
     </view>
@@ -200,15 +210,19 @@ onMounted(() => {
         />
       </view>
       <view
-        class="anonymous-toggle"
+        class="anonymous-toggle press-feedback"
         :class="{ 'anonymous-toggle--active': isAnonymousReply }"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
         @tap="isAnonymousReply = !isAnonymousReply"
       >
         <text class="anonymous-toggle__text">{{ isAnonymousReply ? "匿名" : "实名" }}</text>
       </view>
       <view
-        class="reply-btn"
+        class="reply-btn press-feedback"
         :class="{ 'reply-btn--disabled': !replyContent.trim() || isSubmitting }"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
         @tap="submitReply"
       >
         <text class="reply-btn__text">{{ isSubmitting ? "发送中" : "发送" }}</text>
@@ -218,12 +232,24 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+$green-primary: #3FCF8E;
+$green-light: #E8F8F0;
+$pink-primary: #EC4899;
+$pink-light: #FFF5F7;
+$white: #FFFFFF;
+$bg-page: #F4F6FA;
+$text-primary: #1F2329;
+$text-secondary: #64748B;
+$text-tertiary: #9AA1AB;
+$border-light: #E2E8F0;
+$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+
 .detail-page {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: linear-gradient(180deg, #E8F8F0 0%, #F4F6FA 20%);
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -232,25 +258,32 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 60%, #F9A8C4 100%);
   z-index: 10;
 }
 
 .detail-header__back {
-  padding: 8rpx 0;
-  min-width: 80rpx;
+  padding: 12rpx 20rpx;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.15s ease;
+}
+
+.detail-header__back:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .back-icon {
   font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  color: #FFFFFF;
+  font-weight: 500;
 }
 
 .detail-header__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: #FFFFFF;
 }
 
 .detail-header__spacer {
@@ -260,21 +293,22 @@ onMounted(() => {
 /* ========== 内容区 ========== */
 .detail-body {
   flex: 1;
+  padding: 24rpx;
 }
 
 /* 分类标签 */
 .topic-category-tag {
-  padding: 16rpx 28rpx 0;
+  margin-bottom: 20rpx;
 }
 
 .category-tag {
   display: inline-block;
-  padding: 8rpx 20rpx;
+  padding: 10rpx 24rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-1);
-  font-size: 22rpx;
-  font-weight: 500;
-  color: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-light, $pink-light);
+  font-size: 24rpx;
+  font-weight: 600;
+  color: $green-primary;
 }
 
 /* 作者信息 */
@@ -282,10 +316,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  padding: 24rpx 28rpx;
-  background: var(--td-bg-color-container);
-  margin: 16rpx 24rpx 0;
-  border-radius: 20rpx 20rpx 0 0;
+  padding: 28rpx;
+  background: $white;
+  border-radius: 24rpx 24rpx 0 0;
+  box-shadow: $card-soft-shadow;
+  transition: transform 0.15s ease;
+}
+
+.topic-author:active {
+  transform: scale(0.98);
 }
 
 .author-avatar {
@@ -293,7 +332,7 @@ onMounted(() => {
   height: 72rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  background: linear-gradient(135deg, $green-light, $pink-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -308,7 +347,7 @@ onMounted(() => {
 .author-avatar__char {
   font-size: 30rpx;
   font-weight: 700;
-  color: var(--td-brand-color-7);
+  color: $green-primary;
 }
 
 .author-info {
@@ -322,40 +361,41 @@ onMounted(() => {
 .author-info__name {
   font-size: 28rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .author-info__school {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .topic-time {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   flex-shrink: 0;
 }
 
 /* 话题正文 */
 .topic-content {
-  padding: 24rpx 28rpx;
-  background: var(--td-bg-color-container);
-  margin: 0 24rpx 16rpx;
-  border-radius: 0 0 20rpx 20rpx;
+  padding: 28rpx;
+  background: $white;
+  border-radius: 0 0 24rpx 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: $card-soft-shadow;
 }
 
 .topic-title {
   display: block;
   font-size: 34rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
   line-height: 1.5;
-  margin-bottom: 16rpx;
+  margin-bottom: 20rpx;
 }
 
 .topic-text {
   font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  color: $text-secondary;
   line-height: 1.8;
   display: block;
   white-space: pre-wrap;
@@ -363,31 +403,32 @@ onMounted(() => {
 
 /* ========== 评论区 ========== */
 .replies-section {
-  background: var(--td-bg-color-container);
-  padding: 24rpx 28rpx;
-  margin: 0 24rpx;
-  border-radius: 20rpx;
+  background: $white;
+  padding: 28rpx;
+  border-radius: 24rpx;
+  box-shadow: $card-soft-shadow;
 }
 
 .replies-header {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
 }
 
 .replies-title {
   font-size: 30rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .replies-count {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
-  background: var(--td-bg-app-page);
-  padding: 4rpx 16rpx;
+  color: $green-primary;
+  background: $green-light;
+  padding: 6rpx 18rpx;
   border-radius: 999px;
+  font-weight: 600;
 }
 
 .replies-loading {
@@ -401,8 +442,8 @@ onMounted(() => {
 .loading-spinner {
   width: 40rpx;
   height: 40rpx;
-  border: 4rpx solid var(--td-border-level-1-color);
-  border-top-color: var(--td-brand-color-7);
+  border: 4rpx solid $border-light;
+  border-top-color: $green-primary;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -413,7 +454,7 @@ onMounted(() => {
 
 .loading-text {
   font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .replies-list {
@@ -425,6 +466,14 @@ onMounted(() => {
 .reply-item {
   display: flex;
   gap: 16rpx;
+  padding: 20rpx;
+  background: $bg-page;
+  border-radius: 20rpx;
+  transition: transform 0.15s ease;
+}
+
+.reply-item:active {
+  transform: scale(0.98);
 }
 
 .reply-avatar {
@@ -432,7 +481,7 @@ onMounted(() => {
   height: 56rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  background: linear-gradient(135deg, $green-light, $pink-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -447,7 +496,7 @@ onMounted(() => {
 .reply-avatar__char {
   font-size: 24rpx;
   font-weight: 600;
-  color: var(--td-brand-color-7);
+  color: $green-primary;
 }
 
 .reply-content {
@@ -459,23 +508,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  margin-bottom: 8rpx;
+  margin-bottom: 10rpx;
 }
 
 .reply-author {
   font-size: 26rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .reply-time {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .reply-text {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
   line-height: 1.6;
 }
 
@@ -488,7 +537,7 @@ onMounted(() => {
 
 .replies-empty__text {
   font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .body-footer {
@@ -507,19 +556,25 @@ onMounted(() => {
 
 .empty-state__text {
   font-size: 30rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .empty-state__back {
-  padding: 16rpx 40rpx;
+  padding: 18rpx 48rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  box-shadow: 0 8rpx 24rpx rgba(63, 207, 142, 0.35);
+  transition: all 0.15s ease;
+}
+
+.empty-state__back:active {
+  transform: scale(0.96);
 }
 
 .back-text {
   font-size: 28rpx;
   color: #ffffff;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* ========== 底部回复栏 ========== */
@@ -529,8 +584,8 @@ onMounted(() => {
   gap: 12rpx;
   padding: 20rpx 24rpx;
   padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
-  background: var(--td-bg-color-container);
-  border-top: 1rpx solid var(--td-border-level-1-color);
+  background: $white;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
 .reply-input-wrap {
@@ -538,46 +593,66 @@ onMounted(() => {
 }
 
 .reply-input {
-  padding: 16rpx 24rpx;
+  padding: 20rpx 28rpx;
   border-radius: 999px;
-  background: var(--td-bg-app-page);
+  background: $bg-page;
   font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+}
+
+.reply-input:focus {
+  border-color: $green-primary;
+  background: $white;
 }
 
 .anonymous-toggle {
-  padding: 12rpx 20rpx;
+  padding: 14rpx 22rpx;
   border-radius: 999px;
-  background: var(--td-bg-app-page);
-  border: 1rpx solid var(--td-border-level-1-color);
+  background: $bg-page;
+  border: 2rpx solid $border-light;
   flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.anonymous-toggle:active {
+  transform: scale(0.96);
 }
 
 .anonymous-toggle--active {
-  background: var(--td-brand-color-1);
-  border-color: var(--td-brand-color-3);
+  background: $green-light;
+  border-color: $green-primary;
 }
 
 .anonymous-toggle__text {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .anonymous-toggle--active .anonymous-toggle__text {
-  color: var(--td-brand-color-7);
+  color: $green-primary;
+  font-weight: 600;
 }
 
 .reply-btn {
-  padding: 16rpx 28rpx;
+  padding: 18rpx 32rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
   flex-shrink: 0;
+  box-shadow: 0 6rpx 16rpx rgba(63, 207, 142, 0.3);
+  transition: all 0.15s ease;
+}
+
+.reply-btn:active {
+  transform: scale(0.96);
 }
 
 .reply-btn--disabled {
-  background: var(--td-bg-color-component-disabled);
+  background: $border-light;
+  box-shadow: none;
   pointer-events: none;
 }
 
@@ -589,6 +664,6 @@ onMounted(() => {
 }
 
 .reply-btn--disabled .reply-btn__text {
-  color: var(--td-text-color-disabled);
+  color: $text-tertiary;
 }
 </style>

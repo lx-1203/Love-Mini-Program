@@ -14,5 +14,6 @@
       />
     </view>
     <text class="tab-bar__label">{{item.label}}</text>
+    <view wx:if="{{index === selected}}" class="tab-bar__indicator"></view>
   </view>
 </view>

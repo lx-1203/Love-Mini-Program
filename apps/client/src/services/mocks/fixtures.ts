@@ -1,4 +1,10 @@
 import type { components } from "../generated/api-types";
+import type {
+  ProfileStats,
+  RecommendationFilter,
+  RecommendedPerson,
+  UpdateBasicProfileRequest,
+} from "../generated/api-types-supplement";
 import { homeRecommendedPeople } from "../../config/home-recommended-people";
 import { createMockApiError } from "../api-error";
 
@@ -6,7 +12,6 @@ type Schemas = components["schemas"];
 type LoginHeroConfig = Schemas["LoginHeroConfig"];
 type UserSession = Schemas["UserSession"];
 type BasicProfile = Schemas["BasicProfile"];
-type ProfileStats = Schemas["ProfileStats"];
 type CampusProfile = Schemas["CampusProfile"];
 type ScheduleProfile = Schemas["ScheduleProfile"];
 type HomeDashboard = Schemas["HomeDashboard"];
@@ -91,6 +96,276 @@ let session: UserSession = {
   },
 };
 
+/**
+ * 推荐人物 mock 内部数据类型。
+ *
+ * 在 RecommendedPerson（视图层）基础上扩展 relationshipStatus/hometownProvince/
+ * hometownCity/futureCity 等过滤字段，用于 mock 模式下应用筛选条件。
+ * 这些过滤字段不暴露到视图层，仅在 mock 数据内部使用。
+ */
+interface MockRecommendedPersonInternal extends RecommendedPerson {
+  relationshipStatus?: string;
+  hometownProvince?: string;
+  hometownCity?: string;
+  futureCity?: string;
+}
+
+/**
+ * 推荐人物 mock 数据（含 Phase A/B 扩展字段）。
+ *
+ * 数据源镜像 discover store 中原 mockCards 的 7 条记录，但采用 RecommendedPerson
+ * 视图结构（number id + 扩展字段）。用于 mockFixtures.getRecommendations
+ * 在 mock 模式下返回带新字段的推荐结果。
+ */
+const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
+  {
+    id: 4001,
+    name: "夏言",
+    initials: "夏",
+    headline: "北京大学 · 大三 · 心理学",
+    commonGround: "你们都选了电影话题",
+    availability: "今晚 19:00-21:00",
+    campusName: "北京大学",
+    avatarUrl: "/static/assets/images/avatars/avatar-1.jpg",
+    tags: ["咖啡", "电影", "夜跑", "心理学", "猫奴"],
+    bio: "喜欢听人讲故事，也擅长保守秘密。想认识有趣的人，一起喝咖啡、看电影、夜跑。周末通常比较空闲，欢迎约我出去逛逛。",
+    images: [
+      "/static/assets/images/posts/campus-library.jpg",
+      "/static/assets/images/activities/activity-1.jpg",
+    ],
+    isSameSchool: false,
+    isSameMajor: false,
+    commonCircleCount: 0,
+    height: 165,
+    educationLevel: "bachelor",
+    photoGallery: [
+      "/static/assets/images/posts/campus-library.jpg",
+      "/static/assets/images/activities/activity-1.jpg",
+    ],
+    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-1.jpg",
+    personalVideoUrl: "",
+    profileBackgroundUrl: "",
+    verificationBadgeLevel: "school",
+    relationshipStatus: "never",
+    hometownProvince: "北京",
+    hometownCity: "北京",
+    futureCity: "北京",
+  },
+  {
+    id: 4002,
+    name: "顾北",
+    initials: "顾",
+    headline: "清华大学 · 研一 · 建筑学",
+    commonGround: "你们都选了美食话题",
+    availability: "周末下午",
+    campusName: "清华大学",
+    avatarUrl: "/static/assets/images/avatars/avatar-2.jpg",
+    tags: ["美食", "音乐", "探店", "建筑", "胶片"],
+    bio: "画图狗一只，偶尔弹吉他。对城市里的老建筑特别感兴趣，想找个人一起探店、扫街。",
+    images: [
+      "/static/assets/images/activities/activity-2.jpg",
+      "/static/assets/images/products/food-1.jpg",
+    ],
+    isSameSchool: false,
+    isSameMajor: false,
+    commonCircleCount: 0,
+    height: 178,
+    educationLevel: "master",
+    photoGallery: [
+      "/static/assets/images/activities/activity-2.jpg",
+      "/static/assets/images/products/food-1.jpg",
+    ],
+    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-2.jpg",
+    personalVideoUrl: "",
+    profileBackgroundUrl: "",
+    verificationBadgeLevel: "school",
+    relationshipStatus: "never",
+    hometownProvince: "江苏",
+    hometownCity: "南京",
+    futureCity: "北京",
+  },
+  {
+    id: 4003,
+    name: "林溪",
+    initials: "林",
+    headline: "复旦大学 · 大二 · 日语系",
+    commonGround: "你们都选了摄影话题",
+    availability: "周三、周五晚上",
+    campusName: "复旦大学",
+    avatarUrl: "/static/assets/images/avatars/avatar-3.jpg",
+    tags: ["语言", "看展", "摄影", "日系", "手账"],
+    bio: "最近在学日语，想找个语伴一起练习。平时也喜欢看展、拍照，记录生活中的小美好。",
+    images: [
+      "/static/assets/images/activities/activity-study.jpg",
+      "/static/assets/images/products/merch-1.jpg",
+    ],
+    isSameSchool: false,
+    isSameMajor: false,
+    commonCircleCount: 0,
+    height: 162,
+    educationLevel: "bachelor",
+    photoGallery: [
+      "/static/assets/images/activities/activity-study.jpg",
+      "/static/assets/images/products/merch-1.jpg",
+    ],
+    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-3.jpg",
+    personalVideoUrl: "",
+    profileBackgroundUrl: "",
+    verificationBadgeLevel: "email",
+    relationshipStatus: "never",
+    hometownProvince: "上海",
+    hometownCity: "上海",
+    futureCity: "上海",
+  },
+  {
+    id: 4004,
+    name: "周屿",
+    initials: "周",
+    headline: "浙江大学 · 大四 · 计算机",
+    commonGround: "你们都选了运动话题",
+    availability: "每天傍晚",
+    campusName: "浙江大学",
+    avatarUrl: "/static/assets/images/avatars/avatar-4.jpg",
+    tags: ["游戏", "篮球", "旅行", "编程", "火锅"],
+    bio: "即将毕业，想在校园里留下一些美好回忆。喜欢打篮球、玩游戏，也热爱旅行，计划毕业前去一趟西藏。",
+    images: [
+      "/static/assets/images/activities/activity-sports.jpg",
+      "/static/assets/images/products/food-2.jpg",
+    ],
+    isSameSchool: false,
+    isSameMajor: false,
+    commonCircleCount: 0,
+    height: 180,
+    educationLevel: "bachelor",
+    photoGallery: [
+      "/static/assets/images/activities/activity-sports.jpg",
+      "/static/assets/images/products/food-2.jpg",
+    ],
+    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-4.jpg",
+    personalVideoUrl: "",
+    profileBackgroundUrl: "",
+    verificationBadgeLevel: "school",
+    relationshipStatus: "never",
+    hometownProvince: "浙江",
+    hometownCity: "杭州",
+    futureCity: "杭州",
+  },
+  {
+    id: 4005,
+    name: "沈念",
+    initials: "沈",
+    headline: "中国人民大学 · 大一 · 新闻传播",
+    commonGround: "你们都选了咖啡话题",
+    availability: "下午没课的时候",
+    campusName: "中国人民大学",
+    avatarUrl: "/static/assets/images/avatars/avatar-5.jpg",
+    tags: ["阅读", "写作", "咖啡", "新闻", "民谣"],
+    bio: "刚来学校不久，想多认识一些朋友。喜欢阅读和写作，梦想是成为一名记者。平时会去咖啡馆写稿，欢迎来找我聊天。",
+    images: [
+      "/static/assets/images/activities/activity-1.jpg",
+      "/static/assets/images/products/merch-2.jpg",
+    ],
+    isSameSchool: false,
+    isSameMajor: false,
+    commonCircleCount: 0,
+    height: 168,
+    educationLevel: "bachelor",
+    photoGallery: [
+      "/static/assets/images/activities/activity-1.jpg",
+      "/static/assets/images/products/merch-2.jpg",
+    ],
+    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-5.jpg",
+    personalVideoUrl: "",
+    profileBackgroundUrl: "",
+    verificationBadgeLevel: "none",
+    relationshipStatus: "never",
+    hometownProvince: "北京",
+    hometownCity: "北京",
+    futureCity: "北京",
+  },
+  {
+    id: 4006,
+    name: "苏晚",
+    initials: "苏",
+    headline: "南京大学 · 大三 · 法学",
+    commonGround: "你们都选了阅读话题",
+    availability: "周二、周四晚上",
+    campusName: "南京大学",
+    avatarUrl: "/static/assets/images/avatars/avatar-6.jpg",
+    tags: ["辩论", "古典音乐", "阅读", "法学", "博物馆"],
+    bio: "理性与感性并存。喜欢辩论，也热爱古典音乐。希望找到一个能聊得来的人，一起去看交响乐演出。",
+    images: [
+      "/static/assets/images/activities/activity-3.jpg",
+      "/static/assets/images/products/ticket-1.jpg",
+    ],
+    isSameSchool: false,
+    isSameMajor: false,
+    commonCircleCount: 0,
+    height: 170,
+    educationLevel: "bachelor",
+    photoGallery: [
+      "/static/assets/images/activities/activity-3.jpg",
+      "/static/assets/images/products/ticket-1.jpg",
+    ],
+    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-6.jpg",
+    personalVideoUrl: "",
+    profileBackgroundUrl: "",
+    verificationBadgeLevel: "school",
+    relationshipStatus: "divorced",
+    hometownProvince: "江苏",
+    hometownCity: "南京",
+    futureCity: "南京",
+  },
+  {
+    id: 4007,
+    name: "陆辰",
+    initials: "陆",
+    headline: "武汉大学 · 研二 · 医学",
+    commonGround: "你们都选了户外话题",
+    availability: "周末全天",
+    campusName: "武汉大学",
+    avatarUrl: "/static/assets/images/avatars/avatar-7.jpg",
+    tags: ["户外", "露营", "爬山", "医学", "纪录片"],
+    bio: "医学生，平时比较忙，但周末一定会给自己放风。喜欢爬山和露营，觉得大自然最能治愈人心。",
+    images: [
+      "/static/assets/images/posts/campus-library.jpg",
+      "/static/assets/images/products/ticket-2.jpg",
+    ],
+    isSameSchool: false,
+    isSameMajor: false,
+    commonCircleCount: 0,
+    height: 175,
+    educationLevel: "master",
+    photoGallery: [
+      "/static/assets/images/posts/campus-library.jpg",
+      "/static/assets/images/products/ticket-2.jpg",
+    ],
+    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-7.jpg",
+    personalVideoUrl: "",
+    profileBackgroundUrl: "",
+    verificationBadgeLevel: "idcard",
+    relationshipStatus: "never",
+    hometownProvince: "湖北",
+    hometownCity: "武汉",
+    futureCity: "武汉",
+  },
+];
+
+const mockLoggedInSession: UserSession = {
+  userId: "user-1001",
+  loggedIn: true,
+  loginMethod: "wechat",
+  displayName: "测试用户",
+  phoneBound: false,
+  profileCompleted: true,
+  campusVerified: true,
+  scheduleCompleted: true,
+  campusName: "北京大学",
+  featureFlags: {
+    chat_ai_enabled: false,
+  },
+};
+
 let loginHero: LoginHeroConfig = {
   heroMode: "video",
   heroVideoUrl: null,
@@ -108,10 +383,56 @@ let basicProfile: BasicProfile = {
   pronouns: "她/她",
 };
 
+/**
+ * 扩展基本资料 mock 状态（Phase A 新增字段）。
+ *
+ * 这些字段不在 Schemas["BasicProfile"] 中（OpenAPI spec 未更新），
+ * 但后端 UserBasicProfile 实体已扩展，PUT /api/profile/basic 接受这些字段。
+ * 通过单独的 mock 状态维护，避免污染原 BasicProfile 类型。
+ */
+let extendedBasicProfile: UpdateBasicProfileRequest = {
+  height: 165,
+  educationLevel: "bachelor",
+  relationshipStatus: "never",
+  hometownProvince: "广东",
+  hometownCity: "广州",
+  futureCity: "广州",
+  futurePlanTags: ["事业", "旅行"],
+};
+
+/**
+ * 照片墙 mock 状态（最多 6 张）。
+ */
+let photoGallery: string[] = [
+  "/static/assets/images/avatars/avatar-1.jpg",
+  "/static/assets/images/avatars/avatar-2.jpg",
+];
+
+/**
+ * 个人视频 URL mock 状态。
+ */
+let personalVideoUrl: string | null = null;
+
+/**
+ * 半身照 URL mock 状态。
+ */
+let halfBodyPhotoUrl: string | null = null;
+
+/**
+ * 主页背景图 URL mock 状态。
+ */
+let profileBackgroundUrl: string | null = null;
+
 let profileStats: ProfileStats = {
+  followers: 16,
+  following: 28,
+  likes: 104,
+  visitors: 50,
+  posts: 12,
   followingCount: 28,
   followersCount: 16,
   likesCount: 104,
+  visitorsCount: 50,
 };
 
 let campusProfile: CampusProfile = {
@@ -502,10 +823,7 @@ export const mockFixtures = {
     return clone(session);
   },
   loginWithWechat(): UserSession {
-    session = {
-      ...session,
-      loggedIn: true,
-    };
+    session = clone(mockLoggedInSession);
     return clone(session);
   },
   getBasicProfile(): BasicProfile {
@@ -568,7 +886,26 @@ export const mockFixtures = {
   markTempChatSessionRead(id: string): ChatSessionSummary {
     const session = ensureSession(id);
     setSessionMeta(id, { unreadCount: 0 });
+    // 同时将 peer 发送的消息 deliveryStatus 更新为 "read"
+    if (session.messages) {
+      session.messages = session.messages.map((m: any) =>
+        m.sender === "peer" && m.deliveryStatus === "delivered"
+          ? { ...m, deliveryStatus: "read" }
+          : m
+      );
+    }
     return clone(toChatSessionSummary(session));
+  },
+  recallTempChatMessage(sessionId: string, messageId: string): Schemas["TempChatSession"] {
+    const session = ensureSession(sessionId);
+    if (session.messages) {
+      session.messages = session.messages.map((m: any) =>
+        m.id === messageId
+          ? { ...m, recalled: true, body: "[已撤回]" }
+          : m
+      );
+    }
+    return clone(session);
   },
   getDiscussionRecommendations(): DiscussionRecommendation[] {
     return clone(discussionRecommendations);
@@ -644,6 +981,8 @@ export const mockFixtures = {
           body: payload.body,
           sentAt: new Date().toISOString(),
           durationSeconds: payload.durationSeconds ?? null,
+          recalled: false,
+          deliveryStatus: "sent" as const,
         },
       ],
     };
@@ -801,5 +1140,179 @@ export const mockFixtures = {
       nextAction: '继续浏览推荐，发现更多心动',
       progressPercentage: 33,
     });
+  },
+
+  /**
+   * 更新基本资料（含 Phase A 扩展字段）。
+   *
+   * Mock 模式下合并 payload 到 extendedBasicProfile 状态，并同步 basicProfile
+   * 中受影响字段（nickname/bio/grade/pronouns）以保持向后兼容。
+   *
+   * @param data - 更新请求体（所有字段可选）
+   */
+  updateBasicProfile(data: UpdateBasicProfileRequest): void {
+    if (data.nickname !== undefined) basicProfile.nickname = data.nickname;
+    if (data.bio !== undefined) basicProfile.bio = data.bio;
+    if (data.grade !== undefined) basicProfile.grade = data.grade;
+    if (data.pronouns !== undefined) basicProfile.pronouns = data.pronouns;
+    extendedBasicProfile = { ...extendedBasicProfile, ...data };
+    session = {
+      ...session,
+      displayName: extendedBasicProfile.nickname ?? basicProfile.nickname,
+      profileCompleted: true,
+    };
+  },
+
+  /**
+   * 上传个人主页背景图。
+   *
+   * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 profileBackgroundUrl 状态。
+   */
+  uploadProfileBackground(file: File): { url: string } {
+    const url = `mock://profile/background/${encodeURIComponent(file.name)}`;
+    profileBackgroundUrl = url;
+    return { url };
+  },
+
+  /**
+   * 上传照片墙指定索引（0-5）。
+   *
+   * Mock 模式下不实际上传文件，仅生成 mock URL 并追加到 photoGallery。
+   * 超过 6 张时抛出错误（与后端一致）。
+   *
+   * @param file - 上传的文件
+   * @param index - 照片墙索引（0-5）
+   */
+  uploadProfilePhoto(file: File, index: number): { url: string } {
+    if (index < 0 || index > 5) {
+      throw createMockApiError(400);
+    }
+    const url = `mock://profile/photo/${index}/${encodeURIComponent(file.name)}`;
+    if (index >= photoGallery.length) {
+      photoGallery = [...photoGallery, url];
+    } else {
+      photoGallery = [
+        ...photoGallery.slice(0, index),
+        url,
+        ...photoGallery.slice(index + 1),
+      ];
+    }
+    return { url };
+  },
+
+  /**
+   * 删除照片墙指定索引。
+   *
+   * Mock 模式下从 photoGallery 数组中移除指定索引的元素。
+   *
+   * @param index - 照片墙索引（0-5）
+   */
+  deleteProfilePhoto(index: number): void {
+    if (index < 0 || index >= photoGallery.length) {
+      throw createMockApiError(404);
+    }
+    photoGallery = [
+      ...photoGallery.slice(0, index),
+      ...photoGallery.slice(index + 1),
+    ];
+  },
+
+  /**
+   * 上传个人视频。
+   *
+   * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 personalVideoUrl 状态。
+   */
+  uploadProfileVideo(file: File): { url: string } {
+    const url = `mock://profile/video/${encodeURIComponent(file.name)}`;
+    personalVideoUrl = url;
+    return { url };
+  },
+
+  /**
+   * 上传半身照。
+   *
+   * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 halfBodyPhotoUrl 状态。
+   */
+  uploadProfileHalfBody(file: File): { url: string } {
+    const url = `mock://profile/half-body/${encodeURIComponent(file.name)}`;
+    halfBodyPhotoUrl = url;
+    return { url };
+  },
+
+  /**
+   * 获取推荐列表（含 Phase B 扩展筛选字段）。
+   *
+   * Mock 模式下从 recommendedPersonsMock 中按筛选条件过滤，
+   * 返回 RecommendedPerson[]。MockRecommendedPersonInternal 在 RecommendedPerson
+   * 基础上扩展了过滤字段（relationshipStatus/hometownProvince/...），由于 TypeScript
+   * 数组协变，可直接作为 RecommendedPerson[] 返回，调用方仅访问视图层字段。
+   *
+   * @param filter - 筛选条件（所有字段可选）
+   */
+  getRecommendations(filter: RecommendationFilter): RecommendedPerson[] {
+    const filtered = recommendedPersonsMock.filter((person) => {
+      // 身高范围筛选
+      if (filter.heightMin !== undefined) {
+        if (person.height === undefined || person.height < filter.heightMin) {
+          return false;
+        }
+      }
+      if (filter.heightMax !== undefined) {
+        if (person.height === undefined || person.height > filter.heightMax) {
+          return false;
+        }
+      }
+      // 学历多选筛选
+      if (filter.educationLevel && filter.educationLevel.length > 0) {
+        if (
+          !person.educationLevel ||
+          !filter.educationLevel.includes(person.educationLevel)
+        ) {
+          return false;
+        }
+      }
+      // 感情状态多选筛选
+      if (filter.relationshipStatus && filter.relationshipStatus.length > 0) {
+        if (
+          !person.relationshipStatus ||
+          !filter.relationshipStatus.includes(person.relationshipStatus)
+        ) {
+          return false;
+        }
+      }
+      // 籍贯省份筛选
+      if (filter.hometownProvince) {
+        if (person.hometownProvince !== filter.hometownProvince) {
+          return false;
+        }
+      }
+      // 籍贯城市筛选
+      if (filter.hometownCity) {
+        if (person.hometownCity !== filter.hometownCity) {
+          return false;
+        }
+      }
+      // 未来城市筛选
+      if (filter.futureCity) {
+        if (person.futureCity !== filter.futureCity) {
+          return false;
+        }
+      }
+      // 关键词模糊匹配（nickname/bio/tags）
+      if (filter.keyword && filter.keyword.trim().length > 0) {
+        const kw = filter.keyword.trim().toLowerCase();
+        const matchesName = person.name.toLowerCase().includes(kw);
+        const matchesBio = person.bio.toLowerCase().includes(kw);
+        const matchesTags = person.tags.some((t) =>
+          t.toLowerCase().includes(kw)
+        );
+        if (!matchesName && !matchesBio && !matchesTags) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return clone(filtered);
   },
 };

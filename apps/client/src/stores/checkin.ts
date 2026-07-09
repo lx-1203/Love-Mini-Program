@@ -203,8 +203,11 @@ export const useCheckInStore = defineStore("checkin", {
         await withTimeout(
           (async () => {
             if (useMock()) {
+              // mock 模式：先设置状态字段，再由外层 finally 重置 loading
+              // 顺序很重要：确保 loading = false 之前状态已就绪，避免页面短暂空白
               this.checkedIn = mockCheckInStatus.checkedIn;
               this.consecutiveDays = mockCheckInStatus.consecutiveDays;
+              this.extraRecommendations = mockCheckInStatus.extraRecommendations;
               return;
             }
 
@@ -300,7 +303,7 @@ export const useCheckInStore = defineStore("checkin", {
 
         // 触发签到成功动画
         this.showSuccessAnimation = true;
-        // 3 秒后自动收起动画
+        // 3 秒后自动收起动画，过渡到 benefits-section 权益卡片
         setTimeout(() => {
           this.showSuccessAnimation = false;
         }, 3000);

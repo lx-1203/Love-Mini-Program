@@ -1,5 +1,6 @@
-{
+﻿{
   "description": "校园恋爱 - 微信小程序",
+  "miniprogramRoot": "apps/client/dist/build/mp-weixin/",
   "packOptions": {
     "ignore": [],
     "include": []

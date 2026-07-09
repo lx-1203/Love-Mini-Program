@@ -22,12 +22,15 @@ export const useCampusWallStore = defineStore("campus-wall", () => {
   const posts = ref<WallPost[]>([
     {
       id: "1",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1",
+      avatar: "/static/assets/images/avatars/avatar-1.jpg",
       nickname: "小明",
       school: "北京大学",
       grade: "大三",
       content: "今天在图书馆看到一本好书，推荐给大家！《百年孤独》真的太震撼了",
-      images: ["https://picsum.photos/300/300?random=1"],
+      images: [
+        "/static/assets/images/posts/campus-library.jpg",
+        "/static/assets/images/activities/activity-1.jpg",
+      ],
       location: "图书馆",
       topic: "读书分享",
       likes: 23,
@@ -38,7 +41,7 @@ export const useCampusWallStore = defineStore("campus-wall", () => {
     },
     {
       id: "2",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2",
+      avatar: "/static/assets/images/avatars/avatar-2.jpg",
       nickname: "小红",
       school: "清华大学",
       grade: "大二",
@@ -54,12 +57,15 @@ export const useCampusWallStore = defineStore("campus-wall", () => {
     },
     {
       id: "3",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3",
+      avatar: "/static/assets/images/avatars/avatar-3.jpg",
       nickname: "阿杰",
       school: "复旦大学",
       grade: "大四",
       content: "毕业季了，整理了一些考研资料，有需要的同学可以联系我",
-      images: ["https://picsum.photos/300/300?random=2", "https://picsum.photos/300/300?random=3"],
+      images: [
+        "/static/assets/images/posts/campus-library.jpg",
+        "/static/assets/images/activities/activity-study.jpg",
+      ],
       location: "宿舍",
       topic: "考研资料",
       likes: 56,

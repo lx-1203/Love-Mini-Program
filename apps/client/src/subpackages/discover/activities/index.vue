@@ -1,10 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 线下活动页 - 支持列表/日历双视图切换
  * 列表视图：展示所有活动卡片，支持下拉刷新、上拉加载更多
  * 日历视图：以月历形式展示活动分布，高亮有活动日期，点击查看当日活动详情
  */
-import { ref, computed, onShow, onUnload } from "@dcloudio/uni-app";
+import { ref, computed } from "vue";
+import { onShow, onUnload } from "@dcloudio/uni-app";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
@@ -13,6 +14,13 @@ import { useActivityStore } from "../../../stores/activity";
 import { useSessionStore } from "../../../stores/session";
 import { openAppPath } from "../../../utils/navigation";
 import type { ActivityItem } from "../../../stores/activity";
+import { IMAGE_PATHS } from "../../../config/images";
+
+/** Emoji 替换 SVG 图标路径 */
+const emojiIcons = {
+  location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
+  schedule: IMAGE_PATHS.ICONS_COMMON.SCHEDULE_SVG,
+} as const;
 
 const activityStore = useActivityStore();
 const sessionStore = useSessionStore();
@@ -110,6 +118,13 @@ const activitiesByDate = computed<Record<string, ActivityItem[]>>(() => {
 const activeDates = computed<Set<string>>(() => {
   return new Set(Object.keys(activitiesByDate.value));
 });
+
+/** 获取某日总报名人数 */
+function getDateEnrollCount(dateStr: string): number {
+  const acts = activitiesByDate.value[dateStr];
+  if (!acts) return 0;
+  return acts.reduce((sum: number, a: ActivityItem) => sum + (a.enrollCount ?? a.enrollmentCount ?? 0), 0);
+}
 
 /**
  * 日历网格数据
@@ -254,7 +269,7 @@ function formatDateLabel(dateStr: string): string {
       class="status-box"
     >
       <text class="status-text status-text--error">{{ activityStore.errorMessage }}</text>
-      <button class="retry-btn" @click="activityStore.fetchActivities()">重试</button>
+      <button class="retry-btn" @tap="activityStore.fetchActivities()">重试</button>
     </view>
 
     <!-- 暂无活动 -->
@@ -313,11 +328,11 @@ function formatDateLabel(dateStr: string): string {
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <text class="row-icon">📍</text>
+                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <text class="row-icon">🕐</text>
+                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>
@@ -326,7 +341,7 @@ function formatDateLabel(dateStr: string): string {
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
               :disabled="activityStore.enrolling"
-              @click="toggleEnroll(item.id)"
+              @tap="toggleEnroll(item.id)"
             >
               <text v-if="activityStore.enrolling" class="enroll-btn__loading">...</text>
               <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
@@ -420,7 +435,7 @@ function formatDateLabel(dateStr: string): string {
               class="calendar-cell__count"
             >
               <text class="calendar-cell__count-text">
-                {{ activitiesByDate[cell.dateStr].reduce((sum, a) => sum + (a.enrollCount ?? a.enrollmentCount ?? 0), 0) }}人
+                {{ getDateEnrollCount(cell.dateStr) }}人
               </text>
             </view>
           </view>
@@ -450,11 +465,11 @@ function formatDateLabel(dateStr: string): string {
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <text class="row-icon">📍</text>
+                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <text class="row-icon">🕐</text>
+                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>
@@ -463,7 +478,7 @@ function formatDateLabel(dateStr: string): string {
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
               :disabled="activityStore.enrolling"
-              @click="toggleEnroll(item.id)"
+              @tap="toggleEnroll(item.id)"
             >
               <text v-if="activityStore.enrolling" class="enroll-btn__loading">...</text>
               <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
@@ -493,28 +508,30 @@ function formatDateLabel(dateStr: string): string {
    状态盒子（加载/错误/空）
    ================================================================ */
 .status-box {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 16rpx;
   padding: 64rpx 28rpx;
 }
 
 .status-text {
   font-size: 24rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
 }
 
 .status-text--error {
-  color: var(--td-error-color-6);
+  color: var(--c-error);
 }
 
 .retry-btn {
   padding: 14rpx 36rpx;
-  border: 1px solid var(--td-border-level-1-color);
+  border: 1px solid var(--c-border-light);
   border-radius: 14rpx;
-  background: var(--td-bg-color-container);
+  background: var(--c-bg-container);
   font-size: 26rpx;
-  color: var(--td-brand-color-7);
+  color: var(--c-brand-700);
 }
 
 /* ================================================================
@@ -528,7 +545,7 @@ function formatDateLabel(dateStr: string): string {
 
 .view-toggle {
   display: flex;
-  background: var(--td-bg-color-surface);
+  background: var(--c-bg-surface);
   border-radius: 999px;
   padding: 4rpx;
   gap: 4rpx;
@@ -541,17 +558,17 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .view-toggle__btn--active {
-  background: var(--td-brand-color-7);
+  background: var(--c-brand-700);
 }
 
 .view-toggle__text {
   font-size: 24rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
   font-weight: 500;
 }
 
 .view-toggle__btn--active .view-toggle__text {
-  color: #ffffff;
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -564,18 +581,20 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .activity-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16rpx;
   padding: 0 0 16rpx;
 }
 
 .activity-row {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12rpx;
   padding: 24rpx;
   border-radius: 20rpx;
-  background: var(--td-bg-color-container);
-  box-shadow: var(--td-shadow-1);
+  background: var(--c-bg-container);
+  box-shadow: var(--s-sm);
 }
 
 .row-header {
@@ -587,7 +606,7 @@ function formatDateLabel(dateStr: string): string {
 .row-title {
   font-size: 28rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   flex: 1;
 }
 
@@ -602,22 +621,23 @@ function formatDateLabel(dateStr: string): string {
 .enrollment-count {
   font-size: 28rpx;
   font-weight: 700;
-  color: var(--td-brand-color-7);
+  color: var(--c-brand-700);
 }
 
 .enrollment-label {
   font-size: 20rpx;
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
 }
 
 .row-desc {
   font-size: 24rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
   line-height: 1.5;
 }
 
 .row-detail {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 4rpx;
 }
 
@@ -628,13 +648,16 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .row-icon {
-  font-size: 24rpx;
-  line-height: 1;
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: var(--sp-1, 8rpx);
+  color: var(--c-text-tertiary, #94a3b8);
+  flex-shrink: 0;
 }
 
 .row-detail-text {
   font-size: 24rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
 }
 
 .enroll-btn {
@@ -643,24 +666,24 @@ function formatDateLabel(dateStr: string): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2rpx solid var(--td-border-level-2-color);
+  border: 2rpx solid var(--c-border-light);
   border-radius: 14rpx;
   background: transparent;
   font-size: 24rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   margin-top: 4rpx;
 }
 
 .enroll-btn--active {
-  border-color: var(--td-brand-color-7);
-  background: var(--td-brand-color-1);
-  color: var(--td-brand-color-7);
+  border-color: var(--c-brand-700);
+  background: var(--c-bg-brand);
+  color: var(--c-brand-700);
 }
 
 .enroll-btn__loading {
   letter-spacing: 4rpx;
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
 }
 
 .loading-more {
@@ -672,7 +695,7 @@ function formatDateLabel(dateStr: string): string {
 
 .loading-more__text {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
 }
 
 /* ================================================================
@@ -702,12 +725,12 @@ function formatDateLabel(dateStr: string): string {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--td-bg-color-surface);
+  background: var(--c-bg-surface);
 }
 
 .month-nav__arrow {
   font-size: 36rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
   line-height: 1;
   font-weight: 300;
 }
@@ -715,7 +738,7 @@ function formatDateLabel(dateStr: string): string {
 .month-nav__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   min-width: 200rpx;
   text-align: center;
 }
@@ -725,7 +748,7 @@ function formatDateLabel(dateStr: string): string {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   padding: 0 24rpx 12rpx;
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  border-bottom: 1rpx solid var(--c-border-light);
   margin: 0 28rpx 8rpx;
 }
 
@@ -733,7 +756,7 @@ function formatDateLabel(dateStr: string): string {
   text-align: center;
   font-size: 24rpx;
   font-weight: 600;
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
   padding: 12rpx 0;
 }
 
@@ -761,7 +784,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .calendar-cell--today {
-  background: var(--td-brand-color-1);
+  background: var(--c-bg-brand);
 }
 
 .calendar-cell--active {
@@ -769,8 +792,8 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .calendar-cell--selected {
-  background: var(--td-brand-color-2);
-  border: 2rpx solid var(--td-brand-color-7);
+  background: var(--c-brand-100);
+  border: 2rpx solid var(--c-brand-700);
 }
 
 .calendar-cell--disabled {
@@ -790,17 +813,17 @@ function formatDateLabel(dateStr: string): string {
 .calendar-cell__day {
   font-size: 28rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   line-height: 1;
 }
 
 .calendar-cell--today .calendar-cell__day {
-  color: var(--td-brand-color-7);
+  color: var(--c-brand-700);
   font-weight: 800;
 }
 
 .calendar-cell--other-month .calendar-cell__day {
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
   font-weight: 400;
 }
 
@@ -813,13 +836,13 @@ function formatDateLabel(dateStr: string): string {
   width: 8rpx;
   height: 8rpx;
   border-radius: 50%;
-  background: var(--td-brand-color-7);
+  background: var(--c-brand-700);
 }
 
 /* --- 活动标题（截断10字） --- */
 .calendar-cell__title {
   font-size: 18rpx;
-  color: var(--td-brand-color-7);
+  color: var(--c-brand-700);
   text-align: center;
   margin-top: 4rpx;
   line-height: 1.3;
@@ -841,14 +864,15 @@ function formatDateLabel(dateStr: string): string {
 
 .calendar-cell__count-text {
   font-size: 16rpx;
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
   font-weight: 500;
 }
 
 /* --- 选中日期活动面板 --- */
 .selected-date-panel {
   margin: 16rpx 28rpx;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16rpx;
 }
 
@@ -862,13 +886,13 @@ function formatDateLabel(dateStr: string): string {
 .selected-date-header__label {
   font-size: 30rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .selected-date-header__count {
   font-size: 24rpx;
-  color: var(--td-brand-color-7);
-  background: var(--td-brand-color-1);
+  color: var(--c-brand-700);
+  background: var(--c-bg-brand);
   padding: 6rpx 16rpx;
   border-radius: 999px;
   font-weight: 500;

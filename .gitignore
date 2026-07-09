@@ -52,6 +52,7 @@ test-screenshots/
 .trae/screenshots/
 # 根目录调试截图
 /[a-z]*-page.png
+/[a-z]*-session*.png
 /devtools-*.png
 /desktop-screenshot*.png
 /screenshot-*.png

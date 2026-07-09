@@ -3,9 +3,7 @@ import { appEnv } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import type { components } from "../services/generated/api-types";
-
-/** 从 api-types 中提取互动事件视图类型 */
-type InteractionEventView = components["schemas"]["InteractionEventView"];
+import type { InteractionEventView } from "../services/generated/api-types-supplement";
 
 /**
  * 会话类型
@@ -328,7 +326,7 @@ const mockNotifications: SystemNotification[] = [
     id: "notif-6", type: "comment", title: "新的评论",
     content: "林夕评论了你的帖子：\"写得真好！\"", isRead: false,
     createdAt: "2026-05-20T20:30:00Z", triggerUserId: "user-2001",
-    resourceId: "post-42", actionUrl: "/pages/post/detail?id=post-42",
+    resourceId: "post-42", actionUrl: "/pages/village/detail?id=post-42",
     signalType: "CONTENT",
   },
   {
@@ -355,12 +353,12 @@ const mockNotifications: SystemNotification[] = [
 ];
 
 const mockInteractionEvents: InteractionEvent[] = [
-  { id: 1, eventType: "NEW_LIKE", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Xiayan&backgroundColor=b6e3f4", referenceId: 0, referenceType: "profile", summary: "夏言喜欢了你", isRead: false, createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString() },
-  { id: 2, eventType: "NEW_VISITOR", triggerUserId: 4002, triggerUserName: "顾北", triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Gubei&backgroundColor=c0aede", referenceId: 0, referenceType: "profile", summary: "顾北访问了你的主页", isRead: false, createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
-  { id: 3, eventType: "NEW_FOLLOW", triggerUserId: 4003, triggerUserName: "林溪", triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Linxi&backgroundColor=ffdfbf", referenceId: 0, referenceType: "profile", summary: "林溪关注了你", isRead: true, createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-  { id: 4, eventType: "POST_LIKED", triggerUserId: 4004, triggerUserName: "周屿", triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Zhouyu&backgroundColor=d1d4f9", referenceId: 42, referenceType: "post", summary: "周屿赞了你的帖子", isRead: false, createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
-  { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Xiayan&backgroundColor=b6e3f4", referenceId: 42, referenceType: "post", summary: "夏言评论了你的帖子：\"写得真好！\"", isRead: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
-  { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "沈念", triggerUserAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Shennian&backgroundColor=ffd5dc", referenceId: 15, referenceType: "topic", summary: "沈念回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
+  { id: 1, eventType: "NEW_LIKE", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: "/static/default-avatar.png", referenceId: 0, referenceType: "profile", summary: "夏言喜欢了你", isRead: false, createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString() },
+  { id: 2, eventType: "NEW_VISITOR", triggerUserId: 4002, triggerUserName: "顾北", triggerUserAvatar: "/static/default-avatar.png", referenceId: 0, referenceType: "profile", summary: "顾北访问了你的主页", isRead: false, createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+  { id: 3, eventType: "NEW_FOLLOW", triggerUserId: 4003, triggerUserName: "林溪", triggerUserAvatar: "/static/default-avatar.png", referenceId: 0, referenceType: "profile", summary: "林溪关注了你", isRead: true, createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+  { id: 4, eventType: "POST_LIKED", triggerUserId: 4004, triggerUserName: "周屿", triggerUserAvatar: "/static/default-avatar.png", referenceId: 42, referenceType: "post", summary: "周屿赞了你的帖子", isRead: false, createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
+  { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: "/static/default-avatar.png", referenceId: 42, referenceType: "post", summary: "夏言评论了你的帖子：\"写得真好！\"", isRead: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
+  { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "沈念", triggerUserAvatar: "/static/default-avatar.png", referenceId: 15, referenceType: "topic", summary: "沈念回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
 ];
 
 function useMock() { return appEnv.apiMode === "mock"; }
@@ -465,7 +463,7 @@ export const useMessagesStore = defineStore("messages", {
       finally { this.loading = false; }
     },
 
-    async sendMessage(sessionId: string, content: string) {
+    async sendMessage(sessionId: string, content: string, quoteRef?: string) {
       this.errorMessage = null;
       try {
         if (!content || content.trim().length === 0) { this.errorMessage = "消息内容不能为空"; throw new Error("消息内容不能为空"); }
@@ -569,7 +567,7 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) { n.isRead = true; return; }
         await withTimeout(request<void>({ url: `/notifications/${notificationId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, "标记通知已读超时");
         n.isRead = true;
-      } catch { /* 静默失败 */ }
+      } catch (_e) { /* 静默失败 */ }
     },
 
     async markAllNotificationsRead() {
@@ -577,7 +575,12 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) { this.notifications.forEach((n) => { n.isRead = true; }); return; }
         await withTimeout(request<void>({ url: "/notifications/read-all", method: "PUT" }), ASYNC_TIMEOUT_MS, "标记全部已读超时");
         this.notifications.forEach((n) => { n.isRead = true; });
-      } catch { this.notifications.forEach((n) => { n.isRead = true; }); }
+      } catch (error) {
+        // 修复：原代码失败时仍强制标记为已读，导致 UI 与服务端数据不一致（下次刷新会"已读变未读"反弹）
+        // 现在保留未读状态，提示用户重试
+        console.error("[messages.markAllNotificationsRead] 标记失败:", error);
+        throw new Error("标记全部已读失败，请稍后重试");
+      }
     },
 
     async fetchUnreadNotificationCount() {
@@ -585,7 +588,12 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) return this.notifications.filter((n) => !n.isRead).length;
         const result = await withTimeout(request<UnreadCountView>({ url: "/notifications/unread-count", method: "GET" }), ASYNC_TIMEOUT_MS, "获取未读通知数量超时");
         return result.count ?? 0;
-      } catch { return 0; }
+      } catch (error) {
+        // 修复：原代码失败时返回 0 会误导用户以为没有未读消息
+        // 现在返回 null 表示数据不可用，调用方可据此显示"数据加载失败"而非"0 条未读"
+        console.error("[messages.fetchUnreadNotificationCount] 获取失败:", error);
+        return null;
+      }
     },
 
     async setSessionPinned(sessionId: string, pinned: boolean) {
@@ -613,6 +621,12 @@ export const useMessagesStore = defineStore("messages", {
     },
 
     onNewMessage(message: MessageItem): void {
+      // 修复：WebSocket 重连重复订阅会导致同一消息被推送多次
+      // 此处按 messageId 去重，避免消息列表出现重复项
+      const exists = this.currentMessages.some((m) => m.id === message.id);
+      if (exists) {
+        return;
+      }
       this.currentMessages.push(message);
       const s = this.sessions.find((x) => x.id === message.sessionId);
       if (s) { s.lastMessagePreview = message.kind === "text" ? message.body : `[${message.kind}]`; s.lastMessageSentAt = message.sentAt; s.unreadCount += 1; }
@@ -641,7 +655,7 @@ export const useMessagesStore = defineStore("messages", {
             return;
           }
           const data = await request<InteractionEventView[]>({ url: `/interactions?page=${page}&pageSize=20`, method: "GET" });
-          const mapped = data.map((item) => ({ id: item.id, eventType: item.eventType, triggerUserId: item.triggerUserId, triggerUserName: item.triggerUserName, triggerUserAvatar: item.triggerUserAvatar, referenceId: item.referenceId, referenceType: item.referenceType, summary: item.summary, isRead: item.isRead, createdAt: item.createdAt }));
+          const mapped = data.map((item) => ({ id: Number(item.id), eventType: item.eventType ?? item.type, triggerUserId: Number(item.triggerUserId ?? item.fromUserId ?? 0), triggerUserName: String(item.triggerUserName ?? item.fromUserName ?? ""), triggerUserAvatar: String(item.triggerUserAvatar ?? item.fromUserAvatar ?? ""), referenceId: Number(item.referenceId ?? 0), referenceType: String(item.referenceType ?? ""), summary: String(item.summary ?? ""), isRead: Boolean(item.isRead ?? item.read), createdAt: String(item.createdAt) })) as InteractionEvent[];
           if (page === 1) this.interactionEvents = mapped;
           else this.interactionEvents = [...this.interactionEvents, ...mapped];
           this.interactionEventPage = page; this.interactionEventHasMore = mapped.length >= 20;
@@ -655,7 +669,7 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) return this.interactionEvents.filter((e) => !e.isRead).length;
         const result = await withTimeout(request<{ count: number }>({ url: "/interactions/unread-count", method: "GET" }), ASYNC_TIMEOUT_MS, "获取未读互动事件数超时");
         return result.count ?? 0;
-      } catch { return this.interactionEvents.filter((e) => !e.isRead).length; }
+      } catch (_e) { return this.interactionEvents.filter((e) => !e.isRead).length; }
     },
 
     async markInteractionRead(eventId: number) {
@@ -665,7 +679,7 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) { e.isRead = true; return; }
         await withTimeout(request<void>({ url: `/interactions/${eventId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, "标记互动事件已读超时");
         e.isRead = true;
-      } catch { /* 静默失败 */ }
+      } catch (_e) { /* 静默失败 */ }
     },
 
     async markAllInteractionsRead() {
@@ -673,7 +687,11 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) { this.interactionEvents.forEach((e) => { e.isRead = true; }); return; }
         await withTimeout(request<void>({ url: "/interactions/read-all", method: "PUT" }), ASYNC_TIMEOUT_MS, "标记全部互动事件已读超时");
         this.interactionEvents.forEach((e) => { e.isRead = true; });
-      } catch { this.interactionEvents.forEach((e) => { e.isRead = true; }); }
+      } catch (error) {
+        // 修复：原代码失败时仍强制标记为已读，导致数据不一致
+        console.error("[messages.markAllInteractionsRead] 标记失败:", error);
+        throw new Error("标记全部互动已读失败，请稍后重试");
+      }
     },
   },
 });

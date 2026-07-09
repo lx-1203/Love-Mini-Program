@@ -3,9 +3,25 @@ import { appEnv } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import type { components } from "../services/generated/api-types";
+import type { CampusFeedView } from "../services/generated/api-types-supplement";
 
-/** 从 api-types 中提取同校动态流视图类型 */
-type CampusFeedView = components["schemas"]["CampusFeedView"];
+/**
+ * 安全数字转换工具
+ *
+ * 修复：原代码直接使用 Number() 转换后端返回值，
+ * 若返回字符串 "abc" 会得到 NaN，导致 sort/reduce 等行为异常。
+ * 此函数在转换失败时回退到 fallback（默认 0）。
+ */
+function toNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number") {
+    return Number.isNaN(value) ? fallback : value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? fallback : parsed;
+  }
+  return fallback;
+}
 
 /**
  * 帖子分类
@@ -73,14 +89,13 @@ export interface CommentItem {
 export interface SimilarAuthor {
   userId: string;
   name: string;
+  nickname?: string;
   avatar: string;
+  avatarUrl?: string;
   campusName: string;
   headline: string;
-  /** 是否同校 */
   isAlumni: boolean;
-  /** 共同兴趣标签 */
   commonInterests: string[];
-  /** 当前用户是否已关注 */
   isFollowed: boolean;
 }
 
@@ -144,7 +159,7 @@ const mockAuthors: PostAuthor[] = [
   {
     userId: "user-3001",
     name: "小鹿",
-    avatar: "",
+    avatar: "/static/default-avatar.png",
     headline: "94年 · 北京 · 年薪30w+ · 985硕士",
     campusName: "北京大学",
     interests: ["阅读", "旅行", "志愿者"],
@@ -152,7 +167,7 @@ const mockAuthors: PostAuthor[] = [
   {
     userId: "user-3002",
     name: "阿泽",
-    avatar: "",
+    avatar: "/static/default-avatar.png",
     headline: "96年 · 上海 · 互联网大厂 · 本科",
     campusName: "复旦大学",
     interests: ["徒步", "户外", "摄影"],
@@ -160,7 +175,7 @@ const mockAuthors: PostAuthor[] = [
   {
     userId: "user-3003",
     name: "橙子",
-    avatar: "",
+    avatar: "/static/default-avatar.png",
     headline: "95年 · 杭州 · 设计师 · 硕士",
     campusName: "浙江大学",
     interests: ["设计", "美食", "旅行"],
@@ -168,7 +183,7 @@ const mockAuthors: PostAuthor[] = [
   {
     userId: "user-3004",
     name: "南风",
-    avatar: "",
+    avatar: "/static/default-avatar.png",
     headline: "97年 · 深圳 · 产品经理 · 本科",
     campusName: "北京大学",
     interests: ["产品", "运动", "音乐"],
@@ -176,7 +191,7 @@ const mockAuthors: PostAuthor[] = [
   {
     userId: "user-3005",
     name: "北岛",
-    avatar: "",
+    avatar: "/static/default-avatar.png",
     headline: "93年 · 成都 · 创业者 · 博士",
     campusName: "四川大学",
     interests: ["创业", "摄影", "读书"],
@@ -563,7 +578,7 @@ export const useVillageStore = defineStore("village", {
               if (myCampus) {
                 result = result.filter((post) => post.author.campusName === myCampus);
               }
-            } catch {
+            } catch (_e) {
               // 无法获取 sessionStore 时忽略
             }
           } else {
@@ -625,7 +640,7 @@ export const useVillageStore = defineStore("village", {
                 } else {
                   result = [];
                 }
-              } catch {
+              } catch (_e) {
                 result = [];
               }
             } else {
@@ -751,7 +766,7 @@ export const useVillageStore = defineStore("village", {
             author: {
               userId: "user-1001",
               name: "我",
-              avatar: "",
+              avatar: "/static/default-avatar.png",
               headline: "",
             },
             categoryId: data.categoryId,
@@ -971,7 +986,7 @@ export const useVillageStore = defineStore("village", {
             author: {
               userId: "user-1001",
               name: "我",
-              avatar: "",
+              avatar: "/static/default-avatar.png",
               headline: "",
             },
             content,
@@ -1221,7 +1236,7 @@ export const useVillageStore = defineStore("village", {
           try {
             const sessionStore = useSessionStore();
             myCampus = sessionStore.userSession?.campusName ?? "";
-          } catch {
+          } catch (_e) {
             // session store 不可用时忽略
           }
 
@@ -1275,7 +1290,7 @@ export const useVillageStore = defineStore("village", {
 
         // 将后端 CampusFeedView 中的帖子映射为前端 PostItem
         // posts 字段为 Record<string, unknown>[]，需要逐条映射
-        this.campusFeedPosts = (data.posts ?? []).map((raw) => {
+        this.campusFeedPosts = (data.posts ?? []).map((raw: Record<string, unknown>) => {
           const author = (raw.author ?? {}) as Record<string, unknown>;
           return {
             id: String(raw.id ?? ""),
@@ -1291,9 +1306,11 @@ export const useVillageStore = defineStore("village", {
             content: String(raw.summary ?? raw.content ?? ""),
             images: (raw.images ?? []) as string[],
             tags: (raw.tags ?? []) as string[],
-            likes: Number(raw.likeCount ?? raw.likes ?? 0),
-            comments: Number(raw.commentCount ?? raw.comments ?? 0),
-            shares: Number(raw.shareCount ?? raw.shares ?? 0),
+            // 修复：原代码直接 Number() 转换，若后端返回字符串 "abc" 会得到 NaN，导致 sort/reduce 异常
+            // 现在使用安全转换函数，NaN 时回退到 0
+            likes: toNumber(raw.likeCount ?? raw.likes ?? 0),
+            comments: toNumber(raw.commentCount ?? raw.comments ?? 0),
+            shares: toNumber(raw.shareCount ?? raw.shares ?? 0),
             isLiked: Boolean(raw.isLiked ?? false),
             isFollowed: Boolean(raw.isFollowed ?? false),
             isShared: Boolean(raw.isShared ?? false),
@@ -1329,7 +1346,7 @@ export const useVillageStore = defineStore("village", {
             {
               userId: "user-3004",
               name: "南风",
-              avatar: "",
+              avatar: "/static/default-avatar.png",
               campusName: "北京大学",
               headline: "97年 · 深圳 · 产品经理 · 本科",
               isAlumni: true,
@@ -1339,7 +1356,7 @@ export const useVillageStore = defineStore("village", {
             {
               userId: "user-3005",
               name: "北岛",
-              avatar: "",
+              avatar: "/static/default-avatar.png",
               campusName: "四川大学",
               headline: "93年 · 成都 · 创业者 · 博士",
               isAlumni: false,

@@ -8,6 +8,17 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { appEnv } from '../services/env'
 import { clientApi } from '../services/api'
+import { IMAGE_PATHS } from '../config/images'
+
+/** 6 层升温路径图标（统一从 config/images.ts 引入，避免硬编码路径） */
+const TIER_ICONS = {
+  L1_EXPOSURE: IMAGE_PATHS.ICONS_SOCIAL.VISITOR,
+  L2_ATTENTION: IMAGE_PATHS.ICONS_SOCIAL.LIKE,
+  L3_MATCH: IMAGE_PATHS.ICONS_SOCIAL.MATCH,
+  L4_COMMUNICATION: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
+  L5_CIRCLE: IMAGE_PATHS.ICONS_SOCIAL.SUPER_LIKE,
+  L6_SCENE: IMAGE_PATHS.ICONS_SOCIAL.FOLLOW,
+} as const
 
 // ==================== 类型定义 ====================
 
@@ -46,12 +57,12 @@ export interface TierInfo {
 
 /** 6层升温路径的静态描述数据 */
 export const TIER_META: Record<string, TierInfo> = {
-  L1_EXPOSURE: { label: '发现心动', icon: '👀', desc: '浏览推荐卡片' },
-  L2_ATTENTION: { label: '表达喜欢', icon: '❤️', desc: '向心仪的人表达喜欢' },
-  L3_MATCH: { label: '双向匹配', icon: '💞', desc: '等待双向确认' },
-  L4_COMMUNICATION: { label: '开启对话', icon: '💬', desc: '发起私信聊天' },
-  L5_CIRCLE: { label: '参与社区', icon: '🌟', desc: '加入兴趣圈和话题' },
-  L6_SCENE: { label: '线下见面', icon: '🤝', desc: '参与线下活动' },
+  L1_EXPOSURE: { label: '发现心动', icon: TIER_ICONS.L1_EXPOSURE, desc: '浏览推荐卡片' },
+  L2_ATTENTION: { label: '表达喜欢', icon: TIER_ICONS.L2_ATTENTION, desc: '向心仪的人表达喜欢' },
+  L3_MATCH: { label: '双向匹配', icon: TIER_ICONS.L3_MATCH, desc: '等待双向确认' },
+  L4_COMMUNICATION: { label: '开启对话', icon: TIER_ICONS.L4_COMMUNICATION, desc: '发起私信聊天' },
+  L5_CIRCLE: { label: '参与社区', icon: TIER_ICONS.L5_CIRCLE, desc: '加入兴趣圈和话题' },
+  L6_SCENE: { label: '线下见面', icon: TIER_ICONS.L6_SCENE, desc: '参与线下活动' },
 }
 
 /** 层级有序列表（用于步骤指示器渲染） */
@@ -68,16 +79,16 @@ export const TIER_ORDER: string[] = [
 
 /** Mock 社交升温进度数据 */
 const MOCK_PROGRESS: SocialProgressData = {
-  currentTier: 'L2_ATTENTION',
-  tierLabel: '表达喜欢',
-  exposureCount: 15,
-  likeCount: 4,
+  currentTier: 'L1_EXPOSURE',
+  tierLabel: '发现心动',
+  exposureCount: 0,
+  likeCount: 0,
   matchCount: 0,
   chatCount: 0,
   circleCount: 0,
   activityCount: 0,
-  nextAction: '继续浏览推荐，发现更多心动',
-  progressPercentage: 33,
+  nextAction: '去寻觅，发现心动的人',
+  progressPercentage: 0,
 }
 
 // ==================== 工具函数 ====================

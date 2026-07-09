@@ -1,9 +1,12 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 逛逛页 - 校内商品/票务/优惠券展示
  */
 import { ref } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { openAppPath } from "../../utils/navigation";
+import { IMAGE_PATHS } from "../../config/images";
+import SafeImage from "../../components/common/SafeImage.vue";
 
 // 分类标签
 const categories = ref([
@@ -23,7 +26,7 @@ const shopItems = ref([
     price: 99,
     originalPrice: 129,
     sales: 56,
-    image: "https://picsum.photos/300/300?random=10",
+    image: IMAGE_PATHS.PRODUCTS.TICKET_1,
     category: "ticket",
     tag: "热销",
   },
@@ -33,7 +36,7 @@ const shopItems = ref([
     price: 29.9,
     originalPrice: 39.9,
     sales: 128,
-    image: "https://picsum.photos/300/300?random=11",
+    image: IMAGE_PATHS.PRODUCTS.MERCH_1,
     category: "creative",
     tag: "新品",
   },
@@ -43,7 +46,7 @@ const shopItems = ref([
     price: 9.9,
     originalPrice: 15,
     sales: 234,
-    image: "https://picsum.photos/300/300?random=12",
+    image: IMAGE_PATHS.PRODUCTS.FOOD_1,
     category: "food",
     tag: "限时",
   },
@@ -53,7 +56,7 @@ const shopItems = ref([
     price: 19.9,
     originalPrice: 25,
     sales: 89,
-    image: "https://picsum.photos/300/300?random=13",
+    image: IMAGE_PATHS.PRODUCTS.MERCH_2,
     category: "goods",
     tag: "",
   },
@@ -63,7 +66,7 @@ const shopItems = ref([
     price: 15,
     originalPrice: 20,
     sales: 45,
-    image: "https://picsum.photos/300/300?random=14",
+    image: IMAGE_PATHS.PRODUCTS.TICKET_2,
     category: "ticket",
     tag: "",
   },
@@ -73,7 +76,7 @@ const shopItems = ref([
     price: 12.9,
     originalPrice: 18,
     sales: 167,
-    image: "https://picsum.photos/300/300?random=15",
+    image: IMAGE_PATHS.PRODUCTS.FOOD_2,
     category: "creative",
     tag: "推荐",
   },
@@ -92,7 +95,7 @@ function goToDetail(itemId: string) {
 </script>
 
 <template>
-  <view class="shop-page">
+  <view class="shop-page page-fade-in">
     <!-- 页面标题 -->
     <view class="shop-header">
       <text class="shop-header__title">逛逛</text>
@@ -105,9 +108,11 @@ function goToDetail(itemId: string) {
           <view
             v-for="cat in categories"
             :key="cat.id"
-            class="category-item"
+            class="category-item press-feedback list-item"
             :class="{ 'category-item--active': activeCategory === cat.id }"
-            @click="activeCategory = cat.id"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="activeCategory = cat.id"
           >
             <text class="category-item__text">{{ cat.name }}</text>
           </view>
@@ -121,11 +126,13 @@ function goToDetail(itemId: string) {
         <view
           v-for="item in filteredItems"
           :key="item.id"
-          class="shop-card"
-          @click="goToDetail(item.id)"
+          class="shop-card press-feedback list-item"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="goToDetail(item.id)"
         >
           <view class="shop-card__image-wrap">
-            <image class="shop-card__image" :src="item.image" mode="aspectFill" />
+            <SafeImage :src="item.image" custom-class="shop-card__image" mode="aspectFill" />
             <view v-if="item.tag" class="shop-card__tag">
               <text>{{ item.tag }}</text>
             </view>
@@ -148,31 +155,53 @@ function goToDetail(itemId: string) {
 </template>
 
 <style scoped lang="scss">
+$green-primary: #3FCF8E;
+$green-light: #E8F9F1;
+$pink-primary: #EC4899;
+$pink-light: #FCE7F3;
+$gold-vip: #C9A36A;
+$white: #FFFFFF;
+$bg-page: #F4F6FA;
+$text-primary: #1F2937;
+$text-secondary: #6B7280;
+$text-tertiary: #9CA3AF;
+$border-light: #F3F4F6;
+$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+
 .shop-page {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: linear-gradient(180deg, #F0FDF8 0%, $bg-page 40%);
 }
 
 /* ========== 页面标题 ========== */
 .shop-header {
   padding: 24rpx 32rpx;
   padding-top: calc(env(safe-area-inset-top) + 24rpx);
-  background: linear-gradient(to bottom, var(--td-bg-app-page), transparent);
+  background: transparent;
   z-index: 10;
 }
 
 .shop-header__title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: var(--td-text-color-primary);
+  font-size: 44rpx;
+  font-weight: 800;
+  color: $text-primary;
+  // #ifdef H5
+  background: linear-gradient(135deg, $green-primary, $pink-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  // #endif
+  // #ifndef H5
+  color: #3FCF8E; // mp-weixin 降级：使用纯色（取渐变中间色）
+  // #endif
 }
 
 /* ========== 分类标签 ========== */
 .category-bar {
-  padding: 0 32rpx 16rpx;
+  padding: 0 24rpx 24rpx;
 }
 
 .category-scroll {
@@ -182,30 +211,38 @@ function goToDetail(itemId: string) {
 .category-list {
   display: flex;
   gap: 16rpx;
-  padding-right: 32rpx;
+  padding-right: 24rpx;
 }
 
 .category-item {
   flex-shrink: 0;
-  padding: 12rpx 24rpx;
+  padding: 16rpx 32rpx;
   border-radius: 999px;
-  background: #ffffff;
-  border: 1px solid var(--td-border-level-1-color);
+  background: $white;
+  border: 2rpx solid transparent;
+  box-shadow: $card-soft-shadow;
+  transition: all 0.2s ease;
+}
+
+.category-item:active {
+  transform: scale(0.96);
 }
 
 .category-item__text {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
+  font-weight: 500;
 }
 
 .category-item--active {
-  background: linear-gradient(135deg, var(--td-brand-color-6), var(--td-brand-color-7));
-  border: 1px solid transparent;
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  border: 2rpx solid transparent;
+  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.3);
 }
 
 .category-item--active .category-item__text {
-  color: #ffffff;
-  font-weight: 600;
+  color: $white;
+  font-weight: 700;
 }
 
 /* ========== 滚动区域 ========== */
@@ -216,18 +253,25 @@ function goToDetail(itemId: string) {
 
 /* ========== 商品网格 ========== */
 .shop-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 20rpx;
-  padding: 0 32rpx;
+  padding: 0 24rpx;
 }
 
 .shop-card {
-  background: #ffffff;
+  width: calc(50% - 10rpx);
+  background: $white;
   border-radius: 24rpx;
   overflow: hidden;
-  box-shadow: var(--td-shadow-1);
-  border: 1px solid var(--td-border-level-1-color);
+  box-shadow: $card-soft-shadow;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.shop-card:active {
+  transform: scale(0.97);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
 }
 
 .shop-card__image-wrap {
@@ -239,34 +283,36 @@ function goToDetail(itemId: string) {
 .shop-card__image {
   width: 100%;
   height: 100%;
-  background: var(--td-bg-color-surface);
+  background: $bg-page;
 }
 
 .shop-card__tag {
   position: absolute;
-  top: 12rpx;
-  left: 12rpx;
-  padding: 6rpx 12rpx;
-  border-radius: 8rpx;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  top: 16rpx;
+  left: 16rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 999px;
+  background: linear-gradient(135deg, $pink-primary, #F472B6);
+  box-shadow: 0 4rpx 12rpx rgba(236, 72, 153, 0.3);
 }
 
 .shop-card__tag text {
   font-size: 20rpx;
-  color: #ffffff;
-  font-weight: 600;
+  color: $white;
+  font-weight: 700;
 }
 
 .shop-card__info {
-  padding: 16rpx;
+  padding: 20rpx;
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 10rpx;
 }
 
 .shop-card__title {
   font-size: 26rpx;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -279,24 +325,24 @@ function goToDetail(itemId: string) {
 }
 
 .shop-card__price {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #ef4444;
+  font-size: 36rpx;
+  font-weight: 800;
+  color: $pink-primary;
 }
 
 .shop-card__original-price {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   text-decoration: line-through;
 }
 
 .shop-card__sales {
-  font-size: 20rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: 22rpx;
+  color: $text-tertiary;
 }
 
 /* ========== 底部留白 ========== */
 .shop-footer {
-  height: 40rpx;
+  height: 60rpx;
 }
 </style>

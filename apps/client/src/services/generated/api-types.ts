@@ -73,23 +73,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/profile/stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get profile statistics */
-        get: operations["getProfileStats"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/profile/campus": {
         parameters: {
             query?: never;
@@ -398,6 +381,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/temp-chat/sessions/{id}/messages/{messageId}/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recall a message in a temporary chat session */
+        post: operations["recallTempChatMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/recommendations/discussions": {
         parameters: {
             query?: never;
@@ -573,11 +573,6 @@ export interface components {
             pronouns: string;
         };
         BasicProfileRequest: components["schemas"]["BasicProfile"];
-        ProfileStats: {
-            followingCount: number;
-            followersCount: number;
-            likesCount: number;
-        };
         CampusProfile: {
             city: string;
             campusName: string;
@@ -719,6 +714,19 @@ export interface components {
             body: string;
             sentAt: string;
             durationSeconds?: number | null;
+            /** @default false */
+            recalled: boolean;
+            /**
+             * @default sent
+             * @enum {string}
+             */
+            deliveryStatus: "sent" | "delivered" | "read";
+            /** @description 引用消息的ID */
+            quoteRef?: string | null;
+            /** @description 被引用消息的内容快照 */
+            quoteBody?: string | null;
+            /** @description 被引用消息的发送者 */
+            quoteSender?: string | null;
         };
         ChatMessageRequest: {
             /** @enum {string} */
@@ -727,6 +735,8 @@ export interface components {
             kind: "text" | "voice" | "emoji";
             body: string;
             durationSeconds?: number | null;
+            /** @description 引用消息的ID（可选） */
+            quoteRef?: string | null;
         };
         ContactExchangeState: {
             /** @enum {string|null} */
@@ -795,40 +805,6 @@ export interface components {
         DebugErrorResponse: {
             error: string;
             message: string;
-        };
-        /** 在线状态视图 */
-        OnlineStatusView: {
-            userId: number;
-            /** @enum {string} */
-            status: "online" | "away" | "offline";
-            lastHeartbeat: string;
-        };
-        /** 破冰话题视图 */
-        IcebreakerView: {
-            topics: string[];
-            matchId: number;
-            /** @enum {string} */
-            basedOn: "common_interests" | "common_answers" | "general";
-        };
-        /** 互动事件视图 */
-        InteractionEventView: {
-            id: number;
-            /** @enum {string} */
-            eventType: "NEW_LIKE" | "NEW_VISITOR" | "NEW_FOLLOW" | "POST_LIKED" | "POST_COMMENTED" | "TOPIC_REPLIED";
-            triggerUserId: number;
-            triggerUserName: string;
-            triggerUserAvatar: string;
-            referenceId: number;
-            referenceType: string;
-            summary: string;
-            isRead: boolean;
-            createdAt: string;
-        };
-        /** 同校动态流视图 */
-        CampusFeedView: {
-            posts: Record<string, unknown>[];
-            activities: Record<string, unknown>[];
-            topics: Record<string, unknown>[];
         };
     };
     responses: never;
@@ -919,26 +895,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BasicProfile"];
-                };
-            };
-        };
-    };
-    getProfileStats: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Profile statistics */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProfileStats"];
                 };
             };
         };
@@ -1429,6 +1385,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChatSessionSummary"];
+                };
+            };
+        };
+    };
+    recallTempChatMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                messageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated chat session with recalled message */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TempChatSession"];
                 };
             };
         };

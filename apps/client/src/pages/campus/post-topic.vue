@@ -10,10 +10,19 @@
  * - 提交按钮
  */
 import { ref, computed } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { useCampusStore, CAMPUS_CATEGORY_MAP } from "../../stores/campus";
 import type { CampusTopicCategory } from "../../stores/campus";
 
 const campusStore = useCampusStore();
+
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
 
 /** 选中的分类 */
 const selectedCategory = ref<CampusTopicCategory>("course_exchange");
@@ -92,7 +101,7 @@ async function submitTopic() {
     setTimeout(() => {
       uni.navigateBack();
     }, 800);
-  } catch {
+  } catch (_e) {
     uni.showToast({
       title: campusStore.errorMessage || "发布失败",
       icon: "none",
@@ -111,98 +120,131 @@ function goBack() {
 </script>
 
 <template>
-  <view class="post-page">
+  <view class="post-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="post-header">
-      <view class="post-header__back" @tap="goBack">
+      <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">取消</text>
       </view>
       <text class="post-header__title">发布话题</text>
       <view
-        class="post-header__submit"
+        class="post-header__submit press-feedback"
         :class="{ 'post-header__submit--disabled': !canSubmit }"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
         @tap="submitTopic"
       >
         <text class="submit-text">{{ isSubmitting ? "发布中" : "发布" }}</text>
       </view>
     </view>
 
-    <!-- 选择分类 -->
-    <view class="category-section">
-      <text class="section-label">选择分类</text>
-      <view class="category-grid">
-        <view
-          v-for="cat in categoryOptions"
-          :key="cat.key"
-          class="category-option"
-          :class="{ 'category-option--selected': selectedCategory === cat.key }"
-          @tap="selectCategory(cat.key)"
-        >
-          <text class="category-option__text">{{ cat.label }}</text>
+    <scroll-view class="post-body" scroll-y>
+      <!-- 选择分类 -->
+      <view class="category-section">
+        <text class="section-label">选择分类</text>
+        <view class="category-list">
+          <view class="category-row">
+            <view
+              v-for="(cat, idx) in categoryOptions.slice(0, 3)"
+              :key="cat.key"
+              class="category-option"
+              :class="{ 'category-option--selected': selectedCategory === cat.key }"
+              @tap="selectCategory(cat.key)"
+            >
+              <text class="category-option__text">{{ cat.label }}</text>
+            </view>
+          </view>
+          <view class="category-row">
+            <view
+              v-for="(cat, idx) in categoryOptions.slice(3, 6)"
+              :key="cat.key"
+              class="category-option"
+              :class="{ 'category-option--selected': selectedCategory === cat.key }"
+              @tap="selectCategory(cat.key)"
+            >
+              <text class="category-option__text">{{ cat.label }}</text>
+            </view>
+          </view>
         </view>
       </view>
-    </view>
 
-    <!-- 标题输入 -->
-    <view class="title-section">
-      <text class="section-label">话题标题</text>
-      <input
-        v-model="title"
-        class="title-input"
-        placeholder="输入一个吸引人的标题"
-        maxlength="50"
-      />
-    </view>
-
-    <!-- 内容输入区 -->
-    <view class="content-section">
-      <text class="section-label">话题内容</text>
-      <textarea
-        v-model="content"
-        class="content-input"
-        placeholder="分享你的想法、经验或求助..."
-        :maxlength="MAX_LENGTH"
-        :show-confirm-bar="false"
-      />
-      <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
-        <text>{{ currentLength }}/{{ MAX_LENGTH }}</text>
-      </view>
-    </view>
-
-    <!-- 匿名开关 -->
-    <view class="options-section">
-      <view class="option-row">
-        <view class="option-info">
-          <text class="option-label">匿名发布</text>
-          <text class="option-desc">开启后，你的信息将显示为"匿名校友"</text>
-        </view>
-        <switch
-          :checked="isAnonymous"
-          color="var(--td-brand-color-7)"
-          @change="toggleAnonymous"
+      <!-- 标题输入 -->
+      <view class="title-section">
+        <text class="section-label">话题标题</text>
+        <input
+          v-model="title"
+          class="title-input"
+          placeholder="输入一个吸引人的标题"
+          maxlength="50"
         />
       </view>
-    </view>
 
-    <!-- 底部提交按钮（移动端可见，防止内容过长时找不到顶部按钮） -->
-    <view class="bottom-submit">
-      <view
-        class="bottom-submit__btn"
-        :class="{ 'bottom-submit__btn--disabled': !canSubmit }"
-        @tap="submitTopic"
-      >
-        <text class="bottom-submit__text">{{ isSubmitting ? "发布中..." : "发布话题" }}</text>
+      <!-- 内容输入区 -->
+      <view class="content-section">
+        <text class="section-label">话题内容</text>
+        <textarea
+          v-model="content"
+          class="content-input"
+          placeholder="分享你的想法、经验或求助..."
+          :maxlength="MAX_LENGTH"
+          :show-confirm-bar="false"
+        />
+        <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
+          <text>{{ currentLength }}/{{ MAX_LENGTH }}</text>
+        </view>
       </view>
-    </view>
+
+      <!-- 匿名开关 -->
+      <view class="options-section">
+        <view class="option-row">
+          <view class="option-info">
+            <text class="option-label">匿名发布</text>
+            <text class="option-desc">开启后，你的信息将显示为"匿名校友"</text>
+          </view>
+          <switch
+            :checked="isAnonymous"
+            color="#3FCF8E"
+            @change="toggleAnonymous"
+          />
+        </view>
+      </view>
+
+      <!-- 底部提交按钮（移动端可见，防止内容过长时找不到顶部按钮） -->
+      <view class="bottom-submit">
+        <view
+          class="bottom-submit__btn press-feedback"
+          :class="{ 'bottom-submit__btn--disabled': !canSubmit }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="submitTopic"
+        >
+          <text class="bottom-submit__text">{{ isSubmitting ? "发布中..." : "发布话题" }}</text>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 </template>
 
 <style scoped lang="scss">
+$green-primary: #3FCF8E;
+$green-light: #E8F8F0;
+$pink-primary: #EC4899;
+$pink-light: #FFF5F7;
+$white: #FFFFFF;
+$bg-page: #F4F6FA;
+$text-primary: #1F2329;
+$text-secondary: #64748B;
+$text-tertiary: #9AA1AB;
+$border-light: #E2E8F0;
+$error: #EF4444;
+$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+
 .post-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background-color: var(--td-bg-app-page);
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(180deg, #E8F8F0 0%, #F4F6FA 20%);
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -210,76 +252,104 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 20rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 24rpx;
+  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 60%, #F9A8C4 100%);
 }
 
 .post-header__back {
-  padding: 8rpx 0;
-  min-width: 80rpx;
+  padding: 12rpx 20rpx;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.15s ease;
+}
+
+.post-header__back:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .back-icon {
   font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  color: #FFFFFF;
+  font-weight: 500;
 }
 
 .post-header__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: #FFFFFF;
 }
 
 .post-header__submit {
-  padding: 12rpx 32rpx;
+  padding: 14rpx 32rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-7);
+  background: rgba(255, 255, 255, 0.95);
   min-width: 80rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.post-header__submit:active {
+  transform: scale(0.96);
 }
 
 .post-header__submit--disabled {
-  background: var(--td-bg-color-surface);
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: none;
 }
 
 .submit-text {
   font-size: 26rpx;
-  color: #ffffff;
+  color: $green-primary;
   font-weight: 600;
 }
 
 .post-header__submit--disabled .submit-text {
-  color: var(--td-text-color-placeholder);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.post-body {
+  flex: 1;
+  padding: 24rpx;
 }
 
 /* ========== 公共标签 ========== */
 .section-label {
   display: block;
   font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   margin-bottom: 16rpx;
+  font-weight: 500;
 }
 
 /* ========== 分类选择 ========== */
 .category-section {
-  padding: 28rpx 32rpx 24rpx;
-  background: var(--td-bg-color-container);
-  margin-bottom: 16rpx;
+  padding: 28rpx;
+  background: $white;
+  border-radius: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: $card-soft-shadow;
 }
 
-.category-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.category-row {
+  display: flex;
   gap: 14rpx;
 }
 
 .category-option {
-  padding: 16rpx 8rpx;
-  border-radius: 12rpx;
-  background: var(--td-bg-app-page);
+  flex: 1;
+  padding: 20rpx 8rpx;
+  border-radius: 16rpx;
+  background: $bg-page;
   border: 2rpx solid transparent;
   display: flex;
   align-items: center;
@@ -287,71 +357,100 @@ function goBack() {
   transition: all 150ms ease;
 }
 
+.category-option:active {
+  transform: scale(0.96);
+}
+
 .category-option--selected {
-  background: var(--td-brand-color-1);
-  border-color: var(--td-brand-color-3);
+  background: linear-gradient(135deg, $green-light, #F0FDF8);
+  border-color: $green-primary;
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.15);
 }
 
 .category-option__text {
   font-size: 26rpx;
   font-weight: 500;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
   text-align: center;
 }
 
 .category-option--selected .category-option__text {
-  color: var(--td-brand-color-7);
+  color: $green-primary;
   font-weight: 600;
 }
 
 /* ========== 标题输入 ========== */
 .title-section {
-  padding: 28rpx 32rpx;
-  background: var(--td-bg-color-container);
-  margin-bottom: 16rpx;
+  padding: 28rpx;
+  background: $white;
+  border-radius: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: $card-soft-shadow;
 }
 
 .title-input {
   font-size: 32rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary);
-  padding: 12rpx 0;
+  color: $text-primary;
+  padding: 16rpx 20rpx;
+  border-radius: 16rpx;
+  background: $bg-page;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+}
+
+.title-input:focus {
+  border-color: $green-primary;
+  background: $white;
 }
 
 /* ========== 内容输入区 ========== */
 .content-section {
-  padding: 28rpx 32rpx;
-  background: var(--td-bg-color-container);
-  margin-bottom: 16rpx;
+  padding: 28rpx;
+  background: $white;
+  border-radius: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: $card-soft-shadow;
 }
 
 .content-input {
   width: 100%;
-  min-height: 200rpx;
+  min-height: 240rpx;
   font-size: 30rpx;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
   line-height: 1.7;
-  background: transparent;
-  padding: 12rpx 0;
+  background: $bg-page;
+  padding: 20rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid transparent;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.content-input:focus {
+  border-color: $green-primary;
+  background: $white;
 }
 
 .content-count {
   display: flex;
   justify-content: flex-end;
-  margin-top: 12rpx;
+  margin-top: 16rpx;
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .content-count--over {
-  color: var(--td-error-color);
+  color: $error;
 }
 
 /* ========== 选项区 ========== */
 .options-section {
-  padding: 28rpx 32rpx;
-  background: var(--td-bg-color-container);
+  padding: 28rpx;
+  background: $white;
+  border-radius: 24rpx;
   margin-bottom: 24rpx;
+  box-shadow: $card-soft-shadow;
 }
 
 .option-row {
@@ -371,32 +470,40 @@ function goBack() {
 
 .option-label {
   font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
   font-weight: 500;
 }
 
 .option-desc {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 /* ========== 底部提交 ========== */
 .bottom-submit {
-  padding: 20rpx 32rpx 40rpx;
+  padding: 20rpx 0 40rpx;
 }
 
 .bottom-submit__btn {
   width: 100%;
-  padding: 24rpx 0;
-  border-radius: 16rpx;
-  background: var(--td-brand-color-7);
+  padding: 28rpx 0;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(63, 207, 142, 0.35);
+  transition: all 0.15s ease;
+}
+
+.bottom-submit__btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.25);
 }
 
 .bottom-submit__btn--disabled {
-  background: var(--td-bg-color-surface);
+  background: $border-light;
+  box-shadow: none;
 }
 
 .bottom-submit__text {
@@ -406,6 +513,6 @@ function goBack() {
 }
 
 .bottom-submit__btn--disabled .bottom-submit__text {
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 </style>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref } from "vue";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
@@ -71,7 +71,7 @@ async function fetchPreferences() {
       scope.value = "campus_first";
       campusPriority.value = true;
     }
-  } catch {
+  } catch (_e) {
     // API 调用失败时使用默认值
     dailyNotifyTime.value = "12:00";
     scope.value = "campus_first";
@@ -110,7 +110,7 @@ async function savePreferences() {
     }
 
     uni.showToast({ title: "保存成功", icon: "success" });
-  } catch {
+  } catch (_e) {
     uni.showToast({ title: "保存失败，请重试", icon: "none" });
   } finally {
     saving.value = false;
@@ -142,7 +142,7 @@ onMounted(() => {
     <SectionCard v-else-if="error" title="加载失败" compact>
       <view class="error-container">
         <text class="error-text">获取偏好设置时出现问题，请重试</text>
-        <button class="retry-btn" @click="retry">重新加载</button>
+        <button class="retry-btn" @tap="retry">重新加载</button>
       </view>
     </SectionCard>
 
@@ -156,7 +156,7 @@ onMounted(() => {
             :key="opt.value"
             class="option-item"
             :class="{ 'option-item--active': dailyNotifyTime === opt.value }"
-            @click="dailyNotifyTime = opt.value"
+            @tap="dailyNotifyTime = opt.value"
           >
             <text class="option-label">{{ opt.label }}</text>
           </view>
@@ -171,7 +171,7 @@ onMounted(() => {
             :key="opt.value"
             class="option-item"
             :class="{ 'option-item--active': scope === opt.value }"
-            @click="scope = opt.value"
+            @tap="scope = opt.value"
           >
             <text class="option-label">{{ opt.label }}</text>
           </view>
@@ -180,7 +180,7 @@ onMounted(() => {
 
       <!-- 校园优先 -->
       <SectionCard title="校园优先" subtitle="启用后同校用户推荐权重+30%并排序靠前" compact>
-        <view class="toggle-row" @click="campusPriority = !campusPriority">
+        <view class="toggle-row" @tap="campusPriority = !campusPriority">
           <text class="toggle-label">校园优先</text>
           <view class="toggle-switch" :class="{ 'toggle-switch--on': campusPriority }">
             <view class="toggle-knob" />
@@ -212,24 +212,24 @@ onMounted(() => {
 
 .loading-text {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
 }
 
 .error-text {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
   text-align: center;
 }
 
 .retry-btn {
   height: 72rpx;
-  padding: 0 36rpx;
+  padding: 0 var(--sp-9);
   border: 0;
-  border-radius: 18rpx;
-  font-size: 26rpx;
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
   font-weight: 600;
-  background: var(--td-brand-color-7);
-  color: #fff;
+  background: var(--c-brand-700);
+  color: var(--c-text-inverse);
   line-height: 72rpx;
 }
 
@@ -249,23 +249,23 @@ onMounted(() => {
   height: 72rpx;
   padding: 0 28rpx;
   border-radius: 18rpx;
-  border: 2rpx solid var(--td-border-level-1-color);
-  background: var(--td-bg-color-container);
+  border: 2rpx solid var(--c-border-light);
+  background: var(--c-bg-container);
   transition: all 0.2s ease;
 }
 
 .option-item--active {
-  border-color: var(--td-brand-color-7);
-  background: var(--td-brand-color-1);
+  border-color: var(--c-brand-700);
+  background: var(--c-bg-brand);
   .option-label {
-    color: var(--td-brand-color-7);
+    color: var(--c-brand-700);
     font-weight: 700;
   }
 }
 
 .option-label {
   font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 // ==================== 校园优先开关 ====================
@@ -279,27 +279,27 @@ onMounted(() => {
 
 .toggle-label {
   font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .toggle-switch {
   width: 88rpx;
   height: 48rpx;
   border-radius: 24rpx;
-  background: var(--td-bg-color-component);
+  background: var(--c-bg-surface);
   position: relative;
   transition: background 0.2s ease;
 }
 
 .toggle-switch--on {
-  background: var(--td-brand-color-7);
+  background: var(--c-brand-700);
 }
 
 .toggle-knob {
   width: 40rpx;
   height: 40rpx;
   border-radius: 50%;
-  background: #fff;
+  background: var(--c-bg-container);
   position: absolute;
   top: 4rpx;
   left: 4rpx;

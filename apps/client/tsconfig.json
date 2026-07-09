@@ -6,6 +6,7 @@
     "resolveJsonModule": true,
     "strict": true,
     "skipLibCheck": true,
+    "noImplicitAny": false,
     "jsx": "preserve",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
@@ -13,15 +14,14 @@
       "vite/client",
       "@dcloudio/types"
     ],
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": [
-    "env.d.ts",
-    "main.ts",
-    "App.vue",
-    "pages/**/*.vue",
-    "subpackages/**/*.vue",
     "src/**/*.ts",
+    "src/**/*.d.ts",
     "src/**/*.vue"
   ]
 }

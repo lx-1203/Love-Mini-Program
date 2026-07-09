@@ -43,11 +43,16 @@ function goToProfileSetup() {
 
 <template>
   <view class="lock-screen">
+    <!-- 径向渐变心动氛围叠加层 -->
+    <view class="lock-screen__atmosphere" />
+
     <!-- 模糊头像装饰背景 -->
     <view class="lock-screen__decoration">
-      <view class="blur-avatar blur-avatar--left" />
-      <view class="blur-avatar blur-avatar--center" />
-      <view class="blur-avatar blur-avatar--right" />
+      <view class="blur-avatar blur-avatar--1" />
+      <view class="blur-avatar blur-avatar--2" />
+      <view class="blur-avatar blur-avatar--3" />
+      <view class="blur-avatar blur-avatar--4" />
+      <view class="blur-avatar blur-avatar--5" />
     </view>
 
     <!-- 插画区域 -->
@@ -55,13 +60,19 @@ function goToProfileSetup() {
       <view class="illustration-couple">
         <view class="phone phone--left">
           <view class="phone-screen">
-            <view class="phone-heart">💕</view>
+            <view class="phone-heart">
+              <image class="phone-heart__img" src="/static/assets/icons/social/like-filled.png" mode="aspectFit" />
+            </view>
           </view>
         </view>
-        <view class="heart-float">💖</view>
+        <view class="heart-float">
+          <image class="heart-float__img" src="/static/assets/icons/social/like-filled.png" mode="aspectFit" />
+        </view>
         <view class="phone phone--right">
           <view class="phone-screen">
-            <view class="phone-heart">💕</view>
+            <view class="phone-heart">
+              <image class="phone-heart__img" src="/static/assets/icons/social/like-filled.png" mode="aspectFit" />
+            </view>
           </view>
         </view>
       </view>
@@ -93,97 +104,137 @@ function goToProfileSetup() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 48rpx 40rpx;
-  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 60%, #f8fafc 100%);
+  min-height: 100%;
+  height: 100%;
+  padding: var(--sp-10) var(--sp-8);
+  padding-bottom: calc(constant(safe-area-inset-bottom) + var(--sp-10));
+  padding-bottom: calc(env(safe-area-inset-bottom) + var(--sp-10));
+  background: var(--c-gradient-page);
   position: relative;
   overflow: hidden;
 }
 
-/* ========== 模糊头像装饰 ========== */
-.lock-screen__decoration {
+/* ========== 径向渐变心动氛围叠加层（M-14） ========== */
+.lock-screen__atmosphere {
   position: absolute;
-  top: 120rpx;
+  top: 0;
   left: 0;
   right: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: -20rpx;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(63, 207, 142, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, rgba(249, 168, 196, 0.2) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 80%, rgba(124, 217, 166, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 15% 70%, rgba(244, 114, 182, 0.12) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ========== 模糊头像装饰（增强若隐若现感 M-14） ========== */
+.lock-screen__decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;
   z-index: 0;
 }
 
 .blur-avatar {
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--td-brand-color-3), var(--td-brand-color-5));
-  filter: blur(16rpx);
-  opacity: 0.5;
+  position: absolute;
+  border-radius: var(--r-full);
+  filter: blur(40rpx);
+
+  &--1 {
+    width: 320rpx;
+    height: 320rpx;
+    top: -80rpx;
+    left: -100rpx;
+    background: linear-gradient(135deg, var(--c-brand-200), var(--c-brand-400));
+    opacity: 0.15;
+  }
+
+  &--2 {
+    width: 280rpx;
+    height: 280rpx;
+    top: 100rpx;
+    right: -80rpx;
+    background: linear-gradient(135deg, var(--c-romance-200), var(--c-romance-400));
+    opacity: 0.12;
+  }
+
+  &--3 {
+    width: 360rpx;
+    height: 360rpx;
+    top: 200rpx;
+    left: -60rpx;
+    background: linear-gradient(135deg, var(--c-brand-100), var(--c-brand-300));
+    opacity: 0.1;
+  }
+
+  &--4 {
+    width: 240rpx;
+    height: 240rpx;
+    bottom: 200rpx;
+    right: -40rpx;
+    background: linear-gradient(135deg, var(--c-romance-100), var(--c-romance-300));
+    opacity: 0.13;
+  }
+
+  &--5 {
+    width: 200rpx;
+    height: 200rpx;
+    bottom: -60rpx;
+    left: 20%;
+    background: linear-gradient(135deg, var(--c-brand-200), var(--c-romance-200));
+    opacity: 0.12;
+  }
 }
 
-.blur-avatar--left {
-  transform: translateX(30rpx) scale(0.9);
-  background: linear-gradient(135deg, #93c5fd, #60a5fa);
-}
-
-.blur-avatar--center {
-  width: 160rpx;
-  height: 160rpx;
-  z-index: 1;
-  opacity: 0.7;
-  filter: blur(12rpx);
-}
-
-.blur-avatar--right {
-  transform: translateX(-30rpx) scale(0.9);
-  background: linear-gradient(135deg, #fbcfe8, #f9a8d4);
-}
-
-/* ========== 插画区域 - 校园情侣风格 ========== */
+/* ========== 插画区域 ========== */
 .lock-screen__illustration {
   position: relative;
   z-index: 1;
-  margin-bottom: 48rpx;
-  margin-top: 160rpx;
+  margin-bottom: var(--sp-10);
+  margin-top: 80rpx;
 }
 
 .illustration-couple {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24rpx;
+  gap: var(--sp-6);
 }
 
 .phone {
   width: 120rpx;
   height: 200rpx;
-  border-radius: 24rpx;
-  background: #ffffff;
-  box-shadow: 0 8rpx 32rpx rgba(37, 99, 235, 0.08);
+  border-radius: var(--r-xl);
+  background: var(--c-neutral-0);
+  box-shadow: var(--s-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2rpx solid #e2e8f0;
+  border: var(--avatar-border);
 }
 
 .phone-screen {
   width: 96rpx;
   height: 160rpx;
-  border-radius: 16rpx;
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  border-radius: var(--r-md);
+  background: var(--c-gradient-page);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .phone-heart {
-  font-size: 36rpx;
+  font-size: var(--fs-2xl);
 }
 
 .heart-float {
-  font-size: 48rpx;
+  font-size: var(--fs-5xl);
   animation: float 2s ease-in-out infinite;
 }
 
@@ -202,22 +253,22 @@ function goToProfileSetup() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16rpx;
-  margin-bottom: 48rpx;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-10);
   z-index: 1;
 }
 
 .lock-screen__title {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   text-align: center;
   line-height: 1.4;
 }
 
 .lock-screen__subtitle {
-  font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-lg);
+  color: var(--c-text-secondary);
   text-align: center;
   line-height: 1.5;
 }
@@ -226,21 +277,20 @@ function goToProfileSetup() {
 .lock-screen__action {
   width: 100%;
   max-width: 480rpx;
-  margin-bottom: 32rpx;
+  margin-bottom: var(--sp-8);
   z-index: 1;
 }
 
 .lock-screen__btn {
   width: 100%;
-  height: 96rpx;
-  border-radius: 48rpx;
-  background: linear-gradient(135deg, var(--td-brand-color-6), var(--td-brand-color-7));
+  height: var(--btn-height-md);
+  border-radius: var(--r-full);
+  background: var(--c-gradient-brand);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(37, 99, 235, 0.25);
-  transition: transform 0.2s ease;
+  box-shadow: var(--s-brand-lg);
 }
 
 .lock-screen__btn:active {
@@ -248,9 +298,9 @@ function goToProfileSetup() {
 }
 
 .lock-screen__btn-text {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl);
   font-weight: 600;
-  color: #ffffff;
+  color: var(--c-neutral-0);
 }
 
 /* ========== 底部提示 ========== */
@@ -259,7 +309,7 @@ function goToProfileSetup() {
 }
 
 .lock-screen__footer-text {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-base);
+  color: var(--c-text-tertiary);
 }
 </style>

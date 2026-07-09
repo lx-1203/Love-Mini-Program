@@ -373,10 +373,10 @@ export const useDailyQuestionStore = defineStore("daily-question", {
             this.answers = answers;
           } else {
             this.answers.push(...answers);
-            this.answerHasMore = false;
           }
           this.answerPage = page;
-          this.answerHasMore = answers.length >= ANSWER_PAGE_SIZE ? false : false;
+          // 修复：原代码恒为 false，导致分页加载失效；改为根据返回数据量判断是否还有更多
+          this.answerHasMore = answers.length >= ANSWER_PAGE_SIZE;
           return;
         }
 

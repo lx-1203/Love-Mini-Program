@@ -4,7 +4,7 @@
  * 展示指定话题标签下的所有帖子，支持下拉刷新和上拉加载更多
  */
 import { ref, computed, onMounted } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
@@ -12,6 +12,14 @@ import { useVillageStore, formatRelativeTime } from "../../stores/village";
 import type { PostItem, PostAuthor } from "../../stores/village";
 
 const villageStore = useVillageStore();
+
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
 
 /** 当前标签名称 */
 const tagName = ref("");
@@ -70,7 +78,8 @@ async function loadPosts(reset = true) {
       method: "GET",
     });
 
-    const newPosts: PostItem[] = data.map((raw) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const newPosts = (data as any[]).map((raw: any): PostItem => ({
       id: String(raw.id),
       author: {
         userId: String(raw.author.userId),
@@ -90,6 +99,7 @@ async function loadPosts(reset = true) {
       isLiked: false,
       isFollowed: false,
       isShared: false,
+      isAlumni: false,
       createdAt: raw.createdAt,
     }));
 
@@ -132,42 +142,42 @@ function getMockTagPosts(tag: string): PostItem[] {
       author: { userId: "1001", name: "星野", avatar: "", headline: "北京·985硕士", campusName: "北京大学" },
       categoryId: "sincere", title: "", content: "今天在图书馆遇到一个认真学习的女生，感觉好有气质！",
       images: [], tags: ["#校园日常", "#表白墙"], likes: 32, comments: 8, shares: 3,
-      isLiked: false, isFollowed: false, isShared: false, createdAt: new Date(Date.now() - 3600000).toISOString(),
+      isLiked: false, isFollowed: false, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 3600000).toISOString(),
     },
     {
       id: "mock-tag-post-2",
       author: { userId: "1002", name: "阿泽", avatar: "", headline: "上海·互联网大厂", campusName: "复旦大学" },
       categoryId: "interest", title: "", content: "有没有一起打羽毛球的？周末约起来！求搭子！",
       images: [], tags: ["#找搭子", "#兴趣分享"], likes: 18, comments: 12, shares: 4,
-      isLiked: true, isFollowed: false, isShared: false, createdAt: new Date(Date.now() - 10800000).toISOString(),
+      isLiked: true, isFollowed: false, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 10800000).toISOString(),
     },
     {
       id: "mock-tag-post-3",
       author: { userId: "1003", name: "橙子", avatar: "", headline: "杭州·设计师", campusName: "浙江大学" },
       categoryId: "activity", title: "", content: "急！计算机组成原理期末怎么复习？求大佬带带",
       images: [], tags: ["#求助", "#技术交流"], likes: 45, comments: 23, shares: 6,
-      isLiked: false, isFollowed: true, isShared: false, createdAt: new Date(Date.now() - 18000000).toISOString(),
+      isLiked: false, isFollowed: true, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 18000000).toISOString(),
     },
     {
       id: "mock-tag-post-4",
       author: { userId: "1004", name: "北岛", avatar: "", headline: "成都·创业者", campusName: "四川大学" },
       categoryId: "sincere", title: "", content: "毕业5年了，想问问学弟学妹们学校现在变化大吗？",
       images: [], tags: ["#校友动态", "#生活记录"], likes: 67, comments: 19, shares: 10,
-      isLiked: false, isFollowed: false, isShared: true, createdAt: new Date(Date.now() - 86400000).toISOString(),
+      isLiked: false, isFollowed: false, isShared: true, isAlumni: false, createdAt: new Date(Date.now() - 86400000).toISOString(),
     },
     {
       id: "mock-tag-post-5",
       author: { userId: "1005", name: "南风", avatar: "", headline: "深圳·产品经理", campusName: "北京大学" },
       categoryId: "life", title: "", content: "记录一下今天在食堂吃到的好吃的！麻辣香锅绝了",
       images: [], tags: ["#生活记录", "#校园日常"], likes: 23, comments: 5, shares: 2,
-      isLiked: false, isFollowed: false, isShared: false, createdAt: new Date(Date.now() - 90000000).toISOString(),
+      isLiked: false, isFollowed: false, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 90000000).toISOString(),
     },
     {
       id: "mock-tag-post-6",
       author: { userId: "1006", name: "小鹿", avatar: "", headline: "北京·Java开发", campusName: "清华大学" },
       categoryId: "interest", title: "", content: "想找个一起刷 LeetCode 的队友，每天互相监督",
       images: [], tags: ["#技术交流", "#找搭子"], likes: 15, comments: 7, shares: 3,
-      isLiked: false, isFollowed: false, isShared: false, createdAt: new Date(Date.now() - 172800000).toISOString(),
+      isLiked: false, isFollowed: false, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 172800000).toISOString(),
     },
   ];
 
@@ -202,10 +212,10 @@ onLoad((query) => {
 </script>
 
 <template>
-  <view class="tag-posts-page">
+  <view class="tag-posts-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="tag-header">
-      <view class="tag-header__back" @tap="goBack">
+      <view class="tag-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">返回</text>
       </view>
       <text class="tag-header__title">#{{ tagName }}</text>
@@ -231,7 +241,7 @@ onLoad((query) => {
       <view v-else-if="errorMessage && posts.length === 0" class="feed-state">
         <text class="feed-state__icon">&#x1F614;</text>
         <text class="feed-state__text">{{ errorMessage }}</text>
-        <view class="feed-state__btn" @tap="onRefresh">
+        <view class="feed-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="onRefresh">
           <text class="feed-state__btn-text">重试</text>
         </view>
       </view>
@@ -247,7 +257,7 @@ onLoad((query) => {
       <view
         v-for="post in posts"
         :key="post.id"
-        class="post-card"
+        class="post-card list-item"
         @tap="goToDetail(post.id)"
       >
         <!-- 作者信息行 -->
@@ -259,6 +269,7 @@ onLoad((query) => {
                 class="user-avatar__img"
                 :src="post.author.avatar"
                 mode="aspectFill"
+        lazy-load
               />
               <text v-else class="user-avatar__char">{{ post.author.name[0] }}</text>
             </view>
@@ -317,12 +328,24 @@ onLoad((query) => {
 </template>
 
 <style scoped lang="scss">
+$green-primary: #3FCF8E;
+$green-light: #E8F9F4;
+$pink-primary: #EC4899;
+$pink-light: #FFF0F5;
+$bg-page: #F4F6FA;
+$text-primary: #1A1A2E;
+$text-secondary: #8E8E9E;
+$text-tertiary: #B8B8C8;
+$divider: #EEF0F5;
+$white: #FFFFFF;
+$red-badge: #FF4757;
+
 .tag-posts-page {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: $bg-page;
   overflow: hidden;
 }
 
@@ -332,8 +355,7 @@ onLoad((query) => {
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 50%, #F9A8C4 100%);
 }
 
 .tag-header__back {
@@ -343,13 +365,15 @@ onLoad((query) => {
 
 .back-icon {
   font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  color: rgba(255,255,255,0.9);
+  font-weight: 500;
 }
 
 .tag-header__title {
-  font-size: 34rpx;
+  font-size: 36rpx;
   font-weight: 700;
-  color: var(--td-brand-color-7);
+  color: $white;
+  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
 }
 
 .tag-header__spacer {
@@ -376,8 +400,8 @@ onLoad((query) => {
 .loading-spinner {
   width: 44rpx;
   height: 44rpx;
-  border: 4rpx solid var(--td-border-level-1-color);
-  border-top-color: var(--td-brand-color-7);
+  border: 4rpx solid $divider;
+  border-top-color: $green-primary;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -392,15 +416,21 @@ onLoad((query) => {
 
 .feed-state__text {
   font-size: 28rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   text-align: center;
   line-height: 1.6;
 }
 
 .feed-state__btn {
-  padding: 16rpx 48rpx;
+  padding: 18rpx 48rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary 0%, #2DB87A 100%);
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.feed-state__btn:active {
+  transform: scale(0.96);
 }
 
 .feed-state__btn-text {
@@ -416,12 +446,12 @@ onLoad((query) => {
 .feed-empty__title {
   font-size: 32rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .feed-empty__desc {
   font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 /* ========== 帖子卡片 ========== */
@@ -431,14 +461,14 @@ onLoad((query) => {
   gap: 18rpx;
   margin: 16rpx 24rpx;
   padding: 28rpx;
-  background: var(--td-bg-color-container);
-  border-radius: 20rpx;
-  box-shadow: var(--td-shadow-1, 0 2rpx 12rpx rgba(0, 0, 0, 0.04));
-  transition: transform 120ms ease;
+  background: $white;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease;
 }
 
 .post-card:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
 
 /* --- 作者信息行 --- */
@@ -461,7 +491,7 @@ onLoad((query) => {
   height: 76rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  background: linear-gradient(135deg, $green-light, $green-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -476,7 +506,7 @@ onLoad((query) => {
 .user-avatar__char {
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--td-brand-color-7);
+  color: $white;
 }
 
 .user-info {
@@ -494,14 +524,14 @@ onLoad((query) => {
 
 .user-info__name {
   font-size: 30rpx;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
+  font-weight: 700;
+  color: $text-primary;
   line-height: 1.2;
 }
 
 .user-info__headline {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -514,7 +544,7 @@ onLoad((query) => {
 
 .post-card__content {
   font-size: 30rpx;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
   line-height: 1.7;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -531,8 +561,8 @@ onLoad((query) => {
 
 .post-card__tag {
   font-size: 24rpx;
-  color: var(--td-brand-color-7);
-  background: var(--td-brand-color-1);
+  color: $green-primary;
+  background: $green-light;
   padding: 8rpx 18rpx;
   border-radius: 999px;
   font-weight: 500;
@@ -544,12 +574,12 @@ onLoad((query) => {
   align-items: center;
   justify-content: space-between;
   padding-top: 16rpx;
-  border-top: 1rpx solid var(--td-border-level-1-color);
+  border-top: 1rpx solid $divider;
 }
 
 .post-card__time {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .post-card__actions {
@@ -563,17 +593,22 @@ onLoad((query) => {
   align-items: center;
   gap: 6rpx;
   padding: 6rpx 0;
+  transition: transform 0.15s ease;
+}
+
+.action-btn:active {
+  transform: scale(0.9);
 }
 
 .action-btn__icon {
-  font-size: 26rpx;
+  font-size: 28rpx;
   line-height: 1;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .action-btn__count {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   font-weight: 500;
 }
 
@@ -588,7 +623,7 @@ onLoad((query) => {
 
 .load-more__text {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .feed-bottom-spacer {

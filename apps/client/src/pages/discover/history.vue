@@ -1,10 +1,13 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 历史推荐页 - 今日已看卡片列表
  * 展示今日已浏览的所有推荐卡片，支持挽回已拒绝的卡片。
  */
-import { computed, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { useDiscoverStore } from "../../stores/discover";
+import { IMAGE_PATHS } from "../../config/images";
+import SafeImage from "../../components/common/SafeImage.vue";
 
 const discoverStore = useDiscoverStore();
 
@@ -16,6 +19,14 @@ const passedCards = computed(() => discoverStore.passedCards);
 
 /** 今日是否已使用挽回 */
 const hasRewoundToday = computed(() => discoverStore.hasRewoundToday);
+
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
 
 /**
  * 获取卡片详情。
@@ -84,10 +95,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="history-page">
+  <view class="history-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航 -->
     <view class="header">
-      <view class="back-btn" @click="goBack">
+      <view class="back-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">←</text>
       </view>
       <text class="page-title">今日已看</text>
@@ -115,12 +126,12 @@ onMounted(() => {
       <view
         v-for="record in historyCards"
         :key="record.cardId"
-        class="history-card"
+        class="history-card list-item"
       >
         <view class="card-main">
-          <image
-            class="card-avatar"
+          <SafeImage
             :src="getCardDetail(record.cardId)?.avatar || '/static/default-avatar.png'"
+            custom-class="card-avatar"
             mode="aspectFill"
           />
           <view class="card-info">
@@ -145,7 +156,7 @@ onMounted(() => {
           v-if="record.direction === 'left' && isLastPassedCard(record.cardId) && !hasRewoundToday"
           class="rewind-action"
         >
-          <button class="rewind-btn" @click="handleRewind(record.cardId)">
+          <button class="rewind-btn" @tap="handleRewind(record.cardId)">
             <text class="rewind-icon">↩</text>
             <text class="rewind-label">挽回（每日限1次）</text>
           </button>
@@ -163,19 +174,31 @@ onMounted(() => {
 
     <!-- 空状态 -->
     <view v-if="historyCards.length === 0" class="empty-state">
-      <text class="empty-icon">📭</text>
+      <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" custom-class="empty-icon" mode="aspectFit" />
       <text class="empty-title">还没有浏览记录</text>
       <text class="empty-subtitle">快去寻觅页发现有趣的TA吧</text>
     </view>
   </view>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+$green-primary: #3FCF8E;
+$green-light: #E8F9F1;
+$pink-primary: #EC4899;
+$pink-light: #FCE7F3;
+$white: #FFFFFF;
+$bg-page: #F4F6FA;
+$text-primary: #1F2937;
+$text-secondary: #6B7280;
+$text-tertiary: #9CA3AF;
+$border-light: #F3F4F6;
+$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+
 .history-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f4f7fb;
+  background: linear-gradient(180deg, #F0FDF8 0%, $bg-page 50%);
   padding-bottom: 40rpx;
 }
 
@@ -184,77 +207,108 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 40rpx 32rpx 24rpx;
+  padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 28rpx;
+  background: transparent;
 }
 
 .back-btn {
-  width: 64rpx;
-  height: 64rpx;
+  width: 72rpx;
+  height: 72rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #ffffff;
+  background-color: $white;
   border-radius: 50%;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  transition: all 0.15s ease;
+}
+
+.back-btn:active {
+  transform: scale(0.92);
 }
 
 .back-icon {
-  font-size: 32rpx;
-  color: #334155;
+  font-size: 36rpx;
+  color: $green-primary;
+  font-weight: 600;
 }
 
 .page-title {
-  font-size: 36rpx;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 38rpx;
+  font-weight: 700;
+  color: $text-primary;
+  // #ifdef H5
+  background: linear-gradient(135deg, $green-primary, $pink-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  // #endif
+  // #ifndef H5
+  color: #3FCF8E; // mp-weixin 降级：使用纯色（取渐变中间色）
+  // #endif
 }
 
 .header-placeholder {
-  width: 64rpx;
+  width: 72rpx;
 }
 
 /* ===== 统计栏 ===== */
 .stats-bar {
   display: flex;
   justify-content: space-around;
-  padding: 24rpx 32rpx;
-  margin: 0 32rpx 24rpx;
-  background-color: #ffffff;
-  border-radius: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  padding: 28rpx 32rpx;
+  margin: 0 24rpx 28rpx;
+  background-color: $white;
+  border-radius: 24rpx;
+  box-shadow: $card-soft-shadow;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8rpx;
 }
 
 .stat-num {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 44rpx;
+  font-weight: 800;
+  // #ifdef H5
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  // #endif
+  // #ifndef H5
+  color: #3FCF8E; // mp-weixin 降级：使用纯色（取渐变中间色）
+  // #endif
 }
 
 .stat-label {
   font-size: 24rpx;
-  color: #64748b;
-  margin-top: 4rpx;
+  color: $text-tertiary;
+  font-weight: 500;
 }
 
 /* ===== 历史列表 ===== */
 .history-list {
-  padding: 0 32rpx;
+  padding: 0 24rpx;
   display: flex;
   flex-direction: column;
   gap: 20rpx;
 }
 
 .history-card {
-  background-color: #ffffff;
-  border-radius: 20rpx;
+  background-color: $white;
+  border-radius: 24rpx;
   padding: 28rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  box-shadow: $card-soft-shadow;
+  transition: all 0.15s ease;
+}
+
+.history-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
 }
 
 .card-main {
@@ -263,12 +317,13 @@ onMounted(() => {
 }
 
 .card-avatar {
-  width: 88rpx;
-  height: 88rpx;
+  width: 96rpx;
+  height: 96rpx;
   border-radius: 50%;
-  background-color: #e2e8f0;
+  background-color: $bg-page;
   margin-right: 20rpx;
   flex-shrink: 0;
+  border: 4rpx solid $green-light;
 }
 
 .card-info {
@@ -282,51 +337,51 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8rpx;
+  margin-bottom: 10rpx;
 }
 
 .card-name {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: $text-primary;
 }
 
 .status-badge {
-  padding: 6rpx 14rpx;
-  border-radius: 16rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 999px;
 }
 
 .status-liked {
-  background-color: #fce7f3;
+  background: linear-gradient(135deg, $pink-light, #FBCFE8);
 }
 
 .status-liked .status-text {
-  color: #db2777;
+  color: $pink-primary;
 }
 
 .status-passed {
-  background-color: #f1f5f9;
+  background-color: $bg-page;
 }
 
 .status-passed .status-text {
-  color: #94a3b8;
+  color: $text-tertiary;
 }
 
 .status-text {
   font-size: 22rpx;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .card-headline {
   font-size: 24rpx;
-  color: #64748b;
+  color: $text-tertiary;
   margin-bottom: 8rpx;
 }
 
 .card-bio {
   font-size: 26rpx;
-  color: #334155;
-  line-height: 1.5;
+  color: $text-secondary;
+  line-height: 1.6;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -336,9 +391,9 @@ onMounted(() => {
 
 /* ===== 挽回操作 ===== */
 .rewind-action {
-  margin-top: 20rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx solid #f1f5f9;
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid $border-light;
 }
 
 .rewind-btn {
@@ -346,12 +401,18 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 72rpx;
-  background-color: #eef2ff;
-  border-radius: 36rpx;
+  height: 80rpx;
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  border-radius: 999px;
   border: none;
   padding: 0;
   margin: 0;
+  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.35);
+  transition: all 0.15s ease;
+}
+
+.rewind-btn:active {
+  transform: scale(0.96);
 }
 
 .rewind-btn::after {
@@ -359,27 +420,27 @@ onMounted(() => {
 }
 
 .rewind-icon {
-  font-size: 28rpx;
-  color: #4f46e5;
-  margin-right: 8rpx;
+  font-size: 32rpx;
+  color: $white;
+  margin-right: 10rpx;
 }
 
 .rewind-label {
-  font-size: 26rpx;
-  color: #4f46e5;
-  font-weight: 500;
+  font-size: 28rpx;
+  color: $white;
+  font-weight: 600;
 }
 
 .rewind-hint {
-  margin-top: 20rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx solid #f1f5f9;
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid $border-light;
   text-align: center;
 }
 
 .hint-text {
   font-size: 24rpx;
-  color: #94a3b8;
+  color: $text-tertiary;
 }
 
 /* ===== 空状态 ===== */
@@ -388,24 +449,27 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 120rpx 32rpx;
+  padding: 140rpx 32rpx;
   text-align: center;
 }
 
 .empty-icon {
-  font-size: 80rpx;
-  margin-bottom: 24rpx;
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 28rpx;
+  opacity: 0.4;
 }
 
 .empty-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: $text-primary;
   margin-bottom: 12rpx;
 }
 
 .empty-subtitle {
   font-size: 26rpx;
-  color: #64748b;
+  color: $text-tertiary;
+  line-height: 1.6;
 }
 </style>

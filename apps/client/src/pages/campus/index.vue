@@ -9,10 +9,13 @@
  * - 底部悬浮"发布话题"按钮（FAB样式）
  */
 import { ref, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime } from "../../stores/campus";
 import type { CampusTopicCategory } from "../../stores/campus";
 import { openAppPath } from "../../utils/navigation";
+import { IMAGE_PATHS } from "../../config/images";
+import SafeImage from "../../components/common/SafeImage.vue";
 
 const campusStore = useCampusStore();
 const {
@@ -27,12 +30,12 @@ const {
 
 /** 6个话题分类Tab */
 const categoryTabs: { key: CampusTopicCategory; label: string; icon: string }[] = [
-  { key: "course_exchange", label: CAMPUS_CATEGORY_MAP.course_exchange, icon: "📖" },
-  { key: "club_recruitment", label: CAMPUS_CATEGORY_MAP.club_recruitment, icon: "🎯" },
-  { key: "campus_activity", label: CAMPUS_CATEGORY_MAP.campus_activity, icon: "🎉" },
-  { key: "study_help", label: CAMPUS_CATEGORY_MAP.study_help, icon: "💡" },
-  { key: "life_service", label: CAMPUS_CATEGORY_MAP.life_service, icon: "🛒" },
-  { key: "alumni_news", label: CAMPUS_CATEGORY_MAP.alumni_news, icon: "📢" },
+  { key: "course_exchange", label: CAMPUS_CATEGORY_MAP.course_exchange, icon: IMAGE_PATHS.ICONS_COMMON.SCHOOL },
+  { key: "club_recruitment", label: CAMPUS_CATEGORY_MAP.club_recruitment, icon: IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL },
+  { key: "campus_activity", label: CAMPUS_CATEGORY_MAP.campus_activity, icon: IMAGE_PATHS.ICONS_COMMON.CELEBRATION },
+  { key: "study_help", label: CAMPUS_CATEGORY_MAP.study_help, icon: "" },
+  { key: "life_service", label: CAMPUS_CATEGORY_MAP.life_service, icon: IMAGE_PATHS.ICONS_COMMON.SHOP },
+  { key: "alumni_news", label: CAMPUS_CATEGORY_MAP.alumni_news, icon: IMAGE_PATHS.ICONS_COMMON.NOTIFICATION },
 ];
 
 /** 当前Tab滚动位置 */
@@ -107,12 +110,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="campus-page">
+  <view class="campus-page page-fade-in">
     <!-- 顶部学校信息栏 + 认证状态 -->
     <view class="campus-header">
       <view class="header-top">
         <view class="header-school">
-          <text class="school-icon">🏫</text>
+          <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="school-icon" mode="aspectFit" />
           <text class="school-name">{{ certificationInfo?.schoolName || "广州大学" }}</text>
           <view class="cert-badge" :class="certStatusClass(certificationStatus)">
             <text class="cert-badge__text">{{ certStatusText(certificationStatus) }}</text>
@@ -122,13 +125,13 @@ onMounted(() => {
     </view>
 
     <!-- 未认证用户引导卡片 -->
-    <view v-if="!isVerified" class="cert-guide-card">
-      <view class="cert-guide-card__icon">🎓</view>
+    <view v-if="!isVerified" class="cert-guide-card card-base">
+      <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="cert-guide-card__icon" mode="aspectFit" />
       <view class="cert-guide-card__body">
         <text class="cert-guide-card__title">完成学生认证，解锁校园专区</text>
         <text class="cert-guide-card__desc">上传学生证即可认证，与同校同学畅聊校园话题</text>
       </view>
-      <view class="cert-guide-card__btn" @tap="goToCertification">
+      <view class="cert-guide-card__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToCertification">
         <text class="cert-guide-card__btn-text">去认证</text>
       </view>
     </view>
@@ -144,7 +147,6 @@ onMounted(() => {
           :class="{ 'category-tab--active': activeCategory === tab.key }"
           @tap="switchCategory(tab.key)"
         >
-          <text class="category-tab__icon">{{ tab.icon }}</text>
           <text class="category-tab__label">{{ tab.label }}</text>
         </view>
       </scroll-view>
@@ -157,27 +159,19 @@ onMounted(() => {
 
       <!-- 错误状态 -->
       <view v-else-if="errorMessage && topics.length === 0" class="campus-state">
-        <text class="campus-state__icon">😥</text>
+        <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="campus-state__icon" mode="aspectFit" />
         <text class="campus-state__text">{{ errorMessage }}</text>
-        <view class="campus-state__btn" @tap="campusStore.fetchCampusTopics()">
+        <view class="campus-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="campusStore.fetchCampusTopics()">
           <text class="campus-state__btn-text">重试</text>
         </view>
       </view>
 
       <!-- 话题列表 -->
-      <scroll-view v-else class="topics-list" scroll-y @scrolltolower="campusStore.fetchCampusTopics(activeCategory, campusStore.topicPage + 1)">
-        <!-- 空状态 -->
-        <view v-if="topics.length === 0" class="topics-empty">
-          <text class="topics-empty__icon">💬</text>
-          <text class="topics-empty__title">暂无话题</text>
-          <text class="topics-empty__desc">快来发布第一个话题吧</text>
-        </view>
-
-        <!-- 话题卡片 -->
+      <scroll-view v-else class="topic-scroll" scroll-y>
         <view
           v-for="topic in topics"
           :key="topic.id"
-          class="topic-card"
+          class="topic-card list-item"
           @tap="goToTopicDetail(topic.id)"
         >
           <view class="topic-card__body">
@@ -191,61 +185,57 @@ onMounted(() => {
                 {{ topic.isAnonymous ? "匿名校友" : topic.author.name }}
               </text>
               <view class="topic-card__replies">
-                <text class="replies-icon">💬</text>
+                <SafeImage :src="IMAGE_PATHS.ICONS_SOCIAL.COMMENT" custom-class="replies-icon" mode="aspectFit" />
                 <text class="replies-count">{{ topic.replyCount }}</text>
               </view>
             </view>
           </view>
         </view>
-
-        <!-- 加载更多 -->
         <view v-if="loading && topics.length > 0" class="loading-more">
           <view class="loading-spinner--small" />
           <text class="loading-more__text">加载中...</text>
         </view>
-
-        <!-- 没有更多 -->
         <view v-else-if="!campusStore.topicHasMore && topics.length > 0" class="no-more">
-          <text class="no-more__text">-- 没有更多了 --</text>
+          <text class="no-more__text">没有更多了</text>
         </view>
-
-        <!-- 底部留白（为FAB预留空间） -->
         <view class="list-bottom-spacer" />
       </scroll-view>
     </template>
 
-    <!-- 未认证用户仍可浏览基本内容 -->
-    <template v-if="!isVerified">
-      <view class="campus-locked">
-        <text class="locked-icon">🔒</text>
-        <text class="locked-title">认证后可查看校园话题</text>
-        <text class="locked-desc">完成学生认证后，即可参与校园话题讨论</text>
-      </view>
-    </template>
-
-    <!-- 底部悬浮FAB - 发布话题 -->
-    <view v-if="isVerified" class="fab-btn" @tap="goToPostTopic">
-      <text class="fab-btn__icon">+</text>
-      <text class="fab-btn__text">发布话题</text>
+    <!-- 底部FAB -->
+    <view v-if="isVerified" class="campus-fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPostTopic">
+      <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.EDIT" custom-class="campus-fab__icon" mode="aspectFit" />
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
+$green-primary: #3FCF8E;
+$green-light: #E8F9F1;
+$pink-primary: #EC4899;
+$pink-light: #FCE7F3;
+$white: #FFFFFF;
+$bg-page: #F4F6FA;
+$text-primary: #1F2937;
+$text-secondary: #6B7280;
+$text-tertiary: #9CA3AF;
+$border-light: #F3F4F6;
+$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+
 .campus-page {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: $bg-page;
 }
 
 /* ========== 顶部学校信息栏 ========== */
 .campus-header {
   display: flex;
   flex-direction: column;
-  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 20rpx;
-  background: linear-gradient(135deg, var(--td-brand-color-7), var(--td-brand-color-5));
+  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 28rpx;
+  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 50%, #F9A8C4 100%);
 }
 
 .header-top {
@@ -260,31 +250,32 @@ onMounted(() => {
 }
 
 .school-icon {
-  font-size: 36rpx;
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .school-name {
-  font-size: 34rpx;
+  font-size: 36rpx;
   font-weight: 700;
   color: #ffffff;
 }
 
 .cert-badge {
-  padding: 4rpx 18rpx;
+  padding: 6rpx 20rpx;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.25);
 }
 
 .cert-badge--verified {
-  background: rgba(34, 197, 94, 0.3);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .cert-badge--pending {
-  background: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.4);
 }
 
 .cert-badge--rejected {
-  background: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.4);
 }
 
 .cert-badge--unverified {
@@ -294,7 +285,7 @@ onMounted(() => {
 .cert-badge__text {
   font-size: 22rpx;
   color: #ffffff;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* ========== 认证引导卡片 ========== */
@@ -303,14 +294,16 @@ onMounted(() => {
   align-items: center;
   gap: 20rpx;
   margin: 20rpx 24rpx;
-  padding: 28rpx 28rpx;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  border-radius: 20rpx;
-  border: 1rpx solid rgba(37, 99, 235, 0.15);
+  padding: 28rpx;
+  background: linear-gradient(135deg, $green-light, #F0FDF8);
+  border-radius: 24rpx;
+  border: none;
+  box-shadow: $card-soft-shadow;
 }
 
 .cert-guide-card__icon {
-  font-size: 56rpx;
+  width: 64rpx;
+  height: 64rpx;
   flex-shrink: 0;
 }
 
@@ -318,27 +311,33 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
+  gap: 8rpx;
   min-width: 0;
 }
 
 .cert-guide-card__title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
+  font-size: 30rpx;
+  font-weight: 700;
+  color: $text-primary;
 }
 
 .cert-guide-card__desc {
   font-size: 24rpx;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
   line-height: 1.5;
 }
 
 .cert-guide-card__btn {
-  padding: 14rpx 28rpx;
+  padding: 16rpx 32rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
   flex-shrink: 0;
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
+  transition: all 0.15s ease;
+}
+
+.cert-guide-card__btn:active {
+  transform: scale(0.96);
 }
 
 .cert-guide-card__btn-text {
@@ -348,40 +347,13 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-/* ========== 未认证锁定状态 ========== */
-.campus-locked {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20rpx;
-  padding: 80rpx 40rpx;
-}
-
-.locked-icon {
-  font-size: 88rpx;
-}
-
-.locked-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-}
-
-.locked-desc {
-  font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
-  text-align: center;
-}
-
 /* ========== 话题分类Tab ========== */
 .category-tabs {
   display: flex;
   white-space: nowrap;
-  padding: 20rpx 24rpx 16rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  padding: 24rpx 24rpx 20rpx;
+  background: $white;
+  box-shadow: $card-soft-shadow;
 }
 
 .category-tab {
@@ -389,31 +361,32 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 8rpx;
-  padding: 16rpx 24rpx;
-  border-radius: 16rpx;
-  margin-right: 12rpx;
-  transition: all 150ms ease;
+  padding: 18rpx 28rpx;
+  border-radius: 20rpx;
+  margin-right: 16rpx;
+  transition: all 200ms ease;
   flex-shrink: 0;
-  background: var(--td-bg-app-page);
+  background: $bg-page;
+}
+
+.category-tab:active {
+  transform: scale(0.96);
 }
 
 .category-tab--active {
-  background: var(--td-brand-color-1);
-}
-
-.category-tab__icon {
-  font-size: 32rpx;
+  background: linear-gradient(135deg, $green-light, #F0FDF8);
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.2);
 }
 
 .category-tab__label {
-  font-size: 24rpx;
+  font-size: 26rpx;
   font-weight: 500;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
 }
 
 .category-tab--active .category-tab__label {
-  color: var(--td-brand-color-7);
-  font-weight: 600;
+  color: $green-primary;
+  font-weight: 700;
 }
 
 /* ========== 加载/错误/空状态 ========== */
@@ -423,15 +396,15 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24rpx;
-  padding: 80rpx 40rpx;
+  gap: 28rpx;
+  padding: 100rpx 40rpx;
 }
 
 .loading-spinner {
-  width: 44rpx;
-  height: 44rpx;
-  border: 4rpx solid var(--td-border-level-1-color);
-  border-top-color: var(--td-brand-color-7);
+  width: 48rpx;
+  height: 48rpx;
+  border: 4rpx solid $border-light;
+  border-top-color: $green-primary;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -441,19 +414,28 @@ onMounted(() => {
 }
 
 .campus-state__icon {
-  font-size: 80rpx;
+  width: 100rpx;
+  height: 100rpx;
+  opacity: 0.5;
 }
 
 .campus-state__text {
   font-size: 28rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   text-align: center;
+  line-height: 1.6;
 }
 
 .campus-state__btn {
-  padding: 16rpx 48rpx;
+  padding: 20rpx 56rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.3);
+  transition: all 0.15s ease;
+}
+
+.campus-state__btn:active {
+  transform: scale(0.96);
 }
 
 .campus-state__btn-text {
@@ -463,52 +445,28 @@ onMounted(() => {
 }
 
 /* ========== 话题列表 ========== */
-.topics-list {
+.topic-scroll {
   flex: 1;
-  overflow-y: auto;
-}
-
-.topics-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20rpx;
-  padding: 120rpx 40rpx;
-}
-
-.topics-empty__icon {
-  font-size: 88rpx;
-}
-
-.topics-empty__title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-}
-
-.topics-empty__desc {
-  font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
 }
 
 .topic-card {
-  margin: 12rpx 24rpx;
-  padding: 24rpx 28rpx;
-  background: var(--td-bg-color-container);
-  border-radius: 20rpx;
-  box-shadow: var(--td-shadow-1, 0 2rpx 12rpx rgba(0, 0, 0, 0.04));
-  transition: transform 120ms ease;
+  margin: 16rpx 24rpx;
+  padding: 28rpx;
+  background: $white;
+  border-radius: 24rpx;
+  box-shadow: $card-soft-shadow;
+  transition: all 150ms ease;
 }
 
 .topic-card:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
 }
 
 .topic-card__body {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 16rpx;
 }
 
 .topic-card__header {
@@ -519,9 +477,9 @@ onMounted(() => {
 }
 
 .topic-card__title {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
+  font-size: 32rpx;
+  font-weight: 700;
+  color: $text-primary;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -530,14 +488,17 @@ onMounted(() => {
 
 .topic-card__time {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   flex-shrink: 0;
+  background: $bg-page;
+  padding: 4rpx 12rpx;
+  border-radius: 999px;
 }
 
 .topic-card__preview {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary);
-  line-height: 1.6;
+  color: $text-secondary;
+  line-height: 1.7;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -549,26 +510,34 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-top: 12rpx;
+  border-top: 1rpx solid $border-light;
 }
 
 .topic-card__author {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $pink-primary;
+  font-weight: 500;
 }
 
 .topic-card__replies {
   display: flex;
   align-items: center;
-  gap: 6rpx;
+  gap: 8rpx;
+  padding: 8rpx 16rpx;
+  background: $green-light;
+  border-radius: 999px;
 }
 
 .replies-icon {
-  font-size: 22rpx;
+  width: 24rpx;
+  height: 24rpx;
 }
 
 .replies-count {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $green-primary;
+  font-weight: 600;
 }
 
 /* ========== 加载更多 ========== */
@@ -577,69 +546,65 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  padding: 30rpx 0;
+  padding: 36rpx 0;
 }
 
 .loading-spinner--small {
   width: 32rpx;
   height: 32rpx;
-  border: 3rpx solid var(--td-border-level-1-color);
-  border-top-color: var(--td-brand-color-7);
+  border: 3rpx solid $border-light;
+  border-top-color: $green-primary;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 .loading-more__text {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .no-more {
   display: flex;
   justify-content: center;
-  padding: 30rpx 0;
+  padding: 36rpx 0;
 }
 
 .no-more__text {
   font-size: 24rpx;
-  color: var(--td-text-color-disabled);
+  color: $text-tertiary;
+  background: $bg-page;
+  padding: 8rpx 24rpx;
+  border-radius: 999px;
 }
 
 /* ========== 底部留白 ========== */
 .list-bottom-spacer {
-  height: 120rpx;
+  height: 160rpx;
 }
 
 /* ========== 底部悬浮FAB ========== */
-.fab-btn {
+.campus-fab {
   position: fixed;
   right: 32rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 120rpx);
+  bottom: calc(env(safe-area-inset-bottom) + 140rpx);
   display: flex;
   align-items: center;
-  gap: 10rpx;
-  padding: 20rpx 32rpx;
-  border-radius: 999px;
-  background: var(--td-brand-color-7);
-  box-shadow: 0 8rpx 24rpx rgba(37, 99, 235, 0.35);
+  justify-content: center;
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  box-shadow: 0 8rpx 28rpx rgba(63, 207, 142, 0.4);
   z-index: 20;
-  transition: transform 120ms ease;
+  transition: all 200ms ease;
 }
 
-.fab-btn:active {
-  transform: scale(0.95);
+.campus-fab:active {
+  transform: scale(0.9);
 }
 
-.fab-btn__icon {
-  font-size: 36rpx;
-  color: #ffffff;
-  font-weight: 300;
-  line-height: 1;
-}
-
-.fab-btn__text {
-  font-size: 28rpx;
-  color: #ffffff;
-  font-weight: 600;
+.campus-fab__icon {
+  width: 44rpx;
+  height: 44rpx;
 }
 </style>

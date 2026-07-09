@@ -1,0 +1,248 @@
+[
+  {
+    "rel": "images/posters/home-poster.jpg",
+    "size": 99230,
+    "sizeKB": "96.90",
+    "md5": "ed81f68e95ddea425dceac6e3889cf6c"
+  },
+  {
+    "rel": "images/posters/login-poster.jpg",
+    "size": 69277,
+    "sizeKB": "67.65",
+    "md5": "7e1e3bef47a94ad2d2c25f14212c83e2"
+  },
+  {
+    "rel": "images/posters/login-poster.png",
+    "size": 137124,
+    "sizeKB": "133.91",
+    "md5": "c87ebbb8b34aada77d8706b1419dd55c"
+  },
+  {
+    "rel": "images/posts/campus-library.jpg",
+    "size": 68301,
+    "sizeKB": "66.70",
+    "md5": "7cd44808b28e51b392878568b189249f"
+  },
+  {
+    "rel": "images/posts/post-1.jpg",
+    "size": 51047,
+    "sizeKB": "49.85",
+    "md5": "69d7e7ad8b0c8515a4b98e30a265e078"
+  },
+  {
+    "rel": "images/posts/post-2.jpg",
+    "size": 59137,
+    "sizeKB": "57.75",
+    "md5": "0ef29ceacb89d583b8d9b32844584c0e"
+  },
+  {
+    "rel": "images/posts/post-3.jpg",
+    "size": 59433,
+    "sizeKB": "58.04",
+    "md5": "e58374580a82dd9adf572b5a3d0ffc3f"
+  },
+  {
+    "rel": "images/posts/post-4.jpg",
+    "size": 27309,
+    "sizeKB": "26.67",
+    "md5": "78f8e288a035518f290a703974493624"
+  },
+  {
+    "rel": "images/posts/post-5.jpg",
+    "size": 91347,
+    "sizeKB": "89.21",
+    "md5": "ded0bad06f5deab0c095843a8261576f"
+  },
+  {
+    "rel": "images/posts/post-6.jpg",
+    "size": 72254,
+    "sizeKB": "70.56",
+    "md5": "6a270aa5c1d1f11e857173e90f1b3e62"
+  },
+  {
+    "rel": "images/posts/post-7.jpg",
+    "size": 74876,
+    "sizeKB": "73.12",
+    "md5": "ed6aa76e3e6f6be328a97e36a20d354c"
+  },
+  {
+    "rel": "images/posts/post-8.jpg",
+    "size": 27996,
+    "sizeKB": "27.34",
+    "md5": "1575c58a2bd732a878e2c33933760202"
+  },
+  {
+    "rel": "images/posts/post-placeholder.jpg",
+    "size": 33754,
+    "sizeKB": "32.96",
+    "md5": "5aefac17e967720b796643715e365370"
+  },
+  {
+    "rel": "images/activities/activity-1.jpg",
+    "size": 133177,
+    "sizeKB": "130.06",
+    "md5": "f7e6abad481d885e0d942cd6e00baf98"
+  },
+  {
+    "rel": "images/activities/activity-2.jpg",
+    "size": 143165,
+    "sizeKB": "139.81",
+    "md5": "428020c36a8bef244149d32750326b57"
+  },
+  {
+    "rel": "images/activities/activity-3.jpg",
+    "size": 63477,
+    "sizeKB": "61.99",
+    "md5": "6e6ff384b53f14b6c1c0af2a548361f5"
+  },
+  {
+    "rel": "images/activities/activity-4.jpg",
+    "size": 38062,
+    "sizeKB": "37.17",
+    "md5": "520700bced303ad8de688af9bbcb71b2"
+  },
+  {
+    "rel": "images/activities/activity-5.jpg",
+    "size": 32498,
+    "sizeKB": "31.74",
+    "md5": "673fa5d51d0748b977d998d7a65b3f05"
+  },
+  {
+    "rel": "images/activities/activity-6.jpg",
+    "size": 72084,
+    "sizeKB": "70.39",
+    "md5": "2913b8aaaef3f4c3b10b9733eba8bcb6"
+  },
+  {
+    "rel": "images/activities/activity-sports.jpg",
+    "size": 131402,
+    "sizeKB": "128.32",
+    "md5": "24e938b6840197f93b2717b8c24e0b0e"
+  },
+  {
+    "rel": "images/activities/activity-study.jpg",
+    "size": 110395,
+    "sizeKB": "107.81",
+    "md5": "54bf9f8fcb3ad7bf3ad2e066066e42f9"
+  },
+  {
+    "rel": "images/products/food-1.jpg",
+    "size": 62807,
+    "sizeKB": "61.33",
+    "md5": "6292a8d5f9e981d647b3d90cf86f1706"
+  },
+  {
+    "rel": "images/products/food-2.jpg",
+    "size": 13424,
+    "sizeKB": "13.11",
+    "md5": "a2c9ec239829dba4a97dd28a502e43f0"
+  },
+  {
+    "rel": "images/products/merch-1.jpg",
+    "size": 52701,
+    "sizeKB": "51.47",
+    "md5": "37a88eda4f31eb88c96f63be5ff0587f"
+  },
+  {
+    "rel": "images/products/merch-2.jpg",
+    "size": 41406,
+    "sizeKB": "40.44",
+    "md5": "bfb29ef8f7efdb80c4f6775b65328c4d"
+  },
+  {
+    "rel": "images/products/ticket-1.jpg",
+    "size": 41093,
+    "sizeKB": "40.13",
+    "md5": "4fea6f930239af1725cb73f9f61b4af7"
+  },
+  {
+    "rel": "images/products/ticket-2.jpg",
+    "size": 51592,
+    "sizeKB": "50.38",
+    "md5": "913e334c071516818c47d8c8ac70c939"
+  },
+  {
+    "rel": "images/banners/home-banner.jpg",
+    "size": 211095,
+    "sizeKB": "206.15",
+    "md5": "1968c6b1e5d5d140236187398d461ecd"
+  },
+  {
+    "rel": "images/banners/village-banner.jpg",
+    "size": 109371,
+    "sizeKB": "106.81",
+    "md5": "d51b965e4425b34ecb1e00a216298e35"
+  },
+  {
+    "rel": "images/avatars/avatar-1.jpg",
+    "size": 38089,
+    "sizeKB": "37.20",
+    "md5": "14c384c13f4f6e5331a0747cb027da6f"
+  },
+  {
+    "rel": "images/avatars/avatar-10.jpg",
+    "size": 34319,
+    "sizeKB": "33.51",
+    "md5": "5cab4407d1a6c282b9eb80835a13fed7"
+  },
+  {
+    "rel": "images/avatars/avatar-11.jpg",
+    "size": 10370,
+    "sizeKB": "10.13",
+    "md5": "f9e78fde1397a3eea815b1b55da06313"
+  },
+  {
+    "rel": "images/avatars/avatar-12.jpg",
+    "size": 26584,
+    "sizeKB": "25.96",
+    "md5": "ec46ed3af16f19f83036c7fb53de413a"
+  },
+  {
+    "rel": "images/avatars/avatar-2.jpg",
+    "size": 28534,
+    "sizeKB": "27.87",
+    "md5": "7df599ec1125c6e1c57ae5181059cb9b"
+  },
+  {
+    "rel": "images/avatars/avatar-3.jpg",
+    "size": 19227,
+    "sizeKB": "18.78",
+    "md5": "3011fbbdced38ec7c2b28d07029498b6"
+  },
+  {
+    "rel": "images/avatars/avatar-4.jpg",
+    "size": 35224,
+    "sizeKB": "34.40",
+    "md5": "ab79aa8d138d0f133671ea18b9ecb5ac"
+  },
+  {
+    "rel": "images/avatars/avatar-5.jpg",
+    "size": 15106,
+    "sizeKB": "14.75",
+    "md5": "9a70f0bc24fb41b819d6aa1d83017132"
+  },
+  {
+    "rel": "images/avatars/avatar-6.jpg",
+    "size": 16886,
+    "sizeKB": "16.49",
+    "md5": "659f52345dee3e8b3cd3adae39235fd0"
+  },
+  {
+    "rel": "images/avatars/avatar-7.jpg",
+    "size": 34677,
+    "sizeKB": "33.86",
+    "md5": "4606148ae568e362ffda15ed524dff78"
+  },
+  {
+    "rel": "images/avatars/avatar-8.jpg",
+    "size": 32524,
+    "sizeKB": "31.76",
+    "md5": "fcae3063d419ae1e291b3a6be7b5b337"
+  },
+  {
+    "rel": "images/avatars/avatar-9.jpg",
+    "size": 10882,
+    "sizeKB": "10.63",
+    "md5": "aaad40578db81ecd164f97e14ef392ab"
+  }
+]

@@ -24,30 +24,6 @@
       }
     },
     {
-      "path": "pages/circle/index",
-      "style": {
-        "navigationBarTitleText": "圈子"
-      }
-    },
-    {
-      "path": "pages/chat/index",
-      "style": {
-        "navigationBarTitleText": "聊天"
-      }
-    },
-    {
-      "path": "pages/shop/index",
-      "style": {
-        "navigationBarTitleText": "逛逛"
-      }
-    },
-    {
-      "path": "pages/profile/index",
-      "style": {
-        "navigationBarTitleText": "我的"
-      }
-    },
-    {
       "path": "pages/discover/index",
       "style": {
         "navigationBarTitleText": "寻觅"
@@ -57,6 +33,14 @@
       "path": "pages/discover/history",
       "style": {
         "navigationBarTitleText": "今日已看"
+      }
+    },
+    {
+      "path": "pages/discover/video-player",
+      "style": {
+        "navigationBarTitleText": "个人视频",
+        "navigationBarBackgroundColor": "#000000",
+        "navigationBarTextStyle": "white"
       }
     },
     {
@@ -84,15 +68,15 @@
       }
     },
     {
-      "path": "pages/village/tag-posts",
-      "style": {
-        "navigationBarTitleText": "话题帖子"
-      }
-    },
-    {
       "path": "pages/messages/index",
       "style": {
         "navigationBarTitleText": "消息"
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "我的"
       }
     },
     {
@@ -126,15 +110,21 @@
       }
     },
     {
+      "path": "pages/chat/index",
+      "style": {
+        "navigationBarTitleText": "聊天"
+      }
+    },
+    {
       "path": "pages/chat-session/index",
       "style": {
         "navigationBarTitleText": "会话"
       }
     },
     {
-      "path": "pages/dev/index",
+      "path": "pages/shop/index",
       "style": {
-        "navigationBarTitleText": "DEV"
+        "navigationBarTitleText": "逛逛"
       }
     },
     {
@@ -144,21 +134,51 @@
       }
     },
     {
-      "path": "pages/campus/topic-detail",
-      "style": {
-        "navigationBarTitleText": "话题详情"
-      }
-    },
-    {
       "path": "pages/campus/post-topic",
       "style": {
         "navigationBarTitleText": "发布话题"
       }
     },
     {
+      "path": "pages/campus/topic-detail",
+      "style": {
+        "navigationBarTitleText": "话题详情"
+      }
+    },
+    {
       "path": "pages/campus/certification",
       "style": {
-        "navigationBarTitleText": "学生认证"
+        "navigationBarTitleText": "校园认证"
+      }
+    },
+    {
+      "path": "pages/village/tag-posts",
+      "style": {
+        "navigationBarTitleText": "标签帖子"
+      }
+    },
+    {
+      "path": "pages/settings/index",
+      "style": {
+        "navigationBarTitleText": "设置"
+      }
+    },
+    {
+      "path": "pages/verification/index",
+      "style": {
+        "navigationBarTitleText": "恋爱认证"
+      }
+    },
+    {
+      "path": "pages/vip/index",
+      "style": {
+        "navigationBarTitleText": "开通VIP"
+      }
+    },
+    {
+      "path": "pages/dev/index",
+      "style": {
+        "navigationBarTitleText": "开发调试"
       }
     }
   ],
@@ -223,46 +243,40 @@
   ],
   "tabBar": {
     "custom": true,
-    "color": "#64748b",
-    "selectedColor": "#2563eb",
+    "color": "#94A3B8",
+    "selectedColor": "#3FCF8E",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
       {
         "pagePath": "pages/home/index",
         "text": "首页",
-        "iconPath": "static/assets/icons/home.png",
-        "selectedIconPath": "static/assets/icons/home-active.png"
+        "iconPath": "static/assets/icons/tabbar/home-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/home-active.png"
       },
       {
-        "pagePath": "pages/circle/index",
+        "pagePath": "pages/village/index",
         "text": "圈子",
-        "iconPath": "static/assets/icons/circle.png",
-        "selectedIconPath": "static/assets/icons/circle-active.png"
+        "iconPath": "static/assets/icons/tabbar/village-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/village-active.png"
+      },
+      {
+        "pagePath": "pages/discover/index",
+        "text": "匹配",
+        "iconPath": "static/assets/icons/tabbar/discover-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/discover-active.png"
       },
       {
         "pagePath": "pages/chat/index",
-        "text": "聊天",
-        "iconPath": "static/assets/icons/chat.png",
-        "selectedIconPath": "static/assets/icons/chat-active.png"
-      },
-      {
-        "pagePath": "pages/shop/index",
-        "text": "逛逛",
-        "iconPath": "static/assets/icons/shop.png",
-        "selectedIconPath": "static/assets/icons/shop-active.png"
-      },
-      {
-        "pagePath": "pages/campus/index",
-        "text": "校园",
-        "iconPath": "static/assets/icons/village.png",
-        "selectedIconPath": "static/assets/icons/village-active.png"
+        "text": "消息",
+        "iconPath": "static/assets/icons/tabbar/chat-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/chat-active.png"
       },
       {
         "pagePath": "pages/profile/index",
         "text": "我的",
-        "iconPath": "static/assets/icons/profile.png",
-        "selectedIconPath": "static/assets/icons/profile-active.png"
+        "iconPath": "static/assets/icons/tabbar/profile-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/profile-active.png"
       }
     ]
   }

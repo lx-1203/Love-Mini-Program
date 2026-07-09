@@ -5,12 +5,15 @@
  * 包含作者交互卡片（关注/私信/校友标签）、相似作者推荐和转发功能
  */
 import { ref } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
 import { useMessagesStore } from "../../stores/messages";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
+import { reportTarget } from "../../services/report-api";
+import SafeImage from "../../components/common/SafeImage.vue";
+import { IMAGE_PATHS } from "../../config/images";
 
 const villageStore = useVillageStore();
 const messagesStore = useMessagesStore();
@@ -28,11 +31,68 @@ const shareComment = ref("");
 /** 是否正在转发 */
 const isSharing = ref(false);
 
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
+
 /**
  * 返回上一页
  */
 function goBack() {
   uni.navigateBack();
+}
+
+/** 举报原因选项（与产品约定，覆盖常见违规场景） */
+const REPORT_REASONS = ["垃圾广告", "辱骂攻击", "色情低俗", "违法违规", "其他"];
+
+/**
+ * 长按评论触发举报流程。
+ * 1. 弹出 ActionSheet 选择举报原因
+ * 2. 弹出 Modal 收集可选补充描述
+ * 3. 调用后端举报接口持久化
+ *
+ * @param comment 被举报的评论对象
+ */
+async function handleReportComment(comment: { id: string }) {
+  // 1. 选择举报原因
+  let reason: string;
+  try {
+    const res = await uni.showActionSheet({ itemList: REPORT_REASONS });
+    reason = REPORT_REASONS[res.tapIndex];
+  } catch (_e) {
+    // 用户取消选择，静默退出
+    return;
+  }
+
+  // 2. 收集可选补充描述
+  let description: string | undefined;
+  try {
+    const res = await uni.showModal({
+      title: "补充描述（可选）",
+      editable: true,
+      placeholderText: "请输入补充描述...",
+      confirmText: "提交举报",
+      cancelText: "跳过",
+    });
+    if (res.confirm && res.content) {
+      description = res.content;
+    }
+  } catch (_e) {
+    // 取消则不附加描述，继续提交
+  }
+
+  // 3. 调用举报接口
+  try {
+    await reportTarget("COMMENT", comment.id, reason, description);
+    uni.showToast({ title: "举报已提交", icon: "success" });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "举报失败";
+    uni.showToast({ title: message, icon: "none" });
+  }
 }
 
 /**
@@ -185,6 +245,40 @@ function sendMessageToSimilarAuthor(userId: string) {
   }
 }
 
+/* ========== 兴趣分类颜色映射（Phase D1） ========== */
+
+/** 兴趣类别 */
+type InterestCategory = "sports" | "arts" | "tech" | "life";
+
+/** 各类别关键词集合（用于兴趣 chip 颜色映射） */
+const INTEREST_KEYWORDS: Record<InterestCategory, string[]> = {
+  sports: ["运动", "健身", "跑步", "篮球", "足球", "徒步", "户外", "瑜伽", "骑行", "游泳", "羽毛球", "网球", "乒乓球"],
+  arts: ["阅读", "读书", "音乐", "电影", "绘画", "设计", "摄影", "写作", "书法", "戏剧", "舞蹈", "艺术", "文学"],
+  tech: ["编程", "科技", "互联网", "数码", "AI", "计算机", "技术", "产品", "创业"],
+  life: ["美食", "旅行", "旅游", "烹饪", "烘焙", "志愿者", "宠物", "园艺", "手工", "桌游", "生活"],
+};
+
+/**
+ * 根据兴趣文本返回所属类别
+ * 默认归类为 life（生活），保证视觉上有颜色
+ */
+function getInterestCategory(interest: string): InterestCategory {
+  const text = interest.toLowerCase();
+  for (const category of Object.keys(INTEREST_KEYWORDS) as InterestCategory[]) {
+    if (INTEREST_KEYWORDS[category].some((kw) => text.includes(kw.toLowerCase()))) {
+      return category;
+    }
+  }
+  return "life";
+}
+
+/**
+ * 返回兴趣 chip 的 CSS 类名
+ */
+function getInterestChipClass(interest: string): string {
+  return `interest-chip--${getInterestCategory(interest)}`;
+}
+
 onLoad((query) => {
   // 支持通过 URL id 参数加载帖子（从通知、分享等入口进入）
   const postId = query?.id;
@@ -210,10 +304,10 @@ onLoad((query) => {
 </script>
 
 <template>
-  <view class="detail-page">
+  <view class="detail-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
-      <view class="detail-header__back" @tap="goBack">
+      <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">返回</text>
       </view>
       <text class="detail-header__title">帖子详情</text>
@@ -223,7 +317,7 @@ onLoad((query) => {
     <!-- 帖子内容 -->
     <scroll-view v-if="currentPost" class="detail-body" scroll-y>
       <!-- ===== 作者交互卡片 ===== -->
-      <view class="author-card">
+      <view class="author-card card-base">
         <!-- 作者基础信息 -->
         <view class="author-card__main">
           <view class="author-avatar">
@@ -234,13 +328,17 @@ onLoad((query) => {
               mode="aspectFill"
             />
             <text v-else class="author-avatar__char">{{ currentPost.author.name[0] }}</text>
+            <!-- 头像左上角身份徽章（校友） -->
+            <view v-if="currentPost.isAlumni" class="author-avatar__badge">
+              <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="author-avatar__badge-icon" mode="aspectFit" />
+            </view>
           </view>
           <view class="author-info">
             <view class="author-info__name-row">
               <text class="author-info__name">{{ currentPost.author.name }}</text>
               <!-- 校友标签 -->
               <view v-if="currentPost.isAlumni" class="identity-tag identity-tag--alumni">
-                <text class="identity-tag__icon">&#127979;</text>
+                <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="identity-tag__icon" mode="aspectFit" />
                 <text class="identity-tag__text">校友</text>
               </view>
             </view>
@@ -255,27 +353,30 @@ onLoad((query) => {
           </view>
         </view>
 
-        <!-- 兴趣标签 -->
+        <!-- 兴趣标签（按类别着色） -->
         <view v-if="currentPost.author.interests && currentPost.author.interests.length > 0" class="author-card__interests">
           <text
             v-for="interest in currentPost.author.interests"
             :key="interest"
             class="interest-chip"
+            :class="getInterestChipClass(interest)"
           >{{ interest }}</text>
         </view>
 
         <!-- 操作按钮行 -->
         <view class="author-card__actions">
           <view
-            class="action-btn action-btn--follow"
+            class="action-btn action-btn--follow press-feedback"
             :class="{ 'action-btn--follow-active': currentPost.isFollowed }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
             @tap="handleFollow"
           >
             <text class="action-btn__text">
               {{ currentPost.isFollowed ? "已关注" : "+ 关注" }}
             </text>
           </view>
-          <view class="action-btn action-btn--message" @tap="sendMessage">
+          <view class="action-btn action-btn--message press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="sendMessage">
             <text class="action-btn__text">私信</text>
           </view>
         </view>
@@ -294,6 +395,7 @@ onLoad((query) => {
               class="post-image"
               :src="img"
               mode="aspectFill"
+        lazy-load
             />
           </view>
 
@@ -337,14 +439,15 @@ onLoad((query) => {
           <view
             v-for="comment in comments"
             :key="comment.id"
-            class="comment-item"
+            class="comment-item list-item"
+            @longpress="handleReportComment(comment)"
           >
             <view class="comment-avatar">
               <image
                 v-if="comment.author.avatar"
                 class="comment-avatar__img"
                 :src="comment.author.avatar"
-                mode="aspectFill"
+                mode="aspectFill" lazy-load
               />
               <text v-else class="comment-avatar__text">{{ comment.author.name[0] }}</text>
             </view>
@@ -385,7 +488,7 @@ onLoad((query) => {
           <view
             v-for="author in similarAuthors"
             :key="author.userId"
-            class="similar-author-card"
+            class="similar-author-card list-item"
           >
             <view class="similar-author-main">
               <view class="similar-author-avatar">
@@ -393,16 +496,20 @@ onLoad((query) => {
                   v-if="author.avatar"
                   class="similar-author-avatar__img"
                   :src="author.avatar"
-                  mode="aspectFill"
+                  mode="aspectFill" lazy-load
                 />
                 <text v-else class="similar-author-avatar__char">{{ author.name[0] }}</text>
+                <!-- 头像左上角身份徽章（校友） -->
+                <view v-if="author.isAlumni" class="similar-author-avatar__badge">
+                  <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="similar-author-avatar__badge-icon" mode="aspectFit" />
+                </view>
               </view>
               <view class="similar-author-info">
                 <view class="similar-author-name-row">
                   <text class="similar-author-name">{{ author.name }}</text>
                   <!-- 同校标签 -->
                   <view v-if="author.isAlumni" class="identity-tag identity-tag--alumni">
-                    <text class="identity-tag__icon">&#127979;</text>
+                    <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="identity-tag__icon" mode="aspectFit" />
                     <text class="identity-tag__text">校友</text>
                   </view>
                 </view>
@@ -444,7 +551,7 @@ onLoad((query) => {
     <!-- 帖子不存在 -->
     <view v-else class="empty-state">
       <text class="empty-state__text">帖子不存在或已被删除</text>
-      <view class="empty-state__back" @tap="goBack">
+      <view class="empty-state__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-text">返回广场</text>
       </view>
     </view>
@@ -463,21 +570,25 @@ onLoad((query) => {
       <view class="footer-actions">
         <!-- 转发按钮 -->
         <view
-          class="footer-action"
+          class="footer-action press-feedback"
           :class="{ 'footer-action--active': currentPost.isShared }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
           @tap="openShareModal"
         >
           <text class="footer-action__icon">{{ currentPost.isShared ? "已转发" : "转发" }}</text>
           <text v-if="currentPost.shares > 0" class="footer-action__count">{{ currentPost.shares }}</text>
         </view>
         <!-- 私信按钮 -->
-        <view class="footer-action" @tap="sendMessage">
+        <view class="footer-action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="sendMessage">
           <text class="footer-action__icon">私信</text>
         </view>
         <!-- 点赞按钮 -->
         <view
-          class="footer-action"
+          class="footer-action press-feedback"
           :class="{ 'footer-action--active': currentPost.isLiked }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
           @tap="handleLike"
         >
           <text class="footer-action__icon">{{ currentPost.isLiked ? "已赞" : "点赞" }}</text>
@@ -492,7 +603,7 @@ onLoad((query) => {
         <!-- 弹窗标题 -->
         <view class="share-modal__header">
           <text class="share-modal__title">转发到我的动态</text>
-          <view class="share-modal__close" @tap="closeShareModal">
+          <view class="share-modal__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="closeShareModal">
             <text class="share-modal__close-icon">X</text>
           </view>
         </view>
@@ -511,12 +622,14 @@ onLoad((query) => {
 
         <!-- 操作按钮 -->
         <view class="share-modal__footer">
-          <view class="share-modal__btn share-modal__btn--cancel" @tap="closeShareModal">
+          <view class="share-modal__btn share-modal__btn--cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="closeShareModal">
             <text class="share-modal__btn-text">取消</text>
           </view>
           <view
-            class="share-modal__btn share-modal__btn--confirm"
+            class="share-modal__btn share-modal__btn--confirm press-feedback"
             :class="{ 'share-modal__btn--loading': isSharing }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
             @tap="confirmShare"
           >
             <text class="share-modal__btn-text">{{ isSharing ? "转发中..." : "确认转发" }}</text>
@@ -528,12 +641,25 @@ onLoad((query) => {
 </template>
 
 <style scoped lang="scss">
+$green-primary: #3FCF8E;
+$green-light: #E8F9F1;
+$pink-primary: #EC4899;
+$pink-light: #FCE7F3;
+$gold-vip: #C9A36A;
+$white: #FFFFFF;
+$bg-page: #F4F6FA;
+$text-primary: #1F2937;
+$text-secondary: #6B7280;
+$text-tertiary: #9CA3AF;
+$border-light: #F3F4F6;
+$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+
 .detail-page {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: $bg-page;
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -542,8 +668,7 @@ onLoad((query) => {
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 60%, #F9A8C4 100%);
   z-index: 10;
 }
 
@@ -552,15 +677,21 @@ onLoad((query) => {
   min-width: 80rpx;
 }
 
+.detail-header__back:active {
+  opacity: 0.7;
+  transform: scale(0.96);
+}
+
 .back-icon {
   font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  color: $white;
+  font-weight: 500;
 }
 
 .detail-header__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: $white;
 }
 
 .detail-header__spacer {
@@ -576,11 +707,12 @@ onLoad((query) => {
    作者交互卡片
    ================================================================ */
 .author-card {
-  background: var(--td-bg-color-container);
-  margin: 16rpx 24rpx;
+  background: $white;
+  margin: 20rpx 24rpx;
   padding: 28rpx;
-  border-radius: 20rpx;
-  box-shadow: var(--td-shadow-1, 0 2rpx 12rpx rgba(0, 0, 0, 0.04));
+  border-radius: 24rpx;
+  box-shadow: $card-soft-shadow;
+  transition: transform 0.15s ease;
 }
 
 /* 作者基础信息行 */
@@ -592,26 +724,55 @@ onLoad((query) => {
 }
 
 .author-avatar {
+  position: relative;
   width: 88rpx;
   height: 88rpx;
   border-radius: 50%;
-  overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  overflow: visible;
+  background: linear-gradient(135deg, $green-light, #C6F0DB);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border: 4rpx solid $green-light;
+  /* Phase D1: 头像光环 - 双层品牌色阴影 */
+  box-shadow: 0 0 0 4rpx var(--c-brand-50, #E8F8F0),
+              0 0 0 8rpx var(--c-brand-100, #D1F0E0);
 }
 
 .author-avatar__img {
   width: 100%;
   height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .author-avatar__char {
   font-size: 36rpx;
   font-weight: 700;
-  color: var(--td-brand-color-7);
+  color: $green-primary;
+}
+
+/* Phase D1: 头像左上角身份徽章 */
+.author-avatar__badge {
+  position: absolute;
+  top: -6rpx;
+  left: -6rpx;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--c-brand-400, #3FCF8E), var(--c-brand-500, #2DB97A));
+  border: 2rpx solid $white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 6rpx rgba(63, 207, 142, 0.3);
+  z-index: 2;
+}
+
+.author-avatar__badge-icon {
+  width: 20rpx;
+  height: 20rpx;
 }
 
 .author-info {
@@ -625,7 +786,7 @@ onLoad((query) => {
 .author-info__name {
   font-size: 32rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 /* 身份标签（校友等） */
@@ -639,8 +800,8 @@ onLoad((query) => {
 }
 
 .identity-tag--alumni {
-  background: var(--td-brand-color-1);
-  border: 1rpx solid var(--td-brand-color-2);
+  background: $green-light;
+  border: 1rpx solid rgba(63, 207, 142, 0.3);
 }
 
 .identity-tag__icon {
@@ -649,7 +810,7 @@ onLoad((query) => {
 
 .identity-tag__text {
   font-size: 22rpx;
-  color: var(--td-brand-color-7);
+  color: $green-primary;
   font-weight: 600;
 }
 
@@ -661,11 +822,16 @@ onLoad((query) => {
 }
 
 .author-info__headline {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
-  white-space: nowrap;
+  font-size: var(--fs-lg, 28rpx);
+  color: $text-tertiary;
+  line-height: 1.4;
+  /* Phase D1: 简介最多 2 行 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
+  word-break: break-all;
 }
 
 /* 学校标签 */
@@ -678,12 +844,12 @@ onLoad((query) => {
   align-items: center;
   padding: 8rpx 18rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-1);
+  background: linear-gradient(135deg, $pink-light, #FBCFE8);
 }
 
 .author-tag__text {
   font-size: 24rpx;
-  color: var(--td-brand-color-7);
+  color: $pink-primary;
   font-weight: 500;
 }
 
@@ -696,12 +862,33 @@ onLoad((query) => {
 }
 
 .interest-chip {
-  font-size: 24rpx;
-  color: var(--td-text-color-secondary);
-  background: var(--td-bg-app-page);
+  font-size: var(--fs-base, 24rpx);
+  color: $text-secondary;
+  background: $bg-page;
   padding: 8rpx 18rpx;
   border-radius: 999px;
   font-weight: 500;
+}
+
+/* Phase D1: 兴趣 chip 按类别着色（4 种颜色） */
+.interest-chip--sports {
+  color: var(--c-brand-500, #2DB97A);
+  background: var(--c-brand-50, #E8F8F0);
+}
+
+.interest-chip--arts {
+  color: var(--c-lavender-500, #8B5CF6);
+  background: var(--c-lavender-50, #F5F3FF);
+}
+
+.interest-chip--tech {
+  color: var(--c-sky-500, #0EA5E9);
+  background: var(--c-sky-50, #F0F9FF);
+}
+
+.interest-chip--life {
+  color: var(--c-apricot-500, #F97316);
+  background: var(--c-apricot-50, #FFF7ED);
 }
 
 /* 操作按钮行 */
@@ -712,53 +899,65 @@ onLoad((query) => {
 
 .action-btn--follow {
   flex: 1;
-  padding: 16rpx 0;
+  padding: 18rpx 0;
   border-radius: 999px;
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
+}
+
+.action-btn--follow:active {
+  transform: scale(0.96);
 }
 
 .action-btn--follow-active {
-  background: var(--td-bg-color-surface);
-  border: 1rpx solid var(--td-border-level-1-color);
+  background: $bg-page;
+  border: 2rpx solid $border-light;
+  box-shadow: none;
 }
 
 .action-btn--message {
   flex: 1;
-  padding: 16rpx 0;
+  padding: 18rpx 0;
   border-radius: 999px;
-  background: var(--td-bg-color-surface);
-  border: 1rpx solid var(--td-border-level-1-color);
+  background: linear-gradient(135deg, $pink-primary, #F472B6);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 4rpx 12rpx rgba(236, 72, 153, 0.3);
+}
+
+.action-btn--message:active {
+  transform: scale(0.96);
 }
 
 .action-btn__text {
   font-size: 28rpx;
   color: #ffffff;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .action-btn--follow-active .action-btn__text {
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .action-btn--message .action-btn__text {
-  color: var(--td-text-color-primary);
+  color: #ffffff;
 }
 
 /* ================================================================
    帖子正文卡片
    ================================================================ */
 .detail-post {
-  background: var(--td-bg-color-container);
+  background: $white;
   padding: 28rpx 32rpx;
   margin: 0 24rpx 16rpx;
-  border-radius: 20rpx;
-  box-shadow: var(--td-shadow-1, 0 2rpx 12rpx rgba(0, 0, 0, 0.04));
+  border-radius: 24rpx;
+  box-shadow: $card-soft-shadow;
 }
 
 /* 帖子正文 */
@@ -768,7 +967,7 @@ onLoad((query) => {
 
 .post-content {
   font-size: 30rpx;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
   line-height: 1.8;
   display: block;
   margin-bottom: 20rpx;
@@ -776,17 +975,17 @@ onLoad((query) => {
 
 /* 图片网格 */
 .post-images {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 10rpx;
   margin-bottom: 20rpx;
 }
 
 .post-image {
-  width: 100%;
+  width: calc(33.33% - 7rpx);
   height: 220rpx;
-  border-radius: var(--td-radius-small);
-  background: var(--td-bg-app-page);
+  border-radius: 16rpx;
+  background: $bg-page;
 }
 
 /* 话题标签 */
@@ -798,10 +997,17 @@ onLoad((query) => {
 
 .post-tag {
   font-size: 26rpx;
-  color: var(--td-brand-color-7);
-  background: var(--td-brand-color-1);
+  color: $green-primary;
+  background: $green-light;
   padding: 8rpx 18rpx;
-  border-radius: var(--td-radius-small);
+  border-radius: 999px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.post-tag:active {
+  transform: scale(0.96);
+  background: darken($green-light, 5%);
 }
 
 /* 帖子元信息 */
@@ -810,12 +1016,12 @@ onLoad((query) => {
   align-items: center;
   justify-content: space-between;
   padding-top: 20rpx;
-  border-top: 1rpx solid var(--td-border-level-1-color);
+  border-top: 1rpx solid $border-light;
 }
 
 .post-time {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .post-stats {
@@ -825,25 +1031,27 @@ onLoad((query) => {
 
 .post-stats__item {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 /* ========== 评论区 ========== */
 .comments-section {
-  background: var(--td-bg-color-container);
+  background: $white;
   padding: 28rpx 32rpx;
   margin: 0 24rpx;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
+  box-shadow: $card-soft-shadow;
 }
 
 /* ================================================================
    相似作者推荐
    ================================================================ */
 .similar-authors-section {
-  background: var(--td-bg-color-container);
+  background: $white;
   padding: 28rpx 32rpx;
   margin: 16rpx 24rpx 0;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
+  box-shadow: $card-soft-shadow;
 }
 
 .similar-authors-header {
@@ -853,13 +1061,13 @@ onLoad((query) => {
 .similar-authors-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
   display: block;
 }
 
 .similar-authors-subtitle {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   margin-top: 6rpx;
   display: block;
 }
@@ -875,8 +1083,13 @@ onLoad((query) => {
   flex-direction: column;
   gap: 20rpx;
   padding: 24rpx;
-  background: var(--td-bg-app-page);
-  border-radius: 16rpx;
+  background: $bg-page;
+  border-radius: 20rpx;
+  transition: transform 0.15s ease;
+}
+
+.similar-author-card:active {
+  transform: scale(0.98);
 }
 
 .similar-author-main {
@@ -886,26 +1099,54 @@ onLoad((query) => {
 }
 
 .similar-author-avatar {
+  position: relative;
   width: 80rpx;
   height: 80rpx;
   border-radius: 50%;
-  overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  overflow: visible;
+  background: linear-gradient(135deg, $green-light, #C6F0DB);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  /* Phase D1: 头像光环 */
+  box-shadow: 0 0 0 4rpx var(--c-brand-50, #E8F8F0),
+              0 0 0 8rpx var(--c-brand-100, #D1F0E0);
 }
 
 .similar-author-avatar__img {
   width: 100%;
   height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .similar-author-avatar__char {
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--td-brand-color-7);
+  color: $green-primary;
+}
+
+/* Phase D1: 相似作者头像左上角身份徽章 */
+.similar-author-avatar__badge {
+  position: absolute;
+  top: -4rpx;
+  left: -4rpx;
+  width: 28rpx;
+  height: 28rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--c-brand-400, #3FCF8E), var(--c-brand-500, #2DB97A));
+  border: 2rpx solid $white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 6rpx rgba(63, 207, 142, 0.3);
+  z-index: 2;
+}
+
+.similar-author-avatar__badge-icon {
+  width: 18rpx;
+  height: 18rpx;
 }
 
 .similar-author-info {
@@ -923,12 +1164,12 @@ onLoad((query) => {
 .similar-author-name {
   font-size: 30rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .similar-author-headline {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   display: block;
   margin-bottom: 10rpx;
   white-space: nowrap;
@@ -945,12 +1186,12 @@ onLoad((query) => {
 
 .common-interest-label {
   font-size: 24rpx;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
 }
 
 .common-interest-chip {
   font-size: 24rpx;
-  color: var(--td-brand-color-7);
+  color: $pink-primary;
   font-weight: 500;
 }
 
@@ -970,22 +1211,32 @@ onLoad((query) => {
 }
 
 .similar-author-actions .action-btn--follow {
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.25);
+}
+
+.similar-author-actions .action-btn--follow:active {
+  transform: scale(0.96);
 }
 
 .similar-author-actions .action-btn--follow-active {
-  background: var(--td-bg-color-surface);
-  border: 1rpx solid var(--td-border-level-1-color);
+  background: $white;
+  border: 2rpx solid $border-light;
+  box-shadow: none;
 }
 
 .similar-author-actions .action-btn--message {
-  background: var(--td-bg-color-surface);
-  border: 1rpx solid var(--td-border-level-1-color);
+  background: linear-gradient(135deg, $pink-primary, #F472B6);
+  box-shadow: 0 4rpx 12rpx rgba(236, 72, 153, 0.25);
+}
+
+.similar-author-actions .action-btn--message:active {
+  transform: scale(0.96);
 }
 
 .similar-author-actions .action-btn__text {
   font-size: 26rpx;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .similar-author-actions .action-btn--follow .action-btn__text {
@@ -993,11 +1244,11 @@ onLoad((query) => {
 }
 
 .similar-author-actions .action-btn--follow-active .action-btn__text {
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .similar-author-actions .action-btn--message .action-btn__text {
-  color: var(--td-text-color-primary);
+  color: #ffffff;
 }
 
 /* ========== 评论区 ========== */
@@ -1012,15 +1263,16 @@ onLoad((query) => {
 .comments-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .comments-count {
   font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
-  background: var(--td-bg-app-page);
+  color: $green-primary;
+  background: $green-light;
   padding: 4rpx 16rpx;
   border-radius: 999px;
+  font-weight: 600;
 }
 
 /* 评论加载 */
@@ -1035,8 +1287,8 @@ onLoad((query) => {
 .loading-spinner {
   width: 40rpx;
   height: 40rpx;
-  border: 4rpx solid var(--td-border-level-1-color);
-  border-top-color: var(--td-brand-color-7);
+  border: 4rpx solid $border-light;
+  border-top-color: $green-primary;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -1049,7 +1301,7 @@ onLoad((query) => {
 
 .loading-text {
   font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 /* 评论列表 */
@@ -1062,6 +1314,14 @@ onLoad((query) => {
 .comment-item {
   display: flex;
   gap: 20rpx;
+  padding: 20rpx;
+  background: $bg-page;
+  border-radius: 20rpx;
+  transition: transform 0.15s ease;
+}
+
+.comment-item:active {
+  transform: scale(0.98);
 }
 
 .comment-avatar {
@@ -1069,7 +1329,7 @@ onLoad((query) => {
   height: 64rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  background: linear-gradient(135deg, $green-light, #C6F0DB);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1084,7 +1344,7 @@ onLoad((query) => {
 .comment-avatar__text {
   font-size: 28rpx;
   font-weight: 600;
-  color: var(--td-brand-color-7);
+  color: $green-primary;
 }
 
 .comment-content {
@@ -1102,17 +1362,17 @@ onLoad((query) => {
 .comment-author {
   font-size: 28rpx;
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .comment-time {
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .comment-text {
   font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  color: $text-secondary;
   line-height: 1.6;
   display: block;
   margin-bottom: 12rpx;
@@ -1127,21 +1387,29 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   gap: 6rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 999px;
+  background: $white;
+  transition: all 0.15s ease;
+}
+
+.comment-like:active {
+  transform: scale(0.96);
 }
 
 .comment-like__icon {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .comment-like__count {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .comment-like--active .comment-like__icon,
 .comment-like--active .comment-like__count {
-  color: var(--td-error-color);
+  color: $pink-primary;
 }
 
 /* 评论空状态 */
@@ -1154,7 +1422,7 @@ onLoad((query) => {
 
 .comments-empty__text {
   font-size: 28rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .body-footer {
@@ -1173,19 +1441,25 @@ onLoad((query) => {
 
 .empty-state__text {
   font-size: 30rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .empty-state__back {
-  padding: 16rpx 40rpx;
+  padding: 18rpx 48rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
+  transition: all 0.15s ease;
+}
+
+.empty-state__back:active {
+  transform: scale(0.96);
 }
 
 .back-text {
   font-size: 28rpx;
   color: #ffffff;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* ========== 底部互动栏 ========== */
@@ -1195,8 +1469,9 @@ onLoad((query) => {
   gap: 20rpx;
   padding: 20rpx 32rpx;
   padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
-  background: var(--td-bg-color-container);
-  border-top: 1rpx solid var(--td-border-level-1-color);
+  background: $white;
+  border-top: 1rpx solid $border-light;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.03);
 }
 
 .comment-input-wrap {
@@ -1204,11 +1479,11 @@ onLoad((query) => {
 }
 
 .comment-input {
-  padding: 16rpx 24rpx;
+  padding: 18rpx 28rpx;
   border-radius: 999px;
-  background: var(--td-bg-app-page);
+  background: $bg-page;
   font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .footer-actions {
@@ -1222,21 +1497,30 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   gap: 6rpx;
+  padding: 12rpx 16rpx;
+  border-radius: 999px;
+  transition: all 0.15s ease;
+}
+
+.footer-action:active {
+  transform: scale(0.96);
+  background: $bg-page;
 }
 
 .footer-action__icon {
   font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
+  font-weight: 500;
 }
 
 .footer-action__count {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
 }
 
 .footer-action--active .footer-action__icon,
 .footer-action--active .footer-action__count {
-  color: var(--td-brand-color-7);
+  color: $pink-primary;
 }
 
 /* ================================================================
@@ -1248,7 +1532,7 @@ onLoad((query) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1256,11 +1540,11 @@ onLoad((query) => {
 }
 
 .share-modal {
-  width: 600rpx;
-  background: var(--td-bg-color-container);
-  border-radius: 24rpx;
+  width: 620rpx;
+  background: $white;
+  border-radius: 28rpx;
   overflow: hidden;
-  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
 }
 
 .share-modal__header {
@@ -1268,28 +1552,34 @@ onLoad((query) => {
   align-items: center;
   justify-content: space-between;
   padding: 32rpx 32rpx 20rpx;
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  border-bottom: 1rpx solid $border-light;
 }
 
 .share-modal__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
 }
 
 .share-modal__close {
-  width: 48rpx;
-  height: 48rpx;
+  width: 56rpx;
+  height: 56rpx;
   border-radius: 50%;
-  background: var(--td-bg-app-page);
+  background: $bg-page;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.share-modal__close:active {
+  transform: scale(0.96);
+  background: darken($bg-page, 3%);
 }
 
 .share-modal__close-icon {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: 26rpx;
+  color: $text-tertiary;
   font-weight: 600;
 }
 
@@ -1301,10 +1591,10 @@ onLoad((query) => {
   width: 100%;
   min-height: 140rpx;
   padding: 20rpx;
-  border-radius: 16rpx;
-  background: var(--td-bg-app-page);
+  border-radius: 20rpx;
+  background: $bg-page;
   font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  color: $text-primary;
   box-sizing: border-box;
 }
 
@@ -1312,7 +1602,7 @@ onLoad((query) => {
   display: block;
   text-align: right;
   font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  color: $text-tertiary;
   margin-top: 12rpx;
 }
 
@@ -1324,20 +1614,26 @@ onLoad((query) => {
 
 .share-modal__btn {
   flex: 1;
-  padding: 20rpx 0;
+  padding: 22rpx 0;
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.share-modal__btn:active {
+  transform: scale(0.96);
 }
 
 .share-modal__btn--cancel {
-  background: var(--td-bg-app-page);
-  border: 1rpx solid var(--td-border-level-1-color);
+  background: $bg-page;
+  border: 2rpx solid $border-light;
 }
 
 .share-modal__btn--confirm {
-  background: var(--td-brand-color-7);
+  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
 }
 
 .share-modal__btn--loading {
@@ -1347,8 +1643,8 @@ onLoad((query) => {
 
 .share-modal__btn-text {
   font-size: 28rpx;
-  font-weight: 500;
-  color: var(--td-text-color-secondary);
+  font-weight: 600;
+  color: $text-secondary;
 }
 
 .share-modal__btn--confirm .share-modal__btn-text {

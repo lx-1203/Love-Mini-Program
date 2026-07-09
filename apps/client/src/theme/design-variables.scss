@@ -1,0 +1,563 @@
+// ============================================================
+// 校园恋爱小程序 - Design CSS Variables
+// 版本: 4.0.0 (浪漫恋爱风格UI美化版 · 青藤绿+浪漫粉)
+// 说明: 将所有设计令牌映射为 CSS 自定义属性
+// 设计原则: 色彩和谐 · 排版韵律 · 间距统一 · 自然舒适 · 浪漫青春
+// ============================================================
+
+// ---------- 品牌色系（青藤绿 #3FCF8E） ----------
+// 注意：500 档为主色 #3FCF8E，400 档为辅助深色 #2DB97A，600 档为更深色 #25A86C
+$brand-50: #E8F8F0;
+$brand-100: #D1F0E0;
+$brand-200: #A3E0C0;
+$brand-300: #7CD9A6;
+$brand-400: #2DB97A;
+$brand-500: #3FCF8E;
+$brand-600: #25A86C;
+$brand-700: #1D8A5A;
+$brand-800: #15744A;
+$brand-900: #0D5E3A;
+
+// ---------- 辅助色 ----------
+$secondary-400: #7CD9A6;
+$secondary-200: #A3E0C0;
+
+// ---------- 强调色 ----------
+$accent-400: #F97316;
+
+// ---------- 浪漫粉色 ----------
+$romance-50: #FFF5F7;
+$romance-100: #FFE4E9;
+$romance-200: #FBCFE0;
+$romance-300: #F9A8C4;
+$romance-400: #F472B6;
+$romance-500: #EC4899;
+$romance-600: #DB2777;
+$romance-700: #BE185D;
+
+// ---------- VIP金色 ----------
+$vip-from: #C9A36A;
+$vip-to: #E8C98A;
+
+// ---------- 兴趣分类色（Phase D1 · 作者卡片兴趣 chip 颜色映射） ----------
+// 文艺类（薰衣草紫）
+$lavender-50: #F5F3FF;
+$lavender-100: #EDE9FE;
+$lavender-500: #8B5CF6;
+// 科技类（天空蓝）
+$sky-50: #F0F9FF;
+$sky-100: #E0F2FE;
+$sky-500: #0EA5E9;
+// 生活类（杏色暖橙）
+$apricot-50: #FFF7ED;
+$apricot-100: #FFEDD5;
+$apricot-500: #F97316;
+
+// ---------- 语义色 ----------
+$success: #10B981;
+$warning: #F59E0B;
+$error: #E5454D;
+$error-dark: #FF6B6B;
+
+// ---------- 中性色 ----------
+$neutral-0: #FFFFFF;
+$neutral-50: #F4F6FA;
+$neutral-100: #F0F2F5;
+$neutral-200: #E2E8F0;
+$neutral-300: #CBD5E1;
+$neutral-400: #94A3B8;
+$neutral-500: #64748B;
+$neutral-600: #475569;
+$neutral-700: #334155;
+$neutral-800: #1A1F26;
+$neutral-900: #0E1116;
+
+// ---------- 文本色 ----------
+$text-primary: #1F2329;
+$text-secondary: #5B6470;
+$text-tertiary: #9AA1AB;
+$text-quaternary: #94A3B8;
+$text-inverse: #FFFFFF;
+$text-brand: #3FCF8E;
+$text-romance: #EC4899;
+$text-vip: #C9A36A;
+
+// ---------- 背景色 ----------
+$bg-page: #F4F6FA;
+$bg-container: #FFFFFF;
+$bg-surface: #F4F6FA;
+$bg-overlay: rgba(15, 23, 42, 0.45);
+$bg-brand: #E8F8F0;
+$bg-secondary: #D1F0E0;
+$bg-romance: #FFF5F7;
+
+// ---------- 状态徽章色（Phase A2 · 活动/报名状态三色） ----------
+$state-signup-bg: #7CD9A6;
+$state-signup-text: #1A7A4A;
+$state-ongoing-bg: #FFD479;
+$state-ongoing-text: #8A5A00;
+$state-preview-bg: #B7C4FF;
+$state-preview-text: #3B47B7;
+
+// ---------- 功能色 ----------
+$price: #E5454D;
+$badge-campus: #FF7A45;
+$bubble-other: #F0F2F5;
+$divider-light: rgba(15, 23, 42, 0.06);
+$location-bg: rgba(63, 207, 142, 0.12);
+$location-text: #3FCF8E;
+
+// ---------- 课程块低饱和色块（饱和度≤20%，明度≈92%） ----------
+$course-math: #DCEFE2;
+$course-physics: #DCE6F2;
+$course-english: #DCEFE2;
+$course-programming: #FDF2E3;
+$course-datastruct: #E8E2F5;
+$course-sports: #DCEEF2;
+
+// ---------- 课程色块（青藤参考 · 6 色饱和度≤20% 明度≈92%） ----------
+$schedule-mint: #DCEFE2;
+$schedule-blue: #DCE6F2;
+$schedule-purple: #E8DCEF;
+$schedule-apricot: #F2E8DC;
+$schedule-green: #DCEFDC;
+$schedule-pink: #EFDCE8;
+
+// ---------- 渐变氛围 ----------
+$gradient-brand: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
+$gradient-brand-reverse: linear-gradient(135deg, #7CD9A6 0%, #3FCF8E 100%);
+$gradient-warm-cool: linear-gradient(135deg, #3FCF8E 0%, #D1F0E0 100%);
+$gradient-sunset: linear-gradient(135deg, #F97316 0%, #EC4899 100%);
+$gradient-romance: linear-gradient(135deg, #EC4899 0%, #F97316 100%);
+$gradient-pink: linear-gradient(135deg, #EC4899 0%, #F97316 100%);
+// VIP 暖金棕渐变：12deg 角度对齐青藤参考
+$gradient-vip: linear-gradient(12deg, #C9A36A 0%, #E8C98A 100%);
+$gradient-match: linear-gradient(135deg, #E8F8F0 0%, #FDF2F8 100%);
+$gradient-page: linear-gradient(180deg, #FFF5F7 0%, #F4F6FA 100%);
+// 浪漫粉绿页面渐变（青藤参考 · 寻觅页氛围背景）：粉→薄荷绿→中性灰三段过渡
+$gradient-page-romance: linear-gradient(180deg, #FFF5F7 0%, #E8F8F0 50%, #F4F6FA 100%);
+$gradient-card-atmosphere: linear-gradient(135deg, rgba(63,207,142,0.04) 0%, rgba(236,72,153,0.02) 100%);
+$gradient-brand-overlay: linear-gradient(180deg, rgba(63,207,142,0.08) 0%, transparent 100%);
+$gradient-float-btn: linear-gradient(135deg, #3FCF8E 0%, #2DB97A 100%);
+
+// ---------- 边框色 ----------
+$border-light: #EEF0F4;
+$border-default: #E2E8F0;
+$border-strong: #CBD5E1;
+
+// ---------- 圆角 ----------
+$radius-xs: 4rpx;
+$radius-sm: 8rpx;
+$radius-md: 12rpx;
+$radius-lg: 16rpx;
+$radius-xl: 24rpx;
+$radius-xxl: 28rpx;
+$radius-full: 9999rpx;
+
+// ---------- 阴影 ----------
+$shadow-xs: 0 1rpx 2rpx rgba(15, 23, 42, 0.03);
+$shadow-sm: 0 2rpx 8rpx rgba(15, 23, 42, 0.04);
+$shadow-md: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
+$shadow-lg: 0 8rpx 32rpx rgba(15, 23, 42, 0.08);
+$shadow-xl: 0 16rpx 48rpx rgba(15, 23, 42, 0.10);
+$shadow-inner: inset 0 2rpx 4rpx rgba(15, 23, 42, 0.03);
+// 品牌阴影对齐青藤参考：8rpx 偏移 + 24rpx 模糊 + 24% 不透明
+$shadow-brand: 0 8rpx 24rpx rgba(63, 207, 142, 0.24);
+$shadow-brand-sm: 0 2rpx 8rpx rgba(63, 207, 142, 0.15);
+$shadow-brand-md: 0 4rpx 16rpx rgba(63, 207, 142, 0.20);
+$shadow-brand-lg: 0 8rpx 24rpx rgba(63, 207, 142, 0.30);
+$shadow-romance: 0 4rpx 16rpx rgba(236, 72, 153, 0.25);
+$shadow-romance-md: 0 4rpx 16rpx rgba(236, 72, 153, 0.30);
+// 卡片软阴影对齐青藤参考：双层 4% 不透明
+$shadow-card-soft: 0 1rpx 2rpx rgba(15, 23, 42, 0.04), 0 4rpx 12rpx rgba(15, 23, 42, 0.04);
+// 模态阴影对齐青藤参考：24rpx 偏移 + 60rpx 模糊 + 18% 不透明
+$shadow-modal: 0 24rpx 60rpx rgba(15, 23, 42, 0.18);
+// 浮动按钮阴影对齐青藤参考：8rpx 偏移 + 24rpx 模糊 + 32% 不透明
+$shadow-float-btn: 0 8rpx 24rpx rgba(63, 207, 142, 0.32);
+$shadow-vip: 0 4rpx 16rpx rgba(201, 163, 106, 0.3);
+$shadow-success: 0 4rpx 16rpx rgba(16, 185, 129, 0.25);
+$shadow-error: 0 4rpx 16rpx rgba(229, 69, 77, 0.25);
+
+// ============================================================
+// CSS 自定义属性定义
+// ============================================================
+:root {
+  --c-brand-50: #{$brand-50};
+  --c-brand-100: #{$brand-100};
+  --c-brand-200: #{$brand-200};
+  --c-brand-300: #{$brand-300};
+  --c-brand-400: #{$brand-400};
+  --c-brand-500: #{$brand-500};
+  --c-brand-600: #{$brand-600};
+  --c-brand-700: #{$brand-700};
+  --c-brand-800: #{$brand-800};
+  --c-brand-900: #{$brand-900};
+  /* 主色：青藤绿 #3FCF8E，对应 500 档 */
+  --c-brand: #{$brand-500};
+
+  --c-secondary-400: #{$secondary-400};
+  --c-secondary-200: #{$secondary-200};
+
+  --c-accent-400: #{$accent-400};
+
+  --c-romance-50: #{$romance-50};
+  --c-romance-100: #{$romance-100};
+  --c-romance-200: #{$romance-200};
+  --c-romance-300: #{$romance-300};
+  --c-romance-400: #{$romance-400};
+  --c-romance-500: #{$romance-500};
+  --c-romance-600: #{$romance-600};
+  --c-romance-700: #{$romance-700};
+  --c-pink-400: #{$romance-500};
+  --c-pink-500: #{$romance-600};
+
+  --c-vip-from: #{$vip-from};
+  --c-vip-to: #{$vip-to};
+
+  /* 兴趣分类色（Phase D1 · 作者卡片兴趣 chip 颜色映射） */
+  --c-lavender-50: #{$lavender-50};
+  --c-lavender-100: #{$lavender-100};
+  --c-lavender-500: #{$lavender-500};
+  --c-sky-50: #{$sky-50};
+  --c-sky-100: #{$sky-100};
+  --c-sky-500: #{$sky-500};
+  --c-apricot-50: #{$apricot-50};
+  --c-apricot-100: #{$apricot-100};
+  --c-apricot-500: #{$apricot-500};
+
+  --c-success: #{$success};
+  --c-warning: #{$warning};
+  --c-error: #{$error};
+  /* 价格红深色版本（深底使用） */
+  --c-error-dark: #{$error-dark};
+
+  /* 信息蓝（Phase D5 · CardSwiper 超级喜欢按钮渐变） */
+  --c-info-400: #60A5FA;
+  --c-info-500: #3B82F6;
+
+  --c-neutral-0: #{$neutral-0};
+  --c-neutral-50: #{$neutral-50};
+  --c-neutral-100: #{$neutral-100};
+  --c-neutral-200: #{$neutral-200};
+  --c-neutral-300: #{$neutral-300};
+  --c-neutral-400: #{$neutral-400};
+  --c-neutral-500: #{$neutral-500};
+  --c-neutral-600: #{$neutral-600};
+  --c-neutral-700: #{$neutral-700};
+  --c-neutral-800: #{$neutral-800};
+  --c-neutral-900: #{$neutral-900};
+
+  --c-text-primary: #{$text-primary};
+  --c-text-secondary: #{$text-secondary};
+  --c-text-tertiary: #{$text-tertiary};
+  --c-text-quaternary: #{$text-quaternary};
+  --c-text-inverse: #{$text-inverse};
+  --c-text-brand: #{$text-brand};
+  --c-text-romance: #{$text-romance};
+  --c-text-vip: #{$text-vip};
+  --c-text-placeholder: #{$text-quaternary};
+
+  --c-bg-page: #{$bg-page};
+  --c-bg-container: #{$bg-container};
+  --c-bg-surface: #{$bg-surface};
+  --c-bg-overlay: #{$bg-overlay};
+  --c-bg-brand: #{$bg-brand};
+  --c-bg-secondary: #{$bg-secondary};
+  --c-bg-romance: #{$bg-romance};
+  --c-bg-elevated: #{$neutral-0};
+
+  --c-gradient-brand: #{$gradient-brand};
+  --c-gradient-brand-reverse: #{$gradient-brand-reverse};
+  --c-gradient-page: #{$gradient-page};
+  --c-gradient-page-romance: #{$gradient-page-romance};
+  --c-gradient-match: #{$gradient-match};
+  --c-gradient-pink: #{$gradient-pink};
+  --c-gradient-romance: #{$gradient-romance};
+  --c-gradient-vip: #{$gradient-vip};
+  --c-gradient-card-atmosphere: #{$gradient-card-atmosphere};
+  --c-gradient-brand-overlay: #{$gradient-brand-overlay};
+  --c-gradient-warm-cool: #{$gradient-warm-cool};
+  --c-gradient-sunset: #{$gradient-sunset};
+  --c-gradient-float-btn: #{$gradient-float-btn};
+
+  --c-border-light: #{$border-light};
+  --c-border-default: #{$border-default};
+  --c-border-strong: #{$border-strong};
+
+  /* 视觉分隔变量（明确可见的边缘色，解决"边缘色未显示"问题） */
+  --border-subtle: 1rpx solid rgba(15, 23, 42, 0.08);
+  --border-default: 1rpx solid rgba(15, 23, 42, 0.12);
+  --border-strong: 2rpx solid rgba(15, 23, 42, 0.16);
+  --border-accent: 2rpx solid rgba(63, 207, 142, 0.4);
+  --border-romance: 2rpx solid rgba(236, 72, 153, 0.4);
+
+  /* 卡片视觉分隔三件套（边框+阴影+圆角） */
+  --card-border: 1rpx solid rgba(15, 23, 42, 0.08);
+  --card-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.06), 0 2rpx 8rpx rgba(15, 23, 42, 0.04);
+  --card-shadow-hover: 0 12rpx 32rpx rgba(15, 23, 42, 0.1);
+  --card-shadow-active: 0 4rpx 16rpx rgba(15, 23, 42, 0.08);
+  --section-gap: 24rpx;
+
+  /* z-index 层级规范（与 tokens.ts zIndex 对齐，解决"层级划分不清晰"问题） */
+  --z-base: 0;
+  --z-card: 2;
+  --z-overlay: 5;
+  --z-badge: 6;
+  --z-indicator: 7;
+  --z-header: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  --r-xs: #{$radius-xs};
+  --r-sm: #{$radius-sm};
+  --r-md: #{$radius-md};
+  --r-lg: #{$radius-lg};
+  --r-xl: #{$radius-xl};
+  --r-xxl: #{$radius-xxl};
+  --r-full: #{$radius-full};
+
+  --s-xs: #{$shadow-xs};
+  --s-sm: #{$shadow-sm};
+  --s-md: #{$shadow-md};
+  --s-lg: #{$shadow-lg};
+  --s-xl: #{$shadow-xl};
+  --s-inner: #{$shadow-inner};
+  --s-brand: #{$shadow-brand};
+  --s-brand-sm: #{$shadow-brand-sm};
+  --s-brand-md: #{$shadow-brand-md};
+  --s-brand-lg: #{$shadow-brand-lg};
+  --s-romance: #{$shadow-romance};
+  --s-romance-md: #{$shadow-romance-md};
+  --s-card-soft: #{$shadow-card-soft};
+  --s-modal: #{$shadow-modal};
+  --s-float-btn: #{$shadow-float-btn};
+  --s-vip: #{$shadow-vip};
+  --s-success: #{$shadow-success};
+  --s-error: #{$shadow-error};
+
+  --c-elevation-1: 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
+  --c-elevation-2: 0 4rpx 16rpx rgba(15, 23, 42, 0.08);
+  --c-elevation-3: 0 12rpx 32rpx rgba(15, 23, 42, 0.12);
+
+  --c-border-card: 1rpx solid rgba(15, 23, 42, 0.08);
+  --c-border-card-brand: 1rpx solid rgba(63, 207, 142, 0.2);
+
+  --c-border-brand: 1rpx solid rgba(63, 207, 142, 0.2);
+
+  --sp-0: 0;
+  --sp-1: 4rpx;
+  --sp-2: 8rpx;
+  --sp-3: 12rpx;
+  --sp-4: 16rpx;
+  --sp-5: 20rpx;
+  --sp-6: 24rpx;
+  /* 标准 7 档：4/8/12/16/24/32/48rpx —— sp-7 与 sp-8 都映射到 32rpx，sp-9 与 sp-10 都映射到 48rpx，便于新旧代码共存 */
+  --sp-7: 32rpx;
+  --sp-8: 32rpx;
+  --sp-9: 48rpx;
+  --sp-10: 48rpx;
+
+  /* 字号令牌（Phase G · 字号硬编码清理） */
+  --fs-xs: 20rpx;
+  --fs-sm: 22rpx;
+  --fs-base: 24rpx;
+  --fs-md: 26rpx;
+  --fs-lg: 28rpx;
+  --fs-xl: 30rpx;
+  --fs-2xl: 32rpx;
+  --fs-3xl: 36rpx;
+  --fs-4xl: 40rpx;
+  --fs-5xl: 44rpx;
+  --fs-6xl: 48rpx;
+  /* 大标题 28pt = 56rpx，对应登录页主标题 */
+  --fs-7xl: 56rpx;
+  --fs-display: 160rpx;
+
+  --page-padding: 32rpx;
+  --card-padding: 32rpx;
+  --section-gap: 24rpx;
+
+  /* ---------- 课表色块（低饱和同明度，参考 img143_mid.png） ---------- */
+  --c-schedule-course: #B7C4FF;
+  --c-schedule-course-text: #3B47B7;
+  --c-schedule-activity: #7CD9A6;
+  --c-schedule-activity-text: #1A7A4A;
+  --c-schedule-custom: #FFD479;
+  --c-schedule-custom-text: #8A5A00;
+
+  /* profile 头部背景高度 token（Phase D4） */
+  --profile-bg-height: 240rpx;
+  /* profile 头像尺寸 token（Phase D4） */
+  --profile-avatar-size: 128rpx;
+  /* 卡片当前态缩放 token（Phase D5） */
+  --card-current-scale: 1.02;
+  /* 卡片当前态品牌阴影 token（Phase D5） */
+  --c-brand-shadow: 0 20rpx 60rpx rgba(63, 207, 142, 0.25);
+
+  /* ---------- Phase A2 · 补充 Design Token ---------- */
+
+  /* 价格红色：复用 error 色 */
+  --c-price: #{$price};
+
+  /* 状态徽章三色及浅底版本 */
+  --c-state-signup-bg: #{$state-signup-bg};
+  --c-state-signup-text: #{$state-signup-text};
+  --c-state-ongoing-bg: #{$state-ongoing-bg};
+  --c-state-ongoing-text: #{$state-ongoing-text};
+  --c-state-preview-bg: #{$state-preview-bg};
+  --c-state-preview-text: #{$state-preview-text};
+
+  /* 位置胶囊蓝色 */
+  --c-location-bg: #{$location-bg};
+  --c-location-text: #{$location-text};
+
+  /* 校内橙角标 */
+  --c-badge-campus: #{$badge-campus};
+
+  /* 课程块低饱和色块 */
+  --c-course-math: #{$course-math};
+  --c-course-physics: #{$course-physics};
+  --c-course-english: #{$course-english};
+  --c-course-programming: #{$course-programming};
+  --c-course-datastruct: #{$course-datastruct};
+  --c-course-sports: #{$course-sports};
+
+  /* 课程色块（青藤参考 · 6 色饱和度≤20% 明度≈92%） */
+  --c-schedule-mint: #{$schedule-mint};
+  --c-schedule-blue: #{$schedule-blue};
+  --c-schedule-purple: #{$schedule-purple};
+  --c-schedule-apricot: #{$schedule-apricot};
+  --c-schedule-green: #{$schedule-green};
+  --c-schedule-pink: #{$schedule-pink};
+
+  /* 对方气泡灰色 */
+  --c-bubble-other: #{$bubble-other};
+
+  /* 消息列表分隔色 */
+  --c-divider-light: #{$divider-light};
+
+  /* ---------- Phase B · 通用组件变量 ---------- */
+
+  /* 按钮尺寸 */
+  --btn-height-sm: 80rpx;
+  --btn-height-md: 96rpx;
+  --btn-height-lg: 104rpx;
+  --btn-padding-x-sm: 32rpx;
+  --btn-padding-x-md: 48rpx;
+  --btn-padding-x-lg: 64rpx;
+  --btn-press-scale: 0.95;
+  --btn-press-opacity: 0.9;
+  --btn-press-duration: 200ms;
+
+  /* 卡片尺寸 */
+  --card-padding: 32rpx;
+  --card-radius: 16rpx;
+  --card-press-scale: 0.99;
+  --card-press-duration: 200ms;
+
+  /* 头像白底描边 */
+  --avatar-border: 2rpx solid var(--c-neutral-0);
+
+  /* Tag/Chip 尺寸 */
+  --tag-padding-x-sm: 14rpx;
+  --tag-padding-y-sm: 6rpx;
+  --tag-padding-x-md: 18rpx;
+  --tag-padding-y-md: 8rpx;
+  --tag-radius: 12rpx;
+  --tag-radius-pill: 9999rpx;
+  --tag-font-size-sm: 20rpx;
+  --tag-font-size-md: 24rpx;
+
+  /* Tag 变体颜色（报名中/进行中/预告/位置/校内） */
+  --c-tag-signup-bg: #{$state-signup-bg};
+  --c-tag-signup-text: #{$state-signup-text};
+  --c-tag-ongoing-bg: #{$state-ongoing-bg};
+  --c-tag-ongoing-text: #{$state-ongoing-text};
+  --c-tag-preview-bg: #{$state-preview-bg};
+  --c-tag-preview-text: #{$state-preview-text};
+  --c-tag-location-bg: #{$location-bg};
+  --c-tag-location-text: #{$location-text};
+  --c-tag-campus-bg: #{$badge-campus};
+  --c-tag-campus-text: #{$neutral-0};
+
+  /* ---------- Phase D2 · 寻觅页覆盖层色系（图片/视频角标、分页指示器等） ---------- */
+  /* 强遮罩底色：用于视频角标、图片计数器等深底胶囊 */
+  --c-overlay-strong: rgba(15, 23, 42, 0.7);
+  /* 在线状态徽章底色：成功色高不透明度 */
+  --c-overlay-online-bg: rgba(16, 185, 129, 0.95);
+  /* 白色叠层边框（按不透明度分三档，用于深底元素） */
+  --c-overlay-border-light: rgba(255, 255, 255, 0.18);
+  --c-overlay-border-mid: rgba(255, 255, 255, 0.25);
+  --c-overlay-border-strong: rgba(255, 255, 255, 0.3);
+  --c-overlay-border-stronger: rgba(255, 255, 255, 0.4);
+  /* 白色叠层底色（按不透明度分档） */
+  --c-overlay-bg-light: rgba(255, 255, 255, 0.2);
+  --c-overlay-bg-mid: rgba(255, 255, 255, 0.4);
+  --c-overlay-bg-strong: rgba(255, 255, 255, 0.6);
+  --c-overlay-bg-solid: rgba(255, 255, 255, 0.9);
+  --c-overlay-bg-pure: rgba(255, 255, 255, 0.95);
+
+  /* 文字色（基于深底叠层的白色文字，按不透明度分档） */
+  --c-overlay-text-primary: rgba(255, 255, 255, 0.95);
+  --c-overlay-text-secondary: rgba(255, 255, 255, 0.85);
+  --c-overlay-text-tertiary: rgba(255, 255, 255, 0.6);
+  --c-overlay-text-quaternary: rgba(255, 255, 255, 0.5);
+  --c-overlay-text-placeholder: rgba(255, 255, 255, 0.4);
+
+  /* 渐变遮罩（图片底部 → 顶部，分四档） */
+  --c-gradient-mask-strong: rgba(0, 0, 0, 0.6);
+  --c-gradient-mask-mid: rgba(0, 0, 0, 0.25);
+  --c-gradient-mask-light: rgba(0, 0, 0, 0.1);
+  --c-gradient-mask-transparent: rgba(0, 0, 0, 0);
+  /* 文字阴影：用于深底浅字场景 */
+  --c-text-shadow-overlay: rgba(0, 0, 0, 0.3);
+  --c-text-shadow-soft: rgba(0, 0, 0, 0.2);
+
+  /* 校园标签色（半透明叠层，用于卡片底部标签） */
+  --c-tag-school-overlay: rgba(63, 207, 142, 0.65);
+  --c-tag-major-overlay: rgba(236, 72, 153, 0.65);
+  --c-tag-match-from: rgba(236, 72, 153, 0.6);
+  --c-tag-match-to: rgba(249, 115, 22, 0.6);
+
+  /* 视频角标 / 图片计数器胶囊（复用强遮罩底色与白色叠层边框） */
+  --c-badge-video-bg: var(--c-overlay-strong);
+  --c-badge-video-border: var(--c-overlay-border-light);
+
+  /* Phase D2 · 卡片信息区文字阴影 */
+  --c-card-name-shadow: 0 2rpx 8rpx var(--c-text-shadow-overlay);
+  --c-card-bio-shadow: 0 1rpx 4rpx var(--c-text-shadow-soft);
+
+  /* Phase D2 · 操作按钮阴影 */
+  --s-action-success: 0 8rpx 32rpx rgba(16, 185, 129, 0.3);
+  --s-action-error: 0 8rpx 32rpx rgba(229, 69, 77, 0.3);
+  --s-action-reject: 0 8rpx 24rpx rgba(229, 69, 77, 0.15), 0 4rpx 12rpx rgba(15, 23, 42, 0.08);
+  --s-action-reject-pressed: 0 4rpx 12rpx rgba(229, 69, 77, 0.2);
+  --s-action-super: 0 8rpx 28rpx rgba(59, 130, 246, 0.4);
+  --s-action-like: 0 12rpx 36rpx rgba(236, 72, 153, 0.45);
+  --s-action-pressed: 0 2rpx 8rpx rgba(15, 23, 42, 0.15);
+  /* Phase D2 · 拒绝按钮边框（error 色低不透明度） */
+  --c-action-reject-border: rgba(229, 69, 77, 0.15);
+
+  /* ---------- Phase D3 · VerificationBadge 级别色（邮箱/身份证认证） ---------- */
+  --c-badge-email-bg: rgba(183, 196, 255, 0.18);
+  --c-badge-email-border: rgba(99, 102, 241, 0.32);
+  --c-badge-email-text: var(--c-state-preview-text);
+  --c-badge-idcard-bg: rgba(255, 218, 165, 0.18);
+  --c-badge-idcard-border: rgba(249, 115, 22, 0.32);
+  --c-badge-idcard-text: #C2410C;
+}
+
+/* ============================================================
+   视觉层级工具类（Phase G · 强化视觉层级与边缘）
+   说明：与上方 CSS 变量配套，便于在模板中直接引用
+   ============================================================ */
+.elevation-1 { box-shadow: var(--c-elevation-1); }
+.elevation-2 { box-shadow: var(--c-elevation-2); }
+.elevation-3 { box-shadow: var(--c-elevation-3); }
+.border-card { border: var(--c-border-card); }
+.border-card-brand { border: var(--c-border-card-brand); }
+
+

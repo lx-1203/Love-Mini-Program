@@ -6,7 +6,7 @@ describe("error state helpers", () => {
     await expect(clientApi.simulateError(400)).rejects.toMatchObject({
       status: 400,
       error: "bad_request",
-      message: "模拟校验错误",
+      message: "请求参数有误，请检查后重试",
     });
   });
 
@@ -14,13 +14,13 @@ describe("error state helpers", () => {
     await expect(clientApi.simulateError(404)).rejects.toMatchObject({
       status: 404,
       error: "not_found",
-      message: "模拟资源不存在",
+      message: "请求的资源不存在",
     });
 
     await expect(clientApi.simulateError(500)).rejects.toMatchObject({
       status: 500,
       error: "server_error",
-      message: "模拟服务异常",
+      message: "服务暂时不可用，请稍后重试",
     });
   });
 });

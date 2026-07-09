@@ -2,55 +2,59 @@
 import { defineStore } from "pinia";
 import { appEnv } from "../services/env";
 import { request } from "../services/http";
-import { useSessionStore } from "./session";
+
 
 /* ========== 后端视图类型 ========== */
 
 /**
  * 后端 CampusTopicView 类型
- * 对应后端 record CampusTopicView(Long id, String category, String title, String contentPreview, Long authorId, String authorName, String school, int replyCount, boolean isAnonymous, LocalDateTime createdAt)
+ * 对应后端 record CampusTopicView(Long id, Long schoolId, String category, String title, String content, String images, Long authorId, String authorName, String authorAvatar, int replyCount, int viewCount, boolean isAnonymous, String createdAt)
  */
 export interface BackendCampusTopicView {
   id: number;
-  category: CampusTopicCategory;
+  schoolId: number;
+  category: string;
   title: string;
-  contentPreview: string;
-  authorId: number;
+  content: string;
+  images: string | null;
+  authorId: number | null;
   authorName: string;
-  school: string;
+  authorAvatar: string | null;
   replyCount: number;
+  viewCount: number;
   isAnonymous: boolean;
   createdAt: string;
 }
 
 /**
- * 后端 CampusReplyView 类型
- * 对应后端 record CampusReplyView(Long id, Long topicId, Long authorId, String authorName, String school, String content, boolean isAnonymous, LocalDateTime createdAt)
+ * 后端 CampusTopicReplyView 类型
  */
 export interface BackendCampusReplyView {
   id: number;
   topicId: number;
-  authorId: number;
+  authorId: number | null;
   authorName: string;
-  school: string;
+  authorAvatar: string | null;
   content: string;
   isAnonymous: boolean;
   createdAt: string;
 }
 
 /**
- * 后端 CertificationView 类型
+ * 后端 CampusCertificationView 类型
  */
 export interface BackendCertificationView {
   id: number;
   userId: number;
   schoolName: string;
   major: string;
-  studentCardUrl: string;
-  status: CertificationStatus;
-  reviewComment: string;
-  createdAt: string;
-  updatedAt: string;
+  studentIdCardUrl: string;
+  status: string;
+  statusLabel: string;
+  reviewerId: number | null;
+  reviewComment: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
 }
 
 /* ========== 映射函数 ========== */
@@ -58,14 +62,14 @@ export interface BackendCertificationView {
 function mapToCampusTopicItem(raw: BackendCampusTopicView): CampusTopicItem {
   return {
     id: String(raw.id),
-    category: raw.category,
+    category: raw.category as CampusTopicCategory,
     title: raw.title,
-    contentPreview: raw.contentPreview,
+    contentPreview: raw.content ?? "",
     author: {
-      userId: String(raw.authorId),
+      userId: raw.authorId != null ? String(raw.authorId) : "",
       name: raw.authorName,
-      avatar: "",
-      school: raw.school,
+      avatar: raw.authorAvatar ?? "",
+      school: "",
     },
     replyCount: raw.replyCount,
     isAnonymous: raw.isAnonymous,
@@ -76,14 +80,14 @@ function mapToCampusTopicItem(raw: BackendCampusTopicView): CampusTopicItem {
 function mapToCampusTopicDetail(raw: BackendCampusTopicView): CampusTopicDetail {
   return {
     id: String(raw.id),
-    category: raw.category,
+    category: raw.category as CampusTopicCategory,
     title: raw.title,
-    content: raw.contentPreview,
+    content: raw.content ?? "",
     author: {
-      userId: String(raw.authorId),
+      userId: raw.authorId != null ? String(raw.authorId) : "",
       name: raw.authorName,
-      avatar: "",
-      school: raw.school,
+      avatar: raw.authorAvatar ?? "",
+      school: "",
     },
     replyCount: raw.replyCount,
     isAnonymous: raw.isAnonymous,
@@ -96,15 +100,24 @@ function mapToCampusReplyItem(raw: BackendCampusReplyView): CampusReplyItem {
     id: String(raw.id),
     topicId: String(raw.topicId),
     author: {
-      userId: String(raw.authorId),
+      userId: raw.authorId != null ? String(raw.authorId) : "",
       name: raw.authorName,
-      avatar: "",
-      school: raw.school,
+      avatar: raw.authorAvatar ?? "",
+      school: "",
     },
     content: raw.content,
     isAnonymous: raw.isAnonymous,
     createdAt: raw.createdAt,
   };
+}
+
+function mapCertificationStatus(raw: string): CertificationStatus {
+  switch (raw) {
+    case "PENDING": return "pending";
+    case "APPROVED": return "verified";
+    case "REJECTED": return "rejected";
+    default: return "unverified";
+  }
 }
 
 /* ========== 类型定义 ========== */
@@ -523,14 +536,14 @@ export const useCampusStore = defineStore("campus", {
           method: "GET",
         });
 
-        const mapped = data.content.map(mapToCampusTopicItem);
+        const mapped = (data.content ?? []).map(mapToCampusTopicItem);
         if (page === 1) {
           this.topics = mapped;
         } else {
           this.topics.push(...mapped);
         }
         this.topicPage = page;
-        this.topicHasMore = data.content.length >= TOPIC_PAGE_SIZE;
+        this.topicHasMore = (data.content ?? []).length >= TOPIC_PAGE_SIZE;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载校园话题失败";
       } finally {
@@ -636,7 +649,7 @@ export const useCampusStore = defineStore("campus", {
           method: "GET",
         });
 
-        const mapped = data.content.map(mapToCampusReplyItem);
+        const mapped = (data.content ?? []).map(mapToCampusReplyItem);
         if (page === 1) {
           this.replies = mapped;
         } else {
@@ -686,23 +699,17 @@ export const useCampusStore = defineStore("campus", {
         }
 
         // 调用后端 API: POST /api/campus/topics
-        const sessionStore = useSessionStore();
-        const authorId = sessionStore.userSession?.userId ?? "";
         const result = await request<BackendCampusTopicView, {
-          authorId: string;
           category: string;
           title: string;
           content: string;
-          isAnonymous: boolean;
         }>({
           url: "/campus/topics",
           method: "POST",
           data: {
-            authorId,
             category: data.category,
             title: data.title.trim(),
             content: data.content.trim(),
-            isAnonymous: data.isAnonymous,
           },
         });
 
@@ -762,16 +769,12 @@ export const useCampusStore = defineStore("campus", {
         }
 
         // 调用后端 API: POST /api/campus/topics/{topicId}/replies
-        const sessionStore = useSessionStore();
-        const authorId = sessionStore.userSession?.userId ?? "";
         const result = await request<BackendCampusReplyView, {
-          authorId: string;
           content: string;
-          isAnonymous: boolean;
         }>({
           url: `/campus/topics/${topicId}/replies`,
           method: "POST",
-          data: { authorId, content: content.trim(), isAnonymous },
+          data: { content: content.trim() },
         });
 
         const mapped = mapToCampusReplyItem(result);
@@ -830,30 +833,26 @@ export const useCampusStore = defineStore("campus", {
         }
 
         // 调用后端 API: POST /api/campus/certification
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
         const result = await request<BackendCertificationView, {
-          userId: string;
           schoolName: string;
           major: string;
-          studentCardUrl: string;
+          studentIdCardUrl: string;
         }>({
           url: "/campus/certification",
           method: "POST",
           data: {
-            userId,
             schoolName: data.schoolName.trim(),
             major: data.major.trim(),
-            studentCardUrl: data.studentCardUrl,
+            studentIdCardUrl: data.studentCardUrl,
           },
         });
 
-        this.certificationStatus = result.status;
+        this.certificationStatus = mapCertificationStatus(result.status);
         this.certificationInfo = {
           schoolName: result.schoolName,
           major: result.major,
-          studentCardUrl: result.studentCardUrl,
-          reviewComment: result.reviewComment,
+          studentCardUrl: result.studentIdCardUrl,
+          reviewComment: result.reviewComment ?? "",
         };
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "提交认证失败";
@@ -873,20 +872,18 @@ export const useCampusStore = defineStore("campus", {
           return;
         }
 
-        // 调用后端 API: GET /api/campus/certification/status
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
+        // 调用后端 API: GET /api/campus/certification
         const result = await request<BackendCertificationView>({
-          url: `/campus/certification/status?userId=${userId}`,
+          url: "/campus/certification",
           method: "GET",
         });
 
-        this.certificationStatus = result.status;
+        this.certificationStatus = mapCertificationStatus(result.status);
         this.certificationInfo = {
           schoolName: result.schoolName,
           major: result.major,
-          studentCardUrl: result.studentCardUrl,
-          reviewComment: result.reviewComment,
+          studentCardUrl: result.studentIdCardUrl,
+          reviewComment: result.reviewComment ?? "",
         };
       } catch (error) {
         // 未找到认证记录是正常情况，不设置错误信息

@@ -5,6 +5,7 @@ export interface HomeRecommendedPersonSeed {
   headline: string;
   commonGround: string;
   availability: string;
+  avatarUrl: string;
 }
 
 export const homeRecommendedPeople: HomeRecommendedPersonSeed[] = [
@@ -15,6 +16,7 @@ export const homeRecommendedPeople: HomeRecommendedPersonSeed[] = [
     headline: "工业设计大三，偏好低压力的第一轮聊天。",
     commonGround: "共同兴趣：电影夜和安静的咖啡馆路线",
     availability: "合适时间：今晚 19:00 之后",
+    avatarUrl: "/static/assets/images/avatars/avatar-1.jpg",
   },
   {
     id: "person-2",
@@ -23,6 +25,7 @@ export const homeRecommendedPeople: HomeRecommendedPersonSeed[] = [
     headline: "更适合从音乐话题切入，再配一段短距离校园散步。",
     commonGround: "节奏接近：更喜欢短时见面和明确时段",
     availability: "合适时间：周五 16:00-18:00",
+    avatarUrl: "/static/assets/images/avatars/avatar-2.jpg",
   },
   {
     id: "person-3",
@@ -31,5 +34,6 @@ export const homeRecommendedPeople: HomeRecommendedPersonSeed[] = [
     headline: "喜欢直接定计划、边界清楚、气氛放松的咖啡聊天。",
     commonGround: "共同偏好：校园人多时也接受室内兜底",
     availability: "合适时间：周末下午",
+    avatarUrl: "/static/assets/images/avatars/avatar-3.jpg",
   },
 ];

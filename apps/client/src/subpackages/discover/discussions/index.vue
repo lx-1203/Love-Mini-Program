@@ -64,15 +64,17 @@ function openPath(url: string) {
 
 <style scoped lang="scss">
 .section-stack {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16rpx;
 }
 
 .feed-row {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10rpx;
   padding: 22rpx 0;
-  border-top: 1px solid var(--td-border-level-1-color);
+  border-top: 1px solid var(--c-border-light);
 }
 
 .feed-row:first-child {
@@ -83,13 +85,13 @@ function openPath(url: string) {
 .row-title {
   font-size: 28rpx;
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .row-subtitle,
 .empty-state {
   font-size: 24rpx;
   line-height: 1.6;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
 }
 </style>

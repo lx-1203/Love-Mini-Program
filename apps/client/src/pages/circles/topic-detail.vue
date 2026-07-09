@@ -5,10 +5,12 @@
  * 支持从回复直接"打招呼"跳转到私信会话
  */
 import { ref, computed, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCircleStore, formatCircleTime, type ReplyItem } from "../../stores/circle";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
+import { reportTarget } from "../../services/report-api";
 
 const circleStore = useCircleStore();
 const sessionStore = useSessionStore();
@@ -24,6 +26,14 @@ const topicId = ref("");
 /** 当前登录用户 ID */
 const currentUserId = computed(() => sessionStore.userSession?.userId ?? "");
 
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
+
 /**
  * 提交回复
  */
@@ -35,7 +45,7 @@ async function submitReply() {
     await circleStore.replyToTopic(topicId.value, replyContent.value.trim());
     replyContent.value = "";
     uni.showToast({ title: "回复成功", icon: "success" });
-  } catch {
+  } catch (_e) {
     uni.showToast({
       title: circleStore.errorMessage || "回复失败",
       icon: "none",
@@ -73,11 +83,70 @@ function sayHello(reply: ReplyItem) {
 }
 
 /**
+ * 跳转到作者 / 回复者个人主页（F1.3）
+ * 头像点击事件使用 @tap.stop 阻止冒泡，避免触发外层卡片或长按事件
+ * @param authorId - 作者 userId
+ */
+function goToAuthorProfile(authorId: string) {
+  if (!authorId) return;
+  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(authorId)}`);
+}
+
+/**
  * 返回上一页
  */
 function goBack() {
   circleStore.clearCurrentTopic();
   uni.navigateBack();
+}
+
+/** 举报原因选项（与产品约定，覆盖常见违规场景） */
+const REPORT_REASONS = ["垃圾广告", "辱骂攻击", "色情低俗", "违法违规", "其他"];
+
+/**
+ * 长按话题触发举报流程。
+ * 1. 弹出 ActionSheet 选择举报原因
+ * 2. 弹出 Modal 收集可选补充描述
+ * 3. 调用后端举报接口持久化
+ */
+async function handleReportTopic() {
+  if (!topicId.value) return;
+
+  // 1. 选择举报原因
+  let reason: string;
+  try {
+    const res = await uni.showActionSheet({ itemList: REPORT_REASONS });
+    reason = REPORT_REASONS[res.tapIndex];
+  } catch (_e) {
+    // 用户取消选择，静默退出
+    return;
+  }
+
+  // 2. 收集可选补充描述
+  let description: string | undefined;
+  try {
+    const res = await uni.showModal({
+      title: "补充描述（可选）",
+      editable: true,
+      placeholderText: "请输入补充描述...",
+      confirmText: "提交举报",
+      cancelText: "跳过",
+    });
+    if (res.confirm && res.content) {
+      description = res.content;
+    }
+  } catch (_e) {
+    // 取消则不附加描述，继续提交
+  }
+
+  // 3. 调用举报接口
+  try {
+    await reportTarget("TOPIC", topicId.value, reason, description);
+    uni.showToast({ title: "举报已提交", icon: "success" });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "举报失败";
+    uni.showToast({ title: message, icon: "none" });
+  }
 }
 
 onMounted(() => {
@@ -95,10 +164,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="detail-page">
+  <view class="detail-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
-      <view class="detail-header__back" @tap="goBack">
+      <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">返回</text>
       </view>
       <text class="detail-header__title">话题详情</text>
@@ -109,7 +178,10 @@ onMounted(() => {
     <scroll-view v-if="currentTopic" class="detail-body" scroll-y>
       <!-- 作者信息 -->
       <view class="topic-author">
-        <view class="author-avatar">
+        <view
+          class="author-avatar"
+          @tap.stop="goToAuthorProfile(currentTopic.author.userId)"
+        >
           <image
             v-if="currentTopic.author.avatar"
             class="author-avatar__img"
@@ -126,19 +198,23 @@ onMounted(() => {
       </view>
 
       <!-- 话题正文 -->
-      <view class="topic-content">
+      <view class="topic-content" @longpress="handleReportTopic">
         <text class="topic-title">{{ currentTopic.title }}</text>
         <text class="topic-text">{{ currentTopic.content }}</text>
 
         <!-- 图片展示 -->
         <view v-if="currentTopic.images.length > 0" class="topic-images">
-          <image
+          <view
             v-for="(img, idx) in currentTopic.images"
             :key="idx"
-            class="topic-image"
-            :src="img"
-            mode="aspectFill"
-          />
+            class="topic-image-wrap"
+          >
+            <image
+              class="topic-image"
+              :src="img"
+              mode="aspectFill"
+            />
+          </view>
         </view>
       </view>
 
@@ -160,9 +236,12 @@ onMounted(() => {
           <view
             v-for="reply in replies"
             :key="reply.id"
-            class="reply-item"
+            class="reply-item list-item"
           >
-            <view class="reply-avatar">
+            <view
+              class="reply-avatar"
+              @tap.stop="goToAuthorProfile(reply.author.userId)"
+            >
               <image
                 v-if="reply.author.avatar"
                 class="reply-avatar__img"
@@ -204,7 +283,7 @@ onMounted(() => {
     <!-- 话题不存在 -->
     <view v-else-if="!loading" class="empty-state">
       <text class="empty-state__text">话题不存在或已被删除</text>
-      <view class="empty-state__back" @tap="goBack">
+      <view class="empty-state__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-text">返回</text>
       </view>
     </view>
@@ -221,8 +300,10 @@ onMounted(() => {
         />
       </view>
       <view
-        class="reply-btn"
+        class="reply-btn press-feedback"
         :class="{ 'reply-btn--disabled': !replyContent.trim() || isSubmitting }"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
         @tap="submitReply"
       >
         <text class="reply-btn__text">{{ isSubmitting ? "发送中" : "发送" }}</text>
@@ -237,7 +318,7 @@ onMounted(() => {
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -245,26 +326,33 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
+  padding: calc(env(safe-area-inset-top) + var(--sp-6)) var(--sp-8) var(--sp-6);
+  background: var(--c-gradient-brand);
   z-index: 10;
 }
 
 .detail-header__back {
-  padding: 8rpx 0;
-  min-width: 80rpx;
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.15s ease;
+}
+
+.detail-header__back:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .back-icon {
-  font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-lg);
+  color: var(--c-neutral-0);
+  font-weight: 500;
 }
 
 .detail-header__title {
-  font-size: 34rpx;
+  font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-neutral-0);
 }
 
 .detail-header__spacer {
@@ -274,17 +362,23 @@ onMounted(() => {
 /* ========== 内容区 ========== */
 .detail-body {
   flex: 1;
+  padding: var(--sp-6);
 }
 
 /* 作者信息 */
 .topic-author {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  padding: 24rpx 28rpx;
-  background: var(--td-bg-color-container);
-  margin: 16rpx 24rpx 0;
-  border-radius: 20rpx 20rpx 0 0;
+  gap: var(--sp-4);
+  padding: var(--sp-7);
+  background: var(--c-neutral-0);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--s-card-soft);
+  transition: transform 0.15s ease;
+}
+
+.topic-author:active {
+  transform: scale(0.98);
 }
 
 .author-avatar {
@@ -292,7 +386,7 @@ onMounted(() => {
   height: 72rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -305,9 +399,9 @@ onMounted(() => {
 }
 
 .author-avatar__char {
-  font-size: 30rpx;
+  font-size: var(--fs-md);
   font-weight: 700;
-  color: var(--td-brand-color-7);
+  color: var(--c-brand-500);
 }
 
 .author-info {
@@ -319,106 +413,112 @@ onMounted(() => {
 }
 
 .author-info__name {
-  font-size: 28rpx;
+  font-size: var(--fs-lg);
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .author-info__headline {
-  font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .topic-time {
-  font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
   flex-shrink: 0;
 }
 
 /* 话题正文 */
 .topic-content {
-  padding: 24rpx 28rpx;
-  background: var(--td-bg-color-container);
-  margin: 0 24rpx 16rpx;
-  border-radius: 0 0 20rpx 20rpx;
+  padding: var(--sp-7);
+  background: var(--c-neutral-0);
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
+  margin-bottom: var(--sp-5);
+  box-shadow: var(--s-card-soft);
 }
 
 .topic-title {
   display: block;
-  font-size: 34rpx;
+  font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   line-height: 1.5;
-  margin-bottom: 16rpx;
+  margin-bottom: var(--sp-5);
 }
 
 .topic-text {
-  font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  font-size: var(--fs-lg);
+  color: var(--c-text-secondary);
   line-height: 1.8;
   display: block;
-  margin-bottom: 16rpx;
+  margin-bottom: var(--sp-5);
   white-space: pre-wrap;
 }
 
 .topic-images {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 10rpx;
+}
+
+.topic-image-wrap {
+  width: calc((100% - 20rpx) / 3);
 }
 
 .topic-image {
   width: 100%;
   height: 200rpx;
-  border-radius: 12rpx;
-  background: var(--td-bg-app-page);
+  border-radius: var(--r-md);
+  background: var(--c-bg-page);
 }
 
 /* ========== 评论区 ========== */
 .replies-section {
-  background: var(--td-bg-color-container);
-  padding: 24rpx 28rpx;
-  margin: 0 24rpx;
-  border-radius: 20rpx;
+  background: var(--c-neutral-0);
+  padding: var(--sp-7);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
 }
 
 .replies-header {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  margin-bottom: 20rpx;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
 }
 
 .replies-title {
-  font-size: 30rpx;
+  font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .replies-count {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
-  background: var(--td-bg-app-page);
-  padding: 4rpx 16rpx;
-  border-radius: 999px;
+  font-size: var(--fs-base);
+  color: var(--c-brand-500);
+  background: var(--c-bg-brand);
+  padding: 6rpx 18rpx;
+  border-radius: var(--r-full);
+  font-weight: 600;
 }
 
 .replies-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16rpx;
+  gap: var(--sp-4);
   padding: 40rpx 0;
 }
 
 .loading-spinner {
   width: 40rpx;
   height: 40rpx;
-  border: 4rpx solid var(--td-border-level-1-color);
-  border-top-color: var(--td-brand-color-7);
+  border: 4rpx solid var(--c-border-default);
+  border-top-color: var(--c-brand-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -430,19 +530,27 @@ onMounted(() => {
 }
 
 .loading-text {
-  font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
 }
 
 .replies-list {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: var(--sp-6);
 }
 
 .reply-item {
   display: flex;
-  gap: 16rpx;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  background: var(--c-bg-page);
+  border-radius: var(--r-lg);
+  transition: transform 0.15s ease;
+}
+
+.reply-item:active {
+  transform: scale(0.98);
 }
 
 .reply-avatar {
@@ -450,7 +558,7 @@ onMounted(() => {
   height: 56rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -463,9 +571,9 @@ onMounted(() => {
 }
 
 .reply-avatar__char {
-  font-size: 24rpx;
+  font-size: var(--fs-base);
   font-weight: 600;
-  color: var(--td-brand-color-7);
+  color: var(--c-brand-500);
 }
 
 .reply-body {
@@ -473,7 +581,7 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--sp-3);
 }
 
 .reply-content {
@@ -484,46 +592,49 @@ onMounted(() => {
 .reply-header {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  margin-bottom: 8rpx;
+  gap: var(--sp-3);
+  margin-bottom: 10rpx;
 }
 
 .reply-author {
-  font-size: 26rpx;
+  font-size: var(--fs-md);
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .reply-time {
-  font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
 }
 
 .reply-text {
-  font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-md);
+  color: var(--c-text-secondary);
   line-height: 1.6;
 }
 
 /* ========== 打招呼按钮 ========== */
 .reply-say-hello {
   align-self: flex-start;
-  padding: 8rpx 20rpx;
-  border-radius: 999px;
-  background: var(--td-bg-app-page);
-  border: 1rpx solid var(--td-border-level-1-color);
-  transition: background 160ms ease;
+  padding: 10rpx var(--sp-6);
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
+  transition: all 0.15s ease;
 }
 
 .reply-say-hello:active {
-  background: var(--td-brand-color-1);
-  border-color: var(--td-brand-color-3);
+  transform: scale(0.96);
+  background: var(--c-gradient-float-btn);
+}
+
+.reply-say-hello:active .reply-say-hello__text {
+  color: var(--c-neutral-0);
 }
 
 .reply-say-hello__text {
-  font-size: 22rpx;
-  color: var(--td-brand-color-7);
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  color: var(--c-brand-500);
+  font-weight: 600;
 }
 
 .replies-empty {
@@ -534,8 +645,8 @@ onMounted(() => {
 }
 
 .replies-empty__text {
-  font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
 }
 
 .body-footer {
@@ -549,35 +660,41 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24rpx;
+  gap: var(--sp-6);
 }
 
 .empty-state__text {
-  font-size: 30rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-xl);
+  color: var(--c-text-tertiary);
 }
 
 .empty-state__back {
-  padding: 16rpx 40rpx;
-  border-radius: 999px;
-  background: var(--td-brand-color-7);
+  padding: 18rpx 48rpx;
+  border-radius: var(--r-full);
+  background: var(--c-gradient-float-btn);
+  box-shadow: var(--s-brand);
+  transition: all 0.15s ease;
+}
+
+.empty-state__back:active {
+  transform: scale(0.96);
 }
 
 .back-text {
-  font-size: 28rpx;
-  color: #ffffff;
-  font-weight: 500;
+  font-size: var(--fs-lg);
+  color: var(--c-neutral-0);
+  font-weight: 600;
 }
 
 /* ========== 底部回复栏 ========== */
 .detail-footer {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  padding: 20rpx 32rpx;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
-  background: var(--td-bg-color-container);
-  border-top: 1rpx solid var(--td-border-level-1-color);
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-8);
+  padding-bottom: calc(env(safe-area-inset-bottom) + var(--sp-5));
+  background: var(--c-neutral-0);
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
 .reply-input-wrap {
@@ -585,33 +702,47 @@ onMounted(() => {
 }
 
 .reply-input {
-  padding: 16rpx 24rpx;
-  border-radius: 999px;
-  background: var(--td-bg-app-page);
-  font-size: 28rpx;
-  color: var(--td-text-color-primary);
+  padding: var(--sp-5) var(--sp-7);
+  border-radius: var(--r-full);
+  background: var(--c-bg-page);
+  font-size: var(--fs-lg);
+  color: var(--c-text-primary);
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+}
+
+.reply-input:focus {
+  border-color: var(--c-brand-500);
+  background: var(--c-neutral-0);
 }
 
 .reply-btn {
-  padding: 16rpx 32rpx;
-  border-radius: 999px;
-  background: var(--td-brand-color-7);
+  padding: 18rpx var(--sp-8);
+  border-radius: var(--r-full);
+  background: var(--c-gradient-float-btn);
   flex-shrink: 0;
+  box-shadow: var(--s-brand-md);
+  transition: all 0.15s ease;
+}
+
+.reply-btn:active {
+  transform: scale(0.96);
 }
 
 .reply-btn--disabled {
-  background: var(--td-bg-color-component-disabled);
+  background: var(--c-border-default);
+  box-shadow: none;
   pointer-events: none;
 }
 
 .reply-btn__text {
-  font-size: 26rpx;
-  color: #ffffff;
+  font-size: var(--fs-md);
+  color: var(--c-neutral-0);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .reply-btn--disabled .reply-btn__text {
-  color: var(--td-text-color-disabled);
+  color: var(--c-text-tertiary);
 }
 </style>

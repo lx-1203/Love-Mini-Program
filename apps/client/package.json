@@ -17,22 +17,26 @@
   },
   "dependencies": {
     "@dcloudio/types": "3.4.31",
-    "@dcloudio/uni-app": "^3.0.0-alpha-1000920260525813",
-    "@dcloudio/uni-h5": "^3.0.0-alpha-1000920260525813",
-    "@dcloudio/uni-mp-weixin": "^3.0.0-alpha-1000920260525813",
+    "@dcloudio/uni-app": "3.0.0-alpha-1000920260525813",
+    "@dcloudio/uni-h5": "3.0.0-alpha-1000920260525813",
+    "@dcloudio/uni-mp-weixin": "3.0.0-alpha-1000920260525813",
     "@dcloudio/uni-ui": "^1.5.12",
-    "@dcloudio/vite-plugin-uni": "^3.0.0-alpha-1000920260525813",
+    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-1000920260525813",
+    "gsap": "^3.15.0",
     "pinia": "2.3.1",
-    "vue": "3.5.34"
+    "vue": "3.4.21"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.7",
+    "@dcloudio/uni-components": "3.0.0-alpha-1000920260525813",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "@vitest/coverage-v8": "^2.1.9",
     "@vue/test-utils": "^2.4.10",
     "jsdom": "^29.1.1",
+    "sass": "^1.101.0",
     "sass-embedded": "^1.93.3",
     "typescript": "5.9.3",
-    "vite": "^8.0.13",
-    "vitest": "^4.1.6",
-    "vue-tsc": "^3.2.9"
+    "vite": "^5.4.0",
+    "vitest": "^2.0.0",
+    "vue-tsc": "^2.0.0"
   }
 }

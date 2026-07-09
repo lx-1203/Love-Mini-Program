@@ -1,11 +1,11 @@
-export type AppTabId = "home" | "circle" | "chat" | "shop" | "campus" | "profile";
+export type AppTabId = "home" | "village" | "discover" | "chat" | "profile" | "messages" | "likes";
 
 export interface AppTab {
   id: AppTabId;
   label: string;
   path: string;
   iconPath: string;
-  activeIconPath: string;
+  selectedIconPath: string;
   prominent?: boolean;
 }
 
@@ -14,42 +14,35 @@ export const appTabs: AppTab[] = [
     id: "home",
     label: "首页",
     path: "/pages/home/index",
-    iconPath: "static/assets/icons/home.png",
-    activeIconPath: "static/assets/icons/home-active.png",
+    iconPath: "static/assets/icons/tabbar/home-default.png",
+    selectedIconPath: "static/assets/icons/tabbar/home-active.png",
   },
   {
-    id: "circle",
+    id: "village",
     label: "圈子",
-    path: "/pages/circle/index",
-    iconPath: "static/assets/icons/circle.png",
-    activeIconPath: "static/assets/icons/circle-active.png",
+    path: "/pages/village/index",
+    iconPath: "static/assets/icons/tabbar/village-default.png",
+    selectedIconPath: "static/assets/icons/tabbar/village-active.png",
+  },
+  {
+    id: "discover",
+    label: "匹配",
+    path: "/pages/discover/index",
+    iconPath: "static/assets/icons/tabbar/discover-default.png",
+    selectedIconPath: "static/assets/icons/tabbar/discover-active.png",
   },
   {
     id: "chat",
-    label: "聊天",
+    label: "消息",
     path: "/pages/chat/index",
-    iconPath: "static/assets/icons/chat.png",
-    activeIconPath: "static/assets/icons/chat-active.png",
-  },
-  {
-    id: "shop",
-    label: "逛逛",
-    path: "/pages/shop/index",
-    iconPath: "static/assets/icons/shop.png",
-    activeIconPath: "static/assets/icons/shop-active.png",
-  },
-  {
-    id: "campus",
-    label: "校园",
-    path: "/pages/campus/index",
-    iconPath: "static/assets/icons/village.png",
-    activeIconPath: "static/assets/icons/village-active.png",
+    iconPath: "static/assets/icons/tabbar/chat-default.png",
+    selectedIconPath: "static/assets/icons/tabbar/chat-active.png",
   },
   {
     id: "profile",
     label: "我的",
     path: "/pages/profile/index",
-    iconPath: "static/assets/icons/profile.png",
-    activeIconPath: "static/assets/icons/profile-active.png",
+    iconPath: "static/assets/icons/tabbar/profile-default.png",
+    selectedIconPath: "static/assets/icons/tabbar/profile-active.png",
   },
 ];

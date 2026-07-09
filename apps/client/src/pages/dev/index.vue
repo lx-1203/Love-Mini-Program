@@ -5,6 +5,8 @@
  * 列出所有已注册页面，方便快速跳转测试
  * 删除时：删除此文件 + pages.json中dev路由 + profile页入口按钮
  */
+import { ref } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 
 interface PageItem {
   path: string;
@@ -12,6 +14,14 @@ interface PageItem {
   group: string;
   isTab?: boolean;
 }
+
+const pageVisible = ref(false);
+onShow(() => {
+  pageVisible.value = false;
+  setTimeout(() => {
+    pageVisible.value = true;
+  }, 30);
+});
 
 /** 全部已注册页面 */
 const pages: PageItem[] = [
@@ -64,10 +74,10 @@ function goBack() {
 </script>
 
 <template>
-  <view class="dev-page">
+  <view class="dev-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部栏 -->
     <view class="dev-header">
-      <view class="dev-header__back" @tap="goBack">
+      <view class="dev-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="dev-header__back-icon">←</text>
       </view>
       <text class="dev-header__title">DEV 开发者导航</text>
@@ -92,7 +102,7 @@ function goBack() {
         <view
           v-for="(item, idx) in items"
           :key="idx"
-          class="dev-item"
+          class="dev-item list-item"
           :class="{ 'dev-item--tab': item.isTab }"
           @tap="navigateTo(item)"
         >
@@ -112,17 +122,30 @@ function goBack() {
 </template>
 
 <style scoped lang="scss">
+$green-primary: #3FCF8E;
+$green-light: #E8F8F0;
+$pink-primary: #EC4899;
+$pink-light: #FFF0F6;
+$gold-vip: #C9A36A;
+$white: #FFFFFF;
+$bg-page: #F4F6FA;
+$text-primary: #1F2329;
+$text-secondary: #64748B;
+$text-tertiary: #9AA1AB;
+$divider: #E2E8F0;
+$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+
 .dev-page {
   min-height: 100vh;
-  background: #0f172a;
+  background: $bg-page;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 .dev-header {
   display: flex;
   align-items: center;
-  padding: calc(env(safe-area-inset-top) + 16rpx) 32rpx 16rpx;
-  background: #1e293b;
+  padding: calc(env(safe-area-inset-top) + 16rpx) 32rpx 24rpx;
+  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 60%, #F9A8C4 100%);
   gap: 16rpx;
 }
 
@@ -132,50 +155,58 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16rpx;
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.15s ease;
 }
 
 .dev-header__back:active {
-  background: rgba(255, 255, 255, 0.15);
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .dev-header__back-icon {
   font-size: 36rpx;
-  color: #94a3b8;
+  color: $white;
+  font-weight: 600;
 }
 
 .dev-header__title {
   flex: 1;
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: 700;
-  color: #f1f5f9;
+  color: $white;
 }
 
 .dev-header__badge {
-  padding: 6rpx 16rpx;
-  border-radius: 8rpx;
-  background: #ef4444;
+  padding: 8rpx 20rpx;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  /* mp-weixin 不支持，H5 保留毛玻璃；白字+白底场景保留低不透明度避免文字不可见 */
+  // #ifdef H5
+  backdrop-filter: blur(10rpx);
+  // #endif
 }
 
 .dev-header__badge-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: $white;
   letter-spacing: 2rpx;
 }
 
 .dev-notice {
   margin: 24rpx 32rpx 0;
   padding: 20rpx 24rpx;
-  border-radius: 16rpx;
-  background: rgba(234, 179, 8, 0.12);
-  border: 2rpx solid rgba(234, 179, 8, 0.3);
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #FFF8E6 0%, #FFF0D6 100%);
+  border: 2rpx solid rgba(201, 163, 106, 0.2);
+  box-shadow: $card-soft-shadow;
 }
 
 .dev-notice__text {
   font-size: 24rpx;
-  color: #fbbf24;
+  color: $gold-vip;
   font-weight: 500;
 }
 
@@ -185,63 +216,69 @@ function goBack() {
 
 .dev-group__title {
   display: block;
-  font-size: 22rpx;
-  color: #64748b;
+  font-size: 24rpx;
+  color: $text-secondary;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 4rpx;
   margin-bottom: 12rpx;
   padding-left: 8rpx;
 }
 
 .dev-group__list {
-  border-radius: 16rpx;
+  border-radius: 24rpx;
   overflow: hidden;
-  background: #1e293b;
+  background: $white;
+  box-shadow: $card-soft-shadow;
 }
 
 .dev-item {
   display: flex;
   align-items: center;
-  padding: 24rpx 28rpx;
-  border-bottom: 1rpx solid rgba(255, 255, 255, 0.06);
+  padding: 28rpx;
+  border-bottom: 1rpx solid $bg-page;
   gap: 16rpx;
+  transition: all 0.15s ease;
+}
+
+.dev-item:last-child {
+  border-bottom: none;
 }
 
 .dev-item:active {
-  background: rgba(255, 255, 255, 0.05);
+  background: $bg-page;
+  transform: scale(0.98);
 }
 
 .dev-item--tab {
-  border-left: 6rpx solid #3b82f6;
+  border-left: 6rpx solid $green-primary;
+  background: linear-gradient(90deg, $green-light 0%, $white 30%);
 }
 
 .dev-item__left {
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  gap: 12rpx;
   min-width: 200rpx;
 }
 
 .dev-item__title {
   font-size: 28rpx;
-  color: #f1f5f9;
+  color: $text-primary;
   font-weight: 500;
 }
 
 .dev-item__tab-tag {
   font-size: 18rpx;
-  color: #3b82f6;
+  color: $green-primary;
   font-weight: 700;
-  padding: 2rpx 10rpx;
-  border-radius: 6rpx;
-  background: rgba(59, 130, 246, 0.15);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  background: $green-light;
 }
 
 .dev-item__path {
   flex: 1;
   font-size: 22rpx;
-  color: #64748b;
+  color: $text-tertiary;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -249,11 +286,11 @@ function goBack() {
 
 .dev-item__arrow {
   font-size: 28rpx;
-  color: #475569;
+  color: $text-tertiary;
   font-weight: 600;
 }
 
 .safe-bottom {
-  height: 32rpx;
+  height: 48rpx;
 }
 </style>

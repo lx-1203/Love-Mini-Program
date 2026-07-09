@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
@@ -43,9 +43,9 @@ async function submit() {
   <AppShell title="反馈中心" subtitle="反馈、建议和活动提案共用一个入口。" :show-tab-bar="false">
     <SectionCard title="新建提交" compact>
       <view class="chips">
-        <text class="chip" @click="activeType = 'feedback'">反馈</text>
-        <text class="chip" @click="activeType = 'suggestion'">建议</text>
-        <text class="chip" @click="activeType = 'activity_proposal'">活动提案</text>
+        <text class="chip" @tap="activeType = 'feedback'">反馈</text>
+        <text class="chip" @tap="activeType = 'suggestion'">建议</text>
+        <text class="chip" @tap="activeType = 'activity_proposal'">活动提案</text>
       </view>
       <input v-model="form.title" class="field" placeholder="标题" />
       <textarea v-model="form.content" class="field field--textarea" maxlength="280" />
@@ -78,8 +78,8 @@ async function submit() {
 .chip {
   padding: 12rpx 18rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-1);
-  color: var(--td-brand-color-7);
+  background: var(--c-bg-brand);
+  color: var(--c-brand-700);
 }
 
 .field {
@@ -88,7 +88,7 @@ async function submit() {
   padding: 18rpx;
   box-sizing: border-box;
   border-radius: 18rpx;
-  background: var(--td-bg-app-page);
+  background: var(--c-bg-page);
 }
 
 .field--textarea {
@@ -96,10 +96,11 @@ async function submit() {
 }
 
 .submission {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10rpx;
   padding: 18rpx 0;
-  border-top: 1px solid var(--td-border-level-1-color);
+  border-top: 1px solid var(--c-border-light);
 }
 
 .submission:first-child {
@@ -118,7 +119,7 @@ async function submit() {
 }
 
 .submission__summary {
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
   line-height: 1.6;
 }
 </style>

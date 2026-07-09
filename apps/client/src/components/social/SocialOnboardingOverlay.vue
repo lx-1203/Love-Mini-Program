@@ -9,36 +9,16 @@
 -->
 <!-- 普通 script 块：用于导出工具函数，供外部页面使用 -->
 <script lang="ts">
-/** localStorage 键名：是否已看过引导 */
-const ONBOARDING_KEY = 'campus_love_social_onboarding_seen'
-
-/**
- * 检查用户是否已看过引导
- */
-export function hasSeenOnboarding(): boolean {
-  try {
-    const stored = uni.getStorageSync(ONBOARDING_KEY)
-    return stored === 'true' || stored === true
-  } catch {
-    return false
-  }
-}
-
-/**
- * 标记用户已看过引导
- */
-export function markOnboardingSeen(): void {
-  try {
-    uni.setStorageSync(ONBOARDING_KEY, 'true')
-  } catch {
-    // 静默处理存储失败
-  }
-}
+export { hasSeenOnboarding, markOnboardingSeen } from './onboarding-utils';
 </script>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { TIER_ORDER, TIER_META } from '../../stores/social-progress'
+import { markOnboardingSeen } from './onboarding-utils'
+import { designTokens } from '../../theme/tokens'
+
+const t = designTokens
 
 // ==================== Props & Emits ====================
 
@@ -52,7 +32,7 @@ const emit = defineEmits<{
 // ==================== 常量 ====================
 
 /** localStorage 键名 */
-const ONBOARDING_KEY_LOCAL = 'campus_love_social_onboarding_seen'
+
 
 /** 引导页总数 */
 const TOTAL_SCREENS = TIER_ORDER.length
@@ -122,8 +102,25 @@ function handleStart() {
 
 <template>
   <view v-if="!dismissed" class="onboard-overlay">
+    <!-- ========== 装饰：三个模糊头像营造若隐若现 ========== -->
+    <view class="onboard-decor-avatars" aria-hidden="true">
+      <image class="decor-avatar decor-avatar--1" src="/static/assets/images/avatars/avatar-3.jpg" mode="aspectFill" />
+      <image class="decor-avatar decor-avatar--2" src="/static/assets/images/avatars/avatar-5.jpg" mode="aspectFill" />
+      <image class="decor-avatar decor-avatar--3" src="/static/assets/images/avatars/avatar-8.jpg" mode="aspectFill" />
+    </view>
+
+    <!-- ========== 装饰：浮动小心形 CSS 动画 ========== -->
+    <view class="onboard-decor-hearts" aria-hidden="true">
+      <text class="floating-heart floating-heart--1">❤</text>
+      <text class="floating-heart floating-heart--2">❤</text>
+      <text class="floating-heart floating-heart--3">❤</text>
+      <text class="floating-heart floating-heart--4">❤</text>
+    </view>
+
     <!-- ========== 半透明遮罩 ========== -->
     <view class="onboard-mask" />
+    <!-- ========== 半透明渐变叠加（粉→白） ========== -->
+    <view class="onboard-overlay-gradient" />
 
     <!-- ========== 引导卡片容器 ========== -->
     <view class="onboard-card">
@@ -146,7 +143,7 @@ function handleStart() {
           <view class="onboard-screen">
             <!-- 层级图标 -->
             <view class="onboard-screen__icon-wrap">
-              <text class="onboard-screen__icon">{{ screen.icon }}</text>
+              <image class="onboard-screen__icon-img" :src="screen.icon" mode="aspectFit" />
             </view>
 
             <!-- 步骤编号 -->
@@ -180,20 +177,20 @@ function handleStart() {
 
         <!-- 操作按钮 -->
         <view class="onboard-actions">
-          <button
+          <view
             v-if="currentIndex < TOTAL_SCREENS - 1"
-            class="onboard-actions__next"
+            class="onboard-btn onboard-btn--outline"
             @tap="currentIndex = currentIndex + 1"
           >
             下一步
-          </button>
-          <button
+          </view>
+          <view
             v-else
-            class="onboard-actions__start"
+            class="onboard-btn onboard-btn--primary"
             @tap="handleStart"
           >
             开始探索
-          </button>
+          </view>
         </view>
       </view>
     </view>
@@ -208,10 +205,118 @@ function handleStart() {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2000;
+  /* Task F2 / M-09：z-index 提升至 9999，确保覆盖所有其他元素（如 TabBar / 弹窗） */
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ==================== 装饰：模糊头像 ==================== */
+.onboard-decor-avatars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.decor-avatar {
+  position: absolute;
+  border-radius: 50%;
+  /* 默认透明度 0.6 营造若隐若现 */
+  opacity: 0.6;
+  /* H5 端追加模糊滤镜；mp-weixin 不支持 filter，保留 opacity fallback */
+  // #ifdef H5
+  filter: blur(8rpx);
+  // #endif
+}
+
+.decor-avatar--1 {
+  width: 200rpx;
+  height: 200rpx;
+  top: 12%;
+  left: -60rpx;
+}
+
+.decor-avatar--2 {
+  width: 240rpx;
+  height: 240rpx;
+  top: 38%;
+  right: -80rpx;
+}
+
+.decor-avatar--3 {
+  width: 180rpx;
+  height: 180rpx;
+  bottom: 14%;
+  left: 18%;
+}
+
+/* ==================== 装饰：浮动小心形 ==================== */
+.onboard-decor-hearts {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.floating-heart {
+  position: absolute;
+  font-size: var(--fs-2xl);
+  color: var(--c-romance-400);
+  opacity: 0.6;
+  animation: heart-float 6s ease-in-out infinite;
+}
+
+.floating-heart--1 {
+  top: 22%;
+  left: 18%;
+  animation-delay: 0s;
+  font-size: var(--fs-lg);
+}
+
+.floating-heart--2 {
+  top: 40%;
+  right: 22%;
+  animation-delay: 1.5s;
+  font-size: var(--fs-2xl);
+}
+
+.floating-heart--3 {
+  bottom: 28%;
+  left: 32%;
+  animation-delay: 3s;
+  font-size: var(--fs-md);
+}
+
+.floating-heart--4 {
+  top: 65%;
+  right: 30%;
+  animation-delay: 4.5s;
+  font-size: var(--fs-lg);
+}
+
+@keyframes heart-float {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-30rpx) scale(1.15);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
 }
 
 /* ==================== 遮罩层 ==================== */
@@ -221,8 +326,24 @@ function handleStart() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(8rpx);
+  background: rgba(15, 23, 42, 0.7);
+  /* mp-weixin 不支持，H5 保留毛玻璃；mp-weixin 通过提高遮罩不透明度 0.55→0.7 近似降级 */
+  // #ifdef H5
+  backdrop-filter: blur(12rpx);
+  -webkit-backdrop-filter: blur(12rpx);
+  // #endif
+}
+
+/* ==================== 半透明渐变叠加（粉→白） ==================== */
+.onboard-overlay-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,245,247,0.9) 100%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ==================== 卡片容器 ==================== */
@@ -231,9 +352,9 @@ function handleStart() {
   z-index: 1;
   width: 620rpx;
   max-height: 80vh;
-  background: #ffffff;
+  background: var(--c-bg-primary, #ffffff);
   border-radius: 32rpx;
-  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20rpx 60rpx rgba(15, 23, 42, 0.12), 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -250,13 +371,13 @@ function handleStart() {
 
 .onboard-top__step {
   font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  color: var(--c-text-tertiary);
   font-weight: 500;
 }
 
 .onboard-top__skip {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
   padding: 4rpx 8rpx;
 }
 
@@ -279,49 +400,55 @@ function handleStart() {
   width: 140rpx;
   height: 140rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--td-brand-color-1), var(--td-brand-color-2));
+  background: linear-gradient(135deg, var(--c-brand-50), var(--c-brand-100));
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 24rpx;
-  box-shadow: 0 8rpx 24rpx rgba(37, 99, 235, 0.1);
+  box-shadow: 0 8rpx 24rpx rgba(91, 127, 255, 0.12);
 }
 
 .onboard-screen__icon {
-  font-size: 64rpx;
+  font-size: var(--fs-4xl, 64rpx);
   line-height: 1;
+}
+
+.onboard-screen__icon-img {
+  width: 80rpx;
+  height: 80rpx;
+  flex-shrink: 0;
 }
 
 .onboard-screen__badge {
   padding: 6rpx 20rpx;
   border-radius: 999px;
-  background: var(--td-brand-color-1);
+  background: var(--c-bg-brand);
   margin-bottom: 16rpx;
 }
 
 .onboard-screen__badge-text {
   font-size: 22rpx;
   font-weight: 600;
-  color: var(--td-brand-color-6);
+  color: var(--c-brand);
 }
 
 .onboard-screen__title {
   font-size: 40rpx;
   font-weight: 800;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
   margin-bottom: 12rpx;
 }
 
 .onboard-screen__desc {
   font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
   margin-bottom: 24rpx;
   line-height: 1.4;
 }
 
 .onboard-screen__guide {
   font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  color: var(--c-text-secondary);
   line-height: 1.8;
   white-space: pre-line;
 }
@@ -346,14 +473,14 @@ function handleStart() {
   width: 12rpx;
   height: 12rpx;
   border-radius: 50%;
-  background: var(--td-border-level-1-color);
+  background: var(--c-border-light);
   transition: all 0.3s ease;
 }
 
 .onboard-dots__item--active {
   width: 36rpx;
   border-radius: 6rpx;
-  background: var(--td-brand-color-6);
+  background: var(--c-brand);
 }
 
 /* 操作按钮 */
@@ -361,33 +488,39 @@ function handleStart() {
   width: 100%;
 }
 
-.onboard-actions__next,
-.onboard-actions__start {
+.onboard-btn {
   width: 100%;
   height: 88rpx;
-  border: 0;
-  border-radius: 18rpx;
+  border: none;
+  border-radius: 9999rpx;
   font-size: 28rpx;
   font-weight: 700;
-  line-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 
-.onboard-actions__next {
-  background: var(--td-brand-color-1);
-  color: var(--td-brand-color-6);
+.onboard-btn:active {
+  transform: scale(0.97);
 }
 
-.onboard-actions__next:active {
-  background: var(--td-brand-color-2);
+.onboard-btn--primary {
+  background: var(--c-brand-500, #5B7FFF);
+  color: var(--c-text-inverse, #ffffff);
+  box-shadow: 0 4rpx 16rpx rgba(91, 127, 255, 0.25);
 }
 
-.onboard-actions__start {
-  background: linear-gradient(135deg, var(--td-brand-color-6), var(--td-brand-color-7));
-  color: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(37, 99, 235, 0.3);
+.onboard-btn--outline {
+  background: transparent;
+  border: 2rpx solid var(--c-border-light, #E2E8F0);
+  color: var(--c-text-secondary, #475569);
 }
 
-.onboard-actions__start:active {
-  opacity: 0.85;
+.onboard-btn--outline:active {
+  background: var(--c-brand-50);
+  border-color: var(--c-brand-500, #5B7FFF);
+  color: var(--c-brand-500, #5B7FFF);
 }
 </style>

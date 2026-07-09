@@ -4,9 +4,12 @@
  * 展示今日问题，支持回答提交和查看其他人的回答
  */
 import { ref, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useDailyQuestionStore, formatAnswerTime } from "../../stores/daily-question";
 import { useCheckInStore } from "../../stores/checkin";
+import { IMAGE_PATHS } from "../../config/images";
+import SafeImage from "../../components/common/SafeImage.vue";
 
 const dailyQuestionStore = useDailyQuestionStore();
 const checkInStore = useCheckInStore();
@@ -34,7 +37,7 @@ async function submitAnswer() {
     );
     answerContent.value = "";
     uni.showToast({ title: "回答成功", icon: "success" });
-  } catch {
+  } catch (_e) {
     uni.showToast({
       title: dailyQuestionStore.errorMessage || "回答失败",
       icon: "none",
@@ -60,10 +63,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <view class="daily-question-page">
+  <view class="daily-question-page page-fade-in">
     <!-- 顶部导航栏 -->
     <view class="dq-header">
-      <view class="dq-header__back" @tap="goBack">
+      <view class="dq-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">返回</text>
       </view>
       <text class="dq-header__title">每日一问</text>
@@ -73,7 +76,7 @@ onMounted(async () => {
     <scroll-view class="dq-body" scroll-y>
       <!-- 未签到提示 -->
       <view v-if="!checkInStore.checkedIn" class="lock-card">
-        <text class="lock-card__icon">🔒</text>
+        <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="lock-card__icon" mode="aspectFit" />
         <text class="lock-card__title">签到后解锁</text>
         <text class="lock-card__desc">完成今日签到即可参与每日一问</text>
       </view>
@@ -87,7 +90,7 @@ onMounted(async () => {
         </view>
 
         <!-- 问题卡片 -->
-        <view v-if="todayQuestion" class="question-card">
+        <view v-if="todayQuestion" class="question-card card-base">
           <view class="question-card__badge">
             <text class="question-card__badge-text">今日话题</text>
           </view>
@@ -106,15 +109,17 @@ onMounted(async () => {
             :show-confirm-bar="false"
           />
           <view class="answer-actions">
-            <view class="anonymous-toggle" @tap="isAnonymous = !isAnonymous">
+            <view class="anonymous-toggle press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="isAnonymous = !isAnonymous">
               <view class="anonymous-toggle__check" :class="{ 'anonymous-toggle__check--active': isAnonymous }">
                 <text v-if="isAnonymous" class="check-mark">✓</text>
               </view>
               <text class="anonymous-toggle__label">匿名回答</text>
             </view>
             <view
-              class="submit-btn"
+              class="submit-btn press-feedback"
               :class="{ 'submit-btn--disabled': !answerContent.trim() || isSubmitting }"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
               @tap="submitAnswer"
             >
               <text class="submit-btn__text">{{ isSubmitting ? "提交中..." : "提交回答" }}</text>
@@ -138,7 +143,7 @@ onMounted(async () => {
           <view
             v-for="answer in answers"
             :key="answer.id"
-            class="answer-card"
+            class="answer-card list-item"
           >
             <view class="answer-card__header">
               <view class="answer-card__avatar">
@@ -147,6 +152,7 @@ onMounted(async () => {
                   class="answer-card__avatar-img"
                   :src="answer.authorAvatar"
                   mode="aspectFill"
+        lazy-load
                 />
                 <text v-else class="answer-card__avatar-char">
                   {{ answer.isAnonymous ? "?" : answer.authorName[0] }}
@@ -181,7 +187,7 @@ onMounted(async () => {
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--td-bg-app-page);
+  background: var(--c-gradient-page);
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -189,26 +195,31 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: var(--td-bg-color-container);
-  border-bottom: 1rpx solid var(--td-border-level-1-color);
-  z-index: 10;
+  padding: calc(env(safe-area-inset-top) + var(--sp-6)) var(--sp-8) var(--sp-6);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
+  z-index: var(--z-header);
 }
 
 .dq-header__back {
-  padding: 8rpx 0;
+  padding: var(--sp-2) 0;
   min-width: 80rpx;
 }
 
+.dq-header__back:active {
+  opacity: 0.7;
+  transform: scale(0.96);
+}
+
 .back-icon {
-  font-size: 28rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-base);
+  color: var(--c-text-inverse);
+  font-weight: 500;
 }
 
 .dq-header__title {
-  font-size: 34rpx;
+  font-size: var(--fs-2xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-inverse);
 }
 
 .dq-header__spacer {
@@ -226,28 +237,26 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24rpx;
-  padding: 120rpx 40rpx;
+  gap: var(--sp-6);
+  padding: 120rpx var(--sp-10);
 }
 
 .loading-spinner {
   width: 44rpx;
   height: 44rpx;
-  border: 4rpx solid var(--td-border-level-1-color);
-  border-top-color: var(--td-brand-color-7);
+  border: 4rpx solid var(--c-border-light);
+  border-top-color: var(--c-brand);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .dq-state__text {
-  font-size: 28rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
 }
 
 /* ========== 未签到锁定 ========== */
@@ -256,94 +265,120 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16rpx;
-  margin: 80rpx 32rpx;
-  padding: 60rpx 40rpx;
-  background: var(--td-bg-color-container);
-  border-radius: 24rpx;
-  box-shadow: var(--td-shadow-1);
+  gap: var(--sp-5);
+  margin: 80rpx var(--sp-8);
+  padding: 60rpx var(--sp-10);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xxl);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
 }
 
 .lock-card__icon {
-  font-size: 80rpx;
+  width: 80rpx;
+  height: 80rpx;
+  margin-bottom: var(--sp-3);
+  opacity: 0.6;
 }
 
 .lock-card__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .lock-card__desc {
-  font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
+  text-align: center;
+  line-height: 1.6;
 }
 
 /* ========== 问题卡片 ========== */
 .question-card {
-  margin: 24rpx 32rpx;
-  padding: 32rpx;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
-  border: 1rpx solid rgba(102, 126, 234, 0.15);
-  border-radius: 24rpx;
+  margin: var(--sp-7) var(--sp-6);
+  padding: var(--sp-9);
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
+  border: none;
+  border-radius: var(--r-xxl);
+  box-shadow: 0 8rpx 32rpx rgba(63, 207, 142, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.question-card::before {
+  content: '';
+  position: absolute;
+  top: -40rpx;
+  right: -40rpx;
+  width: 160rpx;
+  height: 160rpx;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
 }
 
 .question-card__badge {
   display: inline-flex;
-  padding: 6rpx 16rpx;
-  border-radius: 999px;
-  background: var(--td-brand-color-7);
-  margin-bottom: 20rpx;
+  padding: var(--sp-2) var(--sp-5);
+  border-radius: var(--r-full);
+  background: var(--c-gradient-float-btn);
+  margin-bottom: var(--sp-6);
+  box-shadow: var(--s-brand-sm);
 }
 
 .question-card__badge-text {
-  font-size: 22rpx;
-  color: #ffffff;
+  font-size: var(--fs-sm);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
 .question-card__text {
   display: block;
-  font-size: 36rpx;
+  font-size: var(--fs-3xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
-  line-height: 1.5;
-  margin-bottom: 16rpx;
+  color: var(--c-text-primary);
+  line-height: 1.6;
+  margin-bottom: var(--sp-5);
+  position: relative;
+  z-index: 1;
 }
 
 .question-card__date {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
+  font-weight: 500;
 }
 
 /* ========== 回答区域 ========== */
 .answer-section {
-  margin: 0 32rpx 24rpx;
-  padding: 28rpx;
-  background: var(--td-bg-color-container);
-  border-radius: 20rpx;
-  box-shadow: var(--td-shadow-1);
+  margin: 0 var(--sp-6) var(--sp-6);
+  padding: var(--sp-8);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
 }
 
 .answer-section__title {
   display: block;
-  font-size: 28rpx;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-  margin-bottom: 16rpx;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  margin-bottom: var(--sp-5);
 }
 
 .answer-input {
   width: 100%;
-  min-height: 180rpx;
-  padding: 20rpx;
-  border-radius: 16rpx;
-  background: var(--td-bg-app-page);
-  font-size: 28rpx;
-  color: var(--td-text-color-primary);
-  line-height: 1.6;
+  min-height: 200rpx;
+  padding: var(--sp-6);
+  border-radius: var(--r-lg);
+  background: var(--c-bg-page);
+  font-size: var(--fs-md);
+  color: var(--c-text-primary);
+  line-height: 1.7;
   box-sizing: border-box;
-  margin-bottom: 20rpx;
+  margin-bottom: var(--sp-6);
+  border: 2rpx solid transparent;
 }
 
 .answer-actions {
@@ -355,55 +390,67 @@ onMounted(async () => {
 .anonymous-toggle {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+
+.anonymous-toggle:active {
+  opacity: 0.7;
 }
 
 .anonymous-toggle__check {
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 8rpx;
-  border: 2rpx solid var(--td-border-level-2-color);
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: var(--r-md);
+  border: 2rpx solid var(--c-border-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 160ms ease;
+  background: var(--c-bg-container);
 }
 
 .anonymous-toggle__check--active {
-  background: var(--td-brand-color-7);
-  border-color: var(--td-brand-color-7);
+  background: var(--c-gradient-float-btn);
+  border-color: var(--c-brand);
+  box-shadow: var(--s-brand-sm);
 }
 
 .check-mark {
-  font-size: 22rpx;
-  color: #ffffff;
+  font-size: var(--fs-sm);
+  color: var(--c-text-inverse);
   font-weight: 700;
 }
 
 .anonymous-toggle__label {
-  font-size: 26rpx;
-  color: var(--td-text-color-secondary);
+  font-size: var(--fs-md);
+  color: var(--c-text-secondary);
 }
 
 .submit-btn {
-  padding: 16rpx 40rpx;
-  border-radius: 999px;
-  background: var(--td-brand-color-7);
+  padding: var(--sp-5) var(--sp-10);
+  border-radius: var(--r-full);
+  background: var(--c-gradient-float-btn);
+  box-shadow: var(--s-float-btn);
+}
+
+.submit-btn:active {
+  transform: scale(0.96);
 }
 
 .submit-btn--disabled {
-  background: var(--td-bg-color-component-disabled);
+  background: var(--c-bg-page);
+  box-shadow: none;
   pointer-events: none;
 }
 
 .submit-btn__text {
-  font-size: 26rpx;
-  color: #ffffff;
+  font-size: var(--fs-md);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
 .submit-btn--disabled .submit-btn__text {
-  color: var(--td-text-color-disabled);
+  color: var(--c-text-tertiary);
 }
 
 /* ========== 已回答提示 ========== */
@@ -411,75 +458,83 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
-  margin: 0 32rpx 24rpx;
-  padding: 20rpx;
-  background: rgba(34, 197, 94, 0.06);
-  border: 1rpx solid rgba(34, 197, 94, 0.15);
-  border-radius: 16rpx;
+  gap: var(--sp-3);
+  margin: 0 var(--sp-6) var(--sp-6);
+  padding: var(--sp-6);
+  background: linear-gradient(135deg, var(--c-bg-brand), rgba(63, 207, 142, 0.08));
+  border: 2rpx solid rgba(63, 207, 142, 0.2);
+  border-radius: var(--r-lg);
 }
 
 .answered-hint__icon {
-  font-size: 28rpx;
+  font-size: var(--fs-xl);
 }
 
 .answered-hint__text {
-  font-size: 26rpx;
-  color: #16a34a;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  color: var(--c-brand);
+  font-weight: 600;
 }
 
 /* ========== 回答列表 ========== */
 .answers-list {
-  margin: 0 32rpx;
+  margin: 0 var(--sp-6);
 }
 
 .answers-list__header {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  margin-bottom: 20rpx;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+  padding: 0 var(--sp-2);
 }
 
 .answers-list__title {
-  font-size: 30rpx;
+  font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .answers-list__count {
-  font-size: 24rpx;
-  color: var(--td-text-color-placeholder);
-  background: var(--td-bg-app-page);
-  padding: 4rpx 16rpx;
-  border-radius: 999px;
+  font-size: var(--fs-sm);
+  color: var(--c-brand);
+  background: var(--c-bg-brand);
+  padding: var(--sp-1) var(--sp-4);
+  border-radius: var(--r-full);
+  font-weight: 600;
 }
 
 .answer-card {
-  padding: 24rpx 28rpx;
-  background: var(--td-bg-color-container);
-  border-radius: 20rpx;
-  box-shadow: var(--td-shadow-1);
-  margin-bottom: 16rpx;
+  padding: var(--sp-7);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
+  margin-bottom: var(--sp-4);
+  border: var(--c-border-card);
+}
+
+.answer-card:active {
+  transform: scale(0.98);
 }
 
 .answer-card__header {
   display: flex;
   align-items: center;
-  gap: 14rpx;
-  margin-bottom: 16rpx;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
 }
 
 .answer-card__avatar {
-  width: 56rpx;
-  height: 56rpx;
+  width: 64rpx;
+  height: 64rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--td-brand-color-2), var(--td-brand-color-3));
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-100));
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border: 3rpx solid var(--c-bg-brand);
 }
 
 .answer-card__avatar-img {
@@ -488,47 +543,53 @@ onMounted(async () => {
 }
 
 .answer-card__avatar-char {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: var(--td-brand-color-7);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--c-brand);
 }
 
 .answer-card__info {
   display: flex;
   flex-direction: column;
-  gap: 4rpx;
+  gap: var(--sp-1);
 }
 
 .answer-card__name {
-  font-size: 26rpx;
+  font-size: var(--fs-md);
   font-weight: 600;
-  color: var(--td-text-color-primary);
+  color: var(--c-text-primary);
 }
 
 .answer-card__time {
-  font-size: 22rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
 }
 
 .answer-card__content {
-  font-size: 28rpx;
-  color: var(--td-text-color-primary);
-  line-height: 1.7;
+  font-size: var(--fs-md);
+  color: var(--c-text-primary);
+  line-height: 1.8;
+  background: var(--c-bg-page);
+  padding: var(--sp-5);
+  border-radius: var(--r-md);
 }
 
 .answers-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60rpx 0;
+  padding: 80rpx 0;
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  margin-top: var(--sp-5);
 }
 
 .answers-empty__text {
-  font-size: 26rpx;
-  color: var(--td-text-color-placeholder);
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
 }
 
 .body-footer {
-  height: 40rpx;
+  height: 60rpx;
 }
 </style>
