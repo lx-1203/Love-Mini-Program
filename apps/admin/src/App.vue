@@ -10,9 +10,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <view class="app-container">
+  <div class="app-container">
     <router-view />
-  </view>
+  </div>
 </template>
 
 <style>

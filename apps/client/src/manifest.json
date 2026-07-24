@@ -9,7 +9,7 @@
     "usingComponents": true
   },
   "mp-weixin": {
-    "appid": "",
+    "appid": "wxc67cd233d72388d0",
     "setting": {
       "urlCheck": false,
       "es6": true

@@ -21,38 +21,46 @@ const isH5: boolean = typeof window !== "undefined";
 /**
  * 读取 Vite 环境变量（按 key 直接访问 import.meta.env 具体属性）。
  *
- * 注意：必须通过 `import.meta.env.SPECIFIC_KEY` 形式直接访问，
- * Vite 才能在编译时静态替换为字面量；通过中间变量下标访问
- * （如 `import.meta.env[key]`）不会被替换，dev 模式下虽能运行，
- * 但在 uni-app 的某些构建场景下会读取失败。
+ * 注意：
+ * 1. 必须通过 `import.meta.env.SPECIFIC_KEY` 形式直接访问，
+ *    Vite 才能在编译时静态替换为 `.env` 文件中的字面量。
+ *    通过中间变量下标访问（如 `import.meta.env[key]`）不会被替换，
+ *    在 uni-app 的某些构建场景下会读取失败。
+ * 2. 不要按平台分支读取：uni-app（mp-weixin）构建时同样会由 Vite
+ *    把 `import.meta.env.XXX` 替换为常量；此前仅在 H5 分支读取导致
+ *    小程序生产包读不到 VITE_API_BASE_URL / VITE_API_MODE。
+ * 3. 保留 process.env 回退，用于非 Vite 运行时（如 vitest）或 SSR 场景。
  *
  * @param key Vite 环境变量名（必须为 VITE_ 前缀的静态字面量）
  */
 function readViteEnv(
   key: "VITE_API_MODE" | "VITE_API_BASE_URL" | "VITE_APP_VERSION"
 ): string | undefined {
-  // H5 端：Vite 注入 import.meta.env，直接访问具体属性可被静态替换
-  if (isH5) {
-    try {
+  // 主读取路径：直接访问 import.meta.env 的具名属性，
+  // Vite 会在构建阶段静态替换为 .env.[mode] 中的字面量。
+  try {
+    const viteEnv = (import.meta as any).env;
+    if (viteEnv) {
       let val: unknown;
       // 显式 switch 让 Vite 静态替换 import.meta.env.XXX 为字面量
       switch (key) {
         case "VITE_API_MODE":
-          val = (import.meta as any).env.VITE_API_MODE;
+          val = viteEnv.VITE_API_MODE;
           break;
         case "VITE_API_BASE_URL":
-          val = (import.meta as any).env.VITE_API_BASE_URL;
+          val = viteEnv.VITE_API_BASE_URL;
           break;
         case "VITE_APP_VERSION":
-          val = (import.meta as any).env.VITE_APP_VERSION;
+          val = viteEnv.VITE_APP_VERSION;
           break;
       }
       if (typeof val === "string" && val.length > 0) return val;
-    } catch (_e) {
-      // ignore
     }
+  } catch (_e) {
+    // Vite 未注入时回退到 process.env
   }
-  // mp-weixin 端：通过 process.env 读取（uni-app vite-plugin-uni 编译时注入）
+
+  // 回退路径：通过 process.env 读取（测试环境或 SSR 场景）
   try {
     const proc = (globalThis as any).process;
     if (proc && proc.env) {

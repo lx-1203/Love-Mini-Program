@@ -4,16 +4,19 @@ import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useSessionStore } from "../../stores/session";
 import { replaceAppPath } from "../../utils/navigation";
+import { IMAGE_PATHS } from "../../config/images";
 
 const sessionStore = useSessionStore();
 const { loginHero, loading } = storeToRefs(sessionStore);
 
+// 表单响应式数据（必须初始化，避免模板渲染时访问 undefined）
 const phone = ref("");
 const code = ref("");
 const agreed = ref(false);
 const countdown = ref(0);
 const showPhoneLogin = ref(false);
 
+// 页面进入淡入动画开关
 const pageVisible = ref(false);
 onShow(() => {
   pageVisible.value = false;
@@ -24,10 +27,19 @@ onShow(() => {
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
+// 表单校验计算属性
 const isPhoneValid = computed(() => /^1[3-9]\d{9}$/.test(phone.value));
 const isCodeValid = computed(() => /^\d{4,6}$/.test(code.value));
 const canSendCode = computed(() => isPhoneValid.value && countdown.value === 0);
 const canPhoneLogin = computed(() => isPhoneValid.value && isCodeValid.value && agreed.value);
+
+/**
+ * 安全读取登录页 Hero 文案。
+ * loginHero 来自 store，初始为 null，通过计算属性统一提供兜底文案，
+ * 避免模板中多处重复 optional chaining，也便于后续扩展动态配置。
+ */
+const heroTitle = computed(() => loginHero.value?.heroTitle || "校园恋爱");
+const heroSubtitle = computed(() => loginHero.value?.heroSubtitle || "遇见你的心动");
 
 function startCountdown() {
   countdown.value = 60;
@@ -63,7 +75,7 @@ async function onWechatLogin() {
   }
   try {
     await sessionStore.loginWithWechat();
-    replaceAppPath("/pages/home/index");
+    replaceAppPath("/pages/discover/index");
   } catch (error) {
     const message = error instanceof Error ? error.message : "登录失败，请稍后重试";
     uni.showToast({ title: message, icon: "none" });
@@ -81,7 +93,7 @@ function onPhoneLogin() {
   }
   uni.showToast({ title: "登录成功", icon: "success" });
   setTimeout(() => {
-    replaceAppPath("/pages/home/index");
+    replaceAppPath("/pages/discover/index");
   }, 1500);
 }
 
@@ -104,7 +116,7 @@ function openPrivacyPolicy() {
     <view class="login-page__hero">
       <image
         class="hero-image"
-        src="/static/assets/images/posters/login-poster.jpg"
+        :src="IMAGE_PATHS.POSTERS.LOGIN"
         mode="aspectFill"
         aria-hidden="true"
       />
@@ -112,8 +124,8 @@ function openPrivacyPolicy() {
       <view class="hero-overlay" />
       <!-- 主标题 + 副标压底显示 -->
       <view class="hero-title-wrap">
-        <text class="logo-title">{{ loginHero?.heroTitle || '校园恋爱' }}</text>
-        <text class="logo-subtitle">{{ loginHero?.heroSubtitle || '遇见你的心动' }}</text>
+        <text class="logo-title">{{ heroTitle }}</text>
+        <text class="logo-subtitle">{{ heroSubtitle }}</text>
       </view>
     </view>
 

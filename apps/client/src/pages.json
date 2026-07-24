@@ -18,15 +18,15 @@
       }
     },
     {
-      "path": "pages/home/index",
-      "style": {
-        "navigationBarTitleText": "首页"
-      }
-    },
-    {
       "path": "pages/discover/index",
       "style": {
         "navigationBarTitleText": "寻觅"
+      }
+    },
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationBarTitleText": "首页"
       }
     },
     {
@@ -170,6 +170,12 @@
       }
     },
     {
+      "path": "pages/heart-signals/index",
+      "style": {
+        "navigationBarTitleText": "心动信号"
+      }
+    },
+    {
       "path": "pages/vip/index",
       "style": {
         "navigationBarTitleText": "开通VIP"
@@ -249,10 +255,10 @@
     "borderStyle": "black",
     "list": [
       {
-        "pagePath": "pages/home/index",
-        "text": "首页",
-        "iconPath": "static/assets/icons/tabbar/home-default.png",
-        "selectedIconPath": "static/assets/icons/tabbar/home-active.png"
+        "pagePath": "pages/discover/index",
+        "text": "匹配",
+        "iconPath": "static/assets/icons/tabbar/discover-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/discover-active.png"
       },
       {
         "pagePath": "pages/village/index",
@@ -261,10 +267,10 @@
         "selectedIconPath": "static/assets/icons/tabbar/village-active.png"
       },
       {
-        "pagePath": "pages/discover/index",
-        "text": "匹配",
-        "iconPath": "static/assets/icons/tabbar/discover-default.png",
-        "selectedIconPath": "static/assets/icons/tabbar/discover-active.png"
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "static/assets/icons/tabbar/home-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/home-active.png"
       },
       {
         "pagePath": "pages/chat/index",

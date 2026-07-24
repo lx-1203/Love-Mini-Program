@@ -2,6 +2,8 @@
 locations = ["filesystem:./database/flyway/sql"]
 validateMigrationNaming = true
 # 使用双下划线占位符，避免与 MySQL 单行注释 # 冲突。
+placeholderPrefix = "__"
+placeholderSuffix = "__"
 
 [flyway.placeholders]
 admin_openid = "admin-default-openid-change-me"

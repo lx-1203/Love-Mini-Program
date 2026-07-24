@@ -263,10 +263,11 @@ async function sendText() {
   // 保存草稿，发送失败时恢复
   const messageToSend = draft.value;
   const quoteRef = quoteReply.value;
+  const currentSessionId = sessionId.value;
 
   try {
     // 私信和临时会话都统一走 messagesStore 发送
-    await messagesStore.sendMessage(sessionId.value, messageToSend, quoteRef?.messageId);
+    await messagesStore.sendMessage(currentSessionId, messageToSend, quoteRef?.messageId);
 
     // 临时会话额外同步到 chatStore 以保持兼容性
     if (isTempSession.value) {
@@ -304,23 +305,97 @@ async function handleEndSession() {
   }
 }
 
-/** 发送语音（mock） */
-async function sendVoice() {
+/** 录音管理器 */
+const recorderManager = ref<any>(null);
+const isRecording = ref(false);
+const recordingSeconds = ref(0);
+let recordingTimer: ReturnType<typeof setInterval> | null = null;
+let recorderListenersRegistered = false;
+
+/** 初始化录音管理器（只注册一次监听器，避免重复注册） */
+function initRecorder() {
+  if (recorderListenersRegistered) return;
+  // #ifdef MP-WEIXIN
+  const recorder = uni.getRecorderManager();
+  recorderManager.value = recorder;
+
+  recorder.onStart(() => {
+    isRecording.value = true;
+    recordingSeconds.value = 0;
+    recordingTimer = setInterval(() => {
+      recordingSeconds.value++;
+    }, 1000);
+  });
+
+  recorder.onStop((res: any) => {
+    isRecording.value = false;
+    if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
+    const duration = Math.round(recordingSeconds.value);
+    recordingSeconds.value = 0;
+    if (duration < 1) {
+      uni.showToast({ title: "录音时间太短", icon: "none" });
+      return;
+    }
+    sendVoiceMessage(res.tempFilePath, duration);
+  });
+
+  recorder.onError((err: any) => {
+    isRecording.value = false;
+    if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
+    console.error("[语音录制] 失败:", err);
+    uni.showToast({ title: "录音失败", icon: "none" });
+  });
+
+  recorderListenersRegistered = true;
+  // #endif
+}
+
+/** 发送语音 — 使用 uni.getRecorderManager 真实录音 */
+function startVoiceRecord() {
   if (!sessionId.value || isSessionClosed.value) {
     uni.showToast({ title: "会话已结束，无法发送消息", icon: "none" });
     return;
   }
+
+  // #ifdef MP-WEIXIN
+  initRecorder(); // 首次调用时注册监听器，后续复用
+  recorderManager.value?.start({ format: "mp3", duration: 60000 });
+  // #endif
+
+  // #ifndef MP-WEIXIN
+  uni.showToast({ title: "语音功能仅在小程序端可用", icon: "none" });
+  // #endif
+}
+
+function stopVoiceRecord() {
+  if (recorderManager.value) {
+    recorderManager.value.stop();
+  }
+}
+
+async function sendVoiceMessage(filePath: string, duration: number) {
+  if (!sessionId.value) {
+    uni.showToast({ title: "会话标识缺失，无法发送语音", icon: "none" });
+    return;
+  }
+
+  const currentSessionId = sessionId.value;
   try {
-    // mock 发送 8 秒语音
     if (isTempSession.value) {
-      await chatStore.sendVoice(8);
+      await chatStore.sendVoice(duration);
     } else {
-      await messagesStore.sendMessage(sessionId.value, "[语音消息]");
+      await messagesStore.sendMessage(currentSessionId, `[语音消息 ${duration}秒]`);
     }
+    uni.showToast({ title: "语音已发送", icon: "success" });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "语音发送失败，请稍后重试";
+    const message = error instanceof Error ? error.message : "语音发送失败";
     uni.showToast({ title: message, icon: "none" });
   }
+}
+
+/** 发送语音（mock 兼容旧接口） */
+async function sendVoice() {
+  startVoiceRecord();
 }
 
 /* ========== 破冰话题事件处理 ========== */
@@ -601,11 +676,18 @@ async function loadIcebreakers() {
         >
           <view
             class="wechat-input-bar__icon-btn press-feedback"
+            :class="{ 'wechat-input-bar__icon-btn--recording': isRecording }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
-            @tap="sendVoice"
+            @touchstart="startVoiceRecord"
+            @touchend="stopVoiceRecord"
+            @touchcancel="stopVoiceRecord"
           >
-            <image class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" />
+            <image v-if="!isRecording" class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" />
+            <view v-else class="wechat-input-bar__recording-indicator">
+              <view class="wechat-input-bar__recording-pulse" />
+              <text class="wechat-input-bar__recording-text">{{ recordingSeconds }}″</text>
+            </view>
           </view>
           <input
             v-model="draft"
@@ -767,6 +849,38 @@ async function loadIcebreakers() {
   height: 44rpx;
   color: var(--c-text-secondary, #475569);
   flex-shrink: 0;
+}
+
+/* 录音中状态 */
+.wechat-input-bar__icon-btn--recording {
+  background: var(--c-error, #ef4444);
+  transform: scale(1.1);
+}
+
+.wechat-input-bar__recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.wechat-input-bar__recording-pulse {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #fff;
+  animation: recording-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes recording-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.wechat-input-bar__recording-text {
+  font-size: 22rpx;
+  color: #fff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .wechat-input-bar__input {

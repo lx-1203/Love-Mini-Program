@@ -1,38 +1,135 @@
 <script setup lang="ts">
-defineProps<{
+/**
+ * VoicePill — 语音消息气泡组件
+ *
+ * 展示语音消息时长 + 播放/暂停状态。
+ * mp-weixin 使用 wx.createInnerAudioContext() 播放，
+ * 点击气泡切换播放/暂停，显示波形动画。
+ */
+import { ref, onUnmounted } from "vue";
+
+const props = defineProps<{
   durationSeconds: number;
+  /** 语音文件 URL（可为空，mock 模式仅显示时长） */
+  audioUrl?: string;
   expired?: boolean;
 }>();
+
+const isPlaying = ref(false);
+const audioCtx = ref<any>(null);
+
+function togglePlay() {
+  if (props.expired) return;
+
+  // #ifdef MP-WEIXIN
+  if (!audioCtx.value) {
+    audioCtx.value = uni.createInnerAudioContext();
+    audioCtx.value.onEnded(() => { isPlaying.value = false; });
+    audioCtx.value.onError(() => { isPlaying.value = false; });
+  }
+
+  if (isPlaying.value) {
+    audioCtx.value.pause();
+    isPlaying.value = false;
+  } else if (props.audioUrl) {
+    audioCtx.value.src = props.audioUrl;
+    audioCtx.value.play();
+    isPlaying.value = true;
+  } else {
+    // 无音频 URL，仅切换 UI 模拟播放状态
+    isPlaying.value = true;
+    setTimeout(() => { isPlaying.value = false; }, props.durationSeconds * 1000);
+  }
+  // #endif
+
+  // #ifndef MP-WEIXIN
+  isPlaying.value = true;
+  setTimeout(() => { isPlaying.value = false; }, props.durationSeconds * 1000);
+  // #endif
+}
+
+onUnmounted(() => {
+  audioCtx.value?.destroy();
+});
 </script>
 
 <template>
-  <view class="voice" :class="{ 'voice--expired': expired }">
-    <text class="voice__icon">♪</text>
-    <text>{{ durationSeconds }} 秒语音</text>
+  <view
+    class="voice-pill"
+    :class="{ 'voice-pill--expired': expired, 'voice-pill--playing': isPlaying }"
+    @tap="togglePlay"
+  >
+    <view class="voice-pill__wave">
+      <view
+        v-for="n in 3"
+        :key="n"
+        class="voice-pill__bar"
+        :class="{ 'voice-pill__bar--active': isPlaying }"
+        :style="{ animationDelay: `${(n - 1) * 0.15}s` }"
+      />
+    </view>
+    <text class="voice-pill__duration">{{ durationSeconds }}″</text>
   </view>
 </template>
 
 <style scoped lang="scss">
-.voice {
+.voice-pill {
   display: inline-flex;
   align-items: center;
-  gap: 12rpx;
-  width: fit-content;
-  padding: 16rpx 22rpx;
+  gap: 14rpx;
+  padding: 18rpx 24rpx;
   border-radius: 20rpx 4rpx 20rpx 20rpx;
   background: var(--c-bg-brand);
   color: var(--c-brand-700);
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
-  transition: opacity 200ms ease;
-  font-size: 26rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  transition: all 200ms ease;
+  min-width: 140rpx;
 }
 
-.voice--expired {
-  opacity: 0.48;
+.voice-pill:active {
+  transform: scale(0.96);
+  opacity: 0.85;
 }
 
-.voice__icon {
-  font-weight: 700;
-  font-size: 28rpx;
+.voice-pill--expired {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.voice-pill--playing {
+  background: linear-gradient(135deg, var(--c-brand-400), var(--c-brand-600));
+  color: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.25);
+}
+
+.voice-pill__wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 4rpx;
+  height: 32rpx;
+}
+
+.voice-pill__bar {
+  width: 6rpx;
+  height: 12rpx;
+  border-radius: 3rpx;
+  background: var(--c-brand-300);
+  transition: height 150ms ease, background 200ms ease;
+}
+
+.voice-pill__bar--active {
+  background: #fff;
+  animation: voice-wave 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes voice-wave {
+  from { height: 8rpx; }
+  to { height: 28rpx; }
+}
+
+.voice-pill__duration {
+  font-size: 24rpx;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 </style>

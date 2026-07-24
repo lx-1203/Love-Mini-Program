@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted } from "vue";
 import { onLaunch } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useSessionStore } from "./stores/session";
@@ -10,30 +11,66 @@ const sessionStore = useSessionStore();
 const unlockGuideStore = useUnlockGuideStore();
 const { visible, featureName, completionPercent, overlayVisible } = storeToRefs(unlockGuideStore);
 
+/**
+ * 应用是否已就绪。
+ * 修复（P0 BUG）：App.vue 作为根组件在小程序启动瞬间即渲染全局弹窗，
+ * 此时 WeChat 页面/组件 $scope 尚未挂载到 Vue 实例上，
+ * Vue 运行时在缓存事件处理器（e.o / Ui）时会访问 undefined.e0，
+ * 导致登录页（首个页面）出现 [Vue Error] TypeError: Cannot read properties of undefined (reading 'e0')。
+ * 通过 appReady 标志位，在 onLaunch / onMounted 完成后再渲染含事件处理器的组件，
+ * 确保 $scope 已就绪，事件处理器可正常缓存。
+ */
+const appReady = ref(false);
+
 /** @update:visible 事件处理 - 使用命名函数避免 Vue 编译器对箭头函数的缓存问题 */
-function handleUpdateVisible(val) {
+function handleUpdateVisible(val: boolean) {
   if (!val) unlockGuideStore.hide();
 }
 
+/**
+ * 标记应用已就绪，允许渲染全局事件组件。
+ * 使用双重保障：onMounted 在 Vue 挂载后触发，onLaunch 在小程序启动后触发，
+ * 先触发者设置标志，后者不再重复触发。
+ */
+function markAppReady() {
+  if (!appReady.value) {
+    appReady.value = true;
+  }
+}
+
 onLaunch(() => {
-  uni.onError?.((error: string | Error) => {
-    console.error("[App.onError]", error);
-  });
+  try {
+    uni.onError?.((error: string | Error) => {
+      console.error("[App.onError]", error);
+    });
 
-  uni.onUnhandledRejection?.((res: { reason: unknown; promise: Promise<unknown> }) => {
-    console.error("[App.onUnhandledRejection]", res.reason);
-  });
+    uni.onUnhandledRejection?.((res: { reason: unknown; promise: Promise<unknown> }) => {
+      console.error("[App.onUnhandledRejection]", res.reason);
+    });
 
-  sessionStore.bootstrap().catch((err: unknown) => {
-    console.error("[App.onLaunch] bootstrap 初始化异常:", err);
-  });
+    sessionStore.bootstrap().catch((err: unknown) => {
+      console.error("[App.onLaunch] bootstrap 初始化异常:", err);
+    });
+  } catch (error) {
+    console.error("[App.onLaunch] 启动异常:", error);
+  } finally {
+    markAppReady();
+  }
 });
+
+/**
+ * onMounted 在应用挂载后触发，此时小程序运行时已为根组件准备好 $scope，
+ * 可以安全渲染带事件处理器的全局组件。
+ */
+onMounted(markAppReady);
 </script>
 
 <template>
   <!-- App.vue 不直接渲染页面内容（由 pages.json 配置驱动），仅作为全局根容器 -->
   <!-- Phase 4 任务 20：全局挂载解锁引导弹窗 + 首次教学蒙层，监听 store 状态自动显隐 -->
+  <!-- v-if="appReady" 防止小程序启动瞬间 $scope 未就绪时创建事件处理器导致 e0 异常 -->
   <UnlockGuideModal
+    v-if="appReady"
     :visible="visible"
     :feature-name="featureName"
     :completion-percent="completionPercent"
@@ -42,6 +79,7 @@ onLaunch(() => {
     @cancel="unlockGuideStore.hide"
   />
   <UnlockGuideOverlay
+    v-if="appReady"
     :visible="overlayVisible"
     @known="unlockGuideStore.hideOverlay"
   />
@@ -390,17 +428,19 @@ view, button, scroll-view, swiper, input, textarea {
   }
 }
 
-.card-stagger > * {
+/* mp-weixin 兼容：WXSS 不支持 * 通配符选择器，使用 view 元素选择器替代。
+   实际使用中 .card-stagger 的直接子元素均为 <view>（见 home/discover/village 页面）。 */
+.card-stagger > view {
   animation: cardStaggerIn 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
   will-change: transform, opacity;
 }
 
-.card-stagger > *:nth-child(1) { animation-delay: 0ms; }
-.card-stagger > *:nth-child(2) { animation-delay: 100ms; }
-.card-stagger > *:nth-child(3) { animation-delay: 200ms; }
-.card-stagger > *:nth-child(4) { animation-delay: 300ms; }
-.card-stagger > *:nth-child(5) { animation-delay: 400ms; }
-.card-stagger > *:nth-child(n+6) { animation-delay: 500ms; }
+.card-stagger > view:nth-child(1) { animation-delay: 0ms; }
+.card-stagger > view:nth-child(2) { animation-delay: 100ms; }
+.card-stagger > view:nth-child(3) { animation-delay: 200ms; }
+.card-stagger > view:nth-child(4) { animation-delay: 300ms; }
+.card-stagger > view:nth-child(5) { animation-delay: 400ms; }
+.card-stagger > view:nth-child(n+6) { animation-delay: 500ms; }
 
 /* ================================================================
    Tab 切换动画工具类（下划线滑动 + 内容淡入）

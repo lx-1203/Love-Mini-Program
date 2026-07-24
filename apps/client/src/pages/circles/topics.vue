@@ -92,9 +92,10 @@ function goBack() {
 }
 
 onLoad((query) => {
-  circleId.value = query.circleId || "";
-  circleName.value = decodeURIComponent(query.circleName || "");
-  
+  const q = query || {};
+  circleId.value = q.circleId || "";
+  circleName.value = decodeURIComponent(q.circleName || "");
+
   if (circleId.value) {
     const circle = circleStore.circles.find((c) => c.id === circleId.value);
     if (circle) {

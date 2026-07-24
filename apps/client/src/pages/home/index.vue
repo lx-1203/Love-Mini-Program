@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 首页 - 校园聚合页
  * 包含：学校选择器、校园圈活动、课表空档、校园墙、逛逛推荐、社交升温进度
@@ -12,12 +12,14 @@ import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
 import { useScheduleStore, WEEK_DAYS } from "../../stores/schedule";
 import { openAppPath } from "../../utils/navigation";
+import { useTabBar } from "../../composables/useTabBar";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
-import SocialOnboardingOverlay from "../../components/social/SocialOnboardingOverlay.vue";
-import { hasSeenOnboarding } from "../../components/social/onboarding-utils";
 import SafeImage from "../../components/common/SafeImage.vue";
 import MatchCountChip from "../../components/common/MatchCountChip.vue";
 import { IMAGE_PATHS } from "../../config/images";
+
+// 同步自定义 TabBar 选中状态（首页 = 索引 2）
+useTabBar(2);
 
 /** Emoji 替换 SVG 图标路径（统一通过 IMAGE_PATHS.ICONS_EMOJI 引用，避免硬编码） */
 const emojiIcons = {
@@ -190,23 +192,9 @@ const shopItems = ref([
 /** 是否展开完整的升温进度指示器 */
 const showSocialProgress = ref(false);
 
-/** 是否展示新用户引导浮层 */
-const showOnboarding = ref(false);
-
 /** 切换升温进度展开/收起 */
 function toggleSocialProgress() {
   showSocialProgress.value = !showSocialProgress.value;
-}
-
-/** 关闭引导浮层 */
-function handleOnboardingClose() {
-  showOnboarding.value = false;
-}
-
-/** 用户完成引导，关闭浮层并展开进度 */
-function handleOnboardingStart() {
-  showOnboarding.value = false;
-  showSocialProgress.value = true;
 }
 
 function toggleLike(postId: string) {
@@ -243,11 +231,6 @@ onMounted(() => {
   void activityStore.fetchActivities();
   void checkInStore.fetchStatus();
   void socialProgressStore.fetchProgress();
-
-  // 新用户首次访问时展示社交升温引导浮层
-  if (!hasSeenOnboarding()) {
-    showOnboarding.value = true;
-  }
 });
 </script>
 
@@ -717,12 +700,6 @@ onMounted(() => {
       </view>
     </view>
 
-    <!-- 社交升温新用户引导浮层 -->
-    <SocialOnboardingOverlay
-      v-if="showOnboarding"
-      @close="handleOnboardingClose"
-      @start="handleOnboardingStart"
-    />
   </view>
 </template>
 

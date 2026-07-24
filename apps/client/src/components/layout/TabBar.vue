@@ -26,11 +26,11 @@ const t = designTokens;
 
 const defaultTabs: Tab[] = [
   {
-    key: 'home',
-    iconPath: '/static/assets/icons/tabbar/home-default.png',
-    selectedIconPath: '/static/assets/icons/tabbar/home-active.png',
-    label: '首页',
-    path: '/pages/home/index',
+    key: 'discover',
+    iconPath: '/static/assets/icons/tabbar/discover-default.png',
+    selectedIconPath: '/static/assets/icons/tabbar/discover-active.png',
+    label: '匹配',
+    path: '/pages/discover/index',
   },
   {
     key: 'village',
@@ -40,11 +40,11 @@ const defaultTabs: Tab[] = [
     path: '/pages/village/index',
   },
   {
-    key: 'discover',
-    iconPath: '/static/assets/icons/tabbar/discover-default.png',
-    selectedIconPath: '/static/assets/icons/tabbar/discover-active.png',
-    label: '匹配',
-    path: '/pages/discover/index',
+    key: 'home',
+    iconPath: '/static/assets/icons/tabbar/home-default.png',
+    selectedIconPath: '/static/assets/icons/tabbar/home-active.png',
+    label: '首页',
+    path: '/pages/home/index',
   },
   {
     key: 'chat',

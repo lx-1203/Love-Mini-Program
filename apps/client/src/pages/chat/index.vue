@@ -1,64 +1,45 @@
 ﻿<script setup lang="ts">
 /**
  * 聊天页 - 会话列表
+ * 连接到 useMessagesStore 获取真实会话数据，替代硬编码模拟数据
  */
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
+import { storeToRefs } from "pinia";
+import { useMessagesStore } from "../../stores/messages";
+import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
+import { useTabBar } from "../../composables/useTabBar";
 import Skeleton from "../../components/common/Skeleton.vue";
+import EmptyState from "../../components/common/EmptyState.vue";
+import ErrorState from "../../components/common/ErrorState.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+import LockScreen from "../../components/common/LockScreen.vue";
+import { usePageAccess } from "../../composables/usePageAccess";
+import { messagesPageRequirements } from "../../config/page-access";
+
+// 同步自定义 TabBar 选中状态（消息 = 索引 3）
+useTabBar(3);
+
+const messagesStore = useMessagesStore();
+const sessionStore = useSessionStore();
+
+// 页面访问守卫
+usePageAccess(messagesPageRequirements);
+
+const { loading, errorMessage } = storeToRefs(messagesStore);
+
+/** 资料是否已完善 */
+const isUnlocked = computed(() => sessionStore.isProfileComplete);
+const completionPercent = computed(() => sessionStore.profileCompletion);
 
 /** SVG 图标资源路径 */
 const iconSrc = {
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
 } as const;
 
-// 加载状态
-const loading = ref(true);
-
-// 会话列表（模拟）
-const conversations = ref([
-  {
-    id: "1",
-    avatar: "/static/default-avatar.png",
-    nickname: "小红",
-    lastMessage: "今晚一起去图书馆吗？",
-    time: "10:30",
-    unread: 2,
-    online: true,
-  },
-  {
-    id: "2",
-    avatar: "/static/default-avatar.png",
-    nickname: "小明",
-    lastMessage: "好的，明天见！",
-    time: "昨天",
-    unread: 0,
-    online: false,
-  },
-  {
-    id: "3",
-    avatar: "/static/default-avatar.png",
-    nickname: "校园活动助手",
-    lastMessage: "您报名的「周末音乐节」即将开始",
-    time: "昨天",
-    unread: 1,
-    online: true,
-    isOfficial: true,
-  },
-  {
-    id: "4",
-    avatar: "/static/default-avatar.png",
-    nickname: "阿杰",
-    lastMessage: "谢谢你的资料分享！",
-    time: "周一",
-    unread: 0,
-    online: true,
-  },
-]);
-
-// 话题推荐
+/** 话题推荐 */
 const topicSuggestions = ref([
   "周末有什么安排？",
   "推荐一本好书",
@@ -66,94 +47,191 @@ const topicSuggestions = ref([
   "食堂哪个窗口好吃？",
 ]);
 
-function goToChat(conversationId: string) {
-  openAppPath(`/pages/chat-session/index?sessionId=${conversationId}`);
+/** 私聊会话列表（按置顶 + 时间排序） */
+const privateSessions = computed(() => {
+  const items = [...messagesStore.sessions].sort((a, b) => {
+    // 置顶优先
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    // 再按时间倒序
+    const aTime = a.lastMessageSentAt ? new Date(a.lastMessageSentAt).getTime() : 0;
+    const bTime = b.lastMessageSentAt ? new Date(b.lastMessageSentAt).getTime() : 0;
+    return bTime - aTime;
+  });
+  return items;
+});
+
+/** 格式化时间 */
+function formatChatTime(isoString: string | null): string {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 1) return "刚刚";
+  if (diffMinutes < 60) return `${diffMinutes}分钟前`;
+  if (diffHours < 24) return `${diffHours}小时前`;
+  if (diffDays < 7) return `${diffDays}天前`;
+
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${month}/${day}`;
 }
 
-// 模拟加载
+function goToChat(sessionId: string) {
+  openAppPath(`/pages/chat-session/index?sessionId=${encodeURIComponent(sessionId)}`);
+}
+
+/** 下拉刷新 */
+async function onRefresh() {
+  await messagesStore.fetchSessions();
+}
+
+/** 重试加载 */
+async function handleRetry() {
+  await messagesStore.fetchSessions();
+}
+
 onMounted(() => {
-  setTimeout(() => {
-    loading.value = false;
-  }, 800);
+  if (isUnlocked.value) {
+    void messagesStore.fetchSessions();
+  }
+});
+
+onShow(() => {
+  if (isUnlocked.value) {
+    void messagesStore.fetchSessions();
+  }
 });
 </script>
 
 <template>
   <view class="chat-page page-bottom-safe page-fade-in">
-    <!-- 页面顶部渐变氛围 -->
-    <view class="chat-header-overlay" />
-    
-    <!-- 页面标题 -->
-    <view class="chat-header">
-      <view class="chat-header__title-area">
-        <text class="chat-header__title">聊天</text>
-        <text class="chat-header__subtitle">与匹配对象的消息</text>
-      </view>
-    </view>
+    <!-- 未完善资料：锁定页面 -->
+    <LockScreen
+      v-if="!isUnlocked"
+      page-name="聊天"
+      :completion-percent="completionPercent"
+    />
 
-    <!-- 话题推荐助手 -->
-    <view class="topic-assistant">
-      <view class="topic-assistant__label">
-        <SafeImage :src="iconSrc.message" custom-class="topic-assistant__label-icon" mode="aspectFit" />
-        <text>话题推荐</text>
+    <template v-else>
+      <!-- 页面顶部渐变氛围 -->
+      <view class="chat-header-overlay" />
+
+      <!-- 页面标题 -->
+      <view class="chat-header">
+        <view class="chat-header__title-area">
+          <text class="chat-header__title">聊天</text>
+          <text class="chat-header__subtitle">与匹配对象的消息</text>
+        </view>
       </view>
-      <scroll-view scroll-x class="topic-scroll" show-scrollbar="false">
-        <view class="topic-list">
+
+      <!-- 话题推荐助手 -->
+      <view class="topic-assistant">
+        <view class="topic-assistant__label">
+          <SafeImage :src="iconSrc.message" custom-class="topic-assistant__label-icon" mode="aspectFit" />
+          <text>话题推荐</text>
+        </view>
+        <scroll-view scroll-x class="topic-scroll" show-scrollbar="false">
+          <view class="topic-list">
+            <view
+              v-for="(topic, index) in topicSuggestions"
+              :key="index"
+              class="topic-tag press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+            >
+              <text class="topic-tag__text">{{ topic }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 错误状态 -->
+      <ErrorState
+        v-if="errorMessage && privateSessions.length === 0"
+        :message="errorMessage"
+        @retry="handleRetry"
+      />
+
+      <!-- 会话列表 -->
+      <scroll-view
+        v-else
+        scroll-y
+        class="chat-scroll"
+        refresher-enabled
+        :refresher-triggered="false"
+        @refresherrefresh="onRefresh"
+      >
+        <!-- 骨架屏加载 -->
+        <view v-if="loading" class="conversation-list">
+          <Skeleton variant="list" :count="4" />
+        </view>
+
+        <!-- 空状态 -->
+        <EmptyState
+          v-else-if="privateSessions.length === 0"
+          icon-kind="message"
+          title="暂无聊天消息"
+          description="去寻觅页面匹配新朋友，开始聊天吧"
+        />
+
+        <!-- 正常内容 -->
+        <view v-else class="conversation-list card-base">
           <view
-            v-for="(topic, index) in topicSuggestions"
-            :key="index"
-            class="topic-tag press-feedback"
+            v-for="conv in privateSessions"
+            :key="conv.id"
+            class="conversation-item press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            @tap="goToChat(conv.id)"
           >
-            <text class="topic-tag__text">{{ topic }}</text>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-
-    <!-- 会话列表 -->
-    <scroll-view scroll-y class="chat-scroll">
-      <!-- 骨架屏加载 -->
-      <view v-if="loading" class="conversation-list">
-        <Skeleton variant="list" :count="4" />
-      </view>
-
-      <!-- 正常内容 -->
-      <view v-else class="conversation-list card-base">
-        <view
-          v-for="conv in conversations"
-          :key="conv.id"
-          class="conversation-item press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          @tap="goToChat(conv.id)"
-        >
-          <view class="conversation-item__avatar-wrap">
-            <SafeImage :src="conv.avatar" custom-class="conversation-item__avatar" mode="aspectFill" />
-            <view v-if="conv.online" class="conversation-item__online" />
-          </view>
-          <view class="conversation-item__content">
-            <view class="conversation-item__top">
-              <text class="conversation-item__name">{{ conv.nickname }}</text>
-              <text class="conversation-item__time">{{ conv.time }}</text>
+            <view class="conversation-item__avatar-wrap">
+              <image
+                v-if="conv.partnerAvatar"
+                class="conversation-item__avatar"
+                :src="conv.partnerAvatar"
+                mode="aspectFill"
+                lazy-load
+              />
+              <view v-else class="conversation-item__avatar-placeholder">
+                <text class="conversation-item__avatar-initial">{{ conv.partnerName?.charAt(0) || '?' }}</text>
+              </view>
+              <!-- 在线指示器（当前暂无在线状态数据，保留结构） -->
             </view>
-            <view class="conversation-item__bottom">
-              <text class="conversation-item__message">{{ conv.lastMessage }}</text>
-              <view v-if="conv.unread > 0" class="conversation-item__badge">
-                <text class="conversation-item__badge-text">{{ conv.unread }}</text>
+            <view class="conversation-item__content">
+              <view class="conversation-item__top">
+                <view class="conversation-item__name-wrap">
+                  <text class="conversation-item__name">{{ conv.partnerName }}</text>
+                  <view v-if="conv.pinned" class="conversation-item__pin-icon">
+                    <text>📌</text>
+                  </view>
+                </view>
+                <text class="conversation-item__time">{{ formatChatTime(conv.lastMessageSentAt) }}</text>
+              </view>
+              <view class="conversation-item__bottom">
+                <text class="conversation-item__message">{{ conv.lastMessagePreview }}</text>
+                <view v-if="conv.unreadCount > 0" class="conversation-item__badge">
+                  <text class="conversation-item__badge-text">
+                    {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
+                  </text>
+                </view>
               </view>
             </view>
-          </view>
-          <view v-if="conv.isOfficial" class="conversation-item__official">
-            <text>官方</text>
+            <!-- 会话状态标签 -->
+            <view v-if="conv.phase === 'closing' || conv.phase === 'closed'" class="conversation-item__status">
+              <text>{{ conv.phase === 'closed' ? '已关闭' : '即将关闭' }}</text>
+            </view>
           </view>
         </view>
-      </view>
 
-      <!-- 底部留白 -->
-      <view class="chat-footer" />
-    </scroll-view>
+        <!-- 底部留白 -->
+        <view class="chat-footer" />
+      </scroll-view>
+    </template>
   </view>
 </template>
 
@@ -162,9 +240,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  height: 100vh;
   background: var(--c-gradient-page);
   position: relative;
+  box-sizing: border-box;
 }
 
 .chat-header-overlay {
@@ -181,7 +260,6 @@ onMounted(() => {
 /* ========== 页面标题 ========== */
 .chat-header {
   padding: var(--sp-6) var(--sp-8) var(--sp-5);
-  padding-top: calc(constant(safe-area-inset-top) + var(--sp-6));
   padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
   z-index: 10;
   position: relative;
@@ -316,20 +394,23 @@ onMounted(() => {
   width: 88rpx;
   height: 88rpx;
   border-radius: var(--r-full);
-  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand));
-  border: var(--sp-1) solid var(--c-bg-container);
-  box-shadow: var(--s-brand-sm);
+  background: var(--c-bg-page);
 }
 
-.conversation-item__online {
-  position: absolute;
-  bottom: var(--sp-1);
-  right: var(--sp-1);
-  width: var(--sp-5);
-  height: var(--sp-5);
+.conversation-item__avatar-placeholder {
+  width: 88rpx;
+  height: 88rpx;
   border-radius: var(--r-full);
-  background: var(--c-success);
-  border: var(--sp-1) solid var(--c-bg-container);
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-100));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.conversation-item__avatar-initial {
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+  color: var(--c-brand);
 }
 
 .conversation-item__content {
@@ -346,15 +427,31 @@ onMounted(() => {
   justify-content: space-between;
 }
 
+.conversation-item__name-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
 .conversation-item__name {
   font-size: var(--fs-xl);
   font-weight: 600;
   color: var(--c-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240rpx;
+}
+
+.conversation-item__pin-icon {
+  font-size: var(--fs-sm);
+  flex-shrink: 0;
 }
 
 .conversation-item__time {
   font-size: var(--fs-xs);
   color: var(--c-text-tertiary);
+  flex-shrink: 0;
 }
 
 .conversation-item__bottom {
@@ -390,17 +487,17 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.conversation-item__official {
+.conversation-item__status {
   flex-shrink: 0;
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-sm);
-  background: var(--c-bg-brand);
+  background: var(--c-neutral-50);
 }
 
-.conversation-item__official text {
+.conversation-item__status text {
   font-size: var(--fs-xs);
-  color: var(--c-brand);
-  font-weight: 600;
+  color: var(--c-text-tertiary);
+  font-weight: 500;
 }
 
 /* ========== 底部留白 ========== */

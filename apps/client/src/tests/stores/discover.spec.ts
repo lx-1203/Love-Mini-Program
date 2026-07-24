@@ -289,9 +289,11 @@ describe("discover store", () => {
   // swipeRight 30% 匹配概率（用户指定）
   // ------------------------------------------------------------------
   describe("swipeRight 30% 匹配概率", () => {
-    let randomSpy: ReturnType<typeof vi.spyOn>;
+    let randomSpy: MockInstance<() => number>;
     let likesStore: ReturnType<typeof useLikesStore>;
-    let addMatchedUserSpy: ReturnType<typeof vi.spyOn>;
+    let addMatchedUserSpy: MockInstance<
+      (user: { userId: string; name: string; avatar: string; headline: string }) => void
+    >;
 
     beforeEach(() => {
       // 在当前 pinia 实例上创建 likes store 并 spy addMatchedUser

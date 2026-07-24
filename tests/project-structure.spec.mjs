@@ -37,7 +37,7 @@ const requiredPaths = [
   "../apps/client/src/services/generated/api-types.ts",
   "../apps/client/src/stores/session.ts",
   "../apps/client/src/stores/home.ts",
-  "../apps/client/src/stores/match.ts",
+  "../apps/client/src/stores/discover.ts",
   "../apps/client/src/stores/chat.ts",
   "../apps/client/src/stores/profile.ts",
   "../apps/client/src/stores/feedback.ts",
@@ -118,7 +118,7 @@ const clientPackageJson = JSON.parse(
   readFileSync(new URL("../apps/client/package.json", import.meta.url), "utf8")
 );
 assert.equal(clientPackageJson.type, "module");
-assert.equal(clientPackageJson.dependencies.vue, "3.5.34");
+assert.equal(clientPackageJson.dependencies.vue, "3.4.21");
 assert.ok(clientPackageJson.dependencies["@dcloudio/uni-app"]);
 assert.ok(clientPackageJson.dependencies["@dcloudio/uni-ui"]);
 assert.ok(clientPackageJson.dependencies.pinia);
@@ -128,13 +128,13 @@ assert.equal(typeof clientPackageJson.scripts["build:h5:real"], "string");
 const pagesJson = JSON.parse(
   readFileSync(new URL("../apps/client/pages.json", import.meta.url), "utf8")
 );
-assert.equal(pagesJson.pages.length, 16, "main package should contain sixteen root pages");
+assert.equal(pagesJson.pages.length, 18, "main package should contain eighteen root pages");
 assert.equal(pagesJson.subPackages.length, 3, "client should use three subpackages");
 assert.ok(pagesJson.tabBar, "tab bar should be configured");
 assert.ok(pagesJson.easycom, "easycom should be configured for uni-ui");
 assert.deepEqual(
   pagesJson.tabBar.list.map((item) => item.text),
-  ["首页", "讨论圈", "匹配", "聊天", "我的"],
+  ["首页", "圈子", "匹配", "消息", "我的"],
   "tab bar should follow the current IA order"
 );
 assert.deepEqual(

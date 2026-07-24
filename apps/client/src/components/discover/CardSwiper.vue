@@ -27,7 +27,10 @@ import { ref, computed, watch, nextTick } from "vue";
 import type { DiscoverCard, SwipeDirection } from "../../stores/discover";
 import SafeImage from "../common/SafeImage.vue";
 import VerificationBadge from "../common/VerificationBadge.vue";
+import CardDetailOverlay from "./CardDetailOverlay.vue";
+import LongPressMenu from "./LongPressMenu.vue";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
+import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 
 /** Emoji 替换 SVG 图标路径 */
@@ -70,6 +73,20 @@ const isFlyingOut = ref(false);
 const flyDirection = ref<SwipeDirection | null>(null);
 /** 新卡片入场动画 */
 const isEntering = ref(false);
+
+/* ========== 点击 / 长按状态 ========== */
+/** 是否正在长按 */
+const isLongPressing = ref(false);
+/** 是否显示详情弹出层 */
+const showDetail = ref(false);
+/** 是否显示快捷菜单 */
+const showMenu = ref(false);
+/** 长按定时器 */
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+/** 触摸是否已移动（移动超过阈值则取消长按） */
+let hasMovedForLongPress = false;
+const LONG_PRESS_DELAY = 500;
+const LONG_PRESS_MOVE_THRESHOLD = 10;
 
 /** 触摸起始坐标 */
 let startX = 0;
@@ -169,20 +186,74 @@ const matchScore = computed(() => {
   return Math.min(98, 80 + base * 5);
 });
 
+/** 月收入展示（与 CardDetailOverlay 对齐，基于 userId 做稳定映射） */
+const incomeLabel = computed(() => {
+  const seed = (currentCard.value?.userId?.charCodeAt(0) ?? 0) % 4;
+  const ranges = ["3k-8k", "8k-15k", "15k-30k", "30k+"];
+  return ranges[seed];
+});
+
+/** 性格预览（优先取前两个标签，否则用固定性格词表按 userId 稳定选取） */
+const personalityPreview = computed(() => {
+  const card = currentCard.value;
+  const tags = card?.tags ?? [];
+  if (tags.length > 0) {
+    return tags.slice(0, 2).join(" · ");
+  }
+  const moods = ["开朗外向", "温柔体贴", "幽默风趣", "文艺安静", "运动阳光", "理性沉稳"];
+  const seed = (card?.userId?.charCodeAt(0) ?? 0) % moods.length;
+  return [moods[seed], moods[(seed + 1) % moods.length]].join(" · ");
+});
+
+/** 社交圈预览（优先取前两个标签，否则用兴趣圈词表按 userId 稳定选取） */
+const socialCirclesPreview = computed(() => {
+  const card = currentCard.value;
+  const tags = card?.tags ?? [];
+  if (tags.length > 0) {
+    return tags.slice(0, 2).join(" / ");
+  }
+  const circles = ["读书会", "摄影社", "美食探店", "户外徒步", "音乐节", "剧本杀", "考研互助", "街舞社"];
+  const seed = (card?.userId?.charCodeAt(0) ?? 0) % circles.length;
+  return [circles[seed], circles[(seed + 1) % circles.length]].join(" / ");
+});
+
+/** 拖动时红/绿遮罩的不透明度（跟随拖动距离增强，最大 0.45） */
+const dragTintOpacity = computed(() => {
+  if (!isDragging.value || translateX.value === 0) return { opacity: 0, transition: "none" };
+  return {
+    opacity: Math.min(Math.abs(translateX.value) / 160, 1),
+    transition: "none",
+  };
+});
+
+/** 滑动指示器动态样式（随拖动距离放大并淡入） */
+const swipeIndicatorStyle = computed(() => {
+  if (!isDragging.value || translateX.value === 0) {
+    return { opacity: 0, transform: "scale(0.6)" };
+  }
+  const ratio = Math.min(Math.abs(translateX.value) / 120, 1);
+  const rotate = translateX.value > 0 ? -22 : 22;
+  return {
+    opacity: ratio,
+    transform: `scale(${0.65 + ratio * 0.45}) rotate(${rotate}deg)`,
+    transition: "none",
+  };
+});
+
 /** 当前卡片样式（Phase D5 · 静止/dragging 状态添加 scale(1.02) 突出特殊） */
 const currentCardStyle = computed(() => {
   if (isFlyingOut.value) {
-    const x = flyDirection.value === "left" ? -800 : 800;
+    const x = flyDirection.value === "left" ? -1100 : 1100;
     return {
-      transform: `translateX(${x}px) rotate(${flyDirection.value === "left" ? -30 : 30}deg)`,
+      transform: `translateX(${x}px) rotate(${flyDirection.value === "left" ? -36 : 36}deg) scale(0.92)`,
       opacity: 0,
-      transition: "transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 300ms ease-out",
+      transition: "transform 480ms cubic-bezier(0.22, 1, 0.36, 1), opacity 360ms ease-out",
     };
   }
 
   if (isEntering.value) {
     return {
-      transform: "translateY(100%) translateX(0) rotate(0deg) scale(1)",
+      transform: "translateY(55%) translateX(0) rotate(0deg) scale(0.88)",
       opacity: 0,
       transition: "none",
     };
@@ -190,10 +261,10 @@ const currentCardStyle = computed(() => {
 
   const transition = isDragging.value
     ? "none"
-    : "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 240ms ease-out";
+    : "transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 260ms ease-out";
   // Phase D5 · 静止/dragging 状态保持 scale(1.02) 突出当前卡片
   return {
-    transform: `translateX(${translateX.value}px) rotate(${rotate.value}deg) scale(var(--card-current-scale, 1.02))`,
+    transform: `translateX(${translateX.value}px) rotate(${rotate.value}deg) rotateY(${tiltY.value}deg) scale(${cardScale.value})`,
     opacity: opacity.value,
     transition,
   };
@@ -201,17 +272,73 @@ const currentCardStyle = computed(() => {
 
 /** 下一张卡片样式（堆叠效果） */
 const nextCardStyle = computed(() => {
-  const scale = isDragging.value ? 0.95 : 0.92;
-  const translateY = isDragging.value ? -8 : -16;
+  const scale = isDragging.value ? 0.97 : 0.92;
+  const translateY = isDragging.value ? -4 : -18;
+  const opacity = isDragging.value ? 0.8 : 0.58;
   return {
     transform: `scale(${scale}) translateY(${translateY}px)`,
-    opacity: 0.6,
-    transition: isDragging.value ? "none" : "transform 240ms ease-out",
+    opacity,
+    transition: isDragging.value ? "none" : "transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 260ms ease-out",
   };
 });
 
 /** 简介展开状态 */
 const isBioExpanded = ref(false);
+
+/* ========== 卡片缩放效果（长按时缩小） ========== */
+const cardScale = computed(() => {
+  if (isLongPressing.value) return 0.95;
+  if (isDragging.value) return 1.0;
+  return 1.02;
+});
+
+/** 卡片 3D 倾斜角度（拖动时根据位移计算 Y 轴旋转） */
+const tiltY = computed(() => {
+  if (!isDragging.value) return 0;
+  const ratio = Math.min(Math.abs(translateX.value) / 300, 1);
+  return (translateX.value > 0 ? 1 : -1) * ratio * 8;
+});
+
+/**
+ * 点击卡片 → 打开详情
+ */
+function handleTap() {
+  if (!currentCard.value || isFlyingOut.value) return;
+  lightHaptic();
+  showDetail.value = true;
+}
+
+/**
+ * 关闭详情弹出层
+ */
+function closeDetail() {
+  showDetail.value = false;
+}
+
+/**
+ * 关闭快捷菜单
+ */
+function closeMenu() {
+  showMenu.value = false;
+  isLongPressing.value = false;
+}
+
+/**
+ * 快捷菜单 → 查看详情
+ */
+function onMenuDetail() {
+  showMenu.value = false;
+  isLongPressing.value = false;
+  showDetail.value = true;
+}
+
+/**
+ * 快捷菜单 → 举报
+ */
+function handleReport() {
+  closeMenu();
+  uni.showToast({ title: "举报已提交", icon: "none" });
+}
 
 /* ========== 触摸事件处理 ========== */
 
@@ -221,10 +348,29 @@ const isBioExpanded = ref(false);
 function onTouchStart(e: TouchEvent) {
   if (isFlyingOut.value || !currentCard.value) return;
   isDragging.value = true;
+  hasMovedForLongPress = false;
   startX = e.touches[0].clientX;
   startY = e.touches[0].clientY;
   currentX = startX;
   currentY = startY;
+
+  // 启动长按定时器
+  clearLongPressTimer();
+  longPressTimer = setTimeout(() => {
+    if (!hasMovedForLongPress && !isFlyingOut.value) {
+      isLongPressing.value = true;
+      isDragging.value = false;
+      heavyHaptic();
+      showMenu.value = true;
+    }
+  }, LONG_PRESS_DELAY);
+}
+
+function clearLongPressTimer() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
 }
 
 /**
@@ -237,10 +383,12 @@ function onTouchMove(e: TouchEvent) {
   currentY = e.touches[0].clientY;
 
   const deltaX = currentX - startX;
-  const deltaY = currentY - startY;
 
-  // 判断主要是水平滑动还是垂直滑动（仅用于逻辑判断，默认行为由模板修饰符阻止）
-  void deltaY;
+  // 检查是否移动超过长按阈值，取消长按
+  if (Math.abs(deltaX) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(currentY - startY) > LONG_PRESS_MOVE_THRESHOLD) {
+    hasMovedForLongPress = true;
+    clearLongPressTimer();
+  }
 
   translateX.value = deltaX;
   // 根据滑动距离计算旋转角度
@@ -252,10 +400,25 @@ function onTouchMove(e: TouchEvent) {
  * 触摸结束
  */
 function onTouchEnd() {
+  clearLongPressTimer();
+
+  if (isLongPressing.value) {
+    isLongPressing.value = false;
+    return;
+  }
+
   if (!isDragging.value || isFlyingOut.value) return;
   isDragging.value = false;
 
   const deltaX = currentX - startX;
+  const totalMove = Math.abs(deltaX) + Math.abs(currentY - startY);
+
+  // 几乎没移动 → 点击
+  if (totalMove < 8) {
+    resetCardPosition();
+    handleTap();
+    return;
+  }
 
   if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
     // 超过阈值，触发飞出
@@ -452,6 +615,16 @@ watch(
         <!-- 渐变遮罩（Phase D2 · 下半区加强渐变以提升文字可读性） -->
         <view class="card__overlay" />
 
+        <!-- 拖动红/绿反馈遮罩 -->
+        <view
+          class="card__drag-tint"
+          :class="{
+            'card__drag-tint--like': translateX > 0,
+            'card__drag-tint--nope': translateX < 0
+          }"
+          :style="dragTintOpacity"
+        />
+
         <!-- 顶部在线状态 -->
         <view class="card__online-badge" v-if="currentCard.onlineStatus === 'online'">
           <view class="card__online-dot" />
@@ -493,9 +666,12 @@ watch(
         </view>
 
         <!-- 滑动指示器 -->
-        <view v-if="isDragging && translateX !== 0" class="swipe-indicator" :class="[
-          translateX > 0 ? 'swipe-indicator--like' : 'swipe-indicator--nope'
-        ]">
+        <view
+          v-if="isDragging && translateX !== 0"
+          class="swipe-indicator"
+          :class="translateX > 0 ? 'swipe-indicator--like' : 'swipe-indicator--nope'"
+          :style="swipeIndicatorStyle"
+        >
           <text class="swipe-indicator__text">{{ translateX > 0 ? '喜欢' : '跳过' }}</text>
         </view>
 
@@ -504,7 +680,7 @@ watch(
           <!-- 昵称 + 年龄 + 认证 -->
           <view class="card__name-row">
             <text class="card__name">{{ currentCard.name }}</text>
-            <text class="card__age">{{ extractAge(currentCard.headline) }}</text>
+            <text class="card__age">{{ extractAge(currentCard.headline) }}岁</text>
             <!-- Phase D3 · 集成 VerificationBadge -->
             <VerificationBadge
               v-if="currentCard.verificationBadgeLevel"
@@ -512,6 +688,21 @@ watch(
               size="sm"
               :show-cta-when-none="false"
             />
+          </view>
+
+          <!-- 核心资料：收入 / 性格 / 社交圈 -->
+          <view class="card__key-info">
+            <view class="key-info-chip key-info-chip--income">
+              <text class="key-info-chip__label">收入</text>
+              <text class="key-info-chip__value">{{ incomeLabel }}</text>
+            </view>
+            <view class="key-info-chip key-info-chip--personality">
+              <text class="key-info-chip__value">{{ personalityPreview }}</text>
+            </view>
+            <view class="key-info-chip key-info-chip--circles">
+              <text class="key-info-chip__label">圈子</text>
+              <text class="key-info-chip__value">{{ socialCirclesPreview }}</text>
+            </view>
           </view>
 
           <!-- 学校、距离 -->
@@ -559,6 +750,27 @@ watch(
         </view>
       </view>
     </view>
+
+    <!-- 卡片详情弹出层 -->
+    <CardDetailOverlay
+      :visible="showDetail"
+      :card="currentCard"
+      @close="closeDetail"
+      @like="(id: string) => { closeDetail(); onLike(); }"
+      @superLike="(id: string) => { closeDetail(); onSuperLike(); }"
+      @pass="(id: string) => { closeDetail(); onReject(); }"
+      @message="(userId: string) => { closeDetail(); openAppPath('/pages/chat-session/index?userId=' + encodeURIComponent(userId)); }"
+    />
+
+    <!-- 长按快捷菜单 -->
+    <LongPressMenu
+      :visible="showMenu"
+      :card-name="currentCard?.name ?? ''"
+      @close="closeMenu"
+      @detail="onMenuDetail"
+      @super-like="closeMenu(); onSuperLike();"
+      @report="handleReport"
+    />
 
     <!-- 底部操作区：图片资源 + hover-class 振动反馈，跨设备渲染一致 -->
     <view v-if="currentCard" class="action-bar">
@@ -658,8 +870,31 @@ watch(
 .card--current {
   z-index: 2;
   touch-action: pan-y;
-  /* Phase D5 · 突出特殊：品牌色阴影增强（与 scale(1.02) 配合凸显当前卡片） */
-  box-shadow: var(--c-brand-shadow);
+  border-radius: var(--r-xxl);
+  border: 1rpx solid var(--c-overlay-border-light);
+  /* 多层阴影：环境阴影 + 品牌光晕，打造“橱窗展品”级质感 */
+  box-shadow:
+    0 8rpx 24rpx rgba(15, 23, 42, 0.08),
+    0 28rpx 72rpx rgba(15, 23, 42, 0.14),
+    0 0 40rpx rgba(63, 207, 142, 0.12);
+  will-change: transform;
+}
+
+/* 高端相框效果：顶部高光 + 内阴影 + 细白边框 */
+.card--current::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-xxl);
+  border: 1rpx solid rgba(255, 255, 255, 0.32);
+  box-shadow:
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.28),
+    inset 0 -40rpx 100rpx rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* ========== 背景图片（Phase D5 · brightness + saturate 凸显背景） ========== */
@@ -708,16 +943,46 @@ watch(
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 65%;
+  height: 72%;
   background: linear-gradient(
     to top,
-    var(--c-gradient-mask-strong) 0%,
-    var(--c-gradient-mask-mid) 30%,
-    var(--c-gradient-mask-light) 55%,
-    var(--c-gradient-mask-transparent) 100%
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.42) 32%,
+    rgba(0, 0, 0, 0.16) 58%,
+    rgba(0, 0, 0, 0) 100%
   );
   pointer-events: none;
   z-index: 2;
+}
+
+/* 拖动方向反馈遮罩：右滑绿色 / 左滑红色，从边缘向内渐隐 */
+.card__drag-tint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 120ms ease;
+}
+
+.card__drag-tint--like {
+  background: linear-gradient(
+    270deg,
+    rgba(16, 185, 129, 0.42) 0%,
+    rgba(16, 185, 129, 0.18) 45%,
+    transparent 70%
+  );
+}
+
+.card__drag-tint--nope {
+  background: linear-gradient(
+    90deg,
+    rgba(229, 69, 77, 0.42) 0%,
+    rgba(229, 69, 77, 0.18) 45%,
+    transparent 70%
+  );
 }
 
 /* ========== 在线状态徽章 ========== */
@@ -846,39 +1111,38 @@ watch(
 /* ========== 滑动指示器 ========== */
 .swipe-indicator {
   position: absolute;
-  top: 140rpx;
-  padding: 20rpx 48rpx;
-  border-radius: 20rpx;
-  border-width: 6rpx;
+  top: 160rpx;
+  padding: 28rpx 60rpx;
+  border-radius: 28rpx;
+  border-width: 8rpx;
   border-style: solid;
   z-index: 5;
-  transform: rotate(-18deg);
-  background: var(--c-overlay-bg-pure);
-  /* mp-weixin 不支持，H5 保留毛玻璃；背景已用 0.95 高不透明度近似降级 */
+  background: rgba(255, 255, 255, 0.96);
+  /* mp-weixin 不支持，H5 保留毛玻璃；背景已用 0.96 高不透明度近似降级 */
   // #ifdef H5
-  backdrop-filter: blur(8rpx);
+  backdrop-filter: blur(10rpx);
   // #endif
 }
 
 .swipe-indicator--like {
-  right: 40rpx;
+  right: 36rpx;
   border-color: var(--c-success);
   color: var(--c-success);
-  box-shadow: var(--s-action-success);
+  box-shadow: 0 12rpx 40rpx rgba(16, 185, 129, 0.35);
 }
 
 .swipe-indicator--nope {
-  left: 40rpx;
+  left: 36rpx;
   border-color: var(--c-error);
   color: var(--c-error);
-  box-shadow: var(--s-action-error);
-  transform: rotate(18deg);
+  box-shadow: 0 12rpx 40rpx rgba(229, 69, 77, 0.35);
 }
 
 .swipe-indicator__text {
-  font-size: var(--fs-5xl);
-  font-weight: 800;
-  letter-spacing: 4rpx;
+  font-size: var(--fs-6xl);
+  font-weight: 900;
+  letter-spacing: 6rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 }
 
 /* ========== 卡片内容 ========== */
@@ -887,11 +1151,21 @@ watch(
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 40rpx 40rpx 48rpx;
+  padding: 32rpx 36rpx 48rpx;
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
-  z-index: 2;
+  gap: 14rpx;
+  z-index: 3;
+  /* 毛玻璃信息区：半透明背景 + 模糊效果（叠加在图片遮罩之上） */
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.22) 55%,
+    rgba(0, 0, 0, 0.02) 100%
+  );
+  // #ifdef H5
+  backdrop-filter: blur(12rpx);
+  // #endif
 }
 
 /* 昵称 + 年龄 + 认证 */
@@ -902,19 +1176,21 @@ watch(
 }
 
 .card__name {
-  font-size: var(--fs-6xl);
-  font-weight: 700;
+  font-size: var(--fs-7xl);
+  font-weight: 800;
   color: var(--c-text-inverse);
   text-shadow: var(--c-card-name-shadow);
+  letter-spacing: 0.02em;
 }
 
 .card__age {
-  font-size: var(--fs-3xl);
-  font-weight: 500;
-  color: var(--c-overlay-bg-solid);
-  background: var(--c-overlay-bg-light);
-  padding: 4rpx 16rpx;
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  color: var(--c-text-inverse);
+  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
+  padding: 6rpx 18rpx;
   border-radius: var(--r-full);
+  box-shadow: 0 2rpx 10rpx rgba(63, 207, 142, 0.3);
 }
 
 .card__verified {
@@ -931,6 +1207,52 @@ watch(
   font-size: var(--fs-base);
   color: var(--c-text-inverse);
   font-weight: 700;
+}
+
+/* 核心资料：收入 / 性格 / 社交圈 */
+.card__key-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 4rpx;
+}
+
+.key-info-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 18rpx;
+  border-radius: var(--r-full);
+  border: 1rpx solid var(--c-overlay-border-mid);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-text-inverse);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
+}
+
+.key-info-chip--income {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.75) 0%, rgba(245, 158, 11, 0.75) 100%);
+}
+
+.key-info-chip--personality {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.72) 0%, rgba(244, 114, 182, 0.72) 100%);
+}
+
+.key-info-chip--circles {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.72) 0%, rgba(59, 130, 246, 0.72) 100%);
+}
+
+.key-info-chip__label {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.key-info-chip__value {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--c-text-inverse);
 }
 
 /* 学校、距离信息行 */
@@ -982,8 +1304,8 @@ watch(
   gap: 4rpx;
   padding: 8rpx 20rpx;
   border-radius: var(--r-full);
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  font-size: var(--fs-base);
+  font-weight: 700;
   /* mp-weixin 不支持，H5 保留毛玻璃 */
   // #ifdef H5
   backdrop-filter: blur(8rpx);
@@ -1012,6 +1334,13 @@ watch(
   background: linear-gradient(135deg, var(--c-tag-match-from), var(--c-tag-match-to));
   color: var(--c-text-inverse);
   border: 1rpx solid var(--c-overlay-border-stronger);
+  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.35);
+  animation: match-pulse 2s ease-in-out infinite;
+}
+
+@keyframes match-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.45); }
+  50% { box-shadow: 0 0 0 10rpx rgba(236, 72, 153, 0); }
 }
 
 /* 标签区 */
@@ -1030,11 +1359,32 @@ watch(
   color: var(--c-text-inverse);
   font-size: var(--fs-base);
   font-weight: 500;
-  /* mp-weixin 不支持，H5 保留毛玻璃；白字+白底场景保留低不透明度避免文字不可见 */
-  // #ifdef H5
-  backdrop-filter: blur(8rpx);
-  // #endif
   border: 1rpx solid var(--c-overlay-border-mid);
+}
+
+/* 标签色彩编码：兴趣(绿) / 性格(粉) / 生活(橙) / 校园(蓝) */
+.tag-pill:nth-child(4n+1) {
+  background: rgba(63, 207, 142, 0.3);
+  border-color: rgba(63, 207, 142, 0.4);
+  color: #e8f5e9;
+}
+
+.tag-pill:nth-child(4n+2) {
+  background: rgba(244, 143, 177, 0.3);
+  border-color: rgba(244, 143, 177, 0.4);
+  color: #fce4ec;
+}
+
+.tag-pill:nth-child(4n+3) {
+  background: rgba(255, 183, 77, 0.3);
+  border-color: rgba(255, 183, 77, 0.4);
+  color: #fff3e0;
+}
+
+.tag-pill:nth-child(4n+4) {
+  background: rgba(100, 181, 246, 0.3);
+  border-color: rgba(100, 181, 246, 0.4);
+  color: #e3f2fd;
 }
 
 /* 个人简介 */

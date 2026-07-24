@@ -13,6 +13,7 @@ import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
 import { isDev } from "../../services/env";
 import { openAppPath } from "../../utils/navigation";
+import { useTabBar } from "../../composables/useTabBar";
 import { toProfileView } from "../../view-models/profile";
 import LockScreen from "../../components/common/LockScreen.vue";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
@@ -58,6 +59,9 @@ function buildFileLike(filePath: string, size: number): File {
 type VerificationBadgeLevel = "none" | "school" | "email" | "idcard";
 
 const sessionStore = useSessionStore();
+
+// 同步自定义 TabBar 选中状态（我的 = 索引 4）
+useTabBar(4);
 const profileStore = useProfileStore();
 const socialProgressStore = useSocialProgressStore();
 const discoverStore = useDiscoverStore();

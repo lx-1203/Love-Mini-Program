@@ -9,6 +9,7 @@ import { storeToRefs } from "pinia";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
+import { useTabBar } from "../../composables/useTabBar";
 import LockScreen from "../../components/common/LockScreen.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { villagePageRequirements } from "../../config/page-access";
@@ -23,9 +24,12 @@ import type { PostItem, PostFilters } from "../../stores/village";
 const villageStore = useVillageStore();
 const sessionStore = useSessionStore();
 
-// Phase 4 任务 20：接入页面访问守卫，触发 UnlockGuideModal 引导（替代静默重定向）
+// Phase 4 任务 20：接入页面访问守卫
 usePageAccess(villagePageRequirements);
 const { loading, errorMessage, categories } = storeToRefs(villageStore);
+
+// 同步自定义 TabBar 选中状态（圈子 = 索引 1）
+useTabBar(1);
 
 /* ========== 锁定状态 ========== */
 const isUnlocked = computed(() => sessionStore.isProfileComplete);

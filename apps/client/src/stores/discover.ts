@@ -694,6 +694,19 @@ const _useDiscoverStore = defineStore("discover", {
             }
           }
 
+          // 无论是否匹配，都记录到我发出的喜欢列表，确保在「喜欢」页可见
+          try {
+            const likesStore = useLikesStore();
+            likesStore.recordLikedUser({
+              userId: card.userId,
+              name: card.name,
+              avatar: card.avatar,
+              headline: card.headline,
+            });
+          } catch (_e) {
+            // likes store 不可用时忽略，不影响主流程
+          }
+
           // 卡片不足时自动补充
           if (this.cards.length < 2 && this.hasMore && !this.isLimitReached) {
             await this.fetchCards();
@@ -766,6 +779,19 @@ const _useDiscoverStore = defineStore("discover", {
           } catch (_e) {
             // likes store 不可用时忽略，不影响主流程
           }
+        }
+
+        // 无论是否匹配，都记录到我发出的喜欢列表，确保在「喜欢」页可见
+        try {
+          const likesStore = useLikesStore();
+          likesStore.recordLikedUser({
+            userId: card.userId,
+            name: card.name,
+            avatar: card.avatar,
+            headline: card.headline,
+          });
+        } catch (_e) {
+          // likes store 不可用时忽略，不影响主流程
         }
 
         // 卡片不足时自动补充

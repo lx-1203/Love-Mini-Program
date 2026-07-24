@@ -11,11 +11,11 @@ export interface AppTab {
 
 export const appTabs: AppTab[] = [
   {
-    id: "home",
-    label: "首页",
-    path: "/pages/home/index",
-    iconPath: "static/assets/icons/tabbar/home-default.png",
-    selectedIconPath: "static/assets/icons/tabbar/home-active.png",
+    id: "discover",
+    label: "匹配",
+    path: "/pages/discover/index",
+    iconPath: "static/assets/icons/tabbar/discover-default.png",
+    selectedIconPath: "static/assets/icons/tabbar/discover-active.png",
   },
   {
     id: "village",
@@ -25,11 +25,11 @@ export const appTabs: AppTab[] = [
     selectedIconPath: "static/assets/icons/tabbar/village-active.png",
   },
   {
-    id: "discover",
-    label: "匹配",
-    path: "/pages/discover/index",
-    iconPath: "static/assets/icons/tabbar/discover-default.png",
-    selectedIconPath: "static/assets/icons/tabbar/discover-active.png",
+    id: "home",
+    label: "首页",
+    path: "/pages/home/index",
+    iconPath: "static/assets/icons/tabbar/home-default.png",
+    selectedIconPath: "static/assets/icons/tabbar/home-active.png",
   },
   {
     id: "chat",

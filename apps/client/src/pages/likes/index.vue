@@ -8,6 +8,7 @@ import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useLikesStore } from "../../stores/likes";
 import { useSessionStore } from "../../stores/session";
+import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
@@ -68,24 +69,19 @@ function switchTab(tab: TabType) {
 }
 
 /**
- * 跳转到用户详情页（功能开发中）
+ * 跳转到用户详情页
  * @param userId - 用户 ID
  */
 function goToUserDetail(userId: string) {
-  uni.showToast({
-    title: "用户详情功能开发中",
-    icon: "none",
-  });
+  if (!userId) return;
+  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(userId)}`);
 }
 
 /**
- * 跳转到心动信号页（功能开发中）
+ * 跳转到心动信号页
  */
 function goToHeartSignals() {
-  uni.showToast({
-    title: "心动信号功能开发中",
-    icon: "none",
-  });
+  openAppPath("/pages/heart-signals/index");
 }
 
 onMounted(() => {

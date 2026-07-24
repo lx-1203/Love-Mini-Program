@@ -13,8 +13,6 @@ export const APP_CONFIG = {
 
 /** 本地存储键名统一管理 */
 export const STORAGE_KEYS = {
-  /** 是否已看过社交引导 */
-  SOCIAL_ONBOARDING_SEEN: 'campus_love_social_onboarding_seen',
   /** 是否已看过解锁引导 */
   UNLOCK_GUIDE_SHOWN: 'unlock_guide_shown',
   /** 用户 Token */

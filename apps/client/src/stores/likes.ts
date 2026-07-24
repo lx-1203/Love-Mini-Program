@@ -645,6 +645,38 @@ export const useLikesStore = defineStore("likes", {
     },
 
     /**
+     * 拒绝/忽略心动信号
+     * @param signalId - 心动信号 ID
+     */
+    async declineHeartSignal(signalId: string) {
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          const signal = this.heartSignals.find((s) => s.id === signalId);
+          if (signal) {
+            signal.status = "expired";
+          }
+          return;
+        }
+
+        // 调用后端 API: POST /api/matches/heart-signals/{signalId}/decline?userId={userId}
+        await request<void>({
+          url: `/matches/heart-signals/${signalId}/decline?userId=${this.currentUserId}`,
+          method: "POST",
+        });
+
+        const signal = this.heartSignals.find((s) => s.id === signalId);
+        if (signal) {
+          signal.status = "expired";
+        }
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "拒绝心动信号失败";
+        throw error;
+      }
+    },
+
+    /**
      * 标记访客为已读
      * @param visitorId - 访客记录 ID
      */
@@ -685,6 +717,38 @@ export const useLikesStore = defineStore("likes", {
 
       // 插入列表头部，确保最新匹配优先展示
       this.likedBy.unshift(newRecord);
+    },
+
+    /**
+     * 记录我发出的喜欢（无后端调用）
+     * 由 discover store 在右滑/超级喜欢成功后调用，使「我发出的喜欢」列表
+     * 能即时看到刚喜欢的用户，不触发重复 API 请求。
+     * @param user - 目标用户基础信息
+     */
+    recordLikedUser(user: {
+      userId: string;
+      name: string;
+      avatar: string;
+      headline: string;
+    }) {
+      // 参数校验
+      if (!user || !user.userId) return;
+
+      // 已存在则跳过，避免重复
+      const alreadyLiked = this.likes.some((item) => item.userId === user.userId);
+      if (alreadyLiked) return;
+
+      const newRecord: LikeRecord = {
+        id: `like-${user.userId}-${Date.now()}`,
+        userId: user.userId,
+        name: user.name,
+        avatar: user.avatar || "",
+        headline: user.headline || "",
+        likedAt: new Date().toISOString(),
+      };
+
+      // 插入列表头部，确保最新喜欢优先展示
+      this.likes.unshift(newRecord);
     },
   },
 });

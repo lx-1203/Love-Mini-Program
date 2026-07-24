@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 寻觅页 - 卡片推荐 + 签到入口
  * 展示个性化用户卡片推荐，支持滑动浏览和每日签到
@@ -12,6 +12,7 @@ import { useCheckInStore } from "../../stores/checkin";
 import { useDailyQuestionStore } from "../../stores/daily-question";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { openAppPath } from "../../utils/navigation";
+import { useTabBar } from "../../composables/useTabBar";
 import CardSwiper from "../../components/discover/CardSwiper.vue";
 import FilterDrawer from "../../components/discover/FilterDrawer.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -40,6 +41,9 @@ const icons = {
 } as const;
 
 const discoverStore = useDiscoverStore();
+
+// 同步自定义 TabBar 选中状态（匹配 = 索引 0）
+useTabBar(0);
 const {
   cards,
   remainingCount,
