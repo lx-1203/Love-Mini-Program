@@ -1,0 +1,22 @@
+# 匹配卡片首屏体验打磨 - Checklist
+
+- [x] 打开小程序后首屏为匹配页 `/pages/discover/index`，TabBar 默认选中"匹配"
+- [x] CardSwiper 卡片顶部展示高质量照片/照片墙，4:5 或类似展示比例
+- [x] 卡片上清晰展示姓名、年龄、性格标签、收入范围、共同兴趣圈/社交圈
+- [x] 卡片视觉具有质感：圆角、阴影、渐变遮罩、下一张卡片边缘预览
+- [x] 拖动卡片时卡片随手指移动并倾斜，显示"喜欢"/"跳过"提示
+- [x] 滑动超过阈值释放后卡片流畅飞出，下一张卡片自然顶上
+- [x] 点击当前卡片从当前位置平滑展开至全屏居中详情页
+- [x] 长按当前卡片超过 500ms 调出快捷菜单，移动超过阈值取消长按
+- [x] CardDetailOverlay 展示照片墙、年龄、性格、收入、学校、社交圈等完整信息
+- [x] 详情页底部操作栏"跳过"/"超级喜欢"/"喜欢"/"发消息"事件正确
+- [x] 详情页"发消息"使用 `userId` 导航到 `/pages/chat-session/index`
+- [x] 右滑喜欢调用 `discoverStore.swipeRight` 并同步到 likes store
+- [x] 超级喜欢调用 `discoverStore.swipeRight(cardId, true)`
+- [x] 匹配成功后触发双头像碰撞动画并跳转 `/pages/likes/index`
+- [x] chat-session 页文字消息发送成功并清空输入框
+- [x] chat-session 页语音消息长按录制、松开发送，时间过短有提示
+- [x] 所有失败操作均有 `uni.showToast` 提示，不静默吞错
+- [x] `pnpm run typecheck` 无新增类型错误
+- [x] `pnpm run build:mp-weixin` 构建成功
+- [x] `pnpm run test:unit` 相关测试通过

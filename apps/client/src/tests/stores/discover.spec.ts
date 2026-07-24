@@ -391,6 +391,51 @@ describe("discover store", () => {
       expect(record).toBeDefined();
       expect(record!.direction).toBe("right");
     });
+
+    it("右滑后无论是否匹配都记录到我发出的喜欢列表", async () => {
+      randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+      const store = useDiscoverStore();
+      likesStore = useLikesStore();
+      const recordLikedUserSpy = vi
+        .spyOn(likesStore, "recordLikedUser")
+        .mockImplementation(() => {});
+
+      await store.fetchCards();
+      const firstCard = store.cards[0];
+
+      await store.swipeRight(firstCard.id);
+
+      // 验证未匹配时也记录到我发出的喜欢列表
+      expect(store.lastSwipeResult!.matched).toBe(false);
+      expect(recordLikedUserSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: firstCard.userId,
+          name: firstCard.name,
+          avatar: firstCard.avatar,
+          headline: firstCard.headline,
+        })
+      );
+
+      recordLikedUserSpy.mockRestore();
+    });
+
+    it("超级喜欢调用 swipeRight(cardId, true) 并记录方向为 right", async () => {
+      randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+      const store = useDiscoverStore();
+      await store.fetchCards();
+      const firstCard = store.cards[0];
+      const beforeViewed = store.viewedCards.length;
+
+      await store.swipeRight(firstCard.id, true);
+
+      expect(store.viewedCards.length).toBe(beforeViewed + 1);
+      const record = store.viewedCards.find((v) => v.cardId === firstCard.id);
+      expect(record).toBeDefined();
+      expect(record!.direction).toBe("right");
+      expect(store.lastSwipeResult).not.toBeNull();
+    });
   });
 
   // ------------------------------------------------------------------

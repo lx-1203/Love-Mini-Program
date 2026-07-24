@@ -17,6 +17,13 @@
  * - 照片墙分页指示器（多图场景下展示当前页 / 总页数）
  * - 卡片信息区集成 VerificationBadge（基于 verificationBadgeLevel 字段）
  *
+ * Task 2/3 打磨：
+ * - 强化主视觉区、信息层级与卡片质感（圆角/阴影/微边框/渐变遮罩/堆叠）
+ * - 拖动倾斜、滑动阈值反馈、释放飞出与下一张顶上动画
+ * - 点击触发 showDetail，由 CardDetailOverlay 完成全屏展开
+ * - 长按 500ms 调出 LongPressMenu；移动超过 10px 取消长按识别
+ * - 菜单项包含：查看详情、超级喜欢、不感兴趣、举报、取消
+ *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类（hover-class 替代）
  * - 不使用 backdrop-filter（高不透明度降级）
@@ -30,7 +37,6 @@ import VerificationBadge from "../common/VerificationBadge.vue";
 import CardDetailOverlay from "./CardDetailOverlay.vue";
 import LongPressMenu from "./LongPressMenu.vue";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
-import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 
 /** Emoji 替换 SVG 图标路径 */
@@ -39,6 +45,7 @@ const emojiIcons = {
   graduation: IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG,
   video: IMAGE_PATHS.ICONS_COMMON.CAMERA,
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
+  group: IMAGE_PATHS.ICONS_EMOJI.GROUP,
 } as const;
 
 const props = defineProps<{
@@ -55,6 +62,8 @@ const emit = defineEmits<{
   (e: "superLike", cardId: string): void;
   /** 视频角标点击（Phase D2 新增） */
   (e: "videoTap", cardId: string, videoUrl: string): void;
+  /** 发消息操作（由 CardDetailOverlay 透传，父组件负责导航到聊天页） */
+  (e: "message", userId: string): void;
 }>();
 
 /* ========== 手势状态 ========== */
@@ -304,7 +313,12 @@ const tiltY = computed(() => {
  */
 function handleTap() {
   if (!currentCard.value || isFlyingOut.value) return;
-  lightHaptic();
+  try {
+    lightHaptic();
+  } catch (err) {
+    // 振动反馈失败时静默降级
+    console.warn("[CardSwiper] tap haptic failed:", err);
+  }
   showDetail.value = true;
 }
 
@@ -340,6 +354,23 @@ function handleReport() {
   uni.showToast({ title: "举报已提交", icon: "none" });
 }
 
+/**
+ * 快捷菜单 → 不感兴趣
+ * 关闭菜单并将当前卡片向左滑出（与"跳过"一致），同时 toast 提示用户
+ */
+function handleNotInterested() {
+  closeMenu();
+  uni.showToast({ title: "已减少此类推荐", icon: "none" });
+  if (!currentCard.value || isFlyingOut.value) return;
+  try {
+    lightHaptic();
+  } catch (err) {
+    // 振动反馈失败时静默降级
+    console.warn("[CardSwiper] not-interested haptic failed:", err);
+  }
+  performFlyOut("left");
+}
+
 /* ========== 触摸事件处理 ========== */
 
 /**
@@ -360,7 +391,11 @@ function onTouchStart(e: TouchEvent) {
     if (!hasMovedForLongPress && !isFlyingOut.value) {
       isLongPressing.value = true;
       isDragging.value = false;
-      heavyHaptic();
+      try {
+        heavyHaptic();
+      } catch (err) {
+        console.warn("[CardSwiper] long-press haptic failed:", err);
+      }
       showMenu.value = true;
     }
   }, LONG_PRESS_DELAY);
@@ -439,7 +474,11 @@ function performFlyOut(direction: SwipeDirection) {
   flyDirection.value = direction;
 
   // 飞出时触发重振动反馈
-  heavyHaptic();
+  try {
+    heavyHaptic();
+  } catch (err) {
+    console.warn("[CardSwiper] fly-out haptic failed:", err);
+  }
 
   const cardId = currentCard.value.id;
 
@@ -481,7 +520,11 @@ function resetCardPosition() {
  */
 function onReject() {
   if (isFlyingOut.value || !currentCard.value) return;
-  lightHaptic(); // 拒绝：轻振动
+  try {
+    lightHaptic(); // 拒绝：轻振动
+  } catch (err) {
+    console.warn("[CardSwiper] reject haptic failed:", err);
+  }
   performFlyOut("left");
 }
 
@@ -490,7 +533,11 @@ function onReject() {
  */
 function onLike() {
   if (isFlyingOut.value || !currentCard.value) return;
-  mediumHaptic(); // 喜欢：中等振动
+  try {
+    mediumHaptic(); // 喜欢：中等振动
+  } catch (err) {
+    console.warn("[CardSwiper] like haptic failed:", err);
+  }
   performFlyOut("right");
 }
 
@@ -499,7 +546,11 @@ function onLike() {
  */
 function onSuperLike() {
   if (isFlyingOut.value || !currentCard.value) return;
-  heavyHaptic(); // 超级喜欢：重振动
+  try {
+    heavyHaptic(); // 超级喜欢：重振动
+  } catch (err) {
+    console.warn("[CardSwiper] super-like haptic failed:", err);
+  }
   emit("superLike", currentCard.value.id);
 }
 
@@ -524,7 +575,11 @@ function onSwiperChange(e: { detail: { current: number } }) {
  */
 function onVideoBadgeTap() {
   if (!currentCard.value?.personalVideoUrl) return;
-  lightHaptic();
+  try {
+    lightHaptic();
+  } catch (err) {
+    console.warn("[CardSwiper] video-badge haptic failed:", err);
+  }
   emit("videoTap", currentCard.value.id, currentCard.value.personalVideoUrl);
 }
 
@@ -700,6 +755,7 @@ watch(
               <text class="key-info-chip__value">{{ personalityPreview }}</text>
             </view>
             <view class="key-info-chip key-info-chip--circles">
+              <image class="key-info-chip__icon" :src="emojiIcons.group" mode="aspectFit" />
               <text class="key-info-chip__label">圈子</text>
               <text class="key-info-chip__value">{{ socialCirclesPreview }}</text>
             </view>
@@ -759,7 +815,7 @@ watch(
       @like="(id: string) => { closeDetail(); onLike(); }"
       @superLike="(id: string) => { closeDetail(); onSuperLike(); }"
       @pass="(id: string) => { closeDetail(); onReject(); }"
-      @message="(userId: string) => { closeDetail(); openAppPath('/pages/chat-session/index?userId=' + encodeURIComponent(userId)); }"
+      @message="(userId: string) => { closeDetail(); emit('message', userId); }"
     />
 
     <!-- 长按快捷菜单 -->
@@ -770,6 +826,7 @@ watch(
       @detail="onMenuDetail"
       @super-like="closeMenu(); onSuperLike();"
       @report="handleReport"
+      @not-interested="handleNotInterested"
     />
 
     <!-- 底部操作区：图片资源 + hover-class 振动反馈，跨设备渲染一致 -->
@@ -1247,6 +1304,13 @@ watch(
   font-size: var(--fs-xs);
   font-weight: 500;
   color: rgba(255, 255, 255, 0.85);
+}
+
+.key-info-chip__icon {
+  width: 22rpx;
+  height: 22rpx;
+  flex-shrink: 0;
+  filter: brightness(0) invert(1);
 }
 
 .key-info-chip__value {

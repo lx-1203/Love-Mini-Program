@@ -12,15 +12,15 @@
   },
   "pages": [
     {
-      "path": "pages/login/index",
-      "style": {
-        "navigationBarTitleText": "校园恋爱"
-      }
-    },
-    {
       "path": "pages/discover/index",
       "style": {
         "navigationBarTitleText": "寻觅"
+      }
+    },
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "校园恋爱"
       }
     },
     {

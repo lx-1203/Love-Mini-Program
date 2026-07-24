@@ -31,6 +31,8 @@ const iconSrc = {
 } as const;
 
 const draft = ref("");
+/** 当前是否为语音输入模式 */
+const isVoiceMode = ref(false);
 const sessionId = ref<string | null>(null);
 const targetUserId = ref<string | null>(null);
 const pageErrorMessage = ref<string | null>(null);
@@ -183,6 +185,9 @@ const isSessionClosed = computed(() => {
   return chatStore.activeSession?.phase === "closed";
 });
 
+/** 发送按钮是否可高亮（输入框非空且会话未结束） */
+const canSend = computed(() => draft.value.trim().length > 0 && !isSessionClosed.value);
+
 /** 页面标题 */
 const pageTitle = computed(() => {
   if (isTempSession.value) return "24小时临时聊天";
@@ -249,7 +254,9 @@ function updateTempCountdown() {
   tempCountdown.value = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-/** 发送消息 */
+/** 发送文字消息
+ * 私信会话走 messagesStore.sendMessage，临时会话走 chatStore.sendText
+ */
 async function sendText() {
   if (!draft.value.trim() || !sessionId.value) {
     return;
@@ -260,24 +267,23 @@ async function sendText() {
     return;
   }
 
-  // 保存草稿，发送失败时恢复
   const messageToSend = draft.value;
   const quoteRef = quoteReply.value;
   const currentSessionId = sessionId.value;
 
   try {
-    // 私信和临时会话都统一走 messagesStore 发送
-    await messagesStore.sendMessage(currentSessionId, messageToSend, quoteRef?.messageId);
-
-    // 临时会话额外同步到 chatStore 以保持兼容性
     if (isTempSession.value) {
+      // 临时匿名会话使用 chatStore 的临时聊天链路
       await chatStore.sendText(messageToSend);
+    } else {
+      // 私信会话使用 messagesStore 的标准私信链路
+      await messagesStore.sendMessage(currentSessionId, messageToSend, quoteRef?.messageId);
     }
 
+    // 发送成功后清空输入与引用状态；失败时保留草稿以便重试
     draft.value = "";
     quoteReply.value = null;
   } catch (error) {
-    // 修复：发送失败时给用户明确提示
     const message = error instanceof Error ? error.message : "发送失败，请稍后重试";
     uni.showToast({ title: message, icon: "none" });
   }
@@ -302,6 +308,15 @@ async function handleEndSession() {
     uni.showToast({ title: "会话已结束", icon: "success" });
   } catch (_e) {
     uni.showToast({ title: chatStore.errorMessage || "操作失败", icon: "none" });
+  }
+}
+
+/** 切换语音/文字输入模式 */
+function toggleVoiceMode() {
+  isVoiceMode.value = !isVoiceMode.value;
+  if (isVoiceMode.value) {
+    // 切换到语音模式时取消输入框聚焦，避免键盘遮挡
+    inputFocused.value = false;
   }
 }
 
@@ -350,7 +365,10 @@ function initRecorder() {
   // #endif
 }
 
-/** 发送语音 — 使用 uni.getRecorderManager 真实录音 */
+/** 开始语音录制
+ * mp-weixin 调用 uni.getRecorderManager 真实录音
+ * H5 等环境进入模拟录音状态，用于流程演示与 UI 验证
+ */
 function startVoiceRecord() {
   if (!sessionId.value || isSessionClosed.value) {
     uni.showToast({ title: "会话已结束，无法发送消息", icon: "none" });
@@ -363,14 +381,40 @@ function startVoiceRecord() {
   // #endif
 
   // #ifndef MP-WEIXIN
-  uni.showToast({ title: "语音功能仅在小程序端可用", icon: "none" });
+  // H5 降级：模拟录音状态，便于在非小程序环境验证交互流程
+  isRecording.value = true;
+  recordingSeconds.value = 0;
+  recordingTimer = setInterval(() => {
+    recordingSeconds.value++;
+  }, 1000);
   // #endif
 }
 
+/** 结束语音录制
+ * mp-weixin 停止录音并在 onStop 回调中发送
+ * H5 直接根据模拟时长判断并发送
+ */
 function stopVoiceRecord() {
+  // #ifdef MP-WEIXIN
   if (recorderManager.value) {
     recorderManager.value.stop();
   }
+  // #endif
+
+  // #ifndef MP-WEIXIN
+  if (recordingTimer) {
+    clearInterval(recordingTimer);
+    recordingTimer = null;
+  }
+  const duration = Math.round(recordingSeconds.value);
+  isRecording.value = false;
+  recordingSeconds.value = 0;
+  if (duration < 1) {
+    uni.showToast({ title: "说话时间太短", icon: "none" });
+    return;
+  }
+  void sendVoiceMessage("", duration);
+  // #endif
 }
 
 async function sendVoiceMessage(filePath: string, duration: number) {
@@ -669,27 +713,25 @@ async function loadIcebreakers() {
           <text class="quote-reply-bar__close">✕</text>
         </view>
 
-        <!-- 微信风格输入栏：语音按钮 + 输入框 + 表情/更多按钮（或发送按钮） -->
+        <!-- 微信风格输入栏：语音/键盘切换 + 输入框/按住说话 + 表情/更多/发送 -->
         <view
           class="wechat-input-bar"
           :class="{ 'wechat-input-bar--keyboard-up': keyboardHeight > 0 }"
         >
+          <!-- 语音/文字模式切换按钮 -->
           <view
             class="wechat-input-bar__icon-btn press-feedback"
-            :class="{ 'wechat-input-bar__icon-btn--recording': isRecording }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
-            @touchstart="startVoiceRecord"
-            @touchend="stopVoiceRecord"
-            @touchcancel="stopVoiceRecord"
+            @tap="toggleVoiceMode"
           >
-            <image v-if="!isRecording" class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" />
-            <view v-else class="wechat-input-bar__recording-indicator">
-              <view class="wechat-input-bar__recording-pulse" />
-              <text class="wechat-input-bar__recording-text">{{ recordingSeconds }}″</text>
-            </view>
+            <image v-if="!isVoiceMode" class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" />
+            <text v-else class="wechat-input-bar__icon-text wechat-input-bar__icon-text--keyboard">文</text>
           </view>
+
+          <!-- 文字模式：输入框 -->
           <input
+            v-if="!isVoiceMode"
             v-model="draft"
             class="wechat-input-bar__input"
             :disabled="isSessionClosed"
@@ -700,7 +742,24 @@ async function loadIcebreakers() {
             @input="onDraftChange"
             @keyboardheightchange="onKeyboardHeightChange"
           />
-          <template v-if="!inputFocused">
+
+          <!-- 语音模式：按住说话按钮 -->
+          <view
+            v-else
+            class="wechat-input-bar__voice-hold press-feedback"
+            :class="{ 'wechat-input-bar__voice-hold--recording': isRecording }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @touchstart="startVoiceRecord"
+            @touchend="stopVoiceRecord"
+            @touchcancel="stopVoiceRecord"
+          >
+            <text class="wechat-input-bar__voice-hold-text">
+              {{ isRecording ? `录音中 ${recordingSeconds}″` : '按住 说话' }}
+            </text>
+          </view>
+
+          <template v-if="!inputFocused && !isVoiceMode">
             <view
               class="wechat-input-bar__icon-btn press-feedback"
               hover-class="press-feedback--active"
@@ -717,8 +776,9 @@ async function loadIcebreakers() {
             </view>
           </template>
           <view
-            v-else
+            v-else-if="!isVoiceMode"
             class="wechat-input-bar__send press-feedback"
+            :class="{ 'wechat-input-bar__send--active': canSend }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             @tap="onSend"
@@ -910,6 +970,46 @@ async function loadIcebreakers() {
   color: var(--c-text-inverse);
   font-size: var(--fs-lg);
   font-weight: 600;
+}
+
+/* 发送按钮高亮状态（输入框非空时） */
+.wechat-input-bar__send--active {
+  background: var(--c-brand-600, #22c55e);
+  box-shadow: var(--s-brand-md);
+}
+
+/* 语音模式：按住说话按钮 */
+.wechat-input-bar__voice-hold {
+  flex: 1;
+  height: 64rpx;
+  border-radius: var(--r-md);
+  background: var(--c-neutral-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid var(--c-border-light);
+}
+
+.wechat-input-bar__voice-hold--recording {
+  background: var(--c-error, #ef4444);
+  border-color: var(--c-error, #ef4444);
+}
+
+.wechat-input-bar__voice-hold-text {
+  font-size: var(--fs-lg);
+  color: var(--c-text-primary);
+  font-weight: 600;
+}
+
+.wechat-input-bar__voice-hold--recording .wechat-input-bar__voice-hold-text {
+  color: var(--c-text-inverse);
+}
+
+/* 键盘切换按钮文字样式 */
+.wechat-input-bar__icon-text--keyboard {
+  font-size: var(--fs-base);
+  color: var(--c-text-secondary);
+  font-weight: 700;
 }
 
 /* ========== 临时会话操作按钮 ========== */

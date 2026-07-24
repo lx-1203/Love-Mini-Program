@@ -5,7 +5,7 @@
  * 从卡片位置缩放展开至全屏居中，完整展示用户资料：
  * - 顶部大图轮播 + 分页指示器
  * - 姓名 / 年龄 / 学校 / 认证信息（叠加于图片底部渐变上）
- * - 快速资料卡片：身高 / 学历 / 收入 / 共同兴趣圈
+ * - 快速资料卡片：年龄 / 身高 / 学历 / 月收入
  * - 个人简介区
  * - 性格标签区
  * - 兴趣圈网格
@@ -49,11 +49,26 @@ const icons = {
   graduation: IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG,
   location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
+  cake: IMAGE_PATHS.ICONS_EMOJI.CAKE,
   pass: IMAGE_PATHS.ICONS_SOCIAL.PASS,
   superLike: IMAGE_PATHS.ICONS_SOCIAL.SUPER_LIKE,
   like: IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED,
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
 } as const;
+
+/**
+ * 安全执行交互操作并在异常时给用户明确提示。
+ * 符合 Spec 要求：所有滑动、喜欢、发消息操作失败时禁止静默吞掉异常。
+ */
+function safeAction<T>(fn: () => T, errorMsg = "操作失败"): T | undefined {
+  try {
+    return fn();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : errorMsg;
+    uni.showToast({ title: message, icon: "none" });
+    console.error(`[CardDetailOverlay] ${errorMsg}:`, error);
+  }
+}
 
 /** 展示图片列表（与 CardSwiper 优先级保持一致） */
 const displayImages = computed<string[]>(() => {
@@ -147,50 +162,75 @@ function onSwiperChange(e: { detail: { current: number } }) {
   currentImageIndex.value = e.detail.current;
 }
 
+/** 关闭详情页（带出场动画与触觉反馈） */
 function handleClose() {
-  lightHaptic();
-  animating.value = false;
-  setTimeout(() => emit("close"), 260);
+  safeAction(() => {
+    lightHaptic();
+    animating.value = false;
+    // 等待出场动画完成后再通知父组件移除弹层
+    setTimeout(() => emit("close"), 320);
+  }, "关闭详情失败");
 }
 
+/** 喜欢 */
 function handleLike() {
   if (!props.card) return;
-  mediumHaptic();
-  emit("like", props.card.id);
-  animating.value = false;
-  setTimeout(() => emit("close"), 260);
+  safeAction(() => {
+    mediumHaptic();
+    emit("like", props.card!.id);
+    animating.value = false;
+    setTimeout(() => emit("close"), 320);
+  }, "喜欢操作失败");
 }
 
+/** 超级喜欢 */
 function handleSuperLike() {
   if (!props.card) return;
-  successHaptic();
-  emit("superLike", props.card.id);
+  safeAction(() => {
+    successHaptic();
+    emit("superLike", props.card!.id);
+  }, "超级喜欢失败");
 }
 
+/** 跳过 */
 function handlePass() {
   if (!props.card) return;
-  lightHaptic();
-  emit("pass", props.card.id);
-  animating.value = false;
-  setTimeout(() => emit("close"), 260);
+  safeAction(() => {
+    lightHaptic();
+    emit("pass", props.card!.id);
+    animating.value = false;
+    setTimeout(() => emit("close"), 320);
+  }, "跳过操作失败");
 }
 
+/**
+ * 发消息：向父组件发射 message 事件并携带 userId。
+ * 父组件（CardSwiper）负责关闭弹层并导航到 /pages/chat-session/index?userId={userId}。
+ */
 function handleMessage() {
   if (!props.card) return;
-  lightHaptic();
-  emit("message", props.card.userId);
-  animating.value = false;
-  setTimeout(() => emit("close"), 260);
+  safeAction(() => {
+    lightHaptic();
+    emit("message", props.card!.userId);
+    animating.value = false;
+    setTimeout(() => emit("close"), 320);
+  }, "发消息失败");
 }
 
+/** 跳转个人主页 */
 function goToProfile() {
   if (!props.card) return;
-  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(props.card.userId)}`);
+  safeAction(() => {
+    openAppPath(`/pages/profile/index?userId=${encodeURIComponent(props.card!.userId)}`);
+  }, "跳转主页失败");
 }
 
+/** 展开/收起个人简介 */
 function toggleBio() {
-  lightHaptic();
-  isBioExpanded.value = !isBioExpanded.value;
+  safeAction(() => {
+    lightHaptic();
+    isBioExpanded.value = !isBioExpanded.value;
+  }, "切换简介失败");
 }
 
 /* ========== 顶部栏下滑关闭手势 ========== */
@@ -199,22 +239,28 @@ let swipeStartX = 0;
 const SWIPE_DOWN_THRESHOLD = 120;
 const SWIPE_HORIZONTAL_TOLERANCE = 80;
 
+/** 记录下滑起始坐标 */
 function onSwipeDownStart(e: TouchEvent) {
   swipeStartY = e.touches[0].clientY;
   swipeStartX = e.touches[0].clientX;
 }
 
+/**
+ * 下滑过程中实时判断手势方向。
+ * 注：不在 touchmove 中调用 preventDefault，避免在 mp-weixin 中阻塞滚动或产生兼容警告。
+ */
 function onSwipeDownMove(e: TouchEvent) {
   if (swipeStartY === 0) return;
   const deltaY = e.touches[0].clientY - swipeStartY;
   const deltaX = Math.abs(e.touches[0].clientX - swipeStartX);
+  // 仅做方向校验，不阻止默认滚动行为
   if (deltaY > 0 && deltaY < 240 && deltaX < SWIPE_HORIZONTAL_TOLERANCE) {
-    const ratio = Math.min(deltaY / 240, 1);
-    // 轻微跟随下移，增强手势反馈
-    e.preventDefault();
+    // 可在此扩展视觉跟随（如 translateY），当前通过 drag-bar 提供足够反馈
+    void e;
   }
 }
 
+/** 下滑结束：超过阈值则关闭详情页 */
 function onSwipeDownEnd(e: TouchEvent) {
   if (swipeStartY === 0) return;
   const deltaY = e.changedTouches[0].clientY - swipeStartY;
@@ -336,8 +382,15 @@ function onSwipeDownEnd(e: TouchEvent) {
           </view>
         </view>
 
-        <!-- 快速资料卡片 -->
+        <!-- 快速资料卡片：年龄 / 身高 / 学历 / 月收入 -->
         <view class="detail-panel detail-quick-stats">
+          <view class="quick-stat">
+            <view class="quick-stat__icon quick-stat__icon--age">
+              <image class="quick-stat__icon-img" :src="icons.cake" mode="aspectFit" />
+            </view>
+            <text class="quick-stat__value">{{ ageText }}岁</text>
+            <text class="quick-stat__label">年龄</text>
+          </view>
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--height">
               <text class="quick-stat__icon-text">📏</text>
@@ -358,13 +411,6 @@ function onSwipeDownEnd(e: TouchEvent) {
             </view>
             <text class="quick-stat__value">{{ incomeLabel }}</text>
             <text class="quick-stat__label">月收入</text>
-          </view>
-          <view class="quick-stat">
-            <view class="quick-stat__icon quick-stat__icon--circles">
-              <text class="quick-stat__icon-text">🎯</text>
-            </view>
-            <text class="quick-stat__value">{{ card?.commonCircleCount ?? 3 }}个</text>
-            <text class="quick-stat__label">共同圈</text>
           </view>
         </view>
 
@@ -425,7 +471,7 @@ function onSwipeDownEnd(e: TouchEvent) {
         <view class="detail-bottom-spacer" />
       </scroll-view>
 
-      <!-- 底部操作栏 -->
+      <!-- 底部固定操作栏：跳过 / 超级喜欢 / 喜欢 / 发消息 -->
       <view class="detail-action-bar">
         <view
           class="detail-action-bar__btn detail-action-bar__btn--pass"
@@ -443,7 +489,7 @@ function onSwipeDownEnd(e: TouchEvent) {
           @tap="handleSuperLike"
         >
           <image class="detail-action-bar__icon" :src="icons.superLike" mode="aspectFit" />
-          <text class="detail-action-bar__label">超级</text>
+          <text class="detail-action-bar__label">超级喜欢</text>
         </view>
         <view
           class="detail-action-bar__btn detail-action-bar__btn--like"
@@ -461,7 +507,7 @@ function onSwipeDownEnd(e: TouchEvent) {
           @tap="handleMessage"
         >
           <image class="detail-action-bar__icon" :src="icons.message" mode="aspectFit" />
-          <text class="detail-action-bar__label">消息</text>
+          <text class="detail-action-bar__label">发消息</text>
         </view>
       </view>
     </view>
@@ -864,6 +910,10 @@ function onSwipeDownEnd(e: TouchEvent) {
   margin-bottom: 2rpx;
 }
 
+.quick-stat__icon--age {
+  background: linear-gradient(135deg, var(--c-romance-100) 0%, var(--c-romance-50) 100%);
+}
+
 .quick-stat__icon--height {
   background: linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%);
 }
@@ -874,10 +924,6 @@ function onSwipeDownEnd(e: TouchEvent) {
 
 .quick-stat__icon--income {
   background: linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-apricot-50) 100%);
-}
-
-.quick-stat__icon--circles {
-  background: linear-gradient(135deg, var(--c-romance-100) 0%, var(--c-romance-50) 100%);
 }
 
 .quick-stat__icon-text {
@@ -1021,7 +1067,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   right: 0;
   display: flex;
   justify-content: center;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   padding: var(--sp-4) var(--page-padding);
   padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.96);
@@ -1040,7 +1086,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   align-items: center;
   justify-content: center;
   gap: 6rpx;
-  width: 128rpx;
+  width: 140rpx;
   height: 116rpx;
   border-radius: var(--r-xl);
   transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 160ms ease;
@@ -1085,6 +1131,9 @@ function onSwipeDownEnd(e: TouchEvent) {
 .detail-action-bar__label {
   font-size: var(--fs-xs);
   font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .detail-action-bar__btn--pass .detail-action-bar__label {

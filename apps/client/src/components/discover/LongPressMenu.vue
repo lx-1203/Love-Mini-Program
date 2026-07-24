@@ -18,6 +18,8 @@ const emit = defineEmits<{
   (e: "detail"): void;
   (e: "superLike"): void;
   (e: "report"): void;
+  /** 不感兴趣：减少类似推荐 */
+  (e: "notInterested"): void;
 }>();
 
 const animating = ref(false);
@@ -33,8 +35,13 @@ watch(
   }
 );
 
-function handleAction(action: "detail" | "superLike" | "report") {
-  lightHaptic();
+function handleAction(action: "detail" | "superLike" | "report" | "notInterested") {
+  try {
+    lightHaptic();
+  } catch (err) {
+    // 振动反馈失败时静默降级，不影响主流程
+    console.warn("[LongPressMenu] haptic failed:", err);
+  }
   animating.value = false;
   setTimeout(() => {
     if (action === "detail") {
@@ -43,6 +50,8 @@ function handleAction(action: "detail" | "superLike" | "report") {
       emit("superLike");
     } else if (action === "report") {
       emit("report");
+    } else if (action === "notInterested") {
+      emit("notInterested");
     }
     emit("close");
   }, 200);
@@ -94,6 +103,18 @@ function handleClose() {
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">超级喜欢</text>
           <text class="long-press-menu__item-desc">让对方优先看到你</text>
+        </view>
+        <text class="long-press-menu__item-arrow">›</text>
+      </view>
+
+      <view class="long-press-menu__item press-feedback" hover-class="long-press-menu__item--pressed"
+        @tap="handleAction('notInterested')">
+        <view class="long-press-menu__item-icon long-press-menu__item-icon--not-interested">
+          <text class="long-press-menu__item-icon-emoji">🙅</text>
+        </view>
+        <view class="long-press-menu__item-content">
+          <text class="long-press-menu__item-title">不感兴趣</text>
+          <text class="long-press-menu__item-desc">减少此类推荐</text>
         </view>
         <text class="long-press-menu__item-arrow">›</text>
       </view>
@@ -231,6 +252,10 @@ function handleClose() {
 
 .long-press-menu__item-icon--report {
   background: #fce4ec;
+}
+
+.long-press-menu__item-icon--not-interested {
+  background: #f3f4f6;
 }
 
 .long-press-menu__item-content {

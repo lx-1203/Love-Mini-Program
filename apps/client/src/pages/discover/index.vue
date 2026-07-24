@@ -135,7 +135,9 @@ async function handleSwipe(direction: SwipeDirection, cardId: string) {
       }
     }
   } catch (error) {
-    // 错误已由 store 处理并设置到 errorMessage
+    // 错误已由 store 处理并设置到 errorMessage，额外 toast 提示用户
+    const message = discoverStore.errorMessage || "操作失败，请重试";
+    uni.showToast({ title: message, icon: "none" });
     console.error("滑动操作失败:", error);
   }
 }
@@ -159,7 +161,27 @@ async function handleSuperLike(cardId: string) {
       });
     }
   } catch (error) {
+    const message = discoverStore.errorMessage || "超级喜欢失败，请重试";
+    uni.showToast({ title: message, icon: "none" });
     console.error("超级喜欢操作失败:", error);
+  }
+}
+
+/**
+ * 处理发消息事件（从 CardDetailOverlay 透传）
+ * 导航到聊天页 /pages/chat-session/index?userId={userId}
+ * @param userId - 目标用户 ID
+ */
+function handleMessage(userId: string) {
+  if (!userId || userId.trim().length === 0) {
+    uni.showToast({ title: "用户 ID 无效", icon: "none" });
+    return;
+  }
+  try {
+    openAppPath(`/pages/chat-session/index?userId=${encodeURIComponent(userId)}`);
+  } catch (error) {
+    uni.showToast({ title: "进入聊天失败，请重试", icon: "none" });
+    console.error("进入聊天失败:", error);
   }
 }
 
@@ -635,6 +657,7 @@ onMounted(() => {
         @swipe="handleSwipe"
         @superLike="handleSuperLike"
         @videoTap="handleVideoTap"
+        @message="handleMessage"
       />
     </view>
 

@@ -16,14 +16,14 @@ import { usePageAccess } from "../../composables/usePageAccess";
 import { likesPageRequirements } from "../../config/page-access";
 import { IMAGE_PATHS } from "../../config/images";
 
-type TabType = "likedBy" | "visitors";
+type TabType = "likedBy" | "myLikes" | "visitors";
 
 const likesStore = useLikesStore();
 const sessionStore = useSessionStore();
 
 // Phase 4 任务 20：接入页面访问守卫，触发 UnlockGuideModal 引导（替代静默重定向）
 usePageAccess(likesPageRequirements);
-const { likedBy, visitors, loading, heartSignals } = storeToRefs(likesStore);
+const { likedBy, likes, visitors, loading, heartSignals } = storeToRefs(likesStore);
 
 /** 当前激活的标签页 */
 const activeTab = ref<TabType>("likedBy");
@@ -69,12 +69,33 @@ function switchTab(tab: TabType) {
 }
 
 /**
- * 跳转到用户详情页
+ * 跳转到聊天页
  * @param userId - 用户 ID
  */
-function goToUserDetail(userId: string) {
+function goToChat(userId: string) {
   if (!userId) return;
-  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(userId)}`);
+  openAppPath(`/pages/chat-session/index?userId=${encodeURIComponent(userId)}`);
+}
+
+/**
+ * 判断是否与指定用户互相喜欢（匹配）
+ * @param userId - 用户 ID
+ */
+function isMutualMatch(userId: string): boolean {
+  return likesStore.mutualLikes.some((item) => item.userId === userId);
+}
+
+/**
+ * 点击喜欢列表项：匹配成功则进入聊天，否则进入用户详情页
+ * @param userId - 用户 ID
+ */
+function handleItemClick(userId: string) {
+  if (!userId) return;
+  if (isMutualMatch(userId)) {
+    goToChat(userId);
+  } else {
+    openAppPath(`/pages/profile/index?userId=${encodeURIComponent(userId)}`);
+  }
 }
 
 /**
@@ -164,6 +185,18 @@ onShow(() => {
         </view>
         <view
           class="likes-tabs__item press-feedback"
+          :class="{ 'likes-tabs__item--active': activeTab === 'myLikes' }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="switchTab('myLikes')"
+        >
+          <text class="likes-tabs__text">我发出的喜欢</text>
+          <view v-if="likes.length > 0" class="likes-tabs__badge">
+            <text class="likes-tabs__badge-text">{{ likes.length }}</text>
+          </view>
+        </view>
+        <view
+          class="likes-tabs__item press-feedback"
           :class="{ 'likes-tabs__item--active': activeTab === 'visitors' }"
           hover-class="press-feedback--active"
           hover-stay-time="120"
@@ -195,10 +228,64 @@ onShow(() => {
             v-for="(item, idx) in likedBy"
             :key="item.id"
             class="likes-card list-item animate-fade-in press-feedback"
+            :class="{ 'likes-card--mutual': isMutualMatch(item.userId) }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             :style="{ animationDelay: idx * 60 + 'ms' }"
-            @tap="goToUserDetail(item.userId)"
+            @tap="handleItemClick(item.userId)"
+          >
+            <view class="likes-card__avatar-wrap">
+              <image
+                v-if="item.avatar"
+                class="likes-card__avatar"
+                :src="item.avatar"
+                mode="aspectFill"
+                lazy-load
+              />
+              <view v-else class="likes-card__avatar-placeholder">
+                <text class="likes-card__avatar-initial">{{ item.name.charAt(0) }}</text>
+              </view>
+            </view>
+            <view class="likes-card__info">
+              <view class="likes-card__row">
+                <view class="likes-card__name-wrap">
+                  <text class="likes-card__name">{{ item.name }}</text>
+                  <VerificationBadge
+                    v-if="item.verificationBadgeLevel && item.verificationBadgeLevel !== 'none'"
+                    :level="(item.verificationBadgeLevel as 'school' | 'email' | 'idcard')"
+                    size="sm"
+                    :show-cta-when-none="false"
+                  />
+                </view>
+                <text class="likes-card__time">{{ formatTime(item.likedAt) }}</text>
+              </view>
+              <text class="likes-card__headline">{{ item.headline }}</text>
+            </view>
+            <view class="likes-card__arrow">
+              <text class="likes-card__arrow-icon">›</text>
+            </view>
+          </view>
+        </view>
+      </template>
+
+      <!-- 我发出的喜欢列表 -->
+      <template v-else-if="activeTab === 'myLikes'">
+        <view v-if="likes.length === 0" class="likes-empty card-base">
+          <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.HEART" custom-class="likes-empty__icon" mode="aspectFit" />
+          <text class="likes-empty__title">还没有喜欢的人</text>
+          <text class="likes-empty__subtitle">在 discover 卡片右滑，给心动的人点个赞</text>
+        </view>
+
+        <view v-else class="likes-list">
+          <view
+            v-for="(item, idx) in likes"
+            :key="item.id"
+            class="likes-card list-item animate-fade-in press-feedback"
+            :class="{ 'likes-card--mutual': isMutualMatch(item.userId) }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            :style="{ animationDelay: idx * 60 + 'ms' }"
+            @tap="handleItemClick(item.userId)"
           >
             <view class="likes-card__avatar-wrap">
               <image
@@ -250,7 +337,7 @@ onShow(() => {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             :style="{ animationDelay: idx * 60 + 'ms' }"
-            @tap="goToUserDetail(item.userId)"
+            @tap="handleItemClick(item.userId)"
           >
             <view class="likes-card__avatar-wrap">
               <image
@@ -554,6 +641,16 @@ onShow(() => {
 .likes-card:active {
   transform: scale(0.98);
   box-shadow: var(--card-shadow-active);
+}
+
+/* 互相喜欢（匹配）项高亮，提示用户可点击进入聊天 */
+.likes-card--mutual {
+  border-color: var(--c-romance-300);
+  background: linear-gradient(135deg, var(--c-romance-50) 0%, var(--c-bg-container) 100%);
+}
+
+.likes-card--mutual .likes-card__arrow {
+  background: linear-gradient(135deg, var(--c-romance-200) 0%, var(--c-romance-100) 100%);
 }
 
 .likes-card__avatar-wrap {
