@@ -53,12 +53,12 @@ const t = designTokens;
   align-items: center;
   gap: 24rpx;
   padding: 28rpx 32rpx;
-  background: v-bind('t.color.bg.container');
-  border-bottom: 1rpx solid v-bind('t.color.border.light');
+  background: var(--c-bg-container);
+  border-bottom: 1rpx solid var(--c-border-light);
   cursor: pointer;
   transition: background 150ms ease;
 }
-.chat-item:active { background: v-bind('t.color.neutral[50]'); }
+.chat-item:active { background: var(--c-neutral-50); }
 
 .chat-item-avatar {
   flex-shrink: 0;
@@ -80,9 +80,9 @@ const t = designTokens;
   justify-content: space-between;
 }
 .chat-item-name {
-  font-size: v-bind('`${t.typography.size.body}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
-  color: v-bind('t.color.text.primary');
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -90,14 +90,14 @@ const t = designTokens;
   margin-right: 12rpx;
 }
 .chat-item-match {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
-  color: v-bind('t.color.pink[400]');
-  font-weight: v-bind('t.typography.weight.medium');
+  font-size: var(--fs-sm);
+  color: var(--c-pink-400);
+  font-weight: 500;
   flex-shrink: 0;
 }
 .chat-item-time {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
-  color: v-bind('t.color.text.quaternary');
+  font-size: var(--fs-sm);
+  color: var(--c-text-quaternary);
   flex-shrink: 0;
 }
 .chat-item-bottom {
@@ -106,8 +106,8 @@ const t = designTokens;
   justify-content: space-between;
 }
 .chat-item-msg {
-  font-size: v-bind('`${t.typography.size.bodySm}rpx`');
-  color: v-bind('t.color.text.quaternary');
+  font-size: var(--fs-base);
+  color: var(--c-text-quaternary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -117,12 +117,12 @@ const t = designTokens;
 .chat-item-official {
   flex-shrink: 0;
   padding: 4rpx 16rpx;
-  border-radius: v-bind('`${t.radius.sm}rpx`');
-  background: v-bind('t.color.brand[50]');
+  border-radius: var(--r-sm);
+  background: var(--c-brand-50);
 }
 .chat-item-official-text {
   font-size: 20rpx;
-  color: v-bind('t.color.brand[500]');
-  font-weight: v-bind('t.typography.weight.semibold');
+  color: var(--c-brand);
+  font-weight: 600;
 }
 </style>

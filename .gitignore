@@ -98,3 +98,4 @@ apps/api/target/
 # ===== 临时操作文件（不提交） =====
 .trae/documents/github-ssh-key-to-add.txt
 /github-ssh-key-to-add.txt
+project.private.config.json

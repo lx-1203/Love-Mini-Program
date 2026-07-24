@@ -21,11 +21,11 @@ const t = designTokens;
   gap: 4rpx;
 }
 .terms-text {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
+  font-size: var(--fs-sm);
   color: rgba(255,255,255,0.5);
 }
 .terms-link {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
+  font-size: var(--fs-sm);
   color: rgba(255,255,255,0.7);
   text-decoration: underline;
 }

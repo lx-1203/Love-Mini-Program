@@ -189,7 +189,7 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   justify-content: space-around;
   padding: 8rpx 0 calc(constant(safe-area-inset-bottom) + 12rpx);
   padding: 8rpx 0 calc(env(safe-area-inset-bottom) + 12rpx);
-  box-shadow: v-bind('t.shadow.sm');
+  box-shadow: var(--s-sm);
   z-index: 100;
 }
 

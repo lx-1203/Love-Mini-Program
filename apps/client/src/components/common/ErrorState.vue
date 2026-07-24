@@ -47,26 +47,26 @@ const subMap: Record<string, string> = { network: '请检查网络后重试', se
 }
 .error-icon { width: 120rpx; height: 120rpx; margin-bottom: 16rpx; }
 .error-msg {
-  font-size: v-bind('`${t.typography.size.subtitle}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
-  color: v-bind('t.color.text.secondary');
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-text-secondary);
 }
 .error-sub {
-  font-size: v-bind('`${t.typography.size.bodySm}rpx`');
-  color: v-bind('t.color.text.quaternary');
+  font-size: var(--fs-base);
+  color: var(--c-text-quaternary);
   margin-top: 8rpx;
 }
 .error-btn {
   margin-top: 32rpx;
   padding: 16rpx 48rpx;
   border-radius: 9999rpx;
-  background: v-bind('t.color.brand[400]');
+  background: var(--c-brand-400);
   cursor: pointer;
 }
 .error-btn:active { transform: scale(0.97); }
 .error-btn-text {
   color: #fff;
-  font-size: v-bind('`${t.typography.size.body}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
+  font-size: var(--fs-md);
+  font-weight: 600;
 }
 </style>

@@ -32,7 +32,7 @@ const t = designTokens;
 <style scoped>
 .banner {
   margin: 0 16rpx;
-  border-radius: v-bind('`${t.component.card.radius}rpx`');
+  border-radius: var(--r-lg);
   overflow: hidden;
   position: relative;
 }
@@ -43,14 +43,14 @@ const t = designTokens;
   left: -32rpx;
   right: -32rpx;
   height: 300rpx;
-  background: v-bind('t.color.gradient.pageAtmosphere');
+  background: var(--c-gradient-page);
   z-index: -1;
   border-radius: 0 0 40rpx 40rpx;
 }
 .banner-bg {
   position: absolute;
   inset: 0;
-  background: v-bind('t.color.gradient.brand');
+  background: var(--c-gradient-brand);
   z-index: 0;
 }
 .banner-bg::after {
@@ -115,17 +115,17 @@ const t = designTokens;
   padding: 32rpx;
 }
 .banner-greeting {
-  font-size: v-bind('`${t.typography.size.h2}rpx`');
-  font-weight: v-bind('t.typography.weight.bold');
+  font-size: var(--fs-3xl);
+  font-weight: 700;
   color: #fff;
   position: relative;
 }
 .banner-sub {
-  font-size: v-bind('`${t.typography.size.bodySm}rpx`');
+  font-size: var(--fs-base);
   color: rgba(255,255,255,0.85);
   margin-top: 8rpx;
   position: relative;
-  line-height: v-bind('t.typography.lineHeight.normal');
+  line-height: 1.5;
 }
 .banner-tags {
   display: flex;
@@ -143,8 +143,8 @@ const t = designTokens;
   // #endif
 }
 .banner-tag-text {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
-  font-weight: v-bind('t.typography.weight.medium');
+  font-size: var(--fs-sm);
+  font-weight: 500;
   color: #fff;
 }
 </style>

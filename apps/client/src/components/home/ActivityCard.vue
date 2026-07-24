@@ -40,12 +40,12 @@ const statusClass = (status?: string) => {
 <style scoped>
 .activity-card {
   min-width: 400rpx;
-  border-radius: v-bind('`${t.radius.xl}rpx`');
+  border-radius: var(--r-xl);
   overflow: hidden;
-  background: v-bind('t.color.bg.container');
+  background: var(--c-bg-container);
   box-shadow: var(--c-elevation-1);
   border: var(--c-border-card);
-  transition: transform v-bind('`${t.motion.duration.normal}ms`') v-bind('t.motion.easing.default'), box-shadow v-bind('`${t.motion.duration.normal}ms`') v-bind('t.motion.easing.default'), border-color v-bind('`${t.motion.duration.normal}ms`') v-bind('t.motion.easing.default');
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
 .activity-card:active {
@@ -56,7 +56,7 @@ const statusClass = (status?: string) => {
 
 .activity-cover {
   height: 200rpx;
-  background: linear-gradient(135deg, v-bind('t.color.brand[100]'), v-bind('t.color.brand[50]'));
+  background: linear-gradient(135deg, var(--c-brand-100), var(--c-brand-50));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,7 +77,7 @@ const statusClass = (status?: string) => {
   top: 16rpx;
   left: 16rpx;
   padding: 4rpx 16rpx;
-  border-radius: v-bind('`${t.radius.sm}rpx`');
+  border-radius: var(--r-sm);
   /* mp-weixin 不支持，H5 保留毛玻璃 */
   // #ifdef H5
   backdrop-filter: blur(12rpx);
@@ -94,17 +94,17 @@ const statusClass = (status?: string) => {
 }
 .activity-tag-text {
   font-size: 20rpx;
-  font-weight: v-bind('t.typography.weight.semibold');
+  font-weight: 600;
   color: #fff;
 }
 .activity-emoji { font-size: 56rpx; }
 
 .activity-info { padding: 20rpx; }
 .activity-title {
-  font-size: v-bind('`${t.typography.size.body}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
-  color: v-bind('t.color.text.primary');
-  line-height: v-bind('t.typography.lineHeight.tight');
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text-primary);
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -116,7 +116,7 @@ const statusClass = (status?: string) => {
   flex-wrap: wrap;
 }
 .activity-meta-item {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
-  color: v-bind('t.color.text.quaternary');
+  font-size: var(--fs-sm);
+  color: var(--c-text-quaternary);
 }
 </style>

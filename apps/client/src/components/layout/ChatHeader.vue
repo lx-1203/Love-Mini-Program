@@ -33,14 +33,14 @@ const t = designTokens;
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 32rpx 20rpx;
-  background: v-bind('t.color.bg.container');
-  border-bottom: 1rpx solid v-bind('t.color.border.light');
+  background: var(--c-bg-container);
+  border-bottom: 1rpx solid var(--c-border-light);
 }
 .chat-title {
-  font-size: v-bind('`${t.typography.size.h3}rpx`');
-  font-weight: v-bind('t.typography.weight.bold');
-  color: v-bind('t.color.text.primary');
-  letter-spacing: v-bind('t.typography.letterSpacing.tight');
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  letter-spacing: -0.02em;
 }
 .chat-icons {
   display: flex;
@@ -50,17 +50,17 @@ const t = designTokens;
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: v-bind('t.color.neutral[50]');
+  background: var(--c-neutral-50);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28rpx;
-  color: v-bind('t.color.text.tertiary');
+  color: var(--c-text-tertiary);
   cursor: pointer;
   transition: background 150ms ease;
 }
 .chat-icon:active {
-  background: v-bind('t.color.brand[100]');
+  background: var(--c-brand-100);
   transform: scale(0.95);
 }
 </style>

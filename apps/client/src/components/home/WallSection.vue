@@ -66,7 +66,7 @@ const t = designTokens;
   gap: 24rpx;
 }
 .wall-skeleton {
-  border-radius: v-bind('`${t.radius.xl}rpx`');
+  border-radius: var(--r-xl);
   overflow: hidden;
 }
 .skeleton-card {

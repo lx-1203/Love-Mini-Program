@@ -1,52 +1,25 @@
-﻿{
-  "description": "校园恋爱 - 微信小程序",
-  "miniprogramRoot": "apps/client/dist/build/mp-weixin/",
-  "packOptions": {
-    "ignore": [],
-    "include": []
-  },
+{
   "setting": {
-    "bundle": false,
-    "userConfirmedBundle": false,
-    "urlCheck": true,
-    "scopeDataCheck": false,
-    "coverView": true,
     "es6": true,
     "postcss": true,
-    "compileHotReLoad": false,
-    "lazyloadPlaceholderEnable": false,
-    "preloadBackgroundData": false,
     "minified": true,
-    "autoAudits": false,
-    "newFeature": false,
     "uglifyFileName": false,
-    "uploadWithSourceMap": true,
-    "useIsolateContext": true,
-    "nodeModules": false,
     "enhance": true,
-    "useMultiFrameRuntime": true,
-    "useApiHook": true,
-    "useApiHostProcess": true,
-    "showShadowRootInWxmlPanel": true,
-    "packNpmManually": false,
-    "enableEngc": false,
     "packNpmRelationList": [],
-    "minifyWXSS": true,
-    "showES6CompileOption": false,
-    "minifyWXML": true,
     "babelSetting": {
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    }
+    },
+    "useCompilerPlugins": false
   },
   "compileType": "miniprogram",
-  "libVersion": "3.7.12",
-  "appid": "",
-  "projectname": "校园恋爱",
-  "condition": {},
-  "editorSetting": {
-    "tabIndent": "insertSpaces",
-    "tabSize": 2
-  }
+  "miniprogramRoot": "apps/client/dist/build/mp-weixin",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "appid": "wx67d7f1aa83e60822",
+  "editorSetting": {}
 }

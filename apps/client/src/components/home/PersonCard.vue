@@ -49,12 +49,12 @@ const t = designTokens;
   align-items: center;
   gap: 20rpx;
   padding: 24rpx;
-  border-radius: v-bind('`${t.radius.xl}rpx`');
-  background: v-bind('t.color.bg.container');
+  border-radius: var(--r-xl);
+  background: var(--c-bg-container);
   box-shadow: var(--c-elevation-1);
   border: var(--c-border-card);
   cursor: pointer;
-  transition: transform v-bind('`${t.motion.duration.normal}ms`') v-bind('t.motion.easing.default'), box-shadow v-bind('`${t.motion.duration.normal}ms`') v-bind('t.motion.easing.default'), border-color v-bind('`${t.motion.duration.normal}ms`') v-bind('t.motion.easing.default');
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .person-card:active {
   transform: translateY(-2rpx);
@@ -67,7 +67,7 @@ const t = designTokens;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: box-shadow v-bind('`${t.motion.duration.normal}ms`') v-bind('t.motion.easing.default');
+  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .person-avatar--halo {
@@ -82,18 +82,18 @@ const t = designTokens;
   gap: 4rpx;
 }
 .person-name {
-  font-size: v-bind('`${t.typography.size.body}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
-  color: v-bind('t.color.text.primary');
-  line-height: v-bind('t.typography.lineHeight.tight');
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text-primary);
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .person-headline {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
-  color: v-bind('t.color.text.tertiary');
-  line-height: v-bind('t.typography.lineHeight.tight');
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -106,33 +106,33 @@ const t = designTokens;
 }
 .person-tag {
   padding: 2rpx 12rpx;
-  border-radius: v-bind('`${t.radius.sm}rpx`');
+  border-radius: var(--r-sm);
   font-size: 20rpx;
-  font-weight: v-bind('t.typography.weight.medium');
+  font-weight: 500;
 }
 .person-tag--school {
-  background: v-bind('t.color.brand[50]');
-  color: v-bind('t.color.brand[500]');
+  background: var(--c-brand-50);
+  color: var(--c-brand);
 }
 .person-tag--major {
-  background: v-bind('t.color.accent[50]');
-  color: v-bind('t.color.accent[500]');
+  background: var(--c-apricot-50);
+  color: var(--c-accent-400);
 }
 .person-tag--circle {
-  background: v-bind('t.color.neutral[100]');
-  color: v-bind('t.color.text.tertiary');
+  background: var(--c-neutral-100);
+  color: var(--c-text-tertiary);
 }
 
 .person-action {
   padding: 12rpx 24rpx;
   border-radius: 9999rpx;
-  background: v-bind('t.color.brand[400]');
+  background: var(--c-brand-400);
   flex-shrink: 0;
 }
-.person-action:active { background: v-bind('t.color.brand[500]'); }
+.person-action:active { background: var(--c-brand); }
 .person-action-text {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
+  font-size: var(--fs-sm);
+  font-weight: 600;
   color: #fff;
 }
 </style>

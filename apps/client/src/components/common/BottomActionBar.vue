@@ -38,31 +38,31 @@ const t = designTokens;
   flex: 1;
   height: 88rpx;
   border: 0;
-  border-radius: v-bind('`${t.component.button.radius}rpx`');
+  border-radius: var(--r-xl);
   font-size: 28rpx;
   font-weight: 700;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bar__primary {
-  background: v-bind('t.color.gradient.brand');
+  background: var(--c-gradient-brand);
   color: #fff;
-  box-shadow: v-bind('t.shadow.brand');
+  box-shadow: var(--s-brand);
 }
 .bar__primary:active {
   transform: scale(0.97);
   transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: v-bind('t.shadow.brandMd');
+  box-shadow: var(--s-brand-md);
 }
 
 .bar__secondary {
-  background: v-bind('t.color.bg.container');
-  color: v-bind('t.color.text.primary');
-  border: 1rpx solid v-bind('t.color.border.default');
+  background: var(--c-bg-container);
+  color: var(--c-text-primary);
+  border: 1rpx solid var(--c-border-default);
 }
 .bar__secondary:active {
   transform: scale(0.97);
   transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
-  background: v-bind('t.color.neutral[100]');
+  background: var(--c-neutral-100);
 }
 </style>

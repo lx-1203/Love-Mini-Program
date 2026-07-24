@@ -53,15 +53,15 @@ const t = designTokens;
   gap: 16rpx;
 }
 .skeleton-item {
-  border-radius: v-bind('`${t.radius.xl}rpx`');
+  border-radius: var(--r-xl);
   overflow: hidden;
 }
 .shimmer {
   background: linear-gradient(
     90deg,
-    v-bind('t.color.neutral[100]') 25%,
-    v-bind('t.color.neutral[200]') 50%,
-    v-bind('t.color.neutral[100]') 75%
+    var(--c-neutral-100) 25%,
+    var(--c-neutral-200) 50%,
+    var(--c-neutral-100) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
@@ -77,8 +77,8 @@ const t = designTokens;
   align-items: center;
   gap: 16rpx;
   padding: 24rpx;
-  background: v-bind('t.color.bg.container');
-  border-radius: v-bind('`${t.radius.xl}rpx`');
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
 }
 .skeleton-avatar {
   width: 88rpx;
@@ -122,14 +122,14 @@ const t = designTokens;
   flex-direction: column;
   gap: 16rpx;
   padding: 32rpx 24rpx;
-  background: v-bind('t.color.bg.container');
-  border-radius: v-bind('`${t.radius.xl}rpx`');
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
 }
 
 /* ---- 卡片 ---- */
 .skeleton-card {
-  background: v-bind('t.color.bg.container');
-  border-radius: v-bind('`${t.radius.xl}rpx`');
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
   overflow: hidden;
 }
 .skeleton-card-img {

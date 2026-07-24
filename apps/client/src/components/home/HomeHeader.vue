@@ -48,9 +48,9 @@ const t = designTokens;
   gap: 12rpx;
 }
 .header-school {
-  font-size: v-bind('`${t.typography.size.h3}rpx`');
-  font-weight: v-bind('t.typography.weight.bold');
-  color: v-bind('t.color.text.primary');
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--c-text-primary);
   max-width: 240rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -60,18 +60,18 @@ const t = designTokens;
   width: 28rpx;
   height: 28rpx;
   transform: rotate(90deg);
-  transition: transform v-bind('`${t.motion.duration.normal}ms`') v-bind('t.motion.easing.default');
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .header-badge {
   padding: 4rpx 16rpx;
   border-radius: 9999rpx;
-  background: v-bind('t.color.brand[50]');
-  border: 1rpx solid v-bind('t.color.brand[100]');
+  background: var(--c-brand-50);
+  border: 1rpx solid var(--c-brand-100);
 }
 .header-badge-text {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
-  color: v-bind('t.color.brand[500]');
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-brand);
 }
 .header-right {
   display: flex;
@@ -81,17 +81,17 @@ const t = designTokens;
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: v-bind('t.color.neutral[100]');
+  background: var(--c-neutral-100);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28rpx;
-  color: v-bind('t.color.text.tertiary');
+  color: var(--c-text-tertiary);
   cursor: pointer;
   position: relative;
 }
 /* #ifdef H5 */
-.header-icon:hover { background: v-bind('t.color.brand[100]'); }
+.header-icon:hover { background: var(--c-brand-100); }
 /* #endif */
 .header-dot {
   position: absolute;
@@ -100,7 +100,7 @@ const t = designTokens;
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background: v-bind('t.color.error');
+  background: var(--c-error);
   border: 3rpx solid #fff;
 }
 </style>

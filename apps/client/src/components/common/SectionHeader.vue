@@ -35,13 +35,13 @@ const t = designTokens;
   padding: 32rpx 0 20rpx;
 }
 .section-title {
-  font-size: v-bind('`${t.typography.size.h2}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
-  color: v-bind('t.color.text.primary');
-  letter-spacing: v-bind('t.typography.letterSpacing.tight');
+  font-size: var(--fs-3xl);
+  font-weight: 600;
+  color: var(--c-text-primary);
+  letter-spacing: -0.02em;
 }
 .section-more-text {
-  font-size: v-bind('`${t.typography.size.bodySm}rpx`');
-  color: v-bind('t.color.text.quaternary');
+  font-size: var(--fs-base);
+  color: var(--c-text-quaternary);
 }
 </style>

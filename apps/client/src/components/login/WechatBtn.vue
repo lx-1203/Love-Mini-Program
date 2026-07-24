@@ -32,7 +32,7 @@ const t = designTokens;
   width: 100%;
   height: 104rpx;
   border-radius: 9999rpx;
-  background: v-bind('t.color.gradient.brand');
+  background: var(--c-gradient-brand);
   border: none;
   display: flex;
   align-items: center;

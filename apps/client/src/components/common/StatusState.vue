@@ -50,8 +50,8 @@ const iconSrc = computed(() => {
 }
 
 .pill--brand {
-  background: v-bind('t.color.brand[50]');
-  color: v-bind('t.color.brand[500]');
+  background: var(--c-brand-50);
+  color: var(--c-brand);
 }
 
 .pill--success {

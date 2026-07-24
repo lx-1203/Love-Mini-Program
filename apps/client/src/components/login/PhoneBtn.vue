@@ -40,8 +40,8 @@ const t = designTokens;
 /* #endif */
 .phone-btn--loading { opacity: 0.7; pointer-events: none; }
 .phone-btn-text {
-  font-size: v-bind('`${t.typography.size.subtitle}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
+  font-size: var(--fs-lg);
+  font-weight: 600;
   color: rgba(255,255,255,0.8);
 }
 </style>

@@ -614,7 +614,7 @@ view, button, scroll-view, swiper, input, textarea {
 }
 
 /* TabBar 容器高度参考（供页面计算偏移用） */
-:root {
+page {
   --tabbar-height: calc(140rpx + env(safe-area-inset-bottom));
 }
 

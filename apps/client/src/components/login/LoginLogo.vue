@@ -38,7 +38,7 @@ const t = designTokens;
   width: 144rpx;
   height: 144rpx;
   border-radius: 40rpx;
-  background: v-bind('t.color.gradient.brand');
+  background: var(--c-gradient-brand);
   display: flex;
   align-items: center;
   justify-content: center;

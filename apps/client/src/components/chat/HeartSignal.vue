@@ -33,23 +33,23 @@ const t = designTokens;
 <style scoped>
 .heart-signal {
   margin: 20rpx 32rpx;
-  background: v-bind('t.color.brand[50]');
-  border-radius: v-bind('`${t.radius.lg}rpx`');
+  background: var(--c-brand-50);
+  border-radius: var(--r-lg);
   padding: 24rpx;
-  border: 1rpx solid v-bind('t.color.brand[100]');
+  border: 1rpx solid var(--c-brand-100);
   display: flex;
   align-items: center;
   gap: 20rpx;
   cursor: pointer;
   transition: background 200ms ease;
 }
-.heart-signal:active { background: v-bind('t.color.brand[100]'); }
+.heart-signal:active { background: var(--c-brand-100); }
 
 .signal-icon {
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
-  background: v-bind('t.color.brand[400]');
+  background: var(--c-brand-400);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -71,21 +71,21 @@ const t = designTokens;
 
 .signal-info { flex: 1; }
 .signal-title {
-  font-size: v-bind('`${t.typography.size.body}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
-  color: v-bind('t.color.text.primary');
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text-primary);
 }
 .signal-sub {
-  font-size: v-bind('`${t.typography.size.caption}rpx`');
-  color: v-bind('t.color.text.quaternary');
+  font-size: var(--fs-sm);
+  color: var(--c-text-quaternary);
   margin-top: 4rpx;
 }
 
 .signal-countdown { flex-shrink: 0; }
 .signal-time {
-  font-size: v-bind('`${t.typography.size.h2}rpx`');
-  font-weight: v-bind('t.typography.weight.bold');
-  color: v-bind('t.color.brand[400]');
-  letter-spacing: v-bind('t.typography.letterSpacing.tight');
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+  color: var(--c-brand-400);
+  letter-spacing: -0.02em;
 }
 </style>

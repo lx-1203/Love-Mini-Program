@@ -43,13 +43,13 @@ const subMap: Record<string, string> = { 'no-data': '这里空空如也', 'no-ma
 }
 .empty-icon { width: 120rpx; height: 120rpx; margin-bottom: 16rpx; }
 .empty-msg {
-  font-size: v-bind('`${t.typography.size.subtitle}rpx`');
-  font-weight: v-bind('t.typography.weight.semibold');
-  color: v-bind('t.color.text.secondary');
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-text-secondary);
 }
 .empty-sub {
-  font-size: v-bind('`${t.typography.size.bodySm}rpx`');
-  color: v-bind('t.color.text.quaternary');
+  font-size: var(--fs-base);
+  color: var(--c-text-quaternary);
   margin-top: 8rpx;
 }
 </style>
