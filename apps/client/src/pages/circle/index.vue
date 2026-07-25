@@ -141,6 +141,23 @@ function toggleCollect(postId: string) {
 function goToPost() {
   openAppPath("/subpackages/circle/post/index");
 }
+
+/** 帖子卡片点击 */
+function handleCardTap(_postId: string) {
+  uni.showToast({ title: "详情开发中", icon: "none" });
+}
+
+/** 分享按钮处理 */
+function handleShare() {
+  try {
+    uni.showShareMenu({
+      withShareTicket: true,
+      menus: ["shareAppMessage", "shareTimeline"],
+    });
+  } catch (_e) {
+    uni.showToast({ title: "分享功能开发中", icon: "none" });
+  }
+}
 </script>
 
 <template>
@@ -166,7 +183,7 @@ function goToPost() {
     <!-- 帖子列表 -->
     <scroll-view scroll-y class="circle-scroll">
       <view class="post-list">
-        <view v-for="(post, index) in posts" :key="post.id" class="post-card" :style="{ animationDelay: index * 80 + 'ms' }">
+        <view v-for="(post, index) in posts" :key="post.id" class="post-card" :style="{ animationDelay: index * 80 + 'ms' }" @tap="handleCardTap(post.id)">
           <!-- 用户信息头部 -->
           <view class="post-card__header">
             <view class="post-card__user">
@@ -174,7 +191,9 @@ function goToPost() {
               <view class="post-card__meta">
                 <view class="post-card__name-row">
                   <text class="post-card__nickname">{{ post.nickname }}</text>
-                  <view class="post-card__gender-badge post-card__gender-badge--male">♂</view>
+                  <view class="post-card__gender-badge post-card__gender-badge--male">
+                    <image class="post-card__gender-badge-img" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" />
+                  </view>
                 </view>
                 <text class="post-card__school">{{ post.school }} · {{ post.grade }}</text>
               </view>
@@ -228,7 +247,7 @@ function goToPost() {
                 <text class="post-card__action-count">{{ post.comments }}</text>
               </view>
               <!-- 分享 -->
-              <view class="post-card__action" @tap.stop>
+              <view class="post-card__action" @tap.stop="handleShare">
                 <image class="post-card__action-icon" :src="emojiIcons.share" mode="aspectFit" />
                 <text v-if="post.shares > 0" class="post-card__action-count">{{ post.shares }}</text>
               </view>
@@ -247,7 +266,7 @@ function goToPost() {
 
     <!-- 悬浮发帖按钮 FAB -->
     <view class="fab-post" @tap="goToPost">
-      <text class="fab-post__icon">✏️</text>
+      <text class="fab-post__icon-text">+</text>
     </view>
   </view>
 </template>
@@ -627,7 +646,7 @@ function goToPost() {
 .fab-post {
   position: fixed;
   right: 32rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 160rpx);
+  bottom: calc(env(safe-area-inset-bottom) + 150rpx);
   width: 104rpx;
   height: 104rpx;
   border-radius: 50%;

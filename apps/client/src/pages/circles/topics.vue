@@ -125,7 +125,9 @@ onLoad((query) => {
 
     <!-- 错误状态 -->
     <view v-else-if="errorMessage && currentTopics.length === 0" class="topics-state">
-      <view class="error-icon">😔</view>
+      <view class="error-icon">
+        <image class="error-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" />
+      </view>
       <text class="topics-state__text">{{ errorMessage }}</text>
       <view class="topics-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="onRefresh">
         <text class="topics-state__btn-text">重试</text>
@@ -480,7 +482,7 @@ onLoad((query) => {
 .fab {
   position: fixed;
   right: 40rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 120rpx);
+  bottom: calc(env(safe-area-inset-bottom) + 150rpx);
   width: 112rpx;
   height: 112rpx;
   border-radius: 50%;

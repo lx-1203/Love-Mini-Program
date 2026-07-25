@@ -8,7 +8,7 @@ const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
-const ICONS_DIR = 'D:\\6\\恋爱小程序\\apps\\client\\src\\static\\assets\\icons';
+const ICONS_DIR = path.resolve(__dirname, '../apps/client/src/static/assets/icons');
 
 // 图标映射：[outline文件, filled文件, 输出基础名]
 const icons = [

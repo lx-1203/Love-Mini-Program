@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
-import { appEnv, isDev } from "../services/env";
+import { isDev, isMockMode } from "../services/env";
 import { toLoginHeroView } from "../view-models/login";
 import { MOCK_LOGIN_HERO } from "../features/login/hero";
 import type { components } from "../services/generated/api-types";
@@ -9,10 +9,8 @@ type Schemas = components["schemas"];
 type UserSession = Schemas["UserSession"];
 type LoginHeroConfig = Schemas["LoginHeroConfig"];
 
-/** 判断当前是否为 Mock 模式 */
-function useMock() {
-  return appEnv.apiMode === "mock";
-}
+/** 判断当前是否为 Mock 模式（引用 env.ts 统一导出） */
+const useMock = isMockMode;
 
 /* ========== Mock 数据 ========== */
 

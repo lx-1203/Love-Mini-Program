@@ -5,7 +5,7 @@ echo   校园恋爱 - 后端启动 (Mock模式)
 echo ========================================
 echo.
 
-cd /d "D:\6\恋爱小程序\apps\api"
+cd /d "%~dp0..\apps\api"
 
 echo [1/2] 编译...
 call .\mvnw.cmd package -DskipTests -q

@@ -13,9 +13,9 @@
 
 import { CAMPUS_IMAGES, HOME_POSTER } from "../config/assets-index";
 
-// ===== Agnes AI 配置 =====
-const AGNES_API_BASE = "https://api.agnes-ai.com/api";
-const AGNES_API_KEY = "sk-PeAzA2C0MerWSzrqDbmiB0xFYTVFT3WJnzkfBC9zv0wjMWLT";
+// ===== 后端代理端点 =====
+const BACKEND_AI_VIDEO = "/api/ai/video/generate";
+const BACKEND_AI_IMAGE = "/api/ai/image/generate";
 
 // ===== 素材访问 =====
 // 注：原 getHomeVideoUrl 已删除（缺失视频文件）。如需启用，请先在 assets-index.ts 中补充视频路径。
@@ -37,12 +37,12 @@ interface ImageGenerateParams {
   size?: string;
 }
 
-/** 调用 Agnes AI 生成视频 */
+/** 调用后端代理生成视频 */
 export async function callVideoGenerate(params: VideoGenerateParams) {
   const response = await uni.request({
-    url: AGNES_API_BASE + "/video/generate",
+    url: BACKEND_AI_VIDEO,
     method: "POST",
-    header: { Authorization: "Bearer " + AGNES_API_KEY, "Content-Type": "application/json" },
+    header: { "Content-Type": "application/json" },
     data: {
       prompt: params.prompt,
       duration: params.duration || 5,
@@ -53,12 +53,12 @@ export async function callVideoGenerate(params: VideoGenerateParams) {
   return response.data as { id: string; status: string; videoUrl?: string; posterUrl?: string; error?: string };
 }
 
-/** 调用 Agnes AI 生成图片 */
+/** 调用后端代理生成图片 */
 export async function callImageGenerate(params: ImageGenerateParams) {
   const response = await uni.request({
-    url: AGNES_API_BASE + "/image/generate",
+    url: BACKEND_AI_IMAGE,
     method: "POST",
-    header: { Authorization: "Bearer " + AGNES_API_KEY, "Content-Type": "application/json" },
+    header: { "Content-Type": "application/json" },
     data: { prompt: params.prompt, n: params.n || 1, size: params.size || "1024x1024" },
   });
   return response.data as { data?: { url: string }[]; url?: string; image_url?: string };
@@ -72,10 +72,10 @@ export const CAMPUS_VIDEO_PROMPTS = {
   graduation: "毕业季场景：穿着学士服合影，抛学士帽，拥抱告别，青春的记忆，感人的校园时光",
 } as const;
 
-/** 获取 API 状态 (调试用) */
+/** 获取 API 状态 (调试用, 通过后端代理) */
 export async function checkApiHealth() {
   const response = await uni.request({
-    url: AGNES_API_BASE + "/health",
+    url: "/api/ai/health",
     method: "GET",
   });
   return response.data as { code: string; message: string; data: { status: string } };

@@ -12,7 +12,7 @@ import ChatBubble from "../../src/components/chat/ChatBubble.vue";
 import { useMessagesStore } from "../../src/stores/messages";
 import { useChatStore } from "../../src/stores/chat";
 import { usePageAccess } from "../../src/composables/usePageAccess";
-import { chatPageRequirements } from "../../src/config/page-access";
+import { messagesPageRequirements } from "../../src/config/page-access";
 
 const messagesStore = useMessagesStore();
 const chatStore = useChatStore();
@@ -24,7 +24,7 @@ const pageErrorMessage = ref<string | null>(null);
 const tempCountdown = ref("");
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
-usePageAccess(chatPageRequirements);
+usePageAccess(messagesPageRequirements);
 
 onLoad((query) => {
   if (query && typeof query.sessionId === "string" && query.sessionId.trim().length > 0) {

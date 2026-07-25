@@ -735,6 +735,7 @@ onShow(() => {
   background: var(--c-gradient-page);
   padding: var(--sp-6) var(--sp-8);
   padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
+  padding-bottom: calc(env(safe-area-inset-bottom) + 160rpx);
   box-sizing: border-box;
   position: relative;
 }

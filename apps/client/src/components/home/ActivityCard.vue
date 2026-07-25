@@ -152,7 +152,10 @@ const ariaLabel = computed(() =>
   font-weight: 600;
   color: var(--c-text-inverse, #fff);
 }
-.activity-emoji { font-size: 56rpx; }
+.activity-emoji {
+  width: 56rpx;
+  height: 56rpx;
+}
 
 .activity-info { padding: 20rpx; }
 .activity-title {

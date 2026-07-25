@@ -22,7 +22,7 @@ const requiredPaths = [
   "../apps/client/.env.real",
   "../apps/client/App.vue",
   "../apps/client/main.ts",
-  "../apps/client/pages.json",
+  "../apps/client/src/pages.json",
   "../apps/client/manifest.json",
   "../apps/client/tsconfig.json",
   "../apps/client/uni.scss",
@@ -125,12 +125,21 @@ assert.ok(clientPackageJson.dependencies.pinia);
 assert.equal(typeof clientPackageJson.scripts["dev:h5:real"], "string");
 assert.equal(typeof clientPackageJson.scripts["build:h5:real"], "string");
 
-const pagesJson = JSON.parse(
-  readFileSync(new URL("../apps/client/pages.json", import.meta.url), "utf8")
+const pagesJsonRaw = readFileSync(
+  new URL("../apps/client/src/pages.json", import.meta.url),
+  "utf8"
 );
-// 主包页面数量：包含 login/home/discover/likes/village/messages/profile/circles/daily-question/chat/chat-session
-// 以及新增的 chat/video-call、chat/red-packet，共 20 个根页面
-assert.equal(pagesJson.pages.length, 20, "main package should contain twenty root pages");
+// src/pages.json 使用 JSONC 格式（含注释），需剥离块注释与行注释后再 JSON.parse
+const pagesJson = JSON.parse(
+  pagesJsonRaw
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "")
+);
+// 主包页面数量：src/pages.json 包含全部主包页面（login/home/discover/likes/village/messages/
+// profile/circles/daily-question/chat/chat-session/shop/campus/verification/heart-signals/
+// vip/chat-video-call/chat-red-packet/dev/profile-visitors/profile-album/settings-dnd/feedback-history）
+// 共 38 个根页面
+assert.equal(pagesJson.pages.length, 38, "main package should contain thirty-eight root pages");
 assert.equal(pagesJson.subPackages.length, 3, "client should use three subpackages");
 assert.ok(pagesJson.tabBar, "tab bar should be configured");
 assert.ok(pagesJson.easycom, "easycom should be configured for uni-ui");

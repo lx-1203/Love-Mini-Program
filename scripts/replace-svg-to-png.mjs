@@ -12,7 +12,7 @@ function walk(d) {
   return r;
 }
 
-const files = walk('d:/6/恋爱小程序/apps/client/src');
+const files = walk(path.resolve(process.cwd(), 'apps/client/src'));
 let total = 0;
 for (const f of files) {
   let c = fs.readFileSync(f, 'utf8');
@@ -22,7 +22,7 @@ for (const f of files) {
     const count = (before.match(/\.svg/g) || []).length - (c.match(/\.svg/g) || []).length;
     total += count;
     fs.writeFileSync(f, c, 'utf8');
-    console.log('Updated:', f.replace('d:/6/恋爱小程序/apps/client/src/', ''), 'replaced:', count);
+    console.log('Updated:', f.replace(path.resolve(process.cwd(), 'apps/client/src/'), ''), 'replaced:', count);
   }
 }
 console.log('Total replaced:', total);

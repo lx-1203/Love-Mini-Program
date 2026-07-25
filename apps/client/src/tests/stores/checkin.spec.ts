@@ -6,6 +6,7 @@ vi.mock("../../services/env", () => ({
     apiMode: "mock",
     apiBaseUrl: "http://127.0.0.1:8080/api",
   },
+  isMockMode: () => true,
 }));
 
 // stub global uni

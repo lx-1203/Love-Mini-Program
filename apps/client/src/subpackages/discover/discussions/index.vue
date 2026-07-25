@@ -5,7 +5,7 @@ import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 import StatusState from "../../../components/common/StatusState.vue";
-import { homePageRequirements } from "../../../config/page-access";
+import { discoverPageRequirements } from "../../../config/page-access";
 import { usePageAccess } from "../../../composables/usePageAccess";
 import { clientApi } from "../../../services/api";
 import { openAppPath } from "../../../utils/navigation";
@@ -15,7 +15,7 @@ const loading = ref(false);
 /** 加载失败时的错误状态，供 UI 展示重试入口 */
 const error = ref<string | null>(null);
 
-usePageAccess(homePageRequirements);
+usePageAccess(discoverPageRequirements);
 
 onShow(() => {
   void loadDiscussions();

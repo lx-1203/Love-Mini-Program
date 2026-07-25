@@ -290,6 +290,11 @@ function onReportSubmitted() {
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   padding: 4rpx 0;
 }
+.wall-action__icon {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+}
 .wall-action:active {
   transform: scale(0.97);
   color: var(--c-brand-400);

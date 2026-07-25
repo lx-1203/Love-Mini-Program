@@ -109,6 +109,55 @@ export const IMAGE_PATHS = {
     STAR_SVG: ICONS_BASE + '/common/star.svg',
     SCHEDULE_SVG: ICONS_BASE + '/common/schedule.svg',
     GRADUATION_SVG: ICONS_BASE + '/common/graduation.svg',
+    // 新增 SVG 图标（feather/lucide 风格 24x24 stroke，替换 emoji）
+    USER_SVG: ICONS_BASE + '/common/user.svg',
+    WARNING_SVG: ICONS_BASE + '/common/warning.svg',
+    BOOK_SVG: ICONS_BASE + '/common/book.svg',
+    FOOD_SVG: ICONS_BASE + '/common/food.svg',
+    HIKING_SVG: ICONS_BASE + '/common/hiking.svg',
+    RULER_SVG: ICONS_BASE + '/common/ruler.svg',
+    MONEY_SVG: ICONS_BASE + '/common/money.svg',
+    LOCK_SVG: ICONS_BASE + '/common/lock.svg',
+    PENCIL_SVG: ICONS_BASE + '/common/pencil.svg',
+    EYE_SVG: ICONS_BASE + '/common/eye.svg',
+    EYE_OFF_SVG: ICONS_BASE + '/common/eye-off.svg',
+    BELL_SVG: ICONS_BASE + '/common/bell.svg',
+    PROHIBITED_SVG: ICONS_BASE + '/common/prohibited.svg',
+    SHARE_ICON_SVG: ICONS_BASE + '/common/share.svg',
+    OPEN_BOOK_SVG: ICONS_BASE + '/common/open-book.svg',
+    TREND_UP_SVG: ICONS_BASE + '/common/trend-up.svg',
+    CHART_SVG: ICONS_BASE + '/common/chart.svg',
+    CLIPBOARD_SVG: ICONS_BASE + '/common/clipboard.svg',
+    KEY_SVG: ICONS_BASE + '/common/key.svg',
+    MOBILE_SVG: ICONS_BASE + '/common/mobile.svg',
+    CLOCK_SVG: ICONS_BASE + '/common/clock.svg',
+    CALENDAR_SVG: ICONS_BASE + '/common/calendar.svg',
+    HEART_FILLED_SVG: ICONS_BASE + '/common/heart-filled.svg',
+    CROWN_SVG: ICONS_BASE + '/common/crown.svg',
+    REFRESH_SVG: ICONS_BASE + '/common/refresh.svg',
+    FILE_TEXT_SVG: ICONS_BASE + '/common/file-text.svg',
+    INFO_SVG: ICONS_BASE + '/common/info.svg',
+    LOG_OUT_SVG: ICONS_BASE + '/common/log-out.svg',
+    CHEVRON_DOWN_SVG: ICONS_BASE + '/common/chevron-down.svg',
+    UPLOAD_SVG: ICONS_BASE + '/common/upload.svg',
+    PACKAGE_SVG: ICONS_BASE + '/common/package.svg',
+    BOX_SVG: ICONS_BASE + '/common/box.svg',
+    PIN_SVG: ICONS_BASE + '/common/pin.svg',
+    CHECK_CIRCLE_SVG: ICONS_BASE + '/common/check-circle.svg',
+    X_CIRCLE_SVG: ICONS_BASE + '/common/x-circle.svg',
+    GRADUATION_CAP_SVG: ICONS_BASE + '/common/graduation-cap.svg',
+    CHEVRON_RIGHT_SVG: ICONS_BASE + '/common/chevron-right.svg',
+    CHEVRON_LEFT_SVG: ICONS_BASE + '/common/chevron-left.svg',
+    BOLT_SVG: ICONS_BASE + '/common/bolt.svg',
+    LIST_SVG: ICONS_BASE + '/common/list.svg',
+    CHECK_FAIL_SVG: ICONS_BASE + '/common/check-fail.svg',
+    PENDING_SVG: ICONS_BASE + '/common/pending.svg',
+    SETTINGS_GEAR_SVG: ICONS_BASE + '/common/settings-gear.svg',
+    TERMINAL_SVG: ICONS_BASE + '/common/terminal.svg',
+    ROBOT_SVG: ICONS_BASE + '/common/robot.svg',
+    LOG_IN_SVG: ICONS_BASE + '/common/log-in.svg',
+    DOWNLOAD_SVG: ICONS_BASE + '/common/download.svg',
+    VIDEO_SVG: ICONS_BASE + '/common/video.svg',
   },
 
   /** 社交图标（social 目录） */
@@ -175,5 +224,50 @@ export const IMAGE_PATHS = {
     GIFT:        ICONS_BASE + '/gift.svg',        // 🎁 礼物
     FIRE:        ICONS_BASE + '/fire.svg',       // 🔥 热门
     THUMBS_UP:   ICONS_BASE + '/thumbs-up.svg',  // 👍 点赞
+    // 新增 emoji→SVG 映射（feather/lucide style）
+    USER:        ICONS_BASE + '/common/user.svg',           // 👤 用户
+    WARNING:     ICONS_BASE + '/common/warning.svg',        // ⚠️ 警告
+    BOOK:        ICONS_BASE + '/common/book.svg',           // 📚 读书
+    CAMERA_ICON: ICONS_BASE + '/common/camera.svg',         // 📷 相机
+    RULER:       ICONS_BASE + '/common/ruler.svg',          // 📏 身高
+    MONEY:       ICONS_BASE + '/common/money.svg',          // 💰 月消费
+    LOCK:        ICONS_BASE + '/common/lock.svg',           // 🔒 锁定
+    PENCIL:      ICONS_BASE + '/common/pencil.svg',         // ✏️ 编辑
+    EYE:         ICONS_BASE + '/common/eye.svg',            // 👀 查看
+    EYE_OFF:     ICONS_BASE + '/common/eye-off.svg',        // 🙅 不看
+    BELL:        ICONS_BASE + '/common/bell.svg',           // 🔔 通知
+    PROHIBITED:  ICONS_BASE + '/common/prohibited.svg',     // 🚫 禁止
+    CROWN:       ICONS_BASE + '/common/crown.svg',          // 👑 皇冠
+    ROCKET:      ICONS_BASE + '/common/trend-up.svg',       // 🚀 趋势/加权
+    PALETTE:     ICONS_BASE + '/common/settings-gear.svg',   // 🎨 主题
+    CHECK_CIRCLE:ICONS_BASE + '/common/check-circle.svg',   // ✅ 已选
+    CHECK_FAIL:  ICONS_BASE + '/common/check-fail.svg',     // ❌ 未通过
+    INFO:        ICONS_BASE + '/common/info.svg',           // ℹ️ 信息
+    SHIELD:      ICONS_BASE + '/common/lock.svg',           // 🛡️ 隐私
+    CLIPBOARD:   ICONS_BASE + '/common/clipboard.svg',      // 📋 列表
+    BROOM:       ICONS_BASE + '/common/refresh.svg',        // 🧹 清理
+    PENDING:     ICONS_BASE + '/common/pending.svg',        // ⏳ 审核中
+    GRAD_CAP:    ICONS_BASE + '/common/graduation-cap.svg',  // 🎓 毕业
+    TARGET:      ICONS_BASE + '/common/pin.svg',            // 🎯 目标
+    SCORE:       ICONS_BASE + '/common/check-circle.svg',   // 💯 满分
+    UPLOAD:      ICONS_BASE + '/common/upload.svg',         // 📤 上传
+    LAB:         ICONS_BASE + '/common/robot.svg',          // 🔬 实验室
+    SETTINGS:    ICONS_BASE + '/common/settings-gear.svg',   // ⚙️ 设置
+    HEART_FILLED:ICONS_BASE + '/common/heart-filled.svg',  // 💝/💕 爱心填色
+    MOBILE:      ICONS_BASE + '/common/mobile.svg',         // 📱 手机
+    KEY:         ICONS_BASE + '/common/key.svg',            // 🔑 钥匙
+    CLOCK:       ICONS_BASE + '/common/clock.svg',          // 🕐 时钟
+    CALENDAR:    ICONS_BASE + '/common/calendar.svg',       // 📅 日历
+    VIDEO:       ICONS_BASE + '/common/video.svg',          // 📹 视频
+    LOG_IN:      ICONS_BASE + '/common/log-in.svg',         // 📲 登录
+    DOWNLOAD:    ICONS_BASE + '/common/download.svg',       // 📥 下载
+    CHART:       ICONS_BASE + '/common/chart.svg',          // 📊 图表
+    LIST:        ICONS_BASE + '/common/list.svg',           // 📝 列表
+    FILE_TEXT:   ICONS_BASE + '/common/file-text.svg',      // 📜 文档
+    REFRESH_CW:  ICONS_BASE + '/common/refresh.svg',        // 🔄 刷新
+    // 业务图标别名（与 ICONS_COMMON 中 SVG 资源对应，便于 emoji 风格统一引用）
+    PIN:         ICONS_BASE + '/common/pin.svg',            // 📌 置顶 / 定位
+    BOLT:        ICONS_BASE + '/common/bolt.svg',           // ⚡ 闪电 / 快捷
+    FOOD:        ICONS_BASE + '/common/food.svg',           // 🍔 美食
   },
 } as const;

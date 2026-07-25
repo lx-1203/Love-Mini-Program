@@ -64,6 +64,9 @@ importers:
       '@dcloudio/uni-h5':
         specifier: 3.0.0-alpha-1000920260525813
         version: 3.0.0-alpha-1000920260525813(@vueuse/core@11.3.0(vue@3.4.21(typescript@5.9.3)))(postcss@8.5.15)(rollup@4.62.2)(supports-color@10.2.2)(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.9.3))
+      '@dcloudio/uni-h5-vue':
+        specifier: 3.0.0-alpha-1000920260525813
+        version: 3.0.0-alpha-1000920260525813(vue@3.4.21(typescript@5.9.3))
       '@dcloudio/uni-mp-weixin':
         specifier: 3.0.0-alpha-1000920260525813
         version: 3.0.0-alpha-1000920260525813(@vueuse/core@11.3.0(vue@3.4.21(typescript@5.9.3)))(debug@4.4.3(supports-color@10.2.2))(postcss@8.5.15)(rollup@4.62.2)(supports-color@10.2.2)(vue@3.4.21(typescript@5.9.3))

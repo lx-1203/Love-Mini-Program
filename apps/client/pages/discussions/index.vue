@@ -5,7 +5,7 @@ import AppShell from "../../src/components/layout/AppShell.vue";
 import SectionCard from "../../src/components/common/SectionCard.vue";
 import BottomActionBar from "../../src/components/common/BottomActionBar.vue";
 import StatusState from "../../src/components/common/StatusState.vue";
-import { homePageRequirements } from "../../src/config/page-access";
+import { discoverPageRequirements } from "../../src/config/page-access";
 import { usePageAccess } from "../../src/composables/usePageAccess";
 import { clientApi } from "../../src/services/api";
 import { openAppPath } from "../../src/utils/navigation";
@@ -13,7 +13,7 @@ import { openAppPath } from "../../src/utils/navigation";
 const discussions = ref<Awaited<ReturnType<typeof clientApi.getDiscussionRecommendations>>>([]);
 const loading = ref(false);
 
-usePageAccess(homePageRequirements);
+usePageAccess(discoverPageRequirements);
 
 onShow(() => {
   void loadDiscussions();

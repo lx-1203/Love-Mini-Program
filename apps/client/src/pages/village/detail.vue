@@ -807,7 +807,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .identity-tag__icon {
-  font-size: 22rpx;
+  width: 24rpx;
+  height: 24rpx;
 }
 
 .identity-tag__text {

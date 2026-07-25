@@ -6,11 +6,11 @@
  * 可能无法读取到 VITE_ 前缀变量（Vite 静态替换仅对直接成员访问生效），
  * 导致 apiMode 恒为 "real"、isDev 恒为 false，bootstrap 调用真实 API 失败。
  *
- * 进一步修复（mp-weixin 兼容性）：
- * - 彻底移除客户端代码中的 import.meta 语法，避免 mp-weixin 生产包运行时异常。
- * - vite.config.ts 已通过 Vite define 将 .env 中的 VITE_API_MODE / VITE_API_BASE_URL /
- *   VITE_APP_VERSION 注入为 process.env.XXX 字面量，构建产物中即为字符串常量，
- *   客户端不再依赖 import.meta。
+ * 现改为：
+ * - 直接读取 import.meta.env 的具体命名属性（Vite 静态替换为字面量）
+ * - isDev 多信号检测（H5 localhost 主机名 + process.env.NODE_ENV），
+ *   避免使用 import.meta.env.DEV（mp-weixin 不支持，per project_memory）
+ * - mp-weixin 端通过 process.env 读取 VITE_ 变量（uni-app 编译时注入）
  *
  * 兼容性：H5 与 mp-weixin 双端均能正确解析 VITE_API_MODE 与 isDev。
  */
@@ -19,36 +19,56 @@
 const isH5: boolean = typeof window !== "undefined";
 
 /**
- * 读取 Vite 环境变量（直接访问 process.env.XXX）。
+ * 读取 Vite 环境变量（按 key 直接访问 import.meta.env 具体属性）。
  *
  * 注意：
- * 1. vite.config.ts 在构建阶段通过 `define` 将 process.env.VITE_* 替换为 .env 文件中的字面量，
- *    因此运行时访问的是字符串常量，无需 import.meta。
- * 2. 保留 try/catch 包裹，防止极端情况下（如 SSR 或旧构建工具）process 未定义导致脚本异常。
- * 3. 参数 key 必须为静态字面量，以确保 Vite define 能正确替换对应变量。
+ * 1. 必须通过 `import.meta.env.SPECIFIC_KEY` 形式直接访问，
+ *    Vite 才能在编译时静态替换为 `.env` 文件中的字面量。
+ *    通过中间变量下标访问（如 `import.meta.env[key]`）不会被替换，
+ *    在 uni-app 的某些构建场景下会读取失败。
+ * 2. 不要按平台分支读取：uni-app（mp-weixin）构建时同样会由 Vite
+ *    把 `import.meta.env.XXX` 替换为常量；此前仅在 H5 分支读取导致
+ *    小程序生产包读不到 VITE_API_BASE_URL / VITE_API_MODE。
+ * 3. 保留 process.env 回退，用于非 Vite 运行时（如 vitest）或 SSR 场景。
  *
  * @param key Vite 环境变量名（必须为 VITE_ 前缀的静态字面量）
  */
 function readViteEnv(
   key: "VITE_API_MODE" | "VITE_API_BASE_URL" | "VITE_APP_VERSION"
 ): string | undefined {
+  // 主读取路径：直接访问 import.meta.env 的具名属性，
+  // Vite 会在构建阶段静态替换为 .env.[mode] 中的字面量。
   try {
-    let val: unknown;
-    // 显式 switch 访问具体字段，与 vite.config.ts 中的 define 键一一对应
-    switch (key) {
-      case "VITE_API_MODE":
-        val = process.env.VITE_API_MODE;
-        break;
-      case "VITE_API_BASE_URL":
-        val = process.env.VITE_API_BASE_URL;
-        break;
-      case "VITE_APP_VERSION":
-        val = process.env.VITE_APP_VERSION;
-        break;
+    const viteEnv = (import.meta as any).env;
+    if (viteEnv) {
+      let val: unknown;
+      // 显式 switch 让 Vite 静态替换 import.meta.env.XXX 为字面量
+      switch (key) {
+        case "VITE_API_MODE":
+          val = viteEnv.VITE_API_MODE;
+          break;
+        case "VITE_API_BASE_URL":
+          val = viteEnv.VITE_API_BASE_URL;
+          break;
+        case "VITE_APP_VERSION":
+          val = viteEnv.VITE_APP_VERSION;
+          break;
+      }
+      if (typeof val === "string" && val.length > 0) return val;
     }
-    if (typeof val === "string" && val.length > 0) return val;
   } catch (_e) {
-    // process 未定义或读取异常时静默降级
+    // Vite 未注入时回退到 process.env
+  }
+
+  // 回退路径：通过 process.env 读取（测试环境或 SSR 场景）
+  try {
+    const proc = (globalThis as any).process;
+    if (proc && proc.env) {
+      const val = proc.env[key];
+      if (typeof val === "string" && val.length > 0) return val;
+    }
+  } catch (_e) {
+    // ignore
   }
   return undefined;
 }
@@ -66,7 +86,7 @@ function resolveIsDev(): boolean {
   // 信号 1：H5 localhost 主机名
   if (isH5) {
     try {
-      const host = window.location?.hostname;
+      const host = (window as any).location?.hostname;
       if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") {
         return true;
       }
@@ -76,13 +96,7 @@ function resolveIsDev(): boolean {
   }
   // 信号 2：process.env.NODE_ENV
   try {
-    // 通过类型守卫安全访问 globalThis.process，避免在浏览器环境运行时异常
-    const proc = (
-      typeof globalThis !== "undefined" &&
-      typeof (globalThis as { process?: unknown }).process === "object"
-        ? (globalThis as { process?: { env?: Record<string, string> } }).process
-        : undefined
-    );
+    const proc = (globalThis as any).process;
     if (proc && proc.env && proc.env.NODE_ENV === "development") {
       return true;
     }
@@ -92,27 +106,13 @@ function resolveIsDev(): boolean {
   return false;
 }
 
-/**
- * 是否为开发环境。
- *
- * 通过多信号检测（H5 主机名 / NODE_ENV）综合判定，
- * 不依赖 `import.meta.env.DEV`，确保 mp-weixin 环境下也能正常工作。
- */
+/** 是否为开发环境 */
 export const isDev: boolean = resolveIsDev();
 
 /** Vite 环境变量（H5 与 mp-weixin 均可读取） */
 const VITE_API_MODE = readViteEnv("VITE_API_MODE");
 const VITE_API_BASE_URL = readViteEnv("VITE_API_BASE_URL");
 
-/**
- * 解析 API 基础 URL。
- *
- * 优先使用 VITE_API_BASE_URL 环境变量；未配置时：
- * - 开发环境回退到 `http://127.0.0.1:8080/api`
- * - 生产环境记录错误日志后回退到同一地址（仅用于调试，不应在生产使用）
- *
- * @returns API 基础 URL 字符串
- */
 function resolveApiBaseUrl(): string {
   if (VITE_API_BASE_URL && VITE_API_BASE_URL.trim().length > 0) {
     return VITE_API_BASE_URL.trim();
@@ -129,15 +129,6 @@ function resolveApiBaseUrl(): string {
   return "http://127.0.0.1:8080/api";
 }
 
-/**
- * 解析 API 调用模式。
- *
- * 优先使用 VITE_API_MODE 环境变量（"real" / "mock"）；未配置时：
- * - 开发环境默认 mock，便于无后端联调
- * - 生产环境默认 real（更安全，避免误用 mock 数据）
- *
- * @returns "real" 表示调用真实后端 API；"mock" 表示使用本地 Mock 数据
- */
 function resolveApiMode(): "real" | "mock" {
   if (VITE_API_MODE === "real" || VITE_API_MODE === "mock") {
     return VITE_API_MODE;
@@ -154,21 +145,24 @@ function resolveApiMode(): "real" | "mock" {
   return "real";
 }
 
-/**
- * 应用环境配置（运行时只读常量）。
- *
- * - `apiBaseUrl`：API 基础 URL，由 `resolveApiBaseUrl()` 解析
- * - `apiMode`：API 调用模式，由 `resolveApiMode()` 解析
- *
- * 全局共享同一实例，避免重复解析与环境变量抖动。
- */
 export const appEnv = {
   apiBaseUrl: resolveApiBaseUrl(),
   apiMode: resolveApiMode(),
 } as const;
 
-// 诊断日志（H5 与 mp-weixin 均输出，便于排查 env 解析问题）
-try {
+/**
+ * 判断当前是否为 Mock 模式。
+ *
+ * 各 store 中原先各自定义了局部的 `function useMock()`，
+ * 本质上都是检查 `appEnv.apiMode === "mock"`。
+ * 统一导出此函数，便于各 store 引用单一真相源。
+ */
+export function isMockMode(): boolean {
+  return appEnv.apiMode === "mock";
+}
+
+// 诊断日志（仅在开发环境输出，生产环境不泄露配置信息）
+if (isDev) {
   console.log("[ENV] 诊断:", {
     isDev,
     apiMode: appEnv.apiMode,
@@ -176,6 +170,4 @@ try {
     VITE_API_MODE,
     VITE_API_BASE_URL,
   });
-} catch (_e) {
-  // 控制台不可用时不应影响业务流程
 }

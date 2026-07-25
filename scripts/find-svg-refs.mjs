@@ -14,7 +14,7 @@ function walk(d) {
   return r;
 }
 
-const dist = 'd:/6/恋爱小程序/apps/client/dist/build/mp-weixin';
+const dist = path.resolve(process.cwd(), 'apps/client/dist/build/mp-weixin');
 const files = walk(dist);
 for (const f of files) {
   if (/\.(js|wxml|wxss|json|wx)$/i.test(f)) {

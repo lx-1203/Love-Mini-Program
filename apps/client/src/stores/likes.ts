@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 
@@ -305,7 +305,7 @@ const mockHeartSignals: HeartSignal[] = [
 ];
 
 function useMock() {
-  return appEnv.apiMode === "mock";
+  return isMockMode();
 }
 
 /**
@@ -656,7 +656,7 @@ export const useLikesStore = defineStore("likes", {
       try {
         // 使用 uni-app 通知 API
         uni.showToast({
-          title: `💕 与 ${signal.fromUserName} 互相喜欢了！`,
+          title: `与 ${signal.fromUserName} 互相喜欢了！`,
           icon: "none",
           duration: 3000,
         });

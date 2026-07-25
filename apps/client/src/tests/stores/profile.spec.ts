@@ -7,6 +7,7 @@ vi.mock("../../services/env", () => ({
     apiMode: "mock",
     apiBaseUrl: "http://127.0.0.1:8080/api",
   },
+  isMockMode: () => true,
 }));
 
 // mock clientApi 以避免触发真实 http service 副作用

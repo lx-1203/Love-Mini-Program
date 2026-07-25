@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { clientApi } from "../services/api";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
@@ -95,9 +95,7 @@ const mockActivities: ActivityItem[] = [
 /** 单页大小 */
 const DEFAULT_PAGE_SIZE = 10;
 
-function useMock() {
-  return appEnv.apiMode === "mock";
-}
+const useMock = isMockMode;
 
 /**
  * 线下活动 Store

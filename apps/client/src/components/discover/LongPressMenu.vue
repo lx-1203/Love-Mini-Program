@@ -8,6 +8,7 @@
 import { ref, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { lightHaptic, mediumHaptic } from "../../utils/haptic";
+import { IMAGE_PATHS } from "../../config/images";
 
 const props = defineProps<{
   visible: boolean;
@@ -112,7 +113,7 @@ function handleClose() {
         <!-- #endif -->
       >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--detail">
-          <text class="long-press-menu__item-icon-emoji">👤</text>
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">{{ t('discover.menuDetail') }}</text>
@@ -131,7 +132,7 @@ function handleClose() {
         <!-- #endif -->
       >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--super">
-          <text class="long-press-menu__item-icon-emoji">⭐</text>
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.STAR_SVG" mode="aspectFit" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">{{ t('discover.superLike') }}</text>
@@ -150,7 +151,7 @@ function handleClose() {
         <!-- #endif -->
       >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--not-interested">
-          <text class="long-press-menu__item-icon-emoji">🙅</text>
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.EYE_OFF" mode="aspectFit" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">{{ t('discover.menuNotInterested') }}</text>
@@ -169,7 +170,7 @@ function handleClose() {
         <!-- #endif -->
       >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--report">
-          <text class="long-press-menu__item-icon-emoji">⚠️</text>
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">{{ t('discover.menuReport') }}</text>

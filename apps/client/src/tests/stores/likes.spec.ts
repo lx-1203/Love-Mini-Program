@@ -7,6 +7,7 @@ vi.mock("../../services/env", () => ({
     apiMode: "mock",
     apiBaseUrl: "http://127.0.0.1:8080/api",
   },
+  isMockMode: () => true,
 }));
 
 // stub global uni used by notifyHeartSignal
@@ -228,10 +229,11 @@ describe("likes store", () => {
       (s) => s.fromUserId === mutualUserId && s.status === "pending"
     );
     expect(newSignal).toBeDefined();
-    // should have triggered notification
+    // should have triggered notification (title contains the user name;
+    // emoji have been replaced by SVG icons per project convention)
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: expect.stringContaining("💕"),
+        title: expect.stringContaining("互相喜欢了"),
       })
     );
   });

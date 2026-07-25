@@ -6,7 +6,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { appEnv } from '../services/env'
+import { isMockMode } from '../services/env'
 import { clientApi } from '../services/api'
 import { IMAGE_PATHS } from '../config/images'
 
@@ -95,7 +95,7 @@ const MOCK_PROGRESS: SocialProgressData = {
 
 /** 检测是否处于 Mock 模式 */
 function useMock(): boolean {
-  return appEnv.apiMode === 'mock'
+  return isMockMode()
 }
 
 /** 深拷贝函数 */

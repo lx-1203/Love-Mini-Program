@@ -18,6 +18,7 @@ vi.mock("../services/env", () => ({
     apiBaseUrl: "http://127.0.0.1:8080/api",
     apiMode: "real" as const,
   },
+  isMockMode: () => false,
 }));
 
 vi.mock("../services/http", () => ({

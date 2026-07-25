@@ -74,6 +74,7 @@ function goBack() {
 </script>
 
 <template>
+  <!-- #ifdef DEV -->
   <view class="dev-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部栏 -->
     <view class="dev-header">
@@ -119,6 +120,7 @@ function goBack() {
     <!-- 底部安全区 -->
     <view class="safe-bottom" />
   </view>
+  <!-- #endif -->
 </template>
 
 <style scoped lang="scss">

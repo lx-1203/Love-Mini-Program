@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import type { components } from "../services/generated/api-types";
 import type { ProfileStats } from "../services/generated/api-types-supplement";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { clientApi } from "../services/api";
 import { useSessionStore } from "./session";
 
@@ -128,7 +128,7 @@ const mockMyPosts: MyPostSummary[] = [
  * 检测当前是否为 Mock 模式
  */
 function useMock(): boolean {
-  return appEnv.apiMode === "mock";
+  return isMockMode();
 }
 
 /**

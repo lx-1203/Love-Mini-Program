@@ -20,12 +20,31 @@ const feedbacks = ref([
   },
 ]);
 
+const showDetailModal = ref(false);
+const detailFeedback = ref<any>(null);
+const toastMessage = ref("");
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+function showToast(msg: string) {
+  if (toastTimer) clearTimeout(toastTimer);
+  toastMessage.value = msg;
+  toastTimer = setTimeout(() => {
+    toastMessage.value = "";
+    toastTimer = null;
+  }, 3000);
+}
+
 function handleView(feedback: any) {
-  console.log("查看反馈:", feedback);
+  detailFeedback.value = feedback;
+  showDetailModal.value = true;
 }
 
 function handleProcess(feedback: any) {
-  console.log("处理反馈:", feedback);
+  const confirmed = confirm(`确定要将反馈"${feedback.title}"标记为已处理吗？`);
+  if (confirmed) {
+    feedback.status = "reviewed";
+    showToast("已标记为已处理");
+  }
 }
 </script>
 
@@ -35,6 +54,8 @@ function handleProcess(feedback: any) {
       <text class="page-title">反馈管理</text>
       <text class="page-subtitle">处理用户反馈与建议</text>
     </view>
+
+    <view v-if="toastMessage" class="toast-message">{{ toastMessage }}</view>
 
     <view class="table-container">
       <table class="data-table">
@@ -72,6 +93,42 @@ function handleProcess(feedback: any) {
           </tr>
         </tbody>
       </table>
+    </view>
+
+    <!-- 反馈详情弹窗 -->
+    <view v-if="showDetailModal" class="modal-overlay" @click="showDetailModal = false">
+      <view class="modal-content" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">反馈详情</text>
+          <button class="modal-close" @click="showDetailModal = false">关闭</button>
+        </view>
+        <view class="modal-body" v-if="detailFeedback">
+          <view class="detail-row">
+            <text class="detail-label">ID：</text>
+            <text>{{ detailFeedback.id }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">类型：</text>
+            <text>{{ detailFeedback.type }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">标题：</text>
+            <text>{{ detailFeedback.title }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">提交用户：</text>
+            <text>{{ detailFeedback.user }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">状态：</text>
+            <text>{{ detailFeedback.status === "processing" ? "处理中" : "已处理" }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">提交时间：</text>
+            <text>{{ detailFeedback.createdAt }}</text>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -196,5 +253,82 @@ function handleProcess(feedback: any) {
 
 .action-button.process:hover {
   background: #d9f7be;
+}
+
+.toast-message {
+  padding: 10px 16px;
+  background: #f6ffed;
+  border-left: 3px solid #52c41a;
+  border-radius: 4px;
+  color: #52c41a;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-close {
+  padding: 6px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background: #f5f5f5;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #666;
+  min-width: 80px;
 }
 </style>

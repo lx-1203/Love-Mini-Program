@@ -1,6 +1,6 @@
 // D:\6\恋爱小程序\apps\client\src\stores\campus.ts
 import { defineStore } from "pinia";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 
 
@@ -443,7 +443,7 @@ const mockActivities: CampusActivity[] = [
 const TOPIC_PAGE_SIZE = 10;
 
 function useMock() {
-  return appEnv.apiMode === "mock";
+  return isMockMode();
 }
 
 /**

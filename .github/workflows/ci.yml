@@ -122,6 +122,4 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # 项目中存在开发占位符（BCrypt 哈希、CI 示例账号等），扫描结果仅作参考，
-        # 不阻断 CI。如需严格阻断，请移除 continue-on-error 并完善 .gitleaks.toml。
-        continue-on-error: true
+        continue-on-error: false

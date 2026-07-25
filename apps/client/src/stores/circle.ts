@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { IMAGE_PATHS } from "../config/images";
 
 /* ========== 后端视图类型 ========== */
 
@@ -239,7 +240,7 @@ const mockCircles: CircleItem[] = [
   {
     id: "circle-1",
     name: "电影迷",
-    icon: "🎬",
+    icon: IMAGE_PATHS.ICONS_EMOJI.VIDEO,
     description: "分享你喜欢的电影，寻找一起看片的伙伴",
     memberCount: 1280,
     topicCount: 356,
@@ -248,7 +249,7 @@ const mockCircles: CircleItem[] = [
   {
     id: "circle-2",
     name: "读书会",
-    icon: "📚",
+    icon: IMAGE_PATHS.ICONS_EMOJI.BOOK,
     description: "一起读书，一起成长，分享读书心得",
     memberCount: 890,
     topicCount: 210,
@@ -257,7 +258,7 @@ const mockCircles: CircleItem[] = [
   {
     id: "circle-3",
     name: "运动达人",
-    icon: "🏃",
+    icon: IMAGE_PATHS.ICONS_EMOJI.BOLT,
     description: "跑步、篮球、羽毛球，运动让生活更精彩",
     memberCount: 1560,
     topicCount: 420,
@@ -266,7 +267,7 @@ const mockCircles: CircleItem[] = [
   {
     id: "circle-4",
     name: "美食探店",
-    icon: "🍜",
+    icon: IMAGE_PATHS.ICONS_EMOJI.FOOD,
     description: "发现身边的美食，分享你的味蕾体验",
     memberCount: 2100,
     topicCount: 580,
@@ -275,7 +276,7 @@ const mockCircles: CircleItem[] = [
   {
     id: "circle-5",
     name: "旅行日记",
-    icon: "✈️",
+    icon: IMAGE_PATHS.ICONS_COMMON.SHARE_ICON_SVG,
     description: "记录旅途中的美好，寻找同行旅伴",
     memberCount: 960,
     topicCount: 275,
@@ -284,7 +285,7 @@ const mockCircles: CircleItem[] = [
   {
     id: "circle-6",
     name: "音乐空间",
-    icon: "🎵",
+    icon: IMAGE_PATHS.ICONS_EMOJI.HEART,
     description: "分享你喜欢的音乐，发现更多好声音",
     memberCount: 750,
     topicCount: 180,
@@ -382,7 +383,7 @@ const mockReplies: Record<string, ReplyItem[]> = {
 const TOPIC_PAGE_SIZE = 10;
 
 function useMock() {
-  return appEnv.apiMode === "mock";
+  return isMockMode();
 }
 
 /**

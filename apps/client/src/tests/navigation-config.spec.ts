@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appTabs } from "../config/navigation";
-import pagesJson from "../../pages.json";
+import pagesJson from "../pages.json";
 import runtimePagesJson from "../pages.json";
 
 describe("app tab navigation", () => {
