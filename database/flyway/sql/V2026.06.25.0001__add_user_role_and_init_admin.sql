@@ -27,7 +27,9 @@ UPDATE users SET role = 'USER' WHERE role IS NULL OR role = '';
 -- 初始化管理员账号（仅在不存在 ADMIN 用户时执行）
 -- 使用 __admin_openid__ / __admin_nickname__ 占位符，
 -- 由 application-db.yml 的 spring.flyway.placeholders 提供值。
+-- 注意：Flyway 占位符为纯文本替换，占位符值可能包含连字符等特殊字符，
+-- 必须用单引号包裹使其成为字符串字面量，否则会被解析为减法运算导致语法错误。
 INSERT INTO users (openid, nickname, role, profile_completion, following_count, followers_count, created_at, updated_at)
-SELECT __admin_openid__, __admin_nickname__, 'ADMIN', 100, 0, 0, NOW(), NOW()
+SELECT '__admin_openid__', '__admin_nickname__', 'ADMIN', 100, 0, 0, NOW(), NOW()
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE role = 'ADMIN' LIMIT 1);
