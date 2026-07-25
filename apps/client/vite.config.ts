@@ -1,5 +1,4 @@
 import { createRequire } from "node:module";
-import { fileURLToPath, URL } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import uni from "@dcloudio/vite-plugin-uni";
 
@@ -100,9 +99,7 @@ const buildTarget: string | string[] = isMpWeixin
 export default defineConfig({
   resolve: {
     alias: {
-      vue: fileURLToPath(
-        new URL("../../node_modules/@dcloudio/uni-h5-vue/dist/vue.runtime.esm.js", import.meta.url)
-      ),
+      vue: require.resolve("@dcloudio/uni-h5-vue/dist/vue.runtime.esm.js"),
     },
   },
   esbuild: {

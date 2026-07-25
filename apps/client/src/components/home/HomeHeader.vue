@@ -91,6 +91,10 @@ const t = designTokens;
   cursor: pointer;
   position: relative;
 }
+.header-icon-img {
+  width: 36rpx;
+  height: 36rpx;
+}
 /* #ifdef H5 */
 .header-icon:hover { background: var(--c-brand-100); }
 /* #endif */

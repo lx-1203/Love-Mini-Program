@@ -21,12 +21,11 @@ spring:
     placeholders:
       admin_openid: ${ADMIN_OPENID:admin-default-openid-change-me}
       admin_nickname: ${ADMIN_NICKNAME:系统管理员}
-      # 管理员密码 BCrypt 哈希，默认明文为 'Admin@2026'。
-      # ⚠️ 默认哈希为示例值（对应明文 'password'），仅用于开发/测试。
-      # 生产环境必须通过环境变量 ADMIN_PASSWORD_HASH 配置 'Admin@2026' 的 BCrypt 哈希。
+      # 管理员密码 BCrypt 哈希。
+      # ⚠️ 生产环境必须通过环境变量 ADMIN_PASSWORD_HASH 设置，不留默认值。
       # 生成方法：调用 PasswordEncoderConfig.encodePassword("Admin@2026")
       # 首次登录后必须立即修改密码。
-      admin_password_hash: ${ADMIN_PASSWORD_HASH:.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG}
+      admin_password_hash: ${ADMIN_PASSWORD_HASH:}
   jpa:
     hibernate:
       ddl-auto: validate

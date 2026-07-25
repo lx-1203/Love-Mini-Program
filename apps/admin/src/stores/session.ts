@@ -5,11 +5,11 @@ import { ref, computed } from "vue";
  * 管理员会话 Store
  *
  * 安全修复说明：
- * 原代码硬编码 admin/admin123 凭据在前端源码中，且 token 为可预测字符串，
+ * 原代码硬编码凭据在前端源码中，且 token 为可预测字符串，
  * 任何查看源码的人都能获取凭据，或直接在浏览器 console 伪造 localStorage 绕过登录。
  *
  * 修复方案：
- * 1. 开发环境（import.meta.env.DEV）：保留 mock 登录便于本地调试
+ * 1. 开发环境（import.meta.env.DEV）：从环境变量 VITE_DEV_USERNAME / VITE_DEV_PASSWORD 读取凭据
  * 2. 生产环境：强制调用后端 /api/auth/admin/login 接口，凭据校验在服务端完成
  * 3. token 由服务端签发真实 JWT，前端只负责存储和提交
  *
@@ -78,9 +78,15 @@ export const useSessionStore = defineStore("session", () => {
       }
     }
 
-    // 开发环境：保留 mock 登录（仅用于本地调试）
-    // ⚠️ 警告：此 mock 仅限开发环境使用，生产环境必须配置 VITE_API_BASE_URL 并启用真实登录
-    if (credentials.username === "admin" && credentials.password === "admin123") {
+    // 开发环境：从环境变量读取开发凭据（仅用于本地调试）
+    const devUsername = import.meta.env.VITE_DEV_USERNAME;
+    const devPassword = import.meta.env.VITE_DEV_PASSWORD;
+
+    if (!devUsername || !devPassword) {
+      throw new Error("开发凭据未配置");
+    }
+
+    if (credentials.username === devUsername && credentials.password === devPassword) {
       const mockUser = {
         id: 1,
         username: "admin",

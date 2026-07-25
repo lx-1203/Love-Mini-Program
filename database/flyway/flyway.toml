@@ -8,4 +8,6 @@ placeholderSuffix = "__"
 [flyway.placeholders]
 admin_openid = "admin-default-openid-change-me"
 admin_nickname = "系统管理员"
-admin_password_hash = ".20cQQubK3.HZWzG3YB1tlRy.fqvM/BG"
+admin_password_hash = "change_me"
+# ⚠️ 生产环境务必通过环境变量 ADMIN_PASSWORD_HASH 设置真实的 BCrypt 哈希。
+# 此处 change_me 仅为占位符，不得用于生产环境。

@@ -12,6 +12,7 @@
  * - CSS 变量通过内联 style 注入，保证小程序端可解析
  */
 import { watch, onUnmounted } from "vue";
+import { IMAGE_PATHS } from "../../config/images";
 
 interface Props {
   /** 是否显示粒子动画 */
@@ -81,7 +82,7 @@ function particleStyle(index: number) {
       class="heart-particle"
       :style="particleStyle(i)"
     >
-      <text class="heart-icon">❤</text>
+      <image class="heart-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" />
     </view>
   </view>
 </template>

@@ -20,11 +20,12 @@ regexes = [
     '\.20cQQubK3\.HZWzG3YB1tlRy\.fqvM/BG',
 ]
 paths = [
-    # 数据库迁移脚本中的占位符与示例值
-    'database/flyway/sql/.*\.sql',
+    # 仅对包含开发占位符的特定 SQL 文件白名单
+    'database/flyway/sql/V2026\.06\.25\.0002__migrate_admin_password_to_bcrypt\.sql',
+    'database/flyway/sql/V2026\.06\.25\.0008__extend_user_password_to_all_users\.sql',
     'database/flyway/flyway\.toml',
-    # CI 工作流中的示例连接串
-    '\.github/workflows/.*\.yml',
-    # 示例配置文件
-    'apps/api/src/main/resources/application.*\.yml',
+    # CI 工作流
+    '\.github/workflows/ci\.yml',
+    # 示例配置文件（仅白名单 application-db.yml，它包含 Flyway 占位符默认值）
+    'apps/api/src/main/resources/application-db\.yml',
 ]

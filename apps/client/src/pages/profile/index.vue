@@ -12,6 +12,7 @@ import { useProfileStore } from "../../stores/profile";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
 import { isDev } from "../../services/env";
+import { clientApi } from "../../services/api";
 import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import { toProfileView } from "../../view-models/profile";
@@ -267,42 +268,42 @@ interface MenuItem {
 
 const menuItems = computed<MenuItem[]>(() => [
   {
-    emoji: "💝",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "#FFF0F5",
     label: "我的动态",
     path: "/pages/village/index?tab=mine",
   },
   {
-    emoji: "⭐",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.FAVORITES,
     bgColor: "#FFF8E7",
     label: "我的喜欢",
     path: "/pages/likes/index?tab=likedBy",
   },
   {
-    emoji: "💕",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
     bgColor: "#FFE8EC",
     label: "我的匹配",
     path: "/pages/likes/index",
   },
   {
-    emoji: "👀",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
     bgColor: "#E8F8F0",
     label: "访客记录",
     path: "/pages/likes/index?tab=visitors",
   },
   {
-    emoji: "✅",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
     bgColor: "#E8F4FF",
     label: "恋爱认证",
     path: "/pages/verification/index",
   },
   {
-    emoji: "🔬",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
     bgColor: "#F3E8FF",
     label: "情感实验室",
@@ -316,7 +317,7 @@ const menuItems = computed<MenuItem[]>(() => [
     path: "/subpackages/support/feedback/index",
   },
   {
-    emoji: "📤",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.SHARE,
     bgColor: "#EDE9FE",
     label: "推荐给好友",
@@ -331,14 +332,14 @@ const menuItems = computed<MenuItem[]>(() => [
 
 const bottomMenuItems = computed<MenuItem[]>(() => [
   {
-    emoji: "⚙️",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
     bgColor: "#F4F6FA",
     label: "设置",
     path: "/pages/settings/index",
   },
   {
-    emoji: "ℹ️",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
     bgColor: "#F4F6FA",
     label: "关于我们",
@@ -421,8 +422,7 @@ function handleLogout() {
     content: "确定要退出登录吗？",
     success: (res) => {
       if (res.confirm) {
-        sessionStore.userSession = null;
-        uni.reLaunch({ url: "/pages/login/index" });
+        void clientApi.logout();
       }
     },
   });
@@ -1100,10 +1100,12 @@ onMounted(() => {
         <text class="footer-version__text">{{ appVersion }}</text>
       </view>
 
+      <!-- #ifdef DEV -->
       <!-- [DEV-MODE] 开发者模式入口按钮 -->
       <view v-if="isDev" class="dev-entry press-feedback" @tap="openAppPath('/pages/dev/index')" hover-class="dev-entry--hover" hover-stay-time="100">
         <text class="dev-entry__text">DEV</text>
       </view>
+      <!-- #endif -->
 
       <!-- 底部安全区占位 -->
       <view class="safe-bottom" />
@@ -1128,7 +1130,7 @@ onMounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 520rpx;
+  height: var(--profile-header-bg-height, 520rpx);
   background: var(--c-gradient-brand);
   pointer-events: none;
   z-index: 0;
@@ -1421,7 +1423,8 @@ onMounted(() => {
 }
 
 .user-info__school-icon {
-  font-size: var(--fs-xs);
+  width: 28rpx;
+  height: 28rpx;
   line-height: 1;
 }
 
@@ -1465,6 +1468,18 @@ onMounted(() => {
   font-size: var(--fs-md);
   color: var(--c-brand-500);
   font-weight: 600;
+}
+
+.edit-btn__icon {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+}
+
+.greet-btn__icon {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
 }
 
 /* 数据统计栏 */
@@ -1742,7 +1757,8 @@ onMounted(() => {
 }
 
 .vip-card__icon {
-  font-size: var(--fs-6xl);
+  width: 48rpx;
+  height: 48rpx;
   filter: drop-shadow(0 var(--sp-1) var(--sp-2) rgba(0,0,0,0.15));
 }
 
@@ -1912,8 +1928,17 @@ onMounted(() => {
 }
 
 .my-post-item__stat {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
   font-size: var(--fs-sm);
   color: var(--c-text-secondary);
+}
+
+.my-post-item__stat-icon {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
 }
 
 .my-post-item__arrow {
@@ -1939,7 +1964,9 @@ onMounted(() => {
 }
 
 .my-posts-empty__icon {
-  font-size: 56rpx;
+  width: 56rpx;
+  height: 56rpx;
+  opacity: 0.5;
 }
 
 .my-posts-empty__text {
@@ -2011,6 +2038,9 @@ onMounted(() => {
   font-size: var(--fs-xl);
   color: var(--c-text-primary);
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .menu-item__arrow {

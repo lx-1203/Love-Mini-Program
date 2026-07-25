@@ -207,7 +207,7 @@ onShow(() => {
                 <view class="conversation-item__name-wrap">
                   <text class="conversation-item__name">{{ conv.partnerName }}</text>
                   <view v-if="conv.pinned" class="conversation-item__pin-icon">
-                    <text>📌</text>
+                    <image class="conversation-item__pin-img" :src="IMAGE_PATHS.ICONS_EMOJI.PIN" mode="aspectFit" />
                   </view>
                 </view>
                 <text class="conversation-item__time">{{ formatChatTime(conv.lastMessageSentAt) }}</text>

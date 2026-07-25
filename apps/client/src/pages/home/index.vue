@@ -36,9 +36,10 @@ const emojiIcons = {
   smile: IMAGE_PATHS.ICONS_EMOJI.SMILE,
   thumbsUp: IMAGE_PATHS.ICONS_EMOJI.THUMBS_UP,
   bookmark: IMAGE_PATHS.ICONS_EMOJI.BOOKMARK,
-  // 通用图标（学校、庆典）- SVG 变体，支持 currentColor 主题色
+  // 通用图标（学校、庆典、通知）- SVG 变体，支持 currentColor 主题色
   school: IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG,
   celebration: IMAGE_PATHS.ICONS_COMMON.CELEBRATION_SVG,
+  notification: IMAGE_PATHS.ICONS_COMMON.NOTIFICATION_SVG,
 } as const;
 
 const activityStore = useActivityStore();
@@ -227,6 +228,34 @@ async function handleCheckIn() {
   }
 }
 
+/** 通知铃铛点击 */
+function handleNotificationBell() {
+  uni.showToast({ title: "通知功能开发中", icon: "none" });
+}
+
+/** "换一批"按钮：重新随机推荐数据 */
+function handleRefreshRecommend() {
+  // 对已有 mock 数据做重新随机排列
+  const shuffled = [...recommendUsers].sort(() => Math.random() - 0.5);
+  recommendUsers.splice(0, recommendUsers.length, ...shuffled);
+  uni.showToast({ title: "已换一批", icon: "success", duration: 1200 });
+}
+
+/** 帖子评论按钮：暂无后端 API */
+function handleCommentPlaceholder() {
+  uni.showToast({ title: "功能开发中", icon: "none" });
+}
+
+/** 帖子收藏按钮：暂无后端 API */
+function handleCollectionPlaceholder() {
+  uni.showToast({ title: "功能开发中", icon: "none" });
+}
+
+/** 推荐用户卡片点击 */
+function handleUserCardTap() {
+  uni.showToast({ title: "查看详情功能开发中", icon: "none" });
+}
+
 onMounted(() => {
   void activityStore.fetchActivities();
   void checkInStore.fetchStatus();
@@ -263,13 +292,13 @@ onMounted(() => {
       <view class="top-section">
         <view class="greeting-row">
           <view class="greeting-left">
-            <text class="greeting-text">Hi, 同学👋</text>
+            <text class="greeting-text">Hi, 同学</text>
             <text class="greeting-subtitle">今天想遇见谁呢？</text>
           </view>
           <view class="greeting-right">
             <MatchCountChip :count="remainingCount" />
-            <view class="notification-btn">
-              <text class="notification-icon">🔔</text>
+            <view class="notification-btn" @tap="handleNotificationBell">
+              <image class="notification-icon-img" :src="emojiIcons.notification" mode="aspectFit" />
               <view class="notification-dot"></view>
             </view>
           </view>
@@ -471,11 +500,11 @@ onMounted(() => {
       <view class="section-wrap">
         <view class="section-header">
           <text class="section-title section-title-brand">为你推荐</text>
-          <text class="section-more section-more--green">换一批</text>
+          <text class="section-more section-more--green press-feedback" @tap="handleRefreshRecommend">换一批</text>
         </view>
         <scroll-view scroll-x class="recommend-scroll" :show-scrollbar="false">
           <view class="recommend-list card-stagger">
-            <view class="user-card list-item" v-for="(user, i) in recommendUsers" :key="i">
+            <view class="user-card list-item" v-for="(user, i) in recommendUsers" :key="i" @tap="handleUserCardTap">
               <view class="user-avatar-wrap">
                 <view class="user-avatar-ring">
                   <view class="user-avatar">
@@ -610,11 +639,11 @@ onMounted(() => {
                   <image class="post-action-emoji" :src="emojiIcons.heart" mode="aspectFit" />
                   <text class="post-action-count">{{ post.likes }}</text>
                 </view>
-                <view class="post-action-new">
+                <view class="post-action-new" @tap="handleCommentPlaceholder">
                   <image class="post-action-emoji" :src="emojiIcons.chat" mode="aspectFit" />
                   <text class="post-action-count">{{ post.comments }}</text>
                 </view>
-                <view class="post-action-new">
+                <view class="post-action-new" @tap="handleCollectionPlaceholder">
                   <image class="post-action-emoji" :src="emojiIcons.bookmark" mode="aspectFit" />
                 </view>
               </view>
@@ -1888,14 +1917,14 @@ onMounted(() => {
 
 /* ========== 底部留白 ========== */
 .home-footer-space {
-  height: 200rpx;
+  height: calc(200rpx + env(safe-area-inset-bottom));
 }
 
 /* ========== 悬浮发布按钮 ========== */
 .fab-container {
   position: fixed;
   right: var(--page-padding);
-  bottom: calc(env(safe-area-inset-bottom) + 120rpx);
+  bottom: calc(env(safe-area-inset-bottom) + 150rpx);
   display: flex;
   flex-direction: column;
   align-items: center;

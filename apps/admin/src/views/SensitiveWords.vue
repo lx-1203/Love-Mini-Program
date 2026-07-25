@@ -40,7 +40,7 @@ async function fetchWords(category?: string) {
     const result = await listSensitiveWords(category);
     words.value = result || [];
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : err.message || "加载敏感词列表失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "加载敏感词列表失败";
     words.value = [];
   } finally {
     loading.value = false;
@@ -72,7 +72,7 @@ async function handleCreate() {
     newCategory.value = "";
     await fetchWords(filterCategory.value || undefined);
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : err.message || "新增敏感词失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "新增敏感词失败";
   } finally {
     submitting.value = false;
   }
@@ -88,7 +88,7 @@ async function handleDelete(id: number) {
     await deleteSensitiveWord(id);
     await fetchWords(filterCategory.value || undefined);
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : err.message || "删除敏感词失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "删除敏感词失败";
   }
 }
 

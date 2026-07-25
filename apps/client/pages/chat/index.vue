@@ -6,7 +6,7 @@ import SectionCard from "../../src/components/common/SectionCard.vue";
 import StatusState from "../../src/components/common/StatusState.vue";
 import { useChatStore } from "../../src/stores/chat";
 import { usePageAccess } from "../../src/composables/usePageAccess";
-import { chatPageRequirements } from "../../src/config/page-access";
+import { messagesPageRequirements } from "../../src/config/page-access";
 import { openAppPath } from "../../src/utils/navigation";
 import { filterChatSessions } from "../../src/view-models/chat";
 
@@ -21,7 +21,7 @@ const filteredSessions = computed(() =>
   filterChatSessions(chatStore.overviewView?.sessions ?? [], searchKeyword.value)
 );
 
-usePageAccess(chatPageRequirements);
+usePageAccess(messagesPageRequirements);
 
 onShow(() => {
   void chatStore.loadOverview();

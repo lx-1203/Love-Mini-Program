@@ -28,7 +28,7 @@ async function fetchConfigs() {
     const result = await listNotifyConfigs();
     configs.value = result || [];
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : err.message || "加载通知配置失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "加载通知配置失败";
     configs.value = [];
   } finally {
     loading.value = false;
@@ -51,7 +51,7 @@ async function handleSave() {
     configs.value = updated || configs.value;
     showSuccess("保存成功");
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : err.message || "保存通知配置失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "保存通知配置失败";
   } finally {
     saving.value = false;
   }

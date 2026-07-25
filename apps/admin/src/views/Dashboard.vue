@@ -24,10 +24,10 @@ interface ActivityItem {
 }
 
 const stats = ref<StatCard[]>([
-  { label: "总用户数", value: 0, icon: "👥", color: "#667eea" },
-  { label: "今日活跃", value: 0, icon: "🔥", color: "#f093fb" },
-  { label: "匹配总数", value: 0, icon: "💕", color: "#4facfe" },
-  { label: "今日互动", value: 0, icon: "💬", color: "#43e97b" },
+  { label: "总用户数", value: 0, icon: "/icons/user.svg", color: "#667eea" },
+  { label: "今日活跃", value: 0, icon: "/icons/bolt.svg", color: "#f093fb" },
+  { label: "匹配总数", value: 0, icon: "/icons/heart-filled.svg", color: "#4facfe" },
+  { label: "今日互动", value: 0, icon: "/icons/list.svg", color: "#43e97b" },
 ]);
 
 const recentActivities = ref<ActivityItem[]>([]);
@@ -55,8 +55,8 @@ async function loadDashboard() {
   // 用户统计
   if (results[0].status === "fulfilled") {
     const userStats: UserStats = results[0].value;
-    stats.value[0] = { label: "总用户数", value: userStats.totalUsers, icon: "👥", color: "#667eea" };
-    stats.value[1] = { label: "今日活跃", value: userStats.activeUsersToday, icon: "🔥", color: "#f093fb" };
+    stats.value[0] = { label: "总用户数", value: userStats.totalUsers, icon: "/icons/user.svg", color: "#667eea" };
+    stats.value[1] = { label: "今日活跃", value: userStats.activeUsersToday, icon: "/icons/bolt.svg", color: "#f093fb" };
   } else {
     errors.push("用户统计加载失败");
   }
@@ -64,7 +64,7 @@ async function loadDashboard() {
   // 活跃度统计
   if (results[1].status === "fulfilled") {
     const activeStats: ActiveStats = results[1].value;
-    stats.value[3] = { label: "今日互动", value: activeStats.interactionsToday, icon: "💬", color: "#43e97b" };
+    stats.value[3] = { label: "今日互动", value: activeStats.interactionsToday, icon: "/icons/list.svg", color: "#43e97b" };
   } else {
     errors.push("活跃度统计加载失败");
   }
@@ -72,7 +72,7 @@ async function loadDashboard() {
   // 匹配统计
   if (results[2].status === "fulfilled") {
     const matchStats: MatchStats = results[2].value;
-    stats.value[2] = { label: "匹配总数", value: matchStats.totalMatches, icon: "💕", color: "#4facfe" };
+    stats.value[2] = { label: "匹配总数", value: matchStats.totalMatches, icon: "/icons/heart-filled.svg", color: "#4facfe" };
 
     // 用每日匹配趋势填充"最近活动"列表（最多 5 条）
     recentActivities.value = (matchStats.dailyTrend || [])
@@ -126,7 +126,9 @@ onMounted(() => {
         class="stat-card"
         :style="{ '--stat-color': stat.color }"
       >
-        <view class="stat-icon">{{ stat.icon }}</view>
+        <view class="stat-icon" :style="{ background: stat.color }">
+          <image class="stat-icon-img" :src="stat.icon" mode="aspectFit" />
+        </view>
         <view class="stat-content">
           <text class="stat-value">{{ stat.value }}</text>
           <text class="stat-label">{{ stat.label }}</text>
@@ -231,7 +233,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+}
+
+.stat-icon-img {
+  width: 28px;
+  height: 28px;
+  filter: brightness(0) invert(1);
 }
 
 .stat-content {

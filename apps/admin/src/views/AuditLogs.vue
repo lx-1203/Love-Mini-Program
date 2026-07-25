@@ -55,7 +55,7 @@ async function fetchLogs() {
     page.value = result.page;
     size.value = result.size;
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : err.message || "加载审计日志失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "加载审计日志失败";
     logs.value = [];
     totalElements.value = 0;
     totalPages.value = 0;

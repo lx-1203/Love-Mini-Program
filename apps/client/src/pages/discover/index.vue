@@ -465,7 +465,7 @@ onMounted(() => {
             @tap="removeFilterCapsule(capsule.key)"
           >
             <text class="active-capsule__text">{{ capsule.label }}</text>
-            <text class="active-capsule__close">✕</text>
+            <image class="active-capsule__close-img" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" mode="aspectFit" />
           </view>
           <view
             class="active-capsule active-capsule--clear press-feedback"
@@ -488,7 +488,7 @@ onMounted(() => {
         v-model="searchKeyword"
         @input="onSearchInput"
       />
-      <text v-if="searchKeyword" class="search-clear" @tap="clearSearch">✕</text>
+      <image v-if="searchKeyword" class="search-clear-img" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" mode="aspectFit" @tap="clearSearch" />
     </view>
 
     <!-- 筛选抽屉（H-07 + M-16）：底部滑入，控制身高/学历/感情状态/籍贯/未来城市/关键词 -->
@@ -559,7 +559,7 @@ onMounted(() => {
               <text class="benefit-card__desc">{{ checkInStore.consecutiveDaysText || "明日继续来签到吧" }}</text>
             </view>
           </view>
-          <text class="benefit-card__arrow">✓</text>
+          <image class="benefit-card__arrow-img" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE" mode="aspectFit" />
         </view>
 
         <!-- 推荐配额权益 -->
@@ -897,6 +897,7 @@ onMounted(() => {
   align-items: center;
   gap: var(--sp-2);
   padding: 14rpx 28rpx;
+  flex-shrink: 0;
   border-radius: var(--r-full);
   background: rgba(255, 255, 255, 0.8);
   // #ifdef H5
@@ -1255,7 +1256,8 @@ onMounted(() => {
 }
 
 .checkin-success__icon {
-  font-size: var(--fs-4xl);
+  width: 48rpx;
+  height: 48rpx;
   flex-shrink: 0;
   animation: checkin-success-bounce 0.6s ease 0.1s both;
 }

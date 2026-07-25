@@ -6,6 +6,8 @@
  */
 import { ref, computed } from "vue";
 import { lightHaptic } from "../../utils/haptic";
+import SafeImage from "../../components/common/SafeImage.vue";
+import { IMAGE_PATHS } from "../../config/images";
 
 /** 认证状态：unverified | pending | verified | rejected */
 type VerifyStatus = "unverified" | "pending" | "verified" | "rejected";
@@ -30,7 +32,7 @@ const statusInfo = computed(() => {
   switch (status.value) {
     case "verified":
       return {
-        emoji: "✅",
+        icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE,
         title: "已认证",
         desc: "您的校园身份已通过认证\n享有认证用户专属权益",
         color: "#3FCF8E",
@@ -38,7 +40,7 @@ const statusInfo = computed(() => {
       };
     case "pending":
       return {
-        emoji: "⏳",
+        icon: IMAGE_PATHS.ICONS_EMOJI.PENDING,
         title: "审核中",
         desc: "您的认证申请已提交\n预计 1-3 个工作日内完成审核",
         color: "#F59E0B",
@@ -46,7 +48,7 @@ const statusInfo = computed(() => {
       };
     case "rejected":
       return {
-        emoji: "❌",
+        icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_FAIL,
         title: "认证未通过",
         desc: "您提交的认证信息未通过审核\n请核对后重新提交",
         color: "#E5454D",
@@ -54,7 +56,7 @@ const statusInfo = computed(() => {
       };
     default:
       return {
-        emoji: "🎓",
+        icon: IMAGE_PATHS.ICONS_EMOJI.GRAD_CAP,
         title: "未认证",
         desc: "完成校园身份认证\n解锁专属权益与信任标识",
         color: "#3FCF8E",
@@ -65,10 +67,10 @@ const statusInfo = computed(() => {
 
 /** 认证权益列表 */
 const benefits = [
-  { emoji: "🎯", title: "专属标识", desc: "个人主页展示认证徽章" },
-  { emoji: "💯", title: "信任优先", desc: "认证用户优先推荐排序" },
-  { emoji: "🚀", title: "匹配加权", desc: "匹配概率提升 1.5 倍" },
-  { emoji: "🎁", title: "专属权益", desc: "解锁认证用户专属功能" },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.TARGET, title: "专属标识", desc: "个人主页展示认证徽章" },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.SCORE, title: "信任优先", desc: "认证用户优先推荐排序" },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.ROCKET, title: "匹配加权", desc: "匹配概率提升 1.5 倍" },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.GIFT, title: "专属权益", desc: "解锁认证用户专属功能" },
 ];
 
 /** 选择学生证图片 */
@@ -190,7 +192,7 @@ function onBlur() {
     <!-- 认证状态卡片 -->
     <view class="status-card" :style="{ background: statusInfo.bgColor }">
       <view class="status-card__emoji-wrap">
-        <text class="status-card__emoji">{{ statusInfo.emoji }}</text>
+        <SafeImage :src="statusInfo.icon" custom-class="status-card__emoji-img" mode="aspectFit" />
       </view>
       <text class="status-card__title" :style="{ color: statusInfo.color }">{{ statusInfo.title }}</text>
       <text class="status-card__desc">{{ statusInfo.desc }}</text>
@@ -210,7 +212,7 @@ function onBlur() {
             class="benefit-item"
           >
             <view class="benefit-item__icon">
-              <text class="benefit-item__emoji">{{ item.emoji }}</text>
+              <SafeImage :src="item.icon" custom-class="benefit-item__icon-img" mode="aspectFit" />
             </view>
             <text class="benefit-item__title">{{ item.title }}</text>
             <text class="benefit-item__desc">{{ item.desc }}</text>
@@ -228,7 +230,6 @@ function onBlur() {
     <template v-else-if="status === 'pending'">
       <view class="section">
         <view class="pending-card">
-          <text class="pending-card__emoji">⏳</text>
           <text class="pending-card__title">审核中</text>
           <text class="pending-card__desc">您的认证申请已提交\n预计 1-3 个工作日内完成审核\n审核结果将通过消息通知您</text>
         </view>
@@ -254,7 +255,7 @@ function onBlur() {
             class="benefit-item"
           >
             <view class="benefit-item__icon">
-              <text class="benefit-item__emoji">{{ item.emoji }}</text>
+              <SafeImage :src="item.icon" custom-class="benefit-item__icon-img" mode="aspectFit" />
             </view>
             <text class="benefit-item__title">{{ item.title }}</text>
             <text class="benefit-item__desc">{{ item.desc }}</text>
@@ -319,7 +320,6 @@ function onBlur() {
           hover-stay-time="100"
         >
           <view v-if="!uploadedImagePath" class="upload-card__empty">
-            <text class="upload-card__icon">📷</text>
             <text class="upload-card__text">点击上传学生证照片</text>
             <text class="upload-card__hint">支持 JPG / PNG，大小 ≤ 5MB</text>
           </view>

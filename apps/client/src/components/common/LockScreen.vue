@@ -231,12 +231,24 @@ function goToProfileSetup() {
 }
 
 .phone-heart {
-  font-size: var(--fs-2xl);
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.phone-heart__img {
+  width: 100%;
+  height: 100%;
 }
 
 .heart-float {
-  font-size: var(--fs-5xl);
+  width: 64rpx;
+  height: 64rpx;
   animation: float 2s ease-in-out infinite;
+}
+
+.heart-float__img {
+  width: 100%;
+  height: 100%;
 }
 
 @keyframes float {

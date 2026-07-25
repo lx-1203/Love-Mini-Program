@@ -109,10 +109,10 @@ const personalityTags = computed(() => {
 const interestCircles = computed(() => {
   const tags = props.card?.tags ?? [];
   const preset = [
-    { name: "读书会", icon: "📚", members: 128, gradient: "linear-gradient(135deg, var(--c-lavender-100) 0%, var(--c-lavender-50) 100%)" },
-    { name: "摄影社", icon: "📷", members: 89, gradient: "linear-gradient(135deg, var(--c-sky-100) 0%, var(--c-sky-50) 100%)" },
-    { name: "美食探店", icon: "🍜", members: 256, gradient: "linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-apricot-50) 100%)" },
-    { name: "徒步旅行", icon: "🥾", members: 76, gradient: "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)" },
+    { name: "读书会", icon: IMAGE_PATHS.ICONS_EMOJI.BOOK, members: 128, gradient: "linear-gradient(135deg, var(--c-lavender-100) 0%, var(--c-lavender-50) 100%)" },
+    { name: "摄影社", icon: IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON, members: 89, gradient: "linear-gradient(135deg, var(--c-sky-100) 0%, var(--c-sky-50) 100%)" },
+    { name: "美食探店", icon: IMAGE_PATHS.ICONS_EMOJI.FOOD, members: 256, gradient: "linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-apricot-50) 100%)" },
+    { name: "徒步旅行", icon: IMAGE_PATHS.ICONS_EMOJI.HIKING, members: 76, gradient: "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)" },
   ];
   if (tags.length > 0) {
     return tags.slice(0, 4).map((tag, idx) => ({
@@ -393,7 +393,7 @@ function onSwipeDownEnd(e: TouchEvent) {
           </view>
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--height">
-              <text class="quick-stat__icon-text">📏</text>
+              <image class="quick-stat__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.RULER" mode="aspectFit" />
             </view>
             <text class="quick-stat__value">{{ card?.height ?? (165 + (card?.userId?.length ?? 0) % 25) }}cm</text>
             <text class="quick-stat__label">身高</text>
@@ -407,7 +407,7 @@ function onSwipeDownEnd(e: TouchEvent) {
           </view>
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--income">
-              <text class="quick-stat__icon-text">💰</text>
+              <image class="quick-stat__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.MONEY" mode="aspectFit" />
             </view>
             <text class="quick-stat__value">{{ incomeLabel }}</text>
             <text class="quick-stat__label">月收入</text>
@@ -686,13 +686,12 @@ function onSwipeDownEnd(e: TouchEvent) {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 60%;
+  height: 55%;
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.72) 0%,
-    rgba(0, 0, 0, 0.35) 40%,
-    rgba(0, 0, 0, 0.08) 70%,
-    transparent 100%
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.20) 45%,
+    rgba(0, 0, 0, 0) 100%
   );
   pointer-events: none;
   z-index: 2;

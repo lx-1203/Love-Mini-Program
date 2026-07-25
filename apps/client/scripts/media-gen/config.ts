@@ -10,8 +10,8 @@ export const AGNES_CONFIG = {
   /** API 基础地址 */
   apiBase: "https://api.agnes-ai.com/api",
 
-  /** API Key - 请在 https://agnes-ai.com 重新生成 */
-  apiKey: "sk-PeAzA2C0MerWSzrqDbmiB0xFYTVFT3WJnzkfBC9zv0wjMWLT",
+  /** API Key - 请在 https://agnes-ai.com/ 重新生成，通过环境变量 AGNES_API_KEY 传入 */
+  apiKey: process.env.AGNES_API_KEY || "",
 
   /** 获取新 Key: https://agnes-ai.com/dashboard/api-keys */
 

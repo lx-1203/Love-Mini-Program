@@ -2,6 +2,7 @@ package com.campuslove.api.media;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * 媒体上传控制器。
@@ -82,16 +84,15 @@ public class MediaUploadController {
      *
      * <p>Real 模式：JwtAuthenticationFilter 注入的 principal 通常为 userId。</p>
      *
-     * <p>兜底：未获取到时返回 1L（dev 默认），避免 NPE 影响联调。
-     * 生产环境应通过 SecurityConfig 强制认证，到达此处的请求一定有 principal。</p>
+     * <p>未认证时直接抛出 401，不再使用兜底默认值。</p>
      *
      * @return 当前用户 ID
+     * @throws ResponseStatusException 未认证时返回 401
      */
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
-            LOGGER.warn("SecurityContext 中未找到认证信息，使用 dev 默认 userId=1");
-            return 1L;
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "未认证");
         }
         Object principal = auth.getPrincipal();
         if (principal instanceof Long longValue) {
@@ -104,13 +105,10 @@ public class MediaUploadController {
             try {
                 return Long.parseLong(strValue);
             } catch (NumberFormatException ex) {
-                LOGGER.warn("无法解析 principal 为 Long: {}，使用 dev 默认 userId=1", principal);
-                return 1L;
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "未认证");
             }
         }
-        LOGGER.warn("未识别的 principal 类型: {}，使用 dev 默认 userId=1",
-                principal.getClass().getName());
-        return 1L;
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "未认证");
     }
 
     /**

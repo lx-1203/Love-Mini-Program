@@ -4,9 +4,10 @@ import json
 from datetime import datetime
 
 # 配置
-SCREENSHOTS_DIR = r"d:\6\恋爱小程序\test-screenshots"
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCREENSHOTS_DIR = os.path.join(ROOT_DIR, "test-screenshots")
 BASE_URL = "http://localhost:5173"
-PREVIEW_URL = "file:///d:/6/恋爱小程序/design-preview/index.html"
+PREVIEW_URL = "file:///" + os.path.join(ROOT_DIR, "design-preview", "index.html").replace("\\", "/")
 REPORT_FILE = os.path.join(SCREENSHOTS_DIR, "test_report.json")
 
 # 确保截图目录存在

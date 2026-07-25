@@ -6,6 +6,7 @@
  */
 import { ref, computed } from "vue";
 import { lightHaptic } from "../../utils/haptic";
+import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
 
 /** 套餐 ID */
@@ -66,11 +67,11 @@ const plans = ref<VipPlan[]>([
 
 /** VIP 权益列表 */
 const benefits = ref<VipBenefit[]>([
-  { emoji: "👀", title: "查看谁喜欢我", desc: "无限次查看喜欢我的用户列表" },
-  { emoji: "💝", title: "无限喜欢", desc: "每日喜欢次数无上限" },
-  { emoji: "👑", title: "专属标识", desc: "个人主页 VIP 皇冠徽章" },
-  { emoji: "🚀", title: "匹配加权", desc: "匹配概率提升 2 倍" },
-  { emoji: "🎨", title: "专属主题", desc: "解锁 5 套 VIP 专属主题" },
+  { emoji: "", icon: IMAGE_PATHS.ICONS_EMOJI.EYE, title: "查看谁喜欢我", desc: "无限次查看喜欢我的用户列表" },
+  { emoji: "", icon: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, title: "无限喜欢", desc: "每日喜欢次数无上限" },
+  { emoji: "", icon: IMAGE_PATHS.ICONS_EMOJI.CROWN, title: "专属标识", desc: "个人主页 VIP 皇冠徽章" },
+  { emoji: "", icon: IMAGE_PATHS.ICONS_EMOJI.ROCKET, title: "匹配加权", desc: "匹配概率提升 2 倍" },
+  { emoji: "", icon: IMAGE_PATHS.ICONS_EMOJI.PALETTE, title: "专属主题", desc: "解锁 5 套 VIP 专属主题" },
   { emoji: "", icon: IMAGE_PATHS.ICONS_EMOJI.CHAT, title: "超级喜欢", desc: "每日 3 次超级喜欢机会" },
 ]);
 
@@ -149,7 +150,7 @@ function goBack() {
     <!-- VIP 头部卡片 -->
     <view class="vip-header">
       <view class="vip-header__crown">
-        <text class="vip-header__crown-emoji">👑</text>
+        <SafeImage :src="IMAGE_PATHS.ICONS_EMOJI.CROWN" custom-class="vip-header__crown-img" mode="aspectFit" />
       </view>
       <text class="vip-header__title">校园恋爱 VIP</text>
       <text class="vip-header__subtitle">解锁专属权益 · 遇见更多可能</text>

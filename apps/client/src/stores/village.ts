@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import type { components } from "../services/generated/api-types";
@@ -519,7 +519,7 @@ const MAX_CONTENT_LENGTH = 500;
 const MAX_IMAGES_COUNT = 9;
 
 function useMock() {
-  return appEnv.apiMode === "mock";
+  return isMockMode();
 }
 
 /**

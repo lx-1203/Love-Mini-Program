@@ -129,7 +129,7 @@ onMounted(async () => {
 
         <!-- 已回答提示 -->
         <view v-if="hasAnswered" class="answered-hint">
-          <text class="answered-hint__icon">✅</text>
+          <image class="answered-hint__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE" mode="aspectFit" />
           <text class="answered-hint__text">你已回答今日问题</text>
         </view>
 

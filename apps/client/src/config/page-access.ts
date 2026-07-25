@@ -34,9 +34,3 @@ export const profilePageRequirements: PageRequirements = {
   requiresCampus: false,
   requiresSchedule: false,
 };
-
-/** @deprecated 旧首页配置，待移除 */
-export const homePageRequirements: PageRequirements = discoverPageRequirements;
-
-/** @deprecated 旧聊天页配置，待移除 */
-export const chatPageRequirements: PageRequirements = messagesPageRequirements;

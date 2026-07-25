@@ -150,8 +150,19 @@ export const appEnv = {
   apiMode: resolveApiMode(),
 } as const;
 
-// 诊断日志（仅 H5，便于排查 env 解析问题）
-if (isH5) {
+/**
+ * 判断当前是否为 Mock 模式。
+ *
+ * 各 store 中原先各自定义了局部的 `function useMock()`，
+ * 本质上都是检查 `appEnv.apiMode === "mock"`。
+ * 统一导出此函数，便于各 store 引用单一真相源。
+ */
+export function isMockMode(): boolean {
+  return appEnv.apiMode === "mock";
+}
+
+// 诊断日志（仅在开发环境输出，生产环境不泄露配置信息）
+if (isDev) {
   console.log("[ENV] 诊断:", {
     isDev,
     apiMode: appEnv.apiMode,

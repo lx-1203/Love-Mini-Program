@@ -586,7 +586,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 .campus-fab {
   position: fixed;
   right: 32rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 140rpx);
+  bottom: calc(env(safe-area-inset-bottom) + 150rpx);
   display: flex;
   align-items: center;
   justify-content: center;

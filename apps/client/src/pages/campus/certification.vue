@@ -398,7 +398,8 @@ onMounted(() => {
 }
 
 .info-card__icon {
-  font-size: var(--fs-4xl);
+  width: 44rpx;
+  height: 44rpx;
   display: block;
   margin-bottom: var(--sp-3);
 }

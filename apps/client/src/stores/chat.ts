@@ -3,7 +3,7 @@ import { clientApi } from "../services/api";
 import { useSessionStore } from "./session";
 import { toChatOverviewView, toChatSessionView } from "../view-models/chat";
 import { createChatTransport } from "../features/chat/transport";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import type { components } from "../services/generated/api-types";
 import type { ChatMessage, IcebreakerView } from "../services/generated/api-types-supplement";
@@ -15,7 +15,7 @@ type TempChatSession = Schemas["TempChatSession"];
 
 /** 判断当前是否为 Mock 模式 */
 function useMock() {
-  return appEnv.apiMode === "mock";
+  return isMockMode();
 }
 
 /* ========== Mock 数据 ========== */

@@ -40,12 +40,13 @@ public class WeChatPushService {
     }
 
     /**
-     * 获取微信 access_token，带缓存。
+     * 获取微信 access_token，带缓存（线程安全）。
      *
      * @return access_token 字符串
      */
-    public String getAccessToken() {
+    public synchronized String getAccessToken() {
         long now = System.currentTimeMillis();
+        // 双重检查：快速路径避免不必要的同步等待
         if (cachedAccessToken != null && now < tokenExpireTime) {
             return cachedAccessToken;
         }
@@ -71,9 +72,16 @@ public class WeChatPushService {
                 return null;
             }
 
+            // 双重检查：获取 token 前再次确认缓存未被其他线程更新
+            long nowAfterFetch = System.currentTimeMillis();
+            if (cachedAccessToken != null && nowAfterFetch < tokenExpireTime) {
+                log.debug("WeChat access_token 已被其他线程刷新，复用缓存");
+                return cachedAccessToken;
+            }
+
             cachedAccessToken = response.getAccessToken();
             // 提前 5 分钟过期，避免边界情况
-            tokenExpireTime = now + (response.getExpiresIn() - 300) * 1000L;
+            tokenExpireTime = nowAfterFetch + (response.getExpiresIn() - 300) * 1000L;
             log.info("WeChat access_token refreshed, expires_in={}", response.getExpiresIn());
             return cachedAccessToken;
         } catch (Exception ex) {

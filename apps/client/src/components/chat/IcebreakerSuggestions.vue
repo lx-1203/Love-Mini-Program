@@ -88,7 +88,7 @@ const emit = defineEmits<{
     rgba(37, 99, 235, 0.04),
     rgba(91, 127, 255, 0.03)
   );
-  border-bottom: 1px solid rgba(37, 99, 235, 0.06);
+  border-bottom: 1rpx solid rgba(37, 99, 235, 0.06);
 }
 
 /* ========== 标题行 ========== */
@@ -219,7 +219,7 @@ const emit = defineEmits<{
   padding: 20rpx 22rpx;
   border-radius: 18rpx;
   background: #ffffff;
-  border: 1px solid rgba(37, 99, 235, 0.06);
+  border: 1rpx solid rgba(37, 99, 235, 0.06);
 }
 
 .icebreaker__skeleton-line {

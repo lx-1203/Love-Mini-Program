@@ -7,6 +7,7 @@
  */
 import { ref, watch, nextTick } from "vue";
 import { lightHaptic, mediumHaptic } from "../../utils/haptic";
+import { IMAGE_PATHS } from "../../config/images";
 
 const props = defineProps<{
   visible: boolean;
@@ -86,7 +87,7 @@ function handleClose() {
       <view class="long-press-menu__item press-feedback" hover-class="long-press-menu__item--pressed"
         @tap="handleAction('detail')">
         <view class="long-press-menu__item-icon long-press-menu__item-icon--detail">
-          <text class="long-press-menu__item-icon-emoji">👤</text>
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">查看详情</text>
@@ -98,7 +99,7 @@ function handleClose() {
       <view class="long-press-menu__item press-feedback" hover-class="long-press-menu__item--pressed"
         @tap="handleAction('superLike')">
         <view class="long-press-menu__item-icon long-press-menu__item-icon--super">
-          <text class="long-press-menu__item-icon-emoji">⭐</text>
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.STAR_SVG" mode="aspectFit" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">超级喜欢</text>
@@ -110,7 +111,7 @@ function handleClose() {
       <view class="long-press-menu__item press-feedback" hover-class="long-press-menu__item--pressed"
         @tap="handleAction('notInterested')">
         <view class="long-press-menu__item-icon long-press-menu__item-icon--not-interested">
-          <text class="long-press-menu__item-icon-emoji">🙅</text>
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.EYE_OFF" mode="aspectFit" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">不感兴趣</text>
@@ -122,7 +123,7 @@ function handleClose() {
       <view class="long-press-menu__item press-feedback" hover-class="long-press-menu__item--pressed"
         @tap="handleAction('report')">
         <view class="long-press-menu__item-icon long-press-menu__item-icon--report">
-          <text class="long-press-menu__item-icon-emoji">⚠️</text>
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">举报</text>

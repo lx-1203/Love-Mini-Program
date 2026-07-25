@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import type { components } from "../services/generated/api-types";
@@ -361,7 +361,7 @@ const mockInteractionEvents: InteractionEvent[] = [
   { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "沈念", triggerUserAvatar: "/static/default-avatar.png", referenceId: 15, referenceType: "topic", summary: "沈念回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
 ];
 
-function useMock() { return appEnv.apiMode === "mock"; }
+function useMock() { return isMockMode(); }
 
 const ASYNC_TIMEOUT_MS = 15000;
 

@@ -1023,6 +1023,7 @@ class WebSocketClient {
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
       console.error("[WebSocket] 已达最大重连次数，停止重连");
       this.setConnectionState("disconnected");
+      uni.showToast({ title: "连接已断开，请检查网络", icon: "none" });
       return;
     }
 

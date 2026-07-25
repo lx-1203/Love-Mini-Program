@@ -454,7 +454,7 @@ function stepLineStyles(step: StepItem, index: number) {
   gap: 20rpx;
   padding: 24rpx;
   border-radius: 20rpx;
-  border-width: 1px;
+  border-width: 1rpx;
   border-style: solid;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -570,14 +570,21 @@ function stepLineStyles(step: StepItem, index: number) {
   background: var(--c-bg-container);
 }
 
+.sip-current__icon-img {
+  width: 44rpx;
+  height: 44rpx;
+}
+
 .sip-step__check {
-  font-size: 28rpx;
+  width: 28rpx;
+  height: 28rpx;
   color: var(--c-text-inverse);
   font-weight: 700;
 }
 
 .sip-step__icon {
-  font-size: 24rpx;
+  width: 24rpx;
+  height: 24rpx;
   line-height: 1;
 }
 

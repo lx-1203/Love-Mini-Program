@@ -292,16 +292,20 @@ public class RealPushSummaryService implements PushSummaryService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "PushSummary not found: " + summaryId));
 
-        // 权限校验：仅允许摘要所属用户操作（非该用户的操作记录日志但不阻断）
+        // 权限校验：仅允许摘要所属用户操作
         try {
             Long currentUserId = SecurityUtils.getCurrentUserId();
             if (!currentUserId.equals(summary.getUserId())) {
-                log.warn("用户[{}]尝试标记非所属摘要[{}]为已发送（摘要所属用户: {}）",
+                log.warn("用户[{}]尝试标记非所属摘要[{}]为已发送（摘要所属用户: {}），操作已拒绝",
                         currentUserId, summaryId, summary.getUserId());
+                throw new IllegalArgumentException("无权操作该摘要");
             }
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            // 未认证时仍允许标记（兼容调度系统调用场景）
-            log.debug("无法获取当前用户ID，跳过权限校验: {}", e.getMessage());
+            // 未认证或无法获取用户ID时，拒绝操作
+            log.warn("无法获取当前用户ID，拒绝标记推送摘要[{}]为已发送: {}", summaryId, e.getMessage());
+            throw new IllegalStateException("未认证，无法标记推送为已发送", e);
         }
 
         summary.setIsSent(true);

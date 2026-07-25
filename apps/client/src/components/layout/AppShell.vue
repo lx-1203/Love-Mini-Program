@@ -71,7 +71,7 @@ onShow(() => {
   padding: 10rpx 16rpx 10rpx 10rpx;
   border-radius: 999rpx;
   background: var(--c-bg-surface);
-  border: 1px solid var(--c-border-light);
+  border: 1rpx solid var(--c-border-light);
 }
 
 .shell__back:active {

@@ -34,6 +34,10 @@ public class DatabaseConfigValidator {
     @Value("${spring.datasource.url:}")
     private String dbUrl;
 
+    /** 管理员密码 BCrypt 哈希，由 Flyway placeholder admin_password_hash 提供 */
+    @Value("${spring.flyway.placeholders.admin_password_hash:}")
+    private String adminPasswordHash;
+
     /**
      * 启动后校验数据库凭据完整性。
      * 任一凭据为空将抛出 {@link IllegalStateException} 阻止应用启动。
@@ -54,6 +58,11 @@ public class DatabaseConfigValidator {
             throw new IllegalStateException(
                     "DB_PASSWORD 环境变量未配置，应用启动失败。"
                     + "请在环境中配置 DB_PASSWORD 以提供数据库访问密码。");
+        }
+        if (adminPasswordHash == null || adminPasswordHash.isBlank()) {
+            throw new IllegalStateException(
+                    "ADMIN_PASSWORD_HASH 环境变量未配置，应用启动失败。"
+                    + "生产环境必须通过环境变量 ADMIN_PASSWORD_HASH 设置管理员密码的 BCrypt 哈希。");
         }
         log.info("数据库凭据校验通过: username={}, host={}", dbUsername, extractHost(dbUrl));
     }

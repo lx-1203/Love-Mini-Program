@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { watch } from "vue";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { clientApi } from "../services/api";
 import { useSessionStore } from "./session";
@@ -301,7 +301,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = MAX_RETRIES, dela
 }
 
 function useMock() {
-  return appEnv.apiMode === "mock";
+  return isMockMode();
 }
 
 /**

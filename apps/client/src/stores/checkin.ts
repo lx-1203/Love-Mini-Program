@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { appEnv } from "../services/env";
+import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 
@@ -106,7 +106,7 @@ let mockCheckInStatus: CheckInStatus = {
 const ASYNC_TIMEOUT_MS = 15000;
 
 function useMock() {
-  return appEnv.apiMode === "mock";
+  return isMockMode();
 }
 
 /**

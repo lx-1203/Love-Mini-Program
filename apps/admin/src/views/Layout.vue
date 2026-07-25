@@ -6,14 +6,14 @@ const router = useRouter();
 const sessionStore = useSessionStore();
 
 const menuItems = [
-  { name: "Dashboard", label: "仪表盘", icon: "📊" },
-  { name: "Users", label: "用户管理", icon: "👥" },
-  { name: "Posts", label: "帖子管理", icon: "📝" },
-  { name: "Feedback", label: "反馈管理", icon: "💬" },
-  { name: "AuditLogs", label: "审计日志", icon: "📋" },
-  { name: "Reports", label: "举报管理", icon: "🚩" },
-  { name: "NotifyConfig", label: "通知配置", icon: "🔔" },
-  { name: "SensitiveWords", label: "敏感词管理", icon: "🚫" },
+  { name: "Dashboard", label: "仪表盘", icon: "/icons/chart.svg" },
+  { name: "Users", label: "用户管理", icon: "/icons/user.svg" },
+  { name: "Posts", label: "帖子管理", icon: "/icons/file-text.svg" },
+  { name: "Feedback", label: "反馈管理", icon: "/icons/list.svg" },
+  { name: "AuditLogs", label: "审计日志", icon: "/icons/clipboard.svg" },
+  { name: "Reports", label: "举报管理", icon: "/icons/prohibited.svg" },
+  { name: "NotifyConfig", label: "通知配置", icon: "/icons/lock.svg" },
+  { name: "SensitiveWords", label: "敏感词管理", icon: "/icons/prohibited.svg" },
 ];
 
 async function handleLogout() {
@@ -37,7 +37,7 @@ async function handleLogout() {
           class="menu-item"
           active-class="menu-item--active"
         >
-          <text class="menu-icon">{{ item.icon }}</text>
+          <image class="menu-icon" :src="item.icon" mode="aspectFit" />
           <text class="menu-label">{{ item.label }}</text>
         </router-link>
       </nav>
@@ -111,7 +111,8 @@ async function handleLogout() {
 }
 
 .menu-icon {
-  font-size: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 .menu-label {

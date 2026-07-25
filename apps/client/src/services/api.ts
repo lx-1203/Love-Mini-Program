@@ -6,14 +6,14 @@ import type {
   UpdateBasicProfileRequest,
 } from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
-import { appEnv } from "./env";
+import { appEnv, isMockMode } from "./env";
 import { getToken, request, setToken, setRefreshToken, clearTokens } from "./http";
 
 type Schemas = components["schemas"];
 type SubmissionType = Schemas["SubmissionType"];
 
 function useMock() {
-  return appEnv.apiMode === "mock";
+  return isMockMode();
 }
 
 /**

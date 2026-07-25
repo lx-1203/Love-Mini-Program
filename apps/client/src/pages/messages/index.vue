@@ -342,13 +342,13 @@ function handleEntryClick(type: string) {
       openAppPath("/pages/likes/index");
       break;
     case "group-chat":
-      uni.showToast({ title: "群聊功能开发中", icon: "none" });
+      uni.showToast({ title: "群聊功能即将上线，敬请期待", icon: "none" });
       break;
     case "notification":
       activeTab.value = "notifications";
       break;
     case "assistant":
-      uni.showToast({ title: "恋爱助手开发中", icon: "none" });
+      uni.showToast({ title: "恋爱助手功能即将上线，敬请期待", icon: "none" });
       break;
   }
 }
@@ -711,6 +711,7 @@ function handleSearchClick() {
   background: var(--c-gradient-page);
   padding: 0;
   padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 160rpx);
   box-sizing: border-box;
   position: relative;
 }

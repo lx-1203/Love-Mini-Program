@@ -218,6 +218,19 @@ function goToDiscover() {
   openAppPath("/pages/discover/index");
 }
 
+/* ========== 分享按钮处理 ========== */
+function handleShare() {
+  // 优先尝试调用原生分享菜单
+  try {
+    uni.showShareMenu({
+      withShareTicket: true,
+      menus: ["shareAppMessage", "shareTimeline"],
+    });
+  } catch (_e) {
+    uni.showToast({ title: "分享功能开发中", icon: "none" });
+  }
+}
+
 /* ========== 跳转作者个人主页（M-08） ========== */
 /**
  * 点击帖子作者头像，跳转到对方个人主页
@@ -434,7 +447,7 @@ onMounted(() => {
                 <text v-if="post.likes > 0" class="action-btn__count" :class="{ 'action-btn__count--liked': post.isLiked }">{{ post.likes }}</text>
               </view>
               <!-- 分享 -->
-              <view class="action-btn" @tap.stop>
+              <view class="action-btn" @tap.stop="handleShare">
                 <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" />
               </view>
               <!-- 收藏 -->
@@ -629,6 +642,8 @@ onMounted(() => {
   color: var(--c-neutral-500);
   font-weight: 500;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .category-tab--active .category-tab__name {
@@ -655,10 +670,10 @@ onMounted(() => {
   border: 4rpx solid var(--c-neutral-200);
   border-top-color: var(--c-brand-400);
   border-radius: var(--r-full);
-  animation: spin 1s linear infinite;
+  animation: village-spin 1s linear infinite;
 }
 
-@keyframes spin {
+@keyframes village-spin {
   to {
     transform: rotate(360deg);
   }
@@ -710,6 +725,11 @@ onMounted(() => {
   width: 88rpx;
   height: 88rpx;
   opacity: 0.35;
+}
+
+.village-empty__icon-img {
+  width: 100%;
+  height: 100%;
 }
 
 .village-empty__title {
@@ -878,6 +898,7 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 
 /* --- 关注按钮 --- */
 .follow-chip {
@@ -1090,7 +1111,7 @@ onMounted(() => {
 }
 
 .feed-bottom-spacer {
-  height: 180rpx;
+  height: calc(200rpx + env(safe-area-inset-bottom));
 }
 
 /* ================================================================
@@ -1099,7 +1120,7 @@ onMounted(() => {
 .fab {
   position: fixed;
   right: var(--sp-7);
-  bottom: calc(env(safe-area-inset-bottom) + var(--sp-14));
+  bottom: calc(env(safe-area-inset-bottom) + 150rpx);
   width: 104rpx;
   height: 104rpx;
   border-radius: var(--r-full);

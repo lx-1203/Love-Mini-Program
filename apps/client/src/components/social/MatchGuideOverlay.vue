@@ -142,7 +142,7 @@ function startChat() {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1000;
+  z-index: 500;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -167,10 +167,10 @@ function startChat() {
   position: relative;
   width: 620rpx;
   max-height: 80vh;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border-radius: 32rpx;
   padding: 48rpx 36rpx;
-  box-shadow: 0 20rpx 60rpx rgba(15, 23, 42, 0.12), 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
+  box-shadow: var(--s-modal);
   overflow-y: auto;
 }
 
@@ -197,7 +197,12 @@ function startChat() {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(91, 127, 255, 0.15);
+  box-shadow: 0 8rpx 24rpx rgba(63, 207, 142, 0.15);
+}
+
+.mgo-avatar-img {
+  width: 56rpx;
+  height: 56rpx;
 }
 
 .mgo-avatar-emoji {
@@ -237,9 +242,9 @@ function startChat() {
 
 .mgo-topic-chip {
   padding: 20rpx 24rpx;
-  background: linear-gradient(135deg, var(--c-brand-50), rgba(91, 127, 255, 0.1));
+  background: linear-gradient(135deg, var(--c-brand-50), rgba(63, 207, 142, 0.1));
   border-radius: 16rpx;
-  border: 1px solid rgba(91, 127, 255, 0.15);
+  border: 1rpx solid rgba(63, 207, 142, 0.15);
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -250,7 +255,7 @@ function startChat() {
 
 .mgo-topic-text {
   font-size: 26rpx;
-  color: #4C6EF5;
+  color: var(--c-brand-600);
   line-height: 1.4;
 }
 
@@ -266,7 +271,7 @@ function startChat() {
   align-items: center;
   gap: 8rpx;
   padding: 12rpx 20rpx;
-  background: #F1F5F9;
+  background: var(--c-bg-surface);
   border-radius: 9999rpx;
 }
 
@@ -291,13 +296,13 @@ function startChat() {
   align-items: center;
   justify-content: space-between;
   padding: 16rpx 20rpx;
-  background: #F1F5F9;
+  background: var(--c-bg-surface);
   border-radius: 12rpx;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mgo-activity-item:active {
-  background: #E2E8F0;
+  background: var(--c-neutral-200);
 }
 
 .mgo-activity-title {
@@ -338,18 +343,18 @@ function startChat() {
 }
 
 .mgo-btn--primary {
-  background: #5B7FFF;
+  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
   color: #ffffff;
-  box-shadow: 0 4rpx 16rpx rgba(91, 127, 255, 0.25);
+  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.25);
 }
 
 .mgo-btn--ghost {
   background: transparent;
-  color: #64748B;
+  color: var(--c-text-secondary);
 }
 
 .mgo-btn--ghost:active {
-  background: #F1F5F9;
-  color: #5B7FFF;
+  background: var(--c-bg-surface);
+  color: var(--c-brand-500);
 }
 </style>

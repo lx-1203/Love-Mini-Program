@@ -103,8 +103,6 @@ page {
   -moz-osx-font-smoothing: grayscale;
   height: 100%;
   width: 100%;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 view, text, image {
@@ -314,41 +312,6 @@ view, button, scroll-view, swiper, input, textarea {
   border: 1rpx solid #EEF0F4;
 }
 
-.text-brand { color: #3FCF8E; }
-.text-brand-romance { color: #EC4899; }
-.text-pink { color: #EC4899; }
-.text-vip { color: #C9A36A; }
-
-.gradient-brand {
-  background: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
-}
-.gradient-romance {
-  background: linear-gradient(135deg, #EC4899 0%, #F97316 100%);
-}
-.gradient-pink {
-  background: linear-gradient(135deg, #EC4899 0%, #F97316 100%);
-}
-.gradient-vip {
-  background: linear-gradient(135deg, #C9A36A 0%, #E8C98A 100%);
-}
-
-.float-shadow {
-  box-shadow: 0 6rpx 20rpx rgba(63, 207, 142, 0.35);
-}
-
-.shadow-card-soft {
-  box-shadow: 0 2rpx 12rpx rgba(15, 23, 42, 0.05), 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
-  border: 1rpx solid #EEF0F4;
-}
-
-.shadow-brand {
-  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.25);
-}
-
-.shadow-romance {
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.25);
-}
-
 /* ================================================================
    安全区域适配 - 全局样式
    ================================================================ */
@@ -379,7 +342,7 @@ view, button, scroll-view, swiper, input, textarea {
    - mp-weixin 兼容：纯 CSS 动画，无 DOM API 依赖
    ================================================================ */
 @keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(8rpx); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -580,7 +543,7 @@ view, button, scroll-view, swiper, input, textarea {
 /* 高层级卡片：更强的阴影和边缘，用于主推荐卡片 */
 .card-base--elevated {
   box-shadow: 0 12rpx 32rpx rgba(15, 23, 42, 0.08), 0 4rpx 12rpx rgba(15, 23, 42, 0.04);
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  border: 1rpx solid rgba(15, 23, 42, 0.06);
 }
 
 /* 区块分隔（明确可见的边缘色） */
@@ -616,7 +579,7 @@ view, button, scroll-view, swiper, input, textarea {
 .img-rounded {
   border-radius: 20rpx;
   box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.08), 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
-  border: 1px solid rgba(15, 23, 42, 0.04);
+  border: 1rpx solid rgba(15, 23, 42, 0.04);
   overflow: hidden;
 }
 

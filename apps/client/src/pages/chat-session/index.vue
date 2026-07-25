@@ -13,7 +13,7 @@ import IcebreakerSuggestions from "../../components/chat/IcebreakerSuggestions.v
 import { useMessagesStore } from "../../stores/messages";
 import { useChatStore } from "../../stores/chat";
 import { usePageAccess } from "../../composables/usePageAccess";
-import { chatPageRequirements } from "../../config/page-access";
+import { messagesPageRequirements } from "../../config/page-access";
 import { clientApi } from "../../services/api";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -90,7 +90,7 @@ const shouldShowIcebreakers = computed(() => {
   return userMessageCount.value <= 1 && !pageErrorMessage.value;
 });
 
-usePageAccess(chatPageRequirements);
+usePageAccess(messagesPageRequirements);
 
 onLoad((query) => {
   // ---- 预填消息参数（来自兴趣圈"打招呼"跳转） ----
@@ -590,6 +590,16 @@ function cancelQuoteReply() {
   quoteReply.value = null;
 }
 
+/** 表情按钮点击 */
+function handleEmojiTap() {
+  uni.showToast({ title: "表情功能即将上线", icon: "none" });
+}
+
+/** 更多按钮点击 */
+function handleMoreTap() {
+  uni.showToast({ title: "图片/文件发送功能即将上线", icon: "none" });
+}
+
 /** 点击引用消息跳转（暂不实现滚动定位，仅取消引用） */
 function handleTapQuote(_quoteRef: string) {
   // 后续可实现滚动定位到被引用消息
@@ -764,6 +774,7 @@ async function loadIcebreakers() {
               class="wechat-input-bar__icon-btn press-feedback"
               hover-class="press-feedback--active"
               hover-stay-time="120"
+              @tap="handleEmojiTap"
             >
               <image class="wechat-input-bar__icon-img" :src="iconSrc.smile" mode="aspectFit" />
             </view>
@@ -771,6 +782,7 @@ async function loadIcebreakers() {
               class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--more press-feedback"
               hover-class="press-feedback--active"
               hover-stay-time="120"
+              @tap="handleMoreTap"
             >
               <text class="wechat-input-bar__icon-text">+</text>
             </view>

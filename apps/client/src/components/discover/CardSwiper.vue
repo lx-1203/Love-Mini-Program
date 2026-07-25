@@ -698,6 +698,15 @@ watch(
           <text class="card__video-badge-text">视频</text>
         </view>
 
+        <!-- 匹配度右上角角标 -->
+        <view
+          class="card__match-badge"
+          :class="{ 'card__match-badge--with-video': hasVideo }"
+        >
+          <image class="card__match-badge-icon" :src="emojiIcons.heart" mode="aspectFit" />
+          <text class="card__match-badge-text">{{ matchScore }}%</text>
+        </view>
+
         <!-- Phase D2 · 照片墙分页指示器（多图场景下展示） -->
         <view
           v-if="hasMultipleImages"
@@ -745,22 +754,6 @@ watch(
             />
           </view>
 
-          <!-- 核心资料：收入 / 性格 / 社交圈 -->
-          <view class="card__key-info">
-            <view class="key-info-chip key-info-chip--income">
-              <text class="key-info-chip__label">收入</text>
-              <text class="key-info-chip__value">{{ incomeLabel }}</text>
-            </view>
-            <view class="key-info-chip key-info-chip--personality">
-              <text class="key-info-chip__value">{{ personalityPreview }}</text>
-            </view>
-            <view class="key-info-chip key-info-chip--circles">
-              <image class="key-info-chip__icon" :src="emojiIcons.group" mode="aspectFit" />
-              <text class="key-info-chip__label">圈子</text>
-              <text class="key-info-chip__value">{{ socialCirclesPreview }}</text>
-            </view>
-          </view>
-
           <!-- 学校、距离 -->
           <view class="card__info-row">
             <view class="card__school">
@@ -772,16 +765,6 @@ watch(
               <image class="card__distance-icon" :src="emojiIcons.location" mode="aspectFit" />
               <text class="card__distance-text">{{ currentCard.availability || '附近' }}</text>
             </view>
-          </view>
-
-          <!-- 校园标签 -->
-          <view class="card__campus-tags">
-            <text v-if="currentCard.isSameSchool" class="campus-tag campus-tag--school">同校</text>
-            <text v-if="currentCard.isSameMajor" class="campus-tag campus-tag--major">同专业</text>
-            <text class="campus-tag campus-tag--match">
-              <image class="campus-tag__icon" :src="emojiIcons.heart" mode="aspectFit" />
-              {{ matchScore }}%匹配
-            </text>
           </view>
 
           <!-- 标签区 -->
@@ -1000,12 +983,11 @@ watch(
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 72%;
+  height: 55%;
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.72) 0%,
-    rgba(0, 0, 0, 0.42) 32%,
-    rgba(0, 0, 0, 0.16) 58%,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.20) 45%,
     rgba(0, 0, 0, 0) 100%
   );
   pointer-events: none;
@@ -1114,6 +1096,38 @@ watch(
   line-height: 1;
 }
 
+/* ========== 匹配度右上角角标 ========== */
+.card__match-badge {
+  position: absolute;
+  top: 28rpx;
+  right: 28rpx;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 6rpx 14rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--r-full);
+  border: 1rpx solid rgba(255, 255, 255, 0.3);
+  z-index: 4;
+}
+
+.card__match-badge-icon {
+  width: 20rpx;
+  height: 20rpx;
+  flex-shrink: 0;
+}
+
+.card__match-badge-text {
+  font-size: var(--fs-xs);
+  color: var(--c-text-inverse);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card__match-badge--with-video {
+  top: 72rpx;
+}
+
 /* ========== Phase D2 · 照片墙分页指示器（点状） ========== */
 .card__pagination {
   position: absolute;
@@ -1208,10 +1222,10 @@ watch(
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 32rpx 36rpx 48rpx;
+  padding: 24rpx 36rpx 36rpx;
   display: flex;
   flex-direction: column;
-  gap: 14rpx;
+  gap: 10rpx;
   z-index: 3;
   /* 毛玻璃信息区：半透明背景 + 模糊效果（叠加在图片遮罩之上） */
   background: linear-gradient(
@@ -1266,59 +1280,6 @@ watch(
   font-weight: 700;
 }
 
-/* 核心资料：收入 / 性格 / 社交圈 */
-.card__key-info {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12rpx;
-  margin-top: 4rpx;
-}
-
-.key-info-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6rpx;
-  padding: 8rpx 18rpx;
-  border-radius: var(--r-full);
-  border: 1rpx solid var(--c-overlay-border-mid);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--c-text-inverse);
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
-}
-
-.key-info-chip--income {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.75) 0%, rgba(245, 158, 11, 0.75) 100%);
-}
-
-.key-info-chip--personality {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.72) 0%, rgba(244, 114, 182, 0.72) 100%);
-}
-
-.key-info-chip--circles {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.72) 0%, rgba(59, 130, 246, 0.72) 100%);
-}
-
-.key-info-chip__label {
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.key-info-chip__icon {
-  width: 22rpx;
-  height: 22rpx;
-  flex-shrink: 0;
-  filter: brightness(0) invert(1);
-}
-
-.key-info-chip__value {
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--c-text-inverse);
-}
-
 /* 学校、距离信息行 */
 .card__info-row {
   display: flex;
@@ -1354,59 +1315,6 @@ watch(
   color: var(--c-overlay-text-quaternary);
 }
 
-/* 校园标签 */
-.card__campus-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-  margin-top: 4rpx;
-}
-
-.campus-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4rpx;
-  padding: 8rpx 20rpx;
-  border-radius: var(--r-full);
-  font-size: var(--fs-base);
-  font-weight: 700;
-  /* mp-weixin 不支持，H5 保留毛玻璃 */
-  // #ifdef H5
-  backdrop-filter: blur(8rpx);
-  // #endif
-}
-
-.campus-tag__icon {
-  width: 24rpx;
-  height: 24rpx;
-  flex-shrink: 0;
-}
-
-.campus-tag--school {
-  background: var(--c-tag-school-overlay);
-  color: var(--c-text-inverse);
-  border: 1rpx solid var(--c-overlay-border-strong);
-}
-
-.campus-tag--major {
-  background: var(--c-tag-major-overlay);
-  color: var(--c-text-inverse);
-  border: 1rpx solid var(--c-overlay-border-strong);
-}
-
-.campus-tag--match {
-  background: linear-gradient(135deg, var(--c-tag-match-from), var(--c-tag-match-to));
-  color: var(--c-text-inverse);
-  border: 1rpx solid var(--c-overlay-border-stronger);
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.35);
-  animation: match-pulse 2s ease-in-out infinite;
-}
-
-@keyframes match-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.45); }
-  50% { box-shadow: 0 0 0 10rpx rgba(236, 72, 153, 0); }
-}
-
 /* 标签区 */
 .card__tags {
   display: flex;
@@ -1419,36 +1327,11 @@ watch(
   display: inline-flex;
   padding: 10rpx 24rpx;
   border-radius: var(--r-full);
-  background: var(--c-overlay-bg-light);
-  color: var(--c-text-inverse);
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
   font-size: var(--fs-base);
   font-weight: 500;
-  border: 1rpx solid var(--c-overlay-border-mid);
-}
-
-/* 标签色彩编码：兴趣(绿) / 性格(粉) / 生活(橙) / 校园(蓝) */
-.tag-pill:nth-child(4n+1) {
-  background: rgba(63, 207, 142, 0.3);
-  border-color: rgba(63, 207, 142, 0.4);
-  color: #e8f5e9;
-}
-
-.tag-pill:nth-child(4n+2) {
-  background: rgba(244, 143, 177, 0.3);
-  border-color: rgba(244, 143, 177, 0.4);
-  color: #fce4ec;
-}
-
-.tag-pill:nth-child(4n+3) {
-  background: rgba(255, 183, 77, 0.3);
-  border-color: rgba(255, 183, 77, 0.4);
-  color: #fff3e0;
-}
-
-.tag-pill:nth-child(4n+4) {
-  background: rgba(100, 181, 246, 0.3);
-  border-color: rgba(100, 181, 246, 0.4);
-  color: #e3f2fd;
+  border: 1rpx solid rgba(255, 255, 255, 0.25);
 }
 
 /* 个人简介 */
@@ -1459,9 +1342,9 @@ watch(
 .card__bio-text {
   font-size: var(--fs-md);
   color: var(--c-overlay-text-secondary);
-  line-height: 1.7;
+  line-height: 1.6;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1515,8 +1398,8 @@ watch(
 }
 
 .action-btn--reject {
-  width: 112rpx;
-  height: 112rpx;
+  width: 104rpx;
+  height: 104rpx;
   background: var(--c-bg-container);
   box-shadow: var(--s-action-reject);
   border: 3rpx solid var(--c-action-reject-border);
@@ -1527,17 +1410,18 @@ watch(
 }
 
 .action-btn--super {
-  width: 100rpx;
-  height: 100rpx;
+  width: 88rpx;
+  height: 88rpx;
   background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
   box-shadow: var(--s-action-super);
 }
 
 .action-btn--like {
-  width: 136rpx;
-  height: 136rpx;
+  width: 120rpx;
+  height: 120rpx;
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  box-shadow: var(--s-action-like);
+  box-shadow: 0 4rpx 24rpx rgba(236, 72, 153, 0.4),
+              0 0 60rpx rgba(236, 72, 153, 0.15);
 }
 
 /* 按钮图标样式（替代 emoji，跨设备渲染一致） */

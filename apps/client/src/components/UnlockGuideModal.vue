@@ -13,6 +13,7 @@
  * 蓝色主题，与项目品牌色 var(--c-brand-*) 一致。
  */
 import { computed } from "vue";
+import { IMAGE_PATHS } from "../config/images";
 
 /** 组件 Props 定义 */
 const props = defineProps<{
@@ -95,7 +96,7 @@ function handleMaskClick() {
     <view class="unlock-modal__container" @tap.stop="noop">
       <!-- 顶部图标区域 -->
       <view class="unlock-modal__icon-wrap">
-        <text class="unlock-modal__icon">🔒</text>
+        <image class="unlock-modal__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" />
       </view>
 
       <!-- 标题 -->

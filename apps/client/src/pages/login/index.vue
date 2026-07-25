@@ -102,11 +102,21 @@ function onAgreeTap() {
 }
 
 function openUserAgreement() {
-  uni.showToast({ title: "用户协议", icon: "none" });
+  uni.showModal({
+    title: "用户协议",
+    content: "欢迎使用校园恋爱小程序！\n\n本协议是您与校园恋爱平台之间关于使用本小程序服务所订立的协议。\n\n使用本服务即表示您同意本协议的全部条款。如您不同意，请勿使用本服务。",
+    showCancel: false,
+    confirmText: "我知道了",
+  });
 }
 
 function openPrivacyPolicy() {
-  uni.showToast({ title: "隐私政策", icon: "none" });
+  uni.showModal({
+    title: "隐私政策",
+    content: "我们重视您的隐私。\n\n本隐私政策说明了我们如何收集、使用和保护您的个人信息。\n\n我们仅收集为您提供服务所必需的信息，并采取严格措施保护您的数据安全。",
+    showCancel: false,
+    confirmText: "我知道了",
+  });
 }
 </script>
 
@@ -149,7 +159,7 @@ function openPrivacyPolicy() {
           <view class="input-group">
             <view class="input-item">
               <view class="input-icon">
-                <text class="input-icon-text">📱</text>
+                <image class="input-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.MOBILE" mode="aspectFit" />
               </view>
               <input
                 class="input-field"
@@ -165,7 +175,7 @@ function openPrivacyPolicy() {
 
             <view class="input-item">
               <view class="input-icon">
-                <text class="input-icon-text">🔑</text>
+                <image class="input-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.KEY" mode="aspectFit" />
               </view>
               <input
                 class="input-field"
@@ -193,6 +203,7 @@ function openPrivacyPolicy() {
             <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onPhoneLogin">
               <text class="btn-primary-text">登 录</text>
             </view>
+            <text class="phone-login-hint">(暂不可用，请使用微信登录)</text>
 
             <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="togglePhoneLogin">
               <text class="btn-text-link">返回微信登录</text>
@@ -481,6 +492,14 @@ function openPrivacyPolicy() {
 .btn-text-link {
   font-size: var(--fs-md);
   color: var(--c-text-quaternary);
+}
+
+.phone-login-hint {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
+  text-align: center;
+  margin-top: var(--sp-2);
+  display: block;
 }
 
 .terms-wrap {

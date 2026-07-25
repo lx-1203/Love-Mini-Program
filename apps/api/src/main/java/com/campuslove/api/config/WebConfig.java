@@ -2,7 +2,6 @@ package com.campuslove.api.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -11,10 +10,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *
  * <p>配置项：
  * <ul>
- *   <li>CORS：/api/** 跨域规则</li>
  *   <li>静态资源映射：/uploads/** → file:./uploads/，用于服务上传的媒体文件</li>
  * </ul>
  * </p>
+ *
+ * <p>注意：CORS 规则由 SecurityConfig 统一管理，此处不再重复配置。</p>
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -22,16 +22,6 @@ public class WebConfig implements WebMvcConfigurer {
   /** 媒体存储根目录，与 LocalMediaStorageService 共享配置 */
   @Value("${app.media.storage-root:./uploads}")
   private String mediaStorageRoot;
-
-  @Override
-  public void addCorsMappings(CorsRegistry registry) {
-    registry.addMapping("/api/**")
-        .allowedOriginPatterns("http://localhost:*", "http://127.0.0.1:*")
-        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        .allowedHeaders("Authorization", "Content-Type", "X-Requested-With")
-        .allowCredentials(true)
-        .maxAge(3600);
-  }
 
   /**
    * 静态资源映射：将 /uploads/** URL 映射到本地文件系统目录。

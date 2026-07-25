@@ -6,6 +6,7 @@
  */
 import { ref } from "vue";
 import { lightHaptic } from "../../utils/haptic";
+import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { useSessionStore } from "../../stores/session";
 
@@ -155,14 +156,14 @@ function goBack() {
 /** 账号分组菜单项 */
 const accountMenus = ref<MenuItem[]>([
   {
-    emoji: "✏️",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
     bgColor: "#E8F4FF",
     label: "编辑资料",
     action: goToProfileSetup,
   },
   {
-    emoji: "🔐",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
     bgColor: "#FFF0F5",
     label: "恋爱认证",
@@ -173,28 +174,28 @@ const accountMenus = ref<MenuItem[]>([
 /** 关于分组菜单项 */
 const aboutMenus = ref<MenuItem[]>([
   {
-    emoji: "📜",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "#F4F6FA",
     label: "用户协议",
     action: viewUserAgreement,
   },
   {
-    emoji: "🔒",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
     bgColor: "#F4F6FA",
     label: "隐私政策",
     action: viewPrivacyPolicy,
   },
   {
-    emoji: "🔄",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
     bgColor: "#F4F6FA",
     label: "检查更新",
     action: checkUpdate,
   },
   {
-    emoji: "ℹ️",
+    emoji: "",
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
     bgColor: "#F4F6FA",
     label: "关于我们",
@@ -244,7 +245,13 @@ function handleMenuTap(item: MenuItem) {
         >
           <view class="menu-item__left">
             <view class="menu-item__icon" :style="{ background: item.bgColor }">
-              <text class="menu-item__emoji">{{ item.emoji }}</text>
+              <SafeImage
+                v-if="item.icon"
+                :src="item.icon"
+                custom-class="menu-item__icon-img"
+                mode="aspectFit"
+              />
+              <text v-else class="menu-item__emoji">{{ item.emoji }}</text>
             </view>
             <text class="menu-item__label">{{ item.label }}</text>
           </view>
@@ -262,7 +269,7 @@ function handleMenuTap(item: MenuItem) {
         <view class="menu-item list-item">
           <view class="menu-item__left">
             <view class="menu-item__icon" style="background: #FFF8E7">
-              <text class="menu-item__emoji">🔔</text>
+              <SafeImage :src="IMAGE_PATHS.ICONS_EMOJI.BELL" custom-class="menu-item__icon-img" mode="aspectFit" />
             </view>
             <text class="menu-item__label">消息通知</text>
           </view>
@@ -275,7 +282,7 @@ function handleMenuTap(item: MenuItem) {
         <view class="menu-item list-item menu-item--no-border">
           <view class="menu-item__left">
             <view class="menu-item__icon" style="background: #E8F8F0">
-              <text class="menu-item__emoji">🛡️</text>
+              <SafeImage :src="IMAGE_PATHS.ICONS_EMOJI.SHIELD" custom-class="menu-item__icon-img" mode="aspectFit" />
             </view>
             <text class="menu-item__label">隐私模式</text>
           </view>
@@ -302,7 +309,7 @@ function handleMenuTap(item: MenuItem) {
         >
           <view class="menu-item__left">
             <view class="menu-item__icon" style="background: #F4F6FA">
-              <text class="menu-item__emoji">📋</text>
+              <SafeImage :src="IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD" custom-class="menu-item__icon-img" mode="aspectFit" />
             </view>
             <text class="menu-item__label">隐私政策</text>
           </view>
@@ -325,7 +332,7 @@ function handleMenuTap(item: MenuItem) {
         >
           <view class="menu-item__left">
             <view class="menu-item__icon" style="background: #EDE9FE">
-              <text class="menu-item__emoji">🧹</text>
+              <SafeImage :src="IMAGE_PATHS.ICONS_EMOJI.BROOM" custom-class="menu-item__icon-img" mode="aspectFit" />
             </view>
             <text class="menu-item__label">清除缓存</text>
           </view>
@@ -354,7 +361,13 @@ function handleMenuTap(item: MenuItem) {
         >
           <view class="menu-item__left">
             <view class="menu-item__icon" :style="{ background: item.bgColor }">
-              <text class="menu-item__emoji">{{ item.emoji }}</text>
+              <SafeImage
+                v-if="item.icon"
+                :src="item.icon"
+                custom-class="menu-item__icon-img"
+                mode="aspectFit"
+              />
+              <text v-else class="menu-item__emoji">{{ item.emoji }}</text>
             </view>
             <text class="menu-item__label">{{ item.label }}</text>
           </view>

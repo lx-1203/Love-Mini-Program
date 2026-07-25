@@ -57,6 +57,11 @@ const t = designTokens;
   flex-shrink: 0;
   animation: heart-pulse 2.4s ease-in-out infinite;
 }
+.signal-img {
+  width: 40rpx;
+  height: 40rpx;
+}
+
 .signal-emoji { font-size: 32rpx; }
 
 @keyframes heart-pulse {

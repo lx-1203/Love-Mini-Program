@@ -111,6 +111,9 @@ public class LocalMediaStorageService implements MediaStorageService {
             validateImage(lowerExt, fileSize);
         }
 
+        // 魔数校验：读取文件头部字节确认真实格式与扩展名一致
+        validateMagicBytes(file, lowerExt, isVideoType);
+
         // 计算存储路径与 URL
         String monthSegment = LocalDate.now().format(MONTH_FMT);
         String fileName = UUID.randomUUID().toString() + "." + lowerExt;
@@ -271,6 +274,114 @@ public class LocalMediaStorageService implements MediaStorageService {
             throw new MediaSizeLimitExceededException(
                     "视频大小超过限制（50MB）: 当前 " + (fileSize / 1024 / 1024) + "MB");
         }
+    }
+
+    // === 魔数校验 ===
+
+    /** JPEG 文件头魔数: FF D8 FF */
+    private static final byte[] MAGIC_JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
+
+    /** PNG 文件头魔数: 89 50 4E 47 */
+    private static final byte[] MAGIC_PNG = {(byte) 0x89, 0x50, 0x4E, 0x47};
+
+    /** GIF 文件头魔数: 47 49 46 */
+    private static final byte[] MAGIC_GIF = {0x47, 0x49, 0x46};
+
+    /** WebP 文件头魔数: 52 49 46 46 (RIFF) */
+    private static final byte[] MAGIC_WEBP = {0x52, 0x49, 0x46, 0x46};
+
+    /** MP4/MOV 文件头魔数: 66 74 79 70 (ftyp)，位于偏移 4-7 字节 */
+    private static final byte[] MAGIC_MP4_MOV = {0x66, 0x74, 0x79, 0x70};
+
+    /** 最大读取的头部字节数，包含 ftyp 偏移 */
+    private static final int MAX_HEADER_BYTES = 12;
+
+    /**
+     * 通过文件头部魔数校验文件真实格式是否与声称的扩展名一致。
+     *
+     * <p>魔数参考：
+     * <ul>
+     *   <li>JPEG: FF D8 FF</li>
+     *   <li>PNG:  89 50 4E 47</li>
+     *   <li>GIF:  47 49 46</li>
+     *   <li>WebP: 52 49 46 46 (RIFF container)</li>
+     *   <li>MP4:  00 00 00 xx 66 74 79 70 (ftyp at offset 4)</li>
+     *   <li>MOV:  00 00 00 xx 66 74 79 70 (ftyp at offset 4, same as MP4)</li>
+     * </ul>
+     *
+     * @param file   上传的文件
+     * @param lowerExt 扩展名（小写）
+     * @param isVideo 是否为视频类型
+     * @throws IllegalArgumentException 魔数不匹配时拒绝存储
+     */
+    private void validateMagicBytes(MultipartFile file, String lowerExt, boolean isVideo)
+            throws IllegalArgumentException {
+        byte[] header = new byte[MAX_HEADER_BYTES];
+        int bytesRead = 0;
+        try (InputStream in = file.getInputStream()) {
+            int offset = 0;
+            while (offset < MAX_HEADER_BYTES) {
+                int n = in.read(header, offset, MAX_HEADER_BYTES - offset);
+                if (n < 0) break;
+                offset += n;
+            }
+            bytesRead = offset;
+        } catch (IOException ex) {
+            LOGGER.warn("无法读取文件头部字节进行魔数校验: {}", ex.getMessage());
+            throw new IllegalArgumentException("无法读取文件头部字节，魔数校验失败", ex);
+        }
+
+        boolean valid;
+        if (isVideo) {
+            valid = matchesAt(header, MAGIC_MP4_MOV, 4, Math.min(bytesRead, 8));
+        } else {
+            valid = matchesMagicForImage(lowerExt, header, bytesRead);
+        }
+
+        if (!valid) {
+            throw new IllegalArgumentException(
+                    "文件魔数校验失败：上传文件声称格式为 " + lowerExt + "，但文件头魔数不匹配，拒绝存储");
+        }
+    }
+
+    /**
+     * 校验图片文件头部魔数。
+     */
+    private boolean matchesMagicForImage(String lowerExt, byte[] header, int bytesRead) {
+        switch (lowerExt) {
+            case "jpg":
+            case "jpeg":
+                return matchesAt(header, MAGIC_JPEG, 0, bytesRead);
+            case "png":
+                return matchesAt(header, MAGIC_PNG, 0, bytesRead);
+            case "gif":
+                return matchesAt(header, MAGIC_GIF, 0, bytesRead);
+            case "webp":
+                return matchesAt(header, MAGIC_WEBP, 0, bytesRead);
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * 检查 header 的指定偏移处是否以给定的字节序列开头。
+     *
+     * @param header 文件头部字节
+     * @param magic  魔数字节序列
+     * @param offset 在 header 中的检查偏移
+     * @param available 可用的字节数
+     * @return true 表示匹配
+     */
+    private boolean matchesAt(byte[] header, byte[] magic, int offset, int available) {
+        if (offset + magic.length > available) {
+            return false;
+        }
+        for (int i = 0; i < magic.length; i++) {
+            if (header[offset + i] != magic[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

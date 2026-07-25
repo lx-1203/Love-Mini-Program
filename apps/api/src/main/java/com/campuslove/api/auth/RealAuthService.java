@@ -153,7 +153,7 @@ public class RealAuthService implements AuthService {
                 log.info("创建新用户: userId={}, openid={}", user.getId(), maskOpenid(openid));
             }
         } catch (Exception ex) {
-            log.error("查找/创建用户失败, openid={}: {}", openid, ex.getMessage(), ex);
+            log.error("查找/创建用户失败, openid={}: {}", maskOpenid(openid), ex.getMessage(), ex);
             throw new RuntimeException("用户登录处理失败，请稍后重试", ex);
         }
 
