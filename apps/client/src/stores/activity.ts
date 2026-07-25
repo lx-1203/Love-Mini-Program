@@ -3,6 +3,11 @@ import { appEnv } from "../services/env";
 import { clientApi } from "../services/api";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import type { components } from "../services/generated/api-types";
+// 统一图片资源路径常量，避免在 store 中硬编码字符串
+import { IMAGE_PATHS } from "@/config/images";
+
+type Schemas = components["schemas"];
 
 export interface ActivityItem {
   id: string;
@@ -41,7 +46,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: false,
     status: "open",
-    coverImage: "/static/assets/images/activities/activity-study.jpg",
+    coverImage: IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY,
   },
   {
     id: "a-2",
@@ -55,7 +60,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: false,
     status: "upcoming",
-    coverImage: "/static/assets/images/banners/village-banner.jpg",
+    coverImage: IMAGE_PATHS.BANNERS.VILLAGE,
   },
   {
     id: "a-3",
@@ -69,7 +74,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: true,
     status: "ongoing",
-    coverImage: "/static/assets/images/activities/activity-sports.jpg",
+    coverImage: IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
   },
   {
     id: "a-4",
@@ -83,7 +88,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: false,
     status: "open",
-    coverImage: "/static/assets/images/products/ticket-1.jpg",
+    coverImage: IMAGE_PATHS.PRODUCTS.TICKET_1,
   },
 ];
 
@@ -160,11 +165,18 @@ export const useActivityStore = defineStore("activity", {
 
     /**
      * 加载更多活动（分页追加）
+     *
+     * 修复（P1 BUG）：原实现未将 nextPage 传递给后端，每次都请求第一页数据，
+     * 导致分页失效（永远只能加载到第一页内容，造成数据重复展示）。
+     * 现通过 query 参数 `page` 将目标页码传给后端，并使用 nextPage 局部变量
+     * 避免请求失败时污染 this.page 状态。
      */
     async fetchMoreActivities() {
       if (this.loading || !this.hasMore) return;
 
       this.loading = true;
+      // 使用局部变量保存 nextPage，仅在请求成功后才更新 this.page
+      // 避免请求失败后 this.page 仍被错误推进
       const nextPage = this.page + 1;
       try {
         if (useMock()) {
@@ -173,10 +185,16 @@ export const useActivityStore = defineStore("activity", {
           return;
         }
 
-        const data = await clientApi.getActivityRecommendations();
+        // 修复（P1 BUG）：将 nextPage 作为 query 参数传递给后端
+        // 直接调用 request 以避免破坏 clientApi.getActivityRecommendations 的签名
+        const data = await request<Schemas["ActivityRecommendation"][]>({
+          url: `/recommendations/activities?page=${nextPage}&pageSize=${this.pageSize}`,
+          method: "GET",
+        });
         const mapped = data.map((item) => this.mapToActivityItem(item));
         // 将新数据追加到列表末尾
         this.activities = [...this.activities, ...mapped];
+        // 仅在请求成功后更新 this.page
         this.page = nextPage;
         this.hasMore = data.length >= this.pageSize;
       } catch (error) {

@@ -5,11 +5,20 @@
  * 从顶部滑入的通知横幅，支持 success / error / warning / info 四种类型。
  * 使用 showToast() 函数调起，自动在 duration 后消失。
  *
- * 使用方式：
+ * i18n 用法示例（文案统一从 i18n 资源读取，避免硬编码）：
  *   import { showToast } from '@/components/common/Toast.vue'
- *   showToast('操作成功', 'success')
+ *   import { t } from '@/i18n'
+ *   // 操作成功提示：原硬编码 "操作成功" 替换为 t('common.success')
+ *   showToast(t('common.success'), 'success')
+ *   // 网络错误提示：原硬编码 "网络错误" 替换为 t('common.networkError')
+ *   showToast(t('common.networkError'), 'error')
+ *
+ * 队列管理：新 toast 调用时，旧 toast 先淡出再显示新的，避免互相干扰。
  */
 import { ref, computed, onUnmounted } from "vue";
+import { IMAGE_PATHS } from "../../config/images";
+// 引入全局 t 函数：Toast 组件为非组件场景的便利封装，使用全局 t 与组件内 useI18n().t 行为一致
+import { t } from "../../i18n";
 
 export interface ToastOptions {
   /** 消息内容 */
@@ -27,20 +36,32 @@ const leaving = ref(false);
 /** 当前 Toast 配置 */
 const options = ref<ToastOptions>({ message: "" });
 
+/** 等待中的 Toast 队列（新 toast 调用时，旧 toast 退出后再展示） */
+interface QueueItem {
+  message: string;
+  type: ToastOptions["type"];
+  duration: number;
+  resolve: () => void;
+}
+const queue: QueueItem[] = [];
+
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
 let leaveTimer: ReturnType<typeof setTimeout> | null = null;
 let resolvePromise: (() => void) | null = null;
 
-/** 图标映射（使用纯 Unicode，避免依赖 emoji） */
-const iconMap: Record<string, string> = {
-  success: "✓",
-  error: "✕",
-  warning: "!",
-  info: "i",
+/**
+ * 图标映射：使用 SVG 图片资源替代 Unicode 字符
+ * 旧版微信基础库对部分 Unicode 字符（✓ ✕ ❗）渲染为方框，SVG 方案兼容性更好。
+ */
+const iconSrcMap: Record<NonNullable<ToastOptions["type"]>, string> = {
+  success: IMAGE_PATHS.ICONS_COMMON.CHECK.replace('.png', '.svg'),
+  error: IMAGE_PATHS.ICONS_COMMON.CLOSE.replace('.png', '.svg'),
+  warning: IMAGE_PATHS.ICONS_COMMON.NOTIFICATION.replace('.png', '.svg'),
+  info: IMAGE_PATHS.ICONS_COMMON.NOTIFICATION.replace('.png', '.svg'),
 };
 
-/** 计算当前图标 */
-const icon = computed(() => iconMap[options.value.type || "info"]);
+/** 计算当前图标资源路径 */
+const iconSrc = computed(() => iconSrcMap[options.value.type || "info"]);
 
 /** 计算当前类型 */
 const toastType = computed(() => options.value.type || "info");
@@ -51,19 +72,27 @@ const toastType = computed(() => options.value.type || "info");
  * @param type - 类型，默认 "info"
  * @param duration - 展示时长，默认 2000ms
  * @returns Promise，在 Toast 完全消失后 resolve
+ *
+ * 队列策略：若有正在展示的 Toast，先将其淡出，再展示新的；保证同时只显示一个 Toast。
  */
 export function showToast(
   message: string,
   type: ToastOptions["type"] = "info",
   duration = 2000
 ): Promise<void> {
-  clearTimers();
-
-  options.value = { message, type, duration };
-  leaving.value = false;
-  active.value = true;
-
   return new Promise<void>((resolve) => {
+    // 若当前有活跃 Toast，先入队等待
+    if (active.value && !leaving.value) {
+      queue.push({ message, type, duration, resolve });
+      // 触发当前 Toast 提前退出
+      hideToast();
+      return;
+    }
+
+    options.value = { message, type, duration };
+    leaving.value = false;
+    active.value = true;
+
     resolvePromise = resolve;
 
     hideTimer = setTimeout(() => {
@@ -72,8 +101,48 @@ export function showToast(
   });
 }
 
+/**
+ * 显示「操作成功」Toast（i18n 用法示例）。
+ *
+ * 默认文案通过 t('common.success') 从 i18n 资源读取，替代原硬编码 "操作成功"。
+ * 调用方传入自定义 message 时仍以调用方为准，仅在不传时使用 i18n 默认文案。
+ *
+ * @param message  自定义消息（可选，默认读取 common.success）
+ * @param duration 展示时长，默认 2000ms
+ */
+export function showSuccessToast(
+  message?: string,
+  duration = 2000
+): Promise<void> {
+  const text = message ?? t("common.success");
+  return showToast(text, "success", duration);
+}
+
+/**
+ * 显示「网络错误」Toast（i18n 用法示例）。
+ *
+ * 默认文案通过 t('common.networkError') 从 i18n 资源读取，替代原硬编码 "网络错误"。
+ * 调用方传入自定义 message 时仍以调用方为准，仅在不传时使用 i18n 默认文案。
+ *
+ * @param message  自定义消息（可选，默认读取 common.networkError）
+ * @param duration 展示时长，默认 2000ms
+ */
+export function showErrorToast(
+  message?: string,
+  duration = 2000
+): Promise<void> {
+  const text = message ?? t("common.networkError");
+  return showToast(text, "error", duration);
+}
+
 /** 开始隐藏 Toast（执行退出动画） */
 function hideToast() {
+  if (leaving.value) return;
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+  }
+
   leaving.value = true;
 
   leaveTimer = setTimeout(() => {
@@ -82,6 +151,15 @@ function hideToast() {
     if (resolvePromise) {
       resolvePromise();
       resolvePromise = null;
+    }
+
+    // 队列中有等待的 Toast，继续展示下一个
+    if (queue.length > 0) {
+      const next = queue.shift()!;
+      // 异步触发，确保上一个 Toast 完全消失后再展示
+      setTimeout(() => {
+        showToast(next.message, next.type, next.duration).then(next.resolve);
+      }, 50);
     }
   }, 250); // 与 CSS toast-slide-out 动画时长一致
 }
@@ -100,6 +178,9 @@ function clearTimers() {
 
 onUnmounted(() => {
   clearTimers();
+  // 清空队列，避免内存泄漏
+  queue.forEach((item) => item.resolve());
+  queue.length = 0;
 });
 </script>
 
@@ -112,8 +193,13 @@ onUnmounted(() => {
       leaving ? 'toast-slide-out' : 'toast-slide-in'
     ]"
     @tap="hideToast"
+    <!-- #ifdef H5 -->
+    role="alert"
+    aria-live="assertive"
+    <!-- #endif -->
   >
-    <text class="toast-notification__icon">{{ icon }}</text>
+    <!-- SVG 图标替代 Unicode 字符，兼容旧版微信基础库 -->
+    <image class="toast-notification__icon" :src="iconSrc" mode="aspectFit" />
     <text class="toast-notification__message">{{ options.message }}</text>
   </view>
 </template>
@@ -135,7 +221,7 @@ onUnmounted(() => {
   gap: 16rpx;
   padding: 20rpx 36rpx;
   border-radius: 48rpx;
-  box-shadow: 0 8rpx 32rpx rgba(15, 23, 42, 0.12);
+  box-shadow: 0 8rpx 32rpx var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.12));
   max-width: 640rpx;
   min-width: 320rpx;
   will-change: transform, opacity;
@@ -143,28 +229,27 @@ onUnmounted(() => {
 
 /* ---- 颜色变体（使用 rgba 替代 color-mix） ---- */
 .toast-notification--success {
-  background: rgba(16, 185, 129, 0.1);
-  border: 2rpx solid rgba(16, 185, 129, 0.2);
+  background: var(--c-success-bg-tint, rgba(16, 185, 129, 0.1));
+  border: 2rpx solid var(--c-success-border-tint, rgba(16, 185, 129, 0.2));
 }
 .toast-notification--error {
-  background: rgba(239, 68, 68, 0.1);
-  border: 2rpx solid rgba(239, 68, 68, 0.2);
+  background: var(--c-red-bg-tint, rgba(239, 68, 68, 0.1));
+  border: 2rpx solid var(--c-red-border-tint, rgba(239, 68, 68, 0.2));
 }
 .toast-notification--warning {
-  background: rgba(245, 158, 11, 0.1);
-  border: 2rpx solid rgba(245, 158, 11, 0.2);
+  background: var(--c-warning-bg-tint, rgba(245, 158, 11, 0.1));
+  border: 2rpx solid var(--c-warning-border-tint, rgba(245, 158, 11, 0.2));
 }
 .toast-notification--info {
-  background: rgba(91, 127, 255, 0.1);
-  border: 2rpx solid rgba(91, 127, 255, 0.18);
+  background: var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0.1));
+  border: 2rpx solid var(--c-secondary-blue-border-tint-strong, rgba(91, 127, 255, 0.18));
 }
 
 /* ---- 图标 ---- */
 .toast-notification__icon {
-  font-size: 28rpx;
+  width: 32rpx;
+  height: 32rpx;
   flex-shrink: 0;
-  line-height: 1;
-  font-weight: 700;
 }
 .toast-notification--success .toast-notification__icon { color: var(--c-success); }
 .toast-notification--error .toast-notification__icon { color: var(--c-error); }
@@ -181,9 +266,9 @@ onUnmounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.toast-notification--success .toast-notification__message { color: #065f46; }
-.toast-notification--error .toast-notification__message { color: #991b1b; }
-.toast-notification--warning .toast-notification__message { color: #92400e; }
+.toast-notification--success .toast-notification__message { color: var(--c-text-success-dark, #065f46); }
+.toast-notification--error .toast-notification__message { color: var(--c-text-error-dark, #991b1b); }
+.toast-notification--warning .toast-notification__message { color: var(--c-text-warning-dark, #92400e); }
 .toast-notification--info .toast-notification__message { color: var(--c-brand-800); }
 
 /* ---- 滑入动画（弹性缓动） ---- */

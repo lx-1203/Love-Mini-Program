@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 社交升温进度指示器组件
  *
@@ -10,6 +10,7 @@
  * <SocialProgressIndicator />
  */
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   useSocialProgressStore,
   TIER_ORDER,
@@ -19,7 +20,8 @@ import { designTokens } from '../../theme/tokens'
 import { openAppPath } from '../../utils/navigation'
 import { IMAGE_PATHS } from '../../config/images'
 
-const t = designTokens
+const tokens = designTokens
+const { t } = useI18n()
 
 /** 社交图标常量（统一从 config/images.ts 引入，避免硬编码路径） */
 const SOCIAL_ICONS = {
@@ -52,19 +54,19 @@ const currentTierColor = computed(() => {
 
 /** 6层漏斗颜色，从浅蓝 (var(--c-brand-100)) 到深蓝 (#5B7FFF) */
 const FUNNEL_COLORS = [
-  t.color.brand[100], // L1: var(--c-brand-100)
-  t.color.brand[200], // L2: #BBDAFF
-  t.color.brand[300], // L3: #9BB8FF
-  t.color.secondary[400], // L4: #7B9CFF
-  t.color.brand[400],  // L5: #5B7FFF
-  t.color.brand[500],  // L6: #4C6EF5
+  tokens.color.brand[100], // L1: var(--c-brand-100)
+  tokens.color.brand[200], // L2: #BBDAFF
+  tokens.color.brand[300], // L3: #9BB8FF
+  tokens.color.secondary[400], // L4: #7B9CFF
+  tokens.color.brand[400],  // L5: #5B7FFF
+  tokens.color.brand[500],  // L6: #4C6EF5
 ] as const
 
 /** 漏斗颜色对应的文字色 - 深层用白色，浅层用深色 */
 const FUNNEL_TEXT_COLORS = [
-  t.color.text.primary,   // L1
-  t.color.text.primary,   // L2
-  t.color.text.primary,   // L3
+  tokens.color.text.primary,   // L1
+  tokens.color.text.primary,   // L2
+  tokens.color.text.primary,   // L3
   '#FFFFFF',              // L4
   '#FFFFFF',              // L5
   '#FFFFFF',              // L6
@@ -86,50 +88,76 @@ const prevTierIndex = ref(0)
 
 // ==================== 行动指引配置 ====================
 
-/** 每个层级的行动指引：跳转目标 + 按钮文案 + 图标 */
-const TIER_ACTIONS: Record<string, { icon: string; title: string; desc: string; btn: string; path: string }> = {
+/** 每个层级的行动指引：跳转目标 + 图标 + i18n key */
+const TIER_ACTIONS: Record<string, { icon: string; titleKey: string; descKey: string; btnKey: string; path: string }> = {
   L1_EXPOSURE: {
     icon: SOCIAL_ICONS.VISITOR,
-    title: '去寻觅，发现心动的人',
-    desc: '浏览推荐卡片，找到你的理想型',
-    btn: '去寻觅',
+    titleKey: 'socialProgress.actionL1Title',
+    descKey: 'socialProgress.actionL1Desc',
+    btnKey: 'socialProgress.actionL1Btn',
     path: '/pages/discover/index',
   },
   L2_ATTENTION: {
     icon: SOCIAL_ICONS.LIKE,
-    title: '表达喜欢，等待回应',
-    desc: '右滑喜欢，让对方知道你的心意',
-    btn: '去表达',
+    titleKey: 'socialProgress.actionL2Title',
+    descKey: 'socialProgress.actionL2Desc',
+    btnKey: 'socialProgress.actionL2Btn',
     path: '/pages/discover/index',
   },
   L3_MATCH: {
     icon: SOCIAL_ICONS.MATCH,
-    title: '查看心动信号，开启对话',
-    desc: '有人也喜欢了你，快去看看吧',
-    btn: '去看信号',
+    titleKey: 'socialProgress.actionL3Title',
+    descKey: 'socialProgress.actionL3Desc',
+    btnKey: 'socialProgress.actionL3Btn',
     path: '/pages/messages/index',
   },
   L4_COMMUNICATION: {
     icon: SOCIAL_ICONS.MESSAGE,
-    title: '发起聊天，深入了解',
-    desc: '破冰话题已为你准备好',
-    btn: '去聊天',
+    titleKey: 'socialProgress.actionL4Title',
+    descKey: 'socialProgress.actionL4Desc',
+    btnKey: 'socialProgress.actionL4Btn',
     path: '/pages/messages/index',
   },
   L5_CIRCLE: {
     icon: SOCIAL_ICONS.SUPER_LIKE,
-    title: '加入兴趣圈，认识更多人',
-    desc: '找到志同道合的伙伴',
-    btn: '去圈子',
+    titleKey: 'socialProgress.actionL5Title',
+    descKey: 'socialProgress.actionL5Desc',
+    btnKey: 'socialProgress.actionL5Btn',
     path: '/pages/circles/index',
   },
   L6_SCENE: {
     icon: SOCIAL_ICONS.FOLLOW,
-    title: '参加线下活动，迈出最后一步',
-    desc: '从线上走到线下，开启真实社交',
-    btn: '看活动',
+    titleKey: 'socialProgress.actionL6Title',
+    descKey: 'socialProgress.actionL6Desc',
+    btnKey: 'socialProgress.actionL6Btn',
     path: '/subpackages/discover/activities/index',
   },
+}
+
+/** 层级 label/desc 的 i18n key 映射 */
+const TIER_LABEL_KEYS: Record<string, string> = {
+  L1_EXPOSURE: 'socialProgress.tierL1Label',
+  L2_ATTENTION: 'socialProgress.tierL2Label',
+  L3_MATCH: 'socialProgress.tierL3Label',
+  L4_COMMUNICATION: 'socialProgress.tierL4Label',
+  L5_CIRCLE: 'socialProgress.tierL5Label',
+  L6_SCENE: 'socialProgress.tierL6Label',
+}
+
+const TIER_DESC_KEYS: Record<string, string> = {
+  L1_EXPOSURE: 'socialProgress.tierL1Desc',
+  L2_ATTENTION: 'socialProgress.tierL2Desc',
+  L3_MATCH: 'socialProgress.tierL3Desc',
+  L4_COMMUNICATION: 'socialProgress.tierL4Desc',
+  L5_CIRCLE: 'socialProgress.tierL5Desc',
+  L6_SCENE: 'socialProgress.tierL6Desc',
+}
+
+/** 状态文案 i18n 映射（用于 ARIA） */
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  completed: 'socialProgress.statusCompleted',
+  current: 'socialProgress.statusCurrent',
+  pending: 'socialProgress.statusPending',
 }
 
 /** 当前层级的行动指引 */
@@ -187,15 +215,52 @@ const steps = computed<StepItem[]>(() => {
 
     return {
       tier,
-      label: meta?.label ?? tier,
+      label: t(TIER_LABEL_KEYS[tier] ?? 'socialProgress.tierL1Label'),
       icon: meta?.icon ?? '',
-      desc: meta?.desc ?? '',
+      desc: t(TIER_DESC_KEYS[tier] ?? 'socialProgress.tierL1Desc'),
       status,
       color: FUNNEL_COLORS[index] ?? FUNNEL_COLORS[0],
       textColor: FUNNEL_TEXT_COLORS[index] ?? FUNNEL_TEXT_COLORS[0],
     }
   })
 })
+
+/** 当前层级的 label/desc（i18n） */
+const currentTierLabel = computed(() => {
+  if (!progress.value) return ''
+  return t(TIER_LABEL_KEYS[progress.value.currentTier] ?? 'socialProgress.tierL1Label')
+})
+
+const currentTierDesc = computed(() => {
+  if (!progress.value) return ''
+  return t(TIER_DESC_KEYS[progress.value.currentTier] ?? 'socialProgress.tierL1Desc')
+})
+
+/** 当前层级行动指引文案（i18n） */
+const currentActionTexts = computed(() => {
+  const action = currentAction.value
+  if (!action) return { title: '', desc: '', btn: '' }
+  return {
+    title: t(action.titleKey),
+    desc: t(action.descKey),
+    btn: t(action.btnKey),
+  }
+})
+
+/** 行动卡片 ARIA 标签 */
+const actionCardAria = computed(() => {
+  const a = currentActionTexts.value
+  return t('socialProgress.actionCardAria', { title: a.title, desc: a.desc, btn: a.btn })
+})
+
+/** 步骤 ARIA 标签 */
+function stepAriaLabel(step: StepItem, index: number) {
+  return t('socialProgress.stepAria', {
+    index: index + 1,
+    label: step.label,
+    status: t(STATUS_LABEL_KEYS[step.status] ?? 'socialProgress.statusPending'),
+  })
+}
 
 // ==================== 生命周期 ====================
 
@@ -249,12 +314,18 @@ function stepLineStyles(step: StepItem, index: number) {
 </script>
 
 <template>
-  <view class="sip-card card-base card-base--elevated">
+  <view
+    class="sip-card card-base card-base--elevated"
+    <!-- #ifdef H5 -->
+    role="region"
+    :aria-label="t('home.socialProgressAria', { percent: progressPercentage })"
+    <!-- #endif -->
+  >
     <!-- ========== 顶部进度概览 ========== -->
     <view class="sip-header">
       <view class="sip-header__left">
-        <text class="sip-header__title">社交升温进度</text>
-        <text class="sip-header__subtitle">完成更多互动，解锁更高层级</text>
+        <text class="sip-header__title">{{ t('home.socialProgressTitle') }}</text>
+        <text class="sip-header__subtitle">{{ t('home.socialProgressSubtitle') }}</text>
       </view>
       <view class="sip-header__percent">
         <text class="sip-header__percent-value">{{ progressPercentage }}</text>
@@ -280,16 +351,20 @@ function stepLineStyles(step: StepItem, index: number) {
         background: `linear-gradient(135deg, ${currentTierColor}18, ${currentTierColor}0F)`,
         borderColor: `${currentTierColor}33`,
       }"
+      <!-- #ifdef H5 -->
+      role="img"
+      :aria-label="`${currentTierLabel}：${currentTierDesc}`"
+      <!-- #endif -->
     >
       <view class="sip-current__icon" :style="{ boxShadow: `0 4rpx 12rpx ${currentTierColor}33` }">
         <image v-if="TIER_META[progress.currentTier]?.icon" class="sip-current__icon-img" :src="TIER_META[progress.currentTier]?.icon" mode="aspectFit" />
       </view>
       <view class="sip-current__info">
         <text class="sip-current__label" :style="{ color: currentTierColor }">
-          {{ TIER_META[progress.currentTier]?.label ?? progress.currentTier }}
+          {{ currentTierLabel }}
         </text>
         <text class="sip-current__desc">
-          {{ TIER_META[progress.currentTier]?.desc ?? '' }}
+          {{ currentTierDesc }}
         </text>
       </view>
     </view>
@@ -306,6 +381,10 @@ function stepLineStyles(step: StepItem, index: number) {
             { 'sip-step--last': index === steps.length - 1 },
             { 'sip-step--animating': animatingTierIndex === index },
           ]"
+          <!-- #ifdef H5 -->
+          role="listitem"
+          :aria-label="stepAriaLabel(step, index)"
+          <!-- #endif -->
         >
           <!-- 步骤连接线 -->
           <view
@@ -351,23 +430,34 @@ function stepLineStyles(step: StepItem, index: number) {
       hover-class="press-feedback--active"
       hover-stay-time="120"
       @tap="navigateToAction"
+      <!-- #ifdef H5 -->
+      role="button"
+      :aria-label="actionCardAria"
+      <!-- #endif -->
     >
       <view class="sip-action-card__left">
         <image class="sip-action-card__icon-img" :src="currentAction.icon" mode="aspectFit" />
         <view class="sip-action-card__text">
-          <text class="sip-action-card__title">{{ currentAction.title }}</text>
-          <text class="sip-action-card__desc">{{ currentAction.desc }}</text>
+          <text class="sip-action-card__title">{{ currentActionTexts.title }}</text>
+          <text class="sip-action-card__desc">{{ currentActionTexts.desc }}</text>
         </view>
       </view>
       <view class="sip-action-card__btn">
-        <text class="sip-action-card__btn-text">{{ currentAction.btn }}</text>
+        <text class="sip-action-card__btn-text">{{ currentActionTexts.btn }}</text>
         <text class="sip-action-card__btn-arrow">›</text>
       </view>
     </view>
 
     <!-- ========== 加载状态 ========== -->
-    <view v-if="loading" class="sip-loading">
-      <text class="sip-loading__text">加载中...</text>
+    <view
+      v-if="loading"
+      class="sip-loading"
+      <!-- #ifdef H5 -->
+      role="status"
+      aria-live="polite"
+      <!-- #endif -->
+    >
+      <text class="sip-loading__text">{{ t('common.loading') }}</text>
     </view>
   </view>
 </template>
@@ -416,15 +506,15 @@ function stepLineStyles(step: StepItem, index: number) {
 .sip-header__percent-value {
   font-size: 48rpx;
   font-weight: 800;
-  color: #5B7FFF;
+  color: var(--c-secondary-blue-400, #5B7FFF);
   line-height: 1;
-  text-shadow: 0 2rpx 4rpx rgba(91, 127, 255, 0.15);
+  text-shadow: 0 2rpx 4rpx var(--c-secondary-blue-bg-tint-light, var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15)));
 }
 
 .sip-header__percent-unit {
   font-size: 28rpx;
   font-weight: 600;
-  color: #5B7FFF;
+  color: var(--c-secondary-blue-400, #5B7FFF);
 }
 
 /* ==================== 进度条 ==================== */
@@ -443,7 +533,7 @@ function stepLineStyles(step: StepItem, index: number) {
 .sip-bar-fill {
   height: 100%;
   border-radius: 5rpx;
-  background: linear-gradient(90deg, var(--c-brand-100) 0%, #5B7FFF 100%);
+  background: linear-gradient(90deg, var(--c-brand-100) 0%, var(--c-secondary-blue-400, #5B7FFF) 100%);
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -466,9 +556,9 @@ function stepLineStyles(step: StepItem, index: number) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 50%;
-  box-shadow: 0 4rpx 12rpx rgba(37, 99, 235, 0.12);
+  box-shadow: 0 4rpx 12rpx var(--c-secondary-blue-border-tint-strong, var(--c-secondary-blue-border-tint-strong, rgba(37, 99, 235, 0.12)));
   flex-shrink: 0;
 }
 
@@ -647,13 +737,13 @@ function stepLineStyles(step: StepItem, index: number) {
 /* 当前步骤环形脉冲（box-shadow 扩散，与 sip-pulse 叠加） */
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 rgba(91, 127, 255, 0.4);
+    box-shadow: 0 0 0 0 var(--c-secondary-blue-shadow, var(--c-secondary-blue-shadow, rgba(91, 127, 255, 0.4)));
   }
   70% {
-    box-shadow: 0 0 0 16rpx rgba(91, 127, 255, 0);
+    box-shadow: 0 0 0 16rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0)));
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(91, 127, 255, 0);
+    box-shadow: 0 0 0 0 var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0)));
   }
 }
 
@@ -699,7 +789,7 @@ function stepLineStyles(step: StepItem, index: number) {
 
 .sip-action-card__desc {
   font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
   line-height: 1.3;
 }
 
@@ -708,7 +798,7 @@ function stepLineStyles(step: StepItem, index: number) {
   align-items: center;
   gap: 4rpx;
   padding: 12rpx 24rpx;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)));
   border-radius: var(--r-full);
   flex-shrink: 0;
 }

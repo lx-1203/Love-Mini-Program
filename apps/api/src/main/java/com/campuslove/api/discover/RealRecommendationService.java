@@ -522,14 +522,24 @@ public class RealRecommendationService implements RecommendationService {
                 .stream().collect(Collectors.toMap(UserCampusProfile::getUserId, p -> p));
         Map<Long, UserBasicProfile> basicProfileMap = userBasicProfileRepository.findByUserIdIn(candidateIds)
                 .stream().collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p));
-        Map<Long, List<CircleMembership>> membershipMap = candidateIds.stream()
-                .collect(Collectors.toMap(id -> id, id -> {
-                    try {
-                        return circleMembershipRepository.findByUserId(id);
-                    } catch (Exception e) {
-                        return List.of();
-                    }
-                }));
+        // 修复 N+1 查询：原先在循环中调用 findByUserId(id) 会为每个候选用户产生一条 SQL，
+        // 且评分阶段 m.getCircle().getId() 又会触发 LAZY 加载产生 N 条 SQL。
+        // 现在统一改为 findWithCircleByUserIdIn：单条 SQL + @EntityGraph 预加载 circle，
+        // 将 2N+1 条 SQL 压缩为 1 条。
+        Map<Long, List<CircleMembership>> tempMembershipMap;
+        if (candidateIds.isEmpty()) {
+            tempMembershipMap = Collections.emptyMap();
+        } else {
+            try {
+                tempMembershipMap = circleMembershipRepository.findWithCircleByUserIdIn(candidateIds)
+                        .stream()
+                        .collect(Collectors.groupingBy(CircleMembership::getUserId));
+            } catch (Exception e) {
+                // 查询失败时降级为空 Map，不影响主流程（共同圈得分将为 0）
+                tempMembershipMap = Collections.emptyMap();
+            }
+        }
+        final Map<Long, List<CircleMembership>> membershipMap = tempMembershipMap;
 
         // 11. 加权排序（使用预加载的数据）
         List<ScoredUser> scoredUsers = new ArrayList<>();

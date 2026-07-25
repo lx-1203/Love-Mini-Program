@@ -1,5 +1,6 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.config.PasswordEncoderConfig;
 import com.campuslove.api.entity.User;
@@ -48,6 +49,7 @@ class RealAuthServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private UserCampusProfileRepository userCampusProfileRepository;
     @Mock private UserScheduleProfileRepository userScheduleProfileRepository;
+    @Mock private AesEncryptor aesEncryptor;
 
     private PasswordEncoder passwordEncoder;
     private RealAuthService realAuthService;
@@ -79,6 +81,7 @@ class RealAuthServiceTest {
                 userCampusProfileRepository,
                 userScheduleProfileRepository,
                 passwordEncoder,
+                aesEncryptor,
                 ""
         );
 
@@ -151,6 +154,7 @@ class RealAuthServiceTest {
                 userCampusProfileRepository,
                 userScheduleProfileRepository,
                 passwordEncoder,
+                aesEncryptor,
                 correctHash
         );
 
@@ -239,6 +243,7 @@ class RealAuthServiceTest {
                 userCampusProfileRepository,
                 userScheduleProfileRepository,
                 passwordEncoder,
+                aesEncryptor,
                 plaintextEnvPassword
         );
 

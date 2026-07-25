@@ -5,11 +5,11 @@
  * 匹配成功后展示破冰话题、共同兴趣圈、活动推荐，
  * 引导用户从匹配进入对话，降低破冰门槛。
  */
-import { ref, onMounted } from 'vue'
-import { designTokens } from '../../theme/tokens'
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { IMAGE_PATHS } from '../../config/images'
 
-const t = designTokens
+const { t } = useI18n()
 
 // ==================== Props ====================
 
@@ -59,32 +59,69 @@ function startChat() {
   emit('start-chat')
   close()
 }
+
+/** 副标题：包含匹配对象昵称 */
+const subtitleText = computed(() =>
+  t('matchGuide.subtitle', { name: props.partnerName })
+)
+
+/** 弹窗整体 ARIA 标签 */
+const overlayAriaLabel = computed(() =>
+  t('matchGuide.ariaLabel', { name: props.partnerName })
+)
 </script>
 
 <template>
-  <view v-if="visible" class="mgo-overlay">
-    <view class="mgo-mask" @tap="close" />
+  <view
+    v-if="visible"
+    class="mgo-overlay"
+    <!-- #ifdef H5 -->
+    role="dialog"
+    aria-modal="true"
+    :aria-label="overlayAriaLabel"
+    <!-- #endif -->
+  >
+    <view
+      class="mgo-mask"
+      @tap="close"
+      <!-- #ifdef H5 -->
+      role="button"
+      :aria-label="t('matchGuide.maskAria')"
+      <!-- #endif -->
+    />
     <view class="mgo-card">
       <!-- 匹配成功头部 -->
       <view class="mgo-header">
         <view class="mgo-avatars">
           <view class="mgo-avatar-placeholder">
-            <image class="mgo-avatar-img" :src="IMAGE_PATHS.ICONS_SOCIAL.MATCH" mode="aspectFit" />
+            <image
+              class="mgo-avatar-img"
+              :src="IMAGE_PATHS.ICONS_SOCIAL.MATCH"
+              mode="aspectFit"
+              <!-- #ifdef H5 -->
+              role="img"
+              :aria-label="t('discover.matchSuccessTitle')"
+              <!-- #endif -->
+            />
           </view>
         </view>
-        <text class="mgo-title">匹配成功</text>
-        <text class="mgo-subtitle">你和 {{ partnerName }} 互相喜欢了对方</text>
+        <text class="mgo-title">{{ t('discover.matchSuccessTitle') }}</text>
+        <text class="mgo-subtitle">{{ subtitleText }}</text>
       </view>
 
       <!-- 破冰话题推荐 -->
       <view v-if="icebreakers.length" class="mgo-section">
-        <text class="mgo-section-title">试试这些话题破冰</text>
+        <text class="mgo-section-title">{{ t('matchGuide.icebreakerTitle') }}</text>
         <view class="mgo-topic-list">
           <view
             v-for="(topic, index) in icebreakers"
             :key="index"
             class="mgo-topic-chip"
             @tap="selectIcebreaker(topic)"
+            <!-- #ifdef H5 -->
+            role="button"
+            :aria-label="t('matchGuide.icebreakerAria', { topic })"
+            <!-- #endif -->
           >
             <text class="mgo-topic-text">{{ topic }}</text>
           </view>
@@ -93,12 +130,16 @@ function startChat() {
 
       <!-- 共同兴趣圈 -->
       <view v-if="commonCircles.length" class="mgo-section">
-        <text class="mgo-section-title">你们有共同的兴趣圈</text>
+        <text class="mgo-section-title">{{ t('matchGuide.commonCircleTitle') }}</text>
         <view class="mgo-circle-list">
           <view
             v-for="circle in commonCircles"
             :key="circle.id"
             class="mgo-circle-chip"
+            <!-- #ifdef H5 -->
+            role="img"
+            :aria-label="circle.name"
+            <!-- #endif -->
           >
             <text class="mgo-circle-icon">{{ circle.icon }}</text>
             <text class="mgo-circle-name">{{ circle.name }}</text>
@@ -108,12 +149,16 @@ function startChat() {
 
       <!-- 活动推荐 -->
       <view v-if="activities.length" class="mgo-section">
-        <text class="mgo-section-title">附近可能感兴趣的活动</text>
+        <text class="mgo-section-title">{{ t('matchGuide.activityTitle') }}</text>
         <view class="mgo-activity-list">
           <view
             v-for="act in activities"
             :key="act.id"
             class="mgo-activity-item"
+            <!-- #ifdef H5 -->
+            role="img"
+            :aria-label="t('matchGuide.activityAria', { title: act.title, time: act.scheduleText })"
+            <!-- #endif -->
           >
             <text class="mgo-activity-title">{{ act.title }}</text>
             <text class="mgo-activity-time">{{ act.scheduleText }}</text>
@@ -123,11 +168,25 @@ function startChat() {
 
       <!-- 操作按钮 -->
       <view class="mgo-actions">
-        <view class="mgo-btn mgo-btn--primary" @tap="startChat">
-          开始聊天
+        <view
+          class="mgo-btn mgo-btn--primary"
+          @tap="startChat"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('matchGuide.startChat')"
+          <!-- #endif -->
+        >
+          {{ t('matchGuide.startChat') }}
         </view>
-        <view class="mgo-btn mgo-btn--ghost" @tap="close">
-          稍后再聊
+        <view
+          class="mgo-btn mgo-btn--ghost"
+          @tap="close"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('matchGuide.later')"
+          <!-- #endif -->
+        >
+          {{ t('matchGuide.later') }}
         </view>
       </view>
     </view>
@@ -154,7 +213,7 @@ function startChat() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
   /* mp-weixin 不支持，H5 保留毛玻璃；mp-weixin 通过提高遮罩不透明度 0.5→0.7 近似降级 */
   // #ifdef H5
   backdrop-filter: blur(10rpx);
@@ -167,10 +226,10 @@ function startChat() {
   position: relative;
   width: 620rpx;
   max-height: 80vh;
-  background: #ffffff;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 32rpx;
   padding: 48rpx 36rpx;
-  box-shadow: 0 20rpx 60rpx rgba(15, 23, 42, 0.12), 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
+  box-shadow: 0 20rpx 60rpx var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.12)), 0 4rpx 16rpx var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.06));
   overflow-y: auto;
 }
 
@@ -197,7 +256,7 @@ function startChat() {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(91, 127, 255, 0.15);
+  box-shadow: 0 8rpx 24rpx var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15));
 }
 
 .mgo-avatar-emoji {
@@ -237,9 +296,9 @@ function startChat() {
 
 .mgo-topic-chip {
   padding: 20rpx 24rpx;
-  background: linear-gradient(135deg, var(--c-brand-50), rgba(91, 127, 255, 0.1));
+  background: linear-gradient(135deg, var(--c-brand-50), var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0.1)));
   border-radius: 16rpx;
-  border: 1px solid rgba(91, 127, 255, 0.15);
+  border: 1px solid var(--c-secondary-blue-border-tint, rgba(91, 127, 255, 0.15));
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -250,7 +309,7 @@ function startChat() {
 
 .mgo-topic-text {
   font-size: 26rpx;
-  color: #4C6EF5;
+  color: var(--c-secondary-blue-500, #4C6EF5);
   line-height: 1.4;
 }
 
@@ -266,7 +325,7 @@ function startChat() {
   align-items: center;
   gap: 8rpx;
   padding: 12rpx 20rpx;
-  background: #F1F5F9;
+  background: var(--c-bg-surface, #F4F6FA);
   border-radius: 9999rpx;
 }
 
@@ -291,13 +350,13 @@ function startChat() {
   align-items: center;
   justify-content: space-between;
   padding: 16rpx 20rpx;
-  background: #F1F5F9;
+  background: var(--c-bg-surface, #F4F6FA);
   border-radius: 12rpx;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mgo-activity-item:active {
-  background: #E2E8F0;
+  background: var(--c-border-default, #E2E8F0);
 }
 
 .mgo-activity-title {
@@ -338,18 +397,18 @@ function startChat() {
 }
 
 .mgo-btn--primary {
-  background: #5B7FFF;
-  color: #ffffff;
-  box-shadow: 0 4rpx 16rpx rgba(91, 127, 255, 0.25);
+  background: var(--c-secondary-blue-400, #5B7FFF);
+  color: var(--c-text-inverse, #FFFFFF);
+  box-shadow: 0 4rpx 16rpx var(--c-secondary-blue-shadow-soft, rgba(91, 127, 255, 0.25));
 }
 
 .mgo-btn--ghost {
   background: transparent;
-  color: #64748B;
+  color: var(--c-text-secondary, #5B6470);
 }
 
 .mgo-btn--ghost:active {
-  background: #F1F5F9;
-  color: #5B7FFF;
+  background: var(--c-bg-surface, #F4F6FA);
+  color: var(--c-secondary-blue-400, #5B7FFF);
 }
 </style>

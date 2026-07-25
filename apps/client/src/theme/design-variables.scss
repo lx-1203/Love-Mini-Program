@@ -549,6 +549,132 @@ page {
   --c-badge-idcard-bg: rgba(255, 218, 165, 0.18);
   --c-badge-idcard-border: rgba(249, 115, 22, 0.32);
   --c-badge-idcard-text: #C2410C;
+
+  /* ---------- Phase H · 补充缺失的设计令牌（硬编码清理） ---------- */
+
+  /* 次要蓝色系：用于社交进度指示器、匹配引导、未读徽章 */
+  /* 注意：原有 --c-secondary-400: #7CD9A6 与 brand-300 重复，保留不变；新增蓝色系独立变量 */
+  --c-secondary-blue-400: #5B7FFF;
+  --c-secondary-blue-500: #4C6EF5;
+
+  /* VIP 金色系：用于 VIP 页面金色文字与边框 */
+  --c-gold: #FFD700;
+  --c-text-vip-dark: #5D4E37;
+
+  /* Toast 深色文本：用于 Toast 通知中浅底深字 */
+  --c-text-success-dark: #065f46;
+  --c-text-error-dark: #991b1b;
+  --c-text-warning-dark: #92400e;
+
+  /* 浅色调系：用于卡片底色、徽章背景、装饰元素 */
+  --c-tint-green-50: #E8F5E9;
+  --c-tint-pink-50: #FCE4EC;
+  --c-tint-pink-soft: #FFF0F5;
+  --c-tint-orange-50: #FFF3E0;
+  --c-tint-amber-50: #FFF8E1;
+  --c-tint-cream-50: #FFF8E7;
+  --c-tint-blue-50: #E3F2FD;
+  --c-tint-blue-soft: #E8F4FD;
+  --c-tint-gray-50: #F3F4F6;
+
+  /* ---------- Phase I · 语义 tint token（成功/警告/错误/品牌/浪漫/次要蓝的浅底+边框） ---------- */
+  /* 成功色 tint（10% 底 + 20% 边框） */
+  --c-success-bg-tint: rgba(16, 185, 129, 0.1);
+  --c-success-border-tint: rgba(16, 185, 129, 0.2);
+  /* 警告色 tint */
+  --c-warning-bg-tint: rgba(245, 158, 11, 0.1);
+  --c-warning-border-tint: rgba(245, 158, 11, 0.2);
+  /* 错误色 tint */
+  --c-error-bg-tint: rgba(229, 69, 77, 0.1);
+  --c-error-border-tint: rgba(229, 69, 77, 0.2);
+  /* 错误色（红 #EF4444）tint（用于 Toast/Tag 等组件，与 --c-error 略有差异） */
+  --c-red-bg-tint: rgba(239, 68, 68, 0.1);
+  --c-red-border-tint: rgba(239, 68, 68, 0.2);
+  /* 浪漫粉 tint 边框 */
+  --c-romance-border-tint: rgba(236, 72, 153, 0.22);
+  --c-romance-bg-tint: rgba(236, 72, 153, 0.1);
+  /* VIP 金色 tint 边框 */
+  --c-vip-border-tint: rgba(201, 163, 106, 0.35);
+  --c-vip-border-light: rgba(201, 163, 106, 0.3);
+  /* 次要蓝 tint（用于社交进度指示器、未读徽章等） */
+  --c-secondary-blue-bg-tint: rgba(91, 127, 255, 0.1);
+  --c-secondary-blue-bg-tint-light: rgba(91, 127, 255, 0.15);
+  --c-secondary-blue-border-tint: rgba(91, 127, 255, 0.15);
+  --c-secondary-blue-border-tint-strong: rgba(91, 127, 255, 0.18);
+  --c-secondary-blue-shadow: rgba(91, 127, 255, 0.3);
+  --c-secondary-blue-shadow-soft: rgba(91, 127, 255, 0.25);
+  /* 品牌绿 tint（用于 ripple、shadow 等） */
+  --c-brand-bg-tint: rgba(63, 207, 142, 0.08);
+  --c-brand-bg-tint-strong: rgba(63, 207, 142, 0.12);
+  --c-brand-border-tint: rgba(63, 207, 142, 0.2);
+  --c-brand-border-tint-strong: rgba(63, 207, 142, 0.3);
+  --c-brand-border-tint-stronger: rgba(63, 207, 142, 0.4);
+  --c-brand-shadow-tint: rgba(63, 207, 142, 0.15);
+  --c-brand-shadow-tint-mid: rgba(63, 207, 142, 0.25);
+  --c-brand-shadow-tint-strong: rgba(63, 207, 142, 0.35);
+
+  /* 中性色 tint（用于阴影、边框等） */
+  --c-neutral-shadow-xs: rgba(15, 23, 42, 0.04);
+  --c-neutral-shadow-sm: rgba(15, 23, 42, 0.05);
+  --c-neutral-shadow-md: rgba(15, 23, 42, 0.06);
+  --c-neutral-shadow-lg: rgba(15, 23, 42, 0.08);
+  --c-neutral-shadow-xl: rgba(15, 23, 42, 0.12);
+  --c-neutral-border-tint: rgba(15, 23, 42, 0.04);
+  --c-neutral-border-tint-mid: rgba(15, 23, 42, 0.06);
+
+  /* 黑色叠层（用于卡片阴影、文字阴影等） */
+  --c-black-shadow-xs: rgba(0, 0, 0, 0.04);
+  --c-black-shadow-sm: rgba(0, 0, 0, 0.08);
+  --c-black-shadow-md: rgba(0, 0, 0, 0.1);
+  --c-black-shadow-lg: rgba(0, 0, 0, 0.12);
+  --c-black-shadow-xl: rgba(0, 0, 0, 0.24);
+  --c-black-overlay-strong: rgba(0, 0, 0, 0.65);
+  --c-black-overlay-mid: rgba(0, 0, 0, 0.4);
+  --c-black-overlay-light: rgba(0, 0, 0, 0.16);
+  --c-black-overlay-transparent: rgba(0, 0, 0, 0);
+
+  /* 深色叠层（rgba(15, 23, 42, x)） */
+  --c-overlay-mid-strong: rgba(15, 23, 42, 0.5);
+  --c-overlay-mid: rgba(15, 23, 42, 0.55);
+  --c-overlay-stronger: rgba(15, 23, 42, 0.72);
+
+  /* 白色叠层（补充透明度档位） */
+  --c-overlay-white-bg-tint: rgba(255, 255, 255, 0.08);
+  --c-overlay-white-bg-tint-mid: rgba(255, 255, 255, 0.1);
+  --c-overlay-white-bg-tint-strong: rgba(255, 255, 255, 0.12);
+  --c-overlay-white-bg-mid-strong: rgba(255, 255, 255, 0.25);
+  --c-overlay-white-bg-strong-mid: rgba(255, 255, 255, 0.35);
+  --c-overlay-white-bg-stronger: rgba(255, 255, 255, 0.4);
+  --c-overlay-white-bg-most: rgba(255, 255, 255, 0.96);
+  --c-overlay-white-text-mid: rgba(255, 255, 255, 0.7);
+  --c-overlay-white-text-strong: rgba(255, 255, 255, 0.8);
+  --c-overlay-white-text-stronger: rgba(255, 255, 255, 0.9);
+  --c-overlay-white-border-stronger: rgba(255, 255, 255, 0.32);
+  --c-overlay-white-shadow-light: rgba(255, 255, 255, 0.28);
+
+  /* 浅黑透明叠层（用于无障碍/Overlay 模态） */
+  --c-overlay-light-black: rgba(0, 0, 0, 0.04);
+  --c-overlay-text-shadow-light: rgba(0, 0, 0, 0.1);
+  --c-overlay-text-shadow-mid: rgba(0, 0, 0, 0.2);
+
+  /* ---------- Phase J · 浪漫粉/次要蓝衍生 token（补充） ---------- */
+  /* 浪漫粉阴影 tint */
+  --c-shadow-romance-tint: rgba(236, 72, 153, 0.25);
+  --c-shadow-romance-tint-strong: rgba(236, 72, 153, 0.35);
+  --c-shadow-romance-tint-stronger: rgba(236, 72, 153, 0.45);
+  --c-romance-bg-tint-strong: rgba(236, 72, 153, 0.72);
+  /* 次要蓝衍生色（浅色版用于渐变结束色） */
+  --c-secondary-blue-400-light: #7C9BFF;
+  /* 成功色高不透明度（用于标签底色等） */
+  --c-success-bg-strong: rgba(16, 185, 129, 0.85);
+  /* 错误色衍生 tint */
+  --c-error-bg-tint-strong: rgba(229, 69, 77, 0.3);
+  --c-error-bg-tint-light: rgba(229, 69, 77, 0.4);
+  /* 橙色衍生 tint（用于渐变） */
+  --c-accent-bg-tint: rgba(249, 115, 22, 0.75);
+  --c-accent-bg-tint-mid: rgba(245, 158, 11, 0.75);
+  /* 灰蓝衍生 tint（用于中性标签） */
+  --c-neutral-bg-tint: rgba(100, 116, 139, 0.75);
 }
 
 /* ============================================================

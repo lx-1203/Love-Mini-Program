@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 import WallPostCard from '../social/WallPostCard.vue';
 
 interface WallPost {
@@ -29,12 +29,28 @@ const emit = defineEmits<{
   createPost: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
 </script>
 
 <template>
-  <view class="wall-section">
-    <view v-if="loading" class="wall-skeleton" v-for="i in 2" :key="i">
+  <view
+    class="wall-section"
+    <!-- #ifdef H5 -->
+    role="list"
+    :aria-label="t('home.campusNews')"
+    <!-- #endif -->
+  >
+    <view
+      v-if="loading"
+      class="wall-skeleton"
+      v-for="i in 2"
+      :key="i"
+      <!-- #ifdef H5 -->
+      role="status"
+      aria-live="polite"
+      :aria-label="t('common.loading')"
+      <!-- #endif -->
+    >
       <view class="skeleton-card shimmer" />
     </view>
     <WallPostCard
@@ -71,7 +87,7 @@ const t = designTokens;
 }
 .skeleton-card {
   height: 300rpx;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, var(--c-neutral-50, #f1f5f9) 25%, var(--c-neutral-200, #e2e8f0) 50%, var(--c-neutral-50, #f1f5f9) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }

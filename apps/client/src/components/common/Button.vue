@@ -3,6 +3,19 @@ import { computed, ref } from 'vue';
 import { lightHaptic } from '../../utils/haptic';
 import Ripple from './Ripple.vue';
 
+/**
+ * 按钮点击事件参数（最小契约）
+ *
+ * uni-app 的 @tap 事件在不同平台形态不一：
+ * - H5 / mp-weixin：detail 包含 x / y（页面坐标）
+ * - 触摸类事件：changedTouches[0].clientX / clientY
+ * 此处仅声明实际消费的字段，便于类型安全与静态检查。
+ */
+interface TapEventLike {
+  detail?: { x?: number; y?: number };
+  changedTouches?: Array<{ clientX?: number; clientY?: number }>;
+}
+
 const props = withDefaults(defineProps<{
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'wechat' | 'danger' | 'success' | 'romance' | 'text';
   size?: 'sm' | 'md' | 'lg';
@@ -21,7 +34,7 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  tap: [e: any];
+  tap: [e: TapEventLike];
 }>();
 
 /** Ripple 子组件 ref，用于主动调用 start(clientX, clientY) */
@@ -81,7 +94,7 @@ const showRipple = computed(() => {
 });
 
 /** 统一点击处理：提取点击坐标 → 触发涟漪 → 振动反馈 → 事件抛出（disabled/loading 状态拦截） */
-function handleTap(e: any) {
+function handleTap(e: TapEventLike) {
   if (props.disabled || props.loading) return;
   let px = 0;
   let py = 0;
@@ -90,8 +103,8 @@ function handleTap(e: any) {
     px = e.detail.x;
     py = e.detail.y;
   } else if (e && e.changedTouches && e.changedTouches[0]) {
-    px = e.changedTouches[0].clientX;
-    py = e.changedTouches[0].clientY;
+    px = e.changedTouches[0].clientX ?? 0;
+    py = e.changedTouches[0].clientY ?? 0;
   }
   rippleRef.value?.start(px, py);
   lightHaptic();
@@ -107,6 +120,11 @@ function handleTap(e: any) {
       hover-class="btn--pressed"
       hover-stay-time="120"
       @tap="handleTap"
+      <!-- #ifdef H5 -->
+      role="button"
+      :aria-disabled="disabled || loading"
+      :aria-busy="loading"
+      <!-- #endif -->
     >
       <text v-if="icon && !loading" class="btn-icon">{{ icon }}</text>
       <view v-if="loading" class="btn-spinner" />
@@ -120,6 +138,11 @@ function handleTap(e: any) {
     hover-class="btn--pressed"
     hover-stay-time="120"
     @tap="handleTap"
+    <!-- #ifdef H5 -->
+    role="button"
+    :aria-disabled="disabled || loading"
+    :aria-busy="loading"
+    <!-- #endif -->
   >
     <text v-if="icon && !loading" class="btn-icon">{{ icon }}</text>
     <view v-if="loading" class="btn-spinner" />
@@ -148,8 +171,8 @@ function handleTap(e: any) {
 }
 
 /* 按压态：scale(0.95) + opacity(0.9) */
-.btn--pressed,
-.btn:active {
+/* 用 hover-class="btn--pressed" 替代 :active，H5 与 mp-weixin 均通过 hover-class 触发 */
+.btn--pressed {
   transform: scale(var(--btn-press-scale));
   opacity: var(--btn-press-opacity);
 }
@@ -174,8 +197,7 @@ function handleTap(e: any) {
   color: var(--c-text-inverse);
   box-shadow: var(--s-brand);
 }
-.btn--primary.btn--pressed,
-.btn--primary:active {
+.btn--primary.btn--pressed {
   box-shadow: var(--s-brand-sm);
 }
 
@@ -185,8 +207,7 @@ function handleTap(e: any) {
   color: var(--c-text-primary);
   border: var(--sp-1) solid var(--c-border-default);
 }
-.btn--secondary.btn--pressed,
-.btn--secondary:active {
+.btn--secondary.btn--pressed {
   background: var(--c-bg-brand);
   border-color: var(--c-brand);
   color: var(--c-brand);
@@ -198,8 +219,7 @@ function handleTap(e: any) {
   border: var(--sp-1) solid var(--c-border-default);
   color: var(--c-text-secondary);
 }
-.btn--outline.btn--pressed,
-.btn--outline:active {
+.btn--outline.btn--pressed {
   border-color: var(--c-brand);
   color: var(--c-brand);
   background: var(--c-bg-brand);
@@ -214,9 +234,7 @@ function handleTap(e: any) {
   border-radius: var(--r-full);
 }
 .btn--ghost.btn--pressed,
-.btn--ghost:active,
-.btn--text.btn--pressed,
-.btn--text:active {
+.btn--text.btn--pressed {
   background: var(--c-bg-brand);
 }
 
@@ -226,8 +244,7 @@ function handleTap(e: any) {
   color: var(--c-text-inverse);
   box-shadow: var(--s-romance);
 }
-.btn--romance.btn--pressed,
-.btn--romance:active {
+.btn--romance.btn--pressed {
   box-shadow: var(--s-romance-md);
 }
 
@@ -237,8 +254,7 @@ function handleTap(e: any) {
   color: var(--c-text-inverse);
   box-shadow: var(--s-success);
 }
-.btn--wechat.btn--pressed,
-.btn--wechat:active {
+.btn--wechat.btn--pressed {
   background: var(--c-brand-700);
 }
 
@@ -248,9 +264,14 @@ function handleTap(e: any) {
   color: var(--c-text-inverse);
   box-shadow: var(--s-error);
 }
-.btn--danger.btn--pressed,
-.btn--danger:active {
+.btn--danger.btn--pressed {
+  /* #ifndef MP-WEIXIN */
   filter: brightness(0.9);
+  /* #endif */
+  /* #ifdef MP-WEIXIN */
+  /* mp-weixin 不支持 filter: brightness，用背景色变深兜底 */
+  background: var(--c-error-dark, #c43a42);
+  /* #endif */
 }
 
 /* 成功按钮 */
@@ -259,8 +280,7 @@ function handleTap(e: any) {
   color: var(--c-text-inverse);
   box-shadow: var(--s-success);
 }
-.btn--success.btn--pressed,
-.btn--success:active {
+.btn--success.btn--pressed {
   background: var(--c-brand-800);
 }
 

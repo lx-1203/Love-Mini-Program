@@ -61,8 +61,7 @@ public class MockSecurityConfig {
     private static final List<String> PERMIT_PATHS = List.of(
             "/api/auth/**",
             "/ws/**",
-            "/content-filter/check",
-            "/uploads/**"
+            "/content-filter/check"
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -82,8 +81,8 @@ public class MockSecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 // 内容审查公开端点
                 .requestMatchers("/content-filter/check").permitAll()
-                // 媒体静态资源（用户上传的图片/视频/背景图）放行（与 real profile 一致）
-                .requestMatchers("/uploads/**").permitAll()
+                // 修复：/uploads/** 需要认证，与 real profile 安全规则保持一致
+                .requestMatchers("/uploads/**").authenticated()
                 // 管理端点需要 ADMIN 角色（与 real profile 一致）
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // 媒体上传端点 /api/media/upload 由 /api/** 规则覆盖（需认证），

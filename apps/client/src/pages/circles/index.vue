@@ -3,15 +3,43 @@
  * 兴趣圈列表页
  * 展示所有兴趣圈，支持加入/退出操作，点击进入话题列表
  */
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCircleStore } from "../../stores/circle";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+import AppShell from "../../components/layout/AppShell.vue";
+import PageStateContainer from "../../components/common/PageStateContainer.vue";
 
 const circleStore = useCircleStore();
 const { circles, loading, errorMessage } = storeToRefs(circleStore);
+
+/**
+ * 页面统一状态映射
+ * - loading（且列表为空）→ loading
+ * - errorMessage（且列表为空）→ error
+ * - 列表为空 → empty
+ * - 其他 → content
+ */
+const pageState = computed<"loading" | "error" | "empty" | "content">(() => {
+  if (loading.value && circles.value.length === 0) return "loading";
+  if (errorMessage.value && circles.value.length === 0) return "error";
+  if (circles.value.length === 0) return "empty";
+  return "content";
+});
+
+/**
+ * 错误态展示文案（复用 store 中的 errorMessage，缺失时回退到通用文案）
+ */
+const errorText = computed(() => errorMessage.value || "加载失败，请稍后重试");
+
+/**
+ * 重试：重新拉取兴趣圈列表
+ */
+function handleRetry() {
+  void circleStore.fetchCircles();
+}
 
 /**
  * 点击兴趣圈，跳转到话题列表
@@ -58,168 +86,98 @@ function formatMemberCount(count: number): string {
   return String(count);
 }
 
-/**
- * 返回上一页
- */
-function goBack() {
-  uni.navigateBack();
-}
-
 onMounted(() => {
   void circleStore.fetchCircles();
 });
 </script>
 
 <template>
-  <view class="circles-page page-fade-in">
-    <!-- 顶部导航栏 -->
-    <view class="circles-header">
-      <view class="circles-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">‹</text>
-      </view>
-      <text class="circles-header__title">兴趣圈</text>
-      <view class="circles-header__spacer" />
-    </view>
-
-    <!-- 加载状态 -->
-    <view v-if="loading && circles.length === 0" class="circles-state">
-      <view class="loading-spinner" />
-      <text class="circles-state__text">正在加载...</text>
-    </view>
-
-    <!-- 错误状态 -->
-    <view v-else-if="errorMessage && circles.length === 0" class="circles-state">
-      <image class="error-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SMILE" mode="aspectFit" />
-      <text class="circles-state__text">{{ errorMessage }}</text>
-      <view class="circles-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="circleStore.fetchCircles()">
-        <text class="circles-state__btn-text">重试</text>
-      </view>
-    </view>
-
-    <!-- 兴趣圈列表 -->
-    <scroll-view v-else class="circles-list" scroll-y>
-      <!-- 附近的人快捷入口（Task F1 / M-08） -->
-      <view class="discover-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToDiscover">
-        <view class="discover-entry__left">
-          <view class="discover-entry__icon-wrap">
-            <image class="discover-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" />
-          </view>
-          <view class="discover-entry__text-wrap">
-            <text class="discover-entry__title">附近的人</text>
-            <text class="discover-entry__desc">发现同频的TA，开启心动匹配</text>
-          </view>
-        </view>
-        <text class="discover-entry__arrow">›</text>
-      </view>
-
-      <!-- 推荐提示 -->
-      <view class="circles-banner">
-        <image class="circles-banner__emoji" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" />
-        <view class="circles-banner__text-wrap">
-          <text class="circles-banner__title">发现有趣的圈子</text>
-          <text class="circles-banner__desc">加入兴趣圈，结识志同道合的小伙伴</text>
-        </view>
-      </view>
-
-      <!-- 空状态 -->
-      <view v-if="circles.length === 0" class="circles-empty">
-        <image class="circles-empty__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" />
-        <text class="circles-empty__title">暂无兴趣圈</text>
-        <text class="circles-empty__desc">敬请期待更多兴趣圈上线</text>
-      </view>
-
-      <!-- 兴趣圈卡片 -->
-      <view class="circles-card-list">
-        <view
-          v-for="(circle, index) in circles"
-          :key="circle.id"
-          class="circle-card list-item"
-          :style="{ animationDelay: index * 60 + 'ms' }"
-          @tap="goToTopics(circle.id)"
-        >
-          <view class="circle-card__icon-wrap">
-            <image class="circle-card__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
+  <AppShell
+    variant="standard"
+    bg-variant="default"
+    title="兴趣圈"
+    :show-back="true"
+    :tab-bar-safe="false"
+    :fixed="true"
+  >
+    <!-- 统一页面状态容器：loading / error / empty / content 四态切换 -->
+    <PageStateContainer
+      :state="pageState"
+      empty-text="暂无兴趣圈"
+      :error-text="errorText"
+      @retry="handleRetry"
+    >
+      <template #default>
+        <!-- 兴趣圈列表 -->
+        <scroll-view class="circles-list" scroll-y>
+          <!-- 附近的人快捷入口（Task F1 / M-08） -->
+          <view class="discover-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToDiscover">
+            <view class="discover-entry__left">
+              <view class="discover-entry__icon-wrap">
+                <image class="discover-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" />
+              </view>
+              <view class="discover-entry__text-wrap">
+                <text class="discover-entry__title">附近的人</text>
+                <text class="discover-entry__desc">发现同频的TA，开启心动匹配</text>
+              </view>
+            </view>
+            <text class="discover-entry__arrow">›</text>
           </view>
 
-          <view class="circle-card__body">
-            <text class="circle-card__name">{{ circle.name }}</text>
-            <text class="circle-card__desc">{{ circle.description }}</text>
-            <view class="circle-card__meta">
-              <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" />
-              <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} 成员</text>
-              <text class="circle-card__divider">·</text>
-              <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
-              <text class="circle-card__count">{{ circle.topicCount }} 话题</text>
+          <!-- 推荐提示 -->
+          <view class="circles-banner">
+            <image class="circles-banner__emoji" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" />
+            <view class="circles-banner__text-wrap">
+              <text class="circles-banner__title">发现有趣的圈子</text>
+              <text class="circles-banner__desc">加入兴趣圈，结识志同道合的小伙伴</text>
             </view>
           </view>
 
-          <view
-            class="circle-card__action"
-            :class="{ 'circle-card__action--joined': circle.isJoined }"
-            @tap.stop="toggleJoin(circle.id, circle.isJoined)"
-          >
-            <text class="circle-card__action-text">
-              {{ circle.isJoined ? "已加入" : "+ 加入" }}
-            </text>
-          </view>
-        </view>
-      </view>
+          <!-- 兴趣圈卡片 -->
+          <view class="circles-card-list">
+            <view
+              v-for="(circle, index) in circles"
+              :key="circle.id"
+              class="circle-card list-item"
+              :style="{ animationDelay: index * 60 + 'ms' }"
+              @tap="goToTopics(circle.id)"
+            >
+              <view class="circle-card__icon-wrap">
+                <image class="circle-card__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
+              </view>
 
-      <view class="list-bottom-spacer" />
-    </scroll-view>
-  </view>
+              <view class="circle-card__body">
+                <text class="circle-card__name">{{ circle.name }}</text>
+                <text class="circle-card__desc">{{ circle.description }}</text>
+                <view class="circle-card__meta">
+                  <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" />
+                  <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} 成员</text>
+                  <text class="circle-card__divider">·</text>
+                  <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
+                  <text class="circle-card__count">{{ circle.topicCount }} 话题</text>
+                </view>
+              </view>
+
+              <view
+                class="circle-card__action"
+                :class="{ 'circle-card__action--joined': circle.isJoined }"
+                @tap.stop="toggleJoin(circle.id, circle.isJoined)"
+              >
+                <text class="circle-card__action-text">
+                  {{ circle.isJoined ? "已加入" : "+ 加入" }}
+                </text>
+              </view>
+            </view>
+          </view>
+
+          <view class="list-bottom-spacer" />
+        </scroll-view>
+      </template>
+    </PageStateContainer>
+  </AppShell>
 </template>
 
 <style scoped lang="scss">
-.circles-page {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100vh;
-  background: linear-gradient(180deg, var(--c-neutral-50) 0%, var(--c-bg-surface) 100%);
-}
-
-/* ========== 顶部导航栏 ========== */
-.circles-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + var(--sp-4)) var(--sp-8) var(--sp-5);
-  background: linear-gradient(180deg, var(--c-neutral-0) 0%, rgba(255, 255, 255, 0.98) 100%);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: var(--s-sm);
-}
-
-.circles-header__back {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--c-neutral-50);
-}
-
-.back-icon {
-  font-size: var(--fs-4xl);
-  color: var(--c-text-primary);
-  font-weight: 300;
-  line-height: 1;
-  margin-top: -4rpx;
-}
-
-.circles-header__title {
-  font-size: var(--fs-3xl);
-  font-weight: 700;
-  color: var(--c-text-primary);
-}
-
-.circles-header__spacer {
-  width: 64rpx;
-}
-
 /* ========== 加载/错误/空状态 ========== */
 .circles-state {
   flex: 1;
@@ -321,7 +279,7 @@ onMounted(() => {
   width: 80rpx;
   height: 80rpx;
   border-radius: var(--r-md);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -350,7 +308,7 @@ onMounted(() => {
 
 .discover-entry__desc {
   font-size: var(--fs-sm);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85)));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -442,9 +400,11 @@ onMounted(() => {
   transition: transform 200ms ease;
 }
 
+/* #ifdef H5 */
 .circle-card:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .circle-card__icon-wrap {
   width: 88rpx;
@@ -520,9 +480,11 @@ onMounted(() => {
   transition: all 200ms ease;
 }
 
+/* #ifdef H5 */
 .circle-card__action:active {
   transform: scale(0.95);
 }
+/* #endif */
 
 .circle-card__action--joined {
   background: var(--c-neutral-50);

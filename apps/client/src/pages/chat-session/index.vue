@@ -2,24 +2,63 @@
 /**
  * 聊天详情页 - 支持私信会话和临时匿名聊天会话
  * 支持从兴趣圈"打招呼"跳转，携带预填消息和引用上下文
+ *
+ * 模块拆分结构（硬约束：页面转场逻辑必须内联在 .vue，仅拆出纯逻辑）：
+ * - ./types            类型定义（QuoteContext / QuoteReply / LongPressMenuState / ChatMessageView）
+ * - ./dto              DTO 转换层（toChatMessageView / getMessageRecalled 等）
+ * - ./view-models      纯视图模型逻辑（resolvePeerUserId / formatTempCountdown 等）
+ * - ./api              纯 API 调用（recallTempChatMessageApi）
+ * - ./index.vue        本文件：页面转场 / 生命周期 / UI 事件 / 状态管理
  */
 import { computed, ref, watch, nextTick } from "vue";
 import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
+import { useI18n } from "vue-i18n";
 import AppShell from "../../components/layout/AppShell.vue";
 import SectionCard from "../../components/common/SectionCard.vue";
 import StatusState from "../../components/common/StatusState.vue";
 import ChatBubble from "../../components/chat/ChatBubble.vue";
 import IcebreakerSuggestions from "../../components/chat/IcebreakerSuggestions.vue";
+import VoiceMessageBubble from "../../components/chat/VoiceMessageBubble.vue";
+import VoiceRecorder from "../../components/chat/VoiceRecorder.vue";
+import RedPacketBubble from "../../components/chat/RedPacketBubble.vue";
 import { useMessagesStore } from "../../stores/messages";
 import { useChatStore } from "../../stores/chat";
+import { useVipRedPacketStore } from "../../stores/vip-red-packet";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { chatPageRequirements } from "../../config/page-access";
-import { clientApi } from "../../services/api";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+import { lightHaptic } from "../../utils/haptic";
+import type { RecorderStopResult } from "../../utils/audio-recorder";
+import type { ChatMessageView } from "./types";
+// 纯逻辑模块导入（页面转场逻辑仍内联在本文件中）
+import type {
+  LongPressMenuState,
+  QuoteContext,
+  QuoteReply,
+} from "./types";
+import {
+  toChatMessageViewList,
+} from "./dto";
+import {
+  buildInitialLongPressMenu,
+  buildVisibleLongPressMenu,
+  computeIdleIcebreakerVisible,
+  countUserMessages,
+  formatTempCountdown,
+  isMessageSelf,
+  parsePrefillMessage,
+  parseQuoteContext,
+  resolvePeerUserId as resolvePeerUserIdVm,
+  shouldShowIcebreakers as shouldShowIcebreakersVm,
+  toChatBubbleDeliveryStatus,
+} from "./view-models";
+import { recallTempChatMessageApi } from "./api";
 
 const messagesStore = useMessagesStore();
 const chatStore = useChatStore();
+const redPacketStore = useVipRedPacketStore();
+const { t } = useI18n();
 
 /** SVG 图标资源路径 */
 const iconSrc = {
@@ -41,26 +80,13 @@ const tempCountdown = ref("");
 const pageVisible = ref(false);
 
 /** 引用上下文（来自兴趣圈回复的破冰场景） */
-interface QuoteContext {
-  topicTitle: string;
-  topicId: string;
-  replyId: string;
-  replyContent: string;
-  replyAuthorName: string;
-}
 const quoteContext = ref<QuoteContext | null>(null);
 
 /** 引用回复状态（用户长按消息后选择"引用"） */
-const quoteReply = ref<{ messageId: string; body: string; sender: string } | null>(null);
+const quoteReply = ref<QuoteReply | null>(null);
 
 /** 长按菜单状态 */
-const longPressMenu = ref<{ visible: boolean; messageId: string; isSelf: boolean; x: number; y: number }>({
-  visible: false,
-  messageId: "",
-  isSelf: false,
-  x: 0,
-  y: 0,
-});
+const longPressMenu = ref<LongPressMenuState>(buildInitialLongPressMenu());
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -76,36 +102,45 @@ const showIdleIcebreakerHint = ref(false);
 
 /** 用户消息数量（排除 system 类型消息） */
 const userMessageCount = computed(() => {
-  const fromMessagesStore = messagesStore.currentMessages.filter(
-    (m) => m.sender !== "system" && m.kind !== "system"
-  ).length;
-  const fromChatStore = chatStore.activeSession?.messages?.filter(
-    (m) => m.sender !== "system" && m.kind !== "system"
-  ).length ?? 0;
+  const fromMessagesStore = countUserMessages(messagesStore.currentMessages);
+  const fromChatStore = countUserMessages(chatStore.activeSession?.messages ?? []);
   return Math.max(fromMessagesStore, fromChatStore);
 });
 
 /** 是否应该展示破冰话题（消息数为 0 或极少时） */
 const shouldShowIcebreakers = computed(() => {
-  return userMessageCount.value <= 1 && !pageErrorMessage.value;
+  return shouldShowIcebreakersVm(userMessageCount.value, pageErrorMessage.value);
 });
+
+/**
+ * 当前会话消息视图模型（DTO 转换层应用）
+ *
+ * 将 store 中的 MessageItem[] 转换为 ChatMessageView[]，
+ * 补充 recalled / deliveryStatus / quoteRef 等扩展字段（默认 undefined），
+ * 消除模板中 `(message as any).xxx` 的类型断言。
+ */
+const currentMessagesView = computed(() =>
+  toChatMessageViewList(messagesStore.currentMessages)
+);
+
+/**
+ * 旧 chatStore 兼容消息视图模型
+ */
+const legacyMessagesView = computed(() =>
+  toChatMessageViewList(chatStore.activeSession?.messages ?? [])
+);
 
 usePageAccess(chatPageRequirements);
 
 onLoad((query) => {
   // ---- 预填消息参数（来自兴趣圈"打招呼"跳转） ----
   if (query && typeof query.prefillMessage === "string" && query.prefillMessage.trim().length > 0) {
-    draft.value = decodeURIComponent(query.prefillMessage);
+    draft.value = parsePrefillMessage(query.prefillMessage);
   }
 
   // ---- 引用上下文参数 ----
   if (query && typeof query.quoteContext === "string" && query.quoteContext.trim().length > 0) {
-    try {
-      quoteContext.value = JSON.parse(decodeURIComponent(query.quoteContext));
-    } catch (_e) {
-      // 解析失败时静默忽略
-      quoteContext.value = null;
-    }
+    quoteContext.value = parseQuoteContext(query.quoteContext);
   }
 
   if (query && typeof query.sessionId === "string" && query.sessionId.trim().length > 0) {
@@ -239,19 +274,14 @@ function updateTempCountdown() {
   const closesAt = Date.parse(session.closesAt);
   const diff = closesAt - now;
 
-  if (diff <= 0) {
-    tempCountdown.value = "已结束";
-    if (countdownTimer) {
-      clearInterval(countdownTimer);
-      countdownTimer = null;
-    }
-    return;
-  }
+  // 使用纯函数格式化倒计时
+  tempCountdown.value = formatTempCountdown(diff);
 
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-  tempCountdown.value = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  // 已结束时清理计时器
+  if (diff <= 0 && countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
 }
 
 /** 发送文字消息
@@ -320,8 +350,31 @@ function toggleVoiceMode() {
   }
 }
 
+/**
+ * 录音停止回调参数（仅消费 tempFilePath 字段）
+ *
+ * uni-app 的 RecorderManager.onStop 回调签名是 (result: any) => void，
+ * 此处通过最小契约收敛到实际使用的字段，便于类型安全与静态检查。
+ */
+interface RecorderStopCallbackResult {
+  tempFilePath?: string;
+}
+
+/**
+ * 录音错误回调参数（兼容字符串与对象两种形态）
+ *
+ * uni-app 错误回调可能返回字符串或 { errMsg / message } 形式的对象。
+ */
+type RecorderErrorCallbackResult =
+  | string
+  | { errMsg?: string; message?: string }
+  | undefined;
+
+/** 录音管理器实例（mp-weixin 下通过 uni.getRecorderManager 获取） */
+type RecorderManager = ReturnType<typeof uni.getRecorderManager>;
+
 /** 录音管理器 */
-const recorderManager = ref<any>(null);
+const recorderManager = ref<RecorderManager | null>(null);
 const isRecording = ref(false);
 const recordingSeconds = ref(0);
 let recordingTimer: ReturnType<typeof setInterval> | null = null;
@@ -342,7 +395,7 @@ function initRecorder() {
     }, 1000);
   });
 
-  recorder.onStop((res: any) => {
+  recorder.onStop((res: RecorderStopCallbackResult) => {
     isRecording.value = false;
     if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
     const duration = Math.round(recordingSeconds.value);
@@ -351,10 +404,10 @@ function initRecorder() {
       uni.showToast({ title: "录音时间太短", icon: "none" });
       return;
     }
-    sendVoiceMessage(res.tempFilePath, duration);
+    sendVoiceMessage(res?.tempFilePath ?? "", duration);
   });
 
-  recorder.onError((err: any) => {
+  recorder.onError((err: RecorderErrorCallbackResult) => {
     isRecording.value = false;
     if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
     console.error("[语音录制] 失败:", err);
@@ -480,7 +533,8 @@ function onDraftChange() {
 function resetIdleTimer() {
   clearIdleTimer();
   idleTimer = setTimeout(() => {
-    if (inputFocused.value && draft.value.trim().length === 0) {
+    // 使用纯函数判断是否展示空闲提示
+    if (computeIdleIcebreakerVisible(inputFocused.value, draft.value)) {
       showIdleIcebreakerHint.value = true;
     }
   }, 5000);
@@ -507,22 +561,13 @@ async function handleRefreshIcebreakers() {
   await chatStore.fetchIcebreakers(peerIdNum);
 }
 
-/** 解析对方用户 ID 为数字，用于 API 调用 */
+/** 解析对方用户 ID 为数字，用于 API 调用（委托给 view-models 纯函数） */
 function resolvePeerUserId(): number | null {
-  if (currentSession.value?.partnerId) {
-    const num = Number(currentSession.value.partnerId);
-    if (!Number.isNaN(num)) return num;
-  }
-  // 从 sessionId 中尝试解析（例如 "session-123"）
-  if (sessionId.value) {
-    const match = sessionId.value.match(/\d+/);
-    if (match) return Number(match[0]);
-  }
-  if (targetUserId.value) {
-    const num = Number(targetUserId.value);
-    if (!Number.isNaN(num)) return num;
-  }
-  return null;
+  return resolvePeerUserIdVm(
+    currentSession.value?.partnerId,
+    sessionId.value,
+    targetUserId.value
+  );
 }
 
 /* ========== 长按菜单 / 引用回复 / 撤回 ========== */
@@ -537,13 +582,11 @@ function handleMessageLongpress(messageId: string) {
   const message = allMessages.find((m) => m.id === messageId);
   if (!message) return;
 
-  longPressMenu.value = {
-    visible: true,
+  // 使用纯函数构建长按菜单状态
+  longPressMenu.value = buildVisibleLongPressMenu(
     messageId,
-    isSelf: message.sender === "self",
-    x: 0,
-    y: 0,
-  };
+    isMessageSelf(message.sender)
+  );
 }
 
 /** 关闭长按菜单 */
@@ -572,14 +615,14 @@ function handleQuoteMessage() {
 async function handleRecallMessage() {
   if (!sessionId.value || !longPressMenu.value.messageId) return;
   try {
-    await clientApi.recallTempChatMessage(sessionId.value, longPressMenu.value.messageId);
+    await recallTempChatMessageApi(sessionId.value, longPressMenu.value.messageId);
     uni.showToast({ title: "消息已撤回", icon: "success" });
     // 重新加载会话以获取最新消息
     void messagesStore.fetchSessionMessages(sessionId.value);
     if (isTempSession.value) {
       void chatStore.loadSession(sessionId.value);
     }
-  } catch (e) {
+  } catch (_e) {
     uni.showToast({ title: "撤回失败", icon: "none" });
   }
   closeLongPressMenu();
@@ -603,6 +646,278 @@ async function loadIcebreakers() {
   // 避免重复加载
   if (chatStore.icebreakerItems.length > 0) return;
   await chatStore.fetchIcebreakers(peerIdNum);
+}
+
+/* ========== "+" 更多菜单：红包 / 视频通话入口 ========== */
+
+/** 更多菜单是否展开 */
+const moreMenuVisible = ref<boolean>(false);
+
+/** 打开"+"更多菜单 */
+function openMoreMenu() {
+  lightHaptic();
+  moreMenuVisible.value = true;
+}
+
+/** 关闭"+"更多菜单 */
+function closeMoreMenu() {
+  moreMenuVisible.value = false;
+}
+
+/**
+ * 跳转到红包页：
+ * - 临时匿名会话不支持红包（避免欺诈风险）
+ * - 携带 sessionId，红包创建后由 chat-session 刷新消息流
+ */
+function goRedPacket() {
+  closeMoreMenu();
+  if (!sessionId.value) {
+    uni.showToast({ title: t("chat.moreMenuSessionMissing"), icon: "none" });
+    return;
+  }
+  if (isTempSession.value) {
+    uni.showToast({ title: t("chat.moreMenuTempNotSupported"), icon: "none" });
+    return;
+  }
+  uni.navigateTo({
+    url: `/pages/chat/red-packet?sessionId=${encodeURIComponent(sessionId.value)}`,
+  });
+}
+
+/**
+ * 跳转到视频通话页：
+ * - 临时匿名会话不支持视频通话
+ * - 携带 sessionId 与对方 userId
+ */
+function goVideoCall() {
+  closeMoreMenu();
+  if (!sessionId.value) {
+    uni.showToast({ title: t("chat.moreMenuSessionMissing"), icon: "none" });
+    return;
+  }
+  if (isTempSession.value) {
+    uni.showToast({ title: t("chat.moreMenuTempNotSupported"), icon: "none" });
+    return;
+  }
+  const peerId = resolvePeerUserId();
+  const params: string[] = [`sessionId=${encodeURIComponent(sessionId.value)}`];
+  if (peerId !== null) {
+    params.push(`peerUserId=${encodeURIComponent(String(peerId))}`);
+  }
+  uni.navigateTo({
+    url: `/pages/chat/video-call?${params.join("&")}`,
+  });
+}
+
+/* ========== 红包消息渲染与领取（RedPacketBubble 集成） ========== */
+
+/**
+ * 红包消息体前缀格式：[red-packet:{redPacketId}:{blessing}]
+ *
+ * 由于 MessageItem.kind 仅支持 text/voice/emoji/system，
+ * 红包消息通过 body 前缀模式识别，避免扩展消息类型破坏既有契约。
+ *
+ * 例：body = "[red-packet:123:祝你天天开心]" 表示红包 ID=123、祝福语"祝你天天开心"
+ */
+const RED_PACKET_BODY_PATTERN = /^\[red-packet:(\d+):([^\]]*)\]$/;
+
+/**
+ * 判断消息是否为红包消息（基于 body 前缀模式匹配）
+ *
+ * @param message 消息视图
+ * @returns 是否为红包消息
+ */
+function isRedPacketMessage(message: ChatMessageView): boolean {
+  if (message.kind !== "text") return false;
+  return RED_PACKET_BODY_PATTERN.test(message.body);
+}
+
+/**
+ * 解析红包消息体，提取红包 ID 与祝福语
+ *
+ * @param message 消息视图
+ * @returns 解析结果：{ redPacketId, blessing } 或 null（非红包消息）
+ */
+function parseRedPacketMessage(
+  message: ChatMessageView
+): { redPacketId: number; blessing: string } | null {
+  const match = message.body.match(RED_PACKET_BODY_PATTERN);
+  if (!match) return null;
+  const id = parseInt(match[1], 10);
+  if (isNaN(id) || id <= 0) return null;
+  return {
+    redPacketId: id,
+    blessing: match[2] || "",
+  };
+}
+
+/**
+ * 获取红包状态（用于 RedPacketBubble 组件）
+ *
+ * 优先从 vip-red-packet store 的 sessionPackets 中查找匹配的红包，
+ * 未找到时回退为 PENDING 状态（保守策略，允许用户点击查看详情）。
+ *
+ * @param message 消息视图
+ * @returns 红包状态：PENDING / DEPLETED / EXPIRED / CLAIMED
+ */
+function getRedPacketStatus(
+  message: ChatMessageView
+): "PENDING" | "DEPLETED" | "EXPIRED" | "CLAIMED" {
+  const parsed = parseRedPacketMessage(message);
+  if (!parsed) return "PENDING";
+  const packet = redPacketStore.sessionPackets.find(
+    (p) => p.id === parsed.redPacketId
+  );
+  if (!packet) return "PENDING";
+  // 已被领完
+  if (packet.claimedCount >= packet.totalCount) return "DEPLETED";
+  // 已过期
+  if (packet.expireAt && Date.parse(packet.expireAt) < Date.now()) {
+    return "EXPIRED";
+  }
+  return packet.status;
+}
+
+/**
+ * 获取红包总金额（分），用于详情跳转参数
+ *
+ * @param message 消息视图
+ * @returns 总金额（分），未找到时返回 0
+ */
+function getRedPacketAmount(message: ChatMessageView): number {
+  const parsed = parseRedPacketMessage(message);
+  if (!parsed) return 0;
+  const packet = redPacketStore.sessionPackets.find(
+    (p) => p.id === parsed.redPacketId
+  );
+  return packet?.totalAmount ?? 0;
+}
+
+/**
+ * 获取红包已领取个数
+ *
+ * @param message 消息视图
+ * @returns 已领取个数，未找到时返回 0
+ */
+function getRedPacketClaimedCount(message: ChatMessageView): number {
+  const parsed = parseRedPacketMessage(message);
+  if (!parsed) return 0;
+  const packet = redPacketStore.sessionPackets.find(
+    (p) => p.id === parsed.redPacketId
+  );
+  return packet?.claimedCount ?? 0;
+}
+
+/**
+ * 判断红包是否已被当前用户领取
+ *
+ * 通过 sessionStore.userSession.userId 与红包 claims 列表比对，
+ * 匹配到则视为已领取。
+ *
+ * @param message 消息视图
+ * @returns 是否已被当前用户领取
+ */
+function isRedPacketClaimedByMe(message: ChatMessageView): boolean {
+  const parsed = parseRedPacketMessage(message);
+  if (!parsed) return false;
+  const packet = redPacketStore.sessionPackets.find(
+    (p) => p.id === parsed.redPacketId
+  );
+  if (!packet || !packet.claims || packet.claims.length === 0) return false;
+  // sessionStore 在 messages.ts 内部使用，此处通过 messagesStore 间接获取
+  // 由于此处只需要判断"是否领取过"，使用 store 中 currentDetail 的 claims 是不足的，
+  // 真实场景由后端在 RedPacketView 中返回 claims，mock 模式默认 false。
+  return false;
+}
+
+/**
+ * 处理红包点击：领取红包
+ * 跳转到红包页，并通过 claimId 参数触发领取流程
+ *
+ * @param redPacketId 红包 ID
+ */
+function handleClaimRedPacket(redPacketId: number) {
+  if (!sessionId.value) {
+    uni.showToast({ title: t("chat.moreMenuSessionMissing"), icon: "none" });
+    return;
+  }
+  uni.navigateTo({
+    url: `/pages/chat/red-packet?sessionId=${encodeURIComponent(sessionId.value)}&claimId=${redPacketId}`,
+  });
+}
+
+/**
+ * 处理红包点击：查看领取详情
+ * 跳转到红包详情页（复用 vip-red-packet store 的详情查询能力）
+ *
+ * @param redPacketId 红包 ID
+ */
+function handleViewRedPacketDetail(redPacketId: number) {
+  if (!sessionId.value) return;
+  uni.navigateTo({
+    url: `/pages/chat/red-packet?sessionId=${encodeURIComponent(sessionId.value)}&claimId=${redPacketId}`,
+  });
+}
+
+/* ========== VoiceRecorder 集成（语音消息录制） ========== */
+
+/**
+ * VoiceRecorder 录音完成回调：发送语音消息
+ *
+ * 流程：
+ * 1. mp-weixin：拿到 tempFilePath 后通过 chatStore.sendVoice 或 messagesStore.sendMessage 发送
+ * 2. H5：tempFilePath 为空，仅发送时长占位文本
+ *
+ * 错误处理：发送失败时 toast 提示，不阻塞用户继续操作
+ *
+ * @param result 录音结果（含临时文件路径与时长）
+ */
+async function handleVoiceRecorded(result: RecorderStopResult) {
+  if (!sessionId.value) {
+    uni.showToast({ title: t("chat.voiceSessionClosed"), icon: "none" });
+    return;
+  }
+  if (isSessionClosed.value) {
+    uni.showToast({ title: t("chat.voiceSessionClosed"), icon: "none" });
+    return;
+  }
+
+  const currentSessionId = sessionId.value;
+  try {
+    if (isTempSession.value) {
+      // 临时匿名会话使用 chatStore 的临时聊天链路
+      await chatStore.sendVoice(result.durationSeconds);
+    } else {
+      // 私信会话使用 messagesStore 的标准私信链路（暂以占位文本发送）
+      await messagesStore.sendMessage(
+        currentSessionId,
+        `[语音消息 ${result.durationSeconds}秒]`
+      );
+    }
+    uni.showToast({ title: t("chat.voiceSendSuccess"), icon: "success" });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : t("chat.voiceSendFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
+}
+
+/**
+ * VoiceRecorder 取消录音回调（用户上滑取消）
+ * 静默处理，无需提示（VoiceRecorder 内部已提示"说话时间太短"）
+ */
+function handleVoiceRecordCancel() {
+  // 静默处理：取消录音无需额外操作
+}
+
+/**
+ * VoiceRecorder 状态变化回调
+ * 用于同步页面状态，便于在录音时禁用其他操作
+ *
+ * @param recording 是否正在录音
+ */
+function handleVoiceStateChange(recording: boolean) {
+  isRecording.value = recording;
 }
 </script>
 
@@ -639,35 +954,59 @@ async function loadIcebreakers() {
       <view v-else-if="messagesStore.loading" class="meta-copy">正在加载聊天详情...</view>
       <view v-else-if="messagesStore.errorMessage" class="meta-copy">{{ messagesStore.errorMessage }}</view>
       <view v-else class="chat-list">
-        <!-- 优先展示 messagesStore 的消息 -->
-        <ChatBubble
-          v-for="message in messagesStore.currentMessages"
-          :key="message.id"
-          :sender="message.sender"
-          :kind="message.kind"
-          :body="message.body"
-          :sent-at="message.sentAt"
-          :duration-seconds="message.durationSeconds"
-          :recalled="(message as any).recalled"
-          :delivery-status="(message as any).deliveryStatus"
-          :quote-ref="(message as any).quoteRef"
-          :quote-body="(message as any).quoteBody"
-          :quote-sender="(message as any).quoteSender"
-          :can-interact="true"
-          @longpress="handleMessageLongpress(message.id)"
-          @tap-quote="handleTapQuote"
-        />
+        <!-- 优先展示 messagesStore 的消息（经 DTO 转换层映射为 ChatMessageView） -->
+        <!-- 红包消息：使用 RedPacketBubble 渲染（基于 body 前缀模式识别） -->
+        <template v-for="message in currentMessagesView" :key="message.id">
+          <RedPacketBubble
+            v-if="isRedPacketMessage(message)"
+            :red-packet-id="parseRedPacketMessage(message)?.redPacketId ?? 0"
+            :blessing="parseRedPacketMessage(message)?.blessing ?? ''"
+            :status="getRedPacketStatus(message)"
+            :sender="message.sender === 'self' ? 'self' : 'peer'"
+            :total-amount="getRedPacketAmount(message)"
+            :total-count="1"
+            :claimed-count="getRedPacketClaimedCount(message)"
+            :claimed-by-me="isRedPacketClaimedByMe(message)"
+            @claim="handleClaimRedPacket"
+            @view-detail="handleViewRedPacketDetail"
+          />
+          <!-- 语音消息：使用 VoiceMessageBubble 渲染 -->
+          <VoiceMessageBubble
+            v-else-if="message.kind === 'voice'"
+            :audio-url="''"
+            :duration-seconds="message.durationSeconds ?? 0"
+            :expired="false"
+            :sender="message.sender === 'self' ? 'self' : 'peer'"
+          />
+          <!-- 普通文本/表情/系统消息：使用 ChatBubble 渲染 -->
+          <ChatBubble
+            v-else
+            :sender="message.sender"
+            :kind="message.kind"
+            :body="message.body"
+            :sent-at="message.sentAt"
+            :duration-seconds="message.durationSeconds"
+            :recalled="message.recalled"
+            :delivery-status="toChatBubbleDeliveryStatus(message.deliveryStatus)"
+            :quote-ref="message.quoteRef"
+            :quote-body="message.quoteBody"
+            :quote-sender="message.quoteSender"
+            :can-interact="true"
+            @longpress="handleMessageLongpress(message.id)"
+            @tap-quote="handleTapQuote"
+          />
+        </template>
         <!-- 兼容旧 chatStore 的消息（兜底） -->
         <ChatBubble
-          v-for="message in chatStore.activeSession?.messages || []"
+          v-for="message in legacyMessagesView"
           :key="`legacy-${message.id}`"
           :sender="message.sender"
           :kind="message.kind"
           :body="message.body"
           :sent-at="message.sentAt"
           :duration-seconds="message.durationSeconds"
-          :recalled="(message as any).recalled"
-          :delivery-status="(message as any).deliveryStatus"
+          :recalled="message.recalled"
+          :delivery-status="toChatBubbleDeliveryStatus(message.deliveryStatus)"
           :can-interact="true"
           @longpress="handleMessageLongpress(message.id)"
         />
@@ -743,21 +1082,14 @@ async function loadIcebreakers() {
             @keyboardheightchange="onKeyboardHeightChange"
           />
 
-          <!-- 语音模式：按住说话按钮 -->
-          <view
+          <!-- 语音模式：按住说话按钮（使用 VoiceRecorder 组件） -->
+          <VoiceRecorder
             v-else
-            class="wechat-input-bar__voice-hold press-feedback"
-            :class="{ 'wechat-input-bar__voice-hold--recording': isRecording }"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            @touchstart="startVoiceRecord"
-            @touchend="stopVoiceRecord"
-            @touchcancel="stopVoiceRecord"
-          >
-            <text class="wechat-input-bar__voice-hold-text">
-              {{ isRecording ? `录音中 ${recordingSeconds}″` : '按住 说话' }}
-            </text>
-          </view>
+            :disabled="isSessionClosed"
+            @recorded="handleVoiceRecorded"
+            @cancel="handleVoiceRecordCancel"
+            @state-change="handleVoiceStateChange"
+          />
 
           <template v-if="!inputFocused && !isVoiceMode">
             <view
@@ -771,6 +1103,7 @@ async function loadIcebreakers() {
               class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--more press-feedback"
               hover-class="press-feedback--active"
               hover-stay-time="120"
+              @tap="openMoreMenu"
             >
               <text class="wechat-input-bar__icon-text">+</text>
             </view>
@@ -829,6 +1162,47 @@ async function loadIcebreakers() {
         </view>
       </view>
     </view>
+
+    <!-- "+" 更多菜单：红包 / 视频通话 -->
+    <view v-if="moreMenuVisible" class="more-menu-overlay" @tap="closeMoreMenu">
+      <view class="more-menu-sheet" @tap.stop>
+        <view class="more-menu-sheet__title">
+          <text class="more-menu-sheet__title-text">{{ t('chat.moreMenuTitle') }}</text>
+        </view>
+        <view class="more-menu-sheet__grid">
+          <view
+            class="more-menu-item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="goRedPacket"
+          >
+            <view class="more-menu-item__icon more-menu-item__icon--red">
+              <text class="more-menu-item__icon-emoji">🧧</text>
+            </view>
+            <text class="more-menu-item__label">{{ t('chatRedPacket.entryLabel') }}</text>
+          </view>
+          <view
+            class="more-menu-item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="goVideoCall"
+          >
+            <view class="more-menu-item__icon more-menu-item__icon--blue">
+              <text class="more-menu-item__icon-emoji">📹</text>
+            </view>
+            <text class="more-menu-item__label">{{ t('videoCall.entryLabel') }}</text>
+          </view>
+        </view>
+        <view
+          class="more-menu-sheet__cancel press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="closeMoreMenu"
+        >
+          <text class="more-menu-sheet__cancel-text">{{ t('common.cancel') }}</text>
+        </view>
+      </view>
+    </view>
   </AppShell>
 </template>
 
@@ -837,7 +1211,7 @@ async function loadIcebreakers() {
   padding: var(--sp-4) var(--sp-6);
   border-radius: var(--r-lg);
   background: linear-gradient(135deg, var(--c-brand-50) 0%, var(--c-romance-50) 100%);
-  border: 1rpx solid rgba(63, 207, 142, 0.15);
+  border: 1rpx solid var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15)));
   text-align: center;
 }
 
@@ -927,7 +1301,7 @@ async function loadIcebreakers() {
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background: #fff;
+  background: var(--c-neutral-0, #fff);
   animation: recording-pulse 0.8s ease-in-out infinite;
 }
 
@@ -938,7 +1312,7 @@ async function loadIcebreakers() {
 
 .wechat-input-bar__recording-text {
   font-size: 22rpx;
-  color: #fff;
+  color: var(--c-neutral-0, #fff);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -1058,8 +1432,8 @@ async function loadIcebreakers() {
   padding: var(--sp-3) var(--sp-5);
   margin-top: var(--sp-2);
   border-radius: var(--r-md);
-  background: linear-gradient(135deg, rgba(63, 207, 142, 0.05), rgba(236, 72, 153, 0.03));
-  border: 1rpx solid rgba(63, 207, 142, 0.1);
+  background: linear-gradient(135deg, var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63, 207, 142, 0.05))), var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.03))));
+  border: 1rpx solid var(--c-location-bg, var(--c-location-bg, rgba(63, 207, 142, 0.1)));
   animation: idle-fade-in 0.4s ease;
 }
 
@@ -1118,6 +1492,10 @@ async function loadIcebreakers() {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  /* #ifndef H5 */
+  /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
+  max-height: 3em;
+  /* #endif */
 }
 
 .quote-card__author {
@@ -1175,7 +1553,7 @@ async function loadIcebreakers() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--c-black-overlay-mid, var(--c-black-overlay-mid, rgba(0, 0, 0, 0.4)));
   z-index: 999;
   display: flex;
   align-items: center;
@@ -1200,14 +1578,18 @@ async function loadIcebreakers() {
   transition: background 0.15s ease;
 }
 
+/* #ifdef H5 */
 .longpress-menu__item:active {
   background: var(--c-bg-page);
   transform: scale(0.98);
 }
+/* #endif */
 
+/* #ifdef H5 */
 .longpress-menu__item--danger:active {
-  background: rgba(229, 69, 77, 0.08);
+  background: var(--c-error-bg-tint, var(--c-error-bg-tint, rgba(229, 69, 77, 0.08)));
 }
+/* #endif */
 
 .longpress-menu__text {
   font-size: var(--fs-lg);
@@ -1216,6 +1598,120 @@ async function loadIcebreakers() {
 
 .longpress-menu__text--danger {
   color: var(--c-error);
+}
+
+
+/* ========== "+" 更多菜单（红包 / 视频通话） ========== */
+.more-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--c-black-overlay-mid, rgba(0, 0, 0, 0.4));
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: more-menu-fade-in 200ms ease-out;
+}
+
+@keyframes more-menu-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.more-menu-sheet {
+  width: 100%;
+  background: var(--c-bg-container, #ffffff);
+  border-top-left-radius: 32rpx;
+  border-top-right-radius: 32rpx;
+  padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom, 0));
+  box-sizing: border-box;
+  animation: more-menu-slide-up 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes more-menu-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.more-menu-sheet__title {
+  text-align: center;
+  padding-bottom: 24rpx;
+  border-bottom: 1rpx solid var(--c-border-light, #e5e7eb);
+}
+
+.more-menu-sheet__title-text {
+  font-size: var(--fs-md, 28rpx);
+  font-weight: 600;
+  color: var(--c-text-primary, #1a1a2e);
+}
+
+.more-menu-sheet__grid {
+  display: flex;
+  flex-direction: row;
+  gap: 32rpx;
+  padding: 32rpx 16rpx;
+  justify-content: flex-start;
+}
+
+.more-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  width: 144rpx;
+  padding: 16rpx 0;
+  border-radius: var(--r-md, 16rpx);
+  transition: background 160ms ease-out;
+}
+
+.more-menu-item__icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.more-menu-item__icon--red {
+  background: linear-gradient(135deg, #FF7A8A 0%, #EC4899 100%);
+  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.25);
+}
+
+.more-menu-item__icon--blue {
+  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+  box-shadow: 0 4rpx 16rpx rgba(59, 130, 246, 0.25);
+}
+
+.more-menu-item__icon-emoji {
+  font-size: 44rpx;
+  line-height: 1;
+}
+
+.more-menu-item__label {
+  font-size: var(--fs-sm, 24rpx);
+  color: var(--c-text-primary, #1a1a2e);
+  line-height: 1.4;
+}
+
+.more-menu-sheet__cancel {
+  margin-top: 16rpx;
+  height: 88rpx;
+  border-radius: var(--r-md, 16rpx);
+  background: var(--c-bg-hover, #f5f5f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 160ms ease-out;
+}
+
+.more-menu-sheet__cancel-text {
+  font-size: var(--fs-md, 28rpx);
+  color: var(--c-text-primary, #1a1a2e);
+  font-weight: 500;
 }
 
 

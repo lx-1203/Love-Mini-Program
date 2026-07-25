@@ -31,6 +31,7 @@
  * - 所有过渡动画内联在 .vue 文件中
  */
 import { ref, computed, watch, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
 import type { DiscoverCard, SwipeDirection } from "../../stores/discover";
 import SafeImage from "../common/SafeImage.vue";
 import VerificationBadge from "../common/VerificationBadge.vue";
@@ -38,6 +39,8 @@ import CardDetailOverlay from "./CardDetailOverlay.vue";
 import LongPressMenu from "./LongPressMenu.vue";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+
+const { t } = useI18n();
 
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
@@ -209,7 +212,14 @@ const personalityPreview = computed(() => {
   if (tags.length > 0) {
     return tags.slice(0, 2).join(" · ");
   }
-  const moods = ["开朗外向", "温柔体贴", "幽默风趣", "文艺安静", "运动阳光", "理性沉稳"];
+  const moods = [
+    t('discover.personalityOutgoing'),
+    t('discover.personalityGentle'),
+    t('discover.personalityHumorous'),
+    t('discover.personalityArtistic'),
+    t('discover.personalitySporty'),
+    t('discover.personalityRational'),
+  ];
   const seed = (card?.userId?.charCodeAt(0) ?? 0) % moods.length;
   return [moods[seed], moods[(seed + 1) % moods.length]].join(" · ");
 });
@@ -221,7 +231,16 @@ const socialCirclesPreview = computed(() => {
   if (tags.length > 0) {
     return tags.slice(0, 2).join(" / ");
   }
-  const circles = ["读书会", "摄影社", "美食探店", "户外徒步", "音乐节", "剧本杀", "考研互助", "街舞社"];
+  const circles = [
+    t('discover.circleReading'),
+    t('discover.circlePhotography'),
+    t('discover.circleFood'),
+    t('discover.circleHiking'),
+    t('discover.circleMusic'),
+    t('discover.circleMurder'),
+    t('discover.circleExam'),
+    t('discover.circleDance'),
+  ];
   const seed = (card?.userId?.charCodeAt(0) ?? 0) % circles.length;
   return [circles[seed], circles[(seed + 1) % circles.length]].join(" / ");
 });
@@ -351,7 +370,7 @@ function onMenuDetail() {
  */
 function handleReport() {
   closeMenu();
-  uni.showToast({ title: "举报已提交", icon: "none" });
+  uni.showToast({ title: t('discover.reportSubmitted'), icon: "none" });
 }
 
 /**
@@ -360,7 +379,7 @@ function handleReport() {
  */
 function handleNotInterested() {
   closeMenu();
-  uni.showToast({ title: "已减少此类推荐", icon: "none" });
+  uni.showToast({ title: t('discover.recommendReduced'), icon: "none" });
   if (!currentCard.value || isFlyingOut.value) return;
   try {
     lightHaptic();
@@ -616,10 +635,17 @@ watch(
     <!-- 卡片堆叠区域：@touchmove.stop.prevent 替代 e.preventDefault()，mp-weixin 兼容 -->
     <view class="card-stack" @touchstart="onTouchStart" @touchmove.stop.prevent="onTouchMove" @touchend="onTouchEnd">
       <!-- 无卡片状态 -->
-      <view v-if="!currentCard" class="empty-state">
+      <view
+        v-if="!currentCard"
+        class="empty-state"
+        <!-- #ifdef H5 -->
+        role="status"
+        aria-live="polite"
+        <!-- #endif -->
+      >
         <image class="empty-state__icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" />
-        <text class="empty-state__title">今日推荐已看完</text>
-        <text class="empty-state__subtitle">明天中午 12 点刷新</text>
+        <text class="empty-state__title">{{ t('discover.noMoreRecommend') }}</text>
+        <text class="empty-state__subtitle">{{ t('discover.refreshAtNoon') }}</text>
       </view>
 
       <!-- 下一张卡片（堆叠底层） -->
@@ -639,8 +665,15 @@ watch(
       <!-- 当前卡片（可操作层） -->
       <view v-if="currentCard" class="card card--current" :style="currentCardStyle">
         <!-- Phase D2 · 4:5 大图区，照片墙 swiper 支持多图浏览 -->
+        <!-- 单图场景直接渲染 SafeImage，避免内部 swiper 与卡片整体拖动产生手势冲突 -->
+        <SafeImage
+          v-if="currentDisplayImages.length === 1"
+          :src="currentDisplayImages[0]"
+          custom-class="card__bg"
+          mode="aspectFill"
+        />
         <swiper
-          v-if="currentDisplayImages.length > 0"
+          v-else-if="currentDisplayImages.length > 1"
           class="card__gallery"
           :current="currentImageIndex"
           :indicator-dots="false"
@@ -683,7 +716,7 @@ watch(
         <!-- 顶部在线状态 -->
         <view class="card__online-badge" v-if="currentCard.onlineStatus === 'online'">
           <view class="card__online-dot" />
-          <text class="card__online-text">在线</text>
+          <text class="card__online-text">{{ t('chat.online') }}</text>
         </view>
 
         <!-- Phase D2 · 视频角标（右上角，personalVideoUrl 存在时展示） -->
@@ -693,9 +726,13 @@ watch(
           hover-class="card__video-badge--pressed"
           hover-stay-time="120"
           @tap.stop="onVideoBadgeTap"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('discover.videoBadge')"
+          <!-- #endif -->
         >
           <image class="card__video-badge-icon" :src="emojiIcons.video" mode="aspectFit" />
-          <text class="card__video-badge-text">视频</text>
+          <text class="card__video-badge-text">{{ t('discover.videoBadge') }}</text>
         </view>
 
         <!-- Phase D2 · 照片墙分页指示器（多图场景下展示） -->
@@ -726,8 +763,12 @@ watch(
           class="swipe-indicator"
           :class="translateX > 0 ? 'swipe-indicator--like' : 'swipe-indicator--nope'"
           :style="swipeIndicatorStyle"
+          <!-- #ifdef H5 -->
+          role="status"
+          aria-live="polite"
+          <!-- #endif -->
         >
-          <text class="swipe-indicator__text">{{ translateX > 0 ? '喜欢' : '跳过' }}</text>
+          <text class="swipe-indicator__text">{{ translateX > 0 ? t('discover.like') : t('discover.skip') }}</text>
         </view>
 
         <!-- 卡片内容 -->
@@ -735,7 +776,7 @@ watch(
           <!-- 昵称 + 年龄 + 认证 -->
           <view class="card__name-row">
             <text class="card__name">{{ currentCard.name }}</text>
-            <text class="card__age">{{ extractAge(currentCard.headline) }}岁</text>
+            <text class="card__age">{{ extractAge(currentCard.headline) }}{{ t('discover.ageUnit') }}</text>
             <!-- Phase D3 · 集成 VerificationBadge -->
             <VerificationBadge
               v-if="currentCard.verificationBadgeLevel"
@@ -748,7 +789,7 @@ watch(
           <!-- 核心资料：收入 / 性格 / 社交圈 -->
           <view class="card__key-info">
             <view class="key-info-chip key-info-chip--income">
-              <text class="key-info-chip__label">收入</text>
+              <text class="key-info-chip__label">{{ t('discover.income') }}</text>
               <text class="key-info-chip__value">{{ incomeLabel }}</text>
             </view>
             <view class="key-info-chip key-info-chip--personality">
@@ -756,7 +797,7 @@ watch(
             </view>
             <view class="key-info-chip key-info-chip--circles">
               <image class="key-info-chip__icon" :src="emojiIcons.group" mode="aspectFit" />
-              <text class="key-info-chip__label">圈子</text>
+              <text class="key-info-chip__label">{{ t('discover.circles') }}</text>
               <text class="key-info-chip__value">{{ socialCirclesPreview }}</text>
             </view>
           </view>
@@ -765,22 +806,22 @@ watch(
           <view class="card__info-row">
             <view class="card__school">
               <image class="card__school-icon" :src="emojiIcons.graduation" mode="aspectFit" />
-              <text class="card__school-text">{{ currentCard.campusName || currentCard.headline?.split('·')[0]?.trim() || '同校同学' }}</text>
+              <text class="card__school-text">{{ currentCard.campusName || currentCard.headline?.split('·')[0]?.trim() || t('discover.sameSchoolStudent') }}</text>
             </view>
             <text class="card__dot">·</text>
             <view class="card__distance">
               <image class="card__distance-icon" :src="emojiIcons.location" mode="aspectFit" />
-              <text class="card__distance-text">{{ currentCard.availability || '附近' }}</text>
+              <text class="card__distance-text">{{ currentCard.availability || t('discover.nearby') }}</text>
             </view>
           </view>
 
           <!-- 校园标签 -->
           <view class="card__campus-tags">
-            <text v-if="currentCard.isSameSchool" class="campus-tag campus-tag--school">同校</text>
-            <text v-if="currentCard.isSameMajor" class="campus-tag campus-tag--major">同专业</text>
+            <text v-if="currentCard.isSameSchool" class="campus-tag campus-tag--school">{{ t('home.personSameSchool') }}</text>
+            <text v-if="currentCard.isSameMajor" class="campus-tag campus-tag--major">{{ t('home.personSameMajor') }}</text>
             <text class="campus-tag campus-tag--match">
               <image class="campus-tag__icon" :src="emojiIcons.heart" mode="aspectFit" />
-              {{ matchScore }}%匹配
+              {{ matchScore }}{{ t('discover.matchSuffix') }}
             </text>
           </view>
 
@@ -794,13 +835,20 @@ watch(
           </view>
 
           <!-- 底部：个人简介 -->
-          <view class="card__bio" @tap.stop="toggleBio">
+          <view
+            class="card__bio"
+            @tap.stop="toggleBio"
+            <!-- #ifdef H5 -->
+            role="button"
+            :aria-label="isBioExpanded ? t('home.collapse') : t('home.expand')"
+            <!-- #endif -->
+          >
             <text
               class="card__bio-text"
               :class="{ 'card__bio-text--expanded': isBioExpanded }"
-            >{{ currentCard.bio || '喜欢读书、旅行、看电影，希望遇到有趣的灵魂~' }}</text>
+            >{{ currentCard.bio || t('discover.defaultBio') }}</text>
             <text v-if="(currentCard.bio && currentCard.bio.length > 30) || !currentCard.bio" class="card__bio-more">
-              {{ isBioExpanded ? '收起' : '展开' }}
+              {{ isBioExpanded ? t('home.collapse') : t('home.expand') }}
             </text>
           </view>
         </view>
@@ -836,6 +884,10 @@ watch(
         hover-class="action-btn--pressed"
         hover-stay-time="120"
         @tap="onReject"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('discover.skip')"
+        <!-- #endif -->
       >
         <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.PASS" mode="aspectFit" />
       </view>
@@ -844,6 +896,10 @@ watch(
         hover-class="action-btn--pressed"
         hover-stay-time="120"
         @tap="onSuperLike"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('discover.superLike')"
+        <!-- #endif -->
       >
         <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.SUPER_LIKE" mode="aspectFit" />
       </view>
@@ -852,6 +908,10 @@ watch(
         hover-class="action-btn--pressed"
         hover-stay-time="120"
         @tap="onLike"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('discover.like')"
+        <!-- #endif -->
       >
         <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
       </view>
@@ -914,6 +974,8 @@ watch(
   /* Phase D2 · 卡片采用 4:5 比例约束（aspect-ratio 优先，max-height 兜底防溢出） */
   aspect-ratio: 4 / 5;
   max-height: calc(100% - 32rpx);
+  /* mp-weixin 基础库 < 2.11.0 不支持 aspect-ratio，设置 min-height 防止卡片高度塌陷为 0 */
+  min-height: 600rpx;
   border-radius: var(--r-xl);
   overflow: hidden;
   box-shadow: var(--s-card-soft);
@@ -931,9 +993,9 @@ watch(
   border: 1rpx solid var(--c-overlay-border-light);
   /* 多层阴影：环境阴影 + 品牌光晕，打造“橱窗展品”级质感 */
   box-shadow:
-    0 8rpx 24rpx rgba(15, 23, 42, 0.08),
-    0 28rpx 72rpx rgba(15, 23, 42, 0.14),
-    0 0 40rpx rgba(63, 207, 142, 0.12);
+    0 8rpx 24rpx var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, rgba(15, 23, 42, 0.08))),
+    0 28rpx 72rpx var(--c-neutral-shadow-xl, var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.14))),
+    0 0 40rpx var(--c-brand-bg-tint-strong, var(--c-brand-bg-tint-strong, rgba(63, 207, 142, 0.12)));
   will-change: transform;
 }
 
@@ -946,10 +1008,10 @@ watch(
   width: 100%;
   height: 100%;
   border-radius: var(--r-xxl);
-  border: 1rpx solid rgba(255, 255, 255, 0.32);
+  border: 1rpx solid var(--c-overlay-white-border-stronger, var(--c-overlay-white-border-stronger, rgba(255, 255, 255, 0.32)));
   box-shadow:
-    inset 0 1rpx 0 rgba(255, 255, 255, 0.28),
-    inset 0 -40rpx 100rpx rgba(0, 0, 0, 0.18);
+    inset 0 1rpx 0 var(--c-overlay-white-shadow-light, var(--c-overlay-white-shadow-light, rgba(255, 255, 255, 0.28))),
+    inset 0 -40rpx 100rpx var(--c-black-overlay-light, var(--c-black-overlay-light, rgba(0, 0, 0, 0.18)));
   pointer-events: none;
   z-index: 2;
 }
@@ -1003,10 +1065,10 @@ watch(
   height: 72%;
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.72) 0%,
-    rgba(0, 0, 0, 0.42) 32%,
-    rgba(0, 0, 0, 0.16) 58%,
-    rgba(0, 0, 0, 0) 100%
+    var(--c-overlay-stronger, var(--c-overlay-stronger, rgba(0, 0, 0, 0.72))) 0%,
+    var(--c-black-overlay-mid, var(--c-black-overlay-mid, rgba(0, 0, 0, 0.42))) 32%,
+    var(--c-black-overlay-light, var(--c-black-overlay-light, rgba(0, 0, 0, 0.16))) 58%,
+    var(--c-black-overlay-transparent, var(--c-black-overlay-transparent, rgba(0, 0, 0, 0))) 100%
   );
   pointer-events: none;
   z-index: 2;
@@ -1027,8 +1089,8 @@ watch(
 .card__drag-tint--like {
   background: linear-gradient(
     270deg,
-    rgba(16, 185, 129, 0.42) 0%,
-    rgba(16, 185, 129, 0.18) 45%,
+    var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.42))) 0%,
+    var(--c-success-bg-tint, var(--c-success-bg-tint, rgba(16, 185, 129, 0.18))) 45%,
     transparent 70%
   );
 }
@@ -1036,8 +1098,8 @@ watch(
 .card__drag-tint--nope {
   background: linear-gradient(
     90deg,
-    rgba(229, 69, 77, 0.42) 0%,
-    rgba(229, 69, 77, 0.18) 45%,
+    var(--c-error-bg-tint-light, var(--c-error-bg-tint-light, rgba(229, 69, 77, 0.42))) 0%,
+    var(--c-action-reject-border, var(--c-action-reject-border, rgba(229, 69, 77, 0.18))) 45%,
     transparent 70%
   );
 }
@@ -1174,7 +1236,7 @@ watch(
   border-width: 8rpx;
   border-style: solid;
   z-index: 5;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--c-overlay-white-bg-most, var(--c-overlay-white-bg-most, rgba(255, 255, 255, 0.96)));
   /* mp-weixin 不支持，H5 保留毛玻璃；背景已用 0.96 高不透明度近似降级 */
   // #ifdef H5
   backdrop-filter: blur(10rpx);
@@ -1185,21 +1247,21 @@ watch(
   right: 36rpx;
   border-color: var(--c-success);
   color: var(--c-success);
-  box-shadow: 0 12rpx 40rpx rgba(16, 185, 129, 0.35);
+  box-shadow: 0 12rpx 40rpx var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.35)));
 }
 
 .swipe-indicator--nope {
   left: 36rpx;
   border-color: var(--c-error);
   color: var(--c-error);
-  box-shadow: 0 12rpx 40rpx rgba(229, 69, 77, 0.35);
+  box-shadow: 0 12rpx 40rpx var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.35)));
 }
 
 .swipe-indicator__text {
   font-size: var(--fs-6xl);
   font-weight: 900;
   letter-spacing: 6rpx;
-  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0, 0, 0, 0.1)));
 }
 
 /* ========== 卡片内容 ========== */
@@ -1216,9 +1278,9 @@ watch(
   /* 毛玻璃信息区：半透明背景 + 模糊效果（叠加在图片遮罩之上） */
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.22) 55%,
-    rgba(0, 0, 0, 0.02) 100%
+    var(--c-black-overlay-strong, var(--c-black-overlay-strong, rgba(0, 0, 0, 0.55))) 0%,
+    var(--c-black-shadow-xl, var(--c-black-shadow-xl, rgba(0, 0, 0, 0.22))) 55%,
+    var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.02))) 100%
   );
   // #ifdef H5
   backdrop-filter: blur(12rpx);
@@ -1247,7 +1309,7 @@ watch(
   background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
   padding: 6rpx 18rpx;
   border-radius: var(--r-full);
-  box-shadow: 0 2rpx 10rpx rgba(63, 207, 142, 0.3);
+  box-shadow: 0 2rpx 10rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
 }
 
 .card__verified {
@@ -1285,25 +1347,25 @@ watch(
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--c-text-inverse);
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg, var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12)));
 }
 
 .key-info-chip--income {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.75) 0%, rgba(245, 158, 11, 0.75) 100%);
+  background: linear-gradient(135deg, var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(249, 115, 22, 0.75))) 0%, var(--c-accent-bg-tint-mid, var(--c-accent-bg-tint-mid, rgba(245, 158, 11, 0.75))) 100%);
 }
 
 .key-info-chip--personality {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.72) 0%, rgba(244, 114, 182, 0.72) 100%);
+  background: linear-gradient(135deg, var(--c-romance-bg-tint-strong, var(--c-romance-bg-tint-strong, rgba(236, 72, 153, 0.72))) 0%, var(--c-romance-500, var(--c-romance-500, rgba(244, 114, 182, 0.72))) 100%);
 }
 
 .key-info-chip--circles {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.72) 0%, rgba(59, 130, 246, 0.72) 100%);
+  background: linear-gradient(135deg, var(--c-info-500, var(--c-info-500, rgba(14, 165, 233, 0.72))) 0%, var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.72))) 100%);
 }
 
 .key-info-chip__label {
   font-size: var(--fs-xs);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85)));
 }
 
 .key-info-chip__icon {
@@ -1398,13 +1460,13 @@ watch(
   background: linear-gradient(135deg, var(--c-tag-match-from), var(--c-tag-match-to));
   color: var(--c-text-inverse);
   border: 1rpx solid var(--c-overlay-border-stronger);
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.35);
+  box-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-strong, var(--c-shadow-romance-tint-strong, rgba(236, 72, 153, 0.35)));
   animation: match-pulse 2s ease-in-out infinite;
 }
 
 @keyframes match-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.45); }
-  50% { box-shadow: 0 0 0 10rpx rgba(236, 72, 153, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--c-shadow-romance-tint-stronger, var(--c-shadow-romance-tint-stronger, rgba(236, 72, 153, 0.45))); }
+  50% { box-shadow: 0 0 0 10rpx var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0))); }
 }
 
 /* 标签区 */
@@ -1428,27 +1490,27 @@ watch(
 
 /* 标签色彩编码：兴趣(绿) / 性格(粉) / 生活(橙) / 校园(蓝) */
 .tag-pill:nth-child(4n+1) {
-  background: rgba(63, 207, 142, 0.3);
-  border-color: rgba(63, 207, 142, 0.4);
-  color: #e8f5e9;
+  background: var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  border-color: var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.4)));
+  color: var(--c-tint-green-50, #E8F5E9);
 }
 
 .tag-pill:nth-child(4n+2) {
-  background: rgba(244, 143, 177, 0.3);
-  border-color: rgba(244, 143, 177, 0.4);
-  color: #fce4ec;
+  background: var(--c-romance-border-tint, var(--c-romance-border-tint, rgba(244, 143, 177, 0.3)));
+  border-color: var(--c-romance-border-tint, var(--c-romance-border-tint, rgba(244, 143, 177, 0.4)));
+  color: var(--c-tint-pink-50, #FCE4EC);
 }
 
 .tag-pill:nth-child(4n+3) {
-  background: rgba(255, 183, 77, 0.3);
-  border-color: rgba(255, 183, 77, 0.4);
-  color: #fff3e0;
+  background: var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(255, 183, 77, 0.3)));
+  border-color: var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(255, 183, 77, 0.4)));
+  color: var(--c-tint-orange-50, #FFF3E0);
 }
 
 .tag-pill:nth-child(4n+4) {
-  background: rgba(100, 181, 246, 0.3);
-  border-color: rgba(100, 181, 246, 0.4);
-  color: #e3f2fd;
+  background: var(--c-secondary-blue-shadow-soft, var(--c-secondary-blue-shadow-soft, rgba(100, 181, 246, 0.3)));
+  border-color: var(--c-secondary-blue-shadow, var(--c-secondary-blue-shadow, rgba(100, 181, 246, 0.4)));
+  color: var(--c-tint-blue-50, #E3F2FD);
 }
 
 /* 个人简介 */

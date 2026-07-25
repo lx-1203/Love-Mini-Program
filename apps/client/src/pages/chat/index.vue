@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 聊天页 - 会话列表
  * 连接到 useMessagesStore 获取真实会话数据，替代硬编码模拟数据
@@ -6,6 +6,7 @@
 import { ref, computed, onMounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useMessagesStore } from "../../stores/messages";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
@@ -16,12 +17,14 @@ import ErrorState from "../../components/common/ErrorState.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import LockScreen from "../../components/common/LockScreen.vue";
+import AppShell from "../../components/layout/AppShell.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { messagesPageRequirements } from "../../config/page-access";
 
 // 同步自定义 TabBar 选中状态（消息 = 索引 3）
 useTabBar(3);
 
+const { t } = useI18n();
 const messagesStore = useMessagesStore();
 const sessionStore = useSessionStore();
 
@@ -40,11 +43,11 @@ const iconSrc = {
 } as const;
 
 /** 话题推荐 */
-const topicSuggestions = ref([
-  "周末有什么安排？",
-  "推荐一本好书",
-  "一起上自习吗？",
-  "食堂哪个窗口好吃？",
+const topicSuggestions = computed(() => [
+  t("chat.topicWeekend"),
+  t("chat.topicBook"),
+  t("chat.topicStudy"),
+  t("chat.topicCanteen"),
 ]);
 
 /** 私聊会话列表（按置顶 + 时间排序） */
@@ -71,10 +74,10 @@ function formatChatTime(isoString: string | null): string {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffMinutes < 1) return "刚刚";
-  if (diffMinutes < 60) return `${diffMinutes}分钟前`;
-  if (diffHours < 24) return `${diffHours}小时前`;
-  if (diffDays < 7) return `${diffDays}天前`;
+  if (diffMinutes < 1) return t("common.justNow");
+  if (diffMinutes < 60) return t("common.minutesAgo", { n: diffMinutes });
+  if (diffHours < 24) return t("common.hoursAgo", { n: diffHours });
+  if (diffDays < 7) return t("common.daysAgo", { n: diffDays });
 
   const month = date.getMonth() + 1;
   const day = date.getDate();
@@ -109,31 +112,26 @@ onShow(() => {
 </script>
 
 <template>
-  <view class="chat-page page-bottom-safe page-fade-in">
-    <!-- 未完善资料：锁定页面 -->
-    <LockScreen
-      v-if="!isUnlocked"
-      page-name="聊天"
-      :completion-percent="completionPercent"
-    />
+  <!-- 未完善资料：锁定页面 -->
+  <LockScreen
+    v-if="!isUnlocked"
+    :page-name="t('chat.pageName')"
+    :completion-percent="completionPercent"
+  />
 
-    <template v-else>
-      <!-- 页面顶部渐变氛围 -->
-      <view class="chat-header-overlay" />
-
-      <!-- 页面标题 -->
-      <view class="chat-header">
-        <view class="chat-header__title-area">
-          <text class="chat-header__title">聊天</text>
-          <text class="chat-header__subtitle">与匹配对象的消息</text>
-        </view>
-      </view>
-
-      <!-- 话题推荐助手 -->
-      <view class="topic-assistant">
+  <AppShell
+    v-else
+    variant="standard"
+    bg-variant="gradient"
+    :title="t('chat.title')"
+    :subtitle="t('chat.sessionSubtitle')"
+    :tab-bar-safe="true"
+  >
+    <!-- 话题推荐助手 -->
+    <view class="topic-assistant">
         <view class="topic-assistant__label">
           <SafeImage :src="iconSrc.message" custom-class="topic-assistant__label-icon" mode="aspectFit" />
-          <text>话题推荐</text>
+          <text>{{ t('chat.topicRecommend') }}</text>
         </view>
         <scroll-view scroll-x class="topic-scroll" show-scrollbar="false">
           <view class="topic-list">
@@ -175,8 +173,8 @@ onShow(() => {
         <EmptyState
           v-else-if="privateSessions.length === 0"
           icon-kind="message"
-          title="暂无聊天消息"
-          description="去寻觅页面匹配新朋友，开始聊天吧"
+          :title="t('chat.emptyTitle')"
+          :description="t('chat.emptyDesc')"
         />
 
         <!-- 正常内容 -->
@@ -223,68 +221,16 @@ onShow(() => {
             </view>
             <!-- 会话状态标签 -->
             <view v-if="conv.phase === 'closing' || conv.phase === 'closed'" class="conversation-item__status">
-              <text>{{ conv.phase === 'closed' ? '已关闭' : '即将关闭' }}</text>
+              <text>{{ conv.phase === 'closed' ? t('chat.closed') : t('chat.closingSoon') }}</text>
             </view>
           </view>
         </view>
 
-        <!-- 底部留白 -->
-        <view class="chat-footer" />
       </scroll-view>
-    </template>
-  </view>
+  </AppShell>
 </template>
 
 <style scoped lang="scss">
-.chat-page {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100vh;
-  background: var(--c-gradient-page);
-  position: relative;
-  box-sizing: border-box;
-}
-
-.chat-header-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 300rpx;
-  background: var(--c-gradient-brand-overlay);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ========== 页面标题 ========== */
-.chat-header {
-  padding: var(--sp-6) var(--sp-8) var(--sp-5);
-  padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
-  z-index: 10;
-  position: relative;
-}
-
-.chat-header__title-area {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-}
-
-.chat-header__title {
-  font-size: var(--fs-6xl);
-  font-weight: 800;
-  color: var(--c-text-primary);
-  letter-spacing: 1rpx;
-  line-height: 1.2;
-}
-
-.chat-header__subtitle {
-  font-size: var(--fs-base);
-  color: var(--c-text-tertiary);
-  font-weight: 400;
-}
-
 /* ========== 话题推荐助手 ========== */
 .topic-assistant {
   padding: var(--sp-5) var(--sp-6);
@@ -330,9 +276,11 @@ onShow(() => {
   transition: transform 0.15s ease;
 }
 
+/* #ifdef H5 */
 .topic-tag:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .topic-tag__text {
   font-size: var(--fs-base);
@@ -380,10 +328,12 @@ onShow(() => {
   background: var(--c-divider-light);
 }
 
+/* #ifdef H5 */
 .conversation-item:active {
   background: var(--c-neutral-50);
   transform: scale(0.98);
 }
+/* #endif */
 
 .conversation-item__avatar-wrap {
   position: relative;
@@ -498,10 +448,5 @@ onShow(() => {
   font-size: var(--fs-xs);
   color: var(--c-text-tertiary);
   font-weight: 500;
-}
-
-/* ========== 底部留白 ========== */
-.chat-footer {
-  height: var(--sp-10);
 }
 </style>

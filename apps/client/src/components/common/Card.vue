@@ -57,11 +57,24 @@ const rippleColor = computed(() => {
 
 <template>
   <Ripple v-if="variant === 'interactive' && ripple" :color="rippleColor">
-    <view :class="cardClass" :style="cardStyle">
+    <view
+      :class="cardClass"
+      :style="cardStyle"
+      <!-- #ifdef H5 -->
+      role="group"
+      <!-- #endif -->
+    >
       <slot />
     </view>
   </Ripple>
-  <view v-else :class="cardClass" :style="cardStyle">
+  <view
+    v-else
+    :class="cardClass"
+    :style="cardStyle"
+    <!-- #ifdef H5 -->
+    role="group"
+    <!-- #endif -->
+  >
     <slot />
   </view>
 </template>

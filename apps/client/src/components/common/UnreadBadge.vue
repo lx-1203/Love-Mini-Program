@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 
 const props = withDefaults(defineProps<{
   count?: number;
@@ -10,14 +10,26 @@ const props = withDefaults(defineProps<{
   dot: false,
 });
 
-const t = designTokens;
+const { t } = useI18n();
 
 const show = computed(() => props.dot || props.count > 0);
 const displayText = computed(() => props.count > 99 ? '99+' : String(props.count));
+
+const ariaLabel = computed(() =>
+  props.dot ? t('messages.unreadAria') : t('messages.unreadCountAria', { n: displayText.value })
+);
 </script>
 
 <template>
-  <view v-if="show" class="badge" :class="{ 'badge--dot': dot }">
+  <view
+    v-if="show"
+    class="badge"
+    :class="{ 'badge--dot': dot }"
+    <!-- #ifdef H5 -->
+    role="status"
+    :aria-label="ariaLabel"
+    <!-- #endif -->
+  >
     <text v-if="!dot" class="badge-text">{{ displayText }}</text>
   </view>
 </template>
@@ -27,8 +39,8 @@ const displayText = computed(() => props.count > 99 ? '99+' : String(props.count
   min-width: 32rpx;
   height: 32rpx;
   border-radius: 9999rpx;
-  background: #5B7FFF;
-  color: #fff;
+  background: var(--c-secondary-blue-400, #5B7FFF);
+  color: var(--c-text-inverse, #FFFFFF);
   font-size: 20rpx;
   font-weight: 700;
   display: flex;

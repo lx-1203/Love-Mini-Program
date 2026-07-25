@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { designTokens } from '../../theme/tokens';
 
 defineProps<{
@@ -15,11 +15,33 @@ const t = designTokens;
 </script>
 
 <template>
-  <view class="bar" :class="{ 'bar--single': !secondaryLabel }">
-    <button v-if="secondaryLabel" class="bar__secondary" @tap="emit('secondary')">
+  <view
+    class="bar"
+    :class="{ 'bar--single': !secondaryLabel }"
+    <!-- #ifdef H5 -->
+    role="toolbar"
+    aria-label="操作栏"
+    <!-- #endif -->
+  >
+    <button
+      v-if="secondaryLabel"
+      class="bar__secondary"
+      @tap="emit('secondary')"
+      <!-- #ifdef H5 -->
+      :aria-label="secondaryLabel"
+      <!-- #endif -->
+    >
       {{ secondaryLabel }}
     </button>
-    <button class="bar__primary" @tap="emit('primary')">{{ primaryLabel }}</button>
+    <button
+      class="bar__primary"
+      @tap="emit('primary')"
+      <!-- #ifdef H5 -->
+      :aria-label="primaryLabel"
+      <!-- #endif -->
+    >
+      {{ primaryLabel }}
+    </button>
   </view>
 </template>
 
@@ -46,7 +68,7 @@ const t = designTokens;
 
 .bar__primary {
   background: var(--c-gradient-brand);
-  color: #fff;
+  color: var(--c-text-inverse, #FFFFFF);
   box-shadow: var(--s-brand);
 }
 .bar__primary:active {

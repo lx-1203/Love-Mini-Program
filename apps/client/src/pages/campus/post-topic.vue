@@ -8,11 +8,19 @@
  * - 内容输入
  * - 匿名开关
  * - 提交按钮
+ * - 功能4：集成 TopicSelector 话题选择器（带搜索 + 自定义创建，最多 3 个）
+ *
+ * mp-weixin 兼容性：
+ * - 不使用 :hover 伪类（hover-class 替代）
+ * - 不使用 import.meta.env.DEV
+ * - 不使用 optional catch binding
  */
 import { ref, computed } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useCampusStore, CAMPUS_CATEGORY_MAP } from "../../stores/campus";
 import type { CampusTopicCategory } from "../../stores/campus";
+// 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
+import TopicSelector from "../../components/village/TopicSelector.vue";
 
 const campusStore = useCampusStore();
 
@@ -34,6 +42,14 @@ const content = ref("");
 const isAnonymous = ref(false);
 /** 是否正在提交 */
 const isSubmitting = ref(false);
+
+/**
+ * 功能4：TopicSelector 已选话题列表（不含 # 前缀）。
+ * 由 TopicSelector 组件通过 v-model 双向绑定。
+ * 提交时附加到内容末尾作为 #话题 标签（后端 createCampusTopic 暂未支持 tags 字段，
+ * 采用内容追加方式保留现有 API 不变）。
+ */
+const selectedTopics = ref<string[]>([]);
 
 /** 6个话题分类选项 */
 const categoryOptions: { key: CampusTopicCategory; label: string }[] = [
@@ -74,6 +90,9 @@ function toggleAnonymous() {
 
 /**
  * 发布话题
+ *
+ * 功能4：若用户选择了话题标签，将其以 #话题 格式追加到内容末尾，
+ * 保留 createCampusTopic 现有 API 签名不变（不引入 tags 字段）。
  */
 async function submitTopic() {
   if (!canSubmit.value) return;
@@ -90,10 +109,15 @@ async function submitTopic() {
 
   isSubmitting.value = true;
   try {
+    // 功能4：拼接最终内容（如有话题标签则追加到末尾）
+    const trimmedContent = content.value.trim();
+    const topics = selectedTopics.value.map((name) => `#${name}`).join(" ");
+    const finalContent = topics ? `${trimmedContent}\n\n${topics}` : trimmedContent;
+
     await campusStore.createCampusTopic({
       category: selectedCategory.value,
       title: title.value.trim(),
-      content: content.value.trim(),
+      content: finalContent,
       isAnonymous: isAnonymous.value,
     });
 
@@ -194,6 +218,11 @@ function goBack() {
         </view>
       </view>
 
+      <!-- 功能4：帖子创建话题选择器（带搜索 + 自定义创建） -->
+      <view class="topic-selector-section">
+        <TopicSelector v-model="selectedTopics" />
+      </view>
+
       <!-- 匿名开关 -->
       <view class="options-section">
         <view class="option-row">
@@ -226,25 +255,25 @@ function goBack() {
 </template>
 
 <style scoped lang="scss">
-$green-primary: #3FCF8E;
-$green-light: #E8F8F0;
-$pink-primary: #EC4899;
-$pink-light: #FFF5F7;
-$white: #FFFFFF;
-$bg-page: #F4F6FA;
-$text-primary: #1F2329;
-$text-secondary: #64748B;
-$text-tertiary: #9AA1AB;
-$border-light: #E2E8F0;
-$error: #EF4444;
-$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+$green-primary: var(--c-brand, #3FCF8E);
+$green-light: var(--c-brand-50, #E8F8F0);
+$pink-primary: var(--c-romance-500, #EC4899);
+$pink-light: var(--c-romance-50, #FFF5F7);
+$white: var(--c-neutral-0, #FFFFFF);
+$bg-page: var(--c-bg-page, #F4F6FA);
+$text-primary: var(--c-text-primary, #1F2329);
+$text-secondary: var(--c-neutral-500, #64748B);
+$text-tertiary: var(--c-text-tertiary, #9AA1AB);
+$border-light: var(--c-neutral-200, #E2E8F0);
+$error: var(--c-error, #EF4444);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 
 .post-page {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background: linear-gradient(180deg, #E8F8F0 0%, #F4F6FA 20%);
+  background: linear-gradient(180deg, var(--c-bg-brand, #E8F8F0) 0%, var(--c-bg-page, #F4F6FA) 20%);
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -253,51 +282,55 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 60%, #F9A8C4 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 60%, var(--c-romance-300, #F9A8C4) 100%);
 }
 
 .post-header__back {
   padding: 12rpx 20rpx;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .post-header__back:active {
   transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
 }
+/* #endif */
 
 .back-icon {
   font-size: 28rpx;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 500;
 }
 
 .post-header__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .post-header__submit {
   padding: 14rpx 32rpx;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95)));
   min-width: 80rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0, 0, 0, 0.1)));
 }
 
+/* #ifdef H5 */
 .post-header__submit:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .post-header__submit--disabled {
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
   box-shadow: none;
 }
 
@@ -308,7 +341,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
 .post-header__submit--disabled .submit-text {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
 }
 
 .post-body {
@@ -357,14 +390,16 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   transition: all 150ms ease;
 }
 
+/* #ifdef H5 */
 .category-option:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .category-option--selected {
-  background: linear-gradient(135deg, $green-light, #F0FDF8);
+  background: linear-gradient(135deg, $green-light, var(--c-tint-green-50, #F0FDF8));
   border-color: $green-primary;
-  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.15);
+  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15)));
 }
 
 .category-option__text {
@@ -453,6 +488,15 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   box-shadow: $card-soft-shadow;
 }
 
+/* 功能4：话题选择器容器 */
+.topic-selector-section {
+  padding: 28rpx;
+  background: $white;
+  border-radius: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: $card-soft-shadow;
+}
+
 .option-row {
   display: flex;
   align-items: center;
@@ -488,18 +532,20 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   width: 100%;
   padding: 28rpx 0;
   border-radius: 24rpx;
-  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(63, 207, 142, 0.35);
+  box-shadow: 0 8rpx 24rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35)));
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .bottom-submit__btn:active {
   transform: scale(0.96);
-  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.25);
+  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint-mid, var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25)));
 }
+/* #endif */
 
 .bottom-submit__btn--disabled {
   background: $border-light;
@@ -508,7 +554,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 
 .bottom-submit__text {
   font-size: 30rpx;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
 

@@ -172,10 +172,10 @@
 /* 脉冲闪烁（用于提示） */
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(91, 127, 255, 0.3);
+    box-shadow: 0 0 0 0 var(--c-secondary-blue-shadow, var(--c-secondary-blue-shadow, rgba(91, 127, 255, 0.3)));
   }
   50% {
-    box-shadow: 0 0 0 12rpx rgba(91, 127, 255, 0);
+    box-shadow: 0 0 0 12rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0)));
   }
 }
 

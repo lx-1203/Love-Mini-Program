@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
 
 const props = defineProps<{
@@ -11,7 +11,7 @@ const props = defineProps<{
   emoji?: string;
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
 
 const emojiIconMap: Record<string, string> = {
   'celebration.png': IMAGE_PATHS.ICONS_COMMON.CELEBRATION,
@@ -29,18 +29,52 @@ const emojiSrc = computed(() => {
   return emojiIconMap[props.emoji] || IMAGE_PATHS.ICONS_COMMON.CELEBRATION;
 });
 
-const statusMap: Record<string, string> = { open: '报名中', ongoing: '进行中', upcoming: '预告', closed: '已结束' };
+/** 状态文案映射（走 i18n） */
+const statusTextMap: Record<string, string> = {
+  open: 'home.activityStatusOpen',
+  ongoing: 'home.activityStatusOngoing',
+  upcoming: 'home.activityStatusPreview',
+  closed: 'home.activityStatusClosed',
+};
+const statusText = computed(() => {
+  if (!props.status) return '';
+  return t(statusTextMap[props.status] || 'home.activityStatusOpen');
+});
+
 const statusClass = (status?: string) => {
   const map: Record<string, string> = { open: 'tag--brand', ongoing: 'tag--success', upcoming: 'tag--neutral', closed: 'tag--neutral' };
   return map[status || ''] || 'tag--brand';
 };
+
+/** ARIA 标签 */
+const ariaLabel = computed(() =>
+  t('home.activityCardAria', {
+    title: props.title || '',
+    time: props.time || '',
+    location: props.location || '',
+  })
+);
 </script>
 
 <template>
-  <view class="activity-card">
+  <view
+    class="activity-card"
+    <!-- #ifdef H5 -->
+    role="article"
+    :aria-label="ariaLabel"
+    <!-- #endif -->
+  >
     <view class="activity-cover">
-      <view class="activity-tag" v-if="status" :class="statusClass(status)">
-        <text class="activity-tag-text">{{ statusMap[status] }}</text>
+      <view
+        v-if="status"
+        class="activity-tag"
+        :class="statusClass(status)"
+        <!-- #ifdef H5 -->
+        role="img"
+        :aria-label="statusText"
+        <!-- #endif -->
+      >
+        <text class="activity-tag-text">{{ statusText }}</text>
       </view>
       <image v-if="emoji" class="activity-emoji" :src="emojiSrc" mode="aspectFit" />
       <image v-else class="activity-emoji" :src="IMAGE_PATHS.ICONS_COMMON.CELEBRATION" mode="aspectFit" />
@@ -88,7 +122,7 @@ const statusClass = (status?: string) => {
   left: 0;
   right: 0;
   height: 80rpx;
-  background: linear-gradient(0deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+  background: linear-gradient(0deg, var(--c-overlay-bg-mid, rgba(255,255,255,0.3)) 0%, transparent 100%);
 }
 .activity-tag {
   position: absolute;
@@ -102,18 +136,21 @@ const statusClass = (status?: string) => {
   // #endif
 }
 .activity-tag.tag--brand {
-  background: rgba(91, 127, 255, 0.85);
+  /* 次要蓝 85% 不透明度，用于活动标签底色 */
+  background: var(--c-secondary-blue-400, rgba(91, 127, 255, 0.85));
 }
 .activity-tag.tag--success {
-  background: rgba(16, 185, 129, 0.85);
+  /* 成功色 85% 不透明度，用于活动标签底色 */
+  background: var(--c-success, rgba(16, 185, 129, 0.85));
 }
 .activity-tag.tag--neutral {
-  background: rgba(100, 116, 139, 0.75);
+  /* 中性灰 75% 不透明度，用于活动标签底色 */
+  background: var(--c-neutral-500, rgba(100, 116, 139, 0.75));
 }
 .activity-tag-text {
   font-size: 20rpx;
   font-weight: 600;
-  color: #fff;
+  color: var(--c-text-inverse, #fff);
 }
 .activity-emoji { font-size: 56rpx; }
 

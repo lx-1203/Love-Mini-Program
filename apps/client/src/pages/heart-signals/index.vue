@@ -503,9 +503,11 @@ function getStatusLabel(status: string): string {
   justify-content: center;
 }
 
+/* #ifdef H5 */
 .signal-card__btn:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .signal-card__btn--decline {
   background: var(--c-neutral-100);

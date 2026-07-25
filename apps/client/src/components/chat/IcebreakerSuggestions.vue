@@ -6,6 +6,8 @@
  * 点击话题可一键发送到输入框，支持横向滚动和"换话题"刷新。
  * 使用品牌色系但保持柔和，不刺眼。
  */
+import { useI18n } from "vue-i18n";
+
 defineProps<{
   /** 破冰话题项列表 */
   items: Array<{
@@ -24,24 +26,41 @@ const emit = defineEmits<{
   /** 请求刷新话题 */
   refresh: [];
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
   <view class="icebreaker-suggestions">
     <!-- 标题行 -->
     <view class="icebreaker__header">
-      <text class="icebreaker__label">破冰话题</text>
+      <text class="icebreaker__label">{{ t('chat.icebreakerTitle') }}</text>
       <view class="icebreaker__header-right">
-        <text v-if="loading" class="icebreaker__loading-hint">推荐中...</text>
-        <view class="icebreaker__refresh-btn" @tap="emit('refresh')">
+        <text v-if="loading" class="icebreaker__loading-hint">{{ t('chat.icebreakerLoading') }}</text>
+        <view
+          class="icebreaker__refresh-btn"
+          @tap="emit('refresh')"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('chat.icebreakerRefreshAria')"
+          <!-- #endif -->
+        >
           <text class="icebreaker__refresh-icon">&#x21bb;</text>
-          <text class="icebreaker__refresh-text">换话题</text>
+          <text class="icebreaker__refresh-text">{{ t('chat.icebreakerRefresh') }}</text>
         </view>
       </view>
     </view>
 
     <!-- 加载态 -->
-    <view v-if="loading && items.length === 0" class="icebreaker__loading">
+    <view
+      v-if="loading && items.length === 0"
+      class="icebreaker__loading"
+      <!-- #ifdef H5 -->
+      role="status"
+      aria-live="polite"
+      :aria-label="t('chat.icebreakerLoading')"
+      <!-- #endif -->
+    >
       <view class="icebreaker__skeleton" v-for="n in 3" :key="n">
         <view class="icebreaker__skeleton-line" />
         <view class="icebreaker__skeleton-line icebreaker__skeleton-line--short" />
@@ -62,19 +81,30 @@ const emit = defineEmits<{
           :key="item.id"
           class="icebreaker__card"
           @tap="emit('select', item.content)"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('chat.icebreakerCardAria', { content: item.content })"
+          <!-- #endif -->
         >
           <view class="icebreaker__card-badge">
             <text class="icebreaker__card-badge-text">{{ item.category }}</text>
           </view>
           <text class="icebreaker__card-content">{{ item.content }}</text>
-          <text class="icebreaker__card-hint">点击发送</text>
+          <text class="icebreaker__card-hint">{{ t('chat.icebreakerCardHint') }}</text>
         </view>
       </view>
     </scroll-view>
 
     <!-- 空态 -->
-    <view v-else class="icebreaker__empty">
-      <text class="icebreaker__empty-text">暂无推荐话题，试试点击"换话题"</text>
+    <view
+      v-else
+      class="icebreaker__empty"
+      <!-- #ifdef H5 -->
+      role="status"
+      aria-live="polite"
+      <!-- #endif -->
+    >
+      <text class="icebreaker__empty-text">{{ t('chat.icebreakerEmpty') }}</text>
     </view>
   </view>
 </template>
@@ -85,10 +115,10 @@ const emit = defineEmits<{
   border-radius: 20rpx 20rpx 0 0;
   background: linear-gradient(
     135deg,
-    rgba(37, 99, 235, 0.04),
-    rgba(91, 127, 255, 0.03)
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))),
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0.03)))
   );
-  border-bottom: 1px solid rgba(37, 99, 235, 0.06);
+  border-bottom: 1px solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
 }
 
 /* ========== 标题行 ========== */
@@ -123,12 +153,12 @@ const emit = defineEmits<{
   gap: 4rpx;
   padding: 8rpx 16rpx;
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
+  background: var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
   transition: background 0.2s;
 }
 
 .icebreaker__refresh-btn:active {
-  background: rgba(37, 99, 235, 0.14);
+  background: var(--c-secondary-blue-border-tint-strong, var(--c-secondary-blue-border-tint-strong, rgba(37, 99, 235, 0.14)));
 }
 
 .icebreaker__refresh-icon {
@@ -163,16 +193,16 @@ const emit = defineEmits<{
   gap: 10rpx;
   padding: 22rpx 24rpx;
   border-radius: 24rpx;
-  background: #ffffff;
-  border: 1rpx solid rgba(37, 99, 235, 0.08);
-  box-shadow: 0 2rpx 12rpx rgba(37, 99, 235, 0.04);
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
+  box-shadow: 0 2rpx 12rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04)));
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .icebreaker__card:active {
   transform: scale(0.97);
   border-color: var(--c-brand-200);
-  box-shadow: 0 4rpx 16rpx rgba(37, 99, 235, 0.06);
+  box-shadow: 0 4rpx 16rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
 }
 
 .icebreaker__card-badge {
@@ -180,7 +210,7 @@ const emit = defineEmits<{
   display: inline-flex;
   padding: 4rpx 12rpx;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.04));
+  background: linear-gradient(135deg, var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08))), var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))));
 }
 
 .icebreaker__card-badge-text {
@@ -218,8 +248,8 @@ const emit = defineEmits<{
   gap: 12rpx;
   padding: 20rpx 22rpx;
   border-radius: 18rpx;
-  background: #ffffff;
-  border: 1px solid rgba(37, 99, 235, 0.06);
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1px solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
 }
 
 .icebreaker__skeleton-line {
@@ -227,9 +257,9 @@ const emit = defineEmits<{
   border-radius: 6rpx;
   background: linear-gradient(
     90deg,
-    rgba(37, 99, 235, 0.04) 25%,
-    rgba(37, 99, 235, 0.08) 50%,
-    rgba(37, 99, 235, 0.04) 75%
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))) 25%,
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08))) 50%,
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))) 75%
   );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s ease-in-out infinite;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
@@ -12,23 +12,44 @@ const emit = defineEmits<{
   notifyTap: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
 </script>
 
 <template>
   <view class="home-header">
-    <view class="header-left" @tap="emit('schoolTap')">
-      <text class="header-school">{{ school || '校园恋爱' }}</text>
+    <view
+      class="header-left"
+      @tap="emit('schoolTap')"
+      <!-- #ifdef H5 -->
+      role="button"
+      :aria-label="t('home.selectSchool')"
+      <!-- #endif -->
+    >
+      <text class="header-school">{{ school || t('home.welcome') }}</text>
       <image class="header-arrow" :src="IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT" mode="aspectFit" />
       <view class="header-badge">
-        <text class="header-badge-text">本校限定</text>
+        <text class="header-badge-text">{{ t('home.schoolLimited') }}</text>
       </view>
     </view>
     <view class="header-right">
-      <view class="header-icon" @tap="emit('searchTap')">
+      <view
+        class="header-icon"
+        @tap="emit('searchTap')"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('home.searchPlaceholder')"
+        <!-- #endif -->
+      >
         <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" />
       </view>
-      <view class="header-icon" @tap="emit('notifyTap')">
+      <view
+        class="header-icon"
+        @tap="emit('notifyTap')"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('home.notifications')"
+        <!-- #endif -->
+      >
         <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" />
         <view class="header-dot" />
       </view>
@@ -102,6 +123,6 @@ const t = designTokens;
   height: 16rpx;
   border-radius: 50%;
   background: var(--c-error);
-  border: 3rpx solid #fff;
+  border: 3rpx solid var(--c-bg-container, #FFFFFF);
 }
 </style>

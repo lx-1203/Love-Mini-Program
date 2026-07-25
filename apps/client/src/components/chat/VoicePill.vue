@@ -6,7 +6,8 @@
  * mp-weixin 使用 wx.createInnerAudioContext() 播放，
  * 点击气泡切换播放/暂停，显示波形动画。
  */
-import { ref, onUnmounted } from "vue";
+import { ref, computed, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   durationSeconds: number;
@@ -15,8 +16,19 @@ const props = defineProps<{
   expired?: boolean;
 }>();
 
+const { t } = useI18n();
+
 const isPlaying = ref(false);
-const audioCtx = ref<any>(null);
+/** 音频上下文（mp-weixin 平台为 InnerAudioContext，其他平台为 null） */
+const audioCtx = ref<ReturnType<typeof uni.createInnerAudioContext> | null>(null);
+
+/** ARIA 标签：根据播放状态/过期状态生成无障碍描述 */
+const ariaLabel = computed(() => {
+  if (props.expired) return t("chat.voiceExpired", { n: props.durationSeconds });
+  return isPlaying.value
+    ? t("chat.voicePaused", { n: props.durationSeconds })
+    : t("chat.voicePlayback", { n: props.durationSeconds });
+});
 
 function togglePlay() {
   if (props.expired) return;
@@ -58,6 +70,12 @@ onUnmounted(() => {
     class="voice-pill"
     :class="{ 'voice-pill--expired': expired, 'voice-pill--playing': isPlaying }"
     @tap="togglePlay"
+    <!-- #ifdef H5 -->
+    role="button"
+    :aria-label="ariaLabel"
+    :aria-pressed="isPlaying"
+    :aria-disabled="expired"
+    <!-- #endif -->
   >
     <view class="voice-pill__wave">
       <view
@@ -81,7 +99,7 @@ onUnmounted(() => {
   border-radius: 20rpx 4rpx 20rpx 20rpx;
   background: var(--c-bg-brand);
   color: var(--c-brand-700);
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04));
   transition: all 200ms ease;
   min-width: 140rpx;
 }
@@ -98,8 +116,8 @@ onUnmounted(() => {
 
 .voice-pill--playing {
   background: linear-gradient(135deg, var(--c-brand-400), var(--c-brand-600));
-  color: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.25);
+  color: var(--c-text-inverse, #FFFFFF);
+  box-shadow: 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25));
 }
 
 .voice-pill__wave {
@@ -118,7 +136,7 @@ onUnmounted(() => {
 }
 
 .voice-pill__bar--active {
-  background: #fff;
+  background: var(--c-text-inverse, #FFFFFF);
   animation: voice-wave 0.6s ease-in-out infinite alternate;
 }
 

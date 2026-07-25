@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 消息页 - 私信+心动信号+系统通知
  * 展示私信聊天列表、心动信号通知和系统通知
@@ -6,8 +6,9 @@
  */
 import { computed, ref, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
+import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
-import { useMessagesStore, type NotificationFilterType, type SystemNotification } from "../../stores/messages";
+import { useMessagesStore, type SystemNotification } from "../../stores/messages";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
@@ -17,8 +18,10 @@ import MatchGuideOverlay from "../../components/social/MatchGuideOverlay.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
+import PageStateContainer from "../../components/common/PageStateContainer.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+import BaseTabs, { type BaseTab } from "../../components/common/BaseTabs.vue";
 
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
@@ -29,6 +32,7 @@ const emojiIcons = {
   gift: IMAGE_PATHS.ICONS_EMOJI.GIFT,
 } as const;
 
+const { t } = useI18n();
 const sessionStore = useSessionStore();
 
 // Phase 4 任务 20：接入页面访问守卫，触发 UnlockGuideModal 引导（替代静默重定向）
@@ -56,8 +60,57 @@ const completionPercent = computed(() => sessionStore.profileCompletion);
 /** 当前选中的标签页：private | notifications */
 const activeTab = ref<"private" | "notifications">("private");
 
-/** 通知信号筛选类型：all | social | content */
-const signalFilter = ref<NotificationFilterType>("all");
+/**
+ * 功能5：通知分类筛选类型
+ * - all: 全部通知
+ * - interaction: 互动类（like/comment/follow/visitor/interaction_like）
+ * - system: 系统类（system/activity）
+ * - chat: 聊天类（match/interaction_match，匹配后通常会发起聊天）
+ */
+type NotificationCategory = "all" | "interaction" | "system" | "chat";
+
+/** 功能5：当前选中的通知分类 */
+const categoryFilter = ref<NotificationCategory>("all");
+
+/** 主分类标签配置：私信 / 系统通知，徽章显示未读数 */
+const mainTabs = computed(() => [
+  { key: "private", label: t("messages.private"), badge: messagesStore.totalUnreadCount || undefined },
+  { key: "notifications", label: t("messages.systemNotifications"), badge: messagesStore.unreadNotificationCount || undefined },
+]);
+
+/**
+ * 功能5：通知分类标签配置：全部 / 互动 / 系统 / 聊天
+ * 替代原 signalTabs，提供更直观的业务分类入口
+ */
+const categoryTabs = computed<BaseTab[]>(() => [
+  { key: "all", label: t("messages.categoryAll") },
+  { key: "interaction", label: t("messages.categoryInteraction") },
+  { key: "system", label: t("messages.categorySystem") },
+  { key: "chat", label: t("messages.categoryChat") },
+]);
+
+/**
+ * 功能5：根据 categoryFilter 过滤后的通知列表
+ * - all: 返回全部通知
+ * - interaction: like/comment/follow/visitor/interaction_like 类通知
+ * - system: system/activity 类通知
+ * - chat: match/interaction_match 类通知（匹配后通常发起聊天）
+ */
+const categorizedNotifications = computed(() => {
+  const list = messagesStore.filteredNotifications;
+  if (categoryFilter.value === "all") return list;
+  const interactionTypes = new Set(["like", "comment", "follow", "visitor", "interaction_like"]);
+  const systemTypes = new Set(["system", "activity"]);
+  const chatTypes = new Set(["match", "interaction_match"]);
+  if (categoryFilter.value === "interaction") {
+    return list.filter((n) => interactionTypes.has(n.type));
+  }
+  if (categoryFilter.value === "system") {
+    return list.filter((n) => systemTypes.has(n.type));
+  }
+  // chat
+  return list.filter((n) => chatTypes.has(n.type));
+});
 
 /** 倒计时显示文本映射 */
 const countdownMap = ref<Record<string, string>>({});
@@ -94,9 +147,10 @@ const tempSessionList = computed(() => {
 
 /**
  * 系统通知列表
- * Phase 3：使用 filteredNotifications getter，自动根据 filterType 过滤
+ * 功能5：使用 categorizedNotifications，根据 categoryFilter 过滤
+ * Phase 3：原 filteredNotifications 仍作为底层数据源
  */
-const notificationList = computed(() => messagesStore.filteredNotifications);
+const notificationList = computed(() => categorizedNotifications.value);
 
 /** 是否显示空状态 */
 const showEmptyState = computed(() => {
@@ -105,6 +159,32 @@ const showEmptyState = computed(() => {
   }
   return notificationList.value.length === 0;
 });
+
+/**
+ * 统一页面状态映射
+ * - loading → loading
+ * - errorMessage → error
+ * - showEmptyState → empty
+ * - 其他 → content（私信列表 / 系统通知列表）
+ */
+const pageState = computed<"loading" | "error" | "empty" | "content">(() => {
+  if (messagesStore.loading) return "loading";
+  if (messagesStore.errorMessage) return "error";
+  if (showEmptyState.value) return "empty";
+  return "content";
+});
+
+/**
+ * 错误态展示文案（复用 store 中的 errorMessage，缺失时回退到通用文案）
+ */
+const errorText = computed(() => messagesStore.errorMessage || t("messages.loadFailed"));
+
+/**
+ * 重试：重新拉取会话列表
+ */
+function handleRetry() {
+  void messagesStore.fetchSessions();
+}
 
 /** 页面加载时获取数据 */
 onShow(() => {
@@ -143,7 +223,7 @@ function updateCountdowns() {
     const diff = expiresAt - now;
 
     if (diff <= 0) {
-      countdownMap.value[signal.id] = "已过期";
+      countdownMap.value[signal.id] = t("messages.expired");
       signal.status = "expired";
     } else {
       const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -152,15 +232,6 @@ function updateCountdowns() {
       countdownMap.value[signal.id] = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
     }
   });
-}
-
-/**
- * 切换通知信号筛选类型
- */
-function switchSignalFilter(type: NotificationFilterType) {
-  if (signalFilter.value === type) return;
-  signalFilter.value = type;
-  void messagesStore.setFilterType(type);
 }
 
 /**
@@ -181,12 +252,12 @@ async function handleHeartSignalChat(signalId: string) {
       // 获取匹配对象信息
       const signal = messagesStore.pendingHeartSignals.find(s => s.id === signalId);
       matchGuideData.value = {
-        partnerName: signal?.fromUserName ?? "对方",
+        partnerName: signal?.fromUserName ?? t("messages.partner"),
         partnerAvatar: signal?.fromUserAvatar ?? "",
         icebreakers: [
-          "你好呀，很高兴认识你！",
-          "你也喜欢看电影吗？",
-          "你平时喜欢做什么？",
+          t("messages.icebreaker1"),
+          t("messages.icebreaker2"),
+          t("messages.icebreaker3"),
         ],
         commonCircles: [],
         activities: [],
@@ -195,7 +266,7 @@ async function handleHeartSignalChat(signalId: string) {
       showMatchGuide.value = true;
     }
   } catch (_e) {
-    uni.showToast({ title: messagesStore.errorMessage || "操作失败", icon: "none" });
+    uni.showToast({ title: messagesStore.errorMessage || t("messages.operationFailed"), icon: "none" });
   }
 }
 
@@ -279,7 +350,7 @@ function getSignalClass(notification: SystemNotification): string {
  * Phase 3：获取信号类型标签文本
  */
 function getSignalLabel(notification: SystemNotification): string {
-  return notification.signalType === "SOCIAL" ? "社交信号" : "内容信号";
+  return notification.signalType === "SOCIAL" ? t("messages.socialSignal") : t("messages.contentSignal");
 }
 
 /**
@@ -288,7 +359,7 @@ function getSignalLabel(notification: SystemNotification): string {
  * 内容信号 → "查看详情"（蓝色）
  */
 function getActionLabel(notification: SystemNotification): string {
-  return notification.signalType === "SOCIAL" ? "立即查看" : "查看详情";
+  return notification.signalType === "SOCIAL" ? t("messages.viewNow") : t("messages.viewDetail");
 }
 
 /**
@@ -342,20 +413,20 @@ function handleEntryClick(type: string) {
       openAppPath("/pages/likes/index");
       break;
     case "group-chat":
-      uni.showToast({ title: "群聊功能开发中", icon: "none" });
+      uni.showToast({ title: t("messages.groupChatWip"), icon: "none" });
       break;
     case "notification":
       activeTab.value = "notifications";
       break;
     case "assistant":
-      uni.showToast({ title: "恋爱助手开发中", icon: "none" });
+      uni.showToast({ title: t("messages.assistantWip"), icon: "none" });
       break;
   }
 }
 
 /** 搜索框点击 */
 function handleSearchClick() {
-  uni.showToast({ title: "搜索功能开发中", icon: "none" });
+  uni.showToast({ title: t("messages.searchWip"), icon: "none" });
 }
 </script>
 
@@ -364,7 +435,7 @@ function handleSearchClick() {
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"
-      page-name="消息"
+      :page-name="t('messages.pageName')"
       :completion-percent="completionPercent"
     />
 
@@ -375,7 +446,7 @@ function handleSearchClick() {
       
       <!-- 页面标题 -->
       <view class="messages-header">
-        <text class="messages-header__title">消息</text>
+        <text class="messages-header__title">{{ t('messages.title') }}</text>
         <view v-if="messagesStore.totalUnreadCount > 0" class="messages-header__badge">
           <text class="messages-header__badge-text">
             {{ messagesStore.totalUnreadCount > 99 ? "99+" : messagesStore.totalUnreadCount }}
@@ -388,7 +459,7 @@ function handleSearchClick() {
         <view class="search-bar__icon">
           <image :src="emojiIcons.search" mode="aspectFit" />
         </view>
-        <text class="search-bar__placeholder">搜索</text>
+        <text class="search-bar__placeholder">{{ t('messages.search') }}</text>
       </view>
 
       <!-- 功能入口区 -->
@@ -397,7 +468,7 @@ function handleSearchClick() {
           <view class="entry-item__icon entry-item__icon--green">
             <image class="entry-item__emoji" :src="emojiIcons.smile" mode="aspectFit" />
           </view>
-          <text class="entry-item__text">新朋友</text>
+          <text class="entry-item__text">{{ t('messages.newFriends') }}</text>
           <view v-if="messagesStore.pendingHeartSignals.length > 0" class="entry-item__badge">
             <text class="entry-item__badge-text">{{ messagesStore.pendingHeartSignals.length }}</text>
           </view>
@@ -406,13 +477,13 @@ function handleSearchClick() {
           <view class="entry-item__icon entry-item__icon--blue">
             <image class="entry-item__emoji" :src="emojiIcons.group" mode="aspectFit" />
           </view>
-          <text class="entry-item__text">群聊</text>
+          <text class="entry-item__text">{{ t('messages.groupChat') }}</text>
         </view>
         <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleEntryClick('notification')">
           <view class="entry-item__icon entry-item__icon--orange">
             <image class="entry-item__emoji" :src="emojiIcons.notification" mode="aspectFit" />
           </view>
-          <text class="entry-item__text">通知</text>
+          <text class="entry-item__text">{{ t('messages.notice') }}</text>
           <view v-if="messagesStore.unreadNotificationCount > 0" class="entry-item__badge">
             <text class="entry-item__badge-text">
               {{ messagesStore.unreadNotificationCount > 99 ? "99+" : messagesStore.unreadNotificationCount }}
@@ -423,7 +494,7 @@ function handleSearchClick() {
           <view class="entry-item__icon entry-item__icon--pink">
             <image class="entry-item__emoji" :src="emojiIcons.gift" mode="aspectFit" />
           </view>
-          <text class="entry-item__text">助手</text>
+          <text class="entry-item__text">{{ t('messages.assistant') }}</text>
         </view>
       </view>
 
@@ -454,10 +525,10 @@ function handleSearchClick() {
             <text class="heart-signal-card__countdown">{{ countdownMap[signal.id] || "--:--:--" }}</text>
             <button
               class="heart-signal-card__btn"
-              :disabled="signal.status === 'expired' || countdownMap[signal.id] === '已过期'"
+              :disabled="signal.status === 'expired' || countdownMap[signal.id] === t('messages.expired')"
               @tap="handleHeartSignalChat(signal.id)"
             >
-              {{ countdownMap[signal.id] === "已过期" ? "已过期" : "直接开聊" }}
+              {{ countdownMap[signal.id] === t("messages.expired") ? t("messages.expired") : t("messages.startChatNow") }}
             </button>
           </view>
         </view>
@@ -473,91 +544,49 @@ function handleSearchClick() {
       >
         <SafeImage :src="iconSrc.heartSignal" custom-class="social-warming-hint__icon" mode="aspectFit" />
         <text class="social-warming-hint__text">
-          社交升温 {{ socialProgressStore.progress.progressPercentage ?? 0 }}%
+          {{ t('messages.socialWarming') }} {{ socialProgressStore.progress.progressPercentage ?? 0 }}%
         </text>
-        <text class="social-warming-hint__action">查看详情 &rsaquo;</text>
+        <text class="social-warming-hint__action">{{ t('messages.viewDetailArrow') }}</text>
       </view>
 
       <!-- 主分类标签：私信 / 系统通知 -->
-      <view class="messages-tabs">
-        <view
-          class="messages-tabs__item press-feedback"
-          :class="{ 'messages-tabs__item--active': activeTab === 'private' }"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          @tap="activeTab = 'private'"
-        >
-          <text class="messages-tabs__text">私信</text>
-          <view v-if="messagesStore.totalUnreadCount > 0" class="messages-tabs__dot">
-            <text class="messages-tabs__dot-text">
-              {{ messagesStore.totalUnreadCount > 99 ? "99+" : messagesStore.totalUnreadCount }}
-            </text>
+      <BaseTabs
+        v-model="activeTab"
+        :tabs="mainTabs"
+        variant="underline"
+        :equal-split="false"
+        badge-color="var(--c-error, #E5454D)"
+      />
+
+      <!-- 功能5：通知分类筛选 Tab（全部 / 互动 / 系统 / 聊天） -->
+      <BaseTabs
+        v-if="activeTab === 'notifications'"
+        v-model="categoryFilter"
+        :tabs="categoryTabs"
+        variant="pill"
+        :equal-split="false"
+      />
+
+      <!-- 统一页面状态容器：loading / error / empty / content 四态切换 -->
+      <PageStateContainer :state="pageState" :error-text="errorText" @retry="handleRetry">
+        <template #loading>
+          <view class="messages-loading">
+            <Skeleton variant="list" :count="4" />
           </view>
-        </view>
-        <view
-          class="messages-tabs__item press-feedback"
-          :class="{ 'messages-tabs__item--active': activeTab === 'notifications' }"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          @tap="activeTab = 'notifications'"
-        >
-          <text class="messages-tabs__text">系统通知</text>
-          <view v-if="messagesStore.unreadNotificationCount > 0" class="messages-tabs__dot">
-            <text class="messages-tabs__dot-text">
-              {{ messagesStore.unreadNotificationCount > 99 ? "99+" : messagesStore.unreadNotificationCount }}
-            </text>
+        </template>
+        <template #error>
+          <view class="messages-error">
+            <ErrorState type="network" @retry="handleRetry" />
           </view>
-        </view>
-      </view>
-
-      <!-- Phase 3：通知信号分类筛选 Tab -->
-      <view v-if="activeTab === 'notifications'" class="signal-filter-tabs">
-        <view
-          class="signal-filter-tabs__item press-feedback"
-          :class="{ 'signal-filter-tabs__item--active': signalFilter === 'all' }"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          @tap="switchSignalFilter('all')"
-        >
-          <text class="signal-filter-tabs__text">全部</text>
-        </view>
-        <view
-          class="signal-filter-tabs__item signal-filter-tabs__item--social press-feedback"
-          :class="{ 'signal-filter-tabs__item--active': signalFilter === 'social' }"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          @tap="switchSignalFilter('social')"
-        >
-          <text class="signal-filter-tabs__text">社交信号</text>
-        </view>
-        <view
-          class="signal-filter-tabs__item signal-filter-tabs__item--content press-feedback"
-          :class="{ 'signal-filter-tabs__item--active': signalFilter === 'content' }"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          @tap="switchSignalFilter('content')"
-        >
-          <text class="signal-filter-tabs__text">内容信号</text>
-        </view>
-      </view>
-
-      <!-- 加载状态（骨架屏） -->
-      <view v-if="messagesStore.loading" class="messages-loading">
-        <Skeleton variant="list" :count="4" />
-      </view>
-
-      <!-- 错误状态 -->
-      <view v-else-if="messagesStore.errorMessage" class="messages-error">
-        <ErrorState type="network" @retry="messagesStore.fetchSessions()" />
-      </view>
-
-      <!-- 空状态 -->
-      <view v-else-if="showEmptyState" class="messages-empty">
-        <EmptyState type="no-chat" message="暂无消息" />
-      </view>
-
-      <!-- 私信列表 -->
-      <view v-else-if="activeTab === 'private'" class="session-list">
+        </template>
+        <template #empty>
+          <view class="messages-empty">
+            <EmptyState type="no-chat" :message="t('messages.emptyTitle')" />
+          </view>
+        </template>
+        <template #default>
+          <!-- 私信列表 -->
+          <view v-if="activeTab === 'private'" class="session-list">
         <view
           v-for="(session, index) in privateSessionList"
           :key="session.id"
@@ -586,8 +615,8 @@ function handleSearchClick() {
               <text class="session-row__time">{{ formatTime(session.lastMessageSentAt) }}</text>
             </view>
             <view class="session-row__bottom">
-              <text class="session-row__preview">{{ session.lastMessagePreview || "暂无消息" }}</text>
-              <text v-if="session.pinned" class="session-row__pin">置顶</text>
+              <text class="session-row__preview">{{ session.lastMessagePreview || t('messages.emptyTitle') }}</text>
+              <text v-if="session.pinned" class="session-row__pin">{{ t('messages.pinned') }}</text>
             </view>
           </view>
         </view>
@@ -617,8 +646,8 @@ function handleSearchClick() {
               <text class="session-row__time">{{ formatTime(session.lastMessageSentAt) }}</text>
             </view>
             <view class="session-row__bottom">
-              <text class="session-row__preview">{{ session.lastMessagePreview || "暂无消息" }}</text>
-              <text class="session-row__temp-tag">临时</text>
+              <text class="session-row__preview">{{ session.lastMessagePreview || t('messages.emptyTitle') }}</text>
+              <text class="session-row__temp-tag">{{ t('messages.temp') }}</text>
             </view>
           </view>
         </view>
@@ -685,6 +714,8 @@ function handleSearchClick() {
           />
         </view>
       </view>
+        </template>
+      </PageStateContainer>
     </template>
   </view>
 
@@ -824,9 +855,11 @@ function handleSearchClick() {
   transition: transform 0.2s ease;
 }
 
+/* #ifdef H5 */
 .entry-item:active .entry-item__icon {
   transform: scale(0.95);
 }
+/* #endif */
 
 .entry-item__icon--green {
   background: var(--c-gradient-brand);
@@ -835,12 +868,12 @@ function handleSearchClick() {
 
 .entry-item__icon--blue {
   background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
-  box-shadow: 0 var(--sp-2) var(--sp-5) rgba(59, 130, 246, 0.3);
+  box-shadow: 0 var(--sp-2) var(--sp-5) var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.3)));
 }
 
 .entry-item__icon--orange {
   background: linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-accent-400) 100%);
-  box-shadow: 0 var(--sp-2) var(--sp-5) rgba(249, 115, 22, 0.3);
+  box-shadow: 0 var(--sp-2) var(--sp-5) var(--c-tag-match-to, var(--c-tag-match-to, rgba(249, 115, 22, 0.3)));
 }
 
 .entry-item__icon--pink {
@@ -851,7 +884,7 @@ function handleSearchClick() {
 .entry-item__emoji {
   width: 48rpx;
   height: 48rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   flex-shrink: 0;
 }
 
@@ -900,7 +933,7 @@ function handleSearchClick() {
   padding: var(--sp-6);
   border-radius: var(--r-xl);
   background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-romance-50) 100%);
-  border: 1rpx solid rgba(63, 207, 142, 0.15);
+  border: 1rpx solid var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15)));
 }
 
 .heart-signal-card--expiring {
@@ -912,11 +945,11 @@ function handleSearchClick() {
 @keyframes heart-signal-blink {
   0%, 100% {
     border-color: var(--c-error);
-    box-shadow: 0 0 0 0 rgba(229, 69, 77, 0);
+    box-shadow: 0 0 0 0 var(--c-error-bg-tint, var(--c-error-bg-tint, rgba(229, 69, 77, 0)));
   }
   50% {
-    border-color: rgba(236, 72, 153, 0.5);
-    box-shadow: 0 0 var(--sp-5) rgba(236, 72, 153, 0.3);
+    border-color: var(--c-shadow-romance-tint-stronger, var(--c-shadow-romance-tint-stronger, rgba(236, 72, 153, 0.5)));
+    box-shadow: 0 0 var(--sp-5) var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
   }
 }
 
@@ -1047,100 +1080,6 @@ function handleSearchClick() {
   font-size: var(--fs-sm);
   color: var(--c-romance-500);
   font-weight: 500;
-}
-
-/* ========== 主分类标签 ========== */
-.messages-tabs {
-  display: flex;
-  gap: var(--sp-10);
-  padding: 0 var(--sp-8);
-  margin-bottom: var(--sp-2);
-  position: relative;
-  z-index: 1;
-}
-
-.messages-tabs__item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding-bottom: var(--sp-5);
-}
-
-.messages-tabs__text {
-  font-size: var(--fs-xl);
-  font-weight: 600;
-  color: var(--c-text-tertiary);
-  transition: all 0.2s ease;
-}
-
-.messages-tabs__item--active .messages-tabs__text {
-  color: var(--c-text-primary);
-  font-size: var(--fs-2xl);
-  font-weight: 700;
-}
-
-.messages-tabs__item--active::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: var(--sp-10);
-  height: 6rpx;
-  border-radius: var(--r-sm);
-  background: linear-gradient(90deg, var(--c-brand), var(--c-romance-500));
-}
-
-.messages-tabs__dot {
-  min-width: var(--sp-7);
-  height: var(--sp-7);
-  padding: 0 var(--sp-1);
-  border-radius: var(--r-full);
-  background: var(--c-error);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.messages-tabs__dot-text {
-  font-size: 18rpx;
-  font-weight: 700;
-  color: var(--c-text-inverse);
-}
-
-/* ========== Phase 3：信号分类筛选 Tab ========== */
-.signal-filter-tabs {
-  display: flex;
-  gap: var(--sp-4);
-  padding: var(--sp-3) var(--sp-8) var(--sp-5);
-  position: relative;
-  z-index: 1;
-}
-
-.signal-filter-tabs__item {
-  position: relative;
-  padding: var(--sp-3) var(--sp-7);
-  border-radius: var(--r-full);
-  background: var(--c-bg-container);
-  transition: all 0.2s ease;
-}
-
-.signal-filter-tabs__text {
-  font-size: var(--fs-base);
-  font-weight: 500;
-  color: var(--c-text-secondary);
-  transition: color 0.2s ease;
-}
-
-.signal-filter-tabs__item--active {
-  background: var(--c-gradient-brand);
-  box-shadow: var(--s-brand);
-}
-
-.signal-filter-tabs__item--active .signal-filter-tabs__text {
-  color: var(--c-text-inverse);
-  font-weight: 600;
 }
 
 /* ========== 加载与错误状态 ========== */
@@ -1388,17 +1327,17 @@ function handleSearchClick() {
 }
 
 .notification-row--unread {
-  background: rgba(63, 207, 142, 0.02);
+  background: var(--c-gradient-card-atmosphere, var(--c-gradient-card-atmosphere, rgba(63, 207, 142, 0.02)));
 }
 
 /* 社交信号未读行高亮 */
 .notification-row--unread.signal-social {
-  background: rgba(236, 72, 153, 0.03);
+  background: var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.03)));
 }
 
 /* 内容信号未读行高亮 */
 .notification-row--unread.signal-content {
-  background: rgba(63, 207, 142, 0.03);
+  background: var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63, 207, 142, 0.03)));
 }
 
 /* ===== 通知图标 ===== */

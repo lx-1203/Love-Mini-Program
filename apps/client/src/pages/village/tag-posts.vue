@@ -78,8 +78,7 @@ async function loadPosts(reset = true) {
       method: "GET",
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const newPosts = (data as any[]).map((raw: any): PostItem => ({
+    const newPosts: PostItem[] = data.map((raw) => ({
       id: String(raw.id),
       author: {
         userId: String(raw.author.userId),
@@ -328,17 +327,17 @@ onLoad((query) => {
 </template>
 
 <style scoped lang="scss">
-$green-primary: #3FCF8E;
-$green-light: #E8F9F4;
-$pink-primary: #EC4899;
-$pink-light: #FFF0F5;
-$bg-page: #F4F6FA;
-$text-primary: #1A1A2E;
-$text-secondary: #8E8E9E;
-$text-tertiary: #B8B8C8;
-$divider: #EEF0F5;
-$white: #FFFFFF;
-$red-badge: #FF4757;
+$green-primary: var(--c-brand, #3FCF8E);
+$green-light: var(--c-tint-green-50, #E8F9F4);
+$pink-primary: var(--c-romance-500, #EC4899);
+$pink-light: var(--c-tint-pink-soft, #FFF0F5);
+$bg-page: var(--c-bg-page, #F4F6FA);
+$text-primary: var(--c-neutral-800, #1A1A2E);
+$text-secondary: var(--c-text-tertiary, #8E8E9E);
+$text-tertiary: var(--c-text-quaternary, #B8B8C8);
+$divider: var(--c-neutral-100, #EEF0F5);
+$white: var(--c-neutral-0, #FFFFFF);
+$red-badge: var(--c-error, #FF4757);
 
 .tag-posts-page {
   display: flex;
@@ -355,7 +354,7 @@ $red-badge: #FF4757;
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 50%, #F9A8C4 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 50%, var(--c-romance-300, #F9A8C4) 100%);
 }
 
 .tag-header__back {
@@ -365,7 +364,7 @@ $red-badge: #FF4757;
 
 .back-icon {
   font-size: 28rpx;
-  color: rgba(255,255,255,0.9);
+  color: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255,255,255,0.9)));
   font-weight: 500;
 }
 
@@ -373,7 +372,7 @@ $red-badge: #FF4757;
   font-size: 36rpx;
   font-weight: 700;
   color: $white;
-  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
+  text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0,0,0,0.1)));
 }
 
 .tag-header__spacer {
@@ -424,18 +423,20 @@ $red-badge: #FF4757;
 .feed-state__btn {
   padding: 18rpx 48rpx;
   border-radius: 999px;
-  background: linear-gradient(135deg, $green-primary 0%, #2DB87A 100%);
-  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB87A) 100%);
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: transform 0.15s ease;
 }
 
+/* #ifdef H5 */
 .feed-state__btn:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .feed-state__btn-text {
   font-size: 28rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
 
@@ -463,13 +464,15 @@ $red-badge: #FF4757;
   padding: 28rpx;
   background: $white;
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
   transition: transform 0.15s ease;
 }
 
+/* #ifdef H5 */
 .post-card:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 /* --- 作者信息行 --- */
 .post-card__header {
@@ -550,6 +553,10 @@ $red-badge: #FF4757;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
   overflow: hidden;
+  /* #ifndef H5 */
+  /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
+  max-height: 6.8em;
+  /* #endif */
 }
 
 /* --- 标签 --- */
@@ -596,9 +603,11 @@ $red-badge: #FF4757;
   transition: transform 0.15s ease;
 }
 
+/* #ifdef H5 */
 .action-btn:active {
   transform: scale(0.9);
 }
+/* #endif */
 
 .action-btn__icon {
   font-size: 28rpx;

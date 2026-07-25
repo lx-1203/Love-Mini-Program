@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
 
 const props = withDefaults(defineProps<{
@@ -13,7 +13,7 @@ const emit = defineEmits<{
   retry: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
 
 const iconSrc = computed(() => {
   const map: Record<string, string> = {
@@ -23,17 +23,33 @@ const iconSrc = computed(() => {
   return map[props.type];
 });
 
-const msgMap: Record<string, string> = { network: '网络连接失败', server: '服务器开小差了' };
-const subMap: Record<string, string> = { network: '请检查网络后重试', server: '请稍后再试' };
+const msgKey = computed(() => (props.type === 'server' ? 'error.server' : 'error.network'));
+const subKey = computed(() => (props.type === 'server' ? 'error.serverSub' : 'error.networkSub'));
+const msgText = computed(() => t(msgKey.value));
+const subText = computed(() => t(subKey.value));
 </script>
 
 <template>
-  <view class="error">
+  <view
+    class="error"
+    <!-- #ifdef H5 -->
+    role="alert"
+    aria-live="assertive"
+    :aria-label="msgText"
+    <!-- #endif -->
+  >
     <image class="error-icon" :src="iconSrc" mode="aspectFit" />
-    <text class="error-msg">{{ msgMap[type] }}</text>
-    <text class="error-sub">{{ subMap[type] }}</text>
-    <view class="error-btn" @tap="emit('retry')">
-      <text class="error-btn-text">重试</text>
+    <text class="error-msg">{{ msgText }}</text>
+    <text class="error-sub">{{ subText }}</text>
+    <view
+      class="error-btn"
+      @tap="emit('retry')"
+      <!-- #ifdef H5 -->
+      role="button"
+      :aria-label="t('error.retry')"
+      <!-- #endif -->
+    >
+      <text class="error-btn-text">{{ t('error.retry') }}</text>
     </view>
   </view>
 </template>
@@ -66,7 +82,7 @@ const subMap: Record<string, string> = { network: '请检查网络后重试', se
 }
 .error-btn:active { transform: scale(0.97); }
 .error-btn-text {
-  color: #fff;
+  color: var(--c-text-inverse, #fff);
   font-size: var(--fs-md);
   font-weight: 600;
 }

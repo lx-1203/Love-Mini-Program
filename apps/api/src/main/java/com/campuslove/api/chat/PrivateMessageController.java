@@ -1,6 +1,9 @@
 package com.campuslove.api.chat;
 
 import com.campuslove.api.config.SecurityUtils;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,7 +47,7 @@ public class PrivateMessageController {
      * POST /api/messages/conversations
      */
     @PostMapping("/conversations")
-    public ConversationView createConversation(@RequestBody CreateConversationRequest request) {
+    public ConversationView createConversation(@Valid @RequestBody CreateConversationRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         return privateMessageService.createOrGetConversation(currentUserId, request.userBId());
     }
@@ -70,7 +73,7 @@ public class PrivateMessageController {
     @PostMapping("/conversations/{id}/messages")
     public MessageView sendMessage(
             @PathVariable("id") Long conversationId,
-            @RequestBody SendMessageRequest request) {
+            @Valid @RequestBody SendMessageRequest request) {
         Long senderId = SecurityUtils.getCurrentUserId();
         return privateMessageService.sendMessage(
                 conversationId, senderId, request.content(), request.kind());
@@ -107,7 +110,7 @@ public class PrivateMessageController {
  * userAId 由 SecurityUtils 自动获取，只需传入对方用户ID。
  */
 record CreateConversationRequest(
-    Long userBId
+    @NotNull Long userBId
 ) {}
 
 /**
@@ -115,6 +118,6 @@ record CreateConversationRequest(
  * senderId 由 SecurityUtils 自动获取，只需传入内容和类型。
  */
 record SendMessageRequest(
-    String content,
-    String kind
+    @Size(max = 5000) String content,
+    @Size(max = 32) String kind
 ) {}

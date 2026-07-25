@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 import { appTabs, type AppTab } from '../../config/navigation';
+import { useSessionStore } from '../../stores/session';
+import { openAppPath } from '../../utils/navigation';
 
 /**
  * Tab 配置以 src/config/navigation.ts 中的 appTabs 为唯一真相源
@@ -27,20 +29,28 @@ const emit = defineEmits<{
   publish: [];
 }>();
 
-const t = designTokens;
+const { t: tt } = useI18n();
+
+/** Session store，用于发布按钮的登录权限校验 */
+const sessionStore = useSessionStore();
 
 const defaultTabs: Tab[] = appTabs.map((tab: AppTab) => ({
   key: tab.id,
   iconPath: `/${tab.iconPath}`,
   selectedIconPath: `/${tab.selectedIconPath}`,
-  label: tab.label,
+  // 优先使用 i18n 文案，回退到 navigation.ts 中的静态 label
+  label: tt(`tabs.${tab.id}`) || tab.label,
   path: tab.path,
 }));
 
 const tabList = computed(() => props.tabs || defaultTabs);
 
-const getTab = (key: string): Tab | undefined => {
-  return tabList.value.find(tab => tab.key === key);
+/**
+ * 安全获取 Tab 配置：配置缺失时返回 null，而非崩溃
+ * 配合 v-if 渲染，避免非空断言 `!` 在配置缺失时导致白屏
+ */
+const getTab = (key: string): Tab | null => {
+  return tabList.value.find(tab => tab.key === key) ?? null;
 };
 
 const displayUnreadCount = computed(() => {
@@ -50,16 +60,48 @@ const displayUnreadCount = computed(() => {
 
 const showBadge = computed(() => props.unreadDot || (props.unreadCount && props.unreadCount > 0));
 const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || props.unreadCount <= 0));
+
+/**
+ * 是否启用发布按钮呼吸光晕动画
+ * 仅在用户有未读消息（unreadCount > 0）时启动，空闲时停止以节省电量
+ */
+const enablePublishBreath = computed(() => {
+  return Boolean(props.unreadCount && props.unreadCount > 0);
+});
+
+/**
+ * 处理发布按钮点击：未登录时跳转登录页，已登录时正常触发 publish 事件
+ */
+function handlePublish(): void {
+  if (!sessionStore.isLoggedIn) {
+    openAppPath('/pages/login/index');
+    return;
+  }
+  emit('publish');
+}
 </script>
 
 <template>
-  <view class="tabbar">
+  <view
+    class="tabbar"
+    <!-- #ifdef H5 -->
+    role="tablist"
+    :aria-label="tt('messages.mainNavAria')"
+    <!-- #endif -->
+  >
     <!-- 首页 -->
     <view
       v-if="getTab('home')"
       class="tab-item"
       :class="{ 'tab-item--active': current === 'home' }"
+      hover-class="tab-item--pressed"
+      :hover-stay-time="80"
       @tap="emit('change', 'home')"
+      <!-- #ifdef H5 -->
+      role="tab"
+      :aria-selected="current === 'home'"
+      :aria-label="getTab('home')!.label"
+      <!-- #endif -->
     >
       <view class="tab-top-bar" :class="{ 'tab-top-bar--active': current === 'home', 'tab-top-bar--home': current === 'home' }" />
       <view class="tab-icon-wrap" :class="{ 'tab-icon-wrap--active': current === 'home', 'tab-icon-wrap--home': current === 'home' }">
@@ -80,7 +122,15 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
       v-if="getTab('chat')"
       class="tab-item"
       :class="{ 'tab-item--active': current === 'chat' }"
+      hover-class="tab-item--pressed"
+      :hover-stay-time="80"
       @tap="emit('change', 'chat')"
+      <!-- #ifdef H5 -->
+      role="tab"
+      :aria-selected="current === 'chat'"
+      :aria-label="getTab('chat')!.label"
+      :aria-haspopup="showBadge ? 'true' : 'false'"
+      <!-- #endif -->
     >
       <view class="tab-top-bar" :class="{ 'tab-top-bar--active': current === 'chat', 'tab-top-bar--chat': current === 'chat' }" />
       <view class="tab-icon-wrap" :class="{ 'tab-icon-wrap--active': current === 'chat', 'tab-icon-wrap--chat': current === 'chat' }">
@@ -100,12 +150,22 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
     </view>
 
     <!-- 中间发布按钮 -->
-    <view class="tab-publish" @tap="emit('publish')">
-      <view class="publish-btn">
+    <view
+      class="tab-publish"
+      hover-class="tab-publish--pressed"
+      :hover-stay-time="80"
+      @tap="handlePublish"
+      <!-- #ifdef H5 -->
+      role="button"
+      :aria-label="tt('tabs.publish')"
+      :aria-disabled="!sessionStore.isLoggedIn"
+      <!-- #endif -->
+    >
+      <view class="publish-btn" :class="{ 'publish-btn--breath': enablePublishBreath }">
         <view class="publish-btn__halo" />
         <text class="publish-icon">+</text>
       </view>
-      <text class="publish-label">发布</text>
+      <text class="publish-label">{{ tt('tabs.publish') }}</text>
     </view>
 
     <!-- 圈子 -->
@@ -113,7 +173,14 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
       v-if="getTab('village')"
       class="tab-item"
       :class="{ 'tab-item--active': current === 'village' }"
+      hover-class="tab-item--pressed"
+      :hover-stay-time="80"
       @tap="emit('change', 'village')"
+      <!-- #ifdef H5 -->
+      role="tab"
+      :aria-selected="current === 'village'"
+      :aria-label="getTab('village')!.label"
+      <!-- #endif -->
     >
       <view class="tab-top-bar" :class="{ 'tab-top-bar--active': current === 'village', 'tab-top-bar--village': current === 'village' }" />
       <view class="tab-icon-wrap" :class="{ 'tab-icon-wrap--active': current === 'village', 'tab-icon-wrap--village': current === 'village' }">
@@ -134,7 +201,14 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
       v-if="getTab('profile')"
       class="tab-item"
       :class="{ 'tab-item--active': current === 'profile' }"
+      hover-class="tab-item--pressed"
+      :hover-stay-time="80"
       @tap="emit('change', 'profile')"
+      <!-- #ifdef H5 -->
+      role="tab"
+      :aria-selected="current === 'profile'"
+      :aria-label="getTab('profile')!.label"
+      <!-- #endif -->
     >
       <view class="tab-top-bar" :class="{ 'tab-top-bar--active': current === 'profile', 'tab-top-bar--profile': current === 'profile' }" />
       <view class="tab-icon-wrap" :class="{ 'tab-icon-wrap--active': current === 'profile', 'tab-icon-wrap--profile': current === 'profile' }">
@@ -158,7 +232,7 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   bottom: 0;
   left: 0;
   right: 0;
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
@@ -179,7 +253,8 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   position: relative;
 }
 
-.tab-item:active {
+/* hover-class 按压态，替代 :active */
+.tab-item--pressed {
   opacity: 0.7;
 }
 
@@ -205,22 +280,22 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
 }
 
 .tab-top-bar--home {
-  background: linear-gradient(90deg, #3FCF8E 0%, #7CD9A6 100%);
+  background: linear-gradient(90deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
   box-shadow: 0 2rpx 6rpx rgba(63, 207, 142, 0.35);
 }
 
 .tab-top-bar--chat {
-  background: linear-gradient(90deg, #EC4899 0%, #F472B6 100%);
+  background: linear-gradient(90deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-400, #F472B6) 100%);
   box-shadow: 0 2rpx 6rpx rgba(236, 72, 153, 0.35);
 }
 
 .tab-top-bar--village {
-  background: linear-gradient(90deg, #FB923C 0%, #F97316 100%);
+  background: linear-gradient(90deg, var(--c-accent-400, #FB923C) 0%, var(--c-accent-400, #F97316) 100%);
   box-shadow: 0 2rpx 6rpx rgba(249, 115, 22, 0.35);
 }
 
 .tab-top-bar--profile {
-  background: linear-gradient(90deg, #A78BFA 0%, #8B5CF6 100%);
+  background: linear-gradient(90deg, var(--c-lavender-500, #8B5CF6) 0%, var(--c-lavender-500, #8B5CF6) 100%);
   box-shadow: 0 2rpx 6rpx rgba(139, 92, 246, 0.35);
 }
 
@@ -243,19 +318,19 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
 }
 
 .tab-icon-wrap--home.tab-icon-wrap--active {
-  background: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
+  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
 }
 
 .tab-icon-wrap--chat.tab-icon-wrap--active {
-  background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-400, #F472B6) 100%);
 }
 
 .tab-icon-wrap--village.tab-icon-wrap--active {
-  background: linear-gradient(135deg, #FB923C 0%, #F97316 100%);
+  background: linear-gradient(135deg, var(--c-accent-400, #FB923C) 0%, var(--c-accent-400, #F97316) 100%);
 }
 
 .tab-icon-wrap--profile.tab-icon-wrap--active {
-  background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%);
+  background: linear-gradient(135deg, var(--c-lavender-500, #8B5CF6) 0%, var(--c-lavender-500, #8B5CF6) 100%);
 }
 
 @keyframes tabBounce {
@@ -300,10 +375,10 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
-.tab-dot--home { background: #3FCF8E; box-shadow: 0 0 8rpx rgba(63, 207, 142, 0.5); }
-.tab-dot--chat { background: #EC4899; box-shadow: 0 0 8rpx rgba(236, 72, 153, 0.5); }
-.tab-dot--village { background: #F97316; box-shadow: 0 0 8rpx rgba(249, 115, 22, 0.5); }
-.tab-dot--profile { background: #8B5CF6; box-shadow: 0 0 8rpx rgba(139, 92, 246, 0.5); }
+.tab-dot--home { background: var(--c-brand, #3FCF8E); box-shadow: 0 0 8rpx rgba(63, 207, 142, 0.5); }
+.tab-dot--chat { background: var(--c-romance-500, #EC4899); box-shadow: 0 0 8rpx rgba(236, 72, 153, 0.5); }
+.tab-dot--village { background: var(--c-accent-400, #F97316); box-shadow: 0 0 8rpx rgba(249, 115, 22, 0.5); }
+.tab-dot--profile { background: var(--c-lavender-500, #8B5CF6); box-shadow: 0 0 8rpx rgba(139, 92, 246, 0.5); }
 
 .tab-badge {
   position: absolute;
@@ -311,13 +386,13 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   right: -10rpx;
   min-width: 28rpx;
   height: 28rpx;
-  background: #E5454D;
+  background: var(--c-error, #E5454D);
   border-radius: 9999rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0 6rpx;
-  border: 3rpx solid #FFFFFF;
+  border: 3rpx solid var(--c-bg-container, #FFFFFF);
   box-sizing: content-box;
 }
 
@@ -332,7 +407,7 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
 
 .tab-badge-text {
   font-size: 18rpx;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 700;
   line-height: 1;
 }
@@ -340,7 +415,7 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
 .tab-label {
   font-size: 20rpx;
   /* 非激活态灰色对齐青藤参考 #9AA1AB */
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
   font-weight: 500;
   transition: color 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -350,19 +425,19 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
 }
 
 .tab-label--home.tab-label--active {
-  color: #3FCF8E;
+  color: var(--c-brand, #3FCF8E);
 }
 
 .tab-label--chat.tab-label--active {
-  color: #EC4899;
+  color: var(--c-romance-500, #EC4899);
 }
 
 .tab-label--village.tab-label--active {
-  color: #F97316;
+  color: var(--c-accent-400, #F97316);
 }
 
 .tab-label--profile.tab-label--active {
-  color: #8B5CF6;
+  color: var(--c-lavender-500, #8B5CF6);
 }
 
 .tab-publish {
@@ -374,12 +449,18 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   padding-top: 0;
 }
 
+/* hover-class 按压态 */
+.tab-publish--pressed .publish-btn {
+  transform: scale(0.92);
+  box-shadow: 0 4px 12px rgba(63, 207, 142, 0.45);
+}
+
 .publish-btn {
   position: relative;
   width: 96rpx;
   height: 96rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3FCF8E 0%, #2DB97A 100%);
+  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
   box-shadow: 0 6px 20px rgba(63, 207, 142, 0.35);
   display: flex;
   align-items: center;
@@ -388,7 +469,7 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   overflow: visible;
 }
 
-/* 呼吸光晕动画 */
+/* 呼吸光晕动画：仅在 unreadCount>0 时启用，空闲时停止以节省电量 */
 .publish-btn__halo {
   position: absolute;
   top: 50%;
@@ -399,6 +480,11 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   border: 4rpx solid rgba(63, 207, 142, 0.6);
   transform: translate(-50%, -50%);
   pointer-events: none;
+  /* 默认不运行动画，由 .publish-btn--breath .publish-btn__halo 控制 */
+  animation: none;
+}
+
+.publish-btn--breath .publish-btn__halo {
   animation: publishBreath 2.4s ease-out infinite;
 }
 
@@ -417,22 +503,17 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   }
 }
 
-.publish-btn:active {
-  transform: scale(0.92);
-  box-shadow: 0 4px 12px rgba(63, 207, 142, 0.45);
-}
-
 .publish-icon {
   font-size: 40rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
   line-height: 1;
   margin-top: -4rpx;
 }
 
 .publish-label {
   font-size: 20rpx;
-  color: #3FCF8E;
+  color: var(--c-brand, #3FCF8E);
   font-weight: 600;
   margin-top: 6rpx;
 }

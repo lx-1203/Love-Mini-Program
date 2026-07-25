@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 逛逛页 - 校内商品/票务/优惠券展示
  */
@@ -155,25 +155,25 @@ function goToDetail(itemId: string) {
 </template>
 
 <style scoped lang="scss">
-$green-primary: #3FCF8E;
-$green-light: #E8F9F1;
-$pink-primary: #EC4899;
-$pink-light: #FCE7F3;
-$gold-vip: #C9A36A;
-$white: #FFFFFF;
-$bg-page: #F4F6FA;
-$text-primary: #1F2937;
-$text-secondary: #6B7280;
-$text-tertiary: #9CA3AF;
-$border-light: #F3F4F6;
-$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+$green-primary: var(--c-brand, #3FCF8E);
+$green-light: var(--c-brand-50, #E8F9F1);
+$pink-primary: var(--c-romance-500, #EC4899);
+$pink-light: var(--c-romance-100, #FCE7F3);
+$gold-vip: var(--c-vip-from, #C9A36A);
+$white: var(--c-neutral-0, #FFFFFF);
+$bg-page: var(--c-bg-page, #F4F6FA);
+$text-primary: var(--c-text-primary, #1F2937);
+$text-secondary: var(--c-neutral-500, #6B7280);
+$text-tertiary: var(--c-neutral-400, #9CA3AF);
+$border-light: var(--c-tint-gray-50, #F3F4F6);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 
 .shop-page {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background: linear-gradient(180deg, #F0FDF8 0%, $bg-page 40%);
+  background: linear-gradient(180deg, var(--c-tint-green-50, #F0FDF8) 0%, $bg-page 40%);
 }
 
 /* ========== 页面标题 ========== */
@@ -195,7 +195,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: #3FCF8E; // mp-weixin 降级：使用纯色（取渐变中间色）
+  color: var(--c-brand, #3FCF8E); // mp-weixin 降级：使用纯色（取渐变中间色）
   // #endif
 }
 
@@ -224,9 +224,11 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
 
+/* #ifdef H5 */
 .category-item:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .category-item__text {
   font-size: 26rpx;
@@ -235,9 +237,9 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
 .category-item--active {
-  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   border: 2rpx solid transparent;
-  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.3);
+  box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
 }
 
 .category-item--active .category-item__text {
@@ -269,10 +271,12 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .shop-card:active {
   transform: scale(0.97);
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4rpx 20rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08)));
 }
+/* #endif */
 
 .shop-card__image-wrap {
   position: relative;
@@ -292,8 +296,8 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   left: 16rpx;
   padding: 8rpx 16rpx;
   border-radius: 999px;
-  background: linear-gradient(135deg, $pink-primary, #F472B6);
-  box-shadow: 0 4rpx 12rpx rgba(236, 72, 153, 0.3);
+  background: linear-gradient(135deg, $pink-primary, var(--c-romance-400, #F472B6));
+  box-shadow: 0 4rpx 12rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
 }
 
 .shop-card__tag text {

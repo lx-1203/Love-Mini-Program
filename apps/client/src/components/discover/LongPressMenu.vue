@@ -6,12 +6,15 @@
  * 底部弹出 ActionSheet：查看详情 / 超级喜欢 / 举报
  */
 import { ref, watch, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
 import { lightHaptic, mediumHaptic } from "../../utils/haptic";
 
 const props = defineProps<{
   visible: boolean;
   cardName: string;
 }>();
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -64,10 +67,26 @@ function handleClose() {
 </script>
 
 <template>
-  <view v-if="visible" class="long-press-menu" :class="{ 'long-press-menu--active': animating }">
+  <view
+    v-if="visible"
+    class="long-press-menu"
+    :class="{ 'long-press-menu--active': animating }"
+    <!-- #ifdef H5 -->
+    role="dialog"
+    aria-modal="true"
+    :aria-label="t('discover.menuTitle')"
+    <!-- #endif -->
+  >
     <!-- 半透明遮罩 -->
-    <view class="long-press-menu__backdrop" :class="{ 'long-press-menu__backdrop--active': animating }"
-      @tap="handleClose" />
+    <view
+      class="long-press-menu__backdrop"
+      :class="{ 'long-press-menu__backdrop--active': animating }"
+      @tap="handleClose"
+      <!-- #ifdef H5 -->
+      role="button"
+      :aria-label="t('common.cancel')"
+      <!-- #endif -->
+    />
 
     <!-- 菜单面板 -->
     <view class="long-press-menu__panel" :class="{ 'long-press-menu__panel--active': animating }">
@@ -78,63 +97,98 @@ function handleClose() {
 
       <!-- 标题 -->
       <view class="long-press-menu__header">
-        <text class="long-press-menu__title">快捷操作</text>
+        <text class="long-press-menu__title">{{ t('discover.menuTitle') }}</text>
         <text class="long-press-menu__subtitle">{{ cardName }}</text>
       </view>
 
       <!-- 菜单项 -->
-      <view class="long-press-menu__item press-feedback" hover-class="long-press-menu__item--pressed"
-        @tap="handleAction('detail')">
+      <view
+        class="long-press-menu__item press-feedback"
+        hover-class="long-press-menu__item--pressed"
+        @tap="handleAction('detail')"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('discover.menuDetail')"
+        <!-- #endif -->
+      >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--detail">
           <text class="long-press-menu__item-icon-emoji">👤</text>
         </view>
         <view class="long-press-menu__item-content">
-          <text class="long-press-menu__item-title">查看详情</text>
-          <text class="long-press-menu__item-desc">浏览完整资料和照片</text>
+          <text class="long-press-menu__item-title">{{ t('discover.menuDetail') }}</text>
+          <text class="long-press-menu__item-desc">{{ t('discover.menuDetailDesc') }}</text>
         </view>
         <text class="long-press-menu__item-arrow">›</text>
       </view>
 
-      <view class="long-press-menu__item press-feedback" hover-class="long-press-menu__item--pressed"
-        @tap="handleAction('superLike')">
+      <view
+        class="long-press-menu__item press-feedback"
+        hover-class="long-press-menu__item--pressed"
+        @tap="handleAction('superLike')"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('discover.superLike')"
+        <!-- #endif -->
+      >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--super">
           <text class="long-press-menu__item-icon-emoji">⭐</text>
         </view>
         <view class="long-press-menu__item-content">
-          <text class="long-press-menu__item-title">超级喜欢</text>
-          <text class="long-press-menu__item-desc">让对方优先看到你</text>
+          <text class="long-press-menu__item-title">{{ t('discover.superLike') }}</text>
+          <text class="long-press-menu__item-desc">{{ t('discover.menuSuperLikeDesc') }}</text>
         </view>
         <text class="long-press-menu__item-arrow">›</text>
       </view>
 
-      <view class="long-press-menu__item press-feedback" hover-class="long-press-menu__item--pressed"
-        @tap="handleAction('notInterested')">
+      <view
+        class="long-press-menu__item press-feedback"
+        hover-class="long-press-menu__item--pressed"
+        @tap="handleAction('notInterested')"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('discover.menuNotInterested')"
+        <!-- #endif -->
+      >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--not-interested">
           <text class="long-press-menu__item-icon-emoji">🙅</text>
         </view>
         <view class="long-press-menu__item-content">
-          <text class="long-press-menu__item-title">不感兴趣</text>
-          <text class="long-press-menu__item-desc">减少此类推荐</text>
+          <text class="long-press-menu__item-title">{{ t('discover.menuNotInterested') }}</text>
+          <text class="long-press-menu__item-desc">{{ t('discover.menuNotInterestedDesc') }}</text>
         </view>
         <text class="long-press-menu__item-arrow">›</text>
       </view>
 
-      <view class="long-press-menu__item press-feedback" hover-class="long-press-menu__item--pressed"
-        @tap="handleAction('report')">
+      <view
+        class="long-press-menu__item press-feedback"
+        hover-class="long-press-menu__item--pressed"
+        @tap="handleAction('report')"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('discover.menuReport')"
+        <!-- #endif -->
+      >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--report">
           <text class="long-press-menu__item-icon-emoji">⚠️</text>
         </view>
         <view class="long-press-menu__item-content">
-          <text class="long-press-menu__item-title">举报</text>
-          <text class="long-press-menu__item-desc">举报不当行为或虚假信息</text>
+          <text class="long-press-menu__item-title">{{ t('discover.menuReport') }}</text>
+          <text class="long-press-menu__item-desc">{{ t('discover.menuReportDesc') }}</text>
         </view>
         <text class="long-press-menu__item-arrow">›</text>
       </view>
 
       <!-- 取消按钮 -->
-      <view class="long-press-menu__cancel press-feedback" hover-class="long-press-menu__cancel--pressed"
-        @tap="handleClose">
-        <text class="long-press-menu__cancel-text">取消</text>
+      <view
+        class="long-press-menu__cancel press-feedback"
+        hover-class="long-press-menu__cancel--pressed"
+        @tap="handleClose"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('common.cancel')"
+        <!-- #endif -->
+      >
+        <text class="long-press-menu__cancel-text">{{ t('common.cancel') }}</text>
       </view>
     </view>
   </view>
@@ -158,19 +212,19 @@ function handleClose() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0);
+  background: var(--c-black-overlay-transparent, var(--c-black-overlay-transparent, rgba(0, 0, 0, 0)));
   transition: background 250ms ease;
 }
 
 .long-press-menu__backdrop--active {
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--c-black-overlay-mid, var(--c-black-overlay-mid, rgba(0, 0, 0, 0.4)));
 }
 
 /* ========== 面板 ========== */
 .long-press-menu__panel {
   position: relative;
   width: 100%;
-  background: #fff;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 28rpx 28rpx 0 0;
   padding: 16rpx 28rpx 28rpx;
   padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
@@ -243,19 +297,19 @@ function handleClose() {
 }
 
 .long-press-menu__item-icon--detail {
-  background: #e3f2fd;
+  background: var(--c-tint-blue-50, #E3F2FD);
 }
 
 .long-press-menu__item-icon--super {
-  background: #fff8e1;
+  background: var(--c-tint-amber-50, #FFF8E1);
 }
 
 .long-press-menu__item-icon--report {
-  background: #fce4ec;
+  background: var(--c-tint-pink-50, #FCE4EC);
 }
 
 .long-press-menu__item-icon--not-interested {
-  background: #f3f4f6;
+  background: var(--c-tint-gray-50, #F3F4F6);
 }
 
 .long-press-menu__item-content {

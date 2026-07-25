@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
 
-defineProps<{
+const props = defineProps<{
   title?: string;
   subtitle?: string;
   countdown?: string;
@@ -13,17 +14,41 @@ const emit = defineEmits<{
   tap: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
+
+/** 标题：默认走 i18n 兜底 */
+const titleLabel = computed(() => props.title || t('chat.heartSignalTitle'));
+/** 副标题：默认走 i18n 兜底，支持 count 插值 */
+const subtitleLabel = computed(() =>
+  props.subtitle || t('chat.heartSignalSubtitle', { n: props.count || 3 })
+);
+/** 整体 ARIA 标签 */
+const ariaLabel = computed(() => t('chat.heartSignalAria'));
 </script>
 
 <template>
-  <view class="heart-signal" @tap="emit('tap')">
+  <view
+    class="heart-signal"
+    @tap="emit('tap')"
+    <!-- #ifdef H5 -->
+    role="button"
+    :aria-label="ariaLabel"
+    <!-- #endif -->
+  >
     <view class="signal-icon">
-      <image class="signal-img" :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL" mode="aspectFit" />
+      <image
+        class="signal-img"
+        :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL"
+        mode="aspectFit"
+        <!-- #ifdef H5 -->
+        role="img"
+        :aria-label="titleLabel"
+        <!-- #endif -->
+      />
     </view>
     <view class="signal-info">
-      <text class="signal-title">{{ title || '心信号 · 今日推荐' }}</text>
-      <text class="signal-sub">{{ subtitle || `系统为你推荐了 ${count || 3} 位有缘人` }}</text>
+      <text class="signal-title">{{ titleLabel }}</text>
+      <text class="signal-sub">{{ subtitleLabel }}</text>
     </view>
     <view class="signal-countdown" v-if="countdown">
       <text class="signal-time">{{ countdown }}</text>

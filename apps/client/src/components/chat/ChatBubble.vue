@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import VoicePill from "./VoicePill.vue";
 
@@ -31,6 +33,36 @@ const emit = defineEmits<{
   longpress: [messageId: string];
   tapQuote: [quoteRef: string];
 }>();
+
+const { t } = useI18n();
+
+/** 撤回消息文案 */
+const recalledText = computed(() =>
+  props.sender === "self" ? t("chat.recalledBySelf") : t("chat.recalledByPeer")
+);
+
+/** 是否为自己发送的消息（提取为计算属性以避免 vue-tsc 模板类型收窄问题） */
+const isSelfSender = computed(() => props.sender === "self");
+
+/** 是否为对方发送的消息 */
+const isPeerSender = computed(() => props.sender === "peer");
+
+/** 引用消息发送者文案 */
+const quoteSenderLabel = computed(() => {
+  if (props.quoteSender === "self") return t("chat.quoteMe");
+  return props.quoteSender || t("chat.quotePeer");
+});
+
+/** 气泡 ARIA 标签（按发送者 + 类型组合） */
+const bubbleAriaLabel = computed(() => {
+  if (props.recalled) return recalledText.value;
+  const isSelf = props.sender === "self";
+  if (props.kind === "voice") {
+    return isSelf ? t("chat.selfVoiceMessage") : t("chat.peerVoiceMessage");
+  }
+  if (props.sender === "system") return t("chat.systemMessage");
+  return isSelf ? t("chat.selfTextMessage") : t("chat.peerTextMessage");
+});
 
 /** 长按事件处理 */
 function handleLongpress() {
@@ -66,11 +98,15 @@ function formatTime(isoString: string): string {
     class="bubble-wrap"
     :class="[`bubble-wrap--${sender}`]"
     @longpress="handleLongpress"
+    <!-- #ifdef H5 -->
+    role="article"
+    :aria-label="bubbleAriaLabel"
+    <!-- #endif -->
   >
     <!-- 已撤回状态 -->
     <view v-if="recalled" class="bubble bubble--recalled">
       <text class="bubble__body bubble__body--recalled">
-        {{ sender === 'self' ? '你撤回了一条消息' : '对方撤回了一条消息' }}
+        {{ recalledText }}
       </text>
     </view>
 
@@ -78,25 +114,41 @@ function formatTime(isoString: string): string {
     <view v-else class="bubble-row" :class="[`bubble-row--${sender}`]">
       <!-- 对方头像（左侧） -->
       <image
-        v-if="sender === 'peer'"
+        v-if="isPeerSender"
         class="bubble-avatar bubble-avatar--peer"
         :src="peerAvatar"
         mode="aspectFill"
+        <!-- #ifdef H5 -->
+        role="img"
+        :aria-label="t('chat.quotePeer')"
+        <!-- #endif -->
       />
       <!-- 自己头像（右侧） -->
       <image
-        v-if="sender === 'self'"
+        v-else-if="isSelfSender"
         class="bubble-avatar bubble-avatar--self"
         :src="selfAvatar"
         mode="aspectFill"
+        <!-- #ifdef H5 -->
+        role="img"
+        :aria-label="t('chat.quoteMe')"
+        <!-- #endif -->
       />
 
       <view class="bubble" :class="[`bubble--${sender}`]">
         <!-- 引用消息区域 -->
-        <view v-if="quoteRef && quoteBody" class="bubble__quote" @tap.stop="handleTapQuote">
+        <view
+          v-if="quoteRef && quoteBody"
+          class="bubble__quote"
+          @tap.stop="handleTapQuote"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('chat.quoteAria')"
+          <!-- #endif -->
+        >
           <view class="bubble__quote-bar" />
           <view class="bubble__quote-content">
-            <text class="bubble__quote-sender">{{ quoteSender === 'self' ? '我' : quoteSender || '对方' }}</text>
+            <text class="bubble__quote-sender">{{ quoteSenderLabel }}</text>
             <text class="bubble__quote-body">{{ quoteBody }}</text>
           </view>
         </view>
@@ -113,7 +165,7 @@ function formatTime(isoString: string): string {
         <view class="bubble__footer">
           <text class="bubble__meta">{{ formatTime(sentAt) }}</text>
           <!-- 送达状态图标（仅自己发送的消息显示） -->
-          <view v-if="sender === 'self' && !recalled" class="bubble__status">
+          <view v-if="isSelfSender && !recalled" class="bubble__status">
             <text v-if="deliveryStatus === 'sent'" class="bubble__status-icon">✓</text>
             <text v-else-if="deliveryStatus === 'delivered'" class="bubble__status-icon">✓✓</text>
             <text v-else-if="deliveryStatus === 'read'" class="bubble__status-icon bubble__status-icon--read">✓✓</text>
@@ -219,10 +271,10 @@ function formatTime(isoString: string): string {
   opacity: 0.85;
 }
 .bubble--self .bubble__quote {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2))));
 }
 .bubble--peer .bubble__quote {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--c-black-shadow-xs, var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04))));
 }
 .bubble__quote-bar {
   width: var(--sp-1);
@@ -230,7 +282,7 @@ function formatTime(isoString: string): string {
   flex-shrink: 0;
 }
 .bubble--self .bubble__quote-bar {
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--c-overlay-bg-strong, var(--c-overlay-bg-mid, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5))));
 }
 .bubble--peer .bubble__quote-bar {
   background: var(--c-brand);

@@ -3,11 +3,16 @@
  * 设置页
  * 分组：账号管理、通知设置、隐私安全、缓存管理、关于
  * 所有菜单项点击有 press-feedback 动画 + lightHaptic 反馈
+ *
+ * 功能6：通知设置分组新增「免打扰」入口，跳转到 /pages/settings/dnd
  */
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { useSessionStore } from "../../stores/session";
+
+const { t } = useI18n();
 
 interface MenuItem {
   emoji: string;
@@ -27,9 +32,10 @@ const privacyModeEnabled = ref(false);
 const cacheSize = ref("23.5 MB");
 
 /** 切换消息通知 */
-function toggleNotify(e: any) {
+function toggleNotify(e: Event) {
   lightHaptic();
-  notifyEnabled.value = !!e.detail.value;
+  const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
+  notifyEnabled.value = !!detail?.value;
   uni.showToast({
     title: notifyEnabled.value ? "已开启消息通知" : "已关闭消息通知",
     icon: "none",
@@ -38,9 +44,10 @@ function toggleNotify(e: any) {
 }
 
 /** 切换隐私模式 */
-function togglePrivacyMode(e: any) {
+function togglePrivacyMode(e: Event) {
   lightHaptic();
-  privacyModeEnabled.value = !!e.detail.value;
+  const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
+  privacyModeEnabled.value = !!detail?.value;
   uni.showToast({
     title: privacyModeEnabled.value ? "已开启隐私模式" : "已关闭隐私模式",
     icon: "none",
@@ -51,7 +58,16 @@ function togglePrivacyMode(e: any) {
 /** 跳转到资料编辑 */
 function goToProfileSetup() {
   lightHaptic();
-  uni.navigateTo({ url: "/subpackages/setup/profile/index" });
+  uni.navigateTo({ url: "/subpackages/setup/profile/index" } );
+}
+
+/**
+ * 功能6：跳转到免打扰设置页。
+ * 路径已在 pages.json 中注册：pages/settings/dnd
+ */
+function goToDnd() {
+  lightHaptic();
+  uni.navigateTo({ url: "/pages/settings/dnd" });
 }
 
 /** 查看用户协议 */
@@ -261,7 +277,7 @@ function handleMenuTap(item: MenuItem) {
       <view class="menu-group">
         <view class="menu-item list-item">
           <view class="menu-item__left">
-            <view class="menu-item__icon" style="background: #FFF8E7">
+            <view class="menu-item__icon settings-card--cream">
               <text class="menu-item__emoji">🔔</text>
             </view>
             <text class="menu-item__label">消息通知</text>
@@ -272,9 +288,24 @@ function handleMenuTap(item: MenuItem) {
             @change="toggleNotify"
           />
         </view>
+        <!-- 功能6：免打扰入口，点击跳转到 /pages/settings/dnd -->
+        <view
+          class="menu-item press-feedback list-item"
+          hover-class="menu-item--hover"
+          hover-stay-time="100"
+          @tap="goToDnd"
+        >
+          <view class="menu-item__left">
+            <view class="menu-item__icon settings-card--lavender">
+              <text class="menu-item__emoji">🌙</text>
+            </view>
+            <text class="menu-item__label">{{ t("dnd.title") }}</text>
+          </view>
+          <text class="menu-item__arrow">›</text>
+        </view>
         <view class="menu-item list-item menu-item--no-border">
           <view class="menu-item__left">
-            <view class="menu-item__icon" style="background: #E8F8F0">
+            <view class="menu-item__icon settings-card--brand">
               <text class="menu-item__emoji">🛡️</text>
             </view>
             <text class="menu-item__label">隐私模式</text>
@@ -301,7 +332,7 @@ function handleMenuTap(item: MenuItem) {
           hover-stay-time="100"
         >
           <view class="menu-item__left">
-            <view class="menu-item__icon" style="background: #F4F6FA">
+            <view class="menu-item__icon settings-card--page">
               <text class="menu-item__emoji">📋</text>
             </view>
             <text class="menu-item__label">隐私政策</text>
@@ -324,7 +355,7 @@ function handleMenuTap(item: MenuItem) {
           hover-stay-time="100"
         >
           <view class="menu-item__left">
-            <view class="menu-item__icon" style="background: #EDE9FE">
+            <view class="menu-item__icon settings-card--lavender">
               <text class="menu-item__emoji">🧹</text>
             </view>
             <text class="menu-item__label">清除缓存</text>
@@ -384,7 +415,7 @@ function handleMenuTap(item: MenuItem) {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  background: linear-gradient(180deg, var(--c-bg-page, #f8fafc) 0%, var(--c-tint-blue-50, #eef2ff) 100%);
   box-sizing: border-box;
   position: relative;
 }
@@ -396,8 +427,8 @@ function handleMenuTap(item: MenuItem) {
   justify-content: space-between;
   padding: 0 24rpx;
   height: 88rpx;
-  background: #FFFFFF;
-  box-shadow: 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
+  background: var(--c-bg-container, #FFFFFF);
+  box-shadow: 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
   position: relative;
   z-index: 1;
 }
@@ -411,14 +442,14 @@ function handleMenuTap(item: MenuItem) {
   border-radius: 50%;
 
   &--hover {
-    background: #F4F6FA;
+    background: var(--c-bg-page, #F4F6FA);
     transform: scale(0.94);
   }
 }
 
 .nav-bar__back-icon {
   font-size: 56rpx;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
   font-weight: 300;
   line-height: 1;
 }
@@ -426,7 +457,7 @@ function handleMenuTap(item: MenuItem) {
 .nav-bar__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
 }
 
 .nav-bar__placeholder {
@@ -460,15 +491,15 @@ function handleMenuTap(item: MenuItem) {
 
 .section__title-text {
   font-size: 24rpx;
-  color: #6B7280;
+  color: var(--c-text-secondary, #5B6470);
   font-weight: 500;
 }
 
 /* ==================== 菜单分组 ==================== */
 .menu-group {
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04), 0 1rpx 4rpx rgba(15, 23, 42, 0.03);
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   overflow: hidden;
 }
 
@@ -477,7 +508,7 @@ function handleMenuTap(item: MenuItem) {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 28rpx;
-  border-bottom: 1rpx solid #F4F6FA;
+  border-bottom: 1rpx solid var(--c-border-light, #EEF0F4);
   transition: all 0.15s ease;
 
   &--no-border {
@@ -486,7 +517,7 @@ function handleMenuTap(item: MenuItem) {
 
   &--hover {
     transform: scale(0.98);
-    background: #FAFBFC;
+    background: var(--c-bg-surface, #FAFBFC);
   }
 }
 
@@ -506,13 +537,30 @@ function handleMenuTap(item: MenuItem) {
   flex-shrink: 0;
 }
 
+/* 图标背景变体（替换原内联 style 硬编码色） */
+.settings-card--cream {
+  background: var(--c-tint-cream-50, #FFF8E7);
+}
+
+.settings-card--brand {
+  background: var(--c-bg-brand, #E8F8F0);
+}
+
+.settings-card--page {
+  background: var(--c-bg-page, #F4F6FA);
+}
+
+.settings-card--lavender {
+  background: var(--c-lavender-100, #EDE9FE);
+}
+
 .menu-item__emoji {
   font-size: 32rpx;
 }
 
 .menu-item__label {
   font-size: 28rpx;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
   font-weight: 500;
 }
 
@@ -524,12 +572,12 @@ function handleMenuTap(item: MenuItem) {
 
 .menu-item__value {
   font-size: 24rpx;
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
 }
 
 .menu-item__arrow {
   font-size: 36rpx;
-  color: #CBD5E1;
+  color: var(--c-border-strong, #CBD5E1);
   font-weight: 300;
   line-height: 1;
 }
@@ -540,9 +588,9 @@ function handleMenuTap(item: MenuItem) {
   z-index: 1;
   margin: 32rpx 24rpx 0;
   padding: 28rpx;
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04), 0 1rpx 4rpx rgba(15, 23, 42, 0.03);
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -550,13 +598,13 @@ function handleMenuTap(item: MenuItem) {
 
   &--hover {
     transform: scale(0.98);
-    background: #FAFBFC;
+    background: var(--c-bg-surface, #FAFBFC);
   }
 }
 
 .logout-btn__text {
   font-size: 30rpx;
-  color: #E5454D;
+  color: var(--c-error, #E5454D);
   font-weight: 500;
 }
 
@@ -571,6 +619,6 @@ function handleMenuTap(item: MenuItem) {
 
 .footer-version__text {
   font-size: 22rpx;
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
 }
 </style>

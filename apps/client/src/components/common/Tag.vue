@@ -28,7 +28,14 @@ const tagClass = computed(() => [
 </script>
 
 <template>
-  <view :class="tagClass">
+  <view
+    :class="tagClass"
+    <!-- #ifdef H5 -->
+    role="img"
+    :aria-label="label"
+    :aria-selected="selected"
+    <!-- #endif -->
+  >
     <text v-if="icon" class="tag-icon">{{ icon }}</text>
     <text class="tag-label">{{ label }}</text>
     <slot />
@@ -88,24 +95,24 @@ const tagClass = computed(() => [
   font-weight: 600;
 }
 .tag--success {
-  background: rgba(16, 185, 129, 0.1);
+  background: var(--c-success-bg-tint, var(--c-success-bg-tint, var(--c-success-bg-tint, rgba(16, 185, 129, 0.1))));
   color: var(--c-success);
-  border-color: rgba(16, 185, 129, 0.22);
+  border-color: var(--c-success-border-tint, var(--c-success-border-tint, var(--c-success-border-tint, rgba(16, 185, 129, 0.22))));
 }
 .tag--warning {
-  background: rgba(245, 158, 11, 0.1);
+  background: var(--c-warning-bg-tint, var(--c-warning-bg-tint, var(--c-warning-bg-tint, rgba(245, 158, 11, 0.1))));
   color: var(--c-warning);
-  border-color: rgba(245, 158, 11, 0.22);
+  border-color: var(--c-warning-border-tint, var(--c-warning-border-tint, var(--c-warning-border-tint, rgba(245, 158, 11, 0.22))));
 }
 .tag--error {
-  background: rgba(229, 69, 77, 0.1);
+  background: var(--c-error-bg-tint, var(--c-error-bg-tint, var(--c-error-bg-tint, rgba(229, 69, 77, 0.1))));
   color: var(--c-error);
-  border-color: rgba(229, 69, 77, 0.22);
+  border-color: var(--c-error-border-tint, var(--c-error-border-tint, var(--c-error-border-tint, rgba(229, 69, 77, 0.22))));
 }
 .tag--romance {
   background: var(--c-romance-50);
   color: var(--c-romance-500);
-  border-color: rgba(236, 72, 153, 0.22);
+  border-color: var(--c-romance-border-tint, var(--c-romance-border-tint, var(--c-romance-border-tint, rgba(236, 72, 153, 0.22))));
 }
 .tag--romance.tag--selected {
   background: var(--c-gradient-romance);
@@ -115,7 +122,7 @@ const tagClass = computed(() => [
 .tag--vip {
   background: var(--c-gradient-vip);
   color: var(--c-text-inverse);
-  border-color: rgba(201, 163, 106, 0.35);
+  border-color: var(--c-vip-border-tint, var(--c-vip-border-tint, var(--c-vip-border-tint, rgba(201, 163, 106, 0.35))));
   font-weight: 600;
 }
 .tag--campus {

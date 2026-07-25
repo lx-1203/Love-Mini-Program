@@ -14,6 +14,18 @@
  */
 import { onShow } from "@dcloudio/uni-app";
 
+/**
+ * mp-weixin 自定义 TabBar 页面实例的最小契约
+ *
+ * getCurrentPages() 返回的页面实例在 Vue3 mp-weixin 下包含 getTabBar() 方法，
+ * 但官方类型未声明，此处通过接口扩展补齐字段，避免使用 `as any` 绕过类型检查。
+ */
+interface PageWithTabBar {
+  getTabBar?: () => {
+    setData?: (data: { selected: number }) => void;
+  } | null;
+}
+
 export function useTabBar(index: number): void {
   onShow(() => {
     // #ifdef MP-WEIXIN
@@ -21,7 +33,7 @@ export function useTabBar(index: number): void {
       // uni-app Vue3 mp-weixin 中必须通过 getCurrentPages() 获取页面实例
       // getCurrentInstance()?.proxy 在 mp-weixin 中不可用
       const pages = getCurrentPages();
-      const page = pages[pages.length - 1] as any;
+      const page = pages[pages.length - 1] as PageWithTabBar | undefined;
       const tabBar = page?.getTabBar?.();
       if (tabBar && typeof tabBar.setData === "function") {
         tabBar.setData({ selected: index });

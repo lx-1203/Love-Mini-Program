@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
 
 const props = withDefaults(defineProps<{
@@ -8,10 +8,10 @@ const props = withDefaults(defineProps<{
   message?: string;
 }>(), {
   type: 'no-data',
-  message: '暂无数据',
+  message: '',
 });
 
-const t = designTokens;
+const { t } = useI18n();
 
 const iconSrc = computed(() => {
   const map: Record<string, string> = {
@@ -22,14 +22,30 @@ const iconSrc = computed(() => {
   return map[props.type];
 });
 
-const subMap: Record<string, string> = { 'no-data': '这里空空如也', 'no-match': '暂时没有匹配的人', 'no-chat': '还没有聊天记录' };
+const messageText = computed(() => props.message || t('empty.noData'));
+
+const subText = computed(() => {
+  const map: Record<string, string> = {
+    'no-data': t('empty.noDataSub'),
+    'no-match': t('empty.noMatchSub'),
+    'no-chat': t('empty.noChatSub'),
+  };
+  return map[props.type] || t('empty.noDataSub');
+});
 </script>
 
 <template>
-  <view class="empty">
+  <view
+    class="empty"
+    <!-- #ifdef H5 -->
+    role="status"
+    aria-live="polite"
+    :aria-label="messageText"
+    <!-- #endif -->
+  >
     <image class="empty-icon" :src="iconSrc" mode="aspectFit" />
-    <text class="empty-msg">{{ message }}</text>
-    <text class="empty-sub">{{ subMap[type] }}</text>
+    <text class="empty-msg">{{ messageText }}</text>
+    <text class="empty-sub">{{ subText }}</text>
     <slot />
   </view>
 </template>

@@ -14,6 +14,8 @@
  * 使用方式：
  * <MatchCountChip :count="remainingCount" />
  */
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { openAppPath } from "../../utils/navigation";
 import SafeImage from "./SafeImage.vue";
@@ -28,10 +30,20 @@ const props = withDefaults(defineProps<{
   icon: IMAGE_PATHS.ICONS_SOCIAL.MATCH,
 });
 
+const { t } = useI18n();
+
 /** emit tap 事件，便于父组件监听 */
 const emit = defineEmits<{
   (e: "tap"): void;
 }>();
+
+const ariaLabel = computed(() =>
+  t("messages.todayMatchCountAria", { n: props.count })
+);
+
+const countText = computed(() =>
+  t("messages.matchCountSuffix", { n: props.count })
+);
 
 /**
  * 点击 chip 跳转到寻觅页
@@ -48,13 +60,17 @@ function handleTap() {
     hover-class="press-feedback--active"
     hover-stay-time="120"
     @tap="handleTap"
+    <!-- #ifdef H5 -->
+    role="button"
+    :aria-label="ariaLabel"
+    <!-- #endif -->
   >
     <SafeImage
       :src="props.icon"
       custom-class="match-count-chip__icon"
       mode="aspectFit"
     />
-    <text class="match-count-chip__count">{{ props.count }} 次</text>
+    <text class="match-count-chip__count">{{ countText }}</text>
   </view>
 </template>
 

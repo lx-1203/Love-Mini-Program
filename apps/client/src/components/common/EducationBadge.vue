@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { designTokens } from '../../theme/tokens';
 import { IMAGE_PATHS } from '../../config/images';
 
@@ -11,6 +12,7 @@ const props = defineProps<{
 }>();
 
 const t = designTokens;
+const { t: tt } = useI18n();
 
 const sizeMap = {
   sm: { padding: '4rpx 8rpx', fontSize: '20rpx', iconSize: '16rpx' },
@@ -42,10 +44,24 @@ const shieldStyle = computed(() => ({
   alignItems: 'center',
   justifyContent: 'center',
 }));
+
+const ariaLabel = computed(() => {
+  const parts: string[] = [props.school];
+  if (props.degree) parts.push(props.degree);
+  if (props.verified) parts.push(tt('profile.verificationSchool'));
+  return parts.join(' · ');
+});
 </script>
 
 <template>
-  <view class="edu-badge" :style="badgeStyle">
+  <view
+    class="edu-badge"
+    :style="badgeStyle"
+    <!-- #ifdef H5 -->
+    role="img"
+    :aria-label="ariaLabel"
+    <!-- #endif -->
+  >
     <view class="edu-badge__shield" :style="shieldStyle">
       <image v-if="verified" class="edu-badge__check" :src="IMAGE_PATHS.ICONS_COMMON.CHECK" mode="aspectFit" />
       <text v-else class="edu-badge__dot">•</text>

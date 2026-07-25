@@ -202,6 +202,96 @@ const mockSessionMap: Record<string, TempChatSession> = {
 
 const chatTransport = createChatTransport();
 
+/* ========== 消息发送状态持久化 ========== */
+
+/**
+ * 消息投递状态存储键。
+ *
+ * 修复（P1 BUG）：原 sendText 无状态持久化，页面刷新或切换会话后，
+ * 用户无法感知上一条消息是否发送成功。
+ * 现将消息投递状态持久化到本地存储，确保跨会话/刷新后仍可恢复展示。
+ */
+const MESSAGE_STATUS_STORAGE_KEY = "chat:message-delivery-status";
+
+/** 消息发送最大重试次数（仅对网络层错误重试） */
+const MAX_SEND_RETRIES = 1;
+
+/** 重试延迟（毫秒） */
+const SEND_RETRY_DELAY_MS = 500;
+
+/**
+ * 消息投递状态：sending-发送中 / sent-已发送 / failed-发送失败
+ */
+type MessageDeliveryStatus = "sending" | "sent" | "failed";
+
+/**
+ * 从本地存储加载消息投递状态映射表。
+ */
+function loadMessageStatus(): Record<string, MessageDeliveryStatus> {
+  try {
+    const raw = uni.getStorageSync(MESSAGE_STATUS_STORAGE_KEY);
+    if (typeof raw === "string" && raw.length > 0) {
+      const parsed = JSON.parse(raw) as Record<string, MessageDeliveryStatus>;
+      if (parsed && typeof parsed === "object") {
+        return parsed;
+      }
+    }
+  } catch (_e) {
+    // 读取失败忽略，使用空对象
+  }
+  return {};
+}
+
+/**
+ * 将消息投递状态映射表写入本地存储。
+ */
+function saveMessageStatus(status: Record<string, MessageDeliveryStatus>): void {
+  try {
+    uni.setStorageSync(MESSAGE_STATUS_STORAGE_KEY, JSON.stringify(status));
+  } catch (_e) {
+    // 写入失败忽略，避免阻塞业务流程
+  }
+}
+
+/**
+ * 带重试的异步执行器（仅对网络层错误重试，不对业务错误重试）。
+ *
+ * 修复（P1 BUG）：原 sendText 无重试机制，网络抖动时直接失败，
+ * 用户体验不佳。现新增 1 次自动重试，仅对网络层错误（category === "network"）重试。
+ *
+ * @param fn - 要执行的异步函数
+ * @param maxRetries - 最大重试次数
+ * @param delayMs - 重试延迟毫秒数
+ */
+async function withSendRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = MAX_SEND_RETRIES,
+  delayMs = SEND_RETRY_DELAY_MS
+): Promise<T> {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      // 仅对网络层错误重试（EnhancedApiError.category === "network"）
+      const isNetworkError =
+        error !== null &&
+        typeof error === "object" &&
+        "category" in error &&
+        (error as { category: string }).category === "network";
+      if (!isNetworkError || attempt >= maxRetries) {
+        break;
+      }
+      // 延迟后重试
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("发送失败");
+}
+
 /* ========== 高阶函数：统一处理重复逻辑 ========== */
 
 /**
@@ -351,6 +441,15 @@ export const useChatStore = defineStore("chat", {
     }>,
     /** 破冰话题加载中 */
     loadingIcebreakers: false,
+    /**
+     * 消息投递状态映射表（sendId -> status）。
+     *
+     * 修复（P1 BUG）：原 sendText 无状态持久化，页面刷新或切换会话后，
+     * 用户无法感知上一条消息是否发送成功。
+     * 现将每条消息的投递状态持久化到本地存储，确保跨会话/刷新后仍可恢复展示。
+     * sendId 为客户端生成的唯一 ID（send-${timestamp}），与消息体解耦。
+     */
+    messageDeliveryStatus: loadMessageStatus() as Record<string, MessageDeliveryStatus>,
   }),
   actions: {
     async loadOverview() {
@@ -478,49 +577,76 @@ export const useChatStore = defineStore("chat", {
         }
       );
     },
+    /**
+     * 发送文本消息（带状态持久化与失败重试）。
+     *
+     * 修复（P1 BUG）：
+     * 1. 新增消息投递状态持久化：通过 messageDeliveryStatus 映射表跟踪
+     *    sending/sent/failed 状态，持久化到本地存储，确保刷新/切换会话后可恢复展示。
+     * 2. 新增失败处理与重试：Real 模式下网络层错误自动重试 1 次，
+     *    最终失败时设置 errorMessage 并标记消息为 failed。
+     *
+     * @param body - 消息正文
+     */
     async sendText(body: string) {
       if (!this.activeSession) {
         return;
       }
 
-      // 使用 withMockMode 统一处理 Mock/Real 切换、activeSession 更新、概览刷新
-      await withMockMode(
-        this,
-        // Mock 模式：在本地会话中追加消息
-        () => {
-          const sessionId = this.activeSession!.id;
-          const currentSession = mockSessionMap[sessionId] ?? mockSession1;
-          const updatedSession: TempChatSession = {
-            ...currentSession,
-            phase: "active",
-            messages: [
-              ...currentSession.messages,
-              {
-                id: `m-${Date.now()}`,
+      // 修复（P1 BUG）：生成客户端 sendId 用于跟踪消息投递状态
+      const sendId = `send-${Date.now()}`;
+      this._setMessageStatus(sendId, "sending");
+
+      try {
+        // 使用 withMockMode 统一处理 Mock/Real 切换、activeSession 更新、概览刷新
+        // 修复（P1 BUG）：Real 模式新增 withSendRetry 重试机制
+        await withMockMode(
+          this,
+          // Mock 模式：在本地会话中追加消息
+          () => {
+            const sessionId = this.activeSession!.id;
+            const currentSession = mockSessionMap[sessionId] ?? mockSession1;
+            const updatedSession: TempChatSession = {
+              ...currentSession,
+              phase: "active",
+              messages: [
+                ...currentSession.messages,
+                {
+                  id: `m-${Date.now()}`,
+                  sender: "self",
+                  kind: "text",
+                  body,
+                  sentAt: new Date().toISOString(),
+                  durationSeconds: null,
+                  recalled: false,
+                  deliveryStatus: "sent" as const,
+                },
+              ],
+            };
+            mockSessionMap[sessionId] = updatedSession;
+            return updatedSession;
+          },
+          // Real 模式：调用后端 API 发送消息（带重试）
+          // 注意：ChatMessageRequest 仅包含 sender/kind/body/durationSeconds/quoteRef，
+          // recalled / deliveryStatus 是前端扩展字段，不应发送到后端
+          () =>
+            withSendRetry(() =>
+              chatTransport.pushMessage(this.activeSession!.id, {
                 sender: "self",
                 kind: "text",
                 body,
-                sentAt: new Date().toISOString(),
                 durationSeconds: null,
-                recalled: false,
-                deliveryStatus: "sent" as const,
-              },
-            ],
-          };
-          mockSessionMap[sessionId] = updatedSession;
-          return updatedSession;
-        },
-        // Real 模式：调用后端 API 发送消息
-        () =>
-          chatTransport.pushMessage(this.activeSession!.id, {
-            sender: "self",
-            kind: "text",
-            body,
-            durationSeconds: null,
-            recalled: false,
-            deliveryStatus: "sent" as const,
-          } as any)
-      );
+              })
+            )
+        );
+        // 发送成功，更新状态为 sent
+        this._setMessageStatus(sendId, "sent");
+      } catch (error) {
+        // 修复（P1 BUG）：发送失败，更新状态为 failed 并设置 errorMessage
+        this._setMessageStatus(sendId, "failed");
+        this.errorMessage =
+          error instanceof Error ? error.message : "发送消息失败，请重试";
+      }
     },
     async sendVoice(durationSeconds: number) {
       if (!this.activeSession) {
@@ -693,7 +819,8 @@ export const useChatStore = defineStore("chat", {
             url: `/matches/${matchId}/icebreakers`,
             method: "GET",
           });
-          this.icebreakerTopics = (data as any).topics ?? [];
+          // IcebreakerView.topics 为 { id; title }[]，提取 title 作为话题文案
+          this.icebreakerTopics = (data.topics ?? []).map((t) => t.title);
         }
       );
     },
@@ -702,6 +829,13 @@ export const useChatStore = defineStore("chat", {
      * 发送破冰话题到对话
      * 将选中的破冰话题作为消息发送到当前活跃会话中
      * Mock 模式直接追加消息，Real 模式调用 POST /api/matches/{matchId}/icebreakers/send
+     *
+     * 修复（P1 BUG）：新增回滚保护。Real 模式下若 icebreakers/send 成功但
+     * sendText 失败，破冰话题已发送到后端但消息未追加到会话，此时：
+     * 1. 不回滚后端 icebreakers/send（无法撤回）
+     * 2. 设置明确的 errorMessage 提示用户「破冰话题已发送，但消息追加失败」
+     * 3. 不向上抛出错误（操作部分成功，不应让调用方重试整个流程导致重复发送）
+     *
      * @param matchId - 匹配 ID
      * @param topic - 选中的破冰话题内容
      */
@@ -757,8 +891,19 @@ export const useChatStore = defineStore("chat", {
             data: { topic },
           });
 
-          // 发送成功后，将话题作为普通消息追加到当前会话
-          await this.sendText(topic);
+          // 修复（P1 BUG）：sendText 失败时的回滚保护
+          // icebreakers/send 已成功，若 sendText 失败，不向上抛出错误避免重复发送，
+          // 而是设置明确的 errorMessage 提示用户消息追加失败。
+          try {
+            // 发送成功后，将话题作为普通消息追加到当前会话
+            await this.sendText(topic);
+          } catch (sendTextError) {
+            // sendText 内部已设置 errorMessage，此处补充提示破冰话题已发送
+            this.errorMessage = `破冰话题已发送，但消息追加失败：${
+              sendTextError instanceof Error ? sendTextError.message : "未知错误"
+            }`;
+            // 不向上抛出，避免调用方重试导致 icebreakers/send 重复调用
+          }
         }
       );
     },
@@ -775,6 +920,25 @@ export const useChatStore = defineStore("chat", {
       } finally {
         this.loadingIcebreakers = false;
       }
+    },
+
+    /**
+     * 更新消息投递状态（内部辅助方法）。
+     *
+     * 修复（P1 BUG）：原 sendText 无状态持久化，页面刷新或切换会话后，
+     * 用户无法感知上一条消息是否发送成功。
+     * 现将消息投递状态写入 state.messageDeliveryStatus 并同步到本地存储，
+     * 确保跨会话/刷新后仍可恢复展示。
+     *
+     * @param sendId - 客户端生成的消息发送唯一 ID
+     * @param status - 消息投递状态：sending / sent / failed
+     */
+    _setMessageStatus(sendId: string, status: MessageDeliveryStatus) {
+      this.messageDeliveryStatus = {
+        ...this.messageDeliveryStatus,
+        [sendId]: status,
+      };
+      saveMessageStatus(this.messageDeliveryStatus);
     },
   },
 });

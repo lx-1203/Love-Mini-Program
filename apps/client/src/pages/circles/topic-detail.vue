@@ -334,14 +334,16 @@ onMounted(() => {
 .detail-header__back {
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .detail-header__back:active {
   transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
 }
+/* #endif */
 
 .back-icon {
   font-size: var(--fs-lg);
@@ -377,9 +379,11 @@ onMounted(() => {
   transition: transform 0.15s ease;
 }
 
+/* #ifdef H5 */
 .topic-author:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .author-avatar {
   width: 72rpx;
@@ -549,9 +553,11 @@ onMounted(() => {
   transition: transform 0.15s ease;
 }
 
+/* #ifdef H5 */
 .reply-item:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .reply-avatar {
   width: 56rpx;
@@ -622,14 +628,18 @@ onMounted(() => {
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .reply-say-hello:active {
   transform: scale(0.96);
   background: var(--c-gradient-float-btn);
 }
+/* #endif */
 
+/* #ifdef H5 */
 .reply-say-hello:active .reply-say-hello__text {
   color: var(--c-neutral-0);
 }
+/* #endif */
 
 .reply-say-hello__text {
   font-size: var(--fs-sm);
@@ -676,9 +686,11 @@ onMounted(() => {
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .empty-state__back:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .back-text {
   font-size: var(--fs-lg);
@@ -694,7 +706,7 @@ onMounted(() => {
   padding: var(--sp-5) var(--sp-8);
   padding-bottom: calc(env(safe-area-inset-bottom) + var(--sp-5));
   background: var(--c-neutral-0);
-  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
 .reply-input-wrap {
@@ -725,9 +737,11 @@ onMounted(() => {
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .reply-btn:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .reply-btn--disabled {
   background: var(--c-border-default);

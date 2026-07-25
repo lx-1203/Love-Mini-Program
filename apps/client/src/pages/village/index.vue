@@ -6,6 +6,7 @@
 import { ref, computed, onMounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
@@ -19,8 +20,10 @@ import ErrorState from "../../components/common/ErrorState.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import type { PostItem, PostFilters } from "../../stores/village";
+import BaseTabs from "../../components/common/BaseTabs.vue";
 
 /* ========== Stores ========== */
+const { t } = useI18n();
 const villageStore = useVillageStore();
 const sessionStore = useSessionStore();
 
@@ -50,17 +53,17 @@ interface VillageCategory {
   defaultSort?: "latest" | "hot";
 }
 
-/** 六分类常量定义 - 扩展为更多社交分类 */
-const CATEGORY_CONFIG: VillageCategory[] = [
-  { id: "cat-all", name: "推荐", icon: "fire", backendKey: "all", defaultSort: "hot" },
-  { id: "cat-following", name: "关注", icon: "heart", backendKey: "following", defaultSort: "latest" },
-  { id: "cat-interest", name: "兴趣圈", icon: "star", backendKey: "interest", defaultSort: "latest" },
-  { id: "cat-sincere", name: "诚意帖", icon: "building", backendKey: "sincere", defaultSort: "latest" },
-  { id: "cat-campus", name: "校园", icon: "graduation", backendKey: "campus", requireCampus: true, defaultSort: "latest" },
-  { id: "cat-love", name: "恋爱", icon: "heart", backendKey: "love", defaultSort: "latest" },
-  { id: "cat-treehole", name: "树洞", icon: "new-badge", backendKey: "treehole", defaultSort: "latest" },
-  { id: "cat-latest", name: "最新", icon: "new-badge", backendKey: "latest", defaultSort: "latest" },
-];
+/** 六分类常量定义 - 扩展为更多社交分类（name 通过 i18n 动态渲染） */
+const CATEGORY_CONFIG = computed<VillageCategory[]>(() => [
+  { id: "cat-all", name: t("village.categoryAll"), icon: "fire", backendKey: "all", defaultSort: "hot" },
+  { id: "cat-following", name: t("village.categoryFollowing"), icon: "heart", backendKey: "following", defaultSort: "latest" },
+  { id: "cat-interest", name: t("village.categoryInterest"), icon: "star", backendKey: "interest", defaultSort: "latest" },
+  { id: "cat-sincere", name: t("village.categorySincere"), icon: "building", backendKey: "sincere", defaultSort: "latest" },
+  { id: "cat-campus", name: t("village.categoryCampus"), icon: "graduation", backendKey: "campus", requireCampus: true, defaultSort: "latest" },
+  { id: "cat-love", name: t("village.categoryLove"), icon: "heart", backendKey: "love", defaultSort: "latest" },
+  { id: "cat-treehole", name: t("village.categoryTreehole"), icon: "new-badge", backendKey: "treehole", defaultSort: "latest" },
+  { id: "cat-latest", name: t("village.categoryLatest"), icon: "new-badge", backendKey: "latest", defaultSort: "latest" },
+]);
 
 /** 判断用户是否已完成校园认证 */
 const isCampusVerified = computed(() => {
@@ -79,7 +82,7 @@ const currentUserId = computed(() => {
 
 /** 根据校园认证状态过滤可见分类 */
 const displayCategories = computed<VillageCategory[]>(() => {
-  return CATEGORY_CONFIG.filter((cat) => {
+  return CATEGORY_CONFIG.value.filter((cat) => {
     if (cat.requireCampus) return isCampusVerified.value;
     return true;
   });
@@ -111,7 +114,7 @@ const selectedCategory = ref<string>(getLastCategory());
 
 /** 当前分类配置 */
 const currentCategoryConfig = computed<VillageCategory | undefined>(() => {
-  return CATEGORY_CONFIG.find((c) => c.id === selectedCategory.value);
+  return CATEGORY_CONFIG.value.find((c) => c.id === selectedCategory.value);
 });
 
 /* ========== 筛选条件 ========== */
@@ -124,12 +127,25 @@ const currentFilters = computed<PostFilters>(() => {
   };
 });
 
+/* ========== BaseTabs 数据 ========== */
+/** 将分类配置映射为 BaseTabs 所需的 { key, label } 结构 */
+const villageTabs = computed(() =>
+  displayCategories.value.map((c) => ({ key: c.id, label: c.name }))
+);
+
 /* ========== 分类切换 ========== */
+/**
+ * BaseTabs change 事件回调
+ * 注：BaseTabs 已通过 v-model 更新 selectedCategory 并处理重复点击，此处仅触发 localStorage 持久化 + store 异步副作用
+ */
 function selectCategory(catId: string) {
-  if (selectedCategory.value === catId) return;
-  selectedCategory.value = catId;
   saveLastCategory(catId);
   void villageStore.fetchPosts(currentFilters.value);
+}
+
+/** BaseTabs @change 回调入口 */
+function onCategoryChange(catId: string) {
+  selectCategory(catId);
 }
 
 /* ========== 筛选后的帖子 ========== */
@@ -256,7 +272,7 @@ onMounted(() => {
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"
-      page-name="村口"
+      :page-name="t('village.title')"
       :completion-percent="completionPercent"
     />
 
@@ -266,28 +282,23 @@ onMounted(() => {
       <view class="village-header">
         <view class="village-header__top">
           <view class="village-header__title-wrap">
-            <text class="village-header__title section-title-brand">村口</text>
-            <text class="village-header__subtitle">校园恋爱社区</text>
+            <text class="village-header__title section-title-brand">{{ t('village.title') }}</text>
+            <text class="village-header__subtitle">{{ t('village.subtitle') }}</text>
           </view>
           <view class="village-header__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPost">
-            <text class="village-header__publish-text">发布</text>
+            <text class="village-header__publish-text">{{ t('village.publishPost') }}</text>
           </view>
         </view>
 
-        <!-- ===== 分类横向滚动 Tab（绿色胶囊风格） ===== -->
-        <scroll-view class="category-tab-bar" scroll-x :show-scrollbar="false" :enhanced="true">
-          <view class="category-tab-bar__inner">
-            <view
-              v-for="cat in displayCategories"
-              :key="cat.id"
-              class="category-tab list-item"
-              :class="{ 'category-tab--active': selectedCategory === cat.id }"
-              @tap="selectCategory(cat.id)"
-            >
-              <text class="category-tab__name">{{ cat.name }}</text>
-            </view>
-          </view>
-        </scroll-view>
+        <!-- ===== 分类横向滚动 Tab（胶囊风格，BaseTabs） ===== -->
+        <BaseTabs
+          v-model="selectedCategory"
+          :tabs="villageTabs"
+          variant="pill"
+          :scrollable="true"
+          :equal-split="false"
+          @change="onCategoryChange"
+        />
       </view>
 
       <!-- ===== 附近的人入口卡片（M-08） ===== -->
@@ -296,8 +307,8 @@ onMounted(() => {
           <view class="discover-banner__left">
             <image class="discover-banner__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" />
             <view class="discover-banner__text-wrap">
-              <text class="discover-banner__title">附近的人</text>
-              <text class="discover-banner__subtitle">发现同频的TA，开启心动匹配</text>
+              <text class="discover-banner__title">{{ t('home.nearbyPeople') }}</text>
+              <text class="discover-banner__subtitle">{{ t('village.discoverBannerSubtitle') }}</text>
             </view>
           </view>
           <text class="discover-banner__arrow">›</text>
@@ -326,9 +337,9 @@ onMounted(() => {
       >
         <!-- 空状态 -->
         <view v-if="displayPosts.length === 0" class="village-empty">
-          <EmptyState type="no-data" message="暂无帖子">
+          <EmptyState type="no-data" :message="t('village.emptyPosts')">
             <view class="village-empty__action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/village/post')">
-              <text class="village-empty__action-text">去发帖</text>
+              <text class="village-empty__action-text">{{ t('village.publishPost') }}</text>
             </view>
           </EmptyState>
         </view>
@@ -367,9 +378,9 @@ onMounted(() => {
                   <text
                     v-if="post.author.campusName && post.author.campusName === currentCampusName"
                     class="user-info__campus-badge"
-                  >校友</text>
+                  >{{ t('village.alumni') }}</text>
                 </view>
-                <text class="user-info__headline">{{ post.author.headline || '刚刚活跃' }}</text>
+                <text class="user-info__headline">{{ post.author.headline || t('village.recentlyActive') }}</text>
               </view>
             </view>
             <view
@@ -378,7 +389,7 @@ onMounted(() => {
               @tap.stop="handleFollow(post.author.userId)"
             >
               <text class="follow-chip__text">
-                {{ post.isFollowed ? "已关注" : "+ 关注" }}
+                {{ post.isFollowed ? t('village.followed') : t('village.follow') }}
               </text>
             </view>
           </view>
@@ -453,10 +464,10 @@ onMounted(() => {
         <!-- 加载更多提示 -->
         <view v-if="isLoadingMore" class="load-more">
           <view class="loading-spinner" />
-          <text class="load-more__text">加载中...</text>
+          <text class="load-more__text">{{ t('common.loading') }}</text>
         </view>
         <view v-else-if="!hasMore && displayPosts.length > 0" class="load-more">
-          <text class="load-more__text">— 没有更多了 —</text>
+          <text class="load-more__text">{{ t('village.noMorePosts') }}</text>
         </view>
 
         <!-- 底部留白 -->
@@ -529,10 +540,12 @@ onMounted(() => {
   box-shadow: var(--s-brand);
 }
 
+/* #ifdef H5 */
 .village-header__publish:active {
   transform: scale(0.95);
   opacity: 0.9;
 }
+/* #endif */
 
 .village-header__publish-text {
   font-size: var(--fs-md);
@@ -585,55 +598,13 @@ onMounted(() => {
 
 .discover-banner__subtitle {
   font-size: var(--fs-sm);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85)));
 }
 
 .discover-banner__arrow {
   font-size: var(--fs-4xl);
   color: var(--c-neutral-0);
   font-weight: 300;
-}
-
-/* ================================================================
-   分类横向滚动 Tab 栏
-   ================================================================ */
-.category-tab-bar {
-  background: transparent;
-  white-space: nowrap;
-  padding-bottom: var(--sp-1);
-}
-
-.category-tab-bar__inner {
-  display: flex;
-  gap: var(--sp-2);
-  padding: 0 var(--sp-6) var(--sp-5);
-}
-
-.category-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--sp-3) var(--sp-7);
-  border-radius: var(--r-full);
-  background: var(--c-neutral-50);
-  flex-shrink: 0;
-}
-
-.category-tab--active {
-  background: var(--c-gradient-brand);
-  box-shadow: var(--s-brand);
-}
-
-.category-tab__name {
-  font-size: var(--fs-lg);
-  color: var(--c-neutral-500);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.category-tab--active .category-tab__name {
-  color: var(--c-neutral-0);
-  font-weight: 700;
 }
 
 /* ================================================================
@@ -770,9 +741,11 @@ onMounted(() => {
   }
 }
 
+/* #ifdef H5 */
 .post-card:active {
   transform: scale(0.995);
 }
+/* #endif */
 
 /* --- 作者信息行 --- */
 .post-card__header {
@@ -800,7 +773,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 2rpx solid rgba(63, 207, 142, 0.15);
+  border: 2rpx solid var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15)));
   box-shadow: 0 0 0 3rpx var(--c-brand-50),
               0 0 0 6rpx var(--c-brand-100);
 }
@@ -888,9 +861,11 @@ onMounted(() => {
   margin-left: var(--sp-4);
 }
 
+/* #ifdef H5 */
 .follow-chip:active {
   transform: scale(0.95);
 }
+/* #endif */
 
 .follow-chip--active {
   background: var(--c-neutral-50);
@@ -922,6 +897,10 @@ onMounted(() => {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 5;
   overflow: hidden;
+  /* #ifndef H5 */
+  /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
+  max-height: 8em;
+  /* #endif */
 }
 
 /* --- 图片展示 --- */
@@ -1033,9 +1012,11 @@ onMounted(() => {
   padding: var(--sp-2) var(--sp-1);
 }
 
+/* #ifdef H5 */
 .action-btn:active {
   transform: scale(0.9);
 }
+/* #endif */
 
 .action-btn--animating {
   animation: like-bounce 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1111,9 +1092,11 @@ onMounted(() => {
   z-index: 99;
 }
 
+/* #ifdef H5 */
 .fab:active {
   transform: scale(0.9);
 }
+/* #endif */
 
 .fab__icon {
   width: 56rpx;

@@ -1,12 +1,18 @@
 import type { components } from "../generated/api-types";
 import type {
+  DoNotDisturbRequest,
+  DoNotDisturbView,
+  MakeUpCheckInResultView,
   ProfileStats,
   RecommendationFilter,
   RecommendedPerson,
+  SubmissionDetailView,
   UpdateBasicProfileRequest,
 } from "../generated/api-types-supplement";
 import { homeRecommendedPeople } from "../../config/home-recommended-people";
 import { createMockApiError } from "../api-error";
+// 统一图片资源路径常量，避免在 mock 数据中硬编码字符串
+import { IMAGE_PATHS } from "@/config/images";
 
 type Schemas = components["schemas"];
 type LoginHeroConfig = Schemas["LoginHeroConfig"];
@@ -126,12 +132,12 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     commonGround: "你们都选了电影话题",
     availability: "今晚 19:00-21:00",
     campusName: "北京大学",
-    avatarUrl: "/static/assets/images/avatars/avatar-1.jpg",
+    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_1,
     tags: ["咖啡", "电影", "夜跑", "心理学", "猫奴"],
     bio: "喜欢听人讲故事，也擅长保守秘密。想认识有趣的人，一起喝咖啡、看电影、夜跑。周末通常比较空闲，欢迎约我出去逛逛。",
     images: [
-      "/static/assets/images/posts/campus-library.jpg",
-      "/static/assets/images/activities/activity-1.jpg",
+      IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
     ],
     isSameSchool: false,
     isSameMajor: false,
@@ -139,10 +145,10 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     height: 165,
     educationLevel: "bachelor",
     photoGallery: [
-      "/static/assets/images/posts/campus-library.jpg",
-      "/static/assets/images/activities/activity-1.jpg",
+      IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
     ],
-    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-1.jpg",
+    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_1,
     personalVideoUrl: "",
     profileBackgroundUrl: "",
     verificationBadgeLevel: "school",
@@ -159,12 +165,12 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     commonGround: "你们都选了美食话题",
     availability: "周末下午",
     campusName: "清华大学",
-    avatarUrl: "/static/assets/images/avatars/avatar-2.jpg",
+    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_2,
     tags: ["美食", "音乐", "探店", "建筑", "胶片"],
     bio: "画图狗一只，偶尔弹吉他。对城市里的老建筑特别感兴趣，想找个人一起探店、扫街。",
     images: [
-      "/static/assets/images/activities/activity-2.jpg",
-      "/static/assets/images/products/food-1.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
+      IMAGE_PATHS.PRODUCTS.FOOD_1,
     ],
     isSameSchool: false,
     isSameMajor: false,
@@ -172,10 +178,10 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     height: 178,
     educationLevel: "master",
     photoGallery: [
-      "/static/assets/images/activities/activity-2.jpg",
-      "/static/assets/images/products/food-1.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
+      IMAGE_PATHS.PRODUCTS.FOOD_1,
     ],
-    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-2.jpg",
+    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_2,
     personalVideoUrl: "",
     profileBackgroundUrl: "",
     verificationBadgeLevel: "school",
@@ -192,12 +198,12 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     commonGround: "你们都选了摄影话题",
     availability: "周三、周五晚上",
     campusName: "复旦大学",
-    avatarUrl: "/static/assets/images/avatars/avatar-3.jpg",
+    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_3,
     tags: ["语言", "看展", "摄影", "日系", "手账"],
     bio: "最近在学日语，想找个语伴一起练习。平时也喜欢看展、拍照，记录生活中的小美好。",
     images: [
-      "/static/assets/images/activities/activity-study.jpg",
-      "/static/assets/images/products/merch-1.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY,
+      IMAGE_PATHS.PRODUCTS.MERCH_1,
     ],
     isSameSchool: false,
     isSameMajor: false,
@@ -205,10 +211,10 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     height: 162,
     educationLevel: "bachelor",
     photoGallery: [
-      "/static/assets/images/activities/activity-study.jpg",
-      "/static/assets/images/products/merch-1.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY,
+      IMAGE_PATHS.PRODUCTS.MERCH_1,
     ],
-    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-3.jpg",
+    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_3,
     personalVideoUrl: "",
     profileBackgroundUrl: "",
     verificationBadgeLevel: "email",
@@ -225,12 +231,12 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     commonGround: "你们都选了运动话题",
     availability: "每天傍晚",
     campusName: "浙江大学",
-    avatarUrl: "/static/assets/images/avatars/avatar-4.jpg",
+    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_4,
     tags: ["游戏", "篮球", "旅行", "编程", "火锅"],
     bio: "即将毕业，想在校园里留下一些美好回忆。喜欢打篮球、玩游戏，也热爱旅行，计划毕业前去一趟西藏。",
     images: [
-      "/static/assets/images/activities/activity-sports.jpg",
-      "/static/assets/images/products/food-2.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
+      IMAGE_PATHS.PRODUCTS.FOOD_2,
     ],
     isSameSchool: false,
     isSameMajor: false,
@@ -238,10 +244,10 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     height: 180,
     educationLevel: "bachelor",
     photoGallery: [
-      "/static/assets/images/activities/activity-sports.jpg",
-      "/static/assets/images/products/food-2.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
+      IMAGE_PATHS.PRODUCTS.FOOD_2,
     ],
-    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-4.jpg",
+    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_4,
     personalVideoUrl: "",
     profileBackgroundUrl: "",
     verificationBadgeLevel: "school",
@@ -258,12 +264,12 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     commonGround: "你们都选了咖啡话题",
     availability: "下午没课的时候",
     campusName: "中国人民大学",
-    avatarUrl: "/static/assets/images/avatars/avatar-5.jpg",
+    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_5,
     tags: ["阅读", "写作", "咖啡", "新闻", "民谣"],
     bio: "刚来学校不久，想多认识一些朋友。喜欢阅读和写作，梦想是成为一名记者。平时会去咖啡馆写稿，欢迎来找我聊天。",
     images: [
-      "/static/assets/images/activities/activity-1.jpg",
-      "/static/assets/images/products/merch-2.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
+      IMAGE_PATHS.PRODUCTS.MERCH_2,
     ],
     isSameSchool: false,
     isSameMajor: false,
@@ -271,10 +277,10 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     height: 168,
     educationLevel: "bachelor",
     photoGallery: [
-      "/static/assets/images/activities/activity-1.jpg",
-      "/static/assets/images/products/merch-2.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
+      IMAGE_PATHS.PRODUCTS.MERCH_2,
     ],
-    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-5.jpg",
+    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_5,
     personalVideoUrl: "",
     profileBackgroundUrl: "",
     verificationBadgeLevel: "none",
@@ -291,12 +297,12 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     commonGround: "你们都选了阅读话题",
     availability: "周二、周四晚上",
     campusName: "南京大学",
-    avatarUrl: "/static/assets/images/avatars/avatar-6.jpg",
+    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_6,
     tags: ["辩论", "古典音乐", "阅读", "法学", "博物馆"],
     bio: "理性与感性并存。喜欢辩论，也热爱古典音乐。希望找到一个能聊得来的人，一起去看交响乐演出。",
     images: [
-      "/static/assets/images/activities/activity-3.jpg",
-      "/static/assets/images/products/ticket-1.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
+      IMAGE_PATHS.PRODUCTS.TICKET_1,
     ],
     isSameSchool: false,
     isSameMajor: false,
@@ -304,10 +310,10 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     height: 170,
     educationLevel: "bachelor",
     photoGallery: [
-      "/static/assets/images/activities/activity-3.jpg",
-      "/static/assets/images/products/ticket-1.jpg",
+      IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
+      IMAGE_PATHS.PRODUCTS.TICKET_1,
     ],
-    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-6.jpg",
+    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_6,
     personalVideoUrl: "",
     profileBackgroundUrl: "",
     verificationBadgeLevel: "school",
@@ -324,12 +330,12 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     commonGround: "你们都选了户外话题",
     availability: "周末全天",
     campusName: "武汉大学",
-    avatarUrl: "/static/assets/images/avatars/avatar-7.jpg",
+    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_7,
     tags: ["户外", "露营", "爬山", "医学", "纪录片"],
     bio: "医学生，平时比较忙，但周末一定会给自己放风。喜欢爬山和露营，觉得大自然最能治愈人心。",
     images: [
-      "/static/assets/images/posts/campus-library.jpg",
-      "/static/assets/images/products/ticket-2.jpg",
+      IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+      IMAGE_PATHS.PRODUCTS.TICKET_2,
     ],
     isSameSchool: false,
     isSameMajor: false,
@@ -337,10 +343,10 @@ const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
     height: 175,
     educationLevel: "master",
     photoGallery: [
-      "/static/assets/images/posts/campus-library.jpg",
-      "/static/assets/images/products/ticket-2.jpg",
+      IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+      IMAGE_PATHS.PRODUCTS.TICKET_2,
     ],
-    halfBodyPhotoUrl: "/static/assets/images/avatars/avatar-7.jpg",
+    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_7,
     personalVideoUrl: "",
     profileBackgroundUrl: "",
     verificationBadgeLevel: "idcard",
@@ -404,8 +410,8 @@ let extendedBasicProfile: UpdateBasicProfileRequest = {
  * 照片墙 mock 状态（最多 6 张）。
  */
 let photoGallery: string[] = [
-  "/static/assets/images/avatars/avatar-1.jpg",
-  "/static/assets/images/avatars/avatar-2.jpg",
+  IMAGE_PATHS.AVATARS.AVATAR_1,
+  IMAGE_PATHS.AVATARS.AVATAR_2,
 ];
 
 /**
@@ -422,6 +428,38 @@ let halfBodyPhotoUrl: string | null = null;
  * 主页背景图 URL mock 状态。
  */
 let profileBackgroundUrl: string | null = null;
+
+/**
+ * 通知免打扰设置 mock 状态（功能6）。
+ *
+ * 默认关闭，开始/结束时间 22:00-08:00，每天重复，允许紧急消息穿透。
+ */
+let dndSetting: DoNotDisturbView = {
+  enabled: false,
+  startTime: "22:00",
+  endTime: "08:00",
+  repeatMode: "EVERYDAY",
+  customWeekdays: null,
+  allowUrgent: true,
+};
+
+/**
+ * 签到补签 mock 状态（功能7）。
+ *
+ * 维护本月已用补签次数，用于补签结果计算。
+ * 每月补签上限 3 次，首次免费，后续每次消耗 50 积分。
+ */
+let makeUpUsedCount = 0;
+const MAKE_UP_LIMIT = 3;
+const MAKE_UP_COST_POINTS = 50;
+
+/**
+ * 反馈详情 mock 数据（功能10）。
+ *
+ * 由 createSubmission 时同步生成详情，存入 submissionDetails Map 中。
+ * 详情包含完整 content/attachments/latestReplyContent，列表页不返回这些字段。
+ */
+const submissionDetails = new Map<number, SubmissionDetailView>();
 
 let profileStats: ProfileStats = {
   followers: 16,
@@ -888,7 +926,7 @@ export const mockFixtures = {
     setSessionMeta(id, { unreadCount: 0 });
     // 同时将 peer 发送的消息 deliveryStatus 更新为 "read"
     if (session.messages) {
-      session.messages = session.messages.map((m: any) =>
+      session.messages = session.messages.map((m: Schemas["ChatMessage"]) =>
         m.sender === "peer" && m.deliveryStatus === "delivered"
           ? { ...m, deliveryStatus: "read" }
           : m
@@ -899,7 +937,7 @@ export const mockFixtures = {
   recallTempChatMessage(sessionId: string, messageId: string): Schemas["TempChatSession"] {
     const session = ensureSession(sessionId);
     if (session.messages) {
-      session.messages = session.messages.map((m: any) =>
+      session.messages = session.messages.map((m: Schemas["ChatMessage"]) =>
         m.id === messageId
           ? { ...m, recalled: true, body: "[已撤回]" }
           : m
@@ -1055,6 +1093,20 @@ export const mockFixtures = {
       convertedActivityId: null,
     };
     submissions = [record, ...submissions];
+    // 同步生成详情并存入 Map，供功能10 getSubmissionDetail 查询
+    const detail: SubmissionDetailView = {
+      id: record.id,
+      type,
+      title: payload.title,
+      content: payload.content,
+      attachments: Array.isArray(payload.attachments) ? [...payload.attachments] : [],
+      status: "submitted",
+      latestReplySummary: record.latestReplySummary,
+      latestReplyContent: null,
+      submittedAt: record.submittedAt,
+      convertedActivityId: null,
+    };
+    submissionDetails.set(record.id, detail);
     return clone(record);
   },
   getCheckInStatus(): CheckInStatus {
@@ -1314,5 +1366,103 @@ export const mockFixtures = {
     });
 
     return clone(filtered);
+  },
+
+  /**
+   * 获取通知免打扰设置（功能6）。
+   */
+  getDndSetting(): DoNotDisturbView {
+    return clone(dndSetting);
+  },
+
+  /**
+   * 更新通知免打扰设置（功能6）。
+   *
+   * Mock 模式下直接合并 payload 到 dndSetting 状态，并返回最新视图。
+   */
+  updateDndSetting(payload: DoNotDisturbRequest): DoNotDisturbView {
+    dndSetting = {
+      enabled: payload.enabled,
+      startTime: payload.startTime,
+      endTime: payload.endTime,
+      repeatMode: payload.repeatMode,
+      customWeekdays: payload.customWeekdays ?? null,
+      allowUrgent: payload.allowUrgent,
+    };
+    return clone(dndSetting);
+  },
+
+  /**
+   * 签到补签（功能7）。
+   *
+   * Mock 模式下：
+   * - 校验日期范围（昨日及之前 7 天内）
+   * - 检查本月补签次数上限
+   * - 返回补签成功结果，连续天数 +1（基于现有 checkInStatus.consecutiveDays）
+   *
+   * @param date - 补签日期（yyyy-MM-dd）
+   * @returns 补签结果视图
+   * @throws createMockApiError 400 当日期无效或超出补签次数上限
+   */
+  makeUpCheckIn(date: string): MakeUpCheckInResultView {
+    if (!date) {
+      throw createMockApiError(400);
+    }
+    // 校验日期范围：昨日及之前 7 天内
+    const target = new Date(date);
+    if (isNaN(target.getTime())) {
+      throw createMockApiError(400);
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    if (target > yesterday || target < sevenDaysAgo) {
+      throw createMockApiError(400);
+    }
+    // 检查本月补签次数上限
+    if (makeUpUsedCount >= MAKE_UP_LIMIT) {
+      throw createMockApiError(400);
+    }
+    makeUpUsedCount++;
+    // 模拟连续签到天数 +1
+    checkInStatus = {
+      checkedIn: checkInStatus.checkedIn,
+      consecutiveDays: checkInStatus.consecutiveDays + 1,
+    };
+    return {
+      success: true,
+      checkInDate: date,
+      consecutiveDays: checkInStatus.consecutiveDays,
+      usedMakeUpCount: makeUpUsedCount,
+      makeUpLimit: MAKE_UP_LIMIT,
+      costPoints: makeUpUsedCount === 1 ? 0 : MAKE_UP_COST_POINTS,
+    };
+  },
+
+  /**
+   * 上传反馈图片（功能9）。
+   *
+   * Mock 模式下不实际上传，仅返回 mock URL。
+   * 限制：jpg/png/webp，单张 ≤5MB（前端已校验，此处不重复校验）。
+   */
+  uploadFeedbackImage(file: File): { url: string } {
+    const url = `mock://feedback/image/${encodeURIComponent(file.name)}`;
+    return { url };
+  },
+
+  /**
+   * 获取反馈提交详情（功能10）。
+   *
+   * Mock 模式下从 submissionDetails Map 中查找，未找到则抛 404。
+   */
+  getSubmissionDetail(id: number): SubmissionDetailView {
+    const detail = submissionDetails.get(id);
+    if (!detail) {
+      throw createMockApiError(404);
+    }
+    return clone(detail);
   },
 };

@@ -1,8 +1,16 @@
 <script setup lang="ts">
+/**
+ * 时间安排引导页（功能5：当前步骤 = 4：课表导入）。
+ *
+ * 跳转链路：profile(1) → campus(2) → recommend-pref(3) → schedule(4) → 完成(5)
+ * 保存成功后跳转到 /pages/discover/index，对应步骤 5（完成）。
+ */
 import { onMounted, reactive } from "vue";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
+// 功能5：引导流程进度条（当前步骤 = 4：课表导入）
+import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { useProfileStore } from "../../../stores/profile";
 import { replaceAppPath } from "../../../utils/navigation";
 
@@ -45,6 +53,9 @@ async function save() {
 
 <template>
   <AppShell title="时间安排" subtitle="这里会驱动首页默认推荐和可聊天时段。" :show-tab-bar="false">
+    <!-- 功能5：引导流程进度条（当前步骤 = 4：课表导入） -->
+    <SetupProgress :current-step="4" />
+
     <SectionCard title="偏好设置" compact>
       <input v-model="form.preferredCampusArea" class="field" placeholder="常去区域" />
       <textarea

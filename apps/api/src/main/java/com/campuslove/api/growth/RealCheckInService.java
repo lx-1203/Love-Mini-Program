@@ -5,15 +5,18 @@ import com.campuslove.api.entity.CheckIn;
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleTopic;
 import com.campuslove.api.entity.DailyBenefit;
+import com.campuslove.api.entity.MakeUpQuota;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.repository.CheckInRepository;
 import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.DailyBenefitRepository;
+import com.campuslove.api.repository.MakeUpQuotaRepository;
 import com.campuslove.api.repository.PostRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>连续签到天数计算：从今天开始往前逐天检查，中断则归零</li>
  *   <li>热门话题查询：查询当日最活跃的村口帖子/校园话题</li>
  *   <li>新入圈用户查询：查询最近24h新加入兴趣圈的用户</li>
+ *   <li>功能7 - 补签：补签昨日及之前 7 天内的日期，每月 3 次配额，首次免费</li>
  * </ul>
  */
 @Profile("real")
@@ -44,6 +48,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class RealCheckInService implements CheckInService {
 
     private static final Logger log = LoggerFactory.getLogger(RealCheckInService.class);
+
+    /** 补签日期范围：仅可补签昨日及之前 7 天内的日期 */
+    private static final int MAKE_UP_MAX_DAYS_BACK = 7;
+
+    /** 年月格式（yyyy-MM），用于补签配额按月统计 */
+    private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private final CheckInConfig checkInConfig;
 
@@ -57,6 +67,9 @@ public class RealCheckInService implements CheckInService {
 
     private final CircleMembershipRepository circleMembershipRepository;
 
+    /** 功能7：补签配额数据访问层 */
+    private final MakeUpQuotaRepository makeUpQuotaRepository;
+
     /**
      * 构造函数，注入签到记录和签到权益相关 Repository。
      *
@@ -66,19 +79,22 @@ public class RealCheckInService implements CheckInService {
      * @param postRepository             村口帖子数据访问层
      * @param circleTopicRepository      圈子话题数据访问层
      * @param circleMembershipRepository 圈子成员数据访问层
+     * @param makeUpQuotaRepository      补签配额数据访问层（功能7）
      */
     public RealCheckInService(CheckInConfig checkInConfig,
                               CheckInRepository checkInRepository,
                               DailyBenefitRepository dailyBenefitRepository,
                               PostRepository postRepository,
                               CircleTopicRepository circleTopicRepository,
-                              CircleMembershipRepository circleMembershipRepository) {
+                              CircleMembershipRepository circleMembershipRepository,
+                              MakeUpQuotaRepository makeUpQuotaRepository) {
         this.checkInConfig = checkInConfig;
         this.checkInRepository = checkInRepository;
         this.dailyBenefitRepository = dailyBenefitRepository;
         this.postRepository = postRepository;
         this.circleTopicRepository = circleTopicRepository;
         this.circleMembershipRepository = circleMembershipRepository;
+        this.makeUpQuotaRepository = makeUpQuotaRepository;
     }
 
     /**
@@ -205,6 +221,156 @@ public class RealCheckInService implements CheckInService {
         int extraQuota = calculateTotalExtraQuota(userId);
 
         return new CheckInStatusView(checkedInToday, consecutiveDays, extraQuota);
+    }
+
+    /**
+     * 功能7：签到补签。
+     * <p>
+     * 业务规则校验：
+     * 1. userId 非空
+     * 2. date 格式合法（yyyy-MM-dd，由 @Valid 已校验，此处兜底解析）
+     * 3. date 必须在昨日及之前 7 天内（不可补签当天/未来/超出 7 天）
+     * 4. date 当天不能已有签到记录
+     * 5. 当月补签次数未超上限（默认 3 次）
+     *
+     * 流程：
+     * 1. 校验日期范围与已签到状态
+     * 2. 获取或创建当月配额记录（MakeUpQuota）
+     * 3. 计算补签消耗积分（首次免费，其后 50 积分）
+     * 4. 创建 CheckIn 记录，source=MAKE_UP
+     * 5. 配额记录 used_count+1
+     * 6. 返回补签结果视图
+     *
+     * @param userId 用户 ID
+     * @param date   补签日期（yyyy-MM-dd）
+     * @return 补签结果视图
+     * @throws IllegalArgumentException 日期无效、超出范围、已签到过、超出月配额时抛出
+     */
+    @Override
+    @Transactional
+    public MakeUpCheckInResultView makeUp(Long userId, String date) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        if (date == null || date.isEmpty()) {
+            throw new IllegalArgumentException("date is required");
+        }
+
+        LocalDate targetDate;
+        try {
+            targetDate = LocalDate.parse(date);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException("日期格式无效，必须为 yyyy-MM-dd");
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate sevenDaysAgo = today.minusDays(MAKE_UP_MAX_DAYS_BACK);
+
+        // 校验：不可补签当天或未来日期
+        if (!targetDate.isBefore(today)) {
+            throw new IllegalArgumentException("补签日期必须早于今天");
+        }
+        // 校验：不可补签超过 7 天前的日期
+        if (targetDate.isBefore(sevenDaysAgo)) {
+            throw new IllegalArgumentException("仅可补签昨日及之前 " + MAKE_UP_MAX_DAYS_BACK + " 天内的日期");
+        }
+
+        // 校验：该日期不能已有签到记录
+        Optional<CheckIn> existing = checkInRepository.findByUserIdAndCheckInDate(userId, targetDate);
+        if (existing.isPresent()) {
+            throw new IllegalArgumentException("该日期已签到，无法重复补签");
+        }
+
+        // 获取或创建当月配额记录
+        String yearMonth = targetDate.format(YEAR_MONTH_FORMATTER);
+        MakeUpQuota quota = makeUpQuotaRepository
+                .findByUserIdAndYearMonth(userId, yearMonth)
+                .orElseGet(() -> {
+                    MakeUpQuota newQuota = new MakeUpQuota();
+                    newQuota.setUserId(userId);
+                    newQuota.setYearMonth(yearMonth);
+                    newQuota.setUsedCount(0);
+                    newQuota.setLimitCount(MakeUpQuota.DEFAULT_LIMIT);
+                    newQuota.setUpdatedAt(LocalDateTime.now());
+                    return makeUpQuotaRepository.save(newQuota);
+                });
+
+        // 校验：当月补签次数是否已用完
+        if (quota.getUsedCount() >= quota.getLimitCount()) {
+            throw new IllegalArgumentException(
+                    "本月补签次数已用完（上限 " + quota.getLimitCount() + " 次）");
+        }
+
+        // 计算消耗积分：首次补签免费（used_count=0 时为首次），其后每次 50 积分
+        int costPoints = quota.getUsedCount() == 0 ? 0 : MakeUpQuota.COST_POINTS_AFTER_FREE;
+
+        // 计算补签后的连续签到天数
+        // 补签后，从今天开始往前逐天检查，遇到补签日期会视为已签到
+        // 但补签日期本身不影响今天的连续天数计算，仅在补签日期处视为签到
+        // 此处采用「补签后重新计算连续天数」的策略：补签日期会作为已签到日期参与计数
+        int consecutiveDays = calculateConsecutiveDaysAfterMakeUp(userId, today, targetDate);
+
+        // 创建补签记录
+        CheckIn makeUpCheckIn = new CheckIn();
+        makeUpCheckIn.setUserId(userId);
+        makeUpCheckIn.setCheckInDate(targetDate);
+        makeUpCheckIn.setConsecutiveDays(consecutiveDays);
+        makeUpCheckIn.setSource(CheckIn.SOURCE_MAKE_UP);
+        makeUpCheckIn.setCreatedAt(LocalDateTime.now());
+
+        try {
+            checkInRepository.save(makeUpCheckIn);
+            log.info("用户[{}]补签日期[{}]成功，source=MAKE_UP", userId, targetDate);
+        } catch (DataIntegrityViolationException e) {
+            // 并发补签同一日期，唯一约束冲突
+            log.warn("用户[{}]补签日期[{}]时发生唯一约束冲突", userId, targetDate, e);
+            throw new IllegalArgumentException("该日期已签到，无法重复补签");
+        }
+
+        // 配额记录 used_count+1
+        quota.setUsedCount(quota.getUsedCount() + 1);
+        quota.setUpdatedAt(LocalDateTime.now());
+        makeUpQuotaRepository.save(quota);
+
+        return new MakeUpCheckInResultView(
+                true,
+                date,
+                consecutiveDays,
+                quota.getUsedCount(),
+                quota.getLimitCount(),
+                costPoints
+        );
+    }
+
+    /**
+     * 计算补签后的连续签到天数。
+     * <p>
+     * 补签日期会被视为已签到，参与连续天数计算：
+     * - 从今天开始往前逐天检查（含今天）
+     * - 若当天有签到记录（含补签），连续天数+1，继续检查前一天
+     * - 若当天无签到记录，中断计数
+     *
+     * @param userId     用户 ID
+     * @param today      今天
+     * @param makeUpDate 补签日期
+     * @return 补签后的连续签到天数
+     */
+    private int calculateConsecutiveDaysAfterMakeUp(Long userId, LocalDate today, LocalDate makeUpDate) {
+        int streak = 0;
+        LocalDate checkDate = today;
+
+        while (true) {
+            Optional<CheckIn> checkIn = checkInRepository.findByUserIdAndCheckInDate(userId, checkDate);
+            // 补签日期视为已签到
+            if (checkIn.isPresent() || checkDate.equals(makeUpDate)) {
+                streak++;
+                checkDate = checkDate.minusDays(1);
+            } else {
+                break;
+            }
+        }
+
+        return streak;
     }
 
     // ---- 公共扩展方法 ----

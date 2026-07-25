@@ -6,6 +6,7 @@
 import { ref, computed, onMounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useActivityStore } from "../../stores/activity";
 import { useCheckInStore } from "../../stores/checkin";
 import { useSocialProgressStore } from "../../stores/social-progress";
@@ -16,10 +17,18 @@ import { useTabBar } from "../../composables/useTabBar";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import MatchCountChip from "../../components/common/MatchCountChip.vue";
+// 功能1：首页 Banner 自动轮播组件（替换原静态横滚 Banner）
+import HomeBanner from "../../components/home/HomeBanner.vue";
+// 功能8：签到分享卡片组件
+import ShareCard from "../../components/common/ShareCard.vue";
 import { IMAGE_PATHS } from "../../config/images";
+// 修复：推荐用户数据从 config 动态读取，避免在页面内硬编码
+import { homeRecommendedPeople } from "../../config/home-recommended-people";
 
 // 同步自定义 TabBar 选中状态（首页 = 索引 2）
 useTabBar(2);
+
+const { t } = useI18n();
 
 /** Emoji 替换 SVG 图标路径（统一通过 IMAGE_PATHS.ICONS_EMOJI 引用，避免硬编码） */
 const emojiIcons = {
@@ -48,15 +57,16 @@ const discoverStore = useDiscoverStore();
 /** 共享 discover store 的剩余匹配次数（与寻觅页 count-chip 数据源一致） */
 const { remainingCount } = storeToRefs(discoverStore);
 
-// ==================== 推荐用户数据（真实头像，替代 emoji）====================
-const recommendUsers = [
-  { avatar: IMAGE_PATHS.AVATARS.AVATAR_1, nickname: '小柚子', info: '北大·大二', matchPercent: 95 },
-  { avatar: IMAGE_PATHS.AVATARS.AVATAR_2, nickname: '阳光学长', info: '清华·大三', matchPercent: 88 },
-  { avatar: IMAGE_PATHS.AVATARS.AVATAR_3, nickname: '甜甜圈', info: '复旦·大一', matchPercent: 92 },
-  { avatar: IMAGE_PATHS.AVATARS.AVATAR_4, nickname: '向日葵', info: '浙大·大二', matchPercent: 85 },
-  { avatar: IMAGE_PATHS.AVATARS.AVATAR_5, nickname: '星星', info: '北大·研一', matchPercent: 90 },
-  { avatar: IMAGE_PATHS.AVATARS.AVATAR_6, nickname: '大海', info: '清华·大四', matchPercent: 87 },
-];
+// ==================== 推荐用户数据（从 config 动态读取，替代硬编码）====================
+// 修复：原实现硬编码 6 条推荐用户数据，调整需要修改视图代码；
+// 现统一从 config/home-recommended-people.ts 读取，运营/后端可联动维护。
+// config 中未提供 matchPercent，此处基于 index 派生展示用匹配度。
+const recommendUsers = homeRecommendedPeople.map((person, index) => ({
+  avatar: person.avatarUrl,
+  nickname: person.name,
+  info: person.headline,
+  matchPercent: 95 - index * 3,
+}));
 
 // 学校选择
 const currentSchool = ref("北京大学");
@@ -64,8 +74,25 @@ const schools = ["北京大学", "清华大学", "复旦大学", "浙江大学"]
 const showSchoolPicker = ref(false);
 
 function selectSchool(school: string) {
+  // 修复：分类（学校）切换时重新调用 fetch 数据，避免展示旧学校的内容
+  if (currentSchool.value === school) {
+    showSchoolPicker.value = false;
+    return;
+  }
   currentSchool.value = school;
   showSchoolPicker.value = false;
+  // 切换学校后刷新首页数据（活动、签到、社交进度等可能随学校变化）
+  refreshHomeData();
+}
+
+/**
+ * 刷新首页数据：学校切换或下拉刷新时调用。
+ * 统一触发各 store 的 fetch，避免分散调用导致遗漏。
+ */
+function refreshHomeData() {
+  void activityStore.fetchActivities();
+  void checkInStore.fetchStatus();
+  void socialProgressStore.fetchProgress();
 }
 
 // 课表数据（从 schedule store 拉取，支持课程/活动/自定义三类）
@@ -79,20 +106,20 @@ const currentDaySlots = computed(() =>
 );
 
 /** 课表类型图例 */
-const scheduleLegends = [
-  { type: "course", label: "课程", colorVar: "var(--c-schedule-course)" },
-  { type: "activity", label: "活动", colorVar: "var(--c-schedule-activity)" },
-  { type: "custom", label: "自定义", colorVar: "var(--c-schedule-custom)" },
-] as const;
+const scheduleLegends = computed(() => [
+  { type: "course", label: t('home.scheduleLegendCourse'), colorVar: "var(--c-schedule-course)" },
+  { type: "activity", label: t('home.scheduleLegendActivity'), colorVar: "var(--c-schedule-activity)" },
+  { type: "custom", label: t('home.scheduleLegendCustom'), colorVar: "var(--c-schedule-custom)" },
+]);
 
 /** 获取课表项主标题（根据 type 返回不同字段） */
 function getItemTitle(
   item: { type: string; courseName?: string; activityName?: string; title?: string } | undefined
 ): string {
   if (!item) return "";
-  if (item.type === "course") return item.courseName || "未命名课程";
-  if (item.type === "activity") return item.activityName || "未命名活动";
-  return item.title || "自定义安排";
+  if (item.type === "course") return item.courseName || t('home.unnamedCourse');
+  if (item.type === "activity") return item.activityName || t('home.unnamedActivity');
+  return item.title || t('home.customPlan');
 }
 
 /** 获取课表项副标题（位置/教室 + 主办方/教师/备注） */
@@ -111,7 +138,7 @@ function getItemSubtitle(
     return [item.classroom, item.teacher].filter(Boolean).join(" · ");
   }
   if (item.type === "activity") {
-    return [item.location, item.sponsor ? `主办：${item.sponsor}` : ""].filter(Boolean).join(" · ");
+    return [item.location, item.sponsor ? `${t('home.sponsorPrefix')}${item.sponsor}` : ""].filter(Boolean).join(" · ");
   }
   return [item.location, item.note].filter(Boolean).join(" · ");
 }
@@ -134,14 +161,14 @@ function onSlotTap(slot: { isFree: boolean; item?: { type: string } }): void {
     return;
   }
   uni.showActionSheet({
-    itemList: ["添加课程", "添加活动", "添加自定义安排"],
+    itemList: [t('home.addCourse'), t('home.addActivity'), t('home.addCustom')],
     success: (res) => {
       if (res.tapIndex === 0) {
-        uni.showToast({ title: "课程编辑开发中", icon: "none" });
+        uni.showToast({ title: t('home.courseEditing'), icon: "none" });
       } else if (res.tapIndex === 1) {
-        uni.showToast({ title: "活动编辑开发中", icon: "none" });
+        uni.showToast({ title: t('home.activityEditing'), icon: "none" });
       } else if (res.tapIndex === 2) {
-        uni.showToast({ title: "自定义编辑开发中", icon: "none" });
+        uni.showToast({ title: t('home.customEditing'), icon: "none" });
       }
     },
     fail: (_e) => {
@@ -207,24 +234,129 @@ function toggleLike(postId: string) {
 
 /**
  * 执行每日签到
+ *
+ * 签到成功后（功能8）自动弹出分享卡片，鼓励用户分享打卡成就。
  */
 async function handleCheckIn() {
   if (checkInStore.loading || checkInStore.checkedIn) return;
   try {
     await checkInStore.checkIn();
     uni.showToast({
-      title: `签到成功！连续${checkInStore.consecutiveDays}天`,
+      title: t('home.checkinSuccess', { n: checkInStore.consecutiveDays }),
       icon: "success",
       duration: 2000,
     });
+    // 功能8：签到成功后自动弹出分享卡片
+    shareCardVisible.value = true;
   } catch (error) {
     console.error("[首页签到] 失败:", error);
     uni.showToast({
-      title: "签到失败，请稍后重试",
+      title: t('home.checkinFailed'),
       icon: "none",
       duration: 2000,
     });
   }
+}
+
+// ==================== 功能7：签到补签 ====================
+
+/**
+ * 计算最近 7 天可补签的日期列表（不含今天，仅昨日及之前 7 天）。
+ *
+ * 返回数组项格式：{ value: 'yyyy-MM-dd', label: 'MM-dd 周X' }
+ * 用于 showActionSheet 展示，避免引入 date-picker 组件保持 mp-weixin 兼容。
+ */
+const makeUpDateOptions = computed(() => {
+  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+  const options: { value: string; label: string }[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const value = `${year}-${month}-${day}`;
+    const label = `${month}-${day} 周${weekdays[d.getDay()]}`;
+    options.push({ value, label });
+  }
+  return options;
+});
+
+/**
+ * 触发补签流程：弹出 ActionSheet 选择补签日期。
+ *
+ * mp-weixin 兼容：使用 uni.showActionSheet 而非自定义 date-picker，
+ * 避免引入额外组件依赖与 mp-weixin 不支持的 API。
+ */
+function handleMakeUpCheckIn() {
+  if (checkInStore.makingUp) return;
+  const options = makeUpDateOptions.value;
+  uni.showActionSheet({
+    itemList: options.map((o) => o.label),
+    success: (res) => {
+      const selected = options[res.tapIndex];
+      if (selected) {
+        void confirmMakeUp(selected.value);
+      }
+    },
+    fail: (_e) => {
+      // 用户取消，无需处理
+    },
+  });
+}
+
+/**
+ * 确认补签：调用 store.makeUpCheckIn，根据结果 toast 提示。
+ *
+ * 错误处理：
+ * - 月配额用完 → 提示 makeUpNoQuota
+ * - 积分不足 → 提示 makeUpNoPoints
+ * - 其他错误 → 提示 makeUpFailed
+ *
+ * @param date 补签日期（yyyy-MM-dd）
+ */
+async function confirmMakeUp(date: string) {
+  const result = await checkInStore.makeUpCheckIn(date);
+  if (!result) {
+    // store errorMessage 中包含具体原因（配额/积分等）
+    const errMsg = checkInStore.errorMessage || t('home.makeUpFailed');
+    // 根据错误信息匹配更友好的提示
+    if (errMsg.includes("配额") || errMsg.includes("次数")) {
+      uni.showToast({ title: t('home.makeUpNoQuota'), icon: "none" });
+    } else if (errMsg.includes("积分")) {
+      uni.showToast({ title: t('home.makeUpNoPoints'), icon: "none" });
+    } else {
+      uni.showToast({ title: t('home.makeUpFailed'), icon: "none" });
+    }
+    return;
+  }
+  // 补签成功：toast 提示 + 自动弹出分享卡片（功能8）
+  uni.showToast({
+    title: t('home.makeUpSuccess'),
+    icon: "success",
+    duration: 2000,
+  });
+  shareCardVisible.value = true;
+}
+
+// ==================== 功能8：签到分享 ====================
+
+/** 分享卡片是否可见 */
+const shareCardVisible = ref(false);
+
+/** 签到获得的积分（用于分享卡片展示，与后端 extraQuota 对齐） */
+const earnedPoints = computed(() => checkInStore.extraRecommendations || 5);
+
+/** 打开分享卡片（点击分享按钮时调用） */
+function handleShareCheckIn() {
+  shareCardVisible.value = true;
+}
+
+/** 关闭分享卡片 */
+function handleCloseShareCard() {
+  shareCardVisible.value = false;
 }
 
 onMounted(() => {
@@ -240,7 +372,7 @@ onMounted(() => {
     <view v-if="showSchoolPicker" class="school-picker" @tap="showSchoolPicker = false">
       <view class="school-picker__content" @tap.stop>
         <view class="school-picker__header">
-          <text class="school-picker__title">选择学校</text>
+          <text class="school-picker__title">{{ t('home.selectSchool') }}</text>
           <text class="school-picker__close" @tap="showSchoolPicker = false">✕</text>
         </view>
         <view class="school-picker__list">
@@ -263,8 +395,8 @@ onMounted(() => {
       <view class="top-section">
         <view class="greeting-row">
           <view class="greeting-left">
-            <text class="greeting-text">Hi, 同学👋</text>
-            <text class="greeting-subtitle">今天想遇见谁呢？</text>
+            <text class="greeting-text">{{ t('home.greeting') }}</text>
+            <text class="greeting-subtitle">{{ t('home.greetingSubtitle') }}</text>
           </view>
           <view class="greeting-right">
             <MatchCountChip :count="remainingCount" />
@@ -278,7 +410,7 @@ onMounted(() => {
         <!-- 搜索框 -->
         <view class="search-box press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
           <image class="search-icon" :src="emojiIcons.search" mode="aspectFit" />
-          <text class="search-placeholder">搜索用户/话题/动态</text>
+          <text class="search-placeholder">{{ t('home.searchPlaceholder') }}</text>
         </view>
 
         <!-- 学校选择器 -->
@@ -287,7 +419,7 @@ onMounted(() => {
           <text class="school-name">{{ currentSchool }}</text>
           <text class="school-arrow">▼</text>
           <view class="school-badge">
-            <text class="school-badge__text">本校限定</text>
+            <text class="school-badge__text">{{ t('home.schoolLimited') }}</text>
           </view>
         </view>
       </view>
@@ -299,8 +431,8 @@ onMounted(() => {
             <image class="checkin-emoji" :src="emojiIcons.sparkles" mode="aspectFit" />
           </view>
           <view class="checkin-info">
-            <text class="checkin-title">今日签到</text>
-            <text class="checkin-desc">签到后解锁更多推荐机会</text>
+            <text class="checkin-title">{{ t('home.todayCheckin') }}</text>
+            <text class="checkin-desc">{{ t('home.checkinDesc') }}</text>
           </view>
           <text class="checkin-arrow">›</text>
         </view>
@@ -310,11 +442,30 @@ onMounted(() => {
             <image class="checkin-emoji" :src="emojiIcons.sparkles" mode="aspectFit" />
           </view>
           <view class="checkin-info">
-            <text class="checkin-title checkin-title--dark">已连续签到 {{ checkInStore.consecutiveDays }} 天</text>
-            <text class="checkin-desc checkin-desc--gray">明日继续签到可获得更多权益</text>
+            <text class="checkin-title checkin-title--dark">{{ t('home.consecutiveDays', { n: checkInStore.consecutiveDays }) }}</text>
+            <text class="checkin-desc checkin-desc--gray">{{ t('home.tomorrowContinue') }}</text>
           </view>
           <view class="checkin-streak">
-            <text class="checkin-streak-text">{{ checkInStore.consecutiveDays }}天</text>
+            <text class="checkin-streak-text">{{ t('home.days', { n: checkInStore.consecutiveDays }) }}</text>
+          </view>
+          <!-- 功能7+8：补签 / 分享按钮（仅在已签到状态显示） -->
+          <view class="checkin-actions">
+            <view
+              class="checkin-action-btn press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              @tap="handleMakeUpCheckIn"
+            >
+              <text class="checkin-action-text">{{ t('home.makeUpCheckIn') }}</text>
+            </view>
+            <view
+              class="checkin-action-btn checkin-action-btn--share press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              @tap="handleShareCheckIn"
+            >
+              <text class="checkin-action-text">{{ t('home.shareCheckIn') }}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -327,58 +478,61 @@ onMounted(() => {
               <view class="function-icon function-icon--pink">
                 <image class="function-emoji" :src="emojiIcons.location" mode="aspectFit" />
               </view>
-              <text class="function-label">附近的人</text>
+              <text class="function-label">{{ t('home.nearbyPeople') }}</text>
             </view>
             <view class="function-item function-item--highlight press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
               <view class="function-icon function-icon--purple">
                 <image class="function-emoji" :src="emojiIcons.heart" mode="aspectFit" />
               </view>
-              <text class="function-label">兴趣匹配</text>
+              <text class="function-label">{{ t('home.interestMatch') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/messages/index')">
               <view class="function-icon function-icon--orange">
                 <image class="function-emoji" :src="emojiIcons.microphone" mode="aspectFit" />
               </view>
-              <text class="function-label">语音房</text>
+              <text class="function-label">{{ t('home.voiceRoom') }}</text>
             </view>
             <view class="function-item function-item--highlight press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
               <view class="function-icon function-icon--red">
                 <image class="function-emoji" :src="emojiIcons.heart" mode="aspectFit" />
               </view>
-              <text class="function-label">CP匹配</text>
+              <text class="function-label">{{ t('home.cpMatch') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/subpackages/discover/activities/index')">
               <view class="function-icon function-icon--green">
                 <image class="function-emoji" :src="emojiIcons.sparkles" mode="aspectFit" />
               </view>
-              <text class="function-label">校园活动</text>
+              <text class="function-label">{{ t('home.campusActivity_short') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/village/index')">
               <view class="function-icon function-icon--cyan">
                 <image class="function-emoji" :src="emojiIcons.group" mode="aspectFit" />
               </view>
-              <text class="function-label">恋爱事务所</text>
+              <text class="function-label">{{ t('home.loveAgency') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/daily-question/index')">
               <view class="function-icon function-icon--yellow">
                 <image class="function-emoji" :src="emojiIcons.chat" mode="aspectFit" />
               </view>
-              <text class="function-label">真心话</text>
+              <text class="function-label">{{ t('home.truthOrDare') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/daily-question/index')">
               <view class="function-icon function-icon--blue">
                 <image class="function-emoji" :src="emojiIcons.gift" mode="aspectFit" />
               </view>
-              <text class="function-label">恋爱测试</text>
+              <text class="function-label">{{ t('home.loveTest') }}</text>
             </view>
           </view>
         </view>
       </view>
 
+      <!-- 功能1：首页 Banner 自动轮播（替换原静态横滚 Banner，置于 section-wrap 之上） -->
+      <HomeBanner />
+
       <!-- Banner轮播 -->
       <view class="section-wrap">
         <view class="section-header">
-          <text class="section-title section-title-brand">每日缘分</text>
+          <text class="section-title section-title-brand">{{ t('home.dailyFate') }}</text>
         </view>
         <scroll-view scroll-x class="banner-scroll" :show-scrollbar="false">
           <view class="banner-list">
@@ -386,10 +540,10 @@ onMounted(() => {
               <view class="banner-content">
                 <view class="banner-tag">
                   <image class="banner-tag__icon" :src="emojiIcons.sparkles" mode="aspectFit" />
-                  <text class="banner-tag__text">每日推荐</text>
+                  <text class="banner-tag__text">{{ t('home.dailyRecommend_short') }}</text>
                 </view>
-                <text class="banner-title">今日缘分值98%</text>
-                <text class="banner-desc">3位与你高度契合的同学</text>
+                <text class="banner-title">{{ t('home.todayFateValue') }}</text>
+                <text class="banner-desc">{{ t('home.todayFateDesc') }}</text>
               </view>
               <image class="banner-emoji" :src="emojiIcons.heart" mode="aspectFit" />
             </view>
@@ -397,10 +551,10 @@ onMounted(() => {
               <view class="banner-content">
                 <view class="banner-tag">
                   <image class="banner-tag__icon" :src="emojiIcons.gift" mode="aspectFit" />
-                  <text class="banner-tag__text">新人专属</text>
+                  <text class="banner-tag__text">{{ t('home.newUserExclusive') }}</text>
                 </view>
-                <text class="banner-title">新人礼遇</text>
-                <text class="banner-desc">完成任务领专属徽章</text>
+                <text class="banner-title">{{ t('home.newUserGift') }}</text>
+                <text class="banner-desc">{{ t('home.completeTaskBadge') }}</text>
               </view>
               <image class="banner-emoji" :src="emojiIcons.gift" mode="aspectFit" />
             </view>
@@ -408,10 +562,10 @@ onMounted(() => {
               <view class="banner-content">
                 <view class="banner-tag">
                   <image class="banner-tag__icon" :src="emojiIcons.location" mode="aspectFit" />
-                  <text class="banner-tag__text">周末活动</text>
+                  <text class="banner-tag__text">{{ t('home.weekendActivity') }}</text>
                 </view>
-                <text class="banner-title">周末派对</text>
-                <text class="banner-desc">校园桌游局报名中</text>
+                <text class="banner-title">{{ t('home.weekendParty') }}</text>
+                <text class="banner-desc">{{ t('home.campusBoardGame') }}</text>
               </view>
               <image class="banner-emoji" :src="emojiIcons.sparkles" mode="aspectFit" />
             </view>
@@ -419,10 +573,10 @@ onMounted(() => {
               <view class="banner-content">
                 <view class="banner-tag">
                   <image class="banner-tag__icon" :src="emojiIcons.fire" mode="aspectFit" />
-                  <text class="banner-tag__text">热门话题</text>
+                  <text class="banner-tag__text">{{ t('home.hotTopic') }}</text>
                 </view>
-                <text class="banner-title">毕业季告白</text>
-                <text class="banner-desc">勇敢说出心里话</text>
+                <text class="banner-title">{{ t('home.graduationConfession') }}</text>
+                <text class="banner-desc">{{ t('home.speakYourMind') }}</text>
               </view>
               <image class="banner-emoji" :src="emojiIcons.bookmark" mode="aspectFit" />
             </view>
@@ -433,8 +587,8 @@ onMounted(() => {
       <!-- 校园圈活动 -->
       <view class="section-wrap">
         <view class="section-header">
-          <text class="section-title section-title-brand">校园圈活动</text>
-          <text class="section-more" @tap="openAppPath('/pages/circles/index')">更多 ›</text>
+          <text class="section-title section-title-brand">{{ t('home.campusCircleActivity') }}</text>
+          <text class="section-more" @tap="openAppPath('/pages/circles/index')">{{ t('home.moreArrow') }}</text>
         </view>
         <scroll-view scroll-x class="activity-scroll" :show-scrollbar="false">
           <view class="activity-list">
@@ -455,7 +609,7 @@ onMounted(() => {
                   <image class="activity-placeholder-emoji" :src="emojiIcons.celebration" mode="aspectFit" />
                 </view>
                 <view class="activity-card__status" :class="`activity-status--${item.status}`">
-                  <text class="activity-status-text">{{ item.status === 'open' ? '报名中' : item.status === 'ongoing' ? '进行中' : '预告' }}</text>
+                  <text class="activity-status-text">{{ item.status === 'open' ? t('home.activityStatusOpen') : item.status === 'ongoing' ? t('home.activityStatusOngoing') : t('home.activityStatusPreview') }}</text>
                 </view>
               </view>
               <view class="activity-card__info-new">
@@ -470,8 +624,8 @@ onMounted(() => {
       <!-- 为你推荐 -->
       <view class="section-wrap">
         <view class="section-header">
-          <text class="section-title section-title-brand">为你推荐</text>
-          <text class="section-more section-more--green">换一批</text>
+          <text class="section-title section-title-brand">{{ t('home.recommendForYou') }}</text>
+          <text class="section-more section-more--green">{{ t('home.changeBatch') }}</text>
         </view>
         <scroll-view scroll-x class="recommend-scroll" :show-scrollbar="false">
           <view class="recommend-list card-stagger">
@@ -492,7 +646,7 @@ onMounted(() => {
               <text class="user-info">{{ user.info }}</text>
               <view class="match-tag">
                 <image class="match-tag__icon" :src="emojiIcons.heart" mode="aspectFit" />
-                <text class="match-text">匹配度{{ user.matchPercent }}%</text>
+                <text class="match-text">{{ t('home.matchPercent', { n: user.matchPercent }) }}</text>
               </view>
             </view>
           </view>
@@ -502,11 +656,11 @@ onMounted(() => {
       <!-- 本周安排 -->
       <view class="section-wrap">
         <view class="section-header">
-          <text class="section-title section-title-brand">本周安排</text>
+          <text class="section-title section-title-brand">{{ t('home.weeklySchedule') }}</text>
           <text
             class="section-more"
             @tap="openAppPath('/subpackages/setup/schedule/index')"
-          >编辑 ›</text>
+          >{{ t('home.editArrow') }}</text>
         </view>
 
         <!-- 课表卡片 -->
@@ -555,7 +709,7 @@ onMounted(() => {
                 </template>
                 <view v-else class="schedule-slot__free-new">
                   <image class="schedule-slot__free-icon" :src="emojiIcons.sparkles" mode="aspectFit" />
-                  <text class="schedule-slot__free-text">空闲，可添加安排</text>
+                  <text class="schedule-slot__free-text">{{ t('home.freeSlotHint') }}</text>
                 </view>
               </view>
             </view>
@@ -566,8 +720,8 @@ onMounted(() => {
       <!-- 热门动态 -->
       <view class="section-wrap">
         <view class="section-header">
-          <text class="section-title section-title-brand">校园新鲜事</text>
-          <text class="section-more" @tap="openAppPath('/pages/circles/index')">进入圈子 ›</text>
+          <text class="section-title section-title-brand">{{ t('home.campusNews') }}</text>
+          <text class="section-more" @tap="openAppPath('/pages/circles/index')">{{ t('home.enterCircle') }}</text>
         </view>
         <view class="post-list-new">
           <view v-for="post in posts" :key="post.id" class="post-card-new list-item">
@@ -583,7 +737,7 @@ onMounted(() => {
               </view>
               <view class="post-meta-new">
                 <text class="post-nickname-new">{{ post.nickname }}</text>
-                <text class="post-school-new">{{ post.school }} · {{ post.grade }} · 2小时前</text>
+                <text class="post-school-new">{{ post.school }} · {{ post.grade }} · {{ t('home.hoursAgoShort', { n: 2 }) }}</text>
               </view>
             </view>
             <text class="post-content-new">{{ post.content }}</text>
@@ -626,8 +780,8 @@ onMounted(() => {
       <!-- 逛逛推荐 -->
       <view class="section-wrap">
         <view class="section-header">
-          <text class="section-title section-title-brand">逛逛推荐</text>
-          <text class="section-more" @tap="openAppPath('/pages/shop/index')">更多 ›</text>
+          <text class="section-title section-title-brand">{{ t('home.shopRecommend') }}</text>
+          <text class="section-more" @tap="openAppPath('/pages/shop/index')">{{ t('home.moreArrow') }}</text>
         </view>
         <scroll-view scroll-x class="shop-scroll-new" :show-scrollbar="false">
           <view class="shop-list-new">
@@ -647,7 +801,7 @@ onMounted(() => {
               <text class="shop-title-new">{{ item.title }}</text>
               <view class="shop-bottom-new">
                 <text class="shop-price-new">¥{{ item.price }}</text>
-                <text class="shop-sales-new">已售{{ item.sales }}</text>
+                <text class="shop-sales-new">{{ t('home.soldCount', { n: item.sales }) }}</text>
               </view>
             </view>
           </view>
@@ -658,11 +812,11 @@ onMounted(() => {
       <view class="section-wrap">
         <view class="section-header">
           <view class="section-title-group">
-            <text class="section-title section-title-brand">社交升温进度</text>
+            <text class="section-title section-title-brand">{{ t('home.socialProgressTitle') }}</text>
             <image class="section-title__icon" :src="emojiIcons.fire" mode="aspectFit" />
           </view>
           <text class="section-more" @tap="toggleSocialProgress">
-            {{ showSocialProgress ? '收起 ›' : '展开 ›' }}
+            {{ showSocialProgress ? t('home.collapse') : t('home.expand') }}
           </text>
         </view>
 
@@ -677,8 +831,8 @@ onMounted(() => {
             <text class="social-percent">{{ socialProgressStore.progressPercentage }}%</text>
           </view>
           <view class="social-info-new">
-            <text class="social-label">{{ socialProgressStore.progress?.tierLabel ?? '加载中...' }}</text>
-            <text class="social-hint">{{ socialProgressStore.nextAction || '点击查看完整进度' }}</text>
+            <text class="social-label">{{ socialProgressStore.progress?.tierLabel ?? t('common.loading') }}</text>
+            <text class="social-hint">{{ socialProgressStore.nextAction || t('home.viewFullProgress') }}</text>
           </view>
           <text class="social-arrow">›</text>
         </view>
@@ -693,12 +847,20 @@ onMounted(() => {
     <!-- 悬浮发布按钮 -->
     <view class="fab-container">
       <view class="fab-bubble">
-        <text class="fab-bubble-text">发布动态</text>
+        <text class="fab-bubble-text">{{ t('home.publishPost') }}</text>
       </view>
       <view class="fab-button press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/circles/index')">
         <text class="fab-icon">+</text>
       </view>
     </view>
+
+    <!-- 功能8：签到分享卡片弹窗 -->
+    <ShareCard
+      :visible="shareCardVisible"
+      :consecutive-days="checkInStore.consecutiveDays"
+      :earned-points="earnedPoints"
+      @close="handleCloseShareCard"
+    />
 
   </view>
 </template>
@@ -794,8 +956,14 @@ onMounted(() => {
   align-items: center;
   gap: var(--sp-4);
   height: 88rpx;
-  background: rgba(255,255,255,0.7);
+  /* #ifdef H5 */
+  background: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255,255,255,0.7)));
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  /* #endif */
+  /* #ifndef H5 */
+  background: var(--c-overlay-white-bg-most, var(--c-overlay-white-bg-most, rgba(255,255,255,0.96)));
+  /* #endif */
   border: var(--border-subtle);
   border-radius: var(--r-xl);
   padding: 0 28rpx;
@@ -821,8 +989,14 @@ onMounted(() => {
   align-items: center;
   gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-6);
-  background: rgba(255,255,255,0.7);
+  /* #ifdef H5 */
+  background: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255,255,255,0.7)));
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  /* #endif */
+  /* #ifndef H5 */
+  background: var(--c-overlay-white-bg-most, var(--c-overlay-white-bg-most, rgba(255,255,255,0.96)));
+  /* #endif */
   border: var(--border-subtle);
   border-radius: var(--r-lg);
   align-self: flex-start;
@@ -872,9 +1046,11 @@ onMounted(() => {
   box-shadow: var(--s-brand-lg);
 }
 
+/* #ifdef H5 */
 .checkin-card:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .checkin-card--done {
   background: var(--c-bg-container);
@@ -893,17 +1069,17 @@ onMounted(() => {
 }
 
 .checkin-icon-wrap--gradient {
-  background: rgba(255,255,255,0.25);
+  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255,255,255,0.25)));
 }
 
 .checkin-icon-wrap--success {
-  background: rgba(63,207,142,0.1);
+  background: var(--c-location-bg, var(--c-location-bg, rgba(63,207,142,0.1)));
 }
 
 .checkin-emoji {
   width: 56rpx;
   height: 56rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 .checkin-info {
@@ -925,7 +1101,7 @@ onMounted(() => {
 
 .checkin-desc {
   font-size: var(--fs-base);
-  color: rgba(255,255,255,0.85);
+  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255,255,255,0.85)));
 }
 
 .checkin-desc--gray {
@@ -934,7 +1110,7 @@ onMounted(() => {
 
 .checkin-arrow {
   font-size: var(--fs-5xl);
-  color: rgba(255,255,255,0.8);
+  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255,255,255,0.8)));
   font-weight: 300;
 }
 
@@ -972,9 +1148,11 @@ onMounted(() => {
   padding: var(--sp-3) 0;
 }
 
+/* #ifdef H5 */
 .function-item:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 /* ========== 高亮功能项（兴趣匹配 / CP匹配） ========== */
 .function-item--highlight {
@@ -983,7 +1161,7 @@ onMounted(() => {
   border: 2rpx solid var(--c-romance-200);
   border-radius: var(--r-lg);
   transform: scale(1.05);
-  box-shadow: 0 8rpx 24rpx rgba(236, 72, 153, 0.15);
+  box-shadow: 0 8rpx 24rpx var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.15)));
 
   .function-icon {
     background: var(--c-romance-100);
@@ -1003,7 +1181,7 @@ onMounted(() => {
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-lg) var(--r-lg) var(--r-lg) 0;
   z-index: 2;
-  box-shadow: 0 2rpx 8rpx rgba(236, 72, 153, 0.3);
+  box-shadow: 0 2rpx 8rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
 }
 
 .function-icon {
@@ -1017,48 +1195,48 @@ onMounted(() => {
 
 .function-icon--pink {
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.3);
+  box-shadow: 0 6px 16px var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
 }
 
 .function-icon--purple {
-  background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%);
-  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+  background: linear-gradient(135deg, var(--c-lavender-500, #A78BFA) 0%, var(--c-lavender-500, #8B5CF6) 100%);
+  box-shadow: 0 6px 16px var(--c-lavender-500, var(--c-lavender-500, rgba(139, 92, 246, 0.3)));
 }
 
 .function-icon--orange {
-  background: linear-gradient(135deg, #FB923C 0%, var(--c-accent-400) 100%);
-  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.3);
+  background: linear-gradient(135deg, var(--c-accent-400, #FB923C) 0%, var(--c-accent-400) 100%);
+  box-shadow: 0 6px 16px var(--c-tag-match-to, var(--c-tag-match-to, rgba(249, 115, 22, 0.3)));
 }
 
 .function-icon--red {
-  background: linear-gradient(135deg, #F87171 0%, var(--c-error) 100%);
-  box-shadow: 0 6px 16px rgba(229, 69, 77, 0.3);
+  background: linear-gradient(135deg, var(--c-error-dark, #F87171) 0%, var(--c-error) 100%);
+  box-shadow: 0 6px 16px var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
 }
 
 .function-icon--green {
-  background: linear-gradient(135deg, #34D399 0%, var(--c-success) 100%);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, var(--c-success, #34D399) 0%, var(--c-success) 100%);
+  box-shadow: 0 6px 16px var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.3)));
 }
 
 .function-icon--cyan {
-  background: linear-gradient(135deg, #22D3EE 0%, #06B6D4 100%);
-  box-shadow: 0 6px 16px rgba(6, 182, 212, 0.3);
+  background: linear-gradient(135deg, var(--c-info-400, #22D3EE) 0%, var(--c-info-500, #06B6D4) 100%);
+  box-shadow: 0 6px 16px var(--c-info-500, var(--c-info-500, rgba(6, 182, 212, 0.3)));
 }
 
 .function-icon--yellow {
-  background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
-  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, var(--c-gold, #FBBF24) 0%, var(--c-warning, #F59E0B) 100%);
+  box-shadow: 0 6px 16px var(--c-warning-border-tint, var(--c-warning-border-tint, rgba(245, 158, 11, 0.3)));
 }
 
 .function-icon--blue {
-  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, var(--c-info-400, #60A5FA) 0%, var(--c-info-500, #3B82F6) 100%);
+  box-shadow: 0 6px 16px var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.3)));
 }
 
 .function-emoji {
   width: 56rpx;
   height: 56rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 .function-label {
@@ -1134,13 +1312,15 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15) 0%, transparent 60%);
+  background: radial-gradient(circle at 30% 30%, var(--c-overlay-white-bg-tint-strong, var(--c-overlay-white-bg-tint-strong, rgba(255,255,255,0.15))) 0%, transparent 60%);
   pointer-events: none;
 }
 
+/* #ifdef H5 */
 .banner-card:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .banner-card--romance {
   background: var(--c-gradient-romance);
@@ -1151,11 +1331,11 @@ onMounted(() => {
 }
 
 .banner-card--warm {
-  background: linear-gradient(135deg, #FB923C 0%, #F59E0B 100%);
+  background: linear-gradient(135deg, var(--c-accent-400, #FB923C) 0%, var(--c-warning, #F59E0B) 100%);
 }
 
 .banner-card--purple {
-  background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%);
+  background: linear-gradient(135deg, var(--c-lavender-500, #A78BFA) 0%, var(--c-lavender-500, #8B5CF6) 100%);
 }
 
 .banner-content {
@@ -1170,8 +1350,8 @@ onMounted(() => {
   align-items: center;
   gap: var(--sp-1);
   font-size: var(--fs-xs);
-  color: rgba(255,255,255,0.85);
-  background: rgba(255,255,255,0.2);
+  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255,255,255,0.85)));
+  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255,255,255,0.2)));
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-full);
   align-self: flex-start;
@@ -1180,13 +1360,13 @@ onMounted(() => {
 .banner-tag__icon {
   width: 20rpx;
   height: 20rpx;
-  color: rgba(255,255,255,0.95);
+  color: var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255,255,255,0.95)));
   flex-shrink: 0;
 }
 
 .banner-tag__text {
   font-size: var(--fs-xs);
-  color: rgba(255,255,255,0.95);
+  color: var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255,255,255,0.95)));
   font-weight: 500;
 }
 
@@ -1198,7 +1378,7 @@ onMounted(() => {
 
 .banner-desc {
   font-size: var(--fs-sm);
-  color: rgba(255,255,255,0.8);
+  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255,255,255,0.8)));
 }
 
 .banner-emoji {
@@ -1208,7 +1388,7 @@ onMounted(() => {
   position: absolute;
   right: var(--sp-4);
   bottom: var(--sp-2);
-  color: rgba(255,255,255,0.9);
+  color: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255,255,255,0.9)));
 }
 
 /* ========== 活动卡片 ========== */
@@ -1231,9 +1411,11 @@ onMounted(() => {
   box-shadow: var(--s-sm);
 }
 
+/* #ifdef H5 */
 .activity-card-new:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .activity-card__image-wrap {
   position: relative;
@@ -1344,9 +1526,11 @@ onMounted(() => {
   box-shadow: var(--s-card-soft);
 }
 
+/* #ifdef H5 */
 .user-card:active {
   transform: scale(0.97);
 }
+/* #endif */
 
 .user-avatar-wrap {
   position: relative;
@@ -1504,8 +1688,8 @@ onMounted(() => {
 
 /* 空闲时段 */
 .schedule-slot--free-new {
-  background: rgba(63,207,142,0.06);
-  border: 1rpx dashed rgba(63,207,142,0.3);
+  background: var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63,207,142,0.06)));
+  border: 1rpx dashed var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63,207,142,0.3)));
 }
 
 /* 课程色块（蓝色） */
@@ -1611,9 +1795,11 @@ onMounted(() => {
   box-shadow: var(--s-card-soft);
 }
 
+/* #ifdef H5 */
 .post-card-new:active {
   transform: scale(0.99);
 }
+/* #endif */
 
 .post-card__header-new {
   display: flex;
@@ -1725,9 +1911,11 @@ onMounted(() => {
   gap: 6rpx;
 }
 
+/* #ifdef H5 */
 .post-action-new:active {
   transform: scale(0.9);
 }
+/* #endif */
 
 .post-action-emoji {
   width: 32rpx;
@@ -1769,9 +1957,11 @@ onMounted(() => {
   box-shadow: var(--s-sm);
 }
 
+/* #ifdef H5 */
 .shop-card-new:active {
   transform: scale(0.97);
 }
+/* #endif */
 
 .shop-image-wrap {
   width: 100%;
@@ -1826,9 +2016,11 @@ onMounted(() => {
   border: var(--c-border-card-brand);
 }
 
+/* #ifdef H5 */
 .social-mini-card-new:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .social-progress-wrap {
   display: flex;
@@ -1933,9 +2125,11 @@ onMounted(() => {
   box-shadow: var(--s-float-btn);
 }
 
+/* #ifdef H5 */
 .fab-button:active {
   transform: scale(0.92);
 }
+/* #endif */
 
 .fab-icon {
   font-size: 56rpx;

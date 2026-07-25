@@ -67,6 +67,21 @@ public class LocalMediaStorageService implements MediaStorageService {
     private static final Set<String> ALLOWED_VIDEO_EXT =
             Set.of("mp4", "mov");
 
+    /**
+     * 修复：允许的图片 MIME 类型白名单，防止上传伪装文件（如 .jpg 实为可执行文件）。
+     * 与 ALLOWED_IMAGE_EXT 保持一致：jpg/jpeg/png/webp。
+     */
+    private static final Set<String> ALLOWED_IMAGE_MIME =
+            Set.of("image/jpeg", "image/png", "image/webp");
+
+    /**
+     * 修复：允许的视频 MIME 类型白名单。
+     * 包含 mp4 与 quicktime（mov 文件浏览器通常以 video/quicktime 上传），
+     * 与 ALLOWED_VIDEO_EXT 保持一致。
+     */
+    private static final Set<String> ALLOWED_VIDEO_MIME =
+            Set.of("video/mp4", "video/quicktime");
+
     /** 月份目录格式（如 202607） */
     private static final DateTimeFormatter MONTH_FMT = DateTimeFormatter.ofPattern("yyyyMM");
 
@@ -97,12 +112,14 @@ public class LocalMediaStorageService implements MediaStorageService {
         }
         String normalizedType = normalizeType(type);
 
-        // 提取并校验扩展名
-        String originalName = file.getOriginalFilename();
+        // 修复：对原始文件名进行安全清洗，移除路径分隔符与 ../ 等危险字符，
+        // 防止路径遍历攻击。原始文件名仅用于提取扩展名，不直接用于存储路径。
+        String originalName = sanitizeFileName(file.getOriginalFilename());
         String ext = extractExtension(originalName);
         String lowerExt = ext.toLowerCase(Locale.ROOT);
 
-        // 根据类型校验大小与扩展名
+        // 根据类型校验大小与扩展名（先做扩展名校验，再做 MIME 校验，
+        // 保证不支持的扩展名优先抛出"不支持的格式"信息，便于调用方定位问题）
         boolean isVideoType = "video".equals(normalizedType);
         long fileSize = file.getSize();
         if (isVideoType) {
@@ -111,11 +128,23 @@ public class LocalMediaStorageService implements MediaStorageService {
             validateImage(lowerExt, fileSize);
         }
 
+        // 修复：校验 ContentType MIME 类型白名单，防止上传伪装文件
+        // （扩展名校验通过后再校验 MIME，避免不支持的扩展名优先抛出 MIME 异常信息）
+        String contentType = file.getContentType();
+        validateMimeType(contentType, normalizedType);
+
         // 计算存储路径与 URL
         String monthSegment = LocalDate.now().format(MONTH_FMT);
+        // 存储文件名使用 UUID，不依赖原始文件名，进一步消除路径遍历风险
         String fileName = UUID.randomUUID().toString() + "." + lowerExt;
         Path relativePath = Paths.get(String.valueOf(userId), monthSegment, fileName);
-        Path absolutePath = Paths.get(storageRoot).resolve(relativePath).toAbsolutePath();
+        Path absolutePath = Paths.get(storageRoot).resolve(relativePath).toAbsolutePath().normalize();
+        // 修复：二次校验最终绝对路径仍在 storageRoot 之下，防止路径穿越
+        Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
+        if (!absolutePath.startsWith(root)) {
+            LOGGER.error("计算存储路径越界，拒绝上传: absolutePath={}, root={}", absolutePath, root);
+            throw new IllegalStateException("上传路径异常，已拒绝");
+        }
         String url = URL_PREFIX + relativePath.toString().replace('\\', '/');
 
         // 创建目录（如不存在）
@@ -148,15 +177,15 @@ public class LocalMediaStorageService implements MediaStorageService {
             }
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null || contentType.isBlank()) {
-            contentType = isVideoType ? "video/mp4" : "image/jpeg";
+        String finalContentType = contentType;
+        if (finalContentType == null || finalContentType.isBlank()) {
+            finalContentType = isVideoType ? "video/mp4" : "image/jpeg";
         }
 
         LOGGER.info("媒体上传成功: userId={} type={} url={} size={} ", userId, normalizedType,
                 url, fileSize);
 
-        return new UploadResult(url, width, height, contentType, fileSize, null);
+        return new UploadResult(url, width, height, finalContentType, fileSize, null);
     }
 
     /**
@@ -271,6 +300,71 @@ public class LocalMediaStorageService implements MediaStorageService {
             throw new MediaSizeLimitExceededException(
                     "视频大小超过限制（50MB）: 当前 " + (fileSize / 1024 / 1024) + "MB");
         }
+    }
+
+    /**
+     * 修复：校验上传文件 ContentType MIME 类型是否在白名单中。
+     * 防止攻击者通过修改扩展名绕过校验上传恶意文件（如 .jpg 实为可执行文件）。
+     *
+     * <p>MIME 类型与扩展名双校验策略：
+     * <ul>
+     *   <li>浏览器根据文件内容嗅探 MIME，比扩展名更可信</li>
+     *   <li>同时校验扩展名与 MIME，单一绕过仍会被另一道防线拦截</li>
+     *   <li>允许 null MIME（部分客户端不传），仅扩展名校验生效（向后兼容）</li>
+     * </ul>
+     * </p>
+     *
+     * @param contentType    文件 ContentType（可能为 null）
+     * @param normalizedType 归一化后的媒体类型（image/video）
+     */
+    private void validateMimeType(String contentType, String normalizedType) {
+        // ContentType 为 null 时跳过 MIME 校验，仅依赖扩展名校验（向后兼容）
+        if (contentType == null || contentType.isBlank()) {
+            LOGGER.warn("上传文件未提供 ContentType，仅依赖扩展名校验");
+            return;
+        }
+        // 取分号前的主 MIME 类型（如 "image/jpeg; charset=utf-8" → "image/jpeg"）
+        String mainMime = contentType.split(";")[0].trim().toLowerCase(Locale.ROOT);
+        Set<String> allowed = "video".equals(normalizedType) ? ALLOWED_VIDEO_MIME : ALLOWED_IMAGE_MIME;
+        if (!allowed.contains(mainMime)) {
+            throw new IllegalArgumentException(
+                    "不支持的文件 MIME 类型: " + mainMime
+                    + "，仅支持 " + allowed
+                    + "（类型=" + normalizedType + "）");
+        }
+    }
+
+    /**
+     * 修复：对原始文件名进行安全清洗，移除路径分隔符、.. 与控制字符。
+     *
+     * <p>清洗规则：
+     * <ul>
+     *   <li>移除路径分隔符 / 与 \，防止伪造路径</li>
+     *   <li>移除 .. 序列，防止路径遍历</li>
+     *   <li>移除控制字符（0x00-0x1F 与 0x7F）</li>
+     *   <li>移除前导/后导空白与点号</li>
+     *   <li>null 或空字符串返回 "file"（占位符）</li>
+     * </ul>
+     * </p>
+     *
+     * <p>注：清洗后的文件名仅用于提取扩展名，最终存储文件名为 UUID，
+     * 双重保障消除路径遍历风险。</p>
+     *
+     * @param rawName 原始文件名（可能为 null）
+     * @return 清洗后的安全文件名
+     */
+    private String sanitizeFileName(String rawName) {
+        if (rawName == null || rawName.isBlank()) {
+            return "file";
+        }
+        // 移除路径分隔符与 ..
+        String cleaned = rawName.replace("/", "").replace("\\", "")
+                .replace("..", "").replace("\u0000", "");
+        // 移除控制字符
+        cleaned = cleaned.replaceAll("[\\x00-\\x1F\\x7F]", "");
+        // 移除前导/后导空白与点号
+        cleaned = cleaned.trim().replaceAll("^[.\\s]+", "").replaceAll("[.\\s]+$", "");
+        return cleaned.isEmpty() ? "file" : cleaned;
     }
 
     /**

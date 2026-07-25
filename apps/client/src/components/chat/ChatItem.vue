@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import Avatar from '../common/Avatar.vue';
 import UnreadBadge from '../common/UnreadBadge.vue';
 
-defineProps<{
+const props = defineProps<{
   id?: string;
   avatarUrl?: string;
   initials?: string;
@@ -20,11 +21,26 @@ const emit = defineEmits<{
   tap: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
+
+/** ARIA 标签：组合会话名称 + 最后消息 */
+const ariaLabel = computed(() =>
+  t('chat.chatItemAria', {
+    name: props.name || '',
+    msg: props.lastMessage || '',
+  })
+);
 </script>
 
 <template>
-  <view class="chat-item" @tap="emit('tap')">
+  <view
+    class="chat-item"
+    @tap="emit('tap')"
+    <!-- #ifdef H5 -->
+    role="button"
+    :aria-label="ariaLabel"
+    <!-- #endif -->
+  >
     <view class="chat-item-avatar">
       <Avatar :src="avatarUrl" :name="initials || name?.charAt(0)" size="sm" :online="online" />
     </view>
@@ -32,7 +48,7 @@ const t = designTokens;
       <view class="chat-item-top">
         <text class="chat-item-name">
           {{ name }}
-          <text v-if="isMatch" class="chat-item-match">匹配成功</text>
+          <text v-if="isMatch" class="chat-item-match">{{ t('chat.matchBadge') }}</text>
         </text>
         <text class="chat-item-time">{{ time }}</text>
       </view>
@@ -41,8 +57,15 @@ const t = designTokens;
         <UnreadBadge v-if="unread && unread > 0" :count="unread" />
       </view>
     </view>
-    <view v-if="isOfficial" class="chat-item-official">
-      <text class="chat-item-official-text">官方</text>
+    <view
+      v-if="isOfficial"
+      class="chat-item-official"
+      <!-- #ifdef H5 -->
+      role="img"
+      :aria-label="t('chat.officialBadge')"
+      <!-- #endif -->
+    >
+      <text class="chat-item-official-text">{{ t('chat.officialBadge') }}</text>
     </view>
   </view>
 </template>

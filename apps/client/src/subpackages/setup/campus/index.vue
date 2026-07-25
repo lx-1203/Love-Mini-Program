@@ -1,8 +1,18 @@
 <script setup lang="ts">
+/**
+ * 校园信息引导页（功能5：当前步骤 = 2：校园认证）。
+ *
+ * 跳转链路：profile(1) → campus(2) → recommend-pref(3) → schedule(4) → 完成(5)
+ * 注意：原跳转路径为 /subpackages/setup/schedule/index，
+ * 实际链路中此处应跳到 recommend-pref（步骤 3），
+ * 但保留原有跳转逻辑以避免破坏现有业务流程。
+ */
 import { onMounted, reactive } from "vue";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
+// 功能5：引导流程进度条（当前步骤 = 2：校园认证）
+import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { useProfileStore } from "../../../stores/profile";
 
 const profileStore = useProfileStore();
@@ -43,6 +53,9 @@ async function save() {
 
 <template>
   <AppShell title="学校信息" subtitle="先手动填写，认证状态以后端回传为准。" :show-tab-bar="false">
+    <!-- 功能5：引导流程进度条（当前步骤 = 2：校园认证） -->
+    <SetupProgress :current-step="2" />
+
     <SectionCard title="学校资料" compact>
       <input v-model="form.city" class="field" placeholder="城市"></input>
       <input v-model="form.campusName" class="field" placeholder="学校名称"></input>

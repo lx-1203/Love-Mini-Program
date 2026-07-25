@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
@@ -10,7 +10,7 @@ const emit = defineEmits<{
   tap: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
 </script>
 
 <template>
@@ -18,13 +18,23 @@ const t = designTokens;
     class="wechat-btn"
     :class="{ 'wechat-btn--loading': loading }"
     @tap="emit('tap')"
+    <!-- #ifdef H5 -->
+    role="button"
+    :aria-label="t('login.wechatLogin')"
+    :aria-disabled="loading"
+    :aria-busy="loading"
+    <!-- #endif -->
   >
     <image
       class="wechat-btn-icon"
       :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE"
       mode="aspectFit"
+      <!-- #ifdef H5 -->
+      role="img"
+      :aria-label="t('login.wechatLogin')"
+      <!-- #endif -->
     />
-    <text class="wechat-btn-text">微信登录</text>
+    <text class="wechat-btn-text">{{ t('login.wechatLogin') }}</text>
   </view>
 </template>
 
@@ -64,7 +74,7 @@ const t = designTokens;
 .wechat-btn-text {
   font-size: 34rpx;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
   letter-spacing: 0.04em;
 }
 </style>

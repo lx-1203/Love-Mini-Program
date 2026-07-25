@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 历史推荐页 - 今日已看卡片列表
  * 展示今日已浏览的所有推荐卡片，支持挽回已拒绝的卡片。
@@ -182,23 +182,23 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-$green-primary: #3FCF8E;
-$green-light: #E8F9F1;
-$pink-primary: #EC4899;
-$pink-light: #FCE7F3;
-$white: #FFFFFF;
-$bg-page: #F4F6FA;
-$text-primary: #1F2937;
-$text-secondary: #6B7280;
-$text-tertiary: #9CA3AF;
-$border-light: #F3F4F6;
-$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+$green-primary: var(--c-brand, #3FCF8E);
+$green-light: var(--c-brand-50, #E8F9F1);
+$pink-primary: var(--c-romance-500, #EC4899);
+$pink-light: var(--c-romance-100, #FCE7F3);
+$white: var(--c-neutral-0, #FFFFFF);
+$bg-page: var(--c-bg-page, #F4F6FA);
+$text-primary: var(--c-text-primary, #1F2937);
+$text-secondary: var(--c-neutral-500, #6B7280);
+$text-tertiary: var(--c-neutral-400, #9CA3AF);
+$border-light: var(--c-tint-gray-50, #F3F4F6);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 
 .history-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: linear-gradient(180deg, #F0FDF8 0%, $bg-page 50%);
+  background: linear-gradient(180deg, var(--c-tint-green-50, #F0FDF8) 0%, $bg-page 50%);
   padding-bottom: 40rpx;
 }
 
@@ -219,13 +219,15 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   justify-content: center;
   background-color: $white;
   border-radius: 50%;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4rpx 16rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06)));
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .back-btn:active {
   transform: scale(0.92);
 }
+/* #endif */
 
 .back-icon {
   font-size: 36rpx;
@@ -244,7 +246,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: #3FCF8E; // mp-weixin 降级：使用纯色（取渐变中间色）
+  color: var(--c-brand, #3FCF8E); // mp-weixin 降级：使用纯色（取渐变中间色）
   // #endif
 }
 
@@ -274,13 +276,13 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   font-size: 44rpx;
   font-weight: 800;
   // #ifdef H5
-  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: #3FCF8E; // mp-weixin 降级：使用纯色（取渐变中间色）
+  color: var(--c-brand, #3FCF8E); // mp-weixin 降级：使用纯色（取渐变中间色）
   // #endif
 }
 
@@ -306,10 +308,12 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .history-card:active {
   transform: scale(0.98);
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4rpx 20rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08)));
 }
+/* #endif */
 
 .card-main {
   display: flex;
@@ -352,7 +356,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
 .status-liked {
-  background: linear-gradient(135deg, $pink-light, #FBCFE8);
+  background: linear-gradient(135deg, $pink-light, var(--c-romance-200, #FBCFE8));
 }
 
 .status-liked .status-text {
@@ -387,6 +391,10 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  /* #ifndef H5 */
+  /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
+  max-height: 3.2em;
+  /* #endif */
 }
 
 /* ===== 挽回操作 ===== */
@@ -402,18 +410,20 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   justify-content: center;
   width: 100%;
   height: 80rpx;
-  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   border-radius: 999px;
   border: none;
   padding: 0;
   margin: 0;
-  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.35);
+  box-shadow: 0 4rpx 16rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35)));
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .rewind-btn:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .rewind-btn::after {
   border: none;

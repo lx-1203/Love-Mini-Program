@@ -120,6 +120,21 @@
       "style": {
         "navigationBarTitleText": "会话"
       }
+    },
+    {
+      "path": "pages/chat/video-call",
+      "style": {
+        "navigationBarTitleText": "视频通话",
+        "navigationBarBackgroundColor": "#000000",
+        "navigationBarTextStyle": "white",
+        "disableScroll": true
+      }
+    },
+    {
+      "path": "pages/chat/red-packet",
+      "style": {
+        "navigationBarTitleText": "发红包"
+      }
     }
   ],
   "subPackages": [

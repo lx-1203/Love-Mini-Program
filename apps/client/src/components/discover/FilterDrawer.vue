@@ -26,9 +26,12 @@
  * - 点击"重置"清空 draft，emit reset 事件
  */
 import { ref, computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type { RecommendationFilter } from "../../services/generated/api-types-supplement";
 import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic } from "../../utils/haptic";
+// 功能6：高级筛选组件（性别/年龄/学校/距离/兴趣/在线状态）
+import AdvancedFilter from "./AdvancedFilter.vue";
 
 const props = withDefaults(defineProps<{
   /** 抽屉显隐（v-model:visible） */
@@ -50,6 +53,8 @@ const emit = defineEmits<{
   (e: "reset"): void;
 }>();
 
+const { t } = useI18n();
+
 /* ========== 常量 ========== */
 
 /** 身高范围 */
@@ -60,21 +65,21 @@ const HEIGHT_STEP = 1;
 /** 关键词防抖延迟 */
 const KEYWORD_DEBOUNCE_MS = 300;
 
-/** 学历选项 */
-const EDUCATION_OPTIONS = [
-  { value: "high_school", label: "高中" },
-  { value: "bachelor", label: "本科" },
-  { value: "master", label: "硕士" },
-  { value: "phd", label: "博士" },
-] as const;
+/** 学历选项（标签使用 i18n，确保语言切换时实时刷新） */
+const EDUCATION_OPTIONS = computed(() => [
+  { value: "high_school", label: t("discover.educationHighSchool") },
+  { value: "bachelor", label: t("discover.educationBachelor") },
+  { value: "master", label: t("discover.educationMaster") },
+  { value: "phd", label: t("discover.educationPhd") },
+]);
 
 /** 感情状态选项（与后端字段值对齐：never/married_before/divorced/widowed） */
-const RELATIONSHIP_OPTIONS = [
-  { value: "never", label: "未婚" },
-  { value: "married_before", label: "曾婚" },
-  { value: "divorced", label: "离异" },
-  { value: "widowed", label: "丧偶" },
-] as const;
+const RELATIONSHIP_OPTIONS = computed(() => [
+  { value: "never", label: t("discover.relationshipNever") },
+  { value: "married_before", label: t("discover.relationshipMarriedBefore") },
+  { value: "divorced", label: t("discover.relationshipDivorced") },
+  { value: "widowed", label: t("discover.relationshipWidowed") },
+]);
 
 /**
  * 籍贯省/市数据集（精简版，覆盖主要省份与直辖市）。
@@ -138,6 +143,21 @@ const futureCityDraft = ref<string>("");
 /** 关键词 */
 const keywordDraft = ref<string>("");
 
+/**
+ * 功能6：当前激活的 Tab（基础筛选 / 高级筛选）。
+ * - basic：身高 / 学历 / 感情状态 / 籍贯 / 未来城市 / 关键词
+ * - advanced：性别 / 年龄 / 学校 / 距离 / 兴趣 / 在线状态
+ */
+const activeTab = ref<"basic" | "advanced">("basic");
+
+/**
+ * 功能6：高级筛选 draft 状态。
+ * 由 AdvancedFilter 组件通过 v-model 双向绑定，
+ * 仅包含高级筛选字段（gender/ageMin/ageMax/schools/distanceMax/interests/onlineOnly）。
+ * 基础筛选字段保留在各自的 *Draft ref 中，互不干扰。
+ */
+const advancedFilterDraft = ref<RecommendationFilter>({});
+
 /* ========== 关键词防抖 ========== */
 
 /** 防抖定时器（模块级单例，避免响应式追踪） */
@@ -192,7 +212,7 @@ const futureCityPickerValue = ref<number>(0);
 
 /** 籍贯显示文案（picker 触发器） */
 const hometownDisplayText = computed(() => {
-  if (!hometownProvinceDraft.value) return "请选择籍贯";
+  if (!hometownProvinceDraft.value) return t("filterDrawer.hometownPlaceholder");
   if (hometownProvinceDraft.value === hometownCityDraft.value) {
     return hometownProvinceDraft.value;
   }
@@ -201,7 +221,7 @@ const hometownDisplayText = computed(() => {
 
 /** 未来城市显示文案 */
 const futureCityDisplayText = computed(() => {
-  return futureCityDraft.value || "请选择未来城市";
+  return futureCityDraft.value || t("filterDrawer.futureCityPlaceholder");
 });
 
 /* ========== Watcher: visible 变化时同步 draft ========== */
@@ -245,6 +265,17 @@ function syncDraftFromProps() {
   hometownCityDraft.value = props.filter.hometownCity ?? "";
   futureCityDraft.value = props.filter.futureCity ?? "";
   keywordDraft.value = props.filter.keyword ?? "";
+
+  // 功能6：同步高级筛选字段到 advancedFilterDraft（仅高级筛选字段）
+  advancedFilterDraft.value = {
+    gender: props.filter.gender,
+    ageMin: props.filter.ageMin,
+    ageMax: props.filter.ageMax,
+    schools: props.filter.schools ? [...props.filter.schools] : undefined,
+    distanceMax: props.filter.distanceMax,
+    interests: props.filter.interests ? [...props.filter.interests] : undefined,
+    onlineOnly: props.filter.onlineOnly,
+  };
 
   // 同步 picker 索引
   const provinceIdx = Math.max(0, PROVINCE_LIST.indexOf(hometownProvinceDraft.value));
@@ -291,6 +322,25 @@ function onHeightMaxChange(e: { detail: { value: number } }) {
 /** 身高显示文案 */
 const heightDisplayText = computed(() => {
   return `${heightMinDraft.value}-${heightMaxDraft.value}cm`;
+});
+
+/** 身高范围提示文案 */
+const heightRangeHintText = computed(() => {
+  return t("filterDrawer.heightRangeHint", { min: HEIGHT_MIN_BOUND, max: HEIGHT_MAX_BOUND });
+});
+
+/** 学历已选数量文案（"已选 n" / "不限"） */
+const educationValueText = computed(() => {
+  return educationDraft.value.length > 0
+    ? t("filterDrawer.educationSelected", { n: educationDraft.value.length })
+    : t("filterDrawer.unlimited");
+});
+
+/** 感情状态当前选中项文案 */
+const relationshipValueText = computed(() => {
+  if (relationshipDraft.value.length === 0) return t("filterDrawer.unlimited");
+  const matched = RELATIONSHIP_OPTIONS.value.find(o => o.value === relationshipDraft.value[0]);
+  return matched?.label ?? t("filterDrawer.unlimited");
 });
 
 /* ========== Chip 选择 ========== */
@@ -382,9 +432,15 @@ function onFutureCityPickerChange(e: { detail: { value: number } }) {
 
 /**
  * 关键词输入回调（带 300ms 防抖）
+ *
+ * uni-app input 事件回调签名跨平台形态不一，detail.value 字段
+ * 在 H5 与 mp-weixin 均存在但官方类型未统一声明，此处通过安全的类型断言访问。
+ *
+ * @param e - 事件对象（Event 类型，运行时携带 detail.value 字段）
  */
-function onKeywordInput(e: any) {
-  keywordDraft.value = e?.detail?.value ?? "";
+function onKeywordInput(e: Event) {
+  const detail = (e as unknown as { detail?: { value?: string } }).detail;
+  keywordDraft.value = detail?.value ?? "";
   emitKeywordChange();
 }
 
@@ -400,7 +456,10 @@ function clearKeyword() {
 /* ========== 重置 / 确认 ========== */
 
 /**
- * 构建最终 filter 对象（从 draft 提取有效字段）
+ * 构建最终 filter 对象（从 draft 提取有效字段）。
+ *
+ * 功能6：合并基础筛选字段（*Draft ref）和高级筛选字段（advancedFilterDraft），
+ * 输出完整的 RecommendationFilter 供父组件应用。
  */
 function buildFilterFromDraft(): RecommendationFilter {
   const filter: RecommendationFilter = {};
@@ -439,14 +498,27 @@ function buildFilterFromDraft(): RecommendationFilter {
     filter.keyword = keywordDraft.value.trim();
   }
 
+  // 功能6：合并高级筛选字段（由 AdvancedFilter 组件维护）
+  const adv = advancedFilterDraft.value;
+  if (adv) {
+    if (adv.gender) filter.gender = adv.gender;
+    if (adv.ageMin !== undefined) filter.ageMin = adv.ageMin;
+    if (adv.ageMax !== undefined) filter.ageMax = adv.ageMax;
+    if (adv.schools && adv.schools.length > 0) filter.schools = [...adv.schools];
+    if (adv.distanceMax !== undefined) filter.distanceMax = adv.distanceMax;
+    if (adv.interests && adv.interests.length > 0) filter.interests = [...adv.interests];
+    if (adv.onlineOnly) filter.onlineOnly = adv.onlineOnly;
+  }
+
   return filter;
 }
 
 /**
- * 点击"重置"：清空 draft，emit reset 事件
+ * 点击"重置"：清空 draft（基础 + 高级），emit reset 事件
  */
 function handleReset() {
   lightHaptic();
+  // 基础筛选字段
   heightMinDraft.value = HEIGHT_MIN_BOUND;
   heightMaxDraft.value = HEIGHT_MAX_BOUND;
   educationDraft.value = [];
@@ -457,6 +529,8 @@ function handleReset() {
   keywordDraft.value = "";
   hometownPickerValue.value = [0, 0];
   futureCityPickerValue.value = 0;
+  // 功能6：清空高级筛选 draft
+  advancedFilterDraft.value = {};
   emit("reset");
 }
 
@@ -478,6 +552,31 @@ function handleClose() {
   emit("update:visible", false);
 }
 
+/**
+ * 功能6：切换筛选 Tab（基础 / 高级）。
+ */
+function switchTab(tab: "basic" | "advanced") {
+  if (activeTab.value === tab) return;
+  lightHaptic();
+  activeTab.value = tab;
+}
+
+/**
+ * 功能6：AdvancedFilter v-model 更新回调。
+ * 直接更新 advancedFilterDraft，buildFilterFromDraft 在确认时合并。
+ */
+function onAdvancedFilterUpdate(value: RecommendationFilter) {
+  advancedFilterDraft.value = value;
+}
+
+/**
+ * 功能6：AdvancedFilter emit reset 回调。
+ * 仅清空高级筛选 draft，不影响基础筛选 draft。
+ */
+function onAdvancedFilterReset() {
+  advancedFilterDraft.value = {};
+}
+
 /* ========== 阻止内容区点击事件冒泡 ========== */
 
 function onContentTap() {
@@ -495,6 +594,11 @@ const icons = {
     v-if="visible"
     class="filter-drawer"
     @tap="handleClose"
+    <!-- #ifdef H5 -->
+    role="dialog"
+    aria-modal="true"
+    :aria-label="t('filterDrawer.title')"
+    <!-- #endif -->
   >
     <!-- 抽屉内容（向上滑入动画） -->
     <view
@@ -503,162 +607,226 @@ const icons = {
     >
       <!-- 顶部标题栏 -->
       <view class="filter-drawer__header">
-        <text class="filter-drawer__title">全部筛选</text>
+        <text class="filter-drawer__title">{{ t('filterDrawer.title') }}</text>
         <view
           class="filter-drawer__close press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="handleClose"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('filterDrawer.closeAria')"
+          <!-- #endif -->
         >
           <image class="filter-drawer__close-icon" :src="icons.close" mode="aspectFit" />
         </view>
       </view>
 
+      <!-- 功能6：基础筛选 / 高级筛选 Tab 切换 -->
+      <view class="filter-drawer__tabs">
+        <view
+          class="filter-drawer__tab press-feedback"
+          :class="{ 'filter-drawer__tab--active': activeTab === 'basic' }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="switchTab('basic')"
+        >
+          <text class="filter-drawer__tab-text">{{ t('advancedFilter.tabBasic') }}</text>
+        </view>
+        <view
+          class="filter-drawer__tab press-feedback"
+          :class="{ 'filter-drawer__tab--active': activeTab === 'advanced' }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="switchTab('advanced')"
+        >
+          <text class="filter-drawer__tab-text">{{ t('advancedFilter.tabAdvanced') }}</text>
+        </view>
+      </view>
+
       <!-- 滚动内容区 -->
       <scroll-view scroll-y class="filter-drawer__body">
-        <!-- 身高 -->
-        <view class="filter-section">
-          <view class="filter-section__head">
-            <text class="filter-section__title">身高</text>
-            <text class="filter-section__value">{{ heightDisplayText }}</text>
+        <!-- 功能6：基础筛选 Tab 内容（身高 / 学历 / 感情状态 / 籍贯 / 未来城市 / 关键词） -->
+        <view v-show="activeTab === 'basic'">
+          <!-- 身高 -->
+          <view class="filter-section">
+            <view class="filter-section__head">
+              <text class="filter-section__title">{{ t('filterDrawer.heightTitle') }}</text>
+              <text class="filter-section__value">{{ heightDisplayText }}</text>
+            </view>
+            <view class="filter-section__sliders">
+              <!-- 下限滑块 -->
+              <slider
+                class="height-slider"
+                :min="HEIGHT_MIN_BOUND"
+                :max="HEIGHT_MAX_BOUND"
+                :step="HEIGHT_STEP"
+                :value="heightMinDraft"
+                activeColor="var(--c-brand-500)"
+                backgroundColor="var(--c-neutral-200)"
+                block-color="var(--c-brand-600)"
+                block-size="22"
+                @change="onHeightMinChange"
+              />
+              <!-- 上限滑块 -->
+              <slider
+                class="height-slider"
+                :min="HEIGHT_MIN_BOUND"
+                :max="HEIGHT_MAX_BOUND"
+                :step="HEIGHT_STEP"
+                :value="heightMaxDraft"
+                activeColor="var(--c-romance-500)"
+                backgroundColor="var(--c-neutral-200)"
+                block-color="var(--c-romance-500)"
+                block-size="22"
+                @change="onHeightMaxChange"
+              />
+            </view>
+            <view class="filter-section__hint">
+              <text class="filter-section__hint-text">{{ heightRangeHintText }}</text>
+            </view>
           </view>
-          <view class="filter-section__sliders">
-            <!-- 下限滑块 -->
-            <slider
-              class="height-slider"
-              :min="HEIGHT_MIN_BOUND"
-              :max="HEIGHT_MAX_BOUND"
-              :step="HEIGHT_STEP"
-              :value="heightMinDraft"
-              activeColor="var(--c-brand-500)"
-              backgroundColor="var(--c-neutral-200)"
-              block-color="var(--c-brand-600)"
-              block-size="22"
-              @change="onHeightMinChange"
-            />
-            <!-- 上限滑块 -->
-            <slider
-              class="height-slider"
-              :min="HEIGHT_MIN_BOUND"
-              :max="HEIGHT_MAX_BOUND"
-              :step="HEIGHT_STEP"
-              :value="heightMaxDraft"
-              activeColor="var(--c-romance-500)"
-              backgroundColor="var(--c-neutral-200)"
-              block-color="var(--c-romance-500)"
-              block-size="22"
-              @change="onHeightMaxChange"
-            />
-          </view>
-          <view class="filter-section__hint">
-            <text class="filter-section__hint-text">范围 {{ HEIGHT_MIN_BOUND }}-{{ HEIGHT_MAX_BOUND }}cm</text>
-          </view>
-        </view>
 
-        <!-- 学历（多选） -->
-        <view class="filter-section">
-          <view class="filter-section__head">
-            <text class="filter-section__title">学历</text>
-            <text class="filter-section__value">{{ educationDraft.length > 0 ? `已选 ${educationDraft.length}` : '不限' }}</text>
+          <!-- 学历（多选） -->
+          <view class="filter-section">
+            <view class="filter-section__head">
+              <text class="filter-section__title">{{ t('filterDrawer.educationTitle') }}</text>
+              <text class="filter-section__value">{{ educationValueText }}</text>
+            </view>
+            <view class="chip-group">
+              <view
+                v-for="opt in EDUCATION_OPTIONS"
+                :key="opt.value"
+                class="filter-chip press-feedback"
+                :class="{ 'filter-chip--active': educationDraft.includes(opt.value) }"
+                hover-class="press-feedback--active"
+                hover-stay-time="120"
+                @tap="toggleEducation(opt.value)"
+                <!-- #ifdef H5 -->
+                role="checkbox"
+                :aria-checked="educationDraft.includes(opt.value)"
+                :aria-label="opt.label"
+                <!-- #endif -->
+              >
+                <text class="filter-chip__text">{{ opt.label }}</text>
+              </view>
+            </view>
           </view>
-          <view class="chip-group">
-            <view
-              v-for="opt in EDUCATION_OPTIONS"
-              :key="opt.value"
-              class="filter-chip press-feedback"
-              :class="{ 'filter-chip--active': educationDraft.includes(opt.value) }"
-              hover-class="press-feedback--active"
-              hover-stay-time="120"
-              @tap="toggleEducation(opt.value)"
+
+          <!-- 感情状态（单选） -->
+          <view class="filter-section">
+            <view class="filter-section__head">
+              <text class="filter-section__title">{{ t('filterDrawer.relationshipTitle') }}</text>
+              <text class="filter-section__value">{{ relationshipValueText }}</text>
+            </view>
+            <view class="chip-group">
+              <view
+                v-for="opt in RELATIONSHIP_OPTIONS"
+                :key="opt.value"
+                class="filter-chip press-feedback"
+                :class="{ 'filter-chip--active': relationshipDraft.includes(opt.value) }"
+                hover-class="press-feedback--active"
+                hover-stay-time="120"
+                @tap="toggleRelationship(opt.value)"
+                <!-- #ifdef H5 -->
+                role="radio"
+                :aria-checked="relationshipDraft.includes(opt.value)"
+                :aria-label="opt.label"
+                <!-- #endif -->
+              >
+                <text class="filter-chip__text">{{ opt.label }}</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 籍贯（省/市联动） -->
+          <view class="filter-section">
+            <view class="filter-section__head">
+              <text class="filter-section__title">{{ t('filterDrawer.hometownTitle') }}</text>
+            </view>
+            <picker
+              mode="multiSelector"
+              :value="hometownPickerValue"
+              :range="hometownPickerRange"
+              @columnchange="onHometownPickerColumnChange"
+              @change="onHometownPickerConfirm"
+              @cancel="onHometownPickerCancel"
             >
-              <text class="filter-chip__text">{{ opt.label }}</text>
-            </view>
+              <view
+                class="picker-trigger press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="120"
+                <!-- #ifdef H5 -->
+                role="button"
+                :aria-label="t('filterDrawer.hometownTitle')"
+                <!-- #endif -->
+              >
+                <text class="picker-trigger__text" :class="{ 'picker-trigger__text--placeholder': !hometownProvinceDraft }">
+                  {{ hometownDisplayText }}
+                </text>
+                <text class="picker-trigger__arrow">›</text>
+              </view>
+            </picker>
           </view>
-        </view>
 
-        <!-- 感情状态（单选） -->
-        <view class="filter-section">
-          <view class="filter-section__head">
-            <text class="filter-section__title">感情状态</text>
-            <text class="filter-section__value">{{ relationshipDraft.length > 0 ? RELATIONSHIP_OPTIONS.find(o => o.value === relationshipDraft[0])?.label : '不限' }}</text>
-          </view>
-          <view class="chip-group">
-            <view
-              v-for="opt in RELATIONSHIP_OPTIONS"
-              :key="opt.value"
-              class="filter-chip press-feedback"
-              :class="{ 'filter-chip--active': relationshipDraft.includes(opt.value) }"
-              hover-class="press-feedback--active"
-              hover-stay-time="120"
-              @tap="toggleRelationship(opt.value)"
+          <!-- 未来城市 -->
+          <view class="filter-section">
+            <view class="filter-section__head">
+              <text class="filter-section__title">{{ t('filterDrawer.futureCityTitle') }}</text>
+            </view>
+            <picker
+              mode="selector"
+              :value="futureCityPickerValue"
+              :range="futureCityList"
+              @change="onFutureCityPickerChange"
             >
-              <text class="filter-chip__text">{{ opt.label }}</text>
+              <view
+                class="picker-trigger press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="120"
+                <!-- #ifdef H5 -->
+                role="button"
+                :aria-label="t('filterDrawer.futureCityTitle')"
+                <!-- #endif -->
+              >
+                <text class="picker-trigger__text" :class="{ 'picker-trigger__text--placeholder': !futureCityDraft }">
+                  {{ futureCityDisplayText }}
+                </text>
+                <text class="picker-trigger__arrow">›</text>
+              </view>
+            </picker>
+          </view>
+
+          <!-- 关键词 -->
+          <view class="filter-section">
+            <view class="filter-section__head">
+              <text class="filter-section__title">{{ t('filterDrawer.keywordTitle') }}</text>
+            </view>
+            <view class="keyword-input">
+              <image class="keyword-input__icon" :src="icons.search" mode="aspectFit" />
+              <input
+                class="keyword-input__field"
+                :placeholder="t('filterDrawer.keywordPlaceholder')"
+                placeholder-class="keyword-input__placeholder"
+                :value="keywordDraft"
+                @input="onKeywordInput"
+              />
+              <text
+                v-if="keywordDraft"
+                class="keyword-input__clear"
+                @tap="clearKeyword"
+              >✕</text>
             </view>
           </view>
         </view>
 
-        <!-- 籍贯（省/市联动） -->
-        <view class="filter-section">
-          <view class="filter-section__head">
-            <text class="filter-section__title">籍贯</text>
-          </view>
-          <picker
-            mode="multiSelector"
-            :value="hometownPickerValue"
-            :range="hometownPickerRange"
-            @columnchange="onHometownPickerColumnChange"
-            @change="onHometownPickerConfirm"
-            @cancel="onHometownPickerCancel"
-          >
-            <view class="picker-trigger press-feedback" hover-class="press-feedback--active" hover-stay-time="120">
-              <text class="picker-trigger__text" :class="{ 'picker-trigger__text--placeholder': !hometownProvinceDraft }">
-                {{ hometownDisplayText }}
-              </text>
-              <text class="picker-trigger__arrow">›</text>
-            </view>
-          </picker>
-        </view>
-
-        <!-- 未来城市 -->
-        <view class="filter-section">
-          <view class="filter-section__head">
-            <text class="filter-section__title">未来城市</text>
-          </view>
-          <picker
-            mode="selector"
-            :value="futureCityPickerValue"
-            :range="futureCityList"
-            @change="onFutureCityPickerChange"
-          >
-            <view class="picker-trigger press-feedback" hover-class="press-feedback--active" hover-stay-time="120">
-              <text class="picker-trigger__text" :class="{ 'picker-trigger__text--placeholder': !futureCityDraft }">
-                {{ futureCityDisplayText }}
-              </text>
-              <text class="picker-trigger__arrow">›</text>
-            </view>
-          </picker>
-        </view>
-
-        <!-- 关键词 -->
-        <view class="filter-section">
-          <view class="filter-section__head">
-            <text class="filter-section__title">关键词</text>
-          </view>
-          <view class="keyword-input">
-            <image class="keyword-input__icon" :src="icons.search" mode="aspectFit" />
-            <input
-              class="keyword-input__field"
-              placeholder="搜索昵称/标签/学校"
-              placeholder-class="keyword-input__placeholder"
-              :value="keywordDraft"
-              @input="onKeywordInput"
-            />
-            <text
-              v-if="keywordDraft"
-              class="keyword-input__clear"
-              @tap="clearKeyword"
-            >✕</text>
-          </view>
+        <!-- 功能6：高级筛选 Tab 内容（性别 / 年龄 / 学校 / 距离 / 兴趣 / 在线状态） -->
+        <view v-show="activeTab === 'advanced'">
+          <AdvancedFilter
+            :model-value="advancedFilterDraft"
+            @update:model-value="onAdvancedFilterUpdate"
+            @reset="onAdvancedFilterReset"
+          />
         </view>
 
         <!-- 底部占位（防止内容被按钮遮挡） -->
@@ -672,16 +840,24 @@ const icons = {
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="handleReset"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('filterDrawer.resetAria')"
+          <!-- #endif -->
         >
-          <text class="filter-drawer__btn-text">重置</text>
+          <text class="filter-drawer__btn-text">{{ t('filterDrawer.reset') }}</text>
         </view>
         <view
           class="filter-drawer__btn filter-drawer__btn--confirm press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="handleConfirm"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('filterDrawer.confirmAria')"
+          <!-- #endif -->
         >
-          <text class="filter-drawer__btn-text">确认</text>
+          <text class="filter-drawer__btn-text">{{ t('filterDrawer.confirm') }}</text>
         </view>
       </view>
     </view>

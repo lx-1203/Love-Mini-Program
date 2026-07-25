@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import LockScreen from "../../components/common/LockScreen.vue";
+import { i18n } from "../../i18n";
 
 // mock navigation utility – factory must be inline for hoisting
 vi.mock("../../utils/navigation", () => ({
@@ -22,6 +23,7 @@ describe("LockScreen component", () => {
     return mount(LockScreen, {
       props: props ?? {},
       global: {
+        plugins: [i18n],
         stubs: {
           view: {
             template: '<div class="mock-view"><slot /></div>',

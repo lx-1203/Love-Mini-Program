@@ -30,6 +30,8 @@ export const appTabs: AppTab[] = [
     path: "/pages/discover/index",
     iconPath: IMAGE_PATHS.ICONS_TABBAR.DISCOVER_DEFAULT,
     selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.DISCOVER_ACTIVE,
+    // 与 custom-tab-bar/index.js 保持一致：首 tab 不使用凸起样式
+    prominent: false,
   },
   {
     id: "village",

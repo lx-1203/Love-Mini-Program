@@ -4,14 +4,21 @@
  * 支持文字输入、图片上传、话题标签和分类选择
  * 新增：预置话题标签选择器，支持横向滚动多选（最多3个）
  */
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useVillageStore } from "../../stores/village";
+// 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
+import TopicSelector from "../../components/village/TopicSelector.vue";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
 
 const villageStore = useVillageStore();
+
+/**
+ * 草稿存储 Key（用于 localStorage 持久化发帖草稿）。
+ */
+const DRAFT_STORAGE_KEY = "village:post-draft";
 
 /** 文字内容 */
 const content = ref("");
@@ -29,6 +36,13 @@ const presetTags = ref<string[]>([]);
 /** 选中的预置标签（#话题名 格式） */
 const selectedPresetTags = ref<string[]>([]);
 
+/**
+ * 功能4：TopicSelector 已选话题列表（不含 # 前缀，由组件双向绑定）。
+ * 与 selectedPresetTags 并存：TopicSelector 支持搜索与自定义创建，
+ * 提交时合并到最终话题标签列表中。
+ */
+const selectedTopics = ref<string[]>([]);
+
 const pageVisible = ref(false);
 onShow(() => {
   pageVisible.value = false;
@@ -37,17 +51,17 @@ onShow(() => {
   }, 30);
 });
 
-/** 最大字数 */
-const MAX_LENGTH = 500;
-/** 最大图片数 */
-const MAX_IMAGES = 9;
+/** 最大字数（提取为常量，避免硬编码；从 500 提升到 1000 给用户更多书写空间） */
+const MAX_POST_LENGTH = 1000;
+/** 最大图片数（提取为常量，避免硬编码） */
+const MAX_POST_IMAGES = 9;
 /** 预置标签最大选择数 */
 const MAX_PRESET_TAGS = 3;
 
 /** 当前字数 */
 const currentLength = computed(() => content.value.length);
 /** 是否超出字数限制 */
-const isOverLimit = computed(() => currentLength.value > MAX_LENGTH);
+const isOverLimit = computed(() => currentLength.value > MAX_POST_LENGTH);
 
 /** 分类选项 */
 const categoryOptions = [
@@ -106,7 +120,107 @@ function togglePresetTag(tagName: string) {
 
 onMounted(() => {
   loadPresetTags();
+  // 修复：进入页面时恢复未提交的草稿，避免误退页面丢失内容
+  restoreDraft();
+  // 监听表单变化，debounce 500ms 保存草稿到 storage
+  watch(
+    [content, images, tags, tagInput, selectedCategory, selectedPresetTags, selectedTopics],
+    () => {
+      scheduleDraftSave();
+    },
+    { deep: true }
+  );
 });
+
+/**
+ * 草稿保存定时器引用（debounce 500ms）。
+ */
+let draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 调度草稿保存：500ms 防抖，避免每次输入都写 storage。
+ */
+function scheduleDraftSave() {
+  if (draftSaveTimer) clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(() => {
+    saveDraft();
+  }, 500);
+}
+
+/**
+ * 保存草稿到 storage。
+ * 修复：原实现无草稿保存，用户误退页面会丢失已输入内容。
+ */
+function saveDraft() {
+  try {
+    uni.setStorageSync(DRAFT_STORAGE_KEY, {
+      content: content.value,
+      images: images.value,
+      tags: tags.value,
+      tagInput: tagInput.value,
+      selectedCategory: selectedCategory.value,
+      selectedPresetTags: selectedPresetTags.value,
+      // 功能4：持久化 TopicSelector 已选话题
+      selectedTopics: selectedTopics.value,
+      savedAt: Date.now(),
+    });
+  } catch (_e) {
+    // storage 写入失败不阻塞主流程
+  }
+}
+
+/**
+ * 从 storage 恢复草稿，仅在存在草稿且字段非空时恢复。
+ */
+function restoreDraft() {
+  try {
+    const draft = uni.getStorageSync(DRAFT_STORAGE_KEY) as {
+      content?: string;
+      images?: string[];
+      tags?: string[];
+      tagInput?: string;
+      selectedCategory?: string;
+      selectedPresetTags?: string[];
+      selectedTopics?: string[];
+    } | null;
+    if (!draft) return;
+    if (typeof draft.content === "string" && draft.content) {
+      content.value = draft.content;
+    }
+    if (Array.isArray(draft.images)) {
+      images.value = draft.images;
+    }
+    if (Array.isArray(draft.tags)) {
+      tags.value = draft.tags;
+    }
+    if (typeof draft.tagInput === "string") {
+      tagInput.value = draft.tagInput;
+    }
+    if (typeof draft.selectedCategory === "string" && draft.selectedCategory) {
+      selectedCategory.value = draft.selectedCategory;
+    }
+    if (Array.isArray(draft.selectedPresetTags)) {
+      selectedPresetTags.value = draft.selectedPresetTags;
+    }
+    // 功能4：恢复 TopicSelector 已选话题
+    if (Array.isArray(draft.selectedTopics)) {
+      selectedTopics.value = draft.selectedTopics;
+    }
+  } catch (_e) {
+    // 读取失败忽略
+  }
+}
+
+/**
+ * 清除草稿（发帖成功后调用）。
+ */
+function clearDraft() {
+  try {
+    uni.removeStorageSync(DRAFT_STORAGE_KEY);
+  } catch (_e) {
+    // 忽略
+  }
+}
 
 /**
  * 上传图片到服务器（仅 real 模式使用）
@@ -130,24 +244,56 @@ async function uploadImage(tempPath: string): Promise<string> {
 
 /**
  * 选择图片
+ * 修复：chooseImage 后使用 uni.compressImage 压缩（质量 80），减少上传体积
  */
 function chooseImage() {
-  if (images.value.length >= MAX_IMAGES) {
-    uni.showToast({ title: `最多上传${MAX_IMAGES}张图片`, icon: "none" });
+  if (images.value.length >= MAX_POST_IMAGES) {
+    uni.showToast({ title: `最多上传${MAX_POST_IMAGES}张图片`, icon: "none" });
     return;
   }
 
   uni.chooseImage({
-    count: MAX_IMAGES - images.value.length,
+    count: MAX_POST_IMAGES - images.value.length,
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
-    success: (res) => {
+    success: async (res) => {
       const tempPaths = res.tempFilePaths as string[];
-      images.value.push(...tempPaths);
+      // 压缩每张图片（质量 80）；单张失败回退原图，不阻塞后续
+      const compressedPaths = await compressImages(tempPaths);
+      images.value.push(...compressedPaths);
     },
     fail: (err) => {
       console.error("选择图片失败:", err);
     },
+  });
+}
+
+/**
+ * 批量压缩图片（质量 80）。
+ * 修复：原实现直接使用 chooseImage 返回的临时路径，未做压缩，
+ * 大图上传耗时且占用带宽。现统一压缩后再展示与上传。
+ */
+function compressImages(paths: string[]): Promise<string[]> {
+  return Promise.all(paths.map((path) => compressSingleImage(path)));
+}
+
+/**
+ * 压缩单张图片（质量 80）。
+ * 失败时回退使用原图路径，避免阻塞后续上传流程。
+ */
+function compressSingleImage(path: string): Promise<string> {
+  return new Promise((resolve) => {
+    uni.compressImage({
+      src: path,
+      quality: 80,
+      success: (compressRes) => {
+        resolve(compressRes.tempFilePath || path);
+      },
+      fail: () => {
+        // 压缩失败回退原图
+        resolve(path);
+      },
+    });
   });
 }
 
@@ -208,7 +354,7 @@ async function submitPost() {
   }
 
   if (isOverLimit.value) {
-    uni.showToast({ title: `内容不能超过${MAX_LENGTH}字`, icon: "none" });
+    uni.showToast({ title: `内容不能超过${MAX_POST_LENGTH}字`, icon: "none" });
     return;
   }
 
@@ -224,6 +370,8 @@ async function submitPost() {
       tags: allTags,
     });
 
+    // 发布成功后清除草稿，避免下次进入页面恢复已发布内容
+    clearDraft();
     uni.showToast({ title: "发布成功", icon: "success" });
     setTimeout(() => {
       uni.navigateBack();
@@ -283,11 +431,11 @@ function goBack() {
         v-model="content"
         class="content-input"
         placeholder="分享你的故事、心情或寻找那个TA..."
-        maxlength="500"
+        :maxlength="MAX_POST_LENGTH"
         :show-confirm-bar="false"
       />
       <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
-        <text>{{ currentLength }}/{{ MAX_LENGTH }}</text>
+        <text>{{ currentLength }}/{{ MAX_POST_LENGTH }}</text>
       </view>
     </view>
 
@@ -312,6 +460,11 @@ function goBack() {
       </scroll-view>
     </view>
 
+    <!-- 功能4：帖子创建话题选择器（带搜索 + 自定义创建） -->
+    <view class="topic-selector-section">
+      <TopicSelector v-model="selectedTopics" />
+    </view>
+
     <!-- 图片上传区 -->
     <view class="images-section">
       <view class="images-grid">
@@ -327,14 +480,14 @@ function goBack() {
           </view>
         </view>
         <view
-          v-if="images.length < MAX_IMAGES"
+          v-if="images.length < MAX_POST_IMAGES"
           class="image-upload press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="chooseImage"
         >
           <text class="upload-icon">+</text>
-          <text class="upload-text">{{ images.length }}/{{ MAX_IMAGES }}</text>
+          <text class="upload-text">{{ images.length }}/{{ MAX_POST_IMAGES }}</text>
         </view>
       </view>
     </view>
@@ -369,17 +522,17 @@ function goBack() {
 </template>
 
 <style scoped lang="scss">
-$green-primary: #3FCF8E;
-$green-light: #E8F9F4;
-$pink-primary: #EC4899;
-$pink-light: #FFF0F5;
-$bg-page: #F4F6FA;
-$text-primary: #1A1A2E;
-$text-secondary: #8E8E9E;
-$text-tertiary: #B8B8C8;
-$divider: #EEF0F5;
-$white: #FFFFFF;
-$red-badge: #FF4757;
+$green-primary: var(--c-brand, #3FCF8E);
+$green-light: var(--c-tint-green-50, #E8F9F4);
+$pink-primary: var(--c-romance-500, #EC4899);
+$pink-light: var(--c-tint-pink-soft, #FFF0F5);
+$bg-page: var(--c-bg-page, #F4F6FA);
+$text-primary: var(--c-neutral-800, #1A1A2E);
+$text-secondary: var(--c-text-tertiary, #8E8E9E);
+$text-tertiary: var(--c-text-quaternary, #B8B8C8);
+$divider: var(--c-neutral-100, #EEF0F5);
+$white: var(--c-neutral-0, #FFFFFF);
+$red-badge: var(--c-error, #FF4757);
 
 .post-page {
   display: flex;
@@ -416,18 +569,20 @@ $red-badge: #FF4757;
 .post-header__submit {
   padding: 14rpx 36rpx;
   border-radius: 999px;
-  background: linear-gradient(135deg, $green-primary 0%, #2DB87A 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB87A) 100%);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: transform 0.15s ease;
 }
 
+/* #ifdef H5 */
 .post-header__submit:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .post-header__submit[disabled] {
   background: $divider;
@@ -436,7 +591,7 @@ $red-badge: #FF4757;
 
 .submit-text {
   font-size: 28rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
 
@@ -450,7 +605,7 @@ $red-badge: #FF4757;
   background: $white;
   margin: 16rpx 24rpx;
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
 .section-label {
@@ -475,12 +630,14 @@ $red-badge: #FF4757;
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .category-option:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .category-option--active {
-  background: linear-gradient(135deg, $green-light 0%, #F0FBF7 100%);
+  background: linear-gradient(135deg, $green-light 0%, var(--c-tint-green-50, #F0FBF7) 100%);
   border-color: $green-primary;
 }
 
@@ -501,7 +658,7 @@ $red-badge: #FF4757;
   background: $white;
   margin: 0 24rpx 16rpx;
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
 .content-input {
@@ -531,7 +688,16 @@ $red-badge: #FF4757;
   background: $white;
   margin: 0 24rpx 16rpx;
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+}
+
+/* 功能4：TopicSelector 容器样式 */
+.topic-selector-section {
+  padding: 28rpx 32rpx;
+  background: $white;
+  margin: 0 24rpx 16rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
 .section-header {
@@ -570,9 +736,11 @@ $red-badge: #FF4757;
   flex-shrink: 0;
 }
 
+/* #ifdef H5 */
 .preset-tag-chip:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .preset-tag-chip--active {
   background: linear-gradient(135deg, $green-light 0%, $pink-light 100%);
@@ -597,7 +765,7 @@ $red-badge: #FF4757;
   background: $white;
   margin: 0 24rpx 16rpx;
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
 .images-grid {
@@ -627,7 +795,7 @@ $red-badge: #FF4757;
   width: 40rpx;
   height: 40rpx;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--c-overlay-mid-strong, var(--c-overlay-mid-strong, rgba(0, 0, 0, 0.5)));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -635,7 +803,7 @@ $red-badge: #FF4757;
 
 .remove-icon {
   font-size: 24rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
 
@@ -653,11 +821,13 @@ $red-badge: #FF4757;
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .image-upload:active {
   transform: scale(0.96);
   border-color: $green-primary;
   background: $green-light;
 }
+/* #endif */
 
 .upload-icon {
   font-size: 56rpx;
@@ -676,7 +846,7 @@ $red-badge: #FF4757;
   background: $white;
   margin: 0 24rpx 24rpx;
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
   flex: 1;
 }
 
@@ -698,21 +868,23 @@ $red-badge: #FF4757;
 .tag-add-btn {
   padding: 18rpx 32rpx;
   border-radius: 16rpx;
-  background: linear-gradient(135deg, $pink-primary 0%, #FF6B9D 100%);
+  background: linear-gradient(135deg, $pink-primary 0%, var(--c-romance-400, #FF6B9D) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(236, 72, 153, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
   transition: transform 0.15s ease;
 }
 
+/* #ifdef H5 */
 .tag-add-btn:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .tag-add-text {
   font-size: 26rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
 
@@ -732,9 +904,11 @@ $red-badge: #FF4757;
   transition: transform 0.15s ease;
 }
 
+/* #ifdef H5 */
 .tag-chip:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .tag-chip__text {
   font-size: 24rpx;

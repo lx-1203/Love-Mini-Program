@@ -17,9 +17,10 @@
  *  配置映射关系（navigation.ts → 本文件）：
  *    id           → id
  *    label        → label
- *    path         → path
- *    iconPath     → iconPath    (注意：路径前加 /)
- *    selectedIconPath → activeIconPath (注意：路径前加 /)
+ *    path         → path        (注意：wx.switchTab 要求与 pages.json 的
+ *                               pagePath 完全一致，不带前导斜杠)
+ *    iconPath     → iconPath    (注意：静态资源路径前加 /)
+ *    selectedIconPath → activeIconPath (注意：静态资源路径前加 /)
  *    prominent    → prominent
  *
  * ============================================================
@@ -36,15 +37,16 @@ Component({
       {
         id: "discover",
         label: "匹配",
-        path: "/pages/discover/index",
+        path: "pages/discover/index",
         iconPath: "/static/assets/icons/tabbar/discover-default.png",
         activeIconPath: "/static/assets/icons/tabbar/discover-active.png",
-        prominent: true,
+        // discover 作为首 tab，不再使用中间凸起样式，避免视觉/热区错位导致切换异常
+        prominent: false,
       },
       {
         id: "village",
         label: "圈子",
-        path: "/pages/village/index",
+        path: "pages/village/index",
         iconPath: "/static/assets/icons/tabbar/village-default.png",
         activeIconPath: "/static/assets/icons/tabbar/village-active.png",
         prominent: false,
@@ -52,7 +54,7 @@ Component({
       {
         id: "home",
         label: "首页",
-        path: "/pages/home/index",
+        path: "pages/home/index",
         iconPath: "/static/assets/icons/tabbar/home-default.png",
         activeIconPath: "/static/assets/icons/tabbar/home-active.png",
         prominent: false,
@@ -60,7 +62,7 @@ Component({
       {
         id: "chat",
         label: "消息",
-        path: "/pages/chat/index",
+        path: "pages/chat/index",
         iconPath: "/static/assets/icons/tabbar/chat-default.png",
         activeIconPath: "/static/assets/icons/tabbar/chat-active.png",
         prominent: false,
@@ -68,7 +70,7 @@ Component({
       {
         id: "profile",
         label: "我的",
-        path: "/pages/profile/index",
+        path: "pages/profile/index",
         iconPath: "/static/assets/icons/tabbar/profile-default.png",
         activeIconPath: "/static/assets/icons/tabbar/profile-active.png",
         prominent: false,

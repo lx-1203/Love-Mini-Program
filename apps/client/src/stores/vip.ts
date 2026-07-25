@@ -1,5 +1,23 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
+import { appEnv } from "../services/env";
+import { request } from "../services/http";
+
+/**
+ * VIP 会员 Store
+ *
+ * 提供 VIP 会员基础信息、套餐选择、自动续费与账单记录的入口方法：
+ * - 套餐选择：selectPlan
+ * - 自动续费：enableAutoRenew / disableAutoRenew / getAutoRenewStatus
+ * - 账单记录：fetchBills（分页查询）
+ *
+ * 说明：自动续费与账单记录的详细状态分别由 vip-auto-renew.ts / vip-billing.ts
+ * 维护，本 store 仅提供面向页面的便捷入口，便于页面通过单一 store 调用。
+ *
+ * 错误处理：API 调用失败时抛出 EnhancedApiError，由页面层捕获并 toast 提示。
+ *
+ * mp-weixin 兼容：使用 uni.request 封装，不依赖 import.meta。
+ */
 
 export interface VipPlan {
   id: string;
@@ -9,6 +27,63 @@ export interface VipPlan {
   duration: string;
   features: string[];
   isPopular?: boolean;
+}
+
+/** 自动续费状态视图 */
+export interface AutoRenewStatusView {
+  /** 是否已开启自动续费 */
+  enabled: boolean;
+  /** 当前套餐 ID */
+  planId?: string | null;
+  /** 当前套餐名称 */
+  planName?: string | null;
+  /** 下次扣费时间（ISO 字符串，可空） */
+  nextBillingAt?: string | null;
+  /** 下次扣费金额（分） */
+  nextBillingAmount?: number | null;
+  /** 绑定的支付方式（如 WECHAT） */
+  paymentMethod?: string | null;
+}
+
+/** 账单视图 */
+export interface BillView {
+  id: number;
+  userId: number;
+  planId?: string | null;
+  planName?: string | null;
+  amount: number;
+  originalAmount?: number | null;
+  type: "SUBSCRIBE" | "RENEW" | "REFUND";
+  status: "SUCCESS" | "FAILED" | "REFUNDED";
+  paymentMethod?: string | null;
+  transactionId?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  remark?: string | null;
+  createdAt?: string | null;
+}
+
+/** 账单列表响应 */
+export interface BillListResponse {
+  items: BillView[];
+  total: number;
+  page: number;
+  size: number;
+  totalPages: number;
+}
+
+/** 账单查询参数 */
+export interface FetchBillsParams {
+  page?: number;
+  size?: number;
+  forceRefresh?: boolean;
+}
+
+/**
+ * 判断是否使用 mock 模式
+ */
+function useMock(): boolean {
+  return appEnv.apiMode === "mock";
 }
 
 export const useVipStore = defineStore("vip", () => {
@@ -53,6 +128,268 @@ export const useVipStore = defineStore("vip", () => {
     selectedPlan.value = planId;
   }
 
+  /* ========== 自动续费相关 ========== */
+
+  /** 自动续费状态缓存 */
+  const autoRenewStatus = ref<AutoRenewStatusView>({
+    enabled: false,
+    planId: null,
+    planName: null,
+    nextBillingAt: null,
+    nextBillingAmount: null,
+    paymentMethod: null,
+  });
+
+  /** 自动续费状态加载标志 */
+  const autoRenewLoading = ref(false);
+
+  /**
+   * 查询当前用户的自动续费状态。
+   * <p>对应后端 GET /api/vip/auto-renew/status</p>
+   *
+   * @param forceRefresh 是否强制刷新缓存
+   * @returns 自动续费状态视图
+   */
+  async function getAutoRenewStatus(forceRefresh = false): Promise<AutoRenewStatusView> {
+    if (useMock()) {
+      const mock: AutoRenewStatusView = {
+        enabled: false,
+        planId: selectedPlan.value,
+        planName: currentPlan.value?.name ?? null,
+        nextBillingAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        nextBillingAmount: (currentPlan.value?.price ?? 0) * 100,
+        paymentMethod: "WECHAT",
+      };
+      autoRenewStatus.value = mock;
+      return mock;
+    }
+
+    if (autoRenewLoading.value && !forceRefresh) {
+      return autoRenewStatus.value;
+    }
+
+    autoRenewLoading.value = true;
+    try {
+      const result = await request<AutoRenewStatusView, unknown>({
+        url: "/vip/auto-renew/status",
+        method: "GET",
+      });
+      autoRenewStatus.value = result;
+      return result;
+    } finally {
+      autoRenewLoading.value = false;
+    }
+  }
+
+  /**
+   * 开启自动续费。
+   * <p>对应后端 POST /api/vip/auto-renew</p>
+   *
+   * @param planId 套餐 ID（必填）
+   * @returns 更新后的状态视图
+   */
+  async function enableAutoRenew(planId: string): Promise<AutoRenewStatusView> {
+    if (!planId) {
+      throw new Error("开启自动续费时必须指定套餐");
+    }
+
+    if (useMock()) {
+      const mock: AutoRenewStatusView = {
+        enabled: true,
+        planId,
+        planName: currentPlan.value?.name ?? null,
+        nextBillingAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        nextBillingAmount: (currentPlan.value?.price ?? 0) * 100,
+        paymentMethod: "WECHAT",
+      };
+      autoRenewStatus.value = mock;
+      return mock;
+    }
+
+    const result = await request<AutoRenewStatusView, { planId: string }>({
+      url: "/vip/auto-renew",
+      method: "POST",
+      data: { planId },
+    });
+    autoRenewStatus.value = result;
+    return result;
+  }
+
+  /**
+   * 关闭自动续费。
+   * <p>对应后端 DELETE /api/vip/auto-renew</p>
+   *
+   * @returns 更新后的状态视图
+   */
+  async function disableAutoRenew(): Promise<AutoRenewStatusView> {
+    if (useMock()) {
+      const mock: AutoRenewStatusView = {
+        enabled: false,
+        planId: autoRenewStatus.value.planId,
+        planName: autoRenewStatus.value.planName,
+        nextBillingAt: null,
+        nextBillingAmount: null,
+        paymentMethod: autoRenewStatus.value.paymentMethod,
+      };
+      autoRenewStatus.value = mock;
+      return mock;
+    }
+
+    const result = await request<AutoRenewStatusView, unknown>({
+      url: "/vip/auto-renew",
+      method: "DELETE",
+    });
+    autoRenewStatus.value = result;
+    return result;
+  }
+
+  /* ========== 账单记录相关 ========== */
+
+  /** 账单列表（当前页） */
+  const bills = ref<BillView[]>([]);
+
+  /** 账单总数 */
+  const billsTotal = ref<number>(0);
+
+  /** 账单当前页码 */
+  const billsPage = ref<number>(0);
+
+  /** 账单每页大小 */
+  const billsSize = ref<number>(20);
+
+  /** 账单总页数 */
+  const billsTotalPages = ref<number>(1);
+
+  /** 账单加载标志 */
+  const billsLoading = ref(false);
+
+  /** 是否已加载账单 */
+  const billsLoaded = ref(false);
+
+  /**
+   * 查询当前用户的账单列表（分页）。
+   * <p>对应后端 GET /api/vip/bills?page=&size=</p>
+   *
+   * @param params 分页参数
+   * @returns 账单列表响应
+   */
+  async function fetchBills(params: FetchBillsParams = {}): Promise<BillListResponse> {
+    const requestedPage = params.page ?? 0;
+    const requestedSize = params.size ?? 20;
+    const forceRefresh = params.forceRefresh ?? false;
+
+    if (billsLoading.value) {
+      return {
+        items: bills.value,
+        total: billsTotal.value,
+        page: billsPage.value,
+        size: billsSize.value,
+        totalPages: billsTotalPages.value,
+      };
+    }
+
+    if (useMock()) {
+      const mockItems: BillView[] = [
+        {
+          id: 1001,
+          userId: 1,
+          planId: "quarterly",
+          planName: "季度会员",
+          amount: 4800,
+          originalAmount: 8400,
+          type: "SUBSCRIBE",
+          status: "SUCCESS",
+          paymentMethod: "WECHAT",
+          transactionId: "wx_2026072514300001",
+          periodStart: "2026-07-25T00:00:00",
+          periodEnd: "2026-10-25T00:00:00",
+          remark: "首次开通",
+          createdAt: "2026-07-25T14:30:00",
+        },
+        {
+          id: 1002,
+          userId: 1,
+          planId: "monthly",
+          planName: "月度会员",
+          amount: 1800,
+          originalAmount: 2800,
+          type: "RENEW",
+          status: "SUCCESS",
+          paymentMethod: "WECHAT",
+          transactionId: "wx_2026062012000002",
+          periodStart: "2026-06-20T00:00:00",
+          periodEnd: "2026-07-20T00:00:00",
+          remark: "自动续费",
+          createdAt: "2026-06-20T12:00:00",
+        },
+        {
+          id: 1003,
+          userId: 1,
+          planId: "monthly",
+          planName: "月度会员",
+          amount: 1800,
+          originalAmount: 1800,
+          type: "REFUND",
+          status: "REFUNDED",
+          paymentMethod: "WECHAT",
+          transactionId: "wx_2026051518000003",
+          remark: "用户申请退款",
+          createdAt: "2026-05-15T18:00:00",
+        },
+      ];
+      const start = requestedPage * requestedSize;
+      const end = start + requestedSize;
+      const items = mockItems.slice(start, end);
+      const totalCount = mockItems.length;
+      const tp = Math.max(1, Math.ceil(totalCount / requestedSize));
+      const mock: BillListResponse = {
+        items,
+        total: totalCount,
+        page: requestedPage,
+        size: requestedSize,
+        totalPages: tp,
+      };
+      bills.value = mock.items;
+      billsTotal.value = mock.total;
+      billsPage.value = mock.page;
+      billsSize.value = mock.size;
+      billsTotalPages.value = mock.totalPages;
+      billsLoaded.value = true;
+      return mock;
+    }
+
+    // 已加载且未强制刷新且参数一致时返回缓存
+    if (billsLoaded.value && !forceRefresh
+      && requestedPage === billsPage.value
+      && requestedSize === billsSize.value) {
+      return {
+        items: bills.value,
+        total: billsTotal.value,
+        page: billsPage.value,
+        size: billsSize.value,
+        totalPages: billsTotalPages.value,
+      };
+    }
+
+    billsLoading.value = true;
+    try {
+      const result = await request<BillListResponse, unknown>({
+        url: `/vip/bills?page=${requestedPage}&size=${requestedSize}`,
+        method: "GET",
+      });
+      // 兼容后端旧版返回（仅 items + total）
+      bills.value = result.items ?? [];
+      billsTotal.value = result.total ?? 0;
+      billsPage.value = result.page ?? requestedPage;
+      billsSize.value = result.size ?? requestedSize;
+      billsTotalPages.value = result.totalPages ?? 1;
+      billsLoaded.value = true;
+      return result;
+    } finally {
+      billsLoading.value = false;
+    }
+  }
+
   return {
     isVip,
     expireDate,
@@ -60,5 +397,20 @@ export const useVipStore = defineStore("vip", () => {
     selectedPlan,
     currentPlan,
     selectPlan,
+    /* 自动续费 */
+    autoRenewStatus,
+    autoRenewLoading,
+    getAutoRenewStatus,
+    enableAutoRenew,
+    disableAutoRenew,
+    /* 账单记录 */
+    bills,
+    billsTotal,
+    billsPage,
+    billsSize,
+    billsTotalPages,
+    billsLoading,
+    billsLoaded,
+    fetchBills,
   };
 });

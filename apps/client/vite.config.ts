@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import uni from "@dcloudio/vite-plugin-uni";
 
 const require = createRequire(import.meta.url);
@@ -88,6 +88,33 @@ function patchUniAliasResolverDeprecation() {
 
 patchUniAliasResolverDeprecation();
 
+/**
+ * 将 .env 中的 VITE_ 前缀变量通过 Vite define 注入为 process.env.XXX 常量。
+ *
+ * 设计原因：
+ * - 客户端代码（src/services/env.ts）需读取 VITE_API_MODE / VITE_API_BASE_URL 等变量。
+ * - 直接使用 import.meta.env.XXX 在 mp-weixin 生产包中存在兼容性风险（project_memory 约束）。
+ * - 通过 define 在构建期替换为字面量后，客户端只访问 process.env.XXX，产物中不再保留
+ *   import.meta 语法，双端行为一致。
+ *
+ * 取值优先级：使用 defineConfig 的函数形式接收 mode，并显式调用 Vite 的 loadEnv
+ * 加载对应 .env.[mode] 文件，确保在 uni-app 的多平台构建流程中也能正确读取环境变量。
+ * loadEnv 的第三个参数 'VITE_' 表示只加载以 VITE_ 开头的变量，与客户端读取逻辑一致。
+ *
+ * @param mode - Vite 构建模式（如 development / production / mp-weixin / real）
+ */
+function resolveViteEnvDefine(mode: string) {
+  const env = loadEnv(mode, process.cwd(), "VITE_");
+  // 列出所有需要在客户端代码中通过 process.env.XXX 访问的 Vite 环境变量。
+  // 新增 VITE_SENTRY_DSN：用于 Sentry SDK 初始化，未配置时跳过 Sentry 初始化。
+  return Object.fromEntries(
+    ["VITE_API_MODE", "VITE_API_BASE_URL", "VITE_APP_VERSION", "VITE_SENTRY_DSN"].map((key) => {
+      const value = env[key] ?? "";
+      return [`process.env.${key}`, JSON.stringify(value)];
+    })
+  );
+}
+
 // 构建目标按平台条件化：
 // - mp-weixin：基础库不支持 ES2019 optional catch binding (catch {})，需 es2018 让 esbuild 把 catch {} 转译为 catch (e) {}
 // - H5：必须 ≥ es2020 以保留 import.meta 语法（@vitejs/plugin-vue 注入的 HMR 代码 import.meta.hot.on('file-changed', ...)
@@ -97,7 +124,7 @@ const buildTarget: string | string[] = isMpWeixin
   ? "es2018"
   : ["es2020", "edge88", "firefox78", "chrome87", "safari14"];
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       vue: fileURLToPath(
@@ -111,5 +138,6 @@ export default defineConfig({
   build: {
     target: buildTarget,
   },
+  define: resolveViteEnvDefine(mode),
   plugins: [patchUniH5VueUpdateSlots(), uni.default()],
-});
+}));

@@ -210,17 +210,17 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-$green-primary: #3FCF8E;
-$green-light: #E8F9F1;
-$pink-primary: #EC4899;
-$pink-light: #FCE7F3;
-$white: #FFFFFF;
-$bg-page: #F4F6FA;
-$text-primary: #1F2937;
-$text-secondary: #6B7280;
-$text-tertiary: #9CA3AF;
-$border-light: #F3F4F6;
-$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+$green-primary: var(--c-brand, #3FCF8E);
+$green-light: var(--c-brand-50, #E8F9F1);
+$pink-primary: var(--c-romance-500, #EC4899);
+$pink-light: var(--c-romance-100, #FCE7F3);
+$white: var(--c-neutral-0, #FFFFFF);
+$bg-page: var(--c-bg-page, #F4F6FA);
+$text-primary: var(--c-text-primary, #1F2937);
+$text-secondary: var(--c-neutral-500, #6B7280);
+$text-tertiary: var(--c-neutral-400, #9CA3AF);
+$border-light: var(--c-tint-gray-50, #F3F4F6);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 
 .campus-page {
   display: flex;
@@ -235,7 +235,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 28rpx;
-  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 50%, #F9A8C4 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 50%, var(--c-romance-300, #F9A8C4) 100%);
 }
 
 .header-top {
@@ -257,34 +257,34 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 .school-name {
   font-size: 36rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .cert-badge {
   padding: 6rpx 20rpx;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
 }
 
 .cert-badge--verified {
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--c-overlay-white-bg-strong-mid, var(--c-overlay-white-bg-strong-mid, rgba(255, 255, 255, 0.35)));
 }
 
 .cert-badge--pending {
-  background: rgba(251, 191, 36, 0.4);
+  background: var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(251, 191, 36, 0.4)));
 }
 
 .cert-badge--rejected {
-  background: rgba(239, 68, 68, 0.4);
+  background: var(--c-red-border-tint, var(--c-red-border-tint, rgba(239, 68, 68, 0.4)));
 }
 
 .cert-badge--unverified {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)));
 }
 
 .cert-badge__text {
   font-size: 22rpx;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
 
@@ -295,7 +295,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   gap: 20rpx;
   margin: 20rpx 24rpx;
   padding: 28rpx;
-  background: linear-gradient(135deg, $green-light, #F0FDF8);
+  background: linear-gradient(135deg, $green-light, var(--c-tint-green-50, #F0FDF8));
   border-radius: 24rpx;
   border: none;
   box-shadow: $card-soft-shadow;
@@ -330,19 +330,21 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 .cert-guide-card__btn {
   padding: 16rpx 32rpx;
   border-radius: 999px;
-  background: linear-gradient(135deg, $green-primary, #5ADBA0);
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   flex-shrink: 0;
-  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .cert-guide-card__btn:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .cert-guide-card__btn-text {
   font-size: 26rpx;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -369,13 +371,15 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   background: $bg-page;
 }
 
+/* #ifdef H5 */
 .category-tab:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .category-tab--active {
-  background: linear-gradient(135deg, $green-light, #F0FDF8);
-  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.2);
+  background: linear-gradient(135deg, $green-light, var(--c-tint-green-50, #F0FDF8));
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(63, 207, 142, 0.2)));
 }
 
 .category-tab__label {
@@ -429,18 +433,20 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 .campus-state__btn {
   padding: 20rpx 56rpx;
   border-radius: 999px;
-  background: linear-gradient(135deg, $green-primary, #5ADBA0);
-  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.3);
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
+  box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .campus-state__btn:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .campus-state__btn-text {
   font-size: 28rpx;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
 
@@ -458,10 +464,12 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   transition: all 150ms ease;
 }
 
+/* #ifdef H5 */
 .topic-card:active {
   transform: scale(0.98);
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4rpx 20rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08)));
 }
+/* #endif */
 
 .topic-card__body {
   display: flex;
@@ -504,6 +512,10 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  /* #ifndef H5 */
+  /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
+  max-height: 3.4em;
+  /* #endif */
 }
 
 .topic-card__footer {
@@ -593,15 +605,17 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   width: 104rpx;
   height: 104rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, $green-primary, #5ADBA0);
-  box-shadow: 0 8rpx 28rpx rgba(63, 207, 142, 0.4);
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
+  box-shadow: 0 8rpx 28rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.4)));
   z-index: 20;
   transition: all 200ms ease;
 }
 
+/* #ifdef H5 */
 .campus-fab:active {
   transform: scale(0.9);
 }
+/* #endif */
 
 .campus-fab__icon {
   width: 44rpx;

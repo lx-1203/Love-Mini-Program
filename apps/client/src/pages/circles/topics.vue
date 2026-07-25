@@ -230,14 +230,16 @@ onLoad((query) => {
 .topics-header__back {
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .topics-header__back:active {
   transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
 }
+/* #endif */
 
 .back-icon {
   font-size: var(--fs-lg);
@@ -301,9 +303,11 @@ onLoad((query) => {
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .topics-state__btn:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .topics-state__btn-text {
   font-size: var(--fs-lg);
@@ -357,10 +361,12 @@ onLoad((query) => {
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .topic-card:active {
   transform: scale(0.98);
   box-shadow: var(--s-md);
 }
+/* #endif */
 
 .topic-card__title {
   font-size: var(--fs-xl);
@@ -380,6 +386,10 @@ onLoad((query) => {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
+  /* #ifndef H5 */
+  /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
+  max-height: 3.2em;
+  /* #endif */
 }
 
 .topic-card__footer {
@@ -483,10 +493,12 @@ onLoad((query) => {
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .fab:active {
   transform: scale(0.92);
   box-shadow: var(--s-brand-md);
 }
+/* #endif */
 
 .fab__icon {
   font-size: var(--fs-6xl);

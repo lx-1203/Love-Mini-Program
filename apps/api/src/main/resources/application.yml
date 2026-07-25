@@ -9,8 +9,58 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+  # Redis 配置：所有连接参数通过环境变量外部化，便于不同部署环境切换。
+  # mock profile 下不依赖 Redis，仅 real profile 启用 RedisAutoConfiguration。
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:3000}
+      lettuce:
+        pool:
+          max-active: ${REDIS_POOL_MAX_ACTIVE:8}
+          max-idle: ${REDIS_POOL_MAX_IDLE:8}
+          min-idle: ${REDIS_POOL_MIN_IDLE:0}
+          max-wait: ${REDIS_POOL_MAX_WAIT:-1}
+  # RabbitMQ 配置：所有敏感信息（用户名/密码）必须通过环境变量配置。
+  # 当 RabbitMQ 不可用时，MessagingFallback 会捕获异常并降级（不阻塞主流程）。
+  rabbitmq:
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    # 连接超时（毫秒）：默认 5s，超时抛 AmqpIOException
+    connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:5000}
+    # 启动时连接失败不阻塞容器启动（由 MessagingFallback 兜底）
+    listener:
+      simple:
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+
 server:
   port: ${APP_PORT:8080}
+
+# Actuator 监控端点配置
+# 暴露 health/info/metrics/prometheus 端点供 Prometheus 抓取与运维监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  # 所有指标统一打上 application 标签，便于 Prometheus 区分多服务
+  metrics:
+    tags:
+      application: campus-love-api
+  # health 端点详情仅授权用户可见，避免泄露内部组件状态
+  endpoint:
+    health:
+      show-details: when_authorized
 
 app:
   # 媒体存储配置（Phase A - Task A3）

@@ -16,6 +16,7 @@
  * 通过 props.visible 由父组件（store）控制显隐，自身只负责渲染与"我知道了"事件回传。
  */
 import { watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 /** 组件 Props */
 const props = defineProps<{
@@ -28,6 +29,8 @@ const emit = defineEmits<{
   /** 用户点击「我知道了」按钮 */
   (e: "known"): void;
 }>();
+
+const { t } = useI18n();
 
 /**
  * 监听 visible 变化：仅在变为可见时进行首次展示判断
@@ -52,7 +55,15 @@ function handleKnown() {
 </script>
 
 <template>
-  <view v-if="visible" class="unlock-overlay">
+  <view
+    v-if="visible"
+    class="unlock-overlay"
+    <!-- #ifdef H5 -->
+    role="dialog"
+    aria-modal="true"
+    :aria-label="t('lock.title')"
+    <!-- #endif -->
+  >
     <!-- 全屏半透明蒙层（更深，让用户专注引导内容） -->
     <view class="unlock-overlay__mask" />
 
@@ -64,15 +75,18 @@ function handleKnown() {
       </view>
 
       <!-- 引导文案 -->
-      <text class="unlock-overlay__title">解锁功能</text>
-      <text class="unlock-overlay__desc">点击「去完善资料」即可解锁此功能</text>
+      <text class="unlock-overlay__title">{{ t('lock.title') }}</text>
+      <text class="unlock-overlay__desc">{{ t('lock.overlayDesc') }}</text>
 
       <!-- 「我知道了」按钮 -->
       <button
         class="unlock-overlay__btn"
         @tap="handleKnown"
+        <!-- #ifdef H5 -->
+        :aria-label="t('lock.overlayBtnAria')"
+        <!-- #endif -->
       >
-        <text class="unlock-overlay__btn-text">我知道了</text>
+        <text class="unlock-overlay__btn-text">{{ t('lock.overlayBtn') }}</text>
       </button>
     </view>
   </view>
@@ -114,7 +128,7 @@ function handleKnown() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.72);
+  background: var(--c-overlay-stronger, rgba(15, 23, 42, 0.72));
 }
 
 /* 引导提示卡片 */
@@ -124,9 +138,9 @@ function handleKnown() {
   width: 600rpx;
   max-width: 86%;
   padding: 40rpx 40rpx 32rpx;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--c-overlay-white-bg-most, rgba(255, 255, 255, 0.96));
   border-radius: 28rpx;
-  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.24);
+  box-shadow: 0 16rpx 48rpx var(--c-black-shadow-xl, rgba(0, 0, 0, 0.24));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -168,7 +182,7 @@ function handleKnown() {
 
 .unlock-overlay__arrow-icon {
   font-size: 40rpx;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 700;
   line-height: 1;
 }
@@ -217,6 +231,6 @@ function handleKnown() {
 .unlock-overlay__btn-text {
   font-size: 30rpx;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 </style>

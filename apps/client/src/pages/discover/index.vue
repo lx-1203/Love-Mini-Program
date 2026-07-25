@@ -6,6 +6,7 @@
 import { ref, computed, onMounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useDiscoverStore } from "../../stores/discover";
 import { useActivityStore } from "../../stores/activity";
 import { useCheckInStore } from "../../stores/checkin";
@@ -41,6 +42,7 @@ const icons = {
 } as const;
 
 const discoverStore = useDiscoverStore();
+const { t } = useI18n();
 
 // 同步自定义 TabBar 选中状态（匹配 = 索引 0）
 useTabBar(0);
@@ -79,6 +81,16 @@ const myAvatar = ref<string>("");
 
 /** 是否显示签到粒子撒花动画（1.5s 后由 HeartParticles done 事件重置） */
 const showParticles = ref(false);
+
+/**
+ * 签到动画锁：粒子撒花动画播放期间（1.5s）不响应新的签到点击。
+ *
+ * 修复（P1 BUG）：原实现仅依赖 checkInStore.checkingIn 防止重复 API 调用，
+ * 但 API 返回成功后 checkingIn 立即复位，而粒子动画仍在播放（1.5s）。
+ * 此期间用户若再次触发签到（如通过其他入口），会导致动画重复触发、状态错乱。
+ * 现新增 isAnimating 锁，动画完成（done 事件）后才允许下一次签到。
+ */
+const isAnimating = ref(false);
 
 /**
  * 触发匹配成功跳转（带防重复保护 + 双头像碰撞动画）
@@ -283,12 +295,12 @@ const activeFilterCapsules = computed<{ key: keyof RecommendationFilter; label: 
 const hasActiveFilters = computed(() => activeFilterCapsules.value.length > 0);
 
 /** 筛选配置：id -> 文案与图标（图标使用 SVG 路径，与模板顺序一致） */
-const filterOptions: { id: string; icon: string; text: string }[] = [
-  { id: "nearby", icon: icons.location, text: "附近" },
-  { id: "all", icon: icons.group, text: "不限" },
-  { id: "age18-25", icon: icons.cake, text: "18-25岁" },
-  { id: "match-priority", icon: icons.sparkles, text: "匹配度优先" },
-];
+const filterOptions = computed<{ id: string; icon: string; text: string }[]>(() => [
+  { id: "nearby", icon: icons.location, text: t('discover.nearby') },
+  { id: "all", icon: icons.group, text: t('discover.unlimited') },
+  { id: "age18-25", icon: icons.cake, text: t('discover.ageRange18to25') },
+  { id: "match-priority", icon: icons.sparkles, text: t('discover.matchPriority') },
+]);
 
 /**
  * 切换筛选 chip
@@ -372,19 +384,36 @@ function clearSearch() {
 
 /**
  * 处理签到
+ *
+ * 修复（P1 BUG）：新增 isAnimating 锁，动画播放期间不响应新点击。
+ * checkInStore.checkingIn 仅在 API 请求期间生效，请求返回后立即复位；
+ * 而粒子动画持续 1.5s，此期间通过 isAnimating 锁阻止重复触发。
  */
 async function handleCheckIn() {
+  // 动画播放中或签到请求中时，忽略新点击
+  if (isAnimating.value) return;
+
   try {
     await checkInStore.checkIn();
     // 签到成功后，将额外配额同步到 discover store
     if (checkInStore.extraRecommendQuota > 0) {
       discoverStore.setExtraQuota(checkInStore.extraRecommendQuota);
     }
-    // 触发心形粒子撒花动画（1.5s 后由 HeartParticles done 事件重置）
+    // 触发心形粒子撒花动画，并加锁（1.5s 后由 onParticlesDone 释放）
     showParticles.value = true;
+    isAnimating.value = true;
   } catch (_e) {
     // 错误已在 checkInStore 的 errorMessage 中展示
   }
+}
+
+/**
+ * 粒子动画完成回调：重置 showParticles 并释放 isAnimating 锁。
+ * 由 HeartParticles 组件在 1.5s 后通过 done 事件触发。
+ */
+function onParticlesDone() {
+  showParticles.value = false;
+  isAnimating.value = false;
 }
 
 onMounted(() => {
@@ -407,13 +436,13 @@ onMounted(() => {
     <!-- 页面头部 -->
     <view class="discover-header">
       <view class="discover-header__title-area">
-        <text class="discover-header__title">寻觅</text>
-        <text class="discover-header__subtitle">发现心动的人</text>
+        <text class="discover-header__title">{{ t('discover.title') }}</text>
+        <text class="discover-header__subtitle">{{ t('discover.subtitle') }}</text>
       </view>
       <view class="discover-header__meta">
         <view class="discover-header__count-chip">
           <SafeImage :src="icons.match" custom-class="discover-header__count-icon" mode="aspectFit" />
-          <text class="discover-header__count">{{ remainingCount }} 次</text>
+          <text class="discover-header__count">{{ t('discover.remainingTimes', { n: remainingCount }) }}</text>
         </view>
       </view>
     </view>
@@ -443,7 +472,7 @@ onMounted(() => {
             @tap="onFilterChipTap('all-filters')"
           >
             <image class="filter-chip__icon" :src="icons.plus" mode="aspectFit" />
-            <text class="filter-chip__text">全部筛选</text>
+            <text class="filter-chip__text">{{ t('discover.allFilters') }}</text>
             <view v-if="hasActiveFilters" class="filter-chip__count-badge">
               <text class="filter-chip__count-text">{{ activeFilterCapsules.length }}</text>
             </view>
@@ -473,7 +502,7 @@ onMounted(() => {
             hover-stay-time="120"
             @tap="clearAllFilters"
           >
-            <text class="active-capsule__text active-capsule__text--clear">清空</text>
+            <text class="active-capsule__text active-capsule__text--clear">{{ t('discover.clear') }}</text>
           </view>
         </view>
       </scroll-view>
@@ -523,10 +552,10 @@ onMounted(() => {
       </view>
       <button
         class="checkin-card__btn"
-        :disabled="checkInStore.checkingIn"
+        :disabled="checkInStore.checkingIn || isAnimating"
         @tap="handleCheckIn"
       >
-        {{ checkInStore.checkingIn ? "签到中..." : "立即签到" }}
+        {{ checkInStore.checkingIn ? "签到中..." : (isAnimating ? "签到成功" : "立即签到") }}
       </button>
     </view>
 
@@ -540,8 +569,8 @@ onMounted(() => {
           {{ checkInStore.consecutiveDaysText }}
         </text>
       </view>
-      <!-- 心形粒子撒花动画：1.5s 后由 done 事件自动重置 showParticles -->
-      <HeartParticles :visible="showParticles" @done="showParticles = false" />
+      <!-- 心形粒子撒花动画：1.5s 后由 done 事件触发 onParticlesDone，重置 showParticles 并释放 isAnimating 锁 -->
+      <HeartParticles :visible="showParticles" @done="onParticlesDone" />
     </view>
 
     <!-- 签到权益卡片：签到成功后展示权益入口（CSS 动画淡入，3 秒后由 success 切换过来更平滑） -->
@@ -767,7 +796,7 @@ onMounted(() => {
   height: 360rpx;
   top: 80rpx;
   left: -120rpx;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.32) 0%, rgba(236, 72, 153, 0) 70%);
+  background: radial-gradient(circle, var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.32))) 0%, var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0))) 70%);
 }
 
 .discover-atmosphere__blob--green {
@@ -775,7 +804,7 @@ onMounted(() => {
   height: 420rpx;
   top: 320rpx;
   right: -140rpx;
-  background: radial-gradient(circle, rgba(63, 207, 142, 0.28) 0%, rgba(63, 207, 142, 0) 70%);
+  background: radial-gradient(circle, var(--c-brand-shadow-tint-mid, var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.28))) 0%, var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63, 207, 142, 0))) 70%);
 }
 
 .discover-atmosphere__blob--cream {
@@ -783,7 +812,7 @@ onMounted(() => {
   height: 320rpx;
   bottom: 200rpx;
   left: 30%;
-  background: radial-gradient(circle, rgba(255, 212, 121, 0.22) 0%, rgba(255, 212, 121, 0) 70%);
+  background: radial-gradient(circle, var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(255, 212, 121, 0.22))) 0%, var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(255, 212, 121, 0))) 70%);
 }
 
 /* ========== 页面头部 ========== */
@@ -853,7 +882,7 @@ onMounted(() => {
   padding: var(--sp-2) var(--sp-4);
   border-radius: var(--r-xl);
   background: var(--c-bg-brand);
-  border: 1rpx solid rgba(63, 207, 142, 0.2);
+  border: 1rpx solid var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(63, 207, 142, 0.2)));
 }
 
 .discover-header__count-icon {
@@ -898,19 +927,21 @@ onMounted(() => {
   gap: var(--sp-2);
   padding: 14rpx 28rpx;
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
   // #ifdef H5
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   // #endif
-  border: 1rpx solid rgba(226, 232, 240, 0.8);
+  border: 1rpx solid var(--c-neutral-200, var(--c-neutral-200, rgba(226, 232, 240, 0.8)));
   box-shadow: var(--s-xs);
   transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* #ifdef H5 */
 .filter-chip:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .filter-chip--active {
   background: var(--c-gradient-brand);
@@ -1042,7 +1073,7 @@ onMounted(() => {
   align-items: center;
   margin: var(--sp-4) var(--sp-7);
   padding: var(--sp-3) var(--sp-5);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
   // #ifdef H5
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -1113,7 +1144,7 @@ onMounted(() => {
 
 .checkin-card__desc {
   font-size: var(--fs-base);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85)));
 }
 
 .checkin-card__btn {
@@ -1130,12 +1161,14 @@ onMounted(() => {
   text-align: center;
   flex-shrink: 0;
   transition: opacity 150ms ease;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0, 0, 0, 0.1)));
 }
 
+/* #ifdef H5 */
 .checkin-card__btn:active {
   opacity: 0.85;
 }
+/* #endif */
 
 .checkin-card__btn:disabled {
   background: var(--c-bg-surface);
@@ -1150,9 +1183,9 @@ onMounted(() => {
 .skeleton {
   background: linear-gradient(
     90deg,
-    rgba(0, 0, 0, 0.06) 25%,
-    rgba(0, 0, 0, 0.1) 37%,
-    rgba(0, 0, 0, 0.06) 63%
+    var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06))) 25%,
+    var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0, 0, 0, 0.1))) 37%,
+    var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06))) 63%
   );
   background-size: 400% 100%;
   animation: skeleton-loading 1.4s ease infinite;
@@ -1238,8 +1271,8 @@ onMounted(() => {
   margin: 0 var(--sp-7) var(--sp-4);
   padding: var(--sp-6);
   border-radius: var(--r-lg);
-  background: rgba(16, 185, 129, 0.08);
-  border: 1rpx solid rgba(16, 185, 129, 0.18);
+  background: var(--c-success-bg-tint, var(--c-success-bg-tint, rgba(16, 185, 129, 0.08)));
+  border: 1rpx solid var(--c-success-bg-tint, var(--c-success-bg-tint, rgba(16, 185, 129, 0.18)));
   animation: checkin-success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
@@ -1321,9 +1354,11 @@ onMounted(() => {
   transition: transform 150ms ease;
 }
 
+/* #ifdef H5 */
 .benefit-card--clickable:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .benefit-card--quota {
   background: var(--c-bg-brand);
@@ -1389,15 +1424,17 @@ onMounted(() => {
   margin: 0 var(--sp-7) var(--sp-4);
   padding: var(--sp-6);
   border-radius: var(--r-lg);
-  background: linear-gradient(135deg, var(--c-romance-50) 0%, #FDF2F8 100%);
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.08);
-  border: 1rpx solid rgba(236, 72, 153, 0.12);
+  background: linear-gradient(135deg, var(--c-romance-50) 0%, var(--c-romance-50, #FDF2F8) 100%);
+  box-shadow: 0 4rpx 16rpx var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.08)));
+  border: 1rpx solid var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.12)));
   transition: transform 150ms ease;
 }
 
+/* #ifdef H5 */
 .daily-question-card:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .daily-question-card__left {
   display: flex;
@@ -1467,7 +1504,7 @@ onMounted(() => {
   gap: var(--sp-4);
   margin: var(--sp-6) var(--sp-7);
   padding: var(--sp-5) var(--sp-6);
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--c-red-bg-tint, var(--c-red-bg-tint, rgba(239, 68, 68, 0.08)));
   border-radius: var(--r-md);
 }
 
@@ -1519,9 +1556,9 @@ onMounted(() => {
   justify-content: space-between;
   margin: var(--sp-4) var(--sp-7);
   padding: var(--sp-5) var(--sp-6);
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.08) 0%, rgba(63, 207, 142, 0.08) 100%);
+  background: linear-gradient(135deg, var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.08))) 0%, var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63, 207, 142, 0.08))) 100%);
   border-radius: var(--r-lg);
-  border: 1rpx solid rgba(236, 72, 153, 0.12);
+  border: 1rpx solid var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.12)));
 }
 
 .social-hint__left {
@@ -1594,10 +1631,12 @@ onMounted(() => {
     border-bottom: none;
   }
 
+  /* #ifdef H5 */
   &:active {
     transform: scale(0.98);
     transition: transform 0.1s ease;
   }
+  /* #endif */
 }
 
 .activity-card__info {
@@ -1649,7 +1688,7 @@ onMounted(() => {
   left: 50%;
   transform: translateX(-50%);
   padding: var(--sp-3) var(--sp-6);
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--c-gradient-mask-strong, var(--c-gradient-mask-strong, rgba(0, 0, 0, 0.6)));
   border-radius: var(--r-full);
   z-index: 10;
 }
@@ -1666,7 +1705,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--c-overlay-stronger, var(--c-overlay-stronger, rgba(0, 0, 0, 0.75)));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1697,7 +1736,7 @@ onMounted(() => {
   height: 200rpx;
   border-radius: var(--r-full);
   border: 6rpx solid var(--c-bg-container);
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8rpx 32rpx var(--c-text-shadow-overlay, var(--c-text-shadow-overlay, rgba(0, 0, 0, 0.3)));
   transform: translateY(-50%);
 }
 
@@ -1778,20 +1817,20 @@ onMounted(() => {
 .match-overlay__spark-icon {
   width: 80rpx;
   height: 80rpx;
-  color: #ec4899;
+  color: var(--c-romance-500, #ec4899);
 }
 
 .match-overlay__title {
   font-size: var(--fs-6xl);
   font-weight: 800;
   color: var(--c-text-inverse);
-  text-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.5);
+  text-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-stronger, var(--c-shadow-romance-tint-stronger, rgba(236, 72, 153, 0.5)));
   animation: match-text-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both;
 }
 
 .match-overlay__subtitle {
   font-size: var(--fs-lg);
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9)));
   animation: match-text-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s both;
 }
 

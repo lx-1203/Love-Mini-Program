@@ -6,10 +6,11 @@ export const rpx = (value: number): string => `${value}rpx`;
 
 export const getColor = (path: string, tokens: ThemeTokens = designTokens): string => {
   const parts = path.split('.');
-  let result: any = tokens.color;
+  // 路径下钻过程中类型不可静态推断（依赖运行时字符串），使用 unknown + 类型守卫替代 any
+  let result: unknown = tokens.color;
   for (const part of parts) {
-    if (result && typeof result === 'object' && part in result) {
-      result = result[part];
+    if (result && typeof result === 'object' && part in (result as Record<string, unknown>)) {
+      result = (result as Record<string, unknown>)[part];
     } else {
       return '';
     }

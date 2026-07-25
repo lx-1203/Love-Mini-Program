@@ -8,6 +8,25 @@ spring:
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/qihang_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
+    # 修复：HikariCP 连接池配置，避免默认配置在高并发下连接不足或泄漏。
+    # 最大连接数 20 适合中小规模应用，生产环境可通过 DB_POOL_MAX 调整。
+    hikari:
+      # 最大连接数：默认 20，生产环境建议 (CPU 核心数 * 2) + 磁盘数
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      # 最小空闲连接数：默认 10，与 maximum-pool-size 一致以避免抖动
+      minimum-idle: ${DB_POOL_MIN:10}
+      # 连接超时（毫秒）：默认 30s，超时抛出 SQLTransientConnectionException
+      connection-timeout: ${DB_POOL_CONNECTION_TIMEOUT:30000}
+      # 连接最大生命周期（毫秒）：默认 30min，建议小于数据库 wait_timeout
+      max-lifetime: ${DB_POOL_MAX_LIFETIME:1800000}
+      # 连接空闲超时（毫秒）：默认 10min
+      idle-timeout: ${DB_POOL_IDLE_TIMEOUT:600000}
+      # 连接泄漏检测阈值（毫秒）：默认 0（禁用），开启 60s 帮助定位泄漏
+      leak-detection-threshold: ${DB_POOL_LEAK_DETECTION:60000}
+      # 连接测试查询（MySQL 推荐 SELECT 1）
+      connection-test-query: SELECT 1
+      # 连接池名称（便于监控与日志识别）
+      pool-name: CampusLoveHikariPool
   flyway:
     enabled: true
     # 默认扫描两个位置：

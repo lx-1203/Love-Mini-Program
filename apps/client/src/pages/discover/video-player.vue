@@ -21,6 +21,17 @@ import { ref, onMounted, onUnmounted, computed } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic } from "../../utils/haptic";
 
+/**
+ * 当前页面对象（最小契约）。
+ *
+ * 兼容 mp-weixin（参数挂在 options）与 H5（参数挂在 $page.options）双端，
+ * 此处仅声明实际消费的 options / $page 字段。
+ */
+interface PageWithOptions {
+  options?: Record<string, string>;
+  $page?: { options?: Record<string, string> };
+}
+
 /** 视频地址（由 query 参数注入） */
 const videoUrl = ref<string>("");
 /** 关联卡片 ID（用于埋点 / 日志，不参与渲染） */
@@ -45,9 +56,8 @@ const showControls = ref<boolean>(true);
 function loadQueryParams(): void {
   try {
     const pages = getCurrentPages();
-    const currentPage = pages[pages.length - 1];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const options = (currentPage as any)?.options || (currentPage as any)?.$page?.options || {};
+    const currentPage = pages[pages.length - 1] as PageWithOptions | undefined;
+    const options = currentPage?.options || currentPage?.$page?.options || {};
     const rawUrl = typeof options.videoUrl === "string" ? options.videoUrl : "";
     videoUrl.value = rawUrl ? decodeURIComponent(rawUrl) : "";
     cardId.value = typeof options.cardId === "string" ? options.cardId : "";
@@ -82,16 +92,18 @@ function formatTime(seconds: number): string {
 /**
  * video 元数据加载完成事件
  */
-function onLoadedMetadata(e: any) {
+function onLoadedMetadata(e: Event) {
   isMetadataLoading.value = false;
-  videoDuration.value = e?.detail?.duration || 0;
+  const detail = (e as unknown as { detail?: { duration?: number; currentTime?: number } }).detail;
+  videoDuration.value = detail?.duration || 0;
 }
 
 /**
  * video 时间更新事件
  */
-function onTimeUpdate(e: any) {
-  videoCurrentTime.value = e?.detail?.currentTime || 0;
+function onTimeUpdate(e: Event) {
+  const detail = (e as unknown as { detail?: { duration?: number; currentTime?: number } }).detail;
+  videoCurrentTime.value = detail?.currentTime || 0;
 }
 
 /**

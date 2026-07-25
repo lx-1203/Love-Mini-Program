@@ -296,13 +296,15 @@ onMounted(() => {
 .cert-header__back {
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
 }
 
+/* #ifdef H5 */
 .cert-header__back:active {
   transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
 }
+/* #endif */
 
 .back-icon {
   font-size: var(--fs-base);
@@ -338,23 +340,25 @@ onMounted(() => {
   border: var(--c-border-card);
 }
 
+/* #ifdef H5 */
 .status-card:active {
   transform: scale(0.98);
 }
+/* #endif */
 
 .status-card--pending {
-  background: linear-gradient(135deg, #FEF9C3, #FEF3C7);
-  border: 2rpx solid rgba(201, 163, 106, 0.3);
+  background: linear-gradient(135deg, var(--c-warning-bg-tint, #FEF9C3), var(--c-warning-bg-tint, #FEF3C7));
+  border: 2rpx solid var(--c-vip-border-light, var(--c-vip-border-light, rgba(201, 163, 106, 0.3)));
 }
 
 .status-card--verified {
-  background: linear-gradient(135deg, var(--c-bg-brand), #DCFCE7);
-  border: 2rpx solid rgba(63, 207, 142, 0.3);
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-success-bg-tint, #DCFCE7));
+  border: 2rpx solid var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
 }
 
 .status-card--rejected {
-  background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
-  border: 2rpx solid rgba(229, 69, 77, 0.3);
+  background: linear-gradient(135deg, var(--c-red-bg-tint, #FEF2F2), var(--c-red-bg-tint, #FEE2E2));
+  border: 2rpx solid var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
 }
 
 .status-card--unverified {
@@ -475,11 +479,13 @@ onMounted(() => {
   background: var(--c-bg-page);
 }
 
+/* #ifdef H5 */
 .upload-area:active {
   transform: scale(0.98);
   border-color: var(--c-brand);
   background: var(--c-bg-brand);
 }
+/* #endif */
 
 .upload-icon {
   width: 56rpx;
@@ -522,9 +528,11 @@ onMounted(() => {
   background: var(--c-bg-brand);
 }
 
+/* #ifdef H5 */
 .upload-preview__reupload:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .reupload-text {
   font-size: var(--fs-sm);
@@ -536,15 +544,17 @@ onMounted(() => {
   width: 48rpx;
   height: 48rpx;
   border-radius: 50%;
-  background: rgba(229, 69, 77, 0.1);
+  background: var(--c-error-bg-tint, var(--c-error-bg-tint, rgba(229, 69, 77, 0.1)));
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* #ifdef H5 */
 .upload-preview__remove:active {
   transform: scale(0.9);
 }
+/* #endif */
 
 .remove-icon {
   font-size: var(--fs-sm);
@@ -565,10 +575,12 @@ onMounted(() => {
   box-shadow: var(--s-float-btn);
 }
 
+/* #ifdef H5 */
 .submit-btn:active {
   transform: scale(0.96);
   box-shadow: var(--s-brand-md);
 }
+/* #endif */
 
 .submit-btn--disabled {
   background: var(--c-neutral-200);

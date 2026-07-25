@@ -359,7 +359,7 @@ function onBlur() {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  background: linear-gradient(180deg, var(--c-bg-page, #f8fafc) 0%, var(--c-tint-blue-50, #eef2ff) 100%);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 32rpx;
@@ -372,8 +372,8 @@ function onBlur() {
   justify-content: space-between;
   padding: 0 24rpx;
   height: 88rpx;
-  background: #FFFFFF;
-  box-shadow: 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
+  background: var(--c-bg-container, #FFFFFF);
+  box-shadow: 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
   position: relative;
   z-index: 1;
 }
@@ -387,14 +387,14 @@ function onBlur() {
   border-radius: 50%;
 
   &--hover {
-    background: #F4F6FA;
+    background: var(--c-bg-page, #F4F6FA);
     transform: scale(0.94);
   }
 }
 
 .nav-bar__back-icon {
   font-size: 56rpx;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
   font-weight: 300;
   line-height: 1;
 }
@@ -402,7 +402,7 @@ function onBlur() {
 .nav-bar__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
 }
 
 .nav-bar__placeholder {
@@ -433,19 +433,19 @@ function onBlur() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-md, var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.06)));
 }
 
 .status-card__emoji-wrap {
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06)));
 }
 
 .status-card__emoji {
@@ -461,7 +461,7 @@ function onBlur() {
 
 .status-card__desc {
   font-size: 24rpx;
-  color: #6B7280;
+  color: var(--c-text-secondary, #5B6470);
   text-align: center;
   line-height: 1.6;
 }
@@ -479,7 +479,7 @@ function onBlur() {
 
 .section__title-text {
   font-size: 24rpx;
-  color: #6B7280;
+  color: var(--c-text-secondary, #5B6470);
   font-weight: 500;
 }
 
@@ -493,10 +493,10 @@ function onBlur() {
 .benefit-item {
   flex: 1 1 calc(50% - 8rpx);
   min-width: 280rpx;
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 20rpx;
   padding: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04), 0 1rpx 4rpx rgba(15, 23, 42, 0.03);
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -506,7 +506,7 @@ function onBlur() {
   width: 64rpx;
   height: 64rpx;
   border-radius: 16rpx;
-  background: linear-gradient(135deg, #E8F4FF 0%, #F0F7FF 100%);
+  background: linear-gradient(135deg, var(--c-tint-blue-50, #E8F4FF) 0%, var(--c-tint-blue-50, #F0F7FF) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -520,21 +520,21 @@ function onBlur() {
 .benefit-item__title {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
   margin-bottom: 4rpx;
 }
 
 .benefit-item__desc {
   font-size: 22rpx;
-  color: #6B7280;
+  color: var(--c-text-secondary, #5B6470);
   line-height: 1.5;
 }
 
 /* ==================== 表单卡片 ==================== */
 .form-card {
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04), 0 1rpx 4rpx rgba(15, 23, 42, 0.03);
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   overflow: hidden;
   padding: 0 28rpx;
 }
@@ -543,7 +543,7 @@ function onBlur() {
   display: flex;
   align-items: center;
   padding: 28rpx 0;
-  border-bottom: 1rpx solid #F4F6FA;
+  border-bottom: 1rpx solid var(--c-border-light, #EEF0F4);
   gap: 24rpx;
 
   &--no-border {
@@ -553,7 +553,7 @@ function onBlur() {
 
 .form-item__label {
   font-size: 28rpx;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
   font-weight: 500;
   width: 120rpx;
   flex-shrink: 0;
@@ -562,19 +562,19 @@ function onBlur() {
 .form-item__input {
   flex: 1;
   font-size: 28rpx;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
 }
 
 .form-item__placeholder {
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
   font-size: 28rpx;
 }
 
 /* ==================== 上传卡片 ==================== */
 .upload-card {
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04), 0 1rpx 4rpx rgba(15, 23, 42, 0.03);
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   overflow: hidden;
   transition: all 0.15s ease;
 
@@ -598,13 +598,13 @@ function onBlur() {
 
 .upload-card__text {
   font-size: 28rpx;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
   font-weight: 500;
 }
 
 .upload-card__hint {
   font-size: 22rpx;
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
 }
 
 .upload-card__preview {
@@ -623,20 +623,20 @@ function onBlur() {
   right: 16rpx;
   bottom: 16rpx;
   padding: 8rpx 20rpx;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--c-gradient-mask-strong, var(--c-gradient-mask-strong, rgba(0, 0, 0, 0.6)));
   border-radius: 999rpx;
 }
 
 .upload-card__change-text {
   font-size: 22rpx;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 /* ==================== 审核中卡片 ==================== */
 .pending-card {
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04), 0 1rpx 4rpx rgba(15, 23, 42, 0.03);
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   padding: 48rpx 32rpx;
   display: flex;
   flex-direction: column;
@@ -652,13 +652,13 @@ function onBlur() {
 .pending-card__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #F59E0B;
+  color: var(--c-warning, #F59E0B);
   margin-bottom: 12rpx;
 }
 
 .pending-card__desc {
   font-size: 24rpx;
-  color: #6B7280;
+  color: var(--c-text-secondary, #5B6470);
   text-align: center;
   line-height: 1.6;
 }
@@ -669,9 +669,9 @@ function onBlur() {
   z-index: 1;
   margin: 32rpx 24rpx 0;
   padding: 28rpx;
-  background: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
+  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
   border-radius: 24rpx;
-  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.3);
+  box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -679,7 +679,7 @@ function onBlur() {
 
   &--hover {
     transform: scale(0.98);
-    box-shadow: 0 2rpx 8rpx rgba(63, 207, 142, 0.2);
+    box-shadow: 0 2rpx 8rpx var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(63, 207, 142, 0.2)));
   }
 
   &--disabled {
@@ -687,18 +687,18 @@ function onBlur() {
   }
 
   &--secondary {
-    background: #FFFFFF;
-    box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04);
+    background: var(--c-bg-container, #FFFFFF);
+    box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
   }
 }
 
 .action-btn__text {
   font-size: 30rpx;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 
   &--secondary {
-    color: #3FCF8E;
+    color: var(--c-brand, #3FCF8E);
   }
 }
 </style>

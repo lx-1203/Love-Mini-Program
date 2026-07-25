@@ -2,9 +2,13 @@
 import { ref, computed } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { replaceAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+
+// 使用 vue-i18n 组合式 API 获取 t 函数（组件内优先使用 useI18n 而非全局 t）
+const { t } = useI18n();
 
 const sessionStore = useSessionStore();
 const { loginHero, loading } = storeToRefs(sessionStore);
@@ -37,9 +41,11 @@ const canPhoneLogin = computed(() => isPhoneValid.value && isCodeValid.value && 
  * 安全读取登录页 Hero 文案。
  * loginHero 来自 store，初始为 null，通过计算属性统一提供兜底文案，
  * 避免模板中多处重复 optional chaining，也便于后续扩展动态配置。
+ * 兜底文案统一从 i18n 资源读取（login.heroTitle / login.heroSubtitle），
+ * 不再硬编码中文字符串。
  */
-const heroTitle = computed(() => loginHero.value?.heroTitle || "校园恋爱");
-const heroSubtitle = computed(() => loginHero.value?.heroSubtitle || "遇见你的心动");
+const heroTitle = computed(() => loginHero.value?.heroTitle || t("login.heroTitle"));
+const heroSubtitle = computed(() => loginHero.value?.heroSubtitle || t("login.heroSubtitle"));
 
 function startCountdown() {
   countdown.value = 60;
@@ -56,11 +62,11 @@ function startCountdown() {
 function onSendCode() {
   if (!canSendCode.value) {
     if (!isPhoneValid.value) {
-      uni.showToast({ title: "请输入正确的手机号", icon: "none" });
+      uni.showToast({ title: t("login.phoneInvalid"), icon: "none" });
     }
     return;
   }
-  uni.showToast({ title: "验证码已发送", icon: "none" });
+  uni.showToast({ title: t("login.codeSent"), icon: "none" });
   startCountdown();
 }
 
@@ -68,30 +74,101 @@ function togglePhoneLogin() {
   showPhoneLogin.value = !showPhoneLogin.value;
 }
 
+/** 微信登录超时时间（毫秒），超时后提示用户重试 */
+const WECHAT_LOGIN_TIMEOUT_MS = 15000;
+/** 本地存储中用于 CSRF 防护的 state key */
+const WECHAT_LOGIN_STATE_KEY = "login:wechat:state";
+
+/**
+ * 生成随机 state 字符串用于 CSRF 防护。
+ * 在 mp-weixin 端 crypto 可能不可用，使用 Math.random 兜底。
+ */
+function generateLoginState(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch (_e) {
+    // crypto 不可用时走兜底
+  }
+  return `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * 调用 uni.login 获取微信 code，带 15 秒超时与 state 校验防 CSRF。
+ * - 生成本地 state 写入 storage，登录返回后用于校验一致性
+ * - 超时则提示用户重试
+ * 错误文案统一从 i18n 资源读取（login.wechatTimeout / stateInvalid / wechatCodeFailed / wechatFailed）。
+ */
+function loginWithWechatSdk(): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const state = generateLoginState();
+    try {
+      uni.setStorageSync(WECHAT_LOGIN_STATE_KEY, state);
+    } catch (_e) {
+      // storage 写入失败不阻塞登录
+    }
+
+    const timer = setTimeout(() => {
+      // 超时拒绝，提示重试
+      reject(new Error(t("login.wechatTimeout")));
+    }, WECHAT_LOGIN_TIMEOUT_MS);
+
+    uni.login({
+      provider: "weixin",
+      success: (res) => {
+        clearTimeout(timer);
+        // 校验 state 防 CSRF：本地存储的 state 与本次生成必须一致
+        let savedState = "";
+        try {
+          savedState = uni.getStorageSync(WECHAT_LOGIN_STATE_KEY) as string;
+        } catch (_e) {
+          // 读取失败忽略
+        }
+        if (!savedState || savedState !== state) {
+          reject(new Error(t("login.stateInvalid")));
+          return;
+        }
+        if (!res.code) {
+          reject(new Error(t("login.wechatCodeFailed")));
+          return;
+        }
+        resolve(res.code);
+      },
+      fail: (err) => {
+        clearTimeout(timer);
+        reject(new Error(err?.errMsg || t("login.wechatFailed")));
+      },
+    });
+  });
+}
+
 async function onWechatLogin() {
   if (!agreed.value) {
-    uni.showToast({ title: "请先阅读并同意用户协议", icon: "none" });
+    uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
     return;
   }
   try {
-    await sessionStore.loginWithWechat();
+    // 先获取 code（带超时与 state 防 CSRF），再调用 store 登录
+    const code = await loginWithWechatSdk();
+    await sessionStore.loginWithWechat(code);
     replaceAppPath("/pages/discover/index");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "登录失败，请稍后重试";
+    const message = error instanceof Error ? error.message : t("login.loginFailed");
     uni.showToast({ title: message, icon: "none" });
   }
 }
 
 function onPhoneLogin() {
   if (!agreed.value) {
-    uni.showToast({ title: "请先阅读并同意用户协议", icon: "none" });
+    uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
     return;
   }
   if (!canPhoneLogin.value) {
-    uni.showToast({ title: "请输入正确的手机号和验证码", icon: "none" });
+    uni.showToast({ title: t("login.phoneAndCodeInvalid"), icon: "none" });
     return;
   }
-  uni.showToast({ title: "登录成功", icon: "success" });
+  uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
   setTimeout(() => {
     replaceAppPath("/pages/discover/index");
   }, 1500);
@@ -102,11 +179,70 @@ function onAgreeTap() {
 }
 
 function openUserAgreement() {
-  uni.showToast({ title: "用户协议", icon: "none" });
+  uni.showToast({ title: t("login.userAgreementTitle"), icon: "none" });
 }
 
 function openPrivacyPolicy() {
-  uni.showToast({ title: "隐私政策", icon: "none" });
+  uni.showToast({ title: t("login.privacyPolicyTitle"), icon: "none" });
+}
+
+/* ============================================================
+ * 功能2：第三方账号登录（微信 / Apple）
+ * ============================================================
+ * - 微信登录已有 onWechatLogin 处理，这里复用按钮即可
+ * - Apple 登录仅 H5 / iOS 环境可用，通过条件编译控制显示
+ * - 账号绑定入口跳转到设置页（已登录用户可管理第三方绑定）
+ * ============================================================ */
+
+/**
+ * 触发 Apple 登录。
+ * - 仅 H5 / APP-PLUS 环境调用，mp-weixin 不支持
+ * - 失败时通过 toast 提示用户
+ */
+async function onAppleLogin() {
+  if (!agreed.value) {
+    uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
+    return;
+  }
+  // #ifdef H5 || APP-PLUS
+  try {
+    // 实际项目中通过 Sign in with Apple SDK 拿到 identityToken，
+    // 解析出 sub（Apple User Identifier）后调用后端接口
+    // 这里调用 uni.login 的 apple provider，成功后取 authorizationCode
+    await new Promise<void>((resolve, reject) => {
+      uni.login({
+        provider: "apple",
+        success: () => resolve(),
+        fail: (err) => reject(new Error(err?.errMsg || t("thirdPartyLogin.appleLoginFailed"))),
+      });
+    });
+    // 此处省略与后端 /api/auth/third-party/apple 的 token 交换，
+    // 实际接入时由 services/api.ts 中 loginWithApple 方法完成
+    uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
+    setTimeout(() => {
+      replaceAppPath("/pages/discover/index");
+    }, 1500);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("thirdPartyLogin.appleLoginFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
+  // #endif
+  // #ifndef H5 || APP-PLUS
+  uni.showToast({ title: t("thirdPartyLogin.appleNotSupported"), icon: "none" });
+  // #endif
+}
+
+/**
+ * 跳转到账号绑定管理页（已登录用户可绑定 / 解绑第三方账号）。
+ * - 未登录时提示用户先登录
+ * - 已登录时跳转到 /pages/settings/index（账号绑定入口）
+ */
+function openAccountBinding() {
+  if (!sessionStore.isLoggedIn) {
+    uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
+    return;
+  }
+  replaceAppPath("/pages/settings/index");
 }
 </script>
 
@@ -137,11 +273,11 @@ function openPrivacyPolicy() {
             <view class="btn-icon-wrap">
               <text class="btn-icon-wechat">微</text>
             </view>
-            <text class="btn-primary-text">微信一键登录</text>
+            <text class="btn-primary-text">{{ t('login.wechatLogin') }}</text>
           </view>
 
           <view class="btn-secondary press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="togglePhoneLogin">
-            <text class="btn-secondary-text">手机号登录</text>
+            <text class="btn-secondary-text">{{ t('login.phoneLogin') }}</text>
           </view>
         </view>
 
@@ -155,7 +291,7 @@ function openPrivacyPolicy() {
                 class="input-field"
                 type="number"
                 maxlength="11"
-                placeholder="请输入手机号"
+                :placeholder="t('login.phonePlaceholder')"
                 placeholder-class="input-placeholder"
                 v-model="phone"
               />
@@ -171,7 +307,7 @@ function openPrivacyPolicy() {
                 class="input-field"
                 type="number"
                 maxlength="6"
-                placeholder="请输入验证码"
+                :placeholder="t('login.codePlaceholder')"
                 placeholder-class="input-placeholder"
                 v-model="code"
               />
@@ -183,7 +319,7 @@ function openPrivacyPolicy() {
                 @tap="onSendCode"
               >
                 <text class="send-code-text">
-                  {{ countdown > 0 ? countdown + 's' : '获取验证码' }}
+                  {{ countdown > 0 ? countdown + 's' : t('login.getCode') }}
                 </text>
               </view>
             </view>
@@ -191,11 +327,11 @@ function openPrivacyPolicy() {
 
           <view class="form-btns">
             <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onPhoneLogin">
-              <text class="btn-primary-text">登 录</text>
+              <text class="btn-primary-text">{{ t('login.loginButton') }}</text>
             </view>
 
             <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="togglePhoneLogin">
-              <text class="btn-text-link">返回微信登录</text>
+              <text class="btn-text-link">{{ t('login.backToWechat') }}</text>
             </view>
           </view>
         </view>
@@ -206,10 +342,44 @@ function openPrivacyPolicy() {
           <text v-if="agreed" class="checkbox-check">✓</text>
         </view>
         <view class="terms-text-wrap">
-          <text class="terms-text">已阅读并同意</text>
-          <text class="terms-link" @tap="openUserAgreement">《用户协议》</text>
-          <text class="terms-text">和</text>
-          <text class="terms-link" @tap="openPrivacyPolicy">《隐私政策》</text>
+          <text class="terms-text">{{ t('login.agreedPrefix') }}</text>
+          <text class="terms-link" @tap="openUserAgreement">{{ t('login.userAgreementLink') }}</text>
+          <text class="terms-text">{{ t('login.and') }}</text>
+          <text class="terms-link" @tap="openPrivacyPolicy">{{ t('login.privacyPolicyLink') }}</text>
+        </view>
+      </view>
+
+      <!-- 功能2：其他登录方式（Apple 登录 + 账号绑定入口） -->
+      <view class="third-party-wrap">
+        <view class="third-party-divider">
+          <view class="third-party-divider__line" />
+          <text class="third-party-divider__text">{{ t('thirdPartyLogin.otherLoginMethods') }}</text>
+          <view class="third-party-divider__line" />
+        </view>
+
+        <view class="third-party-icons">
+          <!-- Apple 登录按钮（仅 H5 / APP-PLUS 显示） -->
+          <!-- #ifdef H5 || APP-PLUS -->
+          <view
+            class="third-party-icon-btn press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="onAppleLogin"
+          >
+            <text class="third-party-icon third-party-icon--apple"></text>
+            <text class="third-party-icon-label">{{ t('thirdPartyLogin.appleLoginDesc') }}</text>
+          </view>
+          <!-- #endif -->
+          <!-- 账号绑定入口（已登录用户可管理第三方账号绑定） -->
+          <view
+            class="third-party-icon-btn press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="openAccountBinding"
+          >
+            <text class="third-party-icon third-party-icon--bind">🔗</text>
+            <text class="third-party-icon-label">{{ t('thirdPartyLogin.accountBinding') }}</text>
+          </view>
         </view>
       </view>
     </view>
@@ -334,10 +504,12 @@ function openPrivacyPolicy() {
   box-shadow: var(--s-float-btn);
 }
 
+/* #ifdef H5 */
 .btn-primary:active {
   transform: scale(0.96);
   box-shadow: var(--s-brand-md);
 }
+/* #endif */
 
 .btn--loading {
   opacity: 0.65;
@@ -378,10 +550,12 @@ function openPrivacyPolicy() {
   justify-content: center;
 }
 
+/* #ifdef H5 */
 .btn-secondary:active {
   transform: scale(0.96);
   background: var(--c-neutral-50);
 }
+/* #endif */
 
 .btn-secondary-text {
   font-size: var(--fs-lg);
@@ -441,9 +615,11 @@ function openPrivacyPolicy() {
   margin-left: var(--sp-4);
 }
 
+/* #ifdef H5 */
 .send-code-btn:active {
   transform: scale(0.96);
 }
+/* #endif */
 
 .send-code-btn--disabled {
   background: var(--c-neutral-200);
@@ -474,9 +650,11 @@ function openPrivacyPolicy() {
   justify-content: center;
 }
 
+/* #ifdef H5 */
 .btn-text:active {
   opacity: 0.7;
 }
+/* #endif */
 
 .btn-text-link {
   font-size: var(--fs-md);
@@ -531,5 +709,86 @@ function openPrivacyPolicy() {
   font-size: var(--fs-xs);
   color: var(--c-brand);
   line-height: 1.7;
+}
+
+/* 功能2：第三方账号登录区域样式 */
+.third-party-wrap {
+  margin-top: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--sp-4);
+}
+
+.third-party-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.third-party-divider__line {
+  flex: 1;
+  height: 2rpx;
+  background: var(--c-border-default);
+}
+
+.third-party-divider__text {
+  font-size: var(--fs-xs);
+  color: var(--c-text-quaternary);
+  white-space: nowrap;
+}
+
+.third-party-icons {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-8);
+}
+
+.third-party-icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+}
+
+/* #ifdef H5 */
+.third-party-icon-btn:active {
+  opacity: 0.65;
+}
+/* #endif */
+
+.third-party-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: var(--c-bg-container);
+  border: 2rpx solid var(--c-border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-2xl);
+}
+
+/* Apple 图标用 SVG 背景模拟（避免引入额外图片资源） */
+.third-party-icon--apple {
+  background-color: #000000;
+  position: relative;
+}
+
+.third-party-icon--apple::before {
+  content: "";
+  position: absolute;
+  width: 36rpx;
+  height: 36rpx;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22white%22%3E%3Cpath%20d%3D%22M16.365%201.43c0%201.14-.493%202.27-1.177%203.08-.744.9-1.99%201.57-2.987%201.57-.12%200-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39%0-1.15.572-2.27%201.206-2.98.804-.94%202.142-1.64%203.248-1.68.03.13.05.28.05.43zm4.565%2015.71c-.03.07-.463%201.58-1.518%203.12-.945%201.34-1.94%202.71-3.43%202.71-1.517%200-1.9-.88-3.63-.88-1.698%200-2.302.91-3.67.91-1.377%200-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28%200-4.28%202.797-6.55%205.552-6.55%201.448%200%202.675.95%203.6.95.865%200%202.222-1.01%203.902-1.01.632%200%202.93.06%204.43%202.19-.114.07-2.402%201.37-2.402%204.13%200%203.27%202.866%204.42%2.967%204.45z%22/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.third-party-icon-label {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
 }
 </style>

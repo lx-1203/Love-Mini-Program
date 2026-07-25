@@ -21,7 +21,14 @@ const iconSrc = computed(() => {
 </script>
 
 <template>
-  <view class="pill" :class="[`pill--${tone || 'brand'}`]">
+  <view
+    class="pill"
+    :class="[`pill--${tone || 'brand'}`]"
+    <!-- #ifdef H5 -->
+    role="img"
+    :aria-label="label"
+    <!-- #endif -->
+  >
     <image class="pill-icon" :src="iconSrc" mode="aspectFit" />
     <text class="pill-label">{{ label }}</text>
   </view>

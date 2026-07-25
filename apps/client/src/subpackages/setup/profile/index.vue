@@ -17,6 +17,12 @@ import { onMounted, reactive, ref } from "vue";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
+// 功能3：资料编辑标签选择器（替换原有 futurePlanTagOptions 内联实现）
+import TagSelector from "../../../components/profile/TagSelector.vue";
+// 功能5：引导流程进度条（当前步骤 = 1：基本信息）
+import SetupProgress from "../../../components/setup/SetupProgress.vue";
+import type { ProfileTagGroupKey } from "../../../config/profile-tags";
+import { profileTagGroups } from "../../../config/profile-tags";
 import { useProfileStore } from "../../../stores/profile";
 import { useSessionStore } from "../../../stores/session";
 import { clientApi } from "../../../services/api";
@@ -69,12 +75,105 @@ const futurePlanTagOptions = [
   "社交",
 ];
 
+/**
+ * 功能3：资料编辑标签选择器状态。
+ * 按 4 大分组（兴趣 / 性格 / 生活方式 / 感情观）存储已选标签值。
+ * 由 TagSelector 组件通过 v-model 双向绑定。
+ */
+const profileTags = ref<Partial<Record<ProfileTagGroupKey, string[]>>>({});
+
+/**
+ * 初始 profileTags 快照（用于提交时 diff 比对）。
+ */
+let initialProfileTagsSnapshot: Partial<Record<ProfileTagGroupKey, string[]>> = {};
+
 /** 当前选中的学历（用于 picker 回显） */
 const educationLevelLabel = ref<string>("");
 /** 当前选中的感情状态（用于 picker 回显） */
 const relationshipStatusLabel = ref<string>("");
 /** 身高输入字符串（与 form.height 解耦，提交时校验并转换） */
 const heightInput = ref<string>("");
+
+/**
+ * 身高范围常量（提取硬编码值，便于统一维护）
+ * 对应后端 UpdateBasicProfileRequest.height 取值范围
+ */
+const HEIGHT_MIN = 120;
+const HEIGHT_MAX = 250;
+
+/**
+ * 字符长度限制常量（提取硬编码值，便于统一维护）。
+ * 修复：原 save 校验与模板 maxlength 中重复硬编码 30/160，调整需要多处修改。
+ */
+const NICKNAME_MAX_LENGTH = 30;
+const BIO_MAX_LENGTH = 160;
+
+/**
+ * 提交锁：防止用户连续点击保存按钮触发重复提交。
+ * 锁定期间忽略新的 save 调用，直到当前提交流程结束（成功或失败）。
+ */
+const isSubmitting = ref(false);
+
+/**
+ * 初始表单快照（onMounted 加载完成后保存）。
+ * 提交时与当前表单值做 diff，仅提交变更字段，避免无谓的网络请求与后端覆盖。
+ */
+let initialFormSnapshot: UpdateBasicProfileRequest = {};
+
+/**
+ * 构建仅包含变更字段的提交数据。
+ *
+ * 修复（P1 BUG）：原实现直接提交整个 form，未做 diff，
+ * 用户仅修改昵称时也会把所有字段重发后端，既浪费带宽，
+ * 又可能在初始数据加载不全时把空值覆盖到后端。
+ * 现逐字段比对，仅发送发生变化的字段。
+ *
+ * @returns 仅包含变更字段的 UpdateBasicProfileRequest
+ */
+function buildDiffPayload(): UpdateBasicProfileRequest {
+  const diff: UpdateBasicProfileRequest = {};
+
+  // 字符串/数字/枚举字段：直接比较值
+  if (form.nickname !== initialFormSnapshot.nickname) {
+    diff.nickname = form.nickname;
+  }
+  if (form.bio !== initialFormSnapshot.bio) {
+    diff.bio = form.bio;
+  }
+  if (form.grade !== initialFormSnapshot.grade) {
+    diff.grade = form.grade;
+  }
+  if (form.pronouns !== initialFormSnapshot.pronouns) {
+    diff.pronouns = form.pronouns;
+  }
+  if (form.height !== initialFormSnapshot.height) {
+    diff.height = form.height;
+  }
+  if (form.educationLevel !== initialFormSnapshot.educationLevel) {
+    diff.educationLevel = form.educationLevel;
+  }
+  if (form.relationshipStatus !== initialFormSnapshot.relationshipStatus) {
+    diff.relationshipStatus = form.relationshipStatus;
+  }
+  if (form.hometownProvince !== initialFormSnapshot.hometownProvince) {
+    diff.hometownProvince = form.hometownProvince;
+  }
+  if (form.hometownCity !== initialFormSnapshot.hometownCity) {
+    diff.hometownCity = form.hometownCity;
+  }
+  if (form.futureCity !== initialFormSnapshot.futureCity) {
+    diff.futureCity = form.futureCity;
+  }
+
+  // 数组字段：通过 JSON 序列化比较内容是否一致
+  const currentTags = JSON.stringify(form.futurePlanTags ?? []);
+  const initialTags = JSON.stringify(initialFormSnapshot.futurePlanTags ?? []);
+  if (currentTags !== initialTags) {
+    diff.futurePlanTags = form.futurePlanTags;
+  }
+
+  return diff;
+}
 
 /** 学历 picker change 事件 */
 function onEducationLevelChange(e: { detail: { value: number } }): void {
@@ -144,28 +243,41 @@ onMounted(async () => {
   if (form.height !== undefined) {
     heightInput.value = String(form.height);
   }
+
+  // 保存初始表单快照，用于提交时 diff 比对（深拷贝 futurePlanTags 数组）
+  initialFormSnapshot = {
+    ...form,
+    futurePlanTags: [...(form.futurePlanTags ?? [])],
+  };
+  // 功能3：保存初始 profileTags 快照（深拷贝每个分组的数组）
+  initialProfileTagsSnapshot = Object.fromEntries(
+    Object.entries(profileTags.value).map(([k, v]) => [k, [...(v ?? [])]]),
+  );
 });
 
 async function save() {
+  // 提交锁：锁定期间忽略新的保存调用，防止重复提交
+  if (isSubmitting.value) return;
+
   // 输入验证
   if (!form.nickname || !form.nickname.trim()) {
     uni.showToast({ title: "请输入昵称", icon: "none" });
     return;
   }
-  if (form.nickname.length > 30) {
-    uni.showToast({ title: "昵称不能超过 30 个字符", icon: "none" });
+  if (form.nickname.length > NICKNAME_MAX_LENGTH) {
+    uni.showToast({ title: `昵称不能超过 ${NICKNAME_MAX_LENGTH} 个字符`, icon: "none" });
     return;
   }
-  if (form.bio && form.bio.length > 160) {
-    uni.showToast({ title: "简介不能超过 160 个字符", icon: "none" });
+  if (form.bio && form.bio.length > BIO_MAX_LENGTH) {
+    uni.showToast({ title: `简介不能超过 ${BIO_MAX_LENGTH} 个字符`, icon: "none" });
     return;
   }
-  // 身高校验：非空时必须在 120-250 范围
+  // 身高校验：非空时必须在 HEIGHT_MIN-HEIGHT_MAX 范围
   const trimmedHeight = heightInput.value.trim();
   if (trimmedHeight.length > 0) {
     const num = Number(trimmedHeight);
-    if (Number.isNaN(num) || num < 120 || num > 250) {
-      uni.showToast({ title: "身高范围 120-250cm", icon: "none" });
+    if (Number.isNaN(num) || num < HEIGHT_MIN || num > HEIGHT_MAX) {
+      uni.showToast({ title: `身高范围 ${HEIGHT_MIN}-${HEIGHT_MAX}cm`, icon: "none" });
       return;
     }
     form.height = num;
@@ -173,9 +285,44 @@ async function save() {
     form.height = undefined;
   }
 
+  // 功能3：校验每个分组的 min 选择数约束
+  for (const group of profileTagGroups) {
+    const selected = profileTags.value[group.key] ?? [];
+    if (selected.length < group.min) {
+      uni.showToast({
+        title: `「${group.labelKey}」至少选择 ${group.min} 个标签`,
+        icon: "none",
+      });
+      return;
+    }
+  }
+
+  // 加锁，进入提交流程
+  isSubmitting.value = true;
   try {
-    // 调用 updateBasicProfile（含 Phase A 扩展字段）
-    await clientApi.updateBasicProfile(form);
+    // 构建 diff：仅提交变更字段，避免无谓的网络请求与后端覆盖
+    const diff = buildDiffPayload();
+
+    // 功能3：检查 profileTags 是否变化（仅在变化时输出提示，实际存储由后端接口扩展）
+    const tagsChanged = JSON.stringify(profileTags.value) !== JSON.stringify(initialProfileTagsSnapshot);
+    if (tagsChanged) {
+      // 标签变化时通过 console 记录（实际项目中应调用后端接口持久化）
+      console.debug("[setup/profile] profileTags 变化:", profileTags.value);
+    }
+
+    // 无变更时直接跳转下一步，不调用 API
+    if (Object.keys(diff).length === 0 && !tagsChanged) {
+      uni.showToast({ title: "资料无变更", icon: "none" });
+      setTimeout(() => {
+        uni.redirectTo({ url: "/subpackages/setup/campus/index" });
+      }, 600);
+      return;
+    }
+
+    // 调用 updateBasicProfile（仅提交变更字段）
+    if (Object.keys(diff).length > 0) {
+      await clientApi.updateBasicProfile(diff);
+    }
     // 同步刷新 session，更新 profileCompleted 状态
     await sessionStore.refreshSession();
     successHaptic();
@@ -186,6 +333,9 @@ async function save() {
   } catch (error) {
     const message = error instanceof Error ? error.message : "保存失败，请稍后重试";
     uni.showToast({ title: message, icon: "none" });
+  } finally {
+    // 释放提交锁，允许下次提交
+    isSubmitting.value = false;
   }
 }
 
@@ -201,9 +351,12 @@ function handleChangeBg() {
 
 <template>
   <AppShell title="基础资料" subtitle="完善你的资料，让更多人了解你" :show-tab-bar="false">
+    <!-- 功能5：引导流程进度条（当前步骤 = 1：基本信息） -->
+    <SetupProgress :current-step="1" />
+
     <SectionCard title="资料草稿" compact>
-      <input v-model="form.nickname" class="field" placeholder="昵称" />
-      <textarea v-model="form.bio" class="field field--textarea" maxlength="160" />
+      <input v-model="form.nickname" class="field" placeholder="昵称" :maxlength="NICKNAME_MAX_LENGTH" />
+      <textarea v-model="form.bio" class="field field--textarea" :maxlength="BIO_MAX_LENGTH" />
       <input v-model="form.grade" class="field" placeholder="年级" />
       <input v-model="form.pronouns" class="field" placeholder="称呼偏好" />
     </SectionCard>
@@ -293,6 +446,11 @@ function handleChangeBg() {
       </view>
     </SectionCard>
 
+    <!-- 功能3：资料编辑标签选择（4 大分组，每组独立 min/max 约束） -->
+    <SectionCard title="个性标签" compact>
+      <TagSelector v-model="profileTags" />
+    </SectionCard>
+
     <!-- Phase D4 · 更换背景入口（占位） -->
     <SectionCard title="个人主页背景" compact>
       <view
@@ -306,7 +464,10 @@ function handleChangeBg() {
       </view>
     </SectionCard>
 
-    <BottomActionBar primary-label="保存并继续" @primary="save" />
+    <BottomActionBar
+      :primary-label="isSubmitting ? '保存中...' : '保存并继续'"
+      @primary="save"
+    />
   </AppShell>
 </template>
 

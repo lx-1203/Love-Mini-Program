@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 
-const t = designTokens;
+const { t } = useI18n();
 </script>
 
 <template>
-  <view class="terms">
-    <text class="terms-text">登录即代表您同意</text>
-    <text class="terms-link">《用户协议》</text>
-    <text class="terms-text">和</text>
-    <text class="terms-link">《隐私政策》</text>
+  <view
+    class="terms"
+    <!-- #ifdef H5 -->
+    role="paragraph"
+    :aria-label="t('login.agreedPrefix')"
+    <!-- #endif -->
+  >
+    <text class="terms-text">{{ t('login.termsAgreePrefix') }}</text>
+    <text class="terms-link">{{ t('login.userAgreementLink') }}</text>
+    <text class="terms-text">{{ t('login.and') }}</text>
+    <text class="terms-link">{{ t('login.privacyPolicyLink') }}</text>
   </view>
 </template>
 

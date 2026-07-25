@@ -99,6 +99,15 @@ public class User {
     @Column(name = "followers_count", nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer followersCount = 0;
 
+    /**
+     * VIP 自动续费开关。
+     * <p>由用户在 VIP 页面手动开启/关闭。
+     * 开启后，VIP 到期前 24 小时自动扣款续费。
+     * 默认关闭（false）。</p>
+     */
+    @Column(name = "auto_renew_enabled", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    private Boolean autoRenewEnabled = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -106,6 +115,14 @@ public class User {
     private LocalDateTime updatedAt;
 
     public User() {
+    }
+
+    public Boolean getAutoRenewEnabled() {
+        return autoRenewEnabled;
+    }
+
+    public void setAutoRenewEnabled(Boolean autoRenewEnabled) {
+        this.autoRenewEnabled = autoRenewEnabled;
     }
 
     public Long getId() {

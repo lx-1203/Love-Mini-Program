@@ -147,6 +147,7 @@ export const IMAGE_PATHS = {
     FAVORITES:    ICONS_BASE + '/common/star.png',          // 我的收藏 → 复用 star
     MATCHES:      ICONS_BASE + '/social/match.png',         // 我的匹配 → 复用 social.match
     VISITORS:     ICONS_BASE + '/social/visitor.png',       // 访客记录 → 复用 social.visitor
+    PHOTO_WALL:   ICONS_BASE + '/social/heart-signal.png',  // 相册 → 复用 heart-signal（暂用占位）
     VERIFICATION: ICONS_BASE + '/common/check.png',         // 恋爱认证 → 复用 check
     LAB:          ICONS_BASE + '/common/ai.png',            // 情感实验室 → 复用 ai
     SHARE:        ICONS_BASE + '/social/share.png',         // 推荐给好友 → 复用 social.share

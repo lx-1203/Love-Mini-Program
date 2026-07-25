@@ -37,12 +37,28 @@ public class MatchController {
 
   @PostMapping
   public MatchResultView createMatch(@Valid @RequestBody MatchRequest request) {
-    return matchService.createMatch(request);
+    // 修复：从 JWT 认证上下文获取当前用户 ID，忽略请求体中的 userId 字段，
+    // 防止用户伪造请求体越权为他人创建匹配。
+    Long authenticatedUserId = SecurityUtils.getCurrentUserId();
+    MatchRequest securedRequest = new MatchRequest(
+        authenticatedUserId,
+        request.matchIntent(),
+        request.topicIds(),
+        request.timeWindow(),
+        request.durationMinutes()
+    );
+    return matchService.createMatch(securedRequest);
   }
 
   @PostMapping("/quick")
   public MatchResultView createQuickMatch(@Valid @RequestBody QuickMatchRequest request) {
-    return matchService.createQuickMatch(request);
+    // 修复：从 JWT 认证上下文获取当前用户 ID，忽略请求体中的 userId 字段
+    Long authenticatedUserId = SecurityUtils.getCurrentUserId();
+    QuickMatchRequest securedRequest = new QuickMatchRequest(
+        authenticatedUserId,
+        request.durationMinutes()
+    );
+    return matchService.createQuickMatch(securedRequest);
   }
 
   @GetMapping("/{id}")

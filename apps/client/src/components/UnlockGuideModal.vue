@@ -13,6 +13,7 @@
  * 蓝色主题，与项目品牌色 var(--c-brand-*) 一致。
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 
 /** 组件 Props 定义 */
 const props = defineProps<{
@@ -36,10 +37,12 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
+const { t } = useI18n();
+
 /** 弹窗主文案：根据 featureName 动态生成 */
 const messageText = computed(() => {
-  const name = props.featureName || props.pageTitle || "此功能";
-  return `完成资料完善即可解锁 ${name}`;
+  const name = props.featureName || props.pageTitle || t("lock.thisFeature");
+  return t("lock.unlockHintModal", { name });
 });
 
 /** 弹窗副文案：展示当前完善度，鼓励用户继续 */
@@ -49,9 +52,9 @@ const subtitleText = computed(() => {
     props.completionPercent > 0 &&
     props.completionPercent < 100
   ) {
-    return `当前完善度 ${props.completionPercent}%，继续加油～`;
+    return t("lock.completionProgressEncourage", { n: props.completionPercent });
   }
-  return "完善资料，开启更多校园恋爱功能";
+  return t("lock.defaultSubtitleModal");
 });
 
 /**
@@ -90,6 +93,11 @@ function handleMaskClick() {
     v-if="visible"
     class="unlock-modal"
     @tap="handleMaskClick"
+    <!-- #ifdef H5 -->
+    role="dialog"
+    aria-modal="true"
+    :aria-label="t('lock.title')"
+    <!-- #endif -->
   >
     <!-- 弹窗主体（阻止冒泡，避免点击内容区误关闭） -->
     <view class="unlock-modal__container" @tap.stop="noop">
@@ -99,7 +107,7 @@ function handleMaskClick() {
       </view>
 
       <!-- 标题 -->
-      <text class="unlock-modal__title">解锁功能</text>
+      <text class="unlock-modal__title">{{ t('lock.title') }}</text>
 
       <!-- 主文案 -->
       <text class="unlock-modal__message">{{ messageText }}</text>
@@ -113,16 +121,22 @@ function handleMaskClick() {
         <button
           class="unlock-modal__btn unlock-modal__btn--primary"
           @tap.stop="handleConfirm"
+          <!-- #ifdef H5 -->
+          :aria-label="t('lock.confirm')"
+          <!-- #endif -->
         >
-          <text class="unlock-modal__btn-text">去完善资料</text>
+          <text class="unlock-modal__btn-text">{{ t('lock.confirm') }}</text>
         </button>
 
         <!-- 次按钮：暂不完善 -->
         <button
           class="unlock-modal__btn unlock-modal__btn--secondary"
           @tap.stop="handleCancel"
+          <!-- #ifdef H5 -->
+          :aria-label="t('lock.cancelAria')"
+          <!-- #endif -->
         >
-          <text class="unlock-modal__btn-text unlock-modal__btn-text--secondary">暂不完善</text>
+          <text class="unlock-modal__btn-text unlock-modal__btn-text--secondary">{{ t('lock.cancel') }}</text>
         </button>
       </view>
     </view>
@@ -144,7 +158,7 @@ function handleMaskClick() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--c-overlay-mid-strong, rgba(15, 23, 42, 0.5));
   /* 淡入动画 */
   animation: unlock-fade-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
@@ -165,7 +179,7 @@ function handleMaskClick() {
   padding: 56rpx 48rpx 40rpx;
   background: var(--c-text-inverse, #ffffff);
   border-radius: 32rpx;
-  box-shadow: 0 16rpx 48rpx rgba(15, 23, 42, 0.16);
+  box-shadow: 0 16rpx 48rpx var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.16));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -275,7 +289,7 @@ function handleMaskClick() {
 .unlock-modal__btn-text {
   font-size: 30rpx;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .unlock-modal__btn-text--secondary {

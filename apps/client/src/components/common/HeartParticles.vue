@@ -103,7 +103,7 @@ function particleStyle(index: number) {
 
 .heart-icon {
   font-size: 32rpx;
-  color: #ec4899;
+  color: var(--c-romance-500, #EC4899);
 }
 
 @keyframes heart-burst {

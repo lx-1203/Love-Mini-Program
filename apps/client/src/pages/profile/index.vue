@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 个人中心 - 我的
  * 展示用户头像、昵称、学校、签名、VIP 状态、我的动态、数据统计、资料完善度、社交升温进度、功能菜单入口
@@ -7,6 +7,7 @@
 import { computed, onMounted, ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { useProfileStore } from "../../stores/profile";
 import { useSocialProgressStore } from "../../stores/social-progress";
@@ -22,6 +23,17 @@ import MatchCountChip from "../../components/common/MatchCountChip.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
+
+/**
+ * 当前页面对象（最小契约）。
+ *
+ * 兼容 mp-weixin（参数挂在 options）与 H5（参数挂在 $page.options）双端，
+ * 此处仅声明实际消费的 options / $page 字段。
+ */
+interface PageWithOptions {
+  options?: Record<string, string>;
+  $page?: { options?: Record<string, string> };
+}
 
 /**
  * 从 uni.chooseImage / chooseVideo 返回值构造类 File 对象。
@@ -58,6 +70,7 @@ function buildFileLike(filePath: string, size: number): File {
  */
 type VerificationBadgeLevel = "none" | "school" | "email" | "idcard";
 
+const { t } = useI18n();
 const sessionStore = useSessionStore();
 
 // 同步自定义 TabBar 选中状态（我的 = 索引 4）
@@ -133,9 +146,9 @@ const targetUserId = ref<string>("");
 function loadPageUserIdParam(): void {
   try {
     const pages = getCurrentPages();
-    const currentPage = pages[pages.length - 1];
+    const currentPage = pages[pages.length - 1] as PageWithOptions | undefined;
     // mp-weixin 端：参数挂在 options；H5 端：可通过 $page.options 获取
-    const options = (currentPage as any)?.options || (currentPage as any)?.$page?.options || {};
+    const options = currentPage?.options || currentPage?.$page?.options || {};
     const userId = options.userId;
     if (typeof userId === "string" && userId.length > 0) {
       targetUserId.value = userId;
@@ -246,9 +259,9 @@ interface StatItem {
 const stats = computed<StatItem[]>(() => {
   const s = profileStore.profileStats;
   return [
-    { label: "关注", value: s?.followingCount ?? 0 },
-    { label: "粉丝", value: s?.followersCount ?? 0 },
-    { label: "获赞", value: s?.likesCount ?? 0 },
+    { label: t("profile.following"), value: s?.followingCount ?? 0 },
+    { label: t("profile.followers"), value: s?.followersCount ?? 0 },
+    { label: t("profile.likes"), value: s?.likesCount ?? 0 },
   ];
 });
 
@@ -270,56 +283,64 @@ const menuItems = computed<MenuItem[]>(() => [
     emoji: "💝",
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "#FFF0F5",
-    label: "我的动态",
+    label: t("profile.myPosts"),
     path: "/pages/village/index?tab=mine",
   },
   {
     emoji: "⭐",
     icon: IMAGE_PATHS.ICONS_PROFILE.FAVORITES,
     bgColor: "#FFF8E7",
-    label: "我的喜欢",
+    label: t("profile.myLikes"),
     path: "/pages/likes/index?tab=likedBy",
   },
   {
     emoji: "💕",
     icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
     bgColor: "#FFE8EC",
-    label: "我的匹配",
+    label: t("profile.myMatches"),
     path: "/pages/likes/index",
   },
   {
     emoji: "👀",
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
     bgColor: "#E8F8F0",
-    label: "访客记录",
-    path: "/pages/likes/index?tab=visitors",
+    label: t("profile.visitors"),
+    path: "/pages/profile/visitors",
+  },
+  /* 功能4：相册入口 */
+  {
+    emoji: "📷",
+    icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
+    bgColor: "#FFF0F5",
+    label: t("profile.albumTitle"),
+    path: "/pages/profile/album",
   },
   {
     emoji: "✅",
     icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
     bgColor: "#E8F4FF",
-    label: "恋爱认证",
+    label: t("profile.verification"),
     path: "/pages/verification/index",
   },
   {
     emoji: "🔬",
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
     bgColor: "#F3E8FF",
-    label: "情感实验室",
+    label: t("profile.loveLab"),
     path: "/pages/circles/index",
   },
   {
     emoji: "",
     icon: IMAGE_PATHS.ICONS_EMOJI.CHAT,
     bgColor: "#E0F2FE",
-    label: "意见反馈",
+    label: t("profile.feedback"),
     path: "/subpackages/support/feedback/index",
   },
   {
     emoji: "📤",
     icon: IMAGE_PATHS.ICONS_PROFILE.SHARE,
     bgColor: "#EDE9FE",
-    label: "推荐给好友",
+    label: t("profile.shareFriend"),
     action: () => {
       uni.showShareMenu({
         withShareTicket: true,
@@ -334,22 +355,21 @@ const bottomMenuItems = computed<MenuItem[]>(() => [
     emoji: "⚙️",
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
     bgColor: "#F4F6FA",
-    label: "设置",
+    label: t("profile.settings"),
     path: "/pages/settings/index",
   },
   {
     emoji: "ℹ️",
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
     bgColor: "#F4F6FA",
-    label: "关于我们",
+    label: t("profile.aboutUs"),
     action: () => {
       lightHaptic();
       uni.showModal({
-        title: "关于校园恋爱",
-        content:
-          "校园恋爱 · 遇见你的那个TA\n\n在这里，遇见同频的人，开启一段双向奔赴的校园故事。",
+        title: t("profile.aboutTitle"),
+        content: t("profile.aboutContent"),
         showCancel: false,
-        confirmText: "知道了",
+        confirmText: t("profile.gotIt"),
       });
     },
   },
@@ -417,8 +437,8 @@ function handlePostTap(_postId: string) {
 function handleLogout() {
   lightHaptic();
   uni.showModal({
-    title: "提示",
-    content: "确定要退出登录吗？",
+    title: t("profile.titleTip"),
+    content: t("profile.logoutConfirm"),
     success: (res) => {
       if (res.confirm) {
         sessionStore.userSession = null;
@@ -450,7 +470,7 @@ function handleEditBackground() {
       const tempFile = res.tempFiles?.[0];
       const size = (tempFile as { size?: number })?.size ?? 0;
       if (!tempPath) {
-        uni.showToast({ title: "未选择图片", icon: "none" });
+        uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
         return;
       }
       const file = buildFileLike(tempPath, size);
@@ -459,7 +479,7 @@ function handleEditBackground() {
     fail: (err) => {
       // 用户取消选择时不报错（errMsg 含 cancel）
       if (!String(err?.errMsg || "").includes("cancel")) {
-        uni.showToast({ title: "选择图片失败", icon: "none" });
+        uni.showToast({ title: t("profile.choosePhotoFailed"), icon: "none" });
       }
     },
   });
@@ -471,13 +491,13 @@ function handleEditBackground() {
 async function uploadBackground(file: File) {
   isUploading.value = true;
   uploadKind.value = "background";
-  uploadProgress.value = "上传中...";
+  uploadProgress.value = t("profile.uploading");
   try {
     await profileStore.uploadBackground(file);
     successHaptic();
-    uni.showToast({ title: "背景已更新", icon: "success" });
+    uni.showToast({ title: t("profile.bgUpdated"), icon: "success" });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "上传失败";
+    const message = error instanceof Error ? error.message : t("profile.uploadFailed");
     uni.showToast({ title: message, icon: "none" });
   } finally {
     isUploading.value = false;
@@ -505,7 +525,7 @@ function handleUploadVideo() {
       const tempPath = res.tempFilePath ?? "";
       const size = res.size ?? 0;
       if (!tempPath) {
-        uni.showToast({ title: "未选择视频", icon: "none" });
+        uni.showToast({ title: t("profile.noVideoSelected"), icon: "none" });
         return;
       }
       const file = buildFileLike(tempPath, size);
@@ -513,7 +533,7 @@ function handleUploadVideo() {
     },
     fail: (err) => {
       if (!String(err?.errMsg || "").includes("cancel")) {
-        uni.showToast({ title: "选择视频失败", icon: "none" });
+        uni.showToast({ title: t("profile.chooseVideoFailed"), icon: "none" });
       }
     },
   });
@@ -525,13 +545,13 @@ function handleUploadVideo() {
 async function uploadVideo(file: File) {
   isUploading.value = true;
   uploadKind.value = "video";
-  uploadProgress.value = "上传中...";
+  uploadProgress.value = t("profile.uploading");
   try {
     await profileStore.uploadVideo(file);
     successHaptic();
-    uni.showToast({ title: "视频已上传", icon: "success" });
+    uni.showToast({ title: t("profile.videoUploaded"), icon: "success" });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "上传失败";
+    const message = error instanceof Error ? error.message : t("profile.uploadFailed");
     uni.showToast({ title: message, icon: "none" });
   } finally {
     isUploading.value = false;
@@ -558,21 +578,21 @@ function handleRemoveVideo() {
   if (isUploading.value) return;
   lightHaptic();
   uni.showModal({
-    title: "删除个人视频",
-    content: "确定删除当前个人视频吗？",
-    confirmText: "删除",
+    title: t("profile.deleteVideo"),
+    content: t("profile.deleteVideoConfirm"),
+    confirmText: t("profile.delete"),
     confirmColor: "#E5454D",
     success: async (res) => {
       if (!res.confirm) return;
       isUploading.value = true;
       uploadKind.value = "video";
-      uploadProgress.value = "删除中...";
+      uploadProgress.value = t("profile.deleting");
       try {
         await profileStore.removeVideo();
         successHaptic();
-        uni.showToast({ title: "已删除", icon: "success" });
+        uni.showToast({ title: t("profile.photoDeleted"), icon: "success" });
       } catch (error) {
-        const message = error instanceof Error ? error.message : "删除失败";
+        const message = error instanceof Error ? error.message : t("profile.deleteFailed");
         uni.showToast({ title: message, icon: "none" });
       } finally {
         isUploading.value = false;
@@ -600,7 +620,7 @@ function handleUploadPhoto(index: number) {
       const tempFile = res.tempFiles?.[0];
       const size = (tempFile as { size?: number })?.size ?? 0;
       if (!tempPath) {
-        uni.showToast({ title: "未选择图片", icon: "none" });
+        uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
         return;
       }
       const file = buildFileLike(tempPath, size);
@@ -608,7 +628,7 @@ function handleUploadPhoto(index: number) {
     },
     fail: (err) => {
       if (!String(err?.errMsg || "").includes("cancel")) {
-        uni.showToast({ title: "选择图片失败", icon: "none" });
+        uni.showToast({ title: t("profile.choosePhotoFailed"), icon: "none" });
       }
     },
   });
@@ -620,13 +640,13 @@ function handleUploadPhoto(index: number) {
 async function uploadPhoto(file: File, index: number) {
   isUploading.value = true;
   uploadKind.value = "photo";
-  uploadProgress.value = "上传中...";
+  uploadProgress.value = t("profile.uploading");
   try {
     await profileStore.uploadPhotoAtIndex(file, index);
     successHaptic();
-    uni.showToast({ title: "照片已添加", icon: "success" });
+    uni.showToast({ title: t("profile.photoAdded"), icon: "success" });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "上传失败";
+    const message = error instanceof Error ? error.message : t("profile.uploadFailed");
     uni.showToast({ title: message, icon: "none" });
   } finally {
     isUploading.value = false;
@@ -644,21 +664,21 @@ function handleRemovePhoto(index: number) {
   if (index < 0 || index >= photoGallery.value.length) return;
   lightHaptic();
   uni.showModal({
-    title: "删除照片",
-    content: "确定删除这张照片吗？",
-    confirmText: "删除",
+    title: t("profile.deletePhoto"),
+    content: t("profile.deletePhotoConfirm"),
+    confirmText: t("profile.delete"),
     confirmColor: "#E5454D",
     success: async (res) => {
       if (!res.confirm) return;
       isUploading.value = true;
       uploadKind.value = "photo";
-      uploadProgress.value = "删除中...";
+      uploadProgress.value = t("profile.deleting");
       try {
         await profileStore.removePhotoAtIndex(index);
         successHaptic();
-        uni.showToast({ title: "已删除", icon: "success" });
+        uni.showToast({ title: t("profile.photoDeleted"), icon: "success" });
       } catch (error) {
-        const message = error instanceof Error ? error.message : "删除失败";
+        const message = error instanceof Error ? error.message : t("profile.deleteFailed");
         uni.showToast({ title: message, icon: "none" });
       } finally {
         isUploading.value = false;
@@ -678,7 +698,7 @@ function handleRemovePhoto(index: number) {
 const appVersion: string = (() => {
   if (typeof window === "undefined") return "v1.0.0";
   try {
-    const v = (import.meta as any).env?.VITE_APP_VERSION;
+    const v = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_APP_VERSION;
     return typeof v === "string" && v.length > 0 ? v : "v1.0.0";
   } catch (_e) {
     return "v1.0.0";
@@ -721,7 +741,7 @@ onMounted(() => {
     <!-- ==================== 未完善资料：锁定页面 ==================== -->
     <LockScreen
       v-if="!isUnlocked"
-      page-name="我的"
+      :page-name="t('profile.pageName')"
       :completion-percent="completionPercent"
     />
 
@@ -769,7 +789,7 @@ onMounted(() => {
             />
             <view v-else class="profile-bg__edit-spinner" />
             <text class="profile-bg__edit-text">
-              {{ isUploading && uploadKind === 'background' ? uploadProgress : '编辑背景图' }}
+              {{ isUploading && uploadKind === 'background' ? uploadProgress : t('profile.editBackground') }}
             </text>
           </view>
           <!-- Phase E1 / H-10：上传中蒙层 -->
@@ -825,12 +845,12 @@ onMounted(() => {
         <!-- 自己的 profile：显示"编辑资料"按钮 -->
         <view v-if="isOwnProfile" class="edit-btn press-feedback" @tap="goToProfileSetup" hover-class="edit-btn--hover" hover-stay-time="120">
           <image class="edit-btn__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" />
-          <text class="edit-btn__text">编辑资料</text>
+          <text class="edit-btn__text">{{ t('profile.editProfile') }}</text>
         </view>
         <!-- 对方 profile：显示"打个招呼"按钮 -->
         <view v-else class="greet-btn press-feedback" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="120">
           <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
-          <text class="greet-btn__text">打个招呼</text>
+          <text class="greet-btn__text">{{ t('profile.sayHi') }}</text>
         </view>
 
         <!-- 数据统计栏 -->
@@ -850,8 +870,8 @@ onMounted(() => {
       <view v-if="isOwnProfile" class="media-section">
         <view class="section-header">
           <view class="section-header__left">
-            <text class="section-header__title">个人视频</text>
-            <text class="section-header__count">≤60s，展示真实的你</text>
+            <text class="section-header__title">{{ t('profile.personalVideo') }}</text>
+            <text class="section-header__count">{{ t('profile.personalVideoHint') }}</text>
           </view>
         </view>
 
@@ -873,9 +893,9 @@ onMounted(() => {
             <view v-else class="video-cta__spinner" />
           </view>
           <text class="video-cta__text">
-            {{ isUploading && uploadKind === 'video' ? uploadProgress : '上传个人视频' }}
+            {{ isUploading && uploadKind === 'video' ? uploadProgress : t('profile.uploadVideo') }}
           </text>
-          <text class="video-cta__hint">从相册选择，mp4 / mov，≤60s</text>
+          <text class="video-cta__hint">{{ t('profile.videoHint') }}</text>
         </view>
 
         <!-- 已上传：视频缩略图 + 播放图标 + 删除按钮 -->
@@ -897,7 +917,7 @@ onMounted(() => {
               hover-stay-time="100"
               @tap="handlePlayVideo"
             >
-              <text class="video-preview__action-text">播放</text>
+              <text class="video-preview__action-text">{{ t('profile.play') }}</text>
             </view>
             <view
               class="video-preview__action video-preview__action--delete press-feedback"
@@ -905,7 +925,7 @@ onMounted(() => {
               hover-stay-time="100"
               @tap="handleRemoveVideo"
             >
-              <text class="video-preview__action-text video-preview__action-text--danger">删除</text>
+              <text class="video-preview__action-text video-preview__action-text--danger">{{ t('profile.delete') }}</text>
             </view>
           </view>
         </view>
@@ -915,7 +935,7 @@ onMounted(() => {
       <view v-if="isOwnProfile" class="media-section">
         <view class="section-header">
           <view class="section-header__left">
-            <text class="section-header__title">照片墙</text>
+            <text class="section-header__title">{{ t('profile.photoWall') }}</text>
             <text class="section-header__count">{{ photoGallery.length }} / {{ PHOTO_GALLERY_MAX }}</text>
           </view>
         </view>
@@ -947,7 +967,7 @@ onMounted(() => {
               @tap="handleUploadPhoto(cell.index)"
             >
               <text class="photo-grid__add-icon">+</text>
-              <text class="photo-grid__add-text">添加</text>
+              <text class="photo-grid__add-text">{{ t('profile.add') }}</text>
             </view>
           </view>
         </view>
@@ -958,12 +978,12 @@ onMounted(() => {
         <view class="vip-card__left">
           <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" />
           <view class="vip-card__text-wrap">
-            <text class="vip-card__title">开通VIP会员</text>
-            <text class="vip-card__desc">解锁查看谁喜欢我 · 无限喜欢 · 专属标识</text>
+            <text class="vip-card__title">{{ t('profile.openVip') }}</text>
+            <text class="vip-card__desc">{{ t('profile.openVipDesc') }}</text>
           </view>
         </view>
         <view class="vip-card__btn">
-          <text class="vip-card__btn-text">立即开通</text>
+          <text class="vip-card__btn-text">{{ t('profile.subscribeNow') }}</text>
         </view>
       </view>
 
@@ -976,8 +996,8 @@ onMounted(() => {
       <view class="my-posts-section">
         <view class="section-header">
           <view class="section-header__left">
-            <text class="section-header__title">我的动态</text>
-            <text v-if="myPostsTotal > 0" class="section-header__count">共 {{ myPostsTotal }} 条</text>
+            <text class="section-header__title">{{ t('profile.myPosts') }}</text>
+            <text v-if="myPostsTotal > 0" class="section-header__count">{{ t('profile.postsCount', { n: myPostsTotal }) }}</text>
           </view>
           <view
             v-if="myPostsPreview.length > 0"
@@ -986,7 +1006,7 @@ onMounted(() => {
             hover-class="section-header__more--hover"
             hover-stay-time="100"
           >
-            <text class="section-header__more-text">查看全部</text>
+            <text class="section-header__more-text">{{ t('common.viewAll') }}</text>
             <text class="section-header__more-arrow">›</text>
           </view>
         </view>
@@ -1031,8 +1051,8 @@ onMounted(() => {
           hover-stay-time="100"
         >
           <image class="my-posts-empty__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" />
-          <text class="my-posts-empty__text">还没有发布过动态</text>
-          <text class="my-posts-empty__action">去村口发第一条 ›</text>
+          <text class="my-posts-empty__text">{{ t('profile.noPosts') }}</text>
+          <text class="my-posts-empty__action">{{ t('profile.publishFirst') }}</text>
         </view>
       </view>
 
@@ -1092,7 +1112,7 @@ onMounted(() => {
 
       <!-- 退出登录 -->
       <view class="logout-btn press-feedback" @tap="handleLogout" hover-class="logout-btn--hover" hover-stay-time="100">
-        <text class="logout-btn__text">退出登录</text>
+        <text class="logout-btn__text">{{ t('profile.logout') }}</text>
       </view>
 
       <!-- 底部版本信息 -->
@@ -1210,7 +1230,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(63, 207, 142, 0.3) 0%, rgba(124, 217, 166, 0.5) 50%, var(--c-brand-400) 100%);
+  background: linear-gradient(180deg, var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3))) 0%, var(--c-brand-300, var(--c-brand-300, rgba(124, 217, 166, 0.5))) 50%, var(--c-brand-400) 100%);
   pointer-events: none;
 }
 
@@ -1224,13 +1244,13 @@ onMounted(() => {
   align-items: center;
   gap: var(--sp-1);
   padding: var(--sp-1) var(--sp-3);
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--c-overlay-mid, var(--c-overlay-mid, rgba(15, 23, 42, 0.55)));
   border-radius: var(--r-full);
   transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
   &--hover {
     transform: scale(0.96);
-    background: rgba(15, 23, 42, 0.7);
+    background: var(--c-overlay-strong, var(--c-overlay-strong, rgba(15, 23, 42, 0.7)));
   }
 }
 
@@ -1250,7 +1270,7 @@ onMounted(() => {
   width: 28rpx;
   height: 28rpx;
   border-radius: var(--r-full);
-  border: 3rpx solid rgba(255, 255, 255, 0.4);
+  border: 3rpx solid var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
   border-top-color: var(--c-neutral-0);
   animation: profile-bg-spin 0.8s linear infinite;
 }
@@ -1266,7 +1286,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.35);
+  background: var(--c-overlay-mid-strong, var(--c-overlay-mid-strong, rgba(15, 23, 42, 0.35)));
 }
 
 .profile-bg__loading-text {
@@ -1308,7 +1328,7 @@ onMounted(() => {
 
   &--vip {
     background: var(--c-gradient-vip);
-    box-shadow: 0 0 var(--sp-8) rgba(201, 163, 106, 0.5);
+    box-shadow: 0 0 var(--sp-8) var(--c-vip-border-tint, var(--c-vip-border-tint, rgba(201, 163, 106, 0.5)));
   }
 }
 
@@ -1349,7 +1369,7 @@ onMounted(() => {
   transform: translateX(-50%);
   width: 36rpx;
   height: 36rpx;
-  filter: drop-shadow(0 var(--sp-1) var(--sp-2) rgba(0,0,0,0.2));
+  filter: drop-shadow(0 var(--sp-1) var(--sp-2) var(--c-overlay-text-shadow-mid, var(--c-overlay-text-shadow-mid, rgba(0,0,0,0.2))));
 }
 
 .vip-crown__icon {
@@ -1382,7 +1402,7 @@ onMounted(() => {
   font-size: var(--fs-2xl);
   font-weight: 700;
   color: var(--c-neutral-0);
-  text-shadow: 0 var(--sp-1) var(--sp-4) rgba(0,0,0,0.1);
+  text-shadow: 0 var(--sp-1) var(--sp-4) var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0,0,0,0.1)));
 }
 
 /* VIP 徽章 */
@@ -1416,7 +1436,7 @@ onMounted(() => {
   gap: var(--sp-1);
   margin-bottom: var(--sp-2);
   padding: var(--sp-1) var(--sp-4);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)));
   border-radius: var(--r-full);
 }
 
@@ -1437,7 +1457,7 @@ onMounted(() => {
 
 .user-info__bio {
   font-size: var(--fs-sm);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
   max-width: 480rpx;
   text-align: center;
   overflow: hidden;
@@ -1602,7 +1622,7 @@ onMounted(() => {
   width: 96rpx;
   height: 96rpx;
   border-radius: var(--r-full);
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--c-overlay-mid, var(--c-overlay-mid, rgba(15, 23, 42, 0.55)));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1638,7 +1658,7 @@ onMounted(() => {
   }
 
   &--delete {
-    border-color: rgba(229, 69, 77, 0.3);
+    border-color: var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
   }
 }
 
@@ -1743,7 +1763,7 @@ onMounted(() => {
 
 .vip-card__icon {
   font-size: var(--fs-6xl);
-  filter: drop-shadow(0 var(--sp-1) var(--sp-2) rgba(0,0,0,0.15));
+  filter: drop-shadow(0 var(--sp-1) var(--sp-2) var(--c-black-shadow-lg, var(--c-black-shadow-lg, rgba(0,0,0,0.15))));
 }
 
 .vip-card__text-wrap {
@@ -1762,7 +1782,7 @@ onMounted(() => {
 .vip-card__desc {
   font-size: var(--fs-sm);
   /* 半透明白字 */
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85)));
 }
 
 .vip-card__btn {
@@ -1891,6 +1911,10 @@ onMounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   word-break: break-all;
+  /* #ifndef H5 */
+  /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
+  max-height: 2.8em;
+  /* #endif */
 }
 
 .my-post-item__meta {

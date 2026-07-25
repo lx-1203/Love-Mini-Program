@@ -16,6 +16,7 @@
  * 兼容：不使用 :hover / :active，使用 hover-class；backdrop-filter 仅在 H5 启用
  */
 import { ref, computed, watch, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
 import type { DiscoverCard } from "../../stores/discover";
 import VerificationBadge from "../common/VerificationBadge.vue";
 import SafeImage from "../common/SafeImage.vue";
@@ -35,6 +36,8 @@ const emit = defineEmits<{
   (e: "pass", cardId: string): void;
   (e: "message", userId: string): void;
 }>();
+
+const { t } = useI18n();
 
 /** 入场动画状态 */
 const animating = ref(false);
@@ -60,13 +63,14 @@ const icons = {
  * 安全执行交互操作并在异常时给用户明确提示。
  * 符合 Spec 要求：所有滑动、喜欢、发消息操作失败时禁止静默吞掉异常。
  */
-function safeAction<T>(fn: () => T, errorMsg = "操作失败"): T | undefined {
+function safeAction<T>(fn: () => T, errorMsg?: string): T | undefined {
   try {
     return fn();
   } catch (error) {
-    const message = error instanceof Error ? error.message : errorMsg;
+    const fallbackMsg = errorMsg ?? t("cardDetail.operationFailed");
+    const message = error instanceof Error ? error.message : fallbackMsg;
     uni.showToast({ title: message, icon: "none" });
-    console.error(`[CardDetailOverlay] ${errorMsg}:`, error);
+    console.error(`[CardDetailOverlay] ${fallbackMsg}:`, error);
   }
 }
 
@@ -80,29 +84,33 @@ const displayImages = computed<string[]>(() => {
   return [];
 });
 
-/** 学历中文映射 */
+/** 学历中文映射（使用 i18n 实时切换） */
 function eduLabel(level?: string): string {
   const map: Record<string, string> = {
-    high_school: "高中",
-    bachelor: "本科",
-    master: "硕士",
-    phd: "博士",
+    high_school: t("discover.educationHighSchool"),
+    bachelor: t("discover.educationBachelor"),
+    master: t("discover.educationMaster"),
+    phd: t("discover.educationPhd"),
   };
-  return map[level ?? ""] ?? level ?? "本科";
+  return map[level ?? ""] ?? level ?? t("discover.educationBachelor");
 }
 
 /** 年级文本（从 headline 提取第二段） */
 const gradeText = computed(() => {
   const headline = props.card?.headline ?? "";
   const parts = headline.split("·").map((s) => s.trim());
-  return parts[1] || "大三";
+  return parts[1] || t("cardDetail.defaultGrade");
 });
 
 /** 性格标签（优先使用卡片 tags，否则使用默认标签） */
 const personalityTags = computed(() => {
   const tags = props.card?.tags ?? [];
-  const fallback = ["开朗外向", "温柔体贴", "幽默风趣", "文艺安静"];
-  return tags.length > 0 ? tags.slice(0, 6) : fallback.slice(0, 4);
+  if (tags.length > 0) return tags.slice(0, 6);
+  return t("cardDetail.personalityTags")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 4);
 });
 
 /** 兴趣圈（优先从卡片 tags 派生，否则使用模拟数据） */
@@ -145,6 +153,26 @@ const matchScore = computed(() => {
   return Math.min(98, 80 + count * 5);
 });
 
+/** 匹配度文案 */
+const matchScoreText = computed(() => t("cardDetail.matchScoreLabel", { n: matchScore.value }));
+
+/** 兴趣圈数量文案 */
+const circlesCountText = computed(() => t("cardDetail.circlesCount", { n: interestCircles.value.length }));
+
+/** 简介 toggle 文案 */
+const bioToggleText = computed(() => isBioExpanded.value ? t("cardDetail.bioCollapse") : t("cardDetail.bioExpand"));
+
+/** 默认学校文案 */
+const schoolNameText = computed(() => props.card?.campusName || t("cardDetail.defaultSchool"));
+
+/** 默认简介文案 */
+const bioText = computed(() => props.card?.bio || t("cardDetail.defaultBio"));
+
+/** 圈成员数文案 */
+function circleMembersText(members: number): string {
+  return t("cardDetail.circleMembers", { n: members });
+}
+
 watch(
   () => props.visible,
   (val) => {
@@ -169,7 +197,7 @@ function handleClose() {
     animating.value = false;
     // 等待出场动画完成后再通知父组件移除弹层
     setTimeout(() => emit("close"), 320);
-  }, "关闭详情失败");
+  }, t("cardDetail.closeFailed"));
 }
 
 /** 喜欢 */
@@ -180,7 +208,7 @@ function handleLike() {
     emit("like", props.card!.id);
     animating.value = false;
     setTimeout(() => emit("close"), 320);
-  }, "喜欢操作失败");
+  }, t("cardDetail.likeFailed"));
 }
 
 /** 超级喜欢 */
@@ -189,7 +217,7 @@ function handleSuperLike() {
   safeAction(() => {
     successHaptic();
     emit("superLike", props.card!.id);
-  }, "超级喜欢失败");
+  }, t("cardDetail.superLikeFailed"));
 }
 
 /** 跳过 */
@@ -200,7 +228,7 @@ function handlePass() {
     emit("pass", props.card!.id);
     animating.value = false;
     setTimeout(() => emit("close"), 320);
-  }, "跳过操作失败");
+  }, t("cardDetail.passFailed"));
 }
 
 /**
@@ -214,7 +242,7 @@ function handleMessage() {
     emit("message", props.card!.userId);
     animating.value = false;
     setTimeout(() => emit("close"), 320);
-  }, "发消息失败");
+  }, t("cardDetail.messageFailed"));
 }
 
 /** 跳转个人主页 */
@@ -222,7 +250,7 @@ function goToProfile() {
   if (!props.card) return;
   safeAction(() => {
     openAppPath(`/pages/profile/index?userId=${encodeURIComponent(props.card!.userId)}`);
-  }, "跳转主页失败");
+  }, t("cardDetail.profileNavFailed"));
 }
 
 /** 展开/收起个人简介 */
@@ -230,7 +258,7 @@ function toggleBio() {
   safeAction(() => {
     lightHaptic();
     isBioExpanded.value = !isBioExpanded.value;
-  }, "切换简介失败");
+  }, t("cardDetail.bioToggleFailed"));
 }
 
 /* ========== 顶部栏下滑关闭手势 ========== */
@@ -273,7 +301,16 @@ function onSwipeDownEnd(e: TouchEvent) {
 </script>
 
 <template>
-  <view v-if="visible" class="card-detail-overlay" :class="{ 'card-detail-overlay--active': animating }">
+  <view
+    v-if="visible"
+    class="card-detail-overlay"
+    :class="{ 'card-detail-overlay--active': animating }"
+    <!-- #ifdef H5 -->
+    role="dialog"
+    aria-modal="true"
+    :aria-label="t('cardDetail.detailTitle')"
+    <!-- #endif -->
+  >
     <!-- 半透明背景 -->
     <view class="card-detail-overlay__backdrop" @tap="handleClose" />
 
@@ -295,17 +332,25 @@ function onSwipeDownEnd(e: TouchEvent) {
             hover-class="detail-top-bar__btn--pressed"
             :hover-stay-time="120"
             @tap="handleClose"
+            <!-- #ifdef H5 -->
+            role="button"
+            :aria-label="t('cardDetail.closeAria')"
+            <!-- #endif -->
           >
             <image class="detail-top-bar__icon" :src="icons.close" mode="aspectFit" />
           </view>
-          <text class="detail-top-bar__title">资料详情</text>
+          <text class="detail-top-bar__title">{{ t('cardDetail.detailTitle') }}</text>
           <view
             class="detail-top-bar__btn detail-top-bar__btn--more"
             hover-class="detail-top-bar__btn--pressed"
             :hover-stay-time="120"
             @tap="goToProfile"
+            <!-- #ifdef H5 -->
+            role="button"
+            :aria-label="t('cardDetail.homePageAria')"
+            <!-- #endif -->
           >
-            <text class="detail-top-bar__more-text">主页</text>
+            <text class="detail-top-bar__more-text">{{ t('cardDetail.homePage') }}</text>
           </view>
         </view>
       </view>
@@ -352,7 +397,7 @@ function onSwipeDownEnd(e: TouchEvent) {
               <text class="detail-hero__name">{{ card?.name }}</text>
               <view class="detail-hero__age-badge">
                 <text class="detail-hero__age">{{ ageText }}</text>
-                <text class="detail-hero__age-unit">岁</text>
+                <text class="detail-hero__age-unit">{{ t('cardDetail.ageUnit') }}</text>
               </view>
               <VerificationBadge
                 v-if="card?.verificationBadgeLevel"
@@ -364,7 +409,7 @@ function onSwipeDownEnd(e: TouchEvent) {
 
             <view class="detail-hero__school-row">
               <image class="detail-hero__school-icon" :src="icons.graduation" mode="aspectFit" />
-              <text class="detail-hero__school-text">{{ card?.campusName || '北京大学' }}</text>
+              <text class="detail-hero__school-text">{{ schoolNameText }}</text>
               <text class="detail-hero__dot">·</text>
               <text class="detail-hero__grade-text">{{ gradeText }}</text>
             </view>
@@ -372,11 +417,11 @@ function onSwipeDownEnd(e: TouchEvent) {
             <view class="detail-hero__meta-row">
               <view v-if="card?.onlineStatus === 'online'" class="detail-hero__online">
                 <view class="detail-hero__online-dot" />
-                <text>在线</text>
+                <text>{{ t('cardDetail.onlineLabel') }}</text>
               </view>
               <view class="detail-hero__match">
                 <image class="detail-hero__match-icon" :src="icons.heart" mode="aspectFit" />
-                <text>匹配度 {{ matchScore }}%</text>
+                <text>{{ matchScoreText }}</text>
               </view>
             </view>
           </view>
@@ -388,50 +433,57 @@ function onSwipeDownEnd(e: TouchEvent) {
             <view class="quick-stat__icon quick-stat__icon--age">
               <image class="quick-stat__icon-img" :src="icons.cake" mode="aspectFit" />
             </view>
-            <text class="quick-stat__value">{{ ageText }}岁</text>
-            <text class="quick-stat__label">年龄</text>
+            <text class="quick-stat__value">{{ ageText }}{{ t('cardDetail.ageUnit') }}</text>
+            <text class="quick-stat__label">{{ t('cardDetail.ageLabel') }}</text>
           </view>
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--height">
               <text class="quick-stat__icon-text">📏</text>
             </view>
-            <text class="quick-stat__value">{{ card?.height ?? (165 + (card?.userId?.length ?? 0) % 25) }}cm</text>
-            <text class="quick-stat__label">身高</text>
+            <text class="quick-stat__value">{{ card?.height ?? (165 + (card?.userId?.length ?? 0) % 25) }}{{ t('cardDetail.heightUnit') }}</text>
+            <text class="quick-stat__label">{{ t('cardDetail.heightLabel') }}</text>
           </view>
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--edu">
               <image class="quick-stat__icon-img" :src="icons.graduation" mode="aspectFit" />
             </view>
             <text class="quick-stat__value">{{ eduLabel(card?.educationLevel) }}</text>
-            <text class="quick-stat__label">学历</text>
+            <text class="quick-stat__label">{{ t('cardDetail.educationLabel') }}</text>
           </view>
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--income">
               <text class="quick-stat__icon-text">💰</text>
             </view>
             <text class="quick-stat__value">{{ incomeLabel }}</text>
-            <text class="quick-stat__label">月收入</text>
+            <text class="quick-stat__label">{{ t('cardDetail.incomeLabel') }}</text>
           </view>
         </view>
 
         <!-- 个人简介 -->
-        <view class="detail-panel detail-bio" @tap="toggleBio">
+        <view
+          class="detail-panel detail-bio"
+          @tap="toggleBio"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('cardDetail.bioToggleAria')"
+          <!-- #endif -->
+        >
           <view class="detail-panel__header">
-            <text class="detail-panel__title">个人简介</text>
-            <text class="detail-panel__toggle">{{ isBioExpanded ? '收起' : '展开' }}</text>
+            <text class="detail-panel__title">{{ t('cardDetail.bioTitle') }}</text>
+            <text class="detail-panel__toggle">{{ bioToggleText }}</text>
           </view>
           <text
             class="detail-bio__text"
             :class="{ 'detail-bio__text--expanded': isBioExpanded }"
           >
-            {{ card?.bio || '喜欢读书、旅行、看电影，希望遇到有趣的灵魂。平时也会健身、摄影，享受生活中的小确幸。期待与你相遇~' }}
+            {{ bioText }}
           </text>
         </view>
 
         <!-- 性格标签 -->
         <view class="detail-panel detail-personality">
           <view class="detail-panel__header">
-            <text class="detail-panel__title">性格特点</text>
+            <text class="detail-panel__title">{{ t('cardDetail.personalityTitle') }}</text>
           </view>
           <view class="detail-tags">
             <text
@@ -448,8 +500,8 @@ function onSwipeDownEnd(e: TouchEvent) {
         <!-- 兴趣圈 -->
         <view class="detail-panel detail-circles">
           <view class="detail-panel__header">
-            <text class="detail-panel__title">兴趣圈</text>
-            <text class="detail-panel__subtitle">{{ interestCircles.length }} 个圈子</text>
+            <text class="detail-panel__title">{{ t('cardDetail.circlesTitle') }}</text>
+            <text class="detail-panel__subtitle">{{ circlesCountText }}</text>
           </view>
           <view class="detail-circles__grid">
             <view
@@ -461,7 +513,7 @@ function onSwipeDownEnd(e: TouchEvent) {
               <text class="detail-circle-card__icon">{{ circle.icon }}</text>
               <view class="detail-circle-card__info">
                 <text class="detail-circle-card__name">{{ circle.name }}</text>
-                <text class="detail-circle-card__members">{{ circle.members }} 人加入</text>
+                <text class="detail-circle-card__members">{{ circleMembersText(circle.members) }}</text>
               </view>
             </view>
           </view>
@@ -478,36 +530,52 @@ function onSwipeDownEnd(e: TouchEvent) {
           hover-class="detail-action-bar__btn--pressed"
           :hover-stay-time="120"
           @tap="handlePass"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('cardDetail.passAria')"
+          <!-- #endif -->
         >
           <image class="detail-action-bar__icon" :src="icons.pass" mode="aspectFit" />
-          <text class="detail-action-bar__label">跳过</text>
+          <text class="detail-action-bar__label">{{ t('cardDetail.passLabel') }}</text>
         </view>
         <view
           class="detail-action-bar__btn detail-action-bar__btn--super"
           hover-class="detail-action-bar__btn--pressed"
           :hover-stay-time="120"
           @tap="handleSuperLike"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('cardDetail.superLikeAria')"
+          <!-- #endif -->
         >
           <image class="detail-action-bar__icon" :src="icons.superLike" mode="aspectFit" />
-          <text class="detail-action-bar__label">超级喜欢</text>
+          <text class="detail-action-bar__label">{{ t('cardDetail.superLikeLabel') }}</text>
         </view>
         <view
           class="detail-action-bar__btn detail-action-bar__btn--like"
           hover-class="detail-action-bar__btn--pressed"
           :hover-stay-time="120"
           @tap="handleLike"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('cardDetail.likeAria')"
+          <!-- #endif -->
         >
           <image class="detail-action-bar__icon" :src="icons.like" mode="aspectFit" />
-          <text class="detail-action-bar__label">喜欢</text>
+          <text class="detail-action-bar__label">{{ t('cardDetail.likeLabel') }}</text>
         </view>
         <view
           class="detail-action-bar__btn detail-action-bar__btn--msg"
           hover-class="detail-action-bar__btn--pressed"
           :hover-stay-time="120"
           @tap="handleMessage"
+          <!-- #ifdef H5 -->
+          role="button"
+          :aria-label="t('cardDetail.messageAria')"
+          <!-- #endif -->
         >
           <image class="detail-action-bar__icon" :src="icons.message" mode="aspectFit" />
-          <text class="detail-action-bar__label">发消息</text>
+          <text class="detail-action-bar__label">{{ t('cardDetail.messageLabel') }}</text>
         </view>
       </view>
     </view>
@@ -534,12 +602,12 @@ function onSwipeDownEnd(e: TouchEvent) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0);
+  background: var(--c-black-overlay-transparent, var(--c-black-overlay-transparent, rgba(0, 0, 0, 0)));
   transition: background 280ms ease;
 }
 
 .card-detail-overlay--active .card-detail-overlay__backdrop {
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--c-black-overlay-strong, var(--c-black-overlay-strong, rgba(0, 0, 0, 0.65)));
 }
 
 /* ========== 内容面板：全屏居中 + 缩放 ========== */
@@ -572,9 +640,9 @@ function onSwipeDownEnd(e: TouchEvent) {
   padding-bottom: 12rpx;
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(255, 255, 255, 0.85) 60%,
-    rgba(255, 255, 255, 0) 100%
+    var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95))) 0%,
+    var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85))) 60%,
+    var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0))) 100%
   );
 }
 
@@ -588,7 +656,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   width: 44rpx;
   height: 6rpx;
   border-radius: var(--r-full);
-  background: rgba(15, 23, 42, 0.2);
+  background: var(--c-black-overlay-light, var(--c-black-overlay-light, rgba(15, 23, 42, 0.2)));
 }
 
 .detail-top-bar__actions {
@@ -602,7 +670,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9)));
   border: 1rpx solid var(--c-border-light);
   display: flex;
   align-items: center;
@@ -678,7 +746,7 @@ function onSwipeDownEnd(e: TouchEvent) {
 .detail-hero__placeholder-text {
   font-size: var(--fs-display);
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--c-overlay-bg-mid, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5)));
 }
 
 .detail-hero__gradient {
@@ -689,9 +757,9 @@ function onSwipeDownEnd(e: TouchEvent) {
   height: 60%;
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.72) 0%,
-    rgba(0, 0, 0, 0.35) 40%,
-    rgba(0, 0, 0, 0.08) 70%,
+    var(--c-overlay-stronger, var(--c-overlay-stronger, rgba(0, 0, 0, 0.72))) 0%,
+    var(--c-black-overlay-mid, var(--c-black-overlay-mid, rgba(0, 0, 0, 0.35))) 40%,
+    var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08))) 70%,
     transparent 100%
   );
   pointer-events: none;
@@ -994,13 +1062,13 @@ function onSwipeDownEnd(e: TouchEvent) {
 
 .detail-tag--2 {
   background: var(--c-lavender-100);
-  border-color: rgba(139, 92, 246, 0.15);
+  border-color: var(--c-lavender-100, var(--c-lavender-100, rgba(139, 92, 246, 0.15)));
   color: var(--c-lavender-500);
 }
 
 .detail-tag--3 {
   background: var(--c-apricot-100);
-  border-color: rgba(249, 115, 22, 0.15);
+  border-color: var(--c-apricot-100, var(--c-apricot-100, rgba(249, 115, 22, 0.15)));
   color: var(--c-apricot-500);
 }
 
@@ -1017,7 +1085,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   gap: var(--sp-3);
   padding: var(--sp-4);
   border-radius: var(--r-lg);
-  border: 1rpx solid rgba(255, 255, 255, 0.4);
+  border: 1rpx solid var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
   transition: transform 180ms ease;
 }
 
@@ -1029,7 +1097,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--c-overlay-bg-mid, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5)));
   flex-shrink: 0;
 }
 
@@ -1070,7 +1138,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   gap: var(--sp-3);
   padding: var(--sp-4) var(--page-padding);
   padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--c-overlay-white-bg-most, var(--c-overlay-white-bg-most, rgba(255, 255, 255, 0.96)));
   border-top: 1rpx solid var(--c-divider-light);
   flex-shrink: 0;
   z-index: var(--z-header);

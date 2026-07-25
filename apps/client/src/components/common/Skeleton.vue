@@ -13,7 +13,15 @@ const t = designTokens;
 </script>
 
 <template>
-  <view class="skeleton">
+  <view
+    class="skeleton"
+    <!-- #ifdef H5 -->
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+    aria-label="加载中"
+    <!-- #endif -->
+  >
     <view v-for="i in count" :key="i" class="skeleton-item" :class="`skeleton--${variant}`">
       <!-- 列表骨架 -->
       <view v-if="variant === 'list'" class="skeleton-list">
@@ -64,11 +72,25 @@ const t = designTokens;
     var(--c-neutral-100) 75%
   );
   background-size: 200% 100%;
+  /* #ifndef MP-WEIXIN */
+  /* H5 / App 端：保持原 1.5s 流畅 shimmer */
   animation: shimmer 1.5s ease-in-out infinite;
+  /* #endif */
+  /* #ifdef MP-WEIXIN */
+  /* mp-weixin 低端机性能差，降低动画频率到 3s 减少重绘开销 */
+  animation: shimmer 3s ease-in-out infinite;
+  /* #endif */
 }
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+/* 尊重用户「减少动效」系统偏好：完全关闭 shimmer 动画，仅显示静态渐变背景 */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    animation: none;
+  }
 }
 
 /* ---- 列表 ---- */

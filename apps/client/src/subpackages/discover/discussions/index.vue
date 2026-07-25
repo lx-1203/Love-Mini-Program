@@ -12,6 +12,8 @@ import { openAppPath } from "../../../utils/navigation";
 
 const discussions = ref<Awaited<ReturnType<typeof clientApi.getDiscussionRecommendations>>>([]);
 const loading = ref(false);
+/** 加载失败时的错误状态，供 UI 展示重试入口 */
+const error = ref<string | null>(null);
 
 usePageAccess(homePageRequirements);
 
@@ -21,8 +23,13 @@ onShow(() => {
 
 async function loadDiscussions() {
   loading.value = true;
+  error.value = null;
   try {
     discussions.value = await clientApi.getDiscussionRecommendations();
+  } catch (e) {
+    // 失败时设置 error 状态，UI 可据此展示重试入口
+    error.value = e instanceof Error ? e.message : "加载讨论内容失败，请稍后重试";
+    uni.showToast({ title: error.value, icon: "none" });
   } finally {
     loading.value = false;
   }
@@ -41,6 +48,10 @@ function openPath(url: string) {
   >
     <SectionCard title="正在讨论" subtitle="先看大家最近真正在聊什么。">
       <view v-if="loading" class="empty-state">正在加载讨论内容...</view>
+      <view v-else-if="error" class="empty-state">
+        {{ error }}
+        <text class="retry-link" @tap="loadDiscussions">点击重试</text>
+      </view>
       <view v-else-if="!discussions.length" class="empty-state">暂时还没有新的讨论推荐。</view>
       <view v-else class="section-stack">
         <view v-for="item in discussions" :key="item.id" class="feed-row">
@@ -93,5 +104,11 @@ function openPath(url: string) {
   font-size: 24rpx;
   line-height: 1.6;
   color: var(--c-text-secondary);
+}
+
+.retry-link {
+  margin-left: 12rpx;
+  color: var(--c-brand-500, #3fcf8e);
+  font-weight: 600;
 }
 </style>

@@ -117,6 +117,15 @@ export const useSessionStore = defineStore("session", {
      * 优先使用后端返回值（向后兼容：UserSession schema 暂未暴露该字段，使用类型断言安全访问）。
      */
     profileBackgroundUrl: (initialPersisted.profileBackgroundUrl ?? "") as string,
+    /**
+     * 最近一次会话错误信息。
+     *
+     * 修复（P1 BUG）：原 refreshSession 失败时仅设置 isOffline 标记并 throw，
+     * UI 无法获取具体错误原因（如「网络超时」「鉴权失败」），无法给用户明确提示。
+     * 现新增 errorMessage 字段，refreshSession 失败时记录具体错误信息，
+     * 成功时清空，UI 可据此展示重试入口与错误提示。
+     */
+    errorMessage: null as string | null,
   }),
   getters: {
     isLoggedIn: (state) => Boolean(state.userSession?.loggedIn),
@@ -240,9 +249,20 @@ export const useSessionStore = defineStore("session", {
      *
      * 修复（E1.1）：将 userSession.profileBackgroundUrl 同步到 store.profileBackgroundUrl，
      * 保证后端返回背景图 URL 时前端状态一致；同时持久化到本地存储以支撑冷启动 / H5 刷新场景。
+     *
+     * 修复（P1 BUG）：原 refreshSession 失败时仅设置 isOffline 标记并 throw，
+     * UI 无法获取具体错误原因，且对鉴权失败（401）和网络错误一视同仁，
+     * 导致鉴权失败时仍保留陈旧 userSession（用户看起来仍处于登录态）。
+     * 现改进失败处理：
+     * 1. 新增 errorMessage 字段记录具体错误信息，成功时清空
+     * 2. 区分网络错误（isOffline=true，保留 userSession 以支持离线浏览）与
+     *    鉴权错误（清空 userSession，强制重新登录）
+     * 3. 仍然向上抛出错误，调用方可据此展示重试入口
      */
     async refreshSession() {
       try {
+        // 修复（P1 BUG）：开始时清空 errorMessage，避免陈旧错误信息误导 UI
+        this.errorMessage = null;
         this.isOffline = false;
 
         if (useMock()) {
@@ -278,9 +298,81 @@ export const useSessionStore = defineStore("session", {
 
         return this.userSession;
       } catch (error) {
-        this.isOffline = true;
-        console.warn("[SessionStore] 刷新会话失败，可能处于离线状态:", error);
+        // 修复（P1 BUG）：记录具体错误信息，UI 可据此展示
+        this.errorMessage = error instanceof Error ? error.message : "刷新会话失败";
+
+        // 修复（P1 BUG）：区分网络错误与鉴权错误
+        // 鉴权错误（401）：清空 userSession，强制重新登录
+        // 网络错误：保留 userSession 以支持离线浏览，仅设置 isOffline
+        const isAuthError =
+          error !== null &&
+          typeof error === "object" &&
+          ("status" in error || "statusCode" in error || "code" in error) &&
+          ((error as { status?: number }).status === 401 ||
+            (error as { statusCode?: number }).statusCode === 401 ||
+            (error as { code?: number }).code === 401);
+
+        if (isAuthError) {
+          // 鉴权失败：清空会话，强制重新登录
+          this.userSession = null;
+          this.isOffline = false;
+        } else {
+          // 网络或其他错误：标记为离线，保留 userSession 以支持离线浏览
+          this.isOffline = true;
+        }
+
+        console.warn("[SessionStore] 刷新会话失败:", {
+          error: this.errorMessage,
+          isAuthError,
+          isOffline: this.isOffline,
+        });
         throw error;
+      }
+    },
+
+    /**
+     * 退出登录。
+     *
+     * 修复（P1 BUG）：原 settings/index.vue 与 profile/index.vue 直接通过
+     * `sessionStore.userSession = null` 清空会话，未调用后端 logout 接口、
+     * 未清理本地状态（profileBackgroundUrl / isOffline / errorMessage），
+     * 导致：
+     * 1. 后端 token 在过期前仍有效，存在安全隐患
+     * 2. 下次登录后可能展示上一次用户的背景图等残留状态
+     * 3. 模块级定时器（如未来扩展的会话心跳）不会被清理，可能在登出后继续触发
+     *
+     * 现新增 logout action 统一处理退出登录流程：
+     * 1. 调用 clientApi.logout() 清除本地 token + 通知后端 + 跳转登录页
+     * 2. 清空 store 状态（userSession / isOffline / errorMessage / profileBackgroundUrl）
+     * 3. 清除持久化的 profileBackgroundUrl（避免下次登录残留）
+     * 4. 清理模块级 in-flight Promise / 定时器（当前无显式定时器，预留扩展点）
+     */
+    async logout() {
+      try {
+        // 1. 调用 clientApi.logout 清除本地 token + 异步通知后端 + 跳转登录页
+        //    clientApi.logout 内部已实现「先清本地 token，再异步通知后端」的安全退出逻辑
+        await clientApi.logout();
+      } catch (error) {
+        // logout 内部已 best-effort 处理后端通知失败，此处仅记录日志
+        console.warn("[SessionStore] logout 调用异常:", error);
+      } finally {
+        // 2. 清空 store 状态，确保下次登录从干净状态开始
+        this.userSession = null;
+        this.loginHero = null;
+        this.isOffline = false;
+        this.errorMessage = null;
+        this.profileBackgroundUrl = "";
+
+        // 3. 清除持久化的 profileBackgroundUrl，避免下次登录残留
+        try {
+          savePersistedFields({ profileBackgroundUrl: "" });
+        } catch (_e) {
+          // 持久化失败忽略，不影响登出主流程
+        }
+
+        if (isDev) {
+          console.debug("[SessionStore] logout 完成，store 状态已清空");
+        }
       }
     },
 

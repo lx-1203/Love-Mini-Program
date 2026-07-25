@@ -2,6 +2,7 @@ package com.campuslove.api.growth;
 
 import com.campuslove.api.config.CheckInConfig;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,8 @@ import org.springframework.stereotype.Service;
 /**
  * Mock 签到服务实现。
  * 在 mock profile 下激活，返回固定的模拟签到数据。
+ *
+ * 功能7：新增 makeUp 方法，模拟补签逻辑（日期范围校验 + 月配额限制）。
  */
 @Profile("mock")
 @Service
@@ -24,6 +27,21 @@ public class MockCheckInService implements CheckInService {
 
   /** 用户额外推荐配额缓存 */
   private final ConcurrentHashMap<Long, Integer> extraQuotaMap = new ConcurrentHashMap<>();
+
+  /** 功能7：用户本月已用补签次数缓存（key=userId+yearMonth，value=已用次数） */
+  private final ConcurrentHashMap<String, Integer> makeUpUsedCountMap = new ConcurrentHashMap<>();
+
+  /** 功能7：每月补签次数上限 */
+  private static final int MAKE_UP_LIMIT = 3;
+
+  /** 功能7：首次补签后每次消耗的积分 */
+  private static final int MAKE_UP_COST_POINTS = 50;
+
+  /** 功能7：补签日期范围（仅可补签昨日及之前 7 天内） */
+  private static final int MAKE_UP_MAX_DAYS_BACK = 7;
+
+  /** 功能7：年月格式化器 */
+  private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
   /**
    * 构造函数，注入签到配置。
@@ -94,5 +112,80 @@ public class MockCheckInService implements CheckInService {
     int extraQuota = extraQuotaMap.getOrDefault(userId, 0);
 
     return new CheckInStatusView(checkedInToday, consecutiveDays, extraQuota);
+  }
+
+  /**
+   * 功能7：Mock 签到补签。
+   *
+   * Mock 逻辑：
+   * 1. 校验日期格式（yyyy-MM-dd）
+   * 2. 校验日期范围（昨日及之前 7 天内）
+   * 3. 校验当月补签次数上限（默认 3 次）
+   * 4. 计算消耗积分（首次免费，其后 50 积分）
+   * 5. 模拟连续签到天数 +1
+   *
+   * @param userId 用户 ID
+   * @param date   补签日期（yyyy-MM-dd）
+   * @return 补签结果视图
+   * @throws IllegalArgumentException 日期无效、超出范围、超出月配额时抛出
+   */
+  @Override
+  public MakeUpCheckInResultView makeUp(Long userId, String date) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId is required");
+    }
+    if (date == null || date.isEmpty()) {
+      throw new IllegalArgumentException("date is required");
+    }
+
+    LocalDate targetDate;
+    try {
+      targetDate = LocalDate.parse(date);
+    } catch (java.time.format.DateTimeParseException e) {
+      throw new IllegalArgumentException("日期格式无效，必须为 yyyy-MM-dd");
+    }
+
+    LocalDate today = LocalDate.now();
+    LocalDate sevenDaysAgo = today.minusDays(MAKE_UP_MAX_DAYS_BACK);
+
+    // 校验：不可补签当天或未来日期
+    if (!targetDate.isBefore(today)) {
+      throw new IllegalArgumentException("补签日期必须早于今天");
+    }
+    // 校验：不可补签超过 7 天前的日期
+    if (targetDate.isBefore(sevenDaysAgo)) {
+      throw new IllegalArgumentException(
+          "仅可补签昨日及之前 " + MAKE_UP_MAX_DAYS_BACK + " 天内的日期");
+    }
+
+    // 当月补签次数（按 userId+yearMonth 维度统计）
+    String yearMonth = targetDate.format(YEAR_MONTH_FORMATTER);
+    String quotaKey = userId + "-" + yearMonth;
+    int usedCount = makeUpUsedCountMap.getOrDefault(quotaKey, 0);
+
+    if (usedCount >= MAKE_UP_LIMIT) {
+      throw new IllegalArgumentException(
+          "本月补签次数已用完（上限 " + MAKE_UP_LIMIT + " 次）");
+    }
+
+    // 计算消耗积分：首次免费（usedCount=0），其后 50 积分
+    int costPoints = usedCount == 0 ? 0 : MAKE_UP_COST_POINTS;
+
+    // 更新本月已用次数
+    makeUpUsedCountMap.put(quotaKey, usedCount + 1);
+
+    // 模拟连续签到天数 +1（补签视为已签到）
+    int currentConsecutive = consecutiveDaysMap.getOrDefault(userId, 0);
+    int newConsecutive = currentConsecutive + 1;
+    consecutiveDaysMap.put(userId, newConsecutive);
+
+    return new MakeUpCheckInResultView(
+        true,
+        date,
+        newConsecutive,
+        usedCount + 1,
+        MAKE_UP_LIMIT,
+        costPoints
+    );
   }
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 const props = withDefaults(defineProps<{
   title?: string;
@@ -7,21 +8,38 @@ const props = withDefaults(defineProps<{
   moreText?: string;
 }>(), {
   more: false,
-  moreText: '查看全部',
+  moreText: '',
 });
 
 const emit = defineEmits<{
   more: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
+
+const moreTextLabel = computed(() => props.moreText || t('common.viewAll'));
 </script>
 
 <template>
-  <view class="section-header">
+  <view
+    class="section-header"
+    <!-- #ifdef H5 -->
+    role="heading"
+    aria-level="2"
+    :aria-label="title"
+    <!-- #endif -->
+  >
     <text class="section-title">{{ title }}</text>
-    <view v-if="more" class="section-more" @tap="emit('more')">
-      <text class="section-more-text">{{ moreText }} ›</text>
+    <view
+      v-if="more"
+      class="section-more"
+      @tap="emit('more')"
+      <!-- #ifdef H5 -->
+      role="button"
+      :aria-label="moreTextLabel"
+      <!-- #endif -->
+    >
+      <text class="section-more-text">{{ moreTextLabel }} ›</text>
     </view>
     <slot name="right" />
   </view>

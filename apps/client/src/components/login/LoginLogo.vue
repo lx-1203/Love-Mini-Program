@@ -1,29 +1,42 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
 
-defineProps<{
+const props = defineProps<{
   title?: string;
   subtitle?: string;
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
+const titleLabel = computed(() => props.title || t('login.heroTitle'));
+const subtitleLabel = computed(() => props.subtitle || t('login.heroSubtitleDefault'));
 </script>
 
 <template>
-  <view class="login-header">
+  <view
+    class="login-header"
+    <!-- #ifdef H5 -->
+    role="banner"
+    :aria-label="titleLabel"
+    <!-- #endif -->
+  >
     <!-- 品牌 Logo -->
     <view class="login-logo">
       <image
         class="login-logo-icon"
         :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL"
         mode="aspectFit"
+        <!-- #ifdef H5 -->
+        role="img"
+        :aria-label="titleLabel"
+        <!-- #endif -->
       />
     </view>
     <!-- 主标题 -->
-    <text class="login-title">{{ title || '校园恋爱' }}</text>
+    <text class="login-title">{{ titleLabel }}</text>
     <!-- 副标题 -->
-    <text class="login-subtitle">{{ subtitle || '在校园里，自然地遇见对的人' }}</text>
+    <text class="login-subtitle">{{ subtitleLabel }}</text>
   </view>
 </template>
 
@@ -57,7 +70,7 @@ const t = designTokens;
 .login-title {
   font-size: 72rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
   letter-spacing: 0.04em;
   text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.25);
   line-height: 1.2;

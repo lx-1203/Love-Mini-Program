@@ -79,6 +79,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
+            // 修复：先检查 token 是否在黑名单中（已登出撤销），如是则拒绝认证
+            if (jwtTokenProvider.isTokenRevoked(token)) {
+                log.warn("JWT token 已被撤销（用户已登出），拒绝认证");
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             // 使用 JwtTokenProvider 验证 token 并提取 userId
             String userIdStr = jwtTokenProvider.getUserIdFromToken(token);
             if (userIdStr == null) {

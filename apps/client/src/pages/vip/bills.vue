@@ -1,0 +1,499 @@
+<script setup lang="ts">
+/**
+ * VIP 账单页
+ *
+ * 功能：
+ * - 展示用户 VIP 订阅、续费、退款等账单历史
+ * - 支持下拉刷新
+ * - 支持按类型筛选（全部/订阅/续费/退款）
+ *
+ * mp-weixin 兼容：
+ * - 使用 @tap / hover-class 而非 click / :hover
+ * - 使用 onPullDownRefresh 实现下拉刷新
+ * - 不使用 import.meta.env
+ */
+import { ref, computed } from "vue";
+import { onPullDownRefresh } from "@dcloudio/uni-app";
+import { useI18n } from "vue-i18n";
+import { useVipBillingStore, type BillType } from "../../stores/vip-billing";
+import { lightHaptic } from "../../utils/haptic";
+
+const { t } = useI18n();
+const store = useVipBillingStore();
+
+/** 筛选类型：ALL / SUBSCRIBE / RENEW / REFUND */
+const filterType = ref<"ALL" | BillType>("ALL");
+
+/** 筛选选项 */
+const filterOptions = computed<{ value: "ALL" | BillType; label: string }[]>(() => [
+  { value: "ALL", label: t("vip.billsFilterAll") },
+  { value: "SUBSCRIBE", label: t("vip.billsFilterSubscribe") },
+  { value: "RENEW", label: t("vip.billsFilterRenew") },
+  { value: "REFUND", label: t("vip.billsFilterRefund") },
+]);
+
+/** 筛选后的账单列表 */
+const filteredBills = computed(() => {
+  if (filterType.value === "ALL") {
+    return store.bills;
+  }
+  return store.bills.filter((b) => b.type === filterType.value);
+});
+
+/** 加载状态 */
+const isLoading = computed(() => store.loading);
+
+/** 是否为空 */
+const isEmpty = computed(() => filteredBills.value.length === 0);
+
+/** 选择筛选类型 */
+function selectFilter(type: "ALL" | BillType) {
+  lightHaptic();
+  filterType.value = type;
+}
+
+/** 加载账单数据 */
+async function loadBills(forceRefresh = false) {
+  try {
+    await store.listBills(forceRefresh);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("vip.billsLoadFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
+}
+
+/** 下拉刷新 */
+onPullDownRefresh(async () => {
+  await loadBills(true);
+  uni.stopPullDownRefresh();
+});
+
+/** 格式化金额（分 → 元） */
+function formatAmount(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+
+/** 格式化日期 */
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hour = String(d.getHours()).padStart(2, "0");
+    const minute = String(d.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day} ${hour}:${minute}`;
+  } catch (_e) {
+    return dateStr;
+  }
+}
+
+/** 类型标签颜色 */
+function typeColor(type: BillType): string {
+  if (type === "SUBSCRIBE") return "bill-card__type--subscribe";
+  if (type === "RENEW") return "bill-card__type--renew";
+  if (type === "REFUND") return "bill-card__type--refund";
+  return "";
+}
+
+/** 状态标签颜色 */
+function statusColor(status: string): string {
+  if (status === "SUCCESS") return "bill-card__status--success";
+  if (status === "FAILED") return "bill-card__status--failed";
+  if (status === "REFUNDED") return "bill-card__status--refunded";
+  return "";
+}
+
+/** 翻译类型 */
+function typeLabel(type: BillType): string {
+  if (type === "SUBSCRIBE") return t("vip.billsTypeSubscribe");
+  if (type === "RENEW") return t("vip.billsTypeRenew");
+  if (type === "REFUND") return t("vip.billsTypeRefund");
+  return type;
+}
+
+/** 翻译状态 */
+function statusLabel(status: string): string {
+  if (status === "SUCCESS") return t("vip.billsStatusSuccess");
+  if (status === "FAILED") return t("vip.billsStatusFailed");
+  if (status === "REFUNDED") return t("vip.billsStatusRefunded");
+  return status;
+}
+
+/** 返回上一页 */
+function goBack() {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
+}
+
+// 初始化加载
+loadBills();
+</script>
+
+<template>
+  <view class="bills-page page-fade-in">
+    <!-- 顶部导航栏 -->
+    <view class="nav-bar">
+      <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">
+        <text class="nav-bar__back-icon">‹</text>
+      </view>
+      <text class="nav-bar__title">{{ t('vip.billsNavTitle') }}</text>
+      <view class="nav-bar__placeholder" />
+    </view>
+
+    <view class="safe-top" />
+
+    <!-- 主视觉 -->
+    <view class="hero">
+      <view class="hero__icon">
+        <text class="hero__icon-emoji">📋</text>
+      </view>
+      <text class="hero__title">{{ t('vip.billsHeroTitle') }}</text>
+      <text class="hero__subtitle">{{ t('vip.billsHeroSubtitle') }}</text>
+    </view>
+
+    <!-- 筛选 -->
+    <scroll-view scroll-x class="filter-bar">
+      <view class="filter-bar__inner">
+        <view
+          v-for="opt in filterOptions"
+          :key="opt.value"
+          class="filter-chip press-feedback"
+          :class="{ 'filter-chip--active': filterType === opt.value }"
+          @tap="selectFilter(opt.value)"
+          hover-class="filter-chip--hover"
+          hover-stay-time="100"
+        >
+          <text class="filter-chip__text">{{ opt.label }}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 账单列表 -->
+    <view class="bills-list">
+      <!-- 加载中骨架 -->
+      <view v-if="isLoading && isEmpty" class="empty-state">
+        <text class="empty-state__text">{{ t('common.loading') }}</text>
+      </view>
+
+      <!-- 空状态 -->
+      <view v-else-if="isEmpty" class="empty-state">
+        <text class="empty-state__icon">📭</text>
+        <text class="empty-state__text">{{ t('vip.billsEmpty') }}</text>
+      </view>
+
+      <!-- 账单卡片 -->
+      <view
+        v-for="bill in filteredBills"
+        :key="bill.id"
+        class="bill-card"
+      >
+        <view class="bill-card__header">
+          <view class="bill-card__type" :class="typeColor(bill.type)">
+            <text class="bill-card__type-text">{{ typeLabel(bill.type) }}</text>
+          </view>
+          <view class="bill-card__status" :class="statusColor(bill.status)">
+            <text class="bill-card__status-text">{{ statusLabel(bill.status) }}</text>
+          </view>
+        </view>
+        <view class="bill-card__body">
+          <view class="bill-card__row">
+            <text class="bill-card__label">{{ t('vip.billsCardPlan') }}</text>
+            <text class="bill-card__value">{{ bill.planName || bill.planId || '-' }}</text>
+          </view>
+          <view class="bill-card__row">
+            <text class="bill-card__label">{{ t('vip.billsCardAmount') }}</text>
+            <text class="bill-card__value bill-card__value--amount">¥{{ formatAmount(bill.amount) }}</text>
+          </view>
+          <view v-if="bill.originalAmount" class="bill-card__row">
+            <text class="bill-card__label">{{ t('vip.billsCardOriginal') }}</text>
+            <text class="bill-card__value bill-card__value--strike">¥{{ formatAmount(bill.originalAmount) }}</text>
+          </view>
+          <view v-if="bill.periodStart && bill.periodEnd" class="bill-card__row">
+            <text class="bill-card__label">{{ t('vip.billsCardPeriod') }}</text>
+            <text class="bill-card__value">
+              {{ formatDate(bill.periodStart) }} ~ {{ formatDate(bill.periodEnd) }}
+            </text>
+          </view>
+          <view v-if="bill.paymentMethod" class="bill-card__row">
+            <text class="bill-card__label">{{ t('vip.billsCardPayMethod') }}</text>
+            <text class="bill-card__value">{{ bill.paymentMethod === 'WECHAT' ? t('vip.billsPayWechat') : bill.paymentMethod }}</text>
+          </view>
+          <view v-if="bill.transactionId" class="bill-card__row">
+            <text class="bill-card__label">{{ t('vip.billsCardTxnId') }}</text>
+            <text class="bill-card__value bill-card__value--mono">{{ bill.transactionId }}</text>
+          </view>
+          <view v-if="bill.remark" class="bill-card__row">
+            <text class="bill-card__label">{{ t('vip.billsCardRemark') }}</text>
+            <text class="bill-card__value">{{ bill.remark }}</text>
+          </view>
+          <view class="bill-card__row">
+            <text class="bill-card__label">{{ t('vip.billsCardCreatedAt') }}</text>
+            <text class="bill-card__value">{{ formatDate(bill.createdAt) }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="safe-bottom" />
+  </view>
+</template>
+
+<style scoped lang="scss">
+/* ==================== 页面容器 ==================== */
+.bills-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--c-bg-base, #F8FAFC);
+  box-sizing: border-box;
+  position: relative;
+  padding-bottom: 80rpx;
+}
+
+/* ==================== 导航栏 ==================== */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24rpx;
+  height: 88rpx;
+  background: #FFFFFF;
+  border-bottom: 1rpx solid var(--c-border-light, #E2E8F0);
+}
+.nav-bar__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  &--hover {
+    background: var(--c-bg-secondary, #F1F5F9);
+    transform: scale(0.94);
+  }
+}
+.nav-bar__back-icon {
+  font-size: 56rpx;
+  color: var(--c-text-primary, #1E293B);
+  font-weight: 300;
+  line-height: 1;
+}
+.nav-bar__title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #1E293B);
+}
+.nav-bar__placeholder {
+  width: 64rpx;
+  height: 64rpx;
+}
+.safe-top, .safe-bottom {
+  height: env(safe-area-inset-top);
+  flex-shrink: 0;
+}
+.safe-bottom {
+  height: env(safe-area-inset-bottom);
+}
+
+/* ==================== 主视觉 ==================== */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32rpx 32rpx 24rpx;
+  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
+}
+.hero__icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx;
+}
+.hero__icon-emoji {
+  font-size: 48rpx;
+  line-height: 1;
+}
+.hero__title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-bottom: 4rpx;
+}
+.hero__subtitle {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ==================== 筛选 ==================== */
+.filter-bar {
+  background: #FFFFFF;
+  padding: 16rpx 0;
+  white-space: nowrap;
+  border-bottom: 1rpx solid var(--c-border-light, #E2E8F0);
+}
+.filter-bar__inner {
+  display: inline-flex;
+  gap: 12rpx;
+  padding: 0 24rpx;
+}
+.filter-chip {
+  display: inline-flex;
+  padding: 12rpx 32rpx;
+  background: var(--c-bg-secondary, #F1F5F9);
+  border-radius: 999rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.15s ease;
+  &--hover {
+    transform: scale(0.96);
+  }
+  &--active {
+    background: rgba(255, 215, 0, 0.18);
+    border-color: var(--c-gold, #FFD700);
+  }
+}
+.filter-chip__text {
+  font-size: 24rpx;
+  color: var(--c-text-secondary, #475569);
+  font-weight: 600;
+}
+.filter-chip--active .filter-chip__text {
+  color: var(--c-gold, #B8860B);
+}
+
+/* ==================== 账单列表 ==================== */
+.bills-list {
+  padding: 16rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+/* ==================== 空状态 ==================== */
+.empty-state {
+  padding: 80rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+.empty-state__icon {
+  font-size: 96rpx;
+}
+.empty-state__text {
+  font-size: 26rpx;
+  color: var(--c-text-tertiary, #64748B);
+}
+
+/* ==================== 账单卡片 ==================== */
+.bill-card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid var(--c-border-light, #E2E8F0);
+}
+.bill-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx dashed var(--c-border-light, #E2E8F0);
+  margin-bottom: 16rpx;
+}
+.bill-card__type {
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  background: rgba(236, 72, 153, 0.1);
+  &--subscribe {
+    background: rgba(34, 197, 94, 0.1);
+  }
+  &--renew {
+    background: rgba(59, 130, 246, 0.1);
+  }
+  &--refund {
+    background: rgba(239, 68, 68, 0.1);
+  }
+}
+.bill-card__type-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--c-romance-500, #EC4899);
+}
+.bill-card__type--subscribe .bill-card__type-text {
+  color: #16A34A;
+}
+.bill-card__type--renew .bill-card__type-text {
+  color: #2563EB;
+}
+.bill-card__type--refund .bill-card__type-text {
+  color: #DC2626;
+}
+.bill-card__status {
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  background: rgba(34, 197, 94, 0.08);
+  &--success {
+    background: rgba(34, 197, 94, 0.08);
+  }
+  &--failed {
+    background: rgba(239, 68, 68, 0.08);
+  }
+  &--refunded {
+    background: rgba(245, 158, 11, 0.08);
+  }
+}
+.bill-card__status-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #16A34A;
+}
+.bill-card__status--failed .bill-card__status-text {
+  color: #DC2626;
+}
+.bill-card__status--refunded .bill-card__status-text {
+  color: #D97706;
+}
+.bill-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.bill-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.bill-card__label {
+  font-size: 24rpx;
+  color: var(--c-text-tertiary, #64748B);
+  flex-shrink: 0;
+}
+.bill-card__value {
+  font-size: 26rpx;
+  color: var(--c-text-primary, #1E293B);
+  text-align: right;
+  word-break: break-all;
+  &--amount {
+    font-weight: 700;
+    color: var(--c-romance-500, #EC4899);
+    font-size: 32rpx;
+  }
+  &--strike {
+    text-decoration: line-through;
+    color: var(--c-text-tertiary, #64748B);
+    font-size: 24rpx;
+  }
+  &--mono {
+    font-family: monospace;
+    font-size: 24rpx;
+  }
+}
+</style>

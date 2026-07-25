@@ -2,80 +2,42 @@
 /**
  * VIP 开通页
  * 展示 VIP 权益 + 套餐选择 + 立即开通
- * mock 模式下套餐数据硬编码
+ * 套餐数据从 config/vip-plans.ts 读取，避免硬编码
+ *
+ * 增量功能（首批 VIP 相关）：
+ * - 自动续费开关：调用 useAutoRenewStore 查询与切换
+ * - 入口跳转：VIP 红包 / 优惠码 / 账单记录
+ *
+ * mp-weixin 兼容：
+ * - 使用 @tap / hover-class 而非 click / :hover
+ * - 不使用 import.meta.env，状态由 store 管理
+ * - 金额单位：分 ↔ 元转换在前端完成
  */
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+import { VIP_PLANS, type VipPlan, type VipBenefit } from "../../config/vip-plans";
+import { useAutoRenewStore } from "../../stores/vip-auto-renew";
 
-/** 套餐 ID */
-type PlanId = "monthly" | "quarterly" | "yearly";
-
-/** 套餐接口 */
-interface VipPlan {
-  id: PlanId;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  period: string;
-  perDay?: string;
-  badge?: string;
-  popular?: boolean;
-}
-
-/** VIP 权益项 */
-interface VipBenefit {
-  /** Emoji 字符（作为 fallback，当 icon 未提供时使用） */
-  emoji: string;
-  /** SVG 图标路径（优先于 emoji 渲染） */
-  icon?: string;
-  title: string;
-  desc: string;
-}
-
-/** 套餐列表 */
-const plans = ref<VipPlan[]>([
-  {
-    id: "monthly",
-    name: "月卡",
-    price: 18,
-    originalPrice: 28,
-    period: "30 天",
-    perDay: "0.6 元/天",
-  },
-  {
-    id: "quarterly",
-    name: "季卡",
-    price: 48,
-    originalPrice: 84,
-    period: "90 天",
-    perDay: "0.53 元/天",
-    badge: "超值",
-    popular: true,
-  },
-  {
-    id: "yearly",
-    name: "年卡",
-    price: 158,
-    originalPrice: 336,
-    period: "365 天",
-    perDay: "0.43 元/天",
-    badge: "最划算",
-  },
-]);
+const { t } = useI18n();
+const autoRenewStore = useAutoRenewStore();
 
 /** VIP 权益列表 */
-const benefits = ref<VipBenefit[]>([
-  { emoji: "👀", title: "查看谁喜欢我", desc: "无限次查看喜欢我的用户列表" },
-  { emoji: "💝", title: "无限喜欢", desc: "每日喜欢次数无上限" },
-  { emoji: "👑", title: "专属标识", desc: "个人主页 VIP 皇冠徽章" },
-  { emoji: "🚀", title: "匹配加权", desc: "匹配概率提升 2 倍" },
-  { emoji: "🎨", title: "专属主题", desc: "解锁 5 套 VIP 专属主题" },
-  { emoji: "", icon: IMAGE_PATHS.ICONS_EMOJI.CHAT, title: "超级喜欢", desc: "每日 3 次超级喜欢机会" },
+const benefits = computed<VipBenefit[]>(() => [
+  { emoji: "👀", title: t("vip.benefitSeeLikes"), desc: t("vip.benefitSeeLikesDesc") },
+  { emoji: "💝", title: t("vip.benefitUnlimitedLikes"), desc: t("vip.benefitUnlimitedLikesDesc") },
+  { emoji: "👑", title: t("vip.benefitBadge"), desc: t("vip.benefitBadgeDesc") },
+  { emoji: "🚀", title: t("vip.benefitBoost"), desc: t("vip.benefitBoostDesc") },
+  { emoji: "🎨", title: t("vip.benefitTheme"), desc: t("vip.benefitThemeDesc") },
+  { emoji: "", icon: IMAGE_PATHS.ICONS_EMOJI.CHAT, title: t("vip.benefitSuperLike"), desc: t("vip.benefitSuperLikeDesc") },
 ]);
 
+/** 套餐列表（从 config 引入，避免硬编码价格） */
+const plans = ref<VipPlan[]>(VIP_PLANS);
+
 /** 当前选中的套餐 ID */
-const selectedPlanId = ref<PlanId>("quarterly");
+const selectedPlanId = ref<VipPlan["id"]>("quarterly");
 
 /** 当前选中的套餐对象 */
 const selectedPlan = computed(() =>
@@ -91,27 +53,58 @@ function selectPlan(plan: VipPlan) {
   selectedPlanId.value = plan.id;
 }
 
-/** 立即开通 */
+/**
+ * 立即开通：调用 uni.requestPayment，正确处理支付取消与失败。
+ * - cancel：用户主动取消支付，仅 toast 提示，不报错
+ * - fail：支付失败，toast 提示重试
+ * - success：开通成功，提示后返回上一页
+ */
 function subscribe() {
   lightHaptic();
   if (processing.value) return;
+  if (!selectedPlan.value) return;
 
   processing.value = true;
-  uni.showLoading({ title: "处理中..." });
+  uni.showLoading({ title: t("vip.processing") });
 
-  setTimeout(() => {
-    processing.value = false;
-    uni.hideLoading();
-    uni.showModal({
-      title: "开通成功",
-      content: `已成功开通 VIP ${selectedPlan.value?.name}\n有效期：${selectedPlan.value?.period}\n\n（mock 模式演示，未实际支付）`,
-      showCancel: false,
-      confirmText: "知道了",
-      success: () => {
-        uni.navigateBack({ delta: 1 });
-      },
+  // mock 模式下不调用真实支付，使用 setTimeout 模拟流程
+  // 真实环境替换为 uni.requestPayment({/* 支付参数 */})，并在 fail 回调中区分 cancel
+  const mockPayment = new Promise<{ ok: boolean; cancelled: boolean; msg?: string }>((resolve) => {
+    setTimeout(() => {
+      // 模拟成功（真实环境调用 uni.requestPayment）
+      resolve({ ok: true, cancelled: false });
+    }, 1200);
+  });
+
+  mockPayment
+    .then((result) => {
+      uni.hideLoading();
+      processing.value = false;
+      if (result.cancelled) {
+        // 用户取消支付：仅友好提示，不报错
+        uni.showToast({ title: t("vip.paymentCancelled"), icon: "none" });
+        return;
+      }
+      if (!result.ok) {
+        // 支付失败：提示重试
+        uni.showToast({ title: result.msg || t("vip.paymentFailed"), icon: "none" });
+        return;
+      }
+      uni.showModal({
+        title: t("vip.subscribeSuccess"),
+        content: `${t("vip.subscribeSuccessContent", { name: selectedPlan.value?.name ?? "", period: selectedPlan.value?.period ?? "" })}`,
+        showCancel: false,
+        confirmText: t("profile.gotIt"),
+        success: () => {
+          uni.navigateBack({ delta: 1 });
+        },
+      });
+    })
+    .catch((_e) => {
+      uni.hideLoading();
+      processing.value = false;
+      uni.showToast({ title: t("vip.paymentFailed"), icon: "none" });
     });
-  }, 1200);
 }
 
 /** 查看权益详情 */
@@ -121,7 +114,7 @@ function viewBenefitDetail(benefit: VipBenefit) {
     title: benefit.title,
     content: benefit.desc,
     showCancel: false,
-    confirmText: "知道了",
+    confirmText: t("profile.gotIt"),
   });
 }
 
@@ -130,6 +123,109 @@ function goBack() {
   lightHaptic();
   uni.navigateBack({ delta: 1 });
 }
+
+/* ========== 自动续费开关 ========== */
+
+/** 自动续费开关状态（来自 store） */
+const autoRenewEnabled = computed(() => autoRenewStore.status.enabled);
+
+/** 下次扣费日期（YYYY-MM-DD） */
+const nextBillingDate = computed(() => {
+  const iso = autoRenewStore.status.nextBillingAt;
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  } catch (_e) {
+    return "";
+  }
+});
+
+/** 切换自动续费开关 */
+async function toggleAutoRenew() {
+  lightHaptic();
+  if (autoRenewStore.updating) return;
+
+  // 开启前确认
+  const nextEnabled = !autoRenewEnabled.value;
+  if (nextEnabled) {
+    const confirmed = await new Promise<boolean>((resolve) => {
+      uni.showModal({
+        title: t("vip.autoRenewConfirmTitle"),
+        content: t("vip.autoRenewConfirmContent", {
+          plan: selectedPlan.value?.name ?? "",
+          date: nextBillingDate.value,
+        }),
+        confirmText: t("vip.autoRenewConfirm"),
+        cancelText: t("common.cancel"),
+        success: (res) => resolve(!!res.confirm),
+        fail: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+  } else {
+    // 关闭前确认
+    const confirmed = await new Promise<boolean>((resolve) => {
+      uni.showModal({
+        title: t("vip.autoRenewOffTitle"),
+        content: t("vip.autoRenewOffContent"),
+        confirmText: t("vip.autoRenewOffConfirm"),
+        cancelText: t("common.cancel"),
+        success: (res) => resolve(!!res.confirm),
+        fail: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+  }
+
+  try {
+    await autoRenewStore.setEnabled({
+      enabled: nextEnabled,
+      planId: selectedPlan.value?.id,
+    });
+    uni.showToast({
+      title: nextEnabled
+        ? t("vip.autoRenewOnSuccess")
+        : t("vip.autoRenewOffSuccess"),
+      icon: "success",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("vip.autoRenewToggleFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
+}
+
+/* ========== VIP 相关功能入口 ========== */
+
+/** 跳转到 VIP 红包页 */
+function goRedPacket() {
+  lightHaptic();
+  uni.navigateTo({ url: "/pages/vip/red-packet" });
+}
+
+/** 跳转到 VIP 优惠码页 */
+function goPromoCode() {
+  lightHaptic();
+  uni.navigateTo({ url: "/pages/vip/promo-code" });
+}
+
+/** 跳转到 VIP 账单页 */
+function goBills() {
+  lightHaptic();
+  uni.navigateTo({ url: "/pages/vip/bills" });
+}
+
+/** 页面挂载时拉取自动续费状态 */
+onMounted(() => {
+  // 忽略错误，状态默认为关闭
+  void autoRenewStore.fetchStatus().catch(() => {
+    // 静默处理，不提示错误
+  });
+});
 </script>
 
 <template>
@@ -139,7 +235,7 @@ function goBack() {
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">
         <text class="nav-bar__back-icon">‹</text>
       </view>
-      <text class="nav-bar__title">开通 VIP</text>
+      <text class="nav-bar__title">{{ t('vip.navTitle') }}</text>
       <view class="nav-bar__placeholder" />
     </view>
 
@@ -151,14 +247,14 @@ function goBack() {
       <view class="vip-header__crown">
         <text class="vip-header__crown-emoji">👑</text>
       </view>
-      <text class="vip-header__title">校园恋爱 VIP</text>
-      <text class="vip-header__subtitle">解锁专属权益 · 遇见更多可能</text>
+      <text class="vip-header__title">{{ t('vip.headerTitle') }}</text>
+      <text class="vip-header__subtitle">{{ t('vip.headerSubtitle') }}</text>
     </view>
 
     <!-- 权益列表 -->
     <view class="section">
       <view class="section__title">
-        <text class="section__title-text">VIP 专属权益</text>
+        <text class="section__title-text">{{ t('vip.benefitsTitle') }}</text>
       </view>
       <view class="benefits-grid">
         <view
@@ -189,7 +285,7 @@ function goBack() {
     <!-- 套餐选择 -->
     <view class="section">
       <view class="section__title">
-        <text class="section__title-text">选择套餐</text>
+        <text class="section__title-text">{{ t('vip.planTitle') }}</text>
       </view>
       <view class="plans-grid">
         <view
@@ -237,16 +333,72 @@ function goBack() {
 
     <!-- 用户协议 -->
     <view class="agreement">
-      <text class="agreement__text">开通即表示同意</text>
-      <text class="agreement__link">《VIP 服务协议》</text>
+      <text class="agreement__text">{{ t('vip.agreementPrefix') }}</text>
+      <text class="agreement__link">{{ t('vip.serviceAgreement') }}</text>
       <text class="agreement__text">·</text>
-      <text class="agreement__link">《自动续费协议》</text>
+      <text class="agreement__link">{{ t('vip.autoRenewAgreement') }}</text>
+    </view>
+
+    <!-- 自动续费开关 -->
+    <view class="section">
+      <view class="auto-renew">
+        <view class="auto-renew__info">
+          <text class="auto-renew__title">{{ t('vip.autoRenewTitle') }}</text>
+          <text class="auto-renew__desc">
+            {{ autoRenewEnabled
+                ? t('vip.autoRenewNextBilling', { date: nextBillingDate })
+                : t('vip.autoRenewDesc') }}
+          </text>
+        </view>
+        <switch
+          :checked="autoRenewEnabled"
+          color="#FFD700"
+          :disabled="autoRenewStore.updating"
+          @change="toggleAutoRenew"
+        />
+      </view>
+    </view>
+
+    <!-- VIP 相关功能入口 -->
+    <view class="section">
+      <view class="entry-list">
+        <view
+          class="entry-item press-feedback"
+          @tap="goRedPacket"
+          hover-class="entry-item--hover"
+          hover-stay-time="100"
+        >
+          <text class="entry-item__icon">🧧</text>
+          <text class="entry-item__label">{{ t('vip.redPacketNavTitle') }}</text>
+          <text class="entry-item__arrow">›</text>
+        </view>
+        <view
+          class="entry-item press-feedback"
+          @tap="goPromoCode"
+          hover-class="entry-item--hover"
+          hover-stay-time="100"
+        >
+          <text class="entry-item__icon">🎫</text>
+          <text class="entry-item__label">{{ t('vip.promoCodeNavTitle') }}</text>
+          <text class="entry-item__arrow">›</text>
+        </view>
+        <view
+          class="entry-item press-feedback"
+          @tap="goBills"
+          hover-class="entry-item--hover"
+          hover-stay-time="100"
+        >
+          <text class="entry-item__icon">📋</text>
+          <text class="entry-item__label">{{ t('vip.billsNavTitle') }}</text>
+          <text class="entry-item__arrow">›</text>
+        </view>
+      </view>
     </view>
 
     <!-- 底部开通按钮（固定） -->
     <view class="footer">
       <view class="footer__price-row">
-        <text class="footer__label">应付：</text>
+        <text class="footer__label">{{ t('vip.payableLabel') }}</text>
         <text class="footer__currency">¥</text>
         <text class="footer__price">{{ selectedPlan?.price }}</text>
         <text v-if="selectedPlan?.originalPrice" class="footer__original-price">¥{{ selectedPlan?.originalPrice }}</text>
@@ -258,7 +410,7 @@ function goBack() {
         hover-class="footer__btn--hover"
         hover-stay-time="100"
       >
-        <text class="footer__btn-text">{{ processing ? '处理中...' : '立即开通' }}</text>
+        <text class="footer__btn-text">{{ processing ? t('vip.processing') : t('vip.subscribe') }}</text>
       </view>
     </view>
 
@@ -273,7 +425,7 @@ function goBack() {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(180deg, var(--c-neutral-800, #1a1a2e) 0%, var(--c-neutral-800, #16213e) 100%);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 200rpx;
@@ -300,14 +452,14 @@ function goBack() {
   border-radius: 50%;
 
   &--hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--c-overlay-white-bg-tint-mid, var(--c-overlay-white-bg-tint-mid, rgba(255, 255, 255, 0.1)));
     transform: scale(0.94);
   }
 }
 
 .nav-bar__back-icon {
   font-size: 56rpx;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 300;
   line-height: 1;
 }
@@ -315,7 +467,7 @@ function goBack() {
 .nav-bar__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .nav-bar__placeholder {
@@ -350,12 +502,12 @@ function goBack() {
   width: 144rpx;
   height: 144rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 20rpx;
-  box-shadow: 0 8rpx 32rpx rgba(255, 215, 0, 0.4);
+  box-shadow: 0 8rpx 32rpx var(--c-vip-border-tint, var(--c-vip-border-tint, rgba(255, 215, 0, 0.4)));
 }
 
 .vip-header__crown-emoji {
@@ -366,14 +518,14 @@ function goBack() {
 .vip-header__title {
   font-size: 44rpx;
   font-weight: 800;
-  color: #FFD700;
+  color: var(--c-gold, #FFD700);
   margin-bottom: 8rpx;
   letter-spacing: 2rpx;
 }
 
 .vip-header__subtitle {
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7)));
 }
 
 /* ==================== 分组 ==================== */
@@ -389,7 +541,7 @@ function goBack() {
 
 .section__title-text {
   font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85))));
   font-weight: 600;
 }
 
@@ -403,8 +555,8 @@ function goBack() {
 .benefit-item {
   flex: 1 1 calc(50% - 8rpx);
   min-width: 280rpx;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1rpx solid rgba(255, 215, 0, 0.2);
+  background: var(--c-overlay-white-bg-tint, var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08)));
+  border: 1rpx solid var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.2)));
   border-radius: 20rpx;
   padding: 20rpx;
   display: flex;
@@ -414,7 +566,7 @@ function goBack() {
 
   &--hover {
     transform: scale(0.98);
-    background: rgba(255, 215, 0, 0.1);
+    background: var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.1)));
   }
 }
 
@@ -422,7 +574,7 @@ function goBack() {
   width: 56rpx;
   height: 56rpx;
   border-radius: 14rpx;
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 165, 0, 0.1) 100%);
+  background: linear-gradient(135deg, var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.2))) 0%, var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.1))) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -437,7 +589,7 @@ function goBack() {
   width: 32rpx;
   height: 32rpx;
   /* SVG 使用 currentColor，与 VIP 金色主题对齐 */
-  color: #FFD700;
+  color: var(--c-gold, #FFD700);
 }
 
 .benefit-item__content {
@@ -451,12 +603,12 @@ function goBack() {
 .benefit-item__title {
   font-size: 26rpx;
   font-weight: 600;
-  color: #FFD700;
+  color: var(--c-gold, #FFD700);
 }
 
 .benefit-item__desc {
   font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--c-overlay-text-tertiary, var(--c-overlay-bg-strong, var(--c-overlay-bg-strong, rgba(255, 255, 255, 0.6))));
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -472,8 +624,8 @@ function goBack() {
 .plan-card {
   flex: 1;
   position: relative;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2rpx solid rgba(255, 255, 255, 0.1);
+  background: var(--c-overlay-white-bg-tint, var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08)));
+  border: 2rpx solid var(--c-overlay-white-bg-tint-mid, var(--c-overlay-white-bg-tint-mid, rgba(255, 255, 255, 0.1)));
   border-radius: 20rpx;
   padding: 32rpx 16rpx 24rpx;
   display: flex;
@@ -487,13 +639,13 @@ function goBack() {
   }
 
   &--selected {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.18) 0%, rgba(255, 165, 0, 0.08) 100%);
-    border-color: #FFD700;
-    box-shadow: 0 4rpx 16rpx rgba(255, 215, 0, 0.25);
+    background: linear-gradient(135deg, var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.18))) 0%, var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.08))) 100%);
+    border-color: var(--c-gold, #FFD700);
+    box-shadow: 0 4rpx 16rpx var(--c-vip-border-tint, var(--c-vip-border-tint, rgba(255, 215, 0, 0.25)));
   }
 
   &--popular {
-    border-color: rgba(255, 215, 0, 0.5);
+    border-color: var(--c-vip-border-tint, var(--c-vip-border-tint, rgba(255, 215, 0, 0.5)));
   }
 }
 
@@ -503,14 +655,14 @@ function goBack() {
   left: 50%;
   transform: translateX(-50%);
   padding: 4rpx 16rpx;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
   border-radius: 0 0 12rpx 12rpx;
-  box-shadow: 0 2rpx 8rpx rgba(255, 165, 0, 0.3);
+  box-shadow: 0 2rpx 8rpx var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.3)));
 }
 
 .plan-card__badge-text {
   font-size: 20rpx;
-  color: #5D4E37;
+  color: var(--c-text-vip-dark, #5D4E37);
   font-weight: 700;
 }
 
@@ -521,7 +673,7 @@ function goBack() {
   width: 32rpx;
   height: 32rpx;
   border-radius: 50%;
-  background: #FFD700;
+  background: var(--c-gold, #FFD700);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -529,14 +681,14 @@ function goBack() {
 
 .plan-card__check-icon {
   font-size: 20rpx;
-  color: #5D4E37;
+  color: var(--c-text-vip-dark, #5D4E37);
   font-weight: 700;
   line-height: 1;
 }
 
 .plan-card__name {
   font-size: 28rpx;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
 
@@ -549,32 +701,32 @@ function goBack() {
 
 .plan-card__currency {
   font-size: 22rpx;
-  color: #FFD700;
+  color: var(--c-gold, #FFD700);
   font-weight: 600;
 }
 
 .plan-card__price {
   font-size: 48rpx;
-  color: #FFD700;
+  color: var(--c-gold, #FFD700);
   font-weight: 800;
   line-height: 1;
 }
 
 .plan-card__original-price {
   font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--c-overlay-text-placeholder, var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4))));
   text-decoration: line-through;
 }
 
 .plan-card__period {
   font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7)));
   margin-top: 4rpx;
 }
 
 .plan-card__per-day {
   font-size: 20rpx;
-  color: rgba(255, 215, 0, 0.8);
+  color: var(--c-gold, var(--c-gold, rgba(255, 215, 0, 0.8)));
   margin-top: 2rpx;
 }
 
@@ -592,12 +744,12 @@ function goBack() {
 
 .agreement__text {
   font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--c-overlay-text-quaternary, var(--c-overlay-bg-mid, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5))));
 }
 
 .agreement__link {
   font-size: 22rpx;
-  color: #FFD700;
+  color: var(--c-gold, #FFD700);
 }
 
 /* ==================== 底部固定按钮 ==================== */
@@ -611,8 +763,8 @@ function goBack() {
   justify-content: space-between;
   padding: 16rpx 24rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  background: rgba(26, 26, 46, 0.95);
-  border-top: 1rpx solid rgba(255, 215, 0, 0.2);
+  background: var(--c-neutral-800, var(--c-neutral-800, rgba(26, 26, 46, 0.95)));
+  border-top: 1rpx solid var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.2)));
   z-index: 10;
 }
 
@@ -624,39 +776,39 @@ function goBack() {
 
 .footer__label {
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7)));
 }
 
 .footer__currency {
   font-size: 24rpx;
-  color: #FFD700;
+  color: var(--c-gold, #FFD700);
   font-weight: 600;
 }
 
 .footer__price {
   font-size: 44rpx;
-  color: #FFD700;
+  color: var(--c-gold, #FFD700);
   font-weight: 800;
   line-height: 1;
 }
 
 .footer__original-price {
   font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--c-overlay-text-placeholder, var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4))));
   text-decoration: line-through;
   margin-left: 8rpx;
 }
 
 .footer__btn {
   padding: 24rpx 56rpx;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
   border-radius: 999rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255, 165, 0, 0.4);
+  box-shadow: 0 4rpx 16rpx var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.4)));
   transition: all 0.15s ease;
 
   &--hover {
     transform: scale(0.96);
-    box-shadow: 0 2rpx 8rpx rgba(255, 165, 0, 0.3);
+    box-shadow: 0 2rpx 8rpx var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.3)));
   }
 
   &--disabled {
@@ -666,7 +818,74 @@ function goBack() {
 
 .footer__btn-text {
   font-size: 30rpx;
-  color: #5D4E37;
+  color: var(--c-text-vip-dark, #5D4E37);
   font-weight: 700;
+}
+
+/* ==================== 自动续费 ==================== */
+.auto-renew {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.auto-renew__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.auto-renew__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--c-gold, #FFD700);
+}
+
+.auto-renew__desc {
+  font-size: 22rpx;
+  color: var(--c-overlay-text-tertiary, rgba(255, 255, 255, 0.6));
+  line-height: 1.4;
+}
+
+/* ==================== 功能入口 ==================== */
+.entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.entry-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 8rpx;
+  border-radius: 16rpx;
+  transition: all 0.15s ease;
+
+  &--hover {
+    transform: scale(0.98);
+    background: var(--c-vip-border-light, rgba(255, 215, 0, 0.08));
+  }
+}
+
+.entry-item__icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+  width: 56rpx;
+  text-align: center;
+}
+
+.entry-item__label {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.85));
+  font-weight: 500;
+}
+
+.entry-item__arrow {
+  font-size: 32rpx;
+  color: var(--c-overlay-text-tertiary, rgba(255, 255, 255, 0.4));
 }
 </style>

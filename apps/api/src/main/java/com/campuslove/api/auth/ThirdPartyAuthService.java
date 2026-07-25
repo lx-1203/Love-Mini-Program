@@ -1,0 +1,339 @@
+package com.campuslove.api.auth;
+
+import com.campuslove.api.config.AesEncryptor;
+import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.config.JwtTokenProvider;
+import com.campuslove.api.entity.ThirdPartyAccount;
+import com.campuslove.api.entity.User;
+import com.campuslove.api.repository.ThirdPartyAccountRepository;
+import com.campuslove.api.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 第三方账号服务（功能2：登录第三方账号）。
+ *
+ * <p>核心职责：</p>
+ * <ul>
+ *   <li>loginWithWechat：通过微信 openId 登录或注册新用户</li>
+ *   <li>loginWithApple：通过 Apple Sub Identifier 登录或注册新用户</li>
+ *   <li>bindThirdParty：为已登录用户绑定第三方账号</li>
+ *   <li>unbindThirdParty：解绑已登录用户的第三方账号</li>
+ *   <li>listBindings：查询已登录用户已绑定的第三方账号列表</li>
+ * </ul>
+ *
+ * <p>安全说明：</p>
+ * <ul>
+ *   <li>openId 在数据库中通过 SHA-256 派生 hash 存储（与 WeChat 登录主流程保持一致），
+ *       避免数据库泄露时直接暴露用户身份标识</li>
+ *   <li>绑定/解绑操作要求当前用户已认证，userId 来自 SecurityUtils.getCurrentUserId()</li>
+ *   <li>同一 (provider, openId) 仅允许绑定一个本系统用户（数据库唯一约束）</li>
+ * </ul>
+ */
+@Service
+public class ThirdPartyAuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(ThirdPartyAuthService.class);
+
+    /** 第三方平台标识：微信 */
+    public static final String PROVIDER_WECHAT = "WECHAT";
+    /** 第三方平台标识：Apple */
+    public static final String PROVIDER_APPLE = "APPLE";
+
+    private final ThirdPartyAccountRepository thirdPartyAccountRepository;
+    private final UserRepository userRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final AesEncryptor aesEncryptor;
+
+    public ThirdPartyAuthService(
+            ThirdPartyAccountRepository thirdPartyAccountRepository,
+            UserRepository userRepository,
+            JwtTokenProvider jwtTokenProvider,
+            AesEncryptor aesEncryptor
+    ) {
+        this.thirdPartyAccountRepository = thirdPartyAccountRepository;
+        this.userRepository = userRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.aesEncryptor = aesEncryptor;
+    }
+
+    /**
+     * 使用微信第三方账号登录。
+     *
+     * <p>流程：</p>
+     * <ol>
+     *   <li>对 openId 做 SHA-256 派生 hash（与主登录流程一致），作为查询键</li>
+     *   <li>按 (WECHAT, openIdHash) 查询绑定记录</li>
+     *   <li>找到则取出 userId 查询用户，签发 JWT 返回</li>
+     *   <li>未找到则创建新用户（昵称使用默认值），并写入绑定记录，签发 JWT 返回</li>
+     * </ol>
+     *
+     * @param openId  微信 openId（不可为空）
+     * @param unionId 微信 unionId（可空）
+     * @return 用户会话视图（包含 JWT 令牌）
+     * @throws IllegalArgumentException openId 为空时抛出
+     */
+    @Transactional
+    public UserSessionView loginWithWechat(String openId, String unionId) {
+        if (openId == null || openId.isBlank()) {
+            throw new IllegalArgumentException("openId 不能为空");
+        }
+        return doLogin(PROVIDER_WECHAT, openId, unionId);
+    }
+
+    /**
+     * 使用 Apple 第三方账号登录。
+     *
+     * <p>流程：</p>
+     * <ol>
+     *   <li>对 Apple Sub Identifier 做 SHA-256 派生 hash 作为查询键</li>
+     *   <li>按 (APPLE, identifierHash) 查询绑定记录</li>
+     *   <li>找到则取出 userId 查询用户，签发 JWT 返回</li>
+     *   <li>未找到则创建新用户（昵称使用默认值），并写入绑定记录，签发 JWT 返回</li>
+     * </ol>
+     *
+     * @param appleIdentifier Apple Sub Identifier（不可为空）
+     * @return 用户会话视图（包含 JWT 令牌）
+     * @throws IllegalArgumentException appleIdentifier 为空时抛出
+     */
+    @Transactional
+    public UserSessionView loginWithApple(String appleIdentifier) {
+        if (appleIdentifier == null || appleIdentifier.isBlank()) {
+            throw new IllegalArgumentException("appleIdentifier 不能为空");
+        }
+        return doLogin(PROVIDER_APPLE, appleIdentifier, null);
+    }
+
+    /**
+     * 第三方登录内部实现：查找或创建用户，签发 JWT。
+     *
+     * @param provider 第三方平台标识
+     * @param openId   第三方 openId（明文）
+     * @param unionId  第三方 unionId（可空）
+     * @return 用户会话视图
+     */
+    private UserSessionView doLogin(String provider, String openId, String unionId) {
+        String openIdHash = hashIdentifier(openId);
+
+        // 1. 查询绑定记录
+        Optional<ThirdPartyAccount> existing = thirdPartyAccountRepository
+                .findByProviderAndOpenId(provider, openIdHash);
+
+        User user;
+        if (existing.isPresent()) {
+            // 已绑定：取出 userId 查询用户
+            Long userId = existing.get().getUserId();
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                // 数据异常：绑定记录存在但用户不存在，删除绑定后重新创建
+                log.warn("第三方账号绑定记录存在但用户不存在, provider={}, userId={}", provider, userId);
+                thirdPartyAccountRepository.delete(existing.get());
+                user = createNewUserAndBind(provider, openIdHash, unionId);
+            } else {
+                user = userOpt.get();
+                log.info("第三方账号登录成功, provider={}, userId={}", provider, userId);
+            }
+        } else {
+            // 未绑定：创建新用户并写入绑定
+            user = createNewUserAndBind(provider, openIdHash, unionId);
+        }
+
+        // 2. 签发 JWT
+        String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
+        return buildSessionView(user, token, provider.toLowerCase());
+    }
+
+    /**
+     * 创建新用户并写入第三方账号绑定记录。
+     *
+     * @param provider    第三方平台标识
+     * @param openIdHash  openId 的 SHA-256 派生 hash（不可逆）
+     * @param unionId     unionId（可空）
+     * @return 新创建的用户实体
+     */
+    private User createNewUserAndBind(String provider, String openIdHash, String unionId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        User user = new User();
+        // 第三方登录的用户 openid 字段填入 provider:openIdHash 以避免与主微信登录冲突
+        user.setOpenid(provider.toLowerCase() + ":" + openIdHash);
+        user.setNickname(DisplayConstants.NEW_USER);
+        user.setProfileCompletion(0);
+        user.setFollowingCount(0);
+        user.setFollowersCount(0);
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+        user = userRepository.save(user);
+        log.info("第三方账号登录创建新用户, provider={}, userId={}", provider, user.getId());
+
+        ThirdPartyAccount account = new ThirdPartyAccount();
+        account.setUserId(user.getId());
+        account.setProvider(provider);
+        account.setOpenId(openIdHash);
+        account.setUnionId(unionId);
+        account.setCreatedAt(now);
+        thirdPartyAccountRepository.save(account);
+        return user;
+    }
+
+    /**
+     * 为已登录用户绑定第三方账号。
+     *
+     * <p>约束：</p>
+     * <ul>
+     *   <li>同一 (provider, openId) 仅允许绑定一个本系统用户（数据库唯一约束）</li>
+     *   <li>同一用户同一 provider 仅允许绑定一个 openId（业务约束）</li>
+     * </ul>
+     *
+     * @param userId   当前用户 ID（来自 SecurityUtils.getCurrentUserId()）
+     * @param provider 第三方平台标识
+     * @param openId   第三方 openId（明文）
+     * @param unionId  第三方 unionId（可空）
+     * @return 绑定成功返回 true；用户已绑定该平台或 openId 已被其他用户绑定时返回 false
+     * @throws IllegalArgumentException userId / provider / openId 为空时抛出
+     */
+    @Transactional
+    public boolean bindThirdParty(Long userId, String provider, String openId, String unionId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId 不能为空");
+        }
+        if (provider == null || provider.isBlank()) {
+            throw new IllegalArgumentException("provider 不能为空");
+        }
+        if (openId == null || openId.isBlank()) {
+            throw new IllegalArgumentException("openId 不能为空");
+        }
+
+        String openIdHash = hashIdentifier(openId);
+
+        // 1. 检查 (provider, openId) 是否已被其他用户绑定
+        Optional<ThirdPartyAccount> existing = thirdPartyAccountRepository
+                .findByProviderAndOpenId(provider, openIdHash);
+        if (existing.isPresent() && !existing.get().getUserId().equals(userId)) {
+            log.warn("第三方账号已被其他用户绑定, provider={}, openIdHash={}, ownerId={}",
+                    provider, openIdHash, existing.get().getUserId());
+            return false;
+        }
+
+        // 2. 检查当前用户是否已绑定该平台
+        Optional<ThirdPartyAccount> userBinding = thirdPartyAccountRepository
+                .findByUserIdAndProvider(userId, provider);
+        if (userBinding.isPresent()) {
+            log.warn("用户已绑定该平台, userId={}, provider={}", userId, provider);
+            return false;
+        }
+
+        // 3. 写入绑定记录
+        ThirdPartyAccount account = new ThirdPartyAccount();
+        account.setUserId(userId);
+        account.setProvider(provider);
+        account.setOpenId(openIdHash);
+        account.setUnionId(unionId);
+        account.setCreatedAt(LocalDateTime.now());
+        thirdPartyAccountRepository.save(account);
+        log.info("第三方账号绑定成功, userId={}, provider={}", userId, provider);
+        return true;
+    }
+
+    /**
+     * 解绑当前用户的第三方账号。
+     *
+     * @param userId   当前用户 ID
+     * @param provider 第三方平台标识
+     * @return 解绑成功返回 true；未绑定该平台时返回 false
+     * @throws IllegalArgumentException userId / provider 为空时抛出
+     */
+    @Transactional
+    public boolean unbindThirdParty(Long userId, String provider) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId 不能为空");
+        }
+        if (provider == null || provider.isBlank()) {
+            throw new IllegalArgumentException("provider 不能为空");
+        }
+
+        long deleted = thirdPartyAccountRepository.deleteByUserIdAndProvider(userId, provider);
+        if (deleted > 0) {
+            log.info("第三方账号解绑成功, userId={}, provider={}", userId, provider);
+            return true;
+        }
+        log.warn("用户未绑定该平台, userId={}, provider={}", userId, provider);
+        return false;
+    }
+
+    /**
+     * 查询当前用户已绑定的第三方账号列表。
+     *
+     * @param userId 当前用户 ID
+     * @return 绑定记录列表（按绑定时间倒序）
+     * @throws IllegalArgumentException userId 为空时抛出
+     */
+    public List<ThirdPartyAccount> listBindings(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId 不能为空");
+        }
+        return thirdPartyAccountRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    /**
+     * 对第三方标识（openId / Apple Identifier）做 SHA-256 派生 hash。
+     *
+     * <p>用途：作为数据库查询键，避免明文存储第三方身份标识，
+     * 与主微信登录流程（RealAuthService#hashOpenid）保持一致的安全策略。</p>
+     *
+     * @param identifier 原始第三方标识
+     * @return SHA-256 hex 字符串（小写），长度 64
+     */
+    private String hashIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return identifier;
+        }
+        try {
+            java.security.MessageDigest sha256 = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = sha256.digest(identifier.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(hashBytes.length * 2);
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 算法不可用", ex);
+        }
+    }
+
+    /**
+     * 根据用户实体构建第三方登录会话视图。
+     * 简化版会话视图，未携带校园/课表等扩展状态（第三方登录后引导走完整引导流程）。
+     *
+     * @param user     用户实体
+     * @param token    JWT 令牌
+     * @param loginMethod 登录方式（wechat / apple）
+     * @return 用户会话视图
+     */
+    private UserSessionView buildSessionView(User user, String token, String loginMethod) {
+        Long userId = user.getId();
+        boolean profileCompleted = user.getProfileCompletion() != null
+                && user.getProfileCompletion() >= 100;
+        boolean phoneBound = user.getPhone() != null && !user.getPhone().isBlank();
+        String displayName = user.getNickname() != null ? user.getNickname() : DisplayConstants.NEW_USER;
+
+        return new UserSessionView(
+                String.valueOf(userId),
+                true,
+                loginMethod,
+                displayName,
+                phoneBound,
+                profileCompleted,
+                false,
+                false,
+                null,
+                java.util.Map.of("chat_ai_enabled", false),
+                token
+        );
+    }
+}

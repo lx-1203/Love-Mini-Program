@@ -1,17 +1,12 @@
-﻿/**
+/**
  * 生成素材资源索引
  *
  * 此文件由 scripts/media-gen/generate.ts 生成后更新。
  * 在 API 调用生成前，提供本地备用素材路径映射。
+ *
+ * 注意：CAMPUS_VIDEOS 原引用的 4 个视频文件（campus-spring.mp4 等）实际不存在于仓库中，
+ * 已移除以避免运行时报错。如需启用视频背景，请先生成对应视频文件并补全路径。
  */
-
-/** 校园主题视频 */
-export const CAMPUS_VIDEOS = {
-  spring: "/static/generated/videos/campus-spring.mp4",
-  sunset: "/static/generated/videos/campus-sunset.mp4",
-  life: "/static/generated/videos/campus-life.mp4",
-  graduation: "/static/generated/videos/campus-graduation.mp4",
-} as const;
 
 /** 校园场景图片 */
 export const CAMPUS_IMAGES = {
@@ -33,9 +28,6 @@ export const ACTIVITY_IMAGES = {
   sportsDay: "/static/generated/images/activities/sports-day.jpg",
   artExhibition: "/static/generated/images/activities/art-exhibition.jpg",
 } as const;
-
-/** 默认视频（首页横幅用） */
-export const HOME_VIDEO = CAMPUS_VIDEOS.spring;
 
 /** 默认海报（视频未加载时显示的封面） */
 export const HOME_POSTER = "/static/assets/images/posters/login-poster.jpg";

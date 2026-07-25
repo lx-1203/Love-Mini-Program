@@ -94,10 +94,15 @@ export function getToken(): string {
 
 /**
  * 保存 JWT Token 到本地存储。
+ *
+ * 修复：同时重置 isRedirecting 状态——新 token 设置意味着用户重新登录成功，
+ * 之前因 401 触发的"正在跳转登录"状态应当清除，避免后续正常的 401 刷新流程被误拦截。
  */
 export function setToken(token: string): void {
   try {
     uni.setStorageSync(TOKEN_STORAGE_KEY, token);
+    // 状态重置：新登录成功，清除跳转登录标志
+    isRedirecting = false;
   } catch (_e) {
     // 存储失败时静默忽略
   }
@@ -151,30 +156,72 @@ addRequestInterceptor((config) => {
   return config;
 });
 
-/* ========== 401 处理：并发刷新队列 ========== */
-
-/** 是否正在刷新 Token */
-let isRefreshing = false;
-
-/** Token 刷新失败后的重定向锁，避免多次跳转 */
-let hasRedirectedToLogin = false;
+/* ========== 默认响应拦截器：规范化错误码 ========== */
 
 /**
- * 等待 Token 刷新的请求队列项。
- * - resolve: 刷新成功后以新 token 唤醒等待者
- * - reject: 刷新失败后以错误通知等待者
+ * 默认响应拦截器：规范化非 2xx 响应的错误码字段。
+ *
+ * 修复（P1 BUG）：原实现各调用方对错误码的处理不统一，部分接口返回的 error 字段
+ * 可能为空或格式不一致，导致前端难以基于 error code 做分支处理。
+ * 此拦截器在响应链最前端确保非 2xx 响应体包含规范化的 error / message 字段，
+ * 后续 buildError 读取时即可拿到统一格式的错误码。
  */
-type PendingRequest = {
-  resolve: (token: string) => void;
-  reject: (error: Error) => void;
-};
+addResponseInterceptor((response) => {
+  const { statusCode, data } = response;
+  // 仅对非 2xx 错误响应规范化
+  if (statusCode < 200 || statusCode >= 300) {
+    if (data && typeof data === "object") {
+      const record = data as Record<string, unknown>;
+      // 确保 error 字段为非空字符串
+      if (typeof record.error !== "string" || record.error.trim().length === 0) {
+        record.error = normalizeErrorCode(statusCode);
+      }
+      // 确保存在 code 字段（数字），便于调用方按码分发
+      if (record.code === undefined || record.code === null) {
+        record.code = statusCode;
+      }
+    }
+  }
+  return response;
+});
 
 /**
- * 等待 Token 刷新的请求队列。
- * 当首个 401 请求触发刷新时，后续并发的 401 请求会被加入此队列，
- * 刷新完成后统一唤醒，避免并发重复刷新 Token。
+ * 根据 HTTP 状态码返回规范化的错误码字符串。
+ * 与 api-error.ts 中的 fallbackErrorShape 保持一致，确保全链路错误码统一。
  */
-let pendingRequests: PendingRequest[] = [];
+function normalizeErrorCode(statusCode: number): string {
+  if (statusCode === 400) return "bad_request";
+  if (statusCode === 401) return "unauthorized";
+  if (statusCode === 403) return "forbidden";
+  if (statusCode === 404) return "not_found";
+  if (statusCode >= 500) return "server_error";
+  return "request_error";
+}
+
+/* ========== 401 处理：并发刷新队列（Promise 队列模式） ========== */
+
+/**
+ * 是否正在跳转登录页。
+ *
+ * 修复（P0 BUG）：原实现使用 hasRedirectedToLogin + setTimeout 3秒窗口重置，
+ * 存在两个问题：
+ * 1. 3秒窗口期内，新的 401 会被直接拒绝（即使 token 已被刷新），影响用户体验；
+ * 2. 3秒窗口期外，若跳转尚未完成（reLaunch 异步），仍可能触发重复跳转。
+ * 现改为基于状态：isRedirecting=true 期间任何 401 直接拒绝，
+ * 状态在 setToken（用户重新登录）时重置，无时间窗口问题。
+ */
+let isRedirecting = false;
+
+/**
+ * 当前正在进行的刷新 Token Promise。
+ *
+ * 修复（P0 BUG）：原实现使用 isRefreshing 布尔 + pendingRequests 数组队列，
+ * 存在非原子操作问题：
+ * - 唤醒队列、清空队列、复位 isRefreshing 三步非原子，并发 401 可能在间隙加入队列后被丢失。
+ * 现改为 Promise 队列模式：所有并发 401 共享同一个 refreshPromise，
+ * Promise 天然原子——resolve/reject 时所有 await 者同时被通知，无需手动管理队列。
+ */
+let refreshPromise: Promise<string> | null = null;
 
 /**
  * 尝试刷新 Token。
@@ -218,68 +265,67 @@ async function tryRefreshToken(): Promise<boolean> {
 }
 
 /**
- * 处理 401 响应，使用并发队列避免多个请求同时触发 Token 刷新。
+ * 跳转登录页（仅触发一次，避免重复跳转）。
+ *
+ * 修复：基于 isRedirecting 状态而非时间戳，确保跳转期间所有 401 都被拒绝，
+ * 且不会因 setTimeout 窗口期误判。状态在 setToken（新登录）时重置。
+ */
+function redirectToLogin(): void {
+  // 已在跳转中，直接返回避免重复
+  if (isRedirecting) return;
+  isRedirecting = true;
+  // 清除失效的本地 token，避免后续请求继续携带
+  clearTokens();
+  // 友好提示
+  uni.showToast({ title: "登录已过期，请重新登录", icon: "none", duration: 2000 });
+  // 延迟跳转，让用户看到提示
+  setTimeout(() => {
+    uni.reLaunch({ url: "/pages/login/index" });
+  }, 500);
+}
+
+/**
+ * 处理 401 响应，使用 Promise 队列模式确保并发请求等待同一刷新流程。
  *
  * 行为说明：
- * - 首个 401 请求：设置 isRefreshing=true 并调用 tryRefreshToken()，
- *   成功则唤醒队列中所有等待者并返回新 token；失败则通知所有等待者并跳转登录页。
- * - 并发的 401 请求：加入等待队列，等首个请求完成后统一处理。
+ * - 首个 401 请求：创建 refreshPromise 并执行刷新，
+ *   成功返回新 token；失败抛出错误并触发跳转登录。
+ * - 并发的 401 请求：共享同一个 refreshPromise，自动等待同一刷新流程，
+ *   刷新成功则一并拿到新 token，失败则一并被 reject（Promise 天然原子）。
  * - 已经在跳转登录时：直接抛错，避免重复处理。
  *
  * @returns Promise<string> 解析为新 Token；刷新失败时 reject。
  */
 async function handle401(): Promise<string> {
   // 已经在跳转登录，直接抛错避免重复处理
-  if (hasRedirectedToLogin) {
-    throw new Error("already redirected to login");
+  if (isRedirecting) {
+    throw new Error("already redirecting to login");
   }
 
-  // 如果正在刷新，加入等待队列，等首个刷新完成后统一唤醒
-  if (isRefreshing) {
-    return new Promise<string>((resolve, reject) => {
-      pendingRequests.push({ resolve, reject });
-    });
+  // 修复：Promise 队列模式——若已有刷新流程在进行，直接 await 同一 Promise
+  // 确保并发 401 等待同一刷新，无需手动管理队列，避免非原子操作导致的丢请求问题
+  if (refreshPromise) {
+    return refreshPromise;
   }
 
-  isRefreshing = true;
-  try {
+  // 启动新的刷新流程
+  refreshPromise = (async () => {
     const refreshed = await tryRefreshToken();
     if (refreshed) {
-      const newToken = getToken();
-      // 唤醒所有等待者
-      pendingRequests.forEach((p) => p.resolve(newToken));
-      pendingRequests = [];
-      isRefreshing = false;
-      return newToken;
+      return getToken();
     }
-    // 刷新失败：说明 refresh token 也已失效，登录态确实失效
-    // 通知所有等待者并跳转登录
-    pendingRequests.forEach((p) => p.reject(new Error("token refresh failed")));
-    pendingRequests = [];
-    isRefreshing = false;
-    clearTokens();
-    hasRedirectedToLogin = true;
-    // 延迟重置跳转锁，避免短时间内多次跳转
-    setTimeout(() => {
-      hasRedirectedToLogin = false;
-    }, 3000);
-    // 友好提示，避免静默登出（仅当确实 token 失效时才清空并跳转）
-    uni.showToast({ title: "登录已过期，请重新登录", icon: "none", duration: 2000 });
-    // 延迟跳转，让用户看到提示
-    setTimeout(() => {
-      uni.reLaunch({
-        url: "/pages/login/index",
-      });
-    }, 500);
+    // 刷新失败：清理 token 并跳转登录
+    // 修复：refresh 失败时，refreshPromise 的 reject 会自动通知所有 await 者（清空队列）
+    redirectToLogin();
     throw new Error("token refresh failed");
-  } catch (err) {
-    // 异常分支：确保所有等待者都被通知，并复位刷新状态
-    // strict 模式下 err 为 unknown，需包装为 Error 后再传给 reject
-    const wrappedErr = err instanceof Error ? err : new Error(String(err));
-    pendingRequests.forEach((p) => p.reject(wrappedErr));
-    pendingRequests = [];
-    isRefreshing = false;
-    throw err;
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    // 刷新完成后清空 promise 引用，允许后续 401 触发新的刷新流程
+    // （配合 doRequest 的 retry401Count 限制，不会形成死循环）
+    refreshPromise = null;
   }
 }
 
@@ -294,6 +340,12 @@ const DEFAULT_RETRY_COUNT = 1;
 /** 默认重试延迟（毫秒），指数退避起始值 */
 const DEFAULT_RETRY_DELAY_MS = 500;
 
+/**
+ * HTTP 请求配置选项。
+ *
+ * 泛型参数 TBody 用于约束 data 字段类型，默认 unknown。
+ * 调用方可显式传入请求体类型以获得静态类型检查，如 request<User, { name: string }>(...)。
+ */
 export interface RequestOptions<TBody = unknown> {
   url: string;
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -308,6 +360,12 @@ export interface RequestOptions<TBody = unknown> {
   retry?: number;
   /** 是否禁用自动重试（用于明确不希望重试的接口，如登录） */
   noRetry?: boolean;
+  /**
+   * AbortController 信号，用于取消请求。
+   * 传入已 aborted 的 signal 会立即取消请求；
+   * 传入未 aborted 的 signal，后续调用 signal.abort() 会终止底层 uni.request。
+   */
+  signal?: AbortSignal;
 }
 
 /**
@@ -364,19 +422,29 @@ function buildNetworkError(error: unknown): EnhancedApiError {
  * 2. success：执行响应拦截器链
  *    - 2xx：resolve 数据
  *    - 401：skipAuth 短路或调用 handle401，刷新成功后用新 token 重试一次
+ *      （修复：通过 retry401Count 限制最多重试 1 次，第二次 401 直接 reject 并跳转登录，避免死循环）
  *    - 其他：reject(buildError(...))
  * 3. fail：reject(buildNetworkError(...))
+ * 4. 支持通过 AbortController.signal 取消请求
  *
- * @param options 调用方传入的请求配置（用于读取 skipAuth 等元信息）
+ * @param options 调用方传入的请求配置（用于读取 skipAuth / signal 等元信息）
  * @param requestConfig 经过请求拦截器处理后的 uni.request 配置
+ * @param retry401Count 当前请求已重试 401 的次数（内部递归使用，外部默认 0）
  * @returns Promise<TResponse> 解析为响应数据
  */
 function doRequest<TResponse, TBody>(
   options: RequestOptions<TBody>,
-  requestConfig: UniApp.RequestOptions
+  requestConfig: UniApp.RequestOptions,
+  retry401Count = 0
 ): Promise<TResponse> {
   return new Promise<TResponse>((resolve, reject) => {
-    uni.request({
+    // 修复：若 signal 已 aborted，立即拒绝，不发请求
+    if (options.signal && options.signal.aborted) {
+      reject(buildNetworkError(new Error("请求已取消")));
+      return;
+    }
+
+    const requestTask = uni.request({
       ...requestConfig,
       success: (result) => {
         // 执行响应拦截器链
@@ -400,9 +468,18 @@ function doRequest<TResponse, TBody>(
             reject(buildError(statusCode, processedResult.data));
             return;
           }
+          // 修复（P0 BUG）：限制最多重试 1 次，第二次 401 直接 reject 并跳转登录，避免死循环
+          // （refresh 成功但新 token 仍返回 401，说明权限或会话有更深问题，不应继续刷新）
+          if (retry401Count >= 1) {
+            redirectToLogin();
+            reject(
+              buildError(401, { error: "unauthorized", message: "登录已过期，请重新登录" })
+            );
+            return;
+          }
           handle401()
             .then((newToken) => {
-              // 用新 token 重试一次原请求
+              // 用新 token 重试一次原请求，retry401Count+1 防止死循环
               const retryConfig: UniApp.RequestOptions = {
                 ...requestConfig,
                 header: {
@@ -410,10 +487,14 @@ function doRequest<TResponse, TBody>(
                   Authorization: `Bearer ${newToken}`,
                 } as Record<string, string>,
               };
-              doRequest<TResponse, TBody>(options, retryConfig).then(resolve).catch(reject);
+              doRequest<TResponse, TBody>(options, retryConfig, retry401Count + 1)
+                .then(resolve)
+                .catch(reject);
             })
             .catch(() => {
-              reject(buildError(401, { error: "unauthorized", message: "登录已过期，请重新登录" }));
+              reject(
+                buildError(401, { error: "unauthorized", message: "登录已过期，请重新登录" })
+              );
             });
           return;
         }
@@ -426,6 +507,26 @@ function doRequest<TResponse, TBody>(
         reject(buildNetworkError(error));
       },
     });
+
+    // 修复：支持 AbortController 取消请求
+    // uni.request 返回 RequestTask，调用其 abort() 可终止请求
+    if (options.signal && requestTask && typeof requestTask.abort === "function") {
+      const signal = options.signal;
+      // signal 已 aborted 时已在上方提前拦截，这里只需监听后续 abort
+      const onAbort = () => {
+        try {
+          requestTask.abort();
+        } catch (_e) {
+          // abort 失败静默处理（请求可能已完成）
+        }
+      };
+      // 兼容性处理：优先使用 addEventListener，不支持时回退到 onabort
+      if (typeof signal.addEventListener === "function") {
+        signal.addEventListener("abort", onAbort, { once: true });
+      } else if (typeof (signal as { onabort?: unknown }).onabort !== "undefined") {
+        (signal as { onabort: (() => void) | null }).onabort = onAbort;
+      }
+    }
   });
 }
 

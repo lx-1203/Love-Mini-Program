@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Agnes AI 视频和图片生成服务
  *
  * API 基础: https://api.agnes-ai.com/api/
@@ -11,14 +11,14 @@
  *   POST /image/generate   → 401 (need valid key)
  */
 
-import { CAMPUS_VIDEOS, CAMPUS_IMAGES, HOME_VIDEO, HOME_POSTER } from "../config/assets-index";
+import { CAMPUS_IMAGES, HOME_POSTER } from "../config/assets-index";
 
 // ===== Agnes AI 配置 =====
 const AGNES_API_BASE = "https://api.agnes-ai.com/api";
 const AGNES_API_KEY = "sk-PeAzA2C0MerWSzrqDbmiB0xFYTVFT3WJnzkfBC9zv0wjMWLT";
 
 // ===== 素材访问 =====
-export function getHomeVideoUrl(): string { return HOME_VIDEO; }
+// 注：原 getHomeVideoUrl 已删除（缺失视频文件）。如需启用，请先在 assets-index.ts 中补充视频路径。
 export function getHomePosterUrl(): string { return HOME_POSTER; }
 export function getCampusImage(key: keyof typeof CAMPUS_IMAGES): string { return CAMPUS_IMAGES[key]; }
 export function getAllCampusImages(): string[] { return Object.values(CAMPUS_IMAGES); }

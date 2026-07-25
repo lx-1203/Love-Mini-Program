@@ -1,0 +1,461 @@
+/**
+ * Village Store 工具函数
+ *
+ * 集中维护村口社区相关的纯工具函数：
+ * - 数据转换：mapToPostItem / mapToCommentItem / mapDetailToPostItem
+ * - 安全转换：toNumber
+ * - 过滤排序：filterAndSortPosts
+ * - 格式化：formatRelativeTime
+ * - Mock 数据：mockCategories / mockAuthors / mockPosts / mockComments
+ */
+
+import type {
+  CommentAuthorView,
+  CommentItem,
+  CommentItemView,
+  PostAuthor,
+  PostAuthorView,
+  PostDetailView,
+  PostItem,
+  PostSummaryView,
+} from "./types";
+import {
+  CATEGORY_ALL_ID,
+  CATEGORY_CAMPUS_ID,
+  CATEGORY_PREFIX,
+} from "./constants";
+
+/**
+ * 安全数字转换工具
+ *
+ * 修复：原代码直接使用 Number() 转换后端返回值，
+ * 若返回字符串 "abc" 会得到 NaN，导致 sort/reduce 等行为异常。
+ * 此函数在转换失败时回退到 fallback（默认 0）。
+ */
+export function toNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number") {
+    return Number.isNaN(value) ? fallback : value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? fallback : parsed;
+  }
+  return fallback;
+}
+
+/**
+ * 将后端 PostAuthorView 映射为前端 PostAuthor
+ */
+export function mapAuthorView(author: PostAuthorView): PostAuthor {
+  return {
+    userId: String(author.userId),
+    name: author.nickname,
+    avatar: author.avatarUrl || "",
+    headline: author.campusName || "",
+    campusName: author.campusName,
+  };
+}
+
+/**
+ * 将后端 CommentAuthorView 映射为前端 PostAuthor
+ */
+export function mapCommentAuthorView(author: CommentAuthorView): PostAuthor {
+  return {
+    userId: String(author.userId),
+    name: author.nickname,
+    avatar: author.avatarUrl || "",
+    headline: "",
+  };
+}
+
+/**
+ * 将后端 PostSummaryView 映射为前端 PostItem
+ */
+export function mapToPostItem(raw: PostSummaryView): PostItem {
+  return {
+    id: String(raw.id),
+    author: mapAuthorView(raw.author),
+    categoryId: raw.category,
+    title: raw.title,
+    content: raw.summary,
+    images: [],
+    tags: raw.tags,
+    likes: raw.likeCount,
+    comments: raw.commentCount,
+    shares: raw.shareCount,
+    isLiked: false, // PostSummaryView 无 isLiked 字段
+    isFollowed: false, // PostSummaryView 无 isFollowed 字段
+    isShared: false, // PostSummaryView 无 isShared 字段
+    isAlumni: raw.isAlumni ?? false,
+    createdAt: raw.createdAt,
+  };
+}
+
+/**
+ * 将后端 PostDetailView 映射为前端 PostItem
+ */
+export function mapDetailToPostItem(data: PostDetailView): PostItem {
+  return {
+    id: String(data.id),
+    author: mapAuthorView(data.author),
+    categoryId: data.category,
+    title: data.title,
+    content: data.content,
+    images: data.images,
+    tags: data.tags,
+    likes: data.likeCount,
+    comments: data.commentCount,
+    shares: data.shareCount,
+    isLiked: data.isLiked,
+    isFollowed: false,
+    isShared: false,
+    isAlumni: data.isAlumni ?? false,
+    createdAt: data.createdAt,
+  };
+}
+
+/**
+ * 将后端 CommentItemView 映射为前端 CommentItem
+ */
+export function mapToCommentItem(raw: CommentItemView): CommentItem {
+  return {
+    id: String(raw.id),
+    postId: String(raw.postId),
+    author: mapCommentAuthorView(raw.author),
+    content: raw.content,
+    likes: raw.likeCount,
+    isLiked: false, // CommentItemView 无 isLiked 字段
+    createdAt: raw.createdAt,
+  };
+}
+
+/**
+ * 将后端同校动态流原始记录映射为前端 PostItem
+ *
+ * 由于后端 CampusFeedView.posts 类型为 Record<string, unknown>[]，
+ * 需要逐条手动映射并应用安全转换。
+ */
+export function mapCampusFeedPost(
+  raw: Record<string, unknown>
+): PostItem {
+  const author = (raw.author ?? {}) as Record<string, unknown>;
+  return {
+    id: String(raw.id ?? ""),
+    author: {
+      userId: String(author.userId ?? ""),
+      name: String(author.nickname ?? author.name ?? ""),
+      avatar: String(author.avatarUrl ?? author.avatar ?? ""),
+      headline: String(author.campusName ?? author.headline ?? ""),
+      campusName: String(author.campusName ?? ""),
+    },
+    categoryId: String(raw.category ?? raw.categoryId ?? ""),
+    title: String(raw.title ?? ""),
+    content: String(raw.summary ?? raw.content ?? ""),
+    images: (raw.images ?? []) as string[],
+    tags: (raw.tags ?? []) as string[],
+    // 修复：原代码直接 Number() 转换，若后端返回字符串 "abc" 会得到 NaN，导致 sort/reduce 异常
+    // 现在使用安全转换函数，NaN 时回退到 0
+    likes: toNumber(raw.likeCount ?? raw.likes ?? 0),
+    comments: toNumber(raw.commentCount ?? raw.comments ?? 0),
+    shares: toNumber(raw.shareCount ?? raw.shares ?? 0),
+    isLiked: Boolean(raw.isLiked ?? false),
+    isFollowed: Boolean(raw.isFollowed ?? false),
+    isShared: Boolean(raw.isShared ?? false),
+    isAlumni: Boolean(raw.isAlumni ?? false),
+    createdAt: String(raw.createdAt ?? new Date().toISOString()),
+  };
+}
+
+/**
+ * 对帖子列表应用筛选与排序。
+ *
+ * 提取自 store filteredPosts getter 与 fetchPosts action 的共同逻辑，
+ * 用于 mock 模式与 real 模式的列表筛选。
+ *
+ * 注意：本函数为纯函数，不修改原数组。
+ *
+ * @param posts - 待筛选的帖子列表
+ * @param filters - 筛选条件（categoryId / keyword / sortBy）
+ * @param myCampus - 当前用户学校名（用于 cat-campus 同校筛选，可选）
+ * @returns 筛选并排序后的新数组
+ */
+export function filterAndSortPosts(
+  posts: PostItem[],
+  filters: {
+    categoryId?: string;
+    keyword?: string;
+    sortBy?: "latest" | "hot";
+  },
+  myCampus?: string
+): PostItem[] {
+  let result = [...posts];
+
+  if (filters.categoryId && filters.categoryId !== CATEGORY_ALL_ID) {
+    if (filters.categoryId === CATEGORY_CAMPUS_ID) {
+      // 校园分类：按同校筛选
+      if (myCampus) {
+        result = result.filter((post) => post.author.campusName === myCampus);
+      } else {
+        result = [];
+      }
+    } else {
+      result = result.filter((post) => post.categoryId === filters.categoryId);
+    }
+  }
+
+  if (filters.keyword) {
+    const keyword = filters.keyword.toLowerCase();
+    result = result.filter(
+      (post) =>
+        post.title.toLowerCase().includes(keyword) ||
+        post.content.toLowerCase().includes(keyword)
+    );
+  }
+
+  if (filters.sortBy === "hot") {
+    result.sort((a, b) => b.likes - a.likes);
+  } else {
+    result.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  }
+
+  return result;
+}
+
+/**
+ * 将前端分类 ID 转换为后端分类名。
+ * 例如 "cat-interest" -> "interest"，"campus" -> "campus"。
+ */
+export function toBackendCategory(categoryId: string): string {
+  if (categoryId.startsWith(CATEGORY_PREFIX)) {
+    return categoryId.substring(CATEGORY_PREFIX.length);
+  }
+  return categoryId;
+}
+
+/**
+ * 格式化相对时间
+ */
+export function formatRelativeTime(dateStr: string): string {
+  const now = Date.now();
+  const then = Date.parse(dateStr);
+  const diff = now - then;
+
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diff < minute) return "刚刚活跃";
+  if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
+  if (diff < day) return `${Math.floor(diff / hour)}小时前`;
+  return `${Math.floor(diff / day)}天前`;
+}
+
+/* ========== Mock 数据 ========== */
+
+import type { PostCategory } from "./types";
+
+/** Mock 分类列表 */
+export const mockCategories: PostCategory[] = [
+  { id: "cat-all", name: "全部", icon: "grid" },
+  { id: "cat-interest", name: "兴趣圈", icon: "heart" },
+  { id: "cat-sincere", name: "诚意帖", icon: "star" },
+  { id: "cat-hometown", name: "同乡", icon: "location" },
+  { id: "cat-campus", name: "校园", icon: "school" },
+  { id: "cat-latest", name: "最新", icon: "time" },
+];
+
+/** Mock 作者列表 */
+export const mockAuthors: PostAuthor[] = [
+  {
+    userId: "user-3001",
+    name: "小鹿",
+    avatar: "/static/default-avatar.png",
+    headline: "94年 · 北京 · 年薪30w+ · 985硕士",
+    campusName: "北京大学",
+    interests: ["阅读", "旅行", "志愿者"],
+  },
+  {
+    userId: "user-3002",
+    name: "阿泽",
+    avatar: "/static/default-avatar.png",
+    headline: "96年 · 上海 · 互联网大厂 · 本科",
+    campusName: "复旦大学",
+    interests: ["徒步", "户外", "摄影"],
+  },
+  {
+    userId: "user-3003",
+    name: "橙子",
+    avatar: "/static/default-avatar.png",
+    headline: "95年 · 杭州 · 设计师 · 硕士",
+    campusName: "浙江大学",
+    interests: ["设计", "美食", "旅行"],
+  },
+  {
+    userId: "user-3004",
+    name: "南风",
+    avatar: "/static/default-avatar.png",
+    headline: "97年 · 深圳 · 产品经理 · 本科",
+    campusName: "北京大学",
+    interests: ["产品", "运动", "音乐"],
+  },
+  {
+    userId: "user-3005",
+    name: "北岛",
+    avatar: "/static/default-avatar.png",
+    headline: "93年 · 成都 · 创业者 · 博士",
+    campusName: "四川大学",
+    interests: ["创业", "摄影", "读书"],
+  },
+];
+
+/** Mock 帖子列表 */
+export const mockPosts: PostItem[] = [
+  {
+    id: "post-1",
+    author: mockAuthors[0],
+    categoryId: "cat-sincere",
+    title: "",
+    content:
+      "认真征友，希望能遇到那个对的人。平时喜欢看书、旅行，周末会去做志愿者。期待一段双向奔赴的感情。",
+    images: [],
+    tags: ["#这是一条520交友启事", "#诚意征友"],
+    likes: 128,
+    comments: 32,
+    shares: 15,
+    isLiked: false,
+    isFollowed: false,
+    isShared: false,
+    isAlumni: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+  },
+  {
+    id: "post-2",
+    author: mockAuthors[1],
+    categoryId: "cat-interest",
+    title: "",
+    content:
+      "周末有一起去徒步的吗？计划去西湖周边走一圈，大概15公里，新手友好路线。已经有3个人了，再来2个就出发！",
+    images: [],
+    tags: ["#周末徒步", "#西湖", "#户外"],
+    likes: 45,
+    comments: 18,
+    shares: 8,
+    isLiked: true,
+    isFollowed: true,
+    isShared: true,
+    isAlumni: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+  },
+  {
+    id: "post-3",
+    author: mockAuthors[2],
+    categoryId: "cat-hometown",
+    title: "",
+    content:
+      "在杭州的四川老乡集合啦！想建一个老乡群，周末可以一起约火锅、打麻将。身在异乡，老乡最亲~",
+    images: [],
+    tags: ["#四川老乡", "#杭州", "#火锅"],
+    likes: 89,
+    comments: 56,
+    shares: 23,
+    isLiked: false,
+    isFollowed: false,
+    isShared: false,
+    isAlumni: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+  },
+  {
+    id: "post-4",
+    author: mockAuthors[3],
+    categoryId: "cat-mask",
+    title: "",
+    content:
+      "【蒙面话题】你们觉得相亲时最看重对方什么？我先说：三观一致最重要，颜值其次。",
+    images: [],
+    tags: ["#蒙面话题", "#相亲", "#三观"],
+    likes: 234,
+    comments: 89,
+    shares: 42,
+    isLiked: false,
+    isFollowed: false,
+    isShared: false,
+    isAlumni: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+  },
+  {
+    id: "post-5",
+    author: mockAuthors[4],
+    categoryId: "cat-sincere",
+    title: "",
+    content:
+      "创业第三年，公司步入正轨，终于有时间考虑个人问题了。喜欢运动、摄影，希望找一个能一起成长的伴侣。",
+    images: [],
+    tags: ["#创业", "#征友", "#摄影"],
+    likes: 167,
+    comments: 43,
+    shares: 19,
+    isLiked: true,
+    isFollowed: false,
+    isShared: false,
+    isAlumni: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+  },
+  {
+    id: "post-6",
+    author: mockAuthors[0],
+    categoryId: "cat-interest",
+    title: "",
+    content:
+      "分享最近读的一本书《亲密关系》，里面讲到沟通的重要性，推荐给正在恋爱中的朋友们。",
+    images: [],
+    tags: ["#读书分享", "#亲密关系"],
+    likes: 67,
+    comments: 12,
+    shares: 6,
+    isLiked: false,
+    isFollowed: false,
+    isShared: false,
+    isAlumni: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+  },
+];
+
+/** Mock 评论列表 */
+export const mockComments: CommentItem[] = [
+  {
+    id: "comment-1",
+    postId: "post-1",
+    author: mockAuthors[1],
+    content: "同在北京，可以认识一下吗？",
+    likes: 6,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 3).toISOString(),
+  },
+  {
+    id: "comment-2",
+    postId: "post-1",
+    author: mockAuthors[2],
+    content: "志愿者活动是在哪里做的呀？",
+    likes: 3,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+  },
+  {
+    id: "comment-3",
+    postId: "post-4",
+    author: mockAuthors[0],
+    content: "完全同意！三观不合真的很难走下去。",
+    likes: 12,
+    isLiked: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+  },
+  {
+    id: "comment-4",
+    postId: "post-4",
+    author: mockAuthors[4],
+    content: "我觉得人品和责任心也很重要。",
+    likes: 8,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+  },
+];

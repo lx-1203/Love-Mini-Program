@@ -1,18 +1,29 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
 import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
   emoji?: string;
 }>();
-
-const t = designTokens;
 </script>
 
 <template>
-  <view class="illustration">
+  <view
+    class="illustration"
+    <!-- #ifdef H5 -->
+    role="img"
+    aria-label="login illustration"
+    <!-- #endif -->
+  >
     <view class="illustration-bg" />
-    <image class="illustration-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" mode="aspectFit" />
+    <image
+      class="illustration-img"
+      :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL"
+      mode="aspectFit"
+      <!-- #ifdef H5 -->
+      role="img"
+      aria-label="login illustration"
+      <!-- #endif -->
+    />
   </view>
 </template>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { useI18n } from 'vue-i18n';
 
 defineProps<{
   loading?: boolean;
@@ -9,12 +9,22 @@ const emit = defineEmits<{
   tap: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
 </script>
 
 <template>
-  <view class="phone-btn" :class="{ 'phone-btn--loading': loading }" @tap="emit('tap')">
-    <text class="phone-btn-text">手机号登录</text>
+  <view
+    class="phone-btn"
+    :class="{ 'phone-btn--loading': loading }"
+    @tap="emit('tap')"
+    <!-- #ifdef H5 -->
+    role="button"
+    :aria-label="t('login.phoneLogin')"
+    :aria-disabled="loading"
+    :aria-busy="loading"
+    <!-- #endif -->
+  >
+    <text class="phone-btn-text">{{ t('login.phoneLogin') }}</text>
   </view>
 </template>
 

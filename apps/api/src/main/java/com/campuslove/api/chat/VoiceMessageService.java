@@ -1,0 +1,240 @@
+package com.campuslove.api.chat;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+/**
+ * 聊天语音消息服务。
+ *
+ * <p>职责：封装语音文件的存储、删除、路径生成等业务逻辑，
+ * 供 {@link VoiceMessageController} 调用。复用 LocalMediaStorageService 的存储根目录
+ * （由 {@code app.media.storage-root} 配置），保证语音文件与其他媒体统一管理。</p>
+ *
+ * <p>存储路径：{@code uploads/{userId}/voice/{uuid}.mp3}，
+ * 与 LocalMediaStorageService 风格一致（按用户/月份分目录），
+ * 但加 {@code voice} 子目录避免与其他媒体类型混淆。</p>
+ *
+ * <p>校验规则：
+ * <ul>
+ *   <li>文件非空、大小 ≤ 2MB</li>
+ *   <li>MIME 类型白名单：audio/mpeg、audio/mp3</li>
+ *   <li>扩展名白名单：mp3、aac、m4a、wav、amr</li>
+ *   <li>时长 ≤ 60 秒</li>
+ * </ul>
+ * </p>
+ *
+ * <p>事务处理：方法使用 {@link Transactional} 注解，
+ * 虽然文件 IO 不参与数据库事务，但为未来扩展（如记录语音元信息到 DB）预留事务上下文，
+ * 并保证异常时统一回滚 DB 操作。</p>
+ *
+ * <p>错误处理：参数非法抛出 {@link IllegalArgumentException}（由 GlobalExceptionHandler 转 400），
+ * IO 异常抛出 {@link RuntimeException}（由 GlobalExceptionHandler 转 500）。</p>
+ *
+ * <p>mp-weixin 兼容：前端通过 uni.uploadFile 上传 multipart/form-data，
+ * 服务端使用 {@link MultipartFile} 接收，与微信小程序兼容。</p>
+ */
+@Profile("real")
+@Service
+public class VoiceMessageService {
+
+    private static final Logger log = LoggerFactory.getLogger(VoiceMessageService.class);
+
+    /** 语音消息最大时长（秒）：60 秒，与前端录音配置一致 */
+    private static final int MAX_DURATION_SECONDS = 60;
+
+    /** 语音消息最大文件大小：2MB，与微信小程序限制一致 */
+    private static final long MAX_FILE_SIZE = 2L * 1024 * 1024;
+
+    /** 允许的语音文件扩展名（小写） */
+    private static final Set<String> ALLOWED_VOICE_EXT =
+            Set.of("mp3", "aac", "m4a", "wav", "amr");
+
+    /** 允许的语音 MIME 类型白名单 */
+    private static final Set<String> ALLOWED_VOICE_MIME =
+            Set.of("audio/mpeg", "audio/aac", "audio/x-m4a", "audio/mp3",
+                    "audio/wav", "audio/x-wav", "audio/amr");
+
+    /** 月份目录格式（如 202607） */
+    private static final DateTimeFormatter MONTH_FMT =
+            DateTimeFormatter.ofPattern("yyyyMM");
+
+    /** URL 前缀，与 WebConfig 静态资源映射一致 */
+    private static final String URL_PREFIX = "/uploads/";
+
+    /** 本地存储根目录，默认 ./uploads */
+    @Value("${app.media.storage-root:./uploads}")
+    private String storageRoot;
+
+    /**
+     * 存储语音文件。
+     *
+     * <p>校验通过后保存到 {@code {storageRoot}/{userId}/voice/{yyyyMM}/{uuid}.{ext}}，
+     * 返回相对 URL 供前端访问与发送。</p>
+     *
+     * @param userId   当前用户 ID（从 JWT 上下文获取）
+     * @param file     语音文件（multipart）
+     * @param duration 语音时长（秒），由前端录音时记录
+     * @return 上传响应（含 URL / 时长 / 文件大小）
+     * @throws IllegalArgumentException 文件为空/过大/格式不支持/时长超限时抛出
+     * @throws RuntimeException         IO 异常或其他未知异常时抛出
+     */
+    @Transactional
+    public VoiceUploadResult store(Long userId, MultipartFile file, Integer duration) {
+        // 入参校验：userId
+        if (userId == null) {
+            throw new IllegalArgumentException("用户 ID 不能为空");
+        }
+        // 文件非空校验
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("语音文件不能为空");
+        }
+        // 文件大小校验
+        long fileSize = file.getSize();
+        if (fileSize > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException(
+                    "语音文件超过 " + (MAX_FILE_SIZE / 1024 / 1024) + "MB 限制");
+        }
+        // 时长校验
+        if (duration != null && duration > MAX_DURATION_SECONDS) {
+            throw new IllegalArgumentException(
+                    "语音时长超过 " + MAX_DURATION_SECONDS + " 秒限制");
+        }
+        // 扩展名校验
+        String originalFilename = file.getOriginalFilename();
+        String ext = extractExtension(originalFilename);
+        if (!ALLOWED_VOICE_EXT.contains(ext)) {
+            throw new IllegalArgumentException(
+                    "不支持的语音格式：" + ext + "，仅支持 " + ALLOWED_VOICE_EXT);
+        }
+        // MIME 类型校验（客户端未提供时跳过）
+        String contentType = file.getContentType();
+        if (contentType != null && !contentType.isBlank()
+                && !ALLOWED_VOICE_MIME.contains(contentType.toLowerCase(Locale.ROOT))) {
+            throw new IllegalArgumentException("不支持的语音 MIME 类型：" + contentType);
+        }
+
+        try {
+            // 构建存储路径：{storageRoot}/{userId}/voice/{yyyyMM}/{uuid}.{ext}
+            String yyyyMM = LocalDate.now().format(MONTH_FMT);
+            String fileName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
+            Path targetDir = Paths.get(storageRoot,
+                    String.valueOf(userId), "voice", yyyyMM);
+            Files.createDirectories(targetDir);
+            Path targetPath = targetDir.resolve(fileName).toAbsolutePath().normalize();
+
+            // 二次校验：防止路径遍历
+            Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
+            if (!targetPath.startsWith(root)) {
+                log.error("语音存储路径越界，拒绝写入: target={}, root={}", targetPath, root);
+                throw new IllegalStateException("语音存储路径异常，已拒绝");
+            }
+
+            // 写入文件
+            try (var in = file.getInputStream()) {
+                Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            // 构造访问 URL
+            String url = "/uploads/" + userId + "/voice/" + yyyyMM + "/" + fileName;
+            log.info("语音上传成功：userId={}, url={}, size={}", userId, url, fileSize);
+            return new VoiceUploadResult(
+                    url,
+                    duration != null ? duration : 0,
+                    fileSize
+            );
+        } catch (IOException e) {
+            log.error("语音上传 IO 失败：userId={}", userId, e);
+            throw new RuntimeException("语音上传失败，请稍后重试", e);
+        } catch (Exception e) {
+            log.error("语音上传失败：userId={}", userId, e);
+            throw new RuntimeException("语音上传失败，请稍后重试", e);
+        }
+    }
+
+    /**
+     * 删除语音文件。
+     *
+     * <p>仅删除受管路径（{@code /uploads/} 前缀）下的文件，防止路径遍历。
+     * 文件不存在时静默忽略，IO 异常抛出 {@link RuntimeException}。</p>
+     *
+     * @param url 语音文件 URL
+     * @throws RuntimeException IO 异常时抛出
+     */
+    @Transactional
+    public void delete(String url) {
+        try {
+            if (url == null || url.isBlank()) {
+                return;
+            }
+            if (!url.startsWith(URL_PREFIX)) {
+                log.warn("跳过删除非受管语音 URL: {}", url);
+                return;
+            }
+            String relative = url.substring(URL_PREFIX.length());
+            Path target = Paths.get(storageRoot, relative).toAbsolutePath().normalize();
+            Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
+            if (!target.startsWith(root)) {
+                log.warn("跳过删除越界语音 URL: {}", url);
+                return;
+            }
+            boolean deleted = Files.deleteIfExists(target);
+            if (deleted) {
+                log.info("语音删除成功: url={}", url);
+            } else {
+                log.debug("语音文件不存在，忽略删除: url={}", url);
+            }
+        } catch (IOException e) {
+            log.error("删除语音文件失败: url={}", url, e);
+            throw new RuntimeException("删除语音文件失败，请稍后重试", e);
+        } catch (Exception e) {
+            log.error("删除语音文件失败: url={}", url, e);
+            throw new RuntimeException("删除语音文件失败，请稍后重试", e);
+        }
+    }
+
+    /**
+     * 从文件名提取扩展名（小写，无点）。
+     *
+     * @param filename 文件名
+     * @return 扩展名（小写），无扩展名返回空字符串
+     */
+    private String extractExtension(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return "";
+        }
+        int dotIdx = filename.lastIndexOf('.');
+        if (dotIdx < 0 || dotIdx == filename.length() - 1) {
+            return "";
+        }
+        return filename.substring(dotIdx + 1).toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * 语音上传响应。
+     *
+     * @param url      语音文件 URL
+     * @param duration 语音时长（秒）
+     * @param size     文件大小（字节）
+     */
+    public record VoiceUploadResult(
+            String url,
+            Integer duration,
+            Long size
+    ) {
+    }
+}

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { onLaunch } from "@dcloudio/uni-app";
+import { onLaunch, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useSessionStore } from "./stores/session";
 import { useUnlockGuideStore } from "./stores/unlock-guide";
+import { reportGlobalError } from "./main";
 import UnlockGuideModal from "./components/UnlockGuideModal.vue";
 import UnlockGuideOverlay from "./components/UnlockGuideOverlay.vue";
 
@@ -40,21 +41,32 @@ function markAppReady() {
 
 onLaunch(() => {
   try {
-    uni.onError?.((error: string | Error) => {
-      console.error("[App.onError]", error);
-    });
-
-    uni.onUnhandledRejection?.((res: { reason: unknown; promise: Promise<unknown> }) => {
-      console.error("[App.onUnhandledRejection]", res.reason);
-    });
-
+    // 修复（P0 BUG）：uni.onError / uni.onUnhandledRejection 已迁移至 main.ts 的
+    // registerGlobalErrorListeners 统一注册，避免与 App.vue 重复监听导致同一错误被上报两次。
     sessionStore.bootstrap().catch((err: unknown) => {
-      console.error("[App.onLaunch] bootstrap 初始化异常:", err);
+      // 修复：bootstrap 异常上报到 main.ts 全局错误处理器，统一出口便于排查
+      reportGlobalError("App.onLaunch.bootstrap", err);
     });
   } catch (error) {
-    console.error("[App.onLaunch] 启动异常:", error);
+    // 修复：启动异常上报到 main.ts 全局错误处理器，避免仅 console.error 后丢失上下文
+    reportGlobalError("App.onLaunch", error);
   } finally {
     markAppReady();
+  }
+});
+
+/**
+ * 修复（P1 BUG）：原实现缺少 onShow 错误监控。
+ * 应用切前台 / 被重新展示时若发生异常（如 store 恢复、定时任务恢复），
+ * 现通过 try-catch 捕获并上报到 main.ts 的全局错误处理器。
+ * 当前无具体业务逻辑，仅作错误监控兜底；后续扩展切前台恢复逻辑时可在此添加。
+ */
+onShow(() => {
+  try {
+    // 应用切前台时的轻量恢复逻辑可在此扩展
+    // 目前仅作错误监控兜底，无具体业务逻辑
+  } catch (error) {
+    reportGlobalError("App.onShow", error);
   }
 });
 
@@ -294,7 +306,7 @@ view, button, scroll-view, swiper, input, textarea {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
+    var(--c-overlay-bg-mid, var(--c-overlay-border-strong, var(--c-overlay-border-strong, rgba(255, 255, 255, 0.3)))) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -310,43 +322,43 @@ view, button, scroll-view, swiper, input, textarea {
 
 .radius-card {
   border-radius: 16rpx;
-  box-shadow: 0 2rpx 12rpx rgba(15, 23, 42, 0.05), 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
-  border: 1rpx solid #EEF0F4;
+  box-shadow: 0 2rpx 12rpx var(--c-neutral-shadow-sm, var(--c-neutral-shadow-sm, var(--c-neutral-shadow-sm, rgba(15, 23, 42, 0.05)))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
+  border: 1rpx solid var(--c-border-light, #EEF0F4);
 }
 
-.text-brand { color: #3FCF8E; }
-.text-brand-romance { color: #EC4899; }
-.text-pink { color: #EC4899; }
-.text-vip { color: #C9A36A; }
+.text-brand { color: var(--c-brand, #3FCF8E); }
+.text-brand-romance { color: var(--c-romance-500, #EC4899); }
+.text-pink { color: var(--c-romance-500, #EC4899); }
+.text-vip { color: var(--c-text-vip, #C9A36A); }
 
 .gradient-brand {
-  background: linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%);
+  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
 }
 .gradient-romance {
-  background: linear-gradient(135deg, #EC4899 0%, #F97316 100%);
+  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-accent-400, #F97316) 100%);
 }
 .gradient-pink {
-  background: linear-gradient(135deg, #EC4899 0%, #F97316 100%);
+  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-accent-400, #F97316) 100%);
 }
 .gradient-vip {
-  background: linear-gradient(135deg, #C9A36A 0%, #E8C98A 100%);
+  background: linear-gradient(135deg, var(--c-text-vip, #C9A36A) 0%, var(--c-vip-to, #E8C98A) 100%);
 }
 
 .float-shadow {
-  box-shadow: 0 6rpx 20rpx rgba(63, 207, 142, 0.35);
+  box-shadow: 0 6rpx 20rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35))));
 }
 
 .shadow-card-soft {
-  box-shadow: 0 2rpx 12rpx rgba(15, 23, 42, 0.05), 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
-  border: 1rpx solid #EEF0F4;
+  box-shadow: 0 2rpx 12rpx var(--c-neutral-shadow-sm, var(--c-neutral-shadow-sm, var(--c-neutral-shadow-sm, rgba(15, 23, 42, 0.05)))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
+  border: 1rpx solid var(--c-border-light, #EEF0F4);
 }
 
 .shadow-brand {
-  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.25);
+  box-shadow: 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, var(--c-brand-shadow-tint-mid, var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25))));
 }
 
 .shadow-romance {
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.25);
+  box-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint, var(--c-shadow-romance-tint, var(--c-shadow-romance-tint, rgba(236, 72, 153, 0.25))));
 }
 
 /* ================================================================
@@ -503,7 +515,7 @@ view, button, scroll-view, swiper, input, textarea {
   transform: scale(0.88);
   filter: brightness(0.95);
   opacity: 0.92;
-  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.12);
+  box-shadow: 0 8rpx 24rpx var(--c-neutral-shadow-xl, var(--c-neutral-shadow-xl, var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.12))));
   transition-duration: 120ms;
 }
 
@@ -516,7 +528,7 @@ view, button, scroll-view, swiper, input, textarea {
   width: 0;
   height: 0;
   border-radius: 50%;
-  background: rgba(91, 127, 255, 0.15);
+  background: var(--c-secondary-blue-bg-tint-light, var(--c-secondary-blue-bg-tint-light, var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15))));
   transform: translate(-50%, -50%);
   pointer-events: none;
   opacity: 0;
@@ -555,7 +567,7 @@ view, button, scroll-view, swiper, input, textarea {
 }
 .card-hover:active {
   transform: scale(0.98);
-  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-md, var(--c-neutral-shadow-md, var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.06))));
 }
 
 /* ================================================================
@@ -564,7 +576,7 @@ view, button, scroll-view, swiper, input, textarea {
    ================================================================ */
 .card-base {
   position: relative;
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   border: var(--card-border);
   border-radius: 24rpx;
   box-shadow: var(--card-shadow);
@@ -579,8 +591,8 @@ view, button, scroll-view, swiper, input, textarea {
 
 /* 高层级卡片：更强的阴影和边缘，用于主推荐卡片 */
 .card-base--elevated {
-  box-shadow: 0 12rpx 32rpx rgba(15, 23, 42, 0.08), 0 4rpx 12rpx rgba(15, 23, 42, 0.04);
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 12rpx 32rpx var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, rgba(15, 23, 42, 0.08)))), 0 4rpx 12rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
+  border: 1px solid var(--c-neutral-border-tint-mid, var(--c-neutral-shadow-md, var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.06))));
 }
 
 /* 区块分隔（明确可见的边缘色） */
@@ -615,8 +627,8 @@ view, button, scroll-view, swiper, input, textarea {
 /* 图片分割：圆角 + 阴影，用于主要 <image> 元素或图片包裹容器 */
 .img-rounded {
   border-radius: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.08), 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
-  border: 1px solid rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, rgba(15, 23, 42, 0.08)))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
+  border: 1px solid var(--c-neutral-border-tint, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
   overflow: hidden;
 }
 
@@ -634,9 +646,9 @@ view, button, scroll-view, swiper, input, textarea {
   transform: translateY(-50%);
   width: 6rpx;
   height: 48rpx;
-  background: linear-gradient(180deg, #5B7FFF 0%, #7C9BFF 100%);
+  background: linear-gradient(180deg, var(--c-secondary-blue-400, #5B7FFF) 0%, var(--c-secondary-blue-400-light, #7C9BFF) 100%);
   border-radius: 2rpx;
-  box-shadow: 0 0 8rpx rgba(91, 127, 255, 0.3);
+  box-shadow: 0 0 8rpx var(--c-secondary-blue-shadow, var(--c-secondary-blue-shadow, var(--c-secondary-blue-shadow, rgba(91, 127, 255, 0.3))));
 }
 
 /* ================================================================

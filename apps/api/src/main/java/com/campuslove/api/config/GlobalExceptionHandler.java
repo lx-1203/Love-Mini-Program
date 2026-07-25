@@ -1,10 +1,13 @@
 package com.campuslove.api.config;
 
 import com.campuslove.api.media.MediaSizeLimitExceededException;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -84,6 +88,65 @@ public class GlobalExceptionHandler {
             AccessDeniedException ex) {
         log.warn("访问被拒绝: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", "您没有权限执行此操作");
+    }
+
+    /**
+     * 修复：处理 javax.validation.ConstraintViolationException。
+     * 当 @RequestParam / @PathVariable 上的 @NotBlank/@Min 等约束校验失败时触发，
+     * 返回 400 Bad Request 并附带字段级错误信息。
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(
+            ConstraintViolationException ex) {
+        String errorMessage = ex.getConstraintViolations().stream()
+                .map(v -> {
+                    String path = v.getPropertyPath() != null ? v.getPropertyPath().toString() : "value";
+                    return path + ": " + v.getMessage();
+                })
+                .reduce((a, b) -> a + "; " + b)
+                .orElse("请求参数校验失败");
+        log.warn("约束校验失败: {}", errorMessage);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation Failed", errorMessage);
+    }
+
+    /**
+     * 修复：处理 jakarta.persistence.EntityNotFoundException。
+     * 当业务层主动抛出实体未找到异常（如查询用户/帖子不存在）时触发，
+     * 返回 404 Not Found，不泄露内部细节。
+     */
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleEntityNotFound(
+            EntityNotFoundException ex) {
+        log.warn("实体未找到: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found",
+                ex.getMessage() != null ? ex.getMessage() : "请求的资源不存在");
+    }
+
+    /**
+     * 修复：处理 DataIntegrityViolationException。
+     * 当数据库约束冲突（唯一键、外键、非空约束等）时触发，
+     * 返回 409 Conflict，不暴露具体数据库结构细节。
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex) {
+        // 仅记录根因日志（不输出到响应体），防止泄露数据库结构
+        log.warn("数据库完整性冲突: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.CONFLICT, "Conflict",
+                "数据冲突，可能存在重复或违反约束的数据");
+    }
+
+    /**
+     * 修复：处理 MaxUploadSizeExceededException。
+     * 当 Spring multipart 解析器检测到上传文件超过 spring.servlet.multipart.max-file-size
+     * 配置阈值时触发，返回 413 Payload Too Large。
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleMaxUploadSize(
+            MaxUploadSizeExceededException ex) {
+        log.warn("上传文件大小超过 multipart 限制: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Payload Too Large",
+                "上传文件超过最大允许大小");
     }
 
     /**

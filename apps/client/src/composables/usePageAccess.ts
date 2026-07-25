@@ -27,6 +27,14 @@ function getCurrentPagePath(): string {
   }
 }
 
+/**
+ * 模块级刷新标志，防止多个页面 onShow 并发触发 refreshSession。
+ * 修复（P0 BUG）：原实现 token 存在但 userSession 为空时直接放行，
+ * 不尝试恢复会话，导致用户带着失效 token 进入受保护页面，
+ * 直到下次 API 401 才被拦截。现主动尝试 refresh，失败则跳登录。
+ */
+let isRefreshingSession = false;
+
 export function usePageAccess(requirements: PageRequirements) {
   const sessionStore = useSessionStore();
   const unlockGuideStore = useUnlockGuideStore();
@@ -46,11 +54,30 @@ export function usePageAccess(requirements: PageRequirements) {
 
     const current = userSession.value;
 
-    // 边界处理：userSession 为空但本地仍有 token，说明会话信息丢失但用户可能仍处于登录态
-    // （例如 bootstrap 因网络异常失败，userSession 未加载，但 token 仍在本地存储中）
-    // 此时不应误判 isLoggedIn=false 而跳转登录页，让页面正常加载，
-    // 后续 API 若返回 401 会由 HTTP 拦截器走标准的刷新/登出流程
+    // 修复（P0 BUG）：token 存在但 userSession 为空时，主动尝试 refresh 恢复会话，
+    // 而非直接放行。refresh 失败（认证类错误）则跳登录；网络/业务错误由 isOffline / 页面处理。
+    // 原实现直接 return 放行，用户可能带着失效 token 进入受保护页面，
+    // 直到触发 API 401 才被拦截，存在安全隐患（页面可能已渲染敏感数据）。
     if (!current && requirements.requiresAuth && getToken()) {
+      if (!isRefreshingSession) {
+        isRefreshingSession = true;
+        sessionStore
+          .refreshSession()
+          .catch((err: unknown) => {
+            console.warn("[usePageAccess] 会话刷新失败:", err);
+            // 认证类错误（401/403）：跳登录
+            // http 层 401 处理通常已触发跳转，此处兜底确保跳转（避免竞态遗漏）
+            const category = (err as { category?: string })?.category;
+            if (category === "auth") {
+              uni.reLaunch({ url: "/pages/login/index" });
+            }
+            // 网络错误 / 业务错误：不跳转，由 isOffline 状态或页面自行处理
+          })
+          .finally(() => {
+            isRefreshingSession = false;
+          });
+      }
+      // 暂时放行，等 refresh 完成后由反应式系统（userSession 变更）触发下次 onShow 重新检查
       return;
     }
 

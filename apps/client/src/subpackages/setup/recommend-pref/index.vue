@@ -1,8 +1,15 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
+/**
+ * 推荐偏好设置页（功能5：当前步骤 = 3：推荐偏好）。
+ *
+ * 跳转链路：profile(1) → campus(2) → recommend-pref(3) → schedule(4) → 完成(5)
+ */
 import { onMounted, ref } from "vue";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
+// 功能5：引导流程进度条（当前步骤 = 3：推荐偏好）
+import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { request } from "../../../services/http";
 import { appEnv } from "../../../services/env";
 import { useSessionStore } from "../../../stores/session";
@@ -131,6 +138,9 @@ onMounted(() => {
 
 <template>
   <AppShell title="推荐计划设置" :show-tab-bar="false">
+    <!-- 功能5：引导流程进度条（当前步骤 = 3：推荐偏好） -->
+    <SetupProgress :current-step="3" />
+
     <!-- 加载状态 -->
     <SectionCard v-if="loading" title="加载中..." compact>
       <view class="loading-container">
@@ -304,7 +314,7 @@ onMounted(() => {
   top: 4rpx;
   left: 4rpx;
   transition: left 0.2s ease;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg, var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12)));
 }
 
 .toggle-switch--on .toggle-knob {

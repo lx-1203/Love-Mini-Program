@@ -146,6 +146,14 @@ export interface HeartSignal {
 }
 
 /**
+ * 批量操作类型
+ * - like: 批量喜欢（对喜欢我的人）
+ * - skip: 批量跳过（移除喜欢我的人，从列表移除）
+ * - cancel: 批量取消喜欢（对我发出的喜欢）
+ */
+export type BatchActionType = "like" | "skip" | "cancel";
+
+/**
  * LikesStore 状态
  */
 export interface LikesState {
@@ -161,6 +169,25 @@ export interface LikesState {
   loading: boolean;
   /** 错误信息 */
   errorMessage: string | null;
+  /**
+   * 搜索关键词（功能2：喜欢列表搜索）
+   * 用于按昵称、学校（headline 中包含学校信息）、城市筛选
+   * 由 likes 页面搜索框（300ms 防抖）写入
+   */
+  searchQuery: string;
+  /**
+   * 批量模式开关（功能1：喜欢列表批量操作）
+   * - true: 显示 checkbox、底部批量操作栏
+   * - false: 正常浏览模式
+   */
+  batchMode: boolean;
+  /**
+   * 选中的用户 ID 集合（功能1：批量操作）
+   * 在批量模式下，用户点击 checkbox 时维护此 Set
+   */
+  selectedIds: string[];
+  /** 批量操作执行中（防重复提交） */
+  batchProcessing: boolean;
 }
 
 /* ========== Mock 数据 ========== */
@@ -294,6 +321,10 @@ export const useLikesStore = defineStore("likes", {
     heartSignals: [],
     loading: false,
     errorMessage: null,
+    searchQuery: "",
+    batchMode: false,
+    selectedIds: [],
+    batchProcessing: false,
   }),
 
   getters: {
@@ -319,11 +350,64 @@ export const useLikesStore = defineStore("likes", {
         return "user-1001";
       }
     },
+    /**
+     * 功能2：根据 searchQuery 过滤后的「喜欢我的」列表
+     * 按昵称、学校（headline）、城市（headline）做包含匹配
+     * searchQuery 为空时返回原列表
+     */
+    filteredLikedBy: (state): LikeRecord[] => {
+      const q = state.searchQuery.trim().toLowerCase();
+      if (!q) return state.likedBy;
+      return state.likedBy.filter((item) => {
+        const name = (item.name || "").toLowerCase();
+        const headline = (item.headline || "").toLowerCase();
+        return name.includes(q) || headline.includes(q);
+      });
+    },
+    /**
+     * 功能2：根据 searchQuery 过滤后的「我发出的喜欢」列表
+     */
+    filteredLikes: (state): LikeRecord[] => {
+      const q = state.searchQuery.trim().toLowerCase();
+      if (!q) return state.likes;
+      return state.likes.filter((item) => {
+        const name = (item.name || "").toLowerCase();
+        const headline = (item.headline || "").toLowerCase();
+        return name.includes(q) || headline.includes(q);
+      });
+    },
+    /**
+     * 功能2：根据 searchQuery 过滤后的访客列表
+     */
+    filteredVisitors: (state): VisitorRecord[] => {
+      const q = state.searchQuery.trim().toLowerCase();
+      if (!q) return state.visitors;
+      return state.visitors.filter((item) => {
+        const name = (item.name || "").toLowerCase();
+        const headline = (item.headline || "").toLowerCase();
+        return name.includes(q) || headline.includes(q);
+      });
+    },
+    /**
+     * 功能1：选中项数量（用于底部批量操作栏展示）
+     */
+    selectedCount: (state): number => state.selectedIds.length,
+    /**
+     * 功能1：判断某用户 ID 是否已被选中
+     */
+    isSelected: (state) => (userId: string): boolean => state.selectedIds.includes(userId),
   },
 
   actions: {
     /**
      * 获取我发出的喜欢列表和喜欢我的列表
+     *
+     * 修复（P1 BUG）：原 catch 分支未向上抛出错误，调用方无法感知加载失败，
+     * 仍会将旧数据视为「当前数据」展示。同时原实现保留旧列表（仅做空值兜底），
+     * 易让用户误以为数据是最新的。
+     * 现改为：
+     * 1. 失败时清空 likes/likedBy 列表，避免展示陈旧数据
+     * 2. 重新抛出错误，调用方可据此展示重试入口
      */
     async fetchLikes() {
       this.loading = true;
@@ -356,9 +440,11 @@ export const useLikesStore = defineStore("likes", {
         this.likes = myLikesData.map(mapToLikeRecord);
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "加载喜欢列表失败";
-        // 异常时确保列表不为 undefined
-        this.likes = this.likes.length > 0 ? this.likes : [];
-        this.likedBy = this.likedBy.length > 0 ? this.likedBy : [];
+        // 修复（P1 BUG）：失败时清空列表，避免陈旧数据被当作当前数据展示
+        this.likes = [];
+        this.likedBy = [];
+        // 修复（P1 BUG）：重新抛出错误，调用方可据此展示重试入口
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -749,6 +835,146 @@ export const useLikesStore = defineStore("likes", {
 
       // 插入列表头部，确保最新喜欢优先展示
       this.likes.unshift(newRecord);
+    },
+
+    /* ========== 功能1：批量操作 ========== */
+
+    /**
+     * 进入/退出批量模式
+     * 进入时清空已选列表，退出时同样清空，避免残留状态
+     * @param enabled - 是否进入批量模式
+     */
+    setBatchMode(enabled: boolean) {
+      this.batchMode = !!enabled;
+      if (!this.batchMode) {
+        this.selectedIds = [];
+      }
+    },
+
+    /**
+     * 切换某用户的选中状态
+     * @param userId - 用户 ID
+     */
+    toggleSelected(userId: string) {
+      if (!userId) return;
+      const idx = this.selectedIds.indexOf(userId);
+      if (idx >= 0) {
+        this.selectedIds.splice(idx, 1);
+      } else {
+        this.selectedIds.push(userId);
+      }
+    },
+
+    /**
+     * 全选当前列表（按传入的 userId 列表）
+     * 用于「全选」按钮：调用方传入当前可见列表的所有 userId
+     * @param userIds - 当前可见列表的用户 ID 数组
+     */
+    selectAll(userIds: string[]) {
+      this.selectedIds = Array.from(new Set([...userIds]));
+    },
+
+    /**
+     * 清空选中
+     */
+    clearSelected() {
+      this.selectedIds = [];
+    },
+
+    /**
+     * 批量操作（功能1核心）
+     *
+     * 支持三种操作类型：
+     * - like: 批量喜欢（对 likedBy 列表中的多个用户同时发起喜欢）
+     * - skip: 批量跳过（从 likedBy 列表移除，相当于"忽略"）
+     * - cancel: 批量取消喜欢（从 likes 列表移除）
+     *
+     * 错误处理：
+     * - 任一用户操作失败时记录到 errorMessage，但不中断后续用户操作
+     * - 全部完成后，若存在失败项则抛出聚合错误，调用方可据此 toast 提示
+     *
+     * @param action - 操作类型：like / skip / cancel
+     * @param userIds - 待操作的用户 ID 列表
+     * @throws Error 当 userIds 为空或批量操作存在失败时抛出
+     */
+    async batchActions(action: BatchActionType, userIds: string[]): Promise<void> {
+      // 参数校验
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        throw new Error("请至少选择一个用户");
+      }
+      // 防重复提交锁
+      if (this.batchProcessing) {
+        return;
+      }
+      this.batchProcessing = true;
+      this.errorMessage = null;
+
+      const failed: string[] = [];
+      try {
+        if (action === "like") {
+          // 批量喜欢：对每个 userId 调用 likeUser
+          for (const userId of userIds) {
+            try {
+              await this.likeUser(userId);
+            } catch (e) {
+              failed.push(userId);
+            }
+          }
+          // 操作完成后从 likedBy 列表移除已喜欢成功的用户
+          this.likedBy = this.likedBy.filter((item) => !failed.includes(item.userId) && !userIds.includes(item.userId) || failed.includes(item.userId));
+          // 已成功喜欢的从 likedBy 移除（避免重复展示）
+          this.likedBy = this.likedBy.filter((item) => !userIds.includes(item.userId) || failed.includes(item.userId));
+        } else if (action === "skip") {
+          // 批量跳过：从 likedBy 列表移除选中项（前端操作，无后端调用）
+          // mock 模式下直接操作本地状态；real 模式下后续可扩展批量 API
+          if (useMock()) {
+            this.likedBy = this.likedBy.filter((item) => !userIds.includes(item.userId));
+          } else {
+            // real 模式：批量调用 cancel-like 反向操作或新增 batch-skip 接口
+            // 此处复用 unlikeUser（语义：从 likedBy 移除并不再展示）
+            for (const userId of userIds) {
+              try {
+                // 跳过不发起喜欢，仅本地移除
+                this.likedBy = this.likedBy.filter((item) => item.userId !== userId);
+              } catch (_e) {
+                failed.push(userId);
+              }
+            }
+          }
+        } else if (action === "cancel") {
+          // 批量取消喜欢：从 likes 列表移除选中项
+          for (const userId of userIds) {
+            try {
+              await this.unlikeUser(userId);
+            } catch (e) {
+              failed.push(userId);
+            }
+          }
+          // 兜底：确保本地状态一致
+          this.likes = this.likes.filter((item) => !userIds.includes(item.userId) || failed.includes(item.userId));
+        }
+
+        // 操作完成清空选中
+        this.selectedIds = [];
+
+        if (failed.length > 0) {
+          this.errorMessage = `部分操作失败（${failed.length}/${userIds.length}）`;
+          throw new Error(this.errorMessage);
+        }
+      } finally {
+        this.batchProcessing = false;
+      }
+    },
+
+    /* ========== 功能2：搜索 ========== */
+
+    /**
+     * 设置搜索关键词（功能2）
+     * 由 likes 页面搜索框（300ms 防抖）调用
+     * @param query - 搜索关键词
+     */
+    setSearchQuery(query: string) {
+      this.searchQuery = query ?? "";
     },
   },
 });

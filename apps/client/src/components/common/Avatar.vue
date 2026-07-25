@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { designTokens } from '../../theme/tokens';
 import { IMAGE_PATHS } from '../../config/images';
 import SafeImage from './SafeImage.vue';
@@ -25,6 +26,9 @@ const props = withDefaults(defineProps<{
 });
 
 const t = designTokens;
+const { t: tt } = useI18n();
+
+const avatarAriaLabel = computed(() => props.name || tt('messages.avatarAria'));
 
 const sizeMap = { xs: t.component.avatar.xs, sm: t.component.avatar.sm, md: t.component.avatar.md, lg: t.component.avatar.lg, xl: t.component.avatar.xl };
 
@@ -91,6 +95,10 @@ const ringBg = computed(() => {
       'avatar--green-ring': ring && !vipRing && !vip,
     }"
     :style="{ ...sizeStyle, background: ringBg }"
+    <!-- #ifdef H5 -->
+    role="img"
+    :aria-label="avatarAriaLabel"
+    <!-- #endif -->
   >
     <SafeImage
       v-if="!showFallback"

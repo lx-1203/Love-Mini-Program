@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
 
-defineProps<{
+const props = defineProps<{
   title?: string;
 }>();
 
@@ -11,17 +12,38 @@ const emit = defineEmits<{
   addTap: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
+const titleLabel = computed(() => props.title || t('chat.headerTitle'));
 </script>
 
 <template>
-  <view class="chat-header">
-    <text class="chat-title">{{ title || '消息' }}</text>
+  <view
+    class="chat-header"
+    <!-- #ifdef H5 -->
+    role="banner"
+    :aria-label="titleLabel"
+    <!-- #endif -->
+  >
+    <text class="chat-title">{{ titleLabel }}</text>
     <view class="chat-icons">
-      <view class="chat-icon" @tap="emit('searchTap')">
+      <view
+        class="chat-icon"
+        @tap="emit('searchTap')"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('chat.searchIconAria')"
+        <!-- #endif -->
+      >
         <image class="chat-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" />
       </view>
-      <view class="chat-icon" @tap="emit('addTap')">
+      <view
+        class="chat-icon"
+        @tap="emit('addTap')"
+        <!-- #ifdef H5 -->
+        role="button"
+        :aria-label="t('chat.addIconAria')"
+        <!-- #endif -->
+      >
         <image class="chat-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.ADD" mode="aspectFit" />
       </view>
     </view>

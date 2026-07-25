@@ -19,6 +19,7 @@
  * - 所有动画内联在 .vue 文件中
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic } from "../../utils/haptic";
 
@@ -44,6 +45,8 @@ const emit = defineEmits<{
   (e: "tap"): void;
 }>();
 
+const { t } = useI18n();
+
 /** 各级别对应的图标资源（SVG，支持 currentColor 主题色） */
 const ICON_MAP: Record<Exclude<BadgeLevel, "none">, string> = {
   school: IMAGE_PATHS.ICONS_COMMON.CHECK,
@@ -51,11 +54,11 @@ const ICON_MAP: Record<Exclude<BadgeLevel, "none">, string> = {
   idcard: IMAGE_PATHS.ICONS_COMMON.SCHOOL,
 };
 
-/** 各级别对应的文案 */
-const LABEL_MAP: Record<Exclude<BadgeLevel, "none">, string> = {
-  school: "已认证",
-  email: "邮箱认证",
-  idcard: "实名认证",
+/** 各级别对应的文案 i18n key */
+const LABEL_KEY_MAP: Record<Exclude<BadgeLevel, "none">, string> = {
+  school: "profile.verificationSchool",
+  email: "profile.verificationEmail",
+  idcard: "profile.verificationIdcard",
 };
 
 /** 当前级别是否渲染徽章（level !== "none" 时渲染） */
@@ -73,7 +76,8 @@ const iconSrc = computed(() => {
 /** 当前级别文案 */
 const label = computed(() => {
   if (!hasBadge.value) return "";
-  return LABEL_MAP[props.level as Exclude<BadgeLevel, "none">];
+  const key = LABEL_KEY_MAP[props.level as Exclude<BadgeLevel, "none">];
+  return t(key);
 });
 
 /** 容器 class，按级别 + 尺寸组合 */
@@ -93,7 +97,14 @@ function handleClick() {
 
 <template>
   <!-- 已认证：渲染徽章 -->
-  <view v-if="hasBadge" :class="containerClass">
+  <view
+    v-if="hasBadge"
+    :class="containerClass"
+    <!-- #ifdef H5 -->
+    role="img"
+    :aria-label="label"
+    <!-- #endif -->
+  >
     <image
       class="verification-badge__icon"
       :src="iconSrc"
@@ -109,8 +120,12 @@ function handleClick() {
     hover-class="verification-cta--pressed"
     :hover-stay-time="120"
     @tap="handleClick"
+    <!-- #ifdef H5 -->
+    role="button"
+    :aria-label="t('profile.verificationCta')"
+    <!-- #endif -->
   >
-    <text class="verification-cta__text">去认证</text>
+    <text class="verification-cta__text">{{ t('profile.verificationCta') }}</text>
   </view>
 
   <!-- 未认证 + 不显示 CTA：不渲染任何内容 -->

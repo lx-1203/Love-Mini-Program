@@ -52,13 +52,20 @@ function queryContainerRect(): Promise<{ left: number; top: number; width: numbe
         return;
       }
       const query = (instance && instance.proxy)
-        ? uni.createSelectorQuery().in(instance.proxy as any)
+        ? uni.createSelectorQuery().in(instance.proxy)
         : uni.createSelectorQuery();
       query
         .select('.ripple-container')
-        .boundingClientRect((rect: any) => {
-          if (rect && typeof rect.left === 'number' && typeof rect.top === 'number') {
-            resolve(rect as { left: number; top: number; width: number; height: number });
+        .boundingClientRect((rect: UniApp.NodeInfo | UniApp.NodeInfo[]) => {
+          // boundingClientRect 回调可能返回单个节点或数组，此处仅消费单节点场景
+          const node = Array.isArray(rect) ? rect[0] : rect;
+          if (node && typeof node.left === 'number' && typeof node.top === 'number') {
+            resolve({
+              left: node.left,
+              top: node.top,
+              width: typeof node.width === 'number' ? node.width : 0,
+              height: typeof node.height === 'number' ? node.height : 0,
+            });
           } else {
             resolve(null);
           }
@@ -136,8 +143,15 @@ function start(clientX?: number, clientY?: number) {
 /**
  * 容器 @tap 监听：从事件中提取坐标后调用 start
  * 用于 Card.vue 等不主动调用 start 的场景，保持向后兼容
+ *
+ * 事件形态与 Button.vue 一致：H5/mp-weixin 走 e.detail.x/y，触摸类走 e.changedTouches[0]。
  */
-function onContainerTap(e: any) {
+interface ContainerTapEvent {
+  detail?: { x?: number; y?: number };
+  changedTouches?: Array<{ clientX?: number; clientY?: number }>;
+}
+
+function onContainerTap(e: ContainerTapEvent) {
   if (props.disabled) return;
   let px: number | undefined;
   let py: number | undefined;

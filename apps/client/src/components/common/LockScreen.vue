@@ -6,8 +6,11 @@
  * 展示锁定状态，引导用户完善资料。
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   /** 当前页面名称，用于动态文案 */
@@ -20,8 +23,8 @@ const props = defineProps<{
  * 根据页面名称生成对应的锁定文案
  */
 const lockMessage = computed(() => {
-  const name = props.pageName || "此功能";
-  return `完善资料后才能解锁「${name}」哦`;
+  const name = props.pageName || t("lock.thisFeature");
+  return t("lock.unlockHint", { name });
 });
 
 /**
@@ -29,9 +32,9 @@ const lockMessage = computed(() => {
  */
 const subMessage = computed(() => {
   if (props.completionPercent !== undefined && props.completionPercent > 0) {
-    return `资料完善度 ${props.completionPercent}%，继续加油～`;
+    return t("lock.completionProgress", { n: props.completionPercent });
   }
-  return "完善资料，开启更多校园恋爱功能";
+  return t("lock.defaultSubtitle");
 });
 
 /**
@@ -43,7 +46,14 @@ function goToProfileSetup() {
 </script>
 
 <template>
-  <view class="lock-screen">
+  <view
+    class="lock-screen"
+    <!-- #ifdef H5 -->
+    role="dialog"
+    aria-modal="true"
+    :aria-label="lockMessage"
+    <!-- #endif -->
+  >
     <!-- 径向渐变心动氛围叠加层 -->
     <view class="lock-screen__atmosphere" />
 
@@ -87,14 +97,20 @@ function goToProfileSetup() {
 
     <!-- 操作按钮 -->
     <view class="lock-screen__action">
-      <button class="lock-screen__btn" @tap="goToProfileSetup">
-        <text class="lock-screen__btn-text">立即完善</text>
+      <button
+        class="lock-screen__btn"
+        @tap="goToProfileSetup"
+        <!-- #ifdef H5 -->
+        :aria-label="t('lock.completeNowAria')"
+        <!-- #endif -->
+      >
+        <text class="lock-screen__btn-text">{{ t('lock.completeNow') }}</text>
       </button>
     </view>
 
     <!-- 底部提示 -->
     <view class="lock-screen__footer">
-      <text class="lock-screen__footer-text">资料越完善，匹配越精准</text>
+      <text class="lock-screen__footer-text">{{ t('lock.footerTip') }}</text>
     </view>
   </view>
 </template>
@@ -145,7 +161,14 @@ function goToProfileSetup() {
 .blur-avatar {
   position: absolute;
   border-radius: var(--r-full);
+  /* #ifndef MP-WEIXIN */
+  /* H5 / App 端：使用 filter:blur 实现真实模糊效果 */
   filter: blur(40rpx);
+  /* #endif */
+  /* #ifdef MP-WEIXIN */
+  /* mp-weixin 不支持 filter:blur，用半透明遮罩 + 提升 opacity 兜底模拟若隐若现感 */
+  opacity: 0.25;
+  /* #endif */
 
   &--1 {
     width: 320rpx;

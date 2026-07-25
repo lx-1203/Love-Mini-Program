@@ -35,9 +35,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -158,10 +161,23 @@ public class RealVillageService implements VillageService {
     public CommentListResponse getComments(Long postId, int page, int pageSize) {
         // 使用数据库分页而非内存分页，避免 OOM 风险
         Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Comment> commentPage = commentRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
+        // 修复 N+1 查询：使用 findWithPostByPostIdOrderByCreatedAtDesc 通过 @EntityGraph 预加载 post，
+        // 避免 toCommentItemView 中 comment.getPost().getId() 触发 N 次 SELECT post 查询。
+        Page<Comment> commentPage = commentRepository.findWithPostByPostIdOrderByCreatedAtDesc(postId, pageable);
+
+        // 修复 N+1 查询：批量预加载评论作者信息，避免 toCommentItemView 中循环调用
+        // userRepository.findById。原本 N 条评论触发 N 次 SELECT user，现在压缩为 1 次。
+        List<Long> authorIds = commentPage.getContent().stream()
+                .map(Comment::getAuthorId)
+                .distinct()
+                .toList();
+        Map<Long, User> authorMap = authorIds.isEmpty()
+                ? Collections.emptyMap()
+                : userRepository.findAllById(authorIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
 
         List<CommentItemView> items = commentPage.getContent().stream()
-                .map(this::toCommentItemView)
+                .map(comment -> toCommentItemView(comment, authorMap))
                 .toList();
 
         return new CommentListResponse(items, (int) commentPage.getTotalElements(), page, pageSize);
@@ -751,9 +767,41 @@ public class RealVillageService implements VillageService {
 
     /**
      * 将 Comment 实体转换为 CommentItemView。
+     * 单条评论场景（如 createComment）调用，内部通过 userRepository.findById 加载作者。
      */
     private CommentItemView toCommentItemView(Comment comment) {
         User author = userRepository.findById(comment.getAuthorId()).orElse(null);
+        CommentAuthorView authorView = new CommentAuthorView(
+                comment.getAuthorId(),
+                author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER,
+                author != null ? author.getAvatarUrl() : null
+        );
+
+        return new CommentItemView(
+                comment.getId(),
+                comment.getPost().getId(),
+                null, // parentId
+                authorView,
+                comment.getContent(),
+                0, // likeCount
+                comment.getCreatedAt().toString(),
+                false, // isAuthor
+                null  // replyTo
+        );
+    }
+
+    /**
+     * 修复 N+1 查询：批量场景下使用预加载的作者 Map 构建评论视图。
+     * <p>分页查询 {@link #getComments} 已通过 {@link org.springframework.data.jpa.repository.JpaRepository#findAllById}
+     * 一次性加载所有作者，调用本方法避免在循环中触发 N 次 SELECT user 查询。
+     * 注意：comment.getPost() 在调用方已通过 @EntityGraph 预加载，此处访问 getId() 不会再触发 SQL。</p>
+     *
+     * @param comment    评论实体
+     * @param authorMap  作者 ID → User 实体的 Map（可能为空 Map，表示无作者命中）
+     * @return 评论视图
+     */
+    private CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap) {
+        User author = authorMap != null ? authorMap.get(comment.getAuthorId()) : null;
         CommentAuthorView authorView = new CommentAuthorView(
                 comment.getAuthorId(),
                 author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER,

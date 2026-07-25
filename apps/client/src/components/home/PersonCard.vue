@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import Avatar from '../common/Avatar.vue';
 
-defineProps<{
+const props = defineProps<{
   id?: string;
   name?: string;
   initials?: string;
@@ -18,11 +19,29 @@ const emit = defineEmits<{
   tap: [];
 }>();
 
-const t = designTokens;
+const { t } = useI18n();
+
+/** 操作按钮文案 */
+const actionLabel = computed(() => props.actionText || t('home.personActionChat'));
+
+/** ARIA 标签 */
+const ariaLabel = computed(() =>
+  t('home.personCardAria', {
+    name: props.name || '',
+    headline: props.headline || '',
+  })
+);
 </script>
 
 <template>
-  <view class="person-card" @tap="emit('tap')">
+  <view
+    class="person-card"
+    @tap="emit('tap')"
+    <!-- #ifdef H5 -->
+    role="button"
+    :aria-label="ariaLabel"
+    <!-- #endif -->
+  >
     <view class="person-avatar" :class="{ 'person-avatar--halo': isSameSchool }">
       <Avatar :name="initials || name?.charAt(0)" :src="avatarUrl" size="md" />
     </view>
@@ -30,15 +49,15 @@ const t = designTokens;
       <text class="person-name">{{ name }}</text>
       <text class="person-headline" v-if="headline">{{ headline }}</text>
       <view class="person-tags">
-        <text v-if="isSameSchool" class="person-tag person-tag--school">同校</text>
-        <text v-if="isSameMajor" class="person-tag person-tag--major">同专业</text>
+        <text v-if="isSameSchool" class="person-tag person-tag--school">{{ t('home.personSameSchool') }}</text>
+        <text v-if="isSameMajor" class="person-tag person-tag--major">{{ t('home.personSameMajor') }}</text>
         <text v-if="commonCircleCount && commonCircleCount > 0" class="person-tag person-tag--circle">
-          {{ commonCircleCount }}个共同圈
+          {{ t('home.personCommonCircle', { n: commonCircleCount }) }}
         </text>
       </view>
     </view>
     <view class="person-action">
-      <text class="person-action-text">{{ actionText || '去聊天' }}</text>
+      <text class="person-action-text">{{ actionLabel }}</text>
     </view>
   </view>
 </template>
@@ -71,7 +90,7 @@ const t = designTokens;
 }
 
 .person-avatar--halo {
-  box-shadow: 0 0 0 4rpx rgba(91, 127, 255, 0.2), 0 0 16rpx rgba(91, 127, 255, 0.15);
+  box-shadow: 0 0 0 4rpx var(--c-secondary-blue-border-tint, rgba(91, 127, 255, 0.2)), 0 0 16rpx var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15));
 }
 
 .person-info {
@@ -133,6 +152,6 @@ const t = designTokens;
 .person-action-text {
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: #fff;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 </style>

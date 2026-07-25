@@ -71,12 +71,47 @@ test-screenshots/
 /DevToolsCtrl.dll
 /ListWindows.cs
 /ListWindows.exe
+/ListAllWindows.cs
+/ListAllWindows.exe
 /ReviewApp.cs
 /ReviewApp.exe
 /ReviewApp2.cs
 /ReviewApp2.exe
 /ScreenshotTest.cs
 /ScreenshotTest.exe
+# 微信开发者工具调试脚本（C# 抓图/控制工具）
+/CaptureByTitle.cs
+/CaptureByTitle.exe
+/CaptureDevTools.cs
+/CaptureDevTools.exe
+/ClickConsoleTab.cs
+/ClickDetails.cs
+/ClickDetails.exe
+/CloseDialog.cs
+/CloseDialog.exe
+/MaximizeAndCapture.cs
+/MaximizeAndCapture.exe
+/OpenProject.cs
+/OpenProject.exe
+/SendEscape.cs
+/SendEscape.exe
+
+# ===== 微信开发者工具验证产物（不入库） =====
+/mp-weixin-devtools-*.png
+/mp-weixin-simulator.png
+/mp-weixin-runtime-logs.json
+/verification-logs*.json
+/wechat-devtools-status-report.md
+/微信开发者工具验证报告.md
+
+# ===== 本地数据库初始化脚本（可能含口令） =====
+/init-mysql.sql
+/set-root-password.sql
+/test-migrations.sh
+
+# ===== TRAE 平台内部产物 =====
+.trae/documents/push_batch_*.json
+.trae/specs/verify-fix-*/
 
 # ===== 二进制工具与压缩包 =====
 tools/flyway-*/

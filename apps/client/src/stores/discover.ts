@@ -145,6 +145,15 @@ export interface DiscoverState {
   isFilterDrawerOpen: boolean;
   /** 搜索关键字（用户/标签/学校） */
   searchKeyword: string;
+  /**
+   * 本次会话已使用 rewind（反悔）次数。
+   *
+   * 修复（P1 BUG）：原实现仅有 hasRewoundToday（每日1次）限制（mock 模式），
+   * real 模式下完全依赖后端，无客户端次数限制。
+   * 现新增 undoCount 客户端计数器，限制单次会话最多 3 次 rewind，
+   * 避免用户反复 rewind 刷卡片，影响推荐算法的有效性。
+   */
+  undoCount: number;
 }
 
 /* ========== 后端视图类型 ========== */
@@ -260,6 +269,26 @@ const SAVE_DEBOUNCE_MS = 300;
 const SEARCH_DEBOUNCE_MS = 300;
 
 /**
+ * 右滑（喜欢）防抖延迟（毫秒）。
+ *
+ * 修复（P1 BUG）：原 swipeRight 无防抖，用户快速连续右滑会触发多次
+ * 后端 /matches/like 请求与本地状态变更，可能导致：
+ * 1. 同一张卡片被重复计入 viewedCards
+ * 2. 后端重复创建 like 记录
+ * 3. cards 数组在并发请求中被多次 filter，状态错乱
+ * 通过 300ms 防抖窗口合并多次右滑为一次实际执行。
+ */
+const SWIPE_RIGHT_DEBOUNCE_MS = 300;
+
+/**
+ * 单次会话 rewind（反悔）最大次数。
+ *
+ * 修复（P1 BUG）：限制单次会话最多 3 次 rewind，
+ * 避免用户反复 rewind 刷卡片影响推荐算法。
+ */
+const MAX_UNDO_COUNT_PER_SESSION = 3;
+
+/**
  * 防抖存储定时器（模块级单例）
  * 重构说明：采用模块级变量而非 state 字段，原因：
  * 1. 定时器句柄不属于业务状态，不应被响应式追踪
@@ -273,6 +302,24 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null;
  * 与 saveTimer 同理，避免被响应式追踪和序列化污染。
  */
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 右滑防抖定时器（模块级单例）。
+ *
+ * 修复（P1 BUG）：用于 swipeRight 300ms 防抖，避免快速连续右滑。
+ * 模块级单例保证全局唯一，dispose 时清理。
+ */
+let swipeRightDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 当前 fetchCards 请求的 AbortController。
+ *
+ * 修复（P1 BUG）：原 fetchCards 未处理 abort，新请求发起时旧请求仍在途，
+ * 旧请求返回后可能覆盖新请求的结果（竞态条件）。
+ * 现保存当前请求的 controller，新请求发起前 abort 旧请求，
+ * 旧请求的 catch 分支通过 signal.aborted 判断跳过状态修改。
+ */
+let fetchCardsController: AbortController | null = null;
 
 /**
  * 带重试机制的异步执行器
@@ -399,6 +446,8 @@ const _useDiscoverStore = defineStore("discover", {
       recommendationFilter: { ...EMPTY_RECOMMENDATION_FILTER },
       isFilterDrawerOpen: false,
       searchKeyword: "",
+      // 修复（P1 BUG）：rewind 次数计数器，初始化为 0
+      undoCount: 0,
     };
   },
 
@@ -458,14 +507,35 @@ const _useDiscoverStore = defineStore("discover", {
      * keyword 优先取 searchKeyword（用户输入），其次取 recommendationFilter.keyword（兜底）。
      */
     async fetchCards() {
+      // 修复（P1 BUG）：取消在途的旧请求，避免竞态条件
+      // 旧请求返回后会覆盖新请求的结果，导致展示错误的卡片
+      if (fetchCardsController) {
+        try {
+          fetchCardsController.abort();
+        } catch (_e) {
+          // abort 失败时忽略
+        }
+        fetchCardsController = null;
+      }
+      const controller = new AbortController();
+      fetchCardsController = controller;
+
       this.loading = true;
       this.errorMessage = null;
 
       try {
-        // 每次加载时检查是否需要跨天重置
-        this.resetDailyLimit();
+        // 修复（P1 BUG）：将 resetDailyLimit 移出 fetchCards。
+        // 原实现 fetchCards 内部调用 resetDailyLimit 修改状态（viewedCards、hasRewoundToday 等），
+        // 这违反了 fetchCards 作为「纯查询」action 的语义，
+        // 也可能导致调用方在不期望的情况下触发状态重置。
+        // 现由调用方（页面 onShow / 显式调用）负责 resetDailyLimit。
 
         await withRetry(async () => {
+          // 修复：每次重试前检查是否已取消，避免在 abort 后继续发请求
+          if (controller.signal.aborted) {
+            return;
+          }
+
           // 统一通过 clientApi.getRecommendations 获取推荐数据
           // clientApi 内部根据 appEnv.apiMode 自动分发 mock / real 模式
           const filter: RecommendationFilter = {
@@ -476,11 +546,25 @@ const _useDiscoverStore = defineStore("discover", {
           };
           const rawData = await clientApi.getRecommendations(filter);
 
+          // 修复：请求返回后若已被取消，跳过状态修改，避免覆盖新请求结果
+          if (controller.signal.aborted) {
+            return;
+          }
+
           // 过滤掉已查看的卡片（避免重复推荐）
           const viewedIds = new Set(this.viewedCards.map((v) => v.cardId));
           let availableCards = rawData
             .map((item) => mapToDiscoverCard(item))
             .filter((card) => !viewedIds.has(card.id));
+
+          // Mock / 本地测试兜底：如果所有卡片都被看过了，清空今日记录重新展示，
+          // 避免首次体验或刷新后页面空白。生产环境（real 模式）保持业务规则不变。
+          if (availableCards.length === 0 && this.viewedCards.length > 0 && useMock()) {
+            this.viewedCards = [];
+            this.historyCards = [];
+            this.passedCards = [];
+            availableCards = rawData.map((item) => mapToDiscoverCard(item));
+          }
 
           // 同校加权：优先展示同校用户
           try {
@@ -502,6 +586,11 @@ const _useDiscoverStore = defineStore("discover", {
             // session store 不可用时忽略，不影响正常流程
           }
 
+          // 修复：写入前再次检查是否已取消
+          if (controller.signal.aborted) {
+            return;
+          }
+
           this.cards = availableCards;
           this.hasMore = availableCards.length > 0 && !this.isLimitReached;
 
@@ -509,9 +598,18 @@ const _useDiscoverStore = defineStore("discover", {
           this.syncHistoryCards();
         });
       } catch (error) {
+        // 修复：被取消的请求不视为错误，不更新 errorMessage
+        if (controller.signal.aborted) {
+          return;
+        }
         this.errorMessage = error instanceof Error ? error.message : "加载推荐失败，请稍后重试";
       } finally {
-        this.loading = false;
+        // 修复：仅当当前 controller 仍是全局 controller 时才清 loading
+        // 避免新请求已发起时被旧请求的 finally 误清 loading
+        if (fetchCardsController === controller) {
+          this.loading = false;
+          fetchCardsController = null;
+        }
       }
     },
 
@@ -614,9 +712,34 @@ const _useDiscoverStore = defineStore("discover", {
 
     /**
      * 右滑（喜欢）
+     *
+     * 修复（P1 BUG）：新增 300ms 防抖，防止快速连续右滑。
+     * 防抖窗口内多次触发只执行最后一次，避免重复请求与状态错乱。
+     * 返回 Promise 以便调用方可以 await 实际执行结果；
+     * 被防抖合并掉的早期调用会 resolve undefined。
+     *
      * @param cardId - 卡片 ID
+     * @param isSuperLike - 是否超级喜欢
      */
-    async swipeRight(cardId: string, isSuperLike = false) {
+    async swipeRight(cardId: string, isSuperLike = false): Promise<void> {
+      // 修复（P1 BUG）：300ms 防抖，防止快速连续右滑
+      return new Promise<void>((resolve, reject) => {
+        // 清理上一次防抖定时器，合并为最后一次调用
+        if (swipeRightDebounceTimer) {
+          clearTimeout(swipeRightDebounceTimer);
+          swipeRightDebounceTimer = null;
+        }
+        swipeRightDebounceTimer = setTimeout(() => {
+          swipeRightDebounceTimer = null;
+          this._doSwipeRight(cardId, isSuperLike).then(resolve).catch(reject);
+        }, SWIPE_RIGHT_DEBOUNCE_MS);
+      });
+    },
+
+    /**
+     * swipeRight 的实际执行逻辑（由防抖 wrapper 调用）。
+     */
+    async _doSwipeRight(cardId: string, isSuperLike = false) {
       this.errorMessage = null;
       // 重置上次结果
       this.lastSwipeResult = null;
@@ -819,12 +942,22 @@ const _useDiscoverStore = defineStore("discover", {
      * 现改为从 viewedCards 末尾的 card 快照恢复，避免依赖本地 mockCards 数组
      * （fetchCards 已切换到 clientApi.getRecommendations，mockCards 已移除）。
      *
+     * 修复（P1 BUG）：新增 undoCount 客户端计数器，限制单次会话最多 3 次 rewind。
+     * 原实现 real 模式无客户端次数限制，完全依赖后端，
+     * 用户可能通过反复 rewind 刷卡片影响推荐算法。
+     *
      * @param cardId - 要反悔的卡片 ID
      */
     async rewindCard(cardId: string) {
       this.errorMessage = null;
 
       try {
+        // 修复（P1 BUG）：客户端 rewind 次数限制（最多 3 次/会话）
+        if (this.undoCount >= MAX_UNDO_COUNT_PER_SESSION) {
+          this.errorMessage = `本次会话挽回次数已用完（最多${MAX_UNDO_COUNT_PER_SESSION}次）`;
+          throw new Error(this.errorMessage);
+        }
+
         if (useMock()) {
           if (this.hasRewoundToday) {
             throw new Error("每日只能挽回一次");
@@ -845,6 +978,8 @@ const _useDiscoverStore = defineStore("discover", {
           this.cards.unshift(card);
           this.hasMore = true;
           this.hasRewoundToday = true;
+          // 修复（P1 BUG）：rewind 次数计数器累加
+          this.undoCount += 1;
 
           this.syncHistoryCards();
           // 存储同步由 watch 自动触发（监听 viewedCards/hasRewoundToday 变更）
@@ -881,6 +1016,8 @@ const _useDiscoverStore = defineStore("discover", {
 
         this.hasMore = true;
         this.hasRewoundToday = true;
+        // 修复（P1 BUG）：rewind 次数计数器累加（后端成功后）
+        this.undoCount += 1;
         this.syncHistoryCards();
         // 存储同步由 watch 自动触发（监听 viewedCards/hasRewoundToday 变更）
       } catch (error) {
@@ -1125,9 +1262,50 @@ const _useDiscoverStore = defineStore("discover", {
         clearTimeout(searchDebounceTimer);
       }
       searchDebounceTimer = setTimeout(() => {
-        void this.fetchCards();
         searchDebounceTimer = null;
+        void this.fetchCards();
       }, SEARCH_DEBOUNCE_MS);
+    },
+
+    /**
+     * 清理 store 持有的所有定时器与请求资源。
+     *
+     * 修复（P1 BUG）：模块级定时器在 HMR 热更新或页面切换时未清理，
+     * 可能导致：
+     * 1. 内存泄漏（定时器持有 store 引用无法 GC）
+     * 2. 已卸载组件的状态被修改（如 successAnimationTimer 触发后修改 showSuccessAnimation）
+     * 3. 旧请求返回后覆盖新请求结果（fetchCardsController）
+     *
+     * 调用时机：
+     * - 页面 onUnmounted（通过 useDiscoverStore().dispose() 调用）
+     * - HMR 热更新时（由 Vite 自动调用 dispose）
+     * - 应用退出 / 切换账号时
+     */
+    dispose() {
+      // 清理存储防抖定时器
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      // 清理搜索防抖定时器
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = null;
+      }
+      // 清理右滑防抖定时器
+      if (swipeRightDebounceTimer) {
+        clearTimeout(swipeRightDebounceTimer);
+        swipeRightDebounceTimer = null;
+      }
+      // 清理 fetchCards 请求控制器，取消在途请求
+      if (fetchCardsController) {
+        try {
+          fetchCardsController.abort();
+        } catch (_e) {
+          // abort 失败时忽略，避免阻塞 dispose
+        }
+        fetchCardsController = null;
+      }
     },
   },
 });

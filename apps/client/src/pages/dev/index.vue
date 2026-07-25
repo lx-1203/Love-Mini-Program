@@ -122,18 +122,18 @@ function goBack() {
 </template>
 
 <style scoped lang="scss">
-$green-primary: #3FCF8E;
-$green-light: #E8F8F0;
-$pink-primary: #EC4899;
-$pink-light: #FFF0F6;
-$gold-vip: #C9A36A;
-$white: #FFFFFF;
-$bg-page: #F4F6FA;
-$text-primary: #1F2329;
-$text-secondary: #64748B;
-$text-tertiary: #9AA1AB;
-$divider: #E2E8F0;
-$card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+$green-primary: var(--c-brand, #3FCF8E);
+$green-light: var(--c-brand-50, #E8F8F0);
+$pink-primary: var(--c-romance-500, #EC4899);
+$pink-light: var(--c-tint-pink-soft, #FFF0F6);
+$gold-vip: var(--c-vip-from, #C9A36A);
+$white: var(--c-neutral-0, #FFFFFF);
+$bg-page: var(--c-bg-page, #F4F6FA);
+$text-primary: var(--c-text-primary, #1F2329);
+$text-secondary: var(--c-neutral-500, #64748B);
+$text-tertiary: var(--c-text-tertiary, #9AA1AB);
+$divider: var(--c-neutral-200, #E2E8F0);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 
 .dev-page {
   min-height: 100vh;
@@ -145,7 +145,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
   padding: calc(env(safe-area-inset-top) + 16rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, #7CD9A6 60%, #F9A8C4 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 60%, var(--c-romance-300, #F9A8C4) 100%);
   gap: 16rpx;
 }
 
@@ -156,14 +156,16 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   transition: all 0.15s ease;
 }
 
+/* #ifdef H5 */
 .dev-header__back:active {
   transform: scale(0.92);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
 }
+/* #endif */
 
 .dev-header__back-icon {
   font-size: 36rpx;
@@ -181,7 +183,7 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 .dev-header__badge {
   padding: 8rpx 20rpx;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   /* mp-weixin 不支持，H5 保留毛玻璃；白字+白底场景保留低不透明度避免文字不可见 */
   // #ifdef H5
   backdrop-filter: blur(10rpx);
@@ -199,8 +201,8 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   margin: 24rpx 32rpx 0;
   padding: 20rpx 24rpx;
   border-radius: 20rpx;
-  background: linear-gradient(135deg, #FFF8E6 0%, #FFF0D6 100%);
-  border: 2rpx solid rgba(201, 163, 106, 0.2);
+  background: linear-gradient(135deg, var(--c-tint-amber-50, #FFF8E6) 0%, var(--c-tint-orange-50, #FFF0D6) 100%);
+  border: 2rpx solid var(--c-vip-border-light, var(--c-vip-border-light, rgba(201, 163, 106, 0.2)));
   box-shadow: $card-soft-shadow;
 }
 
@@ -243,10 +245,12 @@ $card-soft-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
   border-bottom: none;
 }
 
+/* #ifdef H5 */
 .dev-item:active {
   background: $bg-page;
   transform: scale(0.98);
 }
+/* #endif */
 
 .dev-item--tab {
   border-left: 6rpx solid $green-primary;

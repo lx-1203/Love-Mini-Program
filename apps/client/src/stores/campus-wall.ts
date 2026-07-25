@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
+// 统一图片资源路径常量，避免在 store 中硬编码字符串
+import { IMAGE_PATHS } from "@/config/images";
 
 export interface WallPost {
   id: string;
@@ -22,14 +24,14 @@ export const useCampusWallStore = defineStore("campus-wall", () => {
   const posts = ref<WallPost[]>([
     {
       id: "1",
-      avatar: "/static/assets/images/avatars/avatar-1.jpg",
+      avatar: IMAGE_PATHS.AVATARS.AVATAR_1,
       nickname: "小明",
       school: "北京大学",
       grade: "大三",
       content: "今天在图书馆看到一本好书，推荐给大家！《百年孤独》真的太震撼了",
       images: [
-        "/static/assets/images/posts/campus-library.jpg",
-        "/static/assets/images/activities/activity-1.jpg",
+        IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
       ],
       location: "图书馆",
       topic: "读书分享",
@@ -41,7 +43,7 @@ export const useCampusWallStore = defineStore("campus-wall", () => {
     },
     {
       id: "2",
-      avatar: "/static/assets/images/avatars/avatar-2.jpg",
+      avatar: IMAGE_PATHS.AVATARS.AVATAR_2,
       nickname: "小红",
       school: "清华大学",
       grade: "大二",
@@ -57,14 +59,14 @@ export const useCampusWallStore = defineStore("campus-wall", () => {
     },
     {
       id: "3",
-      avatar: "/static/assets/images/avatars/avatar-3.jpg",
+      avatar: IMAGE_PATHS.AVATARS.AVATAR_3,
       nickname: "阿杰",
       school: "复旦大学",
       grade: "大四",
       content: "毕业季了，整理了一些考研资料，有需要的同学可以联系我",
       images: [
-        "/static/assets/images/posts/campus-library.jpg",
-        "/static/assets/images/activities/activity-study.jpg",
+        IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY,
       ],
       location: "宿舍",
       topic: "考研资料",

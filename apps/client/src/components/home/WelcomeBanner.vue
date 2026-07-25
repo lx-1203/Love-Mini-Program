@@ -59,7 +59,7 @@ const t = designTokens;
   width: 300rpx;
   height: 300rpx;
   border-radius: 50%;
-  background: rgba(255,255,255,0.1);
+  background: var(--c-overlay-white-bg-tint-mid, rgba(255,255,255,0.1));
   top: -80rpx;
   right: -60rpx;
   animation: breathe 4s ease-in-out infinite alternate;
@@ -68,7 +68,7 @@ const t = designTokens;
 .banner-deco {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08));
   pointer-events: none;
 }
 
@@ -77,7 +77,7 @@ const t = designTokens;
   height: 200rpx;
   bottom: -60rpx;
   left: -40rpx;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--c-overlay-white-bg-tint-strong, rgba(255, 255, 255, 0.12));
   animation: breathe 5s ease-in-out infinite alternate;
 }
 
@@ -86,7 +86,7 @@ const t = designTokens;
   height: 160rpx;
   top: 40rpx;
   right: 80rpx;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08));
   animation: breathe 4.5s ease-in-out infinite alternate-reverse;
 }
 
@@ -95,7 +95,7 @@ const t = designTokens;
   height: 120rpx;
   bottom: 40rpx;
   right: -30rpx;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--c-overlay-white-bg-tint-mid, rgba(255, 255, 255, 0.1));
   animation: breathe 3.5s ease-in-out infinite alternate;
 }
 
@@ -117,12 +117,12 @@ const t = designTokens;
 .banner-greeting {
   font-size: var(--fs-3xl);
   font-weight: 700;
-  color: #fff;
+  color: var(--c-text-inverse, #FFFFFF);
   position: relative;
 }
 .banner-sub {
   font-size: var(--fs-base);
-  color: rgba(255,255,255,0.85);
+  color: var(--c-overlay-text-secondary, rgba(255,255,255,0.85));
   margin-top: 8rpx;
   position: relative;
   line-height: 1.5;
@@ -136,7 +136,7 @@ const t = designTokens;
 .banner-tag {
   padding: 8rpx 20rpx;
   border-radius: 9999rpx;
-  background: rgba(255,255,255,0.2);
+  background: var(--c-overlay-bg-light, rgba(255,255,255,0.2));
   /* mp-weixin 不支持，H5 保留毛玻璃；白字+白底场景保留低不透明度避免文字不可见 */
   // #ifdef H5
   backdrop-filter: blur(16rpx);
@@ -145,6 +145,6 @@ const t = designTokens;
 .banner-tag-text {
   font-size: var(--fs-sm);
   font-weight: 500;
-  color: #fff;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 </style>

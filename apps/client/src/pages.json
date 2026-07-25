@@ -209,9 +209,67 @@
       }
     },
     {
+      "path": "pages/vip/red-packet",
+      "style": {
+        "navigationBarTitleText": "发红包"
+      }
+    },
+    {
+      "path": "pages/vip/promo-code",
+      "style": {
+        "navigationBarTitleText": "优惠码"
+      }
+    },
+    {
+      "path": "pages/vip/bills",
+      "style": {
+        "navigationBarTitleText": "账单记录",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/chat/red-packet",
+      "style": {
+        "navigationBarTitleText": "发红包"
+      }
+    },
+    {
+      "path": "pages/chat/video-call",
+      "style": {
+        "navigationBarTitleText": "视频通话",
+        "navigationBarBackgroundColor": "#000000",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
       "path": "pages/dev/index",
       "style": {
         "navigationBarTitleText": "开发调试"
+      }
+    },
+    {
+      "path": "pages/profile/visitors",
+      "style": {
+        "navigationBarTitleText": "谁看过我",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/profile/album",
+      "style": {
+        "navigationBarTitleText": "我的相册"
+      }
+    },
+    {
+      "path": "pages/settings/dnd",
+      "style": {
+        "navigationBarTitleText": "免打扰"
+      }
+    },
+    {
+      "path": "pages/feedback/history",
+      "style": {
+        "navigationBarTitleText": "反馈历史"
       }
     }
   ],

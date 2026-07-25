@@ -235,6 +235,23 @@ export interface RecommendationFilter {
   futureCity?: string;
   /** 关键词（模糊匹配 nickname/bio/interestTags） */
   keyword?: string;
+  /**
+   * 性别筛选（功能6 高级筛选）：any/male/female。
+   * 默认 any 表示不限。
+   */
+  gender?: "any" | "male" | "female";
+  /** 年龄下限（功能6 高级筛选，含） */
+  ageMin?: number;
+  /** 年龄上限（功能6 高级筛选，含） */
+  ageMax?: number;
+  /** 学校多选（功能6 高级筛选，学校名称数组） */
+  schools?: string[];
+  /** 距离上限 km（功能6 高级筛选） */
+  distanceMax?: number;
+  /** 兴趣标签多选（功能6 高级筛选，最多 5 个） */
+  interests?: string[];
+  /** 是否仅显示在线用户（功能6 高级筛选） */
+  onlineOnly?: boolean;
 }
 
 /**
@@ -287,4 +304,99 @@ export interface RecommendedPerson {
   profileBackgroundUrl?: string;
   /** 认证徽章级别：none/email/idcard/school */
   verificationBadgeLevel?: string;
+}
+
+// ===== 功能6：通知免打扰设置 =====
+
+/**
+ * 通知免打扰设置视图。
+ *
+ * 对应后端 GET /api/dnd 返回的 DoNotDisturbView。
+ */
+export interface DoNotDisturbView {
+  /** 是否开启免打扰 */
+  enabled: boolean;
+  /** 免打扰开始时间（HH:mm） */
+  startTime: string;
+  /** 免打扰结束时间（HH:mm） */
+  endTime: string;
+  /** 重复方式：EVERYDAY / WEEKDAYS / WEEKENDS / CUSTOM */
+  repeatMode: 'EVERYDAY' | 'WEEKDAYS' | 'WEEKENDS' | 'CUSTOM';
+  /** 自定义星期（CSV，1-7），仅 CUSTOM 模式有值 */
+  customWeekdays: string | null;
+  /** 是否允许紧急消息穿透免打扰 */
+  allowUrgent: boolean;
+}
+
+/**
+ * 通知免打扰设置请求体。
+ *
+ * 对应后端 PUT /api/dnd 端点，所有字段均必填。
+ */
+export interface DoNotDisturbRequest {
+  /** 是否开启免打扰 */
+  enabled: boolean;
+  /** 免打扰开始时间（HH:mm） */
+  startTime: string;
+  /** 免打扰结束时间（HH:mm） */
+  endTime: string;
+  /** 重复方式 */
+  repeatMode: 'EVERYDAY' | 'WEEKDAYS' | 'WEEKENDS' | 'CUSTOM';
+  /** 自定义星期（CSV，1-7），仅 CUSTOM 模式必填 */
+  customWeekdays?: string | null;
+  /** 是否允许紧急消息穿透免打扰 */
+  allowUrgent: boolean;
+}
+
+// ===== 功能7：签到补签 =====
+
+/**
+ * 签到补签结果视图。
+ *
+ * 对应后端 POST /api/check-in/make-up 返回的 MakeUpCheckInResultView。
+ */
+export interface MakeUpCheckInResultView {
+  /** 补签是否成功 */
+  success: boolean;
+  /** 补签的日期（yyyy-MM-dd） */
+  checkInDate: string;
+  /** 补签后连续签到天数 */
+  consecutiveDays: number;
+  /** 本月已用补签次数 */
+  usedMakeUpCount: number;
+  /** 本月补签次数上限 */
+  makeUpLimit: number;
+  /** 补签消耗的积分（0 表示免费补签） */
+  costPoints: number;
+}
+
+// ===== 功能10：反馈历史详情 =====
+
+/**
+ * 反馈提交记录详情视图（功能10）。
+ *
+ * 在原 SubmissionRecord 基础上新增 content/attachments/latestReplyContent 字段，
+ * 用于反馈历史详情页展示完整内容。
+ */
+export interface SubmissionDetailView {
+  /** 反馈记录 ID */
+  id: number;
+  /** 反馈类型 */
+  type: 'feedback' | 'suggestion' | 'activity_proposal';
+  /** 标题 */
+  title: string;
+  /** 反馈内容（详情页才返回，列表页为节省流量不返回） */
+  content: string;
+  /** 附件 URL 数组 */
+  attachments: string[];
+  /** 提交状态 */
+  status: 'submitted' | 'processing' | 'reviewed' | 'planned' | 'converted';
+  /** 最新回复摘要 */
+  latestReplySummary: string | null;
+  /** 最新回复完整内容（详情页才返回） */
+  latestReplyContent: string | null;
+  /** 提交时间字符串 */
+  submittedAt: string;
+  /** 转换后的活动 ID（仅 ACTIVITY_PROPOSAL 类型有值） */
+  convertedActivityId: number | null;
 }

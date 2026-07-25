@@ -1,8 +1,12 @@
 import type { components } from "./generated/api-types";
 import type {
+  DoNotDisturbRequest,
+  DoNotDisturbView,
+  MakeUpCheckInResultView,
   ProfileStats,
   RecommendationFilter,
   RecommendedPerson,
+  SubmissionDetailView,
   UpdateBasicProfileRequest,
 } from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
@@ -459,28 +463,41 @@ export const clientApi = {
   },
 
   /**
-   * 登出：通知后端使 token 失效，并清除本地 Token，跳转登录页。
+   * 登出：清除本地 Token 并跳转登录页，同时异步通知后端使 token 失效。
    *
-   * 修复：原代码仅清除本地 token，未通知后端使 refresh token 失效，
-   * 存在 token 被盗用风险（用户登出后旧 token 仍有效）。
-   * 现在调用后端登出接口（即使失败也清除本地 token）。
+   * 修复（P0 BUG）：原实现先 await 后端 logout 再清本地 token，
+   * 若后端 logout 接口 hang（网络超时 10s / 服务端无响应），
+   * 用户需等待超时才能退出，体验极差且可能因等待中触发的 401 刷新死锁。
+   *
+   * 现改为：
+   * 1. 先清本地 token + 立即跳转登录页（用户无感退出）
+   * 2. 异步调用后端 logout（不 await，失败仅记录日志，不阻塞）
+   *
+   * 安全权衡：异步通知失败时后端旧 token 在过期时间前仍有效，
+   * 但本地已无 token，用户侧已退出；后端 token 会被 refresh 流程的
+   * refresh_token 失效间接限制（refresh_token 仍在本地被清除）。
    */
   async logout() {
+    // 1. 先清本地 token，确保即使后端调用 hang 也能立即退出
+    clearTokens();
+    // 2. 立即跳转登录页（不等待后端响应）
+    uni.reLaunch({ url: "/pages/login/index" });
+
+    // 3. 异步通知后端使 token 失效（best effort，失败不阻塞、不抛错）
+    //    使用 noRetry 避免登出接口网络错误时反复重试占用资源
     try {
-      // 尝试通知后端使 token 失效（best effort，失败不阻塞前端清理）
-      await request<void>({
+      request<void>({
         url: "/auth/logout",
         method: "POST",
+        noRetry: true,
+        // 短超时，避免长时间挂起占用资源（虽不阻塞 UI，但仍会消耗网络连接）
+        timeout: 5000,
+      }).catch((error) => {
+        console.warn("[api.logout] 后端登出接口调用失败:", error);
       });
     } catch (error) {
-      // 后端登出失败不阻塞前端清理，仅记录日志
-      console.warn("[api.logout] 后端登出接口调用失败:", error);
-    } finally {
-      // 无论后端登出是否成功，都清除本地 token
-      clearTokens();
-      uni.reLaunch({
-        url: "/pages/login/index",
-      });
+      // 同步异常（如 request 构造失败）仅记录日志
+      console.warn("[api.logout] 后端登出调用异常:", error);
     }
   },
 
@@ -634,6 +651,96 @@ export const clientApi = {
     const query = buildRecommendationsQuery(filter);
     return request<RecommendedPerson[]>({
       url: `/recommendations${query}`,
+      method: "GET",
+    });
+  },
+
+  /**
+   * 获取通知免打扰设置（功能6）。
+   *
+   * 对应后端 GET /api/dnd 端点。
+   * Mock 模式下返回默认配置（关闭状态）。
+   *
+   * @returns 当前用户的免打扰设置视图
+   */
+  async getDndSetting(): Promise<DoNotDisturbView> {
+    if (useMock()) {
+      return mockFixtures.getDndSetting();
+    }
+    return request<DoNotDisturbView>({ url: "/dnd", method: "GET" });
+  },
+
+  /**
+   * 更新通知免打扰设置（功能6）。
+   *
+   * 对应后端 PUT /api/dnd 端点。
+   * 所有字段必填，校验由后端 @Valid 完成。
+   *
+   * @param payload - 免打扰设置请求体
+   * @returns 更新后的免打扰设置视图
+   */
+  async updateDndSetting(payload: DoNotDisturbRequest): Promise<DoNotDisturbView> {
+    if (useMock()) {
+      return mockFixtures.updateDndSetting(payload);
+    }
+    return request<DoNotDisturbView, DoNotDisturbRequest>({
+      url: "/dnd",
+      method: "PUT",
+      data: payload,
+    });
+  },
+
+  /**
+   * 签到补签（功能7）。
+   *
+   * 对应后端 POST /api/check-in/make-up 端点。
+   * 用于补签昨日及之前 7 天内的某一天。
+   *
+   * @param date - 补签日期（yyyy-MM-dd）
+   * @returns 补签结果视图（含连续天数/已用次数/消耗积分）
+   */
+  async makeUpCheckIn(date: string): Promise<MakeUpCheckInResultView> {
+    if (useMock()) {
+      return mockFixtures.makeUpCheckIn(date);
+    }
+    return request<MakeUpCheckInResultView, { date: string }>({
+      url: "/check-in/make-up",
+      method: "POST",
+      data: { date },
+    });
+  },
+
+  /**
+   * 上传反馈图片（功能9）。
+   *
+   * 对应后端 POST /api/feedback/images 端点，使用 multipart/form-data。
+   * 限制：jpg/png/webp，单张 ≤5MB。
+   *
+   * @param file - 图片文件
+   * @returns 服务端返回的图片 URL
+   */
+  async uploadFeedbackImage(file: File): Promise<{ url: string }> {
+    if (useMock()) {
+      return mockFixtures.uploadFeedbackImage(file);
+    }
+    return uploadFileViaUni<{ url: string }>(file, "/feedback/images");
+  },
+
+  /**
+   * 获取反馈提交详情（功能10）。
+   *
+   * 对应后端 GET /api/feedback/my-submissions/{id} 端点。
+   * 用于反馈历史详情页展示完整内容、附件和最新回复。
+   *
+   * @param id - 反馈记录 ID
+   * @returns 反馈详情视图（含 content/attachments/latestReplyContent）
+   */
+  async getSubmissionDetail(id: number): Promise<SubmissionDetailView> {
+    if (useMock()) {
+      return mockFixtures.getSubmissionDetail(id);
+    }
+    return request<SubmissionDetailView>({
+      url: `/feedback/my-submissions/${id}`,
       method: "GET",
     });
   },

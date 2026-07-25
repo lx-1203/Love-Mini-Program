@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import UnlockGuideModal from "../../components/UnlockGuideModal.vue";
+import { i18n } from "../../i18n";
 
 describe("UnlockGuideModal component", () => {
   beforeEach(() => {
@@ -32,6 +33,7 @@ describe("UnlockGuideModal component", () => {
     return mount(UnlockGuideModal, {
       props: vueProps,
       global: {
+        plugins: [i18n],
         stubs: {
           view: { template: '<div class="mock-view"><slot /></div>', name: "uni-view" },
           text: { template: '<span class="mock-text"><slot /></span>', name: "uni-text" },

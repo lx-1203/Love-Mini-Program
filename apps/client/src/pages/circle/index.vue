@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 圈子页 - 校园墙帖子浏览与发布
  */
@@ -6,6 +6,7 @@ import { ref } from "vue";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+import BaseTabs from "../../components/common/BaseTabs.vue";
 
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
@@ -17,11 +18,11 @@ const emojiIcons = {
 
 // Tab 切换 - 扩展为更多分类
 const tabs = [
-  { key: "recommend", name: "推荐" },
-  { key: "following", name: "关注" },
-  { key: "campus", name: "校园" },
-  { key: "love", name: "恋爱" },
-  { key: "treehole", name: "树洞" },
+  { key: "recommend", label: "推荐" },
+  { key: "following", label: "关注" },
+  { key: "campus", label: "校园" },
+  { key: "love", label: "恋爱" },
+  { key: "treehole", label: "树洞" },
 ];
 const activeTab = ref<string>("recommend");
 
@@ -153,19 +154,13 @@ function goToPost() {
         </view>
       </view>
       <!-- 分类标签栏 -->
-      <scroll-view class="circle-tabs-scroll" scroll-x :show-scrollbar="false" :enhanced="true">
-        <view class="circle-tabs">
-          <view
-            v-for="tab in tabs"
-            :key="tab.key"
-            class="circle-tab"
-            :class="{ 'circle-tab--active': activeTab === tab.key }"
-            @tap="activeTab = tab.key"
-          >
-            <text class="circle-tab__text">{{ tab.name }}</text>
-          </view>
-        </view>
-      </scroll-view>
+      <BaseTabs
+        v-model="activeTab"
+        :tabs="tabs"
+        variant="pill"
+        :scrollable="true"
+        :equalSplit="false"
+      />
     </view>
 
     <!-- 帖子列表 -->
@@ -263,17 +258,17 @@ function goToPost() {
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background: linear-gradient(180deg, #F4F6FA 0%, #EEF2F7 100%);
+  background: var(--c-bg-page, #F4F6FA);
 }
 
 /* ========== 顶部导航 ========== */
 .circle-header {
-  background: linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.95) 100%);
+  background: var(--c-bg-container, #FFFFFF);
   padding-top: calc(env(safe-area-inset-top) + 16rpx);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04);
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
 }
 
 .circle-header__top {
@@ -286,65 +281,28 @@ function goToPost() {
 .circle-header__title {
   font-size: 40rpx;
   font-weight: 800;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
   letter-spacing: 1rpx;
 }
 
 .circle-header__publish {
   padding: 12rpx 28rpx;
-  background: linear-gradient(135deg, #3FCF8E 0%, #2DB97A 100%);
+  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
   border-radius: 999rpx;
-  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.35);
+  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35)));
 }
 
+/* #ifdef H5 */
 .circle-header__publish:active {
   transform: scale(0.95);
   opacity: 0.9;
 }
+/* #endif */
 
 .circle-header__publish-text {
   font-size: 26rpx;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
-}
-
-/* ========== 分类标签栏 ========== */
-.circle-tabs-scroll {
-  white-space: nowrap;
-}
-
-.circle-tabs {
-  display: flex;
-  gap: 8rpx;
-  padding: 0 24rpx 20rpx;
-}
-
-.circle-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14rpx 28rpx;
-  border-radius: 999rpx;
-  background: transparent;
-  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  flex-shrink: 0;
-}
-
-.circle-tab--active {
-  background: linear-gradient(135deg, #3FCF8E 0%, #2DB97A 100%);
-  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.3);
-}
-
-.circle-tab__text {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #64748B;
-  transition: color 250ms ease;
-}
-
-.circle-tab--active .circle-tab__text {
-  color: #FFFFFF;
-  font-weight: 700;
 }
 
 /* ========== 滚动区域 ========== */
@@ -362,16 +320,18 @@ function goToPost() {
 }
 
 .post-card {
-  background: #FFFFFF;
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: 16rpx;
   padding: 28rpx;
-  box-shadow: 0 2rpx 12rpx rgba(15, 23, 42, 0.04), 0 1rpx 3rpx rgba(15, 23, 42, 0.03);
+  box-shadow: 0 2rpx 12rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 3rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   animation: card-slide-up 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* #ifdef H5 */
 .post-card:active {
   transform: scale(0.995);
 }
+/* #endif */
 
 @keyframes card-slide-up {
   from {
@@ -404,8 +364,8 @@ function goToPost() {
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #E8F8F0 0%, #FFF5F7 100%);
-  border: 2rpx solid rgba(63, 207, 142, 0.2);
+  background: linear-gradient(135deg, var(--c-bg-brand, #E8F8F0) 0%, var(--c-bg-romance, #FFF5F7) 100%);
+  border: 2rpx solid var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(63, 207, 142, 0.2)));
   flex-shrink: 0;
 }
 
@@ -425,7 +385,7 @@ function goToPost() {
 .post-card__nickname {
   font-size: 28rpx;
   font-weight: 600;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
 }
 
 .post-card__gender-badge {
@@ -440,61 +400,67 @@ function goToPost() {
 }
 
 .post-card__gender-badge--male {
-  background: #E8F4FD;
-  color: #3B82F6;
+  background: var(--c-tint-blue-soft, #E8F4FD);
+  color: var(--c-info-500, #3B82F6);
 }
 
 .post-card__gender-badge--female {
-  background: #FFF0F5;
-  color: #EC4899;
+  background: var(--c-tint-pink-soft, #FFF0F5);
+  color: var(--c-romance-500, #EC4899);
 }
 
 .post-card__school {
   font-size: 22rpx;
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
 }
 
 /* --- 关注按钮 --- */
 .post-card__follow {
   padding: 10rpx 24rpx;
   border-radius: 999rpx;
-  background: linear-gradient(135deg, #3FCF8E 0%, #2DB97A 100%);
+  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
   border: none;
   transition: all 200ms ease;
   flex-shrink: 0;
   margin-left: 16rpx;
 }
 
+/* #ifdef H5 */
 .post-card__follow:active {
   transform: scale(0.95);
 }
+/* #endif */
 
 .post-card__follow--active {
-  background: #F4F6FA;
-  border: 2rpx solid #E2E8F0;
+  background: var(--c-bg-page, #F4F6FA);
+  border: 2rpx solid var(--c-border-default, #E2E8F0);
 }
 
 .post-card__follow-text {
   font-size: 24rpx;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
 
 .post-card__follow--active .post-card__follow-text {
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
   font-weight: 500;
 }
 
 /* --- 正文内容 --- */
 .post-card__content {
   font-size: 26rpx;
-  color: #1F2329;
+  color: var(--c-text-primary, #1F2329);
   line-height: 1.6;
   margin-bottom: 20rpx;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 5;
   overflow: hidden;
+  /* #ifndef H5 */
+  /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
+  max-height: 8em;
+  /* #endif */
 }
 
 /* --- 图片区域 --- */
@@ -529,7 +495,7 @@ function goToPost() {
   width: 100%;
   aspect-ratio: 1;
   border-radius: 12rpx;
-  background: #F4F6FA;
+  background: var(--c-bg-page, #F4F6FA);
 }
 
 .post-card__images--1 .post-card__image {
@@ -543,7 +509,7 @@ function goToPost() {
   width: 100%;
   aspect-ratio: 1;
   border-radius: 12rpx;
-  background: rgba(0,0,0,0.5);
+  background: var(--c-overlay-mid-strong, var(--c-overlay-mid-strong, rgba(0,0,0,0.5)));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -551,7 +517,7 @@ function goToPost() {
 
 .post-card__image-more text {
   font-size: 32rpx;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
 
@@ -571,13 +537,13 @@ function goToPost() {
 }
 
 .post-card__topic-tag--green {
-  color: #2DB97A;
-  background: #E8F8F0;
+  color: var(--c-brand-400, #2DB97A);
+  background: var(--c-bg-brand, #E8F8F0);
 }
 
 .post-card__topic-tag--pink {
-  color: #EC4899;
-  background: #FFF5F7;
+  color: var(--c-romance-500, #EC4899);
+  background: var(--c-bg-romance, #FFF5F7);
 }
 
 /* --- 底部互动栏 --- */
@@ -586,12 +552,12 @@ function goToPost() {
   align-items: center;
   justify-content: space-between;
   padding-top: 16rpx;
-  border-top: 1rpx solid #F4F6FA;
+  border-top: 1rpx solid var(--c-border-light, #EEF0F4);
 }
 
 .post-card__time {
   font-size: 22rpx;
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
 }
 
 .post-card__actions {
@@ -608,9 +574,11 @@ function goToPost() {
   transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* #ifdef H5 */
 .post-card__action:active {
   transform: scale(0.9);
 }
+/* #endif */
 
 .post-card__action--animating {
   animation: like-bounce 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -625,27 +593,27 @@ function goToPost() {
 .post-card__action-icon {
   width: 36rpx;
   height: 36rpx;
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
   flex-shrink: 0;
 }
 
 .post-card__action--liked .post-card__action-icon {
-  color: #E5454D;
+  color: var(--c-error, #E5454D);
 }
 
 .post-card__action-count {
   font-size: 24rpx;
-  color: #9AA1AB;
+  color: var(--c-text-tertiary, #9AA1AB);
   font-weight: 500;
 }
 
 .post-card__action--liked .post-card__action-count,
 .post-card__action-count--liked {
-  color: #E5454D;
+  color: var(--c-error, #E5454D);
 }
 
 .post-card__action--collected .post-card__action-icon {
-  color: #F59E0B;
+  color: var(--c-warning, #F59E0B);
 }
 
 /* 已删除：旧的 emoji 颜色样式 */
@@ -663,18 +631,20 @@ function goToPost() {
   width: 104rpx;
   height: 104rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3FCF8E 0%, #2DB97A 100%);
+  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(63, 207, 142, 0.4);
+  box-shadow: 0 8rpx 24rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.4)));
   z-index: 100;
   transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* #ifdef H5 */
 .fab-post:active {
   transform: scale(0.9);
 }
+/* #endif */
 
 .fab-post__icon {
   font-size: 44rpx;
