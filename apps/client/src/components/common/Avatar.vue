@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
+import SafeImage from './SafeImage.vue';
 
 const props = withDefaults(defineProps<{
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -90,13 +92,14 @@ const ringBg = computed(() => {
     }"
     :style="{ ...sizeStyle, background: ringBg }"
   >
-    <image
+    <SafeImage
       v-if="!showFallback"
       :src="src"
-      class="avatar-img"
+      :fallback="IMAGE_PATHS.DEFAULT_AVATAR"
       mode="aspectFill"
-      lazy-load
-      :style="innerSizeStyle"
+      :lazy-load="true"
+      custom-class="avatar-img"
+      :custom-style="innerSizeStyle"
     />
     <view v-else class="avatar-fallback" :style="{ ...innerSizeStyle, background: gradient, fontSize }">
       {{ initial }}

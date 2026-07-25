@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 const props = defineProps<{
   tone?: 'brand' | 'success' | 'warning';
@@ -11,9 +12,9 @@ const t = designTokens;
 
 const iconSrc = computed(() => {
   const map: Record<string, string> = {
-    brand: '/static/assets/icons/common/check.png',
-    success: '/static/assets/icons/common/check.png',
-    warning: '/static/assets/icons/common/close.png',
+    brand: IMAGE_PATHS.ICONS_COMMON.CHECK,
+    success: IMAGE_PATHS.ICONS_COMMON.CHECK,
+    warning: IMAGE_PATHS.ICONS_COMMON.CLOSE,
   };
   return map[props.tone || 'brand'];
 });

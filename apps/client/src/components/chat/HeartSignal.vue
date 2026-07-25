@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
   title?: string;
@@ -18,7 +19,7 @@ const t = designTokens;
 <template>
   <view class="heart-signal" @tap="emit('tap')">
     <view class="signal-icon">
-      <image class="signal-img" src="/static/assets/icons/social/heart-signal.png" mode="aspectFit" />
+      <image class="signal-img" :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL" mode="aspectFit" />
     </view>
     <view class="signal-info">
       <text class="signal-title">{{ title || '心信号 · 今日推荐' }}</text>

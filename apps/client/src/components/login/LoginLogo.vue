@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
   title?: string;
@@ -15,7 +16,7 @@ const t = designTokens;
     <view class="login-logo">
       <image
         class="login-logo-icon"
-        src="/static/assets/icons/common/school.png"
+        :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL"
         mode="aspectFit"
       />
     </view>

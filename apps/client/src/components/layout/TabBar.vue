@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { designTokens } from '../../theme/tokens';
+import { appTabs, type AppTab } from '../../config/navigation';
 
+/**
+ * Tab 配置以 src/config/navigation.ts 中的 appTabs 为唯一真相源
+ * 此处从 navigation.ts 导入并映射为组件所需格式
+ */
 interface Tab {
   key: string;
   iconPath: string;
@@ -24,43 +29,13 @@ const emit = defineEmits<{
 
 const t = designTokens;
 
-const defaultTabs: Tab[] = [
-  {
-    key: 'discover',
-    iconPath: '/static/assets/icons/tabbar/discover-default.png',
-    selectedIconPath: '/static/assets/icons/tabbar/discover-active.png',
-    label: '匹配',
-    path: '/pages/discover/index',
-  },
-  {
-    key: 'village',
-    iconPath: '/static/assets/icons/tabbar/village-default.png',
-    selectedIconPath: '/static/assets/icons/tabbar/village-active.png',
-    label: '圈子',
-    path: '/pages/village/index',
-  },
-  {
-    key: 'home',
-    iconPath: '/static/assets/icons/tabbar/home-default.png',
-    selectedIconPath: '/static/assets/icons/tabbar/home-active.png',
-    label: '首页',
-    path: '/pages/home/index',
-  },
-  {
-    key: 'chat',
-    iconPath: '/static/assets/icons/tabbar/chat-default.png',
-    selectedIconPath: '/static/assets/icons/tabbar/chat-active.png',
-    label: '消息',
-    path: '/pages/chat/index',
-  },
-  {
-    key: 'profile',
-    iconPath: '/static/assets/icons/tabbar/profile-default.png',
-    selectedIconPath: '/static/assets/icons/tabbar/profile-active.png',
-    label: '我的',
-    path: '/pages/profile/index',
-  },
-];
+const defaultTabs: Tab[] = appTabs.map((tab: AppTab) => ({
+  key: tab.id,
+  iconPath: `/${tab.iconPath}`,
+  selectedIconPath: `/${tab.selectedIconPath}`,
+  label: tab.label,
+  path: tab.path,
+}));
 
 const tabList = computed(() => props.tabs || defaultTabs);
 

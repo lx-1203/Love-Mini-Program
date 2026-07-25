@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 const props = withDefaults(defineProps<{
   type?: 'network' | 'server';
@@ -16,8 +17,8 @@ const t = designTokens;
 
 const iconSrc = computed(() => {
   const map: Record<string, string> = {
-    network: '/static/assets/icons/common/search.png',
-    server: '/static/assets/icons/common/close.png',
+    network: IMAGE_PATHS.ICONS_COMMON.SEARCH,
+    server: IMAGE_PATHS.ICONS_COMMON.CLOSE,
   };
   return map[props.type];
 });

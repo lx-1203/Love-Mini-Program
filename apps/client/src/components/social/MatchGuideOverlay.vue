@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 匹配成功引导弹窗组件
  *
@@ -7,6 +7,7 @@
  */
 import { ref, onMounted } from 'vue'
 import { designTokens } from '../../theme/tokens'
+import { IMAGE_PATHS } from '../../config/images'
 
 const t = designTokens
 
@@ -68,7 +69,7 @@ function startChat() {
       <view class="mgo-header">
         <view class="mgo-avatars">
           <view class="mgo-avatar-placeholder">
-            <image class="mgo-avatar-img" src="/static/assets/icons/social/match.png" mode="aspectFit" />
+            <image class="mgo-avatar-img" :src="IMAGE_PATHS.ICONS_SOCIAL.MATCH" mode="aspectFit" />
           </view>
         </view>
         <text class="mgo-title">匹配成功</text>

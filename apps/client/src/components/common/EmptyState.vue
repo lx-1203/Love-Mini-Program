@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 const props = withDefaults(defineProps<{
   type?: 'no-data' | 'no-match' | 'no-chat';
@@ -14,9 +15,9 @@ const t = designTokens;
 
 const iconSrc = computed(() => {
   const map: Record<string, string> = {
-    'no-data': '/static/assets/icons/common/search.png',
-    'no-match': '/static/assets/icons/common/close.png',
-    'no-chat': '/static/assets/icons/common/notification.png',
+    'no-data': IMAGE_PATHS.ICONS_COMMON.SEARCH,
+    'no-match': IMAGE_PATHS.ICONS_COMMON.CLOSE,
+    'no-chat': IMAGE_PATHS.ICONS_COMMON.NOTIFICATION,
   };
   return map[props.type];
 });

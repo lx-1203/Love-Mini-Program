@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
   school?: string;
@@ -18,17 +19,17 @@ const t = designTokens;
   <view class="home-header">
     <view class="header-left" @tap="emit('schoolTap')">
       <text class="header-school">{{ school || '校园恋爱' }}</text>
-      <image class="header-arrow" src="/static/assets/icons/common/arrow-right.png" mode="aspectFit" />
+      <image class="header-arrow" :src="IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT" mode="aspectFit" />
       <view class="header-badge">
         <text class="header-badge-text">本校限定</text>
       </view>
     </view>
     <view class="header-right">
       <view class="header-icon" @tap="emit('searchTap')">
-        <image class="header-icon-img" src="/static/assets/icons/common/search.png" mode="aspectFit" />
+        <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" />
       </view>
       <view class="header-icon" @tap="emit('notifyTap')">
-        <image class="header-icon-img" src="/static/assets/icons/common/notification.png" mode="aspectFit" />
+        <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" />
         <view class="header-dot" />
       </view>
     </view>

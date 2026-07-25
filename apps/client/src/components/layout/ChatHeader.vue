@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
   title?: string;
@@ -18,10 +19,10 @@ const t = designTokens;
     <text class="chat-title">{{ title || '消息' }}</text>
     <view class="chat-icons">
       <view class="chat-icon" @tap="emit('searchTap')">
-        <image class="chat-icon-img" src="/static/assets/icons/common/search.png" mode="aspectFit" />
+        <image class="chat-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" />
       </view>
       <view class="chat-icon" @tap="emit('addTap')">
-        <image class="chat-icon-img" src="/static/assets/icons/common/add.png" mode="aspectFit" />
+        <image class="chat-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.ADD" mode="aspectFit" />
       </view>
     </view>
   </view>

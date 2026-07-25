@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { designTokens } from '../../theme/tokens';
 import Avatar from '../common/Avatar.vue';
+import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
   avatarUrl?: string;
@@ -48,11 +49,11 @@ const t = designTokens;
     </view>
     <view class="wall-actions">
       <view class="wall-action" :class="{ 'wall-action--liked': isLiked }" @tap.stop="emit('like')">
-        <image class="wall-action__icon" src="/static/assets/icons/social/like-filled.png" mode="aspectFit" />
+        <image class="wall-action__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
         <text>{{ likes || 0 }}</text>
       </view>
       <view class="wall-action" @tap.stop="emit('comment')">
-        <image class="wall-action__icon" src="/static/assets/icons/social/comment.png" mode="aspectFit" />
+        <image class="wall-action__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.COMMENT" mode="aspectFit" />
         <text>{{ comments || 0 }}</text>
       </view>
       <view class="wall-action" @tap.stop="emit('share')">

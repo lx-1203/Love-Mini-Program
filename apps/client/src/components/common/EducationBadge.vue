@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 const props = defineProps<{
   school: string;
@@ -46,7 +47,7 @@ const shieldStyle = computed(() => ({
 <template>
   <view class="edu-badge" :style="badgeStyle">
     <view class="edu-badge__shield" :style="shieldStyle">
-      <image v-if="verified" class="edu-badge__check" src="/static/assets/icons/common/check.png" mode="aspectFit" />
+      <image v-if="verified" class="edu-badge__check" :src="IMAGE_PATHS.ICONS_COMMON.CHECK" mode="aspectFit" />
       <text v-else class="edu-badge__dot">•</text>
     </view>
     <text class="edu-badge__school">{{ school }}</text>

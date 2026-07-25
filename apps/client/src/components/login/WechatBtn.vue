@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
   loading?: boolean;
@@ -20,7 +21,7 @@ const t = designTokens;
   >
     <image
       class="wechat-btn-icon"
-      src="/static/assets/icons/social/message.png"
+      :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE"
       mode="aspectFit"
     />
     <text class="wechat-btn-text">微信登录</text>

@@ -7,6 +7,7 @@
  */
 import { computed } from "vue";
 import { openAppPath } from "../../utils/navigation";
+import { IMAGE_PATHS } from "../../config/images";
 
 const props = defineProps<{
   /** 当前页面名称，用于动态文案 */
@@ -61,17 +62,17 @@ function goToProfileSetup() {
         <view class="phone phone--left">
           <view class="phone-screen">
             <view class="phone-heart">
-              <image class="phone-heart__img" src="/static/assets/icons/social/like-filled.png" mode="aspectFit" />
+              <image class="phone-heart__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
             </view>
           </view>
         </view>
         <view class="heart-float">
-          <image class="heart-float__img" src="/static/assets/icons/social/like-filled.png" mode="aspectFit" />
+          <image class="heart-float__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
         </view>
         <view class="phone phone--right">
           <view class="phone-screen">
             <view class="phone-heart">
-              <image class="phone-heart__img" src="/static/assets/icons/social/like-filled.png" mode="aspectFit" />
+              <image class="phone-heart__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
             </view>
           </view>
         </view>

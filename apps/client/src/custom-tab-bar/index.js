@@ -1,3 +1,29 @@
+/**
+ * ============================================================
+ *  微信小程序自定义 TabBar 配置
+ * ============================================================
+ *
+ *  注意：此文件中的 tabs 配置必须与 src/config/navigation.ts
+ *  中的 appTabs 数组保持完全一致（顺序、路径、图标）。
+ *
+ *  唯一真相源：src/config/navigation.ts
+ *
+ *  由于微信小程序原生 .js 文件无法直接 import TypeScript，
+ *  此处配置需手动同步。修改 Tab 配置时请遵循以下顺序：
+ *  1. 先修改 src/config/navigation.ts 中的 appTabs
+ *  2. 再同步更新此文件中的 tabs 配置
+ *  3. 同时更新 src/pages.json 中的 tabBar.list
+ *
+ *  配置映射关系（navigation.ts → 本文件）：
+ *    id           → id
+ *    label        → label
+ *    path         → path
+ *    iconPath     → iconPath    (注意：路径前加 /)
+ *    selectedIconPath → activeIconPath (注意：路径前加 /)
+ *    prominent    → prominent
+ *
+ * ============================================================
+ */
 Component({
   properties: {
     selected: {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
 defineProps<{
   emoji?: string;
@@ -11,7 +12,7 @@ const t = designTokens;
 <template>
   <view class="illustration">
     <view class="illustration-bg" />
-    <image class="illustration-img" src="/static/assets/icons/common/school.png" mode="aspectFit" />
+    <image class="illustration-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" mode="aspectFit" />
   </view>
 </template>
 

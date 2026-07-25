@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { designTokens } from '../../theme/tokens';
+import { IMAGE_PATHS } from '../../config/images';
 
-defineProps<{
+const props = defineProps<{
   title?: string;
   time?: string;
   location?: string;
@@ -10,6 +12,22 @@ defineProps<{
 }>();
 
 const t = designTokens;
+
+const emojiIconMap: Record<string, string> = {
+  'celebration.png': IMAGE_PATHS.ICONS_COMMON.CELEBRATION,
+  'school.png': IMAGE_PATHS.ICONS_COMMON.SCHOOL,
+  'fire.png': IMAGE_PATHS.ICONS_COMMON.FIRE,
+  'star.png': IMAGE_PATHS.ICONS_COMMON.STAR,
+  'heart.png': IMAGE_PATHS.ICONS_COMMON.HEART,
+  'schedule.png': IMAGE_PATHS.ICONS_COMMON.SCHEDULE,
+  'graduation.png': IMAGE_PATHS.ICONS_COMMON.GRADUATION,
+  'location.png': IMAGE_PATHS.ICONS_COMMON.LOCATION,
+};
+
+const emojiSrc = computed(() => {
+  if (!props.emoji) return IMAGE_PATHS.ICONS_COMMON.CELEBRATION;
+  return emojiIconMap[props.emoji] || IMAGE_PATHS.ICONS_COMMON.CELEBRATION;
+});
 
 const statusMap: Record<string, string> = { open: '报名中', ongoing: '进行中', upcoming: '预告', closed: '已结束' };
 const statusClass = (status?: string) => {
@@ -24,8 +42,8 @@ const statusClass = (status?: string) => {
       <view class="activity-tag" v-if="status" :class="statusClass(status)">
         <text class="activity-tag-text">{{ statusMap[status] }}</text>
       </view>
-      <image v-if="emoji" class="activity-emoji" :src="`/static/assets/icons/common/${emoji}`" mode="aspectFit" />
-      <image v-else class="activity-emoji" src="/static/assets/icons/common/celebration.png" mode="aspectFit" />
+      <image v-if="emoji" class="activity-emoji" :src="emojiSrc" mode="aspectFit" />
+      <image v-else class="activity-emoji" :src="IMAGE_PATHS.ICONS_COMMON.CELEBRATION" mode="aspectFit" />
     </view>
     <view class="activity-info">
       <text class="activity-title">{{ title }}</text>

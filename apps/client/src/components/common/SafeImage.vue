@@ -4,6 +4,7 @@
       v-if="!hasError"
       :src="displaySrc"
       :mode="mode"
+      :lazy-load="lazyLoad"
       :class="['safe-image__img', customClass, { 'safe-image__img--hidden': isLoading }]"
       :style="customStyle"
       @error="onError"
@@ -13,6 +14,7 @@
       v-else
       :src="fallback"
       :mode="mode"
+      :lazy-load="lazyLoad"
       :class="['safe-image__img', 'safe-image__img--fallback', customClass]"
       :style="customStyle"
     />
@@ -39,13 +41,15 @@ const props = withDefaults(defineProps<{
   fallback?: string;
   mode?: string;
   customClass?: string;
-  customStyle?: string;
+  customStyle?: string | Record<string, string | number>;
+  lazyLoad?: boolean;
 }>(), {
   src: '',
   fallback: '/static/assets/default-avatar.png',
   mode: 'aspectFill',
   customClass: '',
   customStyle: '',
+  lazyLoad: false,
 });
 
 const hasError = ref(false);
