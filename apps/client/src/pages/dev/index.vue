@@ -184,7 +184,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .dev-header__badge {
   padding: 8rpx 20rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   /* mp-weixin 不支持，H5 保留毛玻璃；白字+白底场景保留低不透明度避免文字不可见 */
   // #ifdef H5

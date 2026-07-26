@@ -36,6 +36,7 @@ public class CircleReply {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    /** 记录创建时间（回复发布时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

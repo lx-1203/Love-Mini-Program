@@ -438,9 +438,10 @@ function handlePublish(): void {
 }
 
 /* hover-class 按压态 */
+/* P3 修复：box-shadow 单位统一为 rpx，与项目其他阴影定义保持一致 */
 .tab-publish--pressed .publish-btn {
   transform: scale(0.92);
-  box-shadow: 0 4px 12px rgba(63, 207, 142, 0.45);
+  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.45);
 }
 
 .publish-btn {
@@ -449,7 +450,7 @@ function handlePublish(): void {
   height: 96rpx;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
-  box-shadow: 0 6px 20px rgba(63, 207, 142, 0.35);
+  box-shadow: 0 6rpx 20rpx rgba(63, 207, 142, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;

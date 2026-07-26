@@ -76,9 +76,11 @@ public class Like {
     @Column(name = "status", nullable = false, columnDefinition = "ENUM('active','cancelled') DEFAULT 'active'")
     private LikeStatus status = LikeStatus.active;
 
+    /** 记录创建时间（喜欢动作发生时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（状态变更时刷新，如取消喜欢） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

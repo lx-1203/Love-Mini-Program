@@ -83,6 +83,7 @@ public class Notification {
     @Column(name = "is_read", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean isRead = false;
 
+    /** 记录创建时间（通知产生时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

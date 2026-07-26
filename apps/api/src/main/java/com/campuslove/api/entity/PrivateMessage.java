@@ -91,6 +91,7 @@ public class PrivateMessage {
     @Column(name = "delivery_status", nullable = false, length = 16)
     private String deliveryStatus = "sent";
 
+    /** 记录创建时间（消息发送时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

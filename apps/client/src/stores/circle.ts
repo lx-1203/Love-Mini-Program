@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 import { IMAGE_PATHS } from "../config/images";
 
 /* ========== 后端视图类型 ========== */
@@ -381,10 +381,6 @@ const mockReplies: Record<string, ReplyItem[]> = {
 
 /** 每页话题数量 */
 const TOPIC_PAGE_SIZE = 10;
-
-function useMock() {
-  return isMockMode();
-}
 
 /**
  * 格式化相对时间

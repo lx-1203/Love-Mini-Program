@@ -9,15 +9,16 @@ import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
 import { useMessagesStore } from "../../stores/messages";
+import { useReportStore } from "../../stores/report";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
 import { openAppPath } from "../../utils/navigation";
-import { reportTarget } from "../../services/report-api";
 import SafeImage from "../../components/common/SafeImage.vue";
 import PostReportDialog from "../../components/social/PostReportDialog.vue";
 import { IMAGE_PATHS } from "../../config/images";
 
 const villageStore = useVillageStore();
 const messagesStore = useMessagesStore();
+const reportStore = useReportStore();
 // 修复（严格模式 noUnusedLocals）：sessionStore 声明后未在脚本/模板引用，已移除。
 // 修复（严格模式 noUnusedLocals）：loadingSimilarAuthors 从 storeToRefs 解构后未引用，已移除。
 const { currentPost, comments, loading, similarAuthors } = storeToRefs(villageStore);
@@ -124,7 +125,7 @@ async function handleReportComment(comment: { id: string }) {
 
   // 3. 调用举报接口
   try {
-    await reportTarget("COMMENT", comment.id, reason, description);
+    await reportStore.reportTarget("COMMENT", comment.id, reason, description);
     uni.showToast({ title: "举报已提交", icon: "success" });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "举报失败";
@@ -915,7 +916,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   gap: 4rpx;
   padding: 4rpx 14rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   flex-shrink: 0;
 }
 
@@ -968,7 +969,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: inline-flex;
   align-items: center;
   padding: 8rpx 18rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $pink-light, var(--c-romance-200, #FBCFE8));
 }
 
@@ -991,7 +992,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   color: $text-secondary;
   background: $bg-page;
   padding: 8rpx 18rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   font-weight: 500;
 }
 
@@ -1025,7 +1026,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .action-btn--follow {
   flex: 1;
   padding: 18rpx 0;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   display: flex;
   align-items: center;
@@ -1049,7 +1050,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .action-btn--message {
   flex: 1;
   padding: 18rpx 0;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $pink-primary, var(--c-romance-400, #F472B6));
   display: flex;
   align-items: center;
@@ -1129,7 +1130,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   color: $green-primary;
   background: $green-light;
   padding: 8rpx 18rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   font-weight: 500;
   transition: all 0.15s ease;
 }
@@ -1341,7 +1342,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .similar-author-actions .action-btn--message {
   flex: 1;
   padding: 14rpx 0;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1412,7 +1413,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   color: $green-primary;
   background: $green-light;
   padding: 4rpx 16rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   font-weight: 600;
 }
 
@@ -1531,7 +1532,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   gap: 6rpx;
   padding: 8rpx 16rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: $white;
   transition: all 0.15s ease;
 }
@@ -1591,7 +1592,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .empty-state__back {
   padding: 18rpx 48rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: all 0.15s ease;
@@ -1627,7 +1628,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .comment-input {
   padding: 18rpx 28rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: $bg-page;
   font-size: 28rpx;
   color: $text-primary;
@@ -1648,7 +1649,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   min-height: 88rpx;
   min-width: 88rpx;
   padding: 12rpx 20rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   transition: all 0.15s ease;
 }
 
@@ -1773,7 +1774,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .share-modal__btn {
   flex: 1;
   padding: 22rpx 0;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   display: flex;
   align-items: center;
   justify-content: center;

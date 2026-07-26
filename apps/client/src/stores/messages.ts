@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 // 修复（严格模式 noUnusedLocals）：components 类型未在本文件引用，已移除。
 import type { InteractionEventView } from "../services/generated/api-types-supplement";
 // 统一常量：异步操作超时时间
@@ -362,8 +362,6 @@ const mockInteractionEvents: InteractionEvent[] = [
   { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: "/static/default-avatar.png", referenceId: 42, referenceType: "post", summary: "夏言评论了你的帖子：\"写得真好！\"", isRead: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
   { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "沈念", triggerUserAvatar: "/static/default-avatar.png", referenceId: 15, referenceType: "topic", summary: "沈念回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
 ];
-
-function useMock() { return isMockMode(); }
 
 // 注：ASYNC_TIMEOUT_MS 由 constants/growth.ts 统一提供
 

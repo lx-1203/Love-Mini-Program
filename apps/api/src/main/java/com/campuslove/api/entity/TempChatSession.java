@@ -81,9 +81,11 @@ public class TempChatSession {
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;
 
+    /** 记录创建时间（会话创建时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（会话状态/最后消息变更时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

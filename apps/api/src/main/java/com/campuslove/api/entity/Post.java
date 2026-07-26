@@ -134,9 +134,11 @@ public class Post {
     @Column(name = "audited_at")
     private LocalDateTime auditedAt;
 
+    /** 记录创建时间（帖子发布时间，用于排序与展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（编辑、状态变更等触发更新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

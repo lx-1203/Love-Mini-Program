@@ -57,9 +57,14 @@ onLaunch(() => {
     // 兼容性：H5/APP 端 wx 对象可能不存在，需条件编译包裹。
     // #ifdef MP-WEIXIN
     try {
-      const wxApi = (globalThis as any).wx;
+      // 通过 unknown 收敛替代 `as any`，避免 any 类型污染；
+      // wx 在 mp-weixin 端为全局对象，H5/APP 端可能不存在，需运行时判空。
+      const wxApi = (globalThis as unknown as { wx?: Record<string, unknown> }).wx;
       if (wxApi && typeof wxApi.onNeedPrivacyAuthorization === "function") {
-        wxApi.onNeedPrivacyAuthorization((resolve: () => void) => {
+        const onNeed = wxApi.onNeedPrivacyAuthorization as (
+          cb: (resolve: () => void) => void
+        ) => void;
+        onNeed((resolve: () => void) => {
           // 用户同意隐私协议后调用 resolve 通知微信继续后续 API 调用
           // 这里使用内置的 wx.openPrivacyContract 让用户阅读协议
           try {
@@ -148,6 +153,10 @@ onMounted(markAppReady);
 @import "./styles/tokens.scss";
 // 引入无障碍工具类（.sr-only / .sr-only-focusable），供屏幕阅读器读取的视觉隐藏文本使用
 @import "./styles/a11y.scss";
+// 引入共享 SCSS Mixins（修复 P3 样式重复：集中管理 flex-center / text-ellipsis 等常用 mixin）
+@import "./styles/_mixins.scss";
+// 引入组件级共享样式（修复 P3 样式重复：base-card / base-btn / base-avatar / base-tag 等基础类）
+@import "./styles/_components.scss";
 
 page {
   background: var(--c-gradient-page);
@@ -167,13 +176,10 @@ page {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-view, text, image {
-  box-sizing: border-box;
-}
-
-view, button, scroll-view, swiper, input, textarea {
-  -webkit-tap-highlight-color: transparent;
-}
+/* P3 修复：以下基础重置样式已迁移至 theme/global.scss，避免重复定义
+   - view, text, image { box-sizing: border-box; } → global.scss
+   - view, button, scroll-view, ... { -webkit-tap-highlight-color: transparent; } → global.scss
+   此处删除重复声明 */
 
 /* ================================================================
    全局微动效系统
@@ -307,23 +313,8 @@ view, button, scroll-view, swiper, input, textarea {
   will-change: transform, opacity;
 }
 
-/* 按钮点击缩放 */
-.btn-press {
-  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-.btn-press:active {
-  transform: scale(0.96);
-}
-
-/* 通用点击缩放 */
-.press-scale {
-  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-.press-scale:active {
-  transform: scale(0.98);
-}
+/* 按钮点击缩放 —— P3 修复：已迁移至 _components.scss .base-press 与 theme/global.scss .btn-press
+   此处保留 .btn-press / .press-scale 别名以兼容现有页面引用，但不再重复声明 */
 
 /* 在线红点脉冲 */
 .pulse-dot {
@@ -361,6 +352,7 @@ view, button, scroll-view, swiper, input, textarea {
   animation: gradientShine 2s linear infinite;
 }
 
+/* 滚动条隐藏 —— P3 修复：原 App.vue 中重复定义两次 ::-webkit-scrollbar，此处仅保留一处 */
 ::-webkit-scrollbar {
   display: none;
   width: 0;
@@ -368,59 +360,19 @@ view, button, scroll-view, swiper, input, textarea {
   color: transparent;
 }
 
-.radius-card {
-  border-radius: 16rpx;
-  box-shadow: 0 2rpx 12rpx var(--c-neutral-shadow-sm, var(--c-neutral-shadow-sm, var(--c-neutral-shadow-sm, rgba(15, 23, 42, 0.05)))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
-  border: 1rpx solid var(--c-border-light, #EEF0F4);
-}
-
-.text-brand { color: var(--c-brand, #3FCF8E); }
-.text-brand-romance { color: var(--c-romance-500, #EC4899); }
-.text-pink { color: var(--c-romance-500, #EC4899); }
-.text-vip { color: var(--c-text-vip, #C9A36A); }
-
-.gradient-brand {
-  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
-}
-.gradient-romance {
-  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-accent-400, #F97316) 100%);
-}
-.gradient-pink {
-  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-accent-400, #F97316) 100%);
-}
-.gradient-vip {
-  background: linear-gradient(135deg, var(--c-text-vip, #C9A36A) 0%, var(--c-vip-to, #E8C98A) 100%);
-}
-
-.float-shadow {
-  box-shadow: 0 6rpx 20rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35))));
-}
-
-.shadow-card-soft {
-  box-shadow: 0 2rpx 12rpx var(--c-neutral-shadow-sm, var(--c-neutral-shadow-sm, var(--c-neutral-shadow-sm, rgba(15, 23, 42, 0.05)))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
-  border: 1rpx solid var(--c-border-light, #EEF0F4);
-}
-
-.shadow-brand {
-  box-shadow: 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, var(--c-brand-shadow-tint-mid, var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25))));
-}
-
-.shadow-romance {
-  box-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint, var(--c-shadow-romance-tint, var(--c-shadow-romance-tint, rgba(236, 72, 153, 0.25))));
-}
-
 /* ================================================================
-   安全区域适配 - 全局样式
+   工具类 —— P3 修复：以下工具类已迁移至 theme/global.scss 与 _components.scss
+   - .radius-card → global.scss
+   - .text-brand / .text-brand-romance / .text-pink / .text-vip → global.scss
+   - .gradient-brand / .gradient-romance / .gradient-pink / .gradient-vip → global.scss
+   - .float-shadow / .shadow-card-soft / .shadow-brand / .shadow-romance → global.scss
+   - .safe-area-top / .safe-area-bottom → global.scss
+   - .card-base / .card-base--pressed / .card-base--elevated → global.scss 与 _components.scss .base-card
+   - .section-divider 系列 → _components.scss .base-divider
+   - .img-rounded / .section-title-brand → global.scss 与 _components.scss .base-section-title
+   - .press-feedback → global.scss
+   此处删除重复声明，避免样式冲突与维护负担
    ================================================================ */
-.safe-area-bottom {
-  padding-bottom: constant(safe-area-inset-bottom);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.safe-area-top {
-  padding-top: constant(safe-area-inset-top);
-  padding-top: env(safe-area-inset-top);
-}
 
 /* 页面根容器默认高度 */
 .page-container {
@@ -435,11 +387,13 @@ view, button, scroll-view, swiper, input, textarea {
    页面过渡动画 - 350ms 淡入+上移（全局唯一定义）
    - .page-fade-in 直接由 CSS 类应用，无需 JS 状态切换
    - 350ms + cubic-bezier(0.34, 1.56, 0.64, 1) 弹性缓动
-   - opacity 0→1 + translateY(8px)→0，从下方滑入
+   - opacity 0→1 + translateY(8rpx)→0，从下方滑入
+   - P3 修复：原 translateY(8px) 与其他动画（translateY(8rpx)/translateY(20rpx) 等）单位不统一，
+     现统一为 rpx（uni-app 自动转换为对应平台的响应式像素）
    - mp-weixin 兼容：纯 CSS 动画，无 DOM API 依赖
    ================================================================ */
 @keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(8rpx); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -550,22 +504,9 @@ view, button, scroll-view, swiper, input, textarea {
    通用按压反馈工具类（mp-weixin :active 伪类不可靠，用 JS 控制）
    - 200ms cubic-bezier(0.4, 0, 0.2, 1) 标准缓动
    - 按压时 scale + box-shadow + opacity 三重视觉反馈
+   - P3 修复：基础 .press-feedback 已迁移至 theme/global.scss
+     此处仅保留 ripple 涟漪扩散动画（App.vue 独有，global.scss 未实现）
    ================================================================ */
-.press-feedback {
-  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1),
-              filter 180ms cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform, filter, opacity;
-}
-
-.press-feedback--active {
-  transform: scale(0.88);
-  filter: brightness(0.95);
-  opacity: 0.92;
-  box-shadow: 0 8rpx 24rpx var(--c-neutral-shadow-xl, var(--c-neutral-shadow-xl, var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.12))));
-  transition-duration: 120ms;
-}
 
 /* 按钮按下时的涟漪扩散动画（替代单纯震动） */
 .press-feedback--ripple::after {
@@ -591,12 +532,8 @@ view, button, scroll-view, swiper, input, textarea {
 }
 
 /* ================================================================
-   全局滚动条美化
+   全局滚动条美化 —— P3 修复：与上方重复，已删除（仅保留一处定义）
    ================================================================ */
-::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
 
 /* ================================================================
    骨架屏 Shimmer 动画（全局可用）
@@ -619,42 +556,12 @@ view, button, scroll-view, swiper, input, textarea {
 }
 
 /* ================================================================
-   视觉层级与边缘强化工具类（解决"边缘色未显示、层级划分不清晰"）
-   使用：在卡片元素上添加 .card-base + .press-feedback
+   视觉层级与边缘强化工具类 —— P3 修复：
+   - .card-base / .card-base--pressed / .card-base--elevated 已迁移至 theme/global.scss
+   - .section-divider 系列已迁移至 _components.scss .base-divider
+   - .img-rounded / .section-title-brand 已迁移至 theme/global.scss
+   此处仅保留 .edge-accent / .edge-romance（App.vue 独有，global.scss 未定义）
    ================================================================ */
-.card-base {
-  position: relative;
-  background: var(--c-bg-container, #FFFFFF);
-  border: var(--card-border);
-  border-radius: 24rpx;
-  box-shadow: var(--card-shadow);
-  margin-bottom: var(--section-gap);
-  overflow: hidden;
-}
-
-.card-base--pressed {
-  transform: scale(0.98);
-  box-shadow: var(--card-shadow-active);
-}
-
-/* 高层级卡片：更强的阴影和边缘，用于主推荐卡片 */
-.card-base--elevated {
-  box-shadow: 0 12rpx 32rpx var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, rgba(15, 23, 42, 0.08)))), 0 4rpx 12rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
-  border: 1px solid var(--c-neutral-border-tint-mid, var(--c-neutral-shadow-md, var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.06))));
-}
-
-/* 区块分隔（明确可见的边缘色） */
-.section-divider {
-  border-bottom: var(--border-default);
-}
-
-.section-divider--subtle {
-  border-bottom: var(--border-subtle);
-}
-
-.section-divider--strong {
-  border-bottom: var(--border-strong);
-}
 
 /* 强调边缘（品牌色/浪漫色） */
 .edge-accent {
@@ -663,40 +570,6 @@ view, button, scroll-view, swiper, input, textarea {
 
 .edge-romance {
   border: var(--border-romance);
-}
-
-/* ================================================================
-   Phase G · 视觉层级与边缘强化工具类（全局生效）
-   说明：theme/global.css 在项目中未被导入，故将这两个工具类
-   同步至 App.vue 全局 <style> 块，确保 .img-rounded 与
-   .section-title-brand 在 H5 与 mp-weixin 双端均能生效。
-   ================================================================ */
-
-/* 图片分割：圆角 + 阴影，用于主要 <image> 元素或图片包裹容器 */
-.img-rounded {
-  border-radius: 20rpx;
-  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, rgba(15, 23, 42, 0.08)))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
-  border: 1px solid var(--c-neutral-border-tint, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
-  overflow: hidden;
-}
-
-/* 章节标题品牌色竖线装饰：左侧 4rpx 蓝色渐变竖线 */
-.section-title-brand {
-  position: relative;
-  padding-left: 20rpx;
-}
-
-.section-title-brand::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6rpx;
-  height: 48rpx;
-  background: linear-gradient(180deg, var(--c-secondary-blue-400, #5B7FFF) 0%, var(--c-secondary-blue-400-light, #7C9BFF) 100%);
-  border-radius: 2rpx;
-  box-shadow: 0 0 8rpx var(--c-secondary-blue-shadow, var(--c-secondary-blue-shadow, var(--c-secondary-blue-shadow, rgba(91, 127, 255, 0.3))));
 }
 
 /* ================================================================

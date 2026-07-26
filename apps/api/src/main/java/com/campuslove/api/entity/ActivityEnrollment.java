@@ -32,6 +32,7 @@ public class ActivityEnrollment {
     @Column(name = "enrolled_at", nullable = false)
     private LocalDateTime enrolledAt;
 
+    /** 记录创建时间（报名记录入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

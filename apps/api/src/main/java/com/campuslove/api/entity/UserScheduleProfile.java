@@ -36,9 +36,11 @@ public class UserScheduleProfile {
     @Column(name = "course_block_json", nullable = false, columnDefinition = "JSON DEFAULT '[]'")
     private String courseBlockJson = "[]";
 
+    /** 记录创建时间（日程资料入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（日程资料编辑时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

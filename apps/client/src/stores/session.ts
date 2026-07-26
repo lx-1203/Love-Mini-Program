@@ -1,18 +1,16 @@
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
-import { isDev, isMockMode } from "../services/env";
+import { isDev } from "../services/env";
 // Sentry 监控：登录成功关联用户身份，退出登录清除用户上下文
 import { setUser, clearUser } from "../services/sentry";
 import { toLoginHeroView } from "../view-models/login";
 import { MOCK_LOGIN_HERO } from "../features/login/hero";
+import { useMock } from "./helpers/use-mock";
 import type { components } from "../services/generated/api-types";
 
 type Schemas = components["schemas"];
 type UserSession = Schemas["UserSession"];
 type LoginHeroConfig = Schemas["LoginHeroConfig"];
-
-/** 判断当前是否为 Mock 模式（引用 env.ts 统一导出） */
-const useMock = isMockMode;
 
 /* ========== Mock 数据 ========== */
 
@@ -63,8 +61,11 @@ const SESSION_PERSIST_KEY = "session:persistent-fields";
 
 /**
  * Session Store 持久化字段（仅持久化必要字段，避免泄漏完整会话）。
+ *
+ * 导出供 types/guards.ts 中的类型守卫引用，确保从本地存储反序列化时
+ * 能通过运行时校验安全收敛到该类型。
  */
-interface SessionPersistedFields {
+export interface SessionPersistedFields {
   profileBackgroundUrl: string;
 }
 

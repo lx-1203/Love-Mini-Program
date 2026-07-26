@@ -88,7 +88,6 @@ defineExpose({ overlayAriaLabel });
       @tap="close"
       role="button"
       :aria-label="t('matchGuide.maskAria')"
-      <!-- #endif -->
     />
     <view class="mgo-card">
       <!-- 匹配成功头部 -->
@@ -99,10 +98,8 @@ defineExpose({ overlayAriaLabel });
               class="mgo-avatar-img"
               :src="IMAGE_PATHS.ICONS_SOCIAL.MATCH"
               mode="aspectFit"
-              <!-- #ifdef H5 -->
               role="img"
               :aria-label="t('discover.matchSuccessTitle')"
-              <!-- #endif -->
             />
           </view>
         </view>
@@ -119,7 +116,6 @@ defineExpose({ overlayAriaLabel });
             :key="index"
             class="mgo-topic-chip"
             @tap="selectIcebreaker(topic)"
-            <!-- #ifdef H5 -->
             role="button"
             :aria-label="t('matchGuide.icebreakerAria', { topic })"
           >

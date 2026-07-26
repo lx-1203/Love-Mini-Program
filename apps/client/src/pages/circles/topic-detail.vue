@@ -9,11 +9,12 @@ import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCircleStore, formatCircleTime, type ReplyItem } from "../../stores/circle";
 import { useSessionStore } from "../../stores/session";
+import { useReportStore } from "../../stores/report";
 import { openAppPath } from "../../utils/navigation";
-import { reportTarget } from "../../services/report-api";
 
 const circleStore = useCircleStore();
 const sessionStore = useSessionStore();
+const reportStore = useReportStore();
 const { currentTopic, replies, loading } = storeToRefs(circleStore);
 
 /** 回复内容 */
@@ -143,7 +144,7 @@ async function handleReportTopic() {
 
   // 3. 调用举报接口
   try {
-    await reportTarget("TOPIC", topicId.value, reason, description);
+    await reportStore.reportTarget("TOPIC", topicId.value, reason, description);
     uni.showToast({ title: "举报已提交", icon: "success" });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "举报失败";

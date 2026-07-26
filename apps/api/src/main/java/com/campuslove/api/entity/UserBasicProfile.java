@@ -124,9 +124,11 @@ public class UserBasicProfile {
     @Column(name = "id_card_verified", nullable = false)
     private Boolean idCardVerified = Boolean.FALSE;
 
+    /** 记录创建时间（基本资料入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（基本资料编辑时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

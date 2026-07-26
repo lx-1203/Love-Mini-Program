@@ -595,7 +595,7 @@ $red-badge: var(--c-error, #FF4757);
 
 .post-header__submit {
   padding: 14rpx 36rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB87A) 100%);
   border: none;
   display: flex;
@@ -651,7 +651,7 @@ $red-badge: var(--c-error, #FF4757);
 
 .category-option {
   padding: 16rpx 32rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: $bg-page;
   border: 2rpx solid transparent;
   transition: all 0.15s ease;
@@ -739,7 +739,7 @@ $red-badge: var(--c-error, #FF4757);
   color: $pink-primary;
   background: $pink-light;
   padding: 6rpx 14rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
 }
 
 .preset-tags-scroll {
@@ -756,7 +756,7 @@ $red-badge: var(--c-error, #FF4757);
   display: inline-flex;
   align-items: center;
   padding: 14rpx 28rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: $bg-page;
   border: 2rpx solid transparent;
   transition: all 0.15s ease;
@@ -926,7 +926,7 @@ $red-badge: var(--c-error, #FF4757);
   align-items: center;
   gap: 8rpx;
   padding: 12rpx 20rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: $green-light;
   transition: transform 0.15s ease;
 }

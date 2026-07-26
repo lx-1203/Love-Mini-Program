@@ -33,6 +33,7 @@ public class DailyQuestion {
     @Column(name = "category", length = 32)
     private String category;
 
+    /** 记录创建时间（问题入库时间，用于每日推送排序） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

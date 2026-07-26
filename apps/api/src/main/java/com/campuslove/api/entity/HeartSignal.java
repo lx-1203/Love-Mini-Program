@@ -77,9 +77,11 @@ public class HeartSignal {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
+    /** 记录创建时间（心动信号发起时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（信号状态变更时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

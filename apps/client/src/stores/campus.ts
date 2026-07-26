@@ -1,7 +1,7 @@
 // D:\6\恋爱小程序\apps\client\src\stores\campus.ts
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { request } from "../services/http";
+import { useMock } from "./helpers/use-mock";
 
 
 /* ========== 后端视图类型 ========== */
@@ -441,10 +441,6 @@ const mockActivities: CampusActivity[] = [
 
 /** 每页话题数量 */
 const TOPIC_PAGE_SIZE = 10;
-
-function useMock() {
-  return isMockMode();
-}
 
 /**
  * 格式化相对时间

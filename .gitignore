@@ -8,6 +8,10 @@ build/
 target/
 *.class
 
+# Sourcemap 文件：生产环境 sourcemap 仅用于 Sentry 上传，不应提交到代码仓库
+# 开发环境如需调试，可在本地生成；CI 中通过 Sentry CLI 上传后即删除
+*.map
+
 # IDE
 .idea/
 .vscode/

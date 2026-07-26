@@ -40,9 +40,11 @@ public class AdminAppRule {
     @Column(name = "updated_by")
     private Long updatedBy;
 
+    /** 记录创建时间（规则入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（管理员修改规则时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

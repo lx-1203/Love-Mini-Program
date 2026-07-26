@@ -422,7 +422,7 @@ $red-badge: var(--c-error, #FF4757);
 
 .feed-state__btn {
   padding: 18rpx 48rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB87A) 100%);
   box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: transform 0.15s ease;
@@ -571,7 +571,7 @@ $red-badge: var(--c-error, #FF4757);
   color: $green-primary;
   background: $green-light;
   padding: 8rpx 18rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   font-weight: 500;
 }
 

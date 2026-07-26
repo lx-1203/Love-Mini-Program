@@ -216,7 +216,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .category-item {
   flex-shrink: 0;
   padding: 16rpx 32rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: $white;
   border: 2rpx solid transparent;
   box-shadow: $card-soft-shadow;
@@ -294,7 +294,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   top: 16rpx;
   left: 16rpx;
   padding: 8rpx 16rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $pink-primary, var(--c-romance-400, #F472B6));
   box-shadow: 0 4rpx 12rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
 }

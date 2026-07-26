@@ -32,6 +32,7 @@ public class Visitor {
     @Column(name = "is_read", nullable = false)
     private Boolean isRead = false;
 
+    /** 记录创建时间（访客访问发生时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

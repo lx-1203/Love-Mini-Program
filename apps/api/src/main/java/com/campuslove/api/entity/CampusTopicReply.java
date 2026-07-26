@@ -36,6 +36,7 @@ public class CampusTopicReply {
     @Column(name = "is_anonymous", nullable = false)
     private Boolean isAnonymous = false;
 
+    /** 记录创建时间（回复发布时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

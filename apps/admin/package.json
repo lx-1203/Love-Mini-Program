@@ -3,6 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "description": "Admin console for moderation, feedback triage, and activity proposal review.",
+  "sideEffects": [
+    "*.css",
+    "*.scss",
+    "*.sass",
+    "*.less",
+    "*.vue",
+    "*.vue?vue&type=style*",
+    "*.vue?vue&type=template*",
+    "@campus-love/admin/src/main.ts"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",

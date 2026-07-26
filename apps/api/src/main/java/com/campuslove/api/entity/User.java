@@ -132,9 +132,11 @@ public class User {
     @Column(name = "auto_renew_enabled", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean autoRenewEnabled = false;
 
+    /** 记录创建时间（用户注册时间，用于注册时长统计） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（用户资料变更时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

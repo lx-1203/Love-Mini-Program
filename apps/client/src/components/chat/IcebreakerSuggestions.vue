@@ -144,7 +144,7 @@ const { t } = useI18n();
   align-items: center;
   gap: 4rpx;
   padding: 8rpx 16rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
   transition: background 0.2s;
 }
@@ -201,7 +201,7 @@ const { t } = useI18n();
   align-self: flex-start;
   display: inline-flex;
   padding: 4rpx 12rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08))), var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))));
 }
 

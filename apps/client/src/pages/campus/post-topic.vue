@@ -287,7 +287,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .post-header__back {
   padding: 12rpx 20rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   transition: all 0.15s ease;
 }
@@ -313,7 +313,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .post-header__submit {
   padding: 14rpx 32rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95)));
   min-width: 80rpx;
   display: flex;

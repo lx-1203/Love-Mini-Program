@@ -616,10 +616,13 @@ onMounted(() => {
 }
 
 /* ==================== 卡片 ==================== */
+/* P3 修复：复用 _components.scss 的 .base-card 设计令牌，避免重复定义
+   共享样式位置：src/styles/_components.scss
+   此处保留 .card 类名以兼容模板引用，但使用统一的设计令牌 */
 .card {
-  background: var(--c-bg-container, #ffffff);
-  border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04));
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
   overflow: hidden;
 }
 

@@ -4,6 +4,17 @@
   "version": "0.1.0",
   "description": "Uni-app client workspace for the campus love app.",
   "type": "module",
+  "sideEffects": [
+    "*.css",
+    "*.scss",
+    "*.sass",
+    "*.less",
+    "*.vue",
+    "*.vue?vue&type=style*",
+    "*.vue?vue&type=template*",
+    "@campus-love/client/src/main.ts",
+    "@campus-love/client/src/App.vue"
+  ],
   "scripts": {
     "dev:h5": "uni --platform h5",
     "dev:h5:real": "uni --platform h5 --mode real",

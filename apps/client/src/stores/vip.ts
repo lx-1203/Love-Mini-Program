@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { appEnv } from "../services/env";
 import { request } from "../services/http";
+import { useMock } from "./helpers/use-mock";
 
 /**
  * VIP 会员 Store
@@ -77,13 +77,6 @@ export interface FetchBillsParams {
   page?: number;
   size?: number;
   forceRefresh?: boolean;
-}
-
-/**
- * 判断是否使用 mock 模式
- */
-function useMock(): boolean {
-  return appEnv.apiMode === "mock";
 }
 
 export const useVipStore = defineStore("vip", () => {

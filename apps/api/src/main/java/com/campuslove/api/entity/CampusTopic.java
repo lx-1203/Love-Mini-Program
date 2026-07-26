@@ -56,9 +56,11 @@ public class CampusTopic {
     @Column(name = "is_anonymous", nullable = false)
     private Boolean isAnonymous = false;
 
+    /** 记录创建时间（话题发布时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（话题编辑时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

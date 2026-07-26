@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 
 /* ========== 后端视图类型 ========== */
 
@@ -217,10 +217,6 @@ const mockAnswers: DailyAnswer[] = [
 
 /** 每页回答数量 */
 const ANSWER_PAGE_SIZE = 20;
-
-function useMock() {
-  return isMockMode();
-}
 
 /**
  * 格式化相对时间

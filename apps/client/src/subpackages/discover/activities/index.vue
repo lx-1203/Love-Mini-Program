@@ -551,14 +551,14 @@ function formatDateLabel(dateStr: string): string {
 .view-toggle {
   display: flex;
   background: var(--c-bg-surface);
-  border-radius: 999px;
+  border-radius: 9999rpx;
   padding: 4rpx;
   gap: 4rpx;
 }
 
 .view-toggle__btn {
   padding: 10rpx 28rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   transition: all 200ms ease;
 }
 
@@ -899,7 +899,7 @@ function formatDateLabel(dateStr: string): string {
   color: var(--c-brand-700);
   background: var(--c-bg-brand);
   padding: 6rpx 16rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   font-weight: 500;
 }
 </style>

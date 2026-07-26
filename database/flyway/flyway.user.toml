@@ -1,0 +1,4 @@
+[environments.default]
+url = "jdbc:mysql://127.0.0.1:3306/qihang_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai"
+user = "root"
+password = "Hyp5022940"

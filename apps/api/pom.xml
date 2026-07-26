@@ -150,6 +150,24 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
           <mainClass>com.campuslove.api.CampusLoveApplication</mainClass>
+          <!--
+            分层打包（Spring Boot 2.3+ 特性）：
+            将 jar 内容按变更频率拆分为多个 layer，配合 Docker multi-stage 构建
+            可显著提升 Docker 镜像构建缓存命中率，缩短 CI/CD 构建时间。
+
+            分层顺序（从下到上，变更频率从低到高）：
+            - dependencies: 第三方依赖（变更频率最低）
+            - spring-boot-loader: Spring Boot 启动器
+            - snapshot-dependencies: SNAPSHOT 依赖
+            - application: 应用自身代码（变更频率最高）
+
+            使用方式：
+              1. mvn package 后执行 java -Djarmode=layertools -jar target/*.jar list 查看分层
+              2. Dockerfile 中按层 COPY，依赖未变更时复用缓存
+          -->
+          <layers>
+            <enabled>true</enabled>
+          </layers>
         </configuration>
       </plugin>
       <!-- JaCoCo 覆盖率插件：

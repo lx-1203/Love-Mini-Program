@@ -264,7 +264,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .detail-header__back {
   padding: 12rpx 20rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   transition: all 0.15s ease;
 }
@@ -306,7 +306,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .category-tag {
   display: inline-block;
   padding: 10rpx 24rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $green-light, $pink-light);
   font-size: 24rpx;
   font-weight: 600;
@@ -431,7 +431,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   color: $green-primary;
   background: $green-light;
   padding: 6rpx 18rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   font-weight: 600;
 }
 
@@ -567,7 +567,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .empty-state__back {
   padding: 18rpx 48rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   box-shadow: 0 8rpx 24rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35)));
   transition: all 0.15s ease;
@@ -602,7 +602,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .reply-input {
   padding: 20rpx 28rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: $bg-page;
   font-size: 28rpx;
   color: $text-primary;
@@ -617,7 +617,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .anonymous-toggle {
   padding: 14rpx 22rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: $bg-page;
   border: 2rpx solid $border-light;
   flex-shrink: 0;
@@ -649,7 +649,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .reply-btn {
   padding: 18rpx 32rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   flex-shrink: 0;
   box-shadow: 0 6rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));

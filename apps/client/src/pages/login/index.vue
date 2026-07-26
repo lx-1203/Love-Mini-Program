@@ -550,6 +550,9 @@ function openAccountBinding() {
 }
 
 /* 主按钮：青绿实心 + 微信图标 */
+/* P3 修复：复用 _components.scss 的 .base-btn--primary 设计令牌，避免重复定义
+   共享样式位置：src/styles/_components.scss
+   此处保留 .btn-primary 类名以兼容模板引用 */
 .btn-primary {
   width: 100%;
   height: var(--btn-height-md);

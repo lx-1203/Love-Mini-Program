@@ -7,7 +7,7 @@
  * 拆分后工具函数独立成文件，被 higher-order / index 复用。
  */
 
-import { isMockMode } from "../../services/env";
+import { useMock as useMockShared } from "../helpers/use-mock";
 import {
   MAX_SEND_RETRIES,
   MESSAGE_STATUS_STORAGE_KEY,
@@ -15,10 +15,14 @@ import {
 } from "./constants";
 import type { MessageDeliveryStatusMap } from "./types";
 
-/** 判断当前是否为 Mock 模式 */
-export function useMock() {
-  return isMockMode();
-}
+/**
+ * 判断当前是否为 Mock 模式。
+ *
+ * 注意：本模块对外导出的 `useMock` 来自 `stores/helpers/use-mock`，
+ * 是 store 层共享的单一真相源。此处保留 re-export 仅为兼容既有
+ * `import { useMock } from "./utils"` 的引用方式（如 higher-order.ts）。
+ */
+export const useMock: () => boolean = useMockShared;
 
 /**
  * 从本地存储加载消息投递状态映射表。

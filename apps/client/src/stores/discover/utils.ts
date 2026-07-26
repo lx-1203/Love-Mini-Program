@@ -9,7 +9,7 @@
  * - 本地存储：loadDailyRecord / saveDailyRecord / DailyRecord
  */
 
-import { appEnv } from "../../services/env";
+import { useMock } from "../helpers/use-mock";
 import type { RecommendedPerson } from "../../services/generated/api-types-supplement";
 import { STORAGE_KEY } from "./constants";
 import type { DiscoverCard, ViewedCardRecord } from "./types";
@@ -59,11 +59,14 @@ export function mapToDiscoverCard(
 
 /**
  * 判断当前是否为 mock 模式
+ *
+ * 注意：本模块对外导出的 `useMock` 来自 `stores/helpers/use-mock`，
+ * 是 store 层共享的单一真相源。此处保留 re-export 仅为兼容既有
+ * `import { useMock } from "./utils"` 的引用方式，避免破坏现有调用点。
+ *
  * @returns 是否为 mock 模式
  */
-export function useMock(): boolean {
-  return appEnv.apiMode === "mock";
-}
+export { useMock };
 
 /**
  * 带重试机制的异步执行器

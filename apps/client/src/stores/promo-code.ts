@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { appEnv } from "../services/env";
 import { request } from "../services/http";
+import { useMock } from "./helpers/use-mock";
 
 /**
  * VIP 优惠码 Store
@@ -67,12 +67,10 @@ export interface RedeemPayload {
 }
 
 /**
- * 判断是否使用 mock 模式
+ * VIP 优惠码 Store
+ *
+ * 使用组合式 API（setup store）定义，封装校验/兑换两个异步动作。
  */
-function useMock(): boolean {
-  return appEnv.apiMode === "mock";
-}
-
 export const usePromoCodeStore = defineStore("promo-code", () => {
   /** 最近一次校验结果 */
   const lastValidation = ref<PromoCodeValidateView | null>(null);

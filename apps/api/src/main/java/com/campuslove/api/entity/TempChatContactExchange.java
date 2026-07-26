@@ -37,9 +37,11 @@ public class TempChatContactExchange {
     @Column(name = "status", nullable = false, length = 32)
     private String status = "idle";
 
+    /** 记录创建时间（交换请求发起时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（交换状态变更时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

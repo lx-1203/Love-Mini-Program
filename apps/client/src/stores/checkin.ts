@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
-import { appEnv } from "../services/env";
 import { clientApi } from "../services/api";
 import type { MakeUpCheckInResultView } from "../services/generated/api-types-supplement";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 // 统一常量：异步超时、签到成功动画收起延迟、补签上限、签到权益各项默认值
 import {
   ASYNC_TIMEOUT_MS,
@@ -133,10 +133,6 @@ let mockCheckInStatus: CheckInStatus = {
  * 现保存定时器句柄，新签到前清理旧定时器，dispose 时统一清理。
  */
 let successAnimationTimer: ReturnType<typeof setTimeout> | null = null;
-
-function useMock() {
-  return appEnv.apiMode === "mock";
-}
 
 /**
  * 带超时的 Promise 包装器

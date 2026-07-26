@@ -233,6 +233,142 @@ export function toBackendCategory(categoryId: string): string {
 }
 
 /**
+ * 在 Mock 模式下切换帖子点赞状态（toggle 行为）。
+ *
+ * 抽取自 village store 的 likePost action，用于缩短原函数。
+ * 同步更新列表中的帖子与当前详情页帖子（若命中）。
+ *
+ * @param posts - 帖子列表（in-place 修改）
+ * @param currentPost - 当前详情页帖子（可选，命中时同步修改）
+ * @param postId - 目标帖子 ID
+ * @throws 帖子不存在时抛出 Error
+ */
+export function toggleMockPostLike(
+  posts: PostItem[],
+  currentPost: PostItem | null,
+  postId: string
+): void {
+  const post = posts.find((p) => p.id === postId);
+  if (!post) {
+    throw new Error("帖子不存在");
+  }
+  post.isLiked = !post.isLiked;
+  post.likes += post.isLiked ? 1 : -1;
+
+  if (currentPost?.id === postId) {
+    currentPost.isLiked = !currentPost.isLiked;
+    currentPost.likes += currentPost.isLiked ? 1 : -1;
+  }
+}
+
+/**
+ * 保存帖子点赞的回滚快照，便于失败时恢复。
+ *
+ * 抽取自 village store 的 likePost action，用于缩短原函数。
+ * 不修改任何状态，仅读取当前值并打包返回。
+ */
+export interface PostLikeSnapshot {
+  prevPostIsLiked: boolean | undefined;
+  prevPostLikes: number | undefined;
+  prevCurrentIsLiked: boolean | undefined;
+  prevCurrentLikes: number | undefined;
+}
+
+/**
+ * 捕获点赞前的本地状态快照，用于失败时回滚。
+ *
+ * @param post - 帖子列表中命中的帖子（可选）
+ * @param currentPost - 当前详情页帖子（可选，命中时一并快照）
+ * @returns 状态快照
+ */
+export function captureLikeSnapshot(
+  post: PostItem | undefined,
+  currentPost: PostItem | null
+): PostLikeSnapshot {
+  return {
+    prevPostIsLiked: post?.isLiked,
+    prevPostLikes: post?.likes,
+    prevCurrentIsLiked: currentPost?.isLiked,
+    prevCurrentLikes: currentPost?.likes,
+  };
+}
+
+/**
+ * 乐观应用点赞状态（toggle 行为），返回新的 isLiked 状态。
+ *
+ * @param post - 帖子列表中命中的帖子（可选）
+ * @param currentPost - 当前详情页帖子（可选，命中时一并更新）
+ * @returns 应用后的新 isLiked 状态（用于后续 API 校正）
+ */
+export function applyOptimisticLike(
+  post: PostItem | undefined,
+  currentPost: PostItem | null
+): boolean {
+  let newIsLiked = false;
+  if (post) {
+    newIsLiked = !post.isLiked;
+    post.isLiked = newIsLiked;
+    post.likes = Math.max(0, post.likes + (newIsLiked ? 1 : -1));
+  }
+  if (currentPost) {
+    newIsLiked = !currentPost.isLiked;
+    currentPost.isLiked = newIsLiked;
+    currentPost.likes = Math.max(
+      0,
+      currentPost.likes + (newIsLiked ? 1 : -1)
+    );
+  }
+  return newIsLiked;
+}
+
+/**
+ * 用后端返回的权威状态校正本地状态。
+ *
+ * @param post - 帖子列表中命中的帖子（可选）
+ * @param currentPost - 当前详情页帖子（可选）
+ * @param liked - 后端返回的点赞状态
+ * @param likeCount - 后端返回的点赞数
+ */
+export function applyServerLikeResult(
+  post: PostItem | undefined,
+  currentPost: PostItem | null,
+  liked: boolean,
+  likeCount: number
+): void {
+  if (post) {
+    post.isLiked = liked;
+    post.likes = likeCount;
+  }
+  if (currentPost) {
+    currentPost.isLiked = liked;
+    currentPost.likes = likeCount;
+  }
+}
+
+/**
+ * 用快照回滚本地状态。
+ *
+ * @param post - 帖子列表中命中的帖子（可选）
+ * @param currentPost - 当前详情页帖子（可选）
+ * @param snapshot - 之前捕获的快照
+ */
+export function rollbackLike(
+  post: PostItem | undefined,
+  currentPost: PostItem | null,
+  snapshot: PostLikeSnapshot
+): void {
+  if (post) {
+    post.isLiked = snapshot.prevPostIsLiked ?? false;
+    post.likes = snapshot.prevPostLikes ?? 0;
+  }
+  if (currentPost) {
+    currentPost.isLiked = snapshot.prevCurrentIsLiked ?? false;
+    currentPost.likes = snapshot.prevCurrentLikes ?? 0;
+  }
+}
+
+
+/**
  * 格式化相对时间
  */
 export function formatRelativeTime(dateStr: string): string {

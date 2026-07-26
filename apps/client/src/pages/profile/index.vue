@@ -23,6 +23,8 @@ import MatchCountChip from "../../components/common/MatchCountChip.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
+// 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
+import type { UniUploadFileLike } from "../../services/api";
 
 /**
  * 当前页面对象（最小契约）。
@@ -42,27 +44,20 @@ interface PageWithOptions {
  * - H5：uni.chooseImage 返回 tempFiles，每项是标准 File，可直接传给 uploadFile
  * - mp-weixin：tempFiles 仅含 path/size，无 name 字段，包装为 File-like
  *
+ * 返回 UniUploadFileLike 而非 File，避免 `as unknown as File` 交叉类型断言：
+ * mp-weixin 端无 File 类型，强行断言会引入运行时风险；
+ * UniUploadFileLike 仅约束上传所需的最小契约（name + 可选 path），双端兼容。
+ *
  * @param filePath - 文件路径（tempFilePath）
- * @param size - 文件大小（字节）
- * @returns 类 File 对象（含 name/path/size 字段，满足 clientApi 上传签名）
+ * @returns 类 File 对象（含 name/path 字段，满足 clientApi 上传签名）
  */
-function buildFileLike(filePath: string, size: number): File {
-  // H5 端可直接构造 File 对象
-  if (typeof File !== "undefined") {
-    try {
-      // 从路径中提取文件名
-      const name = filePath.split("/").pop() || "upload";
-      // H5 端 filePath 实际是 blob: URL，无法直接 fetch 转换为 File；
-      // 这里构造一个类 File 对象，由 uploadFileViaUni 通过 path 字段处理
-      const fileLike = { name, size, type: "application/octet-stream", path: filePath } as unknown as File;
-      return fileLike;
-    } catch (_e) {
-      // 忽略，走兜底
-    }
-  }
-  // mp-weixin：构造类 File 对象，挂 path 字段
+function buildFileLike(filePath: string): UniUploadFileLike {
+  // 从路径中提取文件名（H5 与 mp-weixin 均适用）
   const name = filePath.split("/").pop() || "upload";
-  return { name, size, type: "application/octet-stream", path: filePath } as unknown as File;
+  // 构造 UniUploadFileLike 对象，无需断言；
+  // H5 端 filePath 实际是 blob: URL，由 uploadFileViaUni 通过 path 字段处理；
+  // mp-weixin 端 filePath 是 tempFilePath，同样通过 path 字段处理。
+  return { name, path: filePath };
 }
 
 /**
@@ -471,16 +466,11 @@ function handleEditBackground() {
     sourceType: ["album", "camera"],
     success: (res) => {
       const tempPath = res.tempFilePaths?.[0] ?? "";
-      // 修复（严格模式 TS7053）：res.tempFiles 类型为联合类型，直接索引 [0] 会报隐式 any；
-      // 通过 Array.isArray 类型守卫收敛后再索引。
-      const tempFilesRaw: unknown = res.tempFiles;
-      const tempFile = Array.isArray(tempFilesRaw) ? tempFilesRaw[0] : undefined;
-      const size = (tempFile as { size?: number } | undefined)?.size ?? 0;
       if (!tempPath) {
         uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
         return;
       }
-      const file = buildFileLike(tempPath, size);
+      const file = buildFileLike(tempPath);
       void uploadBackground(file);
     },
     fail: (err) => {
@@ -494,8 +484,10 @@ function handleEditBackground() {
 
 /**
  * 实际执行背景图上传（与 chooseImage 解耦，便于测试）
+ *
+ * @param file - 类 File 对象（UniUploadFileLike，兼容 H5 / mp-weixin 双端）
  */
-async function uploadBackground(file: File) {
+async function uploadBackground(file: UniUploadFileLike) {
   isUploading.value = true;
   uploadKind.value = "background";
   uploadProgress.value = t("profile.uploading");
@@ -530,12 +522,11 @@ function handleUploadVideo() {
     camera: "back",
     success: (res) => {
       const tempPath = res.tempFilePath ?? "";
-      const size = res.size ?? 0;
       if (!tempPath) {
         uni.showToast({ title: t("profile.noVideoSelected"), icon: "none" });
         return;
       }
-      const file = buildFileLike(tempPath, size);
+      const file = buildFileLike(tempPath);
       void uploadVideo(file);
     },
     fail: (err) => {
@@ -549,7 +540,7 @@ function handleUploadVideo() {
 /**
  * 实际执行个人视频上传
  */
-async function uploadVideo(file: File) {
+async function uploadVideo(file: UniUploadFileLike) {
   isUploading.value = true;
   uploadKind.value = "video";
   uploadProgress.value = t("profile.uploading");
@@ -624,16 +615,11 @@ function handleUploadPhoto(index: number) {
     sourceType: ["album", "camera"],
     success: (res) => {
       const tempPath = res.tempFilePaths?.[0] ?? "";
-      // 修复（严格模式 TS7053）：res.tempFiles 类型为联合类型，直接索引 [0] 会报隐式 any；
-      // 通过 Array.isArray 类型守卫收敛后再索引。
-      const tempFilesRaw: unknown = res.tempFiles;
-      const tempFile = Array.isArray(tempFilesRaw) ? tempFilesRaw[0] : undefined;
-      const size = (tempFile as { size?: number } | undefined)?.size ?? 0;
       if (!tempPath) {
         uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
         return;
       }
-      const file = buildFileLike(tempPath, size);
+      const file = buildFileLike(tempPath);
       void uploadPhoto(file, index);
     },
     fail: (err) => {
@@ -646,8 +632,11 @@ function handleUploadPhoto(index: number) {
 
 /**
  * 实际执行照片墙上传
+ *
+ * @param file - 类 File 对象（UniUploadFileLike，兼容 H5 / mp-weixin 双端）
+ * @param index - 照片墙目标索引（0-5）
  */
-async function uploadPhoto(file: File, index: number) {
+async function uploadPhoto(file: UniUploadFileLike, index: number) {
   isUploading.value = true;
   uploadKind.value = "photo";
   uploadProgress.value = t("profile.uploading");
@@ -1352,6 +1341,9 @@ onMounted(() => {
   box-shadow: var(--s-sm);
 }
 
+/* P3 修复：复用 _components.scss 的 .base-avatar 设计令牌，避免与 Avatar.vue 重复定义
+   共享样式位置：src/styles/_components.scss
+   此处保留 .avatar 类名以兼容模板引用，并扩展 profile 页面特有的双层光环效果 */
 .avatar {
   width: var(--profile-avatar-size);
   height: var(--profile-avatar-size);

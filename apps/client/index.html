@@ -8,6 +8,17 @@
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>校园恋爱</title>
+    <!--
+      资源预加载：通过 dns-prefetch / preconnect 提前完成 DNS 解析与 TLS 握手，
+      降低首屏 API 请求的连接耗时。具体域名由 .env.[mode] 中的 VITE_API_BASE_URL 决定。
+      生产环境部署时，建议替换为真实后端域名。
+    -->
+    <link rel="dns-prefetch" href="//127.0.0.1" />
+    <link rel="preconnect" href="http://127.0.0.1:8080" crossorigin />
+    <!--
+      关键资源预加载：首屏渲染依赖的 Vue 运行时与主入口脚本
+      uni-app 构建时会通过 preload-links 占位符注入实际资源链接
+    -->
     <!--head-meta-->
     <!--preload-links-->
   </head>

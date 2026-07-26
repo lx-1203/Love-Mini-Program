@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { appEnv } from "../services/env";
 import { request } from "../services/http";
+import { useMock } from "./helpers/use-mock";
 
 /**
  * VIP 红包 Store
@@ -67,13 +67,6 @@ export interface CreateRedPacketPayload {
   chatId?: string;
   /** 祝福语（可选，最长 200 字符） */
   blessing?: string;
-}
-
-/**
- * 判断是否使用 mock 模式
- */
-function useMock(): boolean {
-  return appEnv.apiMode === "mock";
 }
 
 /**

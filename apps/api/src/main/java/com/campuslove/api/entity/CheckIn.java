@@ -72,6 +72,7 @@ public class CheckIn {
     @Column(name = "source", nullable = false, length = 16)
     private String source = SOURCE_NORMAL;
 
+    /** 记录创建时间（签到发生时间，用于签到历史展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

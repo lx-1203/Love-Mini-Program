@@ -127,6 +127,7 @@ public class VipBill {
     @Column(name = "remark", length = 200)
     private String remark;
 
+    /** 记录创建时间（账单生成时间，用于财务对账） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

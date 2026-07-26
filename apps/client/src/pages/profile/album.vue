@@ -23,6 +23,8 @@ import { useProfileStore } from "../../stores/profile";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic, successHaptic } from "../../utils/haptic";
+// 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
+import type { UniUploadFileLike } from "../../services/api";
 
 /** 照片墙最大数量（与后端契约一致，6 张） */
 const PHOTO_GALLERY_MAX = 6;
@@ -72,15 +74,19 @@ const photoCount = computed(() => photoGallery.value.length);
  * - H5：uni.chooseImage 返回 tempFiles，每项是标准 File
  * - mp-weixin：tempFiles 仅含 path/size，无 name 字段，包装为 File-like
  *
+ * 返回 UniUploadFileLike 而非 File，避免 `as unknown as File` 交叉类型断言：
+ * mp-weixin 端无 File 类型，强行断言会引入运行时风险；
+ * UniUploadFileLike 仅约束上传所需的最小契约（name + 可选 path），双端兼容。
+ *
  * @param filePath - 文件路径（tempFilePath）
- * @param size - 文件大小（字节）
- * @returns 类 File 对象（含 name/path/size 字段，满足 clientApi 上传签名）
+ * @returns 类 File 对象（含 name/path 字段，满足 clientApi 上传签名）
  */
-function buildFileLike(filePath: string, size: number): File {
+function buildFileLike(filePath: string): UniUploadFileLike {
   const name = filePath.split("/").pop() || "upload";
-  // H5 端 filePath 实际是 blob: URL，无法直接转换为 File；
-  // 这里构造一个类 File 对象，由 uploadFileViaUni 通过 path 字段处理
-  return { name, size, type: "application/octet-stream", path: filePath } as unknown as File;
+  // 构造 UniUploadFileLike 对象，无需断言；
+  // H5 端 filePath 是 blob: URL，mp-weixin 端是 tempFilePath，
+  // 均由 uploadFileViaUni 通过 path 字段处理。
+  return { name, path: filePath };
 }
 
 /**
@@ -141,7 +147,7 @@ function handleAddPhoto(index?: number): void {
         uni.showToast({ title: t("profile.photoSizeLimit"), icon: "none" });
         return;
       }
-      const file = buildFileLike(tempPath, size);
+      const file = buildFileLike(tempPath);
       void uploadPhoto(file, targetIndex);
     },
     fail: (err) => {
@@ -160,7 +166,7 @@ function handleAddPhoto(index?: number): void {
  * @param file - 类 File 对象
  * @param index - 目标索引
  */
-async function uploadPhoto(file: File, index: number): Promise<void> {
+async function uploadPhoto(file: UniUploadFileLike, index: number): Promise<void> {
   isUploading.value = true;
   uploadingIndex.value = index;
   errorMessage.value = null;

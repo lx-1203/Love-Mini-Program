@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>校园恋爱小程序 - 管理后台</title>
+    <!--
+      资源预加载：通过 dns-prefetch / preconnect 提前完成 DNS 解析与 TLS 握手，
+      降低首屏 API 请求的连接耗时。具体域名由 .env.[mode] 中的 VITE_API_BASE_URL 决定。
+      生产环境部署时，建议替换为真实后端域名。
+    -->
+    <link rel="dns-prefetch" href="//127.0.0.1" />
+    <link rel="preconnect" href="http://127.0.0.1:8080" crossorigin />
   </head>
   <body>
     <div id="app"></div>

@@ -56,6 +56,7 @@ public class TempChatMessage {
     @Column(name = "quote_snapshot", columnDefinition = "TEXT")
     private String quoteSnapshot;
 
+    /** 记录创建时间（消息发送时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

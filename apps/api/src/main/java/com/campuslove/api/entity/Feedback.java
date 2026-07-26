@@ -91,9 +91,11 @@ public class Feedback {
     @Column(name = "converted_activity_id")
     private Long convertedActivityId;
 
+    /** 记录创建时间（反馈提交时间，用于工单排序） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（反馈状态变更时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

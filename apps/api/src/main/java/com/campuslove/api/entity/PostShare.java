@@ -36,6 +36,7 @@ public class PostShare {
     @Column(name = "comment", length = 500)
     private String comment;
 
+    /** 记录创建时间（转发发生时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -37,9 +37,11 @@ public class MatchConfigEntity {
     @Column(name = "updated_by")
     private Long updatedBy;
 
+    /** 记录创建时间（匹配配置入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（管理员修改配置时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

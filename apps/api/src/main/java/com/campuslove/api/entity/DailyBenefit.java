@@ -47,6 +47,7 @@ public class DailyBenefit {
     @Column(name = "new_users_unlocked", nullable = false)
     private Boolean newUsersUnlocked = true;
 
+    /** 记录创建时间（福利配置入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

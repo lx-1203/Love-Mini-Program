@@ -65,9 +65,11 @@ public class Activity {
     @Column(name = "activity_date")
     private LocalDate activityDate;
 
+    /** 记录创建时间（活动发布时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（活动信息编辑时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

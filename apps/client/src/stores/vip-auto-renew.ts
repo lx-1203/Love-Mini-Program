@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { appEnv } from "../services/env";
 import { request } from "../services/http";
+import { useMock } from "./helpers/use-mock";
 
 /**
  * VIP 自动续费 Store
@@ -36,13 +36,6 @@ export interface AutoRenewStatusView {
 export interface EnableAutoRenewPayload {
   /** 套餐 ID（必填，后端用于扩展绑定支付渠道） */
   planId: string;
-}
-
-/**
- * 判断是否使用 mock 模式
- */
-function useMock(): boolean {
-  return appEnv.apiMode === "mock";
 }
 
 export const useAutoRenewStore = defineStore("vip-auto-renew", () => {

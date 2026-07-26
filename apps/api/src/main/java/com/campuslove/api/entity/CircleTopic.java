@@ -52,6 +52,7 @@ public class CircleTopic {
     @Column(name = "is_pinned", nullable = false)
     private Boolean isPinned = false;
 
+    /** 记录创建时间（话题发布时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

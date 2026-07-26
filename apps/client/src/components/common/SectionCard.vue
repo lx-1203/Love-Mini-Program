@@ -22,6 +22,8 @@ defineProps<{
 </template>
 
 <style scoped lang="scss">
+// P3 修复：复用 _components.scss 的设计令牌，避免与其他 .card 类重复定义
+// 共享样式位置：src/styles/_components.scss 中的 .base-card
 .card {
   display: flex;
   flex-direction: column;

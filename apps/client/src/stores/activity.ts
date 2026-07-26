@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { clientApi } from "../services/api";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 import type { components } from "../services/generated/api-types";
 // 统一图片资源路径常量，避免在 store 中硬编码字符串
 import { IMAGE_PATHS } from "@/config/images";
@@ -94,8 +94,6 @@ const mockActivities: ActivityItem[] = [
 
 /** 单页大小 */
 const DEFAULT_PAGE_SIZE = 10;
-
-const useMock = isMockMode;
 
 /**
  * 线下活动 Store

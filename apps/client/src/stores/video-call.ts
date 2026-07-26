@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { appEnv } from "../services/env";
 import { request } from "../services/http";
+import { useMock } from "./helpers/use-mock";
 
 /**
  * 视频通话 Store
@@ -100,13 +100,6 @@ export interface EndCallPayload {
   endReason: VideoCallEndReason;
   /** 实际通话时长（秒，仅在 ONGOING -> ENDED 时填充） */
   durationSec?: number;
-}
-
-/**
- * 判断是否使用 mock 模式
- */
-function useMock(): boolean {
-  return appEnv.apiMode === "mock";
 }
 
 /**

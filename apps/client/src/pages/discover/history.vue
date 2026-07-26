@@ -390,7 +390,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .status-badge {
   padding: 8rpx 18rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
 }
 
 .status-liked {
@@ -449,7 +449,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   width: 100%;
   height: 80rpx;
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
-  border-radius: 999px;
+  border-radius: 9999rpx;
   border: none;
   padding: 0;
   margin: 0;

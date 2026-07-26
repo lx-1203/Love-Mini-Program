@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 
 /**
  * 心动信号状态
@@ -303,10 +303,6 @@ const mockHeartSignals: HeartSignal[] = [
     expiresAt: "2026-05-18T20:10:00Z",
   },
 ];
-
-function useMock() {
-  return isMockMode();
-}
 
 /* ========== 模块级 AbortController（修复 P1 BUG：异步竞态条件） ==========
  *

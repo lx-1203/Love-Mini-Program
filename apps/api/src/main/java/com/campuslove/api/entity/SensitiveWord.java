@@ -28,6 +28,7 @@ public class SensitiveWord {
     @Column(name = "category", length = 32)
     private String category;
 
+    /** 记录创建时间（敏感词入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

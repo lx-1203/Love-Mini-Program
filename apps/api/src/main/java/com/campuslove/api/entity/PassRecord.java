@@ -28,6 +28,7 @@ public class PassRecord {
     @Column(name = "passed_user_id", nullable = false)
     private Long passedUserId;
 
+    /** 记录创建时间（pass 操作发生时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

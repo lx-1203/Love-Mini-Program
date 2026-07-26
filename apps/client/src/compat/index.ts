@@ -14,12 +14,18 @@
 // #ifdef MP-WEIXIN
 // 仅在微信小程序平台生效
 
-/** 微信小程序全局对象类型声明（条件编译下 TS 无法自动识别 wx） */
-declare const wx: Record<string, any>;
+/**
+ * 微信小程序全局对象类型声明（条件编译下 TS 无法自动识别 wx）。
+ *
+ * 使用 Record<string, unknown> 替代 Record<string, any>，保留运行时访问能力的同时
+ * 强制调用方在使用具体字段前自行收敛类型，避免隐式 any 污染。
+ */
+declare const wx: Record<string, unknown>;
 export function patchDeprecatedApi(): void {
   if (typeof wx === "undefined") return;
 
-  const wxAny = wx as Record<string, unknown>;
+  // wx 已声明为 Record<string, unknown>，直接复用避免重复断言
+  const wxAny = wx;
 
   // 保存原始引用，用于真正的 fallback
   const origGetSystemInfoSync = wxAny.getSystemInfoSync as (() => Record<string, unknown>) | undefined;

@@ -20,7 +20,7 @@
  */
 import { ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { reportTarget } from "../../services/report-api";
+import { useReportStore } from "../../stores/report";
 import { lightHaptic } from "../../utils/haptic";
 
 const props = defineProps<{
@@ -40,6 +40,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+// 通过 store 间接调用 service，避免组件直接依赖 services 层
+const reportStore = useReportStore();
 
 /** 举报原因列表（与 i18n 一一对应） */
 const reasons = computed(() => [
@@ -123,7 +125,7 @@ async function submit() {
   submitting.value = true;
   try {
     const reasonLabel = reasons.value.find((r) => r.key === selectedReason.value)?.label ?? selectedReason.value;
-    await reportTarget("POST", props.postId, reasonLabel, description.value.trim() || undefined);
+    await reportStore.reportTarget("POST", props.postId, reasonLabel, description.value.trim() || undefined);
     uni.showToast({ title: t("postReport.submitSuccess"), icon: "success" });
     emit("submitted");
     // 关闭弹窗

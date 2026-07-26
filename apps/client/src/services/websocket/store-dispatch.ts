@@ -24,6 +24,12 @@ import type {
   SystemNotification,
 } from "../../stores/messages";
 import type { HeartSignal } from "../../stores/likes";
+import {
+  isMessageItem,
+  isHeartSignal,
+  isMessageHeartSignal,
+  isSystemNotification,
+} from "../../types/guards";
 
 /**
  * 将消息分发到对应的 Pinia Store
@@ -75,12 +81,20 @@ export function dispatchToStore(destination: string, data: unknown): void {
  * 调用 useMessagesStore 的 onNewMessage 方法更新会话列表和消息。
  * 如果 Store 中没有 onNewMessage 方法，则直接更新 currentMessages。
  *
+ * 使用类型守卫 isMessageItem 替代 `as MessageItem` 强制断言，
+ * 确保运行时数据形状符合接口契约，避免脏数据污染 store。
+ *
  * @param data - 解析后的消息数据
  */
 export function handleNewMessage(data: unknown): void {
   try {
+    // 类型守卫：拒绝不符合 MessageItem 接口的数据
+    if (!isMessageItem(data)) {
+      console.warn("[WebSocket] 收到非法的私信消息数据，已忽略:", data);
+      return;
+    }
+    const message: MessageItem = data;
     const messagesStore = useMessagesStore();
-    const message = data as MessageItem;
 
     // 尝试调用 Store 的 onNewMessage 方法
     const storeAny = messagesStore as unknown as Record<string, unknown>;
@@ -116,12 +130,20 @@ export function handleNewMessage(data: unknown): void {
  * 调用 useLikesStore 的 onNewHeartSignal 方法更新心动信号列表。
  * 如果 Store 中没有 onNewHeartSignal 方法，则直接追加到 heartSignals。
  *
+ * 使用类型守卫 isHeartSignal / isMessageHeartSignal 替代 `as` 断言，
+ * 确保运行时数据形状符合接口契约。
+ *
  * @param data - 解析后的消息数据
  */
 export function handleNewHeartSignal(data: unknown): void {
   try {
+    // 类型守卫：拒绝不符合 HeartSignal 接口的数据
+    if (!isHeartSignal(data)) {
+      console.warn("[WebSocket] 收到非法的心动信号数据，已忽略:", data);
+      return;
+    }
+    const signal: HeartSignal = data;
     const likesStore = useLikesStore();
-    const signal = data as HeartSignal;
 
     // 尝试调用 Store 的 onNewHeartSignal 方法
     const storeAny = likesStore as unknown as Record<string, unknown>;
@@ -133,15 +155,18 @@ export function handleNewHeartSignal(data: unknown): void {
     }
 
     // 同时更新 messagesStore 中的心动信号（如果存在）
+    // 使用 isMessageHeartSignal 类型守卫收敛，避免脏数据进入 messagesStore.heartSignals
     try {
-      const messagesStore = useMessagesStore();
-      const msgSignal = data as MessageHeartSignal;
-      if (
-        !messagesStore.heartSignals.find(
-          (s) => s.id === msgSignal.id
-        )
-      ) {
-        messagesStore.heartSignals.push(msgSignal);
+      if (isMessageHeartSignal(data)) {
+        const messagesStore = useMessagesStore();
+        const msgSignal: MessageHeartSignal = data;
+        if (
+          !messagesStore.heartSignals.find(
+            (s) => s.id === msgSignal.id
+          )
+        ) {
+          messagesStore.heartSignals.push(msgSignal);
+        }
       }
     } catch (_e) {
       // 静默处理
@@ -159,12 +184,20 @@ export function handleNewHeartSignal(data: unknown): void {
  * 调用 useMessagesStore 的 onNewNotification 方法更新通知列表。
  * 如果 Store 中没有 onNewNotification 方法，则直接追加到 notifications。
  *
+ * 使用类型守卫 isSystemNotification 替代 `as SystemNotification` 断言，
+ * 确保运行时数据形状符合接口契约。
+ *
  * @param data - 解析后的消息数据
  */
 export function handleNewNotification(data: unknown): void {
   try {
+    // 类型守卫：拒绝不符合 SystemNotification 接口的数据
+    if (!isSystemNotification(data)) {
+      console.warn("[WebSocket] 收到非法的通知数据，已忽略:", data);
+      return;
+    }
+    const notification: SystemNotification = data;
     const messagesStore = useMessagesStore();
-    const notification = data as SystemNotification;
 
     // 尝试调用 Store 的 onNewNotification 方法
     const storeAny = messagesStore as unknown as Record<string, unknown>;

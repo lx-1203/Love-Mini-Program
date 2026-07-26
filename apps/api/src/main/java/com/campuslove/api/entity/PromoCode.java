@@ -88,9 +88,11 @@ public class PromoCode {
     @Column(name = "remark", length = 200)
     private String remark;
 
+    /** 记录创建时间（优惠码入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（优惠码配置变更时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

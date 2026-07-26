@@ -10,6 +10,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * 匹配调试控制器（仅 mock profile 启用）。
+ *
+ * <p>提供手动设置下一次匹配队列状态的端点，便于联调与端到端测试中模拟
+ * 不同匹配结果（成功/排队/失败）。</p>
+ */
 @RestController
 @RequestMapping("/api/_debug/matches")
 @Profile("mock")

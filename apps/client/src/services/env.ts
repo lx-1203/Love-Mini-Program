@@ -38,8 +38,9 @@ function readViteEnv(
 ): string | undefined {
   // 主读取路径：直接访问 import.meta.env 的具名属性，
   // Vite 会在构建阶段静态替换为 .env.[mode] 中的字面量。
+  // 使用 unknown 收敛 + 类型守卫替代 `as any`，避免 any 类型污染。
   try {
-    const viteEnv = (import.meta as any).env;
+    const viteEnv = (import.meta as unknown as { env?: Record<string, unknown> }).env;
     if (viteEnv) {
       let val: unknown;
       // 显式 switch 让 Vite 静态替换 import.meta.env.XXX 为字面量
@@ -62,7 +63,7 @@ function readViteEnv(
 
   // 回退路径：通过 process.env 读取（测试环境或 SSR 场景）
   try {
-    const proc = (globalThis as any).process;
+    const proc = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process;
     if (proc && proc.env) {
       const val = proc.env[key];
       if (typeof val === "string" && val.length > 0) return val;
@@ -86,7 +87,9 @@ function resolveIsDev(): boolean {
   // 信号 1：H5 localhost 主机名
   if (isH5) {
     try {
-      const host = (window as any).location?.hostname;
+      // 通过 unknown 收敛替代 `as any`，避免 any 类型污染；
+      // window.location 在 H5 环境下必为 Location 对象，此处仅防御性可访问。
+      const host = (window as unknown as { location?: { hostname?: string } }).location?.hostname;
       if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") {
         return true;
       }
@@ -96,7 +99,7 @@ function resolveIsDev(): boolean {
   }
   // 信号 2：process.env.NODE_ENV
   try {
-    const proc = (globalThis as any).process;
+    const proc = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process;
     if (proc && proc.env && proc.env.NODE_ENV === "development") {
       return true;
     }

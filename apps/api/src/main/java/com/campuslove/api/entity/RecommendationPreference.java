@@ -36,9 +36,11 @@ public class RecommendationPreference {
     @Column(name = "campus_priority", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 1")
     private Boolean campusPriority = true;
 
+    /** 记录创建时间（偏好设置入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（用户调整偏好时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

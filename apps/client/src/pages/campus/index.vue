@@ -261,7 +261,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .cert-badge {
   padding: 6rpx 20rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
 }
 
@@ -328,7 +328,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .cert-guide-card__btn {
   padding: 16rpx 32rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   flex-shrink: 0;
   box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
@@ -431,7 +431,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .campus-state__btn {
   padding: 20rpx 56rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: all 0.15s ease;
@@ -499,7 +499,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   flex-shrink: 0;
   background: $bg-page;
   padding: 4rpx 12rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
 }
 
 .topic-card__preview {
@@ -537,7 +537,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   gap: 8rpx;
   padding: 8rpx 16rpx;
   background: $green-light;
-  border-radius: 999px;
+  border-radius: 9999rpx;
 }
 
 .replies-icon {
@@ -585,7 +585,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   color: $text-tertiary;
   background: $bg-page;
   padding: 8rpx 24rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
 }
 
 /* ========== 底部留白 ========== */

@@ -345,7 +345,7 @@ onShow(() => {
 
 .filter-chip {
   padding: 12rpx 22rpx;
-  border-radius: 999px;
+  border-radius: 9999rpx;
   background: var(--c-bg-container);
   border: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
 }

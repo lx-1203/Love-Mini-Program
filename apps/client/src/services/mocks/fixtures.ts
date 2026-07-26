@@ -9,6 +9,8 @@ import type {
   SubmissionDetailView,
   UpdateBasicProfileRequest,
 } from "../generated/api-types-supplement";
+// 导入 UniUploadFileLike 类型，统一 mock 上传方法签名，与 clientApi 对齐
+import type { UniUploadFileLike } from "../api";
 import { homeRecommendedPeople } from "../../config/home-recommended-people";
 import { createMockApiError } from "../api-error";
 // 统一图片资源路径常量，避免在 mock 数据中硬编码字符串
@@ -1225,7 +1227,7 @@ export const mockFixtures = {
    *
    * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 profileBackgroundUrl 状态。
    */
-  uploadProfileBackground(file: File): { url: string } {
+  uploadProfileBackground(file: UniUploadFileLike): { url: string } {
     const url = `mock://profile/background/${encodeURIComponent(file.name)}`;
     // 修复（严格模式 noUnusedLocals）：原 profileBackgroundUrl = url 赋值已移除（变量已删除）。
     return { url };
@@ -1240,7 +1242,7 @@ export const mockFixtures = {
    * @param file - 上传的文件
    * @param index - 照片墙索引（0-5）
    */
-  uploadProfilePhoto(file: File, index: number): { url: string } {
+  uploadProfilePhoto(file: UniUploadFileLike, index: number): { url: string } {
     if (index < 0 || index > 5) {
       throw createMockApiError(400);
     }
@@ -1279,7 +1281,7 @@ export const mockFixtures = {
    *
    * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 personalVideoUrl 状态。
    */
-  uploadProfileVideo(file: File): { url: string } {
+  uploadProfileVideo(file: UniUploadFileLike): { url: string } {
     const url = `mock://profile/video/${encodeURIComponent(file.name)}`;
     // 修复（严格模式 noUnusedLocals）：原 personalVideoUrl = url 赋值已移除（变量已删除）。
     return { url };
@@ -1290,7 +1292,7 @@ export const mockFixtures = {
    *
    * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 halfBodyPhotoUrl 状态。
    */
-  uploadProfileHalfBody(file: File): { url: string } {
+  uploadProfileHalfBody(file: UniUploadFileLike): { url: string } {
     const url = `mock://profile/half-body/${encodeURIComponent(file.name)}`;
     // 修复（严格模式 noUnusedLocals）：原 halfBodyPhotoUrl = url 赋值已移除（变量已删除）。
     return { url };
@@ -1453,7 +1455,7 @@ export const mockFixtures = {
    * Mock 模式下不实际上传，仅返回 mock URL。
    * 限制：jpg/png/webp，单张 ≤5MB（前端已校验，此处不重复校验）。
    */
-  uploadFeedbackImage(file: File): { url: string } {
+  uploadFeedbackImage(file: UniUploadFileLike): { url: string } {
     const url = `mock://feedback/image/${encodeURIComponent(file.name)}`;
     return { url };
   },

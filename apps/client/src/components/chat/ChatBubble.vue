@@ -123,7 +123,6 @@ function formatTime(isoString: string): string {
         mode="aspectFill"
         role="img"
         :aria-label="t('chat.quotePeer')"
-        <!-- #endif -->
       />
       <!-- 自己头像（右侧） -->
       <image
@@ -131,10 +130,8 @@ function formatTime(isoString: string): string {
         class="bubble-avatar bubble-avatar--self"
         :src="selfAvatar"
         mode="aspectFill"
-        <!-- #ifdef H5 -->
         role="img"
         :aria-label="t('chat.quoteMe')"
-        <!-- #endif -->
       />
 
       <view class="bubble" :class="[`bubble--${sender}`]">
@@ -143,7 +140,6 @@ function formatTime(isoString: string): string {
           v-if="quoteRef && quoteBody"
           class="bubble__quote"
           @tap.stop="handleTapQuote"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('chat.quoteAria')"
         >

@@ -40,6 +40,7 @@ public class InterestCircle {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
 
+    /** 记录创建时间（兴趣圈入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -15,8 +15,8 @@
  */
 
 import { defineStore } from "pinia";
-import { appEnv } from "../../services/env";
 import { useSessionStore } from "../session";
+import { useMock } from "../helpers/use-mock";
 import type { CampusFeedView } from "../../services/generated/api-types-supplement";
 import {
   COMMENT_DEBOUNCE_MS,
@@ -25,6 +25,9 @@ import {
   PAGE_SIZE,
 } from "./constants";
 import {
+  applyOptimisticLike,
+  applyServerLikeResult,
+  captureLikeSnapshot,
   filterAndSortPosts,
   mapCampusFeedPost,
   mapDetailToPostItem,
@@ -33,7 +36,9 @@ import {
   mockCategories,
   mockComments,
   mockPosts,
+  rollbackLike,
   toBackendCategory,
+  toggleMockPostLike,
 } from "./utils";
 import {
   createCommentApi,
@@ -90,13 +95,6 @@ const commentDebounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Ma
  * 使用 Set 跟踪 in-flight 的点赞操作，同一帖子的并发请求直接跳过。
  */
 const likingPostIds: Set<string> = new Set();
-
-/**
- * 判断当前是否处于 Mock 模式。
- */
-function useMock(): boolean {
-  return appEnv.apiMode === "mock";
-}
 
 /**
  * 村口社区 Store
@@ -380,19 +378,12 @@ export const useVillageStore = defineStore("village", {
 
       try {
         if (useMock()) {
-          const post = this.posts.find((p) => p.id === postId);
-          if (!post) {
-            this.errorMessage = "帖子不存在";
-            throw new Error("帖子不存在");
-          }
-
-          // 防止重复点赞：如果已经点赞，再次调用则取消点赞（toggle 行为）
-          post.isLiked = !post.isLiked;
-          post.likes += post.isLiked ? 1 : -1;
-
-          if (this.currentPost?.id === postId) {
-            this.currentPost.isLiked = !this.currentPost.isLiked;
-            this.currentPost.likes += this.currentPost.isLiked ? 1 : -1;
+          // Mock 模式：toggle 行为，无后端调用
+          try {
+            toggleMockPostLike(this.posts, this.currentPost, postId);
+          } catch (error) {
+            this.errorMessage = error instanceof Error ? error.message : "帖子不存在";
+            throw error;
           }
           return;
         }
@@ -404,49 +395,25 @@ export const useVillageStore = defineStore("village", {
         const post = this.posts.find((p) => p.id === postId);
         const currentPostSnapshot =
           this.currentPost?.id === postId ? this.currentPost : null;
-        const prevPostIsLiked = post?.isLiked;
-        const prevPostLikes = post?.likes;
-        const prevCurrentIsLiked = currentPostSnapshot?.isLiked;
-        const prevCurrentLikes = currentPostSnapshot?.likes;
+        const snapshot = captureLikeSnapshot(post, currentPostSnapshot);
 
         // 修复（P1 BUG）：乐观更新，先本地预测状态
-        if (post) {
-          const newIsLiked = !post.isLiked;
-          post.isLiked = newIsLiked;
-          post.likes = Math.max(0, post.likes + (newIsLiked ? 1 : -1));
-        }
-        if (currentPostSnapshot) {
-          const newIsLiked = !currentPostSnapshot.isLiked;
-          currentPostSnapshot.isLiked = newIsLiked;
-          currentPostSnapshot.likes = Math.max(
-            0,
-            currentPostSnapshot.likes + (newIsLiked ? 1 : -1)
-          );
-        }
+        applyOptimisticLike(post, currentPostSnapshot);
 
         try {
           // 调用后端 API: POST /api/posts/{postId}/like
           const result = await likePostApi(postId);
 
           // 修复：根据后端返回的权威状态校正本地状态
-          if (post) {
-            post.isLiked = result.liked;
-            post.likes = result.likeCount;
-          }
-          if (currentPostSnapshot) {
-            currentPostSnapshot.isLiked = result.liked;
-            currentPostSnapshot.likes = result.likeCount;
-          }
+          applyServerLikeResult(
+            post,
+            currentPostSnapshot,
+            result.liked,
+            result.likeCount
+          );
         } catch (error) {
           // 修复（P1 BUG）：失败回滚到原始状态
-          if (post) {
-            post.isLiked = prevPostIsLiked ?? false;
-            post.likes = prevPostLikes ?? 0;
-          }
-          if (currentPostSnapshot) {
-            currentPostSnapshot.isLiked = prevCurrentIsLiked ?? false;
-            currentPostSnapshot.likes = prevCurrentLikes ?? 0;
-          }
+          rollbackLike(post, currentPostSnapshot, snapshot);
           throw error;
         }
       } catch (error) {

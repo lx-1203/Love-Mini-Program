@@ -76,6 +76,7 @@ public class AuditLog {
     @Column(name = "duration_ms")
     private Long durationMs;
 
+    /** 记录创建时间（审计事件发生时间，用于追溯） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

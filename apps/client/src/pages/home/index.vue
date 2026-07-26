@@ -1196,42 +1196,42 @@ onMounted(() => {
 
 .function-icon--pink {
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  box-shadow: 0 6px 16px var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
 }
 
 .function-icon--purple {
   background: linear-gradient(135deg, var(--c-lavender-500, #A78BFA) 0%, var(--c-lavender-500, #8B5CF6) 100%);
-  box-shadow: 0 6px 16px var(--c-lavender-500, var(--c-lavender-500, rgba(139, 92, 246, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--c-lavender-500, var(--c-lavender-500, rgba(139, 92, 246, 0.3)));
 }
 
 .function-icon--orange {
   background: linear-gradient(135deg, var(--c-accent-400, #FB923C) 0%, var(--c-accent-400) 100%);
-  box-shadow: 0 6px 16px var(--c-tag-match-to, var(--c-tag-match-to, rgba(249, 115, 22, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--c-tag-match-to, var(--c-tag-match-to, rgba(249, 115, 22, 0.3)));
 }
 
 .function-icon--red {
   background: linear-gradient(135deg, var(--c-error-dark, #F87171) 0%, var(--c-error) 100%);
-  box-shadow: 0 6px 16px var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
 }
 
 .function-icon--green {
   background: linear-gradient(135deg, var(--c-success, #34D399) 0%, var(--c-success) 100%);
-  box-shadow: 0 6px 16px var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.3)));
 }
 
 .function-icon--cyan {
   background: linear-gradient(135deg, var(--c-info-400, #22D3EE) 0%, var(--c-info-500, #06B6D4) 100%);
-  box-shadow: 0 6px 16px var(--c-info-500, var(--c-info-500, rgba(6, 182, 212, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--c-info-500, var(--c-info-500, rgba(6, 182, 212, 0.3)));
 }
 
 .function-icon--yellow {
   background: linear-gradient(135deg, var(--c-gold, #FBBF24) 0%, var(--c-warning, #F59E0B) 100%);
-  box-shadow: 0 6px 16px var(--c-warning-border-tint, var(--c-warning-border-tint, rgba(245, 158, 11, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--c-warning-border-tint, var(--c-warning-border-tint, rgba(245, 158, 11, 0.3)));
 }
 
 .function-icon--blue {
   background: linear-gradient(135deg, var(--c-info-400, #60A5FA) 0%, var(--c-info-500, #3B82F6) 100%);
-  box-shadow: 0 6px 16px var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.3)));
 }
 
 .function-emoji {

@@ -21,6 +21,27 @@ function useMock() {
 }
 
 /**
+ * uni-app 上传文件所需的类 File 对象（mp-weixin 端无标准 File 类型）。
+ *
+ * 与 Web File 接口的差异：
+ * - 必须包含 `path` 字段（uni.chooseImage 返回的 tempFilePaths 包装后挂载），
+ *   uni.uploadFile 通过 path 读取本地临时文件；
+ * - H5 端 File 没有 path 字段，回退到 name。
+ *
+ * 此处通过单独 interface 定义而非 `File & { path?: string }` 交叉类型断言，
+ * 避免在 H5 标准 File 上强加 path 字段导致类型不一致。
+ *
+ * 导出供 stores/profile.ts、pages/profile/*、subpackages/support/feedback 等调用方
+ * 共享同一类型，消除 `as unknown as File` 交叉类型断言。
+ */
+export interface UniUploadFileLike {
+  /** 文件名（H5 端 File.name 回退使用） */
+  name: string;
+  /** mp-weixin 端临时文件路径（H5 端可缺失） */
+  path?: string;
+}
+
+/**
  * 构建 recommendations 端点的 query string。
  *
  * 多值字段（educationLevel、relationshipStatus）以逗号拼接，
@@ -76,14 +97,14 @@ function buildRecommendationsQuery(filter: RecommendationFilter): string {
  * @returns 解析后的服务端响应体
  */
 function uploadFileViaUni<TResponse>(
-  file: File,
+  file: UniUploadFileLike,
   endpoint: string,
   extraFields?: Record<string, string>
 ): Promise<TResponse> {
-  // 兼容 mp-weixin：uni.chooseImage 返回 tempFilePaths，调用方包装为 File-like
-  // 对象时需挂 path 字段；H5 端 File 没有 path，回退到 name
-  const fileWithExtra = file as File & { path?: string };
-  const filePath = fileWithExtra.path ?? file.name;
+  // 兼容 mp-weixin：uni.chooseImage 返回 tempFilePaths，调用方包装为 UniUploadFileLike
+  // 对象时需挂 path 字段；H5 端 File 没有 path，回退到 name。
+  // 参数类型已收敛为 UniUploadFileLike，无需 `as unknown as UniUploadFileLike` 断言。
+  const filePath = file.path ?? file.name;
 
   return new Promise<TResponse>((resolve, reject) => {
     uni.uploadFile({
@@ -98,8 +119,10 @@ function uploadFileViaUni<TResponse>(
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           try {
-            const data = JSON.parse(res.data) as TResponse;
-            resolve(data);
+            // JSON.parse 返回 unknown，使用 unknown 中转再断言为 TResponse，
+            // 明确两步收敛（parse -> unknown -> TResponse）替代单步 `as TResponse`。
+            const parsed: unknown = JSON.parse(res.data);
+            resolve(parsed as TResponse);
           } catch (e) {
             reject(
               new Error(
@@ -140,13 +163,17 @@ export const clientApi = {
       method: "POST",
       data: { code },
     });
-    // 登录成功后，将 token 保存到本地存储
-    // 后端 UserSession 中可能包含 token 信息，按约定保存
-    if ((result as Record<string, unknown>).token) {
-      setToken((result as Record<string, unknown>).token as string);
+    // 登录成功后，将 token 保存到本地存储。
+    // 后端 UserSession 中可能包含 token / refreshToken 字段（按约定保存），
+    // 但 OpenAPI 生成类型 Schemas["UserSession"] 暂未声明这两个字段。
+    // 此处通过 unknown 中转 + 类型守卫收敛，替代 `as Record<string, unknown>` 反复断言，
+    // 一次性提取 resultRecord 引用，避免重复断言导致的类型噪声。
+    const resultRecord = result as unknown as Record<string, unknown>;
+    if (typeof resultRecord.token === "string" && resultRecord.token.length > 0) {
+      setToken(resultRecord.token);
     }
-    if ((result as Record<string, unknown>).refreshToken) {
-      setRefreshToken((result as Record<string, unknown>).refreshToken as string);
+    if (typeof resultRecord.refreshToken === "string" && resultRecord.refreshToken.length > 0) {
+      setRefreshToken(resultRecord.refreshToken);
     }
     return result;
   },
@@ -554,7 +581,7 @@ export const clientApi = {
    * @param file - 图片文件（jpg/png/webp，≤10MB）
    * @returns 服务端返回的图片 URL
    */
-  async uploadProfileBackground(file: File): Promise<{ url: string }> {
+  async uploadProfileBackground(file: UniUploadFileLike): Promise<{ url: string }> {
     if (useMock()) {
       return mockFixtures.uploadProfileBackground(file);
     }
@@ -573,7 +600,7 @@ export const clientApi = {
    * @returns 服务端返回的图片 URL
    */
   async uploadProfilePhoto(
-    file: File,
+    file: UniUploadFileLike,
     index: number
   ): Promise<{ url: string }> {
     if (useMock()) {
@@ -611,7 +638,7 @@ export const clientApi = {
    * @param file - 视频文件
    * @returns 服务端返回的视频 URL
    */
-  async uploadProfileVideo(file: File): Promise<{ url: string }> {
+  async uploadProfileVideo(file: UniUploadFileLike): Promise<{ url: string }> {
     if (useMock()) {
       return mockFixtures.uploadProfileVideo(file);
     }
@@ -626,7 +653,7 @@ export const clientApi = {
    * @param file - 图片文件
    * @returns 服务端返回的图片 URL
    */
-  async uploadProfileHalfBody(file: File): Promise<{ url: string }> {
+  async uploadProfileHalfBody(file: UniUploadFileLike): Promise<{ url: string }> {
     if (useMock()) {
       return mockFixtures.uploadProfileHalfBody(file);
     }
@@ -719,7 +746,7 @@ export const clientApi = {
    * @param file - 图片文件
    * @returns 服务端返回的图片 URL
    */
-  async uploadFeedbackImage(file: File): Promise<{ url: string }> {
+  async uploadFeedbackImage(file: UniUploadFileLike): Promise<{ url: string }> {
     if (useMock()) {
       return mockFixtures.uploadFeedbackImage(file);
     }

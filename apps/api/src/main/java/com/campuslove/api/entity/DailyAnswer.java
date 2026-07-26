@@ -40,6 +40,7 @@ public class DailyAnswer {
     @Column(name = "is_anonymous", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean isAnonymous = false;
 
+    /** 记录创建时间（答案提交时间，用于排序展示） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

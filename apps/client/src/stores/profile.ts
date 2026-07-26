@@ -1,9 +1,11 @@
 import { defineStore } from "pinia";
 import type { components } from "../services/generated/api-types";
 import type { ProfileStats } from "../services/generated/api-types-supplement";
-import { isMockMode } from "../services/env";
 import { clientApi } from "../services/api";
+// 导入 UniUploadFileLike 类型，统一上传方法签名，消除 File 类型在 mp-weixin 端的不兼容问题
+import type { UniUploadFileLike } from "../services/api";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 
 type Schemas = components["schemas"];
 
@@ -123,13 +125,6 @@ const mockMyPosts: MyPostSummary[] = [
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
   },
 ];
-
-/**
- * 检测当前是否为 Mock 模式
- */
-function useMock(): boolean {
-  return isMockMode();
-}
 
 /**
  * 深拷贝工具函数，避免 Mock 数据被直接修改
@@ -372,7 +367,7 @@ export const useProfileStore = defineStore("profile", {
      * @param file - 图片文件（jpg/png/webp，≤10MB）
      * @returns 服务端返回的图片 URL
      */
-    async uploadBackground(file: File): Promise<string> {
+    async uploadBackground(file: UniUploadFileLike): Promise<string> {
       this.errorMessage = null;
       try {
         const result = await clientApi.uploadProfileBackground(file);
@@ -395,7 +390,7 @@ export const useProfileStore = defineStore("profile", {
      * @param file - 视频文件（mp4/mov，≤50MB，≤60s）
      * @returns 服务端返回的视频 URL
      */
-    async uploadVideo(file: File): Promise<string> {
+    async uploadVideo(file: UniUploadFileLike): Promise<string> {
       this.errorMessage = null;
       try {
         const result = await clientApi.uploadProfileVideo(file);
@@ -437,7 +432,7 @@ export const useProfileStore = defineStore("profile", {
      * @param index - 照片墙目标索引（0-5）
      * @returns 服务端返回的图片 URL
      */
-    async uploadPhotoAtIndex(file: File, index: number): Promise<string> {
+    async uploadPhotoAtIndex(file: UniUploadFileLike, index: number): Promise<string> {
       if (index < 0 || index > 5) {
         throw new Error("照片索引超出范围（0-5）");
       }
