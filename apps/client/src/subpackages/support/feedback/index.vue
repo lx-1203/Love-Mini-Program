@@ -146,8 +146,11 @@ function handleAddImage(): void {
     sourceType: ["album", "camera"],
     success: (res) => {
       const tempPath = res.tempFilePaths?.[0] ?? "";
-      const tempFile = res.tempFiles?.[0];
-      const size = (tempFile as { size?: number })?.size ?? 0;
+      // 修复（严格模式 TS7053）：res.tempFiles 类型为联合类型，直接索引 [0] 会报隐式 any；
+      // 通过 Array.isArray 类型守卫收敛后再索引。
+      const tempFilesRaw: unknown = res.tempFiles;
+      const tempFile = Array.isArray(tempFilesRaw) ? tempFilesRaw[0] : undefined;
+      const size = (tempFile as { size?: number } | undefined)?.size ?? 0;
       if (!tempPath) {
         errorHaptic();
         uni.showToast({
@@ -374,9 +377,9 @@ function goDetail(id: number): void {
           @tap="activeType = item.value"
         >{{ item.label }}</text>
       </view>
-      <input v-model="form.title" class="field" placeholder="标题" />
+      <input v-model="form.title" class="field" placeholder="标题" aria-label="标题" />
       <textarea v-model="form.content" class="field field--textarea" maxlength="280" />
-      <input v-model="form.contactWechat" class="field" placeholder="选填微信号" />
+      <input v-model="form.contactWechat" class="field" placeholder="选填微信号" aria-label="选填微信号" />
 
       <!-- 功能9：图片上传区 -->
       <view class="image-upload">
@@ -399,7 +402,7 @@ function goDetail(id: number): void {
               class="image-cell__img"
               :src="url"
               mode="aspectFill"
-              lazy-load
+              lazy-load alt=""
             />
             <view class="image-cell__remove" @tap.stop="handleRemoveImage(idx)">
               <text class="image-cell__remove-icon">✕</text>
@@ -419,7 +422,7 @@ function goDetail(id: number): void {
               <image
                 class="image-cell__plus-icon"
                 :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
-                mode="aspectFit"
+                mode="aspectFit" alt=""
               />
               <text class="image-cell__plus-text">{{ t("feedback.imageUpload") }}</text>
             </template>

@@ -19,6 +19,9 @@ import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { VIP_PLANS, type VipPlan, type VipBenefit } from "../../config/vip-plans";
 import { useAutoRenewStore } from "../../stores/vip-auto-renew";
+import { createButtonGuard } from "../../utils/debounce";
+// Sentry 监控：支付失败上报异常，页面切换 / 关键按钮点击记录面包屑
+import { captureException, addBreadcrumb } from "../../services/sentry";
 
 const { t } = useI18n();
 const autoRenewStore = useAutoRenewStore();
@@ -64,6 +67,12 @@ function subscribe() {
   if (processing.value) return;
   if (!selectedPlan.value) return;
 
+  // 记录关键按钮点击面包屑，便于在支付失败时定位用户操作节点
+  addBreadcrumb("ui", "button_click", {
+    id: "vip.subscribe",
+    planId: selectedPlan.value.id,
+  });
+
   processing.value = true;
   uni.showLoading({ title: t("vip.processing") });
 
@@ -81,12 +90,19 @@ function subscribe() {
       uni.hideLoading();
       processing.value = false;
       if (result.cancelled) {
-        // 用户取消支付：仅友好提示，不报错
+        // 用户取消支付：仅友好提示，不报错；记录面包屑便于回溯
+        addBreadcrumb("ui", "payment_cancelled", {
+          planId: selectedPlan.value?.id,
+        });
         uni.showToast({ title: t("vip.paymentCancelled"), icon: "none" });
         return;
       }
       if (!result.ok) {
-        // 支付失败：提示重试
+        // 支付失败：上报到 Sentry，source 标记为 vip.payment 便于后台筛选
+        captureException(new Error(result.msg || "payment failed"), {
+          source: "vip.payment",
+          planId: selectedPlan.value?.id,
+        });
         uni.showToast({ title: result.msg || t("vip.paymentFailed"), icon: "none" });
         return;
       }
@@ -100,12 +116,25 @@ function subscribe() {
         },
       });
     })
-    .catch((_e) => {
+    .catch((error) => {
       uni.hideLoading();
       processing.value = false;
+      // 支付流程异常：上报到 Sentry，含 planId 便于定位具体套餐
+      captureException(error, {
+        source: "vip.payment",
+        planId: selectedPlan.value?.id,
+      });
       uni.showToast({ title: t("vip.paymentFailed"), icon: "none" });
     });
 }
+
+/**
+ * 按钮防抖包装：支付按钮在 processing 状态生效前的时间窗口内可能被重复点击，
+ * createButtonGuard 提供立即锁，与 processing 标志双重保护，
+ * 避免用户连点导致 uni.showLoading 被多次调用或支付流程被并发触发。
+ * 防抖窗口 1500ms 覆盖支付流程的典型耗时。
+ */
+const subscribeGuarded = createButtonGuard(subscribe, 1500);
 
 /** 查看权益详情 */
 function viewBenefitDetail(benefit: VipBenefit) {
@@ -221,6 +250,9 @@ function goBills() {
 
 /** 页面挂载时拉取自动续费状态 */
 onMounted(() => {
+  // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
+  addBreadcrumb("navigation", "page_enter", { url: "/pages/vip/index" });
+
   // 忽略错误，状态默认为关闭
   void autoRenewStore.fetchStatus().catch(() => {
     // 静默处理，不提示错误
@@ -270,7 +302,7 @@ onMounted(() => {
               v-if="item.icon"
               class="benefit-item__icon-img"
               :src="item.icon"
-              mode="aspectFit"
+              mode="aspectFit" alt=""
             />
             <text v-else class="benefit-item__emoji">{{ item.emoji }}</text>
           </view>
@@ -361,7 +393,7 @@ onMounted(() => {
 
     <!-- VIP 相关功能入口 -->
     <view class="section">
-      <view class="entry-list">
+      <view class="entry-list" role="list">
         <view
           class="entry-item press-feedback"
           @tap="goRedPacket"
@@ -406,7 +438,7 @@ onMounted(() => {
       <view
         class="footer__btn press-feedback"
         :class="{ 'footer__btn--disabled': processing }"
-        @tap="subscribe"
+        @tap="subscribeGuarded"
         hover-class="footer__btn--hover"
         hover-stay-time="100"
       >

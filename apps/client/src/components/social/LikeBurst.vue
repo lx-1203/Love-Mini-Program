@@ -17,16 +17,23 @@
  *   <LikeBurst ref="burstRef" />
  *   burstRef.value?.play();
  */
-import { ref, nextTick } from "vue";
+import { ref, nextTick, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
+
+// 修复（严格模式 noUnusedLocals）：t 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ t });
 
 /** 是否正在播放动画 */
 const playing = ref<boolean>(false);
 
 /** 动画 key，用于强制重启动画（每次 play 自增） */
 const animKey = ref<number>(0);
+
+/** 重置定时器引用，用于卸载时清理 */
+let resetTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 粒子列表：12 个粒子，每个有不同角度、距离、缩放、延迟 */
 const particles = Array.from({ length: 12 }, (_, i) => {
@@ -57,10 +64,24 @@ async function play() {
   animKey.value += 1;
   playing.value = true;
   // 1.5s 后自动复位（与 CSS 动画时长一致）
-  setTimeout(() => {
+  if (resetTimer) clearTimeout(resetTimer);
+  resetTimer = setTimeout(() => {
     playing.value = false;
+    resetTimer = null;
   }, 1500);
 }
+
+/**
+ * 组件卸载前清理重置定时器，避免内存泄漏。
+ * 修复（P1 BUG）：原实现未保存 setTimeout 返回值，组件卸载后定时器仍会触发，
+ * 修改已销毁组件的响应式状态。
+ */
+onBeforeUnmount(() => {
+  if (resetTimer) {
+    clearTimeout(resetTimer);
+    resetTimer = null;
+  }
+});
 
 defineExpose({ play });
 </script>
@@ -70,10 +91,8 @@ defineExpose({ play });
     v-if="playing"
     :key="animKey"
     class="like-burst"
-    <!-- #ifdef H5 -->
     role="img"
     :aria-label="t('likeAnimation.burstAria')"
-    <!-- #endif -->
   >
     <!-- 中心大红心：弹跳缩放 -->
     <view class="like-burst__heart">

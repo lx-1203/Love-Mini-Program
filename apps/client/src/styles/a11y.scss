@@ -1,0 +1,50 @@
+// ============================================================
+// 校园恋爱小程序 — 无障碍（A11Y）工具类
+// 版本: 1.0.0
+// 说明:
+//   1. 提供 .sr-only 工具类：仅供屏幕阅读器读取的视觉隐藏文本，
+//      视觉上看不到但可被 NVDA / VoiceOver / TalkBack 等屏幕阅读器播报；
+//   2. 提供 .sr-only-focusable：默认视觉隐藏，但获得焦点时显式展示，
+//      用于键盘导航可见的跳转链接（如「跳到主内容」）；
+//   3. mp-weixin 兼容：使用标准 CSS 选择器（不使用 :root），微信小程序
+//      的 WXSS 引擎对绝对定位 + clip 完整支持；
+//   4. 引入方式：在 App.vue 全局 <style> 中 @import "@/styles/a11y.scss"；
+//   5. ARIA 规范参考：https://www.w3.org/WAI/ARIA/apg/
+// ============================================================
+
+/* sr-only：仅屏幕阅读器可见的视觉隐藏文本 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* sr-only-focusable：默认视觉隐藏，获得焦点时显式展示（如跳到主内容链接） */
+.sr-only-focusable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+
+  &:focus,
+  &:active {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}

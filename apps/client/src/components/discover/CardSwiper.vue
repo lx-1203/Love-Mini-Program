@@ -30,7 +30,7 @@
  * - 不使用 import.meta.env.DEV
  * - 所有过渡动画内联在 .vue 文件中
  */
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DiscoverCard, SwipeDirection } from "../../stores/discover";
 import SafeImage from "../common/SafeImage.vue";
@@ -39,6 +39,38 @@ import CardDetailOverlay from "./CardDetailOverlay.vue";
 import LongPressMenu from "./LongPressMenu.vue";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+// 统一常量：手势阈值、长按时延、卡片动画参数等
+import {
+  SWIPE_THRESHOLD,
+  SWIPE_ROTATION_MAX,
+  LONG_PRESS_DELAY_MS,
+  LONG_PRESS_MOVE_THRESHOLD,
+  TAP_MOVE_THRESHOLD,
+  CARD_TILT_MAX_DEGREE,
+  CARD_TILT_DIVISOR,
+  SWIPE_ROTATION_DIVISOR,
+  DRAG_TINT_OPACITY_DIVISOR,
+  SWIPE_INDICATOR_RATIO_DIVISOR,
+  CARD_FLY_OUT_DURATION_MS,
+  CARD_ENTER_DELAY_MS,
+  CARD_FLY_OUT_DISTANCE_PX,
+  CARD_FLY_OUT_ROTATION_DEGREE,
+  PHOTO_GALLERY_MAX,
+  CARD_SCALE_STATIC,
+  CARD_SCALE_DRAGGING,
+  CARD_SCALE_LONG_PRESS,
+  NEXT_CARD_SCALE_DRAGGING,
+  NEXT_CARD_SCALE_STATIC,
+  NEXT_CARD_TRANSLATE_Y_DRAGGING,
+  NEXT_CARD_TRANSLATE_Y_STATIC,
+  NEXT_CARD_OPACITY_DRAGGING,
+  NEXT_CARD_OPACITY_STATIC,
+  DEFAULT_MATCH_SCORE,
+  MATCH_SCORE_BASE,
+  MATCH_SCORE_STEP,
+  MATCH_SCORE_MAX,
+  DEFAULT_AGE_FALLBACK,
+} from "../../constants/match";
 
 const { t } = useI18n();
 
@@ -97,8 +129,7 @@ const showMenu = ref(false);
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 /** 触摸是否已移动（移动超过阈值则取消长按） */
 let hasMovedForLongPress = false;
-const LONG_PRESS_DELAY = 500;
-const LONG_PRESS_MOVE_THRESHOLD = 10;
+// 注：LONG_PRESS_DELAY_MS / LONG_PRESS_MOVE_THRESHOLD 由 constants/match 统一提供
 
 /** 触摸起始坐标 */
 let startX = 0;
@@ -106,10 +137,7 @@ let startY = 0;
 /** 当前触摸坐标 */
 let currentX = 0;
 let currentY = 0;
-/** 滑动阈值：超过此距离触发飞出 */
-const SWIPE_THRESHOLD = 120;
-/** 最大旋转角度 */
-const MAX_ROTATE = 15;
+// 注：SWIPE_THRESHOLD / SWIPE_ROTATION_MAX 由 constants/match 统一提供
 
 /* ========== 计算属性 ========== */
 
@@ -138,9 +166,9 @@ function getDisplayImages(card: DiscoverCard | null): string[] {
     return [card.halfBodyPhotoUrl];
   }
 
-  // 2. photoGallery（多图浏览场景，最多 6 张）
+  // 2. photoGallery（多图浏览场景，最多 PHOTO_GALLERY_MAX 张）
   if (card.photoGallery && card.photoGallery.length > 0) {
-    return card.photoGallery.slice(0, 6);
+    return card.photoGallery.slice(0, PHOTO_GALLERY_MAX);
   }
 
   // 3. avatarUrl（DiscoverCard.avatar 字段即后端 avatarUrl 映射）
@@ -185,17 +213,19 @@ const currentImageIndex = ref<number>(0);
 
 /** 从headline中提取年龄 */
 const extractAge = (headline?: string): string => {
-  if (!headline) return '22';
+  if (!headline) return DEFAULT_AGE_FALLBACK;
   const match = headline.match(/(\d{2})\s*岁/);
-  return match ? match[1] : '22';
+  // 修复（严格模式 noUncheckedIndexedAccess）：match[1] 索引访问返回 string | undefined，
+  // 此处追加兜底，确保返回值始终为 string。
+  return match?.[1] ?? DEFAULT_AGE_FALLBACK;
 };
 
 /** 匹配度分数（基于共同兴趣圈数量计算） */
 const matchScore = computed(() => {
   const card = currentCard.value;
-  if (!card) return 95;
+  if (!card) return DEFAULT_MATCH_SCORE;
   const base = card.commonCircleCount ?? 1;
-  return Math.min(98, 80 + base * 5);
+  return Math.min(MATCH_SCORE_MAX, MATCH_SCORE_BASE + base * MATCH_SCORE_STEP);
 });
 
 /** 月收入展示（与 CardDetailOverlay 对齐，基于 userId 做稳定映射） */
@@ -245,11 +275,11 @@ const socialCirclesPreview = computed(() => {
   return [circles[seed], circles[(seed + 1) % circles.length]].join(" / ");
 });
 
-/** 拖动时红/绿遮罩的不透明度（跟随拖动距离增强，最大 0.45） */
+/** 拖动时红/绿遮罩的不透明度（跟随拖动距离增强，最大 1） */
 const dragTintOpacity = computed(() => {
   if (!isDragging.value || translateX.value === 0) return { opacity: 0, transition: "none" };
   return {
-    opacity: Math.min(Math.abs(translateX.value) / 160, 1),
+    opacity: Math.min(Math.abs(translateX.value) / DRAG_TINT_OPACITY_DIVISOR, 1),
     transition: "none",
   };
 });
@@ -259,7 +289,7 @@ const swipeIndicatorStyle = computed(() => {
   if (!isDragging.value || translateX.value === 0) {
     return { opacity: 0, transform: "scale(0.6)" };
   }
-  const ratio = Math.min(Math.abs(translateX.value) / 120, 1);
+  const ratio = Math.min(Math.abs(translateX.value) / SWIPE_INDICATOR_RATIO_DIVISOR, 1);
   const rotate = translateX.value > 0 ? -22 : 22;
   return {
     opacity: ratio,
@@ -268,12 +298,12 @@ const swipeIndicatorStyle = computed(() => {
   };
 });
 
-/** 当前卡片样式（Phase D5 · 静止/dragging 状态添加 scale(1.02) 突出特殊） */
+/** 当前卡片样式（Phase D5 · 静止/dragging 状态添加 scale 突出特殊） */
 const currentCardStyle = computed(() => {
   if (isFlyingOut.value) {
-    const x = flyDirection.value === "left" ? -1100 : 1100;
+    const x = flyDirection.value === "left" ? -CARD_FLY_OUT_DISTANCE_PX : CARD_FLY_OUT_DISTANCE_PX;
     return {
-      transform: `translateX(${x}px) rotate(${flyDirection.value === "left" ? -36 : 36}deg) scale(0.92)`,
+      transform: `translateX(${x}px) rotate(${flyDirection.value === "left" ? -CARD_FLY_OUT_ROTATION_DEGREE : CARD_FLY_OUT_ROTATION_DEGREE}deg) scale(0.92)`,
       opacity: 0,
       transition: "transform 480ms cubic-bezier(0.22, 1, 0.36, 1), opacity 360ms ease-out",
     };
@@ -290,7 +320,7 @@ const currentCardStyle = computed(() => {
   const transition = isDragging.value
     ? "none"
     : "transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 260ms ease-out";
-  // Phase D5 · 静止/dragging 状态保持 scale(1.02) 突出当前卡片
+  // Phase D5 · 静止/dragging 状态保持 scale 突出当前卡片
   return {
     transform: `translateX(${translateX.value}px) rotate(${rotate.value}deg) rotateY(${tiltY.value}deg) scale(${cardScale.value})`,
     opacity: opacity.value,
@@ -300,9 +330,9 @@ const currentCardStyle = computed(() => {
 
 /** 下一张卡片样式（堆叠效果） */
 const nextCardStyle = computed(() => {
-  const scale = isDragging.value ? 0.97 : 0.92;
-  const translateY = isDragging.value ? -4 : -18;
-  const opacity = isDragging.value ? 0.8 : 0.58;
+  const scale = isDragging.value ? NEXT_CARD_SCALE_DRAGGING : NEXT_CARD_SCALE_STATIC;
+  const translateY = isDragging.value ? NEXT_CARD_TRANSLATE_Y_DRAGGING : NEXT_CARD_TRANSLATE_Y_STATIC;
+  const opacity = isDragging.value ? NEXT_CARD_OPACITY_DRAGGING : NEXT_CARD_OPACITY_STATIC;
   return {
     transform: `scale(${scale}) translateY(${translateY}px)`,
     opacity,
@@ -315,16 +345,16 @@ const isBioExpanded = ref(false);
 
 /* ========== 卡片缩放效果（长按时缩小） ========== */
 const cardScale = computed(() => {
-  if (isLongPressing.value) return 0.95;
-  if (isDragging.value) return 1.0;
-  return 1.02;
+  if (isLongPressing.value) return CARD_SCALE_LONG_PRESS;
+  if (isDragging.value) return CARD_SCALE_DRAGGING;
+  return CARD_SCALE_STATIC;
 });
 
 /** 卡片 3D 倾斜角度（拖动时根据位移计算 Y 轴旋转） */
 const tiltY = computed(() => {
   if (!isDragging.value) return 0;
-  const ratio = Math.min(Math.abs(translateX.value) / 300, 1);
-  return (translateX.value > 0 ? 1 : -1) * ratio * 8;
+  const ratio = Math.min(Math.abs(translateX.value) / CARD_TILT_DIVISOR, 1);
+  return (translateX.value > 0 ? 1 : -1) * ratio * CARD_TILT_MAX_DEGREE;
 });
 
 /**
@@ -397,10 +427,14 @@ function handleNotInterested() {
  */
 function onTouchStart(e: TouchEvent) {
   if (isFlyingOut.value || !currentCard.value) return;
+  // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 索引访问返回 Touch | undefined，
+  // 此处提取首触点后做非空校验，避免在未触点时访问 clientX 抛 undefined。
+  const touch = e.touches[0];
+  if (!touch) return;
   isDragging.value = true;
   hasMovedForLongPress = false;
-  startX = e.touches[0].clientX;
-  startY = e.touches[0].clientY;
+  startX = touch.clientX;
+  startY = touch.clientY;
   currentX = startX;
   currentY = startY;
 
@@ -417,7 +451,7 @@ function onTouchStart(e: TouchEvent) {
       }
       showMenu.value = true;
     }
-  }, LONG_PRESS_DELAY);
+  }, LONG_PRESS_DELAY_MS);
 }
 
 function clearLongPressTimer() {
@@ -428,13 +462,25 @@ function clearLongPressTimer() {
 }
 
 /**
+ * 组件卸载时清理长按定时器，避免组件销毁后定时器仍触发回调导致内存泄漏。
+ * 修复（P1 BUG）：原实现缺少 onUnmounted 钩子，组件卸载后 longPressTimer 仍可能触发，
+ * 进而在已销毁组件上修改响应式状态（isLongPressing / showMenu）。
+ */
+onUnmounted(() => {
+  clearLongPressTimer();
+});
+
+/**
  * 触摸移动
  * 注：默认行为阻止由模板的 @touchmove.stop.prevent 完成（mp-weixin 兼容）
  */
 function onTouchMove(e: TouchEvent) {
   if (!isDragging.value || isFlyingOut.value) return;
-  currentX = e.touches[0].clientX;
-  currentY = e.touches[0].clientY;
+  // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 可能为 undefined，做非空校验。
+  const touch = e.touches[0];
+  if (!touch) return;
+  currentX = touch.clientX;
+  currentY = touch.clientY;
 
   const deltaX = currentX - startX;
 
@@ -446,8 +492,8 @@ function onTouchMove(e: TouchEvent) {
 
   translateX.value = deltaX;
   // 根据滑动距离计算旋转角度
-  const ratio = Math.min(Math.abs(deltaX) / 300, 1);
-  rotate.value = (deltaX > 0 ? 1 : -1) * ratio * MAX_ROTATE;
+  const ratio = Math.min(Math.abs(deltaX) / SWIPE_ROTATION_DIVISOR, 1);
+  rotate.value = (deltaX > 0 ? 1 : -1) * ratio * SWIPE_ROTATION_MAX;
 }
 
 /**
@@ -468,7 +514,7 @@ function onTouchEnd() {
   const totalMove = Math.abs(deltaX) + Math.abs(currentY - startY);
 
   // 几乎没移动 → 点击
-  if (totalMove < 8) {
+  if (totalMove < TAP_MOVE_THRESHOLD) {
     resetCardPosition();
     handleTap();
     return;
@@ -519,10 +565,10 @@ function performFlyOut(direction: SwipeDirection) {
       nextTick(() => {
         setTimeout(() => {
           isEntering.value = false;
-        }, 50);
+        }, CARD_ENTER_DELAY_MS);
       });
     }
-  }, 400);
+  }, CARD_FLY_OUT_DURATION_MS);
 }
 
 /**
@@ -613,7 +659,7 @@ watch(
       nextTick(() => {
         setTimeout(() => {
           isEntering.value = false;
-        }, 50);
+        }, CARD_ENTER_DELAY_MS);
       });
     }
   }
@@ -638,12 +684,10 @@ watch(
       <view
         v-if="!currentCard"
         class="empty-state"
-        <!-- #ifdef H5 -->
         role="status"
         aria-live="polite"
-        <!-- #endif -->
       >
-        <image class="empty-state__icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" />
+        <image class="empty-state__icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" alt="" />
         <text class="empty-state__title">{{ t('discover.noMoreRecommend') }}</text>
         <text class="empty-state__subtitle">{{ t('discover.refreshAtNoon') }}</text>
       </view>
@@ -687,10 +731,12 @@ watch(
             :key="idx"
             class="card__gallery-item"
           >
+            <!-- 性能优化：开启 lazy-load，仅在网络图片进入视口时加载，减少首屏并发请求数 -->
             <SafeImage
               :src="imageUrl"
               custom-class="card__bg"
               mode="aspectFill"
+              :lazy-load="true"
             />
           </swiper-item>
         </swiper>
@@ -726,12 +772,10 @@ watch(
           hover-class="card__video-badge--pressed"
           hover-stay-time="120"
           @tap.stop="onVideoBadgeTap"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('discover.videoBadge')"
-          <!-- #endif -->
         >
-          <image class="card__video-badge-icon" :src="emojiIcons.video" mode="aspectFit" />
+          <image class="card__video-badge-icon" :src="emojiIcons.video" mode="aspectFit" alt="" />
           <text class="card__video-badge-text">{{ t('discover.videoBadge') }}</text>
         </view>
 
@@ -763,10 +807,8 @@ watch(
           class="swipe-indicator"
           :class="translateX > 0 ? 'swipe-indicator--like' : 'swipe-indicator--nope'"
           :style="swipeIndicatorStyle"
-          <!-- #ifdef H5 -->
           role="status"
           aria-live="polite"
-          <!-- #endif -->
         >
           <text class="swipe-indicator__text">{{ translateX > 0 ? t('discover.like') : t('discover.skip') }}</text>
         </view>
@@ -796,7 +838,7 @@ watch(
               <text class="key-info-chip__value">{{ personalityPreview }}</text>
             </view>
             <view class="key-info-chip key-info-chip--circles">
-              <image class="key-info-chip__icon" :src="emojiIcons.group" mode="aspectFit" />
+              <image class="key-info-chip__icon" :src="emojiIcons.group" mode="aspectFit" alt="" />
               <text class="key-info-chip__label">{{ t('discover.circles') }}</text>
               <text class="key-info-chip__value">{{ socialCirclesPreview }}</text>
             </view>
@@ -805,12 +847,12 @@ watch(
           <!-- 学校、距离 -->
           <view class="card__info-row">
             <view class="card__school">
-              <image class="card__school-icon" :src="emojiIcons.graduation" mode="aspectFit" />
+              <image class="card__school-icon" :src="emojiIcons.graduation" mode="aspectFit" alt="" />
               <text class="card__school-text">{{ currentCard.campusName || currentCard.headline?.split('·')[0]?.trim() || t('discover.sameSchoolStudent') }}</text>
             </view>
             <text class="card__dot">·</text>
             <view class="card__distance">
-              <image class="card__distance-icon" :src="emojiIcons.location" mode="aspectFit" />
+              <image class="card__distance-icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
               <text class="card__distance-text">{{ currentCard.availability || t('discover.nearby') }}</text>
             </view>
           </view>
@@ -820,7 +862,7 @@ watch(
             <text v-if="currentCard.isSameSchool" class="campus-tag campus-tag--school">{{ t('home.personSameSchool') }}</text>
             <text v-if="currentCard.isSameMajor" class="campus-tag campus-tag--major">{{ t('home.personSameMajor') }}</text>
             <text class="campus-tag campus-tag--match">
-              <image class="campus-tag__icon" :src="emojiIcons.heart" mode="aspectFit" />
+              <image class="campus-tag__icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
               {{ matchScore }}{{ t('discover.matchSuffix') }}
             </text>
           </view>
@@ -838,10 +880,8 @@ watch(
           <view
             class="card__bio"
             @tap.stop="toggleBio"
-            <!-- #ifdef H5 -->
             role="button"
             :aria-label="isBioExpanded ? t('home.collapse') : t('home.expand')"
-            <!-- #endif -->
           >
             <text
               class="card__bio-text"
@@ -860,9 +900,9 @@ watch(
       :visible="showDetail"
       :card="currentCard"
       @close="closeDetail"
-      @like="(id: string) => { closeDetail(); onLike(); }"
-      @superLike="(id: string) => { closeDetail(); onSuperLike(); }"
-      @pass="(id: string) => { closeDetail(); onReject(); }"
+      @like="() => { closeDetail(); onLike(); }"
+      @superLike="() => { closeDetail(); onSuperLike(); }"
+      @pass="() => { closeDetail(); onReject(); }"
       @message="(userId: string) => { closeDetail(); emit('message', userId); }"
     />
 
@@ -884,36 +924,30 @@ watch(
         hover-class="action-btn--pressed"
         hover-stay-time="120"
         @tap="onReject"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('discover.skip')"
-        <!-- #endif -->
       >
-        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.PASS" mode="aspectFit" />
+        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.PASS" mode="aspectFit" alt="" />
       </view>
       <view
         class="action-btn action-btn--super press-feedback"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
         @tap="onSuperLike"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('discover.superLike')"
-        <!-- #endif -->
       >
-        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.SUPER_LIKE" mode="aspectFit" />
+        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.SUPER_LIKE" mode="aspectFit" alt="" />
       </view>
       <view
         class="action-btn action-btn--like press-feedback"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
         @tap="onLike"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('discover.like')"
-        <!-- #endif -->
       >
-        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
+        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
       </view>
     </view>
   </view>
@@ -1300,6 +1334,11 @@ watch(
   color: var(--c-text-inverse);
   text-shadow: var(--c-card-name-shadow);
   letter-spacing: 0.02em;
+  /* 修复（P1 BUG）：原实现缺少文本裁剪，长昵称会溢出到年龄标签右侧导致布局错乱 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 360rpx;
 }
 
 .card__age {

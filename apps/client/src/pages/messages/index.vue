@@ -22,6 +22,7 @@ import PageStateContainer from "../../components/common/PageStateContainer.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import BaseTabs, { type BaseTab } from "../../components/common/BaseTabs.vue";
+import { showErrorToast } from "../../utils/error-toast";
 
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
@@ -90,6 +91,17 @@ const categoryTabs = computed<BaseTab[]>(() => [
 ]);
 
 /**
+ * 功能5：通知类型分组常量。
+ *
+ * 性能优化（P1）：原实现将三个 Set 声明在 computed 内部，每次 computed 重新求值都会重建 Set，
+ * 在通知列表较大或频繁切换 categoryFilter 时会产生不必要的 GC 压力。
+ * 现将常量 Set 提到 computed 外部，仅初始化一次，computed 内部直接复用引用。
+ */
+const INTERACTION_TYPES = new Set(["like", "comment", "follow", "visitor", "interaction_like"]);
+const SYSTEM_TYPES = new Set(["system", "activity"]);
+const CHAT_TYPES = new Set(["match", "interaction_match"]);
+
+/**
  * 功能5：根据 categoryFilter 过滤后的通知列表
  * - all: 返回全部通知
  * - interaction: like/comment/follow/visitor/interaction_like 类通知
@@ -99,17 +111,14 @@ const categoryTabs = computed<BaseTab[]>(() => [
 const categorizedNotifications = computed(() => {
   const list = messagesStore.filteredNotifications;
   if (categoryFilter.value === "all") return list;
-  const interactionTypes = new Set(["like", "comment", "follow", "visitor", "interaction_like"]);
-  const systemTypes = new Set(["system", "activity"]);
-  const chatTypes = new Set(["match", "interaction_match"]);
   if (categoryFilter.value === "interaction") {
-    return list.filter((n) => interactionTypes.has(n.type));
+    return list.filter((n) => INTERACTION_TYPES.has(n.type));
   }
   if (categoryFilter.value === "system") {
-    return list.filter((n) => systemTypes.has(n.type));
+    return list.filter((n) => SYSTEM_TYPES.has(n.type));
   }
   // chat
-  return list.filter((n) => chatTypes.has(n.type));
+  return list.filter((n) => CHAT_TYPES.has(n.type));
 });
 
 /** 倒计时显示文本映射 */
@@ -265,8 +274,15 @@ async function handleHeartSignalChat(signalId: string) {
       };
       showMatchGuide.value = true;
     }
-  } catch (_e) {
-    uni.showToast({ title: messagesStore.errorMessage || t("messages.operationFailed"), icon: "none" });
+  } catch (error) {
+    // 优先使用 store 中已格式化的 errorMessage，其次按错误分类选择文案
+    const storeMessage = messagesStore.errorMessage;
+    if (storeMessage) {
+      uni.showToast({ title: storeMessage, icon: "none" });
+    } else {
+      showErrorToast(error, t("messages.operationFailed"));
+    }
+    console.error("接受心动信号失败:", error);
   }
 }
 
@@ -428,6 +444,58 @@ function handleEntryClick(type: string) {
 function handleSearchClick() {
   uni.showToast({ title: t("messages.searchWip"), icon: "none" });
 }
+
+/**
+ * 长按私信会话触发删除流程。
+ *
+ * 流程：
+ * 1. 弹出确认 Modal，避免误触删除重要会话
+ * 2. 用户确认后调用 messagesStore.deleteSession
+ * 3. 成功 toast 提示，失败 toast 提示错误信息
+ *
+ * @param sessionId 待删除的会话 ID
+ */
+function handleSessionLongPress(sessionId: string) {
+  uni.showModal({
+    title: t("messages.title"),
+    content: t("messages.deleteSessionConfirm"),
+    confirmText: t("common.delete"),
+    confirmColor: "#E5454D",
+    success: (res) => {
+      if (!res.confirm) return;
+      // 调用 store 删除会话，失败时由 store 设置 errorMessage
+      void messagesStore
+        .deleteSession(sessionId)
+        .then(() => {
+          uni.showToast({ title: t("messages.deleted"), icon: "success" });
+        })
+        .catch(() => {
+          uni.showToast({
+            title: messagesStore.errorMessage || t("messages.deleteFailed"),
+            icon: "none",
+          });
+        });
+    },
+  });
+}
+
+/**
+ * 一键标记所有通知为已读。
+ *
+ * 调用 messagesStore.markAllNotificationsRead，成功后 toast 提示；
+ * 失败时 store 会保留未读状态，此处 toast 提示用户重试。
+ */
+async function handleMarkAllNotificationsRead() {
+  try {
+    await messagesStore.markAllNotificationsRead();
+    uni.showToast({ title: t("messages.markAllReadSuccess"), icon: "success" });
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : t("messages.markAllReadFailed"),
+      icon: "none",
+    });
+  }
+}
 </script>
 
 <template>
@@ -457,7 +525,7 @@ function handleSearchClick() {
       <!-- 搜索框 -->
       <view class="search-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleSearchClick">
         <view class="search-bar__icon">
-          <image :src="emojiIcons.search" mode="aspectFit" />
+          <image :src="emojiIcons.search" mode="aspectFit" alt="" />
         </view>
         <text class="search-bar__placeholder">{{ t('messages.search') }}</text>
       </view>
@@ -466,7 +534,7 @@ function handleSearchClick() {
       <view class="entry-section">
         <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleEntryClick('new-friend')">
           <view class="entry-item__icon entry-item__icon--green">
-            <image class="entry-item__emoji" :src="emojiIcons.smile" mode="aspectFit" />
+            <image class="entry-item__emoji" :src="emojiIcons.smile" mode="aspectFit" alt="" />
           </view>
           <text class="entry-item__text">{{ t('messages.newFriends') }}</text>
           <view v-if="messagesStore.pendingHeartSignals.length > 0" class="entry-item__badge">
@@ -475,13 +543,13 @@ function handleSearchClick() {
         </view>
         <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleEntryClick('group-chat')">
           <view class="entry-item__icon entry-item__icon--blue">
-            <image class="entry-item__emoji" :src="emojiIcons.group" mode="aspectFit" />
+            <image class="entry-item__emoji" :src="emojiIcons.group" mode="aspectFit" alt="" />
           </view>
           <text class="entry-item__text">{{ t('messages.groupChat') }}</text>
         </view>
         <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleEntryClick('notification')">
           <view class="entry-item__icon entry-item__icon--orange">
-            <image class="entry-item__emoji" :src="emojiIcons.notification" mode="aspectFit" />
+            <image class="entry-item__emoji" :src="emojiIcons.notification" mode="aspectFit" alt="" />
           </view>
           <text class="entry-item__text">{{ t('messages.notice') }}</text>
           <view v-if="messagesStore.unreadNotificationCount > 0" class="entry-item__badge">
@@ -492,7 +560,7 @@ function handleSearchClick() {
         </view>
         <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleEntryClick('assistant')">
           <view class="entry-item__icon entry-item__icon--pink">
-            <image class="entry-item__emoji" :src="emojiIcons.gift" mode="aspectFit" />
+            <image class="entry-item__emoji" :src="emojiIcons.gift" mode="aspectFit" alt="" />
           </view>
           <text class="entry-item__text">{{ t('messages.assistant') }}</text>
         </view>
@@ -511,12 +579,12 @@ function handleSearchClick() {
               <text v-if="!signal.fromUserAvatar" class="heart-signal-card__avatar-text">
                 {{ signal.fromUserName.charAt(0) }}
               </text>
-              <SafeImage v-else :src="signal.fromUserAvatar" custom-class="heart-signal-card__avatar-img" mode="aspectFill" />
+              <SafeImage v-else :src="signal.fromUserAvatar" custom-class="heart-signal-card__avatar-img" mode="aspectFill" :lazy-load="true" />
             </view>
             <view class="heart-signal-card__info">
               <text class="heart-signal-card__name">{{ signal.fromUserName }}</text>
               <text class="heart-signal-card__meta">
-                {{ signal.school }} · {{ signal.age }}岁 · {{ signal.city }}
+                {{ signal.school }} · {{ signal.age }}{{ t('cardDetail.ageUnit') }} · {{ signal.city }}
               </text>
               <text class="heart-signal-card__highlight">{{ signal.bioHighlight }}</text>
             </view>
@@ -567,6 +635,17 @@ function handleSearchClick() {
         :equal-split="false"
       />
 
+      <!-- 一键标记所有通知为已读（仅在通知 Tab 且存在未读时显示） -->
+      <view
+        v-if="activeTab === 'notifications' && messagesStore.unreadNotificationCount > 0"
+        class="mark-all-read-btn press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        @tap="handleMarkAllNotificationsRead"
+      >
+        <text class="mark-all-read-btn__text">{{ t('messages.markAllRead') }}</text>
+      </view>
+
       <!-- 统一页面状态容器：loading / error / empty / content 四态切换 -->
       <PageStateContainer :state="pageState" :error-text="errorText" @retry="handleRetry">
         <template #loading>
@@ -575,7 +654,7 @@ function handleSearchClick() {
           </view>
         </template>
         <template #error>
-          <view class="messages-error">
+          <view class="messages-error" role="alert">
             <ErrorState type="network" @retry="handleRetry" />
           </view>
         </template>
@@ -586,7 +665,7 @@ function handleSearchClick() {
         </template>
         <template #default>
           <!-- 私信列表 -->
-          <view v-if="activeTab === 'private'" class="session-list">
+          <view v-if="activeTab === 'private'" class="session-list" role="list">
         <view
           v-for="(session, index) in privateSessionList"
           :key="session.id"
@@ -594,13 +673,14 @@ function handleSearchClick() {
           :class="{ 'session-row--pinned': session.pinned, 'session-row--last': index === privateSessionList.length - 1 && tempSessionList.length === 0 }"
           hover-class="session-row--hover"
           @tap="openSession(session.id)"
+          @longpress="handleSessionLongPress(session.id)"
         >
           <view class="session-row__avatar-wrap">
             <view class="session-row__avatar" :class="{ 'session-row__avatar--vip': true }">
               <text v-if="!session.partnerAvatar" class="session-row__avatar-text">
                 {{ session.partnerName.charAt(0) }}
               </text>
-              <SafeImage v-else :src="session.partnerAvatar" custom-class="session-row__avatar-img" mode="aspectFill" />
+              <SafeImage v-else :src="session.partnerAvatar" custom-class="session-row__avatar-img" mode="aspectFill" :lazy-load="true" />
               <view class="session-row__online-dot"></view>
             </view>
             <view v-if="session.unreadCount > 0" class="session-row__unread">
@@ -654,7 +734,7 @@ function handleSearchClick() {
       </view>
 
       <!-- Phase 3：系统通知列表（含信号分类样式） -->
-      <view v-else-if="activeTab === 'notifications'" class="notification-list">
+      <view v-else-if="activeTab === 'notifications'" class="notification-list" role="list">
         <view
           v-for="(notification, index) in notificationList"
           :key="notification.id"
@@ -828,6 +908,21 @@ function handleSearchClick() {
   color: var(--c-text-tertiary);
 }
 
+/* ========== 一键标记所有通知为已读按钮 ========== */
+.mark-all-read-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0 var(--sp-8) var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+}
+
+.mark-all-read-btn__text {
+  font-size: var(--fs-sm);
+  color: var(--c-brand-500, #3FCF8E);
+  font-weight: 500;
+}
+
 /* ========== 功能入口区 ========== */
 .entry-section {
   display: flex;
@@ -996,6 +1091,11 @@ function handleSearchClick() {
   font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--c-text-primary);
+  /* 修复（P1 BUG）：原实现缺少文本裁剪，长昵称会推动布局错乱 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .heart-signal-card__meta {

@@ -4,7 +4,7 @@
  * 校园身份认证流程：上传学生证 → 提交审核 → 审核通过
  * mock 模式下默认展示"已认证"状态
  */
-import { ref, computed } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import { lightHaptic } from "../../utils/haptic";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
@@ -26,6 +26,9 @@ const uploadedImagePath = ref("");
 
 /** 是否正在提交 */
 const submitting = ref(false);
+
+/** 提交定时器引用，用于卸载时清理 */
+let submitTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 状态文案映射 */
 const statusInfo = computed(() => {
@@ -81,7 +84,9 @@ function chooseImage() {
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
     success: (res) => {
-      uploadedImagePath.value = res.tempFilePaths[0];
+      // 修复（严格模式 noUncheckedIndexedAccess）：res.tempFilePaths[0] 索引访问返回 string | undefined，
+      // 此处兜底空字符串，避免在异常（空数组）情况下赋值 undefined 给 ref<string>。
+      uploadedImagePath.value = res.tempFilePaths[0] ?? "";
       uni.showToast({
         title: "学生证已上传",
         icon: "success",
@@ -122,7 +127,8 @@ function submitVerification() {
   submitting.value = true;
   uni.showLoading({ title: "提交中..." });
 
-  setTimeout(() => {
+  if (submitTimer) clearTimeout(submitTimer);
+  submitTimer = setTimeout(() => {
     submitting.value = false;
     uni.hideLoading();
     status.value = "pending";
@@ -131,8 +137,21 @@ function submitVerification() {
       icon: "success",
       duration: 1500,
     });
+    submitTimer = null;
   }, 1000);
 }
+
+/**
+ * 页面卸载时清理定时器，避免内存泄漏。
+ * 修复（P1 BUG）：原实现未保存 setTimeout 返回值，页面销毁后定时器仍会触发
+ * uni.hideLoading 与状态修改。
+ */
+onUnmounted(() => {
+  if (submitTimer) {
+    clearTimeout(submitTimer);
+    submitTimer = null;
+  }
+});
 
 /** 模拟审核通过（mock 模式演示用） */
 function simulateApprove() {
@@ -278,7 +297,7 @@ function onBlur() {
               placeholder="请输入真实姓名"
               placeholder-class="form-item__placeholder"
               maxlength="20"
-              @blur="onBlur"
+              @blur="onBlur" aria-label="请输入真实姓名"
             />
           </view>
           <!-- 学号 -->
@@ -290,7 +309,7 @@ function onBlur() {
               placeholder="请输入学号"
               placeholder-class="form-item__placeholder"
               maxlength="20"
-              @blur="onBlur"
+              @blur="onBlur" aria-label="请输入学号"
             />
           </view>
           <!-- 学校 -->
@@ -302,7 +321,7 @@ function onBlur() {
               placeholder="请输入学校全称"
               placeholder-class="form-item__placeholder"
               maxlength="30"
-              @blur="onBlur"
+              @blur="onBlur" aria-label="请输入学校全称"
             />
           </view>
         </view>
@@ -327,7 +346,7 @@ function onBlur() {
             <image
               :src="uploadedImagePath"
               class="upload-card__image"
-              mode="aspectFill"
+              mode="aspectFill" alt=""
             />
             <view class="upload-card__change">
               <text class="upload-card__change-text">点击更换</text>

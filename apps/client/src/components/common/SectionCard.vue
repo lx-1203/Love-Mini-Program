@@ -10,10 +10,8 @@ defineProps<{
   <view
     class="card"
     :class="{ 'card--compact': compact }"
-    <!-- #ifdef H5 -->
     role="region"
     :aria-label="title"
-    <!-- #endif -->
   >
     <text class="card__title">{{ title }}</text>
     <text v-if="subtitle" class="card__subtitle">{{ subtitle }}</text>

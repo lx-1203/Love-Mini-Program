@@ -37,13 +37,11 @@ const subText = computed(() => {
 <template>
   <view
     class="empty"
-    <!-- #ifdef H5 -->
     role="status"
     aria-live="polite"
     :aria-label="messageText"
-    <!-- #endif -->
   >
-    <image class="empty-icon" :src="iconSrc" mode="aspectFit" />
+    <image class="empty-icon" :src="iconSrc" mode="aspectFit" alt="" />
     <text class="empty-msg">{{ messageText }}</text>
     <text class="empty-sub">{{ subText }}</text>
     <slot />

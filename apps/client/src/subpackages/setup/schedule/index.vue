@@ -57,12 +57,12 @@ async function save() {
     <SetupProgress :current-step="4" />
 
     <SectionCard title="偏好设置" compact>
-      <input v-model="form.preferredCampusArea" class="field" placeholder="常去区域" />
+      <input v-model="form.preferredCampusArea" class="field" placeholder="常去区域" aria-label="常去区域" />
       <textarea
         v-model="form.preferredTimeWindows[0]"
         class="field field--textarea"
         maxlength="60"
-        placeholder="常用空闲时段，例如今晚或本周三下午"
+        placeholder="常用空闲时段，例如今晚或本周三下午" aria-label="常用空闲时段，例如今晚或本周三下午"
       />
       <BottomActionBar primary-label="保存并进入应用" @primary="save" />
     </SectionCard>

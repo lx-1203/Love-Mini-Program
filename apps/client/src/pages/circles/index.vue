@@ -3,8 +3,7 @@
  * 兴趣圈列表页
  * 展示所有兴趣圈，支持加入/退出操作，点击进入话题列表
  */
-import { ref, computed, onMounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useCircleStore } from "../../stores/circle";
 import { openAppPath } from "../../utils/navigation";
@@ -114,7 +113,7 @@ onMounted(() => {
           <view class="discover-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToDiscover">
             <view class="discover-entry__left">
               <view class="discover-entry__icon-wrap">
-                <image class="discover-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" />
+                <image class="discover-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
               </view>
               <view class="discover-entry__text-wrap">
                 <text class="discover-entry__title">附近的人</text>
@@ -126,7 +125,7 @@ onMounted(() => {
 
           <!-- 推荐提示 -->
           <view class="circles-banner">
-            <image class="circles-banner__emoji" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" />
+            <image class="circles-banner__emoji" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
             <view class="circles-banner__text-wrap">
               <text class="circles-banner__title">发现有趣的圈子</text>
               <text class="circles-banner__desc">加入兴趣圈，结识志同道合的小伙伴</text>
@@ -134,7 +133,7 @@ onMounted(() => {
           </view>
 
           <!-- 兴趣圈卡片 -->
-          <view class="circles-card-list">
+          <view class="circles-card-list" role="list">
             <view
               v-for="(circle, index) in circles"
               :key="circle.id"
@@ -143,17 +142,17 @@ onMounted(() => {
               @tap="goToTopics(circle.id)"
             >
               <view class="circle-card__icon-wrap">
-                <image class="circle-card__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
+                <image class="circle-card__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
               </view>
 
               <view class="circle-card__body">
                 <text class="circle-card__name">{{ circle.name }}</text>
                 <text class="circle-card__desc">{{ circle.description }}</text>
                 <view class="circle-card__meta">
-                  <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" />
+                  <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" alt="" />
                   <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} 成员</text>
                   <text class="circle-card__divider">·</text>
-                  <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
+                  <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
                   <text class="circle-card__count">{{ circle.topicCount }} 话题</text>
                 </view>
               </view>

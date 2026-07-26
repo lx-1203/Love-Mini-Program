@@ -5,15 +5,39 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 /**
  * 用户主表实体，对应 users 表。
  * 包含微信登录、基础资料、社交计数等字段。
+ *
+ * <p>索引说明（与数据库 Flyway 脚本保持一致）：</p>
+ * <ul>
+ *   <li>uk_users_openid：openid 唯一索引，微信登录唯一性保证</li>
+ *   <li>idx_users_phone：phone 索引，手机号登录/查询</li>
+ *   <li>idx_users_created_at：created_at 索引，用户列表按时间排序</li>
+ * </ul>
+ *
+ * <p>注：任务规格提到 school_id 索引，但 users 表实际无该字段（校区信息存于
+ * user_campus_profiles 表），故跳过。详见 V2026.07.25.0001 迁移脚本说明。</p>
  */
 @Entity
-@Table(name = "users")
+@Table(
+    name = "users",
+    uniqueConstraints = {
+        // openid 唯一约束：保证一个微信号只能注册一个账号
+        @UniqueConstraint(name = "uk_users_openid", columnNames = {"openid"})
+    },
+    indexes = {
+        // 手机号索引：用于手机号登录、按手机号查询用户
+        @Index(name = "idx_users_phone", columnList = "phone"),
+        // 创建时间索引：用于用户列表按注册时间排序、分页
+        @Index(name = "idx_users_created_at", columnList = "created_at")
+    }
+)
 public class User {
 
     @Id

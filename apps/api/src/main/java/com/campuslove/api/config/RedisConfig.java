@@ -1,6 +1,8 @@
 package com.campuslove.api.config;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -77,6 +79,21 @@ public class RedisConfig {
 
     /** 默认缓存 TTL：30 分钟，与文档要求保持一致 */
     private static final Duration DEFAULT_CACHE_TTL = Duration.ofMinutes(30);
+
+    /** 用户资料缓存 TTL：10 分钟 */
+    private static final Duration USER_PROFILE_TTL = Duration.ofMinutes(10);
+
+    /** 推荐人物列表缓存 TTL：5 分钟（实时性要求高，TTL 较短） */
+    private static final Duration MATCH_RECOMMEND_TTL = Duration.ofMinutes(5);
+
+    /** 村口热门帖子缓存 TTL：15 分钟 */
+    private static final Duration VILLAGE_HOT_POSTS_TTL = Duration.ofMinutes(15);
+
+    /** 校园（学校）列表缓存 TTL：1 小时（变更频率低，TTL 较长） */
+    private static final Duration CAMPUS_SCHOOLS_TTL = Duration.ofHours(1);
+
+    /** 每日一问缓存 TTL：1 小时（每日只更新一次，TTL 较长） */
+    private static final Duration DAILY_QUESTION_TTL = Duration.ofHours(1);
 
     /**
      * 配置 LettuceConnectionFactory，启用 commons-pool2 连接池。
@@ -157,13 +174,23 @@ public class RedisConfig {
      * <p>默认 TTL 30 分钟，可通过 {@code spring.cache.redis.time-to-live} 配置覆盖。
      * 缓存 key 默认使用方法签名 + 参数哈希，前缀为缓存名称（如 "users::" ）。</p>
      *
+     * <p>各 CacheName 独立 TTL 配置：</p>
+     * <ul>
+     *   <li>{@link CacheNames#USER_PROFILE}：10 分钟</li>
+     *   <li>{@link CacheNames#MATCH_RECOMMEND}：5 分钟</li>
+     *   <li>{@link CacheNames#VILLAGE_HOT_POSTS}：15 分钟</li>
+     *   <li>{@link CacheNames#CAMPUS_SCHOOLS}：1 小时</li>
+     *   <li>{@link CacheNames#DAILY_QUESTION}：1 小时</li>
+     * </ul>
+     *
      * @param connectionFactory Redis 连接工厂
      * @return Redis 缓存管理器
      */
     @Bean
     @ConditionalOnMissingBean(CacheManager.class)
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+        // 默认缓存配置：TTL 30 分钟，key 用 String 序列化，value 用 JSON 序列化
+        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(DEFAULT_CACHE_TTL)
                 .disableCachingNullValues()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair
@@ -171,8 +198,17 @@ public class RedisConfig {
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
                         .fromSerializer(new GenericJackson2JsonRedisSerializer()));
 
+        // 按 CacheName 维度配置独立 TTL
+        Map<String, RedisCacheConfiguration> cacheNameTtl = new HashMap<>();
+        cacheNameTtl.put(CacheNames.USER_PROFILE, defaultConfig.entryTtl(USER_PROFILE_TTL));
+        cacheNameTtl.put(CacheNames.MATCH_RECOMMEND, defaultConfig.entryTtl(MATCH_RECOMMEND_TTL));
+        cacheNameTtl.put(CacheNames.VILLAGE_HOT_POSTS, defaultConfig.entryTtl(VILLAGE_HOT_POSTS_TTL));
+        cacheNameTtl.put(CacheNames.CAMPUS_SCHOOLS, defaultConfig.entryTtl(CAMPUS_SCHOOLS_TTL));
+        cacheNameTtl.put(CacheNames.DAILY_QUESTION, defaultConfig.entryTtl(DAILY_QUESTION_TTL));
+
         return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(config)
+                .cacheDefaults(defaultConfig)
+                .withInitialCacheConfigurations(cacheNameTtl)
                 .transactionAware()
                 .build();
     }

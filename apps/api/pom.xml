@@ -152,6 +152,78 @@
           <mainClass>com.campuslove.api.CampusLoveApplication</mainClass>
         </configuration>
       </plugin>
+      <!-- JaCoCo 覆盖率插件：
+           - prepare-agent：在测试启动时注入 agent，收集执行数据到 target/jacoco.exec
+           - report：在 test 阶段生成 HTML/XML/CSV 覆盖率报告到 target/site/jacoco
+           - check：在 verify 阶段校验覆盖率是否达标，未达标则构建失败
+           阈值设定（Phase L 提升，与前端 vitest 阈值对齐）：
+           - LINE     50 → 70：行覆盖率，业务核心代码应稳定覆盖
+           - BRANCH   50 → 65：分支覆盖率，留出容差
+           - METHOD   50 → 70：方法覆盖率，确保入口被调用
+           - CLASS    50 → 65：类覆盖率，确保关键类被测
+           若当前测试不满足，记录差距但不降低阈值，作为后续补全目标。 -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.12</version>
+        <executions>
+          <!-- 测试前：注入 JaCoCo agent，收集执行数据 -->
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <!-- 测试阶段：生成覆盖率报告（HTML + XML + CSV） -->
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+          <!-- 校验阶段：按规则检查覆盖率是否达标 -->
+          <execution>
+            <id>jacoco-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <rule>
+                  <!-- BUNDLE 级别：整个模块所有类的聚合指标 -->
+                  <element>BUNDLE</element>
+                  <limits>
+                    <!-- 行覆盖率：≥ 70% -->
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.70</minimum>
+                    </limit>
+                    <!-- 分支覆盖率：≥ 65% -->
+                    <limit>
+                      <counter>BRANCH</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.65</minimum>
+                    </limit>
+                    <!-- 方法覆盖率：≥ 70% -->
+                    <limit>
+                      <counter>METHOD</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.70</minimum>
+                    </limit>
+                    <!-- 类覆盖率：≥ 65% -->
+                    <limit>
+                      <counter>CLASS</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.65</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

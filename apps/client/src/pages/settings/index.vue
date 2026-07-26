@@ -6,11 +6,14 @@
  *
  * 功能6：通知设置分组新增「免打扰」入口，跳转到 /pages/settings/dnd
  */
-import { ref } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { useSessionStore } from "../../stores/session";
+
+/** 操作定时器集合，用于卸载时统一清理 */
+const operationTimers = new Set<ReturnType<typeof setTimeout>>();
 
 const { t } = useI18n();
 
@@ -37,7 +40,7 @@ function toggleNotify(e: Event) {
   const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
   notifyEnabled.value = !!detail?.value;
   uni.showToast({
-    title: notifyEnabled.value ? "已开启消息通知" : "已关闭消息通知",
+    title: notifyEnabled.value ? t("settings.notifyEnabled") : t("settings.notifyDisabled"),
     icon: "none",
     duration: 1200,
   });
@@ -49,7 +52,7 @@ function togglePrivacyMode(e: Event) {
   const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
   privacyModeEnabled.value = !!detail?.value;
   uni.showToast({
-    title: privacyModeEnabled.value ? "已开启隐私模式" : "已关闭隐私模式",
+    title: privacyModeEnabled.value ? t("settings.privacyModeEnabled") : t("settings.privacyModeDisabled"),
     icon: "none",
     duration: 1200,
   });
@@ -74,11 +77,10 @@ function goToDnd() {
 function viewUserAgreement() {
   lightHaptic();
   uni.showModal({
-    title: "用户协议",
-    content:
-      "欢迎使用校园恋爱小程序。\n\n本协议是您与校园恋爱之间就使用本服务所订立的契约。\n请仔细阅读本协议，您使用本服务即表示同意本协议全部条款。",
+    title: t("settings.userAgreementTitle"),
+    content: t("settings.userAgreementContent"),
     showCancel: false,
-    confirmText: "我知道了",
+    confirmText: t("settings.gotIt"),
   });
 }
 
@@ -86,11 +88,10 @@ function viewUserAgreement() {
 function viewPrivacyPolicy() {
   lightHaptic();
   uni.showModal({
-    title: "隐私政策",
-    content:
-      "我们重视您的隐私。\n\n本隐私政策说明我们如何收集、使用、存储和保护您的个人信息。\n您在使用本服务时，我们可能需要收集您的头像、昵称、学校信息等基本资料。",
+    title: t("settings.privacyPolicyTitle"),
+    content: t("settings.privacyPolicyContent"),
     showCancel: false,
-    confirmText: "我知道了",
+    confirmText: t("settings.gotIt"),
   });
 }
 
@@ -98,22 +99,24 @@ function viewPrivacyPolicy() {
 function clearCache() {
   lightHaptic();
   uni.showModal({
-    title: "清除缓存",
-    content: `当前缓存大小：${cacheSize.value}\n\n清除缓存不会影响您的账号数据，但会清除本地图片缓存与临时文件。`,
-    confirmText: "立即清除",
-    cancelText: "取消",
+    title: t("settings.clearCacheTitle"),
+    content: t("settings.clearCacheContent", { size: cacheSize.value }),
+    confirmText: t("settings.clearCacheConfirm"),
+    cancelText: t("common.cancel"),
     success: (res) => {
       if (res.confirm) {
-        uni.showLoading({ title: "清除中..." });
-        setTimeout(() => {
+        uni.showLoading({ title: t("settings.clearing") });
+        const timer = setTimeout(() => {
           cacheSize.value = "0 KB";
           uni.hideLoading();
           uni.showToast({
-            title: "缓存已清除",
+            title: t("settings.cacheCleared"),
             icon: "success",
             duration: 1500,
           });
+          operationTimers.delete(timer);
         }, 800);
+        operationTimers.add(timer);
       }
     },
   });
@@ -122,27 +125,38 @@ function clearCache() {
 /** 检查更新 */
 function checkUpdate() {
   lightHaptic();
-  uni.showLoading({ title: "检查中..." });
-  setTimeout(() => {
+  uni.showLoading({ title: t("settings.checkingUpdate") });
+  const timer = setTimeout(() => {
     uni.hideLoading();
     uni.showModal({
-      title: "版本更新",
-      content: "当前已是最新版本\n当前版本：v1.0.0",
+      title: t("settings.versionUpdateTitle"),
+      content: t("settings.versionLatestContent"),
       showCancel: false,
-      confirmText: "知道了",
+      confirmText: t("settings.gotIt"),
     });
+    operationTimers.delete(timer);
   }, 800);
+  operationTimers.add(timer);
 }
+
+/**
+ * 页面卸载时清理所有操作定时器，避免内存泄漏。
+ * 修复（P1 BUG）：原实现未保存 setTimeout 返回值，页面销毁后定时器仍可能触发
+ * uni.hideLoading 与状态修改。
+ */
+onUnmounted(() => {
+  operationTimers.forEach((timer) => clearTimeout(timer));
+  operationTimers.clear();
+});
 
 /** 关于我们 */
 function aboutUs() {
   lightHaptic();
   uni.showModal({
-    title: "关于校园恋爱",
-    content:
-      "校园恋爱 · 遇见你的那个TA\n\n版本：v1.0.0\n\n在这里，遇见同频的人，开启一段双向奔赴的校园故事。",
+    title: t("settings.aboutTitle"),
+    content: t("settings.aboutContent"),
     showCancel: false,
-    confirmText: "知道了",
+    confirmText: t("settings.gotIt"),
   });
 }
 
@@ -150,14 +164,18 @@ function aboutUs() {
 function logout() {
   lightHaptic();
   uni.showModal({
-    title: "提示",
-    content: "确定要退出登录吗？",
+    title: t("settings.logoutTitle"),
+    content: t("settings.logoutConfirm"),
     success: (res) => {
-      if (res.confirm) {
-        const sessionStore = useSessionStore();
-        sessionStore.userSession = null;
-        uni.reLaunch({ url: "/pages/login/index" });
-      }
+      if (!res.confirm) return;
+      // 修复（P1 BUG）：原直接置空 userSession，未通知后端、未清理本地状态。
+      // 改为调用 sessionStore.logout() 统一处理：
+      // 1. 调用 clientApi.logout() 清除本地 token + 异步通知后端 + 跳转登录页
+      // 2. 清空 store 状态（userSession / profileBackgroundUrl 等）
+      const sessionStore = useSessionStore();
+      void sessionStore.logout().catch((error) => {
+        console.warn("[settings] logout 调用异常:", error);
+      });
     },
   });
 }
@@ -168,52 +186,52 @@ function goBack() {
   uni.navigateBack({ delta: 1 });
 }
 
-/** 账号分组菜单项 */
-const accountMenus = ref<MenuItem[]>([
+/** 账号分组菜单项（使用 computed 以响应 locale 切换） */
+const accountMenus = computed<MenuItem[]>(() => [
   {
     emoji: "✏️",
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
     bgColor: "#E8F4FF",
-    label: "编辑资料",
+    label: t("settings.editProfile"),
     action: goToProfileSetup,
   },
   {
     emoji: "🔐",
     icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
     bgColor: "#FFF0F5",
-    label: "恋爱认证",
+    label: t("settings.verification"),
     path: "/pages/verification/index",
   },
 ]);
 
-/** 关于分组菜单项 */
-const aboutMenus = ref<MenuItem[]>([
+/** 关于分组菜单项（使用 computed 以响应 locale 切换） */
+const aboutMenus = computed<MenuItem[]>(() => [
   {
     emoji: "📜",
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "#F4F6FA",
-    label: "用户协议",
+    label: t("settings.userAgreement"),
     action: viewUserAgreement,
   },
   {
     emoji: "🔒",
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
     bgColor: "#F4F6FA",
-    label: "隐私政策",
+    label: t("settings.privacyPolicy"),
     action: viewPrivacyPolicy,
   },
   {
     emoji: "🔄",
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
     bgColor: "#F4F6FA",
-    label: "检查更新",
+    label: t("settings.checkUpdate"),
     action: checkUpdate,
   },
   {
     emoji: "ℹ️",
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
     bgColor: "#F4F6FA",
-    label: "关于我们",
+    label: t("settings.aboutUs"),
     action: aboutUs,
   },
 ]);
@@ -236,7 +254,7 @@ function handleMenuTap(item: MenuItem) {
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">
         <text class="nav-bar__back-icon">‹</text>
       </view>
-      <text class="nav-bar__title">设置</text>
+      <text class="nav-bar__title">{{ t('settings.navTitle') }}</text>
       <view class="nav-bar__placeholder" />
     </view>
 
@@ -246,7 +264,7 @@ function handleMenuTap(item: MenuItem) {
     <!-- 账号分组 -->
     <view class="section">
       <view class="section__title">
-        <text class="section__title-text">账号管理</text>
+        <text class="section__title-text">{{ t('settings.accountSection') }}</text>
       </view>
       <view class="menu-group">
         <view
@@ -272,7 +290,7 @@ function handleMenuTap(item: MenuItem) {
     <!-- 通知设置分组 -->
     <view class="section">
       <view class="section__title">
-        <text class="section__title-text">通知设置</text>
+        <text class="section__title-text">{{ t('settings.notificationSection') }}</text>
       </view>
       <view class="menu-group">
         <view class="menu-item list-item">
@@ -280,7 +298,7 @@ function handleMenuTap(item: MenuItem) {
             <view class="menu-item__icon settings-card--cream">
               <text class="menu-item__emoji">🔔</text>
             </view>
-            <text class="menu-item__label">消息通知</text>
+            <text class="menu-item__label">{{ t('settings.messageNotification') }}</text>
           </view>
           <switch
             :checked="notifyEnabled"
@@ -308,7 +326,7 @@ function handleMenuTap(item: MenuItem) {
             <view class="menu-item__icon settings-card--brand">
               <text class="menu-item__emoji">🛡️</text>
             </view>
-            <text class="menu-item__label">隐私模式</text>
+            <text class="menu-item__label">{{ t('settings.privacyMode') }}</text>
           </view>
           <switch
             :checked="privacyModeEnabled"
@@ -322,7 +340,7 @@ function handleMenuTap(item: MenuItem) {
     <!-- 隐私安全分组 -->
     <view class="section">
       <view class="section__title">
-        <text class="section__title-text">隐私安全</text>
+        <text class="section__title-text">{{ t('settings.privacySection') }}</text>
       </view>
       <view class="menu-group">
         <view
@@ -335,7 +353,7 @@ function handleMenuTap(item: MenuItem) {
             <view class="menu-item__icon settings-card--page">
               <text class="menu-item__emoji">📋</text>
             </view>
-            <text class="menu-item__label">隐私政策</text>
+            <text class="menu-item__label">{{ t('settings.privacyPolicy') }}</text>
           </view>
           <text class="menu-item__arrow">›</text>
         </view>
@@ -345,7 +363,7 @@ function handleMenuTap(item: MenuItem) {
     <!-- 缓存管理分组 -->
     <view class="section">
       <view class="section__title">
-        <text class="section__title-text">存储管理</text>
+        <text class="section__title-text">{{ t('settings.storageSection') }}</text>
       </view>
       <view class="menu-group">
         <view
@@ -358,7 +376,7 @@ function handleMenuTap(item: MenuItem) {
             <view class="menu-item__icon settings-card--lavender">
               <text class="menu-item__emoji">🧹</text>
             </view>
-            <text class="menu-item__label">清除缓存</text>
+            <text class="menu-item__label">{{ t('settings.clearCache') }}</text>
           </view>
           <view class="menu-item__right">
             <text class="menu-item__value">{{ cacheSize }}</text>
@@ -371,7 +389,7 @@ function handleMenuTap(item: MenuItem) {
     <!-- 关于分组 -->
     <view class="section">
       <view class="section__title">
-        <text class="section__title-text">关于</text>
+        <text class="section__title-text">{{ t('settings.aboutSection') }}</text>
       </view>
       <view class="menu-group">
         <view
@@ -396,12 +414,12 @@ function handleMenuTap(item: MenuItem) {
 
     <!-- 退出登录按钮 -->
     <view class="logout-btn press-feedback" @tap="logout" hover-class="logout-btn--hover" hover-stay-time="100">
-      <text class="logout-btn__text">退出登录</text>
+      <text class="logout-btn__text">{{ t('settings.logout') }}</text>
     </view>
 
     <!-- 底部版本信息 -->
     <view class="footer-version">
-      <text class="footer-version__text">校园恋爱 v1.0.0</text>
+      <text class="footer-version__text">{{ t('settings.footerVersion') }}</text>
     </view>
 
     <!-- 底部安全区占位 -->

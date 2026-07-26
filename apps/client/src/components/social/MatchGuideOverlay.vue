@@ -69,22 +69,23 @@ const subtitleText = computed(() =>
 const overlayAriaLabel = computed(() =>
   t('matchGuide.ariaLabel', { name: props.partnerName })
 )
+
+// 修复（严格模式 noUnusedLocals）：overlayAriaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ overlayAriaLabel });
 </script>
 
 <template>
   <view
     v-if="visible"
     class="mgo-overlay"
-    <!-- #ifdef H5 -->
     role="dialog"
     aria-modal="true"
     :aria-label="overlayAriaLabel"
-    <!-- #endif -->
   >
     <view
       class="mgo-mask"
       @tap="close"
-      <!-- #ifdef H5 -->
       role="button"
       :aria-label="t('matchGuide.maskAria')"
       <!-- #endif -->
@@ -112,7 +113,7 @@ const overlayAriaLabel = computed(() =>
       <!-- 破冰话题推荐 -->
       <view v-if="icebreakers.length" class="mgo-section">
         <text class="mgo-section-title">{{ t('matchGuide.icebreakerTitle') }}</text>
-        <view class="mgo-topic-list">
+        <view class="mgo-topic-list" role="list">
           <view
             v-for="(topic, index) in icebreakers"
             :key="index"
@@ -121,7 +122,6 @@ const overlayAriaLabel = computed(() =>
             <!-- #ifdef H5 -->
             role="button"
             :aria-label="t('matchGuide.icebreakerAria', { topic })"
-            <!-- #endif -->
           >
             <text class="mgo-topic-text">{{ topic }}</text>
           </view>
@@ -131,15 +131,13 @@ const overlayAriaLabel = computed(() =>
       <!-- 共同兴趣圈 -->
       <view v-if="commonCircles.length" class="mgo-section">
         <text class="mgo-section-title">{{ t('matchGuide.commonCircleTitle') }}</text>
-        <view class="mgo-circle-list">
+        <view class="mgo-circle-list" role="list">
           <view
             v-for="circle in commonCircles"
             :key="circle.id"
             class="mgo-circle-chip"
-            <!-- #ifdef H5 -->
             role="img"
             :aria-label="circle.name"
-            <!-- #endif -->
           >
             <text class="mgo-circle-icon">{{ circle.icon }}</text>
             <text class="mgo-circle-name">{{ circle.name }}</text>
@@ -150,15 +148,13 @@ const overlayAriaLabel = computed(() =>
       <!-- 活动推荐 -->
       <view v-if="activities.length" class="mgo-section">
         <text class="mgo-section-title">{{ t('matchGuide.activityTitle') }}</text>
-        <view class="mgo-activity-list">
+        <view class="mgo-activity-list" role="list">
           <view
             v-for="act in activities"
             :key="act.id"
             class="mgo-activity-item"
-            <!-- #ifdef H5 -->
             role="img"
             :aria-label="t('matchGuide.activityAria', { title: act.title, time: act.scheduleText })"
-            <!-- #endif -->
           >
             <text class="mgo-activity-title">{{ act.title }}</text>
             <text class="mgo-activity-time">{{ act.scheduleText }}</text>
@@ -171,20 +167,16 @@ const overlayAriaLabel = computed(() =>
         <view
           class="mgo-btn mgo-btn--primary"
           @tap="startChat"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('matchGuide.startChat')"
-          <!-- #endif -->
         >
           {{ t('matchGuide.startChat') }}
         </view>
         <view
           class="mgo-btn mgo-btn--ghost"
           @tap="close"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('matchGuide.later')"
-          <!-- #endif -->
         >
           {{ t('matchGuide.later') }}
         </view>

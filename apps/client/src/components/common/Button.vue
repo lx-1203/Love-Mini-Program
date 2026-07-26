@@ -120,11 +120,9 @@ function handleTap(e: TapEventLike) {
       hover-class="btn--pressed"
       hover-stay-time="120"
       @tap="handleTap"
-      <!-- #ifdef H5 -->
       role="button"
       :aria-disabled="disabled || loading"
       :aria-busy="loading"
-      <!-- #endif -->
     >
       <text v-if="icon && !loading" class="btn-icon">{{ icon }}</text>
       <view v-if="loading" class="btn-spinner" />
@@ -138,11 +136,9 @@ function handleTap(e: TapEventLike) {
     hover-class="btn--pressed"
     hover-stay-time="120"
     @tap="handleTap"
-    <!-- #ifdef H5 -->
     role="button"
     :aria-disabled="disabled || loading"
     :aria-busy="loading"
-    <!-- #endif -->
   >
     <text v-if="icon && !loading" class="btn-icon">{{ icon }}</text>
     <view v-if="loading" class="btn-spinner" />

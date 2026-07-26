@@ -166,10 +166,10 @@ function goBack() {
       <!-- 选择分类 -->
       <view class="category-section">
         <text class="section-label">选择分类</text>
-        <view class="category-list">
+        <view class="category-list" role="list">
           <view class="category-row">
             <view
-              v-for="(cat, idx) in categoryOptions.slice(0, 3)"
+              v-for="cat in categoryOptions.slice(0, 3)"
               :key="cat.key"
               class="category-option"
               :class="{ 'category-option--selected': selectedCategory === cat.key }"
@@ -180,7 +180,7 @@ function goBack() {
           </view>
           <view class="category-row">
             <view
-              v-for="(cat, idx) in categoryOptions.slice(3, 6)"
+              v-for="cat in categoryOptions.slice(3, 6)"
               :key="cat.key"
               class="category-option"
               :class="{ 'category-option--selected': selectedCategory === cat.key }"
@@ -199,7 +199,7 @@ function goBack() {
           v-model="title"
           class="title-input"
           placeholder="输入一个吸引人的标题"
-          maxlength="50"
+          maxlength="50" aria-label="输入一个吸引人的标题"
         />
       </view>
 
@@ -211,7 +211,7 @@ function goBack() {
           class="content-input"
           placeholder="分享你的想法、经验或求助..."
           :maxlength="MAX_LENGTH"
-          :show-confirm-bar="false"
+          :show-confirm-bar="false" aria-label="分享你的想法、经验或求助..."
         />
         <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
           <text>{{ currentLength }}/{{ MAX_LENGTH }}</text>

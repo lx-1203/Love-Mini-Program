@@ -72,30 +72,42 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "text-summary", "html", "lcov"],
       reportsDirectory: "coverage",
+      // 覆盖率统计范围：覆盖全部 src 下的 ts 与 vue 文件
+      // 通过 exclude 精细排除非业务代码，确保阈值反映真实业务覆盖情况
       include: [
-        "src/stores/**/*.ts",
-        "src/components/common/Button.vue",
-        "src/components/common/Ripple.vue",
-        "src/services/env.ts",
-        "src/utils/haptic.ts",
-        "src/view-models/profile.ts",
+        "src/**/*.ts",
+        "src/**/*.vue",
       ],
       exclude: [
+        // 测试自身不计入覆盖率
         "src/tests/**",
         "src/**/*.spec.ts",
+        "src/**/*.test.ts",
+        // 类型声明文件无运行时逻辑
+        "src/**/*.d.ts",
         "src/types/**",
-        "src/config/**",
+        // 入口文件包含大量框架副作用（uni-app 注入、Pinia 注册），难以单元测试
+        "src/main.ts",
+        // OpenAPI 自动生成的类型定义，非手写业务代码
+        "src/services/generated/**",
+        // Mock 数据用于测试桩，不参与覆盖率统计
         "src/services/mocks/**",
+        // 纯类型/常量定义文件：无逻辑分支，覆盖率统计无意义
+        "src/**/*.types.ts",
+        "src/**/*.constants.ts",
+        // 配置文件以静态声明为主，少量运行时逻辑由专门 spec 覆盖
+        "src/config/**",
       ],
-      // 阈值设定依据：当前 Phase K 首轮覆盖率基线
-      // 核心组件（Button/Ripple/checkin/profile/likes）覆盖率 ≥ 70%
-      // 整体覆盖率受未测试 store 影响（activity/campus/chat/circle 等暂未编写测试）
-      // 后续 Phase L 可补全 store 测试以提升阈值
+      // 阈值设定依据（Phase L 提升）：
+      // - lines/functions/statements: 50 → 70（业务核心模块应稳定覆盖）
+      // - branches: 50 → 65（分支覆盖略低，留出容差）
+      // 该阈值为目标值；若当前测试不满足，记录差距但不降低阈值，
+      // 后续通过补全 store/组件测试逐步达标。
       thresholds: {
-        statements: 25,
-        branches: 55,
-        functions: 50,
-        lines: 25,
+        statements: 70,
+        branches: 65,
+        functions: 70,
+        lines: 70,
       },
     },
   },

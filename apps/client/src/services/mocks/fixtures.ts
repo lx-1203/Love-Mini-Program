@@ -414,20 +414,9 @@ let photoGallery: string[] = [
   IMAGE_PATHS.AVATARS.AVATAR_2,
 ];
 
-/**
- * 个人视频 URL mock 状态。
- */
-let personalVideoUrl: string | null = null;
-
-/**
- * 半身照 URL mock 状态。
- */
-let halfBodyPhotoUrl: string | null = null;
-
-/**
- * 主页背景图 URL mock 状态。
- */
-let profileBackgroundUrl: string | null = null;
+// 修复（严格模式 noUnusedLocals）：personalVideoUrl / halfBodyPhotoUrl / profileBackgroundUrl
+// 三个模块级变量仅被赋值从未被读取（mock 上传函数直接返回 URL，无需持久化状态），已移除。
+// 下方 uploadProfileBackground / uploadProfileVideo / uploadProfileHalfBody 函数内对应的赋值语句也已同步移除。
 
 /**
  * 通知免打扰设置 mock 状态（功能6）。
@@ -706,9 +695,17 @@ function toTopicLabel(topicId?: string) {
   return topicId || "话题";
 }
 
-function resolveRecommendedPerson(payload: CreateTempChatSessionRequest) {
+function resolveRecommendedPerson(payload: CreateTempChatSessionRequest): RecommendedPersonSummary {
   if (payload.recommendedPersonId) {
-    return recommendedPeople.find((person) => person.id === payload.recommendedPersonId) ?? recommendedPeople[0];
+    // 修复（严格模式 noUncheckedIndexedAccess）：recommendedPeople[0] 索引访问返回 T | undefined，
+    // 此处兜底抛错，使调用方在异常（数组为空）场景获得明确错误而非 undefined。
+    const matched = recommendedPeople.find((person) => person.id === payload.recommendedPersonId);
+    if (matched) return matched;
+    const fallback = recommendedPeople[0];
+    if (!fallback) {
+      throw new Error("No recommended people configured");
+    }
+    return fallback;
   }
 
   if (!recommendedPeople.length) {
@@ -716,7 +713,13 @@ function resolveRecommendedPerson(payload: CreateTempChatSessionRequest) {
   }
 
   const index = Math.abs((payload.matchId || "fallback").length) % recommendedPeople.length;
-  return recommendedPeople[index];
+  // 修复（严格模式 noUncheckedIndexedAccess）：recommendedPeople[index] 索引访问返回 T | undefined，
+  // 由于前面已校验 length > 0，且 index 由 % length 计算，理论非空，此处兜底抛错以满足类型。
+  const person = recommendedPeople[index];
+  if (!person) {
+    throw new Error("No recommended people configured");
+  }
+  return person;
 }
 
 function createSessionView(
@@ -1118,7 +1121,9 @@ export const mockFixtures = {
       consecutiveDays: checkInStatus.consecutiveDays + 1,
     };
     return {
-      checkInDate: new Date().toISOString().split("T")[0],
+      // 修复（严格模式 noUncheckedIndexedAccess）：split("T")[0] 索引访问返回 string | undefined，
+      // 此处兜底取整串，确保 checkInDate 始终为 string（split 结果至少包含一个元素，正常不会越界）。
+      checkInDate: new Date().toISOString().split("T")[0] ?? new Date().toISOString(),
       consecutiveDays: checkInStatus.consecutiveDays,
       extraRecommendations: 5,
       extraRecommendQuota: 5,
@@ -1222,7 +1227,7 @@ export const mockFixtures = {
    */
   uploadProfileBackground(file: File): { url: string } {
     const url = `mock://profile/background/${encodeURIComponent(file.name)}`;
-    profileBackgroundUrl = url;
+    // 修复（严格模式 noUnusedLocals）：原 profileBackgroundUrl = url 赋值已移除（变量已删除）。
     return { url };
   },
 
@@ -1276,7 +1281,7 @@ export const mockFixtures = {
    */
   uploadProfileVideo(file: File): { url: string } {
     const url = `mock://profile/video/${encodeURIComponent(file.name)}`;
-    personalVideoUrl = url;
+    // 修复（严格模式 noUnusedLocals）：原 personalVideoUrl = url 赋值已移除（变量已删除）。
     return { url };
   },
 
@@ -1287,7 +1292,7 @@ export const mockFixtures = {
    */
   uploadProfileHalfBody(file: File): { url: string } {
     const url = `mock://profile/half-body/${encodeURIComponent(file.name)}`;
-    halfBodyPhotoUrl = url;
+    // 修复（严格模式 noUnusedLocals）：原 halfBodyPhotoUrl = url 赋值已移除（变量已删除）。
     return { url };
   },
 

@@ -63,6 +63,10 @@ const commentAriaLabel = computed(() => t('village.comment') + ', ' + (props.com
 const shareAriaLabel = computed(() => t('village.share') + ', ' + (props.shares || 0));
 const reportAriaLabel = computed(() => t('postReport.reportAria'));
 
+// 修复（严格模式 noUnusedLocals）：以下 ARIA 标签仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ ariaLabel, likeAriaLabel, commentAriaLabel, shareAriaLabel, reportAriaLabel });
+
 /**
  * 处理点赞点击：
  * 1. 触发心形爆破动画（仅当本次点击会让状态变为"已点赞"时）
@@ -109,10 +113,8 @@ function onReportSubmitted() {
   <view
     class="wall-card"
     @tap="emit('tap')"
-    <!-- #ifdef H5 -->
     role="article"
     :aria-label="ariaLabel"
-    <!-- #endif -->
   >
     <view class="wall-header">
       <Avatar :name="initials || name?.charAt(0)" :src="avatarUrl" size="sm" />
@@ -127,10 +129,8 @@ function onReportSubmitted() {
         @tap.stop="openReport"
         hover-class="wall-header__more--hover"
         hover-stay-time="100"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="reportAriaLabel"
-        <!-- #endif -->
       >
         <text class="wall-header__more-icon">⋯</text>
       </view>
@@ -144,7 +144,6 @@ function onReportSubmitted() {
         :src="img"
         mode="aspectFill"
         lazy-load
-        <!-- #ifdef H5 -->
         role="img"
         :aria-label="`${t('village.detailTitle')} ${idx + 1}`"
         <!-- #endif -->
@@ -160,9 +159,8 @@ function onReportSubmitted() {
         role="button"
         :aria-label="likeAriaLabel"
         :aria-pressed="isLiked || false"
-        <!-- #endif -->
       >
-        <image class="wall-action__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
+        <image class="wall-action__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
         <text>{{ likes || 0 }}</text>
         <!-- 点赞爆破动画：定位到点赞按钮中心 -->
         <LikeBurst ref="burstRef" />
@@ -170,21 +168,17 @@ function onReportSubmitted() {
       <view
         class="wall-action"
         @tap.stop="emit('comment')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="commentAriaLabel"
-        <!-- #endif -->
       >
-        <image class="wall-action__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.COMMENT" mode="aspectFit" />
+        <image class="wall-action__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.COMMENT" mode="aspectFit" alt="" />
         <text>{{ comments || 0 }}</text>
       </view>
       <view
         class="wall-action"
         @tap.stop="emit('share')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="shareAriaLabel"
-        <!-- #endif -->
       >
         <text>↗</text>
         <text>{{ shares || 0 }}</text>

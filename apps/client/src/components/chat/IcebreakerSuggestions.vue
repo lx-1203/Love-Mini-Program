@@ -40,10 +40,8 @@ const { t } = useI18n();
         <view
           class="icebreaker__refresh-btn"
           @tap="emit('refresh')"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('chat.icebreakerRefreshAria')"
-          <!-- #endif -->
         >
           <text class="icebreaker__refresh-icon">&#x21bb;</text>
           <text class="icebreaker__refresh-text">{{ t('chat.icebreakerRefresh') }}</text>
@@ -55,11 +53,9 @@ const { t } = useI18n();
     <view
       v-if="loading && items.length === 0"
       class="icebreaker__loading"
-      <!-- #ifdef H5 -->
       role="status"
       aria-live="polite"
       :aria-label="t('chat.icebreakerLoading')"
-      <!-- #endif -->
     >
       <view class="icebreaker__skeleton" v-for="n in 3" :key="n">
         <view class="icebreaker__skeleton-line" />
@@ -75,16 +71,14 @@ const { t } = useI18n();
       :show-scrollbar="false"
       :enhanced="true"
     >
-      <view class="icebreaker__list">
+      <view class="icebreaker__list" role="list">
         <view
           v-for="item in items"
           :key="item.id"
           class="icebreaker__card"
           @tap="emit('select', item.content)"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('chat.icebreakerCardAria', { content: item.content })"
-          <!-- #endif -->
         >
           <view class="icebreaker__card-badge">
             <text class="icebreaker__card-badge-text">{{ item.category }}</text>
@@ -99,10 +93,8 @@ const { t } = useI18n();
     <view
       v-else
       class="icebreaker__empty"
-      <!-- #ifdef H5 -->
       role="status"
       aria-live="polite"
-      <!-- #endif -->
     >
       <text class="icebreaker__empty-text">{{ t('chat.icebreakerEmpty') }}</text>
     </view>

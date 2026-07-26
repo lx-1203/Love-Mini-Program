@@ -30,6 +30,10 @@ const { t: tt } = useI18n();
 
 const avatarAriaLabel = computed(() => props.name || tt('messages.avatarAria'));
 
+// 修复（严格模式 noUnusedLocals）：avatarAriaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ avatarAriaLabel });
+
 const sizeMap = { xs: t.component.avatar.xs, sm: t.component.avatar.sm, md: t.component.avatar.md, lg: t.component.avatar.lg, xl: t.component.avatar.xl };
 
 const avatarPadding = computed(() => {
@@ -95,10 +99,8 @@ const ringBg = computed(() => {
       'avatar--green-ring': ring && !vipRing && !vip,
     }"
     :style="{ ...sizeStyle, background: ringBg }"
-    <!-- #ifdef H5 -->
     role="img"
     :aria-label="avatarAriaLabel"
-    <!-- #endif -->
   >
     <SafeImage
       v-if="!showFallback"
@@ -106,6 +108,7 @@ const ringBg = computed(() => {
       :fallback="IMAGE_PATHS.DEFAULT_AVATAR"
       mode="aspectFill"
       :lazy-load="true"
+      :alt="avatarAriaLabel"
       custom-class="avatar-img"
       :custom-style="innerSizeStyle"
     />

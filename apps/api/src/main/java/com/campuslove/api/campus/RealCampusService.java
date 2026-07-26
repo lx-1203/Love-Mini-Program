@@ -1,5 +1,6 @@
 package com.campuslove.api.campus;
 
+import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.discover.ActivityView;
@@ -14,6 +15,7 @@ import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.CampusTopicReplyRepository;
 import com.campuslove.api.repository.CampusTopicRepository;
 import com.campuslove.api.repository.PostRepository;
+import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.village.PostAuthorView;
 import com.campuslove.api.village.PostSummaryView;
@@ -23,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -42,6 +45,7 @@ public class RealCampusService implements CampusService {
     private final PostRepository postRepository;
     private final ActivityRepository activityRepository;
     private final UserRepository userRepository;
+    private final UserCampusProfileRepository userCampusProfileRepository;
     private final ObjectMapper objectMapper;
     private final SensitiveWordFilter sensitiveWordFilter;
 
@@ -51,6 +55,7 @@ public class RealCampusService implements CampusService {
             PostRepository postRepository,
             ActivityRepository activityRepository,
             UserRepository userRepository,
+            UserCampusProfileRepository userCampusProfileRepository,
             ObjectMapper objectMapper,
             SensitiveWordFilter sensitiveWordFilter) {
         this.campusTopicRepository = campusTopicRepository;
@@ -58,6 +63,7 @@ public class RealCampusService implements CampusService {
         this.postRepository = postRepository;
         this.activityRepository = activityRepository;
         this.userRepository = userRepository;
+        this.userCampusProfileRepository = userCampusProfileRepository;
         this.objectMapper = objectMapper;
         this.sensitiveWordFilter = sensitiveWordFilter;
     }
@@ -231,6 +237,22 @@ public class RealCampusService implements CampusService {
                         activity.getActivityDate()
                 ))
                 .toList();
+    }
+
+    // ---- 学校列表 ----
+
+    /**
+     * 获取所有学校（校区）列表。
+     * 从 UserCampusProfile 表中查询 distinct campusName，按名称升序排列。
+     *
+     * <p>缓存策略：使用 {@link CacheNames#CAMPUS_SCHOOLS} 缓存，TTL 1 小时，
+     * key 固定为 "all"（全量列表，无参数）。学校列表变更频率极低，TTL 较长以最大化命中率。</p>
+     *
+     * @return 去重后的校区名称列表（按名称升序）
+     */
+    @Cacheable(cacheNames = CacheNames.CAMPUS_SCHOOLS, key = "'all'")
+    public List<String> listSchools() {
+        return userCampusProfileRepository.findDistinctCampusNames();
     }
 
     // ---- 私有辅助方法 ----

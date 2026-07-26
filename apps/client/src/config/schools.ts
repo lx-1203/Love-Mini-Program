@@ -21,5 +21,7 @@ export const DEFAULT_SCHOOL_ID = 'pku';
 
 /** 根据 ID 获取学校名称 */
 export function getSchoolName(id: string): string {
-  return SCHOOLS.find(s => s.id === id)?.name ?? SCHOOLS[0].name;
+  // 修复（严格模式 noUncheckedIndexedAccess）：SCHOOLS[0] 索引访问返回 School | undefined，
+  // 此处追加可选链兜底，确保未匹配时仍返回非空字符串。
+  return SCHOOLS.find(s => s.id === id)?.name ?? SCHOOLS[0]?.name ?? '';
 }

@@ -32,22 +32,18 @@ const subText = computed(() => t(subKey.value));
 <template>
   <view
     class="error"
-    <!-- #ifdef H5 -->
     role="alert"
     aria-live="assertive"
     :aria-label="msgText"
-    <!-- #endif -->
   >
-    <image class="error-icon" :src="iconSrc" mode="aspectFit" />
+    <image class="error-icon" :src="iconSrc" mode="aspectFit" alt="" />
     <text class="error-msg">{{ msgText }}</text>
     <text class="error-sub">{{ subText }}</text>
     <view
       class="error-btn"
       @tap="emit('retry')"
-      <!-- #ifdef H5 -->
       role="button"
       :aria-label="t('error.retry')"
-      <!-- #endif -->
     >
       <text class="error-btn-text">{{ t('error.retry') }}</text>
     </view>

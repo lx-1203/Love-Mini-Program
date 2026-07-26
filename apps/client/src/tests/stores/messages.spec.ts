@@ -28,7 +28,9 @@ describe("messages store", () => {
     expect(store.sessions.length).toBeGreaterThan(0);
     expect(store.loading).toBe(false);
     // pinned sessions should come first
-    const firstPinned = store.sessions[0];
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.sessions[0] 索引访问返回 T | undefined，
+    // 测试场景已通过 fetchSessions 加载非空数据，此处使用非空断言 ! 简化类型。
+    const firstPinned = store.sessions[0]!;
     const hasPinned = store.sessions.some((s) => s.pinned);
     if (hasPinned) {
       expect(firstPinned.pinned).toBe(true);
@@ -42,13 +44,16 @@ describe("messages store", () => {
     const store = useMessagesStore();
     await store.fetchSessions();
 
-    const session = store.sessions[0];
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.sessions[0] 同上，使用非空断言 !。
+    const session = store.sessions[0]!;
     const beforeCount = store.currentMessages.length;
 
     await store.sendMessage(session.id, "你好！");
 
     expect(store.currentMessages.length).toBe(beforeCount + 1);
-    const lastMsg = store.currentMessages[store.currentMessages.length - 1];
+    // 修复（严格模式 noUncheckedIndexedAccess）：currentMessages[length - 1] 索引访问返回 T | undefined，
+    // 前面 length 断言已确保非空，此处使用非空断言 !。
+    const lastMsg = store.currentMessages[store.currentMessages.length - 1]!;
     expect(lastMsg.body).toBe("你好！");
     expect(lastMsg.sender).toBe("self");
     expect(lastMsg.kind).toBe("text");
@@ -66,7 +71,7 @@ describe("messages store", () => {
     await store.fetchSessions();
 
     await expect(
-      store.sendMessage(store.sessions[0].id, "")
+      store.sendMessage(store.sessions[0]!.id, "")
     ).rejects.toThrow("消息内容不能为空");
   });
 
@@ -75,7 +80,7 @@ describe("messages store", () => {
     await store.fetchSessions();
 
     await expect(
-      store.sendMessage(store.sessions[0].id, "   ")
+      store.sendMessage(store.sessions[0]!.id, "   ")
     ).rejects.toThrow("消息内容不能为空");
   });
 
@@ -88,7 +93,7 @@ describe("messages store", () => {
 
     const tooLong = "a".repeat(5001);
     await expect(
-      store.sendMessage(store.sessions[0].id, tooLong)
+      store.sendMessage(store.sessions[0]!.id, tooLong)
     ).rejects.toThrow("消息内容过长，请分段发送");
   });
 
@@ -243,10 +248,12 @@ describe("messages store", () => {
 
     expect(store.notifications.length).toBeGreaterThan(0);
     // verify descending order by createdAt
+    // 修复（严格模式 noUncheckedIndexedAccess）：notifications[i - 1] / notifications[i] 索引访问返回 T | undefined，
+    // 循环边界 i < length 已确保不越界，此处使用非空断言 ! 简化类型。
     for (let i = 1; i < store.notifications.length; i++) {
       expect(
-        Date.parse(store.notifications[i - 1].createdAt)
-      ).toBeGreaterThanOrEqual(Date.parse(store.notifications[i].createdAt));
+        Date.parse(store.notifications[i - 1]!.createdAt)
+      ).toBeGreaterThanOrEqual(Date.parse(store.notifications[i]!.createdAt));
     }
   });
 

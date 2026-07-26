@@ -7,15 +7,44 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
 /**
  * 心动信号实体，对应 heart_signals 表。
  * 状态枚举: pending / accepted / expired / declined。
+ *
+ * <p>索引说明（与数据库 Flyway 脚本保持一致）：</p>
+ * <ul>
+ *   <li>idx_heart_signals_user_a：user_a_id 单列索引，按发起方查询</li>
+ *   <li>idx_heart_signals_user_b：user_b_id 单列索引，按接收方查询</li>
+ *   <li>idx_heart_signals_expires_at：expires_at 索引，按过期时间扫描</li>
+ *   <li>idx_heart_signals_status：status 索引，按状态过滤（pending/accepted/expired/declined）</li>
+ *   <li>idx_heart_signals_created_at：created_at 索引，按创建时间排序（任务规格中 sender_id+receiver_id 的对应，因表已对 (user_a_id, user_b_id) 建有功能性唯一约束，这里补充 created_at 单列索引）</li>
+ * </ul>
+ *
+ * <p>注：任务规格中提到 sender_id + receiver_id 索引，实际表中为 user_a_id + user_b_id，
+ * 数据库已对 (LEAST(user_a_id, user_b_id), GREATEST(user_a_id, user_b_id)) 建立功能性唯一约束
+ * （uk_heart_signals_users），单列索引 idx_heart_signals_user_a / idx_heart_signals_user_b 已覆盖，
+ * 此处补充 created_at 单列索引。详见 V2026.05.21.0005 建表脚本。</p>
  */
 @Entity
-@Table(name = "heart_signals")
+@Table(
+    name = "heart_signals",
+    indexes = {
+        // 用户 A ID 索引：按发起方查询心动信号
+        @Index(name = "idx_heart_signals_user_a", columnList = "user_a_id"),
+        // 用户 B ID 索引：按接收方查询心动信号
+        @Index(name = "idx_heart_signals_user_b", columnList = "user_b_id"),
+        // 过期时间索引：定时任务扫描过期信号
+        @Index(name = "idx_heart_signals_expires_at", columnList = "expires_at"),
+        // 状态索引：按状态过滤（pending/accepted/expired/declined）
+        @Index(name = "idx_heart_signals_status", columnList = "status"),
+        // 创建时间索引：按时间排序、分页查询
+        @Index(name = "idx_heart_signals_created_at", columnList = "created_at")
+    }
+)
 public class HeartSignal {
 
     /** 心动信号状态枚举 */

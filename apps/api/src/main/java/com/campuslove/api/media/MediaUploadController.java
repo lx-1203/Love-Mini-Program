@@ -1,5 +1,6 @@
 package com.campuslove.api.media;
 
+import com.campuslove.api.ratelimit.RateLimit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -49,12 +50,16 @@ public class MediaUploadController {
     /**
      * 上传媒体文件。
      *
+     * <p>速率限制：桶容量 30，每秒补充 1 个令牌，按客户端 IP 限流，
+     * 防止恶意刷上传占用存储与带宽。</p>
+     *
      * @param file        multipart 文件
      * @param type        媒体类型（image/video/background）
      * @param durationMs  视频时长（毫秒），可选，由前端记录
      * @return 上传响应（URL + 元信息）
      */
     @PostMapping("/upload")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
     public UploadResponse upload(@RequestParam("file") MultipartFile file,
                                  @RequestParam("type") String type,
                                  @RequestParam(value = "durationMs", required = false)

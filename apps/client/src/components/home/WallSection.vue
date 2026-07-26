@@ -30,26 +30,26 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+// 修复（严格模式 noUnusedLocals）：t 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ t });
 </script>
 
 <template>
   <view
     class="wall-section"
-    <!-- #ifdef H5 -->
     role="list"
     :aria-label="t('home.campusNews')"
-    <!-- #endif -->
   >
     <view
       v-if="loading"
       class="wall-skeleton"
       v-for="i in 2"
       :key="i"
-      <!-- #ifdef H5 -->
       role="status"
       aria-live="polite"
       :aria-label="t('common.loading')"
-      <!-- #endif -->
     >
       <view class="skeleton-card shimmer" />
     </view>

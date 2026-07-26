@@ -7,7 +7,8 @@
  */
 import { ref, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { lightHaptic, mediumHaptic } from "../../utils/haptic";
+// 修复（严格模式 noUnusedLocals）：mediumHaptic 导入后未使用，仅保留 lightHaptic。
+import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 
 const props = defineProps<{
@@ -72,18 +73,15 @@ function handleClose() {
     v-if="visible"
     class="long-press-menu"
     :class="{ 'long-press-menu--active': animating }"
-    <!-- #ifdef H5 -->
     role="dialog"
     aria-modal="true"
     :aria-label="t('discover.menuTitle')"
-    <!-- #endif -->
   >
     <!-- 半透明遮罩 -->
     <view
       class="long-press-menu__backdrop"
       :class="{ 'long-press-menu__backdrop--active': animating }"
       @tap="handleClose"
-      <!-- #ifdef H5 -->
       role="button"
       :aria-label="t('common.cancel')"
       <!-- #endif -->
@@ -110,10 +108,9 @@ function handleClose() {
         <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('discover.menuDetail')"
-        <!-- #endif -->
       >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--detail">
-          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" />
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" alt="" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">{{ t('discover.menuDetail') }}</text>
@@ -126,13 +123,11 @@ function handleClose() {
         class="long-press-menu__item press-feedback"
         hover-class="long-press-menu__item--pressed"
         @tap="handleAction('superLike')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('discover.superLike')"
-        <!-- #endif -->
       >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--super">
-          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.STAR_SVG" mode="aspectFit" />
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.STAR_SVG" mode="aspectFit" alt="" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">{{ t('discover.superLike') }}</text>
@@ -145,13 +140,11 @@ function handleClose() {
         class="long-press-menu__item press-feedback"
         hover-class="long-press-menu__item--pressed"
         @tap="handleAction('notInterested')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('discover.menuNotInterested')"
-        <!-- #endif -->
       >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--not-interested">
-          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.EYE_OFF" mode="aspectFit" />
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.EYE_OFF" mode="aspectFit" alt="" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">{{ t('discover.menuNotInterested') }}</text>
@@ -164,13 +157,11 @@ function handleClose() {
         class="long-press-menu__item press-feedback"
         hover-class="long-press-menu__item--pressed"
         @tap="handleAction('report')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('discover.menuReport')"
-        <!-- #endif -->
       >
         <view class="long-press-menu__item-icon long-press-menu__item-icon--report">
-          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" />
+          <image class="long-press-menu__item-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" alt="" />
         </view>
         <view class="long-press-menu__item-content">
           <text class="long-press-menu__item-title">{{ t('discover.menuReport') }}</text>
@@ -184,10 +175,8 @@ function handleClose() {
         class="long-press-menu__cancel press-feedback"
         hover-class="long-press-menu__cancel--pressed"
         @tap="handleClose"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('common.cancel')"
-        <!-- #endif -->
       >
         <text class="long-press-menu__cancel-text">{{ t('common.cancel') }}</text>
       </view>

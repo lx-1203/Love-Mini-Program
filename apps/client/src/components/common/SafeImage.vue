@@ -2,17 +2,16 @@
   <view
     class="safe-image"
     :class="{ 'safe-image--loading': isLoading, 'safe-image--failed': allFailed }"
-    <!-- #ifdef H5 -->
     role="img"
     :aria-label="alt || '图片'"
     :aria-busy="isLoading"
-    <!-- #endif -->
   >
     <image
       v-if="!hasError"
       :src="displaySrc"
       :mode="mode"
       :lazy-load="lazyLoad"
+      :alt="alt"
       :class="['safe-image__img', customClass, { 'safe-image__img--hidden': isLoading }]"
       :style="customStyle"
       @error="onError"
@@ -23,6 +22,7 @@
       :src="fallback"
       :mode="mode"
       :lazy-load="lazyLoad"
+      :alt="alt"
       :class="['safe-image__img', 'safe-image__img--fallback', customClass]"
       :style="customStyle"
       @error="onFallbackError"

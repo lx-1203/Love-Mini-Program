@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "_comment_root_base": "根 monorepo 共享 TS 配置基线。所有子项目（apps/client、apps/admin）通过 extends 继承本文件，避免重复配置；本文件仅声明跨项目通用的编译选项与严格模式开关，子项目可在自身 tsconfig 中追加或覆盖。",
+  "compilerOptions": {
+    /* ========== 目标与模块 ========== */
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "jsx": "preserve",
+
+    /* ========== 严格模式第一阶段：strict 家族全量启用 ==========
+       说明：strict: true 会隐式开启下列 7 个子选项，此处显式列出以便阅读和维护。
+       - strictNullChecks：null/undefined 不再隐式 assignable 给非可空类型
+       - strictFunctionTypes：函数参数类型启用逆变检查（更严格的函数兼容性）
+       - strictBindCallApply：bind/call/apply 严格校验参数类型
+       - strictPropertyInitialization：类的属性必须在构造函数中初始化或标记为可空
+       - noImplicitThis：禁止 this 隐式 any
+       - alwaysStrict：编译输出始终带 'use strict'
+       - noImplicitAny：禁止隐式 any（与 strict: true 一同启用，禁止在子项目中关闭）
+    */
+    "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noImplicitAny": true,
+
+    /* ========== 严格模式第二阶段：可选严格选项（前 4 项） ==========
+       说明：这些选项不属于 strict: true 范围，需要显式启用。
+       - noUnusedLocals：禁止未使用的局部变量
+       - noUnusedParameters：禁止未使用的函数参数
+       - noImplicitReturns：函数所有代码路径必须显式 return
+       - noFallthroughCasesInSwitch：switch case 必须以 break/return 结束，禁止穿透
+    */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* ========== 严格模式第三阶段：noUncheckedIndexedAccess（最严格） ==========
+       说明：通过索引访问（如 obj[key] / arr[i]）得到的类型会自动追加 | undefined，
+       强制要求调用方在使用前进行非空校验，杜绝运行时 undefined 访问。
+       这是递进式启用的最后一阶段，已在前两阶段稳定后开启。
+    */
+    "noUncheckedIndexedAccess": true
+  }
+}

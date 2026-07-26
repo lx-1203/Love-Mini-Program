@@ -3,7 +3,6 @@
  * 逛逛页 - 校内商品/票务/优惠券展示
  */
 import { ref } from "vue";
-import { onShow } from "@dcloudio/uni-app";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -104,7 +103,7 @@ function goToDetail(itemId: string) {
     <!-- 分类标签 -->
     <view class="category-bar">
       <scroll-view scroll-x class="category-scroll" show-scrollbar="false">
-        <view class="category-list">
+        <view class="category-list" role="list">
           <view
             v-for="cat in categories"
             :key="cat.id"
@@ -132,7 +131,7 @@ function goToDetail(itemId: string) {
           @tap="goToDetail(item.id)"
         >
           <view class="shop-card__image-wrap">
-            <SafeImage :src="item.image" custom-class="shop-card__image" mode="aspectFill" />
+            <SafeImage :src="item.image" custom-class="shop-card__image" mode="aspectFill" :lazy-load="true" />
             <view v-if="item.tag" class="shop-card__tag">
               <text>{{ item.tag }}</text>
             </view>

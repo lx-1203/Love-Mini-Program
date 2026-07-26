@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
@@ -14,9 +15,32 @@ import java.time.LocalDateTime;
  * 互动通知实体，对应 notifications 表。
  * 通知类型: follow / like / comment / visitor / match。
  * 关联实体类型: post / comment / user。
+ *
+ * <p>索引说明（与数据库 Flyway 脚本保持一致）：</p>
+ * <ul>
+ *   <li>idx_notifications_user：user_id 单列索引，按接收者查询通知</li>
+ *   <li>idx_notifications_user_read：(user_id, is_read) 复合索引，查询未读通知</li>
+ *   <li>idx_notifications_created：created_at 索引，按时间排序</li>
+ *   <li>idx_notifications_type：type 索引，按通知类型筛选</li>
+ *   <li>idx_notifications_user_created_at：(user_id, created_at) 复合索引，用户通知按时间分页</li>
+ * </ul>
  */
 @Entity
-@Table(name = "notifications")
+@Table(
+    name = "notifications",
+    indexes = {
+        // 接收者用户 ID 索引：按用户查询通知列表
+        @Index(name = "idx_notifications_user", columnList = "user_id"),
+        // (接收者, 是否已读) 复合索引：查询未读通知（高频查询）
+        @Index(name = "idx_notifications_user_read", columnList = "user_id, is_read"),
+        // 创建时间索引：通知按时间排序
+        @Index(name = "idx_notifications_created", columnList = "created_at"),
+        // 通知类型索引：按类型筛选（follow/like/comment/visitor/match）
+        @Index(name = "idx_notifications_type", columnList = "type"),
+        // (接收者, 创建时间) 复合索引：用户通知按时间分页
+        @Index(name = "idx_notifications_user_created_at", columnList = "user_id, created_at")
+    }
+)
 public class Notification {
 
     /** 通知类型枚举 */

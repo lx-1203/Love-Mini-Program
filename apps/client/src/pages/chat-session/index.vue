@@ -10,7 +10,8 @@
  * - ./api              纯 API 调用（recallTempChatMessageApi）
  * - ./index.vue        本文件：页面转场 / 生命周期 / UI 事件 / 状态管理
  */
-import { computed, ref, watch, nextTick } from "vue";
+// 修复（严格模式 noUnusedLocals）：watch 导入后未使用，已移除。
+import { computed, ref, nextTick } from "vue";
 import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import AppShell from "../../components/layout/AppShell.vue";
@@ -29,6 +30,8 @@ import { chatPageRequirements } from "../../config/page-access";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { lightHaptic } from "../../utils/haptic";
+// Sentry 监控：消息发送失败上报异常，页面切换 / 关键按钮点击记录面包屑
+import { captureException, addBreadcrumb } from "../../services/sentry";
 import type { RecorderStopResult } from "../../utils/audio-recorder";
 import type { ChatMessageView } from "./types";
 // 纯逻辑模块导入（页面转场逻辑仍内联在本文件中）
@@ -54,6 +57,13 @@ import {
   toChatBubbleDeliveryStatus,
 } from "./view-models";
 import { recallTempChatMessageApi } from "./api";
+// 统一常量：空闲破冰延迟、倒计时计时器间隔
+// 修复（严格模式 noUnusedLocals）：RECORDING_TICK_MS / RECORDER_MAX_DURATION_MS / RECORDER_MIN_DURATION_SECONDS
+// 仅在已移除的 startVoiceRecord / initRecorder 中使用，已从导入中移除。
+import {
+  IDLE_ICEBREAKER_DELAY_MS,
+  COUNTDOWN_TICK_MS,
+} from "../../constants/chat";
 
 const messagesStore = useMessagesStore();
 const chatStore = useChatStore();
@@ -171,6 +181,12 @@ onLoad((query) => {
 });
 
 onShow(() => {
+  // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
+  addBreadcrumb("navigation", "page_enter", {
+    url: "/pages/chat-session/index",
+    sessionId: sessionId.value,
+  });
+
   // 页面过渡动画：先重置再触发淡入
   pageVisible.value = false;
   void nextTick(() => {
@@ -259,7 +275,7 @@ function startTempCountdown() {
 
   const session = currentSession.value;
   if (session?.sessionType === "temp_anonymous" && session.closesAt) {
-    countdownTimer = setInterval(updateTempCountdown, 1000);
+    countdownTimer = setInterval(updateTempCountdown, COUNTDOWN_TICK_MS);
   }
 }
 
@@ -297,6 +313,12 @@ async function sendText() {
     return;
   }
 
+  // 记录关键按钮点击面包屑，便于在发送失败时定位用户操作节点
+  addBreadcrumb("ui", "button_click", {
+    id: "chat.sendText",
+    sessionId: sessionId.value,
+  });
+
   const messageToSend = draft.value;
   const quoteRef = quoteReply.value;
   const currentSessionId = sessionId.value;
@@ -314,6 +336,11 @@ async function sendText() {
     draft.value = "";
     quoteReply.value = null;
   } catch (error) {
+    // 消息发送失败：上报到 Sentry，source 标记为 chat.sendText 便于后台筛选
+    captureException(error, {
+      source: "chat.sendText",
+      sessionId: currentSessionId,
+    });
     const message = error instanceof Error ? error.message : "发送失败，请稍后重试";
     uni.showToast({ title: message, icon: "none" });
   }
@@ -350,150 +377,41 @@ function toggleVoiceMode() {
   }
 }
 
-/**
- * 录音停止回调参数（仅消费 tempFilePath 字段）
- *
- * uni-app 的 RecorderManager.onStop 回调签名是 (result: any) => void，
- * 此处通过最小契约收敛到实际使用的字段，便于类型安全与静态检查。
- */
-interface RecorderStopCallbackResult {
-  tempFilePath?: string;
-}
+// 修复（严格模式 noUnusedLocals）：以下录音相关类型（RecorderStopCallbackResult /
+// RecorderErrorCallbackResult / RecorderManager）仅在已移除的 initRecorder 中使用，
+// 属于历史遗留死代码，已一并移除。语音录制统一通过 VoiceRecorder 组件处理。
 
-/**
- * 录音错误回调参数（兼容字符串与对象两种形态）
- *
- * uni-app 错误回调可能返回字符串或 { errMsg / message } 形式的对象。
- */
-type RecorderErrorCallbackResult =
-  | string
-  | { errMsg?: string; message?: string }
-  | undefined;
-
-/** 录音管理器实例（mp-weixin 下通过 uni.getRecorderManager 获取） */
-type RecorderManager = ReturnType<typeof uni.getRecorderManager>;
-
-/** 录音管理器 */
-const recorderManager = ref<RecorderManager | null>(null);
+// 修复（严格模式 noUnusedLocals）：以下录音相关变量与 initRecorder 函数均为历史遗留代码，
+// 语音录制已统一由 VoiceRecorder 组件处理（通过 @recorded / @cancel / @state-change 事件）。
+// 已移除：recorderManager / recordingSeconds / recordingTimer / recorderListenersRegistered / initRecorder。
+// 保留：isRecording（由 handleVoiceStateChange 写入，用于页面录音状态同步）。
 const isRecording = ref(false);
-const recordingSeconds = ref(0);
-let recordingTimer: ReturnType<typeof setInterval> | null = null;
-let recorderListenersRegistered = false;
 
-/** 初始化录音管理器（只注册一次监听器，避免重复注册） */
-function initRecorder() {
-  if (recorderListenersRegistered) return;
-  // #ifdef MP-WEIXIN
-  const recorder = uni.getRecorderManager();
-  recorderManager.value = recorder;
-
-  recorder.onStart(() => {
-    isRecording.value = true;
-    recordingSeconds.value = 0;
-    recordingTimer = setInterval(() => {
-      recordingSeconds.value++;
-    }, 1000);
-  });
-
-  recorder.onStop((res: RecorderStopCallbackResult) => {
-    isRecording.value = false;
-    if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
-    const duration = Math.round(recordingSeconds.value);
-    recordingSeconds.value = 0;
-    if (duration < 1) {
-      uni.showToast({ title: "录音时间太短", icon: "none" });
-      return;
-    }
-    sendVoiceMessage(res?.tempFilePath ?? "", duration);
-  });
-
-  recorder.onError((err: RecorderErrorCallbackResult) => {
-    isRecording.value = false;
-    if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
-    console.error("[语音录制] 失败:", err);
-    uni.showToast({ title: "录音失败", icon: "none" });
-  });
-
-  recorderListenersRegistered = true;
-  // #endif
-}
+/** 初始化录音管理器（只注册一次监听器，避免重复注册）
+ *
+ * 修复（严格模式 noUnusedLocals）：initRecorder 函数定义后未被调用（原唯一调用方
+ * startVoiceRecord 已移除），语音录制统一通过 VoiceRecorder 组件处理，已移除。
+ */
 
 /** 开始语音录制
  * mp-weixin 调用 uni.getRecorderManager 真实录音
  * H5 等环境进入模拟录音状态，用于流程演示与 UI 验证
+ *
+ * 修复（严格模式 noUnusedLocals）：startVoiceRecord 函数定义后未被模板/脚本调用，
+ * 属于历史遗留死代码，已移除。语音录制统一通过 VoiceRecorder 组件处理。
  */
-function startVoiceRecord() {
-  if (!sessionId.value || isSessionClosed.value) {
-    uni.showToast({ title: "会话已结束，无法发送消息", icon: "none" });
-    return;
-  }
-
-  // #ifdef MP-WEIXIN
-  initRecorder(); // 首次调用时注册监听器，后续复用
-  recorderManager.value?.start({ format: "mp3", duration: 60000 });
-  // #endif
-
-  // #ifndef MP-WEIXIN
-  // H5 降级：模拟录音状态，便于在非小程序环境验证交互流程
-  isRecording.value = true;
-  recordingSeconds.value = 0;
-  recordingTimer = setInterval(() => {
-    recordingSeconds.value++;
-  }, 1000);
-  // #endif
-}
 
 /** 结束语音录制
  * mp-weixin 停止录音并在 onStop 回调中发送
  * H5 直接根据模拟时长判断并发送
+ *
+ * 修复（严格模式 noUnusedLocals）：stopVoiceRecord 函数定义后未被模板/脚本调用，
+ * 属于历史遗留死代码，已移除。mp-weixin 录音停止由 VoiceRecorder 组件内部
+ * 通过 recorderManager.stop() 触发，并在 onStop 回调中调用 sendVoiceMessage。
  */
-function stopVoiceRecord() {
-  // #ifdef MP-WEIXIN
-  if (recorderManager.value) {
-    recorderManager.value.stop();
-  }
-  // #endif
 
-  // #ifndef MP-WEIXIN
-  if (recordingTimer) {
-    clearInterval(recordingTimer);
-    recordingTimer = null;
-  }
-  const duration = Math.round(recordingSeconds.value);
-  isRecording.value = false;
-  recordingSeconds.value = 0;
-  if (duration < 1) {
-    uni.showToast({ title: "说话时间太短", icon: "none" });
-    return;
-  }
-  void sendVoiceMessage("", duration);
-  // #endif
-}
-
-async function sendVoiceMessage(filePath: string, duration: number) {
-  if (!sessionId.value) {
-    uni.showToast({ title: "会话标识缺失，无法发送语音", icon: "none" });
-    return;
-  }
-
-  const currentSessionId = sessionId.value;
-  try {
-    if (isTempSession.value) {
-      await chatStore.sendVoice(duration);
-    } else {
-      await messagesStore.sendMessage(currentSessionId, `[语音消息 ${duration}秒]`);
-    }
-    uni.showToast({ title: "语音已发送", icon: "success" });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "语音发送失败";
-    uni.showToast({ title: message, icon: "none" });
-  }
-}
-
-/** 发送语音（mock 兼容旧接口） */
-async function sendVoice() {
-  startVoiceRecord();
-}
+/* 修复（严格模式 noUnusedLocals）：sendVoiceMessage 函数定义后未被调用（原唯一调用方
+   initRecorder 的 onStop 回调已移除），语音发送统一通过 handleVoiceRecorded 处理，已移除。 */
 
 /* ========== 破冰话题事件处理 ========== */
 
@@ -529,7 +447,7 @@ function onDraftChange() {
   }
 }
 
-/** 重置空闲计时器：5 秒后显示破冰话题提示 */
+/** 重置空闲计时器：IDLE_ICEBREAKER_DELAY_MS 后显示破冰话题提示 */
 function resetIdleTimer() {
   clearIdleTimer();
   idleTimer = setTimeout(() => {
@@ -537,7 +455,7 @@ function resetIdleTimer() {
     if (computeIdleIcebreakerVisible(inputFocused.value, draft.value)) {
       showIdleIcebreakerHint.value = true;
     }
-  }, 5000);
+  }, IDLE_ICEBREAKER_DELAY_MS);
 }
 
 /** 清除空闲计时器 */
@@ -592,6 +510,46 @@ function handleMessageLongpress(messageId: string) {
 /** 关闭长按菜单 */
 function closeLongPressMenu() {
   longPressMenu.value.visible = false;
+}
+
+/**
+ * 复制当前长按选中的消息内容到剪贴板。
+ * P2 修复（长按复制支持）：用户长按聊天消息后选择"复制"，
+ * 调用 uni.setClipboardData 写入消息正文，复制成功后 toast 提示。
+ * 兼容性：H5 / mp-weixin 均支持 uni.setClipboardData。
+ */
+function handleCopyMessage() {
+  const messageId = longPressMenu.value.messageId;
+  if (!messageId) {
+    closeLongPressMenu();
+    return;
+  }
+  const allMessages = [
+    ...messagesStore.currentMessages,
+    ...(chatStore.activeSession?.messages || []),
+  ];
+  const message = allMessages.find((m) => m.id === messageId);
+  if (!message) {
+    closeLongPressMenu();
+    return;
+  }
+  // 仅支持文本/emoji 类型消息复制，语音类型不复制
+  if (message.kind && message.kind !== "text" && message.kind !== "emoji") {
+    uni.showToast({ title: "当前消息类型不支持复制", icon: "none" });
+    closeLongPressMenu();
+    return;
+  }
+  uni.setClipboardData({
+    data: message.body || "",
+    success: () => {
+      // H5 端 uni.setClipboardData 内部已弹 toast，这里仅兜底
+      // mp-weixin 端 success 后会自动展示内置 toast，无需重复
+    },
+    fail: () => {
+      uni.showToast({ title: "复制失败，请重试", icon: "none" });
+    },
+  });
+  closeLongPressMenu();
 }
 
 /** 引用消息 */
@@ -743,7 +701,11 @@ function parseRedPacketMessage(
 ): { redPacketId: number; blessing: string } | null {
   const match = message.body.match(RED_PACKET_BODY_PATTERN);
   if (!match) return null;
-  const id = parseInt(match[1], 10);
+  // 修复（严格模式 noUncheckedIndexedAccess）：match[1] 索引访问返回 string | undefined，
+  // 此处提取后做非空校验，确保 parseInt 入参为 string。
+  const idStr = match[1];
+  if (!idStr) return null;
+  const id = parseInt(idStr, 10);
   if (isNaN(id) || id <= 0) return null;
   return {
     redPacketId: id,
@@ -953,7 +915,7 @@ function handleVoiceStateChange(recording: boolean) {
       <view v-if="pageErrorMessage" class="meta-copy">{{ pageErrorMessage }}</view>
       <view v-else-if="messagesStore.loading" class="meta-copy">正在加载聊天详情...</view>
       <view v-else-if="messagesStore.errorMessage" class="meta-copy">{{ messagesStore.errorMessage }}</view>
-      <view v-else class="chat-list">
+      <view v-else class="chat-list" role="list">
         <!-- 优先展示 messagesStore 的消息（经 DTO 转换层映射为 ChatMessageView） -->
         <!-- 红包消息：使用 RedPacketBubble 渲染（基于 body 前缀模式识别） -->
         <template v-for="message in currentMessagesView" :key="message.id">
@@ -1064,7 +1026,7 @@ function handleVoiceStateChange(recording: boolean) {
             hover-stay-time="120"
             @tap="toggleVoiceMode"
           >
-            <image v-if="!isVoiceMode" class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" />
+            <image v-if="!isVoiceMode" class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" alt="" />
             <text v-else class="wechat-input-bar__icon-text wechat-input-bar__icon-text--keyboard">文</text>
           </view>
 
@@ -1079,7 +1041,7 @@ function handleVoiceStateChange(recording: boolean) {
             @focus="onInputFocus"
             @blur="onInputBlur"
             @input="onDraftChange"
-            @keyboardheightchange="onKeyboardHeightChange"
+            @keyboardheightchange="onKeyboardHeightChange" aria-label="isSessionClosed ? '会话已结束' : (quoteReply ? '输入回复...' : '输入消息...')"
           />
 
           <!-- 语音模式：按住说话按钮（使用 VoiceRecorder 组件） -->
@@ -1097,7 +1059,7 @@ function handleVoiceStateChange(recording: boolean) {
               hover-class="press-feedback--active"
               hover-stay-time="120"
             >
-              <image class="wechat-input-bar__icon-img" :src="iconSrc.smile" mode="aspectFit" />
+              <image class="wechat-input-bar__icon-img" :src="iconSrc.smile" mode="aspectFit" alt="" />
             </view>
             <view
               class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--more press-feedback"
@@ -1148,23 +1110,70 @@ function handleVoiceStateChange(recording: boolean) {
       </template>
     </SectionCard>
 
-    <!-- 长按菜单遮罩 -->
-    <view v-if="longPressMenu.visible" class="longpress-overlay" @tap="closeLongPressMenu">
+    <!-- 长按菜单遮罩：遮罩点击关闭，内容区 @tap.stop 阻止冒泡（P2 弹窗遮罩点击关闭） -->
+    <view
+      v-if="longPressMenu.visible"
+      class="longpress-overlay"
+      @tap="closeLongPressMenu"
+      role="dialog"
+      aria-modal="true"
+      aria-label="消息操作菜单"
+    >
       <view class="longpress-menu" @tap.stop>
-        <view class="longpress-menu__item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleQuoteMessage">
+        <!-- 复制：将消息正文写入剪贴板（P2 长按复制支持） -->
+        <view
+          class="longpress-menu__item press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="handleCopyMessage"
+          role="button"
+          aria-label="复制该消息"
+        >
+          <text class="longpress-menu__text">复制</text>
+        </view>
+        <view
+          class="longpress-menu__item press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="handleQuoteMessage"
+          role="button"
+          aria-label="引用该消息"
+        >
           <text class="longpress-menu__text">引用</text>
         </view>
-        <view v-if="longPressMenu.isSelf" class="longpress-menu__item longpress-menu__item--danger press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleRecallMessage">
+        <view
+          v-if="longPressMenu.isSelf"
+          class="longpress-menu__item longpress-menu__item--danger press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="handleRecallMessage"
+          role="button"
+          aria-label="撤回该消息"
+        >
           <text class="longpress-menu__text longpress-menu__text--danger">撤回</text>
         </view>
-        <view class="longpress-menu__item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="closeLongPressMenu">
+        <view
+          class="longpress-menu__item press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="closeLongPressMenu"
+          role="button"
+          :aria-label="t('common.cancel')"
+        >
           <text class="longpress-menu__text">取消</text>
         </view>
       </view>
     </view>
 
     <!-- "+" 更多菜单：红包 / 视频通话 -->
-    <view v-if="moreMenuVisible" class="more-menu-overlay" @tap="closeMoreMenu">
+    <view
+      v-if="moreMenuVisible"
+      class="more-menu-overlay"
+      @tap="closeMoreMenu"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t('chat.moreMenuTitle')"
+    >
       <view class="more-menu-sheet" @tap.stop>
         <view class="more-menu-sheet__title">
           <text class="more-menu-sheet__title-text">{{ t('chat.moreMenuTitle') }}</text>
@@ -1175,6 +1184,8 @@ function handleVoiceStateChange(recording: boolean) {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             @tap="goRedPacket"
+            role="button"
+            :aria-label="t('chatRedPacket.entryLabel')"
           >
             <view class="more-menu-item__icon more-menu-item__icon--red">
               <text class="more-menu-item__icon-emoji">🧧</text>
@@ -1186,6 +1197,8 @@ function handleVoiceStateChange(recording: boolean) {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             @tap="goVideoCall"
+            role="button"
+            :aria-label="t('videoCall.entryLabel')"
           >
             <view class="more-menu-item__icon more-menu-item__icon--blue">
               <text class="more-menu-item__icon-emoji">📹</text>
@@ -1198,6 +1211,8 @@ function handleVoiceStateChange(recording: boolean) {
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="closeMoreMenu"
+          role="button"
+          :aria-label="t('common.cancel')"
         >
           <text class="more-menu-sheet__cancel-text">{{ t('common.cancel') }}</text>
         </view>

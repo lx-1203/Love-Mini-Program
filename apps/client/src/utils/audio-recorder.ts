@@ -20,6 +20,15 @@
  * - 录音过短（<1 秒）：触发 onCancel 回调，提示用户说话时间太短
  */
 
+// 统一常量：录音默认配置与最短时长阈值
+import {
+  RECORDER_DEFAULT_FORMAT,
+  RECORDER_MAX_DURATION_MS,
+  RECORDER_SAMPLE_RATE,
+  RECORDER_ENCODE_BIT_RATE,
+  RECORDER_MIN_DURATION_SECONDS,
+} from "../constants/ui";
+
 /** 录音配置选项 */
 export interface RecorderOptions {
   /** 录音格式：mp3 / aac / wav（mp-weixin 默认 mp3） */
@@ -51,16 +60,16 @@ export type RecorderStopCallback = (result: RecorderStopResult) => void;
 export type RecorderErrorCallback = (error: Error) => void;
 export type RecorderCancelCallback = () => void;
 
-/** 默认录音配置：mp3 / 60 秒 / 8kHz / 64kbps */
+/** 默认录音配置：mp3 / 60 秒 / 8kHz / 64kbps（值由 constants/ui 统一提供） */
 const DEFAULT_OPTIONS: Required<RecorderOptions> = {
-  format: "mp3",
-  duration: 60_000,
-  sampleRate: 8000,
-  encodeBitRate: 64,
+  format: RECORDER_DEFAULT_FORMAT,
+  duration: RECORDER_MAX_DURATION_MS,
+  sampleRate: RECORDER_SAMPLE_RATE,
+  encodeBitRate: RECORDER_ENCODE_BIT_RATE,
 };
 
-/** 最小有效录音时长（秒）：低于此值视为取消 */
-const MIN_DURATION_SECONDS = 1;
+/** 最小有效录音时长（秒）：低于此值视为取消（复用 constants/ui 常量） */
+const MIN_DURATION_SECONDS = RECORDER_MIN_DURATION_SECONDS;
 
 /**
  * 录音停止回调返回的文件信息（uni-app 回调实际形态的最小契约）
@@ -500,8 +509,8 @@ export function createAudioPlayer() {
   /** 是否正在播放 */
   let playing = false;
 
-  /** 全局当前播放器引用（用于互斥控制） */
-  let staticPlayingUrl: string = "";
+  // 修复（严格模式 noUnusedLocals）：staticPlayingUrl 仅被赋值从未被读取
+  // （互斥控制实际通过 playing + currentSrc 实现），属于遗留死状态，已移除。
 
   /**
    * 播放语音
@@ -535,12 +544,10 @@ export function createAudioPlayer() {
         audioCtx = uni.createInnerAudioContext();
         audioCtx.onEnded(() => {
           playing = false;
-          staticPlayingUrl = "";
           onPlayStateChange?.(false);
         });
         audioCtx.onError(() => {
           playing = false;
-          staticPlayingUrl = "";
           onPlayStateChange?.(false);
         });
       }
@@ -548,7 +555,6 @@ export function createAudioPlayer() {
       audioCtx.play();
       currentSrc = url;
       playing = true;
-      staticPlayingUrl = url;
       onPlayStateChange?.(true);
     } catch (_e) {
       playing = false;
@@ -560,13 +566,11 @@ export function createAudioPlayer() {
     // H5 / 其他平台：模拟播放
     currentSrc = url;
     playing = true;
-    staticPlayingUrl = url;
     onPlayStateChange?.(true);
     // 模拟播放 3 秒后停止
     setTimeout(() => {
       if (playing && currentSrc === url) {
         playing = false;
-        staticPlayingUrl = "";
         onPlayStateChange?.(false);
       }
     }, 3000);
@@ -585,7 +589,6 @@ export function createAudioPlayer() {
     }
     // #endif
     playing = false;
-    staticPlayingUrl = "";
     onPlayStateChange?.(false);
   }
 
@@ -610,7 +613,6 @@ export function createAudioPlayer() {
     audioCtx = null;
     playing = false;
     currentSrc = "";
-    staticPlayingUrl = "";
   }
 
   /**

@@ -100,15 +100,13 @@ function handleClick() {
   <view
     v-if="hasBadge"
     :class="containerClass"
-    <!-- #ifdef H5 -->
     role="img"
     :aria-label="label"
-    <!-- #endif -->
   >
     <image
       class="verification-badge__icon"
       :src="iconSrc"
-      mode="aspectFit"
+      mode="aspectFit" alt=""
     />
     <text class="verification-badge__label">{{ label }}</text>
   </view>
@@ -120,10 +118,8 @@ function handleClick() {
     hover-class="verification-cta--pressed"
     :hover-stay-time="120"
     @tap="handleClick"
-    <!-- #ifdef H5 -->
     role="button"
     :aria-label="t('profile.verificationCta')"
-    <!-- #endif -->
   >
     <text class="verification-cta__text">{{ t('profile.verificationCta') }}</text>
   </view>

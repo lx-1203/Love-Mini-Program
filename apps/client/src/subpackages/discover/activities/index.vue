@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 线下活动页 - 支持列表/日历双视图切换
  * 列表视图：展示所有活动卡片，支持下拉刷新、上拉加载更多
@@ -11,7 +11,7 @@ import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 import { usePageAccess } from "../../../composables/usePageAccess";
 import { useActivityStore } from "../../../stores/activity";
-import { useSessionStore } from "../../../stores/session";
+// 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
 import { openAppPath } from "../../../utils/navigation";
 import type { ActivityItem } from "../../../stores/activity";
 import { IMAGE_PATHS } from "../../../config/images";
@@ -23,7 +23,7 @@ const emojiIcons = {
 } as const;
 
 const activityStore = useActivityStore();
-const sessionStore = useSessionStore();
+// 修复（严格模式 noUnusedLocals）：sessionStore 声明后未在脚本/模板引用（myCampusName 已移除），已删除。
 
 usePageAccess({
   requiresAuth: true,
@@ -89,9 +89,7 @@ function shortDesc(desc?: string): string {
 const WEEK_DAY_LABELS = ["一", "二", "三", "四", "五", "六", "日"];
 
 /** 当前用户学校名称 */
-const myCampusName = computed(() => {
-  return sessionStore.userSession?.campusName ?? "";
-});
+// 修复（严格模式 noUnusedLocals）：myCampusName 计算属性未被模板/脚本引用，已移除。
 
 /** 当前日历展示的年月 */
 const calendarYear = ref(new Date().getFullYear());
@@ -105,10 +103,14 @@ const activitiesByDate = computed<Record<string, ActivityItem[]>>(() => {
   const map: Record<string, ActivityItem[]> = {};
   for (const act of activityStore.activities) {
     if (act.date) {
-      if (!map[act.date]) {
-        map[act.date] = [];
+      // 修复（严格模式 noUncheckedIndexedAccess）：map[act.date] 索引访问返回 T | undefined，
+      // 此处通过局部变量在保证非空后再 push，避免在 undefined 上调用 .push()。
+      const existing = map[act.date];
+      if (existing) {
+        existing.push(act);
+      } else {
+        map[act.date] = [act];
       }
-      map[act.date].push(act);
     }
   }
   return map;
@@ -199,12 +201,8 @@ const monthTitle = computed(() => {
 });
 
 /** 是否可切换到上个月 */
-const canGoPrev = computed(() => {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-  return calendarYear.value > currentYear || (calendarYear.value === currentYear && calendarMonth.value > currentMonth);
-});
+// 修复（严格模式 noUnusedLocals）：canGoPrev 计算属性未被模板/脚本引用，已移除。
+// goToPrevMonth 内部直接计算月份边界，无需依赖此计算属性。
 
 /** 切换到上个月 */
 function goToPrevMonth() {
@@ -246,8 +244,13 @@ function truncateTitle(title: string, maxLen = 10): string {
 function formatDateLabel(dateStr: string): string {
   const parts = dateStr.split("-");
   if (parts.length !== 3) return dateStr;
-  const month = parseInt(parts[1], 10);
-  const day = parseInt(parts[2], 10);
+  // 修复（严格模式 noUncheckedIndexedAccess）：parts[1] / parts[2] 索引访问返回 string | undefined，
+  // 此处提取后做非空校验，确保 parseInt 入参为 string（前面已校验 length === 3，正常不会越界）。
+  const monthStr = parts[1];
+  const dayStr = parts[2];
+  if (!monthStr || !dayStr) return dateStr;
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
   return `${month}月${day}日`;
 }
 </script>
@@ -309,7 +312,7 @@ function formatDateLabel(dateStr: string): string {
         @refresherrefresh="onRefresherRefresh"
         @scrolltolower="onScrollToLower"
       >
-        <view class="activity-list">
+        <view class="activity-list" role="list">
           <view
             v-for="item in activityStore.activities"
             :key="item.id"
@@ -328,11 +331,11 @@ function formatDateLabel(dateStr: string): string {
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" />
+                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" />
+                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" alt="" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>
@@ -350,10 +353,10 @@ function formatDateLabel(dateStr: string): string {
         </view>
 
         <!-- 加载更多提示 -->
-        <view v-if="activityStore.loading && activityStore.activities.length" class="loading-more">
+        <view v-if="activityStore.loading && activityStore.activities.length" class="loading-more" role="status" aria-live="polite">
           <text class="loading-more__text">加载中...</text>
         </view>
-        <view v-else-if="!activityStore.hasMore && activityStore.activities.length" class="loading-more">
+        <view v-else-if="!activityStore.hasMore && activityStore.activities.length" class="loading-more" role="status" aria-live="polite">
           <text class="loading-more__text">没有更多活动了</text>
         </view>
 
@@ -424,10 +427,12 @@ function formatDateLabel(dateStr: string): string {
             </view>
 
             <!-- 活动标题（取第一条，截断10字内） -->
+            <!-- 修复（严格模式 noUncheckedIndexedAccess）：activitiesByDate[cell.dateStr] 索引访问返回 T | undefined，
+                 再 [0] 仍是 ActivityItem | undefined，统一用可选链 + 兜底，避免 .title 抛 undefined。 -->
             <text
               v-if="cell.isCurrentMonth && activitiesByDate[cell.dateStr]?.length"
               class="calendar-cell__title"
-            >{{ truncateTitle(activitiesByDate[cell.dateStr][0].title) }}</text>
+            >{{ truncateTitle(activitiesByDate[cell.dateStr]?.[0]?.title ?? '') }}</text>
 
             <!-- 参与意向人数标记 -->
             <view
@@ -465,11 +470,11 @@ function formatDateLabel(dateStr: string): string {
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" />
+                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" />
+                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" alt="" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>

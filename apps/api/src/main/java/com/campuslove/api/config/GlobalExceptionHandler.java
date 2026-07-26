@@ -1,6 +1,7 @@
 package com.campuslove.api.config;
 
 import com.campuslove.api.media.MediaSizeLimitExceededException;
+import com.campuslove.api.ratelimit.RateLimitExceededException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import java.util.HashMap;
@@ -161,6 +162,27 @@ public class GlobalExceptionHandler {
                 HttpStatus.valueOf(ex.getStatusCode().value()),
                 "Error",
                 ex.getReason() != null ? ex.getReason() : "请求错误");
+    }
+
+    /**
+     * 处理速率限制超出异常。
+     *
+     * <p>当客户端请求触发 {@link com.campuslove.api.ratelimit.RateLimit} 注解配置的
+     * 令牌桶限流策略（桶内无可用令牌）时，由 {@link com.campuslove.api.ratelimit.RateLimitAspect}
+     * 抛出本异常。此处统一转换为 HTTP 429 Too Many Requests 响应，
+     * 返回友好提示，避免暴露内部限流参数。</p>
+     *
+     * @param ex 速率限制超出异常
+     * @return 标准化的 429 错误响应
+     */
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimitExceeded(
+            RateLimitExceededException ex) {
+        log.warn("触发速率限制: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.TOO_MANY_REQUESTS,
+                "Too Many Requests",
+                "请求过于频繁，请稍后再试");
     }
 
     /**

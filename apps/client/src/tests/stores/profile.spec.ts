@@ -81,8 +81,10 @@ describe("profile store - 数据加载", () => {
     expect(store.scheduleProfile!.preferredCampusArea).toBe("图书馆和北草坪");
     expect(store.scheduleProfile!.preferredTimeWindows).toEqual(["今晚", "本周"]);
     expect(store.scheduleProfile!.courseBlocks).toHaveLength(2);
-    expect(store.scheduleProfile!.courseBlocks[0].label).toBe("设计课");
-    expect(store.scheduleProfile!.courseBlocks[1].label).toBe("专题讨论");
+    // 修复（严格模式 noUncheckedIndexedAccess）：courseBlocks[0] / courseBlocks[1] 索引访问返回 T | undefined，
+    // 前面 toHaveLength(2) 已确保非空，此处使用非空断言 ! 简化类型。
+    expect(store.scheduleProfile!.courseBlocks[0]!.label).toBe("设计课");
+    expect(store.scheduleProfile!.courseBlocks[1]!.label).toBe("专题讨论");
   });
 
   // ------------------------------------------------------------------
@@ -126,13 +128,15 @@ describe("profile store - 数据加载", () => {
     await store.load();
 
     expect(store.myPosts).toHaveLength(3);
-    expect(store.myPosts[0].summary).toContain("橘猫");
-    expect(store.myPosts[1].summary).toContain("艺术展");
-    expect(store.myPosts[2].summary).toContain("设计作业");
+    // 修复（严格模式 noUncheckedIndexedAccess）：myPosts[0] / [1] / [2] 索引访问返回 T | undefined，
+    // 前面 toHaveLength(3) 已确保非空，此处使用非空断言 ! 简化类型。
+    expect(store.myPosts[0]!.summary).toContain("橘猫");
+    expect(store.myPosts[1]!.summary).toContain("艺术展");
+    expect(store.myPosts[2]!.summary).toContain("设计作业");
     // 每条都有 likes/comments/createdAt
-    expect(store.myPosts[0].likes).toBe(32);
-    expect(store.myPosts[0].comments).toBe(8);
-    expect(store.myPosts[0].createdAt).toBeTruthy();
+    expect(store.myPosts[0]!.likes).toBe(32);
+    expect(store.myPosts[0]!.comments).toBe(8);
+    expect(store.myPosts[0]!.createdAt).toBeTruthy();
   });
 
   // ------------------------------------------------------------------
@@ -196,11 +200,13 @@ describe("profile store - 数据加载", () => {
 
     // 修改 store 中的数据
     store.basicProfile!.nickname = "修改后的名字";
-    store.myPosts[0].summary = "修改后的摘要";
+    // 修复（严格模式 noUncheckedIndexedAccess）：myPosts[0] 索引访问返回 T | undefined，
+    // 前面已 load() 完成，myPosts 非空，此处使用非空断言 !。
+    store.myPosts[0]!.summary = "修改后的摘要";
 
     // 重新 load，应该恢复原始 mock 数据
     await store.load();
     expect(store.basicProfile!.nickname).toBe(originalNickname);
-    expect(store.myPosts[0].summary).toContain("橘猫");
+    expect(store.myPosts[0]!.summary).toContain("橘猫");
   });
 });

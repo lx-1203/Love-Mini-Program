@@ -7,10 +7,19 @@ import { useUnlockGuideStore } from "./stores/unlock-guide";
 import { reportGlobalError } from "./main";
 import UnlockGuideModal from "./components/UnlockGuideModal.vue";
 import UnlockGuideOverlay from "./components/UnlockGuideOverlay.vue";
+import { useNetworkStatus } from "./composables/useNetworkStatus";
 
 const sessionStore = useSessionStore();
 const unlockGuideStore = useUnlockGuideStore();
 const { visible, featureName, completionPercent, overlayVisible } = storeToRefs(unlockGuideStore);
+
+/**
+ * 全局网络状态监听：注册 uni.onNetworkStatusChange 监听器，
+ * 在网络断开/恢复时通过 toast 提示用户。
+ * - onLaunch 阶段初始化网络状态 + 注册监听器
+ * - isOnline / networkType 为响应式状态，可被页面消费
+ */
+useNetworkStatus();
 
 /**
  * 应用是否已就绪。
@@ -41,6 +50,38 @@ function markAppReady() {
 
 onLaunch(() => {
   try {
+    // 修复（P0 隐私合规）：注册微信隐私协议授权回调。
+    // 自 2023-09 起微信小程序要求所有调用敏感接口的应用接入隐私协议，
+    // 在 onLaunch 中调用 wx.onNeedPrivacyAuthorization 注册弹窗回调，
+    // 用户首次使用涉及隐私的 API 时由微信弹出协议确认框。
+    // 兼容性：H5/APP 端 wx 对象可能不存在，需条件编译包裹。
+    // #ifdef MP-WEIXIN
+    try {
+      const wxApi = (globalThis as any).wx;
+      if (wxApi && typeof wxApi.onNeedPrivacyAuthorization === "function") {
+        wxApi.onNeedPrivacyAuthorization((resolve: () => void) => {
+          // 用户同意隐私协议后调用 resolve 通知微信继续后续 API 调用
+          // 这里使用内置的 wx.openPrivacyContract 让用户阅读协议
+          try {
+            if (typeof wxApi.openPrivacyContract === "function") {
+              wxApi.openPrivacyContract({
+                success: () => resolve(),
+                fail: () => resolve(),
+              });
+            } else {
+              resolve();
+            }
+          } catch (_e) {
+            // 兜底：任何异常都先 resolve，避免阻塞主流程
+            resolve();
+          }
+        });
+      }
+    } catch (_privacyErr) {
+      // 隐私协议注册失败不应阻断启动，仅记录
+    }
+    // #endif
+
     // 修复（P0 BUG）：uni.onError / uni.onUnhandledRejection 已迁移至 main.ts 的
     // registerGlobalErrorListeners 统一注册，避免与 App.vue 重复监听导致同一错误被上报两次。
     sessionStore.bootstrap().catch((err: unknown) => {
@@ -98,8 +139,15 @@ onMounted(markAppReady);
 </template>
 
 <style lang="scss">
+// 引入底层设计变量与基础 CSS 自定义属性
 @import "./theme/design-variables.scss";
+// 引入全局工具类
 @import "./theme/global.scss";
+// 引入统一设计 token 入口（含语义别名与 dark mode 适配）
+// 说明：本文件整合了语义化 token 别名与深色模式覆盖，提供 kebab-case 命名
+@import "./styles/tokens.scss";
+// 引入无障碍工具类（.sr-only / .sr-only-focusable），供屏幕阅读器读取的视觉隐藏文本使用
+@import "./styles/a11y.scss";
 
 page {
   background: var(--c-gradient-page);
@@ -668,6 +716,43 @@ view, button, scroll-view, swiper, input, textarea {
 /* TabBar 容器高度参考（供页面计算偏移用） */
 page {
   --tabbar-height: calc(140rpx + env(safe-area-inset-bottom));
+}
+
+/* ================================================================
+   P2 修复 · 表单输入框焦点状态（全局）
+   - 焦点时边框变品牌色 + 轻微阴影，明确视觉反馈
+   - 适配 H5/微信小程序双端，避免依赖组件级 scoped 样式
+   ================================================================ */
+input,
+textarea {
+  /* 默认过渡：边框/阴影变化时 200ms 平滑过渡 */
+  transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input:focus,
+textarea:focus {
+  /* 焦点状态：边框变品牌色，外发光阴影；outline: none 避免浏览器默认外框 */
+  outline: none;
+  border-color: var(--c-brand, #3FCF8E);
+  box-shadow: 0 0 0 4rpx var(--c-brand-bg-tint, rgba(63, 207, 142, 0.12));
+}
+
+/* ================================================================
+   P2 修复 · 列表项点击反馈（全局工具类 .clickable）
+   - 使用：在可点击的 <view> 上添加 class="clickable"
+   - 反馈：按下时 opacity 0.7 + scale(0.98)，松开自动恢复
+   - 注意：mp-weixin 的 :active 伪类不可靠，已配合 hover-class 使用
+   ================================================================ */
+.clickable {
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.clickable:active {
+  opacity: 0.7;
+  transform: scale(0.98);
 }
 
 </style>

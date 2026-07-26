@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
 import PersonCard from './PersonCard.vue';
 
 interface Person {
@@ -23,7 +22,8 @@ const emit = defineEmits<{
   tap: [personId: string];
 }>();
 
-const t = designTokens;
+// 修复（严格模式 noUnusedLocals）：原 `const t = designTokens;` 后未使用 t，
+// designTokens 导入也仅用于该别名；模板/style 未引用 designTokens，故导入与别名一并移除。
 
 function getActionText(person: Person) {
   return person.hasCompletedProfile ? '去聊天' : '先完成设置';
@@ -32,8 +32,8 @@ function getActionText(person: Person) {
 
 <template>
   <scroll-view scroll-x class="people-scroll" :show-scrollbar="false">
-    <view class="people-list">
-      <view v-if="loading" class="people-skeleton" v-for="i in 3" :key="i">
+    <view class="people-list" role="list">
+      <view v-if="loading" class="people-skeleton" v-for="i in 3" :key="i" role="listitem">
         <view class="skeleton-card shimmer" />
       </view>
       <PersonCard

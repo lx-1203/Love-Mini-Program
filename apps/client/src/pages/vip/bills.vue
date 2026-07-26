@@ -172,7 +172,7 @@ loadBills();
     </scroll-view>
 
     <!-- 账单列表 -->
-    <view class="bills-list">
+    <view class="bills-list" role="list">
       <!-- 加载中骨架 -->
       <view v-if="isLoading && isEmpty" class="empty-state">
         <text class="empty-state__text">{{ t('common.loading') }}</text>
@@ -260,7 +260,8 @@ loadBills();
   justify-content: space-between;
   padding: 0 24rpx;
   height: 88rpx;
-  background: #FFFFFF;
+  /* 容器背景：使用 token 替代硬编码 #FFFFFF */
+  background: var(--c-bg-container);
   border-bottom: 1rpx solid var(--c-border-light, #E2E8F0);
 }
 .nav-bar__back {
@@ -323,7 +324,8 @@ loadBills();
 .hero__title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   margin-bottom: 4rpx;
 }
 .hero__subtitle {
@@ -333,7 +335,8 @@ loadBills();
 
 /* ==================== 筛选 ==================== */
 .filter-bar {
-  background: #FFFFFF;
+  /* 容器背景：使用 token 替代硬编码 #FFFFFF */
+  background: var(--c-bg-container);
   padding: 16rpx 0;
   white-space: nowrap;
   border-bottom: 1rpx solid var(--c-border-light, #E2E8F0);
@@ -393,7 +396,8 @@ loadBills();
 
 /* ==================== 账单卡片 ==================== */
 .bill-card {
-  background: #FFFFFF;
+  /* 容器背景：使用 token 替代硬编码 #FFFFFF */
+  background: var(--c-bg-container);
   border-radius: 20rpx;
   padding: 24rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);

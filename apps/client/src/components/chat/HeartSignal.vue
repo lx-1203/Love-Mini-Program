@@ -24,16 +24,18 @@ const subtitleLabel = computed(() =>
 );
 /** 整体 ARIA 标签 */
 const ariaLabel = computed(() => t('chat.heartSignalAria'));
+
+// 修复（严格模式 noUnusedLocals）：ariaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ ariaLabel });
 </script>
 
 <template>
   <view
     class="heart-signal"
     @tap="emit('tap')"
-    <!-- #ifdef H5 -->
     role="button"
     :aria-label="ariaLabel"
-    <!-- #endif -->
   >
     <view class="signal-icon">
       <image

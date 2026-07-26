@@ -48,11 +48,9 @@ function goToProfileSetup() {
 <template>
   <view
     class="lock-screen"
-    <!-- #ifdef H5 -->
     role="dialog"
     aria-modal="true"
     :aria-label="lockMessage"
-    <!-- #endif -->
   >
     <!-- 径向渐变心动氛围叠加层 -->
     <view class="lock-screen__atmosphere" />
@@ -72,17 +70,17 @@ function goToProfileSetup() {
         <view class="phone phone--left">
           <view class="phone-screen">
             <view class="phone-heart">
-              <image class="phone-heart__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
+              <image class="phone-heart__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
             </view>
           </view>
         </view>
         <view class="heart-float">
-          <image class="heart-float__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
+          <image class="heart-float__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
         </view>
         <view class="phone phone--right">
           <view class="phone-screen">
             <view class="phone-heart">
-              <image class="phone-heart__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" />
+              <image class="phone-heart__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
             </view>
           </view>
         </view>
@@ -100,9 +98,7 @@ function goToProfileSetup() {
       <button
         class="lock-screen__btn"
         @tap="goToProfileSetup"
-        <!-- #ifdef H5 -->
         :aria-label="t('lock.completeNowAria')"
-        <!-- #endif -->
       >
         <text class="lock-screen__btn-text">{{ t('lock.completeNow') }}</text>
       </button>

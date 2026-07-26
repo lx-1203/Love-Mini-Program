@@ -54,30 +54,30 @@ const ariaLabel = computed(() =>
     location: props.location || '',
   })
 );
+
+// 修复（严格模式 noUnusedLocals）：ariaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ ariaLabel });
 </script>
 
 <template>
   <view
     class="activity-card"
-    <!-- #ifdef H5 -->
     role="article"
     :aria-label="ariaLabel"
-    <!-- #endif -->
   >
     <view class="activity-cover">
       <view
         v-if="status"
         class="activity-tag"
         :class="statusClass(status)"
-        <!-- #ifdef H5 -->
         role="img"
         :aria-label="statusText"
-        <!-- #endif -->
       >
         <text class="activity-tag-text">{{ statusText }}</text>
       </view>
-      <image v-if="emoji" class="activity-emoji" :src="emojiSrc" mode="aspectFit" />
-      <image v-else class="activity-emoji" :src="IMAGE_PATHS.ICONS_COMMON.CELEBRATION" mode="aspectFit" />
+      <image v-if="emoji" class="activity-emoji" :src="emojiSrc" mode="aspectFit" alt="" />
+      <image v-else class="activity-emoji" :src="IMAGE_PATHS.ICONS_COMMON.CELEBRATION" mode="aspectFit" alt="" />
     </view>
     <view class="activity-info">
       <text class="activity-title">{{ title }}</text>

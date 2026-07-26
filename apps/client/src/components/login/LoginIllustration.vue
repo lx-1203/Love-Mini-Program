@@ -9,10 +9,8 @@ defineProps<{
 <template>
   <view
     class="illustration"
-    <!-- #ifdef H5 -->
     role="img"
     aria-label="login illustration"
-    <!-- #endif -->
   >
     <view class="illustration-bg" />
     <image

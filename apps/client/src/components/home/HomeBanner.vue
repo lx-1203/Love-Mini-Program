@@ -111,7 +111,7 @@ function onImageError(item: HomeBannerItem, event: Event) {
             mode="aspectFill"
             lazy-load
             data-fallback="0"
-            @error="onImageError(banner, $event)"
+            @error="onImageError(banner, $event)" alt=""
           />
           <!-- 渐变蒙层，增强文字可读性 -->
           <view class="home-banner__overlay" />

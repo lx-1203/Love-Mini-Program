@@ -71,6 +71,9 @@ function safeAction<T>(fn: () => T, errorMsg?: string): T | undefined {
     const message = error instanceof Error ? error.message : fallbackMsg;
     uni.showToast({ title: message, icon: "none" });
     console.error(`[CardDetailOverlay] ${fallbackMsg}:`, error);
+    // 修复（严格模式 noImplicitReturns）：catch 分支必须显式返回，
+    // 与函数签名 T | undefined 保持一致（异常时返回 undefined 由调用方处理）。
+    return undefined;
   }
 }
 
@@ -123,12 +126,17 @@ const interestCircles = computed(() => {
     { name: "徒步旅行", icon: "🥾", members: 76, gradient: "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)" },
   ];
   if (tags.length > 0) {
-    return tags.slice(0, 4).map((tag, idx) => ({
-      name: tag,
-      icon: preset[idx % preset.length].icon,
-      members: 60 + ((props.card?.userId?.charCodeAt(0) ?? 0) + idx * 31) % 240,
-      gradient: preset[idx % preset.length].gradient,
-    }));
+    // 修复（严格模式 noUncheckedIndexedAccess）：preset[idx % preset.length] 索引访问返回类型含 undefined，
+    // 此处通过局部变量 + 兜底默认值，确保 icon / gradient 始终为 string。
+    return tags.slice(0, 4).map((tag, idx) => {
+      const presetItem = preset[idx % preset.length];
+      return {
+        name: tag,
+        icon: presetItem?.icon ?? "💬",
+        members: 60 + ((props.card?.userId?.charCodeAt(0) ?? 0) + idx * 31) % 240,
+        gradient: presetItem?.gradient ?? "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)",
+      };
+    });
   }
   return preset;
 });
@@ -269,8 +277,12 @@ const SWIPE_HORIZONTAL_TOLERANCE = 80;
 
 /** 记录下滑起始坐标 */
 function onSwipeDownStart(e: TouchEvent) {
-  swipeStartY = e.touches[0].clientY;
-  swipeStartX = e.touches[0].clientX;
+  // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 索引访问返回 Touch | undefined，
+  // 此处提取首触点后做非空校验，避免在未触点时访问 clientY 抛 undefined。
+  const touch = e.touches[0];
+  if (!touch) return;
+  swipeStartY = touch.clientY;
+  swipeStartX = touch.clientX;
 }
 
 /**
@@ -279,8 +291,11 @@ function onSwipeDownStart(e: TouchEvent) {
  */
 function onSwipeDownMove(e: TouchEvent) {
   if (swipeStartY === 0) return;
-  const deltaY = e.touches[0].clientY - swipeStartY;
-  const deltaX = Math.abs(e.touches[0].clientX - swipeStartX);
+  // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 可能为 undefined，做非空校验。
+  const touch = e.touches[0];
+  if (!touch) return;
+  const deltaY = touch.clientY - swipeStartY;
+  const deltaX = Math.abs(touch.clientX - swipeStartX);
   // 仅做方向校验，不阻止默认滚动行为
   if (deltaY > 0 && deltaY < 240 && deltaX < SWIPE_HORIZONTAL_TOLERANCE) {
     // 可在此扩展视觉跟随（如 translateY），当前通过 drag-bar 提供足够反馈
@@ -291,8 +306,14 @@ function onSwipeDownMove(e: TouchEvent) {
 /** 下滑结束：超过阈值则关闭详情页 */
 function onSwipeDownEnd(e: TouchEvent) {
   if (swipeStartY === 0) return;
-  const deltaY = e.changedTouches[0].clientY - swipeStartY;
-  const deltaX = Math.abs(e.changedTouches[0].clientX - swipeStartX);
+  // 修复（严格模式 noUncheckedIndexedAccess）：e.changedTouches[0] 可能为 undefined，做非空校验。
+  const touch = e.changedTouches[0];
+  if (!touch) {
+    swipeStartY = 0;
+    return;
+  }
+  const deltaY = touch.clientY - swipeStartY;
+  const deltaX = Math.abs(touch.clientX - swipeStartX);
   swipeStartY = 0;
   if (deltaY > SWIPE_DOWN_THRESHOLD && deltaX < SWIPE_HORIZONTAL_TOLERANCE) {
     handleClose();
@@ -305,11 +326,9 @@ function onSwipeDownEnd(e: TouchEvent) {
     v-if="visible"
     class="card-detail-overlay"
     :class="{ 'card-detail-overlay--active': animating }"
-    <!-- #ifdef H5 -->
     role="dialog"
     aria-modal="true"
     :aria-label="t('cardDetail.detailTitle')"
-    <!-- #endif -->
   >
     <!-- 半透明背景 -->
     <view class="card-detail-overlay__backdrop" @tap="handleClose" />
@@ -332,12 +351,10 @@ function onSwipeDownEnd(e: TouchEvent) {
             hover-class="detail-top-bar__btn--pressed"
             :hover-stay-time="120"
             @tap="handleClose"
-            <!-- #ifdef H5 -->
             role="button"
             :aria-label="t('cardDetail.closeAria')"
-            <!-- #endif -->
           >
-            <image class="detail-top-bar__icon" :src="icons.close" mode="aspectFit" />
+            <image class="detail-top-bar__icon" :src="icons.close" mode="aspectFit" alt="" />
           </view>
           <text class="detail-top-bar__title">{{ t('cardDetail.detailTitle') }}</text>
           <view
@@ -345,10 +362,8 @@ function onSwipeDownEnd(e: TouchEvent) {
             hover-class="detail-top-bar__btn--pressed"
             :hover-stay-time="120"
             @tap="goToProfile"
-            <!-- #ifdef H5 -->
             role="button"
             :aria-label="t('cardDetail.homePageAria')"
-            <!-- #endif -->
           >
             <text class="detail-top-bar__more-text">{{ t('cardDetail.homePage') }}</text>
           </view>
@@ -370,7 +385,8 @@ function onSwipeDownEnd(e: TouchEvent) {
             @change="onSwiperChange"
           >
             <swiper-item v-for="(url, idx) in displayImages" :key="idx" class="detail-hero__item">
-              <SafeImage :src="url" custom-class="detail-hero__img" mode="aspectFill" />
+              <!-- 性能优化：详情页大图开启 lazy-load，减少首屏并发请求 -->
+              <SafeImage :src="url" custom-class="detail-hero__img" mode="aspectFill" :lazy-load="true" />
             </swiper-item>
           </swiper>
           <!-- 无图兜底 -->
@@ -408,7 +424,7 @@ function onSwipeDownEnd(e: TouchEvent) {
             </view>
 
             <view class="detail-hero__school-row">
-              <image class="detail-hero__school-icon" :src="icons.graduation" mode="aspectFit" />
+              <image class="detail-hero__school-icon" :src="icons.graduation" mode="aspectFit" alt="" />
               <text class="detail-hero__school-text">{{ schoolNameText }}</text>
               <text class="detail-hero__dot">·</text>
               <text class="detail-hero__grade-text">{{ gradeText }}</text>
@@ -420,7 +436,7 @@ function onSwipeDownEnd(e: TouchEvent) {
                 <text>{{ t('cardDetail.onlineLabel') }}</text>
               </view>
               <view class="detail-hero__match">
-                <image class="detail-hero__match-icon" :src="icons.heart" mode="aspectFit" />
+                <image class="detail-hero__match-icon" :src="icons.heart" mode="aspectFit" alt="" />
                 <text>{{ matchScoreText }}</text>
               </view>
             </view>
@@ -431,7 +447,7 @@ function onSwipeDownEnd(e: TouchEvent) {
         <view class="detail-panel detail-quick-stats">
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--age">
-              <image class="quick-stat__icon-img" :src="icons.cake" mode="aspectFit" />
+              <image class="quick-stat__icon-img" :src="icons.cake" mode="aspectFit" alt="" />
             </view>
             <text class="quick-stat__value">{{ ageText }}{{ t('cardDetail.ageUnit') }}</text>
             <text class="quick-stat__label">{{ t('cardDetail.ageLabel') }}</text>
@@ -445,7 +461,7 @@ function onSwipeDownEnd(e: TouchEvent) {
           </view>
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--edu">
-              <image class="quick-stat__icon-img" :src="icons.graduation" mode="aspectFit" />
+              <image class="quick-stat__icon-img" :src="icons.graduation" mode="aspectFit" alt="" />
             </view>
             <text class="quick-stat__value">{{ eduLabel(card?.educationLevel) }}</text>
             <text class="quick-stat__label">{{ t('cardDetail.educationLabel') }}</text>
@@ -463,10 +479,8 @@ function onSwipeDownEnd(e: TouchEvent) {
         <view
           class="detail-panel detail-bio"
           @tap="toggleBio"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('cardDetail.bioToggleAria')"
-          <!-- #endif -->
         >
           <view class="detail-panel__header">
             <text class="detail-panel__title">{{ t('cardDetail.bioTitle') }}</text>
@@ -530,12 +544,10 @@ function onSwipeDownEnd(e: TouchEvent) {
           hover-class="detail-action-bar__btn--pressed"
           :hover-stay-time="120"
           @tap="handlePass"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('cardDetail.passAria')"
-          <!-- #endif -->
         >
-          <image class="detail-action-bar__icon" :src="icons.pass" mode="aspectFit" />
+          <image class="detail-action-bar__icon" :src="icons.pass" mode="aspectFit" alt="" />
           <text class="detail-action-bar__label">{{ t('cardDetail.passLabel') }}</text>
         </view>
         <view
@@ -543,12 +555,10 @@ function onSwipeDownEnd(e: TouchEvent) {
           hover-class="detail-action-bar__btn--pressed"
           :hover-stay-time="120"
           @tap="handleSuperLike"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('cardDetail.superLikeAria')"
-          <!-- #endif -->
         >
-          <image class="detail-action-bar__icon" :src="icons.superLike" mode="aspectFit" />
+          <image class="detail-action-bar__icon" :src="icons.superLike" mode="aspectFit" alt="" />
           <text class="detail-action-bar__label">{{ t('cardDetail.superLikeLabel') }}</text>
         </view>
         <view
@@ -556,12 +566,10 @@ function onSwipeDownEnd(e: TouchEvent) {
           hover-class="detail-action-bar__btn--pressed"
           :hover-stay-time="120"
           @tap="handleLike"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('cardDetail.likeAria')"
-          <!-- #endif -->
         >
-          <image class="detail-action-bar__icon" :src="icons.like" mode="aspectFit" />
+          <image class="detail-action-bar__icon" :src="icons.like" mode="aspectFit" alt="" />
           <text class="detail-action-bar__label">{{ t('cardDetail.likeLabel') }}</text>
         </view>
         <view
@@ -569,12 +577,10 @@ function onSwipeDownEnd(e: TouchEvent) {
           hover-class="detail-action-bar__btn--pressed"
           :hover-stay-time="120"
           @tap="handleMessage"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('cardDetail.messageAria')"
-          <!-- #endif -->
         >
-          <image class="detail-action-bar__icon" :src="icons.message" mode="aspectFit" />
+          <image class="detail-action-bar__icon" :src="icons.message" mode="aspectFit" alt="" />
           <text class="detail-action-bar__label">{{ t('cardDetail.messageLabel') }}</text>
         </view>
       </view>

@@ -71,6 +71,10 @@ const ariaLabel = computed(() => {
     : t("chat.voicePlayback", { n: props.durationSeconds });
 });
 
+// 修复（严格模式 noUnusedLocals）：ariaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ ariaLabel });
+
 /** 气泡宽度（根据时长动态调整，模拟微信风格） */
 const bubbleWidth = computed(() => {
   // 基础宽度 120rpx + 每秒 12rpx，上限 480rpx

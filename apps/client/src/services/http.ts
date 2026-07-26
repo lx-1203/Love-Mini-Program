@@ -1,5 +1,15 @@
 import { appEnv } from "./env";
 import { AppApiError, toAppApiError } from "./api-error";
+// Sentry 监控：用于在 HTTP 请求成功时记录 breadcrumb，失败时上报异常
+import { addBreadcrumb, captureException } from "./sentry";
+// 统一常量：HTTP 超时/重试/状态码/存储键名
+import {
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_RETRY_COUNT,
+  DEFAULT_RETRY_DELAY_MS,
+  MAX_401_RETRY_COUNT,
+} from "../constants/api";
+import { STORAGE_KEYS, LOGIN_TOAST_DURATION_MS, LOGIN_REDIRECT_DELAY_MS } from "../constants/app";
 
 /* ========== 错误分类 ========== */
 
@@ -77,16 +87,14 @@ export function addResponseInterceptor(interceptor: ResponseInterceptor): void {
 
 /* ========== Token 管理 ========== */
 
-/** Token 存储键 */
-const TOKEN_STORAGE_KEY = "token";
-const REFRESH_TOKEN_KEY = "refresh_token";
+// 注：Token 存储键由 constants/app.ts 的 STORAGE_KEYS 统一提供
 
 /**
  * 从本地存储获取 JWT Token。
  */
 export function getToken(): string {
   try {
-    return uni.getStorageSync(TOKEN_STORAGE_KEY) || "";
+    return uni.getStorageSync(STORAGE_KEYS.AUTH_TOKEN) || "";
   } catch (_e) {
     return "";
   }
@@ -100,7 +108,7 @@ export function getToken(): string {
  */
 export function setToken(token: string): void {
   try {
-    uni.setStorageSync(TOKEN_STORAGE_KEY, token);
+    uni.setStorageSync(STORAGE_KEYS.AUTH_TOKEN, token);
     // 状态重置：新登录成功，清除跳转登录标志
     isRedirecting = false;
   } catch (_e) {
@@ -113,7 +121,7 @@ export function setToken(token: string): void {
  */
 export function getRefreshToken(): string {
   try {
-    return uni.getStorageSync(REFRESH_TOKEN_KEY) || "";
+    return uni.getStorageSync(STORAGE_KEYS.REFRESH_TOKEN) || "";
   } catch (_e) {
     return "";
   }
@@ -124,7 +132,7 @@ export function getRefreshToken(): string {
  */
 export function setRefreshToken(token: string): void {
   try {
-    uni.setStorageSync(REFRESH_TOKEN_KEY, token);
+    uni.setStorageSync(STORAGE_KEYS.REFRESH_TOKEN, token);
   } catch (_e) {
     // 存储失败时静默忽略
   }
@@ -135,8 +143,8 @@ export function setRefreshToken(token: string): void {
  */
 export function clearTokens(): void {
   try {
-    uni.removeStorageSync(TOKEN_STORAGE_KEY);
-    uni.removeStorageSync(REFRESH_TOKEN_KEY);
+    uni.removeStorageSync(STORAGE_KEYS.AUTH_TOKEN);
+    uni.removeStorageSync(STORAGE_KEYS.REFRESH_TOKEN);
   } catch (_e) {
     // 清除失败时静默忽略
   }
@@ -277,11 +285,11 @@ function redirectToLogin(): void {
   // 清除失效的本地 token，避免后续请求继续携带
   clearTokens();
   // 友好提示
-  uni.showToast({ title: "登录已过期，请重新登录", icon: "none", duration: 2000 });
+  uni.showToast({ title: "登录已过期，请重新登录", icon: "none", duration: LOGIN_TOAST_DURATION_MS });
   // 延迟跳转，让用户看到提示
   setTimeout(() => {
     uni.reLaunch({ url: "/pages/login/index" });
-  }, 500);
+  }, LOGIN_REDIRECT_DELAY_MS);
 }
 
 /**
@@ -331,14 +339,8 @@ async function handle401(): Promise<string> {
 
 /* ========== 请求配置 ========== */
 
-/** 默认超时时间（毫秒） */
-const DEFAULT_TIMEOUT_MS = 10000;
-
-/** 默认重试次数（仅对网络错误重试，不对业务错误重试） */
-const DEFAULT_RETRY_COUNT = 1;
-
-/** 默认重试延迟（毫秒），指数退避起始值 */
-const DEFAULT_RETRY_DELAY_MS = 500;
+// 注：DEFAULT_TIMEOUT_MS / DEFAULT_RETRY_COUNT / DEFAULT_RETRY_DELAY_MS
+// 由 constants/api.ts 统一提供
 
 /**
  * HTTP 请求配置选项。
@@ -468,9 +470,9 @@ function doRequest<TResponse, TBody>(
             reject(buildError(statusCode, processedResult.data));
             return;
           }
-          // 修复（P0 BUG）：限制最多重试 1 次，第二次 401 直接 reject 并跳转登录，避免死循环
+          // 修复（P0 BUG）：限制最多重试 MAX_401_RETRY_COUNT 次，超过则直接 reject 并跳转登录，避免死循环
           // （refresh 成功但新 token 仍返回 401，说明权限或会话有更深问题，不应继续刷新）
-          if (retry401Count >= 1) {
+          if (retry401Count >= MAX_401_RETRY_COUNT) {
             redirectToLogin();
             reject(
               buildError(401, { error: "unauthorized", message: "登录已过期，请重新登录" })
@@ -554,6 +556,10 @@ function doRequest<TResponse, TBody>(
 export async function request<TResponse, TBody = unknown>(
   options: RequestOptions<TBody>
 ): Promise<TResponse> {
+  // 提前提取 method / url，用于 Sentry breadcrumb 与异常上下文上报
+  const method = options.method || "GET";
+  const url = options.url;
+
   // 构建 uni.request 配置
   let requestConfig: UniApp.RequestOptions = {
     url: `${appEnv.apiBaseUrl}${options.url}`,
@@ -577,16 +583,28 @@ export async function request<TResponse, TBody = unknown>(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await doRequest<TResponse, TBody>(options, requestConfig);
+      const result = await doRequest<TResponse, TBody>(options, requestConfig);
+      // 请求成功：记录 http breadcrumb，便于在异常发生时回溯最近的 API 调用
+      // doRequest 仅在 2xx 时 resolve，状态码默认记为 200（多数接口的成功码）
+      addBreadcrumb("http", `${method} ${url}`, { status: 200 });
+      return result;
     } catch (error) {
       // 非 EnhancedApiError 异常直接抛出（不应发生，防御性处理）
       if (!(error instanceof EnhancedApiError)) {
+        // 非预期异常：上报到 Sentry 便于排查，再向上抛出
+        captureException(error, { source: "http", http_url: url });
         throw error;
       }
       lastError = error;
       // 仅对网络层错误重试（category=network），不对 auth/business 错误重试
       // 已达最大重试次数时也直接抛出
       if (error.category !== "network" || attempt === maxRetries) {
+        // 最终失败：上报到 Sentry，含 http_url 与 http_status 便于后台按接口聚合
+        captureException(error, {
+          source: "http",
+          http_url: url,
+          http_status: error.status,
+        });
         throw error;
       }
       // 指数退避：500ms, 1000ms, 2000ms...

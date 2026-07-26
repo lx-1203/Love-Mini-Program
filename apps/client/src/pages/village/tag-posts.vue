@@ -3,13 +3,13 @@
  * 标签聚合页
  * 展示指定话题标签下的所有帖子，支持下拉刷新和上拉加载更多
  */
-import { ref, computed, onMounted } from "vue";
+import { ref } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
-import type { PostItem, PostAuthor } from "../../stores/village";
+import type { PostItem } from "../../stores/village";
 
 const villageStore = useVillageStore();
 
@@ -232,7 +232,7 @@ onLoad((query) => {
     >
       <!-- 加载状态 -->
       <view v-if="loading && posts.length === 0" class="feed-state">
-        <view class="loading-spinner" />
+        <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
         <text class="feed-state__text">正在加载帖子...</text>
       </view>
 
@@ -268,7 +268,7 @@ onLoad((query) => {
                 class="user-avatar__img"
                 :src="post.author.avatar"
                 mode="aspectFill"
-        lazy-load
+        lazy-load alt=""
               />
               <text v-else class="user-avatar__char">{{ post.author.name[0] }}</text>
             </view>
@@ -312,8 +312,8 @@ onLoad((query) => {
       </view>
 
       <!-- 加载更多提示 -->
-      <view v-if="isLoadingMore" class="load-more">
-        <view class="loading-spinner" />
+      <view v-if="isLoadingMore" class="load-more" role="status" aria-live="polite">
+        <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
         <text class="load-more__text">加载中...</text>
       </view>
       <view v-else-if="!hasMore && posts.length > 0" class="load-more">

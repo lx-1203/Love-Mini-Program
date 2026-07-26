@@ -290,39 +290,41 @@ onShow(() => {
           </view>
 
           <!-- 详情内容 -->
+          <!-- 修复（严格模式 noUncheckedIndexedAccess）：detailCache[item.id] 索引访问返回 T | undefined，
+               vue-tsc 不会通过 v-else-if 收窄类型，故下方所有访问统一使用可选链 + 兜底默认值。 -->
           <template v-else-if="detailCache[item.id]">
             <view class="detail-section">
               <text class="detail-section__label">{{ t("feedback.detailContent") }}</text>
-              <text class="detail-section__content">{{ detailCache[item.id].content }}</text>
+              <text class="detail-section__content">{{ detailCache[item.id]?.content }}</text>
             </view>
 
             <!-- 附件图片 -->
             <view
-              v-if="detailCache[item.id].attachments.length > 0"
+              v-if="(detailCache[item.id]?.attachments?.length ?? 0) > 0"
               class="detail-section"
             >
               <text class="detail-section__label">{{ t("feedback.detailAttachments") }}</text>
               <view class="attachment-grid">
                 <image
-                  v-for="(url, idx) in detailCache[item.id].attachments"
+                  v-for="(url, idx) in detailCache[item.id]?.attachments ?? []"
                   :key="`att-${idx}`"
                   class="attachment-img"
                   :src="url"
                   mode="aspectFill"
                   lazy-load
-                  @tap="handleAttachmentTap(detailCache[item.id].attachments, url)"
+                  @tap="handleAttachmentTap(detailCache[item.id]?.attachments ?? [], url)" alt=""
                 />
               </view>
             </view>
 
             <!-- 最新回复 -->
             <view
-              v-if="detailCache[item.id].latestReplyContent"
+              v-if="detailCache[item.id]?.latestReplyContent"
               class="detail-section detail-section--reply"
             >
               <text class="detail-section__label">{{ t("feedback.historyLatestReply") }}</text>
               <text class="detail-section__content">
-                {{ detailCache[item.id].latestReplyContent }}
+                {{ detailCache[item.id]?.latestReplyContent }}
               </text>
             </view>
           </template>
@@ -385,7 +387,8 @@ onShow(() => {
 }
 
 .error-card__retry-text {
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
   font-size: var(--fs-md);
   font-weight: 600;
 }

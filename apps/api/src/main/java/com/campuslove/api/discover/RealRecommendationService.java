@@ -1,6 +1,7 @@
 package com.campuslove.api.discover;
 
 import com.campuslove.api.campus.CampusCertificationService;
+import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
@@ -34,6 +35,7 @@ import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import com.campuslove.api.monitor.MatchMetrics;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +49,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -80,6 +84,10 @@ public class RealRecommendationService implements RecommendationService {
     private final DailyAnswerRepository dailyAnswerRepository;
     private final ObjectMapper objectMapper;
     private final CampusCertificationService campusCertificationService;
+    /**
+     * 匹配业务监控指标。用于记录推荐算法耗时（match.recommend.latency）。
+     */
+    private final MatchMetrics matchMetrics;
 
     public RealRecommendationService(
             RecommendationConfig recommendationConfig,
@@ -98,7 +106,8 @@ public class RealRecommendationService implements RecommendationService {
             CircleMembershipRepository circleMembershipRepository,
             DailyAnswerRepository dailyAnswerRepository,
             ObjectMapper objectMapper,
-            CampusCertificationService campusCertificationService) {
+            CampusCertificationService campusCertificationService,
+            MatchMetrics matchMetrics) {
         this.recommendationConfig = recommendationConfig;
         this.userRepository = userRepository;
         this.likeRepository = likeRepository;
@@ -116,6 +125,7 @@ public class RealRecommendationService implements RecommendationService {
         this.dailyAnswerRepository = dailyAnswerRepository;
         this.objectMapper = objectMapper;
         this.campusCertificationService = campusCertificationService;
+        this.matchMetrics = matchMetrics;
     }
 
     // ---- Phase 1 存根方法（暂未实现，后续迭代补充） ----
@@ -339,6 +349,9 @@ public class RealRecommendationService implements RecommendationService {
      * 根据用户 ID 查找已有偏好记录，存在则更新，不存在则新建后保存。
      * 偏好会影响推荐排序：同校优先(campus_first)时校区匹配用户排序靠前。
      *
+     * <p>缓存失效：偏好更新会改变推荐结果排序，因此通过 @CacheEvict 清除该用户的
+     * {@link CacheNames#MATCH_RECOMMEND} 缓存，下次查询时重新计算。</p>
+     *
      * @param userId 用户 ID，不能为空
      * @param data   推荐偏好实体数据，包含 preferredTime 和 scope 字段
      * @return 更新后的推荐偏好视图
@@ -346,6 +359,7 @@ public class RealRecommendationService implements RecommendationService {
      */
     @Override
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId")
     public RecommendationPreferencesView updatePreferences(Long userId, RecommendationPreference data) {
         // 参数校验
         if (userId == null) {
@@ -415,14 +429,43 @@ public class RealRecommendationService implements RecommendationService {
      * - 校园优先: 同校用户总分+30%
      * - 根据用户 RecommendationPreference.scope 设置过滤范围
      * - 每日最多返回 10 个推荐
+     *
+     * <p>缓存策略：使用 {@link CacheNames#MATCH_RECOMMEND} 缓存，TTL 5 分钟，
+     * key 为 userId。结果为 null 或空列表时不缓存（unless 条件），
+     * 避免缓存穿透与空结果占用缓存空间。
+     * 当用户更新偏好（{@link #updatePreferences(Long, RecommendationPreference)} /
+     * {@link #savePreferences}）时通过 @CacheEvict 主动失效。</p>
      */
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId",
+            unless = "#result == null || #result.isEmpty()")
     public List<RecommendedPersonView> getRecommendations(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
 
+        // 监控：记录推荐算法耗时（System.nanoTime 计算纳秒级耗时，转为毫秒）
+        long startNanos = System.nanoTime();
+
+        try {
+            return doRecommend(userId);
+        } finally {
+            // finally 块保证即使推荐抛异常也能记录耗时
+            try {
+                long durationMs = (System.nanoTime() - startNanos) / 1_000_000;
+                matchMetrics.recordRecommendLatency(durationMs);
+            } catch (Exception ignore) {
+                // 监控逻辑失败忽略，不影响主流程
+            }
+        }
+    }
+
+    /**
+     * 推荐算法核心实现（由 {@link #getRecommendations(Long)} 调用）。
+     * 抽取出来便于在 finally 中统一记录耗时指标。
+     */
+    private List<RecommendedPersonView> doRecommend(Long userId) {
         // 1. 获取当前用户的校区、城市和专业信息
         Optional<UserCampusProfile> myCampusOpt = userCampusProfileRepository.findByUserId(userId);
         String myCampusName = myCampusOpt.map(UserCampusProfile::getCampusName).orElse("");
@@ -694,6 +737,7 @@ public class RealRecommendationService implements RecommendationService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId")
     public RecommendationPreferencesView savePreferences(Long userId, String preferredTime, String scope, Boolean campusPriority) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");

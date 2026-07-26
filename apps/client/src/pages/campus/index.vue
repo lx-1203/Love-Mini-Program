@@ -9,7 +9,6 @@
  * - 底部悬浮"发布话题"按钮（FAB样式）
  */
 import { ref, onMounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime } from "../../stores/campus";
 import type { CampusTopicCategory } from "../../stores/campus";
@@ -152,13 +151,13 @@ onMounted(() => {
       </scroll-view>
 
       <!-- 加载状态 -->
-      <view v-if="loading && topics.length === 0" class="campus-state">
-        <view class="loading-spinner" />
+      <view v-if="loading && topics.length === 0" class="campus-state" role="status" aria-live="polite">
+        <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
         <text class="campus-state__text">正在加载话题...</text>
       </view>
 
       <!-- 错误状态 -->
-      <view v-else-if="errorMessage && topics.length === 0" class="campus-state">
+      <view v-else-if="errorMessage && topics.length === 0" class="campus-state" role="status" aria-live="polite">
         <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="campus-state__icon" mode="aspectFit" />
         <text class="campus-state__text">{{ errorMessage }}</text>
         <view class="campus-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="campusStore.fetchCampusTopics()">
@@ -192,7 +191,7 @@ onMounted(() => {
           </view>
         </view>
         <view v-if="loading && topics.length > 0" class="loading-more">
-          <view class="loading-spinner--small" />
+          <view class="loading-spinner--small" role="status" aria-live="polite" aria-label="加载中" />
           <text class="loading-more__text">加载中...</text>
         </view>
         <view v-else-if="!campusStore.topicHasMore && topics.length > 0" class="no-more">

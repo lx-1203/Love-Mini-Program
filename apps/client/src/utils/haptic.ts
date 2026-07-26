@@ -12,6 +12,9 @@
  *   successHaptic();      // 成功振动（签到成功、匹配成功）
  */
 
+// 统一常量：振动反馈间隔
+import { HAPTIC_INTERVAL_MS } from "../constants/ui";
+
 /**
  * 带类型强度的短振动参数。
  *
@@ -78,7 +81,8 @@ export function heavyHaptic(): void {
  */
 export function successHaptic(): void {
   lightHaptic();
-  setTimeout(() => lightHaptic(), 100);
+  // 复用统一振动间隔常量，避免硬编码
+  setTimeout(() => lightHaptic(), HAPTIC_INTERVAL_MS);
 }
 
 /**
@@ -90,7 +94,8 @@ export function errorHaptic(): void {
   // #ifdef H5 || APP-PLUS || MP-WEIXIN
   try {
     vibrateWithType("medium");
-    setTimeout(() => vibrateWithType("light"), 100);
+    // 复用统一振动间隔常量，避免硬编码
+    setTimeout(() => vibrateWithType("light"), HAPTIC_INTERVAL_MS);
   } catch (_e) {
     // 静默失败：H5 端不支持 type 参数或 uni.vibrateShort 不存在
   }

@@ -93,11 +93,9 @@ function handleMaskClick() {
     v-if="visible"
     class="unlock-modal"
     @tap="handleMaskClick"
-    <!-- #ifdef H5 -->
     role="dialog"
     aria-modal="true"
     :aria-label="t('lock.title')"
-    <!-- #endif -->
   >
     <!-- 弹窗主体（阻止冒泡，避免点击内容区误关闭） -->
     <view class="unlock-modal__container" @tap.stop="noop">
@@ -121,9 +119,7 @@ function handleMaskClick() {
         <button
           class="unlock-modal__btn unlock-modal__btn--primary"
           @tap.stop="handleConfirm"
-          <!-- #ifdef H5 -->
           :aria-label="t('lock.confirm')"
-          <!-- #endif -->
         >
           <text class="unlock-modal__btn-text">{{ t('lock.confirm') }}</text>
         </button>
@@ -132,9 +128,7 @@ function handleMaskClick() {
         <button
           class="unlock-modal__btn unlock-modal__btn--secondary"
           @tap.stop="handleCancel"
-          <!-- #ifdef H5 -->
           :aria-label="t('lock.cancelAria')"
-          <!-- #endif -->
         >
           <text class="unlock-modal__btn-text unlock-modal__btn-text--secondary">{{ t('lock.cancel') }}</text>
         </button>

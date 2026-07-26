@@ -119,14 +119,14 @@ onLoad((query) => {
 
     <!-- 加载状态 -->
     <view v-if="loading && currentTopics.length === 0" class="topics-state">
-      <view class="loading-spinner" />
+      <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
       <text class="topics-state__text">正在加载话题...</text>
     </view>
 
     <!-- 错误状态 -->
     <view v-else-if="errorMessage && currentTopics.length === 0" class="topics-state">
       <view class="error-icon">
-        <image class="error-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" />
+        <image class="error-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" alt="" />
       </view>
       <text class="topics-state__text">{{ errorMessage }}</text>
       <view class="topics-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="onRefresh">
@@ -146,7 +146,7 @@ onLoad((query) => {
     >
       <!-- 空状态 -->
       <view v-if="currentTopics.length === 0" class="topics-empty">
-        <image class="topics-empty__icon" :src="chatIcon" mode="aspectFit" />
+        <image class="topics-empty__icon" :src="chatIcon" mode="aspectFit" alt="" />
         <text class="topics-empty__title">暂无话题</text>
         <text class="topics-empty__desc">来发第一个话题吧</text>
       </view>
@@ -175,14 +175,14 @@ onLoad((query) => {
                 v-if="topic.author.avatar"
                 class="topic-card__avatar-img"
                 :src="topic.author.avatar"
-                mode="aspectFill"
+                mode="aspectFill" alt=""
               />
               <text v-else class="topic-card__avatar-char">{{ topic.author.name[0] }}</text>
             </view>
             <text class="topic-card__name">{{ topic.author.name }}</text>
           </view>
           <view class="topic-card__meta">
-            <image class="topic-card__reply-icon" :src="chatIcon" mode="aspectFit" />
+            <image class="topic-card__reply-icon" :src="chatIcon" mode="aspectFit" alt="" />
             <text class="topic-card__replies">{{ topic.replyCount }}</text>
             <text class="topic-card__time">{{ formatCircleTime(topic.createdAt) }}</text>
           </view>
@@ -190,8 +190,8 @@ onLoad((query) => {
       </view>
 
       <!-- 加载更多 -->
-      <view v-if="isLoadingMore" class="load-more">
-        <view class="loading-spinner" />
+      <view v-if="isLoadingMore" class="load-more" role="status" aria-live="polite">
+        <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
         <text class="load-more__text">加载中...</text>
       </view>
       <view v-else-if="!topicHasMore && currentTopics.length > 0" class="load-more">

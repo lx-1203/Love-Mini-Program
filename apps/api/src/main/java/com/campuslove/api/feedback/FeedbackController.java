@@ -1,6 +1,7 @@
 package com.campuslove.api.feedback;
 
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -29,20 +30,41 @@ public class FeedbackController {
     this.feedbackService = feedbackService;
   }
 
+  /**
+   * 提交问题反馈。
+   *
+   * <p>速率限制：桶容量 10，每 10 秒补充 1 个令牌（refillTokens=0.1/s），
+   * 按客户端 IP 限流，防止反馈接口被滥用刷量。</p>
+   */
   @PostMapping("/api/feedback/issues")
   @ResponseStatus(HttpStatus.ACCEPTED)
+  @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
   public SubmissionRecordView createIssue(@Valid @RequestBody FeedbackSubmissionRequest request) {
     return feedbackService.submit(FeedbackTicketType.FEEDBACK, request);
   }
 
+  /**
+   * 提交功能建议。
+   *
+   * <p>速率限制：桶容量 10，每 10 秒补充 1 个令牌（refillTokens=0.1/s），
+   * 按客户端 IP 限流，防止反馈接口被滥用刷量。</p>
+   */
   @PostMapping("/api/feedback/suggestions")
   @ResponseStatus(HttpStatus.ACCEPTED)
+  @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
   public SubmissionRecordView createSuggestion(@Valid @RequestBody FeedbackSubmissionRequest request) {
     return feedbackService.submit(FeedbackTicketType.SUGGESTION, request);
   }
 
+  /**
+   * 提交活动提案。
+   *
+   * <p>速率限制：桶容量 10，每 10 秒补充 1 个令牌（refillTokens=0.1/s），
+   * 按客户端 IP 限流，防止反馈接口被滥用刷量。</p>
+   */
   @PostMapping("/api/feedback/activity-proposals")
   @ResponseStatus(HttpStatus.ACCEPTED)
+  @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
   public SubmissionRecordView createActivityProposal(@Valid @RequestBody FeedbackSubmissionRequest request) {
     return feedbackService.submit(FeedbackTicketType.ACTIVITY_PROPOSAL, request);
   }

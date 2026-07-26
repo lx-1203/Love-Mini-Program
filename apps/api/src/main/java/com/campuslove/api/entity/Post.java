@@ -7,15 +7,45 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
 /**
  * 村口帖子实体，对应 posts 表。
  * 包含内容、图片/标签（JSON）、分类、计数和状态等字段。
+ *
+ * <p>索引说明（与数据库 Flyway 脚本保持一致）：</p>
+ * <ul>
+ *   <li>idx_posts_author：author_id 单列索引，作者主页查询</li>
+ *   <li>idx_posts_category：category 索引，按分类筛选帖子</li>
+ *   <li>idx_posts_created_at：created_at 索引，按时间排序</li>
+ *   <li>idx_posts_status：status 索引，状态过滤（active/deleted/hidden）</li>
+ *   <li>idx_posts_author_created_at：(author_id, created_at) 复合索引，作者主页分页</li>
+ *   <li>idx_posts_status_created_at：(status, created_at) 复合索引，按状态+时间查询</li>
+ * </ul>
+ *
+ * <p>注：任务规格提到 circle_id 索引，但 posts 表实际无该字段（圈子功能由
+ * circle_topics / circle_memberships 表承担），故跳过。详见 V2026.07.25.0001 迁移脚本说明。</p>
  */
 @Entity
-@Table(name = "posts")
+@Table(
+    name = "posts",
+    indexes = {
+        // 作者 ID 单列索引：作者主页帖子列表查询
+        @Index(name = "idx_posts_author", columnList = "author_id"),
+        // 分类索引：按分类筛选帖子
+        @Index(name = "idx_posts_category", columnList = "category"),
+        // 创建时间索引：帖子列表按时间排序、分页
+        @Index(name = "idx_posts_created_at", columnList = "created_at"),
+        // 状态索引：状态过滤（几乎所有列表查询都带 status='active'）
+        @Index(name = "idx_posts_status", columnList = "status"),
+        // (作者 ID, 创建时间) 复合索引：作者主页帖子分页查询
+        @Index(name = "idx_posts_author_created_at", columnList = "author_id, created_at"),
+        // (状态, 创建时间) 复合索引：按状态筛选并按时间排序
+        @Index(name = "idx_posts_status_created_at", columnList = "status, created_at")
+    }
+)
 public class Post {
 
     /** 帖子分类枚举 */

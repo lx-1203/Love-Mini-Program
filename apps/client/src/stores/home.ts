@@ -1,11 +1,12 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import type { components } from "../services/generated/api-types";
+// 修复（严格模式 noUnusedLocals）：components 类型未在本文件引用，已移除；
+// HomeDashboardWithDiscussion 已包含所需字段。
 import type { HomeDashboardWithDiscussion } from "../services/generated/api-types-supplement";
 import { clientApi } from "../services/api";
 
 type HomeDashboard = HomeDashboardWithDiscussion;
-type FlexibleObject = Record<string, unknown>;
+// 修复（严格模式 noUnusedLocals）：FlexibleObject 类型未使用，已移除。
 
 /**
  * 首页 Store。

@@ -78,6 +78,11 @@ function handleTapQuote() {
   }
 }
 
+// 修复（严格模式 noUnusedLocals）：bubbleAriaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用，
+// 同时暴露无障碍标签供父组件/测试访问。
+defineExpose({ bubbleAriaLabel });
+
 /** 格式化时间显示 */
 function formatTime(isoString: string): string {
   try {
@@ -98,10 +103,8 @@ function formatTime(isoString: string): string {
     class="bubble-wrap"
     :class="[`bubble-wrap--${sender}`]"
     @longpress="handleLongpress"
-    <!-- #ifdef H5 -->
     role="article"
     :aria-label="bubbleAriaLabel"
-    <!-- #endif -->
   >
     <!-- 已撤回状态 -->
     <view v-if="recalled" class="bubble bubble--recalled">
@@ -118,7 +121,6 @@ function formatTime(isoString: string): string {
         class="bubble-avatar bubble-avatar--peer"
         :src="peerAvatar"
         mode="aspectFill"
-        <!-- #ifdef H5 -->
         role="img"
         :aria-label="t('chat.quotePeer')"
         <!-- #endif -->
@@ -144,7 +146,6 @@ function formatTime(isoString: string): string {
           <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('chat.quoteAria')"
-          <!-- #endif -->
         >
           <view class="bubble__quote-bar" />
           <view class="bubble__quote-content">

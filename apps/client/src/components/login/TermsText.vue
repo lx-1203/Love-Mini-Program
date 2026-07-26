@@ -7,10 +7,8 @@ const { t } = useI18n();
 <template>
   <view
     class="terms"
-    <!-- #ifdef H5 -->
     role="paragraph"
     :aria-label="t('login.agreedPrefix')"
-    <!-- #endif -->
   >
     <text class="terms-text">{{ t('login.termsAgreePrefix') }}</text>
     <text class="terms-link">{{ t('login.userAgreementLink') }}</text>

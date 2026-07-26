@@ -7,12 +7,15 @@ import com.campuslove.api.entity.CircleTopic;
 import com.campuslove.api.entity.DailyBenefit;
 import com.campuslove.api.entity.MakeUpQuota;
 import com.campuslove.api.entity.Post;
+import com.campuslove.api.mq.CheckInEventMessage;
+import com.campuslove.api.mq.MessageProducer;
 import com.campuslove.api.repository.CheckInRepository;
 import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.DailyBenefitRepository;
 import com.campuslove.api.repository.MakeUpQuotaRepository;
 import com.campuslove.api.repository.PostRepository;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -71,6 +74,13 @@ public class RealCheckInService implements CheckInService {
     private final MakeUpQuotaRepository makeUpQuotaRepository;
 
     /**
+     * 消息生产者，用于异步推送签到事件通知。
+     * <p>签到成功后通过 MQ 异步推送通知（微信订阅消息、通知持久化等），
+     * 避免阻塞签到主流程。MQ 不可用时由 MessageProducer 降级处理。</p>
+     */
+    private final MessageProducer messageProducer;
+
+    /**
      * 构造函数，注入签到记录和签到权益相关 Repository。
      *
      * @param checkInConfig              签到配置
@@ -80,6 +90,7 @@ public class RealCheckInService implements CheckInService {
      * @param circleTopicRepository      圈子话题数据访问层
      * @param circleMembershipRepository 圈子成员数据访问层
      * @param makeUpQuotaRepository      补签配额数据访问层（功能7）
+     * @param messageProducer            消息生产者（异步推送签到事件通知）
      */
     public RealCheckInService(CheckInConfig checkInConfig,
                               CheckInRepository checkInRepository,
@@ -87,7 +98,8 @@ public class RealCheckInService implements CheckInService {
                               PostRepository postRepository,
                               CircleTopicRepository circleTopicRepository,
                               CircleMembershipRepository circleMembershipRepository,
-                              MakeUpQuotaRepository makeUpQuotaRepository) {
+                              MakeUpQuotaRepository makeUpQuotaRepository,
+                              MessageProducer messageProducer) {
         this.checkInConfig = checkInConfig;
         this.checkInRepository = checkInRepository;
         this.dailyBenefitRepository = dailyBenefitRepository;
@@ -95,6 +107,7 @@ public class RealCheckInService implements CheckInService {
         this.circleTopicRepository = circleTopicRepository;
         this.circleMembershipRepository = circleMembershipRepository;
         this.makeUpQuotaRepository = makeUpQuotaRepository;
+        this.messageProducer = messageProducer;
     }
 
     /**
@@ -189,6 +202,14 @@ public class RealCheckInService implements CheckInService {
         // 查询热门话题数量和新入圈用户数量
         int hotTopicCount = getHotTopicCount();
         int newUserCount = getNewCircleUserCount();
+
+        // 通过 MQ 异步推送签到事件通知（签到成功通知、连续签到达成奖励通知等），
+        // 避免同步调用外部微信 API 阻塞签到主流程。MQ 不可用时由 MessageProducer 降级处理。
+        messageProducer.sendCheckInEvent(new CheckInEventMessage(
+                userId,
+                consecutiveDays,
+                checkInConfig.getExtraQuotaPerCheckIn(),
+                Instant.now()));
 
         return new CheckInResultView(true, consecutiveDays, extraQuota,
                 checkInConfig.getExtraQuotaPerCheckIn(), true, true,

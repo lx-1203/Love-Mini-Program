@@ -9,15 +9,36 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
 /**
  * 反馈工单实体，对应 feedback_tickets 表。
  * 记录用户提交的反馈、建议和活动提案。
+ *
+ * <p>索引说明（与数据库 Flyway 脚本保持一致）：</p>
+ * <ul>
+ *   <li>idx_feedback_user_id：user_id 索引，按用户查询反馈列表</li>
+ *   <li>idx_feedback_type：type 索引，按反馈类型筛选</li>
+ *   <li>idx_feedback_status：status 索引，按状态筛选工单</li>
+ *   <li>idx_feedback_created_at：created_at 索引，按创建时间排序、分页</li>
+ * </ul>
  */
 @Entity
-@Table(name = "feedback_tickets")
+@Table(
+    name = "feedback_tickets",
+    indexes = {
+        // 用户 ID 索引：按用户查询反馈列表
+        @Index(name = "idx_feedback_user_id", columnList = "user_id"),
+        // 反馈类型索引：按类型筛选（FEEDBACK/SUGGESTION/ACTIVITY_PROPOSAL）
+        @Index(name = "idx_feedback_type", columnList = "type"),
+        // 状态索引：按状态筛选（SUBMITTED/PROCESSING/REVIEWED/PLANNED/CONVERTED）
+        @Index(name = "idx_feedback_status", columnList = "status"),
+        // 创建时间索引：按创建时间排序、分页
+        @Index(name = "idx_feedback_created_at", columnList = "created_at")
+    }
+)
 public class Feedback {
 
     @Id

@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { replaceAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+import { createButtonGuard } from "../../utils/debounce";
+// Sentry 监控：登录失败上报异常，页面切换 / 关键按钮点击记录面包屑
+import { captureException, addBreadcrumb } from "../../services/sentry";
 
 // 使用 vue-i18n 组合式 API 获取 t 函数（组件内优先使用 useI18n 而非全局 t）
 const { t } = useI18n();
@@ -22,14 +25,23 @@ const showPhoneLogin = ref(false);
 
 // 页面进入淡入动画开关
 const pageVisible = ref(false);
+/** 页面进入淡入定时器引用，用于卸载时清理 */
+let pageVisibleTimer: ReturnType<typeof setTimeout> | null = null;
 onShow(() => {
+  // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
+  addBreadcrumb("navigation", "page_enter", { url: "/pages/login/index" });
+
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageVisibleTimer) clearTimeout(pageVisibleTimer);
+  pageVisibleTimer = setTimeout(() => {
     pageVisible.value = true;
+    pageVisibleTimer = null;
   }, 30);
 });
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
+/** 登录成功跳转定时器引用，用于卸载时清理 */
+let loginNavTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 表单校验计算属性
 const isPhoneValid = computed(() => /^1[3-9]\d{9}$/.test(phone.value));
@@ -58,6 +70,26 @@ function startCountdown() {
     }
   }, 1000);
 }
+
+/**
+ * 页面卸载时清理所有定时器，避免内存泄漏。
+ * 修复（P1 BUG）：原实现缺少 onUnmounted 钩子，countdownTimer / pageVisibleTimer /
+ * loginNavTimer 在页面销毁后仍可能触发回调，修改已销毁页面的响应式状态。
+ */
+onUnmounted(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  if (pageVisibleTimer) {
+    clearTimeout(pageVisibleTimer);
+    pageVisibleTimer = null;
+  }
+  if (loginNavTimer) {
+    clearTimeout(loginNavTimer);
+    loginNavTimer = null;
+  }
+});
 
 function onSendCode() {
   if (!canSendCode.value) {
@@ -148,16 +180,27 @@ async function onWechatLogin() {
     uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
     return;
   }
+  // 记录关键按钮点击面包屑，便于在登录失败时定位用户操作节点
+  addBreadcrumb("ui", "button_click", { id: "login.wechat" });
   try {
     // 先获取 code（带超时与 state 防 CSRF），再调用 store 登录
     const code = await loginWithWechatSdk();
     await sessionStore.loginWithWechat(code);
     replaceAppPath("/pages/discover/index");
   } catch (error) {
+    // 登录失败：上报到 Sentry，source 标记为 login.wechat 便于后台按登录方式筛选
+    captureException(error, { source: "login.wechat" });
     const message = error instanceof Error ? error.message : t("login.loginFailed");
     uni.showToast({ title: message, icon: "none" });
   }
 }
+
+/**
+ * 按钮防抖包装：避免用户在微信登录回调期间快速重复点击，
+ * 防止 uni.login 被并发触发导致 state 校验失败或重复跳转。
+ * 防抖窗口 1500ms 覆盖微信登录拉起 + 网络请求的典型耗时。
+ */
+const onWechatLoginGuarded = createButtonGuard(onWechatLogin, 1500);
 
 function onPhoneLogin() {
   if (!agreed.value) {
@@ -169,10 +212,19 @@ function onPhoneLogin() {
     return;
   }
   uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
-  setTimeout(() => {
+  if (loginNavTimer) clearTimeout(loginNavTimer);
+  loginNavTimer = setTimeout(() => {
     replaceAppPath("/pages/discover/index");
+    loginNavTimer = null;
   }, 1500);
 }
+
+/**
+ * 按钮防抖包装：手机号登录在 toast 提示与 1.5s 跳转之间不响应重复点击，
+ * 避免用户连点导致多次 toast 或多次 navigateTo 入栈。
+ * 防抖窗口 2000ms 覆盖 toast 显示 + 跳转延时。
+ */
+const onPhoneLoginGuarded = createButtonGuard(onPhoneLogin, 2000);
 
 function onAgreeTap() {
   agreed.value = !agreed.value;
@@ -204,6 +256,8 @@ async function onAppleLogin() {
     uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
     return;
   }
+  // 记录关键按钮点击面包屑
+  addBreadcrumb("ui", "button_click", { id: "login.apple" });
   // #ifdef H5 || APP-PLUS
   try {
     // 实际项目中通过 Sign in with Apple SDK 拿到 identityToken，
@@ -219,10 +273,14 @@ async function onAppleLogin() {
     // 此处省略与后端 /api/auth/third-party/apple 的 token 交换，
     // 实际接入时由 services/api.ts 中 loginWithApple 方法完成
     uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
-    setTimeout(() => {
+    if (loginNavTimer) clearTimeout(loginNavTimer);
+    loginNavTimer = setTimeout(() => {
       replaceAppPath("/pages/discover/index");
+      loginNavTimer = null;
     }, 1500);
   } catch (error) {
+    // Apple 登录失败：上报到 Sentry，source 标记为 login.apple
+    captureException(error, { source: "login.apple" });
     const message = error instanceof Error ? error.message : t("thirdPartyLogin.appleLoginFailed");
     uni.showToast({ title: message, icon: "none" });
   }
@@ -254,7 +312,7 @@ function openAccountBinding() {
         class="hero-image"
         :src="IMAGE_PATHS.POSTERS.LOGIN"
         mode="aspectFill"
-        aria-hidden="true"
+        aria-hidden="true" alt=""
       />
       <!-- 底部白色渐变叠加，增强文字可读性 -->
       <view class="hero-overlay" />
@@ -269,7 +327,7 @@ function openAccountBinding() {
     <view class="login-page__bottom">
       <view class="login-card card-base">
         <view v-if="!showPhoneLogin" class="login-quick">
-          <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onWechatLogin">
+          <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onWechatLoginGuarded">
             <view class="btn-icon-wrap">
               <text class="btn-icon-wechat">微</text>
             </view>
@@ -293,7 +351,7 @@ function openAccountBinding() {
                 maxlength="11"
                 :placeholder="t('login.phonePlaceholder')"
                 placeholder-class="input-placeholder"
-                v-model="phone"
+                v-model="phone" aria-label="t('login.phonePlaceholder')"
               />
             </view>
 
@@ -309,7 +367,7 @@ function openAccountBinding() {
                 maxlength="6"
                 :placeholder="t('login.codePlaceholder')"
                 placeholder-class="input-placeholder"
-                v-model="code"
+                v-model="code" aria-label="t('login.codePlaceholder')"
               />
               <view
                 class="send-code-btn press-feedback"
@@ -326,7 +384,7 @@ function openAccountBinding() {
           </view>
 
           <view class="form-btns">
-            <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onPhoneLogin">
+            <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onPhoneLoginGuarded">
               <text class="btn-primary-text">{{ t('login.loginButton') }}</text>
             </view>
 
@@ -772,7 +830,8 @@ function openAccountBinding() {
 
 /* Apple 图标用 SVG 背景模拟（避免引入额外图片资源） */
 .third-party-icon--apple {
-  background-color: #000000;
+  /* Apple 品牌黑色：使用深色 token 替代硬编码 #000000 */
+  background-color: var(--c-neutral-900);
   position: relative;
 }
 

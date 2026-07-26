@@ -1,0 +1,340 @@
+// ============================================================
+// 校园恋爱小程序 — 统一设计令牌入口
+// 版本: 5.0.0 (Unified Design Tokens · 含 Dark Mode)
+// 说明:
+//   1. 本文件为全项目设计 token 的唯一入口，整合并扩展 theme/design-variables.scss；
+//   2. 提供 kebab-case 语义别名（--color-primary / --spacing-md / --radius-md / --font-size-md）
+//      便于业务代码以统一命名引用，避免分散硬编码；
+//   3. 提供 dark mode 适配，支持两种切换方式：
+//      a) 系统偏好：@media (prefers-color-scheme: dark)
+//      b) 手动切换：[data-theme="dark"] 选择器（优先级高于系统偏好）
+//   4. mp-weixin 兼容：使用 page 选择器替代 :root，微信小程序不支持 :root 伪类。
+// 引入方式：在 App.vue 中 @import "@/styles/tokens.scss";
+// ============================================================
+
+// ---------- 引入底层 SCSS 变量与基础 CSS 自定义属性 ----------
+@import "../theme/design-variables.scss";
+
+// ============================================================
+// 第一部分：语义化 kebab-case 别名
+// 说明：以下变量为业务代码提供统一的语义命名，便于记忆与迁移。
+//   - --color-primary: 主色（青藤绿 #3FCF8E）
+//   - --color-secondary: 辅助色
+//   - --color-accent: 强调色（暖橙）
+//   - --color-romance: 浪漫粉
+//   - --color-success / --color-warning / --color-error: 语义色
+//   - --color-text-primary / --color-text-secondary / ...: 文本色
+//   - --color-bg-page / --color-bg-card / ...: 背景色
+//   - --color-border: 边框色
+//   - --spacing-{xs|sm|md|lg|xl}: 间距
+//   - --radius-{xs|sm|md|lg|xl|full}: 圆角
+//   - --font-size-{xs|sm|md|lg|xl|2xl|3xl}: 字号
+//   - --shadow-{sm|md|lg|xl}: 阴影
+//   - --duration-{fast|normal|slow}: 动画时长
+// ============================================================
+
+page {
+  // ---------- 颜色语义别名 ----------
+  --color-primary: var(--c-brand);
+  --color-primary-light: var(--c-brand-50);
+  --color-primary-dark: var(--c-brand-700);
+
+  --color-secondary: var(--c-secondary-400);
+  --color-accent: var(--c-accent-400);
+  --color-romance: var(--c-romance-500);
+
+  --color-success: var(--c-success);
+  --color-warning: var(--c-warning);
+  --color-error: var(--c-error);
+  --color-info: var(--c-secondary-blue-400);
+
+  // ---------- 文本色语义别名 ----------
+  --color-text-primary: var(--c-text-primary);
+  --color-text-secondary: var(--c-text-secondary);
+  --color-text-tertiary: var(--c-text-tertiary);
+  --color-text-quaternary: var(--c-text-quaternary);
+  --color-text-inverse: var(--c-text-inverse);
+  --color-text-brand: var(--c-text-brand);
+  --color-text-romance: var(--c-text-romance);
+  --color-text-link: var(--c-text-brand);
+  --color-text-placeholder: var(--c-text-placeholder);
+
+  // ---------- 背景色语义别名 ----------
+  --color-bg-page: var(--c-bg-page);
+  --color-bg-card: var(--c-bg-container);
+  --color-bg-container: var(--c-bg-container);
+  --color-bg-surface: var(--c-bg-surface);
+  --color-bg-overlay: var(--c-bg-overlay);
+  --color-bg-brand: var(--c-bg-brand);
+  --color-bg-romance: var(--c-bg-romance);
+  --color-bg-elevated: var(--c-bg-elevated);
+
+  // ---------- 边框色语义别名 ----------
+  --color-border-light: var(--c-border-light);
+  --color-border: var(--c-border-default);
+  --color-border-strong: var(--c-border-strong);
+  --color-divider: var(--c-divider-light);
+
+  // ---------- 间距语义别名（4/8/12/16/24/32/48rpx 标准 7 档） ----------
+  --spacing-0: var(--sp-0);
+  --spacing-xs: var(--sp-1); // 4rpx
+  --spacing-sm: var(--sp-2); // 8rpx
+  --spacing-md: var(--sp-3); // 12rpx
+  --spacing-base: var(--sp-4); // 16rpx
+  --spacing-lg: var(--sp-6); // 24rpx
+  --spacing-xl: var(--sp-7); // 32rpx
+  --spacing-2xl: var(--sp-9); // 48rpx
+
+  // ---------- 圆角语义别名 ----------
+  --radius-xs: var(--r-xs); // 4rpx
+  --radius-sm: var(--r-sm); // 8rpx
+  --radius-md: var(--r-md); // 12rpx
+  --radius-lg: var(--r-lg); // 16rpx
+  --radius-xl: var(--r-xl); // 24rpx
+  --radius-2xl: var(--r-xxl); // 28rpx
+  --radius-full: var(--r-full); // 9999rpx
+  --radius-circle: 50%; // 圆形保留 50%
+
+  // ---------- 字号语义别名 ----------
+  --font-size-xs: var(--fs-xs); // 20rpx
+  --font-size-sm: var(--fs-sm); // 22rpx
+  --font-size-base: var(--fs-base); // 24rpx
+  --font-size-md: var(--fs-md); // 26rpx
+  --font-size-lg: var(--fs-lg); // 28rpx
+  --font-size-xl: var(--fs-xl); // 30rpx
+  --font-size-2xl: var(--fs-2xl); // 32rpx
+  --font-size-3xl: var(--fs-3xl); // 36rpx
+  --font-size-4xl: var(--fs-4xl); // 40rpx
+  --font-size-5xl: var(--fs-5xl); // 44rpx
+
+  // ---------- 阴影语义别名 ----------
+  --shadow-xs: var(--s-xs);
+  --shadow-sm: var(--s-sm);
+  --shadow-md: var(--s-md);
+  --shadow-lg: var(--s-lg);
+  --shadow-xl: var(--s-xl);
+  --shadow-card: var(--s-card-soft);
+  --shadow-brand: var(--s-brand);
+  --shadow-romance: var(--s-romance);
+  --shadow-modal: var(--s-modal);
+  --shadow-float: var(--s-float-btn);
+
+  // ---------- 动画时长语义别名 ----------
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 250ms;
+  --duration-slower: 350ms;
+  --duration-slowest: 600ms;
+
+  // ---------- 缓动函数别名 ----------
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+  // ---------- 字重别名 ----------
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  // ---------- 行高别名 ----------
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.6;
+
+  // ---------- z-index 别名 ----------
+  --z-base: 0;
+  --z-card: 2;
+  --z-overlay: 5;
+  --z-badge: 6;
+  --z-indicator: 7;
+  --z-header: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
+
+// ============================================================
+// 第二部分：Dark Mode 适配
+// 策略：
+//   1. 优先使用 [data-theme="dark"] 手动切换（用户在设置中主动选择）；
+//   2. 自动模式：@media (prefers-color-scheme: dark)，跟随系统偏好；
+//   3. 手动模式优先级 > 系统偏好，确保用户主动选择不被覆盖；
+//   4. 仅覆盖与背景/文本/边框相关的语义 token，品牌色与语义色保持不变
+//      （品牌色 #3FCF8E 在深色模式下仍然可识别，避免视觉断层）。
+//
+// 注意：mp-weixin 不支持 :root，但支持 page 与属性选择器 [data-theme="dark"]，
+//      故所有覆盖均写在 page[data-theme="dark"] 下，H5 端通过 <html data-theme="dark">
+//      或 <body data-theme="dark"> 切换。
+// ============================================================
+
+// ---------- 自动模式：跟随系统偏好 ----------
+@media (prefers-color-scheme: dark) {
+  page {
+    // 背景色：深色模式使用深中性色
+    --color-bg-page: #0E1116;
+    --color-bg-card: #1A1F26;
+    --color-bg-container: #1A1F26;
+    --color-bg-surface: #222831;
+    --color-bg-elevated: #1A1F26;
+    --color-bg-overlay: rgba(0, 0, 0, 0.65);
+
+    // 文本色：深色模式反色
+    --color-text-primary: #F0F2F5;
+    --color-text-secondary: #B8BEC8;
+    --color-text-tertiary: #8A92A0;
+    --color-text-quaternary: #5A6270;
+    --color-text-inverse: #1A1F26;
+    --color-text-placeholder: #5A6270;
+
+    // 边框色：深色模式使用深灰
+    --color-border-light: #222831;
+    --color-border: #334155;
+    --color-border-strong: #475569;
+    --color-divider: rgba(255, 255, 255, 0.08);
+
+    // 阴影：深色模式下使用更深的阴影
+    --shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
+    --shadow-card: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
+
+    // 同步底层 token，确保使用 var(--c-bg-page) 等的旧代码也获得 dark 适配
+    --c-bg-page: #0E1116;
+    --c-bg-container: #1A1F26;
+    --c-bg-surface: #222831;
+    --c-bg-elevated: #1A1F26;
+    --c-bg-overlay: rgba(0, 0, 0, 0.65);
+
+    --c-text-primary: #F0F2F5;
+    --c-text-secondary: #B8BEC8;
+    --c-text-tertiary: #8A92A0;
+    --c-text-quaternary: #5A6270;
+    --c-text-inverse: #1A1F26;
+    --c-text-placeholder: #5A6270;
+
+    --c-border-light: #222831;
+    --c-border-default: #334155;
+    --c-border-strong: #475569;
+    --c-divider-light: rgba(255, 255, 255, 0.08);
+
+    --s-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
+    --s-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
+    --s-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
+    --s-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
+    --s-card-soft: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
+
+    // 页面渐变：深色模式使用深色渐变
+    --c-gradient-page: linear-gradient(180deg, #0E1116 0%, #1A1F26 100%);
+    --c-gradient-page-romance: linear-gradient(180deg, #1A1F26 0%, #222831 50%, #0E1116 100%);
+  }
+}
+
+// ---------- 手动模式：用户主动切换（优先级更高） ----------
+// 通过设置 page 元素的 data-theme 属性为 "dark" 启用
+// H5 端可在 <html> 或 <body> 上设置 data-theme="dark"
+page[data-theme="dark"] {
+  // 背景色
+  --color-bg-page: #0E1116;
+  --color-bg-card: #1A1F26;
+  --color-bg-container: #1A1F26;
+  --color-bg-surface: #222831;
+  --color-bg-elevated: #1A1F26;
+  --color-bg-overlay: rgba(0, 0, 0, 0.65);
+
+  // 文本色
+  --color-text-primary: #F0F2F5;
+  --color-text-secondary: #B8BEC8;
+  --color-text-tertiary: #8A92A0;
+  --color-text-quaternary: #5A6270;
+  --color-text-inverse: #1A1F26;
+  --color-text-placeholder: #5A6270;
+
+  // 边框色
+  --color-border-light: #222831;
+  --color-border: #334155;
+  --color-border-strong: #475569;
+  --color-divider: rgba(255, 255, 255, 0.08);
+
+  // 阴影
+  --shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
+
+  // 同步底层 token
+  --c-bg-page: #0E1116;
+  --c-bg-container: #1A1F26;
+  --c-bg-surface: #222831;
+  --c-bg-elevated: #1A1F26;
+  --c-bg-overlay: rgba(0, 0, 0, 0.65);
+
+  --c-text-primary: #F0F2F5;
+  --c-text-secondary: #B8BEC8;
+  --c-text-tertiary: #8A92A0;
+  --c-text-quaternary: #5A6270;
+  --c-text-inverse: #1A1F26;
+  --c-text-placeholder: #5A6270;
+
+  --c-border-light: #222831;
+  --c-border-default: #334155;
+  --c-border-strong: #475569;
+  --c-divider-light: rgba(255, 255, 255, 0.08);
+
+  --s-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
+  --s-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
+  --s-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
+  --s-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
+  --s-card-soft: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
+
+  --c-gradient-page: linear-gradient(180deg, #0E1116 0%, #1A1F26 100%);
+  --c-gradient-page-romance: linear-gradient(180deg, #1A1F26 0%, #222831 50%, #0E1116 100%);
+}
+
+// ============================================================
+// 第三部分：主题切换辅助类
+// 说明：提供 .theme-light / .theme-dark 工具类，可在外层容器上添加此类
+//      实现局部主题切换（不影响全局）。
+// ============================================================
+
+.theme-dark {
+  --color-bg-page: #0E1116;
+  --color-bg-card: #1A1F26;
+  --color-bg-container: #1A1F26;
+  --color-bg-surface: #222831;
+  --color-bg-elevated: #1A1F26;
+  --color-bg-overlay: rgba(0, 0, 0, 0.65);
+
+  --color-text-primary: #F0F2F5;
+  --color-text-secondary: #B8BEC8;
+  --color-text-tertiary: #8A92A0;
+  --color-text-quaternary: #5A6270;
+  --color-text-inverse: #1A1F26;
+  --color-text-placeholder: #5A6270;
+
+  --color-border-light: #222831;
+  --color-border: #334155;
+  --color-border-strong: #475569;
+  --color-divider: rgba(255, 255, 255, 0.08);
+
+  --shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
+}
+
+// ============================================================
+// 第四部分：Dark Mode 切换工具函数占位（实际逻辑在 stores/theme.ts 中实现）
+// 说明：在客户端运行时通过设置 page 元素的 data-theme 属性切换主题；
+//      H5 端通过 document.documentElement.setAttribute('data-theme', 'dark') 切换；
+//      mp-weixin 端通过设置当前页面的 root 元素属性切换（需在页面 onLoad 中调用）。
+// ============================================================

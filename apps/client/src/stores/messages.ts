@@ -2,8 +2,10 @@ import { defineStore } from "pinia";
 import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
-import type { components } from "../services/generated/api-types";
+// 修复（严格模式 noUnusedLocals）：components 类型未在本文件引用，已移除。
 import type { InteractionEventView } from "../services/generated/api-types-supplement";
+// 统一常量：异步操作超时时间
+import { ASYNC_TIMEOUT_MS } from "../constants/growth";
 
 /**
  * 会话类型
@@ -177,7 +179,7 @@ export interface UnreadCountView {
 /* ========== 映射函数 ========== */
 
 function mapToMessageSession(raw: ConversationView): MessageSession {
-  const sessionStore = useSessionStore();
+  // 修复（严格模式 noUnusedLocals）：原 sessionStore 在本函数内未使用，已移除。
   return {
     id: String(raw.id),
     partnerId: String(raw.userBId),
@@ -363,7 +365,7 @@ const mockInteractionEvents: InteractionEvent[] = [
 
 function useMock() { return isMockMode(); }
 
-const ASYNC_TIMEOUT_MS = 15000;
+// 注：ASYNC_TIMEOUT_MS 由 constants/growth.ts 统一提供
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -371,6 +373,28 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessa
     promise.then((r) => { clearTimeout(timer); resolve(r); }).catch((e) => { clearTimeout(timer); reject(e); });
   });
 }
+
+/* ========== 模块级请求令牌（修复 P1 BUG：异步竞态条件） ==========
+ *
+ * 修复（P1 BUG）：原 fetchSessions / fetchSessionMessages / fetchNotifications /
+ * fetchHeartSignals / loadInteractionEvents 未处理竞态条件，
+ * 用户快速切换会话或筛选标签时，新请求发起时旧请求仍在途，
+ * 旧请求返回后可能覆盖新请求的结果，导致展示错误列表。
+ *
+ * 现使用请求令牌（递增计数器）模式：每次请求生成唯一 token，
+ * 仅当 token 等于当前最新 token 时才允许更新状态，
+ * 旧 token 的响应被静默丢弃，避免覆盖新请求结果。
+ *
+ * 相比 AbortController 模式：
+ * - 不需要修改 request() 签名或传递 signal
+ * - 与现有 withTimeout 包装兼容
+ * - token 比较为原子操作，无并发风险
+ */
+let fetchSessionsToken = 0;
+let fetchSessionMessagesToken = 0;
+let fetchNotificationsToken = 0;
+let fetchHeartSignalsToken = 0;
+let loadInteractionEventsToken = 0;
 
 /**
  * 消息中心 Store
@@ -420,10 +444,14 @@ export const useMessagesStore = defineStore("messages", {
     },
 
     async fetchSessions() {
+      // 修复（P1 BUG - 异步竞态）：递增 token，旧请求的响应被静默丢弃
+      const token = ++fetchSessionsToken;
       this.loading = true; this.errorMessage = null;
       try {
         await withTimeout((async () => {
           if (useMock()) {
+            // 修复：旧请求返回时不再修改状态，避免覆盖新请求结果
+            if (token !== fetchSessionsToken) return;
             this.sessions = [...mockSessions].sort((a, b) => {
               if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
               return (b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0) - (a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0);
@@ -433,20 +461,35 @@ export const useMessagesStore = defineStore("messages", {
           const sessionStore = useSessionStore();
           const userId = sessionStore.userSession?.userId ?? "";
           const data = await request<ConversationView[]>({ url: `/messages/conversations?userId=${userId}`, method: "GET" });
+          // 修复：旧请求返回时不再修改状态，避免覆盖新请求结果
+          if (token !== fetchSessionsToken) return;
           this.sessions = data.map(mapToMessageSession).sort((a, b) => {
             if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
             return (b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0) - (a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0);
           });
         })(), ASYNC_TIMEOUT_MS, "加载会话列表超时");
-      } catch (error) { this.errorMessage = error instanceof Error ? error.message : "加载会话列表失败"; }
-      finally { this.loading = false; }
+      } catch (error) {
+        // 修复：旧请求的错误不更新 errorMessage
+        if (token !== fetchSessionsToken) return;
+        this.errorMessage = error instanceof Error ? error.message : "加载会话列表失败";
+      }
+      finally {
+        // 修复：仅当当前 token 仍是最新时才清 loading
+        if (token === fetchSessionsToken) {
+          this.loading = false;
+        }
+      }
     },
 
     async fetchSessionMessages(sessionId: string) {
+      // 修复（P1 BUG - 异步竞态）：递增 token，旧请求的响应被静默丢弃
+      const token = ++fetchSessionMessagesToken;
       this.loading = true; this.errorMessage = null;
       try {
         await withTimeout((async () => {
           if (useMock()) {
+            // 修复：旧请求返回时不再修改状态
+            if (token !== fetchSessionMessagesToken) return;
             this.currentMessages = mockMessages[sessionId] ? [...mockMessages[sessionId]] : [];
             const s = this.sessions.find((x) => x.id === sessionId);
             if (s) s.unreadCount = 0;
@@ -455,15 +498,27 @@ export const useMessagesStore = defineStore("messages", {
           const sessionStore = useSessionStore();
           const userId = sessionStore.userSession?.userId ?? "";
           const data = await request<BackendMessageView[]>({ url: `/messages/conversations/${sessionId}/messages?userId=${userId}`, method: "GET" });
+          // 修复：旧请求返回时不再修改状态
+          if (token !== fetchSessionMessagesToken) return;
           this.currentMessages = data.map(mapToMessageItem);
           const s = this.sessions.find((x) => x.id === sessionId);
           if (s) s.unreadCount = 0;
         })(), ASYNC_TIMEOUT_MS, "加载消息超时");
-      } catch (error) { this.errorMessage = error instanceof Error ? error.message : "加载消息失败"; }
-      finally { this.loading = false; }
+      } catch (error) {
+        // 修复：旧请求的错误不更新 errorMessage
+        if (token !== fetchSessionMessagesToken) return;
+        this.errorMessage = error instanceof Error ? error.message : "加载消息失败";
+      }
+      finally {
+        if (token === fetchSessionMessagesToken) {
+          this.loading = false;
+        }
+      }
     },
 
-    async sendMessage(sessionId: string, content: string, quoteRef?: string) {
+    // 修复（严格模式 noUnusedLocals）：原 quoteRef 参数未在函数体内使用，
+    // 加 _ 前缀标识为有意未使用（保留签名以维持调用方兼容性）。
+    async sendMessage(sessionId: string, content: string, _quoteRef?: string) {
       this.errorMessage = null;
       try {
         if (!content || content.trim().length === 0) { this.errorMessage = "消息内容不能为空"; throw new Error("消息内容不能为空"); }
@@ -490,17 +545,34 @@ export const useMessagesStore = defineStore("messages", {
     },
 
     async fetchHeartSignals() {
+      // 修复（P1 BUG - 异步竞态）：递增 token，旧请求的响应被静默丢弃
+      const token = ++fetchHeartSignalsToken;
       this.loading = true; this.errorMessage = null;
       try {
         await withTimeout((async () => {
-          if (useMock()) { this.heartSignals = [...mockHeartSignals]; return; }
+          if (useMock()) {
+            // 修复：旧请求返回时不再修改状态
+            if (token !== fetchHeartSignalsToken) return;
+            this.heartSignals = [...mockHeartSignals];
+            return;
+          }
           const sessionStore = useSessionStore();
           const userId = sessionStore.userSession?.userId ?? "";
           const data = await request<MessageHeartSignal[]>({ url: `/matches/heart-signals?userId=${userId}`, method: "GET" });
+          // 修复：旧请求返回时不再修改状态
+          if (token !== fetchHeartSignalsToken) return;
           this.heartSignals = data;
         })(), ASYNC_TIMEOUT_MS, "加载心动信号超时");
-      } catch (error) { this.errorMessage = error instanceof Error ? error.message : "加载心动信号失败"; }
-      finally { this.loading = false; }
+      } catch (error) {
+        // 修复：旧请求的错误不更新 errorMessage
+        if (token !== fetchHeartSignalsToken) return;
+        this.errorMessage = error instanceof Error ? error.message : "加载心动信号失败";
+      }
+      finally {
+        if (token === fetchHeartSignalsToken) {
+          this.loading = false;
+        }
+      }
     },
 
     async acceptHeartSignal(signalId: string): Promise<MessageSession | null> {
@@ -533,14 +605,21 @@ export const useMessagesStore = defineStore("messages", {
     /**
      * 获取系统通知
      * Phase 3 更新：支持传入 filterType 按信号类型筛选
+     *
+     * 修复（P1 BUG - 异步竞态）：递增 token，旧请求的响应被静默丢弃，
+     * 避免快速切换筛选标签时旧请求覆盖新请求结果。
      */
     async fetchNotifications(filterType?: NotificationFilterType) {
+      // 修复（P1 BUG）：递增 token，旧请求的响应被静默丢弃
+      const token = ++fetchNotificationsToken;
       this.loading = true; this.errorMessage = null;
       if (filterType !== undefined) this.filterType = filterType;
       const activeFilter = this.filterType;
       try {
         await withTimeout((async () => {
           if (useMock()) {
+            // 修复：旧请求返回时不再修改状态
+            if (token !== fetchNotificationsToken) return;
             const all = [...mockNotifications].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
             if (activeFilter === "all") { this.notifications = all; }
             else { const target: SignalType = activeFilter === "social" ? "SOCIAL" : "CONTENT"; this.notifications = all.filter((n) => n.signalType === target); }
@@ -549,15 +628,27 @@ export const useMessagesStore = defineStore("messages", {
           // Real 模式：按筛选调用不同端点
           if (activeFilter === "all") {
             const data = await request<BackendNotificationView[]>({ url: "/notifications", method: "GET" });
+            // 修复：旧请求返回时不再修改状态
+            if (token !== fetchNotificationsToken) return;
             this.notifications = data.map(mapToSystemNotification).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
           } else {
             const signalParam = activeFilter === "social" ? "SOCIAL" : "CONTENT";
             const data = await request<BackendNotificationView[]>({ url: `/notifications/list?page=0&size=100&signalType=${signalParam}`, method: "GET" });
+            // 修复：旧请求返回时不再修改状态
+            if (token !== fetchNotificationsToken) return;
             this.notifications = data.map(mapToSystemNotification).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
           }
         })(), ASYNC_TIMEOUT_MS, "加载通知超时");
-      } catch (error) { this.errorMessage = error instanceof Error ? error.message : "加载通知失败"; }
-      finally { this.loading = false; }
+      } catch (error) {
+        // 修复：旧请求的错误不更新 errorMessage
+        if (token !== fetchNotificationsToken) return;
+        this.errorMessage = error instanceof Error ? error.message : "加载通知失败";
+      }
+      finally {
+        if (token === fetchNotificationsToken) {
+          this.loading = false;
+        }
+      }
     },
 
     async markNotificationRead(notificationId: string) {
@@ -608,6 +699,39 @@ export const useMessagesStore = defineStore("messages", {
       } catch (error) { this.errorMessage = error instanceof Error ? error.message : "置顶操作失败"; throw error; }
     },
 
+    /**
+     * 删除指定的私信会话。
+     *
+     * 业务流程：
+     * 1. 调用后端 DELETE /api/messages/conversations/{sessionId}?userId={userId}
+     * 2. 从本地 sessions 列表中移除该会话
+     * 3. 失败时设置 errorMessage 并向上抛出，由调用方决定是否回滚 UI
+     *
+     * @param sessionId 待删除的会话 ID
+     */
+    async deleteSession(sessionId: string) {
+      this.errorMessage = null;
+      try {
+        // mock 模式：直接从本地列表移除，不调用后端
+        if (useMock()) {
+          this.sessions = this.sessions.filter((s) => s.id !== sessionId);
+          return;
+        }
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId ?? "";
+        await withTimeout(
+          request<void>({ url: `/messages/conversations/${sessionId}?userId=${userId}`, method: "DELETE" }),
+          ASYNC_TIMEOUT_MS,
+          "删除会话超时"
+        );
+        // 删除成功后从本地列表移除
+        this.sessions = this.sessions.filter((s) => s.id !== sessionId);
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "删除会话失败";
+        throw error;
+      }
+    },
+
     async declineHeartSignal(signalId: string) {
       this.errorMessage = null;
       try {
@@ -643,11 +767,21 @@ export const useMessagesStore = defineStore("messages", {
       await this.fetchNotifications(type);
     },
 
+    /**
+     * 加载互动事件列表
+     *
+     * 修复（P1 BUG - 异步竞态）：递增 token，旧请求的响应被静默丢弃，
+     * 避免快速切换页面或刷新时旧请求覆盖新请求结果。
+     */
     async loadInteractionEvents(page: number = 1) {
+      // 修复（P1 BUG）：递增 token，旧请求的响应被静默丢弃
+      const token = ++loadInteractionEventsToken;
       this.loading = true; this.errorMessage = null;
       try {
         await withTimeout((async () => {
           if (useMock()) {
+            // 修复：旧请求返回时不再修改状态
+            if (token !== loadInteractionEventsToken) return;
             const all = [...mockInteractionEvents].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
             if (page === 1) this.interactionEvents = all;
             else this.interactionEvents = [...this.interactionEvents, ...all];
@@ -655,13 +789,23 @@ export const useMessagesStore = defineStore("messages", {
             return;
           }
           const data = await request<InteractionEventView[]>({ url: `/interactions?page=${page}&pageSize=20`, method: "GET" });
+          // 修复：旧请求返回时不再修改状态
+          if (token !== loadInteractionEventsToken) return;
           const mapped = data.map((item) => ({ id: Number(item.id), eventType: item.eventType ?? item.type, triggerUserId: Number(item.triggerUserId ?? item.fromUserId ?? 0), triggerUserName: String(item.triggerUserName ?? item.fromUserName ?? ""), triggerUserAvatar: String(item.triggerUserAvatar ?? item.fromUserAvatar ?? ""), referenceId: Number(item.referenceId ?? 0), referenceType: String(item.referenceType ?? ""), summary: String(item.summary ?? ""), isRead: Boolean(item.isRead ?? item.read), createdAt: String(item.createdAt) })) as InteractionEvent[];
           if (page === 1) this.interactionEvents = mapped;
           else this.interactionEvents = [...this.interactionEvents, ...mapped];
           this.interactionEventPage = page; this.interactionEventHasMore = mapped.length >= 20;
         })(), ASYNC_TIMEOUT_MS, "加载互动事件超时");
-      } catch (error) { this.errorMessage = error instanceof Error ? error.message : "加载互动事件失败"; }
-      finally { this.loading = false; }
+      } catch (error) {
+        // 修复：旧请求的错误不更新 errorMessage
+        if (token !== loadInteractionEventsToken) return;
+        this.errorMessage = error instanceof Error ? error.message : "加载互动事件失败";
+      }
+      finally {
+        if (token === loadInteractionEventsToken) {
+          this.loading = false;
+        }
+      }
     },
 
     async getUnreadInteractionCount(): Promise<number> {

@@ -9,7 +9,6 @@
  *  - active 态阴影提升至 c-elevation-2 + 品牌描边
  */
 import { computed } from 'vue';
-import { designTokens } from '../../theme/tokens';
 import Ripple from './Ripple.vue';
 
 const props = withDefaults(defineProps<{
@@ -26,7 +25,8 @@ const props = withDefaults(defineProps<{
   gradient: false,
 });
 
-const t = designTokens;
+// 修复（严格模式 noUnusedLocals）：原代码 `const t = designTokens;` 后未使用 t，
+// designTokens 导入也仅用于该别名，故一并移除。模板内未引用 t.designTokens.*。
 
 const cardClass = computed(() => [
   'card',
@@ -60,9 +60,7 @@ const rippleColor = computed(() => {
     <view
       :class="cardClass"
       :style="cardStyle"
-      <!-- #ifdef H5 -->
       role="group"
-      <!-- #endif -->
     >
       <slot />
     </view>
@@ -71,9 +69,7 @@ const rippleColor = computed(() => {
     v-else
     :class="cardClass"
     :style="cardStyle"
-    <!-- #ifdef H5 -->
     role="group"
-    <!-- #endif -->
   >
     <slot />
   </view>

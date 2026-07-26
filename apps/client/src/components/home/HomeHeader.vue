@@ -20,13 +20,11 @@ const { t } = useI18n();
     <view
       class="header-left"
       @tap="emit('schoolTap')"
-      <!-- #ifdef H5 -->
       role="button"
       :aria-label="t('home.selectSchool')"
-      <!-- #endif -->
     >
       <text class="header-school">{{ school || t('home.welcome') }}</text>
-      <image class="header-arrow" :src="IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT" mode="aspectFit" />
+      <image class="header-arrow" :src="IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT" mode="aspectFit" alt="" />
       <view class="header-badge">
         <text class="header-badge-text">{{ t('home.schoolLimited') }}</text>
       </view>
@@ -35,22 +33,18 @@ const { t } = useI18n();
       <view
         class="header-icon"
         @tap="emit('searchTap')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('home.searchPlaceholder')"
-        <!-- #endif -->
       >
-        <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" />
+        <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
       </view>
       <view
         class="header-icon"
         @tap="emit('notifyTap')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('home.notifications')"
-        <!-- #endif -->
       >
-        <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" />
+        <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" alt="" />
         <view class="header-dot" />
       </view>
     </view>

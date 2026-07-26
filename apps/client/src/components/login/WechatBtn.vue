@@ -18,12 +18,10 @@ const { t } = useI18n();
     class="wechat-btn"
     :class="{ 'wechat-btn--loading': loading }"
     @tap="emit('tap')"
-    <!-- #ifdef H5 -->
     role="button"
     :aria-label="t('login.wechatLogin')"
     :aria-disabled="loading"
     :aria-busy="loading"
-    <!-- #endif -->
   >
     <image
       class="wechat-btn-icon"

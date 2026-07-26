@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
@@ -26,9 +27,32 @@ import java.time.LocalDateTime;
  *   <li>transactionId：第三方交易号</li>
  *   <li>periodStart / periodEnd：VIP 有效期起止时间</li>
  * </ul>
+ *
+ * <p>索引说明（与数据库 Flyway 脚本保持一致）：</p>
+ * <ul>
+ *   <li>idx_vip_bills_user：user_id 索引，按用户查询账单列表</li>
+ *   <li>idx_vip_bills_status：status 索引，按状态筛选账单</li>
+ *   <li>idx_vip_bills_transaction：transaction_id 索引，按第三方交易号查询（对账场景，任务规格 order_no 的对应）</li>
+ *   <li>idx_vip_bills_created_at：created_at 索引，按创建时间排序、分页</li>
+ * </ul>
+ *
+ * <p>注：任务规格中提到 order_no 字段，实际表中为 transaction_id（第三方交易号），
+ * 故索引按实际字段命名。</p>
  */
 @Entity
-@Table(name = "vip_bills")
+@Table(
+    name = "vip_bills",
+    indexes = {
+        // 用户 ID 索引：按用户查询账单列表
+        @Index(name = "idx_vip_bills_user", columnList = "user_id"),
+        // 状态索引：按状态筛选账单（SUCCESS/FAILED/REFUNDED）
+        @Index(name = "idx_vip_bills_status", columnList = "status"),
+        // 第三方交易号索引：按交易号查询（对账场景，任务规格 order_no 的对应）
+        @Index(name = "idx_vip_bills_transaction", columnList = "transaction_id"),
+        // 创建时间索引：按创建时间排序、分页
+        @Index(name = "idx_vip_bills_created_at", columnList = "created_at")
+    }
+)
 public class VipBill {
 
     /** 账单类型枚举 */

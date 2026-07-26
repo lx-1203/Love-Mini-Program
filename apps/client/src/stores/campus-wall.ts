@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+// 修复（严格模式 noUnusedLocals）：computed 未在 store 内使用，仅保留 ref。
+import { ref } from "vue";
 // 统一图片资源路径常量，避免在 store 中硬编码字符串
 import { IMAGE_PATHS } from "@/config/images";
 

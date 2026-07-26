@@ -25,7 +25,7 @@
  * - 用户编辑 draft，点击"确认"后 emit apply 事件携带最终 filter
  * - 点击"重置"清空 draft，emit reset 事件
  */
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RecommendationFilter } from "../../services/generated/api-types-supplement";
 import { IMAGE_PATHS } from "../../config/images";
@@ -182,6 +182,18 @@ function emitKeywordChange() {
   }, KEYWORD_DEBOUNCE_MS);
 }
 
+/**
+ * 组件卸载时清理关键词防抖定时器，避免内存泄漏。
+ * 修复（P1 BUG）：原实现未在卸载时清理，组件销毁后定时器仍可能触发 emit，
+ * 进而调用已销毁父组件的回调。
+ */
+onUnmounted(() => {
+  if (keywordDebounceTimer) {
+    clearTimeout(keywordDebounceTimer);
+    keywordDebounceTimer = null;
+  }
+});
+
 /* ========== Picker 数据源 ========== */
 
 /** 省/市联动的当前选中索引 [provinceIndex, cityIndex] */
@@ -198,7 +210,10 @@ const hometownPickerRange = computed<(string[])[]>(() => {
 const futureCityList = computed<string[]>(() => {
   const all: string[] = [];
   for (const province of PROVINCE_LIST) {
-    for (const city of PROVINCE_CITY_MAP[province]) {
+    // 修复（严格模式 noUncheckedIndexedAccess）：PROVINCE_CITY_MAP[province] 索引访问可能返回 undefined，
+    // 此处兜底空数组，避免 for...of 拿到 undefined 抛错。
+    const cities = PROVINCE_CITY_MAP[province] ?? [];
+    for (const city of cities) {
       if (!all.includes(city)) {
         all.push(city);
       }
@@ -242,15 +257,36 @@ watch(
 /**
  * 当父组件外部修改 filter 后（如 reset），同步到 draft。
  * 仅在抽屉关闭时同步，避免用户编辑过程中被覆盖。
+ *
+ * 性能优化（P1）：原实现使用 deep: true 监听整个 filter 对象，
+ * 任何一层属性变化都会触发同步，且每次都会递归遍历对象。
+ * 现改为监听具体属性路径（gender / ageMin / ageMax / schools / distanceMax / interests / onlineOnly
+ * 及身高 / 学历 / 感情状态 / 籍贯 / 未来城市 / 关键词），仅在这些属性变化时触发。
+ * 注：数组类型属性（schools / interests / education / relationshipStatus）引用变化即可触发，无需 deep。
  */
 watch(
-  () => props.filter,
+  () => [
+    props.filter?.gender,
+    props.filter?.ageMin,
+    props.filter?.ageMax,
+    props.filter?.schools,
+    props.filter?.distanceMax,
+    props.filter?.interests,
+    props.filter?.onlineOnly,
+    props.filter?.heightMin,
+    props.filter?.heightMax,
+    props.filter?.educationLevel,
+    props.filter?.relationshipStatus,
+    props.filter?.hometownProvince,
+    props.filter?.hometownCity,
+    props.filter?.futureCity,
+    props.filter?.keyword,
+  ],
   () => {
     if (!props.visible) {
       syncDraftFromProps();
     }
   },
-  { deep: true },
 );
 
 /**
@@ -594,11 +630,9 @@ const icons = {
     v-if="visible"
     class="filter-drawer"
     @tap="handleClose"
-    <!-- #ifdef H5 -->
     role="dialog"
     aria-modal="true"
     :aria-label="t('filterDrawer.title')"
-    <!-- #endif -->
   >
     <!-- 抽屉内容（向上滑入动画） -->
     <view
@@ -613,12 +647,10 @@ const icons = {
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="handleClose"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('filterDrawer.closeAria')"
-          <!-- #endif -->
         >
-          <image class="filter-drawer__close-icon" :src="icons.close" mode="aspectFit" />
+          <image class="filter-drawer__close-icon" :src="icons.close" mode="aspectFit" alt="" />
         </view>
       </view>
 
@@ -702,11 +734,9 @@ const icons = {
                 hover-class="press-feedback--active"
                 hover-stay-time="120"
                 @tap="toggleEducation(opt.value)"
-                <!-- #ifdef H5 -->
                 role="checkbox"
                 :aria-checked="educationDraft.includes(opt.value)"
                 :aria-label="opt.label"
-                <!-- #endif -->
               >
                 <text class="filter-chip__text">{{ opt.label }}</text>
               </view>
@@ -728,11 +758,9 @@ const icons = {
                 hover-class="press-feedback--active"
                 hover-stay-time="120"
                 @tap="toggleRelationship(opt.value)"
-                <!-- #ifdef H5 -->
                 role="radio"
                 :aria-checked="relationshipDraft.includes(opt.value)"
                 :aria-label="opt.label"
-                <!-- #endif -->
               >
                 <text class="filter-chip__text">{{ opt.label }}</text>
               </view>
@@ -756,10 +784,8 @@ const icons = {
                 class="picker-trigger press-feedback"
                 hover-class="press-feedback--active"
                 hover-stay-time="120"
-                <!-- #ifdef H5 -->
                 role="button"
                 :aria-label="t('filterDrawer.hometownTitle')"
-                <!-- #endif -->
               >
                 <text class="picker-trigger__text" :class="{ 'picker-trigger__text--placeholder': !hometownProvinceDraft }">
                   {{ hometownDisplayText }}
@@ -784,10 +810,8 @@ const icons = {
                 class="picker-trigger press-feedback"
                 hover-class="press-feedback--active"
                 hover-stay-time="120"
-                <!-- #ifdef H5 -->
                 role="button"
                 :aria-label="t('filterDrawer.futureCityTitle')"
-                <!-- #endif -->
               >
                 <text class="picker-trigger__text" :class="{ 'picker-trigger__text--placeholder': !futureCityDraft }">
                   {{ futureCityDisplayText }}
@@ -803,13 +827,13 @@ const icons = {
               <text class="filter-section__title">{{ t('filterDrawer.keywordTitle') }}</text>
             </view>
             <view class="keyword-input">
-              <image class="keyword-input__icon" :src="icons.search" mode="aspectFit" />
+              <image class="keyword-input__icon" :src="icons.search" mode="aspectFit" alt="" />
               <input
                 class="keyword-input__field"
                 :placeholder="t('filterDrawer.keywordPlaceholder')"
                 placeholder-class="keyword-input__placeholder"
                 :value="keywordDraft"
-                @input="onKeywordInput"
+                @input="onKeywordInput" aria-label="t('filterDrawer.keywordPlaceholder')"
               />
               <text
                 v-if="keywordDraft"
@@ -840,10 +864,8 @@ const icons = {
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="handleReset"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('filterDrawer.resetAria')"
-          <!-- #endif -->
         >
           <text class="filter-drawer__btn-text">{{ t('filterDrawer.reset') }}</text>
         </view>
@@ -852,10 +874,8 @@ const icons = {
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="handleConfirm"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('filterDrawer.confirmAria')"
-          <!-- #endif -->
         >
           <text class="filter-drawer__btn-text">{{ t('filterDrawer.confirm') }}</text>
         </view>

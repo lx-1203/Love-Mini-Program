@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
 import { isDev, isMockMode } from "../services/env";
+// Sentry 监控：登录成功关联用户身份，退出登录清除用户上下文
+import { setUser, clearUser } from "../services/sentry";
 import { toLoginHeroView } from "../view-models/login";
 import { MOCK_LOGIN_HERO } from "../features/login/hero";
 import type { components } from "../services/generated/api-types";
@@ -97,6 +99,37 @@ function savePersistedFields(fields: SessionPersistedFields): void {
 
 // 启动时一次性读取持久化字段，作为 store 初始值
 const initialPersisted = loadPersistedFields();
+
+/**
+ * 将 UserSession 同步到 Sentry，便于在异常发生时关联用户身份。
+ *
+ * 调用时机：
+ * - refreshSession / bootstrap / loginWithWechat 成功后；
+ * - 用户未登录（loggedIn=false 或 session 为空）时调用 clearUser 清除上下文，
+ *   避免上一个用户的身份残留到后续上报。
+ *
+ * 字段映射：
+ * - userId → Sentry.User.id
+ * - displayName → Sentry.User.username（nickname）
+ * - loginMethod → 作为扩展字段透传，便于在后台按登录方式筛选
+ *
+ * @param session 当前用户会话（可能为 null）
+ */
+function syncSentryUser(session: UserSession | null): void {
+  try {
+    if (session && session.loggedIn && typeof session.userId === "string" && session.userId.length > 0) {
+      setUser(session.userId, {
+        nickname: session.displayName ?? "",
+        loginMethod: session.loginMethod ?? "",
+      });
+    } else {
+      // 未登录或会话已失效：清除 Sentry 用户上下文，避免身份残留
+      clearUser();
+    }
+  } catch (_e) {
+    // Sentry 调用失败不应影响 session 流程，静默处理
+  }
+}
 
 export const useSessionStore = defineStore("session", {
   state: () => ({
@@ -284,6 +317,9 @@ export const useSessionStore = defineStore("session", {
           profileBackgroundUrl: this.profileBackgroundUrl,
         });
 
+        // 同步用户身份到 Sentry：H5 刷新后用户身份不丢失，便于异常关联
+        syncSentryUser(this.userSession);
+
         // 开发模式日志：便于排查完善度状态变化（资料保存后是否同步更新）
         if (isDev && this.userSession) {
           console.debug("[SessionStore] refreshSession 完成:", {
@@ -361,7 +397,14 @@ export const useSessionStore = defineStore("session", {
         this.errorMessage = null;
         this.profileBackgroundUrl = "";
 
-        // 3. 清除持久化的 profileBackgroundUrl，避免下次登录残留
+        // 3. 清除 Sentry 用户上下文：避免登出后的上报仍关联已登出用户
+        try {
+          clearUser();
+        } catch (_e) {
+          // Sentry 调用失败不影响登出主流程
+        }
+
+        // 4. 清除持久化的 profileBackgroundUrl，避免下次登录残留
         try {
           savePersistedFields({ profileBackgroundUrl: "" });
         } catch (_e) {
@@ -395,6 +438,9 @@ export const useSessionStore = defineStore("session", {
           this.loginHero = toLoginHeroView(hero);
           this.userSession = session;
         }
+
+        // 应用启动时同步 Sentry 用户身份：H5 冷启动后用户身份不丢失
+        syncSentryUser(this.userSession);
       } catch (error) {
         this.isOffline = true;
         console.warn("[SessionStore] 初始化失败，进入离线模式:", error);
@@ -421,6 +467,9 @@ export const useSessionStore = defineStore("session", {
         } else {
           this.userSession = await clientApi.loginWithWechat(code);
         }
+
+        // 登录成功：同步用户身份到 Sentry，后续异常上报将自动关联该用户
+        syncSentryUser(this.userSession);
 
         return this.userSession;
       } catch (error) {

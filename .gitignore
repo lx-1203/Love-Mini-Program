@@ -1,136 +1,43 @@
+# Dependencies
 node_modules/
+.pnpm-store/
+
+# Build output
 dist/
-.DS_Store
-Thumbs.db
+build/
+target/
+*.class
+
+# IDE
 .idea/
 .vscode/
-*.iml
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
+.env.real.local
+*.env.local
+
+# Logs
 *.log
-.env
-.env.*
-target/
-out/
+logs/
+
+# Test coverage
 coverage/
+.nyc_output/
 
-# Local database secrets
-database/flyway/flyway.user.toml
+# Temporary files
+typecheck_*.txt
+typecheck.log
+tc_*.log
+commit-msg.txt
 
-# ===== 个人本地凭据与覆盖 =====
-# 客户端本地覆盖（保留 .env.example 作为模板）
-apps/client/.env
-apps/client/.env.development
-apps/client/.env.development.local
-apps/client/.env.production
-apps/client/.env.production.local
-apps/client/.env.real
-apps/client/.env.local
-# 管理员本地覆盖
-apps/admin/.env
-apps/admin/.env.development
-apps/admin/.env.development.local
-apps/admin/.env.production
-apps/admin/.env.production.local
-apps/admin/.env.local
-# API 本地覆盖（保留 .env.example）
-apps/api/.env
+# Uni-app
+unpackage/
 
-# ===== IDE / 编辑器状态 =====
-.hbuilderx/
-.codegraph/
-.reasonix/
-.superpowers/
-
-# ===== 个人图片与资料 =====
-# 个人微信图片与参考图
-/2/
-/参考/
-# AI 生成图
-ChatGPT Image *.png
-# 调试截图
-test-screenshots/
-.trae/screenshots/
-# 根目录调试截图
-/[a-z]*-page.png
-/[a-z]*-session*.png
-/devtools-*.png
-/desktop-screenshot*.png
-/screenshot-*.png
-/ss-*.png
-/usability-*.png
-/ref_img.png
-/fullscreen-screenshot.png
-
-# ===== 个人调试工具与脚本 =====
-/compress-images.js
-/check-encoding.js
-/check-pages-json.cjs
-/debug-e0.cjs
-/fix-encoding.js
-/fix-encoding-v2.js
-/DevToolsCtrl.cs
-/DevToolsCtrl.dll
-/ListWindows.cs
-/ListWindows.exe
-/ListAllWindows.cs
-/ListAllWindows.exe
-/ReviewApp.cs
-/ReviewApp.exe
-/ReviewApp2.cs
-/ReviewApp2.exe
-/ScreenshotTest.cs
-/ScreenshotTest.exe
-# 微信开发者工具调试脚本（C# 抓图/控制工具）
-/CaptureByTitle.cs
-/CaptureByTitle.exe
-/CaptureDevTools.cs
-/CaptureDevTools.exe
-/ClickConsoleTab.cs
-/ClickDetails.cs
-/ClickDetails.exe
-/CloseDialog.cs
-/CloseDialog.exe
-/MaximizeAndCapture.cs
-/MaximizeAndCapture.exe
-/OpenProject.cs
-/OpenProject.exe
-/SendEscape.cs
-/SendEscape.exe
-
-# ===== 微信开发者工具验证产物（不入库） =====
-/mp-weixin-devtools-*.png
-/mp-weixin-simulator.png
-/mp-weixin-runtime-logs.json
-/verification-logs*.json
-/wechat-devtools-status-report.md
-/微信开发者工具验证报告.md
-
-# ===== 本地数据库初始化脚本（可能含口令） =====
-/init-mysql.sql
-/set-root-password.sql
-/test-migrations.sh
-
-# ===== TRAE 平台内部产物 =====
-.trae/documents/push_batch_*.json
-.trae/specs/verify-fix-*/
-
-# ===== 二进制工具与压缩包 =====
-tools/flyway-*/
-tools/flyway-commandline-*.zip
-/design-preview.7z
-
-# ===== 大体积媒体资源（由构建/CDN提供） =====
-apps/client/src/static/assets/videos/
-
-# ===== 构建产物 =====
-apps/client/dist/
-apps/client/dist/build/
-apps/client/tmp-*.png
-apps/api/target/
-
-# ===== 残留空文件 =====
-/nul
-
-# ===== 临时操作文件（不提交） =====
-.trae/documents/github-ssh-key-to-add.txt
-/github-ssh-key-to-add.txt
-project.private.config.json
+# Microservices
+*.pid

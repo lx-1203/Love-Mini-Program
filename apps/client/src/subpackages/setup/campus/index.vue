@@ -57,9 +57,9 @@ async function save() {
     <SetupProgress :current-step="2" />
 
     <SectionCard title="学校资料" compact>
-      <input v-model="form.city" class="field" placeholder="城市"></input>
-      <input v-model="form.campusName" class="field" placeholder="学校名称"></input>
-      <input v-model="form.department" class="field" placeholder="院系"></input>
+      <input v-model="form.city" class="field" placeholder="城市" aria-label="城市"></input>
+      <input v-model="form.campusName" class="field" placeholder="学校名称" aria-label="学校名称"></input>
+      <input v-model="form.department" class="field" placeholder="院系" aria-label="院系"></input>
     </SectionCard>
     <BottomActionBar primary-label="保存并继续" @primary="save"></BottomActionBar>
   </AppShell>

@@ -332,6 +332,43 @@
       ]
     }
   ],
+  /*
+   * ============================================================
+   *  分包预加载策略（preloadRule）
+   * ============================================================
+   *
+   *  性能优化（P1）：通过 preloadRule 在访问主包页面时预加载分包资源，
+   *  减少用户进入分包页面时的等待时间，提升首屏体验。
+   *
+   *  策略说明：
+   *  - 进入"寻觅"tab 时预加载 discover 分包（讨论圈/活动），因为用户在寻觅页
+   *    很可能下一步进入讨论圈或活动列表
+   *  - 进入"我的"tab 时预加载 setup 分包（资料设置），因为新用户在 profile 页
+   *    很可能需要完善资料
+   *  - 进入"圈子"tab 时预加载 support 分包（反馈中心），用户在村口可能需要反馈
+   *
+   *  network 触发时机：
+   *  - wifi: 在 wifi 网络下预加载所有分包（默认）
+   *  - all: 任何网络下都预加载（适合分包较小的情况）
+   *  这里使用 "all" 因为分包总体积较小，预加载成本低
+   *
+   *  注：preloadRule 只对 mp-weixin 生效，H5 由 vite manualChunks 处理。
+   * ============================================================
+   */
+  "preloadRule": {
+    "pages/discover/index": {
+      "network": "all",
+      "packages": ["subpackages/discover"]
+    },
+    "pages/profile/index": {
+      "network": "all",
+      "packages": ["subpackages/setup"]
+    },
+    "pages/village/index": {
+      "network": "all",
+      "packages": ["subpackages/support"]
+    }
+  },
   // TabBar list 配置必须与 src/config/navigation.ts 中的 appTabs 保持一致
   "tabBar": {
     "custom": true,

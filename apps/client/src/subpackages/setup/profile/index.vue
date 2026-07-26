@@ -355,10 +355,10 @@ function handleChangeBg() {
     <SetupProgress :current-step="1" />
 
     <SectionCard title="资料草稿" compact>
-      <input v-model="form.nickname" class="field" placeholder="昵称" :maxlength="NICKNAME_MAX_LENGTH" />
+      <input v-model="form.nickname" class="field" placeholder="昵称" :maxlength="NICKNAME_MAX_LENGTH" aria-label="昵称" />
       <textarea v-model="form.bio" class="field field--textarea" :maxlength="BIO_MAX_LENGTH" />
-      <input v-model="form.grade" class="field" placeholder="年级" />
-      <input v-model="form.pronouns" class="field" placeholder="称呼偏好" />
+      <input v-model="form.grade" class="field" placeholder="年级" aria-label="年级" />
+      <input v-model="form.pronouns" class="field" placeholder="称呼偏好" aria-label="称呼偏好" />
     </SectionCard>
 
     <!-- Phase E4 / M-07：扩展资料字段 -->
@@ -370,7 +370,7 @@ function handleChangeBg() {
           v-model="heightInput"
           class="field field--inline"
           type="number"
-          placeholder="120-250"
+          placeholder="120-250" aria-label="120-250"
         />
       </view>
 
@@ -413,19 +413,19 @@ function handleChangeBg() {
       <!-- 籍贯省 -->
       <view class="form-row">
         <text class="form-row__label">籍贯省份</text>
-        <input v-model="form.hometownProvince" class="field field--inline" placeholder="如：广东" />
+        <input v-model="form.hometownProvince" class="field field--inline" placeholder="如：广东" aria-label="如：广东" />
       </view>
 
       <!-- 籍贯市 -->
       <view class="form-row">
         <text class="form-row__label">籍贯城市</text>
-        <input v-model="form.hometownCity" class="field field--inline" placeholder="如：广州" />
+        <input v-model="form.hometownCity" class="field field--inline" placeholder="如：广州" aria-label="如：广州" />
       </view>
 
       <!-- 未来城市 -->
       <view class="form-row">
         <text class="form-row__label">未来城市</text>
-        <input v-model="form.futureCity" class="field field--inline" placeholder="如：广州" />
+        <input v-model="form.futureCity" class="field field--inline" placeholder="如：广州" aria-label="如：广州" />
       </view>
 
       <!-- 未来规划标签 -->

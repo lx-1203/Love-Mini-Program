@@ -29,7 +29,13 @@ describe("custom-tab-bar configuration", () => {
       throw new Error("无法从 custom-tab-bar/index.js 中解析 tabs 数组");
     }
 
-    const tabBlocks = tabsMatch[1].match(/\{\s*id:\s*"[^"]+"[\s\S]*?\}/g) ?? [];
+    // 修复（严格模式 noUncheckedIndexedAccess）：tabsMatch[1] 索引访问返回 string | undefined，
+    // 前面已校验 tabsMatch 非空，但 [1] 仍可能为 undefined，此处提取后做非空校验。
+    const tabsContent = tabsMatch[1];
+    if (!tabsContent) {
+      throw new Error("无法从 custom-tab-bar/index.js 中解析 tabs 数组内容");
+    }
+    const tabBlocks = tabsContent.match(/\{\s*id:\s*"[^"]+"[\s\S]*?\}/g) ?? [];
     return tabBlocks.map((block) => {
       const id = block.match(/id:\s*"([^"]+)"/)?.[1] ?? "";
       const path = block.match(/path:\s*"([^"]+)"/)?.[1] ?? "";

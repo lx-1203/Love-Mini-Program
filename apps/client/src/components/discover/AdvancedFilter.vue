@@ -122,10 +122,25 @@ const onlineOnlyDraft = ref<boolean>(false);
 /**
  * 父组件传入的 modelValue 变化时（如重置），同步到 draft。
  * 仅在外部值与当前 draft 不一致时触发，避免循环更新。
+ *
+ * 性能优化（P1）：原实现使用 deep: true 监听整个 modelValue 对象，
+ * 任何一层属性变化都会触发同步，且每次都会递归遍历对象。
+ * 现改为监听具体属性路径（gender / ageMin / ageMax / schools / distanceMax / interests / onlineOnly），
+ * 仅在这些属性变化时触发，避免不必要的深度遍历。
+ * 注：schools / interests 是数组，引用变化即可触发，无需 deep。
  */
 watch(
-  () => props.modelValue,
-  (val) => {
+  () => [
+    props.modelValue?.gender,
+    props.modelValue?.ageMin,
+    props.modelValue?.ageMax,
+    props.modelValue?.schools,
+    props.modelValue?.distanceMax,
+    props.modelValue?.interests,
+    props.modelValue?.onlineOnly,
+  ],
+  () => {
+    const val = props.modelValue;
     if (!val) return;
     genderDraft.value = (val.gender as "any" | "male" | "female") ?? "any";
     ageMinDraft.value = val.ageMin ?? AGE_MIN_BOUND;
@@ -135,7 +150,7 @@ watch(
     interestsDraft.value = val.interests ? [...val.interests] : [];
     onlineOnlyDraft.value = val.onlineOnly ?? false;
   },
-  { immediate: true, deep: true },
+  { immediate: true },
 );
 
 /* ========== 性别筛选 ========== */

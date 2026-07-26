@@ -27,6 +27,29 @@ spring:
       connection-test-query: SELECT 1
       # 连接池名称（便于监控与日志识别）
       pool-name: CampusLoveHikariPool
+  # Redis 配置：所有连接参数通过环境变量外部化，便于不同部署环境切换。
+  # real profile 下启用 RedisAutoConfiguration，配合 RedisConfig 中自定义的
+  # LettuceConnectionFactory / RedisTemplate / CacheManager Bean。
+  # mock profile 下不依赖 Redis，由 application-mock.yml 覆盖。
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      # 连接超时（毫秒）：默认 3s，超时抛 RedisConnectionFailureException
+      timeout: ${REDIS_TIMEOUT:3000}
+      # Lettuce 连接池配置（基于 commons-pool2，需引入对应依赖）
+      lettuce:
+        pool:
+          # 连接池最大活跃连接数：默认 8，生产环境建议根据并发量调整
+          max-active: ${REDIS_POOL_MAX_ACTIVE:8}
+          # 连接池最大空闲连接数：默认 8
+          max-idle: ${REDIS_POOL_MAX_IDLE:8}
+          # 连接池最小空闲连接数：默认 0
+          min-idle: ${REDIS_POOL_MIN_IDLE:0}
+          # 连接池最大等待时间（毫秒）：默认 -1（无限等待），生产建议设置为正数避免线程阻塞
+          max-wait: ${REDIS_POOL_MAX_WAIT:-1}
   flyway:
     enabled: true
     # 默认扫描两个位置：
@@ -52,3 +75,27 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+  # ============ RabbitMQ 消息队列配置 ============
+  # 通过环境变量外部化：RABBITMQ_HOST / RABBITMQ_PORT / RABBITMQ_USERNAME / RABBITMQ_PASSWORD / RABBITMQ_VIRTUAL_HOST
+  # 默认值适配本地开发环境（127.0.0.1:5672, guest/guest, virtual-host=/）。
+  # RabbitMQ 不可用时不影响应用启动：RabbitConfig 仅在 real profile 激活，
+  # MessagingFallback 会在启动时检测连接可用性并降级为日志记录模式。
+  rabbitmq:
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
+    # 监听器（消费者）重试配置：消费失败时自动重试，避免瞬时故障导致消息丢失
+    listener:
+      simple:
+        retry:
+          # 是否启用消费者重试（默认 true，显式声明便于维护）
+          enabled: true
+          # 首次重试间隔（毫秒）：默认 1000ms
+          initial-interval: ${RABBITMQ_RETRY_INITIAL_INTERVAL:1000}
+          # 最大重试次数：默认 3 次（含首次消费，共尝试 4 次）
+          max-attempts: ${RABBITMQ_RETRY_MAX_ATTEMPTS:3}
+          # 重试间隔乘数：每次重试间隔 = initial-interval * multiplier^(n-1)
+          # 默认 1.0（等间隔），1.5 表示指数退避
+          multiplier: ${RABBITMQ_RETRY_MULTIPLIER:1.5}

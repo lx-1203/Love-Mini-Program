@@ -55,9 +55,11 @@ describe("village store", () => {
     const store = useVillageStore();
     await store.fetchPosts({ sortBy: "hot" });
 
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.posts[i - 1] / [i] 索引访问返回 T | undefined，
+    // 循环边界 i < length 已确保不越界，此处使用非空断言 ! 简化类型。
     for (let i = 1; i < store.posts.length; i++) {
-      expect(store.posts[i - 1].likes).toBeGreaterThanOrEqual(
-        store.posts[i].likes
+      expect(store.posts[i - 1]!.likes).toBeGreaterThanOrEqual(
+        store.posts[i]!.likes
       );
     }
   });
@@ -78,10 +80,12 @@ describe("village store", () => {
     });
 
     expect(store.posts.length).toBe(beforeCount + 1);
-    expect(store.posts[0].id).toBe(newPost.id);
-    expect(store.posts[0].content).toBe("这是一条测试帖子的内容");
-    expect(store.posts[0].likes).toBe(0);
-    expect(store.posts[0].comments).toBe(0);
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.posts[0] 索引访问返回 T | undefined，
+    // 前面 length 断言已确保非空，此处使用非空断言 ! 简化类型。
+    expect(store.posts[0]!.id).toBe(newPost.id);
+    expect(store.posts[0]!.content).toBe("这是一条测试帖子的内容");
+    expect(store.posts[0]!.likes).toBe(0);
+    expect(store.posts[0]!.comments).toBe(0);
   });
 
   // ------------------------------------------------------------------
@@ -154,7 +158,9 @@ describe("village store", () => {
     const store = useVillageStore();
     await store.fetchPosts();
 
-    const post = store.posts[0];
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.posts[0] 索引访问返回 T | undefined，
+    // 测试场景已通过 fetchPosts 加载非空数据，此处使用非空断言 ! 简化类型。
+    const post = store.posts[0]!;
     const initialLikes = post.likes;
     const initialIsLiked = post.isLiked;
 
@@ -193,7 +199,8 @@ describe("village store", () => {
     const store = useVillageStore();
     await store.fetchPosts();
 
-    const post = store.posts[0];
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.posts[0] 同上，使用非空断言 !。
+    const post = store.posts[0]!;
     const initialCommentCount = post.comments;
     const initialCommentsLength = store.comments.length;
 
@@ -213,7 +220,7 @@ describe("village store", () => {
     await store.fetchPosts();
 
     await expect(
-      store.commentPost(store.posts[0].id, "")
+      store.commentPost(store.posts[0]!.id, "")
     ).rejects.toThrow("评论内容不能为空");
   });
 
@@ -222,7 +229,7 @@ describe("village store", () => {
     await store.fetchPosts();
 
     await expect(
-      store.commentPost(store.posts[0].id, "   ")
+      store.commentPost(store.posts[0]!.id, "   ")
     ).rejects.toThrow("评论内容不能为空");
   });
 
@@ -282,8 +289,10 @@ describe("village store", () => {
     await store.fetchPosts();
 
     const result = store.filteredPosts({ sortBy: "hot" });
+    // 修复（严格模式 noUncheckedIndexedAccess）：result[i - 1] / [i] 索引访问返回 T | undefined，
+    // 循环边界 i < length 已确保不越界，此处使用非空断言 ! 简化类型。
     for (let i = 1; i < result.length; i++) {
-      expect(result[i - 1].likes).toBeGreaterThanOrEqual(result[i].likes);
+      expect(result[i - 1]!.likes).toBeGreaterThanOrEqual(result[i]!.likes);
     }
   });
 
@@ -294,7 +303,9 @@ describe("village store", () => {
     const store = useVillageStore();
     await store.fetchPosts();
 
-    const post = store.posts[0];
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.posts[0] 索引访问返回 T | undefined，
+    // 测试场景已通过 fetchPosts 加载非空数据，此处使用非空断言 ! 简化类型。
+    const post = store.posts[0]!;
     const userId = post.author.userId;
     const initialFollowed = post.isFollowed;
 

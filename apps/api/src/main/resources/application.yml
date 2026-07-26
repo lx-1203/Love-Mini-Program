@@ -52,15 +52,29 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        # 暴露 health/info/prometheus/metrics 四个端点：
+        # - health: 健康检查（含数据库连通性等自定义指标）
+        # - info: 应用元信息
+        # - prometheus: Prometheus 抓取端点（micrometer-registry-prometheus 提供）
+        # - metrics: Spring Boot Actuator 指标查询端点
+        include: health,info,prometheus,metrics
   # 所有指标统一打上 application 标签，便于 Prometheus 区分多服务
   metrics:
     tags:
       application: campus-love-api
+    # 开启 HTTP 服务端请求耗时的百分位直方图，便于统计 p95/p99 延迟
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
   # health 端点详情仅授权用户可见，避免泄露内部组件状态
   endpoint:
     health:
       show-details: when_authorized
+    # 显式启用 Prometheus 端点
+    prometheus:
+      enabled: true
 
 app:
   # 媒体存储配置（Phase A - Task A3）

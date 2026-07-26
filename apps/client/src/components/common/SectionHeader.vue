@@ -23,21 +23,17 @@ const moreTextLabel = computed(() => props.moreText || t('common.viewAll'));
 <template>
   <view
     class="section-header"
-    <!-- #ifdef H5 -->
     role="heading"
     aria-level="2"
     :aria-label="title"
-    <!-- #endif -->
   >
     <text class="section-title">{{ title }}</text>
     <view
       v-if="more"
       class="section-more"
       @tap="emit('more')"
-      <!-- #ifdef H5 -->
       role="button"
       :aria-label="moreTextLabel"
-      <!-- #endif -->
     >
       <text class="section-more-text">{{ moreTextLabel }} ›</text>
     </view>

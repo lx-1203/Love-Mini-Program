@@ -121,6 +121,13 @@ export function initSentry(app: App): void {
  * - 其他情况（mp-weixin 或 Sentry 未初始化）：降级为 console.error +
  *   上报到后端 /api/error-reports 接口。
  *
+ * Tag 提取规则：
+ * - context.source：错误来源标识（如 "Vue Error"、"http"、"login.wechat"），
+ *   会被提升为 Sentry tag，便于在后台按来源筛选；
+ * - context.http_url / context.http_status：HTTP 请求相关 tag，
+ *   便于按接口 URL 与状态码聚合排查；
+ * - 其余字段作为 extra 附带上报，仅用于查看上下文，不参与聚合。
+ *
  * @param error   错误对象或原始值
  * @param context 可选的上下文信息（如来源标识、用户操作阶段等）
  */
@@ -131,8 +138,36 @@ export function captureException(
   // #ifdef H5
   if (sentryInitialized) {
     try {
-      // context 作为 extra 字段附带上报，便于在 Sentry 后台查看上下文
-      Sentry.captureException(error, context ? { extra: context } : undefined);
+      // 从 context 中提取已知字段作为 tag，便于在 Sentry 后台按来源/接口筛选
+      const tags: Record<string, string> = {};
+      if (context) {
+        if (typeof context.source === "string" && context.source.length > 0) {
+          tags.source = context.source;
+        }
+        if (typeof context.http_url === "string" && context.http_url.length > 0) {
+          tags.http_url = context.http_url;
+        }
+        if (typeof context.http_status === "number") {
+          tags.http_status = String(context.http_status);
+        }
+      }
+
+      // 组装 CaptureContext：tags 用于聚合筛选，extra 用于保留完整上下文
+      const captureContext: {
+        tags?: Record<string, string>;
+        extra?: Record<string, unknown>;
+      } = {};
+      if (Object.keys(tags).length > 0) {
+        captureContext.tags = tags;
+      }
+      if (context && Object.keys(context).length > 0) {
+        captureContext.extra = context;
+      }
+
+      Sentry.captureException(
+        error,
+        Object.keys(captureContext).length > 0 ? captureContext : undefined
+      );
       return;
     } catch (_e) {
       // Sentry 上报失败时降级到后端上报通道，避免错误丢失
@@ -149,6 +184,175 @@ export function captureException(
 
   // 异步上报到后端，不阻塞调用方；失败时静默处理避免循环上报
   void reportErrorToBackend(error, context);
+}
+
+/* ============================================================
+ * 消息上报（captureMessage）
+ * ============================================================ */
+
+/**
+ * 上报一条文本消息到监控平台。
+ *
+ * 适用场景：业务关键事件、非异常但需监控的状态（如「登录超时但已重试」）。
+ *
+ * 平台分发逻辑：
+ * - H5 环境 + Sentry 已初始化：调用 Sentry.captureMessage 上报；
+ * - 其他情况：降级为 console.info / console.warn / console.error。
+ *
+ * @param message 文本消息内容
+ * @param level   日志级别，默认 "info"；可选 "warning" / "error"
+ */
+export function captureMessage(
+  message: string,
+  level: "info" | "warning" | "error" = "info"
+): void {
+  // #ifdef H5
+  if (sentryInitialized) {
+    try {
+      // Sentry.captureMessage 第二参数接受 severity 字符串，SDK 内部会规范化
+      Sentry.captureMessage(message, level);
+      return;
+    } catch (_e) {
+      // 上报失败静默处理，不影响调用方
+    }
+  }
+  // #endif
+
+  // 降级到 console：根据 level 选择对应 console 方法
+  const logger =
+    level === "error" ? console.error : level === "warning" ? console.warn : console.info;
+  logger("[captureMessage]", message);
+}
+
+/* ============================================================
+ * 面包屑（Breadcrumb）记录
+ * ============================================================ */
+
+/**
+ * 添加一条面包屑到 Sentry，便于在异常发生时回溯用户操作路径。
+ *
+ * 适用场景：
+ * - 页面切换（navigation）：记录用户在应用内的跳转路径；
+ * - 按钮点击（ui）：记录关键操作触发；
+ * - HTTP 请求（http）：由 services/http.ts 自动记录；
+ * - 其他业务节点（如 chat_send / payment_click）。
+ *
+ * 平台分发逻辑：
+ * - H5 环境 + Sentry 已初始化：调用 Sentry.addBreadcrumb 上报；
+ * - 其他情况：降级为 console.debug，便于开发期查看。
+ *
+ * @param category 面包屑分类（如 "navigation" / "ui" / "http"）
+ * @param message  面包屑文本（如 "page_enter" / "button_click" / "GET /users"）
+ * @param data     可选的结构化数据（如 { url, status, id }）
+ */
+export function addBreadcrumb(
+  category: string,
+  message: string,
+  data?: Record<string, unknown>
+): void {
+  // #ifdef H5
+  if (sentryInitialized) {
+    try {
+      Sentry.addBreadcrumb({
+        category,
+        message,
+        // 面包屑级别默认 info，便于在 Sentry 面包屑流中按颜色区分
+        level: "info",
+        data: data ?? {},
+      });
+      return;
+    } catch (_e) {
+      // 静默处理，避免面包屑失败影响业务流程
+    }
+  }
+  // #endif
+
+  // 降级到 console.debug：面包屑是辅助信息，不应使用 error 级别
+  if (data !== undefined) {
+    console.debug(`[breadcrumb][${category}]`, message, data);
+  } else {
+    console.debug(`[breadcrumb][${category}]`, message);
+  }
+}
+
+/* ============================================================
+ * 用户身份关联（setUser / clearUser）
+ * ============================================================ */
+
+/**
+ * 设置当前用户身份到 Sentry，便于在异常发生时关联用户上下文。
+ *
+ * 适用场景：
+ * - 登录成功后调用，将 userId / nickname / role 等信息关联到后续所有上报；
+ * - Session 刷新（refreshSession / bootstrap）发现用户已登录时也应调用，
+ *   保证 H5 刷新后用户身份不丢失。
+ *
+ * 平台分发逻辑：
+ * - H5 环境 + Sentry 已初始化：调用 Sentry.setUser 上报；
+ * - 其他情况：降级为 console.debug，便于开发期排查。
+ *
+ * @param userId   用户 ID（必填）
+ * @param userInfo 可选的用户扩展信息（如 { nickname, role }）
+ *                 - nickname 会被映射到 Sentry.User.username；
+ *                 - 其他字段（如 role）通过 User 索引签名透传，可在后台按字段筛选。
+ */
+export function setUser(
+  userId: string,
+  userInfo?: Record<string, unknown>
+): void {
+  // #ifdef H5
+  if (sentryInitialized) {
+    try {
+      // 组装 Sentry.User：id 必填，nickname 映射为 username，其余字段透传
+      const userPayload: Record<string, unknown> = { id: userId };
+      if (userInfo) {
+        if (typeof userInfo.nickname === "string") {
+          userPayload.username = userInfo.nickname;
+        }
+        // 其余字段（role 等）通过 User 的 [key: string]: any 索引签名透传
+        for (const key of Object.keys(userInfo)) {
+          if (key !== "nickname" && !(key in userPayload)) {
+            userPayload[key] = userInfo[key];
+          }
+        }
+      }
+      Sentry.setUser(userPayload);
+      return;
+    } catch (_e) {
+      // 静默处理，避免 setUser 失败影响业务流程
+    }
+  }
+  // #endif
+
+  // 降级到 console.debug：用户身份变更属于辅助信息
+  console.debug("[setUser]", userId, userInfo ?? {});
+}
+
+/**
+ * 清除当前用户身份。
+ *
+ * 适用场景：
+ * - 退出登录时调用，确保后续上报不再关联已登出的用户；
+ * - 用户切换账号场景下，先 clearUser 再 setUser 关联新身份。
+ *
+ * 平台分发逻辑：
+ * - H5 环境 + Sentry 已初始化：调用 Sentry.setUser(null) 清除；
+ * - 其他情况：降级为 console.debug。
+ */
+export function clearUser(): void {
+  // #ifdef H5
+  if (sentryInitialized) {
+    try {
+      // Sentry.setUser(null) 会清除当前用户上下文
+      Sentry.setUser(null);
+      return;
+    } catch (_e) {
+      // 静默处理
+    }
+  }
+  // #endif
+
+  console.debug("[clearUser]");
 }
 
 /* ============================================================

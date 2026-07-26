@@ -75,7 +75,8 @@ $neutral-900: #0E1116;
 // ---------- 文本色 ----------
 $text-primary: #1F2329;
 $text-secondary: #5B6470;
-$text-tertiary: #9AA1AB;
+// 修复 P2（颜色对比度不足）：#9AA1AB → #6B7280，在白底上对比度从 ~2.85:1 提升至 ~4.6:1，达到 WCAG AA 4.5:1 标准
+$text-tertiary: #6B7280;
 $text-quaternary: #94A3B8;
 $text-inverse: #FFFFFF;
 $text-brand: #3FCF8E;

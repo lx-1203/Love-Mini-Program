@@ -4,21 +4,32 @@
  * 支持文字输入、图片上传、话题标签和分类选择
  * 新增：预置话题标签选择器，支持横向滚动多选（最多3个）
  */
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useVillageStore } from "../../stores/village";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
 import TopicSelector from "../../components/village/TopicSelector.vue";
-import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
+// 统一常量：帖子内容/图片限制、草稿存储键、压缩质量等
+import {
+  POST_MAX_LENGTH,
+  POST_MAX_IMAGES,
+  POST_MAX_CUSTOM_TAGS,
+  POST_DRAFT_STORAGE_KEY,
+  POST_SUBMIT_NAVIGATE_BACK_MS,
+  IMAGE_COMPRESS_QUALITY,
+  DEFAULT_CATEGORY_ID,
+} from "../../constants/village";
+import {
+  POST_DRAFT_SAVE_DEBOUNCE_MS,
+  PAGE_ENTER_ANIMATION_DELAY_MS,
+  MAX_PRESET_TAGS,
+} from "../../constants/chat";
 
 const villageStore = useVillageStore();
 
-/**
- * 草稿存储 Key（用于 localStorage 持久化发帖草稿）。
- */
-const DRAFT_STORAGE_KEY = "village:post-draft";
+// 注：POST_DRAFT_STORAGE_KEY 由 constants/village 统一提供
 
 /** 文字内容 */
 const content = ref("");
@@ -29,7 +40,7 @@ const tagInput = ref("");
 /** 已添加的标签列表 */
 const tags = ref<string[]>([]);
 /** 选中的分类 */
-const selectedCategory = ref("cat-sincere");
+const selectedCategory = ref(DEFAULT_CATEGORY_ID);
 
 /** 预置话题标签列表 */
 const presetTags = ref<string[]>([]);
@@ -44,24 +55,45 @@ const selectedPresetTags = ref<string[]>([]);
 const selectedTopics = ref<string[]>([]);
 
 const pageVisible = ref(false);
+/** 页面进入动画定时器引用，用于卸载时清理 */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
+/** 发布成功跳转定时器引用，用于卸载时清理 */
+let postSubmitNavTimer: ReturnType<typeof setTimeout> | null = null;
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
     pageVisible.value = true;
-  }, 30);
+    pageEnterTimer = null;
+  }, PAGE_ENTER_ANIMATION_DELAY_MS);
 });
 
-/** 最大字数（提取为常量，避免硬编码；从 500 提升到 1000 给用户更多书写空间） */
-const MAX_POST_LENGTH = 1000;
-/** 最大图片数（提取为常量，避免硬编码） */
-const MAX_POST_IMAGES = 9;
-/** 预置标签最大选择数 */
-const MAX_PRESET_TAGS = 3;
+/**
+ * 页面卸载时清理所有定时器，避免内存泄漏。
+ * 修复（P1 BUG）：原实现未保存 setTimeout 返回值，页面销毁后定时器仍可能触发
+ * 状态修改或 navigateBack 跳转。
+ */
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
+  }
+  if (postSubmitNavTimer) {
+    clearTimeout(postSubmitNavTimer);
+    postSubmitNavTimer = null;
+  }
+});
+
+// 注：POST_MAX_LENGTH / POST_MAX_IMAGES / MAX_PRESET_TAGS 由 constants 统一提供
 
 /** 当前字数 */
 const currentLength = computed(() => content.value.length);
 /** 是否超出字数限制 */
-const isOverLimit = computed(() => currentLength.value > MAX_POST_LENGTH);
+const isOverLimit = computed(() => currentLength.value > POST_MAX_LENGTH);
 
 /** 分类选项 */
 const categoryOptions = [
@@ -123,12 +155,17 @@ onMounted(() => {
   // 修复：进入页面时恢复未提交的草稿，避免误退页面丢失内容
   restoreDraft();
   // 监听表单变化，debounce 500ms 保存草稿到 storage
+  // 性能优化（P1）：原实现使用 deep: true，会递归遍历所有 ref 内部属性。
+  // 实际上 content / tagInput / selectedCategory 是 string，images / tags / selectedPresetTags
+  // 是 string[]，selectedTopics 是对象数组。这些 ref 的赋值都是替换整个数组或字符串变更，
+  // 引用变化即可触发 watch，无需 deep 遍历内部属性。
+  // 唯一例外是 selectedTopics 内部对象属性变化（如选中状态切换），但实际使用中是替换整个数组，
+  // 故可安全去掉 deep。
   watch(
     [content, images, tags, tagInput, selectedCategory, selectedPresetTags, selectedTopics],
     () => {
       scheduleDraftSave();
-    },
-    { deep: true }
+    }
   );
 });
 
@@ -138,13 +175,13 @@ onMounted(() => {
 let draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * 调度草稿保存：500ms 防抖，避免每次输入都写 storage。
+ * 调度草稿保存：POST_DRAFT_SAVE_DEBOUNCE_MS 防抖，避免每次输入都写 storage。
  */
 function scheduleDraftSave() {
   if (draftSaveTimer) clearTimeout(draftSaveTimer);
   draftSaveTimer = setTimeout(() => {
     saveDraft();
-  }, 500);
+  }, POST_DRAFT_SAVE_DEBOUNCE_MS);
 }
 
 /**
@@ -153,7 +190,7 @@ function scheduleDraftSave() {
  */
 function saveDraft() {
   try {
-    uni.setStorageSync(DRAFT_STORAGE_KEY, {
+    uni.setStorageSync(POST_DRAFT_STORAGE_KEY, {
       content: content.value,
       images: images.value,
       tags: tags.value,
@@ -174,7 +211,7 @@ function saveDraft() {
  */
 function restoreDraft() {
   try {
-    const draft = uni.getStorageSync(DRAFT_STORAGE_KEY) as {
+    const draft = uni.getStorageSync(POST_DRAFT_STORAGE_KEY) as {
       content?: string;
       images?: string[];
       tags?: string[];
@@ -216,7 +253,7 @@ function restoreDraft() {
  */
 function clearDraft() {
   try {
-    uni.removeStorageSync(DRAFT_STORAGE_KEY);
+    uni.removeStorageSync(POST_DRAFT_STORAGE_KEY);
   } catch (_e) {
     // 忽略
   }
@@ -225,35 +262,23 @@ function clearDraft() {
 /**
  * 上传图片到服务器（仅 real 模式使用）
  * 上传单个临时文件，返回服务器 URL
+ *
+ * 修复（严格模式 noUnusedLocals）：uploadImage 函数定义后未被调用（实际图片上传
+ * 通过 profileStore.uploadPhotoAtIndex / 其他通道处理），属于历史遗留死代码，已移除。
  */
-async function uploadImage(tempPath: string): Promise<string> {
-  // real 模式：调用上传 API
-  try {
-    const res = await uni.uploadFile({
-      url: "/api/upload",
-      filePath: tempPath,
-      name: "file",
-    });
-    const data = JSON.parse(res.data);
-    return data.url ?? data.path ?? tempPath;
-  } catch (_e) {
-    // 上传失败时回退到临时路径（mock 模式行为）
-    return tempPath;
-  }
-}
 
 /**
  * 选择图片
  * 修复：chooseImage 后使用 uni.compressImage 压缩（质量 80），减少上传体积
  */
 function chooseImage() {
-  if (images.value.length >= MAX_POST_IMAGES) {
-    uni.showToast({ title: `最多上传${MAX_POST_IMAGES}张图片`, icon: "none" });
+  if (images.value.length >= POST_MAX_IMAGES) {
+    uni.showToast({ title: `最多上传${POST_MAX_IMAGES}张图片`, icon: "none" });
     return;
   }
 
   uni.chooseImage({
-    count: MAX_POST_IMAGES - images.value.length,
+    count: POST_MAX_IMAGES - images.value.length,
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
     success: async (res) => {
@@ -285,7 +310,7 @@ function compressSingleImage(path: string): Promise<string> {
   return new Promise((resolve) => {
     uni.compressImage({
       src: path,
-      quality: 80,
+      quality: IMAGE_COMPRESS_QUALITY,
       success: (compressRes) => {
         resolve(compressRes.tempFilePath || path);
       },
@@ -321,8 +346,8 @@ function addTag() {
     return;
   }
 
-  if (tags.value.length >= 5) {
-    uni.showToast({ title: "最多添加5个标签", icon: "none" });
+  if (tags.value.length >= POST_MAX_CUSTOM_TAGS) {
+    uni.showToast({ title: `最多添加${POST_MAX_CUSTOM_TAGS}个标签`, icon: "none" });
     return;
   }
 
@@ -354,7 +379,7 @@ async function submitPost() {
   }
 
   if (isOverLimit.value) {
-    uni.showToast({ title: `内容不能超过${MAX_POST_LENGTH}字`, icon: "none" });
+    uni.showToast({ title: `内容不能超过${POST_MAX_LENGTH}字`, icon: "none" });
     return;
   }
 
@@ -373,9 +398,11 @@ async function submitPost() {
     // 发布成功后清除草稿，避免下次进入页面恢复已发布内容
     clearDraft();
     uni.showToast({ title: "发布成功", icon: "success" });
-    setTimeout(() => {
+    if (postSubmitNavTimer) clearTimeout(postSubmitNavTimer);
+    postSubmitNavTimer = setTimeout(() => {
       uni.navigateBack();
-    }, 800);
+      postSubmitNavTimer = null;
+    }, POST_SUBMIT_NAVIGATE_BACK_MS);
   } catch (error) {
     uni.showToast({
       title: villageStore.errorMessage || "发布失败",
@@ -431,11 +458,11 @@ function goBack() {
         v-model="content"
         class="content-input"
         placeholder="分享你的故事、心情或寻找那个TA..."
-        :maxlength="MAX_POST_LENGTH"
-        :show-confirm-bar="false"
+        :maxlength="POST_MAX_LENGTH"
+        :show-confirm-bar="false" aria-label="分享你的故事、心情或寻找那个TA..."
       />
       <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
-        <text>{{ currentLength }}/{{ MAX_POST_LENGTH }}</text>
+        <text>{{ currentLength }}/{{ POST_MAX_LENGTH }}</text>
       </view>
     </view>
 
@@ -474,20 +501,20 @@ function goBack() {
           class="image-item list-item"
         >
           <image class="image-item__img" :src="img" mode="aspectFill"
-        lazy-load />
+        lazy-load alt="" />
           <view class="image-item__remove" @tap="removeImage(idx)">
             <text class="remove-icon">x</text>
           </view>
         </view>
         <view
-          v-if="images.length < MAX_POST_IMAGES"
+          v-if="images.length < POST_MAX_IMAGES"
           class="image-upload press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="chooseImage"
         >
           <text class="upload-icon">+</text>
-          <text class="upload-text">{{ images.length }}/{{ MAX_POST_IMAGES }}</text>
+          <text class="upload-text">{{ images.length }}/{{ POST_MAX_IMAGES }}</text>
         </view>
       </view>
     </view>
@@ -501,13 +528,13 @@ function goBack() {
           class="tag-input"
           placeholder="输入标签，按回车添加（如：520交友）"
           confirm-type="done"
-          @confirm="onTagConfirm"
+          @confirm="onTagConfirm" aria-label="输入标签，按回车添加（如：520交友）"
         />
         <view class="tag-add-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="addTag">
           <text class="tag-add-text">添加</text>
         </view>
       </view>
-      <view v-if="tags.length > 0" class="tag-list">
+      <view v-if="tags.length > 0" class="tag-list" role="list">
         <view
           v-for="(tag, idx) in tags"
           :key="idx"

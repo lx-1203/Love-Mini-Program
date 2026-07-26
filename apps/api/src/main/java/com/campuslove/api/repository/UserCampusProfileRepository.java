@@ -44,4 +44,14 @@ public interface UserCampusProfileRepository extends JpaRepository<UserCampusPro
      */
     @Query("SELECT u.cityName AS field, COUNT(u) AS cnt FROM UserCampusProfile u GROUP BY u.cityName")
     List<FieldCountProjection> countGroupByCityName();
+
+    /**
+     * 查询所有去重后的校区（学校）名称。
+     * 用于校园列表缓存场景，避免在 Service 层做内存去重。
+     * 仅返回非空的 campusName，按名称升序排列。
+     *
+     * @return 去重后的校区名称列表
+     */
+    @Query("SELECT DISTINCT u.campusName FROM UserCampusProfile u WHERE u.campusName IS NOT NULL AND u.campusName <> '' ORDER BY u.campusName ASC")
+    List<String> findDistinctCampusNames();
 }

@@ -2,11 +2,14 @@
 /**
  * 圈子页 - 校园墙帖子浏览与发布
  */
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import BaseTabs from "../../components/common/BaseTabs.vue";
+
+/** 点赞动画定时器集合，用于卸载时统一清理 */
+const likeAnimTimers = new Set<ReturnType<typeof setTimeout>>();
 
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
@@ -117,12 +120,24 @@ function toggleLike(postId: string) {
     post.likes += post.isLiked ? 1 : -1;
     if (post.isLiked) {
       post.likeAnimating = true;
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         post.likeAnimating = false;
+        likeAnimTimers.delete(timer);
       }, 300);
+      likeAnimTimers.add(timer);
     }
   }
 }
+
+/**
+ * 页面卸载时清理所有点赞动画定时器，避免内存泄漏。
+ * 修复（P1 BUG）：原实现未保存 setTimeout 返回值，页面销毁后定时器仍可能触发
+ * 修改已销毁组件的响应式状态 post.likeAnimating。
+ */
+onUnmounted(() => {
+  likeAnimTimers.forEach((timer) => clearTimeout(timer));
+  likeAnimTimers.clear();
+});
 
 function toggleFollow(postId: string) {
   const post = posts.value.find((p) => p.id === postId);
@@ -182,8 +197,8 @@ function handleShare() {
 
     <!-- 帖子列表 -->
     <scroll-view scroll-y class="circle-scroll">
-      <view class="post-list">
-        <view v-for="(post, index) in posts" :key="post.id" class="post-card" :style="{ animationDelay: index * 80 + 'ms' }" @tap="handleCardTap(post.id)">
+      <view class="post-list" role="list">
+        <view v-for="(post, index) in posts" :key="post.id" class="post-card" :style="{ animationDelay: index * 80 + 'ms' }" @tap="handleCardTap(post.id)" role="listitem">
           <!-- 用户信息头部 -->
           <view class="post-card__header">
             <view class="post-card__user">
@@ -192,7 +207,7 @@ function handleShare() {
                 <view class="post-card__name-row">
                   <text class="post-card__nickname">{{ post.nickname }}</text>
                   <view class="post-card__gender-badge post-card__gender-badge--male">
-                    <image class="post-card__gender-badge-img" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" />
+                    <image class="post-card__gender-badge-img" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" alt="" />
                   </view>
                 </view>
                 <text class="post-card__school">{{ post.school }} · {{ post.grade }}</text>
@@ -218,6 +233,7 @@ function handleShare() {
               custom-class="post-card__image"
               :src="img"
               mode="aspectFill"
+              :lazy-load="true"
             />
             <view v-if="post.images.length > 9" class="post-card__image-more">
               <text>+{{ post.images.length - 9 }}</text>
@@ -238,22 +254,22 @@ function handleShare() {
             <view class="post-card__actions">
               <!-- 点赞 -->
               <view class="post-card__action" :class="{ 'post-card__action--liked': post.isLiked, 'post-card__action--animating': post.likeAnimating }" @tap.stop="toggleLike(post.id)">
-                <image class="post-card__action-icon" :src="emojiIcons.heart" mode="aspectFit" />
+                <image class="post-card__action-icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
                 <text class="post-card__action-count" :class="{ 'post-card__action-count--liked': post.isLiked }">{{ post.likes }}</text>
               </view>
               <!-- 评论 -->
               <view class="post-card__action">
-                <image class="post-card__action-icon" :src="emojiIcons.chat" mode="aspectFit" />
+                <image class="post-card__action-icon" :src="emojiIcons.chat" mode="aspectFit" alt="" />
                 <text class="post-card__action-count">{{ post.comments }}</text>
               </view>
               <!-- 分享 -->
               <view class="post-card__action" @tap.stop="handleShare">
-                <image class="post-card__action-icon" :src="emojiIcons.share" mode="aspectFit" />
+                <image class="post-card__action-icon" :src="emojiIcons.share" mode="aspectFit" alt="" />
                 <text v-if="post.shares > 0" class="post-card__action-count">{{ post.shares }}</text>
               </view>
               <!-- 收藏 -->
               <view class="post-card__action" :class="{ 'post-card__action--collected': post.isCollected }" @tap.stop="toggleCollect(post.id)">
-                <image class="post-card__action-icon" :src="emojiIcons.star" mode="aspectFit" />
+                <image class="post-card__action-icon" :src="emojiIcons.star" mode="aspectFit" alt="" />
               </view>
             </view>
           </view>

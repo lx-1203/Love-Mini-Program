@@ -84,10 +84,8 @@ function handlePublish(): void {
 <template>
   <view
     class="tabbar"
-    <!-- #ifdef H5 -->
     role="tablist"
     :aria-label="tt('messages.mainNavAria')"
-    <!-- #endif -->
   >
     <!-- 首页 -->
     <view
@@ -97,18 +95,16 @@ function handlePublish(): void {
       hover-class="tab-item--pressed"
       :hover-stay-time="80"
       @tap="emit('change', 'home')"
-      <!-- #ifdef H5 -->
       role="tab"
       :aria-selected="current === 'home'"
       :aria-label="getTab('home')!.label"
-      <!-- #endif -->
     >
       <view class="tab-top-bar" :class="{ 'tab-top-bar--active': current === 'home', 'tab-top-bar--home': current === 'home' }" />
       <view class="tab-icon-wrap" :class="{ 'tab-icon-wrap--active': current === 'home', 'tab-icon-wrap--home': current === 'home' }">
         <image
           :src="current === 'home' ? getTab('home')!.selectedIconPath : getTab('home')!.iconPath"
           mode="aspectFit"
-          class="tab-icon-image"
+          class="tab-icon-image" alt=""
         />
       </view>
       <text class="tab-label" :class="{ 'tab-label--active': current === 'home', 'tab-label--home': current === 'home' }">
@@ -125,19 +121,17 @@ function handlePublish(): void {
       hover-class="tab-item--pressed"
       :hover-stay-time="80"
       @tap="emit('change', 'chat')"
-      <!-- #ifdef H5 -->
       role="tab"
       :aria-selected="current === 'chat'"
       :aria-label="getTab('chat')!.label"
       :aria-haspopup="showBadge ? 'true' : 'false'"
-      <!-- #endif -->
     >
       <view class="tab-top-bar" :class="{ 'tab-top-bar--active': current === 'chat', 'tab-top-bar--chat': current === 'chat' }" />
       <view class="tab-icon-wrap" :class="{ 'tab-icon-wrap--active': current === 'chat', 'tab-icon-wrap--chat': current === 'chat' }">
         <image
           :src="current === 'chat' ? getTab('chat')!.selectedIconPath : getTab('chat')!.iconPath"
           mode="aspectFit"
-          class="tab-icon-image"
+          class="tab-icon-image" alt=""
         />
         <view v-if="showBadge" class="tab-badge" :class="{ 'tab-badge--dot': showDotBadge }">
           <text v-if="!showDotBadge" class="tab-badge-text">{{ displayUnreadCount }}</text>
@@ -155,11 +149,9 @@ function handlePublish(): void {
       hover-class="tab-publish--pressed"
       :hover-stay-time="80"
       @tap="handlePublish"
-      <!-- #ifdef H5 -->
       role="button"
       :aria-label="tt('tabs.publish')"
       :aria-disabled="!sessionStore.isLoggedIn"
-      <!-- #endif -->
     >
       <view class="publish-btn" :class="{ 'publish-btn--breath': enablePublishBreath }">
         <view class="publish-btn__halo" />
@@ -176,18 +168,16 @@ function handlePublish(): void {
       hover-class="tab-item--pressed"
       :hover-stay-time="80"
       @tap="emit('change', 'village')"
-      <!-- #ifdef H5 -->
       role="tab"
       :aria-selected="current === 'village'"
       :aria-label="getTab('village')!.label"
-      <!-- #endif -->
     >
       <view class="tab-top-bar" :class="{ 'tab-top-bar--active': current === 'village', 'tab-top-bar--village': current === 'village' }" />
       <view class="tab-icon-wrap" :class="{ 'tab-icon-wrap--active': current === 'village', 'tab-icon-wrap--village': current === 'village' }">
         <image
           :src="current === 'village' ? getTab('village')!.selectedIconPath : getTab('village')!.iconPath"
           mode="aspectFit"
-          class="tab-icon-image"
+          class="tab-icon-image" alt=""
         />
       </view>
       <text class="tab-label" :class="{ 'tab-label--active': current === 'village', 'tab-label--village': current === 'village' }">
@@ -204,18 +194,16 @@ function handlePublish(): void {
       hover-class="tab-item--pressed"
       :hover-stay-time="80"
       @tap="emit('change', 'profile')"
-      <!-- #ifdef H5 -->
       role="tab"
       :aria-selected="current === 'profile'"
       :aria-label="getTab('profile')!.label"
-      <!-- #endif -->
     >
       <view class="tab-top-bar" :class="{ 'tab-top-bar--active': current === 'profile', 'tab-top-bar--profile': current === 'profile' }" />
       <view class="tab-icon-wrap" :class="{ 'tab-icon-wrap--active': current === 'profile', 'tab-icon-wrap--profile': current === 'profile' }">
         <image
           :src="current === 'profile' ? getTab('profile')!.selectedIconPath : getTab('profile')!.iconPath"
           mode="aspectFit"
-          class="tab-icon-image"
+          class="tab-icon-image" alt=""
         />
       </view>
       <text class="tab-label" :class="{ 'tab-label--active': current === 'profile', 'tab-label--profile': current === 'profile' }">

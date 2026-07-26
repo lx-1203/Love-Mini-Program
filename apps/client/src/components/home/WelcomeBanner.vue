@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
-
 defineProps<{
   greeting?: string;
   subtitle?: string;
   tags?: string[];
 }>();
 
-const t = designTokens;
+// 修复（严格模式 noUnusedLocals）：原 `const t = designTokens;` 后未使用 t，
+// designTokens 导入也仅用于该别名；模板/style 未引用 designTokens，故导入与别名一并移除。
 </script>
 
 <template>

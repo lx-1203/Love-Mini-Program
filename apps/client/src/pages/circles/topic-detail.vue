@@ -116,7 +116,9 @@ async function handleReportTopic() {
   let reason: string;
   try {
     const res = await uni.showActionSheet({ itemList: REPORT_REASONS });
-    reason = REPORT_REASONS[res.tapIndex];
+    // 修复（严格模式 noUncheckedIndexedAccess）：REPORT_REASONS[res.tapIndex] 索引访问返回 string | undefined，
+    // 此处兜底取第一项，确保 reason 始终为 string（与 showActionSheet 的 itemList 一一对应，正常流程不会越界）。
+    reason = REPORT_REASONS[res.tapIndex] ?? REPORT_REASONS[0] ?? "";
   } catch (_e) {
     // 用户取消选择，静默退出
     return;
@@ -186,7 +188,7 @@ onMounted(() => {
             v-if="currentTopic.author.avatar"
             class="author-avatar__img"
             :src="currentTopic.author.avatar"
-            mode="aspectFill"
+            mode="aspectFill" alt=""
           />
           <text v-else class="author-avatar__char">{{ currentTopic.author.name[0] }}</text>
         </view>
@@ -213,6 +215,7 @@ onMounted(() => {
               class="topic-image"
               :src="img"
               mode="aspectFill"
+              lazy-load alt=""
             />
           </view>
         </view>
@@ -227,12 +230,12 @@ onMounted(() => {
 
         <!-- 加载状态 -->
         <view v-if="loading" class="replies-loading">
-          <view class="loading-spinner" />
+          <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
           <text class="loading-text">加载回复中...</text>
         </view>
 
         <!-- 回复列表 -->
-        <view v-else-if="replies.length > 0" class="replies-list">
+        <view v-else-if="replies.length > 0" class="replies-list" role="list">
           <view
             v-for="reply in replies"
             :key="reply.id"
@@ -246,7 +249,7 @@ onMounted(() => {
                 v-if="reply.author.avatar"
                 class="reply-avatar__img"
                 :src="reply.author.avatar"
-                mode="aspectFill"
+                mode="aspectFill" alt=""
               />
               <text v-else class="reply-avatar__char">{{ reply.author.name[0] }}</text>
             </view>
@@ -296,7 +299,7 @@ onMounted(() => {
           class="reply-input"
           placeholder="写下你的回复..."
           confirm-type="send"
-          @confirm="submitReply"
+          @confirm="submitReply" aria-label="写下你的回复..."
         />
       </view>
       <view

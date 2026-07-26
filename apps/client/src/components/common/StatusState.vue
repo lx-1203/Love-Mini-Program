@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { designTokens } from '../../theme/tokens';
 import { IMAGE_PATHS } from '../../config/images';
 
 const props = defineProps<{
@@ -8,7 +7,8 @@ const props = defineProps<{
   label: string;
 }>();
 
-const t = designTokens;
+// 修复（严格模式 noUnusedLocals）：原 `const t = designTokens;` 后未使用 t，
+// designTokens 导入也仅用于该别名；模板/style 未引用 designTokens，故导入与别名一并移除。
 
 const iconSrc = computed(() => {
   const map: Record<string, string> = {
@@ -24,12 +24,10 @@ const iconSrc = computed(() => {
   <view
     class="pill"
     :class="[`pill--${tone || 'brand'}`]"
-    <!-- #ifdef H5 -->
     role="img"
     :aria-label="label"
-    <!-- #endif -->
   >
-    <image class="pill-icon" :src="iconSrc" mode="aspectFit" />
+    <image class="pill-icon" :src="iconSrc" mode="aspectFit" alt="" />
     <text class="pill-label">{{ label }}</text>
   </view>
 </template>

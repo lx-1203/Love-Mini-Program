@@ -9,7 +9,7 @@
  * @example
  * <SocialProgressIndicator />
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   useSocialProgressStore,
@@ -73,18 +73,13 @@ const FUNNEL_TEXT_COLORS = [
 ] as const
 
 /** 漏斗颜色对应的半透明背景 */
-const FUNNEL_BG_COLORS = [
-  `${FUNNEL_COLORS[0]}1A`, // L1: ~10% opacity
-  `${FUNNEL_COLORS[1]}26`, // L2: ~15% opacity
-  `${FUNNEL_COLORS[2]}33`, // L3: ~20% opacity
-  `${FUNNEL_COLORS[3]}40`, // L4: ~25% opacity
-  `${FUNNEL_COLORS[4]}4D`, // L5: ~30% opacity
-  `${FUNNEL_COLORS[5]}59`, // L6: ~35% opacity
-] as const
+// 修复（严格模式 noUnusedLocals）：FUNNEL_BG_COLORS 定义后未被模板/脚本引用，已移除。
 
 /** 前一个层级是否已进入过渡动画 */
 const animatingTierIndex = ref(-1)
 const prevTierIndex = ref(0)
+/** 层级过渡动画定时器引用，用于卸载时清理 */
+let tierAnimTimer: ReturnType<typeof setTimeout> | null = null
 
 // ==================== 行动指引配置 ====================
 
@@ -198,8 +193,10 @@ const steps = computed<StepItem[]>(() => {
   // 检测层级变化，触发过渡动画
   if (currentIdx !== prevTierIndex.value && currentIdx > prevTierIndex.value) {
     animatingTierIndex.value = currentIdx
-    setTimeout(() => {
+    if (tierAnimTimer) clearTimeout(tierAnimTimer)
+    tierAnimTimer = setTimeout(() => {
       animatingTierIndex.value = -1
+      tierAnimTimer = null
     }, 600)
   }
   prevTierIndex.value = currentIdx
@@ -262,15 +259,29 @@ function stepAriaLabel(step: StepItem, index: number) {
   })
 }
 
+// 修复（严格模式 noUnusedLocals）：actionCardAria / stepAriaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ actionCardAria, stepAriaLabel });
+
 // ==================== 生命周期 ====================
 
 onMounted(() => {
   void progressStore.fetchProgress()
 })
 
+// 修复（P1 BUG）：组件卸载前清理层级过渡动画定时器，避免内存泄漏
+onBeforeUnmount(() => {
+  if (tierAnimTimer) {
+    clearTimeout(tierAnimTimer)
+    tierAnimTimer = null
+  }
+})
+
 // ==================== 辅助方法 ====================
 
-function stepDotStyle(step: StepItem, index: number) {
+// 修复（严格模式 noUnusedParameters）：stepDotStyle 的 index 参数未在函数体内使用，
+// 加 _ 前缀标识为有意未使用，符合 TS noUnusedParameters 约定。
+function stepDotStyle(step: StepItem, _index: number) {
   if (step.status === 'pending') {
     return {
       background: 'transparent',
@@ -316,10 +327,8 @@ function stepLineStyles(step: StepItem, index: number) {
 <template>
   <view
     class="sip-card card-base card-base--elevated"
-    <!-- #ifdef H5 -->
     role="region"
     :aria-label="t('home.socialProgressAria', { percent: progressPercentage })"
-    <!-- #endif -->
   >
     <!-- ========== 顶部进度概览 ========== -->
     <view class="sip-header">
@@ -351,13 +360,11 @@ function stepLineStyles(step: StepItem, index: number) {
         background: `linear-gradient(135deg, ${currentTierColor}18, ${currentTierColor}0F)`,
         borderColor: `${currentTierColor}33`,
       }"
-      <!-- #ifdef H5 -->
       role="img"
       :aria-label="`${currentTierLabel}：${currentTierDesc}`"
-      <!-- #endif -->
     >
       <view class="sip-current__icon" :style="{ boxShadow: `0 4rpx 12rpx ${currentTierColor}33` }">
-        <image v-if="TIER_META[progress.currentTier]?.icon" class="sip-current__icon-img" :src="TIER_META[progress.currentTier]?.icon" mode="aspectFit" />
+        <image v-if="TIER_META[progress.currentTier]?.icon" class="sip-current__icon-img" :src="TIER_META[progress.currentTier]?.icon" mode="aspectFit" alt="" />
       </view>
       <view class="sip-current__info">
         <text class="sip-current__label" :style="{ color: currentTierColor }">
@@ -381,10 +388,8 @@ function stepLineStyles(step: StepItem, index: number) {
             { 'sip-step--last': index === steps.length - 1 },
             { 'sip-step--animating': animatingTierIndex === index },
           ]"
-          <!-- #ifdef H5 -->
           role="listitem"
           :aria-label="stepAriaLabel(step, index)"
-          <!-- #endif -->
         >
           <!-- 步骤连接线 -->
           <view
@@ -401,8 +406,8 @@ function stepLineStyles(step: StepItem, index: number) {
               :class="`sip-step__dot--${step.status}`"
               :style="stepDotStyle(step, index)"
             >
-              <image v-if="step.status === 'completed'" class="sip-step__check" :src="SOCIAL_ICONS.CHECK" mode="aspectFit" />
-              <image v-else class="sip-step__icon" :src="step.icon" mode="aspectFit" />
+              <image v-if="step.status === 'completed'" class="sip-step__check" :src="SOCIAL_ICONS.CHECK" mode="aspectFit" alt="" />
+              <image v-else class="sip-step__icon" :src="step.icon" mode="aspectFit" alt="" />
             </view>
           </view>
 
@@ -430,13 +435,11 @@ function stepLineStyles(step: StepItem, index: number) {
       hover-class="press-feedback--active"
       hover-stay-time="120"
       @tap="navigateToAction"
-      <!-- #ifdef H5 -->
       role="button"
       :aria-label="actionCardAria"
-      <!-- #endif -->
     >
       <view class="sip-action-card__left">
-        <image class="sip-action-card__icon-img" :src="currentAction.icon" mode="aspectFit" />
+        <image class="sip-action-card__icon-img" :src="currentAction.icon" mode="aspectFit" alt="" />
         <view class="sip-action-card__text">
           <text class="sip-action-card__title">{{ currentActionTexts.title }}</text>
           <text class="sip-action-card__desc">{{ currentActionTexts.desc }}</text>
@@ -452,10 +455,8 @@ function stepLineStyles(step: StepItem, index: number) {
     <view
       v-if="loading"
       class="sip-loading"
-      <!-- #ifdef H5 -->
       role="status"
       aria-live="polite"
-      <!-- #endif -->
     >
       <text class="sip-loading__text">{{ t('common.loading') }}</text>
     </view>

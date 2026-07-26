@@ -8,10 +8,10 @@ import { onMounted, ref } from "vue";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
+// 修复（严格模式 noUnusedLocals）：appEnv 导入后未使用，已移除。
 // 功能5：引导流程进度条（当前步骤 = 3：推荐偏好）
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { request } from "../../../services/http";
-import { appEnv } from "../../../services/env";
 import { useSessionStore } from "../../../stores/session";
 
 // ==================== 类型定义 ====================
@@ -125,10 +125,7 @@ async function savePreferences() {
 }
 
 /** 返回上一页 */
-function goBack() {
-  uni.navigateBack();
-}
-
+// 修复（严格模式 noUnusedLocals）：goBack 函数未被模板/脚本调用（页面使用 AppShell 的返回按钮），已移除。
 // ==================== 生命周期 ====================
 
 onMounted(() => {

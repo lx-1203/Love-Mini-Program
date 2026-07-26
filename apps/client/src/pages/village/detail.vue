@@ -9,16 +9,18 @@ import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
 import { useMessagesStore } from "../../stores/messages";
-import { useSessionStore } from "../../stores/session";
+// 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
 import { openAppPath } from "../../utils/navigation";
 import { reportTarget } from "../../services/report-api";
 import SafeImage from "../../components/common/SafeImage.vue";
+import PostReportDialog from "../../components/social/PostReportDialog.vue";
 import { IMAGE_PATHS } from "../../config/images";
 
 const villageStore = useVillageStore();
 const messagesStore = useMessagesStore();
-const sessionStore = useSessionStore();
-const { currentPost, comments, loading, similarAuthors, loadingSimilarAuthors } = storeToRefs(villageStore);
+// 修复（严格模式 noUnusedLocals）：sessionStore 声明后未在脚本/模板引用，已移除。
+// 修复（严格模式 noUnusedLocals）：loadingSimilarAuthors 从 storeToRefs 解构后未引用，已移除。
+const { currentPost, comments, loading, similarAuthors } = storeToRefs(villageStore);
 
 /** 评论输入内容 */
 const commentContent = ref("");
@@ -30,6 +32,8 @@ const showShareModal = ref(false);
 const shareComment = ref("");
 /** 是否正在转发 */
 const isSharing = ref(false);
+/** 帖子举报弹窗是否显示 */
+const showReportDialog = ref(false);
 
 const pageVisible = ref(false);
 onShow(() => {
@@ -50,6 +54,37 @@ function goBack() {
 const REPORT_REASONS = ["垃圾广告", "辱骂攻击", "色情低俗", "违法违规", "其他"];
 
 /**
+ * 长按帖子正文：弹出操作菜单（复制内容 / 举报）。
+ * P2 修复（长按复制支持）：
+ * - 复制内容：调用 uni.setClipboardData 将帖子正文写入剪贴板
+ * - 举报：复用 handleReportPost 触发举报弹窗
+ * 使用 uni.showActionSheet 弹出原生操作菜单，与系统交互一致。
+ */
+async function handlePostLongpress() {
+  if (!currentPost.value) return;
+  // 操作菜单：复制 + 举报
+  const actions = ["复制内容", "举报"];
+  try {
+    const res = await uni.showActionSheet({ itemList: actions });
+    const action = actions[res.tapIndex] ?? actions[0] ?? "";
+    if (action === "复制内容") {
+      // 调用 uni.setClipboardData 写入剪贴板
+      uni.setClipboardData({
+        data: currentPost.value.content || "",
+        fail: () => {
+          uni.showToast({ title: "复制失败，请重试", icon: "none" });
+        },
+      });
+    } else if (action === "举报") {
+      // 触发举报弹窗
+      handleReportPost();
+    }
+  } catch (_e) {
+    // 用户取消选择，静默退出
+  }
+}
+
+/**
  * 长按评论触发举报流程。
  * 1. 弹出 ActionSheet 选择举报原因
  * 2. 弹出 Modal 收集可选补充描述
@@ -62,7 +97,9 @@ async function handleReportComment(comment: { id: string }) {
   let reason: string;
   try {
     const res = await uni.showActionSheet({ itemList: REPORT_REASONS });
-    reason = REPORT_REASONS[res.tapIndex];
+    // 修复（严格模式 noUncheckedIndexedAccess）：REPORT_REASONS[res.tapIndex] 索引访问返回 string | undefined，
+    // 此处兜底取第一项，确保 reason 始终为 string（与 itemList 一一对应，正常流程不会越界）。
+    reason = REPORT_REASONS[res.tapIndex] ?? REPORT_REASONS[0] ?? "";
   } catch (_e) {
     // 用户取消选择，静默退出
     return;
@@ -101,6 +138,23 @@ async function handleReportComment(comment: { id: string }) {
 function goToTagPosts(tagName: string) {
   const cleanTag = tagName.startsWith("#") ? tagName.slice(1) : tagName;
   openAppPath(`/pages/village/tag-posts?tagName=${encodeURIComponent(cleanTag)}`);
+}
+
+/**
+ * 打开帖子举报弹窗。
+ * 由顶部「举报」按钮触发，弹窗内部负责原因选择与 API 调用。
+ */
+function handleReportPost() {
+  if (!currentPost.value) return;
+  showReportDialog.value = true;
+}
+
+/**
+ * 帖子举报提交成功回调。
+ * 由 PostReportDialog submitted 事件触发，关闭弹窗并提示用户。
+ */
+function handleReportSubmitted() {
+  showReportDialog.value = false;
 }
 
 /**
@@ -311,7 +365,17 @@ onLoad((query) => {
         <text class="back-icon">返回</text>
       </view>
       <text class="detail-header__title">帖子详情</text>
-      <view class="detail-header__spacer" />
+      <!-- 举报按钮：仅在帖子已加载时显示 -->
+      <view
+        v-if="currentPost"
+        class="detail-header__report press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        @tap="handleReportPost"
+      >
+        <text class="detail-header__report-text">举报</text>
+      </view>
+      <view v-else class="detail-header__spacer" />
     </view>
 
     <!-- 帖子内容 -->
@@ -326,6 +390,7 @@ onLoad((query) => {
               class="author-avatar__img"
               :src="currentPost.author.avatar"
               mode="aspectFill"
+              lazy-load alt=""
             />
             <text v-else class="author-avatar__char">{{ currentPost.author.name[0] }}</text>
             <!-- 头像左上角身份徽章（校友） -->
@@ -382,9 +447,9 @@ onLoad((query) => {
         </view>
       </view>
 
-      <!-- ===== 帖子正文 ===== -->
+      <!-- ===== 帖子正文：长按弹出复制 / 举报菜单（P2 长按复制支持） ===== -->
       <view class="detail-post">
-        <view class="post-body">
+        <view class="post-body" @longpress="handlePostLongpress">
           <text class="post-content">{{ currentPost.content }}</text>
 
           <!-- 图片网格 -->
@@ -395,7 +460,7 @@ onLoad((query) => {
               class="post-image"
               :src="img"
               mode="aspectFill"
-        lazy-load
+        lazy-load alt=""
             />
           </view>
 
@@ -429,13 +494,13 @@ onLoad((query) => {
         </view>
 
         <!-- 加载状态 -->
-        <view v-if="loading" class="comments-loading">
+        <view v-if="loading" class="comments-loading" role="status" aria-live="polite">
           <view class="loading-spinner" />
           <text class="loading-text">加载评论中...</text>
         </view>
 
         <!-- 评论列表 -->
-        <view v-else-if="comments.length > 0" class="comments-list">
+        <view v-else-if="comments.length > 0" class="comments-list" role="list">
           <view
             v-for="comment in comments"
             :key="comment.id"
@@ -447,7 +512,7 @@ onLoad((query) => {
                 v-if="comment.author.avatar"
                 class="comment-avatar__img"
                 :src="comment.author.avatar"
-                mode="aspectFill" lazy-load
+                mode="aspectFill" lazy-load alt=""
               />
               <text v-else class="comment-avatar__text">{{ comment.author.name[0] }}</text>
             </view>
@@ -484,7 +549,7 @@ onLoad((query) => {
           <text class="similar-authors-subtitle">兴趣相投的同学</text>
         </view>
 
-        <view class="similar-authors-list">
+        <view class="similar-authors-list" role="list">
           <view
             v-for="author in similarAuthors"
             :key="author.userId"
@@ -496,7 +561,7 @@ onLoad((query) => {
                   v-if="author.avatar"
                   class="similar-author-avatar__img"
                   :src="author.avatar"
-                  mode="aspectFill" lazy-load
+                  mode="aspectFill" lazy-load alt=""
                 />
                 <text v-else class="similar-author-avatar__char">{{ author.name[0] }}</text>
                 <!-- 头像左上角身份徽章（校友） -->
@@ -564,7 +629,7 @@ onLoad((query) => {
           class="comment-input"
           placeholder="写下你的评论..."
           confirm-type="send"
-          @confirm="submitComment"
+          @confirm="submitComment" aria-label="写下你的评论..."
         />
       </view>
       <view class="footer-actions">
@@ -598,12 +663,32 @@ onLoad((query) => {
     </view>
 
     <!-- ===== 转发确认弹窗 ===== -->
-    <view v-if="showShareModal" class="share-modal-overlay" @tap="closeShareModal">
+    <!--
+      无障碍（a11y）：role / aria-* 属性直接放在 view 上。
+      说明：uni-app 不支持属性级条件编译（`<!-- #ifdef H5 -->` 不能写在开标签内部），
+      否则会破坏 Vue 模板解析导致下游变量被误判为未使用。
+      mp-weixin 端会忽略未知 HTML 属性，因此 H5 与小程序两端均安全。
+    -->
+    <view
+      v-if="showShareModal"
+      class="share-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="转发到我的动态"
+      @tap="closeShareModal"
+    >
       <view class="share-modal" @tap.stop>
         <!-- 弹窗标题 -->
         <view class="share-modal__header">
           <text class="share-modal__title">转发到我的动态</text>
-          <view class="share-modal__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="closeShareModal">
+          <view
+            class="share-modal__close press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            aria-label="关闭"
+            @tap="closeShareModal"
+          >
             <text class="share-modal__close-icon">X</text>
           </view>
         </view>
@@ -616,13 +701,21 @@ onLoad((query) => {
             placeholder="说点什么吧（选填）..."
             :maxlength="200"
             auto-height
+            aria-label="附加评论"
           />
           <text class="share-modal__count">{{ shareComment.length }}/200</text>
         </view>
 
         <!-- 操作按钮 -->
         <view class="share-modal__footer">
-          <view class="share-modal__btn share-modal__btn--cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="closeShareModal">
+          <view
+            class="share-modal__btn share-modal__btn--cancel press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            aria-label="取消转发"
+            @tap="closeShareModal"
+          >
             <text class="share-modal__btn-text">取消</text>
           </view>
           <view
@@ -630,6 +723,8 @@ onLoad((query) => {
             :class="{ 'share-modal__btn--loading': isSharing }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            role="button"
+            aria-label="确认转发"
             @tap="confirmShare"
           >
             <text class="share-modal__btn-text">{{ isSharing ? "转发中..." : "确认转发" }}</text>
@@ -637,6 +732,18 @@ onLoad((query) => {
         </view>
       </view>
     </view>
+
+    <!-- ===== 帖子举报弹窗 ===== -->
+    <!--
+      修复（严格模式 noUnusedLocals）：PostReportDialog 已导入但未在模板中渲染，
+      导致 typecheck 报错 TS6133。现补全弹窗渲染，使 handleReportPost → showReportDialog
+      → PostReportDialog → handleReportSubmitted 形成完整举报流程闭环。
+    -->
+    <PostReportDialog
+      v-model:visible="showReportDialog"
+      :post-id="currentPost?.id ?? null"
+      @submitted="handleReportSubmitted"
+    />
   </view>
 </template>
 
@@ -673,8 +780,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .detail-header__back {
-  padding: 8rpx 0;
-  min-width: 80rpx;
+  /* 修复 P2（触摸目标过小）：min-height/min-width ≥88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
+  padding: 16rpx 24rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 /* #ifdef H5 */
@@ -789,6 +901,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   font-size: 32rpx;
   font-weight: 600;
   color: $text-primary;
+  /* 修复（P1 BUG）：原实现缺少文本裁剪，长昵称会推动身份标签换行 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* 身份标签（校友等） */
@@ -1019,7 +1137,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #ifdef H5 */
 .post-tag:active {
   transform: scale(0.96);
-  background: darken($green-light, 5%);
+  /* 修复（P1 sass 兼容性）：原实现使用 darken($green-light, 5%)，
+     但 $green-light 是 CSS 变量 var(--c-brand-50, ...)，sass darken 函数无法处理 CSS 变量。
+     改用 brightness filter 实现按压变暗效果，避免 sass 编译失败。
+     brightness(0.95) ≈ darken 5% 的视觉效果。 */
+  filter: brightness(0.95);
 }
 /* #endif */
 
@@ -1522,7 +1644,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   align-items: center;
   gap: 6rpx;
-  padding: 12rpx 16rpx;
+  /* 修复 P2（触摸目标过小）：min-height/min-width ≥88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
+  min-height: 88rpx;
+  min-width: 88rpx;
+  padding: 12rpx 20rpx;
   border-radius: 999px;
   transition: all 0.15s ease;
 }
@@ -1589,8 +1714,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .share-modal__close {
-  width: 56rpx;
-  height: 56rpx;
+  /* 修复 P2（触摸目标过小）：56rpx → 88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
+  width: 88rpx;
+  height: 88rpx;
   border-radius: 50%;
   background: $bg-page;
   display: flex;
@@ -1602,7 +1728,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #ifdef H5 */
 .share-modal__close:active {
   transform: scale(0.96);
-  background: darken($bg-page, 3%);
+  /* 修复（P1 sass 兼容性）：原实现使用 darken($bg-page, 3%)，
+     但 $bg-page 是 CSS 变量 var(--c-bg-page, ...)，sass darken 函数无法处理 CSS 变量。
+     改用 brightness filter 实现按压变暗效果。 */
+  filter: brightness(0.97);
 }
 /* #endif */
 

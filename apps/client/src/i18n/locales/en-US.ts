@@ -166,6 +166,8 @@ export default {
     matchSuccess: "It's a match!",
     matchSuccessTitle: "Match Success",
     matchWithPartner: "Mutual like with {name}",
+    /* Default partner name when partner.name is missing */
+    partnerDefaultName: "TA",
     matchPriority: "Match score first",
     todayCheckin: "Today's Check-in",
     todayQuestion: "Today's topic: What's your ideal first date?",
@@ -234,6 +236,13 @@ export default {
     circleMurder: "Murder Mystery",
     circleExam: "Exam Prep",
     circleDance: "Street Dance",
+    /* Card skeleton / empty state text (follows module.function.description naming) */
+    cardSkeletonHint: "Picking recommendations for you...",
+    /* Nested namespace: t('discover.card.emptyTitle') / t('discover.card.refresh') */
+    card: {
+      emptyTitle: "No recommendation cards",
+      refresh: "Refresh recommendations",
+    },
   },
 
   /* ========== Match guide overlay ========== */
@@ -530,6 +539,9 @@ export default {
     recentlyActive: "Recently active",
     noMorePosts: "— No more posts —",
     discoverBannerSubtitle: "Find like-minded people and start matching",
+    /* Interaction failure (like / follow) */
+    likeFailed: "Like failed, please retry",
+    followFailed: "Follow failed, please retry",
   },
 
   /* ========== Login ========== */
@@ -892,6 +904,13 @@ export default {
     interactionDesc: "Likes, comments, follows",
     systemDesc: "System notifications",
     chatDesc: "Unread messages",
+    /* Session management (delete / mark read) */
+    deleteSessionConfirm: "Are you sure to delete this conversation? This action cannot be undone.",
+    deleted: "Deleted",
+    deleteFailed: "Delete failed, please try again later",
+    markAllReadSuccess: "All marked as read",
+    markAllReadFailed: "Mark failed, please try again later",
+    markAllRead: "Mark all as read",
   },
 
   /* ========== Do Not Disturb (Feature 6) ========== */
@@ -1263,5 +1282,90 @@ export default {
     appliedCount: "{n} filters applied",
     tabBasic: "Basic",
     tabAdvanced: "Advanced",
+  },
+
+  /* ========== Settings ========== */
+  settings: {
+    navTitle: "Settings",
+    /* Account section */
+    accountSection: "Account",
+    editProfile: "Edit Profile",
+    verification: "Verification",
+    /* Notification section */
+    notificationSection: "Notifications",
+    messageNotification: "Message Notifications",
+    notifyEnabled: "Message notifications enabled",
+    notifyDisabled: "Message notifications disabled",
+    privacyMode: "Privacy Mode",
+    privacyModeEnabled: "Privacy mode enabled",
+    privacyModeDisabled: "Privacy mode disabled",
+    /* Privacy & Security section */
+    privacySection: "Privacy & Security",
+    privacyPolicy: "Privacy Policy",
+    /* Storage section */
+    storageSection: "Storage",
+    clearCache: "Clear Cache",
+    clearCacheTitle: "Clear Cache",
+    clearCacheContent: "Current cache size: {size}\n\nClearing cache won't affect your account data, but will clear local image cache and temporary files.",
+    clearCacheConfirm: "Clear Now",
+    clearing: "Clearing...",
+    cacheCleared: "Cache cleared",
+    /* About section */
+    aboutSection: "About",
+    userAgreement: "User Agreement",
+    checkUpdate: "Check Update",
+    aboutUs: "About Us",
+    /* User agreement / Privacy policy modal content */
+    userAgreementTitle: "User Agreement",
+    userAgreementContent: "Welcome to Campus Love.\n\nThis agreement is a contract between you and Campus Love regarding the use of this service.\nPlease read it carefully. By using this service, you agree to all terms of this agreement.",
+    privacyPolicyTitle: "Privacy Policy",
+    privacyPolicyContent: "We value your privacy.\n\nThis privacy policy explains how we collect, use, store, and protect your personal information.\nWhen using this service, we may need to collect your avatar, nickname, school info, and other basic data.",
+    /* Check for updates */
+    checkingUpdate: "Checking...",
+    versionUpdateTitle: "Version Update",
+    versionLatestContent: "Already the latest version\nCurrent version: v1.0.0",
+    /* About Campus Love */
+    aboutTitle: "About Campus Love",
+    aboutContent: "Campus Love · Meet your special someone\n\nVersion: v1.0.0\n\nMeet like-minded people and start a mutual campus story here.",
+    /* Logout */
+    logoutTitle: "Tip",
+    logoutConfirm: "Are you sure to log out?",
+    logout: "Log Out",
+    /* Common button text */
+    gotIt: "Got it",
+    /* Footer version info */
+    footerVersion: "Campus Love v1.0.0",
+  },
+
+  /* ========== Common error messages (by errors.category naming) ========== */
+  errors: {
+    network: "Network connection failed",
+    networkSub: "Please check your network and retry",
+    auth: "Login expired, please log in again",
+    business: "Operation failed, please try again later",
+    loadFailed: "Load failed",
+    saveFailed: "Save failed",
+    deleteFailed: "Delete failed",
+    uploadFailed: "Upload failed",
+    downloadFailed: "Download failed",
+    permissionDenied: "Permission denied",
+    notFound: "Resource not found",
+    serverError: "Server is taking a break",
+    serverSub: "Please try again later",
+    timeout: "Request timed out, please retry",
+    unknown: "Unknown error, please retry",
+    retry: "Retry",
+  },
+
+  /* ========== Common success messages (by success.action naming) ========== */
+  success: {
+    saved: "Saved successfully",
+    deleted: "Deleted successfully",
+    uploaded: "Uploaded successfully",
+    submitted: "Submitted successfully",
+    updated: "Updated successfully",
+    copied: "Copied",
+    shared: "Shared",
+    operationSucceeded: "Operation succeeded",
   },
 } as const;

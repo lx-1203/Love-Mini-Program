@@ -113,7 +113,7 @@ onMounted(() => {
             v-if="currentTopic.author.avatar"
             class="author-avatar__img"
             :src="currentTopic.author.avatar"
-            mode="aspectFill"
+            mode="aspectFill" alt=""
           />
           <text v-else class="author-avatar__char">
             {{ getDisplayName(currentTopic.isAnonymous, currentTopic.author.name)[0] }}
@@ -145,12 +145,12 @@ onMounted(() => {
 
         <!-- 加载状态 -->
         <view v-if="loading" class="replies-loading">
-          <view class="loading-spinner" />
+          <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
           <text class="loading-text">加载回复中...</text>
         </view>
 
         <!-- 回复列表 -->
-        <view v-else-if="replies.length > 0" class="replies-list">
+        <view v-else-if="replies.length > 0" class="replies-list" role="list">
           <view
             v-for="reply in replies"
             :key="reply.id"
@@ -162,7 +162,7 @@ onMounted(() => {
                 class="reply-avatar__img"
                 :src="reply.author.avatar"
                 mode="aspectFill"
-        lazy-load
+        lazy-load alt=""
               />
               <text v-else class="reply-avatar__char">
                 {{ getDisplayName(reply.isAnonymous, reply.author.name)[0] }}
@@ -206,7 +206,7 @@ onMounted(() => {
           class="reply-input"
           placeholder="写下你的回复..."
           confirm-type="send"
-          @confirm="submitReply"
+          @confirm="submitReply" aria-label="写下你的回复..."
         />
       </view>
       <view

@@ -21,7 +21,10 @@ import { usePageAccess } from "../../composables/usePageAccess";
 import { likesPageRequirements } from "../../config/page-access";
 import { IMAGE_PATHS } from "../../config/images";
 import BaseTabs from "../../components/common/BaseTabs.vue";
+import Skeleton from "../../components/common/Skeleton.vue";
+import ErrorState from "../../components/common/ErrorState.vue";
 import { lightHaptic, successHaptic, errorHaptic } from "../../utils/haptic";
+import { showErrorToast } from "../../utils/error-toast";
 import type { BatchActionType } from "../../stores/likes";
 
 type TabType = "likedBy" | "myLikes" | "visitors";
@@ -43,6 +46,13 @@ const {
   batchProcessing,
   searchQuery,
 } = storeToRefs(likesStore);
+
+/**
+ * 修复（P1 BUG）：原实现仅展示 loading/empty 状态，缺少 error 状态指示器。
+ * 用户在网络异常或后端错误时看到的是空列表，无法区分"无数据"与"加载失败"。
+ * 现从 store 派生 errorMessage 用于在错误时展示 ErrorState 组件。
+ */
+const errorMessage = computed(() => likesStore.errorMessage);
 
 /* ========== 功能2：搜索后的列表（直接从 store getter 派生） ========== */
 /**
@@ -191,8 +201,9 @@ async function handleBatchAction(action: BatchActionType): Promise<void> {
     likesStore.setBatchMode(false);
   } catch (error) {
     errorHaptic();
-    const msg = error instanceof Error ? error.message : t("likes.batchFailed");
-    uni.showToast({ title: msg, icon: "none" });
+    // 批量操作失败：按错误分类给出友好提示（网络/权限/业务）
+    showErrorToast(error, t("likes.batchFailed"));
+    console.error("批量操作失败:", error);
   }
 }
 
@@ -433,7 +444,7 @@ onShow(() => {
             :value="searchInput"
             :placeholder="t('likes.searchPlaceholder')"
             confirm-type="search"
-            @input="handleSearchInput"
+            @input="handleSearchInput" aria-label="t('likes.searchPlaceholder')"
           />
           <view
             v-if="searchInput"
@@ -456,10 +467,14 @@ onShow(() => {
         />
       </view>
 
-      <!-- 加载状态 -->
+      <!-- 加载状态：使用骨架屏替代简单 spinner，更好呼应卡片布局 -->
       <view v-if="loading" class="likes-loading">
-        <view class="likes-loading__spinner" />
-        <text class="likes-loading__text">{{ t('common.loading') }}</text>
+        <Skeleton variant="list" :count="4" />
+      </view>
+
+      <!-- 错误状态：网络异常或后端错误时展示，附带重试按钮 -->
+      <view v-else-if="errorMessage" class="likes-error" role="alert">
+        <ErrorState type="network" @retry="() => likesStore.fetchLikes()" />
       </view>
 
       <!-- 喜欢我的列表 -->
@@ -472,7 +487,7 @@ onShow(() => {
           <text class="likes-empty__subtitle">{{ t('likes.emptyLikedByDesc') }}</text>
         </view>
 
-        <view v-else class="likes-list">
+        <view v-else class="likes-list" role="list">
           <view
             v-for="(item, idx) in displayLikedBy"
             :key="item.id"
@@ -501,7 +516,7 @@ onShow(() => {
                 class="likes-card__avatar"
                 :src="item.avatar"
                 mode="aspectFill"
-                lazy-load
+                lazy-load alt=""
               />
               <view v-else class="likes-card__avatar-placeholder">
                 <text class="likes-card__avatar-initial">{{ item.name.charAt(0) }}</text>
@@ -539,7 +554,7 @@ onShow(() => {
           <text class="likes-empty__subtitle">{{ t('likes.emptyMyLikesDesc') }}</text>
         </view>
 
-        <view v-else class="likes-list">
+        <view v-else class="likes-list" role="list">
           <view
             v-for="(item, idx) in displayLikes"
             :key="item.id"
@@ -568,7 +583,7 @@ onShow(() => {
                 class="likes-card__avatar"
                 :src="item.avatar"
                 mode="aspectFill"
-                lazy-load
+                lazy-load alt=""
               />
               <view v-else class="likes-card__avatar-placeholder">
                 <text class="likes-card__avatar-initial">{{ item.name.charAt(0) }}</text>
@@ -606,7 +621,7 @@ onShow(() => {
           <text class="likes-empty__subtitle">{{ t('likes.emptyVisitorsDesc') }}</text>
         </view>
 
-        <view v-else class="likes-list">
+        <view v-else class="likes-list" role="list">
           <view
             v-for="(item, idx) in displayVisitors"
             :key="item.id"
@@ -634,7 +649,7 @@ onShow(() => {
                 class="likes-card__avatar"
                 :src="item.avatar"
                 mode="aspectFill"
-                lazy-load
+                lazy-load alt=""
               />
               <view v-else class="likes-card__avatar-placeholder">
                 <text class="likes-card__avatar-initial">{{ item.name.charAt(0) }}</text>
@@ -838,6 +853,17 @@ onShow(() => {
   justify-content: center;
   gap: var(--sp-6);
   padding: var(--sp-10) 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== 错误状态 ========== */
+.likes-error {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-10) var(--sp-4);
   position: relative;
   z-index: 1;
 }
@@ -1091,7 +1117,8 @@ onShow(() => {
 
 .likes-card__check-icon {
   font-size: 28rpx;
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
   font-weight: 700;
 }
 
@@ -1188,7 +1215,8 @@ onShow(() => {
 
 .likes-batch-bar__check-icon {
   font-size: 28rpx;
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
   font-weight: 700;
 }
 
@@ -1220,7 +1248,8 @@ onShow(() => {
 }
 
 .likes-batch-bar__btn--like .likes-batch-bar__btn-text {
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
 }
 
 .likes-batch-bar__btn--skip {
@@ -1236,7 +1265,8 @@ onShow(() => {
 }
 
 .likes-batch-bar__btn--cancel .likes-batch-bar__btn-text {
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
 }
 
 .likes-batch-bar__btn--disabled {
@@ -1262,7 +1292,8 @@ onShow(() => {
 
 .likes-batch-count__text {
   font-size: var(--fs-sm);
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
 }
 
 /* 头部操作区（管理按钮 + 心动信号） */

@@ -586,7 +586,8 @@ onMounted(() => {
 }
 
 .retry-btn__text {
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
   font-size: 28rpx;
   font-weight: 600;
 }
@@ -761,7 +762,8 @@ onMounted(() => {
       width: 16rpx;
       height: 16rpx;
       border-radius: 50%;
-      background: #ffffff;
+      /* 反色背景：使用 token 替代硬编码 #ffffff */
+      background: var(--c-text-inverse);
     }
   }
 }
@@ -814,7 +816,8 @@ onMounted(() => {
 }
 
 .save-btn__text {
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
   font-size: 30rpx;
   font-weight: 600;
 }

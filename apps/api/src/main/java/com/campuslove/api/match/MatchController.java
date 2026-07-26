@@ -1,6 +1,9 @@
 package com.campuslove.api.match;
 
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.dto.MatchDto;
+import com.campuslove.api.monitor.MatchMetrics;
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
@@ -17,6 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 匹配控制器。
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
+ *
+ * <p>DTO 层接入：新增 GET /api/matches/dto 端点返回 {@link MatchDto} 列表，
+ * 与既有返回 {@code MatchResultView}/{@code LikedUserView} 的端点并存，
+ * 保持方法签名兼容。</p>
+ *
+ * <p><strong>注意：</strong>当前项目中尚不存在独立的 {@code Match} 实体
+ * （匹配关系暂以 {@code HeartSignal} 等形式存储），
+ * 故 {@code /dto} 端点暂返回空列表，待 Match 实体与对应聚合查询引入后再补全。
+ * {@link com.campuslove.api.dto.DtoMapper#toMatchDto} 方法签名已在 DtoMapper 中预留注释。</p>
  */
 @RestController
 @RequestMapping("/api/matches")
@@ -24,10 +36,17 @@ public class MatchController {
 
   private final MatchService matchService;
   private final IcebreakerService icebreakerService;
+  /**
+   * 匹配业务监控指标。用于记录滑动操作、匹配成功、推荐耗时等。
+   * 通过 Micrometer 暴露到 /actuator/prometheus 供 Prometheus 抓取。
+   */
+  private final MatchMetrics matchMetrics;
 
-  public MatchController(MatchService matchService, IcebreakerService icebreakerService) {
+  public MatchController(MatchService matchService, IcebreakerService icebreakerService,
+                         MatchMetrics matchMetrics) {
     this.matchService = matchService;
     this.icebreakerService = icebreakerService;
+    this.matchMetrics = matchMetrics;
   }
 
   @GetMapping("/form-config")
@@ -69,13 +88,32 @@ public class MatchController {
   // ---- Phase 2 新增：社交功能端点 ----
 
   /**
-   * 喜欢用户。
+   * 喜欢用户（右滑 = swipeRight 等价操作）。
    * POST /api/matches/like
+   *
+   * <p>速率限制：桶容量 60，每秒补充 2 个令牌，按客户端 IP 限流，
+   * 防止自动化脚本批量刷喜欢。</p>
    */
   @PostMapping("/like")
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
   public HeartSignalView likeUser(@RequestBody LikeTargetRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return matchService.likeUser(userId, request.targetUserId());
+    // 监控：记录滑动操作（like 方向），指标失败不影响主流程
+    try {
+      matchMetrics.recordSwipe("like");
+    } catch (Exception ignore) {
+      // 监控逻辑失败忽略
+    }
+    HeartSignalView result = matchService.likeUser(userId, request.targetUserId());
+    // 监控：互相喜欢（result != null 表示已生成 HeartSignal，即匹配成功）
+    if (result != null) {
+      try {
+        matchMetrics.recordMatchSuccess();
+      } catch (Exception ignore) {
+        // 监控逻辑失败忽略
+      }
+    }
+    return result;
   }
 
   /**
@@ -159,6 +197,12 @@ public class MatchController {
           @RequestParam(name = "passedUserId") Long passedUserId) {
     Long userId = SecurityUtils.getCurrentUserId();
     matchService.passUser(userId, passedUserId);
+    // 监控：记录左滑（dislike）操作
+    try {
+      matchMetrics.recordSwipe("dislike");
+    } catch (Exception ignore) {
+      // 监控逻辑失败忽略
+    }
     return ResponseEntity.ok().build();
   }
 
@@ -213,6 +257,32 @@ public class MatchController {
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();
     }
+  }
+
+  // ---- DTO 层接入 ----
+
+  /**
+   * 获取当前用户的匹配 DTO 列表（DTO 层示例端点）。
+   *
+   * <p>与 {@link #getHeartSignals()} 等返回 {@code *View} 的端点并存，
+   * 用于演示未来 Entity -&gt; DTO 的批量转换流程。</p>
+   *
+   * <p><strong>当前实现：</strong>项目尚不存在独立的 {@code Match} 实体，
+   * 故本端点暂返回空列表。待 Match 实体引入后，将按以下流程补全：
+   * <ol>
+   *   <li>通过 MatchRepository 查询当前用户的所有匹配关系；</li>
+   *   <li>批量加载 partner 用户实体与最近一条消息预览；</li>
+   *   <li>经 {@link com.campuslove.api.dto.DtoMapper#toMatchDto} 转换为
+   *       {@link MatchDto} 列表返回。</li>
+   * </ol>
+   * </p>
+   *
+   * @return MatchDto 列表（当前阶段恒为空）
+   */
+  @GetMapping("/dto")
+  public ResponseEntity<List<MatchDto>> getMatchesDto() {
+    // TODO: 待 Match 实体引入后，接入 MatchRepository 并调用 DtoMapper.toMatchDto
+    return ResponseEntity.ok(List.of());
   }
 }
 

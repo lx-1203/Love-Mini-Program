@@ -1,10 +1,16 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.dto.DtoMapper;
+import com.campuslove.api.dto.UserDto;
+import com.campuslove.api.entity.User;
+import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,15 +30,21 @@ import org.springframework.web.multipart.MultipartFile;
  *
  * <p>向后兼容：原有 PUT /api/profile/basic 端点保留 4 个必填字段，
  * 新增字段为可选，未传时不会清空已有值。</p>
+ *
+ * <p>DTO 层接入：新增 GET /api/profile/dto 端点返回 {@link UserDto}，
+ * 通过 {@link DtoMapper} 将 User 实体转换为脱敏后的 DTO，
+ * 与既有返回 {@code *View} 的端点并存，保持方法签名兼容。</p>
  */
 @RestController
 @RequestMapping("/api/profile")
 public class ProfileController {
 
   private final ProfileService profileService;
+  private final UserRepository userRepository;
 
-  public ProfileController(ProfileService profileService) {
+  public ProfileController(ProfileService profileService, UserRepository userRepository) {
     this.profileService = profileService;
+    this.userRepository = userRepository;
   }
 
   @GetMapping("/stats")
@@ -119,6 +131,32 @@ public class ProfileController {
   @PutMapping("/schedule")
   public ScheduleProfileView saveScheduleProfile(@Valid @RequestBody ScheduleProfileRequest request) {
     return profileService.saveScheduleProfile(request);
+  }
+
+  // ---- DTO 层接入 ----
+
+  /**
+   * 获取当前登录用户的 UserDto（DTO 层示例端点）。
+   *
+   * <p>与 {@link #getBasicProfile()} 等返回 {@code *View} 的端点并存，
+   * 用于演示 Entity -&gt; DTO 的隔离转换：
+   * <ol>
+   *   <li>从认证上下文获取当前用户 ID；</li>
+   *   <li>通过 UserRepository 加载 User 实体；</li>
+   *   <li>经 {@link DtoMapper#toUserDto(User)} 转换为 {@link UserDto}，
+   *       自动对 openid 进行脱敏处理。</li>
+   * </ol>
+   * 该端点不暴露任何敏感字段（phone、password 等）。</p>
+   *
+   * @return 脱敏后的 UserDto；用户不存在时返回 404
+   */
+  @GetMapping("/dto")
+  public ResponseEntity<UserDto> getCurrentUserDto() {
+    Long userId = SecurityUtils.getCurrentUserId();
+    return userRepository.findById(userId)
+        .map(DtoMapper::toUserDto)
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 }
 

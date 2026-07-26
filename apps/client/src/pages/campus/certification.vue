@@ -18,7 +18,8 @@ import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 
 const campusStore = useCampusStore();
-const { certificationStatus, certificationInfo, loading } = storeToRefs(campusStore);
+// 修复（严格模式 noUnusedLocals）：loading 未在模板/脚本中引用，已从解构中移除。
+const { certificationStatus, certificationInfo } = storeToRefs(campusStore);
 
 const pageVisible = ref(false);
 onShow(() => {
@@ -174,7 +175,7 @@ onMounted(() => {
         <view class="info-card">
           <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="info-card__icon" mode="aspectFit" />
           <text class="info-card__title">为什么要认证？</text>
-          <view class="info-card__list">
+          <view class="info-card__list" role="list">
             <text class="info-card__item">• 解锁校园话题讨论</text>
             <text class="info-card__item">• 与同校同学互动交流</text>
             <text class="info-card__item">• 参与校园活动和社团招新</text>
@@ -190,7 +191,7 @@ onMounted(() => {
             <input
               v-model="schoolName"
               class="form-input"
-              placeholder="请输入你的学校全称"
+              placeholder="请输入你的学校全称" aria-label="请输入你的学校全称"
             />
           </view>
 
@@ -200,7 +201,7 @@ onMounted(() => {
             <input
               v-model="major"
               class="form-input"
-              placeholder="请输入你的专业"
+              placeholder="请输入你的专业" aria-label="请输入你的专业"
             />
           </view>
 
@@ -221,7 +222,7 @@ onMounted(() => {
               <image
                 class="upload-preview__img"
                 :src="studentCardUrl"
-                mode="aspectFill"
+                mode="aspectFill" alt=""
               />
               <view class="upload-preview__actions">
                 <view class="upload-preview__reupload press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadStudentCard">

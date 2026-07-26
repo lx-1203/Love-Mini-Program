@@ -92,13 +92,20 @@ export function parseFrames(raw: string): StompFrame[] {
       const lines = trimmed.split(LINE_BREAK);
       if (lines.length === 0) continue;
 
-      const command = lines[0].trim();
+      // 修复（严格模式 noUncheckedIndexedAccess）：lines[0] 索引访问返回 string | undefined，
+      // 此处提取后做非空校验，避免在异常空数组场景调用 .trim() 抛 undefined。
+      const firstLine = lines[0];
+      if (!firstLine) continue;
+      const command = firstLine.trim();
       const headers: Record<string, string> = {};
       let bodyStartIndex = 1;
 
       // 解析头部：以空行作为头部与体的分隔
       for (let i = 1; i < lines.length; i++) {
+        // 修复（严格模式 noUncheckedIndexedAccess）：lines[i] 索引访问返回 string | undefined，
+        // 此处提取 line 后做非空校验，避免后续 .trim()/.indexOf()/.substring() 在 undefined 上抛错。
         const line = lines[i];
+        if (!line) continue;
         if (line.trim() === "") {
           bodyStartIndex = i + 1;
           break;

@@ -82,7 +82,7 @@ function particleStyle(index: number) {
       class="heart-particle"
       :style="particleStyle(i)"
     >
-      <image class="heart-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" />
+      <image class="heart-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
     </view>
   </view>
 </template>

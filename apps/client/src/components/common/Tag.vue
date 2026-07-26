@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { designTokens } from '../../theme/tokens';
 
 const props = withDefaults(defineProps<{
   variant?: 'gray' | 'blue' | 'pill' | 'topic' | 'cert' | 'success' | 'warning' | 'error' | 'romance' | 'vip' | 'campus' | 'signup' | 'ongoing' | 'preview' | 'location' | 'price';
@@ -16,7 +15,8 @@ const props = withDefaults(defineProps<{
   shape: 'pill',
 });
 
-const t = designTokens;
+// 修复（严格模式 noUnusedLocals）：原 `const t = designTokens;` 后未使用 t，
+// designTokens 导入也仅用于该别名；模板/style 未引用 designTokens，故导入与别名一并移除。
 
 const tagClass = computed(() => [
   'tag',
@@ -30,11 +30,9 @@ const tagClass = computed(() => [
 <template>
   <view
     :class="tagClass"
-    <!-- #ifdef H5 -->
     role="img"
     :aria-label="label"
     :aria-selected="selected"
-    <!-- #endif -->
   >
     <text v-if="icon" class="tag-icon">{{ icon }}</text>
     <text class="tag-label">{{ label }}</text>

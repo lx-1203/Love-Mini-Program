@@ -4,7 +4,6 @@
  * 展示今日问题，支持回答提交和查看其他人的回答
  */
 import { ref, onMounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useDailyQuestionStore, formatAnswerTime } from "../../stores/daily-question";
 import { useCheckInStore } from "../../stores/checkin";
@@ -85,7 +84,7 @@ onMounted(async () => {
       <template v-else>
         <!-- 加载状态 -->
         <view v-if="loading && !todayQuestion" class="dq-state">
-          <view class="loading-spinner" />
+          <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
           <text class="dq-state__text">正在加载...</text>
         </view>
 
@@ -106,7 +105,7 @@ onMounted(async () => {
             class="answer-input"
             placeholder="分享你的想法..."
             maxlength="500"
-            :show-confirm-bar="false"
+            :show-confirm-bar="false" aria-label="分享你的想法..."
           />
           <view class="answer-actions">
             <view class="anonymous-toggle press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="isAnonymous = !isAnonymous">
@@ -129,12 +128,12 @@ onMounted(async () => {
 
         <!-- 已回答提示 -->
         <view v-if="hasAnswered" class="answered-hint">
-          <image class="answered-hint__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE" mode="aspectFit" />
+          <image class="answered-hint__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE" mode="aspectFit" alt="" />
           <text class="answered-hint__text">你已回答今日问题</text>
         </view>
 
         <!-- 回答列表 -->
-        <view v-if="answers.length > 0" class="answers-list">
+        <view v-if="answers.length > 0" class="answers-list" role="list">
           <view class="answers-list__header">
             <text class="answers-list__title">大家的回答</text>
             <text class="answers-list__count">{{ answers.length }}</text>
@@ -152,7 +151,7 @@ onMounted(async () => {
                   class="answer-card__avatar-img"
                   :src="answer.authorAvatar"
                   mode="aspectFill"
-        lazy-load
+        lazy-load alt=""
                 />
                 <text v-else class="answer-card__avatar-char">
                   {{ answer.isAnonymous ? "?" : answer.authorName[0] }}

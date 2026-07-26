@@ -60,7 +60,9 @@ describe("likes store", () => {
     const store = useLikesStore();
     await store.fetchLikes(); // load likedBy list
 
-    const targetUserId = store.likedBy[0].userId;
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.likedBy[0] 索引访问返回 T | undefined，
+    // 测试场景已通过 fetchLikes 加载非空数据，此处使用非空断言 ! 简化类型。
+    const targetUserId = store.likedBy[0]!.userId;
     const beforeCount = store.likes.length;
 
     await store.likeUser(targetUserId);
@@ -90,7 +92,9 @@ describe("likes store", () => {
     const store = useLikesStore();
     await store.fetchLikes();
 
-    const targetUserId = store.likedBy[0].userId;
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.likedBy[0] 索引访问返回 T | undefined，
+    // 测试场景已通过 fetchLikes 加载非空数据，此处使用非空断言 ! 简化类型。
+    const targetUserId = store.likedBy[0]!.userId;
     await store.likeUser(targetUserId); // first like succeeds
 
     // second like should throw
@@ -115,7 +119,9 @@ describe("likes store", () => {
     const store = useLikesStore();
     await store.fetchLikes();
 
-    const targetUserId = store.likedBy[0].userId;
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.likedBy[0] 索引访问返回 T | undefined，
+    // 测试场景已通过 fetchLikes 加载非空数据，此处使用非空断言 ! 简化类型。
+    const targetUserId = store.likedBy[0]!.userId;
     await store.likeUser(targetUserId);
     expect(store.likes.some((item) => item.userId === targetUserId)).toBe(true);
 
@@ -312,7 +318,9 @@ describe("likes store", () => {
 
     const mutual = store.mutualLikes;
     expect(mutual).toHaveLength(1);
-    expect(mutual[0].userId).toBe("user-A");
+    // 修复（严格模式 noUncheckedIndexedAccess）：mutual[0] 索引访问返回 T | undefined，
+    // 前面 expect(mutual).toHaveLength(1) 已确保非空，此处使用非空断言 ! 简化类型。
+    expect(mutual[0]!.userId).toBe("user-A");
   });
 
   // ------------------------------------------------------------------

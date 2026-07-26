@@ -3,7 +3,7 @@
  * 聊天页 - 会话列表
  * 连接到 useMessagesStore 获取真实会话数据，替代硬编码模拟数据
  */
-import { ref, computed, onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
@@ -134,7 +134,7 @@ onShow(() => {
           <text>{{ t('chat.topicRecommend') }}</text>
         </view>
         <scroll-view scroll-x class="topic-scroll" show-scrollbar="false">
-          <view class="topic-list">
+          <view class="topic-list" role="list">
             <view
               v-for="(topic, index) in topicSuggestions"
               :key="index"
@@ -165,7 +165,7 @@ onShow(() => {
         @refresherrefresh="onRefresh"
       >
         <!-- 骨架屏加载 -->
-        <view v-if="loading" class="conversation-list">
+        <view v-if="loading" class="conversation-list" role="list">
           <Skeleton variant="list" :count="4" />
         </view>
 
@@ -178,7 +178,7 @@ onShow(() => {
         />
 
         <!-- 正常内容 -->
-        <view v-else class="conversation-list card-base">
+        <view v-else class="conversation-list card-base" role="list">
           <view
             v-for="conv in privateSessions"
             :key="conv.id"
@@ -193,7 +193,7 @@ onShow(() => {
                 class="conversation-item__avatar"
                 :src="conv.partnerAvatar"
                 mode="aspectFill"
-                lazy-load
+                lazy-load alt=""
               />
               <view v-else class="conversation-item__avatar-placeholder">
                 <text class="conversation-item__avatar-initial">{{ conv.partnerName?.charAt(0) || '?' }}</text>
@@ -205,7 +205,7 @@ onShow(() => {
                 <view class="conversation-item__name-wrap">
                   <text class="conversation-item__name">{{ conv.partnerName }}</text>
                   <view v-if="conv.pinned" class="conversation-item__pin-icon">
-                    <image class="conversation-item__pin-img" :src="IMAGE_PATHS.ICONS_EMOJI.PIN" mode="aspectFit" />
+                    <image class="conversation-item__pin-img" :src="IMAGE_PATHS.ICONS_EMOJI.PIN" mode="aspectFit" alt="" />
                   </view>
                 </view>
                 <text class="conversation-item__time">{{ formatChatTime(conv.lastMessageSentAt) }}</text>

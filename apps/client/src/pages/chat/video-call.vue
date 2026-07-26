@@ -476,7 +476,8 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #000000;
+  /* 视频通话页面背景：使用深色 token 替代硬编码 #000000 */
+  background: var(--c-neutral-900);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -542,7 +543,8 @@ onMounted(() => {
 .call-header__status {
   font-size: 32rpx;
   font-weight: 600;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
 }
 
 .call-header__duration {
@@ -594,7 +596,8 @@ onMounted(() => {
 
   &__label {
     font-size: 24rpx;
-    color: #FFFFFF;
+    /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+    color: var(--c-text-inverse);
     font-weight: 500;
   }
 
@@ -657,7 +660,8 @@ onMounted(() => {
 .call-ended__title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
 }
 
 .call-ended__duration {

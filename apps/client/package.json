@@ -11,8 +11,10 @@
     "build:h5:real": "uni build --platform h5 --mode real",
     "dev:mp-weixin": "uni --platform mp-weixin",
     "build:mp-weixin": "uni build --platform mp-weixin",
+    "build:mp-weixin:real": "node scripts/inject-wx-appid.mjs && uni build --platform mp-weixin --mode real",
     "typecheck": "vue-tsc --noEmit",
     "test:unit": "vitest run --config vitest.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "generate:openapi": "openapi-typescript ../../docs/openapi/feedback-growth-and-auth.yaml -o src/services/generated/api-types.ts"
   },
   "dependencies": {
@@ -23,6 +25,12 @@
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-1000920260525813",
     "@dcloudio/uni-ui": "^1.5.12",
     "@dcloudio/vite-plugin-uni": "3.0.0-alpha-1000920260525813",
+    "@sentry-internal/browser-utils": "8.55.2",
+    "@sentry-internal/feedback": "8.55.2",
+    "@sentry-internal/replay": "8.55.2",
+    "@sentry-internal/replay-canvas": "8.55.2",
+    "@sentry/browser": "8.55.2",
+    "@sentry/core": "8.55.2",
     "@sentry/vue": "^8.42.0",
     "@vueuse/core": "^11.3.0",
     "gsap": "^3.15.0",
@@ -40,7 +48,7 @@
     "sass-embedded": "^1.93.3",
     "typescript": "5.9.3",
     "vite": "^5.4.0",
-    "vitest": "^2.0.0",
+    "vitest": "^2.1.0",
     "vue-tsc": "^2.0.0"
   }
 }

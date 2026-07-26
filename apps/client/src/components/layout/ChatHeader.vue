@@ -19,32 +19,26 @@ const titleLabel = computed(() => props.title || t('chat.headerTitle'));
 <template>
   <view
     class="chat-header"
-    <!-- #ifdef H5 -->
     role="banner"
     :aria-label="titleLabel"
-    <!-- #endif -->
   >
     <text class="chat-title">{{ titleLabel }}</text>
     <view class="chat-icons">
       <view
         class="chat-icon"
         @tap="emit('searchTap')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('chat.searchIconAria')"
-        <!-- #endif -->
       >
-        <image class="chat-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" />
+        <image class="chat-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
       </view>
       <view
         class="chat-icon"
         @tap="emit('addTap')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('chat.addIconAria')"
-        <!-- #endif -->
       >
-        <image class="chat-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.ADD" mode="aspectFit" />
+        <image class="chat-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.ADD" mode="aspectFit" alt="" />
       </view>
     </view>
   </view>
@@ -70,8 +64,9 @@ const titleLabel = computed(() => props.title || t('chat.headerTitle'));
   gap: 16rpx;
 }
 .chat-icon {
-  width: 64rpx;
-  height: 64rpx;
+  /* 修复 P2（触摸目标过小）：从 64rpx 调整为 88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
+  width: 88rpx;
+  height: 88rpx;
   border-radius: 50%;
   background: var(--c-neutral-50);
   display: flex;

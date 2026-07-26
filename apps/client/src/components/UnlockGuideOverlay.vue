@@ -58,11 +58,9 @@ function handleKnown() {
   <view
     v-if="visible"
     class="unlock-overlay"
-    <!-- #ifdef H5 -->
     role="dialog"
     aria-modal="true"
     :aria-label="t('lock.title')"
-    <!-- #endif -->
   >
     <!-- 全屏半透明蒙层（更深，让用户专注引导内容） -->
     <view class="unlock-overlay__mask" />
@@ -82,9 +80,7 @@ function handleKnown() {
       <button
         class="unlock-overlay__btn"
         @tap="handleKnown"
-        <!-- #ifdef H5 -->
         :aria-label="t('lock.overlayBtnAria')"
-        <!-- #endif -->
       >
         <text class="unlock-overlay__btn-text">{{ t('lock.overlayBtn') }}</text>
       </button>

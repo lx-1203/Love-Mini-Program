@@ -119,9 +119,57 @@ function resolveViteEnvDefine(mode: string) {
 // - H5：必须 ≥ es2020 以保留 import.meta 语法（@vitejs/plugin-vue 注入的 HMR 代码 import.meta.hot.on('file-changed', ...)
 //   在 es2018 target 下会被 esbuild 错误转译为未定义的 import_meta 变量，导致 App.vue 入口导入失败、全页面空白）
 const isMpWeixin = process.env.UNI_PLATFORM === "mp-weixin";
+const isH5 = process.env.UNI_PLATFORM === "h5";
 const buildTarget: string | string[] = isMpWeixin
   ? "es2018"
   : ["es2020", "edge88", "firefox78", "chrome87", "safari14"];
+
+/**
+ * H5 构建时的分包策略（manualChunks）。
+ *
+ * 性能优化（P1）：将第三方依赖按生态拆分为独立 chunk，避免单个 vendor 包过大，
+ * 同时利用浏览器并行下载能力提升首屏加载速度。
+ *
+ * 拆分策略：
+ * - vue-vendor: Vue 核心生态（vue / vue-i18n / pinia），变更频率低，可长期缓存
+ * - gsap: GSAP 动画库，仅在动画页面使用
+ * - vueuse: @vueuse/core 组合式工具库
+ *
+ * 注意：
+ * - 仅在 H5 构建时启用。mp-weixin 由 uni-app 编译器自动处理依赖与分包，强制 manualChunks
+ *   会破坏其依赖分析导致运行时错误。
+ * - vue 已通过 resolve.alias 重定向到 @dcloudio/uni-h5-vue/dist/vue.runtime.esm.js，
+ *   因此 vue-vendor chunk 中的 "vue" 入口实际指向 uni-h5-vue 产物。
+ * - 不显式拆分 @sentry/vue 与 @dcloudio/uni-h5，因为 @sentry/vue 内部 import
+ *   "@sentry/browser"（传递依赖，pnpm 未 hoist 到顶层），显式拆分会触发 rollup 主动
+ *   解析其依赖图导致构建失败。让 rollup 默认行为处理这些库即可。
+ *
+ * @param id - 模块绝对路径
+ * @returns chunk 名称，undefined 表示交由 rollup 默认行为
+ */
+function resolveH5ManualChunk(id: string): string | undefined {
+  if (!isH5) return undefined;
+  // 仅处理 node_modules 中的第三方依赖
+  if (!id.includes("node_modules")) return undefined;
+
+  // Vue 核心生态：vue / vue-i18n / pinia
+  if (
+    /[\\/]node_modules[\\/](vue|vue-i18n|pinia)[\\/]/.test(id) ||
+    /[\\/]node_modules[\\/]@vue[\\/](shared|reactivity|runtime-core|runtime-dom|compiler-dom|compiler-core)[\\/]/.test(id)
+  ) {
+    return "vue-vendor";
+  }
+  // GSAP 动画库
+  if (/[\\/]node_modules[\\/]gsap[\\/]/.test(id)) {
+    return "gsap";
+  }
+  // VueUse 组合式工具
+  if (/[\\/]node_modules[\\/]@vueuse[\\/]/.test(id)) {
+    return "vueuse";
+  }
+  // 其他第三方依赖统一归入 vendor chunk（保守策略，避免解析问题）
+  return undefined;
+}
 
 export default defineConfig(({ mode }) => ({
   resolve: {
@@ -134,6 +182,14 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: buildTarget,
+    // 性能优化（P1）：提升 chunk 大小告警阈值至 1000KB，避免 vendor 拆分后频繁告警
+    chunkSizeWarningLimit: 1000,
+    // H5 构建启用 manualChunks 分包，mp-weixin 不启用（由 uni-app 自动处理）
+    rollupOptions: {
+      output: {
+        manualChunks: resolveH5ManualChunk,
+      },
+    },
   },
   define: resolveViteEnvDefine(mode),
   plugins: [patchUniH5VueUpdateSlots(), uni.default()],

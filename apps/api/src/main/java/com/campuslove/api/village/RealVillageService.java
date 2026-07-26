@@ -1,6 +1,7 @@
 package com.campuslove.api.village;
 
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.chat.InteractionEventService;
@@ -41,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -233,6 +236,7 @@ public class RealVillageService implements VillageService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
     public PostDetailView createPost(Long userId, String content, List<String> images, List<String> tags, String category) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
@@ -266,6 +270,7 @@ public class RealVillageService implements VillageService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
     public PostLikeResponse likePost(Long userId, Long postId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
@@ -304,6 +309,7 @@ public class RealVillageService implements VillageService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
     public CommentItemView commentPost(Long userId, Long postId, String content) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
@@ -341,6 +347,7 @@ public class RealVillageService implements VillageService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
     public ShareView sharePost(Long userId, Long postId, String comment) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
@@ -382,6 +389,28 @@ public class RealVillageService implements VillageService {
                         cat.getIcon(),
                         cat.getSortOrder()
                 ))
+                .toList();
+    }
+
+    // ---- 热门帖子 ----
+
+    /**
+     * 获取村口热门帖子列表。
+     * 按点赞数倒序查询活跃帖子的前 20 条，用于首页"热门"模块。
+     *
+     * <p>缓存策略：使用 {@link CacheNames#VILLAGE_HOT_POSTS} 缓存，TTL 15 分钟，
+     * key 固定为 "hot"（无参数全量列表）。帖子创建/点赞/评论/转发时通过
+     * @CacheEvict(allEntries = true) 主动失效，保证热门列表及时更新。</p>
+     *
+     * @return 热门帖子摘要视图列表（按点赞数倒序，最多 20 条）
+     */
+    @Cacheable(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
+    @Transactional(readOnly = true)
+    public List<PostSummaryView> listHotPosts() {
+        Page<Post> postPage = postRepository.findByStatusOrderByLikesCountDesc(
+                PostStatus.active, PageRequest.of(0, 20));
+        return postPage.getContent().stream()
+                .map(this::toPostSummaryView)
                 .toList();
     }
 

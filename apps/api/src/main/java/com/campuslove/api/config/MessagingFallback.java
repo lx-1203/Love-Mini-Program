@@ -98,7 +98,7 @@ public class MessagingFallback implements SmartInitializingSingleton {
      *
      * <p>调用场景：</p>
      * <ul>
-     *   <li>{@link com.campuslove.api.messaging.NotificationProducer#sendNotification}
+     *   <li>{@link com.campuslove.api.mq.MessageProducer#sendNotification}
      *       发送消息时 RabbitMQ 抛出 {@link org.springframework.amqp.AmqpException}</li>
      *   <li>{@link #isAvailable()} 返回 false 时主动调用</li>
      * </ul>

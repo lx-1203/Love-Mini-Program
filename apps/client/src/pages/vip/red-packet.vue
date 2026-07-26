@@ -238,7 +238,7 @@ onLoad((options) => {
           type="digit"
           :placeholder="t('vip.redPacketAmountPlaceholder')"
           :value="amountInput"
-          @input="amountInput = readInputValue($event)"
+          @input="amountInput = readInputValue($event)" aria-label="t('vip.redPacketAmountPlaceholder')"
         />
         <text v-if="selectedType === 'NORMAL' && perPacketYuan" class="amount-input__hint">
           {{ t('vip.redPacketPerPacket', { amount: perPacketYuan }) }}
@@ -257,7 +257,7 @@ onLoad((options) => {
           type="number"
           :placeholder="t('vip.redPacketCountPlaceholder')"
           :value="countInput"
-          @input="countInput = readInputValue($event)"
+          @input="countInput = readInputValue($event)" aria-label="t('vip.redPacketCountPlaceholder')"
         />
         <text class="count-input__suffix">{{ t('vip.redPacketCountUnit') }}</text>
       </view>
@@ -274,7 +274,7 @@ onLoad((options) => {
           :placeholder="t('vip.redPacketBlessingPlaceholder')"
           :maxlength="200"
           :value="blessingInput"
-          @input="blessingInput = readInputValue($event)"
+          @input="blessingInput = readInputValue($event)" aria-label="t('vip.redPacketBlessingPlaceholder')"
         />
       </view>
     </view>
@@ -302,11 +302,23 @@ onLoad((options) => {
     <view class="safe-bottom" />
 
     <!-- 领取红包弹窗 -->
-    <view v-if="showClaimModal" class="claim-modal-mask" @tap="closeClaimModal">
+    <view
+      v-if="showClaimModal"
+      class="claim-modal-mask"
+      @tap="closeClaimModal"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t('vip.redPacketClaimTitle')"
+    >
       <view class="claim-modal" @tap.stop>
         <view class="claim-modal__header">
           <text class="claim-modal__title">{{ t('vip.redPacketClaimTitle') }}</text>
-          <text class="claim-modal__close" @tap="closeClaimModal">×</text>
+          <text
+            class="claim-modal__close"
+            @tap="closeClaimModal"
+            role="button"
+            :aria-label="t('common.cancel')"
+          >×</text>
         </view>
         <view class="claim-modal__body">
           <template v-if="claimedAmount !== null">
@@ -369,14 +381,16 @@ onLoad((options) => {
 }
 .nav-bar__back-icon {
   font-size: 56rpx;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   font-weight: 300;
   line-height: 1;
 }
 .nav-bar__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
 }
 .nav-bar__placeholder {
   width: 64rpx;
@@ -416,7 +430,8 @@ onLoad((options) => {
 .rp-hero__title {
   font-size: 40rpx;
   font-weight: 800;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   margin-bottom: 8rpx;
 }
 .rp-hero__subtitle {
@@ -580,7 +595,8 @@ onLoad((options) => {
 }
 .footer__btn-text {
   font-size: 30rpx;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   font-weight: 700;
 }
 
@@ -599,7 +615,8 @@ onLoad((options) => {
 }
 .claim-modal {
   width: 600rpx;
-  background: #FFFFFF;
+  /* 容器背景：使用 token 替代硬编码 #FFFFFF */
+  background: var(--c-bg-container);
   border-radius: 24rpx;
   overflow: hidden;
 }
@@ -613,11 +630,13 @@ onLoad((options) => {
 .claim-modal__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
 }
 .claim-modal__close {
   font-size: 48rpx;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   line-height: 1;
   padding: 0 12rpx;
 }
@@ -657,7 +676,8 @@ onLoad((options) => {
 }
 .claim-modal__btn-text {
   font-size: 30rpx;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   font-weight: 700;
 }
 </style>

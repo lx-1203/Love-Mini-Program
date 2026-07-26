@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
-
 defineProps<{
   primaryLabel: string;
   secondaryLabel?: string;
@@ -11,34 +9,30 @@ const emit = defineEmits<{
   secondary: [];
 }>();
 
-const t = designTokens;
+// 修复（严格模式 noUnusedLocals）：原 `const t = designTokens;` 后未使用 t，
+// designTokens 导入也仅用于该别名；模板未引用 designTokens，故导入与别名一并移除。
+// emit 在模板 @tap 中使用（不在 #ifdef H5 内），vue-tsc 可识别，无需额外处理。
 </script>
 
 <template>
   <view
     class="bar"
     :class="{ 'bar--single': !secondaryLabel }"
-    <!-- #ifdef H5 -->
     role="toolbar"
     aria-label="操作栏"
-    <!-- #endif -->
   >
     <button
       v-if="secondaryLabel"
       class="bar__secondary"
       @tap="emit('secondary')"
-      <!-- #ifdef H5 -->
       :aria-label="secondaryLabel"
-      <!-- #endif -->
     >
       {{ secondaryLabel }}
     </button>
     <button
       class="bar__primary"
       @tap="emit('primary')"
-      <!-- #ifdef H5 -->
       :aria-label="primaryLabel"
-      <!-- #endif -->
     >
       {{ primaryLabel }}
     </button>

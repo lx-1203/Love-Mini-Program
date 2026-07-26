@@ -193,13 +193,11 @@ onUnmounted(() => {
       leaving ? 'toast-slide-out' : 'toast-slide-in'
     ]"
     @tap="hideToast"
-    <!-- #ifdef H5 -->
     role="alert"
     aria-live="assertive"
-    <!-- #endif -->
   >
     <!-- SVG 图标替代 Unicode 字符，兼容旧版微信基础库 -->
-    <image class="toast-notification__icon" :src="iconSrc" mode="aspectFit" />
+    <image class="toast-notification__icon" :src="iconSrc" mode="aspectFit" alt="" />
     <text class="toast-notification__message">{{ options.message }}</text>
   </view>
 </template>

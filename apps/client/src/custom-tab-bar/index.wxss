@@ -3,7 +3,7 @@
  * 视觉对齐青藤参考：
  *  - 高度 49px + 安全区
  *  - 激活态实心青绿色 #3FCF8E + 文字主色
- *  - 非激活态灰色 #9AA1AB
+ *  - 非激活态灰色 #6B7280（修复 P2 颜色对比度，对比度 4.6:1 满足 WCAG AA）
  *  - 文字 10/Medium
  *  - 背景毛玻璃 + 0.96 高不透明度 fallback（mp-weixin 兼容）
  * ============================================================ */
@@ -37,8 +37,8 @@
   padding: 8rpx 0;
   border: 0;
   background: transparent;
-  /* 非激活态灰色对齐青藤参考 #9AA1AB */
-  color: #9AA1AB;
+  /* 修复 P2（颜色对比度不足）：#9AA1AB → #6B7280，对比度从 ~2.85:1 提升至 ~4.6:1，达到 WCAG AA 4.5:1 标准 */
+  color: #6B7280;
   font-size: 20rpx;
   line-height: 1;
   transition: color 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0, 0.2, 1);

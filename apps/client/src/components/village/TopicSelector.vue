@@ -222,7 +222,7 @@ function clearAll(): void {
         v-model="searchKeyword"
         class="topic-selector__search-input"
         :placeholder="t('topicSelector.searchPlaceholder')"
-        placeholder-class="topic-selector__search-placeholder"
+        placeholder-class="topic-selector__search-placeholder" aria-label="t('topicSelector.searchPlaceholder')"
       />
     </view>
 
@@ -259,7 +259,7 @@ function clearAll(): void {
           v-model="customTopicInput"
           class="topic-selector__create-input"
           :placeholder="t('topicSelector.createTopicPlaceholder')"
-          placeholder-class="topic-selector__search-placeholder"
+          placeholder-class="topic-selector__search-placeholder" aria-label="t('topicSelector.createTopicPlaceholder')"
         />
         <view
           class="topic-selector__create-btn press-feedback"

@@ -13,6 +13,8 @@ import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserScheduleProfile;
 import com.campuslove.api.entity.Visitor;
+import com.campuslove.api.mq.MatchEventMessage;
+import com.campuslove.api.mq.MessageProducer;
 import com.campuslove.api.repository.HeartSignalRepository;
 import com.campuslove.api.repository.LikeRepository;
 import com.campuslove.api.repository.PassRecordRepository;
@@ -24,6 +26,7 @@ import com.campuslove.api.repository.VisitorRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -63,6 +66,12 @@ public class RealMatchService implements MatchService {
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
     private final InteractionEventService interactionEventService;
+    /**
+     * 消息生产者，用于异步推送匹配事件通知。
+     * <p>P0 BUG 修复：原同步发送微信模板消息逻辑改为异步 MQ，
+     * 避免阻塞匹配主流程。MQ 不可用时由 MessageProducer 内部降级处理。</p>
+     */
+    private final MessageProducer messageProducer;
 
     public RealMatchService(
             MatchConfig matchConfig,
@@ -76,7 +85,8 @@ public class RealMatchService implements MatchService {
             UserScheduleProfileRepository userScheduleProfileRepository,
             SimpMessagingTemplate messagingTemplate,
             ObjectMapper objectMapper,
-            InteractionEventService interactionEventService) {
+            InteractionEventService interactionEventService,
+            MessageProducer messageProducer) {
         this.matchConfig = matchConfig;
         this.likeRepository = likeRepository;
         this.heartSignalRepository = heartSignalRepository;
@@ -89,6 +99,7 @@ public class RealMatchService implements MatchService {
         this.messagingTemplate = messagingTemplate;
         this.objectMapper = objectMapper;
         this.interactionEventService = interactionEventService;
+        this.messageProducer = messageProducer;
     }
 
     // ---- Phase 1 存根方法 ----
@@ -358,6 +369,11 @@ public class RealMatchService implements MatchService {
                     "/queue/signals",
                     signalView
             );
+
+            // P0 BUG 修复：通过 MQ 异步推送匹配事件通知（微信模板消息、通知持久化等），
+            // 避免同步调用外部微信 API 阻塞匹配主流程。MQ 不可用时由 MessageProducer 降级处理。
+            messageProducer.sendMatchEvent(new MatchEventMessage(
+                    userId, targetUserId, "match", Instant.now()));
 
             return signalView;
         }

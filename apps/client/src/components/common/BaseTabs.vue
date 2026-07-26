@@ -9,9 +9,7 @@
   <view
     class="base-tabs"
     :class="[`base-tabs--${variant}`, { 'is-scrollable': scrollable }]"
-    <!-- #ifdef H5 -->
     role="tablist"
-    <!-- #endif -->
   >
     <scroll-view
       v-if="scrollable"
@@ -30,11 +28,9 @@
           hover-class="base-tab-item--pressed"
           :hover-stay-time="80"
           @tap="handleClick(tab)"
-          <!-- #ifdef H5 -->
           role="tab"
           :aria-selected="isActive(tab.key)"
           :aria-label="tab.label"
-          <!-- #endif -->
         >
           <text class="base-tab-label">{{ tab.label }}</text>
           <view
@@ -57,11 +53,9 @@
         hover-class="base-tab-item--pressed"
         :hover-stay-time="80"
         @tap="handleClick(tab)"
-        <!-- #ifdef H5 -->
         role="tab"
         :aria-selected="isActive(tab.key)"
         :aria-label="tab.label"
-        <!-- #endif -->
       >
         <text class="base-tab-label">{{ tab.label }}</text>
         <view
@@ -126,7 +120,8 @@ const emit = defineEmits<{
 }>();
 
 /** 当前激活颜色：优先使用 props 传入，否则使用品牌色 CSS 变量 */
-const activeColorValue = computed(() => props.activeColor || "var(--c-brand, #3FCF8E)");
+// 修复（严格模式 noUnusedLocals）：activeColorValue 计算属性未被模板/脚本引用，
+// 模板内通过 CSS 类切换激活样式，无需读取 activeColor 值，故移除。
 const badgeColorValue = computed(() => props.badgeColor || "var(--c-brand, #3FCF8E)");
 
 /** 徽章内联样式 */

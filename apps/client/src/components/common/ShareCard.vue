@@ -221,20 +221,34 @@ async function handleSaveImage() {
 </script>
 
 <template>
-  <view v-if="visible" class="share-overlay" @tap="handleClose">
+  <view
+    v-if="visible"
+    class="share-overlay"
+    @tap="handleClose"
+    role="dialog"
+    aria-modal="true"
+    :aria-label="t('home.shareCardTitle')"
+  >
     <!-- 遮罩层：点击关闭 -->
     <view class="share-mask"></view>
 
     <!-- 卡片主体：阻止冒泡，避免点击卡片关闭 -->
     <view class="share-card" @tap.stop>
       <!-- 关闭按钮 -->
-      <view class="share-close" hover-class="share-close--active" hover-stay-time="120" @tap="handleClose">
+      <view
+        class="share-close"
+        hover-class="share-close--active"
+        hover-stay-time="120"
+        @tap="handleClose"
+        role="button"
+        :aria-label="t('common.cancel')"
+      >
         <text class="share-close__icon">✕</text>
       </view>
 
       <!-- 卡片头部：品牌标识 -->
       <view class="share-header">
-        <image class="share-header__icon" :src="checkinIcon" mode="aspectFit" />
+        <image class="share-header__icon" :src="checkinIcon" mode="aspectFit" alt="" />
         <text class="share-header__title">{{ t('home.shareCardTitle') }}</text>
       </view>
 

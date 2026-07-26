@@ -241,7 +241,7 @@ onPullDownRefresh(async () => {
     </view>
 
     <!-- 错误状态 -->
-    <view v-else-if="errorMessage" class="visitors-error card-base">
+    <view v-else-if="errorMessage" class="visitors-error card-base" role="alert">
       <text class="visitors-error__title">{{ errorMessage }}</text>
       <view class="visitors-error__retry press-feedback" @tap="handleRetry">
         <text class="visitors-error__retry-text">{{ t("common.retry") }}</text>
@@ -260,7 +260,7 @@ onPullDownRefresh(async () => {
     </view>
 
     <!-- 访客列表（按时间分组） -->
-    <view v-else class="visitors-list">
+    <view v-else class="visitors-list" role="list">
       <view
         v-for="group in groupedVisitors"
         :key="group.group"
@@ -282,7 +282,7 @@ onPullDownRefresh(async () => {
                 class="visitors-card__avatar"
                 :src="item.avatarUrl"
                 mode="aspectFill"
-                lazy-load
+                lazy-load alt=""
               />
               <view v-else class="visitors-card__avatar-placeholder">
                 <text class="visitors-card__avatar-initial">
@@ -383,7 +383,8 @@ onPullDownRefresh(async () => {
 }
 
 .visitors-error__retry-text {
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
   font-size: var(--fs-md);
   font-weight: 600;
 }

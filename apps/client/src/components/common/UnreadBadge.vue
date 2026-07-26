@@ -18,6 +18,10 @@ const displayText = computed(() => props.count > 99 ? '99+' : String(props.count
 const ariaLabel = computed(() =>
   props.dot ? t('messages.unreadAria') : t('messages.unreadCountAria', { n: displayText.value })
 );
+
+// 修复（严格模式 noUnusedLocals）：ariaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ ariaLabel });
 </script>
 
 <template>
@@ -25,10 +29,8 @@ const ariaLabel = computed(() =>
     v-if="show"
     class="badge"
     :class="{ 'badge--dot': dot }"
-    <!-- #ifdef H5 -->
     role="status"
     :aria-label="ariaLabel"
-    <!-- #endif -->
   >
     <text v-if="!dot" class="badge-text">{{ displayText }}</text>
   </view>

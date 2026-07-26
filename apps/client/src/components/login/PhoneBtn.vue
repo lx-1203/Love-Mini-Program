@@ -17,12 +17,10 @@ const { t } = useI18n();
     class="phone-btn"
     :class="{ 'phone-btn--loading': loading }"
     @tap="emit('tap')"
-    <!-- #ifdef H5 -->
     role="button"
     :aria-label="t('login.phoneLogin')"
     :aria-disabled="loading"
     :aria-busy="loading"
-    <!-- #endif -->
   >
     <text class="phone-btn-text">{{ t('login.phoneLogin') }}</text>
   </view>

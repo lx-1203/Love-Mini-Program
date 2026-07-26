@@ -51,19 +51,21 @@ const ariaLabel = computed(() => {
   if (props.verified) parts.push(tt('profile.verificationSchool'));
   return parts.join(' · ');
 });
+
+// 修复（严格模式 noUnusedLocals）：ariaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ ariaLabel });
 </script>
 
 <template>
   <view
     class="edu-badge"
     :style="badgeStyle"
-    <!-- #ifdef H5 -->
     role="img"
     :aria-label="ariaLabel"
-    <!-- #endif -->
   >
     <view class="edu-badge__shield" :style="shieldStyle">
-      <image v-if="verified" class="edu-badge__check" :src="IMAGE_PATHS.ICONS_COMMON.CHECK" mode="aspectFit" />
+      <image v-if="verified" class="edu-badge__check" :src="IMAGE_PATHS.ICONS_COMMON.CHECK" mode="aspectFit" alt="" />
       <text v-else class="edu-badge__dot">•</text>
     </view>
     <text class="edu-badge__school">{{ school }}</text>

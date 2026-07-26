@@ -41,6 +41,10 @@ const ariaLabel = computed(() =>
   t("messages.todayMatchCountAria", { n: props.count })
 );
 
+// 修复（严格模式 noUnusedLocals）：ariaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ ariaLabel });
+
 const countText = computed(() =>
   t("messages.matchCountSuffix", { n: props.count })
 );
@@ -60,10 +64,8 @@ function handleTap() {
     hover-class="press-feedback--active"
     hover-stay-time="120"
     @tap="handleTap"
-    <!-- #ifdef H5 -->
     role="button"
     :aria-label="ariaLabel"
-    <!-- #endif -->
   >
     <SafeImage
       :src="props.icon"

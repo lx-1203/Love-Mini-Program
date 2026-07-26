@@ -183,7 +183,7 @@ function goBack() {
           :placeholder="t('vip.promoCodeInputPlaceholder')"
           :value="codeInput"
           maxlength="32"
-          @input="codeInput = readInputValue($event)"
+          @input="codeInput = readInputValue($event)" aria-label="t('vip.promoCodeInputPlaceholder')"
         />
       </view>
     </view>
@@ -342,14 +342,16 @@ function goBack() {
 }
 .nav-bar__back-icon {
   font-size: 56rpx;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   font-weight: 300;
   line-height: 1;
 }
 .nav-bar__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
 }
 .nav-bar__placeholder {
   width: 64rpx;
@@ -387,7 +389,8 @@ function goBack() {
 .hero__title {
   font-size: 40rpx;
   font-weight: 800;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   margin-bottom: 8rpx;
 }
 .hero__subtitle {
@@ -478,7 +481,8 @@ function goBack() {
 }
 .action-btn__text {
   font-size: 28rpx;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   font-weight: 700;
 }
 .action-btn--ghost .action-btn__text {
@@ -555,7 +559,8 @@ function goBack() {
 }
 .footer__btn-text {
   font-size: 30rpx;
-  color: #FFFFFF;
+  /* 反色文字：使用 token 替代硬编码 #FFFFFF */
+  color: var(--c-text-inverse);
   font-weight: 700;
 }
 </style>

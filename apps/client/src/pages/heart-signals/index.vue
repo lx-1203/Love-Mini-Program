@@ -13,7 +13,8 @@ import LockScreen from "../../components/common/LockScreen.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { likesPageRequirements } from "../../config/page-access";
-import { IMAGE_PATHS } from "../../config/images";
+import { showErrorToast } from "../../utils/error-toast";
+// 修复（严格模式 noUnusedLocals）：IMAGE_PATHS 导入后未使用，已移除。
 
 const likesStore = useLikesStore();
 const sessionStore = useSessionStore();
@@ -84,8 +85,10 @@ async function handleAccept(signalId: string) {
     await likesStore.acceptHeartSignal(signalId);
     uni.showToast({ title: "已接受心动信号，去聊天吧", icon: "success" });
     void likesStore.fetchHeartSignals();
-  } catch (e) {
-    uni.showToast({ title: "操作失败，请稍后重试", icon: "none" });
+  } catch (error) {
+    // 接受失败：按错误分类给出友好提示（网络/权限/业务）
+    showErrorToast(error, "接受失败，请重试");
+    console.error("接受心动信号失败:", error);
   }
 }
 
@@ -94,8 +97,10 @@ async function handleDecline(signalId: string) {
     await likesStore.declineHeartSignal(signalId);
     uni.showToast({ title: "已拒绝", icon: "none" });
     void likesStore.fetchHeartSignals();
-  } catch (e) {
-    uni.showToast({ title: "操作失败，请稍后重试", icon: "none" });
+  } catch (error) {
+    // 拒绝失败：按错误分类给出友好提示（网络/权限/业务）
+    showErrorToast(error, "操作失败，请重试");
+    console.error("拒绝心动信号失败:", error);
   }
 }
 
@@ -166,7 +171,7 @@ function getStatusLabel(status: string): string {
       </view>
 
       <!-- 加载 -->
-      <view v-if="loading" class="loading-state">
+      <view v-if="loading" class="loading-state" role="status" aria-live="polite">
         <view class="loading-state__spinner" />
         <text class="loading-state__text">加载中...</text>
       </view>
@@ -207,7 +212,7 @@ function getStatusLabel(status: string): string {
               v-if="signal.fromUserAvatar"
               class="signal-card__avatar"
               :src="signal.fromUserAvatar"
-              mode="aspectFill"
+              mode="aspectFill" alt=""
             />
             <view v-else class="signal-card__avatar-placeholder">
               <text class="signal-card__avatar-initial">{{ signal.fromUserName?.charAt(0) || '?' }}</text>
@@ -251,7 +256,7 @@ function getStatusLabel(status: string): string {
               v-if="signal.fromUserAvatar"
               class="signal-card__avatar signal-card__avatar--small"
               :src="signal.fromUserAvatar"
-              mode="aspectFill"
+              mode="aspectFill" alt=""
             />
             <view v-else class="signal-card__avatar-placeholder signal-card__avatar-placeholder--small">
               <text class="signal-card__avatar-initial">{{ signal.fromUserName?.charAt(0) || '?' }}</text>

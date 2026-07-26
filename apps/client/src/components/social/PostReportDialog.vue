@@ -145,11 +145,9 @@ async function submit() {
     v-if="visible"
     class="report-mask"
     @tap="onMaskTap"
-    <!-- #ifdef H5 -->
     role="dialog"
     aria-modal="true"
     :aria-label="t('postReport.title')"
-    <!-- #endif -->
   >
     <view
       class="report-sheet press-feedback"
@@ -173,11 +171,9 @@ async function submit() {
           @tap.stop="selectReason(item.key)"
           hover-class="reason-item--hover"
           hover-stay-time="80"
-          <!-- #ifdef H5 -->
           role="radio"
           :aria-checked="selectedReason === item.key"
           :aria-label="item.label"
-          <!-- #endif -->
         >
           <text class="reason-item__label">{{ item.label }}</text>
           <view class="reason-item__radio" :class="{ 'reason-item__radio--on': selectedReason === item.key }">
@@ -196,7 +192,7 @@ async function submit() {
           :auto-height="true"
           :show-confirm-bar="false"
           :cursor-spacing="20"
-          :adjust-position="true"
+          :adjust-position="true" aria-label="t('postReport.otherPlaceholder')"
         />
         <text class="report-sheet__count">{{ description.length }}/200</text>
       </view>

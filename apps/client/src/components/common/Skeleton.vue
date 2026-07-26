@@ -1,26 +1,24 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
-
-const props = withDefaults(defineProps<{
+// 修复（严格模式 noUnusedLocals）：
+// 1. 原 `const props = withDefaults(...)` 中 props 在脚本中未被引用，模板内 prop 字段直接解构自 defineProps，
+//    故移除 `const props = ` 前缀，仅保留 withDefaults(defineProps...) 调用以声明默认值。
+// 2. 原 `const t = designTokens;` 后未使用 t，designTokens 导入也仅用于该别名，一并移除。
+withDefaults(defineProps<{
   variant?: 'card' | 'list' | 'avatar' | 'paragraph';
   count?: number;
 }>(), {
   variant: 'card',
   count: 1,
 });
-
-const t = designTokens;
 </script>
 
 <template>
   <view
     class="skeleton"
-    <!-- #ifdef H5 -->
     role="status"
     aria-live="polite"
     aria-busy="true"
     aria-label="加载中"
-    <!-- #endif -->
   >
     <view v-for="i in count" :key="i" class="skeleton-item" :class="`skeleton--${variant}`">
       <!-- 列表骨架 -->

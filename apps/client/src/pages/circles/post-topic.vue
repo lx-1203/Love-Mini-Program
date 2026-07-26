@@ -144,7 +144,7 @@ circleId.value = options.circleId || "";
           v-model="title"
           class="title-input"
           placeholder="话题标题"
-          maxlength="50"
+          maxlength="50" aria-label="话题标题"
         />
       </view>
 
@@ -155,7 +155,7 @@ circleId.value = options.circleId || "";
           class="content-input"
           placeholder="分享你的想法..."
           maxlength="500"
-          :show-confirm-bar="false"
+          :show-confirm-bar="false" aria-label="分享你的想法..."
         />
         <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
           <text>{{ currentLength }}/{{ MAX_LENGTH }}</text>
@@ -165,14 +165,14 @@ circleId.value = options.circleId || "";
       <!-- 图片上传区 -->
       <view class="images-section">
         <text class="section-label">添加图片（可选）</text>
-        <view class="images-list">
+        <view class="images-list" role="list">
           <view
             v-for="(img, idx) in images"
             :key="idx"
             class="image-item"
           >
             <image class="image-item__img" :src="img" mode="aspectFill"
-        lazy-load />
+        lazy-load alt="" />
             <view class="image-item__remove" @tap="removeImage(idx)">
               <text class="remove-icon">×</text>
             </view>

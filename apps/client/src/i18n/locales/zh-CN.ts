@@ -166,6 +166,8 @@ export default {
     matchSuccess: "匹配成功！",
     matchSuccessTitle: "匹配成功",
     matchWithPartner: "与 {name} 互相喜欢",
+    /* 匹配对象默认称呼（partner.name 缺失时兜底） */
+    partnerDefaultName: "TA",
     matchPriority: "匹配度优先",
     todayCheckin: "今日签到",
     todayQuestion: "今日话题：你理想中的第一次约会是什么样？",
@@ -234,6 +236,13 @@ export default {
     circleMurder: "剧本杀",
     circleExam: "考研互助",
     circleDance: "街舞社",
+    /* 卡片骨架屏 / 空状态文案（按 module.function.description 命名规范） */
+    cardSkeletonHint: "正在为你挑选推荐...",
+    /* 命名空间下嵌套写法：t('discover.card.emptyTitle') / t('discover.card.refresh') */
+    card: {
+      emptyTitle: "暂无推荐卡片",
+      refresh: "刷新推荐",
+    },
   },
 
   /* ========== 匹配成功引导弹窗文案 ========== */
@@ -530,6 +539,9 @@ export default {
     recentlyActive: "刚刚活跃",
     noMorePosts: "— 没有更多了 —",
     discoverBannerSubtitle: "发现同频的TA，开启心动匹配",
+    /* 互动失败提示（点赞 / 关注） */
+    likeFailed: "点赞失败，请重试",
+    followFailed: "关注失败，请重试",
   },
 
   /* ========== 登录页文案 ========== */
@@ -892,6 +904,13 @@ export default {
     interactionDesc: "点赞、评论、关注",
     systemDesc: "系统通知",
     chatDesc: "未读消息",
+    /* 会话管理（删除 / 标记已读） */
+    deleteSessionConfirm: "确认删除该会话？删除后无法恢复。",
+    deleted: "已删除",
+    deleteFailed: "删除失败，请稍后重试",
+    markAllReadSuccess: "已全部标记为已读",
+    markAllReadFailed: "标记失败，请稍后重试",
+    markAllRead: "全部标为已读",
   },
 
   /* ========== 锁定页文案 ========== */
@@ -1263,5 +1282,90 @@ export default {
     detailReplyContent: "回复内容",
     submitSuccess: "提交成功",
     submitFailed: "提交失败，请稍后重试",
+  },
+
+  /* ========== 设置页文案 ========== */
+  settings: {
+    navTitle: "设置",
+    /* 账号管理分组 */
+    accountSection: "账号管理",
+    editProfile: "编辑资料",
+    verification: "恋爱认证",
+    /* 通知设置分组 */
+    notificationSection: "通知设置",
+    messageNotification: "消息通知",
+    notifyEnabled: "已开启消息通知",
+    notifyDisabled: "已关闭消息通知",
+    privacyMode: "隐私模式",
+    privacyModeEnabled: "已开启隐私模式",
+    privacyModeDisabled: "已关闭隐私模式",
+    /* 隐私安全分组 */
+    privacySection: "隐私安全",
+    privacyPolicy: "隐私政策",
+    /* 存储管理分组 */
+    storageSection: "存储管理",
+    clearCache: "清除缓存",
+    clearCacheTitle: "清除缓存",
+    clearCacheContent: "当前缓存大小：{size}\n\n清除缓存不会影响您的账号数据，但会清除本地图片缓存与临时文件。",
+    clearCacheConfirm: "立即清除",
+    clearing: "清除中...",
+    cacheCleared: "缓存已清除",
+    /* 关于分组 */
+    aboutSection: "关于",
+    userAgreement: "用户协议",
+    checkUpdate: "检查更新",
+    aboutUs: "关于我们",
+    /* 用户协议 / 隐私政策弹窗内容 */
+    userAgreementTitle: "用户协议",
+    userAgreementContent: "欢迎使用校园恋爱小程序。\n\n本协议是您与校园恋爱之间就使用本服务所订立的契约。\n请仔细阅读本协议，您使用本服务即表示同意本协议全部条款。",
+    privacyPolicyTitle: "隐私政策",
+    privacyPolicyContent: "我们重视您的隐私。\n\n本隐私政策说明我们如何收集、使用、存储和保护您的个人信息。\n您在使用本服务时，我们可能需要收集您的头像、昵称、学校信息等基本资料。",
+    /* 检查更新 */
+    checkingUpdate: "检查中...",
+    versionUpdateTitle: "版本更新",
+    versionLatestContent: "当前已是最新版本\n当前版本：v1.0.0",
+    /* 关于校园恋爱 */
+    aboutTitle: "关于校园恋爱",
+    aboutContent: "校园恋爱 · 遇见你的那个TA\n\n版本：v1.0.0\n\n在这里，遇见同频的人，开启一段双向奔赴的校园故事。",
+    /* 退出登录 */
+    logoutTitle: "提示",
+    logoutConfirm: "确定要退出登录吗？",
+    logout: "退出登录",
+    /* 通用按钮文案 */
+    gotIt: "知道了",
+    /* 底部版本信息 */
+    footerVersion: "校园恋爱 v1.0.0",
+  },
+
+  /* ========== 通用错误信息文案（按 errors.category 命名） ========== */
+  errors: {
+    network: "网络连接失败",
+    networkSub: "请检查网络后重试",
+    auth: "登录已过期，请重新登录",
+    business: "操作失败，请稍后重试",
+    loadFailed: "加载失败",
+    saveFailed: "保存失败",
+    deleteFailed: "删除失败",
+    uploadFailed: "上传失败",
+    downloadFailed: "下载失败",
+    permissionDenied: "权限不足",
+    notFound: "资源不存在",
+    serverError: "服务器开小差了",
+    serverSub: "请稍后再试",
+    timeout: "请求超时，请重试",
+    unknown: "未知错误，请重试",
+    retry: "重试",
+  },
+
+  /* ========== 通用成功信息文案（按 success.action 命名） ========== */
+  success: {
+    saved: "保存成功",
+    deleted: "删除成功",
+    uploaded: "上传成功",
+    submitted: "提交成功",
+    updated: "更新成功",
+    copied: "已复制",
+    shared: "已分享",
+    operationSucceeded: "操作成功",
   },
 } as const;

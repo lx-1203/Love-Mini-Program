@@ -264,8 +264,14 @@ export const mockCategories: PostCategory[] = [
   { id: "cat-latest", name: "最新", icon: "time" },
 ];
 
-/** Mock 作者列表 */
-export const mockAuthors: PostAuthor[] = [
+/**
+ * Mock 作者列表
+ *
+ * 修复（严格模式 noUncheckedIndexedAccess）：原声明为 PostAuthor[]，索引访问会返回 PostAuthor | undefined，
+ * 导致 mockPosts / mockComments 中 `author: mockAuthors[N]` 报 TS2322。
+ * 改为显式 5 元素元组类型，索引访问 mockAuthors[0..4] 将返回确定的 PostAuthor，无需非空断言。
+ */
+export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostAuthor] = [
   {
     userId: "user-3001",
     name: "小鹿",

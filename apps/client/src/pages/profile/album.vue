@@ -20,7 +20,6 @@ import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useProfileStore } from "../../stores/profile";
-import { useSessionStore } from "../../stores/session";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic, successHaptic } from "../../utils/haptic";
@@ -33,7 +32,7 @@ const PHOTO_SIZE_LIMIT = 10 * 1024 * 1024;
 
 const { t } = useI18n();
 const profileStore = useProfileStore();
-const sessionStore = useSessionStore();
+// 修复（严格模式 noUnusedLocals）：sessionStore 仅在注释中提及，实际未使用，已移除。
 
 /** 照片墙 URL 数组（响应式） */
 const { photoGallery } = storeToRefs(profileStore);
@@ -127,8 +126,12 @@ function handleAddPhoto(index?: number): void {
     sourceType: ["album", "camera"],
     success: (res) => {
       const tempPath = res.tempFilePaths?.[0] ?? "";
-      const tempFile = res.tempFiles?.[0];
-      const size = (tempFile as { size?: number })?.size ?? 0;
+      // 修复（严格模式 TS7053）：res.tempFiles 类型为联合类型
+      // （File | File[] | ChooseImageSuccessCallbackResultFile | ChooseImageSuccessCallbackResultFile[]），
+      // 直接索引 [0] 会报隐式 any；通过 Array.isArray 类型守卫收敛后再索引。
+      const tempFilesRaw: unknown = res.tempFiles;
+      const tempFile = Array.isArray(tempFilesRaw) ? tempFilesRaw[0] : undefined;
+      const size = (tempFile as { size?: number } | undefined)?.size ?? 0;
       if (!tempPath) {
         uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
         return;
@@ -309,7 +312,7 @@ onShow(() => {
     </view>
 
     <!-- 错误状态 -->
-    <view v-if="errorMessage" class="album-error card-base">
+    <view v-if="errorMessage" class="album-error card-base" role="alert">
       <text class="album-error__title">{{ errorMessage }}</text>
       <view class="album-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleRetry">
         <text class="album-error__retry-text">{{ t("common.retry") }}</text>
@@ -356,7 +359,7 @@ onShow(() => {
           class="album-cell__img"
           :src="cell.url"
           mode="aspectFill"
-          lazy-load
+          lazy-load alt=""
         />
         <!-- 上传中蒙层 -->
         <view v-if="uploadingIndex === cell.index" class="album-cell__loading">
@@ -442,7 +445,8 @@ onShow(() => {
 }
 
 .album-error__retry-text {
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
   font-size: var(--fs-md);
   font-weight: 600;
 }
@@ -483,7 +487,8 @@ onShow(() => {
 }
 
 .album-empty__btn-text {
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
   font-size: var(--fs-md);
   font-weight: 600;
 }
@@ -551,7 +556,8 @@ onShow(() => {
   width: var(--sp-8);
   height: var(--sp-8);
   border: var(--sp-1) solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  border-top-color: var(--c-text-inverse);
   border-radius: var(--r-full);
   animation: album-spin 1s linear infinite;
 }
@@ -562,7 +568,8 @@ onShow(() => {
 
 .album-cell__loading-text {
   font-size: var(--fs-sm);
-  color: #ffffff;
+  /* 反色文字：使用 token 替代硬编码 #ffffff */
+  color: var(--c-text-inverse);
 }
 
 /* ========== 底部添加按钮 ========== */

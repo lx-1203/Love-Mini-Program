@@ -3,7 +3,7 @@
  * 历史推荐页 - 今日已看卡片列表
  * 展示今日已浏览的所有推荐卡片，支持挽回已拒绝的卡片。
  */
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useDiscoverStore } from "../../stores/discover";
 import { IMAGE_PATHS } from "../../config/images";
@@ -21,12 +21,24 @@ const passedCards = computed(() => discoverStore.passedCards);
 const hasRewoundToday = computed(() => discoverStore.hasRewoundToday);
 
 const pageVisible = ref(false);
+/** 页面进入动画定时器引用，用于卸载时清理 */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
     pageVisible.value = true;
+    pageEnterTimer = null;
   }, 30);
 });
+
+/**
+ * 重试加载：清空 errorMessage 后重新拉取推荐卡片。
+ * 修复（P1 BUG）：原实现无重试入口，用户在网络错误后只能手动刷新页面。
+ */
+function handleRetry() {
+  void discoverStore.fetchCards();
+}
 
 /**
  * 获取卡片详情。
@@ -92,6 +104,16 @@ onMounted(() => {
   // 确保历史记录已同步
   discoverStore.syncHistoryCards();
 });
+
+/**
+ * 页面卸载时清理页面进入动画定时器，避免内存泄漏。
+ */
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
+});
 </script>
 
 <template>
@@ -122,7 +144,22 @@ onMounted(() => {
     </view>
 
     <!-- 历史列表 -->
-    <view class="history-list">
+    <view class="history-list" role="list">
+      <!-- 加载状态：discover store 正在拉取推荐时展示骨架屏 -->
+      <view v-if="discoverStore.loading && historyCards.length === 0" class="history-loading" role="status" aria-live="polite">
+        <text class="history-loading__text">加载中...</text>
+      </view>
+
+      <!-- 错误状态：拉取失败时展示错误提示与重试按钮 -->
+      <view v-else-if="discoverStore.errorMessage && historyCards.length === 0" class="history-error" role="alert">
+        <text class="history-error__text">{{ discoverStore.errorMessage }}</text>
+        <view class="history-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleRetry">
+          <text class="history-error__retry-text">重试</text>
+        </view>
+      </view>
+
+      <!-- 历史卡片列表（仅在非加载/错误状态展示） -->
+      <template v-else>
       <view
         v-for="record in historyCards"
         :key="record.cardId"
@@ -170,10 +207,11 @@ onMounted(() => {
           <text class="hint-text">今日挽回次数已用完</text>
         </view>
       </view>
+      </template>
     </view>
 
     <!-- 空状态 -->
-    <view v-if="historyCards.length === 0" class="empty-state">
+    <view v-if="historyCards.length === 0 && !discoverStore.loading && !discoverStore.errorMessage" class="empty-state">
       <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" custom-class="empty-icon" mode="aspectFit" />
       <text class="empty-title">还没有浏览记录</text>
       <text class="empty-subtitle">快去寻觅页发现有趣的TA吧</text>

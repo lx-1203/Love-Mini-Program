@@ -4,7 +4,6 @@
  * 包含：学校选择器、校园圈活动、课表空档、校园墙、逛逛推荐、社交升温进度
  */
 import { ref, computed, onMounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useActivityStore } from "../../stores/activity";
@@ -375,7 +374,7 @@ onMounted(() => {
           <text class="school-picker__title">{{ t('home.selectSchool') }}</text>
           <text class="school-picker__close" @tap="showSchoolPicker = false">✕</text>
         </view>
-        <view class="school-picker__list">
+        <view class="school-picker__list" role="list">
           <view
             v-for="school in schools"
             :key="school"
@@ -409,13 +408,13 @@ onMounted(() => {
 
         <!-- 搜索框 -->
         <view class="search-box press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
-          <image class="search-icon" :src="emojiIcons.search" mode="aspectFit" />
+          <image class="search-icon" :src="emojiIcons.search" mode="aspectFit" alt="" />
           <text class="search-placeholder">{{ t('home.searchPlaceholder') }}</text>
         </view>
 
         <!-- 学校选择器 -->
         <view class="school-selector press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="showSchoolPicker = true">
-          <image class="school-icon" :src="emojiIcons.school" mode="aspectFit" />
+          <image class="school-icon" :src="emojiIcons.school" mode="aspectFit" alt="" />
           <text class="school-name">{{ currentSchool }}</text>
           <text class="school-arrow">▼</text>
           <view class="school-badge">
@@ -428,7 +427,7 @@ onMounted(() => {
       <view class="section-wrap">
         <view v-if="!checkInStore.checkedIn && !checkInStore.loading" class="checkin-card card-base btn-press press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleCheckIn">
           <view class="checkin-icon-wrap checkin-icon-wrap--gradient">
-            <image class="checkin-emoji" :src="emojiIcons.sparkles" mode="aspectFit" />
+            <image class="checkin-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
           </view>
           <view class="checkin-info">
             <text class="checkin-title">{{ t('home.todayCheckin') }}</text>
@@ -439,7 +438,7 @@ onMounted(() => {
 
         <view v-else-if="checkInStore.checkedIn" class="checkin-card card-base checkin-card--done">
           <view class="checkin-icon-wrap checkin-icon-wrap--success">
-            <image class="checkin-emoji" :src="emojiIcons.sparkles" mode="aspectFit" />
+            <image class="checkin-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
           </view>
           <view class="checkin-info">
             <text class="checkin-title checkin-title--dark">{{ t('home.consecutiveDays', { n: checkInStore.consecutiveDays }) }}</text>
@@ -476,49 +475,49 @@ onMounted(() => {
           <view class="function-grid">
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
               <view class="function-icon function-icon--pink">
-                <image class="function-emoji" :src="emojiIcons.location" mode="aspectFit" />
+                <image class="function-emoji" :src="emojiIcons.location" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.nearbyPeople') }}</text>
             </view>
             <view class="function-item function-item--highlight press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
               <view class="function-icon function-icon--purple">
-                <image class="function-emoji" :src="emojiIcons.heart" mode="aspectFit" />
+                <image class="function-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.interestMatch') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/messages/index')">
               <view class="function-icon function-icon--orange">
-                <image class="function-emoji" :src="emojiIcons.microphone" mode="aspectFit" />
+                <image class="function-emoji" :src="emojiIcons.microphone" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.voiceRoom') }}</text>
             </view>
             <view class="function-item function-item--highlight press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
               <view class="function-icon function-icon--red">
-                <image class="function-emoji" :src="emojiIcons.heart" mode="aspectFit" />
+                <image class="function-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.cpMatch') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/subpackages/discover/activities/index')">
               <view class="function-icon function-icon--green">
-                <image class="function-emoji" :src="emojiIcons.sparkles" mode="aspectFit" />
+                <image class="function-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.campusActivity_short') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/village/index')">
               <view class="function-icon function-icon--cyan">
-                <image class="function-emoji" :src="emojiIcons.group" mode="aspectFit" />
+                <image class="function-emoji" :src="emojiIcons.group" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.loveAgency') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/daily-question/index')">
               <view class="function-icon function-icon--yellow">
-                <image class="function-emoji" :src="emojiIcons.chat" mode="aspectFit" />
+                <image class="function-emoji" :src="emojiIcons.chat" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.truthOrDare') }}</text>
             </view>
             <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/daily-question/index')">
               <view class="function-icon function-icon--blue">
-                <image class="function-emoji" :src="emojiIcons.gift" mode="aspectFit" />
+                <image class="function-emoji" :src="emojiIcons.gift" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.loveTest') }}</text>
             </view>
@@ -535,50 +534,50 @@ onMounted(() => {
           <text class="section-title section-title-brand">{{ t('home.dailyFate') }}</text>
         </view>
         <scroll-view scroll-x class="banner-scroll" :show-scrollbar="false">
-          <view class="banner-list">
+          <view class="banner-list" role="list">
             <view class="banner-card banner-card--romance press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
               <view class="banner-content">
                 <view class="banner-tag">
-                  <image class="banner-tag__icon" :src="emojiIcons.sparkles" mode="aspectFit" />
+                  <image class="banner-tag__icon" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
                   <text class="banner-tag__text">{{ t('home.dailyRecommend_short') }}</text>
                 </view>
                 <text class="banner-title">{{ t('home.todayFateValue') }}</text>
                 <text class="banner-desc">{{ t('home.todayFateDesc') }}</text>
               </view>
-              <image class="banner-emoji" :src="emojiIcons.heart" mode="aspectFit" />
+              <image class="banner-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
             </view>
             <view class="banner-card banner-card--green press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/subpackages/discover/activities/index')">
               <view class="banner-content">
                 <view class="banner-tag">
-                  <image class="banner-tag__icon" :src="emojiIcons.gift" mode="aspectFit" />
+                  <image class="banner-tag__icon" :src="emojiIcons.gift" mode="aspectFit" alt="" />
                   <text class="banner-tag__text">{{ t('home.newUserExclusive') }}</text>
                 </view>
                 <text class="banner-title">{{ t('home.newUserGift') }}</text>
                 <text class="banner-desc">{{ t('home.completeTaskBadge') }}</text>
               </view>
-              <image class="banner-emoji" :src="emojiIcons.gift" mode="aspectFit" />
+              <image class="banner-emoji" :src="emojiIcons.gift" mode="aspectFit" alt="" />
             </view>
             <view class="banner-card banner-card--warm press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/subpackages/discover/activities/index')">
               <view class="banner-content">
                 <view class="banner-tag">
-                  <image class="banner-tag__icon" :src="emojiIcons.location" mode="aspectFit" />
+                  <image class="banner-tag__icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
                   <text class="banner-tag__text">{{ t('home.weekendActivity') }}</text>
                 </view>
                 <text class="banner-title">{{ t('home.weekendParty') }}</text>
                 <text class="banner-desc">{{ t('home.campusBoardGame') }}</text>
               </view>
-              <image class="banner-emoji" :src="emojiIcons.sparkles" mode="aspectFit" />
+              <image class="banner-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
             </view>
             <view class="banner-card banner-card--purple press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/circles/index')">
               <view class="banner-content">
                 <view class="banner-tag">
-                  <image class="banner-tag__icon" :src="emojiIcons.fire" mode="aspectFit" />
+                  <image class="banner-tag__icon" :src="emojiIcons.fire" mode="aspectFit" alt="" />
                   <text class="banner-tag__text">{{ t('home.hotTopic') }}</text>
                 </view>
                 <text class="banner-title">{{ t('home.graduationConfession') }}</text>
                 <text class="banner-desc">{{ t('home.speakYourMind') }}</text>
               </view>
-              <image class="banner-emoji" :src="emojiIcons.bookmark" mode="aspectFit" />
+              <image class="banner-emoji" :src="emojiIcons.bookmark" mode="aspectFit" alt="" />
             </view>
           </view>
         </scroll-view>
@@ -591,7 +590,7 @@ onMounted(() => {
           <text class="section-more" @tap="openAppPath('/pages/circles/index')">{{ t('home.moreArrow') }}</text>
         </view>
         <scroll-view scroll-x class="activity-scroll" :show-scrollbar="false">
-          <view class="activity-list">
+          <view class="activity-list" role="list">
             <view
               v-for="item in activityStore.activities.slice(0, 5)"
               :key="item.id"
@@ -603,10 +602,10 @@ onMounted(() => {
                   v-if="item.coverImage"
                   class="activity-card__img"
                   :src="item.coverImage"
-                  mode="aspectFill"
+                  mode="aspectFill" alt=""
                 />
                 <view v-else class="activity-card__placeholder">
-                  <image class="activity-placeholder-emoji" :src="emojiIcons.celebration" mode="aspectFit" />
+                  <image class="activity-placeholder-emoji" :src="emojiIcons.celebration" mode="aspectFit" alt="" />
                 </view>
                 <view class="activity-card__status" :class="`activity-status--${item.status}`">
                   <text class="activity-status-text">{{ item.status === 'open' ? t('home.activityStatusOpen') : item.status === 'ongoing' ? t('home.activityStatusOngoing') : t('home.activityStatusPreview') }}</text>
@@ -628,8 +627,8 @@ onMounted(() => {
           <text class="section-more section-more--green">{{ t('home.changeBatch') }}</text>
         </view>
         <scroll-view scroll-x class="recommend-scroll" :show-scrollbar="false">
-          <view class="recommend-list card-stagger">
-            <view class="user-card list-item" v-for="(user, i) in recommendUsers" :key="i">
+          <view class="recommend-list card-stagger" role="list">
+            <view class="user-card list-item" v-for="(user, i) in recommendUsers" :key="i" role="listitem">
               <view class="user-avatar-wrap">
                 <view class="user-avatar-ring">
                   <view class="user-avatar">
@@ -645,7 +644,7 @@ onMounted(() => {
               <text class="user-nickname">{{ user.nickname }}</text>
               <text class="user-info">{{ user.info }}</text>
               <view class="match-tag">
-                <image class="match-tag__icon" :src="emojiIcons.heart" mode="aspectFit" />
+                <image class="match-tag__icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
                 <text class="match-text">{{ t('home.matchPercent', { n: user.matchPercent }) }}</text>
               </view>
             </view>
@@ -708,7 +707,7 @@ onMounted(() => {
                   <text class="schedule-slot__classroom-new">{{ getItemSubtitle(slot.item) }}</text>
                 </template>
                 <view v-else class="schedule-slot__free-new">
-                  <image class="schedule-slot__free-icon" :src="emojiIcons.sparkles" mode="aspectFit" />
+                  <image class="schedule-slot__free-icon" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
                   <text class="schedule-slot__free-text">{{ t('home.freeSlotHint') }}</text>
                 </view>
               </view>
@@ -751,25 +750,26 @@ onMounted(() => {
                   :src="img"
                   custom-class="post-image__img"
                   mode="aspectFill"
+                  :lazy-load="true"
                 />
               </view>
             </view>
             <view class="post-footer-new">
               <view class="post-location-new">
-                <image class="post-location-emoji" :src="emojiIcons.location" mode="aspectFit" />
+                <image class="post-location-emoji" :src="emojiIcons.location" mode="aspectFit" alt="" />
                 <text class="post-location-text">{{ post.location }}</text>
               </view>
               <view class="post-actions-new">
                 <view :class="['post-action-new', post.isLiked ? 'post-action--liked' : '']" @tap="toggleLike(post.id)">
-                  <image class="post-action-emoji" :src="emojiIcons.heart" mode="aspectFit" />
+                  <image class="post-action-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
                   <text class="post-action-count">{{ post.likes }}</text>
                 </view>
                 <view class="post-action-new">
-                  <image class="post-action-emoji" :src="emojiIcons.chat" mode="aspectFit" />
+                  <image class="post-action-emoji" :src="emojiIcons.chat" mode="aspectFit" alt="" />
                   <text class="post-action-count">{{ post.comments }}</text>
                 </view>
                 <view class="post-action-new">
-                  <image class="post-action-emoji" :src="emojiIcons.bookmark" mode="aspectFit" />
+                  <image class="post-action-emoji" :src="emojiIcons.bookmark" mode="aspectFit" alt="" />
                 </view>
               </view>
             </view>
@@ -813,7 +813,7 @@ onMounted(() => {
         <view class="section-header">
           <view class="section-title-group">
             <text class="section-title section-title-brand">{{ t('home.socialProgressTitle') }}</text>
-            <image class="section-title__icon" :src="emojiIcons.fire" mode="aspectFit" />
+            <image class="section-title__icon" :src="emojiIcons.fire" mode="aspectFit" alt="" />
           </view>
           <text class="section-more" @tap="toggleSocialProgress">
             {{ showSocialProgress ? t('home.collapse') : t('home.expand') }}
@@ -925,8 +925,9 @@ onMounted(() => {
 
 .notification-btn {
   position: relative;
-  width: 80rpx;
-  height: 80rpx;
+  /* 修复 P2（触摸目标过小）：80rpx → 88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
+  width: 88rpx;
+  height: 88rpx;
   background: var(--c-bg-container);
   border-radius: var(--r-full);
   display: flex;

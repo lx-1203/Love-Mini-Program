@@ -1,12 +1,26 @@
 package com.campuslove.api.village;
 
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.dto.DtoMapper;
+import com.campuslove.api.dto.PostDto;
+import com.campuslove.api.entity.Post;
+import com.campuslove.api.entity.User;
+import com.campuslove.api.monitor.VillageMetrics;
+import com.campuslove.api.ratelimit.RateLimit;
+import com.campuslove.api.repository.PostRepository;
+import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,15 +34,33 @@ import org.springframework.web.bind.annotation.RestController;
  * 村口帖子与转发控制器。
  * 提供帖子列表、详情、发布、点赞、评论以及转发等接口。
  * 写操作的用户ID从JWT认证上下文中获取，不再从请求参数获取。
+ *
+ * <p>DTO 层接入：新增 GET /api/posts/dto 端点返回 {@link PostDto} 列表，
+ * 通过 {@link DtoMapper} 将 Post 实体批量转换为 DTO，
+ * 与既有返回 {@code PostListResponse} 的 {@link #getPosts} 端点并存，
+ * 保持方法签名兼容。</p>
  */
 @RestController
 @RequestMapping("/api/posts")
 public class VillageController {
 
   private final VillageService villageService;
+  /**
+   * 村口业务监控指标。用于记录帖子创建/点赞/评论、当前帖子总数等。
+   * 通过 Micrometer 暴露到 /actuator/prometheus 供 Prometheus 抓取。
+   */
+  private final VillageMetrics villageMetrics;
+  private final PostRepository postRepository;
+  private final UserRepository userRepository;
 
-  public VillageController(VillageService villageService) {
+  public VillageController(VillageService villageService,
+                           VillageMetrics villageMetrics,
+                           PostRepository postRepository,
+                           UserRepository userRepository) {
     this.villageService = villageService;
+    this.villageMetrics = villageMetrics;
+    this.postRepository = postRepository;
+    this.userRepository = userRepository;
   }
 
   // ---------- 帖子 ----------
@@ -59,12 +91,23 @@ public class VillageController {
 
   /**
    * 发布新帖子。
+   *
+   * <p>速率限制：桶容量 20，每 2 秒补充 1 个令牌（refillTokens=0.5/s），
+   * 按客户端 IP 限流，防止垃圾帖子批量发布。</p>
    */
   @PostMapping
+  @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
   public PostDetailView createPost(
       @Valid @RequestBody CreatePostRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return villageService.createPost(userId, request.content(), request.images(), request.tags(), request.category());
+    PostDetailView view = villageService.createPost(userId, request.content(), request.images(), request.tags(), request.category());
+    // 监控：记录帖子创建事件
+    try {
+      villageMetrics.recordPostCreated();
+    } catch (Exception ignore) {
+      // 监控逻辑失败忽略，不影响主流程
+    }
+    return view;
   }
 
   /**
@@ -83,7 +126,16 @@ public class VillageController {
   @PostMapping("/{id}/like")
   public PostLikeResponse likePost(@PathVariable("id") Long id) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return villageService.likePost(userId, id);
+    PostLikeResponse response = villageService.likePost(userId, id);
+    // 监控：记录帖子点赞事件（仅在实际触发点赞时记录，取消点赞不记录）
+    if (response != null && response.liked()) {
+      try {
+        villageMetrics.recordPostLiked(id);
+      } catch (Exception ignore) {
+        // 监控逻辑失败忽略，不影响主流程
+      }
+    }
+    return response;
   }
 
   // ---------- 评论 ----------
@@ -107,7 +159,14 @@ public class VillageController {
       @PathVariable("id") Long id,
       @Valid @RequestBody CreateCommentRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return villageService.commentPost(userId, id, request.content());
+    CommentItemView view = villageService.commentPost(userId, id, request.content());
+    // 监控：记录评论创建事件
+    try {
+      villageMetrics.recordCommentCreated();
+    } catch (Exception ignore) {
+      // 监控逻辑失败忽略，不影响主流程
+    }
+    return view;
   }
 
   // ---------- 转发 ----------
@@ -162,6 +221,55 @@ public class VillageController {
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();
     }
+  }
+
+  // ---------- DTO 层接入 ----------
+
+  /**
+   * 获取帖子 DTO 列表（DTO 层示例端点）。
+   *
+   * <p>与 {@link #getPosts} 返回的 {@code PostListResponse} 并存，
+   * 用于演示 Entity -&gt; DTO 的批量转换：
+   * <ol>
+   *   <li>通过 PostRepository 分页查询最新 active 状态的帖子；</li>
+   *   <li>批量查询作者 User 实体（一次 findAllById 避免 N+1）；</li>
+   *   <li>经 {@link DtoMapper#toPostDto} 逐条转换为 {@link PostDto}，
+   *       并通过 {@link DtoMapper#toDtoList} 批量产出。</li>
+   * </ol>
+   * 计数（likeCount/commentCount）取自 Post 实体本身的累计字段，
+   * 避免在本端点触发额外的聚合查询。</p>
+   *
+   * @param page     页码（从 1 开始）
+   * @param pageSize 每页大小（1-100）
+   * @return PostDto 列表
+   */
+  @GetMapping("/dto")
+  public List<PostDto> getPostsDto(
+      @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
+      @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
+    Pageable pageable = PageRequest.of(page - 1, pageSize,
+        Sort.by(Sort.Direction.DESC, "createdAt"));
+    Page<Post> postPage = postRepository.findByStatusOrderByCreatedAtDesc(
+        Post.PostStatus.active, pageable);
+    List<Post> posts = postPage.getContent();
+    if (posts.isEmpty()) {
+      return List.of();
+    }
+    // 批量加载作者，避免 N+1 查询
+    List<Long> authorIds = posts.stream().map(Post::getAuthorId).distinct().toList();
+    Map<Long, User> authorMap = new HashMap<>();
+    if (!authorIds.isEmpty()) {
+      List<User> authors = userRepository.findAllById(authorIds);
+      for (User u : authors) {
+        authorMap.put(u.getId(), u);
+      }
+    }
+    return DtoMapper.toDtoList(posts, p -> DtoMapper.toPostDto(
+        p,
+        authorMap.get(p.getAuthorId()),
+        p.getLikesCount() != null ? p.getLikesCount().longValue() : 0L,
+        p.getCommentsCount() != null ? p.getCommentsCount().longValue() : 0L
+    ));
   }
 }
 

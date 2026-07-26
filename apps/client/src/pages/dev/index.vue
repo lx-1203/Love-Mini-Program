@@ -99,7 +99,7 @@ function goBack() {
       class="dev-group"
     >
       <text class="dev-group__title">{{ group }}</text>
-      <view class="dev-group__list">
+      <view class="dev-group__list" role="list">
         <view
           v-for="(item, idx) in items"
           :key="idx"

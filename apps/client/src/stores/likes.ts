@@ -308,6 +308,18 @@ function useMock() {
   return isMockMode();
 }
 
+/* ========== 模块级 AbortController（修复 P1 BUG：异步竞态条件） ==========
+ *
+ * 修复（P1 BUG）：原 fetchLikes / fetchVisitors / fetchHeartSignals 未处理 abort，
+ * 用户在 Tab 间快速切换或下拉刷新时，新请求发起时旧请求仍在途，
+ * 旧请求返回后可能覆盖新请求的结果（竞态条件），导致展示错误列表。
+ * 现保存当前请求的 controller，新请求发起前 abort 旧请求，
+ * 旧请求的 catch 分支通过 signal.aborted 判断跳过状态修改。
+ */
+let fetchLikesController: AbortController | null = null;
+let fetchVisitorsController: AbortController | null = null;
+let fetchHeartSignalsController: AbortController | null = null;
+
 /**
  * 喜欢与访客 Store
  *
@@ -408,13 +420,34 @@ export const useLikesStore = defineStore("likes", {
      * 现改为：
      * 1. 失败时清空 likes/likedBy 列表，避免展示陈旧数据
      * 2. 重新抛出错误，调用方可据此展示重试入口
+     *
+     * 修复（P1 BUG - 异步竞态）：新增 AbortController 取消在途的旧请求。
+     * 用户在 Tab 间快速切换或下拉刷新时，新请求发起时旧请求仍在途，
+     * 旧请求返回后可能覆盖新请求结果（竞态条件），导致展示错误列表。
+     * 现保存当前请求的 controller，新请求发起前 abort 旧请求，
+     * 旧请求的 catch 分支通过 signal.aborted 判断跳过状态修改。
      */
     async fetchLikes() {
+      // 修复（P1 BUG）：取消在途的旧请求，避免竞态条件
+      if (fetchLikesController) {
+        try {
+          fetchLikesController.abort();
+        } catch (_e) {
+          // abort 失败时忽略
+        }
+        fetchLikesController = null;
+      }
+      const controller = new AbortController();
+      fetchLikesController = controller;
+
       this.loading = true;
       this.errorMessage = null;
 
       try {
         if (useMock()) {
+          // 修复：被取消的请求不修改状态
+          if (controller.signal.aborted) return;
+
           this.likes = [...mockLikes];
           this.likedBy = [...mockLikedBy];
 
@@ -429,16 +462,28 @@ export const useLikesStore = defineStore("likes", {
         const likedByData = await request<LikedUserView[]>({
           url: `/matches/liked-me?userId=${this.currentUserId}`,
           method: "GET",
+          signal: controller.signal,
         });
+
+        // 修复：请求返回后若已被取消，跳过状态修改，避免覆盖新请求结果
+        if (controller.signal.aborted) return;
+
         this.likedBy = likedByData.map(mapToLikeRecord);
 
         // 调用后端 API: GET /api/matches/my-likes?userId={userId}
         const myLikesData = await request<LikedUserView[]>({
           url: `/matches/my-likes?userId=${this.currentUserId}`,
           method: "GET",
+          signal: controller.signal,
         });
+
+        // 修复：第二次请求返回后再次检查是否已取消
+        if (controller.signal.aborted) return;
+
         this.likes = myLikesData.map(mapToLikeRecord);
       } catch (error) {
+        // 修复：被取消的请求不视为错误，不更新 errorMessage，也不清空列表
+        if (controller.signal.aborted) return;
         this.errorMessage = error instanceof Error ? error.message : "加载喜欢列表失败";
         // 修复（P1 BUG）：失败时清空列表，避免陈旧数据被当作当前数据展示
         this.likes = [];
@@ -446,19 +491,41 @@ export const useLikesStore = defineStore("likes", {
         // 修复（P1 BUG）：重新抛出错误，调用方可据此展示重试入口
         throw error;
       } finally {
-        this.loading = false;
+        // 修复：仅当当前 controller 仍是全局 controller 时才清 loading
+        // 避免新请求已发起时被旧请求的 finally 误清 loading
+        if (fetchLikesController === controller) {
+          this.loading = false;
+          fetchLikesController = null;
+        }
       }
     },
 
     /**
      * 获取访客记录
+     *
+     * 修复（P1 BUG - 异步竞态）：新增 AbortController 取消在途的旧请求，
+     * 避免快速切换 Tab 时旧请求覆盖新请求结果。
      */
     async fetchVisitors() {
+      // 修复（P1 BUG）：取消在途的旧请求，避免竞态条件
+      if (fetchVisitorsController) {
+        try {
+          fetchVisitorsController.abort();
+        } catch (_e) {
+          // abort 失败时忽略
+        }
+        fetchVisitorsController = null;
+      }
+      const controller = new AbortController();
+      fetchVisitorsController = controller;
+
       this.loading = true;
       this.errorMessage = null;
 
       try {
         if (useMock()) {
+          // 修复：被取消的请求不修改状态
+          if (controller.signal.aborted) return;
           this.visitors = [...mockVisitors];
           return;
         }
@@ -467,13 +534,24 @@ export const useLikesStore = defineStore("likes", {
         const data = await request<VisitorView[]>({
           url: `/matches/visitors?userId=${this.currentUserId}`,
           method: "GET",
+          signal: controller.signal,
         });
+
+        // 修复：请求返回后若已被取消，跳过状态修改
+        if (controller.signal.aborted) return;
+
         this.visitors = data.map(mapToVisitorRecord);
       } catch (error) {
+        // 修复：被取消的请求不视为错误，不更新 errorMessage
+        if (controller.signal.aborted) return;
         this.errorMessage = error instanceof Error ? error.message : "加载访客记录失败";
         this.visitors = [];
       } finally {
-        this.loading = false;
+        // 修复：仅当当前 controller 仍是全局 controller 时才清 loading
+        if (fetchVisitorsController === controller) {
+          this.loading = false;
+          fetchVisitorsController = null;
+        }
       }
     },
 
@@ -674,13 +752,30 @@ export const useLikesStore = defineStore("likes", {
 
     /**
      * 获取心动信号列表
+     *
+     * 修复（P1 BUG - 异步竞态）：新增 AbortController 取消在途的旧请求，
+     * 避免快速重复调用时旧请求覆盖新请求结果。
      */
     async fetchHeartSignals() {
+      // 修复（P1 BUG）：取消在途的旧请求，避免竞态条件
+      if (fetchHeartSignalsController) {
+        try {
+          fetchHeartSignalsController.abort();
+        } catch (_e) {
+          // abort 失败时忽略
+        }
+        fetchHeartSignalsController = null;
+      }
+      const controller = new AbortController();
+      fetchHeartSignalsController = controller;
+
       this.loading = true;
       this.errorMessage = null;
 
       try {
         if (useMock()) {
+          // 修复：被取消的请求不修改状态
+          if (controller.signal.aborted) return;
           this.heartSignals = [...mockHeartSignals];
           return;
         }
@@ -689,12 +784,23 @@ export const useLikesStore = defineStore("likes", {
         const data = await request<HeartSignalView[]>({
           url: `/matches/heart-signals?userId=${this.currentUserId}`,
           method: "GET",
+          signal: controller.signal,
         });
+
+        // 修复：请求返回后若已被取消，跳过状态修改
+        if (controller.signal.aborted) return;
+
         this.heartSignals = data.map(mapToHeartSignal);
       } catch (error) {
+        // 修复：被取消的请求不视为错误，不更新 errorMessage
+        if (controller.signal.aborted) return;
         this.errorMessage = error instanceof Error ? error.message : "加载心动信号失败";
       } finally {
-        this.loading = false;
+        // 修复：仅当当前 controller 仍是全局 controller 时才清 loading
+        if (fetchHeartSignalsController === controller) {
+          this.loading = false;
+          fetchHeartSignalsController = null;
+        }
       }
     },
 

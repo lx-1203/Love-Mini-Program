@@ -124,7 +124,7 @@ const photoCells = computed<Array<{ index: number; url: string; filled: boolean 
 });
 
 /** 照片墙是否已上传至少一张（用于切换 CTA 文案） */
-const hasPhotos = computed(() => photoGallery.value.length > 0);
+// 修复（严格模式 noUnusedLocals）：hasPhotos 计算属性未被模板/脚本引用，已移除。
 
 /**
  * 剩余匹配次数（Phase C1 · 共享 discover store）
@@ -440,10 +440,14 @@ function handleLogout() {
     title: t("profile.titleTip"),
     content: t("profile.logoutConfirm"),
     success: (res) => {
-      if (res.confirm) {
-        sessionStore.userSession = null;
-        uni.reLaunch({ url: "/pages/login/index" });
-      }
+      if (!res.confirm) return;
+      // 修复（P1 BUG）：原直接置空 userSession，未通知后端、未清理本地状态。
+      // 改为调用 sessionStore.logout() 统一处理：
+      // 1. 调用 clientApi.logout() 清除本地 token + 异步通知后端 + 跳转登录页
+      // 2. 清空 store 状态（userSession / profileBackgroundUrl 等）
+      void sessionStore.logout().catch((error) => {
+        console.warn("[profile] logout 调用异常:", error);
+      });
     },
   });
 }
@@ -467,8 +471,11 @@ function handleEditBackground() {
     sourceType: ["album", "camera"],
     success: (res) => {
       const tempPath = res.tempFilePaths?.[0] ?? "";
-      const tempFile = res.tempFiles?.[0];
-      const size = (tempFile as { size?: number })?.size ?? 0;
+      // 修复（严格模式 TS7053）：res.tempFiles 类型为联合类型，直接索引 [0] 会报隐式 any；
+      // 通过 Array.isArray 类型守卫收敛后再索引。
+      const tempFilesRaw: unknown = res.tempFiles;
+      const tempFile = Array.isArray(tempFilesRaw) ? tempFilesRaw[0] : undefined;
+      const size = (tempFile as { size?: number } | undefined)?.size ?? 0;
       if (!tempPath) {
         uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
         return;
@@ -617,8 +624,11 @@ function handleUploadPhoto(index: number) {
     sourceType: ["album", "camera"],
     success: (res) => {
       const tempPath = res.tempFilePaths?.[0] ?? "";
-      const tempFile = res.tempFiles?.[0];
-      const size = (tempFile as { size?: number })?.size ?? 0;
+      // 修复（严格模式 TS7053）：res.tempFiles 类型为联合类型，直接索引 [0] 会报隐式 any；
+      // 通过 Array.isArray 类型守卫收敛后再索引。
+      const tempFilesRaw: unknown = res.tempFiles;
+      const tempFile = Array.isArray(tempFilesRaw) ? tempFilesRaw[0] : undefined;
+      const size = (tempFile as { size?: number } | undefined)?.size ?? 0;
       if (!tempPath) {
         uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
         return;
@@ -770,7 +780,7 @@ onMounted(() => {
             v-if="profileBackgroundUrl"
             class="profile-bg__img"
             :src="profileBackgroundUrl"
-            mode="aspectFill"
+            mode="aspectFill" alt=""
           />
           <view class="profile-bg__overlay" />
           <!-- Phase E1 / H-10：编辑背景图按钮（仅自己主页显示，右下角相机图标） -->
@@ -785,7 +795,7 @@ onMounted(() => {
               v-if="!isUploading || uploadKind !== 'background'"
               class="profile-bg__edit-icon"
               :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
-              mode="aspectFit"
+              mode="aspectFit" alt=""
             />
             <view v-else class="profile-bg__edit-spinner" />
             <text class="profile-bg__edit-text">
@@ -811,7 +821,7 @@ onMounted(() => {
             </view>
           </view>
           <view v-if="isVip" class="vip-crown">
-            <image class="vip-crown__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" />
+            <image class="vip-crown__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           </view>
         </view>
 
@@ -829,13 +839,13 @@ onMounted(() => {
             />
             <!-- VIP 徽章：已开通时展示 -->
             <view v-if="isVip" class="user-info__vip-badge">
-              <image class="user-info__vip-badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" />
+              <image class="user-info__vip-badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
               <text class="user-info__vip-badge-text">VIP{{ vipPlanName ? " · " + vipPlanName : "" }}</text>
             </view>
           </view>
           <!-- 学校信息 -->
           <view class="user-info__school-row">
-            <image class="user-info__school-icon" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION" mode="aspectFit" />
+            <image class="user-info__school-icon" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION" mode="aspectFit" alt="" />
             <text class="user-info__school">{{ school }}</text>
           </view>
           <text class="user-info__bio">{{ bio }}</text>
@@ -844,12 +854,12 @@ onMounted(() => {
         <!-- Task F1 / M-08：按钮根据 isOwnProfile 切换 -->
         <!-- 自己的 profile：显示"编辑资料"按钮 -->
         <view v-if="isOwnProfile" class="edit-btn press-feedback" @tap="goToProfileSetup" hover-class="edit-btn--hover" hover-stay-time="120">
-          <image class="edit-btn__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" />
+          <image class="edit-btn__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
           <text class="edit-btn__text">{{ t('profile.editProfile') }}</text>
         </view>
         <!-- 对方 profile：显示"打个招呼"按钮 -->
         <view v-else class="greet-btn press-feedback" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="120">
-          <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
+          <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
           <text class="greet-btn__text">{{ t('profile.sayHi') }}</text>
         </view>
 
@@ -888,7 +898,7 @@ onMounted(() => {
               v-if="!isUploading || uploadKind !== 'video'"
               class="video-cta__icon"
               :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
-              mode="aspectFit"
+              mode="aspectFit" alt=""
             />
             <view v-else class="video-cta__spinner" />
           </view>
@@ -904,7 +914,7 @@ onMounted(() => {
             <image
               class="video-preview__thumb-img"
               :src="personalVideoUrl"
-              mode="aspectFill"
+              mode="aspectFill" alt=""
             />
             <view class="video-preview__play">
               <view class="video-preview__play-triangle" />
@@ -956,6 +966,7 @@ onMounted(() => {
                 class="photo-grid__img"
                 :src="cell.url"
                 mode="aspectFill"
+                lazy-load alt=""
               />
             </view>
             <!-- 空格子：显示"+"占位，点击上传 -->
@@ -976,7 +987,7 @@ onMounted(() => {
       <!-- VIP卡片 -->
       <view v-if="!isVip" class="vip-card press-feedback card-base" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="120">
         <view class="vip-card__left">
-          <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" />
+          <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           <view class="vip-card__text-wrap">
             <text class="vip-card__title">{{ t('profile.openVip') }}</text>
             <text class="vip-card__desc">{{ t('profile.openVipDesc') }}</text>
@@ -1012,7 +1023,7 @@ onMounted(() => {
         </view>
 
         <!-- 动态列表（有数据时） -->
-        <view v-if="myPostsPreview.length > 0" class="my-posts-list">
+        <view v-if="myPostsPreview.length > 0" class="my-posts-list" role="list">
           <view
             v-for="(post, index) in myPostsPreview"
             :key="post.id"
@@ -1028,11 +1039,11 @@ onMounted(() => {
                 <text class="my-post-item__time">{{ post.timeLabel }}</text>
                 <view class="my-post-item__stats">
                   <view class="my-post-item__stat">
-                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" />
+                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
                     <text class="my-post-item__stat-text">{{ post.likes }}</text>
                   </view>
                   <view class="my-post-item__stat">
-                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
+                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
                     <text class="my-post-item__stat-text">{{ post.comments }}</text>
                   </view>
                 </view>
@@ -1050,7 +1061,7 @@ onMounted(() => {
           hover-class="my-posts-empty--hover"
           hover-stay-time="100"
         >
-          <image class="my-posts-empty__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" />
+          <image class="my-posts-empty__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
           <text class="my-posts-empty__text">{{ t('profile.noPosts') }}</text>
           <text class="my-posts-empty__action">{{ t('profile.publishFirst') }}</text>
         </view>

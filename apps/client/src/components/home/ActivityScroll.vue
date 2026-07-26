@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { designTokens } from '../../theme/tokens';
 import ActivityCard from './ActivityCard.vue';
 
 interface Activity {
@@ -16,13 +15,14 @@ defineProps<{
   loading?: boolean;
 }>();
 
-const t = designTokens;
+// 修复（严格模式 noUnusedLocals）：原 `const t = designTokens;` 后未使用 t，
+// designTokens 导入也仅用于该别名；模板/style 未引用 designTokens，故导入与别名一并移除。
 </script>
 
 <template>
   <scroll-view scroll-x class="activity-scroll" :show-scrollbar="false">
-    <view class="activity-list">
-      <view v-if="loading" class="activity-skeleton" v-for="i in 3" :key="i">
+    <view class="activity-list" role="list">
+      <view v-if="loading" class="activity-skeleton" v-for="i in 3" :key="i" role="listitem">
         <view class="skeleton-card shimmer" />
       </view>
       <ActivityCard

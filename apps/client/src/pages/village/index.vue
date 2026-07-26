@@ -4,7 +4,7 @@
  * 用户生成内容社区，展示帖子动态、支持六分类筛选、点赞关注等互动功能
  */
 import { ref, computed, onMounted } from "vue";
-import { onLoad, onShow } from "@dcloudio/uni-app";
+import { onLoad, onHide, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
@@ -21,6 +21,7 @@ import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import type { PostItem, PostFilters } from "../../stores/village";
 import BaseTabs from "../../components/common/BaseTabs.vue";
+import { showErrorToast } from "../../utils/error-toast";
 
 /* ========== Stores ========== */
 const { t } = useI18n();
@@ -29,7 +30,8 @@ const sessionStore = useSessionStore();
 
 // Phase 4 任务 20：接入页面访问守卫
 usePageAccess(villagePageRequirements);
-const { loading, errorMessage, categories } = storeToRefs(villageStore);
+// 修复（严格模式 noUnusedLocals）：categories 从 storeToRefs 解构后未引用（页面使用 BaseTabs 的 items 而非 store categories），已移除。
+const { loading, errorMessage } = storeToRefs(villageStore);
 
 // 同步自定义 TabBar 选中状态（圈子 = 索引 1）
 useTabBar(1);
@@ -145,6 +147,8 @@ function selectCategory(catId: string) {
 
 /** BaseTabs @change 回调入口 */
 function onCategoryChange(catId: string) {
+  // P2 修复：切换 tab 前保存当前滚动位置，切回时恢复
+  handleTabChangeWithMemory(catId);
   selectCategory(catId);
 }
 
@@ -185,17 +189,20 @@ async function onLoadMore() {
 async function handleLike(postId: string) {
   const post = displayPosts.value.find(p => p.id === postId);
   const wasLiked = post?.isLiked ?? false;
-  
+
   if (!wasLiked) {
     likeAnimatingPosts.value.add(postId);
     setTimeout(() => {
       likeAnimatingPosts.value.delete(postId);
     }, 300);
   }
-  
+
   try {
     await villageStore.likePost(postId);
-  } catch (_e) {
+  } catch (error) {
+    // 点赞失败：按错误分类给出友好提示（网络/权限/业务）
+    showErrorToast(error, t("village.likeFailed"));
+    console.error("点赞失败:", error);
   }
 }
 
@@ -214,7 +221,10 @@ function toggleCollect(postId: string) {
 async function handleFollow(userId: string) {
   try {
     await villageStore.followUser(userId);
-  } catch (_e) {
+  } catch (error) {
+    // 关注失败：按错误分类给出友好提示（网络/权限/业务）
+    showErrorToast(error, t("village.followFailed"));
+    console.error("关注失败:", error);
   }
 }
 
@@ -256,6 +266,76 @@ onLoad((query) => {
   if (query?.tab === "hot") {
     selectedCategory.value = "cat-latest";
     saveLastCategory("cat-latest");
+  }
+});
+
+/* ========== 滚动到顶部按钮 + tab 切换记忆位置（P2 修复） ==========
+ * - 监听 scroll-view 的 @scroll 事件，记录当前 scrollTop
+ * - 当 scrollTop > 一屏（按 600rpx 估算）时显示"回到顶部"按钮
+ * - 点击按钮通过 :scroll-top 重置 scroll-view 到顶部
+ * - 切换 tab / 离开页面时保存 scrollTop；onShow 时恢复
+ */
+const SCROLL_TOP_THRESHOLD = 600;
+/** scroll-view 当前 scrollTop（双向绑定到 :scroll-top，用于主动滚回顶部） */
+const scrollTopValue = ref(0);
+/** 是否显示"回到顶部"按钮 */
+const showBackToTop = ref(false);
+/** tab 切换时缓存的滚动位置（key: category id, value: scrollTop） */
+const savedScrollPositions: Record<string, number> = {};
+/** 上次激活的 category，用于切换时保存旧位置 */
+let lastActiveCategory = "";
+
+/** scroll-view 滚动事件：节流更新 scrollTopValue，超过阈值显示回到顶部按钮 */
+function handleScroll(e: { detail: { scrollTop: number } }) {
+  const top = e.detail?.scrollTop ?? 0;
+  // 仅当变化超过 4rpx 时更新，避免频繁触发响应式更新
+  if (Math.abs(top - scrollTopValue.value) > 4) {
+    scrollTopValue.value = top;
+  }
+  showBackToTop.value = top > SCROLL_TOP_THRESHOLD;
+}
+
+/** 点击"回到顶部"按钮：将 scroll-view 滚回顶部 */
+function handleBackToTop() {
+  // 通过临时改值再回 0 触发 scroll-view 的 scroll-top 变化
+  // uni-app scroll-view 监听 :scroll-top 变化执行滚动
+  scrollTopValue.value = 0;
+  showBackToTop.value = false;
+}
+
+/**
+ * BaseTabs change 事件处理：在切换前保存当前 tab 的滚动位置。
+ * 与原 onTabChange 区分，作为 P2 滚动位置记忆的补充钩子。
+ */
+function handleTabChangeWithMemory(key: string) {
+  if (lastActiveCategory && lastActiveCategory !== key) {
+    savedScrollPositions[lastActiveCategory] = scrollTopValue.value;
+  }
+  lastActiveCategory = key;
+  // 恢复目标 tab 的滚动位置
+  const saved = savedScrollPositions[key];
+  scrollTopValue.value = saved ?? 0;
+}
+
+/* ========== 生命周期：页面隐藏时保存滚动位置（P2 tab 切换记忆位置） ========== */
+onHide(() => {
+  // 页面隐藏（如跳转子页）时保存当前滚动位置，便于 onShow 恢复
+  if (lastActiveCategory) {
+    savedScrollPositions[lastActiveCategory] = scrollTopValue.value;
+  } else {
+    savedScrollPositions[selectedCategory.value] = scrollTopValue.value;
+  }
+});
+
+onShow(() => {
+  // 页面恢复时回滚到上次位置（仅 scroll-view 内的滚动，不影响页面级滚动）
+  const key = lastActiveCategory || selectedCategory.value;
+  const saved = savedScrollPositions[key] ?? 0;
+  if (saved > 0) {
+    // 通过 nextTick 确保 DOM 渲染后再设置 scroll-top
+    setTimeout(() => {
+      scrollTopValue.value = saved;
+    }, 50);
   }
 });
 
@@ -305,7 +385,7 @@ onMounted(() => {
       <view class="discover-banner press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToDiscover">
         <view class="discover-banner__content">
           <view class="discover-banner__left">
-            <image class="discover-banner__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" />
+            <image class="discover-banner__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
             <view class="discover-banner__text-wrap">
               <text class="discover-banner__title">{{ t('home.nearbyPeople') }}</text>
               <text class="discover-banner__subtitle">{{ t('village.discoverBannerSubtitle') }}</text>
@@ -325,15 +405,21 @@ onMounted(() => {
         <ErrorState type="network" @retry="onRefresh" />
       </view>
 
-      <!-- ===== 帖子列表 ===== -->
+      <!-- ===== 帖子列表 =====
+           P2 修复：
+           - :scroll-top 双向绑定到 scrollTopValue，点击回到顶部按钮可主动滚回顶部
+           - @scroll 监听滚动位置，超过一屏显示回到顶部按钮
+      -->
       <scroll-view
         v-else
         class="post-feed"
         scroll-y
+        :scroll-top="scrollTopValue"
         :refresher-enabled="true"
         :refresher-triggered="isRefreshing"
         @refresherrefresh="onRefresh"
         @scrolltolower="onLoadMore"
+        @scroll="handleScroll"
       >
         <!-- 空状态 -->
         <view v-if="displayPosts.length === 0" class="village-empty">
@@ -345,23 +431,25 @@ onMounted(() => {
         </view>
 
         <!-- 帖子卡片列表 -->
-        <view class="post-feed__list card-stagger">
+        <view class="post-feed__list card-stagger" role="list">
         <view
-          v-for="(post, index) in displayPosts"
+          v-for="post in displayPosts"
           :key="post.id"
-          class="post-card"
+          class="post-card clickable"
+          hover-class="post-card--pressed"
+          :hover-stay-time="100"
           @tap="goToDetail(post.id)"
         >
           <!-- 作者信息行 -->
           <view class="post-card__header">
-            <view class="post-card__user" @tap.stop="goToAuthorProfile(post.author.userId)">
+            <view class="post-card__user clickable" hover-class="post-card__user--pressed" :hover-stay-time="100" @tap.stop="goToAuthorProfile(post.author.userId)">
               <view class="user-avatar">
                 <image
                   v-if="post.author.avatar"
                   class="user-avatar__img"
                   :src="post.author.avatar"
                   mode="aspectFill"
-                  lazy-load
+                  lazy-load alt=""
                 />
                 <text v-else class="user-avatar__char">{{ post.author.name[0] }}</text>
                 <!-- Phase D1: 头像左上角身份徽章（校友） -->
@@ -408,7 +496,7 @@ onMounted(() => {
               :class="{ 'post-card__image--single': post.images.length === 1 }"
               :src="img"
               mode="aspectFill"
-              lazy-load
+              lazy-load alt=""
             />
             <view v-if="post.images.length > 9" class="post-card__image-more">
               <text class="post-card__image-more-text">+{{ post.images.length - 9 }}</text>
@@ -432,7 +520,7 @@ onMounted(() => {
             <view class="post-card__actions">
               <!-- 评论 -->
               <view class="action-btn" @tap.stop="goToDetail(post.id)">
-                <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" />
+                <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
                 <text v-if="post.comments > 0" class="action-btn__count">{{ post.comments }}</text>
               </view>
               <!-- 点赞 -->
@@ -441,12 +529,12 @@ onMounted(() => {
                 :class="{ 'action-btn--liked': post.isLiked, 'action-btn--animating': likeAnimatingPosts.has(post.id) }"
                 @tap.stop="handleLike(post.id)"
               >
-                <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" />
+                <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
                 <text v-if="post.likes > 0" class="action-btn__count" :class="{ 'action-btn__count--liked': post.isLiked }">{{ post.likes }}</text>
               </view>
               <!-- 分享 -->
               <view class="action-btn" @tap.stop>
-                <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" />
+                <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
               </view>
               <!-- 收藏 -->
               <view
@@ -454,7 +542,7 @@ onMounted(() => {
                 :class="{ 'action-btn--collected': collectedPosts.has(post.id) }"
                 @tap.stop="toggleCollect(post.id)"
               >
-                <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" />
+                <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" />
               </view>
             </view>
           </view>
@@ -462,8 +550,8 @@ onMounted(() => {
         </view>
 
         <!-- 加载更多提示 -->
-        <view v-if="isLoadingMore" class="load-more">
-          <view class="loading-spinner" />
+        <view v-if="isLoadingMore" class="load-more" role="status" aria-live="polite">
+          <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('common.loading')" />
           <text class="load-more__text">{{ t('common.loading') }}</text>
         </view>
         <view v-else-if="!hasMore && displayPosts.length > 0" class="load-more">
@@ -476,7 +564,18 @@ onMounted(() => {
 
       <!-- ===== 浮动发帖按钮 (FAB) ===== -->
       <view class="fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPost">
-        <image class="fab__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PLUS" mode="aspectFit" />
+        <image class="fab__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PLUS" mode="aspectFit" alt="" />
+      </view>
+
+      <!-- ===== 回到顶部按钮（P2 修复：滚动超过一屏后显示） ===== -->
+      <view
+        v-if="showBackToTop"
+        class="back-to-top press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        @tap="handleBackToTop"
+      >
+        <text class="back-to-top__icon">↑</text>
       </view>
     </template>
   </view>
@@ -831,6 +930,12 @@ onMounted(() => {
   font-weight: 600;
   color: var(--c-text-primary);
   line-height: 1.2;
+  /* 修复（P1 BUG）：原实现缺少文本裁剪，长昵称会推动校友徽章换行 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .user-info__campus-badge {
@@ -1009,7 +1114,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--sp-1);
-  padding: var(--sp-2) var(--sp-1);
+  /* 修复 P2（触摸目标过小）：min-height/min-width ≥88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
+  min-width: 88rpx;
+  min-height: 88rpx;
+  padding: var(--sp-2) var(--sp-3);
+  justify-content: center;
 }
 
 /* #ifdef H5 */
@@ -1102,5 +1211,43 @@ onMounted(() => {
   width: 56rpx;
   height: 56rpx;
   color: var(--c-neutral-0);
+}
+
+/* ================================================================
+   回到顶部按钮（P2 修复 · 滚动到顶部按钮）
+   - 位于 FAB 上方，避免遮挡
+   - 触摸目标 88rpx × 88rpx（44px @2x），满足 iOS HIG / Material Design
+   ================================================================ */
+.back-to-top {
+  position: fixed;
+  right: var(--sp-7);
+  bottom: calc(env(safe-area-inset-bottom) + 220rpx);
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--s-md);
+  z-index: 98;
+  animation: back-to-top-fade-in 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes back-to-top-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.back-to-top__icon {
+  font-size: 36rpx;
+  color: var(--c-brand);
+  font-weight: 700;
 }
 </style>

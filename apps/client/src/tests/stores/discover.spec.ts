@@ -53,7 +53,9 @@ describe("discover store", () => {
     const store = useDiscoverStore();
     await store.fetchCards();
 
-    const firstCard = store.cards[0];
+    // 修复（严格模式 noUncheckedIndexedAccess）：store.cards[0] 索引访问返回 T | undefined，
+    // 测试场景已通过 fetchCards 加载非空数据，此处使用非空断言 ! 简化类型。
+    const firstCard = store.cards[0]!;
     const beforeCount = store.cards.length;
     const beforeViewed = store.viewedCards.length;
 
@@ -119,7 +121,7 @@ describe("discover store", () => {
     const store = useDiscoverStore();
     await store.fetchCards();
 
-    const firstCard = store.cards[0];
+    const firstCard = store.cards[0]!;
     const beforeViewed = store.viewedCards.length;
 
     await store.swipeRight(firstCard.id);
@@ -138,7 +140,7 @@ describe("discover store", () => {
     const store = useDiscoverStore();
     await store.fetchCards();
 
-    const firstCard = store.cards[0];
+    const firstCard = store.cards[0]!;
     await store.swipeLeft(firstCard.id);
 
     expect(store.cards.find((c) => c.id === firstCard.id)).toBeUndefined();
@@ -152,12 +154,12 @@ describe("discover store", () => {
     const store = useDiscoverStore();
     await store.fetchCards();
 
-    const firstCard = store.cards[0];
+    const firstCard = store.cards[0]!;
     await store.swipeLeft(firstCard.id);
     await store.rewindCard(firstCard.id); // uses up daily rewind
 
     // swipe again and try to rewind
-    const secondCard = store.cards[0];
+    const secondCard = store.cards[0]!;
     await store.swipeLeft(secondCard.id);
     await expect(store.rewindCard(secondCard.id)).rejects.toThrow(
       "每日只能挽回一次"
@@ -168,7 +170,7 @@ describe("discover store", () => {
     const store = useDiscoverStore();
     await store.fetchCards();
 
-    const firstCard = store.cards[0];
+    const firstCard = store.cards[0]!;
     await store.swipeLeft(firstCard.id);
 
     await expect(store.rewindCard("different-card")).rejects.toThrow(
@@ -252,7 +254,7 @@ describe("discover store", () => {
 
     expect(store.hasRewoundToday).toBe(false);
 
-    const firstCard = store.cards[0];
+    const firstCard = store.cards[0]!;
     await store.swipeLeft(firstCard.id);
     await store.rewindCard(firstCard.id);
 
@@ -266,11 +268,13 @@ describe("discover store", () => {
     const store = useDiscoverStore();
     await store.fetchCards();
 
-    const firstCard = store.cards[0];
+    const firstCard = store.cards[0]!;
     await store.swipeRight(firstCard.id);
 
     expect(store.historyCards.length).toBe(1);
-    expect(store.historyCards[0].cardId).toBe(firstCard.id);
+    // 修复（严格模式 noUncheckedIndexedAccess）：historyCards[0] / passedCards[0] 索引访问返回 T | undefined，
+    // 测试场景已确保数组非空，此处使用非空断言 ! 简化类型。
+    expect(store.historyCards[0]!.cardId).toBe(firstCard.id);
   });
 
   // ------------------------------------------------------------------
@@ -280,10 +284,10 @@ describe("discover store", () => {
     const store = useDiscoverStore();
     await store.fetchCards();
 
-    await store.swipeLeft(store.cards[0].id);
+    await store.swipeLeft(store.cards[0]!.id);
 
     expect(store.passedCards.length).toBe(1);
-    expect(store.passedCards[0].direction).toBe("left");
+    expect(store.passedCards[0]!.direction).toBe("left");
   });
 
   // ------------------------------------------------------------------
@@ -315,7 +319,7 @@ describe("discover store", () => {
 
       const store = useDiscoverStore();
       await store.fetchCards();
-      const firstCard = store.cards[0];
+      const firstCard = store.cards[0]!;
 
       await store.swipeRight(firstCard.id);
 
@@ -340,7 +344,7 @@ describe("discover store", () => {
 
       const store = useDiscoverStore();
       await store.fetchCards();
-      const firstCard = store.cards[0];
+      const firstCard = store.cards[0]!;
 
       await store.swipeRight(firstCard.id);
 
@@ -358,7 +362,7 @@ describe("discover store", () => {
       const store = useDiscoverStore();
       await store.fetchCards();
 
-      await store.swipeRight(store.cards[0].id);
+      await store.swipeRight(store.cards[0]!.id);
 
       expect(store.lastSwipeResult!.matched).toBe(true);
     });
@@ -369,7 +373,7 @@ describe("discover store", () => {
       const store = useDiscoverStore();
       await store.fetchCards();
 
-      await store.swipeRight(store.cards[0].id);
+      await store.swipeRight(store.cards[0]!.id);
 
       expect(store.lastSwipeResult!.matched).toBe(false);
     });
@@ -379,7 +383,7 @@ describe("discover store", () => {
 
       const store = useDiscoverStore();
       await store.fetchCards();
-      const firstCard = store.cards[0];
+      const firstCard = store.cards[0]!;
       const beforeViewed = store.viewedCards.length;
 
       await store.swipeRight(firstCard.id);
@@ -403,7 +407,7 @@ describe("discover store", () => {
         .mockImplementation(() => {});
 
       await store.fetchCards();
-      const firstCard = store.cards[0];
+      const firstCard = store.cards[0]!;
 
       await store.swipeRight(firstCard.id);
 
@@ -426,7 +430,7 @@ describe("discover store", () => {
 
       const store = useDiscoverStore();
       await store.fetchCards();
-      const firstCard = store.cards[0];
+      const firstCard = store.cards[0]!;
       const beforeViewed = store.viewedCards.length;
 
       await store.swipeRight(firstCard.id, true);

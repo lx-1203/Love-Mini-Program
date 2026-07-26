@@ -16,10 +16,8 @@ const subtitleLabel = computed(() => props.subtitle || t('login.heroSubtitleDefa
 <template>
   <view
     class="login-header"
-    <!-- #ifdef H5 -->
     role="banner"
     :aria-label="titleLabel"
-    <!-- #endif -->
   >
     <!-- 品牌 Logo -->
     <view class="login-logo">

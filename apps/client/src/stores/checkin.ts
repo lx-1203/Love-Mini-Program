@@ -4,6 +4,16 @@ import { clientApi } from "../services/api";
 import type { MakeUpCheckInResultView } from "../services/generated/api-types-supplement";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+// 统一常量：异步超时、签到成功动画收起延迟、补签上限、签到权益各项默认值
+import {
+  ASYNC_TIMEOUT_MS,
+  SUCCESS_ANIMATION_AUTO_DISMISS_MS,
+  DEFAULT_MAKEUP_LIMIT,
+  CHECKIN_EXTRA_RECOMMENDATIONS,
+  CHECKIN_EXTRA_QUOTA,
+  CHECKIN_HOT_TOPIC_COUNT,
+  CHECKIN_NEW_USER_COUNT,
+} from "../constants/growth";
 
 /**
  * 签到状态 - 与后端 CheckInStatusView 对齐
@@ -110,13 +120,8 @@ let mockCheckInStatus: CheckInStatus = {
   extraRecommendations: 0,
 };
 
-/** 异步操作超时时间（毫秒） */
-const ASYNC_TIMEOUT_MS = 15000;
-
-/**
- * 签到成功动画自动收起延迟（毫秒）
- */
-const SUCCESS_ANIMATION_AUTO_DISMISS_MS = 3000;
+// 注：ASYNC_TIMEOUT_MS / SUCCESS_ANIMATION_AUTO_DISMISS_MS
+// 由 constants/growth.ts 统一提供
 
 /**
  * 签到成功动画定时器（模块级单例）。
@@ -214,7 +219,7 @@ export const useCheckInStore = defineStore("checkin", {
     errorMessage: null,
     // 功能7：补签相关状态默认值
     makeUpUsedCount: 0,
-    makeUpLimit: 3,
+    makeUpLimit: DEFAULT_MAKEUP_LIMIT,
     makingUp: false,
   }),
 
@@ -348,18 +353,20 @@ export const useCheckInStore = defineStore("checkin", {
                 consecutiveDays: mockCheckInStatus.checkedIn
                   ? mockCheckInStatus.consecutiveDays
                   : mockCheckInStatus.consecutiveDays + 1,
-                extraRecommendations: 5,
+                extraRecommendations: CHECKIN_EXTRA_RECOMMENDATIONS,
               };
 
               return {
-                checkInDate: new Date().toISOString().split("T")[0],
-                extraRecommendations: 5,
+                // 修复（严格模式 noUncheckedIndexedAccess）：split("T")[0] 索引访问返回 string | undefined，
+                // 此处兜底取整串，确保 checkInDate 始终为 string。
+                checkInDate: new Date().toISOString().split("T")[0] ?? new Date().toISOString(),
+                extraRecommendations: CHECKIN_EXTRA_RECOMMENDATIONS,
                 consecutiveDays: mockCheckInStatus.consecutiveDays,
-                extraRecommendQuota: 5,
+                extraRecommendQuota: CHECKIN_EXTRA_QUOTA,
                 hotTopicsUnlocked: true,
                 newUsersUnlocked: true,
-                hotTopicCount: 3,
-                newUserCount: 2,
+                hotTopicCount: CHECKIN_HOT_TOPIC_COUNT,
+                newUserCount: CHECKIN_NEW_USER_COUNT,
               };
             }
 
@@ -378,7 +385,9 @@ export const useCheckInStore = defineStore("checkin", {
 
             // 映射后端字段到前端字段（含签到权益）
             return {
-              checkInDate: new Date().toISOString().split("T")[0],
+              // 修复（严格模式 noUncheckedIndexedAccess）：split("T")[0] 索引访问返回 string | undefined，
+              // 此处兜底取整串，确保 checkInDate 始终为 string。
+              checkInDate: new Date().toISOString().split("T")[0] ?? new Date().toISOString(),
               consecutiveDays: data.consecutiveDays,
               extraRecommendations: data.extraQuota,
               extraRecommendQuota: data.extraRecommendQuota,

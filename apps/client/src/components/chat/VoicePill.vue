@@ -21,6 +21,8 @@ const { t } = useI18n();
 const isPlaying = ref(false);
 /** 音频上下文（mp-weixin 平台为 InnerAudioContext，其他平台为 null） */
 const audioCtx = ref<ReturnType<typeof uni.createInnerAudioContext> | null>(null);
+/** 模拟播放结束定时器引用（用于无音频 URL 时的 UI 状态切换） */
+let playEndTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** ARIA 标签：根据播放状态/过期状态生成无障碍描述 */
 const ariaLabel = computed(() => {
@@ -29,6 +31,10 @@ const ariaLabel = computed(() => {
     ? t("chat.voicePaused", { n: props.durationSeconds })
     : t("chat.voicePlayback", { n: props.durationSeconds });
 });
+
+// 修复（严格模式 noUnusedLocals）：ariaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ ariaLabel });
 
 function togglePlay() {
   if (props.expired) return;
@@ -50,17 +56,25 @@ function togglePlay() {
   } else {
     // 无音频 URL，仅切换 UI 模拟播放状态
     isPlaying.value = true;
-    setTimeout(() => { isPlaying.value = false; }, props.durationSeconds * 1000);
+    if (playEndTimer) clearTimeout(playEndTimer);
+    playEndTimer = setTimeout(() => { isPlaying.value = false; }, props.durationSeconds * 1000);
   }
   // #endif
 
   // #ifndef MP-WEIXIN
   isPlaying.value = true;
-  setTimeout(() => { isPlaying.value = false; }, props.durationSeconds * 1000);
+  if (playEndTimer) clearTimeout(playEndTimer);
+  playEndTimer = setTimeout(() => { isPlaying.value = false; }, props.durationSeconds * 1000);
   // #endif
 }
 
 onUnmounted(() => {
+  // 修复（P1 BUG）：清理模拟播放定时器，避免组件卸载后定时器仍触发回调
+  // 修改已销毁组件的响应式状态 isPlaying。
+  if (playEndTimer) {
+    clearTimeout(playEndTimer);
+    playEndTimer = null;
+  }
   audioCtx.value?.destroy();
 });
 </script>
@@ -70,12 +84,10 @@ onUnmounted(() => {
     class="voice-pill"
     :class="{ 'voice-pill--expired': expired, 'voice-pill--playing': isPlaying }"
     @tap="togglePlay"
-    <!-- #ifdef H5 -->
     role="button"
     :aria-label="ariaLabel"
     :aria-pressed="isPlaying"
     :aria-disabled="expired"
-    <!-- #endif -->
   >
     <view class="voice-pill__wave">
       <view

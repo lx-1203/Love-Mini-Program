@@ -30,16 +30,18 @@ const ariaLabel = computed(() =>
     msg: props.lastMessage || '',
   })
 );
+
+// 修复（严格模式 noUnusedLocals）：ariaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ ariaLabel });
 </script>
 
 <template>
   <view
     class="chat-item"
     @tap="emit('tap')"
-    <!-- #ifdef H5 -->
     role="button"
     :aria-label="ariaLabel"
-    <!-- #endif -->
   >
     <view class="chat-item-avatar">
       <Avatar :src="avatarUrl" :name="initials || name?.charAt(0)" size="sm" :online="online" />
@@ -60,10 +62,8 @@ const ariaLabel = computed(() =>
     <view
       v-if="isOfficial"
       class="chat-item-official"
-      <!-- #ifdef H5 -->
       role="img"
       :aria-label="t('chat.officialBadge')"
-      <!-- #endif -->
     >
       <text class="chat-item-official-text">{{ t('chat.officialBadge') }}</text>
     </view>

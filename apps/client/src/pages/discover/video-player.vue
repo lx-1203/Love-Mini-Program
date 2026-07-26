@@ -165,7 +165,7 @@ onUnmounted(() => {
         hover-stay-time="120"
         @tap="handleBack"
       >
-        <image class="video-player__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" />
+        <image class="video-player__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
       </view>
       <text class="video-player__title">个人视频</text>
       <view class="video-player__topbar-placeholder" />
@@ -175,7 +175,7 @@ onUnmounted(() => {
     <view class="video-player__main">
       <!-- 无视频 URL -->
       <view v-if="!hasVideo" class="video-player__state">
-        <image class="video-player__state-icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" />
+        <image class="video-player__state-icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" alt="" />
         <text class="video-player__state-title">暂无视频</text>
         <text class="video-player__state-subtitle">该用户未上传个人视频</text>
         <view
@@ -190,7 +190,7 @@ onUnmounted(() => {
 
       <!-- 加载失败 -->
       <view v-else-if="isLoadError" class="video-player__state">
-        <image class="video-player__state-icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" />
+        <image class="video-player__state-icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" alt="" />
         <text class="video-player__state-title">视频加载失败</text>
         <text class="video-player__state-subtitle">请检查网络后重试</text>
         <view
@@ -247,7 +247,8 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #000000;
+  /* 视频播放器背景：使用深色 token 替代硬编码 #000000 */
+  background: var(--c-neutral-900);
   display: flex;
   flex-direction: column;
   z-index: 1;
@@ -309,7 +310,8 @@ onUnmounted(() => {
 .video-player__video {
   width: 100%;
   height: 100%;
-  background: #000000;
+  /* 视频元素背景：使用深色 token 替代硬编码 #000000 */
+  background: var(--c-neutral-900);
 }
 
 /* ========== 状态展示（无视频 / 加载失败） ========== */

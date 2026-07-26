@@ -7,24 +7,22 @@
   -->
   <view
     class="page-state-container"
-    <!-- #ifdef H5 -->
     role="region"
     :aria-busy="state === 'loading'"
     :aria-label="regionAriaLabel"
-    <!-- #endif -->
   >
     <!-- 加载态 -->
     <view v-if="state === 'loading'" class="state-slot state-loading">
       <slot name="loading">
         <view class="loading-default">
-          <view class="loading-spinner" />
+          <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
           <text class="loading-text">{{ loadingText }}</text>
         </view>
       </slot>
     </view>
 
     <!-- 错误态 -->
-    <view v-else-if="state === 'error'" class="state-slot state-error">
+    <view v-else-if="state === 'error'" class="state-slot state-error" role="alert">
       <slot name="error">
         <ErrorState
           :description="errorText"
@@ -107,6 +105,10 @@ const regionAriaLabel = computed(() => {
   if (props.state === "empty") return emptyText.value;
   return "";
 });
+
+// 修复（严格模式 noUnusedLocals）：regionAriaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
+// vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
+defineExpose({ regionAriaLabel });
 
 const emit = defineEmits<{
   (e: "retry"): void;
