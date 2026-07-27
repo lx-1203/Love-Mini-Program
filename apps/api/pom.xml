@@ -130,9 +130,42 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-pool2</artifactId>
     </dependency>
+    <!-- Caffeine：本地缓存（L1 cache）。
+         Task 2.3.1：作为 Redis 不可用时的降级方案，及单元测试环境下的轻量级 CacheManager。
+         与 Spring Cache 抽象配合，通过 CaffeCacheManager 在 test/dev profile 下提供缓存能力。 -->
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
+    <!-- Resilience4j：熔断/重试/限流/降级。
+         Task 2.3.3：为微信 API/短信/对象存储等外部依赖提供韧性能力。
+         spring-boot 3.x 适配版本 2.x。 -->
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-spring-boot3</artifactId>
+      <version>2.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-reactor</artifactId>
+      <version>2.2.0</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- mockito-inline：支持 mock final 方法、static 方法、构造函数等。
+         Spring Boot 3.3.1 默认携带的 mockito-core 不包含 inline mock maker，
+         导致 IdempotentInterceptorTest / TraceIdFilterTest 中 mock HttpServletRequest
+         等 final 类或其方法时无法正常工作。
+         显式引入 mockito-inline 以启用 ByteBuddyInlineMockMaker。
+         注意：Spring Boot 3.3.1 的 BOM 已不再托管 mockito-inline，需显式声明版本，
+         与 mockito-core 5.2.0 保持一致。 -->
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-inline</artifactId>
+      <version>5.2.0</version>
       <scope>test</scope>
     </dependency>
     <!-- spring-security-test：提供 @WithMockUser 等测试注解，供 SecurityConfigTest 使用 -->
@@ -174,11 +207,11 @@
            - prepare-agent：在测试启动时注入 agent，收集执行数据到 target/jacoco.exec
            - report：在 test 阶段生成 HTML/XML/CSV 覆盖率报告到 target/site/jacoco
            - check：在 verify 阶段校验覆盖率是否达标，未达标则构建失败
-           阈值设定（Phase L 提升，与前端 vitest 阈值对齐）：
-           - LINE     50 → 70：行覆盖率，业务核心代码应稳定覆盖
-           - BRANCH   50 → 65：分支覆盖率，留出容差
-           - METHOD   50 → 70：方法覆盖率，确保入口被调用
-           - CLASS    50 → 65：类覆盖率，确保关键类被测
+           阈值设定（P7 提升，与前端 vitest 阈值对齐至 80%）：
+           - LINE     70 → 80：行覆盖率，业务核心代码应稳定覆盖
+           - BRANCH   65 → 75：分支覆盖率，留出容差
+           - METHOD   70 → 80：方法覆盖率，确保入口被调用
+           - CLASS    65 → 75：类覆盖率，确保关键类被测
            若当前测试不满足，记录差距但不降低阈值，作为后续补全目标。 -->
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -211,29 +244,29 @@
                   <!-- BUNDLE 级别：整个模块所有类的聚合指标 -->
                   <element>BUNDLE</element>
                   <limits>
-                    <!-- 行覆盖率：≥ 70% -->
+                    <!-- 行覆盖率：≥ 80% -->
                     <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.70</minimum>
+                      <minimum>0.80</minimum>
                     </limit>
-                    <!-- 分支覆盖率：≥ 65% -->
+                    <!-- 分支覆盖率：≥ 75% -->
                     <limit>
                       <counter>BRANCH</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.65</minimum>
+                      <minimum>0.75</minimum>
                     </limit>
-                    <!-- 方法覆盖率：≥ 70% -->
+                    <!-- 方法覆盖率：≥ 80% -->
                     <limit>
                       <counter>METHOD</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.70</minimum>
+                      <minimum>0.80</minimum>
                     </limit>
-                    <!-- 类覆盖率：≥ 65% -->
+                    <!-- 类覆盖率：≥ 75% -->
                     <limit>
                       <counter>CLASS</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.65</minimum>
+                      <minimum>0.75</minimum>
                     </limit>
                   </limits>
                 </rule>

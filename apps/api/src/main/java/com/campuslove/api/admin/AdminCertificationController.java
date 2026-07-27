@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/admin/certifications")
+@RequestMapping("/api/v1/admin/certifications")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminCertificationController {
 
     private final CampusCertificationService certService;

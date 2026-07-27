@@ -3,6 +3,7 @@ package com.campuslove.api.admin;
 import com.campuslove.api.config.SecurityUtils;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,10 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
  *     <li>GET /api/admin/stats/active  - 活跃度统计（DAU/MAU/互动数）</li>
  *     <li>GET /api/admin/stats/matches - 匹配统计（匹配总数/成功率/每日趋势）</li>
  * </ul>
+ *
+ * <p>权限说明：URL 层 /api/admin/** 已限制 ADMIN 角色；
+ * 方法层 @PreAuthorize 作为深度防御（@EnableMethodSecurity 已在 SecurityConfig 启用）。</p>
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/admin/stats")
+@RequestMapping("/api/v1/admin/stats")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminStatsController {
 
     private final AdminStatsService statsService;

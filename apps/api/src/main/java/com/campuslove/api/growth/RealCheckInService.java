@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -140,7 +141,8 @@ public class RealCheckInService implements CheckInService {
         Optional<CheckIn> existingCheckIn = checkInRepository.findByUserIdAndCheckInDate(userId, today);
         if (existingCheckIn.isPresent()) {
             log.info("用户[{}]今日已签到，重复签到被拒绝", userId);
-            int consecutiveDays = existingCheckIn.get().getConsecutiveDays();
+            int consecutiveDays = existingCheckIn.orElseThrow(() ->
+                    new IllegalStateException("existingCheckIn 已确认非空但 orElseThrow 触发，数据不一致")).getConsecutiveDays();
             int extraQuota = calculateTotalExtraQuota(userId);
 
             // 获取已有权益信息
@@ -476,7 +478,8 @@ public class RealCheckInService implements CheckInService {
                     .filter(p -> p.getCreatedAt() != null && !p.getCreatedAt().isBefore(todayStart))
                     .filter(p -> p.getLikesCount() > 0)
                     .count();
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库查询失败时忽略，继续统计其他维度
             log.warn("查询热门帖子时出错: {}", e.getMessage());
         }
 
@@ -489,7 +492,7 @@ public class RealCheckInService implements CheckInService {
                     .filter(t -> t.getCreatedAt() != null && !t.getCreatedAt().isBefore(todayStart))
                     .filter(t -> t.getReplyCount() > 0)
                     .count();
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("查询热门圈子话题时出错: {}", e.getMessage());
         }
 
@@ -516,7 +519,8 @@ public class RealCheckInService implements CheckInService {
                     .distinct()
                     .count();
             return (int) count;
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库查询失败时返回 0，不影响签到主流程
             log.warn("查询新入圈用户时出错: {}", e.getMessage());
             return 0;
         }

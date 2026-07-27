@@ -95,7 +95,7 @@ public class MatchMetrics {
                 case "dislike" -> dislikeCounter.increment();
                 default -> log.debug("未识别的 swipe direction: {}", direction);
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // 监控逻辑失败不影响主流程，仅记录日志
             log.warn("记录 match.swipe.total 指标失败, direction={}: {}", direction, e.getMessage());
         }
@@ -107,7 +107,7 @@ public class MatchMetrics {
     public void recordMatchSuccess() {
         try {
             matchSuccessCounter.increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 match.success.count 指标失败: {}", e.getMessage());
         }
     }
@@ -121,7 +121,7 @@ public class MatchMetrics {
         try {
             // 使用 Duration 包装毫秒值，避免负数或溢出问题
             recommendLatencyTimer.record(Duration.ofMillis(Math.max(0, durationMs)));
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 match.recommend.latency 指标失败, durationMs={}: {}", durationMs, e.getMessage());
         }
     }

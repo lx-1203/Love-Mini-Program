@@ -1,6 +1,17 @@
 package com.campuslove.api.media;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.ratelimit.RateLimit;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -30,8 +41,10 @@ import org.springframework.web.server.ResponseStatusException;
  * </ul>
  * </p>
  */
+@Tag(name = "Media", description = "媒体文件上传与鉴权访问接口")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
-@RequestMapping("/api/media")
+@RequestMapping("/api/v1/media")
 public class MediaUploadController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaUploadController.class);
@@ -59,11 +72,30 @@ public class MediaUploadController {
      * @return 上传响应（URL + 元信息）
      */
     @PostMapping("/upload")
+    @Operation(
+            summary = "上传媒体文件",
+            description = "接收 multipart 文件 + 类型，校验 MIME 与 magic bytes，按 uploads/{userId}/{yyyyMM}/{uuid}.{ext} 分片存储。速率限制：桶容量 30，每秒补充 1 个令牌（按 IP 限流）。支持幂等性。",
+            operationId = "uploadMedia"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "上传成功，返回访问 URL 与元信息",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @ApiResponse(responseCode = "400", description = "BAD_REQUEST：格式不支持或文件损坏", content = @Content),
+            @ApiResponse(responseCode = "401", description = "UNAUTHORIZED：未登录", content = @Content),
+            @ApiResponse(responseCode = "413", description = "PAYLOAD_TOO_LARGE：文件超过大小限制", content = @Content),
+            @ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发限流", content = @Content)
+    })
     @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
-    public UploadResponse upload(@RequestParam("file") MultipartFile file,
-                                 @RequestParam("type") String type,
-                                 @RequestParam(value = "durationMs", required = false)
-                                 Integer durationMs) {
+    @Idempotent
+    public ApiResponse<UploadResponse> upload(
+            @Parameter(in = ParameterIn.QUERY, description = "multipart 文件", required = true,
+                    content = @Content(mediaType = "multipart/form-data"))
+            @RequestParam("file") MultipartFile file,
+            @Parameter(in = ParameterIn.QUERY, description = "媒体类型：image / video / background", required = true, example = "image")
+            @RequestParam("type") String type,
+            @Parameter(in = ParameterIn.QUERY, description = "视频时长（毫秒），可选", example = "15000")
+            @RequestParam(value = "durationMs", required = false)
+            Integer durationMs) {
         Long userId = getCurrentUserId();
         LOGGER.info("收到上传请求: userId={} type={} size={} durationMs={}",
                 userId, type, file == null ? 0 : file.getSize(), durationMs);
@@ -71,14 +103,14 @@ public class MediaUploadController {
         MediaStorageService.UploadResult result = storageService.store(userId, file, type);
         // 若调用方未传 durationMs，使用服务返回的（视频场景通常为 null）
         Integer finalDuration = durationMs != null ? durationMs : result.getDurationMs();
-        return new UploadResponse(
+        return ApiResponse.ok(new UploadResponse(
                 result.getUrl(),
                 result.getWidth(),
                 result.getHeight(),
                 result.getMime(),
                 result.getSize(),
                 finalDuration
-        );
+        ));
     }
 
     /**

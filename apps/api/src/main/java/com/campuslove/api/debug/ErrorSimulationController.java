@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 供前端异常分支与全局错误处理链路联调使用。</p>
  */
 @RestController
-@RequestMapping("/api/_debug/errors")
+@RequestMapping("/api/v1/_debug/errors")
 @Profile("mock")
 public class ErrorSimulationController {
 

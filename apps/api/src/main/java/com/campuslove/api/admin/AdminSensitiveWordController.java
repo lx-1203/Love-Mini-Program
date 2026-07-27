@@ -2,6 +2,7 @@ package com.campuslove.api.admin;
 
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.admin.audit.AuditOperation;
+import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.SensitiveWord;
@@ -10,10 +11,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,28 +29,33 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 管理后台 - 敏感词控制器。
- * <p>提供敏感词的列表、新增、删除功能。
+ * <p>提供敏感词的列表、新增、删除、批量异步导入功能。
  * 新增/删除后会同步刷新内存中的 {@link SensitiveWordFilter} 缓存（通过重置 keywords 列表）。</p>
  *
  * <p>接口：</p>
  * <ul>
- *   <li>GET    /api/admin/sensitive-words         - 敏感词列表（支持可选 category 过滤）</li>
- *   <li>POST   /api/admin/sensitive-words         - 新增敏感词</li>
- *   <li>DELETE /api/admin/sensitive-words/{id}    - 删除敏感词</li>
+ *   <li>GET    /api/admin/sensitive-words                - 敏感词列表（支持可选 category 过滤）</li>
+ *   <li>POST   /api/admin/sensitive-words                - 新增敏感词</li>
+ *   <li>DELETE /api/admin/sensitive-words/{id}           - 删除敏感词</li>
+ *   <li>POST   /api/admin/sensitive-words/batch-import   - SubTask 5.3.5：批量异步导入敏感词</li>
  * </ul>
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/admin/sensitive-words")
+@RequestMapping("/api/v1/admin/sensitive-words")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminSensitiveWordController {
 
     private final SensitiveWordRepository sensitiveWordRepository;
     private final SensitiveWordFilter sensitiveWordFilter;
+    private final SensitiveWordImportService importService;
 
     public AdminSensitiveWordController(SensitiveWordRepository sensitiveWordRepository,
-                                        SensitiveWordFilter sensitiveWordFilter) {
+                                        SensitiveWordFilter sensitiveWordFilter,
+                                        SensitiveWordImportService importService) {
         this.sensitiveWordRepository = sensitiveWordRepository;
         this.sensitiveWordFilter = sensitiveWordFilter;
+        this.importService = importService;
     }
 
     /**
@@ -71,8 +80,13 @@ public class AdminSensitiveWordController {
     /**
      * 新增敏感词。
      * 词文本大小写不敏感去重；若已存在返回 409 Conflict。
+     *
+     * <p>Task 2.3.2：通过 {@code @CacheEvict(allEntries=true)} 主动失效 {@link CacheNames#SENSITIVE_WORDS}
+     * 全量缓存，保证下次查询能取到新增的敏感词。同时调用 {@link #refreshFilterKeywords()}
+     * 同步内存 SensitiveWordFilter。</p>
      */
     @Auditable(value = AuditOperation.ADD_SENSITIVE_WORD, targetType = "SENSITIVE_WORD")
+    @CacheEvict(cacheNames = CacheNames.SENSITIVE_WORDS, allEntries = true)
     @PostMapping
     public ResponseEntity<SensitiveWordView> create(
             @Valid @RequestBody SensitiveWordCreateRequest request) {
@@ -98,8 +112,12 @@ public class AdminSensitiveWordController {
     /**
      * 删除敏感词。
      * 不存在时返回 404。
+     *
+     * <p>Task 2.3.2：通过 {@code @CacheEvict(allEntries=true)} 主动失效 {@link CacheNames#SENSITIVE_WORDS}
+     * 全量缓存，保证下次查询不会返回已删除的敏感词。同时同步刷新内存 SensitiveWordFilter。</p>
      */
     @Auditable(value = AuditOperation.DELETE_SENSITIVE_WORD, targetType = "SENSITIVE_WORD")
+    @CacheEvict(cacheNames = CacheNames.SENSITIVE_WORDS, allEntries = true)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
         SecurityUtils.getCurrentUserId();
@@ -126,9 +144,37 @@ public class AdminSensitiveWordController {
                     .map(SensitiveWord::getWord)
                     .toList();
             sensitiveWordFilter.setKeywords(words);
-        } catch (Exception ignore) {
+        } catch (DataAccessException ignore) {
             // 同步失败不影响主流程，原有内存敏感词列表仍生效
         }
+    }
+
+    /**
+     * SubTask 5.3.5：批量异步导入敏感词。
+     *
+     * <p>支持一次性导入 1 万条以上敏感词，立即返回任务受理结果（含 taskId），
+     * 实际导入在 {@code taskExecutor} 线程池中分批执行，每批 500 条。</p>
+     *
+     * <p>设计说明：</p>
+     * <ul>
+     *   <li>异步处理避免 HTTP 请求阻塞与网关超时</li>
+     *   <li>双层去重：内存 Set + DB existsByWordIgnoreCase</li>
+     *   <li>异常隔离：单批失败不阻断后续批次</li>
+     *   <li>导入完成后主动失效 {@link CacheNames#SENSITIVE_WORDS} 缓存
+     *       并同步刷新内存 SensitiveWordFilter</li>
+     * </ul>
+     *
+     * @param request 批量导入请求（words + category）
+     * @return 任务受理结果
+     */
+    @Auditable(value = AuditOperation.ADD_SENSITIVE_WORD, targetType = "SENSITIVE_WORD")
+    @PostMapping("/batch-import")
+    public ResponseEntity<SensitiveWordImportResult> batchImport(
+            @Valid @RequestBody SensitiveWordBatchImportRequest request) {
+        Long operatorId = SecurityUtils.getCurrentUserId();
+        SensitiveWordImportResult result = importService.importBatchAsync(
+                request.words(), request.category(), operatorId);
+        return ResponseEntity.accepted().body(result);
     }
 
     private SensitiveWordView toView(SensitiveWord entity) {
@@ -152,5 +198,16 @@ record SensitiveWordView(
 /** 新增敏感词请求 */
 record SensitiveWordCreateRequest(
         @NotBlank String word,
+        String category
+) {}
+
+/**
+ * SubTask 5.3.5：批量导入敏感词请求。
+ *
+ * @param words    待导入的敏感词列表（最多 10000 条，超过将分批处理）
+ * @param category 敏感词分类（POLITICS/PORN/ABUSE/AD/OTHER），可为 null
+ */
+record SensitiveWordBatchImportRequest(
+        @jakarta.validation.constraints.NotEmpty List<@NotBlank String> words,
         String category
 ) {}

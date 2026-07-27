@@ -17,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
  * 不同匹配结果（成功/排队/失败）。</p>
  */
 @RestController
-@RequestMapping("/api/_debug/matches")
+@RequestMapping("/api/v1/_debug/matches")
 @Profile("mock")
 public class MatchDebugController {
 

@@ -24,7 +24,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
@@ -79,7 +83,9 @@ public class RealCampusService implements CampusService {
         topic.setViewCount(topic.getViewCount() + 1);
         campusTopicRepository.save(topic);
 
-        return toCampusTopicView(topic);
+        // Task 2.2.3：批量预加载作者信息（单条场景下也走统一 Map，避免后续扩展时遗漏）
+        Map<Long, User> authorMap = batchLoadAuthors(List.of(topic));
+        return toCampusTopicView(topic, authorMap);
     }
 
     @Override
@@ -92,8 +98,10 @@ public class RealCampusService implements CampusService {
             topics = campusTopicRepository.findBySchoolIdOrderByCreatedAtDesc(schoolId);
         }
 
+        // Task 2.2.3：批量预加载作者信息，避免在 toCampusTopicView 中触发 N+1 查询
+        Map<Long, User> authorMap = batchLoadAuthors(topics);
         return topics.stream()
-                .map(this::toCampusTopicView)
+                .map(topic -> toCampusTopicView(topic, authorMap))
                 .toList();
     }
 
@@ -132,7 +140,9 @@ public class RealCampusService implements CampusService {
         topic.setUpdatedAt(now);
 
         campusTopicRepository.save(topic);
-        return toCampusTopicView(topic);
+        // Task 2.2.3：使用统一 Map 复用预加载逻辑
+        Map<Long, User> authorMap = batchLoadAuthors(List.of(topic));
+        return toCampusTopicView(topic, authorMap);
     }
 
     // ---- 校园话题回复 ----
@@ -170,15 +180,20 @@ public class RealCampusService implements CampusService {
         topic.setUpdatedAt(now);
         campusTopicRepository.save(topic);
 
-        return toCampusTopicReplyView(reply);
+        // Task 2.2.3：批量预加载作者信息（单条场景下也走统一 Map）
+        Map<Long, User> authorMap = batchLoadReplyAuthors(List.of(reply));
+        return toCampusTopicReplyView(reply, authorMap);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CampusTopicReplyView> getCampusTopicReplies(Long topicId) {
         List<CampusTopicReply> replies = campusTopicReplyRepository.findByTopicIdOrderByCreatedAtAsc(topicId);
+
+        // Task 2.2.3：批量预加载回复作者信息，避免在 toCampusTopicReplyView 中触发 N+1 查询
+        Map<Long, User> authorMap = batchLoadReplyAuthors(replies);
         return replies.stream()
-                .map(this::toCampusTopicReplyView)
+                .map(reply -> toCampusTopicReplyView(reply, authorMap))
                 .toList();
     }
 
@@ -191,9 +206,17 @@ public class RealCampusService implements CampusService {
         Page<Post> postPage = postRepository.findByStatusOrderByCreatedAtDesc(
                 PostStatus.active, PageRequest.of(page, 20));
 
+        // Task 2.2.3：批量预加载帖子作者信息，避免在循环中触发 N+1 查询
+        List<Long> authorIds = postPage.getContent().stream()
+                .map(Post::getAuthorId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, User> authorMap = batchLoadUsers(authorIds);
+
         List<PostSummaryView> result = new ArrayList<>();
         for (Post post : postPage.getContent()) {
-            PostAuthorView author = getPostAuthorView(post.getAuthorId());
+            PostAuthorView author = getPostAuthorView(post.getAuthorId(), authorMap);
             List<String> tags = parseJsonToList(post.getTags());
             String summary = truncate(post.getContent(), 120);
 
@@ -266,9 +289,16 @@ public class RealCampusService implements CampusService {
     }
 
     /**
-     * 将 CampusTopic 实体转换为 CampusTopicView。
+     * 将 CampusTopic 实体转换为 CampusTopicView（批量场景）。
+     *
+     * <p>Task 2.2.3：从预加载的 author Map 中按 authorId 取出 User 实体（O(1)，无 N+1 查询），
+     * Map 中不存在时按"未知用户"处理。匿名帖子直接返回"匿名校友"，不查 Map。</p>
+     *
+     * @param topic     话题实体
+     * @param authorMap authorId → User 实体的 Map（可能为空 Map）
+     * @return 话题视图
      */
-    private CampusTopicView toCampusTopicView(CampusTopic topic) {
+    private CampusTopicView toCampusTopicView(CampusTopic topic, Map<Long, User> authorMap) {
         String authorName;
         String authorAvatar;
         Long displayAuthorId;
@@ -279,8 +309,8 @@ public class RealCampusService implements CampusService {
             authorAvatar = null;
             displayAuthorId = null;
         } else {
-            // 非匿名：查询真实用户信息
-            User author = userRepository.findById(topic.getAuthorId()).orElse(null);
+            // 非匿名：从预加载的 Map 中获取作者信息（O(1)，无 N+1 查询）
+            User author = authorMap != null ? authorMap.get(topic.getAuthorId()) : null;
             authorName = author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
             authorAvatar = author != null ? author.getAvatarUrl() : null;
             displayAuthorId = topic.getAuthorId();
@@ -304,10 +334,16 @@ public class RealCampusService implements CampusService {
     }
 
     /**
-     * 将 CampusTopicReply 实体转换为 CampusTopicReplyView。
+     * 将 CampusTopicReply 实体转换为 CampusTopicReplyView（批量场景）。
      * 匿名回复时返回"匿名校友"。
+     *
+     * <p>Task 2.2.3：从预加载的 author Map 中按 authorId 取出 User 实体（O(1)，无 N+1 查询）。</p>
+     *
+     * @param reply     回复实体
+     * @param authorMap authorId → User 实体的 Map
+     * @return 回复视图
      */
-    private CampusTopicReplyView toCampusTopicReplyView(CampusTopicReply reply) {
+    private CampusTopicReplyView toCampusTopicReplyView(CampusTopicReply reply, Map<Long, User> authorMap) {
         String authorName;
         String authorAvatar;
         Long displayAuthorId;
@@ -318,8 +354,8 @@ public class RealCampusService implements CampusService {
             authorAvatar = null;
             displayAuthorId = null;
         } else {
-            // 非匿名：查询真实用户信息
-            User author = userRepository.findById(reply.getAuthorId()).orElse(null);
+            // 非匿名：从预加载的 Map 中获取作者信息（O(1)，无 N+1 查询）
+            User author = authorMap != null ? authorMap.get(reply.getAuthorId()) : null;
             authorName = author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
             authorAvatar = author != null ? author.getAvatarUrl() : null;
             displayAuthorId = reply.getAuthorId();
@@ -338,7 +374,61 @@ public class RealCampusService implements CampusService {
     }
 
     /**
-     * 获取帖子作者视图。
+     * 批量预加载 CampusTopic 列表的作者信息。
+     *
+     * <p>Task 2.2.3：原 toCampusTopicView 内部为每条非匿名话题调用
+     * {@code userRepository.findById(authorId)}，N 条话题触发 N 次 SELECT user。
+     * 本方法先收集 distinct authorId（仅非匿名），再通过
+     * {@link org.springframework.data.jpa.repository.JpaRepository#findAllById(Iterable)}
+     * 一次性查询并组装为 Map，将 N 次查询压缩为 1 次。</p>
+     *
+     * @param topics 话题列表
+     * @return authorId → User 实体的 Map
+     */
+    private Map<Long, User> batchLoadAuthors(List<CampusTopic> topics) {
+        if (topics == null || topics.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> authorIds = topics.stream()
+                .filter(t -> !Boolean.TRUE.equals(t.getIsAnonymous()))
+                .map(CampusTopic::getAuthorId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (authorIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+    }
+
+    /**
+     * 批量预加载 CampusTopicReply 列表的作者信息。
+     *
+     * <p>Task 2.2.3：批量收集回复 authorId 后一次性查询，避免在循环中触发 N+1 查询。</p>
+     *
+     * @param replies 回复列表
+     * @return authorId → User 实体的 Map
+     */
+    private Map<Long, User> batchLoadReplyAuthors(List<CampusTopicReply> replies) {
+        if (replies == null || replies.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> authorIds = replies.stream()
+                .filter(r -> !Boolean.TRUE.equals(r.getIsAnonymous()))
+                .map(CampusTopicReply::getAuthorId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (authorIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+    }
+
+    /**
+     * 获取帖子作者视图（单条调用场景，回退到单次查询）。
      */
     private PostAuthorView getPostAuthorView(Long authorId) {
         User author = userRepository.findById(authorId).orElse(null);
@@ -346,6 +436,50 @@ public class RealCampusService implements CampusService {
         String avatarUrl = author != null ? author.getAvatarUrl() : null;
 
         return new PostAuthorView(authorId, nickname, avatarUrl, "");
+    }
+
+    /**
+     * 获取帖子作者视图（批量场景）。
+     *
+     * <p>Task 2.2.3：从预加载的 author Map 中按 authorId 取出 User 实体（O(1)，无 N+1 查询），
+     * Map 中不存在时按"未知用户"处理。</p>
+     *
+     * @param authorId   作者用户 ID
+     * @param authorMap authorId → User 实体的 Map（可能为空 Map）
+     * @return 帖子作者视图
+     */
+    private PostAuthorView getPostAuthorView(Long authorId, Map<Long, User> authorMap) {
+        User author = authorMap != null ? authorMap.get(authorId) : null;
+        String nickname = author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
+        String avatarUrl = author != null ? author.getAvatarUrl() : null;
+
+        return new PostAuthorView(authorId, nickname, avatarUrl, "");
+    }
+
+    /**
+     * 批量查询用户信息，避免 N+1 查询。
+     *
+     * <p>Task 2.2.3：原 getCampusPosts 循环中调用 getPostAuthorView → userRepository.findById
+     * 会触发 N 次 SELECT user。本方法先收集 distinct authorId 列表，再通过
+     * {@link org.springframework.data.jpa.repository.JpaRepository#findAllById(Iterable)}
+     * 一次性查询并组装为 Map，将 N 次查询压缩为 1 次。</p>
+     *
+     * @param userIds 用户 ID 列表
+     * @return userId → User 实体的 Map
+     */
+    private Map<Long, User> batchLoadUsers(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> distinctIds = userIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRepository.findAllById(distinctIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
     }
 
     /**

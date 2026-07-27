@@ -4,6 +4,7 @@ import com.campuslove.api.admin.AdminAuditLogService;
 import com.campuslove.api.entity.AuditLog;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.UserRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -20,6 +21,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -107,7 +109,8 @@ public class AuditLogAspect {
             long duration = System.currentTimeMillis() - start;
             try {
                 recordAuditLog(pjp, auditable, responseStatus, errorMessage, duration);
-            } catch (Exception e) {
+            } catch (DataAccessException e) {
+                // 审计日志写入失败时仅记录 warn，不影响主业务流程
                 log.warn("Failed to record audit log: operation={}, error={}",
                         auditable.value(), e.getMessage());
             }
@@ -198,7 +201,8 @@ public class AuditLogAspect {
             String username = user.getNickname() != null ? user.getNickname() : ("user-" + userId);
             String role = user.getRole() != null ? user.getRole() : "USER";
             return new OperatorInfo(userId, username, role);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库查询失败时降级使用 ANONYMOUS 占位，仍记录审计日志
             log.debug("Failed to resolve operator: {}", e.getMessage());
             return new OperatorInfo(0L, "ANONYMOUS", "ANONYMOUS");
         }
@@ -261,7 +265,8 @@ public class AuditLogAspect {
             maskSensitiveFields(node);
             String json = objectMapper.writeValueAsString(node);
             return truncate(json, MAX_BODY_LENGTH);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
+            // 请求体序列化失败时记录原始错误信息（截断后）
             return "<unable to serialize: " + truncate(e.getMessage(), 100) + ">";
         }
     }

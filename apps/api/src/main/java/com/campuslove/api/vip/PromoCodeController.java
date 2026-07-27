@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/vip/promo-codes")
+@RequestMapping("/api/v1/vip/promo-codes")
 public class PromoCodeController {
 
     private final PromoCodeService promoCodeService;

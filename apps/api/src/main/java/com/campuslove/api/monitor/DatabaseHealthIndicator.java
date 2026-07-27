@@ -60,7 +60,7 @@ public class DatabaseHealthIndicator implements HealthIndicator {
                     .withDetail("database", "unreachable")
                     .withDetail("reason", "Connection.isValid returned false")
                     .build();
-        } catch (Exception e) {
+        } catch (java.sql.SQLException e) {
             // 获取连接失败（数据库不可达 / 鉴权失败 / 网络问题等）
             log.warn("数据库健康检查失败: {}", e.getMessage());
             return Health.down(e)

@@ -1,5 +1,8 @@
 package com.campuslove.api.media;
 
+import com.campuslove.api.config.Resilience4jConfig;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -9,7 +12,9 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.imageio.ImageIO;
@@ -88,6 +93,47 @@ public class LocalMediaStorageService implements MediaStorageService {
     /** URL 前缀（与 WebConfig 静态资源映射一致） */
     private static final String URL_PREFIX = "/uploads/";
 
+    /**
+     * Task 2.6.5：图片格式 magic bytes 白名单。
+     *
+     * <p>每种图片格式对应文件头部的固定字节序列（magic number），用于在 MIME
+     * 与扩展名校验之外再做内容级校验，防止伪装文件攻击
+     * （如恶意脚本重命名为 .jpg 上传）。</p>
+     *
+     * <p>已知的图片 magic bytes：</p>
+     * <ul>
+     *   <li>JPEG：{@code FF D8 FF}（3 字节）</li>
+     *   <li>PNG：{@code 89 50 4E 47 0D 0A 1A 0A}（8 字节）</li>
+     *   <li>WebP：{@code 52 49 46 46 ?? ?? ?? ?? 57 45 42 50}（RIFF + 4 字节大小 + WEBP）</li>
+     * </ul>
+     */
+    private static final Map<String, byte[][]> IMAGE_MAGIC_BYTES = new LinkedHashMap<>();
+
+    /**
+     * Task 2.6.5：视频格式 magic bytes 白名单。
+     *
+     * <p>MP4 与 MOV 文件均使用 ISO BMFF 容器格式，文件头为：
+     * {@code ?? ?? ?? ?? 66 74 79 70}（4 字节 size + "ftyp" box type）。</p>
+     */
+    private static final byte[][] VIDEO_MAGIC_BYTES = new byte[][]{
+            // ftyp box 标识，位于文件偏移 4-7
+            new byte[]{0x66, 0x74, 0x79, 0x70} // "ftyp"
+    };
+
+    static {
+        // JPEG: FF D8 FF
+        IMAGE_MAGIC_BYTES.put("jpg", new byte[][]{new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}});
+        IMAGE_MAGIC_BYTES.put("jpeg", new byte[][]{new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}});
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        IMAGE_MAGIC_BYTES.put("png", new byte[][]{new byte[]{
+                (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}});
+        // WebP: RIFF....WEBP —— 校验前 4 字节 RIFF 与偏移 8-11 的 WEBP
+        IMAGE_MAGIC_BYTES.put("webp", new byte[][]{
+                new byte[]{0x52, 0x49, 0x46, 0x46}, // "RIFF"
+                new byte[]{0x57, 0x45, 0x42, 0x50}  // "WEBP" at offset 8
+        });
+    }
+
     /** 本地存储根目录，默认 ./uploads，相对路径基于应用工作目录 */
     private final String storageRoot;
 
@@ -102,6 +148,9 @@ public class LocalMediaStorageService implements MediaStorageService {
     }
 
     @Override
+    @CircuitBreaker(name = Resilience4jConfig.OBJECT_STORAGE_BACKEND,
+            fallbackMethod = "storeFallback")
+    @Retry(name = Resilience4jConfig.OBJECT_STORAGE_BACKEND)
     public UploadResult store(Long userId, MultipartFile file, String type) {
         // 入参校验：避免 NPE
         if (userId == null) {
@@ -132,6 +181,10 @@ public class LocalMediaStorageService implements MediaStorageService {
         // （扩展名校验通过后再校验 MIME，避免不支持的扩展名优先抛出 MIME 异常信息）
         String contentType = file.getContentType();
         validateMimeType(contentType, normalizedType);
+
+        // Task 2.6.5：校验文件 magic bytes，防止伪装文件攻击
+        // （仅靠扩展名 + MIME 仍可被绕过，magic bytes 是文件内容级校验）
+        validateMagicBytes(file, lowerExt, normalizedType);
 
         // 计算存储路径与 URL
         String monthSegment = LocalDate.now().format(MONTH_FMT);
@@ -186,6 +239,31 @@ public class LocalMediaStorageService implements MediaStorageService {
                 url, fileSize);
 
         return new UploadResult(url, width, height, finalContentType, fileSize, null);
+    }
+
+    /**
+     * Task 2.3.3：{@link #store(Long, MultipartFile, String)} 的 fallback 方法。
+     *
+     * <p>触发场景：本地文件存储连续 IO 失败（如磁盘满 / 权限错误）触发熔断，
+     * 或重试 3 次后仍失败。降级策略：抛出 IllegalStateException 由
+     * {@link com.campuslove.api.config.GlobalExceptionHandler} 转换为 HTTP 500 响应，
+     * 客户端展示"上传失败，请稍后重试"提示。</p>
+     *
+     * <p>注意：本 fallback 不返回 null，因为 UploadResult 为 final record，
+     * 上传失败应明确告知调用方，而非静默返回 null 导致后续 NPE。</p>
+     *
+     * @param userId 用户 ID
+     * @param file   上传文件
+     * @param type   媒体类型
+     * @param ex     触发 fallback 的异常
+     * @return 不返回，始终抛 IllegalStateException
+     */
+    @SuppressWarnings("unused")
+    private UploadResult storeFallback(Long userId, MultipartFile file, String type, Throwable ex) {
+        LOGGER.error("媒体上传降级: userId={}, type={}, errorType={}, message={}",
+                userId, type, ex.getClass().getSimpleName(), ex.getMessage());
+        throw new IllegalStateException(
+                "媒体存储服务暂时不可用，请稍后重试: " + ex.getMessage(), ex);
     }
 
     /**
@@ -332,6 +410,122 @@ public class LocalMediaStorageService implements MediaStorageService {
                     + "，仅支持 " + allowed
                     + "（类型=" + normalizedType + "）");
         }
+    }
+
+    /**
+     * Task 2.6.5：校验文件 magic bytes（文件头魔数）。
+     *
+     * <p>读取文件头部前 12 字节，按扩展名查找期望的 magic bytes 序列，
+     * 逐字节比对确保文件内容与扩展名声明一致。三道防线（扩展名 + MIME + magic bytes）
+     * 同时绕过才可上传恶意文件，显著提升上传安全性。</p>
+     *
+     * <p>校验规则：</p>
+     * <ul>
+     *   <li>读取文件前 {@code MAX_HEADER_BYTES=12} 字节（覆盖所有支持格式的 magic 长度）</li>
+     *   <li>按扩展名从 {@link #IMAGE_MAGIC_BYTES} 或 {@link #VIDEO_MAGIC_BYTES} 取期望 magic 序列</li>
+     *   <li>对每个 magic 序列，按其偏移量逐一比对字节</li>
+     *   <li>任一字节不匹配 → 抛出 IllegalArgumentException（HTTP 400 等价）</li>
+     *   <li>读取失败 → 抛出 IllegalStateException（HTTP 500 等价）</li>
+     * </ul>
+     *
+     * <p>WebP 特殊处理：magic bytes 由两组序列组成（RIFF @ 0, WEBP @ 8），
+     * 两组均需匹配才视为合法 WebP 文件。</p>
+     *
+     * @param file           上传文件
+     * @param lowerExt       扩展名（小写）
+     * @param normalizedType 归一化后的媒体类型（image/video）
+     */
+    private void validateMagicBytes(MultipartFile file, String lowerExt, String normalizedType) {
+        // 读取文件头部字节（最多 12 字节，覆盖 WebP "WEBP" @ offset 8 + 4 字节长度）
+        final int maxHeaderBytes = 12;
+        byte[] header;
+        try (InputStream in = file.getInputStream()) {
+            header = in.readNBytes(maxHeaderBytes);
+        } catch (IOException ex) {
+            LOGGER.error("读取文件 magic bytes 失败: name={}", file.getOriginalFilename(), ex);
+            throw new IllegalStateException("读取文件内容失败: " + ex.getMessage(), ex);
+        }
+
+        if (header.length == 0) {
+            throw new IllegalArgumentException("文件内容为空，无法校验 magic bytes");
+        }
+
+        // 按扩展名与类型选择期望的 magic bytes
+        byte[][] expectedMagic;
+        if ("video".equals(normalizedType)) {
+            // MP4/MOV 共用 ftyp box 标识
+            expectedMagic = VIDEO_MAGIC_BYTES;
+        } else {
+            expectedMagic = IMAGE_MAGIC_BYTES.get(lowerExt);
+        }
+
+        if (expectedMagic == null || expectedMagic.length == 0) {
+            // 无 magic bytes 配置的扩展名跳过内容校验（理论上不会发生，因为扩展名已校验）
+            LOGGER.debug("扩展名 {} 无 magic bytes 配置，跳过内容校验", lowerExt);
+            return;
+        }
+
+        // 逐序列校验（每个序列可指定不同偏移量，按顺序匹配）
+        // 偏移量按扩展名确定：
+        //   - 图片 jpg/png：序列 0 @ 偏移 0
+        //   - WebP：序列 0 (RIFF) @ 偏移 0，序列 1 (WEBP) @ 偏移 8
+        //   - 视频 mp4/mov：序列 0 (ftyp) @ 偏移 4（前 4 字节为 box size，动态值不校验）
+        int[] offsets;
+        if ("video".equals(normalizedType)) {
+            offsets = new int[]{4};
+        } else {
+            offsets = new int[]{0, 8};
+        }
+        for (int i = 0; i < expectedMagic.length; i++) {
+            byte[] magic = expectedMagic[i];
+            int offset = i < offsets.length ? offsets[i] : 0;
+            if (!matchesMagicBytes(header, magic, offset)) {
+                LOGGER.warn("文件 magic bytes 校验失败: ext={}, type={}, expected={}, actual={}, offset={}",
+                        lowerExt, normalizedType, bytesToHex(magic), bytesToHex(header), offset);
+                throw new IllegalArgumentException(
+                        "文件内容与扩展名声明不一致（magic bytes 校验失败），疑似伪装文件");
+            }
+        }
+    }
+
+    /**
+     * 比对 header 中指定偏移量开始的字节是否与 magic 序列完全匹配。
+     *
+     * @param header 文件头字节数组
+     * @param magic  期望的 magic bytes
+     * @param offset 起始偏移量
+     * @return true 表示完全匹配
+     */
+    private boolean matchesMagicBytes(byte[] header, byte[] magic, int offset) {
+        if (offset + magic.length > header.length) {
+            return false;
+        }
+        for (int i = 0; i < magic.length; i++) {
+            if (header[offset + i] != magic[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 将字节数组转换为十六进制字符串，便于日志输出。
+     *
+     * @param bytes 字节数组
+     * @return 十六进制字符串（如 "FF D8 FF"）
+     */
+    private String bytesToHex(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(bytes.length * 3);
+        for (int i = 0; i < bytes.length; i++) {
+            if (i > 0) {
+                sb.append(' ');
+            }
+            sb.append(String.format("%02X", bytes[i] & 0xFF));
+        }
+        return sb.toString();
     }
 
     /**

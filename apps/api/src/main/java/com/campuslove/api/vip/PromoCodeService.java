@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -134,7 +135,8 @@ public class PromoCodeService {
                     discountAmount,
                     Math.max(0, baseAmount - discountAmount)
             );
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库访问异常（save 失败、约束冲突、并发兑换导致的乐观锁失败等）
             log.error("优惠码兑换失败：code={}, userId={}", normalizedCode, userId, e);
             throw new RuntimeException("优惠码兑换失败，请稍后重试", e);
         }

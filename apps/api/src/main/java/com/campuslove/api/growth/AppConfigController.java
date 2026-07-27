@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 配置项由管理后台维护，前端按需拉取以驱动首屏渲染。</p>
  */
 @RestController
-@RequestMapping("/api/app-config")
+@RequestMapping("/api/v1/app-config")
 public class AppConfigController {
 
   private final AppConfigService appConfigService;

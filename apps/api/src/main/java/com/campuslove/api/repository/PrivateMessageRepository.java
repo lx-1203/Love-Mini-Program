@@ -4,6 +4,7 @@ import com.campuslove.api.entity.PrivateMessage;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -32,6 +33,35 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
      * @return 分页消息列表
      */
     Page<PrivateMessage> findByConversationIdOrderByCreatedAtDesc(Long conversationId, Pageable pageable);
+
+    /**
+     * Task 2.2.4：根据会话 ID 分页查询消息，并通过 @EntityGraph 一次性预加载 conversation 关联。
+     * <p>{@link PrivateMessage#getConversation()} 是 LAZY 加载，
+     * 调用方在 View 转换层访问 {@code message.getConversation().getId()} 等字段时
+     * 会为每条消息触发一次 SELECT conversation 查询（N+1 问题）。
+     * 此方法使用 @EntityGraph 在单条 SQL 中通过 LEFT OUTER JOIN 加载 conversation，
+     * 将原本 N 条 SQL 压缩为 1 条。</p>
+     *
+     * @param conversationId 会话 ID
+     * @param pageable       分页参数
+     * @return 分页消息列表（conversation 已被预加载）
+     */
+    @EntityGraph(attributePaths = "conversation")
+    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt DESC")
+    Page<PrivateMessage> findWithConversationByConversationIdOrderByCreatedAtDesc(
+            @Param("conversationId") Long conversationId, Pageable pageable);
+
+    /**
+     * Task 2.2.4：根据会话 ID 查询消息列表（正序），并通过 @EntityGraph 一次性预加载 conversation 关联。
+     * <p>用于聊天历史消息渲染场景，避免在循环中访问 conversation 字段时触发 N+1 查询。</p>
+     *
+     * @param conversationId 会话 ID
+     * @return 消息列表（conversation 已被预加载）
+     */
+    @EntityGraph(attributePaths = "conversation")
+    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt ASC")
+    List<PrivateMessage> findWithConversationByConversationIdOrderByCreatedAtAsc(
+            @Param("conversationId") Long conversationId);
 
     /**
      * 统计指定会话中指定发送者未读消息数量。

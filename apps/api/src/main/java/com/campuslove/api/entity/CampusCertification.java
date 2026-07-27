@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 
 /**
@@ -56,6 +57,19 @@ public class CampusCertification {
     /** 审核时间 */
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
+    /**
+     * 乐观锁版本号（Task 2.1.1 数据一致性基础设施）。
+     *
+     * <p>由 JPA 自动维护，每次实体更新时 version 自增。
+     * 并发更新冲突时抛出 {@link org.springframework.orm.ObjectOptimisticLockingFailureException}，
+     * 由 GlobalExceptionHandler 转换为 HTTP 409 Conflict。</p>
+     *
+     * <p>初始值 0L，对应数据库列 {@code version BIGINT DEFAULT 0}（Flyway V2026.07.26.0003）。</p>
+     */
+    @Version
+    @Column(name = "version", nullable = false, columnDefinition = "BIGINT DEFAULT 0")
+    private Long version = 0L;
+
 
     public CampusCertification() {
     }
@@ -138,5 +152,13 @@ public class CampusCertification {
 
     public void setReviewedAt(LocalDateTime reviewedAt) {
         this.reviewedAt = reviewedAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

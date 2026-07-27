@@ -10,6 +10,8 @@ import com.campuslove.api.repository.CommentRepository;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,8 +42,9 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/admin/posts")
+@RequestMapping("/api/v1/admin/posts")
 @PreAuthorize("hasRole('ADMIN')")
+@Validated
 public class AdminPostController {
 
     private final PostRepository postRepository;
@@ -73,8 +77,8 @@ public class AdminPostController {
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "category", required = false) String category,
             @RequestParam(name = "authorId", required = false) Long authorId,
-            @RequestParam(name = "page", defaultValue = "1") int page,
-            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize) {
+            @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
+            @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
 
         AuditStatus auditStatusEnum = parseAuditStatus(auditStatus);
@@ -168,7 +172,8 @@ public class AdminPostController {
         if (postOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        Post post = postOpt.get();
+        Post post = postOpt.orElseThrow(() ->
+                new IllegalStateException("postOpt 已确认非空但 orElseThrow 触发，数据不一致"));
         post.setStatus(PostStatus.deleted);
         post.setUpdatedAt(LocalDateTime.now());
         postRepository.save(post);

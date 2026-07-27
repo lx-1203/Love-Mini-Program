@@ -159,7 +159,7 @@ public class RateLimitAspect {
                 return methodQualifier + ":null";
             }
             return methodQualifier + ":" + value;
-        } catch (Exception e) {
+        } catch (org.springframework.expression.ExpressionException e) {
             // SpEL 解析失败时降级为方法全限定名，避免限流失效或误伤
             log.warn("SpEL 解析限流键失败，降级为方法全限定名：expression={}, method={}, error={}",
                     expressionStr, method.getName(), e.getMessage());

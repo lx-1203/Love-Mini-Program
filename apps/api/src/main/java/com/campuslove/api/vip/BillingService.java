@@ -2,11 +2,13 @@ package com.campuslove.api.vip;
 
 import com.campuslove.api.entity.VipBill;
 import com.campuslove.api.repository.VipBillRepository;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -73,7 +75,8 @@ public class BillingService {
                     billPage.getSize(),
                     billPage.getTotalPages()
             );
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库访问异常
             log.error("账单列表查询失败：userId={}, page={}, size={}", userId, page, size, e);
             throw new RuntimeException("账单查询失败，请稍后重试", e);
         }
@@ -99,7 +102,8 @@ public class BillingService {
                 views.add(toView(bill));
             }
             return new BillListResponse(views, (long) views.size(), 0, views.size(), 1);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库查询失败时上报，由 GlobalExceptionHandler 转换为 5xx 响应
             log.error("账单列表查询失败：userId={}", userId, e);
             throw new RuntimeException("账单查询失败，请稍后重试", e);
         }
@@ -152,14 +156,16 @@ public class BillingService {
             if (periodStart != null && !periodStart.isBlank()) {
                 try {
                     bill.setPeriodStart(java.time.LocalDateTime.parse(periodStart));
-                } catch (Exception e) {
+                } catch (DateTimeParseException e) {
+                    // 时间字符串格式不合法（非 ISO-8601 LocalDateTime 格式）
                     log.warn("periodStart 解析失败：{}", periodStart, e);
                 }
             }
             if (periodEnd != null && !periodEnd.isBlank()) {
                 try {
                     bill.setPeriodEnd(java.time.LocalDateTime.parse(periodEnd));
-                } catch (Exception e) {
+                } catch (DateTimeParseException e) {
+                    // 时间字符串格式不合法（非 ISO-8601 LocalDateTime 格式）
                     log.warn("periodEnd 解析失败：{}", periodEnd, e);
                 }
             }
@@ -167,7 +173,8 @@ public class BillingService {
             VipBill saved = vipBillRepository.save(bill);
             log.info("账单创建成功：id={}, userId={}, amount={}", saved.getId(), userId, amount);
             return toView(saved);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库写入失败时回滚事务并上报
             log.error("账单创建失败：userId={}, amount={}", userId, amount, e);
             throw new RuntimeException("账单创建失败，请稍后重试", e);
         }

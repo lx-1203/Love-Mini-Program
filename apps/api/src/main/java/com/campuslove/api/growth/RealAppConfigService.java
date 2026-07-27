@@ -62,7 +62,8 @@ public class RealAppConfigService implements AppConfigService {
                     DEFAULT_SCENE_KEY, true);
 
             if (optionalConfig.isPresent()) {
-                AppLoginHeroConfig config = optionalConfig.get();
+                AppLoginHeroConfig config = optionalConfig.orElseThrow(() ->
+                        new IllegalStateException("optionalConfig 已确认非空但 orElseThrow 触发，数据不一致"));
                 log.debug("从数据库读取到登录主视觉配置: sceneKey={}, heroMode={}",
                         config.getSceneKey(), config.getHeroMode());
                 return mapToView(config);
@@ -72,7 +73,7 @@ public class RealAppConfigService implements AppConfigService {
             log.info("数据库中未找到 scene_key='{}' 的激活配置，使用内置默认值", DEFAULT_SCENE_KEY);
             return buildDefaultConfig();
 
-        } catch (Exception e) {
+        } catch (org.springframework.dao.DataAccessException e) {
             // 数据库查询异常时降级为默认配置，避免影响登录页正常展示
             log.error("查询登录主视觉配置失败，降级使用默认配置", e);
             return buildDefaultConfig();

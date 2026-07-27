@@ -1,5 +1,6 @@
 package com.campuslove.api.campus;
 
+import com.campuslove.api.campus.event.CertificationApprovedEvent;
 import com.campuslove.api.entity.CampusCertification;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.repository.CampusCertificationRepository;
@@ -9,6 +10,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
  * 在 real profile 下激活，使用 CampusCertificationRepository 实现数据库持久化。
  * 认证状态流转：PENDING -> APPROVED / REJECTED（仅 PENDING 状态可审核）。
  * 已驳回（REJECTED）的记录允许用户重新提交覆盖。
+ *
+ * <p>SubTask 5.3.2：审批通过后发布 {@link CertificationApprovedEvent} 事件，
+ * 通知订阅者（如 {@link com.campuslove.api.search.UserIndexSyncListener}）
+ * 同步更新 Elasticsearch 用户索引。</p>
  */
 @Profile("real")
 @Service
@@ -31,12 +37,15 @@ public class RealCampusCertificationService implements CampusCertificationServic
 
     private final CampusCertificationRepository campusCertificationRepository;
     private final UserBasicProfileRepository userBasicProfileRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public RealCampusCertificationService(
             CampusCertificationRepository campusCertificationRepository,
-            UserBasicProfileRepository userBasicProfileRepository) {
+            UserBasicProfileRepository userBasicProfileRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.campusCertificationRepository = campusCertificationRepository;
         this.userBasicProfileRepository = userBasicProfileRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -57,7 +66,8 @@ public class RealCampusCertificationService implements CampusCertificationServic
         Optional<CampusCertification> existingOpt = campusCertificationRepository.findByUserId(userId);
 
         if (existingOpt.isPresent()) {
-            CampusCertification existing = existingOpt.get();
+            CampusCertification existing = existingOpt.orElseThrow(() ->
+                    new IllegalStateException("认证记录存在但 Optional 为空，数据不一致"));
             String currentStatus = existing.getStatus();
 
             if (STATUS_PENDING.equals(currentStatus)) {
@@ -118,6 +128,9 @@ public class RealCampusCertificationService implements CampusCertificationServic
      * 仅 status=PENDING 时可审核，更新 status、reviewerId、reviewComment、reviewedAt。
      * 审核结果只能是 APPROVED 或 REJECTED。
      *
+     * <p>SubTask 5.3.2：审核通过（APPROVED）时发布 {@link CertificationApprovedEvent}
+     * 事件，通知订阅者同步更新 Elasticsearch 用户索引。</p>
+     *
      * @param certId        认证记录 ID
      * @param status        审核结果（APPROVED 或 REJECTED）
      * @param reviewerId    审核人 ID
@@ -146,6 +159,19 @@ public class RealCampusCertificationService implements CampusCertificationServic
 
         CampusCertification saved = campusCertificationRepository.save(certification);
         log.info("审核人 {} 将认证记录 id={} 审核为: {}", reviewerId, certId, status);
+
+        // SubTask 5.3.2：审核通过后发布事件，触发 ES 用户索引同步
+        if (STATUS_APPROVED.equals(status)) {
+            try {
+                eventPublisher.publishEvent(CertificationApprovedEvent.of(this, saved, reviewerId));
+                log.info("SubTask 5.3.2 认证审批通过事件已发布: userId={}, certId={}, reviewerId={}",
+                        saved.getUserId(), certId, reviewerId);
+            } catch (RuntimeException e) {
+                // 事件发布失败不影响主流程，仅记录日志
+                log.warn("认证审批通过事件发布失败: certId={}, error={}", certId, e.getMessage());
+            }
+        }
+
         return toView(saved);
     }
 
