@@ -1,5 +1,7 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.ProfileVisitor;
 import com.campuslove.api.entity.User;
@@ -18,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +48,7 @@ import org.springframework.web.server.ResponseStatusException;
  * 通过数据库唯一约束 + 应用层 existsBy 检查双重保障。</p>
  */
 @RestController
-@RequestMapping("/api/profile")
+@RequestMapping("/api/v1/profile")
 public class ProfileVisitorController {
 
     private static final Logger log = LoggerFactory.getLogger(ProfileVisitorController.class);
@@ -96,13 +99,13 @@ public class ProfileVisitorController {
      */
     @GetMapping("/visitors")
     @Transactional(readOnly = true)
-    public List<ProfileVisitorView> listVisitors() {
+    public ApiResponse<List<ProfileVisitorView>> listVisitors() {
         Long hostId = SecurityUtils.getCurrentUserId();
         log.debug("查询用户[{}]的访客列表", hostId);
 
         List<ProfileVisitor> records = profileVisitorRepository.findByHostIdOrderByVisitedAtDesc(hostId);
         if (records.isEmpty()) {
-            return List.of();
+            return ApiResponse.ok(List.of());
         }
 
         // 批量查询访客用户信息，避免 N+1 查询
@@ -115,7 +118,7 @@ public class ProfileVisitorController {
             for (User u : users) {
                 userMap.put(u.getId(), u);
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("批量查询访客用户信息失败: {}", e.getMessage());
         }
 
@@ -124,7 +127,7 @@ public class ProfileVisitorController {
             for (UserCampusProfile c : campuses) {
                 campusMap.put(c.getUserId(), c);
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("批量查询访客校园资料失败: {}", e.getMessage());
         }
 
@@ -144,7 +147,7 @@ public class ProfileVisitorController {
                     visitedAtStr
             ));
         }
-        return views;
+        return ApiResponse.ok(views);
     }
 
     /**
@@ -171,7 +174,8 @@ public class ProfileVisitorController {
      */
     @PostMapping("/{userId}/visit")
     @Transactional
-    public ProfileVisitorView recordVisit(@PathVariable("userId") @NotNull Long userId) {
+    @Idempotent
+    public ApiResponse<ProfileVisitorView> recordVisit(@PathVariable("userId") @NotNull Long userId) {
         Long visitorId = SecurityUtils.getCurrentUserId();
 
         // 参数校验：不能访问自己
@@ -181,8 +185,8 @@ public class ProfileVisitorController {
         if (userId.equals(visitorId)) {
             // 自访问不记录，但仍返回一个空视图，保持接口契约一致
             log.debug("用户[{}]访问自己的主页，跳过记录", visitorId);
-            return new ProfileVisitorView(visitorId, null, null, null,
-                    LocalDateTime.now().format(FORMATTER));
+            return ApiResponse.ok(new ProfileVisitorView(visitorId, null, null, null,
+                    LocalDateTime.now().format(FORMATTER)));
         }
 
         // 校验目标用户存在
@@ -202,13 +206,13 @@ public class ProfileVisitorController {
             // 返回已有记录的视图（不重新插入）
             User target = targetUserOpt.get();
             UserCampusProfile campus = userCampusProfileRepository.findByUserId(userId).orElse(null);
-            return new ProfileVisitorView(
+            return ApiResponse.ok(new ProfileVisitorView(
                     visitorId,
                     target.getNickname(),
                     target.getAvatarUrl(),
                     campus != null ? campus.getCampusName() : null,
                     LocalDateTime.now().format(FORMATTER)
-            );
+            ));
         }
 
         // 创建并保存访客记录
@@ -222,15 +226,16 @@ public class ProfileVisitorController {
                     visitorId, userId, e.getMessage());
         }
 
-        User target = targetUserOpt.get();
+        User target = targetUserOpt.orElseThrow(() ->
+                new IllegalStateException("targetUserOpt 已确认非空但 orElseThrow 触发，数据不一致"));
         UserCampusProfile campus = userCampusProfileRepository.findByUserId(userId).orElse(null);
-        return new ProfileVisitorView(
+        return ApiResponse.ok(new ProfileVisitorView(
                 visitorId,
                 target.getNickname(),
                 target.getAvatarUrl(),
                 campus != null ? campus.getCampusName() : null,
                 record.getVisitedAt().format(FORMATTER)
-        );
+        ));
     }
 
     /**

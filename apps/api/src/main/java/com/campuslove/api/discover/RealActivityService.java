@@ -177,7 +177,8 @@ public class RealActivityService implements ActivityService {
         }
 
         // 删除报名记录
-        activityEnrollmentRepository.delete(enrollmentOpt.get());
+        activityEnrollmentRepository.delete(enrollmentOpt.orElseThrow(() ->
+                new IllegalStateException("enrollmentOpt 已确认非空但 orElseThrow 触发，数据不一致")));
 
         // 减少报名人数（不低于 0）
         activity.setEnrollmentCount(Math.max(0, activity.getEnrollmentCount() - 1));

@@ -1,13 +1,19 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import com.campuslove.api.ratelimit.RateLimit;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
-@RequestMapping("/api/messages")
+@RequestMapping("/api/v1/messages")
+@Validated
 public class PrivateMessageController {
 
     private final PrivateMessageService privateMessageService;
@@ -37,9 +44,9 @@ public class PrivateMessageController {
      * GET /api/messages/conversations
      */
     @GetMapping("/conversations")
-    public List<ConversationView> getConversations() {
+    public ApiResponse<List<ConversationView>> getConversations() {
         Long userId = SecurityUtils.getCurrentUserId();
-        return privateMessageService.getConversations(userId);
+        return ApiResponse.ok(privateMessageService.getConversations(userId));
     }
 
     /**
@@ -47,9 +54,10 @@ public class PrivateMessageController {
      * POST /api/messages/conversations
      */
     @PostMapping("/conversations")
-    public ConversationView createConversation(@Valid @RequestBody CreateConversationRequest request) {
+    @Idempotent
+    public ApiResponse<ConversationView> createConversation(@Valid @RequestBody CreateConversationRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        return privateMessageService.createOrGetConversation(currentUserId, request.userBId());
+        return ApiResponse.ok(privateMessageService.createOrGetConversation(currentUserId, request.userBId()));
     }
 
     /**
@@ -57,26 +65,31 @@ public class PrivateMessageController {
      * GET /api/messages/conversations/{id}/messages
      */
     @GetMapping("/conversations/{id}/messages")
-    public List<MessageView> getMessages(
+    public ApiResponse<List<MessageView>> getMessages(
             @PathVariable("id") Long conversationId,
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
         Long userId = SecurityUtils.getCurrentUserId();
         Pageable pageable = PageRequest.of(page, size);
-        return privateMessageService.getMessages(conversationId, userId, pageable);
+        return ApiResponse.ok(privateMessageService.getMessages(conversationId, userId, pageable));
     }
 
     /**
      * 在指定会话中发送消息。
      * POST /api/messages/conversations/{id}/messages
+     *
+     * <p>速率限制：桶容量 30，每秒补充 1 个令牌（约 1 条/秒，突发 30 条），
+     * 按客户端 IP 限流，防止消息刷屏与垃圾内容轰炸。</p>
      */
     @PostMapping("/conversations/{id}/messages")
-    public MessageView sendMessage(
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+    @Idempotent
+    public ApiResponse<MessageView> sendMessage(
             @PathVariable("id") Long conversationId,
             @Valid @RequestBody SendMessageRequest request) {
         Long senderId = SecurityUtils.getCurrentUserId();
-        return privateMessageService.sendMessage(
-                conversationId, senderId, request.content(), request.kind());
+        return ApiResponse.ok(privateMessageService.sendMessage(
+                conversationId, senderId, request.content(), request.kind()));
     }
 
     /**
@@ -84,9 +97,10 @@ public class PrivateMessageController {
      * PUT /api/messages/conversations/{id}/read
      */
     @PutMapping("/conversations/{id}/read")
-    public void markAsRead(@PathVariable("id") Long conversationId) {
+    public ApiResponse<Void> markAsRead(@PathVariable("id") Long conversationId) {
         Long userId = SecurityUtils.getCurrentUserId();
         privateMessageService.markAsRead(conversationId, userId);
+        return ApiResponse.ok(null);
     }
 
     // ---- Phase 2 新增：会话置顶 ----
@@ -96,12 +110,12 @@ public class PrivateMessageController {
      * PUT /api/messages/conversations/{id}/pin
      */
     @PutMapping("/conversations/{id}/pin")
-    public ResponseEntity<Void> pinConversation(
+    public ApiResponse<Void> pinConversation(
             @PathVariable("id") Long conversationId,
             @RequestParam boolean pinned) {
         Long userId = SecurityUtils.getCurrentUserId();
         privateMessageService.pinConversation(conversationId, pinned, userId);
-        return ResponseEntity.ok().build();
+        return ApiResponse.ok(null);
     }
 }
 

@@ -9,9 +9,12 @@ import com.campuslove.api.repository.PrivateConversationRepository;
 import com.campuslove.api.repository.PrivateMessageRepository;
 import com.campuslove.api.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +52,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
     /**
      * 获取用户的会话列表。
+     *
+     * <p>Task 2.2.1：批量预加载对方用户信息，避免在 toConversationView 中触发 N+1 查询。</p>
      */
     @Override
     @Transactional(readOnly = true)
@@ -60,8 +65,16 @@ public class RealPrivateMessageService implements PrivateMessageService {
         List<PrivateConversation> conversations =
                 conversationRepository.findByUserAIdOrUserBIdOrderByLastMessageAtDesc(userId, userId);
 
+        // 批量预加载对方用户信息，避免在循环中触发 N+1 查询
+        List<Long> otherUserIds = conversations.stream()
+                .map(conv -> conv.getUserAId().equals(userId) ? conv.getUserBId() : conv.getUserAId())
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        Map<Long, User> otherUserMap = batchLoadUsers(otherUserIds);
+
         return conversations.stream()
-                .map(conv -> toConversationView(conv, userId))
+                .map(conv -> toConversationView(conv, userId, otherUserMap))
                 .toList();
     }
 
@@ -237,15 +250,36 @@ public class RealPrivateMessageService implements PrivateMessageService {
     // ---- 私有辅助方法 ----
 
     /**
-     * 将 PrivateConversation 实体转换为 ConversationView。
-     * 填充对方用户信息、未读数、置顶状态、会话阶段和类型等字段。
+     * 将 PrivateConversation 实体转换为 ConversationView（兼容单条调用场景）。
+     * 单条调用时通过 userRepository.findById 加载对方用户信息。
+     *
+     * <p>Task 2.2.1：批量场景应使用 {@link #toConversationView(PrivateConversation, Long, Map)}，
+     * 配合 {@link #batchLoadUsers(List)} 预加载 Map 复用，避免 N+1 查询。</p>
      */
     private ConversationView toConversationView(PrivateConversation conv, Long currentUserId) {
+        Map<Long, User> otherUserMap = batchLoadUsers(List.of(
+                conv.getUserAId().equals(currentUserId) ? conv.getUserBId() : conv.getUserAId()));
+        return toConversationView(conv, currentUserId, otherUserMap);
+    }
+
+    /**
+     * 将 PrivateConversation 实体转换为 ConversationView（批量场景）。
+     *
+     * <p>Task 2.2.1：从预加载的 otherUserMap 中按 otherUserId 取出 User 实体（O(1)，无 N+1 查询），
+     * Map 中不存在时按"未知用户"处理。</p>
+     *
+     * @param conv          会话实体
+     * @param currentUserId 当前用户 ID
+     * @param otherUserMap  对方用户 ID → User 实体的 Map（可能为空 Map）
+     * @return 会话视图
+     */
+    private ConversationView toConversationView(PrivateConversation conv, Long currentUserId,
+                                                Map<Long, User> otherUserMap) {
         // 确定对方用户 ID
         Long otherUserId = conv.getUserAId().equals(currentUserId) ? conv.getUserBId() : conv.getUserAId();
 
-        // 获取对方用户信息
-        User otherUser = userRepository.findById(otherUserId).orElse(null);
+        // 从预加载的 Map 中获取对方用户信息（O(1)，无 N+1 查询）
+        User otherUser = otherUserMap != null ? otherUserMap.get(otherUserId) : null;
         String otherUserName = otherUser != null ? otherUser.getNickname() : DisplayConstants.UNKNOWN_USER;
         String otherUserAvatar = otherUser != null ? otherUser.getAvatarUrl() : null;
 
@@ -339,8 +373,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
                     return text.length() > 50 ? text.substring(0, 50) + "..." : text;
                 }
             }
-        } catch (Exception e) {
-            // JSON 解析失败，回退到截取
+        } catch (StringIndexOutOfBoundsException e) {
+            // 手动解析 JSON 字符串时索引越界（字段缺失或格式异常），回退到截取
         }
         return content.length() > 50 ? content.substring(0, 50) + "..." : content;
     }
@@ -353,5 +387,31 @@ public class RealPrivateMessageService implements PrivateMessageService {
         long min = Math.min(userAId, userBId);
         long max = Math.max(userAId, userBId);
         return "conv-" + min + "-" + max + "-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    /**
+     * 批量查询用户信息，避免 N+1 查询。
+     *
+     * <p>Task 2.2.1：原 toConversationView 在循环中调用 {@code userRepository.findById(id)}
+     * 会触发 N 次 SELECT user。本方法先收集 distinct userId 列表，再通过
+     * {@link org.springframework.data.jpa.repository.JpaRepository#findAllById(Iterable)}
+     * 一次性查询并组装为 Map，由调用方按 ID 取值（O(1)），将 N 次查询压缩为 1 次。</p>
+     *
+     * @param userIds 用户 ID 列表（可能含 null，已内部过滤）
+     * @return userId → User 实体的 Map（空列表时返回空 Map）
+     */
+    private Map<Long, User> batchLoadUsers(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> distinctIds = userIds.stream()
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRepository.findAllById(distinctIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
     }
 }

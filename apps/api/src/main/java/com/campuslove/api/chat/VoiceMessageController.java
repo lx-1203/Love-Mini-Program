@@ -41,7 +41,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/chat/voice")
+@RequestMapping("/api/v1/chat/voice")
 public class VoiceMessageController {
 
     private static final Logger log = LoggerFactory.getLogger(VoiceMessageController.class);
@@ -79,7 +79,8 @@ public class VoiceMessageController {
         } catch (IllegalArgumentException e) {
             // 参数校验失败，向上抛出由 GlobalExceptionHandler 转换为 400
             throw e;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            // Service 层包装后的运行时异常（如 IllegalStateException、RuntimeException 包装的 IO 异常等）
             log.error("语音上传处理失败：userId={}", userId, e);
             throw e;
         }
@@ -109,7 +110,8 @@ public class VoiceMessageController {
             return new DeleteVoiceResponse(true, url);
         } catch (IllegalArgumentException e) {
             throw e;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            // Service 层包装后的运行时异常
             log.error("语音删除处理失败：userId={}, id={}", userId, id, e);
             throw e;
         }

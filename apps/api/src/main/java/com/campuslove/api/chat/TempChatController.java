@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/temp-chat/sessions")
+@RequestMapping("/api/v1/temp-chat/sessions")
 public class TempChatController {
 
   private final TempChatService tempChatService;

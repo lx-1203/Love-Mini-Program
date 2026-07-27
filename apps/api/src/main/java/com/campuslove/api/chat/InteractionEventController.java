@@ -1,9 +1,12 @@
 package com.campuslove.api.chat;
 
 import com.campuslove.api.config.SecurityUtils;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -17,7 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
-@RequestMapping("/api/notifications/interactions")
+@RequestMapping("/api/v1/notifications/interactions")
+@Validated
 public class InteractionEventController {
 
     private final InteractionEventService interactionEventService;
@@ -36,8 +40,8 @@ public class InteractionEventController {
      */
     @GetMapping
     public ResponseEntity<List<InteractionEventView>> getInteractionEvents(
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
         Long userId = SecurityUtils.getCurrentUserId();
         try {
             List<InteractionEventView> events = interactionEventService.getInteractionEvents(userId, page, size);

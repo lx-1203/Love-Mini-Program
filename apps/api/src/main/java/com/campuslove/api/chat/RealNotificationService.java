@@ -8,7 +8,10 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.NotificationRepository;
 import com.campuslove.api.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,9 +55,12 @@ public class RealNotificationService implements NotificationService {
         if (userId == null) {
             return List.of();
         }
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, Pageable.unpaged())
-                .getContent().stream()
-                .map(this::toNotificationView)
+        // Task 2.2.1：批量预加载源用户，避免在 toNotificationView 中触发 N+1 查询
+        List<Notification> notifications = notificationRepository
+                .findByUserIdOrderByCreatedAtDesc(userId, Pageable.unpaged()).getContent();
+        Map<Long, User> sourceUserMap = batchLoadSourceUsers(notifications);
+        return notifications.stream()
+                .map(n -> toNotificationView(n, sourceUserMap))
                 .toList();
     }
 
@@ -100,8 +106,10 @@ public class RealNotificationService implements NotificationService {
             notificationPage = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
         }
 
+        // Task 2.2.1：批量预加载源用户，避免在 toNotificationView 中触发 N+1 查询
+        Map<Long, User> sourceUserMap = batchLoadSourceUsers(notificationPage.getContent());
         return notificationPage.getContent().stream()
-                .map(this::toNotificationView)
+                .map(n -> toNotificationView(n, sourceUserMap))
                 .toList();
     }
 
@@ -128,6 +136,33 @@ public class RealNotificationService implements NotificationService {
         }
 
         return allViews;
+    }
+
+    /**
+     * 批量查询通知源用户信息，避免 N+1 查询。
+     *
+     * <p>Task 2.2.1：原 {@code toNotificationView(Notification)} 内部为每条通知
+     * 单独调用 {@code userRepository.findById(sourceUserId)}，N 条通知触发 N 次 SELECT user。
+     * 本方法先收集 distinct sourceUserId 列表，再通过 {@link org.springframework.data.jpa.repository.JpaRepository#findAllById(Iterable)}
+     * 一次性查询并组装为 Map，由 {@code toNotificationView(Notification, Map)} 复用。</p>
+     *
+     * @param notifications 通知列表
+     * @return sourceUserId → User 实体的 Map（可能为空 Map）
+     */
+    private Map<Long, User> batchLoadSourceUsers(List<Notification> notifications) {
+        if (notifications == null || notifications.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> sourceUserIds = notifications.stream()
+                .map(Notification::getSourceUserId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        if (sourceUserIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRepository.findAllById(sourceUserIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
     }
 
     /**
@@ -215,33 +250,28 @@ public class RealNotificationService implements NotificationService {
     // ---- 私有辅助方法 ----
 
     /**
-     * 根据通知类型判断信号分类。
-     * <ul>
-     *   <li>SOCIAL（社交信号）：match(匹配)、visitor(访客)、like(喜欢) -- 人与人的直接互动</li>
-     *   <li>CONTENT（内容信号）：comment(评论)、follow(关注) -- 内容/关系层面的互动</li>
-     * </ul>
-     *
-     * @param type 通知类型字符串
-     * @return "SOCIAL" 或 "CONTENT"
+     * 将 Notification 实体转换为 NotificationView（兼容旧调用）。
+     * 单条通知场景（如 createNotification）调用，内部通过 userRepository.findById 加载源用户。
+     * <p>注意：批量查询场景应使用 {@link #toNotificationView(Notification, Map)}，
+     * 配合 {@link #batchLoadSourceUsers(List)} 预加载的 Map 复用，避免 N+1 查询。</p>
      */
-    static String determineSignalType(String type) {
-        if (type == null) {
-            return SIGNAL_TYPE_SOCIAL;
-        }
-        return switch (type) {
-            case "match", "visitor", "like" -> SIGNAL_TYPE_SOCIAL;
-            case "comment", "follow" -> SIGNAL_TYPE_CONTENT;
-            default -> SIGNAL_TYPE_SOCIAL;
-        };
+    private NotificationView toNotificationView(Notification notification) {
+        return toNotificationView(notification, Collections.emptyMap());
     }
 
     /**
-     * 将 Notification 实体转换为 NotificationView。
-     * Phase 3 更新：增加 signalType 字段。
+     * 将 Notification 实体转换为 NotificationView（批量场景）。
+     *
+     * <p>Task 2.2.1：从预加载的 sourceUser Map 中按 sourceUserId 取出 User 实体，
+     * 避免在循环中触发 N 次 SELECT user 查询。Map 中不存在时按"未知用户"处理。</p>
+     *
+     * @param notification 通知实体
+     * @param sourceUserMap sourceUserId → User 实体的 Map（可能为空 Map，表示批量预加载失败或未启用）
+     * @return 通知视图
      */
-    private NotificationView toNotificationView(Notification notification) {
-        // 获取源用户信息
-        User sourceUser = userRepository.findById(notification.getSourceUserId()).orElse(null);
+    private NotificationView toNotificationView(Notification notification, Map<Long, User> sourceUserMap) {
+        // 从预加载的 Map 中获取源用户信息（O(1)，无 N+1 查询）
+        User sourceUser = sourceUserMap != null ? sourceUserMap.get(notification.getSourceUserId()) : null;
         String displayName = sourceUser != null ? sourceUser.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatar = sourceUser != null ? sourceUser.getAvatarUrl() : null;
 
@@ -260,6 +290,27 @@ public class RealNotificationService implements NotificationService {
                 summary,
                 signalType
         );
+    }
+
+    /**
+     * 根据通知类型判断信号分类。
+     * <ul>
+     *   <li>SOCIAL（社交信号）：match(匹配)、visitor(访客)、like(喜欢) -- 人与人的直接互动</li>
+     *   <li>CONTENT（内容信号）：comment(评论)、follow(关注) -- 内容/关系层面的互动</li>
+     * </ul>
+     *
+     * @param type 通知类型字符串
+     * @return "SOCIAL" 或 "CONTENT"
+     */
+    static String determineSignalType(String type) {
+        if (type == null) {
+            return SIGNAL_TYPE_SOCIAL;
+        }
+        return switch (type) {
+            case "match", "visitor", "like" -> SIGNAL_TYPE_SOCIAL;
+            case "comment", "follow" -> SIGNAL_TYPE_CONTENT;
+            default -> SIGNAL_TYPE_SOCIAL;
+        };
     }
 
     /**

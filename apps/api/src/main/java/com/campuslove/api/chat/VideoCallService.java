@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -120,7 +121,8 @@ public class VideoCallService {
             log.info("视频通话发起：id={}, roomId={}, callerId={}, calleeId={}",
                     saved.getId(), roomId, callerId, calleeId);
             return toView(saved);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库访问异常（save 失败、约束冲突等）
             log.error("视频通话发起失败：callerId={}, calleeId={}", callerId, calleeId, e);
             throw new RuntimeException("视频通话发起失败，请稍后重试", e);
         }
@@ -198,7 +200,7 @@ public class VideoCallService {
                     record.setUpdatedAt(now);
                     videoCallRecordRepository.save(record);
                 });
-            } catch (Exception rex) {
+            } catch (DataAccessException rex) {
                 // 历史记录更新失败不影响主流程，仅记录日志
                 log.warn("更新通话历史记录失败：roomId={}", roomId, rex);
             }
@@ -206,7 +208,8 @@ public class VideoCallService {
             log.info("视频通话结束：roomId={}, userId={}, reason={}, duration={}s",
                     roomId, userId, call.getEndReason(), durationSec);
             return toView(saved);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库访问异常（save 失败等）
             log.error("视频通话结束失败：roomId={}, userId={}", roomId, userId, e);
             throw new RuntimeException("视频通话结束失败，请稍后重试", e);
         }
@@ -234,7 +237,8 @@ public class VideoCallService {
                 views.add(toRecordView(record));
             }
             return views;
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库访问异常
             log.error("查询通话记录失败：userId={}", userId, e);
             throw new RuntimeException("查询通话记录失败，请稍后重试", e);
         }

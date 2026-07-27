@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 后端复用 {@link TempChatService} 完成会话聚合与推荐查询。
  */
 @RestController
-@RequestMapping("/api/chat")
+@RequestMapping("/api/v1/chat")
 public class ChatController {
 
   private final TempChatService tempChatService;

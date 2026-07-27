@@ -160,7 +160,8 @@ public class VoiceMessageService {
         } catch (IOException e) {
             log.error("语音上传 IO 失败：userId={}", userId, e);
             throw new RuntimeException("语音上传失败，请稍后重试", e);
-        } catch (Exception e) {
+        } catch (IllegalStateException e) {
+            // 媒体存储服务（LocalMediaStorageService）抛出的 IllegalStateException（路径越界/写入失败等）
             log.error("语音上传失败：userId={}", userId, e);
             throw new RuntimeException("语音上传失败，请稍后重试", e);
         }
@@ -201,7 +202,8 @@ public class VoiceMessageService {
         } catch (IOException e) {
             log.error("删除语音文件失败: url={}", url, e);
             throw new RuntimeException("删除语音文件失败，请稍后重试", e);
-        } catch (Exception e) {
+        } catch (IllegalStateException e) {
+            // 媒体存储服务抛出的非法状态异常（路径越界等）
             log.error("删除语音文件失败: url={}", url, e);
             throw new RuntimeException("删除语音文件失败，请稍后重试", e);
         }

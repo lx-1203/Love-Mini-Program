@@ -1,5 +1,7 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.dto.DtoMapper;
 import com.campuslove.api.dto.PostDto;
@@ -22,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,7 +44,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 保持方法签名兼容。</p>
  */
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/api/v1/posts")
+@Validated
 public class VillageController {
 
   private final VillageService villageService;
@@ -81,7 +85,7 @@ public class VillageController {
     if ("campus".equals(category)) {
       try {
         userId = SecurityUtils.getCurrentUserId();
-      } catch (Exception e) {
+      } catch (org.springframework.web.client.HttpClientErrorException.Unauthorized e) {
         // 未认证时返回空列表
         return new PostListResponse(List.of(), 0, page, pageSize);
       }
@@ -97,45 +101,51 @@ public class VillageController {
    */
   @PostMapping
   @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
-  public PostDetailView createPost(
+  @Idempotent
+  public ApiResponse<PostDetailView> createPost(
       @Valid @RequestBody CreatePostRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
     PostDetailView view = villageService.createPost(userId, request.content(), request.images(), request.tags(), request.category());
     // 监控：记录帖子创建事件
     try {
       villageMetrics.recordPostCreated();
-    } catch (Exception ignore) {
+    } catch (RuntimeException ignore) {
       // 监控逻辑失败忽略，不影响主流程
     }
-    return view;
+    return ApiResponse.ok(view);
   }
 
   /**
    * 获取帖子详情。
    */
   @GetMapping("/{id}")
-  public PostDetailView getPostDetail(@PathVariable("id") Long id) {
-    return villageService.getPostDetail(id);
+  public ApiResponse<PostDetailView> getPostDetail(@PathVariable("id") Long id) {
+    return ApiResponse.ok(villageService.getPostDetail(id));
   }
 
   // ---------- 点赞 ----------
 
   /**
    * 点赞帖子。
+   *
+   * <p>速率限制：桶容量 60，每秒补充 2 个令牌，按客户端 IP 限流，
+   * 防止自动化脚本批量刷点赞。</p>
    */
   @PostMapping("/{id}/like")
-  public PostLikeResponse likePost(@PathVariable("id") Long id) {
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
+  @Idempotent
+  public ApiResponse<PostLikeResponse> likePost(@PathVariable("id") Long id) {
     Long userId = SecurityUtils.getCurrentUserId();
     PostLikeResponse response = villageService.likePost(userId, id);
     // 监控：记录帖子点赞事件（仅在实际触发点赞时记录，取消点赞不记录）
     if (response != null && response.liked()) {
       try {
         villageMetrics.recordPostLiked(id);
-      } catch (Exception ignore) {
+      } catch (RuntimeException ignore) {
         // 监控逻辑失败忽略，不影响主流程
       }
     }
-    return response;
+    return ApiResponse.ok(response);
   }
 
   // ---------- 评论 ----------
@@ -146,16 +156,21 @@ public class VillageController {
   @GetMapping("/{id}/comments")
   public CommentListResponse getComments(
       @PathVariable("id") Long id,
-      @RequestParam(name = "page", required = false, defaultValue = "1") int page,
-      @RequestParam(name = "pageSize", required = false, defaultValue = "20") int pageSize) {
+      @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
+      @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
     return villageService.getComments(id, page, pageSize);
   }
 
   /**
    * 发表评论。
+   *
+   * <p>速率限制：桶容量 30，每秒补充 1 个令牌，按客户端 IP 限流，
+   * 防止评论刷屏与垃圾内容。</p>
    */
   @PostMapping("/{id}/comments")
-  public CommentItemView createComment(
+  @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+  @Idempotent
+  public ApiResponse<CommentItemView> createComment(
       @PathVariable("id") Long id,
       @Valid @RequestBody CreateCommentRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
@@ -163,23 +178,28 @@ public class VillageController {
     // 监控：记录评论创建事件
     try {
       villageMetrics.recordCommentCreated();
-    } catch (Exception ignore) {
+    } catch (RuntimeException ignore) {
       // 监控逻辑失败忽略，不影响主流程
     }
-    return view;
+    return ApiResponse.ok(view);
   }
 
   // ---------- 转发 ----------
 
   /**
    * 转发帖子。
+   *
+   * <p>速率限制：桶容量 30，每秒补充 1 个令牌，按客户端 IP 限流，
+   * 防止刷转发与垃圾引流。</p>
    */
   @PostMapping("/{id}/share")
-  public ShareView sharePost(
+  @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+  @Idempotent
+  public ApiResponse<ShareView> sharePost(
       @PathVariable("id") Long id,
       @Valid @RequestBody SharePostRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return villageService.sharePost(userId, id, request.comment());
+    return ApiResponse.ok(villageService.sharePost(userId, id, request.comment()));
   }
 
   // ---------- 同校动态流 ----------
@@ -190,8 +210,8 @@ public class VillageController {
    */
   @GetMapping("/campus-feed")
   public ResponseEntity<CampusFeedView> getCampusFeed(
-      @RequestParam(name = "page", defaultValue = "0") int page,
-      @RequestParam(name = "size", defaultValue = "20") int size) {
+      @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+      @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
     Long userId = SecurityUtils.getCurrentUserId();
     try {
       CampusFeedView feed = villageService.getCampusFeed(userId, page, size);

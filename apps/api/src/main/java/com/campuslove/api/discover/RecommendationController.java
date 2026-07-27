@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1")
 public class RecommendationController {
 
   private final RecommendationService recommendationService;

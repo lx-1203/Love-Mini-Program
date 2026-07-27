@@ -48,7 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/chat")
+@RequestMapping("/api/v1/chat")
 public class ChatRedPacketController {
 
     private static final Logger log = LoggerFactory.getLogger(ChatRedPacketController.class);
@@ -89,7 +89,7 @@ public class ChatRedPacketController {
         } catch (IllegalArgumentException e) {
             // 参数校验失败，向上抛出由 GlobalExceptionHandler 转换为 400
             throw e;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("查询会话红包列表失败：userId={}, chatId={}", userId, chatId, e);
             throw e;
         }

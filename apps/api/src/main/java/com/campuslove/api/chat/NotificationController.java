@@ -1,9 +1,12 @@
 package com.campuslove.api.chat;
 
 import com.campuslove.api.config.SecurityUtils;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,7 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
  * Phase 3 新增：signalType 社交/内容信号分类筛选。
  */
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/api/v1/notifications")
+@Validated
 public class NotificationController {
 
   private final NotificationService notificationService;
@@ -71,8 +75,8 @@ public class NotificationController {
   public List<NotificationView> getNotificationsPaged(
           @RequestParam(name = "unreadOnly", required = false, defaultValue = "false") Boolean unreadOnly,
           @RequestParam(name = "signalType", required = false) String signalType,
-          @RequestParam(name = "page", defaultValue = "0") int page,
-          @RequestParam(name = "size", defaultValue = "20") int size) {
+          @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+          @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
     Long userId = SecurityUtils.getCurrentUserId();
     Pageable pageable = PageRequest.of(page, size);
     return notificationService.getNotifications(userId, unreadOnly, signalType, pageable);

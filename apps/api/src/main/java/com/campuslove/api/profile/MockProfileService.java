@@ -120,7 +120,7 @@ public class MockProfileService implements ProfileService {
       // 尽力删除底层文件，失败时忽略（mock 模式下文件可能由 LocalMediaStorageService 管理）
       try {
         mediaStorageService.delete(removed);
-      } catch (Exception ignored) {
+      } catch (RuntimeException ignored) {
         // 删除失败不影响 mock 状态更新
       }
     }
@@ -370,8 +370,8 @@ public class MockProfileService implements ProfileService {
       if (cert != null && "APPROVED".equals(cert.getStatus())) {
         return "school";
       }
-    } catch (Exception ignored) {
-      // 查询失败降级为 none
+    } catch (RuntimeException ignored) {
+      // 下游服务异常（DataAccessException / IllegalStateException / IllegalArgumentException 等）降级为 none
     }
     return "none";
   }
