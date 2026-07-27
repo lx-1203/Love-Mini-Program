@@ -62,19 +62,27 @@ export interface AdminReportListQuery {
   pageSize?: number;
 }
 
-/** 举报目标类型选项（用于前端筛选下拉） */
-export const REPORT_TARGET_TYPES: { value: string; label: string }[] = [
-  { value: "POST", label: "帖子" },
-  { value: "COMMENT", label: "评论" },
-  { value: "USER", label: "用户" },
-  { value: "TOPIC", label: "话题" },
+/** 举报目标类型选项（用于前端筛选下拉）
+ *
+ * SubTask 3.3.2：labelKey 改为 i18n key（reports.typePost / reports.typeComment 等），
+ * 由组件通过 useI18n().t() 渲染，避免硬编码中文。
+ */
+export const REPORT_TARGET_TYPES: { value: string; labelKey: string }[] = [
+  { value: "POST", labelKey: "reports.typePost" },
+  { value: "COMMENT", labelKey: "reports.typeComment" },
+  { value: "USER", labelKey: "reports.typeUser" },
+  { value: "TOPIC", labelKey: "reports.typeTopic" },
 ];
 
-/** 举报状态选项（用于前端筛选下拉） */
-export const REPORT_STATUSES: { value: string; label: string }[] = [
-  { value: "PENDING", label: "待处理" },
-  { value: "HANDLED", label: "已处理" },
-  { value: "REJECTED", label: "已驳回" },
+/** 举报状态选项（用于前端筛选下拉）
+ *
+ * SubTask 3.3.2：labelKey 改为 i18n key（reports.filterStatusPending 等），
+ * 由组件通过 useI18n().t() 渲染，避免硬编码中文。
+ */
+export const REPORT_STATUSES: { value: string; labelKey: string }[] = [
+  { value: "PENDING", labelKey: "reports.filterStatusPending" },
+  { value: "HANDLED", labelKey: "reports.filterStatusProcessed" },
+  { value: "REJECTED", labelKey: "reports.filterStatusRejected" },
 ];
 
 /**

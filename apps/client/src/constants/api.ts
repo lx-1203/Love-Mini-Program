@@ -40,8 +40,42 @@ export const MAX_401_RETRY_COUNT = 1;
 /** 默认请求 Content-Type */
 export const DEFAULT_CONTENT_TYPE = "application/json";
 
-/** 鉴权头字段名 */
-export const AUTH_HEADER_NAME = "Authorization";
+// AUTH_HEADER_NAME / AUTH_HEADER_PREFIX 已迁移至 api-params.ts，此处 re-export 保持向后兼容
+export { AUTH_HEADER_NAME, AUTH_HEADER_PREFIX } from "./api-params";
 
-/** 鉴权头值前缀（与 Bearer Token 模式对齐） */
-export const AUTH_HEADER_PREFIX = "Bearer ";
+/**
+ * SubTask 1.4.5：AI 视频/图片生成接口专用超时时间（毫秒）。
+ *
+ * <p>AI 生成类接口耗时较长（视频生成可能 10-30s），需独立设置较长超时，
+ * 避免使用默认 10s 超时导致正常请求被误判为失败。</p>
+ */
+export const AI_API_TIMEOUT_MS = 30000;
+
+/**
+ * SubTask 1.4.5：AI 服务未授权业务错误码。
+ *
+ * <p>后端在以下场景返回此错误码：</p>
+ * <ul>
+ *   <li>未配置 AGNES_API_KEY 环境变量</li>
+ *   <li>Agnes AI 上游返回 401（API Key 失效或过期）</li>
+ * </ul>
+ *
+ * <p>与 JWT 认证失败的 {@code unauthorized} 区分：
+ * <ul>
+ *   <li>{@code unauthorized}（JWT）：用户未登录或 token 失效，需重新登录</li>
+ *   <li>{@code ai_api_unauthorized}（AI）：上游 AI 服务 API Key 问题，需联系管理员</li>
+ * </ul>
+ * </p>
+ */
+export const AI_API_UNAUTHORIZED_CODE = "AI_API_UNAUTHORIZED";
+
+/**
+ * SubTask 1.4.5：AI 服务上游异常业务错误码。
+ *
+ * <p>后端在以下场景返回此错误码：</p>
+ * <ul>
+ *   <li>Agnes AI 上游返回 4xx（非 401）/5xx</li>
+ *   <li>调用 Agnes AI 时发生网络异常</li>
+ * </ul>
+ */
+export const AI_API_ERROR_CODE = "AI_API_ERROR";

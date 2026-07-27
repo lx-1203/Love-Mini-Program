@@ -2,7 +2,7 @@
  * 统一常量入口
  *
  * 集中导出所有业务模块的常量，便于上层模块按需引用：
- *   import { SWIPE_THRESHOLD, ASYNC_TIMEOUT_MS } from "@/constants";
+ *   import { SWIPE_THRESHOLD, ASYNC_TIMEOUT_MS, ROUTES, STORAGE_KEYS } from "@/constants";
  *
  * 模块划分：
  * - app:    应用全局常量（应用名称、版本、统一存储键名等）
@@ -12,6 +12,10 @@
  * - village: 村口社区相关常量（帖子内容限制、草稿存储键等）
  * - growth: 成长/签到相关常量（异步超时、动画收起、补签上限等）
  * - ui:     UI 交互相关常量（振动反馈、录音参数、按压停留等）
+ * - routes: 统一页面路径常量（SubTask 3.5.1）
+ * - storage-keys: 统一本地存储键名（SubTask 3.5.2）
+ * - api-params: API 协议参数（Bearer 前缀/wxCode/WebSocket topic，SubTask 3.5.3）
+ * - limits: UI 限制与魔法数字（UI_LIMITS/API_TIMEOUT/WS_RECONNECT，SubTask 3.5.4）
  *
  * 注意：
  * - 已有的领域常量文件（如 stores/discover/constants.ts、stores/village/constants.ts）
@@ -26,3 +30,7 @@ export * from "./chat";
 export * from "./village";
 export * from "./growth";
 export * from "./ui";
+export * from "./routes";
+export * from "./storage-keys";
+export * from "./api-params";
+export * from "./limits";
