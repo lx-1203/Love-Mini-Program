@@ -156,3 +156,12 @@ design-preview.7z
 # Storybook 临时构建
 .storybook-static/
 apps/client/test-result.json
+
+# 审计报告一次性生成脚本
+specs/codebase-audit-2026-07-25/finish_report.py
+specs/codebase-audit-2026-07-25/generate_consolidated.py
+
+# 临时测试对比输出与截图
+test-comp.txt
+test-screenshots/
+test-results.json

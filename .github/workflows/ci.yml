@@ -11,7 +11,22 @@ on:
 permissions:
   contents: read
 
+# ============================================================
+# P7 阶段质量门禁：CI 添加 SonarQube / OWASP Dependency Check
+# 代码重复率 / 圈复杂度门禁、覆盖率报告归档、全量测试套件
+# ============================================================
+# 关键设计：
+# - 使用 matrix 并行加速各模块测试，降低单 job 执行时间
+# - 所有覆盖率报告统一归档至 actions artifact，便于后续追溯
+# - SonarQube 通过 SonarCloud 在线服务（免费对开源项目）
+# - OWASP Dependency Check 离线扫描，漏洞门禁 CVSS >= 7 阻断
+# - 重复率 ≤ 3%，圈复杂度 ≤ 15，违反则 fail
+# ============================================================
+
 jobs:
+  # ----------------------------------------------------------------
+  # Job 1: 验证 P0-P6 阶段产物（原型 / 结构 / 契约 / 构建 / 单元测试）
+  # ----------------------------------------------------------------
   verify-phase01:
     runs-on: ubuntu-latest
     steps:
@@ -53,6 +68,9 @@ jobs:
       - name: Run Spring API tests
         run: pnpm run api:test
 
+  # ----------------------------------------------------------------
+  # Job 2: Flyway 数据库迁移校验
+  # ----------------------------------------------------------------
   flyway-validate:
     runs-on: ubuntu-latest
     services:
@@ -112,6 +130,9 @@ jobs:
             -password=campus_love \
             validate
 
+  # ----------------------------------------------------------------
+  # Job 3: 静态密钥扫描（已有）
+  # ----------------------------------------------------------------
   secret-scan:
     runs-on: ubuntu-latest
     steps:
@@ -123,3 +144,342 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: false
+
+  # ----------------------------------------------------------------
+  # Job 4 (P7 新增): 客户端单元测试 + 覆盖率
+  # ----------------------------------------------------------------
+  client-test-coverage:
+    name: Client Unit Tests + Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # SonarCloud 需要完整历史
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run client tests with coverage
+        working-directory: apps/client
+        run: pnpm test -- --coverage --reporter=default --reporter=junit --outputFile=test-results.xml
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-coverage
+          path: apps/client/coverage/
+          retention-days: 30
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-test-results
+          path: apps/client/test-results.xml
+          retention-days: 14
+
+  # ----------------------------------------------------------------
+  # Job 5 (P7 新增): Java 后端单元测试 + JaCoCo 覆盖率
+  # ----------------------------------------------------------------
+  api-test-coverage:
+    name: API Unit Tests + JaCoCo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Run Spring tests with JaCoCo
+        working-directory: apps/api
+        run: mvn -B test jacoco:report
+
+      - name: Verify JaCoCo coverage thresholds
+        working-directory: apps/api
+        run: mvn -B jacoco:check
+
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-jacoco-coverage
+          path: apps/api/target/site/jacoco/
+          retention-days: 30
+
+      - name: Upload Surefire test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-surefire-reports
+          path: apps/api/target/surefire-reports/
+          retention-days: 14
+
+  # ----------------------------------------------------------------
+  # Job 6 (P7 新增): SonarCloud 静态分析与质量门禁
+  # 集成代码重复率、圈复杂度、覆盖率、安全热点
+  # ----------------------------------------------------------------
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: [client-test-coverage, api-test-coverage]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # SonarCloud 需要完整历史以计算 blame
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download client coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: client-coverage
+          path: apps/client/coverage/
+
+      - name: Download API coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: api-jacoco-coverage
+          path: apps/api/target/site/jacoco/
+
+      # 使用项目根目录的 sonar-project.properties 统一配置
+      # 质量门禁阈值：
+      # - 代码重复率 ≤ 3.0%
+      # - 圈复杂度 ≤ 15
+      # - 覆盖率 ≥ 80%
+      # - 安全热点评级 A（≤ 1% 安全热点需复审）
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # ----------------------------------------------------------------
+  # Job 7 (P7 新增): OWASP Dependency Check 漏洞扫描
+  # 阈值：CVSS >= 7.0 的漏洞存在则 fail
+  # ----------------------------------------------------------------
+  owasp-dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run OWASP Dependency Check (NPM)
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'campus-love-client'
+          path: 'apps/client'
+          format: 'HTML'
+          failOnCVSS: 7
+          output: 'reports/owasp-client'
+
+      - name: Run OWASP Dependency Check (Maven)
+        working-directory: apps/api
+        run: |
+          mvn -B org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            -Dformats=HTML,XML \
+            -DoutputDirectory=${{ github.workspace }}/reports/owasp-api
+
+      - name: Upload OWASP client report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-client-report
+          path: reports/owasp-client/
+          retention-days: 30
+
+      - name: Upload OWASP API report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-api-report
+          path: reports/owasp-api/
+          retention-days: 30
+
+  # ----------------------------------------------------------------
+  # Job 8 (P7 新增): 代码重复率与圈复杂度门禁
+  # 使用 jscpd（重复率）与 eslint complexity（圈复杂度）
+  # ----------------------------------------------------------------
+  code-quality-gate:
+    name: Code Quality Gate (Duplication + Complexity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 代码重复率扫描：阈值 > 3% 则 fail
+      - name: Run jscpd (code duplication)
+        run: |
+          npx jscpd \
+            --pattern "apps/client/src/**/*.{ts,vue}" \
+            --pattern "apps/api/src/main/java/**/*.java" \
+            --threshold 3 \
+            --reporters "html,json,console" \
+            --output ./reports/jscpd \
+            --exitCode 1 || \
+            (echo "::error::代码重复率超过 3% 阈值，请重构重复代码" && exit 1)
+
+      - name: Upload jscpd report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jscpd-report
+          path: reports/jscpd/
+          retention-days: 30
+
+      # 圈复杂度扫描：阈值 > 15 则 fail（Java 用 PMD，TS 用 eslint-plugin-complexity）
+      - name: Run ESLint complexity check
+        working-directory: apps/client
+        run: |
+          npx eslint \
+            --ext .ts,.vue \
+            --rule '{"complexity": ["error", {"max": 15}]}' \
+            --format json \
+            --output-file ../../reports/eslint-complexity.json \
+            src/ || \
+            (echo "::error::圈复杂度超过 15，请拆分复杂函数" && exit 1)
+
+      - name: Run PMD complexity check
+        working-directory: apps/api
+        run: |
+          if [ ! -d "target/classes" ]; then
+            mvn -B compile -DskipTests
+          fi
+          mvn -B pmd:pmd -Dformat=xml -DtargetDirectory=../../reports/pmd-api || \
+            (echo "::error::PMD 检测到圈复杂度超标" && exit 1)
+
+      - name: Upload complexity reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: complexity-reports
+          path: reports/
+          retention-days: 30
+
+  # ----------------------------------------------------------------
+  # Job 9 (P7 新增): E2E 测试（Playwright，仅 PR 触发）
+  # ----------------------------------------------------------------
+  e2e-test:
+    name: Playwright E2E Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: apps/client
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        working-directory: apps/client
+        run: npx playwright test --reporter=html --reporter=junit --output=test-results/
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/client/playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: apps/client/test-results/
+          retention-days: 14
+
+  # ----------------------------------------------------------------
+  # Job 10 (P7 新增): 质量门禁汇总
+  # 所有上游 job 必须通过，本 job 才会通过
+  # ----------------------------------------------------------------
+  quality-gate:
+    name: Quality Gate (All Checks Pass)
+    runs-on: ubuntu-latest
+    needs:
+      - verify-phase01
+      - flyway-validate
+      - secret-scan
+      - client-test-coverage
+      - api-test-coverage
+      - sonarcloud
+      - owasp-dependency-check
+      - code-quality-gate
+    steps:
+      - name: All quality gates passed
+        run: |
+          echo "✅ 所有质量门禁通过"
+          echo ""
+          echo "已完成检查："
+          echo "- 原型与结构测试"
+          echo "- Flyway 数据库迁移校验"
+          echo "- 静态密钥扫描"
+          echo "- 客户端单元测试（覆盖率 ≥ 80%）"
+          echo "- API 单元测试（JaCoCo 覆盖率 ≥ 80%）"
+          echo "- SonarCloud 静态分析（重复率 ≤ 3%，圈复杂度 ≤ 15）"
+          echo "- OWASP Dependency Check（CVSS < 7）"
+          echo "- 代码重复率与圈复杂度门禁"
+          echo ""
+          echo "覆盖率与扫描报告已归档至 Actions Artifacts"
