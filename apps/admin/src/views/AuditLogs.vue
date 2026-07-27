@@ -1,4 +1,12 @@
 <script setup lang="ts">
+/**
+ * Admin 审计日志视图（SubTask 3.3.2 i18n 化）。
+ *
+ * 改造点：
+ * - 标题/副标题/筛选占位符/列头/按钮/详情标签全部走 i18n key
+ * - 加载失败回退 auditLogs.loadFailed，空数据走 auditLogs.noData
+ * - 分页信息通过 auditLogs.paginationInfo 插值生成
+ */
 import { ref, onMounted, computed } from "vue";
 import {
   listAuditLogs,
@@ -7,6 +15,11 @@ import {
   type AuditLogPageView,
 } from "../api/audit-logs";
 import { ApiError } from "../api/http";
+// Task 3.7.2：接入共享 Pagination 组件（pageBase=0 适配 Spring Data Page 风格）
+import Pagination from "../components/Pagination.vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 // 列表数据
 const logs = ref<AuditLogView[]>([]);
@@ -55,7 +68,7 @@ async function fetchLogs() {
     page.value = result.page;
     size.value = result.size;
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "加载审计日志失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("auditLogs.loadFailed");
     logs.value = [];
     totalElements.value = 0;
     totalPages.value = 0;
@@ -92,6 +105,13 @@ function handleNext() {
   }
 }
 
+/**
+ * Task 3.7.2：分页变更回调（由 Pagination 组件触发，pageBase=0）。
+ */
+function handlePageChange() {
+  fetchLogs();
+}
+
 function formatTime(s?: string): string {
   if (!s) return "-";
   // 兼容 ISO 时间：截到秒
@@ -119,8 +139,8 @@ onMounted(() => {
 <template>
   <view class="audit-page">
     <view class="page-header">
-      <text class="page-title">审计日志</text>
-      <text class="page-subtitle">管理操作留痕与合规追溯</text>
+      <text class="page-title">{{ t("auditLogs.title") }}</text>
+      <text class="page-subtitle">{{ t("auditLogs.tableSubtitle") }}</text>
     </view>
 
     <view class="toolbar">
@@ -128,19 +148,19 @@ onMounted(() => {
         v-model="filterOperator"
         class="filter-input"
         type="text"
-        placeholder="操作者ID"
+        :placeholder="t('auditLogs.filterOperatorPlaceholder')"
       />
       <select v-model="filterOperation" class="filter-select">
-        <option value="">全部操作</option>
+        <option value="">{{ t("auditLogs.filterActionAll") }}</option>
         <option v-for="op in AUDIT_OPERATIONS" :key="op.value" :value="op.value">
           {{ op.label }}
         </option>
       </select>
       <input v-model="filterStartDate" class="filter-input filter-date" type="date" />
-      <text class="filter-sep">至</text>
+      <text class="filter-sep">{{ t("auditLogs.dateRangeSep") }}</text>
       <input v-model="filterEndDate" class="filter-input filter-date" type="date" />
-      <button class="primary-button" @click="handleSearch">查询</button>
-      <button class="secondary-button" @click="handleReset">重置</button>
+      <button class="primary-button" @click="handleSearch">{{ t("auditLogs.queryButton") }}</button>
+      <button class="secondary-button" @click="handleReset">{{ t("common.reset") }}</button>
     </view>
 
     <view v-if="error" class="error-message">{{ error }}</view>
@@ -149,25 +169,25 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>时间</th>
-            <th>操作者</th>
-            <th>角色</th>
-            <th>操作</th>
-            <th>目标</th>
-            <th>HTTP</th>
-            <th>状态</th>
-            <th>耗时</th>
-            <th>IP</th>
-            <th>详情</th>
+            <th scope="col">{{ t("auditLogs.columnId") }}</th>
+            <th scope="col">{{ t("auditLogs.columnTime") }}</th>
+            <th scope="col">{{ t("auditLogs.columnOperator") }}</th>
+            <th scope="col">{{ t("auditLogs.columnOperatorRole") }}</th>
+            <th scope="col">{{ t("auditLogs.columnAction") }}</th>
+            <th scope="col">{{ t("auditLogs.columnTarget") }}</th>
+            <th scope="col">{{ t("auditLogs.columnHttp") }}</th>
+            <th scope="col">{{ t("auditLogs.columnStatus") }}</th>
+            <th scope="col">{{ t("auditLogs.columnDuration") }}</th>
+            <th scope="col">{{ t("auditLogs.columnIp") }}</th>
+            <th scope="col">{{ t("auditLogs.columnDetail") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="11" class="empty-row">加载中...</td>
+            <td colspan="11" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="logs.length === 0">
-            <td colspan="11" class="empty-row">暂无审计日志</td>
+            <td colspan="11" class="empty-row">{{ t("auditLogs.noData") }}</td>
           </tr>
           <tr v-for="log in logs" :key="log.id">
             <td>{{ log.id }}</td>
@@ -205,13 +225,13 @@ onMounted(() => {
             <td>{{ log.ip || "-" }}</td>
             <td class="detail-cell">
               <details v-if="log.requestBody || log.errorMessage">
-                <summary>查看</summary>
+                <summary>{{ t("auditLogs.detailView") }}</summary>
                 <view v-if="log.errorMessage" class="error-detail">
-                  <text class="detail-label">错误：</text>
+                  <text class="detail-label">{{ t("auditLogs.detailErrorLabel") }}</text>
                   <text>{{ log.errorMessage }}</text>
                 </view>
                 <view v-if="log.requestBody" class="body-detail">
-                  <text class="detail-label">请求体：</text>
+                  <text class="detail-label">{{ t("auditLogs.detailRequestBodyLabel") }}</text>
                   <pre>{{ log.requestBody }}</pre>
                 </view>
               </details>
@@ -224,21 +244,33 @@ onMounted(() => {
 
     <view class="pagination">
       <text class="pagination-info">
-        共 {{ totalElements }} 条 / 第 {{ page + 1 }} / {{ Math.max(totalPages, 1) }} 页
+        {{ t("auditLogs.paginationInfo", { total: totalElements, page: page + 1, totalPages: Math.max(totalPages, 1) }) }}
       </text>
       <view class="pagination-actions">
-        <button class="page-button" :disabled="page === 0" @click="handlePrev">上一页</button>
+        <button class="page-button" :disabled="page === 0" @click="handlePrev">{{ t("common.prevPage") }}</button>
         <button
           class="page-button"
           :disabled="page >= totalPages - 1"
           @click="handleNext"
-        >下一页</button>
+        >{{ t("common.nextPage") }}</button>
       </view>
     </view>
+
+    <!-- Task 3.7.2：接入共享 Pagination 组件（pageBase=0 适配 Spring Data Page 风格） -->
+    <Pagination
+      v-model:page="page"
+      :total-pages="totalPages"
+      :total="totalElements"
+      :page-base="0"
+      :disabled="loading"
+      @change="handlePageChange"
+    />
   </view>
 </template>
 
 <style scoped>
+@import "../styles/admin-common.css";
+
 .audit-page {
   max-width: 1400px;
 }

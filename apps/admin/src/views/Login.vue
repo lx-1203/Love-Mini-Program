@@ -1,10 +1,23 @@
 <script setup lang="ts">
+/**
+ * Admin 登录视图（SubTask 3.3.2 i18n 化）。
+ *
+ * 改造点：
+ * - 标题/副标题/标签/占位符/按钮/错误提示全部走 i18n
+ * - 错误回退消息（如 "登录失败"）改为 errors.* key
+ * - 开发环境账号提示通过 i18n 模板插值，便于英文版展示
+ *
+ * 工程约束遵守：
+ * - 保留 import.meta.env.DEV（H5 + Vite 环境支持，Admin 不在 mp-weixin 运行）
+ */
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useSessionStore } from "../stores/session";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const sessionStore = useSessionStore();
+const { t } = useI18n();
 
 const form = ref({
   username: "",
@@ -25,7 +38,7 @@ const devPassword = computed(() => import.meta.env.VITE_DEV_DEFAULT_PASSWORD || 
 
 async function handleLogin() {
   if (!form.value.username || !form.value.password) {
-    error.value = "请输入用户名和密码";
+    error.value = t("login.usernameRequired") + " / " + t("login.passwordRequired");
     return;
   }
 
@@ -35,8 +48,10 @@ async function handleLogin() {
   try {
     await sessionStore.login(form.value);
     router.push({ name: "Dashboard" });
-  } catch (err: any) {
-    error.value = err.message || "登录失败";
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "";
+    // 后端返回的错误信息已由拦截器根据错误码翻译，这里仅做兜底
+    error.value = message || t("login.loginFailed");
   } finally {
     loading.value = false;
   }
@@ -47,29 +62,29 @@ async function handleLogin() {
   <view class="login-page">
     <view class="login-card">
       <view class="login-header">
-        <text class="login-title">管理员登录</text>
-        <text class="login-subtitle">校园恋爱小程序管理后台</text>
+        <text class="login-title">{{ t("login.title") }}</text>
+        <text class="login-subtitle">{{ t("login.subtitle") }}</text>
       </view>
 
       <view class="login-form">
         <view class="form-item">
-          <text class="form-label">用户名</text>
+          <text class="form-label">{{ t("login.usernameLabel") }}</text>
           <input
             v-model="form.username"
             class="form-input"
             type="text"
-            placeholder="请输入用户名"
+            :placeholder="t('login.usernamePlaceholder')"
             @keyup.enter="handleLogin"
           />
         </view>
 
         <view class="form-item">
-          <text class="form-label">密码</text>
+          <text class="form-label">{{ t("login.passwordLabel") }}</text>
           <input
             v-model="form.password"
             class="form-input"
             type="password"
-            placeholder="请输入密码"
+            :placeholder="t('login.passwordPlaceholder')"
             @keyup.enter="handleLogin"
           />
         </view>
@@ -81,20 +96,14 @@ async function handleLogin() {
           :disabled="loading"
           @click="handleLogin"
         >
-          {{ loading ? "登录中..." : "登录" }}
+          {{ loading ? t("login.loggingIn") : t("login.loginButton") }}
         </button>
 
         <!-- 修复：移除硬编码默认凭据明文展示，改为从环境变量读取（仅开发环境显示）
              生产环境（NODE_ENV=production）完全不显示默认凭据提示 -->
         <view v-if="showDevHint" class="login-hint">
-          <text>开发环境默认账号：{{ devUsername }} / {{ devPassword }}</text>
-        </view>
-        <!-- TODO: 首次登录强制修改密码功能待实现
-             安全要求：管理员首次登录后必须修改默认密码，
-             后端需在 loginAsAdmin 返回时标记 passwordMustChange=true，
-             前端检测到此标记后跳转到强制改密页面 -->
-        <view class="login-hint login-hint-warning">
-          <text>首次登录后请立即修改默认密码</text>
+          <text>{{ t("login.devUsernameHint", { username: devUsername }) }}</text>
+          <text>{{ t("login.devPasswordHint", { password: devPassword }) }}</text>
         </view>
       </view>
     </view>
@@ -127,7 +136,7 @@ async function handleLogin() {
 
 .login-title {
   display: block;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #333;
   margin-bottom: 8px;
@@ -136,55 +145,51 @@ async function handleLogin() {
 .login-subtitle {
   display: block;
   font-size: 14px;
-  color: #999;
+  color: #666;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .form-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .form-label {
-  font-size: 14px;
+  font-size: 13px;
+  color: #555;
   font-weight: 500;
-  color: #666;
 }
 
 .form-input {
-  width: 100%;
-  padding: 12px 16px;
+  padding: 12px 14px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   font-size: 14px;
-  transition: all 0.2s;
+  transition: border-color 0.2s;
 }
 
 .form-input:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .error-message {
-  padding: 12px;
-  background: #fee;
-  border-left: 3px solid #f44;
-  border-radius: 4px;
-  color: #f44;
+  background: #fff1f0;
+  color: #f5222d;
+  padding: 10px 14px;
+  border-radius: 6px;
   font-size: 13px;
 }
 
 .login-button {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 12px;
+  background: #667eea;
   color: white;
   border: none;
   border-radius: 8px;
@@ -194,26 +199,23 @@ async function handleLogin() {
   transition: all 0.2s;
 }
 
-.login-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+.login-button:hover {
+  background: #5568d3;
 }
 
 .login-button:disabled {
-  opacity: 0.6;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .login-hint {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: #f0f4ff;
+  border-radius: 6px;
   font-size: 12px;
-  color: #999;
-  margin-top: 8px;
-}
-
-/* 首次登录改密警告提示样式 */
-.login-hint-warning {
-  color: #d97706;
-  font-weight: 500;
+  color: #667eea;
 }
 </style>

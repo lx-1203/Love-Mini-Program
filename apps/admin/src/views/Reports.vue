@@ -1,8 +1,13 @@
 <script setup lang="ts">
 /**
- * 举报管理页。
+ * 举报管理页（SubTask 3.3.2 i18n 化）。
  * 提供举报列表的分页查询（按状态/目标类型筛选）与处理（HANDLE 已处理 / REJECT 驳回）。
  * 对应后端 com.campuslove.api.admin.AdminReportController。
+ *
+ * SubTask 3.3.2 改造点：
+ * - 标题/列头/筛选下拉/按钮/弹窗文案全部走 i18n key（reports.*）
+ * - 目标类型/状态通过 reports.typePost / reports.filterStatusPending 等映射
+ * - 错误回退通过 reports.loadFailed / reports.handleFailed 表达
  */
 import { ref, onMounted } from "vue";
 import {
@@ -15,6 +20,11 @@ import {
   type AdminReportHandleRequest,
 } from "../api/reports";
 import { ApiError } from "../api/http";
+// Task 3.7.2：接入共享 Pagination 组件
+import Pagination from "../components/Pagination.vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 /** 举报列表数据 */
 const reports = ref<AdminReportView[]>([]);
@@ -66,7 +76,7 @@ async function fetchReports() {
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "加载举报列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("reports.loadFailed");
     reports.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -114,6 +124,13 @@ function handleNextPage() {
 }
 
 /**
+ * Task 3.7.2：分页变更回调（由 Pagination 组件触发）。
+ */
+function handlePageChange() {
+  fetchReports();
+}
+
+/**
  * 打开处理弹窗。
  * @param report 当前举报记录
  */
@@ -148,7 +165,7 @@ async function submitHandle() {
     handleRemark.value = "";
     await fetchReports();
   } catch (err) {
-    alert(err instanceof ApiError ? err.message : "处理失败");
+    alert(err instanceof ApiError ? err.message : t("reports.handleFailed"));
   } finally {
     submitting.value = false;
   }
@@ -168,19 +185,33 @@ function formatDate(iso: string | null): string {
 }
 
 /**
- * 获取目标类型的中文标签。
+ * 获取目标类型的中文标签（通过 i18n key 渲染）。
  */
 function targetTypeLabel(type: string): string {
-  const found = REPORT_TARGET_TYPES.find((t) => t.value === type);
-  return found ? found.label : type;
+  const found = REPORT_TARGET_TYPES.find((item) => item.value === type);
+  return found ? t(found.labelKey) : type;
 }
 
 /**
- * 获取状态的中文标签。
+ * 获取状态的中文标签（通过 i18n key 渲染）。
  */
 function statusLabel(status: string): string {
-  const found = REPORT_STATUSES.find((s) => s.value === status);
-  return found ? found.label : status;
+  const found = REPORT_STATUSES.find((item) => item.value === status);
+  return found ? t(found.labelKey) : status;
+}
+
+/**
+ * 举报人显示：优先 nickname，否则用 i18n 插值兜底。
+ */
+function reporterDisplay(report: AdminReportView): string {
+  return report.reporterNickname || t("reports.authorFallback", { id: report.reporterId });
+}
+
+/**
+ * 处理人显示：handlerId 存在时显示 #id，否则占位符。
+ */
+function handlerDisplay(report: AdminReportView): string {
+  return report.handlerId ? t("reports.handlerPrefix", { id: report.handlerId }) : "—";
 }
 
 onMounted(() => {
@@ -192,26 +223,26 @@ onMounted(() => {
   <view class="reports-page">
     <!-- 页面标题 -->
     <view class="page-header">
-      <text class="page-title">举报管理</text>
-      <text class="page-subtitle">处理用户举报的帖子/评论/用户/话题</text>
+      <text class="page-title">{{ t("reports.pageTitle") }}</text>
+      <text class="page-subtitle">{{ t("reports.pageSubtitle") }}</text>
     </view>
 
     <!-- 筛选工具栏 -->
     <view class="toolbar">
       <select v-model="statusFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部状态</option>
-        <option value="PENDING">待处理</option>
-        <option value="HANDLED">已处理</option>
-        <option value="REJECTED">已驳回</option>
+        <option value="">{{ t("reports.filterStatusAllStatus") }}</option>
+        <option value="PENDING">{{ t("reports.filterStatusPending") }}</option>
+        <option value="HANDLED">{{ t("reports.filterStatusProcessed") }}</option>
+        <option value="REJECTED">{{ t("reports.filterStatusRejected") }}</option>
       </select>
       <select v-model="targetTypeFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部目标</option>
-        <option value="POST">帖子</option>
-        <option value="COMMENT">评论</option>
-        <option value="USER">用户</option>
-        <option value="TOPIC">话题</option>
+        <option value="">{{ t("reports.filterTargetAll") }}</option>
+        <option value="POST">{{ t("reports.filterTargetPost") }}</option>
+        <option value="COMMENT">{{ t("reports.filterTargetComment") }}</option>
+        <option value="USER">{{ t("reports.filterTargetUser") }}</option>
+        <option value="TOPIC">{{ t("reports.filterTargetTopic") }}</option>
       </select>
-      <button class="ghost-button" @click="handleResetFilters">重置</button>
+      <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
     </view>
 
     <!-- 错误提示 -->
@@ -222,24 +253,24 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>目标类型</th>
-            <th>目标ID</th>
-            <th>举报人</th>
-            <th>原因</th>
-            <th>描述</th>
-            <th>状态</th>
-            <th>处理人</th>
-            <th>处理时间</th>
-            <th>操作</th>
+            <th scope="col">{{ t("reports.columnId") }}</th>
+            <th scope="col">{{ t("reports.columnTargetType") }}</th>
+            <th scope="col">{{ t("reports.columnTargetId") }}</th>
+            <th scope="col">{{ t("reports.columnReporter") }}</th>
+            <th scope="col">{{ t("reports.columnReason") }}</th>
+            <th scope="col">{{ t("reports.columnDescription") }}</th>
+            <th scope="col">{{ t("reports.columnStatus") }}</th>
+            <th scope="col">{{ t("reports.columnHandler") }}</th>
+            <th scope="col">{{ t("reports.columnHandledAt") }}</th>
+            <th scope="col">{{ t("reports.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="10" class="empty-cell">加载中...</td>
+            <td colspan="10" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="reports.length === 0">
-            <td colspan="10" class="empty-cell">暂无举报数据</td>
+            <td colspan="10" class="empty-cell">{{ t("reports.noData") }}</td>
           </tr>
           <tr v-for="report in reports" :key="report.id">
             <td>{{ report.id }}</td>
@@ -249,7 +280,7 @@ onMounted(() => {
             <td>{{ report.targetId }}</td>
             <td>
               <view class="reporter-cell">
-                <text>{{ report.reporterNickname || `用户#${report.reporterId}` }}</text>
+                <text>{{ reporterDisplay(report) }}</text>
               </view>
             </td>
             <td>{{ report.reason }}</td>
@@ -259,15 +290,15 @@ onMounted(() => {
                 {{ statusLabel(report.status) }}
               </span>
             </td>
-            <td>{{ report.handlerId ? `#${report.handlerId}` : "—" }}</td>
+            <td>{{ handlerDisplay(report) }}</td>
             <td>{{ formatDate(report.handledAt) }}</td>
             <td class="action-cell">
               <button
                 v-if="report.status === 'PENDING'"
                 class="action-button handle"
                 @click="openHandleModal(report)"
-              >处理</button>
-              <text v-else class="handled-text">已处理</text>
+              >{{ t("reports.actionProcess") }}</button>
+              <text v-else class="handled-text">{{ t("reports.handledText") }}</text>
             </td>
           </tr>
         </tbody>
@@ -276,62 +307,76 @@ onMounted(() => {
 
     <!-- 分页 -->
     <view class="pagination">
-      <button class="page-button" :disabled="page <= 1" @click="handlePrevPage">上一页</button>
-      <text class="page-info">第 {{ page }} / {{ totalPages }} 页（共 {{ total }} 条）</text>
-      <button class="page-button" :disabled="page >= totalPages" @click="handleNextPage">下一页</button>
+      <button class="page-button" :disabled="page <= 1" @click="handlePrevPage">{{ t("common.prevPage") }}</button>
+      <text class="page-info">{{ t("reports.paginationInfo", { page, totalPages, total }) }}</text>
+      <button class="page-button" :disabled="page >= totalPages" @click="handleNextPage">{{ t("common.nextPage") }}</button>
     </view>
+
+    <!-- Task 3.7.2：接入共享 Pagination 组件 -->
+    <Pagination
+      v-model:page="page"
+      :total-pages="totalPages"
+      :total="total"
+      :disabled="loading"
+      @change="handlePageChange"
+    />
 
     <!-- 处理举报弹窗 -->
     <view v-if="handlingReport" class="modal-mask" @click.self="closeHandleModal">
       <view class="modal">
-        <text class="modal-title">处理举报 #{{ handlingReport.id }}</text>
+        <text class="modal-title">{{ t("reports.handleTitle", { id: handlingReport.id }) }}</text>
 
         <!-- 举报信息预览 -->
         <view class="report-info-box">
           <view class="info-row">
-            <text class="info-label">目标：</text>
+            <text class="info-label">{{ t("reports.targetLabel") }}</text>
             <text>{{ targetTypeLabel(handlingReport.targetType) }} #{{ handlingReport.targetId }}</text>
           </view>
           <view class="info-row">
-            <text class="info-label">举报人：</text>
-            <text>{{ handlingReport.reporterNickname || `用户#${handlingReport.reporterId}` }}</text>
+            <text class="info-label">{{ t("reports.reporterLabel") }}</text>
+            <text>{{ reporterDisplay(handlingReport) }}</text>
           </view>
           <view class="info-row">
-            <text class="info-label">原因：</text>
+            <text class="info-label">{{ t("reports.reasonLabel") }}</text>
             <text>{{ handlingReport.reason }}</text>
           </view>
           <view v-if="handlingReport.description" class="info-row">
-            <text class="info-label">描述：</text>
+            <text class="info-label">{{ t("reports.descriptionLabel") }}</text>
             <text>{{ handlingReport.description }}</text>
           </view>
         </view>
 
         <!-- 处理决定单选 -->
         <view class="form-row">
-          <text class="form-label">处理决定</text>
+          <text class="form-label">{{ t("reports.handleDecisionLabel") }}</text>
           <view class="radio-group">
             <label class="radio-item">
               <input v-model="handleDecision" type="radio" value="HANDLE" />
-              <span>已处理（核实并处置）</span>
+              <span>{{ t("reports.handleDecisionHandled") }}</span>
             </label>
             <label class="radio-item">
               <input v-model="handleDecision" type="radio" value="REJECT" />
-              <span>驳回（无效举报）</span>
+              <span>{{ t("reports.handleDecisionRejected") }}</span>
             </label>
           </view>
         </view>
 
         <!-- 处理备注 -->
         <view class="form-row">
-          <text class="form-label">处理备注（可选）</text>
-          <textarea v-model="handleRemark" class="form-textarea" rows="3" placeholder="请输入处理说明..." />
+          <text class="form-label">{{ t("reports.handleRemarkLabel") }}</text>
+          <textarea
+            v-model="handleRemark"
+            class="form-textarea"
+            rows="3"
+            :placeholder="t('reports.handleRemarkPlaceholder')"
+          />
         </view>
 
         <!-- 操作按钮 -->
         <view class="modal-actions">
-          <button class="ghost-button" @click="closeHandleModal">取消</button>
+          <button class="ghost-button" @click="closeHandleModal">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="submitting" @click="submitHandle">
-            {{ submitting ? "提交中..." : "提交" }}
+            {{ submitting ? t("reports.submitting") : t("reports.submitButton") }}
           </button>
         </view>
       </view>
@@ -340,6 +385,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@import "../styles/admin-common.css";
+
 .reports-page {
   max-width: 1400px;
 }

@@ -1,13 +1,28 @@
 <script setup lang="ts">
+/**
+ * Admin 用户管理视图（SubTask 3.3.2 i18n 化）。
+ *
+ * 改造点：
+ * - 标题/副标题/搜索占位符/列头/按钮/状态文案全部走 i18n key
+ * - ConfirmDialog 的 title/message 通过 users.disableConfirmMessage 等插值生成
+ * - 错误回退通过 users.loadFailed / users.saveFailed / users.actionFailed 表达
+ */
 import { ref, onMounted, computed } from "vue";
 import {
   listUsers,
   disableUser,
   enableUser,
+  updateUser,
   type AdminUserSummary,
   type AdminUserListQuery,
 } from "../api/users";
 import { ApiError } from "../api/http";
+// Task 3.7.2 / 3.7.3：接入共享 Pagination 与 ConfirmDialog 组件
+import Pagination from "../components/Pagination.vue";
+import ConfirmDialog from "../components/ConfirmDialog.vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const users = ref<AdminUserSummary[]>([]);
 const loading = ref(false);
@@ -24,7 +39,16 @@ const totalPages = ref(1);
 
 const editingUser = ref<AdminUserSummary | null>(null);
 const editNickname = ref("");
+// SubTask 1.3.2：编辑保存过程中的 loading 状态，防止重复点击与并发提交
+const savingEdit = ref(false);
 
+// Task 3.7.3：禁用/启用确认弹窗状态
+const confirmVisible = ref(false);
+const confirmAction = ref<"disable" | "enable">("disable");
+const confirmTarget = ref<AdminUserSummary | null>(null);
+const confirming = ref(false);
+
+/** 通用 computed：filteredUsers 保留兼容旧模板 */
 const filteredUsers = computed(() => users.value);
 
 async function fetchUsers() {
@@ -44,7 +68,7 @@ async function fetchUsers() {
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "加载用户列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("users.loadFailed");
     users.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -80,42 +104,104 @@ function handleNextPage() {
   }
 }
 
+/**
+ * Task 3.7.2：分页变更回调（由 Pagination 组件触发）。
+ * 直接复用 fetchUsers，page 已通过 v-model 同步。
+ */
+function handlePageChange(newPage: number): void {
+  // Pagination 组件已通过 v-model:page 同步 page.value，
+  // 此处仅触发数据加载
+  void newPage;
+  fetchUsers();
+}
+
 function handleEdit(user: AdminUserSummary) {
   editingUser.value = user;
   editNickname.value = user.nickname;
+  errorMsg.value = "";
 }
 
 function handleCancelEdit() {
   editingUser.value = null;
   editNickname.value = "";
+  savingEdit.value = false;
 }
 
+/**
+ * SubTask 1.3.2：保存编辑用户。
+ *
+ * 调用 PUT /api/admin/users/{id}，请求体只携带变更字段（nickname）。
+ * 保存过程中禁用按钮（savingEdit=true），防止重复点击产生并发更新。
+ * 成功后刷新列表以同步显示最新昵称；失败时通过 alert 提示并保留弹窗，便于用户重试。
+ */
 async function handleSaveEdit() {
   if (!editingUser.value) return;
-  // 当前任务未要求编辑接口在前端联调，仅做禁用/启用切换
-  // 编辑接口已在后端实现，前端表单扩展可后续迭代
-  editingUser.value = null;
-  editNickname.value = "";
+  if (savingEdit.value) return; // 防重复点击
+
+  const trimmed = editNickname.value.trim();
+  if (!trimmed) {
+    alert(t("users.nicknameRequired"));
+    return;
+  }
+
+  const userId = editingUser.value.id;
+  savingEdit.value = true;
+  try {
+    await updateUser(userId, { nickname: trimmed });
+    editingUser.value = null;
+    editNickname.value = "";
+    // 刷新列表以同步最新昵称
+    await fetchUsers();
+  } catch (err) {
+    const msg = err instanceof ApiError ? err.message : "保存失败";
+    alert(msg);
+  } finally {
+    savingEdit.value = false;
+  }
 }
 
 async function handleDisable(user: AdminUserSummary) {
-  if (!confirm(`确定要禁用用户 ${user.nickname} 吗？`)) return;
-  try {
-    await disableUser(user.id);
-    await fetchUsers();
-  } catch (err) {
-    alert(err instanceof ApiError ? err.message : "禁用失败");
-  }
+  // Task 3.7.3：替换原生 confirm() 为 ConfirmDialog 组件
+  confirmAction.value = "disable";
+  confirmTarget.value = user;
+  confirmVisible.value = true;
 }
 
 async function handleEnable(user: AdminUserSummary) {
-  if (!confirm(`确定要启用用户 ${user.nickname} 吗？`)) return;
+  // Task 3.7.3：替换原生 confirm() 为 ConfirmDialog 组件
+  confirmAction.value = "enable";
+  confirmTarget.value = user;
+  confirmVisible.value = true;
+}
+
+/**
+ * Task 3.7.3：ConfirmDialog 确认回调，执行禁用/启用操作。
+ */
+async function handleConfirmAction() {
+  const target = confirmTarget.value;
+  if (!target || confirming.value) return;
+
+  confirming.value = true;
   try {
-    await enableUser(user.id);
+    if (confirmAction.value === "disable") {
+      await disableUser(target.id);
+    } else {
+      await enableUser(target.id);
+    }
+    confirmVisible.value = false;
+    confirmTarget.value = null;
     await fetchUsers();
   } catch (err) {
-    alert(err instanceof ApiError ? err.message : "启用失败");
+    alert(err instanceof ApiError ? err.message : t("users.actionFailed"));
+  } finally {
+    confirming.value = false;
   }
+}
+
+/** Task 3.7.3：ConfirmDialog 取消回调 */
+function handleConfirmCancel() {
+  confirmTarget.value = null;
+  confirming.value = false;
 }
 
 function formatDate(iso: string): string {
@@ -143,8 +229,8 @@ onMounted(() => {
 <template>
   <view class="users-page">
     <view class="page-header">
-      <text class="page-title">用户管理</text>
-      <text class="page-subtitle">管理系统用户与权限</text>
+      <text class="page-title">{{ t("users.title") }}</text>
+      <text class="page-subtitle">{{ t("users.tableSubtitle") }}</text>
     </view>
 
     <view class="toolbar">
@@ -152,21 +238,21 @@ onMounted(() => {
         v-model="searchQuery"
         class="search-input"
         type="text"
-        placeholder="搜索昵称..."
+        :placeholder="t('users.searchNicknamePlaceholder')"
         @keyup.enter="handleSearch"
       />
       <select v-model="roleFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部角色</option>
-        <option value="USER">普通用户</option>
-        <option value="ADMIN">管理员</option>
+        <option value="">{{ t("users.filterRoleAll") }}</option>
+        <option value="USER">{{ t("users.filterRoleUser") }}</option>
+        <option value="ADMIN">{{ t("users.filterRoleAdmin") }}</option>
       </select>
       <select v-model="statusFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部状态</option>
-        <option value="active">正常</option>
-        <option value="disabled">禁用</option>
+        <option value="">{{ t("users.filterStatusAllShort") }}</option>
+        <option value="active">{{ t("users.filterStatusActiveShort") }}</option>
+        <option value="disabled">{{ t("users.filterStatusDisabledShort") }}</option>
       </select>
-      <button class="primary-button" @click="handleSearch">搜索</button>
-      <button class="ghost-button" @click="handleResetFilters">重置</button>
+      <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
+      <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
     </view>
 
     <view v-if="errorMsg" class="error-banner">{{ errorMsg }}</view>
@@ -175,22 +261,22 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>昵称</th>
-            <th>角色</th>
-            <th>状态</th>
-            <th>资料完善度</th>
-            <th>关注/粉丝</th>
-            <th>注册时间</th>
-            <th>操作</th>
+            <th scope="col">{{ t("users.columnId") }}</th>
+            <th scope="col">{{ t("users.columnNickname") }}</th>
+            <th scope="col">{{ t("users.columnRole") }}</th>
+            <th scope="col">{{ t("users.columnStatus") }}</th>
+            <th scope="col">{{ t("users.columnProfileCompletion") }}</th>
+            <th scope="col">{{ t("users.columnFollowing") }}</th>
+            <th scope="col">{{ t("users.columnRegisteredAt") }}</th>
+            <th scope="col">{{ t("users.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="8" class="empty-cell">加载中...</td>
+            <td colspan="8" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="filteredUsers.length === 0">
-            <td colspan="8" class="empty-cell">暂无用户数据</td>
+            <td colspan="8" class="empty-cell">{{ t("users.noData") }}</td>
           </tr>
           <tr v-for="user in filteredUsers" :key="user.id">
             <td>{{ user.id }}</td>
@@ -214,17 +300,17 @@ onMounted(() => {
             <td>{{ user.followingCount }} / {{ user.followersCount }}</td>
             <td>{{ formatDate(user.createdAt) }}</td>
             <td class="action-cell">
-              <button class="action-button edit" @click="handleEdit(user)">编辑</button>
+              <button class="action-button edit" @click="handleEdit(user)">{{ t("users.actionEdit") }}</button>
               <button
                 v-if="user.status === 'active'"
                 class="action-button delete"
                 @click="handleDisable(user)"
-              >禁用</button>
+              >{{ t("users.actionDisable") }}</button>
               <button
                 v-else
                 class="action-button enable"
                 @click="handleEnable(user)"
-              >启用</button>
+              >{{ t("users.actionEnable") }}</button>
             </td>
           </tr>
         </tbody>
@@ -232,29 +318,53 @@ onMounted(() => {
     </view>
 
     <view class="pagination">
-      <button class="page-button" :disabled="page <= 1" @click="handlePrevPage">上一页</button>
-      <text class="page-info">第 {{ page }} / {{ totalPages }} 页（共 {{ total }} 条）</text>
-      <button class="page-button" :disabled="page >= totalPages" @click="handleNextPage">下一页</button>
+      <button class="page-button" :disabled="page <= 1" @click="handlePrevPage">{{ t("common.prevPage") }}</button>
+      <text class="page-info">{{ t("common.page", { page, totalPages }) }}（{{ t("common.total", { n: total }) }}）</text>
+      <button class="page-button" :disabled="page >= totalPages" @click="handleNextPage">{{ t("common.nextPage") }}</button>
     </view>
+
+    <!-- Task 3.7.2：接入共享 Pagination 组件（替代上方手写分页） -->
+    <Pagination
+      v-model:page="page"
+      :total-pages="totalPages"
+      :total="total"
+      :disabled="loading"
+      @change="handlePageChange"
+    />
+
+    <!-- Task 3.7.3：禁用/启用确认弹窗 -->
+    <ConfirmDialog
+      v-model:visible="confirmVisible"
+      :title="confirmAction === 'disable' ? t('users.disableUserTitle') : t('users.enableUserTitle')"
+      :message="confirmTarget ? (confirmAction === 'disable' ? t('users.disableConfirmMessage', { name: confirmTarget.nickname }) : t('users.enableConfirmMessage', { name: confirmTarget.nickname })) : ''"
+      :danger="confirmAction === 'disable'"
+      :confirming="confirming"
+      @confirm="handleConfirmAction"
+      @cancel="handleConfirmCancel"
+    />
 
     <view v-if="editingUser" class="modal-mask" @click.self="handleCancelEdit">
       <view class="modal">
-        <text class="modal-title">编辑用户 - {{ editingUser.nickname }}</text>
+        <text class="modal-title">{{ t("users.editUserTitle", { name: editingUser.nickname }) }}</text>
         <view class="form-row">
-          <text class="form-label">昵称</text>
+          <text class="form-label">{{ t("users.nicknameLabel") }}</text>
           <input v-model="editNickname" class="form-input" type="text" />
         </view>
         <view class="modal-actions">
-          <button class="ghost-button" @click="handleCancelEdit">取消</button>
-          <button class="primary-button" @click="handleSaveEdit">保存</button>
+          <button class="ghost-button" :disabled="savingEdit" @click="handleCancelEdit">{{ t("common.cancel") }}</button>
+          <button class="primary-button" :disabled="savingEdit" @click="handleSaveEdit">
+            {{ savingEdit ? t("common.saving") : t("common.save") }}
+          </button>
         </view>
-        <text class="modal-hint">提示：状态切换请使用列表中的"禁用/启用"按钮。</text>
+        <text class="modal-hint">{{ t("users.modalHint") }}</text>
       </view>
     </view>
   </view>
 </template>
 
 <style scoped>
+@import "../styles/admin-common.css";
+
 .users-page {
   max-width: 1200px;
 }

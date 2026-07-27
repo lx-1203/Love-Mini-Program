@@ -1,4 +1,13 @@
 <script setup lang="ts">
+/**
+ * Admin 帖子管理视图（SubTask 3.3.2 i18n 化）。
+ *
+ * 改造点：
+ * - 标题/副标题/列头/筛选下拉/按钮/弹窗文案全部走 i18n key（posts.*）
+ * - ConfirmDialog 的 title/message 通过 posts.deleteTitle / posts.deleteConfirmMessage 插值生成
+ * - 状态/审核状态标签通过 posts.statusActive / posts.auditStatusPending 等映射
+ * - 错误回退通过 posts.loadFailed / posts.auditFailed / posts.deleteFailed 表达
+ */
 import { ref, onMounted } from "vue";
 import {
   listPosts,
@@ -8,6 +17,12 @@ import {
   type AdminPostListQuery,
 } from "../api/posts";
 import { ApiError } from "../api/http";
+// Task 3.7.2 / 3.7.3：接入共享 Pagination 与 ConfirmDialog 组件
+import Pagination from "../components/Pagination.vue";
+import ConfirmDialog from "../components/ConfirmDialog.vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const posts = ref<AdminPostSummary[]>([]);
 const loading = ref(false);
@@ -26,6 +41,11 @@ const auditingPost = ref<AdminPostSummary | null>(null);
 const auditDecision = ref<"approved" | "rejected">("approved");
 const auditRemark = ref("");
 
+// Task 3.7.3：删除确认弹窗状态
+const deleteVisible = ref(false);
+const deleteTarget = ref<AdminPostSummary | null>(null);
+const deleting = ref(false);
+
 async function fetchPosts() {
   loading.value = true;
   errorMsg.value = "";
@@ -43,7 +63,7 @@ async function fetchPosts() {
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "加载帖子列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("posts.loadFailed");
     posts.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -101,18 +121,47 @@ async function handleSaveAudit() {
     auditRemark.value = "";
     await fetchPosts();
   } catch (err) {
-    alert(err instanceof ApiError ? err.message : "审核失败");
+    alert(err instanceof ApiError ? err.message : t("posts.auditFailed"));
   }
 }
 
 async function handleDelete(post: AdminPostSummary) {
-  if (!confirm(`确定要删除帖子 #${post.id} 吗？（软删除，可在数据库恢复）`)) return;
+  // Task 3.7.3：替换原生 confirm() 为 ConfirmDialog 组件
+  deleteTarget.value = post;
+  deleteVisible.value = true;
+}
+
+/**
+ * Task 3.7.3：ConfirmDialog 确认回调，执行删除操作。
+ */
+async function handleConfirmDelete() {
+  const target = deleteTarget.value;
+  if (!target || deleting.value) return;
+
+  deleting.value = true;
   try {
-    await deletePost(post.id);
+    await deletePost(target.id);
+    deleteVisible.value = false;
+    deleteTarget.value = null;
     await fetchPosts();
   } catch (err) {
-    alert(err instanceof ApiError ? err.message : "删除失败");
+    alert(err instanceof ApiError ? err.message : t("posts.deleteFailed"));
+  } finally {
+    deleting.value = false;
   }
+}
+
+/** Task 3.7.3：ConfirmDialog 取消回调 */
+function handleCancelDelete() {
+  deleteTarget.value = null;
+  deleting.value = false;
+}
+
+/**
+ * Task 3.7.2：分页变更回调（由 Pagination 组件触发）。
+ */
+function handlePageChange() {
+  fetchPosts();
 }
 
 function formatDate(iso: string | null): string {
@@ -127,11 +176,11 @@ function formatDate(iso: string | null): string {
 function auditStatusLabel(status: string): string {
   switch (status) {
     case "pending":
-      return "待审核";
+      return t("posts.auditStatusPending");
     case "approved":
-      return "已通过";
+      return t("posts.auditStatusApproved");
     case "rejected":
-      return "已拒绝";
+      return t("posts.auditStatusRejected");
     default:
       return status;
   }
@@ -140,14 +189,18 @@ function auditStatusLabel(status: string): string {
 function statusLabel(status: string): string {
   switch (status) {
     case "active":
-      return "正常";
+      return t("posts.statusActive");
     case "deleted":
-      return "已删除";
+      return t("posts.statusDeleted");
     case "hidden":
-      return "已隐藏";
+      return t("posts.statusHidden");
     default:
       return status;
   }
+}
+
+function authorDisplay(post: AdminPostSummary): string {
+  return post.authorNickname || t("posts.authorFallback", { id: post.authorId });
 }
 
 onMounted(() => {
@@ -158,34 +211,34 @@ onMounted(() => {
 <template>
   <view class="posts-page">
     <view class="page-header">
-      <text class="page-title">帖子管理</text>
-      <text class="page-subtitle">管理社区帖子与审核</text>
+      <text class="page-title">{{ t("posts.title") }}</text>
+      <text class="page-subtitle">{{ t("posts.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
       <select v-model="auditStatusFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部审核状态</option>
-        <option value="pending">待审核</option>
-        <option value="approved">已通过</option>
-        <option value="rejected">已拒绝</option>
+        <option value="">{{ t("posts.filterAuditStatusAll") }}</option>
+        <option value="pending">{{ t("posts.auditStatusPending") }}</option>
+        <option value="approved">{{ t("posts.auditStatusApproved") }}</option>
+        <option value="rejected">{{ t("posts.auditStatusRejected") }}</option>
       </select>
       <select v-model="statusFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部帖子状态</option>
-        <option value="active">正常</option>
-        <option value="hidden">已隐藏</option>
-        <option value="deleted">已删除</option>
+        <option value="">{{ t("posts.filterPostStatusAll") }}</option>
+        <option value="active">{{ t("posts.statusActive") }}</option>
+        <option value="hidden">{{ t("posts.statusHidden") }}</option>
+        <option value="deleted">{{ t("posts.statusDeleted") }}</option>
       </select>
       <select v-model="categoryFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部分类</option>
-        <option value="all">全部</option>
-        <option value="interest">兴趣</option>
-        <option value="sincere">真诚</option>
-        <option value="hometown">家乡</option>
-        <option value="anonymous">匿名</option>
-        <option value="latest">最新</option>
-        <option value="campus">校园</option>
+        <option value="">{{ t("posts.filterCategoryAll") }}</option>
+        <option value="all">{{ t("posts.categoryAll") }}</option>
+        <option value="interest">{{ t("posts.categoryInterest") }}</option>
+        <option value="sincere">{{ t("posts.categorySincere") }}</option>
+        <option value="hometown">{{ t("posts.categoryHometown") }}</option>
+        <option value="anonymous">{{ t("posts.categoryAnonymous") }}</option>
+        <option value="latest">{{ t("posts.categoryLatest") }}</option>
+        <option value="campus">{{ t("posts.categoryCampus") }}</option>
       </select>
-      <button class="ghost-button" @click="handleResetFilters">重置</button>
+      <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
     </view>
 
     <view v-if="errorMsg" class="error-banner">{{ errorMsg }}</view>
@@ -194,30 +247,30 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>内容预览</th>
-            <th>作者</th>
-            <th>分类</th>
-            <th>帖子状态</th>
-            <th>审核状态</th>
-            <th>点赞/评论/转发</th>
-            <th>创建时间</th>
-            <th>操作</th>
+            <th scope="col">{{ t("posts.columnId") }}</th>
+            <th scope="col">{{ t("posts.columnContentPreview") }}</th>
+            <th scope="col">{{ t("posts.columnAuthor") }}</th>
+            <th scope="col">{{ t("posts.columnCategory") }}</th>
+            <th scope="col">{{ t("posts.columnPostStatus") }}</th>
+            <th scope="col">{{ t("posts.columnAuditStatus") }}</th>
+            <th scope="col">{{ t("posts.columnStats") }}</th>
+            <th scope="col">{{ t("posts.columnCreatedAt") }}</th>
+            <th scope="col">{{ t("posts.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="9" class="empty-cell">加载中...</td>
+            <td colspan="9" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="posts.length === 0">
-            <td colspan="9" class="empty-cell">暂无帖子数据</td>
+            <td colspan="9" class="empty-cell">{{ t("posts.noData") }}</td>
           </tr>
           <tr v-for="post in posts" :key="post.id">
             <td>{{ post.id }}</td>
             <td class="content-cell">{{ post.contentPreview }}</td>
             <td>
               <view class="author-cell">
-                <text>{{ post.authorNickname || `用户#${post.authorId}` }}</text>
+                <text>{{ authorDisplay(post) }}</text>
               </view>
             </td>
             <td>{{ post.category }}</td>
@@ -234,8 +287,8 @@ onMounted(() => {
             <td>{{ post.likesCount }} / {{ post.commentsCount }} / {{ post.shareCount }}</td>
             <td>{{ formatDate(post.createdAt) }}</td>
             <td class="action-cell">
-              <button class="action-button audit" @click="handleAudit(post)">审核</button>
-              <button class="action-button delete" @click="handleDelete(post)">删除</button>
+              <button class="action-button audit" @click="handleAudit(post)">{{ t("posts.actionAudit") }}</button>
+              <button class="action-button delete" @click="handleDelete(post)">{{ t("posts.actionDelete") }}</button>
             </td>
           </tr>
         </tbody>
@@ -243,35 +296,55 @@ onMounted(() => {
     </view>
 
     <view class="pagination">
-      <button class="page-button" :disabled="page <= 1" @click="handlePrevPage">上一页</button>
-      <text class="page-info">第 {{ page }} / {{ totalPages }} 页（共 {{ total }} 条）</text>
-      <button class="page-button" :disabled="page >= totalPages" @click="handleNextPage">下一页</button>
+      <button class="page-button" :disabled="page <= 1" @click="handlePrevPage">{{ t("common.prevPage") }}</button>
+      <text class="page-info">{{ t("posts.paginationInfo", { page, totalPages, total }) }}</text>
+      <button class="page-button" :disabled="page >= totalPages" @click="handleNextPage">{{ t("common.nextPage") }}</button>
     </view>
+
+    <!-- Task 3.7.2：接入共享 Pagination 组件 -->
+    <Pagination
+      v-model:page="page"
+      :total-pages="totalPages"
+      :total="total"
+      :disabled="loading"
+      @change="handlePageChange"
+    />
+
+    <!-- Task 3.7.3：删除确认弹窗 -->
+    <ConfirmDialog
+      v-model:visible="deleteVisible"
+      :title="t('posts.deleteTitle')"
+      :message="deleteTarget ? t('posts.deleteConfirmMessage', { id: deleteTarget.id }) : ''"
+      :danger="true"
+      :confirming="deleting"
+      @confirm="handleConfirmDelete"
+      @cancel="handleCancelDelete"
+    />
 
     <view v-if="auditingPost" class="modal-mask" @click.self="handleCancelAudit">
       <view class="modal">
-        <text class="modal-title">审核帖子 #{{ auditingPost.id }}</text>
+        <text class="modal-title">{{ t("posts.auditTitle", { id: auditingPost.id }) }}</text>
         <view class="post-content-box">{{ auditingPost.contentPreview }}</view>
         <view class="form-row">
-          <text class="form-label">审核决定</text>
+          <text class="form-label">{{ t("posts.auditDecisionLabel") }}</text>
           <view class="radio-group">
             <label class="radio-item">
               <input v-model="auditDecision" type="radio" value="approved" />
-              <span>通过</span>
+              <span>{{ t("posts.auditApprovedOption") }}</span>
             </label>
             <label class="radio-item">
               <input v-model="auditDecision" type="radio" value="rejected" />
-              <span>拒绝（自动隐藏）</span>
+              <span>{{ t("posts.auditRejectedOption") }}</span>
             </label>
           </view>
         </view>
         <view class="form-row">
-          <text class="form-label">审核备注（拒绝原因等）</text>
+          <text class="form-label">{{ t("posts.auditRemarkLabel") }}</text>
           <textarea v-model="auditRemark" class="form-textarea" rows="3" />
         </view>
         <view class="modal-actions">
-          <button class="ghost-button" @click="handleCancelAudit">取消</button>
-          <button class="primary-button" @click="handleSaveAudit">提交</button>
+          <button class="ghost-button" @click="handleCancelAudit">{{ t("common.cancel") }}</button>
+          <button class="primary-button" @click="handleSaveAudit">{{ t("posts.submitButton") }}</button>
         </view>
       </view>
     </view>
@@ -279,6 +352,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@import "../styles/admin-common.css";
+
 .posts-page {
   max-width: 1200px;
 }
