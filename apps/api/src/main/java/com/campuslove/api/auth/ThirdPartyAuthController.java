@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Map;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,8 +34,19 @@ import org.springframework.web.client.HttpClientErrorException;
  *   <li>所有写操作请求体均通过 {@link Valid} 触发 Bean Validation 校验</li>
  * </ul>
  */
+/**
+ * Profile 限定说明：
+ * <p>仅在 real profile 下激活。原因：本控制器依赖 {@link ThirdPartyAuthService}，
+ * 后者通过 {@link com.campuslove.api.repository.ThirdPartyAccountRepository}
+ * （Spring Data JPA）访问数据库，而 mock profile（{@code application-mock.yml}）
+ * 排除了 HibernateJpaAutoConfiguration / DataSourceAutoConfiguration，
+ * 故 JPA Repository Bean 在 mock profile 下不可用。
+ * 与 {@link RealAuthService} / {@link com.campuslove.api.auth.WeChatClient}
+ * 等其他依赖 JPA / 外部 API 的组件保持一致的 Profile 隔离策略。</p>
+ */
 @RestController
-@RequestMapping("/api/auth/third-party")
+@RequestMapping("/api/v1/auth/third-party")
+@Profile("real")
 public class ThirdPartyAuthController {
 
     private final ThirdPartyAuthService thirdPartyAuthService;

@@ -1,7 +1,18 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.monitor.AuthMetrics;
 import com.campuslove.api.ratelimit.RateLimit;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Map;
@@ -17,8 +28,10 @@ import org.springframework.web.bind.annotation.RestController;
  * 认证控制器。
  * 提供微信登录、获取当前用户会话和刷新令牌的 API。
  */
+@Tag(name = "Auth", description = "认证相关接口：微信登录、会话查询、令牌刷新、登出、管理员登录")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
     private final AuthService authService;
@@ -41,7 +54,21 @@ public class AuthController {
      * @return 用户会话视图
      */
     @GetMapping("/me")
+    @Operation(
+            summary = "获取当前用户会话",
+            description = "从 Authorization 请求头中提取 Bearer token 进行身份验证，返回当前登录用户的会话信息（含 userId、VIP 状态、资料完成度等）。",
+            operationId = "getCurrentSession"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "会话有效，返回用户会话视图",
+                    content = @Content(schema = @Schema(implementation = UserSessionView.class)),
+                    headers = {@Header(name = "X-Trace-Id", description = "请求追踪 ID")}),
+            @ApiResponse(responseCode = "401", description = "未授权：token 缺失/失效/已撤销", content = @Content),
+            @ApiResponse(responseCode = "403", description = "用户已禁用", content = @Content)
+    })
     public UserSessionView getCurrentSession(
+            @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true,
+                    example = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.xxx")
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader
     ) {
         String token = extractBearerToken(authHeader);
@@ -58,8 +85,23 @@ public class AuthController {
      * @return 用户会话视图（包含 JWT 令牌）
      */
     @PostMapping("/wechat-login")
+    @Operation(
+            summary = "微信小程序登录（旧路径，建议使用 /auth/wechat）",
+            description = "接收前端 wx.login() 返回的临时 code，调用微信 code2session 换取 openId，签发 JWT。速率限制：桶容量 10，每 10 秒补充 1 个令牌（按 IP 限流）。",
+            operationId = "loginWithWechatLegacy"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "登录成功，返回 JWT 与用户会话信息",
+                    content = @Content(schema = @Schema(implementation = UserSessionView.class))),
+            @ApiResponse(responseCode = "401", description = "INVALID_CODE：微信 code 失效或已过期", content = @Content),
+            @ApiResponse(responseCode = "403", description = "USER_DISABLED：用户已被管理员禁用", content = @Content),
+            @ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发登录接口限流", content = @Content),
+            @ApiResponse(responseCode = "502", description = "WECHAT_API_ERROR：微信 API 调用失败", content = @Content)
+    })
     @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
-    public UserSessionView loginWithWechat(@Valid @RequestBody WechatLoginRequest request) {
+    public UserSessionView loginWithWechat(
+            @Parameter(description = "微信登录请求体，包含 wx.login() 返回的 code", required = true)
+            @Valid @RequestBody WechatLoginRequest request) {
         try {
             UserSessionView session = authService.loginWithWechat(request.code());
             // 登录成功：记录成功指标（指标失败不影响主流程）
@@ -67,7 +109,7 @@ public class AuthController {
                 if (session != null && session.userId() != null) {
                     authMetrics.recordLoginSuccess(parseUserId(session.userId()));
                 }
-            } catch (Exception ignore) {
+            } catch (RuntimeException ignore) {
                 // 监控逻辑失败忽略，不影响登录主流程
             }
             return session;
@@ -75,7 +117,7 @@ public class AuthController {
             // 登录失败：记录失败指标，原因取异常类名避免泄露敏感信息
             try {
                 authMetrics.recordLoginFailure(e.getClass().getSimpleName());
-            } catch (Exception ignore) {
+            } catch (RuntimeException ignore) {
                 // 监控逻辑失败忽略
             }
             throw e;
@@ -93,8 +135,21 @@ public class AuthController {
      * @return 包含新令牌的用户会话视图
      */
     @PostMapping("/refresh")
+    @Operation(
+            summary = "刷新 JWT 令牌",
+            description = "验证旧令牌有效性后生成新令牌返回。支持幂等性（Idempotency-Key）。速率限制：桶容量 20，每 2 秒补充 1 个令牌。",
+            operationId = "refreshToken"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "刷新成功，返回新令牌",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @ApiResponse(responseCode = "401", description = "原令牌无效或已撤销", content = @Content),
+            @ApiResponse(responseCode = "429", description = "触发限流", content = @Content)
+    })
     @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
-    public UserSessionView refreshToken(
+    @Idempotent
+    public ApiResponse<UserSessionView> refreshToken(
+            @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true)
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader
     ) {
         String oldToken = extractBearerToken(authHeader);
@@ -102,10 +157,10 @@ public class AuthController {
         // 记录 Token 刷新指标
         try {
             authMetrics.recordTokenRefresh();
-        } catch (Exception ignore) {
+        } catch (RuntimeException ignore) {
             // 监控逻辑失败忽略，不影响主流程
         }
-        return session;
+        return ApiResponse.ok(session);
     }
 
     /**
@@ -117,7 +172,17 @@ public class AuthController {
      * @return 包含 success 标志的响应体
      */
     @PostMapping("/logout")
+    @Operation(
+            summary = "用户登出",
+            description = "从 Authorization 请求头提取 Bearer token，将 JWT 加入 Redis 黑名单实现主动撤销。后续使用该 token 的请求返回 401。",
+            operationId = "logout"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "登出成功，返回 success=true"),
+            @ApiResponse(responseCode = "401", description = "token 无效", content = @Content)
+    })
     public Map<String, Boolean> logout(
+            @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true)
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader
     ) {
         String token = extractBearerToken(authHeader);
@@ -132,7 +197,21 @@ public class AuthController {
      * @return 用户会话视图（包含 JWT 令牌）
      */
     @PostMapping("/admin/login")
-    public UserSessionView loginAsAdmin(@Valid @RequestBody AdminLoginRequest request) {
+    @Operation(
+            summary = "管理员账号密码登录",
+            description = "管理员通过账号密码登录，校验 enabled/status 字段。支持幂等性。登录成功后返回带 ADMIN 角色的 JWT。",
+            operationId = "loginAsAdmin"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "登录成功",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @ApiResponse(responseCode = "401", description = "ADMIN_INVALID_CREDENTIALS：账号或密码错误", content = @Content),
+            @ApiResponse(responseCode = "403", description = "ADMIN_DISABLED：管理员账号已被禁用", content = @Content)
+    })
+    @Idempotent
+    public ApiResponse<UserSessionView> loginAsAdmin(
+            @Parameter(description = "管理员登录请求体（username + password）", required = true)
+            @Valid @RequestBody AdminLoginRequest request) {
         try {
             UserSessionView session = authService.loginAsAdmin(request.username(), request.password());
             // 管理员登录成功：记录成功指标
@@ -140,15 +219,15 @@ public class AuthController {
                 if (session != null && session.userId() != null) {
                     authMetrics.recordLoginSuccess(parseUserId(session.userId()));
                 }
-            } catch (Exception ignore) {
+            } catch (RuntimeException ignore) {
                 // 监控逻辑失败忽略
             }
-            return session;
+            return ApiResponse.ok(session);
         } catch (RuntimeException e) {
             // 管理员登录失败：记录失败指标（reason 统一为 admin_invalid_credentials 避免泄露账号信息）
             try {
                 authMetrics.recordLoginFailure("admin_invalid_credentials");
-            } catch (Exception ignore) {
+            } catch (RuntimeException ignore) {
                 // 监控逻辑失败忽略
             }
             throw e;
@@ -162,7 +241,18 @@ public class AuthController {
      * @return 包含 success 标志的响应体
      */
     @PostMapping("/admin/logout")
+    @Operation(
+            summary = "管理员登出",
+            description = "语义同 /logout，单独提供用于审计与未来扩展。撤销 JWT 并记录审计日志。",
+            operationId = "logoutAsAdmin"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "登出成功"),
+            @ApiResponse(responseCode = "401", description = "token 无效", content = @Content),
+            @ApiResponse(responseCode = "403", description = "非管理员角色", content = @Content)
+    })
     public Map<String, Boolean> logoutAsAdmin(
+            @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true)
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader
     ) {
         String token = extractBearerToken(authHeader);
@@ -200,9 +290,6 @@ public class AuthController {
             return null;
         }
     }
-}
-
-record WechatLoginRequest(@NotBlank String code) {
 }
 
 /**

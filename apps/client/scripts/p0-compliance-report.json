@@ -1,0 +1,184 @@
+{
+  "generatedAt": "2026-07-26T14:59:10.919Z",
+  "project": "campus-love",
+  "phase": "P0",
+  "summary": {
+    "total": 24,
+    "passed": 16,
+    "failed": 0,
+    "manual": 3,
+    "todo": 5,
+    "overall": "PASS"
+  },
+  "checks": [
+    {
+      "id": "2",
+      "name": "__usePrivacyCheck__: true",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "manifest.json: mp-weixin.__usePrivacyCheck__ = true"
+    },
+    {
+      "id": "3",
+      "name": "wx.onNeedPrivacyAuthorization 已注册",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "App.vue 已注册 onNeedPrivacyAuthorization 回调"
+    },
+    {
+      "id": "4",
+      "name": "ensurePrivacyAuthorized 调用点",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "找到 9 个文件调用 ensurePrivacyAuthorized：\\src\\pages\\campus\\certification.vue, \\src\\pages\\circles\\post-topic.vue, \\src\\pages\\profile\\album.vue, \\src\\pages\\profile\\index.vue, \\src\\pages\\verification\\index.vue, \\src\\pages\\village\\post.vue, \\src\\subpackages\\support\\feedback\\index.vue, \\src\\tests\\utils\\privacy.spec.ts, \\src\\utils\\privacy.ts"
+    },
+    {
+      "id": "5",
+      "name": "requiredPrivateInfos 与实际使用一致",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "manifest 声明 3 个接口：[chooseAddress, chooseLocation, getLocation]；源码中调用隐私接口的文件数：9（需人工核对接口级一致性）"
+    },
+    {
+      "id": "16",
+      "name": "@JsonIgnore 凭据脱敏",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "User.java 中 @JsonIgnore 出现 1 次（期望 >= 1，password 字段必须脱敏；openid 通过 DtoMapper 在 DTO 层脱敏）"
+    },
+    {
+      "id": "17",
+      "name": "JWT 密钥环境变量化",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "application.yml: secret 使用 ${JWT_SECRET:} 占位 = ✓；mock profile 重复声明 = ✓"
+    },
+    {
+      "id": "19",
+      "name": "@PreAuthorize Admin 权限注解",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "11/11 个 Admin Controller 标注 @PreAuthorize(\"hasRole('ADMIN')\")（期望 >= 11）"
+    },
+    {
+      "id": "20",
+      "name": "/uploads/** denyAll",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "SecurityConfig: ✓；MockSecurityConfig: ✓"
+    },
+    {
+      "id": "21",
+      "name": "JWT 黑名单服务存在",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "RedisTokenBlacklistService.isRevoked: ✓；JwtAuthenticationFilter 调用 isRevoked: ✓"
+    },
+    {
+      "id": "22",
+      "name": ".env.example + .gitleaks.toml 已配置",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "apps/api/.env.example: ✓；apps/client/.env.example: ✓；.gitleaks.toml: ✓"
+    },
+    {
+      "id": "23",
+      "name": "安全响应头 HSTS 配置",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "HSTS: ✓；X-Content-Type-Options: ✓；X-Frame-Options: ✓；Referrer-Policy: ✓"
+    },
+    {
+      "id": "24",
+      "name": "401/403 JSON 错误体 handler 存在",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "JwtAuthenticationEntryPoint (UNAUTHORIZED): ✓；JwtAccessDeniedHandler (FORBIDDEN): ✓；SecurityConfig 注册: ✓（注：MockSecurityConfig 未注册，仅 real profile 生效）"
+    },
+    {
+      "id": "1",
+      "name": "隐私协议页面已配置",
+      "level": "P0-必选-手动",
+      "status": "manual",
+      "detail": "需登录 mp 后台确认「用户隐私保护指引」已审核通过"
+    },
+    {
+      "id": "6",
+      "name": "已选择「社交 > 婚恋」类目",
+      "level": "P0-必选-手动",
+      "status": "manual",
+      "detail": "需登录 mp 后台确认「服务类目」已添加「社交 > 婚恋」或「社交 > 社交」"
+    },
+    {
+      "id": "7",
+      "name": "敏感词过滤机制",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "SensitiveWordFilter.java 存在：✓（业务路径接入需人工核对）"
+    },
+    {
+      "id": "8",
+      "name": "举报入口与处理流程",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "ReportController: ✓；AdminReportController: ✓"
+    },
+    {
+      "id": "9",
+      "name": "7×24 举报处理时效承诺",
+      "level": "P0-推荐-手动",
+      "status": "manual",
+      "detail": "需运营团队提供 SLA 文档与审核员排班表"
+    },
+    {
+      "id": "10",
+      "name": "校园实名认证流程",
+      "level": "P0-必选",
+      "status": "pass",
+      "detail": "后端 RealCampusCertificationService: ✓；前端 certification.vue: ✓"
+    },
+    {
+      "id": "11",
+      "name": "用户年龄限制（≥18 周岁）",
+      "level": "P0-必选-待补",
+      "status": "todo",
+      "detail": "P1.3 在 WechatAuthController 增加年龄校验逻辑（当前未实现）"
+    },
+    {
+      "id": "12",
+      "name": "文本审核 msgSecCheck",
+      "level": "P0-必选-待补",
+      "status": "todo",
+      "detail": "P1.4 接入微信 security.msgSecCheck"
+    },
+    {
+      "id": "13",
+      "name": "图片审核 imgSecCheck",
+      "level": "P0-必选-待补",
+      "status": "todo",
+      "detail": "P1.4 接入微信 security.imgSecCheck"
+    },
+    {
+      "id": "14",
+      "name": "视频审核 mediaCheckAsync",
+      "level": "P0-必选-待补",
+      "status": "todo",
+      "detail": "P1.4 接入微信 security.mediaCheckAsync"
+    },
+    {
+      "id": "15",
+      "name": "全站 HTTPS",
+      "level": "P0-必选-半自动",
+      "status": "pass",
+      "detail": "后端 HSTS 已配置：✓；生产 Nginx HTTPS 配置需手动确认"
+    },
+    {
+      "id": "18",
+      "name": "用户注销机制",
+      "level": "P0-必选-待补",
+      "status": "todo",
+      "detail": "P1.5 实现 DELETE /api/auth/account 端点（当前仅有 logout）"
+    }
+  ],
+  "issues": []
+}
