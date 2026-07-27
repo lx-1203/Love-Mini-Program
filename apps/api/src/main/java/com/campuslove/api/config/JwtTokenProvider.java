@@ -6,15 +6,18 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.crypto.SecretKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -75,19 +78,85 @@ public class JwtTokenProvider {
     /**
      * 根据用户 ID 生成 JWT 令牌。
      *
+     * <p>Task 0.5.3 安全加固：每个 token 都附带唯一 {@code jti}（JWT ID，RFC 7519 标准 claim），
+     * 用于支持基于 jti 的 Redis 黑名单撤销机制。jti 由 {@link UUID#randomUUID()} 生成，
+     * 全局唯一，不可预测。</p>
+     *
      * @param userId 用户唯一标识
      * @return 签发后的 JWT 字符串
      */
     public String generateToken(String userId) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationMs);
+        Instant now = Instant.now();
+        Instant expiryInstant = now.plusMillis(expirationMs);
 
         return Jwts.builder()
                 .subject(userId)
-                .issuedAt(now)
-                .expiration(expiryDate)
+                .id(UUID.randomUUID().toString()) // jti claim，用于 Redis 黑名单撤销
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiryInstant))
                 .signWith(signingKey)
                 .compact();
+    }
+
+    /**
+     * 从 JWT 令牌中提取 jti（JWT ID）。
+     *
+     * <p>Task 0.5.3 新增：用于在认证过滤器与登出流程中查询 Redis 黑名单。
+     * 兼容旧 token（无 jti claim）：返回 null，调用方应将 null 视为"无法撤销"，
+     * 仅依赖 token 自然过期。</p>
+     *
+     * @param token JWT 令牌字符串
+     * @return jti 字符串（UUID 格式），如果令牌无效或无 jti claim 则返回 null
+     */
+    public String getJtiFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(signingKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return claims.getId();
+        } catch (ExpiredJwtException ex) {
+            // 过期 token 仍可能需要查询黑名单（理论上过期即自动失效，但保留接口一致性）
+            // ExpiredJwtException 的 claims 信息可通过 getClaims() 获取
+            log.debug("Token 已过期，仍尝试从异常中提取 jti: {}", ex.getMessage());
+            return ex.getClaims() != null ? ex.getClaims().getId() : null;
+        } catch (JwtException ex) {
+            log.warn("Failed to extract jti from token: {}", ex.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 计算令牌剩余有效期（秒）。
+     *
+     * <p>Task 0.5.3 新增：用于 Redis 黑名单 TTL 设置，确保黑名单条目在 token 自然过期后
+     * 自动清理，避免 Redis 无限增长。</p>
+     *
+     * @param token JWT 令牌字符串
+     * @return 剩余有效期（秒），&lt;= 0 表示已过期或无法解析；
+     *         无法解析过期时间时返回应用配置的默认有效期（秒）
+     */
+    public long getRemainingTtlSeconds(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(signingKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            Instant expiration = getExpirationInstantFromClaims(claims);
+            if (expiration == null) {
+                return TimeUnit.MILLISECONDS.toSeconds(expirationMs);
+            }
+            long remainingMs = expiration.toEpochMilli() - Instant.now().toEpochMilli();
+            return Math.max(1, TimeUnit.MILLISECONDS.toSeconds(remainingMs));
+        } catch (ExpiredJwtException ex) {
+            // 已过期 token 的 TTL 应为 0，调用方一般不会再加入黑名单
+            return 0L;
+        } catch (JwtException ex) {
+            // 无法解析的 token，使用默认有效期作为兜底
+            return TimeUnit.MILLISECONDS.toSeconds(expirationMs);
+        }
     }
 
     /**
@@ -150,20 +219,37 @@ public class JwtTokenProvider {
      * 从令牌中提取过期时间。
      *
      * @param token JWT 令牌字符串
-     * @return 过期时间，如果令牌无效则返回 null
+     * @return 过期时间（Instant），如果令牌无效则返回 null
      */
-    public Date getExpirationFromToken(String token) {
+    public Instant getExpirationFromToken(String token) {
         try {
             Claims claims = Jwts.parser()
                     .verifyWith(signingKey)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-            return claims.getExpiration();
+            return getExpirationInstantFromClaims(claims);
         } catch (JwtException ex) {
             log.warn("Failed to extract expiration from token: {}", ex.getMessage());
             return null;
         }
+    }
+
+    /**
+     * 将 {@link Claims#getExpiration()} 返回的 {@link java.util.Date} 转换为 {@link Instant}。
+     *
+     * <p>JJWT 0.12.x 的 {@code Claims.getExpiration()} 仍返回 {@link java.util.Date}，
+     * 此方法封装转换逻辑，避免外部调用方直接依赖旧式 Date 类型。
+     * 当 claims 为 null 或过期时间为 null 时返回 null。</p>
+     *
+     * @param claims JWT claims 载荷
+     * @return 过期时间 Instant，可能为 null
+     */
+    private Instant getExpirationInstantFromClaims(Claims claims) {
+        if (claims == null || claims.getExpiration() == null) {
+            return null;
+        }
+        return claims.getExpiration().toInstant();
     }
 
     /**
@@ -189,10 +275,10 @@ public class JwtTokenProvider {
         // 2. 写入 Redis（多实例共享方案），通过 try-catch 保护
         try {
             if (redisTemplate != null) {
-                Date expiration = getExpirationFromToken(token);
+                Instant expiration = getExpirationFromToken(token);
                 long ttlSeconds;
                 if (expiration != null) {
-                    long remainingMs = expiration.getTime() - System.currentTimeMillis();
+                    long remainingMs = expiration.toEpochMilli() - Instant.now().toEpochMilli();
                     // 兜底：剩余时间 ≤ 0 时给 1 秒 TTL，避免负值导致 Redis 报错
                     ttlSeconds = Math.max(1, TimeUnit.MILLISECONDS.toSeconds(remainingMs));
                 } else {
@@ -203,7 +289,7 @@ public class JwtTokenProvider {
                 redisTemplate.opsForValue().set(redisKey, "1", ttlSeconds, TimeUnit.SECONDS);
                 log.info("Token 已加入 Redis 黑名单，TTL={}秒，长度={}", ttlSeconds, token.length());
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             // Redis 不可用时降级到本地内存方案，不影响登出主流程
             log.warn("写入 Redis 黑名单失败，降级使用本地内存方案：{}", e.getMessage());
         }
@@ -237,7 +323,7 @@ public class JwtTokenProvider {
                 // Redis 可用且 key 不存在，直接返回未撤销（以 Redis 为准）
                 return false;
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             // Redis 不可用时降级查本地内存
             log.warn("查询 Redis 黑名单失败，降级使用本地内存方案：{}", e.getMessage());
         }
@@ -272,9 +358,9 @@ public class JwtTokenProvider {
         Iterator<String> iterator = revokedTokens.iterator();
         while (iterator.hasNext()) {
             String token = iterator.next();
-            Date expiration = getExpirationFromToken(token);
+            Instant expiration = getExpirationFromToken(token);
             // 过期时间为 null（无法解析）或已过期，则从黑名单移除
-            if (expiration == null || expiration.before(new Date())) {
+            if (expiration == null || expiration.isBefore(Instant.now())) {
                 iterator.remove();
                 removed++;
             }

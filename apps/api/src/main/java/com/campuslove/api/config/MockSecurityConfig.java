@@ -31,9 +31,9 @@ import jakarta.servlet.http.HttpServletResponse;
  *
  * <p>现收敛为按角色鉴权，与 {@link SecurityConfig} 保持一致：
  * <ul>
- *   <li>/api/auth/**、/ws/**、/content-filter/check：permitAll（登录入口、WebSocket、内容检查）</li>
- *   <li>/api/admin/**：hasRole("ADMIN")</li>
- *   <li>/api/**：authenticated()</li>
+ *   <li>/api/v1/auth/**、/ws/**、/api/v1/content-filter/check：permitAll（登录入口、WebSocket、内容检查）</li>
+ *   <li>/api/v1/admin/**：hasRole("ADMIN")</li>
+ *   <li>/api/v1/**：authenticated()</li>
  *   <li>其他请求：permitAll（静态资源等）</li>
  * </ul>
  * </p>
@@ -41,8 +41,8 @@ import jakarta.servlet.http.HttpServletResponse;
  * <p>Mock 模式不进行真实 JWT 校验（JwtAuthenticationFilter 仅在 real profile 激活），
  * 而是由内置 mock filter 根据请求路径自动注入对应角色：
  * <ul>
- *   <li>/api/admin/** 路径 → 注入 ROLE_ADMIN（便于本地联调管理端）</li>
- *   <li>其他 /api/** 路径 → 注入 ROLE_USER</li>
+ *   <li>/api/v1/admin/** 路径 → 注入 ROLE_ADMIN（便于本地联调管理端）</li>
+ *   <li>其他 /api/v1/** 路径 → 注入 ROLE_USER</li>
  * </ul>
  * 这样既保留了 mock 模式的便利性，又验证了 SecurityFilterChain 的鉴权规则配置正确。</p>
  *
@@ -56,12 +56,12 @@ import jakarta.servlet.http.HttpServletResponse;
 public class MockSecurityConfig {
 
     /** 管理端路径前缀，用于 mock filter 自动注入 ROLE_ADMIN */
-    private static final String ADMIN_PATH_PATTERN = "/api/admin/**";
+    private static final String ADMIN_PATH_PATTERN = "/api/v1/admin/**";
     /** 不需要认证的路径模式（与 SecurityConfig 保持一致） */
     private static final List<String> PERMIT_PATHS = List.of(
-            "/api/auth/**",
+            "/api/v1/auth/**",
             "/ws/**",
-            "/content-filter/check"
+            "/api/v1/content-filter/check"
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -76,19 +76,23 @@ public class MockSecurityConfig {
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // 登录端点不需要认证（与 real profile 一致）
-                .requestMatchers("/api/auth/**").permitAll()
+                // Task 2.4.1：所有路径统一升级为 /api/v1/**
+                .requestMatchers("/api/v1/auth/**").permitAll()
                 // WebSocket 握手由单独机制处理
                 .requestMatchers("/ws/**").permitAll()
                 // 内容审查公开端点
-                .requestMatchers("/content-filter/check").permitAll()
-                // 修复：/uploads/** 需要认证，与 real profile 安全规则保持一致
-                .requestMatchers("/uploads/**").authenticated()
+                .requestMatchers("/api/v1/content-filter/check").permitAll()
+                // Task 0.3.1：/uploads/** 完全拒绝直接访问，强制走鉴权代理端点
+                // /api/v1/media/{userId}/{path}（与 real profile 一致）
+                .requestMatchers("/uploads/**").denyAll()
                 // 管理端点需要 ADMIN 角色（与 real profile 一致）
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                // 媒体上传端点 /api/media/upload 由 /api/** 规则覆盖（需认证），
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                // Task 0.3.2：媒体鉴权代理端点需认证
+                .requestMatchers("/api/v1/media/**").authenticated()
+                // 媒体上传端点 /api/v1/media/upload 由 /api/v1/** 规则覆盖（需认证），
                 // 防止匿名用户滥用存储空间
-                // 其他 /api/** 路径需要认证
-                .requestMatchers("/api/**").authenticated()
+                // 其他 /api/v1/** 路径需要认证
+                .requestMatchers("/api/v1/**").authenticated()
                 // 其他请求放行（静态资源等）
                 .anyRequest().permitAll()
             )
@@ -100,8 +104,8 @@ public class MockSecurityConfig {
     /**
      * Mock 认证过滤器：根据请求路径自动注入对应角色。
      *
-     * <p>对于 /api/admin/** 路径，注入 ROLE_ADMIN 以便 mock 模式下管理端联调；
-     * 对于其他需要认证的 /api/** 路径，注入 ROLE_USER；
+     * <p>对于 /api/v1/admin/** 路径，注入 ROLE_ADMIN 以便 mock 模式下管理端联调；
+     * 对于其他需要认证的 /api/v1/** 路径，注入 ROLE_USER；
      * 对于 permitAll 路径，不设置认证信息（由 SecurityFilterChain 放行）。</p>
      */
     private class MockAuthenticationFilter extends OncePerRequestFilter {

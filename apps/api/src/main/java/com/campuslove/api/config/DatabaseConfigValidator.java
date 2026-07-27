@@ -100,4 +100,9 @@ public class DatabaseConfigValidator {
     void setDbUrl(String dbUrl) {
         this.dbUrl = dbUrl;
     }
+
+    /** 测试用 setter：注入管理员密码哈希（模拟 @Value 注入）。 */
+    void setAdminPasswordHash(String adminPasswordHash) {
+        this.adminPasswordHash = adminPasswordHash;
+    }
 }

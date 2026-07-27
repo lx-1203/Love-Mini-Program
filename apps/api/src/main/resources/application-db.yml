@@ -64,10 +64,20 @@ spring:
       admin_openid: ${ADMIN_OPENID:admin-default-openid-change-me}
       admin_nickname: ${ADMIN_NICKNAME:系统管理员}
       # 管理员密码 BCrypt 哈希。
-      # ⚠️ 生产环境必须通过环境变量 ADMIN_PASSWORD_HASH 设置，不留默认值。
-      # 生成方法：调用 PasswordEncoderConfig.encodePassword("Admin@2026")
-      # 首次登录后必须立即修改密码。
-      admin_password_hash: ${ADMIN_PASSWORD_HASH:}
+      #
+      # Task 0.6.5：默认值改为强随机 BCrypt 哈希（cost=10，22 字符随机盐 + 31 字符哈希），
+      # 该哈希由 53 字符随机串生成，无已知明文，确保即使配置泄露也无法被破解登录。
+      #
+      # ⚠️ 首次部署必须通过环境变量 ADMIN_INITIAL_PASSWORD_HASH 覆盖为运营已知明文对应的哈希：
+      #   - 生成明文：openssl rand -base64 24（生成 24 字节随机明文）
+      #   - 生成哈希：调用 PasswordEncoderConfig.encodePassword(plaintext) 或
+      #     python -c "import bcrypt; print(bcrypt.hashpw(b'YOUR-PASSWORD', bcrypt.gensalt(10)).decode())"
+      #   - 设置环境变量：ADMIN_INITIAL_PASSWORD_HASH=$2a$10$<your-generated-hash>
+      #   - 首次登录后必须立即修改密码为运营人已知的安全密码
+      #
+      # 注意：默认值仅用于首次启动占位，无任何人知道其明文，无法用于实际登录。
+      # 生产环境若未设置 ADMIN_INITIAL_PASSWORD_HASH，管理员将无法登录（安全锁定）。
+      admin_password_hash: ${ADMIN_INITIAL_PASSWORD_HASH:$2a$10$SFn8RZb8.sj5yVnP9S27a3W9MEkCL2no9sceF0/e7lp7wqGEGsjWQ}
   jpa:
     hibernate:
       ddl-auto: validate

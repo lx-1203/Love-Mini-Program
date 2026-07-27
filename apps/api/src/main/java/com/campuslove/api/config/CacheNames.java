@@ -48,4 +48,55 @@ public final class CacheNames {
      * 每日一问每日只更新一次，TTL 设置较长以降低数据库压力。
      */
     public static final String DAILY_QUESTION = "daily_question";
+
+    /**
+     * 敏感词列表缓存（Task 2.3.2）。
+     *
+     * <p>缓存 {@code SensitiveWordRepository.findAllByOrderByCreatedAtDesc()} 的全量结果，
+     * 供 {@link SensitiveWordFilter} 在内存中重建 HashSet/Pattern。
+     * 敏感词变更频率低，TTL 1 小时；Admin 后台增删时通过 @CacheEvict(allEntries=true) 主动失效。</p>
+     */
+    public static final String SENSITIVE_WORDS = "sensitive_words";
+
+    /**
+     * 系统配置缓存（Task 2.3.2）。
+     *
+     * <p>缓存 {@code RealAdminConfigService.listConfigs()} 返回的 AdminAppConfig 全量列表，
+     * 供业务方读取匹配/推荐/特性开关等运行时参数。TTL 30 分钟；
+     * Admin 更新配置时通过 @CacheEvict(allEntries=true) 主动失效。</p>
+     */
+    public static final String SYSTEM_CONFIG = "system_config";
+
+    /**
+     * 用户标签 / 帖子标签缓存（Task 2.3.2）。
+     *
+     * <p>缓存 {@code RealPostTagService.getTags()} 返回的预置标签列表，
+     * 避免每次接口调用重复构造 List。TTL 10 分钟；
+     * 标签列表为静态预置常量，目前不触发 @CacheEvict，TTL 到期自然失效。</p>
+     */
+    public static final String USER_TAGS = "user_tags";
+
+    /**
+     * 客户端动态配置缓存（Task 3.6）。
+     *
+     * <p>缓存 {@code ConfigController} 暴露的 5 类前端启动期配置：
+     * 学校列表 / 匹配偏好选项 / 筛选选项 / Hero Banner / 解锁引导步骤。
+     * 这些配置变更频率低、被所有登录用户共享，TTL 5 分钟以平衡实时性与缓存命中率。</p>
+     *
+     * <p>后台维护配置后可通过 {@code @CacheEvict(allEntries=true)} 主动失效，
+     * 或等待 TTL 自然过期。</p>
+     */
+    public static final String CLIENT_CONFIG = "client_config";
+
+    /**
+     * 管理后台统计缓存（SubTask 5.3.4）。
+     *
+     * <p>缓存 {@code RealAdminStatsService} 的三类统计结果（用户/活跃度/匹配），
+     * 作为 Redis 计数器方案使用，避免每次后台首页刷新都触发全表 COUNT 与
+     * GROUP BY 查询（用户表 / 心跳表 / 互动事件表 / 心信号表 大数据量下耗时较高）。</p>
+     *
+     * <p>TTL 5 分钟，平衡实时性与 DB 压力；Admin 后台可手动触发
+     * {@code @CacheEvict(allEntries=true)} 强制刷新。</p>
+     */
+    public static final String ADMIN_STATS = "admin_stats";
 }
