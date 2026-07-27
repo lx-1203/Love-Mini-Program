@@ -24,6 +24,8 @@ import {
   CATEGORY_CAMPUS_ID,
   CATEGORY_PREFIX,
 } from "./constants";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * 安全数字转换工具
@@ -250,7 +252,7 @@ export function toggleMockPostLike(
 ): void {
   const post = posts.find((p) => p.id === postId);
   if (!post) {
-    throw new Error("帖子不存在");
+    throw new Error(t("storeErrors.village.postNotFound"));
   }
   post.isLiked = !post.isLiked;
   post.likes += post.isLiked ? 1 : -1;

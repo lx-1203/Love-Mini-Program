@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * VIP 优惠码 Store
@@ -92,10 +94,10 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
    */
   async function validateCode(payload: ValidatePayload): Promise<PromoCodeValidateView> {
     if (!payload.code || payload.code.trim().length === 0) {
-      throw new Error("优惠码不能为空");
+      throw new Error(t("storeErrors.promoCode.codeEmpty"));
     }
     if (payload.orderAmount < 0) {
-      throw new Error("订单金额不能为负数");
+      throw new Error(t("storeErrors.promoCode.amountNegative"));
     }
 
     if (useMock()) {
@@ -150,10 +152,10 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
    */
   async function redeemCode(payload: RedeemPayload): Promise<PromoCodeRedeemView> {
     if (!payload.code || payload.code.trim().length === 0) {
-      throw new Error("优惠码不能为空");
+      throw new Error(t("storeErrors.promoCode.codeEmpty"));
     }
     if (payload.orderAmount < 0) {
-      throw new Error("订单金额不能为负数");
+      throw new Error(t("storeErrors.promoCode.amountNegative"));
     }
 
     if (useMock()) {

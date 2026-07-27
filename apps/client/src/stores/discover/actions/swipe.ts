@@ -14,6 +14,7 @@ import { useSessionStore } from "../../session";
 import { useLikesStore } from "../../likes";
 import {
   SWIPE_RIGHT_DEBOUNCE_MS,
+  MOCK_MATCH_PROBABILITY,
 } from "../constants";
 import {
   useMock,
@@ -27,6 +28,8 @@ import type {
   ViewedCardRecord,
 } from "../types";
 import type { DiscoverStoreThis } from "../store-type";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * 左滑（不感兴趣）
@@ -38,20 +41,20 @@ export async function swipeLeft(this: DiscoverStoreThis, cardId: string): Promis
   try {
     // 参数校验
     if (!cardId || cardId.trim().length === 0) {
-      this.errorMessage = "卡片 ID 无效";
-      throw new Error("卡片 ID 无效");
+      this.errorMessage = t("storeErrors.discover.cardIdInvalid");
+      throw new Error(t("storeErrors.discover.cardIdInvalid"));
     }
 
     // 卡片存在检查
     const card = this.cards.find((c) => c.id === cardId);
     if (!card) {
-      this.errorMessage = "卡片不存在或已被处理";
-      throw new Error("卡片不存在或已被处理");
+      this.errorMessage = t("storeErrors.discover.cardNotFound");
+      throw new Error(t("storeErrors.discover.cardNotFound"));
     }
 
     if (this.isLimitReached) {
-      this.errorMessage = "今日推荐次数已用完";
-      throw new Error("今日推荐次数已用完");
+      this.errorMessage = t("storeErrors.discover.recommendQuotaExhausted");
+      throw new Error(t("storeErrors.discover.recommendQuotaExhausted"));
     }
 
     if (useMock()) {
@@ -155,25 +158,26 @@ export async function _doSwipeRight(
   try {
     // 参数校验
     if (!cardId || cardId.trim().length === 0) {
-      this.errorMessage = "卡片 ID 无效";
-      throw new Error("卡片 ID 无效");
+      this.errorMessage = t("storeErrors.discover.cardIdInvalid");
+      throw new Error(t("storeErrors.discover.cardIdInvalid"));
     }
 
     // 卡片存在检查
     const card = this.cards.find((c) => c.id === cardId);
     if (!card) {
-      this.errorMessage = "卡片不存在或已被处理";
-      throw new Error("卡片不存在或已被处理");
+      this.errorMessage = t("storeErrors.discover.cardNotFound");
+      throw new Error(t("storeErrors.discover.cardNotFound"));
     }
 
     if (this.isLimitReached) {
-      this.errorMessage = "今日推荐次数已用完";
-      throw new Error("今日推荐次数已用完");
+      this.errorMessage = t("storeErrors.discover.recommendQuotaExhausted");
+      throw new Error(t("storeErrors.discover.recommendQuotaExhausted"));
     }
 
     if (useMock()) {
-      // mock 模式：30% 概率匹配成功（用户指定）
-      const matched = Math.random() < 0.3;
+      // SubTask 5.1.4：Mock 匹配概率配置化，默认关闭（MOCK_MATCH_PROBABILITY=0）。
+      // 如需在 mock 模式下模拟匹配，可在 .env 中设置 VITE_MOCK_MATCH_PROBABILITY=0.3
+      const matched = Math.random() < MOCK_MATCH_PROBABILITY;
       const mockResult: {
         matched: boolean;
         matchId?: string;
@@ -250,20 +254,21 @@ export async function _doSwipeRight(
     const sessionStore = useSessionStore();
     const currentUserId = sessionStore.userSession?.userId ?? "";
 
-    // 调用后端 API，失败时使用 mock 逻辑兜底：30% 概率匹配成功（与 mock 模式一致）
+    // SubTask 5.1.1：移除 Mock fallback，API 失败向上抛异常。
+    //
+    // 历史 BUG：原实现使用 `.catch(() => Math.random() < 0.3)` 兜底返回 mock
+    // 匹配结果，掩盖了真实接口故障（网络异常/服务端 5xx/超时等），导致：
+    // 1. 用户在弱网或后端故障时仍看到"匹配成功"的虚假反馈，引发后续聊天链路错乱；
+    // 2. 监控系统无法捕获真实失败率，无法触发告警；
+    // 3. 违反商业化项目"真实链路"要求（spec.md P5 Task 5.1.1）。
+    //
+    // 修复：直接 await likeUserApi，失败时异常向上抛出，
+    // 由调用方（页面/组件）展示错误提示并保留卡片在栈顶供用户重试。
     const result = await likeUserApi(
       currentUserId,
       card.userId,
       isSuperLike
-    ).catch(() => {
-      // API 失败时使用 mock 逻辑：30% 概率匹配成功（与 mock 模式一致）
-      const matched = Math.random() < 0.3;
-      return {
-        matched,
-        matchId: matched ? `match_${Date.now()}` : undefined,
-        partnerName: matched ? card.name : undefined,
-      };
-    });
+    );
 
     // 保存匹配结果供页面使用
     this.lastSwipeResult = {

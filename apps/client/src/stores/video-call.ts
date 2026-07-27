@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * 视频通话 Store
@@ -151,10 +153,10 @@ export const useVideoCallStore = defineStore("video-call", () => {
     callerId = 1
   ): Promise<StartCallResult> {
     if (!payload.calleeId || payload.calleeId <= 0) {
-      throw new Error("被叫用户 ID 无效");
+      throw new Error(t("storeErrors.videoCall.calleeIdInvalid"));
     }
     if (starting.value) {
-      throw new Error("正在发起通话，请勿重复提交");
+      throw new Error(t("storeErrors.videoCall.callingInProgress"));
     }
 
     if (useMock()) {
@@ -208,10 +210,10 @@ export const useVideoCallStore = defineStore("video-call", () => {
    */
   async function endCall(payload: EndCallPayload): Promise<VideoCallView> {
     if (!payload.callId || payload.callId <= 0) {
-      throw new Error("通话 ID 无效");
+      throw new Error(t("storeErrors.videoCall.callIdInvalid"));
     }
     if (ending.value) {
-      throw new Error("正在结束通话，请勿重复提交");
+      throw new Error(t("storeErrors.videoCall.endingInProgress"));
     }
 
     if (useMock()) {

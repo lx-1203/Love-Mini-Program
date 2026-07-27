@@ -21,6 +21,8 @@ import {
   rewindCardApi,
 } from "../api";
 import type { DiscoverStoreThis } from "../store-type";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * 清除上次滑动结果
@@ -54,18 +56,18 @@ export async function rewindCard(this: DiscoverStoreThis, cardId: string): Promi
 
     if (useMock()) {
       if (this.hasRewoundToday) {
-        throw new Error("每日只能挽回一次");
+        throw new Error(t("storeErrors.discover.rewindOncePerDay"));
       }
 
       const lastViewed = this.viewedCards[this.viewedCards.length - 1];
       if (!lastViewed || lastViewed.cardId !== cardId) {
-        throw new Error("只能挽回最后一张卡片");
+        throw new Error(t("storeErrors.discover.rewindLastCardOnly"));
       }
 
       // 从 viewedCards 末尾的快照恢复卡片数据
       const card = lastViewed.card;
       if (!card) {
-        throw new Error("卡片不存在");
+        throw new Error(t("storeErrors.discover.cardNotExist"));
       }
 
       this.viewedCards.pop();

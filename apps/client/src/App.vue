@@ -8,6 +8,7 @@ import { reportGlobalError } from "./main";
 import UnlockGuideModal from "./components/UnlockGuideModal.vue";
 import UnlockGuideOverlay from "./components/UnlockGuideOverlay.vue";
 import { useNetworkStatus } from "./composables/useNetworkStatus";
+import { useUnreadBadge } from "./composables/useUnreadBadge";
 
 const sessionStore = useSessionStore();
 const unlockGuideStore = useUnlockGuideStore();
@@ -18,8 +19,18 @@ const { visible, featureName, completionPercent, overlayVisible } = storeToRefs(
  * 在网络断开/恢复时通过 toast 提示用户。
  * - onLaunch 阶段初始化网络状态 + 注册监听器
  * - isOnline / networkType 为响应式状态，可被页面消费
+ *
+ * SubTask 5.4.3：网络状态变化主动提示用户（断网/恢复）
  */
 useNetworkStatus();
+
+/**
+ * SubTask 5.4.2：未读消息计数实时同步 TabBar 红点。
+ *
+ * 监听 useMessagesStore.totalUnreadCount getter，当 WebSocket 推送
+ * 新消息导致 session.unreadCount 变化时，自动更新 TabBar 红点数字。
+ */
+useUnreadBadge();
 
 /**
  * 应用是否已就绪。
@@ -50,10 +61,16 @@ function markAppReady() {
 
 onLaunch(() => {
   try {
-    // 修复（P0 隐私合规）：注册微信隐私协议授权回调。
+    // 修复（P0 隐私合规 Task 0.2.2）：注册微信隐私协议授权回调。
     // 自 2023-09 起微信小程序要求所有调用敏感接口的应用接入隐私协议，
     // 在 onLaunch 中调用 wx.onNeedPrivacyAuthorization 注册弹窗回调，
-    // 用户首次使用涉及隐私的 API 时由微信弹出协议确认框。
+    // 用户首次使用涉及隐私的 API 时弹出协议确认框。
+    // 实现策略：
+    //   1. 弹出 uni.showModal 提示用户阅读《隐私协议》
+    //   2. 提供"查看协议"入口（cancelText）跳转 wx.openPrivacyContract
+    //   3. 用户点"同意并继续"→ resolve({ buttonId: 'accept', event: 'agree' })
+    //   4. 用户点"查看协议"→ 跳转协议页后回到 modal 继续选择
+    //   5. 用户关闭/拒绝 → resolve({ event: 'disagree' })，由微信决定后续行为
     // 兼容性：H5/APP 端 wx 对象可能不存在，需条件编译包裹。
     // #ifdef MP-WEIXIN
     try {
@@ -61,25 +78,84 @@ onLaunch(() => {
       // wx 在 mp-weixin 端为全局对象，H5/APP 端可能不存在，需运行时判空。
       const wxApi = (globalThis as unknown as { wx?: Record<string, unknown> }).wx;
       if (wxApi && typeof wxApi.onNeedPrivacyAuthorization === "function") {
+        // 隐私协议 resolve 参数类型：{ event: 'agree' | 'disagree', buttonId?: string }
+        // buttonId 为自定义弹窗中"同意"按钮的 id，供微信事件埋点使用。
+        type PrivacyResolveArg = {
+          event: "agree" | "disagree";
+          buttonId?: string;
+        };
+        type PrivacyResolve = (arg: PrivacyResolveArg) => void;
         const onNeed = wxApi.onNeedPrivacyAuthorization as (
-          cb: (resolve: () => void) => void
+          cb: (resolve: PrivacyResolve) => void
         ) => void;
-        onNeed((resolve: () => void) => {
-          // 用户同意隐私协议后调用 resolve 通知微信继续后续 API 调用
-          // 这里使用内置的 wx.openPrivacyContract 让用户阅读协议
+
+        // 弹窗标题/文案（中文，后续 P3 i18n 化时迁移至 locale 文件）
+        const PRIVACY_TITLE = "隐私保护提示";
+        const PRIVACY_CONTENT =
+          "为了向你提供匹配、聊天、图片上传等服务，我们需要收集你的微信账号、资料、位置等信息。" +
+          "请阅读并同意《用户隐私协议》后继续使用。";
+
+        // "查看协议"跳转：调用 wx.openPrivacyContract 打开微信托管的隐私协议页面
+        const openPrivacyContract = (
+          onSuccess: () => void,
+          onFail: () => void
+        ): void => {
           try {
-            if (typeof wxApi.openPrivacyContract === "function") {
-              wxApi.openPrivacyContract({
-                success: () => resolve(),
-                fail: () => resolve(),
-              });
+            const openFn = wxApi.openPrivacyContract as
+              | ((opts: { success?: () => void; fail?: () => void }) => void)
+              | undefined;
+            if (typeof openFn === "function") {
+              openFn({ success: onSuccess, fail: onFail });
             } else {
-              resolve();
+              // 不支持时直接成功回调，避免阻塞
+              onSuccess();
             }
           } catch (_e) {
-            // 兜底：任何异常都先 resolve，避免阻塞主流程
-            resolve();
+            // 兜底：异常时按失败处理
+            onFail();
           }
+        };
+
+        onNeed((resolve: PrivacyResolve) => {
+          // 弹出隐私协议确认 modal，提供"同意并继续"与"查看协议"两个按钮
+          uni.showModal({
+            title: PRIVACY_TITLE,
+            content: PRIVACY_CONTENT,
+            confirmText: "同意并继续",
+            cancelText: "查看协议",
+            success: (modalRes) => {
+              if (modalRes.confirm) {
+                // 用户点击"同意并继续"→ 同意隐私协议，buttonId='accept' 供埋点
+                resolve({ buttonId: "accept", event: "agree" });
+              } else if (modalRes.cancel) {
+                // 用户点击"查看协议"→ 跳转隐私协议页面，返回后再次弹窗
+                openPrivacyContract(
+                  () => {
+                    // 阅读完毕后重新弹出同意弹窗
+                    uni.showModal({
+                      title: PRIVACY_TITLE,
+                      content: PRIVACY_CONTENT,
+                      confirmText: "同意并继续",
+                      cancelText: "不同意",
+                      success: (res2) => {
+                        if (res2.confirm) {
+                          resolve({ buttonId: "accept", event: "agree" });
+                        } else {
+                          resolve({ event: "disagree" });
+                        }
+                      },
+                      fail: () => resolve({ event: "disagree" }),
+                    });
+                  },
+                  () => resolve({ event: "disagree" })
+                );
+              }
+            },
+            fail: () => {
+              // modal 调用失败（如小程序环境异常）→ 默认不同意，避免静默同意
+              resolve({ event: "disagree" });
+            },
+          });
         });
       }
     } catch (_privacyErr) {
@@ -286,7 +362,7 @@ page {
 
 /* 页面进入动画类 */
 .animate-fade-in {
-  animation: fadeInUp 400ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: fadeInUp var(--d-bounce, 400ms) cubic-bezier(0.4, 0, 0.2, 1) both;
   will-change: transform, opacity;
 }
 
@@ -303,13 +379,13 @@ page {
 
 /* 淡入动画类 */
 .animate-fade {
-  animation: fadeIn 200ms ease-out both;
+  animation: fadeIn var(--d-normal, 200ms) ease-out both;
   will-change: opacity;
 }
 
 /* 弹性缩放入场类 */
 .animate-scale-in {
-  animation: scaleIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: scaleIn var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
   will-change: transform, opacity;
 }
 
@@ -398,7 +474,7 @@ page {
 }
 
 .page-fade-in {
-  animation: pageFadeIn 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pageFadeIn var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 /* ================================================================
@@ -413,7 +489,7 @@ page {
 }
 
 .list-item {
-  animation: list-item-enter 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: list-item-enter var(--d-fade, 300ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .list-item:nth-child(1) { animation-delay: 0ms; }
@@ -445,7 +521,7 @@ page {
 /* mp-weixin 兼容：WXSS 不支持 * 通配符选择器，使用 view 元素选择器替代。
    实际使用中 .card-stagger 的直接子元素均为 <view>（见 home/discover/village 页面）。 */
 .card-stagger > view {
-  animation: cardStaggerIn 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: cardStaggerIn var(--d-bounce, 400ms) cubic-bezier(0.16, 1, 0.3, 1) both;
   will-change: transform, opacity;
 }
 
@@ -463,12 +539,12 @@ page {
    - 在 tab 内容上添加 .tab-content-fade
    ================================================================ */
 .tab-underline {
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
-              width 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1),
+              width var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tab-content-fade {
-  animation: tab-content-enter 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: tab-content-enter var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes tab-content-enter {
@@ -485,7 +561,7 @@ page {
 }
 
 .page-slide-up {
-  animation: page-slide-up 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: page-slide-up var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 /* ================================================================
@@ -497,7 +573,7 @@ page {
 }
 
 .page-scale-in {
-  animation: page-scale-in 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: page-scale-in var(--d-fade, 300ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* ================================================================
@@ -521,14 +597,14 @@ page {
   transform: translate(-50%, -50%);
   pointer-events: none;
   opacity: 0;
-  transition: width 400ms ease-out, height 400ms ease-out, opacity 400ms ease-out;
+  transition: width var(--d-bounce, 400ms) ease-out, height var(--d-bounce, 400ms) ease-out, opacity var(--d-bounce, 400ms) ease-out;
 }
 
 .press-feedback--ripple.press-feedback--active::after {
   width: 200%;
   height: 200%;
   opacity: 0.6;
-  transition: width 300ms ease-out, height 300ms ease-out, opacity 600ms ease-out;
+  transition: width var(--d-fade, 300ms) ease-out, height var(--d-fade, 300ms) ease-out, opacity var(--d-slowest, 600ms) ease-out;
 }
 
 /* ================================================================
@@ -544,11 +620,61 @@ page {
 }
 
 /* ================================================================
+   P6 a11y：prefers-reduced-motion 回退
+   为前庭功能障碍/动效敏感用户禁用所有动画与过渡。
+   覆盖 15+ CSS 动画类：fadeIn/fadeInUp/scaleIn/pulseDot/bounceIn/
+   float/heartBeat/gradientShine/pageFadeIn/list-item-enter/cardStaggerIn/
+   tab-content-enter/page-slide-up/page-scale-in/pulse-badge/shimmer/
+   tabBounce/iconSpin/dotPop/publishBreath/heart-burst
+   ================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade,
+  .animate-scale-in,
+  .pulse-dot,
+  .bounce-in,
+  .float,
+  .heart-beat,
+  .gradient-shine,
+  .page-fade-in,
+  .page-slide-up,
+  .page-scale-in,
+  .tab-content-fade,
+  .list-item,
+  .card-stagger > view {
+    animation: none !important;
+    transition: none !important;
+    will-change: auto !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* 通用过渡也禁用 */
+  .card-hover,
+  .clickable,
+  .tab-underline,
+  .tab-icon-wrap,
+  .tab-icon-image,
+  .tab-label,
+  input,
+  textarea {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* 骨架屏 shimmer 也降级为静态 */
+  .skeleton,
+  .shimmer {
+    animation: none !important;
+  }
+}
+
+/* ================================================================
    基础卡片 hover 提升
    ================================================================ */
 .card-hover {
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 .card-hover:active {
   transform: scale(0.98);
@@ -595,20 +721,43 @@ page {
    P2 修复 · 表单输入框焦点状态（全局）
    - 焦点时边框变品牌色 + 轻微阴影，明确视觉反馈
    - 适配 H5/微信小程序双端，避免依赖组件级 scoped 样式
+   - P6 a11y：使用 box-shadow 替代 outline（mp-weixin 不支持 outline），
+     为键盘导航提供清晰焦点指示；触控操作时不显示焦点环（:focus-visible 语义）
    ================================================================ */
 input,
 textarea {
   /* 默认过渡：边框/阴影变化时 200ms 平滑过渡 */
-  transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: border-color var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-input:focus,
-textarea:focus {
-  /* 焦点状态：边框变品牌色，外发光阴影；outline: none 避免浏览器默认外框 */
+/* H5 端：使用 :focus-visible 仅在键盘导航时显示焦点环 */
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+view:focus-visible {
   outline: none;
   border-color: var(--c-brand, #3FCF8E);
   box-shadow: 0 0 0 4rpx var(--c-brand-bg-tint, rgba(63, 207, 142, 0.12));
+}
+
+/* mp-weixin / 触控端：保留原 :focus 行为（无 outline，仅 box-shadow） */
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--c-brand, #3FCF8E);
+  box-shadow: 0 0 0 4rpx var(--c-brand-bg-tint, rgba(63, 207, 142, 0.12));
+}
+
+/* 高对比度模式：强制显示焦点环（a11y 增强） */
+@media (prefers-contrast: high) {
+  input:focus,
+  textarea:focus,
+  button:focus,
+  view:focus {
+    outline: 2rpx solid var(--c-brand, #3FCF8E) !important;
+    outline-offset: 2rpx;
+  }
 }
 
 /* ================================================================
@@ -618,9 +767,9 @@ textarea:focus {
    - 注意：mp-weixin 的 :active 伪类不可靠，已配合 hover-class 使用
    ================================================================ */
 .clickable {
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  transition: opacity var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+  /* mp-weixin 不支持 cursor:pointer，已通过 hover-class 提供按下反馈 */
 }
 
 .clickable:active {

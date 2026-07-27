@@ -18,6 +18,8 @@ import { defineStore } from "pinia";
 import { useSessionStore } from "../session";
 import { useMock } from "../helpers/use-mock";
 import type { CampusFeedView } from "../../services/generated/api-types-supplement";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 import {
   COMMENT_DEBOUNCE_MS,
   MAX_CONTENT_LENGTH,
@@ -259,14 +261,37 @@ export const useVillageStore = defineStore("village", {
 
     /**
      * 加载更多帖子（分页加载下一页）
+     *
+     * SubTask 5.2.2：分页加载失败时保留已加载项并回退 page。
+     *
+     * <p>历史 BUG：原实现 {@code this.page += 1} 在 fetchPosts 之前执行，
+     * 若 fetchPosts 失败（网络异常/服务端 5xx），{@code this.page} 已被推进，
+     * 下次 loadMore 会跳过本应加载的页，导致帖子列表出现「断页」。
+     * 同时 fetchPosts 内部 catch 不抛错，loadMore 无法感知失败。</p>
+     *
+     * <p>修复策略：</p>
+     * <ol>
+     *   <li>保存 previousPage，失败时回退；</li>
+     *   <li>通过 errorMessage 非空感知失败（fetchPosts 内部 catch 不抛错，
+     *       但会设置 errorMessage）；</li>
+     *   <li>失败时不清空 this.posts（fetchPosts 已保证），保留已加载项供用户重试。</li>
+     * </ol>
+     *
      * @param filters - 筛选条件
      */
     async loadMore(filters?: PostFilters) {
       if (!this.hasMore || this.loading) {
         return;
       }
+      const previousPage = this.page;
       this.page += 1;
       await this.fetchPosts(filters, false);
+      // SubTask 5.2.2：分页加载失败时回退 page，保留已加载项供用户重试
+      // fetchPosts 内部 catch 不抛错（避免上层未处理 reject），
+      // 通过 errorMessage 非空感知失败并回退 page，避免下次 loadMore 跳页
+      if (this.errorMessage) {
+        this.page = previousPage;
+      }
     },
 
     /**
@@ -285,25 +310,25 @@ export const useVillageStore = defineStore("village", {
       try {
         // 内容长度校验：不超过500字
         if (!data.content || data.content.trim().length === 0) {
-          this.errorMessage = "帖子内容不能为空";
-          throw new Error("帖子内容不能为空");
+          this.errorMessage = t("storeErrors.village.postContentEmpty");
+          throw new Error(t("storeErrors.village.postContentEmpty"));
         }
         if (data.content.length > MAX_CONTENT_LENGTH) {
-          this.errorMessage = `帖子内容不能超过${MAX_CONTENT_LENGTH}字`;
-          throw new Error(`帖子内容不能超过${MAX_CONTENT_LENGTH}字`);
+          this.errorMessage = t("storeErrors.village.postContentTooLong", { n: MAX_CONTENT_LENGTH });
+          throw new Error(t("storeErrors.village.postContentTooLong", { n: MAX_CONTENT_LENGTH }));
         }
 
         // 图片数量校验：不超过9张
         const imageCount = data.images?.length ?? 0;
         if (imageCount > MAX_IMAGES_COUNT) {
-          this.errorMessage = `图片数量不能超过${MAX_IMAGES_COUNT}张`;
-          throw new Error(`图片数量不能超过${MAX_IMAGES_COUNT}张`);
+          this.errorMessage = t("storeErrors.village.postImagesTooMany", { n: MAX_IMAGES_COUNT });
+          throw new Error(t("storeErrors.village.postImagesTooMany", { n: MAX_IMAGES_COUNT }));
         }
 
         // 分类校验
         if (!data.categoryId || data.categoryId.trim().length === 0) {
-          this.errorMessage = "请选择帖子分类";
-          throw new Error("请选择帖子分类");
+          this.errorMessage = t("storeErrors.village.postCategoryRequired");
+          throw new Error(t("storeErrors.village.postCategoryRequired"));
         }
 
         if (useMock()) {
@@ -367,8 +392,8 @@ export const useVillageStore = defineStore("village", {
 
       // postId 校验
       if (!postId || postId.trim().length === 0) {
-        this.errorMessage = "帖子 ID 无效";
-        throw new Error("帖子 ID 无效");
+        this.errorMessage = t("storeErrors.village.postIdInvalid");
+        throw new Error(t("storeErrors.village.postIdInvalid"));
       }
 
       // 修复（P1 BUG）：幂等守卫，同一帖子的并发点赞请求直接跳过
@@ -490,20 +515,20 @@ export const useVillageStore = defineStore("village", {
 
       // 内容非空检查（在防抖前执行，确保用户立即收到错误反馈）
       if (!content || content.trim().length === 0) {
-        this.errorMessage = "评论内容不能为空";
-        throw new Error("评论内容不能为空");
+        this.errorMessage = t("storeErrors.village.commentContentEmpty");
+        throw new Error(t("storeErrors.village.commentContentEmpty"));
       }
 
       // 内容长度检查
       if (content.length > MAX_CONTENT_LENGTH) {
-        this.errorMessage = `评论内容不能超过${MAX_CONTENT_LENGTH}字`;
-        throw new Error(`评论内容不能超过${MAX_CONTENT_LENGTH}字`);
+        this.errorMessage = t("storeErrors.village.commentContentTooLong", { n: MAX_CONTENT_LENGTH });
+        throw new Error(t("storeErrors.village.commentContentTooLong", { n: MAX_CONTENT_LENGTH }));
       }
 
       // postId 检查
       if (!postId || postId.trim().length === 0) {
-        this.errorMessage = "帖子 ID 无效";
-        throw new Error("帖子 ID 无效");
+        this.errorMessage = t("storeErrors.village.postIdInvalid");
+        throw new Error(t("storeErrors.village.postIdInvalid"));
       }
 
       // 修复（P1 BUG）：per-post 防抖，防止快速连续提交
@@ -587,15 +612,15 @@ export const useVillageStore = defineStore("village", {
 
       try {
         if (!commentId || commentId.trim().length === 0) {
-          this.errorMessage = "评论 ID 无效";
-          throw new Error("评论 ID 无效");
+          this.errorMessage = t("storeErrors.village.commentIdInvalid");
+          throw new Error(t("storeErrors.village.commentIdInvalid"));
         }
 
         if (useMock()) {
           const comment = this.comments.find((c) => c.id === commentId);
           if (!comment) {
-            this.errorMessage = "评论不存在";
-            throw new Error("评论不存在");
+            this.errorMessage = t("storeErrors.village.commentNotFound");
+            throw new Error(t("storeErrors.village.commentNotFound"));
           }
 
           // toggle 点赞状态
@@ -629,21 +654,21 @@ export const useVillageStore = defineStore("village", {
       try {
         // postId 校验
         if (!postId || postId.trim().length === 0) {
-          this.errorMessage = "帖子 ID 无效";
-          throw new Error("帖子 ID 无效");
+          this.errorMessage = t("storeErrors.village.postIdInvalid");
+          throw new Error(t("storeErrors.village.postIdInvalid"));
         }
 
         if (useMock()) {
           const post = this.posts.find((p) => p.id === postId);
           if (!post) {
-            this.errorMessage = "帖子不存在";
-            throw new Error("帖子不存在");
+            this.errorMessage = t("storeErrors.village.postNotFound");
+            throw new Error(t("storeErrors.village.postNotFound"));
           }
 
           // 如果已转发则不再累加（幂等保护）
           if (post.isShared) {
-            this.errorMessage = "您已转发过该帖子";
-            throw new Error("您已转发过该帖子");
+            this.errorMessage = t("storeErrors.village.alreadyForwarded");
+            throw new Error(t("storeErrors.village.alreadyForwarded"));
           }
 
           post.isShared = true;

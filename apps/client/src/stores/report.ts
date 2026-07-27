@@ -16,6 +16,8 @@ import {
   type ReportTargetType,
   type ReportResponse,
 } from "../services/report-api";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * 举报 Store
@@ -50,7 +52,7 @@ export const useReportStore = defineStore("report", {
       try {
         return await reportTargetApi(type, id, reason, description);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "提交举报失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.report.submitFailed");
         throw error;
       } finally {
         this.submitting = false;

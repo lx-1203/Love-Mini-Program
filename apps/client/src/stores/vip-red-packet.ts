@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * VIP 红包 Store
@@ -122,19 +124,19 @@ export const useVipRedPacketStore = defineStore("vip-red-packet", () => {
   ): Promise<RedPacketView> {
     // 参数前置校验，与后端 @Valid 注解保持一致
     if (!payload.totalAmount || payload.totalAmount < 100) {
-      throw new Error("红包总金额不能少于 100 分（1 元）");
+      throw new Error(t("storeErrors.vipRedPacket.amountTooSmall"));
     }
     if (payload.totalAmount > 100_000) {
-      throw new Error("红包总金额不能超过 100000 分（1000 元）");
+      throw new Error(t("storeErrors.vipRedPacket.amountTooLarge"));
     }
     if (!payload.totalCount || payload.totalCount < 1) {
-      throw new Error("红包个数至少为 1");
+      throw new Error(t("storeErrors.vipRedPacket.countTooSmall"));
     }
     if (payload.totalCount > 100) {
-      throw new Error("红包个数不能超过 100");
+      throw new Error(t("storeErrors.vipRedPacket.countTooLarge"));
     }
     if (payload.type === "NORMAL" && payload.totalAmount % payload.totalCount !== 0) {
-      throw new Error("普通红包总金额必须能被个数整除");
+      throw new Error(t("storeErrors.vipRedPacket.amountNotDivisible"));
     }
 
     if (useMock()) {
@@ -165,7 +167,7 @@ export const useVipRedPacketStore = defineStore("vip-red-packet", () => {
    */
   async function claimRedPacket(redPacketId: number): Promise<ClaimResultView> {
     if (!redPacketId || redPacketId <= 0) {
-      throw new Error("红包 ID 非法");
+      throw new Error(t("storeErrors.vipRedPacket.redPacketIdInvalid"));
     }
 
     if (useMock()) {
@@ -197,7 +199,7 @@ export const useVipRedPacketStore = defineStore("vip-red-packet", () => {
    */
   async function fetchRedPacketDetail(redPacketId: number): Promise<RedPacketView> {
     if (!redPacketId || redPacketId <= 0) {
-      throw new Error("红包 ID 非法");
+      throw new Error(t("storeErrors.vipRedPacket.redPacketIdInvalid"));
     }
 
     if (useMock()) {
@@ -256,7 +258,7 @@ export const useVipRedPacketStore = defineStore("vip-red-packet", () => {
    */
   async function listByChatId(chatId: string): Promise<RedPacketView[]> {
     if (!chatId || chatId.trim().length === 0) {
-      throw new Error("聊天会话 ID 不能为空");
+      throw new Error(t("storeErrors.chat.sessionIdEmpty"));
     }
 
     if (useMock()) {

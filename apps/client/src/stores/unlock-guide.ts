@@ -2,6 +2,27 @@ import { defineStore } from "pinia";
 import { openAppPath } from "../utils/navigation";
 
 /**
+ * 单个解锁引导步骤的视图结构（与后端 UnlockGuideStepView 对齐）。
+ *
+ * Task 3.6.5：用于 stores 缓存后端动态下发的步骤文案，
+ * 替代原先硬编码在视图层的「完善资料 / 校园认证 / 发布首帖」三步文案。
+ */
+export interface UnlockGuideStep {
+  /** 步骤序号（从 1 开始） */
+  step: number;
+  /** 步骤标题 */
+  title: string;
+  /** 步骤详细说明 */
+  description: string;
+  /** 步骤主按钮文案 */
+  ctaText: string;
+  /** 点击主按钮跳转的 app 内部路径 */
+  ctaLink: string;
+  /** 关闭按钮文案 */
+  dismissText: string;
+}
+
+/**
  * 解锁引导弹窗 Store
  *
  * Phase 4 任务 20：替换 profile-guard 静默重定向为友好的 Modal 弹窗引导。
@@ -13,6 +34,9 @@ import { openAppPath } from "../utils/navigation";
  *
  * 同时维护「首次进入锁定页」的一次性教学蒙层（UnlockGuideOverlay）状态，
  * 通过 uni.getStorageSync('unlock_guide_shown') 记录是否已展示过。
+ *
+ * Task 3.6.5：新增 steps 状态与 loadStepsFromBackend() action，
+ * 支持从后端 /api/v1/config/unlock-guide-steps 动态拉取步骤文案。
  */
 export const useUnlockGuideStore = defineStore("unlock-guide", {
   state: () => ({
@@ -24,8 +48,38 @@ export const useUnlockGuideStore = defineStore("unlock-guide", {
     completionPercent: 0,
     /** 一次性教学蒙层是否可见（仅首次进入锁定页时为 true） */
     overlayVisible: false,
+    /**
+     * Task 3.6.5：从后端加载的解锁引导步骤列表。
+     * null 表示尚未加载，视图可按需调用 loadStepsFromBackend() 刷新。
+     */
+    steps: null as UnlockGuideStep[] | null,
   }),
   actions: {
+    /**
+     * Task 3.6.5：从后端 /api/v1/config/unlock-guide-steps 加载步骤文案。
+     *
+     * 失败时静默回退（保留原 steps 值），视图层应使用本地默认文案兜底。
+     * 调用时机：进入解锁引导弹窗触发点（如 likes/village/messages 锁定页）时调用一次。
+     */
+    async loadStepsFromBackend() {
+      try {
+        const { loadUnlockGuideSteps } = await import("../services/config");
+        const remoteSteps = await loadUnlockGuideSteps();
+        if (remoteSteps.length > 0) {
+          this.steps = remoteSteps.map((s) => ({
+            step: s.step,
+            title: s.title,
+            description: s.description,
+            ctaText: s.ctaText,
+            ctaLink: s.ctaLink,
+            dismissText: s.dismissText,
+          }));
+        }
+      } catch (_e) {
+        // 后端不可达：保留原 steps 值（可能为 null），视图层使用本地默认文案
+      }
+    },
+
     /**
      * 展示解锁引导弹窗
      * @param featureName - 锁定功能名称
@@ -49,7 +103,7 @@ export const useUnlockGuideStore = defineStore("unlock-guide", {
       }
     },
 
-    /** 隐藏解锁引导弹窗（保留 overlayVisible 状态由 overlay 自行管理） */
+    /** 隐藏解锁引导弹窗（保留 overlayVisible 状态由 overlay 自身管理） */
     hide() {
       this.visible = false;
     },

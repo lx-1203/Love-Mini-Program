@@ -129,8 +129,11 @@
 
 // ---------- 限定宽高比 ----------
 // 用途：视频/图片封面、卡片比例约束
-// 参数：$ratio 宽高比，如 4/5
-// 兼容：mp-weixin 基础库 < 2.11.0 不支持 aspect-ratio，需在外部设置 min-height 兜底
+// 参数：$ratio 宽高比，如 4/5（宽/高）
+// 兼容：mp-weixin 不支持 aspect-ratio，统一使用 padding-top 百分比替代
+// 实现：padding-top = 高/宽 × 100% = (1/$ratio) × 100%
+// 注意：使用此 mixin 的容器需 position: relative，子元素需 position: absolute 铺满
 @mixin aspect-ratio($ratio) {
-  aspect-ratio: $ratio;
+  position: relative;
+  padding-top: (1 / $ratio) * 100%;
 }

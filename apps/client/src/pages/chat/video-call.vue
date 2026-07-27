@@ -494,7 +494,7 @@ onMounted(() => {
   bottom: 0;
   width: 100%;
   height: 100%;
-  background: #1a1a2e;
+  background: var(--c-neutral-900, #1a1a2e);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -511,8 +511,8 @@ onMounted(() => {
   right: 24rpx;
   width: 200rpx;
   height: 280rpx;
-  background: #2a2a3e;
-  border-radius: 16rpx;
+  background: var(--c-neutral-800, #2a2a3e);
+  border-radius: var(--r-lg, 16rpx);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -541,14 +541,14 @@ onMounted(() => {
 }
 
 .call-header__status {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 600;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
 }
 
 .call-header__duration {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: rgba(255, 255, 255, 0.8);
   font-family: monospace;
 }
@@ -590,24 +590,24 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 56rpx;
+    font-size: var(--fs-7xl, 56rpx);
     background: rgba(255, 255, 255, 0.18);
   }
 
   &__label {
-    font-size: 24rpx;
+    font-size: var(--fs-base, 24rpx);
     /* 反色文字：使用 token 替代硬编码 #FFFFFF */
     color: var(--c-text-inverse);
     font-weight: 500;
   }
 
   &--accept .call-btn__icon {
-    background: #22C55E;
+    background: var(--c-success, #22C55E);
   }
 
   &--reject .call-btn__icon,
   &--hangup .call-btn__icon {
-    background: #EF4444;
+    background: var(--c-error, #EF4444);
   }
 }
 
@@ -639,11 +639,11 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 48rpx;
+    font-size: var(--fs-6xl, 48rpx);
   }
 
   &__label {
-    font-size: 22rpx;
+    font-size: var(--fs-sm, 22rpx);
     color: rgba(255, 255, 255, 0.85);
   }
 }
@@ -658,14 +658,14 @@ onMounted(() => {
 }
 
 .call-ended__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 600;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
 }
 
 .call-ended__duration {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: rgba(255, 255, 255, 0.7);
   font-family: monospace;
 }

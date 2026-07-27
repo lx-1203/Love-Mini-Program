@@ -85,3 +85,82 @@ export const SWIPE_RIGHT_DEBOUNCE_MS = 300;
  * 避免用户反复 rewind 刷卡片影响推荐算法。
  */
 export const MAX_UNDO_COUNT_PER_SESSION = 3;
+
+/**
+ * SubTask 5.1.4：Mock 模式下右滑匹配成功的概率（0~1）。
+ *
+ * <p>历史 BUG：原 swipe.ts 在 mock 模式硬编码 {@code Math.random() < 0.3}（30% 匹配率），
+ * 真相源分散且无法配置，导致：</p>
+ * <ul>
+ *   <li>开发调试时无法模拟「匹配失败」场景，难以验证错误处理逻辑；</li>
+ *   <li>演示环境匹配率固定，无法快速调整以测试不同匹配率下的 UI 反馈；</li>
+ *   <li>违反「配置化」要求（spec.md P5 Task 5.1.4）。</li>
+ * </ul>
+ *
+ * <p>修复：</p>
+ * <ol>
+ *   <li>将匹配概率抽离为常量，集中管理真相源；</li>
+ *   <li>默认值设为 0（关闭 Mock 匹配），强制开发者显式开启以避免误用；
+ *       若需在 mock 模式下模拟匹配，可在本地调试时修改此常量或通过
+ *       环境变量 {@code VITE_MOCK_MATCH_PROBABILITY} 覆盖。</li>
+ * </ol>
+ *
+ * <p>取值范围：</p>
+ * <ul>
+ *   <li>0：永远不匹配（默认，关闭 Mock 匹配）</li>
+ *   <li>0.3：30% 概率匹配（原硬编码行为，仅供回溯兼容）</li>
+ *   <li>1：永远匹配（用于测试匹配成功后的 UI 流程）</li>
+ * </ul>
+ */
+export const MOCK_MATCH_PROBABILITY: number = readMockMatchProbability();
+
+/**
+ * 读取 Mock 匹配概率配置。
+ *
+ * 优先级：
+ * 1. Vite 环境变量 {@code VITE_MOCK_MATCH_PROBABILITY}（开发调试时动态调整）
+ * 2. 默认值 0（关闭 Mock 匹配，符合 spec.md P5 Task 5.1.4 要求）
+ *
+ * 兼容性：mp-weixin 端通过 Vite 静态替换读取，H5 端同样生效。
+ * 解析失败时回退到默认值 0，并输出 warn 日志便于排查。
+ */
+function readMockMatchProbability(): number {
+  // 默认值 0：关闭 Mock 匹配（spec.md P5 Task 5.1.4）
+  const DEFAULT_VALUE = 0;
+
+  try {
+    const viteEnv = (import.meta as unknown as { env?: Record<string, unknown> }).env;
+    if (viteEnv) {
+      const raw = viteEnv.VITE_MOCK_MATCH_PROBABILITY;
+      if (typeof raw === "string" && raw.trim().length > 0) {
+        const parsed = Number.parseFloat(raw);
+        if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+          return parsed;
+        }
+        console.warn(
+          `[Discover] VITE_MOCK_MATCH_PROBABILITY="${raw}" 无效（应为 0~1 之间的数字），回退到默认值 ${DEFAULT_VALUE}`
+        );
+      }
+    }
+  } catch (_e) {
+    // import.meta 不可用时回退到默认值
+  }
+
+  // 回退路径：process.env（vitest/SSR 场景）
+  try {
+    const proc = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process;
+    if (proc && proc.env) {
+      const raw = proc.env.VITE_MOCK_MATCH_PROBABILITY;
+      if (typeof raw === "string" && raw.trim().length > 0) {
+        const parsed = Number.parseFloat(raw);
+        if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+          return parsed;
+        }
+      }
+    }
+  } catch (_e) {
+    // ignore
+  }
+
+  return DEFAULT_VALUE;
+}

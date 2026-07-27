@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * 心动信号状态
@@ -553,6 +555,16 @@ export const useLikesStore = defineStore("likes", {
 
     /**
      * 喜欢一个用户
+     *
+     * <p>SubTask 5.5.1：改为乐观更新模式。</p>
+     * <ol>
+     *   <li>参数与业务校验（userId 空、自喜欢、重复喜欢）</li>
+     *   <li>快照本地 likes 列表，便于失败时回滚</li>
+     *   <li>立即将目标用户追加到本地 likes 列表（UI 即时反馈）</li>
+     *   <li>调用后端 POST /api/matches/like 同步状态</li>
+     *   <li>失败时回滚 likes 列表至快照，并向上抛出错误供 UI 提示</li>
+     * </ol>
+     *
      * @param userId - 目标用户 ID
      */
     async likeUser(userId: string) {
@@ -561,22 +573,22 @@ export const useLikesStore = defineStore("likes", {
       try {
         // 参数校验：userId 不能为空
         if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
-          this.errorMessage = "用户 ID 无效";
-          throw new Error("用户 ID 无效");
+          this.errorMessage = t("storeErrors.likes.userIdInvalid");
+          throw new Error(t("storeErrors.likes.userIdInvalid"));
         }
 
         // 自喜欢检查：不能喜欢自己
         const currentUserId = this.currentUserId;
         if (userId === currentUserId) {
-          this.errorMessage = "不能喜欢自己哦";
-          throw new Error("不能喜欢自己哦");
+          this.errorMessage = t("storeErrors.likes.cannotLikeSelf");
+          throw new Error(t("storeErrors.likes.cannotLikeSelf"));
         }
 
         // 重复喜欢检查
         const alreadyLiked = this.likes.some((item) => item.userId === userId);
         if (alreadyLiked) {
-          this.errorMessage = "你已经喜欢过该用户了";
-          throw new Error("你已经喜欢过该用户了");
+          this.errorMessage = t("storeErrors.likes.alreadyLiked");
+          throw new Error(t("storeErrors.likes.alreadyLiked"));
         }
 
         if (useMock()) {
@@ -591,25 +603,35 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // 调用后端 API: POST /api/matches/like
-        // 后端请求体: { userId: Long, targetUserId: Long }
-        await request<HeartSignalView>({
-          url: "/matches/like",
-          method: "POST",
-          data: {
-            userId: this.currentUserId,
-            targetUserId: userId,
-          },
-        });
-
-        // 更新本地状态
+        // SubTask 5.5.1：乐观更新 —— 先在本地追加，再同步服务端
         const target = this.likedBy.find((item) => item.userId === userId);
+        // 快照 likes 列表（浅拷贝），用于失败时回滚
+        const likesSnapshot = this.likes.slice();
+
         if (target) {
+          // 立即更新本地状态，UI 即时反馈「已喜欢」
           this.likes.push({
             ...target,
             id: `like-${Date.now()}`,
             likedAt: new Date().toISOString(),
           });
+        }
+
+        try {
+          // 调用后端 API: POST /api/matches/like
+          // 后端请求体: { userId: Long, targetUserId: Long }
+          await request<HeartSignalView>({
+            url: "/matches/like",
+            method: "POST",
+            data: {
+              userId: this.currentUserId,
+              targetUserId: userId,
+            },
+          });
+        } catch (apiError) {
+          // SubTask 5.5.1：失败回滚 —— 恢复 likes 列表至乐观更新前的快照
+          this.likes = likesSnapshot;
+          throw apiError;
         }
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "喜欢用户失败";
@@ -619,6 +641,16 @@ export const useLikesStore = defineStore("likes", {
 
     /**
      * 取消喜欢一个用户
+     *
+     * <p>SubTask 5.5.1：改为乐观更新模式。</p>
+     * <ol>
+     *   <li>参数校验</li>
+     *   <li>快照本地 likes 列表，便于失败时回滚</li>
+     *   <li>立即从本地 likes 列表移除目标用户（UI 即时反馈）</li>
+     *   <li>调用后端 POST /api/matches/cancel-like 同步状态</li>
+     *   <li>失败时回滚 likes 列表至快照，并向上抛出错误供 UI 提示</li>
+     * </ol>
+     *
      * @param userId - 目标用户 ID
      */
     async unlikeUser(userId: string) {
@@ -627,8 +659,8 @@ export const useLikesStore = defineStore("likes", {
       try {
         // 参数校验
         if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
-          this.errorMessage = "用户 ID 无效";
-          throw new Error("用户 ID 无效");
+          this.errorMessage = t("storeErrors.likes.userIdInvalid");
+          throw new Error(t("storeErrors.likes.userIdInvalid"));
         }
 
         if (useMock()) {
@@ -636,18 +668,27 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // 调用后端 API: POST /api/matches/cancel-like
-        // 后端请求体: { userId: Long, targetUserId: Long }
-        await request<void>({
-          url: "/matches/cancel-like",
-          method: "POST",
-          data: {
-            userId: this.currentUserId,
-            targetUserId: userId,
-          },
-        });
-
+        // SubTask 5.5.1：乐观更新 —— 先本地移除，再同步服务端
+        const likesSnapshot = this.likes.slice();
+        // 立即从本地列表移除目标用户，UI 即时反馈「已取消喜欢」
         this.likes = this.likes.filter((item) => item.userId !== userId);
+
+        try {
+          // 调用后端 API: POST /api/matches/cancel-like
+          // 后端请求体: { userId: Long, targetUserId: Long }
+          await request<void>({
+            url: "/matches/cancel-like",
+            method: "POST",
+            data: {
+              userId: this.currentUserId,
+              targetUserId: userId,
+            },
+          });
+        } catch (apiError) {
+          // SubTask 5.5.1：失败回滚 —— 恢复 likes 列表至乐观更新前的快照
+          this.likes = likesSnapshot;
+          throw apiError;
+        }
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : "取消喜欢失败";
         throw error;
@@ -1002,7 +1043,7 @@ export const useLikesStore = defineStore("likes", {
     async batchActions(action: BatchActionType, userIds: string[]): Promise<void> {
       // 参数校验
       if (!Array.isArray(userIds) || userIds.length === 0) {
-        throw new Error("请至少选择一个用户");
+        throw new Error(t("storeErrors.likes.noSelectedUsers"));
       }
       // 防重复提交锁
       if (this.batchProcessing) {

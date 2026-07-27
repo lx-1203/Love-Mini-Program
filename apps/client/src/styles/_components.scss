@@ -22,14 +22,14 @@
   box-shadow: var(--s-card-soft);
   padding: var(--sp-6);
   overflow: hidden;
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              border-color var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // 卡片按压态：scale + 阴影提升
 .base-card--interactive {
-  cursor: pointer;
+  // mp-weixin 不支持 cursor:pointer，已通过 :active 伪类提供按下反馈
 }
 
 .base-card--interactive:active {
@@ -60,8 +60,6 @@
   border-radius: var(--r-full);
   font-weight: 600;
   border: none;
-  cursor: pointer;
-  user-select: none;
   position: relative;
   overflow: hidden;
   transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -180,9 +178,8 @@
   gap: var(--sp-1);
   font-weight: 500;
   white-space: nowrap;
-  user-select: none;
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .base-tag:active {
@@ -198,7 +195,7 @@
   justify-content: center;
   min-width: 32rpx;
   height: 32rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   padding: 0 var(--sp-2);
   font-size: var(--fs-xs);
   font-weight: 700;

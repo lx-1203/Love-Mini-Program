@@ -10,6 +10,19 @@ vi.mock("../../services/env", () => ({
   isMockMode: () => true,
 }));
 
+// mock discover constants：将 MOCK_MATCH_PROBABILITY 强制为 0.3，
+// 用于支持 swipeRight 30% 匹配概率测试用例（默认值 0 会关闭 mock 匹配，使测试期望失败）。
+// 其他常量保持实际值不变。
+vi.mock("../../stores/discover/constants", async () => {
+  const actual = await vi.importActual<any>(
+    "../../stores/discover/constants",
+  );
+  return {
+    ...actual,
+    MOCK_MATCH_PROBABILITY: 0.3,
+  };
+});
+
 // stub global uni storage used by discover store
 const storageData: Record<string, string> = {};
 const mockGetStorageSync = vi.fn((key: string) => storageData[key] ?? null);

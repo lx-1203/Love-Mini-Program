@@ -330,6 +330,23 @@
           }
         }
       ]
+    },
+    {
+      "root": "subpackages/legal",
+      "pages": [
+        {
+          "path": "privacy/index",
+          "style": {
+            "navigationBarTitleText": "隐私政策"
+          }
+        },
+        {
+          "path": "agreement/index",
+          "style": {
+            "navigationBarTitleText": "用户协议"
+          }
+        }
+      ]
     }
   ],
   /*

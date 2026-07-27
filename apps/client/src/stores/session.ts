@@ -1,12 +1,16 @@
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
 import { isDev } from "../services/env";
+// 微信登录真实链路（Task 0.1.1）：services/auth.ts 封装 wx.login + POST /v1/auth/wechat
+import { loginWithWechat as authLoginWithWechat } from "../services/auth";
 // Sentry 监控：登录成功关联用户身份，退出登录清除用户上下文
 import { setUser, clearUser } from "../services/sentry";
 import { toLoginHeroView } from "../view-models/login";
 import { MOCK_LOGIN_HERO } from "../features/login/hero";
 import { useMock } from "./helpers/use-mock";
 import type { components } from "../services/generated/api-types";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 type Schemas = components["schemas"];
 type UserSession = Schemas["UserSession"];
@@ -206,36 +210,66 @@ export const useSessionStore = defineStore("session", {
 
     /**
      * 细粒度资料完善度百分比（0-100）
-     * 权重：头像20%、昵称10%、性别10%、生日10%、学校20%、专业10%、兴趣标签10%、个人简介10%
+     *
+     * 修复（SubTask 1.4.2）：原实现使用 `Math.min(baseScore, detailScore)` 取基础维度
+     * 与细粒度维度较小值，导致用户即使填完所有细粒度字段，只要三大模块任一未完成，
+     * 完善度就会被压低到 33% / 67%，与用户实际填写感受不符。
+     *
+     * 现改为纯加权平均算法：按字段权重累加得分，权重总和为 100，
+     * 每个字段完成则加上对应权重，未完成则加 0，最终得分即完善度百分比。
+     *
+     * 权重分配（合计 100）：
+     * - 头像 20%
+     * - 昵称 10%
+     * - 性别 10%
+     * - 生日 10%
+     * - 学校 20%
+     * - 专业 10%
+     * - 兴趣标签 10%
+     * - 个人简介 10%
      */
     profileCompletion: (state): number => {
       const session = state.userSession;
       if (!session) return 0;
 
-      // 基础维度（三大模块）
-      let completed = 0;
-      if (session.profileCompleted) completed += 1;
-      if (session.campusVerified) completed += 1;
-      if (session.scheduleCompleted) completed += 1;
-      const baseScore = Math.round((completed / 3) * 100);
+      // 字段权重表（合计 100）
+      const weights = {
+        avatar: 20,
+        nickname: 10,
+        gender: 10,
+        birthday: 10,
+        school: 20,
+        major: 10,
+        interestTags: 10,
+        bio: 10,
+      } as const;
 
-      // 细粒度字段维度（仅用于展示，实际以三大模块为硬门槛）
-      const fields = {
-        avatar: session.profileCompleted ? 20 : 0,
-        nickname: Boolean(session.displayName && session.displayName.trim().length > 0) ? 10 : 0,
-        gender: session.profileCompleted ? 10 : 0,
-        birthday: session.profileCompleted ? 10 : 0,
-        school: Boolean(session.campusName && session.campusName.trim().length > 0) ? 20 : 0,
-        major: session.profileCompleted ? 10 : 0,
-        interestTags: session.profileCompleted ? 10 : 0,
-        bio: session.profileCompleted ? 10 : 0,
+      // 各字段完成状态
+      const fields: Record<keyof typeof weights, boolean> = {
+        // 头像：以 profileCompleted 为代理（实际应有 avatarUrl 字段）
+        avatar: session.profileCompleted === true,
+        // 昵称：有 displayName 即算完成
+        nickname: Boolean(session.displayName && session.displayName.trim().length > 0),
+        // 性别、生日、专业、兴趣标签、简介：以 profileCompleted 为代理
+        gender: session.profileCompleted === true,
+        birthday: session.profileCompleted === true,
+        // 学校：有 campusName 即算完成
+        school: Boolean(session.campusName && session.campusName.trim().length > 0),
+        major: session.profileCompleted === true,
+        interestTags: session.profileCompleted === true,
+        bio: session.profileCompleted === true,
       };
 
-      const detailScore = Object.values(fields).reduce((sum, v) => sum + v, 0);
+      // 加权平均：每个字段完成则加上对应权重
+      let score = 0;
+      (Object.keys(weights) as Array<keyof typeof weights>).forEach((key) => {
+        if (fields[key]) {
+          score += weights[key];
+        }
+      });
 
-      // 取两者较小值，确保硬门槛优先；边界值检查确保不超100
-      const rawScore = Math.min(baseScore, detailScore);
-      return Math.max(0, Math.min(100, rawScore));
+      // 边界值检查确保 0-100 范围
+      return Math.max(0, Math.min(100, score));
     },
 
     /**
@@ -455,27 +489,47 @@ export const useSessionStore = defineStore("session", {
     },
 
     /**
-     * 微信登录
-     * @param code - 微信授权码
+     * 微信登录（Task 0.1 真实链路）。
+     *
+     * <p>调用 {@link authLoginWithWechat}（services/auth.ts）完成端到端登录流程：</p>
+     * <ol>
+     *   <li>wx.login() 获取微信临时 code（带 15 秒超时 + state CSRF 防护）</li>
+     *   <li>POST /v1/auth/wechat 将 code 发送到后端</li>
+     *   <li>后端调用微信 jscode2session 换取 openId、查找/创建用户、签发 JWT</li>
+     *   <li>services/auth.ts 自动保存 token 到本地存储</li>
+     * </ol>
+     *
+     * <p>Task 0.1.4 修复：移除原 `code = "mock-code"` 默认参数与 `if (useMock())` Mock fallback，
+     * 确保登录失败时抛出具体业务错误（WechatLoginError）供 UI 显示。
+     * Mock 模式不再适用于登录链路，仅保留在非登录的会话刷新 / bootstrap 流程中。</p>
+     *
+     * <p>错误处理：失败时抛出 WechatLoginError（含 INVALID_CODE / WECHAT_API_ERROR /
+     * USER_DISABLED / CLIENT_ERROR 业务错误码），调用方应捕获并在 UI 上显示 error.message。
+     * isOffline 标记为 true 仅供 UI 显示离线提示，实际错误信息以抛出的异常为准。</p>
+     *
+     * @throws WechatLoginError 当 wx.login 失败 / 后端返回业务错误 / 网络异常时抛出
      */
-    async loginWithWechat(code = "mock-code") {
+    async loginWithWechat() {
       try {
         this.isOffline = false;
+        this.errorMessage = null;
 
-        if (useMock()) {
-          // Mock 模式：模拟登录成功，返回已登录的用户会话数据
-          this.userSession = { ...mockUserSession, loggedIn: true };
-        } else {
-          this.userSession = await clientApi.loginWithWechat(code);
-        }
+        // Task 0.1.1 真实链路：services/auth.ts 封装 wx.login + POST /v1/auth/wechat
+        // 不含 Mock fallback，失败时抛出 WechatLoginError（含明确业务错误码）
+        this.userSession = await authLoginWithWechat();
 
         // 登录成功：同步用户身份到 Sentry，后续异常上报将自动关联该用户
         syncSentryUser(this.userSession);
 
         return this.userSession;
       } catch (error) {
+        // 登录失败：记录具体错误信息，UI 可据此展示
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.session.wechatLoginFailed");
         this.isOffline = true;
-        console.warn("[SessionStore] 登录失败，可能处于离线状态:", error);
+        console.warn("[SessionStore] 微信登录失败:", {
+          error: this.errorMessage,
+          errorName: error instanceof Error ? error.name : "Unknown",
+        });
         throw error;
       }
     },

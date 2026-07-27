@@ -13,6 +13,7 @@ import { usePageAccess } from "../../../composables/usePageAccess";
 import { useActivityStore } from "../../../stores/activity";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
 import { openAppPath } from "../../../utils/navigation";
+import { debounce } from "../../../utils/debounce";
 import type { ActivityItem } from "../../../stores/activity";
 import { IMAGE_PATHS } from "../../../config/images";
 
@@ -46,33 +47,53 @@ function switchView(mode: ViewMode) {
 }
 
 /* ========== 下拉刷新 / 加载更多 ========== */
-let refresherTriggered = false;
+// 修复（SubTask 1.2.1）：refresherTriggered 必须为响应式 ref，
+// 否则 :refresher-triggered 绑定无法触发视图更新（下拉刷新动画卡死）。
+const refresherTriggered = ref(false);
 
 onShow(() => {
   void activityStore.fetchActivities();
 });
 
 onUnload(() => {
-  refresherTriggered = false;
+  refresherTriggered.value = false;
+  // 修复（SubTask 1.5.2）：页面卸载时取消挂起的 loadMore 防抖定时器，避免内存泄漏
+  debouncedLoadMore.cancel();
 });
 
 async function onRefresherRefresh() {
-  refresherTriggered = true;
+  refresherTriggered.value = true;
   try {
     await activityStore.fetchActivities();
   } finally {
-    refresherTriggered = false;
+    refresherTriggered.value = false;
   }
 }
 
-async function onScrollToLower() {
+// 修复（SubTask 1.2.2）：onScrollToLower 添加 300ms 防抖，
+// 避免快速滑动触发多次 fetchMoreActivities 造成请求风暴与重复分页。
+const debouncedLoadMore = debounce(async () => {
   if (activityStore.loading || !activityStore.hasMore) return;
   await activityStore.fetchMoreActivities();
+}, 300);
+
+async function onScrollToLower() {
+  debouncedLoadMore();
 }
 
 /* ========== 报名 ========== */
+// 修复（SubTask 1.2.4）：报名按钮 loading 状态防重复点击，
+// 通过 activityStore.enrolling 全局禁用 + 本地 submittingId 精准定位当前点击项。
+const submittingId = ref<string>("");
+
 async function toggleEnroll(activityId: string) {
-  await activityStore.enrollActivity(activityId);
+  if (activityStore.enrolling || submittingId.value === activityId) return;
+  submittingId.value = activityId;
+  try {
+    await activityStore.enrollActivity(activityId);
+  } finally {
+    submittingId.value = "";
+  }
 }
 
 /** 截取描述前50字 */
@@ -343,10 +364,10 @@ function formatDateLabel(dateStr: string): string {
             <button
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
-              :disabled="activityStore.enrolling"
+              :disabled="activityStore.enrolling || submittingId === item.id"
               @tap="toggleEnroll(item.id)"
             >
-              <text v-if="activityStore.enrolling" class="enroll-btn__loading">...</text>
+              <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
               <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
             </button>
           </view>
@@ -482,10 +503,10 @@ function formatDateLabel(dateStr: string): string {
             <button
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
-              :disabled="activityStore.enrolling"
+              :disabled="activityStore.enrolling || submittingId === item.id"
               @tap="toggleEnroll(item.id)"
             >
-              <text v-if="activityStore.enrolling" class="enroll-btn__loading">...</text>
+              <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
               <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
             </button>
           </view>
@@ -522,7 +543,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .status-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary);
 }
 
@@ -535,7 +556,7 @@ function formatDateLabel(dateStr: string): string {
   border: 1px solid var(--c-border-light);
   border-radius: 14rpx;
   background: var(--c-bg-container);
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-brand-700);
 }
 
@@ -551,15 +572,15 @@ function formatDateLabel(dateStr: string): string {
 .view-toggle {
   display: flex;
   background: var(--c-bg-surface);
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   padding: 4rpx;
   gap: 4rpx;
 }
 
 .view-toggle__btn {
   padding: 10rpx 28rpx;
-  border-radius: 9999rpx;
-  transition: all 200ms ease;
+  border-radius: var(--r-full, 9999rpx);
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 .view-toggle__btn--active {
@@ -567,7 +588,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .view-toggle__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary);
   font-weight: 500;
 }
@@ -609,7 +630,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .row-title {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: var(--c-text-primary);
   flex: 1;
@@ -624,18 +645,18 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .enrollment-count {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: var(--c-brand-700);
 }
 
 .enrollment-label {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-text-tertiary);
 }
 
 .row-desc {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary);
   line-height: 1.5;
 }
@@ -661,7 +682,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .row-detail-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary);
 }
 
@@ -674,7 +695,7 @@ function formatDateLabel(dateStr: string): string {
   border: 2rpx solid var(--c-border-light);
   border-radius: 14rpx;
   background: transparent;
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   font-weight: 600;
   color: var(--c-text-primary);
   margin-top: 4rpx;
@@ -699,7 +720,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .loading-more__text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary);
 }
 
@@ -734,7 +755,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .month-nav__arrow {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   color: var(--c-text-secondary);
   line-height: 1;
   font-weight: 300;
@@ -749,28 +770,39 @@ function formatDateLabel(dateStr: string): string {
 }
 
 /* --- 星期标题行 --- */
+/* mp-weixin 不支持 display:grid，7 列等宽布局改用 Flexbox + 子元素 width: calc */
 .weekday-row {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   padding: 0 24rpx 12rpx;
   border-bottom: 1rpx solid var(--c-border-light);
   margin: 0 28rpx 8rpx;
 }
 
 .weekday-row__item {
+  /* 7 列：每行 7 个，无 gap → width = calc(100% / 7) */
+  width: calc(100% / 7);
   text-align: center;
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   font-weight: 600;
   color: var(--c-text-tertiary);
   padding: 12rpx 0;
+  box-sizing: border-box;
 }
 
 /* --- 日历网格 --- */
+/* mp-weixin 不支持 display:grid，7 列等宽布局改用 Flexbox + 子元素 width: calc */
 .calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   padding: 0 28rpx;
   gap: 4rpx 0;
+}
+
+.calendar-grid .calendar-cell {
+  /* 7 列：每行 7 个，无水平 gap → width = calc(100% / 7) */
+  width: calc(100% / 7);
+  box-sizing: border-box;
 }
 
 .calendar-cell {
@@ -779,7 +811,7 @@ function formatDateLabel(dateStr: string): string {
   align-items: center;
   padding: 10rpx 4rpx 14rpx;
   min-height: 120rpx;
-  border-radius: 12rpx;
+  border-radius: var(--r-md, 12rpx);
   transition: background 160ms ease;
   position: relative;
 }
@@ -793,7 +825,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .calendar-cell--active {
-  cursor: pointer;
+  /* mp-weixin 不支持 cursor:pointer，已通过 :active 伪类提供按下反馈 */
 }
 
 .calendar-cell--selected {
@@ -816,7 +848,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .calendar-cell__day {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: var(--c-text-primary);
   line-height: 1;
@@ -889,17 +921,17 @@ function formatDateLabel(dateStr: string): string {
 }
 
 .selected-date-header__label {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
   color: var(--c-text-primary);
 }
 
 .selected-date-header__count {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-brand-700);
   background: var(--c-bg-brand);
   padding: 6rpx 16rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   font-weight: 500;
 }
 </style>
