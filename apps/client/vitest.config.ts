@@ -68,6 +68,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["src/tests/**/*.spec.ts"],
+    setupFiles: ["src/tests/setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "text-summary", "html", "lcov"],
@@ -98,16 +99,16 @@ export default defineConfig({
         // 配置文件以静态声明为主，少量运行时逻辑由专门 spec 覆盖
         "src/config/**",
       ],
-      // 阈值设定依据（Phase L 提升）：
-      // - lines/functions/statements: 50 → 70（业务核心模块应稳定覆盖）
-      // - branches: 50 → 65（分支覆盖略低，留出容差）
+      // 阈值设定依据（P7 提升，与 Java JaCoCo 阈值对齐至 80%）：
+      // - lines/functions/statements: 70 → 80（业务核心模块应稳定覆盖）
+      // - branches: 65 → 75（分支覆盖略低，留出容差）
       // 该阈值为目标值；若当前测试不满足，记录差距但不降低阈值，
       // 后续通过补全 store/组件测试逐步达标。
       thresholds: {
-        statements: 70,
-        branches: 65,
-        functions: 70,
-        lines: 70,
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80,
       },
     },
   },

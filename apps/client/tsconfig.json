@@ -16,5 +16,11 @@
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.vue"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.stories.ts",
+    "src/tests/**/*"
   ]
 }

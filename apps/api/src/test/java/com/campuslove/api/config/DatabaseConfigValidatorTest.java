@@ -23,6 +23,7 @@ class DatabaseConfigValidatorTest {
     private static final String VALID_URL = "jdbc:mysql://127.0.0.1:3306/qihang_platform";
     private static final String VALID_USERNAME = "root";
     private static final String VALID_PASSWORD = "secure-database-password";
+    private static final String VALID_ADMIN_HASH = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
     @Test
     void validate_withNullPassword_shouldThrowIllegalStateException() {
@@ -93,6 +94,7 @@ class DatabaseConfigValidatorTest {
         validator.setDbUrl(VALID_URL);
         validator.setDbUsername(VALID_USERNAME);
         validator.setDbPassword(VALID_PASSWORD);
+        validator.setAdminPasswordHash(VALID_ADMIN_HASH);
         assertDoesNotThrow(validator::validate);
     }
 
@@ -103,6 +105,7 @@ class DatabaseConfigValidatorTest {
         validator.setDbUrl("jdbc:mysql://127.0.0.1:3306/qihang_platform?useUnicode=true&characterEncoding=UTF-8");
         validator.setDbUsername(VALID_USERNAME);
         validator.setDbPassword(VALID_PASSWORD);
+        validator.setAdminPasswordHash(VALID_ADMIN_HASH);
         assertDoesNotThrow(validator::validate);
     }
 }

@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * 校园认证服务单元测试（Phase B - Task B4）。
@@ -39,11 +40,15 @@ import org.junit.jupiter.api.Test;
  *       调用 reviewCertification 模拟审核通过、setVerificationFlags 设置邮箱/身份证标志</li>
  * </ul>
  * </p>
+ *
+ * <p>SubTask 5.3.2：Real 服务构造函数新增 {@link ApplicationEventPublisher} 参数，
+ * 测试中以 mock 注入（publishEvent 为空操作即可，徽章测试不依赖事件发布）。</p>
  */
 class CampusCertificationServiceTest {
 
     private CampusCertificationRepository repository;
     private UserBasicProfileRepository userBasicProfileRepository;
+    private ApplicationEventPublisher eventPublisher;
     private RealCampusCertificationService realService;
     private MockCampusCertificationService mockService;
 
@@ -51,7 +56,8 @@ class CampusCertificationServiceTest {
     void setUp() {
         repository = mock(CampusCertificationRepository.class);
         userBasicProfileRepository = mock(UserBasicProfileRepository.class);
-        realService = new RealCampusCertificationService(repository, userBasicProfileRepository);
+        eventPublisher = mock(ApplicationEventPublisher.class);
+        realService = new RealCampusCertificationService(repository, userBasicProfileRepository, eventPublisher);
         mockService = new MockCampusCertificationService();
     }
 
