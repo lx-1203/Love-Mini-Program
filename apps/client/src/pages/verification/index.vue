@@ -8,6 +8,8 @@ import { ref, computed, onUnmounted } from "vue";
 import { lightHaptic } from "../../utils/haptic";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
+// Task 0.2.4：调用 chooseImage 前需检查隐私授权
+import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
 /** 认证状态：unverified | pending | verified | rejected */
 type VerifyStatus = "unverified" | "pending" | "verified" | "rejected";
@@ -38,32 +40,32 @@ const statusInfo = computed(() => {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE,
         title: "已认证",
         desc: "您的校园身份已通过认证\n享有认证用户专属权益",
-        color: "#3FCF8E",
-        bgColor: "#E8F8F0",
+        color: "var(--c-brand-500, #3FCF8E)",
+        bgColor: "var(--c-brand-50, #E8F8F0)",
       };
     case "pending":
       return {
         icon: IMAGE_PATHS.ICONS_EMOJI.PENDING,
         title: "审核中",
         desc: "您的认证申请已提交\n预计 1-3 个工作日内完成审核",
-        color: "#F59E0B",
-        bgColor: "#FFF8E7",
+        color: "var(--c-warning, #F59E0B)",
+        bgColor: "var(--c-tint-amber-50, #FFF8E7)",
       };
     case "rejected":
       return {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_FAIL,
         title: "认证未通过",
         desc: "您提交的认证信息未通过审核\n请核对后重新提交",
-        color: "#E5454D",
-        bgColor: "#FFF0F5",
+        color: "var(--c-error, #E5454D)",
+        bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
       };
     default:
       return {
         icon: IMAGE_PATHS.ICONS_EMOJI.GRAD_CAP,
         title: "未认证",
         desc: "完成校园身份认证\n解锁专属权益与信任标识",
-        color: "#3FCF8E",
-        bgColor: "#E8F4FF",
+        color: "var(--c-brand-500, #3FCF8E)",
+        bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
       };
   }
 });
@@ -76,9 +78,22 @@ const benefits = [
   { icon: IMAGE_PATHS.ICONS_EMOJI.GIFT, title: "专属权益", desc: "解锁认证用户专属功能" },
 ];
 
-/** 选择学生证图片 */
-function chooseImage() {
+/** 选择学生证图片
+ *
+ * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
+ */
+async function chooseImage() {
   lightHaptic();
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({
+      title: "需同意隐私协议后才能选择图片",
+      icon: "none",
+      duration: 1200,
+    });
+    return;
+  }
   uni.chooseImage({
     count: 1,
     sizeType: ["compressed"],
@@ -290,38 +305,47 @@ function onBlur() {
         <view class="form-card">
           <!-- 学生姓名 -->
           <view class="form-item list-item">
-            <text class="form-item__label">学生姓名</text>
+            <label class="form-item__label" for="verification-student-name">学生姓名</label>
             <input
+              id="verification-student-name"
               v-model="studentName"
               class="form-item__input"
               placeholder="请输入真实姓名"
               placeholder-class="form-item__placeholder"
               maxlength="20"
-              @blur="onBlur" aria-label="请输入真实姓名"
+              @blur="onBlur"
+              :aria-label="'请输入真实姓名'"
+              aria-required="true"
             />
           </view>
           <!-- 学号 -->
           <view class="form-item list-item">
-            <text class="form-item__label">学号</text>
+            <label class="form-item__label" for="verification-student-id">学号</label>
             <input
+              id="verification-student-id"
               v-model="studentId"
               class="form-item__input"
               placeholder="请输入学号"
               placeholder-class="form-item__placeholder"
               maxlength="20"
-              @blur="onBlur" aria-label="请输入学号"
+              @blur="onBlur"
+              :aria-label="'请输入学号'"
+              aria-required="true"
             />
           </view>
           <!-- 学校 -->
           <view class="form-item list-item form-item--no-border">
-            <text class="form-item__label">学校</text>
+            <label class="form-item__label" for="verification-school-name">学校</label>
             <input
+              id="verification-school-name"
               v-model="schoolName"
               class="form-item__input"
               placeholder="请输入学校全称"
               placeholder-class="form-item__placeholder"
               maxlength="30"
-              @blur="onBlur" aria-label="请输入学校全称"
+              @blur="onBlur"
+              :aria-label="'请输入学校全称'"
+              aria-required="true"
             />
           </view>
         </view>
@@ -412,14 +436,14 @@ function onBlur() {
 }
 
 .nav-bar__back-icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   color: var(--c-text-primary, #1F2329);
   font-weight: 300;
   line-height: 1;
 }
 
 .nav-bar__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1F2329);
 }
@@ -448,7 +472,7 @@ function onBlur() {
   z-index: 1;
   margin: 24rpx;
   padding: 48rpx 32rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -473,13 +497,13 @@ function onBlur() {
 }
 
 .status-card__title {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
   margin-bottom: 12rpx;
 }
 
 .status-card__desc {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary, #5B6470);
   text-align: center;
   line-height: 1.6;
@@ -497,7 +521,7 @@ function onBlur() {
 }
 
 .section__title-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary, #5B6470);
   font-weight: 500;
 }
@@ -524,7 +548,7 @@ function onBlur() {
 .benefit-item__icon {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   background: linear-gradient(135deg, var(--c-tint-blue-50, #E8F4FF) 0%, var(--c-tint-blue-50, #F0F7FF) 100%);
   display: flex;
   align-items: center;
@@ -533,18 +557,18 @@ function onBlur() {
 }
 
 .benefit-item__emoji {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
 }
 
 .benefit-item__title {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1F2329);
   margin-bottom: 4rpx;
 }
 
 .benefit-item__desc {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-secondary, #5B6470);
   line-height: 1.5;
 }
@@ -552,7 +576,7 @@ function onBlur() {
 /* ==================== 表单卡片 ==================== */
 .form-card {
   background: var(--c-bg-container, #FFFFFF);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   overflow: hidden;
   padding: 0 28rpx;
@@ -571,7 +595,7 @@ function onBlur() {
 }
 
 .form-item__label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1F2329);
   font-weight: 500;
   width: 120rpx;
@@ -580,19 +604,19 @@ function onBlur() {
 
 .form-item__input {
   flex: 1;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1F2329);
 }
 
 .form-item__placeholder {
   color: var(--c-text-tertiary, #9AA1AB);
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
 }
 
 /* ==================== 上传卡片 ==================== */
 .upload-card {
   background: var(--c-bg-container, #FFFFFF);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   overflow: hidden;
   transition: all 0.15s ease;
@@ -616,13 +640,13 @@ function onBlur() {
 }
 
 .upload-card__text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1F2329);
   font-weight: 500;
 }
 
 .upload-card__hint {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary, #9AA1AB);
 }
 
@@ -647,14 +671,14 @@ function onBlur() {
 }
 
 .upload-card__change-text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-inverse, #FFFFFF);
 }
 
 /* ==================== 审核中卡片 ==================== */
 .pending-card {
   background: var(--c-bg-container, #FFFFFF);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   padding: 48rpx 32rpx;
   display: flex;
@@ -669,14 +693,14 @@ function onBlur() {
 }
 
 .pending-card__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-warning, #F59E0B);
   margin-bottom: 12rpx;
 }
 
 .pending-card__desc {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary, #5B6470);
   text-align: center;
   line-height: 1.6;
@@ -689,7 +713,7 @@ function onBlur() {
   margin: 32rpx 24rpx 0;
   padding: 28rpx;
   background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   display: flex;
   align-items: center;
@@ -712,7 +736,7 @@ function onBlur() {
 }
 
 .action-btn__text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 

@@ -368,6 +368,17 @@ export interface RequestOptions<TBody = unknown> {
    * 传入未 aborted 的 signal，后续调用 signal.abort() 会终止底层 uni.request。
    */
   signal?: AbortSignal;
+  /**
+   * SubTask 1.4.5：是否跳过 401 自动刷新 token 流程。
+   *
+   * <p>默认 false：401 时按既有逻辑尝试 refresh token，失败则跳转登录。
+   * 设为 true 时：401 直接抛出错误，不触发刷新或跳转登录。</p>
+   *
+   * <p>适用场景：上游服务返回 401（如 AI 服务的 API Key 失效），
+   * 与用户 JWT 认证无关，不应触发登录跳转。AI 代理调用（/api/ai/**）
+   * 必须设置此标志，避免后端 AI_API_UNAUTHORIZED 错误误触发登录跳转。</p>
+   */
+  skipAuthRefresh?: boolean;
 }
 
 /**
@@ -467,6 +478,12 @@ function doRequest<TResponse, TBody>(
         if (statusCode === 401) {
           // skipAuth 接口（如登录）本身返回 401 时不走刷新流程，直接抛出
           if (options.skipAuth) {
+            reject(buildError(statusCode, processedResult.data));
+            return;
+          }
+          // SubTask 1.4.5：skipAuthRefresh 接口（如 AI 代理）上游 401 时
+          // 不应触发 token 刷新或登录跳转，直接抛出错误，由调用方按错误码处理
+          if (options.skipAuthRefresh) {
             reject(buildError(statusCode, processedResult.data));
             return;
           }

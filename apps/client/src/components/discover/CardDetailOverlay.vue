@@ -15,7 +15,7 @@
  * 动画：入场 scale(0.9)→scale(1) + opacity 0→1，出场反向
  * 兼容：不使用 :hover / :active，使用 hover-class；backdrop-filter 仅在 H5 启用
  */
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DiscoverCard } from "../../stores/discover";
 import VerificationBadge from "../common/VerificationBadge.vue";
@@ -45,6 +45,42 @@ const animating = ref(false);
 const currentImageIndex = ref(0);
 /** 个人简介是否展开（默认展开，长文可收起） */
 const isBioExpanded = ref(true);
+
+/**
+ * SubTask 1.5.2：关闭动画定时器引用，用于组件卸载时清理。
+ *
+ * <p>原实现 4 处 {@code setTimeout(() => emit("close"), 320)} 均未保存返回值，
+ * 若用户在 320ms 出场动画期间快速关闭弹层或父组件销毁本组件，
+ * 定时器仍会触发并 emit 事件到已卸载的父组件，造成 Vue 警告与潜在状态错乱。</p>
+ */
+let closeAnimTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * SubTask 1.5.2：统一的"延迟触发 close 事件"封装。
+ *
+ * <p>每次启动前先清掉前一个未触发的 close 定时器，避免快速连点产生多次 emit。</p>
+ *
+ * @param delayMs 延迟毫秒数，默认 320ms（出场动画时长）
+ */
+function scheduleCloseEmit(delayMs = 320): void {
+  if (closeAnimTimer) {
+    clearTimeout(closeAnimTimer);
+  }
+  closeAnimTimer = setTimeout(() => {
+    closeAnimTimer = null;
+    emit("close");
+  }, delayMs);
+}
+
+/**
+ * SubTask 1.5.2：组件卸载时清理未触发的 close 定时器，避免在已销毁组件上 emit 事件。
+ */
+onUnmounted(() => {
+  if (closeAnimTimer) {
+    clearTimeout(closeAnimTimer);
+    closeAnimTimer = null;
+  }
+});
 
 /** 图标资源 */
 const icons = {
@@ -204,7 +240,8 @@ function handleClose() {
     lightHaptic();
     animating.value = false;
     // 等待出场动画完成后再通知父组件移除弹层
-    setTimeout(() => emit("close"), 320);
+    // SubTask 1.5.2：使用 scheduleCloseEmit 跟踪定时器，卸载时统一清理
+    scheduleCloseEmit(320);
   }, t("cardDetail.closeFailed"));
 }
 
@@ -215,7 +252,8 @@ function handleLike() {
     mediumHaptic();
     emit("like", props.card!.id);
     animating.value = false;
-    setTimeout(() => emit("close"), 320);
+    // SubTask 1.5.2：使用 scheduleCloseEmit 跟踪定时器
+    scheduleCloseEmit(320);
   }, t("cardDetail.likeFailed"));
 }
 
@@ -235,7 +273,8 @@ function handlePass() {
     lightHaptic();
     emit("pass", props.card!.id);
     animating.value = false;
-    setTimeout(() => emit("close"), 320);
+    // SubTask 1.5.2：使用 scheduleCloseEmit 跟踪定时器
+    scheduleCloseEmit(320);
   }, t("cardDetail.passFailed"));
 }
 
@@ -249,7 +288,8 @@ function handleMessage() {
     lightHaptic();
     emit("message", props.card!.userId);
     animating.value = false;
-    setTimeout(() => emit("close"), 320);
+    // SubTask 1.5.2：使用 scheduleCloseEmit 跟踪定时器
+    scheduleCloseEmit(320);
   }, t("cardDetail.messageFailed"));
 }
 
@@ -620,7 +660,8 @@ function onSwipeDownEnd(e: TouchEvent) {
 .card-detail-overlay__content {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），fixed 定位下 100vh 会包含状态栏；改用 100% 配合 fixed 父级铺满可视区域 */
+  height: 100%;
   background: var(--c-bg-page);
   display: flex;
   flex-direction: column;
@@ -1001,7 +1042,7 @@ function onSwipeDownEnd(e: TouchEvent) {
 }
 
 .quick-stat__icon-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
 }
 
 .quick-stat__icon-img {
@@ -1029,7 +1070,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  transition: all 250ms ease;
+  transition: all var(--d-slow, 250ms) ease;
 }
 
 .detail-bio__text--expanded {
@@ -1079,13 +1120,16 @@ function onSwipeDownEnd(e: TouchEvent) {
 }
 
 /* ========== 兴趣圈网格 ========== */
+/* mp-weixin 不支持 display:grid，2 列等宽布局改用 Flexbox + 子元素 width: calc */
 .detail-circles__grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-3);
 }
 
 .detail-circle-card {
+  /* 2 列布局：每行 2 个，gap var(--sp-3) 共 1 个间隙 → width = calc((100% - sp-3) / 2) */
+  width: calc((100% - var(--sp-3)) / 2);
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -1093,10 +1137,11 @@ function onSwipeDownEnd(e: TouchEvent) {
   border-radius: var(--r-lg);
   border: 1rpx solid var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
   transition: transform 180ms ease;
+  box-sizing: border-box;
 }
 
 .detail-circle-card__icon {
-  font-size: 44rpx;
+  font-size: var(--fs-5xl, 44rpx);
   width: 56rpx;
   height: 56rpx;
   display: flex;

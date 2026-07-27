@@ -3,18 +3,25 @@
  * 兴趣圈话题列表页
  * 展示指定兴趣圈下的话题列表，支持下拉刷新和加载更多
  */
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCircleStore, formatCircleTime } from "../../stores/circle";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
+// SubTask 5.5.2：列表页图片 @error 占位图通用方案
+import { useImageFallback } from "../../composables/useImageFallback";
 
 /** Emoji 替换 SVG 图标路径 */
 const chatIcon = IMAGE_PATHS.ICONS_EMOJI.CHAT;
 
 const circleStore = useCircleStore();
 const { currentTopics, loading, errorMessage, topicHasMore } = storeToRefs(circleStore);
+
+// SubTask 5.5.2：列表页图片 @error 占位图 —— 失败 key 集合与判断函数
+const { onImageError, isImageFailed } = useImageFallback();
 
 /** 当前兴趣圈 ID（从页面参数获取） */
 const circleId = ref("");
@@ -26,11 +33,26 @@ const isRefreshing = ref(false);
 const isLoadingMore = ref(false);
 
 const pageVisible = ref(false);
+/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
+    pageEnterTimer = null;
     pageVisible.value = true;
   }, 30);
+});
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
+ */
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
 });
 
 /**
@@ -172,10 +194,12 @@ onLoad((query) => {
               @tap.stop="goToAuthorProfile(topic.author.userId)"
             >
               <image
-                v-if="topic.author.avatar"
+                v-if="topic.author.avatar && !isImageFailed(`avatar-${topic.id}`)"
                 class="topic-card__avatar-img"
-                :src="topic.author.avatar"
-                mode="aspectFill" alt=""
+                :src="resolveMediaUrl(topic.author.avatar)"
+                mode="aspectFill"
+                lazy-load alt=""
+                @error="onImageError(`avatar-${topic.id}`)"
               />
               <text v-else class="topic-card__avatar-char">{{ topic.author.name[0] }}</text>
             </view>
@@ -214,7 +238,8 @@ onLoad((query) => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
   overflow: hidden;
 }

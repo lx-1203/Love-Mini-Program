@@ -46,11 +46,9 @@ const tagClass = computed(() => [
   align-items: center;
   gap: var(--sp-1);
   font-weight: 500;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
   border: var(--border-subtle);
   white-space: nowrap;
-  user-select: none;
 }
 .tag:active { opacity: 0.8; transform: scale(0.97); }
 

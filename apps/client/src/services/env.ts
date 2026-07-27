@@ -120,16 +120,24 @@ function resolveApiBaseUrl(): string {
   if (VITE_API_BASE_URL && VITE_API_BASE_URL.trim().length > 0) {
     return VITE_API_BASE_URL.trim();
   }
-  // 开发环境允许使用 localhost 回退
+  // 开发环境（H5 本地）允许使用 http://localhost 回退
+  // Task 0.6.1：仅 dev 模式可使用 http（H5 本地后端），mp-weixin 合法域名强制 https
   if (isDev) {
+    // #ifdef H5
     return "http://127.0.0.1:8080/api";
+    // #endif
+    // #ifndef H5
+    // 非 H5 环境（mp-weixin 等）dev 模式同样要求 https，避免运行时违规
+    return "https://127.0.0.1:8080/api";
+    // #endif
   }
-  // 生产环境必须显式配置
+  // 生产环境必须显式配置 https URL（mp-weixin 合法域名要求 https）
+  // 不再回退到 http://localhost，避免误用未加密通道
   console.error(
     "[ENV] 生产环境未配置 VITE_API_BASE_URL，请检查构建配置。" +
-    "当前回退到 localhost 仅用于调试，不应在生产使用。"
+    "mp-weixin 合法域名必须为 https://，禁止回退到 http://localhost。"
   );
-  return "http://127.0.0.1:8080/api";
+  return "https://localhost:8080/api";
 }
 
 function resolveApiMode(): "real" | "mock" {

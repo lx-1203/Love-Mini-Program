@@ -3,22 +3,39 @@
  * 标签聚合页
  * 展示指定话题标签下的所有帖子，支持下拉刷新和上拉加载更多
  */
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
 import type { PostItem } from "../../stores/village";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
 
 const villageStore = useVillageStore();
 
 const pageVisible = ref(false);
+/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
+    pageEnterTimer = null;
     pageVisible.value = true;
   }, 30);
+});
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
+ */
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
 });
 
 /** 当前标签名称 */
@@ -266,7 +283,7 @@ onLoad((query) => {
               <image
                 v-if="post.author.avatar"
                 class="user-avatar__img"
-                :src="post.author.avatar"
+                :src="resolveMediaUrl(post.author.avatar)"
                 mode="aspectFill"
         lazy-load alt=""
               />
@@ -343,7 +360,8 @@ $red-badge: var(--c-error, #FF4757);
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: $bg-page;
   overflow: hidden;
 }
@@ -363,13 +381,13 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .back-icon {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255,255,255,0.9)));
   font-weight: 500;
 }
 
 .tag-header__title {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
   color: $white;
   text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0,0,0,0.1)));
@@ -414,7 +432,7 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .feed-state__text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-tertiary;
   text-align: center;
   line-height: 1.6;
@@ -422,7 +440,7 @@ $red-badge: var(--c-error, #FF4757);
 
 .feed-state__btn {
   padding: 18rpx 48rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB87A) 100%);
   box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: transform 0.15s ease;
@@ -435,7 +453,7 @@ $red-badge: var(--c-error, #FF4757);
 /* #endif */
 
 .feed-state__btn-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
@@ -445,13 +463,13 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .feed-empty__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 600;
   color: $text-primary;
 }
 
 .feed-empty__desc {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-tertiary;
 }
 
@@ -463,7 +481,7 @@ $red-badge: var(--c-error, #FF4757);
   margin: 16rpx 24rpx;
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
   transition: transform 0.15s ease;
 }
@@ -507,7 +525,7 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .user-avatar__char {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: $white;
 }
@@ -526,14 +544,14 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .user-info__name {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
   color: $text-primary;
   line-height: 1.2;
 }
 
 .user-info__headline {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
   white-space: nowrap;
   overflow: hidden;
@@ -546,7 +564,7 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .post-card__content {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: $text-primary;
   line-height: 1.7;
   display: -webkit-box;
@@ -567,11 +585,11 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .post-card__tag {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $green-primary;
   background: $green-light;
   padding: 8rpx 18rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   font-weight: 500;
 }
 
@@ -585,7 +603,7 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .post-card__time {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -610,13 +628,13 @@ $red-badge: var(--c-error, #FF4757);
 /* #endif */
 
 .action-btn__icon {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   line-height: 1;
   color: $text-tertiary;
 }
 
 .action-btn__count {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
   font-weight: 500;
 }
@@ -631,7 +649,7 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .load-more__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 

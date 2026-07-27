@@ -304,7 +304,7 @@ onUnmounted(() => {
   background: var(--c-bg-container, #ffffff);
   border: 1rpx solid var(--c-border-light, #e5e7eb);
   box-shadow: var(--s-sm);
-  animation: voice-indicator-fade-in 200ms ease-out;
+  animation: voice-indicator-fade-in var(--d-normal, 200ms) ease-out;
 }
 
 @keyframes voice-indicator-fade-in {
@@ -336,7 +336,7 @@ onUnmounted(() => {
 .voice-recorder__wave-bar {
   width: 8rpx;
   height: 24rpx;
-  border-radius: 4rpx;
+  border-radius: var(--r-xs, 4rpx);
   background: var(--c-brand-500, #22c55e);
   animation: voice-wave 0.8s ease-in-out infinite alternate;
 }

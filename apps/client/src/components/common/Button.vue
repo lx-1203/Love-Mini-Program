@@ -159,9 +159,7 @@ function handleTap(e: TapEventLike) {
               box-shadow var(--btn-press-duration) cubic-bezier(0.4, 0, 0.2, 1),
               background-color var(--btn-press-duration) cubic-bezier(0.4, 0, 0.2, 1),
               border-color var(--btn-press-duration) cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
   border: none;
-  user-select: none;
   position: relative;
   overflow: hidden;
 }

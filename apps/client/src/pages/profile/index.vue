@@ -25,6 +25,10 @@ import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
 // 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
 import type { UniUploadFileLike } from "../../services/api";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
+// Task 0.2.4：调用 chooseImage / chooseVideo 前需检查隐私授权
+import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
 /**
  * 当前页面对象（最小契约）。
@@ -456,10 +460,21 @@ function handleLogout() {
  * 3. 调用 profileStore.uploadBackground 上传 + 更新本地状态
  * 4. 上传中显示 loading + 进度文案，上传完成 toast 提示
  * 5. 失败时 toast 提示错误信息
+ *
+ * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
  */
-function handleEditBackground() {
+async function handleEditBackground() {
   if (isUploading.value) return;
   lightHaptic();
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({
+      title: "需同意隐私协议后才能选择图片",
+      icon: "none",
+    });
+    return;
+  }
   uni.chooseImage({
     count: 1,
     sizeType: ["compressed"],
@@ -512,10 +527,21 @@ async function uploadBackground(file: UniUploadFileLike) {
  * 1. uni.chooseVideo 选择相册中的视频（maxDuration 60s，camera: back）
  * 2. 构造类 File 对象
  * 3. 调用 profileStore.uploadVideo 上传 + 更新本地状态
+ *
+ * Task 0.2.4：调用 chooseVideo 前先调用 ensurePrivacyAuthorized 检查隐私授权。
  */
-function handleUploadVideo() {
+async function handleUploadVideo() {
   if (isUploading.value) return;
   lightHaptic();
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({
+      title: "需同意隐私协议后才能选择视频",
+      icon: "none",
+    });
+    return;
+  }
   uni.chooseVideo({
     maxDuration: 60,
     sourceType: ["album"],
@@ -604,11 +630,22 @@ function handleRemoveVideo() {
 /**
  * Task E3 / H-08：点击照片墙空格子触发图片选择 + 上传到指定索引。
  * @param index - 目标索引（0-5），应为当前 photoGallery.length
+ *
+ * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
  */
-function handleUploadPhoto(index: number) {
+async function handleUploadPhoto(index: number) {
   if (isUploading.value) return;
   if (index < 0 || index >= PHOTO_GALLERY_MAX) return;
   lightHaptic();
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({
+      title: "需同意隐私协议后才能选择图片",
+      icon: "none",
+    });
+    return;
+  }
   uni.chooseImage({
     count: 1,
     sizeType: ["compressed"],
@@ -902,7 +939,7 @@ onMounted(() => {
           <view class="video-preview__thumb" @tap="handlePlayVideo">
             <image
               class="video-preview__thumb-img"
-              :src="personalVideoUrl"
+              :src="resolveMediaUrl(personalVideoUrl)"
               mode="aspectFill" alt=""
             />
             <view class="video-preview__play">
@@ -1246,7 +1283,7 @@ onMounted(() => {
   padding: var(--sp-1) var(--sp-3);
   background: var(--c-overlay-mid, var(--c-overlay-mid, rgba(15, 23, 42, 0.55)));
   border-radius: var(--r-full);
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 
   &--hover {
     transform: scale(0.96);
@@ -1547,7 +1584,7 @@ onMounted(() => {
   border-radius: var(--r-lg);
   border: 2rpx dashed var(--c-brand-200);
   background: var(--c-bg-brand);
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 
   &--hover {
     transform: scale(0.98);
@@ -1675,21 +1712,23 @@ onMounted(() => {
   }
 }
 
-/* 照片墙 3x2 网格 */
+/* 照片墙 3x2 网格 - mp-weixin 不支持 display:grid，改用 Flexbox + 子元素 width: calc */
 .photo-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-2);
 }
 
 .photo-grid__cell {
   position: relative;
-  width: 100%;
-  padding-bottom: 100%;
+  /* 3 列布局：每行 3 张，gap var(--sp-2) 共 2 个间隙 → width = calc((100% - 2*sp-2) / 3) */
+  width: calc((100% - 2 * var(--sp-2)) / 3);
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-bottom 百分比（1:1 → 100%） */
+  padding-bottom: calc((100% - 2 * var(--sp-2)) / 3);
   border-radius: var(--r-md);
   overflow: hidden;
   background: var(--c-neutral-50);
+  box-sizing: border-box;
 }
 
 .photo-grid__img-wrap {
@@ -1714,7 +1753,7 @@ onMounted(() => {
   border: 2rpx dashed var(--c-border-default);
   border-radius: var(--r-md);
   background: var(--c-neutral-50);
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 
   &--hover {
     transform: scale(0.96);

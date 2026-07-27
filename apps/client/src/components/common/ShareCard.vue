@@ -322,7 +322,7 @@ async function handleSaveImage() {
   padding: 48rpx 40rpx 40rpx;
   border-radius: var(--r-xl, 32rpx);
   background: linear-gradient(135deg, var(--c-romance-400, #EC4899) 0%, var(--c-brand-500, #3FCF8E) 100%);
-  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
+  box-shadow: var(--s-modal, 0 20rpx 60rpx rgba(0, 0, 0, 0.2));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -346,8 +346,8 @@ async function handleSaveImage() {
 }
 
 .share-close__icon {
-  font-size: 28rpx;
-  color: #ffffff;
+  font-size: var(--fs-lg, 28rpx);
+  color: var(--c-text-inverse, #ffffff);
   font-weight: 600;
 }
 
@@ -364,9 +364,9 @@ async function handleSaveImage() {
 }
 
 .share-header__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-text-inverse, #ffffff);
 }
 
 .share-body {
@@ -386,12 +386,12 @@ async function handleSaveImage() {
 .share-stat__value {
   font-size: 64rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-text-inverse, #ffffff);
   line-height: 1;
 }
 
 .share-stat__label {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -402,13 +402,13 @@ async function handleSaveImage() {
 }
 
 .share-date {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: rgba(255, 255, 255, 0.85);
   margin-bottom: 12rpx;
 }
 
 .share-subtitle {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: rgba(255, 255, 255, 0.95);
   text-align: center;
   margin-bottom: 40rpx;
@@ -431,7 +431,7 @@ async function handleSaveImage() {
 }
 
 .share-btn--primary {
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
 }
 
 .share-btn--secondary {
@@ -444,7 +444,7 @@ async function handleSaveImage() {
 }
 
 .share-btn__text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 600;
 }
 
@@ -453,6 +453,6 @@ async function handleSaveImage() {
 }
 
 .share-btn--secondary .share-btn__text {
-  color: #ffffff;
+  color: var(--c-text-inverse, #ffffff);
 }
 </style>

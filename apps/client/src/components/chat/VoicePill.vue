@@ -112,7 +112,7 @@ onUnmounted(() => {
   background: var(--c-bg-brand);
   color: var(--c-brand-700);
   box-shadow: 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04));
-  transition: all 200ms ease;
+  transition: all var(--d-normal, 200ms) ease;
   min-width: 140rpx;
 }
 
@@ -144,7 +144,7 @@ onUnmounted(() => {
   height: 12rpx;
   border-radius: 3rpx;
   background: var(--c-brand-300);
-  transition: height 150ms ease, background 200ms ease;
+  transition: height 150ms ease, background var(--d-normal, 200ms) ease;
 }
 
 .voice-pill__bar--active {
@@ -158,7 +158,7 @@ onUnmounted(() => {
 }
 
 .voice-pill__duration {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }

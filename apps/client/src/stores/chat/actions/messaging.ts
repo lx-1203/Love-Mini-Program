@@ -21,9 +21,75 @@ import {
 import { mockSession1, mockSessionMap } from "../mock-data";
 import type {
   MessageDeliveryStatus,
+  SendMessageRequest,
   TempChatSession,
 } from "../types";
 import type { ChatStoreThis } from "../store-type";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
+
+/**
+ * 上传语音文件到后端（Task 1.1.4）。
+ *
+ * 调用 `uni.uploadFile` 将 mp-weixin 录音器产生的临时文件上传至
+ * `POST /api/chat/voice`（由 `VoiceMessageController` 处理），
+ * 后端校验大小/格式后存储并返回 `{ url, duration, size }`。
+ *
+ * Mock 模式下不发起真实网络请求，返回本地占位 URL，
+ * 保证 dev 环境流程可走通且不依赖录音文件实际存在。
+ *
+ * 兼容性：
+ * - mp-weixin：tempFilePath 为 wxfile:// 协议，uni.uploadFile 直接支持
+ * - H5：tempFilePath 通常为空（H5 端 createRecorder 模拟录音），
+ *   调用方应在 H5 端跳过上传，仅以 durationSeconds 占位发送
+ *
+ * @param tempFilePath 录音文件临时路径
+ * @param durationSeconds 语音时长（秒）
+ * @returns 上传成功后的语音文件 URL；上传失败抛出 Error
+ */
+async function uploadVoiceFile(
+  tempFilePath: string,
+  durationSeconds: number
+): Promise<string> {
+  if (!tempFilePath) {
+    throw new Error(t("storeErrors.chat.voiceFilePathEmpty"));
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    uni.uploadFile({
+      url: `/api/chat/voice`,
+      filePath: tempFilePath,
+      name: "file",
+      formData: {
+        duration: String(durationSeconds),
+      },
+      success: (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            const parsed: unknown = JSON.parse(res.data);
+            const payload = parsed as { url?: string; duration?: number; size?: number };
+            if (typeof payload.url === "string" && payload.url.length > 0) {
+              resolve(payload.url);
+              return;
+            }
+            reject(new Error("语音上传响应缺少 url 字段"));
+          } catch (e) {
+            reject(
+              new Error(
+                `语音上传响应解析失败: ${e instanceof Error ? e.message : String(e)}`
+              )
+            );
+          }
+        } else {
+          reject(new Error(`语音上传失败: HTTP ${res.statusCode}`));
+        }
+      },
+      fail: (err) => {
+        reject(new Error(err.errMsg || "语音上传请求失败"));
+      },
+    });
+  });
+}
 
 /**
  * 发送文本消息（带状态持久化与失败重试）。
@@ -33,6 +99,9 @@ import type { ChatStoreThis } from "../store-type";
  *    sending/sent/failed 状态，持久化到本地存储，确保刷新/切换会话后可恢复展示。
  * 2. 新增失败处理与重试：Real 模式下网络层错误自动重试 1 次，
  *    最终失败时设置 errorMessage 并标记消息为 failed。
+ *
+ * Task 1.1.5：使用 `SendMessageRequest` 接口替代内联对象 + 隐式断言，
+ * 与后端 `Schemas["ChatMessageRequest"]` 契约对齐，消除 `as any` 类型漏洞。
  *
  * @param body - 消息正文
  */
@@ -49,6 +118,14 @@ export async function sendText(
   this._setMessageStatus(sendId, "sending");
 
   try {
+    // Task 1.1.5：构造强类型 SendMessageRequest，替代内联对象 + 隐式 any 推断
+    const payload: SendMessageRequest = {
+      sender: "self",
+      kind: "text",
+      body,
+      durationSeconds: null,
+    };
+
     // 使用 withMockMode 统一处理 Mock/Real 切换、activeSession 更新、概览刷新
     // 修复（P1 BUG）：Real 模式新增 withSendRetry 重试机制
     await withMockMode(
@@ -78,16 +155,10 @@ export async function sendText(
         return updatedSession;
       },
       // Real 模式：调用后端 API 发送消息（带重试）
-      // 注意：ChatMessageRequest 仅包含 sender/kind/body/durationSeconds/quoteRef，
-      // recalled / deliveryStatus 是前端扩展字段，不应发送到后端
+      // Task 1.1.5：payload 已是强类型 SendMessageRequest，与 ChatMessageRequest 结构对齐
       () =>
         withSendRetry(() =>
-          chatTransport.pushMessage(this.activeSession!.id, {
-            sender: "self",
-            kind: "text",
-            body,
-            durationSeconds: null,
-          })
+          chatTransport.pushMessage(this.activeSession!.id, payload)
         )
     );
     // 发送成功，更新状态为 sent
@@ -101,17 +172,46 @@ export async function sendText(
 }
 
 /**
- * 发送语音消息
+ * 发送语音消息（Task 1.1.4：集成 uni.getRecorderManager + uni.uploadFile）。
+ *
+ * 流程：
+ * 1. mp-weixin：调用 `uni.uploadFile` 将录音临时文件上传至 `POST /api/chat/voice`
+ *    后端 `VoiceMessageController` 返回音频 URL
+ * 2. 通过 `chatTransport.pushMessage` 发送 kind="voice" 的消息，body 为音频 URL
+ * 3. H5：tempFilePath 为空时降级为占位 body（保留会话流程，便于 UI 验证）
  *
  * @param durationSeconds - 语音时长（秒）
+ * @param tempFilePath - 录音文件临时路径（mp-weixin 由 RecorderManager.onStop 提供）
  */
 export async function sendVoice(
   this: ChatStoreThis,
-  durationSeconds: number
+  durationSeconds: number,
+  tempFilePath?: string
 ): Promise<void> {
   if (!this.activeSession) {
     return;
   }
+
+  // Task 1.1.4：Real 模式下先上传录音文件，拿到 URL 后再发送消息
+  // Mock 模式或 H5 端（tempFilePath 为空）跳过上传，使用占位 body
+  let voiceBody = "语音消息";
+  if (tempFilePath && tempFilePath.length > 0) {
+    try {
+      voiceBody = await uploadVoiceFile(tempFilePath, durationSeconds);
+    } catch (error) {
+      this.errorMessage =
+        error instanceof Error ? error.message : "语音上传失败，请重试";
+      throw error;
+    }
+  }
+
+  // Task 1.1.5：构造强类型 SendMessageRequest
+  const payload: SendMessageRequest = {
+    sender: "self",
+    kind: "voice",
+    body: voiceBody,
+    durationSeconds,
+  };
 
   // 使用 withMockMode 统一处理 Mock/Real 切换、activeSession 更新、概览刷新
   await withMockMode(
@@ -129,7 +229,7 @@ export async function sendVoice(
             id: `m-${Date.now()}`,
             sender: "self",
             kind: "voice",
-            body: "语音消息",
+            body: voiceBody,
             sentAt: new Date().toISOString(),
             durationSeconds,
             recalled: false,
@@ -140,8 +240,8 @@ export async function sendVoice(
       mockSessionMap[sessionId] = updatedSession;
       return updatedSession;
     },
-    // Real 模式：调用后端 API 发送语音消息
-    () => chatTransport.pushVoice(this.activeSession!.id, durationSeconds)
+    // Real 模式：调用后端 API 发送语音消息（携带上传后的 URL）
+    () => chatTransport.pushMessage(this.activeSession!.id, payload)
   );
 }
 

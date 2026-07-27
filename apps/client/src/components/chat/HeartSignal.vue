@@ -68,8 +68,7 @@ defineExpose({ ariaLabel });
   display: flex;
   align-items: center;
   gap: 20rpx;
-  cursor: pointer;
-  transition: background 200ms ease;
+  transition: background var(--d-normal, 200ms) ease;
 }
 .heart-signal:active { background: var(--c-brand-100); }
 
@@ -89,7 +88,7 @@ defineExpose({ ariaLabel });
   height: 40rpx;
 }
 
-.signal-emoji { font-size: 32rpx; }
+.signal-emoji { font-size: var(--fs-2xl, 32rpx); }
 
 @keyframes heart-pulse {
   0%, 100% {

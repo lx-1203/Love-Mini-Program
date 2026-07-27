@@ -74,8 +74,7 @@ defineExpose({ ariaLabel });
   background: var(--c-bg-container);
   box-shadow: var(--c-elevation-1);
   border: var(--c-border-card);
-  cursor: pointer;
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1), box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1), border-color var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 .person-card:active {
   transform: translateY(-2rpx);
@@ -88,7 +87,7 @@ defineExpose({ ariaLabel });
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .person-avatar--halo {
@@ -128,7 +127,7 @@ defineExpose({ ariaLabel });
 .person-tag {
   padding: 2rpx 12rpx;
   border-radius: var(--r-sm);
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   font-weight: 500;
 }
 .person-tag--school {
@@ -146,7 +145,7 @@ defineExpose({ ariaLabel });
 
 .person-action {
   padding: 12rpx 24rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-brand-400);
   flex-shrink: 0;
 }

@@ -23,9 +23,19 @@ import ShareCard from "../../components/common/ShareCard.vue";
 import { IMAGE_PATHS } from "../../config/images";
 // 修复：推荐用户数据从 config 动态读取，避免在页面内硬编码
 import { homeRecommendedPeople } from "../../config/home-recommended-people";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
+// SubTask 5.5.2：列表页图片 @error 占位图通用方案
+import { useImageFallback } from "../../composables/useImageFallback";
 
 // 同步自定义 TabBar 选中状态（首页 = 索引 2）
 useTabBar(2);
+
+// SubTask 5.5.2：列表页图片 @error 占位图 —— 失败 key 集合与判断函数
+// 注意：使用对象引用而非解构，避免 vue-tsc 在某些场景下误报 "All destructured elements are unused"
+const imageFallback = useImageFallback();
+const onImageError = imageFallback.onImageError;
+const isImageFailed = imageFallback.isImageFailed;
 
 const { t } = useI18n();
 
@@ -599,10 +609,12 @@ onMounted(() => {
             >
               <view class="activity-card__image-wrap">
                 <image
-                  v-if="item.coverImage"
+                  v-if="item.coverImage && !isImageFailed(`activity-${item.id}`)"
                   class="activity-card__img"
-                  :src="item.coverImage"
-                  mode="aspectFill" alt=""
+                  :src="resolveMediaUrl(item.coverImage)"
+                  mode="aspectFill"
+                  lazy-load alt=""
+                  @error="onImageError(`activity-${item.id}`)"
                 />
                 <view v-else class="activity-card__placeholder">
                   <image class="activity-placeholder-emoji" :src="emojiIcons.celebration" mode="aspectFit" alt="" />
@@ -636,6 +648,7 @@ onMounted(() => {
                       :src="user.avatar"
                       custom-class="user-avatar__img"
                       mode="aspectFill"
+                      :lazy-load="true"
                     />
                   </view>
                 </view>
@@ -731,6 +744,7 @@ onMounted(() => {
                     :src="post.avatar"
                     custom-class="post-avatar__img"
                     mode="aspectFill"
+                    :lazy-load="true"
                   />
                 </view>
               </view>
@@ -796,6 +810,7 @@ onMounted(() => {
                   :src="item.image"
                   custom-class="shop-image__img"
                   mode="aspectFill"
+                  :lazy-load="true"
                 />
               </view>
               <text class="shop-title-new">{{ item.title }}</text>
@@ -871,13 +886,17 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   background: var(--c-gradient-page);
 }
 
 .home-scroll {
+  /* mp-weixin 不支持 100vh，配合 flex:1 实现自适应高度 */
   flex: 1;
-  height: 100vh;
+  /* 占位高度，配合 flex:1 让 scroll-view 撑满剩余空间；0 避免 vh 单位 */
+  height: 0;
+  min-height: 0;
 }
 
 .section-wrap {

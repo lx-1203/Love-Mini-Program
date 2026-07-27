@@ -190,7 +190,7 @@ function formatBadge(badge: number | string): string {
 }
 
 .base-tab-label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-secondary, #5B6470);
   transition: color 0.3s ease, font-weight 0.3s ease;
 }
@@ -200,8 +200,8 @@ function formatBadge(badge: number | string): string {
   min-width: 32rpx;
   height: 32rpx;
   padding: 0 8rpx;
-  border-radius: 16rpx;
-  font-size: 22rpx;
+  border-radius: var(--r-lg, 16rpx);
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-inverse, #FFFFFF);
   line-height: 32rpx;
   text-align: center;
@@ -238,12 +238,12 @@ function formatBadge(badge: number | string): string {
 
 .base-tabs--pill .base-tab-item {
   padding: 12rpx 32rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-page, #F4F6FA);
 }
 
 .base-tabs--pill .base-tab-label {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
 }
 
 .base-tabs--pill .base-tab-item.is-active {
@@ -263,12 +263,12 @@ function formatBadge(badge: number | string): string {
 
 .base-tabs--block .base-tab-item {
   padding: 16rpx 24rpx;
-  border-radius: 12rpx;
+  border-radius: var(--r-md, 12rpx);
   background: var(--c-bg-page, #F4F6FA);
 }
 
 .base-tabs--block .base-tab-label {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
 }
 
 .base-tabs--block .base-tab-item.is-active {

@@ -18,7 +18,7 @@
  * - API 调用失败时 toast 提示错误信息，弹窗保持打开让用户重试
  * - 网络异常或登录失效由 services/http 统一拦截处理
  */
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useReportStore } from "../../stores/report";
 import { lightHaptic } from "../../utils/haptic";
@@ -62,6 +62,24 @@ const description = ref<string>("");
 
 /** 提交中标志 */
 const submitting = ref<boolean>(false);
+
+/**
+ * SubTask 1.5.2：提交成功后的关闭动画定时器引用。
+ *
+ * <p>原实现 {@code setTimeout(..., 400)} 未保存返回值，若用户在 400ms 内
+ * 快速关闭弹窗或父组件销毁本组件，定时器仍会触发并 emit 事件到已卸载组件。</p>
+ */
+let closeAfterSubmitTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * SubTask 1.5.2：组件卸载时清理未触发的关闭定时器，避免在已销毁组件上 emit 事件。
+ */
+onUnmounted(() => {
+  if (closeAfterSubmitTimer) {
+    clearTimeout(closeAfterSubmitTimer);
+    closeAfterSubmitTimer = null;
+  }
+});
 
 /**
  * 监听弹窗显隐：打开时重置状态，关闭时清空表单
@@ -129,7 +147,10 @@ async function submit() {
     uni.showToast({ title: t("postReport.submitSuccess"), icon: "success" });
     emit("submitted");
     // 关闭弹窗
-    setTimeout(() => {
+    // SubTask 1.5.2：保存定时器引用，卸载时统一清理
+    if (closeAfterSubmitTimer) clearTimeout(closeAfterSubmitTimer);
+    closeAfterSubmitTimer = setTimeout(() => {
+      closeAfterSubmitTimer = null;
       submitting.value = false;
       emit("update:visible", false);
       emit("close");
@@ -239,7 +260,7 @@ async function submit() {
   align-items: flex-end;
   justify-content: center;
   /* 进入动画 */
-  animation: report-mask-in 200ms ease-out;
+  animation: report-mask-in var(--d-normal, 200ms) ease-out;
 }
 
 @keyframes report-mask-in {
@@ -340,8 +361,8 @@ async function submit() {
 }
 
 .reason-item__radio-icon {
-  color: #ffffff;
-  font-size: 22rpx;
+  color: var(--c-text-inverse, #ffffff);
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 700;
   line-height: 1;
 }
@@ -414,7 +435,7 @@ async function submit() {
 }
 
 .report-btn__text--submit {
-  color: #ffffff;
+  color: var(--c-text-inverse, #ffffff);
   font-weight: 600;
 }
 </style>

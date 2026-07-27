@@ -185,7 +185,8 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: var(--c-gradient-page);
 }
 

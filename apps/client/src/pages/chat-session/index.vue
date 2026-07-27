@@ -110,12 +110,16 @@ let idleTimer: ReturnType<typeof setTimeout> | null = null;
 /** 是否显示空闲提示（5 秒未输入则展示） */
 const showIdleIcebreakerHint = ref(false);
 
-/** 用户消息数量（排除 system 类型消息） */
-const userMessageCount = computed(() => {
-  const fromMessagesStore = countUserMessages(messagesStore.currentMessages);
-  const fromChatStore = countUserMessages(chatStore.activeSession?.messages ?? []);
-  return Math.max(fromMessagesStore, fromChatStore);
-});
+/**
+ * 用户消息数量（排除 system 类型消息）
+ *
+ * Task 1.1.1：统一以 `messagesStore.currentMessages` 为单一数据源，
+ * 移除对 `chatStore.activeSession.messages` 的双写读取，
+ * 避免两个 store 数据不同步时计数闪烁。
+ */
+const userMessageCount = computed(() =>
+  countUserMessages(messagesStore.currentMessages)
+);
 
 /** 是否应该展示破冰话题（消息数为 0 或极少时） */
 const shouldShowIcebreakers = computed(() => {
@@ -128,21 +132,68 @@ const shouldShowIcebreakers = computed(() => {
  * 将 store 中的 MessageItem[] 转换为 ChatMessageView[]，
  * 补充 recalled / deliveryStatus / quoteRef 等扩展字段（默认 undefined），
  * 消除模板中 `(message as any).xxx` 的类型断言。
+ *
+ * Task 1.1.1：单一数据源 - 仅消费 `messagesStore.currentMessages`，
+ * 临时匿名会话由 `chatStore` 管理生命周期，但其消息通过
+ * `messagesStore.setCurrentMessages()` 同步到 currentMessages 后再渲染。
  */
 const currentMessagesView = computed(() =>
   toChatMessageViewList(messagesStore.currentMessages)
 );
 
-/**
- * 旧 chatStore 兼容消息视图模型
- */
-const legacyMessagesView = computed(() =>
-  toChatMessageViewList(chatStore.activeSession?.messages ?? [])
-);
-
 usePageAccess(chatPageRequirements);
 
-onLoad((query) => {
+/**
+ * 同步 chatStore.activeSession.messages 到 messagesStore.currentMessages
+ *
+ * Task 1.1.1：临时匿名会话由 `chatStore` 管理生命周期，
+ * 但页面渲染统一从 `messagesStore.currentMessages` 读取。
+ * 该函数在 chatStore 操作（loadSession / sendText / sendVoice / acceptExchange /
+ * endSession / recallMessage）完成后调用，确保单一数据源同步。
+ */
+function syncChatStoreMessagesToMessagesStore(): void {
+  const chatMessages = chatStore.activeSession?.messages ?? [];
+  // 将 ChatMessage[] 转换为 MessageItem[] 形态后写入 messagesStore
+  // ChatMessage 与 MessageItem 字段语义一致（id/sender/kind/body/sentAt/durationSeconds）
+  messagesStore.setCurrentMessages(
+    chatMessages.map((m) => ({
+      id: String(m.id),
+      sessionId: sessionId.value ?? "",
+      sender: m.sender,
+      kind: m.kind,
+      body: m.body,
+      sentAt: m.sentAt,
+      durationSeconds: m.durationSeconds ?? null,
+    }))
+  );
+}
+
+/**
+ * 加载会话消息（Task 1.1.6：改为 await 等待数据加载完成）
+ *
+ * 统一封装 messagesStore.fetchSessionMessages + chatStore.loadSession 的同步逻辑：
+ * - 私信会话：仅调用 messagesStore.fetchSessionMessages
+ * - 临时匿名会话：先调用 chatStore.loadSession，再同步消息到 messagesStore
+ *
+ * 防止 onShow 与 onLoad 异步创建会话竞态：仅在 sessionId 就绪时执行。
+ */
+async function loadSessionData(): Promise<void> {
+  if (!sessionId.value) {
+    return;
+  }
+
+  // Task 1.1.6：等待 messagesStore 数据加载完成，避免页面渲染空消息列表
+  await messagesStore.fetchSessionMessages(sessionId.value);
+
+  // 临时匿名会话需要额外加载 chatStore 数据并同步消息
+  const session = messagesStore.sessions.find((s) => s.id === sessionId.value);
+  if (!session || session.sessionType === "temp_anonymous") {
+    await chatStore.loadSession(sessionId.value);
+    syncChatStoreMessagesToMessagesStore();
+  }
+}
+
+onLoad(async (query) => {
   // ---- 预填消息参数（来自兴趣圈"打招呼"跳转） ----
   if (query && typeof query.prefillMessage === "string" && query.prefillMessage.trim().length > 0) {
     draft.value = parsePrefillMessage(query.prefillMessage);
@@ -171,9 +222,25 @@ onLoad((query) => {
       pageErrorMessage.value = null;
       return;
     }
-    // Mock 模式下无现有会话时，使用 userId 作为临时标识
-    sessionId.value = `session-${rawUserId}`;
-    pageErrorMessage.value = null;
+
+    // Task 1.1.3：移除硬编码 `session-${rawUserId}`，
+    // 调用 POST /api/messages/conversations 创建/复用真实会话 ID。
+    // 后端 PrivateMessageController.createConversation 入参 { userBId: Long }，
+    // 返回 ConversationView（含真实 id / partnerId / partnerName 等）。
+    // Mock 模式下 messagesStore.createSession 内部构造本地占位会话，保证 dev 流程可走通。
+    try {
+      const session = await messagesStore.createSession(rawUserId);
+      if (session) {
+        sessionId.value = session.id;
+        pageErrorMessage.value = null;
+        // 创建会话后立即加载消息（onShow 可能在 createSession 完成前已触发并 return）
+        await loadSessionData();
+      } else {
+        pageErrorMessage.value = "创建会话失败，请稍后重试";
+      }
+    } catch (e) {
+      pageErrorMessage.value = e instanceof Error ? e.message : "创建会话失败";
+    }
     return;
   }
 
@@ -197,14 +264,11 @@ onShow(() => {
     return;
   }
 
-  // 优先从 messagesStore 加载会话信息
-  void messagesStore.fetchSessionMessages(sessionId.value);
-
-  // 如果是临时会话，同时兼容旧 chatStore 的加载逻辑
-  const session = messagesStore.sessions.find((s) => s.id === sessionId.value);
-  if (!session || session.sessionType === "temp_anonymous") {
-    void chatStore.loadSession(sessionId.value);
-  }
+  // Task 1.1.6：等待消息加载完成后再启动倒计时与破冰话题加载，
+  // 避免页面渲染空消息列表导致破冰话题过早出现。
+  // 注：onShow 为同步生命周期，使用 void 不阻塞页面渲染，
+  // loadSessionData 内部已通过 await 确保 messagesStore.currentMessages 就绪。
+  void loadSessionData();
 
   startTempCountdown();
   void loadIcebreakers();
@@ -327,6 +391,8 @@ async function sendText() {
     if (isTempSession.value) {
       // 临时匿名会话使用 chatStore 的临时聊天链路
       await chatStore.sendText(messageToSend);
+      // Task 1.1.1：单一数据源 - chatStore 操作后同步消息到 messagesStore
+      syncChatStoreMessagesToMessagesStore();
     } else {
       // 私信会话使用 messagesStore 的标准私信链路
       await messagesStore.sendMessage(currentSessionId, messageToSend, quoteRef?.messageId);
@@ -492,12 +558,8 @@ function resolvePeerUserId(): number | null {
 
 /** 处理消息长按 */
 function handleMessageLongpress(messageId: string) {
-  // 查找消息以判断是否是自己的消息
-  const allMessages = [
-    ...messagesStore.currentMessages,
-    ...(chatStore.activeSession?.messages || []),
-  ];
-  const message = allMessages.find((m) => m.id === messageId);
+  // Task 1.1.1：单一数据源 - 仅从 messagesStore.currentMessages 查找消息
+  const message = messagesStore.currentMessages.find((m) => m.id === messageId);
   if (!message) return;
 
   // 使用纯函数构建长按菜单状态
@@ -513,6 +575,16 @@ function closeLongPressMenu() {
 }
 
 /**
+ * 空操作函数，用于 @tap.stop 阻止冒泡时的占位 handler。
+ *
+ * Task 1.1.7：使用 @tap.stop="noop" 实现条件编译效果。
+ * uni-app 编译器在 mp-weixin 端自动将 @tap.stop 编译为 catchtap，
+ * 在 H5 端保留 @tap.stop 语义。mp-weixin 的 catchtap 必须绑定 handler，
+ * 因此需要 noop 作为占位。
+ */
+const noop = () => {};
+
+/**
  * 复制当前长按选中的消息内容到剪贴板。
  * P2 修复（长按复制支持）：用户长按聊天消息后选择"复制"，
  * 调用 uni.setClipboardData 写入消息正文，复制成功后 toast 提示。
@@ -524,11 +596,8 @@ function handleCopyMessage() {
     closeLongPressMenu();
     return;
   }
-  const allMessages = [
-    ...messagesStore.currentMessages,
-    ...(chatStore.activeSession?.messages || []),
-  ];
-  const message = allMessages.find((m) => m.id === messageId);
+  // Task 1.1.1：单一数据源 - 仅从 messagesStore.currentMessages 查找
+  const message = messagesStore.currentMessages.find((m) => m.id === messageId);
   if (!message) {
     closeLongPressMenu();
     return;
@@ -554,11 +623,10 @@ function handleCopyMessage() {
 
 /** 引用消息 */
 function handleQuoteMessage() {
-  const allMessages = [
-    ...messagesStore.currentMessages,
-    ...(chatStore.activeSession?.messages || []),
-  ];
-  const message = allMessages.find((m) => m.id === longPressMenu.value.messageId);
+  // Task 1.1.1：单一数据源 - 仅从 messagesStore.currentMessages 查找
+  const message = messagesStore.currentMessages.find(
+    (m) => m.id === longPressMenu.value.messageId
+  );
   if (message) {
     quoteReply.value = {
       messageId: message.id,
@@ -576,9 +644,11 @@ async function handleRecallMessage() {
     await recallTempChatMessageApi(sessionId.value, longPressMenu.value.messageId);
     uni.showToast({ title: "消息已撤回", icon: "success" });
     // 重新加载会话以获取最新消息
-    void messagesStore.fetchSessionMessages(sessionId.value);
+    await messagesStore.fetchSessionMessages(sessionId.value);
+    // Task 1.1.1：临时会话需同步 chatStore 消息到 messagesStore 单一数据源
     if (isTempSession.value) {
-      void chatStore.loadSession(sessionId.value);
+      await chatStore.loadSession(sessionId.value);
+      syncChatStoreMessagesToMessagesStore();
     }
   } catch (_e) {
     uni.showToast({ title: "撤回失败", icon: "none" });
@@ -958,21 +1028,16 @@ function handleVoiceStateChange(recording: boolean) {
             @tap-quote="handleTapQuote"
           />
         </template>
-        <!-- 兼容旧 chatStore 的消息（兜底） -->
-        <ChatBubble
-          v-for="message in legacyMessagesView"
-          :key="`legacy-${message.id}`"
-          :sender="message.sender"
-          :kind="message.kind"
-          :body="message.body"
-          :sent-at="message.sentAt"
-          :duration-seconds="message.durationSeconds"
-          :recalled="message.recalled"
-          :delivery-status="toChatBubbleDeliveryStatus(message.deliveryStatus)"
-          :can-interact="true"
-          @longpress="handleMessageLongpress(message.id)"
-        />
-        <text v-if="!messagesStore.currentMessages.length && !chatStore.activeSession?.messages.length" class="meta-copy">
+        <!--
+          Task 1.1.2：移除重复 v-for 渲染块。
+          原实现存在两套消息渲染：
+            1. currentMessagesView（基于 messagesStore.currentMessages，主数据源）
+            2. legacyMessagesView（基于 chatStore.activeSession.messages，兜底）
+          两套渲染会导致消息重复显示，且 legacyMessagesView 在 <script setup> 中
+          未定义（运行时为 undefined），存在运行时错误风险。
+          现统一以 messagesStore 为单一数据源（Task 1.1.1），删除兜底渲染块。
+        -->
+        <text v-if="!messagesStore.currentMessages.length" class="meta-copy">
           会话刚建立，还没有消息。
         </text>
         <text v-if="isSessionClosed" class="meta-copy meta-copy--warning">
@@ -1110,7 +1175,13 @@ function handleVoiceStateChange(recording: boolean) {
       </template>
     </SectionCard>
 
-    <!-- 长按菜单遮罩：遮罩点击关闭，内容区 @tap.stop 阻止冒泡（P2 弹窗遮罩点击关闭） -->
+    <!--
+      长按菜单遮罩：遮罩点击关闭，内容区阻止冒泡（P2 弹窗遮罩点击关闭）。
+      Task 1.1.7：使用 @tap.stop="noop" 阻止冒泡。
+      uni-app 编译器在 mp-weixin 端会自动将 @tap.stop 编译为 catchtap，
+      实现条件编译效果（mp-weixin 用 catchtap，H5 用 tap.stop）。
+      noop 为空操作 handler，因 mp-weixin 的 catchtap 必须绑定 handler。
+    -->
     <view
       v-if="longPressMenu.visible"
       class="longpress-overlay"
@@ -1119,7 +1190,10 @@ function handleVoiceStateChange(recording: boolean) {
       aria-modal="true"
       aria-label="消息操作菜单"
     >
-      <view class="longpress-menu" @tap.stop>
+      <view
+        class="longpress-menu"
+        @tap.stop="noop"
+      >
         <!-- 复制：将消息正文写入剪贴板（P2 长按复制支持） -->
         <view
           class="longpress-menu__item press-feedback"
@@ -1174,7 +1248,10 @@ function handleVoiceStateChange(recording: boolean) {
       aria-modal="true"
       :aria-label="t('chat.moreMenuTitle')"
     >
-      <view class="more-menu-sheet" @tap.stop>
+      <view
+        class="more-menu-sheet"
+        @tap.stop="noop"
+      >
         <view class="more-menu-sheet__title">
           <text class="more-menu-sheet__title-text">{{ t('chat.moreMenuTitle') }}</text>
         </view>
@@ -1628,7 +1705,7 @@ function handleVoiceStateChange(recording: boolean) {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  animation: more-menu-fade-in 200ms ease-out;
+  animation: more-menu-fade-in var(--d-normal, 200ms) ease-out;
 }
 
 @keyframes more-menu-fade-in {
@@ -1693,12 +1770,12 @@ function handleVoiceStateChange(recording: boolean) {
 
 .more-menu-item__icon--red {
   background: linear-gradient(135deg, #FF7A8A 0%, #EC4899 100%);
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.25);
+  box-shadow: var(--s-romance, 0 4rpx 16rpx rgba(236, 72, 153, 0.25));
 }
 
 .more-menu-item__icon--blue {
   background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
-  box-shadow: 0 4rpx 16rpx rgba(59, 130, 246, 0.25);
+  box-shadow: var(--s-info-soft, 0 4rpx 16rpx rgba(59, 130, 246, 0.25));
 }
 
 .more-menu-item__icon-emoji {

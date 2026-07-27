@@ -818,7 +818,8 @@ async function handleMarkAllNotificationsRead() {
 .messages-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   background: var(--c-gradient-page);
   padding: 0;
   padding-top: env(safe-area-inset-top);

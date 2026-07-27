@@ -1,19 +1,26 @@
-<view class="tab-bar">
+<!-- P6 a11y：TabBar 添加 role=tablist / role=tab / aria-selected / aria-label
+     微信小程序原生 wxml 支持 role 与 aria-* 属性，可直接渲染到 DOM -->
+<view class="tab-bar" role="tablist" aria-label="主导航">
   <view
     wx:for="{{tabs}}"
     wx:key="id"
     class="tab-bar__item {{item.prominent ? 'tab-bar__item--prominent' : ''}} {{index === selected ? 'tab-bar__item--active' : ''}}"
     data-index="{{index}}"
     bindtap="switchTab"
+    role="tab"
+    aria-selected="{{index === selected ? 'true' : 'false'}}"
+    aria-label="{{item.label}}"
   >
     <view class="tab-bar__icon-wrap">
       <image
         class="tab-bar__icon"
         src="{{index === selected ? item.activeIconPath : item.iconPath}}"
         mode="aspectFit"
+        alt=""
+        aria-hidden="true"
       />
     </view>
     <text class="tab-bar__label">{{item.label}}</text>
-    <view wx:if="{{index === selected}}" class="tab-bar__indicator"></view>
+    <view wx:if="{{index === selected}}" class="tab-bar__indicator" aria-hidden="true"></view>
   </view>
 </view>

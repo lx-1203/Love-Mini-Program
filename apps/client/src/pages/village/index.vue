@@ -3,7 +3,7 @@
  * 村口页 - UGC社区（六分类版）
  * 用户生成内容社区，展示帖子动态、支持六分类筛选、点赞关注等互动功能
  */
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { onLoad, onHide, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
@@ -19,9 +19,13 @@ import EmptyState from "../../components/common/EmptyState.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
+// SubTask 5.5.2：列表页图片 @error 占位图通用方案
+import { useImageFallback } from "../../composables/useImageFallback";
 import type { PostItem, PostFilters } from "../../stores/village";
 import BaseTabs from "../../components/common/BaseTabs.vue";
 import { showErrorToast } from "../../utils/error-toast";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
 
 /* ========== Stores ========== */
 const { t } = useI18n();
@@ -35,6 +39,12 @@ const { loading, errorMessage } = storeToRefs(villageStore);
 
 // 同步自定义 TabBar 选中状态（圈子 = 索引 1）
 useTabBar(1);
+
+// SubTask 5.5.2：列表页图片 @error 占位图 —— 失败 key 集合与判断函数
+// 注意：使用对象引用而非解构，避免 vue-tsc 在某些场景下误报 "All destructured elements are unused"
+const imageFallback = useImageFallback();
+const onImageError = imageFallback.onImageError;
+const isImageFailed = imageFallback.isImageFailed;
 
 /* ========== 锁定状态 ========== */
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
@@ -186,15 +196,26 @@ async function onLoadMore() {
 }
 
 /* ========== 点赞（带缩放动画） ========== */
+/**
+ * SubTask 1.5.2：点赞动画定时器集合，用于卸载时统一清理。
+ *
+ * <p>原实现 {@code setTimeout(..., 300)} 未保存返回值，用户在 300ms 动画期间
+ * 快速返回上一页时，定时器仍会触发并修改已销毁页面的 Set 状态。</p>
+ */
+const likeAnimTimers = new Set<ReturnType<typeof setTimeout>>();
+
 async function handleLike(postId: string) {
   const post = displayPosts.value.find(p => p.id === postId);
   const wasLiked = post?.isLiked ?? false;
 
   if (!wasLiked) {
     likeAnimatingPosts.value.add(postId);
-    setTimeout(() => {
+    // SubTask 1.5.2：保存定时器引用，卸载时统一清理
+    const timer = setTimeout(() => {
+      likeAnimTimers.delete(timer);
       likeAnimatingPosts.value.delete(postId);
     }, 300);
+    likeAnimTimers.add(timer);
   }
 
   try {
@@ -327,13 +348,19 @@ onHide(() => {
   }
 });
 
+/** SubTask 1.5.2：滚动位置恢复定时器引用，用于卸载时清理 */
+let scrollTopRestoreTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   // 页面恢复时回滚到上次位置（仅 scroll-view 内的滚动，不影响页面级滚动）
   const key = lastActiveCategory || selectedCategory.value;
   const saved = savedScrollPositions[key] ?? 0;
   if (saved > 0) {
     // 通过 nextTick 确保 DOM 渲染后再设置 scroll-top
-    setTimeout(() => {
+    // SubTask 1.5.2：保存定时器引用，卸载时统一清理
+    if (scrollTopRestoreTimer) clearTimeout(scrollTopRestoreTimer);
+    scrollTopRestoreTimer = setTimeout(() => {
+      scrollTopRestoreTimer = null;
       scrollTopValue.value = saved;
     }, 50);
   }
@@ -343,6 +370,18 @@ onShow(() => {
 onMounted(() => {
   if (isUnlocked.value) {
     void villageStore.fetchPosts(currentFilters.value);
+  }
+});
+
+/**
+ * SubTask 1.5.2：页面卸载时清理所有未触发的定时器，避免在已销毁页面上修改响应式状态。
+ */
+onUnmounted(() => {
+  likeAnimTimers.forEach((timer) => clearTimeout(timer));
+  likeAnimTimers.clear();
+  if (scrollTopRestoreTimer) {
+    clearTimeout(scrollTopRestoreTimer);
+    scrollTopRestoreTimer = null;
   }
 });
 </script>
@@ -417,6 +456,9 @@ onMounted(() => {
         :scroll-top="scrollTopValue"
         :refresher-enabled="true"
         :refresher-triggered="isRefreshing"
+        :enhanced="true"
+        :bounces="true"
+        :show-scrollbar="false"
         @refresherrefresh="onRefresh"
         @scrolltolower="onLoadMore"
         @scroll="handleScroll"
@@ -445,11 +487,12 @@ onMounted(() => {
             <view class="post-card__user clickable" hover-class="post-card__user--pressed" :hover-stay-time="100" @tap.stop="goToAuthorProfile(post.author.userId)">
               <view class="user-avatar">
                 <image
-                  v-if="post.author.avatar"
+                  v-if="post.author.avatar && !isImageFailed(`avatar-${post.id}`)"
                   class="user-avatar__img"
-                  :src="post.author.avatar"
+                  :src="resolveMediaUrl(post.author.avatar)"
                   mode="aspectFill"
                   lazy-load alt=""
+                  @error="onImageError(`avatar-${post.id}`)"
                 />
                 <text v-else class="user-avatar__char">{{ post.author.name[0] }}</text>
                 <!-- Phase D1: 头像左上角身份徽章（校友） -->
@@ -489,15 +532,19 @@ onMounted(() => {
 
           <!-- 图片展示 -->
           <view v-if="post.images.length > 0" class="post-card__images" :class="'post-card__images--' + Math.min(post.images.length, 9)" @tap.stop>
-            <image
+            <view
               v-for="(img, idx) in post.images.slice(0, 9)"
               :key="idx"
-              class="post-card__image img-rounded"
-              :class="{ 'post-card__image--single': post.images.length === 1 }"
-              :src="img"
-              mode="aspectFill"
-              lazy-load alt=""
-            />
+              class="post-card__image-wrap"
+              :class="{ 'post-card__image-wrap--single': post.images.length === 1 }"
+            >
+              <image
+                class="post-card__image img-rounded"
+                :src="img"
+                mode="aspectFill"
+                lazy-load alt=""
+              />
+            </view>
             <view v-if="post.images.length > 9" class="post-card__image-more">
               <text class="post-card__image-more-text">+{{ post.images.length - 9 }}</text>
             </view>
@@ -826,7 +873,7 @@ onMounted(() => {
   border-radius: var(--r-xl);
   box-shadow: var(--s-card-soft);
   border: var(--c-border-card);
-  animation: village-card-slide-up 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: village-card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes village-card-slide-up {
@@ -1009,58 +1056,78 @@ onMounted(() => {
 }
 
 /* --- 图片展示 --- */
+/* mp-weixin 不支持 display:grid，改用 Flexbox + 子元素 width: calc 实现自适应列布局 */
 .post-card__images {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-2);
   border-radius: var(--r-md);
   overflow: hidden;
 }
 
-.post-card__images--1 {
-  grid-template-columns: 1fr;
-  max-width: 480rpx;
-}
-
-.post-card__images--2,
-.post-card__images--4 {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.post-card__images--3,
-.post-card__images--5,
-.post-card__images--6,
-.post-card__images--7,
-.post-card__images--8,
-.post-card__images--9 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.post-card__image {
+.post-card__images--1 .post-card__image-wrap {
+  /* 1 列：100% 宽度，4:3 比例 */
   width: 100%;
-  aspect-ratio: 1;
+  max-width: 480rpx;
+  /* 4:3 比例 → padding-top: 75% */
+  padding-top: 75%;
+  max-height: 360rpx;
+  border-radius: var(--r-md);
+}
+
+.post-card__images--2 .post-card__image-wrap,
+.post-card__images--4 .post-card__image-wrap {
+  /* 2 列：width = calc((100% - gap) / 2) */
+  width: calc((100% - var(--sp-2)) / 2);
+}
+
+.post-card__images--3 .post-card__image-wrap,
+.post-card__images--5 .post-card__image-wrap,
+.post-card__images--6 .post-card__image-wrap,
+.post-card__images--7 .post-card__image-wrap,
+.post-card__images--8 .post-card__image-wrap,
+.post-card__images--9 .post-card__image-wrap {
+  /* 3 列：width = calc((100% - 2*gap) / 3) */
+  width: calc((100% - 2 * var(--sp-2)) / 3);
+}
+
+.post-card__image-wrap {
+  position: relative;
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: 100%;
   border-radius: var(--r-md);
   background: var(--c-neutral-50);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.post-card__image--single {
-  aspect-ratio: 4/3;
-  max-height: 360rpx;
-  border-radius: var(--r-md);
+.post-card__image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .post-card__image-more {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: 100%;
   border-radius: var(--r-md);
   background: var(--c-bg-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
 }
 
 .post-card__image-more-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: var(--fs-2xl);
   color: var(--c-neutral-0);
   font-weight: 600;
@@ -1128,7 +1195,7 @@ onMounted(() => {
 /* #endif */
 
 .action-btn--animating {
-  animation: like-bounce 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: like-bounce var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes like-bounce {
@@ -1231,7 +1298,7 @@ onMounted(() => {
   justify-content: center;
   box-shadow: var(--s-md);
   z-index: 98;
-  animation: back-to-top-fade-in 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: back-to-top-fade-in var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes back-to-top-fade-in {

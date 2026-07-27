@@ -159,7 +159,7 @@ function handleRetry(): void {
   }
 
   .loading-text {
-    font-size: 26rpx;
+    font-size: var(--fs-md, 26rpx);
     color: var(--c-text-tertiary, #9AA1AB);
   }
 }

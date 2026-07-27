@@ -9,20 +9,37 @@
  * - 回复列表
  * - 底部回复输入框
  */
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime } from "../../stores/campus";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
 
 const campusStore = useCampusStore();
 const { currentTopic, replies, loading } = storeToRefs(campusStore);
 
 const pageVisible = ref(false);
+/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
+    pageEnterTimer = null;
     pageVisible.value = true;
   }, 30);
+});
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器，避免在已销毁页面上修改响应式状态。
+ */
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
 });
 
 /** 回复内容 */
@@ -112,7 +129,7 @@ onMounted(() => {
           <image
             v-if="currentTopic.author.avatar"
             class="author-avatar__img"
-            :src="currentTopic.author.avatar"
+            :src="resolveMediaUrl(currentTopic.author.avatar)"
             mode="aspectFill" alt=""
           />
           <text v-else class="author-avatar__char">
@@ -160,7 +177,7 @@ onMounted(() => {
               <image
                 v-if="reply.author.avatar"
                 class="reply-avatar__img"
-                :src="reply.author.avatar"
+                :src="resolveMediaUrl(reply.author.avatar)"
                 mode="aspectFill"
         lazy-load alt=""
               />
@@ -248,7 +265,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: linear-gradient(180deg, var(--c-bg-brand, #E8F8F0) 0%, var(--c-bg-page, #F4F6FA) 20%);
 }
 
@@ -264,7 +282,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .detail-header__back {
   padding: 12rpx 20rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   transition: all 0.15s ease;
 }
@@ -277,7 +295,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .back-icon {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 500;
 }
@@ -306,9 +324,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .category-tag {
   display: inline-block;
   padding: 10rpx 24rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-light, $pink-light);
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   font-weight: 600;
   color: $green-primary;
 }
@@ -349,7 +367,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .author-avatar__char {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
   color: $green-primary;
 }
@@ -363,18 +381,18 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .author-info__name {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: $text-primary;
 }
 
 .author-info__school {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
 }
 
 .topic-time {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
   flex-shrink: 0;
 }
@@ -398,7 +416,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .topic-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-secondary;
   line-height: 1.8;
   display: block;
@@ -409,7 +427,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .replies-section {
   background: $white;
   padding: 28rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
 }
 
@@ -421,17 +439,17 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .replies-title {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
   color: $text-primary;
 }
 
 .replies-count {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $green-primary;
   background: $green-light;
   padding: 6rpx 18rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   font-weight: 600;
 }
 
@@ -457,7 +475,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .loading-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-tertiary;
 }
 
@@ -500,7 +518,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .reply-avatar__char {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   font-weight: 600;
   color: $green-primary;
 }
@@ -518,18 +536,18 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .reply-author {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 600;
   color: $text-primary;
 }
 
 .reply-time {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
 }
 
 .reply-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-secondary;
   line-height: 1.6;
 }
@@ -542,7 +560,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .replies-empty__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-tertiary;
 }
 
@@ -561,13 +579,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .empty-state__text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: $text-tertiary;
 }
 
 .empty-state__back {
   padding: 18rpx 48rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   box-shadow: 0 8rpx 24rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35)));
   transition: all 0.15s ease;
@@ -580,7 +598,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .back-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
@@ -602,9 +620,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .reply-input {
   padding: 20rpx 28rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: $bg-page;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-primary;
   border: 2rpx solid transparent;
   transition: all 0.2s ease;
@@ -617,7 +635,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .anonymous-toggle {
   padding: 14rpx 22rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: $bg-page;
   border: 2rpx solid $border-light;
   flex-shrink: 0;
@@ -636,7 +654,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .anonymous-toggle__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
   font-weight: 500;
   white-space: nowrap;
@@ -649,7 +667,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .reply-btn {
   padding: 18rpx 32rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   flex-shrink: 0;
   box-shadow: 0 6rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
@@ -669,7 +687,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .reply-btn__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
   white-space: nowrap;

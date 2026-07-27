@@ -232,7 +232,7 @@ const currentStepLabel = computed(() => {
   flex-shrink: 0;
   border: 2rpx solid var(--c-border-default);
   background: var(--c-bg-surface);
-  transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* 已完成状态：品牌色填充 */
@@ -289,7 +289,7 @@ const currentStepLabel = computed(() => {
   background: var(--c-border-default);
   margin: 0 var(--sp-1);
   border-radius: 2rpx;
-  transition: background 300ms ease;
+  transition: background var(--d-fade, 300ms) ease;
   min-width: 24rpx;
 }
 

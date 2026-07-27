@@ -21,6 +21,8 @@ import { useMock } from "../utils";
 import { mockSession1, mockSessionMap } from "../mock-data";
 import type { TempChatSession } from "../types";
 import type { ChatStoreThis } from "../store-type";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t as translate } from "@/i18n";
 
 /**
  * 加载破冰话题
@@ -103,13 +105,13 @@ export async function sendIcebreaker(
     async () => {
       // 参数校验
       if (!topic || topic.trim().length === 0) {
-        this.errorMessage = "破冰话题内容不能为空";
-        throw new Error("破冰话题内容不能为空");
+        this.errorMessage = translate("storeErrors.chat.icebreakerContentEmpty");
+        throw new Error(translate("storeErrors.chat.icebreakerContentEmpty"));
       }
 
       if (!this.activeSession) {
-        this.errorMessage = "当前没有活跃会话";
-        throw new Error("当前没有活跃会话");
+        this.errorMessage = translate("storeErrors.chat.noActiveSession");
+        throw new Error(translate("storeErrors.chat.noActiveSession"));
       }
 
       if (useMock()) {

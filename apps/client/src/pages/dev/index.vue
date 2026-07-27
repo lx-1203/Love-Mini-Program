@@ -5,7 +5,7 @@
  * 列出所有已注册页面，方便快速跳转测试
  * 删除时：删除此文件 + pages.json中dev路由 + profile页入口按钮
  */
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 
 interface PageItem {
@@ -16,11 +16,26 @@ interface PageItem {
 }
 
 const pageVisible = ref(false);
+/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
+    pageEnterTimer = null;
     pageVisible.value = true;
   }, 30);
+});
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
+ */
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
 });
 
 /** 全部已注册页面 */
@@ -138,7 +153,8 @@ $divider: var(--c-neutral-200, #E2E8F0);
 $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 
 .dev-page {
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   background: $bg-page;
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -170,7 +186,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .dev-header__back-icon {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   color: $white;
   font-weight: 600;
 }
@@ -184,7 +200,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .dev-header__badge {
   padding: 8rpx 20rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   /* mp-weixin 不支持，H5 保留毛玻璃；白字+白底场景保留低不透明度避免文字不可见 */
   // #ifdef H5
@@ -193,7 +209,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .dev-header__badge-text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 700;
   color: $white;
   letter-spacing: 2rpx;
@@ -209,7 +225,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .dev-notice__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $gold-vip;
   font-weight: 500;
 }
@@ -220,7 +236,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .dev-group__title {
   display: block;
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-secondary;
   font-weight: 600;
   margin-bottom: 12rpx;
@@ -228,7 +244,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .dev-group__list {
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   overflow: hidden;
   background: $white;
   box-shadow: $card-soft-shadow;
@@ -267,7 +283,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .dev-item__title {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-primary;
   font-weight: 500;
 }
@@ -277,13 +293,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   color: $green-primary;
   font-weight: 700;
   padding: 4rpx 12rpx;
-  border-radius: 8rpx;
+  border-radius: var(--r-sm, 8rpx);
   background: $green-light;
 }
 
 .dev-item__path {
   flex: 1;
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -291,7 +307,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .dev-item__arrow {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-tertiary;
   font-weight: 600;
 }

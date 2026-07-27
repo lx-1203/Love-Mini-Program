@@ -134,7 +134,7 @@ defineProps<{
 }
 .banner-tag {
   padding: 8rpx 20rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-bg-light, rgba(255,255,255,0.2));
   /* mp-weixin 不支持，H5 保留毛玻璃；白字+白底场景保留低不透明度避免文字不可见 */
   // #ifdef H5

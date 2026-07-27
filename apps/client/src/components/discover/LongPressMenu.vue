@@ -5,7 +5,7 @@
  * 长按卡片 500ms 后触发，卡片轻微缩放 + 暗色遮罩，
  * 底部弹出 ActionSheet：查看详情 / 超级喜欢 / 举报
  */
-import { ref, watch, nextTick } from "vue";
+import { ref, watch, nextTick, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 // 修复（严格模式 noUnusedLocals）：mediumHaptic 导入后未使用，仅保留 lightHaptic。
 import { lightHaptic } from "../../utils/haptic";
@@ -29,6 +29,44 @@ const emit = defineEmits<{
 
 const animating = ref(false);
 
+/**
+ * SubTask 1.5.2：菜单关闭动画定时器引用。
+ *
+ * <p>原实现 2 处 {@code setTimeout(..., 200)} 未保存返回值，
+ * 用户在 200ms 出场动画期间快速关闭菜单或父组件销毁本组件时，
+ * 定时器仍会触发并 emit 事件到已卸载组件。</p>
+ */
+let closeAnimTimer: ReturnType<typeof setTimeout> | null = null;
+/** SubTask 1.5.2：handleAction 中的延迟分发定时器引用 */
+let actionDispatchTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * SubTask 1.5.2：统一的"延迟触发 close 事件"封装，避免快速连点产生多次 emit。
+ */
+function scheduleCloseEmit(delayMs = 200): void {
+  if (closeAnimTimer) {
+    clearTimeout(closeAnimTimer);
+  }
+  closeAnimTimer = setTimeout(() => {
+    closeAnimTimer = null;
+    emit("close");
+  }, delayMs);
+}
+
+/**
+ * SubTask 1.5.2：组件卸载时清理未触发的所有定时器。
+ */
+onUnmounted(() => {
+  if (closeAnimTimer) {
+    clearTimeout(closeAnimTimer);
+    closeAnimTimer = null;
+  }
+  if (actionDispatchTimer) {
+    clearTimeout(actionDispatchTimer);
+    actionDispatchTimer = null;
+  }
+});
+
 watch(
   () => props.visible,
   (val) => {
@@ -48,7 +86,10 @@ function handleAction(action: "detail" | "superLike" | "report" | "notInterested
     console.warn("[LongPressMenu] haptic failed:", err);
   }
   animating.value = false;
-  setTimeout(() => {
+  // SubTask 1.5.2：保存分发定时器引用，卸载时统一清理
+  if (actionDispatchTimer) clearTimeout(actionDispatchTimer);
+  actionDispatchTimer = setTimeout(() => {
+    actionDispatchTimer = null;
     if (action === "detail") {
       emit("detail");
     } else if (action === "superLike") {
@@ -64,7 +105,8 @@ function handleAction(action: "detail" | "superLike" | "report" | "notInterested
 
 function handleClose() {
   animating.value = false;
-  setTimeout(() => emit("close"), 200);
+  // SubTask 1.5.2：使用 scheduleCloseEmit 跟踪定时器
+  scheduleCloseEmit(200);
 }
 </script>
 
@@ -201,7 +243,7 @@ function handleClose() {
   right: 0;
   bottom: 0;
   background: var(--c-black-overlay-transparent, var(--c-black-overlay-transparent, rgba(0, 0, 0, 0)));
-  transition: background 250ms ease;
+  transition: background var(--d-slow, 250ms) ease;
 }
 
 .long-press-menu__backdrop--active {
@@ -217,7 +259,7 @@ function handleClose() {
   padding: 16rpx 28rpx 28rpx;
   padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
   transform: translateY(100%);
-  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .long-press-menu__panel--active {
@@ -261,7 +303,7 @@ function handleClose() {
   align-items: center;
   gap: 16rpx;
   padding: 20rpx 16rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   margin-bottom: 8rpx;
   transition: background 150ms ease;
 }
@@ -281,7 +323,7 @@ function handleClose() {
 }
 
 .long-press-menu__item-icon-emoji {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
 }
 
 .long-press-menu__item-icon--detail {
@@ -328,7 +370,7 @@ function handleClose() {
 .long-press-menu__cancel {
   margin-top: 12rpx;
   padding: 22rpx 0;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   background: var(--c-neutral-50);
   text-align: center;
 }

@@ -33,8 +33,8 @@ defineProps<{
   background: var(--c-bg-container);
   border: var(--c-border-card);
   box-shadow: var(--c-elevation-1);
-  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              border-color var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:active {
@@ -47,13 +47,13 @@ defineProps<{
 }
 
 .card__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-text-primary);
 }
 
 .card__subtitle {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   line-height: 1.6;
   color: var(--c-text-secondary);
 }

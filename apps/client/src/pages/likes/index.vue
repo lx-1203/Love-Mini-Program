@@ -26,6 +26,8 @@ import ErrorState from "../../components/common/ErrorState.vue";
 import { lightHaptic, successHaptic, errorHaptic } from "../../utils/haptic";
 import { showErrorToast } from "../../utils/error-toast";
 import type { BatchActionType } from "../../stores/likes";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
 
 type TabType = "likedBy" | "myLikes" | "visitors";
 
@@ -514,7 +516,7 @@ onShow(() => {
               <image
                 v-if="item.avatar"
                 class="likes-card__avatar"
-                :src="item.avatar"
+                :src="resolveMediaUrl(item.avatar)"
                 mode="aspectFill"
                 lazy-load alt=""
               />
@@ -581,7 +583,7 @@ onShow(() => {
               <image
                 v-if="item.avatar"
                 class="likes-card__avatar"
-                :src="item.avatar"
+                :src="resolveMediaUrl(item.avatar)"
                 mode="aspectFill"
                 lazy-load alt=""
               />
@@ -647,7 +649,7 @@ onShow(() => {
               <image
                 v-if="item.avatar"
                 class="likes-card__avatar"
-                :src="item.avatar"
+                :src="resolveMediaUrl(item.avatar)"
                 mode="aspectFill"
                 lazy-load alt=""
               />
@@ -746,7 +748,8 @@ onShow(() => {
 .likes-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   background: var(--c-gradient-page);
   padding: var(--sp-6) var(--sp-8);
   padding-top: calc(env(safe-area-inset-top) + var(--sp-6));

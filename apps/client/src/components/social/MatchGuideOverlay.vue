@@ -248,17 +248,17 @@ defineExpose({ overlayAriaLabel });
 }
 
 .mgo-avatar-emoji {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
 }
 
 .mgo-title {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 800;
   color: var(--c-text-primary);
 }
 
 .mgo-subtitle {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary);
 }
 
@@ -269,7 +269,7 @@ defineExpose({ overlayAriaLabel });
 
 .mgo-section-title {
   display: block;
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 600;
   color: var(--c-text-primary);
   margin-bottom: 16rpx;
@@ -285,9 +285,9 @@ defineExpose({ overlayAriaLabel });
 .mgo-topic-chip {
   padding: 20rpx 24rpx;
   background: linear-gradient(135deg, var(--c-brand-50), var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0.1)));
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   border: 1px solid var(--c-secondary-blue-border-tint, rgba(91, 127, 255, 0.15));
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mgo-topic-chip:active {
@@ -296,7 +296,7 @@ defineExpose({ overlayAriaLabel });
 }
 
 .mgo-topic-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-secondary-blue-500, #4C6EF5);
   line-height: 1.4;
 }
@@ -314,15 +314,15 @@ defineExpose({ overlayAriaLabel });
   gap: 8rpx;
   padding: 12rpx 20rpx;
   background: var(--c-bg-surface, #F4F6FA);
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
 }
 
 .mgo-circle-icon {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
 }
 
 .mgo-circle-name {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-primary);
 }
 
@@ -339,8 +339,8 @@ defineExpose({ overlayAriaLabel });
   justify-content: space-between;
   padding: 16rpx 20rpx;
   background: var(--c-bg-surface, #F4F6FA);
-  border-radius: 12rpx;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--r-md, 12rpx);
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mgo-activity-item:active {
@@ -348,13 +348,13 @@ defineExpose({ overlayAriaLabel });
 }
 
 .mgo-activity-title {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-primary);
   font-weight: 500;
 }
 
 .mgo-activity-time {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-secondary);
 }
 
@@ -369,15 +369,14 @@ defineExpose({ overlayAriaLabel });
 .mgo-btn {
   width: 100%;
   height: 88rpx;
-  border-radius: 9999rpx;
-  font-size: 28rpx;
+  border-radius: var(--r-full, 9999rpx);
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mgo-btn:active {

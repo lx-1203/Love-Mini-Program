@@ -20,6 +20,7 @@ import { IMAGE_PATHS } from '../../config/images';
 import LikeBurst from './LikeBurst.vue';
 import PostReportDialog from './PostReportDialog.vue';
 import { lightHaptic } from '../../utils/haptic';
+import { resolveMediaUrl } from '../../utils/media';
 
 const props = defineProps<{
   avatarUrl?: string;
@@ -137,16 +138,20 @@ function onReportSubmitted() {
     </view>
     <text class="wall-content" v-if="content">{{ content }}</text>
     <view class="wall-images" v-if="images && images.length > 0">
-      <image
+      <view
         v-for="(img, idx) in images.slice(0, 3)"
         :key="idx"
-        class="wall-img"
-        :src="img"
-        mode="aspectFill"
-        lazy-load
-        role="img"
-        :aria-label="`${t('village.detailTitle')} ${idx + 1}`"
-      />
+        class="wall-img-wrap"
+      >
+        <image
+          class="wall-img"
+          :src="resolveMediaUrl(img)"
+          mode="aspectFill"
+          lazy-load
+          role="img"
+          :aria-label="`${t('village.detailTitle')} ${idx + 1}`"
+        />
+      </view>
     </view>
     <view class="wall-actions">
       <!-- 点赞按钮：相对定位，LikeBurst 绝对定位在其中 -->
@@ -200,7 +205,7 @@ function onReportSubmitted() {
   padding: 28rpx;
   box-shadow: var(--s-sm);
   border: 1rpx solid var(--c-border-light);
-  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wall-card:active {
   box-shadow: var(--s-md);
@@ -224,7 +229,7 @@ function onReportSubmitted() {
   background: var(--c-bg-hover, #f5f5f7);
 }
 .wall-header__more-icon {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   color: var(--c-text-quaternary, #9ca3af);
   line-height: 1;
   transform: translateY(-4rpx);
@@ -252,17 +257,31 @@ function onReportSubmitted() {
   color: var(--c-text-secondary);
   line-height: 1.5;
 }
+/* mp-weixin 不支持 display:grid，改用 Flexbox + width: calc 实现三列等宽布局 */
 .wall-images {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8rpx;
   border-radius: var(--r-md);
   overflow: hidden;
   margin-top: 16rpx;
 }
+.wall-img-wrap {
+  position: relative;
+  /* 3 列布局：每行 3 张，gap 8rpx 共 2 个间隙 → width = calc((100% - 16rpx) / 3) */
+  width: calc((100% - 16rpx) / 3);
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: calc((100% - 16rpx) / 3);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  box-sizing: border-box;
+}
 .wall-img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
   border-radius: var(--r-sm);
 }
 .wall-actions {
@@ -278,8 +297,7 @@ function onReportSubmitted() {
   gap: 8rpx;
   font-size: var(--fs-sm);
   color: var(--c-text-quaternary);
-  cursor: pointer;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
   padding: 4rpx 0;
 }
 .wall-action__icon {

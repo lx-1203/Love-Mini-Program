@@ -590,7 +590,7 @@ defineExpose({ reset });
   border-radius: var(--r-full);
   background: var(--c-bg-surface);
   border: 1rpx solid var(--c-border-default);
-  transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .filter-chip--active {
@@ -626,7 +626,7 @@ defineExpose({ reset });
 .toggle-switch {
   width: 88rpx;
   height: 48rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-surface);
   position: relative;
   transition: background 0.2s ease;

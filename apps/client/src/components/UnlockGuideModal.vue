@@ -154,7 +154,7 @@ function handleMaskClick() {
   justify-content: center;
   background: var(--c-overlay-mid-strong, rgba(15, 23, 42, 0.5));
   /* 淡入动画 */
-  animation: unlock-fade-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: unlock-fade-in var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes unlock-fade-in {
@@ -205,13 +205,13 @@ function handleMaskClick() {
 }
 
 .unlock-modal__icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   line-height: 1;
 }
 
 /* 标题 */
 .unlock-modal__title {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
   color: var(--c-text-primary, #0f172a);
   margin-bottom: 16rpx;
@@ -220,7 +220,7 @@ function handleMaskClick() {
 
 /* 主文案 */
 .unlock-modal__message {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: var(--c-text-primary, #0f172a);
   text-align: center;
   line-height: 1.5;
@@ -230,7 +230,7 @@ function handleMaskClick() {
 
 /* 副文案 */
 .unlock-modal__subtitle {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary, #475569);
   text-align: center;
   line-height: 1.5;
@@ -260,7 +260,7 @@ function handleMaskClick() {
   &::after {
     border: none;
   }
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .unlock-modal__btn:active {
@@ -270,7 +270,7 @@ function handleMaskClick() {
 /* 主按钮（蓝色） */
 .unlock-modal__btn--primary {
   background: linear-gradient(135deg, var(--c-brand-500, #3b82f6), var(--c-brand-700, #1d4ed8));
-  box-shadow: 0 8rpx 24rpx rgba(59, 130, 246, 0.32);
+  box-shadow: var(--s-info-md, 0 8rpx 24rpx rgba(59, 130, 246, 0.32));
 }
 
 /* 次按钮（白底蓝字） */
@@ -281,7 +281,7 @@ function handleMaskClick() {
 
 /* 按钮文案 */
 .unlock-modal__btn-text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 600;
   color: var(--c-text-inverse, #FFFFFF);
 }

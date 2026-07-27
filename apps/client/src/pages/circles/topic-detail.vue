@@ -4,13 +4,15 @@
  * 展示话题完整内容、作者信息、回复列表，底部回复输入框
  * 支持从回复直接"打招呼"跳转到私信会话
  */
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useCircleStore, formatCircleTime, type ReplyItem } from "../../stores/circle";
 import { useSessionStore } from "../../stores/session";
 import { useReportStore } from "../../stores/report";
 import { openAppPath } from "../../utils/navigation";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
 
 const circleStore = useCircleStore();
 const sessionStore = useSessionStore();
@@ -28,11 +30,26 @@ const topicId = ref("");
 const currentUserId = computed(() => sessionStore.userSession?.userId ?? "");
 
 const pageVisible = ref(false);
+/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
+    pageEnterTimer = null;
     pageVisible.value = true;
   }, 30);
+});
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
+ */
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
 });
 
 /**
@@ -188,7 +205,7 @@ onMounted(() => {
           <image
             v-if="currentTopic.author.avatar"
             class="author-avatar__img"
-            :src="currentTopic.author.avatar"
+            :src="resolveMediaUrl(currentTopic.author.avatar)"
             mode="aspectFill" alt=""
           />
           <text v-else class="author-avatar__char">{{ currentTopic.author.name[0] }}</text>
@@ -249,7 +266,7 @@ onMounted(() => {
               <image
                 v-if="reply.author.avatar"
                 class="reply-avatar__img"
-                :src="reply.author.avatar"
+                :src="resolveMediaUrl(reply.author.avatar)"
                 mode="aspectFill" alt=""
               />
               <text v-else class="reply-avatar__char">{{ reply.author.name[0] }}</text>
@@ -321,7 +338,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
 }
 

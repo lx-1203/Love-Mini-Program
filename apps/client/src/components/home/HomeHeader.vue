@@ -76,11 +76,11 @@ const { t } = useI18n();
   width: 28rpx;
   height: 28rpx;
   transform: rotate(90deg);
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 .header-badge {
   padding: 4rpx 16rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-brand-50);
   border: 1rpx solid var(--c-brand-100);
 }
@@ -101,9 +101,8 @@ const { t } = useI18n();
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-tertiary);
-  cursor: pointer;
   position: relative;
 }
 .header-icon-img {

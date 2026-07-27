@@ -15,10 +15,24 @@
  * 缺少 JWT 自动附加、错误规范化、超时重试等能力。现统一改用 http.ts
  * 的 request()，URL 去掉 `/api` 前缀（http.ts 会自动拼接 apiBaseUrl，
  * 该地址在所有环境下均以 `/api` 结尾）。
+ *
+ * SubTask 1.4.5：AI 服务调用特殊性：
+ * 1. 超时：视频/图片生成耗时较长，使用 AI_API_TIMEOUT_MS（30s），
+ *    避免默认 10s 超时误判正常长耗时请求为失败。
+ * 2. 401 处理：AI 上游 401（API Key 失效）与用户 JWT 401 不同——
+ *    通过 skipAuthRefresh=true 跳过 http.ts 的 token 刷新与登录跳转，
+ *    改为返回业务错误码 AI_API_UNAUTHORIZED_CODE，由调用方提示用户。
+ * 3. 错误规范化：包装为统一的 AppApiError，便于上层基于 error code 分发提示。
  */
 
 import { CAMPUS_IMAGES, HOME_POSTER } from "../config/assets-index";
 import { request } from "./http";
+import { AppApiError } from "./api-error";
+import {
+  AI_API_TIMEOUT_MS,
+  AI_API_UNAUTHORIZED_CODE,
+  AI_API_ERROR_CODE,
+} from "../constants/api";
 
 // ===== 后端代理端点（去掉 /api 前缀，由 http.ts 拼接 apiBaseUrl） =====
 const BACKEND_AI_VIDEO = "/ai/video/generate";
@@ -91,29 +105,108 @@ interface ApiHealthResponse {
 }
 
 /**
+ * SubTask 1.4.5：将底层 request 抛出的错误统一包装为 AppApiError。
+ *
+ * <p>处理三类错误：</p>
+ * <ul>
+ *   <li>AI_API_UNAUTHORIZED：上游 AI 服务 401（API Key 失效或未配置），
+ *       提示"AI 服务未授权"，不触发登录跳转</li>
+ *   <li>AI_API_ERROR：上游 AI 服务 5xx/网络异常，
+ *       提示"AI 服务暂时不可用"</li>
+ *   <li>其他错误：保留原始错误信息向上抛出</li>
+ * </ul>
+ *
+ * @param error request() 抛出的原始错误
+ * @param operation 操作名（"video"/"image"/"health"），用于日志上下文
+ * @returns 统一的 AppApiError，调用方可通过 error code 分发提示
+ */
+function wrapAiError(error: unknown, operation: string): AppApiError {
+  // 已经是 AppApiError/EnhancedApiError：根据 error code 重映射为用户友好提示
+  if (error instanceof AppApiError) {
+    const upstreamCode = error.error;
+    // 后端 GlobalExceptionHandler 返回的业务错误码优先
+    if (upstreamCode === AI_API_UNAUTHORIZED_CODE) {
+      return new AppApiError({
+        status: error.status,
+        error: AI_API_UNAUTHORIZED_CODE,
+        message: "AI 服务未授权，请联系管理员检查 API Key 配置",
+        details: { operation, upstreamMessage: error.message },
+      });
+    }
+    if (upstreamCode === AI_API_ERROR_CODE) {
+      return new AppApiError({
+        status: error.status,
+        error: AI_API_ERROR_CODE,
+        message: "AI 服务暂时不可用，请稍后重试",
+        details: { operation, upstreamMessage: error.message },
+      });
+    }
+    // 兜底：HTTP 401 但未带 AI 业务错误码（理论上后端会带，防御性处理）
+    if (error.status === 401) {
+      return new AppApiError({
+        status: 401,
+        error: AI_API_UNAUTHORIZED_CODE,
+        message: "AI 服务未授权，请联系管理员检查 API Key 配置",
+        details: { operation, upstreamMessage: error.message },
+      });
+    }
+    // 5xx 或网络层错误归为 AI_API_ERROR
+    if (error.status === 0 || error.status >= 500) {
+      return new AppApiError({
+        status: error.status,
+        error: AI_API_ERROR_CODE,
+        message: "AI 服务暂时不可用，请稍后重试",
+        details: { operation, upstreamMessage: error.message },
+      });
+    }
+    // 其他业务错误（如 400 参数错误）保留原状
+    return error;
+  }
+  // 非 AppApiError（如原生 Error、网络异常）：统一归为 AI_API_ERROR
+  const message = error instanceof Error ? error.message : "未知错误";
+  return new AppApiError({
+    status: 0,
+    error: AI_API_ERROR_CODE,
+    message: "AI 服务暂时不可用，请稍后重试",
+    details: { operation, rawError: message },
+  });
+}
+
+/**
  * 调用后端代理生成视频。
  *
  * @param params - 视频生成参数（prompt 必填，其余有默认值）
  * @returns 视频生成任务视图（含任务 ID 与状态）
+ *
+ * @throws {AppApiError} error=AI_API_UNAUTHORIZED_CODE 表示 API Key 未配置/失效；
+ *                      error=AI_API_ERROR_CODE 表示上游服务异常或网络错误。
  */
 export async function callVideoGenerate(
   params: VideoGenerateParams
 ): Promise<VideoGenerateResponse> {
-  return request<VideoGenerateResponse, {
-    prompt: string;
-    duration: number;
-    style: string;
-    resolution: string;
-  }>({
-    url: BACKEND_AI_VIDEO,
-    method: "POST",
-    data: {
-      prompt: params.prompt,
-      duration: params.duration || 5,
-      style: params.style || "campus",
-      resolution: params.resolution || "720p",
-    },
-  });
+  try {
+    return await request<VideoGenerateResponse, {
+      prompt: string;
+      duration: number;
+      style: string;
+      resolution: string;
+    }>({
+      url: BACKEND_AI_VIDEO,
+      method: "POST",
+      data: {
+        prompt: params.prompt,
+        duration: params.duration || 5,
+        style: params.style || "campus",
+        resolution: params.resolution || "720p",
+      },
+      // SubTask 1.4.5：AI 生成耗时较长，使用 30s 超时
+      timeout: AI_API_TIMEOUT_MS,
+      // SubTask 1.4.5：上游 AI 401 不应触发用户登录跳转
+      skipAuthRefresh: true,
+    });
+  } catch (error) {
+    throw wrapAiError(error, "video");
+  }
 }
 
 /**
@@ -121,23 +214,34 @@ export async function callVideoGenerate(
  *
  * @param params - 图片生成参数（prompt 必填，其余有默认值）
  * @returns 图片生成结果（包含图片 URL）
+ *
+ * @throws {AppApiError} error=AI_API_UNAUTHORIZED_CODE 表示 API Key 未配置/失效；
+ *                      error=AI_API_ERROR_CODE 表示上游服务异常或网络错误。
  */
 export async function callImageGenerate(
   params: ImageGenerateParams
 ): Promise<ImageGenerateResponse> {
-  return request<ImageGenerateResponse, {
-    prompt: string;
-    n: number;
-    size: string;
-  }>({
-    url: BACKEND_AI_IMAGE,
-    method: "POST",
-    data: {
-      prompt: params.prompt,
-      n: params.n || 1,
-      size: params.size || "1024x1024",
-    },
-  });
+  try {
+    return await request<ImageGenerateResponse, {
+      prompt: string;
+      n: number;
+      size: string;
+    }>({
+      url: BACKEND_AI_IMAGE,
+      method: "POST",
+      data: {
+        prompt: params.prompt,
+        n: params.n || 1,
+        size: params.size || "1024x1024",
+      },
+      // SubTask 1.4.5：AI 生成耗时较长，使用 30s 超时
+      timeout: AI_API_TIMEOUT_MS,
+      // SubTask 1.4.5：上游 AI 401 不应触发用户登录跳转
+      skipAuthRefresh: true,
+    });
+  } catch (error) {
+    throw wrapAiError(error, "image");
+  }
 }
 
 // ===== 校园主题提示词 =====
@@ -150,11 +254,24 @@ export const CAMPUS_VIDEO_PROMPTS = {
 
 /**
  * 获取 API 状态（调试用，通过后端代理）。
+ *
+ * <p>SubTask 1.4.5：健康检查同样使用 AI 专用超时与 skipAuthRefresh，
+ * 确保上游 AI Key 失效时不会误触发用户登录跳转。</p>
+ *
  * @returns 健康检查响应（含状态字段）
+ *
+ * @throws {AppApiError} error=AI_API_UNAUTHORIZED_CODE 表示 API Key 未配置/失效；
+ *                      error=AI_API_ERROR_CODE 表示上游服务异常或网络错误。
  */
 export async function checkApiHealth(): Promise<ApiHealthResponse> {
-  return request<ApiHealthResponse>({
-    url: BACKEND_AI_HEALTH,
-    method: "GET",
-  });
+  try {
+    return await request<ApiHealthResponse>({
+      url: BACKEND_AI_HEALTH,
+      method: "GET",
+      timeout: AI_API_TIMEOUT_MS,
+      skipAuthRefresh: true,
+    });
+  } catch (error) {
+    throw wrapAiError(error, "health");
+  }
 }

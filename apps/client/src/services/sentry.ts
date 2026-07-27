@@ -47,7 +47,10 @@ let sentryInitialized = false;
  */
 function readSentryDsn(): string {
   try {
-    const val = (process as { env?: Record<string, string | undefined> }).env?.VITE_SENTRY_DSN;
+    // 通过 globalThis 收敛访问 process，避免引入 @types/node；
+    // mp-weixin 运行时无 process 对象，运行时判空安全降级。
+    const g = globalThis as { process?: { env?: Record<string, string | undefined> } };
+    const val = g.process?.env?.VITE_SENTRY_DSN;
     if (typeof val === "string" && val.trim().length > 0) {
       return val.trim();
     }

@@ -15,6 +15,9 @@ import { homeRecommendedPeople } from "../../config/home-recommended-people";
 import { createMockApiError } from "../api-error";
 // 统一图片资源路径常量，避免在 mock 数据中硬编码字符串
 import { IMAGE_PATHS } from "@/config/images";
+// i18n 翻译函数（SubTask 3.3.4：Mock 数据文案 i18n 化）
+// 在非组件场景使用 i18n.global.t，与组件内 useI18n().t 行为一致。
+import { t } from "@/i18n";
 
 type Schemas = components["schemas"];
 type LoginHeroConfig = Schemas["LoginHeroConfig"];
@@ -59,41 +62,54 @@ const recommendedPeople: RecommendedPersonSummary[] = homeRecommendedPeople.map(
   availability: person.availability,
 }));
 
-const discussionRecommendations: DiscussionRecommendation[] = [
-  {
-    id: "d-1",
-    title: "大家怎么平衡恋爱和考试周？",
-    summary: "一条很实用的讨论串，边界清楚，安排也容易落地。",
-    heatLabel: "412 人收藏",
-  },
-  {
-    id: "d-2",
-    title: "第一次校园咖啡散步，怎样才会更自然？",
-    summary: "大家在分享路线、时间点和不生硬的开场方式。",
-    heatLabel: "热度上升",
-  },
-];
+/**
+ * 讨论推荐 mock 数据构建器（SubTask 3.3.4：i18n 化）。
+ *
+ * 使用 builder 函数在调用时解析 i18n key，确保 locale 切换后返回的 mock 数据
+ * 能跟随当前语言。原模块级常量已替换为函数，调用方需通过 buildXxx() 获取数据。
+ */
+function buildDiscussionRecommendations(): DiscussionRecommendation[] {
+  return [
+    {
+      id: "d-1",
+      title: t("mockData.discussions.title1"),
+      summary: t("mockData.discussions.summary1"),
+      heatLabel: t("mockData.discussions.heatLabel1"),
+    },
+    {
+      id: "d-2",
+      title: t("mockData.discussions.title2"),
+      summary: t("mockData.discussions.summary2"),
+      heatLabel: t("mockData.discussions.heatLabel2"),
+    },
+  ];
+}
 
-const activityRecommendations: ActivityRecommendation[] = [
-  {
-    id: "a-1",
-    title: "图书馆南门咖啡散步",
-    location: "南门咖啡馆",
-    scheduleText: "周四 19:00-20:00",
-  },
-  {
-    id: "a-2",
-    title: "电影社轻松线下碰面",
-    location: "影像楼 B 厅",
-    scheduleText: "周六 15:00-17:00",
-  },
-];
+/**
+ * 活动推荐 mock 数据构建器（SubTask 3.3.4：i18n 化）。
+ */
+function buildActivityRecommendations(): ActivityRecommendation[] {
+  return [
+    {
+      id: "a-1",
+      title: t("mockData.activities.title1"),
+      location: t("mockData.activities.location1"),
+      scheduleText: t("mockData.activities.schedule1"),
+    },
+    {
+      id: "a-2",
+      title: t("mockData.activities.title2"),
+      location: t("mockData.activities.location2"),
+      scheduleText: t("mockData.activities.schedule2"),
+    },
+  ];
+}
 
 let session: UserSession = {
   userId: "user-1001",
   loggedIn: false,
   loginMethod: "wechat",
-  displayName: "星野",
+  displayName: t("mockData.session.defaultDisplayName"),
   phoneBound: false,
   profileCompleted: false,
   campusVerified: false,
@@ -119,256 +135,261 @@ interface MockRecommendedPersonInternal extends RecommendedPerson {
 }
 
 /**
- * 推荐人物 mock 数据（含 Phase A/B 扩展字段）。
+ * 推荐人物 mock 数据构建器（含 Phase A/B 扩展字段，SubTask 3.3.4：i18n 化）。
  *
  * 数据源镜像 discover store 中原 mockCards 的 7 条记录，但采用 RecommendedPerson
  * 视图结构（number id + 扩展字段）。用于 mockFixtures.getRecommendations
  * 在 mock 模式下返回带新字段的推荐结果。
+ *
+ * 使用 builder 函数在调用时解析 i18n key，确保 locale 切换后返回的 mock 数据
+ * 能跟随当前语言。
  */
-const recommendedPersonsMock: MockRecommendedPersonInternal[] = [
-  {
-    id: 4001,
-    name: "夏言",
-    initials: "夏",
-    headline: "北京大学 · 大三 · 心理学",
-    commonGround: "你们都选了电影话题",
-    availability: "今晚 19:00-21:00",
-    campusName: "北京大学",
-    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_1,
-    tags: ["咖啡", "电影", "夜跑", "心理学", "猫奴"],
-    bio: "喜欢听人讲故事，也擅长保守秘密。想认识有趣的人，一起喝咖啡、看电影、夜跑。周末通常比较空闲，欢迎约我出去逛逛。",
-    images: [
-      IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
-    ],
-    isSameSchool: false,
-    isSameMajor: false,
-    commonCircleCount: 0,
-    height: 165,
-    educationLevel: "bachelor",
-    photoGallery: [
-      IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
-    ],
-    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_1,
-    personalVideoUrl: "",
-    profileBackgroundUrl: "",
-    verificationBadgeLevel: "school",
-    relationshipStatus: "never",
-    hometownProvince: "北京",
-    hometownCity: "北京",
-    futureCity: "北京",
-  },
-  {
-    id: 4002,
-    name: "顾北",
-    initials: "顾",
-    headline: "清华大学 · 研一 · 建筑学",
-    commonGround: "你们都选了美食话题",
-    availability: "周末下午",
-    campusName: "清华大学",
-    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_2,
-    tags: ["美食", "音乐", "探店", "建筑", "胶片"],
-    bio: "画图狗一只，偶尔弹吉他。对城市里的老建筑特别感兴趣，想找个人一起探店、扫街。",
-    images: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
-      IMAGE_PATHS.PRODUCTS.FOOD_1,
-    ],
-    isSameSchool: false,
-    isSameMajor: false,
-    commonCircleCount: 0,
-    height: 178,
-    educationLevel: "master",
-    photoGallery: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
-      IMAGE_PATHS.PRODUCTS.FOOD_1,
-    ],
-    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_2,
-    personalVideoUrl: "",
-    profileBackgroundUrl: "",
-    verificationBadgeLevel: "school",
-    relationshipStatus: "never",
-    hometownProvince: "江苏",
-    hometownCity: "南京",
-    futureCity: "北京",
-  },
-  {
-    id: 4003,
-    name: "林溪",
-    initials: "林",
-    headline: "复旦大学 · 大二 · 日语系",
-    commonGround: "你们都选了摄影话题",
-    availability: "周三、周五晚上",
-    campusName: "复旦大学",
-    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_3,
-    tags: ["语言", "看展", "摄影", "日系", "手账"],
-    bio: "最近在学日语，想找个语伴一起练习。平时也喜欢看展、拍照，记录生活中的小美好。",
-    images: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY,
-      IMAGE_PATHS.PRODUCTS.MERCH_1,
-    ],
-    isSameSchool: false,
-    isSameMajor: false,
-    commonCircleCount: 0,
-    height: 162,
-    educationLevel: "bachelor",
-    photoGallery: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY,
-      IMAGE_PATHS.PRODUCTS.MERCH_1,
-    ],
-    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_3,
-    personalVideoUrl: "",
-    profileBackgroundUrl: "",
-    verificationBadgeLevel: "email",
-    relationshipStatus: "never",
-    hometownProvince: "上海",
-    hometownCity: "上海",
-    futureCity: "上海",
-  },
-  {
-    id: 4004,
-    name: "周屿",
-    initials: "周",
-    headline: "浙江大学 · 大四 · 计算机",
-    commonGround: "你们都选了运动话题",
-    availability: "每天傍晚",
-    campusName: "浙江大学",
-    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_4,
-    tags: ["游戏", "篮球", "旅行", "编程", "火锅"],
-    bio: "即将毕业，想在校园里留下一些美好回忆。喜欢打篮球、玩游戏，也热爱旅行，计划毕业前去一趟西藏。",
-    images: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
-      IMAGE_PATHS.PRODUCTS.FOOD_2,
-    ],
-    isSameSchool: false,
-    isSameMajor: false,
-    commonCircleCount: 0,
-    height: 180,
-    educationLevel: "bachelor",
-    photoGallery: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
-      IMAGE_PATHS.PRODUCTS.FOOD_2,
-    ],
-    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_4,
-    personalVideoUrl: "",
-    profileBackgroundUrl: "",
-    verificationBadgeLevel: "school",
-    relationshipStatus: "never",
-    hometownProvince: "浙江",
-    hometownCity: "杭州",
-    futureCity: "杭州",
-  },
-  {
-    id: 4005,
-    name: "沈念",
-    initials: "沈",
-    headline: "中国人民大学 · 大一 · 新闻传播",
-    commonGround: "你们都选了咖啡话题",
-    availability: "下午没课的时候",
-    campusName: "中国人民大学",
-    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_5,
-    tags: ["阅读", "写作", "咖啡", "新闻", "民谣"],
-    bio: "刚来学校不久，想多认识一些朋友。喜欢阅读和写作，梦想是成为一名记者。平时会去咖啡馆写稿，欢迎来找我聊天。",
-    images: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
-      IMAGE_PATHS.PRODUCTS.MERCH_2,
-    ],
-    isSameSchool: false,
-    isSameMajor: false,
-    commonCircleCount: 0,
-    height: 168,
-    educationLevel: "bachelor",
-    photoGallery: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
-      IMAGE_PATHS.PRODUCTS.MERCH_2,
-    ],
-    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_5,
-    personalVideoUrl: "",
-    profileBackgroundUrl: "",
-    verificationBadgeLevel: "none",
-    relationshipStatus: "never",
-    hometownProvince: "北京",
-    hometownCity: "北京",
-    futureCity: "北京",
-  },
-  {
-    id: 4006,
-    name: "苏晚",
-    initials: "苏",
-    headline: "南京大学 · 大三 · 法学",
-    commonGround: "你们都选了阅读话题",
-    availability: "周二、周四晚上",
-    campusName: "南京大学",
-    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_6,
-    tags: ["辩论", "古典音乐", "阅读", "法学", "博物馆"],
-    bio: "理性与感性并存。喜欢辩论，也热爱古典音乐。希望找到一个能聊得来的人，一起去看交响乐演出。",
-    images: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
-      IMAGE_PATHS.PRODUCTS.TICKET_1,
-    ],
-    isSameSchool: false,
-    isSameMajor: false,
-    commonCircleCount: 0,
-    height: 170,
-    educationLevel: "bachelor",
-    photoGallery: [
-      IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
-      IMAGE_PATHS.PRODUCTS.TICKET_1,
-    ],
-    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_6,
-    personalVideoUrl: "",
-    profileBackgroundUrl: "",
-    verificationBadgeLevel: "school",
-    relationshipStatus: "divorced",
-    hometownProvince: "江苏",
-    hometownCity: "南京",
-    futureCity: "南京",
-  },
-  {
-    id: 4007,
-    name: "陆辰",
-    initials: "陆",
-    headline: "武汉大学 · 研二 · 医学",
-    commonGround: "你们都选了户外话题",
-    availability: "周末全天",
-    campusName: "武汉大学",
-    avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_7,
-    tags: ["户外", "露营", "爬山", "医学", "纪录片"],
-    bio: "医学生，平时比较忙，但周末一定会给自己放风。喜欢爬山和露营，觉得大自然最能治愈人心。",
-    images: [
-      IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
-      IMAGE_PATHS.PRODUCTS.TICKET_2,
-    ],
-    isSameSchool: false,
-    isSameMajor: false,
-    commonCircleCount: 0,
-    height: 175,
-    educationLevel: "master",
-    photoGallery: [
-      IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
-      IMAGE_PATHS.PRODUCTS.TICKET_2,
-    ],
-    halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_7,
-    personalVideoUrl: "",
-    profileBackgroundUrl: "",
-    verificationBadgeLevel: "idcard",
-    relationshipStatus: "never",
-    hometownProvince: "湖北",
-    hometownCity: "武汉",
-    futureCity: "武汉",
-  },
-];
+function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
+  return [
+    {
+      id: 4001,
+      name: t("mockData.recommendedPeople.name1"),
+      initials: "夏",
+      headline: t("mockData.recommendedPeople.headline1"),
+      commonGround: t("mockData.recommendedPeople.commonGround1"),
+      availability: t("mockData.recommendedPeople.availability1"),
+      campusName: t("mockData.recommendedPeople.campusName1"),
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_1,
+      tags: ["咖啡", "电影", "夜跑", "心理学", "猫奴"],
+      bio: t("mockData.recommendedPeople.bio1"),
+      images: [
+        IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
+      ],
+      isSameSchool: false,
+      isSameMajor: false,
+      commonCircleCount: 0,
+      height: 165,
+      educationLevel: "bachelor",
+      photoGallery: [
+        IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
+      ],
+      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_1,
+      personalVideoUrl: "",
+      profileBackgroundUrl: "",
+      verificationBadgeLevel: "school",
+      relationshipStatus: "never",
+      hometownProvince: t("mockData.recommendedPeople.hometownProvince1"),
+      hometownCity: t("mockData.recommendedPeople.hometownCity1"),
+      futureCity: t("mockData.recommendedPeople.futureCity1"),
+    },
+    {
+      id: 4002,
+      name: t("mockData.recommendedPeople.name2"),
+      initials: "顾",
+      headline: t("mockData.recommendedPeople.headline2"),
+      commonGround: t("mockData.recommendedPeople.commonGround2"),
+      availability: t("mockData.recommendedPeople.availability2"),
+      campusName: t("mockData.recommendedPeople.campusName2"),
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_2,
+      tags: ["美食", "音乐", "探店", "建筑", "胶片"],
+      bio: t("mockData.recommendedPeople.bio2"),
+      images: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
+        IMAGE_PATHS.PRODUCTS.FOOD_1,
+      ],
+      isSameSchool: false,
+      isSameMajor: false,
+      commonCircleCount: 0,
+      height: 178,
+      educationLevel: "master",
+      photoGallery: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
+        IMAGE_PATHS.PRODUCTS.FOOD_1,
+      ],
+      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_2,
+      personalVideoUrl: "",
+      profileBackgroundUrl: "",
+      verificationBadgeLevel: "school",
+      relationshipStatus: "never",
+      hometownProvince: t("mockData.recommendedPeople.hometownProvince2"),
+      hometownCity: t("mockData.recommendedPeople.hometownCity2"),
+      futureCity: t("mockData.recommendedPeople.futureCity2"),
+    },
+    {
+      id: 4003,
+      name: t("mockData.recommendedPeople.name3"),
+      initials: "林",
+      headline: t("mockData.recommendedPeople.headline3"),
+      commonGround: t("mockData.recommendedPeople.commonGround3"),
+      availability: t("mockData.recommendedPeople.availability3"),
+      campusName: t("mockData.recommendedPeople.campusName3"),
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_3,
+      tags: ["语言", "看展", "摄影", "日系", "手账"],
+      bio: t("mockData.recommendedPeople.bio3"),
+      images: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY,
+        IMAGE_PATHS.PRODUCTS.MERCH_1,
+      ],
+      isSameSchool: false,
+      isSameMajor: false,
+      commonCircleCount: 0,
+      height: 162,
+      educationLevel: "bachelor",
+      photoGallery: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY,
+        IMAGE_PATHS.PRODUCTS.MERCH_1,
+      ],
+      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_3,
+      personalVideoUrl: "",
+      profileBackgroundUrl: "",
+      verificationBadgeLevel: "email",
+      relationshipStatus: "never",
+      hometownProvince: t("mockData.recommendedPeople.hometownProvince3"),
+      hometownCity: t("mockData.recommendedPeople.hometownCity3"),
+      futureCity: t("mockData.recommendedPeople.futureCity3"),
+    },
+    {
+      id: 4004,
+      name: t("mockData.recommendedPeople.name4"),
+      initials: "周",
+      headline: t("mockData.recommendedPeople.headline4"),
+      commonGround: t("mockData.recommendedPeople.commonGround4"),
+      availability: t("mockData.recommendedPeople.availability4"),
+      campusName: t("mockData.recommendedPeople.campusName4"),
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_4,
+      tags: ["游戏", "篮球", "旅行", "编程", "火锅"],
+      bio: t("mockData.recommendedPeople.bio4"),
+      images: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
+        IMAGE_PATHS.PRODUCTS.FOOD_2,
+      ],
+      isSameSchool: false,
+      isSameMajor: false,
+      commonCircleCount: 0,
+      height: 180,
+      educationLevel: "bachelor",
+      photoGallery: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
+        IMAGE_PATHS.PRODUCTS.FOOD_2,
+      ],
+      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_4,
+      personalVideoUrl: "",
+      profileBackgroundUrl: "",
+      verificationBadgeLevel: "school",
+      relationshipStatus: "never",
+      hometownProvince: t("mockData.recommendedPeople.hometownProvince4"),
+      hometownCity: t("mockData.recommendedPeople.hometownCity4"),
+      futureCity: t("mockData.recommendedPeople.futureCity4"),
+    },
+    {
+      id: 4005,
+      name: t("mockData.recommendedPeople.name5"),
+      initials: "沈",
+      headline: t("mockData.recommendedPeople.headline5"),
+      commonGround: t("mockData.recommendedPeople.commonGround5"),
+      availability: t("mockData.recommendedPeople.availability5"),
+      campusName: t("mockData.recommendedPeople.campusName5"),
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_5,
+      tags: ["阅读", "写作", "咖啡", "新闻", "民谣"],
+      bio: t("mockData.recommendedPeople.bio5"),
+      images: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
+        IMAGE_PATHS.PRODUCTS.MERCH_2,
+      ],
+      isSameSchool: false,
+      isSameMajor: false,
+      commonCircleCount: 0,
+      height: 168,
+      educationLevel: "bachelor",
+      photoGallery: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
+        IMAGE_PATHS.PRODUCTS.MERCH_2,
+      ],
+      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_5,
+      personalVideoUrl: "",
+      profileBackgroundUrl: "",
+      verificationBadgeLevel: "none",
+      relationshipStatus: "never",
+      hometownProvince: t("mockData.recommendedPeople.hometownProvince5"),
+      hometownCity: t("mockData.recommendedPeople.hometownCity5"),
+      futureCity: t("mockData.recommendedPeople.futureCity5"),
+    },
+    {
+      id: 4006,
+      name: t("mockData.recommendedPeople.name6"),
+      initials: "苏",
+      headline: t("mockData.recommendedPeople.headline6"),
+      commonGround: t("mockData.recommendedPeople.commonGround6"),
+      availability: t("mockData.recommendedPeople.availability6"),
+      campusName: t("mockData.recommendedPeople.campusName6"),
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_6,
+      tags: ["辩论", "古典音乐", "阅读", "法学", "博物馆"],
+      bio: t("mockData.recommendedPeople.bio6"),
+      images: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
+        IMAGE_PATHS.PRODUCTS.TICKET_1,
+      ],
+      isSameSchool: false,
+      isSameMajor: false,
+      commonCircleCount: 0,
+      height: 170,
+      educationLevel: "bachelor",
+      photoGallery: [
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
+        IMAGE_PATHS.PRODUCTS.TICKET_1,
+      ],
+      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_6,
+      personalVideoUrl: "",
+      profileBackgroundUrl: "",
+      verificationBadgeLevel: "school",
+      relationshipStatus: "divorced",
+      hometownProvince: t("mockData.recommendedPeople.hometownProvince6"),
+      hometownCity: t("mockData.recommendedPeople.hometownCity6"),
+      futureCity: t("mockData.recommendedPeople.futureCity6"),
+    },
+    {
+      id: 4007,
+      name: t("mockData.recommendedPeople.name7"),
+      initials: "陆",
+      headline: t("mockData.recommendedPeople.headline7"),
+      commonGround: t("mockData.recommendedPeople.commonGround7"),
+      availability: t("mockData.recommendedPeople.availability7"),
+      campusName: t("mockData.recommendedPeople.campusName7"),
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_7,
+      tags: ["户外", "露营", "爬山", "医学", "纪录片"],
+      bio: t("mockData.recommendedPeople.bio7"),
+      images: [
+        IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+        IMAGE_PATHS.PRODUCTS.TICKET_2,
+      ],
+      isSameSchool: false,
+      isSameMajor: false,
+      commonCircleCount: 0,
+      height: 175,
+      educationLevel: "master",
+      photoGallery: [
+        IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+        IMAGE_PATHS.PRODUCTS.TICKET_2,
+      ],
+      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_7,
+      personalVideoUrl: "",
+      profileBackgroundUrl: "",
+      verificationBadgeLevel: "idcard",
+      relationshipStatus: "never",
+      hometownProvince: t("mockData.recommendedPeople.hometownProvince7"),
+      hometownCity: t("mockData.recommendedPeople.hometownCity7"),
+      futureCity: t("mockData.recommendedPeople.futureCity7"),
+    },
+  ];
+}
 
 const mockLoggedInSession: UserSession = {
   userId: "user-1001",
   loggedIn: true,
   loginMethod: "wechat",
-  displayName: "测试用户",
+  displayName: t("mockData.session.testDisplayName"),
   phoneBound: false,
   profileCompleted: true,
   campusVerified: true,
   scheduleCompleted: true,
-  campusName: "北京大学",
+  campusName: t("mockData.session.defaultCampus"),
   featureFlags: {
     chat_ai_enabled: false,
   },
@@ -379,16 +400,16 @@ let loginHero: LoginHeroConfig = {
   heroVideoUrl: null,
   heroPosterUrl: null,
   heroAnimationTheme: "campus-night",
-  heroTitle: "校园恋爱",
-  heroSubtitle: "先从推荐的人、讨论圈、活动和临时聊天开始认识彼此。",
+  heroTitle: t("mockData.session.heroTitle"),
+  heroSubtitle: t("mockData.session.heroSubtitle"),
   videoFallbackToAnimation: true,
 };
 
 let basicProfile: BasicProfile = {
-  nickname: "星野",
-  bio: "安静、好奇，更喜欢一对一慢慢聊。",
-  grade: "大三",
-  pronouns: "她/她",
+  nickname: t("mockData.session.basicProfileNickname"),
+  bio: t("mockData.session.basicProfileBio"),
+  grade: t("mockData.session.basicProfileGrade"),
+  pronouns: t("mockData.session.basicProfilePronouns"),
 };
 
 /**
@@ -402,10 +423,13 @@ let extendedBasicProfile: UpdateBasicProfileRequest = {
   height: 165,
   educationLevel: "bachelor",
   relationshipStatus: "never",
-  hometownProvince: "广东",
-  hometownCity: "广州",
-  futureCity: "广州",
-  futurePlanTags: ["事业", "旅行"],
+  hometownProvince: t("mockData.session.extendedHometownProvince"),
+  hometownCity: t("mockData.session.extendedHometownCity"),
+  futureCity: t("mockData.session.extendedFutureCity"),
+  futurePlanTags: [
+    t("mockData.session.futurePlanTag1"),
+    t("mockData.session.futurePlanTag2"),
+  ],
 };
 
 /**
@@ -465,29 +489,32 @@ let profileStats: ProfileStats = {
 };
 
 let campusProfile: CampusProfile = {
-  city: "广州",
-  campusName: "南校区",
-  department: "工业设计",
+  city: t("mockData.session.campusCity"),
+  campusName: t("mockData.session.campusName"),
+  department: t("mockData.session.campusDept"),
   verificationStatus: "draft",
 };
 
 let scheduleProfile: ScheduleProfile = {
-  preferredCampusArea: "图书馆和北草坪",
-  preferredTimeWindows: ["今晚", "本周"],
+  preferredCampusArea: t("mockData.session.scheduleArea"),
+  preferredTimeWindows: [
+    t("mockData.session.scheduleTimeWindow1"),
+    t("mockData.session.scheduleTimeWindow2"),
+  ],
   courseBlocks: [
     {
       id: "b-1",
-      weekday: "周一",
+      weekday: t("mockData.session.weekdayMon"),
       start: "09:00",
       end: "10:30",
-      label: "设计课",
+      label: t("mockData.session.courseBlock1Label"),
     },
     {
       id: "b-2",
-      weekday: "周三",
+      weekday: t("mockData.session.weekdayWed"),
       start: "14:00",
       end: "15:30",
-      label: "专题讨论",
+      label: t("mockData.session.courseBlock2Label"),
     },
   ],
 };
@@ -496,16 +523,16 @@ const matchFormConfig: MatchFormConfig = {
   sections: [
     {
       id: "intent",
-      title: "匹配目标",
+      title: t("mockData.common.matchTopicLabel"),
       fields: [
         {
           id: "matchIntent",
           kind: "single-select",
-          label: "从什么开始",
+          label: t("mockData.common.matchTopicLabel"),
           options: [
-            { id: "topic", label: "话题匹配" },
-            { id: "coffee", label: "咖啡散步" },
-            { id: "study", label: "自习搭子" },
+            { id: "topic", label: t("mockData.topics.default") },
+            { id: "coffee", label: t("mockData.topics.coffee") },
+            { id: "study", label: t("mockData.topics.study") },
           ],
           min: null,
           max: null,
@@ -514,17 +541,17 @@ const matchFormConfig: MatchFormConfig = {
     },
     {
       id: "filters",
-      title: "筛选条件",
+      title: t("mockData.common.filterTitle"),
       fields: [
         {
           id: "topicIds",
           kind: "multi-select",
-          label: "话题",
+          label: t("mockData.common.filterTopicLabel"),
           options: [
-            { id: "music", label: "音乐" },
-            { id: "film", label: "电影" },
-            { id: "sports", label: "运动" },
-            { id: "food", label: "美食" },
+            { id: "music", label: t("mockData.topics.music") },
+            { id: "film", label: t("mockData.topics.film") },
+            { id: "sports", label: t("mockData.topics.sports") },
+            { id: "food", label: t("mockData.topics.food") },
           ],
           min: null,
           max: null,
@@ -532,11 +559,11 @@ const matchFormConfig: MatchFormConfig = {
         {
           id: "timeWindow",
           kind: "single-select",
-          label: "时间",
+          label: t("mockData.common.filterTimeLabel"),
           options: [
-            { id: "today-evening", label: "今晚" },
-            { id: "tomorrow", label: "明天" },
-            { id: "this-week", label: "本周" },
+            { id: "today-evening", label: t("mockData.common.timeTodayEvening") },
+            { id: "tomorrow", label: t("mockData.common.timeTomorrow") },
+            { id: "this-week", label: t("mockData.common.timeThisWeek") },
           ],
           min: null,
           max: null,
@@ -544,7 +571,7 @@ const matchFormConfig: MatchFormConfig = {
         {
           id: "durationMinutes",
           kind: "stepper",
-          label: "聊天时长",
+          label: t("mockData.common.filterDurationLabel"),
           options: [],
           min: 15,
           max: 60,
@@ -557,10 +584,10 @@ const matchFormConfig: MatchFormConfig = {
 let matchResult: MatchResult = {
   id: "match-1",
   queueStatus: "connected",
-  topicLabel: "音乐",
-  partnerHeadline: "大二，喜欢低压力的第一次见面。",
+  topicLabel: t("mockData.common.matchResultTopicLabel"),
+  partnerHeadline: t("mockData.tempChat.partnerHeadline"),
   countdownMinutes: 24,
-  recommendedPrompt: "可以先问问，对方心里最轻松的一次校园初见应该是什么样。",
+  recommendedPrompt: t("mockData.tempChat.recommendedPrompt"),
   tempChatSessionId: "session-1",
 };
 let nextMatchQueueStatus: MatchResult["queueStatus"] | null = null;
@@ -580,18 +607,18 @@ let submissions: SubmissionRecord[] = [
   {
     id: 1,
     type: "feedback",
-    title: "视频主视觉需要稳定兜底",
+    title: t("mockData.submissions.title1"),
     status: "processing",
-    latestReplySummary: "兜底逻辑已经纳入客户端壳层处理。",
+    latestReplySummary: t("mockData.submissions.reply1"),
     submittedAt: "2026-05-18 09:18",
     convertedActivityId: null,
   },
   {
     id: 2,
     type: "suggestion",
-    title: "首页保留讨论和活动入口",
+    title: t("mockData.submissions.title2"),
     status: "reviewed",
-    latestReplySummary: "已接受，纳入第一版 IA 调整。",
+    latestReplySummary: t("mockData.submissions.reply2"),
     submittedAt: "2026-05-17 18:42",
     convertedActivityId: null,
   },
@@ -624,9 +651,9 @@ function buildMatchResult(
     id,
     queueStatus,
     topicLabel,
-    partnerHeadline: "大二，喜欢低压力的第一次见面。",
+    partnerHeadline: t("mockData.tempChat.partnerHeadline"),
     countdownMinutes: queueStatus === "expired" ? 0 : durationMinutes,
-    recommendedPrompt: "可以先问问，对方心里最轻松的一次校园初见应该是什么样。",
+    recommendedPrompt: t("mockData.tempChat.recommendedPrompt"),
     tempChatSessionId: queueStatus === "connected" ? `session-${id}` : null,
   };
 }
@@ -635,66 +662,66 @@ function buildHomeDashboard(): HomeDashboard {
   return {
     scheduleSummary: {
       id: "schedule-summary",
-      title: `已保存 ${scheduleProfile.courseBlocks.length} 个课表块`,
-      subtitle: "你大部分的空闲时间会从 18:30 之后开始。",
-      meta: `偏好区域：${scheduleProfile.preferredCampusArea}`,
-      actionLabel: "更新课表",
+      title: t("mockData.common.scheduleSummaryTitle", { n: scheduleProfile.courseBlocks.length }),
+      subtitle: t("mockData.common.scheduleSummarySubtitle"),
+      meta: t("mockData.common.scheduleSummaryMeta", { area: scheduleProfile.preferredCampusArea }),
+      actionLabel: t("mockData.common.scheduleSummaryAction"),
     },
     freeSlots: [
       {
         id: "free-1",
-        title: "今晚 19:00-20:30",
-        subtitle: "北草坪和咖啡馆都可以安排。",
-        meta: "适合轻松散步或喝杯咖啡",
-        actionLabel: "用于推荐",
+        title: t("mockData.common.freeSlot1Title"),
+        subtitle: t("mockData.common.freeSlot1Subtitle"),
+        meta: t("mockData.common.freeSlot1Meta"),
+        actionLabel: t("mockData.common.freeSlot1Action"),
       },
       {
         id: "free-2",
-        title: "周五 16:00-18:00",
-        subtitle: "时间足够，适合更完整的一次聊天。",
-        meta: "也有安静的室内兜底地点",
-        actionLabel: "保留空档",
+        title: t("mockData.common.freeSlot2Title"),
+        subtitle: t("mockData.common.freeSlot2Subtitle"),
+        meta: t("mockData.common.freeSlot2Meta"),
+        actionLabel: t("mockData.common.freeSlot2Action"),
       },
     ],
     aiPlan: {
       id: "ai-plan",
-      title: "人工编辑兜底计划",
-      subtitle: "当前 AI 关闭，所以首页展示静态推荐块。",
-      meta: "当前开关 chat_ai_enabled = false",
+      title: t("mockData.common.aiPlanTitle"),
+      subtitle: t("mockData.common.aiPlanSubtitle"),
+      meta: t("mockData.common.aiPlanMeta"),
       actionLabel: null,
     },
     recommendedPeople: clone(recommendedPeople),
-    peopleLead: "把推荐位作为进入聊天的主入口。",
+    peopleLead: t("mockData.common.peopleLead"),
     activityPreview: {
-      title: "活动入口",
-      subtitle: "先看近期小活动，再决定是否去匹配或提交新的活动提案。",
-      actionLabel: "查看活动",
-      items: activityRecommendations.map((item) => ({
+      title: t("mockData.common.activityPreviewTitle"),
+      subtitle: t("mockData.common.activityPreviewSubtitle"),
+      actionLabel: t("mockData.common.activityPreviewAction"),
+      items: buildActivityRecommendations().map((item) => ({
         id: item.id,
         title: item.title,
         subtitle: item.location,
         meta: item.scheduleText,
       })),
-      pulseTitle: discussionRecommendations[0]?.title ?? null,
-      pulseMeta: discussionRecommendations[0]?.heatLabel ?? null,
+      pulseTitle: buildDiscussionRecommendations()[0]?.title ?? null,
+      pulseMeta: buildDiscussionRecommendations()[0]?.heatLabel ?? null,
     },
   };
 }
 
 function toTopicLabel(topicId?: string) {
   if (topicId === "music") {
-    return "音乐";
+    return t("mockData.topics.music");
   }
   if (topicId === "film") {
-    return "电影";
+    return t("mockData.topics.film");
   }
   if (topicId === "sports") {
-    return "运动";
+    return t("mockData.topics.sports");
   }
   if (topicId === "food") {
-    return "美食";
+    return t("mockData.topics.food");
   }
-  return topicId || "话题";
+  return topicId || t("mockData.topics.default");
 }
 
 function resolveRecommendedPerson(payload: CreateTempChatSessionRequest): RecommendedPersonSummary {
@@ -802,7 +829,7 @@ function previewMessage(sessionView: TempChatSession) {
 
   if (!lastMessage) {
     return {
-      lastMessagePreview: "刚建立临时会话，等你开场。",
+      lastMessagePreview: t("mockData.tempChat.lastMessagePreview"),
       lastMessageSentAt: null,
     };
   }
@@ -810,9 +837,9 @@ function previewMessage(sessionView: TempChatSession) {
   return {
     lastMessagePreview:
       lastMessage.kind === "voice"
-        ? "语音消息"
+        ? t("mockData.tempChat.voiceMessage")
         : lastMessage.kind === "emoji"
-          ? "表情消息"
+          ? t("mockData.tempChat.emojiMessage")
           : lastMessage.body,
     lastMessageSentAt: lastMessage.sentAt,
   };
@@ -853,7 +880,7 @@ function buildChatOverview(): ChatOverview {
         return Date.parse(rightMeta.updatedAt) - Date.parse(leftMeta.updatedAt);
       })
       .map((item) => toChatSessionSummary(item)),
-    emptyStateLead: "还没有临时会话时，继续从推荐的人进入。",
+    emptyStateLead: t("mockData.tempChat.emptyState"),
     recommendedPeople: clone(recommendedPeople),
   };
 }
@@ -944,17 +971,17 @@ export const mockFixtures = {
     if (session.messages) {
       session.messages = session.messages.map((m: Schemas["ChatMessage"]) =>
         m.id === messageId
-          ? { ...m, recalled: true, body: "[已撤回]" }
+          ? { ...m, recalled: true, body: t("mockData.tempChat.recalledMessage") }
           : m
       );
     }
     return clone(session);
   },
   getDiscussionRecommendations(): DiscussionRecommendation[] {
-    return clone(discussionRecommendations);
+    return clone(buildDiscussionRecommendations());
   },
   getActivityRecommendations(): ActivityRecommendation[] {
-    return clone(activityRecommendations);
+    return clone(buildActivityRecommendations());
   },
   getMatchFormConfig(): MatchFormConfig {
     return clone(matchFormConfig);
@@ -968,7 +995,7 @@ export const mockFixtures = {
     return clone(matchResult);
   },
   createQuickMatch(payload: Schemas["QuickMatchRequest"]): MatchResult {
-    matchResult = buildMatchResult(`match-${Date.now()}`, "快速匹配", payload.durationMinutes);
+    matchResult = buildMatchResult(`match-${Date.now()}`, t("mockData.tempChat.quickMatchTopic"), payload.durationMinutes);
     return clone(matchResult);
   },
   getMatchResult(id: string): MatchResult {
@@ -1093,8 +1120,8 @@ export const mockFixtures = {
       type,
       title: payload.title,
       status: "submitted",
-      latestReplySummary: "你的提交已进入处理队列。",
-      submittedAt: "刚刚",
+      latestReplySummary: t("mockData.submissions.queueReply"),
+      submittedAt: t("mockData.submissions.submittedAt"),
       convertedActivityId: null,
     };
     submissions = [record, ...submissions];
@@ -1140,35 +1167,44 @@ export const mockFixtures = {
   getIcebreakers(peerUserId: number): {
     items: Array<{ id: number; content: string; category: string; source: string }>;
   } {
+    // SubTask 3.3.4：破冰话题文案与分类标签均通过 i18n key 解析，
+    // 确保 locale 切换后返回的 mock 数据能跟随当前语言。
+    const catHobby = t("mockData.icebreakers.categoryHobby");
+    const catCampus = t("mockData.icebreakers.categoryCampus");
+    const catAcademic = t("mockData.icebreakers.categoryAcademic");
+    const catInvite = t("mockData.icebreakers.categoryInvite");
+    const catIcebreak = t("mockData.icebreakers.categoryIcebreak");
+    const catDaily = t("mockData.icebreakers.categoryDaily");
+
     const icebreakerPool: Record<number, Array<{ id: number; content: string; category: string; source: string }>> = {
       1: [
-        { id: 101, content: "看到你也喜欢看电影，最近有什么好片推荐吗？", category: "兴趣爱好", source: "profile_interests" },
-        { id: 102, content: "听说你也爱喝咖啡，学校附近哪家咖啡馆最值得去？", category: "校园生活", source: "profile_interests" },
-        { id: 103, content: "你的专业听起来很有趣，平时课程压力大吗？", category: "学业交流", source: "profile_department" },
-        { id: 104, content: "看到你的课表里有设计课，觉得很厉害！", category: "学业交流", source: "profile_schedule" },
-        { id: 105, content: "周末有计划吗？要不要一起去图书馆？", category: "邀约", source: "common_ground" },
+        { id: 101, content: t("mockData.icebreakers.user1_1"), category: catHobby, source: "profile_interests" },
+        { id: 102, content: t("mockData.icebreakers.user1_2"), category: catCampus, source: "profile_interests" },
+        { id: 103, content: t("mockData.icebreakers.user1_3"), category: catAcademic, source: "profile_department" },
+        { id: 104, content: t("mockData.icebreakers.user1_4"), category: catAcademic, source: "profile_schedule" },
+        { id: 105, content: t("mockData.icebreakers.user1_5"), category: catInvite, source: "common_ground" },
       ],
       2: [
-        { id: 201, content: "你也选了美食话题，校园食堂哪个窗口最好吃？", category: "校园生活", source: "profile_interests" },
-        { id: 202, content: "看到你喜欢摄影，平时用什么设备拍照呀？", category: "兴趣爱好", source: "profile_interests" },
-        { id: 203, content: "你们都在同一个城市，周末有什么好去处推荐吗？", category: "邀约", source: "common_ground" },
-        { id: 204, content: "你最喜欢什么类型的音乐？最近有在听什么歌吗？", category: "兴趣爱好", source: "profile_interests" },
-        { id: 205, content: "如果用一个词形容你的大学生活，会是什么？", category: "校园生活", source: "general" },
+        { id: 201, content: t("mockData.icebreakers.user2_1"), category: catCampus, source: "profile_interests" },
+        { id: 202, content: t("mockData.icebreakers.user2_2"), category: catHobby, source: "profile_interests" },
+        { id: 203, content: t("mockData.icebreakers.user2_3"), category: catInvite, source: "common_ground" },
+        { id: 204, content: t("mockData.icebreakers.user2_4"), category: catHobby, source: "profile_interests" },
+        { id: 205, content: t("mockData.icebreakers.user2_5"), category: catCampus, source: "general" },
       ],
       3: [
-        { id: 301, content: "你也喜欢运动！平时跑步还是打球多？", category: "兴趣爱好", source: "profile_interests" },
-        { id: 302, content: "你们学校的操场晚上开放吗？想约跑步", category: "邀约", source: "common_ground" },
-        { id: 303, content: "日语系听起来好棒，学日语多久了？", category: "学业交流", source: "profile_department" },
-        { id: 304, content: "周三傍晚有空吗？想找个自习搭子", category: "邀约", source: "profile_schedule" },
-        { id: 305, content: "你日常喜欢追剧还是看电影多一点？", category: "兴趣爱好", source: "general" },
+        { id: 301, content: t("mockData.icebreakers.user3_1"), category: catHobby, source: "profile_interests" },
+        { id: 302, content: t("mockData.icebreakers.user3_2"), category: catInvite, source: "common_ground" },
+        { id: 303, content: t("mockData.icebreakers.user3_3"), category: catAcademic, source: "profile_department" },
+        { id: 304, content: t("mockData.icebreakers.user3_4"), category: catInvite, source: "profile_schedule" },
+        { id: 305, content: t("mockData.icebreakers.user3_5"), category: catHobby, source: "general" },
       ],
     };
     const defaultIcebreakers = [
-      { id: 901, content: "嗨，很高兴认识你！最近过得怎么样？", category: "破冰", source: "general" },
-      { id: 902, content: "看到你也在这个校园，好巧！平时喜欢去哪里逛？", category: "校园生活", source: "common_ground" },
-      { id: 903, content: "你平时喜欢做什么？有什么特别的兴趣爱好吗？", category: "兴趣爱好", source: "general" },
-      { id: 904, content: "如果用一个词形容你的大学生活，会是什么？", category: "校园生活", source: "general" },
-      { id: 905, content: "最近有什么有意思的事情想分享吗？", category: "日常", source: "general" },
+      { id: 901, content: t("mockData.icebreakers.default1"), category: catIcebreak, source: "general" },
+      { id: 902, content: t("mockData.icebreakers.default2"), category: catCampus, source: "common_ground" },
+      { id: 903, content: t("mockData.icebreakers.default3"), category: catHobby, source: "general" },
+      { id: 904, content: t("mockData.icebreakers.default4"), category: catCampus, source: "general" },
+      { id: 905, content: t("mockData.icebreakers.default5"), category: catDaily, source: "general" },
     ];
     const items = icebreakerPool[peerUserId] ?? defaultIcebreakers;
     return clone({ items });
@@ -1189,14 +1225,14 @@ export const mockFixtures = {
   } {
     return clone({
       currentTier: 'L2_ATTENTION',
-      tierLabel: '表达喜欢',
+      tierLabel: t('mockData.socialProgress.tierLabel'),
       exposureCount: 15,
       likeCount: 4,
       matchCount: 0,
       chatCount: 0,
       circleCount: 0,
       activityCount: 0,
-      nextAction: '继续浏览推荐，发现更多心动',
+      nextAction: t('mockData.socialProgress.nextAction'),
       progressPercentage: 33,
     });
   },
@@ -1309,7 +1345,7 @@ export const mockFixtures = {
    * @param filter - 筛选条件（所有字段可选）
    */
   getRecommendations(filter: RecommendationFilter): RecommendedPerson[] {
-    const filtered = recommendedPersonsMock.filter((person) => {
+    const filtered = buildRecommendedPersonsMock().filter((person) => {
       // 身高范围筛选
       if (filter.heightMin !== undefined) {
         if (person.height === undefined || person.height < filter.heightMin) {

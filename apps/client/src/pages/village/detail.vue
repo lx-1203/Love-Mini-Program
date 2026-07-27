@@ -4,7 +4,7 @@
  * 展示完整帖子内容、评论列表和互动功能
  * 包含作者交互卡片（关注/私信/校友标签）、相似作者推荐和转发功能
  */
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
@@ -15,6 +15,8 @@ import { openAppPath } from "../../utils/navigation";
 import SafeImage from "../../components/common/SafeImage.vue";
 import PostReportDialog from "../../components/social/PostReportDialog.vue";
 import { IMAGE_PATHS } from "../../config/images";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
 
 const villageStore = useVillageStore();
 const messagesStore = useMessagesStore();
@@ -36,12 +38,60 @@ const isSharing = ref(false);
 /** 帖子举报弹窗是否显示 */
 const showReportDialog = ref(false);
 
+/**
+ * SubTask 5.5.2：图片加载失败 key 集合。
+ *
+ * <p>记录已触发 @error 的图片唯一 key，模板通过 contains 判断切换为占位元素，
+ * 避免 broken image 残留显示。key 命名规则：</p>
+ * <ul>
+ *   <li>{@code author} — 作者头像</li>
+ *   <li>{@code comment-{id}} — 评论头像</li>
+ *   <li>{@code similar-{userId}} — 相似作者头像</li>
+ *   <li>{@code post-img-{idx}} — 帖子正文图片</li>
+ * </ul>
+ */
+const failedImageKeys = ref<Set<string>>(new Set());
+
+/**
+ * SubTask 5.5.2：图片 @error 回调。
+ *
+ * <p>将失败图片的 key 加入集合，触发模板 v-if 切换为占位元素（首字 / 默认占位图）。
+ * 同一 key 仅记录一次，避免重复触发。</p>
+ *
+ * @param key 图片唯一标识
+ */
+function onImageError(key: string) {
+  if (!failedImageKeys.value.has(key)) {
+    failedImageKeys.value = new Set(failedImageKeys.value).add(key);
+  }
+}
+
+/** SubTask 5.5.2：判断图片是否已失败，用于模板 v-if 切换占位元素 */
+function isImageFailed(key: string): boolean {
+  return failedImageKeys.value.has(key);
+}
+
 const pageVisible = ref(false);
+/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
+    pageEnterTimer = null;
     pageVisible.value = true;
   }, 30);
+});
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
+ */
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
 });
 
 /**
@@ -387,11 +437,12 @@ onLoad((query) => {
         <view class="author-card__main">
           <view class="author-avatar">
             <image
-              v-if="currentPost.author.avatar"
+              v-if="currentPost.author.avatar && !isImageFailed('author')"
               class="author-avatar__img"
-              :src="currentPost.author.avatar"
+              :src="resolveMediaUrl(currentPost.author.avatar)"
               mode="aspectFill"
               lazy-load alt=""
+              @error="onImageError('author')"
             />
             <text v-else class="author-avatar__char">{{ currentPost.author.name[0] }}</text>
             <!-- 头像左上角身份徽章（校友） -->
@@ -455,13 +506,15 @@ onLoad((query) => {
 
           <!-- 图片网格 -->
           <view v-if="currentPost.images.length > 0" class="post-images">
-            <image
+            <!-- SubTask 5.2.4 / 5.5.2：列表图片使用 SafeImage，自动 lazy-load + @error 占位图回退 -->
+            <SafeImage
               v-for="(img, idx) in currentPost.images"
               :key="idx"
-              class="post-image"
+              custom-class="post-image"
               :src="img"
+              :fallback="IMAGE_PATHS.POST_PLACEHOLDER"
               mode="aspectFill"
-        lazy-load alt=""
+              :lazy-load="true"
             />
           </view>
 
@@ -510,10 +563,11 @@ onLoad((query) => {
           >
             <view class="comment-avatar">
               <image
-                v-if="comment.author.avatar"
+                v-if="comment.author.avatar && !isImageFailed('comment-' + comment.id)"
                 class="comment-avatar__img"
-                :src="comment.author.avatar"
+                :src="resolveMediaUrl(comment.author.avatar)"
                 mode="aspectFill" lazy-load alt=""
+                @error="onImageError('comment-' + comment.id)"
               />
               <text v-else class="comment-avatar__text">{{ comment.author.name[0] }}</text>
             </view>
@@ -559,10 +613,11 @@ onLoad((query) => {
             <view class="similar-author-main">
               <view class="similar-author-avatar">
                 <image
-                  v-if="author.avatar"
+                  v-if="author.avatar && !isImageFailed('similar-' + author.userId)"
                   class="similar-author-avatar__img"
-                  :src="author.avatar"
+                  :src="resolveMediaUrl(author.avatar)"
                   mode="aspectFill" lazy-load alt=""
+                  @error="onImageError('similar-' + author.userId)"
                 />
                 <text v-else class="similar-author-avatar__char">{{ author.name[0] }}</text>
                 <!-- 头像左上角身份徽章（校友） -->
@@ -766,7 +821,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: $bg-page;
 }
 
@@ -798,7 +854,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .back-icon {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $white;
   font-weight: 500;
 }
@@ -825,7 +881,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background: $white;
   margin: 20rpx 24rpx;
   padding: 28rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
   transition: transform 0.15s ease;
 }
@@ -863,7 +919,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .author-avatar__char {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
   color: $green-primary;
 }
@@ -899,7 +955,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .author-info__name {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 600;
   color: $text-primary;
   /* 修复（P1 BUG）：原实现缺少文本裁剪，长昵称会推动身份标签换行 */
@@ -916,7 +972,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   gap: 4rpx;
   padding: 4rpx 14rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   flex-shrink: 0;
 }
 
@@ -931,7 +987,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .identity-tag__text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $green-primary;
   font-weight: 600;
 }
@@ -969,12 +1025,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: inline-flex;
   align-items: center;
   padding: 8rpx 18rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $pink-light, var(--c-romance-200, #FBCFE8));
 }
 
 .author-tag__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $pink-primary;
   font-weight: 500;
 }
@@ -992,7 +1048,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   color: $text-secondary;
   background: $bg-page;
   padding: 8rpx 18rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   font-weight: 500;
 }
 
@@ -1026,7 +1082,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .action-btn--follow {
   flex: 1;
   padding: 18rpx 0;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   display: flex;
   align-items: center;
@@ -1050,7 +1106,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .action-btn--message {
   flex: 1;
   padding: 18rpx 0;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $pink-primary, var(--c-romance-400, #F472B6));
   display: flex;
   align-items: center;
@@ -1066,7 +1122,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .action-btn__text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
@@ -1086,7 +1142,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background: $white;
   padding: 28rpx 32rpx;
   margin: 0 24rpx 16rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
 }
 
@@ -1096,7 +1152,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .post-content {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: $text-primary;
   line-height: 1.8;
   display: block;
@@ -1114,7 +1170,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .post-image {
   width: calc(33.33% - 7rpx);
   height: 220rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   background: $bg-page;
 }
 
@@ -1126,11 +1182,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .post-tag {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $green-primary;
   background: $green-light;
   padding: 8rpx 18rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   font-weight: 500;
   transition: all 0.15s ease;
 }
@@ -1156,7 +1212,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .post-time {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -1166,7 +1222,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .post-stats__item {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -1175,7 +1231,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background: $white;
   padding: 28rpx 32rpx;
   margin: 0 24rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
 }
 
@@ -1186,7 +1242,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background: $white;
   padding: 28rpx 32rpx;
   margin: 16rpx 24rpx 0;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
 }
 
@@ -1195,14 +1251,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .similar-authors-title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: $text-primary;
   display: block;
 }
 
 .similar-authors-subtitle {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
   margin-top: 6rpx;
   display: block;
@@ -1260,7 +1316,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .similar-author-avatar__char {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: $green-primary;
 }
@@ -1300,13 +1356,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .similar-author-name {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 600;
   color: $text-primary;
 }
 
 .similar-author-headline {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
   display: block;
   margin-bottom: 10rpx;
@@ -1323,12 +1379,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .common-interest-label {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-secondary;
 }
 
 .common-interest-chip {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $pink-primary;
   font-weight: 500;
 }
@@ -1342,7 +1398,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .similar-author-actions .action-btn--message {
   flex: 1;
   padding: 14rpx 0;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1377,7 +1433,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .similar-author-actions .action-btn__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 600;
 }
 
@@ -1403,17 +1459,17 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .comments-title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: $text-primary;
 }
 
 .comments-count {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $green-primary;
   background: $green-light;
   padding: 4rpx 16rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   font-weight: 600;
 }
 
@@ -1442,7 +1498,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .loading-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-tertiary;
 }
 
@@ -1486,7 +1542,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .comment-avatar__text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: $green-primary;
 }
@@ -1504,18 +1560,18 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .comment-author {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: $text-primary;
 }
 
 .comment-time {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
 }
 
 .comment-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-secondary;
   line-height: 1.6;
   display: block;
@@ -1532,7 +1588,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   gap: 6rpx;
   padding: 8rpx 16rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: $white;
   transition: all 0.15s ease;
 }
@@ -1544,12 +1600,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .comment-like__icon {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
 .comment-like__count {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -1567,7 +1623,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .comments-empty__text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-tertiary;
 }
 
@@ -1586,13 +1642,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .empty-state__text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: $text-tertiary;
 }
 
 .empty-state__back {
   padding: 18rpx 48rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: all 0.15s ease;
@@ -1605,7 +1661,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .back-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
@@ -1628,9 +1684,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .comment-input {
   padding: 18rpx 28rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: $bg-page;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-primary;
 }
 
@@ -1649,7 +1705,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   min-height: 88rpx;
   min-width: 88rpx;
   padding: 12rpx 20rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   transition: all 0.15s ease;
 }
 
@@ -1661,13 +1717,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .footer-action__icon {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-tertiary;
   font-weight: 500;
 }
 
 .footer-action__count {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -1695,7 +1751,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .share-modal {
   width: 620rpx;
   background: $white;
-  border-radius: 28rpx;
+  border-radius: var(--r-xxl, 28rpx);
   overflow: hidden;
   box-shadow: 0 20rpx 60rpx var(--c-overlay-text-shadow-mid, var(--c-overlay-text-shadow-mid, rgba(0, 0, 0, 0.2)));
 }
@@ -1709,7 +1765,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .share-modal__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: $text-primary;
 }
@@ -1737,7 +1793,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .share-modal__close-icon {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-tertiary;
   font-weight: 600;
 }
@@ -1752,7 +1808,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 20rpx;
   border-radius: 20rpx;
   background: $bg-page;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-primary;
   box-sizing: border-box;
 }
@@ -1760,7 +1816,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .share-modal__count {
   display: block;
   text-align: right;
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
   margin-top: 12rpx;
 }
@@ -1774,7 +1830,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .share-modal__btn {
   flex: 1;
   padding: 22rpx 0;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1803,7 +1859,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .share-modal__btn-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: $text-secondary;
 }

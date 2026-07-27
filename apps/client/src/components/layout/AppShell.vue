@@ -133,6 +133,28 @@ function handleBack(): void {
   });
   // #endif
 }
+
+/**
+ * P6 a11y：Skip link 点击/键盘触发时，将焦点移到主内容区。
+ * 通过 id="shell-main-content" 让屏幕阅读器与键盘用户跳过头部导航直达内容。
+ * 兼容性：mp-weixin 不支持 DOM focus API，使用 uni.pageScrollTo 滚动到内容区作为兜底。
+ */
+function focusMainContent(): void {
+  // #ifdef H5
+  const el = document.getElementById('shell-main-content');
+  if (el) {
+    el.focus();
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  // #endif
+  // #ifndef H5
+  // mp-weixin / APP 端：无 DOM API，使用页面滚动到主体内容
+  uni.pageScrollTo({
+    scrollTop: 0,
+    duration: 200,
+  });
+  // #endif
+}
 </script>
 
 <template>
@@ -142,6 +164,17 @@ function handleBack(): void {
     role="main"
     :aria-label="title || subtitle || ''"
   >
+    <!-- P6 a11y：Skip link 跳到主内容（键盘 Tab 焦点首次进入时可见） -->
+    <view
+      class="shell__skip-link sr-only-focusable"
+      role="link"
+      :aria-label="t('common.skipToMain')"
+      tabindex="0"
+      @tap="focusMainContent"
+      @keydown.enter="focusMainContent"
+    >
+      <text class="shell__skip-link-text">{{ t('common.skipToMain') }}</text>
+    </view>
     <!-- 头部（仅 standard 变体显示） -->
     <view
       v-if="variant === 'standard'"
@@ -186,7 +219,12 @@ function handleBack(): void {
     />
 
     <!-- 主体内容 -->
-    <view class="shell__body" :style="{ paddingBottom: bodyPaddingBottom }">
+    <view
+      class="shell__body"
+      :style="{ paddingBottom: bodyPaddingBottom }"
+      id="shell-main-content"
+      tabindex="-1"
+    >
       <slot />
     </view>
 
@@ -279,7 +317,7 @@ function handleBack(): void {
 }
 
 .shell__back-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-brand, #3FCF8E);
   font-weight: 500;
 }
@@ -287,14 +325,14 @@ function handleBack(): void {
 .shell__eyebrow {
   display: block;
   color: var(--c-text-secondary, #5B6470);
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   margin-bottom: 8rpx;
   letter-spacing: 0;
 }
 
 .shell__title {
   display: block;
-  font-size: 44rpx;
+  font-size: var(--fs-5xl, 44rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1F2329);
 }
@@ -303,6 +341,26 @@ function handleBack(): void {
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  /* P6 a11y：让 id=shell-main-content 可被 focus（outline 通过全局 :focus-visible 处理） */
+  outline: none;
+}
+
+/* P6 a11y：Skip link 视觉隐藏，获得焦点时显示在顶部 */
+.shell__skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  background: var(--c-brand, #3FCF8E);
+  color: var(--c-text-inverse, #ffffff);
+  padding: 16rpx 24rpx;
+  border-radius: 0 0 var(--r-md, 12rpx) 0;
+  font-size: var(--fs-sm, 22rpx);
+}
+
+.shell__skip-link-text {
+  color: inherit;
+  font-weight: 600;
 }
 
 .shell__footer {

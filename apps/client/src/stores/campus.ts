@@ -2,6 +2,8 @@
 import { defineStore } from "pinia";
 import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 
 /* ========== 后端视图类型 ========== */
@@ -237,6 +239,14 @@ export interface CampusState {
     studentCardUrl: string;
     reviewComment: string;
   } | null;
+  /**
+   * Task 3.6.3：从后端 /api/v1/config/filter-options 动态加载的分类映射缓存。
+   *
+   * 仅缓存 campus_topic_category 维度的 {value: label} 映射，用于覆盖
+   * 本地 CAMPUS_CATEGORY_MAP 静态默认值。null 表示尚未加载，调用
+   * categoryLabelOf getter 时回退到 CAMPUS_CATEGORY_MAP。
+   */
+  dynamicCategoryMap: Record<string, string> | null;
 }
 
 /* ========== Mock 数据 ========== */
@@ -479,6 +489,8 @@ export const useCampusStore = defineStore("campus", {
     topicHasMore: true,
     certificationStatus: "unverified",
     certificationInfo: null,
+    // Task 3.6.3：初始为 null，触发 loadFilterOptionsFromBackend 后填充
+    dynamicCategoryMap: null,
   }),
 
   getters: {
@@ -491,9 +503,53 @@ export const useCampusStore = defineStore("campus", {
     isVerified: (state): boolean => {
       return state.certificationStatus === "verified";
     },
+
+    /**
+     * Task 3.6.3：根据分类 key 获取展示文案。
+     *
+     * 优先使用 dynamicCategoryMap（后端动态加载），未加载或未命中时
+     * 回退到本地 CAMPUS_CATEGORY_MAP 静态默认值，保证功能可用性。
+     *
+     * @param category - 校园话题分类 key
+     * @returns 展示文案（始终返回非空字符串，未匹配时返回原 key）
+     */
+    categoryLabelOf: (state) => (category: CampusTopicCategory): string => {
+      const dynamic = state.dynamicCategoryMap;
+      if (dynamic && typeof dynamic[category] === "string") {
+        return dynamic[category];
+      }
+      return CAMPUS_CATEGORY_MAP[category] ?? category;
+    },
   },
 
   actions: {
+    /**
+     * Task 3.6.3：从后端 /api/v1/config/filter-options 加载筛选选项，
+     * 提取 campus_topic_category 维度缓存到 dynamicCategoryMap。
+     *
+     * 调用时机：进入「校园话题列表页」时调用一次，后续可由用户下拉刷新触发。
+     * 失败时静默回退（保留 dynamicCategoryMap 当前值），不阻塞话题列表加载。
+     */
+    async loadFilterOptionsFromBackend() {
+      try {
+        // 动态 import 避免循环依赖（services/config → http → ... 与本 store 解耦）
+        const { loadFilterOptions } = await import("../services/config");
+        const options = await loadFilterOptions();
+        const campusTopicCategory = options.find(
+          (o) => o.category === "campus_topic_category",
+        );
+        if (campusTopicCategory && campusTopicCategory.options.length > 0) {
+          const map: Record<string, string> = {};
+          for (const opt of campusTopicCategory.options) {
+            map[opt.value] = opt.label;
+          }
+          this.dynamicCategoryMap = map;
+        }
+      } catch (_e) {
+        // 后端不可达：保留原 dynamicCategoryMap（可能为 null），getter 回退到 CAMPUS_CATEGORY_MAP
+      }
+    },
+
     /**
      * 切换分类
      * @param category - 话题分类
@@ -541,7 +597,7 @@ export const useCampusStore = defineStore("campus", {
         this.topicPage = page;
         this.topicHasMore = (data.content ?? []).length >= TOPIC_PAGE_SIZE;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载校园话题失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.loadTopicsFailed");
       } finally {
         this.loading = false;
       }
@@ -566,7 +622,7 @@ export const useCampusStore = defineStore("campus", {
         });
         this.activities = data;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载校园活动失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.loadActivitiesFailed");
       }
     },
 
@@ -580,8 +636,8 @@ export const useCampusStore = defineStore("campus", {
 
       try {
         if (!topicId || topicId.trim().length === 0) {
-          this.errorMessage = "话题 ID 无效";
-          throw new Error("话题 ID 无效");
+          this.errorMessage = t("storeErrors.campus.topicIdInvalid");
+          throw new Error(t("storeErrors.campus.topicIdInvalid"));
         }
 
         if (useMock()) {
@@ -609,7 +665,7 @@ export const useCampusStore = defineStore("campus", {
         });
         this.currentTopic = mapToCampusTopicDetail(data);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载话题详情失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.loadTopicDetailFailed");
       } finally {
         this.loading = false;
       }
@@ -625,8 +681,8 @@ export const useCampusStore = defineStore("campus", {
 
       try {
         if (!topicId || topicId.trim().length === 0) {
-          this.errorMessage = "话题 ID 无效";
-          throw new Error("话题 ID 无效");
+          this.errorMessage = t("storeErrors.campus.topicIdInvalid");
+          throw new Error(t("storeErrors.campus.topicIdInvalid"));
         }
 
         if (useMock()) {
@@ -652,7 +708,7 @@ export const useCampusStore = defineStore("campus", {
           this.replies.push(...mapped);
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载回复失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.loadRepliesFailed");
       }
     },
 
@@ -666,12 +722,12 @@ export const useCampusStore = defineStore("campus", {
       try {
         // 参数校验
         if (!data.title || data.title.trim().length === 0) {
-          this.errorMessage = "话题标题不能为空";
-          throw new Error("话题标题不能为空");
+          this.errorMessage = t("storeErrors.campus.topicTitleEmpty");
+          throw new Error(t("storeErrors.campus.topicTitleEmpty"));
         }
         if (!data.content || data.content.trim().length === 0) {
-          this.errorMessage = "话题内容不能为空";
-          throw new Error("话题内容不能为空");
+          this.errorMessage = t("storeErrors.campus.topicContentEmpty");
+          throw new Error(t("storeErrors.campus.topicContentEmpty"));
         }
 
         if (useMock()) {
@@ -713,7 +769,7 @@ export const useCampusStore = defineStore("campus", {
         this.topics.unshift(mapped);
         return mapped;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "发布话题失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.publishTopicFailed");
         throw error;
       }
     },
@@ -729,12 +785,12 @@ export const useCampusStore = defineStore("campus", {
 
       try {
         if (!topicId || topicId.trim().length === 0) {
-          this.errorMessage = "话题 ID 无效";
-          throw new Error("话题 ID 无效");
+          this.errorMessage = t("storeErrors.campus.topicIdInvalid");
+          throw new Error(t("storeErrors.campus.topicIdInvalid"));
         }
         if (!content || content.trim().length === 0) {
-          this.errorMessage = "回复内容不能为空";
-          throw new Error("回复内容不能为空");
+          this.errorMessage = t("storeErrors.campus.replyContentEmpty");
+          throw new Error(t("storeErrors.campus.replyContentEmpty"));
         }
 
         if (useMock()) {
@@ -787,7 +843,7 @@ export const useCampusStore = defineStore("campus", {
 
         return mapped;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "回复失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.replyFailed");
         throw error;
       }
     },
@@ -805,16 +861,16 @@ export const useCampusStore = defineStore("campus", {
 
       try {
         if (!data.schoolName || data.schoolName.trim().length === 0) {
-          this.errorMessage = "学校名称不能为空";
-          throw new Error("学校名称不能为空");
+          this.errorMessage = t("storeErrors.campus.schoolNameEmpty");
+          throw new Error(t("storeErrors.campus.schoolNameEmpty"));
         }
         if (!data.major || data.major.trim().length === 0) {
-          this.errorMessage = "专业不能为空";
-          throw new Error("专业不能为空");
+          this.errorMessage = t("storeErrors.campus.majorEmpty");
+          throw new Error(t("storeErrors.campus.majorEmpty"));
         }
         if (!data.studentCardUrl) {
-          this.errorMessage = "请上传学生证照片";
-          throw new Error("请上传学生证照片");
+          this.errorMessage = t("storeErrors.campus.studentCardRequired");
+          throw new Error(t("storeErrors.campus.studentCardRequired"));
         }
 
         if (useMock()) {
@@ -851,7 +907,7 @@ export const useCampusStore = defineStore("campus", {
           reviewComment: result.reviewComment ?? "",
         };
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "提交认证失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.submitCertificationFailed");
         throw error;
       }
     },
@@ -887,7 +943,7 @@ export const useCampusStore = defineStore("campus", {
           this.certificationStatus = "unverified";
           return;
         }
-        this.errorMessage = error instanceof Error ? error.message : "获取认证状态失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.loadCertificationStatusFailed");
       }
     },
 

@@ -256,8 +256,8 @@ function handlePublish(): void {
   border-radius: 0 0 4rpx 4rpx;
   transform: translateX(-50%) scaleX(0);
   transform-origin: center center;
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1),
+              opacity var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;
   pointer-events: none;
 }
@@ -269,22 +269,22 @@ function handlePublish(): void {
 
 .tab-top-bar--home {
   background: linear-gradient(90deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
-  box-shadow: 0 2rpx 6rpx rgba(63, 207, 142, 0.35);
+  box-shadow: var(--s-tab-brand, 0 2rpx 6rpx rgba(63, 207, 142, 0.35));
 }
 
 .tab-top-bar--chat {
   background: linear-gradient(90deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-400, #F472B6) 100%);
-  box-shadow: 0 2rpx 6rpx rgba(236, 72, 153, 0.35);
+  box-shadow: var(--s-tab-romance, 0 2rpx 6rpx rgba(236, 72, 153, 0.35));
 }
 
 .tab-top-bar--village {
   background: linear-gradient(90deg, var(--c-accent-400, #FB923C) 0%, var(--c-accent-400, #F97316) 100%);
-  box-shadow: 0 2rpx 6rpx rgba(249, 115, 22, 0.35);
+  box-shadow: var(--s-tab-accent, 0 2rpx 6rpx rgba(249, 115, 22, 0.35));
 }
 
 .tab-top-bar--profile {
   background: linear-gradient(90deg, var(--c-lavender-500, #8B5CF6) 0%, var(--c-lavender-500, #8B5CF6) 100%);
-  box-shadow: 0 2rpx 6rpx rgba(139, 92, 246, 0.35);
+  box-shadow: var(--s-tab-purple, 0 2rpx 6rpx rgba(139, 92, 246, 0.35));
 }
 
 .tab-icon-wrap {
@@ -295,8 +295,8 @@ function handlePublish(): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
-              background 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1),
+              background var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1);
   transform: scale(0.98);
 }
 
@@ -375,7 +375,7 @@ function handlePublish(): void {
   min-width: 28rpx;
   height: 28rpx;
   background: var(--c-error, #E5454D);
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -401,7 +401,7 @@ function handlePublish(): void {
 }
 
 .tab-label {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   /* 非激活态灰色对齐青藤参考 #9AA1AB */
   color: var(--c-text-tertiary, #9AA1AB);
   font-weight: 500;
@@ -441,7 +441,7 @@ function handlePublish(): void {
 /* P3 修复：box-shadow 单位统一为 rpx，与项目其他阴影定义保持一致 */
 .tab-publish--pressed .publish-btn {
   transform: scale(0.92);
-  box-shadow: 0 4rpx 12rpx rgba(63, 207, 142, 0.45);
+  box-shadow: var(--s-tab-active, 0 4rpx 12rpx rgba(63, 207, 142, 0.45));
 }
 
 .publish-btn {
@@ -450,7 +450,7 @@ function handlePublish(): void {
   height: 96rpx;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
-  box-shadow: 0 6rpx 20rpx rgba(63, 207, 142, 0.35);
+  box-shadow: var(--s-tab-active-md, 0 6rpx 20rpx rgba(63, 207, 142, 0.35));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -493,7 +493,7 @@ function handlePublish(): void {
 }
 
 .publish-icon {
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   font-weight: 700;
   color: var(--c-text-inverse, #FFFFFF);
   line-height: 1;
@@ -501,7 +501,7 @@ function handlePublish(): void {
 }
 
 .publish-label {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-brand, #3FCF8E);
   font-weight: 600;
   margin-top: 6rpx;

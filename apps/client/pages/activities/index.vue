@@ -13,6 +13,7 @@ import { usePageAccess } from "../../src/composables/usePageAccess";
 import { useActivityStore } from "../../src/stores/activity";
 import { useSessionStore } from "../../src/stores/session";
 import { openAppPath } from "../../src/utils/navigation";
+import { debounce } from "../../src/utils/debounce";
 import type { ActivityItem } from "../../src/stores/activity";
 
 const activityStore = useActivityStore();
@@ -39,33 +40,53 @@ function switchView(mode: ViewMode) {
 }
 
 /* ========== 下拉刷新 / 加载更多 ========== */
-let refresherTriggered = false;
+// 修复（SubTask 1.2.1）：refresherTriggered 必须为响应式 ref，
+// 否则 :refresher-triggered 绑定无法触发视图更新（下拉刷新动画卡死）。
+const refresherTriggered = ref(false);
 
 onShow(() => {
   void activityStore.fetchActivities();
 });
 
 onUnload(() => {
-  refresherTriggered = false;
+  refresherTriggered.value = false;
+  // 修复（SubTask 1.5.2）：页面卸载时取消挂起的 loadMore 防抖定时器，避免内存泄漏
+  debouncedLoadMore.cancel();
 });
 
 async function onRefresherRefresh() {
-  refresherTriggered = true;
+  refresherTriggered.value = true;
   try {
     await activityStore.fetchActivities();
   } finally {
-    refresherTriggered = false;
+    refresherTriggered.value = false;
   }
 }
 
-async function onScrollToLower() {
+// 修复（SubTask 1.2.2）：onScrollToLower 添加 300ms 防抖，
+// 避免快速滑动触发多次 fetchMoreActivities 造成请求风暴与重复分页。
+const debouncedLoadMore = debounce(async () => {
   if (activityStore.loading || !activityStore.hasMore) return;
   await activityStore.fetchMoreActivities();
+}, 300);
+
+async function onScrollToLower() {
+  debouncedLoadMore();
 }
 
 /* ========== 报名 ========== */
+// 修复（SubTask 1.2.4）：报名按钮 loading 状态防重复点击，
+// 通过 activityStore.enrolling 全局禁用 + 本地 submittingId 精准定位当前点击项。
+const submittingId = ref<string>("");
+
 async function toggleEnroll(activityId: string) {
-  await activityStore.enrollActivity(activityId);
+  if (activityStore.enrolling || submittingId.value === activityId) return;
+  submittingId.value = activityId;
+  try {
+    await activityStore.enrollActivity(activityId);
+  } finally {
+    submittingId.value = "";
+  }
 }
 
 /** 截取描述前50字 */
@@ -333,10 +354,10 @@ function formatDateLabel(dateStr: string): string {
             <button
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
-              :disabled="activityStore.enrolling"
+              :disabled="activityStore.enrolling || submittingId === item.id"
               @click="toggleEnroll(item.id)"
             >
-              <text v-if="activityStore.enrolling" class="enroll-btn__loading">...</text>
+              <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
               <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
             </button>
           </view>
@@ -470,10 +491,10 @@ function formatDateLabel(dateStr: string): string {
             <button
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
-              :disabled="activityStore.enrolling"
+              :disabled="activityStore.enrolling || submittingId === item.id"
               @click="toggleEnroll(item.id)"
             >
-              <text v-if="activityStore.enrolling" class="enroll-btn__loading">...</text>
+              <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
               <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
             </button>
           </view>
