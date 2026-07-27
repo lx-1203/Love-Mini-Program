@@ -296,7 +296,7 @@
 - [x] Admin 后台运营手册（`docs/ADMIN-GUIDE.md` 11 大章节覆盖登录/Dashboard/用户管理/内容审核/反馈/举报/敏感词/配置/统计/监控/应急）
 - [x] 故障排查手册（`docs/TROUBLESHOOTING.md` 故障分级 + 诊断工具 + 5 类常见故障排查 + 应急预案 + 复盘模板）
 - [x] 全量 checklist.md 检查通过（P0-P9 验收清单逐条验证，证据完整）
-- [x] 微信小程序提审模拟通过（`docs/WECHAT-MINI-PROGRAM-ACCEPTANCE.md` 24 项合规自检 + 提审材料 + 流程模拟 + 体验测试，综合评分 8.9/10，决策 GO）
+- [x] 微信小程序提审模拟通过（`docs/WECHAT-MINI-PROGRAM-ACCEPTANCE.md` 24 项合规自检 + 提审材料清单 + 流程模拟 + 体验测试，综合评分 8.9/10，决策 CONDITIONAL GO；⚠️ 物理材料/外部资源如企业主体认证、ICP 备案、演示视频等需线下推进，详见 `docs/wechat-submission-materials-checklist.md`）
 - [x] 多视角商业化验收（企业/技术/用户/营销）通过（4 视角验收全部通过，企业关注商业化可行性、技术关注架构健壮性、用户关注体验完整性、营销关注增长可拓展性）
 - [x] 长期可演进性评估通过（综合评分 8.7/10：架构可扩展性/技术栈升级/商业化演进/团队成长/合规可持续性 5 维度评估，3 年演进路线图就绪）
 
@@ -362,7 +362,7 @@
 - [x] 监控告警生效（P8 完成：Prometheus + Grafana 3 面板 + Alertmanager 7 类告警规则）
 - [x] 数据备份与恢复演练通过（P8 完成：backup-mysql.sh --dry-run + docs/DR/restore-procedure.md + docs/DR/DRP.md）
 - [x] 文档完整（API/Storybook/CHANGELOG/运维手册/DRP/ADR）（P9 完成：OpenAPI 注解 + 63+ stories + CHANGELOG + USER-GUIDE + ADMIN-GUIDE + TROUBLESHOOTING + DRP + 10 个 ADR）
-- [x] 微信小程序提审通过（P9 完成：24 项合规自检全部通过，docs/WECHAT-MINI-PROGRAM-ACCEPTANCE.md）
+- [x] 微信小程序提审模拟通过（P9 完成：代码层面 24 项合规自检全部通过，docs/WECHAT-MINI-PROGRAM-ACCEPTANCE.md；⚠️ 实际提审待物理材料齐备：企业主体认证、ICP 备案、演示视频等，详见 docs/wechat-submission-materials-checklist.md）
 - [x] 多视角商业化验收全部 ✅（4 视角 36 项 checkpoint 全部通过）
 
 ---
