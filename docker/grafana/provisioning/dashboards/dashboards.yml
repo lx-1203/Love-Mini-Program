@@ -1,0 +1,22 @@
+# ============================================================
+# Grafana 仪表板自动加载（Task 8.2.2）
+# ============================================================
+# 启动时从指定目录加载 JSON 仪表板定义
+# ============================================================
+
+apiVersion: 1
+
+providers:
+
+  # ---------- 业务仪表板 ----------
+  - name: campus-love-dashboards
+    orgId: 1
+    folder: Campus Love
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      # 仪表板 JSON 文件路径（与 docker-compose 挂载一致）
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true
