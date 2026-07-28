@@ -31,6 +31,7 @@ import type {
   SimilarAuthor,
 } from "./types";
 import type { PostFilters } from "./types";
+import type { CampusFeedView } from "../../services/generated/api-types-supplement";
 
 /**
  * 构建帖子列表请求参数对象。
@@ -242,10 +243,15 @@ export async function followUserApi(
 /**
  * 获取同校动态流
  *
+ * 泛型 T 约束为 CampusFeedView 的子类型，调用方必须传入与后端 CampusFeedView
+ * 结构兼容的类型，避免传入任意不相关类型导致类型不安全。
+ *
  * @param userId - 当前用户 ID
  * @returns 后端 CampusFeedView
  */
-export async function fetchCampusFeedApi<T>(userId: string): Promise<T> {
+export async function fetchCampusFeedApi<T extends CampusFeedView>(
+  userId: string
+): Promise<T> {
   return request<T>({
     url: `/campus/feed?userId=${userId}`,
     method: "GET",

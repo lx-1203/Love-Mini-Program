@@ -1,0 +1,82 @@
+{
+  "annotations": {"list": []},
+  "description": "JVM 健康监控：堆内存、GC、线程、类加载（Task 8.2.2）",
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "title": "堆内存使用（已用 / 最大）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "fieldConfig": {
+        "defaults": {"unit": "bytes", "custom": {"fillOpacity": 10}}
+      },
+      "targets": [
+        {"expr": "sum(jvm_memory_used_bytes{area=\"heap\"})", "legendFormat": "已用", "refId": "A"},
+        {"expr": "sum(jvm_memory_max_bytes{area=\"heap\"})", "legendFormat": "最大", "refId": "B"}
+      ]
+    },
+    {
+      "title": "GC 暂停时间（5 分钟速率）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [
+        {"expr": "sum(rate(jvm_gc_pause_seconds_sum[5m])) by (cause)", "legendFormat": "{{cause}}", "refId": "A"}
+      ]
+    },
+    {
+      "title": "GC 次数（累计）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "targets": [
+        {"expr": "increase(jvm_gc_pause_seconds_count[5m])", "legendFormat": "{{action}}", "refId": "A"}
+      ]
+    },
+    {
+      "title": "线程状态分布",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "targets": [
+        {"expr": "jvm_threads_states_threads", "legendFormat": "{{state}}", "refId": "A"}
+      ]
+    },
+    {
+      "title": "已加载类数量",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 16},
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "targets": [{"expr": "jvm_classes_loaded_classes", "refId": "A"}]
+    },
+    {
+      "title": "CPU 使用率（进程）",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 16},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "targets": [{"expr": "rate(process_cpu_usage[1m])", "refId": "A"}]
+    },
+    {
+      "title": "启动时间",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 16},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [{"expr": "process_start_time_seconds", "refId": "A"}]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["campus-love", "jvm"],
+  "time": {"from": "now-1h", "to": "now"},
+  "title": "JVM Health",
+  "uid": "jvm-health",
+  "version": 1
+}

@@ -5,12 +5,18 @@
  * 所有菜单项点击有 press-feedback 动画 + lightHaptic 反馈
  *
  * 功能6：通知设置分组新增「免打扰」入口，跳转到 /pages/settings/dnd
+ *
+ * SubTask 5.5.1：消息通知/隐私模式开关采用乐观更新模式：
+ * 1. 切换时立即更新本地 ref，UI 即时反馈
+ * 2. 异步持久化到本地存储（uni.setStorage）
+ * 3. 持久化失败时回滚 ref 至旧值，并提示用户
  */
-import { ref, computed, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { useSessionStore } from "../../stores/session";
+import { STORAGE_KEYS } from "../../constants/storage-keys";
 
 /** 操作定时器集合，用于卸载时统一清理 */
 const operationTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -27,36 +33,131 @@ interface MenuItem {
   path?: string;
 }
 
-/** 消息通知开关状态 */
+/**
+ * 消息通知开关状态
+ *
+ * <p>SubTask 5.5.1：初始值在 onMounted 中从本地存储读取，避免首次进入设置页时
+ * 默认 true 与用户上次关闭的偏好不一致。</p>
+ */
 const notifyEnabled = ref(true);
-/** 隐私模式开关状态 */
+/**
+ * 隐私模式开关状态
+ *
+ * <p>SubTask 5.5.1：与 notifyEnabled 同理，初始值从本地存储恢复。</p>
+ */
 const privacyModeEnabled = ref(false);
 /** 缓存大小（mock） */
 const cacheSize = ref("23.5 MB");
 
-/** 切换消息通知 */
+/**
+ * SubTask 5.5.1：从本地存储读取开关初始值。
+ *
+ * <p>读取失败（如首次启动无 key）时保持默认值，不阻塞页面渲染。</p>
+ */
+function loadTogglePreferences(): void {
+  try {
+    const notify = uni.getStorageSync(STORAGE_KEYS.NOTIFY_ENABLED);
+    if (typeof notify === "boolean") {
+      notifyEnabled.value = notify;
+    }
+  } catch (_e) {
+    // 读取失败保持默认值，不影响页面使用
+  }
+  try {
+    const privacy = uni.getStorageSync(STORAGE_KEYS.PRIVACY_MODE_ENABLED);
+    if (typeof privacy === "boolean") {
+      privacyModeEnabled.value = privacy;
+    }
+  } catch (_e) {
+    // 读取失败保持默认值
+  }
+}
+
+/**
+ * SubTask 5.5.1：切换消息通知（乐观更新 + 失败回滚）。
+ *
+ * <p>流程：</p>
+ * <ol>
+ *   <li>lightHaptic 触发轻反馈</li>
+ *   <li>立即更新 notifyEnabled（UI 即时反馈）</li>
+ *   <li>toast 提示当前状态</li>
+ *   <li>异步 uni.setStorage 持久化</li>
+ *   <li>持久化失败时回滚 ref 至切换前的旧值，并提示「保存失败」</li>
+ * </ol>
+ */
 function toggleNotify(e: Event) {
   lightHaptic();
   const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
-  notifyEnabled.value = !!detail?.value;
+  const newValue = !!detail?.value;
+  // 保存旧值用于失败回滚
+  const oldValue = notifyEnabled.value;
+  // 乐观更新：立即生效
+  notifyEnabled.value = newValue;
   uni.showToast({
-    title: notifyEnabled.value ? t("settings.notifyEnabled") : t("settings.notifyDisabled"),
+    title: newValue ? t("settings.notifyEnabled") : t("settings.notifyDisabled"),
     icon: "none",
     duration: 1200,
+  });
+  // 异步持久化，失败时回滚
+  uni.setStorage({
+    key: STORAGE_KEYS.NOTIFY_ENABLED,
+    data: newValue,
+    fail: () => {
+      // 持久化失败，回滚至旧值
+      notifyEnabled.value = oldValue;
+      uni.showToast({
+        title: t("settings.saveFailed"),
+        icon: "none",
+        duration: 1500,
+      });
+    },
   });
 }
 
-/** 切换隐私模式 */
+/**
+ * SubTask 5.5.1：切换隐私模式（乐观更新 + 失败回滚）。
+ *
+ * <p>与 {@link #toggleNotify} 同构，区别仅在持久化的 key 与 toast 文案。</p>
+ */
 function togglePrivacyMode(e: Event) {
   lightHaptic();
   const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
-  privacyModeEnabled.value = !!detail?.value;
+  const newValue = !!detail?.value;
+  // 保存旧值用于失败回滚
+  const oldValue = privacyModeEnabled.value;
+  // 乐观更新：立即生效
+  privacyModeEnabled.value = newValue;
   uni.showToast({
-    title: privacyModeEnabled.value ? t("settings.privacyModeEnabled") : t("settings.privacyModeDisabled"),
+    title: newValue ? t("settings.privacyModeEnabled") : t("settings.privacyModeDisabled"),
     icon: "none",
     duration: 1200,
   });
+  // 异步持久化，失败时回滚
+  uni.setStorage({
+    key: STORAGE_KEYS.PRIVACY_MODE_ENABLED,
+    data: newValue,
+    fail: () => {
+      // 持久化失败，回滚至旧值
+      privacyModeEnabled.value = oldValue;
+      uni.showToast({
+        title: t("settings.saveFailed"),
+        icon: "none",
+        duration: 1500,
+      });
+    },
+  });
 }
+
+/**
+ * SubTask 5.5.1：页面挂载时恢复开关偏好。
+ *
+ * <p>在 onMounted 中调用 loadTogglePreferences，确保从本地存储读取的最新值
+ * 优先于 ref 的默认值，避免「用户关闭通知 → 退出应用 → 重启后开关显示打开」
+ * 的不一致体验。</p>
+ */
+onMounted(() => {
+  loadTogglePreferences();
+});
 
 /** 跳转到资料编辑 */
 function goToProfileSetup() {
@@ -466,14 +567,14 @@ function handleMenuTap(item: MenuItem) {
 }
 
 .nav-bar__back-icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   color: var(--c-text-primary, #1F2329);
   font-weight: 300;
   line-height: 1;
 }
 
 .nav-bar__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1F2329);
 }
@@ -508,7 +609,7 @@ function handleMenuTap(item: MenuItem) {
 }
 
 .section__title-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary, #5B6470);
   font-weight: 500;
 }
@@ -516,7 +617,7 @@ function handleMenuTap(item: MenuItem) {
 /* ==================== 菜单分组 ==================== */
 .menu-group {
   background: var(--c-bg-container, #FFFFFF);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   overflow: hidden;
 }
@@ -573,11 +674,11 @@ function handleMenuTap(item: MenuItem) {
 }
 
 .menu-item__emoji {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
 }
 
 .menu-item__label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1F2329);
   font-weight: 500;
 }
@@ -589,12 +690,12 @@ function handleMenuTap(item: MenuItem) {
 }
 
 .menu-item__value {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #9AA1AB);
 }
 
 .menu-item__arrow {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   color: var(--c-border-strong, #CBD5E1);
   font-weight: 300;
   line-height: 1;
@@ -607,7 +708,7 @@ function handleMenuTap(item: MenuItem) {
   margin: 32rpx 24rpx 0;
   padding: 28rpx;
   background: var(--c-bg-container, #FFFFFF);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
   display: flex;
   align-items: center;
@@ -621,7 +722,7 @@ function handleMenuTap(item: MenuItem) {
 }
 
 .logout-btn__text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: var(--c-error, #E5454D);
   font-weight: 500;
 }
@@ -636,7 +737,7 @@ function handleMenuTap(item: MenuItem) {
 }
 
 .footer-version__text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary, #9AA1AB);
 }
 </style>

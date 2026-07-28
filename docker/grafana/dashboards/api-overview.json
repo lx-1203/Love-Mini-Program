@@ -1,0 +1,173 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Campus Love API 概览面板：HTTP 请求量、响应时间、错误率、健康状态（Task 8.2.2）",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "请求速率（QPS）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {"drawStyle": "line", "lineInterpolation": "linear", "fillOpacity": 10}
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"campuslove-api\"}[1m])) by (uri)",
+          "legendFormat": "{{uri}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "P99 / P95 / P50 响应时间",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {"drawStyle": "line", "lineInterpolation": "linear", "fillOpacity": 10}
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=\"campuslove-api\"}[5m])) by (le))",
+          "legendFormat": "P99",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"campuslove-api\"}[5m])) by (le))",
+          "legendFormat": "P95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=\"campuslove-api\"}[5m])) by (le))",
+          "legendFormat": "P50",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [
+        {"value": 2, "color": "red", "op": "gt"}
+      ]
+    },
+    {
+      "title": "5xx 错误率",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.005},
+              {"color": "red", "value": 0.01}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"campuslove-api\", status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=\"campuslove-api\"}[5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "服务可用性",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8},
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}, "type": "value"}
+          ]
+        }
+      },
+      "targets": [
+        {"expr": "up{job=\"campuslove-api\"}", "refId": "A"}
+      ]
+    },
+    {
+      "title": "健康检查",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 8},
+      "targets": [
+        {"expr": "spring_boot_health_status", "refId": "A"}
+      ]
+    },
+    {
+      "title": "活跃线程数",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8},
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "targets": [
+        {"expr": "jvm_threads_states_threads", "refId": "A"}
+      ]
+    },
+    {
+      "title": "数据库连接池使用率",
+      "type": "gauge",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 8},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0, "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.6},
+              {"color": "red", "value": 0.8}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {"expr": "hikaricp_connections_active / hikaricp_connections_max", "refId": "A"}
+      ]
+    },
+    {
+      "title": "Top 10 慢请求 URI",
+      "type": "table",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "targets": [
+        {
+          "expr": "topk(10, histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=\"campuslove-api\"}[5m])) by (le, uri)))",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["campus-love", "api"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "API Overview",
+  "uid": "api-overview",
+  "version": 1,
+  "weekStart": ""
+}

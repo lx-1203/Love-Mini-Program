@@ -218,12 +218,12 @@ onMounted(() => {
 }
 
 .loading-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary);
 }
 
 .error-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary);
   text-align: center;
 }
@@ -271,7 +271,7 @@ onMounted(() => {
 }
 
 .option-label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary);
 }
 
@@ -285,14 +285,14 @@ onMounted(() => {
 }
 
 .toggle-label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary);
 }
 
 .toggle-switch {
   width: 88rpx;
   height: 48rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-surface);
   position: relative;
   transition: background 0.2s ease;

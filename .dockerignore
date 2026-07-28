@@ -1,0 +1,130 @@
+# ============================================================
+# 项目根 .dockerignore（Task 8.1.4）
+# ============================================================
+# 排除不需要发送到 Docker 守护进程的文件，加速构建并减小上下文体积。
+# Docker CLI 会在构建前过滤这些路径，避免不必要的文件传输。
+# ============================================================
+
+# ---------- 版本控制 ----------
+.git
+.gitignore
+.gitattributes
+.github
+.gitlab
+
+# ---------- 依赖与构建产物 ----------
+**/node_modules
+**/target
+**/dist
+**/build
+**/out
+**/.next
+**/.nuxt
+**/.gradle
+**/.mvn/wrapper/maven-wrapper.jar
+
+# ---------- 包管理器锁文件（保留 pnpm-lock.yaml / package-lock.json 用于缓存层）----------
+# 注：不能排除 lock 文件，因为 Dockerfile 需要 COPY 它做依赖缓存
+# **/pnpm-lock.yaml
+# **/package-lock.json
+# **/yarn.lock
+
+# ---------- IDE 与编辑器 ----------
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ---------- 日志与运行时产物 ----------
+**/*.log
+**/logs
+**/coverage
+**/.nyc_output
+**/heap-dump.hprof
+**/uploads
+**/tmp-*.png
+
+# ---------- 环境变量与密钥 ----------
+.env
+.env.local
+.env.*.local
+**/.env.real
+**/flyway.user.toml
+
+# ---------- 测试与文档（构建期不需要）----------
+**/*.test.ts
+**/*.spec.ts
+**/*.test.js
+**/*.spec.js
+**/__tests__
+**/__mocks__
+docs
+doc
+specs
+**/*.md
+**/README.md
+!apps/admin/README.md
+!apps/api/README.md
+
+# ---------- 设计稿与截图（与构建无关）----------
+design-archive
+design-preview
+test-screenshots
+参考
+2
+
+# ---------- Trae 与工具产物 ----------
+.trae
+.codegraph
+.reasonix
+opencode.json
+reasonix.toml
+
+# ---------- 其他无关产物 ----------
+**/.DS_Store
+**/tsconfig.tsbuildinfo
+**/*.tar.gz
+**/*.zip
+**/*.7z
+
+# ---------- 可执行脚本与二进制（避免污染镜像）----------
+*.exe
+*.dll
+CaptureByTitle.exe
+ClickDetails.exe
+CloseDialog.exe
+ListAllWindows.exe
+ListWindows.exe
+MaximizeAndCapture.exe
+OpenProject.exe
+ReviewApp.exe
+ReviewApp2.exe
+ScreenshotTest.exe
+SendEscape.exe
+DevToolsCtrl.dll
+
+# ---------- Python 缓存（如有 CI 脚本）----------
+__pycache__
+*.pyc
+*.pyo
+
+# ---------- Docker 自身文件（避免递归）----------
+Dockerfile
+*.dockerfile
+docker-compose*.yml
+.dockerignore
+
+# ---------- 数据库迁移脚本（API 镜像通过 flyway.locations 挂载，不打入镜像）----------
+# 注：API Dockerfile 也不需要 database/ 目录，迁移通过 volume 挂载执行
+database
+
+# ---------- 工具与脚本（构建期不需要）----------
+scripts
+tools
+*.bat
+*.cmd
+*.ps1
+*.sh

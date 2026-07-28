@@ -1,7 +1,12 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
@@ -9,6 +14,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
-@RequestMapping("/api/circles")
+@RequestMapping("/api/v1/circles")
+@Validated
 public class CircleController {
 
   private final CircleService circleService;
@@ -40,9 +47,9 @@ public class CircleController {
    * GET /api/circles
    */
   @GetMapping
-  public List<CircleView> getCircles() {
+  public ApiResponse<List<CircleView>> getCircles() {
     Long userId = SecurityUtils.getCurrentUserId();
-    return circleService.getCircles(userId);
+    return ApiResponse.ok(circleService.getCircles(userId));
   }
 
   /**
@@ -50,9 +57,10 @@ public class CircleController {
    * POST /api/circles/{id}/join
    */
   @PostMapping("/{id}/join")
-  public CircleMembershipView joinCircle(@PathVariable("id") Long circleId) {
+  @Idempotent
+  public ApiResponse<CircleMembershipView> joinCircle(@PathVariable("id") Long circleId) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return circleService.joinCircle(userId, circleId);
+    return ApiResponse.ok(circleService.joinCircle(userId, circleId));
   }
 
   /**
@@ -60,9 +68,10 @@ public class CircleController {
    * DELETE /api/circles/{id}/join
    */
   @DeleteMapping("/{id}/join")
-  public CircleMembershipView leaveCircle(@PathVariable("id") Long circleId) {
+  @Idempotent
+  public ApiResponse<CircleMembershipView> leaveCircle(@PathVariable("id") Long circleId) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return circleService.leaveCircle(userId, circleId);
+    return ApiResponse.ok(circleService.leaveCircle(userId, circleId));
   }
 
   // ---------- 话题 ----------
@@ -72,25 +81,30 @@ public class CircleController {
    * GET /api/circles/{id}/topics
    */
   @GetMapping("/{id}/topics")
-  public Page<CircleTopicView> getTopics(
+  public ApiResponse<Page<CircleTopicView>> getTopics(
       @PathVariable("id") Long circleId,
-      @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-      @RequestParam(name = "size", required = false, defaultValue = "20") int size) {
+      @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
+      @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
     Pageable pageable = PageRequest.of(page, size);
-    return circleService.getTopics(circleId, pageable);
+    return ApiResponse.ok(circleService.getTopics(circleId, pageable));
   }
 
   /**
    * 在指定圈子发布新话题。
    * POST /api/circles/{id}/topics
+   *
+   * <p>速率限制：桶容量 20，每 2 秒补充 1 个令牌（refillTokens=0.5/s），
+   * 按客户端 IP 限流，防止话题刷屏。</p>
    */
   @PostMapping("/{id}/topics")
-  public CircleTopicView createTopic(
+  @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
+  @Idempotent
+  public ApiResponse<CircleTopicView> createTopic(
       @PathVariable("id") Long circleId,
       @Valid @RequestBody CreateTopicRequest request) {
     Long authorId = SecurityUtils.getCurrentUserId();
-    return circleService.createTopic(circleId, authorId, request.title(),
-        request.content(), request.images());
+    return ApiResponse.ok(circleService.createTopic(circleId, authorId, request.title(),
+        request.content(), request.images()));
   }
 
   /**
@@ -98,8 +112,8 @@ public class CircleController {
    * GET /api/circles/topics/{id}
    */
   @GetMapping("/topics/{id}")
-  public CircleTopicView getTopicDetail(@PathVariable("id") Long topicId) {
-    return circleService.getTopicDetail(topicId);
+  public ApiResponse<CircleTopicView> getTopicDetail(@PathVariable("id") Long topicId) {
+    return ApiResponse.ok(circleService.getTopicDetail(topicId));
   }
 
   // ---------- 回复 ----------
@@ -109,24 +123,29 @@ public class CircleController {
    * GET /api/circles/topics/{id}/replies
    */
   @GetMapping("/topics/{id}/replies")
-  public Page<CircleReplyView> getReplies(
+  public ApiResponse<Page<CircleReplyView>> getReplies(
       @PathVariable("id") Long topicId,
-      @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-      @RequestParam(name = "size", required = false, defaultValue = "20") int size) {
+      @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
+      @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
     Pageable pageable = PageRequest.of(page, size);
-    return circleService.getReplies(topicId, pageable);
+    return ApiResponse.ok(circleService.getReplies(topicId, pageable));
   }
 
   /**
    * 对指定话题发表回复。
    * POST /api/circles/topics/{id}/replies
+   *
+   * <p>速率限制：桶容量 30，每秒补充 1 个令牌，按客户端 IP 限流，
+   * 防止回复刷屏与垃圾内容。</p>
    */
   @PostMapping("/topics/{id}/replies")
-  public CircleReplyView createReply(
+  @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+  @Idempotent
+  public ApiResponse<CircleReplyView> createReply(
       @PathVariable("id") Long topicId,
       @Valid @RequestBody CreateReplyRequest request) {
     Long authorId = SecurityUtils.getCurrentUserId();
-    return circleService.replyToTopic(topicId, authorId, request.content());
+    return ApiResponse.ok(circleService.replyToTopic(topicId, authorId, request.content()));
   }
 
   // ---------- 精选话题 ----------
@@ -136,11 +155,11 @@ public class CircleController {
    * GET /api/circles/featured
    */
   @GetMapping("/featured")
-  public Page<CircleTopicView> getFeaturedTopics(
-      @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-      @RequestParam(name = "size", required = false, defaultValue = "20") int size) {
+  public ApiResponse<Page<CircleTopicView>> getFeaturedTopics(
+      @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
+      @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
     Pageable pageable = PageRequest.of(page, size);
-    return circleService.getFeaturedTopics(pageable);
+    return ApiResponse.ok(circleService.getFeaturedTopics(pageable));
   }
 }
 

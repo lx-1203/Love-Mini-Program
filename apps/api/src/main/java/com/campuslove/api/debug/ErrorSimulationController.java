@@ -9,8 +9,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 错误模拟控制器（仅 mock profile 启用）。
+ *
+ * <p>提供按 HTTP 状态码（400/404/500）模拟后端错误的端点，
+ * 供前端异常分支与全局错误处理链路联调使用。</p>
+ */
 @RestController
-@RequestMapping("/api/_debug/errors")
+@RequestMapping("/api/v1/_debug/errors")
 @Profile("mock")
 public class ErrorSimulationController {
 

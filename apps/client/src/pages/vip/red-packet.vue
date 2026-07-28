@@ -380,14 +380,14 @@ onLoad((options) => {
   }
 }
 .nav-bar__back-icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   font-weight: 300;
   line-height: 1;
 }
 .nav-bar__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
@@ -428,14 +428,14 @@ onLoad((options) => {
   line-height: 1;
 }
 .rp-hero__title {
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   font-weight: 800;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   margin-bottom: 8rpx;
 }
 .rp-hero__subtitle {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: rgba(255, 255, 255, 0.8);
 }
 
@@ -447,13 +447,13 @@ onLoad((options) => {
   background: rgba(255, 255, 255, 0.96);
   border-radius: 20rpx;
   padding: 24rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  box-shadow: var(--s-md, 0 4rpx 16rpx rgba(0, 0, 0, 0.08));
 }
 .section__title {
   padding: 0 0 16rpx;
 }
 .section__title-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary, #475569);
   font-weight: 600;
 }
@@ -467,7 +467,7 @@ onLoad((options) => {
   flex: 1;
   background: var(--c-bg-secondary, #F1F5F9);
   border: 2rpx solid transparent;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   padding: 24rpx 16rpx;
   display: flex;
   flex-direction: column;
@@ -483,12 +483,12 @@ onLoad((options) => {
   }
 }
 .type-card__label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1E293B);
 }
 .type-card__desc {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-text-tertiary, #64748B);
   text-align: center;
 }
@@ -501,20 +501,20 @@ onLoad((options) => {
   flex-wrap: wrap;
 }
 .amount-input__currency {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   color: var(--c-romance-500, #EC4899);
   font-weight: 700;
 }
 .amount-input {
   flex: 1;
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   font-weight: 800;
   color: var(--c-text-primary, #1E293B);
   min-width: 200rpx;
 }
 .amount-input__hint {
   flex-basis: 100%;
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary, #64748B);
   margin-top: 8rpx;
 }
@@ -527,12 +527,12 @@ onLoad((options) => {
 }
 .count-input {
   flex: 1;
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1E293B);
 }
 .count-input__suffix {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #64748B);
 }
 
@@ -540,7 +540,7 @@ onLoad((options) => {
 .blessing-input {
   width: 100%;
   min-height: 120rpx;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1E293B);
   line-height: 1.5;
 }
@@ -566,16 +566,16 @@ onLoad((options) => {
   gap: 4rpx;
 }
 .footer__label {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #64748B);
 }
 .footer__currency {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-romance-500, #EC4899);
   font-weight: 600;
 }
 .footer__amount {
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   color: var(--c-romance-500, #EC4899);
   font-weight: 800;
   line-height: 1;
@@ -584,7 +584,7 @@ onLoad((options) => {
   padding: 24rpx 56rpx;
   background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
   border-radius: 999rpx;
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.4);
+  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.4));
   transition: all 0.15s ease;
   &--hover {
     transform: scale(0.96);
@@ -594,7 +594,7 @@ onLoad((options) => {
   }
 }
 .footer__btn-text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   font-weight: 700;
@@ -617,7 +617,7 @@ onLoad((options) => {
   width: 600rpx;
   /* 容器背景：使用 token 替代硬编码 #FFFFFF */
   background: var(--c-bg-container);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   overflow: hidden;
 }
 .claim-modal__header {
@@ -628,13 +628,13 @@ onLoad((options) => {
   background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
 }
 .claim-modal__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
 }
 .claim-modal__close {
-  font-size: 48rpx;
+  font-size: var(--fs-6xl, 48rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   line-height: 1;
@@ -653,11 +653,11 @@ onLoad((options) => {
   color: var(--c-romance-500, #EC4899);
 }
 .claim-modal__tip {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-tertiary, #64748B);
 }
 .claim-modal__desc {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-secondary, #475569);
   text-align: center;
   line-height: 1.6;
@@ -666,7 +666,7 @@ onLoad((options) => {
   padding: 20rpx 80rpx;
   background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
   border-radius: 999rpx;
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.4);
+  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.4));
   &--hover {
     transform: scale(0.96);
   }
@@ -675,7 +675,7 @@ onLoad((options) => {
   }
 }
 .claim-modal__btn-text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   font-weight: 700;

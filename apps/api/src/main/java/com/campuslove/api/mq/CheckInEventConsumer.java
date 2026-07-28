@@ -77,7 +77,7 @@ public class CheckInEventConsumer {
 
             // 2. 检查并推送连续签到奖励通知
             checkAndPushRewardNotification(message);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // 捕获所有异常，避免消息无限重投
             log.warn("签到事件处理失败，不抛出异常：message={}, error={}",
                     message, e.getMessage(), e);
@@ -113,7 +113,7 @@ public class CheckInEventConsumer {
                                 "rewardPoints", rewardPoints,
                                 "createdAt", createdAt.toString()
                         ));
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 log.warn("WebSocket 推送签到通知失败：userId={}, error={}",
                         userId, e.getMessage());
             }
@@ -154,7 +154,7 @@ public class CheckInEventConsumer {
                                         "consecutiveDays", consecutiveDays,
                                         "createdAt", createdAt.toString()
                                 ));
-                    } catch (Exception e) {
+                    } catch (RuntimeException e) {
                         log.warn("WebSocket 推送连续签到奖励通知失败：userId={}, milestone={}, error={}",
                                 userId, milestone, e.getMessage());
                     }
@@ -197,7 +197,7 @@ public class CheckInEventConsumer {
             entity.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now());
             notificationRepository.save(entity);
             log.debug("签到通知已持久化：userId={}, title={}", userId, title);
-        } catch (Exception e) {
+        } catch (org.springframework.dao.DataAccessException e) {
             log.warn("签到通知持久化失败：userId={}, title={}, error={}",
                     userId, title, e.getMessage());
         }

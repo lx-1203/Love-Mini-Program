@@ -1,5 +1,7 @@
 package com.campuslove.api.feedback;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
@@ -18,8 +20,8 @@ import org.springframework.web.multipart.MultipartFile;
  * 反馈控制器。
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  *
- * <p>功能9：新增 POST /api/feedback/images 端点，用于上传反馈图片附件。</p>
- * <p>功能10：新增 GET /api/feedback/my-submissions/{id} 端点，用于查询反馈详情。</p>
+ * <p>功能9：新增 POST /api/v1/feedback/images 端点，用于上传反馈图片附件。</p>
+ * <p>功能10：新增 GET /api/v1/feedback/my-submissions/{id} 端点，用于查询反馈详情。</p>
  */
 @RestController
 public class FeedbackController {
@@ -36,11 +38,12 @@ public class FeedbackController {
    * <p>速率限制：桶容量 10，每 10 秒补充 1 个令牌（refillTokens=0.1/s），
    * 按客户端 IP 限流，防止反馈接口被滥用刷量。</p>
    */
-  @PostMapping("/api/feedback/issues")
+  @PostMapping("/api/v1/feedback/issues")
   @ResponseStatus(HttpStatus.ACCEPTED)
   @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
-  public SubmissionRecordView createIssue(@Valid @RequestBody FeedbackSubmissionRequest request) {
-    return feedbackService.submit(FeedbackTicketType.FEEDBACK, request);
+  @Idempotent
+  public ApiResponse<SubmissionRecordView> createIssue(@Valid @RequestBody FeedbackSubmissionRequest request) {
+    return ApiResponse.ok(feedbackService.submit(FeedbackTicketType.FEEDBACK, request));
   }
 
   /**
@@ -49,11 +52,12 @@ public class FeedbackController {
    * <p>速率限制：桶容量 10，每 10 秒补充 1 个令牌（refillTokens=0.1/s），
    * 按客户端 IP 限流，防止反馈接口被滥用刷量。</p>
    */
-  @PostMapping("/api/feedback/suggestions")
+  @PostMapping("/api/v1/feedback/suggestions")
   @ResponseStatus(HttpStatus.ACCEPTED)
   @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
-  public SubmissionRecordView createSuggestion(@Valid @RequestBody FeedbackSubmissionRequest request) {
-    return feedbackService.submit(FeedbackTicketType.SUGGESTION, request);
+  @Idempotent
+  public ApiResponse<SubmissionRecordView> createSuggestion(@Valid @RequestBody FeedbackSubmissionRequest request) {
+    return ApiResponse.ok(feedbackService.submit(FeedbackTicketType.SUGGESTION, request));
   }
 
   /**
@@ -62,35 +66,37 @@ public class FeedbackController {
    * <p>速率限制：桶容量 10，每 10 秒补充 1 个令牌（refillTokens=0.1/s），
    * 按客户端 IP 限流，防止反馈接口被滥用刷量。</p>
    */
-  @PostMapping("/api/feedback/activity-proposals")
+  @PostMapping("/api/v1/feedback/activity-proposals")
   @ResponseStatus(HttpStatus.ACCEPTED)
   @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
-  public SubmissionRecordView createActivityProposal(@Valid @RequestBody FeedbackSubmissionRequest request) {
-    return feedbackService.submit(FeedbackTicketType.ACTIVITY_PROPOSAL, request);
+  @Idempotent
+  public ApiResponse<SubmissionRecordView> createActivityProposal(@Valid @RequestBody FeedbackSubmissionRequest request) {
+    return ApiResponse.ok(feedbackService.submit(FeedbackTicketType.ACTIVITY_PROPOSAL, request));
   }
 
-  @GetMapping("/api/feedback/my-submissions")
-  public List<SubmissionRecordView> listMySubmissions(
+  @GetMapping("/api/v1/feedback/my-submissions")
+  public ApiResponse<List<SubmissionRecordView>> listMySubmissions(
       @RequestParam(name = "type", required = false) FeedbackTicketType type
   ) {
     // listMine 内部已通过 SecurityUtils 获取当前用户ID
-    return feedbackService.listMine(type);
+    return ApiResponse.ok(feedbackService.listMine(type));
   }
 
-  @GetMapping("/api/admin/feedback")
-  public List<SubmissionRecordView> listAdminFeedback() {
-    return feedbackService.listAdminFeedback();
+  @GetMapping("/api/v1/admin/feedback")
+  public ApiResponse<List<SubmissionRecordView>> listAdminFeedback() {
+    return ApiResponse.ok(feedbackService.listAdminFeedback());
   }
 
-  @PostMapping("/api/admin/activity-proposals/{id}/convert")
-  public SubmissionRecordView convertProposal(@PathVariable("id") long id) {
-    return feedbackService.convertProposal(id);
+  @PostMapping("/api/v1/admin/activity-proposals/{id}/convert")
+  @Idempotent
+  public ApiResponse<SubmissionRecordView> convertProposal(@PathVariable("id") long id) {
+    return ApiResponse.ok(feedbackService.convertProposal(id));
   }
 
   /**
    * 功能9：上传反馈图片附件。
    *
-   * <p>端点：POST /api/feedback/images（multipart/form-data，字段名 file）</p>
+   * <p>端点：POST /api/v1/feedback/images（multipart/form-data，字段名 file）</p>
    *
    * <p>业务规则：
    * <ul>
@@ -112,16 +118,17 @@ public class FeedbackController {
    * @param file multipart 文件（由 Spring 自动绑定 multipart/form-data 的 file 字段）
    * @return 上传结果，含访问 URL
    */
-  @PostMapping("/api/feedback/images")
-  public FeedbackService.UploadedImageResult uploadImage(MultipartFile file) {
+  @PostMapping("/api/v1/feedback/images")
+  @Idempotent
+  public ApiResponse<FeedbackService.UploadedImageResult> uploadImage(MultipartFile file) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return feedbackService.uploadImage(userId, file);
+    return ApiResponse.ok(feedbackService.uploadImage(userId, file));
   }
 
   /**
    * 功能10：查询反馈提交详情。
    *
-   * <p>端点：GET /api/feedback/my-submissions/{id}</p>
+   * <p>端点：GET /api/v1/feedback/my-submissions/{id}</p>
    *
    * <p>业务规则：
    * <ul>
@@ -143,9 +150,9 @@ public class FeedbackController {
    * @param id 反馈记录 ID
    * @return 反馈详情视图
    */
-  @GetMapping("/api/feedback/my-submissions/{id}")
-  public SubmissionDetailView getSubmissionDetail(@PathVariable("id") long id) {
+  @GetMapping("/api/v1/feedback/my-submissions/{id}")
+  public ApiResponse<SubmissionDetailView> getSubmissionDetail(@PathVariable("id") long id) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return feedbackService.getSubmissionDetail(userId, id);
+    return ApiResponse.ok(feedbackService.getSubmissionDetail(userId, id));
   }
 }

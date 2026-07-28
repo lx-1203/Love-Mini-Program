@@ -122,7 +122,7 @@ const { t } = useI18n();
 }
 
 .icebreaker__label {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 700;
   color: var(--c-brand);
   letter-spacing: 0.5rpx;
@@ -135,7 +135,7 @@ const { t } = useI18n();
 }
 
 .icebreaker__loading-hint {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary);
 }
 
@@ -144,7 +144,7 @@ const { t } = useI18n();
   align-items: center;
   gap: 4rpx;
   padding: 8rpx 16rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
   transition: background 0.2s;
 }
@@ -154,13 +154,13 @@ const { t } = useI18n();
 }
 
 .icebreaker__refresh-icon {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 700;
   color: var(--c-brand);
 }
 
 .icebreaker__refresh-text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-brand);
   font-weight: 600;
 }
@@ -184,7 +184,7 @@ const { t } = useI18n();
   flex-direction: column;
   gap: 10rpx;
   padding: 22rpx 24rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
   box-shadow: 0 2rpx 12rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04)));
@@ -201,18 +201,18 @@ const { t } = useI18n();
   align-self: flex-start;
   display: inline-flex;
   padding: 4rpx 12rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08))), var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))));
 }
 
 .icebreaker__card-badge-text {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-brand);
   font-weight: 600;
 }
 
 .icebreaker__card-content {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-primary);
   line-height: 1.55;
   display: -webkit-box;
@@ -222,7 +222,7 @@ const { t } = useI18n();
 }
 
 .icebreaker__card-hint {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-text-tertiary);
 }
 
@@ -277,7 +277,7 @@ const { t } = useI18n();
 }
 
 .icebreaker__empty-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary);
 }
 </style>

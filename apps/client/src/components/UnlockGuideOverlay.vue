@@ -105,7 +105,7 @@ function handleKnown() {
   justify-content: center;
   padding-bottom: calc(env(safe-area-inset-bottom) + 80rpx);
   pointer-events: auto;
-  animation: overlay-fade-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: overlay-fade-in var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes overlay-fade-in {
@@ -135,7 +135,7 @@ function handleKnown() {
   max-width: 86%;
   padding: 40rpx 40rpx 32rpx;
   background: var(--c-overlay-white-bg-most, rgba(255, 255, 255, 0.96));
-  border-radius: 28rpx;
+  border-radius: var(--r-xxl, 28rpx);
   box-shadow: 0 16rpx 48rpx var(--c-black-shadow-xl, rgba(0, 0, 0, 0.24));
   display: flex;
   flex-direction: column;
@@ -177,7 +177,7 @@ function handleKnown() {
 }
 
 .unlock-overlay__arrow-icon {
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 700;
   line-height: 1;
@@ -185,7 +185,7 @@ function handleKnown() {
 
 /* 引导标题 */
 .unlock-overlay__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-text-primary, #0f172a);
   margin-bottom: 12rpx;
@@ -193,7 +193,7 @@ function handleKnown() {
 
 /* 引导描述 */
 .unlock-overlay__desc {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary, #475569);
   text-align: center;
   line-height: 1.5;
@@ -213,11 +213,11 @@ function handleKnown() {
   justify-content: center;
   padding: 0;
   margin: 0;
-  box-shadow: 0 6rpx 20rpx rgba(59, 130, 246, 0.32);
+  box-shadow: var(--s-info, 0 6rpx 20rpx rgba(59, 130, 246, 0.32));
   &::after {
     border: none;
   }
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .unlock-overlay__btn:active {
@@ -225,7 +225,7 @@ function handleKnown() {
 }
 
 .unlock-overlay__btn-text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 600;
   color: var(--c-text-inverse, #FFFFFF);
 }

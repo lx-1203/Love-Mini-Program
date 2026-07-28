@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
@@ -55,7 +56,7 @@ public class AdminAuditLogService {
         }
         try {
             auditLogRepository.save(auditLog);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             // 审计日志写入失败不应影响主流程，仅记录警告
             log.warn("Failed to save audit log: operation={}, operatorId={}, error={}",
                     auditLog.getOperation(), auditLog.getOperatorId(), e.getMessage());

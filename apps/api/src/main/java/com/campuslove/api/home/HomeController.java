@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
-@RequestMapping("/api/home")
+@RequestMapping("/api/v1/home")
 public class HomeController {
 
   private final HomeService homeService;

@@ -23,9 +23,19 @@ import ShareCard from "../../components/common/ShareCard.vue";
 import { IMAGE_PATHS } from "../../config/images";
 // 修复：推荐用户数据从 config 动态读取，避免在页面内硬编码
 import { homeRecommendedPeople } from "../../config/home-recommended-people";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
+// SubTask 5.5.2：列表页图片 @error 占位图通用方案
+import { useImageFallback } from "../../composables/useImageFallback";
 
 // 同步自定义 TabBar 选中状态（首页 = 索引 2）
 useTabBar(2);
+
+// SubTask 5.5.2：列表页图片 @error 占位图 —— 失败 key 集合与判断函数
+// 注意：使用对象引用而非解构，避免 vue-tsc 在某些场景下误报 "All destructured elements are unused"
+const imageFallback = useImageFallback();
+const onImageError = imageFallback.onImageError;
+const isImageFailed = imageFallback.isImageFailed;
 
 const { t } = useI18n();
 
@@ -599,10 +609,12 @@ onMounted(() => {
             >
               <view class="activity-card__image-wrap">
                 <image
-                  v-if="item.coverImage"
+                  v-if="item.coverImage && !isImageFailed(`activity-${item.id}`)"
                   class="activity-card__img"
-                  :src="item.coverImage"
-                  mode="aspectFill" alt=""
+                  :src="resolveMediaUrl(item.coverImage)"
+                  mode="aspectFill"
+                  lazy-load alt=""
+                  @error="onImageError(`activity-${item.id}`)"
                 />
                 <view v-else class="activity-card__placeholder">
                   <image class="activity-placeholder-emoji" :src="emojiIcons.celebration" mode="aspectFit" alt="" />
@@ -636,6 +648,7 @@ onMounted(() => {
                       :src="user.avatar"
                       custom-class="user-avatar__img"
                       mode="aspectFill"
+                      :lazy-load="true"
                     />
                   </view>
                 </view>
@@ -731,6 +744,7 @@ onMounted(() => {
                     :src="post.avatar"
                     custom-class="post-avatar__img"
                     mode="aspectFill"
+                    :lazy-load="true"
                   />
                 </view>
               </view>
@@ -796,6 +810,7 @@ onMounted(() => {
                   :src="item.image"
                   custom-class="shop-image__img"
                   mode="aspectFill"
+                  :lazy-load="true"
                 />
               </view>
               <text class="shop-title-new">{{ item.title }}</text>
@@ -871,13 +886,17 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   background: var(--c-gradient-page);
 }
 
 .home-scroll {
+  /* mp-weixin 不支持 100vh，配合 flex:1 实现自适应高度 */
   flex: 1;
-  height: 100vh;
+  /* 占位高度，配合 flex:1 让 scroll-view 撑满剩余空间；0 避免 vh 单位 */
+  height: 0;
+  min-height: 0;
 }
 
 .section-wrap {
@@ -1196,42 +1215,42 @@ onMounted(() => {
 
 .function-icon--pink {
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  box-shadow: 0 6px 16px var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
 }
 
 .function-icon--purple {
   background: linear-gradient(135deg, var(--c-lavender-500, #A78BFA) 0%, var(--c-lavender-500, #8B5CF6) 100%);
-  box-shadow: 0 6px 16px var(--c-lavender-500, var(--c-lavender-500, rgba(139, 92, 246, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--c-lavender-500, var(--c-lavender-500, rgba(139, 92, 246, 0.3)));
 }
 
 .function-icon--orange {
   background: linear-gradient(135deg, var(--c-accent-400, #FB923C) 0%, var(--c-accent-400) 100%);
-  box-shadow: 0 6px 16px var(--c-tag-match-to, var(--c-tag-match-to, rgba(249, 115, 22, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--c-tag-match-to, var(--c-tag-match-to, rgba(249, 115, 22, 0.3)));
 }
 
 .function-icon--red {
   background: linear-gradient(135deg, var(--c-error-dark, #F87171) 0%, var(--c-error) 100%);
-  box-shadow: 0 6px 16px var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
 }
 
 .function-icon--green {
   background: linear-gradient(135deg, var(--c-success, #34D399) 0%, var(--c-success) 100%);
-  box-shadow: 0 6px 16px var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.3)));
 }
 
 .function-icon--cyan {
   background: linear-gradient(135deg, var(--c-info-400, #22D3EE) 0%, var(--c-info-500, #06B6D4) 100%);
-  box-shadow: 0 6px 16px var(--c-info-500, var(--c-info-500, rgba(6, 182, 212, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--c-info-500, var(--c-info-500, rgba(6, 182, 212, 0.3)));
 }
 
 .function-icon--yellow {
   background: linear-gradient(135deg, var(--c-gold, #FBBF24) 0%, var(--c-warning, #F59E0B) 100%);
-  box-shadow: 0 6px 16px var(--c-warning-border-tint, var(--c-warning-border-tint, rgba(245, 158, 11, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--c-warning-border-tint, var(--c-warning-border-tint, rgba(245, 158, 11, 0.3)));
 }
 
 .function-icon--blue {
   background: linear-gradient(135deg, var(--c-info-400, #60A5FA) 0%, var(--c-info-500, #3B82F6) 100%);
-  box-shadow: 0 6px 16px var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.3)));
 }
 
 .function-emoji {

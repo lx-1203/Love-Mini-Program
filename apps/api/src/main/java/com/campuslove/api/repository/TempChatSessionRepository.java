@@ -2,6 +2,7 @@ package com.campuslove.api.repository;
 
 import com.campuslove.api.entity.TempChatSession;
 import com.campuslove.api.entity.TempChatSession.SessionPhase;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -79,4 +80,17 @@ public interface TempChatSessionRepository extends JpaRepository<TempChatSession
     Optional<TempChatSession> findActiveByMatchId(
             @Param("matchId") String matchId,
             @Param("excludedPhases") List<SessionPhase> excludedPhases);
+
+    /**
+     * 查询指定阶段且已超过关闭时间的会话（用于定时清理过期会话）。
+     *
+     * <p>SubTask 5.3.1：用于 {@code TempChatCleanupService.cleanupExpiredSessions()}
+     * 定时任务，每小时一次扫描所有 {@code active}/@{code matching} 阶段且
+     * {@code closesAt < now()} 的会话，将其标记为 {@code expired}。</p>
+     *
+     * @param phase     目标阶段（active / matching）
+     * @param cutoff    关闭时间阈值（通常为 {@code LocalDateTime.now()}）
+     * @return 已过期但尚未标记的会话列表
+     */
+    List<TempChatSession> findByPhaseAndClosesAtBefore(SessionPhase phase, LocalDateTime cutoff);
 }

@@ -235,7 +235,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .history-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   background: linear-gradient(180deg, var(--c-tint-green-50, #F0FDF8) 0%, $bg-page 50%);
   padding-bottom: 40rpx;
 }
@@ -268,7 +269,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .back-icon {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   color: $green-primary;
   font-weight: 600;
 }
@@ -299,7 +300,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 28rpx 32rpx;
   margin: 0 24rpx 28rpx;
   background-color: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
 }
 
@@ -311,7 +312,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .stat-num {
-  font-size: 44rpx;
+  font-size: var(--fs-5xl, 44rpx);
   font-weight: 800;
   // #ifdef H5
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
@@ -325,7 +326,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .stat-label {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
   font-weight: 500;
 }
@@ -340,7 +341,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .history-card {
   background-color: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   padding: 28rpx;
   box-shadow: $card-soft-shadow;
   transition: all 0.15s ease;
@@ -383,14 +384,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .card-name {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: $text-primary;
 }
 
 .status-badge {
   padding: 8rpx 18rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
 }
 
 .status-liked {
@@ -410,18 +411,18 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .status-text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 600;
 }
 
 .card-headline {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
   margin-bottom: 8rpx;
 }
 
 .card-bio {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-secondary;
   line-height: 1.6;
   overflow: hidden;
@@ -449,7 +450,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   width: 100%;
   height: 80rpx;
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   border: none;
   padding: 0;
   margin: 0;
@@ -468,13 +469,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .rewind-icon {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   color: $white;
   margin-right: 10rpx;
 }
 
 .rewind-label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $white;
   font-weight: 600;
 }
@@ -487,7 +488,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .hint-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -516,7 +517,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .empty-subtitle {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-tertiary;
   line-height: 1.6;
 }

@@ -1,0 +1,110 @@
+# ============================================================
+# Alertmanager 告警路由配置（Task 8.2.1）
+# ============================================================
+# 职责：
+#   1. 接收 Prometheus 推送的告警
+#   2. 按严重级 / 服务分组、去重、抑制
+#   3. 路由到不同通知渠道（邮件 / 钉钉 / 飞书）
+#
+# 通知策略：
+#   - critical：立即通知，1 小时重复提醒
+#   - warning：聚合 5 分钟后通知，4 小时重复
+#   - info：仅归档，不通知
+# ============================================================
+
+global:
+  # 发件人 SMTP 配置（邮件通知）
+  smtp_smarthost: '${SMTP_HOST:smtp.example.com:587}'
+  smtp_from: '${SMTP_FROM:alert@example.com}'
+  smtp_auth_username: '${SMTP_USER:}'
+  smtp_auth_password: '${SMTP_PASSWORD:}'
+  smtp_require_tls: true
+  # 告警去重窗口：相同告警在该时间内只发一次
+  resolve_timeout: 5m
+
+# ---------- 告警模板 ----------
+templates:
+  - /etc/alertmanager/templates/*.tmpl
+
+# ---------- 路由规则 ----------
+route:
+  # 顶层分组：按 alertname 与 service 分组，避免同类告警刷屏
+  group_by: ['alertname', 'service', 'severity']
+  # 分组等待：首次告警后等 30s，凑齐同组其他告警再发
+  group_wait: 30s
+  # 分组间隔：同一组后续告警的发送间隔
+  group_interval: 5m
+  # 重复间隔：相同告警再次发送的最小间隔
+  repeat_interval: 4h
+  # 默认接收者
+  receiver: default-webhook
+  routes:
+    # critical 级别：立即发送，1 小时重复
+    - matchers:
+        - severity = critical
+      receiver: critical-email
+      group_wait: 0s
+      repeat_interval: 1h
+      continue: true
+    # warning 级别：聚合 5 分钟发送
+    - matchers:
+        - severity = warning
+      receiver: warning-webhook
+      group_wait: 30s
+      repeat_interval: 4h
+    # info 级别：仅归档，不通知
+    - matchers:
+        - severity = info
+      receiver: null-pager
+
+# ---------- 抑制规则 ----------
+# 当高级别告警触发时，抑制低级别告警，避免噪音
+inhibit_rules:
+  # 服务下线时，抑制该服务的所有其他告警
+  - source_matchers:
+      - alertname = ApiDown
+    target_matchers:
+      - service = campuslove-api
+    equal: ['service']
+  # 主机磁盘满时，抑制该主机的其他磁盘相关告警
+  - source_matchers:
+      - alertname = HostDiskHigh
+    target_matchers:
+      - alertname =~ "Db.*|Jvm.*"
+    equal: ['instance']
+
+# ---------- 接收者定义 ----------
+receivers:
+
+  # 默认接收者：webhook（用于调试与归档）
+  - name: default-webhook
+    webhook_configs:
+      - url: '${DEFAULT_WEBHOOK_URL:http://localhost:9999/webhook}'
+        send_resolved: true
+        max_alerts: 0
+
+  # critical 级别：邮件 + 钉钉
+  - name: critical-email
+    email_configs:
+      - to: '${CRITICAL_EMAIL:oncall@example.com}'
+        subject: '[CRITICAL] {{ .CommonLabels.alertname }}'
+        html: '{{ template "email.default.html" . }}'
+        send_resolved: true
+    webhook_configs:
+      # 钉钉机器人 webhook
+      - url: '${DINGTALK_CRITICAL_WEBHOOK:}'
+        send_resolved: true
+        max_alerts: 0
+
+  # warning 级别：飞书群机器人
+  - name: warning-webhook
+    webhook_configs:
+      - url: '${FEISHU_WARNING_WEBHOOK:}'
+        send_resolved: true
+        max_alerts: 0
+
+  # info 级别：丢弃
+  - name: null-pager
+    webhook_configs:
+      - url: '${NULL_WEBHOOK:http://localhost:9999/null}'
+        send_resolved: false

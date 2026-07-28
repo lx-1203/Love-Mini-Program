@@ -171,7 +171,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: linear-gradient(180deg, var(--c-tint-green-50, #F0FDF8) 0%, $bg-page 40%);
 }
 
@@ -184,7 +185,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .shop-header__title {
-  font-size: 44rpx;
+  font-size: var(--fs-5xl, 44rpx);
   font-weight: 800;
   color: $text-primary;
   // #ifdef H5
@@ -216,7 +217,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .category-item {
   flex-shrink: 0;
   padding: 16rpx 32rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: $white;
   border: 2rpx solid transparent;
   box-shadow: $card-soft-shadow;
@@ -230,7 +231,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .category-item__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-secondary;
   font-weight: 500;
 }
@@ -263,7 +264,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .shop-card {
   width: calc(50% - 10rpx);
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   overflow: hidden;
   box-shadow: $card-soft-shadow;
   border: none;
@@ -294,13 +295,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   top: 16rpx;
   left: 16rpx;
   padding: 8rpx 16rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $pink-primary, var(--c-romance-400, #F472B6));
   box-shadow: 0 4rpx 12rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
 }
 
 .shop-card__tag text {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: $white;
   font-weight: 700;
 }
@@ -313,7 +314,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .shop-card__title {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-primary;
   font-weight: 600;
   overflow: hidden;
@@ -328,19 +329,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .shop-card__price {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 800;
   color: $pink-primary;
 }
 
 .shop-card__original-price {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
   text-decoration: line-through;
 }
 
 .shop-card__sales {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
 }
 

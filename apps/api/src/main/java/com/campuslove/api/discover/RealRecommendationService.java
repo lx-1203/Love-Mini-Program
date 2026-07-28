@@ -1,156 +1,94 @@
 package com.campuslove.api.discover;
 
-import com.campuslove.api.campus.CampusCertificationService;
-import com.campuslove.api.config.CacheNames;
-import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
 import com.campuslove.api.entity.ActivityEnrollment;
-import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleTopic;
-import com.campuslove.api.entity.DailyAnswer;
-import com.campuslove.api.entity.HeartSignal;
-import com.campuslove.api.entity.HeartSignal.SignalStatus;
-import com.campuslove.api.entity.Like;
-import com.campuslove.api.entity.Like.LikeStatus;
-import com.campuslove.api.entity.PassRecord;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostStatus;
 import com.campuslove.api.entity.RecommendationPreference;
-import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
-import com.campuslove.api.entity.UserCampusProfile;
-import com.campuslove.api.entity.UserScheduleProfile;
 import com.campuslove.api.repository.ActivityEnrollmentRepository;
 import com.campuslove.api.repository.ActivityRepository;
-import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
-import com.campuslove.api.repository.DailyAnswerRepository;
-import com.campuslove.api.repository.HeartSignalRepository;
-import com.campuslove.api.repository.LikeRepository;
-import com.campuslove.api.repository.PassRecordRepository;
 import com.campuslove.api.repository.PostRepository;
-import com.campuslove.api.repository.RecommendationPreferenceRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
-import com.campuslove.api.repository.UserCampusProfileRepository;
-import com.campuslove.api.repository.UserRepository;
-import com.campuslove.api.repository.UserScheduleProfileRepository;
-import com.campuslove.api.monitor.MatchMetrics;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.campuslove.api.config.CacheNames;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 真实推荐服务实现。
- * 在 real profile 下激活，使用 Repository 实现数据库查询。
- * 提供人物推荐、偏好管理、推荐历史等功能。
+ * 真实推荐服务实现（real profile）。
+ *
+ * <p>Task 4.1.5 重构：原 1368 行 God Class 已拆分为 4 个组件：
+ * {@link RecommendationStrategy}（算法）、{@link UserPreferenceCalculator}（偏好）、
+ * {@link RecommendationCacheManager}（缓存）、{@link RecommendationRanker}（排序）。
+ * 本类保留讨论/活动推荐、筛选过滤及委托逻辑。所有 public 方法签名保持向后兼容。</p>
  */
 @Profile("real")
 @Service
 public class RealRecommendationService implements RecommendationService {
 
-    private final RecommendationConfig recommendationConfig;
-
-    private final UserRepository userRepository;
-    private final LikeRepository likeRepository;
-    private final UserCampusProfileRepository userCampusProfileRepository;
-    private final UserScheduleProfileRepository userScheduleProfileRepository;
-    private final RecommendationPreferenceRepository recommendationPreferenceRepository;
-    private final UserBasicProfileRepository userBasicProfileRepository;
     private final ActivityRepository activityRepository;
     private final ActivityEnrollmentRepository activityEnrollmentRepository;
     private final CircleTopicRepository circleTopicRepository;
     private final PostRepository postRepository;
-    private final HeartSignalRepository heartSignalRepository;
-    private final PassRecordRepository passRecordRepository;
-    private final CircleMembershipRepository circleMembershipRepository;
-    private final DailyAnswerRepository dailyAnswerRepository;
-    private final ObjectMapper objectMapper;
-    private final CampusCertificationService campusCertificationService;
-    /**
-     * 匹配业务监控指标。用于记录推荐算法耗时（match.recommend.latency）。
-     */
-    private final MatchMetrics matchMetrics;
+    private final UserBasicProfileRepository userBasicProfileRepository;
+
+    // 拆分后的 4 个组件
+    private final RecommendationStrategy recommendationStrategy;
+    private final UserPreferenceCalculator preferenceCalculator;
+    private final RecommendationCacheManager cacheManager;
+    private final RecommendationRanker ranker;
 
     public RealRecommendationService(
-            RecommendationConfig recommendationConfig,
-            UserRepository userRepository,
-            LikeRepository likeRepository,
-            UserCampusProfileRepository userCampusProfileRepository,
-            UserScheduleProfileRepository userScheduleProfileRepository,
-            RecommendationPreferenceRepository recommendationPreferenceRepository,
-            UserBasicProfileRepository userBasicProfileRepository,
             ActivityRepository activityRepository,
             ActivityEnrollmentRepository activityEnrollmentRepository,
             CircleTopicRepository circleTopicRepository,
             PostRepository postRepository,
-            HeartSignalRepository heartSignalRepository,
-            PassRecordRepository passRecordRepository,
-            CircleMembershipRepository circleMembershipRepository,
-            DailyAnswerRepository dailyAnswerRepository,
-            ObjectMapper objectMapper,
-            CampusCertificationService campusCertificationService,
-            MatchMetrics matchMetrics) {
-        this.recommendationConfig = recommendationConfig;
-        this.userRepository = userRepository;
-        this.likeRepository = likeRepository;
-        this.userCampusProfileRepository = userCampusProfileRepository;
-        this.userScheduleProfileRepository = userScheduleProfileRepository;
-        this.recommendationPreferenceRepository = recommendationPreferenceRepository;
-        this.userBasicProfileRepository = userBasicProfileRepository;
+            UserBasicProfileRepository userBasicProfileRepository,
+            RecommendationStrategy recommendationStrategy,
+            UserPreferenceCalculator preferenceCalculator,
+            RecommendationCacheManager cacheManager,
+            RecommendationRanker ranker) {
         this.activityRepository = activityRepository;
         this.activityEnrollmentRepository = activityEnrollmentRepository;
         this.circleTopicRepository = circleTopicRepository;
         this.postRepository = postRepository;
-        this.heartSignalRepository = heartSignalRepository;
-        this.passRecordRepository = passRecordRepository;
-        this.circleMembershipRepository = circleMembershipRepository;
-        this.dailyAnswerRepository = dailyAnswerRepository;
-        this.objectMapper = objectMapper;
-        this.campusCertificationService = campusCertificationService;
-        this.matchMetrics = matchMetrics;
+        this.userBasicProfileRepository = userBasicProfileRepository;
+        this.recommendationStrategy = recommendationStrategy;
+        this.preferenceCalculator = preferenceCalculator;
+        this.cacheManager = cacheManager;
+        this.ranker = ranker;
     }
 
-    // ---- Phase 1 存根方法（暂未实现，后续迭代补充） ----
+    // ---- 讨论推荐 ----
 
-    /**
-     * 获取推荐讨论列表。
-     * 基于 CircleTopic 和 Post 的热门内容，按回复数和点赞数加权排序。
-     * 热度计算公式: replyCount * 3 + likesCount * 2（回复权重更高）。
-     * 合并两类内容后按热度降序排列，取前 DISCUSSION_LIMIT 个。
-     */
+    /** 获取推荐讨论列表：基于 CircleTopic + Post 热度（reply*3 + like*2）排序。 */
     @Override
     @Transactional(readOnly = true)
     public List<DiscussionRecommendationView> getDiscussions() {
         List<ScoredDiscussion> scoredDiscussions = new ArrayList<>();
 
-        // 1. 从 CircleTopic 获取热门话题（分页查询，按创建时间倒序，默认每页20条）
+        // 1. 从 CircleTopic 获取热门话题
         try {
             List<CircleTopic> topics = circleTopicRepository.findAll(
                     PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt")))
                     .getContent();
             for (CircleTopic topic : topics) {
-                // 话题热度 = 回复数 * 3（话题没有点赞数，以回复数为主要指标）
                 int heatScore = (topic.getReplyCount() != null ? topic.getReplyCount() : 0) * 3;
-                String summary = truncateContent(topic.getContent(), 60);
-                String heatLabel = buildHeatLabel(topic.getReplyCount(), 0);
+                String summary = ranker.truncateContent(topic.getContent(), 60);
+                String heatLabel = ranker.buildHeatLabel(topic.getReplyCount(), 0);
                 scoredDiscussions.add(new ScoredDiscussion(
                         String.valueOf(topic.getId()),
                         topic.getTitle(),
@@ -159,7 +97,7 @@ public class RealRecommendationService implements RecommendationService {
                         heatScore
                 ));
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             // CircleTopic 查询失败时忽略，继续从 Post 获取
         }
 
@@ -167,17 +105,15 @@ public class RealRecommendationService implements RecommendationService {
         try {
             List<Post> posts = postRepository.findByStatusOrderByCreatedAtDesc(
                     PostStatus.active,
-                    org.springframework.data.domain.PageRequest.of(0, 50))
+                    PageRequest.of(0, 50))
                     .getContent();
             for (Post post : posts) {
-                // 帖子热度 = 评论数 * 3 + 点赞数 * 2
                 int commentsCount = post.getCommentsCount() != null ? post.getCommentsCount() : 0;
                 int likesCount = post.getLikesCount() != null ? post.getLikesCount() : 0;
                 int heatScore = commentsCount * 3 + likesCount * 2;
-                String summary = truncateContent(post.getContent(), 60);
-                String heatLabel = buildHeatLabel(commentsCount, likesCount);
-                // Post 没有 title 字段，用内容前 30 字作为标题
-                String title = truncateContent(post.getContent(), 30);
+                String summary = ranker.truncateContent(post.getContent(), 60);
+                String heatLabel = ranker.buildHeatLabel(commentsCount, likesCount);
+                String title = ranker.truncateContent(post.getContent(), 30);
                 scoredDiscussions.add(new ScoredDiscussion(
                         String.valueOf(post.getId()),
                         title,
@@ -186,26 +122,27 @@ public class RealRecommendationService implements RecommendationService {
                         heatScore
                 ));
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             // Post 查询失败时忽略
         }
 
-        // 3. 按热度降序排序，取前 DISCUSSION_LIMIT 个
+        // 3. 按热度降序排序
         scoredDiscussions.sort(Comparator.comparingInt(ScoredDiscussion::heatScore).reversed());
 
         return scoredDiscussions.stream()
-                .limit(recommendationConfig.getDiscussionLimit())
+                .limit(recommendationConfigDiscussionLimit())
                 .map(sd -> new DiscussionRecommendationView(sd.id(), sd.title(), sd.summary(), sd.heatLabel()))
                 .toList();
     }
 
+    // ---- 活动推荐 ----
+
     @Override
     @Transactional(readOnly = true)
     public List<ActivityRecommendationView> getActivities() {
-        // 从 ActivityRepository 加载 upcoming 状态的活动，取前 10 个
         List<Activity> activities = activityRepository
                 .findByStatusOrderByActivityDateAsc(ActivityStatus.upcoming,
-                        org.springframework.data.domain.PageRequest.of(0, 10))
+                        PageRequest.of(0, 10))
                 .getContent();
 
         return activities.stream()
@@ -230,18 +167,14 @@ public class RealRecommendationService implements RecommendationService {
             throw new IllegalArgumentException("Invalid activityId format: " + activityId);
         }
 
-        // 查找活动，不存在则抛异常
         Activity activity = activityRepository.findById(activityIdLong)
                 .orElseThrow(() -> new IllegalArgumentException("Activity not found: " + activityId));
 
         if (enrolled) {
-            // 报名操作：检查是否已报名
             if (activityEnrollmentRepository.existsByActivityIdAndUserId(activityIdLong, userId)) {
-                // 已报名，返回当前状态
                 return new ActivityEnrollmentView(activityId, true, activity.getEnrollmentCount());
             }
 
-            // 创建报名记录
             LocalDateTime now = LocalDateTime.now();
             ActivityEnrollment enrollment = new ActivityEnrollment();
             enrollment.setActivityId(activityIdLong);
@@ -250,26 +183,22 @@ public class RealRecommendationService implements RecommendationService {
             enrollment.setCreatedAt(now);
             activityEnrollmentRepository.save(enrollment);
 
-            // 更新报名人数 +1
             activity.setEnrollmentCount(activity.getEnrollmentCount() + 1);
             activity.setUpdatedAt(LocalDateTime.now());
             activityRepository.save(activity);
 
             return new ActivityEnrollmentView(activityId, true, activity.getEnrollmentCount());
         } else {
-            // 取消报名操作：查找并删除已存在的报名记录
             Optional<ActivityEnrollment> enrollmentOpt =
                     activityEnrollmentRepository.findByActivityIdAndUserId(activityIdLong, userId);
 
             if (enrollmentOpt.isEmpty()) {
-                // 未报名，返回当前状态
                 return new ActivityEnrollmentView(activityId, false, activity.getEnrollmentCount());
             }
 
-            // 删除报名记录
-            activityEnrollmentRepository.delete(enrollmentOpt.get());
+            activityEnrollmentRepository.delete(enrollmentOpt.orElseThrow(() ->
+                    new IllegalStateException("enrollmentOpt 已确认非空但 orElseThrow 触发，数据不一致")));
 
-            // 更新报名人数 -1（最小为 0）
             activity.setEnrollmentCount(Math.max(0, activity.getEnrollmentCount() - 1));
             activity.setUpdatedAt(LocalDateTime.now());
             activityRepository.save(activity);
@@ -292,18 +221,15 @@ public class RealRecommendationService implements RecommendationService {
             throw new IllegalArgumentException("Invalid activityId format: " + activityId);
         }
 
-        // 查找活动，不存在则抛异常
         Activity activity = activityRepository.findById(activityIdLong)
                 .orElseThrow(() -> new IllegalArgumentException("Activity not found: " + activityId));
 
-        // 判断当前用户是否已报名
         boolean isEnrolled = false;
         if (userId != null) {
             isEnrolled = activityEnrollmentRepository.existsByActivityIdAndUserId(activityIdLong, userId);
         }
 
-        // 解析参与者头像列表
-        List<String> avatars = parseParticipantAvatars(activity.getParticipantAvatars());
+        List<String> avatars = preferenceCalculator.parseStringList(activity.getParticipantAvatars());
 
         return new ActivityDetailView(
                 activity.getId(),
@@ -319,6 +245,8 @@ public class RealRecommendationService implements RecommendationService {
         );
     }
 
+    // ---- 推荐偏好（委托 UserPreferenceCalculator） ----
+
     /**
      * 获取推荐偏好设置（无用户上下文版本）。
      * @deprecated 无法获取用户特定偏好，仅返回默认值。
@@ -327,7 +255,6 @@ public class RealRecommendationService implements RecommendationService {
     @Override
     @Deprecated
     public RecommendationPreferencesView getPreferences() {
-        // 无用户上下文，返回默认偏好（同校优先 / 中午12点刷新 / 启用校园优先）
         return new RecommendationPreferencesView("12:00", "campus_first", true);
     }
 
@@ -344,289 +271,36 @@ public class RealRecommendationService implements RecommendationService {
                 "无用户上下文，无法持久化偏好。请使用 updatePreferences(Long userId, RecommendationPreference data) 方法");
     }
 
-    /**
-     * 更新指定用户的推荐偏好设置（持久化到数据库）。
-     * 根据用户 ID 查找已有偏好记录，存在则更新，不存在则新建后保存。
-     * 偏好会影响推荐排序：同校优先(campus_first)时校区匹配用户排序靠前。
-     *
-     * <p>缓存失效：偏好更新会改变推荐结果排序，因此通过 @CacheEvict 清除该用户的
-     * {@link CacheNames#MATCH_RECOMMEND} 缓存，下次查询时重新计算。</p>
-     *
-     * @param userId 用户 ID，不能为空
-     * @param data   推荐偏好实体数据，包含 preferredTime 和 scope 字段
-     * @return 更新后的推荐偏好视图
-     * @throws IllegalArgumentException 参数校验失败时抛出
-     */
     @Override
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId")
     public RecommendationPreferencesView updatePreferences(Long userId, RecommendationPreference data) {
-        // 参数校验
-        if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
-        }
-        if (data == null) {
-            throw new IllegalArgumentException("偏好数据不能为空");
-        }
-        if (data.getPreferredTime() == null || data.getPreferredTime().isBlank()) {
-            throw new IllegalArgumentException("推荐时间偏好(preferredTime)不能为空");
-        }
-        if (data.getScope() == null || data.getScope().isBlank()) {
-            throw new IllegalArgumentException("推荐范围(scope)不能为空");
-        }
-
-        // 校验 scope 取值范围
-        Set<String> validScopes = Set.of("campus_first", "city", "unlimited");
-        if (!validScopes.contains(data.getScope())) {
-            throw new IllegalArgumentException(
-                    "推荐范围(scope)无效，有效值: campus_first, city, unlimited，当前值: " + data.getScope());
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-
-        try {
-            // 查找已有偏好记录，存在则更新，不存在则新建
-            RecommendationPreference pref = recommendationPreferenceRepository.findByUserId(userId)
-                    .orElseGet(() -> {
-                        RecommendationPreference newPref = new RecommendationPreference();
-                        newPref.setUserId(userId);
-                        newPref.setCreatedAt(now);
-                        return newPref;
-                    });
-
-            // 更新偏好字段
-            pref.setPreferredTime(data.getPreferredTime());
-            pref.setScope(data.getScope());
-            // campusPriority 可为 null，保持数据库已有值不变
-            if (data.getCampusPriority() != null) {
-                pref.setCampusPriority(data.getCampusPriority());
-            }
-            pref.setUpdatedAt(now);
-
-            // 持久化到数据库
-            recommendationPreferenceRepository.save(pref);
-
-            return new RecommendationPreferencesView(
-                    pref.getPreferredTime(), pref.getScope(), pref.getCampusPriority());
-        } catch (Exception e) {
-            // 数据库操作异常时，包装为运行时异常向上抛出
-            throw new RuntimeException("保存推荐偏好失败，用户ID: " + userId, e);
-        }
+        return preferenceCalculator.updatePreferences(userId, data);
     }
 
-    // ---- Phase 2 核心实现：人物推荐 ----
-
-    /**
-     * 获取推荐人物列表。
-     * 加权排序逻辑：
-     * - 同校区 (campus_first): +50 权重
-     * - 同城市: +20 权重
-     * - 兴趣标签匹配: +10 每个匹配
-     * - 同专业: +20 权重
-     * - 共同兴趣圈: +5 每个
-     * - 共同每日一问: +3 每个
-     * - 日程重叠: +15 权重
-     * - 校园优先: 同校用户总分+30%
-     * - 根据用户 RecommendationPreference.scope 设置过滤范围
-     * - 每日最多返回 10 个推荐
-     *
-     * <p>缓存策略：使用 {@link CacheNames#MATCH_RECOMMEND} 缓存，TTL 5 分钟，
-     * key 为 userId。结果为 null 或空列表时不缓存（unless 条件），
-     * 避免缓存穿透与空结果占用缓存空间。
-     * 当用户更新偏好（{@link #updatePreferences(Long, RecommendationPreference)} /
-     * {@link #savePreferences}）时通过 @CacheEvict 主动失效。</p>
-     */
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId",
-            unless = "#result == null || #result.isEmpty()")
+    public RecommendationPreferencesView getPreferences(Long userId) {
+        return preferenceCalculator.getPreferences(userId);
+    }
+
+    @Override
+    @Transactional
+    public RecommendationPreferencesView savePreferences(Long userId, String preferredTime, String scope, Boolean campusPriority) {
+        return preferenceCalculator.savePreferences(userId, preferredTime, scope, campusPriority);
+    }
+
+    // ---- 人物推荐（委托 CacheManager / Strategy / Ranker） ----
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId")
     public List<RecommendedPersonView> getRecommendations(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
-
-        // 监控：记录推荐算法耗时（System.nanoTime 计算纳秒级耗时，转为毫秒）
-        long startNanos = System.nanoTime();
-
-        try {
-            return doRecommend(userId);
-        } finally {
-            // finally 块保证即使推荐抛异常也能记录耗时
-            try {
-                long durationMs = (System.nanoTime() - startNanos) / 1_000_000;
-                matchMetrics.recordRecommendLatency(durationMs);
-            } catch (Exception ignore) {
-                // 监控逻辑失败忽略，不影响主流程
-            }
-        }
+        return cacheManager.getCachedRecommendations(userId);
     }
 
-    /**
-     * 推荐算法核心实现（由 {@link #getRecommendations(Long)} 调用）。
-     * 抽取出来便于在 finally 中统一记录耗时指标。
-     */
-    private List<RecommendedPersonView> doRecommend(Long userId) {
-        // 1. 获取当前用户的校区、城市和专业信息
-        Optional<UserCampusProfile> myCampusOpt = userCampusProfileRepository.findByUserId(userId);
-        String myCampusName = myCampusOpt.map(UserCampusProfile::getCampusName).orElse("");
-        String myCityName = myCampusOpt.map(UserCampusProfile::getCityName).orElse("");
-        String myDepartmentName = myCampusOpt.map(UserCampusProfile::getDepartmentName).orElse("");
-
-        // 2. 获取当前用户的日程偏好
-        Optional<UserScheduleProfile> myScheduleOpt = userScheduleProfileRepository.findByUserId(userId);
-        String myTimeWindow = myScheduleOpt.map(UserScheduleProfile::getPreferredTimeWindowJson).orElse("{}");
-
-        // 3. 获取当前用户的兴趣标签（从 UserBasicProfile 的 interest_tags 字段）
-        Set<String> myTags = userBasicProfileRepository.findByUserId(userId)
-                .map(profile -> parseInterestTags(profile.getInterestTags()))
-                .orElse(Collections.emptySet());
-
-        // 4. 批量查询当前用户加入的兴趣圈 ID 列表（用于计算共同圈）
-        Set<Long> tempMyCircleIds;
-        try {
-            List<CircleMembership> myMemberships = circleMembershipRepository.findByUserId(userId);
-            tempMyCircleIds = myMemberships.stream()
-                    .map(m -> m.getCircle().getId())
-                    .collect(Collectors.toSet());
-        } catch (Exception e) {
-            tempMyCircleIds = Collections.emptySet();
-        }
-        final Set<Long> myCircleIds = tempMyCircleIds;
-
-        // 5. 批量查询当前用户回答过的每日一问 questionId 列表（用于计算共同回答）
-        Set<Long> tempAnswerQuestionIds;
-        try {
-            List<DailyAnswer> myAnswers = dailyAnswerRepository.findByUserIdOrderByCreatedAtDesc(userId);
-            tempAnswerQuestionIds = myAnswers.stream()
-                    .map(a -> a.getQuestion().getId())
-                    .collect(Collectors.toSet());
-        } catch (Exception e) {
-            tempAnswerQuestionIds = Collections.emptySet();
-        }
-        final Set<Long> myAnswerQuestionIds = tempAnswerQuestionIds;
-
-        // 6. 获取推荐偏好
-        RecommendationPreference pref = recommendationPreferenceRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    RecommendationPreference defaultPref = new RecommendationPreference();
-                    defaultPref.setUserId(userId);
-                    defaultPref.setPreferredTime("12:00");
-                    defaultPref.setScope("campus_first");
-                    return defaultPref;
-                });
-        boolean campusPriorityEnabled = pref.getCampusPriority() != null ? pref.getCampusPriority() : true;
-
-        // 7. 获取已喜欢/已跳过的用户 ID 列表（排除这些用户）
-        List<Like> myLikes = likeRepository.findByUserIdAndStatusIn(userId,
-                List.of(LikeStatus.active));
-        Set<Long> excludedUserIds = myLikes.stream()
-                .map(Like::getTargetUserId)
-                .collect(Collectors.toSet());
-        excludedUserIds.add(userId); // 排除自己
-
-        // 7.1 获取已有心动信号的用户 ID 列表（排除已产生双向信号的用户，避免重复推荐）
-        try {
-            List<HeartSignal> mySignals = heartSignalRepository
-                    .findByUserAIdOrUserBIdAndStatus(userId, userId, SignalStatus.accepted);
-            for (HeartSignal signal : mySignals) {
-                Long partnerId = signal.getUserAId().equals(userId)
-                        ? signal.getUserBId()
-                        : signal.getUserAId();
-                excludedUserIds.add(partnerId);
-            }
-        } catch (Exception e) {
-            // HeartSignal 查询失败时忽略，不影响主流程
-        }
-
-        // 7.2 获取已 pass 的用户 ID 列表（排除左滑跳过的用户）
-        try {
-            List<PassRecord> passRecords = passRecordRepository.findByUserIdOrderByCreatedAtDesc(userId);
-            for (PassRecord record : passRecords) {
-                excludedUserIds.add(record.getPassedUserId());
-            }
-        } catch (Exception e) {
-            // PassRecord 查询失败时忽略，不影响主流程
-        }
-
-        // 8. 使用分页查询候选用户，避免全表扫描
-        List<User> allUsers = userRepository.findAll(
-                PageRequest.of(0, recommendationConfig.getCandidatePageSize())).getContent();
-
-        // 9. 根据推荐范围过滤
-        String scope = pref.getScope();
-        List<User> candidates = allUsers.stream()
-                .filter(u -> !excludedUserIds.contains(u.getId()))
-                .filter(u -> filterByScope(u.getId(), scope, myCampusName, myCityName))
-                .toList();
-
-        // 10. 批量预加载候选用户的关联数据，避免 N+1 查询
-        List<Long> candidateIds = candidates.stream().map(User::getId).toList();
-        Map<Long, UserCampusProfile> campusProfileMap = userCampusProfileRepository.findByUserIdIn(candidateIds)
-                .stream().collect(Collectors.toMap(UserCampusProfile::getUserId, p -> p));
-        Map<Long, UserBasicProfile> basicProfileMap = userBasicProfileRepository.findByUserIdIn(candidateIds)
-                .stream().collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p));
-        // 修复 N+1 查询：原先在循环中调用 findByUserId(id) 会为每个候选用户产生一条 SQL，
-        // 且评分阶段 m.getCircle().getId() 又会触发 LAZY 加载产生 N 条 SQL。
-        // 现在统一改为 findWithCircleByUserIdIn：单条 SQL + @EntityGraph 预加载 circle，
-        // 将 2N+1 条 SQL 压缩为 1 条。
-        Map<Long, List<CircleMembership>> tempMembershipMap;
-        if (candidateIds.isEmpty()) {
-            tempMembershipMap = Collections.emptyMap();
-        } else {
-            try {
-                tempMembershipMap = circleMembershipRepository.findWithCircleByUserIdIn(candidateIds)
-                        .stream()
-                        .collect(Collectors.groupingBy(CircleMembership::getUserId));
-            } catch (Exception e) {
-                // 查询失败时降级为空 Map，不影响主流程（共同圈得分将为 0）
-                tempMembershipMap = Collections.emptyMap();
-            }
-        }
-        final Map<Long, List<CircleMembership>> membershipMap = tempMembershipMap;
-
-        // 11. 加权排序（使用预加载的数据）
-        List<ScoredUser> scoredUsers = new ArrayList<>();
-        for (User candidate : candidates) {
-            UserCampusProfile campusProfile = campusProfileMap.get(candidate.getId());
-            UserBasicProfile basicProfile = basicProfileMap.get(candidate.getId());
-            List<CircleMembership> memberships = membershipMap.getOrDefault(candidate.getId(), List.of());
-            int score = calculateScoreOptimized(
-                    candidate.getId(), myCampusName, myCityName, myTags, myTimeWindow,
-                    myDepartmentName, myCircleIds, myAnswerQuestionIds, campusPriorityEnabled,
-                    campusProfile, basicProfile, memberships);
-            scoredUsers.add(new ScoredUser(candidate, score));
-        }
-
-        // 按分数降序排序
-        scoredUsers.sort(Comparator.comparingInt(ScoredUser::score).reversed());
-
-        // 12. 取前 DAILY_LIMIT 个
-        List<ScoredUser> topResults = scoredUsers.stream()
-                .limit(recommendationConfig.getDailyLimit())
-                .toList();
-
-        // 13. 转换为视图，携带同校/同专业/共同圈等标记（使用预加载的数据）
-        return topResults.stream()
-                .map(su -> toRecommendedPersonViewOptimized(
-                        su.user(), myCampusName, myDepartmentName, myCircleIds,
-                        campusProfileMap.get(su.user().getId()),
-                        basicProfileMap.get(su.user().getId()),
-                        membershipMap.getOrDefault(su.user().getId(), List.of())))
-                .toList();
-    }
-
-    /**
-     * 获取推荐人物列表（带筛选参数）。
-     * Phase B - Task B2：
-     * <ul>
-     *   <li>filter 为 null 或 {@link RecommendationFilter#isEmpty()} 时，委托 {@link #getRecommendations(Long)}，保证向后兼容。</li>
-     *   <li>否则在已排序的推荐结果上应用 in-memory filter，过滤掉不符合筛选条件的候选。</li>
-     * </ul>
-     *
-     * <p>实现说明：先复用既有加权排序逻辑，再在视图层应用筛选，避免重复实现排序算法。
-     * 注意：会在 dailyLimit 之后再过滤，可能导致返回数量少于 dailyLimit；这是可接受的，
-     * 因为筛选条件会缩小候选池，强行补足反而会让低分用户混入结果。</p>
-     */
     @Override
     @Transactional(readOnly = true)
     public List<RecommendedPersonView> getRecommendations(Long userId, RecommendationFilter filter) {
@@ -639,525 +313,55 @@ public class RealRecommendationService implements RecommendationService {
                 .toList();
     }
 
-    /**
-     * 判断单个推荐视图是否满足筛选条件。
-     * 任一维度不满足即返回 false；所有激活的维度都通过才返回 true。
-     *
-     * <p>实现策略：</p>
-     * <ul>
-     *   <li>视图已暴露的字段（height/educationLevel/keyword 命中 name|bio|tags）：直接在视图层判定</li>
-     *   <li>视图未暴露的字段（relationshipStatus/hometownProvince/hometownCity/futureCity）：
-     *       通过 userBasicProfileRepository 重新查询该用户的 BasicProfile 进行判定。
-     *       虽然存在 N+1 查询，但 dailyLimit 上限为 10，性能损耗可接受。</li>
-     * </ul>
-     *
-     * <p>可见性为包级（package-private）以便单元测试直接覆盖筛选维度组合，
-     * 避免测试时需要构造完整的 17 个依赖 mock。</p>
-     */
-    boolean matchesFilter(RecommendedPersonView view, RecommendationFilter filter) {
-        // 1. height 范围（视图已暴露）
-        if (filter.heightMin() != null) {
-            if (view.height() == null || view.height() < filter.heightMin()) {
-                return false;
-            }
-        }
-        if (filter.heightMax() != null) {
-            if (view.height() == null || view.height() > filter.heightMax()) {
-                return false;
-            }
-        }
-        // 2. educationLevel 多选（视图已暴露）
-        if (!filter.educationLevels().isEmpty()) {
-            if (view.educationLevel() == null
-                    || !filter.educationLevels().contains(view.educationLevel())) {
-                return false;
-            }
-        }
-        // 3. keyword 模糊匹配 name/bio/tags（视图已暴露）
-        if (filter.keyword() != null) {
-            String kw = filter.keyword().toLowerCase();
-            boolean inName = view.name() != null && view.name().toLowerCase().contains(kw);
-            boolean inBio = view.bio() != null && view.bio().toLowerCase().contains(kw);
-            boolean inTags = view.tags() != null && view.tags().stream()
-                    .anyMatch(t -> t != null && t.toLowerCase().contains(kw));
-            if (!(inName || inBio || inTags)) {
-                return false;
-            }
-        }
-        // 4. 视图未暴露的字段：DB 回查
-        boolean needDbLookup = !filter.relationshipStatuses().isEmpty()
-                || filter.hometownProvince() != null
-                || filter.hometownCity() != null
-                || filter.futureCity() != null;
-        if (needDbLookup) {
-            UserBasicProfile bp = userBasicProfileRepository.findByUserId(view.id())
-                    .orElse(null);
-            if (bp == null) {
-                return false;
-            }
-            if (!filter.relationshipStatuses().isEmpty()) {
-                if (bp.getRelationshipStatus() == null
-                        || !filter.relationshipStatuses().contains(bp.getRelationshipStatus())) {
-                    return false;
-                }
-            }
-            if (filter.hometownProvince() != null) {
-                if (bp.getHometownProvince() == null
-                        || !filter.hometownProvince().equals(bp.getHometownProvince())) {
-                    return false;
-                }
-            }
-            if (filter.hometownCity() != null) {
-                if (bp.getHometownCity() == null
-                        || !filter.hometownCity().equals(bp.getHometownCity())) {
-                    return false;
-                }
-            }
-            if (filter.futureCity() != null) {
-                if (bp.getFutureCity() == null
-                        || !filter.futureCity().equals(bp.getFutureCity())) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public RecommendationPreferencesView getPreferences(Long userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
-        return recommendationPreferenceRepository.findByUserId(userId)
-                .map(pref -> new RecommendationPreferencesView(
-                        pref.getPreferredTime(), pref.getScope(), pref.getCampusPriority()))
-                .orElse(new RecommendationPreferencesView("12:00", "campus_first", true));
-    }
-
-    @Override
-    @Transactional
-    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId")
-    public RecommendationPreferencesView savePreferences(Long userId, String preferredTime, String scope, Boolean campusPriority) {
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
-        if (preferredTime == null || preferredTime.isBlank()) {
-            throw new IllegalArgumentException("preferredTime is required");
-        }
-        if (scope == null || scope.isBlank()) {
-            throw new IllegalArgumentException("scope is required");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        RecommendationPreference pref = recommendationPreferenceRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    RecommendationPreference newPref = new RecommendationPreference();
-                    newPref.setUserId(userId);
-                    newPref.setCreatedAt(now);
-                    return newPref;
-                });
-
-        pref.setPreferredTime(preferredTime);
-        pref.setScope(scope);
-        pref.setCampusPriority(campusPriority != null ? campusPriority : true);
-        pref.setUpdatedAt(now);
-
-        recommendationPreferenceRepository.save(pref);
-        return new RecommendationPreferencesView(preferredTime, scope, pref.getCampusPriority());
-    }
-
-    /**
-     * 获取推荐历史列表。
-     * 基于用户的 Like 记录和 HeartSignal 记录，返回用户曾经互动过的推荐人物。
-     * Like 记录表示用户曾经喜欢过的人，HeartSignal 记录表示产生过心动信号的人。
-     * 按互动时间倒序排列，最多返回 DAILY_LIMIT 个。
-     */
     @Override
     @Transactional(readOnly = true)
     public List<RecommendedPersonView> getHistory(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
+        return cacheManager.buildHistory(userId);
+    }
 
-        // 预加载当前用户的校区和专业信息（用于标记同校/同专业）
-        Optional<UserCampusProfile> myCampusOpt = userCampusProfileRepository.findByUserId(userId);
-        String myCampusName = myCampusOpt.map(UserCampusProfile::getCampusName).orElse("");
-        String myDepartmentName = myCampusOpt.map(UserCampusProfile::getDepartmentName).orElse("");
+    // ---- 筛选匹配（视图层 in-memory 过滤，包级可见以便单元测试） ----
 
-        // 预加载当前用户的兴趣圈 ID（用于计算共同圈）
-        Set<Long> myCircleIds;
-        try {
-            List<CircleMembership> myMemberships = circleMembershipRepository.findByUserId(userId);
-            myCircleIds = myMemberships.stream()
-                    .map(m -> m.getCircle().getId())
-                    .collect(Collectors.toSet());
-        } catch (Exception e) {
-            myCircleIds = Collections.emptySet();
+    boolean matchesFilter(RecommendedPersonView view, RecommendationFilter filter) {
+        if (filter.heightMin() != null && (view.height() == null || view.height() < filter.heightMin())) return false;
+        if (filter.heightMax() != null && (view.height() == null || view.height() > filter.heightMax())) return false;
+        if (!filter.educationLevels().isEmpty()
+                && (view.educationLevel() == null || !filter.educationLevels().contains(view.educationLevel()))) {
+            return false;
         }
-
-        // 用于去重，避免同一用户出现多次
-        Set<Long> seenUserIds = new HashSet<>();
-        List<User> historyUsers = new ArrayList<>();
-
-        // 1. 从 HeartSignal 记录获取（优先级高，表示有深层互动）
-        try {
-            List<HeartSignal> signals = heartSignalRepository
-                    .findByUserAIdOrUserBIdAndStatus(userId, userId, SignalStatus.accepted);
-            for (HeartSignal signal : signals) {
-                Long partnerId = signal.getUserAId().equals(userId)
-                        ? signal.getUserBId()
-                        : signal.getUserAId();
-                if (seenUserIds.add(partnerId)) {
-                    userRepository.findById(partnerId).ifPresent(historyUsers::add);
-                }
+        if (filter.keyword() != null) {
+            String kw = filter.keyword().toLowerCase();
+            boolean hitName = view.name() != null && view.name().toLowerCase().contains(kw);
+            boolean hitBio = view.bio() != null && view.bio().toLowerCase().contains(kw);
+            boolean hitTags = view.tags() != null && view.tags().stream()
+                    .anyMatch(t -> t != null && t.toLowerCase().contains(kw));
+            if (!(hitName || hitBio || hitTags)) return false;
+        }
+        boolean needDbLookup = !filter.relationshipStatuses().isEmpty()
+                || filter.hometownProvince() != null
+                || filter.hometownCity() != null
+                || filter.futureCity() != null;
+        if (needDbLookup) {
+            UserBasicProfile bp = userBasicProfileRepository.findByUserId(view.id()).orElse(null);
+            if (bp == null) return false;
+            if (!filter.relationshipStatuses().isEmpty()
+                    && (bp.getRelationshipStatus() == null
+                        || !filter.relationshipStatuses().contains(bp.getRelationshipStatus()))) {
+                return false;
             }
-        } catch (Exception e) {
-            // HeartSignal 查询失败时忽略
+            if (filter.hometownProvince() != null && !filter.hometownProvince().equals(bp.getHometownProvince())) return false;
+            if (filter.hometownCity() != null && !filter.hometownCity().equals(bp.getHometownCity())) return false;
+            if (filter.futureCity() != null && !filter.futureCity().equals(bp.getFutureCity())) return false;
         }
-
-        // 2. 从 Like 记录获取（表示用户喜欢过的人）
-        try {
-            List<Like> likes = likeRepository.findByUserIdAndStatus(userId, LikeStatus.active);
-            for (Like like : likes) {
-                if (seenUserIds.add(like.getTargetUserId())) {
-                    userRepository.findById(like.getTargetUserId()).ifPresent(historyUsers::add);
-                }
-            }
-        } catch (Exception e) {
-            // Like 查询失败时忽略
-        }
-
-        // 3. 转换为视图，限制返回数量
-        final String fMyCampusName = myCampusName;
-        final String fMyDepartmentName = myDepartmentName;
-        final Set<Long> fMyCircleIds = myCircleIds;
-        return historyUsers.stream()
-                .limit(recommendationConfig.getDailyLimit())
-                .map(u -> toRecommendedPersonView(u, fMyCampusName, fMyDepartmentName, fMyCircleIds))
-                .toList();
+        return true;
     }
 
     // ---- 私有辅助方法 ----
 
-    /**
-     * 根据推荐范围过滤候选用户。
-     * - campus_first: 仅同校区
-     * - city: 同城市
-     * - unlimited: 不限
-     */
-    private boolean filterByScope(Long candidateUserId, String scope,
-                                   String myCampusName, String myCityName) {
-        if ("unlimited".equals(scope)) {
-            return true;
-        }
-
-        Optional<UserCampusProfile> candidateCampusOpt = userCampusProfileRepository.findByUserId(candidateUserId);
-        if (candidateCampusOpt.isEmpty()) {
-            // 没有校区资料的用户在 campus_first/city 模式下不推荐
-            return "unlimited".equals(scope);
-        }
-
-        UserCampusProfile candidateCampus = candidateCampusOpt.get();
-
-        if ("campus_first".equals(scope)) {
-            return myCampusName.equals(candidateCampus.getCampusName());
-        }
-
-        if ("city".equals(scope)) {
-            return myCityName.equals(candidateCampus.getCityName());
-        }
-
-        return true;
-    }
-
-    /**
-     * 计算候选用户的推荐权重分数。
-     * 加权维度包括：同校区、同城市、同专业、兴趣标签匹配、共同兴趣圈、
-     * 共同每日一问、日程重叠，以及校园优先的同校百分比加成。
-     *
-     * @param candidateUserId        候选用户 ID
-     * @param myCampusName           当前用户校区名称
-     * @param myCityName             当前用户城市名称
-     * @param myTags                 当前用户兴趣标签集合
-     * @param myTimeWindow           当前用户时间窗口 JSON
-     * @param myDepartmentName       当前用户专业/院系名称
-     * @param myCircleIds            当前用户加入的兴趣圈 ID 集合
-     * @param myAnswerQuestionIds    当前用户回答过的每日一问 questionId 集合
-     * @param campusPriorityEnabled  校园优先开关
-     * @return 加权后的推荐分数
-     */
-    private int calculateScore(Long candidateUserId, String myCampusName,
-                                String myCityName, Set<String> myTags, String myTimeWindow,
-                                String myDepartmentName, Set<Long> myCircleIds,
-                                Set<Long> myAnswerQuestionIds, boolean campusPriorityEnabled) {
-        int score = 0;
-        boolean isSameCampus = false;
-
-        // 同校区 + 同城市 + 同专业
-        Optional<UserCampusProfile> campusOpt = userCampusProfileRepository.findByUserId(candidateUserId);
-        if (campusOpt.isPresent()) {
-            UserCampusProfile campus = campusOpt.get();
-
-            // 同校区判断并加分
-            if (myCampusName != null && !myCampusName.isBlank()
-                    && myCampusName.equals(campus.getCampusName())) {
-                score += recommendationConfig.getCampusWeight();
-                isSameCampus = true;
-            }
-
-            // 同城市
-            if (myCityName != null && !myCityName.isBlank()
-                    && myCityName.equals(campus.getCityName())) {
-                score += recommendationConfig.getCityWeight();
-            }
-
-            // 同专业：比较 departmentName（院系/专业）
-            if (myDepartmentName != null && !myDepartmentName.isBlank()
-                    && myDepartmentName.equals(campus.getDepartmentName())) {
-                score += recommendationConfig.getSameMajorWeight();
-            }
-        }
-
-        // 兴趣标签匹配
-        // 从候选用户的 UserBasicProfile 中解析 interest_tags JSON 字段
-        if (!myTags.isEmpty()) {
-            Set<String> candidateTags = userBasicProfileRepository.findByUserId(candidateUserId)
-                    .map(profile -> parseInterestTags(profile.getInterestTags()))
-                    .orElse(Collections.emptySet());
-            // 计算两个标签集合的交集数量，每个共同标签加分
-            long commonTagCount = myTags.stream()
-                    .filter(candidateTags::contains)
-                    .count();
-            score += (int) commonTagCount * recommendationConfig.getInterestWeight();
-        }
-
-        // 共同兴趣圈：查询候选用户加入的圈子，计算交集
-        if (!myCircleIds.isEmpty()) {
-            try {
-                List<CircleMembership> candidateMemberships =
-                        circleMembershipRepository.findByUserId(candidateUserId);
-                Set<Long> candidateCircleIds = candidateMemberships.stream()
-                        .map(m -> m.getCircle().getId())
-                        .collect(Collectors.toSet());
-                // 计算交集
-                long commonCircleCount = myCircleIds.stream()
-                        .filter(candidateCircleIds::contains)
-                        .count();
-                score += (int) commonCircleCount * recommendationConfig.getCommonCircleWeight();
-            } catch (Exception e) {
-                // 查询失败不影响主流程
-            }
-        }
-
-        // 共同每日一问回答：查询候选用户的回答，计算共同问题数
-        if (!myAnswerQuestionIds.isEmpty()) {
-            try {
-                List<DailyAnswer> candidateAnswers =
-                        dailyAnswerRepository.findByUserIdOrderByCreatedAtDesc(candidateUserId);
-                Set<Long> candidateQuestionIds = candidateAnswers.stream()
-                        .map(a -> a.getQuestion().getId())
-                        .collect(Collectors.toSet());
-                // 计算交集
-                long commonAnswerCount = myAnswerQuestionIds.stream()
-                        .filter(candidateQuestionIds::contains)
-                        .count();
-                score += (int) commonAnswerCount * recommendationConfig.getCommonDailyAnswerWeight();
-            } catch (Exception e) {
-                // 查询失败不影响主流程
-            }
-        }
-
-        // 日程重叠
-        Optional<UserScheduleProfile> scheduleOpt = userScheduleProfileRepository.findByUserId(candidateUserId);
-        if (scheduleOpt.isPresent() && hasScheduleOverlap(myTimeWindow, scheduleOpt.get().getPreferredTimeWindowJson())) {
-            score += recommendationConfig.getScheduleWeight();
-        }
-
-        // 校园优先：同校用户总分加成+30%
-        if (campusPriorityEnabled && isSameCampus
-                && recommendationConfig.isSameSchoolBoostEnabled()) {
-            score = (int) Math.round(score * (1.0 + recommendationConfig.getSameSchoolBoostPercent()));
-        }
-
-        return score;
-    }
-
-    /**
-     * 检查两个用户的日程时间窗口是否有重叠。
-     * 简化实现：比较 JSON 字符串是否有交集。
-     */
-    private boolean hasScheduleOverlap(String myTimeWindow, String candidateTimeWindow) {
-        if (myTimeWindow == null || myTimeWindow.isBlank() ||
-                candidateTimeWindow == null || candidateTimeWindow.isBlank()) {
-            return false;
-        }
-        try {
-            Map<String, Object> myMap = objectMapper.readValue(myTimeWindow, new TypeReference<>() {});
-            Map<String, Object> candidateMap = objectMapper.readValue(candidateTimeWindow, new TypeReference<>() {});
-            // 简化判断：如果两个时间窗口有相同的键，则认为有重叠
-            for (String key : myMap.keySet()) {
-                if (candidateMap.containsKey(key)) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            // JSON 解析失败，默认无重叠
-            return false;
-        }
-        return false;
-    }
-
-    /**
-     * 解析兴趣标签 JSON 字符串为 Set 集合。
-     * JSON 格式示例: ["摄影", "篮球", "阅读", "编程"]
-     * 解析失败时返回空集合，不影响推荐算法正常运行。
-     *
-     * @param interestTagsJson 兴趣标签 JSON 字符串
-     * @return 兴趣标签集合
-     */
-    private Set<String> parseInterestTags(String interestTagsJson) {
-        if (interestTagsJson == null || interestTagsJson.isBlank()) {
-            return Collections.emptySet();
-        }
-        try {
-            List<String> tags = objectMapper.readValue(interestTagsJson, new TypeReference<List<String>>() {});
-            return new HashSet<>(tags);
-        } catch (JsonProcessingException e) {
-            // JSON 解析失败，返回空集合，避免影响推荐算法
-            return Collections.emptySet();
-        }
-    }
-
-    /**
-     * 将 User 实体转换为 RecommendedPersonView。
-     * 携带同校/同专业/共同兴趣圈等推荐维度的标记信息。
-     *
-     * @param user             用户实体
-     * @param myCampusName     当前用户校区名称
-     * @param myDepartmentName 当前用户专业/院系名称
-     * @param myCircleIds      当前用户加入的兴趣圈 ID 集合
-     * @return 推荐人物视图
-     */
-    private RecommendedPersonView toRecommendedPersonView(User user,
-            String myCampusName, String myDepartmentName, Set<Long> myCircleIds) {
-        String name = user.getNickname() != null ? user.getNickname() : "";
-        String initials = extractInitials(name);
-        String headline = user.getBio() != null ? user.getBio() : "";
-
-        // 获取校区名称
-        String campusName = userCampusProfileRepository.findByUserId(user.getId())
-                .map(UserCampusProfile::getCampusName)
-                .orElse("");
-
-        // 获取 BasicProfile（一次性查询，复用给所有 Phase B 字段）
-        Optional<UserBasicProfile> basicProfileOpt = userBasicProfileRepository.findByUserId(user.getId());
-        UserBasicProfile basicProfile = basicProfileOpt.orElse(null);
-
-        // 获取用户标签（从 UserBasicProfile 的 interest_tags 字段解析）
-        List<String> tags = basicProfileOpt
-                .map(profile -> parseInterestTags(profile.getInterestTags()))
-                .map(Set::stream)
-                .map(stream -> stream.toList())
-                .orElse(List.of());
-
-        // 获取个人简介（从 UserBasicProfile 的 bio 字段获取，若为空则使用 User 的 bio）
-        String bio = basicProfileOpt
-                .map(profile -> profile.getBio() != null ? profile.getBio() : "")
-                .orElse(user.getBio() != null ? user.getBio() : "");
-
-        // 获取用户图片列表（暂传空列表，后续迭代补充图片存储功能）
-        List<String> images = Collections.emptyList();
-
-        // 计算共同点（简化实现）
-        String commonGround = "";
-
-        // 计算可用时间（简化实现）
-        String availability = userScheduleProfileRepository.findByUserId(user.getId())
-                .map(UserScheduleProfile::getPreferredCampusArea)
-                .orElse("");
-
-        // ---- 新增推荐维度标记 ----
-
-        // 同校判断：比较 campusName
-        boolean isSameSchool = false;
-        Optional<UserCampusProfile> campusOpt = userCampusProfileRepository.findByUserId(user.getId());
-        if (campusOpt.isPresent() && myCampusName != null && !myCampusName.isBlank()) {
-            isSameSchool = myCampusName.equals(campusOpt.get().getCampusName());
-        }
-
-        // 同专业判断：比较 departmentName
-        boolean isSameMajor = false;
-        if (campusOpt.isPresent() && myDepartmentName != null && !myDepartmentName.isBlank()) {
-            isSameMajor = myDepartmentName.equals(campusOpt.get().getDepartmentName());
-        }
-
-        // 共同兴趣圈数量
-        int commonCircleCount = 0;
-        if (!myCircleIds.isEmpty()) {
-            try {
-                List<CircleMembership> memberships = circleMembershipRepository.findByUserId(user.getId());
-                Set<Long> candidateCircleIds = memberships.stream()
-                        .map(m -> m.getCircle().getId())
-                        .collect(Collectors.toSet());
-                commonCircleCount = (int) myCircleIds.stream()
-                        .filter(candidateCircleIds::contains)
-                        .count();
-            } catch (Exception e) {
-                // 查询失败时保持为 0
-            }
-        }
-
-        // ---- Phase B - Task B2 新增字段（从 BasicProfile 提取） ----
-        Integer height = basicProfile != null ? basicProfile.getHeight() : null;
-        String educationLevel = basicProfile != null ? basicProfile.getEducationLevel() : null;
-        List<String> photoGallery = basicProfile != null
-                ? parseStringList(basicProfile.getPhotoGallery())
-                : List.of();
-        String halfBodyPhotoUrl = basicProfile != null ? basicProfile.getHalfBodyPhotoUrl() : null;
-        String personalVideoUrl = basicProfile != null ? basicProfile.getPersonalVideoUrl() : null;
-        String verificationBadgeLevel = resolveBadgeLevelSafe(user.getId());
-
-        return new RecommendedPersonView(
-                user.getId(),
-                name,
-                initials,
-                headline,
-                commonGround,
-                availability,
-                campusName,
-                user.getAvatarUrl(),
-                tags,
-                bio,
-                images,
-                isSameSchool,
-                isSameMajor,
-                commonCircleCount,
-                height,
-                educationLevel,
-                photoGallery,
-                halfBodyPhotoUrl,
-                personalVideoUrl,
-                verificationBadgeLevel
-        );
-    }
-
-    /**
-     * 提取姓名首字母（简化实现：取第一个字符）。
-     */
-    private String extractInitials(String name) {
-        if (name == null || name.isBlank()) {
-            return "";
-        }
-        return name.substring(0, 1);
-    }
-
-    /**
-     * 将 Activity 实体转换为 ActivityRecommendationView。
-     */
     private ActivityRecommendationView toActivityRecommendationView(Activity activity) {
-        List<String> avatars = parseParticipantAvatars(activity.getParticipantAvatars());
-
+        List<String> avatars = preferenceCalculator.parseStringList(activity.getParticipantAvatars());
         return new ActivityRecommendationView(
                 String.valueOf(activity.getId()),
                 activity.getTitle(),
@@ -1169,253 +373,10 @@ public class RealRecommendationService implements RecommendationService {
         );
     }
 
-    /**
-     * 解析参与者头像 JSON 字符串为列表。
-     *
-     * @param json JSON 字符串
-     * @return 头像 URL 列表
-     */
-    private List<String> parseParticipantAvatars(String json) {
-        return parseStringList(json);
+    /** 讨论推荐数量上限：委托 ranker 持有的 RecommendationConfig，避免重复注入。 */
+    private int recommendationConfigDiscussionLimit() {
+        return ranker.getDiscussionLimit();
     }
 
-    /**
-     * 解析 JSON 字符串数组为 List<String>（Phase B - Task B2）。
-     * 用于 photoGallery / futurePlanTags 等字段的解析。
-     * 解析失败或 null 时返回空列表，不影响主流程。
-     *
-     * @param json JSON 字符串，例如 ["url1","url2"]
-     * @return 字符串列表，永不为 null
-     */
-    private List<String> parseStringList(String json) {
-        if (json == null || json.isBlank()) {
-            return Collections.emptyList();
-        }
-        try {
-            List<String> result = objectMapper.readValue(json, new TypeReference<List<String>>() {});
-            return result != null ? result : Collections.emptyList();
-        } catch (JsonProcessingException e) {
-            return Collections.emptyList();
-        }
-    }
-
-    /**
-     * 安全查询认证徽章级别（Phase B - Task B3）。
-     * 委托 CampusCertificationService，捕获异常以避免推荐流程被认证查询失败影响。
-     *
-     * @param userId 用户 ID
-     * @return 徽章级别（school/email/idcard/none），失败时降级为 "none"
-     */
-    private String resolveBadgeLevelSafe(Long userId) {
-        try {
-            return campusCertificationService.getVerificationBadgeLevel(userId);
-        } catch (Exception e) {
-            // 认证查询失败不影响推荐列表生成
-            return "none";
-        }
-    }
-
-    /**
-     * 优化版本：计算候选用户的推荐权重分数（使用预加载的数据）。
-     * 避免 N+1 查询问题。
-     */
-    private int calculateScoreOptimized(Long candidateUserId, String myCampusName,
-                                         String myCityName, Set<String> myTags, String myTimeWindow,
-                                         String myDepartmentName, Set<Long> myCircleIds,
-                                         Set<Long> myAnswerQuestionIds, boolean campusPriorityEnabled,
-                                         UserCampusProfile campusProfile, UserBasicProfile basicProfile,
-                                         List<CircleMembership> memberships) {
-        int score = 0;
-
-        // 同校区 + 同城市 + 同专业
-        if (campusProfile != null) {
-            // 同校区判断并加分
-            if (myCampusName != null && !myCampusName.isBlank()
-                    && myCampusName.equals(campusProfile.getCampusName())) {
-                score += recommendationConfig.getCampusWeight();
-            }
-
-            // 同城市
-            if (myCityName != null && !myCityName.isBlank()
-                    && myCityName.equals(campusProfile.getCityName())) {
-                score += recommendationConfig.getCityWeight();
-            }
-
-            // 同专业
-            if (myDepartmentName != null && !myDepartmentName.isBlank()
-                    && myDepartmentName.equals(campusProfile.getDepartmentName())) {
-                score += recommendationConfig.getSameMajorWeight();
-            }
-        }
-
-        // 兴趣标签匹配（使用预加载的 basicProfile）
-        if (!myTags.isEmpty() && basicProfile != null) {
-            Set<String> candidateTags = parseInterestTags(basicProfile.getInterestTags());
-            long commonTagCount = myTags.stream()
-                    .filter(candidateTags::contains)
-                    .count();
-            score += (int) commonTagCount * recommendationConfig.getInterestWeight();
-        }
-
-        // 共同兴趣圈（使用预加载的 memberships）
-        if (!myCircleIds.isEmpty()) {
-            Set<Long> candidateCircleIds = memberships.stream()
-                    .map(m -> m.getCircle().getId())
-                    .collect(Collectors.toSet());
-            long commonCircleCount = myCircleIds.stream()
-                    .filter(candidateCircleIds::contains)
-                    .count();
-            score += (int) commonCircleCount * recommendationConfig.getCircleWeight();
-        }
-
-        // 校园优先加成
-        if (campusPriorityEnabled && campusProfile != null
-                && myCampusName != null && !myCampusName.isBlank()
-                && myCampusName.equals(campusProfile.getCampusName())) {
-            score = (int) (score * 1.3);
-        }
-
-        return score;
-    }
-
-    /**
-     * 优化版本：将 User 实体转换为推荐人物视图（使用预加载的数据）。
-     * 避免 N+1 查询问题。
-     */
-    private RecommendedPersonView toRecommendedPersonViewOptimized(User user,
-            String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
-            UserCampusProfile campusProfile, UserBasicProfile basicProfile,
-            List<CircleMembership> memberships) {
-        String name = user.getNickname() != null ? user.getNickname() : "";
-        String initials = extractInitials(name);
-        String headline = user.getBio() != null ? user.getBio() : "";
-
-        // 使用预加载的校区名称
-        String campusName = campusProfile != null ? campusProfile.getCampusName() : "";
-
-        // 使用预加载的用户标签
-        List<String> tags = basicProfile != null
-                ? parseInterestTags(basicProfile.getInterestTags()).stream().toList()
-                : List.of();
-
-        // 使用预加载的个人简介
-        String bio = basicProfile != null && basicProfile.getBio() != null
-                ? basicProfile.getBio()
-                : (user.getBio() != null ? user.getBio() : "");
-
-        // 获取用户图片列表（暂传空列表，后续迭代补充图片存储功能）
-        List<String> images = Collections.emptyList();
-
-        // 计算共同点（简化实现）
-        String commonGround = "";
-
-        // 计算可用时间（简化实现）
-        String availability = "";
-
-        // ---- 新增推荐维度标记 ----
-
-        // 同校判断：比较 campusName
-        boolean isSameSchool = false;
-        if (campusProfile != null && myCampusName != null && !myCampusName.isBlank()) {
-            isSameSchool = myCampusName.equals(campusProfile.getCampusName());
-        }
-
-        // 同专业判断：比较 departmentName
-        boolean isSameMajor = false;
-        if (campusProfile != null && myDepartmentName != null && !myDepartmentName.isBlank()) {
-            isSameMajor = myDepartmentName.equals(campusProfile.getDepartmentName());
-        }
-
-        // 共同兴趣圈数量（使用预加载的 memberships）
-        int commonCircleCount = 0;
-        if (!myCircleIds.isEmpty()) {
-            Set<Long> candidateCircleIds = memberships.stream()
-                    .map(m -> m.getCircle().getId())
-                    .collect(Collectors.toSet());
-            commonCircleCount = (int) myCircleIds.stream()
-                    .filter(candidateCircleIds::contains)
-                    .count();
-        }
-
-        // ---- Phase B - Task B2 新增字段（使用预加载的 basicProfile） ----
-        Integer height = basicProfile != null ? basicProfile.getHeight() : null;
-        String educationLevel = basicProfile != null ? basicProfile.getEducationLevel() : null;
-        List<String> photoGallery = basicProfile != null
-                ? parseStringList(basicProfile.getPhotoGallery())
-                : List.of();
-        String halfBodyPhotoUrl = basicProfile != null ? basicProfile.getHalfBodyPhotoUrl() : null;
-        String personalVideoUrl = basicProfile != null ? basicProfile.getPersonalVideoUrl() : null;
-        String verificationBadgeLevel = resolveBadgeLevelSafe(user.getId());
-
-        return new RecommendedPersonView(
-                user.getId(),
-                name,
-                initials,
-                headline,
-                commonGround,
-                availability,
-                campusName,
-                user.getAvatarUrl(),
-                tags,
-                bio,
-                images,
-                isSameSchool,
-                isSameMajor,
-                commonCircleCount,
-                height,
-                educationLevel,
-                photoGallery,
-                halfBodyPhotoUrl,
-                personalVideoUrl,
-                verificationBadgeLevel
-        );
-    }
-
-    /**
-     * 加权排序用的内部记录。
-     */
-    private record ScoredUser(User user, int score) {}
-
-    /**
-     * 讨论热度排序用的内部记录。
-     */
     private record ScoredDiscussion(String id, String title, String summary, String heatLabel, int heatScore) {}
-
-    /**
-     * 截断内容到指定最大长度，超出部分用省略号代替。
-     *
-     * @param content   原始内容
-     * @param maxLength 最大长度
-     * @return 截断后的内容
-     */
-    private String truncateContent(String content, int maxLength) {
-        if (content == null || content.isBlank()) {
-            return "";
-        }
-        if (content.length() <= maxLength) {
-            return content;
-        }
-        return content.substring(0, maxLength) + "...";
-    }
-
-    /**
-     * 构建热度标签文本。
-     * 根据回复数和点赞数生成人类可读的热度描述。
-     *
-     * @param replyCount 回复数
-     * @param likesCount 点赞数
-     * @return 热度标签文本
-     */
-    private String buildHeatLabel(Integer replyCount, int likesCount) {
-        int replies = replyCount != null ? replyCount : 0;
-        int total = replies + likesCount;
-        if (total >= 100) {
-            return total + " 人参与";
-        } else if (total >= 20) {
-            return "热度上升";
-        } else if (total > 0) {
-            return total + " 人参与";
-        }
-        return "新发布";
-    }
 }

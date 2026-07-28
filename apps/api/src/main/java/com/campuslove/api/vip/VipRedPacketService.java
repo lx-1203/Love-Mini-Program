@@ -13,6 +13,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -132,7 +133,8 @@ public class VipRedPacketService {
             log.info("红包创建成功：id={}, senderId={}, amount={}, count={}, type={}",
                     saved.getId(), senderId, totalAmount, totalCount, actualType);
             return toView(saved, null);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库访问异常（save 失败、约束冲突等）
             log.error("红包创建失败：senderId={}, amount={}, count={}", senderId, totalAmount, totalCount, e);
             throw new RuntimeException("红包创建失败，请稍后重试", e);
         }
@@ -213,7 +215,8 @@ public class VipRedPacketService {
             log.info("红包领取成功：redPacketId={}, claimerId={}, amount={}",
                     redPacketId, claimerId, amount);
             return new ClaimResultView(amount, packet.getClaimedCount(), packet.getTotalCount());
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库写入失败时回滚事务（@Transactional 默认回滚 RuntimeException）并上报
             log.error("红包领取失败：redPacketId={}, claimerId={}", redPacketId, claimerId, e);
             throw new RuntimeException("红包领取失败，请稍后重试", e);
         }
@@ -262,7 +265,8 @@ public class VipRedPacketService {
                 views.add(toView(packet, null));
             }
             return views;
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库查询失败时上报，由 GlobalExceptionHandler 转换为 5xx 响应
             log.error("按会话查询红包列表失败：chatId={}", chatId, e);
             throw new RuntimeException("查询红包列表失败，请稍后重试", e);
         }

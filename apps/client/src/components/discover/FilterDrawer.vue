@@ -1032,7 +1032,7 @@ const icons = {
   border-radius: var(--r-full);
   background: var(--c-bg-surface);
   border: 1rpx solid var(--c-border-default);
-  transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .filter-chip--active {
@@ -1129,7 +1129,7 @@ const icons = {
   align-items: center;
   justify-content: center;
   border-radius: var(--r-full);
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .filter-drawer__btn--reset {

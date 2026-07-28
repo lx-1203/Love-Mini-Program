@@ -24,7 +24,7 @@ const { t } = useI18n();
 
 // 修复（严格模式 noUnusedLocals）：t 仅在模板的 #ifdef H5 条件编译块内引用，
 // vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
-defineExpose({ t });
+// 同时暴露 play 方法供父组件 ref 调用，合并为单个 defineExpose 避免 SFC 重复声明错误。
 
 /** 是否正在播放动画 */
 const playing = ref<boolean>(false);
@@ -83,7 +83,8 @@ onBeforeUnmount(() => {
   }
 });
 
-defineExpose({ play });
+// 合并 t 与 play 暴露，避免 SFC 重复 defineExpose 调用导致编译错误
+defineExpose({ t, play });
 </script>
 
 <template>
@@ -141,8 +142,8 @@ defineExpose({ play });
 }
 
 .like-burst__heart-icon {
-  font-size: 56rpx;
-  color: #EC4899;
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-romance-500, #EC4899);
   text-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.4);
 }
 
@@ -176,7 +177,7 @@ defineExpose({ play });
 }
 
 .like-burst__particle-icon {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--particle-color, #EC4899);
   /* 微微旋转增加灵动感 */
   display: inline-block;

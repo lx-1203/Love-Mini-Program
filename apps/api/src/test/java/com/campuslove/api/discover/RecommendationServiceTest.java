@@ -5,24 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.campuslove.api.campus.CampusCertificationService;
-import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.repository.ActivityEnrollmentRepository;
 import com.campuslove.api.repository.ActivityRepository;
-import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
-import com.campuslove.api.repository.DailyAnswerRepository;
-import com.campuslove.api.repository.HeartSignalRepository;
-import com.campuslove.api.repository.LikeRepository;
-import com.campuslove.api.repository.PassRecordRepository;
 import com.campuslove.api.repository.PostRepository;
-import com.campuslove.api.repository.RecommendationPreferenceRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
-import com.campuslove.api.repository.UserCampusProfileRepository;
-import com.campuslove.api.repository.UserRepository;
-import com.campuslove.api.repository.UserScheduleProfileRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -69,24 +57,18 @@ class RecommendationServiceTest {
     void setUp() {
         // 仅 userBasicProfileRepository 在 matchesFilter 中被实际调用
         userBasicProfileRepository = mock(UserBasicProfileRepository.class);
+        // Task 4.1.5 重构后：RealRecommendationService 委托 4 个组件
+        // matchesFilter 仅使用 userBasicProfileRepository，其余依赖传 mock 占位即可
         realService = new RealRecommendationService(
-                mock(RecommendationConfig.class),
-                mock(UserRepository.class),
-                mock(LikeRepository.class),
-                mock(UserCampusProfileRepository.class),
-                mock(UserScheduleProfileRepository.class),
-                mock(RecommendationPreferenceRepository.class),
-                userBasicProfileRepository,
                 mock(ActivityRepository.class),
                 mock(ActivityEnrollmentRepository.class),
                 mock(CircleTopicRepository.class),
                 mock(PostRepository.class),
-                mock(HeartSignalRepository.class),
-                mock(PassRecordRepository.class),
-                mock(CircleMembershipRepository.class),
-                mock(DailyAnswerRepository.class),
-                mock(ObjectMapper.class),
-                mock(CampusCertificationService.class)
+                userBasicProfileRepository,
+                mock(RecommendationStrategy.class),
+                mock(UserPreferenceCalculator.class),
+                mock(RecommendationCacheManager.class),
+                mock(RecommendationRanker.class)
         );
     }
 

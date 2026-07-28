@@ -1,10 +1,20 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.dto.DtoMapper;
 import com.campuslove.api.dto.UserDto;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -35,8 +45,10 @@ import org.springframework.web.multipart.MultipartFile;
  * 通过 {@link DtoMapper} 将 User 实体转换为脱敏后的 DTO，
  * 与既有返回 {@code *View} 的端点并存，保持方法签名兼容。</p>
  */
+@Tag(name = "Profile", description = "个人资料接口：基本资料、校园资料、课表、照片墙、背景图、个人视频、访客记录")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
-@RequestMapping("/api/profile")
+@RequestMapping("/api/v1/profile")
 public class ProfileController {
 
   private final ProfileService profileService;
@@ -48,13 +60,19 @@ public class ProfileController {
   }
 
   @GetMapping("/stats")
-  public ProfileStatsView getProfileStats() {
-    return profileService.getProfileStats();
+  @Operation(summary = "获取个人资料统计", description = "返回资料完成度、照片数量、视频数量等统计指标，用于个人主页头部展示。", operationId = "getProfileStats")
+  @ApiResponse(responseCode = "200", description = "统计信息",
+          content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+  public ApiResponse<ProfileStatsView> getProfileStats() {
+    return ApiResponse.ok(profileService.getProfileStats());
   }
 
   @GetMapping("/basic")
-  public BasicProfileView getBasicProfile() {
-    return profileService.getBasicProfile();
+  @Operation(summary = "获取基本资料", description = "返回当前用户的基本资料（昵称、性别、生日、签名、照片墙、背景图等）。", operationId = "getBasicProfile")
+  @ApiResponse(responseCode = "200", description = "基本资料",
+          content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+  public ApiResponse<BasicProfileView> getBasicProfile() {
+    return ApiResponse.ok(profileService.getBasicProfile());
   }
 
   /**
@@ -63,7 +81,16 @@ public class ProfileController {
    * 校验字段范围后更新 UserBasicProfile，并重新计算 profileCompletion。
    */
   @PutMapping("/basic")
-  public BasicProfileView saveBasicProfile(@Valid @RequestBody BasicProfileRequest request) {
+  @Operation(summary = "保存基本资料", description = "更新昵称、性别、生日、签名等字段，重新计算资料完成度（加权平均：displayName 10% + campus 10% + schedule 10% + profileCompleted 70%）。", operationId = "saveBasicProfile")
+  @ApiResponses({
+          @ApiResponse(responseCode = "200", description = "保存成功",
+                  content = @Content(schema = @Schema(implementation = BasicProfileView.class))),
+          @ApiResponse(responseCode = "400", description = "字段校验失败", content = @Content),
+          @ApiResponse(responseCode = "409", description = "乐观锁冲突", content = @Content)
+  })
+  public BasicProfileView saveBasicProfile(
+          @Parameter(description = "基本资料请求体", required = true)
+          @Valid @RequestBody BasicProfileRequest request) {
     return profileService.saveBasicProfile(request);
   }
 
@@ -72,7 +99,17 @@ public class ProfileController {
    * POST /api/profile/background
    */
   @PostMapping("/background")
-  public BasicProfileView uploadBackground(@RequestParam("file") MultipartFile file) {
+  @Operation(summary = "上传主页背景图", description = "上传个人主页顶部的背景图，自动调用媒体存储服务，校验 MIME 与 magic bytes。", operationId = "uploadProfileBackground")
+  @ApiResponses({
+          @ApiResponse(responseCode = "200", description = "上传成功，返回更新后的资料",
+                  content = @Content(schema = @Schema(implementation = BasicProfileView.class))),
+          @ApiResponse(responseCode = "400", description = "格式不支持", content = @Content),
+          @ApiResponse(responseCode = "413", description = "文件过大", content = @Content)
+  })
+  public BasicProfileView uploadBackground(
+          @Parameter(in = ParameterIn.QUERY, description = "背景图文件", required = true,
+                  content = @Content(mediaType = "multipart/form-data"))
+          @RequestParam("file") MultipartFile file) {
     return profileService.uploadBackground(file);
   }
 
@@ -81,8 +118,18 @@ public class ProfileController {
    * POST /api/profile/photos?index=0
    */
   @PostMapping("/photos")
-  public BasicProfileView uploadPhoto(@RequestParam("file") MultipartFile file,
-                                      @RequestParam("index") int index) {
+  @Operation(summary = "上传照片墙图片", description = "上传照片墙指定索引（0-5）的图片。索引超范围返回 400。", operationId = "uploadProfilePhoto")
+  @ApiResponses({
+          @ApiResponse(responseCode = "200", description = "上传成功",
+                  content = @Content(schema = @Schema(implementation = BasicProfileView.class))),
+          @ApiResponse(responseCode = "400", description = "index 超出 0-5 范围或文件格式不支持", content = @Content)
+  })
+  public BasicProfileView uploadPhoto(
+          @Parameter(in = ParameterIn.QUERY, description = "照片文件", required = true,
+                  content = @Content(mediaType = "multipart/form-data"))
+          @RequestParam("file") MultipartFile file,
+          @Parameter(in = ParameterIn.QUERY, description = "照片墙索引（0-5）", required = true, example = "0")
+          @RequestParam("index") int index) {
     return profileService.uploadPhoto(file, index);
   }
 
@@ -91,7 +138,15 @@ public class ProfileController {
    * DELETE /api/profile/photos/{index}
    */
   @DeleteMapping("/photos/{index}")
-  public BasicProfileView deletePhoto(@PathVariable("index") int index) {
+  @Operation(summary = "删除照片墙图片", description = "删除指定索引（0-5）的照片墙图片。", operationId = "deleteProfilePhoto")
+  @ApiResponses({
+          @ApiResponse(responseCode = "200", description = "删除成功",
+                  content = @Content(schema = @Schema(implementation = BasicProfileView.class))),
+          @ApiResponse(responseCode = "404", description = "索引无照片", content = @Content)
+  })
+  public BasicProfileView deletePhoto(
+          @Parameter(description = "照片墙索引（0-5）", required = true, example = "0")
+          @PathVariable("index") int index) {
     return profileService.deletePhoto(index);
   }
 

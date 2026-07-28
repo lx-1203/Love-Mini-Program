@@ -1,5 +1,6 @@
 package com.campuslove.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -8,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 
 /**
@@ -102,7 +104,12 @@ public class User {
      * <p>历史明文兼容：V2026.06.25.0002 迁移脚本已将所有管理员密码升级为 BCrypt 哈希，
      * 但 RealAuthService#loginAsAdmin 仍保留对历史明文密码的兼容校验与自动迁移逻辑（一次性升级），
      * 以应对手工录入异常等边界场景。</p>
+     *
+     * <p>Task 0.5.1 安全加固：使用 {@link JsonIgnore} 标注，确保 User 实体在任何 JSON
+     * 序列化场景下（包括 Entity 被误直接返回 Controller、日志输出、调试接口等）
+     * 都不会泄露密码哈希值。</p>
      */
+    @JsonIgnore
     @Column(name = "password", length = 100)
     private String password;
 
@@ -132,11 +139,26 @@ public class User {
     @Column(name = "auto_renew_enabled", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean autoRenewEnabled = false;
 
+    /** 记录创建时间（用户注册时间，用于注册时长统计） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（用户资料变更时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+    /**
+     * 乐观锁版本号（Task 2.1.1 数据一致性基础设施）。
+     *
+     * <p>由 JPA 自动维护，每次实体更新时 version 自增。
+     * 并发更新冲突时抛出 {@link org.springframework.orm.ObjectOptimisticLockingFailureException}，
+     * 由 GlobalExceptionHandler 转换为 HTTP 409 Conflict。</p>
+     *
+     * <p>初始值 0L，对应数据库列 {@code version BIGINT DEFAULT 0}（Flyway V2026.07.26.0003）。</p>
+     */
+    @Version
+    @Column(name = "version", nullable = false, columnDefinition = "BIGINT DEFAULT 0")
+    private Long version = 0L;
+
 
     public User() {
     }
@@ -293,5 +315,13 @@ public class User {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

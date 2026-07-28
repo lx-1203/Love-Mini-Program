@@ -7,6 +7,8 @@ import com.campuslove.api.entity.Report;
 import com.campuslove.api.repository.ReportRepository;
 import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,8 +45,9 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/admin/reports")
+@RequestMapping("/api/v1/admin/reports")
 @PreAuthorize("hasRole('ADMIN')")
+@Validated
 public class AdminReportController {
 
     /** 举报处理结果：已处理（对应 status=HANDLED） */
@@ -78,8 +82,8 @@ public class AdminReportController {
     public AdminPageView<AdminReportView> listReports(
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "targetType", required = false) String targetType,
-            @RequestParam(name = "page", defaultValue = "1") int page,
-            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize) {
+            @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
+            @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
 
         int safePage = Math.max(1, page);
@@ -129,7 +133,8 @@ public class AdminReportController {
         if (reportOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        Report report = reportOpt.get();
+        Report report = reportOpt.orElseThrow(() ->
+                new IllegalStateException("reportOpt 已确认非空但 orElseThrow 触发，数据不一致"));
 
         // 根据处理结果映射到对应状态
         String newStatus = RESULT_HANDLE.equals(req.result()) ? STATUS_HANDLED : STATUS_REJECTED;

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts">
 /**
  * Toast 通知组件
  *
@@ -14,6 +14,9 @@
  *   showToast(t('common.networkError'), 'error')
  *
  * 队列管理：新 toast 调用时，旧 toast 先淡出再显示新的，避免互相干扰。
+ *
+ * 注：showToast/showSuccessToast/showErrorToast 为非组件场景的便利封装，
+ * 需作为模块导出，故使用普通 <script> + <script setup> 双脚本块结构。
  */
 import { ref, computed, onUnmounted } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
@@ -176,12 +179,37 @@ function clearTimers() {
   }
 }
 
+/**
+ * 重置 Toast 模块级状态（仅供测试使用）。
+ *
+ * 设计原因：Toast 使用模块级 ref（active/leaving/options）与队列管理,
+ * 在单元测试中若不重置，前一个用例残留的 active=true 会让后续 showToast
+ * 调用进入队列分支，导致 options.value 不更新、断言失败。
+ * 生产代码不应调用此函数。
+ */
+export function __resetToastState() {
+  clearTimers();
+  active.value = false;
+  leaving.value = false;
+  options.value = { message: "" };
+  queue.length = 0;
+  resolvePromise = null;
+}
+
 onUnmounted(() => {
   clearTimers();
   // 清空队列，避免内存泄漏
   queue.forEach((item) => item.resolve());
   queue.length = 0;
 });
+
+// 导出供模板使用：使用 Options API 风格的 setup 函数返回响应式状态
+// showToast/showSuccessToast/showErrorToast 作为模块具名导出供外部调用
+export default {
+  setup() {
+    return { active, leaving, options, iconSrc, toastType, hideToast };
+  },
+};
 </script>
 
 <template>
@@ -256,7 +284,7 @@ onUnmounted(() => {
 
 /* ---- 消息文本 ---- */
 .toast-notification__message {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 500;
   color: var(--c-text-primary);
   line-height: 1.4;
@@ -271,7 +299,7 @@ onUnmounted(() => {
 
 /* ---- 滑入动画（弹性缓动） ---- */
 .toast-slide-in {
-  animation: toast-slide-in 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: toast-slide-in var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 @keyframes toast-slide-in {
   from {
@@ -286,7 +314,7 @@ onUnmounted(() => {
 
 /* ---- 滑出动画 ---- */
 .toast-slide-out {
-  animation: toast-slide-out 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: toast-slide-out var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 @keyframes toast-slide-out {
   from {

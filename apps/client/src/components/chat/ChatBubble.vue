@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import VoicePill from "./VoicePill.vue";
+import { resolveMediaUrl } from "../../utils/media";
 
 const props = withDefaults(
   defineProps<{
@@ -133,7 +134,7 @@ function formatTime(isoString: string): string {
       >
         <image
           class="bubble-avatar bubble-avatar--peer"
-          :src="peerAvatar"
+          :src="resolveMediaUrl(peerAvatar)"
           mode="aspectFill"
           role="img"
           :aria-label="t('chat.quotePeer')"
@@ -143,7 +144,7 @@ function formatTime(isoString: string): string {
       <image
         v-else-if="isSelfSender"
         class="bubble-avatar bubble-avatar--self"
-        :src="selfAvatar"
+        :src="resolveMediaUrl(selfAvatar)"
         mode="aspectFill"
         role="img"
         :aria-label="t('chat.quoteMe')"
@@ -236,8 +237,10 @@ function formatTime(isoString: string): string {
   background: var(--c-neutral-100);
 }
 
+/* mp-weixin 不支持 display:grid，单列纵向堆叠改用 flex-direction: column */
 .bubble {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-2);
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);

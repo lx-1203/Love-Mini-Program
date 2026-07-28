@@ -253,7 +253,9 @@ class LocalMediaStorageServiceTest {
      */
     @Test
     void uploadMov_shouldBeSupported() {
-        byte[] movBytes = new byte[]{0x00, 0x00, 0x00, 0x14, 0x6D, 0x6F, 0x6F, 0x76};
+        // MOV 文件也使用 ISO BMFF 容器格式，文件头为 "ftyp" box（与 mp4 共用 magic bytes）
+        byte[] movBytes = new byte[]{0x00, 0x00, 0x00, 0x14, 0x66, 0x74, 0x79, 0x70,
+                0x71, 0x74, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00};
         MockMultipartFile file = new MockMultipartFile(
                 "file", "clip.mov", "video/quicktime", movBytes);
 
@@ -315,10 +317,11 @@ class LocalMediaStorageServiceTest {
      */
     @Test
     void uploadWebp_shouldBeSupported() {
-        // 仅校验扩展名路径，无需真实 webp 二进制
+        // WebP 文件头：RIFF (4字节) + size (4字节) + WEBP (4字节)
         MockMultipartFile file = new MockMultipartFile(
                 "file", "anim.webp", "image/webp",
-                new byte[]{0x52, 0x49, 0x46, 0x46, 0x00, 0x00});
+                new byte[]{0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00,
+                        0x57, 0x45, 0x42, 0x50});
 
         // webp 在 JDK 默认 ImageIO 可能未注册 reader，store 会调用 readImageDimensions
         // 但 validate 阶段已通过，store 应返回 url（width/height 可能因无 reader 为 null）

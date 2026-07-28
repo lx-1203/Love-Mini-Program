@@ -1,7 +1,10 @@
 package com.campuslove.api.village;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,7 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 提供预置标签获取、按标签查询帖子等接口。
  */
 @RestController
-@RequestMapping("/api/post-tags")
+@RequestMapping("/api/v1/post-tags")
+@Validated
 public class PostTagController {
 
     private final PostTagService postTagService;
@@ -45,8 +49,8 @@ public class PostTagController {
     @GetMapping("/posts")
     public ResponseEntity<List<PostSummaryView>> getPostsByTag(
             @RequestParam(name = "tagName") String tagName,
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
         List<PostSummaryView> posts = postTagService.getPostsByTag(tagName, page, size);
         return ResponseEntity.ok(posts);
     }

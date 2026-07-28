@@ -38,21 +38,20 @@ const { t } = useI18n();
 .wechat-btn {
   width: 100%;
   height: 104rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-gradient-brand);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 14rpx;
-  box-shadow: 0 8rpx 32rpx rgba(91, 127, 255, 0.35);
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  box-shadow: var(--s-secondary-blue, 0 8rpx 32rpx rgba(91, 127, 255, 0.35));
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1), box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .wechat-btn:active {
   transform: scale(0.97);
-  box-shadow: 0 4rpx 16rpx rgba(91, 127, 255, 0.2);
+  box-shadow: var(--s-secondary-blue-sm, 0 4rpx 16rpx rgba(91, 127, 255, 0.2));
 }
 
 .wechat-btn--loading {

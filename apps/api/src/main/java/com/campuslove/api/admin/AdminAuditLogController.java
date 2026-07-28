@@ -2,14 +2,19 @@ package com.campuslove.api.admin;
 
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.AuditLog;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,8 +32,10 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>Phase 3 修复：仅 real profile 加载，与 AdminAuditLogService 保持一致，避免 mock profile 启动失败。</p>
  */
 @RestController
-@RequestMapping("/api/admin/audit-logs")
+@RequestMapping("/api/v1/admin/audit-logs")
 @Profile("real")
+@PreAuthorize("hasRole('ADMIN')")
+@Validated
 public class AdminAuditLogController {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
@@ -52,8 +59,8 @@ public class AdminAuditLogController {
      */
     @GetMapping
     public ResponseEntity<AuditLogPageView> list(
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(name = "operator", required = false) String operator,
             @RequestParam(name = "operation", required = false) String operation,
             @RequestParam(name = "startDate", required = false) String startDate,
@@ -117,7 +124,7 @@ public class AdminAuditLogController {
                 return LocalDateTime.parse(s + "T00:00:00", DATE_TIME_FORMATTER);
             }
             return LocalDateTime.parse(s, DATE_TIME_FORMATTER);
-        } catch (Exception e) {
+        } catch (DateTimeParseException e) {
             return null;
         }
     }

@@ -18,13 +18,17 @@ export interface SensitiveWordCreateRequest {
   category?: string;
 }
 
-/** 敏感词分类（与后端 SQL 注释保持一致） */
-export const SENSITIVE_WORD_CATEGORIES: { value: string; label: string }[] = [
-  { value: "POLITICS", label: "政治" },
-  { value: "PORN", label: "色情" },
-  { value: "ABUSE", label: "辱骂" },
-  { value: "AD", label: "广告" },
-  { value: "OTHER", label: "其他" },
+/** 敏感词分类（与后端 SQL 注释保持一致）
+ *
+ * SubTask 3.3.2：label 改为 i18n key（sensitiveWords.filterCategoryPolitics 等），
+ * 由组件通过 useI18n().t() 渲染，避免硬编码中文。
+ */
+export const SENSITIVE_WORD_CATEGORIES: { value: string; labelKey: string }[] = [
+  { value: "POLITICS", labelKey: "sensitiveWords.filterCategoryPolitics" },
+  { value: "PORN", labelKey: "sensitiveWords.filterCategoryPorn" },
+  { value: "ABUSE", labelKey: "sensitiveWords.filterCategoryAbuse" },
+  { value: "AD", labelKey: "sensitiveWords.filterCategoryAd" },
+  { value: "OTHER", labelKey: "sensitiveWords.filterCategoryOther" },
 ];
 
 /** 查询敏感词列表（可选 category 过滤） */

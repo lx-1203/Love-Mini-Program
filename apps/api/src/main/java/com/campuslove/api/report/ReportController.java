@@ -1,5 +1,7 @@
 package com.campuslove.api.report;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Report;
 import com.campuslove.api.repository.ReportRepository;
@@ -33,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/reports")
+@RequestMapping("/api/v1/reports")
 public class ReportController {
 
     /** 举报初始状态：待处理 */
@@ -54,7 +56,8 @@ public class ReportController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ReportView createReport(@Valid @RequestBody ReportCreateRequest req) {
+    @Idempotent
+    public ApiResponse<ReportView> createReport(@Valid @RequestBody ReportCreateRequest req) {
         Long reporterId = SecurityUtils.getCurrentUserId();
 
         Report report = new Report();
@@ -68,7 +71,7 @@ public class ReportController {
 
         Report saved = reportRepository.save(report);
 
-        return new ReportView(
+        return ApiResponse.ok(new ReportView(
                 saved.getId(),
                 saved.getTargetType(),
                 saved.getTargetId(),
@@ -77,7 +80,7 @@ public class ReportController {
                 saved.getDescription(),
                 saved.getStatus(),
                 saved.getCreatedAt() != null ? saved.getCreatedAt().toString() : null
-        );
+        ));
     }
 }
 

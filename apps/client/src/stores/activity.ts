@@ -1,11 +1,13 @@
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { clientApi } from "../services/api";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 import type { components } from "../services/generated/api-types";
 // 统一图片资源路径常量，避免在 store 中硬编码字符串
 import { IMAGE_PATHS } from "@/config/images";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 type Schemas = components["schemas"];
 
@@ -95,8 +97,6 @@ const mockActivities: ActivityItem[] = [
 /** 单页大小 */
 const DEFAULT_PAGE_SIZE = 10;
 
-const useMock = isMockMode;
-
 /**
  * 线下活动 Store
  *
@@ -155,7 +155,7 @@ export const useActivityStore = defineStore("activity", {
         this.hasMore = data.length >= this.pageSize;
       } catch (error) {
         this.errorMessage =
-          error instanceof Error ? error.message : "加载活动失败";
+          error instanceof Error ? error.message : t("storeErrors.activity.loadActivitiesFailed");
       } finally {
         this.loading = false;
       }
@@ -197,7 +197,7 @@ export const useActivityStore = defineStore("activity", {
         this.hasMore = data.length >= this.pageSize;
       } catch (error) {
         this.errorMessage =
-          error instanceof Error ? error.message : "加载更多活动失败";
+          error instanceof Error ? error.message : t("storeErrors.activity.loadMoreFailed");
       } finally {
         this.loading = false;
       }
@@ -219,8 +219,12 @@ export const useActivityStore = defineStore("activity", {
         if (useMock()) {
           activity.isEnrolled = !activity.isEnrolled;
           if (activity.isEnrolled) {
+            // 修复：enrollCount 与 enrollmentCount 为同一字段的兼容别名，
+            // 必须同步更新，避免 UI（消费 enrollCount）与 API（消费 enrollmentCount）数据不一致。
+            activity.enrollCount = (activity.enrollCount ?? 0) + 1;
             activity.enrollmentCount = (activity.enrollmentCount ?? 0) + 1;
           } else {
+            activity.enrollCount = Math.max((activity.enrollCount ?? 1) - 1, 0);
             activity.enrollmentCount = Math.max(
               (activity.enrollmentCount ?? 1) - 1,
               0,
@@ -254,7 +258,7 @@ export const useActivityStore = defineStore("activity", {
         }
       } catch (error) {
         this.errorMessage =
-          error instanceof Error ? error.message : "报名操作失败";
+          error instanceof Error ? error.message : t("storeErrors.activity.registerFailed");
       } finally {
         this.enrolling = false;
       }
@@ -305,7 +309,7 @@ export const useActivityStore = defineStore("activity", {
           isEnrolled: data.isEnrolled,
         };
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "获取活动详情失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.activity.loadDetailFailed");
         return null;
       }
     },

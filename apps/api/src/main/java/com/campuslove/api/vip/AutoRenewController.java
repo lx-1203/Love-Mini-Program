@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/vip/auto-renew")
+@RequestMapping("/api/v1/vip/auto-renew")
 public class AutoRenewController {
 
     private final AutoRenewService autoRenewService;

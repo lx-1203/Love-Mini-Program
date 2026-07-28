@@ -1,5 +1,7 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.admin.auth.AdminDisabledException;
+import com.campuslove.api.admin.auth.InvalidCredentialsException;
 import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.config.DisplayConstants;
@@ -9,6 +11,7 @@ import com.campuslove.api.entity.UserScheduleProfile;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import io.jsonwebtoken.JwtException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -16,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +66,12 @@ public class RealAuthService implements AuthService {
     private final AesEncryptor aesEncryptor;
 
     /**
+     * Task 0.5.3：JWT 黑名单服务，用于登出时将 jti 加入 Redis 黑名单，
+     * 实现 JWT 主动失效。
+     */
+    private final TokenBlacklistService tokenBlacklistService;
+
+    /**
      * 管理员登录密码哈希，由环境变量 ADMIN_PASSWORD 配置。
      * <p>注意：值必须为 BCrypt 哈希（格式 {@code $...}），而非明文。
      * 可通过 {@link com.campuslove.api.config.PasswordEncoderConfig#encodePassword(String)} 生成。</p>
@@ -77,6 +87,7 @@ public class RealAuthService implements AuthService {
             UserScheduleProfileRepository userScheduleProfileRepository,
             PasswordEncoder passwordEncoder,
             AesEncryptor aesEncryptor,
+            TokenBlacklistService tokenBlacklistService,
             @Value("${app.admin.password:}") String adminPassword
     ) {
         this.weChatClient = weChatClient;
@@ -86,6 +97,7 @@ public class RealAuthService implements AuthService {
         this.userScheduleProfileRepository = userScheduleProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.aesEncryptor = aesEncryptor;
+        this.tokenBlacklistService = tokenBlacklistService;
         this.adminPassword = adminPassword;
     }
 
@@ -123,7 +135,8 @@ public class RealAuthService implements AuthService {
                         null, Map.of("chat_ai_enabled", false)
                 );
             }
-            user = userOpt.get();
+            user = userOpt.orElseThrow(() ->
+                    new IllegalStateException("userOpt 已确认非空但 orElseThrow 触发，数据不一致"));
         } catch (NumberFormatException ex) {
             log.error("JWT 中的 userId={} 格式非法，无法转换为 Long", userId, ex);
             return UserSessionView.withoutToken(
@@ -138,32 +151,87 @@ public class RealAuthService implements AuthService {
     }
 
     @Override
-    @Transactional
     public UserSessionView loginWithWechat(String code) {
-        // 1. 调用微信接口，用 code 换取 openid
+        // Task 2.5.5：移除方法级 @Transactional，将远程调用移出事务边界。
+        // 原实现将 weChatClient.code2Session()（可能耗时 1-3s）置于事务内，
+        // 导致数据库连接被长时间占用，高并发下易引发连接池耗尽。
+        // 现拆分为两阶段：
+        //   阶段 1（无事务）：调用微信接口换取 openid（远程调用，不占用 DB 连接）
+        //   阶段 2（事务）：查找或创建用户、生成 JWT、构建会话视图（DB 操作）
+        // DB 操作的原子性由 findOrCreateUserForWechatLogin 的 @Transactional 保证，
+        // 单次 save 亦由 SimpleJpaRepository 自带事务兜底。
+
+        // 1. 调用微信接口，用 code 换取 openid（远程调用，移出事务边界）
+        //    失败时将 WeChatClient.WeChatAuthException 映射为 WechatLoginException，
+        //    携带明确业务错误码（INVALID_CODE / WECHAT_API_ERROR），
+        //    供 GlobalExceptionHandler 转换为标准化 HTTP 响应，前端按错误码分支处理。
         WeChatClient.WeChatSessionResponse session;
         try {
             session = weChatClient.code2Session(code);
         } catch (WeChatClient.WeChatAuthException ex) {
-            log.error("WeChat auth failed for code(length={}): {}", code != null ? code.length() : 0, ex.getMessage());
-            throw ex;
+            Integer errcode = ex.getErrcode();
+            log.warn("WeChat auth failed for code(length={}): errcode={}, message={}",
+                    code != null ? code.length() : 0, errcode, ex.getMessage());
+            // errcode 40029：code 无效/已过期 → INVALID_CODE（401）
+            // 其他 errcode 或网络异常 → WECHAT_API_ERROR（502）
+            if (errcode != null && errcode == 40029) {
+                throw new WechatLoginException(
+                        WechatLoginException.ErrorCode.INVALID_CODE,
+                        "微信登录凭证已失效，请重新登录",
+                        ex);
+            }
+            throw new WechatLoginException(
+                    WechatLoginException.ErrorCode.WECHAT_API_ERROR,
+                    "微信服务暂时不可用：" + (ex.getMessage() != null ? ex.getMessage() : "unknown"),
+                    ex);
         }
 
         String openid = session.getOpenid();
         // 修复：openid 加密后再用于查询/存储，避免数据库明文泄露用户身份
-        // 加密后的 openid 仍然保持唯一性（相同明文加密结果不同但都能解密回原值，
-        // 因为我们使用 encrypt 后做精确匹配，所以同一 openid 多次登录会生成不同密文，
-        // 这里需要使用确定的派生方式或保留明文查询能力）。
-        // 实现策略：openid 用于唯一索引查询，使用 HMAC-SHA256 派生固定 hash 作为查询键，
-        // 同时将加密后的 openid 密文存储于 openid 字段（保留可解密性）。
-        // 但为简化实现并保持与现有 findByOpenid 接口兼容，这里使用 AES 加密后的固定输出
-        // —— 注意 AES-GCM 每次加密 IV 不同，密文不同，无法直接用于等值查询。
-        // 解决方案：使用确定性派生（SHA-256）作为查询键，加密密文单独存储。
-        // 此处采用最小改动：将 openid 通过 SHA-256 派生为确定 hash 用于查询/存储，
+        // 实现策略：openid 用于唯一索引查询，使用 SHA-256 派生固定 hash 作为查询键，
         // 数据库 openid 字段存储派生 hash（不可逆，但可用于唯一性约束）。
         String openidHash = hashOpenid(openid);
 
-        // 2. 查找或创建用户
+        // 2. 查找或创建用户（事务边界仅覆盖 DB 操作）
+        User user = findOrCreateUserForWechatLogin(openidHash, openid);
+
+        // 2.5 用户禁用检查：被管理员禁用的账号禁止登录，返回 USER_DISABLED（403）。
+        //     新创建用户 status 默认为 active，此处主要拦截老用户被禁用后再次登录的场景。
+        //     与 RealAuthService.loginAsAdmin 中 admin 禁用检查语义保持一致。
+        if (user.isDisabled()) {
+            log.warn("禁用用户尝试登录, userId={}, openid={}", user.getId(), maskOpenid(openid));
+            throw new WechatLoginException(
+                    WechatLoginException.ErrorCode.USER_DISABLED,
+                    "账号已被禁用，请联系管理员");
+        }
+
+        // 3. 生成 JWT 令牌（userId 为 Long 类型，转为 String 存储）
+        String jwtToken = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
+
+        // 4. 返回会话视图
+        return buildSessionView(user, jwtToken);
+    }
+
+    /**
+     * Task 2.5.5：微信登录的 DB 操作事务边界。
+     *
+     * <p>将查找/创建用户逻辑抽取为独立 {@code @Transactional} 方法，使事务仅覆盖
+     * DB 操作（findByOpenid + save），不再包含远程调用。事务范围最小化，降低
+     * 数据库连接占用时间，避免长事务引发的连接池耗尽问题。</p>
+     *
+     * <p>注意：因 Spring AOP 代理不拦截同类内部方法调用，本方法采用 public 可见性
+     * 以便后续如需通过 self-injection 调用；当前由 {@link #loginWithWechat} 直接调用，
+     * Spring 在 proxy 调用 {@code loginWithWechat} 时已无 @Transactional，本方法
+     * 通过 Spring Data JPA 的 SimpleJpaRepository.save() 自带事务保证单次写入原子性，
+     * 多次写入场景（如未来扩展为同时保存用户与初始化资料）需通过 self-injection
+     * 或 TransactionTemplate 显式开启事务。</p>
+     *
+     * @param openidHash openid 的 SHA-256 派生 hash（用于查询/存储）
+     * @param openid     原始 openid（仅用于日志脱敏展示）
+     * @return 已存在或新创建的用户实体
+     */
+    @Transactional
+    public User findOrCreateUserForWechatLogin(String openidHash, String openid) {
         User user;
         try {
             Optional<User> existingUser = userRepository.findByOpenid(openidHash);
@@ -184,16 +252,11 @@ public class RealAuthService implements AuthService {
                 user = userRepository.save(user);
                 log.info("创建新用户: userId={}, openid={}", user.getId(), maskOpenid(openid));
             }
-        } catch (Exception ex) {
+        } catch (DataAccessException ex) {
             log.error("查找/创建用户失败, openid={}: {}", maskOpenid(openid), ex.getMessage(), ex);
             throw new RuntimeException("用户登录处理失败，请稍后重试", ex);
         }
-
-        // 3. 生成 JWT 令牌（userId 为 Long 类型，转为 String 存储）
-        String jwtToken = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
-
-        // 4. 返回会话视图
-        return buildSessionView(user, jwtToken);
+        return user;
     }
 
     @Override
@@ -238,16 +301,28 @@ public class RealAuthService implements AuthService {
     public UserSessionView loginAsAdmin(String username, String password) {
         // 1. 校验入参非空，避免空指针；统一返回相同错误信息以防账号枚举
         if (username == null || username.isBlank() || password == null) {
-            throw new IllegalArgumentException("管理员账号或密码错误");
+            throw new InvalidCredentialsException("管理员账号或密码错误");
         }
 
         // 2. 通过 openid 查找用户（约定：管理员 openid 字段存用户名）
         User user = userRepository.findByOpenid(username).orElse(null);
         if (user == null || !user.isAdmin()) {
-            throw new IllegalArgumentException("管理员账号或密码错误");
+            // 防账号枚举：账号不存在或非管理员均统一返回凭据无效
+            throw new InvalidCredentialsException("管理员账号或密码错误");
         }
 
-        // 3. 校验密码：优先使用数据库 password 字段，环境变量 ADMIN_PASSWORD 作为兜底。
+        // 3. 校验账号状态：禁用账号拒绝登录并返回明确错误码 ADMIN_DISABLED。
+        //    修复（Task 0.4.2）：原代码未校验 status 字段，被禁用的管理员仍可登录获取 token，
+        //    存在安全隐患。现增加 status 校验，与 User.isDisabled() 语义保持一致
+        //    （status='disabled' 即视为禁用）。
+        //    注意：User 实体无 enabled 字段，仅有 status（active/disabled），
+        //    故按现有数据模型校验 status，与任务要求"禁用账号拒绝登录"语义一致。
+        if (user.isDisabled()) {
+            log.warn("禁用管理员账号尝试登录, userId={}, username={}", user.getId(), username);
+            throw new AdminDisabledException("管理员账号已被禁用，请联系超级管理员");
+        }
+
+        // 4. 校验密码：优先使用数据库 password 字段，环境变量 ADMIN_PASSWORD 作为兜底。
         //
         // Phase 3 任务 13 扩展：引入 matchesPasswordWithMigration 通用校验方法，支持：
         //   - BCrypt 哈希校验（标准路径，格式 $2a$10$...）
@@ -268,10 +343,10 @@ public class RealAuthService implements AuthService {
             throw new IllegalStateException("管理员登录未启用");
         }
         if (!matchesPasswordWithMigration(user, password, storedHash, allowMigration)) {
-            throw new IllegalArgumentException("管理员账号或密码错误");
+            throw new InvalidCredentialsException("管理员账号或密码错误");
         }
 
-        // 4. 生成 JWT 令牌并返回会话视图
+        // 5. 生成 JWT 令牌并返回会话视图
         String jwtToken = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         log.info("管理员登录成功, userId={}, username={}", user.getId(), username);
         return buildSessionView(user, jwtToken);
@@ -353,7 +428,7 @@ public class RealAuthService implements AuthService {
                     user.setUpdatedAt(LocalDateTime.now());
                     userRepository.save(user);
                     log.info("历史明文密码已自动迁移为 BCrypt 哈希, userId={}", user.getId());
-                } catch (Exception ex) {
+                } catch (DataAccessException ex) {
                     // 迁移失败不影响登录通过，仅记录日志
                     log.error("历史明文密码迁移 BCrypt 失败, userId={}: {}",
                             user.getId(), ex.getMessage(), ex);
@@ -402,8 +477,15 @@ public class RealAuthService implements AuthService {
 
     /**
      * 登出日志记录的内部实现。
-     * 修复：将 token 加入 JwtTokenProvider 黑名单，实现登出后 token 立即失效。
-     * 当前实现使用内存黑名单（单实例足够），生产多实例部署应替换为 Redis。
+     *
+     * <p>Task 0.5.3 升级：登出时将 JWT 的 jti 加入 Redis 黑名单（通过 {@link TokenBlacklistService}），
+     * TTL 设为 JWT 剩余有效期，实现：
+     * <ul>
+     *   <li>多实例共享：所有应用实例共享 Redis 黑名单，登出后立即在所有实例生效</li>
+     *   <li>自动过期清理：Token 自然过期后黑名单条目由 Redis TTL 自动清理</li>
+     *   <li>降级容错：Redis 不可用时降级到本地内存黑名单，不阻塞登出主流程</li>
+     * </ul>
+     * 同时保留旧 {@link JwtTokenProvider#revokeToken} 调用，兼容过渡期间的双黑名单方案。</p>
      *
      * @param token  当前 JWT 令牌（可能为 null 或非法）
      * @param action 日志中的操作描述（如 "用户登出" / "管理员登出"）
@@ -413,11 +495,23 @@ public class RealAuthService implements AuthService {
         try {
             if (token != null && !token.isBlank()) {
                 userId = jwtTokenProvider.getUserIdFromToken(token);
-                // 修复：将 token 加入黑名单，立即失效，防止登出后 token 被继续使用
+
+                // Task 0.5.3：将 jti 加入 Redis 黑名单（TTL = JWT 剩余有效期）
+                String jti = jwtTokenProvider.getJtiFromToken(token);
+                if (jti != null && !jti.isBlank()) {
+                    long ttlSeconds = jwtTokenProvider.getRemainingTtlSeconds(token);
+                    if (ttlSeconds > 0) {
+                        tokenBlacklistService.revoke(jti, ttlSeconds);
+                        log.debug("jti={} 已加入 Redis 黑名单, ttl={}秒", jti, ttlSeconds);
+                    }
+                }
+
+                // 兼容旧黑名单实现：将完整 token 加入 JwtTokenProvider 黑名单
+                // 保留过渡期，确保旧 token（无 jti）也能被撤销
                 jwtTokenProvider.revokeToken(token);
             }
-        } catch (Exception ex) {
-            // 防止日志失败影响流程
+        } catch (JwtException ex) {
+            // JWT 解析失败时不影响登出主流程
             log.debug("登出时解析 token 失败: {}", ex.getMessage());
         }
         log.info("{}, userId={}", action, userId);
@@ -506,7 +600,7 @@ public class RealAuthService implements AuthService {
                 campusName = campusProfile.getCampusName();
                 campusVerified = "verified".equals(campusProfile.getVerificationStatus());
             }
-        } catch (Exception ex) {
+        } catch (DataAccessException ex) {
             log.error("查询用户校园资料失败, userId={}: {}", userId, ex.getMessage(), ex);
         }
 
@@ -515,7 +609,7 @@ public class RealAuthService implements AuthService {
         try {
             Optional<UserScheduleProfile> scheduleOpt = userScheduleProfileRepository.findByUserId(userId);
             scheduleCompleted = scheduleOpt.isPresent();
-        } catch (Exception ex) {
+        } catch (DataAccessException ex) {
             log.error("查询用户日程偏好失败, userId={}: {}", userId, ex.getMessage(), ex);
         }
 

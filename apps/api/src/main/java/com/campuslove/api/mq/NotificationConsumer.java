@@ -139,7 +139,7 @@ public class NotificationConsumer {
             if (sent) {
                 log.info("微信通知推送成功：userId={}, type={}", message.getUserId(), message.getType());
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("微信通知推送失败，不影响后续处理：userId={}, error={}",
                     message.getUserId(), e.getMessage());
         }
@@ -172,7 +172,7 @@ public class NotificationConsumer {
 
             notificationRepository.save(entity);
             log.debug("通知已持久化：userId={}, type={}", message.getUserId(), message.getType());
-        } catch (Exception e) {
+        } catch (org.springframework.dao.DataAccessException e) {
             log.warn("通知持久化失败，不抛出异常以避免消息重投：userId={}, error={}",
                     message.getUserId(), e.getMessage());
         }

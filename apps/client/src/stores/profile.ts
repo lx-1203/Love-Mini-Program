@@ -1,9 +1,15 @@
 import { defineStore } from "pinia";
 import type { components } from "../services/generated/api-types";
 import type { ProfileStats } from "../services/generated/api-types-supplement";
-import { isMockMode } from "../services/env";
 import { clientApi } from "../services/api";
+// 导入 UniUploadFileLike 类型，统一上传方法签名，消除 File 类型在 mp-weixin 端的不兼容问题
+import type { UniUploadFileLike } from "../services/api";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
+// SubTask 1.4.1：loadMyPosts 复用 village API 拉取当前用户发布的帖子
+import { request } from "../services/http";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 type Schemas = components["schemas"];
 
@@ -125,13 +131,6 @@ const mockMyPosts: MyPostSummary[] = [
 ];
 
 /**
- * 检测当前是否为 Mock 模式
- */
-function useMock(): boolean {
-  return isMockMode();
-}
-
-/**
  * 深拷贝工具函数，避免 Mock 数据被直接修改
  */
 function clone<T>(value: T): T {
@@ -233,12 +232,37 @@ export const useProfileStore = defineStore("profile", {
           this.campusProfile = campus;
           this.scheduleProfile = schedule;
           this.profileStats = stats;
-          // VIP 状态与我的动态暂无独立后端接口，使用默认值占位
-          // 待后端补充 /profile/vip-status 与 /profile/my-posts 接口后替换
-          this.vipStatus = this.vipStatus ?? { isVip: false, planName: "", expireDate: null };
+
+          // SubTask 1.4.1：解析 vipStatus。
+          // 当前后端 UserSession schema 暂未声明 vipStatus 字段，但实际响应可能已包含
+          // （后端 DTO 扩展常常先于 OpenAPI 重新生成）。这里通过类型断言安全读取：
+          // - 若响应包含 vipStatus 对象，则按其字段解析
+          // - 否则回退到默认（未开通 VIP），保证 UI 不出现 undefined
+          const session = useSessionStore();
+          const sessionRaw = session.userSession as
+            | {
+                vipStatus?: {
+                  isVip?: boolean;
+                  planName?: string;
+                  expireDate?: string | null;
+                };
+              }
+            | null
+            | undefined;
+          const rawVip = sessionRaw?.vipStatus;
+          this.vipStatus = {
+            isVip: Boolean(rawVip?.isVip),
+            planName: typeof rawVip?.planName === "string" ? rawVip.planName : "",
+            expireDate:
+              typeof rawVip?.expireDate === "string" || rawVip?.expireDate === null
+                ? (rawVip.expireDate as string | null)
+                : null,
+          };
+
+          // 我的动态：load() 不阻塞主流程，留空由 loadMyPosts() 按需拉取
           this.myPosts = this.myPosts ?? [];
         } catch (error) {
-          this.errorMessage = error instanceof Error ? error.message : "加载个人资料失败";
+          this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.loadProfileFailed");
           // 异常时确保数据不为 undefined
           this.basicProfile = this.basicProfile ?? null;
           this.campusProfile = this.campusProfile ?? null;
@@ -270,6 +294,96 @@ export const useProfileStore = defineStore("profile", {
     },
 
     /**
+     * SubTask 1.4.1：拉取当前用户的动态列表（个人主页"我的动态"模块）。
+     *
+     * <p>实现策略：</p>
+     * <ul>
+     *   <li>Mock 模式：直接返回 mockMyPosts，不发起网络请求</li>
+     *   <li>Real 模式：复用后端 GET /api/posts?userId={currentUserId} 接口拉取当前用户发布的帖子，
+     *       取前 3 条作为个人主页预览。后端响应字段映射到 MyPostSummary：
+     *       id / content 截摘要 / likes / comments / createdAt / coverImage（首图）</li>
+     *   <li>错误处理：失败时清空 myPosts 并设置 errorMessage，不抛出，避免阻塞页面渲染</li>
+     * </ul>
+     *
+     * <p>设计考量：将 myPosts 拆分为独立 action 而非塞入 load()，原因：</p>
+     * <ul>
+     *   <li>个人主页首屏只需 basic/campus/schedule/stats + vipStatus，动态列表可懒加载</li>
+     *   <li>用户进入"我的动态"分页时才需要完整列表，避免 load() 拉取冗余数据</li>
+     *   <li>独立 action 便于失败重试，不影响主资料展示</li>
+     * </ul>
+     */
+    async loadMyPosts() {
+      this.errorMessage = null;
+      try {
+        if (useMock()) {
+          this.myPosts = clone(mockMyPosts);
+          return;
+        }
+
+        // Real 模式：从 sessionStore 获取当前用户 ID，调用 /posts?userId=... 拉取
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId;
+        if (!userId) {
+          // 未登录场景下没有"我的动态"可展示，清空即可
+          this.myPosts = [];
+          return;
+        }
+
+        // 后端 PostListResponse 结构（与 village store 一致），仅取所需字段
+        type PostListItem = {
+          id: string | number;
+          content?: string;
+          text?: string;
+          title?: string;
+          likeCount?: number;
+          likes?: number;
+          commentCount?: number;
+          comments?: number;
+          createdAt?: string;
+          images?: string[];
+        };
+        type PostListResponse = {
+          items?: PostListItem[];
+          data?: PostListItem[];
+          list?: PostListItem[];
+        };
+
+        const query = new URLSearchParams({
+          userId: String(userId),
+          page: "1",
+          pageSize: "3",
+        }).toString();
+        const resp = await request<PostListResponse>({
+          url: `/posts?${query}`,
+          method: "GET",
+        });
+
+        const items = resp.items ?? resp.data ?? resp.list ?? [];
+        this.myPosts = items.map((p): MyPostSummary => {
+          const summary =
+            (p.content && p.content.trim()) ||
+            (p.text && p.text.trim()) ||
+            (p.title && p.title.trim()) ||
+            "";
+          const truncated =
+            summary.length > 50 ? summary.slice(0, 50) + "..." : summary;
+          return {
+            id: String(p.id),
+            summary: truncated,
+            likes: p.likeCount ?? p.likes ?? 0,
+            comments: p.commentCount ?? p.comments ?? 0,
+            createdAt: p.createdAt ?? new Date().toISOString(),
+            coverImage: Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : undefined,
+          };
+        });
+      } catch (error) {
+        // 失败时清空 myPosts，避免展示陈旧数据；记录 errorMessage 便于 UI 提示
+        this.myPosts = [];
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.loadMyPostsFailed");
+      }
+    },
+
+    /**
      * 加载个人统计数据。
      */
     async loadStats() {
@@ -281,7 +395,7 @@ export const useProfileStore = defineStore("profile", {
         }
         this.profileStats = await clientApi.getProfileStats();
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载资料统计失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.loadStatsFailed");
       }
     },
 
@@ -306,7 +420,7 @@ export const useProfileStore = defineStore("profile", {
         this.basicProfile = await clientApi.saveBasicProfile(payload);
         await useSessionStore().refreshSession();
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "保存基本资料失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.saveBasicFailed");
         throw error;
       }
     },
@@ -332,7 +446,7 @@ export const useProfileStore = defineStore("profile", {
         this.campusProfile = await clientApi.saveCampusProfile(payload);
         await useSessionStore().refreshSession();
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "保存校园资料失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.saveCampusFailed");
         throw error;
       }
     },
@@ -357,7 +471,7 @@ export const useProfileStore = defineStore("profile", {
         this.scheduleProfile = await clientApi.saveScheduleProfile(payload);
         await useSessionStore().refreshSession();
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "保存日程资料失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.saveScheduleFailed");
         throw error;
       }
     },
@@ -372,7 +486,7 @@ export const useProfileStore = defineStore("profile", {
      * @param file - 图片文件（jpg/png/webp，≤10MB）
      * @returns 服务端返回的图片 URL
      */
-    async uploadBackground(file: File): Promise<string> {
+    async uploadBackground(file: UniUploadFileLike): Promise<string> {
       this.errorMessage = null;
       try {
         const result = await clientApi.uploadProfileBackground(file);
@@ -382,7 +496,7 @@ export const useProfileStore = defineStore("profile", {
         sessionStore.setProfileBackgroundUrl(url);
         return url;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "上传背景图失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadBackgroundFailed");
         throw error;
       }
     },
@@ -395,14 +509,14 @@ export const useProfileStore = defineStore("profile", {
      * @param file - 视频文件（mp4/mov，≤50MB，≤60s）
      * @returns 服务端返回的视频 URL
      */
-    async uploadVideo(file: File): Promise<string> {
+    async uploadVideo(file: UniUploadFileLike): Promise<string> {
       this.errorMessage = null;
       try {
         const result = await clientApi.uploadProfileVideo(file);
         this.personalVideoUrl = result.url;
         return result.url;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "上传个人视频失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadVideoFailed");
         throw error;
       }
     },
@@ -420,7 +534,7 @@ export const useProfileStore = defineStore("profile", {
         // TODO: 后端补齐 DELETE /api/profile/video 后接入 clientApi.deleteProfileVideo()
         this.personalVideoUrl = "";
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "删除个人视频失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.deleteVideoFailed");
         throw error;
       }
     },
@@ -437,9 +551,9 @@ export const useProfileStore = defineStore("profile", {
      * @param index - 照片墙目标索引（0-5）
      * @returns 服务端返回的图片 URL
      */
-    async uploadPhotoAtIndex(file: File, index: number): Promise<string> {
+    async uploadPhotoAtIndex(file: UniUploadFileLike, index: number): Promise<string> {
       if (index < 0 || index > 5) {
-        throw new Error("照片索引超出范围（0-5）");
+        throw new Error(t("storeErrors.profile.photoIndexOutOfRange"));
       }
       this.errorMessage = null;
       try {
@@ -459,7 +573,7 @@ export const useProfileStore = defineStore("profile", {
         this.photoGallery = next;
         return url;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "上传照片失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadPhotoFailed");
         throw error;
       }
     },
@@ -474,7 +588,7 @@ export const useProfileStore = defineStore("profile", {
      */
     async removePhotoAtIndex(index: number): Promise<void> {
       if (index < 0 || index >= this.photoGallery.length) {
-        throw new Error("照片索引不存在");
+        throw new Error(t("storeErrors.profile.photoIndexNotFound"));
       }
       this.errorMessage = null;
       try {
@@ -485,7 +599,7 @@ export const useProfileStore = defineStore("profile", {
           ...this.photoGallery.slice(index + 1),
         ];
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "删除照片失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.deletePhotoFailed");
         throw error;
       }
     },

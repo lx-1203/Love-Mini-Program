@@ -49,7 +49,7 @@ class SecurityConfigTest {
      */
     @Test
     void unauthenticated_accessToAuthMe_shouldReturn200() throws Exception {
-        mockMvc.perform(get("/api/auth/me"))
+        mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isOk());
     }
 
@@ -60,7 +60,7 @@ class SecurityConfigTest {
      */
     @Test
     void unauthenticated_accessToWechatLogin_shouldReturn200() throws Exception {
-        mockMvc.perform(post("/api/auth/wechat-login")
+        mockMvc.perform(post("/api/v1/auth/wechat-login")
                         .contentType("application/json")
                         .content("{\"code\":\"test-code\"}"))
                 .andExpect(status().isOk());
@@ -75,7 +75,7 @@ class SecurityConfigTest {
     @Test
     @WithMockUser(roles = "USER")
     void user_accessToAdminEndpoint_shouldReturn403() throws Exception {
-        mockMvc.perform(get("/api/admin/users"))
+        mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isForbidden());
     }
 
@@ -88,12 +88,12 @@ class SecurityConfigTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void admin_accessToAdminEndpoint_shouldNotBeForbidden() throws Exception {
-        mockMvc.perform(get("/api/admin/users"))
+        mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(result -> {
                     int status = result.getResponse().getStatus();
                     if (status == 401 || status == 403) {
                         throw new AssertionError(
-                                "管理员访问 /api/admin/users 不应被 security 拦截，但返回: " + status);
+                                "管理员访问 /api/v1/admin/users 不应被 security 拦截，但返回: " + status);
                     }
                 });
     }
@@ -114,12 +114,12 @@ class SecurityConfigTest {
      */
     @Test
     void user_accessToUserEndpoint_shouldNotBeBlockedBySecurity() throws Exception {
-        mockMvc.perform(post("/api/users/123/follow"))
+        mockMvc.perform(post("/api/v1/users/123/follow"))
                 .andExpect(result -> {
                     int status = result.getResponse().getStatus();
                     if (status == 401 || status == 403) {
                         throw new AssertionError(
-                                "普通用户访问 /api/users/123/follow 不应被 security 拦截，但返回: " + status);
+                                "普通用户访问 /api/v1/users/123/follow 不应被 security 拦截，但返回: " + status);
                     }
                 });
     }
@@ -134,7 +134,7 @@ class SecurityConfigTest {
      */
     @Test
     void unauthenticated_accessToUserEndpoint_inMockProfile_shouldNotBe401() throws Exception {
-        mockMvc.perform(post("/api/users/123/follow"))
+        mockMvc.perform(post("/api/v1/users/123/follow"))
                 .andExpect(result -> {
                     int status = result.getResponse().getStatus();
                     if (status == 401) {
@@ -168,7 +168,7 @@ class SecurityConfigTest {
      */
     @Test
     void unauthenticated_accessToContentFilterCheck_shouldNotRequireAuth() throws Exception {
-        mockMvc.perform(post("/content-filter/check")
+        mockMvc.perform(post("/api/v1/content-filter/check")
                         .contentType("application/json")
                         .content("{\"text\":\"test\"}"))
                 .andExpect(result -> {

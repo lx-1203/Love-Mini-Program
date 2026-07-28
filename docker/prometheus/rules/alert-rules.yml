@@ -1,0 +1,281 @@
+# ============================================================
+# Prometheus 告警规则（Task 8.2.4）
+# ============================================================
+# 告警阈值设计原则：
+#   1. 避免误报：阈值基于 SLO 与历史基线，触发后 5 分钟内持续异常才告警
+#   2. 优先级清晰：
+#      - critical：P0 紧急，需立即处理（服务不可用、数据丢失）
+#      - warning：P1 重要，需 1 小时内响应（性能下降、容量预警）
+#      - info：P2 提示，纳入日报（趋势异常）
+# ============================================================
+
+groups:
+
+  # ---------- API 高可用性告警 ----------
+  - name: api-availability
+    interval: 30s
+    rules:
+
+      # API 服务下线（5 分钟内健康检查持续失败）
+      - alert: ApiDown
+        expr: up{job="campuslove-api"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: campuslove-api
+        annotations:
+          summary: "API 服务不可用"
+          description: "实例 {{ $labels.instance }} 已离线超过 5 分钟，请立即检查容器状态与日志。"
+          runbook: "docs/DR/restore-procedure.md#api-下线"
+
+      # API 健康检查端点异常
+      - alert: ApiHealthCheckFailed
+        expr: spring_boot_health_status{status="DOWN"} == 1
+        for: 2m
+        labels:
+          severity: critical
+          service: campuslove-api
+        annotations:
+          summary: "API 健康检查 DOWN"
+          description: "组件 {{ $labels.component }} 健康检查失败，请查看日志定位根因。"
+
+  # ---------- API 性能与延迟告警 ----------
+  - name: api-performance
+    interval: 30s
+    rules:
+
+      # P99 响应时间 > 2 秒（连续 5 分钟）
+      # 阈值依据：spec 中明确 "P99 响应时间 > 2s 触发告警"
+      - alert: ApiHighLatencyP99
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_server_requests_seconds_bucket{job="campuslove-api"}[5m])) by (le, uri)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "API P99 响应时间过高"
+          description: "URI {{ $labels.uri }} 的 P99 响应时间已达 {{ $value }}s，超过 2s 阈值，请检查慢 SQL / 缓存命中 / 第三方调用。"
+          runbook: "docs/CI-CD.md#性能问题排查"
+
+      # P95 响应时间 > 1 秒（连续 10 分钟，提示级别）
+      - alert: ApiHighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket{job="campuslove-api"}[5m])) by (le, uri)
+          ) > 1
+        for: 10m
+        labels:
+          severity: info
+          service: campuslove-api
+        annotations:
+          summary: "API P95 响应时间偏高"
+          description: "URI {{ $labels.uri }} 的 P95 响应时间达 {{ $value }}s，建议关注。"
+
+      # 5 分钟内平均响应时间 > 500ms
+      - alert: ApiSlowAverageResponse
+        expr: |
+          sum(rate(http_server_requests_seconds_sum[5m])) by (uri)
+          / sum(rate(http_server_requests_seconds_count[5m])) by (uri) > 0.5
+        for: 10m
+        labels:
+          severity: info
+          service: campuslove-api
+        annotations:
+          summary: "API 平均响应时间偏慢"
+          description: "URI {{ $labels.uri }} 5 分钟平均响应 {{ $value }}s。"
+
+  # ---------- 错误率告警 ----------
+  - name: api-errors
+    interval: 30s
+    rules:
+
+      # 5xx 错误率 > 1%（连续 5 分钟）
+      # 阈值依据：spec 中明确 "错误率 > 1% 触发告警"
+      - alert: ApiHighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="campuslove-api", status=~"5.."}[5m])) by (uri)
+          / sum(rate(http_server_requests_seconds_count{job="campuslove-api"}[5m])) by (uri) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "API 5xx 错误率过高"
+          description: "URI {{ $labels.uri }} 5xx 错误率 {{ $value | humanizePercentage }}，超过 1% 阈值，请检查异常日志。"
+          runbook: "docs/CI-CD.md#错误率排查"
+
+      # 4xx 错误率 > 5%（提示级别，可能是客户端误用）
+      - alert: ApiHighClientErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="campuslove-api", status=~"4.."}[5m])) by (uri)
+          / sum(rate(http_server_requests_seconds_count{job="campuslove-api"}[5m])) by (uri) > 0.05
+        for: 15m
+        labels:
+          severity: info
+          service: campuslove-api
+        annotations:
+          summary: "API 4xx 客户端错误率偏高"
+          description: "URI {{ $labels.uri }} 4xx 错误率 {{ $value | humanizePercentage }}。"
+
+  # ---------- JVM 告警 ----------
+  - name: jvm-health
+    interval: 30s
+    rules:
+
+      # JVM 堆内存使用率 > 85%（连续 5 分钟）
+      # 阈值依据：spec 中明确 "内存 > 85% 触发告警"
+      - alert: JvmHeapMemoryHigh
+        expr: |
+          (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "JVM 堆内存使用率过高"
+          description: "实例 {{ $labels.instance }} 堆内存使用率 {{ $value | humanizePercentage }}，超过 85% 阈值，可能触发 OOM 或频繁 Full GC。"
+          runbook: "docs/DR/restore-procedure.md#jvm-oom"
+
+      # JVM 线程数 > 500（提示线程泄漏可能）
+      - alert: JvmThreadsHigh
+        expr: jvm_threads_states_threads > 500
+        for: 10m
+        labels:
+          severity: info
+          service: campuslove-api
+        annotations:
+          summary: "JVM 线程数偏高"
+          description: "实例 {{ $labels.instance }} 线程数 {{ $value }}，建议检查线程池配置。"
+
+      # Full GC 频率过高（5 分钟内 > 5 次）
+      - alert: JvmFrequentFullGc
+        expr: |
+          increase(jvm_gc_pause_seconds_count{action="end of major GC"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "JVM Full GC 频繁"
+          description: "实例 {{ $labels.instance }} 5 分钟内 Full GC {{ $value }} 次，可能内存不足或泄漏。"
+
+  # ---------- 数据库告警 ----------
+  - name: database-health
+    interval: 30s
+    rules:
+
+      # HikariCP 连接池使用率 > 80%
+      - alert: DbConnectionPoolHigh
+        expr: |
+          (hikaricp_connections_active / hikaricp_connections_max) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "数据库连接池使用率过高"
+          description: "连接池 {{ $labels.pool }} 使用率 {{ $value | humanizePercentage }}，可能存在慢 SQL 占用连接。"
+
+      # 慢查询（HikariCP 等待连接 > 1s）
+      - alert: DbSlowQuery
+        expr: hikaricp_connections_acquire_seconds_sum / hikaricp_connections_acquire_seconds_count > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "数据库连接获取慢"
+          description: "HikariCP 平均获取连接耗时 {{ $value }}s，可能存在慢 SQL。"
+
+  # ---------- 主机资源告警（node-exporter）----------
+  - name: host-resources
+    interval: 30s
+    rules:
+
+      # 磁盘使用率 > 80%（连续 5 分钟）
+      # 阈值依据：spec 中明确 "磁盘 > 80% 触发告警"
+      - alert: HostDiskHigh
+        expr: |
+          (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: host
+        annotations:
+          summary: "磁盘使用率过高"
+          description: "{{ $labels.mountpoint }} 磁盘使用率 {{ $value | humanizePercentage }}，超过 80% 阈值，请清理日志/备份/镜像。"
+          runbook: "docs/DR/restore-procedure.md#磁盘满"
+
+      # 主机内存使用率 > 85%（连续 5 分钟）
+      # 阈值依据：spec 中明确 "内存 > 85% 触发告警"
+      - alert: HostMemoryHigh
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: host
+        annotations:
+          summary: "主机内存使用率过高"
+          description: "实例 {{ $labels.instance }} 内存使用率 {{ $value | humanizePercentage }}，可能触发 OOM Killer。"
+
+      # CPU 使用率 > 80%（连续 10 分钟）
+      - alert: HostCpuHigh
+        expr: |
+          (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) > 0.8
+        for: 10m
+        labels:
+          severity: info
+          service: host
+        annotations:
+          summary: "CPU 使用率偏高"
+          description: "实例 {{ $labels.instance }} CPU 使用率 {{ $value | humanizePercentage }} 持续 10 分钟。"
+
+  # ---------- 第三方依赖可用性 ----------
+  - name: third-party-availability
+    interval: 30s
+    rules:
+
+      # 微信 API 探测失败
+      - alert: WechatApiUnreachable
+        expr: probe_success{instance="https://api.weixin.qq.com/sns/jscode2session"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: wechat
+        annotations:
+          summary: "微信 API 不可达"
+          description: "微信 jscode2session 端点探测失败，登录可能受影响。"
+          runbook: "docs/DR/restore-procedure.md#第三方依赖故障"
+
+      # Agnes AI 探测失败
+      - alert: AgnesApiUnreachable
+        expr: probe_success{instance="https://api.agnes-ai.com/api/health"} == 0
+        for: 10m
+        labels:
+          severity: info
+          service: ai
+        annotations:
+          summary: "Agnes AI 不可达"
+          description: "Agnes AI 接口探测失败，AI 视频功能可能受影响。"
+
+  # ---------- 业务指标告警 ----------
+  - name: business-metrics
+    interval: 60s
+    rules:
+
+      # 登录失败率 > 10%（5 分钟内）
+      - alert: HighLoginFailureRate
+        expr: |
+          sum(rate(campuslove_auth_login_total{status="failed"}[5m]))
+          / sum(rate(campuslove_auth_login_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "登录失败率过高"
+          description: "5 分钟内登录失败率 {{ $value | humanizePercentage }}，可能存在撞库或微信 API 异常。"

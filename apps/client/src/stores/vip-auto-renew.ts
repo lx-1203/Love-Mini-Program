@@ -1,7 +1,9 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { appEnv } from "../services/env";
 import { request } from "../services/http";
+import { useMock } from "./helpers/use-mock";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * VIP 自动续费 Store
@@ -36,13 +38,6 @@ export interface AutoRenewStatusView {
 export interface EnableAutoRenewPayload {
   /** 套餐 ID（必填，后端用于扩展绑定支付渠道） */
   planId: string;
-}
-
-/**
- * 判断是否使用 mock 模式
- */
-function useMock(): boolean {
-  return appEnv.apiMode === "mock";
 }
 
 export const useAutoRenewStore = defineStore("vip-auto-renew", () => {
@@ -116,7 +111,7 @@ export const useAutoRenewStore = defineStore("vip-auto-renew", () => {
    */
   async function enableAutoRenew(payload: EnableAutoRenewPayload): Promise<AutoRenewStatusView> {
     if (!payload || !payload.planId) {
-      throw new Error("开启自动续费时必须指定套餐");
+      throw new Error(t("storeErrors.vip.planRequired"));
     }
 
     if (useMock()) {

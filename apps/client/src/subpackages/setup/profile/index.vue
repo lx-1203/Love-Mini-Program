@@ -13,7 +13,7 @@
  * 提交时调用 clientApi.updateBasicProfile（含 Phase A 扩展字段），
  * 后端会重新计算 profileCompletion 并更新会话状态。
  */
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, onUnmounted } from "vue";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
@@ -31,6 +31,25 @@ import type { UpdateBasicProfileRequest } from "../../../services/generated/api-
 
 const profileStore = useProfileStore();
 const sessionStore = useSessionStore();
+
+/**
+ * SubTask 1.5.2：保存成功/无变更后跳转下一页的定时器引用，用于卸载时清理。
+ *
+ * <p>原实现 2 处 {@code setTimeout(..., 600)} 未保存返回值，
+ * 用户在 600ms 延迟内快速返回上一页时，定时器仍会触发 uni.redirectTo，
+ * 可能导致意外的页面跳转或 Vue 警告。</p>
+ */
+let saveSuccessNavTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的跳转定时器。
+ */
+onUnmounted(() => {
+  if (saveSuccessNavTimer) {
+    clearTimeout(saveSuccessNavTimer);
+    saveSuccessNavTimer = null;
+  }
+});
 
 /** 表单数据（含 Phase A 扩展字段） */
 const form = reactive<UpdateBasicProfileRequest>({
@@ -313,7 +332,10 @@ async function save() {
     // 无变更时直接跳转下一步，不调用 API
     if (Object.keys(diff).length === 0 && !tagsChanged) {
       uni.showToast({ title: "资料无变更", icon: "none" });
-      setTimeout(() => {
+      // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
+      if (saveSuccessNavTimer) clearTimeout(saveSuccessNavTimer);
+      saveSuccessNavTimer = setTimeout(() => {
+        saveSuccessNavTimer = null;
         uni.redirectTo({ url: "/subpackages/setup/campus/index" });
       }, 600);
       return;
@@ -327,7 +349,10 @@ async function save() {
     await sessionStore.refreshSession();
     successHaptic();
     uni.showToast({ title: "保存成功", icon: "success" });
-    setTimeout(() => {
+    // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
+    if (saveSuccessNavTimer) clearTimeout(saveSuccessNavTimer);
+    saveSuccessNavTimer = setTimeout(() => {
+      saveSuccessNavTimer = null;
       uni.redirectTo({ url: "/subpackages/setup/campus/index" });
     }, 600);
   } catch (error) {
@@ -571,7 +596,7 @@ function handleChangeBg() {
   padding: var(--sp-4) var(--sp-3);
   border-radius: var(--r-lg);
   background: var(--c-bg-page);
-  transition: transform 120ms ease;
+  transition: transform var(--d-fast, 120ms) ease;
 
   &--hover {
     transform: scale(0.98);

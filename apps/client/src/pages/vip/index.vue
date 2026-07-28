@@ -13,7 +13,7 @@
  * - 不使用 import.meta.env，状态由 store 管理
  * - 金额单位：分 ↔ 元转换在前端完成
  */
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
@@ -25,6 +25,25 @@ import { captureException, addBreadcrumb } from "../../services/sentry";
 
 const { t } = useI18n();
 const autoRenewStore = useAutoRenewStore();
+
+/**
+ * SubTask 1.5.2：mock 支付定时器引用，用于卸载时清理。
+ *
+ * <p>原实现 {@code setTimeout(..., 1200)} 未保存返回值，用户在 mock 支付流程
+ * 进行中快速返回上一页时，定时器仍会触发 resolve 并执行后续 .then 回调，
+ * 在已销毁页面上调用 uni.hideLoading / uni.showToast 等方法。</p>
+ */
+let mockPaymentTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的 mock 支付定时器。
+ */
+onUnmounted(() => {
+  if (mockPaymentTimer) {
+    clearTimeout(mockPaymentTimer);
+    mockPaymentTimer = null;
+  }
+});
 
 /** VIP 权益列表 */
 const benefits = computed<VipBenefit[]>(() => [
@@ -78,8 +97,11 @@ function subscribe() {
 
   // mock 模式下不调用真实支付，使用 setTimeout 模拟流程
   // 真实环境替换为 uni.requestPayment({/* 支付参数 */})，并在 fail 回调中区分 cancel
+  // SubTask 1.5.2：保存定时器引用，卸载时统一清理
+  if (mockPaymentTimer) clearTimeout(mockPaymentTimer);
   const mockPayment = new Promise<{ ok: boolean; cancelled: boolean; msg?: string }>((resolve) => {
-    setTimeout(() => {
+    mockPaymentTimer = setTimeout(() => {
+      mockPaymentTimer = null;
       // 模拟成功（真实环境调用 uni.requestPayment）
       resolve({ ok: true, cancelled: false });
     }, 1200);
@@ -490,14 +512,14 @@ onMounted(() => {
 }
 
 .nav-bar__back-icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 300;
   line-height: 1;
 }
 
 .nav-bar__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-text-inverse, #FFFFFF);
 }
@@ -548,7 +570,7 @@ onMounted(() => {
 }
 
 .vip-header__title {
-  font-size: 44rpx;
+  font-size: var(--fs-5xl, 44rpx);
   font-weight: 800;
   color: var(--c-gold, #FFD700);
   margin-bottom: 8rpx;
@@ -556,7 +578,7 @@ onMounted(() => {
 }
 
 .vip-header__subtitle {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7)));
 }
 
@@ -572,7 +594,7 @@ onMounted(() => {
 }
 
 .section__title-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85))));
   font-weight: 600;
 }
@@ -614,7 +636,7 @@ onMounted(() => {
 }
 
 .benefit-item__emoji {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
 }
 
 .benefit-item__icon-img {
@@ -633,13 +655,13 @@ onMounted(() => {
 }
 
 .benefit-item__title {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 600;
   color: var(--c-gold, #FFD700);
 }
 
 .benefit-item__desc {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-overlay-text-tertiary, var(--c-overlay-bg-strong, var(--c-overlay-bg-strong, rgba(255, 255, 255, 0.6))));
   line-height: 1.4;
   overflow: hidden;
@@ -693,7 +715,7 @@ onMounted(() => {
 }
 
 .plan-card__badge-text {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-text-vip-dark, #5D4E37);
   font-weight: 700;
 }
@@ -712,14 +734,14 @@ onMounted(() => {
 }
 
 .plan-card__check-icon {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-text-vip-dark, #5D4E37);
   font-weight: 700;
   line-height: 1;
 }
 
 .plan-card__name {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
@@ -732,32 +754,32 @@ onMounted(() => {
 }
 
 .plan-card__currency {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-gold, #FFD700);
   font-weight: 600;
 }
 
 .plan-card__price {
-  font-size: 48rpx;
+  font-size: var(--fs-6xl, 48rpx);
   color: var(--c-gold, #FFD700);
   font-weight: 800;
   line-height: 1;
 }
 
 .plan-card__original-price {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-overlay-text-placeholder, var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4))));
   text-decoration: line-through;
 }
 
 .plan-card__period {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7)));
   margin-top: 4rpx;
 }
 
 .plan-card__per-day {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-gold, var(--c-gold, rgba(255, 215, 0, 0.8)));
   margin-top: 2rpx;
 }
@@ -775,12 +797,12 @@ onMounted(() => {
 }
 
 .agreement__text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-overlay-text-quaternary, var(--c-overlay-bg-mid, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5))));
 }
 
 .agreement__link {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-gold, #FFD700);
 }
 
@@ -807,25 +829,25 @@ onMounted(() => {
 }
 
 .footer__label {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7)));
 }
 
 .footer__currency {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-gold, #FFD700);
   font-weight: 600;
 }
 
 .footer__price {
-  font-size: 44rpx;
+  font-size: var(--fs-5xl, 44rpx);
   color: var(--c-gold, #FFD700);
   font-weight: 800;
   line-height: 1;
 }
 
 .footer__original-price {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-overlay-text-placeholder, var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4))));
   text-decoration: line-through;
   margin-left: 8rpx;
@@ -849,7 +871,7 @@ onMounted(() => {
 }
 
 .footer__btn-text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: var(--c-text-vip-dark, #5D4E37);
   font-weight: 700;
 }
@@ -871,13 +893,13 @@ onMounted(() => {
 }
 
 .auto-renew__title {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: var(--c-gold, #FFD700);
 }
 
 .auto-renew__desc {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-overlay-text-tertiary, rgba(255, 255, 255, 0.6));
   line-height: 1.4;
 }
@@ -893,7 +915,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   padding: 20rpx 8rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   transition: all 0.15s ease;
 
   &--hover {
@@ -903,7 +925,7 @@ onMounted(() => {
 }
 
 .entry-item__icon {
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   margin-right: 16rpx;
   width: 56rpx;
   text-align: center;
@@ -911,13 +933,13 @@ onMounted(() => {
 
 .entry-item__label {
   flex: 1;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.85));
   font-weight: 500;
 }
 
 .entry-item__arrow {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   color: var(--c-overlay-text-tertiary, rgba(255, 255, 255, 0.4));
 }
 </style>

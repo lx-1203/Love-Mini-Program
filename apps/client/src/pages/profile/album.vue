@@ -23,6 +23,11 @@ import { useProfileStore } from "../../stores/profile";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic, successHaptic } from "../../utils/haptic";
+import { resolveMediaUrl } from "../../utils/media";
+// 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
+import type { UniUploadFileLike } from "../../services/api";
+// Task 0.2.4：调用 chooseImage 前需检查隐私授权
+import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
 /** 照片墙最大数量（与后端契约一致，6 张） */
 const PHOTO_GALLERY_MAX = 6;
@@ -72,15 +77,19 @@ const photoCount = computed(() => photoGallery.value.length);
  * - H5：uni.chooseImage 返回 tempFiles，每项是标准 File
  * - mp-weixin：tempFiles 仅含 path/size，无 name 字段，包装为 File-like
  *
+ * 返回 UniUploadFileLike 而非 File，避免 `as unknown as File` 交叉类型断言：
+ * mp-weixin 端无 File 类型，强行断言会引入运行时风险；
+ * UniUploadFileLike 仅约束上传所需的最小契约（name + 可选 path），双端兼容。
+ *
  * @param filePath - 文件路径（tempFilePath）
- * @param size - 文件大小（字节）
- * @returns 类 File 对象（含 name/path/size 字段，满足 clientApi 上传签名）
+ * @returns 类 File 对象（含 name/path 字段，满足 clientApi 上传签名）
  */
-function buildFileLike(filePath: string, size: number): File {
+function buildFileLike(filePath: string): UniUploadFileLike {
   const name = filePath.split("/").pop() || "upload";
-  // H5 端 filePath 实际是 blob: URL，无法直接转换为 File；
-  // 这里构造一个类 File 对象，由 uploadFileViaUni 通过 path 字段处理
-  return { name, size, type: "application/octet-stream", path: filePath } as unknown as File;
+  // 构造 UniUploadFileLike 对象，无需断言；
+  // H5 端 filePath 是 blob: URL，mp-weixin 端是 tempFilePath，
+  // 均由 uploadFileViaUni 通过 path 字段处理。
+  return { name, path: filePath };
 }
 
 /**
@@ -108,8 +117,10 @@ async function loadAlbum(): Promise<void> {
  * 6. 失败时 toast 提示错误信息
  *
  * @param index - 目标索引（0-5），若不传则追加到末尾第一个空位
+ *
+ * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
  */
-function handleAddPhoto(index?: number): void {
+async function handleAddPhoto(index?: number): Promise<void> {
   // 防重复触发
   if (isUploading.value) return;
   // 已满 6 张，不允许继续上传
@@ -120,6 +131,17 @@ function handleAddPhoto(index?: number): void {
   // 计算目标索引：未指定时追加到末尾第一个空位
   const targetIndex = index ?? photoGallery.value.length;
   lightHaptic();
+  // 隐私授权预检查：未同意隐私协议时直接终止，避免 chooseImage 触发 fail
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    errorHaptic();
+    uni.showToast({
+      title: "需同意隐私协议后才能选择图片",
+      icon: "none",
+    });
+    return;
+  }
   uni.chooseImage({
     count: 1,
     sizeType: ["compressed"],
@@ -141,7 +163,7 @@ function handleAddPhoto(index?: number): void {
         uni.showToast({ title: t("profile.photoSizeLimit"), icon: "none" });
         return;
       }
-      const file = buildFileLike(tempPath, size);
+      const file = buildFileLike(tempPath);
       void uploadPhoto(file, targetIndex);
     },
     fail: (err) => {
@@ -160,7 +182,7 @@ function handleAddPhoto(index?: number): void {
  * @param file - 类 File 对象
  * @param index - 目标索引
  */
-async function uploadPhoto(file: File, index: number): Promise<void> {
+async function uploadPhoto(file: UniUploadFileLike, index: number): Promise<void> {
   isUploading.value = true;
   uploadingIndex.value = index;
   errorMessage.value = null;
@@ -357,7 +379,7 @@ onShow(() => {
         <image
           v-if="cell.filled"
           class="album-cell__img"
-          :src="cell.url"
+          :src="resolveMediaUrl(cell.url)"
           mode="aspectFill"
           lazy-load alt=""
         />
@@ -395,7 +417,8 @@ onShow(() => {
 .album-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   background: var(--c-gradient-page);
   padding: var(--sp-6) var(--sp-8);
   padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
@@ -494,23 +517,24 @@ onShow(() => {
 }
 
 /* ========== 照片墙网格 ========== */
+/* mp-weixin 不支持 display:grid，改用 Flexbox + 子元素 width: calc 实现三列等宽布局 */
 .album-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-3);
 }
 
 .album-cell {
   position: relative;
-  width: 100%;
-  aspect-ratio: 1;
+  /* 3 列布局：每行 3 张，gap var(--sp-3) 共 2 个间隙 → width = calc((100% - 2*sp-3) / 3) */
+  width: calc((100% - 2 * var(--sp-3)) / 3);
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: calc((100% - 2 * var(--sp-3)) / 3);
   border-radius: var(--r-lg);
   background: var(--c-bg-container);
   border: var(--c-border-card);
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-sizing: border-box;
 }
 
 .album-cell--filled {
@@ -518,12 +542,18 @@ onShow(() => {
 }
 
 .album-cell__img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: block;
 }
 
 .album-cell__placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
   align-items: center;
   justify-content: center;

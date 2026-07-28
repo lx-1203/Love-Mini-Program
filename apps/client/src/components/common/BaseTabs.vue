@@ -152,17 +152,18 @@ function formatBadge(badge: number | string): string {
 </script>
 
 <style lang="scss" scoped>
+/* P3 修复：扁平化 SCSS 嵌套（原 4 层嵌套 → 最多 2 层），使用 BEM 风格命名提升可读性
+   原 .base-tabs--pill > .base-tab-item > &.is-active > .base-tab-label 改为平级 .base-tabs--pill .base-tab-item.is-active .base-tab-label */
+
 .base-tabs {
   width: 100%;
   // 使用 design tokens，自动适配主题
   background: var(--c-bg-container, #FFFFFF);
+}
 
-  &.is-scrollable {
-    .base-tabs-list {
-      display: inline-flex;
-      white-space: nowrap;
-    }
-  }
+.base-tabs.is-scrollable .base-tabs-list {
+  display: inline-flex;
+  white-space: nowrap;
 }
 
 .base-tabs-list {
@@ -181,106 +182,101 @@ function formatBadge(badge: number | string): string {
   padding: 20rpx 24rpx;
   // 过渡动画
   transition: all 0.3s ease;
-
-  /* mp-weixin hover-class 按压态；H5 通过 :active 实现 */
-  &--pressed {
-    opacity: 0.7;
-  }
-
-  .base-tab-label {
-    font-size: 28rpx;
-    color: var(--c-text-secondary, #5B6470);
-    transition: color 0.3s ease, font-weight 0.3s ease;
-  }
-
-  .base-tab-badge {
-    margin-left: 8rpx;
-    min-width: 32rpx;
-    height: 32rpx;
-    padding: 0 8rpx;
-    border-radius: 16rpx;
-    font-size: 22rpx;
-    color: var(--c-text-inverse, #FFFFFF);
-    line-height: 32rpx;
-    text-align: center;
-  }
-
-  .base-tab-underline {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%) scaleX(0);
-    width: 48rpx;
-    height: 4rpx;
-    border-radius: 2rpx;
-    background: var(--c-brand, #3FCF8E);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  &.is-active {
-    .base-tab-label {
-      color: var(--c-text-primary, #1F2329);
-      font-weight: 600;
-    }
-
-    .base-tab-underline {
-      transform: translateX(-50%) scaleX(1);
-    }
-  }
 }
 
-// 胶囊变体
-.base-tabs--pill {
-  .base-tabs-list {
-    border-bottom: none;
-    gap: 16rpx;
-    padding: 16rpx 24rpx;
-  }
-
-  .base-tab-item {
-    padding: 12rpx 32rpx;
-    border-radius: 999rpx;
-    background: var(--c-bg-page, #F4F6FA);
-
-    .base-tab-label {
-      font-size: 26rpx;
-    }
-
-    &.is-active {
-      background: var(--c-brand, #3FCF8E);
-
-      .base-tab-label {
-        color: var(--c-text-inverse, #FFFFFF);
-      }
-    }
-  }
+/* mp-weixin hover-class 按压态；H5 通过 :active 实现 */
+.base-tab-item--pressed {
+  opacity: 0.7;
 }
 
-// 块状变体
-.base-tabs--block {
-  .base-tabs-list {
-    border-bottom: none;
-    gap: 12rpx;
-    padding: 16rpx 24rpx;
-  }
+.base-tab-label {
+  font-size: var(--fs-lg, 28rpx);
+  color: var(--c-text-secondary, #5B6470);
+  transition: color 0.3s ease, font-weight 0.3s ease;
+}
 
-  .base-tab-item {
-    padding: 16rpx 24rpx;
-    border-radius: 12rpx;
-    background: var(--c-bg-page, #F4F6FA);
+.base-tab-badge {
+  margin-left: 8rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  padding: 0 8rpx;
+  border-radius: var(--r-lg, 16rpx);
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-text-inverse, #FFFFFF);
+  line-height: 32rpx;
+  text-align: center;
+}
 
-    .base-tab-label {
-      font-size: 26rpx;
-    }
+.base-tab-underline {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 48rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: var(--c-brand, #3FCF8E);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
-    &.is-active {
-      background: var(--c-brand, #3FCF8E);
+/* 激活态：标签文字加粗 + 下划线展开 */
+.base-tab-item.is-active .base-tab-label {
+  color: var(--c-text-primary, #1F2329);
+  font-weight: 600;
+}
 
-      .base-tab-label {
-        color: var(--c-text-inverse, #FFFFFF);
-      }
-    }
-  }
+.base-tab-item.is-active .base-tab-underline {
+  transform: translateX(-50%) scaleX(1);
+}
+
+/* 胶囊变体（扁平化：避免 4 层嵌套） */
+.base-tabs--pill .base-tabs-list {
+  border-bottom: none;
+  gap: 16rpx;
+  padding: 16rpx 24rpx;
+}
+
+.base-tabs--pill .base-tab-item {
+  padding: 12rpx 32rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-bg-page, #F4F6FA);
+}
+
+.base-tabs--pill .base-tab-label {
+  font-size: var(--fs-md, 26rpx);
+}
+
+.base-tabs--pill .base-tab-item.is-active {
+  background: var(--c-brand, #3FCF8E);
+}
+
+.base-tabs--pill .base-tab-item.is-active .base-tab-label {
+  color: var(--c-text-inverse, #FFFFFF);
+}
+
+/* 块状变体（扁平化：避免 4 层嵌套） */
+.base-tabs--block .base-tabs-list {
+  border-bottom: none;
+  gap: 12rpx;
+  padding: 16rpx 24rpx;
+}
+
+.base-tabs--block .base-tab-item {
+  padding: 16rpx 24rpx;
+  border-radius: var(--r-md, 12rpx);
+  background: var(--c-bg-page, #F4F6FA);
+}
+
+.base-tabs--block .base-tab-label {
+  font-size: var(--fs-md, 26rpx);
+}
+
+.base-tabs--block .base-tab-item.is-active {
+  background: var(--c-brand, #3FCF8E);
+}
+
+.base-tabs--block .base-tab-item.is-active .base-tab-label {
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 // scroll-view 兼容

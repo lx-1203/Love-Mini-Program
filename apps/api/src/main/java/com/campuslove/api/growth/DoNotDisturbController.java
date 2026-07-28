@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * </p>
  */
 @RestController
-@RequestMapping("/api/dnd")
+@RequestMapping("/api/v1/dnd")
 public class DoNotDisturbController {
 
     private static final Logger log = LoggerFactory.getLogger(DoNotDisturbController.class);

@@ -75,7 +75,7 @@ public class VillageMetrics {
                 Gauge.builder(METRIC_POST_TOTAL, postRepository, repo -> {
                     try {
                         return repo.count();
-                    } catch (Exception e) {
+                    } catch (RuntimeException e) {
                         // Gauge 抓取失败时返回 -1 表示无效值，避免抛出异常影响 Prometheus 抓取
                         log.debug("获取 village.post.total 失败: {}", e.getMessage());
                         return -1.0;
@@ -83,7 +83,7 @@ public class VillageMetrics {
                 })
                         .description("当前村口帖子总数")
                         .register(meterRegistry);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 log.warn("注册 village.post.total Gauge 失败: {}", e.getMessage());
             }
         } else {
@@ -97,7 +97,8 @@ public class VillageMetrics {
     public void recordPostCreated() {
         try {
             postCreatedCounter.increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            // Counter.increment 失败不影响业务主流程
             log.warn("记录 village.post.created 指标失败: {}", e.getMessage());
         }
     }
@@ -116,7 +117,7 @@ public class VillageMetrics {
                     .description("村口帖子点赞总数（按帖子区分）")
                     .register(meterRegistry)
                     .increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 village.post.liked 指标失败, postId={}: {}", postId, e.getMessage());
         }
     }
@@ -127,7 +128,8 @@ public class VillageMetrics {
     public void recordCommentCreated() {
         try {
             commentCreatedCounter.increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            // Counter.increment 失败不影响业务主流程
             log.warn("记录 village.comment.created 指标失败: {}", e.getMessage());
         }
     }

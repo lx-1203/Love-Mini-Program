@@ -85,7 +85,7 @@ public class RedisHealthIndicator implements HealthIndicator {
                         builder.withDetail("version", version);
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (org.springframework.data.redis.RedisSystemException ignored) {
                 // info 命令失败不影响主连通性判定
             }
 
@@ -94,12 +94,12 @@ public class RedisHealthIndicator implements HealthIndicator {
                 if (dbSize != null) {
                     builder.withDetail("dbSize", dbSize);
                 }
-            } catch (Exception ignored) {
+            } catch (org.springframework.data.redis.RedisSystemException ignored) {
                 // dbSize 命令失败不影响主连通性判定
             }
 
             return builder.build();
-        } catch (Exception e) {
+        } catch (org.springframework.data.redis.RedisSystemException e) {
             // 任何异常视为 DOWN，附带异常信息便于运维排查
             return Health.down()
                     .withDetail("error", e.getClass().getName() + ": " + e.getMessage())

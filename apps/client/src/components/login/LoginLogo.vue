@@ -52,7 +52,7 @@ const subtitleLabel = computed(() => props.subtitle || t('login.heroSubtitleDefa
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 32rpx rgba(91, 127, 255, 0.3);
+  box-shadow: var(--s-secondary-blue-md, 0 8rpx 32rpx rgba(91, 127, 255, 0.3));
   margin-bottom: 12rpx;
 }
 
@@ -73,7 +73,7 @@ const subtitleLabel = computed(() => props.subtitle || t('login.heroSubtitleDefa
 }
 
 .login-subtitle {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: rgba(255, 255, 255, 0.8);
   text-align: center;
   line-height: 1.6;

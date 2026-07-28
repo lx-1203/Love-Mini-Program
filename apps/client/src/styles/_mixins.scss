@@ -1,0 +1,139 @@
+// ============================================================
+// 校园恋爱小程序 — 共享 SCSS Mixins
+// 版本: 1.0.0
+// 说明:
+//   1. 集中提供常用 mixin，避免在多个 .vue / .scss 文件中重复定义；
+//   2. 全部使用设计令牌（design tokens），保证主题适配与深色模式兼容；
+//   3. mp-weixin 兼容：仅使用 WXSS 引擎支持的语法，不使用 :root 与高级伪类；
+//   4. 引入方式：在 .vue 或 .scss 文件中 @import "@/styles/_mixins.scss";
+//      然后 @include flex-center; / @include text-ellipsis(2);
+// ============================================================
+
+// ---------- Flex 居中 ----------
+// 用途：水平 + 垂直居中，常见于按钮/头像/徽章/空状态容器
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// ---------- Flex 两端对齐 ----------
+// 用途：导航栏、列表头/尾，子元素两端对齐且垂直居中
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// ---------- 单行/多行文本截断 ----------
+// 参数：$lines = 1 单行截断（默认），$lines >= 2 多行截断
+// 兼容：-webkit-line-clamp 在 H5 与 mp-weixin 均支持
+@mixin text-ellipsis($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: $lines;
+    overflow: hidden;
+    // mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出
+    // 行高 1.4，按行数计算最大高度
+    max-height: calc(1.4em * #{$lines});
+  }
+}
+
+// ---------- 底部安全区域适配 ----------
+// 用途：固定在底部的 TabBar / FAB / 弹窗，预留 iPhone 全面屏底部安全区
+// 兼容：constant() 为 iOS < 11.2，env() 为 iOS >= 11.2
+@mixin safe-area-bottom {
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+// ---------- 顶部安全区域适配 ----------
+// 用途：固定在顶部的 Header / 状态栏占位
+@mixin safe-area-top {
+  padding-top: constant(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top);
+}
+
+// ---------- 1px 物理像素边框（hairline） ----------
+// 用途：在视网膜屏上绘制真正的 1px 边框，避免在 2x/3x 屏上显得过粗
+// 参数：$color 边框颜色，$position 边框位置（top/right/bottom/left）
+// 实现：使用 transform: scaleY(0.5) / scaleX(0.5) 缩放 1rpx 视觉边框
+@mixin hairline-border($color: var(--c-border-light), $position: bottom) {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    #{$position}: 0;
+    left: 0;
+    width: 100%;
+    height: 1rpx;
+    background-color: $color;
+    transform: scaleY(0.5);
+    transform-origin: 0 0;
+    pointer-events: none;
+  }
+}
+
+// ---------- 按压反馈 ----------
+// 用途：可点击元素的 scale 缩放反馈，替代 :active 伪类（mp-weixin 不可靠）
+// 参数：$scale 缩放比例，$duration 过渡时长
+@mixin press-feedback($scale: 0.96, $duration: 150ms) {
+  transition: transform $duration cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+
+  &:active {
+    transform: scale($scale);
+  }
+}
+
+// ---------- 圆形元素 ----------
+// 用途：头像、圆形按钮、状态点等需要正圆的元素
+@mixin circle($size) {
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+}
+
+// ---------- 文本隐藏（仅屏幕阅读器可见） ----------
+// 用途：无障碍标签，视觉隐藏但屏幕阅读器可读
+@mixin sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---------- 滚动条隐藏 ----------
+// 用途：横向滚动 tab / 焦点图等场景，隐藏滚动条保持视觉整洁
+@mixin hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+// ---------- 限定宽高比 ----------
+// 用途：视频/图片封面、卡片比例约束
+// 参数：$ratio 宽高比，如 4/5（宽/高）
+// 兼容：mp-weixin 不支持 aspect-ratio，统一使用 padding-top 百分比替代
+// 实现：padding-top = 高/宽 × 100% = (1/$ratio) × 100%
+// 注意：使用此 mixin 的容器需 position: relative，子元素需 position: absolute 铺满
+@mixin aspect-ratio($ratio) {
+  position: relative;
+  padding-top: (1 / $ratio) * 100%;
+}

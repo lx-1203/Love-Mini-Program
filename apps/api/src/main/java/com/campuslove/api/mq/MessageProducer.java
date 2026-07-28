@@ -71,7 +71,7 @@ public class MessageProducer {
                     routingKey,
                     message);
             log.debug("通知消息已投递：routingKey={}, message={}", routingKey, message);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // MQ 不可用，仅记录日志，不抛出
             log.warn("通知消息发送失败，已丢弃：routingKey={}, message={}, error={}",
                     routingKey, message, e.getMessage());
@@ -106,7 +106,7 @@ public class MessageProducer {
                     message);
             log.debug("匹配事件消息已投递：routingKey={}, message={}",
                     RabbitConfig.MATCH_ROUTING_KEY, message);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // MQ 不可用，仅记录日志，不抛出
             log.warn("匹配事件消息发送失败，已丢弃：message={}, error={}",
                     message, e.getMessage());
@@ -141,7 +141,7 @@ public class MessageProducer {
                     message);
             log.debug("签到事件消息已投递：routingKey={}, message={}",
                     RabbitConfig.CHECKIN_ROUTING_KEY, message);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // MQ 不可用，仅记录日志，不抛出
             log.warn("签到事件消息发送失败，已丢弃：message={}, error={}",
                     message, e.getMessage());

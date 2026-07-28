@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostStatus;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 真实帖子话题标签服务实现。
  * 在 real profile 下激活，使用 Repository 实现数据库查询。
+ *
+ * <p>Task 2.3.2：{@link #getTags()} 添加 {@code @Cacheable}（CacheName = {@link CacheNames#USER_TAGS}），
+ * 避免每次接口调用重复返回新构造的 List。标签列表为静态预置常量，
+ * TTL 10 分钟自然失效即可，无需 @CacheEvict。</p>
  */
 @Profile("real")
 @Service
@@ -59,8 +65,19 @@ public class RealPostTagService implements PostTagService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 获取预置话题标签列表。
+     *
+     * <p>Task 2.3.2：使用 {@code @Cacheable} 缓存返回值，
+     * 避免每次接口调用都重新构造 List 对象（虽然 PRESET_TAGS 是常量，
+     * 但缓存后可直接返回缓存引用，减少对象分配与序列化开销）。
+     * CacheKey 固定为 {@code "all"}，TTL 10 分钟。</p>
+     *
+     * @return 不可变的预置标签列表
+     */
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.USER_TAGS, key = "'all'")
     public List<String> getTags() {
         return PRESET_TAGS;
     }

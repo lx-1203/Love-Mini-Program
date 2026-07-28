@@ -1,5 +1,7 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Report;
 import com.campuslove.api.repository.PostRepository;
@@ -11,6 +13,7 @@ import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,7 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/api/v1/posts")
 public class PostReportController {
 
     private static final Logger log = LoggerFactory.getLogger(PostReportController.class);
@@ -70,7 +73,8 @@ public class PostReportController {
     @PostMapping("/{id}/report")
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    public PostReportView reportPost(
+    @Idempotent
+    public ApiResponse<PostReportView> reportPost(
             @PathVariable("id") Long postId,
             @Valid @RequestBody PostReportRequest request) {
         Long reporterId = SecurityUtils.getCurrentUserId();
@@ -97,7 +101,7 @@ public class PostReportController {
             log.info("帖子举报创建：reportId={}, postId={}, reporterId={}, reason={}",
                     saved.getId(), postId, reporterId, request.reason());
 
-            return new PostReportView(
+            return ApiResponse.ok(new PostReportView(
                     saved.getId(),
                     saved.getTargetId(),
                     saved.getReporterId(),
@@ -105,8 +109,8 @@ public class PostReportController {
                     saved.getDescription(),
                     saved.getStatus(),
                     saved.getCreatedAt() != null ? saved.getCreatedAt().toString() : null
-            );
-        } catch (Exception e) {
+            ));
+        } catch (DataAccessException e) {
             log.error("帖子举报创建失败：postId={}, reporterId={}", postId, reporterId, e);
             throw new RuntimeException("举报提交失败，请稍后重试", e);
         }

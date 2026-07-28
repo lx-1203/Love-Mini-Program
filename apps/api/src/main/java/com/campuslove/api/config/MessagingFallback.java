@@ -68,13 +68,13 @@ public class MessagingFallback implements SmartInitializingSingleton {
                 // 关闭测试连接，避免连接泄漏
                 try {
                     connection.close();
-                } catch (Exception ignored) {
+                } catch (org.springframework.amqp.AmqpException ignored) {
                     // 关闭失败不影响主流程
                 }
             }
             messagingAvailable = true;
             log.info("RabbitMQ 连接正常，消息生产者就绪");
-        } catch (Exception e) {
+        } catch (org.springframework.amqp.AmqpException e) {
             // RabbitMQ 不可用，降级为日志记录模式，不阻塞应用启动
             messagingAvailable = false;
             log.warn("RabbitMQ 连接失败，消息发送将降级为日志记录模式。原因：{}", e.getMessage());

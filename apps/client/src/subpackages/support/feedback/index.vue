@@ -33,6 +33,10 @@ import {
 } from "../../../view-models/feedback";
 import { errorHaptic, lightHaptic, successHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
+// 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
+import type { UniUploadFileLike } from "../../../services/api";
+// Task 0.2.4：调用 chooseImage 前需检查隐私授权
+import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 
 /** 反馈类型枚举常量（提取为常量，便于扩展与统一维护） */
 type FeedbackType = "feedback" | "suggestion" | "activity_proposal";
@@ -86,18 +90,19 @@ onMounted(() => {
  * - H5：uni.chooseImage 返回 tempFiles，每项是标准 File
  * - mp-weixin：tempFiles 仅含 path/size，无 name 字段，包装为 File-like
  *
+ * 返回 UniUploadFileLike 而非 File，避免 `as unknown as File` 交叉类型断言：
+ * mp-weixin 端无 File 类型，强行断言会引入运行时风险；
+ * UniUploadFileLike 仅约束上传所需的最小契约（name + 可选 path），双端兼容。
+ *
  * @param filePath - 文件路径（tempFilePath）
- * @param size - 文件大小（字节）
- * @returns 类 File 对象（含 name/path/size 字段，满足 clientApi 上传签名）
+ * @returns 类 File 对象（含 name/path 字段，满足 clientApi 上传签名）
  */
-function buildFileLike(filePath: string, size: number): File {
+function buildFileLike(filePath: string): UniUploadFileLike {
   const name = filePath.split("/").pop() || "upload";
-  return {
-    name,
-    size,
-    type: "application/octet-stream",
-    path: filePath,
-  } as unknown as File;
+  // 构造 UniUploadFileLike 对象，无需断言；
+  // H5 端 filePath 是 blob: URL，mp-weixin 端是 tempFilePath，
+  // 均由 uploadFileViaUni 通过 path 字段处理。
+  return { name, path: filePath };
 }
 
 /**
@@ -140,6 +145,28 @@ function handleAddImage(): void {
     return;
   }
   lightHaptic();
+  // Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
+  // 使用 void + .catch 模式：handleAddImage 自身保持 void 返回（被 @tap 调用），
+  // 内部异步流程通过 Promise 链处理，授权失败时 toast 提示并终止后续 chooseImage 调用。
+  void ensurePrivacyAuthorized()
+    .then(() => {
+      chooseImageInternal();
+    })
+    .catch((_e) => {
+      errorHaptic();
+      uni.showToast({
+        title: "需同意隐私协议后才能选择图片",
+        icon: "none",
+      });
+    });
+}
+
+/**
+ * 实际执行图片选择逻辑（隐私授权通过后调用）。
+ *
+ * 原 handleAddImage 内部实现，抽出为独立函数以保持 handleAddImage 的 void 返回签名。
+ */
+function chooseImageInternal(): void {
   uni.chooseImage({
     count: 1,
     sizeType: ["compressed"],
@@ -177,7 +204,7 @@ function handleAddImage(): void {
         });
         return;
       }
-      const file = buildFileLike(tempPath, size);
+      const file = buildFileLike(tempPath);
       void uploadImage(file);
     },
     fail: (err) => {
@@ -197,9 +224,9 @@ function handleAddImage(): void {
 /**
  * 执行图片上传（内联辅助函数，统一处理 loading / 错误）。
  *
- * @param file - 类 File 对象
+ * @param file - 类 File 对象（UniUploadFileLike，兼容 H5 / mp-weixin 双端）
  */
-async function uploadImage(file: File): Promise<void> {
+async function uploadImage(file: UniUploadFileLike): Promise<void> {
   isUploading.value = true;
   errorMessage.value = null;
   try {
@@ -366,20 +393,62 @@ function goDetail(id: number): void {
 <template>
   <AppShell title="反馈中心" subtitle="反馈、建议和活动提案共用一个入口。" :show-tab-bar="false">
     <SectionCard title="新建提交" compact>
-      <view class="chips">
-        <text
+      <view class="chips" role="tablist" aria-label="反馈类型">
+        <view
           v-for="item in FEEDBACK_TYPES"
           :key="item.value"
           class="chip press-feedback"
           :class="{ 'chip--active': activeType === item.value }"
           hover-class="press-feedback--active"
           hover-stay-time="120"
+          role="tab"
+          :aria-selected="activeType === item.value ? 'true' : 'false'"
+          :aria-label="item.label"
           @tap="activeType = item.value"
-        >{{ item.label }}</text>
+        ><text class="chip__label">{{ item.label }}</text></view>
       </view>
-      <input v-model="form.title" class="field" placeholder="标题" aria-label="标题" />
-      <textarea v-model="form.content" class="field field--textarea" maxlength="280" />
-      <input v-model="form.contactWechat" class="field" placeholder="选填微信号" aria-label="选填微信号" />
+      <label class="sr-only" for="feedback-title">标题</label>
+      <input
+        id="feedback-title"
+        v-model="form.title"
+        class="field"
+        placeholder="标题"
+        aria-label="标题"
+        aria-required="true"
+        :aria-describedby="errorMessage ? 'feedback-error' : undefined"
+        aria-errormessage="feedback-error"
+      />
+      <label class="sr-only" for="feedback-content">反馈内容</label>
+      <textarea
+        id="feedback-content"
+        v-model="form.content"
+        class="field field--textarea"
+        maxlength="280"
+        aria-label="反馈内容"
+        aria-required="true"
+        :aria-describedby="errorMessage ? 'feedback-error' : undefined"
+        aria-errormessage="feedback-error"
+      />
+      <label class="sr-only" for="feedback-wechat">选填微信号</label>
+      <input
+        id="feedback-wechat"
+        v-model="form.contactWechat"
+        class="field"
+        placeholder="选填微信号"
+        aria-label="选填微信号"
+        :aria-describedby="errorMessage ? 'feedback-error' : undefined"
+        aria-errormessage="feedback-error"
+      />
+      <!-- P6 a11y：表单错误信息（aria-live 让屏幕阅读器在错误变化时播报） -->
+      <view
+        v-if="errorMessage"
+        id="feedback-error"
+        class="form-error"
+        role="alert"
+        aria-live="assertive"
+      >
+        <text class="form-error__text">{{ errorMessage }}</text>
+      </view>
 
       <!-- 功能9：图片上传区 -->
       <view class="image-upload">
@@ -404,8 +473,15 @@ function goDetail(id: number): void {
               mode="aspectFill"
               lazy-load alt=""
             />
-            <view class="image-cell__remove" @tap.stop="handleRemoveImage(idx)">
-              <text class="image-cell__remove-icon">✕</text>
+            <view
+              class="image-cell__remove"
+              role="button"
+              :aria-label="t('feedback.imageRemove')"
+              hover-class="image-cell__remove--pressed"
+              :hover-stay-time="100"
+              @tap.stop="handleRemoveImage(idx)"
+            >
+              <text class="image-cell__remove-icon" aria-hidden="true">✕</text>
             </view>
           </view>
           <!-- 添加图片占位（+ 号按钮） -->
@@ -484,8 +560,13 @@ function goDetail(id: number): void {
 }
 
 .chip {
-  padding: 12rpx 18rpx;
-  border-radius: 999px;
+  /* P6 a11y：触控目标 ≥88rpx（44px @2x），通过 min-height + 垂直 padding 满足 */
+  min-height: 88rpx;
+  padding: 16rpx 28rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-brand);
   color: var(--c-brand-700);
 }
@@ -509,6 +590,23 @@ function goDetail(id: number): void {
   min-height: 180rpx;
 }
 
+/* P6 a11y：表单错误信息样式（role=alert + aria-live） */
+.form-error {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 18rpx;
+  border-radius: var(--r-md, 12rpx);
+  background: var(--c-tint-pink-soft, #FFF0F5);
+  border: 1rpx solid var(--c-error, #E5454D);
+}
+
+.form-error__text {
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-error, #E5454D);
+  line-height: 1.4;
+}
+
 /* ========== 功能9：图片上传区 ========== */
 .image-upload {
   display: flex;
@@ -523,13 +621,13 @@ function goDetail(id: number): void {
 }
 
 .image-upload__title {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: var(--c-text-primary);
 }
 
 .image-upload__hint {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary);
 }
 
@@ -543,7 +641,7 @@ function goDetail(id: number): void {
   position: relative;
   width: 180rpx;
   height: 180rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   overflow: hidden;
   background: var(--c-bg-page);
   border: 1rpx dashed var(--c-border-default, rgba(15, 23, 42, 0.08));
@@ -559,11 +657,13 @@ function goDetail(id: number): void {
 }
 
 .image-cell__remove {
+  /* P6 a11y：触控目标 ≥44×44 CSS 像素（88rpx），确保移动端可点击；
+     视觉上通过较小图标 + 透明 padding 扩大命中区域，避免遮挡缩略图 */
   position: absolute;
-  top: 6rpx;
-  right: 6rpx;
-  width: 36rpx;
-  height: 36rpx;
+  top: 0;
+  right: 0;
+  width: 88rpx;
+  height: 88rpx;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.55);
   display: flex;
@@ -571,9 +671,14 @@ function goDetail(id: number): void {
   justify-content: center;
 }
 
+.image-cell__remove--pressed {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(0.95);
+}
+
 .image-cell__remove-icon {
-  color: #ffffff;
-  font-size: 22rpx;
+  color: var(--c-text-inverse, #ffffff);
+  font-size: 28rpx;
   line-height: 1;
 }
 
@@ -593,7 +698,7 @@ function goDetail(id: number): void {
 }
 
 .image-cell__plus-text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary);
 }
 
@@ -623,19 +728,19 @@ function goDetail(id: number): void {
 }
 
 .history-header__hint {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary);
   flex: 1;
 }
 
 .history-header__btn {
   padding: 10rpx 20rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-brand);
 }
 
 .history-header__btn-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-brand-700);
   font-weight: 600;
 }
@@ -648,7 +753,7 @@ function goDetail(id: number): void {
 }
 
 .empty-state__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-tertiary);
 }
 
@@ -674,11 +779,11 @@ function goDetail(id: number): void {
 .submission__summary {
   color: var(--c-text-secondary);
   line-height: 1.6;
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
 }
 
 .submission__time {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary);
 }
 </style>

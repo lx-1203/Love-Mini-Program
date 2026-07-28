@@ -45,6 +45,33 @@ spring:
 
 server:
   port: ${APP_PORT:8080}
+  # Tomcat 配置（Task 8.2.3 访问日志 + 容器化线程池优化）
+  # 访问日志与 logback-spring.xml 中 ACCESS_FILE appender 协同工作：
+  # - AccessLogValve 由 Tomcat 内置实现，将访问日志输出到 logger org.apache.catalina.accesslog
+  # - logback 中该 logger 路由到 ACCESS_FILE，按日 + 100MB 滚动
+  tomcat:
+    accesslog:
+      enabled: ${APP_ACCESS_LOG_ENABLED:true}
+      # 自定义 pattern（combined 扩展）：
+      # - %h: 远程 IP（X-Forwarded-For 由 RemoteIpValve 处理后注入）
+      # - %l: 远程逻辑用户名（通常 -）
+      # - %u: 认证用户（JWT userId，未认证 -）
+      # - %t: 时间戳 [dd/MMM/yyyy:HH:mm:ss Z]
+      # - %r: 请求首行（METHOD URI?query PROTOCOL）
+      # - %s: HTTP 状态码
+      # - %b: 响应字节数（无 Body 时 -）
+      # - %D: 请求耗时（毫秒）
+      # - %{Referer}i / %{User-Agent}i / %{X-Trace-Id}i: 关键请求头
+      pattern: '%h %l %u %t "%r" %s %b %D "%{Referer}i" "%{User-Agent}i" "%{X-Trace-Id}i"'
+      # 日志输出到 logger（而非直接文件），由 logback 接管滚动策略
+      condition-unless: ${APP_ACCESS_LOG_DISABLED:false}
+    # 线程与连接配置（容器化部署优化）
+    threads:
+      max: ${SERVER_TOMCAT_THREADS_MAX:200}
+      min-spare: ${SERVER_TOMCAT_THREADS_MIN:10}
+    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:100}
+    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:8192}
+    connection-timeout: ${SERVER_TOMCAT_CONNECTION_TIMEOUT:20s}
 
 # Actuator 监控端点配置
 # 暴露 health/info/metrics/prometheus 端点供 Prometheus 抓取与运维监控
@@ -76,12 +103,55 @@ management:
     prometheus:
       enabled: true
 
+# springdoc-openapi 配置（Task 8.4.1）
+# 文档地址：
+#   - Swagger UI: http://localhost:8080/swagger-ui.html
+#   - OpenAPI JSON: http://localhost:8080/v3/api-docs
+#   - OpenAPI YAML: http://localhost:8080/v3/api-docs.yaml
+# 安全策略：
+#   - real profile 下 /swagger-ui/** 与 /v3/api-docs/** 仅 ADMIN 可访问（详见 SecurityConfig）
+#   - 生产部署可通过 SWAGGER_UI_ENABLED=false 关闭 Swagger UI
+#   - OPENAPI_SERVER_URL 配置后会在 Swagger UI 顶部显示生产服务器地址
+springdoc:
+  # OpenAPI 文档端点路径
+  api-docs:
+    path: /v3/api-docs
+    enabled: ${SWAGGER_UI_ENABLED:true}
+  # Swagger UI 配置
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_UI_ENABLED:true}
+    # 启用 Try it out 按钮默认展开
+    try-it-out-enabled: true
+    # 接口排序按 HTTP method 顺序（GET → POST → PUT → DELETE）
+    operations-sorter: method
+    # Tag 排序按字母顺序
+    tags-sorter: alpha
+    # 持久化授权信息（避免刷新页面后丢失 token）
+    persist-authorization: true
+    # 禁用 Springdoc 的默认 petstore 示例
+    disable-swagger-default-url: true
+  # 默认对所有 Controller 生成文档
+  # Controller 分布在 admin/ai/auth/campus/chat/clientconfig/discover/feedback/growth/home/match/media/profile/report 等多个包
+  packages-to-scan: com.campuslove.api
+  # 默认包含的路径（与 SecurityConfig 鉴权规则保持一致）
+  paths-to-match: /api/v1/**,/api/ai/**
+
 app:
   # 媒体存储配置（Phase A - Task A3）
   # storageRoot: 本地存储根目录，相对路径基于应用工作目录
   # URL 访问路径前缀 /uploads/** 由 WebConfig 静态资源映射
   media:
     storage-root: ${APP_MEDIA_STORAGE_ROOT:./uploads}
+  # CORS 允许的源列表（Task 0.6.2）
+  # - 逗号分隔字符串形式，便于 WebConfig/SecurityConfig 通过 split(',') 解析为 List<String>
+  # - 兼容环境变量 CORS_ALLOWED_ORIGINS（逗号分隔字符串）直接覆盖
+  # - 生产环境必须配置具体域名（如 https://example.com），禁止使用通配符 *
+  # - 当 allowCredentials=true 时，Spring 6 严格模式禁止 *，必须使用 allowedOriginPatterns
+  # - 也支持 YAML 列表形式覆盖：app.cors.allowed-origins[0], [1], ...
+  #   Spring 自动将列表绑定结果转换为逗号分隔字符串供 @Value("${app.cors.allowed-origins}") 使用
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5177,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5177}
   jwt:
     # JWT 签名密钥：必须通过环境变量 JWT_SECRET 设置，不允许使用默认值。
     # 启动时若未设置或使用了不安全的默认值，应用将拒绝启动。
@@ -89,8 +159,22 @@ app:
     secret: ${JWT_SECRET:}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   wechat:
-    app-id: ${WECHAT_APP_ID:}
-    app-secret: ${WECHAT_APP_SECRET:}
+    # Task 0.6.3：微信小程序 AppID/AppSecret 通过环境变量注入
+    # 环境变量命名规范：全大写 + 下划线（与 .env.example 保持一致）
+    # - WECHAT_APPID：微信小程序 AppID（wx + 16 位十六进制字符）
+    # - WECHAT_SECRET：微信小程序 AppSecret（16 位字符串，与 AppID 配套申请）
+    # 申请地址：https://mp.weixin.qq.com/
+    app-id: ${WECHAT_APPID:}
+    app-secret: ${WECHAT_SECRET:}
+  # SubTask 1.4.5：Agnes AI 视频/图片生成服务配置
+  # - API Key 必须通过环境变量 AGNES_API_KEY 配置，禁止硬编码
+  # - 缺失时调用 /api/ai/** 端点会返回 401 AI_API_UNAUTHORIZED，提示运营方补全
+  # - 申请地址：https://agnes-ai.com/dashboard/api-keys
+  ai:
+    agnes:
+      api-base: ${AGNES_API_BASE:https://api.agnes-ai.com/api}
+      api-key: ${AGNES_API_KEY:}
+      timeout-ms: ${AGNES_TIMEOUT_MS:30000}
   recommendation:
     daily-limit: 10
     discussion-limit: 10
@@ -129,3 +213,118 @@ app:
       - 赌博网站
       - 六合彩
       - 博彩
+
+# Resilience4j 配置（Task 2.3.3）。
+# 为外部依赖（微信 API / 短信 / 对象存储）提供熔断 / 重试 / 限流 / 降级能力。
+#
+# 设计原则：
+# - 熔断器（CircuitBreaker）：保护下游服务，连续失败时快速熔断，避免雪崩；
+#   半开状态试探性放行请求，恢复后自动闭合。
+# - 重试（Retry）：对瞬时故障（网络抖动、临时 5xx）自动重试，
+#   指数退避避免加剧下游压力；对业务异常（4xx）不重试。
+# - 限流器（RateLimiter）：限制对下游的调用速率，防止突发流量打垮下游。
+#
+# 配置项命名：backend 名称对齐 {@link com.campuslove.api.config.Resilience4jConfig} 中
+# 各 @CircuitBreaker/@Retry/@RateLimiter 注解的 name 属性。
+resilience4j:
+  circuitbreaker:
+    instances:
+      # 微信 API（jscode2session、access_token、订阅消息）
+      wechatApi:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 60
+        slow-call-duration-threshold: 3s
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        # 业务异常（如 WeChatAuthException 中的 4xx 错误码）不应触发熔断
+        record-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.RestClientException
+        ignore-exceptions:
+          - com.campuslove.api.auth.WeChatClient.WeChatAuthException
+      # 对象存储（媒体上传 / 下载）
+      objectStorage:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 60
+        slow-call-rate-threshold: 70
+        slow-call-duration-threshold: 10s
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - java.io.IOException
+          - org.springframework.web.multipart.MultipartException
+      # 短信服务（如未来集成阿里云/腾讯云 SMS）
+      sms:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 60
+        slow-call-duration-threshold: 5s
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.RestClientException
+  retry:
+    instances:
+      # 微信 API 重试：最多 2 次（共 3 次请求），指数退避 500ms→1s→2s
+      wechatApi:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2.0
+        exponential-max-wait-duration: 5s
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.RestClientException
+        ignore-exceptions:
+          - com.campuslove.api.auth.WeChatClient.WeChatAuthException
+      # 对象存储重试：最多 2 次（共 3 次请求），固定 200ms 间隔
+      objectStorage:
+        max-attempts: 3
+        wait-duration: 200ms
+        enable-exponential-backoff: false
+        retry-exceptions:
+          - java.io.IOException
+      # 短信重试：最多 2 次（共 3 次请求），指数退避 1s→2s→4s
+      sms:
+        max-attempts: 3
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2.0
+        exponential-max-wait-duration: 10s
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.RestClientException
+  ratelimiter:
+    instances:
+      # 微信 API 限流：每 1s 最多 10 次调用（微信侧也有 QPS 限制，避免触发限流）
+      wechatApi:
+        limit-for-period: 10
+        limit-refresh-period: 1s
+        timeout-duration: 0
+        register-health-indicator: true
+      # 短信限流：每 1s 最多 5 次调用（SMS 服务商通常按 QPS 计费）
+      sms:
+        limit-for-period: 5
+        limit-refresh-period: 1s
+        timeout-duration: 0
+        register-health-indicator: true
+  # 暴露 resilience4j 健康指标到 /actuator/health
+  health:
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
+      enabled: true

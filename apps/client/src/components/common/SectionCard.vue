@@ -22,6 +22,8 @@ defineProps<{
 </template>
 
 <style scoped lang="scss">
+// P3 修复：复用 _components.scss 的设计令牌，避免与其他 .card 类重复定义
+// 共享样式位置：src/styles/_components.scss 中的 .base-card
 .card {
   display: flex;
   flex-direction: column;
@@ -31,8 +33,8 @@ defineProps<{
   background: var(--c-bg-container);
   border: var(--c-border-card);
   box-shadow: var(--c-elevation-1);
-  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              border-color var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:active {
@@ -45,13 +47,13 @@ defineProps<{
 }
 
 .card__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-text-primary);
 }
 
 .card__subtitle {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   line-height: 1.6;
   color: var(--c-text-secondary);
 }

@@ -108,7 +108,7 @@ onMounted(() => {
     >
       <template #default>
         <!-- 兴趣圈列表 -->
-        <scroll-view class="circles-list" scroll-y>
+        <scroll-view class="circles-list" scroll-y :enhanced="true" :bounces="true" :show-scrollbar="false">
           <!-- 附近的人快捷入口（Task F1 / M-08） -->
           <view class="discover-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToDiscover">
             <view class="discover-entry__left">
@@ -263,7 +263,7 @@ onMounted(() => {
   background: var(--c-gradient-brand);
   border-radius: var(--r-xl);
   box-shadow: var(--s-brand);
-  animation: card-slide-up 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .discover-entry__left {
@@ -331,7 +331,7 @@ onMounted(() => {
   padding: var(--sp-7);
   background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
   border-radius: var(--r-lg);
-  animation: card-slide-up 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .circles-banner__emoji {
@@ -395,8 +395,8 @@ onMounted(() => {
   background: var(--c-neutral-0);
   border-radius: var(--r-lg);
   box-shadow: var(--s-card-soft);
-  animation: card-slide-up 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  transition: transform 200ms ease;
+  animation: card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: transform var(--d-normal, 200ms) ease;
 }
 
 /* #ifdef H5 */
@@ -476,7 +476,7 @@ onMounted(() => {
   background: var(--c-gradient-float-btn);
   flex-shrink: 0;
   box-shadow: var(--s-brand-md);
-  transition: all 200ms ease;
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 /* #ifdef H5 */

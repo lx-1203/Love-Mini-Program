@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.DailyAnswer;
 import com.campuslove.api.entity.DailyQuestion;
@@ -11,6 +12,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
@@ -49,11 +52,17 @@ public class RealDailyQuestionService implements DailyQuestionService {
      * 获取今日问题。
      * 查询当日 DailyQuestion 记录，若无则返回最近的问题。
      *
+     * <p>Task 2.3.2：使用 {@code @Cacheable} 缓存结果（CacheName = {@link CacheNames#DAILY_QUESTION}）。
+     * 每日一问每日只更新一次，TTL 1 小时（与一天相比足够短），
+     * 同一 userId 多次访问走缓存，避免重复查询 DB 与计算 hasAnswered。
+     * 用户提交回答后通过 {@link #submitAnswer} 的 @CacheEvict 主动失效当前用户的缓存。</p>
+     *
      * @param userId 当前用户 ID（用于判断是否已回答），可为 null
      * @return 每日一问视图
      */
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.DAILY_QUESTION, key = "#userId", unless = "#result == null")
     public DailyQuestionView getTodayQuestion(Long userId) {
         LocalDate today = LocalDate.now();
         log.debug("获取今日问题，日期: {}, userId: {}", today, userId);
@@ -89,6 +98,9 @@ public class RealDailyQuestionService implements DailyQuestionService {
      * 提交每日一问的回答。
      * 创建 DailyAnswer 记录，支持匿名回答。
      *
+     * <p>Task 2.3.2：通过 {@code @CacheEvict} 主动失效当前用户的 DAILY_QUESTION 缓存，
+     * 保证下次查询时 hasAnswered 字段反映最新回答状态。</p>
+     *
      * @param userId      用户 ID
      * @param questionId  问题 ID
      * @param content     回答内容
@@ -97,6 +109,7 @@ public class RealDailyQuestionService implements DailyQuestionService {
      */
     @Override
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.DAILY_QUESTION, key = "#userId")
     public DailyAnswerView submitAnswer(Long userId, Long questionId, String content, boolean isAnonymous) {
         // 参数校验
         if (userId == null) {

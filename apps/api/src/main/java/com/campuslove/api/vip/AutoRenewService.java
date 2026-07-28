@@ -5,6 +5,7 @@ import com.campuslove.api.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,7 +53,8 @@ public class AutoRenewService {
         } catch (IllegalArgumentException e) {
             // 业务参数异常直接抛出
             throw e;
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库查询失败时上报，由 GlobalExceptionHandler 转换为 5xx 响应
             log.error("查询自动续费状态失败：userId={}", userId, e);
             throw new RuntimeException("查询自动续费状态失败，请稍后重试", e);
         }
@@ -83,7 +85,8 @@ public class AutoRenewService {
             userRepository.save(user);
             log.info("自动续费已开启：userId={}, planId={}", userId, planId);
             return new AutoRenewStatusView(true);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库访问异常（save 失败、约束冲突等）
             log.error("开启自动续费失败：userId={}, planId={}", userId, planId, e);
             throw new RuntimeException("开启自动续费失败，请稍后重试", e);
         }
@@ -110,7 +113,8 @@ public class AutoRenewService {
             userRepository.save(user);
             log.info("自动续费已关闭：userId={}", userId);
             return new AutoRenewStatusView(false);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库更新失败时回滚事务并上报
             log.error("关闭自动续费失败：userId={}", userId, e);
             throw new RuntimeException("关闭自动续费失败，请稍后重试", e);
         }

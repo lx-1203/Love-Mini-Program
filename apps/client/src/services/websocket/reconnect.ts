@@ -1,30 +1,34 @@
 /**
  * WebSocket 重连策略模块
  *
+ * SubTask 5.4.1：重连策略改为指数退避算法
+ *
  * 集中维护重连次数计数与重连定时器：
- * - schedule()：在固定延迟后触发重连（最多 MAX_RECONNECT_ATTEMPTS 次）
+ * - schedule()：在指数退避延迟后触发重连（最多 MAX_RECONNECT_ATTEMPTS 次）
  * - cancel()：取消挂起的重连任务
  * - resetAttempts()：重连成功后重置计数
  * - canReconnect()：判断是否还能继续重连
  *
- * 重连策略说明：
- * 当前实现采用固定 3 秒间隔（RECONNECT_INTERVAL_MS），
- * 最多重连 5 次（MAX_RECONNECT_ATTEMPTS）。
+ * 指数退避策略（SubTask 5.4.1）：
+ * 重连延迟按 2 的幂次递增，达到 RECONNECT_MAX_INTERVAL_MS 后保持不变：
+ *   第 1 次：1000ms  (1s)
+ *   第 2 次：2000ms  (2s)
+ *   第 3 次：4000ms  (4s)
+ *   第 4 次：8000ms  (8s)
+ *   第 5 次：16000ms (16s)
+ *   第 6 次：30000ms (30s, 上限)
  *
  * 设计权衡：
- * 原计划采用指数退避（exponential backoff），但考虑到：
- * 1. 后端 Spring WebSocket 在网络抖动后通常会快速恢复
- * 2. 固定间隔对用户体验更可预期
- * 3. 现有测试用例基于 3 秒间隔编写
- * 因此保留固定间隔策略，但模块化为独立类便于未来切换到指数退避。
- *
- * 若需切换为指数退避，只需修改 schedule() 内部的 delay 计算逻辑：
- *   const delay = RECONNECT_INTERVAL_MS * Math.pow(2, this.attempts);
+ * 1. 弱网环境下固定 3s 间隔会浪费电量与服务器资源
+ * 2. 指数退避能在网络恢复后快速重连（1s），网络持续不可用时逐步降频
+ * 3. 上限 30s 避免长时间不重连导致用户感知断线
+ * 4. 工程约束：WebSocket 重连上限 30s，避免过于频繁
  */
 
 import {
   MAX_RECONNECT_ATTEMPTS,
-  RECONNECT_INTERVAL_MS,
+  RECONNECT_BACKOFF_MS,
+  RECONNECT_MAX_INTERVAL_MS,
 } from "./constants";
 
 /**
@@ -59,9 +63,33 @@ export class ReconnectManager {
   }
 
   /**
+   * SubTask 5.4.1：计算指数退避延迟
+   *
+   * 退避公式：delay = min(RECONNECT_BACKOFF_MS * 2^(attempt-1), RECONNECT_MAX_INTERVAL_MS)
+   *
+   * 退避序列：
+   *   attempt=1 → 1000ms
+   *   attempt=2 → 2000ms
+   *   attempt=3 → 4000ms
+   *   attempt=4 → 8000ms
+   *   attempt=5 → 16000ms
+   *   attempt=6 → 30000ms (达到上限)
+   *   attempt=7+ → 30000ms (保持上限)
+   *
+   * @param attempt - 重连次数（从 1 开始）
+   * @returns 延迟毫秒数
+   */
+  private calculateDelay(attempt: number): number {
+    // Math.pow(2, attempt-1)：attempt=1 时为 1，attempt=2 时为 2 ...
+    const exponent = Math.max(0, attempt - 1);
+    const rawDelay = RECONNECT_BACKOFF_MS * Math.pow(2, exponent);
+    return Math.min(rawDelay, RECONNECT_MAX_INTERVAL_MS);
+  }
+
+  /**
    * 安排下一次重连
    *
-   * 在固定延迟（RECONNECT_INTERVAL_MS）后触发 onReconnect 回调。
+   * SubTask 5.4.1：在指数退避延迟后触发 onReconnect 回调。
    * 若已达最大重连次数，则不安排重连并返回 false。
    *
    * @param onReconnect - 重连回调（由业务层提供，内部调用 connect(token)）
@@ -74,15 +102,16 @@ export class ReconnectManager {
     }
 
     this.attempts += 1;
+    const delay = this.calculateDelay(this.attempts);
 
     console.log(
-      `[WebSocket] 将在 ${RECONNECT_INTERVAL_MS}ms 后进行第 ${this.attempts} 次重连`
+      `[WebSocket] 将在 ${delay}ms 后进行第 ${this.attempts} 次重连（指数退避）`
     );
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       onReconnect();
-    }, RECONNECT_INTERVAL_MS);
+    }, delay);
 
     return true;
   }

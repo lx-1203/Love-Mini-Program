@@ -13,6 +13,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,7 +33,8 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/admin/notify-config")
+@RequestMapping("/api/v1/admin/notify-config")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminNotifyConfigController {
 
     private final NotifyConfigRepository notifyConfigRepository;
@@ -56,9 +59,14 @@ public class AdminNotifyConfigController {
      * 批量更新通知配置。
      * <p>对每个条目按 type 匹配现有记录，更新 enabled/template；
      * 若 type 不存在则新建（便于后续扩展新通知类型）。</p>
+     *
+     * <p>Task 2.5.4：添加 {@link Transactional} 注解，保证批量更新的原子性。
+     * 任意一条记录写入失败时整批回滚，避免出现"部分成功部分失败"的中间态
+     * （可能导致前端展示与数据库状态不一致）。</p>
      */
     @Auditable(value = AuditOperation.UPDATE_NOTIFY_CONFIG, targetType = "NOTIFY_CONFIG")
     @PutMapping
+    @Transactional
     public ResponseEntity<List<NotifyConfigView>> update(
             @Valid @RequestBody NotifyConfigBatchUpdateRequest request) {
         SecurityUtils.getCurrentUserId();

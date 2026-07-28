@@ -72,9 +72,8 @@ const subText = computed(() => t(subKey.value));
 .error-btn {
   margin-top: 32rpx;
   padding: 16rpx 48rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-brand-400);
-  cursor: pointer;
 }
 .error-btn:active { transform: scale(0.97); }
 .error-btn-text {

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://www.chromatic.com/config-file.schema.json",
+  "projectToken": "${CHROMATIC_PROJECT_TOKEN}",
+  "storybookBuildDir": "storybook-static",
+  "exitZeroOnChanges": false,
+  "exitOnceUploaded": true,
+  "onlyChanged": true,
+  "skip": [
+    "**/*.mdx"
+  ],
+  "ignoreLastBuildOnBranch": [
+    "main",
+    "release/*"
+  ],
+  "thresholds": {
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0
+  },
+  "uploadMetadata": true,
+  "traceChanged": "reviewers"
+}

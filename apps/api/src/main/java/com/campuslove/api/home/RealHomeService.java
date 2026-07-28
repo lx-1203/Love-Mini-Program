@@ -16,6 +16,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -136,7 +137,7 @@ public class RealHomeService implements HomeService {
                     person.availability()
                 ))
                 .toList();
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("聚合推荐人物数据失败, userId={}: {}", userId, e.getMessage());
             return List.of();
         }
@@ -174,7 +175,7 @@ public class RealHomeService implements HomeService {
                     "去签到"
                 );
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("聚合签到状态失败, userId={}: {}", userId, e.getMessage());
             return new HomeCardView(
                 "schedule-summary", "签到服务暂不可用", "请稍后再试", null, "去设置"
@@ -204,7 +205,7 @@ public class RealHomeService implements HomeService {
                     question.hasAnswered() ? "查看回答" : "去回答"
                 );
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("聚合每日一问失败, userId={}: {}", userId, e.getMessage());
         }
         // 默认兜底
@@ -238,7 +239,7 @@ public class RealHomeService implements HomeService {
                 null,
                 null
             );
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("聚合活动推荐失败: {}", e.getMessage());
             return new ActivityPreviewView(
                 "活动推荐", "查看近期活动", "查看活动", List.of(), null, null
@@ -266,7 +267,7 @@ public class RealHomeService implements HomeService {
                     post.getCategory().name()
                 ))
                 .toList();
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("聚合村口热门帖子失败: {}", e.getMessage());
             return Collections.emptyList();
         }

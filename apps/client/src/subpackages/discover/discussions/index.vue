@@ -94,14 +94,14 @@ function openPath(url: string) {
 }
 
 .row-title {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: var(--c-text-primary);
 }
 
 .row-subtitle,
 .empty-state {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   line-height: 1.6;
   color: var(--c-text-secondary);
 }

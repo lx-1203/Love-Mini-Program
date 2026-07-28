@@ -519,14 +519,14 @@ onMounted(() => {
 }
 
 .nav-bar__back-icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   color: var(--c-text-primary, #1f2329);
   font-weight: 300;
   line-height: 1;
 }
 
 .nav-bar__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1f2329);
 }
@@ -575,7 +575,7 @@ onMounted(() => {
 }
 
 .state-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-secondary, #5b6470);
 }
 
@@ -588,7 +588,7 @@ onMounted(() => {
 .retry-btn__text {
   /* 反色文字：使用 token 替代硬编码 #ffffff */
   color: var(--c-text-inverse);
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
 }
 
@@ -610,16 +610,19 @@ onMounted(() => {
 }
 
 .section__title-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary, #5b6470);
   font-weight: 500;
 }
 
 /* ==================== 卡片 ==================== */
+/* P3 修复：复用 _components.scss 的 .base-card 设计令牌，避免重复定义
+   共享样式位置：src/styles/_components.scss
+   此处保留 .card 类名以兼容模板引用，但使用统一的设计令牌 */
 .card {
-  background: var(--c-bg-container, #ffffff);
-  border-radius: 24rpx;
-  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04));
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
   overflow: hidden;
 }
 
@@ -645,13 +648,13 @@ onMounted(() => {
 }
 
 .switch-row__label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1f2329);
   font-weight: 500;
 }
 
 .switch-row__desc {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #9aa1ab);
   line-height: 1.5;
 }
@@ -665,12 +668,12 @@ onMounted(() => {
 }
 
 .status-row__label {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary, #5b6470);
 }
 
 .status-row__value {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-tertiary, #9aa1ab);
   font-weight: 600;
 
@@ -693,7 +696,7 @@ onMounted(() => {
 }
 
 .time-row__label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1f2329);
   font-weight: 500;
 }
@@ -705,14 +708,14 @@ onMounted(() => {
 }
 
 .time-row__value {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-brand, #3fcf8e);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .time-row__arrow {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   color: var(--c-border-strong, #cbd5e1);
   font-weight: 300;
 }
@@ -736,7 +739,7 @@ onMounted(() => {
 }
 
 .radio-row__label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1f2329);
   font-weight: 500;
 }
@@ -769,22 +772,26 @@ onMounted(() => {
 }
 
 /* ==================== 星期网格 ==================== */
+/* mp-weixin 不支持 display:grid，4 列等宽布局改用 Flexbox + 子元素 width: calc */
 .weekday-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 16rpx;
   padding: 24rpx 28rpx;
 }
 
 .weekday-item {
+  /* 4 列布局：每行 4 个，gap 16rpx 共 3 个间隙 → width = calc((100% - 48rpx) / 4) */
+  width: calc((100% - 48rpx) / 4);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20rpx 0;
   background: var(--c-bg-page, #f4f6fa);
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   border: 2rpx solid transparent;
   transition: all 0.15s ease;
+  box-sizing: border-box;
 
   &--active {
     background: var(--c-bg-brand, #e8f8f0);
@@ -793,7 +800,7 @@ onMounted(() => {
 }
 
 .weekday-item__label {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-primary, #1f2329);
   font-weight: 500;
 }
@@ -803,7 +810,7 @@ onMounted(() => {
   margin: 40rpx 24rpx 0;
   padding: 28rpx;
   background: var(--c-brand, #3fcf8e);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -818,7 +825,7 @@ onMounted(() => {
 .save-btn__text {
   /* 反色文字：使用 token 替代硬编码 #ffffff */
   color: var(--c-text-inverse);
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 600;
 }
 </style>

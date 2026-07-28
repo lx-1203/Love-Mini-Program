@@ -55,9 +55,9 @@ const emit = defineEmits<{
   height: 88rpx;
   border: 0;
   border-radius: var(--r-xl);
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bar__primary {
@@ -67,7 +67,7 @@ const emit = defineEmits<{
 }
 .bar__primary:active {
   transform: scale(0.97);
-  transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--d-fast, 120ms) cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--s-brand-md);
 }
 
@@ -78,7 +78,7 @@ const emit = defineEmits<{
 }
 .bar__secondary:active {
   transform: scale(0.97);
-  transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--d-fast, 120ms) cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--c-neutral-100);
 }
 </style>

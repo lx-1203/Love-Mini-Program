@@ -4,7 +4,10 @@ import com.campuslove.api.entity.CircleTopic;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * 圈子话题 Repository。
@@ -20,6 +23,23 @@ public interface CircleTopicRepository extends JpaRepository<CircleTopic, Long> 
      * @return 分页话题列表
      */
     Page<CircleTopic> findByCircleIdOrderByIsPinnedDescCreatedAtDesc(Long circleId, Pageable pageable);
+
+    /**
+     * Task 2.2.4：根据圈子 ID 查询话题，并通过 @EntityGraph 一次性预加载 circle 关联。
+     * <p>{@link CircleTopic#getCircle()} 是 LAZY 加载，
+     * 调用方在 View 转换层访问 {@code topic.getCircle().getId()} / {@code topic.getCircle().getName()} 等字段时
+     * 会为每条话题触发一次 SELECT circle 查询（N+1 问题）。
+     * 此方法使用 @EntityGraph 在单条 SQL 中通过 LEFT OUTER JOIN 加载 circle，
+     * 将原本 N 条 SQL 压缩为 1 条。</p>
+     *
+     * @param circleId 圈子 ID
+     * @param pageable 分页参数
+     * @return 分页话题列表（circle 已被预加载）
+     */
+    @EntityGraph(attributePaths = "circle")
+    @Query("SELECT t FROM CircleTopic t WHERE t.circle.id = :circleId ORDER BY t.isPinned DESC, t.createdAt DESC")
+    Page<CircleTopic> findWithCircleByCircleIdOrderByIsPinnedDescCreatedAtDesc(
+            @Param("circleId") Long circleId, Pageable pageable);
 
     /**
      * 根据圈子 ID 统计话题数量。

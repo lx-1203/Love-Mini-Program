@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 
 /**
  * 真实推送摘要服务实现。
@@ -244,7 +246,8 @@ public class RealPushSummaryService implements PushSummaryService {
         LocalTime prefTime;
         try {
             prefTime = LocalTime.parse(preferredTime, TIME_FORMATTER);
-        } catch (Exception e) {
+        } catch (DateTimeParseException e) {
+            // 用户偏好时间格式不合法时降级使用默认 12:00
             log.warn("用户[{}]推荐偏好时间格式无效: {}, 使用默认 12:00", userId, preferredTime);
             prefTime = LocalTime.of(12, 0);
         }
@@ -302,7 +305,7 @@ public class RealPushSummaryService implements PushSummaryService {
             }
         } catch (IllegalArgumentException e) {
             throw e;
-        } catch (Exception e) {
+        } catch (HttpClientErrorException e) {
             // 未认证或无法获取用户ID时，拒绝操作
             log.warn("无法获取当前用户ID，拒绝标记推送摘要[{}]为已发送: {}", summaryId, e.getMessage());
             throw new IllegalStateException("未认证，无法标记推送为已发送", e);

@@ -177,6 +177,29 @@ $shadow-modal: 0 24rpx 60rpx rgba(15, 23, 42, 0.18);
 $shadow-float-btn: 0 8rpx 24rpx rgba(63, 207, 142, 0.32);
 $shadow-vip: 0 4rpx 16rpx rgba(201, 163, 106, 0.3);
 $shadow-success: 0 4rpx 16rpx rgba(16, 185, 129, 0.25);
+// SubTask 3.4.3：补充业务专用阴影 token
+// 强调色（橙色）阴影：用于优惠码、促销卡片
+$shadow-accent: 0 4rpx 16rpx rgba(255, 165, 0, 0.4);
+// 次要蓝阴影：用于登录按钮、Logo 等次要蓝色元素
+$shadow-secondary-blue: 0 8rpx 32rpx rgba(91, 127, 255, 0.35);
+$shadow-secondary-blue-sm: 0 4rpx 16rpx rgba(91, 127, 255, 0.2);
+$shadow-secondary-blue-md: 0 8rpx 32rpx rgba(91, 127, 255, 0.3);
+// 信息蓝阴影：用于解锁引导、AI 推荐
+$shadow-info: 0 6rpx 20rpx rgba(59, 130, 246, 0.32);
+$shadow-info-md: 0 8rpx 24rpx rgba(59, 130, 246, 0.32);
+$shadow-info-soft: 0 4rpx 16rpx rgba(59, 130, 246, 0.25);
+// Tab 指示器阴影：用于 TabBar 状态切换的彩色微阴影
+$shadow-tab-brand: 0 2rpx 6rpx rgba(63, 207, 142, 0.35);
+$shadow-tab-romance: 0 2rpx 6rpx rgba(236, 72, 153, 0.35);
+$shadow-tab-accent: 0 2rpx 6rpx rgba(249, 115, 22, 0.35);
+$shadow-tab-purple: 0 2rpx 6rpx rgba(139, 92, 246, 0.35);
+$shadow-tab-active: 0 4rpx 12rpx rgba(63, 207, 142, 0.45);
+$shadow-tab-active-md: 0 6rpx 20rpx rgba(63, 207, 142, 0.35);
+// 品牌色变体阴影：用于自定义 tab-bar
+$shadow-brand-soft: 0 4rpx 16rpx rgba(63, 207, 142, 0.10);
+$shadow-brand-mid: 0 6rpx 24rpx rgba(63, 207, 142, 0.20);
+// 红包阴影（红色）：用于红包气泡
+$shadow-red-packet: 0 4rpx 12rpx rgba(236, 72, 72, 0.2);
 $shadow-error: 0 4rpx 16rpx rgba(229, 69, 77, 0.25);
 
 // ============================================================
@@ -339,6 +362,23 @@ page {
   --s-vip: #{$shadow-vip};
   --s-success: #{$shadow-success};
   --s-error: #{$shadow-error};
+  /* SubTask 3.4.3：业务专用阴影 token */
+  --s-accent: #{$shadow-accent};
+  --s-secondary-blue: #{$shadow-secondary-blue};
+  --s-secondary-blue-sm: #{$shadow-secondary-blue-sm};
+  --s-secondary-blue-md: #{$shadow-secondary-blue-md};
+  --s-info: #{$shadow-info};
+  --s-info-md: #{$shadow-info-md};
+  --s-info-soft: #{$shadow-info-soft};
+  --s-tab-brand: #{$shadow-tab-brand};
+  --s-tab-romance: #{$shadow-tab-romance};
+  --s-tab-accent: #{$shadow-tab-accent};
+  --s-tab-purple: #{$shadow-tab-purple};
+  --s-tab-active: #{$shadow-tab-active};
+  --s-tab-active-md: #{$shadow-tab-active-md};
+  --s-brand-soft: #{$shadow-brand-soft};
+  --s-brand-mid: #{$shadow-brand-mid};
+  --s-red-packet: #{$shadow-red-packet};
 
   --c-elevation-1: 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
   --c-elevation-2: 0 4rpx 16rpx rgba(15, 23, 42, 0.08);
@@ -453,6 +493,25 @@ page {
   --btn-press-scale: 0.95;
   --btn-press-opacity: 0.9;
   --btn-press-duration: 200ms;
+
+  /* ---------- Phase G · 动画时长 token（SubTask 3.4.5） ---------- */
+  /* 与 tokens.ts motion.duration 对齐，统一管理 transition / animation 时长 */
+  --d-instant: 80ms;     /* 即时反馈（防抖首帧） */
+  --d-fast: 120ms;       /* 快速过渡（按钮按压） */
+  --d-normal: 200ms;     /* 标准过渡（默认） */
+  --d-slow: 250ms;       /* 慢速过渡（卡片悬浮） */
+  --d-slower: 350ms;     /* 更慢过渡（抽屉展开） */
+  --d-slowest: 600ms;    /* 最慢过渡（页面切换） */
+  /* 业务专用时长 */
+  --d-press: 200ms;      /* 按钮按压时长（与 --btn-press-duration 一致） */
+  --d-card-press: 200ms; /* 卡片按压时长 */
+  --d-fade: 300ms;       /* 淡入淡出 */
+  --d-slide: 300ms;      /* 滑动 */
+  --d-bounce: 400ms;     /* 弹跳动画 */
+  --d-particle: 1500ms;  /* 粒子动画（签到心动粒子） */
+  --d-toast-short: 1500ms; /* 短 Toast */
+  --d-toast-normal: 2000ms;/* 普通 Toast */
+  --d-toast-long: 3000ms;  /* 长 Toast */
 
   /* 卡片尺寸 */
   --card-padding: 32rpx;

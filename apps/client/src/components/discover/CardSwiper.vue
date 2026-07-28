@@ -127,6 +127,13 @@ const showDetail = ref(false);
 const showMenu = ref(false);
 /** 长按定时器 */
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * SubTask 1.5.2：动画相关 setTimeout 集合，用于卸载时统一清理。
+ *
+ * <p>原实现 fly-out / card-enter / watch-enter 三处 setTimeout 未保存返回值，
+ * 用户在动画进行中快速返回上一页时，定时器仍会触发并修改已销毁组件的响应式状态。</p>
+ */
+const animTimers = new Set<ReturnType<typeof setTimeout>>();
 /** 触摸是否已移动（移动超过阈值则取消长按） */
 let hasMovedForLongPress = false;
 // 注：LONG_PRESS_DELAY_MS / LONG_PRESS_MOVE_THRESHOLD 由 constants/match 统一提供
@@ -462,12 +469,40 @@ function clearLongPressTimer() {
 }
 
 /**
- * 组件卸载时清理长按定时器，避免组件销毁后定时器仍触发回调导致内存泄漏。
+ * SubTask 1.5.2：注册动画 setTimeout，返回值入队 animTimers，便于卸载时统一清理。
+ *
+ * <p>回调触发后自动出队，避免 Set 无限增长。</p>
+ *
+ * @param fn 回调函数
+ * @param delay 延迟毫秒数
+ * @returns setTimeout 返回值（timer id）
+ */
+function registerAnimTimer(fn: () => void, delay: number): ReturnType<typeof setTimeout> {
+  const timer = setTimeout(() => {
+    animTimers.delete(timer);
+    fn();
+  }, delay);
+  animTimers.add(timer);
+  return timer;
+}
+
+/**
+ * SubTask 1.5.2：清空所有动画定时器，避免组件销毁后定时器仍触发回调。
+ */
+function clearAnimTimers() {
+  animTimers.forEach((timer) => clearTimeout(timer));
+  animTimers.clear();
+}
+
+/**
+ * 组件卸载时清理长按定时器与所有动画定时器，避免组件销毁后定时器仍触发回调导致内存泄漏。
  * 修复（P1 BUG）：原实现缺少 onUnmounted 钩子，组件卸载后 longPressTimer 仍可能触发，
  * 进而在已销毁组件上修改响应式状态（isLongPressing / showMenu）。
+ * SubTask 1.5.2：扩展清理范围至 animTimers，覆盖 fly-out / card-enter / watch-enter 三类动画定时器。
  */
 onUnmounted(() => {
   clearLongPressTimer();
+  clearAnimTimers();
 });
 
 /**
@@ -548,7 +583,8 @@ function performFlyOut(direction: SwipeDirection) {
   const cardId = currentCard.value.id;
 
   // 动画结束后通知父组件
-  setTimeout(() => {
+  // SubTask 1.5.2：使用 registerAnimTimer 跟踪定时器，卸载时统一清理
+  registerAnimTimer(() => {
     emit("swipe", direction, cardId);
     // 重置状态
     isFlyingOut.value = false;
@@ -563,7 +599,8 @@ function performFlyOut(direction: SwipeDirection) {
     if (props.cards.length > 1) {
       isEntering.value = true;
       nextTick(() => {
-        setTimeout(() => {
+        // SubTask 1.5.2：嵌套定时器同样入队清理
+        registerAnimTimer(() => {
           isEntering.value = false;
         }, CARD_ENTER_DELAY_MS);
       });
@@ -657,7 +694,8 @@ watch(
       // 从无卡片到有卡片，触发入场动画
       isEntering.value = true;
       nextTick(() => {
-        setTimeout(() => {
+        // SubTask 1.5.2：watch 触发的入场动画定时器同样入队清理
+        registerAnimTimer(() => {
           isEntering.value = false;
         }, CARD_ENTER_DELAY_MS);
       });
@@ -695,11 +733,13 @@ watch(
       <!-- 下一张卡片（堆叠底层） -->
       <view v-if="nextCard" class="card card--next" :style="nextCardStyle">
         <!-- Phase D2 · 下一张卡片仅展示首图预览（保持堆叠层次简洁） -->
+        <!-- SubTask 5.2.4：下一张卡片非首屏可见，开启 lazy-load 延迟加载，减少首屏并发请求数 -->
         <SafeImage
           v-if="getDisplayImages(nextCard).length > 0"
           :src="getDisplayImages(nextCard)[0]"
           custom-class="card__bg"
           mode="aspectFill"
+          :lazy-load="true"
         />
         <view v-else class="card__bg card__bg--placeholder">
           <text class="card__placeholder-text">{{ nextCard.name[0] }}</text>
@@ -1010,10 +1050,11 @@ watch(
 .card {
   position: absolute;
   width: calc(100% - 48rpx);
-  /* Phase D2 · 卡片采用 4:5 比例约束（aspect-ratio 优先，max-height 兜底防溢出） */
-  aspect-ratio: 4 / 5;
+  /* Phase D2 · 卡片采用 4:5 比例约束：mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（125% = 5/4 × 100%） */
+  /* 内部绝对定位子元素（.card__bg/.card__overlay 等）会铺满 padding box，保持视觉一致 */
+  padding-top: 125%;
   max-height: calc(100% - 32rpx);
-  /* mp-weixin 基础库 < 2.11.0 不支持 aspect-ratio，设置 min-height 防止卡片高度塌陷为 0 */
+  /* min-height 兜底防溢出 */
   min-height: 600rpx;
   border-radius: var(--r-xl);
   overflow: hidden;
@@ -1122,7 +1163,7 @@ watch(
   height: 100%;
   pointer-events: none;
   z-index: 2;
-  transition: opacity 120ms ease;
+  transition: opacity var(--d-fast, 120ms) ease;
 }
 
 .card__drag-tint--like {
@@ -1193,8 +1234,8 @@ watch(
   border-radius: var(--r-full);
   border: 1rpx solid var(--c-badge-video-border);
   z-index: 4;
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              opacity var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card__video-badge--pressed {
@@ -1271,7 +1312,7 @@ watch(
   position: absolute;
   top: 160rpx;
   padding: 28rpx 60rpx;
-  border-radius: 28rpx;
+  border-radius: var(--r-xxl, 28rpx);
   border-width: 8rpx;
   border-style: solid;
   z-index: 5;
@@ -1610,7 +1651,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 200ms ease;
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1), filter var(--d-normal, 200ms) ease;
 }
 
 /* 通用按压态（替代 :active，兼容 mp-weixin） */

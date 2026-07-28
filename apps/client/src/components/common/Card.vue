@@ -86,7 +86,7 @@ const rippleColor = computed(() => {
               border-color var(--card-press-duration) cubic-bezier(0.4, 0, 0.2, 1);
 }
 .card--interactive {
-  cursor: pointer;
+  /* mp-weixin 不支持 cursor:pointer，已通过 :active 伪类提供按下反馈 */
 }
 /* active 态：缩放 + 阴影提升至 elevation-2 + 品牌描边（mp-weixin 不支持 :hover，仅 :active） */
 .card--interactive:active {

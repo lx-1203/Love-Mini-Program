@@ -47,11 +47,14 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-/** 各级别对应的图标资源（SVG，支持 currentColor 主题色） */
+/** 各级别对应的图标资源（SVG/PNG，支持 currentColor 主题色）
+ * P6 修复：idcard 原映射到 SCHOOL 图标（学校建筑），语义错误；
+ * 实名认证应使用身份证/证件类图标，改为 FILE_TEXT_SVG（证件文档图标）。
+ */
 const ICON_MAP: Record<Exclude<BadgeLevel, "none">, string> = {
   school: IMAGE_PATHS.ICONS_COMMON.CHECK,
   email: IMAGE_PATHS.ICONS_COMMON.NOTIFICATION,
-  idcard: IMAGE_PATHS.ICONS_COMMON.SCHOOL,
+  idcard: IMAGE_PATHS.ICONS_COMMON.FILE_TEXT_SVG,
 };
 
 /** 各级别对应的文案 i18n key */
@@ -207,8 +210,8 @@ function handleClick() {
   background: var(--c-bg-brand);
   color: var(--c-brand-600);
   white-space: nowrap;
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              opacity var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
 

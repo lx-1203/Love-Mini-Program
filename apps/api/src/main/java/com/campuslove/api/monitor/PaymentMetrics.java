@@ -74,7 +74,7 @@ public class PaymentMetrics {
                     .description("VIP 套餐购买次数（按套餐区分）")
                     .register(meterRegistry)
                     .increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 payment.vip.purchased 指标失败, planId={}: {}", planId, e.getMessage());
         }
     }
@@ -85,7 +85,7 @@ public class PaymentMetrics {
     public void recordVipCancelled() {
         try {
             vipCancelledCounter.increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 payment.vip.cancelled 指标失败: {}", e.getMessage());
         }
     }
@@ -104,7 +104,7 @@ public class PaymentMetrics {
             // 未来如需统计金额分布，可在此处使用 DistributionSummary：
             // DistributionSummary.builder("payment.red_packet.amount")
             //     .register(meterRegistry).record(amount == null ? 0 : amount.doubleValue());
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 payment.red_packet.sent 指标失败, amount={}: {}", amount, e.getMessage());
         }
     }
@@ -118,7 +118,7 @@ public class PaymentMetrics {
         try {
             // 使用 Duration 包装毫秒值，避免负数或溢出问题
             callbackLatencyTimer.record(Duration.ofMillis(Math.max(0, durationMs)));
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 payment.callback.latency 指标失败, durationMs={}: {}", durationMs, e.getMessage());
         }
     }

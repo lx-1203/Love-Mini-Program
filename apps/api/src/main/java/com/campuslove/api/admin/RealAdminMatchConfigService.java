@@ -12,6 +12,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,7 +62,8 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
                     values.put(entity.getConfigKey(), entity.getConfigValue());
                 }
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库查询失败时降级使用内存默认值，保证管理后台可访问
             log.warn("查询 match_config 表失败，仅返回内存默认值", e);
         }
         return new MatchConfigView(values);
@@ -82,24 +84,23 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
                 continue;
             }
 
-            try {
-                MatchConfigEntity entity = matchConfigRepository.findByConfigKey(key)
-                        .orElseGet(() -> {
-                            MatchConfigEntity e = new MatchConfigEntity();
-                            e.setConfigKey(key);
-                            e.setDescription("");
-                            return e;
-                        });
-                entity.setConfigValue(value);
-                entity.setUpdatedBy(operatorId);
-                entity.setUpdatedAt(now);
-                matchConfigRepository.save(entity);
+            // Task 2.5.3：移除 catch(Exception) 吞异常，保证事务原子性。
+            // 任意一条更新失败时整批回滚，由 GlobalExceptionHandler 统一转换为
+            // 5xx 错误响应，避免出现"部分成功部分失败"的中间态。
+            MatchConfigEntity entity = matchConfigRepository.findByConfigKey(key)
+                    .orElseGet(() -> {
+                        MatchConfigEntity e = new MatchConfigEntity();
+                        e.setConfigKey(key);
+                        e.setDescription("");
+                        return e;
+                    });
+            entity.setConfigValue(value);
+            entity.setUpdatedBy(operatorId);
+            entity.setUpdatedAt(now);
+            matchConfigRepository.save(entity);
 
-                // 同步刷新内存 bean，使 RealMatchService 立即生效
-                applyToMatchConfigBean(key, value);
-            } catch (Exception e) {
-                log.warn("更新 match_config[{}={}] 失败: {}", key, value, e.getMessage());
-            }
+            // 同步刷新内存 bean，使 RealMatchService 立即生效
+            applyToMatchConfigBean(key, value);
         }
 
         return getMatchConfig();
@@ -115,7 +116,8 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
                     values.put(entity.getStrategyKey(), entity.getStrategyValue());
                 }
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
+            // 数据库查询失败时降级使用内存默认值，保证管理后台可访问
             log.warn("查询 recommend_strategy 表失败，仅返回内存默认值", e);
         }
         return new RecommendStrategyView(values);
@@ -136,24 +138,21 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
                 continue;
             }
 
-            try {
-                RecommendStrategyEntity entity = recommendStrategyRepository.findByStrategyKey(key)
-                        .orElseGet(() -> {
-                            RecommendStrategyEntity e = new RecommendStrategyEntity();
-                            e.setStrategyKey(key);
-                            e.setDescription("");
-                            return e;
-                        });
-                entity.setStrategyValue(value);
-                entity.setUpdatedBy(operatorId);
-                entity.setUpdatedAt(now);
-                recommendStrategyRepository.save(entity);
+            // Task 2.5.3：移除 catch(Exception) 吞异常，保证事务原子性。
+            RecommendStrategyEntity entity = recommendStrategyRepository.findByStrategyKey(key)
+                    .orElseGet(() -> {
+                        RecommendStrategyEntity e = new RecommendStrategyEntity();
+                        e.setStrategyKey(key);
+                        e.setDescription("");
+                        return e;
+                    });
+            entity.setStrategyValue(value);
+            entity.setUpdatedBy(operatorId);
+            entity.setUpdatedAt(now);
+            recommendStrategyRepository.save(entity);
 
-                // 同步刷新内存 bean
-                applyToRecommendationConfigBean(key, value);
-            } catch (Exception e) {
-                log.warn("更新 recommend_strategy[{}={}] 失败: {}", key, value, e.getMessage());
-            }
+            // 同步刷新内存 bean
+            applyToRecommendationConfigBean(key, value);
         }
 
         return getRecommendStrategy();

@@ -79,7 +79,6 @@ defineExpose({ ariaLabel });
   padding: 28rpx 32rpx;
   background: var(--c-bg-container);
   border-bottom: 1rpx solid var(--c-border-light);
-  cursor: pointer;
   transition: background 150ms ease;
 }
 .chat-item:active { background: var(--c-neutral-50); }
@@ -148,7 +147,7 @@ defineExpose({ ariaLabel });
   background: var(--c-brand-50);
 }
 .chat-item-official-text {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-brand);
   font-weight: 600;
 }

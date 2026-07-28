@@ -223,7 +223,7 @@ const durationDisplay = computed(() => {
   background: var(--c-bg-brand, rgba(63, 207, 142, 0.08));
   color: var(--c-brand-700, #15803d);
   box-shadow: 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04));
-  transition: all 200ms ease;
+  transition: all var(--d-normal, 200ms) ease;
   min-width: 140rpx;
 }
 
@@ -267,7 +267,7 @@ const durationDisplay = computed(() => {
   height: 12rpx;
   border-radius: 3rpx;
   background: var(--c-brand-300, #86efac);
-  transition: height 150ms ease, background 200ms ease;
+  transition: height 150ms ease, background var(--d-normal, 200ms) ease;
 }
 
 .voice-bubble--self .voice-bubble__bar {
@@ -301,7 +301,7 @@ const durationDisplay = computed(() => {
 
 /* ==================== 时长 ==================== */
 .voice-bubble__duration {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
@@ -316,7 +316,7 @@ const durationDisplay = computed(() => {
 }
 
 .voice-bubble__icon-emoji {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   line-height: 1;
 }
 

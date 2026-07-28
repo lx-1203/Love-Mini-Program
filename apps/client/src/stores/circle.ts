@@ -1,8 +1,10 @@
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 import { IMAGE_PATHS } from "../config/images";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /* ========== 后端视图类型 ========== */
 
@@ -382,10 +384,6 @@ const mockReplies: Record<string, ReplyItem[]> = {
 /** 每页话题数量 */
 const TOPIC_PAGE_SIZE = 10;
 
-function useMock() {
-  return isMockMode();
-}
-
 /**
  * 格式化相对时间
  */
@@ -451,7 +449,7 @@ export const useCircleStore = defineStore("circle", {
         });
         this.circles = data.map(mapToCircleItem);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载兴趣圈失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.circle.loadCirclesFailed");
       } finally {
         this.loading = false;
       }
@@ -466,8 +464,8 @@ export const useCircleStore = defineStore("circle", {
 
       try {
         if (!circleId || circleId.trim().length === 0) {
-          this.errorMessage = "兴趣圈 ID 无效";
-          throw new Error("兴趣圈 ID 无效");
+          this.errorMessage = t("storeErrors.circle.circleIdInvalid");
+          throw new Error(t("storeErrors.circle.circleIdInvalid"));
         }
 
         if (useMock()) {
@@ -496,7 +494,7 @@ export const useCircleStore = defineStore("circle", {
           circle.memberCount = result.memberCount;
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加入兴趣圈失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.circle.joinCircleFailed");
         throw error;
       }
     },
@@ -510,8 +508,8 @@ export const useCircleStore = defineStore("circle", {
 
       try {
         if (!circleId || circleId.trim().length === 0) {
-          this.errorMessage = "兴趣圈 ID 无效";
-          throw new Error("兴趣圈 ID 无效");
+          this.errorMessage = t("storeErrors.circle.circleIdInvalid");
+          throw new Error(t("storeErrors.circle.circleIdInvalid"));
         }
 
         if (useMock()) {
@@ -540,7 +538,7 @@ export const useCircleStore = defineStore("circle", {
           circle.memberCount = result.memberCount;
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "退出兴趣圈失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.circle.leaveCircleFailed");
         throw error;
       }
     },
@@ -556,8 +554,8 @@ export const useCircleStore = defineStore("circle", {
 
       try {
         if (!circleId || circleId.trim().length === 0) {
-          this.errorMessage = "兴趣圈 ID 无效";
-          throw new Error("兴趣圈 ID 无效");
+          this.errorMessage = t("storeErrors.circle.circleIdInvalid");
+          throw new Error(t("storeErrors.circle.circleIdInvalid"));
         }
 
         if (useMock()) {
@@ -589,7 +587,10 @@ export const useCircleStore = defineStore("circle", {
         this.topicPage = page;
         this.topicHasMore = data.content.length >= TOPIC_PAGE_SIZE;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载话题失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.circle.loadTopicsFailed");
+        // 修复：与 joinCircle/createTopic 保持一致，参数校验错误需向上抛出，
+        // 否则测试 `fetchTopics("") 应 reject` 与真实业务调用方都无法捕获参数错误。
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -606,16 +607,16 @@ export const useCircleStore = defineStore("circle", {
       try {
         // 参数校验
         if (!circleId || circleId.trim().length === 0) {
-          this.errorMessage = "兴趣圈 ID 无效";
-          throw new Error("兴趣圈 ID 无效");
+          this.errorMessage = t("storeErrors.circle.circleIdInvalid");
+          throw new Error(t("storeErrors.circle.circleIdInvalid"));
         }
         if (!data.title || data.title.trim().length === 0) {
-          this.errorMessage = "话题标题不能为空";
-          throw new Error("话题标题不能为空");
+          this.errorMessage = t("storeErrors.circle.topicTitleEmpty");
+          throw new Error(t("storeErrors.circle.topicTitleEmpty"));
         }
         if (!data.content || data.content.trim().length === 0) {
-          this.errorMessage = "话题内容不能为空";
-          throw new Error("话题内容不能为空");
+          this.errorMessage = t("storeErrors.circle.topicContentEmpty");
+          throw new Error(t("storeErrors.circle.topicContentEmpty"));
         }
 
         if (useMock()) {
@@ -657,7 +658,7 @@ export const useCircleStore = defineStore("circle", {
         this.currentTopics.unshift(mappedResult);
         return mappedResult;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "发布话题失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.circle.publishTopicFailed");
         throw error;
       }
     },
@@ -672,8 +673,8 @@ export const useCircleStore = defineStore("circle", {
 
       try {
         if (!topicId || topicId.trim().length === 0) {
-          this.errorMessage = "话题 ID 无效";
-          throw new Error("话题 ID 无效");
+          this.errorMessage = t("storeErrors.circle.topicIdInvalid");
+          throw new Error(t("storeErrors.circle.topicIdInvalid"));
         }
 
         if (useMock()) {
@@ -703,7 +704,9 @@ export const useCircleStore = defineStore("circle", {
         });
         this.currentTopic = mapToTopicDetail(data);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载话题详情失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.circle.loadTopicDetailFailed");
+        // 修复：与 joinCircle/createTopic/fetchTopics 保持一致，参数校验错误需向上抛出。
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -719,8 +722,8 @@ export const useCircleStore = defineStore("circle", {
 
       try {
         if (!topicId || topicId.trim().length === 0) {
-          this.errorMessage = "话题 ID 无效";
-          throw new Error("话题 ID 无效");
+          this.errorMessage = t("storeErrors.circle.topicIdInvalid");
+          throw new Error(t("storeErrors.circle.topicIdInvalid"));
         }
 
         if (useMock()) {
@@ -747,7 +750,7 @@ export const useCircleStore = defineStore("circle", {
           this.replies.push(...mappedReplies);
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载回复失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.circle.loadRepliesFailed");
       }
     },
 
@@ -762,12 +765,12 @@ export const useCircleStore = defineStore("circle", {
       try {
         // 参数校验
         if (!topicId || topicId.trim().length === 0) {
-          this.errorMessage = "话题 ID 无效";
-          throw new Error("话题 ID 无效");
+          this.errorMessage = t("storeErrors.circle.topicIdInvalid");
+          throw new Error(t("storeErrors.circle.topicIdInvalid"));
         }
         if (!content || content.trim().length === 0) {
-          this.errorMessage = "回复内容不能为空";
-          throw new Error("回复内容不能为空");
+          this.errorMessage = t("storeErrors.circle.replyContentEmpty");
+          throw new Error(t("storeErrors.circle.replyContentEmpty"));
         }
 
         if (useMock()) {
@@ -820,7 +823,7 @@ export const useCircleStore = defineStore("circle", {
 
         return mappedResult;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "回复失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.circle.replyFailed");
         throw error;
       }
     },

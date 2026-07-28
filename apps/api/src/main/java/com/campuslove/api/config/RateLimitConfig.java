@@ -189,7 +189,7 @@ public class RateLimitConfig {
                     return method.getName() + ":null";
                 }
                 return method.getName() + ":" + value;
-            } catch (Exception e) {
+            } catch (org.springframework.expression.ExpressionException e) {
                 // SpEL 解析失败时降级为方法名，避免限流失效
                 log.warn("SpEL 解析限流键失败，降级为方法名：expression={}, error={}",
                         expressionStr, e.getMessage());

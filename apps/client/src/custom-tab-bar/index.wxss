@@ -18,7 +18,7 @@
   gap: 12rpx;
   padding: 18rpx 16rpx 16rpx;
   border: 1rpx solid rgba(63, 207, 142, 0.08);
-  border-radius: 28rpx;
+  border-radius: var(--r-xxl, 28rpx);
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 8rpx 32rpx rgba(63, 207, 142, 0.08), 0 2rpx 8rpx rgba(15, 23, 42, 0.04);
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
@@ -41,7 +41,7 @@
   color: #6B7280;
   font-size: 20rpx;
   line-height: 1;
-  transition: color 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1), transform var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tab-bar__item:active {
@@ -58,10 +58,10 @@
   margin-top: -30rpx;
   padding: 14rpx 0 10rpx;
   border: 1rpx solid rgba(63, 207, 142, 0.18);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   background: #FFFFFF;
-  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.10);
-  transition: border-color 250ms ease, background 250ms ease, box-shadow 250ms ease, transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--s-brand-soft, 0 4rpx 16rpx rgba(63, 207, 142, 0.10));
+  transition: border-color var(--d-slow, 250ms) ease, background var(--d-slow, 250ms) ease, box-shadow var(--d-slow, 250ms) ease, transform var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tab-bar__item--prominent:active {
@@ -71,7 +71,7 @@
 .tab-bar__item--prominent.tab-bar__item--active {
   border-color: rgba(63, 207, 142, 0.35);
   background: rgba(232, 248, 240, 0.95);
-  box-shadow: 0 6rpx 24rpx rgba(63, 207, 142, 0.20);
+  box-shadow: var(--s-brand-mid, 0 6rpx 24rpx rgba(63, 207, 142, 0.20));
 }
 
 .tab-bar__icon-wrap {
@@ -80,8 +80,8 @@
   justify-content: center;
   width: 64rpx;
   height: 64rpx;
-  border-radius: 16rpx;
-  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), background 250ms ease;
+  border-radius: var(--r-lg, 16rpx);
+  transition: transform var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1), background var(--d-slow, 250ms) ease;
 }
 
 /* 激活态图标背景：青藤绿浅底 */
@@ -103,7 +103,7 @@
 .tab-bar__icon {
   width: 40rpx;
   height: 40rpx;
-  transition: transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--d-slow, 250ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tab-bar__item--active .tab-bar__icon {
@@ -118,7 +118,7 @@
 .tab-bar__label {
   font-size: 20rpx;
   font-weight: 500;
-  transition: font-weight 250ms ease;
+  transition: font-weight var(--d-slow, 250ms) ease;
 }
 
 .tab-bar__item--active .tab-bar__label {
@@ -135,7 +135,7 @@
   border-radius: 2rpx;
   background: linear-gradient(90deg, #3FCF8E 0%, #7CD9A6 100%);
   transform: translateX(-50%);
-  animation: indicator-pop 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: indicator-pop var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tab-bar__item--prominent .tab-bar__indicator {

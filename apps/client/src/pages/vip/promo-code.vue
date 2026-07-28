@@ -341,14 +341,14 @@ function goBack() {
   }
 }
 .nav-bar__back-icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   font-weight: 300;
   line-height: 1;
 }
 .nav-bar__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
@@ -387,14 +387,14 @@ function goBack() {
   line-height: 1;
 }
 .hero__title {
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   font-weight: 800;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   margin-bottom: 8rpx;
 }
 .hero__subtitle {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: rgba(255, 255, 255, 0.85);
 }
 
@@ -406,13 +406,13 @@ function goBack() {
   background: rgba(255, 255, 255, 0.96);
   border-radius: 20rpx;
   padding: 24rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  box-shadow: var(--s-md, 0 4rpx 16rpx rgba(0, 0, 0, 0.08));
 }
 .section__title {
   padding: 0 0 16rpx;
 }
 .section__title-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary, #475569);
   font-weight: 600;
 }
@@ -420,11 +420,11 @@ function goBack() {
 /* ==================== 输入区 ==================== */
 .code-input-wrap {
   background: var(--c-bg-secondary, #F1F5F9);
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   padding: 24rpx;
 }
 .code-input {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1E293B);
   letter-spacing: 4rpx;
@@ -435,17 +435,17 @@ function goBack() {
   align-items: baseline;
   gap: 8rpx;
   background: var(--c-bg-secondary, #F1F5F9);
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   padding: 16rpx 24rpx;
 }
 .amount-input__currency {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   color: var(--c-gold, #B8860B);
   font-weight: 700;
 }
 .amount-input {
   flex: 1;
-  font-size: 48rpx;
+  font-size: var(--fs-6xl, 48rpx);
   font-weight: 800;
   color: var(--c-text-primary, #1E293B);
 }
@@ -463,14 +463,14 @@ function goBack() {
   padding: 24rpx 32rpx;
   background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
   border-radius: 999rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255, 165, 0, 0.4);
+  box-shadow: var(--s-accent, 0 4rpx 16rpx rgba(255, 165, 0, 0.4));
   transition: all 0.15s ease;
   display: flex;
   justify-content: center;
   align-items: center;
   &--ghost {
     background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+    box-shadow: var(--s-md, 0 4rpx 16rpx rgba(0, 0, 0, 0.08));
   }
   &--hover {
     transform: scale(0.96);
@@ -480,7 +480,7 @@ function goBack() {
   }
 }
 .action-btn__text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   font-weight: 700;
@@ -495,7 +495,7 @@ function goBack() {
 }
 .result-card {
   background: var(--c-bg-secondary, #F1F5F9);
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   padding: 16rpx 24rpx;
   border: 2rpx solid transparent;
   &--invalid {
@@ -514,18 +514,18 @@ function goBack() {
   }
 }
 .result-row__label {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-tertiary, #64748B);
 }
 .result-row__value {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1E293B);
   font-weight: 600;
   &--accent {
     color: var(--c-romance-500, #EC4899);
   }
   &--danger {
-    color: #EF4444;
+    color: var(--c-error, #EF4444);
   }
 }
 
@@ -545,7 +545,7 @@ function goBack() {
   padding: 24rpx 0;
   background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
   border-radius: 999rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255, 165, 0, 0.4);
+  box-shadow: var(--s-accent, 0 4rpx 16rpx rgba(255, 165, 0, 0.4));
   transition: all 0.15s ease;
   display: flex;
   justify-content: center;
@@ -558,7 +558,7 @@ function goBack() {
   }
 }
 .footer__btn-text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   font-weight: 700;

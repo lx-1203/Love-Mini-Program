@@ -52,6 +52,34 @@ public class RecommendationConfig {
     /** 同校百分比加成启用开关 */
     private boolean sameSchoolBoostEnabled = true;
 
+    /**
+     * SubTask 5.1.3：活跃度评分权重（每条最近发帖加分）。
+     *
+     * <p>用于推荐算法的「活跃度」维度：候选用户最近 N 天的发帖数 × 该权重 = 活跃度加分。
+     * 默认 5，表示每条最近发帖加 5 分（约为兴趣标签匹配权重的一半）。</p>
+     *
+     * <p>配置示例：{@code app.recommendation.activity-weight=5}</p>
+     */
+    private int activityWeight = 5;
+
+    /**
+     * SubTask 5.1.3：活跃度统计时间窗口（天）。
+     *
+     * <p>仅统计候选用户最近 N 天的发帖数作为活跃度指标。
+     * 默认 7 天，覆盖一周内的活跃行为，避免长期不活跃用户占用推荐配额。</p>
+     *
+     * <p>配置示例：{@code app.recommendation.activity-recent-days=7}</p>
+     */
+    private int activityRecentDays = 7;
+
+    /**
+     * SubTask 5.1.3：活跃度加分上限（防止单一维度主导总分）。
+     *
+     * <p>单个候选用户的活跃度加分上限，避免高频发帖用户分数过高压倒其他维度。
+     * 默认 10 条，即最多加 {@code 10 × activityWeight} 分。</p>
+     */
+    private int activityMaxPosts = 10;
+
     public int getDailyLimit() {
         return dailyLimit;
     }
@@ -154,5 +182,29 @@ public class RecommendationConfig {
 
     public void setSameSchoolBoostEnabled(boolean sameSchoolBoostEnabled) {
         this.sameSchoolBoostEnabled = sameSchoolBoostEnabled;
+    }
+
+    public int getActivityWeight() {
+        return activityWeight;
+    }
+
+    public void setActivityWeight(int activityWeight) {
+        this.activityWeight = activityWeight;
+    }
+
+    public int getActivityRecentDays() {
+        return activityRecentDays;
+    }
+
+    public void setActivityRecentDays(int activityRecentDays) {
+        this.activityRecentDays = activityRecentDays;
+    }
+
+    public int getActivityMaxPosts() {
+        return activityMaxPosts;
+    }
+
+    public void setActivityMaxPosts(int activityMaxPosts) {
+        this.activityMaxPosts = activityMaxPosts;
     }
 }

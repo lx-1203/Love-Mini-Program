@@ -50,6 +50,7 @@ class RealAuthServiceTest {
     @Mock private UserCampusProfileRepository userCampusProfileRepository;
     @Mock private UserScheduleProfileRepository userScheduleProfileRepository;
     @Mock private AesEncryptor aesEncryptor;
+    @Mock private TokenBlacklistService tokenBlacklistService;
 
     private PasswordEncoder passwordEncoder;
     private RealAuthService realAuthService;
@@ -82,6 +83,7 @@ class RealAuthServiceTest {
                 userScheduleProfileRepository,
                 passwordEncoder,
                 aesEncryptor,
+                tokenBlacklistService,
                 ""
         );
 
@@ -155,6 +157,7 @@ class RealAuthServiceTest {
                 userScheduleProfileRepository,
                 passwordEncoder,
                 aesEncryptor,
+                tokenBlacklistService,
                 correctHash
         );
 
@@ -244,6 +247,7 @@ class RealAuthServiceTest {
                 userScheduleProfileRepository,
                 passwordEncoder,
                 aesEncryptor,
+                tokenBlacklistService,
                 plaintextEnvPassword
         );
 

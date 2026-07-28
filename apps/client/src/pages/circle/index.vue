@@ -227,14 +227,18 @@ function handleShare() {
 
           <!-- 图片区域 -->
           <view v-if="post.images.length > 0" class="post-card__images" :class="'post-card__images--' + post.images.length">
-            <SafeImage
+            <view
               v-for="(img, idx) in post.images.slice(0, 9)"
               :key="idx"
-              custom-class="post-card__image"
-              :src="img"
-              mode="aspectFill"
-              :lazy-load="true"
-            />
+              class="post-card__image-wrap"
+            >
+              <SafeImage
+                custom-class="post-card__image"
+                :src="img"
+                mode="aspectFill"
+                :lazy-load="true"
+              />
+            </view>
             <view v-if="post.images.length > 9" class="post-card__image-more">
               <text>+{{ post.images.length - 9 }}</text>
             </view>
@@ -292,7 +296,8 @@ function handleShare() {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: var(--c-bg-page, #F4F6FA);
 }
 
@@ -314,7 +319,7 @@ function handleShare() {
 }
 
 .circle-header__title {
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   font-weight: 800;
   color: var(--c-text-primary, #1F2329);
   letter-spacing: 1rpx;
@@ -335,7 +340,7 @@ function handleShare() {
 /* #endif */
 
 .circle-header__publish-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
@@ -356,10 +361,10 @@ function handleShare() {
 
 .post-card {
   background: var(--c-bg-container, #FFFFFF);
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   padding: 28rpx;
   box-shadow: 0 2rpx 12rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 3rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
-  animation: card-slide-up 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 /* #ifdef H5 */
@@ -418,7 +423,7 @@ function handleShare() {
 }
 
 .post-card__nickname {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: var(--c-text-primary, #1F2329);
 }
@@ -430,7 +435,7 @@ function handleShare() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   font-weight: bold;
 }
 
@@ -450,7 +455,7 @@ function handleShare() {
 }
 
 .post-card__school {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary, #9AA1AB);
 }
 
@@ -460,7 +465,7 @@ function handleShare() {
   border-radius: 999rpx;
   background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
   border: none;
-  transition: all 200ms ease;
+  transition: all var(--d-normal, 200ms) ease;
   flex-shrink: 0;
   margin-left: 16rpx;
 }
@@ -477,7 +482,7 @@ function handleShare() {
 }
 
 .post-card__follow-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
@@ -489,7 +494,7 @@ function handleShare() {
 
 /* --- 正文内容 --- */
 .post-card__content {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-primary, #1F2329);
   line-height: 1.6;
   margin-bottom: 20rpx;
@@ -504,59 +509,82 @@ function handleShare() {
 }
 
 /* --- 图片区域 --- */
+/* mp-weixin 不支持 display:grid，改用 Flexbox + 子元素 width: calc 实现自适应列布局 */
 .post-card__images {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8rpx;
   margin-bottom: 16rpx;
-  border-radius: 12rpx;
+  border-radius: var(--r-md, 12rpx);
   overflow: hidden;
 }
 
-.post-card__images--1 {
-  grid-template-columns: 1fr;
+.post-card__images--1 .post-card__image-wrap {
+  /* 1 列：100% 宽度，4:3 比例 */
+  width: 100%;
   max-width: 480rpx;
+  /* 4:3 比例 → padding-top: 75% */
+  padding-top: 75%;
+  max-height: 360rpx;
+  border-radius: var(--r-md, 12rpx);
 }
 
-.post-card__images--2,
-.post-card__images--4 {
-  grid-template-columns: repeat(2, 1fr);
+.post-card__images--2 .post-card__image-wrap,
+.post-card__images--4 .post-card__image-wrap {
+  /* 2 列：width = calc((100% - 8rpx) / 2) */
+  width: calc((100% - 8rpx) / 2);
 }
 
-.post-card__images--3,
-.post-card__images--5,
-.post-card__images--6,
-.post-card__images--7,
-.post-card__images--8,
-.post-card__images--9 {
-  grid-template-columns: repeat(3, 1fr);
+.post-card__images--3 .post-card__image-wrap,
+.post-card__images--5 .post-card__image-wrap,
+.post-card__images--6 .post-card__image-wrap,
+.post-card__images--7 .post-card__image-wrap,
+.post-card__images--8 .post-card__image-wrap,
+.post-card__images--9 .post-card__image-wrap {
+  /* 3 列：width = calc((100% - 16rpx) / 3) */
+  width: calc((100% - 16rpx) / 3);
+}
+
+.post-card__image-wrap {
+  position: relative;
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: 100%;
+  border-radius: var(--r-md, 12rpx);
+  background: var(--c-bg-page, #F4F6FA);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .post-card__image {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  aspect-ratio: 1;
-  border-radius: 12rpx;
-  background: var(--c-bg-page, #F4F6FA);
-}
-
-.post-card__images--1 .post-card__image {
-  aspect-ratio: 4/3;
-  max-height: 360rpx;
-  border-radius: 12rpx;
+  height: 100%;
 }
 
 .post-card__image-more {
   position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 12rpx;
+  /* 当超过 9 张时显示 +N 遮罩，按 3 列布局尺寸对齐 */
+  width: calc((100% - 16rpx) / 3);
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: calc((100% - 16rpx) / 3);
+  border-radius: var(--r-md, 12rpx);
   background: var(--c-overlay-mid-strong, var(--c-overlay-mid-strong, rgba(0,0,0,0.5)));
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .post-card__image-more text {
-  font-size: 32rpx;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-2xl, 32rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
@@ -570,7 +598,7 @@ function handleShare() {
 }
 
 .post-card__topic-tag {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   padding: 8rpx 20rpx;
   border-radius: 999rpx;
   font-weight: 500;
@@ -596,7 +624,7 @@ function handleShare() {
 }
 
 .post-card__time {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary, #9AA1AB);
 }
 
@@ -611,7 +639,7 @@ function handleShare() {
   align-items: center;
   gap: 6rpx;
   padding: 8rpx 4rpx;
-  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* #ifdef H5 */
@@ -621,7 +649,7 @@ function handleShare() {
 /* #endif */
 
 .post-card__action--animating {
-  animation: like-bounce 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: like-bounce var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes like-bounce {
@@ -642,7 +670,7 @@ function handleShare() {
 }
 
 .post-card__action-count {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #9AA1AB);
   font-weight: 500;
 }
@@ -677,7 +705,7 @@ function handleShare() {
   justify-content: center;
   box-shadow: 0 8rpx 24rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.4)));
   z-index: 100;
-  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* #ifdef H5 */
@@ -687,6 +715,6 @@ function handleShare() {
 /* #endif */
 
 .fab-post__icon {
-  font-size: 44rpx;
+  font-size: var(--fs-5xl, 44rpx);
 }
 </style>

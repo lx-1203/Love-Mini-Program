@@ -95,6 +95,21 @@ public class RedisConfig {
     /** 每日一问缓存 TTL：1 小时（每日只更新一次，TTL 较长） */
     private static final Duration DAILY_QUESTION_TTL = Duration.ofHours(1);
 
+    /** 敏感词列表缓存 TTL：1 小时（变更频率低，TTL 较长；Admin 增删时主动失效） */
+    private static final Duration SENSITIVE_WORDS_TTL = Duration.ofHours(1);
+
+    /** 系统配置缓存 TTL：30 分钟（与默认 TTL 一致；Admin 更新时主动失效） */
+    private static final Duration SYSTEM_CONFIG_TTL = Duration.ofMinutes(30);
+
+    /** 用户标签 / 帖子标签缓存 TTL：10 分钟（预置静态列表，TTL 较短） */
+    private static final Duration USER_TAGS_TTL = Duration.ofMinutes(10);
+
+    /** 客户端动态配置缓存 TTL：5 分钟（Task 3.6，所有登录用户共享，TTL 短以保证及时性） */
+    private static final Duration CLIENT_CONFIG_TTL = Duration.ofMinutes(5);
+
+    /** 管理后台统计缓存 TTL：5 分钟（SubTask 5.3.4，作为 Redis 计数器方案，避免全表 COUNT 频繁触发） */
+    private static final Duration ADMIN_STATS_TTL = Duration.ofMinutes(5);
+
     /**
      * 配置 LettuceConnectionFactory，启用 commons-pool2 连接池。
      *
@@ -181,6 +196,10 @@ public class RedisConfig {
      *   <li>{@link CacheNames#VILLAGE_HOT_POSTS}：15 分钟</li>
      *   <li>{@link CacheNames#CAMPUS_SCHOOLS}：1 小时</li>
      *   <li>{@link CacheNames#DAILY_QUESTION}：1 小时</li>
+     *   <li>{@link CacheNames#SENSITIVE_WORDS}：1 小时</li>
+     *   <li>{@link CacheNames#SYSTEM_CONFIG}：30 分钟</li>
+     *   <li>{@link CacheNames#USER_TAGS}：10 分钟</li>
+     *   <li>{@link CacheNames#CLIENT_CONFIG}：5 分钟（Task 3.6 客户端动态配置）</li>
      * </ul>
      *
      * @param connectionFactory Redis 连接工厂
@@ -205,6 +224,11 @@ public class RedisConfig {
         cacheNameTtl.put(CacheNames.VILLAGE_HOT_POSTS, defaultConfig.entryTtl(VILLAGE_HOT_POSTS_TTL));
         cacheNameTtl.put(CacheNames.CAMPUS_SCHOOLS, defaultConfig.entryTtl(CAMPUS_SCHOOLS_TTL));
         cacheNameTtl.put(CacheNames.DAILY_QUESTION, defaultConfig.entryTtl(DAILY_QUESTION_TTL));
+        cacheNameTtl.put(CacheNames.SENSITIVE_WORDS, defaultConfig.entryTtl(SENSITIVE_WORDS_TTL));
+        cacheNameTtl.put(CacheNames.SYSTEM_CONFIG, defaultConfig.entryTtl(SYSTEM_CONFIG_TTL));
+        cacheNameTtl.put(CacheNames.USER_TAGS, defaultConfig.entryTtl(USER_TAGS_TTL));
+        cacheNameTtl.put(CacheNames.CLIENT_CONFIG, defaultConfig.entryTtl(CLIENT_CONFIG_TTL));
+        cacheNameTtl.put(CacheNames.ADMIN_STATS, defaultConfig.entryTtl(ADMIN_STATS_TTL));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)

@@ -47,7 +47,7 @@ public class ChatMetrics {
             Gauge.builder(METRIC_SESSION_ACTIVE, activeSessionCount, AtomicLong::doubleValue)
                     .description("当前活跃聊天会话数")
                     .register(meterRegistry);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("注册 chat.session.active Gauge 失败: {}", e.getMessage());
         }
     }
@@ -64,7 +64,7 @@ public class ChatMetrics {
                     .description("聊天消息发送成功次数（按消息类型区分）")
                     .register(meterRegistry)
                     .increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 chat.message.sent 指标失败, messageType={}: {}", messageType, e.getMessage());
         }
     }
@@ -81,7 +81,7 @@ public class ChatMetrics {
                     .description("聊天消息发送失败次数（按失败原因区分）")
                     .register(meterRegistry)
                     .increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 chat.message.failed 指标失败, reason={}: {}", reason, e.getMessage());
         }
     }
@@ -92,7 +92,7 @@ public class ChatMetrics {
     public void incrementActiveSession() {
         try {
             activeSessionCount.incrementAndGet();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("增加 chat.session.active 失败: {}", e.getMessage());
         }
     }
@@ -104,7 +104,7 @@ public class ChatMetrics {
         try {
             // 使用 updateAndGet 防止减到负数
             activeSessionCount.updateAndGet(curr -> Math.max(0, curr - 1));
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("减少 chat.session.active 失败: {}", e.getMessage());
         }
     }

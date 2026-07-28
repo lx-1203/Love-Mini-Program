@@ -1,5 +1,7 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 功能7：新增 POST /api/check-in/make-up 端点，用于补签昨日及之前 7 天内的日期。
  */
 @RestController
-@RequestMapping("/api/check-in")
+@RequestMapping("/api/v1/check-in")
 public class CheckInController {
 
   private final CheckInService checkInService;
@@ -30,9 +32,10 @@ public class CheckInController {
    * POST /api/check-in
    */
   @PostMapping
-  public CheckInResultView checkIn() {
+  @Idempotent
+  public ApiResponse<CheckInResultView> checkIn() {
     Long userId = SecurityUtils.getCurrentUserId();
-    return checkInService.checkIn(userId);
+    return ApiResponse.ok(checkInService.checkIn(userId));
   }
 
   /**
@@ -40,9 +43,9 @@ public class CheckInController {
    * GET /api/check-in/status
    */
   @GetMapping("/status")
-  public CheckInStatusView getStatus() {
+  public ApiResponse<CheckInStatusView> getStatus() {
     Long userId = SecurityUtils.getCurrentUserId();
-    return checkInService.getCheckInStatus(userId);
+    return ApiResponse.ok(checkInService.getCheckInStatus(userId));
   }
 
   /**
@@ -72,8 +75,9 @@ public class CheckInController {
    * @return 补签结果视图（含连续天数/已用次数/消耗积分）
    */
   @PostMapping("/make-up")
-  public MakeUpCheckInResultView makeUp(@Valid @RequestBody MakeUpCheckInRequest request) {
+  @Idempotent
+  public ApiResponse<MakeUpCheckInResultView> makeUp(@Valid @RequestBody MakeUpCheckInRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return checkInService.makeUp(userId, request.date());
+    return ApiResponse.ok(checkInService.makeUp(userId, request.date()));
   }
 }

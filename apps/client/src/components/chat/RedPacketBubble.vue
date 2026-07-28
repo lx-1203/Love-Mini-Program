@@ -200,11 +200,11 @@ function handleClick() {
   width: 480rpx;
   max-width: 84%;
   padding: 0;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   overflow: hidden;
   background: linear-gradient(135deg, #FA5151 0%, #E0413E 100%);
-  color: #FFFFFF;
-  box-shadow: 0 4rpx 12rpx rgba(236, 72, 72, 0.2);
+  color: var(--c-text-inverse, #FFFFFF);
+  box-shadow: var(--s-red-packet, 0 4rpx 12rpx rgba(236, 72, 72, 0.2));
   transition: transform 0.15s ease, opacity 0.2s ease;
 }
 
@@ -247,7 +247,7 @@ function handleClick() {
 }
 
 .rp-bubble__icon-emoji {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   line-height: 1;
 }
 
@@ -262,13 +262,13 @@ function handleClick() {
 }
 
 .rp-bubble__title {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   line-height: 1.3;
 }
 
 .rp-bubble__blessing {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   opacity: 0.92;
   line-height: 1.4;
   overflow: hidden;
@@ -280,7 +280,7 @@ function handleClick() {
 }
 
 .rp-bubble__status {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   opacity: 0.78;
   margin-top: 2rpx;
 }
@@ -296,7 +296,7 @@ function handleClick() {
 }
 
 .rp-bubble__tail-text {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   color: rgba(255, 255, 255, 0.78);
   font-weight: 300;
   line-height: 1;

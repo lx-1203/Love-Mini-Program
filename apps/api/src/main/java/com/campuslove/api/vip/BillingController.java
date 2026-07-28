@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @Validated
 @RestController
-@RequestMapping("/api/vip/bills")
+@RequestMapping("/api/v1/vip/bills")
 public class BillingController {
 
     private final BillingService billingService;

@@ -30,7 +30,7 @@ class PhaseOneFlowApiTest {
 
   @Test
   void profileSavesAdvanceSessionCompletionState() throws Exception {
-    mockMvc.perform(post("/api/auth/wechat-login")
+    mockMvc.perform(post("/api/v1/auth/wechat-login")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -40,7 +40,7 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.loggedIn").value(true));
 
-    mockMvc.perform(put("/api/profile/basic")
+    mockMvc.perform(put("/api/v1/profile/basic")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -53,7 +53,7 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.nickname").value("若星"));
 
-    mockMvc.perform(put("/api/profile/campus")
+    mockMvc.perform(put("/api/v1/profile/campus")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -65,7 +65,7 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.verificationStatus").value("pending"));
 
-    mockMvc.perform(put("/api/profile/schedule")
+    mockMvc.perform(put("/api/v1/profile/schedule")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -77,7 +77,7 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.preferredCampusArea").value("图书馆"));
 
-    mockMvc.perform(get("/api/auth/me"))
+    mockMvc.perform(get("/api/v1/auth/me"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.loggedIn").value(true))
         .andExpect(jsonPath("$.displayName").value("若星"))
@@ -89,7 +89,7 @@ class PhaseOneFlowApiTest {
 
   @Test
   void homeChatAndFeedbackFlowsRetainMutableState() throws Exception {
-    mockMvc.perform(post("/api/auth/wechat-login")
+    mockMvc.perform(post("/api/v1/auth/wechat-login")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -99,17 +99,17 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.loggedIn").value(true));
 
-    mockMvc.perform(get("/api/home/dashboard"))
+    mockMvc.perform(get("/api/v1/home/dashboard"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.recommendedPeople.length()").value(5))
         .andExpect(jsonPath("$.activityPreview.items.length()").value(2));
 
-    mockMvc.perform(get("/api/chat/overview"))
+    mockMvc.perform(get("/api/v1/chat/overview"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.sessions.length()").value(0))
         .andExpect(jsonPath("$.recommendedPeople.length()").value(5));
 
-    MvcResult createdSession = mockMvc.perform(post("/api/temp-chat/sessions")
+    MvcResult createdSession = mockMvc.perform(post("/api/v1/temp-chat/sessions")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -125,7 +125,7 @@ class PhaseOneFlowApiTest {
     JsonNode sessionNode = objectMapper.readTree(createdSession.getResponse().getContentAsString());
     String sessionId = sessionNode.get("id").asText();
 
-    mockMvc.perform(get("/api/chat/overview"))
+    mockMvc.perform(get("/api/v1/chat/overview"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.sessions.length()").value(1))
         .andExpect(jsonPath("$.sessions[0].id").value(sessionId))
@@ -133,7 +133,7 @@ class PhaseOneFlowApiTest {
         .andExpect(jsonPath("$.sessions[0].pinned").value(false))
         .andExpect(jsonPath("$.sessions[0].unreadCount").value(0));
 
-    mockMvc.perform(post("/api/temp-chat/sessions")
+    mockMvc.perform(post("/api/v1/temp-chat/sessions")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -143,7 +143,7 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(sessionId));
 
-    mockMvc.perform(post("/api/temp-chat/sessions/{id}/messages", sessionId)
+    mockMvc.perform(post("/api/v1/temp-chat/sessions/{id}/messages", sessionId)
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -156,7 +156,7 @@ class PhaseOneFlowApiTest {
         .andExpect(jsonPath("$.phase").value("active"))
         .andExpect(jsonPath("$.messages.length()").value(1));
 
-    mockMvc.perform(post("/api/temp-chat/sessions/{id}/contact-exchange/respond", sessionId)
+    mockMvc.perform(post("/api/v1/temp-chat/sessions/{id}/contact-exchange/respond", sessionId)
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -167,7 +167,7 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.contactExchange.status").value("accepted-by-self"));
 
-    mockMvc.perform(post("/api/temp-chat/sessions/{id}/contact-exchange/respond", sessionId)
+    mockMvc.perform(post("/api/v1/temp-chat/sessions/{id}/contact-exchange/respond", sessionId)
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -178,23 +178,23 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.contactExchange.status").value("completed"));
 
-    mockMvc.perform(post("/api/temp-chat/sessions/{id}/end", sessionId))
+    mockMvc.perform(post("/api/v1/temp-chat/sessions/{id}/end", sessionId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.phase").value("closed"))
         .andExpect(jsonPath("$.closedReason").value("ended"));
 
-    mockMvc.perform(get("/api/temp-chat/sessions/{id}", sessionId))
+    mockMvc.perform(get("/api/v1/temp-chat/sessions/{id}", sessionId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.phase").value("closed"))
         .andExpect(jsonPath("$.closedReason").value("ended"));
 
-    mockMvc.perform(get("/api/chat/overview"))
+    mockMvc.perform(get("/api/v1/chat/overview"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.sessions[0].id").value(sessionId))
         .andExpect(jsonPath("$.sessions[0].phase").value("closed"))
         .andExpect(jsonPath("$.sessions[0].contactExchangeStatus").value("completed"));
 
-    mockMvc.perform(post("/api/feedback/issues")
+    mockMvc.perform(post("/api/v1/feedback/issues")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -205,18 +205,18 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isAccepted())
         .andExpect(jsonPath("$.type").value("FEEDBACK"));
 
-    mockMvc.perform(get("/api/feedback/my-submissions"))
+    mockMvc.perform(get("/api/v1/feedback/my-submissions"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].title").value("需要更清楚的超时提示"));
   }
 
   @Test
   void matchDebugEndpointCanStageQueuedAndExpiredResults() throws Exception {
-    mockMvc.perform(post("/api/_debug/matches/next-status/queued"))
+    mockMvc.perform(post("/api/v1/_debug/matches/next-status/queued"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.nextQueueStatus").value("queued"));
 
-    mockMvc.perform(post("/api/matches")
+    mockMvc.perform(post("/api/v1/matches")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -229,11 +229,11 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.queueStatus").value("queued"));
 
-    mockMvc.perform(post("/api/_debug/matches/next-status/expired"))
+    mockMvc.perform(post("/api/v1/_debug/matches/next-status/expired"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.nextQueueStatus").value("expired"));
 
-    mockMvc.perform(post("/api/matches/quick")
+    mockMvc.perform(post("/api/v1/matches/quick")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -244,13 +244,13 @@ class PhaseOneFlowApiTest {
         .andExpect(jsonPath("$.queueStatus").value("expired"))
         .andExpect(jsonPath("$.countdownMinutes").value(0));
 
-    mockMvc.perform(post("/api/_debug/matches/next-status/invalid"))
+    mockMvc.perform(post("/api/v1/_debug/matches/next-status/invalid"))
         .andExpect(status().isBadRequest());
   }
 
   @Test
   void chatOverviewSupportsPinningAndUnreadClearing() throws Exception {
-    JsonNode firstSession = objectMapper.readTree(mockMvc.perform(post("/api/temp-chat/sessions")
+    JsonNode firstSession = objectMapper.readTree(mockMvc.perform(post("/api/v1/temp-chat/sessions")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -263,7 +263,7 @@ class PhaseOneFlowApiTest {
         .getContentAsString());
     String firstSessionId = firstSession.get("id").asText();
 
-    mockMvc.perform(post("/api/temp-chat/sessions")
+    mockMvc.perform(post("/api/v1/temp-chat/sessions")
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -272,7 +272,7 @@ class PhaseOneFlowApiTest {
                 """))
         .andExpect(status().isOk());
 
-    mockMvc.perform(post("/api/temp-chat/sessions/{id}/messages", firstSessionId)
+    mockMvc.perform(post("/api/v1/temp-chat/sessions/{id}/messages", firstSessionId)
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -283,7 +283,7 @@ class PhaseOneFlowApiTest {
                 """))
         .andExpect(status().isOk());
 
-    mockMvc.perform(post("/api/temp-chat/sessions/{id}/messages", firstSessionId)
+    mockMvc.perform(post("/api/v1/temp-chat/sessions/{id}/messages", firstSessionId)
             .contentType(APPLICATION_JSON)
             .content("""
                 {
@@ -294,37 +294,37 @@ class PhaseOneFlowApiTest {
                 """))
         .andExpect(status().isOk());
 
-    mockMvc.perform(post("/api/temp-chat/sessions/{id}/pin", firstSessionId))
+    mockMvc.perform(post("/api/v1/temp-chat/sessions/{id}/pin", firstSessionId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.pinned").value(true))
         .andExpect(jsonPath("$.unreadCount").value(2));
 
-    mockMvc.perform(get("/api/chat/overview"))
+    mockMvc.perform(get("/api/v1/chat/overview"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.sessions[0].id").value(firstSessionId))
         .andExpect(jsonPath("$.sessions[0].pinned").value(true))
         .andExpect(jsonPath("$.sessions[0].unreadCount").value(2));
 
-    mockMvc.perform(post("/api/temp-chat/sessions/{id}/read", firstSessionId))
+    mockMvc.perform(post("/api/v1/temp-chat/sessions/{id}/read", firstSessionId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.unreadCount").value(0));
 
-    mockMvc.perform(post("/api/temp-chat/sessions/{id}/unpin", firstSessionId))
+    mockMvc.perform(post("/api/v1/temp-chat/sessions/{id}/unpin", firstSessionId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.pinned").value(false));
   }
 
   @Test
   void debugEndpointsExposeExpectedErrorShapes() throws Exception {
-    mockMvc.perform(post("/api/_debug/errors/400"))
+    mockMvc.perform(post("/api/v1/_debug/errors/400"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error").value("bad_request"))
         .andExpect(jsonPath("$.message").value("模拟校验错误"));
 
-    mockMvc.perform(post("/api/_debug/errors/404"))
+    mockMvc.perform(post("/api/v1/_debug/errors/404"))
         .andExpect(status().isNotFound());
 
-    mockMvc.perform(post("/api/_debug/errors/500"))
+    mockMvc.perform(post("/api/v1/_debug/errors/500"))
         .andExpect(status().isInternalServerError());
   }
 }

@@ -1,4 +1,12 @@
 <script setup lang="ts">
+/**
+ * Admin 通知配置视图（SubTask 3.3.2 i18n 化）。
+ *
+ * 改造点：
+ * - 标题/副标题/列头/按钮/状态文案全部走 i18n key
+ * - 错误回退与成功提示通过 notifyConfig.loadFailed/saveSuccess/saveFailed 表达
+ * - 加载/空数据状态复用 common.loading / notifyConfig.noData
+ */
 import { ref, onMounted } from "vue";
 import {
   listNotifyConfigs,
@@ -7,6 +15,9 @@ import {
   type NotifyConfigUpdateRequest,
 } from "../api/notify-config";
 import { ApiError } from "../api/http";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 // 通知配置列表（每行直接可编辑）
 const configs = ref<NotifyConfigView[]>([]);
@@ -28,7 +39,7 @@ async function fetchConfigs() {
     const result = await listNotifyConfigs();
     configs.value = result || [];
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "加载通知配置失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("notifyConfig.loadFailed");
     configs.value = [];
   } finally {
     loading.value = false;
@@ -49,9 +60,9 @@ async function handleSave() {
     }));
     const updated = await updateNotifyConfigs(payload);
     configs.value = updated || configs.value;
-    showSuccess("保存成功");
+    showSuccess(t("notifyConfig.saveSuccess"));
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "保存通知配置失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("notifyConfig.saveFailed");
   } finally {
     saving.value = false;
   }
@@ -87,13 +98,13 @@ onMounted(() => {
 <template>
   <view class="notify-page">
     <view class="page-header">
-      <text class="page-title">通知配置</text>
-      <text class="page-subtitle">管理各类型通知的启用状态与模板内容</text>
+      <text class="page-title">{{ t("notifyConfig.title") }}</text>
+      <text class="page-subtitle">{{ t("notifyConfig.tableSubtitle") }}</text>
     </view>
 
     <view class="toolbar">
       <button class="primary-button" :disabled="saving || loading" @click="handleSave">
-        {{ saving ? "保存中..." : "保存" }}
+        {{ saving ? t("common.saving") : t("notifyConfig.saveButtonShort") }}
       </button>
     </view>
 
@@ -104,18 +115,18 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>类型</th>
-            <th>启用状态</th>
-            <th>模板内容</th>
-            <th>更新时间</th>
+            <th scope="col">{{ t("notifyConfig.columnType") }}</th>
+            <th scope="col">{{ t("notifyConfig.columnEnabled") }}</th>
+            <th scope="col">{{ t("notifyConfig.columnTemplate") }}</th>
+            <th scope="col">{{ t("notifyConfig.columnUpdatedAt") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="4" class="empty-row">加载中...</td>
+            <td colspan="4" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="configs.length === 0">
-            <td colspan="4" class="empty-row">暂无通知配置</td>
+            <td colspan="4" class="empty-row">{{ t("notifyConfig.noData") }}</td>
           </tr>
           <tr v-for="config in configs" :key="config.id">
             <td class="type-cell">{{ config.type }}</td>
@@ -126,7 +137,7 @@ onMounted(() => {
                   type="checkbox"
                   class="switch-input"
                 />
-                <text class="switch-text">{{ config.enabled ? "已启用" : "已停用" }}</text>
+                <text class="switch-text">{{ config.enabled ? t("notifyConfig.enabledLabel") : t("notifyConfig.disabledLabel") }}</text>
               </label>
             </td>
             <td>
@@ -134,7 +145,7 @@ onMounted(() => {
                 v-model="config.template"
                 class="template-input"
                 rows="3"
-                placeholder="请输入模板内容"
+                :placeholder="t('notifyConfig.templatePlaceholder')"
               />
             </td>
             <td class="time-cell">{{ formatTime(config.updatedAt) }}</td>
@@ -146,117 +157,16 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Task 3.7.1：接入共享样式表，去除与 admin-common.css 重复的定义 */
+@import "../styles/admin-common.css";
+
 .notify-page {
   max-width: 1400px;
 }
 
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-title {
-  display: block;
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.page-subtitle {
-  display: block;
-  font-size: 14px;
-  color: #999;
-}
-
-.toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.primary-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: #667eea;
-  color: white;
-}
-
-.primary-button:hover:not(:disabled) {
-  background: #5568d3;
-}
-
-.primary-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.error-message {
-  padding: 12px;
-  background: #fee;
-  border-left: 3px solid #f44;
-  border-radius: 4px;
-  color: #f44;
-  font-size: 13px;
-  margin-bottom: 16px;
-}
-
-.success-message {
-  padding: 12px;
-  background: #f6ffed;
-  border-left: 3px solid #52c41a;
-  border-radius: 4px;
-  color: #52c41a;
-  font-size: 13px;
-  margin-bottom: 16px;
-}
-
-.table-container {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  overflow-x: auto;
-}
-
+/* NotifyConfig 特有：模板输入框较宽，需要保证可滚动 */
 .data-table {
-  width: 100%;
-  border-collapse: collapse;
   min-width: 900px;
-}
-
-.data-table th,
-.data-table td {
-  padding: 12px 14px;
-  text-align: left;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 13px;
-  vertical-align: top;
-}
-
-.data-table th {
-  background: #f9f9f9;
-  font-size: 12px;
-  font-weight: 600;
-  color: #666;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.data-table tbody tr:hover {
-  background: #f9f9f9;
-}
-
-.empty-row {
-  text-align: center;
-  color: #999;
-  padding: 32px;
 }
 
 .type-cell {

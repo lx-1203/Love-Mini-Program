@@ -869,7 +869,8 @@ watch(
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   /* 浪漫粉绿渐变：粉→薄荷绿→中性灰三段过渡，对齐青藤参考 */
   background: var(--c-gradient-page-romance);
   overflow-y: auto;
@@ -1043,7 +1044,7 @@ watch(
   // #endif
   border: 1rpx solid var(--c-neutral-200, var(--c-neutral-200, rgba(226, 232, 240, 0.8)));
   box-shadow: var(--s-xs);
-  transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* #ifdef H5 */
@@ -1887,7 +1888,7 @@ watch(
   justify-content: center;
   gap: var(--sp-8);
   z-index: 9999;
-  animation: match-overlay-fade 300ms ease both;
+  animation: match-overlay-fade var(--d-fade, 300ms) ease both;
 }
 
 @keyframes match-overlay-fade {
@@ -2000,13 +2001,13 @@ watch(
   font-weight: 800;
   color: var(--c-text-inverse);
   text-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-stronger, var(--c-shadow-romance-tint-stronger, rgba(236, 72, 153, 0.5)));
-  animation: match-text-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both;
+  animation: match-text-pop var(--d-slowest, 600ms) cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both;
 }
 
 .match-overlay__subtitle {
   font-size: var(--fs-lg);
   color: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9)));
-  animation: match-text-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s both;
+  animation: match-text-pop var(--d-slowest, 600ms) cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s both;
 }
 
 @keyframes match-text-pop {

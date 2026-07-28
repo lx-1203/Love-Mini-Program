@@ -6,8 +6,8 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { isMockMode } from '../services/env'
 import { clientApi } from '../services/api'
+import { useMock } from './helpers/use-mock'
 import { IMAGE_PATHS } from '../config/images'
 
 /** 6 层升温路径图标（统一从 config/images.ts 引入，避免硬编码路径） */
@@ -93,11 +93,6 @@ const MOCK_PROGRESS: SocialProgressData = {
 
 // ==================== 工具函数 ====================
 
-/** 检测是否处于 Mock 模式 */
-function useMock(): boolean {
-  return isMockMode()
-}
-
 /** 深拷贝函数 */
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
@@ -160,9 +155,12 @@ export const useSocialProgressStore = defineStore('socialProgress', () => {
       }
 
       const result = await clientApi.getSocialProgress()
-      // 如果后端返回了数据，进行类型安全的赋值
+      // 如果后端返回了数据，进行类型安全的赋值。
+      // 后端返回的内联类型与 SocialProgressData 结构等价，
+      // 此前使用 `as unknown as SocialProgressData` 双重断言过度宽松，
+      // 现在直接赋值依赖 TS 结构兼容校验，确保类型一致。
       if (result) {
-        progress.value = result as unknown as SocialProgressData
+        progress.value = result
       }
     } catch (error) {
       errorMessage.value =

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onHide } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { replaceAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import { createButtonGuard } from "../../utils/debounce";
+// 触觉反馈：协议链接点击轻触反馈
+import { lightHaptic } from "../../utils/haptic";
 // Sentry 监控：登录失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
 
@@ -27,6 +29,29 @@ const showPhoneLogin = ref(false);
 const pageVisible = ref(false);
 /** 页面进入淡入定时器引用，用于卸载时清理 */
 let pageVisibleTimer: ReturnType<typeof setTimeout> | null = null;
+
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
+/** 登录成功跳转定时器引用，用于卸载时清理 */
+let loginNavTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * 切后台时记录剩余倒计时秒数，用于恢复。
+ * 修复（SubTask 1.5.4）：原实现切后台后 setInterval 仍持续运行，
+ * 一方面浪费小程序后台资源（部分平台会限制后台 timer 频率），
+ * 另一方面若系统挂起 timer，回到前台时倒计时与实际经过时间不一致。
+ * 现切后台时暂停 setInterval，回到前台时按剩余秒数恢复。
+ */
+let pausedCountdown: number = 0;
+/** 切后台时间戳（毫秒），用于回到前台时计算应扣除的倒计时秒数 */
+let hiddenAt: number | null = null;
+
+/**
+ * onShow 钩子：统一处理页面进入/回到前台逻辑。
+ * - 记录面包屑（便于异常回溯）
+ * - 触发淡入动画
+ * - 恢复验证码倒计时（若有暂停状态）
+ *
+ * 修复（SubTask 1.5.4）：合并 onShow 钩子，避免多个钩子分散维护。
+ */
 onShow(() => {
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
   addBreadcrumb("navigation", "page_enter", { url: "/pages/login/index" });
@@ -37,11 +62,13 @@ onShow(() => {
     pageVisible.value = true;
     pageVisibleTimer = null;
   }, 30);
-});
 
-let countdownTimer: ReturnType<typeof setInterval> | null = null;
-/** 登录成功跳转定时器引用，用于卸载时清理 */
-let loginNavTimer: ReturnType<typeof setTimeout> | null = null;
+  // 修复（SubTask 1.5.4）：回到前台时恢复验证码倒计时
+  // 仅在 pausedCountdown 标记存在时才恢复（避免初次进入页面误触发）
+  if (hiddenAt !== null) {
+    resumeCountdown();
+  }
+});
 
 // 表单校验计算属性
 const isPhoneValid = computed(() => /^1[3-9]\d{9}$/.test(phone.value));
@@ -72,6 +99,51 @@ function startCountdown() {
 }
 
 /**
+ * 暂停倒计时：记录当前剩余秒数并清除 setInterval。
+ * 切后台时调用，避免后台 timer 浪费资源与时间不同步。
+ */
+function pauseCountdown() {
+  if (!countdownTimer) return;
+  pausedCountdown = countdown.value;
+  clearInterval(countdownTimer);
+  countdownTimer = null;
+  hiddenAt = Date.now();
+}
+
+/**
+ * 恢复倒计时：根据后台停留时间扣除相应秒数后重建 setInterval。
+ * 回到前台时调用，确保倒计时与实际经过时间一致。
+ */
+function resumeCountdown() {
+  if (hiddenAt === null || pausedCountdown <= 0) {
+    hiddenAt = null;
+    return;
+  }
+  // 计算后台停留秒数（向上取整，避免少扣 1 秒）
+  const hiddenSeconds = Math.floor((Date.now() - hiddenAt) / 1000);
+  hiddenAt = null;
+  countdown.value = Math.max(0, pausedCountdown - hiddenSeconds);
+  pausedCountdown = 0;
+  if (countdown.value <= 0) return;
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    countdown.value--;
+    if (countdown.value <= 0) {
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+  }, 1000);
+}
+
+/**
+ * 修复（SubTask 1.5.4）：切后台时暂停验证码倒计时 setInterval，
+ * 避免后台运行浪费资源与时间不同步问题。
+ */
+onHide(() => {
+  pauseCountdown();
+});
+
+/**
  * 页面卸载时清理所有定时器，避免内存泄漏。
  * 修复（P1 BUG）：原实现缺少 onUnmounted 钩子，countdownTimer / pageVisibleTimer /
  * loginNavTimer 在页面销毁后仍可能触发回调，修改已销毁页面的响应式状态。
@@ -89,6 +161,9 @@ onUnmounted(() => {
     clearTimeout(loginNavTimer);
     loginNavTimer = null;
   }
+  // 重置后台暂停状态
+  hiddenAt = null;
+  pausedCountdown = 0;
 });
 
 function onSendCode() {
@@ -106,75 +181,20 @@ function togglePhoneLogin() {
   showPhoneLogin.value = !showPhoneLogin.value;
 }
 
-/** 微信登录超时时间（毫秒），超时后提示用户重试 */
-const WECHAT_LOGIN_TIMEOUT_MS = 15000;
-/** 本地存储中用于 CSRF 防护的 state key */
-const WECHAT_LOGIN_STATE_KEY = "login:wechat:state";
-
 /**
- * 生成随机 state 字符串用于 CSRF 防护。
- * 在 mp-weixin 端 crypto 可能不可用，使用 Math.random 兜底。
+ * 微信登录入口（Task 0.1 真实链路）。
+ *
+ * <p>Task 0.1.4 修复：移除本地的 loginWithWechatSdk() / generateLoginState() 实现，
+ * 统一委托给 services/auth.ts 的 loginWithWechat()（封装 wx.login + POST /v1/auth/wechat），
+ * 避免重复实现 wx.login 调用与 state CSRF 防护逻辑。</p>
+ *
+ * <p>错误处理：失败时 services/auth.ts 抛出 WechatLoginError（含业务错误码
+ * INVALID_CODE / WECHAT_API_ERROR / USER_DISABLED / CLIENT_ERROR），
+ * 此处捕获后通过 toast 显示 error.message，并上报到 Sentry 便于后台监控。</p>
+ *
+ * <p>注意：本函数不含任何 Mock fallback，登录失败会显示具体错误。
+ * 防抖包装（onWechatLoginGuarded）防止用户重复点击触发并发登录请求。</p>
  */
-function generateLoginState(): string {
-  try {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-      return crypto.randomUUID();
-    }
-  } catch (_e) {
-    // crypto 不可用时走兜底
-  }
-  return `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-/**
- * 调用 uni.login 获取微信 code，带 15 秒超时与 state 校验防 CSRF。
- * - 生成本地 state 写入 storage，登录返回后用于校验一致性
- * - 超时则提示用户重试
- * 错误文案统一从 i18n 资源读取（login.wechatTimeout / stateInvalid / wechatCodeFailed / wechatFailed）。
- */
-function loginWithWechatSdk(): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
-    const state = generateLoginState();
-    try {
-      uni.setStorageSync(WECHAT_LOGIN_STATE_KEY, state);
-    } catch (_e) {
-      // storage 写入失败不阻塞登录
-    }
-
-    const timer = setTimeout(() => {
-      // 超时拒绝，提示重试
-      reject(new Error(t("login.wechatTimeout")));
-    }, WECHAT_LOGIN_TIMEOUT_MS);
-
-    uni.login({
-      provider: "weixin",
-      success: (res) => {
-        clearTimeout(timer);
-        // 校验 state 防 CSRF：本地存储的 state 与本次生成必须一致
-        let savedState = "";
-        try {
-          savedState = uni.getStorageSync(WECHAT_LOGIN_STATE_KEY) as string;
-        } catch (_e) {
-          // 读取失败忽略
-        }
-        if (!savedState || savedState !== state) {
-          reject(new Error(t("login.stateInvalid")));
-          return;
-        }
-        if (!res.code) {
-          reject(new Error(t("login.wechatCodeFailed")));
-          return;
-        }
-        resolve(res.code);
-      },
-      fail: (err) => {
-        clearTimeout(timer);
-        reject(new Error(err?.errMsg || t("login.wechatFailed")));
-      },
-    });
-  });
-}
-
 async function onWechatLogin() {
   if (!agreed.value) {
     uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
@@ -183,13 +203,14 @@ async function onWechatLogin() {
   // 记录关键按钮点击面包屑，便于在登录失败时定位用户操作节点
   addBreadcrumb("ui", "button_click", { id: "login.wechat" });
   try {
-    // 先获取 code（带超时与 state 防 CSRF），再调用 store 登录
-    const code = await loginWithWechatSdk();
-    await sessionStore.loginWithWechat(code);
+    // services/auth.ts 封装 wx.login + POST /v1/auth/wechat，无 Mock fallback
+    // 失败时抛出 WechatLoginError（含明确业务错误码）
+    await sessionStore.loginWithWechat();
     replaceAppPath("/pages/discover/index");
   } catch (error) {
     // 登录失败：上报到 Sentry，source 标记为 login.wechat 便于后台按登录方式筛选
     captureException(error, { source: "login.wechat" });
+    // 显示具体错误消息（WechatLoginError.message 已包含用户友好提示）
     const message = error instanceof Error ? error.message : t("login.loginFailed");
     uni.showToast({ title: message, icon: "none" });
   }
@@ -230,12 +251,58 @@ function onAgreeTap() {
   agreed.value = !agreed.value;
 }
 
+/**
+ * 跳转到用户协议页面（微信小程序提审合规必备）。
+ *
+ * 使用 uni.navigateTo 跳转到 subpackages/legal/agreement/index 分包页面，
+ * 该页面通过 getLegalText(LegalTextType.USER_AGREEMENT) 从后端 CMS 拉取最新条款，
+ * 后端不可达时回退到 i18n 本地 fallback 文案。
+ *
+ * mp-weixin 与 H5 双端兼容：mp-weixin 使用 fail 回调，H5 使用 Promise.catch。
+ */
 function openUserAgreement() {
-  uni.showToast({ title: t("login.userAgreementTitle"), icon: "none" });
+  lightHaptic();
+  const url = "/subpackages/legal/agreement/index";
+  // #ifdef MP-WEIXIN
+  uni.navigateTo({
+    url,
+    fail: () => {
+      // 跳转失败时静默处理（如页面栈已满）
+    },
+  });
+  // #endif
+  // #ifndef MP-WEIXIN
+  uni.navigateTo({ url }).catch(() => {
+    // 跳转失败时静默处理
+  });
+  // #endif
 }
 
+/**
+ * 跳转到隐私政策页面（微信小程序提审合规必备）。
+ *
+ * 使用 uni.navigateTo 跳转到 subpackages/legal/privacy/index 分包页面，
+ * 该页面通过 getLegalText(LegalTextType.PRIVACY_POLICY) 从后端 CMS 拉取最新条款，
+ * 后端不可达时回退到 i18n 本地 fallback 文案。
+ *
+ * mp-weixin 与 H5 双端兼容：mp-weixin 使用 fail 回调，H5 使用 Promise.catch。
+ */
 function openPrivacyPolicy() {
-  uni.showToast({ title: t("login.privacyPolicyTitle"), icon: "none" });
+  lightHaptic();
+  const url = "/subpackages/legal/privacy/index";
+  // #ifdef MP-WEIXIN
+  uni.navigateTo({
+    url,
+    fail: () => {
+      // 跳转失败时静默处理（如页面栈已满）
+    },
+  });
+  // #endif
+  // #ifndef MP-WEIXIN
+  uni.navigateTo({ url }).catch(() => {
+    // 跳转失败时静默处理
+  });
+  // #endif
 }
 
 /* ============================================================
@@ -342,32 +409,43 @@ function openAccountBinding() {
         <view v-else class="login-form">
           <view class="input-group">
             <view class="input-item">
-              <view class="input-icon">
+              <view class="input-icon" aria-hidden="true">
                 <text class="input-icon-text">📱</text>
               </view>
+              <!-- P6 a11y：label 关联输入框（sr-only 视觉隐藏，屏幕阅读器可读） -->
+              <label class="sr-only" for="login-phone">{{ t('login.phonePlaceholder') }}</label>
               <input
+                id="login-phone"
                 class="input-field"
                 type="number"
                 maxlength="11"
                 :placeholder="t('login.phonePlaceholder')"
                 placeholder-class="input-placeholder"
-                v-model="phone" aria-label="t('login.phonePlaceholder')"
+                v-model="phone"
+                :aria-label="t('login.phonePlaceholder')"
+                aria-required="true"
+                inputmode="numeric"
               />
             </view>
 
             <view class="input-divider" />
 
             <view class="input-item">
-              <view class="input-icon">
+              <view class="input-icon" aria-hidden="true">
                 <text class="input-icon-text">🔑</text>
               </view>
+              <label class="sr-only" for="login-code">{{ t('login.codePlaceholder') }}</label>
               <input
+                id="login-code"
                 class="input-field"
                 type="number"
                 maxlength="6"
                 :placeholder="t('login.codePlaceholder')"
                 placeholder-class="input-placeholder"
-                v-model="code" aria-label="t('login.codePlaceholder')"
+                v-model="code"
+                :aria-label="t('login.codePlaceholder')"
+                aria-required="true"
+                inputmode="numeric"
               />
               <view
                 class="send-code-btn press-feedback"
@@ -375,6 +453,9 @@ function openAccountBinding() {
                 hover-class="press-feedback--active"
                 hover-stay-time="120"
                 @tap="onSendCode"
+                role="button"
+                :aria-label="t('login.getCode')"
+                :aria-disabled="!canSendCode"
               >
                 <text class="send-code-text">
                   {{ countdown > 0 ? countdown + 's' : t('login.getCode') }}
@@ -396,14 +477,23 @@ function openAccountBinding() {
       </view>
 
       <view class="terms-wrap">
-        <view class="checkbox press-feedback" :class="{ 'checkbox--checked': agreed }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onAgreeTap">
-          <text v-if="agreed" class="checkbox-check">✓</text>
+        <view
+          class="checkbox press-feedback"
+          :class="{ 'checkbox--checked': agreed }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="onAgreeTap"
+          role="checkbox"
+          :aria-checked="agreed ? 'true' : 'false'"
+          :aria-label="t('login.agreedPrefix')"
+        >
+          <text v-if="agreed" class="checkbox-check" aria-hidden="true">✓</text>
         </view>
         <view class="terms-text-wrap">
           <text class="terms-text">{{ t('login.agreedPrefix') }}</text>
-          <text class="terms-link" @tap="openUserAgreement">{{ t('login.userAgreementLink') }}</text>
+          <text class="terms-link" @tap="openUserAgreement" role="link" :aria-label="t('login.userAgreementLink')">{{ t('login.userAgreementLink') }}</text>
           <text class="terms-text">{{ t('login.and') }}</text>
-          <text class="terms-link" @tap="openPrivacyPolicy">{{ t('login.privacyPolicyLink') }}</text>
+          <text class="terms-link" @tap="openPrivacyPolicy" role="link" :aria-label="t('login.privacyPolicyLink')">{{ t('login.privacyPolicyLink') }}</text>
         </view>
       </view>
 
@@ -448,7 +538,8 @@ function openAccountBinding() {
 .login-page {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -550,6 +641,9 @@ function openAccountBinding() {
 }
 
 /* 主按钮：青绿实心 + 微信图标 */
+/* P3 修复：复用 _components.scss 的 .base-btn--primary 设计令牌，避免重复定义
+   共享样式位置：src/styles/_components.scss
+   此处保留 .btn-primary 类名以兼容模板引用 */
 .btn-primary {
   width: 100%;
   height: var(--btn-height-md);

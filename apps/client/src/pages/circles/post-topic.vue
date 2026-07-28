@@ -3,9 +3,11 @@
  * 发布话题页
  * 支持标题输入、内容输入、可选图片上传
  */
-import { ref, computed } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useCircleStore } from "../../stores/circle";
+// Task 0.2.4：调用 chooseImage 前需检查隐私授权
+import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
 const circleStore = useCircleStore();
 
@@ -29,19 +31,56 @@ const currentLength = computed(() => content.value.length);
 const isOverLimit = computed(() => currentLength.value > MAX_LENGTH);
 
 const pageVisible = ref(false);
+/**
+ * SubTask 1.5.2：页面进入淡入定时器与发布成功跳转定时器，统一保存引用便于卸载清理。
+ */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
+let postSuccessNavTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
+    pageEnterTimer = null;
     pageVisible.value = true;
   }, 30);
 });
 
 /**
- * 选择图片上传
+ * SubTask 1.5.2：页面卸载时清理所有未触发的定时器。
  */
-function chooseImage() {
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
+  if (postSuccessNavTimer) {
+    clearTimeout(postSuccessNavTimer);
+    postSuccessNavTimer = null;
+  }
+});
+
+/**
+ * 选择图片上传
+ *
+ * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
+ * - 用户已同意隐私协议 → 继续选择图片
+ * - 用户拒绝或未授权 → 提示并终止
+ * - H5/APP 环境不支持隐私 API → 直接通过
+ */
+async function chooseImage() {
   if (images.value.length >= MAX_IMAGES) {
     uni.showToast({ title: `最多上传${MAX_IMAGES}张图片`, icon: "none" });
+    return;
+  }
+
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({
+      title: "需同意隐私协议后才能选择图片",
+      icon: "none",
+    });
     return;
   }
 
@@ -93,7 +132,10 @@ async function submitTopic() {
     });
 
     uni.showToast({ title: "发布成功", icon: "success" });
-    setTimeout(() => {
+    // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
+    if (postSuccessNavTimer) clearTimeout(postSuccessNavTimer);
+    postSuccessNavTimer = setTimeout(() => {
+      postSuccessNavTimer = null;
       uni.navigateBack();
     }, 800);
   } catch (_e) {
@@ -184,8 +226,10 @@ circleId.value = options.circleId || "";
             hover-stay-time="120"
             @tap="chooseImage"
           >
-            <text class="upload-icon">+</text>
-            <text class="upload-text">{{ images.length }}/{{ MAX_IMAGES }}</text>
+            <view class="image-upload__inner">
+              <text class="upload-icon">+</text>
+              <text class="upload-text">{{ images.length }}/{{ MAX_IMAGES }}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -224,7 +268,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: linear-gradient(180deg, var(--c-bg-brand, #E8F8F0) 0%, var(--c-bg-page, #F4F6FA) 20%);
 }
 
@@ -239,7 +284,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .post-header__back {
   padding: 12rpx 20rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   transition: all 0.15s ease;
 }
@@ -252,7 +297,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .back-icon {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 500;
 }
@@ -265,7 +310,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .post-header__submit {
   padding: 14rpx 32rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95)));
   display: flex;
   align-items: center;
@@ -286,7 +331,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .submit-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $green-primary;
   font-weight: 600;
 }
@@ -302,7 +347,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .section-label {
   display: block;
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-tertiary;
   margin-bottom: 16rpx;
   font-weight: 500;
@@ -312,7 +357,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .title-section {
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -322,7 +367,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   font-weight: 600;
   color: $text-primary;
   padding: 16rpx 20rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   background: $bg-page;
   border: 2rpx solid transparent;
   transition: all 0.2s ease;
@@ -337,7 +382,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .content-section {
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -345,12 +390,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .content-input {
   width: 100%;
   min-height: 280rpx;
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: $text-primary;
   line-height: 1.7;
   background: $bg-page;
   padding: 20rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   border: 2rpx solid transparent;
   box-sizing: border-box;
   transition: all 0.2s ease;
@@ -365,7 +410,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   justify-content: flex-end;
   margin-top: 16rpx;
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -377,7 +422,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .images-section {
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   margin-bottom: 24rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -391,13 +436,17 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .image-item {
   position: relative;
   width: calc((100% - 32rpx) / 3);
-  aspect-ratio: 1;
-  border-radius: 16rpx;
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: calc((100% - 32rpx) / 3);
+  border-radius: var(--r-lg, 16rpx);
   overflow: hidden;
   background: $bg-page;
 }
 
 .image-item__img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
@@ -423,24 +472,35 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .remove-icon {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 300;
   line-height: 1;
 }
 
 .image-upload {
+  position: relative;
   width: calc((100% - 32rpx) / 3);
-  aspect-ratio: 1;
-  border-radius: 16rpx;
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: calc((100% - 32rpx) / 3);
+  border-radius: var(--r-lg, 16rpx);
   border: 2rpx dashed $border-light;
+  background: $bg-page;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+
+.image-upload__inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  background: $bg-page;
-  transition: all 0.15s ease;
 }
 
 /* #ifdef H5 */
@@ -452,14 +512,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .upload-icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   color: $text-tertiary;
   font-weight: 300;
   line-height: 1;
 }
 
 .upload-text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
 }
 
@@ -471,7 +531,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .bottom-submit__btn {
   width: 100%;
   padding: 28rpx 0;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   display: flex;
   align-items: center;
@@ -493,7 +553,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .bottom-submit__text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }

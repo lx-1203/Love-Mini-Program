@@ -1,7 +1,9 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { appEnv } from "../services/env";
 import { request } from "../services/http";
+import { useMock } from "./helpers/use-mock";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * VIP 优惠码 Store
@@ -67,12 +69,10 @@ export interface RedeemPayload {
 }
 
 /**
- * 判断是否使用 mock 模式
+ * VIP 优惠码 Store
+ *
+ * 使用组合式 API（setup store）定义，封装校验/兑换两个异步动作。
  */
-function useMock(): boolean {
-  return appEnv.apiMode === "mock";
-}
-
 export const usePromoCodeStore = defineStore("promo-code", () => {
   /** 最近一次校验结果 */
   const lastValidation = ref<PromoCodeValidateView | null>(null);
@@ -94,10 +94,10 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
    */
   async function validateCode(payload: ValidatePayload): Promise<PromoCodeValidateView> {
     if (!payload.code || payload.code.trim().length === 0) {
-      throw new Error("优惠码不能为空");
+      throw new Error(t("storeErrors.promoCode.codeEmpty"));
     }
     if (payload.orderAmount < 0) {
-      throw new Error("订单金额不能为负数");
+      throw new Error(t("storeErrors.promoCode.amountNegative"));
     }
 
     if (useMock()) {
@@ -152,10 +152,10 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
    */
   async function redeemCode(payload: RedeemPayload): Promise<PromoCodeRedeemView> {
     if (!payload.code || payload.code.trim().length === 0) {
-      throw new Error("优惠码不能为空");
+      throw new Error(t("storeErrors.promoCode.codeEmpty"));
     }
     if (payload.orderAmount < 0) {
-      throw new Error("订单金额不能为负数");
+      throw new Error(t("storeErrors.promoCode.amountNegative"));
     }
 
     if (useMock()) {

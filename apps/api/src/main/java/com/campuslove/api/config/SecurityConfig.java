@@ -1,5 +1,7 @@
 package com.campuslove.api.config;
 
+import com.campuslove.api.auth.JwtAccessDeniedHandler;
+import com.campuslove.api.auth.JwtAuthenticationEntryPoint;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +25,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * 在 real profile 下激活，启用 JWT 认证保护。
  * 放行 /api/auth/**、/ws/**、/content-filter/check 路径，
  * 其他 /api/** 路径需要认证。
+ *
+ * <p>Task 0.5.4：注册自定义 {@link JwtAuthenticationEntryPoint} 与 {@link JwtAccessDeniedHandler}，
+ * 统一返回 HTTP 401/403 + 标准 JSON 错误体（含 traceId），便于前端按错误码分支处理
+ * 与客户端报错时关联服务端日志。</p>
  */
 @Configuration
 @EnableWebSecurity
@@ -31,21 +37,37 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    /**
+     * Task 0.5.4：JWT 认证失败入口点，返回 401 + JSON。
+     */
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    /**
+     * Task 0.5.4：JWT 权限不足处理器，返回 403 + JSON。
+     */
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     /**
-     * CORS 允许的源列表，从配置 app.security.cors.allowed-origins 读取。
+     * CORS 允许的源列表，从配置 app.cors.allowed-origins 读取。
      * 修复：原代码硬编码 localhost 端口，无法适应生产环境具体域名。
      * 配置缺失时回退到本地开发端口，保证开发体验。
      *
-     * <p>修复：显式支持环境变量 CORS_ALLOWED_ORIGINS 直接覆盖，
-     * 优先级：app.security.cors.allowed-origins > CORS_ALLOWED_ORIGINS > 本地开发默认值。
+     * <p>Task 0.6.2：配置项 key 从 {@code app.security.cors.allowed-origins}
+     * 收敛为 {@code app.cors.allowed-origins}，与 {@link WebConfig#addCorsMappings}
+     * 共享同一配置源，避免 real / mock profile 间不一致。
+     *
+     * <p>显式支持环境变量 CORS_ALLOWED_ORIGINS 直接覆盖，
+     * 优先级：app.cors.allowed-origins > CORS_ALLOWED_ORIGINS > 本地开发默认值。
      * 生产部署时只需设置 CORS_ALLOWED_ORIGINS=https://example.com 即可。</p>
      */
-    @Value("${app.security.cors.allowed-origins:${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5177,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5177}}")
+    @Value("${app.cors.allowed-origins:${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5177,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5177}}")
     private String allowedOrigins;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+                          JwtAccessDeniedHandler jwtAccessDeniedHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+        this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
     }
 
     @Bean
@@ -66,6 +88,13 @@ public class SecurityConfig {
             // 无状态会话管理
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Task 0.5.4：注册自定义异常处理器，统一返回 JSON 错误体
+            // - authenticationEntryPoint：未认证访问受保护资源时触发（401）
+            // - accessDeniedHandler：已认证但权限不足时触发（403）
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                .accessDeniedHandler(jwtAccessDeniedHandler)
+            )
             // 添加安全响应头：X-Content-Type-Options / X-Frame-Options / HSTS / XSS-Protection / Referrer-Policy
             .headers(headers -> headers
                 // X-Content-Type-Options: nosniff —— 防止 MIME 类型嗅探
@@ -86,21 +115,43 @@ public class SecurityConfig {
             // 配置请求授权
             .authorizeHttpRequests(auth -> auth
                 // 登录端点不需要认证
-                .requestMatchers("/api/auth/**").permitAll()
+                // Task 2.4.1：所有路径统一升级为 /api/v1/**
+                .requestMatchers("/api/v1/auth/**").permitAll()
                 // WebSocket 握手由单独机制处理
                 .requestMatchers("/ws/**").permitAll()
-                // 公开端点
-                .requestMatchers("/content-filter/check").permitAll()
-                // 修复：/uploads/** 不再无条件放行，需要认证才能访问上传的媒体资源。
-                // 原代码 permitAll 导致任意匿名用户可枚举/访问上传资源，
-                // 存在隐私泄露与资源滥用风险。前端访问 /uploads/** 时需携带 Authorization 头。
-                .requestMatchers("/uploads/**").authenticated()
+                // 公开端点：内容敏感词预检查（前端实时提示，不暴露敏感词字典）
+                .requestMatchers("/api/v1/content-filter/check").permitAll()
+                // Task 8.4.1：springdoc-openapi Swagger UI 与 OpenAPI 文档端点
+                // 仅 ADMIN 可访问，避免生产环境暴露接口结构。
+                // 开发环境可通过 SWAGGER_UI_ENABLED=true 环境变量在 application-dev.yml 中放开
+                // （或在 mock profile 下使用 MockSecurityConfig 的 permitAll 规则）。
+                // 路径说明：
+                //   /swagger-ui/**         —— Swagger UI 静态资源与页面
+                //   /swagger-ui.html       —— Swagger UI 入口重定向
+                //   /v3/api-docs/**        —— OpenAPI 3 JSON/YAML 文档
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                 "/v3/api-docs/**", "/v3/api-docs.yaml").hasRole("ADMIN")
+                // Task 2.6.3：Actuator 端点鉴权 —— 仅 ADMIN 可访问完整端点；
+                // /actuator/health 公开（健康检查供负载均衡探测）
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
+                // Task 0.3.1：/uploads/** 完全拒绝直接访问，强制走鉴权代理端点
+                // /api/v1/media/{userId}/{path}。原代码 permitAll 导致任意匿名用户可枚举/
+                // 访问上传资源；改为 denyAll 后，即使知道 URL 也无法直接访问，
+                // 所有上传文件均需经过 MediaAccessController 的 JWT 鉴权与文件归属校验。
+                .requestMatchers("/uploads/**").denyAll()
                 // 管理端点需要 ADMIN 角色，防止普通用户越权访问
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                // 媒体上传端点 /api/media/upload 由 /api/** 规则覆盖（需认证），
+                // Task 2.4.1：路径统一升级为 /api/v1/admin/**
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                // Task 0.3.2：媒体鉴权代理端点（/api/v1/media/**）需要认证，
+                // 支持 Authorization 头与 ?token= 查询参数两种方式（详见 MediaAccessController）。
+                // MediaAccessController 内部按 JWT 中的 userId 校验文件归属；
+                // 管理员（ROLE_ADMIN）可访问所有用户文件。
+                .requestMatchers("/api/v1/media/**").authenticated()
+                // 媒体上传端点 /api/v1/media/upload 由 /api/v1/** 规则覆盖（需认证），
                 // 即登录用户才能上传文件，防止匿名用户滥用存储空间
-                // 其他所有 /api/** 需要认证
-                .requestMatchers("/api/**").authenticated()
+                // 其他所有 /api/v1/** 需要认证
+                .requestMatchers("/api/v1/**").authenticated()
                 // 其他请求放行
                 .anyRequest().permitAll()
             )
@@ -111,18 +162,19 @@ public class SecurityConfig {
     }
 
     /**
-     * CORS 配置，从 app.security.cors.allowed-origins 读取允许的源列表。
+     * CORS 配置，从 app.cors.allowed-origins 读取允许的源列表。
      * 修复：原代码硬编码 localhost 端口，无法适应生产部署的具体域名；
      * 现通过配置注入，生产环境必须配置具体域名（如 https://example.com）。
+     *
+     * <p>Task 0.6.2：与 {@link WebConfig#addCorsMappings} 共享同一配置项
+     * {@code app.cors.allowed-origins}，复用 {@link WebConfig#parseOrigins}
+     * 解析逻辑，保证两处 CORS 规则一致。</p>
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 从配置读取允许的源（逗号分隔），生产环境应配置具体域名
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
+        // 复用 WebConfig.parseOrigins 解析逻辑，保证与 WebMvc CORS 一致
+        List<String> origins = WebConfig.parseOrigins(allowedOrigins);
         configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));

@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
-import { appEnv } from "../services/env";
 import { clientApi } from "../services/api";
 import type { MakeUpCheckInResultView } from "../services/generated/api-types-supplement";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 // 统一常量：异步超时、签到成功动画收起延迟、补签上限、签到权益各项默认值
 import {
   ASYNC_TIMEOUT_MS,
@@ -14,6 +14,8 @@ import {
   CHECKIN_HOT_TOPIC_COUNT,
   CHECKIN_NEW_USER_COUNT,
 } from "../constants/growth";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * 签到状态 - 与后端 CheckInStatusView 对齐
@@ -133,10 +135,6 @@ let mockCheckInStatus: CheckInStatus = {
  * 现保存定时器句柄，新签到前清理旧定时器，dispose 时统一清理。
  */
 let successAnimationTimer: ReturnType<typeof setTimeout> | null = null;
-
-function useMock() {
-  return appEnv.apiMode === "mock";
-}
 
 /**
  * 带超时的 Promise 包装器
@@ -305,7 +303,7 @@ export const useCheckInStore = defineStore("checkin", {
           controller
         );
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "获取签到状态失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.checkin.loadStatusFailed");
       } finally {
         this.loading = false;
       }
@@ -345,7 +343,7 @@ export const useCheckInStore = defineStore("checkin", {
             if (useMock()) {
               // 修复：超时后不再修改 mock 状态
               if (controller.signal.aborted) {
-                throw new Error("签到请求超时，请稍后重试");
+                throw new Error(t("storeErrors.checkin.timeout"));
               }
               // mock 模式下模拟签到成功
               mockCheckInStatus = {
@@ -380,7 +378,7 @@ export const useCheckInStore = defineStore("checkin", {
 
             // 修复：API 返回后若已超时，不再继续处理
             if (controller.signal.aborted) {
-              throw new Error("签到请求超时，请稍后重试");
+              throw new Error(t("storeErrors.checkin.timeout"));
             }
 
             // 映射后端字段到前端字段（含签到权益）
@@ -398,13 +396,13 @@ export const useCheckInStore = defineStore("checkin", {
             };
           })(),
           ASYNC_TIMEOUT_MS,
-          "签到请求超时，请稍后重试",
+          t("storeErrors.checkin.timeout"),
           controller
         );
 
         // 修复：超时后不再更新签到结果状态
         if (controller.signal.aborted) {
-          throw new Error("签到请求超时，请稍后重试");
+          throw new Error(t("storeErrors.checkin.timeout"));
         }
 
         // 签到成功（后端 CheckInView 返回即表示成功）
@@ -429,7 +427,7 @@ export const useCheckInStore = defineStore("checkin", {
           }
         }, SUCCESS_ANIMATION_AUTO_DISMISS_MS);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "签到失败，请稍后重试";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.checkin.checkinFailed");
         throw error;
       } finally {
         this.checkingIn = false;
@@ -467,7 +465,7 @@ export const useCheckInStore = defineStore("checkin", {
         }
         return result;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "补签失败，请稍后重试";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.checkin.makeupFailed");
         console.error("[checkinStore.makeUpCheckIn]", error);
         return null;
       } finally {

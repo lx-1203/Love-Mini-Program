@@ -1,12 +1,18 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
-@RequestMapping("/api/daily-question")
+@RequestMapping("/api/v1/daily-question")
+@Validated
 public class DailyQuestionController {
 
   private final DailyQuestionService dailyQuestionService;
@@ -34,24 +41,30 @@ public class DailyQuestionController {
    * GET /api/daily-question/today
    */
   @GetMapping("/today")
-  public DailyQuestionView getTodayQuestion() {
+  public ApiResponse<DailyQuestionView> getTodayQuestion() {
     Long userId = SecurityUtils.getCurrentUserId();
-    return dailyQuestionService.getTodayQuestion(userId);
+    return ApiResponse.ok(dailyQuestionService.getTodayQuestion(userId));
   }
 
   /**
    * 提交每日一问的回答。
    * POST /api/daily-question/answer
+   *
+   * <p>速率限制：桶容量 10，每 6 秒补充 1 个令牌（refillTokens≈0.17/s），
+   * 按客户端 IP 限流，防止回答刷屏。实际 refillTokens 取 0.2（每 5 秒 1 个），
+   * 兼顾用户体验与防滥用。</p>
    */
   @PostMapping("/answer")
-  public DailyAnswerView submitAnswer(@Valid @RequestBody DailyAnswerRequest request) {
+  @RateLimit(capacity = 10, refillTokens = 0.2, key = "#request.remoteAddr")
+  @Idempotent
+  public ApiResponse<DailyAnswerView> submitAnswer(@Valid @RequestBody DailyAnswerRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return dailyQuestionService.submitAnswer(
+    return ApiResponse.ok(dailyQuestionService.submitAnswer(
         userId,
         request.questionId(),
         request.content(),
         request.isAnonymous() != null && request.isAnonymous()
-    );
+    ));
   }
 
   /**
@@ -59,13 +72,13 @@ public class DailyQuestionController {
    * GET /api/daily-question/answers?questionId={id}
    */
   @GetMapping("/answers")
-  public Page<DailyAnswerView> getAnswers(
+  public ApiResponse<Page<DailyAnswerView>> getAnswers(
       @RequestParam("questionId") Long questionId,
-      @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-      @RequestParam(name = "size", required = false, defaultValue = "20") int size) {
+      @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
+      @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
     Long userId = SecurityUtils.getCurrentUserId();
     Pageable pageable = PageRequest.of(page, size);
-    return dailyQuestionService.getAnswers(questionId, userId, pageable);
+    return ApiResponse.ok(dailyQuestionService.getAnswers(questionId, userId, pageable));
   }
 }
 

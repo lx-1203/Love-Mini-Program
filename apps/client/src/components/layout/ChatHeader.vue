@@ -72,9 +72,8 @@ const titleLabel = computed(() => props.title || t('chat.headerTitle'));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-tertiary);
-  cursor: pointer;
   transition: background 150ms ease;
 }
 .chat-icon-img {

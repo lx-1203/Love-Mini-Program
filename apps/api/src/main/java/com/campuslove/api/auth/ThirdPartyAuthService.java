@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +36,15 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>同一 (provider, openId) 仅允许绑定一个本系统用户（数据库唯一约束）</li>
  * </ul>
  */
+/**
+ * Profile 限定说明：仅在 real profile 下激活。
+ * <p>原因：本服务直接注入 {@link ThirdPartyAccountRepository} 与 {@link UserRepository}
+ * （Spring Data JPA），而 mock profile（{@code application-mock.yml}）排除了
+ * HibernateJpaAutoConfiguration / DataSourceAutoConfiguration，JPA Repository Bean 不可用。
+ * 与 {@link RealAuthService} / {@link RedisTokenBlacklistService} 等保持一致。</p>
+ */
 @Service
+@Profile("real")
 public class ThirdPartyAuthService {
 
     private static final Logger log = LoggerFactory.getLogger(ThirdPartyAuthService.class);

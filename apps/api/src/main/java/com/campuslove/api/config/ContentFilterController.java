@@ -33,7 +33,7 @@ public class ContentFilterController {
      * @param body 包含 content 字段的请求体
      * @return 敏感词检测结果
      */
-    @PostMapping("/content-filter/check")
+    @PostMapping("/api/v1/content-filter/check")
     public Map<String, Object> checkContent(@RequestBody Map<String, String> body) {
         String content = body.get("content");
 

@@ -40,7 +40,7 @@ const iconSrc = computed(() => {
   width: fit-content;
   padding: 8rpx 16rpx;
   border-radius: var(--r-full);
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 600;
 }
 

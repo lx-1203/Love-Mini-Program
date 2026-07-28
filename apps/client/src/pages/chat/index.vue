@@ -161,6 +161,9 @@ onShow(() => {
         class="chat-scroll"
         refresher-enabled
         :refresher-triggered="false"
+        :enhanced="true"
+        :bounces="true"
+        :show-scrollbar="false"
         @refresherrefresh="onRefresh"
       >
         <!-- 骨架屏加载 -->

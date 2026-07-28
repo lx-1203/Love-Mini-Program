@@ -61,7 +61,7 @@ public class AuthMetrics {
                     .description("登录成功次数（按用户区分）")
                     .register(meterRegistry)
                     .increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 auth.login.success 指标失败, userId={}: {}", userId, e.getMessage());
         }
     }
@@ -78,7 +78,7 @@ public class AuthMetrics {
                     .description("登录失败次数（按原因区分）")
                     .register(meterRegistry)
                     .increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 auth.login.failure 指标失败, reason={}: {}", reason, e.getMessage());
         }
     }
@@ -89,7 +89,7 @@ public class AuthMetrics {
     public void recordTokenRefresh() {
         try {
             tokenRefreshCounter.increment();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("记录 auth.token.refresh 指标失败: {}", e.getMessage());
         }
     }

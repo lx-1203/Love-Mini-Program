@@ -10,20 +10,35 @@
  * - 不使用 import.meta.env.DEV
  * - 不使用 backdrop-filter
  * - CSS 变量通过内联 style 注入，保证小程序端可解析
+ *
+ * P6 a11y：
+ * - 添加可暂停按钮（前庭功能障碍用户可停止动画）
+ * - 暂停按钮可见但不遮挡内容（半透明右上角小按钮，pointer-events 仅在按钮上）
+ * - 暂停状态通过 animation-play-state: paused 实现
+ * - 容器保持 aria-hidden="true"，避免屏幕阅读器播报装饰性粒子
  */
-import { watch, onUnmounted } from "vue";
+import { ref, watch, onUnmounted } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
 
 interface Props {
   /** 是否显示粒子动画 */
   visible: boolean;
+  /** 是否显示暂停按钮（默认 true，前庭功能障碍用户可关闭动画） */
+  showPauseButton?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  showPauseButton: true,
+});
 
 const emit = defineEmits<{
   (e: "done"): void;
+  (e: "paused"): void;
+  (e: "resumed"): void;
 }>();
+
+/** 动画是否暂停（a11y：前庭功能障碍用户可暂停粒子动画） */
+const paused = ref(false);
 
 /** 计时器句柄，1.5s 后触发 done 事件 */
 let doneTimer: ReturnType<typeof setTimeout> | null = null;
@@ -40,22 +55,48 @@ function clearDoneTimer() {
 
 /**
  * 监听 visible 变化：显示时启动 1.5s 倒计时，隐藏时清理计时器
+ * 暂停状态下不启动倒计时，恢复后才启动
+ *
+ * immediate: true 确保组件挂载时若 visible=true 也启动倒计时，
+ * 避免初始可见场景下 done 事件永不触发。
  */
 watch(
   () => props.visible,
   (visible) => {
     clearDoneTimer();
-    if (visible) {
+    if (visible && !paused.value) {
       doneTimer = setTimeout(() => {
         emit("done");
       }, 1500);
     }
   },
+  { immediate: true },
 );
+
+/**
+ * 监听 paused 状态：暂停时清除倒计时，恢复时重新启动
+ */
+watch(paused, (isPaused) => {
+  if (isPaused) {
+    clearDoneTimer();
+    emit("paused");
+  } else if (props.visible) {
+    clearDoneTimer();
+    doneTimer = setTimeout(() => {
+      emit("done");
+    }, 1500);
+    emit("resumed");
+  }
+});
 
 onUnmounted(() => {
   clearDoneTimer();
 });
+
+/** 切换暂停/恢复状态 */
+function togglePause() {
+  paused.value = !paused.value;
+}
 
 /**
  * 计算单个粒子的扩散方向与延时
@@ -75,7 +116,12 @@ function particleStyle(index: number) {
 </script>
 
 <template>
-  <view v-if="visible" class="heart-particles" aria-hidden="true">
+  <view
+    v-if="visible"
+    class="heart-particles"
+    :class="{ 'heart-particles--paused': paused }"
+    aria-hidden="true"
+  >
     <view
       v-for="i in 12"
       :key="i"
@@ -83,6 +129,19 @@ function particleStyle(index: number) {
       :style="particleStyle(i)"
     >
       <image class="heart-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
+    </view>
+    <!-- P6 a11y：暂停按钮（前庭功能障碍用户可停止动画） -->
+    <view
+      v-if="showPauseButton"
+      class="heart-particles__pause"
+      hover-class="heart-particles__pause--pressed"
+      :hover-stay-time="100"
+      role="button"
+      :aria-label="paused ? '恢复粒子动画' : '暂停粒子动画'"
+      :aria-pressed="paused"
+      @tap="togglePause"
+    >
+      <text class="heart-particles__pause-icon">{{ paused ? '▶' : '❚❚' }}</text>
     </view>
   </view>
 </template>
@@ -102,9 +161,14 @@ function particleStyle(index: number) {
   animation: heart-burst 1.5s ease-out forwards;
 }
 
-.heart-icon-img {
-  width: 32rpx;
-  height: 32rpx;
+/* P6 a11y：暂停状态时停止粒子动画 */
+.heart-particles--paused .heart-particle {
+  animation-play-state: paused;
+}
+
+.heart-icon {
+  font-size: var(--fs-2xl, 32rpx);
+  color: var(--c-romance-500, #EC4899);
 }
 
 @keyframes heart-burst {
@@ -115,6 +179,48 @@ function particleStyle(index: number) {
   100% {
     transform: translate(var(--tx), var(--ty)) scale(1.2);
     opacity: 0;
+  }
+}
+
+/* ================================================================
+   P6 a11y：暂停按钮样式
+   - 可见但不遮挡内容：半透明白底 + 小尺寸 56rpx（约 28px，触控目标达标）
+   - pointer-events: auto 仅在按钮上启用，粒子层保持 pointer-events: none
+   - 位置：右上角，避免遮挡中心粒子扩散
+   ================================================================ */
+.heart-particles__pause {
+  position: absolute;
+  top: -120rpx;
+  right: -120rpx;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1rpx solid var(--c-border-default, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  box-shadow: 0 2rpx 8rpx rgba(15, 23, 42, 0.08);
+  z-index: 1000;
+}
+
+.heart-particles__pause--pressed {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.heart-particles__pause-icon {
+  font-size: 20rpx;
+  color: var(--c-text-secondary, #5b6470);
+  line-height: 1;
+}
+
+/* P6 a11y：尊重 prefers-reduced-motion，粒子动画自动暂停 */
+@media (prefers-reduced-motion: reduce) {
+  .heart-particle {
+    animation: none !important;
+    opacity: 0.5 !important;
   }
 }
 </style>

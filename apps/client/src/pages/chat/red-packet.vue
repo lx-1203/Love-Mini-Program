@@ -16,11 +16,30 @@
  * - 不使用 import.meta.env
  * - 金额单位：分 ↔ 元转换在前端完成
  */
-import { ref, computed } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVipRedPacketStore } from "../../stores/vip-red-packet";
 import { lightHaptic } from "../../utils/haptic";
+
+/**
+ * SubTask 1.5.2：红包发送成功后的跳转定时器引用，用于卸载时清理。
+ *
+ * <p>原实现 {@code setTimeout(() => uni.navigateBack(...), 800)} 未保存返回值，
+ * 用户在 800ms 延迟内快速返回上一页时，定时器仍会触发 navigateBack，
+ * 可能导致意外的双重页面出栈。</p>
+ */
+let sendSuccessNavTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的跳转定时器。
+ */
+onUnmounted(() => {
+  if (sendSuccessNavTimer) {
+    clearTimeout(sendSuccessNavTimer);
+    sendSuccessNavTimer = null;
+  }
+});
 
 /**
  * 读取 input/textarea 事件的 value，统一兜底为空字符串。
@@ -90,7 +109,12 @@ async function handleSend() {
     });
     uni.showToast({ title: t("chatRedPacket.sendSuccess"), icon: "success" });
     // 返回上一页，让 chat-session 刷新消息流
-    setTimeout(() => uni.navigateBack({ delta: 1 }), 800);
+    // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
+    if (sendSuccessNavTimer) clearTimeout(sendSuccessNavTimer);
+    sendSuccessNavTimer = setTimeout(() => {
+      sendSuccessNavTimer = null;
+      uni.navigateBack({ delta: 1 });
+    }, 800);
   } catch (error) {
     const message = error instanceof Error ? error.message : t("chatRedPacket.sendFailed");
     uni.showToast({ title: message, icon: "none" });
@@ -123,6 +147,16 @@ function closeClaimModal() {
   claimId.value = null;
   claimedAmount.value = null;
 }
+
+/**
+ * 空操作函数，用于 @tap.stop 阻止冒泡时的占位 handler。
+ *
+ * Task 1.1.7：使用 @tap.stop="noop" 实现条件编译效果。
+ * uni-app 编译器在 mp-weixin 端自动将 @tap.stop 编译为 catchtap，
+ * 在 H5 端保留 @tap.stop 语义。mp-weixin 的 catchtap 必须绑定 handler，
+ * 因此需要 noop 作为占位。
+ */
+const noop = () => {};
 
 /** 返回上一页 */
 function goBack() {
@@ -238,7 +272,10 @@ onLoad((options) => {
       aria-modal="true"
       :aria-label="t('vip.redPacketClaimTitle')"
     >
-      <view class="claim-modal" @tap.stop>
+      <view
+        class="claim-modal"
+        @tap.stop="noop"
+      >
         <view class="claim-modal__header">
           <text class="claim-modal__title">{{ t('vip.redPacketClaimTitle') }}</text>
           <text
@@ -308,14 +345,14 @@ onLoad((options) => {
   }
 }
 .nav-bar__back-icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   font-weight: 300;
   line-height: 1;
 }
 .nav-bar__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
@@ -356,14 +393,14 @@ onLoad((options) => {
   line-height: 1;
 }
 .hero__title {
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   font-weight: 800;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   margin-bottom: 8rpx;
 }
 .hero__subtitle {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: rgba(255, 255, 255, 0.8);
 }
 
@@ -375,13 +412,13 @@ onLoad((options) => {
   background: rgba(255, 255, 255, 0.96);
   border-radius: 20rpx;
   padding: 24rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  box-shadow: var(--s-md, 0 4rpx 16rpx rgba(0, 0, 0, 0.08));
 }
 .section__title {
   padding: 0 0 16rpx;
 }
 .section__title-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary, #475569);
   font-weight: 600;
 }
@@ -393,13 +430,13 @@ onLoad((options) => {
   gap: 8rpx;
 }
 .amount-input__currency {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   color: var(--c-romance-500, #EC4899);
   font-weight: 700;
 }
 .amount-input {
   flex: 1;
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   font-weight: 800;
   color: var(--c-text-primary, #1E293B);
   min-width: 200rpx;
@@ -409,7 +446,7 @@ onLoad((options) => {
 .blessing-input {
   width: 100%;
   min-height: 120rpx;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1E293B);
   line-height: 1.5;
 }
@@ -435,16 +472,16 @@ onLoad((options) => {
   gap: 4rpx;
 }
 .footer__label {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #64748B);
 }
 .footer__currency {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-romance-500, #EC4899);
   font-weight: 600;
 }
 .footer__amount {
-  font-size: 40rpx;
+  font-size: var(--fs-4xl, 40rpx);
   color: var(--c-romance-500, #EC4899);
   font-weight: 800;
   line-height: 1;
@@ -453,7 +490,7 @@ onLoad((options) => {
   padding: 24rpx 56rpx;
   background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
   border-radius: 999rpx;
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.4);
+  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.4));
   transition: all 0.15s ease;
   &--hover {
     transform: scale(0.96);
@@ -463,7 +500,7 @@ onLoad((options) => {
   }
 }
 .footer__btn-text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   font-weight: 700;
@@ -486,7 +523,7 @@ onLoad((options) => {
   width: 600rpx;
   /* 容器背景：使用 token 替代硬编码 #FFFFFF */
   background: var(--c-bg-container);
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   overflow: hidden;
 }
 .claim-modal__header {
@@ -497,13 +534,13 @@ onLoad((options) => {
   background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
 }
 .claim-modal__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
 }
 .claim-modal__close {
-  font-size: 48rpx;
+  font-size: var(--fs-6xl, 48rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   line-height: 1;
@@ -522,11 +559,11 @@ onLoad((options) => {
   color: var(--c-romance-500, #EC4899);
 }
 .claim-modal__tip {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-tertiary, #64748B);
 }
 .claim-modal__desc {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-secondary, #475569);
   text-align: center;
   line-height: 1.6;
@@ -535,7 +572,7 @@ onLoad((options) => {
   padding: 20rpx 80rpx;
   background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
   border-radius: 999rpx;
-  box-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.4);
+  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.4));
   &--hover {
     transform: scale(0.96);
   }
@@ -544,7 +581,7 @@ onLoad((options) => {
   }
 }
 .claim-modal__btn-text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   /* 反色文字：使用 token 替代硬编码 #FFFFFF */
   color: var(--c-text-inverse);
   font-weight: 700;

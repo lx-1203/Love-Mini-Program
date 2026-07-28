@@ -166,7 +166,7 @@ onMounted(() => {
       </view>
 
       <!-- 话题列表 -->
-      <scroll-view v-else class="topic-scroll" scroll-y>
+      <scroll-view v-else class="topic-scroll" scroll-y :enhanced="true" :bounces="true" :show-scrollbar="false">
         <view
           v-for="topic in topics"
           :key="topic.id"
@@ -225,7 +225,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: $bg-page;
 }
 
@@ -254,14 +255,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .school-name {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
   color: var(--c-text-inverse, #FFFFFF);
 }
 
 .cert-badge {
   padding: 6rpx 20rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
 }
 
@@ -282,7 +283,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .cert-badge__text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
@@ -295,7 +296,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   margin: 20rpx 24rpx;
   padding: 28rpx;
   background: linear-gradient(135deg, $green-light, var(--c-tint-green-50, #F0FDF8));
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   border: none;
   box-shadow: $card-soft-shadow;
 }
@@ -315,20 +316,20 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .cert-guide-card__title {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
   color: $text-primary;
 }
 
 .cert-guide-card__desc {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-secondary;
   line-height: 1.5;
 }
 
 .cert-guide-card__btn {
   padding: 16rpx 32rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   flex-shrink: 0;
   box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
@@ -342,7 +343,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .cert-guide-card__btn-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
   white-space: nowrap;
@@ -365,7 +366,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 18rpx 28rpx;
   border-radius: 20rpx;
   margin-right: 16rpx;
-  transition: all 200ms ease;
+  transition: all var(--d-normal, 200ms) ease;
   flex-shrink: 0;
   background: $bg-page;
 }
@@ -382,7 +383,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .category-tab__label {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 500;
   color: $text-secondary;
 }
@@ -423,7 +424,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .campus-state__text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-tertiary;
   text-align: center;
   line-height: 1.6;
@@ -431,7 +432,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .campus-state__btn {
   padding: 20rpx 56rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
   transition: all 0.15s ease;
@@ -444,7 +445,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .campus-state__btn-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }
@@ -458,7 +459,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   margin: 16rpx 24rpx;
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
   transition: all 150ms ease;
 }
@@ -484,7 +485,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .topic-card__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: $text-primary;
   flex: 1;
@@ -494,16 +495,16 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .topic-card__time {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
   flex-shrink: 0;
   background: $bg-page;
   padding: 4rpx 12rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
 }
 
 .topic-card__preview {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-secondary;
   line-height: 1.7;
   overflow: hidden;
@@ -526,7 +527,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .topic-card__author {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $pink-primary;
   font-weight: 500;
 }
@@ -537,7 +538,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   gap: 8rpx;
   padding: 8rpx 16rpx;
   background: $green-light;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
 }
 
 .replies-icon {
@@ -546,7 +547,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .replies-count {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $green-primary;
   font-weight: 600;
 }
@@ -570,7 +571,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .loading-more__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -581,11 +582,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .no-more__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
   background: $bg-page;
   padding: 8rpx 24rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
 }
 
 /* ========== 底部留白 ========== */
@@ -607,7 +608,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   box-shadow: 0 8rpx 28rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.4)));
   z-index: 20;
-  transition: all 200ms ease;
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 /* #ifdef H5 */

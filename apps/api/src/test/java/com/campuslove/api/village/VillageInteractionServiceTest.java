@@ -1,0 +1,150 @@
+package com.campuslove.api.village;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.campuslove.api.chat.InteractionEventService;
+import com.campuslove.api.entity.Comment;
+import com.campuslove.api.entity.Post;
+import com.campuslove.api.entity.PostLike;
+import com.campuslove.api.repository.CommentRepository;
+import com.campuslove.api.repository.PostLikeRepository;
+import com.campuslove.api.repository.PostRepository;
+import com.campuslove.api.repository.PostShareRepository;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+/**
+ * VillageInteractionService 单元测试（Task 4.2.2）。
+ */
+class VillageInteractionServiceTest {
+
+    @Mock private PostRepository postRepository;
+    @Mock private CommentRepository commentRepository;
+    @Mock private PostLikeRepository postLikeRepository;
+    @Mock private PostShareRepository postShareRepository;
+    @Mock private InteractionEventService interactionEventService;
+    @Mock private VillageQueryService queryService;
+
+    private VillageInteractionService interactionService;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        interactionService = new VillageInteractionService(
+                postRepository, commentRepository, postLikeRepository,
+                postShareRepository, interactionEventService, queryService);
+    }
+
+    /**
+     * 场景：未点赞的用户 likePost 应创建 PostLike、likesCount+1、触发互动事件。
+     */
+    @Test
+    void likePost_notLikedYet_createsLikeAndIncrementsCount() {
+        Long userId = 1L;
+        Long postId = 100L;
+        Post post = createPost(postId, 5);
+
+        when(queryService.findPostOrThrow(postId)).thenReturn(post);
+        when(postLikeRepository.existsByUserIdAndPostId(userId, postId)).thenReturn(false);
+
+        var result = interactionService.likePost(userId, postId);
+
+        assertTrue(result.liked());
+        assertEquals(6, post.getLikesCount(), "likesCount 应 +1");
+        verify(postLikeRepository).save(any(PostLike.class));
+        verify(interactionEventService).recordEvent(
+                eq(post.getAuthorId()), eq(userId), eq("POST_LIKED"), eq(postId), eq("POST"), anyString());
+    }
+
+    /**
+     * 场景：已点赞的用户再次 likePost 应取消点赞、likesCount-1。
+     */
+    @Test
+    void likePost_alreadyLiked_removesLikeAndDecrementsCount() {
+        Long userId = 1L;
+        Long postId = 100L;
+        Post post = createPost(postId, 5);
+
+        when(queryService.findPostOrThrow(postId)).thenReturn(post);
+        when(postLikeRepository.existsByUserIdAndPostId(userId, postId)).thenReturn(true);
+
+        var result = interactionService.likePost(userId, postId);
+
+        assertFalse(result.liked());
+        assertEquals(4, post.getLikesCount(), "likesCount 应 -1");
+        verify(postLikeRepository).deleteByUserIdAndPostId(userId, postId);
+        verify(interactionEventService, never()).recordEvent(anyLong(), anyLong(),
+                anyString(), anyLong(), anyString(), anyString());
+    }
+
+    /**
+     * 场景：commentPost 应创建 Comment 并 commentsCount+1。
+     */
+    @Test
+    void commentPost_createsCommentAndIncrementsCount() {
+        Long userId = 1L;
+        Long postId = 100L;
+        Post post = createPost(postId, 3);
+        when(queryService.findPostOrThrow(postId)).thenReturn(post);
+        ArgumentCaptor<Comment> captor = ArgumentCaptor.forClass(Comment.class);
+        when(commentRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+        when(queryService.toCommentItemView(any(Comment.class)))
+                .thenAnswer(inv -> new CommentItemView(
+                        null, postId, userId,
+                        new CommentAuthorView(userId, "昵称", null),
+                        "评论内容", 0,
+                        java.time.LocalDateTime.now().toString(),
+                        false, null));
+
+        interactionService.commentPost(userId, postId, "评论内容");
+
+        Comment saved = captor.getValue();
+        assertEquals(userId, saved.getAuthorId());
+        assertEquals(postId, saved.getPost().getId());
+        assertEquals("评论内容", saved.getContent());
+        assertEquals(1, post.getCommentsCount(), "commentsCount 应 +1（初始 0 + 1）");
+    }
+
+    /**
+     * 场景：sharePost 应创建 PostShare 并 shareCount+1。
+     */
+    @Test
+    void sharePost_createsShareAndIncrementsCount() {
+        Long userId = 1L;
+        Long postId = 100L;
+        Post post = createPost(postId, 2);
+        when(queryService.findPostOrThrow(postId)).thenReturn(post);
+        ArgumentCaptor<com.campuslove.api.entity.PostShare> captor =
+                ArgumentCaptor.forClass(com.campuslove.api.entity.PostShare.class);
+        when(postShareRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = interactionService.sharePost(userId, postId, "分享评论");
+
+        assertEquals(1, post.getShareCount(), "shareCount 应 +1（初始 0 + 1）");
+    }
+
+    private Post createPost(Long id, int likesCount) {
+        Post post = new Post();
+        post.setId(id);
+        post.setAuthorId(2L); // 不同于 userId 触发通知
+        post.setLikesCount(likesCount);
+        post.setCommentsCount(0);
+        post.setShareCount(0);
+        return post;
+    }
+}

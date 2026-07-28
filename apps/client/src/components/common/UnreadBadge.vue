@@ -40,10 +40,10 @@ defineExpose({ ariaLabel });
 .badge {
   min-width: 32rpx;
   height: 32rpx;
-  border-radius: 9999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-secondary-blue-400, #5B7FFF);
   color: var(--c-text-inverse, #FFFFFF);
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -58,7 +58,7 @@ defineExpose({ ariaLabel });
   padding: 0;
 }
 .badge-text {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   line-height: 1;
 }
 @keyframes pulse-badge {

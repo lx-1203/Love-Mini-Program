@@ -1,9 +1,14 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,7 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
  */
 @RestController
-@RequestMapping("/api/activities")
+@RequestMapping("/api/v1/activities")
+@Validated
 public class ActivityController {
 
     private final ActivityService activityService;
@@ -37,12 +43,12 @@ public class ActivityController {
      * @return 活动视图分页列表
      */
     @GetMapping
-    public Page<ActivityView> getActivities(
+    public ApiResponse<Page<ActivityView>> getActivities(
             @RequestParam(name = "campusName", required = false) String campusName,
-            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(name = "size", required = false, defaultValue = "20") int size) {
+            @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return activityService.getActivities(campusName, pageable);
+        return ApiResponse.ok(activityService.getActivities(campusName, pageable));
     }
 
     /**
@@ -53,9 +59,9 @@ public class ActivityController {
      * @return 活动详情视图
      */
     @GetMapping("/{id}")
-    public ActivityDetailView getActivityDetail(@PathVariable("id") Long id) {
+    public ApiResponse<ActivityDetailView> getActivityDetail(@PathVariable("id") Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
-        return activityService.getActivityDetail(id, userId);
+        return ApiResponse.ok(activityService.getActivityDetail(id, userId));
     }
 
     /**
@@ -66,9 +72,10 @@ public class ActivityController {
      * @return 报名操作结果视图
      */
     @PostMapping("/{id}/enroll")
-    public ActivityEnrollmentResultView enrollActivity(@PathVariable("id") Long id) {
+    @Idempotent
+    public ApiResponse<ActivityEnrollmentResultView> enrollActivity(@PathVariable("id") Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
-        return activityService.enrollActivity(userId, id);
+        return ApiResponse.ok(activityService.enrollActivity(userId, id));
     }
 
     /**
@@ -79,8 +86,9 @@ public class ActivityController {
      * @return 取消报名操作结果视图
      */
     @DeleteMapping("/{id}/enroll")
-    public ActivityEnrollmentResultView cancelEnrollment(@PathVariable("id") Long id) {
+    @Idempotent
+    public ApiResponse<ActivityEnrollmentResultView> cancelEnrollment(@PathVariable("id") Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
-        return activityService.cancelEnrollment(userId, id);
+        return ApiResponse.ok(activityService.cancelEnrollment(userId, id));
     }
 }

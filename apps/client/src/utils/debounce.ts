@@ -22,6 +22,7 @@
  * @param delay - 延迟毫秒数（默认 300ms）
  * @returns 防抖后的函数（携带 cancel 方法用于取消挂起的调用）
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 通用函数泛型约束需 any 兼容任意签名业务函数，Parameters<T> 仅能从可调用类型推导
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   delay = 300,
@@ -66,6 +67,7 @@ export function debounce<T extends (...args: any[]) => any>(
  * @param delay - 节流间隔毫秒数（默认 300ms）
  * @returns 节流后的函数（携带 cancel 方法用于取消挂起的调用）
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 通用函数泛型约束需 any 兼容任意签名业务函数，Parameters<T> 仅能从可调用类型推导
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   delay = 300,
@@ -131,6 +133,7 @@ export function throttle<T extends (...args: any[]) => any>(
  * @param delay - 防抖窗口毫秒数（默认 800ms，覆盖常见双击间隔）
  * @returns 包装后的函数，与原函数签名一致
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 通用函数泛型约束需 any 兼容任意签名业务函数，Parameters<T> 仅能从可调用类型推导
 export function createButtonGuard<T extends (...args: any[]) => any>(
   func: T,
   delay = 800,

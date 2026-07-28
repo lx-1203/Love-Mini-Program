@@ -1,11 +1,13 @@
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
 // 修复（严格模式 noUnusedLocals）：components 类型未在本文件引用，已移除。
 import type { InteractionEventView } from "../services/generated/api-types-supplement";
 // 统一常量：异步操作超时时间
 import { ASYNC_TIMEOUT_MS } from "../constants/growth";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /**
  * 会话类型
@@ -368,8 +370,6 @@ const mockInteractionEvents: InteractionEvent[] = [
   { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "沈念", triggerUserAvatar: "/static/default-avatar.png", referenceId: 15, referenceType: "topic", summary: "沈念回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
 ];
 
-function useMock() { return isMockMode(); }
-
 // 注：ASYNC_TIMEOUT_MS 由 constants/growth.ts 统一提供
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
@@ -444,7 +444,7 @@ export const useMessagesStore = defineStore("messages", {
           ASYNC_TIMEOUT_MS, "消息数据初始化超时，请检查网络后重试"
         );
       } catch (error) {
-        if (!this.errorMessage) this.errorMessage = error instanceof Error ? error.message : "消息数据加载失败";
+        if (!this.errorMessage) this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.loadMessagesFailed");
       }
     },
 
@@ -524,14 +524,101 @@ export const useMessagesStore = defineStore("messages", {
       }
     },
 
+    /**
+     * 创建或获取与指定对方的私信会话（Task 1.1.3）。
+     *
+     * 替代旧的硬编码 `session-${rawUserId}` 写法，调用后端
+     * `POST /api/messages/conversations` 创建/复用真实会话 ID。
+     *
+     * 后端由 `PrivateMessageController.createConversation` 处理，
+     * 入参 `CreateConversationRequest { userBId: Long }`，
+     * 返回 `ConversationView`（含真实 id / partnerId / partnerName 等）。
+     *
+     * Mock 模式下构造一个本地会话占位，保证 dev 环境流程可走通。
+     *
+     * @param peerUserId 对方用户 ID（字符串形式，内部转 number）
+     * @returns 创建/复用的会话对象；失败时返回 null 并设置 errorMessage
+     */
+    async createSession(peerUserId: string): Promise<MessageSession | null> {
+      this.errorMessage = null;
+      const trimmedId = (peerUserId ?? "").trim();
+      if (trimmedId.length === 0) {
+        this.errorMessage = t("storeErrors.messages.peerUserIdInvalid");
+        throw new Error(t("storeErrors.messages.peerUserIdInvalid"));
+      }
+      try {
+        return await withTimeout((async (): Promise<MessageSession> => {
+          if (useMock()) {
+            // Mock 模式：构造一个本地占位会话，避免硬编码 session-${rawUserId}
+            const nowIso = new Date().toISOString();
+            const session: MessageSession = {
+              id: `session-private-${trimmedId}`,
+              partnerId: trimmedId,
+              partnerName: "对方",
+              partnerAvatar: "",
+              partnerHeadline: "",
+              lastMessagePreview: "",
+              lastMessageSentAt: nowIso,
+              unreadCount: 0,
+              pinned: false,
+              phase: "active",
+              sessionType: "private",
+              closesAt: null,
+              closedReason: null,
+            };
+            if (!this.sessions.find((s) => s.id === session.id)) {
+              this.sessions.unshift(session);
+            }
+            this.currentMessages = [];
+            return session;
+          }
+          const userBId = Number(trimmedId);
+          if (!Number.isFinite(userBId) || userBId <= 0) {
+            throw new Error(t("storeErrors.messages.peerUserIdNotPositive"));
+          }
+          const data = await request<ConversationView, { userBId: number }>({
+            url: "/messages/conversations",
+            method: "POST",
+            data: { userBId },
+          });
+          const session = mapToMessageSession(data);
+          if (!this.sessions.find((s) => s.id === session.id)) {
+            this.sessions.unshift(session);
+          }
+          this.currentMessages = [];
+          return session;
+        })(), ASYNC_TIMEOUT_MS, "创建会话超时，请重试");
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : "创建会话失败";
+        throw error;
+      }
+    },
+
+    /**
+     * 直接设置当前消息列表（Task 1.1.1 单一数据源同步用）。
+     *
+     * 临时匿名会话由 `chatStore` 管理会话生命周期，但其消息渲染统一通过
+     * `messagesStore.currentMessages` 输出，避免页面同时读取两个 store 的
+     * `messages` 字段造成双写/重复渲染。
+     *
+     * 调用时机：
+     * - `chatStore.loadSession()` 成功后，将 `activeSession.messages` 同步到 currentMessages
+     * - `chatStore.sendText()` / `sendVoice()` 成功后，重新同步
+     *
+     * @param messages 消息列表（按时间顺序排列）
+     */
+    setCurrentMessages(messages: MessageItem[]): void {
+      this.currentMessages = [...messages];
+    },
+
     // 修复（严格模式 noUnusedLocals）：原 quoteRef 参数未在函数体内使用，
     // 加 _ 前缀标识为有意未使用（保留签名以维持调用方兼容性）。
     async sendMessage(sessionId: string, content: string, _quoteRef?: string) {
       this.errorMessage = null;
       try {
-        if (!content || content.trim().length === 0) { this.errorMessage = "消息内容不能为空"; throw new Error("消息内容不能为空"); }
-        if (content.length > 5000) { this.errorMessage = "消息内容过长，请分段发送"; throw new Error("消息内容过长，请分段发送"); }
-        if (!sessionId || sessionId.trim().length === 0) { this.errorMessage = "会话 ID 无效"; throw new Error("会话 ID 无效"); }
+        if (!content || content.trim().length === 0) { this.errorMessage = t("storeErrors.messages.contentEmpty"); throw new Error(t("storeErrors.messages.contentEmpty")); }
+        if (content.length > 5000) { this.errorMessage = t("storeErrors.messages.contentTooLong"); throw new Error(t("storeErrors.messages.contentTooLong")); }
+        if (!sessionId || sessionId.trim().length === 0) { this.errorMessage = t("storeErrors.messages.sessionIdInvalid"); throw new Error(t("storeErrors.messages.sessionIdInvalid")); }
         await withTimeout((async () => {
           if (useMock()) {
             const nm: MessageItem = { id: `msg-${Date.now()}`, sessionId, sender: "self", kind: "text", body: content, sentAt: new Date().toISOString() };
@@ -549,7 +636,7 @@ export const useMessagesStore = defineStore("messages", {
           if (s) { s.lastMessagePreview = content; s.lastMessageSentAt = mr.sentAt; }
           return mr;
         })(), ASYNC_TIMEOUT_MS, "发送消息超时，请重试");
-      } catch (error) { this.errorMessage = error instanceof Error ? error.message : "发送消息失败"; throw error; }
+      } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.sendMessageFailed"); throw error; }
     },
 
     async fetchHeartSignals() {
@@ -574,7 +661,7 @@ export const useMessagesStore = defineStore("messages", {
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
         if (token !== fetchHeartSignalsToken) return;
-        this.errorMessage = error instanceof Error ? error.message : "加载心动信号失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.loadSignalsFailed");
       }
       finally {
         if (token === fetchHeartSignalsToken) {
@@ -586,14 +673,14 @@ export const useMessagesStore = defineStore("messages", {
     async acceptHeartSignal(signalId: string): Promise<MessageSession | null> {
       this.errorMessage = null;
       try {
-        if (!signalId || signalId.trim().length === 0) { this.errorMessage = "心动信号 ID 无效"; throw new Error("心动信号 ID 无效"); }
+        if (!signalId || signalId.trim().length === 0) { this.errorMessage = t("storeErrors.messages.signalIdInvalid"); throw new Error(t("storeErrors.messages.signalIdInvalid")); }
         return await withTimeout((async (): Promise<MessageSession | null> => {
           if (useMock()) {
             const signal = this.heartSignals.find((s) => s.id === signalId);
-            if (!signal) throw new Error("心动信号不存在");
-            if (signal.status !== "pending") throw new Error("心动信号已处理");
+            if (!signal) throw new Error(t("storeErrors.messages.signalNotFound"));
+            if (signal.status !== "pending") throw new Error(t("storeErrors.messages.signalHandled"));
             const expiresAt = Date.parse(signal.expiresAt);
-            if (Date.now() > expiresAt) { signal.status = "expired"; throw new Error("心动信号已过期"); }
+            if (Date.now() > expiresAt) { signal.status = "expired"; throw new Error(t("storeErrors.messages.signalExpired")); }
             signal.status = "accepted";
             const ns: MessageSession = { id: `session-private-${signal.fromUserId}`, partnerId: signal.fromUserId, partnerName: signal.fromUserName, partnerAvatar: signal.fromUserAvatar, partnerHeadline: `${signal.school || ""} · ${signal.age || ""}岁 · ${signal.city || ""}`, lastMessagePreview: "你们已成为好友，开始聊天吧", lastMessageSentAt: new Date().toISOString(), unreadCount: 0, pinned: false, phase: "active", sessionType: "private", closesAt: null, closedReason: null };
             if (!this.sessions.find((s) => s.id === ns.id)) this.sessions.unshift(ns);
@@ -607,7 +694,7 @@ export const useMessagesStore = defineStore("messages", {
           await this.fetchSessions();
           return this.sessions.find((s) => s.sessionType === "private" && s.partnerId === signal?.fromUserId) ?? null;
         })(), ASYNC_TIMEOUT_MS, "接受心动信号超时，请重试");
-      } catch (error) { this.errorMessage = error instanceof Error ? error.message : "接受心动信号失败"; throw error; }
+      } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.acceptSignalFailed"); throw error; }
     },
 
     /**
@@ -678,7 +765,7 @@ export const useMessagesStore = defineStore("messages", {
         // 修复：原代码失败时仍强制标记为已读，导致 UI 与服务端数据不一致（下次刷新会"已读变未读"反弹）
         // 现在保留未读状态，提示用户重试
         console.error("[messages.markAllNotificationsRead] 标记失败:", error);
-        throw new Error("标记全部已读失败，请稍后重试");
+        throw new Error(t("storeErrors.messages.markAllReadFailed"));
       }
     },
 
@@ -889,7 +976,7 @@ export const useMessagesStore = defineStore("messages", {
       } catch (error) {
         // 修复：原代码失败时仍强制标记为已读，导致数据不一致
         console.error("[messages.markAllInteractionsRead] 标记失败:", error);
-        throw new Error("标记全部互动已读失败，请稍后重试");
+        throw new Error(t("storeErrors.messages.markAllInteractionsReadFailed"));
       }
     },
   },

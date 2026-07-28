@@ -26,6 +26,8 @@ import {
   PAGE_ENTER_ANIMATION_DELAY_MS,
   MAX_PRESET_TAGS,
 } from "../../constants/chat";
+// Task 0.2.4：调用 chooseImage 前需检查隐私授权
+import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
 const villageStore = useVillageStore();
 
@@ -270,10 +272,25 @@ function clearDraft() {
 /**
  * 选择图片
  * 修复：chooseImage 后使用 uni.compressImage 压缩（质量 80），减少上传体积
+ *
+ * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
+ * - 用户已同意隐私协议 → 继续选择图片
+ * - 用户拒绝或未授权 → 提示并终止
+ * - H5/APP 环境不支持隐私 API → 直接通过
  */
-function chooseImage() {
+async function chooseImage() {
   if (images.value.length >= POST_MAX_IMAGES) {
     uni.showToast({ title: `最多上传${POST_MAX_IMAGES}张图片`, icon: "none" });
+    return;
+  }
+
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({
+      title: "需同意隐私协议后才能选择图片",
+      icon: "none",
+    });
     return;
   }
 
@@ -513,8 +530,10 @@ function goBack() {
           hover-stay-time="120"
           @tap="chooseImage"
         >
-          <text class="upload-icon">+</text>
-          <text class="upload-text">{{ images.length }}/{{ POST_MAX_IMAGES }}</text>
+          <view class="image-upload__inner">
+            <text class="upload-icon">+</text>
+            <text class="upload-text">{{ images.length }}/{{ POST_MAX_IMAGES }}</text>
+          </view>
         </view>
       </view>
     </view>
@@ -564,7 +583,8 @@ $red-badge: var(--c-error, #FF4757);
 .post-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   background: $bg-page;
   padding-top: calc(env(safe-area-inset-top) + 24rpx);
 }
@@ -583,19 +603,19 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .back-icon {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-secondary;
 }
 
 .post-header__title {
-  font-size: 36rpx;
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
   color: $text-primary;
 }
 
 .post-header__submit {
   padding: 14rpx 36rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB87A) 100%);
   border: none;
   display: flex;
@@ -617,7 +637,7 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .submit-text {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
@@ -631,13 +651,13 @@ $red-badge: var(--c-error, #FF4757);
   padding: 28rpx 32rpx;
   background: $white;
   margin: 16rpx 24rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
 .section-label {
   display: block;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: $text-primary;
   margin-bottom: 20rpx;
@@ -651,7 +671,7 @@ $red-badge: var(--c-error, #FF4757);
 
 .category-option {
   padding: 16rpx 32rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: $bg-page;
   border: 2rpx solid transparent;
   transition: all 0.15s ease;
@@ -669,7 +689,7 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .category-option__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-secondary;
   font-weight: 500;
 }
@@ -684,14 +704,14 @@ $red-badge: var(--c-error, #FF4757);
   padding: 28rpx 32rpx;
   background: $white;
   margin: 0 24rpx 16rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
 .content-input {
   width: 100%;
   min-height: 240rpx;
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: $text-primary;
   line-height: 1.8;
   background: transparent;
@@ -701,7 +721,7 @@ $red-badge: var(--c-error, #FF4757);
   display: flex;
   justify-content: flex-end;
   margin-top: 12rpx;
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -714,7 +734,7 @@ $red-badge: var(--c-error, #FF4757);
   padding: 28rpx 32rpx;
   background: $white;
   margin: 0 24rpx 16rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
@@ -723,7 +743,7 @@ $red-badge: var(--c-error, #FF4757);
   padding: 28rpx 32rpx;
   background: $white;
   margin: 0 24rpx 16rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
@@ -735,11 +755,11 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .section-hint {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $pink-primary;
   background: $pink-light;
   padding: 6rpx 14rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
 }
 
 .preset-tags-scroll {
@@ -756,7 +776,7 @@ $red-badge: var(--c-error, #FF4757);
   display: inline-flex;
   align-items: center;
   padding: 14rpx 28rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: $bg-page;
   border: 2rpx solid transparent;
   transition: all 0.15s ease;
@@ -775,7 +795,7 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .preset-tag-chip__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-secondary;
   font-weight: 500;
   white-space: nowrap;
@@ -791,7 +811,7 @@ $red-badge: var(--c-error, #FF4757);
   padding: 28rpx 32rpx;
   background: $white;
   margin: 0 24rpx 16rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
@@ -804,13 +824,17 @@ $red-badge: var(--c-error, #FF4757);
 .image-item {
   position: relative;
   width: calc((100% - 32rpx) / 3);
-  aspect-ratio: 1;
-  border-radius: 16rpx;
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: calc((100% - 32rpx) / 3);
+  border-radius: var(--r-lg, 16rpx);
   overflow: hidden;
   background: $bg-page;
 }
 
 .image-item__img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
@@ -829,23 +853,34 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .remove-icon {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
 
 .image-upload {
+  position: relative;
   width: calc((100% - 32rpx) / 3);
-  aspect-ratio: 1;
-  border-radius: 16rpx;
+  /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
+  padding-top: calc((100% - 32rpx) / 3);
+  border-radius: var(--r-lg, 16rpx);
   border: 2rpx dashed $divider;
+  background: $bg-page;
+  transition: all 0.15s ease;
+  overflow: hidden;
+}
+
+.image-upload__inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  background: $bg-page;
-  transition: all 0.15s ease;
 }
 
 /* #ifdef H5 */
@@ -857,13 +892,13 @@ $red-badge: var(--c-error, #FF4757);
 /* #endif */
 
 .upload-icon {
-  font-size: 56rpx;
+  font-size: var(--fs-7xl, 56rpx);
   color: $text-tertiary;
   font-weight: 300;
 }
 
 .upload-text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
 }
 
@@ -872,7 +907,7 @@ $red-badge: var(--c-error, #FF4757);
   padding: 28rpx 32rpx;
   background: $white;
   margin: 0 24rpx 24rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
   flex: 1;
 }
@@ -886,15 +921,15 @@ $red-badge: var(--c-error, #FF4757);
 .tag-input {
   flex: 1;
   padding: 18rpx 24rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   background: $bg-page;
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-primary;
 }
 
 .tag-add-btn {
   padding: 18rpx 32rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   background: linear-gradient(135deg, $pink-primary 0%, var(--c-romance-400, #FF6B9D) 100%);
   display: flex;
   align-items: center;
@@ -910,7 +945,7 @@ $red-badge: var(--c-error, #FF4757);
 /* #endif */
 
 .tag-add-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
@@ -926,7 +961,7 @@ $red-badge: var(--c-error, #FF4757);
   align-items: center;
   gap: 8rpx;
   padding: 12rpx 20rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: $green-light;
   transition: transform 0.15s ease;
 }
@@ -938,13 +973,13 @@ $red-badge: var(--c-error, #FF4757);
 /* #endif */
 
 .tag-chip__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $green-primary;
   font-weight: 500;
 }
 
 .tag-chip__remove {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $pink-primary;
   padding: 0 4rpx;
   font-weight: 600;

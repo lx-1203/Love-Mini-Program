@@ -488,13 +488,13 @@ function stepLineStyles(step: StepItem, index: number) {
 }
 
 .sip-header__title {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-text-primary);
 }
 
 .sip-header__subtitle {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary);
 }
 
@@ -505,7 +505,7 @@ function stepLineStyles(step: StepItem, index: number) {
 }
 
 .sip-header__percent-value {
-  font-size: 48rpx;
+  font-size: var(--fs-6xl, 48rpx);
   font-weight: 800;
   color: var(--c-secondary-blue-400, #5B7FFF);
   line-height: 1;
@@ -513,7 +513,7 @@ function stepLineStyles(step: StepItem, index: number) {
 }
 
 .sip-header__percent-unit {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: var(--c-secondary-blue-400, #5B7FFF);
 }
@@ -551,7 +551,7 @@ function stepLineStyles(step: StepItem, index: number) {
 }
 
 .sip-current__icon {
-  font-size: 48rpx;
+  font-size: var(--fs-6xl, 48rpx);
   width: 80rpx;
   height: 80rpx;
   display: flex;
@@ -572,13 +572,13 @@ function stepLineStyles(step: StepItem, index: number) {
 }
 
 .sip-current__label {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
   color: var(--c-text-primary);
 }
 
 .sip-current__desc {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary);
 }
 
@@ -646,7 +646,7 @@ function stepLineStyles(step: StepItem, index: number) {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -701,7 +701,7 @@ function stepLineStyles(step: StepItem, index: number) {
 
 /* 步骤标签 */
 .sip-step__label {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 600;
   text-align: center;
   line-height: 1.3;
@@ -717,7 +717,7 @@ function stepLineStyles(step: StepItem, index: number) {
 
 /* 步骤描述 */
 .sip-step__desc {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   text-align: center;
   color: var(--c-text-tertiary);
   line-height: 1.3;
@@ -789,14 +789,14 @@ function stepLineStyles(step: StepItem, index: number) {
 }
 
 .sip-action-card__title {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: var(--c-text-inverse);
   line-height: 1.3;
 }
 
 .sip-action-card__desc {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
   line-height: 1.3;
 }
@@ -812,13 +812,13 @@ function stepLineStyles(step: StepItem, index: number) {
 }
 
 .sip-action-card__btn-text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   font-weight: 600;
   color: var(--c-text-inverse);
 }
 
 .sip-action-card__btn-arrow {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse);
 }
 
@@ -830,7 +830,7 @@ function stepLineStyles(step: StepItem, index: number) {
 }
 
 .sip-loading__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-tertiary);
 }
 </style>

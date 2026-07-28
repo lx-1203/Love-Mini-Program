@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { appEnv } from "../services/env";
 import { request } from "../services/http";
+import { useMock } from "./helpers/use-mock";
 
 /**
  * VIP 账单 Store
@@ -59,13 +59,6 @@ export interface BillListParams {
   size?: number;
   /** 是否强制刷新（忽略缓存） */
   forceRefresh?: boolean;
-}
-
-/**
- * 判断是否使用 mock 模式
- */
-function useMock(): boolean {
-  return appEnv.apiMode === "mock";
 }
 
 /** mock 数据（按时间倒序） */

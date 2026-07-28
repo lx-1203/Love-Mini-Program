@@ -8,6 +8,10 @@ build/
 target/
 *.class
 
+# Sourcemap 文件：生产环境 sourcemap 仅用于 Sentry 上传，不应提交到代码仓库
+# 开发环境如需调试，可在本地生成；CI 中通过 Sentry CLI 上传后即删除
+*.map
+
 # IDE
 .idea/
 .vscode/
@@ -41,3 +45,123 @@ unpackage/
 
 # Microservices
 *.pid
+
+# ============================================================
+# 以下为 2026-07-26 商业化长期运行修复阶段新增排除项
+# ============================================================
+
+# 临时截图与录屏（提审材料应单独归档至 OSS/wiki，不入仓库）
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.mp4
+*.mov
+*.webm
+*.7z
+*.zip
+!apps/client/src/static/**/*.png
+!apps/client/src/static/**/*.jpg
+!apps/client/src/static/**/*.jpeg
+!apps/client/src/static/**/*.gif
+!apps/client/src/static/**/*.webp
+!apps/client/src/static/**/*.mp4
+!apps/admin/public/**/*.png
+!apps/admin/public/**/*.jpg
+!apps/admin/public/**/*.ico
+!docs/assets/**/*.png
+!docs/assets/**/*.jpg
+!**/avatar*.png
+!**/avatar*.jpg
+
+# 临时调试工具（C# 编译产物与源码，仅本地用于微信开发者工具自动化）
+*.exe
+*.dll
+CaptureByTitle.*
+CaptureDevTools.*
+ClickConsoleTab.*
+ClickDetails.*
+CloseDialog.*
+DevToolsCtrl.*
+ListAllWindows.*
+ListWindows.*
+MaximizeAndCapture.*
+OpenProject.*
+ReviewApp.*
+ReviewApp2.*
+ScreenshotTest.*
+SendEscape.*
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 临时测试输出与日志
+all_fails*.txt
+fail_*.txt
+test_*.txt
+test_*.json
+test-output.txt
+test-result.json
+verification-logs*.json
+mp-weixin-runtime-logs.json
+fail_lines.txt
+fail_list.txt
+test_comp.txt
+
+# 临时脚本（一次性数据迁移/校验脚本，不纳入版本管理）
+add_version_to_entities.py
+audit_merge_count.py
+compress-images.js
+check-encoding.js
+check-pages-json.cjs
+debug-e0.cjs
+fix-encoding*.js
+parse-results.ps1
+process_audit.py
+test_merge.py
+test_parse.py
+
+# 临时数据目录
+2/
+nul
+参考/
+微信开发者工具验证报告.md
+wechat-devtools-status-report.md
+
+# Trae IDE 内部文件（仅保留 specs 目录归档规范文档）
+.trae/count_lines*.ps1
+.trae/documents/
+.trae/screenshots/
+.trae/specs/verify-fix-swipe-likes-chat-flow/
+.codegraph/
+.reasonix/
+
+# 大型工具二进制（Flyway 命令行应由部署环境安装，不入仓库）
+tools/flyway-12.6.1/
+tools/flyway-commandline-*.zip
+
+# 数据库初始化临时脚本（已在 flyway 迁移中体现）
+init-mysql.sql
+set-root-password.sql
+
+# 构建脚本临时产物
+build-mp-weixin.bat.local
+
+# 临时设计稿压缩包
+design-preview.7z
+
+# Storybook 临时构建
+.storybook-static/
+apps/client/test-result.json
+
+# 审计报告一次性生成脚本
+specs/codebase-audit-2026-07-25/finish_report.py
+specs/codebase-audit-2026-07-25/generate_consolidated.py
+
+# 临时测试对比输出与截图
+test-comp.txt
+test-screenshots/
+test-results.json

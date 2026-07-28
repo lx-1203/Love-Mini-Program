@@ -55,7 +55,8 @@ public class RealOnlineStatusService implements OnlineStatusService {
         Optional<UserOnlineStatus> existing = userOnlineStatusRepository.findByUserId(userId);
         if (existing.isPresent()) {
             // 更新已有记录
-            UserOnlineStatus status = existing.get();
+            UserOnlineStatus status = existing.orElseThrow(() ->
+                    new IllegalStateException("existing 已确认非空但 orElseThrow 触发，数据不一致"));
             status.setLastHeartbeat(now);
             status.setStatus(OnlineStatus.online);
             status.setDeviceType(deviceType);

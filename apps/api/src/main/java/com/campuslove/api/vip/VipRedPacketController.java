@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/vip/red-packets")
+@RequestMapping("/api/v1/vip/red-packets")
 public class VipRedPacketController {
 
     private final VipRedPacketService redPacketService;

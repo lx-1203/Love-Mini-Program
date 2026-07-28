@@ -1,0 +1,278 @@
+// ============================================================
+// 校园恋爱小程序 — 组件级共享样式
+// 版本: 1.0.0
+// 说明:
+//   1. 集中定义跨页面/跨组件复用的基础样式类，避免在多个 .vue 中重复定义；
+//   2. 与 theme/global.scss 形成互补：global.scss 偏原子工具类（flex / text-*），
+//      _components.scss 偏复合组件类（base-card / base-btn / base-avatar / base-tag）；
+//   3. 全部使用设计令牌（design tokens），保证主题适配与深色模式兼容；
+//   4. mp-weixin 兼容：使用 page / 类选择器，不使用 :root 等高级伪类；
+//   5. 引入方式：在 App.vue 中 @import "@/styles/_components.scss";
+// ============================================================
+
+// ---------- 基础卡片 ----------
+// 用途：信息卡片容器，统一白底 + 软阴影 + 边缘色 + 圆角
+// 修复 P3 重复样式问题：原 .card 类在 Card.vue / SectionCard.vue / CardSwiper.vue / dnd.vue / profile 等多处重复定义
+// 现统一使用 .base-card 类（避免与组件 scoped .card 冲突）
+.base-card {
+  position: relative;
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
+  padding: var(--sp-6);
+  overflow: hidden;
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              border-color var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// 卡片按压态：scale + 阴影提升
+.base-card--interactive {
+  // mp-weixin 不支持 cursor:pointer，已通过 :active 伪类提供按下反馈
+}
+
+.base-card--interactive:active {
+  transform: scale(0.98);
+  box-shadow: var(--c-elevation-2);
+  border: var(--c-border-card-brand);
+}
+
+// 紧凑型卡片：更小的内边距
+.base-card--compact {
+  padding: var(--sp-4);
+}
+
+// 高层级卡片：更强的阴影
+.base-card--elevated {
+  box-shadow: 0 12rpx 32rpx rgba(15, 23, 42, 0.08),
+              0 4rpx 12rpx rgba(15, 23, 42, 0.04);
+}
+
+// ---------- 基础按钮（原子类） ----------
+// 说明：项目通用按钮组件为 components/common/Button.vue，此处仅提供原子类
+// 用于页面内一次性按钮（如登录页 .btn-primary）的统一定义，避免重复
+.base-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  border-radius: var(--r-full);
+  font-weight: 600;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// 主按钮：品牌渐变背景
+.base-btn--primary {
+  background: var(--c-gradient-brand);
+  color: var(--c-text-inverse);
+  box-shadow: var(--s-brand);
+}
+
+.base-btn--primary:active {
+  transform: scale(0.96);
+  box-shadow: var(--s-brand-sm);
+}
+
+// 次按钮：白底 + 边框
+.base-btn--secondary {
+  background: var(--c-bg-container);
+  color: var(--c-text-primary);
+  border: 2rpx solid var(--c-border-default);
+}
+
+.base-btn--secondary:active {
+  background: var(--c-bg-brand);
+  border-color: var(--c-brand);
+  color: var(--c-brand);
+}
+
+// 描边按钮
+.base-btn--outline {
+  background: transparent;
+  border: 2rpx solid var(--c-border-default);
+  color: var(--c-text-secondary);
+}
+
+.base-btn--outline:active {
+  border-color: var(--c-brand);
+  color: var(--c-brand);
+  background: var(--c-bg-brand);
+}
+
+// 危险按钮
+.base-btn--danger {
+  background: var(--c-error);
+  color: var(--c-text-inverse);
+  box-shadow: var(--s-error);
+}
+
+.base-btn--danger:active {
+  filter: brightness(0.9);
+}
+
+// 块级按钮：100% 宽度
+.base-btn--block {
+  width: 100%;
+}
+
+// 禁用态
+.base-btn--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+// ---------- 基础头像 ----------
+// 用途：用户头像的统一样式基础类
+// 修复 P3 重复样式问题：原 .avatar 类在 Avatar.vue / profile/index.vue 重复定义且产生冲突
+// 现使用 .base-avatar 原子类，组件内通过 scoped 样式扩展
+.base-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full);
+  overflow: visible;
+  flex-shrink: 0;
+  background: var(--c-gradient-brand);
+  color: var(--c-text-inverse);
+  font-weight: 600;
+}
+
+.base-avatar__img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-full);
+  display: block;
+}
+
+.base-avatar__dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  border-radius: var(--r-full);
+  border-style: solid;
+  border-color: var(--c-bg-container);
+}
+
+.base-avatar__dot--online {
+  background: var(--c-brand);
+}
+
+.base-avatar__dot--live {
+  background: var(--c-error);
+}
+
+// ---------- 基础标签 ----------
+// 用途：标签 / 徽章的基础类，统一 inline-flex + 居中 + 字重
+// 修复 P3 重复样式问题：原 .tag / .badge 类在 Tag.vue / UnreadBadge.vue / 多个页面中重复定义
+// 现使用 .base-tag / .base-badge 原子类，组件内通过 scoped 样式扩展颜色
+.base-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: opacity var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
+              transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.base-tag:active {
+  opacity: 0.8;
+  transform: scale(0.97);
+}
+
+// ---------- 基础徽章 ----------
+// 用途：未读数 / 状态标识的小型徽章
+.base-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32rpx;
+  height: 32rpx;
+  border-radius: var(--r-full, 9999rpx);
+  padding: 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  background: var(--c-secondary-blue-400);
+  color: var(--c-text-inverse);
+  line-height: 1;
+}
+
+// 圆点徽章（无数字）
+.base-badge--dot {
+  width: 16rpx;
+  height: 16rpx;
+  min-width: 16rpx;
+  padding: 0;
+}
+
+// ---------- 通用圆角工具类（统一单位 rpx） ----------
+// 修复 P3 单位不统一问题：原代码大量使用 border-radius: 9999rpx（硬编码 px）
+// 现统一为 var(--r-full)（= 9999rpx），保持微信小程序响应式像素一致
+.radius-full {
+  border-radius: var(--r-full);
+}
+
+// ---------- 章节标题（带品牌色竖线装饰） ----------
+// 修复 P3 重复样式问题：原 .section-title-brand 在 App.vue 与 global.scss 中重复定义
+// 现仅保留 _components.scss 中一处定义
+.base-section-title {
+  position: relative;
+  padding-left: var(--sp-5);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.base-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6rpx;
+  height: 32rpx;
+  background: linear-gradient(180deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
+  border-radius: var(--r-xs);
+  box-shadow: 0 0 8rpx rgba(63, 207, 142, 0.3);
+}
+
+// ---------- 区块分隔线 ----------
+// 修复 P3 重复样式问题：原 .section-divider 在 App.vue 中重复定义
+.base-divider {
+  border-bottom: 1rpx solid var(--c-border-light);
+}
+
+.base-divider--strong {
+  border-bottom: 1rpx solid var(--c-border-default);
+}
+
+// ---------- 安全区域工具类（统一封装） ----------
+// 修复 P3 重复样式问题：原 .safe-area-top / .safe-area-bottom 在 App.vue 与 global.scss 中重复定义
+// 现统一使用 _components.scss 中的版本，并配合 _mixins.scss 的 mixin 使用
+.base-safe-top {
+  padding-top: constant(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top);
+}
+
+.base-safe-bottom {
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+// ---------- 按压反馈工具类（统一封装） ----------
+// 修复 P3 重复样式问题：原 .btn-press / .press-scale / .press-feedback 在 App.vue 与 global.scss 中重复定义
+.base-press {
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.base-press:active {
+  transform: scale(0.96);
+}

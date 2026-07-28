@@ -123,7 +123,7 @@ public class AesEncryptor {
             System.arraycopy(iv, 0, combined, 0, iv.length);
             System.arraycopy(cipherText, 0, combined, iv.length, cipherText.length);
             return Base64.getEncoder().encodeToString(combined);
-        } catch (Exception ex) {
+        } catch (java.security.GeneralSecurityException ex) {
             // 加密失败抛运行时异常，避免吞掉错误
             throw new IllegalStateException("AES 加密失败", ex);
         }
@@ -157,7 +157,7 @@ public class AesEncryptor {
             // Base64 解码失败：说明不是加密数据（可能是历史明文），原样返回
             log.debug("输入非 Base64 编码，视为明文返回");
             return ciphertext;
-        } catch (Exception ex) {
+        } catch (java.security.GeneralSecurityException ex) {
             // 解密失败（如认证标签不匹配）：返回原值，避免影响业务流程
             log.warn("AES 解密失败，原样返回输入: {}", ex.getMessage());
             return ciphertext;

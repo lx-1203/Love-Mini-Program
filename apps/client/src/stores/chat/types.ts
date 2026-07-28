@@ -37,6 +37,31 @@ export type MessageDeliveryStatus = "sending" | "sent" | "failed";
 export type MessageDeliveryStatusMap = Record<string, MessageDeliveryStatus>;
 
 /**
+ * 发送消息请求载荷（Task 1.1.5）
+ *
+ * 替代 `chatTransport.pushMessage` 调用处内联对象 + `as any` 隐式断言，
+ * 显式声明客户端发送消息时传递给传输层的字段类型，与后端
+ * `Schemas["ChatMessageRequest"]` 对齐（sender/kind/body/durationSeconds/quoteRef）。
+ *
+ * 设计目的：
+ * 1. 消除 sendText / sendVoice 中重复的内联对象类型推断
+ * 2. 静态校验调用方传参，避免运行时因字段缺失/类型错误被后端拒绝
+ * 3. 后端契约变更时，仅需调整本接口即可在编译期暴露所有受影响调用点
+ */
+export interface SendMessageRequest {
+  /** 发送方：self / peer（system 仅由后端生成，前端不可发送） */
+  sender: "self" | "peer";
+  /** 消息类型：text / voice / emoji */
+  kind: "text" | "voice" | "emoji";
+  /** 消息正文（voice 类型为音频文件 URL） */
+  body: string;
+  /** 语音时长（秒），仅 voice 类型必填，其他类型为 null */
+  durationSeconds?: number | null;
+  /** 引用回复的目标消息 ID（可选） */
+  quoteRef?: string | null;
+}
+
+/**
  * ChatStore 实例类型约束
  * 用于高阶函数的类型推断，避免循环依赖（store 定义前无法引用其类型）。
  *

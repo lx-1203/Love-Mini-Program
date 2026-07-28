@@ -95,8 +95,16 @@ export interface ChatStoreThis extends ChatState {
   setSessionPinned: (sessionId: string, pinned: boolean) => Promise<void>;
   /** 发送文本消息 */
   sendText: (body: string) => Promise<void>;
-  /** 发送语音消息 */
-  sendVoice: (durationSeconds: number) => Promise<void>;
+  /**
+   * 发送语音消息
+   *
+   * Task 1.1.4：第二个参数 tempFilePath 为录音文件临时路径，
+   * 由 VoiceRecorder 组件 onStop 回调提供（mp-weixin 端为 wxfile:// 协议）。
+   * Real 模式下会先通过 uni.uploadFile 上传至 /api/chat/voice 拿到 URL，
+   * 再调用 chatTransport.pushMessage 发送 kind="voice" 的消息。
+   * H5 端 tempFilePath 为空时降级为占位 body，保留会话流程。
+   */
+  sendVoice: (durationSeconds: number, tempFilePath?: string) => Promise<void>;
   /** 接受联系方式交换 */
   acceptExchange: (actor: "self" | "peer") => Promise<void>;
   /** 拒绝联系方式交换 */

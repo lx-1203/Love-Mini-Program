@@ -19,7 +19,7 @@
  * - 不使用 optional catch binding（catch 必须带参数）
  * - 不使用 backdrop-filter（仅 H5 条件编译）
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import AppShell from "../../components/layout/AppShell.vue";
@@ -33,6 +33,25 @@ import {
 } from "../../view-models/feedback";
 import { errorHaptic, lightHaptic } from "../../utils/haptic";
 import type { SubmissionDetailView } from "../../services/generated/api-types-supplement";
+
+/**
+ * SubTask 1.5.2：URL 参数 id 自动展开定时器引用，用于卸载时清理。
+ *
+ * <p>原实现 2 处 {@code setTimeout(..., 300)} 未保存返回值，
+ * 用户在 300ms 延迟内快速返回上一页时，定时器仍会触发 toggleExpand
+ * 并修改已销毁页面的展开状态。</p>
+ */
+let autoExpandTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * SubTask 1.5.2：页面卸载时清理未触发的自动展开定时器。
+ */
+onUnmounted(() => {
+  if (autoExpandTimer) {
+    clearTimeout(autoExpandTimer);
+    autoExpandTimer = null;
+  }
+});
 
 /** 反馈类型筛选枚举（"all" 表示全部） */
 type FilterType = "all" | "feedback" | "suggestion" | "activity_proposal";
@@ -172,7 +191,10 @@ function loadQueryId(): void {
     const numId = Number(id);
     if (!isNaN(numId) && numId > 0) {
       // 异步触发，确保列表已加载后再展开
-      setTimeout(() => {
+      // SubTask 1.5.2：保存定时器引用，卸载时统一清理
+      if (autoExpandTimer) clearTimeout(autoExpandTimer);
+      autoExpandTimer = setTimeout(() => {
+        autoExpandTimer = null;
         void toggleExpand(numId);
       }, 300);
     }
@@ -189,7 +211,10 @@ function loadQueryId(): void {
     if (id) {
       const numId = Number(id);
       if (!isNaN(numId) && numId > 0) {
-        setTimeout(() => {
+        // SubTask 1.5.2：保存定时器引用，卸载时统一清理
+        if (autoExpandTimer) clearTimeout(autoExpandTimer);
+        autoExpandTimer = setTimeout(() => {
+          autoExpandTimer = null;
           void toggleExpand(numId);
         }, 300);
       }
@@ -345,7 +370,7 @@ onShow(() => {
 
 .filter-chip {
   padding: 12rpx 22rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container);
   border: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
 }
@@ -356,7 +381,7 @@ onShow(() => {
 }
 
 .filter-chip__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary);
 }
 
@@ -440,14 +465,14 @@ onShow(() => {
 }
 
 .record__title {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: var(--c-text-primary);
   flex: 1;
 }
 
 .record__summary {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary);
   line-height: 1.6;
 }
@@ -460,12 +485,12 @@ onShow(() => {
 }
 
 .record__time {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary);
 }
 
 .record__expand-hint {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-brand);
   font-weight: 500;
 }
@@ -475,7 +500,7 @@ onShow(() => {
   margin-top: 12rpx;
   padding: 16rpx;
   background: var(--c-bg-page);
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   display: flex;
   flex-direction: column;
   gap: 16rpx;
@@ -505,7 +530,7 @@ onShow(() => {
 }
 
 .detail-loading__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary);
 }
 
@@ -521,13 +546,13 @@ onShow(() => {
 }
 
 .detail-section__label {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary);
   font-weight: 600;
 }
 
 .detail-section__content {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-primary);
   line-height: 1.7;
   white-space: pre-wrap;
@@ -543,7 +568,7 @@ onShow(() => {
 .attachment-img {
   width: 160rpx;
   height: 160rpx;
-  border-radius: 12rpx;
+  border-radius: var(--r-md, 12rpx);
   background: var(--c-bg-container);
 }
 </style>

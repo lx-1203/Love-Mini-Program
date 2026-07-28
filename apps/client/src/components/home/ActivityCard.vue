@@ -97,8 +97,7 @@ defineExpose({ ariaLabel });
   background: var(--c-bg-container);
   box-shadow: var(--c-elevation-1);
   border: var(--c-border-card);
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1), box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1), border-color var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 .activity-card:active {
   transform: translateY(-4rpx);
@@ -148,7 +147,7 @@ defineExpose({ ariaLabel });
   background: var(--c-neutral-500, rgba(100, 116, 139, 0.75));
 }
 .activity-tag-text {
-  font-size: 20rpx;
+  font-size: var(--fs-xs, 20rpx);
   font-weight: 600;
   color: var(--c-text-inverse, #fff);
 }

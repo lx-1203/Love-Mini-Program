@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback 配置（Task 4.5.3）。
+
+  设计目标：
+  1. 滚动策略：按日 + 100MB 双触发，保留 30 天，避免磁盘占用无限增长。
+  2. 敏感字段脱敏：password / sessionToken / accessToken / secret / openId 等字段
+     在日志输出时统一替换为 ***，防止凭据泄露到日志文件。
+  3. 多 profile 支持：dev 环境输出到控制台便于调试；real/prod 环境输出到文件。
+  4. 异步日志：通过 AsyncAppender 包装文件输出，避免 IO 阻塞业务线程。
+
+  滚动策略说明（SizeAndTimeBasedRollingPolicy）：
+    - fileNamePattern：logs/campus-love.%d{yyyy-MM-dd}.%i.log
+      %d{yyyy-MM-dd}：按日切割
+      %i：当日内按大小切割的序号（0,1,2...）
+    - maxFileSize：单个文件 100MB
+    - maxHistory：保留 30 天
+    - totalSizeCap：所有日志文件总大小上限 10GB，超过后自动清理最老文件
+-->
+<configuration scan="false" scanPeriod="30 seconds">
+
+    <!-- 读取 Spring 属性，用于日志文件路径配置 -->
+    <springProperty name="LOG_PATH" source="app.logging.path" defaultValue="logs"/>
+    <springProperty name="APP_NAME" source="spring.application.name" defaultValue="campus-love-api"/>
+
+    <!-- 控制台输出 Pattern（含敏感字段脱敏）。
+         %replace 用法：将匹配 regex 的部分替换为 fixed string。
+         脱敏字段：password、sessionToken、accessToken、refreshToken、secret、openId、idCard、phone（保留前3后4）。
+    -->
+    <property name="CONSOLE_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %replace(%msg){'(password|passwd|sessionToken|accessToken|refreshToken|secret|appSecret|jwtSecret|openId|unionId)\s*[=:]\s*\S+','$1=***'}%n%replace(%ex){'(password|passwd|sessionToken|accessToken|refreshToken|secret|appSecret|jwtSecret|openId|unionId)\s*[=:]\s*\S+','$1=***'}"/>
+
+    <!-- 文件输出 Pattern（与控制台一致，含敏感字段脱敏） -->
+    <property name="FILE_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %replace(%msg){'(password|passwd|sessionToken|accessToken|refreshToken|secret|appSecret|jwtSecret|openId|unionId)\s*[=:]\s*\S+','$1=***'}%n%replace(%ex){'(password|passwd|sessionToken|accessToken|refreshToken|secret|appSecret|jwtSecret|openId|unionId)\s*[=:]\s*\S+','$1=***'}"/>
+
+    <!-- 控制台 Appender：开发环境使用 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 主日志文件 Appender：按日 + 100MB 滚动，保留 30 天 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 文件名格式：应用名.日期.序号.log -->
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- 单个文件最大 100MB -->
+            <maxFileSize>100MB</maxFileSize>
+            <!-- 保留 30 天的日志文件 -->
+            <maxHistory>30</maxHistory>
+            <!-- 所有日志文件总大小上限 10GB，超过后清理最老文件 -->
+            <totalSizeCap>10GB</totalSizeCap>
+            <!-- 启动时清理过期文件 -->
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 错误日志单独文件：便于快速定位生产问题 -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}-error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}-error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ============================================================
+         Access Log（Task 8.2.3）：Tomcat 访问日志
+         ============================================================
+         通过 server.tomcat.accesslog.enabled 开启，输出到独立文件。
+         AccessLogValve 由 Tomcat 内置实现，不依赖 logback appender，
+         此处仅声明对应的 rolling 策略供运维参考（实际写入由 Tomcat 控制）。
+         字段说明（combined 格式）：
+           %h - 远程主机（IP）
+           %l - 远程逻辑用户名（通常 -）
+           %u - 远程认证用户名（JWT 解析后的 userId，未认证 -）
+           %t - 时间戳 [dd/MMM/yyyy:HH:mm:ss Z]
+           %r - 请求首行（METHOD URI PROTOCOL）
+           %s - HTTP 状态码
+           %b - 响应字节数（无 Body 时 -）
+           %{Referer}i - Referer 头
+           %{User-Agent}i - User-Agent 头
+         敏感字段脱敏：
+           - URL query 中的 token/key/secret 已在 AccessLogValve 中通过
+             pattern 替换为 ***（见 application.yml server.tomcat.accesslog.pattern）
+         滚动策略：
+           - 按日切割 + 100MB 触发
+           - 保留 14 天（访问日志量大，保留时间短于业务日志）
+           - 总大小上限 5GB
+         注：在 application.yml 中通过 server.tomcat.accesslog.enabled=true 开启
+    -->
+    <appender name="ACCESS_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}-access.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}-access.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>14</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Access Log 通过 org.apache.catalina.accesslog logger 路由到 ACCESS_FILE -->
+    <logger name="org.apache.catalina.accesslog" level="INFO" additivity="false">
+        <appender-ref ref="ACCESS_FILE"/>
+    </logger>
+
+    <!-- 异步文件输出：通过 BlockingQueue 缓冲日志事件，避免 IO 阻塞业务线程。
+         neverBlock=true：队列满时丢弃日志事件，避免阻塞业务线程（生产环境推荐）。
+         queueSize=2048：默认 256，提升到 2048 容纳更高并发。
+         discardingThreshold=0：队列剩余容量低于 0 时才丢弃 DEBUG/TRACE 日志（即不丢弃）。
+    -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <neverBlock>true</neverBlock>
+        <queueSize>2048</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <neverBlock>true</neverBlock>
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="ERROR_FILE"/>
+    </appender>
+
+    <!-- 开发环境（dev profile）：仅输出到控制台，便于本地调试 -->
+    <springProfile name="dev,local,mock">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <!-- 项目包 DEBUG 日志：便于调试业务逻辑 -->
+        <logger name="com.campuslove.api" level="DEBUG"/>
+        <!-- Spring 框架日志级别：减少噪音 -->
+        <logger name="org.springframework.web" level="INFO"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+    </springProfile>
+
+    <!-- 生产环境（real / prod profile）：输出到文件 + 错误文件，控制台可选 -->
+    <springProfile name="real,prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </root>
+        <!-- 项目包 INFO 日志：生产环境不需要 DEBUG -->
+        <logger name="com.campuslove.api" level="INFO"/>
+        <!-- Spring 框架日志级别：WARNING 及以上 -->
+        <logger name="org.springframework.web" level="WARN"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <!-- 数据库连接池日志：WARNING 及以上 -->
+        <logger name="com.zaxxer.hikari" level="WARN"/>
+        <!-- Redis 连接日志：WARNING 及以上 -->
+        <logger name="io.lettuce" level="WARN"/>
+    </springProfile>
+
+    <!-- 默认配置（未指定 profile 时）：仅控制台输出 -->
+    <springProfile name="default">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.campuslove.api" level="DEBUG"/>
+    </springProfile>
+
+    <!-- 第三方库日志级别调整：减少噪音 -->
+    <logger name="org.apache.catalina.startup.DigesterFactory" level="ERROR"/>
+    <logger name="org.apache.catalina.util.LifecycleBase" level="ERROR"/>
+    <logger name="org.apache.coyote.http11.Http11NioProtocol" level="WARN"/>
+    <logger name="org.apache.tomcat.util.net" level="WARN"/>
+
+</configuration>

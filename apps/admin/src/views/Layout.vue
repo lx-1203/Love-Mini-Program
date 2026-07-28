@@ -1,32 +1,74 @@
 <script setup lang="ts">
+/**
+ * Admin 布局视图（SubTask 3.3.2 i18n 化）。
+ *
+ * 改造点：
+ * - 菜单项 label 改为 i18n key（layout.navXxx）
+ * - "管理后台" / "管理员" / "退出登录" / 路由 fallback 文案改走 i18n
+ * - 路由 name 与 i18n key 通过 table 显式映射，避免拼写错误
+ */
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useSessionStore } from "../stores/session";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const sessionStore = useSessionStore();
+const { t } = useI18n();
 
-const menuItems = [
-  { name: "Dashboard", label: "仪表盘", icon: "/icons/chart.svg" },
-  { name: "Users", label: "用户管理", icon: "/icons/user.svg" },
-  { name: "Posts", label: "帖子管理", icon: "/icons/file-text.svg" },
-  { name: "Feedback", label: "反馈管理", icon: "/icons/list.svg" },
-  { name: "AuditLogs", label: "审计日志", icon: "/icons/clipboard.svg" },
-  { name: "Reports", label: "举报管理", icon: "/icons/prohibited.svg" },
-  { name: "NotifyConfig", label: "通知配置", icon: "/icons/lock.svg" },
-  { name: "SensitiveWords", label: "敏感词管理", icon: "/icons/prohibited.svg" },
+interface MenuItem {
+  name: string;
+  labelKey: string;
+  icon: string;
+}
+
+/** 菜单项配置：name 对应 router 路由 name，labelKey 对应 i18n 文案 key。 */
+const menuItems: MenuItem[] = [
+  { name: "Dashboard", labelKey: "layout.navDashboard", icon: "/icons/chart.svg" },
+  { name: "Users", labelKey: "layout.navUsers", icon: "/icons/user.svg" },
+  { name: "Posts", labelKey: "layout.navPosts", icon: "/icons/file-text.svg" },
+  { name: "Feedback", labelKey: "layout.navFeedback", icon: "/icons/list.svg" },
+  { name: "AuditLogs", labelKey: "layout.navAuditLogs", icon: "/icons/clipboard.svg" },
+  { name: "Reports", labelKey: "layout.navReports", icon: "/icons/prohibited.svg" },
+  { name: "NotifyConfig", labelKey: "layout.navNotifyConfig", icon: "/icons/lock.svg" },
+  { name: "SensitiveWords", labelKey: "layout.navSensitiveWords", icon: "/icons/prohibited.svg" },
 ];
+
+/** 当前管理员的显示名（缺失时回退到 i18n）。 */
+const displayName = computed(() => sessionStore.user?.displayName || t("layout.userMenuTitle"));
+/** 当前管理员角色（缺失时回退到 ADMIN 字面量）。 */
+const displayRole = computed(() => sessionStore.user?.role || "ADMIN");
 
 async function handleLogout() {
   await sessionStore.logout();
   router.push({ name: "Login" });
 }
+
+/**
+ * P6 a11y：Skip link 触发时，将焦点移到主内容区。
+ * 让键盘用户跳过侧边栏导航直达主内容。
+ */
+function focusMainContent(): void {
+  const el = document.getElementById("main-content");
+  if (el) {
+    el.focus();
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
 </script>
 
 <template>
   <view class="layout">
-    <view class="sidebar">
+    <!-- P6 a11y：Skip link 跳到主内容（键盘 Tab 焦点首次进入时可见） -->
+    <a
+      href="#main-content"
+      class="skip-link sr-only-focusable"
+      @click.prevent="focusMainContent"
+    >{{ t("common.skipToMain") }}</a>
+
+    <view class="sidebar" role="navigation" aria-label="主导航">
       <view class="sidebar-header">
-        <text class="logo-text">管理后台</text>
+        <text class="logo-text">{{ t("login.title") }}</text>
       </view>
 
       <nav class="sidebar-menu">
@@ -37,21 +79,26 @@ async function handleLogout() {
           class="menu-item"
           active-class="menu-item--active"
         >
-          <image class="menu-icon" :src="item.icon" mode="aspectFit" />
-          <text class="menu-label">{{ item.label }}</text>
+          <image class="menu-icon" :src="item.icon" mode="aspectFit" alt="" aria-hidden="true" />
+          <text class="menu-label">{{ t(item.labelKey) }}</text>
         </router-link>
       </nav>
 
       <view class="sidebar-footer">
         <view class="user-info">
-          <text class="user-name">{{ sessionStore.user?.displayName || "管理员" }}</text>
-          <text class="user-role">{{ sessionStore.user?.role || "ADMIN" }}</text>
+          <text class="user-name">{{ displayName }}</text>
+          <text class="user-role">{{ displayRole }}</text>
         </view>
-        <button class="logout-button" @click="handleLogout">退出登录</button>
+        <button class="logout-button" @click="handleLogout">{{ t("common.logout") }}</button>
       </view>
     </view>
 
-    <view class="main-content">
+    <view
+      class="main-content"
+      id="main-content"
+      role="main"
+      tabindex="-1"
+    >
       <router-view />
     </view>
   </view>
@@ -62,6 +109,51 @@ async function handleLogout() {
   display: flex;
   min-height: 100vh;
   background: #f5f5f5;
+}
+
+/* P6 a11y：sr-only / sr-only-focusable（视觉隐藏，屏幕阅读器可读；获得焦点时显示） */
+.sr-only,
+.sr-only-focusable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  z-index: 9999;
+  padding: 12px 20px;
+  background: #3FCF8E;
+  color: #ffffff;
+  border-radius: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Skip link 视觉样式（focus 时显示） */
+.skip-link {
+  outline: 2px solid #3FCF8E;
+  outline-offset: 2px;
+}
+
+.main-content:focus {
+  outline: none;
 }
 
 .sidebar {

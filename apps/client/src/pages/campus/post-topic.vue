@@ -15,7 +15,7 @@
  * - 不使用 import.meta.env.DEV
  * - 不使用 optional catch binding
  */
-import { ref, computed } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useCampusStore, CAMPUS_CATEGORY_MAP } from "../../stores/campus";
 import type { CampusTopicCategory } from "../../stores/campus";
@@ -25,11 +25,33 @@ import TopicSelector from "../../components/village/TopicSelector.vue";
 const campusStore = useCampusStore();
 
 const pageVisible = ref(false);
+/**
+ * SubTask 1.5.2：页面进入淡入定时器与发布成功跳转定时器，统一保存引用便于卸载清理。
+ */
+let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
+let postSuccessNavTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   pageVisible.value = false;
-  setTimeout(() => {
+  if (pageEnterTimer) clearTimeout(pageEnterTimer);
+  pageEnterTimer = setTimeout(() => {
+    pageEnterTimer = null;
     pageVisible.value = true;
   }, 30);
+});
+
+/**
+ * SubTask 1.5.2：页面卸载时清理所有未触发的定时器，避免在已销毁页面上修改响应式状态或触发导航。
+ */
+onUnmounted(() => {
+  if (pageEnterTimer) {
+    clearTimeout(pageEnterTimer);
+    pageEnterTimer = null;
+  }
+  if (postSuccessNavTimer) {
+    clearTimeout(postSuccessNavTimer);
+    postSuccessNavTimer = null;
+  }
 });
 
 /** 选中的分类 */
@@ -122,7 +144,10 @@ async function submitTopic() {
     });
 
     uni.showToast({ title: "发布成功", icon: "success" });
-    setTimeout(() => {
+    // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
+    if (postSuccessNavTimer) clearTimeout(postSuccessNavTimer);
+    postSuccessNavTimer = setTimeout(() => {
+      postSuccessNavTimer = null;
       uni.navigateBack();
     }, 800);
   } catch (_e) {
@@ -272,7 +297,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  height: 100%;
   background: linear-gradient(180deg, var(--c-bg-brand, #E8F8F0) 0%, var(--c-bg-page, #F4F6FA) 20%);
 }
 
@@ -287,7 +313,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .post-header__back {
   padding: 12rpx 20rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
   transition: all 0.15s ease;
 }
@@ -300,7 +326,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .back-icon {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 500;
 }
@@ -313,7 +339,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .post-header__submit {
   padding: 14rpx 32rpx;
-  border-radius: 999px;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95)));
   min-width: 80rpx;
   display: flex;
@@ -335,7 +361,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .submit-text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $green-primary;
   font-weight: 600;
 }
@@ -352,7 +378,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* ========== 公共标签 ========== */
 .section-label {
   display: block;
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: $text-tertiary;
   margin-bottom: 16rpx;
   font-weight: 500;
@@ -362,7 +388,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .category-section {
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -381,7 +407,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .category-option {
   flex: 1;
   padding: 20rpx 8rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   background: $bg-page;
   border: 2rpx solid transparent;
   display: flex;
@@ -403,7 +429,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .category-option__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 500;
   color: $text-secondary;
   text-align: center;
@@ -418,17 +444,17 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .title-section {
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
 
 .title-input {
-  font-size: 32rpx;
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 600;
   color: $text-primary;
   padding: 16rpx 20rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   background: $bg-page;
   border: 2rpx solid transparent;
   transition: all 0.2s ease;
@@ -443,7 +469,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .content-section {
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -451,12 +477,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .content-input {
   width: 100%;
   min-height: 240rpx;
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: $text-primary;
   line-height: 1.7;
   background: $bg-page;
   padding: 20rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx);
   border: 2rpx solid transparent;
   box-sizing: border-box;
   transition: all 0.2s ease;
@@ -471,7 +497,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   justify-content: flex-end;
   margin-top: 16rpx;
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
@@ -483,7 +509,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .options-section {
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   margin-bottom: 24rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -492,7 +518,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .topic-selector-section {
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -513,13 +539,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .option-label {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: $text-primary;
   font-weight: 500;
 }
 
 .option-desc {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
 }
 
@@ -531,7 +557,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .bottom-submit__btn {
   width: 100%;
   padding: 28rpx 0;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
   display: flex;
   align-items: center;
@@ -553,7 +579,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .bottom-submit__text {
-  font-size: 30rpx;
+  font-size: var(--fs-xl, 30rpx);
   color: var(--c-text-inverse, #FFFFFF);
   font-weight: 600;
 }

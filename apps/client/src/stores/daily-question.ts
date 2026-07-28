@@ -1,7 +1,9 @@
 import { defineStore } from "pinia";
-import { isMockMode } from "../services/env";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
 
 /* ========== 后端视图类型 ========== */
 
@@ -218,10 +220,6 @@ const mockAnswers: DailyAnswer[] = [
 /** 每页回答数量 */
 const ANSWER_PAGE_SIZE = 20;
 
-function useMock() {
-  return isMockMode();
-}
-
 /**
  * 格式化相对时间
  */
@@ -278,7 +276,7 @@ export const useDailyQuestionStore = defineStore("daily-question", {
         });
         this.todayQuestion = mapToDailyQuestion(data);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载每日一问失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.dailyQuestion.loadQuestionFailed");
       } finally {
         this.loading = false;
       }
@@ -296,16 +294,16 @@ export const useDailyQuestionStore = defineStore("daily-question", {
       try {
         // 参数校验
         if (!questionId || questionId.trim().length === 0) {
-          this.errorMessage = "问题 ID 无效";
-          throw new Error("问题 ID 无效");
+          this.errorMessage = t("storeErrors.dailyQuestion.questionIdInvalid");
+          throw new Error(t("storeErrors.dailyQuestion.questionIdInvalid"));
         }
         if (!content || content.trim().length === 0) {
-          this.errorMessage = "回答内容不能为空";
-          throw new Error("回答内容不能为空");
+          this.errorMessage = t("storeErrors.dailyQuestion.answerContentEmpty");
+          throw new Error(t("storeErrors.dailyQuestion.answerContentEmpty"));
         }
         if (content.length > 500) {
-          this.errorMessage = "回答内容不能超过500字";
-          throw new Error("回答内容不能超过500字");
+          this.errorMessage = t("storeErrors.dailyQuestion.answerContentTooLong");
+          throw new Error(t("storeErrors.dailyQuestion.answerContentTooLong"));
         }
 
         if (useMock()) {
@@ -348,7 +346,7 @@ export const useDailyQuestionStore = defineStore("daily-question", {
         this.hasAnswered = true;
         return mappedResult;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "提交回答失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.dailyQuestion.submitAnswerFailed");
         throw error;
       }
     },
@@ -363,8 +361,8 @@ export const useDailyQuestionStore = defineStore("daily-question", {
 
       try {
         if (!questionId || questionId.trim().length === 0) {
-          this.errorMessage = "问题 ID 无效";
-          throw new Error("问题 ID 无效");
+          this.errorMessage = t("storeErrors.dailyQuestion.questionIdInvalid");
+          throw new Error(t("storeErrors.dailyQuestion.questionIdInvalid"));
         }
 
         if (useMock()) {
@@ -396,7 +394,7 @@ export const useDailyQuestionStore = defineStore("daily-question", {
         this.answerPage = page;
         this.answerHasMore = data.content.length >= ANSWER_PAGE_SIZE;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载回答失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.dailyQuestion.loadAnswersFailed");
       }
     },
   },

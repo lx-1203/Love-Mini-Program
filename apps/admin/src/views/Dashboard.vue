@@ -1,4 +1,12 @@
 <script setup lang="ts">
+/**
+ * Admin 数据看板视图（SubTask 3.3.2 i18n 化）。
+ *
+ * 改造点：
+ * - 标题/副标题/统计卡片 label/加载中文案全部走 i18n key
+ * - 三个统计接口的失败提示通过 dashboard.userStatsLoadFailed 等回退
+ * - "最近活动"列表文案改走 dashboard.recentActivities 与 common.noData
+ */
 import { ref, onMounted } from "vue";
 import {
   getUserStats,
@@ -8,9 +16,12 @@ import {
   type ActiveStats,
   type MatchStats,
 } from "@/api/stats";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 interface StatCard {
-  label: string;
+  labelKey: string;
   value: number | string;
   icon: string;
   color: string;
@@ -24,10 +35,10 @@ interface ActivityItem {
 }
 
 const stats = ref<StatCard[]>([
-  { label: "总用户数", value: 0, icon: "/icons/user.svg", color: "#667eea" },
-  { label: "今日活跃", value: 0, icon: "/icons/bolt.svg", color: "#f093fb" },
-  { label: "匹配总数", value: 0, icon: "/icons/heart-filled.svg", color: "#4facfe" },
-  { label: "今日互动", value: 0, icon: "/icons/list.svg", color: "#43e97b" },
+  { labelKey: "dashboard.statTotalUsers", value: 0, icon: "/icons/user.svg", color: "#667eea" },
+  { labelKey: "dashboard.statActiveToday", value: 0, icon: "/icons/bolt.svg", color: "#f093fb" },
+  { labelKey: "dashboard.statTotalMatches", value: 0, icon: "/icons/heart-filled.svg", color: "#4facfe" },
+  { labelKey: "dashboard.statInteractionsToday", value: 0, icon: "/icons/list.svg", color: "#43e97b" },
 ]);
 
 const recentActivities = ref<ActivityItem[]>([]);
@@ -55,24 +66,24 @@ async function loadDashboard() {
   // 用户统计
   if (results[0].status === "fulfilled") {
     const userStats: UserStats = results[0].value;
-    stats.value[0] = { label: "总用户数", value: userStats.totalUsers, icon: "/icons/user.svg", color: "#667eea" };
-    stats.value[1] = { label: "今日活跃", value: userStats.activeUsersToday, icon: "/icons/bolt.svg", color: "#f093fb" };
+    stats.value[0] = { labelKey: "dashboard.statTotalUsers", value: userStats.totalUsers, icon: "/icons/user.svg", color: "#667eea" };
+    stats.value[1] = { labelKey: "dashboard.statActiveToday", value: userStats.activeUsersToday, icon: "/icons/bolt.svg", color: "#f093fb" };
   } else {
-    errors.push("用户统计加载失败");
+    errors.push(t("dashboard.userStatsLoadFailed"));
   }
 
   // 活跃度统计
   if (results[1].status === "fulfilled") {
     const activeStats: ActiveStats = results[1].value;
-    stats.value[3] = { label: "今日互动", value: activeStats.interactionsToday, icon: "/icons/list.svg", color: "#43e97b" };
+    stats.value[3] = { labelKey: "dashboard.statInteractionsToday", value: activeStats.interactionsToday, icon: "/icons/list.svg", color: "#43e97b" };
   } else {
-    errors.push("活跃度统计加载失败");
+    errors.push(t("dashboard.activeStatsLoadFailed"));
   }
 
   // 匹配统计
   if (results[2].status === "fulfilled") {
     const matchStats: MatchStats = results[2].value;
-    stats.value[2] = { label: "匹配总数", value: matchStats.totalMatches, icon: "/icons/heart-filled.svg", color: "#4facfe" };
+    stats.value[2] = { labelKey: "dashboard.statTotalMatches", value: matchStats.totalMatches, icon: "/icons/heart-filled.svg", color: "#4facfe" };
 
     // 用每日匹配趋势填充"最近活动"列表（最多 5 条）
     recentActivities.value = (matchStats.dailyTrend || [])
@@ -81,11 +92,11 @@ async function loadDashboard() {
       .map((item, idx) => ({
         id: `${item.date}-${idx}`,
         type: "match",
-        message: `匹配 ${item.count} 对`,
+        message: t("dashboard.matchCountFormat", { n: item.count }),
         time: item.date,
       }));
   } else {
-    errors.push("匹配统计加载失败");
+    errors.push(t("dashboard.matchStatsLoadFailed"));
   }
 
   if (errors.length > 0) {
@@ -97,9 +108,9 @@ async function loadDashboard() {
 
 onMounted(() => {
   loadDashboard().catch((err) => {
-    console.error("[Dashboard] 加载统计数据失败", err);
+    console.error("[Dashboard] load stats failed", err);
     loading.value = false;
-    errorMessage.value = "加载统计数据失败，请检查网络或登录状态";
+    errorMessage.value = t("dashboard.loadFailed");
   });
 });
 </script>
@@ -107,8 +118,8 @@ onMounted(() => {
 <template>
   <view class="dashboard">
     <view class="page-header">
-      <text class="page-title">仪表盘</text>
-      <text class="page-subtitle">系统概览与统计数据</text>
+      <text class="page-title">{{ t("dashboard.title") }}</text>
+      <text class="page-subtitle">{{ t("dashboard.subtitle") }}</text>
     </view>
 
     <view v-if="errorMessage" class="error-banner">
@@ -116,13 +127,13 @@ onMounted(() => {
     </view>
 
     <view v-if="loading" class="loading-banner">
-      <text>加载中...</text>
+      <text>{{ t("common.loading") }}</text>
     </view>
 
     <view class="stats-grid">
       <view
         v-for="stat in stats"
-        :key="stat.label"
+        :key="stat.labelKey"
         class="stat-card"
         :style="{ '--stat-color': stat.color }"
       >
@@ -131,14 +142,14 @@ onMounted(() => {
         </view>
         <view class="stat-content">
           <text class="stat-value">{{ stat.value }}</text>
-          <text class="stat-label">{{ stat.label }}</text>
+          <text class="stat-label">{{ t(stat.labelKey) }}</text>
         </view>
       </view>
     </view>
 
     <view class="content-section">
       <view class="section-header">
-        <text class="section-title">最近活动</text>
+        <text class="section-title">{{ t("dashboard.recentActivities") }}</text>
       </view>
 
       <view class="activity-list">
@@ -154,7 +165,7 @@ onMounted(() => {
           </view>
         </view>
         <view v-if="recentActivities.length === 0" class="empty-tip">
-          <text>暂无活动数据</text>
+          <text>{{ t("common.noData") }}</text>
         </view>
       </view>
     </view>
@@ -162,35 +173,16 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Task 3.7.1：接入共享样式表，复用 page-header / page-title / page-subtitle / error-banner */
+@import "../styles/admin-common.css";
+
 .dashboard {
   max-width: 1200px;
 }
 
+/* Dashboard 特有：page-header 间距比通用 24px 略大 */
 .page-header {
   margin-bottom: 32px;
-}
-
-.page-title {
-  display: block;
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.page-subtitle {
-  display: block;
-  font-size: 14px;
-  color: #999;
-}
-
-.error-banner {
-  background: #fff1f0;
-  color: #f5222d;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 13px;
 }
 
 .loading-banner {

@@ -19,7 +19,7 @@
     />
     <image
       v-else-if="!allFailed"
-      :src="fallback"
+      :src="resolvedFallback"
       :mode="mode"
       :lazy-load="lazyLoad"
       :alt="alt"
@@ -48,7 +48,8 @@
  *
  * 使用方式：<SafeImage :src="url" fallback="/static/assets/default-avatar.png" mode="aspectFill" />
  */
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { resolveMediaUrl } from '../../utils/media';
 
 const props = withDefaults(defineProps<{
   src: string;
@@ -73,16 +74,25 @@ const MAX_RETRY = 2;
 
 const hasError = ref(false);
 const isLoading = ref(true);
-const displaySrc = ref(props.src);
+const displaySrc = ref(resolveMediaUrl(props.src));
 /** 原 src 重试计数 */
 const retryCount = ref(0);
 /** fallback 是否也加载失败 */
 const allFailed = ref(false);
 
+/**
+ * Task 0.3.4：将 fallback prop 经 resolveMediaUrl 处理后使用。
+ *
+ * <p>静态资源路径（如 {@code /static/assets/default-avatar.png}）会被 resolveMediaUrl
+ * 原样返回；用户上传的 fallback 路径（如 {@code /uploads/...}）会被重写为鉴权代理 URL。</p>
+ */
+const resolvedFallback = computed(() => resolveMediaUrl(props.fallback));
+
 watch(() => props.src, (newSrc) => {
   hasError.value = false;
   isLoading.value = true;
-  displaySrc.value = newSrc;
+  // Task 0.3.4：每次 src 变化时重新走鉴权代理 URL 解析，附加最新 token
+  displaySrc.value = resolveMediaUrl(newSrc);
   retryCount.value = 0;
   allFailed.value = false;
 });
@@ -93,8 +103,9 @@ function onError() {
     // 重试：通过修改 displaySrc 触发 image 重新加载
     retryCount.value += 1;
     // 拼接 timestamp 避免缓存命中
-    const sep = props.src.includes('?') ? '&' : '?';
-    displaySrc.value = `${props.src}${sep}_retry=${retryCount.value}`;
+    const base = resolveMediaUrl(props.src);
+    const sep = base.includes('?') ? '&' : '?';
+    displaySrc.value = `${base}${sep}_retry=${retryCount.value}`;
     return;
   }
 

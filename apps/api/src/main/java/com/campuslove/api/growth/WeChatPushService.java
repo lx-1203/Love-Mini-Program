@@ -1,8 +1,12 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.config.Resilience4jConfig;
 import com.campuslove.api.config.WeChatConfig;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -10,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 /**
  * 微信订阅消息推送服务。
@@ -30,9 +35,22 @@ public class WeChatPushService {
     private final WeChatConfig weChatConfig;
     private final RestClient restClient;
 
-    /** 缓存 access_token，有效期 2 小时 */
-    private String cachedAccessToken;
-    private long tokenExpireTime = 0;
+    /**
+     * 缓存 access_token，有效期 2 小时。
+     *
+     * <p>Task 2.3.4：声明为 {@code volatile} 以保证多线程可见性。
+     * {@code getAccessToken()} 使用 synchronized + 双重检查锁定模式：
+     * 进入 synchronized 块前先读 {@code cachedAccessToken}（快速路径），
+     * 通过 volatile 的 happens-before 语义确保读到的是最新写入值，
+     * 避免线程长时间持有锁，同时避免 JVM 重排序导致的"半初始化"读取问题。</p>
+     */
+    private volatile String cachedAccessToken;
+    /**
+     * access_token 的过期时间戳（毫秒）。
+     * <p>Task 2.3.4：声明为 {@code volatile}，与 {@link #cachedAccessToken} 同步更新，
+     * 保证双重检查锁定中读到的过期时间与 token 是同一写入者发布的值。</p>
+     */
+    private volatile long tokenExpireTime = 0;
 
     public WeChatPushService(WeChatConfig weChatConfig, RestClient.Builder restClientBuilder) {
         this.weChatConfig = weChatConfig;
@@ -42,8 +60,21 @@ public class WeChatPushService {
     /**
      * 获取微信 access_token，带缓存（线程安全）。
      *
-     * @return access_token 字符串
+     * <p>Task 2.3.3：通过 Resilience4j 注解组合实现外部依赖韧性：</p>
+     * <ul>
+     *   <li>{@code @CircuitBreaker(wechatApi)}：连续失败超阈值时熔断 30s，避免持续打微信接口</li>
+     *   <li>{@code @Retry(wechatApi)}：网络抖动自动重试 2 次（共 3 次），指数退避 500ms→1s→2s</li>
+     *   <li>{@code @RateLimiter(wechatApi)}：每秒最多 10 次调用，避免突发触发微信侧 QPS 限制</li>
+     * </ul>
+     *
+     * <p>fallback 方法 {@link #getAccessTokenFallback(Throwable)} 在熔断 / 重试耗尽时返回 null，
+     * 由 {@link #sendSubscribeMessage} 检测到 null 时跳过推送，不影响业务主流程。</p>
+     *
+     * @return access_token 字符串；熔断 / 重试耗尽时返回 null
      */
+    @CircuitBreaker(name = Resilience4jConfig.WECHAT_API_BACKEND, fallbackMethod = "getAccessTokenFallback")
+    @Retry(name = Resilience4jConfig.WECHAT_API_BACKEND)
+    @RateLimiter(name = Resilience4jConfig.WECHAT_API_BACKEND)
     public synchronized String getAccessToken() {
         long now = System.currentTimeMillis();
         // 双重检查：快速路径避免不必要的同步等待
@@ -84,21 +115,51 @@ public class WeChatPushService {
             tokenExpireTime = nowAfterFetch + (response.getExpiresIn() - 300) * 1000L;
             log.info("WeChat access_token refreshed, expires_in={}", response.getExpiresIn());
             return cachedAccessToken;
-        } catch (Exception ex) {
+        } catch (RestClientException ex) {
             log.error("Failed to call WeChat access_token API", ex);
             return null;
         }
     }
 
     /**
+     * Task 2.3.3：{@link #getAccessToken()} 的 fallback 方法。
+     *
+     * <p>触发场景：熔断器打开 / 重试耗尽 / 限流器拒绝。
+     * 降级策略：返回 null，由 {@link #sendSubscribeMessage} 检测到 null 时跳过推送，
+     * 业务主流程不受影响（订阅消息推送失败不应阻塞用户操作）。</p>
+     *
+     * @param ex 触发 fallback 的异常
+     * @return 始终返回 null
+     */
+    private String getAccessTokenFallback(Throwable ex) {
+        log.warn("WeChat access_token 调用降级: errorType={}, message={}",
+                ex.getClass().getSimpleName(), ex.getMessage());
+        return null;
+    }
+
+    /**
      * 发送订阅消息。
+     *
+     * <p>Task 2.3.3：通过 Resilience4j 注解组合实现外部依赖韧性：</p>
+     * <ul>
+     *   <li>{@code @CircuitBreaker(wechatApi)}：连续失败超阈值时熔断 30s</li>
+     *   <li>{@code @Retry(wechatApi)}：网络抖动自动重试 2 次，指数退避 500ms→1s→2s</li>
+     *   <li>{@code @RateLimiter(wechatApi)}：每秒最多 10 次调用</li>
+     * </ul>
+     *
+     * <p>fallback 方法 {@link #sendSubscribeMessageFallback(String, String, String, Map, Throwable)}
+     * 在熔断 / 重试耗尽时返回 false，业务方检测到 false 时记录日志，不影响主流程。</p>
      *
      * @param openId     用户 openid
      * @param templateId 模板 ID
      * @param page       跳转页面路径
      * @param data       模板数据
-     * @return 是否发送成功
+     * @return 是否发送成功；熔断 / 重试耗尽时返回 false
      */
+    @CircuitBreaker(name = Resilience4jConfig.WECHAT_API_BACKEND,
+            fallbackMethod = "sendSubscribeMessageFallback")
+    @Retry(name = Resilience4jConfig.WECHAT_API_BACKEND)
+    @RateLimiter(name = Resilience4jConfig.WECHAT_API_BACKEND)
     public boolean sendSubscribeMessage(String openId, String templateId, String page,
                                          Map<String, TemplateDataItem> data) {
         String accessToken = getAccessToken();
@@ -135,10 +196,31 @@ public class WeChatPushService {
 
             log.info("Subscribe message sent successfully to {}", openId);
             return true;
-        } catch (Exception ex) {
+        } catch (RestClientException ex) {
             log.error("Failed to send subscribe message to {}", openId, ex);
             return false;
         }
+    }
+
+    /**
+     * Task 2.3.3：{@link #sendSubscribeMessage(String, String, String, Map)} 的 fallback 方法。
+     *
+     * <p>触发场景：熔断器打开 / 重试耗尽 / 限流器拒绝。
+     * 降级策略：返回 false，由调用方记录"推送失败"日志，不影响用户主流程
+     * （社交动态摘要 / 推荐刷新推送均为辅助功能，失败不阻塞核心业务）。</p>
+     *
+     * @param openId     用户 openid（与原方法签名一致）
+     * @param templateId 模板 ID
+     * @param page       跳转页面路径
+     * @param data       模板数据
+     * @param ex         触发 fallback 的异常
+     * @return 始终返回 false
+     */
+    private boolean sendSubscribeMessageFallback(String openId, String templateId, String page,
+                                                  Map<String, TemplateDataItem> data, Throwable ex) {
+        log.warn("WeChat subscribe message 调用降级: openId={}, templateId={}, errorType={}, message={}",
+                openId, templateId, ex.getClass().getSimpleName(), ex.getMessage());
+        return false;
     }
 
     /**

@@ -26,6 +26,8 @@ import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic } from "../../utils/haptic";
+// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
 
 /** 后端 ProfileVisitorView 类型 */
 interface ProfileVisitorView {
@@ -280,7 +282,7 @@ onPullDownRefresh(async () => {
               <image
                 v-if="item.avatarUrl"
                 class="visitors-card__avatar"
-                :src="item.avatarUrl"
+                :src="resolveMediaUrl(item.avatarUrl)"
                 mode="aspectFill"
                 lazy-load alt=""
               />
@@ -306,7 +308,8 @@ onPullDownRefresh(async () => {
 .visitors-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  min-height: 100%;
   background: var(--c-gradient-page);
   padding: var(--sp-6) var(--sp-8);
   padding-top: calc(env(safe-area-inset-top) + var(--sp-6));

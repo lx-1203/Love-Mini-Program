@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Profile("real")
 @RestController
-@RequestMapping("/api/chat/video-call")
+@RequestMapping("/api/v1/chat/video-call")
 public class VideoCallController {
 
     private final VideoCallService videoCallService;

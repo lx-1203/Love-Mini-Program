@@ -95,7 +95,7 @@ public class MatchEventConsumer {
                 case "unmatch" -> handleUnmatch(message);
                 default -> log.warn("未知的匹配事件类型：{}, message={}", eventType, message);
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // 捕获所有异常，避免消息无限重投
             log.warn("匹配事件处理失败，不抛出异常：message={}, error={}",
                     message, e.getMessage(), e);
@@ -133,7 +133,7 @@ public class MatchEventConsumer {
                         String.valueOf(targetUserId), WS_SIGNALS_QUEUE, signal);
                 log.debug("已通过 WebSocket 推送心动信号：userId={}, targetUserId={}",
                         userId, targetUserId);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 log.warn("WebSocket 推送心动信号失败：userId={}, targetUserId={}, error={}",
                         userId, targetUserId, e.getMessage());
             }
@@ -178,7 +178,7 @@ public class MatchEventConsumer {
                         Map.of("type", message.getEventType(),
                                 "fromUserId", userId,
                                 "createdAt", createdAt.toString()));
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 log.warn("WebSocket 推送喜欢通知失败：targetUserId={}, error={}",
                         targetUserId, e.getMessage());
             }
@@ -239,7 +239,7 @@ public class MatchEventConsumer {
             notificationRepository.save(entity);
             log.debug("匹配事件通知已持久化：receiverId={}, type={}, title={}",
                     receiverId, type, title);
-        } catch (Exception e) {
+        } catch (org.springframework.dao.DataAccessException e) {
             log.warn("匹配事件通知持久化失败：receiverId={}, title={}, error={}",
                     receiverId, title, e.getMessage());
         }

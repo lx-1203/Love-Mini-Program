@@ -4,6 +4,7 @@ import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
 import com.campuslove.api.entity.Post.AuditStatus;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -114,4 +115,31 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("category") PostCategory category,
             @Param("authorId") Long authorId,
             Pageable pageable);
+
+    /**
+     * SubTask 5.1.3：批量统计指定作者集合在时间窗口内的发帖数（按 authorId 分组）。
+     *
+     * <p>用于推荐算法的「活跃度」评分维度：候选用户最近 N 天的发帖数反映其活跃程度，
+     * 活跃用户优先推荐，提升匹配成功率与对话响应率。</p>
+     *
+     * <p>查询返回 {@code [authorId, postCount]} 二元组列表，调用方按需转为 Map。
+     * 单次批量查询避免 N+1 问题。</p>
+     *
+     * @param authorIds 作者 ID 列表（候选用户集合）
+     * @param status    帖子状态（通常为 {@code active}，排除已删除/隐藏）
+     * @param since     起始时间（含），通常为 {@code now().minusDays(activityRecentDays)}
+     * @return 二元组列表：每个元素为 {@code [Long authorId, Long postCount]}
+     */
+    @Query("""
+            SELECT p.authorId, COUNT(p)
+            FROM Post p
+            WHERE p.authorId IN :authorIds
+              AND p.status = :status
+              AND p.createdAt >= :since
+            GROUP BY p.authorId
+            """)
+    List<Object[]> countRecentPostsByAuthorIds(
+            @Param("authorIds") List<Long> authorIds,
+            @Param("status") PostStatus status,
+            @Param("since") LocalDateTime since);
 }

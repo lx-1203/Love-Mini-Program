@@ -1,4 +1,14 @@
 <script setup lang="ts">
+/**
+ * 敏感词管理页（SubTask 3.3.2 i18n 化）。
+ * 提供敏感词列表的分类筛选、新增、删除。
+ * 对应后端 com.campuslove.api.admin.AdminSensitiveWordController。
+ *
+ * SubTask 3.3.2 改造点：
+ * - 标题/列头/筛选下拉/按钮/弹窗文案全部走 i18n key（sensitiveWords.*）
+ * - 分类下拉通过 SENSITIVE_WORD_CATEGORIES[i].labelKey 渲染
+ * - 错误回退通过 sensitiveWords.loadFailed / createFailed / deleteSensitiveWordFailed 表达
+ */
 import { ref, onMounted, computed } from "vue";
 import {
   listSensitiveWords,
@@ -8,6 +18,11 @@ import {
   type SensitiveWordView,
 } from "../api/sensitive-words";
 import { ApiError } from "../api/http";
+// Task 3.7.3：接入共享 ConfirmDialog 组件，替换原生 confirm()
+import ConfirmDialog from "../components/ConfirmDialog.vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 // 列表数据
 const words = ref<SensitiveWordView[]>([]);
@@ -22,10 +37,15 @@ const newWord = ref("");
 const newCategory = ref("");
 const submitting = ref(false);
 
-// 分类 value → 中文 label 映射
+// Task 3.7.3：删除确认弹窗状态
+const deleteVisible = ref(false);
+const deleteTarget = ref<SensitiveWordView | null>(null);
+const deleting = ref(false);
+
+// 分类 value → i18n label 映射
 const categoryLabelMap = computed(() => {
   const m: Record<string, string> = {};
-  for (const c of SENSITIVE_WORD_CATEGORIES) m[c.value] = c.label;
+  for (const c of SENSITIVE_WORD_CATEGORIES) m[c.value] = t(c.labelKey);
   return m;
 });
 
@@ -40,7 +60,7 @@ async function fetchWords(category?: string) {
     const result = await listSensitiveWords(category);
     words.value = result || [];
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "加载敏感词列表失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("sensitiveWords.loadFailed");
     words.value = [];
   } finally {
     loading.value = false;
@@ -61,7 +81,7 @@ function handleFilter() {
 async function handleCreate() {
   const word = newWord.value.trim();
   if (!word) {
-    error.value = "请输入敏感词";
+    error.value = t("sensitiveWords.wordRequired");
     return;
   }
   submitting.value = true;
@@ -72,24 +92,46 @@ async function handleCreate() {
     newCategory.value = "";
     await fetchWords(filterCategory.value || undefined);
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "新增敏感词失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("sensitiveWords.createFailed");
   } finally {
     submitting.value = false;
   }
 }
 
 /**
- * 删除敏感词。
- * @param id 敏感词主键
+ * Task 3.7.3：打开删除确认弹窗（替代直接调用 handleDelete）。
+ * @param word 待删除敏感词
  */
-async function handleDelete(id: number) {
+function handleDeleteClick(word: SensitiveWordView) {
+  deleteTarget.value = word;
+  deleteVisible.value = true;
+}
+
+/**
+ * Task 3.7.3：ConfirmDialog 确认回调，执行真实删除调用。
+ */
+async function handleConfirmDelete() {
+  const target = deleteTarget.value;
+  if (!target) return;
+  deleting.value = true;
   error.value = "";
   try {
-    await deleteSensitiveWord(id);
+    await deleteSensitiveWord(target.id);
+    deleteVisible.value = false;
+    deleteTarget.value = null;
     await fetchWords(filterCategory.value || undefined);
   } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || "删除敏感词失败";
+    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("sensitiveWords.deleteSensitiveWordFailed");
+  } finally {
+    deleting.value = false;
   }
+}
+
+/**
+ * Task 3.7.3：ConfirmDialog 取消回调，清理临时状态。
+ */
+function handleCancelDelete() {
+  deleteTarget.value = null;
 }
 
 /**
@@ -108,20 +150,20 @@ onMounted(() => {
 <template>
   <view class="sw-page">
     <view class="page-header">
-      <text class="page-title">敏感词管理</text>
-      <text class="page-subtitle">维护平台敏感词库，按分类过滤与管理</text>
+      <text class="page-title">{{ t("sensitiveWords.pageTitle") }}</text>
+      <text class="page-subtitle">{{ t("sensitiveWords.pageSubtitle") }}</text>
     </view>
 
     <!-- 顶部工具栏：分类筛选 + 新增表单 -->
     <view class="toolbar">
       <select v-model="filterCategory" class="filter-select" @change="handleFilter">
-        <option value="">全部分类</option>
+        <option value="">{{ t("sensitiveWords.filterAllCategories") }}</option>
         <option
           v-for="c in SENSITIVE_WORD_CATEGORIES"
           :key="c.value"
           :value="c.value"
         >
-          {{ c.label }}
+          {{ t(c.labelKey) }}
         </option>
       </select>
 
@@ -131,17 +173,17 @@ onMounted(() => {
         v-model="newWord"
         class="filter-input"
         type="text"
-        placeholder="输入敏感词"
+        :placeholder="t('sensitiveWords.wordPlaceholder')"
         @keyup.enter="handleCreate"
       />
       <select v-model="newCategory" class="filter-select">
-        <option value="">不指定分类</option>
+        <option value="">{{ t("sensitiveWords.noCategory") }}</option>
         <option
           v-for="c in SENSITIVE_WORD_CATEGORIES"
           :key="c.value"
           :value="c.value"
         >
-          {{ c.label }}
+          {{ t(c.labelKey) }}
         </option>
       </select>
       <button
@@ -149,7 +191,7 @@ onMounted(() => {
         :disabled="submitting"
         @click="handleCreate"
       >
-        {{ submitting ? "提交中..." : "新增" }}
+        {{ submitting ? t("sensitiveWords.creating") : t("sensitiveWords.createButton") }}
       </button>
     </view>
 
@@ -159,19 +201,19 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>敏感词</th>
-            <th>分类</th>
-            <th>创建时间</th>
-            <th>操作</th>
+            <th scope="col">{{ t("sensitiveWords.columnId") }}</th>
+            <th scope="col">{{ t("sensitiveWords.columnWord") }}</th>
+            <th scope="col">{{ t("sensitiveWords.columnCategory") }}</th>
+            <th scope="col">{{ t("sensitiveWords.columnCreatedAt") }}</th>
+            <th scope="col">{{ t("sensitiveWords.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="5" class="empty-row">加载中...</td>
+            <td colspan="5" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="words.length === 0">
-            <td colspan="5" class="empty-row">暂无敏感词</td>
+            <td colspan="5" class="empty-row">{{ t("sensitiveWords.noData") }}</td>
           </tr>
           <tr v-for="word in words" :key="word.id">
             <td>{{ word.id }}</td>
@@ -184,91 +226,43 @@ onMounted(() => {
             </td>
             <td class="time-cell">{{ formatTime(word.createdAt) }}</td>
             <td>
-              <button class="danger-button" @click="handleDelete(word.id)">
-                删除
+              <button class="danger-button" @click="handleDeleteClick(word)">
+                {{ t("sensitiveWords.actionDelete") }}
               </button>
             </td>
           </tr>
         </tbody>
       </table>
     </view>
+
+    <!-- Task 3.7.3：删除确认弹窗（替代原生 confirm） -->
+    <ConfirmDialog
+      v-model:visible="deleteVisible"
+      :title="t('sensitiveWords.deleteTitle')"
+      :message="deleteTarget ? t('sensitiveWords.deleteConfirmMessage', { word: deleteTarget.word }) : ''"
+      :danger="true"
+      :confirming="deleting"
+      @confirm="handleConfirmDelete"
+      @cancel="handleCancelDelete"
+    />
   </view>
 </template>
 
 <style scoped>
+/* Task 3.7.1：接入共享样式表，去除与 admin-common.css 重复的定义 */
+@import "../styles/admin-common.css";
+
 .sw-page {
   max-width: 1400px;
 }
 
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-title {
-  display: block;
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.page-subtitle {
-  display: block;
-  font-size: 14px;
-  color: #999;
-}
-
-.toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
+/* SensitiveWords 特有：搜索输入框比通用 filter-input 更宽 */
 .filter-input {
-  padding: 10px 14px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
   min-width: 200px;
 }
 
-.filter-select {
-  padding: 10px 14px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  background: white;
-  min-width: 160px;
-}
-
-.divider {
-  width: 1px;
-  height: 24px;
-  background: #e0e0e0;
-  margin: 0 4px;
-}
-
-.primary-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: #667eea;
-  color: white;
-}
-
-.primary-button:hover:not(:disabled) {
-  background: #5568d3;
-}
-
-.primary-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.data-table {
+  min-width: 800px;
 }
 
 .danger-button {
@@ -286,62 +280,6 @@ onMounted(() => {
 .danger-button:hover {
   background: #f5222d;
   color: white;
-}
-
-.error-message {
-  padding: 12px;
-  background: #fee;
-  border-left: 3px solid #f44;
-  border-radius: 4px;
-  color: #f44;
-  font-size: 13px;
-  margin-bottom: 16px;
-}
-
-.table-container {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 800px;
-}
-
-.data-table th,
-.data-table td {
-  padding: 12px 14px;
-  text-align: left;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 13px;
-  vertical-align: top;
-}
-
-.data-table th {
-  background: #f9f9f9;
-  font-size: 12px;
-  font-weight: 600;
-  color: #666;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.data-table tbody tr:hover {
-  background: #f9f9f9;
-}
-
-.empty-row {
-  text-align: center;
-  color: #999;
-  padding: 32px;
-}
-
-.empty-cell {
-  color: #ccc;
 }
 
 .word-cell {

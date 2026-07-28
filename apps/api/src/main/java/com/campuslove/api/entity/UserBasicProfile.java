@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 
 /**
@@ -124,11 +125,26 @@ public class UserBasicProfile {
     @Column(name = "id_card_verified", nullable = false)
     private Boolean idCardVerified = Boolean.FALSE;
 
+    /** 记录创建时间（基本资料入库时间） */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 记录最近更新时间（基本资料编辑时刷新） */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+    /**
+     * 乐观锁版本号（Task 2.1.1 数据一致性基础设施）。
+     *
+     * <p>由 JPA 自动维护，每次实体更新时 version 自增。
+     * 并发更新冲突时抛出 {@link org.springframework.orm.ObjectOptimisticLockingFailureException}，
+     * 由 GlobalExceptionHandler 转换为 HTTP 409 Conflict。</p>
+     *
+     * <p>初始值 0L，对应数据库列 {@code version BIGINT DEFAULT 0}（Flyway V2026.07.26.0003）。</p>
+     */
+    @Version
+    @Column(name = "version", nullable = false, columnDefinition = "BIGINT DEFAULT 0")
+    private Long version = 0L;
+
 
     public UserBasicProfile() {
     }
@@ -307,5 +323,13 @@ public class UserBasicProfile {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }
