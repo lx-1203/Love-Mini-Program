@@ -19,7 +19,7 @@ import org.springframework.web.client.RestClientException;
  * 仅在 real profile 下激活，负责调用微信 jscode2session 接口。
  */
 @Component
-@Profile("real")
+@Profile("real & !dev")
 public class WeChatClient {
 
     private static final Logger log = LoggerFactory.getLogger(WeChatClient.class);

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
-import TagSelector from './TagSelector.vue';
+import TagSelector from '../../subpackages/setup/components/TagSelector.vue';
 
 /**
  * Profile 组件 Stories（P9 / Task 9.1.2）

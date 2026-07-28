@@ -22,8 +22,9 @@
  */
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { profileTagGroups, type ProfileTagGroupKey } from "../../config/profile-tags";
-import { lightHaptic } from "../../utils/haptic";
+import { profileTagGroups, type ProfileTagGroupKey } from "../../../config/profile-tags";
+import { lightHaptic } from "../../../utils/haptic";
+import TagIcon from "./TagIcon.vue";
 
 const { t } = useI18n();
 
@@ -128,13 +129,13 @@ function clearAll(): void {
  * 获取所有已选标签的展示信息（用于顶部已选区渲染）。
  */
 const selectedTags = computed(() => {
-  const result: Array<{ value: string; label: string; emoji?: string }> = [];
+  const result: Array<{ value: string; label: string; icon?: string }> = [];
   for (const group of profileTagGroups) {
     const list = props.modelValue[group.key] ?? [];
     for (const value of list) {
       const opt = group.options.find((o) => o.value === value);
       if (opt) {
-        result.push({ value: opt.value, label: opt.label, emoji: opt.emoji });
+        result.push({ value: opt.value, label: opt.label, icon: opt.icon });
       }
     }
   }
@@ -179,7 +180,7 @@ const selectedTags = computed(() => {
           hover-stay-time="100"
           @tap="removeTag(tag.value)"
         >
-          <text v-if="tag.emoji" class="tag-chip__emoji">{{ tag.emoji }}</text>
+          <TagIcon v-if="tag.icon" :name="tag.icon" />
           <text class="tag-chip__text">{{ tag.label }}</text>
           <text class="tag-chip__remove">×</text>
         </view>
@@ -214,7 +215,7 @@ const selectedTags = computed(() => {
           hover-stay-time="100"
           @tap="toggleTag(group, opt.value)"
         >
-          <text v-if="opt.emoji" class="tag-chip__emoji">{{ opt.emoji }}</text>
+          <TagIcon v-if="opt.icon" :name="opt.icon" />
           <text class="tag-chip__text">{{ opt.label }}</text>
         </view>
       </view>
@@ -347,14 +348,10 @@ const selectedTags = computed(() => {
   opacity: 0.85;
 }
 
-.tag-chip__emoji {
-  font-size: var(--fs-sm);
-  line-height: 1;
-}
-
 .tag-chip__text {
   font-size: var(--fs-sm);
   color: var(--c-text-primary);
+  line-height: 1;
 }
 
 .tag-chip--selected .tag-chip__text {

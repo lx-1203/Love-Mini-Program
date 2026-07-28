@@ -23,6 +23,7 @@ import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import BaseTabs, { type BaseTab } from "../../components/common/BaseTabs.vue";
 import { showErrorToast } from "../../utils/error-toast";
+import { lightHaptic } from "../../utils/haptic";
 
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
@@ -445,6 +446,12 @@ function handleSearchClick() {
   uni.showToast({ title: t("messages.searchWip"), icon: "none" });
 }
 
+/** 返回上一页 */
+function goBack() {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
+}
+
 /**
  * 长按私信会话触发删除流程。
  *
@@ -514,6 +521,9 @@ async function handleMarkAllNotificationsRead() {
       
       <!-- 页面标题 -->
       <view class="messages-header">
+        <view class="messages-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="100" @tap="goBack">
+          <text class="messages-header__back-icon">‹</text>
+        </view>
         <text class="messages-header__title">{{ t('messages.title') }}</text>
         <view v-if="messagesStore.totalUnreadCount > 0" class="messages-header__badge">
           <text class="messages-header__badge-text">
@@ -853,6 +863,23 @@ async function handleMarkAllNotificationsRead() {
   font-weight: 800;
   color: var(--c-text-primary);
   letter-spacing: 1rpx;
+}
+
+.messages-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.messages-header__back-icon {
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-text-primary);
+  font-weight: 300;
+  line-height: 1;
 }
 
 .messages-header__badge {

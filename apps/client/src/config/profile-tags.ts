@@ -8,7 +8,7 @@
  *   3. 生活方式（lifestyle）—— 早睡 / 熬夜 / 健身 / 美食 等
  *   4. 感情观（relationship）—— 长期关系 / 顺其自然 等
  * - 每个分组定义 min / max 选择数约束，由 TagSelector 组件校验
- * - 标签 emoji 可选，用于视觉增强
+ * - 标签 icon 可选，用于视觉增强
  *
  * mp-weixin 兼容性：
  * - 不使用 import.meta.env.DEV
@@ -34,8 +34,8 @@ export interface ProfileTagOption {
   value: string;
   /** 标签展示文案 */
   label: string;
-  /** 可选 emoji 图标 */
-  emoji?: string;
+  /** 可选 SVG 图标名称 */
+  icon?: string;
 }
 
 /**
@@ -67,16 +67,16 @@ export const profileTagGroups: ProfileTagGroup[] = [
     min: 1,
     max: 5,
     options: [
-      { value: "reading", label: "阅读", emoji: "📚" },
-      { value: "sports", label: "运动", emoji: "⚽" },
-      { value: "music", label: "音乐", emoji: "🎵" },
-      { value: "movie", label: "电影", emoji: "🎬" },
-      { value: "travel", label: "旅行", emoji: "✈️" },
-      { value: "photography", label: "摄影", emoji: "📷" },
-      { value: "gaming", label: "游戏", emoji: "🎮" },
-      { value: "cooking", label: "美食", emoji: "🍳" },
-      { value: "painting", label: "绘画", emoji: "🎨" },
-      { value: "dance", label: "舞蹈", emoji: "💃" },
+      { value: "reading", label: "阅读", icon: "reading" },
+      { value: "sports", label: "运动", icon: "sports" },
+      { value: "music", label: "音乐", icon: "music" },
+      { value: "movie", label: "电影", icon: "movie" },
+      { value: "travel", label: "旅行", icon: "travel" },
+      { value: "photography", label: "摄影", icon: "photography" },
+      { value: "gaming", label: "游戏", icon: "gaming" },
+      { value: "cooking", label: "美食", icon: "cooking" },
+      { value: "painting", label: "绘画", icon: "painting" },
+      { value: "dance", label: "舞蹈", icon: "dance" },
     ],
   },
   {

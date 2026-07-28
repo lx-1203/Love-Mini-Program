@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("mock")
+@Profile("mock | dev")
 public class MockRuntimeState {
 
   private boolean loggedIn;

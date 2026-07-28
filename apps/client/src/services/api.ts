@@ -2,6 +2,7 @@ import type { components } from "./generated/api-types";
 import type {
   DoNotDisturbRequest,
   DoNotDisturbView,
+  FollowUser,
   MakeUpCheckInResultView,
   ProfileStats,
   RecommendationFilter,
@@ -402,6 +403,12 @@ export const clientApi = {
       url: `/temp-chat/sessions/${id}/end`,
       method: "POST",
     });
+  },
+  async getFollowList(type: 'following' | 'followers') {
+    if (useMock()) {
+      return mockFixtures.getFollowList(type);
+    }
+    return request<FollowUser[]>({ url: `/profile/${type}` });
   },
   async simulateError(status: 400 | 404 | 500) {
     if (useMock()) {

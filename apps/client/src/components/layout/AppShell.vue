@@ -40,6 +40,8 @@ interface Props {
   tabBarSafe?: boolean;
   /** 是否启用页面淡入动画 */
   animate?: boolean;
+  /** 返回兜底路径：当页面栈无上一页时 fallback 跳转（默认跳首页） */
+  backFallback?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -53,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
   safeArea: true,
   tabBarSafe: true,
   animate: true,
+  backFallback: '/pages/home/index',
 });
 
 const emit = defineEmits<{
@@ -116,6 +119,19 @@ const bodyPaddingBottom = computed(() => {
 /** 处理返回按钮点击 */
 function handleBack(): void {
   emit('back');
+
+  // 检查页面栈深度：如果只有当前页，navigateBack 必然失败，直接跳兜底页
+  const pages = getCurrentPages();
+  if (pages.length <= 1) {
+    // 使用 switchTab 处理 TabBar 页面，navigateTo 处理非 TabBar 页面
+    uni.switchTab({ url: props.backFallback }).catch(() => {
+      uni.redirectTo({ url: props.backFallback }).catch(() => {
+        // 兜底：使用 location.href（H5 极端情况）
+      });
+    });
+    return;
+  }
+
   // 默认行为：返回上一页
   // #ifdef MP-WEIXIN
   // mp-weixin 的 uni.navigateBack 不返回 Promise，必须使用 success/fail 回调风格

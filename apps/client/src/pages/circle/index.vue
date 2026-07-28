@@ -7,6 +7,7 @@ import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import BaseTabs from "../../components/common/BaseTabs.vue";
+import { lightHaptic } from "../../utils/haptic";
 
 /** 点赞动画定时器集合，用于卸载时统一清理 */
 const likeAnimTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -153,6 +154,12 @@ function toggleCollect(postId: string) {
   }
 }
 
+/** 返回上一页 */
+function goBack() {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
+}
+
 function goToPost() {
   openAppPath("/subpackages/circle/post/index");
 }
@@ -180,7 +187,12 @@ function handleShare() {
     <!-- 顶部导航 -->
     <view class="circle-header">
       <view class="circle-header__top">
-        <text class="circle-header__title">圈子</text>
+        <view class="circle-header__left">
+          <view class="circle-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="100" @tap="goBack">
+            <text class="circle-header__back-icon">‹</text>
+          </view>
+          <text class="circle-header__title">圈子</text>
+        </view>
         <view class="circle-header__publish" @tap="goToPost">
           <text class="circle-header__publish-text">发布</text>
         </view>
@@ -316,6 +328,29 @@ function handleShare() {
   align-items: center;
   justify-content: space-between;
   padding: 0 32rpx 20rpx;
+}
+
+.circle-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.circle-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.circle-header__back-icon {
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-text-primary);
+  font-weight: 300;
+  line-height: 1;
 }
 
 .circle-header__title {

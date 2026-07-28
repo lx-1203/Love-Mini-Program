@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
  * Mock 认证服务实现。
  * 在 mock profile 下激活，使用 MockRuntimeState 返回固定的模拟会话数据。
  */
-@Profile("mock")
+@Profile("mock | dev")
 @Service
 public class MockAuthService implements AuthService {
 

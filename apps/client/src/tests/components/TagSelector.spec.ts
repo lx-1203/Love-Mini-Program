@@ -11,7 +11,7 @@ vi.mock("../../utils/haptic", () => ({
   lightHaptic: vi.fn(),
 }));
 
-import TagSelector from "../../components/profile/TagSelector.vue";
+import TagSelector from "../../subpackages/setup/components/TagSelector.vue";
 
 describe("TagSelector component - 资料标签选择器组件", () => {
   beforeEach(() => {
@@ -34,6 +34,7 @@ describe("TagSelector component - 资料标签选择器组件", () => {
         stubs: {
           view: { template: '<div class="mock-view"><slot /></div>', name: "uni-view" },
           text: { template: '<span class="mock-text"><slot /></span>', name: "uni-text" },
+          TagIcon: { template: '<span class="mock-tag-icon" />', name: "TagIcon" },
         },
       },
     });

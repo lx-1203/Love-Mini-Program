@@ -117,14 +117,16 @@ function goToProfileSetup() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100%;
-  height: 100%;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--sp-10) var(--sp-8);
-  padding-bottom: calc(constant(safe-area-inset-bottom) + var(--sp-10));
+  padding-top: calc(env(safe-area-inset-top) + var(--sp-14, 2.5rem));
   padding-bottom: calc(env(safe-area-inset-bottom) + var(--sp-10));
   background: var(--c-gradient-page);
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* ========== 径向渐变心动氛围叠加层（M-14） ========== */

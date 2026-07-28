@@ -1,14 +1,14 @@
 {
   "setting": {
-    "es6": true,
-    "postcss": true,
-    "minified": true,
+    "es6": false,
+    "postcss": false,
+    "minified": false,
     "uglifyFileName": false,
     "enhance": true,
     "packNpmRelationList": [],
     "babelSetting": {
-      "ignore": [],
-      "disablePlugins": [],
+      "ignore": ["**/*.js"],
+      "disablePlugins": ["*"],
       "outputPath": ""
     },
     "useCompilerPlugins": false

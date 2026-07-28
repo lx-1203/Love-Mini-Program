@@ -261,22 +261,37 @@ const myPostsTotal = computed(() => profileView.value.myPostsTotal);
 interface StatItem {
   label: string;
   value: number | string;
+  key: string;
 }
 
 const stats = computed<StatItem[]>(() => {
   const s = profileStore.profileStats;
   return [
-    { label: t("profile.following"), value: s?.followingCount ?? 0 },
-    { label: t("profile.followers"), value: s?.followersCount ?? 0 },
-    { label: t("profile.likes"), value: s?.likesCount ?? 0 },
+    { label: t("profile.following"), value: s?.followingCount ?? 0, key: "following" },
+    { label: t("profile.followers"), value: s?.followersCount ?? 0, key: "followers" },
+    { label: t("profile.likes"), value: s?.likesCount ?? 0, key: "likes" },
   ];
 });
+
+/**
+ * 点击统计项跳转到对应列表页
+ */
+function handleStatTap(key: string): void {
+  if (key === "following") {
+    lightHaptic();
+    openAppPath("/pages/profile/follow-list?type=following");
+  } else if (key === "followers") {
+    lightHaptic();
+    openAppPath("/pages/profile/follow-list?type=followers");
+  }
+}
 
 /**
  * 功能菜单项配置
  * 使用 IMAGE_PATHS 图标 + 同色系浅色背景（emoji 作为 fallback）
  */
 interface MenuItem {
+  id?: string;
   emoji: string;
   icon?: string;
   bgColor: string;
@@ -285,87 +300,106 @@ interface MenuItem {
   action?: () => void;
 }
 
-const menuItems = computed<MenuItem[]>(() => [
-  {
-    emoji: "💝",
-    icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
-    bgColor: "#FFF0F5",
-    label: t("profile.myPosts"),
-    path: "/pages/village/index?tab=mine",
-  },
-  {
-    emoji: "⭐",
-    icon: IMAGE_PATHS.ICONS_PROFILE.FAVORITES,
-    bgColor: "#FFF8E7",
-    label: t("profile.myLikes"),
-    path: "/pages/likes/index?tab=likedBy",
-  },
-  {
-    emoji: "💕",
-    icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
-    bgColor: "#FFE8EC",
-    label: t("profile.myMatches"),
-    path: "/pages/likes/index",
-  },
-  {
-    emoji: "👀",
-    icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
-    bgColor: "#E8F8F0",
-    label: t("profile.visitors"),
-    path: "/pages/profile/visitors",
-  },
-  /* 功能4：相册入口 */
-  {
-    emoji: "📷",
-    icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
-    bgColor: "#FFF0F5",
-    label: t("profile.albumTitle"),
-    path: "/pages/profile/album",
-  },
-  {
-    emoji: "✅",
-    icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
-    bgColor: "#E8F4FF",
-    label: t("profile.verification"),
-    path: "/pages/verification/index",
-  },
-  {
-    emoji: "🔬",
-    icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
-    bgColor: "#F3E8FF",
-    label: t("profile.loveLab"),
-    path: "/pages/circles/index",
-  },
-  {
-    emoji: "",
-    icon: IMAGE_PATHS.ICONS_EMOJI.CHAT,
-    bgColor: "#E0F2FE",
-    label: t("profile.feedback"),
-    path: "/subpackages/support/feedback/index",
-  },
-  {
-    emoji: "📤",
-    icon: IMAGE_PATHS.ICONS_PROFILE.SHARE,
-    bgColor: "#EDE9FE",
-    label: t("profile.shareFriend"),
-    action: () => {
-      uni.showShareMenu({
-        withShareTicket: true,
-        menus: ["shareAppMessage", "shareTimeline"],
-      });
+const menuItems = computed<MenuItem[]>(() => {
+  const isPeer = !isOwnProfile.value;
+  return [
+    {
+      id: "posts",
+      emoji: "💝",
+      icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
+      bgColor: "#FFF0F5",
+      label: isPeer ? t("profile.theirPosts") : t("profile.myPosts"),
+      path: "/pages/village/index?tab=mine",
     },
-  },
-]);
+    {
+      id: "likes",
+      emoji: "⭐",
+      icon: IMAGE_PATHS.ICONS_PROFILE.FAVORITES,
+      bgColor: "#FFF8E7",
+      label: isPeer ? t("profile.theirLikes") : t("profile.myLikes"),
+      path: "/pages/likes/index?tab=likedBy",
+    },
+    {
+      id: "matches",
+      emoji: "💕",
+      icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
+      bgColor: "#FFE8EC",
+      label: isPeer ? t("profile.theirMatches") : t("profile.myMatches"),
+      path: "/pages/likes/index",
+    },
+    // 访客记录仅自己可见
+    ...(isPeer ? [] : [{
+      id: "visitors",
+      emoji: "👀",
+      icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
+      bgColor: "#E8F8F0",
+      label: t("profile.visitors"),
+      path: "/pages/profile/visitors",
+    }]),
+    {
+      id: "album",
+      emoji: "📷",
+      icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
+      bgColor: "#FFF0F5",
+      label: isPeer ? t("profile.theirAlbum") : t("profile.albumTitle"),
+      path: "/pages/profile/album",
+    },
+    // 以下仅自己可见
+    ...(isPeer ? [] : [
+      {
+        id: "verification",
+        emoji: "✅",
+        icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
+        bgColor: "#E8F4FF",
+        label: t("profile.verification"),
+        path: "/pages/verification/index",
+      },
+      {
+        id: "loveLab",
+        emoji: "🔬",
+        icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
+        bgColor: "#F3E8FF",
+        label: t("profile.loveLab"),
+        path: "/pages/circles/index",
+      },
+      {
+        id: "feedback",
+        emoji: "",
+        icon: IMAGE_PATHS.ICONS_EMOJI.CHAT,
+        bgColor: "#E0F2FE",
+        label: t("profile.feedback"),
+        path: "/subpackages/support/feedback/index",
+      },
+      {
+        id: "share",
+        emoji: "📤",
+        icon: IMAGE_PATHS.ICONS_PROFILE.SHARE,
+        bgColor: "#EDE9FE",
+        label: t("profile.shareFriend"),
+        action: () => {
+          uni.showShareMenu({
+            withShareTicket: true,
+            menus: ["shareAppMessage", "shareTimeline"],
+          });
+        },
+      },
+    ]),
+  ];
+});
 
-const bottomMenuItems = computed<MenuItem[]>(() => [
-  {
-    emoji: "⚙️",
-    icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
-    bgColor: "#F4F6FA",
-    label: t("profile.settings"),
-    path: "/pages/settings/index",
-  },
-  {
+const bottomMenuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [];
+  // 设置仅自己可见
+  if (isOwnProfile.value) {
+    items.push({
+      emoji: "⚙️",
+      icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
+      bgColor: "#F4F6FA",
+      label: t("profile.settings"),
+      path: "/pages/settings/index",
+    });
+  }
+  items.push({
     emoji: "ℹ️",
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
     bgColor: "#F4F6FA",
@@ -379,8 +413,9 @@ const bottomMenuItems = computed<MenuItem[]>(() => [
         confirmText: t("profile.gotIt"),
       });
     },
-  },
-]);
+  });
+  return items;
+});
 
 /**
  * 点击菜单项处理
@@ -762,7 +797,8 @@ const appVersion: string = (() => {
  */
 onShow(() => {
   loadPageUserIdParam();
-  profileStore.fetchProfile().catch((error) => {
+  const fetchId = targetUserId.value || undefined;
+  profileStore.fetchProfile(fetchId).catch((error) => {
     console.warn("[ProfilePage] fetchProfile 失败:", error);
   });
   socialProgressStore.fetchProgress().catch((error) => {
@@ -773,7 +809,8 @@ onShow(() => {
 /** 页面首次加载时获取统计数据（与 onShow 配合，确保首屏有数据） */
 onMounted(() => {
   loadPageUserIdParam();
-  profileStore.fetchProfile().catch(() => {
+  const fetchId = targetUserId.value || undefined;
+  profileStore.fetchProfile(fetchId).catch(() => {
     // onShow 会重试，这里静默处理
   });
   socialProgressStore.fetchProgress();
@@ -902,7 +939,14 @@ onMounted(() => {
           <view
             v-for="(stat, index) in stats"
             :key="index"
-            class="stats-bar__item list-item"
+            class="stats-bar__item"
+            :class="[
+              'stats-bar__item--' + stat.key,
+              { 'stats-bar__item--clickable': stat.key !== 'likes' }
+            ]"
+            hover-class="stats-bar__item--hover"
+            hover-stay-time="120"
+            @tap="handleStatTap(stat.key)"
           >
             <text class="stats-bar__value">{{ stat.value }}</text>
             <text class="stats-bar__label">{{ stat.label }}</text>
@@ -1018,8 +1062,8 @@ onMounted(() => {
         </view>
       </view>
 
-      <!-- VIP卡片 -->
-      <view v-if="!isVip" class="vip-card press-feedback card-base" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="120">
+      <!-- VIP卡片（仅自己主页显示） -->
+      <view v-if="isOwnProfile && !isVip" class="vip-card press-feedback card-base" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="120">
         <view class="vip-card__left">
           <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           <view class="vip-card__text-wrap">
@@ -1032,16 +1076,16 @@ onMounted(() => {
         </view>
       </view>
 
-      <!-- 社交升温进度 -->
-      <view class="social-section">
+      <!-- 社交升温进度（仅自己主页显示） -->
+      <view v-if="isOwnProfile" class="social-section">
         <SocialProgressIndicator />
       </view>
 
-      <!-- 我的动态预览列表 -->
+      <!-- 动态预览列表 -->
       <view class="my-posts-section">
         <view class="section-header">
           <view class="section-header__left">
-            <text class="section-header__title">{{ t('profile.myPosts') }}</text>
+            <text class="section-header__title">{{ isOwnProfile ? t('profile.myPosts') : t('profile.theirPosts') }}</text>
             <text v-if="myPostsTotal > 0" class="section-header__count">{{ t('profile.postsCount', { n: myPostsTotal }) }}</text>
           </view>
           <view
@@ -1096,8 +1140,8 @@ onMounted(() => {
           hover-stay-time="100"
         >
           <image class="my-posts-empty__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
-          <text class="my-posts-empty__text">{{ t('profile.noPosts') }}</text>
-          <text class="my-posts-empty__action">{{ t('profile.publishFirst') }}</text>
+          <text class="my-posts-empty__text">{{ isOwnProfile ? t('profile.noPosts') : t('profile.peerNoPosts') }}</text>
+          <text v-if="isOwnProfile" class="my-posts-empty__action">{{ t('profile.publishFirst') }}</text>
         </view>
       </view>
 
@@ -1155,8 +1199,8 @@ onMounted(() => {
         </view>
       </view>
 
-      <!-- 退出登录 -->
-      <view class="logout-btn press-feedback" @tap="handleLogout" hover-class="logout-btn--hover" hover-stay-time="100">
+      <!-- 退出登录（仅自己主页显示） -->
+      <view v-if="isOwnProfile" class="logout-btn press-feedback" @tap="handleLogout" hover-class="logout-btn--hover" hover-stay-time="100">
         <text class="logout-btn__text">{{ t('profile.logout') }}</text>
       </view>
 
@@ -1563,11 +1607,12 @@ onMounted(() => {
 /* 数据统计栏 */
 .stats-bar {
   display: flex;
+  align-items: stretch;
   width: 100%;
   max-width: 500rpx;
   background: var(--c-bg-container);
   border-radius: var(--r-xl);
-  padding: var(--sp-4);
+  padding: var(--sp-4) 0;
   margin: 0 var(--sp-7);
   box-sizing: border-box;
   border: var(--c-border-card);
@@ -1579,7 +1624,37 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6rpx;
+  padding: var(--sp-1) 0;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* 竖直分割线：第一、二项右侧 */
+.stats-bar__item--following::after,
+.stats-bar__item--followers::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 1rpx;
+  background: var(--c-border-divider, rgba(15, 23, 42, 0.08));
+}
+
+.stats-bar__item--clickable {
+  cursor: pointer;
+}
+
+.stats-bar__item--hover {
+  background: rgba(15, 23, 42, 0.04);
+  transform: scale(0.95);
+  border-radius: var(--r-lg);
+}
+
+.stats-bar__item:active {
+  transform: scale(0.95);
 }
 
 .stats-bar__value {
@@ -1587,11 +1662,13 @@ onMounted(() => {
   font-weight: 700;
   color: var(--c-text-primary);
   line-height: 1;
+  transition: color 0.2s ease;
 }
 
 .stats-bar__label {
-  font-size: var(--fs-base);
+  font-size: var(--fs-sm);
   color: var(--c-text-tertiary);
+  line-height: 1.3;
 }
 
 /* ==================== Phase E2 / E3：媒体区块（个人视频 + 照片墙） ==================== */

@@ -177,6 +177,24 @@ function resolveH5ManualChunk(id: string): string | undefined {
   return undefined;
 }
 
+/** 处理 /favicon.ico 请求 */
+function faviconPlugin(): Plugin {
+  return {
+    name: "favicon-redirect",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url === "/favicon.ico") {
+          res.writeHead(302, { Location: "/favicon.svg" });
+          res.end();
+          return;
+        }
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
@@ -221,6 +239,7 @@ export default defineConfig(({ mode }) => ({
   define: resolveViteEnvDefine(mode),
   plugins: [
     patchUniH5VueUpdateSlots(),
+    faviconPlugin(),
     uni.default(),
     // 资源压缩插件示例（未引入新依赖，需要时安装 vite-plugin-compression 启用）：
     // import viteCompression from "vite-plugin-compression";

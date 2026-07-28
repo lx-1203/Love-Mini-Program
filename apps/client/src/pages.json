@@ -107,6 +107,12 @@
       }
     },
     {
+      "path": "pages/profile/follow-list",
+      "style": {
+        "navigationBarTitleText": "关注列表"
+      }
+    },
+    {
       "path": "pages/circles/index",
       "style": {
         "navigationBarTitleText": "兴趣圈"

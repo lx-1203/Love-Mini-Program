@@ -55,6 +55,23 @@ const mockBasicProfile: Schemas["BasicProfile"] = {
   pronouns: "她/她",
 };
 
+/** Mock 对方用户资料数据（根据 userId 索引） */
+const mockPeerProfiles: Record<string, Schemas["BasicProfile"]> = {
+  "user-2001": { nickname: "林夕", bio: "大二 · 喜欢电影和咖啡，周末常出没于图书馆和影院。", grade: "大二", pronouns: "他/他" },
+  "user-2002": { nickname: "陈默", bio: "大三 · 自习搭子，喜欢安静的地方。", grade: "大三", pronouns: "他/他" },
+  "user-2005": { nickname: "顾言", bio: "研一 · 摄影爱好者，喜欢记录生活。", grade: "研一", pronouns: "她/她" },
+};
+const mockPeerCampusProfiles: Record<string, Schemas["CampusProfile"]> = {
+  "user-2001": { city: "广州", campusName: "南校区", department: "计算机科学", verificationStatus: "verified" },
+  "user-2002": { city: "广州", campusName: "北校区", department: "数学", verificationStatus: "verified" },
+  "user-2005": { city: "广州", campusName: "南校区", department: "新闻传播", verificationStatus: "verified" },
+};
+const mockPeerProfileStats: Record<string, ProfileStats> = {
+  "user-2001": { followers: 42, following: 38, likes: 256, visitors: 128, posts: 8, followingCount: 38, followersCount: 42, likesCount: 256, visitorsCount: 128 },
+  "user-2002": { followers: 18, following: 22, likes: 89, visitors: 45, posts: 3, followingCount: 22, followersCount: 18, likesCount: 89, visitorsCount: 45 },
+  "user-2005": { followers: 67, following: 51, likes: 412, visitors: 203, posts: 15, followingCount: 51, followersCount: 67, likesCount: 412, visitorsCount: 203 },
+};
+
 /** Mock 校区资料数据 */
 const mockCampusProfile: Schemas["CampusProfile"] = {
   city: "广州",
@@ -201,9 +218,9 @@ export const useProfileStore = defineStore("profile", {
      * 原实现会发起两次完整 API 请求，响应顺序不可控，旧响应可能覆盖新响应。
      * 现保存 in-flight Promise，并发调用复用同一次请求，避免重复请求与状态错乱。
      */
-    async load() {
+    async load(userId?: string) {
       // 修复（P1 BUG）：并发守卫——若已有 in-flight 请求，复用其 Promise
-      if (inflightLoadPromise) {
+      if (inflightLoadPromise && !userId) {
         return inflightLoadPromise;
       }
 
@@ -213,12 +230,22 @@ export const useProfileStore = defineStore("profile", {
 
         try {
           if (useMock()) {
-            this.basicProfile = clone(mockBasicProfile);
-            this.campusProfile = clone(mockCampusProfile);
-            this.scheduleProfile = clone(mockScheduleProfile);
-            this.profileStats = clone(mockProfileStats);
-            this.vipStatus = clone(mockVipStatus);
-            this.myPosts = clone(mockMyPosts);
+            if (userId && mockPeerProfiles[userId]) {
+              // 加载对方用户资料
+              this.basicProfile = clone(mockPeerProfiles[userId]);
+              this.campusProfile = clone(mockPeerCampusProfiles[userId] ?? mockCampusProfile);
+              this.scheduleProfile = clone(mockScheduleProfile);
+              this.profileStats = clone(mockPeerProfileStats[userId] ?? mockProfileStats);
+              this.vipStatus = clone(mockVipStatus);
+              this.myPosts = [];
+            } else {
+              this.basicProfile = clone(mockBasicProfile);
+              this.campusProfile = clone(mockCampusProfile);
+              this.scheduleProfile = clone(mockScheduleProfile);
+              this.profileStats = clone(mockProfileStats);
+              this.vipStatus = clone(mockVipStatus);
+              this.myPosts = clone(mockMyPosts);
+            }
             return;
           }
 
@@ -289,8 +316,8 @@ export const useProfileStore = defineStore("profile", {
      * 现新增 fetchProfile 作为 onShow 入口，确保每次进入个人主页都能获取最新数据，
      * 同时保持与 load 的兼容（fetchProfile 内部委托 load，避免重复实现）。
      */
-    async fetchProfile() {
-      await this.load();
+    async fetchProfile(userId?: string) {
+      await this.load(userId);
     },
 
     /**

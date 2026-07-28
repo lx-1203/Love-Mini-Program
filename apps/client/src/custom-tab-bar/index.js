@@ -93,8 +93,11 @@ Component({
       }
 
       // 调用 wx.switchTab 切换页面
+      // 注意：path 必须以 / 开头，否则微信会按相对路径解析（如当前在 discover 页时，
+      // 相对路径 pages/village/index 会被解析为 pages/discover/pages/village/index）
+      const switchUrl = tab.path.startsWith('/') ? tab.path : '/' + tab.path;
       wx.switchTab({
-        url: tab.path,
+        url: switchUrl,
         success: () => {
           // 切换成功后更新 selected 状态（立即反馈，不等页面 onShow 回传）
           this.setData({ selected: index });

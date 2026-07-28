@@ -2,10 +2,11 @@
 /**
  * 逛逛页 - 校内商品/票务/优惠券展示
  */
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+import { lightHaptic } from "../../utils/haptic";
 
 // 分类标签
 const categories = ref([
@@ -86,7 +87,12 @@ const filteredItems = computed(() => {
   return shopItems.value.filter((item) => item.category === activeCategory.value);
 });
 
-import { computed } from "vue";
+
+/** 返回上一页 */
+function goBack() {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
+}
 
 function goToDetail(itemId: string) {
   openAppPath(`/subpackages/shop/detail/index?id=${itemId}`);
@@ -97,6 +103,9 @@ function goToDetail(itemId: string) {
   <view class="shop-page page-fade-in">
     <!-- 页面标题 -->
     <view class="shop-header">
+      <view class="shop-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="100" @tap="goBack">
+        <text class="shop-header__back-icon">‹</text>
+      </view>
       <text class="shop-header__title">逛逛</text>
     </view>
 
@@ -178,10 +187,30 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 /* ========== 页面标题 ========== */
 .shop-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
   padding: 24rpx 32rpx;
   padding-top: calc(env(safe-area-inset-top) + 24rpx);
   background: transparent;
   z-index: 10;
+}
+
+.shop-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.shop-header__back-icon {
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-text-primary);
+  font-weight: 300;
+  line-height: 1;
 }
 
 .shop-header__title {

@@ -190,18 +190,18 @@ export const IMAGE_PATHS = {
     VILLAGE_DEFAULT: ICONS_BASE + '/tabbar/village-default.png',
   },
 
-  /** 个人中心菜单图标（profile 目录，全部复用现有图标，避免下载新资源） */
+  /** 个人中心菜单图标（profile 目录，全部使用 SVG，支持 currentColor） */
   ICONS_PROFILE: {
-    POSTS:        ICONS_BASE + '/social/heart-signal.png', // 我的动态 → 复用 heart-signal
-    FAVORITES:    ICONS_BASE + '/common/star.png',          // 我的收藏 → 复用 star
-    MATCHES:      ICONS_BASE + '/social/match.png',         // 我的匹配 → 复用 social.match
-    VISITORS:     ICONS_BASE + '/social/visitor.png',       // 访客记录 → 复用 social.visitor
-    PHOTO_WALL:   ICONS_BASE + '/social/heart-signal.png',  // 相册 → 复用 heart-signal（暂用占位）
-    VERIFICATION: ICONS_BASE + '/common/check.png',         // 恋爱认证 → 复用 check
-    LAB:          ICONS_BASE + '/common/ai.png',            // 情感实验室 → 复用 ai
-    SHARE:        ICONS_BASE + '/social/share.png',         // 推荐给好友 → 复用 social.share
-    SETTINGS:     ICONS_BASE + '/common/settings.png',      // 设置 → 复用 common.settings
-    INFO:         ICONS_BASE + '/common/notification.png',  // 关于我们 → 复用 notification
+    POSTS:        ICONS_BASE + '/social/heart-signal.svg', // 我的动态 → 复用 heart-signal
+    FAVORITES:    ICONS_BASE + '/common/star.svg',          // 我的收藏 → 复用 star
+    MATCHES:      ICONS_BASE + '/social/match.svg',         // 我的匹配 → 复用 social.match
+    VISITORS:     ICONS_BASE + '/social/visitor.svg',       // 访客记录 → 复用 social.visitor
+    PHOTO_WALL:   ICONS_BASE + '/social/heart-signal.svg',  // 相册 → 复用 heart-signal
+    VERIFICATION: ICONS_BASE + '/common/check.svg',         // 恋爱认证 → 复用 check
+    LAB:          ICONS_BASE + '/common/ai.svg',            // 情感实验室 → 复用 ai
+    SHARE:        ICONS_BASE + '/social/share.svg',         // 推荐给好友 → 复用 social.share
+    SETTINGS:     ICONS_BASE + '/common/settings-gear.svg', // 设置 → 复用 settings-gear
+    INFO:         ICONS_BASE + '/common/info.svg',          // 关于我们 → 复用 info
   },
 
   /**

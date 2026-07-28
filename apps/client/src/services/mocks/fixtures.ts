@@ -2,6 +2,7 @@ import type { components } from "../generated/api-types";
 import type {
   DoNotDisturbRequest,
   DoNotDisturbView,
+  FollowUser,
   MakeUpCheckInResultView,
   ProfileStats,
   RecommendationFilter,
@@ -1507,5 +1508,63 @@ export const mockFixtures = {
       throw createMockApiError(404);
     }
     return clone(detail);
+  },
+
+  /**
+   * 获取关注/粉丝列表（Mock 数据）。
+   */
+  getFollowList(type: 'following' | 'followers'): FollowUser[] {
+    const avatars = [
+      IMAGE_PATHS.AVATARS.AVATAR_1,
+      IMAGE_PATHS.AVATARS.AVATAR_2,
+      IMAGE_PATHS.AVATARS.AVATAR_3,
+      IMAGE_PATHS.AVATARS.AVATAR_4,
+      IMAGE_PATHS.AVATARS.AVATAR_5,
+      IMAGE_PATHS.AVATARS.AVATAR_6,
+      IMAGE_PATHS.AVATARS.AVATAR_7,
+    ];
+    const names = [
+      t("mockData.recommendedPeople.name1"),
+      t("mockData.recommendedPeople.name2"),
+      t("mockData.recommendedPeople.name3"),
+      t("mockData.recommendedPeople.name4"),
+      t("mockData.recommendedPeople.name5"),
+      t("mockData.recommendedPeople.name6"),
+      t("mockData.recommendedPeople.name7"),
+    ];
+    const campuses = [
+      t("mockData.recommendedPeople.campusName1"),
+      t("mockData.recommendedPeople.campusName2"),
+      t("mockData.recommendedPeople.campusName3"),
+      t("mockData.recommendedPeople.campusName4"),
+      t("mockData.recommendedPeople.campusName5"),
+      t("mockData.recommendedPeople.campusName6"),
+      t("mockData.recommendedPeople.campusName7"),
+    ];
+    const headlines = [
+      t("mockData.recommendedPeople.headline1"),
+      t("mockData.recommendedPeople.headline2"),
+      t("mockData.recommendedPeople.headline3"),
+      t("mockData.recommendedPeople.headline4"),
+      t("mockData.recommendedPeople.headline5"),
+      t("mockData.recommendedPeople.headline6"),
+      t("mockData.recommendedPeople.headline7"),
+    ];
+
+    const users: FollowUser[] = names.map((name, i) => ({
+      userId: `follow-user-${i + 1}`,
+      name,
+      avatar: avatars[i],
+      headline: headlines[i],
+      campusName: campuses[i],
+      isFollowed: type === 'following' ? true : Math.random() > 0.5,
+      followedAt: new Date(Date.now() - (i + 1) * 86400000).toISOString(),
+    }));
+
+    // followers 列表按倒序排列，看起来更自然
+    if (type === 'followers') {
+      return users.reverse();
+    }
+    return users;
   },
 };

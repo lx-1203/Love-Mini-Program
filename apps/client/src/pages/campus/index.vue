@@ -15,6 +15,7 @@ import type { CampusTopicCategory } from "../../stores/campus";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+import { lightHaptic } from "../../utils/haptic";
 
 const campusStore = useCampusStore();
 const {
@@ -61,6 +62,12 @@ function goToTopicDetail(topicId: string) {
  */
 function goToPostTopic() {
   openAppPath("/pages/campus/post-topic");
+}
+
+/** 返回上一页 */
+function goBack() {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
 }
 
 /**
@@ -112,6 +119,9 @@ onMounted(() => {
   <view class="campus-page page-fade-in">
     <!-- 顶部学校信息栏 + 认证状态 -->
     <view class="campus-header">
+      <view class="campus-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="100" @tap="goBack">
+        <text class="campus-header__back-icon">‹</text>
+      </view>
       <view class="header-top">
         <view class="header-school">
           <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="school-icon" mode="aspectFit" />
@@ -236,6 +246,24 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   flex-direction: column;
   padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 28rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 50%, var(--c-romance-300, #F9A8C4) 100%);
+}
+
+.campus-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-bottom: 12rpx;
+}
+
+.campus-header__back-icon {
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-text-inverse, #FFFFFF);
+  font-weight: 300;
+  line-height: 1;
 }
 
 .header-top {

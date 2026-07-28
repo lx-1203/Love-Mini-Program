@@ -181,6 +181,12 @@ function togglePhoneLogin() {
   showPhoneLogin.value = !showPhoneLogin.value;
 }
 
+/** 返回上一页 */
+function goBack() {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
+}
+
 /**
  * 微信登录入口（Task 0.1 真实链路）。
  *
@@ -373,6 +379,10 @@ function openAccountBinding() {
 
 <template>
   <view class="login-page" :class="{ 'page-fade-in': pageVisible }">
+    <!-- 返回按钮 -->
+    <view class="login-page__back press-feedback" hover-class="press-feedback--active" hover-stay-time="100" @tap="goBack">
+      <text class="login-page__back-icon">‹</text>
+    </view>
     <!-- 顶部实景图区（占 70% 高度） -->
     <view class="login-page__hero">
       <image
@@ -544,6 +554,27 @@ function openAccountBinding() {
   display: flex;
   flex-direction: column;
   background: var(--c-bg-page);
+}
+
+/* 返回按钮 */
+.login-page__back {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 20rpx);
+  left: 24rpx;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  z-index: 10;
+}
+
+.login-page__back-icon {
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-text-inverse, #FFFFFF);
+  font-weight: 300;
+  line-height: 1;
 }
 
 /* 顶部实景图区 —— 占 70% 高度 */

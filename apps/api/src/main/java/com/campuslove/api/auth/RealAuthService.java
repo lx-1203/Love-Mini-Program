@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
  * </ul>
  * </p>
  */
-@Profile("real")
+@Profile("real & !dev")
 @Service
 public class RealAuthService implements AuthService {
 

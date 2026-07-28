@@ -313,6 +313,12 @@ function handleRetry(): void {
   void loadAlbum();
 }
 
+/** 返回上一页 */
+function goBack(): void {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
+}
+
 onMounted(() => {
   void loadAlbum();
 });
@@ -327,6 +333,9 @@ onShow(() => {
   <view class="album-page page-fade-in">
     <!-- 页面标题 -->
     <view class="album-header">
+      <view class="album-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="100" @tap="goBack">
+        <text class="album-header__back-icon">‹</text>
+      </view>
       <text class="album-header__title">{{ t("profile.albumTitle") }}</text>
       <text class="album-header__count" v-if="photoCount > 0">
         {{ photoCount }} / {{ PHOTO_GALLERY_MAX }}
@@ -428,9 +437,26 @@ onShow(() => {
 /* ========== 页面标题 ========== */
 .album-header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
   margin-bottom: var(--section-gap);
+}
+
+.album-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.album-header__back-icon {
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-text-primary);
+  font-weight: 300;
+  line-height: 1;
 }
 
 .album-header__title {

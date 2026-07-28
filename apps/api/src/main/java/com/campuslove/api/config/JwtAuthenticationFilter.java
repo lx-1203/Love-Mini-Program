@@ -39,7 +39,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * <p>Task 2.4.1：所有路径统一升级为 /api/v1/**。</p>
  */
 @Component
-@Profile("real")
+@Profile("real & !dev")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);

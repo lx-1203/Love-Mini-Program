@@ -18,15 +18,18 @@ import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 // 功能3：资料编辑标签选择器（替换原有 futurePlanTagOptions 内联实现）
-import TagSelector from "../../../components/profile/TagSelector.vue";
+import TagSelector from "../components/TagSelector.vue";
 // 功能5：引导流程进度条（当前步骤 = 1：基本信息）
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import type { ProfileTagGroupKey } from "../../../config/profile-tags";
 import { profileTagGroups } from "../../../config/profile-tags";
+import { provinceNames, getCitiesByProvince } from "../../../config/regions";
 import { useProfileStore } from "../../../stores/profile";
 import { useSessionStore } from "../../../stores/session";
 import { clientApi } from "../../../services/api";
+import type { UniUploadFileLike } from "../../../services/api";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
+import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 import type { UpdateBasicProfileRequest } from "../../../services/generated/api-types-supplement";
 
 const profileStore = useProfileStore();
@@ -113,6 +116,20 @@ const relationshipStatusLabel = ref<string>("");
 /** 身高输入字符串（与 form.height 解耦，提交时校验并转换） */
 const heightInput = ref<string>("");
 
+/** 当前选中的籍贯省份（用于 picker 回显） */
+const hometownProvinceLabel = ref<string>("");
+/** 当前选中的籍贯城市（用于 picker 回显） */
+const hometownCityLabel = ref<string>("");
+/** 当前选中的未来城市（用于 picker 回显） */
+const futureCityLabel = ref<string>("");
+
+/** 当前籍贯省份对应的城市列表 */
+const hometownCities = ref<string[]>([]);
+/** 当前未来城市省份对应的城市列表 */
+const futureCities = ref<string[]>([]);
+/** 未来城市省份（用于 picker 联动） */
+const futureProvinceLabel = ref<string>("");
+
 /**
  * 身高范围常量（提取硬编码值，便于统一维护）
  * 对应后端 UpdateBasicProfileRequest.height 取值范围
@@ -132,6 +149,10 @@ const BIO_MAX_LENGTH = 160;
  * 锁定期间忽略新的 save 调用，直到当前提交流程结束（成功或失败）。
  */
 const isSubmitting = ref(false);
+
+/** 上传状态 */
+const isUploading = ref<boolean>(false);
+const uploadProgress = ref<string>("");
 
 /**
  * 初始表单快照（onMounted 加载完成后保存）。
@@ -233,6 +254,57 @@ function isFuturePlanTagSelected(tag: string): boolean {
   return (form.futurePlanTags ?? []).includes(tag);
 }
 
+/** 籍贯省份 picker change 事件 */
+function onHometownProvinceChange(e: { detail: { value: number } }): void {
+  const idx = e.detail.value;
+  const province = provinceNames[idx];
+  if (province) {
+    form.hometownProvince = province;
+    hometownProvinceLabel.value = province;
+    // 联动清空城市
+    form.hometownCity = "";
+    hometownCityLabel.value = "";
+    hometownCities.value = getCitiesByProvince(province);
+    lightHaptic();
+  }
+}
+
+/** 籍贯城市 picker change 事件 */
+function onHometownCityChange(e: { detail: { value: number } }): void {
+  const idx = e.detail.value;
+  const cities = hometownCities.value;
+  if (cities[idx]) {
+    form.hometownCity = cities[idx];
+    hometownCityLabel.value = cities[idx];
+    lightHaptic();
+  }
+}
+
+/** 未来城市省份 picker change 事件 */
+function onFutureProvinceChange(e: { detail: { value: number } }): void {
+  const idx = e.detail.value;
+  const province = provinceNames[idx];
+  if (province) {
+    futureProvinceLabel.value = province;
+    // 联动清空城市
+    form.futureCity = "";
+    futureCityLabel.value = "";
+    futureCities.value = getCitiesByProvince(province);
+    lightHaptic();
+  }
+}
+
+/** 未来城市 picker change 事件 */
+function onFutureCityChange(e: { detail: { value: number } }): void {
+  const idx = e.detail.value;
+  const cities = futureCities.value;
+  if (cities[idx]) {
+    form.futureCity = cities[idx];
+    futureCityLabel.value = cities[idx];
+    lightHaptic();
+  }
+}
+
 onMounted(async () => {
   await profileStore.load();
   const basic = profileStore.basicProfile;
@@ -261,6 +333,27 @@ onMounted(async () => {
   // 身高初始回显
   if (form.height !== undefined) {
     heightInput.value = String(form.height);
+  }
+  // 籍贯省份/城市初始回显
+  if (form.hometownProvince) {
+    hometownProvinceLabel.value = form.hometownProvince;
+    hometownCities.value = getCitiesByProvince(form.hometownProvince);
+    if (form.hometownCity) {
+      hometownCityLabel.value = form.hometownCity;
+    }
+  }
+  // 未来城市初始回显（无省份联动时直接显示城市名）
+  if (form.futureCity) {
+    // 尝试匹配省份，如果城市属于某个省份则自动选中该省份
+    const matched = provinceNames.find((p) => {
+      const cities = getCitiesByProvince(p);
+      return cities.includes(form.futureCity!);
+    });
+    if (matched) {
+      futureProvinceLabel.value = matched;
+      futureCities.value = getCitiesByProvince(matched);
+    }
+    futureCityLabel.value = form.futureCity;
   }
 
   // 保存初始表单快照，用于提交时 diff 比对（深拷贝 futurePlanTags 数组）
@@ -365,17 +458,72 @@ async function save() {
 }
 
 /**
- * 更换个人主页背景（Phase D4 · 占位入口）
- * 前序 Phase E1 已在 profile 页实现上传，此处保留入口跳转回 profile 页操作
+ * 从 uni.chooseImage 返回值构造类 File 对象。
+ * 兼容 H5（File 标准）与 mp-weixin（tempFilePaths + path 字段）双端。
  */
-function handleChangeBg() {
+function buildFileLike(filePath: string): UniUploadFileLike {
+  const name = filePath.split("/").pop() || "upload";
+  return { name, path: filePath };
+}
+
+/**
+ * 更换个人主页背景
+ * 修复：原为占位入口仅提示前往「我的」页，但「我的」页在资料未完善时有 LockScreen 遮挡，
+ * 导致用户无法换背景的死循环。现直接在基础资料页实现上传。
+ */
+async function handleChangeBg() {
+  if (isUploading.value) return;
   lightHaptic();
-  uni.showToast({ title: "请前往「我的」页点击背景图编辑", icon: "none" });
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({
+      title: "需同意隐私协议后才能选择图片",
+      icon: "none",
+    });
+    return;
+  }
+  uni.chooseImage({
+    count: 1,
+    sizeType: ["compressed"],
+    sourceType: ["album", "camera"],
+    success: (res) => {
+      const tempPath = res.tempFilePaths?.[0] ?? "";
+      if (!tempPath) {
+        uni.showToast({ title: "未选择图片", icon: "none" });
+        return;
+      }
+      const file = buildFileLike(tempPath);
+      void uploadBackground(file);
+    },
+    fail: (err) => {
+      if (!String(err?.errMsg || "").includes("cancel")) {
+        uni.showToast({ title: "选择图片失败", icon: "none" });
+      }
+    },
+  });
+}
+
+/** 执行背景图上传 */
+async function uploadBackground(file: UniUploadFileLike) {
+  isUploading.value = true;
+  uploadProgress.value = "上传中…";
+  try {
+    await profileStore.uploadBackground(file);
+    successHaptic();
+    uni.showToast({ title: "背景图已更换", icon: "success" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "上传失败，请稍后重试";
+    uni.showToast({ title: message, icon: "none" });
+  } finally {
+    isUploading.value = false;
+    uploadProgress.value = "";
+  }
 }
 </script>
 
 <template>
-  <AppShell title="基础资料" subtitle="完善你的资料，让更多人了解你" :show-tab-bar="false">
+  <AppShell title="基础资料" subtitle="完善你的资料，让更多人了解你" show-back back-fallback="/pages/home/index" :show-tab-bar="false">
     <!-- 功能5：引导流程进度条（当前步骤 = 1：基本信息） -->
     <SetupProgress :current-step="1" />
 
@@ -435,22 +583,69 @@ function handleChangeBg() {
         </picker>
       </view>
 
-      <!-- 籍贯省 -->
+      <!-- 籍贯省份 -->
       <view class="form-row">
         <text class="form-row__label">籍贯省份</text>
-        <input v-model="form.hometownProvince" class="field field--inline" placeholder="如：广东" aria-label="如：广东" />
+        <picker
+          mode="selector"
+          :range="provinceNames"
+          @change="onHometownProvinceChange"
+        >
+          <view class="field field--inline field--picker">
+            <text :class="['field__text', !hometownProvinceLabel && 'field__text--placeholder']">
+              {{ hometownProvinceLabel || '请选择省份' }}
+            </text>
+            <text class="field__arrow">›</text>
+          </view>
+        </picker>
       </view>
 
-      <!-- 籍贯市 -->
+      <!-- 籍贯城市 -->
       <view class="form-row">
         <text class="form-row__label">籍贯城市</text>
-        <input v-model="form.hometownCity" class="field field--inline" placeholder="如：广州" aria-label="如：广州" />
+        <picker
+          mode="selector"
+          :range="hometownCities"
+          :disabled="!hometownProvinceLabel"
+          @change="onHometownCityChange"
+        >
+          <view class="field field--inline field--picker">
+            <text :class="['field__text', !hometownCityLabel && 'field__text--placeholder']">
+              {{ hometownCityLabel || (hometownProvinceLabel ? '请选择城市' : '请先选择省份') }}
+            </text>
+            <text class="field__arrow">›</text>
+          </view>
+        </picker>
       </view>
 
       <!-- 未来城市 -->
       <view class="form-row">
         <text class="form-row__label">未来城市</text>
-        <input v-model="form.futureCity" class="field field--inline" placeholder="如：广州" aria-label="如：广州" />
+        <picker
+          mode="selector"
+          :range="provinceNames"
+          @change="onFutureProvinceChange"
+        >
+          <view class="field field--inline field--picker" style="margin-bottom: 8rpx;">
+            <text :class="['field__text', !futureProvinceLabel && 'field__text--placeholder']">
+              {{ futureProvinceLabel || '请选择省份' }}
+            </text>
+            <text class="field__arrow">›</text>
+          </view>
+        </picker>
+        <picker
+          mode="selector"
+          :range="futureCities"
+          :disabled="!futureProvinceLabel"
+          @change="onFutureCityChange"
+        >
+          <view class="field field--inline field--picker">
+            <text :class="['field__text', !futureCityLabel && 'field__text--placeholder']">
+              {{ futureCityLabel || (futureProvinceLabel ? '请选择城市' : '请先选择省份') }}
+            </text>
+            <text class="field__arrow">›</text>
+          </view>
+        </picker>
       </view>
 
       <!-- 未来规划标签 -->
@@ -476,7 +671,7 @@ function handleChangeBg() {
       <TagSelector v-model="profileTags" />
     </SectionCard>
 
-    <!-- Phase D4 · 更换背景入口（占位） -->
+    <!-- Phase D4 · 更换背景入口 -->
     <SectionCard title="个人主页背景" compact>
       <view
         class="bg-entry press-feedback"
@@ -484,7 +679,7 @@ function handleChangeBg() {
         hover-stay-time="120"
         @tap="handleChangeBg"
       >
-        <text class="bg-entry__text">更换背景</text>
+        <text class="bg-entry__text">{{ isUploading ? uploadProgress : '更换背景' }}</text>
         <text class="bg-entry__arrow">›</text>
       </view>
     </SectionCard>

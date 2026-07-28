@@ -172,7 +172,15 @@ function viewBenefitDetail(benefit: VipBenefit) {
 /** 返回上一页 */
 function goBack() {
   lightHaptic();
+  const currentUrl = window.location.hash;
   uni.navigateBack({ delta: 1 });
+  // H5 端 navigateBack 在无历史记录时不会报错也不会导航，
+  // 等一帧后如果 URL 没变则 fallback 到个人主页 Tab
+  setTimeout(() => {
+    if (window.location.hash === currentUrl) {
+      uni.switchTab({ url: "/pages/profile/index" });
+    }
+  }, 100);
 }
 
 /* ========== 自动续费开关 ========== */

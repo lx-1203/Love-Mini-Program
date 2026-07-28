@@ -72,6 +72,17 @@ export interface IcebreakerView {
   topics?: { id: string; title: string }[];
 }
 
+// ===== Follow User =====
+export interface FollowUser {
+  userId: string;
+  name: string;
+  avatar: string;
+  headline: string;
+  campusName?: string;
+  isFollowed: boolean;
+  followedAt?: string;
+}
+
 // ===== Post Author =====
 export interface PostAuthor {
   userId: string;

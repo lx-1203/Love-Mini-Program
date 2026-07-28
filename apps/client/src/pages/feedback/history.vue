@@ -240,6 +240,7 @@ onShow(() => {
   <AppShell
     :title="t('feedback.historyTitle')"
     :subtitle="t('feedback.historyEmptyDesc')"
+    :show-back="true"
     :show-tab-bar="false"
   >
     <!-- 类型筛选 Tab -->

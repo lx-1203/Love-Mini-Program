@@ -192,6 +192,12 @@ async function loadVisitors(): Promise<void> {
   }
 }
 
+/** 返回上一页 */
+function goBack(): void {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
+}
+
 /**
  * 点击访客项：跳转到对方主页
  * @param visitorId - 访客用户 ID
@@ -230,6 +236,9 @@ onPullDownRefresh(async () => {
   <view class="visitors-page page-fade-in">
     <!-- 页面标题 -->
     <view class="visitors-header">
+      <view class="visitors-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="100" @tap="goBack">
+        <text class="visitors-header__back-icon">‹</text>
+      </view>
       <text class="visitors-header__title">{{ t("profile.visitorsTitle") }}</text>
       <text class="visitors-header__count" v-if="visitors.length > 0">
         {{ t("profile.visitors") }} · {{ visitors.length }}
@@ -318,9 +327,26 @@ onPullDownRefresh(async () => {
 
 .visitors-header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
   margin-bottom: var(--section-gap);
+}
+
+.visitors-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.visitors-header__back-icon {
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-text-primary);
+  font-weight: 300;
+  line-height: 1;
 }
 
 .visitors-header__title {

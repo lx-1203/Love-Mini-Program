@@ -82,12 +82,24 @@ echo ========================================
 echo   编译成功！
 echo ========================================
 echo.
+
+REM ---------- Step 5: Post-build 生成组件 JS 存根 ----------
+echo [5/5] 生成组件 JS 存根...
+cd /d "%~dp0"
+node scripts\post-build-mp-weixin.mjs
+if errorlevel 1 (
+    echo [WARN] 组件 JS 存根生成遇到问题，但不会阻塞构建
+)
+echo.
+
 echo 输出目录: %~dp0apps\client\dist\build\mp-weixin
 echo.
 echo 下一步：
 echo   1. 打开微信开发者工具
-echo   2. 导入上述输出目录
-echo   3. 在工具中填写 AppID（或通过 WX_APPID 环境变量自动注入）
+echo   2. 导入项目根目录（已配置 miniprogramRoot）
+echo   3. 如果仍遇到编译错误，请在开发者工具中：
+echo      设置 -> 项目设置 -> 关闭"增强编译"
+echo   4. 在工具中填写 AppID（或通过 WX_APPID 环境变量自动注入）
 echo.
 
 REM 仅在交互式命令行中暂停（双击运行时保留窗口）

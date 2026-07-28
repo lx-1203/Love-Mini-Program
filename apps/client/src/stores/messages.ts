@@ -499,8 +499,16 @@ export const useMessagesStore = defineStore("messages", {
             this.currentMessages = mockMessages[sessionId]
               ? JSON.parse(JSON.stringify(mockMessages[sessionId]))
               : [];
-            const s = this.sessions.find((x) => x.id === sessionId);
-            if (s) s.unreadCount = 0;
+            // 确保 sessions 中包含当前会话（供 currentSession 计算属性使用）
+            const existing = this.sessions.find((x) => x.id === sessionId);
+            if (existing) {
+              existing.unreadCount = 0;
+            } else {
+              const mockSession = mockSessions.find((x) => x.id === sessionId);
+              if (mockSession) {
+                this.sessions.push(JSON.parse(JSON.stringify(mockSession)));
+              }
+            }
             return;
           }
           const sessionStore = useSessionStore();

@@ -121,6 +121,12 @@ function getStatusLabel(status: string): string {
     default: return status;
   }
 }
+
+/** 返回上一页 */
+function goBack() {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
+}
 </script>
 
 <template>
@@ -138,8 +144,13 @@ function getStatusLabel(status: string): string {
 
       <!-- 页面头部 -->
       <view class="page-header">
-        <text class="page-header__title">心动信号</text>
-        <text class="page-header__subtitle">双向心动，从这里开始</text>
+        <view class="page-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="100" @tap="goBack">
+          <text class="page-header__back-icon">‹</text>
+        </view>
+        <view class="page-header__text">
+          <text class="page-header__title">心动信号</text>
+          <text class="page-header__subtitle">双向心动，从这里开始</text>
+        </view>
       </view>
 
       <!-- 状态筛选 Tab -->
@@ -301,11 +312,34 @@ function getStatusLabel(status: string): string {
 /* ========== 页面头部 ========== */
 .page-header {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
+  align-items: center;
+  gap: var(--sp-3);
   margin-bottom: var(--section-gap);
   position: relative;
   z-index: 1;
+}
+
+.page-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.page-header__back-icon {
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-text-primary);
+  font-weight: 300;
+  line-height: 1;
+}
+
+.page-header__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
 }
 
 .page-header__title {

@@ -52,7 +52,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Profile("mock")
+@Profile("mock | dev")
 public class MockSecurityConfig {
 
     /** 管理端路径前缀，用于 mock filter 自动注入 ROLE_ADMIN */

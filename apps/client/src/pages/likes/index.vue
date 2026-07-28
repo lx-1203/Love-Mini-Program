@@ -317,6 +317,14 @@ function handleItemClick(userId: string) {
 }
 
 /**
+ * 返回上一页
+ */
+function goBack() {
+  lightHaptic();
+  uni.navigateBack({ delta: 1 });
+}
+
+/**
  * 跳转到心动信号页
  */
 function goToHeartSignals() {
@@ -408,6 +416,9 @@ onShow(() => {
       
       <!-- 页面头部 -->
       <view class="likes-header">
+        <view class="likes-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="100" @tap="goBack">
+          <text class="likes-header__back-icon">‹</text>
+        </view>
         <text class="likes-header__title">{{ t('likes.title') }}</text>
         <view class="likes-header__actions">
           <!-- 心动信号入口 -->
@@ -792,6 +803,23 @@ onShow(() => {
   // #ifndef H5
   color: var(--c-brand);
   // #endif
+}
+
+.likes-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.likes-header__back-icon {
+  font-size: var(--fs-7xl, 56rpx);
+  color: var(--c-text-primary);
+  font-weight: 300;
+  line-height: 1;
 }
 
 .likes-header__signal {

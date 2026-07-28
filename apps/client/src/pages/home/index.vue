@@ -23,6 +23,15 @@ import ShareCard from "../../components/common/ShareCard.vue";
 import { IMAGE_PATHS } from "../../config/images";
 // 修复：推荐用户数据从 config 动态读取，避免在页面内硬编码
 import { homeRecommendedPeople } from "../../config/home-recommended-people";
+// 修复：换一批功能需要随机打乱，使用 Fisher-Yates 洗牌
+function shuffleArray<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 // SubTask 5.5.2：列表页图片 @error 占位图通用方案
@@ -70,12 +79,12 @@ const { remainingCount } = storeToRefs(discoverStore);
 // 修复：原实现硬编码 6 条推荐用户数据，调整需要修改视图代码；
 // 现统一从 config/home-recommended-people.ts 读取，运营/后端可联动维护。
 // config 中未提供 matchPercent，此处基于 index 派生展示用匹配度。
-const recommendUsers = homeRecommendedPeople.map((person, index) => ({
+const recommendUsers = ref(homeRecommendedPeople.map((person, index) => ({
   avatar: person.avatarUrl,
   nickname: person.name,
   info: person.headline,
   matchPercent: 95 - index * 3,
-}));
+})));
 
 // 学校选择
 const currentSchool = ref("北京大学");
@@ -239,6 +248,31 @@ function toggleLike(postId: string) {
     post.isLiked = !post.isLiked;
     post.likes += post.isLiked ? 1 : -1;
   }
+}
+
+/** 通知按钮：提示暂无新通知 */
+function handleNotificationTap() {
+  uni.showToast({ title: t('home.noNotification'), icon: 'none' });
+}
+
+/** 换一批：随机打乱推荐用户列表 */
+function handleChangeBatch() {
+  recommendUsers.value = shuffleArray(recommendUsers.value);
+}
+
+/** 打开用户主页 */
+function openUserProfile(user: { nickname: string }) {
+  openAppPath(`/pages/profile/index?from=home&user=${user.nickname}`);
+}
+
+/** 点击帖子评论按钮 */
+function handleCommentTap(postId: string) {
+  uni.showToast({ title: t('home.commentHint'), icon: 'none' });
+}
+
+/** 点击帖子收藏按钮 */
+function handleBookmarkTap(postId: string) {
+  uni.showToast({ title: t('home.bookmarkHint'), icon: 'none' });
 }
 
 /**
@@ -409,7 +443,7 @@ onMounted(() => {
           </view>
           <view class="greeting-right">
             <MatchCountChip :count="remainingCount" />
-            <view class="notification-btn">
+            <view class="notification-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleNotificationTap">
               <text class="notification-icon">🔔</text>
               <view class="notification-dot"></view>
             </view>
@@ -636,11 +670,11 @@ onMounted(() => {
       <view class="section-wrap">
         <view class="section-header">
           <text class="section-title section-title-brand">{{ t('home.recommendForYou') }}</text>
-          <text class="section-more section-more--green">{{ t('home.changeBatch') }}</text>
+          <text class="section-more section-more--green press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleChangeBatch">{{ t('home.changeBatch') }}</text>
         </view>
         <scroll-view scroll-x class="recommend-scroll" :show-scrollbar="false">
           <view class="recommend-list card-stagger" role="list">
-            <view class="user-card list-item" v-for="(user, i) in recommendUsers" :key="i" role="listitem">
+            <view class="user-card list-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" v-for="(user, i) in recommendUsers" :key="i" role="listitem" @tap="openUserProfile(user)">
               <view class="user-avatar-wrap">
                 <view class="user-avatar-ring">
                   <view class="user-avatar">
@@ -778,11 +812,11 @@ onMounted(() => {
                   <image class="post-action-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
                   <text class="post-action-count">{{ post.likes }}</text>
                 </view>
-                <view class="post-action-new">
+                <view class="post-action-new press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleCommentTap(post.id)">
                   <image class="post-action-emoji" :src="emojiIcons.chat" mode="aspectFit" alt="" />
                   <text class="post-action-count">{{ post.comments }}</text>
                 </view>
-                <view class="post-action-new">
+                <view class="post-action-new press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleBookmarkTap(post.id)">
                   <image class="post-action-emoji" :src="emojiIcons.bookmark" mode="aspectFit" alt="" />
                 </view>
               </view>
