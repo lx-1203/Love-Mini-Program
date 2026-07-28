@@ -25,10 +25,8 @@ const subtitleLabel = computed(() => props.subtitle || t('login.heroSubtitleDefa
         class="login-logo-icon"
         :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL"
         mode="aspectFit"
-        <!-- #ifdef H5 -->
         role="img"
         :aria-label="titleLabel"
-        <!-- #endif -->
       />
     </view>
     <!-- 主标题 -->

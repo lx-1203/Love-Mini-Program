@@ -764,6 +764,10 @@ onMounted(() => {
    ================================================================ */
 .post-feed {
   flex: 1;
+  /* 修复（H5 渲染截断）：flex 子项默认 min-height:auto，会导致 scroll-view
+     在 H5 下不随父容器收缩、高度被算大，底部被 TabBar 预留区吃掉而截断内容。
+     设 min-height:0 让其正确按 flex:1 收缩到剩余空间。 */
+  min-height: 0;
   overflow-y: auto;
 }
 

@@ -958,7 +958,12 @@ watch(
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  /* 修复：父级 .card-area 是 flex column 且高度来自 flex: 1（indefinite height），
+     此时 height: 100% 无法解析，会退化为内容高度（stack 17px + action-bar 104px = 121px），
+     导致 .card-stack 被压扁、overflow: hidden 把 318px 的卡片裁成一条细缝。
+     改用 flex: 1 1 0% 由父容器分配剩余空间；min-height: 0 允许在 flex 容器内正常收缩。 */
+  flex: 1 1 0%;
+  min-height: 0;
   position: relative;
 }
 

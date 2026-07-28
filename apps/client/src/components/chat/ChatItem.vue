@@ -39,6 +39,7 @@ defineExpose({ ariaLabel });
 <template>
   <view
     class="chat-item"
+    :class="{ 'chat-item--unread': unread && unread > 0 }"
     @tap="emit('tap')"
     role="button"
     :aria-label="ariaLabel"
@@ -82,6 +83,9 @@ defineExpose({ ariaLabel });
   transition: background 150ms ease;
 }
 .chat-item:active { background: var(--c-neutral-50); }
+.chat-item--unread { background: var(--c-neutral-50, #F7F8FA); }
+.chat-item--unread .chat-item-name { font-weight: 700; }
+.chat-item--unread .chat-item-msg { font-weight: 600; color: var(--c-text-primary, #1F2329); }
 
 .chat-item-avatar {
   flex-shrink: 0;

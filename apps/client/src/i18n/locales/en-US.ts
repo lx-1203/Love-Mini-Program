@@ -320,6 +320,7 @@ export default {
     recalledByPeer: "The other party recalled a message",
     quoteMe: "Me",
     quotePeer: "Partner",
+    viewProfile: "View profile",
     selfTextMessage: "My text message",
     peerTextMessage: "Partner's text message",
     selfVoiceMessage: "My voice message",

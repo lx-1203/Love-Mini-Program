@@ -84,7 +84,6 @@ function handleClose() {
       @tap="handleClose"
       role="button"
       :aria-label="t('common.cancel')"
-      <!-- #endif -->
     />
 
     <!-- 菜单面板 -->
@@ -105,7 +104,6 @@ function handleClose() {
         class="long-press-menu__item press-feedback"
         hover-class="long-press-menu__item--pressed"
         @tap="handleAction('detail')"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="t('discover.menuDetail')"
       >
@@ -284,6 +282,11 @@ function handleClose() {
 
 .long-press-menu__item-icon-emoji {
   font-size: 36rpx;
+}
+
+.long-press-menu__item-icon-img {
+  width: 36rpx;
+  height: 36rpx;
 }
 
 .long-press-menu__item-icon--detail {

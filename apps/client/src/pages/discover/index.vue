@@ -1164,6 +1164,13 @@ watch(
   line-height: 1;
 }
 
+.active-capsule__close-img {
+  width: var(--fs-xs);
+  height: var(--fs-xs);
+  margin-left: var(--sp-1);
+  flex-shrink: 0;
+}
+
 /* "清空"胶囊：暖色风格区分 */
 .active-capsule--clear {
   background: var(--c-bg-surface);
@@ -1209,6 +1216,13 @@ watch(
     font-size: var(--fs-md);
     color: var(--c-text-tertiary);
     padding: var(--sp-1) var(--sp-2);
+  }
+
+  .search-clear-img {
+    width: 32rpx;
+    height: 32rpx;
+    margin-left: var(--sp-2);
+    flex-shrink: 0;
   }
 }
 
@@ -1523,6 +1537,12 @@ watch(
   font-size: var(--fs-2xl);
   color: var(--c-text-tertiary);
   font-weight: 300;
+  flex-shrink: 0;
+}
+
+.benefit-card__arrow-img {
+  width: var(--fs-2xl);
+  height: var(--fs-2xl);
   flex-shrink: 0;
 }
 

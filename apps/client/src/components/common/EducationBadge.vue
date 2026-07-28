@@ -76,7 +76,10 @@ defineExpose({ ariaLabel });
 <style lang="scss" scoped>
 .edu-badge {
   &__check {
-    font-weight: 700;
+    /* 撑满 shieldStyle 容器（尺寸由 sizeMap.iconSize 决定），
+       避免 H5 下 uni-image 落回 320x240 默认尺寸 */
+    width: 100%;
+    height: 100%;
     opacity: 0.95;
   }
   &__dot { opacity: 0.5; }

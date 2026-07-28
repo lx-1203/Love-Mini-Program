@@ -32,7 +32,7 @@ export const mockSession1: TempChatSession = {
       sentAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
       durationSeconds: null,
       recalled: false,
-      deliveryStatus: "sent" as const,
+      deliveryStatus: "read" as const,
     },
     {
       id: "m-1-2",
@@ -42,7 +42,7 @@ export const mockSession1: TempChatSession = {
       sentAt: new Date(Date.now() - 28 * 60 * 1000).toISOString(),
       durationSeconds: null,
       recalled: false,
-      deliveryStatus: "sent" as const,
+      deliveryStatus: "read" as const,
     },
     {
       id: "m-1-3",
@@ -52,7 +52,7 @@ export const mockSession1: TempChatSession = {
       sentAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
       durationSeconds: null,
       recalled: false,
-      deliveryStatus: "sent" as const,
+      deliveryStatus: "read" as const,
     },
     {
       id: "m-1-4",
@@ -62,7 +62,7 @@ export const mockSession1: TempChatSession = {
       sentAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
       durationSeconds: null,
       recalled: false,
-      deliveryStatus: "sent" as const,
+      deliveryStatus: "delivered" as const,
     },
     {
       id: "m-1-5",

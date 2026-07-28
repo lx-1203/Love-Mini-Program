@@ -471,8 +471,10 @@ onMounted(async () => {
   border-radius: var(--r-lg);
 }
 
-.answered-hint__icon {
-  font-size: var(--fs-xl);
+.answered-hint__icon-img {
+  width: var(--fs-xl);
+  height: var(--fs-xl);
+  flex-shrink: 0;
 }
 
 .answered-hint__text {

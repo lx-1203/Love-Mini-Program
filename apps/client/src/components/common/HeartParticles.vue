@@ -102,9 +102,9 @@ function particleStyle(index: number) {
   animation: heart-burst 1.5s ease-out forwards;
 }
 
-.heart-icon {
-  font-size: 32rpx;
-  color: var(--c-romance-500, #EC4899);
+.heart-icon-img {
+  width: 32rpx;
+  height: 32rpx;
 }
 
 @keyframes heart-burst {

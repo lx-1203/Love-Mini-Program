@@ -15,7 +15,6 @@ import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
 import { IMAGE_PATHS } from "../../config/images";
-import SafeImage from "../../components/common/SafeImage.vue";
 import LockScreen from "../../components/common/LockScreen.vue";
 import AppShell from "../../components/layout/AppShell.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
@@ -130,8 +129,8 @@ onShow(() => {
     <!-- 话题推荐助手 -->
     <view class="topic-assistant">
         <view class="topic-assistant__label">
-          <SafeImage :src="iconSrc.message" custom-class="topic-assistant__label-icon" mode="aspectFit" />
-          <text>{{ t('chat.topicRecommend') }}</text>
+          <image class="topic-assistant__label-icon" :src="iconSrc.message" mode="aspectFit" alt="" />
+          <text class="topic-assistant__label-text">{{ t('chat.topicRecommend') }}</text>
         </view>
         <scroll-view scroll-x class="topic-scroll" show-scrollbar="false">
           <view class="topic-list" role="list">
@@ -245,16 +244,20 @@ onShow(() => {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  font-size: var(--fs-base);
-  color: var(--c-brand);
-  font-weight: 600;
   margin-bottom: var(--sp-3);
 }
 
 .topic-assistant__label-icon {
   width: var(--sp-7);
   height: var(--sp-7);
+  flex-shrink: 0;
   opacity: 0.7;
+}
+
+.topic-assistant__label-text {
+  font-size: var(--fs-base);
+  color: var(--c-brand);
+  font-weight: 600;
 }
 
 .topic-scroll {
@@ -394,8 +397,15 @@ onShow(() => {
 }
 
 .conversation-item__pin-icon {
-  font-size: var(--fs-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+
+.conversation-item__pin-img {
+  width: var(--sp-5);
+  height: var(--sp-5);
 }
 
 .conversation-item__time {

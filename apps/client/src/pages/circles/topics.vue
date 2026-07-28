@@ -286,9 +286,12 @@ onLoad((query) => {
 }
 
 .error-icon {
-  font-size: var(--fs-3xl);
   opacity: 0.6;
-  color: var(--c-text-tertiary);
+}
+
+.error-icon-img {
+  width: var(--fs-3xl);
+  height: var(--fs-3xl);
 }
 
 .topics-state__text {

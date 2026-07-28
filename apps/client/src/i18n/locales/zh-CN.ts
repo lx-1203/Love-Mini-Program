@@ -320,6 +320,7 @@ export default {
     recalledByPeer: "对方撤回了一条消息",
     quoteMe: "我",
     quotePeer: "对方",
+    viewProfile: "查看对方主页",
     selfTextMessage: "我发送的文本消息",
     peerTextMessage: "对方发送的文本消息",
     selfVoiceMessage: "我发送的语音消息",

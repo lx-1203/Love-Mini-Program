@@ -146,7 +146,6 @@ function onReportSubmitted() {
         lazy-load
         role="img"
         :aria-label="`${t('village.detailTitle')} ${idx + 1}`"
-        <!-- #endif -->
       />
     </view>
     <view class="wall-actions">
@@ -155,7 +154,6 @@ function onReportSubmitted() {
         class="wall-action wall-action--like"
         :class="{ 'wall-action--liked': isLiked }"
         @tap.stop="handleLike"
-        <!-- #ifdef H5 -->
         role="button"
         :aria-label="likeAriaLabel"
         :aria-pressed="isLiked || false"

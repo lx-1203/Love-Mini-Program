@@ -40,6 +40,8 @@ export interface TempChatMessageDto {
   recalled?: boolean;
   /** 送达状态 */
   deliveryStatus?: MessageDeliveryStatus;
+  /** 是否已被当前用户阅读（对方消息） */
+  isRead?: boolean;
   /** 引用回复的目标消息 ID */
   quoteRef?: string;
   /** 引用回复的目标消息正文 */
@@ -77,6 +79,8 @@ export interface MessageLike {
   recalled?: boolean;
   /** 送达状态 */
   deliveryStatus?: MessageDeliveryStatus;
+  /** 是否已被当前用户阅读（对方消息） */
+  isRead?: boolean;
   /** 引用回复的目标消息 ID */
   quoteRef?: string | null;
   /** 引用回复的目标消息正文 */
@@ -105,10 +109,20 @@ export interface MessageLike {
  * @returns 视图层使用的 ChatMessageView
  */
 export function toChatMessageView(message: MessageLike): ChatMessageView {
+  // 根据 deliveryStatus 和 sender 推导 isRead
+  // - 对方消息 deliveryStatus === "read" 或 isRead === true → 已读
+  // - 对方消息 其他情况 → 未读 (false)
+  // - 自己消息不设置 isRead (undefined)
+  const sender = (message.sender as "self" | "peer" | "system") ?? "peer";
+  let derivedIsRead: boolean | undefined;
+  if (sender === "peer") {
+    derivedIsRead = message.isRead === true || message.deliveryStatus === "read" ? true : false;
+  }
+
   return {
     id: String(message.id),
     sessionId: message.sessionId ?? "",
-    sender: (message.sender as "self" | "peer" | "system") ?? "peer",
+    sender,
     kind: (message.kind as "text" | "voice" | "emoji" | "system") ?? "text",
     body: message.body ?? "",
     sentAt:
@@ -118,6 +132,7 @@ export function toChatMessageView(message: MessageLike): ChatMessageView {
     durationSeconds: message.durationSeconds ?? null,
     recalled: message.recalled,
     deliveryStatus: message.deliveryStatus,
+    isRead: derivedIsRead,
     quoteRef: message.quoteRef ?? undefined,
     quoteBody: message.quoteBody ?? undefined,
     quoteSender: toQuoteSender(message.quoteSender),

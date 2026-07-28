@@ -11,12 +11,9 @@
  * - ./index.vue        本文件：页面转场 / 生命周期 / UI 事件 / 状态管理
  */
 // 修复（严格模式 noUnusedLocals）：watch 导入后未使用，已移除。
-import { computed, ref, nextTick } from "vue";
+import { computed, ref, nextTick, watch } from "vue";
 import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
-import AppShell from "../../components/layout/AppShell.vue";
-import SectionCard from "../../components/common/SectionCard.vue";
-import StatusState from "../../components/common/StatusState.vue";
 import ChatBubble from "../../components/chat/ChatBubble.vue";
 import IcebreakerSuggestions from "../../components/chat/IcebreakerSuggestions.vue";
 import VoiceMessageBubble from "../../components/chat/VoiceMessageBubble.vue";
@@ -34,6 +31,8 @@ import { lightHaptic } from "../../utils/haptic";
 import { captureException, addBreadcrumb } from "../../services/sentry";
 import type { RecorderStopResult } from "../../utils/audio-recorder";
 import type { ChatMessageView } from "./types";
+// 导航工具
+import { openAppPath } from "../../utils/navigation";
 // 纯逻辑模块导入（页面转场逻辑仍内联在本文件中）
 import type {
   LongPressMenuState,
@@ -74,10 +73,63 @@ const { t } = useI18n();
 const iconSrc = {
   heartSignal: IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL,
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
+  // 顶栏返回箭头（与 AppShell 保持同一套图标资源）
+  back: IMAGE_PATHS.ICONS_COMMON.BACK,
   // Emoji 替换 SVG 图标
   microphone: IMAGE_PATHS.ICONS_EMOJI.MICROPHONE,
   smile: IMAGE_PATHS.ICONS_EMOJI.SMILE,
 } as const;
+
+/**
+ * 点击对方头像 -> 跳转对方个人主页
+ */
+function goToPeerProfile() {
+  // 尝试多个来源获取对方 userId
+  let peerId: string | undefined | null;
+
+  // 1. messagesStore 中的会话信息
+  peerId = currentSession.value?.partnerId;
+
+  // 2. chatStore 中的活跃会话（推荐人 ID 作为 userId）
+  if (!peerId) {
+    peerId = chatStore.activeSession?.recommendedPersonId;
+  }
+
+  // 3. 页面跳转参数携带的 userId
+  if (!peerId) {
+    peerId = targetUserId.value;
+  }
+
+  if (!peerId) {
+    uni.showToast({ title: "无法获取对方信息", icon: "none" });
+    return;
+  }
+  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(peerId)}`);
+}
+
+/**
+ * 返回好友列表（聊天会话列表）。
+ *
+ * 优先尝试 navigateBack 回到上一页，失败时切换 Tab 到好友列表页面。
+ * mp-weixin 的 uni.navigateBack 不返回 Promise，必须使用 fail 回调风格。
+ */
+function handleBack() {
+  // #ifdef MP-WEIXIN
+  uni.navigateBack({
+    delta: 1,
+    fail: () => {
+      // 无上一页时切换到好友列表
+      uni.switchTab({ url: "/pages/chat/index" });
+    },
+  });
+  // #endif
+  // #ifndef MP-WEIXIN
+  uni.navigateBack({ delta: 1 }).catch(() => {
+    // navigateBack 失败（如 H5 无历史记录）时切换到好友列表
+    uni.switchTab({ url: "/pages/chat/index" });
+  });
+  // #endif
+}
 
 const draft = ref("");
 /** 当前是否为语音输入模式 */
@@ -88,6 +140,23 @@ const pageErrorMessage = ref<string | null>(null);
 const tempCountdown = ref("");
 /** 控制页面内容淡入动画 */
 const pageVisible = ref(false);
+
+/**
+ * 消息列表滚动锚点：指向列表末尾的占位元素 id。
+ *
+ * scroll-view 的 scroll-into-view 只在值发生变化时才重新触发滚动，
+ * 因此先置空再于 nextTick 写回锚点 id，确保连续发送消息时每次都能滚到底。
+ */
+const CHAT_BOTTOM_ANCHOR = "chat-bottom-anchor";
+const scrollIntoView = ref("");
+
+/** 滚动到消息列表底部（进入会话 / 新消息到达 / 发送后调用） */
+function scrollToBottom() {
+  scrollIntoView.value = "";
+  void nextTick(() => {
+    scrollIntoView.value = CHAT_BOTTOM_ANCHOR;
+  });
+}
 
 /** 引用上下文（来自兴趣圈回复的破冰场景） */
 const quoteContext = ref<QuoteContext | null>(null);
@@ -123,21 +192,38 @@ const shouldShowIcebreakers = computed(() => {
 });
 
 /**
- * 当前会话消息视图模型（DTO 转换层应用）
+ * 合并后的消息视图模型（按 sentAt 时间排序，时间戳缺失的消息排末尾）
  *
- * 将 store 中的 MessageItem[] 转换为 ChatMessageView[]，
- * 补充 recalled / deliveryStatus / quoteRef 等扩展字段（默认 undefined），
- * 消除模板中 `(message as any).xxx` 的类型断言。
+ * 合并 messagesStore.currentMessages（私信链路）与
+ * chatStore.activeSession.messages（旧版临时会话兜底），
+ * 统一排序后渲染，避免两段顺序渲染导致的时间错乱。
  */
-const currentMessagesView = computed(() =>
-  toChatMessageViewList(messagesStore.currentMessages)
-);
+const mergedMessagesView = computed(() => {
+  const msgs = [
+    ...toChatMessageViewList(messagesStore.currentMessages),
+    ...toChatMessageViewList(chatStore.activeSession?.messages ?? []),
+  ];
+  // 按 sentAt 升序排列（旧→新），无 sentAt 的排末尾
+  return msgs.sort((a, b) => {
+    const ta = a.sentAt ? new Date(a.sentAt).getTime() : 0;
+    const tb = b.sentAt ? new Date(b.sentAt).getTime() : 0;
+    return ta - tb;
+  });
+});
 
 /**
- * 旧 chatStore 兼容消息视图模型
+ * 消息条数变化时自动滚到底部。
+ *
+ * 覆盖两条链路：messagesStore（私信）与 chatStore（临时匿名会话），
+ * 对方新消息推送、自己发送成功后的乐观更新都会触发。
  */
-const legacyMessagesView = computed(() =>
-  toChatMessageViewList(chatStore.activeSession?.messages ?? [])
+watch(
+  () => mergedMessagesView.value.length,
+  (count, prevCount) => {
+    if (count > (prevCount ?? 0)) {
+      scrollToBottom();
+    }
+  }
 );
 
 usePageAccess(chatPageRequirements);
@@ -197,13 +283,29 @@ onShow(() => {
     return;
   }
 
-  // 优先从 messagesStore 加载会话信息
-  void messagesStore.fetchSessionMessages(sessionId.value);
+  // 优先从 messagesStore 加载会话信息，加载完成后标记已读并滚动到底部
+  void messagesStore.fetchSessionMessages(sessionId.value).then(() => {
+    // 标记当前会话所有对方消息为已读
+    void messagesStore.markSessionMessagesRead(sessionId.value!);
+    scrollToBottom();
+  });
 
   // 如果是临时会话，同时兼容旧 chatStore 的加载逻辑
   const session = messagesStore.sessions.find((s) => s.id === sessionId.value);
   if (!session || session.sessionType === "temp_anonymous") {
-    void chatStore.loadSession(sessionId.value);
+    void chatStore.loadSession(sessionId.value).then(() => {
+      // 标记临时会话中所有对方消息为已读
+      if (chatStore.activeSession) {
+        const updatedMessages = chatStore.activeSession.messages.map((msg) => {
+          if (msg.sender === "peer" && msg.deliveryStatus !== "read") {
+            return { ...msg, deliveryStatus: "read" as const };
+          }
+          return msg;
+        });
+        chatStore.activeSession.messages = updatedMessages;
+      }
+      scrollToBottom();
+    });
   }
 
   startTempCountdown();
@@ -220,6 +322,11 @@ onUnload(() => {
 /** 当前会话信息（优先从 messagesStore 获取） */
 const currentSession = computed(() => {
   return messagesStore.sessions.find((s) => s.id === sessionId.value) || null;
+});
+
+/** 对方头像兜底 */
+const peerAvatarFallback = computed(() => {
+  return currentSession.value?.partnerAvatar || IMAGE_PATHS.AVATARS.AVATAR_1;
 });
 
 /** 是否为临时匿名会话 */
@@ -332,9 +439,19 @@ async function sendText() {
       await messagesStore.sendMessage(currentSessionId, messageToSend, quoteRef?.messageId);
     }
 
-    // 发送成功后清空输入与引用状态；失败时保留草稿以便重试
+    // 发送成功后清空输入与引用状态、关闭表情面板；失败时保留草稿以便重试
     draft.value = "";
     quoteReply.value = null;
+    showEmojiPicker.value = false;
+    // 修复（H5 input 显示不同步）：强制清除原生 input 的显示值
+    // uni-app H5 中 :value 绑定在清空后不更新原生 <input> 显示，
+    // 通过 DOM 直接设置为空确保视觉同步。
+    try {
+      const el = document.querySelector('.wechat-input-bar__input') as HTMLInputElement | null;
+      if (el) el.value = "";
+    } catch (_e) { /* H5 专属修复，非 H5 环境忽略 */ }
+    // 滚动到底部，让刚发出的消息可见
+    scrollToBottom();
   } catch (error) {
     // 消息发送失败：上报到 Sentry，source 标记为 chat.sendText 便于后台筛选
     captureException(error, {
@@ -439,8 +556,16 @@ function onKeyboardHeightChange(e: { height: number }) {
   keyboardHeight.value = e?.height ?? 0;
 }
 
-/** 输入内容变化：重置空闲计时器 */
-function onDraftChange() {
+/**
+ * 输入事件处理：同步 draft 值 + 重置空闲计时器
+ *
+ * 配合 :value + @input 单向数据流使用（替代 v-model），
+ * 确保程序化清空 draft 后原生 input 显示同步更新。
+ * 注意：函数名避免用 onInput（与 uni-app input 组件内部事件名冲突）。
+ */
+function handleInput(e: Event) {
+  const value = (e as any).detail?.value ?? (e.target as HTMLInputElement)?.value ?? "";
+  draft.value = value;
   if (inputFocused.value) {
     showIdleIcebreakerHint.value = false;
     resetIdleTimer();
@@ -608,6 +733,67 @@ async function loadIcebreakers() {
 
 /* ========== "+" 更多菜单：红包 / 视频通话入口 ========== */
 
+/* ========== 表情选择器 ========== */
+
+/** 内置表情列表（按分类分组） */
+const EMOJI_CATEGORIES = [
+  {
+    name: "笑脸",
+    items: ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🫢","🫣","🤫","🤔","🫡","🤐","🤨","😐","😑","😶","🫥","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🥴","😵","🤯","🥳","🥺","😢","😭","😤","😡","🤬","😈","👿","💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"],
+  },
+  {
+    name: "爱心",
+    items: ["❤️","🧡","💛","💚","💙","💜","🖤","🩷","🩵","🩶","🤍","🤎","💕","💞","💗","💖","💘","💝","💟","❣️","💌","❤️‍🔥","❤️‍🩹"],
+  },
+  {
+    name: "手势",
+    items: ["👋","🤚","🖐️","✋","🖖","🫱","🫲","🫳","🫴","👌","🤌","🤏","✌️","🤞","🫰","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","🫵","👍","👎","✊","👊","🤛","🤜","👏","🙌","🫶","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦵","🦶","👂","🦻","👃","🧠","🫀","🫁","🦷","🦴","👀","👁️","👅","👄"],
+  },
+  {
+    name: "物品",
+    items: ["🎉","🎊","🎀","🎁","🎈","🎂","🍰","🧁","🍦","🍿","🎵","🎶","🎤","🎧","📱","💻","⌚️","📸","🎮","🎯","🎲","🧩","📚","✏️","💰","💎","🔮","💡","🔑","🗝️","📌","🧷","🪄"],
+  },
+  {
+    name: "自然",
+    items: ["🌟","⭐️","✨","🔥","🌈","☀️","🌙","⭐","💫","🌸","🌺","🌻","🌹","🌷","🌿","🍀","🌵","🌴","🍁","🍄","🐶","🐱","🦊","🐰","🐼","🐨","🦁","🐯","🐮","🦄","🐧","🦋","🐝","🦄","💐","🌷"],
+  },
+];
+
+/** 展开的表情分类索引（-1 = 未展开） */
+const activeEmojiCategory = ref(0);
+
+/** 是否显示表情选择面板 */
+const showEmojiPicker = ref(false);
+
+/** 切换表情面板显示 */
+function toggleEmojiPicker() {
+  showEmojiPicker.value = !showEmojiPicker.value;
+  if (showEmojiPicker.value) {
+    // 打开表情面板时收起键盘、关闭更多菜单
+    inputFocused.value = false;
+    moreMenuVisible.value = false;
+    uni.hideKeyboard();
+    activeEmojiCategory.value = 0;
+  }
+}
+
+/** 选中表情：插入到输入框草稿 */
+function insertEmoji(emoji: string) {
+  draft.value += emoji;
+  // 同步更新原生 input 显示值（与 handleInput 保持一致）
+  try {
+    const el = document.querySelector('.wechat-input-bar__input') as HTMLInputElement | null;
+    if (el) el.value = draft.value;
+  } catch (_e) { /* H5 专属修复 */ }
+}
+
+/** 关闭表情面板 */
+function closeEmojiPicker() {
+  showEmojiPicker.value = false;
+}
+
+/* ========== "+" 更多菜单：红包 / 视频通话入口 ========== */
+
 /** 更多菜单是否展开 */
 const moreMenuVisible = ref<boolean>(false);
 
@@ -615,6 +801,7 @@ const moreMenuVisible = ref<boolean>(false);
 function openMoreMenu() {
   lightHaptic();
   moreMenuVisible.value = true;
+  showEmojiPicker.value = false;
 }
 
 /** 关闭"+"更多菜单 */
@@ -884,41 +1071,76 @@ function handleVoiceStateChange(recording: boolean) {
 </script>
 
 <template>
-  <AppShell
-    :title="pageTitle"
-    :subtitle="pageSubtitle"
-    show-back
-    :class="{ 'page-fade-in': pageVisible }"
-  >
+  <!--
+    聊天详情页布局（满屏三段式，参考微信）：
+    ┌ chat-page__header  固定顶栏：返回 + 对方昵称/副标题
+    ├ chat-page__body    flex:1 滚动消息区（scroll-view，新消息自动滚到底）
+    └ chat-page__footer  吸底输入栏（引用条 / 破冰话题 / 输入栏 / 临时会话操作）
 
-    <!-- 临时匿名会话顶部提示 -->
+    修复：原实现用 AppShell + SectionCard("消息"/"操作") 把聊天塞进普通文档流，
+    导致消息区无法撑满、输入栏不吸底，且暴露"消息""操作"两个突兀的卡片标题。
+  -->
+  <view class="chat-page" :class="{ 'page-fade-in': pageVisible }" role="main" :aria-label="pageTitle">
+    <!-- ===== 固定顶栏 ===== -->
+    <view class="chat-page__header" role="banner">
+      <view
+        class="chat-header__back press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        @tap="handleBack"
+        role="button"
+        :aria-label="t('common.back')"
+      >
+        <image
+          class="chat-header__back-icon"
+          :src="iconSrc.back"
+          mode="aspectFit"
+          alt=""
+        />
+      </view>
+      <view class="chat-header__titles">
+        <text class="chat-header__title">{{ pageTitle }}</text>
+        <text v-if="pageSubtitle" class="chat-header__subtitle">{{ pageSubtitle }}</text>
+      </view>
+      <view class="chat-header__spacer" />
+    </view>
+
+    <!-- 临时匿名会话顶部提示（含联系方式交换状态，替代原"会话状态"卡片） -->
     <view v-if="isTempSession" class="temp-banner">
       <text class="temp-banner__text">
         {{ tempCountdown === "已结束" ? "会话已结束" : "24小时临时聊天，双方身份匿名" }}
       </text>
+      <text v-if="chatStore.activeSession" class="temp-banner__state">
+        {{ chatStore.activeSession.contactExchangeLabel }}
+      </text>
     </view>
 
-    <!-- 会话状态 -->
-    <SectionCard v-if="isTempSession" title="会话状态" compact>
-      <StatusState
-        v-if="chatStore.activeSession"
-        tone="brand"
-        :label="chatStore.activeSession.contactExchangeLabel"
-      />
-      <text class="meta-copy">
-        {{ chatStore.activeSession?.availabilityHint || '24 小时倒计时和联系方式交换都由状态机驱动。' }}
-      </text>
-    </SectionCard>
-
-    <!-- 消息列表 -->
-    <SectionCard title="消息" compact>
-      <view v-if="pageErrorMessage" class="meta-copy">{{ pageErrorMessage }}</view>
-      <view v-else-if="messagesStore.loading" class="meta-copy">正在加载聊天详情...</view>
-      <view v-else-if="messagesStore.errorMessage" class="meta-copy">{{ messagesStore.errorMessage }}</view>
-      <view v-else class="chat-list" role="list">
-        <!-- 优先展示 messagesStore 的消息（经 DTO 转换层映射为 ChatMessageView） -->
+    <!-- ===== 滚动消息区 ===== -->
+    <view v-if="pageErrorMessage" class="chat-page__body chat-page__body--state">
+      <text class="meta-copy">{{ pageErrorMessage }}</text>
+    </view>
+    <view v-else-if="messagesStore.loading" class="chat-page__body chat-page__body--state">
+      <text class="meta-copy">正在加载聊天详情...</text>
+    </view>
+    <view v-else-if="messagesStore.errorMessage" class="chat-page__body chat-page__body--state">
+      <text class="meta-copy">{{ messagesStore.errorMessage }}</text>
+    </view>
+    <scroll-view
+      v-else
+      class="chat-page__body"
+      scroll-y
+      :scroll-into-view="scrollIntoView"
+      :scroll-with-animation="true"
+      :show-scrollbar="false"
+    >
+      <view class="chat-list" role="list">
+        <!--
+          合并消息列表（按 sentAt 时间升序排列）。
+          合并 messagesStore（私信链路）与 chatStore（旧版临时会话兜底），
+          统一排序后渲染，避免两段顺序渲染导致的时间错乱。
+        -->
         <!-- 红包消息：使用 RedPacketBubble 渲染（基于 body 前缀模式识别） -->
-        <template v-for="message in currentMessagesView" :key="message.id">
+        <template v-for="message in mergedMessagesView" :key="`msg-${message.id}`">
           <RedPacketBubble
             v-if="isRedPacketMessage(message)"
             :red-packet-id="parseRedPacketMessage(message)?.redPacketId ?? 0"
@@ -950,165 +1172,222 @@ function handleVoiceStateChange(recording: boolean) {
             :duration-seconds="message.durationSeconds"
             :recalled="message.recalled"
             :delivery-status="toChatBubbleDeliveryStatus(message.deliveryStatus)"
+            :is-read="message.isRead"
             :quote-ref="message.quoteRef"
             :quote-body="message.quoteBody"
             :quote-sender="message.quoteSender"
+            :peer-avatar="peerAvatarFallback"
             :can-interact="true"
             @longpress="handleMessageLongpress(message.id)"
             @tap-quote="handleTapQuote"
+            @avatar-tap="goToPeerProfile"
           />
         </template>
-        <!-- 兼容旧 chatStore 的消息（兜底） -->
-        <ChatBubble
-          v-for="message in legacyMessagesView"
-          :key="`legacy-${message.id}`"
-          :sender="message.sender"
-          :kind="message.kind"
-          :body="message.body"
-          :sent-at="message.sentAt"
-          :duration-seconds="message.durationSeconds"
-          :recalled="message.recalled"
-          :delivery-status="toChatBubbleDeliveryStatus(message.deliveryStatus)"
-          :can-interact="true"
-          @longpress="handleMessageLongpress(message.id)"
-        />
-        <text v-if="!messagesStore.currentMessages.length && !chatStore.activeSession?.messages.length" class="meta-copy">
-          会话刚建立，还没有消息。
-        </text>
+        <!-- 空态：居中展示，避免顶在滚动区最上方 -->
+        <view
+          v-if="!mergedMessagesView.length"
+          class="chat-empty"
+        >
+          <text class="chat-empty__text">会话刚建立，打个招呼吧</text>
+        </view>
         <text v-if="isSessionClosed" class="meta-copy meta-copy--warning">
           会话已结束，无法继续发送消息。
         </text>
+        <!-- 滚动锚点：始终位于消息流末尾，供 scroll-into-view 定位到底部 -->
+        <view :id="CHAT_BOTTOM_ANCHOR" class="chat-list__anchor" />
       </view>
-    </SectionCard>
+    </scroll-view>
 
-    <!-- 操作区 -->
-    <SectionCard title="操作" compact>
-      <view v-if="pageErrorMessage" class="meta-copy">{{ pageErrorMessage }}</view>
-      <template v-else>
-        <!-- 引用上下文卡片（来自兴趣圈"打招呼"） -->
-        <view v-if="quoteContext" class="quote-card card-base">
-          <view class="quote-card__header">
-            <text class="quote-card__label">引用自「{{ quoteContext.topicTitle }}」</text>
+    <!-- ===== 吸底操作区 ===== -->
+    <view
+      v-if="!pageErrorMessage"
+      class="chat-page__footer"
+      :class="{ 'chat-page__footer--keyboard-up': keyboardHeight > 0 }"
+    >
+      <!-- 引用上下文卡片（来自兴趣圈"打招呼"） -->
+      <view v-if="quoteContext" class="quote-card">
+        <view class="quote-card__header">
+          <text class="quote-card__label">引用自「{{ quoteContext.topicTitle }}」</text>
+        </view>
+        <text class="quote-card__content">"{{ quoteContext.replyContent }}"</text>
+        <text class="quote-card__author">-- {{ quoteContext.replyAuthorName }}</text>
+      </view>
+
+      <!-- 破冰话题建议（消息数极少时展示） -->
+      <IcebreakerSuggestions
+        v-if="shouldShowIcebreakers"
+        :items="chatStore.icebreakerItems"
+        :loading="chatStore.loadingIcebreakers"
+        @select="handleIcebreakerSelect"
+        @refresh="handleRefreshIcebreakers"
+      />
+
+      <!-- 输入框空闲提示（停留 5 秒未输入时展示） -->
+      <view v-if="showIdleIcebreakerHint && shouldShowIcebreakers" class="idle-hint">
+        <SafeImage :src="iconSrc.heartSignal" custom-class="idle-hint__icon" mode="aspectFit" />
+        <text class="idle-hint__text">不知道说什么？试试上面的破冰话题吧</text>
+      </view>
+
+      <!-- 临时会话操作按钮（保留同意交换/结束会话入口） -->
+      <view v-if="isTempSession" class="temp-action-row">
+        <view
+          class="temp-action-btn temp-action-btn--secondary press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="handleAcceptExchange"
+        >
+          <text class="temp-action-btn__text">同意交换</text>
+        </view>
+        <view
+          class="temp-action-btn temp-action-btn--danger press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="handleEndSession"
+        >
+          <text class="temp-action-btn__text temp-action-btn__text--danger">结束会话</text>
+        </view>
+      </view>
+
+      <!-- 引用回复预览条 -->
+      <view v-if="quoteReply" class="quote-reply-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="cancelQuoteReply">
+        <view class="quote-reply-bar__content">
+          <text class="quote-reply-bar__label">
+            引用 {{ quoteReply.sender === 'self' ? '我' : '对方' }}：
+          </text>
+          <text class="quote-reply-bar__body">{{ quoteReply.body }}</text>
+        </view>
+        <text class="quote-reply-bar__close">✕</text>
+      </view>
+
+      <!-- 表情选择面板 -->
+      <view
+        v-if="showEmojiPicker"
+        class="emoji-picker"
+        role="region"
+        aria-label="表情选择面板"
+      >
+        <!-- 表情分类标签页 -->
+        <view class="emoji-picker__tabs">
+          <view
+            v-for="(category, idx) in EMOJI_CATEGORIES"
+            :key="idx"
+            class="emoji-picker__tab"
+            :class="{ 'emoji-picker__tab--active': activeEmojiCategory === idx }"
+            @tap="activeEmojiCategory = idx"
+            role="tab"
+            :aria-selected="activeEmojiCategory === idx"
+          >
+            <text class="emoji-picker__tab-text">{{ category.name }}</text>
           </view>
-          <text class="quote-card__content">"{{ quoteContext.replyContent }}"</text>
-          <text class="quote-card__author">-- {{ quoteContext.replyAuthorName }}</text>
+        </view>
+        <!-- 表情网格 -->
+        <scroll-view
+          class="emoji-picker__grid"
+          scroll-y
+          :show-scrollbar="false"
+        >
+          <view class="emoji-picker__items">
+            <view
+              v-for="(emoji, eidx) in EMOJI_CATEGORIES[activeEmojiCategory]?.items"
+              :key="`emoji-${activeEmojiCategory}-${eidx}`"
+              class="emoji-picker__item press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="80"
+              @tap="insertEmoji(emoji)"
+              role="button"
+              :aria-label="emoji"
+            >
+              <text class="emoji-picker__emoji">{{ emoji }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 微信风格输入栏：语音/键盘切换 + 输入框/按住说话 + 表情/更多/发送 -->
+      <view class="wechat-input-bar">
+        <!-- 语音/文字模式切换按钮 -->
+        <view
+          class="wechat-input-bar__icon-btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="toggleVoiceMode"
+        >
+          <image v-if="!isVoiceMode" class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" alt="" />
+          <text v-else class="wechat-input-bar__icon-text wechat-input-bar__icon-text--keyboard">文</text>
         </view>
 
-        <!-- 破冰话题建议（消息数极少时展示） -->
-        <IcebreakerSuggestions
-          v-if="shouldShowIcebreakers"
-          :items="chatStore.icebreakerItems"
-          :loading="chatStore.loadingIcebreakers"
-          @select="handleIcebreakerSelect"
-          @refresh="handleRefreshIcebreakers"
+        <!-- 文字模式：输入框 -->
+        <!--
+          修复（H5 v-model 不同步）：使用 :value + @input 替代 v-model。
+          uni-app H5 中 v-model 在程序化清空值（draft.value = ""）后，
+          原生 <input> 的显示值不更新，导致用户误认为消息未发出。
+          改为单向数据流 + 手动更新，确保 model→view 始终同步。
+        -->
+        <input
+          v-if="!isVoiceMode"
+          :value="draft"
+          class="wechat-input-bar__input"
+          :disabled="isSessionClosed"
+          :placeholder="isSessionClosed ? '会话已结束' : (quoteReply ? '输入回复...' : '输入消息...')"
+          :adjust-position="true"
+          confirm-type="send"
+          :confirm-hold="true"
+          @confirm="onSend"
+          @focus="onInputFocus"
+          @blur="onInputBlur"
+          @input="handleInput"
+          @keyboardheightchange="onKeyboardHeightChange"
+          :aria-label="isSessionClosed ? '会话已结束' : (quoteReply ? '输入回复' : '输入消息')"
         />
 
-        <!-- 引用回复预览条 -->
-        <view v-if="quoteReply" class="quote-reply-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="cancelQuoteReply">
-          <view class="quote-reply-bar__content">
-            <text class="quote-reply-bar__label">
-              引用 {{ quoteReply.sender === 'self' ? '我' : '对方' }}：
-            </text>
-            <text class="quote-reply-bar__body">{{ quoteReply.body }}</text>
-          </view>
-          <text class="quote-reply-bar__close">✕</text>
-        </view>
+        <!-- 语音模式：按住说话按钮（使用 VoiceRecorder 组件） -->
+        <VoiceRecorder
+          v-else
+          :disabled="isSessionClosed"
+          @recorded="handleVoiceRecorded"
+          @cancel="handleVoiceRecordCancel"
+          @state-change="handleVoiceStateChange"
+        />
 
-        <!-- 微信风格输入栏：语音/键盘切换 + 输入框/按住说话 + 表情/更多/发送 -->
+        <!-- 表情按钮：语音模式下隐藏，避免与录音条挤在一行 -->
         <view
-          class="wechat-input-bar"
-          :class="{ 'wechat-input-bar--keyboard-up': keyboardHeight > 0 }"
+          v-if="!isVoiceMode"
+          class="wechat-input-bar__icon-btn press-feedback"
+          :class="{ 'wechat-input-bar__icon-btn--active': showEmojiPicker }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="toggleEmojiPicker"
+          role="button"
+          aria-label="表情"
         >
-          <!-- 语音/文字模式切换按钮 -->
-          <view
-            class="wechat-input-bar__icon-btn press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            @tap="toggleVoiceMode"
-          >
-            <image v-if="!isVoiceMode" class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" alt="" />
-            <text v-else class="wechat-input-bar__icon-text wechat-input-bar__icon-text--keyboard">文</text>
-          </view>
-
-          <!-- 文字模式：输入框 -->
-          <input
-            v-if="!isVoiceMode"
-            v-model="draft"
-            class="wechat-input-bar__input"
-            :disabled="isSessionClosed"
-            :placeholder="isSessionClosed ? '会话已结束' : (quoteReply ? '输入回复...' : '输入消息...')"
-            :adjust-position="true"
-            @focus="onInputFocus"
-            @blur="onInputBlur"
-            @input="onDraftChange"
-            @keyboardheightchange="onKeyboardHeightChange" aria-label="isSessionClosed ? '会话已结束' : (quoteReply ? '输入回复...' : '输入消息...')"
-          />
-
-          <!-- 语音模式：按住说话按钮（使用 VoiceRecorder 组件） -->
-          <VoiceRecorder
-            v-else
-            :disabled="isSessionClosed"
-            @recorded="handleVoiceRecorded"
-            @cancel="handleVoiceRecordCancel"
-            @state-change="handleVoiceStateChange"
-          />
-
-          <template v-if="!inputFocused && !isVoiceMode">
-            <view
-              class="wechat-input-bar__icon-btn press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="120"
-            >
-              <image class="wechat-input-bar__icon-img" :src="iconSrc.smile" mode="aspectFit" alt="" />
-            </view>
-            <view
-              class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--more press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="120"
-              @tap="openMoreMenu"
-            >
-              <text class="wechat-input-bar__icon-text">+</text>
-            </view>
-          </template>
-          <view
-            v-else-if="!isVoiceMode"
-            class="wechat-input-bar__send press-feedback"
-            :class="{ 'wechat-input-bar__send--active': canSend }"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            @tap="onSend"
-          >
-            <text class="wechat-input-bar__send-text">发送</text>
-          </view>
+          <image class="wechat-input-bar__icon-img" :src="iconSrc.smile" mode="aspectFit" alt="" />
         </view>
 
-        <!-- 输入框空闲提示（停留 5 秒未输入时展示） -->
-        <view v-if="showIdleIcebreakerHint && shouldShowIcebreakers" class="idle-hint">
-          <SafeImage :src="iconSrc.heartSignal" custom-class="idle-hint__icon" mode="aspectFit" />
-          <text class="idle-hint__text">不知道说什么？试试上面的破冰话题吧</text>
+        <!-- 有草稿时显示发送按钮，否则显示"+"更多入口（不再依赖聚焦态，避免按钮闪烁跳动） -->
+        <view
+          v-if="!isVoiceMode && canSend"
+          class="wechat-input-bar__send press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="onSend"
+          role="button"
+          aria-label="发送消息"
+        >
+          <text class="wechat-input-bar__send-text">发送</text>
         </view>
-
-        <!-- 临时会话操作按钮（保留同意交换/结束会话入口） -->
-        <view v-if="isTempSession" class="temp-action-row">
-          <view
-            class="temp-action-btn temp-action-btn--secondary press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            @tap="handleAcceptExchange"
-          >
-            <text class="temp-action-btn__text">同意交换</text>
-          </view>
-          <view
-            class="temp-action-btn temp-action-btn--danger press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            @tap="handleEndSession"
-          >
-            <text class="temp-action-btn__text temp-action-btn__text--danger">结束会话</text>
-          </view>
+        <view
+          v-else-if="!isVoiceMode"
+          class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--more press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="openMoreMenu"
+          role="button"
+          :aria-label="t('chat.moreMenuTitle')"
+        >
+          <text class="wechat-input-bar__icon-text">+</text>
         </view>
-      </template>
-    </SectionCard>
+      </view>
+    </view>
 
     <!-- 长按菜单遮罩：遮罩点击关闭，内容区 @tap.stop 阻止冒泡（P2 弹窗遮罩点击关闭） -->
     <view
@@ -1218,22 +1497,145 @@ function handleVoiceStateChange(recording: boolean) {
         </view>
       </view>
     </view>
-  </AppShell>
+  </view>
 </template>
 
 <style scoped lang="scss">
+/* ==========================================================
+   页面骨架：满屏三段式（顶栏固定 / 消息区滚动 / 输入栏吸底）
+   ========================================================== */
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  box-sizing: border-box;
+  background: var(--c-bg-page, #F4F6FA);
+  overflow: hidden;
+}
+
+/* ========== 固定顶栏 ========== */
+.chat-page__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-shrink: 0;
+  padding: calc(env(safe-area-inset-top) + var(--sp-3)) var(--sp-5) var(--sp-3);
+  background: var(--c-bg-container);
+  border-bottom: 1rpx solid var(--c-border-light);
+}
+
+.chat-header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 触摸目标 ≥88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
+  width: 88rpx;
+  height: 88rpx;
+  flex-shrink: 0;
+  border-radius: var(--r-full);
+}
+
+.chat-header__back-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+/* 标题区：居中收敛，昵称单行省略，避免长昵称把副标题挤走 */
+.chat-header__titles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-header__title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--c-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.chat-header__subtitle {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--c-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* 右侧占位：与返回按钮等宽，保证标题视觉居中 */
+.chat-header__spacer {
+  width: 88rpx;
+  flex-shrink: 0;
+}
+
+/* ========== 滚动消息区 ========== */
+.chat-page__body {
+  flex: 1;
+  /* min-height:0 必需：否则 flex 子项会被内容撑高，滚动失效 */
+  min-height: 0;
+  padding: var(--sp-5) var(--sp-5) var(--sp-6);
+  box-sizing: border-box;
+}
+
+/* 加载 / 错误 / 缺参等状态：居中展示，不再顶在左上角 */
+.chat-page__body--state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-8);
+  text-align: center;
+}
+
+/* ========== 吸底操作区 ========== */
+.chat-page__footer {
+  flex-shrink: 0;
+  background: var(--c-bg-container);
+  border-top: 1rpx solid var(--c-border-light);
+  padding: var(--sp-3) var(--sp-4);
+  padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* 键盘弹起时收掉底部安全区留白，避免输入栏与键盘之间出现空档 */
+.chat-page__footer--keyboard-up {
+  padding-bottom: var(--sp-3);
+}
+
+/* 键盘弹起时：底部安全区留白由键盘本身占据，去掉多余内边距 */
+.chat-page__footer--keyboard-up {
+  padding-bottom: var(--sp-3);
+}
+
+/* ========== 临时会话提示条 ========== */
 .temp-banner {
-  padding: var(--sp-4) var(--sp-6);
-  border-radius: var(--r-lg);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  padding: var(--sp-3) var(--sp-6);
   background: linear-gradient(135deg, var(--c-brand-50) 0%, var(--c-romance-50) 100%);
-  border: 1rpx solid var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15)));
+  border-bottom: 1rpx solid var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15));
   text-align: center;
 }
 
 .temp-banner__text {
-  font-size: var(--fs-base);
+  font-size: var(--fs-sm);
   color: var(--c-romance-500);
   font-weight: 600;
+}
+
+.temp-banner__state {
+  font-size: var(--fs-xs);
+  color: var(--c-text-secondary);
 }
 
 .meta-copy {
@@ -1249,28 +1651,43 @@ function handleVoiceStateChange(recording: boolean) {
   padding: var(--sp-4) 0;
 }
 
+/* 消息流：气泡之间留出呼吸感，左右内边距由滚动区提供 */
 .chat-list {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-5);
+  min-height: 100%;
+  /* 消息不足一屏时贴住底部，视觉上更接近真实聊天 */
+  justify-content: flex-end;
 }
 
-/* ========== 微信风格输入栏 ========== */
+/* 滚动锚点：零高度占位，仅用于 scroll-into-view 定位 */
+.chat-list__anchor {
+  height: 1rpx;
+}
+
+/* 空态：会话刚建立时居中提示 */
+.chat-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-10) 0;
+}
+
+.chat-empty__text {
+  font-size: var(--fs-base);
+  color: var(--c-text-tertiary);
+}
+
+/* ========== 微信风格输入栏 ==========
+   吸底容器 .chat-page__footer 已负责背景 / 分隔线 / 安全区，
+   这里只排列控件，避免出现"卡片里套输入框"的割裂感。 */
 .wechat-input-bar {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
   min-height: 88rpx;
-  padding: var(--sp-3) var(--sp-4);
-  padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom));
-  background: var(--c-bg-container);
-  border-top: 1rpx solid var(--c-border-light);
-  border-radius: var(--r-lg);
   box-sizing: border-box;
-}
-
-.wechat-input-bar--keyboard-up {
-  padding-bottom: var(--sp-3);
 }
 
 .wechat-input-bar__icon-btn {
@@ -1729,6 +2146,100 @@ function handleVoiceStateChange(recording: boolean) {
   font-weight: 500;
 }
 
+
+/* ========== 表情选择面板 ========== */
+.emoji-picker {
+  border-top: 1rpx solid var(--c-border-light);
+  background: var(--c-bg-container);
+  animation: emoji-slide-up 200ms ease-out;
+  overflow: hidden;
+}
+
+@keyframes emoji-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.emoji-picker__tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 var(--sp-3);
+  border-bottom: 1rpx solid var(--c-border-light);
+  flex-shrink: 0;
+}
+
+.emoji-picker__tab {
+  flex: 1;
+  text-align: center;
+  padding: var(--sp-3) var(--sp-2);
+  cursor: pointer;
+  position: relative;
+  transition: color 180ms ease;
+}
+
+.emoji-picker__tab-text {
+  font-size: 24rpx;
+  color: var(--c-text-tertiary);
+  font-weight: 500;
+  transition: color 180ms ease;
+}
+
+.emoji-picker__tab--active .emoji-picker__tab-text {
+  color: var(--c-brand);
+  font-weight: 600;
+}
+
+.emoji-picker__tab--active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 4rpx;
+  background: var(--c-brand);
+  border-radius: 4rpx 4rpx 0 0;
+}
+
+.emoji-picker__grid {
+  max-height: 420rpx;
+  padding: var(--sp-3);
+  box-sizing: border-box;
+}
+
+.emoji-picker__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  justify-content: flex-start;
+}
+
+.emoji-picker__item {
+  width: 12.5%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-md);
+  transition: background 120ms ease;
+  cursor: pointer;
+}
+
+.emoji-picker__emoji {
+  font-size: 44rpx;
+  line-height: 1;
+}
+
+/* 表情按钮激活态 */
+.wechat-input-bar__icon-btn--active {
+  background: var(--c-brand-50);
+  box-shadow: inset 0 0 0 2rpx var(--c-brand-200);
+}
 
 /* ========== 返回按钮 ========== */
 .chat-session-back {

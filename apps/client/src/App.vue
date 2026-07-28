@@ -4,7 +4,7 @@ import { onLaunch, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useSessionStore } from "./stores/session";
 import { useUnlockGuideStore } from "./stores/unlock-guide";
-import { reportGlobalError } from "./main";
+import { reportGlobalError } from "./utils/error-reporter";
 import UnlockGuideModal from "./components/UnlockGuideModal.vue";
 import UnlockGuideOverlay from "./components/UnlockGuideOverlay.vue";
 import { useNetworkStatus } from "./composables/useNetworkStatus";
@@ -279,9 +279,10 @@ view, button, scroll-view, swiper, input, textarea {
 }
 
 /* 页面进入动画类 */
+/* 性能（H5 滚动卡顿修复）：一次性入场动画不声明 will-change，
+   否则动画结束后合成层永久保留，滚动时叠加合成开销。 */
 .animate-fade-in {
   animation: fadeInUp 400ms cubic-bezier(0.4, 0, 0.2, 1) both;
-  will-change: transform, opacity;
 }
 
 /* 列表/卡片交错入场延迟类 */
@@ -298,31 +299,30 @@ view, button, scroll-view, swiper, input, textarea {
 /* 淡入动画类 */
 .animate-fade {
   animation: fadeIn 200ms ease-out both;
-  will-change: opacity;
 }
 
 /* 弹性缩放入场类 */
 .animate-scale-in {
   animation: scaleIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  will-change: transform, opacity;
 }
 
 /* 按钮点击缩放 */
+/* 性能：will-change 仅在按压瞬间声明，静止态不常驻合成层 */
 .btn-press {
   transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
 }
 .btn-press:active {
   transform: scale(0.96);
+  will-change: transform;
 }
 
 /* 通用点击缩放 */
 .press-scale {
   transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
 }
 .press-scale:active {
   transform: scale(0.98);
+  will-change: transform;
 }
 
 /* 在线红点脉冲 */
@@ -458,17 +458,23 @@ view, button, scroll-view, swiper, input, textarea {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* 性能（H5 滚动卡顿修复）：入场动画不声明 will-change。
+   .list-item 会同时命中一个滚动容器内的所有列表项（评论、推荐作者等），
+   常驻 will-change 等于把每一项永久提升为合成层，滚动时合成开销叠加导致掉帧。
+   animation-fill-mode 用 both 保留首帧即可，动画本身只跑 300ms。 */
 .list-item {
   animation: list-item-enter 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
+/* stagger 延迟只给首屏前 6 项，之后的项直接以最终态出现，
+   避免长列表在滚动过程中还有大量子项排队做动画。 */
 .list-item:nth-child(1) { animation-delay: 0ms; }
 .list-item:nth-child(2) { animation-delay: 60ms; }
 .list-item:nth-child(3) { animation-delay: 120ms; }
 .list-item:nth-child(4) { animation-delay: 180ms; }
 .list-item:nth-child(5) { animation-delay: 240ms; }
 .list-item:nth-child(6) { animation-delay: 300ms; }
-.list-item:nth-child(n+7) { animation-delay: 360ms; }
+.list-item:nth-child(n+7) { animation: none; }
 
 /* ================================================================
    卡片错位入场动画（Phase F3）
@@ -490,9 +496,10 @@ view, button, scroll-view, swiper, input, textarea {
 
 /* mp-weixin 兼容：WXSS 不支持 * 通配符选择器，使用 view 元素选择器替代。
    实际使用中 .card-stagger 的直接子元素均为 <view>（见 home/discover/village 页面）。 */
+/* 性能（H5 滚动卡顿修复）：一次性入场动画不声明 will-change，
+   否则容器内每张卡片动画结束后仍常驻合成层。 */
 .card-stagger > view {
   animation: cardStaggerIn 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
 }
 
 .card-stagger > view:nth-child(1) { animation-delay: 0ms; }
@@ -551,15 +558,18 @@ view, button, scroll-view, swiper, input, textarea {
    - 200ms cubic-bezier(0.4, 0, 0.2, 1) 标准缓动
    - 按压时 scale + box-shadow + opacity 三重视觉反馈
    ================================================================ */
+/* 性能（H5 滚动卡顿修复）：原实现在 .press-feedback 上常驻 will-change，
+   导致页面内每个可点击元素都被永久提升为合成层，滚动时合成开销叠加造成掉帧。
+   改为仅在按压瞬间（--active）声明 will-change，静止态不占用 GPU 资源。 */
 .press-feedback {
   transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1),
               filter 180ms cubic-bezier(0.4, 0, 0.2, 1),
               opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform, filter, opacity;
 }
 
 .press-feedback--active {
+  will-change: transform, filter, opacity;
   transform: scale(0.88);
   filter: brightness(0.95);
   opacity: 0.92;
@@ -588,6 +598,21 @@ view, button, scroll-view, swiper, input, textarea {
   height: 200%;
   opacity: 0.6;
   transition: width 300ms ease-out, height 300ms ease-out, opacity 600ms ease-out;
+}
+
+/* 修复（P1 性能）：全局滚动容器启用硬件加速与惯性滚动，减少 H5 端滚动卡顿 */
+scroll-view {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 修复（P1 性能）：动画结束后清除合成层提示，避免滚动时持续占用 GPU 资源 */
+.animate-fade-in,
+.animate-fade,
+.animate-scale-in,
+.page-fade-in,
+.page-slide-up,
+.page-scale-in {
+  will-change: auto;
 }
 
 /* ================================================================

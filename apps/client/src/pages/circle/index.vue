@@ -434,6 +434,11 @@ function handleShare() {
   font-weight: bold;
 }
 
+.post-card__gender-badge-img {
+  width: 20rpx;
+  height: 20rpx;
+}
+
 .post-card__gender-badge--male {
   background: var(--c-tint-blue-soft, #E8F4FD);
   color: var(--c-info-500, #3B82F6);

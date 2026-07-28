@@ -3,48 +3,22 @@ import type { App as VueApp } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";
 import gsapPlugin from "./plugins/gsap";
-import { initSentry, captureException } from "./services/sentry";
+import { initSentry } from "./services/sentry";
 import i18n from "./i18n";
+import { reportGlobalError } from "./utils/error-reporter";
 
 /**
- * 全局错误上报函数（统一错误出口）。
+ * 全局错误上报函数已迁移至 utils/error-reporter.ts。
  *
- * 修复（P0 BUG）：原实现各处错误仅通过散落的 console.error 输出，
- * 缺少统一上报通道，难以后续接入监控平台或聚合排查。
- * 现提供单一入口 reportGlobalError，供 main.ts 全局错误处理器
- * （app.config.errorHandler / uni.onError / uni.onUnhandledRejection）
- * 和 App.vue 启动 try-catch 共同使用，确保所有未处理错误都通过同一通道输出。
+ * 修复（P0 BUG）：原 reportGlobalError 定义在 main.ts 中，App.vue 通过
+ * `import { reportGlobalError } from "./main"` 引用，与 main.ts 的
+ * `import App from "./App.vue"` 形成循环依赖。在 Vite + uni-app 的 H5
+ * 构建模式下，Vite 注入的入口模块立即调用 createApp()，但 App 因循环依赖
+ * 尚未完成评估，导致 "Cannot access 'App' before initialization" TDZ 错误，
+ * 页面白屏。
  *
- * 监控平台对接：
- * - 内部调用 captureException（services/sentry.ts），自动适配 H5 / mp-weixin：
- *   - H5 环境：上报到 Sentry（若已配置 VITE_SENTRY_DSN）；
- *   - mp-weixin 环境：console.error + 上报到后端 /api/error-reports 接口；
- * - 同时保留 console.error 本地输出，便于开发期调试。
- *
- * @param source - 错误来源标识（如 "Vue Error"、"App.onLaunch"、"uni.onError"）
- * @param err - 错误对象或原始值
- * @param context - 可选的上下文信息（如 Vue info 字符串、生命周期阶段）
+ * 现 reportGlobalError 独立存放于 utils/error-reporter.ts，打破循环。
  */
-export function reportGlobalError(source: string, err: unknown, context?: unknown): void {
-  // 1. 本地控制台输出（H5 与 mp-weixin 均保留，便于开发期调试）
-  if (context !== undefined) {
-    console.error(`[Global Error][${source}]`, err, context);
-  } else {
-    console.error(`[Global Error][${source}]`, err);
-  }
-
-  // 2. 上报到监控平台：captureException 内部根据平台分发（Sentry / 后端接口）
-  //    将 source 与 context 合并为 extra 上下文，便于在 Sentry 后台按来源筛选
-  const extra: Record<string, unknown> = { source };
-  if (context !== undefined) {
-    extra.context = context;
-  }
-  try {
-    captureException(err, extra);
-  } catch (_e) {
-    // captureException 内部已做容错，此处兜底防止极端情况影响主流程
-  }
-}
 
 /** 全局错误监听器是否已注册（避免重复注册） */
 let globalErrorListenersRegistered = false;

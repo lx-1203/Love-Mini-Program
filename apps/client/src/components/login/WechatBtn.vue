@@ -27,10 +27,8 @@ const { t } = useI18n();
       class="wechat-btn-icon"
       :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE"
       mode="aspectFit"
-      <!-- #ifdef H5 -->
       role="img"
       :aria-label="t('login.wechatLogin')"
-      <!-- #endif -->
     />
     <text class="wechat-btn-text">{{ t('login.wechatLogin') }}</text>
   </view>

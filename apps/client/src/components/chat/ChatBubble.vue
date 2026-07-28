@@ -13,6 +13,8 @@ const props = withDefaults(
     durationSeconds?: number | null;
     recalled?: boolean;
     deliveryStatus?: "sent" | "delivered" | "read";
+    /** 对方消息是否已被当前用户阅读 */
+    isRead?: boolean;
     quoteRef?: string | null;
     quoteBody?: string | null;
     quoteSender?: string | null;
@@ -32,6 +34,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   longpress: [messageId: string];
   tapQuote: [quoteRef: string];
+  avatarTap: [];
 }>();
 
 const { t } = useI18n();
@@ -78,6 +81,11 @@ function handleTapQuote() {
   }
 }
 
+/** 点击对方头像 */
+function handlePeerAvatarTap() {
+  emit("avatarTap");
+}
+
 // 修复（严格模式 noUnusedLocals）：bubbleAriaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
 // vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用，
 // 同时暴露无障碍标签供父组件/测试访问。
@@ -116,25 +124,29 @@ function formatTime(isoString: string): string {
     <!-- 正常消息 -->
     <view v-else class="bubble-row" :class="[`bubble-row--${sender}`]">
       <!-- 对方头像（左侧） -->
-      <image
+      <view
         v-if="isPeerSender"
-        class="bubble-avatar bubble-avatar--peer"
-        :src="peerAvatar"
-        mode="aspectFill"
-        role="img"
-        :aria-label="t('chat.quotePeer')"
-        <!-- #endif -->
-      />
+        class="bubble-avatar-wrap bubble-avatar-wrap--peer"
+        @tap.stop="handlePeerAvatarTap"
+        role="button"
+        :aria-label="t('chat.viewProfile')"
+      >
+        <image
+          class="bubble-avatar bubble-avatar--peer"
+          :src="peerAvatar"
+          mode="aspectFill"
+          role="img"
+          :aria-label="t('chat.quotePeer')"
+        />
+      </view>
       <!-- 自己头像（右侧） -->
       <image
         v-else-if="isSelfSender"
         class="bubble-avatar bubble-avatar--self"
         :src="selfAvatar"
         mode="aspectFill"
-        <!-- #ifdef H5 -->
         role="img"
         :aria-label="t('chat.quoteMe')"
-        <!-- #endif -->
       />
 
       <view class="bubble" :class="[`bubble--${sender}`]">
@@ -143,7 +155,6 @@ function formatTime(isoString: string): string {
           v-if="quoteRef && quoteBody"
           class="bubble__quote"
           @tap.stop="handleTapQuote"
-          <!-- #ifdef H5 -->
           role="button"
           :aria-label="t('chat.quoteAria')"
         >
@@ -162,9 +173,11 @@ function formatTime(isoString: string): string {
           <text class="bubble__body">{{ body }}</text>
         </template>
 
-        <!-- 底部元信息：时间 + 送达状态 -->
+        <!-- 底部元信息：时间 + 已读/未读 + 送达状态 -->
         <view class="bubble__footer">
           <text class="bubble__meta">{{ formatTime(sentAt) }}</text>
+          <!-- 对方消息未读指示器（蓝色小点） -->
+          <view v-if="isPeerSender && isRead === false" class="bubble__unread-dot" />
           <!-- 送达状态图标（仅自己发送的消息显示） -->
           <view v-if="isSelfSender && !recalled" class="bubble__status">
             <text v-if="deliveryStatus === 'sent'" class="bubble__status-icon">✓</text>
@@ -204,6 +217,13 @@ function formatTime(isoString: string): string {
 }
 .bubble-row--peer {
   flex-direction: row;
+}
+
+/* 头像容器：包裹层用于承载点击事件（uni-app image 原生组件 @tap 不可靠） */
+.bubble-avatar-wrap {
+  width: 64rpx;
+  height: 64rpx;
+  flex-shrink: 0;
 }
 
 /* 头像：圆形 + 白边（参考微信风格，64rpx 直径） */
@@ -330,5 +350,20 @@ function formatTime(isoString: string): string {
 .bubble__status-icon--read {
   color: var(--c-bg-container);
   opacity: 0.9;
+}
+
+/* 对方消息未读指示器（蓝色小圆点） */
+.bubble__unread-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: var(--c-brand, #1A8CFF);
+  flex-shrink: 0;
+  animation: unread-pulse 2s ease-in-out infinite;
+}
+
+@keyframes unread-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 </style>

@@ -665,9 +665,11 @@ onLoad((query) => {
     <!-- ===== 转发确认弹窗 ===== -->
     <!--
       无障碍（a11y）：role / aria-* 属性直接放在 view 上。
-      说明：uni-app 不支持属性级条件编译（`<!-- #ifdef H5 -->` 不能写在开标签内部），
+      说明：uni-app 不支持属性级条件编译（ifdef 注释不能写在开标签内部），
       否则会破坏 Vue 模板解析导致下游变量被误判为未使用。
       mp-weixin 端会忽略未知 HTML 属性，因此 H5 与小程序两端均安全。
+      注意：本段注释内不可出现注释结束符，否则注释会提前闭合，
+      剩余文字将作为文本节点渲染到页面底部（曾出现过该问题）。
     -->
     <view
       v-if="showShareModal"
@@ -761,11 +763,16 @@ $text-tertiary: var(--c-neutral-400, #9CA3AF);
 $border-light: var(--c-tint-gray-50, #F3F4F6);
 $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 
+/* 修复（H5 滚动卡顿）：page 已带 env(safe-area-inset-*) 内边距，
+   子容器再取 100vh 会让文档整体高度超出视口，浏览器因此额外产生一层页面滚动。
+   改用 height: 100% 贴合 page 的内容盒，并 overflow: hidden 明确禁止外层滚动，
+   滚动只交给内部的 .detail-body 一层处理。 */
 .detail-page {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  height: 100%;
+  overflow: hidden;
   background: $bg-page;
 }
 
@@ -776,6 +783,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 60%, var(--c-romance-300, #F9A8C4) 100%);
+  /* 固定高度：不参与 flex 收缩，剩余空间全部留给滚动区 */
+  flex-shrink: 0;
+  /* z-index 需要非 static 定位才生效 */
+  position: relative;
   z-index: 10;
 }
 
@@ -813,8 +824,16 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 /* ========== 帖子内容容器 ========== */
+/* 修复（H5 滚动卡顿）：原实现只写 flex: 1，flex-basis 保持 auto，
+   scroll-view 会被内容撑到超过视口高度，于是 page 与 scroll-view 同时可滚动。
+   两层滚动交接时手势要在容器间"交棒"，表现为滚动发涩、需要二次拖动。
+   min-height: 0 + height: 0 让 flex 容器严格按剩余空间约束高度，只保留一层滚动。 */
 .detail-body {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
+  height: 0;
+  /* iOS 惯性滚动 */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ================================================================
@@ -826,7 +845,6 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 28rpx;
   border-radius: 24rpx;
   box-shadow: $card-soft-shadow;
-  transition: transform 0.15s ease;
 }
 
 /* 作者基础信息行 */
@@ -1213,6 +1231,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   gap: 20rpx;
 }
 
+/* 修复（H5 滚动卡顿）：卡片本身不是点击目标（点击操作在内部的关注/私信按钮上），
+   但 :active 在 H5 触摸时手指按下即触发，滑动起手会让卡片跟着缩放一下，
+   滚动过程中触发 transform 重绘，正是"卡手"的直接来源。已移除按压缩放。 */
 .similar-author-card {
   display: flex;
   flex-direction: column;
@@ -1220,14 +1241,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 24rpx;
   background: $bg-page;
   border-radius: 20rpx;
-  transition: transform 0.15s ease;
 }
-
-/* #ifdef H5 */
-.similar-author-card:active {
-  transform: scale(0.98);
-}
-/* #endif */
 
 .similar-author-main {
   display: flex;
@@ -1458,14 +1472,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 20rpx;
   background: $bg-page;
   border-radius: 20rpx;
-  transition: transform 0.15s ease;
 }
 
-/* #ifdef H5 */
-.comment-item:active {
-  transform: scale(0.98);
-}
-/* #endif */
+/* 修复（H5 滚动卡顿）：原实现给 .comment-item 加了 :active { transform: scale(0.98) }。
+   H5 触摸端 :active 在手指按下瞬间就命中，用户从评论卡片上起手滑动时会先触发一次
+   缩放动画，观感就是"滚动前先顿一下"。评论卡片整体并非点击目标（只有 @longpress
+   与内部点赞按钮），因此直接移除该按压反馈。 */
 
 .comment-avatar {
   width: 64rpx;
@@ -1614,6 +1626,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   align-items: center;
   gap: 20rpx;
+  /* .detail-page 现在是严格定高的 flex 容器，固定区域需禁止收缩 */
+  flex-shrink: 0;
   padding: 20rpx 32rpx;
   padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
   background: $white;

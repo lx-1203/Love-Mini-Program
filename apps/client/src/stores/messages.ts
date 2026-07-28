@@ -110,6 +110,8 @@ export interface MessageItem {
   body: string;
   sentAt: string;
   durationSeconds?: number | null;
+  /** 是否已被当前用户阅读（对方消息） */
+  isRead?: boolean;
 }
 
 /**
@@ -200,13 +202,16 @@ function mapToMessageSession(raw: ConversationView): MessageSession {
 function mapToMessageItem(raw: BackendMessageView): MessageItem {
   const sessionStore = useSessionStore();
   const currentUserId = sessionStore.userSession?.userId ?? "";
+  const sender = String(raw.senderId) === currentUserId ? "self" : "peer";
   return {
     id: String(raw.id),
     sessionId: String(raw.conversationId),
-    sender: String(raw.senderId) === currentUserId ? "self" : "peer",
+    sender,
     kind: raw.messageKind === "voice" ? "voice" : raw.messageKind === "emoji" ? "emoji" : "text",
     body: raw.content,
     sentAt: raw.createdAt,
+    // 对方的消息记录 isRead，自己的消息不记录
+    isRead: sender === "peer" ? raw.isRead : undefined,
   };
 }
 
@@ -268,18 +273,18 @@ const mockSessions: MessageSession[] = [
 
 const mockMessages: Record<string, MessageItem[]> = {
   "session-private-1": [
-    { id: "msg-1", sessionId: "session-private-1", sender: "peer", kind: "text", body: "嗨，看到你的资料觉得挺有缘的", sentAt: "2026-05-20T18:00:00Z" },
+    { id: "msg-1", sessionId: "session-private-1", sender: "peer", kind: "text", body: "嗨，看到你的资料觉得挺有缘的", sentAt: "2026-05-20T18:00:00Z", isRead: true },
     { id: "msg-2", sessionId: "session-private-1", sender: "self", kind: "text", body: "哈哈，我也觉得", sentAt: "2026-05-20T18:05:00Z" },
-    { id: "msg-3", sessionId: "session-private-1", sender: "peer", kind: "text", body: "明天下午有空吗？", sentAt: "2026-05-20T18:30:00Z" },
+    { id: "msg-3", sessionId: "session-private-1", sender: "peer", kind: "text", body: "明天下午有空吗？", sentAt: "2026-05-20T18:30:00Z", isRead: false },
   ],
   "session-private-2": [
-    { id: "msg-4", sessionId: "session-private-2", sender: "peer", kind: "text", body: "图书馆三楼见", sentAt: "2026-05-19T21:00:00Z" },
+    { id: "msg-4", sessionId: "session-private-2", sender: "peer", kind: "text", body: "图书馆三楼见", sentAt: "2026-05-19T21:00:00Z", isRead: true },
   ],
   "session-private-3": [
-    { id: "msg-5", sessionId: "session-private-3", sender: "peer", kind: "text", body: "上次拍的那组照片发你了", sentAt: "2026-05-18T14:20:00Z" },
+    { id: "msg-5", sessionId: "session-private-3", sender: "peer", kind: "text", body: "上次拍的那组照片发你了", sentAt: "2026-05-18T14:20:00Z", isRead: false },
   ],
   "session-temp-1": [
-    { id: "msg-6", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "嗨，我是通过匹配进来的", sentAt: "2026-05-20T20:00:00Z" },
+    { id: "msg-6", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "嗨，我是通过匹配进来的", sentAt: "2026-05-20T20:00:00Z", isRead: false },
   ],
 };
 
@@ -490,7 +495,10 @@ export const useMessagesStore = defineStore("messages", {
           if (useMock()) {
             // 修复：旧请求返回时不再修改状态
             if (token !== fetchSessionMessagesToken) return;
-            this.currentMessages = mockMessages[sessionId] ? [...mockMessages[sessionId]] : [];
+            // 深拷贝 mock 数据，避免 markSessionMessagesRead 等操作污染原始数据
+            this.currentMessages = mockMessages[sessionId]
+              ? JSON.parse(JSON.stringify(mockMessages[sessionId]))
+              : [];
             const s = this.sessions.find((x) => x.id === sessionId);
             if (s) s.unreadCount = 0;
             return;
@@ -754,6 +762,53 @@ export const useMessagesStore = defineStore("messages", {
       this.currentMessages.push(message);
       const s = this.sessions.find((x) => x.id === message.sessionId);
       if (s) { s.lastMessagePreview = message.kind === "text" ? message.body : `[${message.kind}]`; s.lastMessageSentAt = message.sentAt; s.unreadCount += 1; }
+    },
+
+    /**
+     * 标记当前会话中所有对方消息为已读。
+     *
+     * 当用户进入聊天会话页面时调用，将当前展示的所有 peer 消息标记为已读：
+     * - 更新 currentMessages 中每条 peer 消息的 isRead = true
+     * - 更新会话列表中的 unreadCount = 0
+     * - Mock 模式下直接修改本地数据
+     * - Real 模式下调用后端 API 标记已读
+     *
+     * @param sessionId 会话 ID
+     */
+    async markSessionMessagesRead(sessionId: string) {
+      // 本地标记：所有 peer 消息设为已读（不可变更新，避免污染共享数据）
+      let changed = false;
+      const updatedMessages = this.currentMessages.map((msg) => {
+        if (msg.sender === "peer" && msg.isRead === false) {
+          changed = true;
+          return { ...msg, isRead: true };
+        }
+        return msg;
+      });
+      if (changed) {
+        this.currentMessages = updatedMessages;
+      }
+
+      // 更新会话未读数
+      const session = this.sessions.find((s) => s.id === sessionId);
+      if (session) {
+        session.unreadCount = 0;
+      }
+
+      // Real 模式下调用后端 API
+      if (!useMock() && changed) {
+        try {
+          const sessionStore = useSessionStore();
+          const userId = sessionStore.userSession?.userId ?? "";
+          await request<void>({
+            url: `/messages/conversations/${sessionId}/read?userId=${userId}`,
+            method: "PUT",
+          });
+        } catch (_e) {
+          // 标记已读失败不影响用户体验，静默处理
+          console.warn("[messages.markSessionMessagesRead] 标记已读失败:", _e);
+        }
+      }
     },
 
     clearCurrentMessages() { this.currentMessages = []; },

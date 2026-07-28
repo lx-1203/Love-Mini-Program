@@ -13,7 +13,7 @@ import { useProfileStore } from "../../stores/profile";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
 import { isDev } from "../../services/env";
-import { openAppPath } from "../../utils/navigation";
+import { openAppPath, consumeTabQueryCache } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import { toProfileView } from "../../view-models/profile";
 import LockScreen from "../../components/common/LockScreen.vue";
@@ -152,9 +152,17 @@ function loadPageUserIdParam(): void {
     const userId = options.userId;
     if (typeof userId === "string" && userId.length > 0) {
       targetUserId.value = userId;
-    } else {
-      targetUserId.value = "";
+      return;
     }
+
+    // 兜底：从 tabQueryCache 获取（switchTab 无法携带 query 参数）
+    const cached = consumeTabQueryCache("/pages/profile/index");
+    if (cached.userId) {
+      targetUserId.value = cached.userId;
+      return;
+    }
+
+    targetUserId.value = "";
   } catch (_e) {
     // 获取页面参数失败，按自己的 profile 处理
     targetUserId.value = "";
@@ -1452,8 +1460,9 @@ onMounted(() => {
 }
 
 .user-info__school-icon {
-  font-size: var(--fs-xs);
-  line-height: 1;
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
 }
 
 .user-info__school {
@@ -1480,6 +1489,9 @@ onMounted(() => {
 .edit-btn {
   position: relative;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   padding: var(--sp-3) var(--sp-6);
   background: var(--c-brand-50);
   border-radius: var(--r-full);
@@ -1492,10 +1504,31 @@ onMounted(() => {
   }
 }
 
+.edit-btn__icon {
+  width: 28rpx;
+  height: 28rpx;
+  flex-shrink: 0;
+}
+
 .edit-btn__text {
   font-size: var(--fs-md);
   color: var(--c-brand-500);
   font-weight: 600;
+}
+
+/* 打个招呼按钮（对方主页） */
+.greet-btn {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.greet-btn__icon {
+  width: 28rpx;
+  height: 28rpx;
+  flex-shrink: 0;
 }
 
 /* 数据统计栏 */
@@ -1773,7 +1806,9 @@ onMounted(() => {
 }
 
 .vip-card__icon {
-  font-size: var(--fs-6xl);
+  width: var(--fs-6xl);
+  height: var(--fs-6xl);
+  flex-shrink: 0;
   filter: drop-shadow(0 var(--sp-1) var(--sp-2) var(--c-black-shadow-lg, var(--c-black-shadow-lg, rgba(0,0,0,0.15))));
 }
 
@@ -1947,8 +1982,17 @@ onMounted(() => {
 }
 
 .my-post-item__stat {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
   font-size: var(--fs-sm);
   color: var(--c-text-secondary);
+}
+
+.my-post-item__stat-icon {
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
 }
 
 .my-post-item__arrow {
@@ -1974,7 +2018,8 @@ onMounted(() => {
 }
 
 .my-posts-empty__icon {
-  font-size: 56rpx;
+  width: 56rpx;
+  height: 56rpx;
 }
 
 .my-posts-empty__text {

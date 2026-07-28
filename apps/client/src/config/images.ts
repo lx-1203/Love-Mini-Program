@@ -248,7 +248,7 @@ export const IMAGE_PATHS = {
     BROOM:       ICONS_BASE + '/common/refresh.svg',        // 🧹 清理
     PENDING:     ICONS_BASE + '/common/pending.svg',        // ⏳ 审核中
     GRAD_CAP:    ICONS_BASE + '/common/graduation-cap.svg',  // 🎓 毕业
-    TARGET:      ICONS_BASE + '/common/pin.svg',            // 🎯 目标
+    TARGET:      ICONS_BASE + '/common/star.svg',           // 🎯 目标 / 专属标识
     SCORE:       ICONS_BASE + '/common/check-circle.svg',   // 💯 满分
     UPLOAD:      ICONS_BASE + '/common/upload.svg',         // 📤 上传
     LAB:         ICONS_BASE + '/common/robot.svg',          // 🔬 实验室
