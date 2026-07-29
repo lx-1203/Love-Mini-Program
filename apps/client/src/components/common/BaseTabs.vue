@@ -181,7 +181,7 @@ function formatBadge(badge: number | string): string {
   justify-content: center;
   padding: 20rpx 24rpx;
   // 过渡动画
-  transition: all 0.3s ease;
+  transition: all var(--d-base, 300ms) ease;
 }
 
 /* mp-weixin hover-class 按压态；H5 通过 :active 实现 */
@@ -192,7 +192,7 @@ function formatBadge(badge: number | string): string {
 .base-tab-label {
   font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-secondary, #5B6470);
-  transition: color 0.3s ease, font-weight 0.3s ease;
+  transition: color var(--d-base, 300ms) ease, font-weight var(--d-base, 300ms) ease;
 }
 
 .base-tab-badge {
@@ -214,9 +214,9 @@ function formatBadge(badge: number | string): string {
   transform: translateX(-50%) scaleX(0);
   width: 48rpx;
   height: 4rpx;
-  border-radius: 2rpx;
+  border-radius: var(--r-xs, 4rpx);
   background: var(--c-brand, #3FCF8E);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--d-base, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* 激活态：标签文字加粗 + 下划线展开 */

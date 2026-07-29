@@ -8,6 +8,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 社交升温进度实体，对应 social_progress 表。
@@ -15,6 +19,7 @@ import java.time.LocalDateTime;
  * 包含六层漏斗模型的各项计数和当前所处层级。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "social_progress")
 public class SocialProgress {
 
@@ -54,7 +59,15 @@ public class SocialProgress {
     @Column(name = "activity_count", nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer activityCount = 0;
 
+    /** 记录创建时间（Task 37 P2.14 审计字段补齐） */
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     /** 更新时间 */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**
@@ -146,6 +159,14 @@ public class SocialProgress {
 
     public void setActivityCount(Integer activityCount) {
         this.activityCount = activityCount;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {

@@ -241,12 +241,12 @@
 
 /* 脉冲缩放工具类 */
 .pulse-scale {
-  animation: pulse-scale 2s ease-in-out infinite;
+  animation: pulse-scale var(--d-loop-slow, 2000ms) ease-in-out infinite;
 }
 
 /* 呼吸动画工具类 */
 .breathe {
-  animation: breathe 3s ease-in-out infinite;
+  animation: breathe var(--d-breathe, 3000ms) ease-in-out infinite;
 }
 
 // ============ 页面切换动画 ============

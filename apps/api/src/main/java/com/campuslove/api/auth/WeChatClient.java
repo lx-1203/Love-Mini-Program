@@ -7,8 +7,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -23,9 +25,25 @@ import org.springframework.web.client.RestClientException;
 public class WeChatClient {
 
     private static final Logger log = LoggerFactory.getLogger(WeChatClient.class);
-    private static final String JSCODE2SESSION_URL =
-            "https://api.weixin.qq.com/sns/jscode2session?appid={appId}&secret={appSecret}"
-                    + "&js_code={code}&grant_type=authorization_code";
+
+    /**
+     * jscode2session 接口的 query string 模板（与 base URL 拼接）。
+     * 使用 URI 变量占位符 {appId}/{appSecret}/{code}，由 RestClient 自动 URL 编码，
+     * 避免直接字符串拼接导致特殊字符注入风险。
+     */
+    private static final String JSCODE2SESSION_QUERY =
+            "?appid={appId}&secret={appSecret}&js_code={code}&grant_type=authorization_code";
+
+    /**
+     * 微信 jscode2session 接口 base URL，从配置 {@code app.wechat.jscode2session-url} 注入。
+     *
+     * <p>原代码硬编码 {@code https://api.weixin.qq.com/sns/jscode2session}，无法适应
+     * 微信 API 域名切换或代理转发场景；改为配置注入后，可通过环境变量
+     * {@code WECHAT_JSCODE2SESSION_URL} 覆盖（如内网代理地址）。
+     * 默认值为官方文档地址，保证开箱即用。</p>
+     */
+    @Value("${app.wechat.jscode2session-url:${WECHAT_JSCODE2SESSION_URL:https://api.weixin.qq.com/sns/jscode2session}}")
+    private String jscode2sessionBaseUrl;
 
     private final WeChatConfig weChatConfig;
     private final RestClient restClient;
@@ -64,14 +82,16 @@ public class WeChatClient {
             throw new IllegalArgumentException("WeChat login code must not be blank");
         }
 
-        String url = JSCODE2SESSION_URL
-                .replace("{appId}", weChatConfig.getAppId())
-                .replace("{appSecret}", weChatConfig.getAppSecret())
-                .replace("{code}", code);
+        String url = jscode2sessionBaseUrl + JSCODE2SESSION_QUERY;
+        // URI 变量由 RestClient 自动 URL 编码，避免直接字符串拼接导致的特殊字符注入风险
+        Map<String, String> uriVariables = Map.of(
+                "appId", weChatConfig.getAppId(),
+                "appSecret", weChatConfig.getAppSecret(),
+                "code", code);
 
         try {
             WeChatSessionResponse response = restClient.get()
-                    .uri(url)
+                    .uri(url, uriVariables)
                     .retrieve()
                     .body(WeChatSessionResponse.class);
 

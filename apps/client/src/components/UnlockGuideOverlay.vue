@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * UnlockGuideOverlay - 首次进入锁定页一次性教学蒙层
  *
@@ -15,11 +15,10 @@
  *
  * 通过 props.visible 由父组件（store）控制显隐，自身只负责渲染与"我知道了"事件回传。
  */
-import { watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 /** 组件 Props */
-const props = defineProps<{
+defineProps<{
   /** 蒙层是否可见（由 store.overlayVisible 控制） */
   visible: boolean;
 }>();
@@ -31,19 +30,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-
-/**
- * 监听 visible 变化：仅在变为可见时进行首次展示判断
- * 此处仅做日志记录便于调试，实际显隐完全由 props.visible 控制
- */
-watch(
-  () => props.visible,
-  (val) => {
-    if (val) {
-      console.debug("[UnlockGuideOverlay] 展示首次引导蒙层");
-    }
-  }
-);
 
 /**
  * 点击「我知道了」按钮
@@ -140,7 +126,7 @@ function handleKnown() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: hint-pop-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: hint-pop-in var(--d-slower, 320ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes hint-pop-in {
@@ -158,13 +144,13 @@ function handleKnown() {
 .unlock-overlay__arrow {
   width: 72rpx;
   height: 72rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-brand-500, #3b82f6), var(--c-brand-700, #1d4ed8));
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-brand-500, #3FCF8E), var(--c-brand-700, #1D8A5A));
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 24rpx;
-  animation: arrow-bounce 1.4s ease-in-out infinite;
+  animation: arrow-bounce var(--d-loop, 1400ms) ease-in-out infinite;
 }
 
 @keyframes arrow-bounce {
@@ -187,14 +173,14 @@ function handleKnown() {
 .unlock-overlay__title {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #0f172a);
+  color: var(--c-text-primary, #1F2329);
   margin-bottom: 12rpx;
 }
 
 /* 引导描述 */
 .unlock-overlay__desc {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary, #5B6470);
   text-align: center;
   line-height: 1.5;
   margin-bottom: 32rpx;
@@ -205,8 +191,8 @@ function handleKnown() {
 .unlock-overlay__btn {
   width: 100%;
   height: 84rpx;
-  border-radius: 42rpx;
-  background: linear-gradient(135deg, var(--c-brand-500, #3b82f6), var(--c-brand-700, #1d4ed8));
+  border-radius: var(--r-xl, 42rpx);
+  background: linear-gradient(135deg, var(--c-brand-500, #3FCF8E), var(--c-brand-700, #1D8A5A));
   border: none;
   display: flex;
   align-items: center;

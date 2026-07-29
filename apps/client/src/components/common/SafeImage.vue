@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view
     class="safe-image"
     :class="{ 'safe-image--loading': isLoading, 'safe-image--failed': allFailed }"
@@ -145,7 +145,7 @@ function onLoad() {
   width: 100%;
   height: 100%;
   display: block;
-  transition: opacity 240ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--d-slow, 240ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .safe-image__img--hidden {
@@ -177,7 +177,7 @@ function onLoad() {
     rgba(0, 0, 0, 0.06) 63%
   );
   background-size: 400% 100%;
-  animation: safe-image-shimmer 1.4s ease infinite;
+  animation: safe-image-shimmer var(--d-loop, 1400ms) ease infinite;
   pointer-events: none;
 }
 

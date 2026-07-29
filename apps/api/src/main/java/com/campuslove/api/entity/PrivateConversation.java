@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 私信会话实体，对应 private_conversations 表。
  * 存储两个用户之间的会话信息，包括最后一条消息预览。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "private_conversations")
 public class PrivateConversation {
 
@@ -46,10 +51,16 @@ public class PrivateConversation {
     private Boolean pinned = false;
 
     /** 记录创建时间（会话创建时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（会话状态变更时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

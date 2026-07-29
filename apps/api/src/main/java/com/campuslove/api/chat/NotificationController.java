@@ -3,9 +3,11 @@ package com.campuslove.api.chat;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,7 +48,8 @@ public class NotificationController {
    * PUT /api/notifications/{id}/read
    */
   @PutMapping("/{id}/read")
-  public void markAsRead(@PathVariable("id") Long id) {
+  @PreAuthorize("hasRole('USER')")
+  public void markAsRead(@PathVariable("id") @Positive Long id) {
     notificationService.markAsRead(id);
   }
 
@@ -97,7 +100,8 @@ public class NotificationController {
    * PUT /api/notifications/{id}/read-with-user
    */
   @PutMapping("/{id}/read-with-user")
-  public void markAsReadWithUser(@PathVariable("id") Long notificationId) {
+  @PreAuthorize("hasRole('USER')")
+  public void markAsReadWithUser(@PathVariable("id") @Positive Long notificationId) {
     Long userId = SecurityUtils.getCurrentUserId();
     notificationService.markAsRead(notificationId, userId);
   }
@@ -107,6 +111,7 @@ public class NotificationController {
    * PUT /api/notifications/read-all
    */
   @PutMapping("/read-all")
+  @PreAuthorize("hasRole('USER')")
   public void markAllAsRead() {
     Long userId = SecurityUtils.getCurrentUserId();
     notificationService.markAllAsRead(userId);

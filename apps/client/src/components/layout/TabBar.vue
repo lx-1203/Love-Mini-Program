@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { appTabs, type AppTab } from '../../config/navigation';
@@ -220,7 +220,7 @@ function handlePublish(): void {
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--c-bg-container, #FFFFFF);
+  background: var(--c-bg-container);
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
@@ -237,7 +237,7 @@ function handlePublish(): void {
   align-items: center;
   gap: 6rpx;
   padding-top: 8rpx;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--d-fast, 120ms) ease;
   position: relative;
 }
 
@@ -253,7 +253,7 @@ function handlePublish(): void {
   left: 50%;
   width: 48rpx;
   height: 4rpx;
-  border-radius: 0 0 4rpx 4rpx;
+  border-radius: 0 0 var(--r-xs, 4rpx) var(--r-xs, 4rpx);
   transform: translateX(-50%) scaleX(0);
   transform-origin: center center;
   transition: transform var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1),
@@ -268,30 +268,30 @@ function handlePublish(): void {
 }
 
 .tab-top-bar--home {
-  background: linear-gradient(90deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
-  box-shadow: var(--s-tab-brand, 0 2rpx 6rpx rgba(63, 207, 142, 0.35));
+  background: linear-gradient(90deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
+  box-shadow: var(--s-tab-brand);
 }
 
 .tab-top-bar--chat {
-  background: linear-gradient(90deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-400, #F472B6) 100%);
-  box-shadow: var(--s-tab-romance, 0 2rpx 6rpx rgba(236, 72, 153, 0.35));
+  background: linear-gradient(90deg, var(--c-romance-500) 0%, var(--c-romance-400) 100%);
+  box-shadow: var(--s-tab-romance);
 }
 
 .tab-top-bar--village {
-  background: linear-gradient(90deg, var(--c-accent-400, #FB923C) 0%, var(--c-accent-400, #F97316) 100%);
-  box-shadow: var(--s-tab-accent, 0 2rpx 6rpx rgba(249, 115, 22, 0.35));
+  background: linear-gradient(90deg, var(--c-accent-400) 0%, var(--c-accent-400) 100%);
+  box-shadow: var(--s-tab-accent);
 }
 
 .tab-top-bar--profile {
-  background: linear-gradient(90deg, var(--c-lavender-500, #8B5CF6) 0%, var(--c-lavender-500, #8B5CF6) 100%);
-  box-shadow: var(--s-tab-purple, 0 2rpx 6rpx rgba(139, 92, 246, 0.35));
+  background: linear-gradient(90deg, var(--c-lavender-500) 0%, var(--c-lavender-500) 100%);
+  box-shadow: var(--s-tab-purple);
 }
 
 .tab-icon-wrap {
   position: relative;
   width: 48rpx;
   height: 36rpx;
-  border-radius: 20rpx;
+  border-radius: var(--r-lg, 20rpx);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -301,24 +301,24 @@ function handlePublish(): void {
 }
 
 .tab-icon-wrap--active {
-  animation: tabBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: tabBounce var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1);
   transform: scale(1.15);
 }
 
 .tab-icon-wrap--home.tab-icon-wrap--active {
-  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
 }
 
 .tab-icon-wrap--chat.tab-icon-wrap--active {
-  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-400, #F472B6) 100%);
+  background: linear-gradient(135deg, var(--c-romance-500) 0%, var(--c-romance-400) 100%);
 }
 
 .tab-icon-wrap--village.tab-icon-wrap--active {
-  background: linear-gradient(135deg, var(--c-accent-400, #FB923C) 0%, var(--c-accent-400, #F97316) 100%);
+  background: linear-gradient(135deg, var(--c-accent-400) 0%, var(--c-accent-400) 100%);
 }
 
 .tab-icon-wrap--profile.tab-icon-wrap--active {
-  background: linear-gradient(135deg, var(--c-lavender-500, #8B5CF6) 0%, var(--c-lavender-500, #8B5CF6) 100%);
+  background: linear-gradient(135deg, var(--c-lavender-500) 0%, var(--c-lavender-500) 100%);
 }
 
 @keyframes tabBounce {
@@ -330,7 +330,7 @@ function handlePublish(): void {
 
 /* 激活态图标旋转放大 */
 .tab-icon-wrap--active .tab-icon-image {
-  animation: iconSpin 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: iconSpin var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes iconSpin {
@@ -342,7 +342,7 @@ function handlePublish(): void {
 .tab-icon-image {
   width: 36rpx;
   height: 36rpx;
-  transition: transform 0.2s ease;
+  transition: transform var(--d-normal, 200ms) ease;
 }
 
 /* ========== 底部小圆点指示器 ========== */
@@ -353,8 +353,8 @@ function handlePublish(): void {
   transform: translateX(-50%);
   width: 8rpx;
   height: 8rpx;
-  border-radius: 50%;
-  animation: dotPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: var(--r-circle, 50%);
+  animation: dotPop var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes dotPop {
@@ -363,10 +363,10 @@ function handlePublish(): void {
   100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
-.tab-dot--home { background: var(--c-brand, #3FCF8E); box-shadow: 0 0 8rpx rgba(63, 207, 142, 0.5); }
-.tab-dot--chat { background: var(--c-romance-500, #EC4899); box-shadow: 0 0 8rpx rgba(236, 72, 153, 0.5); }
-.tab-dot--village { background: var(--c-accent-400, #F97316); box-shadow: 0 0 8rpx rgba(249, 115, 22, 0.5); }
-.tab-dot--profile { background: var(--c-lavender-500, #8B5CF6); box-shadow: 0 0 8rpx rgba(139, 92, 246, 0.5); }
+.tab-dot--home { background: var(--c-brand); box-shadow: 0 0 8rpx var(--c-tab-glow-brand); }
+.tab-dot--chat { background: var(--c-romance-500); box-shadow: 0 0 8rpx var(--c-tab-glow-romance); }
+.tab-dot--village { background: var(--c-accent-400); box-shadow: 0 0 8rpx var(--c-tab-glow-accent); }
+.tab-dot--profile { background: var(--c-lavender-500); box-shadow: 0 0 8rpx var(--c-tab-glow-purple); }
 
 .tab-badge {
   position: absolute;
@@ -374,13 +374,13 @@ function handlePublish(): void {
   right: -10rpx;
   min-width: 28rpx;
   height: 28rpx;
-  background: var(--c-error, #E5454D);
+  background: var(--c-error);
   border-radius: var(--r-full, 9999rpx);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0 6rpx;
-  border: 3rpx solid var(--c-bg-container, #FFFFFF);
+  border: 3rpx solid var(--c-bg-container);
   box-sizing: content-box;
 }
 
@@ -395,17 +395,17 @@ function handlePublish(): void {
 
 .tab-badge-text {
   font-size: 18rpx;
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 700;
   line-height: 1;
 }
 
 .tab-label {
   font-size: var(--fs-xs, 20rpx);
-  /* 非激活态灰色对齐青藤参考 #9AA1AB */
-  color: var(--c-text-tertiary, #9AA1AB);
+  /* 非激活态灰色对齐青藤参考，使用 token 后由 tokens.scss 统一管理 */
+  color: var(--c-text-tertiary);
   font-weight: 500;
-  transition: color 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: color var(--d-slow, 250ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tab-label--active {
@@ -413,19 +413,19 @@ function handlePublish(): void {
 }
 
 .tab-label--home.tab-label--active {
-  color: var(--c-brand, #3FCF8E);
+  color: var(--c-brand);
 }
 
 .tab-label--chat.tab-label--active {
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
 }
 
 .tab-label--village.tab-label--active {
-  color: var(--c-accent-400, #F97316);
+  color: var(--c-accent-400);
 }
 
 .tab-label--profile.tab-label--active {
-  color: var(--c-lavender-500, #8B5CF6);
+  color: var(--c-lavender-500);
 }
 
 .tab-publish {
@@ -441,20 +441,20 @@ function handlePublish(): void {
 /* P3 修复：box-shadow 单位统一为 rpx，与项目其他阴影定义保持一致 */
 .tab-publish--pressed .publish-btn {
   transform: scale(0.92);
-  box-shadow: var(--s-tab-active, 0 4rpx 12rpx rgba(63, 207, 142, 0.45));
+  box-shadow: var(--s-tab-active);
 }
 
 .publish-btn {
   position: relative;
   width: 96rpx;
   height: 96rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
-  box-shadow: var(--s-tab-active-md, 0 6rpx 20rpx rgba(63, 207, 142, 0.35));
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-400) 100%);
+  box-shadow: var(--s-tab-active-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  transition: transform var(--d-fast, 120ms) ease-out, box-shadow 0.15s ease-out;
   overflow: visible;
 }
 
@@ -465,8 +465,8 @@ function handlePublish(): void {
   left: 50%;
   width: 96rpx;
   height: 96rpx;
-  border-radius: 50%;
-  border: 4rpx solid rgba(63, 207, 142, 0.6);
+  border-radius: var(--r-circle, 50%);
+  border: 4rpx solid var(--c-brand-glow-strong);
   transform: translate(-50%, -50%);
   pointer-events: none;
   /* 默认不运行动画，由 .publish-btn--breath .publish-btn__halo 控制 */
@@ -474,7 +474,7 @@ function handlePublish(): void {
 }
 
 .publish-btn--breath .publish-btn__halo {
-  animation: publishBreath 2.4s ease-out infinite;
+  animation: publishBreath var(--d-loop-slow, 2400ms) ease-out infinite;
 }
 
 @keyframes publishBreath {
@@ -493,16 +493,16 @@ function handlePublish(): void {
 }
 
 .publish-icon {
-  font-size: var(--fs-4xl, 40rpx);
+  font-size: var(--fs-4xl);
   font-weight: 700;
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   line-height: 1;
   margin-top: -4rpx;
 }
 
 .publish-label {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-brand, #3FCF8E);
+  color: var(--c-brand);
   font-weight: 600;
   margin-top: 6rpx;
 }

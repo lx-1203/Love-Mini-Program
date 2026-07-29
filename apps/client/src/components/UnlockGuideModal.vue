@@ -85,6 +85,9 @@ function handleMaskClick() {
   handleCancel();
 }
 
+// 修复（严格模式 noUnusedLocals）：handleConfirm/noop 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ handleConfirm, noop });
 </script>
 
 <template>
@@ -97,7 +100,7 @@ function handleMaskClick() {
     aria-modal="true"
     :aria-label="t('lock.title')"
   >
-    <!-- 弹窗主体（阻止冒泡，避免点击内容区误关闭） -->
+    <!-- 弹窗主体（@tap.stop 阻止冒泡，避免点击内容区误关闭） -->
     <view class="unlock-modal__container" @tap.stop="noop">
       <!-- 顶部图标区域 -->
       <view class="unlock-modal__icon-wrap">
@@ -172,13 +175,13 @@ function handleMaskClick() {
   max-width: 86%;
   padding: 56rpx 48rpx 40rpx;
   background: var(--c-text-inverse, #ffffff);
-  border-radius: 32rpx;
-  box-shadow: 0 16rpx 48rpx var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.16));
+  border-radius: var(--r-xxl, 28rpx);
+  box-shadow: var(--s-modal, 0 24rpx 60rpx var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.18)));
   display: flex;
   flex-direction: column;
   align-items: center;
   /* 弹窗放大淡入动画 */
-  animation: unlock-pop-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: unlock-pop-in var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes unlock-pop-in {
@@ -196,8 +199,8 @@ function handleMaskClick() {
 .unlock-modal__icon-wrap {
   width: 120rpx;
   height: 120rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-brand-100, #dbeafe), var(--c-brand-200, #bfdbfe));
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-brand-100, #D1F0E0), var(--c-brand-200, #A3E0C0));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -213,7 +216,7 @@ function handleMaskClick() {
 .unlock-modal__title {
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #0f172a);
+  color: var(--c-text-primary, #1F2329);
   margin-bottom: 16rpx;
   line-height: 1.4;
 }
@@ -221,7 +224,7 @@ function handleMaskClick() {
 /* 主文案 */
 .unlock-modal__message {
   font-size: var(--fs-xl, 30rpx);
-  color: var(--c-text-primary, #0f172a);
+  color: var(--c-text-primary, #1F2329);
   text-align: center;
   line-height: 1.5;
   margin-bottom: 12rpx;
@@ -231,7 +234,7 @@ function handleMaskClick() {
 /* 副文案 */
 .unlock-modal__subtitle {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary, #5B6470);
   text-align: center;
   line-height: 1.5;
   margin-bottom: 40rpx;
@@ -249,7 +252,7 @@ function handleMaskClick() {
 .unlock-modal__btn {
   width: 100%;
   height: 92rpx;
-  border-radius: 46rpx;
+  border-radius: var(--r-full, 9999rpx);
   border: none;
   display: flex;
   align-items: center;
@@ -267,16 +270,16 @@ function handleMaskClick() {
   transform: scale(0.98);
 }
 
-/* 主按钮（蓝色） */
+/* 主按钮（品牌色） */
 .unlock-modal__btn--primary {
-  background: linear-gradient(135deg, var(--c-brand-500, #3b82f6), var(--c-brand-700, #1d4ed8));
-  box-shadow: var(--s-info-md, 0 8rpx 24rpx rgba(59, 130, 246, 0.32));
+  background: linear-gradient(135deg, var(--c-brand-500, #3FCF8E), var(--c-brand-700, #1D8A5A));
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.20)));
 }
 
-/* 次按钮（白底蓝字） */
+/* 次按钮（白底品牌字） */
 .unlock-modal__btn--secondary {
-  background: var(--c-bg-page, #f8fafc);
-  border: 2rpx solid var(--c-border-light, #e2e8f0);
+  background: var(--c-bg-page, #F4F6FA);
+  border: 2rpx solid var(--c-border-light, #EEF0F4);
 }
 
 /* 按钮文案 */
@@ -287,7 +290,7 @@ function handleMaskClick() {
 }
 
 .unlock-modal__btn-text--secondary {
-  color: var(--c-brand-700, #1d4ed8);
+  color: var(--c-brand-700, #1D8A5A);
   font-weight: 500;
 }
 </style>

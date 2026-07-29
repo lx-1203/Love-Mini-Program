@@ -25,7 +25,7 @@
 
     <!-- 控制台输出 Pattern（含敏感字段脱敏）。
          %replace 用法：将匹配 regex 的部分替换为 fixed string。
-         脱敏字段：password、sessionToken、accessToken、refreshToken、secret、openId、idCard、phone（保留前3后4）。
+         脱敏字段：password、sessionToken、accessToken、refreshToken、secret、openId、phone（保留前3后4）。
     -->
     <property name="CONSOLE_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %replace(%msg){'(password|passwd|sessionToken|accessToken|refreshToken|secret|appSecret|jwtSecret|openId|unionId)\s*[=:]\s*\S+','$1=***'}%n%replace(%ex){'(password|passwd|sessionToken|accessToken|refreshToken|secret|appSecret|jwtSecret|openId|unionId)\s*[=:]\s*\S+','$1=***'}"/>
@@ -33,6 +33,26 @@
     <!-- 文件输出 Pattern（与控制台一致，含敏感字段脱敏） -->
     <property name="FILE_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %replace(%msg){'(password|passwd|sessionToken|accessToken|refreshToken|secret|appSecret|jwtSecret|openId|unionId)\s*[=:]\s*\S+','$1=***'}%n%replace(%ex){'(password|passwd|sessionToken|accessToken|refreshToken|secret|appSecret|jwtSecret|openId|unionId)\s*[=:]\s*\S+','$1=***'}"/>
+
+    <!--
+      Task 11.6 / Task 26.3：审计日志 Pattern（单行 JSON 格式，含敏感字段脱敏）。
+
+      输出格式（每行一条 JSON，便于 ELK/Loki 等日志采集器解析）：
+        {"timestamp":"2026-07-27T12:34:56.789+0800","level":"INFO",
+         "logger":"com.campuslove.api.audit","traceId":"a1b2c3d4",
+         "message":"event=media.access.granted type=IMAGE targetUserId=123 ...",
+         "exception":"..."}
+
+      设计要点：
+        1. JSON 字段使用 &quot; 转义双引号（XML 属性值中需要）
+        2. timestamp 采用 ISO-8601 含时区格式（yyyy-MM-dd'T'HH:mm:ss.SSSZ）
+        3. traceId 从 MDC 读取（由 Logback MDCFilter / Spring Cloud Sleuth 注入）
+        4. message 内嵌的 key=value 已由调用方控制（不含双引号），无需二次转义
+        5. 应用与主日志相同的敏感字段脱敏正则，避免凭据泄露到审计文件
+        6. exception 字段输出堆栈；审计事件本身已结构化，堆栈通常为空字符串
+    -->
+    <property name="AUDIT_PATTERN"
+              value="{&quot;timestamp&quot;:&quot;%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}&quot;,&quot;level&quot;:&quot;%level&quot;,&quot;logger&quot;:&quot;%logger{36}&quot;,&quot;traceId&quot;:&quot;%X{traceId}&quot;,&quot;message&quot;:&quot;%replace(%msg){'(password|passwd|sessionToken|accessToken|refreshToken|secret|appSecret|jwtSecret|openId|unionId)\s*[=:]\s*\S+','$1=***'}&quot;,&quot;exception&quot;:&quot;%ex&quot;}%n"/>
 
     <!-- 控制台 Appender：开发环境使用 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -82,6 +102,47 @@
         </encoder>
     </appender>
 
+    <!--
+      ============================================================
+      Task 11.6：审计日志 Appender（AUDIT）
+      ============================================================
+      用途：记录安全审计事件（媒体访问、登录、敏感操作、权限变更等），
+            独立于业务日志，便于合规审计与安全事件追溯。
+
+      输出文件：${LOG_PATH}/audit.log（与业务日志分离，便于独立采集与权限管控）
+
+      滚动策略（SizeAndTimeBasedRollingPolicy）：
+        - fileNamePattern：按日 + 100MB 序号切割
+        - maxFileSize：100MB（与任务要求一致）
+        - maxHistory：90 天（审计日志保留时间应长于业务日志，满足合规审计需求）
+        - totalSizeCap：10GB（避免磁盘占用失控）
+        - cleanHistoryOnStart：启动时清理过期文件
+
+      格式：单行 JSON（详见 AUDIT_PATTERN），含敏感字段脱敏
+
+      使用方式：通过 logger name="com.campuslove.api.audit" 路由到此 appender
+                （详见下方 logger 配置，additivity=false 避免重复输出到 root）
+    -->
+    <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/audit.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 文件名格式：audit.日期.序号.log -->
+            <fileNamePattern>${LOG_PATH}/audit.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- 单个文件最大 100MB（与任务要求一致） -->
+            <maxFileSize>100MB</maxFileSize>
+            <!-- 保留 90 天（审计合规要求长保留期） -->
+            <maxHistory>90</maxHistory>
+            <!-- 总大小上限 10GB -->
+            <totalSizeCap>10GB</totalSizeCap>
+            <!-- 启动时清理过期文件 -->
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${AUDIT_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
     <!-- ============================================================
          Access Log（Task 8.2.3）：Tomcat 访问日志
          ============================================================
@@ -125,6 +186,30 @@
     <!-- Access Log 通过 org.apache.catalina.accesslog logger 路由到 ACCESS_FILE -->
     <logger name="org.apache.catalina.accesslog" level="INFO" additivity="false">
         <appender-ref ref="ACCESS_FILE"/>
+    </logger>
+
+    <!--
+      Task 11.6：审计日志 Logger
+      ============================================================
+      关联 AUDIT appender，独立于 root logger（additivity=false 避免重复输出到业务日志）。
+
+      代码侧使用方式：
+        private static final Logger AUDIT_LOG =
+            LoggerFactory.getLogger("com.campuslove.api.audit");
+        AUDIT_LOG.info("event=media.access.granted type=IMAGE targetUserId={} ...", ...);
+
+      覆盖事件类型（参考）：
+        - media.access.granted / media.access.denied.*  —— 媒体访问审计（详见 MediaAccessController）
+        - admin.login.success / admin.login.failed      —— 管理员登录审计
+        - admin.operation.*                              —— 管理员敏感操作审计
+        - permission.change.*                            —— 权限变更审计
+        - sensitive.data.access                          —— 敏感数据访问审计
+
+      注：此 logger 在所有 profile 下激活（声明在 springProfile 之外），
+          保证 dev/mock/real/prod 均能记录审计事件。
+    -->
+    <logger name="com.campuslove.api.audit" level="INFO" additivity="false">
+        <appender-ref ref="AUDIT"/>
     </logger>
 
     <!-- 异步文件输出：通过 BlockingQueue 缓冲日志事件，避免 IO 阻塞业务线程。

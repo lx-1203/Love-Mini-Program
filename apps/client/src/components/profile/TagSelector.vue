@@ -172,8 +172,7 @@ const selectedTags = computed(() => {
 
       <view v-if="selectedTags.length > 0" class="tag-selector__chips">
         <view
-          v-for="tag in selectedTags"
-          :key="`sel-${tag.value}`"
+          v-for="tag in selectedTags" :key="`sel-${tag.value}`"
           class="tag-chip tag-chip--selected press-feedback"
           hover-class="tag-chip--hover"
           hover-stay-time="100"
@@ -191,8 +190,7 @@ const selectedTags = computed(() => {
 
     <!-- 分组标签区 -->
     <view
-      v-for="group in profileTagGroups"
-      :key="group.key"
+      v-for="group in profileTagGroups" :key="group.key"
       class="tag-selector__group"
     >
       <view class="tag-selector__group-header">
@@ -203,8 +201,7 @@ const selectedTags = computed(() => {
       </view>
       <view class="tag-selector__chips">
         <view
-          v-for="opt in group.options"
-          :key="opt.value"
+          v-for="opt in group.options" :key="opt.value"
           :class="[
             'tag-chip',
             'press-feedback',

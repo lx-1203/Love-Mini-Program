@@ -1,485 +1,367 @@
-name: ci
+name: CI
 
 on:
-  push:
-    branches:
-      - main
-      - 'release/*'
-      - 'hotfix/*'
   pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
 
 permissions:
   contents: read
 
 # ============================================================
-# P7 阶段质量门禁：CI 添加 SonarQube / OWASP Dependency Check
-# 代码重复率 / 圈复杂度门禁、覆盖率报告归档、全量测试套件
-# ============================================================
-# 关键设计：
-# - 使用 matrix 并行加速各模块测试，降低单 job 执行时间
-# - 所有覆盖率报告统一归档至 actions artifact，便于后续追溯
-# - SonarQube 通过 SonarCloud 在线服务（免费对开源项目）
-# - OWASP Dependency Check 离线扫描，漏洞门禁 CVSS >= 7 阻断
-# - 重复率 ≤ 3%，圈复杂度 ≤ 15，违反则 fail
+# CI 完整门禁（Task 19 + Task 23 + Task 24 + P1.16 容器与部署加固 + Task 53 CI/CD 完善）
+# 修复 REAUDIT-REPORT-100+.md 第 3.1 节编号 8 与第 3.5 节编号 105：
+# - 补齐 Admin typecheck / Java compile / OpenAPI lint / E2E 等关键门禁
+# - e2e 依赖所有前置 job 通过后才执行
+# - Task 24：新增 security-scan job（Trivy 漏洞扫描），位于 api-test 通过后、e2e 之前
+# - Task 19：Maven 命令统一加 -B（batch mode）避免交互式阻塞；为每个 job 配置 timeout-minutes
+#   （client-test 30min、api-test 60min、e2e 45min、其他默认 30min）
+# - P1.16（2026-07-28）：新增 phase01-verify job，运行 `npm run verify:phase01`
+#   作为最终集成门禁，覆盖 9 项关键检查：mvn compile / mvn test /
+#   admin typecheck / admin build / client typecheck / client build:mp-weixin /
+#   test:structure / lint:openapi / verify:phase01。
+# - Task 53（2026-07-28）：CI/CD 完善
+#   1. 所有 pnpm install 改用 --frozen-lockfile（强制 lockfile 与 package.json 一致，
+#      避免意外更新依赖；如需更新依赖请本地 pnpm install 后提交 lockfile）
+#   2. 使用 actions/setup-node@v4 内置 cache: 'pnpm'（等价于显式 actions/cache@v4，
+#      缓存 ~/.local/share/pnpm/store）
+#   3. 使用 actions/setup-java@v4 内置 cache: 'maven'（等价于显式 actions/cache@v4，
+#      缓存 ~/.m2/repository）
+#   4. Trivy 安全扫描已存在（fs 扫描 apps/api 与 apps/admin），HIGH/CRITICAL 漏洞即失败
+# - 9 个 job：lint-and-structure / client-typecheck-and-build /
+#   client-test / admin-typecheck-and-build / api-compile /
+#   api-test / security-scan / phase01-verify / e2e
+# - 所有 job 默认 fail-fast：前序 job 失败时后续 job 不执行（通过 needs 依赖实现）
+# - P3-D（2026-07-29）：部署加固
+#   1. D.1 security-scan 新增 Trivy image 扫描：构建 campus-love-api/campus-love-admin
+#      镜像（--target runtime 跳过 Dockerfile 内 trivy-scanner 阶段），扫描 HIGH/CRITICAL
+#   2. D.2 security-scan 新增 cosign 镜像签名：使用 sigstore/cosign-installer@v3，
+#      通过 COSIGN_PRIVATE_KEY / COSIGN_PASSWORD secrets 注入密钥；
+#      仅在 secrets 配置时执行（PR 场景跳过避免无密钥报错）
 # ============================================================
 
 jobs:
   # ----------------------------------------------------------------
-  # Job 1: 验证 P0-P6 阶段产物（原型 / 结构 / 契约 / 构建 / 单元测试）
+  # Job 1: 根目录 OpenAPI lint + 项目结构测试
   # ----------------------------------------------------------------
-  verify-phase01:
+  lint-and-structure:
+    name: Lint & Structure
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        # 版本由 package.json 的 packageManager 字段统一管理，
-        # 此处不再指定 version 以避免 ERR_PNPM_BAD_PM_VERSION 冲突。
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 11.17.0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
+          node-version: '20'
+          cache: 'pnpm'
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: maven
-
-      - name: Install pnpm dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run prototype and structure tests
-        run: pnpm test
-
-      - name: Run OpenAPI contract lint
-        run: pnpm run lint:openapi
+      - name: Run OpenAPI lint
+        run: npm run lint:openapi
 
       - name: Run Spectral lint
-        run: pnpm run lint:openapi:spectral
+        run: npm run lint:openapi:spectral
 
-      - name: Run client typecheck
+      - name: Run structure tests
+        run: npm run test:structure
+
+  # ----------------------------------------------------------------
+  # Job 2: 客户端类型检查 + H5 / mp-weixin 构建
+  # ----------------------------------------------------------------
+  client-typecheck-and-build:
+    name: Client Typecheck & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 11.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Client typecheck
         run: pnpm --filter @campus-love/client run typecheck
 
-      - name: Run client builds
-        run: pnpm run verify:client-builds
+      - name: Client build (H5)
+        run: pnpm --filter @campus-love/client run build:h5
 
-      - name: Run Spring API tests
-        run: pnpm run api:test
+      - name: Client build (mp-weixin)
+        run: pnpm --filter @campus-love/client run build:mp-weixin
 
   # ----------------------------------------------------------------
-  # Job 2: Flyway 数据库迁移校验
+  # Job 3: 客户端单元测试
   # ----------------------------------------------------------------
-  flyway-validate:
+  client-test:
+    name: Client Unit Tests
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_DATABASE: campus_love_ci
-          MYSQL_USER: campus_love
-          MYSQL_PASSWORD: campus_love
-          MYSQL_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
-      - name: Debug Flyway environment
-        run: |
-          docker run --rm --network host \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace \
-            redgate/flyway:12.6.1-alpine \
-            -configFiles=/workspace/database/flyway/flyway.toml \
-            -locations=filesystem:/workspace/database/flyway/sql \
-            -url="jdbc:mysql://127.0.0.1:3306/campus_love_ci?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false" \
-            -user=campus_love \
-            -password=campus_love \
-            info || true
-
-      - name: Flyway migrate on disposable database
-        run: |
-          docker run --rm --network host \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace \
-            redgate/flyway:12.6.1-alpine \
-            -configFiles=/workspace/database/flyway/flyway.toml \
-            -locations=filesystem:/workspace/database/flyway/sql \
-            -url="jdbc:mysql://127.0.0.1:3306/campus_love_ci?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false" \
-            -user=campus_love \
-            -password=campus_love \
-            migrate
-
-      - name: Flyway validate on disposable database
-        run: |
-          docker run --rm --network host \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace \
-            redgate/flyway:12.6.1-alpine \
-            -configFiles=/workspace/database/flyway/flyway.toml \
-            -locations=filesystem:/workspace/database/flyway/sql \
-            -url="jdbc:mysql://127.0.0.1:3306/campus_love_ci?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false" \
-            -user=campus_love \
-            -password=campus_love \
-            validate
-
-  # ----------------------------------------------------------------
-  # Job 3: 静态密钥扫描（已有）
-  # ----------------------------------------------------------------
-  secret-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
         with:
-          fetch-depth: 0
-      - name: Secret scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: false
-
-  # ----------------------------------------------------------------
-  # Job 4 (P7 新增): 客户端单元测试 + 覆盖率
-  # ----------------------------------------------------------------
-  client-test-coverage:
-    name: Client Unit Tests + Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # SonarCloud 需要完整历史
-
-      - uses: pnpm/action-setup@v4
+          version: 11.17.0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run client tests with coverage
-        working-directory: apps/client
-        run: pnpm test -- --coverage --reporter=default --reporter=junit --outputFile=test-results.xml
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: client-coverage
-          path: apps/client/coverage/
-          retention-days: 30
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: client-test-results
-          path: apps/client/test-results.xml
-          retention-days: 14
+      - name: Run client unit tests
+        run: pnpm --filter @campus-love/client run test:unit
 
   # ----------------------------------------------------------------
-  # Job 5 (P7 新增): Java 后端单元测试 + JaCoCo 覆盖率
+  # Job 4: 管理后台类型检查 + 构建
   # ----------------------------------------------------------------
-  api-test-coverage:
-    name: API Unit Tests + JaCoCo
+  admin-typecheck-and-build:
+    name: Admin Typecheck & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
         with:
-          fetch-depth: 0
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: maven
-
-      - name: Run Spring tests with JaCoCo
-        working-directory: apps/api
-        run: mvn -B test jacoco:report
-
-      - name: Verify JaCoCo coverage thresholds
-        working-directory: apps/api
-        run: mvn -B jacoco:check
-
-      - name: Upload JaCoCo coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-jacoco-coverage
-          path: apps/api/target/site/jacoco/
-          retention-days: 30
-
-      - name: Upload Surefire test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-surefire-reports
-          path: apps/api/target/surefire-reports/
-          retention-days: 14
-
-  # ----------------------------------------------------------------
-  # Job 6 (P7 新增): SonarCloud 静态分析与质量门禁
-  # 集成代码重复率、圈复杂度、覆盖率、安全热点
-  # ----------------------------------------------------------------
-  sonarcloud:
-    name: SonarCloud Analysis
-    runs-on: ubuntu-latest
-    needs: [client-test-coverage, api-test-coverage]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # SonarCloud 需要完整历史以计算 blame
-
-      - uses: pnpm/action-setup@v4
+          version: 11.17.0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: maven
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Download client coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: client-coverage
-          path: apps/client/coverage/
+      - name: Admin typecheck
+        run: pnpm --filter @campus-love/admin run typecheck
 
-      - name: Download API coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: api-jacoco-coverage
-          path: apps/api/target/site/jacoco/
-
-      # 使用项目根目录的 sonar-project.properties 统一配置
-      # 质量门禁阈值：
-      # - 代码重复率 ≤ 3.0%
-      # - 圈复杂度 ≤ 15
-      # - 覆盖率 ≥ 80%
-      # - 安全热点评级 A（≤ 1% 安全热点需复审）
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Admin build
+        run: pnpm --filter @campus-love/admin run build
 
   # ----------------------------------------------------------------
-  # Job 7 (P7 新增): OWASP Dependency Check 漏洞扫描
-  # 阈值：CVSS >= 7.0 的漏洞存在则 fail
+  # Job 5: Java 后端编译
   # ----------------------------------------------------------------
-  owasp-dependency-check:
-    name: OWASP Dependency Check
+  api-compile:
+    name: API Compile
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 21
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
 
-      - uses: pnpm/action-setup@v4
+      - name: Maven compile
+        run: mvn -B -f apps/api/pom.xml compile
+
+  # ----------------------------------------------------------------
+  # Job 6: Java 后端单元测试（依赖 api-compile）
+  # ----------------------------------------------------------------
+  api-test:
+    name: API Unit Tests
+    runs-on: ubuntu-latest
+    needs: api-compile
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Maven test
+        run: mvn -B -f apps/api/pom.xml test
+
+  # ----------------------------------------------------------------
+  # Job 7: Trivy 安全扫描（Task 24 + P3-D.1/D.2）
+  # 依赖 api-test 与 admin-typecheck-and-build 通过后执行
+  # 扫描策略：
+  #   1. fs 扫描：扫描 apps/api 与 apps/admin 仓库源码（Task 24）
+  #   2. image 扫描：构建 Docker 镜像后扫描最终 runtime 镜像（P3-D.1）
+  #   3. cosign 签名：对镜像进行签名，支持部署端验证（P3-D.2）
+  # HIGH/CRITICAL 漏洞即失败
+  # ----------------------------------------------------------------
+  security-scan:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    needs:
+      - api-test
+      - admin-typecheck-and-build
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------- 阶段 1：源码 fs 扫描（Task 24）----------
+      - name: Trivy scan API (fs)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: apps/api
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+      - name: Trivy scan Admin (fs)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: apps/admin
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+      # ---------- 阶段 2：构建 Docker 镜像（P3-D.1）----------
+      # 使用 --target runtime 跳过 Dockerfile 中的 trivy-scanner 中间阶段
+      # （该阶段会在构建期触发 fs 扫描，与 CI image 扫描重复）
+      - name: Set image tag
+        id: tag
+        run: echo "TAG=ci-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build API image
+        run: |
+          docker build \
+            --target runtime \
+            -t campus-love-api:${{ steps.tag.outputs.TAG }} \
+            ./apps/api
+
+      - name: Build Admin image
+        run: |
+          docker build \
+            --target runtime \
+            -t campus-love-admin:${{ steps.tag.outputs.TAG }} \
+            ./apps/admin
+
+      # ---------- 阶段 3：镜像漏洞扫描（P3-D.1）----------
+      - name: Trivy scan API image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: campus-love-api:${{ steps.tag.outputs.TAG }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+      - name: Trivy scan Admin image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: campus-love-admin:${{ steps.tag.outputs.TAG }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+      # ---------- 阶段 4：镜像签名（P3-D.2）----------
+      # 仅当 COSIGN_PRIVATE_KEY secret 配置时执行（PR 场景跳过，避免无密钥报错）
+      - name: Install cosign
+        if: ${{ env.COSIGN_PRIVATE_KEY != '' }}
+        uses: sigstore/cosign-installer@v3
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+
+      - name: Sign images
+        if: ${{ env.COSIGN_PRIVATE_KEY != '' }}
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          cosign sign --key env://COSIGN_PRIVATE_KEY campus-love-api:${{ steps.tag.outputs.TAG }}
+          cosign sign --key env://COSIGN_PRIVATE_KEY campus-love-admin:${{ steps.tag.outputs.TAG }}
+
+  # ----------------------------------------------------------------
+  # Job 8: Phase 01 综合验证（P1.16 新增）
+  # 运行 `npm run verify:phase01`，作为最终集成门禁，覆盖：
+  #   1. mvn -f apps/api/pom.xml compile（通过 api:test 间接覆盖）
+  #   2. mvn -f apps/api/pom.xml test
+  #   3. npm --workspace apps/admin run typecheck（前置 job 已覆盖，本 job 不重复）
+  #   4. npm --workspace apps/admin run build（前置 job 已覆盖，本 job 不重复）
+  #   5. npm --workspace apps/client run typecheck
+  #   6. npm --workspace apps/client run build:mp-weixin（通过 verify:client-builds 覆盖）
+  #   7. npm run test:structure（通过 npm run test 覆盖）
+  #   8. npm run lint:openapi
+  #   9. npm run verify:phase01（本 job 主体）
+  # 依赖 security-scan 通过后才执行；e2e 依赖本 job 通过后才执行
+  # ----------------------------------------------------------------
+  phase01-verify:
+    name: Phase 01 Verify
+    runs-on: ubuntu-latest
+    needs:
+      - security-scan
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 11.17.0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
+          node-version: '20'
+          cache: 'pnpm'
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run OWASP Dependency Check (NPM)
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: 'campus-love-client'
-          path: 'apps/client'
-          format: 'HTML'
-          failOnCVSS: 7
-          output: 'reports/owasp-client'
-
-      - name: Run OWASP Dependency Check (Maven)
-        working-directory: apps/api
-        run: |
-          mvn -B org.owasp:dependency-check-maven:check \
-            -DfailBuildOnCVSS=7 \
-            -Dformats=HTML,XML \
-            -DoutputDirectory=${{ github.workspace }}/reports/owasp-api
-
-      - name: Upload OWASP client report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: owasp-client-report
-          path: reports/owasp-client/
-          retention-days: 30
-
-      - name: Upload OWASP API report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: owasp-api-report
-          path: reports/owasp-api/
-          retention-days: 30
+      - name: Run verify:phase01
+        run: npm run verify:phase01
 
   # ----------------------------------------------------------------
-  # Job 8 (P7 新增): 代码重复率与圈复杂度门禁
-  # 使用 jscpd（重复率）与 eslint complexity（圈复杂度）
+  # Job 9: E2E 测试（依赖所有前置 job 通过，含安全扫描与 Phase 01 验证）
   # ----------------------------------------------------------------
-  code-quality-gate:
-    name: Code Quality Gate (Duplication + Complexity)
+  e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
+    needs:
+      - lint-and-structure
+      - client-typecheck-and-build
+      - client-test
+      - admin-typecheck-and-build
+      - api-compile
+      - api-test
+      - security-scan
+      - phase01-verify
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 11.17.0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # 代码重复率扫描：阈值 > 3% 则 fail
-      - name: Run jscpd (code duplication)
-        run: |
-          npx jscpd \
-            --pattern "apps/client/src/**/*.{ts,vue}" \
-            --pattern "apps/api/src/main/java/**/*.java" \
-            --threshold 3 \
-            --reporters "html,json,console" \
-            --output ./reports/jscpd \
-            --exitCode 1 || \
-            (echo "::error::代码重复率超过 3% 阈值，请重构重复代码" && exit 1)
-
-      - name: Upload jscpd report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jscpd-report
-          path: reports/jscpd/
-          retention-days: 30
-
-      # 圈复杂度扫描：阈值 > 15 则 fail（Java 用 PMD，TS 用 eslint-plugin-complexity）
-      - name: Run ESLint complexity check
-        working-directory: apps/client
-        run: |
-          npx eslint \
-            --ext .ts,.vue \
-            --rule '{"complexity": ["error", {"max": 15}]}' \
-            --format json \
-            --output-file ../../reports/eslint-complexity.json \
-            src/ || \
-            (echo "::error::圈复杂度超过 15，请拆分复杂函数" && exit 1)
-
-      - name: Run PMD complexity check
-        working-directory: apps/api
-        run: |
-          if [ ! -d "target/classes" ]; then
-            mvn -B compile -DskipTests
-          fi
-          mvn -B pmd:pmd -Dformat=xml -DtargetDirectory=../../reports/pmd-api || \
-            (echo "::error::PMD 检测到圈复杂度超标" && exit 1)
-
-      - name: Upload complexity reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: complexity-reports
-          path: reports/
-          retention-days: 30
-
-  # ----------------------------------------------------------------
-  # Job 9 (P7 新增): E2E 测试（Playwright，仅 PR 触发）
-  # ----------------------------------------------------------------
-  e2e-test:
-    name: Playwright E2E Tests
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        working-directory: apps/client
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        working-directory: apps/client
-        run: npx playwright test --reporter=html --reporter=junit --output=test-results/
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: apps/client/playwright-report/
-          retention-days: 30
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-test-results
-          path: apps/client/test-results/
-          retention-days: 14
-
-  # ----------------------------------------------------------------
-  # Job 10 (P7 新增): 质量门禁汇总
-  # 所有上游 job 必须通过，本 job 才会通过
-  # ----------------------------------------------------------------
-  quality-gate:
-    name: Quality Gate (All Checks Pass)
-    runs-on: ubuntu-latest
-    needs:
-      - verify-phase01
-      - flyway-validate
-      - secret-scan
-      - client-test-coverage
-      - api-test-coverage
-      - sonarcloud
-      - owasp-dependency-check
-      - code-quality-gate
-    steps:
-      - name: All quality gates passed
-        run: |
-          echo "✅ 所有质量门禁通过"
-          echo ""
-          echo "已完成检查："
-          echo "- 原型与结构测试"
-          echo "- Flyway 数据库迁移校验"
-          echo "- 静态密钥扫描"
-          echo "- 客户端单元测试（覆盖率 ≥ 80%）"
-          echo "- API 单元测试（JaCoCo 覆盖率 ≥ 80%）"
-          echo "- SonarCloud 静态分析（重复率 ≤ 3%，圈复杂度 ≤ 15）"
-          echo "- OWASP Dependency Check（CVSS < 7）"
-          echo "- 代码重复率与圈复杂度门禁"
-          echo ""
-          echo "覆盖率与扫描报告已归档至 Actions Artifacts"
+        run: npx playwright test

@@ -94,6 +94,9 @@ page {
   --radius-2xl: var(--r-xxl); // 28rpx
   --radius-full: var(--r-full); // 9999rpx
   --radius-circle: 50%; // 圆形保留 50%
+  // Phase P2.2 · radius 短别名（与 --r-* 对齐，便于业务代码引用）
+  --r-pill: var(--r-full); // 9999rpx 胶囊形
+  --r-circle: 50%; // 圆形
 
   // ---------- 字号语义别名 ----------
   --font-size-xs: var(--fs-xs); // 20rpx
@@ -118,6 +121,10 @@ page {
   --shadow-romance: var(--s-romance);
   --shadow-modal: var(--s-modal);
   --shadow-float: var(--s-float-btn);
+  // Phase P2.4 · 光晕阴影 token（用于 TabBar 圆点、活动状态、悬浮按钮等发光效果）
+  --s-glow: 0 0 16rpx var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35));
+  --s-glow-romance: 0 0 16rpx var(--c-shadow-romance-tint-strong, rgba(236, 72, 153, 0.35));
+  --s-glow-accent: 0 0 16rpx var(--c-accent-bg-tint, rgba(249, 115, 22, 0.35));
 
   // ---------- 动画时长语义别名 ----------
   --duration-instant: 80ms;
@@ -126,6 +133,15 @@ page {
   --duration-slow: 250ms;
   --duration-slower: 350ms;
   --duration-slowest: 600ms;
+  // Phase P2.3 · duration 短别名（与 design-variables.scss --d-* 对齐）
+  --d-base: 300ms; // 标准过渡（与 --d-fade 一致，常用于 transition 默认时长）
+  --d-press: 200ms; // 按钮按压时长（与 --btn-press-duration 一致）
+  --d-spinner: 800ms; // 旋转加载动画时长（spinner 旋转一圈）
+  --d-loop: 1000ms; // 标准循环动画时长（pulse/blink 1s 循环）
+  --d-loop-slow: 2000ms; // 慢速循环动画时长（pulse-dot/heartbeat 2s 循环）
+  --d-breathe: 3000ms; // 呼吸动画时长（breathe 3s 循环）
+  --d-breathe-slow: 4000ms; // 慢呼吸动画时长（breathe 4s 循环）
+  --d-rotate-slow: 8000ms; // 慢旋转动画时长（ring-rotate 8s 循环）
 
   // ---------- 缓动函数别名 ----------
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);

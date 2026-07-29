@@ -1,8 +1,23 @@
-package com.campuslove.api.village;
+package com.campuslove.api.mock;
 
+import com.campuslove.api.village.CampusFeedView;
+import com.campuslove.api.village.CommentAuthorView;
+import com.campuslove.api.village.CommentItemView;
+import com.campuslove.api.village.CommentListResponse;
+import com.campuslove.api.village.CreateCommentRequest;
+import com.campuslove.api.village.CreatePostRequest;
+import com.campuslove.api.village.PostAuthorView;
+import com.campuslove.api.village.PostCategoryView;
+import com.campuslove.api.village.PostDetailView;
+import com.campuslove.api.village.PostLikeResponse;
+import com.campuslove.api.village.PostListResponse;
+import com.campuslove.api.village.PostSummaryView;
+import com.campuslove.api.village.SharePostRequest;
+import com.campuslove.api.village.ShareView;
+import com.campuslove.api.village.SimilarAuthorView;
+import com.campuslove.api.village.SimilarAuthorsResponse;
+import com.campuslove.api.village.VillageService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

@@ -67,14 +67,14 @@ const titleLabel = computed(() => props.title || t('chat.headerTitle'));
   /* 修复 P2（触摸目标过小）：从 64rpx 调整为 88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
   width: 88rpx;
   height: 88rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-neutral-50);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-tertiary);
-  transition: background 150ms ease;
+  transition: background var(--d-fast, 120ms) ease;
 }
 .chat-icon:active {
   background: var(--c-brand-100);

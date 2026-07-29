@@ -26,11 +26,11 @@ const { t } = useI18n();
 }
 .terms-text {
   font-size: var(--fs-sm);
-  color: rgba(255,255,255,0.5);
+  color: var(--c-overlay-text-quaternary, rgba(255, 255, 255, 0.5));
 }
 .terms-link {
   font-size: var(--fs-sm);
-  color: rgba(255,255,255,0.7);
+  color: var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7));
   text-decoration: underline;
 }
 </style>

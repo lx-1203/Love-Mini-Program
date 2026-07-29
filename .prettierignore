@@ -1,0 +1,56 @@
+# Prettier 忽略配置（Task 50）
+# 不格式化的文件/目录
+
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+.output/
+.nuxt/
+.next/
+
+# uni-app 构建输出
+apps/client/dist/
+apps/client/unpackage/
+apps/admin/dist/
+
+# 锁文件
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# 自动生成的代码
+apps/client/src/services/generated/
+**/*.generated.ts
+**/*.generated.js
+
+# 第三方库与脚本
+apps/api/.mvn/
+apps/api/target/
+
+# 数据与日志
+*.log
+*.lock
+*.tmp
+
+# 设计预览（含手写 HTML，不强制格式化）
+design-preview/
+design-archive/
+design-system/previews/
+
+# 大文件/二进制资源
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# Markdown 中的长文档（按需手动格式化）
+CHANGELOG.md
+pnpm-lock.yaml

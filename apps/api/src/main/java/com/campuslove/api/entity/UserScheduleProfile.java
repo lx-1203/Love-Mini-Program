@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 用户日程偏好实体，对应 user_schedule_profile 表。
  * 存储偏好校区区域、时间窗口和课程安排（JSON 格式）。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "user_schedule_profile")
 public class UserScheduleProfile {
 
@@ -38,10 +43,16 @@ public class UserScheduleProfile {
     private String courseBlockJson = "[]";
 
     /** 记录创建时间（日程资料入库时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（日程资料编辑时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

@@ -107,7 +107,11 @@ public class RealVillageService implements VillageService {
         try {
             currentUserId = SecurityUtils.getCurrentUserId();
         } catch (HttpClientErrorException.Unauthorized ignored) {
-            // 未认证用户查看帖子，isLiked/isAuthor 均为 false
+            // Task 10（FIN-00151）复核：此处 catch HttpClientErrorException.Unauthorized 为
+            // HTTP 鉴权异常（SecurityUtils 从 SecurityContext 读取未认证抛出），非 DB 异常，
+            // 触发时尚未执行 findPostOrThrow/toPostDetailView 等 DB 读操作，不存在"事务部分提交"风险；
+            // 按设计意图允许未认证用户匿名查看帖子（isLiked/isAuthor 均为 false），
+            // 无需 setRollbackOnly 或重新抛出（spec SubTask 10.5/10.6 适用于 DB 异常场景）。
         }
         Post post = queryService.findPostOrThrow(postId);
         return queryService.toPostDetailView(post, currentUserId);

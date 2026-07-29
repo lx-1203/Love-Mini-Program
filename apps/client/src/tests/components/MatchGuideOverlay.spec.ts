@@ -81,7 +81,7 @@ describe("MatchGuideOverlay component - 匹配成功引导弹窗组件", () => {
   it("icebreakers 为空时不渲染话题区", () => {
     const wrapper = mountOverlay({ icebreakers: [] });
     // 仍有 commonCircles / activities 区块，但话题块不应渲染
-    const sections = wrapper.findAll(".mgo-section");
+    // 修复 no-unused-vars：删除未使用的 sections 变量
     // 验证至少没有 topic-chip
     expect(wrapper.find(".mgo-topic-chip").exists()).toBe(false);
   });

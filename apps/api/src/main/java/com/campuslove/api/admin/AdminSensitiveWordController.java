@@ -9,6 +9,9 @@ import com.campuslove.api.entity.SensitiveWord;
 import com.campuslove.api.repository.SensitiveWordRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.cache.annotation.CacheEvict;
@@ -119,7 +122,7 @@ public class AdminSensitiveWordController {
     @Auditable(value = AuditOperation.DELETE_SENSITIVE_WORD, targetType = "SENSITIVE_WORD")
     @CacheEvict(cacheNames = CacheNames.SENSITIVE_WORDS, allEntries = true)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") @Positive Long id) {
         SecurityUtils.getCurrentUserId();
 
         if (!sensitiveWordRepository.existsById(id)) {
@@ -197,7 +200,9 @@ record SensitiveWordView(
 
 /** 新增敏感词请求 */
 record SensitiveWordCreateRequest(
-        @NotBlank String word,
+        @NotBlank @Size(max = 64) String word,
+        @Pattern(regexp = "POLITICS|PORN|ABUSE|AD|OTHER",
+                message = "category 必须为 POLITICS/PORN/ABUSE/AD/OTHER")
         String category
 ) {}
 
@@ -208,6 +213,10 @@ record SensitiveWordCreateRequest(
  * @param category 敏感词分类（POLITICS/PORN/ABUSE/AD/OTHER），可为 null
  */
 record SensitiveWordBatchImportRequest(
-        @jakarta.validation.constraints.NotEmpty List<@NotBlank String> words,
+        @jakarta.validation.constraints.NotEmpty
+        @Size(max = 10000, message = "words 列表不能超过 10000 条")
+        List<@NotBlank @Size(max = 64) String> words,
+        @Pattern(regexp = "POLITICS|PORN|ABUSE|AD|OTHER",
+                message = "category 必须为 POLITICS/PORN/ABUSE/AD/OTHER")
         String category
 ) {}

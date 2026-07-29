@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * VIP 优惠码兑换页
  *
@@ -312,7 +312,7 @@ function goBack() {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
+  background: linear-gradient(180deg, var(--c-gold) 0%, var(--c-accent-400) 100%);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 200rpx;
@@ -334,9 +334,9 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   &--hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--c-overlay-border-light);
     transform: scale(0.94);
   }
 }
@@ -375,8 +375,8 @@ function goBack() {
 .hero__icon {
   width: 144rpx;
   height: 144rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-overlay-border-mid);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -395,7 +395,7 @@ function goBack() {
 }
 .hero__subtitle {
   font-size: var(--fs-base, 24rpx);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary);
 }
 
 /* ==================== 分组 ==================== */
@@ -403,30 +403,30 @@ function goBack() {
   position: relative;
   z-index: 1;
   margin: 16rpx 24rpx 0;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 20rpx;
+  background: var(--c-overlay-white-bg-most);
+  border-radius: var(--r-lg, 20rpx);
   padding: 24rpx;
-  box-shadow: var(--s-md, 0 4rpx 16rpx rgba(0, 0, 0, 0.08));
+  box-shadow: var(--s-md);
 }
 .section__title {
   padding: 0 0 16rpx;
 }
 .section__title-text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary);
   font-weight: 600;
 }
 
 /* ==================== 输入区 ==================== */
 .code-input-wrap {
-  background: var(--c-bg-secondary, #F1F5F9);
+  background: var(--c-bg-secondary);
   border-radius: var(--r-lg, 16rpx);
   padding: 24rpx;
 }
 .code-input {
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
   letter-spacing: 4rpx;
   text-align: center;
 }
@@ -434,20 +434,20 @@ function goBack() {
   display: flex;
   align-items: baseline;
   gap: 8rpx;
-  background: var(--c-bg-secondary, #F1F5F9);
+  background: var(--c-bg-secondary);
   border-radius: var(--r-lg, 16rpx);
   padding: 16rpx 24rpx;
 }
 .amount-input__currency {
   font-size: var(--fs-2xl, 32rpx);
-  color: var(--c-gold, #B8860B);
+  color: var(--c-gold);
   font-weight: 700;
 }
 .amount-input {
   flex: 1;
   font-size: var(--fs-6xl, 48rpx);
   font-weight: 800;
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
 }
 
 /* ==================== 操作按钮 ==================== */
@@ -461,16 +461,16 @@ function goBack() {
 .action-btn {
   flex: 1;
   padding: 24rpx 32rpx;
-  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
-  border-radius: 999rpx;
-  box-shadow: var(--s-accent, 0 4rpx 16rpx rgba(255, 165, 0, 0.4));
-  transition: all 0.15s ease;
+  background: linear-gradient(135deg, var(--c-gold) 0%, var(--c-accent-400) 100%);
+  border-radius: var(--r-full, 9999rpx);
+  box-shadow: var(--s-accent);
+  transition: all var(--d-fast, 120ms) ease;
   display: flex;
   justify-content: center;
   align-items: center;
   &--ghost {
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: var(--s-md, 0 4rpx 16rpx rgba(0, 0, 0, 0.08));
+    background: var(--c-overlay-white-bg-most);
+    box-shadow: var(--s-md);
   }
   &--hover {
     transform: scale(0.96);
@@ -486,7 +486,7 @@ function goBack() {
   font-weight: 700;
 }
 .action-btn--ghost .action-btn__text {
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
 }
 
 /* ==================== 结果卡片 ==================== */
@@ -494,13 +494,13 @@ function goBack() {
   margin-top: 24rpx;
 }
 .result-card {
-  background: var(--c-bg-secondary, #F1F5F9);
+  background: var(--c-bg-secondary);
   border-radius: var(--r-lg, 16rpx);
   padding: 16rpx 24rpx;
   border: 2rpx solid transparent;
   &--invalid {
-    background: rgba(239, 68, 68, 0.08);
-    border-color: rgba(239, 68, 68, 0.3);
+    background: var(--c-red-bg-tint);
+    border-color: var(--c-red-border-tint);
   }
 }
 .result-row {
@@ -508,24 +508,24 @@ function goBack() {
   align-items: center;
   justify-content: space-between;
   padding: 12rpx 0;
-  border-bottom: 1rpx dashed var(--c-border-light, #E2E8F0);
+  border-bottom: 1rpx dashed var(--c-border-light);
   &:last-child {
     border-bottom: none;
   }
 }
 .result-row__label {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
 }
 .result-row__value {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
   font-weight: 600;
   &--accent {
-    color: var(--c-romance-500, #EC4899);
+    color: var(--c-romance-500);
   }
   &--danger {
-    color: var(--c-error, #EF4444);
+    color: var(--c-error);
   }
 }
 
@@ -537,16 +537,16 @@ function goBack() {
   right: 0;
   padding: 16rpx 24rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.96);
-  border-top: 1rpx solid var(--c-border-light, #E2E8F0);
+  background: var(--c-overlay-white-bg-most);
+  border-top: 1rpx solid var(--c-border-light);
   z-index: 10;
 }
 .footer__btn {
   padding: 24rpx 0;
-  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
-  border-radius: 999rpx;
-  box-shadow: var(--s-accent, 0 4rpx 16rpx rgba(255, 165, 0, 0.4));
-  transition: all 0.15s ease;
+  background: linear-gradient(135deg, var(--c-gold) 0%, var(--c-accent-400) 100%);
+  border-radius: var(--r-full, 9999rpx);
+  box-shadow: var(--s-accent);
+  transition: all var(--d-fast, 120ms) ease;
   display: flex;
   justify-content: center;
   align-items: center;

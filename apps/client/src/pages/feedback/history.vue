@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 反馈历史记录页（功能10）
  *
@@ -25,6 +25,7 @@ import { useI18n } from "vue-i18n";
 import AppShell from "../../components/layout/AppShell.vue";
 import SectionCard from "../../components/common/SectionCard.vue";
 import StatusState from "../../components/common/StatusState.vue";
+import EmptyState from "../../components/common/EmptyState.vue";
 import { useFeedbackStore } from "../../stores/feedback";
 import { clientApi } from "../../services/api";
 import {
@@ -53,16 +54,17 @@ onUnmounted(() => {
   }
 });
 
-/** 反馈类型筛选枚举（"all" 表示全部） */
-type FilterType = "all" | "feedback" | "suggestion" | "activity_proposal";
+/** 反馈类型筛选枚举（"all" 表示全部）。
+ *  类型值与后端 FeedbackTicketType 枚举保持一致（大写形式）。 */
+type FilterType = "all" | "FEEDBACK" | "SUGGESTION" | "ACTIVITY_PROPOSAL";
 
-/** 类型筛选选项（与 i18n 解耦，使用固定中文标签便于直接展示） */
-const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
-  { value: "all", label: "全部" },
-  { value: "feedback", label: "反馈" },
-  { value: "suggestion", label: "建议" },
-  { value: "activity_proposal", label: "活动提案" },
-];
+/** 类型筛选选项（Task 28：label 通过 i18n 计算属性动态切换） */
+const FILTER_OPTIONS = computed<{ value: FilterType; label: string }[]>(() => [
+  { value: "all", label: t("feedbackHistory.filterAll") },
+  { value: "FEEDBACK", label: t("feedbackHistory.filterFeedback") },
+  { value: "SUGGESTION", label: t("feedbackHistory.filterSuggestion") },
+  { value: "ACTIVITY_PROPOSAL", label: t("feedbackHistory.filterActivityProposal") },
+]);
 
 const { t } = useI18n();
 const feedbackStore = useFeedbackStore();
@@ -271,10 +273,12 @@ onShow(() => {
     </view>
 
     <!-- 空状态 -->
-    <view v-else-if="filteredSubmissions.length === 0" class="empty-card card-base">
-      <text class="empty-card__title">{{ t("feedback.historyEmpty") }}</text>
-      <text class="empty-card__subtitle">{{ t("feedback.historyEmptyDesc") }}</text>
-    </view>
+    <EmptyState
+      v-else-if="filteredSubmissions.length === 0"
+      type="no-data"
+      :title="t('feedback.historyEmpty')"
+      :description="t('feedback.historyEmptyDesc')"
+    />
 
     <!-- 提交记录列表 -->
     <SectionCard v-else :title="t('feedback.historyTitle')" compact>
@@ -519,8 +523,8 @@ onShow(() => {
   height: 36rpx;
   border: 3rpx solid var(--c-border-light, rgba(15, 23, 42, 0.08));
   border-top-color: var(--c-brand);
-  border-radius: 50%;
-  animation: feedback-history-spinner 0.8s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: feedback-history-spinner var(--d-spinner, 800ms) linear infinite;
 }
 
 @keyframes feedback-history-spinner {

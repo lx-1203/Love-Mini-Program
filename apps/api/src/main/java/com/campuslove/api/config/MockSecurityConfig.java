@@ -1,5 +1,7 @@
 package com.campuslove.api.config;
 
+import com.campuslove.api.auth.JwtAccessDeniedHandler;
+import com.campuslove.api.auth.JwtAuthenticationEntryPoint;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import jakarta.servlet.FilterChain;
@@ -61,10 +64,33 @@ public class MockSecurityConfig {
     private static final List<String> PERMIT_PATHS = List.of(
             "/api/v1/auth/**",
             "/ws/**",
-            "/api/v1/content-filter/check"
+            "/api/v1/content-filter/check",
+            "/actuator/health",
+            "/actuator/health/**"
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    /**
+     * Task 11.1：JWT 认证失败入口点（@Component，无 profile 限制，mock 也可复用）。
+     * 与 SecurityConfig 共享同一实现，保证 401 响应格式一致。
+     */
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    /**
+     * Task 11.1：JWT 权限不足处理器，与 SecurityConfig 共享同一实现，保证 403 响应格式一致。
+     */
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+
+    /**
+     * Task 11.1：构造函数注入 JWT 异常处理器。
+     *
+     * @param jwtAuthenticationEntryPoint JWT 认证失败入口点
+     * @param jwtAccessDeniedHandler      JWT 权限不足处理器
+     */
+    public MockSecurityConfig(JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+                              JwtAccessDeniedHandler jwtAccessDeniedHandler) {
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+        this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
+    }
 
     @Bean
     public SecurityFilterChain mockSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -74,6 +100,24 @@ public class MockSecurityConfig {
             .httpBasic(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Task 11.1：与 SecurityConfig 完全对齐——注册自定义异常处理器，
+            // 统一返回 401/403 + 标准 JSON 错误体（含 traceId），不暴露堆栈
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                .accessDeniedHandler(jwtAccessDeniedHandler)
+            )
+            // Task 11.1：与 SecurityConfig 完全对齐——添加安全响应头
+            .headers(headers -> headers
+                .contentTypeOptions(contentType -> {})
+                .frameOptions(frame -> frame.deny())
+                .referrerPolicy(referrer -> referrer
+                    .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .xssProtection(xss -> {})
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31536000)
+                )
+            )
             .authorizeHttpRequests(auth -> auth
                 // 登录端点不需要认证（与 real profile 一致）
                 // Task 2.4.1：所有路径统一升级为 /api/v1/**
@@ -82,6 +126,13 @@ public class MockSecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 // 内容审查公开端点
                 .requestMatchers("/api/v1/content-filter/check").permitAll()
+                // Task 11.1：Swagger UI / OpenAPI 文档端点仅 ADMIN 可访问（与 real profile 一致）
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                 "/v3/api-docs/**", "/v3/api-docs.yaml").hasRole("ADMIN")
+                // Task 11.1：Actuator 端点鉴权（与 real profile 一致），
+                // /actuator/health 公开供负载均衡探测；其他端点仅 ADMIN
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
                 // Task 0.3.1：/uploads/** 完全拒绝直接访问，强制走鉴权代理端点
                 // /api/v1/media/{userId}/{path}（与 real profile 一致）
                 .requestMatchers("/uploads/**").denyAll()

@@ -246,7 +246,7 @@ export default {
   align-items: center;
   gap: 16rpx;
   padding: 20rpx 36rpx;
-  border-radius: 48rpx;
+  border-radius: var(--r-xxl, 48rpx);
   box-shadow: 0 8rpx 32rpx var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.12));
   max-width: 640rpx;
   min-width: 320rpx;

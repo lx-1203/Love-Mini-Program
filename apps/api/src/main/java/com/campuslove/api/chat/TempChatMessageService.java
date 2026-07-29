@@ -111,7 +111,10 @@ public class TempChatMessageService {
                     message.setQuoteSnapshot(snapshot);
                 });
             } catch (NumberFormatException ignored) {
-                // quoteRef 非法数字时忽略
+                // Task 10（FIN-00031）复核：此处 catch NumberFormatException 为输入解析异常，
+                // 触发时尚未执行任何 DB 写操作（messageRepository.save 在下方 L118），
+                // 不存在"事务部分提交"风险；按设计意图跳过 quoteSnapshot 字段继续发送消息，
+                // 无需 setRollbackOnly 或重新抛出（spec SubTask 10.3 适用于 DB 异常场景）。
             }
         }
 
@@ -162,6 +165,10 @@ public class TempChatMessageService {
         try {
             msgId = Long.parseLong(messageId);
         } catch (NumberFormatException e) {
+            // Task 10（FIN-00031）复核：此处 catch NumberFormatException 为输入解析异常，
+            // 触发时尚未执行任何 DB 写操作（messageRepository.findById/save 在下方 L169/L192），
+            // 不存在"事务部分提交"风险；按设计意图对非法 messageId 做静默 no-op 返回原会话，
+            // 无需 setRollbackOnly 或重新抛出（spec SubTask 10.3 适用于 DB 异常场景）。
             log.warn("非法消息ID: {}", messageId);
             return session;
         }

@@ -156,22 +156,30 @@ export const ROUTES = {
 /**
  * SubPackage 页面路径（按分业务模块组织，对应 pages.json 的 subPackages）。
  *
- * 注意：分包页面路径需加上分包根路径前缀（如 "profile/index" → "/profile/index"），
- * 与主包路径（"/pages/xxx/xxx"）区分。
+ * 注意：分包页面路径需使用完整路径（含分包根路径前缀），
+ * 如 "/subpackages/setup/profile/index"，与 uni.navigateTo/redirectTo 的 url 参数约定一致。
  */
 export const SUBPACKAGE_ROUTES = {
-  /** setup-progress 分包 */
+  /** setup-progress 分包（root: subpackages/setup） */
   SETUP_PROGRESS: {
-    PROFILE: "/profile/index",
-    CAMPUS: "/campus/index",
-    SCHEDULE: "/schedule/index",
-    RECOMMEND_PREF: "/recommend-pref/index",
-    FEEDBACK: "/feedback/index",
+    PROFILE: "/subpackages/setup/profile/index",
+    CAMPUS: "/subpackages/setup/campus/index",
+    SCHEDULE: "/subpackages/setup/schedule/index",
+    RECOMMEND_PREF: "/subpackages/setup/recommend-pref/index",
   },
-  /** discover-feed 分包 */
+  /** support 分包（root: subpackages/support） */
+  SUPPORT: {
+    FEEDBACK: "/subpackages/support/feedback/index",
+  },
+  /** discover-feed 分包（root: subpackages/discover） */
   DISCOVER_FEED: {
-    DISCUSSIONS: "/discussions/index",
-    ACTIVITIES: "/activities/index",
+    DISCUSSIONS: "/subpackages/discover/discussions/index",
+    ACTIVITIES: "/subpackages/discover/activities/index",
+  },
+  /** legal 分包（root: subpackages/legal） */
+  LEGAL: {
+    PRIVACY: "/subpackages/legal/privacy/index",
+    AGREEMENT: "/subpackages/legal/agreement/index",
   },
 } as const;
 

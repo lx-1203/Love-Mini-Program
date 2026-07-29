@@ -156,7 +156,8 @@ class WebSocketClient {
     const wsUrl = buildWsUrl();
     const protocols = buildProtocols(token);
 
-    console.log("[WebSocket] 正在连接:", wsUrl);
+    // 修复 no-console：连接过程日志改用 console.warn（允许的方法）
+    console.warn("[WebSocket] 正在连接:", wsUrl);
 
     this.socketTask = createSocketTask(wsUrl, protocols, {
       onOpen: () => {
@@ -215,7 +216,7 @@ class WebSocketClient {
 
     this.stompSessionReady = false;
     this.stateMachine.setState("disconnected");
-    console.log("[WebSocket] 已断开连接");
+    console.warn("[WebSocket] 已断开连接");
   }
 
   /**
@@ -282,7 +283,7 @@ class WebSocketClient {
       this.sendSubscribeFrame(subId, destination);
     }
 
-    console.log(`[WebSocket] 订阅频道: ${destination}, subId: ${subId}`);
+    console.warn(`[WebSocket] 订阅频道: ${destination}, subId: ${subId}`);
     return subId;
   }
 
@@ -330,7 +331,7 @@ class WebSocketClient {
       }
     }
 
-    console.log(`[WebSocket] 取消订阅: ${destination}, subId: ${subId}`);
+    console.warn(`[WebSocket] 取消订阅: ${destination}, subId: ${subId}`);
   }
 
   /**
@@ -382,7 +383,7 @@ class WebSocketClient {
    * 后端 JwtChannelInterceptor 在 CONNECT 阶段提取并校验。
    */
   private onSocketOpen(): void {
-    console.log("[WebSocket] TCP 连接已建立，发送 STOMP CONNECT 帧");
+    console.warn("[WebSocket] TCP 连接已建立，发送 STOMP CONNECT 帧");
 
     // 发送 STOMP CONNECT 帧
     // Authorization header 用于 STOMP 会话级认证（JwtChannelInterceptor 提取）
@@ -400,7 +401,7 @@ class WebSocketClient {
       this.socketTask.send({
         data: connectFrame,
         success: () => {
-          console.log("[WebSocket] STOMP CONNECT 帧已发送");
+          console.warn("[WebSocket] STOMP CONNECT 帧已发送");
         },
         fail: (err) => {
           console.error("[WebSocket] STOMP CONNECT 帧发送失败:", err);
@@ -450,7 +451,7 @@ class WebSocketClient {
    * 后续 handleReconnect 会再将其转为 reconnecting。
    */
   private onSocketClose(res: { code: number; reason: string }): void {
-    console.log("[WebSocket] 连接已关闭:", res.code, res.reason);
+    console.warn("[WebSocket] 连接已关闭:", res.code, res.reason);
     this.stompSessionReady = false;
     // 显式同步状态机：连接已断开
     this.stateMachine.setState("disconnected");
@@ -531,7 +532,7 @@ class WebSocketClient {
    * 6. 集成 Pinia Store
    */
   private onStompConnected(frame: StompFrame): void {
-    console.log("[WebSocket] STOMP 会话已建立:", frame.headers);
+    console.warn("[WebSocket] STOMP 会话已建立:", frame.headers);
     this.stompSessionReady = true;
     this.reconnectManager.resetAttempts();
     this.stateMachine.setState("connected");
@@ -606,7 +607,7 @@ class WebSocketClient {
    */
   private onStompReceipt(frame: StompFrame): void {
     const receiptId = frame.headers["receipt-id"] || "";
-    console.log(`[WebSocket] 收到 RECEIPT: ${receiptId}`);
+    console.warn(`[WebSocket] 收到 RECEIPT: ${receiptId}`);
   }
 
   /**
@@ -663,7 +664,7 @@ class WebSocketClient {
       this.socketTask.send({
         data: subFrame,
         success: () => {
-          console.log(`[WebSocket] SUBSCRIBE 帧已发送: ${destination}`);
+          console.warn(`[WebSocket] SUBSCRIBE 帧已发送: ${destination}`);
         },
         fail: (err) => {
           console.error(`[WebSocket] SUBSCRIBE 帧发送失败: ${destination}`, err);

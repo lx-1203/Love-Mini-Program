@@ -11,12 +11,16 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 临时聊天消息实体，对应 temp_chat_message 表。
  * 关联 TempChatSession，支持文本、语音、表情等消息类型。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "temp_chat_message")
 public class TempChatMessage {
 
@@ -58,6 +62,9 @@ public class TempChatMessage {
     private String quoteSnapshot;
 
     /** 记录创建时间（消息发送时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

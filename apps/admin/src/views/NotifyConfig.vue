@@ -38,8 +38,14 @@ async function fetchConfigs() {
   try {
     const result = await listNotifyConfigs();
     configs.value = result || [];
-  } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("notifyConfig.loadFailed");
+  } catch (err: unknown) {
+    // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
+    error.value =
+      err instanceof ApiError
+        ? err.message
+        : err instanceof Error && err.message
+          ? err.message
+          : t("notifyConfig.loadFailed");
     configs.value = [];
   } finally {
     loading.value = false;
@@ -61,8 +67,14 @@ async function handleSave() {
     const updated = await updateNotifyConfigs(payload);
     configs.value = updated || configs.value;
     showSuccess(t("notifyConfig.saveSuccess"));
-  } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("notifyConfig.saveFailed");
+  } catch (err: unknown) {
+    // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
+    error.value =
+      err instanceof ApiError
+        ? err.message
+        : err instanceof Error && err.message
+          ? err.message
+          : t("notifyConfig.saveConfigFailed");
   } finally {
     saving.value = false;
   }
@@ -171,41 +183,41 @@ onMounted(() => {
 
 .type-cell {
   font-weight: 500;
-  color: #333;
+  color: var(--admin-color-text-primary);
   white-space: nowrap;
 }
 
 .time-cell {
-  color: #999;
+  color: var(--admin-color-text-quaternary);
   white-space: nowrap;
 }
 
 .switch-label {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-sm);
   cursor: pointer;
   user-select: none;
 }
 
 .switch-input {
-  width: 16px;
-  height: 16px;
+  width: var(--admin-space-lg);
+  height: var(--admin-space-lg);
   cursor: pointer;
 }
 
 .switch-text {
-  font-size: 12px;
-  color: #666;
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-tertiary);
 }
 
 .template-input {
   width: 100%;
   min-width: 360px;
-  padding: 8px 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 13px;
+  padding: var(--admin-space-sm) var(--admin-space-md-sm);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-md);
   font-family: inherit;
   resize: vertical;
   box-sizing: border-box;
@@ -213,6 +225,6 @@ onMounted(() => {
 
 .template-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--admin-color-primary);
 }
 </style>

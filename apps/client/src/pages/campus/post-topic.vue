@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 校园话题发布页
  *
@@ -17,12 +17,14 @@
  */
 import { ref, computed, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
-import { useCampusStore, CAMPUS_CATEGORY_MAP } from "../../stores/campus";
-import type { CampusTopicCategory } from "../../stores/campus";
+import { useI18n } from "vue-i18n";
+// 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
+import { useCampusStore, CAMPUS_CATEGORY_MAP, type CampusTopicCategory } from "../../stores/campus";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
 import TopicSelector from "../../components/village/TopicSelector.vue";
 
 const campusStore = useCampusStore();
+const { t } = useI18n();
 
 const pageVisible = ref(false);
 /**
@@ -120,12 +122,12 @@ async function submitTopic() {
   if (!canSubmit.value) return;
 
   if (!title.value.trim()) {
-    uni.showToast({ title: "请输入标题", icon: "none" });
+    uni.showToast({ title: t("campus.postTopic.errTitle"), icon: "none" });
     return;
   }
 
   if (!content.value.trim()) {
-    uni.showToast({ title: "请输入内容", icon: "none" });
+    uni.showToast({ title: t("campus.postTopic.errContent"), icon: "none" });
     return;
   }
 
@@ -143,7 +145,7 @@ async function submitTopic() {
       isAnonymous: isAnonymous.value,
     });
 
-    uni.showToast({ title: "发布成功", icon: "success" });
+    uni.showToast({ title: t("campus.postTopic.publishSuccess"), icon: "success" });
     // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
     if (postSuccessNavTimer) clearTimeout(postSuccessNavTimer);
     postSuccessNavTimer = setTimeout(() => {
@@ -152,7 +154,7 @@ async function submitTopic() {
     }, 800);
   } catch (_e) {
     uni.showToast({
-      title: campusStore.errorMessage || "发布失败",
+      title: campusStore.errorMessage || t("campus.postTopic.publishFailed"),
       icon: "none",
     });
   } finally {
@@ -173,9 +175,9 @@ function goBack() {
     <!-- 顶部导航栏 -->
     <view class="post-header">
       <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">取消</text>
+        <text class="back-icon">{{ t('campus.postTopic.cancel') }}</text>
       </view>
-      <text class="post-header__title">发布话题</text>
+      <text class="post-header__title">{{ t('campus.postTopic.navTitle') }}</text>
       <view
         class="post-header__submit press-feedback"
         :class="{ 'post-header__submit--disabled': !canSubmit }"
@@ -183,19 +185,18 @@ function goBack() {
         hover-stay-time="120"
         @tap="submitTopic"
       >
-        <text class="submit-text">{{ isSubmitting ? "发布中" : "发布" }}</text>
+        <text class="submit-text">{{ isSubmitting ? t('campus.postTopic.submitPublishing') : t('campus.postTopic.submitPublish') }}</text>
       </view>
     </view>
 
     <scroll-view class="post-body" scroll-y>
       <!-- 选择分类 -->
       <view class="category-section">
-        <text class="section-label">选择分类</text>
+        <text class="section-label">{{ t('campus.postTopic.labelCategory') }}</text>
         <view class="category-list" role="list">
           <view class="category-row">
             <view
-              v-for="cat in categoryOptions.slice(0, 3)"
-              :key="cat.key"
+              v-for="cat in categoryOptions.slice(0, 3)" :key="cat.key"
               class="category-option"
               :class="{ 'category-option--selected': selectedCategory === cat.key }"
               @tap="selectCategory(cat.key)"
@@ -205,8 +206,7 @@ function goBack() {
           </view>
           <view class="category-row">
             <view
-              v-for="cat in categoryOptions.slice(3, 6)"
-              :key="cat.key"
+              v-for="cat in categoryOptions.slice(3, 6)" :key="cat.key"
               class="category-option"
               :class="{ 'category-option--selected': selectedCategory === cat.key }"
               @tap="selectCategory(cat.key)"
@@ -219,24 +219,24 @@ function goBack() {
 
       <!-- 标题输入 -->
       <view class="title-section">
-        <text class="section-label">话题标题</text>
+        <text class="section-label">{{ t('campus.postTopic.labelTitle') }}</text>
         <input
           v-model="title"
           class="title-input"
-          placeholder="输入一个吸引人的标题"
-          maxlength="50" aria-label="输入一个吸引人的标题"
+          :placeholder="t('campus.postTopic.placeholderTitle')"
+          maxlength="50" :aria-label="t('campus.postTopic.placeholderTitle')"
         />
       </view>
 
       <!-- 内容输入区 -->
       <view class="content-section">
-        <text class="section-label">话题内容</text>
+        <text class="section-label">{{ t('campus.postTopic.labelContent') }}</text>
         <textarea
           v-model="content"
           class="content-input"
-          placeholder="分享你的想法、经验或求助..."
+          :placeholder="t('campus.postTopic.placeholderContent')"
           :maxlength="MAX_LENGTH"
-          :show-confirm-bar="false" aria-label="分享你的想法、经验或求助..."
+          :show-confirm-bar="false" :aria-label="t('campus.postTopic.placeholderContent')"
         />
         <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
           <text>{{ currentLength }}/{{ MAX_LENGTH }}</text>
@@ -252,8 +252,8 @@ function goBack() {
       <view class="options-section">
         <view class="option-row">
           <view class="option-info">
-            <text class="option-label">匿名发布</text>
-            <text class="option-desc">开启后，你的信息将显示为"匿名校友"</text>
+            <text class="option-label">{{ t('campus.postTopic.labelAnonymous') }}</text>
+            <text class="option-desc">{{ t('campus.postTopic.anonymousDesc') }}</text>
           </view>
           <switch
             :checked="isAnonymous"
@@ -272,7 +272,7 @@ function goBack() {
           hover-stay-time="120"
           @tap="submitTopic"
         >
-          <text class="bottom-submit__text">{{ isSubmitting ? "发布中..." : "发布话题" }}</text>
+          <text class="bottom-submit__text">{{ isSubmitting ? t('campus.postTopic.submitPublishingBottom') : t('campus.postTopic.submitPublishBottom') }}</text>
         </view>
       </view>
     </scroll-view>
@@ -280,18 +280,18 @@ function goBack() {
 </template>
 
 <style scoped lang="scss">
-$green-primary: var(--c-brand, #3FCF8E);
-$green-light: var(--c-brand-50, #E8F8F0);
-$pink-primary: var(--c-romance-500, #EC4899);
-$pink-light: var(--c-romance-50, #FFF5F7);
-$white: var(--c-neutral-0, #FFFFFF);
-$bg-page: var(--c-bg-page, #F4F6FA);
-$text-primary: var(--c-text-primary, #1F2329);
-$text-secondary: var(--c-neutral-500, #64748B);
-$text-tertiary: var(--c-text-tertiary, #9AA1AB);
-$border-light: var(--c-neutral-200, #E2E8F0);
-$error: var(--c-error, #EF4444);
-$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+$green-primary: var(--c-brand);
+$green-light: var(--c-brand-50);
+$pink-primary: var(--c-romance-500);
+$pink-light: var(--c-romance-50);
+$white: var(--c-neutral-0);
+$bg-page: var(--c-bg-page);
+$text-primary: var(--c-text-primary);
+$text-secondary: var(--c-neutral-500);
+$text-tertiary: var(--c-text-tertiary);
+$border-light: var(--c-neutral-200);
+$error: var(--c-error);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .post-page {
   display: flex;
@@ -299,7 +299,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   height: 100%;
-  background: linear-gradient(180deg, var(--c-bg-brand, #E8F8F0) 0%, var(--c-bg-page, #F4F6FA) 20%);
+  background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -308,45 +308,45 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 60%, var(--c-romance-300, #F9A8C4) 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
 }
 
 .post-header__back {
   padding: 12rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
-  transition: all 0.15s ease;
+  background: var(--c-overlay-white-bg-mid-strong);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
 .post-header__back:active {
   transform: scale(0.96);
-  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
+  background: var(--c-overlay-white-bg-stronger);
 }
 /* #endif */
 
 .back-icon {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 500;
 }
 
 .post-header__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
 }
 
 .post-header__submit {
   padding: 14rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95)));
+  background: var(--c-overlay-bg-pure);
   min-width: 80rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
-  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0, 0, 0, 0.1)));
+  transition: all var(--d-fast, 120ms) ease;
+  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-md);
 }
 
 /* #ifdef H5 */
@@ -356,7 +356,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .post-header__submit--disabled {
-  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
+  background: var(--c-overlay-white-bg-stronger);
   box-shadow: none;
 }
 
@@ -367,7 +367,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .post-header__submit--disabled .submit-text {
-  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
+  color: var(--c-overlay-white-text-strong);
 }
 
 .post-body {
@@ -413,7 +413,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 150ms ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -423,9 +423,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .category-option--selected {
-  background: linear-gradient(135deg, $green-light, var(--c-tint-green-50, #F0FDF8));
+  background: linear-gradient(135deg, $green-light, var(--c-tint-green-50));
   border-color: $green-primary;
-  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15)));
+  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint);
 }
 
 .category-option__text {
@@ -457,7 +457,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   border-radius: var(--r-lg, 16rpx);
   background: $bg-page;
   border: 2rpx solid transparent;
-  transition: all 0.2s ease;
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 .title-input:focus {
@@ -485,7 +485,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   border-radius: var(--r-lg, 16rpx);
   border: 2rpx solid transparent;
   box-sizing: border-box;
-  transition: all 0.2s ease;
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 .content-input:focus {
@@ -558,18 +558,18 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   width: 100%;
   padding: 28rpx 0;
   border-radius: var(--r-xl, 24rpx);
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35)));
-  transition: all 0.15s ease;
+  box-shadow: 0 8rpx 24rpx var(--c-brand-shadow-tint-strong);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
 .bottom-submit__btn:active {
   transform: scale(0.96);
-  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint-mid, var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25)));
+  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint-mid);
 }
 /* #endif */
 
@@ -580,7 +580,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .bottom-submit__text {
   font-size: var(--fs-xl, 30rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 

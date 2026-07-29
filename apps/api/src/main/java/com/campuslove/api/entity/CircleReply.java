@@ -11,12 +11,16 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 圈子回复实体，对应 circle_replies 表。
  * 关联 CircleTopic，支持级联删除。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "circle_replies")
 public class CircleReply {
 
@@ -38,6 +42,9 @@ public class CircleReply {
     private String content;
 
     /** 记录创建时间（回复发布时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

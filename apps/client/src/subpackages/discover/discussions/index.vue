@@ -5,6 +5,7 @@ import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 import StatusState from "../../../components/common/StatusState.vue";
+import EmptyState from "../../../components/common/EmptyState.vue";
 import { discoverPageRequirements } from "../../../config/page-access";
 import { usePageAccess } from "../../../composables/usePageAccess";
 import { clientApi } from "../../../services/api";
@@ -52,7 +53,11 @@ function openPath(url: string) {
         {{ error }}
         <text class="retry-link" @tap="loadDiscussions">点击重试</text>
       </view>
-      <view v-else-if="!discussions.length" class="empty-state">暂时还没有新的讨论推荐。</view>
+      <EmptyState
+        v-else-if="!discussions.length"
+        :title="'暂时还没有新的讨论推荐'"
+        type="no-data"
+      />
       <view v-else class="section-stack">
         <view v-for="item in discussions" :key="item.id" class="feed-row">
           <StatusState tone="warning" :label="item.heatLabel" />

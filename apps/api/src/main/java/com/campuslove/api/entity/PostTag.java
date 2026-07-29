@@ -8,12 +8,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 帖子话题标签实体，对应 post_tags 表。
  * 记录帖子与预置话题标签的关联关系。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "post_tags")
 public class PostTag {
 
@@ -30,6 +34,9 @@ public class PostTag {
     private String tagName;
 
     /** 创建时间 */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

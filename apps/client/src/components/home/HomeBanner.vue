@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * HomeBanner - 首页 Banner 自动轮播组件
  *
@@ -192,6 +192,7 @@ function onImageError(item: HomeBannerItem, event: Event) {
   font-weight: 700;
   color: var(--c-text-inverse, #ffffff);
   line-height: 1.3;
+  /* FIXME: token 化需补充 —— 0.35 alpha 超出现有 --c-black-shadow-xl(0.24) 范围，需新增 --c-overlay-text-shadow-strong token */
   text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.35);
 }
 
@@ -199,6 +200,7 @@ function onImageError(item: HomeBannerItem, event: Event) {
   font-size: var(--fs-sm);
   color: var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85));
   line-height: 1.4;
+  /* FIXME: token 化需补充 —— 0.35 alpha 超出现有 --c-black-shadow-xl(0.24) 范围，需新增 --c-overlay-text-shadow-strong token */
   text-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.35);
 }
 
@@ -218,9 +220,9 @@ function onImageError(item: HomeBannerItem, event: Event) {
 .home-banner__dot {
   width: 12rpx;
   height: 12rpx;
-  border-radius: 6rpx;
+  border-radius: var(--r-xs, 6rpx);
   background: var(--c-overlay-white-bg-tint-strong, rgba(255, 255, 255, 0.45));
-  transition: width 280ms cubic-bezier(0.4, 0, 0.2, 1), background 280ms ease;
+  transition: width var(--d-slow, 280ms) cubic-bezier(0.4, 0, 0.2, 1), background var(--d-slow, 280ms) ease;
 }
 
 .home-banner__dot--active {

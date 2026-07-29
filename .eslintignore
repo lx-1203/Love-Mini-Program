@@ -1,0 +1,34 @@
+# ESLint 忽略配置（Task 50）
+# 与 eslint.config.mjs 的 ignores 字段保持一致，兼容旧版 ESLint
+
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+apps/client/dist/
+apps/client/unpackage/
+apps/admin/dist/
+apps/api/target/
+apps/api/.mvn/
+
+# 自动生成的代码
+apps/client/src/services/generated/
+**/*.generated.ts
+**/*.generated.js
+
+# 锁文件
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# 设计预览
+design-preview/
+design-archive/
+design-system/previews/
+
+# 第三方脚本（非项目源码）
+*.min.js
+*.min.css
+
+# Markdown / 文档
+*.md

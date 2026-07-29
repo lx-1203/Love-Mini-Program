@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * IcebreakerSuggestions - 破冰话题建议组件
  *
@@ -104,7 +104,7 @@ const { t } = useI18n();
 <style scoped lang="scss">
 .icebreaker-suggestions {
   padding: 20rpx 24rpx;
-  border-radius: 20rpx 20rpx 0 0;
+  border-radius: var(--r-lg, 20rpx) var(--r-lg, 20rpx) 0 0;
   background: linear-gradient(
     135deg,
     var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))),
@@ -146,7 +146,7 @@ const { t } = useI18n();
   padding: 8rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
-  transition: background 0.2s;
+  transition: background var(--d-normal, 200ms);
 }
 
 .icebreaker__refresh-btn:active {
@@ -188,7 +188,7 @@ const { t } = useI18n();
   background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
   box-shadow: 0 2rpx 12rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04)));
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .icebreaker__card:active {
@@ -239,14 +239,14 @@ const { t } = useI18n();
   flex-direction: column;
   gap: 12rpx;
   padding: 20rpx 22rpx;
-  border-radius: 18rpx;
+  border-radius: var(--r-lg, 18rpx);
   background: var(--c-bg-container, #FFFFFF);
   border: 1px solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
 }
 
 .icebreaker__skeleton-line {
   height: 22rpx;
-  border-radius: 6rpx;
+  border-radius: var(--r-xs, 6rpx);
   background: linear-gradient(
     90deg,
     var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))) 25%,
@@ -254,7 +254,7 @@ const { t } = useI18n();
     var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))) 75%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  animation: skeleton-shimmer var(--d-particle, 1500ms) ease-in-out infinite;
 }
 
 .icebreaker__skeleton-line--short {

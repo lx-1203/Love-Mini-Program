@@ -73,3 +73,19 @@ EXPOSE 8080
 # 健康检查：每 30s 请求 nginx 根路径
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -fsS http://localhost:8080/ || exit 1
+
+# ---------- Stage 3: Trivy 漏洞扫描（Task 24，中间步骤）----------
+# 说明：此 stage 仅用于 CI 构建期漏洞扫描，不会进入最终运行镜像。
+#   - 构建生产镜像：docker build --target runtime -t campus-love/admin:latest .
+#   - 单独触发扫描：docker build --target trivy-scanner .
+# 扫描范围：builder 阶段产出的 nginx 静态文件目录（dist）
+# 退出策略：发现 HIGH/CRITICAL 漏洞时 exit-code=1，构建失败
+FROM aquasec/trivy:latest AS trivy-scanner
+
+WORKDIR /scan
+
+# 复制 builder 阶段产出的静态资源到扫描目录
+COPY --from=builder /build/dist /scan/dist
+
+# Trivy 文件系统扫描：HIGH+CRITICAL 级别漏洞，命中即失败
+RUN trivy fs --severity HIGH,CRITICAL --exit-code 1 /scan

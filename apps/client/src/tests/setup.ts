@@ -6,6 +6,8 @@
  *   导致 Avatar/Card/EducationBadge 等组件测试中 :style 绑定的 width/height/padding
  *   在 DOM 上丢失，断言失败。
  * - mp-weixin 专属 API（如 uni.createInnerAudioContext）在 jsdom 中不存在，需统一桩。
+ * - 部分组件（Skeleton/WelcomeBanner 等）在 setup 中使用 useI18n()，若 mount 时未通过
+ *   app.use(i18n) 注入实例，会抛出 SyntaxError: Need to install with 'app.use' function。
  *
  * 解决：
  * - 通过 setupFiles 在每个测试文件执行前注入以下环境补丁：
@@ -13,9 +15,50 @@
  *   2) 遍历 CSSStyleProperties.prototype（jsdom 29+ 实际承载 width/height 等 setter 的原型）
  *      上所有带 setter 的属性，对包含 rpx 的值绕过 cssstyle 校验，通过 impl._setProperty
  *      直接写入内部 #values Map，确保 getAttribute('style') 序列化时能保留 rpx 值。
+ *   3) 通过 @vue/test-utils config.global.plugins 注入 i18n 实例，使所有 mount() 默认带上 i18n，
+ *      避免 Skeleton/WelcomeBanner 这类未显式 plugins: [i18n] 的测试因 useI18n() 抛错。
  *
  * 注意：本文件仅作用于测试环境，不进入生产构建。
  */
+
+// ------------------------------------------------------------------
+// 0. 注入 vue-i18n 全局插件（解决 useI18n() 未注入报错）
+// ------------------------------------------------------------------
+// 部分测试（如 Skeleton.spec.ts、WelcomeBanner.spec.ts）直接 mount(Component) 而未在
+// global.plugins 中传入 i18n，组件内 useI18n() 会抛出：
+//   SyntaxError: Need to install with 'app.use' function.
+// 这里通过 @vue/test-utils 的 config.global.plugins 默认注入 i18n，使所有 mount 自动带上。
+import { config } from "@vue/test-utils";
+import { createI18n } from "vue-i18n";
+import zhCN from "../i18n/locales/zh-CN";
+import enUS from "../i18n/locales/en-US";
+
+const i18n = createI18n({
+  legacy: false,
+  locale: "zh-CN",
+  fallbackLocale: "zh-CN",
+  messages: {
+    "zh-CN": zhCN,
+    "en-US": enUS,
+  },
+});
+
+// 仅当未配置 plugins 时注入，避免覆盖测试用例内部的精细化 plugin 配置
+if (
+  !config.global.plugins ||
+  !Array.isArray(config.global.plugins) ||
+  config.global.plugins.length === 0
+) {
+  config.global.plugins = [i18n];
+} else {
+  // 已有 plugins 时也确保 i18n 在其中（去重添加）
+  const hasI18n = config.global.plugins.some(
+    (p) => p === i18n || (p && typeof p === "object" && "global" in p && p.global === i18n.global),
+  );
+  if (!hasI18n) {
+    config.global.plugins.push(i18n);
+  }
+}
 
 // ------------------------------------------------------------------
 // 1. 桩 globalThis.uni（mp-weixin 运行时 API）

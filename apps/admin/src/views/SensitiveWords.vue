@@ -59,8 +59,14 @@ async function fetchWords(category?: string) {
   try {
     const result = await listSensitiveWords(category);
     words.value = result || [];
-  } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("sensitiveWords.loadFailed");
+  } catch (err: unknown) {
+    // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
+    error.value =
+      err instanceof ApiError
+        ? err.message
+        : err instanceof Error && err.message
+          ? err.message
+          : t("sensitiveWords.loadFailed");
     words.value = [];
   } finally {
     loading.value = false;
@@ -91,8 +97,14 @@ async function handleCreate() {
     newWord.value = "";
     newCategory.value = "";
     await fetchWords(filterCategory.value || undefined);
-  } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("sensitiveWords.createFailed");
+  } catch (err: unknown) {
+    // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
+    error.value =
+      err instanceof ApiError
+        ? err.message
+        : err instanceof Error && err.message
+          ? err.message
+          : t("sensitiveWords.createFailed");
   } finally {
     submitting.value = false;
   }
@@ -120,8 +132,14 @@ async function handleConfirmDelete() {
     deleteVisible.value = false;
     deleteTarget.value = null;
     await fetchWords(filterCategory.value || undefined);
-  } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("sensitiveWords.deleteSensitiveWordFailed");
+  } catch (err: unknown) {
+    // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
+    error.value =
+      err instanceof ApiError
+        ? err.message
+        : err instanceof Error && err.message
+          ? err.message
+          : t("sensitiveWords.deleteSensitiveWordFailed");
   } finally {
     deleting.value = false;
   }
@@ -266,40 +284,40 @@ onMounted(() => {
 }
 
 .danger-button {
-  padding: 6px 14px;
+  padding: var(--admin-space-xxs) var(--admin-space-md-lg);
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-sm);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  background: #fff1f0;
-  color: #f5222d;
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
 }
 
 .danger-button:hover {
-  background: #f5222d;
-  color: white;
+  background: var(--admin-color-danger);
+  color: var(--admin-color-bg-container);
 }
 
 .word-cell {
   font-weight: 500;
-  color: #333;
+  color: var(--admin-color-text-primary);
   word-break: break-all;
 }
 
 .time-cell {
-  color: #999;
+  color: var(--admin-color-text-quaternary);
   white-space: nowrap;
 }
 
 .category-tag {
   display: inline-block;
-  padding: 2px 8px;
-  background: #f0f5ff;
-  color: #2f54eb;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  background: var(--admin-color-accent-soft);
+  color: var(--admin-color-accent);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-sm);
   font-weight: 500;
 }
 </style>

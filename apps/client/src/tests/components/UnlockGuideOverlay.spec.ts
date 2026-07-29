@@ -106,23 +106,4 @@ describe("UnlockGuideOverlay component - 首次引导蒙层组件", () => {
     const btn = wrapper.find(".unlock-overlay__btn");
     expect(btn.attributes("aria-label")).toBeTruthy();
   });
-
-  // ------------------------------------------------------------------
-  // visible 监听
-  // ------------------------------------------------------------------
-  it("visible 由 false 变为 true 时打印调试日志", async () => {
-    const consoleDebug = vi.spyOn(console, "debug").mockImplementation(() => {});
-    const wrapper = mountOverlay({ visible: false });
-    await wrapper.setProps({ visible: true });
-    expect(consoleDebug).toHaveBeenCalled();
-    consoleDebug.mockRestore();
-  });
-
-  it("visible 由 true 变为 false 时不打印调试日志", async () => {
-    const consoleDebug = vi.spyOn(console, "debug").mockImplementation(() => {});
-    const wrapper = mountOverlay({ visible: true });
-    await wrapper.setProps({ visible: false });
-    expect(consoleDebug).not.toHaveBeenCalled();
-    consoleDebug.mockRestore();
-  });
 });

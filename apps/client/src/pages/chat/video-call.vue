@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 视频通话页
  *
@@ -59,6 +59,39 @@ let durationTimer: ReturnType<typeof setInterval> | null = null;
 /** 振铃超时计时器（30 秒未接听视为未接） */
 let ringTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
+/**
+ * 待执行的页面返回定时器集合。
+ *
+ * 修复（Task 18.7）：原 startCallAsCaller / startRingTimeout / rejectCall / hangupCall 内
+ * 4 处 {@code setTimeout(() => uni.navigateBack(...), N)} 未保存返回值，
+ * 若用户在延迟窗口内手动返回上一页，定时器仍会触发 navigateBack，造成多次返回或返回到错误页面。
+ * 现统一通过 scheduleNavBack 入队，onUnload 时通过 clearPendingNavBackTimers 清理。
+ */
+const pendingNavBackTimers: Set<ReturnType<typeof setTimeout>> = new Set();
+
+/**
+ * 注册延迟返回上一页的定时器，并入队待清理集合。
+ *
+ * @param delay - 延迟毫秒数
+ */
+function scheduleNavBack(delay: number): void {
+  const timer = setTimeout(() => {
+    pendingNavBackTimers.delete(timer);
+    uni.navigateBack({ delta: 1 });
+  }, delay);
+  pendingNavBackTimers.add(timer);
+}
+
+/**
+ * 清理所有待执行的页面返回定时器。
+ *
+ * 用于 onUnload，避免离开页面后仍触发 navigateBack。
+ */
+function clearPendingNavBackTimers(): void {
+  pendingNavBackTimers.forEach((timer) => clearTimeout(timer));
+  pendingNavBackTimers.clear();
+}
+
 /** 通话状态文案 */
 const statusText = computed(() => {
   switch (callStatus.value) {
@@ -106,8 +139,8 @@ async function startCallAsCaller() {
   } catch (error) {
     const message = error instanceof Error ? error.message : t("videoCall.startFailed");
     uni.showToast({ title: message, icon: "none" });
-    // 返回上一页
-    setTimeout(() => uni.navigateBack({ delta: 1 }), 1500);
+    // 返回上一页（修复 Task 18.7：通过 scheduleNavBack 入队，支持 onUnload 清理）
+    scheduleNavBack(1500);
   }
 }
 
@@ -134,8 +167,8 @@ function startRingTimeout() {
   ringTimeoutTimer = setTimeout(() => {
     if (callStatus.value === "RINGING") {
       callStatus.value = "MISSED";
-      // 自动返回上一页
-      setTimeout(() => uni.navigateBack({ delta: 1 }), 1500);
+      // 自动返回上一页（修复 Task 18.7：通过 scheduleNavBack 入队，支持 onUnload 清理）
+      scheduleNavBack(1500);
     }
   }, 30_000);
 }
@@ -164,7 +197,8 @@ function rejectCall() {
   }
   callStatus.value = "REJECTED";
   void endCallWithReason("REJECTED");
-  setTimeout(() => uni.navigateBack({ delta: 1 }), 1000);
+  // 修复 Task 18.7：通过 scheduleNavBack 入队，支持 onUnload 清理
+  scheduleNavBack(1000);
 }
 
 /**
@@ -175,7 +209,8 @@ function hangupCall() {
   callStatus.value = "ENDED";
   stopDurationTimer();
   void endCallWithReason("HANGUP");
-  setTimeout(() => uni.navigateBack({ delta: 1 }), 1500);
+  // 修复 Task 18.7：通过 scheduleNavBack 入队，支持 onUnload 清理
+  scheduleNavBack(1500);
 }
 
 /**
@@ -297,6 +332,8 @@ onUnmounted(() => {
     clearTimeout(ringTimeoutTimer);
     ringTimeoutTimer = null;
   }
+  // 修复 Task 18.7：清理待执行的页面返回定时器，避免组件卸载后仍触发 navigateBack
+  clearPendingNavBackTimers();
 });
 
 onUnload(() => {
@@ -305,6 +342,8 @@ onUnload(() => {
     clearTimeout(ringTimeoutTimer);
     ringTimeoutTimer = null;
   }
+  // 修复 Task 18.7：清理待执行的页面返回定时器，避免离开页面后仍触发 navigateBack
+  clearPendingNavBackTimers();
 });
 
 // 页面挂载时锁定屏幕为竖屏（视频通话一般使用竖屏）
@@ -494,7 +533,7 @@ onMounted(() => {
   bottom: 0;
   width: 100%;
   height: 100%;
-  background: var(--c-neutral-900, #1a1a2e);
+  background: var(--c-neutral-900);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -502,7 +541,7 @@ onMounted(() => {
 
 .video-call-page__remote-emoji {
   font-size: 200rpx;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--c-overlay-text-placeholder);
 }
 
 .video-call-page__local {
@@ -511,18 +550,18 @@ onMounted(() => {
   right: 24rpx;
   width: 200rpx;
   height: 280rpx;
-  background: var(--c-neutral-800, #2a2a3e);
+  background: var(--c-neutral-800);
   border-radius: var(--r-lg, 16rpx);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2rpx solid rgba(255, 255, 255, 0.2);
+  border: 2rpx solid var(--c-overlay-bg-light);
   z-index: 10;
 }
 
 .video-call-page__local-emoji {
   font-size: 64rpx;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--c-overlay-text-quaternary);
 }
 
 /* ==================== 顶部状态栏 ==================== */
@@ -537,7 +576,7 @@ onMounted(() => {
   align-items: center;
   gap: 8rpx;
   z-index: 20;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(180deg, var(--c-black-overlay-50) 0%, var(--c-black-overlay-transparent) 100%);
 }
 
 .call-header__status {
@@ -549,7 +588,7 @@ onMounted(() => {
 
 .call-header__duration {
   font-size: var(--fs-lg, 28rpx);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--c-overlay-white-text-strong);
   font-family: monospace;
 }
 
@@ -567,7 +606,7 @@ onMounted(() => {
   gap: 48rpx;
   flex-wrap: wrap;
   z-index: 20;
-  background: linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(0deg, var(--c-black-overlay-strong) 0%, var(--c-black-overlay-transparent) 100%);
 }
 
 /* ==================== 操作按钮 ==================== */
@@ -577,7 +616,7 @@ onMounted(() => {
   align-items: center;
   gap: 8rpx;
   width: 128rpx;
-  transition: transform 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease;
 
   &--hover {
     transform: scale(0.92);
@@ -586,12 +625,12 @@ onMounted(() => {
   &__icon {
     width: 112rpx;
     height: 112rpx;
-    border-radius: 50%;
+    border-radius: var(--r-circle, 50%);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: var(--fs-7xl, 56rpx);
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--c-overlay-border-light);
   }
 
   &__label {
@@ -602,12 +641,12 @@ onMounted(() => {
   }
 
   &--accept .call-btn__icon {
-    background: var(--c-success, #22C55E);
+    background: var(--c-success);
   }
 
   &--reject .call-btn__icon,
   &--hangup .call-btn__icon {
-    background: var(--c-error, #EF4444);
+    background: var(--c-error);
   }
 }
 
@@ -625,7 +664,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 8rpx;
-  transition: transform 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease;
 
   &--hover {
     transform: scale(0.92);
@@ -634,8 +673,8 @@ onMounted(() => {
   &__icon {
     width: 96rpx;
     height: 96rpx;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.18);
+    border-radius: var(--r-circle, 50%);
+    background: var(--c-overlay-border-light);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -644,7 +683,7 @@ onMounted(() => {
 
   &__label {
     font-size: var(--fs-sm, 22rpx);
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--c-overlay-text-secondary);
   }
 }
 
@@ -666,7 +705,7 @@ onMounted(() => {
 
 .call-ended__duration {
   font-size: var(--fs-md, 26rpx);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--c-overlay-white-text-mid);
   font-family: monospace;
 }
 

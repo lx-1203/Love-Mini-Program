@@ -6,10 +6,12 @@ import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,6 +57,7 @@ public class VideoCallController {
      */
     @PostMapping("/start")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('USER')")
     public VideoCallView startCall(@Valid @RequestBody StartCallRequest request) {
         Long callerId = SecurityUtils.getCurrentUserId();
         return videoCallService.startCall(callerId, request.calleeId());
@@ -67,6 +70,7 @@ public class VideoCallController {
      * @return 通话视图（含最终状态与时长）
      */
     @PostMapping("/end")
+    @PreAuthorize("hasRole('USER')")
     public VideoCallView endCall(@Valid @RequestBody EndCallRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         return videoCallService.endCall(request.roomId(), userId, request.endReason());
@@ -93,8 +97,7 @@ public class VideoCallController {
  * @param calleeId 接收方用户 ID（必填）
  */
 record StartCallRequest(
-        @NotNull
-        Long calleeId
+        @NotNull @Positive Long calleeId
 ) {
 }
 

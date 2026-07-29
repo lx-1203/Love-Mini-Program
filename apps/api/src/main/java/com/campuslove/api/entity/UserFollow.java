@@ -9,12 +9,16 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 用户关注关系实体，对应 user_follows 表。
  * 记录用户之间的关注关系，follower_id 关注 following_id。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "user_follows", uniqueConstraints = {
         @UniqueConstraint(name = "uk_follower_following", columnNames = {"follower_id", "following_id"})
 })
@@ -33,6 +37,9 @@ public class UserFollow {
     private Long followingId;
 
     /** 关注时间 */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

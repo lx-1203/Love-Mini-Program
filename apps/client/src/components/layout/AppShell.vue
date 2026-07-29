@@ -302,7 +302,7 @@ function focusMainContent(): void {
   /* 修复 P2（触摸目标过小）：min-height/min-width 确保 ≥88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
   min-height: 88rpx;
   min-width: 88rpx;
-  border-radius: 999rpx;
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-border-light, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
 }
@@ -369,7 +369,7 @@ function focusMainContent(): void {
 
 // 页面淡入动画
 .page-fade-in {
-  animation: page-fade-in 0.3s ease-out;
+  animation: page-fade-in var(--d-base, 300ms) ease-out;
 }
 
 @keyframes page-fade-in {

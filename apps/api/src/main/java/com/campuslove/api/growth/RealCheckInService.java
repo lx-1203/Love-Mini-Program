@@ -15,6 +15,7 @@ import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.DailyBenefitRepository;
 import com.campuslove.api.repository.MakeUpQuotaRepository;
 import com.campuslove.api.repository.PostRepository;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,10 +26,12 @@ import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +62,30 @@ public class RealCheckInService implements CheckInService {
     /** 年月格式（yyyy-MM），用于补签配额按月统计 */
     private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
+    /**
+     * Task 15.1：签到日限一次 Redis 锁 key 前缀。
+     *
+     * <p>完整 key 格式：{@code checkin:{userId}:{yyyyMMDD}}，按用户+日期维度隔离，
+     * 同一用户同一天仅能获取一次锁。TTL 24 小时，次日自动过期。</p>
+     *
+     * <p>设计目的：</p>
+     * <ul>
+     *   <li>多实例部署下的分布式锁，防止并发签到请求被多个实例同时通过 DB 检查</li>
+     *   <li>快速拒绝重复签到请求（fast path），减少 DB 压力</li>
+     *   <li>与 DB 唯一约束（user_id + check_in_date）形成防御纵深</li>
+     * </ul>
+     */
+    private static final String CHECKIN_REDIS_KEY_PREFIX = "checkin:";
+
+    /** Task 15.1：签到锁 TTL：24 小时（次日自然过期，避免 Redis 无限增长） */
+    private static final Duration CHECKIN_REDIS_LOCK_TTL = Duration.ofHours(24);
+
+    /** Task 15.1：Redis 中存储的占位值（仅用于 SETNX 占位，不读取） */
+    private static final String CHECKIN_REDIS_LOCK_VALUE = "1";
+
+    /** Task 15.1：日期格式化器（yyyyMMdd），用于拼接 Redis key，避免使用默认 ISO 格式中的连字符 */
+    private static final DateTimeFormatter CHECKIN_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+
     private final CheckInConfig checkInConfig;
 
     private final CheckInRepository checkInRepository;
@@ -80,6 +107,19 @@ public class RealCheckInService implements CheckInService {
      * 避免阻塞签到主流程。MQ 不可用时由 MessageProducer 降级处理。</p>
      */
     private final MessageProducer messageProducer;
+
+    /**
+     * Task 15.1：Redis 模板，用于实现签到日限一次锁。
+     *
+     * <p>使用 {@link Autowired} 注入而非构造器注入，并标记 {@code required = false}，
+     * 确保 mock profile（无 Redis 配置）或 Redis 未启动场景下应用仍可正常启动；
+     * real 模式下若 Redis 不可用，签到流程降级到仅 DB 检查（不影响主流程）。</p>
+     *
+     * <p>降级语义参考 {@code RedisTokenBlacklistService}：Redis 故障期间仅丢失
+     * "fast path 拒绝"与"多实例分布式锁"能力，DB 唯一约束仍能保证签到幂等性。</p>
+     */
+    @Autowired(required = false)
+    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 构造函数，注入签到记录和签到权益相关 Repository。
@@ -137,6 +177,16 @@ public class RealCheckInService implements CheckInService {
 
         LocalDate today = LocalDate.now();
 
+        // Task 15.1：Redis 日限一次锁（fast path 拒绝重复签到）
+        // 使用 SETNX 原子操作：key 存在则说明今日已签到，直接走 DB 查询返回完整响应
+        // Redis 不可用时降级到仅 DB 检查（DB 唯一约束仍能保证幂等性）
+        String checkInLockKey = buildCheckInRedisKey(userId, today);
+        boolean redisLockAcquired = tryAcquireCheckInLock(checkInLockKey);
+        if (!redisLockAcquired && redisTemplate != null) {
+            // Redis 可用但锁已存在 → 今日已签到，记录日志（继续走 DB 查询以返回完整响应）
+            log.info("用户[{}]今日已签到（Redis 锁存在），查询 DB 返回完整签到状态", userId);
+        }
+
         // 检查今日是否已签到
         Optional<CheckIn> existingCheckIn = checkInRepository.findByUserIdAndCheckInDate(userId, today);
         if (existingCheckIn.isPresent()) {
@@ -176,6 +226,11 @@ public class RealCheckInService implements CheckInService {
             log.info("用户[{}]签到成功，连续签到{}天", userId, consecutiveDays);
         } catch (DataIntegrityViolationException e) {
             log.warn("用户[{}]签到时发生唯一约束冲突，可能为并发重复签到", userId, e);
+            // Task 15.1：DB 写入失败时释放 Redis 锁，允许用户重试
+            // 场景：并发请求中本请求丢失竞争（DB 唯一约束拦截），需释放锁避免阻塞用户重试
+            if (redisLockAcquired) {
+                releaseCheckInLock(checkInLockKey);
+            }
             throw new RuntimeException("签到失败，请稍后重试", e);
         }
 
@@ -520,7 +575,13 @@ public class RealCheckInService implements CheckInService {
                     .count();
             return (int) count;
         } catch (DataAccessException e) {
-            // 数据库查询失败时返回 0，不影响签到主流程
+            // Task 10（FIN-00114）复核：本方法被 checkIn()（@Transactional 读写事务）自调用，
+            // Spring AOP 自调用不经过代理，readOnly 提示失效，本方法实际运行在 checkIn 事务内。
+            // 设计意图为"非关键查询失败时降级返回 0，不阻断签到主流程"，
+            // 若添加 setRollbackOnly 会污染外层 checkIn 事务导致签到失败（UnexpectedRollbackException），
+            // 与产品诉求"签到流程高可用"冲突。
+            // 复核结论：catch 仅捕获 SELECT 查询异常，无 DB 写操作，不存在"部分提交"风险；
+            // 按 spec SubTask 10.6 提示"若是只读查询则评估是否真的需要事务"，此处保留降级逻辑。
             log.warn("查询新入圈用户时出错: {}", e.getMessage());
             return 0;
         }
@@ -575,5 +636,80 @@ public class RealCheckInService implements CheckInService {
 
         // 基于连续签到天数的配额计算
         return latestCheckIn.get().getConsecutiveDays() * checkInConfig.getExtraQuotaPerCheckIn();
+    }
+
+    // ---- Task 15.1：签到日限一次 Redis 锁辅助方法 ----
+
+    /**
+     * Task 15.1：构造签到锁的 Redis key。
+     *
+     * <p>格式：{@code checkin:{userId}:{yyyyMMDD}}，按用户+日期维度隔离。
+     * 使用 {@code yyyyMMdd}（无分隔符）格式减小 key 长度，与现有 Redis key 风格一致
+     * （参考 {@code IdempotentInterceptor.REDIS_KEY_PREFIX}）。</p>
+     *
+     * @param userId 用户 ID
+     * @param date   签到日期
+     * @return Redis key 字符串
+     */
+    private String buildCheckInRedisKey(Long userId, LocalDate date) {
+        return CHECKIN_REDIS_KEY_PREFIX + userId + ":" + date.format(CHECKIN_DATE_FORMATTER);
+    }
+
+    /**
+     * Task 15.1：尝试获取签到日限一次 Redis 锁。
+     *
+     * <p>使用 {@code SET key value NX EX ttl} 原子操作：</p>
+     * <ul>
+     *   <li>成功（key 不存在 → 写入成功）→ 返回 true，表示首次签到，可继续 DB 写入</li>
+     *   <li>失败（key 已存在）→ 返回 false，表示今日已签到，应走 DB 查询返回完整响应</li>
+     * </ul>
+     *
+     * <p>降级策略：Redis 不可用时（{@code redisTemplate} 为 null 或抛异常）返回 false，
+     * 不阻塞签到主流程，由 DB 唯一约束保证幂等性。</p>
+     *
+     * @param redisKey 签到锁 Redis key
+     * @return true 表示锁获取成功（首次签到）；false 表示锁已存在或 Redis 不可用
+     */
+    private boolean tryAcquireCheckInLock(String redisKey) {
+        if (redisTemplate == null) {
+            // Redis 未注入（mock profile 或未配置），降级到仅 DB 检查
+            log.debug("RedisTemplate 未注入，签到锁降级到仅 DB 检查");
+            return false;
+        }
+        try {
+            Boolean acquired = redisTemplate.opsForValue().setIfAbsent(
+                    redisKey, CHECKIN_REDIS_LOCK_VALUE, CHECKIN_REDIS_LOCK_TTL);
+            return Boolean.TRUE.equals(acquired);
+        } catch (RuntimeException e) {
+            // Redis 连接异常等运行时异常时降级，不阻塞签到主流程
+            // 捕获 RuntimeException 而非 DataAccessException：覆盖 RedisTemplate 连接异常
+            log.warn("Redis 不可用，签到锁降级到仅 DB 检查：key={}, error={}", redisKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Task 15.1：释放签到日限一次 Redis 锁。
+     *
+     * <p>使用场景：DB 写入失败（如唯一约束冲突）时，需释放 Redis 锁以允许用户重试。
+     * 正常签到成功后不释放锁，由 TTL 24h 自然过期，防止当日重复签到。</p>
+     *
+     * <p>降级策略：Redis 不可用时仅记录日志，不影响主流程（锁会自然过期）。</p>
+     *
+     * @param redisKey 签到锁 Redis key
+     */
+    private void releaseCheckInLock(String redisKey) {
+        if (redisTemplate == null) {
+            return;
+        }
+        try {
+            Boolean deleted = redisTemplate.delete(redisKey);
+            if (Boolean.TRUE.equals(deleted)) {
+                log.debug("签到锁已释放：key={}", redisKey);
+            }
+        } catch (RuntimeException e) {
+            log.warn("释放签到锁失败（不影响主流程，锁将自然过期）：key={}, error={}",
+                    redisKey, e.getMessage());
+        }
     }
 }

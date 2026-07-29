@@ -2,53 +2,48 @@ openapi: 3.0.3
 info:
   title: Campus Love - Users API
   version: 1.0.0
+  description: |
+    User follow graph and online-status endpoints exposed by `UserController`
+    (`/api/v1/users`). All endpoints require a valid JWT bearer token.
 servers:
-  - url: /api
+  - url: /api/v1
+    description: Versioned API gateway prefix
+tags:
+  - name: users
+    description: User follow relationships and online status
 paths:
-  /users/{id}/profile-completion:
-    get:
-      summary: Get user profile completion percentage
-      operationId: getProfileCompletion
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          description: User ID
-      responses:
-        '200':
-          description: Profile completion details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProfileCompletionResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
   /users/{id}/follow:
     post:
+      tags: [users]
       summary: Follow a user
+      description: |
+        Authenticated user follows the target user. Idempotent — repeated
+        calls produce the same follow relationship without creating duplicates.
       operationId: followUser
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            type: string
-          description: Target user ID to follow
+            type: integer
+            format: int64
+            minimum: 1
+          description: Target user ID to follow (must be positive).
       responses:
         '200':
           description: Follow action successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FollowActionResponse'
+                $ref: '#/components/schemas/FollowView'
+              example:
+                success: true
+                userId: 1024
+                following: true
+                followerCount: 18
+                followingCount: 5
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -58,22 +53,34 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
+      tags: [users]
       summary: Unfollow a user
+      description: Removes the follow relationship between the current user and the target user. Idempotent.
       operationId: unfollowUser
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            type: string
-          description: Target user ID to unfollow
+            type: integer
+            format: int64
+            minimum: 1
+          description: Target user ID to unfollow (must be positive).
       responses:
         '200':
           description: Unfollow action successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FollowActionResponse'
+                $ref: '#/components/schemas/FollowView'
+              example:
+                success: true
+                userId: 1024
+                following: false
+                followerCount: 17
+                followingCount: 4
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -82,85 +89,293 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /users/{id}/followers:
+    get:
+      tags: [users]
+      summary: Get a user's follower list
+      description: Returns the list of users following the specified user.
+      operationId: getFollowers
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: User ID (must be positive).
+      responses:
+        '200':
+          description: Follower list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FollowUserView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /users/{id}/following:
+    get:
+      tags: [users]
+      summary: Get a user's following list
+      description: Returns the list of users that the specified user is following.
+      operationId: getFollowing
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: User ID (must be positive).
+      responses:
+        '200':
+          description: Following list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FollowUserView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /users/{id}/is-following:
+    get:
+      tags: [users]
+      summary: Check if the current user follows the target user
+      description: Returns a boolean indicating whether the authenticated user follows the target user.
+      operationId: isFollowing
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Target user ID (must be positive).
+      responses:
+        '200':
+          description: Follow status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IsFollowingView'
+              example:
+                isFollowing: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /users/{userId}/online-status:
+    get:
+      tags: [users]
+      summary: Get a user's online status
+      description: Returns whether the target user is currently online and the last active timestamp.
+      operationId: getOnlineStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Target user ID (must be positive).
+      responses:
+        '200':
+          description: Online status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnlineStatusView'
+              example:
+                userId: 1024
+                status: online
+                lastHeartbeat: '2026-07-29T08:00:00Z'
+                deviceType: mini-program
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /users/online-status/batch:
+    post:
+      tags: [users]
+      summary: Batch get online status for multiple users
+      description: |
+        Returns a map of user ID to online status. Limited to 500 user IDs
+        per request.
+      operationId: batchGetOnlineStatus
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchOnlineStatusRequest'
+            example:
+              userIds: [1024, 1025, 1026]
+      responses:
+        '200':
+          description: Map of user ID to online status
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/OnlineStatusView'
+              example:
+                '1024':
+                  userId: 1024
+                  status: online
+                  lastHeartbeat: '2026-07-29T08:00:00Z'
+                  deviceType: mini-program
+                '1025':
+                  userId: 1025
+                  status: offline
+                  lastHeartbeat: '2026-07-28T22:30:00Z'
+                  deviceType: web
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT bearer token issued by `/auth/wechat-login` or `/auth/refresh`.
   schemas:
-    ProfileCompletionField:
-      type: object
-      properties:
-        fieldName:
-          type: string
-          description: Name of the profile field
-        completed:
-          type: boolean
-          description: Whether this field is completed
-        weight:
-          type: integer
-          minimum: 0
-          maximum: 100
-          description: Weight percentage of this field in total completion
-      required:
-        - fieldName
-        - completed
-        - weight
-    ProfileCompletionResponse:
-      type: object
-      properties:
-        userId:
-          type: string
-        completionPercentage:
-          type: integer
-          minimum: 0
-          maximum: 100
-          description: Overall profile completion percentage
-        fields:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProfileCompletionField'
-        missingFields:
-          type: array
-          items:
-            type: string
-          description: List of field names that are not completed yet
-        canPublishProfile:
-          type: boolean
-          description: Whether the profile is complete enough to be published
-      required:
-        - userId
-        - completionPercentage
-        - fields
-        - missingFields
-        - canPublishProfile
-    FollowActionResponse:
+    FollowView:
       type: object
       properties:
         success:
           type: boolean
         userId:
-          type: string
+          type: integer
+          format: int64
+          description: Target user ID of the follow action.
         following:
           type: boolean
-          description: Current follow status after the action
+          description: Current follow status after the action.
         followerCount:
           type: integer
           minimum: 0
-          description: Target user's follower count after the action
+          description: Target user's follower count after the action.
         followingCount:
           type: integer
           minimum: 0
-          description: Current user's following count after the action
+          description: Current user's following count after the action.
       required:
         - success
         - userId
         - following
         - followerCount
         - followingCount
-    ErrorResponse:
+    FollowUserView:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        followingCount:
+          type: integer
+          minimum: 0
+        followersCount:
+          type: integer
+          minimum: 0
+      required:
+        - userId
+        - nickname
+        - followingCount
+        - followersCount
+    IsFollowingView:
+      type: object
+      properties:
+        isFollowing:
+          type: boolean
+          description: Whether the current user follows the target user.
+      required:
+        - isFollowing
+    OnlineStatusView:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [online, offline, away]
+          description: User's current online status.
+        lastHeartbeat:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of the user's last heartbeat (null if never active).
+        deviceType:
+          type: string
+          nullable: true
+          description: Device type reported by the client (e.g., web, h5, mini-program).
+      required:
+        - userId
+        - status
+    BatchOnlineStatusRequest:
+      type: object
+      properties:
+        userIds:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+          description: List of user IDs to query (1-500 per request).
+      required:
+        - userIds
+    ApiError:
       type: object
       properties:
         error:
           type: string
+          description: Machine-readable error code.
         message:
           type: string
+          description: Human-readable error message.
       required:
         - error
         - message
@@ -170,22 +385,34 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: BAD_REQUEST
+            message: 'User ID must be positive.'
     Unauthorized:
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: UNAUTHORIZED
+            message: 'Missing or invalid bearer token.'
     NotFound:
       description: Not found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: NOT_FOUND
+            message: 'Target user not found.'
     InternalServerError:
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: INTERNAL_ERROR
+            message: 'Unexpected server error.'

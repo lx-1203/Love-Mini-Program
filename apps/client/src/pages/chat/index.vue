@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 聊天页 - 会话列表
  * 连接到 useMessagesStore 获取真实会话数据，替代硬编码模拟数据
@@ -136,8 +136,7 @@ onShow(() => {
         <scroll-view scroll-x class="topic-scroll" show-scrollbar="false">
           <view class="topic-list" role="list">
             <view
-              v-for="(topic, index) in topicSuggestions"
-              :key="index"
+              v-for="(topic, index) in topicSuggestions" :key="index"
               class="topic-tag press-feedback"
               hover-class="press-feedback--active"
               hover-stay-time="120"
@@ -175,7 +174,7 @@ onShow(() => {
         <!-- 空状态 -->
         <EmptyState
           v-else-if="privateSessions.length === 0"
-          icon-kind="message"
+          type="no-chat"
           :title="t('chat.emptyTitle')"
           :description="t('chat.emptyDesc')"
         />
@@ -183,8 +182,7 @@ onShow(() => {
         <!-- 正常内容 -->
         <view v-else class="conversation-list card-base" role="list">
           <view
-            v-for="conv in privateSessions"
-            :key="conv.id"
+            v-for="conv in privateSessions" :key="conv.id"
             class="conversation-item press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
@@ -276,7 +274,7 @@ onShow(() => {
   border-radius: var(--r-full);
   background: var(--c-bg-container);
   box-shadow: var(--s-sm);
-  transition: transform 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -318,7 +316,7 @@ onShow(() => {
   padding: var(--sp-6) var(--sp-8);
   background: var(--c-bg-container);
   position: relative;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease, background 0.15s ease;
 }
 
 .conversation-item:not(:last-child)::after {

@@ -8,6 +8,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * VIP 优惠码实体，对应 promo_codes 表。
@@ -26,6 +30,7 @@ import java.time.LocalDateTime;
  * </ul>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "promo_codes")
 public class PromoCode {
 
@@ -65,9 +70,34 @@ public class PromoCode {
     @Column(name = "max_uses", nullable = false)
     private Integer maxUses = 0;
 
+    /**
+     * 单用户最大使用次数。
+     *
+     * <p>Task 12.4（REAUDIT-REPORT-100+ 编号 41）：限制同一用户对同一优惠码的使用次数。
+     * 默认 1（即同一用户只能用一次），管理员可在创建/编辑优惠码时调整。
+     * 兑换时通过 {@code SELECT COUNT(*) FROM promo_code_usages WHERE promo_code_id = ? AND user_id = ?}
+     * 校验当前用户已使用次数 &lt; maxUsesPerUser 才允许继续。</p>
+     */
+    @Column(name = "max_uses_per_user", nullable = false)
+    private Integer maxUsesPerUser = 1;
+
     /** 已使用次数 */
     @Column(name = "used_count", nullable = false)
     private Integer usedCount = 0;
+
+    /**
+     * 剩余可用次数（原子扣减用）。
+     *
+     * <p>Task 12.4：并发安全基础设施。创建时初始化为 max_uses（max_uses=0 时设为 2147483647 表示无限），
+     * 每次兑换通过 {@code UPDATE ... SET remaining_uses = remaining_uses - 1
+     * WHERE code = :code AND remaining_uses > 0} 原子扣减，
+     * 影响行数 0 则兑换失败（优惠码已用完）。</p>
+     *
+     * <p>与 used_count 并存：remaining_uses 用于原子扣减保证不超发，
+     * used_count 用于统计展示（每次成功兑换后 +1）。</p>
+     */
+    @Column(name = "remaining_uses", nullable = false)
+    private Integer remainingUses = 0;
 
     /** 有效期开始时间 */
     @Column(name = "valid_from", nullable = false)
@@ -90,10 +120,16 @@ public class PromoCode {
     private String remark;
 
     /** 记录创建时间（优惠码入库时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（优惠码配置变更时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**
@@ -153,12 +189,28 @@ public class PromoCode {
         this.maxUses = maxUses;
     }
 
+    public Integer getMaxUsesPerUser() {
+        return maxUsesPerUser;
+    }
+
+    public void setMaxUsesPerUser(Integer maxUsesPerUser) {
+        this.maxUsesPerUser = maxUsesPerUser;
+    }
+
     public Integer getUsedCount() {
         return usedCount;
     }
 
     public void setUsedCount(Integer usedCount) {
         this.usedCount = usedCount;
+    }
+
+    public Integer getRemainingUses() {
+        return remainingUses;
+    }
+
+    public void setRemainingUses(Integer remainingUses) {
+        this.remainingUses = remainingUses;
     }
 
     public LocalDateTime getValidFrom() {

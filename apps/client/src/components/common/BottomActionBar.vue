@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
 defineProps<{
   primaryLabel: string;
   secondaryLabel?: string;
 }>();
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   primary: [];
@@ -19,7 +23,7 @@ const emit = defineEmits<{
     class="bar"
     :class="{ 'bar--single': !secondaryLabel }"
     role="toolbar"
-    aria-label="操作栏"
+    :aria-label="t('common.actionBarAria')"
   >
     <button
       v-if="secondaryLabel"

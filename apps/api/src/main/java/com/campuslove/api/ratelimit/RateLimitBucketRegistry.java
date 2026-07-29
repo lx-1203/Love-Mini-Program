@@ -7,8 +7,11 @@ import java.time.Duration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -49,6 +52,18 @@ public class RateLimitBucketRegistry {
 
     /** key -> 桶条目映射，线程安全。 */
     private final ConcurrentHashMap<String, BucketEntry> buckets = new ConcurrentHashMap<>();
+
+    /**
+     * Redisson 分布式锁客户端（FIN-00136）。
+     *
+     * <p>用于 {@link #cleanupIdleBuckets()} 定时任务的分布式锁，
+     * 确保多实例部署时仅一个实例执行清理，避免重复扫描与数据竞争。
+     * 使用 {@link Autowired} 注入并标记 required = false，
+     * 确保 mock 模式（无 Redis 配置）下也能正常启动；mock 模式下为 null，
+     * 定时任务跳过分布式锁（单实例无需锁）。</p>
+     */
+    @Autowired(required = false)
+    private RedissonClient redissonClient;
 
     /**
      * 尝试消费 1 个令牌。
@@ -101,6 +116,21 @@ public class RateLimitBucketRegistry {
      */
     @Scheduled(fixedDelay = CLEANUP_INTERVAL_MS, initialDelay = CLEANUP_INTERVAL_MS)
     public void cleanupIdleBuckets() {
+        // FIN-00136: 分布式锁确保多实例部署时仅一个实例执行清理任务
+        // mock profile 下 redissonClient 为 null（Redisson 已排除），跳过锁（单实例无需锁）
+        if (redissonClient != null) {
+            try {
+                if (!redissonClient.getLock("scheduled:rateLimitCleanup")
+                        .tryLock(0, 30, TimeUnit.SECONDS)) {
+                    log.debug("rateLimitCleanup 定时任务已被其他实例持有，跳过本次执行");
+                    return;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("rateLimitCleanup 获取分布式锁被中断");
+                return;
+            }
+        }
         long now = System.currentTimeMillis();
         int removed = 0;
 

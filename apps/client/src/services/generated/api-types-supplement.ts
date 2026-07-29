@@ -381,8 +381,8 @@ export interface MakeUpCheckInResultView {
 export interface SubmissionDetailView {
   /** 反馈记录 ID */
   id: number;
-  /** 反馈类型 */
-  type: 'feedback' | 'suggestion' | 'activity_proposal';
+  /** 反馈类型（与后端 FeedbackTicketType 枚举一致，使用大写形式） */
+  type: 'FEEDBACK' | 'SUGGESTION' | 'ACTIVITY_PROPOSAL';
   /** 标题 */
   title: string;
   /** 反馈内容（详情页才返回，列表页为节省流量不返回） */

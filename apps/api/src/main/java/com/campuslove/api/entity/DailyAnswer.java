@@ -11,12 +11,16 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 每日一问回答实体，对应 daily_answers 表。
  * 关联 DailyQuestion，支持匿名回答。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "daily_answers")
 public class DailyAnswer {
 
@@ -42,6 +46,9 @@ public class DailyAnswer {
     private Boolean isAnonymous = false;
 
     /** 记录创建时间（答案提交时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

@@ -8,12 +8,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,7 +60,8 @@ public class CircleController {
    */
   @PostMapping("/{id}/join")
   @Idempotent
-  public ApiResponse<CircleMembershipView> joinCircle(@PathVariable("id") Long circleId) {
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<CircleMembershipView> joinCircle(@PathVariable("id") @Positive Long circleId) {
     Long userId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(circleService.joinCircle(userId, circleId));
   }
@@ -69,7 +72,8 @@ public class CircleController {
    */
   @DeleteMapping("/{id}/join")
   @Idempotent
-  public ApiResponse<CircleMembershipView> leaveCircle(@PathVariable("id") Long circleId) {
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<CircleMembershipView> leaveCircle(@PathVariable("id") @Positive Long circleId) {
     Long userId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(circleService.leaveCircle(userId, circleId));
   }
@@ -82,7 +86,7 @@ public class CircleController {
    */
   @GetMapping("/{id}/topics")
   public ApiResponse<Page<CircleTopicView>> getTopics(
-      @PathVariable("id") Long circleId,
+      @PathVariable("id") @Positive Long circleId,
       @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
       @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
     Pageable pageable = PageRequest.of(page, size);
@@ -99,8 +103,9 @@ public class CircleController {
   @PostMapping("/{id}/topics")
   @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<CircleTopicView> createTopic(
-      @PathVariable("id") Long circleId,
+      @PathVariable("id") @Positive Long circleId,
       @Valid @RequestBody CreateTopicRequest request) {
     Long authorId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(circleService.createTopic(circleId, authorId, request.title(),
@@ -112,7 +117,7 @@ public class CircleController {
    * GET /api/circles/topics/{id}
    */
   @GetMapping("/topics/{id}")
-  public ApiResponse<CircleTopicView> getTopicDetail(@PathVariable("id") Long topicId) {
+  public ApiResponse<CircleTopicView> getTopicDetail(@PathVariable("id") @Positive Long topicId) {
     return ApiResponse.ok(circleService.getTopicDetail(topicId));
   }
 
@@ -124,7 +129,7 @@ public class CircleController {
    */
   @GetMapping("/topics/{id}/replies")
   public ApiResponse<Page<CircleReplyView>> getReplies(
-      @PathVariable("id") Long topicId,
+      @PathVariable("id") @Positive Long topicId,
       @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
       @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
     Pageable pageable = PageRequest.of(page, size);
@@ -141,8 +146,9 @@ public class CircleController {
   @PostMapping("/topics/{id}/replies")
   @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<CircleReplyView> createReply(
-      @PathVariable("id") Long topicId,
+      @PathVariable("id") @Positive Long topicId,
       @Valid @RequestBody CreateReplyRequest request) {
     Long authorId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(circleService.replyToTopic(topicId, authorId, request.content()));
@@ -228,7 +234,7 @@ record CircleReplyView(
 record CreateTopicRequest(
     @NotBlank @Size(max = 200) String title,
     @NotBlank @Size(max = 5000) String content,
-    List<String> images
+    @Size(max = 9) List<String> images
 ) {
 }
 

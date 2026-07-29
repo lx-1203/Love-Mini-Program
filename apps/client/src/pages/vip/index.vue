@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * VIP 开通页
  * 展示 VIP 权益 + 套餐选择 + 立即开通
@@ -22,6 +22,8 @@ import { useAutoRenewStore } from "../../stores/vip-auto-renew";
 import { createButtonGuard } from "../../utils/debounce";
 // Sentry 监控：支付失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
+// Task 33：路由路径常量化，避免硬编码字符串
+import { ROUTES } from "../../constants/routes";
 
 const { t } = useI18n();
 const autoRenewStore = useAutoRenewStore();
@@ -255,19 +257,19 @@ async function toggleAutoRenew() {
 /** 跳转到 VIP 红包页 */
 function goRedPacket() {
   lightHaptic();
-  uni.navigateTo({ url: "/pages/vip/red-packet" });
+  uni.navigateTo({ url: ROUTES.VIP.RED_PACKET });
 }
 
 /** 跳转到 VIP 优惠码页 */
 function goPromoCode() {
   lightHaptic();
-  uni.navigateTo({ url: "/pages/vip/promo-code" });
+  uni.navigateTo({ url: ROUTES.VIP.PROMO_CODE });
 }
 
 /** 跳转到 VIP 账单页 */
 function goBills() {
   lightHaptic();
-  uni.navigateTo({ url: "/pages/vip/bills" });
+  uni.navigateTo({ url: ROUTES.VIP.BILLS });
 }
 
 /** 页面挂载时拉取自动续费状态 */
@@ -312,8 +314,7 @@ onMounted(() => {
       </view>
       <view class="benefits-grid">
         <view
-          v-for="(item, index) in benefits"
-          :key="index"
+          v-for="(item, index) in benefits" :key="index"
           class="benefit-item press-feedback"
           @tap="viewBenefitDetail(item)"
           hover-class="benefit-item--hover"
@@ -324,7 +325,7 @@ onMounted(() => {
               v-if="item.icon"
               class="benefit-item__icon-img"
               :src="item.icon"
-              mode="aspectFit" alt=""
+              mode="aspectFit" lazy-load="true" alt=""
             />
             <text v-else class="benefit-item__emoji">{{ item.emoji }}</text>
           </view>
@@ -343,8 +344,7 @@ onMounted(() => {
       </view>
       <view class="plans-grid">
         <view
-          v-for="plan in plans"
-          :key="plan.id"
+          v-for="plan in plans" :key="plan.id"
           class="plan-card press-feedback"
           :class="{
             'plan-card--selected': plan.id === selectedPlanId,
@@ -479,7 +479,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-neutral-800, #1a1a2e) 0%, var(--c-neutral-800, #16213e) 100%);
+  background: linear-gradient(180deg, var(--c-neutral-800) 0%, var(--c-neutral-800) 100%);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 200rpx;
@@ -503,17 +503,17 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
 
   &--hover {
-    background: var(--c-overlay-white-bg-tint-mid, var(--c-overlay-white-bg-tint-mid, rgba(255, 255, 255, 0.1)));
+    background: var(--c-overlay-white-bg-tint-mid);
     transform: scale(0.94);
   }
 }
 
 .nav-bar__back-icon {
   font-size: var(--fs-7xl, 56rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 300;
   line-height: 1;
 }
@@ -521,7 +521,7 @@ onMounted(() => {
 .nav-bar__title {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
 }
 
 .nav-bar__placeholder {
@@ -555,13 +555,13 @@ onMounted(() => {
 .vip-header__crown {
   width: 144rpx;
   height: 144rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-gold) 0%, var(--c-accent-400) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 20rpx;
-  box-shadow: 0 8rpx 32rpx var(--c-vip-border-tint, var(--c-vip-border-tint, rgba(255, 215, 0, 0.4)));
+  box-shadow: 0 8rpx 32rpx var(--c-vip-border-tint);
 }
 
 .vip-header__crown-emoji {
@@ -572,14 +572,14 @@ onMounted(() => {
 .vip-header__title {
   font-size: var(--fs-5xl, 44rpx);
   font-weight: 800;
-  color: var(--c-gold, #FFD700);
+  color: var(--c-gold);
   margin-bottom: 8rpx;
   letter-spacing: 2rpx;
 }
 
 .vip-header__subtitle {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7)));
+  color: var(--c-overlay-white-text-mid);
 }
 
 /* ==================== 分组 ==================== */
@@ -595,7 +595,7 @@ onMounted(() => {
 
 .section__title-text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85))));
+  color: var(--c-overlay-text-secondary);
   font-weight: 600;
 }
 
@@ -609,26 +609,26 @@ onMounted(() => {
 .benefit-item {
   flex: 1 1 calc(50% - 8rpx);
   min-width: 280rpx;
-  background: var(--c-overlay-white-bg-tint, var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08)));
-  border: 1rpx solid var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.2)));
-  border-radius: 20rpx;
+  background: var(--c-overlay-white-bg-tint);
+  border: 1rpx solid var(--c-vip-border-light);
+  border-radius: var(--r-lg, 20rpx);
   padding: 20rpx;
   display: flex;
   align-items: center;
   gap: 16rpx;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 
   &--hover {
     transform: scale(0.98);
-    background: var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.1)));
+    background: var(--c-vip-border-light);
   }
 }
 
 .benefit-item__icon {
   width: 56rpx;
   height: 56rpx;
-  border-radius: 14rpx;
-  background: linear-gradient(135deg, var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.2))) 0%, var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.1))) 100%);
+  border-radius: var(--r-md, 14rpx);
+  background: linear-gradient(135deg, var(--c-vip-border-light) 0%, var(--c-accent-bg-tint) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -643,7 +643,7 @@ onMounted(() => {
   width: 32rpx;
   height: 32rpx;
   /* SVG 使用 currentColor，与 VIP 金色主题对齐 */
-  color: var(--c-gold, #FFD700);
+  color: var(--c-gold);
 }
 
 .benefit-item__content {
@@ -657,12 +657,12 @@ onMounted(() => {
 .benefit-item__title {
   font-size: var(--fs-md, 26rpx);
   font-weight: 600;
-  color: var(--c-gold, #FFD700);
+  color: var(--c-gold);
 }
 
 .benefit-item__desc {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-overlay-text-tertiary, var(--c-overlay-bg-strong, var(--c-overlay-bg-strong, rgba(255, 255, 255, 0.6))));
+  color: var(--c-overlay-text-tertiary);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -678,28 +678,28 @@ onMounted(() => {
 .plan-card {
   flex: 1;
   position: relative;
-  background: var(--c-overlay-white-bg-tint, var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08)));
-  border: 2rpx solid var(--c-overlay-white-bg-tint-mid, var(--c-overlay-white-bg-tint-mid, rgba(255, 255, 255, 0.1)));
-  border-radius: 20rpx;
+  background: var(--c-overlay-white-bg-tint);
+  border: 2rpx solid var(--c-overlay-white-bg-tint-mid);
+  border-radius: var(--r-lg, 20rpx);
   padding: 32rpx 16rpx 24rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8rpx;
-  transition: all 0.2s ease;
+  transition: all var(--d-normal, 200ms) ease;
 
   &--hover {
     transform: scale(0.97);
   }
 
   &--selected {
-    background: linear-gradient(135deg, var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.18))) 0%, var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.08))) 100%);
-    border-color: var(--c-gold, #FFD700);
-    box-shadow: 0 4rpx 16rpx var(--c-vip-border-tint, var(--c-vip-border-tint, rgba(255, 215, 0, 0.25)));
+    background: linear-gradient(135deg, var(--c-vip-border-light) 0%, var(--c-accent-bg-tint) 100%);
+    border-color: var(--c-gold);
+    box-shadow: 0 4rpx 16rpx var(--c-vip-border-tint);
   }
 
   &--popular {
-    border-color: var(--c-vip-border-tint, var(--c-vip-border-tint, rgba(255, 215, 0, 0.5)));
+    border-color: var(--c-vip-border-tint);
   }
 }
 
@@ -709,14 +709,14 @@ onMounted(() => {
   left: 50%;
   transform: translateX(-50%);
   padding: 4rpx 16rpx;
-  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
-  border-radius: 0 0 12rpx 12rpx;
-  box-shadow: 0 2rpx 8rpx var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.3)));
+  background: linear-gradient(135deg, var(--c-gold) 0%, var(--c-accent-400) 100%);
+  border-radius: 0 0 var(--r-md, 12rpx) var(--r-md, 12rpx);
+  box-shadow: 0 2rpx 8rpx var(--c-accent-bg-tint);
 }
 
 .plan-card__badge-text {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-vip-dark, #5D4E37);
+  color: var(--c-text-vip-dark);
   font-weight: 700;
 }
 
@@ -726,8 +726,8 @@ onMounted(() => {
   right: 12rpx;
   width: 32rpx;
   height: 32rpx;
-  border-radius: 50%;
-  background: var(--c-gold, #FFD700);
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-gold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -735,14 +735,14 @@ onMounted(() => {
 
 .plan-card__check-icon {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-vip-dark, #5D4E37);
+  color: var(--c-text-vip-dark);
   font-weight: 700;
   line-height: 1;
 }
 
 .plan-card__name {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -755,32 +755,32 @@ onMounted(() => {
 
 .plan-card__currency {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-gold, #FFD700);
+  color: var(--c-gold);
   font-weight: 600;
 }
 
 .plan-card__price {
   font-size: var(--fs-6xl, 48rpx);
-  color: var(--c-gold, #FFD700);
+  color: var(--c-gold);
   font-weight: 800;
   line-height: 1;
 }
 
 .plan-card__original-price {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-overlay-text-placeholder, var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4))));
+  color: var(--c-overlay-text-placeholder);
   text-decoration: line-through;
 }
 
 .plan-card__period {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7)));
+  color: var(--c-overlay-white-text-mid);
   margin-top: 4rpx;
 }
 
 .plan-card__per-day {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-gold, var(--c-gold, rgba(255, 215, 0, 0.8)));
+  color: var(--c-gold);
   margin-top: 2rpx;
 }
 
@@ -798,12 +798,12 @@ onMounted(() => {
 
 .agreement__text {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-overlay-text-quaternary, var(--c-overlay-bg-mid, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5))));
+  color: var(--c-overlay-text-quaternary);
 }
 
 .agreement__link {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-gold, #FFD700);
+  color: var(--c-gold);
 }
 
 /* ==================== 底部固定按钮 ==================== */
@@ -817,8 +817,8 @@ onMounted(() => {
   justify-content: space-between;
   padding: 16rpx 24rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  background: var(--c-neutral-800, var(--c-neutral-800, rgba(26, 26, 46, 0.95)));
-  border-top: 1rpx solid var(--c-vip-border-light, var(--c-vip-border-light, rgba(255, 215, 0, 0.2)));
+  background: var(--c-neutral-800);
+  border-top: 1rpx solid var(--c-vip-border-light);
   z-index: 10;
 }
 
@@ -830,39 +830,39 @@ onMounted(() => {
 
 .footer__label {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7)));
+  color: var(--c-overlay-white-text-mid);
 }
 
 .footer__currency {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-gold, #FFD700);
+  color: var(--c-gold);
   font-weight: 600;
 }
 
 .footer__price {
   font-size: var(--fs-5xl, 44rpx);
-  color: var(--c-gold, #FFD700);
+  color: var(--c-gold);
   font-weight: 800;
   line-height: 1;
 }
 
 .footer__original-price {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-overlay-text-placeholder, var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4))));
+  color: var(--c-overlay-text-placeholder);
   text-decoration: line-through;
   margin-left: 8rpx;
 }
 
 .footer__btn {
   padding: 24rpx 56rpx;
-  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
-  border-radius: 999rpx;
-  box-shadow: 0 4rpx 16rpx var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.4)));
-  transition: all 0.15s ease;
+  background: linear-gradient(135deg, var(--c-gold) 0%, var(--c-accent-400) 100%);
+  border-radius: var(--r-full, 9999rpx);
+  box-shadow: 0 4rpx 16rpx var(--c-accent-bg-tint);
+  transition: all var(--d-fast, 120ms) ease;
 
   &--hover {
     transform: scale(0.96);
-    box-shadow: 0 2rpx 8rpx var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(255, 165, 0, 0.3)));
+    box-shadow: 0 2rpx 8rpx var(--c-accent-bg-tint);
   }
 
   &--disabled {
@@ -872,7 +872,7 @@ onMounted(() => {
 
 .footer__btn-text {
   font-size: var(--fs-xl, 30rpx);
-  color: var(--c-text-vip-dark, #5D4E37);
+  color: var(--c-text-vip-dark);
   font-weight: 700;
 }
 
@@ -895,12 +895,12 @@ onMounted(() => {
 .auto-renew__title {
   font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
-  color: var(--c-gold, #FFD700);
+  color: var(--c-gold);
 }
 
 .auto-renew__desc {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-overlay-text-tertiary, rgba(255, 255, 255, 0.6));
+  color: var(--c-overlay-text-tertiary);
   line-height: 1.4;
 }
 
@@ -916,11 +916,11 @@ onMounted(() => {
   align-items: center;
   padding: 20rpx 8rpx;
   border-radius: var(--r-lg, 16rpx);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 
   &--hover {
     transform: scale(0.98);
-    background: var(--c-vip-border-light, rgba(255, 215, 0, 0.08));
+    background: var(--c-vip-border-light);
   }
 }
 
@@ -934,12 +934,12 @@ onMounted(() => {
 .entry-item__label {
   flex: 1;
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.85));
+  color: var(--c-overlay-white-text-mid);
   font-weight: 500;
 }
 
 .entry-item__arrow {
   font-size: var(--fs-2xl, 32rpx);
-  color: var(--c-overlay-text-tertiary, rgba(255, 255, 255, 0.4));
+  color: var(--c-overlay-text-tertiary);
 }
 </style>

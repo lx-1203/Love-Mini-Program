@@ -10,6 +10,8 @@ import {
   MAX_401_RETRY_COUNT,
 } from "../constants/api";
 import { STORAGE_KEYS, LOGIN_TOAST_DURATION_MS, LOGIN_REDIRECT_DELAY_MS } from "../constants/app";
+// Task 33：路由路径常量化，避免硬编码字符串
+import { ROUTES } from "../constants/routes";
 
 /* ========== 错误分类 ========== */
 
@@ -111,6 +113,9 @@ export function setToken(token: string): void {
     uni.setStorageSync(STORAGE_KEYS.AUTH_TOKEN, token);
     // 状态重置：新登录成功，清除跳转登录标志
     isRedirecting = false;
+    // 修复（Task 18.1）：用户重新登录后，取消尚未执行的登录跳转定时器，
+    // 避免已恢复会话后仍触发 reLaunch 跳转到登录页造成页面闪现
+    cancelLoginRedirect();
   } catch (_e) {
     // 存储失败时静默忽略
   }
@@ -221,6 +226,32 @@ function normalizeErrorCode(statusCode: number): string {
 let isRedirecting = false;
 
 /**
+ * 登录跳转延迟定时器引用。
+ *
+ * 修复（P1 BUG / Task 18.1）：原 redirectToLogin 内的 setTimeout 未保存返回的 timer 引用，
+ * 在用户于延迟窗口内重新登录（setToken）或页面 onUnload 时无法 clearTimeout，
+ * 可能导致跳转在用户已恢复会话后仍被触发，造成页面闪现。
+ * 现保存到模块级变量，在 setToken 或主动调用 cancelLoginRedirect 时清理。
+ */
+let loginRedirectTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 取消待执行的登录跳转定时器。
+ *
+ * 使用场景：
+ * - 页面 onUnload 时调用，避免离开页面后仍触发 reLaunch
+ * - 用户在延迟窗口内手动重新登录后调用（setToken 已内置）
+ *
+ * 多次调用安全：若 timer 已触发或已清理，本函数为空操作。
+ */
+export function cancelLoginRedirect(): void {
+  if (loginRedirectTimer !== null) {
+    clearTimeout(loginRedirectTimer);
+    loginRedirectTimer = null;
+  }
+}
+
+/**
  * 当前正在进行的刷新 Token Promise。
  *
  * 修复（P0 BUG）：原实现使用 isRefreshing 布尔 + pendingRequests 数组队列，
@@ -286,9 +317,16 @@ function redirectToLogin(): void {
   clearTokens();
   // 友好提示
   uni.showToast({ title: "登录已过期，请重新登录", icon: "none", duration: LOGIN_TOAST_DURATION_MS });
-  // 延迟跳转，让用户看到提示
-  setTimeout(() => {
-    uni.reLaunch({ url: "/pages/login/index" });
+  // 修复（Task 18.1）：保存 timer 引用到模块级变量，
+  // 在 setToken（用户重新登录）或 cancelLoginRedirect（页面 onUnload）时清理，
+  // 避免离开页面或恢复会话后仍触发跳转
+  // 清理上一次可能残留的 timer（防御性处理，正常路径下应为 null）
+  if (loginRedirectTimer !== null) {
+    clearTimeout(loginRedirectTimer);
+  }
+  loginRedirectTimer = setTimeout(() => {
+    loginRedirectTimer = null;
+    uni.reLaunch({ url: ROUTES.LOGIN });
   }, LOGIN_REDIRECT_DELAY_MS);
 }
 
@@ -631,4 +669,81 @@ export async function request<TResponse, TBody = unknown>(
   }
   // 理论上不会执行到这里，TypeScript 需要明确的返回或抛出
   throw lastError ?? new Error("request failed");
+}
+
+/* ========== Task 31: withTimeout 工具函数 ========== */
+
+/**
+ * Task 31：为任意 Promise 包装超时控制。
+ *
+ * <p>设计目标：为非 HTTP 请求类异步操作（如 AI 生成、文件上传、长轮询）
+ * 提供统一的超时控制能力，与 {@link RequestOptions#timeout} 互补——
+ * 后者仅作用于 uni.request，而 withTimeout 可包裹任意 Promise。</p>
+ *
+ * <p>行为说明：</p>
+ * <ul>
+ *   <li>在 <code>timeoutMs</code> 内未完成：reject 一个
+ *       {@link EnhancedApiError}（category=network，message=超时提示），
+ *       并通过 {@link AbortController} 通知上游取消操作（如已传入 signal）。</li>
+ *   <li>在 <code>timeoutMs</code> 内完成：原样透传 resolve/reject 结果。</li>
+ *   <li>支持外部传入已有 signal：与内部超时 signal 联动，
+ *       任一 abort 即触发整体取消。</li>
+ * </ul>
+ *
+ * @param target 被包裹的 Promise
+ * @param timeoutMs 超时时间（毫秒），默认 10s，与 {@link DEFAULT_TIMEOUT_MS} 对齐
+ * @param externalSignal 可选的外部 AbortSignal，用于手动取消
+ * @returns 包装后的 Promise，超时或取消时 reject EnhancedApiError
+ */
+export function withTimeout<T>(
+  target: Promise<T>,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  externalSignal?: AbortSignal
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const controller = new AbortController();
+
+    // 已取消（外部 signal 已 aborted）→ 立即 reject
+    if (externalSignal?.aborted) {
+      reject(buildNetworkError(new Error("请求已取消")));
+      return;
+    }
+
+    // 监听外部 signal，联动取消
+    if (externalSignal) {
+      const onExternalAbort = () => {
+        controller.abort();
+        reject(buildNetworkError(new Error("请求已取消")));
+      };
+      if (typeof externalSignal.addEventListener === "function") {
+        externalSignal.addEventListener("abort", onExternalAbort, { once: true });
+      } else if (typeof (externalSignal as { onabort?: unknown }).onabort !== "undefined") {
+        (externalSignal as { onabort: (() => void) | null }).onabort = onExternalAbort;
+      }
+    }
+
+    // 超时定时器
+    const timer = setTimeout(() => {
+      controller.abort();
+      reject(
+        new EnhancedApiError({
+          status: 0,
+          error: "timeout",
+          message: `请求超时（${timeoutMs}ms）`,
+          category: "network",
+        })
+      );
+    }, timeoutMs);
+
+    // 目标 Promise 落定 → 清理定时器并透传结果
+    target
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err instanceof EnhancedApiError ? err : buildNetworkError(err));
+      });
+  });
 }

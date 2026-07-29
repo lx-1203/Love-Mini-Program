@@ -33,15 +33,15 @@ export const SENSITIVE_WORD_CATEGORIES: { value: string; labelKey: string }[] = 
 
 /** 查询敏感词列表（可选 category 过滤） */
 export function listSensitiveWords(category?: string) {
-  return get<SensitiveWordView[]>("/admin/sensitive-words", { category });
+  return get<SensitiveWordView[]>("/v1/admin/sensitive-words", { category });
 }
 
 /** 新增敏感词 */
 export function createSensitiveWord(word: string, category?: string) {
-  return post<SensitiveWordView>("/admin/sensitive-words", { word, category });
+  return post<SensitiveWordView>("/v1/admin/sensitive-words", { word, category });
 }
 
 /** 删除敏感词 */
 export function deleteSensitiveWord(id: number) {
-  return del<void>(`/admin/sensitive-words/${id}`);
+  return del<void>(`/v1/admin/sensitive-words/${id}`);
 }

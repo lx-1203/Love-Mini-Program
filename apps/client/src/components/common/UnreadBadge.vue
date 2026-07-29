@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -49,7 +49,7 @@ defineExpose({ ariaLabel });
   align-items: center;
   justify-content: center;
   padding: 0 8rpx;
-  animation: pulse-badge 2s ease-in-out infinite;
+  animation: pulse-badge var(--d-loop-slow, 2000ms) ease-in-out infinite;
 }
 .badge--dot {
   width: 16rpx;

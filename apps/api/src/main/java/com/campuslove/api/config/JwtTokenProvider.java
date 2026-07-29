@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.crypto.SecretKey;
+import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,15 @@ public class JwtTokenProvider {
     private final long expirationMs;
 
     /**
+     * 密钥版本号（SubTask 10.2 安全加固）。
+     *
+     * <p>签发 token 时写入 JWT header {@code kid}（Key ID），用于支持密钥轮换：
+     * 验证方可根据 kid 选择对应版本的密钥校验签名。当前实现仅校验当前密钥，
+     * 接入 KMS/Vault 后可实现完整的多版本密钥校验逻辑。</p>
+     */
+    private final int keyVersion;
+
+    /**
      * Redis 模板，用于持久化 token 黑名单。
      *
      * <p>使用 {@link Autowired} 注入而非构造器注入，并标记 required = false，
@@ -68,11 +78,25 @@ public class JwtTokenProvider {
     @Autowired(required = false)
     private RedisTemplate<String, Object> redisTemplate;
 
+    /**
+     * Redisson 分布式锁客户端（FIN-00082）。
+     *
+     * <p>用于 {@link #cleanupExpiredRevokedTokens()} 定时任务的分布式锁，
+     * 确保多实例部署时仅一个实例执行清理，避免重复扫描与数据竞争。
+     * 使用 {@link Autowired} 注入并标记 required = false，
+     * 确保 mock 模式（无 Redis 配置）下也能正常启动；mock 模式下为 null，
+     * 定时任务跳过分布式锁（单实例无需锁）。</p>
+     */
+    @Autowired(required = false)
+    private RedissonClient redissonClient;
+
     public JwtTokenProvider(JwtConfig jwtConfig) {
         // 确保密钥长度满足 HMAC-SHA256 的最低要求（256 位 = 32 字节）
+        // 密钥非空与长度校验由 JwtConfig.validateSecret() 在 @PostConstruct 完成
         byte[] keyBytes = jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8);
         this.signingKey = Keys.hmacShaKeyFor(keyBytes);
         this.expirationMs = jwtConfig.getExpirationMs();
+        this.keyVersion = jwtConfig.getKeyVersion();
     }
 
     /**
@@ -92,6 +116,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(userId)
                 .id(UUID.randomUUID().toString()) // jti claim，用于 Redis 黑名单撤销
+                .header().keyId(String.valueOf(keyVersion)).and() // kid header，用于密钥轮换
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiryInstant))
                 .signWith(signingKey)
@@ -351,6 +376,21 @@ public class JwtTokenProvider {
      */
     @Scheduled(fixedDelay = 3600000L, initialDelay = 3600000L)
     public void cleanupExpiredRevokedTokens() {
+        // FIN-00082: 分布式锁确保多实例部署时仅一个实例执行清理任务
+        // mock profile 下 redissonClient 为 null（Redisson 已排除），跳过锁（单实例无需锁）
+        if (redissonClient != null) {
+            try {
+                if (!redissonClient.getLock("scheduled:jwtKeyRotation")
+                        .tryLock(0, 30, TimeUnit.SECONDS)) {
+                    log.debug("jwtKeyRotation 定时任务已被其他实例持有，跳过本次执行");
+                    return;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("jwtKeyRotation 获取分布式锁被中断");
+                return;
+            }
+        }
         if (revokedTokens.isEmpty()) {
             return;
         }

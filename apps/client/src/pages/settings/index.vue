@@ -17,6 +17,9 @@ import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { useSessionStore } from "../../stores/session";
 import { STORAGE_KEYS } from "../../constants/storage-keys";
+import { designTokens } from "../../theme/tokens";
+// Task 33：路由路径常量化，避免硬编码字符串
+import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 
 /** 操作定时器集合，用于卸载时统一清理 */
 const operationTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -162,7 +165,7 @@ onMounted(() => {
 /** 跳转到资料编辑 */
 function goToProfileSetup() {
   lightHaptic();
-  uni.navigateTo({ url: "/subpackages/setup/profile/index" } );
+  uni.navigateTo({ url: SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE } );
 }
 
 /**
@@ -171,7 +174,7 @@ function goToProfileSetup() {
  */
 function goToDnd() {
   lightHaptic();
-  uni.navigateTo({ url: "/pages/settings/dnd" });
+  uni.navigateTo({ url: ROUTES.SETTINGS.DND });
 }
 
 /** 查看用户协议 */
@@ -292,14 +295,14 @@ const accountMenus = computed<MenuItem[]>(() => [
   {
     emoji: "✏️",
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
-    bgColor: "#E8F4FF",
+    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
     label: t("settings.editProfile"),
     action: goToProfileSetup,
   },
   {
     emoji: "🔐",
     icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
-    bgColor: "#FFF0F5",
+    bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
     label: t("settings.verification"),
     path: "/pages/verification/index",
   },
@@ -310,28 +313,28 @@ const aboutMenus = computed<MenuItem[]>(() => [
   {
     emoji: "📜",
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
-    bgColor: "#F4F6FA",
+    bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("settings.userAgreement"),
     action: viewUserAgreement,
   },
   {
     emoji: "🔒",
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
-    bgColor: "#F4F6FA",
+    bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("settings.privacyPolicy"),
     action: viewPrivacyPolicy,
   },
   {
     emoji: "🔄",
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
-    bgColor: "#F4F6FA",
+    bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("settings.checkUpdate"),
     action: checkUpdate,
   },
   {
     emoji: "ℹ️",
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
-    bgColor: "#F4F6FA",
+    bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("settings.aboutUs"),
     action: aboutUs,
   },
@@ -403,7 +406,7 @@ function handleMenuTap(item: MenuItem) {
           </view>
           <switch
             :checked="notifyEnabled"
-            color="#3FCF8E"
+            :color="designTokens.color.brand[500]"
             @change="toggleNotify"
           />
         </view>
@@ -431,7 +434,7 @@ function handleMenuTap(item: MenuItem) {
           </view>
           <switch
             :checked="privacyModeEnabled"
-            color="#3FCF8E"
+            :color="designTokens.color.brand[500]"
             @change="togglePrivacyMode"
           />
         </view>
@@ -547,7 +550,7 @@ function handleMenuTap(item: MenuItem) {
   padding: 0 24rpx;
   height: 88rpx;
   background: var(--c-bg-container, #FFFFFF);
-  box-shadow: 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
+  box-shadow: var(--s-xs, 0 1rpx 2rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
   position: relative;
   z-index: 1;
 }
@@ -558,7 +561,7 @@ function handleMenuTap(item: MenuItem) {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
 
   &--hover {
     background: var(--c-bg-page, #F4F6FA);
@@ -618,7 +621,7 @@ function handleMenuTap(item: MenuItem) {
 .menu-group {
   background: var(--c-bg-container, #FFFFFF);
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
+  box-shadow: var(--s-card-soft, 0 1rpx 2rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)), 0 4rpx 12rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
   overflow: hidden;
 }
 
@@ -628,7 +631,7 @@ function handleMenuTap(item: MenuItem) {
   justify-content: space-between;
   padding: 24rpx 28rpx;
   border-bottom: 1rpx solid var(--c-border-light, #EEF0F4);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 
   &--no-border {
     border-bottom: none;
@@ -649,7 +652,7 @@ function handleMenuTap(item: MenuItem) {
 .menu-item__icon {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 18rpx;
+  border-radius: var(--r-xl, 24rpx);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -709,11 +712,11 @@ function handleMenuTap(item: MenuItem) {
   padding: 28rpx;
   background: var(--c-bg-container, #FFFFFF);
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
+  box-shadow: var(--s-card-soft, 0 1rpx 2rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)), 0 4rpx 12rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 
   &--hover {
     transform: scale(0.98);

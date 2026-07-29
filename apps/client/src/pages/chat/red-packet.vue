@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 聊天红包页
  *
@@ -149,12 +149,11 @@ function closeClaimModal() {
 }
 
 /**
- * 空操作函数，用于 @tap.stop 阻止冒泡时的占位 handler。
+ * 空操作函数，用于 catchtap 阻止冒泡时的占位 handler。
  *
- * Task 1.1.7：使用 @tap.stop="noop" 实现条件编译效果。
- * uni-app 编译器在 mp-weixin 端自动将 @tap.stop 编译为 catchtap，
- * 在 H5 端保留 @tap.stop 语义。mp-weixin 的 catchtap 必须绑定 handler，
- * 因此需要 noop 作为占位。
+ * 源码层面直接使用 catchtap="noop" 阻止冒泡：
+ * mp-weixin 端 catchtap 原生阻止冒泡且必须绑定 handler，故需 noop 占位；
+ * H5 端 catchtap 不生效，由外层遮罩 @tap 兜底关闭。
  */
 const noop = () => {};
 
@@ -179,6 +178,10 @@ onLoad((options) => {
     }
   }
 });
+
+// 修复（严格模式 noUnusedLocals）：noop 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ noop });
 </script>
 
 <template>
@@ -274,7 +277,7 @@ onLoad((options) => {
     >
       <view
         class="claim-modal"
-        @tap.stop="noop"
+        catchtap="noop"
       >
         <view class="claim-modal__header">
           <text class="claim-modal__title">{{ t('vip.redPacketClaimTitle') }}</text>
@@ -316,7 +319,7 @@ onLoad((options) => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
+  background: linear-gradient(180deg, var(--c-romance-500) 0%, var(--c-romance-700) 100%);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 200rpx;
@@ -338,9 +341,9 @@ onLoad((options) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   &--hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--c-overlay-border-light);
     transform: scale(0.94);
   }
 }
@@ -381,8 +384,8 @@ onLoad((options) => {
 .hero__icon {
   width: 144rpx;
   height: 144rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-overlay-border-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -401,7 +404,7 @@ onLoad((options) => {
 }
 .hero__subtitle {
   font-size: var(--fs-base, 24rpx);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--c-overlay-text-secondary);
 }
 
 /* ==================== 分组 ==================== */
@@ -409,17 +412,17 @@ onLoad((options) => {
   position: relative;
   z-index: 1;
   margin: 24rpx 24rpx 0;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 20rpx;
+  background: var(--c-overlay-bg-pure);
+  border-radius: var(--r-lg, 20rpx);
   padding: 24rpx;
-  box-shadow: var(--s-md, 0 4rpx 16rpx rgba(0, 0, 0, 0.08));
+  box-shadow: var(--s-md);
 }
 .section__title {
   padding: 0 0 16rpx;
 }
 .section__title-text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary);
   font-weight: 600;
 }
 
@@ -431,14 +434,14 @@ onLoad((options) => {
 }
 .amount-input__currency {
   font-size: var(--fs-3xl, 36rpx);
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
   font-weight: 700;
 }
 .amount-input {
   flex: 1;
   font-size: var(--fs-7xl, 56rpx);
   font-weight: 800;
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
   min-width: 200rpx;
 }
 
@@ -447,7 +450,7 @@ onLoad((options) => {
   width: 100%;
   min-height: 120rpx;
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
   line-height: 1.5;
 }
 
@@ -462,8 +465,8 @@ onLoad((options) => {
   justify-content: space-between;
   padding: 16rpx 24rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.96);
-  border-top: 1rpx solid var(--c-border-light, #E2E8F0);
+  background: var(--c-overlay-bg-pure);
+  border-top: 1rpx solid var(--c-border-light);
   z-index: 10;
 }
 .footer__amount-row {
@@ -473,25 +476,25 @@ onLoad((options) => {
 }
 .footer__label {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
 }
 .footer__currency {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
   font-weight: 600;
 }
 .footer__amount {
   font-size: var(--fs-4xl, 40rpx);
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
   font-weight: 800;
   line-height: 1;
 }
 .footer__btn {
   padding: 24rpx 56rpx;
-  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
-  border-radius: 999rpx;
-  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.4));
-  transition: all 0.15s ease;
+  background: linear-gradient(135deg, var(--c-romance-500) 0%, var(--c-romance-700) 100%);
+  border-radius: var(--r-full, 9999rpx);
+  box-shadow: var(--s-romance-md);
+  transition: all var(--d-fast, 120ms) ease;
   &--hover {
     transform: scale(0.96);
   }
@@ -513,7 +516,7 @@ onLoad((options) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--c-bg-overlay);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -531,7 +534,7 @@ onLoad((options) => {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx;
-  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
+  background: linear-gradient(135deg, var(--c-romance-500) 0%, var(--c-romance-700) 100%);
 }
 .claim-modal__title {
   font-size: var(--fs-2xl, 32rpx);
@@ -556,23 +559,23 @@ onLoad((options) => {
 .claim-modal__amount {
   font-size: 80rpx;
   font-weight: 800;
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
 }
 .claim-modal__tip {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
 }
 .claim-modal__desc {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary);
   text-align: center;
   line-height: 1.6;
 }
 .claim-modal__btn {
   padding: 20rpx 80rpx;
-  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
-  border-radius: 999rpx;
-  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.4));
+  background: linear-gradient(135deg, var(--c-romance-500) 0%, var(--c-romance-700) 100%);
+  border-radius: var(--r-full, 9999rpx);
+  box-shadow: var(--s-romance-md);
   &--hover {
     transform: scale(0.96);
   }

@@ -8,12 +8,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 校园话题回复实体，对应 campus_topic_replies 表。
  * 包含回复内容、作者、匿名标识等字段。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "campus_topic_replies")
 public class CampusTopicReply {
 
@@ -38,6 +42,9 @@ public class CampusTopicReply {
     private Boolean isAnonymous = false;
 
     /** 记录创建时间（回复发布时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

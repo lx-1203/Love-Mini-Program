@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 线下活动页 - 支持列表/日历双视图切换
  * 列表视图：展示所有活动卡片，支持下拉刷新、上拉加载更多
@@ -9,12 +9,13 @@ import { onShow, onUnload } from "@dcloudio/uni-app";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
+import EmptyState from "../../../components/common/EmptyState.vue";
 import { usePageAccess } from "../../../composables/usePageAccess";
-import { useActivityStore } from "../../../stores/activity";
+// 修复 no-duplicate-imports：合并 ../../../stores/activity 的重复 import
+import { useActivityStore, type ActivityItem } from "../../../stores/activity";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
 import { openAppPath } from "../../../utils/navigation";
 import { debounce } from "../../../utils/debounce";
-import type { ActivityItem } from "../../../stores/activity";
 import { IMAGE_PATHS } from "../../../config/images";
 
 /** Emoji 替换 SVG 图标路径 */
@@ -297,9 +298,10 @@ function formatDateLabel(dateStr: string): string {
     </view>
 
     <!-- 暂无活动 -->
-    <view v-else-if="!activityStore.activities.length" class="status-box">
-      <text class="status-text">暂无活动</text>
-    </view>
+    <EmptyState
+      v-else-if="!activityStore.activities.length"
+      type="no-data"
+    />
 
     <!-- 主内容区域 -->
     <template v-else>
@@ -352,11 +354,11 @@ function formatDateLabel(dateStr: string): string {
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
+                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" lazy-load="true" alt="" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" alt="" />
+                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" lazy-load="true" alt="" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>
@@ -491,11 +493,11 @@ function formatDateLabel(dateStr: string): string {
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
+                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" lazy-load="true" alt="" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" alt="" />
+                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" lazy-load="true" alt="" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>
@@ -554,7 +556,7 @@ function formatDateLabel(dateStr: string): string {
 .retry-btn {
   padding: 14rpx 36rpx;
   border: 1px solid var(--c-border-light);
-  border-radius: 14rpx;
+  border-radius: var(--r-md, 14rpx);
   background: var(--c-bg-container);
   font-size: var(--fs-md, 26rpx);
   color: var(--c-brand-700);
@@ -618,7 +620,7 @@ function formatDateLabel(dateStr: string): string {
   flex-direction: column;
   gap: 12rpx;
   padding: 24rpx;
-  border-radius: 20rpx;
+  border-radius: var(--r-lg, 20rpx);
   background: var(--c-bg-container);
   box-shadow: var(--s-sm);
 }
@@ -693,7 +695,7 @@ function formatDateLabel(dateStr: string): string {
   align-items: center;
   justify-content: center;
   border: 2rpx solid var(--c-border-light);
-  border-radius: 14rpx;
+  border-radius: var(--r-md, 14rpx);
   background: transparent;
   font-size: var(--fs-base, 24rpx);
   font-weight: 600;
@@ -750,7 +752,7 @@ function formatDateLabel(dateStr: string): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-bg-surface);
 }
 
@@ -812,7 +814,7 @@ function formatDateLabel(dateStr: string): string {
   padding: 10rpx 4rpx 14rpx;
   min-height: 120rpx;
   border-radius: var(--r-md, 12rpx);
-  transition: background 160ms ease;
+  transition: background var(--d-fast, 160ms) ease;
   position: relative;
 }
 
@@ -872,7 +874,7 @@ function formatDateLabel(dateStr: string): string {
   transform: translateX(-50%);
   width: 8rpx;
   height: 8rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-brand-700);
 }
 

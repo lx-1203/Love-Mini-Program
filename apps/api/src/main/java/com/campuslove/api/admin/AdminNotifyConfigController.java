@@ -6,6 +6,9 @@ import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.NotifyConfig;
 import com.campuslove.api.repository.NotifyConfigRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -132,12 +135,13 @@ record NotifyConfigView(
 
 /** 单条通知配置更新请求 */
 record NotifyConfigUpdateRequest(
-        String type,
+        @NotBlank @Size(max = 32) String type,
         Boolean enabled,
-        String template
+        @Size(max = 2000) String template
 ) {}
 
 /** 批量更新通知配置请求 */
 record NotifyConfigBatchUpdateRequest(
-        List<NotifyConfigUpdateRequest> configs
+        @NotEmpty(message = "configs 列表不能为空")
+        List<@Valid NotifyConfigUpdateRequest> configs
 ) {}

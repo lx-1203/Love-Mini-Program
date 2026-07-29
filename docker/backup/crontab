@@ -4,6 +4,12 @@
 # cron 表达式格式：分 时 日 月 周 命令
 # 默认：每天凌晨 2:00 执行备份（与 BACKUP_CRON 环境变量对齐）
 # ============================================================
+# 路径说明（Task 24 修复）：
+#   docker-compose.yml 中 backup 服务将宿主脚本挂载至 /backup.sh：
+#     - ./scripts/backup-mysql.sh:/backup.sh:ro
+#   因此 crontab 必须调用 /backup.sh（而非 /usr/local/bin/backup-mysql.sh）。
+#   历史上路径不一致导致 cron 触发后脚本报错 "command not found"，此处对齐。
+# ============================================================
 
 # m h  dom mon dow   command
-0 2 * * * /usr/local/bin/backup-mysql.sh >> /backup/cron.log 2>&1
+0 2 * * * /backup.sh >> /backup/cron.log 2>&1

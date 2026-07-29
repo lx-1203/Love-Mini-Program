@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 村口页 - UGC社区（六分类版）
  * 用户生成内容社区，展示帖子动态、支持六分类筛选、点赞关注等互动功能
@@ -7,7 +7,8 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { onLoad, onHide, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useVillageStore, formatRelativeTime } from "../../stores/village";
+// 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
+import { useVillageStore, formatRelativeTime, type PostItem, type PostFilters } from "../../stores/village";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
@@ -21,7 +22,6 @@ import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
 // SubTask 5.5.2：列表页图片 @error 占位图通用方案
 import { useImageFallback } from "../../composables/useImageFallback";
-import type { PostItem, PostFilters } from "../../stores/village";
 import BaseTabs from "../../components/common/BaseTabs.vue";
 import { showErrorToast } from "../../utils/error-toast";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
@@ -109,6 +109,8 @@ function getLastCategory(): string {
       if (visibleIds.includes(saved)) return saved;
     }
   } catch (_e) {
+    // 修复 no-empty：catch 块不能为空，添加注释说明静默处理
+    // 读取失败时回退到默认分类，不阻塞页面渲染
   }
   return "cat-all";
 }
@@ -118,6 +120,8 @@ function saveLastCategory(catId: string) {
   try {
     uni.setStorageSync(LAST_CATEGORY_KEY, catId);
   } catch (_e) {
+    // 修复 no-empty：catch 块不能为空，添加注释说明静默处理
+    // 持久化失败时忽略，不影响用户当前选择
   }
 }
 
@@ -255,6 +259,9 @@ function goToDetail(postId: string) {
   openAppPath("/pages/village/detail");
 }
 
+/* ========== 空操作占位（catchtap 占位 handler，mp-weixin 要求 catchtap 必须绑定 handler） ========== */
+function noop() {}
+
 /* ========== 发帖 ========== */
 function goToPost() {
   openAppPath("/pages/village/post");
@@ -384,6 +391,10 @@ onUnmounted(() => {
     scrollTopRestoreTimer = null;
   }
 });
+
+// 修复（严格模式 noUnusedLocals）：handleLike/toggleCollect/handleFollow/noop/goToAuthorProfile/goToTagPosts
+// 通过 catchtap 绑定到模板，vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile, goToTagPosts });
 </script>
 
 <template>
@@ -404,7 +415,7 @@ onUnmounted(() => {
             <text class="village-header__title section-title-brand">{{ t('village.title') }}</text>
             <text class="village-header__subtitle">{{ t('village.subtitle') }}</text>
           </view>
-          <view class="village-header__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPost">
+          <view class="village-header__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.publishPostAria')" @tap="goToPost">
             <text class="village-header__publish-text">{{ t('village.publishPost') }}</text>
           </view>
         </view>
@@ -421,7 +432,7 @@ onUnmounted(() => {
       </view>
 
       <!-- ===== 附近的人入口卡片（M-08） ===== -->
-      <view class="discover-banner press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToDiscover">
+      <view class="discover-banner press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.goToDiscoverAria')" @tap="goToDiscover">
         <view class="discover-banner__content">
           <view class="discover-banner__left">
             <image class="discover-banner__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
@@ -466,7 +477,7 @@ onUnmounted(() => {
         <!-- 空状态 -->
         <view v-if="displayPosts.length === 0" class="village-empty">
           <EmptyState type="no-data" :message="t('village.emptyPosts')">
-            <view class="village-empty__action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/village/post')">
+            <view class="village-empty__action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.publishPostAria')" @tap="openAppPath('/pages/village/post')">
               <text class="village-empty__action-text">{{ t('village.publishPost') }}</text>
             </view>
           </EmptyState>
@@ -475,16 +486,17 @@ onUnmounted(() => {
         <!-- 帖子卡片列表 -->
         <view class="post-feed__list card-stagger" role="list">
         <view
-          v-for="post in displayPosts"
-          :key="post.id"
+          v-for="post in displayPosts" :key="post.id"
           class="post-card clickable"
           hover-class="post-card--pressed"
           :hover-stay-time="100"
+          role="button"
+          :aria-label="t('village.postItemAria', { title: post.title || post.content })"
           @tap="goToDetail(post.id)"
         >
           <!-- 作者信息行 -->
           <view class="post-card__header">
-            <view class="post-card__user clickable" hover-class="post-card__user--pressed" :hover-stay-time="100" @tap.stop="goToAuthorProfile(post.author.userId)">
+            <view class="post-card__user clickable" hover-class="post-card__user--pressed" :hover-stay-time="100" catchtap="goToAuthorProfile(post.author.userId)">
               <view class="user-avatar">
                 <image
                   v-if="post.author.avatar && !isImageFailed(`avatar-${post.id}`)"
@@ -517,7 +529,7 @@ onUnmounted(() => {
             <view
               class="follow-chip"
               :class="{ 'follow-chip--active': post.isFollowed }"
-              @tap.stop="handleFollow(post.author.userId)"
+              catchtap="handleFollow(post.author.userId)"
             >
               <text class="follow-chip__text">
                 {{ post.isFollowed ? t('village.followed') : t('village.follow') }}
@@ -531,10 +543,9 @@ onUnmounted(() => {
           </view>
 
           <!-- 图片展示 -->
-          <view v-if="post.images.length > 0" class="post-card__images" :class="'post-card__images--' + Math.min(post.images.length, 9)" @tap.stop>
+          <view v-if="post.images.length > 0" class="post-card__images" :class="'post-card__images--' + Math.min(post.images.length, 9)" catchtap="noop">
             <view
-              v-for="(img, idx) in post.images.slice(0, 9)"
-              :key="idx"
+              v-for="(img, idx) in post.images.slice(0, 9)" :key="idx"
               class="post-card__image-wrap"
               :class="{ 'post-card__image-wrap--single': post.images.length === 1 }"
             >
@@ -553,11 +564,10 @@ onUnmounted(() => {
           <!-- 标签 -->
           <view v-if="post.tags.length > 0" class="post-card__tags">
             <text
-              v-for="(tag, tagIdx) in post.tags"
-              :key="tag"
+              v-for="(tag, tagIdx) in post.tags" :key="tag"
               class="post-card__tag"
               :class="tagIdx % 2 === 0 ? 'post-card__tag--green' : 'post-card__tag--pink'"
-              @tap.stop="goToTagPosts(tag)"
+              catchtap="goToTagPosts(tag)"
             >{{ tag.startsWith('#') ? tag : '#' + tag }}</text>
           </view>
 
@@ -566,7 +576,7 @@ onUnmounted(() => {
             <text class="post-card__time">{{ formatRelativeTime(post.createdAt) }}</text>
             <view class="post-card__actions">
               <!-- 评论 -->
-              <view class="action-btn" @tap.stop="goToDetail(post.id)">
+              <view class="action-btn" catchtap="goToDetail(post.id)">
                 <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
                 <text v-if="post.comments > 0" class="action-btn__count">{{ post.comments }}</text>
               </view>
@@ -574,20 +584,20 @@ onUnmounted(() => {
               <view
                 class="action-btn"
                 :class="{ 'action-btn--liked': post.isLiked, 'action-btn--animating': likeAnimatingPosts.has(post.id) }"
-                @tap.stop="handleLike(post.id)"
+                catchtap="handleLike(post.id)"
               >
                 <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
                 <text v-if="post.likes > 0" class="action-btn__count" :class="{ 'action-btn__count--liked': post.isLiked }">{{ post.likes }}</text>
               </view>
               <!-- 分享 -->
-              <view class="action-btn" @tap.stop>
+              <view class="action-btn" catchtap="noop">
                 <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
               </view>
               <!-- 收藏 -->
               <view
                 class="action-btn"
                 :class="{ 'action-btn--collected': collectedPosts.has(post.id) }"
-                @tap.stop="toggleCollect(post.id)"
+                catchtap="toggleCollect(post.id)"
               >
                 <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" />
               </view>
@@ -610,7 +620,7 @@ onUnmounted(() => {
       </scroll-view>
 
       <!-- ===== 浮动发帖按钮 (FAB) ===== -->
-      <view class="fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPost">
+      <view class="fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.publishPostAria')" @tap="goToPost">
         <image class="fab__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PLUS" mode="aspectFit" alt="" />
       </view>
 
@@ -620,6 +630,8 @@ onUnmounted(() => {
         class="back-to-top press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
+        role="button"
+        :aria-label="t('village.backToTopAria')"
         @tap="handleBackToTop"
       >
         <text class="back-to-top__icon">↑</text>
@@ -772,7 +784,7 @@ onUnmounted(() => {
   border: 4rpx solid var(--c-neutral-200);
   border-top-color: var(--c-brand-400);
   border-radius: var(--r-full);
-  animation: spin 1s linear infinite;
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {

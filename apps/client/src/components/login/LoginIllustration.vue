@@ -30,7 +30,7 @@ defineProps<{
   width: 400rpx;
   height: 320rpx;
   margin: 0 auto;
-  border-radius: 48rpx;
+  border-radius: var(--r-xxl, 48rpx);
   background: linear-gradient(135deg, var(--c-brand-100), var(--c-brand-50));
   display: flex;
   align-items: center;
@@ -42,7 +42,7 @@ defineProps<{
   position: absolute;
   width: 240rpx;
   height: 240rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-brand-400);
   opacity: 0.08;
   top: 40rpx;
@@ -53,7 +53,7 @@ defineProps<{
   position: absolute;
   width: 160rpx;
   height: 160rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-pink-400);
   opacity: 0.06;
   bottom: 20rpx;

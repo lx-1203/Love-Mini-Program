@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * LockScreen - 资料完善锁定页面组件
  *
@@ -262,7 +262,7 @@ function goToProfileSetup() {
 .heart-float {
   width: 64rpx;
   height: 64rpx;
-  animation: float 2s ease-in-out infinite;
+  animation: float var(--d-loop-slow, 2000ms) ease-in-out infinite;
 }
 
 .heart-float__img {

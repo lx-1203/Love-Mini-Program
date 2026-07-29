@@ -12,6 +12,7 @@ import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
 import java.util.List;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.Profile;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -48,7 +49,8 @@ public class RealTempChatService implements TempChatService {
             UserScheduleProfileRepository userScheduleProfileRepository,
             RecommendationService recommendationService,
             SimpMessagingTemplate messagingTemplate,
-            TempChatViewMapper viewMapper) {
+            TempChatViewMapper viewMapper,
+            RedissonClient redissonClient) {
         this.sessionService = new TempChatSessionService(
                 chatConfig,
                 sessionRepository,
@@ -63,7 +65,7 @@ public class RealTempChatService implements TempChatService {
                 viewMapper);
         this.messageService = new TempChatMessageService(messageRepository, this.sessionService);
         this.cleanupService = new TempChatCleanupService(
-                contactExchangeRepository, this.sessionService, sessionRepository);
+                contactExchangeRepository, this.sessionService, sessionRepository, redissonClient);
     }
 
     /** 内部构造器：用于单元测试直接注入组件。 */

@@ -6,8 +6,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -81,13 +79,13 @@ public class WechatAuthController {
             description = "接收前端 wx.login() 返回的临时 code，调用微信 code2session 换取 openId，查找或创建用户（uk_users_openid 唯一约束），签发 JWT 并返回用户会话视图。速率限制：桶容量 10，每 10 秒补充 1 个令牌（按 IP 限流）。",
             operationId = "loginWithWechat"
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "登录成功，返回 JWT 与用户会话信息",
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "登录成功，返回 JWT 与用户会话信息",
                     content = @Content(schema = @Schema(implementation = UserSessionView.class))),
-            @ApiResponse(responseCode = "401", description = "INVALID_CODE：微信 code 失效或已过期", content = @Content),
-            @ApiResponse(responseCode = "403", description = "USER_DISABLED：用户已被管理员禁用", content = @Content),
-            @ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发登录接口限流", content = @Content),
-            @ApiResponse(responseCode = "502", description = "WECHAT_API_ERROR：微信 API 调用失败（网络异常或 errcode 非 0）", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "INVALID_CODE：微信 code 失效或已过期", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "USER_DISABLED：用户已被管理员禁用", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发登录接口限流", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "WECHAT_API_ERROR：微信 API 调用失败（网络异常或 errcode 非 0）", content = @Content)
     })
     @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
     public UserSessionView loginWithWechat(

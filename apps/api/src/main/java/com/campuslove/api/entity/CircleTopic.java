@@ -11,12 +11,16 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 圈子话题实体，对应 circle_topics 表。
  * 关联 InterestCircle，支持置顶和图片（JSON）。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "circle_topics")
 public class CircleTopic {
 
@@ -54,6 +58,9 @@ public class CircleTopic {
     private Boolean isPinned = false;
 
     /** 记录创建时间（话题发布时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

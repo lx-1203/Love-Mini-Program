@@ -8,12 +8,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 活动报名记录实体，对应 activity_enrollments 表。
  * 记录用户报名活动的信息，同一用户对同一活动只能报名一次。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "activity_enrollments")
 public class ActivityEnrollment {
 
@@ -34,6 +38,9 @@ public class ActivityEnrollment {
     private LocalDateTime enrolledAt;
 
     /** 记录创建时间（报名记录入库时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

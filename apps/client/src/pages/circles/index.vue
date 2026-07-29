@@ -1,16 +1,18 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 兴趣圈列表页
  * 展示所有兴趣圈，支持加入/退出操作，点击进入话题列表
  */
 import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useCircleStore } from "../../stores/circle";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import AppShell from "../../components/layout/AppShell.vue";
 import PageStateContainer from "../../components/common/PageStateContainer.vue";
 
+const { t } = useI18n();
 const circleStore = useCircleStore();
 const { circles, loading, errorMessage } = storeToRefs(circleStore);
 
@@ -31,7 +33,7 @@ const pageState = computed<"loading" | "error" | "empty" | "content">(() => {
 /**
  * 错误态展示文案（复用 store 中的 errorMessage，缺失时回退到通用文案）
  */
-const errorText = computed(() => errorMessage.value || "加载失败，请稍后重试");
+const errorText = computed(() => errorMessage.value || t("circle.loadFailedRetry"));
 
 /**
  * 重试：重新拉取兴趣圈列表
@@ -69,6 +71,8 @@ async function toggleJoin(circleId: string, isJoined: boolean) {
       await circleStore.joinCircle(circleId);
     }
   } catch (_e) {
+    // 修复 no-empty：catch 块不能为空，添加注释说明静默处理
+    // 加入/退出圈子失败时忽略，由 store 内部已处理错误提示
   }
 }
 
@@ -77,7 +81,8 @@ async function toggleJoin(circleId: string, isJoined: boolean) {
  */
 function formatMemberCount(count: number): string {
   if (count >= 10000) {
-    return `${(count / 10000).toFixed(1)}万`;
+    /* Task 28: 万单位中文化保留（中文特有数字单位，无需 i18n） */
+    return `${(count / 10000).toFixed(1)}w`;
   }
   if (count >= 1000) {
     return `${(count / 1000).toFixed(1)}k`;
@@ -88,13 +93,17 @@ function formatMemberCount(count: number): string {
 onMounted(() => {
   void circleStore.fetchCircles();
 });
+
+// 修复（严格模式 noUnusedLocals）：toggleJoin 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ toggleJoin });
 </script>
 
 <template>
   <AppShell
     variant="standard"
     bg-variant="default"
-    title="兴趣圈"
+    :title="t('circle.circlesNavTitle')"
     :show-back="true"
     :tab-bar-safe="false"
     :fixed="true"
@@ -102,7 +111,7 @@ onMounted(() => {
     <!-- 统一页面状态容器：loading / error / empty / content 四态切换 -->
     <PageStateContainer
       :state="pageState"
-      empty-text="暂无兴趣圈"
+      :empty-text="t('circle.circlesEmpty')"
       :error-text="errorText"
       @retry="handleRetry"
     >
@@ -116,8 +125,8 @@ onMounted(() => {
                 <image class="discover-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
               </view>
               <view class="discover-entry__text-wrap">
-                <text class="discover-entry__title">附近的人</text>
-                <text class="discover-entry__desc">发现同频的TA，开启心动匹配</text>
+                <text class="discover-entry__title">{{ t("circle.discoverEntryTitle") }}</text>
+                <text class="discover-entry__desc">{{ t("circle.discoverEntryDesc") }}</text>
               </view>
             </view>
             <text class="discover-entry__arrow">›</text>
@@ -127,16 +136,15 @@ onMounted(() => {
           <view class="circles-banner">
             <image class="circles-banner__emoji" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
             <view class="circles-banner__text-wrap">
-              <text class="circles-banner__title">发现有趣的圈子</text>
-              <text class="circles-banner__desc">加入兴趣圈，结识志同道合的小伙伴</text>
+              <text class="circles-banner__title">{{ t("circle.bannerTitle") }}</text>
+              <text class="circles-banner__desc">{{ t("circle.bannerDesc") }}</text>
             </view>
           </view>
 
           <!-- 兴趣圈卡片 -->
           <view class="circles-card-list" role="list">
             <view
-              v-for="(circle, index) in circles"
-              :key="circle.id"
+              v-for="(circle, index) in circles" :key="circle.id"
               class="circle-card list-item"
               :style="{ animationDelay: index * 60 + 'ms' }"
               @tap="goToTopics(circle.id)"
@@ -150,20 +158,20 @@ onMounted(() => {
                 <text class="circle-card__desc">{{ circle.description }}</text>
                 <view class="circle-card__meta">
                   <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" alt="" />
-                  <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} 成员</text>
+                  <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} {{ t("circle.memberUnit") }}</text>
                   <text class="circle-card__divider">·</text>
                   <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
-                  <text class="circle-card__count">{{ circle.topicCount }} 话题</text>
+                  <text class="circle-card__count">{{ circle.topicCount }} {{ t("circle.topicUnit") }}</text>
                 </view>
               </view>
 
               <view
                 class="circle-card__action"
                 :class="{ 'circle-card__action--joined': circle.isJoined }"
-                @tap.stop="toggleJoin(circle.id, circle.isJoined)"
+                catchtap="toggleJoin(circle.id, circle.isJoined)"
               >
                 <text class="circle-card__action-text">
-                  {{ circle.isJoined ? "已加入" : "+ 加入" }}
+                  {{ circle.isJoined ? t("circle.joinedBtn") : t("circle.joinBtn") }}
                 </text>
               </view>
             </view>
@@ -193,8 +201,8 @@ onMounted(() => {
   height: 48rpx;
   border: 4rpx solid var(--c-border-default);
   border-top-color: var(--c-brand-500);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {

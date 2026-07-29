@@ -9,6 +9,7 @@ import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -125,7 +126,7 @@ public class AdminReportController {
     @Transactional
     @Auditable(value = AuditOperation.HANDLE_REPORT, targetType = "REPORT")
     public ResponseEntity<Map<String, Object>> handleReport(
-            @PathVariable("id") Long id,
+            @PathVariable("id") @Positive Long id,
             @Valid @RequestBody AdminReportHandleRequest req) {
         Long handlerId = SecurityUtils.getCurrentUserId();
 

@@ -8,8 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.campuslove.api.testdata.MockAllRepositoriesConfig;
 
 /**
  * SecurityConfig 集成测试（Phase 3 任务 17）。
@@ -37,6 +40,7 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @SpringBootTest(properties = "JWT_SECRET=test-jwt-secret-for-security-config-tests-32-chars-min")
 @AutoConfigureMockMvc
+@Import(MockAllRepositoriesConfig.class)
 class SecurityConfigTest {
 
     @Autowired

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * SetupProgress - 引导流程进度条组件（功能5）。
  *
@@ -118,8 +118,7 @@ const currentStepLabel = computed(() => {
     <!-- 步骤条 -->
     <view class="setup-progress__bar">
       <view
-        v-for="(step, idx) in renderSteps"
-        :key="`step-${step.stepNo}`"
+        v-for="(step, idx) in renderSteps" :key="`step-${step.stepNo}`"
         class="setup-progress__step-wrap"
       >
         <!-- 步骤圆点 -->
@@ -149,8 +148,7 @@ const currentStepLabel = computed(() => {
     <!-- 步骤名称行（每个步骤下方显示名称） -->
     <view class="setup-progress__labels">
       <view
-        v-for="step in renderSteps"
-        :key="`label-${step.stepNo}`"
+        v-for="step in renderSteps" :key="`label-${step.stepNo}`"
         class="setup-progress__label-item"
         :class="[`setup-progress__label-item--${step.status}`]"
       >
@@ -225,7 +223,7 @@ const currentStepLabel = computed(() => {
 .setup-progress__dot {
   width: 56rpx;
   height: 56rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,7 +237,7 @@ const currentStepLabel = computed(() => {
 .setup-progress__dot--completed {
   background: var(--c-brand);
   border-color: var(--c-brand);
-  box-shadow: 0 2rpx 8rpx var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.25));
+  box-shadow: var(--s-brand-sm, 0 2rpx 8rpx var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.25)));
 }
 
 /* 当前状态：品牌色边框 + 脉冲动画 */
@@ -247,7 +245,7 @@ const currentStepLabel = computed(() => {
   background: var(--c-bg-brand);
   border-color: var(--c-brand);
   box-shadow: 0 0 0 6rpx var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.18));
-  animation: setup-progress-pulse 1.6s ease-in-out infinite;
+  animation: setup-progress-pulse var(--d-particle, 1600ms) ease-in-out infinite;
 }
 
 @keyframes setup-progress-pulse {
@@ -288,7 +286,7 @@ const currentStepLabel = computed(() => {
   height: 4rpx;
   background: var(--c-border-default);
   margin: 0 var(--sp-1);
-  border-radius: 2rpx;
+  border-radius: var(--r-xs, 2rpx);
   transition: background var(--d-fade, 300ms) ease;
   min-width: 24rpx;
 }

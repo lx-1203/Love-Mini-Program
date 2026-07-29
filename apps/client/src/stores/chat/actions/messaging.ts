@@ -27,6 +27,11 @@ import type {
 import type { ChatStoreThis } from "../store-type";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
+// Task 31：网络请求超时控制
+import { withTimeout } from "@/services/http";
+
+/** Task 31：语音上传默认超时时间（30s，语音文件较大） */
+const VOICE_UPLOAD_TIMEOUT_MS = 30000;
 
 /**
  * 上传语音文件到后端（Task 1.1.4）。
@@ -55,7 +60,9 @@ async function uploadVoiceFile(
     throw new Error(t("storeErrors.chat.voiceFilePathEmpty"));
   }
 
-  return new Promise<string>((resolve, reject) => {
+  // Task 31：使用 AbortController 实现超时控制
+  const controller = new AbortController();
+  const uploadPromise = new Promise<string>((resolve, reject) => {
     uni.uploadFile({
       url: `/api/chat/voice`,
       filePath: tempFilePath,
@@ -89,6 +96,9 @@ async function uploadVoiceFile(
       },
     });
   });
+
+  // Task 31：30s 超时控制，超时后调用方收到 EnhancedApiError（category=network, error=timeout）
+  return withTimeout(uploadPromise, VOICE_UPLOAD_TIMEOUT_MS, controller.signal);
 }
 
 /**

@@ -32,7 +32,7 @@ const { t } = useI18n();
   height: 96rpx;
   border-radius: var(--r-full, 9999rpx);
   background: transparent;
-  border: 2rpx solid rgba(255,255,255,0.4);
+  border: 2rpx solid var(--c-overlay-white-bg-stronger, rgba(255,255,255,0.4));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -41,14 +41,14 @@ const { t } = useI18n();
 .phone-btn:active { transform: scale(0.98); }
 /* #ifdef H5 */
 .phone-btn:hover {
-  border-color: rgba(255,255,255,0.7);
-  background: rgba(255,255,255,0.1);
+  border-color: var(--c-overlay-white-text-strong, rgba(255,255,255,0.7));
+  background: var(--c-overlay-white-bg-tint-mid, rgba(255,255,255,0.1));
 }
 /* #endif */
 .phone-btn--loading { opacity: 0.7; pointer-events: none; }
 .phone-btn-text {
   font-size: var(--fs-lg);
   font-weight: 600;
-  color: rgba(255,255,255,0.8);
+  color: var(--c-overlay-white-text-strong, rgba(255,255,255,0.8));
 }
 </style>

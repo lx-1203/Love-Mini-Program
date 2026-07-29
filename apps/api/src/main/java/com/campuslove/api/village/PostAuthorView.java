@@ -1,7 +1,5 @@
 package com.campuslove.api.village;
 
-import java.util.List;
-
 /**
  * 帖子作者视图。
  */

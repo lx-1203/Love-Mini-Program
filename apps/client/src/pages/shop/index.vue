@@ -1,57 +1,60 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 逛逛页 - 校内商品/票务/优惠券展示
  */
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 
+const { t } = useI18n();
+
 // 分类标签
-const categories = ref([
-  { id: "all", name: "全部" },
-  { id: "ticket", name: "活动票务" },
-  { id: "food", name: "餐饮美食" },
-  { id: "goods", name: "校园周边" },
-  { id: "creative", name: "文创周边" },
+const categories = computed(() => [
+  { id: "all", name: t("shop.categoryAll") },
+  { id: "ticket", name: t("shop.categoryTicket") },
+  { id: "food", name: t("shop.categoryFood") },
+  { id: "goods", name: t("shop.categoryGoods") },
+  { id: "creative", name: t("shop.categoryCreative") },
 ]);
 const activeCategory = ref("all");
 
 // 商品列表（模拟）
-const shopItems = ref([
+const shopItems = computed(() => [
   {
     id: "1",
-    title: "校园音乐节早鸟票",
+    title: t("shop.productTicket1"),
     price: 99,
     originalPrice: 129,
     sales: 56,
     image: IMAGE_PATHS.PRODUCTS.TICKET_1,
     category: "ticket",
-    tag: "热销",
+    tag: t("shop.tagHot"),
   },
   {
     id: "2",
-    title: "校园文创帆布袋",
+    title: t("shop.productCreative1"),
     price: 29.9,
     originalPrice: 39.9,
     sales: 128,
     image: IMAGE_PATHS.PRODUCTS.MERCH_1,
     category: "creative",
-    tag: "新品",
+    tag: t("shop.tagNew"),
   },
   {
     id: "3",
-    title: "食堂午餐优惠券",
+    title: t("shop.productFood1"),
     price: 9.9,
     originalPrice: 15,
     sales: 234,
     image: IMAGE_PATHS.PRODUCTS.FOOD_1,
     category: "food",
-    tag: "限时",
+    tag: t("shop.tagLimited"),
   },
   {
     id: "4",
-    title: "校徽纪念徽章",
+    title: t("shop.productGoods1"),
     price: 19.9,
     originalPrice: 25,
     sales: 89,
@@ -61,7 +64,7 @@ const shopItems = ref([
   },
   {
     id: "5",
-    title: "篮球赛门票",
+    title: t("shop.productTicket2"),
     price: 15,
     originalPrice: 20,
     sales: 45,
@@ -71,13 +74,13 @@ const shopItems = ref([
   },
   {
     id: "6",
-    title: "校园手绘地图",
+    title: t("shop.productCreative2"),
     price: 12.9,
     originalPrice: 18,
     sales: 167,
     image: IMAGE_PATHS.PRODUCTS.FOOD_2,
     category: "creative",
-    tag: "推荐",
+    tag: t("shop.tagRecommended"),
   },
 ]);
 
@@ -85,8 +88,6 @@ const filteredItems = computed(() => {
   if (activeCategory.value === "all") return shopItems.value;
   return shopItems.value.filter((item) => item.category === activeCategory.value);
 });
-
-import { computed } from "vue";
 
 function goToDetail(itemId: string) {
   openAppPath(`/subpackages/shop/detail/index?id=${itemId}`);
@@ -97,7 +98,7 @@ function goToDetail(itemId: string) {
   <view class="shop-page page-fade-in">
     <!-- 页面标题 -->
     <view class="shop-header">
-      <text class="shop-header__title">逛逛</text>
+      <text class="shop-header__title">{{ t('shop.pageTitle') }}</text>
     </view>
 
     <!-- 分类标签 -->
@@ -142,7 +143,7 @@ function goToDetail(itemId: string) {
               <text class="shop-card__price">¥{{ item.price }}</text>
               <text class="shop-card__original-price">¥{{ item.originalPrice }}</text>
             </view>
-            <text class="shop-card__sales">已售 {{ item.sales }}</text>
+            <text class="shop-card__sales">{{ t('shop.salesLabel', { n: item.sales }) }}</text>
           </view>
         </view>
       </view>
@@ -154,18 +155,18 @@ function goToDetail(itemId: string) {
 </template>
 
 <style scoped lang="scss">
-$green-primary: var(--c-brand, #3FCF8E);
-$green-light: var(--c-brand-50, #E8F9F1);
-$pink-primary: var(--c-romance-500, #EC4899);
-$pink-light: var(--c-romance-100, #FCE7F3);
-$gold-vip: var(--c-vip-from, #C9A36A);
-$white: var(--c-neutral-0, #FFFFFF);
-$bg-page: var(--c-bg-page, #F4F6FA);
-$text-primary: var(--c-text-primary, #1F2937);
-$text-secondary: var(--c-neutral-500, #6B7280);
-$text-tertiary: var(--c-neutral-400, #9CA3AF);
-$border-light: var(--c-tint-gray-50, #F3F4F6);
-$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+$green-primary: var(--c-brand);
+$green-light: var(--c-brand-50);
+$pink-primary: var(--c-romance-500);
+$pink-light: var(--c-romance-100);
+$gold-vip: var(--c-vip-from);
+$white: var(--c-neutral-0);
+$bg-page: var(--c-bg-page);
+$text-primary: var(--c-text-primary);
+$text-secondary: var(--c-neutral-500);
+$text-tertiary: var(--c-neutral-400);
+$border-light: var(--c-tint-gray-50);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .shop-page {
   display: flex;
@@ -173,7 +174,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   height: 100%;
-  background: linear-gradient(180deg, var(--c-tint-green-50, #F0FDF8) 0%, $bg-page 40%);
+  background: linear-gradient(180deg, var(--c-tint-green-50) 0%, $bg-page 40%);
 }
 
 /* ========== 页面标题 ========== */
@@ -195,7 +196,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: var(--c-brand, #3FCF8E); // mp-weixin 降级：使用纯色（取渐变中间色）
+  color: var(--c-brand); // mp-weixin 降级：使用纯色（取渐变中间色）
   // #endif
 }
 
@@ -221,7 +222,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background: $white;
   border: 2rpx solid transparent;
   box-shadow: $card-soft-shadow;
-  transition: all 0.2s ease;
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 /* #ifdef H5 */
@@ -237,9 +238,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .category-item--active {
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
   border: 2rpx solid transparent;
-  box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger);
 }
 
 .category-item--active .category-item__text {
@@ -268,13 +269,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   overflow: hidden;
   box-shadow: $card-soft-shadow;
   border: none;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
 .shop-card:active {
   transform: scale(0.97);
-  box-shadow: 0 4rpx 20rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08)));
+  box-shadow: 0 4rpx 20rpx var(--c-black-shadow-sm);
 }
 /* #endif */
 
@@ -296,8 +297,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   left: 16rpx;
   padding: 8rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $pink-primary, var(--c-romance-400, #F472B6));
-  box-shadow: 0 4rpx 12rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
+  background: linear-gradient(135deg, $pink-primary, var(--c-romance-400));
+  box-shadow: 0 4rpx 12rpx var(--s-romance);
 }
 
 .shop-card__tag text {

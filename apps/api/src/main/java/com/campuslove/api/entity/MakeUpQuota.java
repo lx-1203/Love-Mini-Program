@@ -8,6 +8,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 签到补签每月配额实体，对应 make_up_quota 表。
@@ -16,6 +20,7 @@ import java.time.LocalDateTime;
  * 每月切换时由 RealCheckInService 在首次补签时自动创建新记录。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "make_up_quota")
 public class MakeUpQuota {
 
@@ -45,6 +50,12 @@ public class MakeUpQuota {
     @Column(name = "limit_count", nullable = false)
     private Integer limitCount = DEFAULT_LIMIT;
 
+    /** 记录创建时间（Task 37 P2.14 审计字段补齐） */
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**
@@ -102,6 +113,14 @@ public class MakeUpQuota {
 
     public void setLimitCount(Integer limitCount) {
         this.limitCount = limitCount;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {

@@ -9,12 +9,14 @@ import com.campuslove.api.repository.ReportRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,8 +76,9 @@ public class PostReportController {
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
     @Idempotent
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<PostReportView> reportPost(
-            @PathVariable("id") Long postId,
+            @PathVariable("id") @Positive Long postId,
             @Valid @RequestBody PostReportRequest request) {
         Long reporterId = SecurityUtils.getCurrentUserId();
 

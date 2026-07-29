@@ -3,9 +3,11 @@ package com.campuslove.api.chat;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -76,7 +78,8 @@ public class InteractionEventController {
      * @return 操作结果
      */
     @PutMapping("/{eventId}/read")
-    public ResponseEntity<Void> markAsRead(@PathVariable("eventId") Long eventId) {
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> markAsRead(@PathVariable("eventId") @Positive Long eventId) {
         Long userId = SecurityUtils.getCurrentUserId();
         try {
             interactionEventService.markAsRead(eventId, userId);
@@ -93,6 +96,7 @@ public class InteractionEventController {
      * @return 操作结果
      */
     @PutMapping("/read-all")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> markAllAsRead() {
         Long userId = SecurityUtils.getCurrentUserId();
         try {

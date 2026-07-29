@@ -103,8 +103,6 @@ assert.match(openApi, /\/profile\/basic:/u);
 assert.match(openApi, /\/profile\/campus:/u);
 assert.match(openApi, /\/profile\/schedule:/u);
 assert.match(openApi, /\/home\/dashboard:/u);
-assert.match(openApi, /\/matches\/form-config:/u);
-assert.match(openApi, /\/matches\/quick:/u);
 assert.match(openApi, /\/_debug\/matches\/next-status\/\{queueStatus\}:/u);
 assert.match(openApi, /\/_debug\/errors\/\{status\}:/u);
 assert.match(openApi, /\/temp-chat\/sessions:/u);
@@ -113,6 +111,13 @@ assert.match(openApi, /\/recommendations\/activities:/u);
 assert.match(openApi, /\/feedback\/issues:/u);
 assert.match(openApi, /\/feedback\/suggestions:/u);
 assert.match(openApi, /\/feedback\/activity-proposals:/u);
+
+const likesOpenApi = readFileSync(
+  new URL("../docs/openapi/likes.yaml", import.meta.url),
+  "utf8"
+);
+assert.match(likesOpenApi, /\/matches\/form-config:/u);
+assert.match(likesOpenApi, /\/matches\/quick:/u);
 
 const clientPackageJson = JSON.parse(
   readFileSync(new URL("../apps/client/package.json", import.meta.url), "utf8")
@@ -140,7 +145,7 @@ const pagesJson = JSON.parse(
 // vip/chat-video-call/chat-red-packet/dev/profile-visitors/profile-album/settings-dnd/feedback-history）
 // 共 38 个根页面
 assert.equal(pagesJson.pages.length, 38, "main package should contain thirty-eight root pages");
-assert.equal(pagesJson.subPackages.length, 3, "client should use three subpackages");
+assert.equal(pagesJson.subPackages.length, 4, "client should use four subpackages (setup/support/discover/legal)");
 assert.ok(pagesJson.tabBar, "tab bar should be configured");
 assert.ok(pagesJson.easycom, "easycom should be configured for uni-ui");
 // TabBar 默认入口为「匹配」（discover），其次为圈子、首页、消息、我的

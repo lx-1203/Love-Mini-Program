@@ -11,16 +11,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,6 +50,7 @@ import org.springframework.web.multipart.MultipartFile;
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/api/v1/profile")
+@org.springframework.validation.annotation.Validated
 public class ProfileController {
 
   private final ProfileService profileService;
@@ -61,7 +63,7 @@ public class ProfileController {
 
   @GetMapping("/stats")
   @Operation(summary = "获取个人资料统计", description = "返回资料完成度、照片数量、视频数量等统计指标，用于个人主页头部展示。", operationId = "getProfileStats")
-  @ApiResponse(responseCode = "200", description = "统计信息",
+  @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "统计信息",
           content = @Content(schema = @Schema(implementation = ApiResponse.class)))
   public ApiResponse<ProfileStatsView> getProfileStats() {
     return ApiResponse.ok(profileService.getProfileStats());
@@ -69,7 +71,7 @@ public class ProfileController {
 
   @GetMapping("/basic")
   @Operation(summary = "获取基本资料", description = "返回当前用户的基本资料（昵称、性别、生日、签名、照片墙、背景图等）。", operationId = "getBasicProfile")
-  @ApiResponse(responseCode = "200", description = "基本资料",
+  @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "基本资料",
           content = @Content(schema = @Schema(implementation = ApiResponse.class)))
   public ApiResponse<BasicProfileView> getBasicProfile() {
     return ApiResponse.ok(profileService.getBasicProfile());
@@ -81,12 +83,13 @@ public class ProfileController {
    * 校验字段范围后更新 UserBasicProfile，并重新计算 profileCompletion。
    */
   @PutMapping("/basic")
+  @PreAuthorize("hasRole('USER')")
   @Operation(summary = "保存基本资料", description = "更新昵称、性别、生日、签名等字段，重新计算资料完成度（加权平均：displayName 10% + campus 10% + schedule 10% + profileCompleted 70%）。", operationId = "saveBasicProfile")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "保存成功",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "保存成功",
                   content = @Content(schema = @Schema(implementation = BasicProfileView.class))),
-          @ApiResponse(responseCode = "400", description = "字段校验失败", content = @Content),
-          @ApiResponse(responseCode = "409", description = "乐观锁冲突", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "字段校验失败", content = @Content),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "乐观锁冲突", content = @Content)
   })
   public BasicProfileView saveBasicProfile(
           @Parameter(description = "基本资料请求体", required = true)
@@ -99,12 +102,13 @@ public class ProfileController {
    * POST /api/profile/background
    */
   @PostMapping("/background")
+  @PreAuthorize("hasRole('USER')")
   @Operation(summary = "上传主页背景图", description = "上传个人主页顶部的背景图，自动调用媒体存储服务，校验 MIME 与 magic bytes。", operationId = "uploadProfileBackground")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "上传成功，返回更新后的资料",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "上传成功，返回更新后的资料",
                   content = @Content(schema = @Schema(implementation = BasicProfileView.class))),
-          @ApiResponse(responseCode = "400", description = "格式不支持", content = @Content),
-          @ApiResponse(responseCode = "413", description = "文件过大", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "格式不支持", content = @Content),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "413", description = "文件过大", content = @Content)
   })
   public BasicProfileView uploadBackground(
           @Parameter(in = ParameterIn.QUERY, description = "背景图文件", required = true,
@@ -118,11 +122,12 @@ public class ProfileController {
    * POST /api/profile/photos?index=0
    */
   @PostMapping("/photos")
+  @PreAuthorize("hasRole('USER')")
   @Operation(summary = "上传照片墙图片", description = "上传照片墙指定索引（0-5）的图片。索引超范围返回 400。", operationId = "uploadProfilePhoto")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "上传成功",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "上传成功",
                   content = @Content(schema = @Schema(implementation = BasicProfileView.class))),
-          @ApiResponse(responseCode = "400", description = "index 超出 0-5 范围或文件格式不支持", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "index 超出 0-5 范围或文件格式不支持", content = @Content)
   })
   public BasicProfileView uploadPhoto(
           @Parameter(in = ParameterIn.QUERY, description = "照片文件", required = true,
@@ -138,15 +143,16 @@ public class ProfileController {
    * DELETE /api/profile/photos/{index}
    */
   @DeleteMapping("/photos/{index}")
+  @PreAuthorize("hasRole('USER')")
   @Operation(summary = "删除照片墙图片", description = "删除指定索引（0-5）的照片墙图片。", operationId = "deleteProfilePhoto")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "删除成功",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "删除成功",
                   content = @Content(schema = @Schema(implementation = BasicProfileView.class))),
-          @ApiResponse(responseCode = "404", description = "索引无照片", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "索引无照片", content = @Content)
   })
   public BasicProfileView deletePhoto(
           @Parameter(description = "照片墙索引（0-5）", required = true, example = "0")
-          @PathVariable("index") int index) {
+          @PathVariable("index") @Min(0) @Max(5) int index) {
     return profileService.deletePhoto(index);
   }
 
@@ -155,6 +161,7 @@ public class ProfileController {
    * POST /api/profile/video
    */
   @PostMapping("/video")
+  @PreAuthorize("hasRole('USER')")
   public BasicProfileView uploadVideo(@RequestParam("file") MultipartFile file) {
     return profileService.uploadVideo(file);
   }
@@ -164,6 +171,7 @@ public class ProfileController {
    * POST /api/profile/half-body
    */
   @PostMapping("/half-body")
+  @PreAuthorize("hasRole('USER')")
   public BasicProfileView uploadHalfBody(@RequestParam("file") MultipartFile file) {
     return profileService.uploadHalfBody(file);
   }
@@ -174,6 +182,7 @@ public class ProfileController {
   }
 
   @PutMapping("/campus")
+  @PreAuthorize("hasRole('USER')")
   public CampusProfileView saveCampusProfile(@Valid @RequestBody CampusProfileRequest request) {
     return profileService.saveCampusProfile(request);
   }
@@ -184,6 +193,7 @@ public class ProfileController {
   }
 
   @PutMapping("/schedule")
+  @PreAuthorize("hasRole('USER')")
   public ScheduleProfileView saveScheduleProfile(@Valid @RequestBody ScheduleProfileRequest request) {
     return profileService.saveScheduleProfile(request);
   }
@@ -254,22 +264,24 @@ record BasicProfileView(
  * 新增字段全部可选，未传时保留既有值（不清空）。</p>
  */
 record BasicProfileRequest(
-    @NotBlank String nickname,
-    @NotBlank String bio,
-    @NotBlank String grade,
-    @NotBlank String pronouns,
+    @NotBlank @Size(max = 64) String nickname,
+    @NotBlank @Size(max = 500) String bio,
+    @NotBlank @Size(max = 32) String grade,
+    @NotBlank @Size(max = 32) String pronouns,
     /** 身高（120-250 cm），可空 */
     @Min(120) @Max(250) Integer height,
     /** 学历层级：high_school/bachelor/master/phd，可空 */
-    String educationLevel,
+    @Pattern(regexp = "high_school|bachelor|master|phd",
+        message = "educationLevel 必须为 high_school/bachelor/master/phd") String educationLevel,
     /** 感情状态：never/married_before/divorced/widowed，可空 */
-    String relationshipStatus,
+    @Pattern(regexp = "never|married_before|divorced|widowed",
+        message = "relationshipStatus 必须为 never/married_before/divorced/widowed") String relationshipStatus,
     /** 籍贯省份，可空 */
-    String hometownProvince,
+    @Size(max = 32) String hometownProvince,
     /** 籍贯城市，可空 */
-    String hometownCity,
+    @Size(max = 32) String hometownCity,
     /** 未来计划定居城市，可空 */
-    String futureCity,
+    @Size(max = 32) String futureCity,
     /** 未来规划标签列表，可空 */
     List<String> futurePlanTags
 ) {
@@ -284,9 +296,9 @@ record CampusProfileView(
 }
 
 record CampusProfileRequest(
-    @NotBlank String city,
-    @NotBlank String campusName,
-    @NotBlank String department
+    @NotBlank @Size(max = 32) String city,
+    @NotBlank @Size(max = 100) String campusName,
+    @NotBlank @Size(max = 100) String department
 ) {
 }
 
@@ -307,7 +319,7 @@ record ScheduleProfileView(
 }
 
 record ScheduleProfileRequest(
-    @NotBlank String preferredCampusArea,
+    @NotBlank @Size(max = 64) String preferredCampusArea,
     List<String> preferredTimeWindows,
     List<ScheduleBlockView> courseBlocks
 ) {

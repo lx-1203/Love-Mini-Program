@@ -2,7 +2,7 @@
  * 管理后台 - 用户管理 API 封装。
  *
  * 对应后端：com.campuslove.api.admin.AdminUserController
- * 接口前缀：/api/admin/users
+ * 接口前缀：/api/v1/admin/users
  */
 
 import { AdminPageView, get, post, put } from "./http";
@@ -71,45 +71,45 @@ export interface AdminUserToggleResponse {
 
 /**
  * 分页查询用户列表。
- * GET /api/admin/users
+ * GET /api/v1/admin/users
  */
 export function listUsers(
   query: AdminUserListQuery = {}
 ): Promise<AdminPageView<AdminUserSummary>> {
-  return get<AdminPageView<AdminUserSummary>>("/admin/users", query as Record<string, unknown>);
+  return get<AdminPageView<AdminUserSummary>>("/v1/admin/users", query as Record<string, unknown>);
 }
 
 /**
  * 查询用户详情。
- * GET /api/admin/users/{id}
+ * GET /api/v1/admin/users/{id}
  */
 export function getUserDetail(id: number): Promise<AdminUserDetail> {
-  return get<AdminUserDetail>(`/admin/users/${id}`);
+  return get<AdminUserDetail>(`/v1/admin/users/${id}`);
 }
 
 /**
  * 编辑用户。
- * PUT /api/admin/users/{id}
+ * PUT /api/v1/admin/users/{id}
  */
 export function updateUser(
   id: number,
   req: AdminUserUpdateRequest
 ): Promise<AdminUserDetail> {
-  return put<AdminUserDetail>(`/admin/users/${id}`, req);
+  return put<AdminUserDetail>(`/v1/admin/users/${id}`, req);
 }
 
 /**
  * 禁用用户。
- * POST /api/admin/users/{id}/disable
+ * POST /api/v1/admin/users/{id}/disable
  */
 export function disableUser(id: number): Promise<AdminUserToggleResponse> {
-  return post<AdminUserToggleResponse>(`/admin/users/${id}/disable`);
+  return post<AdminUserToggleResponse>(`/v1/admin/users/${id}/disable`);
 }
 
 /**
  * 启用用户。
- * POST /api/admin/users/{id}/enable
+ * POST /api/v1/admin/users/{id}/enable
  */
 export function enableUser(id: number): Promise<AdminUserToggleResponse> {
-  return post<AdminUserToggleResponse>(`/admin/users/${id}/enable`);
+  return post<AdminUserToggleResponse>(`/v1/admin/users/${id}/enable`);
 }

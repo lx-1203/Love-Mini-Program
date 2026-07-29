@@ -9,12 +9,16 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 帖子点赞记录实体，对应 post_likes 表。
  * 通过联合唯一约束 (user_id, post_id) 实现同一用户对同一帖子的点赞去重。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "post_likes", uniqueConstraints = {
         @UniqueConstraint(name = "uk_post_likes_user_post", columnNames = {"user_id", "post_id"})
 })
@@ -33,6 +37,9 @@ public class PostLike {
     private Long postId;
 
     /** 点赞时间 */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

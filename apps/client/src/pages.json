@@ -241,12 +241,14 @@
         "navigationBarTextStyle": "white"
       }
     },
+    // #ifdef DEV
     {
       "path": "pages/dev/index",
       "style": {
         "navigationBarTitleText": "开发调试"
       }
     },
+    // #endif
     {
       "path": "pages/profile/visitors",
       "style": {

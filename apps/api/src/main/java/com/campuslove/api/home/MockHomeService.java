@@ -1,6 +1,6 @@
 package com.campuslove.api.home;
 
-import com.campuslove.api.runtime.MockRuntimeState;
+import com.campuslove.api.mock.MockRuntimeState;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;

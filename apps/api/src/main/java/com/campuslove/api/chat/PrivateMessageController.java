@@ -7,11 +7,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import com.campuslove.api.ratelimit.RateLimit;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,6 +57,7 @@ public class PrivateMessageController {
      */
     @PostMapping("/conversations")
     @Idempotent
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<ConversationView> createConversation(@Valid @RequestBody CreateConversationRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(privateMessageService.createOrGetConversation(currentUserId, request.userBId()));
@@ -66,7 +69,7 @@ public class PrivateMessageController {
      */
     @GetMapping("/conversations/{id}/messages")
     public ApiResponse<List<MessageView>> getMessages(
-            @PathVariable("id") Long conversationId,
+            @PathVariable("id") @Positive Long conversationId,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -84,8 +87,9 @@ public class PrivateMessageController {
     @PostMapping("/conversations/{id}/messages")
     @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
     @Idempotent
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<MessageView> sendMessage(
-            @PathVariable("id") Long conversationId,
+            @PathVariable("id") @Positive Long conversationId,
             @Valid @RequestBody SendMessageRequest request) {
         Long senderId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(privateMessageService.sendMessage(
@@ -97,7 +101,8 @@ public class PrivateMessageController {
      * PUT /api/messages/conversations/{id}/read
      */
     @PutMapping("/conversations/{id}/read")
-    public ApiResponse<Void> markAsRead(@PathVariable("id") Long conversationId) {
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<Void> markAsRead(@PathVariable("id") @Positive Long conversationId) {
         Long userId = SecurityUtils.getCurrentUserId();
         privateMessageService.markAsRead(conversationId, userId);
         return ApiResponse.ok(null);
@@ -110,8 +115,9 @@ public class PrivateMessageController {
      * PUT /api/messages/conversations/{id}/pin
      */
     @PutMapping("/conversations/{id}/pin")
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<Void> pinConversation(
-            @PathVariable("id") Long conversationId,
+            @PathVariable("id") @Positive Long conversationId,
             @RequestParam boolean pinned) {
         Long userId = SecurityUtils.getCurrentUserId();
         privateMessageService.pinConversation(conversationId, pinned, userId);
@@ -124,7 +130,7 @@ public class PrivateMessageController {
  * userAId 由 SecurityUtils 自动获取，只需传入对方用户ID。
  */
 record CreateConversationRequest(
-    @NotNull Long userBId
+    @NotNull @Positive Long userBId
 ) {}
 
 /**
@@ -133,5 +139,7 @@ record CreateConversationRequest(
  */
 record SendMessageRequest(
     @Size(max = 5000) String content,
+    @Pattern(regexp = "TEXT|IMAGE|VOICE|VIDEO|SYSTEM|EMOJI",
+        message = "kind 必须为 TEXT/IMAGE/VOICE/VIDEO/SYSTEM/EMOJI")
     @Size(max = 32) String kind
 ) {}

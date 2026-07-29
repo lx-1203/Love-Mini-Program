@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!--
     统一页面状态容器 PageStateContainer
     - 支持 loading / error / empty / content 四种状态
@@ -15,7 +15,7 @@
     <view v-if="state === 'loading'" class="state-slot state-loading">
       <slot name="loading">
         <view class="loading-default">
-          <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
+          <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('common.loadingAria')" />
           <text class="loading-text">{{ loadingText }}</text>
         </view>
       </slot>
@@ -130,7 +130,7 @@ function handleRetry(): void {
 .state-slot {
   width: 100%;
   // 状态切换淡入动画
-  animation: state-fade-in 0.24s ease-out;
+  animation: state-fade-in var(--d-slow, 250ms) ease-out;
 }
 
 .state-loading,
@@ -154,8 +154,8 @@ function handleRetry(): void {
     height: 56rpx;
     border: 4rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
     border-top-color: var(--c-brand, #3FCF8E);
-    border-radius: 50%;
-    animation: spinner-rotate 0.8s linear infinite;
+    border-radius: var(--r-circle, 50%);
+    animation: spinner-rotate var(--d-spinner, 800ms) linear infinite;
   }
 
   .loading-text {

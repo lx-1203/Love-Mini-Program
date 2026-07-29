@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 用户在线状态实体，对应 user_online_status 表。
  * 记录用户心跳时间、在线状态和设备类型，用于在线状态感知功能。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "user_online_status")
 public class UserOnlineStatus {
 
@@ -40,7 +45,15 @@ public class UserOnlineStatus {
     @Column(name = "device_type", length = 20)
     private String deviceType;
 
+    /** 记录创建时间（Task 37 P2.14 审计字段补齐） */
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     /** 更新时间 */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**
@@ -90,6 +103,14 @@ public class UserOnlineStatus {
 
     public void setDeviceType(String deviceType) {
         this.deviceType = deviceType;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {

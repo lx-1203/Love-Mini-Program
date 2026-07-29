@@ -1,6 +1,6 @@
 /**
  * 管理后台 - 匹配算法与推荐策略配置 API（任务 10）。
- * 对应后端 AdminMatchConfigController（/api/admin/match-config、/recommend-strategy）。
+ * 对应后端 AdminMatchConfigController（/api/v1/admin/match-config、/recommend-strategy）。
  */
 import { get, put } from "./http";
 
@@ -23,36 +23,36 @@ export interface UpdateKeyValueRequest {
 
 /**
  * 查询匹配算法配置。
- * GET /api/admin/match-config
+ * GET /api/v1/admin/match-config
  */
 export function getMatchConfig(): Promise<MatchConfigView> {
-  return get<MatchConfigView>("/admin/match-config");
+  return get<MatchConfigView>("/v1/admin/match-config");
 }
 
 /**
  * 更新匹配算法配置（仅更新 values 中包含的 key）。
- * PUT /api/admin/match-config
+ * PUT /api/v1/admin/match-config
  */
 export function updateMatchConfig(
   values: Record<string, string>
 ): Promise<MatchConfigView> {
-  return put<MatchConfigView>("/admin/match-config", { values });
+  return put<MatchConfigView>("/v1/admin/match-config", { values });
 }
 
 /**
  * 查询推荐策略配置。
- * GET /api/admin/recommend-strategy
+ * GET /api/v1/admin/recommend-strategy
  */
 export function getRecommendStrategy(): Promise<RecommendStrategyView> {
-  return get<RecommendStrategyView>("/admin/recommend-strategy");
+  return get<RecommendStrategyView>("/v1/admin/recommend-strategy");
 }
 
 /**
  * 更新推荐策略配置。
- * PUT /api/admin/recommend-strategy
+ * PUT /api/v1/admin/recommend-strategy
  */
 export function updateRecommendStrategy(
   values: Record<string, string>
 ): Promise<RecommendStrategyView> {
-  return put<RecommendStrategyView>("/admin/recommend-strategy", { values });
+  return put<RecommendStrategyView>("/v1/admin/recommend-strategy", { values });
 }

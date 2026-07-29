@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -19,6 +20,7 @@ public record AdminUserUpdateRequest(
         @Size(max = 500) String bio,
         @Size(max = 32) String gradeLabel,
         @Size(max = 32) String pronouns,
-        String status
+        @Pattern(regexp = "active|disabled",
+                message = "status 必须为 active 或 disabled") String status
 ) {
 }

@@ -1,7 +1,6 @@
 package com.campuslove.api.chat;
 
 import com.campuslove.api.config.ChatConfig;
-import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.discover.RecommendationService;
 import com.campuslove.api.discover.RecommendedPersonView;
@@ -9,10 +8,6 @@ import com.campuslove.api.entity.TempChatContactExchange;
 import com.campuslove.api.entity.TempChatMessage;
 import com.campuslove.api.entity.TempChatSession;
 import com.campuslove.api.entity.TempChatSession.SessionPhase;
-import com.campuslove.api.entity.User;
-import com.campuslove.api.entity.UserBasicProfile;
-import com.campuslove.api.entity.UserCampusProfile;
-import com.campuslove.api.entity.UserScheduleProfile;
 import com.campuslove.api.repository.TempChatContactExchangeRepository;
 import com.campuslove.api.repository.TempChatMessageRepository;
 import com.campuslove.api.repository.TempChatSessionRepository;

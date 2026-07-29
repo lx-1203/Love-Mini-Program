@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * AdvancedFilter - 推荐高级筛选组件（功能6）。
  *
@@ -629,7 +629,7 @@ defineExpose({ reset });
   border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-surface);
   position: relative;
-  transition: background 0.2s ease;
+  transition: background var(--d-normal, 200ms) ease;
   border: 1rpx solid var(--c-border-default);
 }
 
@@ -641,12 +641,12 @@ defineExpose({ reset });
 .toggle-knob {
   width: 40rpx;
   height: 40rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-bg-container);
   position: absolute;
   top: 3rpx;
   left: 3rpx;
-  transition: left 0.2s ease;
+  transition: left var(--d-normal, 200ms) ease;
   box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12));
 }
 

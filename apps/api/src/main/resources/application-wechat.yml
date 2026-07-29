@@ -1,0 +1,21 @@
+# 微信小程序生产环境配置 profile（Task 9）
+#
+# 激活方式：通过 SPRING_PROFILES_ACTIVE 环境变量包含 wechat，
+#   例如 SPRING_PROFILES_ACTIVE=real,wechat
+#
+# 适用场景：部署到生产环境时使用真实微信小程序 API，
+#   需通过环境变量提供 WECHAT_APPID / WECHAT_SECRET / WECHAT_JSCODE2SESSION_URL。
+#
+# 与 application.yml 的关系：application.yml 中 app.wechat.* 字段
+# 默认空（app-id/app-secret）或使用官方文档地址（jscode2session-url），
+# 本文件仅为 wechat profile 提供显式占位，所有值仍由环境变量注入，
+# 避免在配置文件中硬编码敏感信息。
+
+app:
+  wechat:
+    # 微信小程序 AppID/AppSecret 必须通过环境变量注入，禁止硬编码
+    app-id: ${WECHAT_APPID:}
+    app-secret: ${WECHAT_SECRET:}
+    # jscode2session 接口 base URL：默认为官方文档地址，
+    # 如需走内网代理或切换微信 API 域名，通过环境变量 WECHAT_JSCODE2SESSION_URL 覆盖
+    jscode2session-url: ${WECHAT_JSCODE2SESSION_URL:https://api.weixin.qq.com/sns/jscode2session}

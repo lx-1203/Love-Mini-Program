@@ -49,7 +49,7 @@ const subtitleLabel = computed(() => props.subtitle || t('login.heroSubtitleDefa
 .login-logo {
   width: 144rpx;
   height: 144rpx;
-  border-radius: 40rpx;
+  border-radius: var(--r-xl, 40rpx);
   background: var(--c-gradient-brand);
   display: flex;
   align-items: center;
@@ -70,17 +70,18 @@ const subtitleLabel = computed(() => props.subtitle || t('login.heroSubtitleDefa
   font-weight: 700;
   color: var(--c-text-inverse, #FFFFFF);
   letter-spacing: 0.04em;
+  /* FIXME: token 化需补充 —— 现有 --c-overlay-text-shadow-mid 为 0.2 alpha，0.25 介于 mid/strong 之间无精确 token */
   text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.25);
   line-height: 1.2;
 }
 
 .login-subtitle {
   font-size: var(--fs-lg, 28rpx);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8));
   text-align: center;
   line-height: 1.6;
   letter-spacing: 0.02em;
-  text-shadow: 0 1rpx 6rpx rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1rpx 6rpx var(--c-overlay-text-shadow-light, rgba(0, 0, 0, 0.15));
   max-width: 480rpx;
 }
 </style>

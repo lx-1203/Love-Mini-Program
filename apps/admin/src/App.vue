@@ -19,6 +19,6 @@ onMounted(async () => {
 .app-container {
   width: 100%;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--admin-color-bg-page);
 }
 </style>

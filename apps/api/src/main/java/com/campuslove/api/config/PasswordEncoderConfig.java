@@ -16,13 +16,36 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  *
  * <p>管理员密码的 BCrypt 哈希通过环境变量 {@code ADMIN_PASSWORD} 配置（注意：值必须为 BCrypt 哈希，
  * 而非明文）。如需生成哈希，可调用 {@link #encodePassword(String)} 工具方法。</p>
+ *
+ * <p>Task 11.3 安全审计复核结论：
+ * <ul>
+ *   <li><b>算法</b>：BCrypt（{@link BCryptPasswordEncoder}），自适应哈希，对 GPU/ASIC 暴力破解
+ *       具备较强抗性，OWASP 推荐的密码哈希算法之一</li>
+ *   <li><b>强度</b>：cost factor = {@value #BCRYPT_STRENGTH}，对应 2^10=1024 轮迭代，
+ *       在主流 CPU 上单次哈希耗时约 100ms，兼顾安全与登录吞吐</li>
+ *   <li><b>盐值</b>：每次哈希自动生成随机 salt 并内嵌于哈希结果（{@code $2a$10$...}），
+ *       相同明文每次生成不同哈希，无需单独存储 salt</li>
+ *   <li><b>抗暴力破解</b>：cost factor 可随硬件升级平滑提升，未来若需要更强的抗破解能力，
+ *       只需调高 {@code BCRYPT_STRENGTH} 常量并重新生成哈希即可（旧哈希在 matches 时
+ *       仍可识别其内嵌 cost，平滑兼容）</li>
+ *   <li><b>对比 PBKDF2/scrypt/argon2</b>：BCrypt 在 JDK 生态与 Spring Security 中
+ *       开箱即用、无外部依赖，对于本项目当前规模与运维成本是合理选择；
+ *       若未来对 GPU 并行破解有更高敏感度，可评估迁移至 argon2</li>
+ * </ul>
+ * </p>
  */
 @Configuration
 public class PasswordEncoderConfig {
 
     /**
-     * BCrypt 加密强度（cost factor），取值 10 为推荐值。
-     * 取值越高抗暴力破解能力越强，但耗时也越长；10 大约对应 ~100ms/次。
+     * BCrypt 加密强度（cost factor）。
+     *
+     * <p>Task 11.3：取值 10 满足 OWASP 2023 推荐下限（>= 10），
+     * 单次哈希耗时约 100ms，对单次登录场景可接受；若部署到高算力环境，
+     * 可调高至 12（耗时约 400ms）以提升抗暴力破解能力，但需同步评估登录吞吐影响。</p>
+     *
+     * <p><b>不可低于 10</b>：低于该值将被视为弱配置（详见 AdminPasswordValidator 强密码策略
+     * 与 SecurityConfig 安全审计）。</p>
      */
     private static final int BCRYPT_STRENGTH = 10;
 

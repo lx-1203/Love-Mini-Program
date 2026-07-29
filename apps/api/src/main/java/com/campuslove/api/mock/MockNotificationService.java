@@ -1,7 +1,11 @@
-package com.campuslove.api.chat;
+package com.campuslove.api.mock;
 
+import com.campuslove.api.chat.NotificationService;
+import com.campuslove.api.chat.NotificationSourceUserView;
+import com.campuslove.api.chat.NotificationView;
+import com.campuslove.api.chat.RealNotificationService;
+import com.campuslove.api.chat.UnreadCountView;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

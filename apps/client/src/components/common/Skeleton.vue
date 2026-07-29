@@ -1,8 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 // 修复（严格模式 noUnusedLocals）：
 // 1. 原 `const props = withDefaults(...)` 中 props 在脚本中未被引用，模板内 prop 字段直接解构自 defineProps，
 //    故移除 `const props = ` 前缀，仅保留 withDefaults(defineProps...) 调用以声明默认值。
 // 2. 原 `const t = designTokens;` 后未使用 t，designTokens 导入也仅用于该别名，一并移除。
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 withDefaults(defineProps<{
   variant?: 'card' | 'list' | 'avatar' | 'paragraph';
   count?: number;
@@ -18,7 +21,7 @@ withDefaults(defineProps<{
     role="status"
     aria-live="polite"
     aria-busy="true"
-    aria-label="加载中"
+    :aria-label="t('common.loadingAria')"
   >
     <view v-for="i in count" :key="i" class="skeleton-item" :class="`skeleton--${variant}`">
       <!-- 列表骨架 -->
@@ -72,11 +75,11 @@ withDefaults(defineProps<{
   background-size: 200% 100%;
   /* #ifndef MP-WEIXIN */
   /* H5 / App 端：保持原 1.5s 流畅 shimmer */
-  animation: shimmer 1.5s ease-in-out infinite;
+  animation: shimmer var(--d-particle, 1500ms) ease-in-out infinite;
   /* #endif */
   /* #ifdef MP-WEIXIN */
   /* mp-weixin 低端机性能差，降低动画频率到 3s 减少重绘开销 */
-  animation: shimmer 3s ease-in-out infinite;
+  animation: shimmer var(--d-breathe, 3000ms) ease-in-out infinite;
   /* #endif */
 }
 @keyframes shimmer {
@@ -103,7 +106,7 @@ withDefaults(defineProps<{
 .skeleton-avatar {
   width: 88rpx;
   height: 88rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   flex-shrink: 0;
 }
 .skeleton-lines {
@@ -114,7 +117,7 @@ withDefaults(defineProps<{
 }
 .skeleton-line {
   height: 24rpx;
-  border-radius: 6rpx;
+  border-radius: var(--r-xs, 6rpx);
 }
 .skeleton-line--w30 { width: 30%; }
 .skeleton-line--w40 { width: 40%; }
@@ -133,7 +136,7 @@ withDefaults(defineProps<{
 .skeleton-avatar-lg {
   width: 120rpx;
   height: 120rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
 }
 
 /* ---- 段落 ---- */

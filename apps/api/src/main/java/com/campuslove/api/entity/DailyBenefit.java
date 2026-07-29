@@ -9,6 +9,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 每日签到权益实体，对应 daily_benefits 表。
@@ -21,6 +24,7 @@ import java.time.LocalDateTime;
  * 每天每个用户仅有一条记录（user_id + benefit_date 唯一约束）。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "daily_benefits")
 public class DailyBenefit {
 
@@ -49,6 +53,9 @@ public class DailyBenefit {
     private Boolean newUsersUnlocked = true;
 
     /** 记录创建时间（福利配置入库时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

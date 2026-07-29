@@ -1,5 +1,7 @@
-package com.campuslove.api.campus;
+package com.campuslove.api.mock;
 
+import com.campuslove.api.campus.CampusCertificationService;
+import com.campuslove.api.campus.CampusCertificationView;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;

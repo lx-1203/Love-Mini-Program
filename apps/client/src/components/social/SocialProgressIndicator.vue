@@ -67,9 +67,9 @@ const FUNNEL_TEXT_COLORS = [
   tokens.color.text.primary,   // L1
   tokens.color.text.primary,   // L2
   tokens.color.text.primary,   // L3
-  '#FFFFFF',              // L4
-  '#FFFFFF',              // L5
-  '#FFFFFF',              // L6
+  tokens.color.text.inverse,   // L4
+  tokens.color.text.inverse,   // L5
+  tokens.color.text.inverse,   // L6
 ] as const
 
 /** 漏斗颜色对应的半透明背景 */
@@ -380,8 +380,7 @@ function stepLineStyles(step: StepItem, index: number) {
     <scroll-view scroll-x class="sip-steps-scroll" :show-scrollbar="false">
       <view class="sip-steps">
         <view
-          v-for="(step, index) in steps"
-          :key="step.tier"
+          v-for="(step, index) in steps" :key="step.tier"
           class="sip-step"
           :class="[
             `sip-step--${step.status}`,
@@ -526,16 +525,16 @@ function stepLineStyles(step: StepItem, index: number) {
 .sip-bar-track {
   width: 100%;
   height: 10rpx;
-  border-radius: 5rpx;
+  border-radius: var(--r-xs, 5rpx);
   background: var(--c-bg-surface);
   overflow: hidden;
 }
 
 .sip-bar-fill {
   height: 100%;
-  border-radius: 5rpx;
+  border-radius: var(--r-xs, 5rpx);
   background: linear-gradient(90deg, var(--c-brand-100) 0%, var(--c-secondary-blue-400, #5B7FFF) 100%);
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width var(--d-slower, 500ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ==================== 当前层级高亮卡片 ==================== */
@@ -544,10 +543,10 @@ function stepLineStyles(step: StepItem, index: number) {
   align-items: center;
   gap: 20rpx;
   padding: 24rpx;
-  border-radius: 20rpx;
+  border-radius: var(--r-lg, 20rpx);
   border-width: 1rpx;
   border-style: solid;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--d-bounce, 400ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sip-current__icon {
@@ -558,7 +557,7 @@ function stepLineStyles(step: StepItem, index: number) {
   align-items: center;
   justify-content: center;
   background: var(--c-bg-container, #FFFFFF);
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   box-shadow: 0 4rpx 12rpx var(--c-secondary-blue-border-tint-strong, var(--c-secondary-blue-border-tint-strong, rgba(37, 99, 235, 0.12)));
   flex-shrink: 0;
 }
@@ -642,16 +641,16 @@ function stepLineStyles(step: StepItem, index: number) {
 .sip-step__dot {
   width: 56rpx;
   height: 56rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--fs-base, 24rpx);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--d-bounce, 400ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sip-step__dot--current {
-  animation: sip-pulse 2s ease-in-out infinite, pulse-ring 2s infinite;
+  animation: sip-pulse var(--d-toast-normal, 2s) ease-in-out infinite, pulse-ring var(--d-toast-normal, 2s) infinite;
   transform: scale(1.08);
 }
 
@@ -681,7 +680,7 @@ function stepLineStyles(step: StepItem, index: number) {
 
 /* 层级切换入场动画 */
 .sip-step--animating .sip-step__dot {
-  animation: sip-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: sip-pop-in var(--d-slower, 500ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes sip-pop-in {

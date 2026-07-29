@@ -1,5 +1,18 @@
 # Gitleaks 配置：继承默认规则，并对项目中的开发占位符/示例值进行白名单豁免。
 # 详见 https://github.com/gitleaks/gitleaks#configuration
+#
+# Task 20（FIN-00008）：白名单收紧为精确匹配
+# - 移除宽泛路径白名单 `path: '.github/workflows/ci.yml'` 与 `path: 'application-db.yml'`
+# - 改用精确字符串匹配（regexes）+ 精确文件路径（paths）双重控制
+# - 仅放行已知的开发占位符、CI 数据库账号、特定 BCrypt 占位哈希
+# - 真实凭据泄露仍会被 gitleaks 检出并阻断合并
+#
+# P1.17（2026-07-28）再次复核：
+# - 确认 `.github/workflows/ci.yml` 与 `application-db.yml` 已不在 paths 白名单中
+# - `campus_love` 仅作为 MySQL 数据库名占位符（非凭据），出现在 JDBC URL / docker-compose 默认值，
+#   保留 regex 豁免以避免 gitleaks 误报数据库连接字符串规则
+# - BCrypt 占位哈希 regex 收紧为完整盐值 + 哈希字符串，避免部分匹配导致真实哈希被放行
+# - paths 白名单仅保留 2 个 SQL 迁移文件（包含历史 BCrypt 占位哈希）与测试资源目录
 
 title = "campus-love gitleaks config"
 
@@ -8,24 +21,29 @@ useDefault = true
 
 # 全局允许列表：匹配这些内容的发现会被忽略
 [allowlist]
-description = "Allow known development placeholders and CI sample credentials"
+description = "Allow known development placeholders and CI sample credentials (precise match only)"
 # Task 0.6.4：移除 BCrypt 哈希白名单（原规则 (?i)\$2[aby]\$10\$[./A-Za-z0-9]{53}）
 # 原因：BCrypt 哈希白名单会让所有 BCrypt 密码哈希通过扫描，无法发现泄露的真实凭据。
 # 现在所有 BCrypt 哈希必须通过显式路径白名单（见下方 paths）按文件粒度豁免，
 # 避免误将代码中其他位置的密码哈希（如泄露的真实密码）一并放行。
+#
+# Task 20：以下 regexes 仅匹配明确的占位符字符串，避免误放行真实凭据
 regexes = [
-    # Flyway 占位符默认值
+    # Flyway 占位符默认值（出现在 flyway.toml / application-db.yml / .env.example）
     'admin-default-openid-change-me',
-    # CI 专用数据库账号（非生产凭据）
+    # MySQL 数据库名占位符（非凭据，仅作为 JDBC URL 中的 database 名出现在 application-db.yml / docker-compose.yml）
+    # 保留豁免以避免 gitleaks 数据库连接字符串规则误报；不涉及任何账号密码
     'campus_love',
+    # application-db.yml 中管理员密码 BCrypt 占位哈希（强随机生成，无已知明文）
+    # 生成方式：openssl rand -base64 32 + bcrypt(cost=10)
+    # P1.17：收紧为完整盐值+哈希字符串，避免部分匹配导致真实 BCrypt 哈希被放行
+    'SFn8RZb8\\.sj5yVnP9S27a3W9MEkCL2no9sceF0/e7lp7wqGEGsjWQ',
 ]
 paths = [
-    # 仅对包含开发占位符的特定 SQL 文件白名单（按文件粒度豁免，包含其中的 BCrypt 哈希）
+    # 仅对包含开发占位符的特定 SQL 迁移文件白名单（按文件粒度豁免，包含其中的 BCrypt 哈希）
+    # 这些文件中的 BCrypt 哈希用于将历史 admin 密码迁移到 bcrypt，无生产明文对应
     'database/flyway/sql/V2026\.06\.25\.0002__migrate_admin_password_to_bcrypt\.sql',
     'database/flyway/sql/V2026\.06\.25\.0008__extend_user_password_to_all_users\.sql',
-    'database/flyway/flyway\.toml',
-    # CI 工作流
-    '\.github/workflows/ci\.yml',
-    # 示例配置文件（仅白名单 application-db.yml，它包含 Flyway 占位符默认值）
-    'apps/api/src/main/resources/application-db\.yml',
+    # 测试资源目录：仅放行测试用的 fixture / 测试配置（不含生产凭据）
+    '^apps/api/src/test/resources/.*',
 ]

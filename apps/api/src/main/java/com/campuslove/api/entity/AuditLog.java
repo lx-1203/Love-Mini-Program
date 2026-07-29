@@ -8,12 +8,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 审计日志实体，对应 audit_log 表。
  * 由 AOP 切面异步写入，记录管理端关键操作。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "audit_log")
 public class AuditLog {
 
@@ -78,6 +82,9 @@ public class AuditLog {
     private Long durationMs;
 
     /** 记录创建时间（审计事件发生时间，用于追溯） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

@@ -11,7 +11,6 @@ import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
 import com.campuslove.api.entity.PostCategoryEntity;
-import com.campuslove.api.entity.PostLike;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
@@ -27,18 +26,15 @@ import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserFollowRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -141,7 +137,12 @@ public class VillageQueryService {
         try {
             currentUserId = SecurityUtils.getCurrentUserId();
         } catch (org.springframework.web.client.HttpClientErrorException.Unauthorized ignored) {
-            // 未认证用户查看帖子
+            // Task 10（FIN-00157）复核：此处 catch HttpClientErrorException.Unauthorized 为
+            // HTTP 鉴权异常（SecurityUtils 从 SecurityContext 读取未认证抛出），非 DB 异常；
+            // 触发时 findPostOrThrow（DB 读）已完成且无写操作，不存在"事务部分提交"风险；
+            // 按设计意图允许未认证用户匿名查看帖子（isLiked/isAuthor 均为 false），
+            // 按 spec SubTask 10.6 提示"若是只读查询则评估是否真的需要事务"——本方法为只读查询，
+            // 无需 setRollbackOnly 或重新抛出。
         }
         return toPostDetailView(post, currentUserId);
     }

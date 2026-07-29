@@ -171,6 +171,57 @@
 - 如发现未满 18 周岁用户违规注册，我们将主动注销其账号
 - 监护人如发现未满 18 周岁子女使用本服务，可联系 privacy@campuslove.example.com 申请注销
 
+### 8.1 实名+校园认证代码审查记录（Task 23 / FIN-00273，2026-07-28）
+
+> 本小节为代码审查记录，对应隐私政策第 8 条「未成年人保护」的实现现状披露。
+> 审查人：Sub-Agent；审查日期：2026-07-28；审查范围：`apps/api/src/main/java/com/campuslove/api/auth/RealAuthService.java` 与 `apps/api/src/main/java/com/campuslove/api/campus/{CampusCertificationService,RealCampusCertificationService}.java`
+
+#### 8.1.1 审查方法
+
+- 使用 Grep 搜索 `RealAuthService.java` 与 `RealCampusCertificationService.java` 中以下关键词：`18`、`minor`、`birthDate`、`birthday`、`birth_date`、`underage`、`isAdult`、`legalAge`、`age`、`ChronoUnit.YEARS`、`Period.between`
+- 全量阅读 `RealAuthService.loginWithWechat`（行 156-200）与 `RealCampusCertificationService.submitCertification`（行 63-110）方法体
+- 搜索 `apps/api/src/main/java` 全目录确认是否存在显式年龄校验逻辑
+
+#### 8.1.2 审查结论
+
+| 审查项 | 文件:行号 | 结论 |
+|--------|-----------|------|
+| 微信登录入口 | `RealAuthService.java:156` `loginWithWechat(String code)` | ❌ 未实现显式 18 岁年龄校验，仅完成 OpenID 换取与用户创建/查找 |
+| 校园认证提交 | `RealCampusCertificationService.java:63-110` `submitCertification(...)` | ❌ 未实现显式 18 岁年龄校验，仅校验认证状态流转（PENDING/APPROVED/REJECTED） |
+| 实名信息年龄解析 | 全目录搜索 `birthDate`/`birthday`/`age` | ❌ 未找到任何生日字段或年龄计算逻辑 |
+| 显式 18 岁判断 | 全目录搜索 `18`/`minor`/`isAdult`/`legalAge`/`ChronoUnit.YEARS`/`Period.between` | ❌ 未找到任何显式年龄校验代码 |
+
+#### 8.1.3 现状说明
+
+当前代码中**未实现显式的 18 周岁以下用户拦截逻辑**，隐私政策第 8 条「未满 18 周岁用户无法注册」的承诺在代码层面未得到直接执行。当前的间接保护机制为：
+
+1. **微信开放平台实名认证**：用户使用微信登录时，微信侧已要求实名认证（绑定银行卡或人脸识别），但本服务当前**未调用** `wx.getUserInfo` 等接口获取用户的实名年龄信息
+2. **校园认证学生证核验**：`CampusCertificationService.submitCertification` 要求用户上传学生证照片（`studentIdCardUrl`），由管理员人工审核（`reviewCertification`）。在校大学生通常为 18 周岁以上，但并非显式年龄校验
+3. **用户协议告知**：用户注册时须勾选《用户协议》，协议第 2 条明确「您须年满 18 周岁且为在校大学生」，但属于告知性约束，无技术拦截
+
+#### 8.1.4 风险与整改建议
+
+- **风险**：未满 18 周岁用户可通过微信登录完成注册，仅在校认证环节可能被人工审核拦截（依赖审核人主观判断学生证年龄）
+- **整改建议**（建议作为独立后续 Task 跟进，不属本 Task 23 范围）：
+  1. 在 `RealAuthService.loginWithWechat` 中调用微信开放平台实名信息接口获取出生日期，计算年龄，<18 岁直接拒绝注册
+  2. 或在注册流程新增「年龄确认」步骤，用户须声明已满 18 岁（电子声明具有法律效力）
+  3. 在 `RealCampusCertificationService.reviewCertification` 中要求审核人核对学生证出生日期字段，未满 18 岁一律驳回
+  4. 定期扫描已注册用户，发现未满 18 岁账号主动注销（对应隐私政策第 8 条第 3 款）
+- **现状披露**：在上述整改完成前，隐私政策第 8 条的承诺与代码实现存在差距，需运营/法务评估是否调整政策文案或加紧技术整改
+
+#### 8.1.5 P1.20 复核记录（2026-07-28）
+
+> P1.20 任务要求补充「未成年人保护代码审查记录」小节，并说明 `RealAuthService.java` 中如何强制实名校验、`UserRegistrationService.java` 中如何拒绝 18 岁以下注册。经复核确认：
+
+| P1.20 复核项 | 结论 | 证据 |
+|--------------|------|------|
+| `RealAuthService.java` 实名校验 | ❌ 未强制实名校验 | `RealAuthService.java:156-215` `loginWithWechat(String code)` 仅完成 OpenID 换取与用户创建/查找，未调用微信实名信息接口（如 `wx.getUserInfo`）获取出生日期或年龄信息 |
+| `UserRegistrationService.java` 拒绝 18 岁以下注册 | ⚠️ 文件不存在 | 项目中不存在 `UserRegistrationService.java`（已通过 `Glob **/UserRegistrationService.java` 全目录搜索确认）。用户注册由 `RealAuthService.findOrCreateUserForWechatLogin(openidHash, openid)`（`RealAuthService.java:236-262`）处理，仅基于 OpenID 创建用户，未实现年龄校验 |
+| 校园认证环节年龄校验 | ❌ 未实现 | `RealCampusCertificationService.java:63-105` `submitCertification(...)` 仅校验认证状态流转（PENDING/APPROVED/REJECTED），未校验年龄 |
+| 隐私政策第 8 条与代码一致性 | ⚠️ 存在差距 | 隐私政策承诺「未满 18 周岁用户无法注册」，但代码层面无技术拦截，仅依赖用户协议告知性约束 |
+
+**P1.20 复核结论**：Task 23 已在 8.1.1-8.1.4 节完成代码审查记录，P1.20 复核确认上述结论仍然成立。`UserRegistrationService.java` 在本项目中不存在，用户注册逻辑由 `RealAuthService.loginWithWechat` 与 `RealAuthService.findOrCreateUserForWechatLogin` 承担，均未实现 18 岁年龄校验。整改建议见 8.1.4 节，建议作为独立后续 Task 跟进。
+
 ---
 
 ## 9. 隐私政策更新

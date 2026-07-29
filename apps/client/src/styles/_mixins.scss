@@ -97,7 +97,7 @@
 @mixin circle($size) {
   width: $size;
   height: $size;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
 }
 
 // ---------- 文本隐藏（仅屏幕阅读器可见） ----------

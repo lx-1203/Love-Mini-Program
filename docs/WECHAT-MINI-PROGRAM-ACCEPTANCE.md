@@ -3,9 +3,64 @@
 > 对应规范：`.trae/specs/2026-07-26-commercialize-longterm-fixall/tasks.md` Task 9.3
 > 适用范围：商业化首版（v1.0.0）发布前最终验收
 > 维护者：Release Manager
-> 最近更新：2026-07-26
-> 版本：v1.0.0
-> 配套文档：`docs/release-checklist.md`、`docs/GRADUAL-RELEASE.md`、`docs/USER-GUIDE.md`、`docs/ADMIN-GUIDE.md`
+> 最近更新：2026-07-29
+> 版本：v1.3
+> 配套文档：`docs/release-checklist.md`、`docs/GRADUAL-RELEASE.md`、`docs/USER-GUIDE.md`、`docs/ADMIN-GUIDE.md`、`docs/wechat-submission-materials-checklist.md`
+
+---
+
+## 线下落实进度跟踪表（运营/法务按表逐项推进）
+
+> 本表汇总所有需要线下落实的物理材料与外部资源，运营/法务/产品按表逐项推进，落实后在"落实后填写的字段 / 证据"列填入证据（备案号/截图路径/文件 SHA256），并通知 Release Manager 更新本文档与 `docs/wechat-submission-materials-checklist.md`。
+> 任何标"待线下落实"的项目在提审前禁止勾选完成。
+
+**列说明**：
+
+- **责任部门**：牵头部门（法务部 / 运营部 / 产品部 / 运维部 / QA部 / 设计部 / 客服部 / 财务部）
+- **前置依赖**：本项启动前必须完成的跟踪表项或其他外部条件
+- **预计耗时**：从启动到完成的预估工时（不含等待审核的时间标注"审核另需 X 工作日"）
+- **证据材料**：落实后需存档的截图/扫描件路径，统一存档到 `verification_logs/2026-07-28-mp-wechat/`
+
+| 序号 | 材料名称 | 代码引用 / 配置位置 | 责任人（占位） | 责任部门 | 前置依赖 | 预计耗时 | 状态 | 证据材料（存档路径） | 落实后填写的字段 / 证据 |
+|------|----------|---------------------|----------------|----------|----------|----------|------|----------------------|-------------------------|
+| L01 | 企业主体认证（营业执照+法人身份证+对公账户+300元/年） | 微信公众平台 > 设置 > 基本设置 > 主体信息 | 运营-XX / 法务-XX | 法务部 / 运营部 | 无（最先启动） | 1 工作日准备材料 + 3-5 工作日审核 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/business-license.pdf | 主体名称、统一社会信用代码、认证通过日期 |
+| L02 | 小程序名称注册与核名（"校园恋爱"） | 微信公众平台 > 设置 > 基本设置 > 小程序名称 | 产品-XX / 运营-XX | 产品部 / 运营部 | L01（主体认证通过） | 0.5 工作日 + 1-3 工作日核名 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/mp-name-registration.png | 注册成功的小程序名称、核名通过日期 |
+| L03 | 小程序简介与标签填写 | 微信公众平台 > 设置 > 基本设置 > 简介 | 产品-XX | 产品部 | L02 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/mp-intro-tags.png | 简介文本、标签列表 |
+| L04 | 小程序头像上传 | 微信公众平台 > 设置 > 基本设置 > 头像 | 设计-XX / 运营-XX | 设计部 / 运营部 | L02 | 0.5 工作日（设计 + 上传） | 待线下落实 | verification_logs/2026-07-28-mp-wechat/mp-avatar.png | 头像文件 SHA256、上传日期 |
+| L05 | 客服联系方式填写（微信号/电话） | 微信公众平台 > 设置 > 基本设置 > 客服 | 运营-XX / 客服-XX | 运营部 / 客服部 | L02 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/mp-customer-service.png | 客服微信号、客服电话 |
+| L06 | 类目选择：社交 > 社交资讯 | 微信公众平台 > 设置 > 服务类目 | 产品-XX / 法务-XX | 产品部 / 法务部 | L01 | 0.5 工作日 + 1-3 工作日审核 | 待线下落实（代码层面已就绪） | verification_logs/2026-07-28-mp-wechat/category-selection.png | 类目审核通过日期 |
+| L07 | 类目资质材料上传（营业执照、法人身份证） | 微信公众平台 > 设置 > 主体信息 | 法务-XX | 法务部 | L01、L06 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/category-qualification.pdf | 上传日期、审核通过日期 |
+| L08 | 服务器域名 ICP 备案（7-20 工作日） | 域名服务商 > 工信部备案系统 | 运维-XX / 法务-XX | 运维部 / 法务部 | 域名注册完成 + 服务器租赁合同 | 1 工作日准备材料 + 7-20 工作日审核 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/icp-record.pdf | ICP 备案号（如"沪ICP备XXXXXXXX号"）、备案通过日期 |
+| L09 | 业务域名 ICP 备案（与 L08 同步推进） | 域名服务商 > 工信部备案系统 | 运维-XX / 法务-XX | 运维部 / 法务部 | 域名注册完成（与 L08 同步） | 1 工作日准备材料 + 7-20 工作日审核 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/icp-record-business.pdf | ICP 备案号、备案通过日期 |
+| L10 | SSL 证书申请与部署（主域名+API 子域名） | docker/nginx/conf.d/*.conf | 运维-XX | 运维部 | L08、L09（域名需先备案） | 1-2 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/ssl-certificate.png | 证书颁发机构、到期日期、部署服务器 |
+| L11 | 微信公众平台 request 域名配置 | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 | 运维-XX | 运维部 | L08、L10 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/domain-config.png | request 域名列表（如 https://api.example.com） |
+| L12 | 微信公众平台 uploadFile 域名配置 | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 | 运维-XX | 运维部 | L08、L10 | 0.5 工作日（与 L11~L14 同步） | 待线下落实 | verification_logs/2026-07-28-mp-wechat/domain-config.png | uploadFile 域名列表（如 https://upload.example.com） |
+| L13 | 微信公众平台 downloadFile 域名配置 | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 | 运维-XX | 运维部 | L08、L10 | 0.5 工作日（与 L11~L14 同步） | 待线下落实 | verification_logs/2026-07-28-mp-wechat/domain-config.png | downloadFile 域名列表（如 https://download.example.com） |
+| L14 | 微信公众平台 socket 域名配置 | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 | 运维-XX | 运维部 | L08、L10 | 0.5 工作日（与 L11~L14 同步） | 待线下落实 | verification_logs/2026-07-28-mp-wechat/domain-config.png | socket 域名列表（如 wss://ws.example.com） |
+| L15 | 微信公众平台业务域名配置（如使用 webview） | 微信公众平台 > 开发管理 > 业务域名 | 运维-XX | 运维部 | L09、L10 | 0.5 工作日（含校验文件上传） | 待线下落实 | verification_logs/2026-07-28-mp-wechat/domain-config.png | 业务域名列表、校验文件上传证据 |
+| L16 | 域名配置截图存档 | verification_logs/2026-07-28-mp-wechat/domain-config.png | 运维-XX | 运维部 | L11~L15 全部完成 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/domain-config.png | 截图文件 SHA256、存档日期 |
+| L17 | AppID 确认与正式 appid 替换 | apps/client/src/manifest.json:49、apps/client/.env.mp-weixin、project.config.json:23、apps/client/project.config.json:28 | 产品-XX / 运营-XX | 产品部 / 运营部 | L01（主体认证通过后才有正式 appid） | 1 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/appid-confirmation.png | 正式 appid、确认人签字、替换日期（详见附录 E.5 AppID 确认小节） |
+| L18 | 3-5 分钟功能演示视频录制与上传 | 微信公众平台 > 版本管理 > 提交审核 > 功能演示视频 | 产品-XX / QA-XX | 产品部 / QA部 | 核心流程稳定（P1 修复完成） | 1-2 工作日（录制 + 剪辑 + 上传） | 待线下落实 | 微信公众平台视频链接 + 本地存档 demo.mp4 | 视频文件 SHA256、上传日期、视频链接 |
+| L19 | 测试账号在微信公众平台后台配置 | 微信公众平台 > 版本管理 > 提交审核 > 测试账号 | QA-XX | QA部 | L01 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/test-accounts-config.png | 测试账号清单（admin_test/user_test/vip_test） |
+| L20 | 微信公众平台隐私协议摘要填写 | 微信公众平台 > 设置 > 服务内容声明 | 法务-XX | 法务部 | docs/privacy-policy.md 已发布（v1.0.0） | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/privacy-summary.png | 摘要文本、填写日期 |
+| L21 | 微信公众平台用户隐私保护指引填写 | 微信公众平台 > 设置 > 用户隐私保护指引 | 法务-XX | 法务部 | docs/privacy-policy.md 已发布（v1.0.0） | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/privacy-guideline.png | 指引文本、填写日期 |
+| L22 | 提审备注填写（功能说明+测试账号+演示视频链接） | 微信公众平台 > 版本管理 > 提交审核 | 产品-XX | 产品部 | L18、L19、L20、L21 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/submission-notes.png | 备注文本、填写日期 |
+| L23 | ICP 备案截图存档（仅内部归档，不提交微信） | verification_logs/2026-07-28-mp-wechat/icp-record.pdf | 运维-XX | 运维部 | L08 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/icp-record.pdf | 备案证书扫描件 SHA256 |
+| L24 | 营业执照扫描件存档 | verification_logs/2026-07-28-mp-wechat/business-license.pdf | 法务-XX | 法务部 | L01 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/business-license.pdf | 营业执照扫描件 SHA256 |
+| L25 | 类目资质证明扫描件存档 | verification_logs/2026-07-28-mp-wechat/category-qualification.pdf | 法务-XX | 法务部 | L07 | 0.5 工作日 | 待线下落实 | verification_logs/2026-07-28-mp-wechat/category-qualification.pdf | 资质证明扫描件 SHA256 |
+
+> 截图与扫描件统一存档到 `verification_logs/2026-07-28-mp-wechat/` 目录，文件命名规范见该目录 README.md。
+
+### 关键路径与耗时汇总
+
+> 基于「预计耗时」列汇总的关键路径，T 日 = 提审提交日（初步定为 2026-08-10）。
+
+| 关键路径 | 节点 | 累计耗时 | 备注 |
+|----------|------|----------|------|
+| 域名备案路径 | 域名注册 → L08/L09 ICP 备案 → L10 SSL 证书 → L11~L15 域名配置 → L16 截图存档 | 7-20 工作日 + 3 工作日 | **最长关键路径**，需 T-30 启动 |
+| 主体认证路径 | L01 企业主体认证 → L02 名称注册 → L03~L05 基本信息 → L06 类目选择 → L07 资质上传 | 4-8 工作日 | L01 通过后其余可并行 |
+| 内容准备路径 | L18 演示视频 + L19 测试账号 + L20/L21 隐私协议 | 2-3 工作日 | 依赖核心流程稳定 |
+| 收尾路径 | L22 提审备注 → L23~L25 扫描件存档 | 1 工作日 | 所有前置项完成后汇总 |
 
 ---
 
@@ -61,15 +116,17 @@
 
 ### 2.1 服务类目与资质
 
-| 检查项 | 状态 | 说明 |
-|--------|------|------|
-| 服务类目 | ✅ 通过 | 社交 > 社交资讯（代码层面已就绪） |
-| 类目资质 | ❌ 待准备 | 营业执照、法人身份证需线下准备并上传 |
-| 小程序名称 | ❌ 待注册 | "校园恋爱"需在微信公众平台注册并核名 |
-| 简介与标签 | ❌ 待填写 | 需在微信公众平台填写完整 |
-| 头像合规 | ❌ 待上传 | 需在微信公众平台上传小程序头像 |
-| 客服联系方式 | ❌ 待填写 | 需在微信公众平台填写客服微信/电话 |
-| 主体信息 | ❌ 待认证 | 企业主体尚未认证（需营业执照 + 法人身份证 + 300 元/年认证费） |
+| 检查项 | 状态 | 代码引用 / 配置位置 | 责任人（占位） | 落实后填写的字段 / 证据 |
+|--------|------|---------------------|----------------|-------------------------|
+| 服务类目 | ✅ 代码层面已就绪 / 待线下落实 | 微信公众平台 > 设置 > 服务类目 | 产品-XX / 法务-XX | 类目审核通过日期（对应跟踪表 L06） |
+| 类目资质 | 待线下落实（已就绪模板） | 微信公众平台 > 设置 > 主体信息 | 法务-XX | 营业执照号、上传日期、审核通过日期（对应 L07、L24） |
+| 小程序名称 | 待线下落实（已就绪模板） | 微信公众平台 > 设置 > 基本设置 > 小程序名称 | 产品-XX / 运营-XX | 注册成功的名称、核名通过日期（对应 L02） |
+| 简介与标签 | 待线下落实（已就绪模板） | 微信公众平台 > 设置 > 基本设置 > 简介 | 产品-XX | 简介文本、标签列表（对应 L03） |
+| 头像合规 | 待线下落实（已就绪模板） | 微信公众平台 > 设置 > 基本设置 > 头像 | 设计-XX / 运营-XX | 头像文件 SHA256、上传日期（对应 L04） |
+| 客服联系方式 | 待线下落实（已就绪模板） | 微信公众平台 > 设置 > 基本设置 > 客服 | 运营-XX / 客服-XX | 客服微信号、客服电话（对应 L05） |
+| 主体信息 | 待线下落实（已就绪模板） | 微信公众平台 > 设置 > 基本设置 > 主体信息 | 运营-XX / 法务-XX | 主体名称、统一社会信用代码、认证通过日期（对应 L01） |
+
+> 上述所有"待线下落实"项目均已在「线下落实进度跟踪表」（文档顶部）登记，运营/法务按表逐项推进，落实后填入证据字段并由 Release Manager 同步更新状态。
 
 ### 2.2 隐私合规
 
@@ -125,18 +182,18 @@
 
 ### 2.5 技术合规
 
-| 检查项 | 状态 | 说明 |
-|--------|------|------|
-| 服务器域名 HTTPS | ✅ 通过 | 代码层面全部 HTTPS（待域名备案后配置到微信公众平台） |
-| 服务器域名 ICP 备案 | ❌ 待备案 | 域名未完成 ICP 备案，提审前必须完成（7-20 工作日） |
-| WebSocket wss | ✅ 通过 | 代码层面使用 wss（待域名备案后配置） |
-| 上传域名 | ❌ 待配置 | 需在微信公众平台配置 uploadFile 合法域名（待 ICP 备案完成） |
-| 下载域名 | ❌ 待配置 | 需在微信公众平台配置 downloadFile 合法域名（待 ICP 备案完成） |
-| 业务域名 | ❌ 待配置 | 需在微信公众平台配置业务域名（待 ICP 备案完成） |
-| 主包体积 < 2MB | ✅ 通过 | 实测 1.78MB |
-| 分包体积 < 16MB | ✅ 通过 | 实测 8.6MB |
-| 基础库版本 | ✅ 通过 | 兼容 2.8.0+ |
-| 无禁用 API | ✅ 通过 | 不使用 `wx.getUserInfo` 直接弹窗等 |
+| 检查项 | 状态 | 代码引用 / 配置位置 | 责任人（占位） | 落实后填写的字段 / 证据 |
+|--------|------|---------------------|----------------|-------------------------|
+| 服务器域名 HTTPS | ✅ 代码层面已就绪 | apps/api application.yml server-url；docker/nginx/conf.d/*.conf | 运维-XX | 部署后 HTTPS 域名列表（对应 L10、L11） |
+| 服务器域名 ICP 备案 | 待线下落实（已就绪模板） | 域名服务商 > 工信部备案系统 | 运维-XX / 法务-XX | ICP 备案号（如"沪ICP备XXXXXXXX号"）、备案通过日期（对应 L08） |
+| WebSocket wss | ✅ 代码层面已就绪 | apps/client/src/services/websocket/index.ts | 运维-XX | wss 域名（对应 L14） |
+| 上传域名 | 待线下落实（已就绪模板） | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 > uploadFile | 运维-XX | uploadFile 域名列表（如 https://upload.example.com）（对应 L12） |
+| 下载域名 | 待线下落实（已就绪模板） | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 > downloadFile | 运维-XX | downloadFile 域名列表（如 https://download.example.com）（对应 L13） |
+| 业务域名 | 待线下落实（已就绪模板） | 微信公众平台 > 开发管理 > 业务域名 | 运维-XX | 业务域名列表、校验文件上传证据（对应 L15） |
+| 主包体积 < 2MB | ✅ 通过 | 实测 1.78MB | - | - |
+| 分包体积 < 16MB | ✅ 通过 | 实测 8.6MB | - | - |
+| 基础库版本 | ✅ 通过 | 兼容 2.8.0+ | - | - |
+| 无禁用 API | ✅ 通过 | 不使用 `wx.getUserInfo` 直接弹窗等 | - | - |
 
 ### 2.6 用户体验合规
 
@@ -151,18 +208,18 @@
 
 ### 2.7 合规自检结论
 
-**代码与文档层面合规检查通过**，但存在以下需要线下完成的物理材料/外部资源类待办项：
+**代码与文档层面合规检查通过**，但存在以下需要线下完成的物理材料/外部资源类待办项（均已在「线下落实进度跟踪表」登记，状态为"待线下落实（已就绪模板）"）：
 
-- ❌ 企业主体认证（需营业执照、法人身份证、对公账户）
-- ❌ 小程序名称注册与基本信息填写
-- ❌ 服务器域名 ICP 备案（7-20 工作日）
-- ❌ 微信公众平台服务器域名/业务域名配置（依赖 ICP 备案）
-- ❌ 类目资质材料上传
-- ❌ 演示视频录制与上传
+- 待线下落实：企业主体认证（需营业执照、法人身份证、对公账户）（对应 L01）
+- 待线下落实：小程序名称注册与基本信息填写（对应 L02~L05）
+- 待线下落实：服务器域名 ICP 备案（7-20 工作日）（对应 L08）
+- 待线下落实：微信公众平台服务器域名/业务域名配置（依赖 ICP 备案）（对应 L11~L15）
+- 待线下落实：类目资质材料上传（对应 L07、L24、L25）
+- 待线下落实：演示视频录制与上传（对应 L18）
 
 **详细待办清单**：见 [docs/wechat-submission-materials-checklist.md](./wechat-submission-materials-checklist.md)
 
-**结论**：代码层面符合微信小程序商业化提审要求，物理材料/外部资源待线下准备完成后方可提审。
+**结论**：代码层面符合微信小程序商业化提审要求，物理材料/外部资源待运营/法务线下落实完成后方可提审。所有"待线下落实"项均附完整的材料清单、责任人占位、文件名规范与提交流程，运营/法务可按文档逐项推进。
 
 ---
 
@@ -188,7 +245,7 @@
   6. VIP 购买与权益（4:00-5:00）
 - **格式**：MP4，720p
 - **存储位置**：微信开发者工具本地（待录制）
-- **状态**：❌ 待录制（提审前必须完成）
+- **状态**：待线下落实（已就绪模板，对应 L18，提审前必须完成）
 - **录制脚本**：见本节上述内容大纲
 - **录制工具**：微信开发者工具自带录屏功能（推荐）或 OBS Studio
 - **上传位置**：微信公众平台 → 版本管理 → 提交审核 → 功能演示视频
@@ -196,31 +253,31 @@
 
 ### 3.3 类目资质文件
 
-- 营业执照：❌ 待准备（需法人主体提供，代码仓库无法存放）
-- 法人身份证正反面：❌ 待准备（需法人提供，代码仓库无法存放）
+- 营业执照：待线下落实（已就绪模板，对应 L07、L24，需法人主体提供，代码仓库无法存放）
+- 法人身份证正反面：待线下落实（已就绪模板，对应 L07，需法人提供，代码仓库无法存放）
 - 类目：社交资讯（不需要特殊资质，但主体必须是已认证的企业主体）
 - 上传位置：微信公众平台 → 设置 → 基本设置 → 主体信息
 - 注意：个人主体无法发布社交类目小程序，必须先完成企业主体认证
 
 ### 3.4 服务器域名 ICP 备案
 
-- **状态**：❌ 待备案（域名需先完成 ICP 备案，约 7-20 工作日）
+- **状态**：待线下落实（已就绪模板，对应 L08，域名需先完成 ICP 备案，约 7-20 工作日）
 - **备案流程**：
   1. 在域名服务商处提交 ICP 备案申请
   2. 等待工信部审核（7-20 工作日）
   3. 备案通过后截图保存（仅用于内部归档，不提交微信）
   4. 在微信公众平台配置服务器域名
 - **配置位置**：微信公众平台 → 开发管理 → 服务器域名
-- **需配置域名**：
-  - request 合法域名：https://api.campuslove.example.com
-  - uploadFile 合法域名：https://api.campuslove.example.com
-  - downloadFile 合法域名：https://api.campuslove.example.com
+- **需配置域名**（占位，运营替换为真实域名，详见附录 E.1）：
+  - request 合法域名：https://api.example.com
+  - uploadFile 合法域名：https://upload.example.com
+  - downloadFile 合法域名：https://download.example.com
 - **注意**：域名必须完成 ICP 备案后才能配置为小程序服务器域名
 
 ### 3.5 业务域名 ICP 备案
 
-- **状态**：❌ 待备案（与 3.4 同步推进）
-- **业务域名**：h5.campuslove.example.com（用于 webview 嵌入，如需要）
+- **状态**：待线下落实（已就绪模板，对应 L09，与 3.4 同步推进）
+- **业务域名**：h5.example.com（占位，运营替换为真实域名，用于 webview 嵌入，如需要）
 - **配置位置**：微信公众平台 → 开发管理 → 业务域名
 - **注意**：业务域名同样需完成 ICP 备案，且需上传校验文件到域名根目录
 
@@ -277,18 +334,18 @@ pnpm --filter @campus-love/client run build:mp-weixin
 # 3. 填写审核信息：
 #    - 服务类目：社交 > 社交资讯
 #    - 测试账号：admin_test / user_test / vip_test
-#    - 功能演示视频：❌ 待录制上传
-#    - 服务器域名：❌ 待 ICP 备案后配置
+#    - 功能演示视频：待线下落实（已就绪模板，对应 L18）
+#    - 服务器域名：待线下落实（依赖 L08 ICP 备案完成后配置，对应 L11~L14）
 # 4. 提交
 ```
 
-**模拟结果**：⚠️ 流程已模拟，但实际提审被阻塞，需先完成以下前置条件：
-- 企业主体认证（营业执照 + 法人身份证 + 对公账户）
-- 小程序名称注册与基本信息填写
-- 服务器域名 ICP 备案（7-20 工作日）
-- 微信公众平台服务器域名/业务域名配置
-- 演示视频录制与上传
-- 测试账号在微信公众平台后台配置
+**模拟结果**：⚠️ 流程已模拟，但实际提审被阻塞，需先完成以下前置条件（均已在「线下落实进度跟踪表」登记，状态为"待线下落实"）：
+- 企业主体认证（营业执照 + 法人身份证 + 对公账户）（对应 L01）
+- 小程序名称注册与基本信息填写（对应 L02~L05）
+- 服务器域名 ICP 备案（7-20 工作日）（对应 L08）
+- 微信公众平台服务器域名/业务域名配置（对应 L11~L15）
+- 演示视频录制与上传（对应 L18）
+- 测试账号在微信公众平台后台配置（对应 L19）
 
 详细清单见 [docs/wechat-submission-materials-checklist.md](./wechat-submission-materials-checklist.md)
 
@@ -641,7 +698,7 @@ pnpm --filter @campus-love/client run build:mp-weixin
 | 维度 | 状态 |
 |------|------|
 | 微信小程序合规（代码层面） | ✅ 通过（24 项中代码相关项全部通过） |
-| 提审材料齐备 | ⚠️ 部分齐备（文档/代码齐备，物理材料/外部资源待准备） |
+| 提审材料齐备 | ⚠️ 部分齐备（文档/代码齐备，物理材料/外部资源待线下落实，详见跟踪表 L01~L25） |
 | 提审流程模拟 | ✅ 通过（流程已演练，前置依赖待补齐） |
 | 多视角验收 | ✅ 综合 8.9/10 |
 | 长期可演进性 | ✅ 综合 8.7/10 |
@@ -705,19 +762,19 @@ pnpm --filter @campus-love/client run build:mp-weixin
 
 ## 附录 A：提审材料归档清单
 
-| 材料 | 位置 | 状态 |
-|------|------|------|
-| 测试账号 | 内部 wiki | ❌ 待准备（需在微信公众平台后台配置） |
-| 演示视频 | 微信开发者工具本地 → 微信公众平台 | ❌ 待录制上传 |
-| 类目资质（营业执照、法人身份证） | 微信公众平台 主体信息 | ❌ 待准备上传 |
-| ICP 备案截图 | 内部 wiki（仅归档，不提交微信） | ❌ 待备案 |
-| 隐私政策 | docs/privacy-policy.md | ✅ 已发布（v1.0.0，2026-07-26 生效） |
-| 用户协议 | docs/user-agreement.md | ✅ 已发布（v1.0.0，2026-07-26 生效） |
-| 第三方 SDK 列表 | docs/third-party-sdks.md | ✅ 已准备 |
-| 企业主体认证 | 微信公众平台 主体信息 | ❌ 待认证 |
-| 小程序名称与基本信息 | 微信公众平台 基本设置 | ❌ 待填写 |
-| 服务器域名配置 | 微信公众平台 开发管理 | ❌ 待配置（依赖 ICP 备案） |
-| 业务域名配置 | 微信公众平台 开发管理 | ❌ 待配置（依赖 ICP 备案） |
+| 材料 | 位置 | 状态 | 对应跟踪表 |
+|------|------|------|-----------|
+| 测试账号 | 内部 wiki | 待线下落实（需在微信公众平台后台配置） | L19 |
+| 演示视频 | 微信开发者工具本地 → 微信公众平台 | 待线下落实（待录制上传） | L18 |
+| 类目资质（营业执照、法人身份证） | 微信公众平台 主体信息 | 待线下落实（已就绪模板） | L07、L24、L25 |
+| ICP 备案截图 | 内部 wiki（仅归档，不提交微信） | 待线下落实（已就绪模板） | L08、L23 |
+| 隐私政策 | docs/privacy-policy.md | ✅ 已发布（v1.0.0，2026-07-26 生效） | - |
+| 用户协议 | docs/user-agreement.md | ✅ 已发布（v1.0.0，2026-07-26 生效） | - |
+| 第三方 SDK 列表 | docs/third-party-sdks.md | ✅ 已就绪 | - |
+| 企业主体认证 | 微信公众平台 主体信息 | 待线下落实（已就绪模板） | L01 |
+| 小程序名称与基本信息 | 微信公众平台 基本设置 | 待线下落实（已就绪模板） | L02~L05 |
+| 服务器域名配置 | 微信公众平台 开发管理 | 待线下落实（已就绪模板，依赖 ICP 备案） | L11~L14、L16 |
+| 业务域名配置 | 微信公众平台 开发管理 | 待线下落实（已就绪模板，依赖 ICP 备案） | L15 |
 
 ---
 
@@ -756,9 +813,156 @@ pnpm --filter @campus-love/client run build:mp-weixin
 
 ---
 
+## 附录 E：微信公众平台域名配置（运营/运维落实）
+
+> 本小节对应「线下落实进度跟踪表」L08~L16、L23。运营/运维完成 ICP 备案后，按本节清单在微信公众平台配置服务器域名，并截图存档到 `verification_logs/2026-07-28-mp-wechat/domain-config.png`。
+
+### E.1 域名配置清单
+
+> 每个域名必须先完成 ICP 备案（7-20 工作日）才能配置为小程序服务器域名。ICP 备案号格式如"沪ICP备XXXXXXXX号"，备案通过后工信部会下发备案号与备案截图。
+
+| 类型 | 占位域名（运营替换为真实域名） | ICP 备案要求 | SSL 证书要求 | 配置入口 | 责任人 | 对应跟踪表 | 状态 |
+|------|-------------------------------|--------------|--------------|----------|--------|-----------|------|
+| request 合法域名 | `https://api.example.com` | 必须备案（L08） | 必须启用 HTTPS（L10） | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 > request 合法域名 | 运维-XX | L08、L10、L11 | 待线下落实 |
+| uploadFile 合法域名 | `https://upload.example.com` | 必须备案（L08，可与 api 同域） | 必须启用 HTTPS（L10） | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 > uploadFile 合法域名 | 运维-XX | L08、L10、L12 | 待线下落实 |
+| downloadFile 合法域名 | `https://download.example.com` | 必须备案（L08，可与 api 同域） | 必须启用 HTTPS（L10） | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 > downloadFile 合法域名 | 运维-XX | L08、L10、L13 | 待线下落实 |
+| socket 合法域名 | `wss://ws.example.com` | 必须备案（L08） | 必须启用 wss（L10） | 微信公众平台 > 开发管理 > 开发设置 > 服务器域名 > socket 合法域名 | 运维-XX | L08、L10、L14 | 待线下落实 |
+| 业务域名（如使用 webview） | `https://h5.example.com` | 必须备案（L09，独立于 L08） | 必须启用 HTTPS（L10） + 需上传校验文件 | 微信公众平台 > 开发管理 > 业务域名 | 运维-XX | L09、L10、L15 | 待线下落实 |
+
+> **域名合并建议**：upload 与 download 域名可与 api 域名合并为同一个（如 `https://api.example.com`），通过路径区分（如 `/api/upload`、`/api/download`），减少 ICP 备案与 SSL 证书数量。socket 域名可与 api 域名合并为 `wss://api.example.com`。
+
+### E.2 配置入口与操作步骤
+
+#### E.2.1 服务器域名配置（request / uploadFile / downloadFile / socket）
+
+1. **登录微信公众平台**：访问 https://mp.weixin.qq.com，使用管理员微信扫码登录
+   - 截图说明：截图 1 - 登录后的首页，显示小程序名称与主体信息
+2. **进入开发设置**：左侧菜单「开发管理」>「开发设置」
+   - 截图说明：截图 2 - 开发设置页面，显示 AppID、AppSecret 等信息
+3. **找到服务器域名配置**：在「服务器域名」区域点击「修改」
+   - 截图说明：截图 3 - 服务器域名配置弹窗，显示 request / uploadFile / downloadFile / socket 四类输入框
+4. **逐项填入真实域名**（每行一个，必须 HTTPS/wss）：
+   - request 合法域名：`https://api.example.com`（替换为真实域名）
+   - uploadFile 合法域名：`https://upload.example.com`（或与 api 同域）
+   - downloadFile 合法域名：`https://download.example.com`（或与 api 同域）
+   - socket 合法域名：`wss://ws.example.com`（或与 api 同域使用 wss）
+   - 截图说明：截图 4 - 填入真实域名后的弹窗，完整显示四类域名
+5. **保存**：点击「保存」按钮，系统提示「修改成功」
+   - 截图说明：截图 5 - 保存成功后的服务器域名列表页面
+
+#### E.2.2 业务域名配置（如使用 webview）
+
+1. **进入业务域名配置**：左侧菜单「开发管理」>「业务域名」
+2. **下载校验文件**：点击「下载校验文件」，获取 `MP_verify_xxxx.txt`
+3. **上传校验文件**：将校验文件上传到业务域名根目录，确保可访问 `https://h5.example.com/MP_verify_xxxx.txt`
+4. **填入业务域名**：在业务域名输入框填入 `https://h5.example.com`
+5. **保存**：点击「保存」，系统会自动校验文件是否可访问
+   - 截图说明：截图 6 - 业务域名配置页面，显示已上传校验文件并保存成功
+
+### E.3 截图存档规范
+
+- **截图路径**：`verification_logs/2026-07-28-mp-wechat/domain-config.png`
+  - 如有多张截图，命名为 `domain-config-01.png` ~ `domain-config-06.png`
+- **截图内容**：
+  - 截图 1-5：服务器域名配置全流程（登录 → 开发设置 → 修改弹窗 → 填入域名 → 保存成功）
+  - 截图 6：业务域名配置（含校验文件上传）
+- **命名规范**：见 `verification_logs/2026-07-28-mp-wechat/README.md`
+- **落实后由运维**：在跟踪表 L16 填入截图文件 SHA256 与存档日期
+- **截图要求**：
+  - 必须完整显示浏览器地址栏（证明是 mp.weixin.qq.com）
+  - 必须完整显示四类域名（request / uploadFile / downloadFile / socket）
+  - 必须显示登录账号的主体信息（与 L01 主体认证一致）
+
+### E.4 注意事项
+
+- 域名必须先完成 ICP 备案（对应 L08、L09），否则无法配置为小程序服务器域名
+  - ICP 备案需通过域名服务商提交，审核周期 7-20 工作日
+  - 备案通过后工信部下发备案号，备案截图仅用于内部归档（L23），不提交微信
+- 域名必须启用 HTTPS（wss for socket），证书申请与部署对应 L10
+  - 推荐 Let's Encrypt 免费证书（90 天自动续期）或阿里云/腾讯云付费证书
+  - 证书需覆盖所有子域名（通配符证书 `*.example.com` 或单独申请）
+- 一个月内可修改 50 次服务器域名，避免频繁变更
+- 修改后需在微信开发者工具重新编译预览，确认无 urlCheck 报错
+  - 微信开发者工具 > 详情 > 本地设置 > 取消勾选「不校验合法域名」（生产环境必须校验）
+
+### E.5 AppID 确认（运营/产品落实）
+
+> 本小节对应「线下落实进度跟踪表」L17。
+> Task 21（FIN-00009）复核：Sub-Agent 无法线下确认正式 appid，保留两处现有 appid 不做替换，仅文档化不一致问题与解决流程。待运营/产品确认后统一替换。
+>
+> P1.18（2026-07-28）更新：Sub-Agent 已将三个配置文件的 appid 统一为 `wxc67cd233d72388d0`
+> （与 manifest.json 中 mp-weixin 实际构建使用的 appid 一致）。
+> 由于 manifest.json 是 mp-weixin 构建产物中实际生效的 appid 来源，统一后可避免
+> 「微信开发者工具 appid 与构建产物 appid 不匹配」的告警。
+> 仍需运营/产品向微信开放平台核对 `wxc67cd233d72388d0` 是否为正式注册的小程序 appid。
+
+#### E.5.1 当前 appid 状态（P1.18 统一后）
+
+| 配置文件 | 行号 | 当前 appid | 状态 | 落实动作 |
+|----------|------|-----------|------|----------|
+| `apps/client/src/manifest.json` | **49** | `wxc67cd233d72388d0` | mp-weixin 实际构建使用；待运营/产品确认是否为正式注册的小程序 appid | 若为测试 appid 则替换为正式 appid；若为正式则由运营签字确认 |
+| `apps/client/.env.mp-weixin` | - | （未直接配置 appid，仅配置 VITE_API_MODE / VITE_API_BASE_URL / VITE_APP_VERSION） | 不涉及 appid 替换 | 如需通过环境变量注入 appid，需新增 `VITE_MP_WEIXIN_APPID` 并在 manifest.json 引用 |
+| `project.config.json`（根目录） | **23** | `wxc67cd233d72388d0` | ✅ 已与 manifest.json 统一（P1.18 修复） | 待运营确认正式 appid；若为测试 appid 则三个文件同步替换 |
+| `apps/client/project.config.json` | **28** | `wxc67cd233d72388d0` | ✅ 已与 manifest.json 统一（P1.18 修复） | 待运营确认正式 appid；若为测试 appid 则三个文件同步替换 |
+
+> **行号说明**：以上行号通过 `grep -n "appid" <file>` 验证，与实际文件一致。manifest.json 中 appid 在第 49 行（mp-weixin.appid 字段），非注释中提到的第 41 行（注释为历史遗留，待运营确认时一并修正）。
+
+#### E.5.2 关键发现
+
+P1.18 修复后，三个配置文件的 appid 已统一为 `wxc67cd233d72388d0`：
+- `apps/client/src/manifest.json:49` —— mp-weixin 实际构建使用（uni-app 编译时读取此 appid 写入 dist/build/mp-weixin/project.config.json）
+- `apps/client/project.config.json:28` —— 微信开发者工具项目配置
+- `project.config.json:23`（根目录） —— 微信开发者工具项目配置（指向 apps/client/dist/build/mp-weixin）
+
+仍需运营/产品向微信开放平台核对 `wxc67cd233d72388d0` 是否为正式注册的小程序 appid。
+
+#### E.5.3 运营确认流程
+
+1. 运营/产品登录微信开放平台 https://mp.weixin.qq.com
+2. 进入「开发管理」>「开发设置」>「AppID」
+   - 截图说明：截图 1 - 微信公众平台 AppID 显示页面，显示正式注册的小程序 appid
+3. 比对当前代码中已统一的 appid（`wxc67cd233d72388d0`）与微信开放平台显示的 AppID
+4. 截图存档到 `verification_logs/2026-07-28-mp-wechat/appid-confirmation.png`，截图需显示微信开发者工具项目设置页面的 appid 字段
+5. 在本节「E.5.4 确认结果」填入正式 appid、确认人签字、确认日期
+
+#### E.5.4 确认结果（待运营/产品填写）
+
+- 正式 appid：______________
+- 确认人（签字）：______________
+- 确认日期：______________
+- 截图 SHA256（appid-confirmation.png）：______________
+
+#### E.5.5 替换步骤（若 `wxc67cd233d72388d0` 为测试 appid）
+
+如运营/产品确认 `wxc67cd233d72388d0` 为测试 appid，需将正式 appid（记为 `OFFICIAL_APPID`）替换到以下三个文件：
+
+1. `apps/client/src/manifest.json:49` —— 替换 `"appid": "wxc67cd233d72388d0"` 为 `"appid": "OFFICIAL_APPID"`
+2. `project.config.json:23`（根目录） —— 替换 `"appid": "wxc67cd233d72388d0"` 为 `"appid": "OFFICIAL_APPID"`
+3. `apps/client/project.config.json:28` —— 替换 `"appid": "wxc67cd233d72388d0"` 为 `"appid": "OFFICIAL_APPID"`
+4. 同步更新 `apps/client/src/manifest.json` 中第 31 行注释里的 appid 引用（`当前 appid: wxc67cd233d72388d0` → `当前 appid: OFFICIAL_APPID`）
+5. 同步检查 `apps/client/.env.mp-weixin`：如需通过环境变量注入 appid，新增 `VITE_MP_WEIXIN_APPID` 并在 manifest.json 引用（当前未启用此机制，可保留现状）
+6. 微信开发者工具打开项目，确认无"appid 不匹配"警告
+7. 重新运行 `pnpm --filter @campus-love/client run build:mp-weixin`，确认构建产物 `dist/build/mp-weixin/project.config.json` 中的 appid 已更新
+8. 落实后在跟踪表 L17 填入正式 appid、确认人签字、替换日期
+
+#### E.5.6 P1.18 修复结果（2026-07-28）
+
+- ✅ manifest.json 已更新待确认注释（行 26-48），明确标注当前 appid 已统一
+- ✅ `apps/client/project.config.json:28` 已从 `wx67d7f1aa83e60822` 替换为 `wxc67cd233d72388d0`
+- ✅ `project.config.json:23`（根目录）已从 `wx67d7f1aa83e60822` 替换为 `wxc67cd233d72388d0`
+- ✅ .env.mp-weixin 已确认不直接配置 appid（仅 VITE_API_MODE / VITE_API_BASE_URL / VITE_APP_VERSION）
+- ⏸️ 仍需运营/产品向微信开放平台核对 `wxc67cd233d72388d0` 是否为正式注册的小程序 appid
+- 📋 若需替换时需同步更新的文件清单：apps/client/src/manifest.json、project.config.json（根目录）、apps/client/project.config.json、apps/client/.env.mp-weixin（如启用 VITE_MP_WEIXIN_APPID 注入）
+
+详细 AppID 确认流程见 `docs/wechat-submission-materials-checklist.md`「AppID 确认」小节。
+
+---
+
 ## 变更历史
 
 | 日期 | 版本 | 变更内容 | 作者 |
 |------|------|----------|------|
 | 2026-07-26 | v1.0 | 首次发布，完成提审模拟与多视角验收 | Release Manager |
 | 2026-07-27 | v1.1 | 修正虚假声称：演示视频/营业执照/法人身份证/ICP 备案等物理材料均改为"待准备"真实状态；新增附录 D 引用提审材料准备清单 | Release Manager |
+| 2026-07-28 | v1.2 | FIN-00004/00005/00006 落实：新增「线下落实进度跟踪表」（L01~L25）；2.1/2.5/2.7/4.1.3 中"待配置/待准备/待备案"统一改为"待线下落实（已就绪模板）"并附结构化表格；新增附录 E「微信公众平台域名配置」与「AppID 确认」小节，明确域名清单、配置入口、截图存档路径规范与 appid 不一致问题 | Release Manager |
+| 2026-07-29 | v1.3 | P3-C.2 完善：L01~L25 跟踪表新增 4 列（责任部门 / 前置依赖 / 预计耗时 / 证据材料），新增「关键路径与耗时汇总」小节；附录 E.1 域名配置清单新增 ICP 备案要求与 SSL 证书要求列；E.2 拆分为 E.2.1（服务器域名）与 E.2.2（业务域名）两个小节并补全每步截图说明；E.3 截图存档规范新增多张截图命名规范与截图内容要求；E.4 注意事项补全 ICP 备案流程与 SSL 证书建议；E.5 AppID 确认拆分为 E.5.1~E.5.6 六个小节（当前状态 / 关键发现 / 运营确认流程 / 确认结果 / 替换步骤 / P1.18 修复结果），修正 manifest.json appid 行号从 :47 改为 :49（实际行号） | Release Manager |

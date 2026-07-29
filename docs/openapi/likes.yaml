@@ -1,186 +1,548 @@
 openapi: 3.0.3
 info:
-  title: Campus Love - Likes & Visitors API
+  title: Campus Love - Match & Visitors API
   version: 1.0.0
+  description: |
+    Match swipe operations, heart signals, visitor tracking, and profile visit
+    endpoints. Exposed by `MatchController` (`/api/v1/matches`) and
+    `ProfileVisitorController` (`/api/v1/profile`). All endpoints require a
+    valid JWT bearer token.
 servers:
-  - url: /api
+  - url: /api/v1
+    description: Versioned API gateway prefix
+tags:
+  - name: match
+    description: Match swipe operations (like / pass / rewind) and heart signals
+  - name: visitors
+    description: Profile visitor tracking endpoints
 paths:
-  /likes/{userId}:
-    post:
-      summary: Like a user
-      operationId: likeUser
-      parameters:
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: string
-          description: Target user ID to like
+  /matches/form-config:
+    get:
+      tags: [match]
+      summary: Get match form configuration
+      description: Returns the dynamic form configuration (intention, topics, time windows) used to render the match request form.
+      operationId: getMatchFormConfig
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: Like recorded successfully
+          description: Match form configuration
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LikeActionResponse'
+                $ref: '#/components/schemas/MatchFormConfigView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches:
+    post:
+      tags: [match]
+      summary: Create a match request
+      description: |
+        Submits match intent, topics and time window to enter the matching
+        queue. The `userId` field in the request body is ignored — the
+        authenticated user ID from the JWT context is always used to prevent
+        cross-user impersonation.
+      operationId: createMatch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchRequest'
+            example:
+              userId: 0
+              matchIntent: 'study_partner'
+              topicIds: ['topic-1', 'topic-2']
+              timeWindow: 'weekday_morning'
+              durationMinutes: 30
+      responses:
+        '200':
+          description: Match result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResultView'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    delete:
-      summary: Unlike a user
-      operationId: unlikeUser
-      parameters:
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: string
-          description: Target user ID to unlike
+  /matches/quick:
+    post:
+      tags: [match]
+      summary: Create a quick match request
+      description: Skips form input and reuses the last or default configuration to enter the matching queue quickly.
+      operationId: createQuickMatch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickMatchRequest'
+            example:
+              userId: 0
+              durationMinutes: 15
       responses:
         '200':
-          description: Like removed successfully
+          description: Match result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LikeActionResponse'
+                $ref: '#/components/schemas/MatchResultView'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /likes/me:
+  /matches/{id}:
     get:
-      summary: Get users who liked me
-      operationId: getMyLikers
-      parameters:
-        - in: query
-          name: page
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-          description: Page number
-        - in: query
-          name: pageSize
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-          description: Items per page
-      responses:
-        '200':
-          description: List of users who liked me
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LikeListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /visitors:
-    get:
-      summary: Get visitor list
-      operationId: getVisitors
-      parameters:
-        - in: query
-          name: page
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-          description: Page number
-        - in: query
-          name: pageSize
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-          description: Items per page
-      responses:
-        '200':
-          description: List of visitors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VisitorListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /heart-signals:
-    get:
-      summary: Get heart signal list
-      operationId: getHeartSignals
-      parameters:
-        - in: query
-          name: status
-          required: false
-          schema:
-            type: string
-            enum: [pending, accepted, rejected, all]
-            default: all
-          description: Filter by signal status
-        - in: query
-          name: page
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-          description: Page number
-        - in: query
-          name: pageSize
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-          description: Items per page
-      responses:
-        '200':
-          description: List of heart signals
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HeartSignalListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /heart-signals/{id}/accept:
-    post:
-      summary: Accept a heart signal
-      operationId: acceptHeartSignal
+      tags: [match]
+      summary: Get match detail by ID
+      description: Returns the match result detail including partner info and the temporary chat session ID.
+      operationId: getMatch
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: Heart signal ID
+          description: Match ID.
       responses:
         '200':
-          description: Heart signal accepted
+          description: Match detail
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HeartSignalActionResponse'
+                $ref: '#/components/schemas/MatchResultView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/like:
+    post:
+      tags: [match]
+      summary: Like a user (swipe right)
+      description: |
+        Marks the target user as liked. If the like is mutual, a `HeartSignal`
+        is created (match succeeds). Idempotent. Rate-limited to 60 bucket
+        capacity / 2 tokens per second per client IP.
+      operationId: likeUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LikeTargetRequest'
+            example:
+              targetUserId: 1234
+      responses:
+        '200':
+          description: |
+            Like recorded. `data` is a `HeartSignalView` when the like is
+            mutual (match created), otherwise `null`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeartSignalApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/cancel-like:
+    post:
+      tags: [match]
+      summary: Cancel a previously recorded like
+      description: Withdraws a like for the target user. Idempotent.
+      operationId: cancelLike
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LikeTargetRequest'
+            example:
+              targetUserId: 1234
+      responses:
+        '200':
+          description: Like cancelled
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/pass:
+    post:
+      tags: [match]
+      summary: Pass on a user (swipe left)
+      description: Marks the target user as passed. Does not produce a match. Idempotent.
+      operationId: passUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: passedUserId
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: ID of the user being passed.
+      responses:
+        '200':
+          description: Pass recorded
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/rewind:
+    post:
+      tags: [match]
+      summary: Rewind the last swipe
+      description: |
+        Undoes the most recent `pass` action. Limited to 1 rewind per day;
+        exceeding the daily quota returns `DAILY_LIMIT_EXCEEDED` (429).
+        Idempotent.
+      operationId: rewind
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Rewind result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewindResultApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/liked-me:
+    get:
+      tags: [match]
+      summary: Get users who liked me
+      description: Returns the list of users who have liked the current user.
+      operationId: getLikedMe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users who liked me
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LikedUserView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/my-likes:
+    get:
+      tags: [match]
+      summary: Get users I have liked
+      description: Returns the list of users the current user has liked.
+      operationId: getMyLikes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users I liked
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LikedUserView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/visitors:
+    get:
+      tags: [match]
+      summary: Get my visitors (match side)
+      description: Returns the list of users who visited the current user's profile (match module side).
+      operationId: getMatchVisitors
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Visitor list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VisitorView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/visit:
+    post:
+      tags: [match]
+      summary: Record a profile visit
+      description: Records that the current user visited the target user's profile.
+      operationId: recordMatchVisit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitTargetRequest'
+            example:
+              visitedUserId: 1234
+      responses:
+        '200':
+          description: Visit recorded
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/visitors/{id}/read:
+    put:
+      tags: [match]
+      summary: Mark a visitor record as read
+      description: Marks the specified visitor record as read by the current user.
+      operationId: markMatchVisitorRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Visitor record ID.
+      responses:
+        '200':
+          description: Visitor marked as read
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/heart-signals:
+    get:
+      tags: [match]
+      summary: Get heart signals (matches)
+      description: Returns the list of heart signals (mutual likes) involving the current user.
+      operationId: getHeartSignals
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of heart signals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HeartSignalView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/heart-signals/{id}/accept:
+    post:
+      tags: [match]
+      summary: Accept a heart signal
+      description: Accepts the specified heart signal. Idempotent.
+      operationId: acceptHeartSignal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Heart signal ID.
+      responses:
+        '200':
+          description: Heart signal accepted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/heart-signals/{id}/decline:
+    post:
+      tags: [match]
+      summary: Decline a heart signal
+      description: Declines the specified heart signal. Idempotent.
+      operationId: declineHeartSignal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Heart signal ID.
+      responses:
+        '200':
+          description: Heart signal declined
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/{matchId}/icebreakers:
+    get:
+      tags: [match]
+      summary: Get icebreaker prompts for a match
+      description: Returns up to 3 icebreaker topic suggestions for the specified match.
+      operationId: getIcebreakers
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: matchId
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Match (heart signal) ID.
+      responses:
+        '200':
+          description: Icebreaker list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IcebreakerView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/dto:
+    get:
+      tags: [match]
+      summary: Get match DTO list (placeholder)
+      description: |
+        Returns match DTO list for the current user. Currently returns an
+        empty list because the standalone `Match` entity is not yet
+        introduced; will be populated once MatchRepository is wired up.
+      operationId: getMatchesDto
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Match DTO list (currently empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/visitors:
+    get:
+      tags: [visitors]
+      summary: Get my profile visitors
+      description: |
+        Returns the visitor list for the current user's profile. Each visitor
+        record is de-duplicated per visitor-per-host-per-day. Sorted by visit
+        time descending.
+      operationId: getProfileVisitors
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile visitor list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProfileVisitorView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/{userId}/visit:
+    post:
+      tags: [visitors]
+      summary: Record a profile visit (profile side)
+      description: |
+        Records that the current user visited the target user's profile.
+        De-duplicated per visitor-per-host-per-day. Self-visits are not
+        recorded. Idempotent.
+      operationId: recordProfileVisit
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Target profile user ID.
+      responses:
+        '200':
+          description: Visit recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileVisitorView'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -190,183 +552,307 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT bearer token issued by `/auth/wechat-login` or `/auth/refresh`.
   schemas:
-    LikeActionResponse:
+    MatchFormConfigView:
       type: object
       properties:
-        success:
-          type: boolean
-        liked:
-          type: boolean
-        mutualLike:
-          type: boolean
-          description: Whether the like is mutual (both users like each other)
-        matchCreated:
-          type: boolean
-          description: Whether a match was created due to mutual like
-      required:
-        - success
-        - liked
-        - mutualLike
-        - matchCreated
-    LikeUserItem:
-      type: object
-      properties:
-        userId:
-          type: string
-        nickname:
-          type: string
-        avatarUrl:
-          type: string
-          nullable: true
-        headline:
-          type: string
-        likedAt:
-          type: string
-          format: date-time
-        isMutual:
-          type: boolean
-      required:
-        - userId
-        - nickname
-        - headline
-        - likedAt
-        - isMutual
-    LikeListResponse:
-      type: object
-      properties:
-        items:
+        sections:
           type: array
           items:
-            $ref: '#/components/schemas/LikeUserItem'
-        total:
-          type: integer
-          minimum: 0
-        page:
-          type: integer
-          minimum: 1
-        pageSize:
-          type: integer
-          minimum: 1
+            $ref: '#/components/schemas/MatchFormSectionView'
       required:
-        - items
-        - total
-        - page
-        - pageSize
-    VisitorItem:
-      type: object
-      properties:
-        userId:
-          type: string
-        nickname:
-          type: string
-        avatarUrl:
-          type: string
-          nullable: true
-        headline:
-          type: string
-        visitedAt:
-          type: string
-          format: date-time
-        visitCount:
-          type: integer
-          minimum: 1
-          description: Total number of visits from this user
-      required:
-        - userId
-        - nickname
-        - headline
-        - visitedAt
-        - visitCount
-    VisitorListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/VisitorItem'
-        total:
-          type: integer
-          minimum: 0
-        page:
-          type: integer
-          minimum: 1
-        pageSize:
-          type: integer
-          minimum: 1
-      required:
-        - items
-        - total
-        - page
-        - pageSize
-    HeartSignalStatus:
-      type: string
-      enum: [pending, accepted, rejected]
-    HeartSignalItem:
+        - sections
+    MatchFormSectionView:
       type: object
       properties:
         id:
           type: string
-        fromUser:
-          $ref: '#/components/schemas/LikeUserItem'
-        status:
-          $ref: '#/components/schemas/HeartSignalStatus'
-        createdAt:
+        title:
           type: string
-          format: date-time
-        message:
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchFormFieldView'
+      required:
+        - id
+        - title
+        - fields
+    MatchFormFieldView:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [single-select, multi-select, stepper]
+        label:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchOptionView'
+        min:
+          type: integer
+          nullable: true
+        max:
+          type: integer
+          nullable: true
+      required:
+        - id
+        - kind
+        - label
+        - options
+    MatchOptionView:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+      required:
+        - id
+        - label
+    MatchRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Ignored — authenticated user ID from JWT is always used.
+        matchIntent:
+          type: string
+          maxLength: 64
+        topicIds:
+          type: array
+          items:
+            type: string
+        timeWindow:
+          type: string
+          maxLength: 32
+        durationMinutes:
+          type: integer
+          minimum: 1
+          maximum: 180
+      required:
+        - userId
+        - matchIntent
+        - timeWindow
+        - durationMinutes
+    QuickMatchRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Ignored — authenticated user ID from JWT is always used.
+        durationMinutes:
+          type: integer
+          minimum: 1
+          maximum: 180
+      required:
+        - userId
+        - durationMinutes
+    MatchResultView:
+      type: object
+      properties:
+        id:
+          type: string
+        queueStatus:
+          type: string
+          enum: [queued, connected, expired]
+        topicLabel:
+          type: string
+        partnerHeadline:
+          type: string
+        countdownMinutes:
+          type: integer
+        recommendedPrompt:
+          type: string
+        tempChatSessionId:
           type: string
           nullable: true
       required:
         - id
-        - fromUser
-        - status
-        - createdAt
-    HeartSignalListResponse:
+        - queueStatus
+        - topicLabel
+        - partnerHeadline
+        - countdownMinutes
+        - recommendedPrompt
+    LikeTargetRequest:
       type: object
       properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/HeartSignalItem'
-        total:
+        targetUserId:
           type: integer
-          minimum: 0
-        page:
-          type: integer
-          minimum: 1
-        pageSize:
-          type: integer
+          format: int64
           minimum: 1
       required:
-        - items
-        - total
-        - page
-        - pageSize
-    HeartSignalActionResponse:
+        - targetUserId
+    VisitTargetRequest:
+      type: object
+      properties:
+        visitedUserId:
+          type: integer
+          format: int64
+          minimum: 1
+      required:
+        - visitedUserId
+    HeartSignalView:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+          format: int64
+        userAId:
+          type: integer
+          format: int64
+        userBId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        fromUserName:
+          type: string
+          nullable: true
+        fromUserAvatar:
+          type: string
+          nullable: true
+    HeartSignalApiResponse:
       type: object
       properties:
         success:
           type: boolean
-        signalId:
-          type: string
-        status:
-          $ref: '#/components/schemas/HeartSignalStatus'
-        matchCreated:
-          type: boolean
-          description: Whether a match was created after accepting
+        data:
+          $ref: '#/components/schemas/HeartSignalView'
       required:
         - success
-        - signalId
-        - status
-        - matchCreated
-    ErrorResponse:
+    RewindResultView:
+      type: object
+      properties:
+        rewound:
+          type: boolean
+        remainingDailyQuota:
+          type: integer
+          minimum: 0
+      required:
+        - rewound
+        - remainingDailyQuota
+    RewindResultApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/RewindResultView'
+      required:
+        - success
+    LikedUserView:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        campusName:
+          type: string
+          nullable: true
+        likedAt:
+          type: string
+          format: date-time
+      required:
+        - userId
+        - nickname
+        - likedAt
+    VisitorView:
+      type: object
+      properties:
+        visitorId:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        visitedAt:
+          type: string
+          format: date-time
+      required:
+        - visitorId
+        - nickname
+        - visitedAt
+    IcebreakerView:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        prompt:
+          type: string
+      required:
+        - id
+        - prompt
+    MatchDto:
+      type: object
+      description: Match DTO (currently always returned as an empty list).
+      properties:
+        matchId:
+          type: integer
+          format: int64
+        partnerId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    ProfileVisitorView:
+      type: object
+      properties:
+        visitorId:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          nullable: true
+        campusName:
+          type: string
+          nullable: true
+        visitedAt:
+          type: string
+          description: Visit time formatted as `yyyy-MM-dd HH:mm:ss`.
+      required:
+        - visitorId
+        - visitedAt
+    ApiError:
       type: object
       properties:
         error:
           type: string
+          description: Machine-readable error code.
         message:
           type: string
+          description: Human-readable error message.
       required:
         - error
         - message
@@ -376,22 +862,52 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: BAD_REQUEST
+            message: 'targetUserId must be positive.'
     Unauthorized:
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: UNAUTHORIZED
+            message: 'Missing or invalid bearer token.'
     NotFound:
       description: Not found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: NOT_FOUND
+            message: 'Target user not found.'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: CONFLICT
+            message: 'An active match already exists.'
+    TooManyRequests:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: DAILY_LIMIT_EXCEEDED
+            message: 'Daily rewind quota exceeded.'
     InternalServerError:
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: INTERNAL_ERROR
+            message: 'Unexpected server error.'

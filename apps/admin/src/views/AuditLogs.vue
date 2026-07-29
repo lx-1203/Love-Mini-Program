@@ -40,7 +40,7 @@ const error = ref("");
 // 操作类型 → 中文标签映射
 const operationLabelMap = computed(() => {
   const m: Record<string, string> = {};
-  for (const op of AUDIT_OPERATIONS) m[op.value] = op.label;
+  for (const op of AUDIT_OPERATIONS) m[op.value] = t(op.labelKey);
   return m;
 });
 
@@ -67,8 +67,14 @@ async function fetchLogs() {
     totalPages.value = result.totalPages || 0;
     page.value = result.page;
     size.value = result.size;
-  } catch (err: any) {
-    error.value = err instanceof ApiError ? err.message : (err as any)?.message || t("auditLogs.loadFailed");
+  } catch (err: unknown) {
+    // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
+    error.value =
+      err instanceof ApiError
+        ? err.message
+        : err instanceof Error && err.message
+          ? err.message
+          : t("auditLogs.loadFailed");
     logs.value = [];
     totalElements.value = 0;
     totalPages.value = 0;
@@ -153,7 +159,7 @@ onMounted(() => {
       <select v-model="filterOperation" class="filter-select">
         <option value="">{{ t("auditLogs.filterActionAll") }}</option>
         <option v-for="op in AUDIT_OPERATIONS" :key="op.value" :value="op.value">
-          {{ op.label }}
+          {{ t(op.labelKey) }}
         </option>
       </select>
       <input v-model="filterStartDate" class="filter-input filter-date" type="date" />
@@ -276,36 +282,36 @@ onMounted(() => {
 }
 
 .page-header {
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-xxl);
 }
 
 .page-title {
   display: block;
-  font-size: 28px;
+  font-size: var(--admin-font-display);
   font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
+  color: var(--admin-color-text-primary);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .page-subtitle {
   display: block;
-  font-size: 14px;
-  color: #999;
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-quaternary);
 }
 
 .toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xxl);
   flex-wrap: wrap;
   align-items: center;
 }
 
 .filter-input {
-  padding: 10px 14px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: var(--admin-space-md-sm) var(--admin-space-md-lg);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
   min-width: 140px;
 }
 
@@ -314,63 +320,63 @@ onMounted(() => {
 }
 
 .filter-select {
-  padding: 10px 14px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  background: white;
+  padding: var(--admin-space-md-sm) var(--admin-space-md-lg);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
+  background: var(--admin-color-bg-container);
   min-width: 160px;
 }
 
 .filter-sep {
-  color: #999;
-  font-size: 14px;
+  color: var(--admin-color-text-quaternary);
+  font-size: var(--admin-font-lg);
 }
 
 .primary-button,
 .secondary-button {
-  padding: 10px 20px;
+  padding: var(--admin-space-md-sm) var(--admin-space-xl);
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .primary-button {
-  background: #667eea;
-  color: white;
+  background: var(--admin-color-primary);
+  color: var(--admin-color-bg-container);
 }
 
 .primary-button:hover {
-  background: #5568d3;
+  background: var(--admin-color-primary-hover);
 }
 
 .secondary-button {
-  background: #f5f5f5;
-  color: #666;
+  background: var(--admin-color-bg-hover);
+  color: var(--admin-color-text-tertiary);
 }
 
 .secondary-button:hover {
-  background: #eee;
+  background: var(--admin-color-bg-hover);
 }
 
 .error-message {
-  padding: 12px;
-  background: #fee;
-  border-left: 3px solid #f44;
-  border-radius: 4px;
-  color: #f44;
-  font-size: 13px;
-  margin-bottom: 16px;
+  padding: var(--admin-space-md);
+  background: var(--admin-color-danger-soft);
+  border-left: 3px solid var(--admin-color-danger);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-color-danger);
+  font-size: var(--admin-font-md);
+  margin-bottom: var(--admin-space-lg);
 }
 
 .table-container {
-  background: white;
-  border-radius: 12px;
+  background: var(--admin-color-bg-container);
+  border-radius: var(--admin-radius-xl);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--admin-shadow-sm);
   overflow-x: auto;
 }
 
@@ -382,124 +388,124 @@ onMounted(() => {
 
 .data-table th,
 .data-table td {
-  padding: 12px 14px;
+  padding: var(--admin-space-md) var(--admin-space-md-lg);
   text-align: left;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 13px;
+  border-bottom: 1px solid var(--admin-color-border-light);
+  font-size: var(--admin-font-md);
   vertical-align: top;
 }
 
 .data-table th {
-  background: #f9f9f9;
-  font-size: 12px;
+  background: var(--admin-color-bg-subtle);
+  font-size: var(--admin-font-sm);
   font-weight: 600;
-  color: #666;
+  color: var(--admin-color-text-tertiary);
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .data-table tbody tr:hover {
-  background: #f9f9f9;
+  background: var(--admin-color-bg-subtle);
 }
 
 .empty-row {
   text-align: center;
-  color: #999;
-  padding: 32px;
+  color: var(--admin-color-text-quaternary);
+  padding: var(--admin-space-xxxl);
 }
 
 .empty-cell {
-  color: #ccc;
+  color: var(--admin-color-text-placeholder);
 }
 
 .operator-name {
   display: block;
   font-weight: 500;
-  color: #333;
+  color: var(--admin-color-text-primary);
 }
 
 .operator-id {
   display: block;
-  font-size: 11px;
-  color: #999;
+  font-size: var(--admin-font-xs);
+  color: var(--admin-color-text-quaternary);
 }
 
 .role-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-xs);
   font-weight: 500;
 }
 
 .role-admin {
-  background: #fff7e6;
-  color: #fa8c16;
+  background: var(--admin-color-warning-soft);
+  color: var(--admin-color-warning);
 }
 
 .role-user {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
 }
 
 .operation-tag {
   display: inline-block;
-  padding: 2px 8px;
-  background: #f0f5ff;
-  color: #2f54eb;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  background: var(--admin-color-accent-soft);
+  color: var(--admin-color-accent);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-sm);
   font-weight: 500;
 }
 
 .target-text {
-  font-size: 12px;
-  color: #666;
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-tertiary);
 }
 
 .http-method {
   display: inline-block;
-  padding: 1px 6px;
-  background: #f5f5f5;
-  border-radius: 3px;
-  font-size: 11px;
+  padding: var(--admin-space-xxs);
+  background: var(--admin-color-bg-hover);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-xs);
   font-weight: 600;
-  color: #333;
-  margin-right: 4px;
+  color: var(--admin-color-text-primary);
+  margin-right: var(--admin-space-xs);
 }
 
 .http-url {
-  font-size: 11px;
-  color: #999;
+  font-size: var(--admin-font-xs);
+  color: var(--admin-color-text-quaternary);
   word-break: break-all;
 }
 
 .status-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-xs);
   font-weight: 500;
 }
 
 .status-success {
-  background: #f6ffed;
-  color: #52c41a;
+  background: var(--admin-color-success-soft);
+  color: var(--admin-color-success);
 }
 
 .status-client-error {
-  background: #fff7e6;
-  color: #fa8c16;
+  background: var(--admin-color-warning-soft);
+  color: var(--admin-color-warning);
 }
 
 .status-server-error {
-  background: #fff1f0;
-  color: #f5222d;
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
 }
 
 .status-unknown {
-  background: #f5f5f5;
-  color: #999;
+  background: var(--admin-color-bg-hover);
+  color: var(--admin-color-text-quaternary);
 }
 
 .detail-cell details {
@@ -507,67 +513,67 @@ onMounted(() => {
 }
 
 .detail-cell summary {
-  font-size: 12px;
-  color: #667eea;
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-primary);
   user-select: none;
 }
 
 .detail-cell .detail-label {
   font-weight: 600;
-  color: #666;
+  color: var(--admin-color-text-tertiary);
 }
 
 .detail-cell .error-detail {
-  color: #f5222d;
-  font-size: 12px;
-  margin-top: 6px;
+  color: var(--admin-color-danger);
+  font-size: var(--admin-font-sm);
+  margin-top: var(--admin-space-xxs);
 }
 
 .detail-cell .body-detail pre {
-  font-size: 11px;
-  background: #f9f9f9;
-  padding: 8px;
-  border-radius: 4px;
-  margin-top: 4px;
+  font-size: var(--admin-font-xs);
+  background: var(--admin-color-bg-subtle);
+  padding: var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm);
+  margin-top: var(--admin-space-xs);
   max-height: 200px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-all;
-  color: #333;
+  color: var(--admin-color-text-primary);
 }
 
 .pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
+  margin-top: var(--admin-space-xl);
 }
 
 .pagination-info {
-  font-size: 13px;
-  color: #666;
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-tertiary);
 }
 
 .pagination-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-sm);
 }
 
 .page-button {
-  padding: 8px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  background: white;
-  color: #333;
-  font-size: 13px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-color-bg-container);
+  color: var(--admin-color-text-primary);
+  font-size: var(--admin-font-md);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .page-button:hover:not(:disabled) {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
+  background: var(--admin-color-primary);
+  color: var(--admin-color-bg-container);
+  border-color: var(--admin-color-primary);
 }
 
 .page-button:disabled {

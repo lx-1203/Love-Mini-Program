@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 校园社交专区首页
  *
@@ -10,13 +10,15 @@
  */
 import { ref, onMounted } from "vue";
 import { storeToRefs } from "pinia";
-import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime } from "../../stores/campus";
-import type { CampusTopicCategory } from "../../stores/campus";
+import { useI18n } from "vue-i18n";
+// 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
+import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime, type CampusTopicCategory } from "../../stores/campus";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 
 const campusStore = useCampusStore();
+const { t } = useI18n();
 const {
   activeCategory,
   topics,
@@ -92,13 +94,13 @@ function certStatusClass(status: string): string {
 function certStatusText(status: string): string {
   switch (status) {
     case "verified":
-      return "已认证";
+      return t("campus.index.statusVerified");
     case "pending":
-      return "审核中";
+      return t("campus.index.statusPending");
     case "rejected":
-      return "未通过";
+      return t("campus.index.statusRejected");
     default:
-      return "未认证";
+      return t("campus.index.statusUnverified");
   }
 }
 
@@ -115,7 +117,7 @@ onMounted(() => {
       <view class="header-top">
         <view class="header-school">
           <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="school-icon" mode="aspectFit" />
-          <text class="school-name">{{ certificationInfo?.schoolName || "广州大学" }}</text>
+          <text class="school-name">{{ certificationInfo?.schoolName || t('campus.index.defaultSchool') }}</text>
           <view class="cert-badge" :class="certStatusClass(certificationStatus)">
             <text class="cert-badge__text">{{ certStatusText(certificationStatus) }}</text>
           </view>
@@ -127,11 +129,11 @@ onMounted(() => {
     <view v-if="!isVerified" class="cert-guide-card card-base">
       <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="cert-guide-card__icon" mode="aspectFit" />
       <view class="cert-guide-card__body">
-        <text class="cert-guide-card__title">完成学生认证，解锁校园专区</text>
-        <text class="cert-guide-card__desc">上传学生证即可认证，与同校同学畅聊校园话题</text>
+        <text class="cert-guide-card__title">{{ t('campus.index.certGuideTitle') }}</text>
+        <text class="cert-guide-card__desc">{{ t('campus.index.certGuideDesc') }}</text>
       </view>
       <view class="cert-guide-card__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToCertification">
-        <text class="cert-guide-card__btn-text">去认证</text>
+        <text class="cert-guide-card__btn-text">{{ t('campus.index.certGuideBtn') }}</text>
       </view>
     </view>
 
@@ -140,8 +142,7 @@ onMounted(() => {
       <!-- 话题分类Tab -->
       <scroll-view class="category-tabs" scroll-x :scroll-left="scrollLeft" :show-scrollbar="false">
         <view
-          v-for="tab in categoryTabs"
-          :key="tab.key"
+          v-for="tab in categoryTabs" :key="tab.key"
           class="category-tab"
           :class="{ 'category-tab--active': activeCategory === tab.key }"
           @tap="switchCategory(tab.key)"
@@ -152,8 +153,8 @@ onMounted(() => {
 
       <!-- 加载状态 -->
       <view v-if="loading && topics.length === 0" class="campus-state" role="status" aria-live="polite">
-        <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
-        <text class="campus-state__text">正在加载话题...</text>
+        <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('campus.index.loadingAria')" />
+        <text class="campus-state__text">{{ t('campus.index.loadingTopics') }}</text>
       </view>
 
       <!-- 错误状态 -->
@@ -161,15 +162,14 @@ onMounted(() => {
         <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="campus-state__icon" mode="aspectFit" />
         <text class="campus-state__text">{{ errorMessage }}</text>
         <view class="campus-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="campusStore.fetchCampusTopics()">
-          <text class="campus-state__btn-text">重试</text>
+          <text class="campus-state__btn-text">{{ t('campus.index.retry') }}</text>
         </view>
       </view>
 
       <!-- 话题列表 -->
       <scroll-view v-else class="topic-scroll" scroll-y :enhanced="true" :bounces="true" :show-scrollbar="false">
         <view
-          v-for="topic in topics"
-          :key="topic.id"
+          v-for="topic in topics" :key="topic.id"
           class="topic-card list-item"
           @tap="goToTopicDetail(topic.id)"
         >
@@ -181,7 +181,7 @@ onMounted(() => {
             <text class="topic-card__preview">{{ topic.contentPreview }}</text>
             <view class="topic-card__footer">
               <text class="topic-card__author">
-                {{ topic.isAnonymous ? "匿名校友" : topic.author.name }}
+                {{ topic.isAnonymous ? t('campus.index.anonymousAuthor') : topic.author.name }}
               </text>
               <view class="topic-card__replies">
                 <SafeImage :src="IMAGE_PATHS.ICONS_SOCIAL.COMMENT" custom-class="replies-icon" mode="aspectFit" />
@@ -191,11 +191,11 @@ onMounted(() => {
           </view>
         </view>
         <view v-if="loading && topics.length > 0" class="loading-more">
-          <view class="loading-spinner--small" role="status" aria-live="polite" aria-label="加载中" />
-          <text class="loading-more__text">加载中...</text>
+          <view class="loading-spinner--small" role="status" aria-live="polite" :aria-label="t('campus.index.loadingAria')" />
+          <text class="loading-more__text">{{ t('campus.index.loadingMore') }}</text>
         </view>
         <view v-else-if="!campusStore.topicHasMore && topics.length > 0" class="no-more">
-          <text class="no-more__text">没有更多了</text>
+          <text class="no-more__text">{{ t('campus.index.noMore') }}</text>
         </view>
         <view class="list-bottom-spacer" />
       </scroll-view>
@@ -209,17 +209,17 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-$green-primary: var(--c-brand, #3FCF8E);
-$green-light: var(--c-brand-50, #E8F9F1);
-$pink-primary: var(--c-romance-500, #EC4899);
-$pink-light: var(--c-romance-100, #FCE7F3);
-$white: var(--c-neutral-0, #FFFFFF);
-$bg-page: var(--c-bg-page, #F4F6FA);
-$text-primary: var(--c-text-primary, #1F2937);
-$text-secondary: var(--c-neutral-500, #6B7280);
-$text-tertiary: var(--c-neutral-400, #9CA3AF);
-$border-light: var(--c-tint-gray-50, #F3F4F6);
-$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+$green-primary: var(--c-brand);
+$green-light: var(--c-brand-50);
+$pink-primary: var(--c-romance-500);
+$pink-light: var(--c-romance-100);
+$white: var(--c-neutral-0);
+$bg-page: var(--c-bg-page);
+$text-primary: var(--c-text-primary);
+$text-secondary: var(--c-neutral-500);
+$text-tertiary: var(--c-neutral-400);
+$border-light: var(--c-tint-gray-50);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .campus-page {
   display: flex;
@@ -235,7 +235,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   flex-direction: column;
   padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 28rpx;
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 50%, var(--c-romance-300, #F9A8C4) 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 50%, var(--c-romance-300) 100%);
 }
 
 .header-top {
@@ -257,34 +257,34 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .school-name {
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
 }
 
 .cert-badge {
   padding: 6rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
+  background: var(--c-overlay-white-bg-mid-strong);
 }
 
 .cert-badge--verified {
-  background: var(--c-overlay-white-bg-strong-mid, var(--c-overlay-white-bg-strong-mid, rgba(255, 255, 255, 0.35)));
+  background: var(--c-overlay-white-bg-strong-mid);
 }
 
 .cert-badge--pending {
-  background: var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(251, 191, 36, 0.4)));
+  background: var(--c-state-ongoing-bg);
 }
 
 .cert-badge--rejected {
-  background: var(--c-red-border-tint, var(--c-red-border-tint, rgba(239, 68, 68, 0.4)));
+  background: var(--c-red-border-tint);
 }
 
 .cert-badge--unverified {
-  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)));
+  background: var(--c-overlay-bg-light);
 }
 
 .cert-badge__text {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -295,7 +295,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   gap: 20rpx;
   margin: 20rpx 24rpx;
   padding: 28rpx;
-  background: linear-gradient(135deg, $green-light, var(--c-tint-green-50, #F0FDF8));
+  background: linear-gradient(135deg, $green-light, var(--c-tint-green-50));
   border-radius: var(--r-xl, 24rpx);
   border: none;
   box-shadow: $card-soft-shadow;
@@ -330,10 +330,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .cert-guide-card__btn {
   padding: 16rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
   flex-shrink: 0;
-  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
-  transition: all 0.15s ease;
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -344,7 +344,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .cert-guide-card__btn-text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -364,7 +364,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   gap: 8rpx;
   padding: 18rpx 28rpx;
-  border-radius: 20rpx;
+  border-radius: var(--r-lg, 20rpx);
   margin-right: 16rpx;
   transition: all var(--d-normal, 200ms) ease;
   flex-shrink: 0;
@@ -378,8 +378,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 /* #endif */
 
 .category-tab--active {
-  background: linear-gradient(135deg, $green-light, var(--c-tint-green-50, #F0FDF8));
-  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(63, 207, 142, 0.2)));
+  background: linear-gradient(135deg, $green-light, var(--c-tint-green-50));
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint);
 }
 
 .category-tab__label {
@@ -409,8 +409,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   height: 48rpx;
   border: 4rpx solid $border-light;
   border-top-color: $green-primary;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {
@@ -433,9 +433,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .campus-state__btn {
   padding: 20rpx 56rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
-  box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
-  transition: all 0.15s ease;
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
+  box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -446,7 +446,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .campus-state__btn-text {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -461,13 +461,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background: $white;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
-  transition: all 150ms ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
 .topic-card:active {
   transform: scale(0.98);
-  box-shadow: 0 4rpx 20rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08)));
+  box-shadow: 0 4rpx 20rpx var(--c-black-shadow-sm);
 }
 /* #endif */
 
@@ -566,8 +566,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   height: 32rpx;
   border: 3rpx solid $border-light;
   border-top-color: $green-primary;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 .loading-more__text {
@@ -604,9 +604,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   justify-content: center;
   width: 104rpx;
   height: 104rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
-  box-shadow: 0 8rpx 28rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.4)));
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
+  box-shadow: 0 8rpx 28rpx var(--c-brand-border-tint-stronger);
   z-index: 20;
   transition: all var(--d-normal, 200ms) ease;
 }

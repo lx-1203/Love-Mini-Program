@@ -11,6 +11,7 @@ import com.campuslove.api.entity.UserScheduleProfile;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import com.campuslove.api.utils.SensitiveDataMasker;
 import io.jsonwebtoken.JwtException;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -36,8 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>敏感数据加密：微信 openid 通过 {@link AesEncryptor} 加密后存储到数据库，
  *       避免数据库泄露时直接暴露用户身份标识。加密前后兼容：解密失败时视为明文，
  *       支持历史明文数据平滑迁移。</li>
- *   <li>日志脱敏：openid 显示前 4 + 后 4 位，phone 显示前 3 + 后 4 位，
- *       避免日志泄露完整敏感信息。</li>
+ *   <li>日志脱敏（P0 CRITICAL FIN-00001/00002）：openId / phone / token 等敏感字段
+ *       统一通过 {@link SensitiveDataMasker} 脱敏后再输出到日志，避免日志文件、APM 链路
+ *       追踪、异常堆栈中泄露原始敏感值。openId 显示前 4 + 后 4 位，phone 显示前 3 + 后 4 位。</li>
  *   <li>登出黑名单：logout 时将 token 加入 JwtTokenProvider 黑名单，立即失效。</li>
  * </ul>
  * </p>
@@ -199,7 +201,7 @@ public class RealAuthService implements AuthService {
         //     新创建用户 status 默认为 active，此处主要拦截老用户被禁用后再次登录的场景。
         //     与 RealAuthService.loginAsAdmin 中 admin 禁用检查语义保持一致。
         if (user.isDisabled()) {
-            log.warn("禁用用户尝试登录, userId={}, openid={}", user.getId(), maskOpenid(openid));
+            log.warn("禁用用户尝试登录, userId={}, openid={}", user.getId(), SensitiveDataMasker.mask(openid));
             throw new WechatLoginException(
                     WechatLoginException.ErrorCode.USER_DISABLED,
                     "账号已被禁用，请联系管理员");
@@ -237,7 +239,7 @@ public class RealAuthService implements AuthService {
             Optional<User> existingUser = userRepository.findByOpenid(openidHash);
             if (existingUser.isPresent()) {
                 user = existingUser.get();
-                log.info("已有用户登录: userId={}, openid={}", user.getId(), maskOpenid(openid));
+                log.info("已有用户登录: userId={}, openid={}", user.getId(), SensitiveDataMasker.mask(openid));
             } else {
                 // 创建新用户：openid 字段存储派生 hash（不可逆，保护原始 openid）
                 user = new User();
@@ -250,10 +252,10 @@ public class RealAuthService implements AuthService {
                 user.setCreatedAt(now);
                 user.setUpdatedAt(now);
                 user = userRepository.save(user);
-                log.info("创建新用户: userId={}, openid={}", user.getId(), maskOpenid(openid));
+                log.info("创建新用户: userId={}, openid={}", user.getId(), SensitiveDataMasker.mask(openid));
             }
         } catch (DataAccessException ex) {
-            log.error("查找/创建用户失败, openid={}: {}", maskOpenid(openid), ex.getMessage(), ex);
+            log.error("查找/创建用户失败, openid={}: {}", SensitiveDataMasker.mask(openid), ex.getMessage(), ex);
             throw new RuntimeException("用户登录处理失败，请稍后重试", ex);
         }
         return user;
@@ -293,11 +295,13 @@ public class RealAuthService implements AuthService {
     }
 
     @Override
+    @Transactional
     public void logout(String token) {
         doLogout(token, "用户登出");
     }
 
     @Override
+    @Transactional
     public UserSessionView loginAsAdmin(String username, String password) {
         // 1. 校验入参非空，避免空指针；统一返回相同错误信息以防账号枚举
         if (username == null || username.isBlank() || password == null) {
@@ -353,6 +357,7 @@ public class RealAuthService implements AuthService {
     }
 
     @Override
+    @Transactional
     public void logoutAsAdmin(String token) {
         doLogout(token, "管理员登出");
     }
@@ -554,30 +559,12 @@ public class RealAuthService implements AuthService {
         }
     }
 
-    private String maskOpenid(String openid) {
-        if (openid == null || openid.length() <= 8) {
-            return "****";
-        }
-        return openid.substring(0, 4) + "****" + openid.substring(openid.length() - 4);
-    }
-
-    /**
-     * 手机号脱敏：显示前 3 + 后 4 位，中间用 **** 替换。
-     * 修复：日志中输出完整手机号会泄露用户隐私，统一脱敏处理。
-     *
-     * @param phone 原始手机号
-     * @return 脱敏后的字符串（如 "138****5678"），输入过短返回 "****"
-     */
-    private String maskPhone(String phone) {
-        if (phone == null || phone.length() <= 7) {
-            return "****";
-        }
-        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
-    }
-
     /**
      * 根据用户实体构建完整的会话视图。
      * 从数据库查询校园认证状态、日程偏好等，计算 profileCompleted / campusVerified / scheduleCompleted 等字段。
+     *
+     * <p>注：openId / phone 等敏感字段在日志输出时统一通过 {@link SensitiveDataMasker}
+     * 脱敏（P0 CRITICAL FIN-00001/00002），不再使用本类内的本地脱敏方法。</p>
      *
      * @param user  用户实体
      * @param token JWT 令牌（可为 null）

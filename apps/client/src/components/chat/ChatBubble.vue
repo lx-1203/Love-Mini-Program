@@ -82,7 +82,8 @@ function handleTapQuote() {
 // 修复（严格模式 noUnusedLocals）：bubbleAriaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
 // vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用，
 // 同时暴露无障碍标签供父组件/测试访问。
-defineExpose({ bubbleAriaLabel });
+// handleTapQuote 通过 catchtap 绑定到模板，vue-tsc 无法识别 catchtap 语法，需显式暴露。
+defineExpose({ bubbleAriaLabel, handleTapQuote });
 
 /** 格式化时间显示 */
 function formatTime(isoString: string): string {
@@ -122,6 +123,7 @@ function formatTime(isoString: string): string {
         class="bubble-avatar bubble-avatar--peer"
         :src="resolveMediaUrl(peerAvatar)"
         mode="aspectFill"
+        lazy-load
         role="img"
         :aria-label="t('chat.quotePeer')"
       />
@@ -131,6 +133,7 @@ function formatTime(isoString: string): string {
         class="bubble-avatar bubble-avatar--self"
         :src="resolveMediaUrl(selfAvatar)"
         mode="aspectFill"
+        lazy-load
         role="img"
         :aria-label="t('chat.quoteMe')"
       />
@@ -140,7 +143,7 @@ function formatTime(isoString: string): string {
         <view
           v-if="quoteRef && quoteBody"
           class="bubble__quote"
-          @tap.stop="handleTapQuote"
+          catchtap="handleTapQuote"
           role="button"
           :aria-label="t('chat.quoteAria')"
         >

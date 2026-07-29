@@ -10,7 +10,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.campuslove.api.common.ApiResponse;
-import com.campuslove.api.entity.Feedback;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,10 +46,11 @@ class FeedbackControllerTest {
     void createIssue_shouldDelegateToServiceAndWrapApiResponse() {
         // Arrange
         FeedbackSubmissionRequest req = new FeedbackSubmissionRequest(
-                "POST", 100L, "内容不当", "详细描述", "127.0.0.1");
+                "内容不当", "详细描述", null, List.of(), null, null);
         SubmissionRecordView view = new SubmissionRecordView(
-                1L, "FEEDBACK", "PENDING", "2026-07-26T10:00:00");
-        when(feedbackService.submit(eq(Feedback.FeedbackTicketType.FEEDBACK), eq(req)))
+                1L, FeedbackTicketType.FEEDBACK, "内容不当",
+                SubmissionStatus.SUBMITTED, null, "2026-07-26T10:00:00", null);
+        when(feedbackService.submit(eq(FeedbackTicketType.FEEDBACK), eq(req)))
                 .thenReturn(view);
 
         // Act
@@ -59,15 +59,16 @@ class FeedbackControllerTest {
         // Assert
         assertNotNull(result, "返回不应为 null");
         assertSame(view, result.data(), "应原样返回 service 结果");
-        verify(feedbackService).submit(eq(Feedback.FeedbackTicketType.FEEDBACK), eq(req));
+        verify(feedbackService).submit(eq(FeedbackTicketType.FEEDBACK), eq(req));
     }
 
     @Test
     void listMySubmissions_shouldDelegateWithTypeFilter() {
         // Arrange
-        Feedback.FeedbackTicketType type = Feedback.FeedbackTicketType.FEEDBACK;
+        FeedbackTicketType type = FeedbackTicketType.FEEDBACK;
         List<SubmissionRecordView> views = List.of(
-                new SubmissionRecordView(1L, "FEEDBACK", "PENDING", "2026-07-26T10:00:00"));
+                new SubmissionRecordView(1L, FeedbackTicketType.FEEDBACK, "反馈标题",
+                        SubmissionStatus.SUBMITTED, null, "2026-07-26T10:00:00", null));
         when(feedbackService.listMine(eq(type))).thenReturn(views);
 
         // Act
@@ -96,7 +97,8 @@ class FeedbackControllerTest {
         // Arrange
         long proposalId = 42L;
         SubmissionRecordView view = new SubmissionRecordView(
-                proposalId, "ACTIVITY_PROPOSAL", "CONVERTED", "2026-07-26T11:00:00");
+                proposalId, FeedbackTicketType.ACTIVITY_PROPOSAL, "活动提案标题",
+                SubmissionStatus.CONVERTED, null, "2026-07-26T11:00:00", 100L);
         when(feedbackService.convertProposal(proposalId)).thenReturn(view);
 
         // Act
@@ -114,7 +116,7 @@ class FeedbackControllerTest {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "test.jpg", "image/jpeg", new byte[]{1, 2, 3});
         FeedbackService.UploadedImageResult resultView =
-                new FeedbackService.UploadedImageResult("https://cdn.example.com/u.jpg", 1024L);
+                new FeedbackService.UploadedImageResult("https://cdn.example.com/u.jpg");
         when(feedbackService.uploadImage(anyLong(), any(MultipartFile.class)))
                 .thenReturn(resultView);
 
@@ -129,7 +131,9 @@ class FeedbackControllerTest {
         // Arrange
         long submissionId = 99L;
         SubmissionDetailView view = new SubmissionDetailView(
-                submissionId, "FEEDBACK", "content", List.of(), null);
+                submissionId, FeedbackTicketType.FEEDBACK, "反馈标题", "反馈内容",
+                List.of(), SubmissionStatus.SUBMITTED, null, null,
+                "2026-07-26T10:00:00", null);
         when(feedbackService.getSubmissionDetail(anyLong(), eq(submissionId)))
                 .thenReturn(view);
 

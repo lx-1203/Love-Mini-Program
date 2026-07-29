@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,6 +65,7 @@ public class VoiceMessageController {
      * @return 上传响应（含 URL / 时长 / 文件大小）
      */
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public VoiceUploadResponse uploadVoice(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "duration", required = false, defaultValue = "0")
@@ -99,6 +101,7 @@ public class VoiceMessageController {
      * @param id URL 编码后的语音文件 URL
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('USER')")
     public DeleteVoiceResponse deleteVoice(@PathVariable("id") String id) {
         Long userId = SecurityUtils.getCurrentUserId();
         log.info("收到语音删除请求：userId={}, id={}", userId, id);

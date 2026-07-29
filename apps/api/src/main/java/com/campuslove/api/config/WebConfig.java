@@ -66,10 +66,11 @@ public class WebConfig implements WebMvcConfigurer {
      * CORS 允许的源列表，从配置 {@code app.cors.allowed-origins} 读取。
      *
      * <p>支持列表形式注入（YAML 数组自动转换为逗号分隔字符串，再由本类解析）。
-     * 配置缺失时回退到本地开发常用端口，保证开发体验。
+     * 默认值清空：生产环境必须显式配置 CORS_ALLOWED_ORIGINS，
+     * mock profile 在 application-mock.yml 中提供 localhost 默认值供本地开发使用。
      * 兼容环境变量 {@code CORS_ALLOWED_ORIGINS}（逗号分隔）直接覆盖。</p>
      */
-    @Value("#{'${app.cors.allowed-origins:${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5177,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5177}}'.split(',')}")
+    @Value("#{'${app.cors.allowed-origins:${CORS_ALLOWED_ORIGINS:}}'.split(',')}")
     private List<String> allowedOrigins;
 
     /**

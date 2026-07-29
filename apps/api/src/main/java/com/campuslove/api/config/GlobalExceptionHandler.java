@@ -13,14 +13,17 @@ import com.campuslove.api.common.BusinessException;
 import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.media.MediaSizeLimitExceededException;
 import com.campuslove.api.ratelimit.RateLimitExceededException;
+import com.campuslove.api.wallet.InsufficientBalanceException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,11 +39,46 @@ import org.springframework.web.server.ResponseStatusException;
  * 全局异常处理器。
  * 统一处理各类异常，返回标准化的错误响应格式。
  * 错误响应格式: { "error": string, "message": string, "status": int }
+ *
+ * <p>Task 11.4 生产脱敏：
+ * <ul>
+ *   <li>通用未捕获异常（{@link #handleGenericException(Exception)}）在生产 profile
+ *       （{@code spring.profiles.active} 含 {@code prod} 或 {@code real}）下仅返回
+ *       {@code code}/{@code message}/{@code traceId}/{@code timestamp} 四个字段，
+ *       不返回异常类名/堆栈/根因消息，避免攻击者探测内部结构</li>
+ *   <li>堆栈写入日志：{@code log.error("Unhandled exception [traceId={}]", traceId, e)}</li>
+ *   <li>开发 profile（{@code dev}/{@code local}/{@code mock}）下追加 {@code detail} 字段，
+ *       包含异常类名与根因消息，辅助本地调试</li>
+ *   <li>业务异常（{@link BusinessException} 及子类）已被业务侧精心设计为面向终端用户的安全消息，
+ *       透传 message 不视为泄露</li>
+ * </ul>
+ * </p>
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /**
+     * Task 11.4：当前激活的 Spring profile，用于区分生产/开发脱敏策略。
+     *
+     * <p>注入 {@code spring.profiles.active}，未设置时默认 {@code dev}。
+     * 包含 {@code prod} 或 {@code real} 视为生产 profile；其他视为开发 profile。</p>
+     */
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
+
+    /**
+     * Task 11.4：判断当前是否为生产 profile（{@code prod} 或 {@code real}）。
+     *
+     * @return true 表示当前为生产环境，需脱敏
+     */
+    private boolean isProductionProfile() {
+        if (activeProfile == null) {
+            return false;
+        }
+        return activeProfile.contains("prod") || activeProfile.contains("real");
+    }
 
     /**
      * 处理请求参数校验异常。
@@ -79,6 +117,51 @@ public class GlobalExceptionHandler {
             IllegalArgumentException ex) {
         log.warn("非法参数: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage());
+    }
+
+    /**
+     * 处理钱包余额不足异常（Task 2 / Task 15）。
+     *
+     * <p>触发场景：</p>
+     * <ul>
+     *   <li>VIP 红包发送（{@link com.campuslove.api.vip.VipRedPacketService#createRedPacket}）：
+     *       发送方钱包余额不足以支付红包总金额时抛出，由 @Transactional 回滚红包创建事务，
+     *       本 handler 将异常转换为 HTTP 400 响应，前端展示"余额不足，请充值"提示</li>
+     *   <li>VIP 自动续费（{@link com.campuslove.api.vip.AutoRenewService#renewVip}）：
+     *       内部已捕获并写 FAILED 流水，不会进入本 handler；但若未来有其他钱包扣减场景
+     *       未捕获抛出，本 handler 作为兜底返回 400 响应</li>
+     * </ul>
+     *
+     * <p>响应体格式（含业务错误码与余额信息，便于前端展示"余额 X，需要 Y"）：
+     * <pre>{@code
+     * {
+     *   "error": "Bad Request",
+     *   "message": "余额不足：userId=123, 需要=1990 分, 当前余额=500 分",
+     *   "status": 400,
+     *   "code": "INSUFFICIENT_BALANCE",
+     *   "userId": 123,
+     *   "amountCents": 1990,
+     *   "balanceCents": 500
+     * }
+     * }</pre>
+     *
+     * @param ex 余额不足异常
+     * @return 标准化的 400 错误响应（含 INSUFFICIENT_BALANCE 错误码与余额信息）
+     */
+    @ExceptionHandler(InsufficientBalanceException.class)
+    public ResponseEntity<Map<String, Object>> handleInsufficientBalance(
+            InsufficientBalanceException ex) {
+        log.warn("钱包余额不足: userId={}, 需要={}, 当前余额={}",
+                ex.getUserId(), ex.getAmountCents(), ex.getBalanceCents());
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("error", "Bad Request");
+        body.put("message", ex.getMessage());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("code", "INSUFFICIENT_BALANCE");
+        body.put("userId", ex.getUserId());
+        body.put("amountCents", ex.getAmountCents());
+        body.put("balanceCents", ex.getBalanceCents());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     /**
@@ -404,13 +487,27 @@ public class GlobalExceptionHandler {
     /**
      * 处理通用异常。
      * 捕获所有未处理的异常，返回 500 Internal Server Error。
-     * 生产环境不暴露堆栈信息。
+     *
+     * <p>Task 11.4 生产脱敏策略：
+     * <ul>
+     *   <li>堆栈与异常根因写入日志（含 traceId 关联）：
+     *       {@code log.error("Unhandled exception [traceId={}]", traceId, ex)}</li>
+     *   <li>生产 profile：响应体仅含 {@code code}/{@code message}/{@code traceId}/{@code timestamp}
+     *       四个字段，不暴露异常类名/根因/堆栈</li>
+     *   <li>开发 profile：追加 {@code detail} 字段（异常类名 + 根因 message），辅助本地调试</li>
+     * </ul>
+     * </p>
+     *
+     * @param ex 未捕获的异常
+     * @return 500 错误响应（生产环境脱敏）
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        log.error("服务器内部错误", ex);
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error",
-                "服务器内部错误，请稍后重试");
+        String traceId = generateTraceId();
+        // Task 11.4：堆栈与根因写入日志（不返回响应体），通过 traceId 关联客户端报错与服务端日志
+        log.error("Unhandled exception [traceId={}]", traceId, ex);
+        return buildDesensitizedErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "INTERNAL_ERROR", "服务器内部错误，请稍后重试", traceId, ex);
     }
 
     /**
@@ -600,6 +697,57 @@ public class GlobalExceptionHandler {
         body.put("status", status.value());
         body.put("code", errorCode);
         body.put("traceId", traceId);
+        return ResponseEntity.status(status)
+                .header("X-Trace-Id", traceId)
+                .body(body);
+    }
+
+    /**
+     * Task 11.4：构建生产脱敏的错误响应体。
+     *
+     * <p>生产 profile（{@code prod}/{@code real}）下响应体仅包含四个字段：
+     * <ul>
+     *   <li>{@code code}：标准化错误码（如 {@code INTERNAL_ERROR}）</li>
+     *   <li>{@code message}：通用错误提示（不暴露异常类名/根因）</li>
+     *   <li>{@code traceId}：请求追踪 ID，用于客户端报错时关联服务端日志</li>
+     *   <li>{@code timestamp}：ISO-8601 时间戳，便于排查时间点</li>
+     * </ul>
+     * </p>
+     *
+     * <p>开发 profile 下追加 {@code detail} 字段，包含异常类名与根因 message，辅助本地调试：</p>
+     * <pre>{@code
+     * {
+     *   "code": "INTERNAL_ERROR",
+     *   "message": "服务器内部错误，请稍后重试",
+     *   "traceId": "uuid-...",
+     *   "timestamp": "2026-07-27T12:34:56.789Z",
+     *   "detail": "NullPointerException: ..."
+     * }
+     * }</pre>
+     *
+     * <p>注：异常堆栈已在调用处通过 {@code log.error(..., ex)} 写入日志，
+     * 本方法不重复打印堆栈，避免日志冗余。</p>
+     *
+     * @param status     HTTP 状态码
+     * @param code       标准化错误码
+     * @param message    通用错误提示（不暴露内部细节）
+     * @param traceId    请求追踪 ID
+     * @param ex         原始异常（仅开发 profile 用于提取 detail）
+     * @return 生产环境脱敏 / 开发环境含 detail 的错误响应
+     */
+    private ResponseEntity<Map<String, Object>> buildDesensitizedErrorResponse(
+            HttpStatus status, String code, String message, String traceId, Throwable ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("code", code);
+        body.put("message", message);
+        body.put("traceId", traceId);
+        body.put("timestamp", Instant.now().toString());
+        // 开发 profile 追加 detail 字段，便于本地调试
+        if (!isProductionProfile() && ex != null) {
+            String detail = ex.getClass().getSimpleName()
+                    + (ex.getMessage() != null ? ": " + ex.getMessage() : "");
+            body.put("detail", detail);
+        }
         return ResponseEntity.status(status)
                 .header("X-Trace-Id", traceId)
                 .body(body);

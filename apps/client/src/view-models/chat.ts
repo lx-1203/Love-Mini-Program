@@ -1,7 +1,7 @@
 import type { components } from "../services/generated/api-types";
 import { statusCopyMap } from "../config/status-copy";
-import type { HomeCompletionState } from "./home";
-import { getHomeSetupTasks } from "./home";
+// 修复 no-duplicate-imports：合并 ./home 的重复 import
+import { type HomeCompletionState, getHomeSetupTasks } from "./home";
 
 type Schemas = components["schemas"];
 

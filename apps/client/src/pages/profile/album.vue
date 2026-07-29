@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 个人主页相册页（功能4）
  *
@@ -137,7 +137,7 @@ async function handleAddPhoto(index?: number): Promise<void> {
   } catch (_e) {
     errorHaptic();
     uni.showToast({
-      title: "需同意隐私协议后才能选择图片",
+      title: t("profile.privacyRequiredImage"),
       icon: "none",
     });
     return;
@@ -574,7 +574,7 @@ onShow(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--c-bg-overlay, rgba(15, 23, 42, 0.45));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -589,7 +589,7 @@ onShow(() => {
   /* 反色文字：使用 token 替代硬编码 #ffffff */
   border-top-color: var(--c-text-inverse);
   border-radius: var(--r-full);
-  animation: album-spin 1s linear infinite;
+  animation: album-spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes album-spin {

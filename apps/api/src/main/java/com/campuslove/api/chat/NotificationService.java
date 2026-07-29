@@ -84,34 +84,3 @@ public interface NotificationService {
      */
     void createNotification(Long userId, String type, Long sourceUserId, Long referenceId, String referenceType);
 }
-
-/**
- * 通知列表项视图。
- * Phase 3 新增 signalType 字段，用于区分社交信号(SOCIAL)和内容信号(CONTENT)。
- */
-record NotificationView(
-    Long id,
-    String type,
-    NotificationSourceUserView sourceUser,
-    Long referenceId,
-    String referenceType,
-    boolean isRead,
-    String createdAt,
-    String summary,
-    String signalType
-) {}
-
-/**
- * 通知源用户视图。
- */
-record NotificationSourceUserView(
-    String displayName,
-    String avatar
-) {}
-
-/**
- * 未读通知数字段视图。
- */
-record UnreadCountView(
-    long count
-) {}

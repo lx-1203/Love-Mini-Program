@@ -18,6 +18,13 @@
 
   <properties>
     <java.version>17</java.version>
+    <!-- Mockito 5.10.0+ 修复 JDK 21 下 MockMaker 初始化失败问题。
+         旧版 Mockito (3.x/4.x/5.2.0) 与 byte-buddy 在 JDK 21 上无法初始化
+         ByteBuddyInlineMockMaker，导致 "Could not initialize plugin: interface
+         org.mockito.plugins.MockMaker" 错误，586/790 测试报 Error。
+         Mockito 5.10.0 自带 byte-buddy 1.14.12，完全兼容 JDK 21。 -->
+    <mockito.version>5.10.0</mockito.version>
+    <byte-buddy.version>1.14.12</byte-buddy.version>
   </properties>
 
   <dependencies>
@@ -100,6 +107,13 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-redis</artifactId>
     </dependency>
+    <!-- Redisson：分布式锁实现（Task 12.2 AutoRenewService 续费流程加锁防并发多扣）。
+         基于 Redis 的可重入锁 RLock，支持锁自动续期与宕机释放。 -->
+    <dependency>
+      <groupId>org.redisson</groupId>
+      <artifactId>redisson-spring-boot-starter</artifactId>
+      <version>3.27.0</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
@@ -155,17 +169,49 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- mockito-inline：支持 mock final 方法、static 方法、构造函数等。
-         Spring Boot 3.3.1 默认携带的 mockito-core 不包含 inline mock maker，
-         导致 IdempotentInterceptorTest / TraceIdFilterTest 中 mock HttpServletRequest
-         等 final 类或其方法时无法正常工作。
-         显式引入 mockito-inline 以启用 ByteBuddyInlineMockMaker。
-         注意：Spring Boot 3.3.1 的 BOM 已不再托管 mockito-inline，需显式声明版本，
-         与 mockito-core 5.2.0 保持一致。 -->
+    <!-- mockito-core：Mockito 5.3+ 已将 inline mock maker 合并入 mockito-core，
+         不再发布 mockito-inline artifact（5.2.0 为最后版本）。
+         IdempotentInterceptorTest / TraceIdFilterTest 中 mock HttpServletRequest
+         等 final 类或其方法依赖 ByteBuddyInlineMockMaker，Mockito 5.x 默认启用。
+         JDK 21 兼容性：显式升级至 5.10.0，覆盖 Spring Boot 3.3.1 BOM 中的 5.2.0，
+         与 byte-buddy 1.14.12 配合解决
+         "Could not initialize plugin: interface org.mockito.plugins.MockMaker" 错误。 -->
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-inline</artifactId>
-      <version>5.2.0</version>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- byte-buddy：Mockito 5.10.0 需要 byte-buddy 1.14.10+ 才能在 JDK 21 上正常工作。
+         显式声明版本以覆盖 Spring Boot 3.3.1 BOM 中较旧的 byte-buddy 版本，
+         确保 ByteBuddyInlineMockMaker 在 JDK 21 模块系统下可正确初始化。 -->
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>${byte-buddy.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy-agent</artifactId>
+      <version>${byte-buddy.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- JNA：byte-buddy-agent 在 JDK 21 上 self-attach 时，若 HotSpot attachment
+         provider 不可用，需要 JNA 作为后备 attachment provider。
+         Mockito 报错 "No compatible attachment provider is available" 时，
+         添加 JNA 可解决 byte-buddy-agent 的 dynamic agent 安装问题。
+         参考错误信息："add JNA to the class path"。 -->
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna</artifactId>
+      <version>5.14.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna-platform</artifactId>
+      <version>5.14.0</version>
       <scope>test</scope>
     </dependency>
     <!-- spring-security-test：提供 @WithMockUser 等测试注解，供 SecurityConfigTest 使用 -->
@@ -178,6 +224,22 @@
 
   <build>
     <plugins>
+      <!-- maven-surefire-plugin：JDK 21 兼容性配置。
+           JDK 9+ 模块系统限制了反射访问，导致 Mockito ByteBuddyInlineMockMaker
+           在初始化时无法访问 java.base 模块中的非公开类。
+           通过 add-opens 选项显式开放相关包给未命名模块，
+           并启用 EnableDynamicAgentLoading 允许 byte-buddy 动态注入 agent。
+
+           注意：使用 @{argLine} 而非 ${argLine} 实现延迟绑定，
+           确保上方的 JaCoCo prepare-agent 通过设置 argLine 属性注入的
+           jacocoagent.jar 仍能生效，覆盖率统计不会被覆盖。 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED -XX:+EnableDynamicAgentLoading</argLine>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
@@ -201,6 +263,22 @@
           <layers>
             <enabled>true</enabled>
           </layers>
+        </configuration>
+      </plugin>
+      <!-- maven-jar-plugin：排除 mock 包。
+           SubTask 22.3：将 Mock 服务隔离到 com.campuslove.api.mock 包后，
+           通过 maven-jar-plugin 在打包阶段排除该包，确保生产 jar 不含 Mock 类字节码。
+           注意：target/classes 仍保留 mock 类供 test 编译/运行使用，
+           仅最终 jar 产物排除。spring-boot-maven-plugin repackage 基于
+           此 jar 产物，因此 fat jar 也不会包含 mock 类。 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.1</version>
+        <configuration>
+          <excludes>
+            <exclude>com/campuslove/api/mock/**</exclude>
+          </excludes>
         </configuration>
       </plugin>
       <!-- JaCoCo 覆盖率插件：

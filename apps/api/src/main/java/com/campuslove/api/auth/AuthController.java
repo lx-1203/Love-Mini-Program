@@ -9,8 +9,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -59,12 +57,12 @@ public class AuthController {
             description = "从 Authorization 请求头中提取 Bearer token 进行身份验证，返回当前登录用户的会话信息（含 userId、VIP 状态、资料完成度等）。",
             operationId = "getCurrentSession"
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "会话有效，返回用户会话视图",
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "会话有效，返回用户会话视图",
                     content = @Content(schema = @Schema(implementation = UserSessionView.class)),
                     headers = {@Header(name = "X-Trace-Id", description = "请求追踪 ID")}),
-            @ApiResponse(responseCode = "401", description = "未授权：token 缺失/失效/已撤销", content = @Content),
-            @ApiResponse(responseCode = "403", description = "用户已禁用", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授权：token 缺失/失效/已撤销", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "用户已禁用", content = @Content)
     })
     public UserSessionView getCurrentSession(
             @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true,
@@ -90,13 +88,13 @@ public class AuthController {
             description = "接收前端 wx.login() 返回的临时 code，调用微信 code2session 换取 openId，签发 JWT。速率限制：桶容量 10，每 10 秒补充 1 个令牌（按 IP 限流）。",
             operationId = "loginWithWechatLegacy"
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "登录成功，返回 JWT 与用户会话信息",
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "登录成功，返回 JWT 与用户会话信息",
                     content = @Content(schema = @Schema(implementation = UserSessionView.class))),
-            @ApiResponse(responseCode = "401", description = "INVALID_CODE：微信 code 失效或已过期", content = @Content),
-            @ApiResponse(responseCode = "403", description = "USER_DISABLED：用户已被管理员禁用", content = @Content),
-            @ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发登录接口限流", content = @Content),
-            @ApiResponse(responseCode = "502", description = "WECHAT_API_ERROR：微信 API 调用失败", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "INVALID_CODE：微信 code 失效或已过期", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "USER_DISABLED：用户已被管理员禁用", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发登录接口限流", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "WECHAT_API_ERROR：微信 API 调用失败", content = @Content)
     })
     @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
     public UserSessionView loginWithWechat(
@@ -140,11 +138,11 @@ public class AuthController {
             description = "验证旧令牌有效性后生成新令牌返回。支持幂等性（Idempotency-Key）。速率限制：桶容量 20，每 2 秒补充 1 个令牌。",
             operationId = "refreshToken"
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "刷新成功，返回新令牌",
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "刷新成功，返回新令牌",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
-            @ApiResponse(responseCode = "401", description = "原令牌无效或已撤销", content = @Content),
-            @ApiResponse(responseCode = "429", description = "触发限流", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "原令牌无效或已撤销", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "触发限流", content = @Content)
     })
     @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
     @Idempotent
@@ -177,9 +175,9 @@ public class AuthController {
             description = "从 Authorization 请求头提取 Bearer token，将 JWT 加入 Redis 黑名单实现主动撤销。后续使用该 token 的请求返回 401。",
             operationId = "logout"
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "登出成功，返回 success=true"),
-            @ApiResponse(responseCode = "401", description = "token 无效", content = @Content)
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "登出成功，返回 success=true"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "token 无效", content = @Content)
     })
     public Map<String, Boolean> logout(
             @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true)
@@ -202,11 +200,11 @@ public class AuthController {
             description = "管理员通过账号密码登录，校验 enabled/status 字段。支持幂等性。登录成功后返回带 ADMIN 角色的 JWT。",
             operationId = "loginAsAdmin"
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "登录成功",
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "登录成功",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
-            @ApiResponse(responseCode = "401", description = "ADMIN_INVALID_CREDENTIALS：账号或密码错误", content = @Content),
-            @ApiResponse(responseCode = "403", description = "ADMIN_DISABLED：管理员账号已被禁用", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "ADMIN_INVALID_CREDENTIALS：账号或密码错误", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "ADMIN_DISABLED：管理员账号已被禁用", content = @Content)
     })
     @Idempotent
     public ApiResponse<UserSessionView> loginAsAdmin(
@@ -246,10 +244,10 @@ public class AuthController {
             description = "语义同 /logout，单独提供用于审计与未来扩展。撤销 JWT 并记录审计日志。",
             operationId = "logoutAsAdmin"
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "登出成功"),
-            @ApiResponse(responseCode = "401", description = "token 无效", content = @Content),
-            @ApiResponse(responseCode = "403", description = "非管理员角色", content = @Content)
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "登出成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "token 无效", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "非管理员角色", content = @Content)
     })
     public Map<String, Boolean> logoutAsAdmin(
             @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true)

@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 /**
  * 审计日志服务。
@@ -57,9 +58,15 @@ public class AdminAuditLogService {
         try {
             auditLogRepository.save(auditLog);
         } catch (DataAccessException e) {
-            // 审计日志写入失败不应影响主流程，仅记录警告
+            // Task 10（FIN-00022）：@Transactional 内 catch DB 异常必须显式回滚或重新抛出，
+            // 否则 Spring 会认为方法正常返回而提交事务，可能导致部分提交/连接状态不一致。
+            // 此处使用 REQUIRES_NEW 传播级别，本方法运行在独立事务中，
+            // setRollbackOnly 仅标记当前审计日志事务为回滚，不影响主业务事务；
+            // 同时 @Async 将异常上抛交由 auditLogExecutor 线程池统一记录，不阻断主请求。
             log.warn("Failed to save audit log: operation={}, operatorId={}, error={}",
                     auditLog.getOperation(), auditLog.getOperatorId(), e.getMessage());
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException("Audit log persistence failed", e);
         }
     }
 

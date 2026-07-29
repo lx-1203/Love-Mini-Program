@@ -1,6 +1,6 @@
 package com.campuslove.api.auth;
 
-import com.campuslove.api.runtime.MockRuntimeState;
+import com.campuslove.api.mock.MockRuntimeState;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

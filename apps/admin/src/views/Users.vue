@@ -140,6 +140,7 @@ async function handleSaveEdit() {
 
   const trimmed = editNickname.value.trim();
   if (!trimmed) {
+    // eslint-disable-next-line no-alert
     alert(t("users.nicknameRequired"));
     return;
   }
@@ -153,7 +154,8 @@ async function handleSaveEdit() {
     // 刷新列表以同步最新昵称
     await fetchUsers();
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : "保存失败";
+    const msg = err instanceof ApiError ? err.message : t("users.saveFailed");
+    // eslint-disable-next-line no-alert
     alert(msg);
   } finally {
     savingEdit.value = false;
@@ -192,6 +194,7 @@ async function handleConfirmAction() {
     confirmTarget.value = null;
     await fetchUsers();
   } catch (err) {
+    // eslint-disable-next-line no-alert
     alert(err instanceof ApiError ? err.message : t("users.actionFailed"));
   } finally {
     confirming.value = false;
@@ -214,11 +217,11 @@ function formatDate(iso: string): string {
 }
 
 function statusLabel(status: string): string {
-  return status === "active" ? "正常" : "禁用";
+  return status === "active" ? t("users.statusActive") : t("users.statusDisabled");
 }
 
 function roleLabel(role: string): string {
-  return role === "ADMIN" ? "管理员" : "普通用户";
+  return role === "ADMIN" ? t("users.roleAdmin") : t("users.roleUser");
 }
 
 onMounted(() => {
@@ -370,27 +373,27 @@ onMounted(() => {
 }
 
 .page-header {
-  margin-bottom: 32px;
+  margin-bottom: var(--admin-space-xxxl);
 }
 
 .page-title {
   display: block;
-  font-size: 28px;
+  font-size: var(--admin-font-display);
   font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
+  color: var(--admin-color-text-primary);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .page-subtitle {
   display: block;
-  font-size: 14px;
-  color: #999;
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-quaternary);
 }
 
 .toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xxl);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -398,69 +401,69 @@ onMounted(() => {
 .search-input {
   flex: 1;
   max-width: 320px;
-  padding: 10px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: var(--admin-space-md-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--admin-color-primary);
 }
 
 .filter-select {
-  padding: 10px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  background: white;
+  padding: var(--admin-space-md-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
+  background: var(--admin-color-bg-container);
 }
 
 .primary-button {
-  padding: 10px 20px;
-  background: #667eea;
-  color: white;
+  padding: var(--admin-space-md-sm) var(--admin-space-xl);
+  background: var(--admin-color-primary);
+  color: var(--admin-color-bg-container);
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .primary-button:hover {
-  background: #5568d3;
+  background: var(--admin-color-primary-hover);
 }
 
 .ghost-button {
-  padding: 10px 20px;
+  padding: var(--admin-space-md-sm) var(--admin-space-xl);
   background: transparent;
-  color: #666;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
+  color: var(--admin-color-text-tertiary);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
   cursor: pointer;
 }
 
 .ghost-button:hover {
-  background: #f5f5f5;
+  background: var(--admin-color-bg-hover);
 }
 
 .error-banner {
-  background: #fff1f0;
-  color: #f5222d;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border-radius: var(--admin-radius-lg);
+  margin-bottom: var(--admin-space-lg);
+  font-size: var(--admin-font-lg);
 }
 
 .table-container {
-  background: white;
-  border-radius: 12px;
+  background: var(--admin-color-bg-container);
+  border-radius: var(--admin-radius-xl);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--admin-shadow-sm);
 }
 
 .data-table {
@@ -470,33 +473,33 @@ onMounted(() => {
 
 .data-table th,
 .data-table td {
-  padding: 14px 16px;
+  padding: var(--admin-space-md-lg) var(--admin-space-lg);
   text-align: left;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--admin-color-border-light);
 }
 
 .data-table th {
-  background: #f9f9f9;
-  font-size: 13px;
+  background: var(--admin-color-bg-subtle);
+  font-size: var(--admin-font-md);
   font-weight: 600;
-  color: #666;
+  color: var(--admin-color-text-tertiary);
   text-transform: uppercase;
 }
 
 .data-table tbody tr:hover {
-  background: #f9f9f9;
+  background: var(--admin-color-bg-subtle);
 }
 
 .empty-cell {
   text-align: center;
-  color: #999;
-  padding: 40px 16px;
+  color: var(--admin-color-text-quaternary);
+  padding: var(--admin-space-section) var(--admin-space-lg);
 }
 
 .user-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-sm);
 }
 
 .user-avatar {
@@ -508,96 +511,96 @@ onMounted(() => {
 
 .role-badge {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: var(--admin-space-xs) var(--admin-space-md-sm);
+  border-radius: var(--admin-space-md);
+  font-size: var(--admin-font-sm);
   font-weight: 500;
 }
 
 .role-user {
-  background: #f0f5ff;
-  color: #2f54eb;
+  background: var(--admin-color-accent-soft);
+  color: var(--admin-color-accent);
 }
 
 .role-admin {
-  background: #fff7e6;
-  color: #fa8c16;
+  background: var(--admin-color-warning-soft);
+  color: var(--admin-color-warning);
 }
 
 .status-badge {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border-radius: var(--admin-space-md);
+  font-size: var(--admin-font-sm);
   font-weight: 500;
 }
 
 .status-active {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
 }
 
 .status-disabled {
-  background: #fff1f0;
-  color: #f5222d;
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
 }
 
 .action-cell {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-sm);
 }
 
 .action-button {
-  padding: 6px 12px;
+  padding: var(--admin-space-xxs) var(--admin-space-md);
   border: none;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-sm);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .action-button.edit {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
 }
 
 .action-button.edit:hover {
-  background: #bae7ff;
+  background: var(--admin-color-info-softer);
 }
 
 .action-button.delete {
-  background: #fff1f0;
-  color: #f5222d;
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
 }
 
 .action-button.delete:hover {
-  background: #ffccc7;
+  background: var(--admin-color-danger-softer);
 }
 
 .action-button.enable {
-  background: #f6ffed;
-  color: #52c41a;
+  background: var(--admin-color-success-soft);
+  color: var(--admin-color-success);
 }
 
 .action-button.enable:hover {
-  background: #d9f7be;
+  background: var(--admin-color-success-softer);
 }
 
 .pagination {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-top: 24px;
+  gap: var(--admin-space-lg);
+  margin-top: var(--admin-space-xxl);
 }
 
 .page-button {
-  padding: 8px 16px;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  background: var(--admin-color-bg-container);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--admin-font-lg);
 }
 
 .page-button:disabled {
@@ -606,14 +609,14 @@ onMounted(() => {
 }
 
 .page-info {
-  font-size: 14px;
-  color: #666;
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-tertiary);
 }
 
 .modal-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--admin-color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -621,50 +624,50 @@ onMounted(() => {
 }
 
 .modal {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
+  background: var(--admin-color-bg-container);
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-xxl);
   width: 360px;
   max-width: 90%;
 }
 
 .modal-title {
   display: block;
-  font-size: 18px;
+  font-size: var(--admin-font-xxl);
   font-weight: 600;
-  margin-bottom: 16px;
-  color: #333;
+  margin-bottom: var(--admin-space-lg);
+  color: var(--admin-color-text-primary);
 }
 
 .form-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: var(--admin-space-xxs);
+  margin-bottom: var(--admin-space-lg);
 }
 
 .form-label {
-  font-size: 13px;
-  color: #666;
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-tertiary);
 }
 
 .form-input {
-  padding: 10px 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: var(--admin-space-md-sm) var(--admin-space-sm);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-lg);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-md);
 }
 
 .modal-hint {
   display: block;
-  font-size: 12px;
-  color: #999;
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-quaternary);
 }
 </style>

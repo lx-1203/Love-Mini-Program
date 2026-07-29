@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * VIP 红包页
  *
@@ -158,6 +158,9 @@ async function handleClaim() {
   }
 }
 
+/** 空操作占位（catchtap 占位 handler，mp-weixin 要求 catchtap 必须绑定 handler） */
+function noop() {}
+
 /** 关闭领取弹窗 */
 function closeClaimModal() {
   showClaimModal.value = false;
@@ -181,6 +184,10 @@ onLoad((options) => {
     }
   }
 });
+
+// 修复（严格模式 noUnusedLocals）：noop 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ noop });
 </script>
 
 <template>
@@ -212,8 +219,7 @@ onLoad((options) => {
       </view>
       <view class="type-grid">
         <view
-          v-for="opt in typeOptions"
-          :key="opt.value"
+          v-for="opt in typeOptions" :key="opt.value"
           class="type-card press-feedback"
           :class="{ 'type-card--selected': selectedType === opt.value }"
           @tap="selectType(opt.value)"
@@ -310,7 +316,7 @@ onLoad((options) => {
       aria-modal="true"
       :aria-label="t('vip.redPacketClaimTitle')"
     >
-      <view class="claim-modal" @tap.stop>
+      <view class="claim-modal" catchtap="noop">
         <view class="claim-modal__header">
           <text class="claim-modal__title">{{ t('vip.redPacketClaimTitle') }}</text>
           <text
@@ -351,7 +357,7 @@ onLoad((options) => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
+  background: linear-gradient(180deg, var(--c-romance-500) 0%, var(--c-romance-700) 100%);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 200rpx;
@@ -373,9 +379,9 @@ onLoad((options) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   &--hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--c-overlay-border-light);
     transform: scale(0.94);
   }
 }
@@ -416,8 +422,8 @@ onLoad((options) => {
 .rp-hero__icon {
   width: 144rpx;
   height: 144rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-overlay-border-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -436,7 +442,7 @@ onLoad((options) => {
 }
 .rp-hero__subtitle {
   font-size: var(--fs-base, 24rpx);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--c-overlay-white-text-strong);
 }
 
 /* ==================== 分组 ==================== */
@@ -444,17 +450,17 @@ onLoad((options) => {
   position: relative;
   z-index: 1;
   margin: 24rpx 24rpx 0;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 20rpx;
+  background: var(--c-overlay-white-bg-most);
+  border-radius: var(--r-lg, 20rpx);
   padding: 24rpx;
-  box-shadow: var(--s-md, 0 4rpx 16rpx rgba(0, 0, 0, 0.08));
+  box-shadow: var(--s-md);
 }
 .section__title {
   padding: 0 0 16rpx;
 }
 .section__title-text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary);
   font-weight: 600;
 }
 
@@ -465,7 +471,7 @@ onLoad((options) => {
 }
 .type-card {
   flex: 1;
-  background: var(--c-bg-secondary, #F1F5F9);
+  background: var(--c-bg-secondary);
   border: 2rpx solid transparent;
   border-radius: var(--r-lg, 16rpx);
   padding: 24rpx 16rpx;
@@ -473,23 +479,23 @@ onLoad((options) => {
   flex-direction: column;
   align-items: center;
   gap: 6rpx;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
   &--hover {
     transform: scale(0.98);
   }
   &--selected {
-    background: rgba(236, 72, 153, 0.08);
-    border-color: var(--c-romance-500, #EC4899);
+    background: var(--c-romance-bg-tint);
+    border-color: var(--c-romance-500);
   }
 }
 .type-card__label {
   font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
 }
 .type-card__desc {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
   text-align: center;
 }
 
@@ -502,20 +508,20 @@ onLoad((options) => {
 }
 .amount-input__currency {
   font-size: var(--fs-3xl, 36rpx);
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
   font-weight: 700;
 }
 .amount-input {
   flex: 1;
   font-size: var(--fs-7xl, 56rpx);
   font-weight: 800;
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
   min-width: 200rpx;
 }
 .amount-input__hint {
   flex-basis: 100%;
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
   margin-top: 8rpx;
 }
 
@@ -529,11 +535,11 @@ onLoad((options) => {
   flex: 1;
   font-size: var(--fs-4xl, 40rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
 }
 .count-input__suffix {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
 }
 
 /* ==================== 祝福语 ==================== */
@@ -541,7 +547,7 @@ onLoad((options) => {
   width: 100%;
   min-height: 120rpx;
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
   line-height: 1.5;
 }
 
@@ -556,8 +562,8 @@ onLoad((options) => {
   justify-content: space-between;
   padding: 16rpx 24rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.96);
-  border-top: 1rpx solid var(--c-border-light, #E2E8F0);
+  background: var(--c-overlay-white-bg-most);
+  border-top: 1rpx solid var(--c-border-light);
   z-index: 10;
 }
 .footer__amount-row {
@@ -567,25 +573,25 @@ onLoad((options) => {
 }
 .footer__label {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
 }
 .footer__currency {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
   font-weight: 600;
 }
 .footer__amount {
   font-size: var(--fs-4xl, 40rpx);
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
   font-weight: 800;
   line-height: 1;
 }
 .footer__btn {
   padding: 24rpx 56rpx;
-  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
-  border-radius: 999rpx;
-  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.4));
-  transition: all 0.15s ease;
+  background: linear-gradient(135deg, var(--c-romance-500) 0%, var(--c-romance-700) 100%);
+  border-radius: var(--r-full, 9999rpx);
+  box-shadow: var(--s-romance-md);
+  transition: all var(--d-fast, 120ms) ease;
   &--hover {
     transform: scale(0.96);
   }
@@ -607,7 +613,7 @@ onLoad((options) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--c-bg-overlay);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -625,7 +631,7 @@ onLoad((options) => {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx;
-  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
+  background: linear-gradient(135deg, var(--c-romance-500) 0%, var(--c-romance-700) 100%);
 }
 .claim-modal__title {
   font-size: var(--fs-2xl, 32rpx);
@@ -650,23 +656,23 @@ onLoad((options) => {
 .claim-modal__amount {
   font-size: 80rpx;
   font-weight: 800;
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
 }
 .claim-modal__tip {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
 }
 .claim-modal__desc {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary);
   text-align: center;
   line-height: 1.6;
 }
 .claim-modal__btn {
   padding: 20rpx 80rpx;
-  background: linear-gradient(135deg, var(--c-romance-500, #EC4899) 0%, var(--c-romance-700, #BE185D) 100%);
-  border-radius: 999rpx;
-  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.4));
+  background: linear-gradient(135deg, var(--c-romance-500) 0%, var(--c-romance-700) 100%);
+  border-radius: var(--r-full, 9999rpx);
+  box-shadow: var(--s-romance-md);
   &--hover {
     transform: scale(0.96);
   }

@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 业务规则实体，对应 app_rule 表。
  * 存储每日推荐上限、心动信号过期时长等业务规则。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "app_rule")
 public class AdminAppRule {
 
@@ -42,10 +47,16 @@ public class AdminAppRule {
     private Long updatedBy;
 
     /** 记录创建时间（规则入库时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（管理员修改规则时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

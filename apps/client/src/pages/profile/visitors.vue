@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 个人主页访客记录页（功能3）
  *
@@ -351,7 +351,7 @@ onPullDownRefresh(async () => {
   border: var(--sp-1) solid var(--c-neutral-100);
   border-top-color: var(--c-brand);
   border-radius: var(--r-full);
-  animation: visitors-spin 1s linear infinite;
+  animation: visitors-spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes visitors-spin {

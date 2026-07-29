@@ -3,6 +3,7 @@ package com.campuslove.api.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -15,7 +16,7 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import java.security.Principal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +52,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     /** WebSocket 子协议中传递 token 时使用的前缀 */
     private static final String BEARER_PROTOCOL_PREFIX = "bearer.";
 
+    /**
+     * WebSocket 允许的 Origin 模式列表，从配置 {@code app.websocket.allowed-origin-patterns} 读取。
+     *
+     * <p>默认值清空：生产环境必须显式配置 {@code WEBSOCKET_ALLOWED_ORIGIN_PATTERNS}
+     * 或 {@code app.websocket.allowed-origin-patterns}，避免硬编码 localhost。
+     * mock profile 在 application-mock.yml 中提供 {@code http://localhost:*,http://127.0.0.1:*}
+     * 默认值供本地开发使用。</p>
+     *
+     * <p>支持逗号分隔字符串形式（YAML 列表自动转换为逗号分隔字符串）。
+     * 配置为空时不限制 Origin（由 SockJS 默认行为处理）。</p>
+     */
+    @Value("${app.websocket.allowed-origin-patterns:${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:}}")
+    private String allowedOriginPatternsRaw;
+
     private JwtChannelInterceptor jwtChannelInterceptor;
 
     private JwtTokenProvider jwtTokenProvider;
@@ -84,15 +99,36 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      * 客户端通过 /ws 端点建立 WebSocket 连接，支持 SockJS 降级。
      *
      * 安全策略:
-     * - Origin 限制为 localhost / 127.0.0.1（开发环境）
+     * - Origin 限制由 {@code app.websocket.allowed-origin-patterns} 配置注入；
+     *   配置为空时不限制 Origin（生产环境必须显式配置具体域名/模式）。
      * - 握手阶段通过 HandshakeInterceptor 校验 JWT 令牌
      */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")
-            .setAllowedOriginPatterns("http://localhost:*", "http://127.0.0.1:*")
-            .addInterceptors(new JwtHandshakeInterceptor(jwtTokenProvider))
+        // 解析配置的 Origin 模式列表（去空白、去空项）
+        String[] patterns = parseOriginPatterns(allowedOriginPatternsRaw);
+        var endpoint = registry.addEndpoint("/ws");
+        if (patterns.length > 0) {
+            endpoint.setAllowedOriginPatterns(patterns);
+        }
+        endpoint.addInterceptors(new JwtHandshakeInterceptor(jwtTokenProvider))
             .withSockJS();
+    }
+
+    /**
+     * 解析 Origin 模式字符串为清理后的数组。
+     *
+     * @param raw 原始逗号分隔字符串（可能为 null/空白）
+     * @return 去除空白与空项后的数组；为空时返回长度为 0 的数组
+     */
+    private static String[] parseOriginPatterns(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return new String[0];
+        }
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toArray(String[]::new);
     }
 
     /**

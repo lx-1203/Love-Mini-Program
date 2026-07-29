@@ -616,13 +616,18 @@ function onAdvancedFilterReset() {
 /* ========== 阻止内容区点击事件冒泡 ========== */
 
 function onContentTap() {
-  // 阻止冒泡到遮罩层（模板中 @tap.stop 已处理）
+  // 阻止冒泡到遮罩层（模板中 catchtap 已处理，H5 端调用 stopPropagation）
+  // H5 兼容：catchtap 在 mp-weixin 端原生阻止冒泡，H5 端需手动 stopPropagation
 }
 
 const icons = {
   close: IMAGE_PATHS.ICONS_COMMON.CLOSE,
   search: IMAGE_PATHS.ICONS_EMOJI.SEARCH,
 } as const;
+
+// 修复（严格模式 noUnusedLocals）：onContentTap 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ onContentTap });
 </script>
 
 <template>
@@ -634,10 +639,10 @@ const icons = {
     aria-modal="true"
     :aria-label="t('filterDrawer.title')"
   >
-    <!-- 抽屉内容（向上滑入动画） -->
+    <!-- 抽屉内容（向上滑入动画，catchtap 阻止冒泡避免点击内容区误关闭） -->
     <view
       class="filter-drawer__panel"
-      @tap.stop="onContentTap"
+      catchtap="onContentTap"
     >
       <!-- 顶部标题栏 -->
       <view class="filter-drawer__header">
@@ -727,8 +732,7 @@ const icons = {
             </view>
             <view class="chip-group">
               <view
-                v-for="opt in EDUCATION_OPTIONS"
-                :key="opt.value"
+                v-for="opt in EDUCATION_OPTIONS" :key="opt.value"
                 class="filter-chip press-feedback"
                 :class="{ 'filter-chip--active': educationDraft.includes(opt.value) }"
                 hover-class="press-feedback--active"
@@ -751,8 +755,7 @@ const icons = {
             </view>
             <view class="chip-group">
               <view
-                v-for="opt in RELATIONSHIP_OPTIONS"
-                :key="opt.value"
+                v-for="opt in RELATIONSHIP_OPTIONS" :key="opt.value"
                 class="filter-chip press-feedback"
                 :class="{ 'filter-chip--active': relationshipDraft.includes(opt.value) }"
                 hover-class="press-feedback--active"
@@ -895,7 +898,7 @@ const icons = {
   background: var(--c-bg-overlay);
   display: flex;
   align-items: flex-end;
-  animation: drawer-fade-in 280ms ease both;
+  animation: drawer-fade-in var(--d-slow, 280ms) ease both;
 }
 
 @keyframes drawer-fade-in {
@@ -911,7 +914,7 @@ const icons = {
   box-shadow: var(--s-modal);
   display: flex;
   flex-direction: column;
-  animation: drawer-slide-up 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: drawer-slide-up var(--d-slower, 320ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
   overflow: hidden;
 }
 

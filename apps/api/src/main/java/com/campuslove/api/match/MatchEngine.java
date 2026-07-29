@@ -7,7 +7,6 @@ import com.campuslove.api.entity.Like;
 import com.campuslove.api.entity.Like.LikeStatus;
 import com.campuslove.api.entity.PassRecord;
 import com.campuslove.api.entity.User;
-import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserScheduleProfile;
 import com.campuslove.api.repository.HeartSignalRepository;

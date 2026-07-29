@@ -1,5 +1,8 @@
-package com.campuslove.api.campus;
+package com.campuslove.api.mock;
 
+import com.campuslove.api.campus.CampusService;
+import com.campuslove.api.campus.CampusTopicReplyView;
+import com.campuslove.api.campus.CampusTopicView;
 import com.campuslove.api.discover.ActivityView;
 import com.campuslove.api.village.PostAuthorView;
 import com.campuslove.api.village.PostSummaryView;

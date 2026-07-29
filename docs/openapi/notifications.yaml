@@ -2,13 +2,24 @@ openapi: 3.0.3
 info:
   title: Campus Love - Notifications API
   version: 1.0.0
+  description: |
+    Notification endpoints exposed by `NotificationController`
+    (`/api/v1/notifications`). All endpoints require a valid JWT bearer token.
 servers:
-  - url: /api
+  - url: /api/v1
+    description: Versioned API gateway prefix
+tags:
+  - name: notifications
+    description: User-facing notification list, unread count, and mark-read operations
 paths:
   /notifications:
     get:
+      tags: [notifications]
       summary: Get notification list for current user
+      description: Returns the full notification list for the authenticated user (no pagination).
       operationId: getNotifications
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: List of notifications
@@ -18,14 +29,130 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/NotificationView'
+              example:
+                - id: 101
+                  type: like
+                  sourceUser:
+                    displayName: '小明'
+                    avatar: 'https://cdn.example.com/avatar/101.png'
+                  referenceId: 9001
+                  referenceType: post
+                  isRead: false
+                  createdAt: '2026-07-29T08:12:30Z'
+                  summary: '小明赞了你的帖子'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /notifications/list:
+    get:
+      tags: [notifications]
+      summary: Get paged notification list with filters
+      description: |
+        Returns a paginated notification list. Supports filtering by
+        `unreadOnly` and `signalType` (`SOCIAL` for social signals,
+        `CONTENT` for content signals).
+      operationId: getNotificationsPaged
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: unreadOnly
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: If true, only unread notifications are returned.
+        - in: query
+          name: signalType
+          required: false
+          schema:
+            type: string
+            enum: [SOCIAL, CONTENT]
+          description: Filter notifications by signal type.
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Page number (0-based).
+        - in: query
+          name: size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Items per page.
+      responses:
+        '200':
+          description: Paginated list of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /notifications/count:
+    get:
+      tags: [notifications]
+      summary: Get unread notification count (long)
+      description: Returns the unread notification count as a bare long value.
+      operationId: getUnreadNotificationCountLong
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread count (long)
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                minimum: 0
+              example: 7
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /notifications/unread-count:
+    get:
+      tags: [notifications]
+      summary: Get unread notification count
+      description: Returns the unread notification count wrapped in `UnreadCountView`.
+      operationId: getUnreadNotificationCount
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadCountView'
+              example:
+                count: 7
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /notifications/{id}/read:
     put:
+      tags: [notifications]
       summary: Mark a notification as read
+      description: Marks a single notification as read by ID.
       operationId: markNotificationRead
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -45,22 +172,57 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /notifications/unread-count:
-    get:
-      summary: Get unread notification count
-      operationId: getUnreadNotificationCount
+  /notifications/{id}/read-with-user:
+    put:
+      tags: [notifications]
+      summary: Mark a notification as read with user verification
+      description: |
+        Marks a single notification as read after verifying that the
+        notification belongs to the authenticated user.
+      operationId: markNotificationReadWithUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Notification ID
       responses:
         '200':
-          description: Unread count
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnreadCountView'
+          description: Notification marked as read
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /notifications/read-all:
+    put:
+      tags: [notifications]
+      summary: Mark all notifications as read
+      description: Marks all unread notifications of the current user as read.
+      operationId: markAllNotificationsRead
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT bearer token issued by `/auth/wechat-login` or `/auth/refresh`.
   schemas:
     NotificationSourceUser:
       type: object
@@ -103,6 +265,11 @@ components:
         summary:
           type: string
           description: Human-readable notification summary (e.g., "xxx关注了你")
+        signalType:
+          type: string
+          enum: [SOCIAL, CONTENT]
+          nullable: true
+          description: Signal category (SOCIAL for social signals, CONTENT for content signals).
       required:
         - id
         - type
@@ -119,13 +286,15 @@ components:
           minimum: 0
       required:
         - count
-    ErrorResponse:
+    ApiError:
       type: object
       properties:
         error:
           type: string
+          description: Machine-readable error code.
         message:
           type: string
+          description: Human-readable error message.
       required:
         - error
         - message
@@ -135,22 +304,34 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: BAD_REQUEST
+            message: 'Invalid query parameter.'
     Unauthorized:
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: UNAUTHORIZED
+            message: 'Missing or invalid bearer token.'
     NotFound:
       description: Not found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: NOT_FOUND
+            message: 'Notification not found.'
     InternalServerError:
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: INTERNAL_ERROR
+            message: 'Unexpected server error.'

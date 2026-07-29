@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -106,6 +107,7 @@ public class ThirdPartyAuthController {
      * @throws HttpClientErrorException.BadRequest provider 取值非法或参数缺失时抛出 400
      */
     @PostMapping("/bind")
+    @PreAuthorize("hasRole('USER')")
     public Map<String, Boolean> bindThirdParty(@Valid @RequestBody BindThirdPartyRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         String provider = normalizeProvider(request.provider());
@@ -123,6 +125,7 @@ public class ThirdPartyAuthController {
      * @throws HttpClientErrorException.BadRequest provider 取值非法时抛出 400
      */
     @DeleteMapping("/unbind")
+    @PreAuthorize("hasRole('USER')")
     public Map<String, Boolean> unbindThirdParty(@Valid @RequestBody UnbindThirdPartyRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         String provider = normalizeProvider(request.provider());

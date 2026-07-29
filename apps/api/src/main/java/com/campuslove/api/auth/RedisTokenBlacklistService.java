@@ -26,7 +26,14 @@ import org.springframework.stereotype.Service;
  *   </li>
  *   <li><b>TTL = JWT 剩余有效期</b>：Token 自然过期后黑名单条目自动清理，避免 Redis 无限增长</li>
  *   <li><b>降级策略</b>：Redis 不可用时（网络异常、Redis 未启动）写入本地内存并降级查询，
- *       不阻塞登出主流程，由后续签名校验兜底</li>
+ *       不阻塞登出主流程，由后续签名校验兜底。
+ *       <ul>
+ *           <li>SubTask 10.3 安全加固：捕获 RedisConnectionException 后降级到本地内存</li>
+ *           <li>未来增强：接入 DbTokenBlacklistRepository 持久化到数据库，保证多实例下 Redis 故障期间撤销仍生效</li>
+ *           <li>当前本地内存在多实例间不共享，Redis 故障期间极少数已撤销 token 可能仍被接受，
+ *               由 JWT 自然过期与签名校验兜底</li>
+ *       </ul>
+ *   </li>
  *   <li><b>幂等性</b>：同一 jti 多次 revoke 不报错，TTL 以最后一次调用为准</li>
  * </ul>
  *
@@ -101,7 +108,9 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
             // Redis 不可用时降级到本地内存方案，不影响登出主流程
             // 捕获 RuntimeException 而非 DataAccessException：覆盖 Mockito 测试场景与
             // RedisTemplate 在连接异常时可能抛出的非 DataAccessException 子类异常
-            log.warn("写入 Redis 黑名单失败，降级使用本地内存方案：{}", e.getMessage());
+            // SubTask 10.3：传入异常对象便于运维定位 Redis 故障根因；
+            // 未来接入 DbTokenBlacklistRepository 后，此处将追加数据库写入逻辑
+            log.warn("Redis unavailable, falling back to local memory blacklist (revoke jti={})", jti, e);
         }
     }
 
@@ -140,7 +149,8 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
             }
         } catch (RuntimeException e) {
             // Redis 不可用时降级查本地内存
-            log.warn("查询 Redis 黑名单失败，降级使用本地内存方案：{}", e.getMessage());
+            // SubTask 10.3：传入异常对象便于运维定位 Redis 故障根因
+            log.warn("Redis unavailable, falling back to local memory blacklist (isRevoked jti={})", jti, e);
         }
 
         // 2. 降级查本地内存

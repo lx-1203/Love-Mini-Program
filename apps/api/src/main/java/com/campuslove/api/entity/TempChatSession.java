@@ -10,6 +10,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 临时聊天会话实体，对应 temp_chat_session 表。
@@ -17,6 +21,7 @@ import java.time.LocalDateTime;
  * 会话阶段: matching(匹配中) / active(活跃) / closed(已关闭) / expired(已过期)。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "temp_chat_session")
 public class TempChatSession {
 
@@ -83,10 +88,16 @@ public class TempChatSession {
     private LocalDateTime lastMessageAt;
 
     /** 记录创建时间（会话创建时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（会话状态/最后消息变更时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

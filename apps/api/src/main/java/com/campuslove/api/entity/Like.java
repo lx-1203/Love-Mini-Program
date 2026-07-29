@@ -12,6 +12,10 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 用户喜欢记录实体，对应 likes 表。
@@ -32,6 +36,7 @@ import java.time.LocalDateTime;
  * </ul>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "likes",
     uniqueConstraints = {
@@ -78,10 +83,16 @@ public class Like {
     private LikeStatus status = LikeStatus.active;
 
     /** 记录创建时间（喜欢动作发生时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（状态变更时刷新，如取消喜欢） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

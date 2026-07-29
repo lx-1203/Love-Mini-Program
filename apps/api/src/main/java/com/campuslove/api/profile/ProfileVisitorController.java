@@ -10,6 +10,7 @@ import com.campuslove.api.repository.ProfileVisitorRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -175,7 +177,8 @@ public class ProfileVisitorController {
     @PostMapping("/{userId}/visit")
     @Transactional
     @Idempotent
-    public ApiResponse<ProfileVisitorView> recordVisit(@PathVariable("userId") @NotNull Long userId) {
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<ProfileVisitorView> recordVisit(@PathVariable("userId") @NotNull @Positive Long userId) {
         Long visitorId = SecurityUtils.getCurrentUserId();
 
         // 参数校验：不能访问自己

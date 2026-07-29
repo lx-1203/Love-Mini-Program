@@ -9,6 +9,10 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 视频通话记录实体，对应 video_calls 表。
@@ -28,6 +32,7 @@ import java.time.LocalDateTime;
  * <p>说明：实际音视频流由 WebRTC + 信令服务器处理，本实体仅记录通话元信息。</p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "video_calls", uniqueConstraints = {
         @UniqueConstraint(name = "uk_video_calls_room_id", columnNames = {"room_id"})
 })
@@ -71,10 +76,16 @@ public class VideoCall {
     private String endReason;
 
     /** 创建时间 */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 更新时间 */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 

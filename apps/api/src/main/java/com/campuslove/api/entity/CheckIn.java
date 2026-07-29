@@ -11,6 +11,9 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 用户签到记录实体，对应 check_ins 表。
@@ -27,6 +30,7 @@ import java.time.LocalDateTime;
  * </ul>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "check_ins",
     uniqueConstraints = {
@@ -74,6 +78,9 @@ public class CheckIn {
     private String source = SOURCE_NORMAL;
 
     /** 记录创建时间（签到发生时间，用于签到历史展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

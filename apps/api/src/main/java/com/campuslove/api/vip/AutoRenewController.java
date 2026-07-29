@@ -3,8 +3,10 @@ package com.campuslove.api.vip;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.vip.AutoRenewService.AutoRenewStatusView;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -58,6 +60,7 @@ public class AutoRenewController {
      * @return 更新后的状态视图
      */
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public AutoRenewStatusView enableAutoRenew(@Valid @RequestBody EnableAutoRenewRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         return autoRenewService.enable(userId, request.planId());
@@ -70,6 +73,7 @@ public class AutoRenewController {
      * @return 更新后的状态视图
      */
     @DeleteMapping
+    @PreAuthorize("hasRole('USER')")
     public AutoRenewStatusView disableAutoRenew() {
         Long userId = SecurityUtils.getCurrentUserId();
         return autoRenewService.disable(userId);
@@ -82,6 +86,6 @@ public class AutoRenewController {
  * @param planId 套餐 ID（可选，用于将来绑定支付渠道等扩展）
  */
 record EnableAutoRenewRequest(
-        @NotNull String planId
+        @NotBlank @Size(max = 64) String planId
 ) {
 }

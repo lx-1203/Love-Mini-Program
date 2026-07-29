@@ -9,9 +9,12 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/vip/red-packets")
+@Validated
 public class VipRedPacketController {
 
     private final VipRedPacketService redPacketService;
@@ -55,6 +59,7 @@ public class VipRedPacketController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('USER')")
     public RedPacketView createRedPacket(@Valid @RequestBody CreateRedPacketRequest request) {
         Long senderId = SecurityUtils.getCurrentUserId();
         return redPacketService.createRedPacket(
@@ -74,7 +79,8 @@ public class VipRedPacketController {
      * @return 领取结果视图
      */
     @PostMapping("/{id}/claim")
-    public ClaimResultView claimRedPacket(@PathVariable("id") Long id) {
+    @PreAuthorize("hasRole('USER')")
+    public ClaimResultView claimRedPacket(@PathVariable("id") @Positive Long id) {
         Long claimerId = SecurityUtils.getCurrentUserId();
         return redPacketService.claimRedPacket(id, claimerId);
     }
@@ -86,7 +92,7 @@ public class VipRedPacketController {
      * @return 红包视图
      */
     @GetMapping("/{id}")
-    public RedPacketView getRedPacketDetail(@PathVariable("id") Long id) {
+    public RedPacketView getRedPacketDetail(@PathVariable("id") @Positive Long id) {
         return redPacketService.getRedPacketDetail(id);
     }
 }

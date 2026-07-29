@@ -1,4 +1,4 @@
-<!-- [DEV-MODE] 开发者导航页 - 用于测试和研究所有页面，后续需整体删除 -->
+﻿<!-- [DEV-MODE] 开发者导航页 - 用于测试和研究所有页面，后续需整体删除 -->
 <script setup lang="ts">
 /**
  * [DEV-MODE] 开发者模式 - 页面导航器
@@ -109,15 +109,13 @@ function goBack() {
 
     <!-- 页面分组列表 -->
     <view
-      v-for="(items, group) in grouped"
-      :key="group"
+      v-for="(items, group) in grouped" :key="group"
       class="dev-group"
     >
       <text class="dev-group__title">{{ group }}</text>
       <view class="dev-group__list" role="list">
         <view
-          v-for="(item, idx) in items"
-          :key="idx"
+          v-for="(item, idx) in items" :key="idx"
           class="dev-item list-item"
           :class="{ 'dev-item--tab': item.isTab }"
           @tap="navigateTo(item)"
@@ -139,18 +137,18 @@ function goBack() {
 </template>
 
 <style scoped lang="scss">
-$green-primary: var(--c-brand, #3FCF8E);
-$green-light: var(--c-brand-50, #E8F8F0);
-$pink-primary: var(--c-romance-500, #EC4899);
-$pink-light: var(--c-tint-pink-soft, #FFF0F6);
-$gold-vip: var(--c-vip-from, #C9A36A);
-$white: var(--c-neutral-0, #FFFFFF);
-$bg-page: var(--c-bg-page, #F4F6FA);
-$text-primary: var(--c-text-primary, #1F2329);
-$text-secondary: var(--c-neutral-500, #64748B);
-$text-tertiary: var(--c-text-tertiary, #9AA1AB);
-$divider: var(--c-neutral-200, #E2E8F0);
-$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+$green-primary: var(--c-brand);
+$green-light: var(--c-brand-50);
+$pink-primary: var(--c-romance-500);
+$pink-light: var(--c-tint-pink-soft);
+$gold-vip: var(--c-vip-from);
+$white: var(--c-neutral-0);
+$bg-page: var(--c-bg-page);
+$text-primary: var(--c-text-primary);
+$text-secondary: var(--c-neutral-500);
+$text-tertiary: var(--c-text-tertiary);
+$divider: var(--c-neutral-200);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .dev-page {
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
@@ -163,7 +161,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   align-items: center;
   padding: calc(env(safe-area-inset-top) + 16rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 60%, var(--c-romance-300, #F9A8C4) 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
   gap: 16rpx;
 }
 
@@ -173,15 +171,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
-  transition: all 0.15s ease;
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-overlay-white-bg-mid-strong);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
 .dev-header__back:active {
   transform: scale(0.92);
-  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
+  background: var(--c-overlay-white-bg-stronger);
 }
 /* #endif */
 
@@ -201,11 +199,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .dev-header__badge {
   padding: 8rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
+  background: var(--c-overlay-white-bg-mid-strong);
   /* mp-weixin 不支持，H5 保留毛玻璃；白字+白底场景保留低不透明度避免文字不可见 */
-  // #ifdef H5
+  /* #ifdef H5 */
   backdrop-filter: blur(10rpx);
-  // #endif
+  /* #endif */
+  /* #ifndef H5 */
+  opacity: 0.96;
+  /* #endif */
 }
 
 .dev-header__badge-text {
@@ -218,9 +219,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .dev-notice {
   margin: 24rpx 32rpx 0;
   padding: 20rpx 24rpx;
-  border-radius: 20rpx;
-  background: linear-gradient(135deg, var(--c-tint-amber-50, #FFF8E6) 0%, var(--c-tint-orange-50, #FFF0D6) 100%);
-  border: 2rpx solid var(--c-vip-border-light, var(--c-vip-border-light, rgba(201, 163, 106, 0.2)));
+  border-radius: var(--r-lg, 20rpx);
+  background: linear-gradient(135deg, var(--c-tint-amber-50) 0%, var(--c-tint-orange-50) 100%);
+  border: 2rpx solid var(--c-vip-border-light);
   box-shadow: $card-soft-shadow;
 }
 
@@ -256,7 +257,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 28rpx;
   border-bottom: 1rpx solid $bg-page;
   gap: 16rpx;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 .dev-item:last-child {

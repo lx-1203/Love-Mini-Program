@@ -24,6 +24,7 @@ export default {
     search: "Search",
     reset: "Reset",
     refresh: "Refresh",
+    retry: "Retry",
     loading: "Loading...",
     success: "Operation succeeded",
     failed: "Operation failed",
@@ -104,6 +105,8 @@ export default {
     navSensitiveWords: "Sensitive Words",
     navContentAudit: "Content Audit",
     navMatchConfig: "Match Config",
+    navAriaLabel: "Main navigation",
+    footerCopyright: "© 2026 Campus Love · Internal use only",
     userMenuTitle: "Admin Center",
     userMenuProfile: "View Profile",
     userMenuLogout: "Log Out",
@@ -361,6 +364,8 @@ export default {
     processTitle: "Mark as Processed",
     processConfirmMessage: "Mark feedback \"{title}\" as processed?",
     processedToast: "Marked as processed",
+    processFailed: "Failed to mark as processed, please retry later",
+    defaultReplyContent: "Marked as processed by admin",
     detailTitle: "Feedback Detail",
     detailContent: "Content",
     detailAttachments: "Attachments",
@@ -512,6 +517,22 @@ export default {
     exportButton: "Export CSV",
     exportSuccess: "Exported",
     exportFailed: "Export failed",
+    opAuditPost: "Audit Post",
+    opDeletePost: "Delete Post",
+    opDeleteComment: "Delete Comment",
+    opDisableUser: "Disable User",
+    opEnableUser: "Enable User",
+    opEditUser: "Edit User",
+    opHandleReport: "Handle Report",
+    opReviewCertification: "Review Certification",
+    opUpdateConfig: "Update Config",
+    opUpdateRule: "Update Rule",
+    opUpdateSwitch: "Update Switch",
+    opUpdateMatchConfig: "Update Match Config",
+    opUpdateRecommendStrategy: "Update Recommend Strategy",
+    opUpdateNotifyConfig: "Update Notify Config",
+    opAddSensitiveWord: "Add Sensitive Word",
+    opDeleteSensitiveWord: "Delete Sensitive Word",
   },
 
   /* ========== NotifyConfig ========== */
@@ -551,14 +572,14 @@ export default {
     fieldDndEnd: "DND End Time",
     saveButton: "Save Config",
     saveSuccess: "Config saved",
-    saveFailed: "Save failed, please retry",
+    saveConfigFailed: "Save failed, please retry",
     resetButton: "Reset to Default",
     resetConfirm: "Reset to default config?",
     resetSuccess: "Reset to default",
     resetFailed: "Reset failed",
   },
 
-  /* ========== Sensitive Words ========== */
+  /* ========== 敏感词库文案 ========== */
   sensitiveWords: {
     title: "Sensitive Words",
     pageTitle: "Sensitive Word Management",
@@ -669,6 +690,19 @@ export default {
     resetConfirm: "Reset to default config?",
     resetSuccess: "Reset to default",
     resetFailed: "Reset failed",
+  },
+
+  /* ========== Error state component (ErrorState.vue) ========== */
+  errorState: {
+    title: "Loading Failed",
+    retry: "Retry",
+    networkError: "Network error, please check your connection",
+  },
+
+  /* ========== 403 Forbidden page (Forbidden.vue) ========== */
+  forbidden: {
+    title: "Access Denied",
+    description: "Sorry, you do not have permission to access this page. Please contact the administrator or return to the home page.",
   },
 
   /* ========== Errors (aligned with backend MessageSource) ========== */

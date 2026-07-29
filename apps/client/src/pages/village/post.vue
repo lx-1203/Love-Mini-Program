@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 发帖页
  * 支持文字输入、图片上传、话题标签和分类选择
@@ -6,6 +6,7 @@
  */
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { onShow } from "@dcloudio/uni-app";
+import { useI18n } from "vue-i18n";
 import { useVillageStore } from "../../stores/village";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
 import TopicSelector from "../../components/village/TopicSelector.vue";
@@ -30,6 +31,7 @@ import {
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
 const villageStore = useVillageStore();
+const { t } = useI18n();
 
 // 注：POST_DRAFT_STORAGE_KEY 由 constants/village 统一提供
 
@@ -98,12 +100,12 @@ const currentLength = computed(() => content.value.length);
 const isOverLimit = computed(() => currentLength.value > POST_MAX_LENGTH);
 
 /** 分类选项 */
-const categoryOptions = [
-  { id: "cat-sincere", name: "诚意帖" },
-  { id: "cat-hometown", name: "同乡" },
-  { id: "cat-mask", name: "蒙面" },
-  { id: "cat-interest", name: "兴趣圈" },
-];
+const categoryOptions = computed(() => [
+  { id: "cat-sincere", name: t("village.post.categorySincere") },
+  { id: "cat-hometown", name: t("village.post.categoryHometown") },
+  { id: "cat-mask", name: t("village.post.categoryMask") },
+  { id: "cat-interest", name: t("village.post.categoryInterest") },
+]);
 
 /**
  * 加载预置话题标签（从后端获取）
@@ -145,7 +147,7 @@ function togglePresetTag(tagName: string) {
   } else {
     // 未选中，检查数量限制
     if (selectedPresetTags.value.length >= MAX_PRESET_TAGS) {
-      uni.showToast({ title: `最多选择${MAX_PRESET_TAGS}个话题标签`, icon: "none" });
+      uni.showToast({ title: t("village.post.maxTagsError", { n: MAX_PRESET_TAGS }), icon: "none" });
       return;
     }
     selectedPresetTags.value.push(tag);
@@ -280,7 +282,7 @@ function clearDraft() {
  */
 async function chooseImage() {
   if (images.value.length >= POST_MAX_IMAGES) {
-    uni.showToast({ title: `最多上传${POST_MAX_IMAGES}张图片`, icon: "none" });
+    uni.showToast({ title: t("village.post.maxImagesError", { n: POST_MAX_IMAGES }), icon: "none" });
     return;
   }
 
@@ -288,7 +290,7 @@ async function chooseImage() {
     await ensurePrivacyAuthorized();
   } catch (_e) {
     uni.showToast({
-      title: "需同意隐私协议后才能选择图片",
+      title: t("village.post.privacyRequiredImage"),
       icon: "none",
     });
     return;
@@ -359,12 +361,12 @@ function addTag() {
   }
 
   if (tags.value.includes(tag)) {
-    uni.showToast({ title: "标签已存在", icon: "none" });
+    uni.showToast({ title: t("village.post.tagExists"), icon: "none" });
     return;
   }
 
   if (tags.value.length >= POST_MAX_CUSTOM_TAGS) {
-    uni.showToast({ title: `最多添加${POST_MAX_CUSTOM_TAGS}个标签`, icon: "none" });
+    uni.showToast({ title: t("village.post.maxCustomTagsError", { n: POST_MAX_CUSTOM_TAGS }), icon: "none" });
     return;
   }
 
@@ -391,12 +393,12 @@ function onTagConfirm() {
  */
 async function submitPost() {
   if (!content.value.trim()) {
-    uni.showToast({ title: "请输入内容", icon: "none" });
+    uni.showToast({ title: t("village.contentRequired"), icon: "none" });
     return;
   }
 
   if (isOverLimit.value) {
-    uni.showToast({ title: `内容不能超过${POST_MAX_LENGTH}字`, icon: "none" });
+    uni.showToast({ title: t("village.post.contentTooLong", { n: POST_MAX_LENGTH }), icon: "none" });
     return;
   }
 
@@ -414,15 +416,15 @@ async function submitPost() {
 
     // 发布成功后清除草稿，避免下次进入页面恢复已发布内容
     clearDraft();
-    uni.showToast({ title: "发布成功", icon: "success" });
+    uni.showToast({ title: t("village.postSuccess"), icon: "success" });
     if (postSubmitNavTimer) clearTimeout(postSubmitNavTimer);
     postSubmitNavTimer = setTimeout(() => {
       uni.navigateBack();
       postSubmitNavTimer = null;
     }, POST_SUBMIT_NAVIGATE_BACK_MS);
-  } catch (error) {
+  } catch (_error) {
     uni.showToast({
-      title: villageStore.errorMessage || "发布失败",
+      title: villageStore.errorMessage || t("village.post.publishFailed"),
       icon: "none",
     });
   }
@@ -441,25 +443,24 @@ function goBack() {
     <!-- 顶部导航栏 -->
     <view class="post-header">
       <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">返回</text>
+        <text class="back-icon">{{ t("common.back") }}</text>
       </view>
-      <text class="post-header__title">发布帖子</text>
+      <text class="post-header__title">{{ t("village.post.headerTitle") }}</text>
       <button
         class="post-header__submit"
         :disabled="!content.trim() || isOverLimit"
         @tap="submitPost"
       >
-        <text class="submit-text">发布</text>
+        <text class="submit-text">{{ t("village.submit") }}</text>
       </button>
     </view>
 
     <!-- 分类选择 -->
     <view class="category-section">
-      <text class="section-label">选择分类</text>
+      <text class="section-label">{{ t("village.post.selectCategory") }}</text>
       <view class="category-options">
         <view
-          v-for="cat in categoryOptions"
-          :key="cat.id"
+          v-for="cat in categoryOptions" :key="cat.id"
           class="category-option list-item"
           :class="{ 'category-option--active': selectedCategory === cat.id }"
           @tap="selectedCategory = cat.id"
@@ -474,9 +475,9 @@ function goBack() {
       <textarea
         v-model="content"
         class="content-input"
-        placeholder="分享你的故事、心情或寻找那个TA..."
+        :placeholder="t('village.post.contentPlaceholder')"
         :maxlength="POST_MAX_LENGTH"
-        :show-confirm-bar="false" aria-label="分享你的故事、心情或寻找那个TA..."
+        :show-confirm-bar="false" :aria-label="t('village.post.contentPlaceholder')"
       />
       <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
         <text>{{ currentLength }}/{{ POST_MAX_LENGTH }}</text>
@@ -486,14 +487,13 @@ function goBack() {
     <!-- 预置话题标签选择器 -->
     <view class="preset-tags-section">
       <view class="section-header">
-        <text class="section-label">话题标签</text>
-        <text class="section-hint">最多选择{{ MAX_PRESET_TAGS }}个</text>
+        <text class="section-label">{{ t("village.post.topicTags") }}</text>
+        <text class="section-hint">{{ t("village.post.topicTagsHint", { n: MAX_PRESET_TAGS }) }}</text>
       </view>
       <scroll-view class="preset-tags-scroll" scroll-x :show-scrollbar="false" :enhanced="true">
         <view class="preset-tags-inner">
           <view
-            v-for="tag in presetTags"
-            :key="tag"
+            v-for="tag in presetTags" :key="tag"
             class="preset-tag-chip list-item"
             :class="{ 'preset-tag-chip--active': selectedPresetTags.includes('#' + tag) }"
             @tap="togglePresetTag(tag)"
@@ -513,8 +513,7 @@ function goBack() {
     <view class="images-section">
       <view class="images-grid">
         <view
-          v-for="(img, idx) in images"
-          :key="idx"
+          v-for="(img, idx) in images" :key="idx"
           class="image-item list-item"
         >
           <image class="image-item__img" :src="img" mode="aspectFill"
@@ -540,23 +539,22 @@ function goBack() {
 
     <!-- 话题标签区 -->
     <view class="tags-section">
-      <text class="section-label">话题标签</text>
+      <text class="section-label">{{ t("village.post.topicTags") }}</text>
       <view class="tag-input-wrap">
         <input
           v-model="tagInput"
           class="tag-input"
-          placeholder="输入标签，按回车添加（如：520交友）"
+          :placeholder="t('village.post.tagInputPlaceholder')"
           confirm-type="done"
-          @confirm="onTagConfirm" aria-label="输入标签，按回车添加（如：520交友）"
+          @confirm="onTagConfirm" :aria-label="t('village.post.tagInputPlaceholder')"
         />
         <view class="tag-add-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="addTag">
-          <text class="tag-add-text">添加</text>
+          <text class="tag-add-text">{{ t("village.post.addTag") }}</text>
         </view>
       </view>
       <view v-if="tags.length > 0" class="tag-list" role="list">
         <view
-          v-for="(tag, idx) in tags"
-          :key="idx"
+          v-for="(tag, idx) in tags" :key="idx"
           class="tag-chip list-item"
         >
           <text class="tag-chip__text">{{ tag }}</text>
@@ -568,17 +566,17 @@ function goBack() {
 </template>
 
 <style scoped lang="scss">
-$green-primary: var(--c-brand, #3FCF8E);
-$green-light: var(--c-tint-green-50, #E8F9F4);
-$pink-primary: var(--c-romance-500, #EC4899);
-$pink-light: var(--c-tint-pink-soft, #FFF0F5);
-$bg-page: var(--c-bg-page, #F4F6FA);
-$text-primary: var(--c-neutral-800, #1A1A2E);
-$text-secondary: var(--c-text-tertiary, #8E8E9E);
-$text-tertiary: var(--c-text-quaternary, #B8B8C8);
-$divider: var(--c-neutral-100, #EEF0F5);
-$white: var(--c-neutral-0, #FFFFFF);
-$red-badge: var(--c-error, #FF4757);
+$green-primary: var(--c-brand);
+$green-light: var(--c-tint-green-50);
+$pink-primary: var(--c-romance-500);
+$pink-light: var(--c-tint-pink-soft);
+$bg-page: var(--c-bg-page);
+$text-primary: var(--c-neutral-800);
+$text-secondary: var(--c-text-tertiary);
+$text-tertiary: var(--c-text-quaternary);
+$divider: var(--c-neutral-100);
+$white: var(--c-neutral-0);
+$red-badge: var(--c-error);
 
 .post-page {
   display: flex;
@@ -616,13 +614,13 @@ $red-badge: var(--c-error, #FF4757);
 .post-header__submit {
   padding: 14rpx 36rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB87A) 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400) 100%);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
-  transition: transform 0.15s ease;
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger);
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -638,7 +636,7 @@ $red-badge: var(--c-error, #FF4757);
 
 .submit-text {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-neutral-0, #ffffff);
+  color: var(--c-neutral-0);
   font-weight: 600;
 }
 
@@ -652,7 +650,7 @@ $red-badge: var(--c-error, #FF4757);
   background: $white;
   margin: 16rpx 24rpx;
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .section-label {
@@ -674,7 +672,7 @@ $red-badge: var(--c-error, #FF4757);
   border-radius: var(--r-full, 9999rpx);
   background: $bg-page;
   border: 2rpx solid transparent;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -684,7 +682,7 @@ $red-badge: var(--c-error, #FF4757);
 /* #endif */
 
 .category-option--active {
-  background: linear-gradient(135deg, $green-light 0%, var(--c-tint-green-50, #F0FBF7) 100%);
+  background: linear-gradient(135deg, $green-light 0%, var(--c-tint-green-50) 100%);
   border-color: $green-primary;
 }
 
@@ -705,7 +703,7 @@ $red-badge: var(--c-error, #FF4757);
   background: $white;
   margin: 0 24rpx 16rpx;
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .content-input {
@@ -735,7 +733,7 @@ $red-badge: var(--c-error, #FF4757);
   background: $white;
   margin: 0 24rpx 16rpx;
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 /* 功能4：TopicSelector 容器样式 */
@@ -744,7 +742,7 @@ $red-badge: var(--c-error, #FF4757);
   background: $white;
   margin: 0 24rpx 16rpx;
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .section-header {
@@ -779,7 +777,7 @@ $red-badge: var(--c-error, #FF4757);
   border-radius: var(--r-full, 9999rpx);
   background: $bg-page;
   border: 2rpx solid transparent;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
   flex-shrink: 0;
 }
 
@@ -812,7 +810,7 @@ $red-badge: var(--c-error, #FF4757);
   background: $white;
   margin: 0 24rpx 16rpx;
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .images-grid {
@@ -845,8 +843,8 @@ $red-badge: var(--c-error, #FF4757);
   right: 8rpx;
   width: 40rpx;
   height: 40rpx;
-  border-radius: 50%;
-  background: var(--c-overlay-mid-strong, var(--c-overlay-mid-strong, rgba(0, 0, 0, 0.5)));
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-overlay-mid-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -854,7 +852,7 @@ $red-badge: var(--c-error, #FF4757);
 
 .remove-icon {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-neutral-0, #ffffff);
+  color: var(--c-neutral-0);
   font-weight: 600;
 }
 
@@ -866,7 +864,7 @@ $red-badge: var(--c-error, #FF4757);
   border-radius: var(--r-lg, 16rpx);
   border: 2rpx dashed $divider;
   background: $bg-page;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
   overflow: hidden;
 }
 
@@ -908,7 +906,7 @@ $red-badge: var(--c-error, #FF4757);
   background: $white;
   margin: 0 24rpx 24rpx;
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   flex: 1;
 }
 
@@ -930,12 +928,12 @@ $red-badge: var(--c-error, #FF4757);
 .tag-add-btn {
   padding: 18rpx 32rpx;
   border-radius: var(--r-lg, 16rpx);
-  background: linear-gradient(135deg, $pink-primary 0%, var(--c-romance-400, #FF6B9D) 100%);
+  background: linear-gradient(135deg, $pink-primary 0%, var(--c-romance-400) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 12rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
-  transition: transform 0.15s ease;
+  box-shadow: 0 4rpx 12rpx var(--s-romance);
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -946,7 +944,7 @@ $red-badge: var(--c-error, #FF4757);
 
 .tag-add-text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-neutral-0, #ffffff);
+  color: var(--c-neutral-0);
   font-weight: 600;
 }
 
@@ -963,7 +961,7 @@ $red-badge: var(--c-error, #FF4757);
   padding: 12rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
   background: $green-light;
-  transition: transform 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */

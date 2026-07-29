@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 校园话题详情页
  *
@@ -12,11 +12,14 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime } from "../../stores/campus";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
+import EmptyState from "../../components/common/EmptyState.vue";
 
 const campusStore = useCampusStore();
+const { t } = useI18n();
 const { currentTopic, replies, loading } = storeToRefs(campusStore);
 
 const pageVisible = ref(false);
@@ -65,10 +68,10 @@ async function submitReply() {
       isAnonymousReply.value,
     );
     replyContent.value = "";
-    uni.showToast({ title: "回复成功", icon: "success" });
+    uni.showToast({ title: t("campus.topicDetail.replySuccess"), icon: "success" });
   } catch (_e) {
     uni.showToast({
-      title: campusStore.errorMessage || "回复失败",
+      title: campusStore.errorMessage || t("campus.topicDetail.replyFailed"),
       icon: "none",
     });
   } finally {
@@ -88,7 +91,7 @@ function goBack() {
  * 获取作者显示名称
  */
 function getDisplayName(isAnonymous: boolean, name: string): string {
-  return isAnonymous ? "匿名校友" : name;
+  return isAnonymous ? t("campus.topicDetail.anonymousAuthor") : name;
 }
 
 onMounted(() => {
@@ -110,9 +113,9 @@ onMounted(() => {
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">返回</text>
+        <text class="back-icon">{{ t('campus.topicDetail.back') }}</text>
       </view>
-      <text class="detail-header__title">话题详情</text>
+      <text class="detail-header__title">{{ t('campus.topicDetail.navTitle') }}</text>
       <view class="detail-header__spacer" />
     </view>
 
@@ -130,7 +133,7 @@ onMounted(() => {
             v-if="currentTopic.author.avatar"
             class="author-avatar__img"
             :src="resolveMediaUrl(currentTopic.author.avatar)"
-            mode="aspectFill" alt=""
+            mode="aspectFill" lazy-load alt=""
           />
           <text v-else class="author-avatar__char">
             {{ getDisplayName(currentTopic.isAnonymous, currentTopic.author.name)[0] }}
@@ -156,21 +159,20 @@ onMounted(() => {
       <!-- 评论区 -->
       <view class="replies-section">
         <view class="replies-header">
-          <text class="replies-title">回复</text>
+          <text class="replies-title">{{ t('campus.topicDetail.repliesTitle') }}</text>
           <text class="replies-count">{{ currentTopic.replyCount }}</text>
         </view>
 
         <!-- 加载状态 -->
         <view v-if="loading" class="replies-loading">
-          <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
-          <text class="loading-text">加载回复中...</text>
+          <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('campus.topicDetail.loadingAria')" />
+          <text class="loading-text">{{ t('campus.topicDetail.loadingReplies') }}</text>
         </view>
 
         <!-- 回复列表 -->
         <view v-else-if="replies.length > 0" class="replies-list" role="list">
           <view
-            v-for="reply in replies"
-            :key="reply.id"
+            v-for="reply in replies" :key="reply.id"
             class="reply-item list-item"
           >
             <view class="reply-avatar">
@@ -179,7 +181,7 @@ onMounted(() => {
                 class="reply-avatar__img"
                 :src="resolveMediaUrl(reply.author.avatar)"
                 mode="aspectFill"
-        lazy-load alt=""
+                lazy-load alt=""
               />
               <text v-else class="reply-avatar__char">
                 {{ getDisplayName(reply.isAnonymous, reply.author.name)[0] }}
@@ -198,9 +200,12 @@ onMounted(() => {
         </view>
 
         <!-- 空状态 -->
-        <view v-else class="replies-empty">
-          <text class="replies-empty__text">暂无回复，快来抢沙发吧</text>
-        </view>
+        <EmptyState
+          v-else
+          type="no-data"
+          :title="t('campus.topicDetail.emptyTitle')"
+          :description="t('campus.topicDetail.emptyDesc')"
+        />
       </view>
 
       <!-- 底部留白 -->
@@ -208,12 +213,13 @@ onMounted(() => {
     </scroll-view>
 
     <!-- 话题不存在 -->
-    <view v-else-if="!loading" class="empty-state">
-      <text class="empty-state__text">话题不存在或已被删除</text>
-      <view class="empty-state__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-text">返回</text>
-      </view>
-    </view>
+    <EmptyState
+      v-else-if="!loading"
+      :title="t('campus.topicDetail.notExistText')"
+      :action-text="t('campus.topicDetail.backText')"
+      type="no-data"
+      @action="goBack"
+    />
 
     <!-- 底部回复栏 -->
     <view v-if="currentTopic" class="detail-footer">
@@ -221,9 +227,9 @@ onMounted(() => {
         <input
           v-model="replyContent"
           class="reply-input"
-          placeholder="写下你的回复..."
+          :placeholder="t('campus.topicDetail.replyPlaceholder')"
           confirm-type="send"
-          @confirm="submitReply" aria-label="写下你的回复..."
+          @confirm="submitReply" :aria-label="t('campus.topicDetail.replyPlaceholder')"
         />
       </view>
       <view
@@ -233,7 +239,7 @@ onMounted(() => {
         hover-stay-time="120"
         @tap="isAnonymousReply = !isAnonymousReply"
       >
-        <text class="anonymous-toggle__text">{{ isAnonymousReply ? "匿名" : "实名" }}</text>
+        <text class="anonymous-toggle__text">{{ isAnonymousReply ? t('campus.topicDetail.anonymousToggleOn') : t('campus.topicDetail.anonymousToggleOff') }}</text>
       </view>
       <view
         class="reply-btn press-feedback"
@@ -242,24 +248,24 @@ onMounted(() => {
         hover-stay-time="120"
         @tap="submitReply"
       >
-        <text class="reply-btn__text">{{ isSubmitting ? "发送中" : "发送" }}</text>
+        <text class="reply-btn__text">{{ isSubmitting ? t('campus.topicDetail.sendSending') : t('campus.topicDetail.sendSend') }}</text>
       </view>
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
-$green-primary: var(--c-brand, #3FCF8E);
-$green-light: var(--c-brand-50, #E8F8F0);
-$pink-primary: var(--c-romance-500, #EC4899);
-$pink-light: var(--c-romance-50, #FFF5F7);
-$white: var(--c-neutral-0, #FFFFFF);
-$bg-page: var(--c-bg-page, #F4F6FA);
-$text-primary: var(--c-text-primary, #1F2329);
-$text-secondary: var(--c-neutral-500, #64748B);
-$text-tertiary: var(--c-text-tertiary, #9AA1AB);
-$border-light: var(--c-neutral-200, #E2E8F0);
-$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+$green-primary: var(--c-brand);
+$green-light: var(--c-brand-50);
+$pink-primary: var(--c-romance-500);
+$pink-light: var(--c-romance-50);
+$white: var(--c-neutral-0);
+$bg-page: var(--c-bg-page);
+$text-primary: var(--c-text-primary);
+$text-secondary: var(--c-neutral-500);
+$text-tertiary: var(--c-text-tertiary);
+$border-light: var(--c-neutral-200);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .detail-page {
   display: flex;
@@ -267,7 +273,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   height: 100%;
-  background: linear-gradient(180deg, var(--c-bg-brand, #E8F8F0) 0%, var(--c-bg-page, #F4F6FA) 20%);
+  background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -276,34 +282,34 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 60%, var(--c-romance-300, #F9A8C4) 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
   z-index: 10;
 }
 
 .detail-header__back {
   padding: 12rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
-  transition: all 0.15s ease;
+  background: var(--c-overlay-white-bg-mid-strong);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
 .detail-header__back:active {
   transform: scale(0.96);
-  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
+  background: var(--c-overlay-white-bg-stronger);
 }
 /* #endif */
 
 .back-icon {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 500;
 }
 
 .detail-header__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
 }
 
 .detail-header__spacer {
@@ -338,9 +344,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   gap: 16rpx;
   padding: 28rpx;
   background: $white;
-  border-radius: 24rpx 24rpx 0 0;
+  border-radius: var(--r-xl, 24rpx) var(--r-xl, 24rpx) 0 0;
   box-shadow: $card-soft-shadow;
-  transition: transform 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -352,7 +358,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .author-avatar {
   width: 72rpx;
   height: 72rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
   background: linear-gradient(135deg, $green-light, $pink-light);
   display: flex;
@@ -401,7 +407,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .topic-content {
   padding: 28rpx;
   background: $white;
-  border-radius: 0 0 24rpx 24rpx;
+  border-radius: 0 0 var(--r-xl, 24rpx) var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -466,8 +472,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   height: 40rpx;
   border: 4rpx solid $border-light;
   border-top-color: $green-primary;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {
@@ -490,8 +496,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   gap: 16rpx;
   padding: 20rpx;
   background: $bg-page;
-  border-radius: 20rpx;
-  transition: transform 0.15s ease;
+  border-radius: var(--r-lg, 20rpx);
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -503,7 +509,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .reply-avatar {
   width: 56rpx;
   height: 56rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
   background: linear-gradient(135deg, $green-light, $pink-light);
   display: flex;
@@ -586,9 +592,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .empty-state__back {
   padding: 18rpx 48rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
-  box-shadow: 0 8rpx 24rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35)));
-  transition: all 0.15s ease;
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
+  box-shadow: 0 8rpx 24rpx var(--c-brand-shadow-tint-strong);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -599,7 +605,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .back-text {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -611,7 +617,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 20rpx 24rpx;
   padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
   background: $white;
-  box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+  box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .reply-input-wrap {
@@ -625,7 +631,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   font-size: var(--fs-lg, 28rpx);
   color: $text-primary;
   border: 2rpx solid transparent;
-  transition: all 0.2s ease;
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 .reply-input:focus {
@@ -639,7 +645,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background: $bg-page;
   border: 2rpx solid $border-light;
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -668,10 +674,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .reply-btn {
   padding: 18rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
   flex-shrink: 0;
-  box-shadow: 0 6rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
-  transition: all 0.15s ease;
+  box-shadow: 0 6rpx 16rpx var(--c-brand-border-tint-stronger);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -688,7 +694,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .reply-btn__text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
   white-space: nowrap;
 }

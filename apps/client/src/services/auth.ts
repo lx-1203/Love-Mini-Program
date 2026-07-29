@@ -94,7 +94,7 @@ function generateLoginState(): string {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
       return crypto.randomUUID();
     }
-  } catch (e) {
+  } catch (_e) {
     // crypto 不可用时走兜底（mp-weixin 端可能不支持 crypto.randomUUID）
   }
   return `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -117,7 +117,7 @@ function getWxLoginCode(): Promise<string> {
     const state = generateLoginState();
     try {
       uni.setStorageSync(WECHAT_LOGIN_STATE_KEY, state);
-    } catch (e) {
+    } catch (_e) {
       // storage 写入失败不阻塞登录，但 state 校验会失败
     }
 
@@ -139,7 +139,7 @@ function getWxLoginCode(): Promise<string> {
         let savedState = "";
         try {
           savedState = uni.getStorageSync(WECHAT_LOGIN_STATE_KEY) as string;
-        } catch (e) {
+        } catch (_e) {
           // 读取失败忽略，但 state 校验会失败
         }
         if (!savedState || savedState !== state) {

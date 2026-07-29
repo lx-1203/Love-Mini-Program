@@ -39,6 +39,18 @@ groups:
           summary: "API 健康检查 DOWN"
           description: "组件 {{ $labels.component }} 健康检查失败，请查看日志定位根因。"
 
+      # Admin 后台下线（P3-D.4：通过 blackbox 探针监控，5 分钟持续失败告警）
+      - alert: AdminDown
+        expr: probe_success{instance="http://admin:8080/healthz"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: admin
+        annotations:
+          summary: "Admin 后台不可用"
+          description: "Admin 健康检查端点 http://admin:8080/healthz 探测失败超过 5 分钟，请检查 nginx 容器状态。"
+          runbook: "docs/DR/restore-procedure.md#admin-下线"
+
   # ---------- API 性能与延迟告警 ----------
   - name: api-performance
     interval: 30s

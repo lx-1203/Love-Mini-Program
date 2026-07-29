@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 推荐偏好设置实体，对应 recommendation_preferences 表。
  * 存储用户的推荐时间偏好和推荐范围设置。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "recommendation_preferences")
 public class RecommendationPreference {
 
@@ -38,10 +43,16 @@ public class RecommendationPreference {
     private Boolean campusPriority = true;
 
     /** 记录创建时间（偏好设置入库时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（用户调整偏好时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

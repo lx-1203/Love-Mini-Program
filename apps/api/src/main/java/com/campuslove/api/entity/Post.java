@@ -11,6 +11,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 村口帖子实体，对应 posts 表。
@@ -30,6 +34,7 @@ import java.time.LocalDateTime;
  * circle_topics / circle_memberships 表承担），故跳过。详见 V2026.07.25.0001 迁移脚本说明。</p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "posts",
     indexes = {
@@ -136,10 +141,16 @@ public class Post {
     private LocalDateTime auditedAt;
 
     /** 记录创建时间（帖子发布时间，用于排序与展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（编辑、状态变更等触发更新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

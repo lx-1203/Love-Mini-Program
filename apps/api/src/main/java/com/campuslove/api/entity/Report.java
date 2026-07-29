@@ -8,6 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 举报实体，对应 reports 表。
@@ -15,6 +18,7 @@ import java.time.LocalDateTime;
  * <p>状态流转：PENDING（待处理）→ HANDLED（已处理）/ REJECTED（已驳回）</p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "reports")
 public class Report {
 
@@ -56,6 +60,9 @@ public class Report {
     private String handleRemark;
 
     /** 创建时间 */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

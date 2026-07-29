@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * CardDetailOverlay — 卡片详情全屏展示层
  *
@@ -23,6 +23,8 @@ import SafeImage from "../common/SafeImage.vue";
 import { lightHaptic, mediumHaptic, successHaptic } from "../../utils/haptic";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+// Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
+import type { UniTouchEvent } from "../../compat";
 
 const props = defineProps<{
   visible: boolean;
@@ -316,8 +318,8 @@ const SWIPE_DOWN_THRESHOLD = 120;
 const SWIPE_HORIZONTAL_TOLERANCE = 80;
 
 /** 记录下滑起始坐标 */
-function onSwipeDownStart(e: TouchEvent) {
-  // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 索引访问返回 Touch | undefined，
+function onSwipeDownStart(e: UniTouchEvent) {
+  // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 索引访问返回 UniTouchPoint | undefined，
   // 此处提取首触点后做非空校验，避免在未触点时访问 clientY 抛 undefined。
   const touch = e.touches[0];
   if (!touch) return;
@@ -329,7 +331,7 @@ function onSwipeDownStart(e: TouchEvent) {
  * 下滑过程中实时判断手势方向。
  * 注：不在 touchmove 中调用 preventDefault，避免在 mp-weixin 中阻塞滚动或产生兼容警告。
  */
-function onSwipeDownMove(e: TouchEvent) {
+function onSwipeDownMove(e: UniTouchEvent) {
   if (swipeStartY === 0) return;
   // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 可能为 undefined，做非空校验。
   const touch = e.touches[0];
@@ -344,7 +346,7 @@ function onSwipeDownMove(e: TouchEvent) {
 }
 
 /** 下滑结束：超过阈值则关闭详情页 */
-function onSwipeDownEnd(e: TouchEvent) {
+function onSwipeDownEnd(e: UniTouchEvent) {
   if (swipeStartY === 0) return;
   // 修复（严格模式 noUncheckedIndexedAccess）：e.changedTouches[0] 可能为 undefined，做非空校验。
   const touch = e.changedTouches[0];
@@ -440,8 +442,7 @@ function onSwipeDownEnd(e: TouchEvent) {
           <!-- 图片分页指示器 -->
           <view v-if="displayImages.length > 1" class="detail-hero__pagination">
             <view
-              v-for="(_, idx) in displayImages"
-              :key="idx"
+              v-for="(_, idx) in displayImages" :key="idx"
               class="detail-hero__dot"
               :class="{ 'detail-hero__dot--active': idx === currentImageIndex }"
             />
@@ -648,12 +649,12 @@ function onSwipeDownEnd(e: TouchEvent) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--c-black-overlay-transparent, var(--c-black-overlay-transparent, rgba(0, 0, 0, 0)));
-  transition: background 280ms ease;
+  background: var(--c-black-overlay-transparent);
+  transition: background var(--d-fade, 300ms) ease;
 }
 
 .card-detail-overlay--active .card-detail-overlay__backdrop {
-  background: var(--c-black-overlay-strong, var(--c-black-overlay-strong, rgba(0, 0, 0, 0.65)));
+  background: var(--c-black-overlay-strong);
 }
 
 /* ========== 内容面板：全屏居中 + 缩放 ========== */
@@ -667,7 +668,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   flex-direction: column;
   transform: scale(0.9) translateY(40rpx);
   opacity: 0;
-  transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 280ms ease;
+  transition: transform var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1), opacity var(--d-fade, 300ms) ease;
   overflow: hidden;
 }
 
@@ -687,9 +688,9 @@ function onSwipeDownEnd(e: TouchEvent) {
   padding-bottom: 12rpx;
   background: linear-gradient(
     to bottom,
-    var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95))) 0%,
-    var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85))) 60%,
-    var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0))) 100%
+    var(--c-overlay-bg-pure) 0%,
+    var(--c-overlay-text-secondary) 60%,
+    var(--c-overlay-bg-light) 100%
   );
 }
 
@@ -703,7 +704,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   width: 44rpx;
   height: 6rpx;
   border-radius: var(--r-full);
-  background: var(--c-black-overlay-light, var(--c-black-overlay-light, rgba(15, 23, 42, 0.2)));
+  background: var(--c-black-overlay-light);
 }
 
 .detail-top-bar__actions {
@@ -716,13 +717,13 @@ function onSwipeDownEnd(e: TouchEvent) {
 .detail-top-bar__btn {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 50%;
-  background: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9)));
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-overlay-bg-solid);
   border: 1rpx solid var(--c-border-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1), opacity 180ms ease;
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1), opacity var(--d-normal, 200ms) ease;
   box-shadow: var(--s-sm);
 }
 
@@ -793,7 +794,7 @@ function onSwipeDownEnd(e: TouchEvent) {
 .detail-hero__placeholder-text {
   font-size: var(--fs-display);
   font-weight: 800;
-  color: var(--c-overlay-bg-mid, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5)));
+  color: var(--c-overlay-bg-mid);
 }
 
 .detail-hero__gradient {
@@ -804,9 +805,9 @@ function onSwipeDownEnd(e: TouchEvent) {
   height: 60%;
   background: linear-gradient(
     to top,
-    var(--c-overlay-stronger, var(--c-overlay-stronger, rgba(0, 0, 0, 0.72))) 0%,
-    var(--c-black-overlay-mid, var(--c-black-overlay-mid, rgba(0, 0, 0, 0.35))) 40%,
-    var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08))) 70%,
+    var(--c-overlay-stronger) 0%,
+    var(--c-black-overlay-mid) 40%,
+    var(--c-black-shadow-sm) 70%,
     transparent 100%
   );
   pointer-events: none;
@@ -831,15 +832,15 @@ function onSwipeDownEnd(e: TouchEvent) {
 .detail-hero__dot {
   width: 10rpx;
   height: 10rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-overlay-bg-mid);
-  transition: all 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all var(--d-slow, 250ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .detail-hero__dot--active {
   background: var(--c-text-inverse);
   width: 28rpx;
-  border-radius: 5rpx;
+  border-radius: var(--r-xs, 5rpx);
 }
 
 /* ========== 叠加信息 ========== */
@@ -931,9 +932,9 @@ function onSwipeDownEnd(e: TouchEvent) {
 .detail-hero__online-dot {
   width: 12rpx;
   height: 12rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-success);
-  animation: pulse-dot 1.5s ease-in-out infinite;
+  animation: pulse-dot var(--d-particle, 1500ms) ease-in-out infinite;
 }
 
 @keyframes pulse-dot {
@@ -1018,7 +1019,7 @@ function onSwipeDownEnd(e: TouchEvent) {
 .quick-stat__icon {
   width: 56rpx;
   height: 56rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1092,7 +1093,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   font-weight: 600;
   border-width: 1rpx;
   border-style: solid;
-  transition: transform 180ms ease;
+  transition: transform var(--d-normal, 200ms) ease;
 }
 
 .detail-tag--0 {
@@ -1109,13 +1110,13 @@ function onSwipeDownEnd(e: TouchEvent) {
 
 .detail-tag--2 {
   background: var(--c-lavender-100);
-  border-color: var(--c-lavender-100, var(--c-lavender-100, rgba(139, 92, 246, 0.15)));
+  border-color: var(--c-lavender-100);
   color: var(--c-lavender-500);
 }
 
 .detail-tag--3 {
   background: var(--c-apricot-100);
-  border-color: var(--c-apricot-100, var(--c-apricot-100, rgba(249, 115, 22, 0.15)));
+  border-color: var(--c-apricot-100);
   color: var(--c-apricot-500);
 }
 
@@ -1135,8 +1136,8 @@ function onSwipeDownEnd(e: TouchEvent) {
   gap: var(--sp-3);
   padding: var(--sp-4);
   border-radius: var(--r-lg);
-  border: 1rpx solid var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
-  transition: transform 180ms ease;
+  border: 1rpx solid var(--c-overlay-white-bg-stronger);
+  transition: transform var(--d-normal, 200ms) ease;
   box-sizing: border-box;
 }
 
@@ -1147,8 +1148,8 @@ function onSwipeDownEnd(e: TouchEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: var(--c-overlay-bg-mid, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5)));
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-overlay-bg-mid);
   flex-shrink: 0;
 }
 
@@ -1189,7 +1190,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   gap: var(--sp-3);
   padding: var(--sp-4) var(--page-padding);
   padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
-  background: var(--c-overlay-white-bg-most, var(--c-overlay-white-bg-most, rgba(255, 255, 255, 0.96)));
+  background: var(--c-overlay-white-bg-most);
   border-top: 1rpx solid var(--c-divider-light);
   flex-shrink: 0;
   z-index: var(--z-header);
@@ -1208,7 +1209,7 @@ function onSwipeDownEnd(e: TouchEvent) {
   width: 140rpx;
   height: 116rpx;
   border-radius: var(--r-xl);
-  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 160ms ease;
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1), filter var(--d-normal, 200ms) ease;
 }
 
 .detail-action-bar__btn--pressed {

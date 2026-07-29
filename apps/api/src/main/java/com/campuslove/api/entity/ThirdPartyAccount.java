@@ -1,5 +1,7 @@
 package com.campuslove.api.entity;
 
+import com.campuslove.api.utils.SensitiveDataMasker;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,6 +12,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 第三方账号实体（功能2：登录第三方账号）。
@@ -30,6 +35,7 @@ import java.time.LocalDateTime;
  * <p>唯一约束：(provider, openId) 唯一，避免同一第三方账号绑定多个本系统用户。</p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "third_party_account",
     indexes = {
@@ -62,7 +68,13 @@ public class ThirdPartyAccount {
      * 第三方平台的 openId。
      * - WECHAT：微信 openId（每个小程序下唯一）
      * - APPLE：Apple Sub Identifier（开发者账号下唯一）
+     *
+     * <p>FIN-00100：使用 {@link JsonIgnore} 标注，确保 ThirdPartyAccount 实体在任何 JSON
+     * 序列化场景下（包括 Entity 被误直接返回 Controller、日志输出、调试接口等）
+     * 都不会泄露 openId 原始值。需要 openId 的业务场景应通过专用 DTO 显式传递，
+     * 日志/审计请使用 {@link #getMaskedOpenId()} 获取脱敏值。</p>
      */
+    @JsonIgnore
     @Column(name = "open_id", length = 128, nullable = false)
     private String openId;
 
@@ -75,6 +87,9 @@ public class ThirdPartyAccount {
     private String unionId;
 
     /** 绑定时间 */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**
@@ -124,6 +139,18 @@ public class ThirdPartyAccount {
 
     public void setOpenId(String openId) {
         this.openId = openId;
+    }
+
+    /**
+     * 获取脱敏后的 openId（FIN-00100）。
+     *
+     * <p>供日志输出、审计落库等场景使用，避免原始 openId 泄露。
+     * 脱敏规则：保留前 4 + 后 4，中间用星号替换；不足 8 位全部星号。</p>
+     *
+     * @return 脱敏后的 openId 字符串；openId 为 null/空时返回空串
+     */
+    public String getMaskedOpenId() {
+        return SensitiveDataMasker.mask(openId);
     }
 
     public String getUnionId() {

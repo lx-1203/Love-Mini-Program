@@ -8,6 +8,7 @@ import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -115,7 +116,7 @@ public class AdminUserController {
      * @return 用户详情；不存在返回 404
      */
     @GetMapping("/{id}")
-    public ResponseEntity<AdminUserDetailView> getUserDetail(@PathVariable("id") Long id) {
+    public ResponseEntity<AdminUserDetailView> getUserDetail(@PathVariable("id") @Positive Long id) {
         SecurityUtils.getCurrentUserId();
 
         Optional<User> userOpt = userRepository.findById(id);
@@ -161,7 +162,7 @@ public class AdminUserController {
     @PutMapping("/{id}")
     @Transactional
     public ResponseEntity<AdminUserDetailView> updateUser(
-            @PathVariable("id") Long id,
+            @PathVariable("id") @Positive Long id,
             @Valid @RequestBody AdminUserUpdateRequest req) {
         SecurityUtils.getCurrentUserId();
 
@@ -207,7 +208,7 @@ public class AdminUserController {
      */
     @PostMapping("/{id}/disable")
     @Transactional
-    public ResponseEntity<Map<String, Object>> disableUser(@PathVariable("id") Long id) {
+    public ResponseEntity<Map<String, Object>> disableUser(@PathVariable("id") @Positive Long id) {
         Long adminId = SecurityUtils.getCurrentUserId();
         return toggleUserStatus(id, "disabled", adminId);
     }
@@ -221,7 +222,7 @@ public class AdminUserController {
      */
     @PostMapping("/{id}/enable")
     @Transactional
-    public ResponseEntity<Map<String, Object>> enableUser(@PathVariable("id") Long id) {
+    public ResponseEntity<Map<String, Object>> enableUser(@PathVariable("id") @Positive Long id) {
         Long adminId = SecurityUtils.getCurrentUserId();
         return toggleUserStatus(id, "active", adminId);
     }

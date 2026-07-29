@@ -9,10 +9,12 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -57,6 +59,7 @@ public class ReportController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Idempotent
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<ReportView> createReport(@Valid @RequestBody ReportCreateRequest req) {
         Long reporterId = SecurityUtils.getCurrentUserId();
 
@@ -96,7 +99,7 @@ record ReportCreateRequest(
         @NotBlank
         @Pattern(regexp = "POST|COMMENT|USER|TOPIC", message = "targetType 必须为 POST/COMMENT/USER/TOPIC")
         String targetType,
-        @NotNull Long targetId,
+        @NotNull @Positive Long targetId,
         @NotBlank
         @Size(max = 64) String reason,
         @Size(max = 500) String description

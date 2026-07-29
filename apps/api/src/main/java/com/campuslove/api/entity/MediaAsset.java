@@ -9,6 +9,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 媒体资产实体，对应 media_asset 表。
@@ -25,6 +28,7 @@ import java.time.LocalDateTime;
  * </p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "media_asset")
 public class MediaAsset {
 
@@ -82,6 +86,9 @@ public class MediaAsset {
     private String status = "ready";
 
     /** 创建时间（不可更新） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -48,7 +48,7 @@ class CheckInControllerTest {
         // Arrange
         Long userId = 100L;
         CheckInResultView view = new CheckInResultView(
-                true, 5, 100, false, LocalDate.now().toString());
+                true, 5, 100, 0, false, false, 0, 0);
 
         // 使用 mockStatic 模拟 SecurityUtils 静态方法
         try (MockedStatic<SecurityUtils> mocked = Mockito.mockStatic(SecurityUtils.class)) {
@@ -69,7 +69,7 @@ class CheckInControllerTest {
     void getStatus_shouldDelegateToService() {
         // Arrange
         Long userId = 200L;
-        CheckInStatusView view = new CheckInStatusView(true, 3, false);
+        CheckInStatusView view = new CheckInStatusView(true, 3, 0);
 
         try (MockedStatic<SecurityUtils> mocked = Mockito.mockStatic(SecurityUtils.class)) {
             mocked.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
@@ -91,7 +91,7 @@ class CheckInControllerTest {
         String date = "2026-07-25";
         MakeUpCheckInRequest req = new MakeUpCheckInRequest(date);
         MakeUpCheckInResultView view = new MakeUpCheckInResultView(
-                6, 1, 50, true, date);
+                true, date, 6, 1, 50, 0);
 
         try (MockedStatic<SecurityUtils> mocked = Mockito.mockStatic(SecurityUtils.class)) {
             mocked.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
@@ -111,6 +111,9 @@ class CheckInControllerTest {
         // Arrange & Act & Assert
         // SecurityUtils 在无认证上下文时直接抛 Unauthorized
         // controller 应让异常向上传播，由 GlobalExceptionHandler 转 401
+        // 显式清空 SecurityContextHolder，避免上游测试 mockStatic(SecurityUtils.class)
+        // 残留或同线程其他测试设置认证上下文导致本用例未抛 401
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
         org.springframework.web.client.HttpClientErrorException.Unauthorized ex =
                 assertThrows(org.springframework.web.client.HttpClientErrorException.Unauthorized.class,
                         () -> controller.checkIn());

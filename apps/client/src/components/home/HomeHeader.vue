@@ -96,7 +96,7 @@ const { t } = useI18n();
 .header-icon {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-neutral-100);
   display: flex;
   align-items: center;
@@ -118,7 +118,7 @@ const { t } = useI18n();
   right: 4rpx;
   width: 16rpx;
   height: 16rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-error);
   border: 3rpx solid var(--c-bg-container, #FFFFFF);
 }

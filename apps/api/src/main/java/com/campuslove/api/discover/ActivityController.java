@@ -5,9 +5,11 @@ import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 活动控制器。
  * 提供活动列表查询、活动详情、报名和取消报名等 API。
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
+ *
+ * <p>Task 42 / P2.19：所有 {@code @PathVariable Long} 参数添加 {@link Positive} 校验。</p>
  */
 @RestController
 @RequestMapping("/api/v1/activities")
@@ -59,7 +63,7 @@ public class ActivityController {
      * @return 活动详情视图
      */
     @GetMapping("/{id}")
-    public ApiResponse<ActivityDetailView> getActivityDetail(@PathVariable("id") Long id) {
+    public ApiResponse<ActivityDetailView> getActivityDetail(@PathVariable("id") @Positive Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(activityService.getActivityDetail(id, userId));
     }
@@ -73,7 +77,8 @@ public class ActivityController {
      */
     @PostMapping("/{id}/enroll")
     @Idempotent
-    public ApiResponse<ActivityEnrollmentResultView> enrollActivity(@PathVariable("id") Long id) {
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<ActivityEnrollmentResultView> enrollActivity(@PathVariable("id") @Positive Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(activityService.enrollActivity(userId, id));
     }
@@ -87,7 +92,8 @@ public class ActivityController {
      */
     @DeleteMapping("/{id}/enroll")
     @Idempotent
-    public ApiResponse<ActivityEnrollmentResultView> cancelEnrollment(@PathVariable("id") Long id) {
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<ActivityEnrollmentResultView> cancelEnrollment(@PathVariable("id") @Positive Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(activityService.cancelEnrollment(userId, id));
     }

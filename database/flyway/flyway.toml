@@ -1,6 +1,10 @@
 [flyway]
 locations = ["filesystem:./database/flyway/sql"]
 validateMigrationNaming = true
+# Task 25.1：启动时校验已应用迁移的 checksum，防止历史脚本被篡改导致 schema 不一致。
+validateOnMigrate = true
+# Task 25.1：禁止在已有非空数据库上自动 baseline，避免跳过历史迁移。
+baselineOnMigrate = false
 # 使用双下划线占位符，避免与 MySQL 单行注释 # 冲突。
 placeholderPrefix = "__"
 placeholderSuffix = "__"
@@ -8,6 +12,12 @@ placeholderSuffix = "__"
 [flyway.placeholders]
 admin_openid = "admin-default-openid-change-me"
 admin_nickname = "系统管理员"
-admin_password_hash = "change_me"
-# ⚠️ 生产环境务必通过环境变量 ADMIN_PASSWORD_HASH 设置真实的 BCrypt 哈希。
-# 此处 change_me 仅为占位符，不得用于生产环境。
+# Task 22（FIN-00268）：移除 admin_password_hash 默认值 "change_me"，强制通过环境变量注入。
+# flyway.toml 不支持原生环境变量占位符（${VAR} 语法仅在 Spring Boot 的 application*.yml 中生效），
+# 因此此处不写入任何默认值，生产环境必须通过以下两种方式之一注入真实 BCrypt 哈希：
+#   1. CLI 参数：flyway -placeholders.admin_password_hash='$2a$10$...' migrate
+#   2. 环境变量：export FLYWAY_PLACEHOLDERS_ADMIN_PASSWORD_HASH='$2a$10$...'
+# 生成方法：python -c "import bcrypt; print(bcrypt.hashpw(b'YOUR-PASSWORD', bcrypt.gensalt(10)).decode())"
+# ⚠️ 未设置环境变量时，flyway migrate 将因占位符缺失而失败（这是预期行为，避免使用弱默认值上线）。
+# 注：Spring Boot 启动时通过 application-db.yml 中的 ${ADMIN_INITIAL_PASSWORD_HASH:...} 注入，
+# 与本文件（独立 flyway CLI 用途）独立。

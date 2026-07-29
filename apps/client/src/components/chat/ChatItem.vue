@@ -78,7 +78,7 @@ defineExpose({ ariaLabel });
   padding: 28rpx 32rpx;
   background: var(--c-bg-container);
   border-bottom: 1rpx solid var(--c-border-light);
-  transition: background 150ms ease;
+  transition: background var(--d-fast, 120ms) ease;
 }
 .chat-item:active { background: var(--c-neutral-50); }
 
@@ -86,7 +86,7 @@ defineExpose({ ariaLabel });
   flex-shrink: 0;
 }
 .chat-item-avatar :deep(.avatar) {
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
 }
 
 .chat-item-content {

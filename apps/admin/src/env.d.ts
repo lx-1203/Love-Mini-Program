@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   readonly VITE_DEV_DEFAULT_USERNAME?: string;
   /** 开发环境默认管理员密码（仅占位，实际值由开发者本地配置，生产环境不读取） */
   readonly VITE_DEV_DEFAULT_PASSWORD?: string;
+  /** 开发环境管理员 token（由 .env.development 注入，生产环境不读取） */
+  readonly VITE_DEV_ADMIN_TOKEN?: string;
   readonly DEV?: boolean;
 }
 

@@ -14,6 +14,8 @@ import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 // 功能5：引导流程进度条（当前步骤 = 2：校园认证）
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { useProfileStore } from "../../../stores/profile";
+// Task 33：路由路径常量化，避免硬编码字符串
+import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
 
 const profileStore = useProfileStore();
 const form = reactive({
@@ -43,7 +45,7 @@ async function save() {
 
   try {
     await profileStore.saveCampusProfile({ ...form });
-    uni.redirectTo({ url: "/subpackages/setup/schedule/index" });
+    uni.redirectTo({ url: SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE });
   } catch (error) {
     const message = error instanceof Error ? error.message : "保存失败，请稍后重试";
     uni.showToast({ title: message, icon: "none" });

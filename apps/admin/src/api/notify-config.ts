@@ -27,10 +27,10 @@ export interface NotifyConfigBatchUpdateRequest {
 
 /** 查询全部通知配置 */
 export function listNotifyConfigs() {
-  return get<NotifyConfigView[]>("/admin/notify-config");
+  return get<NotifyConfigView[]>("/v1/admin/notify-config");
 }
 
 /** 批量更新通知配置 */
 export function updateNotifyConfigs(configs: NotifyConfigUpdateRequest[]) {
-  return put<NotifyConfigView[]>("/admin/notify-config", { configs });
+  return put<NotifyConfigView[]>("/v1/admin/notify-config", { configs });
 }

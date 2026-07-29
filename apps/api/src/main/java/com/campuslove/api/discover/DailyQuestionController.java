@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,6 +60,7 @@ public class DailyQuestionController {
   @PostMapping("/answer")
   @RateLimit(capacity = 10, refillTokens = 0.2, key = "#request.remoteAddr")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<DailyAnswerView> submitAnswer(@Valid @RequestBody DailyAnswerRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(dailyQuestionService.submitAnswer(
@@ -73,7 +77,7 @@ public class DailyQuestionController {
    */
   @GetMapping("/answers")
   public ApiResponse<Page<DailyAnswerView>> getAnswers(
-      @RequestParam("questionId") Long questionId,
+      @RequestParam("questionId") @Positive Long questionId,
       @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
       @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
     Long userId = SecurityUtils.getCurrentUserId();
@@ -89,7 +93,7 @@ public class DailyQuestionController {
  * userId 由 SecurityUtils 自动获取，不再从请求体传入。
  */
 record DailyAnswerRequest(
-    Long questionId,
+    @NotNull @Positive Long questionId,
     @NotBlank @Size(max = 2000) String content,
     Boolean isAnonymous
 ) {}

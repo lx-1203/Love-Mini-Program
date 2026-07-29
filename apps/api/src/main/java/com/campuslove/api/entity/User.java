@@ -1,5 +1,6 @@
 package com.campuslove.api.entity;
 
+import com.campuslove.api.utils.SensitiveDataMasker;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,6 +12,10 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 用户主表实体，对应 users 表。
@@ -27,6 +32,7 @@ import java.time.LocalDateTime;
  * user_campus_profiles 表），故跳过。详见 V2026.07.25.0001 迁移脚本说明。</p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "users",
     uniqueConstraints = {
@@ -46,7 +52,15 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 微信 openid */
+    /**
+     * 微信 openid。
+     *
+     * <p>FIN-00101：使用 {@link JsonIgnore} 标注，确保 User 实体在任何 JSON
+     * 序列化场景下（包括 Entity 被误直接返回 Controller、日志输出、调试接口等）
+     * 都不会泄露 openid 原始值。需要 openid 的业务场景应通过专用 DTO 显式传递，
+     * 日志/审计请使用 {@link #getMaskedOpenid()} 获取脱敏值。</p>
+     */
+    @JsonIgnore
     @Column(name = "openid", length = 128)
     private String openid;
 
@@ -140,10 +154,16 @@ public class User {
     private Boolean autoRenewEnabled = false;
 
     /** 记录创建时间（用户注册时间，用于注册时长统计） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（用户资料变更时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**
@@ -185,6 +205,18 @@ public class User {
 
     public void setOpenid(String openid) {
         this.openid = openid;
+    }
+
+    /**
+     * 获取脱敏后的 openid（FIN-00101）。
+     *
+     * <p>供日志输出、审计落库等场景使用，避免原始 openid 泄露。
+     * 脱敏规则：保留前 4 + 后 4，中间用星号替换；不足 8 位全部星号。</p>
+     *
+     * @return 脱敏后的 openid 字符串；openid 为 null/空时返回空串
+     */
+    public String getMaskedOpenid() {
+        return SensitiveDataMasker.mask(openid);
     }
 
     public String getNickname() {

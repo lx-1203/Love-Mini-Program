@@ -112,8 +112,7 @@ defineExpose({ overlayAriaLabel });
         <text class="mgo-section-title">{{ t('matchGuide.icebreakerTitle') }}</text>
         <view class="mgo-topic-list" role="list">
           <view
-            v-for="(topic, index) in icebreakers"
-            :key="index"
+            v-for="(topic, index) in icebreakers" :key="index"
             class="mgo-topic-chip"
             @tap="selectIcebreaker(topic)"
             role="button"
@@ -129,8 +128,7 @@ defineExpose({ overlayAriaLabel });
         <text class="mgo-section-title">{{ t('matchGuide.commonCircleTitle') }}</text>
         <view class="mgo-circle-list" role="list">
           <view
-            v-for="circle in commonCircles"
-            :key="circle.id"
+            v-for="circle in commonCircles" :key="circle.id"
             class="mgo-circle-chip"
             role="img"
             :aria-label="circle.name"
@@ -146,8 +144,7 @@ defineExpose({ overlayAriaLabel });
         <text class="mgo-section-title">{{ t('matchGuide.activityTitle') }}</text>
         <view class="mgo-activity-list" role="list">
           <view
-            v-for="act in activities"
-            :key="act.id"
+            v-for="act in activities" :key="act.id"
             class="mgo-activity-item"
             role="img"
             :aria-label="t('matchGuide.activityAria', { title: act.title, time: act.scheduleText })"
@@ -201,7 +198,7 @@ defineExpose({ overlayAriaLabel });
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
+  background: var(--c-overlay-strong);
   /* mp-weixin 不支持，H5 保留毛玻璃；mp-weixin 通过提高遮罩不透明度 0.5→0.7 近似降级 */
   // #ifdef H5
   backdrop-filter: blur(10rpx);
@@ -214,10 +211,10 @@ defineExpose({ overlayAriaLabel });
   position: relative;
   width: 620rpx;
   max-height: 80vh;
-  background: var(--c-bg-container, #FFFFFF);
-  border-radius: 32rpx;
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl, 32rpx);
   padding: 48rpx 36rpx;
-  box-shadow: 0 20rpx 60rpx var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.12)), 0 4rpx 16rpx var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.06));
+  box-shadow: 0 20rpx 60rpx var(--c-neutral-shadow-xl), 0 4rpx 16rpx var(--c-neutral-shadow-md);
   overflow-y: auto;
 }
 
@@ -239,12 +236,12 @@ defineExpose({ overlayAriaLabel });
 .mgo-avatar-placeholder {
   width: 120rpx;
   height: 120rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: linear-gradient(135deg, var(--c-brand-50), var(--c-brand-100));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15));
+  box-shadow: 0 8rpx 24rpx var(--c-secondary-blue-bg-tint-light);
 }
 
 .mgo-avatar-emoji {
@@ -284,9 +281,9 @@ defineExpose({ overlayAriaLabel });
 
 .mgo-topic-chip {
   padding: 20rpx 24rpx;
-  background: linear-gradient(135deg, var(--c-brand-50), var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0.1)));
+  background: linear-gradient(135deg, var(--c-brand-50), var(--c-secondary-blue-bg-tint));
   border-radius: var(--r-lg, 16rpx);
-  border: 1px solid var(--c-secondary-blue-border-tint, rgba(91, 127, 255, 0.15));
+  border: 1px solid var(--c-secondary-blue-border-tint);
   transition: all var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -297,7 +294,7 @@ defineExpose({ overlayAriaLabel });
 
 .mgo-topic-text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-secondary-blue-500, #4C6EF5);
+  color: var(--c-secondary-blue-500);
   line-height: 1.4;
 }
 
@@ -313,7 +310,7 @@ defineExpose({ overlayAriaLabel });
   align-items: center;
   gap: 8rpx;
   padding: 12rpx 20rpx;
-  background: var(--c-bg-surface, #F4F6FA);
+  background: var(--c-bg-surface);
   border-radius: var(--r-full, 9999rpx);
 }
 
@@ -338,13 +335,13 @@ defineExpose({ overlayAriaLabel });
   align-items: center;
   justify-content: space-between;
   padding: 16rpx 20rpx;
-  background: var(--c-bg-surface, #F4F6FA);
+  background: var(--c-bg-surface);
   border-radius: var(--r-md, 12rpx);
   transition: all var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mgo-activity-item:active {
-  background: var(--c-border-default, #E2E8F0);
+  background: var(--c-border-default);
 }
 
 .mgo-activity-title {
@@ -384,18 +381,18 @@ defineExpose({ overlayAriaLabel });
 }
 
 .mgo-btn--primary {
-  background: var(--c-secondary-blue-400, #5B7FFF);
-  color: var(--c-text-inverse, #FFFFFF);
-  box-shadow: 0 4rpx 16rpx var(--c-secondary-blue-shadow-soft, rgba(91, 127, 255, 0.25));
+  background: var(--c-secondary-blue-400);
+  color: var(--c-text-inverse);
+  box-shadow: 0 4rpx 16rpx var(--c-secondary-blue-shadow-soft);
 }
 
 .mgo-btn--ghost {
   background: transparent;
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary);
 }
 
 .mgo-btn--ghost:active {
-  background: var(--c-bg-surface, #F4F6FA);
-  color: var(--c-secondary-blue-400, #5B7FFF);
+  background: var(--c-bg-surface);
+  color: var(--c-secondary-blue-400);
 }
 </style>

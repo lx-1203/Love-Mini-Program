@@ -13,6 +13,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 反馈工单实体，对应 feedback_tickets 表。
@@ -27,6 +31,7 @@ import java.time.LocalDateTime;
  * </ul>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "feedback_tickets",
     indexes = {
@@ -93,10 +98,16 @@ public class Feedback {
     private Long convertedActivityId;
 
     /** 记录创建时间（反馈提交时间，用于工单排序） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（反馈状态变更时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

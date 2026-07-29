@@ -5,9 +5,11 @@
  *  - JWT token（从 localStorage.admin_token 读取）
  *  - JSON 序列化/反序列化
  *  - 查询参数序列化
- *  - 401 自动登出
+ *  - 401 自动登出并跳转登录页（Task 14：携带 redirect 参数便于回跳）
  *  - 错误响应处理
  */
+
+import { env } from "../config/env";
 
 /** 后端通用分页响应结构（对应 com.campuslove.api.admin.AdminPageView） */
 export interface AdminPageView<T> {
@@ -33,9 +35,8 @@ export class ApiError extends Error {
   }
 }
 
-/** API 基础 URL：优先使用环境变量，回退到 /api（由 vite proxy 转发到 http://localhost:8080） */
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "/api";
+/** API 基础 URL：统一通过 config/env.ts 封装读取（Task 5：移除 import.meta.env 直接引用） */
+export const API_BASE_URL = env.apiBaseUrl;
 
 /**
  * 获取当前管理员 token。
@@ -139,11 +140,13 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
 
   // 401 未授权：清除本地凭据并跳转登录页
   // 与 session.ts 中的 localStorage key 保持一致：admin_token / admin_user
+  // Task 14：携带 redirect 参数，便于登录后回跳到当前被拦截的页面
   if (response.status === 401) {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_user");
     if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-      window.location.href = "/login";
+      const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/login?redirect=${redirect}`;
     }
     throw new ApiError(401, "未授权，请重新登录");
   }

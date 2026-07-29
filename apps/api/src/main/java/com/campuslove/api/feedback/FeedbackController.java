@@ -5,8 +5,11 @@ import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
  * <p>功能10：新增 GET /api/v1/feedback/my-submissions/{id} 端点，用于查询反馈详情。</p>
  */
 @RestController
+@Validated
 public class FeedbackController {
 
   private final FeedbackService feedbackService;
@@ -42,6 +46,7 @@ public class FeedbackController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<SubmissionRecordView> createIssue(@Valid @RequestBody FeedbackSubmissionRequest request) {
     return ApiResponse.ok(feedbackService.submit(FeedbackTicketType.FEEDBACK, request));
   }
@@ -56,6 +61,7 @@ public class FeedbackController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<SubmissionRecordView> createSuggestion(@Valid @RequestBody FeedbackSubmissionRequest request) {
     return ApiResponse.ok(feedbackService.submit(FeedbackTicketType.SUGGESTION, request));
   }
@@ -70,6 +76,7 @@ public class FeedbackController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<SubmissionRecordView> createActivityProposal(@Valid @RequestBody FeedbackSubmissionRequest request) {
     return ApiResponse.ok(feedbackService.submit(FeedbackTicketType.ACTIVITY_PROPOSAL, request));
   }
@@ -89,7 +96,8 @@ public class FeedbackController {
 
   @PostMapping("/api/v1/admin/activity-proposals/{id}/convert")
   @Idempotent
-  public ApiResponse<SubmissionRecordView> convertProposal(@PathVariable("id") long id) {
+  @PreAuthorize("hasRole('ADMIN')")
+  public ApiResponse<SubmissionRecordView> convertProposal(@PathVariable("id") @Positive long id) {
     return ApiResponse.ok(feedbackService.convertProposal(id));
   }
 
@@ -120,6 +128,7 @@ public class FeedbackController {
    */
   @PostMapping("/api/v1/feedback/images")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<FeedbackService.UploadedImageResult> uploadImage(MultipartFile file) {
     Long userId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(feedbackService.uploadImage(userId, file));
@@ -151,7 +160,7 @@ public class FeedbackController {
    * @return 反馈详情视图
    */
   @GetMapping("/api/v1/feedback/my-submissions/{id}")
-  public ApiResponse<SubmissionDetailView> getSubmissionDetail(@PathVariable("id") long id) {
+  public ApiResponse<SubmissionDetailView> getSubmissionDetail(@PathVariable("id") @Positive long id) {
     Long userId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(feedbackService.getSubmissionDetail(userId, id));
   }

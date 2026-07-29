@@ -107,6 +107,26 @@ public class OpenApiConfig {
     private String serverDescription;
 
     /**
+     * 本地开发服务器地址，可通过环境变量 OPENAPI_LOCAL_SERVER_URL 覆盖。
+     *
+     * <p>始终添加到 Swagger UI 服务器列表，便于在 Swagger UI 中切换环境。
+     * 默认 {@code http://localhost:8080}，与本地后端开发端口一致；
+     * 生产部署若 Swagger UI 暴露在内网，可通过环境变量配置为内网地址。</p>
+     */
+    @Value("${app.openapi.local-server-url:${OPENAPI_LOCAL_SERVER_URL:http://localhost:8080}}")
+    private String localServerUrl;
+
+    /**
+     * API 许可证 URL，可通过环境变量 OPENAPI_LICENSE_URL 覆盖。
+     *
+     * <p>原代码硬编码 {@code https://campuslove.example.com/license}，
+     * 已改为配置注入：未配置时不设置 license.url 字段（Swagger UI 不显示许可证链接），
+     * 生产环境通过 OPENAPI_LICENSE_URL 显式配置实际许可证地址。</p>
+     */
+    @Value("${app.openapi.license-url:${OPENAPI_LICENSE_URL:}}")
+    private String licenseUrl;
+
+    /**
      * 配置 OpenAPI 文档元信息与 JWT 鉴权方案。
      *
      * <p>配置结构：</p>
@@ -122,6 +142,11 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI campusLoveOpenAPI() {
         // 1. 构建 API 元信息
+        License license = new License().name("Proprietary");
+        // 仅在配置了 license-url 时设置 URL，避免硬编码无效链接
+        if (licenseUrl != null && !licenseUrl.trim().isEmpty()) {
+            license.setUrl(licenseUrl.trim());
+        }
         Info info = new Info()
                 .title(apiTitle)
                 .version(apiVersion)
@@ -129,9 +154,7 @@ public class OpenApiConfig {
                 .contact(new Contact()
                         .name(contactName)
                         .email(contactEmail))
-                .license(new License()
-                        .name("Proprietary")
-                        .url("https://campuslove.example.com/license"));
+                .license(license);
 
         // 2. 构建 JWT Bearer 鉴权方案
         // scheme: bearer —— HTTP Bearer 认证
@@ -169,8 +192,9 @@ public class OpenApiConfig {
             servers.add(server);
         }
         // 始终添加本地开发服务器（便于在 Swagger UI 中切换环境）
+        // 地址由 app.openapi.local-server-url 注入，默认 http://localhost:8080
         Server localServer = new Server()
-                .url("http://localhost:8080")
+                .url(localServerUrl)
                 .description("本地开发环境");
         servers.add(localServer);
 

@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
   position: absolute;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   pointer-events: none;
   /* 初始 opacity 由 :style 控制，此处仅作为兜底 */
   opacity: 1;

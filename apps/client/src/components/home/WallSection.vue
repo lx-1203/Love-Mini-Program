@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import WallPostCard from '../social/WallPostCard.vue';
 
@@ -89,7 +89,7 @@ defineExpose({ t });
   height: 300rpx;
   background: linear-gradient(90deg, var(--c-neutral-50, #f1f5f9) 25%, var(--c-neutral-200, #e2e8f0) 50%, var(--c-neutral-50, #f1f5f9) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  animation: shimmer var(--d-particle, 1500ms) ease-in-out infinite;
 }
 @keyframes shimmer {
   0% { background-position: 200% 0; }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 寻觅页 - 卡片滑动推荐组件
  *
@@ -39,6 +39,8 @@ import CardDetailOverlay from "./CardDetailOverlay.vue";
 import LongPressMenu from "./LongPressMenu.vue";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+// Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
+import type { UniTouchEvent } from "../../compat";
 // 统一常量：手势阈值、长按时延、卡片动画参数等
 import {
   SWIPE_THRESHOLD,
@@ -432,9 +434,9 @@ function handleNotInterested() {
 /**
  * 触摸开始
  */
-function onTouchStart(e: TouchEvent) {
+function onTouchStart(e: UniTouchEvent) {
   if (isFlyingOut.value || !currentCard.value) return;
-  // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 索引访问返回 Touch | undefined，
+  // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 索引访问返回 UniTouchPoint | undefined，
   // 此处提取首触点后做非空校验，避免在未触点时访问 clientX 抛 undefined。
   const touch = e.touches[0];
   if (!touch) return;
@@ -507,9 +509,16 @@ onUnmounted(() => {
 
 /**
  * 触摸移动
- * 注：默认行为阻止由模板的 @touchmove.stop.prevent 完成（mp-weixin 兼容）
+ * 注：catchtouchmove 在 mp-weixin 端原生阻止冒泡与默认行为；
+ * H5 端 catchtouchmove 不生效，需手动调用 preventDefault 阻止页面滚动默认行为。
  */
-function onTouchMove(e: TouchEvent) {
+function onTouchMove(e: UniTouchEvent) {
+  // H5 兼容：阻止 touchmove 默认行为（页面滚动），mp-weixin 端 catchtouchmove 已原生处理
+  // #ifdef H5
+  if (typeof e.preventDefault === 'function') {
+    e.preventDefault();
+  }
+  // #endif
   if (!isDragging.value || isFlyingOut.value) return;
   // 修复（严格模式 noUncheckedIndexedAccess）：e.touches[0] 可能为 undefined，做非空校验。
   const touch = e.touches[0];
@@ -712,12 +721,16 @@ watch(
     currentImageIndex.value = 0;
   }
 );
+
+// 修复（严格模式 noUnusedLocals）：onTouchMove/toggleBio/onVideoBadgeTap 通过 catchtap/catchtouchmove
+// 绑定到模板，vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
 </script>
 
 <template>
   <view class="card-swiper">
-    <!-- 卡片堆叠区域：@touchmove.stop.prevent 替代 e.preventDefault()，mp-weixin 兼容 -->
-    <view class="card-stack" @touchstart="onTouchStart" @touchmove.stop.prevent="onTouchMove" @touchend="onTouchEnd">
+    <!-- 卡片堆叠区域：catchtouchmove 阻止冒泡与默认行为，mp-weixin 原生兼容；H5 端在 onTouchMove 内调用 preventDefault -->
+    <view class="card-stack" @touchstart="onTouchStart" catchtouchmove="onTouchMove" @touchend="onTouchEnd">
       <!-- 无卡片状态 -->
       <view
         v-if="!currentCard"
@@ -767,8 +780,7 @@ watch(
           @change="onSwiperChange"
         >
           <swiper-item
-            v-for="(imageUrl, idx) in currentDisplayImages"
-            :key="idx"
+            v-for="(imageUrl, idx) in currentDisplayImages" :key="idx"
             class="card__gallery-item"
           >
             <!-- 性能优化：开启 lazy-load，仅在网络图片进入视口时加载，减少首屏并发请求数 -->
@@ -811,7 +823,7 @@ watch(
           class="card__video-badge press-feedback"
           hover-class="card__video-badge--pressed"
           hover-stay-time="120"
-          @tap.stop="onVideoBadgeTap"
+          catchtap="onVideoBadgeTap"
           role="button"
           :aria-label="t('discover.videoBadge')"
         >
@@ -825,8 +837,7 @@ watch(
           class="card__pagination"
         >
           <view
-            v-for="(_, idx) in currentDisplayImages"
-            :key="idx"
+            v-for="(_, idx) in currentDisplayImages" :key="idx"
             class="card__pagination-dot"
             :class="{ 'card__pagination-dot--active': idx === currentImageIndex }"
           />
@@ -910,8 +921,7 @@ watch(
           <!-- 标签区 -->
           <view v-if="currentCard.tags && currentCard.tags.length > 0" class="card__tags">
             <text
-              v-for="(tag, idx) in currentCard.tags.slice(0, 4)"
-              :key="idx"
+              v-for="(tag, idx) in currentCard.tags.slice(0, 4)" :key="idx"
               class="tag-pill"
             >{{ tag }}</text>
           </view>
@@ -919,7 +929,7 @@ watch(
           <!-- 底部：个人简介 -->
           <view
             class="card__bio"
-            @tap.stop="toggleBio"
+            catchtap="toggleBio"
             role="button"
             :aria-label="isBioExpanded ? t('home.collapse') : t('home.expand')"
           >
@@ -1068,9 +1078,9 @@ watch(
   border: 1rpx solid var(--c-overlay-border-light);
   /* 多层阴影：环境阴影 + 品牌光晕，打造“橱窗展品”级质感 */
   box-shadow:
-    0 8rpx 24rpx var(--c-neutral-shadow-lg, var(--c-neutral-shadow-lg, rgba(15, 23, 42, 0.08))),
-    0 28rpx 72rpx var(--c-neutral-shadow-xl, var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.14))),
-    0 0 40rpx var(--c-brand-bg-tint-strong, var(--c-brand-bg-tint-strong, rgba(63, 207, 142, 0.12)));
+    0 8rpx 24rpx var(--c-neutral-shadow-lg),
+    0 28rpx 72rpx var(--c-neutral-shadow-xl),
+    0 0 40rpx var(--c-brand-bg-tint-strong);
   will-change: transform;
 }
 
@@ -1083,10 +1093,10 @@ watch(
   width: 100%;
   height: 100%;
   border-radius: var(--r-xxl);
-  border: 1rpx solid var(--c-overlay-white-border-stronger, var(--c-overlay-white-border-stronger, rgba(255, 255, 255, 0.32)));
+  border: 1rpx solid var(--c-overlay-white-border-stronger);
   box-shadow:
-    inset 0 1rpx 0 var(--c-overlay-white-shadow-light, var(--c-overlay-white-shadow-light, rgba(255, 255, 255, 0.28))),
-    inset 0 -40rpx 100rpx var(--c-black-overlay-light, var(--c-black-overlay-light, rgba(0, 0, 0, 0.18)));
+    inset 0 1rpx 0 var(--c-overlay-white-shadow-light),
+    inset 0 -40rpx 100rpx var(--c-black-overlay-light);
   pointer-events: none;
   z-index: 2;
 }
@@ -1140,10 +1150,10 @@ watch(
   height: 72%;
   background: linear-gradient(
     to top,
-    var(--c-overlay-stronger, var(--c-overlay-stronger, rgba(0, 0, 0, 0.72))) 0%,
-    var(--c-black-overlay-mid, var(--c-black-overlay-mid, rgba(0, 0, 0, 0.42))) 32%,
-    var(--c-black-overlay-light, var(--c-black-overlay-light, rgba(0, 0, 0, 0.16))) 58%,
-    var(--c-black-overlay-transparent, var(--c-black-overlay-transparent, rgba(0, 0, 0, 0))) 100%
+    var(--c-overlay-stronger) 0%,
+    var(--c-black-overlay-mid) 32%,
+    var(--c-black-overlay-light) 58%,
+    var(--c-black-overlay-transparent) 100%
   );
   pointer-events: none;
   z-index: 2;
@@ -1164,8 +1174,8 @@ watch(
 .card__drag-tint--like {
   background: linear-gradient(
     270deg,
-    var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.42))) 0%,
-    var(--c-success-bg-tint, var(--c-success-bg-tint, rgba(16, 185, 129, 0.18))) 45%,
+    var(--s-action-success) 0%,
+    var(--c-success-bg-tint) 45%,
     transparent 70%
   );
 }
@@ -1173,8 +1183,8 @@ watch(
 .card__drag-tint--nope {
   background: linear-gradient(
     90deg,
-    var(--c-error-bg-tint-light, var(--c-error-bg-tint-light, rgba(229, 69, 77, 0.42))) 0%,
-    var(--c-action-reject-border, var(--c-action-reject-border, rgba(229, 69, 77, 0.18))) 45%,
+    var(--c-error-bg-tint-light) 0%,
+    var(--c-action-reject-border) 45%,
     transparent 70%
   );
 }
@@ -1201,8 +1211,8 @@ watch(
   width: 14rpx;
   height: 14rpx;
   background: var(--c-text-inverse);
-  border-radius: 50%;
-  animation: pulse-dot 1.5s ease-in-out infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: pulse-dot var(--d-particle, 1500ms) ease-in-out infinite;
 }
 
 @keyframes pulse-dot {
@@ -1267,14 +1277,14 @@ watch(
 .card__pagination-dot {
   width: 12rpx;
   height: 12rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-overlay-bg-mid);
-  transition: all 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all var(--d-slow, 250ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .card__pagination-dot--active {
   width: 32rpx;
-  border-radius: 6rpx;
+  border-radius: var(--r-xs, 6rpx);
   background: var(--c-text-inverse);
 }
 
@@ -1311,7 +1321,7 @@ watch(
   border-width: 8rpx;
   border-style: solid;
   z-index: 5;
-  background: var(--c-overlay-white-bg-most, var(--c-overlay-white-bg-most, rgba(255, 255, 255, 0.96)));
+  background: var(--c-overlay-white-bg-most);
   /* mp-weixin 不支持，H5 保留毛玻璃；背景已用 0.96 高不透明度近似降级 */
   // #ifdef H5
   backdrop-filter: blur(10rpx);
@@ -1322,21 +1332,21 @@ watch(
   right: 36rpx;
   border-color: var(--c-success);
   color: var(--c-success);
-  box-shadow: 0 12rpx 40rpx var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.35)));
+  box-shadow: 0 12rpx 40rpx var(--s-action-success);
 }
 
 .swipe-indicator--nope {
   left: 36rpx;
   border-color: var(--c-error);
   color: var(--c-error);
-  box-shadow: 0 12rpx 40rpx var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.35)));
+  box-shadow: 0 12rpx 40rpx var(--s-action-error);
 }
 
 .swipe-indicator__text {
   font-size: var(--fs-6xl);
   font-weight: 900;
   letter-spacing: 6rpx;
-  text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0, 0, 0, 0.1)));
+  text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md);
 }
 
 /* ========== 卡片内容 ========== */
@@ -1353,9 +1363,9 @@ watch(
   /* 毛玻璃信息区：半透明背景 + 模糊效果（叠加在图片遮罩之上） */
   background: linear-gradient(
     to top,
-    var(--c-black-overlay-strong, var(--c-black-overlay-strong, rgba(0, 0, 0, 0.55))) 0%,
-    var(--c-black-shadow-xl, var(--c-black-shadow-xl, rgba(0, 0, 0, 0.22))) 55%,
-    var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.02))) 100%
+    var(--c-black-overlay-strong) 0%,
+    var(--c-black-shadow-xl) 55%,
+    var(--c-black-shadow-xs) 100%
   );
   // #ifdef H5
   backdrop-filter: blur(12rpx);
@@ -1389,14 +1399,14 @@ watch(
   background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
   padding: 6rpx 18rpx;
   border-radius: var(--r-full);
-  box-shadow: 0 2rpx 10rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  box-shadow: 0 2rpx 10rpx var(--c-brand-border-tint-stronger);
 }
 
 .card__verified {
   width: 40rpx;
   height: 40rpx;
   background: var(--c-gradient-brand);
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1427,25 +1437,25 @@ watch(
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--c-text-inverse);
-  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg, var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12)));
+  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg);
 }
 
 .key-info-chip--income {
-  background: linear-gradient(135deg, var(--c-accent-bg-tint, var(--c-accent-bg-tint, rgba(249, 115, 22, 0.75))) 0%, var(--c-accent-bg-tint-mid, var(--c-accent-bg-tint-mid, rgba(245, 158, 11, 0.75))) 100%);
+  background: linear-gradient(135deg, var(--c-accent-bg-tint) 0%, var(--c-accent-bg-tint-mid) 100%);
 }
 
 .key-info-chip--personality {
-  background: linear-gradient(135deg, var(--c-romance-bg-tint-strong, var(--c-romance-bg-tint-strong, rgba(236, 72, 153, 0.72))) 0%, var(--c-romance-500, var(--c-romance-500, rgba(244, 114, 182, 0.72))) 100%);
+  background: linear-gradient(135deg, var(--c-romance-bg-tint-strong) 0%, var(--c-romance-500) 100%);
 }
 
 .key-info-chip--circles {
-  background: linear-gradient(135deg, var(--c-info-500, var(--c-info-500, rgba(14, 165, 233, 0.72))) 0%, var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.72))) 100%);
+  background: linear-gradient(135deg, var(--c-info-500) 0%, var(--s-action-super) 100%);
 }
 
 .key-info-chip__label {
   font-size: var(--fs-xs);
   font-weight: 500;
-  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85)));
+  color: var(--c-overlay-text-secondary);
 }
 
 .key-info-chip__icon {
@@ -1540,13 +1550,13 @@ watch(
   background: linear-gradient(135deg, var(--c-tag-match-from), var(--c-tag-match-to));
   color: var(--c-text-inverse);
   border: 1rpx solid var(--c-overlay-border-stronger);
-  box-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-strong, var(--c-shadow-romance-tint-strong, rgba(236, 72, 153, 0.35)));
-  animation: match-pulse 2s ease-in-out infinite;
+  box-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-strong);
+  animation: match-pulse var(--d-loop-slow, 2000ms) ease-in-out infinite;
 }
 
 @keyframes match-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 var(--c-shadow-romance-tint-stronger, var(--c-shadow-romance-tint-stronger, rgba(236, 72, 153, 0.45))); }
-  50% { box-shadow: 0 0 0 10rpx var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0))); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--c-shadow-romance-tint-stronger); }
+  50% { box-shadow: 0 0 0 10rpx var(--c-romance-bg-tint); }
 }
 
 /* 标签区 */
@@ -1570,27 +1580,27 @@ watch(
 
 /* 标签色彩编码：兴趣(绿) / 性格(粉) / 生活(橙) / 校园(蓝) */
 .tag-pill:nth-child(4n+1) {
-  background: var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
-  border-color: var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.4)));
-  color: var(--c-tint-green-50, #E8F5E9);
+  background: var(--c-brand-border-tint-stronger);
+  border-color: var(--c-brand-border-tint-stronger);
+  color: var(--c-tint-green-50);
 }
 
 .tag-pill:nth-child(4n+2) {
-  background: var(--c-romance-border-tint, var(--c-romance-border-tint, rgba(244, 143, 177, 0.3)));
-  border-color: var(--c-romance-border-tint, var(--c-romance-border-tint, rgba(244, 143, 177, 0.4)));
-  color: var(--c-tint-pink-50, #FCE4EC);
+  background: var(--c-romance-border-tint);
+  border-color: var(--c-romance-border-tint);
+  color: var(--c-tint-pink-50);
 }
 
 .tag-pill:nth-child(4n+3) {
-  background: var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(255, 183, 77, 0.3)));
-  border-color: var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(255, 183, 77, 0.4)));
-  color: var(--c-tint-orange-50, #FFF3E0);
+  background: var(--c-state-ongoing-bg);
+  border-color: var(--c-state-ongoing-bg);
+  color: var(--c-tint-orange-50);
 }
 
 .tag-pill:nth-child(4n+4) {
-  background: var(--c-secondary-blue-shadow-soft, var(--c-secondary-blue-shadow-soft, rgba(100, 181, 246, 0.3)));
-  border-color: var(--c-secondary-blue-shadow, var(--c-secondary-blue-shadow, rgba(100, 181, 246, 0.4)));
-  color: var(--c-tint-blue-50, #E3F2FD);
+  background: var(--c-secondary-blue-shadow-soft);
+  border-color: var(--c-secondary-blue-shadow);
+  color: var(--c-tint-blue-50);
 }
 
 /* 个人简介 */
@@ -1642,7 +1652,7 @@ watch(
 .action-btn {
   width: 120rpx;
   height: 120rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   display: flex;
   align-items: center;
   justify-content: center;

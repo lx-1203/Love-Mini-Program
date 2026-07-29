@@ -739,7 +739,7 @@ export const useVillageStore = defineStore("village", {
       try {
         const data = await fetchPostDetailApi(postId);
         this.currentPost = mapDetailToPostItem(data);
-      } catch (error) {
+      } catch (_error) {
         // API 调用失败时回退到本地列表查找
         this.currentPost = this.posts.find((p) => p.id === postId) ?? null;
       }

@@ -513,6 +513,17 @@ export function createAudioPlayer() {
   // （互斥控制实际通过 playing + currentSrc 实现），属于遗留死状态，已移除。
 
   /**
+   * H5 模拟播放结束定时器引用。
+   *
+   * 修复（Task 18.5）：原 play 内 setTimeout 未保存 timer 引用，
+   * 在用户停止播放或销毁播放器时无法 clearTimeout，导致：
+   * 1. 已停止的播放器在 3 秒后仍可能触发 onPlayStateChange(false) 回调
+   * 2. 销毁后回调触发访问已释放资源，存在内存泄漏与潜在异常
+   * 现保存到闭包变量，在 stopInternal / destroy 时清理。
+   */
+  let playbackEndTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
    * 播放语音
    *
    * @param url 语音文件 URL
@@ -567,8 +578,14 @@ export function createAudioPlayer() {
     currentSrc = url;
     playing = true;
     onPlayStateChange?.(true);
-    // 模拟播放 3 秒后停止
-    setTimeout(() => {
+    // 修复（Task 18.5）：保存 timer 引用到闭包变量，
+    // 在 stopInternal / destroy 时 clearTimeout，避免回调在停止后仍触发
+    // 清理上一次可能残留的 timer（防御性处理）
+    if (playbackEndTimer !== null) {
+      clearTimeout(playbackEndTimer);
+    }
+    playbackEndTimer = setTimeout(() => {
+      playbackEndTimer = null;
       if (playing && currentSrc === url) {
         playing = false;
         onPlayStateChange?.(false);
@@ -588,6 +605,12 @@ export function createAudioPlayer() {
       // 静默处理
     }
     // #endif
+    // 修复（Task 18.5）：停止播放时清理 H5 模拟播放定时器，
+    // 避免定时器在停止后仍触发 onPlayStateChange(false) 回调
+    if (playbackEndTimer !== null) {
+      clearTimeout(playbackEndTimer);
+      playbackEndTimer = null;
+    }
     playing = false;
     onPlayStateChange?.(false);
   }
@@ -610,6 +633,11 @@ export function createAudioPlayer() {
       // 静默处理
     }
     // #endif
+    // 修复（Task 18.5）：销毁时清理 H5 模拟播放定时器，避免回调访问已释放资源
+    if (playbackEndTimer !== null) {
+      clearTimeout(playbackEndTimer);
+      playbackEndTimer = null;
+    }
     audioCtx = null;
     playing = false;
     currentSrc = "";

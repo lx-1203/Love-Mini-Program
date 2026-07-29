@@ -1,14 +1,17 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 历史推荐页 - 今日已看卡片列表
  * 展示今日已浏览的所有推荐卡片，支持挽回已拒绝的卡片。
  */
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
+import { useI18n } from "vue-i18n";
 import { useDiscoverStore } from "../../stores/discover";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+import EmptyState from "../../components/common/EmptyState.vue";
 
+const { t } = useI18n();
 const discoverStore = useDiscoverStore();
 
 /** 历史记录（今日已看过的所有卡片） */
@@ -57,7 +60,7 @@ function getCardDetail(cardId: string) {
     return {
       id: viewedRecord.cardId,
       userId: viewedRecord.userId,
-      name: "用户",
+      name: t("discoverHistory.defaultUserName"),
       avatar: "",
       headline: "",
       bio: "",
@@ -82,14 +85,14 @@ async function handleRewind(cardId: string) {
   try {
     await discoverStore.rewindCard(cardId);
     uni.showToast({
-      title: "挽回成功",
+      title: t("discoverHistory.rewindSuccess"),
       icon: "success",
     });
     // 返回寻觅页
     uni.navigateBack();
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : "挽回失败",
+      title: error instanceof Error ? error.message : t("discoverHistory.rewindFailed"),
       icon: "none",
     });
   }
@@ -123,7 +126,7 @@ onUnmounted(() => {
       <view class="back-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">←</text>
       </view>
-      <text class="page-title">今日已看</text>
+      <text class="page-title">{{ $t("discoverHistory.navTitle") }}</text>
       <view class="header-placeholder" />
     </view>
 
@@ -131,15 +134,15 @@ onUnmounted(() => {
     <view class="stats-bar">
       <view class="stat-item">
         <text class="stat-num">{{ historyCards.length }}</text>
-        <text class="stat-label">已浏览</text>
+        <text class="stat-label">{{ $t("discoverHistory.statViewed") }}</text>
       </view>
       <view class="stat-item">
         <text class="stat-num">{{ historyCards.filter((c) => c.direction === "right").length }}</text>
-        <text class="stat-label">已喜欢</text>
+        <text class="stat-label">{{ $t("discoverHistory.statLiked") }}</text>
       </view>
       <view class="stat-item">
         <text class="stat-num">{{ passedCards.length }}</text>
-        <text class="stat-label">已跳过</text>
+        <text class="stat-label">{{ $t("discoverHistory.statSkipped") }}</text>
       </view>
     </view>
 
@@ -147,22 +150,21 @@ onUnmounted(() => {
     <view class="history-list" role="list">
       <!-- 加载状态：discover store 正在拉取推荐时展示骨架屏 -->
       <view v-if="discoverStore.loading && historyCards.length === 0" class="history-loading" role="status" aria-live="polite">
-        <text class="history-loading__text">加载中...</text>
+        <text class="history-loading__text">{{ $t("discoverHistory.loadingText") }}</text>
       </view>
 
       <!-- 错误状态：拉取失败时展示错误提示与重试按钮 -->
       <view v-else-if="discoverStore.errorMessage && historyCards.length === 0" class="history-error" role="alert">
         <text class="history-error__text">{{ discoverStore.errorMessage }}</text>
         <view class="history-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleRetry">
-          <text class="history-error__retry-text">重试</text>
+          <text class="history-error__retry-text">{{ $t("discoverHistory.retryText") }}</text>
         </view>
       </view>
 
       <!-- 历史卡片列表（仅在非加载/错误状态展示） -->
       <template v-else>
       <view
-        v-for="record in historyCards"
-        :key="record.cardId"
+        v-for="record in historyCards" :key="record.cardId"
         class="history-card list-item"
       >
         <view class="card-main">
@@ -170,16 +172,17 @@ onUnmounted(() => {
             :src="getCardDetail(record.cardId)?.avatar || '/static/default-avatar.png'"
             custom-class="card-avatar"
             mode="aspectFill"
+            :lazy-load="true"
           />
           <view class="card-info">
             <view class="card-header-row">
-              <text class="card-name">{{ getCardDetail(record.cardId)?.name || "未知用户" }}</text>
+              <text class="card-name">{{ getCardDetail(record.cardId)?.name || $t("discoverHistory.unknownUser") }}</text>
               <view
                 class="status-badge"
                 :class="record.direction === 'right' ? 'status-liked' : 'status-passed'"
               >
                 <text class="status-text">
-                  {{ record.direction === "right" ? "已喜欢" : "已跳过" }}
+                  {{ record.direction === "right" ? $t("discoverHistory.directionLiked") : $t("discoverHistory.directionSkipped") }}
                 </text>
               </view>
             </view>
@@ -195,7 +198,7 @@ onUnmounted(() => {
         >
           <button class="rewind-btn" @tap="handleRewind(record.cardId)">
             <text class="rewind-icon">↩</text>
-            <text class="rewind-label">挽回（每日限1次）</text>
+            <text class="rewind-label">{{ $t("discoverHistory.rewindLabel") }}</text>
           </button>
         </view>
 
@@ -204,40 +207,42 @@ onUnmounted(() => {
           v-else-if="record.direction === 'left' && isLastPassedCard(record.cardId) && hasRewoundToday"
           class="rewind-hint"
         >
-          <text class="hint-text">今日挽回次数已用完</text>
+          <text class="hint-text">{{ $t("discoverHistory.rewindUsedUp") }}</text>
         </view>
       </view>
       </template>
     </view>
 
     <!-- 空状态 -->
-    <view v-if="historyCards.length === 0 && !discoverStore.loading && !discoverStore.errorMessage" class="empty-state">
-      <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" custom-class="empty-icon" mode="aspectFit" />
-      <text class="empty-title">还没有浏览记录</text>
-      <text class="empty-subtitle">快去寻觅页发现有趣的TA吧</text>
-    </view>
+    <EmptyState
+      v-if="historyCards.length === 0 && !discoverStore.loading && !discoverStore.errorMessage"
+      type="no-data"
+      :image="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION"
+      :title="$t('discoverHistory.emptyTitle')"
+      :description="$t('discoverHistory.emptyDesc')"
+    />
   </view>
 </template>
 
 <style scoped lang="scss">
-$green-primary: var(--c-brand, #3FCF8E);
-$green-light: var(--c-brand-50, #E8F9F1);
-$pink-primary: var(--c-romance-500, #EC4899);
-$pink-light: var(--c-romance-100, #FCE7F3);
-$white: var(--c-neutral-0, #FFFFFF);
-$bg-page: var(--c-bg-page, #F4F6FA);
-$text-primary: var(--c-text-primary, #1F2937);
-$text-secondary: var(--c-neutral-500, #6B7280);
-$text-tertiary: var(--c-neutral-400, #9CA3AF);
-$border-light: var(--c-tint-gray-50, #F3F4F6);
-$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+$green-primary: var(--c-brand);
+$green-light: var(--c-brand-50);
+$pink-primary: var(--c-romance-500);
+$pink-light: var(--c-romance-100);
+$white: var(--c-neutral-0);
+$bg-page: var(--c-bg-page);
+$text-primary: var(--c-text-primary);
+$text-secondary: var(--c-neutral-500);
+$text-tertiary: var(--c-neutral-400);
+$border-light: var(--c-tint-gray-50);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .history-page {
   display: flex;
   flex-direction: column;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-tint-green-50, #F0FDF8) 0%, $bg-page 50%);
+  background: linear-gradient(180deg, var(--c-tint-green-50) 0%, $bg-page 50%);
   padding-bottom: 40rpx;
 }
 
@@ -257,9 +262,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   justify-content: center;
   background-color: $white;
-  border-radius: 50%;
-  box-shadow: 0 4rpx 16rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06)));
-  transition: all 0.15s ease;
+  border-radius: var(--r-circle, 50%);
+  box-shadow: 0 4rpx 16rpx var(--c-black-shadow-sm);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -285,7 +290,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: var(--c-brand, #3FCF8E); // mp-weixin 降级：使用纯色（取渐变中间色）
+  color: var(--c-brand); // mp-weixin 降级：使用纯色（取渐变中间色）
   // #endif
 }
 
@@ -315,13 +320,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   font-size: var(--fs-5xl, 44rpx);
   font-weight: 800;
   // #ifdef H5
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: var(--c-brand, #3FCF8E); // mp-weixin 降级：使用纯色（取渐变中间色）
+  color: var(--c-brand); // mp-weixin 降级：使用纯色（取渐变中间色）
   // #endif
 }
 
@@ -344,13 +349,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   border-radius: var(--r-xl, 24rpx);
   padding: 28rpx;
   box-shadow: $card-soft-shadow;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
 .history-card:active {
   transform: scale(0.98);
-  box-shadow: 0 4rpx 20rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08)));
+  box-shadow: 0 4rpx 20rpx var(--c-black-shadow-sm);
 }
 /* #endif */
 
@@ -362,7 +367,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .card-avatar {
   width: 96rpx;
   height: 96rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background-color: $bg-page;
   margin-right: 20rpx;
   flex-shrink: 0;
@@ -395,7 +400,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .status-liked {
-  background: linear-gradient(135deg, $pink-light, var(--c-romance-200, #FBCFE8));
+  background: linear-gradient(135deg, $pink-light, var(--c-romance-200));
 }
 
 .status-liked .status-text {
@@ -449,13 +454,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   justify-content: center;
   width: 100%;
   height: 80rpx;
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
   border-radius: var(--r-full, 9999rpx);
   border: none;
   padding: 0;
   margin: 0;
-  box-shadow: 0 4rpx 16rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35)));
-  transition: all 0.15s ease;
+  box-shadow: 0 4rpx 16rpx var(--c-brand-shadow-tint-strong);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */

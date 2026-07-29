@@ -50,7 +50,7 @@ class UserControllerTest {
         // Arrange
         Long targetUserId = 100L;
         List<FollowUserView> views = List.of(
-                new FollowUserView(1L, "粉丝1", "avatar1.png"));
+                new FollowUserView(1L, "粉丝1", "avatar1.png", "个人简介", 0, 0));
         when(profileService.getFollowers(targetUserId)).thenReturn(views);
 
         // Act
@@ -66,7 +66,7 @@ class UserControllerTest {
         // Arrange
         Long targetUserId = 200L;
         List<FollowUserView> views = List.of(
-                new FollowUserView(2L, "关注1", "avatar2.png"));
+                new FollowUserView(2L, "关注1", "avatar2.png", "个人简介", 0, 0));
         when(profileService.getFollowing(targetUserId)).thenReturn(views);
 
         // Act

@@ -8,6 +8,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * VIP 红包实体，对应 vip_red_packets 表。
@@ -29,6 +33,7 @@ import java.time.LocalDateTime;
  * </ul>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "vip_red_packets")
 public class VipRedPacket {
 
@@ -74,6 +79,26 @@ public class VipRedPacket {
     @Column(name = "claimed_amount", nullable = false)
     private Integer claimedAmount = 0;
 
+    /**
+     * 红包剩余金额（单位：分）。
+     *
+     * <p>Task 12.3（REAUDIT-REPORT-100+ 编号 40）：原子扣减用。
+     * 创建时初始化为 totalAmount，每次领取通过
+     * {@code UPDATE ... SET remaining_amount = remaining_amount - :amount
+     * WHERE id = :id AND remaining_amount >= :amount} 原子扣减，
+     * 影响行数 0 则领取失败（红包已领完或剩余不足）。</p>
+     */
+    @Column(name = "remaining_amount", nullable = false)
+    private Integer remainingAmount = 0;
+
+    /**
+     * 红包剩余份数。
+     *
+     * <p>Task 12.3：原子扣减用，与 remaining_amount 配合保证不超发。</p>
+     */
+    @Column(name = "remaining_count", nullable = false)
+    private Integer remainingCount = 0;
+
     /** 红包类型 */
     @Column(name = "type", nullable = false, length = 16)
     private String type = "NORMAL";
@@ -94,9 +119,11 @@ public class VipRedPacket {
     @Column(name = "status", nullable = false, length = 16)
     private String status = "PENDING";
 
+    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**
@@ -162,6 +189,22 @@ public class VipRedPacket {
 
     public void setClaimedAmount(Integer claimedAmount) {
         this.claimedAmount = claimedAmount;
+    }
+
+    public Integer getRemainingAmount() {
+        return remainingAmount;
+    }
+
+    public void setRemainingAmount(Integer remainingAmount) {
+        this.remainingAmount = remainingAmount;
+    }
+
+    public Integer getRemainingCount() {
+        return remainingCount;
+    }
+
+    public void setRemainingCount(Integer remainingCount) {
+        this.remainingCount = remainingCount;
     }
 
     public String getType() {

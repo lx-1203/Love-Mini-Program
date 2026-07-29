@@ -23,11 +23,12 @@ import org.springframework.web.multipart.MultipartFile;
  *
  * <p>职责：封装语音文件的存储、删除、路径生成等业务逻辑，
  * 供 {@link VoiceMessageController} 调用。复用 LocalMediaStorageService 的存储根目录
- * （由 {@code app.media.storage-root} 配置），保证语音文件与其他媒体统一管理。</p>
+ * （由 {@code file-storage.base-dir} 配置），保证语音文件与其他媒体统一管理。</p>
  *
- * <p>存储路径：{@code uploads/{userId}/voice/{uuid}.mp3}，
- * 与 LocalMediaStorageService 风格一致（按用户/月份分目录），
- * 但加 {@code voice} 子目录避免与其他媒体类型混淆。</p>
+ * <p>存储路径：{@code uploads/{userId}/{yyyyMM}/{uuid}.{ext}}，
+ * 与 LocalMediaStorageService 风格一致（按用户/月份分目录）。
+ * Task 9：已移除 {@code voice} 子目录，统一为 {@code uploads/{userId}/{yyyyMM}/{uuid}.{ext}}
+ * 格式，符合项目约定的路径规范。</p>
  *
  * <p>校验规则：
  * <ul>
@@ -73,11 +74,23 @@ public class VoiceMessageService {
     private static final DateTimeFormatter MONTH_FMT =
             DateTimeFormatter.ofPattern("yyyyMM");
 
-    /** URL 前缀，与 WebConfig 静态资源映射一致 */
-    private static final String URL_PREFIX = "/uploads/";
+    /**
+     * URL 前缀，与 WebConfig 静态资源映射一致。
+     *
+     * <p>Task 9：原为硬编码常量 {@code "/uploads/"}，已改为配置注入。
+     * 默认 {@code /uploads/}，可通过 {@code FILE_STORAGE_PREFIX} 环境变量覆盖。</p>
+     */
+    @Value("${file-storage.upload-prefix:/uploads/}")
+    private String urlPrefix;
 
-    /** 本地存储根目录，默认 ./uploads */
-    @Value("${app.media.storage-root:./uploads}")
+    /**
+     * 本地存储根目录。
+     *
+     * <p>Task 9：原为 {@code app.media.storage-root}，已切换至 {@code file-storage.base-dir}
+     * 命名空间，与 urlPrefix 同源。默认 {@code uploads}，
+     * 可通过 {@code FILE_STORAGE_BASE_DIR} 环境变量覆盖。</p>
+     */
+    @Value("${file-storage.base-dir:uploads}")
     private String storageRoot;
 
     /**
@@ -129,11 +142,12 @@ public class VoiceMessageService {
         }
 
         try {
-            // 构建存储路径：{storageRoot}/{userId}/voice/{yyyyMM}/{uuid}.{ext}
+            // 构建存储路径：{storageRoot}/{userId}/{yyyyMM}/{uuid}.{ext}
+            // Task 9：移除 voice 子目录，统一为 uploads/{userId}/{yyyyMM}/{uuid}.{ext} 格式
             String yyyyMM = LocalDate.now().format(MONTH_FMT);
             String fileName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
             Path targetDir = Paths.get(storageRoot,
-                    String.valueOf(userId), "voice", yyyyMM);
+                    String.valueOf(userId), yyyyMM);
             Files.createDirectories(targetDir);
             Path targetPath = targetDir.resolve(fileName).toAbsolutePath().normalize();
 
@@ -149,8 +163,9 @@ public class VoiceMessageService {
                 Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
             }
 
-            // 构造访问 URL
-            String url = "/uploads/" + userId + "/voice/" + yyyyMM + "/" + fileName;
+            // 构造访问 URL：{urlPrefix}{userId}/{yyyyMM}/{fileName}
+            // Task 9：URL 前缀由 file-storage.upload-prefix 注入，原为硬编码 "/uploads/"
+            String url = urlPrefix + userId + "/" + yyyyMM + "/" + fileName;
             log.info("语音上传成功：userId={}, url={}, size={}", userId, url, fileSize);
             return new VoiceUploadResult(
                     url,
@@ -182,11 +197,12 @@ public class VoiceMessageService {
             if (url == null || url.isBlank()) {
                 return;
             }
-            if (!url.startsWith(URL_PREFIX)) {
+            // Task 9：使用注入的 urlPrefix 判定受管路径，原为硬编码 URL_PREFIX 常量
+            if (!url.startsWith(urlPrefix)) {
                 log.warn("跳过删除非受管语音 URL: {}", url);
                 return;
             }
-            String relative = url.substring(URL_PREFIX.length());
+            String relative = url.substring(urlPrefix.length());
             Path target = Paths.get(storageRoot, relative).toAbsolutePath().normalize();
             Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
             if (!target.startsWith(root)) {

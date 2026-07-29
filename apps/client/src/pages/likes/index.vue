@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 喜欢页 - 双向喜欢 / 访客
  * 展示「喜欢我的」用户列表和「访客」记录，支持切换标签页
@@ -11,12 +11,14 @@ import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useLikesStore } from "../../stores/likes";
+// 修复 no-duplicate-imports：合并 ../../stores/likes 的重复 import
+import { useLikesStore, type BatchActionType } from "../../stores/likes";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
+import EmptyState from "../../components/common/EmptyState.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { likesPageRequirements } from "../../config/page-access";
 import { IMAGE_PATHS } from "../../config/images";
@@ -25,7 +27,6 @@ import Skeleton from "../../components/common/Skeleton.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
 import { lightHaptic, successHaptic, errorHaptic } from "../../utils/haptic";
 import { showErrorToast } from "../../utils/error-toast";
-import type { BatchActionType } from "../../stores/likes";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 
@@ -416,6 +417,8 @@ onShow(() => {
             class="likes-header__signal press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            role="button"
+            :aria-label="t('likes.heartSignal')"
             @tap="goToHeartSignals"
           >
             <SafeImage :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL" custom-class="likes-header__signal-icon" mode="aspectFit" />
@@ -427,6 +430,8 @@ onShow(() => {
             class="likes-header__manage press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            role="button"
+            :aria-label="batchMode ? t('likes.finish') : t('likes.manage')"
             @tap="toggleBatchMode"
           >
             <text class="likes-header__manage-text">
@@ -451,6 +456,8 @@ onShow(() => {
           <view
             v-if="searchInput"
             class="likes-search__clear"
+            role="button"
+            :aria-label="t('common.clear')"
             @tap="handleClearSearch"
           >
             <text class="likes-search__clear-icon">×</text>
@@ -481,13 +488,13 @@ onShow(() => {
 
       <!-- 喜欢我的列表 -->
       <template v-else-if="activeTab === 'likedBy'">
-        <view v-if="displayLikedBy.length === 0" class="likes-empty card-base">
-          <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.HEART" custom-class="likes-empty__icon" mode="aspectFit" />
-          <text class="likes-empty__title">
-            {{ isSearchEmpty ? t('likes.searchEmpty') : t('likes.emptyLikedBy') }}
-          </text>
-          <text class="likes-empty__subtitle">{{ t('likes.emptyLikedByDesc') }}</text>
-        </view>
+        <EmptyState
+          v-if="displayLikedBy.length === 0"
+          type="no-data"
+          :image="IMAGE_PATHS.ICONS_COMMON.HEART"
+          :title="isSearchEmpty ? t('likes.searchEmpty') : t('likes.emptyLikedBy')"
+          :description="t('likes.emptyLikedByDesc')"
+        />
 
         <view v-else class="likes-list" role="list">
           <view
@@ -502,6 +509,8 @@ onShow(() => {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             :style="{ animationDelay: idx * 60 + 'ms' }"
+            role="button"
+            :aria-label="item.name || item.userId"
             @tap="batchMode ? handleToggleSelect(item.userId) : handleItemClick(item.userId)"
           >
             <!-- 功能1：批量模式下的 checkbox -->
@@ -548,13 +557,13 @@ onShow(() => {
 
       <!-- 我发出的喜欢列表 -->
       <template v-else-if="activeTab === 'myLikes'">
-        <view v-if="displayLikes.length === 0" class="likes-empty card-base">
-          <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.HEART" custom-class="likes-empty__icon" mode="aspectFit" />
-          <text class="likes-empty__title">
-            {{ isSearchEmpty ? t('likes.searchEmpty') : t('likes.emptyMyLikes') }}
-          </text>
-          <text class="likes-empty__subtitle">{{ t('likes.emptyMyLikesDesc') }}</text>
-        </view>
+        <EmptyState
+          v-if="displayLikes.length === 0"
+          type="no-data"
+          :image="IMAGE_PATHS.ICONS_COMMON.HEART"
+          :title="isSearchEmpty ? t('likes.searchEmpty') : t('likes.emptyMyLikes')"
+          :description="t('likes.emptyMyLikesDesc')"
+        />
 
         <view v-else class="likes-list" role="list">
           <view
@@ -569,6 +578,8 @@ onShow(() => {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             :style="{ animationDelay: idx * 60 + 'ms' }"
+            role="button"
+            :aria-label="item.name || item.userId"
             @tap="batchMode ? handleToggleSelect(item.userId) : handleItemClick(item.userId)"
           >
             <!-- 功能1：批量模式下的 checkbox -->
@@ -615,13 +626,13 @@ onShow(() => {
 
       <!-- 访客列表 -->
       <template v-else-if="activeTab === 'visitors'">
-        <view v-if="displayVisitors.length === 0" class="likes-empty card-base">
-          <SafeImage :src="IMAGE_PATHS.ICONS_SOCIAL.VISITOR" custom-class="likes-empty__icon" mode="aspectFit" />
-          <text class="likes-empty__title">
-            {{ isSearchEmpty ? t('likes.searchEmpty') : t('likes.emptyVisitors') }}
-          </text>
-          <text class="likes-empty__subtitle">{{ t('likes.emptyVisitorsDesc') }}</text>
-        </view>
+        <EmptyState
+          v-if="displayVisitors.length === 0"
+          type="no-data"
+          :image="IMAGE_PATHS.ICONS_SOCIAL.VISITOR"
+          :title="isSearchEmpty ? t('likes.searchEmpty') : t('likes.emptyVisitors')"
+          :description="t('likes.emptyVisitorsDesc')"
+        />
 
         <view v-else class="likes-list" role="list">
           <view
@@ -635,6 +646,8 @@ onShow(() => {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             :style="{ animationDelay: idx * 60 + 'ms' }"
+            role="button"
+            :aria-label="item.name || item.userId"
             @tap="batchMode ? handleToggleSelect(item.userId) : handleItemClick(item.userId)"
           >
             <!-- 功能1：批量模式下的 checkbox -->
@@ -686,7 +699,7 @@ onShow(() => {
         v-if="batchMode"
         class="likes-batch-bar"
       >
-        <view class="likes-batch-bar__left" @tap="handleSelectAll">
+        <view class="likes-batch-bar__left" role="button" :aria-label="isAllSelected ? t('common.cancel') : t('likes.selectAll')" @tap="handleSelectAll">
           <view
             class="likes-batch-bar__checkbox"
             :class="{ 'likes-batch-bar__checkbox--checked': isAllSelected }"
@@ -703,6 +716,8 @@ onShow(() => {
             v-if="activeTab === 'likedBy'"
             class="likes-batch-bar__btn likes-batch-bar__btn--like"
             :class="{ 'likes-batch-bar__btn--disabled': batchProcessing }"
+            role="button"
+            :aria-label="t('likes.batchLike')"
             @tap="handleBatchAction('like')"
           >
             <text class="likes-batch-bar__btn-text">
@@ -714,6 +729,8 @@ onShow(() => {
             v-if="activeTab === 'likedBy'"
             class="likes-batch-bar__btn likes-batch-bar__btn--skip"
             :class="{ 'likes-batch-bar__btn--disabled': batchProcessing }"
+            role="button"
+            :aria-label="t('likes.batchSkip')"
             @tap="handleBatchAction('skip')"
           >
             <text class="likes-batch-bar__btn-text">
@@ -725,6 +742,8 @@ onShow(() => {
             v-if="activeTab === 'myLikes'"
             class="likes-batch-bar__btn likes-batch-bar__btn--cancel"
             :class="{ 'likes-batch-bar__btn--disabled': batchProcessing }"
+            role="button"
+            :aria-label="t('likes.batchCancel')"
             @tap="handleBatchAction('cancel')"
           >
             <text class="likes-batch-bar__btn-text">
@@ -801,7 +820,7 @@ onShow(() => {
   padding: var(--sp-3) var(--sp-6);
   background: linear-gradient(135deg, var(--c-romance-50), var(--c-romance-100));
   border-radius: var(--r-full);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
   box-shadow: var(--s-romance);
 }
 
@@ -827,7 +846,7 @@ onShow(() => {
   height: var(--sp-4);
   border-radius: var(--r-full);
   background: var(--c-romance-500);
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: pulse var(--d-particle, 1500ms) ease-in-out infinite;
 }
 
 @keyframes pulse {
@@ -877,7 +896,7 @@ onShow(() => {
   border: var(--sp-1) solid var(--c-neutral-100);
   border-top-color: var(--c-brand);
   border-radius: var(--r-full);
-  animation: spin 1s linear infinite;
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {
@@ -935,7 +954,7 @@ onShow(() => {
 /* ========== 列表过渡动画 ========== */
 .list-enter-active,
 .list-leave-active {
-  transition: all 0.3s ease;
+  transition: all var(--d-fade, 300ms) ease;
 }
 .list-enter-from,
 .list-leave-to {
@@ -943,7 +962,7 @@ onShow(() => {
   transform: translateY(var(--sp-5));
 }
 .list-move {
-  transition: transform 0.3s ease;
+  transition: transform var(--d-fade, 300ms) ease;
 }
 
 /* ========== 卡片 ========== */
@@ -956,7 +975,7 @@ onShow(() => {
   border-radius: var(--r-xl);
   border: var(--c-border-card);
   box-shadow: var(--s-card-soft);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1110,7 +1129,7 @@ onShow(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 .likes-card__checkbox--checked {
@@ -1189,7 +1208,7 @@ onShow(() => {
   padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
   background: var(--c-bg-container);
   border-top: 1rpx solid var(--c-border-light);
-  box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -4rpx 24rpx var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06));
   z-index: 100;
 }
 
@@ -1243,7 +1262,7 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 .likes-batch-bar__btn--like {
@@ -1288,7 +1307,7 @@ onShow(() => {
   transform: translateX(-50%);
   bottom: calc(env(safe-area-inset-bottom) + 120rpx);
   padding: var(--sp-2) var(--sp-5);
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
   border-radius: var(--r-full);
   z-index: 101;
 }

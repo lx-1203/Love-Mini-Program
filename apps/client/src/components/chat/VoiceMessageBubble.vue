@@ -219,29 +219,29 @@ const durationDisplay = computed(() => {
   align-items: center;
   gap: 14rpx;
   padding: 18rpx 24rpx;
-  border-radius: 20rpx 4rpx 20rpx 20rpx;
+  border-radius: var(--r-xl, 24rpx) var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
   background: var(--c-bg-brand, rgba(63, 207, 142, 0.08));
-  color: var(--c-brand-700, #15803d);
-  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04));
+  color: var(--c-brand-700, #1D8A5A);
+  box-shadow: var(--s-sm, 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
   transition: all var(--d-normal, 200ms) ease;
   min-width: 140rpx;
 }
 
 /* self 发送：右侧圆角反向 */
 .voice-bubble--self {
-  border-radius: 4rpx 20rpx 20rpx 20rpx;
-  background: var(--c-brand, #22c55e);
+  border-radius: var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
+  background: var(--c-brand, #3FCF8E);
   color: var(--c-text-inverse, #ffffff);
 }
 
 .voice-bubble--peer {
-  border-radius: 20rpx 4rpx 20rpx 20rpx;
-  background: var(--c-bubble-other, #f1f5f9);
+  border-radius: var(--r-xl, 24rpx) var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
+  background: var(--c-bubble-other, #F0F2F5);
   color: var(--c-text-primary, #1a1a2e);
 }
 
 .voice-bubble--playing {
-  box-shadow: 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25));
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.20)));
 }
 
 .voice-bubble--expired {
@@ -265,9 +265,9 @@ const durationDisplay = computed(() => {
 .voice-bubble__bar {
   width: 6rpx;
   height: 12rpx;
-  border-radius: 3rpx;
-  background: var(--c-brand-300, #86efac);
-  transition: height 150ms ease, background var(--d-normal, 200ms) ease;
+  border-radius: var(--r-xs, 4rpx);
+  background: var(--c-brand-300, #7CD9A6);
+  transition: height var(--d-fast, 120ms) ease, background var(--d-normal, 200ms) ease;
 }
 
 .voice-bubble--self .voice-bubble__bar {
@@ -275,7 +275,7 @@ const durationDisplay = computed(() => {
 }
 
 .voice-bubble__bar--active {
-  animation: voice-wave 0.6s ease-in-out infinite alternate;
+  animation: voice-wave var(--d-slowest, 600ms) ease-in-out infinite alternate;
 }
 
 .voice-bubble__bar--progress {

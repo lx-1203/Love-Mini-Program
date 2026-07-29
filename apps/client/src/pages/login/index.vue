@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onUnmounted } from "vue";
 import { onShow, onHide } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
@@ -396,7 +396,7 @@ function openAccountBinding() {
         <view v-if="!showPhoneLogin" class="login-quick">
           <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onWechatLoginGuarded">
             <view class="btn-icon-wrap">
-              <text class="btn-icon-wechat">微</text>
+              <text class="btn-icon-wechat">{{ t('login.wechatIconText') }}</text>
             </view>
             <text class="btn-primary-text">{{ t('login.wechatLogin') }}</text>
           </view>
@@ -670,8 +670,8 @@ function openAccountBinding() {
 .btn-icon-wrap {
   width: 44rpx;
   height: 44rpx;
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 50%;
+  background: var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25));
+  border-radius: var(--r-circle, 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -824,7 +824,7 @@ function openAccountBinding() {
 .checkbox {
   width: 34rpx;
   height: 34rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   border: 2rpx solid var(--c-neutral-300);
   display: flex;
   align-items: center;
@@ -913,7 +913,7 @@ function openAccountBinding() {
 .third-party-icon {
   width: 80rpx;
   height: 80rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-bg-container);
   border: 2rpx solid var(--c-border-default);
   display: flex;

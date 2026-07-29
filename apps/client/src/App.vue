@@ -1,7 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { onLaunch, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useSessionStore } from "./stores/session";
 import { useUnlockGuideStore } from "./stores/unlock-guide";
 import { reportGlobalError } from "./main";
@@ -13,6 +14,7 @@ import { useUnreadBadge } from "./composables/useUnreadBadge";
 const sessionStore = useSessionStore();
 const unlockGuideStore = useUnlockGuideStore();
 const { visible, featureName, completionPercent, overlayVisible } = storeToRefs(unlockGuideStore);
+const { t } = useI18n();
 
 /**
  * 全局网络状态监听：注册 uni.onNetworkStatusChange 监听器，
@@ -89,11 +91,9 @@ onLaunch(() => {
           cb: (resolve: PrivacyResolve) => void
         ) => void;
 
-        // 弹窗标题/文案（中文，后续 P3 i18n 化时迁移至 locale 文件）
-        const PRIVACY_TITLE = "隐私保护提示";
-        const PRIVACY_CONTENT =
-          "为了向你提供匹配、聊天、图片上传等服务，我们需要收集你的微信账号、资料、位置等信息。" +
-          "请阅读并同意《用户隐私协议》后继续使用。";
+        // 弹窗标题/文案（Task 28：已迁移至 locale 文件 legal.consent 命名空间）
+        const PRIVACY_TITLE = t("legal.consent.protectionTitle");
+        const PRIVACY_CONTENT = t("legal.consent.protectionContent");
 
         // "查看协议"跳转：调用 wx.openPrivacyContract 打开微信托管的隐私协议页面
         const openPrivacyContract = (
@@ -121,8 +121,8 @@ onLaunch(() => {
           uni.showModal({
             title: PRIVACY_TITLE,
             content: PRIVACY_CONTENT,
-            confirmText: "同意并继续",
-            cancelText: "查看协议",
+            confirmText: t("legal.consent.agree"),
+            cancelText: t("legal.consent.viewAgreementShort"),
             success: (modalRes) => {
               if (modalRes.confirm) {
                 // 用户点击"同意并继续"→ 同意隐私协议，buttonId='accept' 供埋点
@@ -135,8 +135,8 @@ onLaunch(() => {
                     uni.showModal({
                       title: PRIVACY_TITLE,
                       content: PRIVACY_CONTENT,
-                      confirmText: "同意并继续",
-                      cancelText: "不同意",
+                      confirmText: t("legal.consent.agree"),
+                      cancelText: t("legal.consent.disagree"),
                       success: (res2) => {
                         if (res2.confirm) {
                           resolve({ buttonId: "accept", event: "agree" });
@@ -394,25 +394,25 @@ page {
 
 /* 在线红点脉冲 */
 .pulse-dot {
-  animation: pulseDot 2s ease-in-out infinite;
+  animation: pulseDot var(--d-loop-slow, 2000ms) ease-in-out infinite;
   will-change: transform, opacity;
 }
 
 /* 点赞爱心弹出 */
 .bounce-in {
-  animation: bounceIn 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: bounceIn var(--d-slower, 500ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
   will-change: transform, opacity;
 }
 
 /* 漂浮动画 */
 .float {
-  animation: float 3s ease-in-out infinite;
+  animation: float var(--d-breathe, 3000ms) ease-in-out infinite;
   will-change: transform;
 }
 
 /* 心跳动画 */
 .heart-beat {
-  animation: heartBeat 1.2s ease-in-out infinite;
+  animation: heartBeat var(--d-loop, 1200ms) ease-in-out infinite;
   will-change: transform;
 }
 
@@ -425,7 +425,7 @@ page {
     transparent 100%
   );
   background-size: 200% 100%;
-  animation: gradientShine 2s linear infinite;
+  animation: gradientShine var(--d-loop-slow, 2000ms) linear infinite;
 }
 
 /* 滚动条隐藏 —— P3 修复：原 App.vue 中重复定义两次 ::-webkit-scrollbar，此处仅保留一处 */
@@ -592,7 +592,7 @@ page {
   left: 50%;
   width: 0;
   height: 0;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-secondary-blue-bg-tint-light, var(--c-secondary-blue-bg-tint-light, var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15))));
   transform: translate(-50%, -50%);
   pointer-events: none;

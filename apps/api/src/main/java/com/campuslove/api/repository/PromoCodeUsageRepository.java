@@ -23,6 +23,19 @@ public interface PromoCodeUsageRepository extends JpaRepository<PromoCodeUsage, 
     Optional<PromoCodeUsage> findByPromoCodeIdAndUserId(Long promoCodeId, Long userId);
 
     /**
+     * 按优惠码 ID + 用户 ID 统计使用次数。
+     *
+     * <p>Task 12.4（REAUDIT-REPORT-100+ 编号 41）：用于支持 max_uses_per_user 限制。
+     * 兑换前查询当前用户对该优惠码的已使用次数，与 promo_codes.max_uses_per_user 比较，
+     * 超过则拒绝兑换。当 max_uses_per_user = 1 时退化为"是否已使用过"判断。</p>
+     *
+     * @param promoCodeId 优惠码 ID
+     * @param userId      用户 ID
+     * @return 已使用次数
+     */
+    long countByPromoCodeIdAndUserId(Long promoCodeId, Long userId);
+
+    /**
      * 按用户 ID 查询使用记录列表，按使用时间倒序。
      *
      * @param userId 用户 ID

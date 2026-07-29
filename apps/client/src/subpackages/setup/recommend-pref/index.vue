@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 推荐偏好设置页（功能5：当前步骤 = 3：推荐偏好）。
  *
@@ -255,10 +255,10 @@ onMounted(() => {
   min-width: 120rpx;
   height: 72rpx;
   padding: 0 28rpx;
-  border-radius: 18rpx;
+  border-radius: var(--r-lg, 18rpx);
   border: 2rpx solid var(--c-border-light);
   background: var(--c-bg-container);
-  transition: all 0.2s ease;
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 .option-item--active {
@@ -295,7 +295,7 @@ onMounted(() => {
   border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-surface);
   position: relative;
-  transition: background 0.2s ease;
+  transition: background var(--d-normal, 200ms) ease;
 }
 
 .toggle-switch--on {
@@ -305,12 +305,12 @@ onMounted(() => {
 .toggle-knob {
   width: 40rpx;
   height: 40rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-bg-container);
   position: absolute;
   top: 4rpx;
   left: 4rpx;
-  transition: left 0.2s ease;
+  transition: left var(--d-normal, 200ms) ease;
   box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg, var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12)));
 }
 

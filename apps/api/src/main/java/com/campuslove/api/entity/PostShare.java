@@ -11,12 +11,16 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 帖子转发记录实体，对应 post_shares 表。
  * 关联 Post，支持级联删除，可附加评论。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "post_shares")
 public class PostShare {
 
@@ -38,6 +42,9 @@ public class PostShare {
     private String comment;
 
     /** 记录创建时间（转发发生时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

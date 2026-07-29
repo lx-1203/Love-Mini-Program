@@ -18,6 +18,8 @@ import type {
   PostDetailView,
   PostItem,
   PostSummaryView,
+  // 修复 no-duplicate-imports：合并 ./types 的重复 import
+  PostCategory,
 } from "./types";
 import {
   CATEGORY_ALL_ID,
@@ -390,7 +392,7 @@ export function formatRelativeTime(dateStr: string): string {
 
 /* ========== Mock 数据 ========== */
 
-import type { PostCategory } from "./types";
+// 修复 no-duplicate-imports：PostCategory 已在文件顶部导入，此处删除重复 import
 
 /** Mock 分类列表 */
 export const mockCategories: PostCategory[] = [

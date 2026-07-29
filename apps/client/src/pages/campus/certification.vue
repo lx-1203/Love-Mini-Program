@@ -12,8 +12,9 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
-import { useCampusStore, CERT_STATUS_MAP } from "../../stores/campus";
-import type { CertificationStatus } from "../../stores/campus";
+import { useI18n } from "vue-i18n";
+// 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
+import { useCampusStore, CERT_STATUS_MAP, type CertificationStatus } from "../../stores/campus";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
@@ -22,6 +23,8 @@ import { ensurePrivacyAuthorized } from "../../utils/privacy";
 const campusStore = useCampusStore();
 // 修复（严格模式 noUnusedLocals）：loading 未在模板/脚本中引用，已从解构中移除。
 const { certificationStatus, certificationInfo } = storeToRefs(campusStore);
+// Task 28：i18n 文案
+const { t } = useI18n();
 
 const pageVisible = ref(false);
 /** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
@@ -68,7 +71,7 @@ async function uploadStudentCard() {
     await ensurePrivacyAuthorized();
   } catch (_e) {
     uni.showToast({
-      title: "需同意隐私协议后才能上传图片",
+      title: t("campus.certification.privacyRequiredImage"),
       icon: "none",
     });
     return;
@@ -83,7 +86,7 @@ async function uploadStudentCard() {
     },
     fail: (err) => {
       console.error("选择图片失败:", err);
-      uni.showToast({ title: "选择图片失败", icon: "none" });
+      uni.showToast({ title: t("campus.certification.chooseImageFailed"), icon: "none" });
     },
   });
 }
@@ -93,15 +96,15 @@ async function uploadStudentCard() {
  */
 async function submitCert() {
   if (!schoolName.value.trim()) {
-    uni.showToast({ title: "请输入学校名称", icon: "none" });
+    uni.showToast({ title: t("campus.certification.errSchoolName"), icon: "none" });
     return;
   }
   if (!major.value.trim()) {
-    uni.showToast({ title: "请输入专业", icon: "none" });
+    uni.showToast({ title: t("campus.certification.errMajor"), icon: "none" });
     return;
   }
   if (!studentCardUrl.value) {
-    uni.showToast({ title: "请上传学生证照片", icon: "none" });
+    uni.showToast({ title: t("campus.certification.errStudentCard"), icon: "none" });
     return;
   }
 
@@ -112,10 +115,10 @@ async function submitCert() {
       major: major.value.trim(),
       studentCardUrl: studentCardUrl.value,
     });
-    uni.showToast({ title: "提交成功，请等待审核", icon: "success" });
+    uni.showToast({ title: t("campus.certification.submitSuccess"), icon: "success" });
   } catch (_e) {
     uni.showToast({
-      title: campusStore.errorMessage || "提交失败",
+      title: campusStore.errorMessage || t("campus.certification.submitFailed"),
       icon: "none",
     });
   } finally {
@@ -172,9 +175,9 @@ onMounted(() => {
     <!-- 顶部导航栏 -->
     <view class="cert-header">
       <view class="cert-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">返回</text>
+        <text class="back-icon">{{ $t("campus.certification.back") }}</text>
       </view>
-      <text class="cert-header__title">学生认证</text>
+      <text class="cert-header__title">{{ $t("campus.certification.navTitle") }}</text>
       <view class="cert-header__spacer" />
     </view>
 
@@ -189,13 +192,13 @@ onMounted(() => {
         <view class="status-card__body">
           <text class="status-card__title">{{ CERT_STATUS_MAP[certificationStatus] }}</text>
           <text v-if="certificationStatus === 'pending'" class="status-card__desc">
-            你的认证正在审核中，通常需要1-3个工作日，请耐心等待
+            {{ $t("campus.certification.pendingDesc") }}
           </text>
           <text v-else-if="certificationStatus === 'verified'" class="status-card__desc">
-            恭喜！你已通过学生认证，可以畅享校园专区所有功能
+            {{ $t("campus.certification.verifiedDesc") }}
           </text>
           <text v-else-if="certificationStatus === 'rejected'" class="status-card__desc">
-            很遗憾，你的认证未通过。原因：{{ certificationInfo?.reviewComment || "信息不符" }}，请重新提交
+            {{ $t("campus.certification.rejectedDescPrefix") }}{{ certificationInfo?.reviewComment || $t("campus.certification.rejectedDescDefault") }}{{ $t("campus.certification.rejectedDescSuffix") }}
           </text>
         </view>
       </view>
@@ -205,12 +208,12 @@ onMounted(() => {
         <!-- 说明卡片 -->
         <view class="info-card">
           <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="info-card__icon" mode="aspectFit" />
-          <text class="info-card__title">为什么要认证？</text>
+          <text class="info-card__title">{{ $t("campus.certification.whyCertifyTitle") }}</text>
           <view class="info-card__list" role="list">
-            <text class="info-card__item">• 解锁校园话题讨论</text>
-            <text class="info-card__item">• 与同校同学互动交流</text>
-            <text class="info-card__item">• 参与校园活动和社团招新</text>
-            <text class="info-card__item">• 获取校友资源和人脉</text>
+            <text class="info-card__item">{{ $t("campus.certification.whyCertifyItem1") }}</text>
+            <text class="info-card__item">{{ $t("campus.certification.whyCertifyItem2") }}</text>
+            <text class="info-card__item">{{ $t("campus.certification.whyCertifyItem3") }}</text>
+            <text class="info-card__item">{{ $t("campus.certification.whyCertifyItem4") }}</text>
           </view>
         </view>
 
@@ -218,46 +221,46 @@ onMounted(() => {
         <view class="form-section">
           <!-- 学校名称 -->
           <view class="form-group">
-            <text class="form-label">学校名称</text>
+            <text class="form-label">{{ $t("campus.certification.labelSchool") }}</text>
             <input
               v-model="schoolName"
               class="form-input"
-              placeholder="请输入你的学校全称" aria-label="请输入你的学校全称"
+              :placeholder="$t('campus.certification.placeholderSchool')" :aria-label="$t('campus.certification.placeholderSchool')"
             />
           </view>
 
           <!-- 专业 -->
           <view class="form-group">
-            <text class="form-label">专业</text>
+            <text class="form-label">{{ $t("campus.certification.labelMajor") }}</text>
             <input
               v-model="major"
               class="form-input"
-              placeholder="请输入你的专业" aria-label="请输入你的专业"
+              :placeholder="$t('campus.certification.placeholderMajor')" :aria-label="$t('campus.certification.placeholderMajor')"
             />
           </view>
 
           <!-- 学生证照片上传 -->
           <view class="form-group">
-            <text class="form-label">学生证照片</text>
+            <text class="form-label">{{ $t("campus.certification.labelStudentCard") }}</text>
             <text class="form-hint">
-              确保照片清晰，包含学校名称、姓名、学号等信息
+              {{ $t("campus.certification.studentCardHint") }}
             </text>
 
             <view v-if="!studentCardUrl" class="upload-area press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadStudentCard">
               <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CAMERA" custom-class="upload-icon" mode="aspectFit" />
-              <text class="upload-text">点击上传学生证照片</text>
-              <text class="upload-sub">支持拍照或从相册选择</text>
+              <text class="upload-text">{{ $t("campus.certification.uploadText") }}</text>
+              <text class="upload-sub">{{ $t("campus.certification.uploadSub") }}</text>
             </view>
 
             <view v-else class="upload-preview">
               <image
                 class="upload-preview__img"
                 :src="studentCardUrl"
-                mode="aspectFill" alt=""
+                mode="aspectFill" lazy-load alt=""
               />
               <view class="upload-preview__actions">
                 <view class="upload-preview__reupload press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadStudentCard">
-                  <text class="reupload-text">重新上传</text>
+                  <text class="reupload-text">{{ $t("campus.certification.reupload") }}</text>
                 </view>
                 <view class="upload-preview__remove press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="studentCardUrl = ''">
                   <text class="remove-icon">x</text>
@@ -275,14 +278,14 @@ onMounted(() => {
             @tap="submitCert"
           >
             <text class="submit-btn__text">
-              {{ isSubmitting ? "提交中..." : "提交审核" }}
+              {{ isSubmitting ? $t("campus.certification.submitting") : $t("campus.certification.submitBtn") }}
             </text>
           </view>
 
           <!-- 底部提示 -->
           <view class="privacy-tip">
             <text class="privacy-tip__text">
-              你的信息仅用于学生身份认证，我们承诺保护你的隐私安全
+              {{ $t("campus.certification.privacyTip") }}
             </text>
           </view>
         </view>
@@ -292,12 +295,12 @@ onMounted(() => {
       <view v-if="certificationStatus === 'verified'" class="verified-info">
         <view class="verified-card">
           <view class="verified-card__row">
-            <text class="verified-label">学校</text>
+            <text class="verified-label">{{ $t("campus.certification.verifiedLabelSchool") }}</text>
             <text class="verified-value">{{ certificationInfo?.schoolName || "-" }}</text>
           </view>
           <view class="verified-card__divider" />
           <view class="verified-card__row">
-            <text class="verified-label">专业</text>
+            <text class="verified-label">{{ $t("campus.certification.verifiedLabelMajor") }}</text>
             <text class="verified-value">{{ certificationInfo?.major || "-" }}</text>
           </view>
         </view>
@@ -329,13 +332,13 @@ onMounted(() => {
 .cert-header__back {
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
-  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
+  background: var(--c-overlay-white-bg-mid-strong);
 }
 
 /* #ifdef H5 */
 .cert-header__back:active {
   transform: scale(0.96);
-  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
+  background: var(--c-overlay-white-bg-stronger);
 }
 /* #endif */
 
@@ -380,18 +383,18 @@ onMounted(() => {
 /* #endif */
 
 .status-card--pending {
-  background: linear-gradient(135deg, var(--c-warning-bg-tint, #FEF9C3), var(--c-warning-bg-tint, #FEF3C7));
-  border: 2rpx solid var(--c-vip-border-light, var(--c-vip-border-light, rgba(201, 163, 106, 0.3)));
+  background: linear-gradient(135deg, var(--c-warning-bg-tint), var(--c-warning-bg-tint));
+  border: 2rpx solid var(--c-vip-border-light);
 }
 
 .status-card--verified {
-  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-success-bg-tint, #DCFCE7));
-  border: 2rpx solid var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-success-bg-tint));
+  border: 2rpx solid var(--c-brand-border-tint-stronger);
 }
 
 .status-card--rejected {
-  background: linear-gradient(135deg, var(--c-red-bg-tint, #FEF2F2), var(--c-red-bg-tint, #FEE2E2));
-  border: 2rpx solid var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
+  background: linear-gradient(135deg, var(--c-red-bg-tint), var(--c-red-bg-tint));
+  border: 2rpx solid var(--c-error-bg-tint-strong);
 }
 
 .status-card--unverified {
@@ -577,8 +580,8 @@ onMounted(() => {
 .upload-preview__remove {
   width: 48rpx;
   height: 48rpx;
-  border-radius: 50%;
-  background: var(--c-error-bg-tint, var(--c-error-bg-tint, rgba(229, 69, 77, 0.1)));
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-error-bg-tint);
   display: flex;
   align-items: center;
   justify-content: center;

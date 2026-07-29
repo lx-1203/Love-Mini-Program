@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 个人中心 - 我的
  * 展示用户头像、昵称、学校、签名、VIP 状态、我的动态、数据统计、资料完善度、社交升温进度、功能菜单入口
@@ -23,6 +23,7 @@ import MatchCountChip from "../../components/common/MatchCountChip.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
+import { designTokens } from "../../theme/tokens";
 // 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
 import type { UniUploadFileLike } from "../../services/api";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
@@ -281,28 +282,28 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     emoji: "💝",
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
-    bgColor: "#FFF0F5",
+    bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
     label: t("profile.myPosts"),
     path: "/pages/village/index?tab=mine",
   },
   {
     emoji: "⭐",
     icon: IMAGE_PATHS.ICONS_PROFILE.FAVORITES,
-    bgColor: "#FFF8E7",
+    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
     label: t("profile.myLikes"),
     path: "/pages/likes/index?tab=likedBy",
   },
   {
     emoji: "💕",
     icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
-    bgColor: "#FFE8EC",
+    bgColor: "var(--c-tint-pink-50, #FFE8EC)",
     label: t("profile.myMatches"),
     path: "/pages/likes/index",
   },
   {
     emoji: "👀",
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
-    bgColor: "#E8F8F0",
+    bgColor: "var(--c-bg-brand, #E8F8F0)",
     label: t("profile.visitors"),
     path: "/pages/profile/visitors",
   },
@@ -310,35 +311,35 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     emoji: "📷",
     icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
-    bgColor: "#FFF0F5",
+    bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
     label: t("profile.albumTitle"),
     path: "/pages/profile/album",
   },
   {
     emoji: "✅",
     icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
-    bgColor: "#E8F4FF",
+    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
     label: t("profile.verification"),
     path: "/pages/verification/index",
   },
   {
     emoji: "🔬",
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
-    bgColor: "#F3E8FF",
+    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
     label: t("profile.loveLab"),
     path: "/pages/circles/index",
   },
   {
     emoji: "",
     icon: IMAGE_PATHS.ICONS_EMOJI.CHAT,
-    bgColor: "#E0F2FE",
+    bgColor: "var(--c-sky-50, #E0F2FE)",
     label: t("profile.feedback"),
     path: "/subpackages/support/feedback/index",
   },
   {
     emoji: "📤",
     icon: IMAGE_PATHS.ICONS_PROFILE.SHARE,
-    bgColor: "#EDE9FE",
+    bgColor: "var(--c-lavender-100, #EDE9FE)",
     label: t("profile.shareFriend"),
     action: () => {
       uni.showShareMenu({
@@ -353,14 +354,14 @@ const bottomMenuItems = computed<MenuItem[]>(() => [
   {
     emoji: "⚙️",
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
-    bgColor: "#F4F6FA",
+    bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("profile.settings"),
     path: "/pages/settings/index",
   },
   {
     emoji: "ℹ️",
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
-    bgColor: "#F4F6FA",
+    bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("profile.aboutUs"),
     action: () => {
       lightHaptic();
@@ -470,7 +471,7 @@ async function handleEditBackground() {
     await ensurePrivacyAuthorized();
   } catch (_e) {
     uni.showToast({
-      title: "需同意隐私协议后才能选择图片",
+      title: t('profile.privacyRequiredImage'),
       icon: "none",
     });
     return;
@@ -537,7 +538,7 @@ async function handleUploadVideo() {
     await ensurePrivacyAuthorized();
   } catch (_e) {
     uni.showToast({
-      title: "需同意隐私协议后才能选择视频",
+      title: t('profile.privacyRequiredVideo'),
       icon: "none",
     });
     return;
@@ -605,7 +606,7 @@ function handleRemoveVideo() {
     title: t("profile.deleteVideo"),
     content: t("profile.deleteVideoConfirm"),
     confirmText: t("profile.delete"),
-    confirmColor: "#E5454D",
+    confirmColor: designTokens.color.error,
     success: async (res) => {
       if (!res.confirm) return;
       isUploading.value = true;
@@ -641,7 +642,7 @@ async function handleUploadPhoto(index: number) {
     await ensurePrivacyAuthorized();
   } catch (_e) {
     uni.showToast({
-      title: "需同意隐私协议后才能选择图片",
+      title: t('profile.privacyRequiredImage'),
       icon: "none",
     });
     return;
@@ -703,7 +704,7 @@ function handleRemovePhoto(index: number) {
     title: t("profile.deletePhoto"),
     content: t("profile.deletePhotoConfirm"),
     confirmText: t("profile.delete"),
-    confirmColor: "#E5454D",
+    confirmColor: designTokens.color.error,
     success: async (res) => {
       if (!res.confirm) return;
       isUploading.value = true;
@@ -806,7 +807,7 @@ onMounted(() => {
             v-if="profileBackgroundUrl"
             class="profile-bg__img"
             :src="profileBackgroundUrl"
-            mode="aspectFill" alt=""
+            mode="aspectFill" lazy-load alt=""
           />
           <view class="profile-bg__overlay" />
           <!-- Phase E1 / H-10：编辑背景图按钮（仅自己主页显示，右下角相机图标） -->
@@ -815,6 +816,8 @@ onMounted(() => {
             class="profile-bg__edit press-feedback"
             hover-class="profile-bg__edit--hover"
             hover-stay-time="120"
+            role="button"
+            :aria-label="t('profile.editBgAria')"
             @tap="handleEditBackground"
           >
             <image
@@ -879,12 +882,12 @@ onMounted(() => {
 
         <!-- Task F1 / M-08：按钮根据 isOwnProfile 切换 -->
         <!-- 自己的 profile：显示"编辑资料"按钮 -->
-        <view v-if="isOwnProfile" class="edit-btn press-feedback" @tap="goToProfileSetup" hover-class="edit-btn--hover" hover-stay-time="120">
+        <view v-if="isOwnProfile" class="edit-btn press-feedback" role="button" :aria-label="t('profile.editProfileAria')" @tap="goToProfileSetup" hover-class="edit-btn--hover" hover-stay-time="120">
           <image class="edit-btn__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
           <text class="edit-btn__text">{{ t('profile.editProfile') }}</text>
         </view>
         <!-- 对方 profile：显示"打个招呼"按钮 -->
-        <view v-else class="greet-btn press-feedback" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="120">
+        <view v-else class="greet-btn press-feedback" role="button" :aria-label="t('profile.sayHiAria')" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="120">
           <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
           <text class="greet-btn__text">{{ t('profile.sayHi') }}</text>
         </view>
@@ -917,6 +920,8 @@ onMounted(() => {
           class="video-cta press-feedback"
           hover-class="video-cta--hover"
           hover-stay-time="120"
+          role="button"
+          :aria-label="t('profile.uploadVideoAria')"
           @tap="handleUploadVideo"
         >
           <view class="video-cta__icon-wrap">
@@ -936,11 +941,11 @@ onMounted(() => {
 
         <!-- 已上传：视频缩略图 + 播放图标 + 删除按钮 -->
         <view v-else class="video-preview">
-          <view class="video-preview__thumb" @tap="handlePlayVideo">
+          <view class="video-preview__thumb" role="button" :aria-label="t('profile.playVideoAria')" @tap="handlePlayVideo">
             <image
               class="video-preview__thumb-img"
               :src="resolveMediaUrl(personalVideoUrl)"
-              mode="aspectFill" alt=""
+              mode="aspectFill" lazy-load alt=""
             />
             <view class="video-preview__play">
               <view class="video-preview__play-triangle" />
@@ -951,6 +956,8 @@ onMounted(() => {
               class="video-preview__action video-preview__action--play press-feedback"
               hover-class="video-preview__action--hover"
               hover-stay-time="100"
+              role="button"
+              :aria-label="t('profile.playVideoAria')"
               @tap="handlePlayVideo"
             >
               <text class="video-preview__action-text">{{ t('profile.play') }}</text>
@@ -959,6 +966,8 @@ onMounted(() => {
               class="video-preview__action video-preview__action--delete press-feedback"
               hover-class="video-preview__action--hover"
               hover-stay-time="100"
+              role="button"
+              :aria-label="t('profile.removeVideoAria')"
               @tap="handleRemoveVideo"
             >
               <text class="video-preview__action-text video-preview__action-text--danger">{{ t('profile.delete') }}</text>
@@ -1001,6 +1010,8 @@ onMounted(() => {
               class="photo-grid__add press-feedback"
               hover-class="photo-grid__add--hover"
               hover-stay-time="100"
+              role="button"
+              :aria-label="t('profile.uploadPhotoAria')"
               @tap="handleUploadPhoto(cell.index)"
             >
               <text class="photo-grid__add-icon">+</text>
@@ -1011,7 +1022,7 @@ onMounted(() => {
       </view>
 
       <!-- VIP卡片 -->
-      <view v-if="!isVip" class="vip-card press-feedback card-base" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="120">
+      <view v-if="!isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="120">
         <view class="vip-card__left">
           <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           <view class="vip-card__text-wrap">
@@ -1039,6 +1050,8 @@ onMounted(() => {
           <view
             v-if="myPostsPreview.length > 0"
             class="section-header__more press-feedback"
+            role="button"
+            :aria-label="t('profile.viewAllPostsAria')"
             @tap="goToMyPosts"
             hover-class="section-header__more--hover"
             hover-stay-time="100"
@@ -1055,6 +1068,8 @@ onMounted(() => {
             :key="post.id"
             class="my-post-item press-feedback"
             :class="{ 'my-post-item--no-border': index === myPostsPreview.length - 1 }"
+            role="button"
+            :aria-label="post.summary"
             @tap="handlePostTap(post.id)"
             hover-class="my-post-item--hover"
             hover-stay-time="100"
@@ -1065,11 +1080,11 @@ onMounted(() => {
                 <text class="my-post-item__time">{{ post.timeLabel }}</text>
                 <view class="my-post-item__stats">
                   <view class="my-post-item__stat">
-                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
+                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" lazy-load="true" alt="" />
                     <text class="my-post-item__stat-text">{{ post.likes }}</text>
                   </view>
                   <view class="my-post-item__stat">
-                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
+                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" lazy-load="true" alt="" />
                     <text class="my-post-item__stat-text">{{ post.comments }}</text>
                   </view>
                 </view>
@@ -1083,6 +1098,8 @@ onMounted(() => {
         <view
           v-else
           class="my-posts-empty press-feedback"
+          role="button"
+          :aria-label="t('profile.publishFirstAria')"
           @tap="goToMyPosts"
           hover-class="my-posts-empty--hover"
           hover-stay-time="100"
@@ -1100,6 +1117,8 @@ onMounted(() => {
           :key="index"
           class="menu-item press-feedback list-item"
           :class="{ 'menu-item--no-border': index === menuItems.length - 1 }"
+          role="button"
+          :aria-label="t('profile.menuItemAria', { label: item.label })"
           @tap="handleMenuTap(item)"
           hover-class="menu-item--hover"
           hover-stay-time="100"
@@ -1127,6 +1146,8 @@ onMounted(() => {
           :key="index"
           class="menu-item press-feedback list-item"
           :class="{ 'menu-item--no-border': index === bottomMenuItems.length - 1 }"
+          role="button"
+          :aria-label="t('profile.menuItemAria', { label: item.label })"
           @tap="handleMenuTap(item)"
           hover-class="menu-item--hover"
           hover-stay-time="100"
@@ -1148,7 +1169,7 @@ onMounted(() => {
       </view>
 
       <!-- 退出登录 -->
-      <view class="logout-btn press-feedback" @tap="handleLogout" hover-class="logout-btn--hover" hover-stay-time="100">
+      <view class="logout-btn press-feedback" role="button" :aria-label="t('profile.logoutAria')" @tap="handleLogout" hover-class="logout-btn--hover" hover-stay-time="100">
         <text class="logout-btn__text">{{ t('profile.logout') }}</text>
       </view>
 
@@ -1158,7 +1179,7 @@ onMounted(() => {
       </view>
 
       <!-- [DEV-MODE] 开发者模式入口按钮 -->
-      <view v-if="isDev" class="dev-entry press-feedback" @tap="openAppPath('/pages/dev/index')" hover-class="dev-entry--hover" hover-stay-time="100">
+      <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath('/pages/dev/index')" hover-class="dev-entry--hover" hover-stay-time="100">
         <text class="dev-entry__text">DEV</text>
       </view>
 
@@ -1267,7 +1288,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3))) 0%, var(--c-brand-300, var(--c-brand-300, rgba(124, 217, 166, 0.5))) 50%, var(--c-brand-400) 100%);
+  background: linear-gradient(180deg, var(--c-brand-border-tint-stronger) 0%, var(--c-brand-300) 50%, var(--c-brand-400) 100%);
   pointer-events: none;
 }
 
@@ -1281,13 +1302,13 @@ onMounted(() => {
   align-items: center;
   gap: var(--sp-1);
   padding: var(--sp-1) var(--sp-3);
-  background: var(--c-overlay-mid, var(--c-overlay-mid, rgba(15, 23, 42, 0.55)));
+  background: var(--c-overlay-mid);
   border-radius: var(--r-full);
   transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 
   &--hover {
     transform: scale(0.96);
-    background: var(--c-overlay-strong, var(--c-overlay-strong, rgba(15, 23, 42, 0.7)));
+    background: var(--c-overlay-strong);
   }
 }
 
@@ -1307,9 +1328,9 @@ onMounted(() => {
   width: 28rpx;
   height: 28rpx;
   border-radius: var(--r-full);
-  border: 3rpx solid var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
+  border: 3rpx solid var(--c-overlay-white-bg-stronger);
   border-top-color: var(--c-neutral-0);
-  animation: profile-bg-spin 0.8s linear infinite;
+  animation: profile-bg-spin var(--d-spinner, 800ms) linear infinite;
 }
 
 @keyframes profile-bg-spin {
@@ -1323,7 +1344,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-overlay-mid-strong, var(--c-overlay-mid-strong, rgba(15, 23, 42, 0.35)));
+  background: var(--c-overlay-mid-strong);
 }
 
 .profile-bg__loading-text {
@@ -1361,11 +1382,11 @@ onMounted(() => {
   border-radius: var(--r-full);
   padding: var(--sp-1);
   background: var(--c-gradient-brand);
-  animation: ring-rotate 8s linear infinite;
+  animation: ring-rotate var(--d-rotate-slow, 8000ms) linear infinite;
 
   &--vip {
     background: var(--c-gradient-vip);
-    box-shadow: 0 0 var(--sp-8) var(--c-vip-border-tint, var(--c-vip-border-tint, rgba(201, 163, 106, 0.5)));
+    box-shadow: 0 0 var(--sp-8) var(--c-vip-border-tint);
   }
 }
 
@@ -1409,7 +1430,7 @@ onMounted(() => {
   transform: translateX(-50%);
   width: 36rpx;
   height: 36rpx;
-  filter: drop-shadow(0 var(--sp-1) var(--sp-2) var(--c-overlay-text-shadow-mid, var(--c-overlay-text-shadow-mid, rgba(0,0,0,0.2))));
+  filter: drop-shadow(0 var(--sp-1) var(--sp-2) var(--c-overlay-text-shadow-mid));
 }
 
 .vip-crown__icon {
@@ -1442,7 +1463,7 @@ onMounted(() => {
   font-size: var(--fs-2xl);
   font-weight: 700;
   color: var(--c-neutral-0);
-  text-shadow: 0 var(--sp-1) var(--sp-4) var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0,0,0,0.1)));
+  text-shadow: 0 var(--sp-1) var(--sp-4) var(--c-black-shadow-md);
 }
 
 /* VIP 徽章 */
@@ -1476,7 +1497,7 @@ onMounted(() => {
   gap: var(--sp-1);
   margin-bottom: var(--sp-2);
   padding: var(--sp-1) var(--sp-4);
-  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)));
+  background: var(--c-overlay-bg-light);
   border-radius: var(--r-full);
 }
 
@@ -1497,7 +1518,7 @@ onMounted(() => {
 
 .user-info__bio {
   font-size: var(--fs-sm);
-  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
+  color: var(--c-overlay-white-text-strong);
   max-width: 480rpx;
   text-align: center;
   overflow: hidden;
@@ -1614,7 +1635,7 @@ onMounted(() => {
   border-radius: var(--r-full);
   border: 4rpx solid var(--c-brand-100);
   border-top-color: var(--c-brand-500);
-  animation: video-cta-spin 0.8s linear infinite;
+  animation: video-cta-spin var(--d-spinner, 800ms) linear infinite;
 }
 
 @keyframes video-cta-spin {
@@ -1662,7 +1683,7 @@ onMounted(() => {
   width: 96rpx;
   height: 96rpx;
   border-radius: var(--r-full);
-  background: var(--c-overlay-mid, var(--c-overlay-mid, rgba(15, 23, 42, 0.55)));
+  background: var(--c-overlay-mid);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1698,7 +1719,7 @@ onMounted(() => {
   }
 
   &--delete {
-    border-color: var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
+    border-color: var(--s-action-error);
   }
 }
 
@@ -1805,7 +1826,7 @@ onMounted(() => {
 
 .vip-card__icon {
   font-size: var(--fs-6xl);
-  filter: drop-shadow(0 var(--sp-1) var(--sp-2) var(--c-black-shadow-lg, var(--c-black-shadow-lg, rgba(0,0,0,0.15))));
+  filter: drop-shadow(0 var(--sp-1) var(--sp-2) var(--c-black-shadow-lg));
 }
 
 .vip-card__text-wrap {
@@ -1824,7 +1845,7 @@ onMounted(() => {
 .vip-card__desc {
   font-size: var(--fs-sm);
   /* 半透明白字 */
-  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85)));
+  color: var(--c-overlay-text-secondary);
 }
 
 .vip-card__btn {

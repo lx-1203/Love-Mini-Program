@@ -1,0 +1,2308 @@
+=== 扫描结果：共 1993 处疑似中文硬编码，分布在 190 个文件 ===
+
+--- components\chat\chat.stories.ts (27 处) ---
+  L22: render: (args) => ({ components: { ChatBubble }, setup: () => ({ args }), template: '<ChatBubble v-bind="args">你好，今天一起吃饭吗？</ChatBubble>' }),
+  L24: type: { control: 'select', options: ['text', 'image', 'voice', 'video', 'system'], description: '消息类型' },
+  L25: direction: { control: 'select', options: ['sent', 'received'], description: '消息方向' },
+  L26: time: { control: 'text', description: '时间戳显示' },
+  L27: showAvatar: { control: 'boolean', description: '是否显示头像' },
+  L36: message: { control: 'object', description: '消息对象 {id,type,content,direction,timestamp}' },
+  L37: showAvatar: { control: 'boolean', description: '是否显示头像' },
+  L39: args: { message: { id: '1', type: 'text', content: '你好', direction: 'sent', timestamp: Date.now() }, showAvatar: true },
+  L46: visible: { control: 'boolean', description: '是否可见' },
+  L47: userName: { control: 'text', description: '对方用户名' },
+  L49: args: { visible: true, userName: '小明' },
+  L56: suggestions: { control: 'array', description: '破冰话题列表' },
+  L57: visible: { control: 'boolean', description: '是否可见' },
+  L59: args: { suggestions: ['你最近在追什么剧？', '周末一起去图书馆吗？', '你喜欢吃什么？'], visible: true },
+  L66: amount: { control: 'number', description: '金额（分）' },
+  L67: greeting: { control: 'text', description: '祝福语' },
+  L68: direction: { control: 'select', options: ['sent', 'received'], description: '方向' },
+  L69: opened: { control: 'boolean', description: '是否已打开' },
+  L71: args: { amount: 520, greeting: '一见钟情', direction: 'sent', opened: false },
+  L78: duration: { control: 'number', description: '时长（秒）' },
+  L79: direction: { control: 'select', options: ['sent', 'received'], description: '方向' },
+  L80: playing: { control: 'boolean', description: '是否正在播放' },
+  L81: url: { control: 'text', description: '音频 URL' },
+  L90: recording: { control: 'boolean', description: '是否录音中' },
+  L91: duration: { control: 'number', description: '已录时长（秒）' },
+  L100: visible: { control: 'boolean', description: '是否显示' },
+  L101: maxDuration: { control: 'number', description: '最大时长（秒）' },
+
+--- components\common\BottomActionBar.vue (1 处) ---
+  L22: aria-label="操作栏"
+
+--- components\common\EducationBadge.vue (1 处) ---
+  L9: degree?: '本科' | '硕士' | '博士' | '专科' | string;
+
+--- components\common\HeartParticles.vue (1 处) ---
+  L125: :aria-label="paused ? '恢复粒子动画' : '暂停粒子动画'"
+
+--- components\common\PageStateContainer.vue (1 处) ---
+  L13: <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
+
+--- components\common\SafeImage.vue (1 处) ---
+  L6: :aria-label="alt || '图片'"
+
+--- components\common\Skeleton.vue (1 处) ---
+  L21: aria-label="加载中"
+
+--- components\common\common.stories.ts (94 处) ---
+  L47: size: { control: 'select', options: ['xs', 'sm', 'md', 'lg', 'xl'], description: '头像尺寸' },
+  L48: src: { control: 'text', description: '头像图片 URL' },
+  L49: name: { control: 'text', description: '用户名（用于 alt 文本）' },
+  L50: online: { control: 'boolean', description: '是否在线' },
+  L51: vip: { control: 'boolean', description: '是否 VIP' },
+  L52: ring: { control: 'boolean', description: '是否显示边框' },
+  L53: vipRing: { control: 'boolean', description: '是否显示 VIP 边框' },
+  L54: liveDot: { control: 'select', options: [false, 'green', 'red'], description: '直播指示点' },
+  L59: name: '小明',
+  L74: template: '<Button v-bind="args">按钮</Button>',
+  L77: variant: { control: 'select', options: ['primary', 'secondary', 'outline', 'ghost', 'wechat', 'danger', 'success', 'romance', 'text'], description: '按钮变体' },
+  L78: size: { control: 'select', options: ['sm', 'md', 'lg'], description: '按钮尺寸' },
+  L79: block: { control: 'boolean', description: '是否块级宽度' },
+  L80: loading: { control: 'boolean', description: '加载中状态' },
+  L81: disabled: { control: 'boolean', description: '禁用状态' },
+  L82: ripple: { control: 'boolean', description: '是否启用涟漪效果' },
+  L96: src: { control: 'text', description: '图片 URL' },
+  L97: fallback: { control: 'text', description: '加载失败时的占位图' },
+  L98: mode: { control: 'select', options: ['aspectFill', 'aspectFit', 'scaleToFill', 'widthFix'], description: '裁剪模式' },
+  L99: alt: { control: 'text', description: 'alt 文本（无障碍）' },
+  L100: lazyLoad: { control: 'boolean', description: '是否懒加载' },
+  L102: args: { src: '', fallback: '', mode: 'aspectFill', alt: '图片', lazyLoad: true },
+  L111: template: '<Tag v-bind="args">标签</Tag>',
+  L114: type: { control: 'select', options: ['default', 'primary', 'success', 'warning', 'danger'], description: '标签类型' },
+  L115: size: { control: 'select', options: ['sm', 'md', 'lg'], description: '尺寸' },
+  L116: closable: { control: 'boolean', description: '是否可关闭' },
+  L130: message: { control: 'text', description: '提示文案' },
+  L131: type: { control: 'select', options: ['info', 'success', 'warning', 'error'], description: '类型' },
+  L132: duration: { control: 'number', description: '显示时长（ms）' },
+  L134: args: { message: '操作成功', type: 'success', duration: 2000 },
+  L146: title: { control: 'text', description: '空状态标题' },
+  L147: description: { control: 'text', description: '辅助说明' },
+  L148: image: { control: 'text', description: '占位图 URL' },
+  L150: args: { title: '暂无数据', description: '下拉刷新试试', image: '' },
+  L162: title: { control: 'text', description: '错误标题' },
+  L163: description: { control: 'text', description: '错误详情' },
+  L164: retryText: { control: 'text', description: '重试按钮文案' },
+  L166: args: { title: '加载失败', description: '网络异常，请重试', retryText: '重试' },
+  L178: type: { control: 'select', options: ['line', 'circle', 'rect'], description: '骨架类型' },
+  L179: width: { control: 'text', description: '宽度' },
+  L180: height: { control: 'text', description: '高度' },
+  L181: animated: { control: 'boolean', description: '是否动画' },
+  L192: template: '<SectionCard v-bind="args"><p>内容区域</p></SectionCard>',
+  L195: title: { control: 'text', description: '区块标题' },
+  L196: padding: { control: 'text', description: '内边距' },
+  L197: shadow: { control: 'select', options: ['sm', 'md', 'lg'], description: '阴影层级' },
+  L199: args: { title: '区块标题', padding: '24rpx', shadow: 'sm' },
+  L211: title: { control: 'text', description: '标题' },
+  L212: subtitle: { control: 'text', description: '副标题' },
+  L213: showMore: { control: 'boolean', description: '是否显示"更多"' },
+  ... 还有 44 处
+
+--- components\discover\AdvancedFilter.vue (10 处) ---
+  L59: "广州大学",
+  L60: "中山大学",
+  L61: "华南理工大学",
+  L62: "暨南大学",
+  L63: "华南师范大学",
+  L64: "广东外语外贸大学",
+  L65: "广东工业大学",
+  L66: "广州美术学院",
+  L67: "星海音乐学院",
+  L68: "深圳大学",
+
+--- components\discover\CardDetailOverlay.vue (5 处) ---
+  L129: { name: "读书会", icon: "📚", members: 128, gradient: "linear-gradient(135deg, var(--c-lavender-100) 0%, var(--c-lavender-50) 100%)" },
+  L130: { name: "摄影社", icon: "📷", members: 89, gradient: "linear-gradient(135deg, var(--c-sky-100) 0%, var(--c-sky-50) 100%)" },
+  L131: { name: "美食探店", icon: "🍜", members: 256, gradient: "linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-apricot-50) 100%)" },
+  L132: { name: "徒步旅行", icon: "🥾", members: 76, gradient: "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)" },
+  L160: const m = h.match(/(\d{2})\s*岁/);
+
+--- components\discover\CardSwiper.vue (1 处) ---
+  L170: const match = headline.match(/(\d{2})\s*岁/);
+
+--- components\discover\FilterDrawer.vue (31 处) ---
+  L61: "北京": ["北京"],
+  L62: "上海": ["上海"],
+  L63: "天津": ["天津"],
+  L64: "重庆": ["重庆"],
+  L65: "广东": ["广州", "深圳", "珠海", "佛山", "东莞", "中山"],
+  L66: "江苏": ["南京", "苏州", "无锡", "常州", "徐州", "扬州"],
+  L67: "浙江": ["杭州", "宁波", "温州", "绍兴", "嘉兴", "金华"],
+  L68: "山东": ["济南", "青岛", "烟台", "潍坊", "淄博"],
+  L69: "河南": ["郑州", "洛阳", "开封", "新乡"],
+  L70: "湖北": ["武汉", "宜昌", "襄阳", "荆州"],
+  L71: "湖南": ["长沙", "株洲", "湘潭", "岳阳"],
+  L72: "四川": ["成都", "绵阳", "德阳", "乐山"],
+  L73: "福建": ["福州", "厦门", "泉州", "漳州"],
+  L74: "安徽": ["合肥", "芜湖", "蚌埠", "安庆"],
+  L75: "河北": ["石家庄", "唐山", "保定", "秦皇岛"],
+  L76: "陕西": ["西安", "宝鸡", "咸阳", "延安"],
+  L77: "辽宁": ["沈阳", "大连", "鞍山", "抚顺"],
+  L78: "黑龙江": ["哈尔滨", "齐齐哈尔", "大庆"],
+  L79: "吉林": ["长春", "吉林", "延边"],
+  L80: "江西": ["南昌", "赣州", "九江", "上饶"],
+  L81: "广西": ["南宁", "柳州", "桂林", "北海"],
+  L82: "云南": ["昆明", "大理", "丽江", "曲靖"],
+  L83: "贵州": ["贵阳", "遵义", "六盘水"],
+  L84: "山西": ["太原", "大同", "临汾"],
+  L85: "海南": ["海口", "三亚", "儋州"],
+  L86: "甘肃": ["兰州", "天水", "酒泉"],
+  L87: "青海": ["西宁", "海东"],
+  L88: "宁夏": ["银川", "石嘴山"],
+  L89: "新疆": ["乌鲁木齐", "喀什", "伊犁"],
+  L90: "内蒙古": ["呼和浩特", "包头", "鄂尔多斯"],
+  L91: "西藏": ["拉萨", "日喀则", "林芝"],
+
+--- components\discover\discover.stories.ts (17 处) ---
+  L17: cards: { control: 'array', description: '卡片数据列表 [{id,name,avatar,...}]' },
+  L18: currentIndex: { control: 'number', description: '当前卡片索引' },
+  L19: swipeable: { control: 'boolean', description: '是否可滑动' },
+  L23: { id: '1', name: '小红', avatar: '', age: 20, school: '清华大学' },
+  L24: { id: '2', name: '小蓝', avatar: '', age: 21, school: '北京大学' },
+  L35: visible: { control: 'boolean', description: '是否可见' },
+  L36: user: { control: 'object', description: '用户详情对象' },
+  L38: args: { visible: true, user: { id: '1', name: '小红', age: 20, bio: '喜欢读书与旅行' } },
+  L45: visible: { control: 'boolean', description: '是否可见' },
+  L46: filters: { control: 'object', description: '当前筛选值 {ageRange,school,gender,...}' },
+  L55: visible: { control: 'boolean', description: '是否可见' },
+  L56: position: { control: 'select', options: ['left', 'right', 'bottom'], description: '弹出位置' },
+  L65: visible: { control: 'boolean', description: '是否可见' },
+  L66: actions: { control: 'array', description: '操作列表 [{key,label,danger}]' },
+  L71: { key: 'report', label: '举报', danger: true },
+  L72: { key: 'block', label: '拉黑', danger: true },
+  L73: { key: 'cancel', label: '取消', danger: false },
+
+--- components\home\home.stories.ts (23 处) ---
+  L20: activity: { control: 'object', description: '活动对象 {id,title,time,location,participants}' },
+  L21: compact: { control: 'boolean', description: '紧凑模式' },
+  L23: args: { activity: { id: '1', title: '周末电影之夜', time: '2026-07-30 19:00', location: '学生活动中心', participants: 12 }, compact: false },
+  L30: activities: { control: 'array', description: '活动列表' },
+  L31: loading: { control: 'boolean', description: '加载中' },
+  L40: banners: { control: 'array', description: 'Banner 列表 [{id,imageUrl,link}]' },
+  L41: autoplay: { control: 'boolean', description: '自动播放' },
+  L42: interval: { control: 'number', description: '切换间隔（ms）' },
+  L51: title: { control: 'text', description: '标题' },
+  L52: showBack: { control: 'boolean', description: '是否显示返回按钮' },
+  L53: transparent: { control: 'boolean', description: '透明背景' },
+  L55: args: { title: '校园恋爱', showBack: false, transparent: false },
+  L62: people: { control: 'array', description: '人物列表' },
+  L63: loading: { control: 'boolean', description: '加载中' },
+  L72: person: { control: 'object', description: '人物对象 {id,name,avatar,age,school,tags}' },
+  L73: layout: { control: 'select', options: ['vertical', 'horizontal'], description: '布局方向' },
+  L75: args: { person: { id: '1', name: '小红', avatar: '', age: 20, school: '清华大学', tags: ['文艺', '猫咪'] }, layout: 'vertical' },
+  L82: title: { control: 'text', description: '区块标题' },
+  L83: posts: { control: 'array', description: '帖子列表' },
+  L85: args: { title: '表白墙', posts: [] },
+  L92: userName: { control: 'text', description: '用户名' },
+  L93: subtitle: { control: 'text', description: '副标题' },
+  L95: args: { userName: '小明', subtitle: '今天也要加油哦' },
+
+--- components\layout\layout.stories.ts (12 处) ---
+  L13: render: (args) => ({ components: { AppShell }, setup: () => ({ args }), template: '<AppShell v-bind="args"><p style="padding:24rpx">页面内容</p></AppShell>' }),
+  L15: showHeader: { control: 'boolean', description: '是否显示头部' },
+  L16: showTabBar: { control: 'boolean', description: '是否显示底部 Tab' },
+  L17: headerTitle: { control: 'text', description: '头部标题' },
+  L19: args: { showHeader: true, showTabBar: true, headerTitle: '校园恋爱' },
+  L26: title: { control: 'text', description: '对方用户名' },
+  L27: subtitle: { control: 'text', description: '副标题（如"在线"）' },
+  L28: avatar: { control: 'text', description: '头像 URL' },
+  L29: showBack: { control: 'boolean', description: '是否显示返回' },
+  L31: args: { title: '小红', subtitle: '在线', avatar: '', showBack: true },
+  L38: active: { control: 'select', options: ['home', 'discover', 'messages', 'profile'], description: '当前激活的 Tab' },
+  L39: unreadCount: { control: 'number', description: '未读消息数' },
+
+--- components\login\login.stories.ts (9 处) ---
+  L17: variant: { control: 'select', options: ['default', 'night', 'romance'], description: '插画变体' },
+  L26: size: { control: 'select', options: ['sm', 'md', 'lg'], description: '尺寸' },
+  L27: withText: { control: 'boolean', description: '是否显示文字' },
+  L36: disabled: { control: 'boolean', description: '禁用状态' },
+  L37: loading: { control: 'boolean', description: '加载中' },
+  L46: agreed: { control: 'boolean', description: '是否已同意' },
+  L47: version: { control: 'select', options: ['compact', 'full'], description: '版本' },
+  L56: disabled: { control: 'boolean', description: '禁用状态' },
+  L57: loading: { control: 'boolean', description: '加载中' },
+
+--- components\profile\profile.stories.ts (4 处) ---
+  L26: description: '各分组的已选标签值，按 groupKey 索引（interest/personality/lifestyle/relationship）',
+  L31: interest: ['电影', '音乐'],
+  L33: lifestyle: ['早睡早起'],
+  L34: relationship: ['寻找长线关系'],
+
+--- components\setup\setup.stories.ts (2 处) ---
+  L26: description: '当前步骤（1-based，1~totalSteps），越界自动 clamp',
+  L30: description: '总步骤数（默认 5）',
+
+--- components\social\social.stories.ts (15 处) ---
+  L17: active: { control: 'boolean', description: '是否激活动画' },
+  L18: count: { control: 'number', description: '爆裂粒子数' },
+  L27: visible: { control: 'boolean', description: '是否可见' },
+  L28: step: { control: 'number', description: '当前步骤（0-3）' },
+  L29: userName: { control: 'text', description: '用户名' },
+  L31: args: { visible: true, step: 0, userName: '小红' },
+  L38: visible: { control: 'boolean', description: '是否可见' },
+  L39: postId: { control: 'text', description: '帖子 ID' },
+  L48: progress: { control: 'number', description: '进度（0-100）' },
+  L49: label: { control: 'text', description: '标签' },
+  L51: args: { progress: 60, label: '社交进度' },
+  L58: post: { control: 'object', description: '帖子对象 {id,author,content,images,likes,comments}' },
+  L59: showActions: { control: 'boolean', description: '是否显示操作区' },
+  L64: author: { name: '小明', avatar: '' },
+  L65: content: '今天天气真好，想找人一起去操场散步~',
+
+--- components\unlock-guide.stories.ts (10 处) ---
+  L25: visible: { control: 'boolean', description: '弹窗是否可见（v-model:visible）' },
+  L26: pageTitle: { control: 'text', description: '当前页面/功能标题（保留兼容）' },
+  L27: featureName: { control: 'text', description: '锁定功能名称（如「喜欢列表」）' },
+  L28: completionPercent: { control: 'number', description: '当前资料完善度百分比（可选）' },
+  L32: pageTitle: '喜欢列表',
+  L33: featureName: '喜欢列表',
+  L47: visible: { control: 'boolean', description: '遮罩是否可见' },
+  L48: featureName: { control: 'text', description: '锁定功能名称' },
+  L49: completionPercent: { control: 'number', description: '资料完善度百分比' },
+  L53: featureName: '消息列表',
+
+--- components\village\village.stories.ts (2 处) ---
+  L26: description: '已选话题名称列表（不含 # 前缀，最多 3 个）',
+  L30: modelValue: ['校园生活', '运动健身'],
+
+--- composables\useNetworkStatus.ts (2 处) ---
+  L27: title: "网络已断开，请检查网络设置",
+  L34: title: "网络已恢复",
+
+--- composables\usePageAccess.ts (2 处) ---
+  L87: profileDecision.featureName ?? "此功能",
+  L108: uni.showToast({ title: "登录已过期，请重新登录", icon: "none" });
+
+--- config\app.ts (1 处) ---
+  L4: APP_NAME: '校园恋爱',
+
+--- config\env.ts (4 处) ---
+  L115: "[ENV] 生产环境未配置 VITE_API_BASE_URL，请检查构建配置。" +
+  L116: "mp-weixin 合法域名必须为 https://，禁止回退到 http://localhost。"
+  L131: "[ENV] 生产环境未配置 VITE_API_MODE，默认使用 real 模式。" +
+  L132: "如需 mock 模式请显式设置 VITE_API_MODE=mock"
+
+--- config\home-banners.ts (8 处) ---
+  L24: title: "今日缘分值98%",
+  L25: subtitle: "3位与你高度契合的同学",
+  L31: title: "新人礼遇",
+  L32: subtitle: "完成任务领专属徽章",
+  L38: title: "周末派对",
+  L39: subtitle: "校园桌游局报名中",
+  L45: title: "毕业季告白",
+  L46: subtitle: "勇敢说出心里话",
+
+--- config\home-recommended-people.ts (15 处) ---
+  L16: name: "林安",
+  L17: initials: "林",
+  L18: headline: "工业设计大三，偏好低压力的第一轮聊天。",
+  L19: commonGround: "共同兴趣：电影夜和安静的咖啡馆路线",
+  L20: availability: "合适时间：今晚 19:00 之后",
+  L25: name: "周沐",
+  L26: initials: "周",
+  L27: headline: "更适合从音乐话题切入，再配一段短距离校园散步。",
+  L28: commonGround: "节奏接近：更喜欢短时见面和明确时段",
+  L29: availability: "合适时间：周五 16:00-18:00",
+  L34: name: "许诺",
+  L35: initials: "许",
+  L36: headline: "喜欢直接定计划、边界清楚、气氛放松的咖啡聊天。",
+  L37: commonGround: "共同偏好：校园人多时也接受室内兜底",
+  L38: availability: "合适时间：周末下午",
+
+--- config\home-sections.ts (5 处) ---
+  L10: { id: 'recommended', title: '推荐的人', type: 'recommended', order: 1, enabled: true },
+  L11: { id: 'activity', title: '校园活动', type: 'activity', order: 2, enabled: true },
+  L12: { id: 'village', title: '村口动态', type: 'village', order: 3, enabled: true },
+  L13: { id: 'daily-question', title: '每日一问', type: 'daily-question', order: 4, enabled: true },
+  L14: { id: 'checkin', title: '每日签到', type: 'checkin', order: 5, enabled: true },
+
+--- config\match-form.ts (2 处) ---
+  L15: { key: 'preference', label: '匹配偏好', required: true },
+  L16: { key: 'timeRange', label: '可聊时间', required: false },
+
+--- config\navigation.ts (5 处) ---
+  L19: label: "匹配",
+  L28: label: "圈子",
+  L35: label: "首页",
+  L42: label: "消息",
+  L49: label: "我的",
+
+--- config\popular-topics.ts (12 处) ---
+  L17: { id: "topic-campus-daily", name: "校园日常", usageCount: 1280, category: "life" },
+  L18: { id: "topic-confession", name: "表白墙", usageCount: 1024, category: "love" },
+  L19: { id: "topic-find-buddy", name: "找搭子", usageCount: 856, category: "social" },
+  L20: { id: "topic-interest-share", name: "兴趣分享", usageCount: 712, category: "interest" },
+  L21: { id: "topic-help", name: "求助", usageCount: 634, category: "life" },
+  L22: { id: "topic-alumni", name: "校友动态", usageCount: 521, category: "social" },
+  L23: { id: "topic-life-record", name: "生活记录", usageCount: 489, category: "life" },
+  L24: { id: "topic-tech-talk", name: "技术交流", usageCount: 412, category: "interest" },
+  L25: { id: "topic-exam", name: "期末考试", usageCount: 367, category: "study" },
+  L26: { id: "topic-graduation", name: "毕业季", usageCount: 298, category: "life" },
+  L27: { id: "topic-sports", name: "运动健身", usageCount: 256, category: "interest" },
+  L28: { id: "topic-food", name: "美食探店", usageCount: 234, category: "life" },
+
+--- config\profile-tags.ts (32 处) ---
+  L42: { value: "reading", label: "阅读", emoji: "📚" },
+  L43: { value: "sports", label: "运动", emoji: "⚽" },
+  L44: { value: "music", label: "音乐", emoji: "🎵" },
+  L45: { value: "movie", label: "电影", emoji: "🎬" },
+  L46: { value: "travel", label: "旅行", emoji: "✈️" },
+  L47: { value: "photography", label: "摄影", emoji: "📷" },
+  L48: { value: "gaming", label: "游戏", emoji: "🎮" },
+  L49: { value: "cooking", label: "美食", emoji: "🍳" },
+  L50: { value: "painting", label: "绘画", emoji: "🎨" },
+  L51: { value: "dance", label: "舞蹈", emoji: "💃" },
+  L60: { value: "introvert", label: "内向" },
+  L61: { value: "extrovert", label: "外向" },
+  L62: { value: "rational", label: "理性" },
+  L63: { value: "emotional", label: "感性" },
+  L64: { value: "optimistic", label: "乐观" },
+  L65: { value: "calm", label: "沉稳" },
+  L66: { value: "humorous", label: "幽默" },
+  L67: { value: "gentle", label: "温柔" },
+  L76: { value: "early_bird", label: "早睡早起" },
+  L77: { value: "night_owl", label: "熬夜党" },
+  L78: { value: "fitness", label: "健身达人" },
+  L79: { value: "foodie", label: "美食家" },
+  L80: { value: "pet_lover", label: "宠物控" },
+  L81: { value: "tea", label: "喝茶" },
+  L82: { value: "coffee", label: "咖啡" },
+  L83: { value: "night_run", label: "夜跑" },
+  L92: { value: "long_term", label: "长期关系" },
+  L93: { value: "natural", label: "顺其自然" },
+  L94: { value: "marriage", label: "以结婚为目的" },
+  L95: { value: "growth", label: "共同成长" },
+  L96: { value: "independence", label: "保持独立" },
+  L97: { value: "companionship", label: "互相陪伴" },
+
+--- config\schools.ts (4 处) ---
+  L12: { id: 'pku', name: '北京大学', city: '北京' },
+  L13: { id: 'thu', name: '清华大学', city: '北京' },
+  L14: { id: 'fudan', name: '复旦大学', city: '上海' },
+  L15: { id: 'zju', name: '浙江大学', city: '杭州' },
+
+--- config\status-copy.ts (12 处) ---
+  L3: enabled: "AI 计划已就绪",
+  L4: fallback: "当前使用人工编辑兜底方案",
+  L7: open: "可开始匹配",
+  L8: queued: "等待对方加入",
+  L9: connected: "会话已就绪",
+  L10: expired: "会话已过期",
+  L13: idle: "未发起交换",
+  L14: pending: "等待双方确认",
+  L15: acceptedByPeer: "对方已同意",
+  L16: acceptedBySelf: "你已同意",
+  L17: completed: "交换已完成",
+  L18: rejected: "交换已关闭",
+
+--- config\vip-plans.ts (11 处) ---
+  L30: name: "月卡",
+  L33: period: "30 天",
+  L34: perDay: "0.6 元/天",
+  L38: name: "季卡",
+  L41: period: "90 天",
+  L42: perDay: "0.53 元/天",
+  L43: badge: "超值",
+  L48: name: "年卡",
+  L51: period: "365 天",
+  L52: perDay: "0.43 元/天",
+  L53: badge: "最划算",
+
+--- constants\app.ts (1 处) ---
+  L9: NAME: "校园恋爱",
+
+--- features\chat\transport.ts (2 处) ---
+  L47: body: "语音消息",
+  L91: body: "语音消息",
+
+--- features\login\hero.ts (2 处) ---
+  L22: heroTitle: "校园恋爱",
+  L23: heroSubtitle: "先从推荐的人、讨论圈、活动和临时聊天开始认识彼此。",
+
+--- guards\profile-guard.ts (3 处) ---
+  L13: "/pages/likes/index": "喜欢列表",
+  L14: "/pages/village/index": "村口/讨论圈",
+  L15: "/pages/messages/index": "消息",
+
+--- pages\campus\index.vue (15 处) ---
+  L73: return "已认证";
+  L75: return "审核中";
+  L77: return "未通过";
+  L79: return "未认证";
+  L96: <text class="school-name">{{ certificationInfo?.schoolName || "广州大学" }}</text>
+  L108: <text class="cert-guide-card__title">完成学生认证，解锁校园专区</text>
+  L109: <text class="cert-guide-card__desc">上传学生证即可认证，与同校同学畅聊校园话题</text>
+  L112: <text class="cert-guide-card__btn-text">去认证</text>
+  L133: <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
+  L134: <text class="campus-state__text">正在加载话题...</text>
+  L142: <text class="campus-state__btn-text">重试</text>
+  L162: {{ topic.isAnonymous ? "匿名校友" : topic.author.name }}
+  L172: <view class="loading-spinner--small" role="status" aria-live="polite" aria-label="加载中" />
+  L173: <text class="loading-more__text">加载中...</text>
+  L176: <text class="no-more__text">没有更多了</text>
+
+--- pages\campus\post-topic.vue (17 处) ---
+  L89: uni.showToast({ title: "请输入标题", icon: "none" });
+  L94: uni.showToast({ title: "请输入内容", icon: "none" });
+  L112: uni.showToast({ title: "发布成功", icon: "success" });
+  L121: title: campusStore.errorMessage || "发布失败",
+  L140: <text class="back-icon">取消</text>
+  L142: <text class="post-header__title">发布话题</text>
+  L150: <text class="submit-text">{{ isSubmitting ? "发布中" : "发布" }}</text>
+  L157: <text class="section-label">选择分类</text>
+  L186: <text class="section-label">话题标题</text>
+  L190: placeholder="输入一个吸引人的标题"
+  L191: maxlength="50" aria-label="输入一个吸引人的标题"
+  L197: <text class="section-label">话题内容</text>
+  L201: placeholder="分享你的想法、经验或求助..."
+  L203: :show-confirm-bar="false" aria-label="分享你的想法、经验或求助..."
+  L219: <text class="option-label">匿名发布</text>
+  L220: <text class="option-desc">开启后，你的信息将显示为"匿名校友"</text>
+  L239: <text class="bottom-submit__text">{{ isSubmitting ? "发布中..." : "发布话题" }}</text>
+
+--- pages\campus\topic-detail.vue (16 处) ---
+  L56: uni.showToast({ title: "回复成功", icon: "success" });
+  L59: title: campusStore.errorMessage || "回复失败",
+  L75: return isAnonymous ? "匿名校友" : name;
+  L97: <text class="back-icon">返回</text>
+  L99: <text class="detail-header__title">话题详情</text>
+  L143: <text class="replies-title">回复</text>
+  L149: <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
+  L150: <text class="loading-text">加载回复中...</text>
+  L188: title="暂无回复"
+  L189: description="快来抢沙发吧"
+  L199: <text class="empty-state__text">话题不存在或已被删除</text>
+  L201: <text class="back-text">返回</text>
+  L211: placeholder="写下你的回复..."
+  L213: @confirm="submitReply" aria-label="写下你的回复..."
+  L223: <text class="anonymous-toggle__text">{{ isAnonymousReply ? "匿名" : "实名" }}</text>
+  L232: <text class="reply-btn__text">{{ isSubmitting ? "发送中" : "发送" }}</text>
+
+--- pages\chat-session\index.vue (9 处) ---
+  L815: {{ tempCountdown === "已结束" ? t("") : t("") }}
+  L1025: aria-label="消息操作菜单"
+  L1038: aria-label="复制该消息"
+  L1040: <text class="longpress-menu__text">复制</text>
+  L1048: aria-label="引用该消息"
+  L1050: <text class="longpress-menu__text">引用</text>
+  L1059: aria-label="撤回该消息"
+  L1061: <text class="longpress-menu__text longpress-menu__text--danger">撤回</text>
+  L1071: <text class="longpress-menu__text">取消</text>
+
+--- pages\chat-session\view-models.ts (1 处) ---
+  L52: return "已结束";
+
+--- pages\circle\index.vue (28 处) ---
+  L39: nickname: "小明",
+  L40: school: "北京大学",
+  L41: grade: "大三",
+  L42: content: "今天在图书馆看到一本好书，推荐给大家！《百年孤独》真的太震撼了，加西亚·马尔克斯的文字真的有魔力，那种孤独感被描写得淋漓尽致。有人一起讨论吗？",
+  L44: location: "图书馆",
+  L45: topic: "读书分享",
+  L47: time: "2分钟前",
+  L59: nickname: "小红",
+  L60: school: "清华大学",
+  L61: grade: "大二",
+  L62: content: "有人一起上晚自习吗？求组队！可以互相监督，提高效率～期末复习ing，一个人真的太容易摸鱼了😭",
+  L64: location: "教学楼",
+  L65: topic: "学习组队",
+  L67: time: "15分钟前",
+  L79: nickname: "阿杰",
+  L80: school: "复旦大学",
+  L81: grade: "大四",
+  L82: content: "毕业季了，整理了一些考研资料，有需要的同学可以联系我。祝大家都能上岸！💪",
+  L84: location: "宿舍",
+  L85: topic: "考研资料",
+  L87: time: "1小时前",
+  L99: nickname: "小甜甜",
+  L100: school: "浙江大学",
+  L101: grade: "大一",
+  L102: content: "今天的晚霞真的太美了！和喜欢的人一起看晚霞是世界上最幸福的事吧～🌅",
+  L104: location: "西湖边",
+  L105: topic: "恋爱日常",
+  L107: time: "3小时前",
+
+--- pages\dev\index.vue (25 处) ---
+  L38: { path: "/pages/login/index", title: "登录页", group: "主包" },
+  L39: { path: "/pages/discover/index", title: "寻觅", group: "主包", isTab: true },
+  L40: { path: "/pages/discover/history", title: "今日已看", group: "主包" },
+  L41: { path: "/pages/likes/index", title: "喜欢", group: "主包", isTab: true },
+  L42: { path: "/pages/village/index", title: "村口", group: "主包", isTab: true },
+  L43: { path: "/pages/village/post", title: "发布帖子", group: "主包" },
+  L44: { path: "/pages/village/detail", title: "帖子详情", group: "主包" },
+  L45: { path: "/pages/messages/index", title: "消息", group: "主包", isTab: true },
+  L46: { path: "/pages/profile/index", title: "我的", group: "主包", isTab: true },
+  L47: { path: "/pages/circles/index", title: "兴趣圈", group: "主包" },
+  L48: { path: "/pages/circles/topics", title: "话题列表", group: "主包" },
+  L49: { path: "/pages/circles/topic-detail", title: "话题详情", group: "主包" },
+  L50: { path: "/pages/circles/post-topic", title: "发布话题", group: "主包" },
+  L51: { path: "/pages/daily-question/index", title: "每日一问", group: "主包" },
+  L52: { path: "/pages/chat/index", title: "聊天", group: "主包" },
+  L53: { path: "/pages/chat-session/index", title: "会话", group: "主包" },
+  L55: { path: "/subpackages/setup/profile/index", title: "基础资料", group: "设置子包" },
+  L56: { path: "/subpackages/setup/campus/index", title: "学校信息", group: "设置子包" },
+  L57: { path: "/subpackages/setup/schedule/index", title: "时间安排", group: "设置子包" },
+  L58: { path: "/subpackages/setup/recommend-pref/index", title: "推荐计划", group: "设置子包" },
+  L59: { path: "/subpackages/support/feedback/index", title: "反馈中心", group: "支持子包" },
+  L60: { path: "/subpackages/discover/discussions/index", title: "讨论圈", group: "发现子包" },
+  L61: { path: "/subpackages/discover/activities/index", title: "活动", group: "发现子包" },
+  L93: <text class="dev-header__title">DEV 开发者导航</text>
+  L101: <text class="dev-notice__text">⚠️ 开发者模式 - 仅用于测试，上线前删除</text>
+
+--- pages\home\index.vue (17 处) ---
+  L78: const currentSchool = ref("北京大学");
+  L79: const schools = ["北京大学", "清华大学", "复旦大学", "浙江大学"];
+  L185: nickname: "小明",
+  L186: school: "北京大学",
+  L187: grade: "大三",
+  L188: content: "今天在图书馆看到一本好书，推荐给大家！",
+  L190: location: "图书馆",
+  L198: nickname: "小红",
+  L199: school: "清华大学",
+  L200: grade: "大二",
+  L201: content: "有人一起上晚自习吗？求组队！",
+  L203: location: "教学楼",
+  L212: { id: "1", title: "校园文创帆布袋", price: 29.9, sales: 128, image: IMAGE_PATHS.PRODUCTS.MERCH_1 },
+  L213: { id: "2", title: "音乐节早鸟票", price: 99, sales: 56, image: IMAGE_PATHS.PRODUCTS.TICKET_1 },
+  L214: { id: "3", title: "食堂优惠券", price: 9.9, sales: 234, image: IMAGE_PATHS.PRODUCTS.FOOD_1 },
+  L308: if (errMsg.includes("配额") || errMsg.includes("次数")) {
+  L310: } else if (errMsg.includes("积分")) {
+
+--- pages\profile\visitors.vue (6 处) ---
+  L108: nickname: "苏晴",
+  L110: campusName: "中山大学",
+  L115: nickname: "顾言",
+  L117: campusName: "星海音乐学院",
+  L122: nickname: "江晚吟",
+  L124: campusName: "华南师范",
+
+--- pages\village\detail.vue (55 处) ---
+  L304: sports: ["运动", "健身", "跑步", "篮球", "足球", "徒步", "户外", "瑜伽", "骑行", "游泳", "羽毛球", "网球", "乒乓球"],
+  L305: arts: ["阅读", "读书", "音乐", "电影", "绘画", "设计", "摄影", "写作", "书法", "戏剧", "舞蹈", "艺术", "文学"],
+  L306: tech: ["编程", "科技", "互联网", "数码", "AI", "计算机", "技术", "产品", "创业"],
+  L307: life: ["美食", "旅行", "旅游", "烹饪", "烘焙", "志愿者", "宠物", "园艺", "手工", "桌游", "生活"],
+  L671: ` 不能写在开标签内部），
+  L672: 否则会破坏 Vue 模板解析导致下游变量被误判为未使用。
+  L673: mp-weixin 端会忽略未知 HTML 属性，因此 H5 与小程序两端均安全。
+  L684: <!-- 弹窗标题 -->
+  L699: <!-- 附加评论输入 -->
+  L712: <!-- 操作按钮 -->
+  L739: <!-- ===== 帖子举报弹窗 ===== -->
+  L741: 修复（严格模式 noUnusedLocals）：PostReportDialog 已导入但未在模板中渲染，
+  L742: 导致 typecheck 报错 TS6133。现补全弹窗渲染，使 handleReportPost → showReportDialog
+  L743: → PostReportDialog → handleReportSubmitted 形成完整举报流程闭环。
+  L771: /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
+  L776: /* ========== 顶部导航栏 ========== */
+  L787: /* 修复 P2（触摸目标过小）：min-height/min-width ≥88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
+  L819: /* ========== 帖子内容容器 ========== */
+  L825: 作者交互卡片
+  L836: /* 作者基础信息行 */
+  L856: /* Phase D1: 头像光环 - 双层品牌色阴影 */
+  L874: /* Phase D1: 头像左上角身份徽章 */
+  L908: /* 修复（P1 BUG）：原实现缺少文本裁剪，长昵称会推动身份标签换行 */
+  L916: /* 身份标签（校友等） */
+  L953: /* Phase D1: 简介最多 2 行 */
+  L961: /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
+  L966: /* 学校标签 */
+  L985: /* 兴趣标签 */
+  L1002: /* Phase D1: 兴趣 chip 按类别着色（4 种颜色） */
+  L1023: /* 操作按钮行 */
+  L1086: 帖子正文卡片
+  L1096: /* 帖子正文 */
+  L1109: /* 图片网格 */
+  L1124: /* 话题标签 */
+  L1144: /* 修复（P1 sass 兼容性）：原实现使用 darken($green-light, 5%)，
+  L1145: 但 $green-light 是 CSS 变量 var(--c-brand-50, ...)，sass darken 函数无法处理 CSS 变量。
+  L1146: 改用 brightness filter 实现按压变暗效果，避免 sass 编译失败。
+  L1147: brightness(0.95) ≈ darken 5% 的视觉效果。 */
+  L1152: /* 帖子元信息 */
+  L1176: /* ========== 评论区 ========== */
+  L1186: 相似作者推荐
+  L1253: /* Phase D1: 头像光环 */
+  L1271: /* Phase D1: 相似作者头像左上角身份徽章 */
+  L1399: /* ========== 评论区 ========== */
+  L1423: /* 评论加载 */
+  L1452: /* 评论列表 */
+  L1564: /* 评论空状态 */
+  L1581: /* ========== 帖子不存在 ========== */
+  L1616: /* ========== 底部互动栏 ========== */
+  L1651: /* 修复 P2（触摸目标过小）：min-height/min-width ≥88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
+  ... 还有 5 处
+
+--- pages\village\post.vue (4 处) ---
+  L104: "校园日常", "兴趣分享", "找搭子", "求助",
+  L105: "表白墙", "校友动态", "生活记录", "技术交流",
+  L118: "校园日常", "兴趣分享", "找搭子", "求助",
+  L119: "表白墙", "校友动态", "生活记录", "技术交流",
+
+--- pages\village\tag-posts.vue (19 处) ---
+  L120: errorMessage.value = error instanceof Error ? error.message : "加载帖子失败";
+  L146: author: { userId: "1001", name: "星野", avatar: "", headline: "北京·985硕士", campusName: "北京大学" },
+  L147: categoryId: "sincere", title: "", content: "今天在图书馆遇到一个认真学习的女生，感觉好有气质！",
+  L148: images: [], tags: ["#校园日常", "#表白墙"], likes: 32, comments: 8, shares: 3,
+  L153: author: { userId: "1002", name: "阿泽", avatar: "", headline: "上海·互联网大厂", campusName: "复旦大学" },
+  L154: categoryId: "interest", title: "", content: "有没有一起打羽毛球的？周末约起来！求搭子！",
+  L155: images: [], tags: ["#找搭子", "#兴趣分享"], likes: 18, comments: 12, shares: 4,
+  L160: author: { userId: "1003", name: "橙子", avatar: "", headline: "杭州·设计师", campusName: "浙江大学" },
+  L161: categoryId: "activity", title: "", content: "急！计算机组成原理期末怎么复习？求大佬带带",
+  L162: images: [], tags: ["#求助", "#技术交流"], likes: 45, comments: 23, shares: 6,
+  L167: author: { userId: "1004", name: "北岛", avatar: "", headline: "成都·创业者", campusName: "四川大学" },
+  L168: categoryId: "sincere", title: "", content: "毕业5年了，想问问学弟学妹们学校现在变化大吗？",
+  L169: images: [], tags: ["#校友动态", "#生活记录"], likes: 67, comments: 19, shares: 10,
+  L174: author: { userId: "1005", name: "南风", avatar: "", headline: "深圳·产品经理", campusName: "北京大学" },
+  L175: categoryId: "life", title: "", content: "记录一下今天在食堂吃到的好吃的！麻辣香锅绝了",
+  L176: images: [], tags: ["#生活记录", "#校园日常"], likes: 23, comments: 5, shares: 2,
+  L181: author: { userId: "1006", name: "小鹿", avatar: "", headline: "北京·Java开发", campusName: "清华大学" },
+  L182: categoryId: "interest", title: "", content: "想找个一起刷 LeetCode 的队友，每天互相监督",
+  L183: images: [], tags: ["#技术交流", "#找搭子"], likes: 15, comments: 7, shares: 3,
+
+--- services\agnes-video.ts (10 处) ---
+  L82: message: "AI 服务未授权，请联系管理员检查 API Key 配置",
+  L90: message: "AI 服务暂时不可用，请稍后重试",
+  L99: message: "AI 服务未授权，请联系管理员检查 API Key 配置",
+  L108: message: "AI 服务暂时不可用，请稍后重试",
+  L116: const message = error instanceof Error ? error.message : "未知错误";
+  L120: message: "AI 服务暂时不可用，请稍后重试",
+  L183: spring: "青春校园，春光明媚，樱花树下学生们漫步聊天，图书馆前草坪上读书，阳光洒在教学楼，温馨浪漫的大学时光",
+  L184: sunset: "傍晚的大学校园，夕阳余晖下情侣在湖边散步，路灯渐亮，梧桐叶飘落，温暖柔和的慢镜头画面",
+  L185: life: "大学生活场景：教室里认真听课，操场上跑步打球，食堂里一起用餐，社团活动欢声笑语，青春洋溢的校园日常",
+  L186: graduation: "毕业季场景：穿着学士服合影，抛学士帽，拥抱告别，青春的记忆，感人的校园时光",
+
+--- services\api-error.ts (6 处) ---
+  L29: message: "请求参数有误，请检查后重试",
+  L37: message: "登录已过期，请重新登录",
+  L45: message: "无权限执行此操作",
+  L53: message: "请求的资源不存在",
+  L61: message: "服务暂时不可用，请稍后重试",
+  L68: message: "请求失败，请稍后重试",
+
+--- services\api.ts (3 处) ---
+  L103: `上传响应解析失败: ${e instanceof Error ? e.message : String(e)}`
+  L108: reject(new Error(`上传失败: HTTP ${res.statusCode}`));
+  L112: reject(new Error(err.errMsg || "上传请求失败"));
+
+--- services\auth.ts (8 处) ---
+  L70: "微信登录超时，请重试"
+  L90: "登录状态校验失败，请重试"
+  L99: "微信登录未返回有效凭证，请重试"
+  L109: const errMsg = err?.errMsg || "微信登录失败";
+  L111: const isUserDeny = /deny|cancel|拒绝|取消/i.test(errMsg);
+  L113: ? "您已取消微信登录"
+  L114: : `微信登录失败：${errMsg}`;
+  L198: : "登录失败，请稍后重试";
+
+--- services\env.ts (4 处) ---
+  L100: "[ENV] 生产环境未配置 VITE_API_BASE_URL，请检查构建配置。" +
+  L101: "mp-weixin 合法域名必须为 https://，禁止回退到 http://localhost。"
+  L116: "[ENV] 生产环境未配置 VITE_API_MODE，默认使用 real 模式。" +
+  L117: "如需 mock 模式请显式设置 VITE_API_MODE=mock"
+
+--- services\http.ts (9 处) ---
+  L235: uni.showToast({ title: "登录已过期，请重新登录", icon: "none", duration: LOGIN_TOAST_DURATION_MS });
+  L328: message: error.message || "网络请求失败",
+  L335: message: "网络请求失败",
+  L350: reject(buildNetworkError(new Error("请求已取消")));
+  L389: buildError(401, { error: "unauthorized", message: "登录已过期，请重新登录" })
+  L409: buildError(401, { error: "unauthorized", message: "登录已过期，请重新登录" })
+  L523: reject(buildNetworkError(new Error("请求已取消")));
+  L531: reject(buildNetworkError(new Error("请求已取消")));
+  L547: message: `请求超时（${timeoutMs}ms）`,
+
+--- services\mocks\fixtures.ts (14 处) ---
+  L130: initials: "夏",
+  L136: tags: ["咖啡", "电影", "夜跑", "心理学", "猫奴"],
+  L163: initials: "顾",
+  L169: tags: ["美食", "音乐", "探店", "建筑", "胶片"],
+  L196: initials: "林",
+  L202: tags: ["语言", "看展", "摄影", "日系", "手账"],
+  L229: initials: "周",
+  L235: tags: ["游戏", "篮球", "旅行", "编程", "火锅"],
+  L262: initials: "沈",
+  L268: tags: ["阅读", "写作", "咖啡", "新闻", "民谣"],
+  L295: initials: "苏",
+  L301: tags: ["辩论", "古典音乐", "阅读", "法学", "博物馆"],
+  L328: initials: "陆",
+  L334: tags: ["户外", "露营", "爬山", "医学", "纪录片"],
+
+--- services\websocket\index.ts (4 处) ---
+  L422: `[WebSocket] 频道回调执行异常 [${destination}]:`,
+  L435: `[WebSocket] 消息解析失败 [${destination}]:`,
+  L450: const message = frame.headers["message"] || "未知错误";
+  L615: reason: "客户端主动关闭",
+
+--- services\websocket\reconnect.ts (1 处) ---
+  L46: `[WebSocket] 将在 ${delay}ms 后进行第 ${this.attempts} 次重连（指数退避）`
+
+--- stores\activity.ts (16 处) ---
+  L41: title: "图书馆南门咖啡散步",
+  L42: location: "南门咖啡馆",
+  L43: scheduleText: "周四 19:00-20:00",
+  L46: description: "在安静的咖啡馆里，和志同道合的朋友一起聊天放松",
+  L55: title: "电影社轻松线下碰面",
+  L56: location: "影像楼 B 厅",
+  L57: scheduleText: "周六 15:00-17:00",
+  L60: description: "一起看电影，认识新朋友",
+  L69: title: "周末篮球友谊赛",
+  L70: location: "体育馆",
+  L71: scheduleText: "周日 10:00-12:00",
+  L74: description: "篮球爱好者集合，友谊第一比赛第二",
+  L83: title: "校园音乐节",
+  L84: location: "大礼堂",
+  L85: scheduleText: "下周五 19:00-21:00",
+  L88: description: "校园歌手大赛决赛，精彩不容错过",
+
+--- stores\campus-wall.ts (18 处) ---
+  L29: nickname: "小明",
+  L30: school: "北京大学",
+  L31: grade: "大三",
+  L32: content: "今天在图书馆看到一本好书，推荐给大家！《百年孤独》真的太震撼了",
+  L37: location: "图书馆",
+  L38: topic: "读书分享",
+  L48: nickname: "小红",
+  L49: school: "清华大学",
+  L50: grade: "大二",
+  L51: content: "有人一起上晚自习吗？求组队！可以互相监督，提高效率",
+  L53: location: "教学楼",
+  L54: topic: "学习组队",
+  L64: nickname: "阿杰",
+  L65: school: "复旦大学",
+  L66: grade: "大四",
+  L67: content: "毕业季了，整理了一些考研资料，有需要的同学可以联系我",
+  L72: location: "宿舍",
+  L73: topic: "考研资料",
+
+--- stores\campus.ts (71 处) ---
+  L131: course_exchange: "课程交流",
+  L132: club_recruitment: "社团招新",
+  L133: campus_activity: "校园活动",
+  L134: study_help: "学习互助",
+  L135: life_service: "生活服务",
+  L136: alumni_news: "校友动态",
+  L144: unverified: "未认证",
+  L145: pending: "审核中",
+  L146: verified: "已认证",
+  L147: rejected: "未通过",
+  L246: title: "高数B期末复习资料分享",
+  L247: contentPreview: "整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~",
+  L248: author: { userId: "u-1001", name: "学长小王", avatar: "", school: "广州大学" },
+  L256: title: "数据结构实验报告模板",
+  L257: contentPreview: "分享一份数据结构实验报告的标准模板，含代码规范和注释要求，适合新手参考。",
+  L258: author: { userId: "u-1002", name: "匿名校友", avatar: "", school: "" },
+  L267: title: "摄影社团招新啦！",
+  L268: contentPreview: "喜欢摄影的朋友看过来！摄影社团新学期招新开始啦，零基础也可以加入，我们会定期组织外拍活动~",
+  L269: author: { userId: "u-2001", name: "摄影社社长", avatar: "", school: "广州大学" },
+  L277: title: "街舞社寻找志同道合的舞伴",
+  L278: contentPreview: "街舞社新学期招新！无论你是什么水平，只要热爱街舞就欢迎加入。每周二四晚集训~",
+  L279: author: { userId: "u-2002", name: "匿名校友", avatar: "", school: "" },
+  L288: title: "本周六校园音乐节节目单公布",
+  L289: contentPreview: "校园音乐节节目单出来啦！本周六下午2点开始，地点在操场，有乐队表演、舞蹈、相声等节目~",
+  L290: author: { userId: "u-3001", name: "学生会长", avatar: "", school: "广州大学" },
+  L298: title: "校园跑步打卡活动第三期",
+  L299: contentPreview: "坚持锻炼，健康生活！第三期跑步打卡活动开始报名，完成21天打卡可获证书和奖品。",
+  L300: author: { userId: "u-3002", name: "匿名校友", avatar: "", school: "" },
+  L309: title: "考研英语复习经验分享",
+  L310: contentPreview: "分享一下我考研英语80+的复习经验，包括单词记忆方法、阅读理解技巧和作文模板~",
+  L311: author: { userId: "u-4001", name: "考研学姐", avatar: "", school: "广州大学" },
+  L319: title: "求伴一起刷LeetCode",
+  L320: contentPreview: "大二计科，目前刷了200多题，想找几个编程搭子互相监督，每天至少刷3道题。",
+  L321: author: { userId: "u-4002", name: "匿名校友", avatar: "", school: "" },
+  L330: title: "食堂新窗口测评",
+  L331: contentPreview: "二楼新开了川菜窗口，试了水煮鱼和麻婆豆腐，味道相当不错！比外面还便宜，推荐大家去试。",
+  L332: author: { userId: "u-5001", name: "吃货小分队", avatar: "", school: "广州大学" },
+  L340: title: "校园代拿快递服务推荐",
+  L341: contentPreview: "推荐一个靠谱的校园代拿快递，价格实惠，南区北区都覆盖，不用再排队拿快递了~",
+  L342: author: { userId: "u-5002", name: "匿名校友", avatar: "", school: "" },
+  L351: title: "校友企业招聘信息汇总（六月）",
+  L352: contentPreview: "汇总了6月份来校招聘的校友企业信息，包括字节、腾讯、阿里等，有需要的同学记得关注~",
+  L353: author: { userId: "u-6001", name: "校友联络员", avatar: "", school: "广州大学" },
+  L361: title: "创业成功的学长回来做分享",
+  L362: contentPreview: "听说咱们学校2015级的师兄创业成功，下周三回来做经验分享，想去的可以先报名。",
+  L363: author: { userId: "u-6002", name: "匿名校友", avatar: "", school: "" },
+  L374: title: "高数B期末复习资料分享",
+  L375: content: "整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~\n\n内容包括：\n1. 极限与连续性重点公式\n2. 导数与微分的应用\n3. 不定积分与定积分\n4. 微分方程\n5. 典型例题20道（带详细解析）\n\n需要的同学私信我获取百度云链接~期末加油！",
+  L376: author: { userId: "u-1001", name: "学长小王", avatar: "", school: "广州大学" },
+  L388: author: { userId: "u-2001", name: "学弟小李", avatar: "", school: "广州大学" },
+  ... 还有 21 处
+
+--- stores\chat\actions\icebreakers.ts (14 处) ---
+  L26: { loadingKey: "loadingIcebreakers", errorPrefix: "加载破冰话题" },
+  L32: "你们都喜欢看电影，最近有什么好片推荐吗？",
+  L33: "看到你也喜欢咖啡，你最喜欢哪种咖啡？",
+  L34: "你们有共同的朋友圈，要不要聊聊校园生活？",
+  L37: "你们都选了美食话题，有没有推荐的校园美食？",
+  L38: "看到你也喜欢摄影，平时用什么相机？",
+  L39: "你们都在同一个城市，周末有什么好去处？",
+  L43: "嗨，很高兴认识你！",
+  L44: "你们有共同的兴趣，聊聊看？",
+  L45: "最近有什么有趣的事想分享吗？",
+  L71: { errorPrefix: "发送破冰话题", rethrow: true },
+  L126: this.errorMessage = `破冰话题已发送，但消息追加失败：${
+  L127: sendTextError instanceof Error ? sendTextError.message : "未知错误"
+  L148: error instanceof Error ? error.message : "加载破冰话题失败";
+
+--- stores\chat\actions\messaging.ts (7 处) ---
+  L54: reject(new Error("语音上传响应缺少 url 字段"));
+  L58: `语音上传响应解析失败: ${e instanceof Error ? e.message : String(e)}`
+  L63: reject(new Error(`语音上传失败: HTTP ${res.statusCode}`));
+  L67: reject(new Error(err.errMsg || "语音上传请求失败"));
+  L139: error instanceof Error ? error.message : "发送消息失败，请重试";
+  L155: let voiceBody = "语音消息";
+  L161: error instanceof Error ? error.message : "语音上传失败，请重试";
+
+--- stores\chat\actions\session.ts (9 处) ---
+  L22: { loadingKey: "loadingOverview", errorPrefix: "聊天页加载" },
+  L57: partnerName: "新匹配",
+  L58: partnerHeadline: "校园恋爱推荐",
+  L59: availabilityHint: "今晚",
+  L87: partnerName: "匹配对象",
+  L88: partnerHeadline: "校园恋爱匹配",
+  L89: availabilityHint: "今晚",
+  L112: { loadingKey: "loadingSession", errorPrefix: "聊天详情加载" },
+  L140: { errorPrefix: "会话置顶状态更新" },
+
+--- stores\chat\higher-order.ts (1 处) ---
+  L36: store.errorMessage = error instanceof Error ? error.message : `${errorPrefix}失败`;
+
+--- stores\chat\mock-data.ts (27 处) ---
+  L13: partnerName: "夏言",
+  L14: partnerHeadline: "北京大学 · 大三 · 心理学",
+  L15: availabilityHint: "今晚 19:00-21:00",
+  L24: body: "你好呀，看到你也喜欢看电影，最近有什么推荐吗？",
+  L34: body: "嗨！最近看了《你的名字》，觉得特别适合校园恋爱的氛围",
+  L44: body: "那部我也超喜欢！新海诚的画面太美了，要不要周末一起去重温一下？",
+  L54: body: "好呀！周六下午怎么样？学校附近有家影院在重映",
+  L64: body: "太棒了，那就周六下午见！看完还可以去旁边的咖啡馆聊聊～",
+  L81: partnerName: "顾北",
+  L82: partnerHeadline: "清华大学 · 研一 · 建筑学",
+  L83: availabilityHint: "周末下午",
+  L92: body: "你们已匹配成功，快来打个招呼吧！",
+  L102: body: "嗨，我是顾北，喜欢探店和摄影，你呢？",
+  L112: body: "你好！我也喜欢摄影，最近在学胶片拍摄",
+  L136: lastMessagePreview: "太棒了，那就周六下午见！看完还可以去旁边的咖啡馆聊聊～",
+  L151: lastMessagePreview: "你好！我也喜欢摄影，最近在学胶片拍摄",
+  L162: emptyStateLead: "还没有临时会话时，继续从推荐的人进入。",
+  L166: name: "林溪",
+  L167: initials: "林",
+  L168: headline: "复旦大学 · 大二 · 日语系",
+  L169: commonGround: "你们都选了摄影话题",
+  L170: availability: "周三、周五晚上",
+  L174: name: "周屿",
+  L175: initials: "周",
+  L176: headline: "浙江大学 · 大四 · 计算机",
+  L177: commonGround: "你们都选了运动话题",
+  L178: availability: "每天傍晚",
+
+--- stores\chat\utils.ts (1 处) ---
+  L66: : new Error("发送失败");
+
+--- stores\checkin.ts (6 处) ---
+  L192: return `已连续签到 ${state.consecutiveDays} 天`;
+  L198: return `今日剩余次数+${state.extraRecommendations}`;
+  L204: return `今日额外推荐配额 +${state.extraRecommendQuota}`;
+  L210: return `今日热门话题 (${state.hotTopicCount})`;
+  L216: return `新入圈用户 (${state.newUserCount})`;
+  L261: "获取签到状态超时",
+
+--- stores\circle.ts (40 处) ---
+  L213: name: "电影迷",
+  L215: description: "分享你喜欢的电影，寻找一起看片的伙伴",
+  L222: name: "读书会",
+  L224: description: "一起读书，一起成长，分享读书心得",
+  L231: name: "运动达人",
+  L233: description: "跑步、篮球、羽毛球，运动让生活更精彩",
+  L240: name: "美食探店",
+  L242: description: "发现身边的美食，分享你的味蕾体验",
+  L249: name: "旅行日记",
+  L251: description: "记录旅途中的美好，寻找同行旅伴",
+  L258: name: "音乐空间",
+  L260: description: "分享你喜欢的音乐，发现更多好声音",
+  L272: title: "最近看了《奥本海默》，聊聊感受",
+  L273: content: "诺兰的新片真的太震撼了，三线叙事把人物刻画得非常立体。有人一起讨论吗？",
+  L275: author: { userId: "user-3001", name: "小鹿", avatar: "", headline: "电影爱好者" },
+  L282: title: "推荐几部适合情侣一起看的电影",
+  L283: content: "周末想和对象一起看电影，大家有什么好推荐吗？最好是温馨治愈类的。",
+  L285: author: { userId: "user-3002", name: "阿泽", avatar: "", headline: "影视专业" },
+  L292: title: "有没有人一起去看周末的电影首映？",
+  L293: content: "这周六有部新片首映，想找人一起去，一个人看电影太孤单了。",
+  L295: author: { userId: "user-3003", name: "橙子", avatar: "", headline: "设计师" },
+  L304: title: "校园夜跑打卡群",
+  L305: content: "每天晚上9点操场夜跑，有没有人一起？互相监督，坚持锻炼！",
+  L307: author: { userId: "user-3004", name: "南风", avatar: "", headline: "篮球队长" },
+  L318: title: "最近看了《奥本海默》，聊聊感受",
+  L319: content: "诺兰的新片真的太震撼了，三线叙事把人物刻画得非常立体。尤其是那场听证会的戏，台词功力太强了。有人一起讨论吗？\n\n我觉得最打动我的是奥本海默在成功之后的道德挣扎，科学家的责任感和社会责任之间的矛盾。",
+  L321: author: { userId: "user-3001", name: "小鹿", avatar: "", headline: "电影爱好者" },
+  L332: author: { userId: "user-3002", name: "阿泽", avatar: "", headline: "影视专业" },
+  L333: content: "我也看了！三线叙事确实很厉害，不过我觉得节奏稍微有点慢，前面铺垫太长了。",
+  L339: author: { userId: "user-3003", name: "橙子", avatar: "", headline: "设计师" },
+  L340: content: "强烈推荐IMAX版本，视觉效果完全不一样！",
+  L346: author: { userId: "user-3004", name: "南风", avatar: "", headline: "篮球队长" },
+  L347: content: "看完之后一直在想一个问题：如果是我们，会做出同样的选择吗？",
+  L366: if (diff < minute) return "刚刚";
+  L367: if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
+  L368: if (diff < day) return `${Math.floor(diff / hour)}小时前`;
+  L369: return `${Math.floor(diff / day)}天前`;
+  L578: name: "我",
+  L718: name: "我",
+  L807: this.errorMessage = error instanceof Error ? error.message : "加载精选话题失败";
+
+--- stores\daily-question.ts (16 处) ---
+  L144: question: "你理想中的第一次约会是什么样？",
+  L145: category: "恋爱",
+  L156: userName: "小鹿",
+  L159: authorName: "小鹿",
+  L161: content: "希望是在一个安静的咖啡馆，两个人慢慢聊天，不用太刻意，就是那种很自然的感觉。",
+  L173: content: "想一起去公园散步，看夕阳，然后一起吃个晚饭。不需要多浪漫，重要的是两个人在一起。",
+  L180: userName: "南风",
+  L183: authorName: "南风",
+  L185: content: "一起去看一场电影，然后边走边聊感受。如果聊得来，就找个地方坐下来继续聊。",
+  L197: content: "一起去逛书店，各自挑一本喜欢的书送给对方，然后找个地方一起看。",
+  L215: if (diff < minute) return "刚刚";
+  L216: if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
+  L217: if (diff < day) return `${Math.floor(diff / hour)}小时前`;
+  L218: return `${Math.floor(diff / day)}天前`;
+  L285: userName: isAnonymous ? "" : "我",
+  L288: authorName: isAnonymous ? "" : "我",
+
+--- stores\discover\actions\fetch.ts (1 处) ---
+  L124: this.errorMessage = error instanceof Error ? error.message : "加载推荐失败，请稍后重试";
+
+--- stores\discover\actions\history.ts (2 处) ---
+  L39: error instanceof Error ? error.message : "加载推荐历史失败";
+  L83: error instanceof Error ? error.message : "查询在线状态失败";
+
+--- stores\discover\actions\rewind.ts (2 处) ---
+  L29: this.errorMessage = `本次会话挽回次数已用完（最多${MAX_UNDO_COUNT_PER_SESSION}次）`;
+  L92: this.errorMessage = error instanceof Error ? error.message : "挽回失败";
+
+--- stores\discover\actions\swipe.ts (2 处) ---
+  L98: this.errorMessage = error instanceof Error ? error.message : "操作失败";
+  L305: this.errorMessage = isSuperLike ? "超级喜欢失败，请重试" : "喜欢操作失败，请重试";
+
+--- stores\discover\constants.ts (1 处) ---
+  L67: `[Discover] VITE_MOCK_MATCH_PROBABILITY="${raw}" 无效（应为 0~1 之间的数字），回退到默认值 ${DEFAULT_VALUE}`
+
+--- stores\discover\utils.ts (2 处) ---
+  L60: `[DiscoverStore] 第${attempt + 1}次尝试失败，将进行第${attempt + 2}次重试:`,
+  L67: throw lastError ?? new Error("操作失败");
+
+--- stores\feedback.ts (4 处) ---
+  L21: this.errorMessage = error instanceof Error ? error.message : "加载反馈列表失败";
+  L37: this.errorMessage = error instanceof Error ? error.message : "提交问题反馈失败";
+  L54: this.errorMessage = error instanceof Error ? error.message : "提交建议失败";
+  L71: this.errorMessage = error instanceof Error ? error.message : "提交活动提案失败";
+
+--- stores\home.ts (1 处) ---
+  L57: const msg = error instanceof Error ? error.message : "加载首页数据失败";
+
+--- stores\likes.ts (30 处) ---
+  L152: name: "林夕",
+  L154: headline: "中山大学 · 大二 · 喜欢电影和咖啡",
+  L160: name: "陈默",
+  L162: headline: "华南理工 · 大三 · 自习搭子",
+  L171: name: "苏晴",
+  L173: headline: "中山大学 · 大一 · 摄影爱好者",
+  L180: name: "周然",
+  L182: headline: "华南理工 · 研一 · 喜欢夜跑",
+  L189: name: "叶知秋",
+  L191: headline: "暨南大学 · 大二 · 文学系",
+  L197: name: "沈星河",
+  L199: headline: "广东工业 · 大三 · 篮球队",
+  L209: name: "苏晴",
+  L211: headline: "中山大学 · 大一 · 摄影爱好者",
+  L219: name: "顾言",
+  L221: headline: "星海音乐 · 大二 · 音乐社",
+  L228: name: "江晚吟",
+  L230: headline: "华南师范 · 大一 · 舞蹈队",
+  L241: fromUserName: "苏晴",
+  L251: fromUserName: "叶知秋",
+  L398: this.errorMessage = error instanceof Error ? error.message : "加载喜欢列表失败";
+  L453: this.errorMessage = error instanceof Error ? error.message : "加载访客记录失败";
+  L532: this.errorMessage = error instanceof Error ? error.message : "喜欢用户失败";
+  L575: this.errorMessage = error instanceof Error ? error.message : "取消喜欢失败";
+  L584: this.errorMessage = "用户 ID 无效";
+  L645: title: `与 ${signal.fromUserName} 互相喜欢了！`,
+  L700: this.errorMessage = error instanceof Error ? error.message : "加载心动信号失败";
+  L734: this.errorMessage = error instanceof Error ? error.message : "接受心动信号失败";
+  L763: this.errorMessage = error instanceof Error ? error.message : "拒绝心动信号失败";
+  L923: this.errorMessage = `部分操作失败（${failed.length}/${userIds.length}）`;
+
+--- stores\messages.ts (67 处) ---
+  L224: id: "session-private-1", partnerId: "user-2001", partnerName: "林夕", partnerAvatar: "",
+  L225: partnerHeadline: "大二 · 喜欢电影和咖啡", lastMessagePreview: "明天下午有空吗？",
+  L230: id: "session-private-2", partnerId: "user-2002", partnerName: "陈默", partnerAvatar: "",
+  L231: partnerHeadline: "大三 · 自习搭子", lastMessagePreview: "图书馆三楼见",
+  L236: id: "session-private-3", partnerId: "user-2005", partnerName: "顾言", partnerAvatar: "",
+  L237: partnerHeadline: "研一 · 摄影爱好者", lastMessagePreview: "上次拍的那组照片发你了",
+  L242: id: "session-temp-1", partnerId: "user-2004", partnerName: "对方", partnerAvatar: "",
+  L243: partnerHeadline: "24小时临时聊天", lastMessagePreview: "嗨，我是通过匹配进来的",
+  L251: { id: "msg-1", sessionId: "session-private-1", sender: "peer", kind: "text", body: "嗨，看到你的资料觉得挺有缘的", sentAt: "2026-05-20T18:00:00Z" },
+  L252: { id: "msg-2", sessionId: "session-private-1", sender: "self", kind: "text", body: "哈哈，我也觉得", sentAt: "2026-05-20T18:05:00Z" },
+  L253: { id: "msg-3", sessionId: "session-private-1", sender: "peer", kind: "text", body: "明天下午有空吗？", sentAt: "2026-05-20T18:30:00Z" },
+  L256: { id: "msg-4", sessionId: "session-private-2", sender: "peer", kind: "text", body: "图书馆三楼见", sentAt: "2026-05-19T21:00:00Z" },
+  L259: { id: "msg-5", sessionId: "session-private-3", sender: "peer", kind: "text", body: "上次拍的那组照片发你了", sentAt: "2026-05-18T14:20:00Z" },
+  L262: { id: "msg-6", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "嗨，我是通过匹配进来的", sentAt: "2026-05-20T20:00:00Z" },
+  L268: id: "signal-1", fromUserId: "user-2003", fromUserName: "苏晴", fromUserAvatar: "",
+  L270: school: "南校区", age: 20, city: "广州",
+  L271: bioHighlight: "ta的介绍很丰富，对于找对象ta是认真的",
+  L278: id: "notif-1", type: "match", title: "新的匹配",
+  L279: content: "你与林夕成功匹配，可以开始聊天了", isRead: false,
+  L285: id: "notif-2", type: "system", title: "资料完善提醒",
+  L286: content: "完善资料可以提高匹配成功率哦", isRead: true,
+  L291: id: "notif-3", type: "like", title: "有人喜欢你",
+  L292: content: "一位匿名用户对你点了喜欢，快去寻觅页看看吧", isRead: false,
+  L297: id: "notif-4", type: "follow", title: "新的关注",
+  L298: content: "苏晴关注了你", isRead: false,
+  L304: id: "notif-6", type: "comment", title: "新的评论",
+  L305: content: "林夕评论了你的帖子：\"写得真好！\"", isRead: false,
+  L311: id: "notif-7", type: "visitor", title: "新的访客",
+  L312: content: "顾北访问了你的主页", isRead: true,
+  L318: id: "notif-8", type: "interaction_match", title: "双向喜欢",
+  L319: content: "你和夏言互相喜欢了，快去看看", isRead: false,
+  L325: id: "notif-9", type: "interaction_like", title: "新的赞",
+  L326: content: "周屿赞了你的帖子", isRead: false,
+  L334: { id: 1, eventType: "NEW_LIKE", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: "/static/default-avatar.png", referenceId: 0, referenceType: "profile", summary: "夏言喜欢了你", isRead: false,
+  L335: { id: 2, eventType: "NEW_VISITOR", triggerUserId: 4002, triggerUserName: "顾北", triggerUserAvatar: "/static/default-avatar.png", referenceId: 0, referenceType: "profile", summary: "顾北访问了你的主页", isRead: 
+  L336: { id: 3, eventType: "NEW_FOLLOW", triggerUserId: 4003, triggerUserName: "林溪", triggerUserAvatar: "/static/default-avatar.png", referenceId: 0, referenceType: "profile", summary: "林溪关注了你", isRead: true
+  L337: { id: 4, eventType: "POST_LIKED", triggerUserId: 4004, triggerUserName: "周屿", triggerUserAvatar: "/static/default-avatar.png", referenceId: 42, referenceType: "post", summary: "周屿赞了你的帖子", isRead: fals
+  L338: { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: "/static/default-avatar.png", referenceId: 42, referenceType: "post", summary: "夏言评论了你的帖子：\"写得真好！\"
+  L339: { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "沈念", triggerUserAvatar: "/static/default-avatar.png", referenceId: 15, referenceType: "topic", summary: "沈念回复了你的话题", isRead:
+  L395: ASYNC_TIMEOUT_MS, "消息数据初始化超时，请检查网络后重试"
+  L426: })(), ASYNC_TIMEOUT_MS, "加载会话列表超时");
+  L430: this.errorMessage = error instanceof Error ? error.message : "加载会话列表失败";
+  L462: })(), ASYNC_TIMEOUT_MS, "加载消息超时");
+  L466: this.errorMessage = error instanceof Error ? error.message : "加载消息失败";
+  L491: partnerName: "对方",
+  L524: })(), ASYNC_TIMEOUT_MS, "创建会话超时，请重试");
+  L526: this.errorMessage = error instanceof Error ? error.message : "创建会话失败";
+  L560: })(), ASYNC_TIMEOUT_MS, "发送消息超时，请重试");
+  L582: })(), ASYNC_TIMEOUT_MS, "加载心动信号超时");
+  L607: const ns: MessageSession = { id: `session-private-${signal.fromUserId}`, partnerId: signal.fromUserId, partnerName: signal.fromUserName, partnerAvatar: signal.fromUserAvatar, partnerHeadline: `${signa
+  ... 还有 17 处
+
+--- stores\profile.ts (16 处) ---
+  L47: nickname: "星野",
+  L48: bio: "安静、好奇，更喜欢一对一慢慢聊。",
+  L49: grade: "大三",
+  L50: pronouns: "她/她",
+  L55: city: "广州",
+  L56: campusName: "南校区",
+  L57: department: "工业设计",
+  L63: preferredCampusArea: "图书馆和北草坪",
+  L64: preferredTimeWindows: ["今晚", "本周"],
+  L68: weekday: "周一",
+  L71: label: "设计课",
+  L75: weekday: "周三",
+  L78: label: "专题讨论",
+  L107: summary: "今天在图书馆遇到一只很亲人的橘猫，分享几张照片～",
+  L114: summary: "周末去看了场艺术展，被一幅画击中了，推荐给大家。",
+  L121: summary: "整理了一下这学期的设计作业，复盘的过程很有收获。",
+
+--- stores\promo-code.ts (2 处) ---
+  L94: reason: "优惠码已过期或不可用",
+  L105: description: "立减 10 元",
+
+--- stores\schedule.ts (18 处) ---
+  L48: courseName: "高等数学",
+  L49: classroom: "教三201",
+  L50: teacher: "王教授",
+  L58: courseName: "数据结构",
+  L59: classroom: "机房A",
+  L60: teacher: "李教授",
+  L68: courseName: "大学英语",
+  L69: classroom: "外语楼301",
+  L70: teacher: "张老师",
+  L79: activityName: "社团破冰",
+  L80: location: "学生活动中心",
+  L81: sponsor: "校学生会",
+  L89: activityName: "篮球友谊赛",
+  L90: location: "体育馆",
+  L91: sponsor: "篮球社",
+  L100: title: "图书馆自习",
+  L101: location: "图书馆三楼",
+  L102: note: "期末复习冲刺",
+
+--- stores\session.ts (3 处) ---
+  L26: displayName: "测试用户",
+  L31: campusName: "北京大学",
+  L274: this.errorMessage = error instanceof Error ? error.message : "刷新会话失败";
+
+--- stores\social-progress.ts (9 处) ---
+  L55: L1_EXPOSURE: { label: '发现心动', icon: TIER_ICONS.L1_EXPOSURE, desc: '浏览推荐卡片' },
+  L56: L2_ATTENTION: { label: '表达喜欢', icon: TIER_ICONS.L2_ATTENTION, desc: '向心仪的人表达喜欢' },
+  L57: L3_MATCH: { label: '双向匹配', icon: TIER_ICONS.L3_MATCH, desc: '等待双向确认' },
+  L58: L4_COMMUNICATION: { label: '开启对话', icon: TIER_ICONS.L4_COMMUNICATION, desc: '发起私信聊天' },
+  L59: L5_CIRCLE: { label: '参与社区', icon: TIER_ICONS.L5_CIRCLE, desc: '加入兴趣圈和话题' },
+  L60: L6_SCENE: { label: '线下见面', icon: TIER_ICONS.L6_SCENE, desc: '参与线下活动' },
+  L78: tierLabel: '发现心动',
+  L85: nextAction: '去寻觅，发现心动的人',
+  L154: error instanceof Error ? error.message : '加载社交升温进度失败'
+
+--- stores\unlock-guide.ts (2 处) ---
+  L26: featureName: "此功能",
+  L57: this.featureName = featureName || "此功能";
+
+--- stores\village\index.ts (33 处) ---
+  L203: this.errorMessage = error instanceof Error ? error.message : "加载帖子失败";
+  L269: name: "我",
+  L304: this.errorMessage = error instanceof Error ? error.message : "发布帖子失败";
+  L330: this.errorMessage = error instanceof Error ? error.message : "帖子不存在";
+  L365: this.errorMessage = error instanceof Error ? error.message : "点赞操作失败";
+  L415: this.errorMessage = error instanceof Error ? error.message : "关注操作失败";
+  L469: name: "我",
+  L504: this.errorMessage = error instanceof Error ? error.message : "评论失败";
+  L541: this.errorMessage = error instanceof Error ? error.message : "点赞评论失败";
+  L594: this.errorMessage = error instanceof Error ? error.message : "转发操作失败";
+  L614: this.errorMessage = error instanceof Error ? error.message : "加载评论失败";
+  L668: title: "周末校园电影放映",
+  L669: location: "学生活动中心",
+  L670: scheduleText: "本周六 19:00",
+  L674: title: "社团招新嘉年华",
+  L675: location: "操场",
+  L676: scheduleText: "下周三 14:00-17:00",
+  L682: title: "期末考试复习经验分享",
+  L683: heatLabel: "热门",
+  L687: title: "校园周边美食推荐",
+  L688: heatLabel: "讨论中",
+  L692: title: "毕业季租房避坑指南",
+  L693: heatLabel: "新话题",
+  L710: this.errorMessage = error instanceof Error ? error.message : "加载同校动态失败";
+  L727: name: "南风",
+  L729: campusName: "北京大学",
+  L730: headline: "97年 · 深圳 · 产品经理 · 本科",
+  L732: commonInterests: ["阅读", "旅行"],
+  L737: name: "北岛",
+  L739: campusName: "四川大学",
+  L740: headline: "93年 · 成都 · 创业者 · 博士",
+  L742: commonInterests: ["阅读"],
+  L765: this.errorMessage = error instanceof Error ? error.message : "加载相似作者失败";
+
+--- stores\village\utils.ts (46 处) ---
+  L298: if (diff < minute) return "刚刚活跃";
+  L299: if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
+  L300: if (diff < day) return `${Math.floor(diff / hour)}小时前`;
+  L301: return `${Math.floor(diff / day)}天前`;
+  L310: { id: "cat-all", name: "全部", icon: "grid" },
+  L311: { id: "cat-interest", name: "兴趣圈", icon: "heart" },
+  L312: { id: "cat-sincere", name: "诚意帖", icon: "star" },
+  L313: { id: "cat-hometown", name: "同乡", icon: "location" },
+  L314: { id: "cat-campus", name: "校园", icon: "school" },
+  L315: { id: "cat-latest", name: "最新", icon: "time" },
+  L322: name: "小鹿",
+  L324: headline: "94年 · 北京 · 年薪30w+ · 985硕士",
+  L325: campusName: "北京大学",
+  L326: interests: ["阅读", "旅行", "志愿者"],
+  L330: name: "阿泽",
+  L332: headline: "96年 · 上海 · 互联网大厂 · 本科",
+  L333: campusName: "复旦大学",
+  L334: interests: ["徒步", "户外", "摄影"],
+  L338: name: "橙子",
+  L340: headline: "95年 · 杭州 · 设计师 · 硕士",
+  L341: campusName: "浙江大学",
+  L342: interests: ["设计", "美食", "旅行"],
+  L346: name: "南风",
+  L348: headline: "97年 · 深圳 · 产品经理 · 本科",
+  L349: campusName: "北京大学",
+  L350: interests: ["产品", "运动", "音乐"],
+  L354: name: "北岛",
+  L356: headline: "93年 · 成都 · 创业者 · 博士",
+  L357: campusName: "四川大学",
+  L358: interests: ["创业", "摄影", "读书"],
+  L370: "认真征友，希望能遇到那个对的人。平时喜欢看书、旅行，周末会去做志愿者。期待一段双向奔赴的感情。",
+  L372: tags: ["#这是一条520交友启事", "#诚意征友"],
+  L388: "周末有一起去徒步的吗？计划去西湖周边走一圈，大概15公里，新手友好路线。已经有3个人了，再来2个就出发！",
+  L390: tags: ["#周末徒步", "#西湖", "#户外"],
+  L406: "在杭州的四川老乡集合啦！想建一个老乡群，周末可以一起约火锅、打麻将。身在异乡，老乡最亲~",
+  L408: tags: ["#四川老乡", "#杭州", "#火锅"],
+  L424: "【蒙面话题】你们觉得相亲时最看重对方什么？我先说：三观一致最重要，颜值其次。",
+  L426: tags: ["#蒙面话题", "#相亲", "#三观"],
+  L442: "创业第三年，公司步入正轨，终于有时间考虑个人问题了。喜欢运动、摄影，希望找一个能一起成长的伴侣。",
+  L444: tags: ["#创业", "#征友", "#摄影"],
+  L460: "分享最近读的一本书《亲密关系》，里面讲到沟通的重要性，推荐给正在恋爱中的朋友们。",
+  L462: tags: ["#读书分享", "#亲密关系"],
+  L480: content: "同在北京，可以认识一下吗？",
+  L489: content: "志愿者活动是在哪里做的呀？",
+  L498: content: "完全同意！三观不合真的很难走下去。",
+  L507: content: "我觉得人品和责任心也很重要。",
+
+--- stores\vip-auto-renew.ts (2 处) ---
+  L65: planName: "季度会员",
+  L99: planName: status.value.planName ?? "季度会员",
+
+--- stores\vip-billing.ts (6 处) ---
+  L62: planName: "季度会员",
+  L71: remark: "首次开通",
+  L78: planName: "月度会员",
+  L87: remark: "自动续费",
+  L94: planName: "月度会员",
+  L101: remark: "用户申请退款",
+
+--- stores\vip-red-packet.ts (1 处) ---
+  L185: blessing: "祝你天天开心",
+
+--- stores\vip.ts (15 处) ---
+  L77: name: "月度会员",
+  L80: duration: "1个月",
+  L81: features: ["专属标识", "解锁空档查看", "优先推荐"],
+  L85: name: "季度会员",
+  L88: duration: "3个月",
+  L89: features: ["专属标识", "解锁空档查看", "优先推荐", "隐身浏览", "消息加速"],
+  L94: name: "年度会员",
+  L97: duration: "12个月",
+  L98: features: ["专属标识", "解锁空档查看", "优先推荐", "隐身浏览", "消息加速", "专属客服"],
+  L255: planName: "季度会员",
+  L264: remark: "首次开通",
+  L271: planName: "月度会员",
+  L280: remark: "自动续费",
+  L287: planName: "月度会员",
+  L294: remark: "用户申请退款",
+
+--- subpackages\discover\activities\index.vue (26 处) ---
+  L104: const WEEK_DAY_LABELS = ["一", "二", "三", "四", "五", "六", "日"];
+  L212: return `${calendarYear.value}年${calendarMonth.value}月`;
+  L266: return `${month}月${day}日`;
+  L272: title="线下活动"
+  L273: subtitle="从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。"
+  L278: <text class="status-text">正在加载活动内容...</text>
+  L287: <button class="retry-btn" @tap="activityStore.fetchActivities()">重试</button>
+  L292: <text class="status-text">暂无活动</text>
+  L305: <text class="view-toggle__text">列表</text>
+  L312: <text class="view-toggle__text">日历</text>
+  L338: <text class="enrollment-label">人已报名</text>
+  L362: <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
+  L369: <text class="loading-more__text">加载中...</text>
+  L372: <text class="loading-more__text">没有更多活动了</text>
+  L376: title="下一步"
+  L377: subtitle="看到合适活动后，可以继续去寻觅，也可以提交新的活动提案。"
+  L380: primary-label="去寻觅"
+  L381: secondary-label="提交活动提案"
+  L454: {{ getDateEnrollCount(cell.dateStr) }}人
+  L464: <text class="selected-date-header__count">{{ selectedDateActivities.length }}个活动</text>
+  L476: <text class="enrollment-label">人已报名</text>
+  L500: <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
+  L507: title="下一步"
+  L508: subtitle="看到合适活动后，可以继续去寻觅，也可以提交新的活动提案。"
+  L511: primary-label="去寻觅"
+  L512: secondary-label="提交活动提案"
+
+--- subpackages\discover\discussions\index.vue (10 处) ---
+  L31: error.value = e instanceof Error ? e.message : "加载讨论内容失败，请稍后重试";
+  L45: title="讨论圈"
+  L46: subtitle="先看大家最近真的在聊什么，再决定从哪里开始建立联系。"
+  L49: <SectionCard title="正在讨论" subtitle="先看大家最近真正在聊什么。">
+  L50: <view v-if="loading" class="empty-state">正在加载讨论内容...</view>
+  L53: <text class="retry-link" @tap="loadDiscussions">点击重试</text>
+  L55: <view v-else-if="!discussions.length" class="empty-state">暂时还没有新的讨论推荐。</view>
+  L65: <SectionCard title="下一步" subtitle="看到合适的话题后，可以直接去匹配或反馈新的讨论建议。">
+  L67: primary-label="去寻觅"
+  L68: secondary-label="反馈讨论建议"
+
+--- subpackages\legal\agreement\index.vue (1 处) ---
+  L111: <AppShell title="用户协议" :show-tab-bar="false">
+
+--- subpackages\legal\privacy\index.vue (1 处) ---
+  L111: <AppShell title="隐私政策" :show-tab-bar="false">
+
+--- subpackages\setup\campus\index.vue (13 处) ---
+  L13: city: "广州",
+  L14: campusName: "南校区",
+  L15: department: "工业设计",
+  L25: uni.showToast({ title: "请输入城市", icon: "none" });
+  L29: uni.showToast({ title: "请输入学校名称", icon: "none" });
+  L33: uni.showToast({ title: "请输入专业", icon: "none" });
+  L41: const message = error instanceof Error ? error.message : "保存失败，请稍后重试";
+  L48: <AppShell title="学校信息" subtitle="先手动填写，认证状态以后端回传为准。" :show-tab-bar="false">
+  L52: <SectionCard title="学校资料" compact>
+  L53: <input v-model="form.city" class="field" placeholder="城市" aria-label="城市"></input>
+  L54: <input v-model="form.campusName" class="field" placeholder="学校名称" aria-label="学校名称"></input>
+  L55: <input v-model="form.department" class="field" placeholder="院系" aria-label="院系"></input>
+  L57: <BottomActionBar primary-label="保存并继续" @primary="save"></BottomActionBar>
+
+--- subpackages\setup\profile\index.vue (47 处) ---
+  L50: { label: "高中", value: "high_school" },
+  L51: { label: "本科", value: "bachelor" },
+  L52: { label: "硕士", value: "master" },
+  L53: { label: "博士", value: "phd" },
+  L58: { label: "未婚", value: "never" },
+  L59: { label: "曾离异", value: "married_before" },
+  L60: { label: "离异", value: "divorced" },
+  L61: { label: "丧偶", value: "widowed" },
+  L66: "事业",
+  L67: "旅行",
+  L68: "学习",
+  L69: "家庭",
+  L70: "健康",
+  L71: "理财",
+  L72: "兴趣",
+  L73: "社交",
+  L235: uni.showToast({ title: "请输入昵称", icon: "none" });
+  L239: uni.showToast({ title: `昵称不能超过 ${NICKNAME_MAX_LENGTH} 个字符`, icon: "none" });
+  L243: uni.showToast({ title: `简介不能超过 ${BIO_MAX_LENGTH} 个字符`, icon: "none" });
+  L251: uni.showToast({ title: `身高范围 ${HEIGHT_MIN}-${HEIGHT_MAX}cm`, icon: "none" });
+  L264: title: `「${group.labelKey}」至少选择 ${group.min} 个标签`,
+  L286: uni.showToast({ title: "资料无变更", icon: "none" });
+  L303: uni.showToast({ title: "保存成功", icon: "success" });
+  L311: const message = error instanceof Error ? error.message : "保存失败，请稍后重试";
+  L322: uni.showToast({ title: "请前往「我的」页点击背景图编辑", icon: "none" });
+  L327: <AppShell title="基础资料" subtitle="完善你的资料，让更多人了解你" :show-tab-bar="false">
+  L331: <SectionCard title="资料草稿" compact>
+  L332: <input v-model="form.nickname" class="field" placeholder="昵称" :maxlength="NICKNAME_MAX_LENGTH" aria-label="昵称" />
+  L334: <input v-model="form.grade" class="field" placeholder="年级" aria-label="年级" />
+  L335: <input v-model="form.pronouns" class="field" placeholder="称呼偏好" aria-label="称呼偏好" />
+  L339: <SectionCard title="基本资料" compact>
+  L342: <text class="form-row__label">身高（cm）</text>
+  L353: <text class="form-row__label">学历</text>
+  L362: {{ educationLevelLabel || '请选择' }}
+  L371: <text class="form-row__label">感情状态</text>
+  L380: {{ relationshipStatusLabel || '请选择' }}
+  L389: <text class="form-row__label">籍贯省份</text>
+  L390: <input v-model="form.hometownProvince" class="field field--inline" placeholder="如：广东" aria-label="如：广东" />
+  L395: <text class="form-row__label">籍贯城市</text>
+  L396: <input v-model="form.hometownCity" class="field field--inline" placeholder="如：广州" aria-label="如：广州" />
+  L401: <text class="form-row__label">未来城市</text>
+  L402: <input v-model="form.futureCity" class="field field--inline" placeholder="如：广州" aria-label="如：广州" />
+  L407: <text class="form-row__label">未来规划</text>
+  L424: <SectionCard title="个性标签" compact>
+  L429: <SectionCard title="个人主页背景" compact>
+  L436: <text class="bg-entry__text">更换背景</text>
+  L442: :primary-label="isSubmitting ? '保存中...' : '保存并继续'"
+
+--- subpackages\setup\recommend-pref\index.vue (16 处) ---
+  L48: { label: "同校优先", value: "campus_first" as const },
+  L49: { label: "同城", value: "city" as const },
+  L50: { label: "不限", value: "unlimited" as const },
+  L115: uni.showToast({ title: "保存成功", icon: "success" });
+  L117: uni.showToast({ title: "保存失败，请重试", icon: "none" });
+  L133: <AppShell title="推荐计划设置" :show-tab-bar="false">
+  L138: <SectionCard v-if="loading" title="加载中..." compact>
+  L140: <text class="loading-text">正在获取推荐偏好设置...</text>
+  L145: <SectionCard v-else-if="error" title="加载失败" compact>
+  L147: <text class="error-text">获取偏好设置时出现问题，请重试</text>
+  L148: <button class="retry-btn" @tap="retry">重新加载</button>
+  L155: <SectionCard title="推荐时间" subtitle="每天在这个时间为你刷新推荐卡片" compact>
+  L170: <SectionCard title="推荐范围" subtitle="优先推荐哪些范围的人" compact>
+  L185: <SectionCard title="校园优先" subtitle="启用后同校用户推荐权重+30%并排序靠前" compact>
+  L187: <text class="toggle-label">校园优先</text>
+  L196: :primary-label="saving ? '保存中...' : '保存'"
+
+--- subpackages\setup\schedule\index.vue (11 处) ---
+  L14: preferredCampusArea: "图书馆和北草坪",
+  L15: preferredTimeWindows: ["今晚", "本周"],
+  L17: { id: "b-1", weekday: "周一", start: "09:00", end: "10:30", label: "设计课" },
+  L29: uni.showToast({ title: "请输入偏好地点", icon: "none" });
+  L35: uni.showToast({ title: "请至少添加一个时间窗口", icon: "none" });
+  L43: const message = error instanceof Error ? error.message : "保存失败，请稍后重试";
+  L50: <AppShell title="时间安排" subtitle="这里会驱动首页默认推荐和可聊天时段。" :show-tab-bar="false">
+  L54: <SectionCard title="偏好设置" compact>
+  L55: <input v-model="form.preferredCampusArea" class="field" placeholder="常去区域" aria-label="常去区域" />
+  L60: placeholder="常用空闲时段，例如今晚或本周三下午" aria-label="常用空闲时段，例如今晚或本周三下午"
+  L62: <BottomActionBar primary-label="保存并进入应用" @primary="save" />
+
+--- subpackages\support\feedback\index.vue (15 处) ---
+  L25: { value: "feedback", label: "反馈" },
+  L26: { value: "suggestion", label: "建议" },
+  L27: { value: "activity_proposal", label: "活动提案" },
+  L105: title: "需同意隐私协议后才能选择图片",
+  L312: <AppShell title="反馈中心" subtitle="反馈、建议和活动提案共用一个入口。" :show-tab-bar="false">
+  L313: <SectionCard title="新建提交" compact>
+  L314: <view class="chips" role="tablist" aria-label="反馈类型">
+  L328: <label class="sr-only" for="feedback-title">标题</label>
+  L333: placeholder="标题"
+  L334: aria-label="标题"
+  L339: <label class="sr-only" for="feedback-content">反馈内容</label>
+  L345: aria-label="反馈内容"
+  L350: <label class="sr-only" for="feedback-wechat">选填微信号</label>
+  L355: placeholder="选填微信号"
+  L356: aria-label="选填微信号"
+
+--- tests\chat-overview-view.spec.ts (16 处) ---
+  L12: partnerName: "林安",
+  L13: partnerHeadline: "工业设计大三，偏好低压力的第一轮聊天。",
+  L14: availabilityHint: "合适时间：今晚 19:00 之后",
+  L18: lastMessagePreview: "刚建立临时会话，等你开场。",
+  L25: emptyStateLead: "还没有临时会话时，继续从推荐的人进入。",
+  L29: name: "林安",
+  L30: initials: "林",
+  L31: headline: "工业设计大三，偏好低压力的第一轮聊天。",
+  L32: commonGround: "共同兴趣：电影夜和安静的咖啡馆路线",
+  L33: availability: "合适时间：今晚 19:00 之后",
+  L47: expect(view.sessions[0]?.statusLabel).toBe("等待你开场");
+  L69: partnerName: "沈念",
+  L70: lastMessagePreview: "今晚图书馆门口见。",
+  L85: expect(filterChatSessions(view.sessions, "图书馆")).toHaveLength(1);
+  L86: expect(filterChatSessions(view.sessions, "等待你开场")).toHaveLength(1);
+  L87: expect(filterChatSessions(view.sessions, "沈念")[0]?.unreadCount).toBe(2);
+
+--- tests\chat-transport-real.spec.ts (18 处) ---
+  L38: partnerName: "林夏",
+  L39: partnerHeadline: "喜欢先从轻松问题聊起。",
+  L40: availabilityHint: "今晚 19:00 后有空",
+  L60: partnerName: "林夏",
+  L61: partnerHeadline: "喜欢先从轻松问题聊起。",
+  L62: availabilityHint: "今晚 19:00 后有空",
+  L91: partnerName: "林夏",
+  L92: partnerHeadline: "喜欢先从轻松问题聊起。",
+  L93: availabilityHint: "今晚 19:00 后有空",
+  L113: partnerName: "林夏",
+  L114: partnerHeadline: "喜欢先从轻松问题聊起。",
+  L115: availabilityHint: "今晚 19:00 后有空",
+  L135: partnerName: "林夏",
+  L136: partnerHeadline: "喜欢先从轻松问题聊起。",
+  L137: availabilityHint: "今晚 19:00 后有空",
+  L146: body: "你好，先聊聊你今天最轻松的一段时间。",
+  L167: body: "你好，先聊聊你今天最轻松的一段时间。",
+  L179: expect(loaded.messages[0]?.body).toContain("最轻松");
+
+--- tests\chat-transport.spec.ts (2 处) ---
+  L23: body: "你好，先从今天的安排开始聊吧。",
+  L31: expect(loaded.messages[0]?.body).toBe("你好，先从今天的安排开始聊吧。");
+
+--- tests\components\ActivityCard.spec.ts (12 处) ---
+  L10: describe("ActivityCard component - 活动卡片组件", () => {
+  L40: const wrapper = mountCard({ title: "活动" });
+  L45: const wrapper = mountCard({ title: "活动" });
+  L51: const wrapper = mountCard({ title: "活动" });
+  L56: const wrapper = mountCard({ title: "篮球赛", time: "今晚 8 点", location: "体育馆" });
+  L64: const wrapper = mountCard({ title: "校园马拉松" });
+  L65: expect(wrapper.find(".activity-title").text()).toBe("校园马拉松");
+  L72: const wrapper = mountCard({ title: "T", time: "今晚 8 点" });
+  L74: expect(wrapper.find(".activity-meta-item").text()).toBe("今晚 8 点");
+  L85: const wrapper = mountCard({ title: "T", location: "体育馆" });
+  L87: expect(wrapper.find(".activity-meta-item").text()).toBe("体育馆");
+  L91: const wrapper = mountCard({ title: "T", time: "今晚", location: "体育馆" });
+
+--- tests\components\Avatar.spec.ts (6 处) ---
+  L10: describe("Avatar component - 头像组件", () => {
+  L67: const wrapper = mountAvatar({ src: "https://cdn.example.com/a.png", name: "小明" });
+  L74: const wrapper = mountAvatar({ name: "小明" });
+  L77: expect(fallback.text()).toContain("小");
+  L137: const wrapper = mountAvatar({ name: "小红" });
+  L138: expect(wrapper.find(".avatar").attributes("aria-label")).toBe("小红");
+
+--- tests\components\BaseTabs.spec.ts (6 处) ---
+  L10: describe("BaseTabs component - 标签页组件", () => {
+  L16: { key: "all", label: "全部" },
+  L17: { key: "following", label: "关注", badge: 5 },
+  L18: { key: "hot", label: "热门", badge: 100 },
+  L125: { key: "all", label: "全部", badge: "NEW" },
+  L143: expect(items[0].attributes("aria-label")).toBe("全部");
+
+--- tests\components\BottomActionBar.spec.ts (18 处) ---
+  L10: describe("BottomActionBar component - 底部操作栏组件", () => {
+  L21: props: props ?? { primaryLabel: "确定" },
+  L36: const wrapper = mountBar({ primaryLabel: "确定" });
+  L38: expect(wrapper.find(".bar__primary").text()).toBe("确定");
+  L42: const wrapper = mountBar({ primaryLabel: "确定" });
+  L47: const wrapper = mountBar({ primaryLabel: "确定", secondaryLabel: "取消" });
+  L49: expect(wrapper.find(".bar__secondary").text()).toBe("取消");
+  L56: const wrapper = mountBar({ primaryLabel: "确定" });
+  L61: const wrapper = mountBar({ primaryLabel: "确定", secondaryLabel: "取消" });
+  L69: const wrapper = mountBar({ primaryLabel: "确定" });
+  L76: const wrapper = mountBar({ primaryLabel: "确定", secondaryLabel: "取消" });
+  L83: const wrapper = mountBar({ primaryLabel: "确定", secondaryLabel: "取消" });
+  L92: const wrapper = mountBar({ primaryLabel: "确定" });
+  L95: expect(bar.attributes("aria-label")).toBe("操作栏");
+  L99: const wrapper = mountBar({ primaryLabel: "提交" });
+  L100: expect(wrapper.find(".bar__primary").attributes("aria-label")).toBe("提交");
+  L104: const wrapper = mountBar({ primaryLabel: "确定", secondaryLabel: "返回" });
+  L105: expect(wrapper.find(".bar__secondary").attributes("aria-label")).toBe("返回");
+
+--- tests\components\Button.spec.ts (3 处) ---
+  L25: describe("Button component - ripple 动画", () => {
+  L42: slots: { default: "按钮文本" },
+  L278: expect(wrapper.find(".btn-text").text()).toBe("按钮文本");
+
+--- tests\components\Card.spec.ts (2 处) ---
+  L9: describe("Card component - 通用卡片组件", () => {
+  L24: slots: { default: '<div class="card-content">内容</div>' },
+
+--- tests\components\ChatBubble.spec.ts (6 处) ---
+  L15: describe("ChatBubble component - 聊天气泡组件", () => {
+  L40: body: "你好",
+  L65: const wrapper = mountBubble({ kind: "text", body: "你好啊" });
+  L67: expect(wrapper.find(".bubble__body").text()).toContain("你好啊");
+  L81: const wrapper = mountBubble({ sender: "system", kind: "system", body: "系统消息" });
+  L105: quoteBody: "原消息内容",
+
+--- tests\components\ChatItem.spec.ts (7 处) ---
+  L15: describe("ChatItem component - 会话列表项组件", () => {
+  L35: name: "小明",
+  L36: lastMessage: "你好",
+  L62: const wrapper = mountItem({ name: "小红" });
+  L63: expect(wrapper.find(".chat-item-name").text()).toContain("小红");
+  L67: const wrapper = mountItem({ lastMessage: "明天见" });
+  L68: expect(wrapper.find(".chat-item-msg").text()).toBe("明天见");
+
+--- tests\components\EducationBadge.spec.ts (21 处) ---
+  L10: describe("EducationBadge component - 教育徽章组件", () => {
+  L23: props: props ?? { school: "测试大学" },
+  L39: const wrapper = mountBadge({ school: "测试大学" });
+  L44: const wrapper = mountBadge({ school: "测试大学" });
+  L49: const wrapper = mountBadge({ school: "北京大学" });
+  L50: expect(wrapper.find(".edu-badge").attributes("aria-label")).toContain("北京大学");
+  L57: const wrapper = mountBadge({ school: "清华大学" });
+  L58: expect(wrapper.find(".edu-badge__school").text()).toBe("清华大学");
+  L62: const wrapper = mountBadge({ school: "北大", degree: "本科" });
+  L65: expect(degree.text()).toContain("本科");
+  L69: const wrapper = mountBadge({ school: "北大" });
+  L74: const wrapper = mountBadge({ school: "复旦大学", degree: "硕士" });
+  L76: expect(aria).toContain("复旦大学");
+  L77: expect(aria).toContain("硕士");
+  L84: const wrapper = mountBadge({ school: "北大", verified: true });
+  L89: const wrapper = mountBadge({ school: "北大", verified: false });
+  L94: const wrapper = mountBadge({ school: "北大", verified: true });
+  L96: expect(aria).toContain("北大");
+  L103: const wrapper = mountBadge({ school: "北大", size: "sm" });
+  L111: const wrapper = mountBadge({ school: "北大", size: "md" });
+  L117: const wrapper = mountBadge({ school: "北大", size: "lg" });
+
+--- tests\components\EmptyState.spec.ts (4 处) ---
+  L10: describe("EmptyState component - 空状态组件", () => {
+  L58: const wrapper = mountEmpty({ message: "暂无数据，下拉刷新" });
+  L59: expect(wrapper.find(".empty-msg").text()).toBe("暂无数据，下拉刷新");
+  L116: slots: { default: '<button class="action-btn">刷新</button>' },
+
+--- tests\components\ErrorState.spec.ts (1 处) ---
+  L10: describe("ErrorState component - 错误状态组件", () => {
+
+--- tests\components\HeartParticles.spec.ts (1 处) ---
+  L9: describe("HeartParticles component - 心形粒子动画组件", () => {
+
+--- tests\components\HeartSignal.spec.ts (5 处) ---
+  L10: describe("HeartSignal component - 心动信号卡片组件", () => {
+  L72: const wrapper = mountSignal({ title: "今日心动" });
+  L73: expect(wrapper.find(".signal-title").text()).toBe("今日心动");
+  L85: const wrapper = mountSignal({ subtitle: "还剩 3 小时" });
+  L86: expect(wrapper.find(".signal-sub").text()).toBe("还剩 3 小时");
+
+--- tests\components\HomeHeader.spec.ts (3 处) ---
+  L10: describe("HomeHeader component - 首页头部组件", () => {
+  L72: const wrapper = mountHeader({ school: "清华大学" });
+  L73: expect(wrapper.find(".header-school").text()).toBe("清华大学");
+
+--- tests\components\IcebreakerSuggestions.spec.ts (7 处) ---
+  L10: describe("IcebreakerSuggestions component - 破冰话题建议组件", () => {
+  L16: { id: 1, content: "你最近在追什么剧？", category: "兴趣爱好", source: "common_interest" },
+  L17: { id: 2, content: "周末一般做什么？", category: "生活方式", source: "common_interest" },
+  L18: { id: 3, content: "喜欢什么运动？", category: "兴趣爱好", source: "common_interest" },
+  L77: expect(firstCard.find(".icebreaker__card-badge-text").text()).toBe("兴趣爱好");
+  L78: expect(firstCard.find(".icebreaker__card-content").text()).toBe("你最近在追什么剧？");
+  L116: expect(wrapper.emitted("select")![0]).toEqual(["你最近在追什么剧？"]);
+
+--- tests\components\LikeBurst.spec.ts (1 处) ---
+  L10: describe("LikeBurst component - 点赞爆破动画组件", () => {
+
+--- tests\components\LockScreen.spec.ts (13 处) ---
+  L51: const wrapper = mountLockScreen({ pageName: "喜欢" });
+  L54: expect(title.text()).toContain("喜欢");
+  L55: expect(title.text()).toContain("完善资料后才能解锁");
+  L62: expect(title.text()).toContain("此功能");
+  L69: const likesWrapper = mountLockScreen({ pageName: "喜欢" });
+  L70: expect(likesWrapper.find(".lock-screen__title").text()).toContain("喜欢");
+  L72: const villageWrapper = mountLockScreen({ pageName: "村口" });
+  L73: expect(villageWrapper.find(".lock-screen__title").text()).toContain("村口");
+  L75: const messagesWrapper = mountLockScreen({ pageName: "消息" });
+  L76: expect(messagesWrapper.find(".lock-screen__title").text()).toContain("消息");
+  L107: expect(subtitle.text()).toContain("完善资料，开启更多校园恋爱功能");
+  L114: expect(subtitle.text()).toContain("完善资料，开启更多校园恋爱功能");
+  L124: expect(footer.text()).toBe("资料越完善，匹配越精准");
+
+--- tests\components\LoginLogo.spec.ts (7 处) ---
+  L10: describe("LoginLogo component - 登录页 Logo 与标语组件", () => {
+  L64: const wrapper = mountLogo({ title: "心动校园" });
+  L65: expect(wrapper.find(".login-title").text()).toBe("心动校园");
+  L76: const wrapper = mountLogo({ subtitle: "遇见对的人" });
+  L77: expect(wrapper.find(".login-subtitle").text()).toBe("遇见对的人");
+  L88: const wrapper = mountLogo({ title: "我的应用" });
+  L89: expect(wrapper.find(".login-header").attributes("aria-label")).toBe("我的应用");
+
+--- tests\components\MatchCountChip.spec.ts (1 处) ---
+  L16: describe("MatchCountChip component - 匹配次数 Chip 组件", () => {
+
+--- tests\components\MatchGuideOverlay.spec.ts (12 处) ---
+  L10: describe("MatchGuideOverlay component - 匹配成功引导弹窗组件", () => {
+  L15: const sampleIcebreakers = ["你最近在追什么剧？", "周末一般做什么？"];
+  L17: { id: "1", name: "摄影圈", icon: "📷" },
+  L18: { id: "2", name: "篮球圈", icon: "🏀" },
+  L21: { id: "a1", title: "周末户外徒步", scheduleText: "周六 09:00" },
+  L35: partnerName: "小明",
+  L63: const wrapper = mountOverlay({ partnerName: "小红" });
+  L66: expect(wrapper.find(".mgo-subtitle").text()).toContain("小红");
+  L92: expect(wrapper.emitted("select-icebreaker")![0]).toEqual(["你最近在追什么剧？"]);
+  L107: expect(first.find(".mgo-circle-name").text()).toBe("摄影圈");
+  L123: expect(act.find(".mgo-activity-title").text()).toBe("周末户外徒步");
+  L124: expect(act.find(".mgo-activity-time").text()).toBe("周六 09:00");
+
+--- tests\components\PageStateContainer.spec.ts (5 处) ---
+  L10: describe("PageStateContainer component - 页面状态容器组件", () => {
+  L31: default: '<div class="mock-content">内容</div>',
+  L73: const wrapper = mountContainer({ state: "loading", loadingText: "正在加载..." });
+  L74: expect(wrapper.find(".loading-text").text()).toBe("正在加载...");
+  L130: loading: '<div class="custom-loading">自定义加载</div>',
+
+--- tests\components\PersonCard.spec.ts (9 处) ---
+  L10: describe("PersonCard component - 推荐人物卡片组件", () => {
+  L29: name: "小明",
+  L30: headline: "热爱生活",
+  L53: const wrapper = mountCard({ name: "小红" });
+  L54: expect(wrapper.find(".person-name").text()).toBe("小红");
+  L58: const wrapper = mountCard({ headline: "热爱摄影" });
+  L59: expect(wrapper.find(".person-headline").text()).toBe("热爱摄影");
+  L99: const wrapper = mountCard({ actionText: "打招呼" });
+  L100: expect(wrapper.find(".person-action-text").text()).toBe("打招呼");
+
+--- tests\components\PhoneBtn.spec.ts (1 处) ---
+  L10: describe("PhoneBtn component - 手机号登录按钮组件", () => {
+
+--- tests\components\PostReportDialog.spec.ts (1 处) ---
+  L22: describe("PostReportDialog component - 帖子举报弹窗组件", () => {
+
+--- tests\components\RedPacketBubble.spec.ts (4 处) ---
+  L12: describe("RedPacketBubble component - 红包消息气泡组件", () => {
+  L31: blessing: "祝你天天开心",
+  L55: const wrapper = mountBubble({ blessing: "新婚快乐" });
+  L56: expect(wrapper.find(".rp-bubble__blessing").text()).toBe("新婚快乐");
+
+--- tests\components\Ripple.spec.ts (2 处) ---
+  L9: describe("Ripple component - 涟漪效果组件", () => {
+  L22: slots: { default: '<div class="content">点击我</div>' },
+
+--- tests\components\SafeImage.spec.ts (4 处) ---
+  L15: describe("SafeImage component - 安全图片组件", () => {
+  L66: const wrapper = mountImage({ src: "https://cdn.example.com/a.png", alt: "用户头像" });
+  L67: expect(wrapper.find(".safe-image").attributes("aria-label")).toBe("用户头像");
+  L72: expect(wrapper.find(".safe-image").attributes("aria-label")).toBe("图片");
+
+--- tests\components\SectionCard.spec.ts (15 处) ---
+  L10: describe("SectionCard component - 区块卡片组件", () => {
+  L22: props: props ?? { title: "默认标题" },
+  L23: slots: slots ?? { default: '<div class="slot-content">内容</div>' },
+  L38: const wrapper = mountCard({ title: "推荐话题" });
+  L39: expect(wrapper.find(".card__title").text()).toBe("推荐话题");
+  L43: const wrapper = mountCard({ title: "热门活动" });
+  L46: expect(card.attributes("aria-label")).toBe("热门活动");
+  L53: const wrapper = mountCard({ title: "无副标题" });
+  L58: const wrapper = mountCard({ title: "推荐话题", subtitle: "更多话题请进入查看" });
+  L60: expect(wrapper.find(".card__subtitle").text()).toBe("更多话题请进入查看");
+  L67: const wrapper = mountCard({ title: "标题" });
+  L72: const wrapper = mountCard({ title: "标题", compact: true });
+  L81: { title: "标题" },
+  L82: { default: '<div class="custom-content">自定义内容</div>' }
+  L85: expect(wrapper.find(".custom-content").text()).toBe("自定义内容");
+
+--- tests\components\SectionHeader.spec.ts (11 处) ---
+  L10: describe("SectionHeader component - 区块标题组件", () => {
+  L37: const wrapper = mountHeader({ title: "推荐" });
+  L42: const wrapper = mountHeader({ title: "推荐" });
+  L47: const wrapper = mountHeader({ title: "推荐" });
+  L52: const wrapper = mountHeader({ title: "今日推荐" });
+  L53: expect(wrapper.find(".section-header").attributes("aria-label")).toBe("今日推荐");
+  L60: const wrapper = mountHeader({ title: "热门话题" });
+  L61: expect(wrapper.find(".section-title").text()).toBe("热门话题");
+  L78: const wrapper = mountHeader({ title: "T", more: true, moreText: "查看全部" });
+  L79: expect(wrapper.find(".section-more-text").text()).toContain("查看全部");
+  L113: right: '<view class="custom-right"><text>自定义</text></view>',
+
+--- tests\components\SetupProgress.spec.ts (1 处) ---
+  L10: describe("SetupProgress component - 引导流程进度条组件", () => {
+
+--- tests\components\ShareCard.spec.ts (1 处) ---
+  L28: describe("ShareCard component - 签到分享卡片组件", () => {
+
+--- tests\components\Skeleton.spec.ts (2 处) ---
+  L9: describe("Skeleton component - 骨架屏组件", () => {
+  L55: expect(wrapper.find(".skeleton").attributes("aria-label")).toBe("加载中");
+
+--- tests\components\StatusState.spec.ts (9 处) ---
+  L9: describe("StatusState component - 状态徽章组件", () => {
+  L20: props: props ?? { label: "测试" },
+  L35: const wrapper = mountPill({ label: "已认证" });
+  L40: const wrapper = mountPill({ label: "已通过审核" });
+  L41: expect(wrapper.find(".pill-label").text()).toBe("已通过审核");
+  L45: const wrapper = mountPill({ label: "状态" });
+  L50: const wrapper = mountPill({ label: "审核中" });
+  L51: expect(wrapper.find(".pill").attributes("aria-label")).toBe("审核中");
+  L58: const wrapper = mountPill({ label: "默认" });
+
+--- tests\components\Tag.spec.ts (6 处) ---
+  L9: describe("Tag component - 标签组件", () => {
+  L38: const wrapper = mountTag({ label: "标签" });
+  L84: const wrapper = mountTag({ label: "我的标签" });
+  L85: expect(wrapper.find(".tag-label").text()).toBe("我的标签");
+  L121: const wrapper = mountTag({ label: "校园认证" });
+  L122: expect(wrapper.find(".tag").attributes("aria-label")).toBe("校园认证");
+
+--- tests\components\TagSelector.spec.ts (1 处) ---
+  L16: describe("TagSelector component - 资料标签选择器组件", () => {
+
+--- tests\components\Toast.spec.ts (2 处) ---
+  L10: describe("Toast component - 通知组件", () => {
+  L50: expect(wrapper.find(".toast-notification__message").text()).toBe("操作成功");
+
+--- tests\components\TopicSelector.spec.ts (6 处) ---
+  L16: describe("TopicSelector component - 话题选择器组件", () => {
+  L80: const wrapper = mountSelector({ modelValue: ["旅行"] });
+  L100: const wrapper = mountSelector({ modelValue: ["旅行"] });
+  L107: expect(emitted).not.toContain("旅行");
+  L115: const wrapper = mountSelector({ modelValue: ["旅行"] });
+  L120: const wrapper = mountSelector({ modelValue: ["旅行"] });
+
+--- tests\components\UnlockGuideModal.spec.ts (14 处) ---
+  L52: const wrapper = mountModal({ featureName: "喜欢列表" });
+  L54: expect(message.text()).toContain("完成资料完善即可解锁");
+  L55: expect(message.text()).toContain("喜欢列表");
+  L62: expect(message.text()).toContain("此功能");
+  L74: expect(subtitle.text()).toContain("完善资料，开启更多校园恋爱功能");
+  L80: expect(subtitle.text()).toContain("完善资料，开启更多校园恋爱功能");
+  L133: const likesWrapper = mountModal({ featureName: "喜欢列表" });
+  L134: expect(likesWrapper.find(".unlock-modal__message").text()).toContain("喜欢列表");
+  L136: const villageWrapper = mountModal({ featureName: "村口/讨论圈" });
+  L137: expect(villageWrapper.find(".unlock-modal__message").text()).toContain("村口/讨论圈");
+  L139: const messagesWrapper = mountModal({ featureName: "消息" });
+  L140: expect(messagesWrapper.find(".unlock-modal__message").text()).toContain("消息");
+  L149: expect(primaryText).toBe("去完善资料");
+  L152: expect(secondaryText).toBe("暂不完善");
+
+--- tests\components\UnlockGuideOverlay.spec.ts (1 处) ---
+  L10: describe("UnlockGuideOverlay component - 首次引导蒙层组件", () => {
+
+--- tests\components\UnreadBadge.spec.ts (1 处) ---
+  L10: describe("UnreadBadge component - 未读徽章组件", () => {
+
+--- tests\components\VerificationBadge.spec.ts (1 处) ---
+  L21: describe("VerificationBadge component - 认证徽章组件", () => {
+
+--- tests\components\VirtualList.spec.ts (2 处) ---
+  L10: describe("VirtualList component - 虚拟滚动列表组件", () => {
+  L19: title: `项目 ${i + 1}`,
+
+--- tests\components\VoiceMessageBubble.spec.ts (1 处) ---
+  L21: describe("VoiceMessageBubble component - 语音消息气泡组件", () => {
+
+--- tests\components\VoicePill.spec.ts (1 处) ---
+  L10: describe("VoicePill component - 语音消息气泡组件", () => {
+
+--- tests\components\WallPostCard.spec.ts (10 处) ---
+  L21: describe("WallPostCard component - 村口帖子卡片组件", () => {
+  L44: name: "小明",
+  L45: school: "测试大学",
+  L47: content: "今天天气真好",
+  L86: const wrapper = mountCard({ name: "小红" });
+  L87: expect(wrapper.find(".wall-name").text()).toBe("小红");
+  L91: const wrapper = mountCard({ time: "12:00", school: "测试大学" });
+  L93: expect(wrapper.find(".wall-time").text()).toContain("测试大学");
+  L97: const wrapper = mountCard({ content: "今天很开心" });
+  L98: expect(wrapper.find(".wall-content").text()).toBe("今天很开心");
+
+--- tests\components\WechatBtn.spec.ts (1 处) ---
+  L10: describe("WechatBtn component - 微信登录按钮组件", () => {
+
+--- tests\components\WelcomeBanner.spec.ts (14 处) ---
+  L9: describe("WelcomeBanner component - 欢迎横幅组件", () => {
+  L54: const wrapper = mountBanner({ greeting: "早上好，同学" });
+  L55: expect(wrapper.find(".banner-greeting").text()).toBe("早上好，同学");
+  L60: expect(wrapper.find(".banner-greeting").text()).toBe("下午好，同学");
+  L64: const wrapper = mountBanner({ subtitle: "今天没有课" });
+  L65: expect(wrapper.find(".banner-sub").text()).toBe("今天没有课");
+  L71: expect(sub).toContain("今天有");
+  L72: expect(sub).toContain("节课");
+  L89: const wrapper = mountBanner({ tags: ["音乐", "运动", "读书"] });
+  L93: expect(tags[0].text()).toBe("音乐");
+  L94: expect(tags[1].text()).toBe("运动");
+  L95: expect(tags[2].text()).toBe("读书");
+  L99: const wrapper = mountBanner({ tags: ["测试"] });
+  L101: expect(wrapper.find(".banner-tag-text").text()).toBe("测试");
+
+--- tests\components\reduced-motion.spec.ts (2 处) ---
+  L37: describe("reduced-motion a11y 降级 - prefers-reduced-motion=true", () => {
+  L142: describe("reduced-motion a11y 降级 - prefers-reduced-motion=false（对照组）", () => {
+
+--- tests\custom-tab-bar.spec.ts (2 处) ---
+  L22: throw new Error("无法从 custom-tab-bar/index.js 中解析 tabs 数组");
+  L29: throw new Error("无法从 custom-tab-bar/index.js 中解析 tabs 数组内容");
+
+--- tests\error-state.spec.ts (3 处) ---
+  L9: message: "请求参数有误，请检查后重试",
+  L17: message: "请求的资源不存在",
+  L23: message: "服务暂时不可用，请稍后重试",
+
+--- tests\guards\profile-guard.spec.ts (8 处) ---
+  L8: displayName: "星野",
+  L57: expect(getFeatureName("/pages/likes/index")).toBe("喜欢列表");
+  L61: expect(getFeatureName("/pages/village/index")).toBe("村口/讨论圈");
+  L65: expect(getFeatureName("/pages/messages/index")).toBe("消息");
+  L74: expect(getFeatureName("pages/likes/index")).toBe("喜欢列表");
+  L96: expect(result.featureName).toBe("喜欢列表");
+  L105: expect(result.featureName).toBe("村口/讨论圈");
+  L112: expect(result.featureName).toBe("消息");
+
+--- tests\hero.spec.ts (4 处) ---
+  L12: heroTitle: "校园恋爱",
+  L13: heroSubtitle: "先从内容认识彼此",
+  L29: heroTitle: "校园恋爱",
+  L30: heroSubtitle: "先从内容认识彼此",
+
+--- tests\i18n.spec.ts (51 处) ---
+  L15: describe("i18n - vue-i18n 实例配置", () => {
+  L42: describe("i18n - locale 切换", () => {
+  L49: expect(t("")).toBe("确认");
+  L50: expect(t("")).toBe("取消");
+  L51: expect(t("")).toBe("校园恋爱");
+  L64: expect(zhValue).toBe("保存");
+  L84: describe("i18n - 翻译 key 完整性", () => {
+  L132: describe("i18n - 占位符插值", () => {
+  L138: expect(t("", { n: 5 })).toBe("5分钟前");
+  L139: expect(t("", { n: 2 })).toBe("2小时前");
+  L140: expect(t("", { n: 7 })).toBe("签到成功！连续7天");
+  L153: expect(t("", { m: 7, d: 26 })).toBe("7月26日");
+  L258: expect(formatRelativeTime(now, "zh-CN")).toBe("刚刚");
+  L265: expect(formatRelativeTime(fiveMinAgo, "zh-CN")).toBe("5 分钟前");
+  L275: expect(formatRelativeTime(twoHourAgo, "zh-CN")).toBe("2 小时前");
+  L285: expect(formatRelativeTime(threeDayAgo, "zh-CN")).toBe("3 天前");
+  L315: it(""昨天' / 'Yesterday'", () => {
+  L322: expect(formatChatListTime(yesterday, "zh-CN")).toBe("昨天");
+  L335: const zhWeekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  L347: describe("Task 3.1 - 设计 Token 完整性回归", () => {
+  L401: describe("Task 3.3.2 - Admin 视图 i18n key 存在性", () => {
+  L444: "zh-CN 应包含 %s.* 命名空间",
+  L453: "en-US 应包含 %s.* 命名空间",
+  L462: expect(t("")).toBe("管理员登录");
+  L470: it(""退出登录'", () => {
+  L472: expect(t("")).toBe("退出登录");
+  L476: describe("Task 3.3.3 - 14 个 Store 错误回退消息 i18n key 存在性", () => {
+  L521: "zh-CN 应包含 %s.* 命名空间",
+  L529: "en-US 应包含 %s.* 命名空间",
+  L538: expect(t("")).toBe("签到请求超时，请稍后重试");
+  L543: expect(t("")).toBe("不能喜欢自己哦");
+  L548: expect(t("")).toBe("消息内容不能为空");
+  L555: expect(result).toContain("字");
+  L559: describe("Task 3.3.5 - 法律文本 i18n key 存在性", () => {
+  L592: "zh-CN 应包含 key: %s",
+  L599: "en-US 应包含 key: %s",
+  L605: it(""用户协议'", () => {
+  L607: expect(t("")).toBe("用户协议");
+  L610: it(""隐私政策'", () => {
+  L612: expect(t("")).toBe("隐私政策");
+  L615: it(""同意并继续'", () => {
+  L617: expect(t("")).toBe("同意并继续");
+  L621: describe("Task 3.3 - 核心模块 locale 切换响应式验证", () => {
+  L630: expect(zhTitle).toBe("管理员登录");
+  L638: expect(t("")).toBe("管理员登录");
+  L644: expect(zhMsg).toBe("签到请求超时，请稍后重试");
+  L656: expect(zhTitle).toBe("用户协议");
+  L666: expect(t("")).toBe("保存成功");
+  L670: expect(t("")).not.toBe("保存成功");
+  L674: describe("Task 3.5 - 常量化完整性回归", () => {
+  ... 还有 1 处
+
+--- tests\mock-fixtures.spec.ts (8 处) ---
+  L8: preferredCampusArea: "教学楼和图书馆",
+  L9: preferredTimeWindows: ["今晚", "周三下午"],
+  L11: { id: "b-1", weekday: "周一", start: "09:00", end: "10:30", label: "设计课" },
+  L20: preferredCampusArea: "教学楼和图书馆",
+  L21: preferredTimeWindows: ["今晚", "周三下午"],
+  L23: { id: "b-1", weekday: "周一", start: "09:00", end: "10:30", label: "设计课" },
+  L52: body: "今晚要不要先绕操场走一圈？",
+  L57: body: "我 19:30 之后有空。",
+
+--- tests\profile-store.spec.ts (26 处) ---
+  L33: displayName: "星野",
+  L45: nickname: "若星",
+  L46: bio: "个人简介",
+  L47: grade: "大三",
+  L48: pronouns: "她/她",
+  L51: city: "广州",
+  L52: campusName: "北校区",
+  L53: department: "设计系",
+  L57: preferredCampusArea: "图书馆",
+  L58: preferredTimeWindows: ["今晚"],
+  L64: displayName: "若星",
+  L69: displayName: "若星",
+  L72: campusName: "北校区",
+  L76: displayName: "若星",
+  L80: campusName: "北校区",
+  L86: nickname: "若星",
+  L87: bio: "个人简介",
+  L88: grade: "大三",
+  L89: pronouns: "她/她",
+  L92: expect(sessionStore.userSession?.displayName).toBe("若星");
+  L95: city: "广州",
+  L96: campusName: "北校区",
+  L97: department: "设计系",
+  L100: expect(sessionStore.userSession?.campusName).toBe("北校区");
+  L103: preferredCampusArea: "图书馆",
+  L104: preferredTimeWindows: ["今晚"],
+
+--- tests\services\agnes-video.spec.ts (16 处) ---
+  L31: describe("services/agnes-video - SubTask 1.4.5 AI 服务错误处理", () => {
+  L43: const result = await callVideoGenerate({ prompt: "校园春景" });
+  L58: const result = await callImageGenerate({ prompt: "校园风景" });
+  L89: message: "AI 服务未授权",
+  L97: message: expect.stringContaining("AI 服务未授权"),
+  L105: message: "AI 服务未授权",
+  L111: throw new Error("应抛出 AppApiError");
+  L126: it(""AI 服务暂时不可用'", async () => {
+  L130: message: "AI 上游异常",
+  L138: message: expect.stringContaining("AI 服务暂时不可用"),
+  L149: message: "登录已过期",
+  L185: message: "网络请求失败",
+  L200: const rawError = new Error("网络断开");
+  L207: message: expect.stringContaining("AI 服务暂时不可用"),
+  L218: message: "prompt 不能为空",
+  L226: message: "prompt 不能为空",
+
+--- tests\services\auth.spec.ts (10 处) ---
+  L86: displayName: "测试用户",
+  L131: message: "微信登录凭证已失效，请重新登录",
+  L134: message: "微信登录凭证已失效，请重新登录",
+  L149: message: "微信登录凭证已失效，请重新登录",
+  L164: message: "微信服务暂时不可用，请稍后重试",
+  L167: message: "微信服务暂时不可用，请稍后重试",
+  L193: message: "账号已被禁用，请联系管理员",
+  L196: message: "账号已被禁用，请联系管理员",
+  L265: message: "失效",
+  L266: details: { code: "INVALID_CODE", message: "失效" },
+
+--- tests\services\chat.spec.ts (14 处) ---
+  L81: expect(lastMessage!.body).toBe("你好，今晚有空吗？");
+  L151: expect(lastMessage.body).toBe("语音消息");
+  L240: body: "类型契约测试",
+  L246: expect(textPayload.body).toBe("类型契约测试");
+  L327: expect(chatStore.activeSession!.partnerName).toBe("夏言");
+  L335: expect(chatStore.activeSession!.partnerName).toBe("顾北");
+  L423: body: "我刚到图书馆门口，你呢？",
+  L435: expect(lastMessage!.body).toBe("我刚到图书馆门口，你呢？");
+  L509: body: "重复推送测试",
+  L584: body: "对方已开启临时会话联系方式交换",
+  L594: expect(lastMessage!.body).toContain("联系方式交换");
+  L660: expect(myMessage!.body).toBe("今天天气不错，出去走走吗？");
+  L668: body: "好呀，去校园湖边走走？",
+  L676: expect(lastMessage!.body).toBe("好呀，去校园湖边走走？");
+
+--- tests\smoke.spec.ts (5 处) ---
+  L23: describe("design tokens - 结构契约", () => {
+  L78: describe("theme utils - 行为契约", () => {
+  L125: describe("haptic - 不抛错契约", () => {
+  L168: describe("view-models/profile - toProfileCompletion 契约", () => {
+  L201: describe("compat - patchDeprecatedApi 可加载性", () => {
+
+--- tests\stores\activity.spec.ts (1 处) ---
+  L34: describe("activity store - 线下活动", () => {
+
+--- tests\stores\campus.spec.ts (7 处) ---
+  L28: describe("campus store - 校园话题", () => {
+  L75: title: "测试话题",
+  L76: content: "测试内容",
+  L81: expect(store.topics[0]!.title).toBe("测试话题");
+  L90: content: "内容",
+  L101: title: "标题",
+  L133: await store.replyToCampusTopic(topicId, "新回复内容");
+
+--- tests\stores\checkin.spec.ts (5 处) ---
+  L125: expect(store.consecutiveDaysText).toBe("已连续签到 1 天");
+  L133: expect(store.extraRecommendationsText).toBe("今日剩余次数+5");
+  L141: expect(store.extraQuotaText).toBe("今日额外推荐配额 +5");
+  L149: expect(store.hotTopicsText).toBe("今日热门话题 (3)");
+  L157: expect(store.newUsersText).toBe("新入圈用户 (2)");
+
+--- tests\stores\circle.spec.ts (13 处) ---
+  L28: describe("circle store - 兴趣圈", () => {
+  L157: title: "测试话题",
+  L158: content: "测试内容",
+  L162: expect(result!.title).toBe("测试话题");
+  L164: expect(store.currentTopics[0]!.title).toBe("测试话题");
+  L170: store.createTopic("circle-1", { title: "", content: "内容" }),
+  L177: store.createTopic("circle-1", { title: "标题", content: "" }),
+  L212: await store.replyToTopic("topic-1", "新回复");
+  L214: expect(store.replies[store.replies.length - 1]!.content).toBe("新回复");
+  L238: it(""刚刚'", () => {
+  L240: expect(formatCircleTime(recent)).toBe("刚刚");
+  L243: it(""X分钟前'", () => {
+  L245: expect(formatCircleTime(recent)).toContain("分钟前");
+
+--- tests\stores\daily-question.spec.ts (16 处) ---
+  L28: describe("daily-question store - 每日一问", () => {
+  L43: expect(store.todayQuestion!.question).toContain("约会");
+  L44: expect(store.todayQuestion!.category).toBe("恋爱");
+  L61: const result = await store.submitAnswer("dq-20260522", "我的回答", false);
+  L64: expect(result!.content).toBe("我的回答");
+  L66: expect(store.answers[0]!.content).toBe("我的回答");
+  L72: await expect(store.submitAnswer("", "内容", false)).rejects.toThrow();
+  L93: const result = await store.submitAnswer("dq-20260522", "匿名回答", true);
+  L142: it(""刚刚'", () => {
+  L144: expect(formatAnswerTime(recent)).toBe("刚刚");
+  L147: it(""X分钟前'", () => {
+  L149: expect(formatAnswerTime(recent)).toContain("分钟前");
+  L152: it(""X小时前'", () => {
+  L154: expect(formatAnswerTime(recent)).toContain("小时前");
+  L157: it(""X天前'", () => {
+  L159: expect(formatAnswerTime(recent)).toContain("天前");
+
+--- tests\stores\discover.spec.ts (29 处) ---
+  L88: await expect(store.swipeLeft("")).rejects.toThrow("卡片 ID 无效");
+  L95: "卡片不存在或已被处理"
+  L107: name: "限制测试",
+  L126: "今日推荐次数已用完"
+  L178: "每日只能挽回一次"
+  L190: "只能挽回最后一张卡片"
+  L309: describe("swipeRight 30% 匹配概率", () => {
+  L462: describe("Phase C: recommendationFilter 与筛选抽屉状态", () => {
+  L486: throw new Error("spy 未初始化");
+  L491: throw new Error("getRecommendations 未被调用");
+  L533: hometownProvince: "北京",
+  L534: hometownCity: "北京",
+  L535: futureCity: "北京",
+  L536: keyword: "咖啡",
+  L569: hometownProvince: "江苏",
+  L570: hometownCity: "南京",
+  L571: futureCity: "北京",
+  L589: expect(arg.hometownProvince).toBe("江苏");
+  L590: expect(arg.hometownCity).toBe("南京");
+  L591: expect(arg.futureCity).toBe("北京");
+  L603: hometownProvince: "上海",
+  L609: store.searchKeyword = "摄影";
+  L618: expect(arg.hometownProvince).toBe("上海");
+  L620: expect(arg.keyword).toBe("摄影");
+  L634: keyword: "电影",
+  L641: expect(arg.keyword).toBe("电影");
+  L667: hometownProvince: "北京",
+  L668: hometownCity: "北京",
+  L669: futureCity: "北京",
+
+--- tests\stores\feedback.spec.ts (22 处) ---
+  L32: describe("feedback store - 反馈提交", () => {
+  L42: const mockData = [{ id: 1, type: "issue", content: "测试问题" }];
+  L62: mockListSubmissions.mockRejectedValue(new Error("网络错误"));
+  L66: expect(store.errorMessage).toBe("网络错误");
+  L75: expect(store.errorMessage).toBe("加载反馈列表失败");
+  L88: content: "页面打不开",
+  L94: content: "页面打不开",
+  L100: mockCreateFeedbackIssue.mockRejectedValue(new Error("提交失败"));
+  L105: content: "测试",
+  L109: expect(store.errorMessage).toBe("提交失败");
+  L121: content: "建议增加夜间模式",
+  L126: content: "建议增加夜间模式",
+  L131: mockCreateSuggestion.mockRejectedValue(new Error("提交建议失败"));
+  L135: content: "建议",
+  L139: expect(store.errorMessage).toBe("提交建议失败");
+  L151: title: "周末户外",
+  L152: description: "一起去户外徒步",
+  L157: title: "周末户外",
+  L158: description: "一起去户外徒步",
+  L163: mockCreateActivityProposal.mockRejectedValue(new Error("提案提交失败"));
+  L167: title: "测试",
+  L171: expect(store.errorMessage).toBe("提案提交失败");
+
+--- tests\stores\likes.spec.ts (13 处) ---
+  L84: await expect(store.likeUser("user-1001")).rejects.toThrow("不能喜欢自己哦");
+  L85: expect(store.errorMessage).toBe("不能喜欢自己哦");
+  L102: "你已经喜欢过该用户了"
+  L104: expect(store.errorMessage).toBe("你已经喜欢过该用户了");
+  L112: await expect(store.likeUser("")).rejects.toThrow("用户 ID 无效");
+  L134: await expect(store.unlikeUser("")).rejects.toThrow("用户 ID 无效");
+  L149: name: "测试用户",
+  L159: name: "测试用户",
+  L178: name: "单向",
+  L200: expect(store.errorMessage).toBe("用户 ID 无效");
+  L211: name: "苏晴",
+  L221: name: "苏晴",
+  L242: title: expect.stringContaining("互相喜欢了"),
+
+--- tests\stores\messages.spec.ts (17 处) ---
+  L51: await store.sendMessage(session.id, "你好！");
+  L57: expect(lastMsg.body).toBe("你好！");
+  L63: expect(updatedSession?.lastMessagePreview).toBe("你好！");
+  L75: ).rejects.toThrow("消息内容不能为空");
+  L84: ).rejects.toThrow("消息内容不能为空");
+  L97: ).rejects.toThrow("消息内容过长，请分段发送");
+  L106: "会话 ID 无效"
+  L121: fromUserName: "苏晴",
+  L126: school: "南校区",
+  L128: city: "广州",
+  L129: bioHighlight: "ta的介绍很丰富",
+  L161: fromUserName: "苏晴",
+  L180: ).rejects.toThrow("心动信号已处理");
+  L194: fromUserName: "过期用户",
+  L204: ).rejects.toThrow("心动信号已过期");
+  L216: "心动信号 ID 无效"
+  L228: ).rejects.toThrow("心动信号不存在");
+
+--- tests\stores\profile.spec.ts (18 处) ---
+  L39: describe("profile store - 数据加载", () => {
+  L53: expect(store.basicProfile!.nickname).toBe("星野");
+  L54: expect(store.basicProfile!.bio).toBe("安静、好奇，更喜欢一对一慢慢聊。");
+  L55: expect(store.basicProfile!.grade).toBe("大三");
+  L56: expect(store.basicProfile!.pronouns).toBe("她/她");
+  L67: expect(store.campusProfile!.city).toBe("广州");
+  L68: expect(store.campusProfile!.campusName).toBe("南校区");
+  L69: expect(store.campusProfile!.department).toBe("工业设计");
+  L81: expect(store.scheduleProfile!.preferredCampusArea).toBe("图书馆和北草坪");
+  L82: expect(store.scheduleProfile!.preferredTimeWindows).toEqual(["今晚", "本周"]);
+  L86: expect(store.scheduleProfile!.courseBlocks[0]!.label).toBe("设计课");
+  L87: expect(store.scheduleProfile!.courseBlocks[1]!.label).toBe("专题讨论");
+  L133: expect(store.myPosts[0]!.summary).toContain("橘猫");
+  L134: expect(store.myPosts[1]!.summary).toContain("艺术展");
+  L135: expect(store.myPosts[2]!.summary).toContain("设计作业");
+  L202: store.basicProfile!.nickname = "修改后的名字";
+  L205: store.myPosts[0]!.summary = "修改后的摘要";
+  L210: expect(store.myPosts[0]!.summary).toContain("橘猫");
+
+--- tests\stores\report.spec.ts (17 处) ---
+  L18: describe("report store - 举报", () => {
+  L41: const result = await store.reportTarget("", 100, "垃圾广告", "测试描述");
+  L44: expect(mockReportTarget).toHaveBeenCalledWith("POST", 100, "垃圾广告", "测试描述");
+  L58: const promise = store.reportTarget("", 1, "原因");
+  L70: const error = new Error("网络错误");
+  L74: await expect(store.reportTarget("", 1, "原因")).rejects.toThrow("网络错误");
+  L76: expect(store.errorMessage).toBe("网络错误");
+  L84: await expect(store.reportTarget("", 1, "原因")).rejects.toThrow();
+  L97: await expect(store.reportTarget("", 1, "原因")).rejects.toThrow();
+  L110: await store.reportTarget("", "post-123", "垃圾广告");
+  L111: expect(mockReportTarget).toHaveBeenCalledWith("POST", "post-123", "垃圾广告", undefined);
+  L117: await store.reportTarget("", "chat-456", "骚扰");
+  L118: expect(mockReportTarget).toHaveBeenCalledWith("CHAT", "chat-456", "骚扰", undefined);
+  L124: await store.reportTarget("", "user-789", "违规用户");
+  L125: expect(mockReportTarget).toHaveBeenCalledWith("USER", "user-789", "违规用户", undefined);
+  L131: await store.reportTarget("", 1, "原因", "详细描述");
+  L132: expect(mockReportTarget).toHaveBeenCalledWith("POST", 1, "原因", "详细描述");
+
+--- tests\stores\session.spec.ts (12 处) ---
+  L49: describe("session store - profileCompletion 加权平均算法（SubTask 1.4.2）", () => {
+  L78: displayName: "星野",
+  L79: campusName: "北京大学",
+  L92: displayName: "星野",
+  L93: campusName: "北京大学",
+  L102: displayName: "星野",
+  L113: campusName: "北京大学",
+  L143: displayName: "星野",
+  L153: describe("isProfileComplete（P0 BUG 修复：仅判定 profileCompleted）", () => {
+  L189: { profileCompleted: true, displayName: "星野", campusName: "北京大学" },
+  L190: { profileCompleted: false, displayName: "星野", campusName: "北京大学" },
+  L209: displayName: "测试用户",
+
+--- tests\stores\social-progress.spec.ts (4 处) ---
+  L76: expect(store.progress?.tierLabel).toBe("发现心动");
+  L106: tierLabel: "发现心动",
+  L113: nextAction: "去寻觅，发现心动的人",
+  L186: expect(l1.label).toBe("发现心动");
+
+--- tests\stores\village.spec.ts (20 处) ---
+  L44: await store.fetchPosts({ keyword: "徒步" });
+  L49: p.title.includes("徒步") || p.content.includes("徒步")
+  L77: title: "测试帖子",
+  L78: content: "这是一条测试帖子的内容",
+  L79: tags: ["#测试"],
+  L86: expect(store.posts[0]!.content).toBe("这是一条测试帖子的内容");
+  L103: ).rejects.toThrow("帖子内容不能为空");
+  L119: ).rejects.toThrow("帖子内容不能超过500字");
+  L133: content: "有效内容",
+  L136: ).rejects.toThrow("图片数量不能超过9张");
+  L149: content: "有效内容",
+  L151: ).rejects.toThrow("请选择帖子分类");
+  L184: await expect(store.likePost("")).rejects.toThrow("帖子 ID 无效");
+  L191: "帖子不存在"
+  L207: const newComment = await store.commentPost(post.id, "测试评论内容");
+  L224: ).rejects.toThrow("评论内容不能为空");
+  L233: ).rejects.toThrow("评论内容不能为空");
+  L278: const result = store.filteredPosts({ keyword: "火锅" });
+  L282: p.title.includes("火锅") || p.content.includes("火锅")
+  L328: expect(formatRelativeTime(now)).toBe("刚刚活跃");
+
+--- tests\theme-switch.spec.ts (9 处) ---
+  L15: describe("theme-switch - getThemeTokens 切换契约", () => {
+  L16: it(""light') 应返回 designTokens", () => {
+  L20: it(""dark') 应返回 darkThemeTokens", () => {
+  L24: it(""warm') 应返回 warmThemeTokens", () => {
+  L44: describe("theme-switch - 三种主题 Token 完整性", () => {
+  L93: describe("theme-switch - 关键 token 差异化", () => {
+  L151: describe("theme-switch - 暗色主题对比度", () => {
+  L194: describe("theme-switch - Token 结构稳定性", () => {
+  L227: describe("theme-switch - 模拟前端切换流程", () => {
+
+--- tests\utils\privacy.spec.ts (3 处) ---
+  L73: privacyContractName: "用户隐私保护指引",
+  L87: expect(result.privacyContractName).toBe("用户隐私保护指引");
+  L99: privacyContractName: "用户隐私保护指引",
+
+--- tests\websocket.spec.ts (1 处) ---
+  L61: describe("websocket client - token 传递方式（Phase 3 任务 15）", () => {
+
+--- utils\audio-recorder.ts (4 处) ---
+  L151: : (err && (err.errMsg || err.message)) || "录音失败，请重试"
+  L219: const error = new Error("麦克风权限被拒绝，请在设置中开启");
+  L245: e instanceof Error ? e.message : "录音启动失败"
+  L284: e instanceof Error ? e.message : "停止录音失败"
+
+--- utils\error-toast.ts (4 处) ---
+  L10: network: "网络连接异常，请检查网络后重试",
+  L11: auth: "登录已过期，请重新登录",
+  L12: business: "操作失败，请稍后重试",
+  L13: unknown: "操作失败，请稍后重试",
+
+--- utils\form-validator.ts (2 处) ---
+  L57: message: message || `长度需在${min}-${max}之间`,
+  L71: message: message || `不能超过${max}个字符`,
+
+--- utils\time.ts (6 处) ---
+  L162: return "刚刚";
+  L165: return `${diffMin} 分钟前`;
+  L168: return `${diffHour} 小时前`;
+  L171: return `${diffDay} 天前`;
+  L249: return "昨天";
+  L253: const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+--- view-models\chat.ts (4 处) ---
+  L49: label: "先完成设置",
+  L56: label: "去聊天",
+  L78: return session.closedReason === "ended" ? "聊天已结束" : "聊天已关闭";
+  L82: return "等待你开场";
+
+--- view-models\feedback.ts (5 处) ---
+  L17: return "已提交";
+  L20: return "处理中";
+  L23: return "已查看";
+  L26: return "已排期";
+  L28: return "已转活动";
+
+--- view-models\home.ts (10 处) ---
+  L76: title: "补全基础资料",
+  L77: subtitle: "开始聊天前，至少需要昵称、简介和年级。",
+  L85: title: "填写学校信息",
+  L86: subtitle: "学校和院系信息会在你准备进入聊天前作为必要门槛。",
+  L94: title: "设置真实空闲时段",
+  L95: subtitle: "空闲时间越准确，推荐链路就越可靠。",
+  L108: label: "先完成设置",
+  L115: label: "去聊天",
+  L131: toCardItem(dashboard.scheduleSummary, "今日", "brand"),
+  L132: ...dashboard.freeSlots.map((item) => toCardItem(item, "空档", "success")),
+
+--- view-models\profile.ts (11 处) ---
+  L11: title: "基础资料",
+  L16: title: "学校信息",
+  L21: title: "时间安排",
+  L61: const DEFAULT_BIO = "这个人很懒，什么都没写";
+  L71: if (diff < 0) return "刚刚";
+  L77: if (diff < minute) return "刚刚";
+  L78: if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`;
+  L79: if (diff < day) return `${Math.floor(diff / hour)} 小时前`;
+  L80: return `${Math.floor(diff / day)} 天前`;
+  L103: "未设置昵称";
+  L111: "未设置学校";
+
+=== Top 15 文件（按硬编码数量） ===
+  components\common\common.stories.ts: 94 处
+  stores\campus.ts: 71 处
+  stores\messages.ts: 67 处
+  pages\village\detail.vue: 55 处
+  tests\i18n.spec.ts: 51 处
+  subpackages\setup\profile\index.vue: 47 处
+  stores\village\utils.ts: 46 处
+  stores\circle.ts: 40 处
+  stores\village\index.ts: 33 处
+  config\profile-tags.ts: 32 处
+  components\discover\FilterDrawer.vue: 31 处
+  stores\likes.ts: 30 处
+  tests\stores\discover.spec.ts: 29 处
+  pages\circle\index.vue: 28 处
+  components\chat\chat.stories.ts: 27 处

@@ -13,13 +13,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.campuslove.api.testdata.MockAllRepositoriesConfig;
+
 @SpringBootTest(properties = "JWT_SECRET=test-jwt-secret-for-phase-one-flow-tests-32-chars-min")
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@Import(MockAllRepositoriesConfig.class)
 class PhaseOneFlowApiTest {
 
   @Autowired
@@ -161,7 +165,7 @@ class PhaseOneFlowApiTest {
             .content("""
                 {
                   "actor": "self",
-                  "decision": "accepted"
+                  "decision": "accept"
                 }
                 """))
         .andExpect(status().isOk())
@@ -172,7 +176,7 @@ class PhaseOneFlowApiTest {
             .content("""
                 {
                   "actor": "peer",
-                  "decision": "accepted"
+                  "decision": "accept"
                 }
                 """))
         .andExpect(status().isOk())
@@ -203,11 +207,11 @@ class PhaseOneFlowApiTest {
                 }
                 """))
         .andExpect(status().isAccepted())
-        .andExpect(jsonPath("$.type").value("FEEDBACK"));
+        .andExpect(jsonPath("$.data.type").value("FEEDBACK"));
 
     mockMvc.perform(get("/api/v1/feedback/my-submissions"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].title").value("需要更清楚的超时提示"));
+        .andExpect(jsonPath("$.data[0].title").value("需要更清楚的超时提示"));
   }
 
   @Test
@@ -220,6 +224,7 @@ class PhaseOneFlowApiTest {
             .contentType(APPLICATION_JSON)
             .content("""
                 {
+                  "userId": 1,
                   "matchIntent": "topic",
                   "topicIds": ["music"],
                   "timeWindow": "今晚",
@@ -237,6 +242,7 @@ class PhaseOneFlowApiTest {
             .contentType(APPLICATION_JSON)
             .content("""
                 {
+                  "userId": 1,
                   "durationMinutes": 15
                 }
                 """))

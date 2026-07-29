@@ -1,22 +1,30 @@
 <script setup lang="ts">
 /**
- * Admin 数据看板视图（SubTask 3.3.2 i18n 化）。
+ * Admin 数据看板视图（SubTask 3.3.2 i18n 化 / Task 13 真实数据 + 错误降级）。
  *
  * 改造点：
  * - 标题/副标题/统计卡片 label/加载中文案全部走 i18n key
  * - 三个统计接口的失败提示通过 dashboard.userStatsLoadFailed 等回退
  * - "最近活动"列表文案改走 dashboard.recentActivities 与 common.noData
+ *
+ * Task 13 改造点：
+ * - 通过 getStats() 聚合接口一次性拉取三类统计，统一错误降级
+ * - 引入 ErrorState 组件：当 errors.length > 0 时展示错误条 + 重试按钮，
+ *   重试回调重新触发 loadStats()，避免运营人员面对白屏
+ * - 移除所有 Mock 引用（本视图本无 Mock，仅做错误降级增强）
  */
 import { ref, onMounted } from "vue";
 import {
-  getUserStats,
-  getActiveStats,
-  getMatchStats,
+  getStats,
   type UserStats,
   type ActiveStats,
   type MatchStats,
 } from "@/api/stats";
 import { useI18n } from "vue-i18n";
+// Task 13：接入共享 ErrorState 组件，统一错误降级 UI
+import ErrorState from "@/components/ErrorState.vue";
+// Task 45：统一日志入口
+import { logger } from "@/utils/logger";
 
 const { t } = useI18n();
 
@@ -35,80 +43,87 @@ interface ActivityItem {
 }
 
 const stats = ref<StatCard[]>([
-  { labelKey: "dashboard.statTotalUsers", value: 0, icon: "/icons/user.svg", color: "#667eea" },
-  { labelKey: "dashboard.statActiveToday", value: 0, icon: "/icons/bolt.svg", color: "#f093fb" },
-  { labelKey: "dashboard.statTotalMatches", value: 0, icon: "/icons/heart-filled.svg", color: "#4facfe" },
-  { labelKey: "dashboard.statInteractionsToday", value: 0, icon: "/icons/list.svg", color: "#43e97b" },
+  { labelKey: "dashboard.statTotalUsers", value: 0, icon: "/icons/user.svg", color: "var(--admin-color-stat-primary)" },
+  { labelKey: "dashboard.statActiveToday", value: 0, icon: "/icons/bolt.svg", color: "var(--admin-color-stat-pink)" },
+  { labelKey: "dashboard.statTotalMatches", value: 0, icon: "/icons/heart-filled.svg", color: "var(--admin-color-stat-blue)" },
+  { labelKey: "dashboard.statInteractionsToday", value: 0, icon: "/icons/list.svg", color: "var(--admin-color-stat-green)" },
 ]);
 
 const recentActivities = ref<ActivityItem[]>([]);
 
 const loading = ref(false);
+/** 错误信息（聚合所有子接口错误，空串表示无错误）。空串时不渲染 ErrorState。 */
 const errorMessage = ref("");
 
 /**
- * 加载仪表盘统计数据。
- * 并行调用三个统计接口，任一接口失败时记录错误但不阻塞其他接口。
+ * 加载仪表盘统计数据（Task 13：改用 getStats() 聚合接口）。
+ *
+ * 三个子接口并行调用，任一失败记录错误但不阻塞其他。
+ * 全部失败或部分失败时，errorMessage 非空，触发 ErrorState 降级展示与重试入口。
+ *
+ * Task 46：包裹 try/catch + finally，确保网络异常时 loading 状态被正确重置，
+ * 避免页面卡在"加载中"骨架；异常通过 logger 记录便于线上问题定位。
  */
-async function loadDashboard() {
+async function loadStats() {
   loading.value = true;
   errorMessage.value = "";
 
-  // 并行发起三个请求，使用 allSettled 保证单个失败不影响其他
-  const results = await Promise.allSettled([
-    getUserStats(),
-    getActiveStats(),
-    getMatchStats(),
-  ]);
+  try {
+    const overview = await getStats();
+    const errors: string[] = [];
 
-  const errors: string[] = [];
+    // 用户统计
+    if (overview.userStats) {
+      const userStats: UserStats = overview.userStats;
+      stats.value[0] = { labelKey: "dashboard.statTotalUsers", value: userStats.totalUsers, icon: "/icons/user.svg", color: "var(--admin-color-stat-primary)" };
+      stats.value[1] = { labelKey: "dashboard.statActiveToday", value: userStats.activeUsersToday, icon: "/icons/bolt.svg", color: "var(--admin-color-stat-pink)" };
+    } else {
+      errors.push(t("dashboard.userStatsLoadFailed"));
+    }
 
-  // 用户统计
-  if (results[0].status === "fulfilled") {
-    const userStats: UserStats = results[0].value;
-    stats.value[0] = { labelKey: "dashboard.statTotalUsers", value: userStats.totalUsers, icon: "/icons/user.svg", color: "#667eea" };
-    stats.value[1] = { labelKey: "dashboard.statActiveToday", value: userStats.activeUsersToday, icon: "/icons/bolt.svg", color: "#f093fb" };
-  } else {
-    errors.push(t("dashboard.userStatsLoadFailed"));
+    // 活跃度统计
+    if (overview.activeStats) {
+      const activeStats: ActiveStats = overview.activeStats;
+      stats.value[3] = { labelKey: "dashboard.statInteractionsToday", value: activeStats.interactionsToday, icon: "/icons/list.svg", color: "var(--admin-color-stat-green)" };
+    } else {
+      errors.push(t("dashboard.activeStatsLoadFailed"));
+    }
+
+    // 匹配统计
+    if (overview.matchStats) {
+      const matchStats: MatchStats = overview.matchStats;
+      stats.value[2] = { labelKey: "dashboard.statTotalMatches", value: matchStats.totalMatches, icon: "/icons/heart-filled.svg", color: "var(--admin-color-stat-blue)" };
+
+      // 用每日匹配趋势填充"最近活动"列表（最多 5 条）
+      recentActivities.value = (matchStats.dailyTrend || [])
+        .slice(-5)
+        .reverse()
+        .map((item, idx) => ({
+          id: `${item.date}-${idx}`,
+          type: "match",
+          message: t("dashboard.matchCountFormat", { n: item.count }),
+          time: item.date,
+        }));
+    } else {
+      errors.push(t("dashboard.matchStatsLoadFailed"));
+    }
+
+    if (errors.length > 0) {
+      errorMessage.value = errors.join("；");
+    }
+  } catch (err) {
+    // Task 45：异常通过 logger 记录，便于线上问题定位
+    logger.error("[Dashboard] load stats failed", err);
+    errorMessage.value = t("dashboard.loadFailed");
+  } finally {
+    // Task 46：finally 确保无论成功/失败都重置 loading 状态
+    loading.value = false;
   }
-
-  // 活跃度统计
-  if (results[1].status === "fulfilled") {
-    const activeStats: ActiveStats = results[1].value;
-    stats.value[3] = { labelKey: "dashboard.statInteractionsToday", value: activeStats.interactionsToday, icon: "/icons/list.svg", color: "#43e97b" };
-  } else {
-    errors.push(t("dashboard.activeStatsLoadFailed"));
-  }
-
-  // 匹配统计
-  if (results[2].status === "fulfilled") {
-    const matchStats: MatchStats = results[2].value;
-    stats.value[2] = { labelKey: "dashboard.statTotalMatches", value: matchStats.totalMatches, icon: "/icons/heart-filled.svg", color: "#4facfe" };
-
-    // 用每日匹配趋势填充"最近活动"列表（最多 5 条）
-    recentActivities.value = (matchStats.dailyTrend || [])
-      .slice(-5)
-      .reverse()
-      .map((item, idx) => ({
-        id: `${item.date}-${idx}`,
-        type: "match",
-        message: t("dashboard.matchCountFormat", { n: item.count }),
-        time: item.date,
-      }));
-  } else {
-    errors.push(t("dashboard.matchStatsLoadFailed"));
-  }
-
-  if (errors.length > 0) {
-    errorMessage.value = errors.join("；");
-  }
-
-  loading.value = false;
 }
 
 onMounted(() => {
-  loadDashboard().catch((err) => {
-    console.error("[Dashboard] load stats failed", err);
+  loadStats().catch((err) => {
+    logger.error("[Dashboard] load stats failed", err);
     loading.value = false;
     errorMessage.value = t("dashboard.loadFailed");
   });
@@ -122,9 +137,11 @@ onMounted(() => {
       <text class="page-subtitle">{{ t("dashboard.subtitle") }}</text>
     </view>
 
-    <view v-if="errorMessage" class="error-banner">
-      <text>{{ errorMessage }}</text>
-    </view>
+    <ErrorState
+      v-if="errorMessage"
+      :message="errorMessage"
+      @retry="loadStats"
+    />
 
     <view v-if="loading" class="loading-banner">
       <text>{{ t("common.loading") }}</text>
@@ -136,9 +153,12 @@ onMounted(() => {
         :key="stat.labelKey"
         class="stat-card"
         :style="{ '--stat-color': stat.color }"
+        role="region"
+        :aria-label="t(stat.labelKey)"
+        tabindex="0"
       >
         <view class="stat-icon" :style="{ background: stat.color }">
-          <image class="stat-icon-img" :src="stat.icon" mode="aspectFit" />
+          <image class="stat-icon-img" :src="stat.icon" mode="aspectFit" alt="" aria-hidden="true" />
         </view>
         <view class="stat-content">
           <text class="stat-value">{{ stat.value }}</text>
@@ -152,7 +172,12 @@ onMounted(() => {
         <text class="section-title">{{ t("dashboard.recentActivities") }}</text>
       </view>
 
-      <view class="activity-list">
+      <view
+        class="activity-list"
+        role="img"
+        :aria-label="t('dashboard.recentActivities')"
+        tabindex="0"
+      >
         <view
           v-for="activity in recentActivities"
           :key="activity.id"
@@ -182,45 +207,51 @@ onMounted(() => {
 
 /* Dashboard 特有：page-header 间距比通用 24px 略大 */
 .page-header {
-  margin-bottom: 32px;
+  margin-bottom: var(--admin-space-xxxl);
 }
 
 .loading-banner {
-  background: #e6f7ff;
-  color: #1890ff;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 13px;
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border-radius: var(--admin-radius-lg);
+  margin-bottom: var(--admin-space-lg);
+  font-size: var(--admin-font-md);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
+  gap: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-xxxl);
 }
 
 .stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
+  background: var(--admin-color-bg-container);
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-xxl);
   display: flex;
   align-items: center;
-  gap: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  gap: var(--admin-space-lg);
+  box-shadow: var(--admin-shadow-sm);
   transition: all 0.2s;
 }
 
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--admin-shadow-lg);
+}
+
+/* Task 21：键盘导航聚焦轮廓，避免聚焦后无视觉反馈 */
+.stat-card:focus-visible {
+  outline: 2px solid var(--admin-color-primary);
+  outline-offset: 2px;
 }
 
 .stat-icon {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: var(--admin-radius-xl);
   background: var(--stat-color);
   display: flex;
   align-items: center;
@@ -239,61 +270,67 @@ onMounted(() => {
 
 .stat-value {
   display: block;
-  font-size: 32px;
+  font-size: var(--admin-space-xxxl);
   font-weight: 700;
-  color: #333;
+  color: var(--admin-color-text-primary);
   line-height: 1;
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .stat-label {
   display: block;
-  font-size: 14px;
-  color: #999;
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-quaternary);
 }
 
 .content-section {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: var(--admin-color-bg-container);
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-xxl);
+  box-shadow: var(--admin-shadow-sm);
 }
 
 .section-header {
-  margin-bottom: 20px;
+  margin-bottom: var(--admin-space-xl);
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: var(--admin-font-xxl);
   font-weight: 600;
-  color: #333;
+  color: var(--admin-color-text-primary);
 }
 
 .activity-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--admin-space-lg);
+}
+
+/* Task 21：键盘导航聚焦轮廓 */
+.activity-list:focus-visible {
+  outline: 2px solid var(--admin-color-primary);
+  outline-offset: 2px;
 }
 
 .activity-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 8px;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-md);
+  border-radius: var(--admin-radius-lg);
   transition: background 0.2s;
 }
 
 .activity-item:hover {
-  background: #f9f9f9;
+  background: var(--admin-color-bg-subtle);
 }
 
 .activity-dot {
-  width: 8px;
-  height: 8px;
+  width: var(--admin-space-sm);
+  height: var(--admin-space-sm);
   border-radius: 50%;
-  background: #667eea;
-  margin-top: 6px;
+  background: var(--admin-color-primary);
+  margin-top: var(--admin-space-xxs);
   flex-shrink: 0;
 }
 
@@ -303,21 +340,21 @@ onMounted(() => {
 
 .activity-message {
   display: block;
-  font-size: 14px;
-  color: #333;
-  margin-bottom: 4px;
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-primary);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .activity-time {
   display: block;
-  font-size: 12px;
-  color: #999;
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-quaternary);
 }
 
 .empty-tip {
-  padding: 24px;
+  padding: var(--admin-space-xxl);
   text-align: center;
-  color: #999;
-  font-size: 13px;
+  color: var(--admin-color-text-quaternary);
+  font-size: var(--admin-font-md);
 }
 </style>

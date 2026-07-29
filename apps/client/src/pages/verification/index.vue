@@ -1,15 +1,18 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 恋爱认证页
  * 校园身份认证流程：上传学生证 → 提交审核 → 审核通过
  * mock 模式下默认展示"已认证"状态
  */
 import { ref, computed, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
+
+const { t } = useI18n();
 
 /** 认证状态：unverified | pending | verified | rejected */
 type VerifyStatus = "unverified" | "pending" | "verified" | "rejected";
@@ -38,32 +41,32 @@ const statusInfo = computed(() => {
     case "verified":
       return {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE,
-        title: "已认证",
-        desc: "您的校园身份已通过认证\n享有认证用户专属权益",
+        title: t("verification.statusVerified"),
+        desc: t("verification.statusVerifiedDesc"),
         color: "var(--c-brand-500, #3FCF8E)",
         bgColor: "var(--c-brand-50, #E8F8F0)",
       };
     case "pending":
       return {
         icon: IMAGE_PATHS.ICONS_EMOJI.PENDING,
-        title: "审核中",
-        desc: "您的认证申请已提交\n预计 1-3 个工作日内完成审核",
+        title: t("verification.statusPending"),
+        desc: t("verification.statusPendingDesc"),
         color: "var(--c-warning, #F59E0B)",
         bgColor: "var(--c-tint-amber-50, #FFF8E7)",
       };
     case "rejected":
       return {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_FAIL,
-        title: "认证未通过",
-        desc: "您提交的认证信息未通过审核\n请核对后重新提交",
+        title: t("verification.statusRejected"),
+        desc: t("verification.statusRejectedDesc"),
         color: "var(--c-error, #E5454D)",
         bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
       };
     default:
       return {
         icon: IMAGE_PATHS.ICONS_EMOJI.GRAD_CAP,
-        title: "未认证",
-        desc: "完成校园身份认证\n解锁专属权益与信任标识",
+        title: t("verification.statusUnverified"),
+        desc: t("verification.statusUnverifiedDesc"),
         color: "var(--c-brand-500, #3FCF8E)",
         bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
       };
@@ -71,12 +74,12 @@ const statusInfo = computed(() => {
 });
 
 /** 认证权益列表 */
-const benefits = [
-  { icon: IMAGE_PATHS.ICONS_EMOJI.TARGET, title: "专属标识", desc: "个人主页展示认证徽章" },
-  { icon: IMAGE_PATHS.ICONS_EMOJI.SCORE, title: "信任优先", desc: "认证用户优先推荐排序" },
-  { icon: IMAGE_PATHS.ICONS_EMOJI.ROCKET, title: "匹配加权", desc: "匹配概率提升 1.5 倍" },
-  { icon: IMAGE_PATHS.ICONS_EMOJI.GIFT, title: "专属权益", desc: "解锁认证用户专属功能" },
-];
+const benefits = computed(() => [
+  { icon: IMAGE_PATHS.ICONS_EMOJI.TARGET, title: t("verification.benefitBadgeTitle"), desc: t("verification.benefitBadgeDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.SCORE, title: t("verification.benefitTrustTitle"), desc: t("verification.benefitTrustDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.ROCKET, title: t("verification.benefitMatchTitle"), desc: t("verification.benefitMatchDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.GIFT, title: t("verification.benefitPerksTitle"), desc: t("verification.benefitPerksDesc") },
+]);
 
 /** 选择学生证图片
  *
@@ -88,7 +91,7 @@ async function chooseImage() {
     await ensurePrivacyAuthorized();
   } catch (_e) {
     uni.showToast({
-      title: "需同意隐私协议后才能选择图片",
+      title: t("verification.privacyRequiredImage"),
       icon: "none",
       duration: 1200,
     });
@@ -103,14 +106,14 @@ async function chooseImage() {
       // 此处兜底空字符串，避免在异常（空数组）情况下赋值 undefined 给 ref<string>。
       uploadedImagePath.value = res.tempFilePaths[0] ?? "";
       uni.showToast({
-        title: "学生证已上传",
+        title: t("verification.imageUploaded"),
         icon: "success",
         duration: 1200,
       });
     },
     fail: () => {
       uni.showToast({
-        title: "已取消选择",
+        title: t("verification.imageChooseCancelled"),
         icon: "none",
         duration: 1000,
       });
@@ -123,24 +126,24 @@ function submitVerification() {
   lightHaptic();
 
   if (!studentName.value.trim()) {
-    uni.showToast({ title: "请输入学生姓名", icon: "none" });
+    uni.showToast({ title: t("verification.errStudentName"), icon: "none" });
     return;
   }
   if (!studentId.value.trim()) {
-    uni.showToast({ title: "请输入学号", icon: "none" });
+    uni.showToast({ title: t("verification.errStudentId"), icon: "none" });
     return;
   }
   if (!schoolName.value.trim()) {
-    uni.showToast({ title: "请输入学校名称", icon: "none" });
+    uni.showToast({ title: t("verification.errSchoolName"), icon: "none" });
     return;
   }
   if (!uploadedImagePath.value) {
-    uni.showToast({ title: "请上传学生证照片", icon: "none" });
+    uni.showToast({ title: t("verification.errImageRequired"), icon: "none" });
     return;
   }
 
   submitting.value = true;
-  uni.showLoading({ title: "提交中..." });
+  uni.showLoading({ title: t("verification.submitting") });
 
   if (submitTimer) clearTimeout(submitTimer);
   submitTimer = setTimeout(() => {
@@ -148,7 +151,7 @@ function submitVerification() {
     uni.hideLoading();
     status.value = "pending";
     uni.showToast({
-      title: "提交成功，等待审核",
+      title: t("verification.submitSuccess"),
       icon: "success",
       duration: 1500,
     });
@@ -173,7 +176,7 @@ function simulateApprove() {
   lightHaptic();
   status.value = "verified";
   uni.showToast({
-    title: "认证已通过",
+    title: t("verification.approvedTitle"),
     icon: "success",
     duration: 1500,
   });
@@ -183,8 +186,8 @@ function simulateApprove() {
 function resetVerification() {
   lightHaptic();
   uni.showModal({
-    title: "重新认证",
-    content: "确定要重新提交认证申请吗？",
+    title: t("verification.resetConfirmTitle"),
+    content: t("verification.resetConfirmContent"),
     success: (res) => {
       if (res.confirm) {
         status.value = "unverified";
@@ -216,7 +219,7 @@ function onBlur() {
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">
         <text class="nav-bar__back-icon">‹</text>
       </view>
-      <text class="nav-bar__title">恋爱认证</text>
+      <text class="nav-bar__title">{{ t('verification.navTitle') }}</text>
       <view class="nav-bar__placeholder" />
     </view>
 
@@ -237,12 +240,11 @@ function onBlur() {
       <!-- 认证权益列表 -->
       <view class="section">
         <view class="section__title">
-          <text class="section__title-text">认证权益</text>
+          <text class="section__title-text">{{ t('verification.benefitsTitle') }}</text>
         </view>
         <view class="benefits-grid">
           <view
-            v-for="(item, index) in benefits"
-            :key="index"
+            v-for="(item, index) in benefits" :key="index"
             class="benefit-item"
           >
             <view class="benefit-item__icon">
@@ -256,7 +258,7 @@ function onBlur() {
 
       <!-- 重新认证按钮 -->
       <view class="action-btn press-feedback" @tap="resetVerification" hover-class="action-btn--hover" hover-stay-time="100">
-        <text class="action-btn__text">重新认证</text>
+        <text class="action-btn__text">{{ t('verification.resetBtn') }}</text>
       </view>
     </template>
 
@@ -264,14 +266,14 @@ function onBlur() {
     <template v-else-if="status === 'pending'">
       <view class="section">
         <view class="pending-card">
-          <text class="pending-card__title">审核中</text>
-          <text class="pending-card__desc">您的认证申请已提交\n预计 1-3 个工作日内完成审核\n审核结果将通过消息通知您</text>
+          <text class="pending-card__title">{{ t('verification.pendingTitle') }}</text>
+          <text class="pending-card__desc">{{ t('verification.pendingDesc') }}</text>
         </view>
       </view>
 
       <!-- mock 演示：模拟审核通过按钮 -->
       <view class="action-btn action-btn--secondary press-feedback" @tap="simulateApprove" hover-class="action-btn--hover" hover-stay-time="100">
-        <text class="action-btn__text action-btn__text--secondary">模拟审核通过（演示）</text>
+        <text class="action-btn__text action-btn__text--secondary">{{ t('verification.simulateApproveBtn') }}</text>
       </view>
     </template>
 
@@ -280,12 +282,11 @@ function onBlur() {
       <!-- 认证权益预览 -->
       <view class="section">
         <view class="section__title">
-          <text class="section__title-text">认证权益</text>
+          <text class="section__title-text">{{ t('verification.benefitsTitle') }}</text>
         </view>
         <view class="benefits-grid">
           <view
-            v-for="(item, index) in benefits"
-            :key="index"
+            v-for="(item, index) in benefits" :key="index"
             class="benefit-item"
           >
             <view class="benefit-item__icon">
@@ -300,51 +301,51 @@ function onBlur() {
       <!-- 认证表单 -->
       <view class="section">
         <view class="section__title">
-          <text class="section__title-text">填写认证信息</text>
+          <text class="section__title-text">{{ t('verification.formTitle') }}</text>
         </view>
         <view class="form-card">
           <!-- 学生姓名 -->
           <view class="form-item list-item">
-            <label class="form-item__label" for="verification-student-name">学生姓名</label>
+            <label class="form-item__label" for="verification-student-name">{{ t('verification.labelStudentName') }}</label>
             <input
               id="verification-student-name"
               v-model="studentName"
               class="form-item__input"
-              placeholder="请输入真实姓名"
+              :placeholder="t('verification.placeholderStudentName')"
               placeholder-class="form-item__placeholder"
               maxlength="20"
               @blur="onBlur"
-              :aria-label="'请输入真实姓名'"
+              :aria-label="t('verification.placeholderStudentName')"
               aria-required="true"
             />
           </view>
           <!-- 学号 -->
           <view class="form-item list-item">
-            <label class="form-item__label" for="verification-student-id">学号</label>
+            <label class="form-item__label" for="verification-student-id">{{ t('verification.labelStudentId') }}</label>
             <input
               id="verification-student-id"
               v-model="studentId"
               class="form-item__input"
-              placeholder="请输入学号"
+              :placeholder="t('verification.placeholderStudentId')"
               placeholder-class="form-item__placeholder"
               maxlength="20"
               @blur="onBlur"
-              :aria-label="'请输入学号'"
+              :aria-label="t('verification.placeholderStudentId')"
               aria-required="true"
             />
           </view>
           <!-- 学校 -->
           <view class="form-item list-item form-item--no-border">
-            <label class="form-item__label" for="verification-school-name">学校</label>
+            <label class="form-item__label" for="verification-school-name">{{ t('verification.labelSchool') }}</label>
             <input
               id="verification-school-name"
               v-model="schoolName"
               class="form-item__input"
-              placeholder="请输入学校全称"
+              :placeholder="t('verification.placeholderSchool')"
               placeholder-class="form-item__placeholder"
               maxlength="30"
               @blur="onBlur"
-              :aria-label="'请输入学校全称'"
+              :aria-label="t('verification.placeholderSchool')"
               aria-required="true"
             />
           </view>
@@ -354,7 +355,7 @@ function onBlur() {
       <!-- 上传学生证 -->
       <view class="section">
         <view class="section__title">
-          <text class="section__title-text">上传学生证</text>
+          <text class="section__title-text">{{ t('verification.uploadTitle') }}</text>
         </view>
         <view
           class="upload-card press-feedback"
@@ -363,17 +364,17 @@ function onBlur() {
           hover-stay-time="100"
         >
           <view v-if="!uploadedImagePath" class="upload-card__empty">
-            <text class="upload-card__text">点击上传学生证照片</text>
-            <text class="upload-card__hint">支持 JPG / PNG，大小 ≤ 5MB</text>
+            <text class="upload-card__text">{{ t('verification.uploadText') }}</text>
+            <text class="upload-card__hint">{{ t('verification.uploadHint') }}</text>
           </view>
           <view v-else class="upload-card__preview">
             <image
               :src="uploadedImagePath"
               class="upload-card__image"
-              mode="aspectFill" alt=""
+              mode="aspectFill" lazy-load alt=""
             />
             <view class="upload-card__change">
-              <text class="upload-card__change-text">点击更换</text>
+              <text class="upload-card__change-text">{{ t('verification.uploadChange') }}</text>
             </view>
           </view>
         </view>
@@ -387,7 +388,7 @@ function onBlur() {
         hover-class="action-btn--hover"
         hover-stay-time="100"
       >
-        <text class="action-btn__text">{{ submitting ? '提交中...' : '提交认证申请' }}</text>
+        <text class="action-btn__text">{{ submitting ? t('verification.submittingBtn') : t('verification.submitBtn') }}</text>
       </view>
     </template>
 
@@ -402,7 +403,7 @@ function onBlur() {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-bg-page, #f8fafc) 0%, var(--c-tint-blue-50, #eef2ff) 100%);
+  background: linear-gradient(180deg, var(--c-bg-page) 0%, var(--c-tint-blue-50) 100%);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 32rpx;
@@ -415,8 +416,8 @@ function onBlur() {
   justify-content: space-between;
   padding: 0 24rpx;
   height: 88rpx;
-  background: var(--c-bg-container, #FFFFFF);
-  box-shadow: 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
+  background: var(--c-bg-container);
+  box-shadow: 0 1rpx 4rpx var(--c-neutral-shadow-xs);
   position: relative;
   z-index: 1;
 }
@@ -427,17 +428,17 @@ function onBlur() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
 
   &--hover {
-    background: var(--c-bg-page, #F4F6FA);
+    background: var(--c-bg-page);
     transform: scale(0.94);
   }
 }
 
 .nav-bar__back-icon {
   font-size: var(--fs-7xl, 56rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary);
   font-weight: 300;
   line-height: 1;
 }
@@ -445,7 +446,7 @@ function onBlur() {
 .nav-bar__title {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary);
 }
 
 .nav-bar__placeholder {
@@ -476,19 +477,19 @@ function onBlur() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-md, var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.06)));
+  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-md);
 }
 
 .status-card__emoji-wrap {
   width: 120rpx;
   height: 120rpx;
-  border-radius: 50%;
-  background: var(--c-bg-container, #FFFFFF);
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-bg-container);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06)));
+  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-sm);
 }
 
 .status-card__emoji {
@@ -504,7 +505,7 @@ function onBlur() {
 
 .status-card__desc {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary);
   text-align: center;
   line-height: 1.6;
 }
@@ -522,7 +523,7 @@ function onBlur() {
 
 .section__title-text {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary);
   font-weight: 500;
 }
 
@@ -536,10 +537,10 @@ function onBlur() {
 .benefit-item {
   flex: 1 1 calc(50% - 8rpx);
   min-width: 280rpx;
-  background: var(--c-bg-container, #FFFFFF);
-  border-radius: 20rpx;
+  background: var(--c-bg-container);
+  border-radius: var(--r-lg, 20rpx);
   padding: 24rpx;
-  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs), 0 1rpx 4rpx var(--c-neutral-shadow-xs);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -549,7 +550,7 @@ function onBlur() {
   width: 64rpx;
   height: 64rpx;
   border-radius: var(--r-lg, 16rpx);
-  background: linear-gradient(135deg, var(--c-tint-blue-50, #E8F4FF) 0%, var(--c-tint-blue-50, #F0F7FF) 100%);
+  background: linear-gradient(135deg, var(--c-tint-blue-50) 0%, var(--c-tint-blue-50) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -563,21 +564,21 @@ function onBlur() {
 .benefit-item__title {
   font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary);
   margin-bottom: 4rpx;
 }
 
 .benefit-item__desc {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary);
   line-height: 1.5;
 }
 
 /* ==================== 表单卡片 ==================== */
 .form-card {
-  background: var(--c-bg-container, #FFFFFF);
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs), 0 1rpx 4rpx var(--c-neutral-shadow-xs);
   overflow: hidden;
   padding: 0 28rpx;
 }
@@ -586,7 +587,7 @@ function onBlur() {
   display: flex;
   align-items: center;
   padding: 28rpx 0;
-  border-bottom: 1rpx solid var(--c-border-light, #EEF0F4);
+  border-bottom: 1rpx solid var(--c-border-light);
   gap: 24rpx;
 
   &--no-border {
@@ -596,7 +597,7 @@ function onBlur() {
 
 .form-item__label {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary);
   font-weight: 500;
   width: 120rpx;
   flex-shrink: 0;
@@ -605,21 +606,21 @@ function onBlur() {
 .form-item__input {
   flex: 1;
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary);
 }
 
 .form-item__placeholder {
-  color: var(--c-text-tertiary, #9AA1AB);
+  color: var(--c-text-tertiary);
   font-size: var(--fs-lg, 28rpx);
 }
 
 /* ==================== 上传卡片 ==================== */
 .upload-card {
-  background: var(--c-bg-container, #FFFFFF);
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs), 0 1rpx 4rpx var(--c-neutral-shadow-xs);
   overflow: hidden;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 
   &--hover {
     transform: scale(0.98);
@@ -641,13 +642,13 @@ function onBlur() {
 
 .upload-card__text {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
 .upload-card__hint {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-tertiary, #9AA1AB);
+  color: var(--c-text-tertiary);
 }
 
 .upload-card__preview {
@@ -666,20 +667,20 @@ function onBlur() {
   right: 16rpx;
   bottom: 16rpx;
   padding: 8rpx 20rpx;
-  background: var(--c-gradient-mask-strong, var(--c-gradient-mask-strong, rgba(0, 0, 0, 0.6)));
-  border-radius: 999rpx;
+  background: var(--c-gradient-mask-strong);
+  border-radius: var(--r-full, 9999rpx);
 }
 
 .upload-card__change-text {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
 }
 
 /* ==================== 审核中卡片 ==================== */
 .pending-card {
-  background: var(--c-bg-container, #FFFFFF);
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 4rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs), 0 1rpx 4rpx var(--c-neutral-shadow-xs);
   padding: 48rpx 32rpx;
   display: flex;
   flex-direction: column;
@@ -695,13 +696,13 @@ function onBlur() {
 .pending-card__title {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: var(--c-warning, #F59E0B);
+  color: var(--c-warning);
   margin-bottom: 12rpx;
 }
 
 .pending-card__desc {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary);
   text-align: center;
   line-height: 1.6;
 }
@@ -712,17 +713,17 @@ function onBlur() {
   z-index: 1;
   margin: 32rpx 24rpx 0;
   padding: 28rpx;
-  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-300, #7CD9A6) 100%);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 
   &--hover {
     transform: scale(0.98);
-    box-shadow: 0 2rpx 8rpx var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(63, 207, 142, 0.2)));
+    box-shadow: 0 2rpx 8rpx var(--c-brand-border-tint);
   }
 
   &--disabled {
@@ -730,18 +731,18 @@ function onBlur() {
   }
 
   &--secondary {
-    background: var(--c-bg-container, #FFFFFF);
-    box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
+    background: var(--c-bg-container);
+    box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs);
   }
 }
 
 .action-btn__text {
   font-size: var(--fs-xl, 30rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 
   &--secondary {
-    color: var(--c-brand, #3FCF8E);
+    color: var(--c-brand);
   }
 }
 </style>

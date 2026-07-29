@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 通知免打扰设置页（功能6）
  *
@@ -57,15 +57,15 @@ const repeatModeOptions = computed<{ value: RepeatMode; label: string }[]>(() =>
 ]);
 
 /** 星期选项（自定义模式下使用，1-7 对应周一到周日） */
-const weekdayOptions = [
-  { value: "1", label: "周一" },
-  { value: "2", label: "周二" },
-  { value: "3", label: "周三" },
-  { value: "4", label: "周四" },
-  { value: "5", label: "周五" },
-  { value: "6", label: "周六" },
-  { value: "7", label: "周日" },
-];
+const weekdayOptions = computed(() => [
+  { value: "1", label: t("dnd.weekdayMon") },
+  { value: "2", label: t("dnd.weekdayTue") },
+  { value: "3", label: t("dnd.weekdayWed") },
+  { value: "4", label: t("dnd.weekdayThu") },
+  { value: "5", label: t("dnd.weekdayFri") },
+  { value: "6", label: t("dnd.weekdaySat") },
+  { value: "7", label: t("dnd.weekdaySun") },
+]);
 
 /** 自定义模式下选中的星期数组（响应式） */
 const customWeekdaysSelected = ref<string[]>([]);
@@ -484,8 +484,8 @@ onMounted(() => {
   min-height: 100%;
   background: linear-gradient(
     180deg,
-    var(--c-bg-page, #f8fafc) 0%,
-    var(--c-tint-blue-50, #eef2ff) 100%
+    var(--c-bg-page) 0%,
+    var(--c-tint-blue-50) 100%
   );
   box-sizing: border-box;
   position: relative;
@@ -498,8 +498,8 @@ onMounted(() => {
   justify-content: space-between;
   padding: 0 24rpx;
   height: 88rpx;
-  background: var(--c-bg-container, #ffffff);
-  box-shadow: 0 1rpx 4rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04));
+  background: var(--c-bg-container);
+  box-shadow: 0 1rpx 4rpx var(--c-neutral-shadow-xs);
   position: relative;
   z-index: 1;
 }
@@ -510,17 +510,17 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
 
   &--hover {
-    background: var(--c-bg-page, #f4f6fa);
+    background: var(--c-bg-page);
     transform: scale(0.94);
   }
 }
 
 .nav-bar__back-icon {
   font-size: var(--fs-7xl, 56rpx);
-  color: var(--c-text-primary, #1f2329);
+  color: var(--c-text-primary);
   font-weight: 300;
   line-height: 1;
 }
@@ -528,7 +528,7 @@ onMounted(() => {
 .nav-bar__title {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2329);
+  color: var(--c-text-primary);
 }
 
 .nav-bar__placeholder {
@@ -562,10 +562,10 @@ onMounted(() => {
 .spinner {
   width: 64rpx;
   height: 64rpx;
-  border: 4rpx solid var(--c-border-light, #eef0f4);
-  border-top-color: var(--c-brand, #3fcf8e);
-  border-radius: 50%;
-  animation: dnd-spin 1s linear infinite;
+  border: 4rpx solid var(--c-border-light);
+  border-top-color: var(--c-brand);
+  border-radius: var(--r-circle, 50%);
+  animation: dnd-spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes dnd-spin {
@@ -576,13 +576,13 @@ onMounted(() => {
 
 .state-text {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-secondary, #5b6470);
+  color: var(--c-text-secondary);
 }
 
 .retry-btn {
   padding: 16rpx 48rpx;
-  background: var(--c-brand, #3fcf8e);
-  border-radius: 999rpx;
+  background: var(--c-brand);
+  border-radius: var(--r-full, 9999rpx);
 }
 
 .retry-btn__text {
@@ -611,7 +611,7 @@ onMounted(() => {
 
 .section__title-text {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-secondary, #5b6470);
+  color: var(--c-text-secondary);
   font-weight: 500;
 }
 
@@ -632,7 +632,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 28rpx;
-  border-bottom: 1rpx solid var(--c-border-light, #eef0f4);
+  border-bottom: 1rpx solid var(--c-border-light);
 
   &--no-border {
     border-bottom: none;
@@ -649,13 +649,13 @@ onMounted(() => {
 
 .switch-row__label {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1f2329);
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
 .switch-row__desc {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #9aa1ab);
+  color: var(--c-text-tertiary);
   line-height: 1.5;
 }
 
@@ -669,16 +669,16 @@ onMounted(() => {
 
 .status-row__label {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #5b6470);
+  color: var(--c-text-secondary);
 }
 
 .status-row__value {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-tertiary, #9aa1ab);
+  color: var(--c-text-tertiary);
   font-weight: 600;
 
   &--on {
-    color: var(--c-brand, #3fcf8e);
+    color: var(--c-brand);
   }
 }
 
@@ -688,7 +688,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 28rpx;
-  border-bottom: 1rpx solid var(--c-border-light, #eef0f4);
+  border-bottom: 1rpx solid var(--c-border-light);
 
   &--no-border {
     border-bottom: none;
@@ -697,7 +697,7 @@ onMounted(() => {
 
 .time-row__label {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1f2329);
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
@@ -709,14 +709,14 @@ onMounted(() => {
 
 .time-row__value {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-brand, #3fcf8e);
+  color: var(--c-brand);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .time-row__arrow {
   font-size: var(--fs-2xl, 32rpx);
-  color: var(--c-border-strong, #cbd5e1);
+  color: var(--c-border-strong);
   font-weight: 300;
 }
 
@@ -726,35 +726,35 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 28rpx;
-  border-bottom: 1rpx solid var(--c-border-light, #eef0f4);
-  transition: background 0.15s ease;
+  border-bottom: 1rpx solid var(--c-border-light);
+  transition: background var(--d-fast, 120ms) ease;
 
   &--no-border {
     border-bottom: none;
   }
 
   &--hover {
-    background: var(--c-bg-surface, #fafbfc);
+    background: var(--c-bg-surface);
   }
 }
 
 .radio-row__label {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1f2329);
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
 .radio-row__indicator {
   width: 36rpx;
   height: 36rpx;
-  border-radius: 50%;
-  border: 2rpx solid var(--c-border-strong, #cbd5e1);
+  border-radius: var(--r-circle, 50%);
+  border: 2rpx solid var(--c-border-strong);
   position: relative;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 
   &--active {
-    border-color: var(--c-brand, #3fcf8e);
-    background: var(--c-brand, #3fcf8e);
+    border-color: var(--c-brand);
+    background: var(--c-brand);
 
     &::after {
       content: "";
@@ -764,7 +764,7 @@ onMounted(() => {
       transform: translate(-50%, -50%);
       width: 16rpx;
       height: 16rpx;
-      border-radius: 50%;
+      border-radius: var(--r-circle, 50%);
       /* 反色背景：使用 token 替代硬编码 #ffffff */
       background: var(--c-text-inverse);
     }
@@ -787,21 +787,21 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 20rpx 0;
-  background: var(--c-bg-page, #f4f6fa);
+  background: var(--c-bg-page);
   border-radius: var(--r-lg, 16rpx);
   border: 2rpx solid transparent;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
   box-sizing: border-box;
 
   &--active {
-    background: var(--c-bg-brand, #e8f8f0);
-    border-color: var(--c-brand, #3fcf8e);
+    background: var(--c-bg-brand);
+    border-color: var(--c-brand);
   }
 }
 
 .weekday-item__label {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-primary, #1f2329);
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
@@ -809,13 +809,13 @@ onMounted(() => {
 .save-btn {
   margin: 40rpx 24rpx 0;
   padding: 28rpx;
-  background: var(--c-brand, #3fcf8e);
+  background: var(--c-brand);
   border-radius: var(--r-xl, 24rpx);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-sm, rgba(63, 207, 142, 0.2));
-  transition: all 0.15s ease;
+  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-sm);
+  transition: all var(--d-fast, 120ms) ease;
 
   &--disabled {
     opacity: 0.6;

@@ -6,11 +6,19 @@
  * - 菜单项 label 改为 i18n key（layout.navXxx）
  * - "管理后台" / "管理员" / "退出登录" / 路由 fallback 文案改走 i18n
  * - 路由 name 与 i18n key 通过 table 显式映射，避免拼写错误
+ *
+ * Task 44：handleLogout 为敏感操作（结束会话），添加 ConfirmDialog 二次确认。
+ * Task 45：异常分支统一通过 logger 记录，避免直接 console 调用。
+ * Task 46：handleLogout 包裹 try/catch，异常时仍跳转登录页，避免界面卡死。
  */
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useSessionStore } from "../stores/session";
 import { useI18n } from "vue-i18n";
+// Task 44：接入共享 ConfirmDialog 组件，用于退出登录二次确认
+import ConfirmDialog from "../components/ConfirmDialog.vue";
+// Task 45：统一日志入口
+import { logger } from "../utils/logger";
 
 const router = useRouter();
 const sessionStore = useSessionStore();
@@ -36,12 +44,52 @@ const menuItems: MenuItem[] = [
 
 /** 当前管理员的显示名（缺失时回退到 i18n）。 */
 const displayName = computed(() => sessionStore.user?.displayName || t("layout.userMenuTitle"));
-/** 当前管理员角色（缺失时回退到 ADMIN 字面量）。 */
-const displayRole = computed(() => sessionStore.user?.role || "ADMIN");
+/** 当前管理员角色（缺失时回退到 i18n）。 */
+const displayRole = computed(() => {
+  const role = sessionStore.user?.role;
+  if (!role) return t("users.roleAdmin");
+  return role === "ADMIN" ? t("users.roleAdmin") : t("users.roleUser");
+});
 
-async function handleLogout() {
-  await sessionStore.logout();
-  router.push({ name: "Login" });
+// Task 44：退出登录确认弹窗状态
+const logoutVisible = ref(false);
+const loggingOut = ref(false);
+
+/**
+ * Task 44：点击退出登录按钮时仅打开确认弹窗，不直接执行登出。
+ */
+function handleLogoutClick(): void {
+  logoutVisible.value = true;
+}
+
+/**
+ * Task 44 + Task 46：ConfirmDialog 确认回调，执行真实登出。
+ *
+ * 包裹 try/catch 确保即使后端登出接口异常仍跳转登录页，
+ * 避免用户卡在已登出但路由未切换的中间态。
+ */
+async function handleConfirmLogout(): Promise<void> {
+  if (loggingOut.value) return; // 防重复点击
+  loggingOut.value = true;
+  try {
+    await sessionStore.logout();
+    logoutVisible.value = false;
+    router.push({ name: "Login" });
+  } catch (err) {
+    // Task 45：异常通过 logger 记录，便于线上问题定位
+    logger.error("[Layout] logout failed", err);
+    // 即便登出失败也跳转登录页，强制清理本地会话
+    logoutVisible.value = false;
+    router.push({ name: "Login" });
+  } finally {
+    loggingOut.value = false;
+  }
+}
+
+/** Task 44：ConfirmDialog 取消回调，清理临时状态 */
+function handleCancelLogout(): void {
+  logoutVisible.value = false;
+  loggingOut.value = false;
 }
 
 /**
@@ -66,7 +114,7 @@ function focusMainContent(): void {
       @click.prevent="focusMainContent"
     >{{ t("common.skipToMain") }}</a>
 
-    <view class="sidebar" role="navigation" aria-label="主导航">
+    <view class="sidebar" role="navigation" :aria-label="t('layout.navAriaLabel')">
       <view class="sidebar-header">
         <text class="logo-text">{{ t("login.title") }}</text>
       </view>
@@ -89,7 +137,7 @@ function focusMainContent(): void {
           <text class="user-name">{{ displayName }}</text>
           <text class="user-role">{{ displayRole }}</text>
         </view>
-        <button class="logout-button" @click="handleLogout">{{ t("common.logout") }}</button>
+        <button class="logout-button" @click="handleLogoutClick">{{ t("common.logout") }}</button>
       </view>
     </view>
 
@@ -101,6 +149,17 @@ function focusMainContent(): void {
     >
       <router-view />
     </view>
+
+    <!-- Task 44：退出登录确认弹窗（敏感操作二次确认） -->
+    <ConfirmDialog
+      v-model:visible="logoutVisible"
+      :title="t('common.logout')"
+      :message="t('layout.logoutConfirm')"
+      :danger="true"
+      :confirming="loggingOut"
+      @confirm="handleConfirmLogout"
+      @cancel="handleCancelLogout"
+    />
   </view>
 </template>
 
@@ -108,7 +167,7 @@ function focusMainContent(): void {
 .layout {
   display: flex;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--admin-color-bg-page);
 }
 
 /* P6 a11y：sr-only / sr-only-focusable（视觉隐藏，屏幕阅读器可读；获得焦点时显示） */
@@ -137,18 +196,18 @@ function focusMainContent(): void {
   clip: auto;
   white-space: normal;
   z-index: 9999;
-  padding: 12px 20px;
-  background: #3FCF8E;
-  color: #ffffff;
-  border-radius: 0 0 6px 0;
-  font-size: 14px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  background: var(--admin-color-skip-link);
+  color: var(--admin-color-skip-link-fg);
+  border-radius: 0 0 var(--admin-radius-md) 0;
+  font-size: var(--admin-font-lg);
   font-weight: 600;
   text-decoration: none;
 }
 
 /* Skip link 视觉样式（focus 时显示） */
 .skip-link {
-  outline: 2px solid #3FCF8E;
+  outline: 2px solid var(--admin-color-skip-link);
   outline-offset: 2px;
 }
 
@@ -158,103 +217,103 @@ function focusMainContent(): void {
 
 .sidebar {
   width: 240px;
-  background: white;
+  background: var(--admin-color-bg-container);
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--admin-shadow-sm);
 }
 
 .sidebar-header {
-  padding: 24px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: var(--admin-space-xxl) var(--admin-space-xl);
+  border-bottom: 1px solid var(--admin-color-border-light);
 }
 
 .logo-text {
-  font-size: 20px;
+  font-size: var(--admin-font-xl);
   font-weight: 700;
-  color: #333;
+  color: var(--admin-color-text-primary);
 }
 
 .sidebar-menu {
   flex: 1;
-  padding: 16px 0;
+  padding: var(--admin-space-lg) 0;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  color: #666;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-md-lg) var(--admin-space-xl);
+  color: var(--admin-color-text-tertiary);
   text-decoration: none;
   transition: all 0.2s;
   cursor: pointer;
 }
 
 .menu-item:hover {
-  background: #f9f9f9;
-  color: #333;
+  background: var(--admin-color-bg-subtle);
+  color: var(--admin-color-text-primary);
 }
 
 .menu-item--active {
-  background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
-  color: #667eea;
-  border-right: 3px solid #667eea;
+  background: linear-gradient(90deg, var(--admin-color-primary-soft) 0%, transparent 100%);
+  color: var(--admin-color-primary);
+  border-right: 3px solid var(--admin-color-primary);
 }
 
 .menu-icon {
-  width: 20px;
-  height: 20px;
+  width: var(--admin-space-xl);
+  height: var(--admin-space-xl);
 }
 
 .menu-label {
-  font-size: 14px;
+  font-size: var(--admin-font-lg);
   font-weight: 500;
 }
 
 .sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid #f0f0f0;
+  padding: var(--admin-space-xl);
+  border-top: 1px solid var(--admin-color-border-light);
 }
 
 .user-info {
-  margin-bottom: 12px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .user-name {
   display: block;
-  font-size: 14px;
+  font-size: var(--admin-font-lg);
   font-weight: 600;
-  color: #333;
+  color: var(--admin-color-text-primary);
 }
 
 .user-role {
   display: block;
-  font-size: 12px;
-  color: #999;
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-quaternary);
   margin-top: 2px;
 }
 
 .logout-button {
   width: 100%;
-  padding: 10px;
-  background: #f5f5f5;
+  padding: var(--admin-space-md-sm);
+  background: var(--admin-color-bg-hover);
   border: none;
-  border-radius: 6px;
-  color: #666;
-  font-size: 13px;
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-color-text-tertiary);
+  font-size: var(--admin-font-md);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .logout-button:hover {
-  background: #eee;
-  color: #333;
+  background: var(--admin-color-bg-hover);
+  color: var(--admin-color-text-primary);
 }
 
 .main-content {
   flex: 1;
-  padding: 24px;
+  padding: var(--admin-space-xxl);
   overflow-y: auto;
 }
 </style>

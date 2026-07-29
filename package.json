@@ -12,7 +12,7 @@
     "client:dev:h5": "npm --workspace apps/client run dev:h5",
     "client:dev:h5:real": "npm --workspace apps/client run dev:h5:real",
     "generate:openapi": "npm --workspace apps/client run generate:openapi",
-    "lint:openapi": "node tools/lint-openapi.mjs docs/openapi/feedback-growth-and-auth.yaml docs/openapi/likes.yaml docs/openapi/village.yaml docs/openapi/recommendations.yaml docs/openapi/users.yaml",
+    "lint:openapi": "node tools/lint-openapi.mjs docs/openapi/feedback-growth-and-auth.yaml docs/openapi/likes.yaml docs/openapi/village.yaml docs/openapi/recommendations.yaml docs/openapi/users.yaml docs/openapi/check-in.yaml docs/openapi/notifications.yaml",
     "lint:openapi:spectral": "spectral lint \"docs/openapi/*.yaml\"",
     "test:prototype": "node tests/prototype-contract.spec.mjs",
     "test:structure": "node tests/project-structure.spec.mjs",
@@ -25,14 +25,23 @@
     "lighthouse:ci": "lhci autorun"
   },
   "devDependencies": {
-    "@lhci/cli": "^0.13.0",
-    "@stoplight/spectral-cli": "^6.15.0",
-    "lighthouse": "^11.0.0",
-    "openapi-typescript": "^7.13.0"
+    "@eslint/js": "^9.39.5",
+    "@lhci/cli": "~0.13.0",
+    "@stoplight/spectral-cli": "~6.15.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-vue": "^9.33.0",
+    "lighthouse": "~11.0.0",
+    "openapi-typescript": "~7.13.0",
+    "typescript-eslint": "^8.65.0",
+    "yaml": "~2.5.0"
   },
   "dependencies": {
-    "puppeteer": "^24.43.1",
-    "sharp": "^0.34.5"
+    "puppeteer": "~24.43.1",
+    "sharp": "~0.34.5"
+  },
+  "engines": {
+    "node": ">=18.0.0 <20.0.0",
+    "npm": ">=9.0.0"
   },
   "packageManager": "pnpm@11.17.0+sha512.cca3cea332ad254bb84145f966d19f4879615210346fc92c79a047f23a0d7b3cca3c3792f0076ba1f1831d277efbcf0a9119b31a9a60eca7fb3d6231f331ef72"
 }

@@ -41,22 +41,29 @@ public class DatabaseConfigValidator {
     /**
      * 启动后校验数据库凭据完整性。
      * 任一凭据为空将抛出 {@link IllegalStateException} 阻止应用启动。
+     *
+     * <p>Task 25.3：校验 DB_URL / DB_USERNAME / DB_PASSWORD 系统环境变量
+     * （或等价的 spring.datasource.url / username / password 配置项）非空。
+     * 配置项通常由 application.yml 通过 ${DB_URL} 等占位符从环境变量注入。</p>
      */
     @PostConstruct
     public void validate() {
         if (dbUrl == null || dbUrl.isBlank()) {
             throw new IllegalStateException(
-                    "DB_URL 环境变量未配置，应用启动失败。"
+                    "Required DB config missing: DB_URL/DB_USERNAME/DB_PASSWORD"
+                    + " — DB_URL 环境变量未配置，应用启动失败。"
                     + "请在环境中配置 DB_URL 以提供数据库连接地址。");
         }
         if (dbUsername == null || dbUsername.isBlank()) {
             throw new IllegalStateException(
-                    "DB_USERNAME 环境变量未配置，应用启动失败。"
+                    "Required DB config missing: DB_URL/DB_USERNAME/DB_PASSWORD"
+                    + " — DB_USERNAME 环境变量未配置，应用启动失败。"
                     + "请在环境中配置 DB_USERNAME 以提供数据库用户名。");
         }
         if (dbPassword == null || dbPassword.isBlank()) {
             throw new IllegalStateException(
-                    "DB_PASSWORD 环境变量未配置，应用启动失败。"
+                    "Required DB config missing: DB_URL/DB_USERNAME/DB_PASSWORD"
+                    + " — DB_PASSWORD 环境变量未配置，应用启动失败。"
                     + "请在环境中配置 DB_PASSWORD 以提供数据库访问密码。");
         }
         if (adminPasswordHash == null || adminPasswordHash.isBlank()) {

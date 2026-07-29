@@ -290,6 +290,8 @@ page {
   --c-bg-secondary: #{$bg-secondary};
   --c-bg-romance: #{$bg-romance};
   --c-bg-elevated: #{$neutral-0};
+  /* 悬停态背景色（用于列表项、按钮悬停态） */
+  --c-bg-hover: #{$neutral-50};
 
   --c-gradient-brand: #{$gradient-brand};
   --c-gradient-brand-reverse: #{$gradient-brand-reverse};
@@ -653,6 +655,10 @@ page {
   /* 浪漫粉 tint 边框 */
   --c-romance-border-tint: rgba(236, 72, 153, 0.22);
   --c-romance-bg-tint: rgba(236, 72, 153, 0.1);
+  /* 信息蓝 tint（用于账单类型徽章、信息提示等） */
+  --c-info-bg-tint: rgba(59, 130, 246, 0.1);
+  /* 金色 tint（用于 VIP 筛选 chip 激活态背景） */
+  --c-gold-bg-tint: rgba(255, 215, 0, 0.18);
   /* VIP 金色 tint 边框 */
   --c-vip-border-tint: rgba(201, 163, 106, 0.35);
   --c-vip-border-light: rgba(201, 163, 106, 0.3);
@@ -735,6 +741,27 @@ page {
   --c-accent-bg-tint-mid: rgba(245, 158, 11, 0.75);
   /* 灰蓝衍生 tint（用于中性标签） */
   --c-neutral-bg-tint: rgba(100, 116, 139, 0.75);
+
+  /* ---------- Phase K · 涟漪 / Tab 光晕专用 token（硬编码清理） ---------- */
+  /* 涟漪色：用于 Button.vue rippleColorMap，按 variant 区分 */
+  --c-ripple-light: rgba(255, 255, 255, 0.3);
+  --c-ripple-brand: rgba(63, 207, 142, 0.15);
+  --c-ripple-brand-soft: rgba(63, 207, 142, 0.1);
+
+  /* Tab 圆点光晕：用于 TabBar.vue 底部圆点 box-shadow */
+  --c-tab-glow-brand: rgba(63, 207, 142, 0.5);
+  --c-tab-glow-romance: rgba(236, 72, 153, 0.5);
+  --c-tab-glow-accent: rgba(249, 115, 22, 0.5);
+  --c-tab-glow-purple: rgba(139, 92, 246, 0.5);
+
+  /* 发布按钮呼吸光晕边框色 */
+  --c-brand-glow-strong: rgba(63, 207, 142, 0.6);
+
+  /* ---------- Phase L · 视频播放页专用 token（Task 17.4 · video-player.vue 硬编码清理） ---------- */
+  /* 白色叠层 16% 不透明：用于视频播放页状态按钮底色（介于 tint-strong 12% 与 mid-strong 25% 之间） */
+  --c-overlay-white-bg-16: rgba(255, 255, 255, 0.16);
+  /* 黑色叠层 50% 不透明：用于视频播放页加载遮罩底色（介于 mid 40% 与 strong 65% 之间） */
+  --c-black-overlay-50: rgba(0, 0, 0, 0.5);
 }
 
 /* ============================================================

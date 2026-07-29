@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * VIP 账单页
  *
@@ -17,6 +17,7 @@ import { onPullDownRefresh } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVipBillingStore, type BillType } from "../../stores/vip-billing";
 import { lightHaptic } from "../../utils/haptic";
+import EmptyState from "../../components/common/EmptyState.vue";
 
 const { t } = useI18n();
 const store = useVipBillingStore();
@@ -158,8 +159,7 @@ loadBills();
     <scroll-view scroll-x class="filter-bar">
       <view class="filter-bar__inner">
         <view
-          v-for="opt in filterOptions"
-          :key="opt.value"
+          v-for="opt in filterOptions" :key="opt.value"
           class="filter-chip press-feedback"
           :class="{ 'filter-chip--active': filterType === opt.value }"
           @tap="selectFilter(opt.value)"
@@ -179,15 +179,15 @@ loadBills();
       </view>
 
       <!-- 空状态 -->
-      <view v-else-if="isEmpty" class="empty-state">
-        <text class="empty-state__icon">📭</text>
-        <text class="empty-state__text">{{ t('vip.billsEmpty') }}</text>
-      </view>
+      <EmptyState
+        v-else-if="isEmpty"
+        :title="t('vip.billsEmpty')"
+        type="no-data"
+      />
 
       <!-- 账单卡片 -->
       <view
-        v-for="bill in filteredBills"
-        :key="bill.id"
+        v-for="bill in filteredBills" :key="bill.id"
         class="bill-card"
       >
         <view class="bill-card__header">
@@ -247,7 +247,7 @@ loadBills();
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--c-bg-base, #F8FAFC);
+  background: var(--c-bg-page);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 80rpx;
@@ -262,7 +262,7 @@ loadBills();
   height: 88rpx;
   /* 容器背景：使用 token 替代硬编码 #FFFFFF */
   background: var(--c-bg-container);
-  border-bottom: 1rpx solid var(--c-border-light, #E2E8F0);
+  border-bottom: 1rpx solid var(--c-border-light);
 }
 .nav-bar__back {
   width: 64rpx;
@@ -270,22 +270,22 @@ loadBills();
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   &--hover {
-    background: var(--c-bg-secondary, #F1F5F9);
+    background: var(--c-bg-secondary);
     transform: scale(0.94);
   }
 }
 .nav-bar__back-icon {
   font-size: var(--fs-7xl, 56rpx);
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
   font-weight: 300;
   line-height: 1;
 }
 .nav-bar__title {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
 }
 .nav-bar__placeholder {
   width: 64rpx;
@@ -305,13 +305,13 @@ loadBills();
   flex-direction: column;
   align-items: center;
   padding: 32rpx 32rpx 24rpx;
-  background: linear-gradient(135deg, var(--c-gold, #FFD700) 0%, var(--c-accent-400, #FFA500) 100%);
+  background: linear-gradient(135deg, var(--c-gold) 0%, var(--c-accent-400) 100%);
 }
 .hero__icon {
   width: 96rpx;
   height: 96rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-overlay-border-mid);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -330,7 +330,7 @@ loadBills();
 }
 .hero__subtitle {
   font-size: var(--fs-sm, 22rpx);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary);
 }
 
 /* ==================== 筛选 ==================== */
@@ -339,7 +339,7 @@ loadBills();
   background: var(--c-bg-container);
   padding: 16rpx 0;
   white-space: nowrap;
-  border-bottom: 1rpx solid var(--c-border-light, #E2E8F0);
+  border-bottom: 1rpx solid var(--c-border-light);
 }
 .filter-bar__inner {
   display: inline-flex;
@@ -349,25 +349,25 @@ loadBills();
 .filter-chip {
   display: inline-flex;
   padding: 12rpx 32rpx;
-  background: var(--c-bg-secondary, #F1F5F9);
-  border-radius: 999rpx;
+  background: var(--c-bg-secondary);
+  border-radius: var(--r-full, 9999rpx);
   border: 2rpx solid transparent;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
   &--hover {
     transform: scale(0.96);
   }
   &--active {
-    background: rgba(255, 215, 0, 0.18);
-    border-color: var(--c-gold, #FFD700);
+    background: var(--c-gold-bg-tint);
+    border-color: var(--c-gold);
   }
 }
 .filter-chip__text {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary);
   font-weight: 600;
 }
 .filter-chip--active .filter-chip__text {
-  color: var(--c-gold, #B8860B);
+  color: var(--c-gold);
 }
 
 /* ==================== 账单列表 ==================== */
@@ -391,78 +391,78 @@ loadBills();
 }
 .empty-state__text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
 }
 
 /* ==================== 账单卡片 ==================== */
 .bill-card {
   /* 容器背景：使用 token 替代硬编码 #FFFFFF */
   background: var(--c-bg-container);
-  border-radius: 20rpx;
+  border-radius: var(--r-lg, 20rpx);
   padding: 24rpx;
-  box-shadow: var(--s-sm, 0 2rpx 12rpx rgba(0, 0, 0, 0.04));
-  border: 1rpx solid var(--c-border-light, #E2E8F0);
+  box-shadow: var(--s-sm);
+  border: 1rpx solid var(--c-border-light);
 }
 .bill-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding-bottom: 16rpx;
-  border-bottom: 1rpx dashed var(--c-border-light, #E2E8F0);
+  border-bottom: 1rpx dashed var(--c-border-light);
   margin-bottom: 16rpx;
 }
 .bill-card__type {
   padding: 4rpx 16rpx;
   border-radius: var(--r-sm, 8rpx);
-  background: rgba(236, 72, 153, 0.1);
+  background: var(--c-romance-bg-tint);
   &--subscribe {
-    background: rgba(34, 197, 94, 0.1);
+    background: var(--c-success-bg-tint);
   }
   &--renew {
-    background: rgba(59, 130, 246, 0.1);
+    background: var(--c-info-bg-tint);
   }
   &--refund {
-    background: rgba(239, 68, 68, 0.1);
+    background: var(--c-red-bg-tint);
   }
 }
 .bill-card__type-text {
   font-size: var(--fs-sm, 22rpx);
   font-weight: 600;
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
 }
 .bill-card__type--subscribe .bill-card__type-text {
-  color: var(--c-success, #16A34A);
+  color: var(--c-success);
 }
 .bill-card__type--renew .bill-card__type-text {
-  color: var(--c-secondary-blue-500, #2563EB);
+  color: var(--c-secondary-blue-500);
 }
 .bill-card__type--refund .bill-card__type-text {
-  color: var(--c-error, #DC2626);
+  color: var(--c-error);
 }
 .bill-card__status {
   padding: 4rpx 16rpx;
   border-radius: var(--r-sm, 8rpx);
-  background: rgba(34, 197, 94, 0.08);
+  background: var(--c-success-bg-tint);
   &--success {
-    background: rgba(34, 197, 94, 0.08);
+    background: var(--c-success-bg-tint);
   }
   &--failed {
-    background: rgba(239, 68, 68, 0.08);
+    background: var(--c-red-bg-tint);
   }
   &--refunded {
-    background: rgba(245, 158, 11, 0.08);
+    background: var(--c-warning-bg-tint);
   }
 }
 .bill-card__status-text {
   font-size: var(--fs-sm, 22rpx);
   font-weight: 600;
-  color: var(--c-success, #16A34A);
+  color: var(--c-success);
 }
 .bill-card__status--failed .bill-card__status-text {
-  color: var(--c-error, #DC2626);
+  color: var(--c-error);
 }
 .bill-card__status--refunded .bill-card__status-text {
-  color: var(--c-warning, #D97706);
+  color: var(--c-warning);
 }
 .bill-card__body {
   display: flex;
@@ -477,22 +477,22 @@ loadBills();
 }
 .bill-card__label {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #64748B);
+  color: var(--c-text-tertiary);
   flex-shrink: 0;
 }
 .bill-card__value {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-primary, #1E293B);
+  color: var(--c-text-primary);
   text-align: right;
   word-break: break-all;
   &--amount {
     font-weight: 700;
-    color: var(--c-romance-500, #EC4899);
+    color: var(--c-romance-500);
     font-size: var(--fs-2xl, 32rpx);
   }
   &--strike {
     text-decoration: line-through;
-    color: var(--c-text-tertiary, #64748B);
+    color: var(--c-text-tertiary);
     font-size: var(--fs-base, 24rpx);
   }
   &--mono {

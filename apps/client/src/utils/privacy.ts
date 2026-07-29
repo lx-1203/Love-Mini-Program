@@ -166,7 +166,6 @@ export function checkPrivacySetting(): Promise<PrivacySettingResult> {
         },
         fail: (err: { errMsg?: string }) => {
           // getPrivacySetting 调用失败：保守视为未授权，避免静默同意
-          // eslint-disable-next-line no-console
           console.warn("[privacy] getPrivacySetting failed:", err?.errMsg);
           resolve({
             status: "unauthorized",

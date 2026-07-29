@@ -8,12 +8,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 敏感词实体，对应 sensitive_word 表。
  * 由管理后台维护，用于内容过滤（替换为 ***）。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "sensitive_word")
 public class SensitiveWord {
 
@@ -30,6 +34,9 @@ public class SensitiveWord {
     private String category;
 
     /** 记录创建时间（敏感词入库时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

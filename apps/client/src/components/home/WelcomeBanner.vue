@@ -1,9 +1,13 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
 defineProps<{
   greeting?: string;
   subtitle?: string;
   tags?: string[];
 }>();
+
+const { t } = useI18n();
 
 // 修复（严格模式 noUnusedLocals）：原 `const t = designTokens;` 后未使用 t，
 // designTokens 导入也仅用于该别名；模板/style 未引用 designTokens，故导入与别名一并移除。
@@ -17,8 +21,8 @@ defineProps<{
       <view class="banner-deco banner-deco--3" />
     </view>
     <view class="banner-content">
-      <text class="banner-greeting">{{ greeting || '下午好，同学' }}</text>
-      <text class="banner-sub">{{ subtitle || '今天有 3 节课，2 个空闲时段可以认识新朋友' }}</text>
+      <text class="banner-greeting">{{ greeting || t('home.bannerGreetingDefault') }}</text>
+      <text class="banner-sub">{{ subtitle || t('home.bannerSubtitleDefault') }}</text>
       <view class="banner-tags" v-if="tags && tags.length > 0">
         <view v-for="(tag, idx) in tags" :key="idx" class="banner-tag">
           <text class="banner-tag-text">{{ tag }}</text>
@@ -44,7 +48,7 @@ defineProps<{
   height: 300rpx;
   background: var(--c-gradient-page);
   z-index: -1;
-  border-radius: 0 0 40rpx 40rpx;
+  border-radius: 0 0 var(--r-xl, 40rpx) var(--r-xl, 40rpx);
 }
 .banner-bg {
   position: absolute;
@@ -57,16 +61,16 @@ defineProps<{
   position: absolute;
   width: 300rpx;
   height: 300rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-overlay-white-bg-tint-mid, rgba(255,255,255,0.1));
   top: -80rpx;
   right: -60rpx;
-  animation: breathe 4s ease-in-out infinite alternate;
+  animation: breathe var(--d-breathe-slow, 4000ms) ease-in-out infinite alternate;
 }
 
 .banner-deco {
   position: absolute;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08));
   pointer-events: none;
 }
@@ -77,7 +81,7 @@ defineProps<{
   bottom: -60rpx;
   left: -40rpx;
   background: var(--c-overlay-white-bg-tint-strong, rgba(255, 255, 255, 0.12));
-  animation: breathe 5s ease-in-out infinite alternate;
+  animation: breathe var(--d-breathe-slow, 5000ms) ease-in-out infinite alternate;
 }
 
 .banner-deco--2 {
@@ -86,7 +90,7 @@ defineProps<{
   top: 40rpx;
   right: 80rpx;
   background: var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08));
-  animation: breathe 4.5s ease-in-out infinite alternate-reverse;
+  animation: breathe var(--d-breathe-slow, 4500ms) ease-in-out infinite alternate-reverse;
 }
 
 .banner-deco--3 {
@@ -95,7 +99,7 @@ defineProps<{
   bottom: 40rpx;
   right: -30rpx;
   background: var(--c-overlay-white-bg-tint-mid, rgba(255, 255, 255, 0.1));
-  animation: breathe 3.5s ease-in-out infinite alternate;
+  animation: breathe var(--d-breathe, 3500ms) ease-in-out infinite alternate;
 }
 
 @keyframes breathe {

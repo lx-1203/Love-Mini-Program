@@ -4,8 +4,14 @@ import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.profile.ProfileService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,9 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户关注关系与在线状态控制器。
  * 提供关注、取关、查询粉丝列表、查询关注列表、判断关注状态、在线状态查询等接口。
  * 用户ID从JWT认证上下文中获取，不再从请求参数获取。
+ *
+ * <p>Task 42 / P2.19：所有 {@code @PathVariable Long} 参数均添加 {@link Positive} 校验，
+ * 拒绝 0/负数 ID，避免无效数据库查询。</p>
  */
 @RestController
 @RequestMapping("/api/v1/users")
+@Validated
 public class UserController {
 
     private final ProfileService profileService;
@@ -40,7 +50,8 @@ public class UserController {
      */
     @PostMapping("/{id}/follow")
     @Idempotent
-    public ApiResponse<FollowView> followUser(@PathVariable("id") Long id) {
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<FollowView> followUser(@PathVariable("id") @Positive Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(profileService.followUser(userId, id));
     }
@@ -54,7 +65,8 @@ public class UserController {
      */
     @DeleteMapping("/{id}/follow")
     @Idempotent
-    public ApiResponse<FollowView> unfollowUser(@PathVariable("id") Long id) {
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<FollowView> unfollowUser(@PathVariable("id") @Positive Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(profileService.unfollowUser(userId, id));
     }
@@ -67,7 +79,7 @@ public class UserController {
      * @return 粉丝用户列表
      */
     @GetMapping("/{id}/followers")
-    public ApiResponse<List<FollowUserView>> getFollowers(@PathVariable("id") Long id) {
+    public ApiResponse<List<FollowUserView>> getFollowers(@PathVariable("id") @Positive Long id) {
         return ApiResponse.ok(profileService.getFollowers(id));
     }
 
@@ -79,7 +91,7 @@ public class UserController {
      * @return 关注用户列表
      */
     @GetMapping("/{id}/following")
-    public ApiResponse<List<FollowUserView>> getFollowing(@PathVariable("id") Long id) {
+    public ApiResponse<List<FollowUserView>> getFollowing(@PathVariable("id") @Positive Long id) {
         return ApiResponse.ok(profileService.getFollowing(id));
     }
 
@@ -91,7 +103,7 @@ public class UserController {
      * @return 是否已关注
      */
     @GetMapping("/{id}/is-following")
-    public ApiResponse<IsFollowingView> isFollowing(@PathVariable("id") Long id) {
+    public ApiResponse<IsFollowingView> isFollowing(@PathVariable("id") @Positive Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         boolean following = profileService.isFollowing(userId, id);
         return ApiResponse.ok(new IsFollowingView(following));
@@ -107,7 +119,7 @@ public class UserController {
      * @return 在线状态视图
      */
     @GetMapping("/{userId}/online-status")
-    public ApiResponse<OnlineStatusView> getOnlineStatus(@PathVariable("userId") Long userId) {
+    public ApiResponse<OnlineStatusView> getOnlineStatus(@PathVariable("userId") @Positive Long userId) {
         return ApiResponse.ok(onlineStatusService.getOnlineStatus(userId));
     }
 
@@ -119,8 +131,9 @@ public class UserController {
      * @return 用户 ID 到在线状态视图的映射
      */
     @PostMapping("/online-status/batch")
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<Map<Long, OnlineStatusView>> batchGetOnlineStatus(
-            @RequestBody BatchOnlineStatusRequest request) {
+            @Valid @RequestBody BatchOnlineStatusRequest request) {
         return ApiResponse.ok(onlineStatusService.batchGetOnlineStatus(request.userIds()));
     }
 }
@@ -134,5 +147,9 @@ record IsFollowingView(boolean isFollowing) {
 /**
  * 批量在线状态查询请求体。
  */
-record BatchOnlineStatusRequest(List<Long> userIds) {
+record BatchOnlineStatusRequest(
+        @NotEmpty(message = "userIds 列表不能为空")
+        @Size(max = 500, message = "userIds 列表不能超过 500 条")
+        List<@Positive Long> userIds
+) {
 }

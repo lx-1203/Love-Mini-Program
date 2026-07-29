@@ -9,6 +9,9 @@ import com.campuslove.api.entity.CampusCertification;
 import com.campuslove.api.repository.CampusCertificationRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
@@ -76,7 +79,7 @@ public class AdminCertificationController {
     @Auditable(value = AuditOperation.REVIEW_CERTIFICATION, targetType = "CERTIFICATION")
     @PostMapping("/{id}/review")
     public ResponseEntity<CampusCertificationView> reviewCertification(
-            @PathVariable("id") Long certId,
+            @PathVariable("id") @Positive Long certId,
             @Valid @RequestBody ReviewCertificationRequest req) {
         Long reviewerId = SecurityUtils.getCurrentUserId();
 
@@ -113,6 +116,8 @@ public class AdminCertificationController {
  * 审核认证请求体。
  */
 record ReviewCertificationRequest(
-    @NotBlank String status,
-    String comment
+    @NotBlank
+    @Pattern(regexp = "APPROVED|REJECTED|PENDING", message = "status 必须为 APPROVED/REJECTED/PENDING")
+    String status,
+    @Size(max = 500) String comment
 ) {}

@@ -6,7 +6,6 @@ import com.campuslove.api.repository.PromoCodeRepository;
 import com.campuslove.api.repository.PromoCodeUsageRepository;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -83,7 +82,26 @@ public class PromoCodeService {
 
     /**
      * 兑换优惠码（消耗使用次数）。
-     * <p>校验优惠码有效性后，记录使用记录并更新使用次数。</p>
+     *
+     * <p>Task 12.4（REAUDIT-REPORT-100+ 编号 41）：并发安全改造。</p>
+     *
+     * <p>处理流程：</p>
+     * <ol>
+     *   <li>悲观锁查询优惠码：SELECT ... FOR UPDATE，锁住优惠码行防止并发读取到过期状态</li>
+     *   <li>校验优惠码状态、有效期、剩余次数、单用户使用次数</li>
+     *   <li>计算折扣金额</li>
+     *   <li>原子扣减：UPDATE ... WHERE remaining_uses > 0，
+     *       影响行数 0 则失败（优惠码已用完）</li>
+     *   <li>累加 used_count（统计展示用）</li>
+     *   <li>保存使用记录（应用层 countByPromoCodeIdAndUserId 校验防重放）</li>
+     * </ol>
+     *
+     * <p>并发安全：</p>
+     * <ul>
+     *   <li>悲观锁保证同一优惠码同时只有一个事务在处理</li>
+     *   <li>原子扣减作为兜底，即使悲观锁失效也能保证不超发</li>
+     *   <li>应用层 countByPromoCodeIdAndUserId 校验防止单用户超过 max_uses_per_user</li>
+     * </ul>
      *
      * @param code        优惠码字符串
      * @param userId      当前用户 ID
@@ -104,16 +122,31 @@ public class PromoCodeService {
         }
 
         String normalizedCode = code.trim().toUpperCase();
-        PromoCode promo = promoCodeRepository.findByCode(normalizedCode)
+
+        // 1. 悲观锁查询优惠码（SELECT ... FOR UPDATE），锁住优惠码行防止并发读取到过期状态
+        PromoCode promo = promoCodeRepository.findByCodeForUpdate(normalizedCode)
                 .orElseThrow(() -> new IllegalArgumentException("优惠码不存在"));
 
-        // 校验状态、有效期、使用次数
+        // 2. 校验状态、有效期、剩余次数、单用户使用次数
         validatePromoCode(promo, userId);
 
+        // 3. 计算折扣金额
         int discountAmount = calculateDiscount(promo, baseAmount);
 
         try {
-            // 记录使用记录
+            // 4. 原子扣减：UPDATE ... WHERE remaining_uses > 0
+            int affected = promoCodeRepository.decrementRemaining(normalizedCode);
+            if (affected == 0) {
+                // 影响行数 0：优惠码已被并发用完
+                log.warn("优惠码原子扣减失败，可能被并发用完：code={}, userId={}",
+                        normalizedCode, userId);
+                throw new IllegalArgumentException("优惠码已用完");
+            }
+
+            // 5. 累加 used_count（统计展示用，与 decrementRemaining 在同一事务内）
+            promoCodeRepository.incrementUsedCount(promo.getId());
+
+            // 6. 保存使用记录（应用层 countByPromoCodeIdAndUserId 校验防重放）
             PromoCodeUsage usage = new PromoCodeUsage();
             usage.setPromoCodeId(promo.getId());
             usage.setCode(promo.getCode());
@@ -122,13 +155,9 @@ public class PromoCodeService {
             usage.setUsedAt(LocalDateTime.now());
             promoCodeUsageRepository.save(usage);
 
-            // 更新使用次数
-            promo.setUsedCount(promo.getUsedCount() + 1);
-            promo.setUpdatedAt(LocalDateTime.now());
-            promoCodeRepository.save(promo);
-
-            log.info("优惠码兑换成功：code={}, userId={}, discount={}",
-                    normalizedCode, userId, discountAmount);
+            log.info("优惠码兑换成功：code={}, userId={}, discount={}, remainingUses={}",
+                    normalizedCode, userId, discountAmount,
+                    promo.getRemainingUses() - 1);
             return new RedeemResultView(
                     promo.getId(),
                     promo.getCode(),
@@ -157,7 +186,12 @@ public class PromoCodeService {
     }
 
     /**
-     * 校验优惠码状态、有效期、使用次数、是否已使用。
+     * 校验优惠码状态、有效期、剩余次数、单用户使用次数。
+     *
+     * <p>Task 12.4：原校验仅基于 used_count vs max_uses，存在并发竞态。
+     * 现引入 remaining_uses（原子扣减用）和 max_uses_per_user（单用户上限）双重校验：
+     * remaining_uses > 0 由原子扣减 SQL 兜底，此处仅做快速失败提示；
+     * 单用户使用次数通过 countByPromoCodeIdAndUserId 查询，超过 maxUsesPerUser 则拒绝。</p>
      *
      * @param promo  优惠码实体
      * @param userId 当前用户 ID
@@ -175,18 +209,19 @@ public class PromoCodeService {
             throw new IllegalArgumentException("优惠码已过期");
         }
 
-        // 检查使用次数限制（maxUses = 0 表示不限）
-        if (promo.getMaxUses() != null && promo.getMaxUses() > 0
-                && promo.getUsedCount() >= promo.getMaxUses()) {
+        // 检查剩余次数（remaining_uses = 0 表示已用完；max_uses = 0 时不限次数，
+        // remaining_uses 在 Flyway 迁移时被设为 2147483647，不会触发此分支）
+        if (promo.getRemainingUses() != null && promo.getRemainingUses() <= 0) {
             throw new IllegalArgumentException("优惠码使用次数已达上限");
         }
 
-        // 检查用户是否已使用过该优惠码
-        if (userId != null) {
-            Optional<PromoCodeUsage> existing = promoCodeUsageRepository
-                    .findByPromoCodeIdAndUserId(promo.getId(), userId);
-            if (existing.isPresent()) {
-                throw new IllegalArgumentException("您已使用过该优惠码");
+        // 检查单用户使用次数限制（maxUsesPerUser 默认 1）
+        if (userId != null && promo.getMaxUsesPerUser() != null && promo.getMaxUsesPerUser() > 0) {
+            long userUsedCount = promoCodeUsageRepository
+                    .countByPromoCodeIdAndUserId(promo.getId(), userId);
+            if (userUsedCount >= promo.getMaxUsesPerUser()) {
+                throw new IllegalArgumentException(
+                        "您已达到该优惠码的使用次数上限（" + promo.getMaxUsesPerUser() + " 次）");
             }
         }
     }

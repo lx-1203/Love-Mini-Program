@@ -8,16 +8,20 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Version;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 活动实体，对应 activities 表。
  * 记录活动信息，包括标题、地点、时间、描述、报名人数等。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "activities")
 public class Activity {
 
@@ -67,10 +71,16 @@ public class Activity {
     private LocalDate activityDate;
 
     /** 记录创建时间（活动发布时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（活动信息编辑时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.campuslove.api.entity.CampusCertification;
 import com.campuslove.api.entity.UserBasicProfile;
+import com.campuslove.api.mock.MockCampusCertificationService;
 import com.campuslove.api.repository.CampusCertificationRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
 import java.time.LocalDateTime;

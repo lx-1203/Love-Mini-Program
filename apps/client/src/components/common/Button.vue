@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref } from 'vue';
 import { lightHaptic } from '../../utils/haptic';
 import Ripple from './Ripple.vue';
@@ -73,18 +73,24 @@ const btnStyle = computed(() => ({
   fontSize: fontSizeMap[props.size],
 }));
 
+/**
+ * Ripple 颜色映射：通过 CSS 变量引用 design token，跨主题自动适配
+ * - 深色按钮（primary/wechat/danger/success/romance）使用浅色涟漪
+ * - 品牌色按钮（secondary/outline）使用品牌色涟漪
+ * - 浅色按钮（ghost/text）使用淡品牌色涟漪
+ */
 const rippleColorMap: Record<string, string> = {
-  primary: 'rgba(255,255,255,0.3)',
-  secondary: 'rgba(63,207,142,0.15)',
-  outline: 'rgba(63,207,142,0.15)',
-  ghost: 'rgba(63,207,142,0.1)',
-  text: 'rgba(63,207,142,0.1)',
-  wechat: 'rgba(255,255,255,0.3)',
-  danger: 'rgba(255,255,255,0.3)',
-  success: 'rgba(255,255,255,0.3)',
-  romance: 'rgba(255,255,255,0.3)',
+  primary: 'var(--c-ripple-light)',
+  secondary: 'var(--c-ripple-brand)',
+  outline: 'var(--c-ripple-brand)',
+  ghost: 'var(--c-ripple-brand-soft)',
+  text: 'var(--c-ripple-brand-soft)',
+  wechat: 'var(--c-ripple-light)',
+  danger: 'var(--c-ripple-light)',
+  success: 'var(--c-ripple-light)',
+  romance: 'var(--c-ripple-light)',
 };
-const rippleColor = computed(() => rippleColorMap[props.variant] || 'rgba(255,255,255,0.3)');
+const rippleColor = computed(() => rippleColorMap[props.variant] || 'var(--c-ripple-light)');
 
 const showRipple = computed(() => {
   if (props.variant === 'text') return false;
@@ -264,7 +270,7 @@ function handleTap(e: TapEventLike) {
   /* #endif */
   /* #ifdef MP-WEIXIN */
   /* mp-weixin 不支持 filter: brightness，用背景色变深兜底 */
-  background: var(--c-error-dark, #c43a42);
+  background: var(--c-error-dark);
   /* #endif */
 }
 
@@ -292,7 +298,7 @@ function handleTap(e: TapEventLike) {
   border-top-color: var(--c-text-inverse);
   opacity: 1;
   border-radius: var(--r-full);
-  animation: spin 0.6s linear infinite;
+  animation: spin var(--d-slowest, 600ms) linear infinite;
 }
 .btn--outline .btn-spinner,
 .btn--secondary .btn-spinner,

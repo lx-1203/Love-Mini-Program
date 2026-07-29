@@ -1,15 +1,18 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 每日一问页面
  * 展示今日问题，支持回答提交和查看其他人的回答
  */
 import { ref, onMounted } from "vue";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useDailyQuestionStore, formatAnswerTime } from "../../stores/daily-question";
 import { useCheckInStore } from "../../stores/checkin";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+import EmptyState from "../../components/common/EmptyState.vue";
 
+const { t } = useI18n();
 const dailyQuestionStore = useDailyQuestionStore();
 const checkInStore = useCheckInStore();
 const { todayQuestion, answers, hasAnswered, loading } = storeToRefs(dailyQuestionStore);
@@ -35,10 +38,10 @@ async function submitAnswer() {
       isAnonymous.value
     );
     answerContent.value = "";
-    uni.showToast({ title: "回答成功", icon: "success" });
+    uni.showToast({ title: t("dailyQuestion.answerSuccess"), icon: "success" });
   } catch (_e) {
     uni.showToast({
-      title: dailyQuestionStore.errorMessage || "回答失败",
+      title: dailyQuestionStore.errorMessage || t("dailyQuestion.answerFailed"),
       icon: "none",
     });
   } finally {
@@ -66,9 +69,9 @@ onMounted(async () => {
     <!-- 顶部导航栏 -->
     <view class="dq-header">
       <view class="dq-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">返回</text>
+        <text class="back-icon">{{ $t("dailyQuestion.back") }}</text>
       </view>
-      <text class="dq-header__title">每日一问</text>
+      <text class="dq-header__title">{{ $t("dailyQuestion.navTitle") }}</text>
       <view class="dq-header__spacer" />
     </view>
 
@@ -76,22 +79,22 @@ onMounted(async () => {
       <!-- 未签到提示 -->
       <view v-if="!checkInStore.checkedIn" class="lock-card">
         <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="lock-card__icon" mode="aspectFit" />
-        <text class="lock-card__title">签到后解锁</text>
-        <text class="lock-card__desc">完成今日签到即可参与每日一问</text>
+        <text class="lock-card__title">{{ $t("dailyQuestion.lockTitle") }}</text>
+        <text class="lock-card__desc">{{ $t("dailyQuestion.lockDesc") }}</text>
       </view>
 
       <!-- 已签到：显示问题内容 -->
       <template v-else>
         <!-- 加载状态 -->
         <view v-if="loading && !todayQuestion" class="dq-state">
-          <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
-          <text class="dq-state__text">正在加载...</text>
+          <view class="loading-spinner" role="status" aria-live="polite" :aria-label="$t('dailyQuestion.loadingAria')" />
+          <text class="dq-state__text">{{ $t("dailyQuestion.loadingTextProgress") }}</text>
         </view>
 
         <!-- 问题卡片 -->
         <view v-if="todayQuestion" class="question-card card-base">
           <view class="question-card__badge">
-            <text class="question-card__badge-text">今日话题</text>
+            <text class="question-card__badge-text">{{ $t("dailyQuestion.todayTopic") }}</text>
           </view>
           <text class="question-card__text">{{ todayQuestion.question }}</text>
           <text class="question-card__date">{{ todayQuestion.date }}</text>
@@ -99,20 +102,20 @@ onMounted(async () => {
 
         <!-- 回答区域：未回答时显示输入框 -->
         <view v-if="!hasAnswered && todayQuestion" class="answer-section">
-          <text class="answer-section__title">写下你的回答</text>
+          <text class="answer-section__title">{{ $t("dailyQuestion.answerSectionTitle") }}</text>
           <textarea
             v-model="answerContent"
             class="answer-input"
-            placeholder="分享你的想法..."
+            :placeholder="$t('dailyQuestion.inputPlaceholder')"
             maxlength="500"
-            :show-confirm-bar="false" aria-label="分享你的想法..."
+            :show-confirm-bar="false" :aria-label="$t('dailyQuestion.inputPlaceholder')"
           />
           <view class="answer-actions">
             <view class="anonymous-toggle press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="isAnonymous = !isAnonymous">
               <view class="anonymous-toggle__check" :class="{ 'anonymous-toggle__check--active': isAnonymous }">
                 <text v-if="isAnonymous" class="check-mark">✓</text>
               </view>
-              <text class="anonymous-toggle__label">匿名回答</text>
+              <text class="anonymous-toggle__label">{{ $t("dailyQuestion.anonymousLabel") }}</text>
             </view>
             <view
               class="submit-btn press-feedback"
@@ -121,7 +124,7 @@ onMounted(async () => {
               hover-stay-time="120"
               @tap="submitAnswer"
             >
-              <text class="submit-btn__text">{{ isSubmitting ? "提交中..." : "提交回答" }}</text>
+              <text class="submit-btn__text">{{ isSubmitting ? $t("dailyQuestion.submittingBtn") : $t("dailyQuestion.submitBtn") }}</text>
             </view>
           </view>
         </view>
@@ -129,19 +132,18 @@ onMounted(async () => {
         <!-- 已回答提示 -->
         <view v-if="hasAnswered" class="answered-hint">
           <image class="answered-hint__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE" mode="aspectFit" alt="" />
-          <text class="answered-hint__text">你已回答今日问题</text>
+          <text class="answered-hint__text">{{ $t("dailyQuestion.answeredHint") }}</text>
         </view>
 
         <!-- 回答列表 -->
         <view v-if="answers.length > 0" class="answers-list" role="list">
           <view class="answers-list__header">
-            <text class="answers-list__title">大家的回答</text>
+            <text class="answers-list__title">{{ $t("dailyQuestion.answersListTitle") }}</text>
             <text class="answers-list__count">{{ answers.length }}</text>
           </view>
 
           <view
-            v-for="answer in answers"
-            :key="answer.id"
+            v-for="answer in answers" :key="answer.id"
             class="answer-card list-item"
           >
             <view class="answer-card__header">
@@ -151,7 +153,7 @@ onMounted(async () => {
                   class="answer-card__avatar-img"
                   :src="answer.authorAvatar"
                   mode="aspectFill"
-        lazy-load alt=""
+                  lazy-load alt=""
                 />
                 <text v-else class="answer-card__avatar-char">
                   {{ answer.isAnonymous ? "?" : answer.authorName[0] }}
@@ -159,7 +161,7 @@ onMounted(async () => {
               </view>
               <view class="answer-card__info">
                 <text class="answer-card__name">
-                  {{ answer.isAnonymous ? "匿名用户" : answer.authorName }}
+                  {{ answer.isAnonymous ? $t("dailyQuestion.anonymousUser") : answer.authorName }}
                 </text>
                 <text class="answer-card__time">{{ formatAnswerTime(answer.createdAt) }}</text>
               </view>
@@ -169,9 +171,12 @@ onMounted(async () => {
         </view>
 
         <!-- 空状态 -->
-        <view v-else-if="!loading && hasAnswered" class="answers-empty">
-          <text class="answers-empty__text">还没有其他人回答，快来看看吧</text>
-        </view>
+        <EmptyState
+          v-else-if="!loading && hasAnswered"
+          type="no-data"
+          :title="$t('dailyQuestion.emptyTitle')"
+          :description="$t('dailyQuestion.emptyDesc')"
+        />
       </template>
 
       <!-- 底部留白 -->
@@ -248,8 +253,8 @@ onMounted(async () => {
   height: 44rpx;
   border: 4rpx solid var(--c-border-light);
   border-top-color: var(--c-brand);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {
@@ -316,7 +321,7 @@ onMounted(async () => {
   width: 160rpx;
   height: 160rpx;
   background: radial-gradient(circle, var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.1))) 0%, transparent 70%);
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
 }
 
 .question-card__badge {
@@ -535,7 +540,7 @@ onMounted(async () => {
 .answer-card__avatar {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
   background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-100));
   display: flex;

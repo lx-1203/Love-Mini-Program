@@ -62,7 +62,7 @@ export async function acceptExchange(
     () =>
       chatTransport.respondToContactExchange(this.activeSession!.id, {
         actor,
-        decision: "accepted",
+        decision: "accept",
       })
   );
 }
@@ -101,7 +101,7 @@ export async function rejectExchange(
     () =>
       chatTransport.respondToContactExchange(this.activeSession!.id, {
         actor,
-        decision: "rejected",
+        decision: "reject",
       })
   );
 }

@@ -14,8 +14,7 @@ import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -102,6 +102,7 @@ public class VillageController {
   @PostMapping
   @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<PostDetailView> createPost(
       @Valid @RequestBody CreatePostRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
@@ -119,7 +120,7 @@ public class VillageController {
    * 获取帖子详情。
    */
   @GetMapping("/{id}")
-  public ApiResponse<PostDetailView> getPostDetail(@PathVariable("id") Long id) {
+  public ApiResponse<PostDetailView> getPostDetail(@PathVariable("id") @Positive Long id) {
     return ApiResponse.ok(villageService.getPostDetail(id));
   }
 
@@ -134,7 +135,8 @@ public class VillageController {
   @PostMapping("/{id}/like")
   @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
   @Idempotent
-  public ApiResponse<PostLikeResponse> likePost(@PathVariable("id") Long id) {
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<PostLikeResponse> likePost(@PathVariable("id") @Positive Long id) {
     Long userId = SecurityUtils.getCurrentUserId();
     PostLikeResponse response = villageService.likePost(userId, id);
     // 监控：记录帖子点赞事件（仅在实际触发点赞时记录，取消点赞不记录）
@@ -155,7 +157,7 @@ public class VillageController {
    */
   @GetMapping("/{id}/comments")
   public CommentListResponse getComments(
-      @PathVariable("id") Long id,
+      @PathVariable("id") @Positive Long id,
       @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
       @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
     return villageService.getComments(id, page, pageSize);
@@ -170,8 +172,9 @@ public class VillageController {
   @PostMapping("/{id}/comments")
   @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<CommentItemView> createComment(
-      @PathVariable("id") Long id,
+      @PathVariable("id") @Positive Long id,
       @Valid @RequestBody CreateCommentRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
     CommentItemView view = villageService.commentPost(userId, id, request.content());
@@ -195,8 +198,9 @@ public class VillageController {
   @PostMapping("/{id}/share")
   @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<ShareView> sharePost(
-      @PathVariable("id") Long id,
+      @PathVariable("id") @Positive Long id,
       @Valid @RequestBody SharePostRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(villageService.sharePost(userId, id, request.comment()));
@@ -233,7 +237,7 @@ public class VillageController {
    */
   @GetMapping("/{id}/similar-authors")
   public ResponseEntity<SimilarAuthorsResponse> getSimilarAuthors(
-      @PathVariable("id") Long postId) {
+      @PathVariable("id") @Positive Long postId) {
     Long userId = SecurityUtils.getCurrentUserId();
     try {
       SimilarAuthorsResponse response = villageService.getSimilarAuthors(postId, userId);
@@ -294,129 +298,8 @@ public class VillageController {
 }
 
 // ---------- 视图 / 请求模型 ----------
-
-/**
- * 帖子列表响应。
- */
-record PostListResponse(List<PostSummaryView> items, int total, int page, int pageSize) {
-}
-
-/**
- * 帖子详情视图。
- */
-record PostDetailView(
-    Long id,
-    String title,
-    String content,
-    PostAuthorView author,
-    String category,
-    List<String> tags,
-    List<String> images,
-    int likeCount,
-    int commentCount,
-    int shareCount,
-    String createdAt,
-    String updatedAt,
-    boolean isLiked,
-    boolean isAuthor,
-    boolean isAlumni
-) {
-}
-
-/**
- * 发布帖子请求体。
- */
-record CreatePostRequest(
-    @NotBlank @Size(max = 200) String title,
-    @NotBlank @Size(max = 5000) String content,
-    @NotBlank String category,
-    List<@Size(max = 20) String> tags,
-    List<String> images
-) {
-}
-
-/**
- * 点赞响应。
- */
-record PostLikeResponse(boolean success, boolean liked, int likeCount) {
-}
-
-/**
- * 评论列表响应。
- */
-record CommentListResponse(List<CommentItemView> items, int total, int page, int pageSize) {
-}
-
-/**
- * 评论项视图。
- */
-record CommentItemView(
-    Long id,
-    Long postId,
-    Long parentId,
-    CommentAuthorView author,
-    String content,
-    int likeCount,
-    String createdAt,
-    boolean isAuthor,
-    String replyTo
-) {
-}
-
-/**
- * 评论作者视图。
- */
-record CommentAuthorView(Long userId, String nickname, String avatarUrl) {
-}
-
-/**
- * 发表评论请求体。
- */
-record CreateCommentRequest(
-    @NotBlank @Size(max = 1000) String content,
-    Long parentId
-) {
-}
-
-/**
- * 转发帖子请求体。
- */
-record SharePostRequest(
-    @Size(max = 500) String comment
-) {
-}
-
-/**
- * 转发响应视图。
- */
-record ShareView(Long id, Long postId, int shareCount) {
-}
-
-/**
- * 帖子分类视图。
- */
-record PostCategoryView(
-    Long id,
-    String name,
-    String code,
-    String icon,
-    int sortOrder
-) {}
-
-/**
- * 同校动态流视图。
- *
- * @param campusName 校区名称
- * @param posts      同校最新帖子列表
- * @param activities 同校即将开始的活动列表
- * @param topics     同校兴趣圈最新话题列表
- */
-record CampusFeedView(
-    String campusName,
-    List<PostSummaryView> posts,
-    List<CampusActivityView> activities,
-    List<CampusTopicView> topics
-) {}
+// 注意：public record 已迁移到独立文件，便于跨包引用（如 mock 包）。
+// 下方仅保留 VillageController 内部使用的 package-private 视图。
 
 /**
  * 同校动态流中的活动简要视图。
@@ -441,37 +324,4 @@ record CampusTopicView(
     String authorName,
     int replyCount,
     String createdAt
-) {}
-
-// ---- 相似作者推荐 ----
-
-/**
- * 相似作者推荐响应。
- */
-record SimilarAuthorsResponse(
-    /** 推荐的相似作者列表 */
-    List<SimilarAuthorView> authors
-) {}
-
-/**
- * 相似作者视图。
- * 包含作者基础信息、同校关系、共同兴趣及是否已关注等字段。
- */
-record SimilarAuthorView(
-    /** 用户 ID */
-    Long userId,
-    /** 昵称 */
-    String nickname,
-    /** 头像 URL */
-    String avatarUrl,
-    /** 校区名称 */
-    String campusName,
-    /** 个性签名/一句话介绍 */
-    String headline,
-    /** 是否同校 */
-    boolean isAlumni,
-    /** 共同的兴趣标签 */
-    List<String> commonInterests,
-    /** 当前用户是否已关注该推荐作者 */
-    boolean isFollowed
 ) {}

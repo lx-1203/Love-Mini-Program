@@ -17,6 +17,7 @@
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import {
   listAdminFeedback,
+  replyFeedback,
   type FeedbackRecordView,
   type FeedbackTicketType,
   type SubmissionStatus,
@@ -79,13 +80,15 @@ function handleView(feedback: FeedbackRecordView) {
 // Task 3.7.3：处理确认弹窗状态
 const processVisible = ref(false);
 const processTarget = ref<FeedbackRecordView | null>(null);
+/** Task 13：回复接口调用中状态，传给 ConfirmDialog 的 confirming prop 禁用按钮 */
+const processLoading = ref(false);
 
 /**
  * 标记反馈为已处理。
  *
- * 当前后端 listAdminFeedback 不暴露写接口（POST convert 仅用于活动提案），
- * 因此这里仅在前端展示层更新状态为 REVIEWED，待后端补齐 PUT /admin/feedback/{id} 后切换为真实调用。
- * 错误分支使用具体类型捕获，避免空 catch。
+ * Task 13：通过 replyFeedback() 调用 PUT /api/v1/admin/feedback/{id}/reply，
+ * 将反馈状态推进至 REVIEWED。后端如未实现该端点会返回 404/405，
+ * 此时弹出错误 toast，避免静默失败误导运营人员。
  *
  * Task 3.7.3：替换原生 confirm() 为 ConfirmDialog 组件。
  */
@@ -94,14 +97,25 @@ function handleProcess(feedback: FeedbackRecordView) {
   processVisible.value = true;
 }
 
-/** Task 3.7.3：ConfirmDialog 确认回调，执行标记已处理操作 */
-function handleConfirmProcess() {
+/** Task 13：ConfirmDialog 确认回调，调用真实回复接口 */
+async function handleConfirmProcess() {
   const target = processTarget.value;
   if (!target) return;
-  target.status = "REVIEWED";
-  processVisible.value = false;
-  processTarget.value = null;
-  showToast(t("feedback.processedToast"));
+  processLoading.value = true;
+  try {
+    const updated = await replyFeedback(target.id, t("feedback.defaultReplyContent"));
+    // 用后端返回的记录替换列表中的对应项，保证状态/回复摘要与服务端一致
+    const idx = feedbacks.value.findIndex((f) => f.id === updated.id);
+    if (idx >= 0) feedbacks.value[idx] = updated;
+    processVisible.value = false;
+    processTarget.value = null;
+    showToast(t("feedback.processedToast"));
+  } catch (err) {
+    const msg = err instanceof ApiError ? err.message : t("feedback.processFailed");
+    showToast(msg);
+  } finally {
+    processLoading.value = false;
+  }
 }
 
 /** Task 3.7.3：ConfirmDialog 取消回调 */
@@ -265,7 +279,7 @@ onBeforeUnmount(() => {
       v-model:visible="processVisible"
       :title="t('feedback.processTitle')"
       :message="processTarget ? t('feedback.processConfirmMessage', { title: processTarget.title }) : ''"
-      :confirming="false"
+      :confirming="processLoading"
       @confirm="handleConfirmProcess"
       @cancel="handleCancelProcess"
     />
@@ -273,33 +287,35 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+@import "../styles/admin-common.css";
+
 .feedback-page {
   max-width: 1200px;
 }
 
 .page-header {
-  margin-bottom: 32px;
+  margin-bottom: var(--admin-space-xxxl);
 }
 
 .page-title {
   display: block;
-  font-size: 28px;
+  font-size: var(--admin-font-display);
   font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
+  color: var(--admin-color-text-primary);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .page-subtitle {
   display: block;
-  font-size: 14px;
-  color: #999;
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-quaternary);
 }
 
 .table-container {
-  background: white;
-  border-radius: 12px;
+  background: var(--admin-color-bg-container);
+  border-radius: var(--admin-radius-xl);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--admin-shadow-sm);
 }
 
 .data-table {
@@ -309,140 +325,140 @@ onBeforeUnmount(() => {
 
 .data-table th,
 .data-table td {
-  padding: 16px;
+  padding: var(--admin-space-lg);
   text-align: left;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--admin-color-border-light);
 }
 
 .data-table th {
-  background: #f9f9f9;
-  font-size: 13px;
+  background: var(--admin-color-bg-subtle);
+  font-size: var(--admin-font-md);
   font-weight: 600;
-  color: #666;
+  color: var(--admin-color-text-tertiary);
   text-transform: uppercase;
 }
 
 .type-badge {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border-radius: var(--admin-space-md);
+  font-size: var(--admin-font-sm);
   font-weight: 500;
 }
 
 .type-FEEDBACK {
-  background: #fff7e6;
-  color: #fa8c16;
+  background: var(--admin-color-warning-soft);
+  color: var(--admin-color-warning);
 }
 
 .type-SUGGESTION {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
 }
 
 .type-ACTIVITY_PROPOSAL {
-  background: #f6ffed;
-  color: #52c41a;
+  background: var(--admin-color-success-soft);
+  color: var(--admin-color-success);
 }
 
 .status-badge {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border-radius: var(--admin-space-md);
+  font-size: var(--admin-font-sm);
   font-weight: 500;
 }
 
 .status-processing {
-  background: #fff7e6;
-  color: #fa8c16;
+  background: var(--admin-color-warning-soft);
+  color: var(--admin-color-warning);
 }
 
 .status-reviewed {
-  background: #f6ffed;
-  color: #52c41a;
+  background: var(--admin-color-success-soft);
+  color: var(--admin-color-success);
 }
 
 .status-submitted {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
 }
 
 .empty-cell {
   text-align: center;
-  color: #999;
-  padding: 40px 16px;
+  color: var(--admin-color-text-quaternary);
+  padding: var(--admin-space-section) var(--admin-space-lg);
 }
 
 .error-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  background: #fff1f0;
-  color: #f5222d;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
+  gap: var(--admin-space-md);
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border-radius: var(--admin-radius-lg);
+  margin-bottom: var(--admin-space-lg);
+  font-size: var(--admin-font-lg);
 }
 
 .error-banner__retry {
-  padding: 6px 14px;
-  background: #f5222d;
-  color: #fff;
+  padding: var(--admin-space-xxs) var(--admin-space-md-lg);
+  background: var(--admin-color-danger);
+  color: var(--admin-color-bg-container);
   border: none;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-md);
   cursor: pointer;
 }
 
 .action-cell {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-sm);
 }
 
 .action-button {
-  padding: 6px 12px;
+  padding: var(--admin-space-xxs) var(--admin-space-md);
   border: none;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-sm);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .action-button.view {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
 }
 
 .action-button.view:hover {
-  background: #bae7ff;
+  background: var(--admin-color-info-softer);
 }
 
 .action-button.process {
-  background: #f6ffed;
-  color: #52c41a;
+  background: var(--admin-color-success-soft);
+  color: var(--admin-color-success);
 }
 
 .action-button.process:hover {
-  background: #d9f7be;
+  background: var(--admin-color-success-softer);
 }
 
 .toast-message {
-  padding: 10px 16px;
-  background: #f6ffed;
-  border-left: 3px solid #52c41a;
-  border-radius: 4px;
-  color: #52c41a;
-  font-size: 13px;
-  margin-bottom: 16px;
+  padding: var(--admin-space-md-sm) var(--admin-space-lg);
+  background: var(--admin-color-success-soft);
+  border-left: 3px solid var(--admin-color-success);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-color-success);
+  font-size: var(--admin-font-md);
+  margin-bottom: var(--admin-space-lg);
 }
 
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--admin-color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -450,59 +466,59 @@ onBeforeUnmount(() => {
 }
 
 .modal-content {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
+  background: var(--admin-color-bg-container);
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-xxl);
   min-width: 420px;
   max-width: 90vw;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--admin-shadow-lg);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: var(--admin-space-xl);
+  padding-bottom: var(--admin-space-md);
+  border-bottom: 1px solid var(--admin-color-border-light);
 }
 
 .modal-title {
-  font-size: 18px;
+  font-size: var(--admin-font-xxl);
   font-weight: 600;
-  color: #333;
+  color: var(--admin-color-text-primary);
 }
 
 .modal-close {
-  padding: 6px 14px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  background: white;
-  color: #666;
-  font-size: 13px;
+  padding: var(--admin-space-xxs) var(--admin-space-md-lg);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-color-bg-container);
+  color: var(--admin-color-text-tertiary);
+  font-size: var(--admin-font-md);
   cursor: pointer;
 }
 
 .modal-close:hover {
-  background: #f5f5f5;
+  background: var(--admin-color-bg-hover);
 }
 
 .modal-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--admin-space-md);
 }
 
 .detail-row {
   display: flex;
-  gap: 8px;
-  font-size: 14px;
-  color: #333;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-primary);
 }
 
 .detail-label {
   font-weight: 600;
-  color: #666;
+  color: var(--admin-color-text-tertiary);
   min-width: 80px;
 }
 </style>

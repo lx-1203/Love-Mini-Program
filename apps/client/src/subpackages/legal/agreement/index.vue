@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 用户协议页面（微信小程序提审合规必备）
  *
@@ -20,9 +20,11 @@
 import { onMounted, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
-import { getLegalText, LegalTextType } from "../../../config/legal-texts";
-import type { LegalTextView } from "../../../config/legal-texts";
+// 修复 no-duplicate-imports：合并 ../../../config/legal-texts 的重复 import
+import { getLegalText, LegalTextType, type LegalTextView } from "../../../config/legal-texts";
 import { lightHaptic } from "../../../utils/haptic";
+// Task 33：路由路径常量化，避免硬编码字符串
+import { ROUTES } from "../../../constants/routes";
 
 /** 加载状态枚举（避免使用魔法字符串） */
 type LoadState = "loading" | "success" | "error" | "empty";
@@ -120,13 +122,13 @@ function handleAcknowledge(): void {
   uni.navigateBack({
     fail: () => {
       // 页面栈为空时 fallback 到首页
-      uni.switchTab({ url: "/pages/discover/index" });
+      uni.switchTab({ url: ROUTES.TAB.DISCOVER });
     },
   });
   // #endif
   // #ifndef MP-WEIXIN
   uni.navigateBack().catch(() => {
-    uni.switchTab({ url: "/pages/discover/index" }).catch(() => {
+    uni.switchTab({ url: ROUTES.TAB.DISCOVER }).catch(() => {
       // 静默处理
     });
   });
@@ -280,8 +282,8 @@ function handleRetry(): void {
   height: 48rpx;
   border: 4rpx solid var(--c-border-default, rgba(15, 23, 42, 0.08));
   border-top-color: var(--c-brand);
-  border-radius: 50%;
-  animation: legal-spinner 0.8s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: legal-spinner var(--d-spinner, 800ms) linear infinite;
 }
 
 @keyframes legal-spinner {

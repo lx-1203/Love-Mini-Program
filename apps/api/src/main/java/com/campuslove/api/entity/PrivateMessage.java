@@ -12,6 +12,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 私信消息实体，对应 private_messages 表。
@@ -32,6 +35,7 @@ import java.time.LocalDateTime;
  * 故索引按实际字段命名。详见 V2026.07.25.0001 迁移脚本说明。</p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "private_messages",
     indexes = {
@@ -93,6 +97,9 @@ public class PrivateMessage {
     private String deliveryStatus = "sent";
 
     /** 记录创建时间（消息发送时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

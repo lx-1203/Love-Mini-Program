@@ -1,4 +1,4 @@
-view, text, image {
+﻿view, text, image {
   box-sizing: border-box;
 }
 
@@ -31,7 +31,7 @@ view, button, scroll-view, swiper, input, textarea {
 }
 
 .press-scale {
-  transition: transform 0.2s, opacity 0.2s;
+  transition: transform var(--d-normal, 200ms), opacity var(--d-normal, 200ms);
 }
 
 .press-scale:active {
@@ -40,7 +40,7 @@ view, button, scroll-view, swiper, input, textarea {
 }
 
 .press-scale-sm {
-  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-fast, 150ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .press-scale-sm:active {
@@ -266,8 +266,8 @@ scroll-view::-webkit-scrollbar {
   width: 6rpx;
   height: 32rpx;
   background: linear-gradient(180deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
-  border-radius: 3rpx;
-  box-shadow: 0 0 8rpx rgba(63, 207, 142, 0.3);
+  border-radius: var(--r-xs, 3rpx);
+  box-shadow: var(--s-glow, 0 0 8rpx rgba(63, 207, 142, 0.3));
 }
 
 .press-feedback {

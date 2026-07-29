@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 寻觅页 - 卡片推荐 + 签到入口
  * 展示个性化用户卡片推荐，支持滑动浏览和每日签到
@@ -6,7 +6,8 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useDiscoverStore } from "../../stores/discover";
+// 修复 no-duplicate-imports：合并 ../../stores/discover 的重复 import
+import { useDiscoverStore, type SwipeDirection } from "../../stores/discover";
 import { useActivityStore } from "../../stores/activity";
 import { useCheckInStore } from "../../stores/checkin";
 import { useDailyQuestionStore } from "../../stores/daily-question";
@@ -24,7 +25,6 @@ import { lightHaptic } from "../../utils/haptic";
 import { showErrorToast } from "../../utils/error-toast";
 // Sentry 监控：推荐加载 / 滑动失败上报异常，页面切换记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
-import type { SwipeDirection } from "../../stores/discover";
 import type { RecommendationFilter } from "../../services/generated/api-types-supplement";
 
 /** 图标资源路径 */
@@ -511,6 +511,10 @@ watch(
     }
   }
 );
+
+// 修复（严格模式 noUnusedLocals）：clearSearch 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ clearSearch });
 </script>
 
 <template>
@@ -541,12 +545,14 @@ watch(
       <scroll-view scroll-x class="filter-scroll" :show-scrollbar="false">
         <view class="filter-list" role="list">
           <view
-            v-for="filter in filterOptions"
-            :key="filter.id"
+            v-for="filter in filterOptions" :key="filter.id"
             class="filter-chip press-feedback"
             :class="{ 'filter-chip--active': activeFilter === filter.id }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            role="button"
+            :aria-label="filter.text"
+            :aria-pressed="activeFilter === filter.id"
             @tap="onFilterChipTap(filter.id)"
           >
             <image class="filter-chip__icon" :src="filter.icon" mode="aspectFit" alt="" />
@@ -558,6 +564,8 @@ watch(
             :class="{ 'filter-chip--has-active': hasActiveFilters }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            role="button"
+            :aria-label="t('discover.allFilters')"
             @tap="onFilterChipTap('all-filters')"
           >
             <image class="filter-chip__icon" :src="icons.plus" mode="aspectFit" alt="" />
@@ -575,11 +583,12 @@ watch(
       <scroll-view scroll-x class="active-capsules__scroll" :show-scrollbar="false">
         <view class="active-capsules__list" role="list">
           <view
-            v-for="capsule in activeFilterCapsules"
-            :key="capsule.key"
+            v-for="capsule in activeFilterCapsules" :key="capsule.key"
             class="active-capsule press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            role="button"
+            :aria-label="capsule.label"
             @tap="removeFilterCapsule(capsule.key)"
           >
             <text class="active-capsule__text">{{ capsule.label }}</text>
@@ -589,6 +598,8 @@ watch(
             class="active-capsule active-capsule--clear press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            role="button"
+            :aria-label="t('discover.clear')"
             @tap="clearAllFilters"
           >
             <text class="active-capsule__text active-capsule__text--clear">{{ t('discover.clear') }}</text>
@@ -600,7 +611,7 @@ watch(
     <!-- 搜索框 -->
     <!-- P2 修复（搜索框自动聚焦）：容器 @tap 触发 focusSearchInput，扩大可点击区域；
          input 绑定 :focus 与 @blur，blur 后 reset 为 false 才能再次触发 focus -->
-    <view class="search-box" @tap="focusSearchInput">
+    <view class="search-box" role="button" :aria-label="t('discover.searchPlaceholder')" @tap="focusSearchInput">
       <image class="search-icon" :src="icons.search" mode="aspectFit" alt="" />
       <input
         class="search-input"
@@ -610,7 +621,7 @@ watch(
         @input="onSearchInput"
         @blur="searchInputFocused = false" :aria-label="t('discover.searchPlaceholder')"
       />
-      <image v-if="searchKeyword" class="search-clear-img" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" mode="aspectFit" @tap.stop="clearSearch" alt="" />
+      <image v-if="searchKeyword" class="search-clear-img" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" mode="aspectFit" catchtap="clearSearch" alt="" />
     </view>
 
     <!-- 筛选抽屉（H-07 + M-16）：底部滑入，控制身高/学历/感情状态/籍贯/未来城市/关键词 -->
@@ -690,6 +701,8 @@ watch(
           class="benefit-card card-base benefit-card--quota press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
+          role="button"
+          :aria-label="checkInStore.extraQuotaText"
           @tap="openAppPath('/pages/likes/index')"
         >
           <view class="benefit-card__left">
@@ -707,6 +720,8 @@ watch(
           class="benefit-card card-base benefit-card--clickable press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
+          role="button"
+          :aria-label="t('discover.hotTopics')"
           @tap="openAppPath('/pages/village/index?tab=hot')"
         >
           <view class="benefit-card__left">
@@ -725,6 +740,8 @@ watch(
           class="benefit-card card-base benefit-card--clickable press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
+          role="button"
+          :aria-label="t('discover.newCircleUsers')"
           @tap="openAppPath('/pages/circles/index')"
         >
           <view class="benefit-card__left">
@@ -762,7 +779,7 @@ watch(
     <!-- 错误提示 -->
     <view v-if="errorMessage" class="error-banner">
       <text class="error-banner__text">{{ errorMessage }}</text>
-      <text class="error-banner__retry" @tap="reloadCards">{{ t('discover.errorRetry') }}</text>
+      <text class="error-banner__retry" role="button" :aria-label="t('common.retryAria')" @tap="reloadCards">{{ t('discover.errorRetry') }}</text>
     </view>
 
     <!-- 加载状态：使用卡片骨架屏替代简单 spinner，更好呼应卡片布局 -->
@@ -805,6 +822,8 @@ watch(
       class="social-hint press-feedback"
       hover-class="press-feedback--active"
       hover-stay-time="120"
+      role="button"
+      :aria-label="t('discover.likeCountProgress', { count: socialProgressStore.progress.likeCount })"
       @tap="openAppPath('/pages/likes/index')"
     >
       <view class="social-hint__left">
@@ -824,10 +843,11 @@ watch(
       </view>
       <view class="activity-list" role="list">
         <view
-          v-for="(item, idx) in activityStore.activities.slice(0, 3)"
-          :key="item.id"
+          v-for="(item, idx) in activityStore.activities.slice(0, 3)" :key="item.id"
           class="activity-card list-item animate-fade-in"
           :style="{ animationDelay: idx * 80 + 'ms' }"
+          role="button"
+          :aria-label="t('home.activityCardAria', { title: item.title, time: item.scheduleText, location: item.location })"
           @tap="openAppPath('/subpackages/discover/activities/index')"
         >
           <view class="activity-card__info">
@@ -838,7 +858,7 @@ watch(
           <text class="activity-card__arrow">&rsaquo;</text>
         </view>
       </view>
-      <view class="activity-recommend__more press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/subpackages/discover/activities/index')">
+      <view class="activity-recommend__more press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('discover.viewMoreActivities')" @tap="openAppPath('/subpackages/discover/activities/index')">
         <text class="activity-recommend__more-text">{{ t('discover.viewMoreActivities') }}</text>
       </view>
     </view>
@@ -851,8 +871,8 @@ watch(
     <!-- 匹配成功双头像碰撞动画 overlay -->
     <view v-if="showMatchAnimation" class="match-overlay">
       <view class="match-overlay__avatars">
-        <image class="match-overlay__avatar match-overlay__avatar--left" :src="myAvatar" mode="aspectFill" alt="" />
-        <image class="match-overlay__avatar match-overlay__avatar--right" :src="partnerAvatar" mode="aspectFill" alt="" />
+        <image class="match-overlay__avatar match-overlay__avatar--left" :src="myAvatar" mode="aspectFill" lazy-load alt="" />
+        <image class="match-overlay__avatar match-overlay__avatar--right" :src="partnerAvatar" mode="aspectFill" lazy-load alt="" />
         <view class="match-overlay__spark">
           <image class="match-overlay__spark-icon" :src="icons.heart" mode="aspectFit" alt="" />
         </view>
@@ -892,7 +912,7 @@ watch(
 
 .discover-atmosphere__blob {
   position: absolute;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   opacity: 0.55;
   /* H5 端追加高斯模糊营造柔光氛围；mp-weixin 不支持 filter，保留 opacity + 渐变 fallback */
   // #ifdef H5
@@ -905,7 +925,7 @@ watch(
   height: 360rpx;
   top: 80rpx;
   left: -120rpx;
-  background: radial-gradient(circle, var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.32))) 0%, var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0))) 70%);
+  background: radial-gradient(circle, var(--s-romance) 0%, var(--c-romance-bg-tint) 70%);
 }
 
 .discover-atmosphere__blob--green {
@@ -913,7 +933,7 @@ watch(
   height: 420rpx;
   top: 320rpx;
   right: -140rpx;
-  background: radial-gradient(circle, var(--c-brand-shadow-tint-mid, var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.28))) 0%, var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63, 207, 142, 0))) 70%);
+  background: radial-gradient(circle, var(--c-brand-shadow-tint-mid) 0%, var(--c-brand-bg-tint) 70%);
 }
 
 .discover-atmosphere__blob--cream {
@@ -921,7 +941,7 @@ watch(
   height: 320rpx;
   bottom: 200rpx;
   left: 30%;
-  background: radial-gradient(circle, var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(255, 212, 121, 0.22))) 0%, var(--c-state-ongoing-bg, var(--c-state-ongoing-bg, rgba(255, 212, 121, 0))) 70%);
+  background: radial-gradient(circle, var(--c-state-ongoing-bg) 0%, var(--c-state-ongoing-bg) 70%);
 }
 
 /* ========== 页面头部 ========== */
@@ -991,7 +1011,7 @@ watch(
   padding: var(--sp-2) var(--sp-4);
   border-radius: var(--r-xl);
   background: var(--c-bg-brand);
-  border: 1rpx solid var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(63, 207, 142, 0.2)));
+  border: 1rpx solid var(--c-brand-border-tint);
 }
 
 .discover-header__count-icon {
@@ -1037,12 +1057,15 @@ watch(
   padding: 14rpx 28rpx;
   flex-shrink: 0;
   border-radius: var(--r-full);
-  background: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
-  // #ifdef H5
+  background: var(--c-overlay-white-text-strong);
+  /* #ifdef H5 */
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  // #endif
-  border: 1rpx solid var(--c-neutral-200, var(--c-neutral-200, rgba(226, 232, 240, 0.8)));
+  /* #endif */
+  /* #ifndef H5 */
+  opacity: 0.96;
+  /* #endif */
+  border: 1rpx solid var(--c-neutral-200);
   box-shadow: var(--s-xs);
   transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1183,11 +1206,14 @@ watch(
   align-items: center;
   margin: var(--sp-4) var(--sp-7);
   padding: var(--sp-3) var(--sp-5);
-  background: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
-  // #ifdef H5
+  background: var(--c-overlay-white-text-strong);
+  /* #ifdef H5 */
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  // #endif
+  /* #endif */
+  /* #ifndef H5 */
+  opacity: 0.96;
+  /* #endif */
   border-radius: var(--r-xl);
   border: var(--border-subtle);
   box-shadow: var(--s-xs);
@@ -1254,7 +1280,7 @@ watch(
 
 .checkin-card__desc {
   font-size: var(--fs-base);
-  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85)));
+  color: var(--c-overlay-text-secondary);
 }
 
 .checkin-card__btn {
@@ -1270,8 +1296,8 @@ watch(
   line-height: 64rpx;
   text-align: center;
   flex-shrink: 0;
-  transition: opacity 150ms ease;
-  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0, 0, 0, 0.1)));
+  transition: opacity var(--d-fast, 120ms) ease;
+  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-md);
 }
 
 /* #ifdef H5 */
@@ -1293,12 +1319,12 @@ watch(
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06))) 25%,
-    var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0, 0, 0, 0.1))) 37%,
-    var(--c-black-shadow-sm, var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06))) 63%
+    var(--c-black-shadow-sm) 25%,
+    var(--c-black-shadow-md) 37%,
+    var(--c-black-shadow-sm) 63%
   );
   background-size: 400% 100%;
-  animation: skeleton-loading 1.4s ease infinite;
+  animation: skeleton-loading var(--d-loop, 1400ms) ease infinite;
   border-radius: var(--r-sm);
 }
 
@@ -1339,7 +1365,7 @@ watch(
 /* ========== 通用 fade 过渡（签到卡片、签到成功、权益卡片切换） ========== */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 280ms ease, transform 280ms ease;
+  transition: opacity var(--d-fade, 300ms) ease, transform var(--d-fade, 300ms) ease;
 }
 
 .fade-enter-from {
@@ -1355,7 +1381,7 @@ watch(
 /* ========== list 过渡（活动列表 transition-group） ========== */
 .list-enter-active,
 .list-leave-active {
-  transition: opacity 320ms ease, transform 320ms ease;
+  transition: opacity var(--d-bounce, 400ms) ease, transform var(--d-bounce, 400ms) ease;
 }
 
 .list-enter-from {
@@ -1369,7 +1395,7 @@ watch(
 }
 
 .list-move {
-  transition: transform 320ms ease;
+  transition: transform var(--d-bounce, 400ms) ease;
 }
 
 /* ========== 签到成功提示（缩放+渐变动画） ========== */
@@ -1381,9 +1407,9 @@ watch(
   margin: 0 var(--sp-7) var(--sp-4);
   padding: var(--sp-6);
   border-radius: var(--r-lg);
-  background: var(--c-success-bg-tint, var(--c-success-bg-tint, rgba(16, 185, 129, 0.08)));
-  border: 1rpx solid var(--c-success-bg-tint, var(--c-success-bg-tint, rgba(16, 185, 129, 0.18)));
-  animation: checkin-success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  background: var(--c-success-bg-tint);
+  border: 1rpx solid var(--c-success-border-tint);
+  animation: checkin-success-pop var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes checkin-success-pop {
@@ -1401,7 +1427,7 @@ watch(
   width: 48rpx;
   height: 48rpx;
   flex-shrink: 0;
-  animation: checkin-success-bounce 0.6s ease 0.1s both;
+  animation: checkin-success-bounce var(--d-slowest, 600ms) ease 0.1s both;
 }
 
 @keyframes checkin-success-bounce {
@@ -1458,11 +1484,11 @@ watch(
   border: var(--c-border-card);
   position: relative;
   overflow: hidden;
-  transition: transform 150ms ease;
+  transition: transform var(--d-fast, 150ms) ease;
 }
 
 .benefit-card--clickable {
-  transition: transform 150ms ease;
+  transition: transform var(--d-fast, 150ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1535,10 +1561,10 @@ watch(
   margin: 0 var(--sp-7) var(--sp-4);
   padding: var(--sp-6);
   border-radius: var(--r-lg);
-  background: linear-gradient(135deg, var(--c-romance-50) 0%, var(--c-romance-50, #FDF2F8) 100%);
-  box-shadow: 0 4rpx 16rpx var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.08)));
-  border: 1rpx solid var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.12)));
-  transition: transform 150ms ease;
+  background: linear-gradient(135deg, var(--c-romance-50) 0%, var(--c-romance-50) 100%);
+  box-shadow: 0 4rpx 16rpx var(--c-romance-bg-tint);
+  border: 1rpx solid var(--c-romance-border-tint);
+  transition: transform var(--d-fast, 150ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1615,7 +1641,7 @@ watch(
   gap: var(--sp-4);
   margin: var(--sp-6) var(--sp-7);
   padding: var(--sp-5) var(--sp-6);
-  background: var(--c-red-bg-tint, var(--c-red-bg-tint, rgba(239, 68, 68, 0.08)));
+  background: var(--c-red-bg-tint);
   border-radius: var(--r-md);
 }
 
@@ -1646,7 +1672,7 @@ watch(
   border: 4rpx solid var(--c-border-default);
   border-top-color: var(--c-brand-700);
   border-radius: var(--r-full);
-  animation: spin 1s linear infinite;
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {
@@ -1712,9 +1738,9 @@ watch(
   justify-content: space-between;
   margin: var(--sp-4) var(--sp-7);
   padding: var(--sp-5) var(--sp-6);
-  background: linear-gradient(135deg, var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.08))) 0%, var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63, 207, 142, 0.08))) 100%);
+  background: linear-gradient(135deg, var(--c-romance-bg-tint) 0%, var(--c-brand-bg-tint) 100%);
   border-radius: var(--r-lg);
-  border: 1rpx solid var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.12)));
+  border: 1rpx solid var(--c-romance-border-tint);
 }
 
 .social-hint__left {
@@ -1790,7 +1816,7 @@ watch(
   /* #ifdef H5 */
   &:active {
     transform: scale(0.98);
-    transition: transform 0.1s ease;
+    transition: transform var(--d-fast, 120ms) ease;
   }
   /* #endif */
 }
@@ -1844,7 +1870,7 @@ watch(
   left: 50%;
   transform: translateX(-50%);
   padding: var(--sp-3) var(--sp-6);
-  background: var(--c-gradient-mask-strong, var(--c-gradient-mask-strong, rgba(0, 0, 0, 0.6)));
+  background: var(--c-gradient-mask-strong);
   border-radius: var(--r-full);
   z-index: 10;
 }
@@ -1861,7 +1887,7 @@ watch(
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--c-overlay-stronger, var(--c-overlay-stronger, rgba(0, 0, 0, 0.75)));
+  background: var(--c-overlay-stronger);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1892,18 +1918,18 @@ watch(
   height: 200rpx;
   border-radius: var(--r-full);
   border: 6rpx solid var(--c-bg-container);
-  box-shadow: 0 8rpx 32rpx var(--c-text-shadow-overlay, var(--c-text-shadow-overlay, rgba(0, 0, 0, 0.3)));
+  box-shadow: 0 8rpx 32rpx var(--c-text-shadow-overlay);
   transform: translateY(-50%);
 }
 
 .match-overlay__avatar--left {
   left: 0;
-  animation: match-avatar-left 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: match-avatar-left var(--d-loop, 1200ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .match-overlay__avatar--right {
   right: 0;
-  animation: match-avatar-right 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: match-avatar-right var(--d-loop, 1200ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes match-avatar-left {
@@ -1948,7 +1974,7 @@ watch(
   left: 50%;
   transform: translate(-50%, -50%) scale(0);
   z-index: 2;
-  animation: match-spark 1.2s ease 0.5s both;
+  animation: match-spark var(--d-loop, 1200ms) ease 0.5s both;
 }
 
 @keyframes match-spark {
@@ -1973,20 +1999,20 @@ watch(
 .match-overlay__spark-icon {
   width: 80rpx;
   height: 80rpx;
-  color: var(--c-romance-500, #ec4899);
+  color: var(--c-romance-500);
 }
 
 .match-overlay__title {
   font-size: var(--fs-6xl);
   font-weight: 800;
   color: var(--c-text-inverse);
-  text-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-stronger, var(--c-shadow-romance-tint-stronger, rgba(236, 72, 153, 0.5)));
+  text-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-stronger);
   animation: match-text-pop var(--d-slowest, 600ms) cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both;
 }
 
 .match-overlay__subtitle {
   font-size: var(--fs-lg);
-  color: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9)));
+  color: var(--c-overlay-bg-solid);
   animation: match-text-pop var(--d-slowest, 600ms) cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s both;
 }
 

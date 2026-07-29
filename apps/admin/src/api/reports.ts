@@ -3,8 +3,8 @@
  * 对应后端 com.campuslove.api.admin.AdminReportController。
  *
  * 接口：
- *   - GET  /api/admin/reports           分页查询举报列表
- *   - POST /api/admin/reports/{id}/handle 处理举报
+ *   - GET  /api/v1/admin/reports           分页查询举报列表
+ *   - POST /api/v1/admin/reports/{id}/handle 处理举报
  */
 import { AdminPageView, get, post } from "./http";
 
@@ -87,12 +87,12 @@ export const REPORT_STATUSES: { value: string; labelKey: string }[] = [
 
 /**
  * 分页查询举报列表。
- * GET /api/admin/reports
+ * GET /api/v1/admin/reports
  */
 export function listReports(
   query: AdminReportListQuery = {}
 ): Promise<AdminPageView<AdminReportView>> {
-  return get<AdminPageView<AdminReportView>>("/admin/reports", {
+  return get<AdminPageView<AdminReportView>>("/v1/admin/reports", {
     status: query.status,
     targetType: query.targetType,
     page: query.page ?? 1,
@@ -102,11 +102,11 @@ export function listReports(
 
 /**
  * 处理举报。
- * POST /api/admin/reports/{id}/handle
+ * POST /api/v1/admin/reports/{id}/handle
  */
 export function handleReport(
   id: number,
   req: AdminReportHandleRequest
 ): Promise<AdminReportHandleResponse> {
-  return post<AdminReportHandleResponse>(`/admin/reports/${id}/handle`, req);
+  return post<AdminReportHandleResponse>(`/v1/admin/reports/${id}/handle`, req);
 }

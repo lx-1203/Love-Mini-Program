@@ -143,6 +143,18 @@ app:
   # URL 访问路径前缀 /uploads/** 由 WebConfig 静态资源映射
   media:
     storage-root: ${APP_MEDIA_STORAGE_ROOT:./uploads}
+  # OpenAPI 文档元信息配置（Task 8）
+  # - license-url：API 许可证地址，默认空（Swagger UI 不显示许可证链接）；
+  #   生产环境通过 OPENAPI_LICENSE_URL 显式配置实际许可证地址。
+  # - local-server-url：始终添加到 Swagger UI 服务器列表的本地开发地址，
+  #   默认 http://localhost:8080；生产部署若 Swagger UI 暴露在内网，可通过
+  #   OPENAPI_LOCAL_SERVER_URL 配置为内网地址。
+  # - server-url / server-description：可选的主服务器地址，未配置时不添加主服务器。
+  openapi:
+    license-url: ${OPENAPI_LICENSE_URL:}
+    local-server-url: ${OPENAPI_LOCAL_SERVER_URL:http://localhost:8080}
+    server-url: ${OPENAPI_SERVER_URL:}
+    server-description: ${OPENAPI_SERVER_DESCRIPTION:Campus Love API Server}
   # CORS 允许的源列表（Task 0.6.2）
   # - 逗号分隔字符串形式，便于 WebConfig/SecurityConfig 通过 split(',') 解析为 List<String>
   # - 兼容环境变量 CORS_ALLOWED_ORIGINS（逗号分隔字符串）直接覆盖
@@ -151,13 +163,26 @@ app:
   # - 也支持 YAML 列表形式覆盖：app.cors.allowed-origins[0], [1], ...
   #   Spring 自动将列表绑定结果转换为逗号分隔字符串供 @Value("${app.cors.allowed-origins}") 使用
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5177,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5177}
+    # 默认值清空：生产环境必须显式配置 CORS_ALLOWED_ORIGINS，
+    # mock profile 在 application-mock.yml 中提供 localhost 默认值供本地开发使用。
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  # WebSocket 允许的 Origin 模式列表（逗号分隔）。
+  # - 默认值清空：生产环境必须显式配置具体域名/模式，避免硬编码 localhost。
+  # - mock profile 在 application-mock.yml 中提供 http://localhost:*,http://127.0.0.1:* 默认值。
+  # - 支持环境变量 WEBSOCKET_ALLOWED_ORIGIN_PATTERNS 直接覆盖。
+  websocket:
+    allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:}
   jwt:
     # JWT 签名密钥：必须通过环境变量 JWT_SECRET 设置，不允许使用默认值。
     # 启动时若未设置或使用了不安全的默认值，应用将拒绝启动。
     # 生成安全密钥示例：openssl rand -base64 48
     secret: ${JWT_SECRET:}
+    # JWT 令牌有效期（毫秒），默认 86400000 = 24 小时
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    # 密钥版本号（SubTask 10.2 安全加固）：用于支持密钥轮换。
+    # 签发 token 时写入 JWT header kid（Key ID），验证时按 kid 选择对应版本密钥。
+    # 轮换时递增版本号并配套更新 KMS/Vault 中的密钥。
+    key-version: ${JWT_KEY_VERSION:1}
   wechat:
     # Task 0.6.3：微信小程序 AppID/AppSecret 通过环境变量注入
     # 环境变量命名规范：全大写 + 下划线（与 .env.example 保持一致）
@@ -166,13 +191,20 @@ app:
     # 申请地址：https://mp.weixin.qq.com/
     app-id: ${WECHAT_APPID:}
     app-secret: ${WECHAT_SECRET:}
+    # Task 9：微信 jscode2session 接口 base URL，原在 WeChatClient.java 硬编码。
+    # 默认值为官方文档地址，可通过环境变量 WECHAT_JSCODE2SESSION_URL 覆盖
+    # （如需走内网代理或切换微信 API 域名）。
+    jscode2session-url: ${WECHAT_JSCODE2SESSION_URL:https://api.weixin.qq.com/sns/jscode2session}
   # SubTask 1.4.5：Agnes AI 视频/图片生成服务配置
   # - API Key 必须通过环境变量 AGNES_API_KEY 配置，禁止硬编码
   # - 缺失时调用 /api/ai/** 端点会返回 401 AI_API_UNAUTHORIZED，提示运营方补全
   # - 申请地址：https://agnes-ai.com/dashboard/api-keys
+  # - Task 9：api-base 默认值已移除，未配置时启动失败（避免硬编码外部 URL）；
+  #   生产环境必须通过 AGNES_API_BASE 显式配置；mock profile 在 application-mock.yml
+  #   中提供默认值供本地开发使用。
   ai:
     agnes:
-      api-base: ${AGNES_API_BASE:https://api.agnes-ai.com/api}
+      api-base: ${AGNES_API_BASE:}
       api-key: ${AGNES_API_KEY:}
       timeout-ms: ${AGNES_TIMEOUT_MS:30000}
   recommendation:
@@ -328,3 +360,13 @@ resilience4j:
       enabled: true
     ratelimiters:
       enabled: true
+
+# 文件存储配置（Task 9）
+# - upload-prefix：上传文件 URL 访问前缀，与 WebConfig 静态资源映射一致。
+#   原 VoiceMessageService 硬编码 "/uploads/"，已改为配置注入。
+# - base-dir：本地存储根目录，与 LocalMediaStorageService 共享语义。
+#   原 VoiceMessageService 使用 app.media.storage-root，已统一为本配置项。
+# 两者可通过环境变量 FILE_STORAGE_PREFIX / FILE_STORAGE_BASE_DIR 覆盖。
+file-storage:
+  upload-prefix: ${FILE_STORAGE_PREFIX:/uploads/}
+  base-dir: ${FILE_STORAGE_BASE_DIR:uploads}

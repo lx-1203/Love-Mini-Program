@@ -8,6 +8,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 通知免打扰设置实体，对应 dnd_settings 表（功能6）。
@@ -25,6 +29,7 @@ import java.time.LocalDateTime;
  * </p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "dnd_settings")
 public class DoNotDisturbSetting {
 
@@ -61,7 +66,15 @@ public class DoNotDisturbSetting {
     @Column(name = "allow_urgent", nullable = false)
     private Boolean allowUrgent = true;
 
+    /** 记录创建时间（Task 37 P2.14 审计字段补齐） */
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     /** 更新时间 */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**
@@ -143,6 +156,14 @@ public class DoNotDisturbSetting {
 
     public void setAllowUrgent(Boolean allowUrgent) {
         this.allowUrgent = allowUrgent;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {

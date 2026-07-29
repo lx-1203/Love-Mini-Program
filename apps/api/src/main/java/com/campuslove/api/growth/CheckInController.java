@@ -4,6 +4,7 @@ import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,6 +34,7 @@ public class CheckInController {
    */
   @PostMapping
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<CheckInResultView> checkIn() {
     Long userId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(checkInService.checkIn(userId));
@@ -76,6 +78,7 @@ public class CheckInController {
    */
   @PostMapping("/make-up")
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ApiResponse<MakeUpCheckInResultView> makeUp(@Valid @RequestBody MakeUpCheckInRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(checkInService.makeUp(userId, request.date()));

@@ -2,11 +2,52 @@
 
 > 对应规范：`.trae/specs/2026-07-26-commercialize-longterm-fixall/tasks.md` Task 9.1.3
 > 维护者：后端 Lead & 前端 Lead
-> 最近更新：2026-07-26
+> 最近更新：2026-07-27
 > 配套文档：
 > - `docs/OPENAPI-ANNOTATION-GUIDE.md`：OpenAPI 注解补全指南
-> - `docs/openapi/*.yaml`：分模块 OpenAPI Schema 定义
+> - `docs/openapi/*.yaml`：分模块 OpenAPI Schema 定义（权威源）
 > - 在线 Swagger UI：`/swagger-ui.html`（生产环境仅 ADMIN 可访问）
+
+---
+
+## 0. 一致性声明与权威源
+
+本文档下的端点清单与下列来源保持一致；若任何来源之间出现差异，按下列优先级判定权威源：
+
+1. `docs/openapi/*.yaml`（OpenAPI Schema，最高权威）
+2. `apps/api/src/main/java/com/campuslove/api/**/*Controller.java` 中的 `@RequestMapping` / `@GetMapping` / `@PostMapping` / `@PutMapping` / `@DeleteMapping` 注解
+3. 本文档（`docs/API-CONTRACT.md`）
+
+> 当本文档与 OpenAPI YAML 或 Controller 注解不一致时：
+> - 以 OpenAPI YAML 为准。
+> - 若 YAML 缺失，以 Controller 注解为准。
+> - 请在 PR 中提交 issue 标注差异点，并在合并后更新本文档与 YAML，禁止单方面修改本文档。
+> - 复核脚本：`pnpm run lint:openapi`（OpenAPI YAML 结构校验）+ `pnpm run lint:openapi:spectral`（Spectral 规范 lint）+ `pnpm run generate:openapi`（前端类型生成）+ `pnpm run verify:client-builds`（多端构建验证）。
+
+### 0.1 当前已知差异（待修复，禁止视为"已实现"）
+
+下列端点在本文档与 OpenAPI YAML / Controller 注解间存在差异，已在 REAUDIT-REPORT-100+ 第 3.5 节编号 112 跟踪。在差异修复前，前端调用必须以 OpenAPI YAML / Controller 注解为准：
+
+| 域 | 本文档当前描述 | OpenAPI YAML / 代码实际路径 | 处理建议 |
+|---|---|---|---|
+| Auth | `POST /api/v1/auth/wechat` | `POST /api/v1/auth/wechat-login`（`AuthController`） + `POST /api/v1/auth/wechat`（`WechatAuthController`） | 双端点并存，前端按 YAML 使用 `/auth/wechat-login` |
+| Third-party Auth | `GET /api/v1/auth/third-party` | `GET /api/v1/auth/third-party/bindings` | 按 YAML 更新 |
+| Match | `POST /api/v1/matches/like` | `POST /api/v1/likes/{userId}`（`likes.yaml`） | 按 YAML 更新 |
+| Match | `POST /api/v1/matches/cancel-like` | `DELETE /api/v1/likes/{userId}` | 按 YAML 更新 |
+| Village | `/api/v1/village/posts/**` | `/api/v1/posts/**`（`VillageController`） | 按 YAML 更新 |
+| Chat Sessions | `/api/v1/chat/sessions/**` | `/api/v1/messages/conversations/**`（`PrivateMessageController`） | 按 Controller 更新 |
+| Temp Chat | `/api/v1/chat/temp-sessions/**` | `/api/v1/temp-chat/sessions/**`（`TempChatController`） | 按 YAML 更新 |
+| Feedback | `POST /api/v1/feedback` | `POST /api/v1/feedback/{issues,suggestions,activity-proposals}` + `GET /api/v1/feedback/my-submissions` | 按 YAML 更新 |
+| Growth - Check-in | `/api/v1/growth/check-in/**` | `/api/v1/check-in/**`（`CheckInController`） | 按 YAML 更新 |
+| Growth - Hero | `GET /api/v1/growth/hero-config` | `GET /api/v1/app-config/login-hero`（`AppConfigController`） | 按 YAML 更新 |
+| Growth - DND | `/api/v1/growth/do-not-disturb` | `/api/v1/dnd`（`DoNotDisturbController`） | 按 Controller 更新 |
+| AI | `POST /api/ai/video/generate`（不带 v1） | `POST /api/v1/ai/video/generate`（`AiVideoController`） | 按 Controller 更新（带 v1） |
+| Notifications | `/api/v1/chat/notifications` | `/api/v1/notifications`（`NotificationController`） | 按 YAML 更新 |
+| Voice Message | `/api/v1/chat/sessions/{id}/voice` | `/api/v1/chat/voice`（`VoiceMessageController`） | 按 Controller 更新 |
+| Video Call | `/api/v1/chat/video-calls/**` | `/api/v1/chat/video-call/{start,end,records}`（`VideoCallController`） | 按 Controller 更新 |
+| Reports | `POST /api/v1/reports` | `POST /api/v1/posts/{id}/report`（`PostReportController`） | 按 Controller 更新（按帖子维度） |
+
+> 修复计划：在后端 Lead 主导的下一次 OpenAPI 同步 PR 中按 YAML 重建本文档第 3 节，并补齐缺失的 OpenAPI YAML（vip / campus / media / config / home / admin 等模块尚未提供 YAML）。
 
 ---
 
@@ -633,7 +674,7 @@ mvn spring-boot:run  # 启动后访问 /v3/api-docs 导出最新 Schema
 ### 10.2 端到端验证
 
 - 真机：微信开发者工具 + 真机预览
-- H5：本地 `npm run dev:h5:real` 接入本地后端
+- H5：本地 `npm run client:dev:h5:real`（或 `apps/client` 目录下 `npm run dev:h5:real`）接入本地后端
 - 自动化：Playwright 覆盖核心旅程（注册→匹配→聊天）
 
 ---
@@ -725,3 +766,4 @@ mvn spring-boot:run  # 启动后访问 /v3/api-docs 导出最新 Schema
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | 1.0.0 | 2026-07-26 | 初始版本，覆盖 P0-P9 全量接口契约 |
+| 1.1.0 | 2026-07-27 | REAUDIT-REPORT-100+ 第 3.5 节编号 112 修复：新增 §0 一致性声明与权威源、§0.1 已知差异表，与 `docs/openapi/*.yaml` 与 Java Controller 注解对齐 |

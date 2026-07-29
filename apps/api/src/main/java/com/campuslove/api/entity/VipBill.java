@@ -9,6 +9,9 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * VIP 账单实体，对应 vip_bills 表。
@@ -41,6 +44,7 @@ import java.time.LocalDateTime;
  * 故索引按实际字段命名。</p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "vip_bills",
     indexes = {
@@ -129,6 +133,9 @@ public class VipBill {
     private String remark;
 
     /** 记录创建时间（账单生成时间，用于财务对账） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

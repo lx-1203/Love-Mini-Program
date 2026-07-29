@@ -12,6 +12,7 @@ import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +77,7 @@ public class AdminPostController {
             @RequestParam(name = "auditStatus", required = false) String auditStatus,
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "category", required = false) String category,
-            @RequestParam(name = "authorId", required = false) Long authorId,
+            @RequestParam(name = "authorId", required = false) @Positive Long authorId,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
@@ -118,7 +119,7 @@ public class AdminPostController {
     @PostMapping("/{id}/audit")
     @Transactional
     public ResponseEntity<Map<String, Object>> auditPost(
-            @PathVariable("id") Long id,
+            @PathVariable("id") @Positive Long id,
             @Valid @RequestBody AdminPostAuditRequest req) {
         Long auditorId = SecurityUtils.getCurrentUserId();
 
@@ -165,7 +166,7 @@ public class AdminPostController {
      */
     @DeleteMapping("/{id}")
     @Transactional
-    public ResponseEntity<Map<String, Object>> deletePost(@PathVariable("id") Long id) {
+    public ResponseEntity<Map<String, Object>> deletePost(@PathVariable("id") @Positive Long id) {
         SecurityUtils.getCurrentUserId();
 
         Optional<Post> postOpt = postRepository.findById(id);

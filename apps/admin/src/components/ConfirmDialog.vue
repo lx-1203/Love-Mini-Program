@@ -146,13 +146,13 @@ function stopPropagation(e: Event): void {
 <style scoped>
 @import "../styles/admin-common.css";
 
-/* ConfirmDialog 特有样式：主按钮 danger 修饰类 */
+/* ConfirmDialog 特有样式（Task 21：按钮颜色/尺寸通过 token CSS variables 引用） */
 .primary-button.danger {
-  background: #f5222d;
+  background: var(--admin-color-danger);
 }
 
 .primary-button.danger:hover {
-  background: #d4380d;
+  background: var(--admin-color-danger-hover);
 }
 
 .confirm-dialog {
@@ -160,9 +160,9 @@ function stopPropagation(e: Event): void {
 }
 
 .confirm-message {
-  margin-bottom: 20px;
-  font-size: 14px;
-  color: #555;
+  margin-bottom: var(--admin-space-xl);
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-secondary);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;

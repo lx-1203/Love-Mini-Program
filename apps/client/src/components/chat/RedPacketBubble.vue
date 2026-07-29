@@ -202,19 +202,19 @@ function handleClick() {
   padding: 0;
   border-radius: var(--r-lg, 16rpx);
   overflow: hidden;
-  background: linear-gradient(135deg, #FA5151 0%, #E0413E 100%);
+  background: linear-gradient(135deg, var(--c-error, #FA5151) 0%, var(--c-error-dark, #E0413E) 100%);
   color: var(--c-text-inverse, #FFFFFF);
   box-shadow: var(--s-red-packet, 0 4rpx 12rpx rgba(236, 72, 72, 0.2));
-  transition: transform 0.15s ease, opacity 0.2s ease;
+  transition: transform var(--d-press, 150ms) ease, opacity var(--d-fade, 200ms) ease;
 }
 
 /* self 发送：右侧圆角反向（与微信红包一致） */
 .rp-bubble--self {
-  border-radius: 4rpx 16rpx 16rpx 16rpx;
+  border-radius: var(--r-xs, 4rpx) var(--r-lg, 16rpx) var(--r-lg, 16rpx) var(--r-lg, 16rpx);
 }
 
 .rp-bubble--peer {
-  border-radius: 16rpx 4rpx 16rpx 16rpx;
+  border-radius: var(--r-lg, 16rpx) var(--r-xs, 4rpx) var(--r-lg, 16rpx) var(--r-lg, 16rpx);
 }
 
 .rp-bubble--hover {
@@ -223,16 +223,16 @@ function handleClick() {
 }
 
 .rp-bubble--expired {
-  background: linear-gradient(135deg, #B5B5B5 0%, #8C8C8C 100%);
+  background: linear-gradient(135deg, var(--c-neutral-400, #B5B5B5) 0%, var(--c-neutral-600, #8C8C8C) 100%);
   opacity: 0.78;
 }
 
 .rp-bubble--depleted {
-  background: linear-gradient(135deg, #E0A050 0%, #C97C3A 100%);
+  background: linear-gradient(135deg, var(--c-accent-400, #E0A050) 0%, var(--c-accent-500, #C97C3A) 100%);
 }
 
 .rp-bubble--claimed {
-  background: linear-gradient(135deg, #B5B5B5 0%, #8C8C8C 100%);
+  background: linear-gradient(135deg, var(--c-neutral-400, #B5B5B5) 0%, var(--c-neutral-600, #8C8C8C) 100%);
   opacity: 0.88;
 }
 
@@ -242,7 +242,7 @@ function handleClick() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--c-overlay-white-bg-tint-strong, rgba(255, 255, 255, 0.12));
   flex-shrink: 0;
 }
 
@@ -292,12 +292,12 @@ function handleClick() {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--c-black-shadow-xs, rgba(0, 0, 0, 0.08));
 }
 
 .rp-bubble__tail-text {
   font-size: var(--fs-2xl, 32rpx);
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--c-overlay-white-text-stronger, rgba(255, 255, 255, 0.78));
   font-weight: 300;
   line-height: 1;
 }

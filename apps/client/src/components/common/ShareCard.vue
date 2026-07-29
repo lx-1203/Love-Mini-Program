@@ -73,11 +73,11 @@ const shareText = computed(() => {
   });
 });
 
-/** "天" 标签（复用 i18n 的 days 文案，去掉前缀空格） */
-const daysLabel = computed(() => t("home.days", { n: 0 }).replace("0", "").trim() || "天");
+/** "天" 标签（Task 28：直接使用 i18n 键，避免字符串替换 fallback） */
+const daysLabel = computed(() => t("home.daysLabel"));
 
 /** "积分" 标签 */
-const pointsLabel = "积分";
+const pointsLabel = computed(() => t("home.pointsLabel"));
 
 /**
  * 关闭卡片
@@ -175,17 +175,17 @@ async function handleSaveImage() {
           if (res.statusCode === 200) {
             resolve(res.tempFilePath);
           } else {
-            reject(new Error(`下载失败: HTTP ${res.statusCode}`));
+            reject(new Error(t("home.downloadFailedWithCode", { code: res.statusCode })));
           }
         },
-        fail: (err) => reject(new Error(err.errMsg || "下载失败")),
+        fail: (err) => reject(new Error(err.errMsg || t("home.downloadFailed"))),
       });
     });
     await new Promise<void>((resolve, reject) => {
       uni.saveImageToPhotosAlbum({
         filePath: downloadResult,
         success: () => resolve(),
-        fail: (err) => reject(new Error(err.errMsg || "保存失败")),
+        fail: (err) => reject(new Error(err.errMsg || t("home.saveFailed"))),
       });
     });
     successHaptic();
@@ -232,8 +232,8 @@ async function handleSaveImage() {
     <!-- 遮罩层：点击关闭 -->
     <view class="share-mask"></view>
 
-    <!-- 卡片主体：阻止冒泡，避免点击卡片关闭 -->
-    <view class="share-card" @tap.stop>
+    <!-- 卡片主体：catchtap 阻止冒泡，避免点击卡片关闭 -->
+    <view class="share-card" catchtap="noop">
       <!-- 关闭按钮 -->
       <view
         class="share-close"
@@ -313,7 +313,7 @@ async function handleSaveImage() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--c-bg-overlay, rgba(0, 0, 0, 0.5));
+  background: var(--c-bg-overlay);
 }
 
 .share-card {
@@ -321,8 +321,8 @@ async function handleSaveImage() {
   width: 580rpx;
   padding: 48rpx 40rpx 40rpx;
   border-radius: var(--r-xl, 32rpx);
-  background: linear-gradient(135deg, var(--c-romance-400, #EC4899) 0%, var(--c-brand-500, #3FCF8E) 100%);
-  box-shadow: var(--s-modal, 0 20rpx 60rpx rgba(0, 0, 0, 0.2));
+  background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-brand-500) 100%);
+  box-shadow: var(--s-modal);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -338,16 +338,16 @@ async function handleSaveImage() {
   align-items: center;
   justify-content: center;
   border-radius: var(--r-full, 999rpx);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--c-overlay-bg-light);
 }
 
 .share-close--active {
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--c-overlay-white-bg-strong-mid);
 }
 
 .share-close__icon {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -366,7 +366,7 @@ async function handleSaveImage() {
 .share-header__title {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-text-inverse);
 }
 
 .share-body {
@@ -386,30 +386,30 @@ async function handleSaveImage() {
 .share-stat__value {
   font-size: 64rpx;
   font-weight: 700;
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-text-inverse);
   line-height: 1;
 }
 
 .share-stat__label {
   font-size: var(--fs-base, 24rpx);
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--c-overlay-white-text-stronger);
 }
 
 .share-divider {
   width: 2rpx;
   height: 80rpx;
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--c-overlay-border-strong);
 }
 
 .share-date {
   font-size: var(--fs-md, 26rpx);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary);
   margin-bottom: 12rpx;
 }
 
 .share-subtitle {
   font-size: var(--fs-lg, 28rpx);
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--c-overlay-text-primary);
   text-align: center;
   margin-bottom: 40rpx;
   line-height: 1.5;
@@ -431,12 +431,12 @@ async function handleSaveImage() {
 }
 
 .share-btn--primary {
-  background: var(--c-bg-container, #ffffff);
+  background: var(--c-bg-container);
 }
 
 .share-btn--secondary {
-  background: rgba(255, 255, 255, 0.2);
-  border: 2rpx solid rgba(255, 255, 255, 0.4);
+  background: var(--c-overlay-bg-light);
+  border: 2rpx solid var(--c-overlay-white-bg-stronger);
 }
 
 .share-btn--active {
@@ -449,10 +449,10 @@ async function handleSaveImage() {
 }
 
 .share-btn--primary .share-btn__text {
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500);
 }
 
 .share-btn--secondary .share-btn__text {
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-text-inverse);
 }
 </style>

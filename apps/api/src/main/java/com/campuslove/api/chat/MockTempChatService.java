@@ -1,6 +1,6 @@
 package com.campuslove.api.chat;
 
-import com.campuslove.api.runtime.MockRuntimeState;
+import com.campuslove.api.mock.MockRuntimeState;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;

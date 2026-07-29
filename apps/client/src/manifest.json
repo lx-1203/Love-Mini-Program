@@ -1,4 +1,18 @@
 {
+  /*
+   * ============================================================
+   *  环境变量与调试页面说明
+   * ============================================================
+   *
+   *  pages/dev/index 调试页面位于主包中，仅用于开发调试。
+   *  已通过条件编译确保生产构建不包含 dev 页面：
+   *    1. pages.json 中 dev 路由用 `// #ifdef DEV` 包裹（生产构建剔除路由）
+   *    2. dev/index.vue template 用 `<!-- #ifdef DEV -->` 包裹（生产构建剔除渲染）
+   *    3. profile/index.vue 中 dev 入口按钮用 `v-if="isDev"` 包裹（生产构建不可见）
+   *
+   *  相关审计：REAUDIT-REPORT-100+ 第 3.4 节 编号 98
+   * ============================================================
+   */
   "name": "校园恋爱",
   "appid": "__UNI__CAMPUSLOVE",
   "description": "校园恋爱 uni-app 客户端",
@@ -9,6 +23,29 @@
     "usingComponents": true
   },
   "mp-weixin": {
+    /*
+     * ============================================================
+     *  AppID 状态（P1.18 / 2026-07-28 统一）
+     * ============================================================
+     *
+     *  当前 appid: wxc67cd233d72388d0（已统一到以下三个文件）
+     *    - apps/client/src/manifest.json:41（mp-weixin 实际构建使用，本文件）
+     *    - apps/client/project.config.json:28
+     *    - project.config.json:23（根目录）
+     *
+     *  ⚠️ 待运营/产品向微信开放平台核对 wxc67cd233d72388d0 是否为正式注册的
+     *    小程序 appid：
+     *    - 若为测试 appid：替换为正式 appid，同步更新上述三个文件
+     *    - 若为正式 appid：由运营签字确认，更新 docs/wechat-submission-materials-checklist.md
+     *      「AppID 确认」小节填入正式 appid 与确认人签字
+     *
+     *  注：manifest.json 是 mp-weixin 实际构建使用的配置文件，appid 以此为准。
+     *  project.config.json 仅用于微信开发者工具项目配置。
+     *
+     *  落实流程详见 docs/wechat-submission-materials-checklist.md「AppID 确认」小节
+     *  截图存档到 verification_logs/2026-07-28-mp-wechat/appid-confirmation.png
+     * ============================================================
+     */
     "appid": "wxc67cd233d72388d0",
     "setting": {
       "urlCheck": false,

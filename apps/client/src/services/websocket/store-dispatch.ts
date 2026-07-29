@@ -16,14 +16,9 @@
  * - /user/{userId}/queue/notifications 通知
  */
 
-import { useMessagesStore } from "../../stores/messages";
-import { useLikesStore } from "../../stores/likes";
-import type {
-  MessageItem,
-  MessageHeartSignal,
-  SystemNotification,
-} from "../../stores/messages";
-import type { HeartSignal } from "../../stores/likes";
+// 修复 no-duplicate-imports：将 value 与 type import 合并到单一 import 语句
+import { useMessagesStore, type MessageItem, type MessageHeartSignal, type SystemNotification } from "../../stores/messages";
+import { useLikesStore, type HeartSignal } from "../../stores/likes";
 import {
   isMessageItem,
   isHeartSignal,
@@ -118,7 +113,8 @@ export function handleNewMessage(data: unknown): void {
       }
     }
 
-    console.log("[WebSocket] 收到新私信:", message.id);
+    // 修复 no-console：消息接收日志改用 console.warn（允许的方法）
+    console.warn("[WebSocket] 收到新私信:", message.id);
   } catch (error) {
     console.error("[WebSocket] 处理新私信异常:", error);
   }
@@ -172,7 +168,7 @@ export function handleNewHeartSignal(data: unknown): void {
       // 静默处理
     }
 
-    console.log("[WebSocket] 收到新心动信号:", signal.id);
+    console.warn("[WebSocket] 收到新心动信号:", signal.id);
   } catch (error) {
     console.error("[WebSocket] 处理新心动信号异常:", error);
   }
@@ -214,7 +210,7 @@ export function handleNewNotification(data: unknown): void {
       }
     }
 
-    console.log("[WebSocket] 收到新通知:", notification.id);
+    console.warn("[WebSocket] 收到新通知:", notification.id);
   } catch (error) {
     console.error("[WebSocket] 处理新通知异常:", error);
   }

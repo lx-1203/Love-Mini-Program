@@ -523,7 +523,7 @@ async function handleMarkAllNotificationsRead() {
       </view>
 
       <!-- 搜索框 -->
-      <view class="search-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleSearchClick">
+      <view class="search-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.search')" @tap="handleSearchClick">
         <view class="search-bar__icon">
           <image :src="emojiIcons.search" mode="aspectFit" alt="" />
         </view>
@@ -531,8 +531,8 @@ async function handleMarkAllNotificationsRead() {
       </view>
 
       <!-- 功能入口区 -->
-      <view class="entry-section">
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleEntryClick('new-friend')">
+      <view class="entry-section" role="list">
+        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.newFriends')" @tap="handleEntryClick('new-friend')">
           <view class="entry-item__icon entry-item__icon--green">
             <image class="entry-item__emoji" :src="emojiIcons.smile" mode="aspectFit" alt="" />
           </view>
@@ -541,13 +541,13 @@ async function handleMarkAllNotificationsRead() {
             <text class="entry-item__badge-text">{{ messagesStore.pendingHeartSignals.length }}</text>
           </view>
         </view>
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleEntryClick('group-chat')">
+        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.groupChat')" @tap="handleEntryClick('group-chat')">
           <view class="entry-item__icon entry-item__icon--blue">
             <image class="entry-item__emoji" :src="emojiIcons.group" mode="aspectFit" alt="" />
           </view>
           <text class="entry-item__text">{{ t('messages.groupChat') }}</text>
         </view>
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleEntryClick('notification')">
+        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.notice')" @tap="handleEntryClick('notification')">
           <view class="entry-item__icon entry-item__icon--orange">
             <image class="entry-item__emoji" :src="emojiIcons.notification" mode="aspectFit" alt="" />
           </view>
@@ -558,7 +558,7 @@ async function handleMarkAllNotificationsRead() {
             </text>
           </view>
         </view>
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleEntryClick('assistant')">
+        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.assistant')" @tap="handleEntryClick('assistant')">
           <view class="entry-item__icon entry-item__icon--pink">
             <image class="entry-item__emoji" :src="emojiIcons.gift" mode="aspectFit" alt="" />
           </view>
@@ -569,8 +569,7 @@ async function handleMarkAllNotificationsRead() {
       <!-- 心动信号 Banner -->
       <view v-if="hasPendingHeartSignal" class="heart-signal-banner">
         <view
-          v-for="signal in messagesStore.pendingHeartSignals"
-          :key="signal.id"
+          v-for="signal in messagesStore.pendingHeartSignals" :key="signal.id"
           class="heart-signal-card list-item"
           :class="{ 'heart-signal-card--expiring': isSignalExpiringSoon(signal) }"
         >
@@ -608,6 +607,8 @@ async function handleMarkAllNotificationsRead() {
         class="social-warming-hint press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
+        role="button"
+        :aria-label="t('messages.socialWarming')"
         @tap="openAppPath('/pages/profile/index')"
       >
         <SafeImage :src="iconSrc.heartSignal" custom-class="social-warming-hint__icon" mode="aspectFit" />
@@ -641,6 +642,8 @@ async function handleMarkAllNotificationsRead() {
         class="mark-all-read-btn press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
+        role="button"
+        :aria-label="t('messages.markAllRead')"
         @tap="handleMarkAllNotificationsRead"
       >
         <text class="mark-all-read-btn__text">{{ t('messages.markAllRead') }}</text>
@@ -667,8 +670,7 @@ async function handleMarkAllNotificationsRead() {
           <!-- 私信列表 -->
           <view v-if="activeTab === 'private'" class="session-list" role="list">
         <view
-          v-for="(session, index) in privateSessionList"
-          :key="session.id"
+          v-for="(session, index) in privateSessionList" :key="session.id"
           class="session-row list-item"
           :class="{ 'session-row--pinned': session.pinned, 'session-row--last': index === privateSessionList.length - 1 && tempSessionList.length === 0 }"
           hover-class="session-row--hover"
@@ -703,8 +705,7 @@ async function handleMarkAllNotificationsRead() {
 
         <!-- 临时匿名会话 -->
         <view
-          v-for="(session, index) in tempSessionList"
-          :key="session.id"
+          v-for="(session, index) in tempSessionList" :key="session.id"
           class="session-row list-item session-row--temp"
           :class="{ 'session-row--last': index === tempSessionList.length - 1 }"
           hover-class="session-row--hover"
@@ -736,8 +737,7 @@ async function handleMarkAllNotificationsRead() {
       <!-- Phase 3：系统通知列表（含信号分类样式） -->
       <view v-else-if="activeTab === 'notifications'" class="notification-list" role="list">
         <view
-          v-for="(notification, index) in notificationList"
-          :key="notification.id"
+          v-for="(notification, index) in notificationList" :key="notification.id"
           class="notification-row list-item"
           :class="[
             { 'notification-row--unread': !notification.isRead, 'notification-row--last': index === notificationList.length - 1 },
@@ -920,7 +920,7 @@ async function handleMarkAllNotificationsRead() {
 
 .mark-all-read-btn__text {
   font-size: var(--fs-sm);
-  color: var(--c-brand-500, #3FCF8E);
+  color: var(--c-brand-500);
   font-weight: 500;
 }
 
@@ -948,7 +948,7 @@ async function handleMarkAllNotificationsRead() {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease;
+  transition: transform var(--d-normal, 200ms) ease;
 }
 
 /* #ifdef H5 */
@@ -964,12 +964,12 @@ async function handleMarkAllNotificationsRead() {
 
 .entry-item__icon--blue {
   background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
-  box-shadow: 0 var(--sp-2) var(--sp-5) var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.3)));
+  box-shadow: 0 var(--sp-2) var(--sp-5) var(--s-action-super);
 }
 
 .entry-item__icon--orange {
   background: linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-accent-400) 100%);
-  box-shadow: 0 var(--sp-2) var(--sp-5) var(--c-tag-match-to, var(--c-tag-match-to, rgba(249, 115, 22, 0.3)));
+  box-shadow: 0 var(--sp-2) var(--sp-5) var(--c-tag-match-to);
 }
 
 .entry-item__icon--pink {
@@ -980,7 +980,7 @@ async function handleMarkAllNotificationsRead() {
 .entry-item__emoji {
   width: 48rpx;
   height: 48rpx;
-  color: var(--c-neutral-0, #ffffff);
+  color: var(--c-neutral-0);
   flex-shrink: 0;
 }
 
@@ -1029,23 +1029,23 @@ async function handleMarkAllNotificationsRead() {
   padding: var(--sp-6);
   border-radius: var(--r-xl);
   background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-romance-50) 100%);
-  border: 1rpx solid var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15)));
+  border: 1rpx solid var(--c-brand-shadow-tint);
 }
 
 .heart-signal-card--expiring {
   border-color: var(--c-error);
   border-width: 2rpx;
-  animation: heart-signal-blink 1.5s ease-in-out infinite;
+  animation: heart-signal-blink var(--d-particle, 1500ms) ease-in-out infinite;
 }
 
 @keyframes heart-signal-blink {
   0%, 100% {
     border-color: var(--c-error);
-    box-shadow: 0 0 0 0 var(--c-error-bg-tint, var(--c-error-bg-tint, rgba(229, 69, 77, 0)));
+    box-shadow: 0 0 0 0 var(--c-error-bg-tint);
   }
   50% {
-    border-color: var(--c-shadow-romance-tint-stronger, var(--c-shadow-romance-tint-stronger, rgba(236, 72, 153, 0.5)));
-    box-shadow: 0 0 var(--sp-5) var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
+    border-color: var(--c-shadow-romance-tint-stronger);
+    box-shadow: 0 0 var(--sp-5) var(--s-romance);
   }
 }
 
@@ -1226,7 +1226,7 @@ async function handleMarkAllNotificationsRead() {
   padding: var(--sp-6) var(--sp-8);
   background: var(--c-bg-container);
   position: relative;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease, background 0.15s ease;
 }
 
 .session-row:not(.session-row--last)::after {
@@ -1409,7 +1409,7 @@ async function handleMarkAllNotificationsRead() {
   padding: var(--sp-6) var(--sp-8);
   background: var(--c-bg-container);
   position: relative;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease, background 0.15s ease;
 }
 
 .notification-row:not(.notification-row--last)::after {
@@ -1428,17 +1428,17 @@ async function handleMarkAllNotificationsRead() {
 }
 
 .notification-row--unread {
-  background: var(--c-gradient-card-atmosphere, var(--c-gradient-card-atmosphere, rgba(63, 207, 142, 0.02)));
+  background: var(--c-gradient-card-atmosphere);
 }
 
 /* 社交信号未读行高亮 */
 .notification-row--unread.signal-social {
-  background: var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.03)));
+  background: var(--c-romance-bg-tint);
 }
 
 /* 内容信号未读行高亮 */
 .notification-row--unread.signal-content {
-  background: var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63, 207, 142, 0.03)));
+  background: var(--c-brand-bg-tint);
 }
 
 /* ===== 通知图标 ===== */
@@ -1543,7 +1543,7 @@ async function handleMarkAllNotificationsRead() {
   padding: var(--sp-2) var(--sp-6);
   border-radius: var(--r-full);
   line-height: 1.4;
-  transition: all 0.2s ease;
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 /* 社交信号按钮：粉色 */

@@ -2,9 +2,9 @@
  * 管理后台 - 内容管理 API 封装（帖子 + 评论 + 举报）。
  *
  * 对应后端：
- *   - com.campuslove.api.admin.AdminPostController  (/api/admin/posts)
- *   - com.campuslove.api.admin.AdminCommentController (/api/admin/comments)
- *   - com.campuslove.api.admin.AdminReportController  (/api/admin/reports)
+ *   - com.campuslove.api.admin.AdminPostController  (/api/v1/admin/posts)
+ *   - com.campuslove.api.admin.AdminCommentController (/api/v1/admin/comments)
+ *   - com.campuslove.api.admin.AdminReportController  (/api/v1/admin/reports)
  *
  * 注：举报接口当前为占位实现，后端举报表后续落地后接口契约不变。
  */
@@ -64,31 +64,31 @@ export interface AdminPostListQuery {
 
 /**
  * 分页查询帖子列表。
- * GET /api/admin/posts
+ * GET /api/v1/admin/posts
  */
 export function listPosts(
   query: AdminPostListQuery = {}
 ): Promise<AdminPageView<AdminPostSummary>> {
-  return get<AdminPageView<AdminPostSummary>>("/admin/posts", query as Record<string, unknown>);
+  return get<AdminPageView<AdminPostSummary>>("/v1/admin/posts", query as Record<string, unknown>);
 }
 
 /**
  * 审核帖子（通过/拒绝）。
- * POST /api/admin/posts/{id}/audit
+ * POST /api/v1/admin/posts/{id}/audit
  */
 export function auditPost(
   id: number,
   req: AdminPostAuditRequest
 ): Promise<AdminPostAuditResponse> {
-  return post<AdminPostAuditResponse>(`/admin/posts/${id}/audit`, req);
+  return post<AdminPostAuditResponse>(`/v1/admin/posts/${id}/audit`, req);
 }
 
 /**
  * 删除帖子（软删除）。
- * DELETE /api/admin/posts/{id}
+ * DELETE /api/v1/admin/posts/{id}
  */
 export function deletePost(id: number): Promise<AdminPostDeleteResponse> {
-  return del<AdminPostDeleteResponse>(`/admin/posts/${id}`);
+  return del<AdminPostDeleteResponse>(`/v1/admin/posts/${id}`);
 }
 
 // ---------- 评论 ----------
@@ -119,20 +119,20 @@ export interface AdminCommentListQuery {
 
 /**
  * 分页查询评论列表。
- * GET /api/admin/comments
+ * GET /api/v1/admin/comments
  */
 export function listComments(
   query: AdminCommentListQuery = {}
 ): Promise<AdminPageView<AdminCommentSummary>> {
-  return get<AdminPageView<AdminCommentSummary>>("/admin/comments", query as Record<string, unknown>);
+  return get<AdminPageView<AdminCommentSummary>>("/v1/admin/comments", query as Record<string, unknown>);
 }
 
 /**
  * 删除评论。
- * DELETE /api/admin/comments/{id}
+ * DELETE /api/v1/admin/comments/{id}
  */
 export function deleteComment(id: number): Promise<AdminCommentDeleteResponse> {
-  return del<AdminCommentDeleteResponse>(`/admin/comments/${id}`);
+  return del<AdminCommentDeleteResponse>(`/v1/admin/comments/${id}`);
 }
 
 // ---------- 举报（占位） ----------
@@ -179,21 +179,21 @@ export interface AdminReportListQuery {
 
 /**
  * 分页查询举报列表（当前为占位实现，返回空列表）。
- * GET /api/admin/reports
+ * GET /api/v1/admin/reports
  */
 export function listReports(
   query: AdminReportListQuery = {}
 ): Promise<AdminPageView<AdminReportSummary>> {
-  return get<AdminPageView<AdminReportSummary>>("/admin/reports", query as Record<string, unknown>);
+  return get<AdminPageView<AdminReportSummary>>("/v1/admin/reports", query as Record<string, unknown>);
 }
 
 /**
  * 处理举报（当前为占位实现，仅校验参数后返回成功）。
- * POST /api/admin/reports/{id}/handle
+ * POST /api/v1/admin/reports/{id}/handle
  */
 export function handleReport(
   id: number,
   req: AdminReportHandleRequest
 ): Promise<AdminReportHandleResponse> {
-  return post<AdminReportHandleResponse>(`/admin/reports/${id}/handle`, req);
+  return post<AdminReportHandleResponse>(`/v1/admin/reports/${id}/handle`, req);
 }

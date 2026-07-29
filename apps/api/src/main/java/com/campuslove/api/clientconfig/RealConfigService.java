@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 客户端动态配置服务真实实现（Task 3.6）。
@@ -158,6 +159,7 @@ public class RealConfigService implements ConfigService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(cacheNames = CacheNames.CLIENT_CONFIG, key = "'hero_banners'")
     public List<HeroBannerView> loadHeroBanners() {
         return DEFAULT_HERO_BANNERS;

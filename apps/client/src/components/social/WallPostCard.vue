@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * WallPostCard — 村口帖子卡片
  *
@@ -8,7 +8,7 @@
  * - 举报：右上角"..."按钮打开 PostReportDialog，复用 /api/reports 接口
  *
  * mp-weixin 兼容：
- * - 使用 @tap.stop 阻止冒泡，避免触发卡片整体 tap
+ * - 使用 catchtap 阻止冒泡，避免触发卡片整体 tap
  * - 使用 hover-class 而非 :hover
  * - 不使用 import.meta.env
  * - 子组件 ref 调用使用 defineExpose 暴露的 play() 方法
@@ -66,7 +66,9 @@ const reportAriaLabel = computed(() => t('postReport.reportAria'));
 
 // 修复（严格模式 noUnusedLocals）：以下 ARIA 标签仅在模板的 #ifdef H5 条件编译块内引用，
 // vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
-defineExpose({ ariaLabel, likeAriaLabel, commentAriaLabel, shareAriaLabel, reportAriaLabel });
+// handleLike/openReport 通过 @tap.stop 绑定到模板，理论上 vue-tsc 可识别；
+// 保留 defineExpose 以便测试通过 wrapper.vm 直接调用。
+defineExpose({ ariaLabel, likeAriaLabel, commentAriaLabel, shareAriaLabel, reportAriaLabel, handleLike, openReport });
 
 /**
  * 处理点赞点击：
@@ -88,7 +90,7 @@ function handleLike() {
 
 /**
  * 打开举报弹窗
- * 使用 .stop 阻止冒泡到卡片 tap
+ * 使用 catchtap 阻止冒泡到卡片 tap（mp-weixin 原生阻止；H5 端由 uni-app 编译为带 stopPropagation 的 click 处理器）
  */
 function openReport() {
   lightHaptic();
@@ -139,8 +141,7 @@ function onReportSubmitted() {
     <text class="wall-content" v-if="content">{{ content }}</text>
     <view class="wall-images" v-if="images && images.length > 0">
       <view
-        v-for="(img, idx) in images.slice(0, 3)"
-        :key="idx"
+        v-for="(img, idx) in images.slice(0, 3)" :key="idx"
         class="wall-img-wrap"
       >
         <image
@@ -222,8 +223,8 @@ function onReportSubmitted() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: background-color 160ms ease-out;
+  border-radius: var(--r-circle, 50%);
+  transition: background-color var(--d-fast, 160ms) ease-out;
 }
 .wall-header__more--hover {
   background: var(--c-bg-hover, #f5f5f7);

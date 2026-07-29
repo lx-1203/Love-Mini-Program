@@ -9,12 +9,16 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 每日一问问题实体，对应 daily_questions 表。
  * 每天发布一个唯一问题。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "daily_questions")
 public class DailyQuestion {
 
@@ -35,6 +39,9 @@ public class DailyQuestion {
     private String category;
 
     /** 记录创建时间（问题入库时间，用于每日推送排序） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

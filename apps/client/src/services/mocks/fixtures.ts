@@ -395,7 +395,8 @@ const mockLoggedInSession: UserSession = {
   },
 };
 
-let loginHero: LoginHeroConfig = {
+// 修复 prefer-const：loginHero 未被重新赋值，改为 const
+const loginHero: LoginHeroConfig = {
   heroMode: "video",
   heroVideoUrl: null,
   heroPosterUrl: null,
@@ -476,7 +477,8 @@ const MAKE_UP_COST_POINTS = 50;
  */
 const submissionDetails = new Map<number, SubmissionDetailView>();
 
-let profileStats: ProfileStats = {
+// 修复 prefer-const：profileStats 未被重新赋值，改为 const
+const profileStats: ProfileStats = {
   followers: 16,
   following: 28,
   likes: 104,
@@ -593,7 +595,8 @@ let matchResult: MatchResult = {
 let nextMatchQueueStatus: MatchResult["queueStatus"] | null = null;
 
 let tempChatSessions: TempChatSession[] = [];
-let tempChatSessionMetaById: Record<
+// 修复 prefer-const：tempChatSessionMetaById 未被重新赋值（仅修改属性），改为 const
+const tempChatSessionMetaById: Record<
   string,
   {
     pinned: boolean;
@@ -606,7 +609,7 @@ let submissionSeed = 1000;
 let submissions: SubmissionRecord[] = [
   {
     id: 1,
-    type: "feedback",
+    type: "FEEDBACK",
     title: t("mockData.submissions.title1"),
     status: "processing",
     latestReplySummary: t("mockData.submissions.reply1"),
@@ -615,7 +618,7 @@ let submissions: SubmissionRecord[] = [
   },
   {
     id: 2,
-    type: "suggestion",
+    type: "SUGGESTION",
     title: t("mockData.submissions.title2"),
     status: "reviewed",
     latestReplySummary: t("mockData.submissions.reply2"),
@@ -929,8 +932,14 @@ export const mockFixtures = {
   getScheduleProfile(): ScheduleProfile {
     return clone(scheduleProfile);
   },
-  saveScheduleProfile(payload: ScheduleProfile): ScheduleProfile {
-    scheduleProfile = clone(payload);
+  saveScheduleProfile(payload: Schemas["ScheduleProfileRequest"]): ScheduleProfile {
+    // ScheduleProfileRequest 中 preferredTimeWindows/courseBlocks 为可选字段，
+    // 而 ScheduleProfile（响应）中为必填。Mock 模式下用空数组兜底，保持响应契约。
+    scheduleProfile = {
+      preferredCampusArea: payload.preferredCampusArea,
+      preferredTimeWindows: payload.preferredTimeWindows ?? [],
+      courseBlocks: payload.courseBlocks ?? [],
+    };
     session = {
       ...session,
       scheduleCompleted: true,
@@ -989,7 +998,7 @@ export const mockFixtures = {
   createMatch(payload: Schemas["MatchRequest"]): MatchResult {
     matchResult = buildMatchResult(
       `match-${Date.now()}`,
-      toTopicLabel(payload.topicIds[0]),
+      toTopicLabel(payload.topicIds?.[0]),
       payload.durationMinutes
     );
     return clone(matchResult);
@@ -1066,7 +1075,7 @@ export const mockFixtures = {
   respondToContactExchange(
     id: string,
     actor: "self" | "peer",
-    decision: "accepted" | "rejected"
+    decision: "accept" | "reject" | "revoke"
   ): TempChatSession {
     const current = ensureSession(id);
 
@@ -1076,7 +1085,7 @@ export const mockFixtures = {
 
     const currentStatus = current.contactExchange.status;
     const status =
-      decision === "rejected"
+      decision === "reject"
         ? "rejected"
         : actor === "self"
           ? currentStatus === "accepted-by-peer"

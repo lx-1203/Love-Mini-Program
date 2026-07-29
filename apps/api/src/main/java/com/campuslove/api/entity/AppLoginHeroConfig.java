@@ -8,6 +8,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 登录主视觉配置实体，对应 app_login_hero_config 表。
@@ -15,6 +19,7 @@ import java.time.LocalDateTime;
  * 通过 is_active 字段控制当前生效的配置行。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "app_login_hero_config")
 public class AppLoginHeroConfig {
 
@@ -60,10 +65,16 @@ public class AppLoginHeroConfig {
     private Long updatedBy;
 
     /** 创建时间 */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 更新时间 */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

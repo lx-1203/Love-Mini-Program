@@ -302,7 +302,7 @@ public class RealNotificationService implements NotificationService {
      * @param type 通知类型字符串
      * @return "SOCIAL" 或 "CONTENT"
      */
-    static String determineSignalType(String type) {
+    public static String determineSignalType(String type) {
         if (type == null) {
             return SIGNAL_TYPE_SOCIAL;
         }

@@ -310,7 +310,6 @@ export async function getCurrentLocaleAsync(): Promise<SupportedLocale> {
 export function getCurrentLocale(): SupportedLocale {
   try {
     // 使用全局对象上的 i18n 实例（若有），避免直接 require 导致的循环依赖
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 全局对象访问需 any 兼容
     const globalI18n = (globalThis as unknown as { __I18N__?: { locale?: { value?: string } } }).__I18N__;
     if (globalI18n && globalI18n.locale && globalI18n.locale.value) {
       return normalizeLocale(globalI18n.locale.value);

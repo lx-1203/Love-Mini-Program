@@ -1,4 +1,5 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import PersonCard from './PersonCard.vue';
 
 interface Person {
@@ -22,11 +23,13 @@ const emit = defineEmits<{
   tap: [personId: string];
 }>();
 
+const { t } = useI18n();
+
 // 修复（严格模式 noUnusedLocals）：原 `const t = designTokens;` 后未使用 t，
 // designTokens 导入也仅用于该别名；模板/style 未引用 designTokens，故导入与别名一并移除。
 
 function getActionText(person: Person) {
-  return person.hasCompletedProfile ? '去聊天' : '先完成设置';
+  return person.hasCompletedProfile ? t('home.actionChat') : t('home.actionCompleteProfile');
 }
 </script>
 
@@ -73,7 +76,7 @@ function getActionText(person: Person) {
   border-radius: var(--r-xl);
   background: linear-gradient(90deg, var(--c-neutral-50, #f1f5f9) 25%, var(--c-neutral-200, #e2e8f0) 50%, var(--c-neutral-50, #f1f5f9) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  animation: shimmer var(--d-particle, 1500ms) ease-in-out infinite;
 }
 @keyframes shimmer {
   0% { background-position: 200% 0; }

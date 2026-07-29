@@ -4,6 +4,8 @@ import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
@@ -84,7 +86,7 @@ public class AdminConfigController {
      */
     @PutMapping("/rules/{id}")
     public ResponseEntity<AdminRuleView> updateRule(
-            @PathVariable("id") Long id,
+            @PathVariable("id") @Positive Long id,
             @Valid @RequestBody UpdateRuleRequest req) {
         Long operatorId = SecurityUtils.getCurrentUserId();
         try {
@@ -126,8 +128,8 @@ public class AdminConfigController {
  * 更新系统参数配置请求体。
  */
 record UpdateConfigRequest(
-        @NotBlank String value,
-        String description
+        @NotBlank @Size(max = 2000) String value,
+        @Size(max = 500) String description
 ) {}
 
 /**
@@ -135,9 +137,9 @@ record UpdateConfigRequest(
  * 所有字段可选，null 表示不修改对应字段。
  */
 record UpdateRuleRequest(
-        String expression,
+        @Size(max = 2000) String expression,
         Boolean enabled,
-        String description
+        @Size(max = 500) String description
 ) {}
 
 /**

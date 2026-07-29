@@ -61,12 +61,12 @@ const iconSrc = computed(() => {
 }
 
 .pill--success {
-  background: rgba(16, 185, 129, 0.12);
+  background: var(--c-success-bg-tint, rgba(16, 185, 129, 0.12));
   color: var(--c-success);
 }
 
 .pill--warning {
-  background: rgba(245, 158, 11, 0.12);
+  background: var(--c-warning-bg-tint, rgba(245, 158, 11, 0.12));
   color: var(--c-warning);
 }
 </style>

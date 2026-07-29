@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 校园话题实体，对应 campus_topics 表。
  * 包含课程讨论、社团招募、活动组织、学习互助、校园生活、校友交流等分类话题。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "campus_topics")
 public class CampusTopic {
 
@@ -58,10 +63,16 @@ public class CampusTopic {
     private Boolean isAnonymous = false;
 
     /** 记录创建时间（话题发布时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（话题编辑时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

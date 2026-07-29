@@ -161,6 +161,10 @@ async function submit() {
     uni.showToast({ title: message, icon: "none" });
   }
 }
+
+// 修复（严格模式 noUnusedLocals）：onContentTap/selectReason/submit 通过 @tap.stop 绑定到模板，
+// 理论上 vue-tsc 可识别；保留 defineExpose 以便测试通过 wrapper.vm 直接调用。
+defineExpose({ onContentTap, selectReason, submit });
 </script>
 
 <template>
@@ -187,8 +191,7 @@ async function submit() {
       <!-- 原因列表 -->
       <view class="report-sheet__reasons">
         <view
-          v-for="item in reasons"
-          :key="item.key"
+          v-for="item in reasons" :key="item.key"
           class="reason-item press-feedback"
           :class="{ 'reason-item--selected': selectedReason === item.key }"
           @tap.stop="selectReason(item.key)"
@@ -254,7 +257,7 @@ async function submit() {
   right: 0;
   top: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--c-black-overlay-50, rgba(0, 0, 0, 0.5));
   z-index: 999;
   display: flex;
   align-items: flex-end;
@@ -272,12 +275,12 @@ async function submit() {
 .report-sheet {
   width: 100%;
   background: var(--c-bg-container, #ffffff);
-  border-top-left-radius: 32rpx;
-  border-top-right-radius: 32rpx;
+  border-top-left-radius: var(--r-xl, 24rpx);
+  border-top-right-radius: var(--r-xl, 24rpx);
   padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom, 0));
   box-sizing: border-box;
   /* 进入动画：从底部滑入 */
-  animation: report-sheet-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: report-sheet-in var(--d-slow, 250ms) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes report-sheet-in {
@@ -302,7 +305,7 @@ async function submit() {
 .report-sheet__title {
   font-size: var(--fs-lg, 32rpx);
   font-weight: 600;
-  color: var(--c-text-primary, #1a1a2e);
+  color: var(--c-text-primary, #1F2329);
   line-height: 1.4;
 }
 
@@ -327,7 +330,7 @@ async function submit() {
   justify-content: space-between;
   padding: 24rpx 16rpx;
   border-radius: var(--r-md, 16rpx);
-  transition: background-color 160ms ease-out;
+  transition: background-color var(--d-fast, 120ms) ease-out;
 }
 
 .reason-item--hover {
@@ -340,19 +343,19 @@ async function submit() {
 
 .reason-item__label {
   font-size: var(--fs-md, 28rpx);
-  color: var(--c-text-primary, #1a1a2e);
+  color: var(--c-text-primary, #1F2329);
   line-height: 1.4;
 }
 
 .reason-item__radio {
   width: 36rpx;
   height: 36rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   border: 2rpx solid var(--c-border, #d1d5db);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 160ms ease-out;
+  transition: all var(--d-fast, 120ms) ease-out;
 }
 
 .reason-item__radio--on {
@@ -380,7 +383,7 @@ async function submit() {
   width: 100%;
   min-height: 120rpx;
   font-size: var(--fs-sm, 24rpx);
-  color: var(--c-text-primary, #1a1a2e);
+  color: var(--c-text-primary, #1F2329);
   line-height: 1.5;
   background: transparent;
 }
@@ -408,7 +411,7 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 160ms ease-out;
+  transition: opacity var(--d-fast, 120ms) ease-out;
 }
 
 .report-btn--cancel {
@@ -430,7 +433,7 @@ async function submit() {
 .report-btn__text {
   font-size: var(--fs-md, 28rpx);
   font-weight: 500;
-  color: var(--c-text-primary, #1a1a2e);
+  color: var(--c-text-primary, #1F2329);
   line-height: 1.4;
 }
 

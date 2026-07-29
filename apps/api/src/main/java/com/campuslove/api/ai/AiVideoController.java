@@ -1,6 +1,8 @@
 package com.campuslove.api.ai;
 
+import jakarta.validation.Valid;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -53,7 +55,8 @@ public class AiVideoController {
      * @throws RealAiVideoService.AiApiException 当上游返回其他错误时
      */
     @PostMapping("/video/generate")
-    public Map<String, Object> generateVideo(@RequestBody Map<String, Object> params) {
+    @PreAuthorize("hasRole('USER')")
+    public Map<String, Object> generateVideo(@Valid @RequestBody Map<String, Object> params) {
         return aiVideoService.generateVideo(params);
     }
 
@@ -66,7 +69,8 @@ public class AiVideoController {
      * @throws RealAiVideoService.AiApiException 当上游返回其他错误时
      */
     @PostMapping("/image/generate")
-    public Map<String, Object> generateImage(@RequestBody Map<String, Object> params) {
+    @PreAuthorize("hasRole('USER')")
+    public Map<String, Object> generateImage(@Valid @RequestBody Map<String, Object> params) {
         return aiVideoService.generateImage(params);
     }
 

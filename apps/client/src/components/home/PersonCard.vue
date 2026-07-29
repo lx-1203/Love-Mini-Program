@@ -86,7 +86,7 @@ defineExpose({ ariaLabel });
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   transition: box-shadow var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 

@@ -35,6 +35,18 @@ const animKey = ref<number>(0);
 /** 重置定时器引用，用于卸载时清理 */
 let resetTimer: ReturnType<typeof setTimeout> | null = null;
 
+// #ifdef H5
+/**
+ * P6 a11y：检测用户是否启用了「减少动态效果」系统设置
+ * 仅在 H5 调用 window.matchMedia，mp-weixin 端无此 API
+ * 命中时 play() 直接返回，不触发粒子爆破动画
+ */
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// #endif
+
 /** 粒子列表：12 个粒子，每个有不同角度、距离、缩放、延迟 */
 const particles = Array.from({ length: 12 }, (_, i) => {
   // 均匀分布 12 个方向，加少量随机偏移避免完全对称
@@ -47,7 +59,7 @@ const particles = Array.from({ length: 12 }, (_, i) => {
     distance,
     delay: i * 16, // 错峰启动，制造层次感
     scale: (0.6 + (i % 3) * 0.2).toFixed(2),
-    color: ["#EC4899", "#F43F5E", "#FB7185"][i % 3],
+    color: ["var(--c-romance-500)", "var(--c-romance-400)", "var(--c-romance-300)"][i % 3],
   };
 });
 
@@ -58,6 +70,10 @@ const particles = Array.from({ length: 12 }, (_, i) => {
  * 确保 consecutive 多次点击都能正常播放。
  */
 async function play() {
+  // #ifdef H5
+  // P6 a11y：reduced-motion 模式下跳过粒子爆破动画，避免前庭功能障碍用户不适
+  if (prefersReducedMotion) return;
+  // #endif
   // 重置 playing 让 DOM 移除后再添加，触发动画重启
   playing.value = false;
   await nextTick();
@@ -102,8 +118,7 @@ defineExpose({ t, play });
 
     <!-- 12 个心形粒子：向四周飞散 -->
     <view
-      v-for="p in particles"
-      :key="p.id"
+      v-for="p in particles" :key="p.id"
       class="like-burst__particle"
       :style="{
         '--particle-angle': p.angle + 'deg',
@@ -138,13 +153,13 @@ defineExpose({ t, play });
   left: 0;
   top: 0;
   transform: translate(-50%, -50%) scale(0);
-  animation: like-burst-heart 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: like-burst-heart var(--d-bounce, 400ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .like-burst__heart-icon {
   font-size: var(--fs-7xl, 56rpx);
   color: var(--c-romance-500, #EC4899);
-  text-shadow: 0 4rpx 16rpx rgba(236, 72, 153, 0.4);
+  text-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-stronger, rgba(236, 72, 153, 0.4));
 }
 
 @keyframes like-burst-heart {
@@ -172,7 +187,7 @@ defineExpose({ t, play });
   left: 0;
   top: 0;
   transform: translate(-50%, -50%) scale(0);
-  animation: like-burst-particle 1200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: like-burst-particle var(--d-particle, 1500ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
   animation-delay: var(--particle-delay, 0ms);
 }
 
@@ -181,7 +196,7 @@ defineExpose({ t, play });
   color: var(--particle-color, #EC4899);
   /* 微微旋转增加灵动感 */
   display: inline-block;
-  animation: like-burst-particle-rotate 1200ms ease-out forwards;
+  animation: like-burst-particle-rotate var(--d-particle, 1500ms) ease-out forwards;
   animation-delay: var(--particle-delay, 0ms);
 }
 
@@ -208,5 +223,21 @@ defineExpose({ t, play });
 @keyframes like-burst-particle-rotate {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(calc(var(--particle-angle, 0deg) * 0.5)); }
+}
+
+/* P6 a11y：尊重 prefers-reduced-motion，关闭中心大红心与粒子飞散动画 */
+@media (prefers-reduced-motion: reduce) {
+  .like-burst__heart {
+    animation: none !important;
+    transition: none !important;
+  }
+  .like-burst__particle {
+    animation: none !important;
+    transition: none !important;
+  }
+  .like-burst__particle-icon {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

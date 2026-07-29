@@ -98,7 +98,8 @@ export function resolveProfileGuard(pagePath: string): ProfileGuardDecision {
   // 如果资料已完善，直接放行
   if (isProfileComplete) {
     if (isDev) {
-      console.debug("[profile-guard] 放行（资料已完善）:", {
+      // 修复 no-console：调试日志改用 console.warn（允许的方法）
+      console.warn("[profile-guard] 放行（资料已完善）:", {
         pagePath,
         completionPercent,
       });
@@ -109,7 +110,7 @@ export function resolveProfileGuard(pagePath: string): ProfileGuardDecision {
   // 如果页面不在锁定列表中，放行
   if (!locked) {
     if (isDev) {
-      console.debug("[profile-guard] 放行（页面未锁定）:", {
+      console.warn("[profile-guard] 放行（页面未锁定）:", {
         pagePath,
         completionPercent,
         isProfileComplete,
@@ -121,7 +122,7 @@ export function resolveProfileGuard(pagePath: string): ProfileGuardDecision {
   // 拦截并返回 shouldShowModal=true，由调用方弹出 UnlockGuideModal 引导
   // 不再静默重定向到 setup 页，避免用户体验突兀
   if (isDev) {
-    console.debug("[profile-guard] 拦截并请求展示弹窗:", {
+    console.warn("[profile-guard] 拦截并请求展示弹窗:", {
       pagePath,
       isProfileComplete,
       completionPercent,

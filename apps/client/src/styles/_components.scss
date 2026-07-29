@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // 校园恋爱小程序 — 组件级共享样式
 // 版本: 1.0.0
 // 说明:
@@ -45,7 +45,7 @@
 
 // 高层级卡片：更强的阴影
 .base-card--elevated {
-  box-shadow: 0 12rpx 32rpx rgba(15, 23, 42, 0.08),
+  box-shadow: var(--s-lg, 0 12rpx 32rpx var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.08))),
               0 4rpx 12rpx rgba(15, 23, 42, 0.04);
 }
 
@@ -62,7 +62,7 @@
   border: none;
   position: relative;
   overflow: hidden;
-  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
+  transition: transform var(--d-fast, 150ms) cubic-bezier(0.4, 0, 0.2, 1),
               opacity 150ms cubic-bezier(0.4, 0, 0.2, 1),
               background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -269,7 +269,7 @@
 // ---------- 按压反馈工具类（统一封装） ----------
 // 修复 P3 重复样式问题：原 .btn-press / .press-scale / .press-feedback 在 App.vue 与 global.scss 中重复定义
 .base-press {
-  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--d-fast, 150ms) cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
 }
 

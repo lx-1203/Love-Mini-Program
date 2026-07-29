@@ -2,7 +2,6 @@ package com.campuslove.api.config;
 
 import com.campuslove.api.auth.JwtAccessDeniedHandler;
 import com.campuslove.api.auth.JwtAuthenticationEntryPoint;
-import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -48,18 +47,17 @@ public class SecurityConfig {
 
     /**
      * CORS 允许的源列表，从配置 app.cors.allowed-origins 读取。
-     * 修复：原代码硬编码 localhost 端口，无法适应生产环境具体域名。
-     * 配置缺失时回退到本地开发端口，保证开发体验。
      *
      * <p>Task 0.6.2：配置项 key 从 {@code app.security.cors.allowed-origins}
      * 收敛为 {@code app.cors.allowed-origins}，与 {@link WebConfig#addCorsMappings}
      * 共享同一配置源，避免 real / mock profile 间不一致。
      *
      * <p>显式支持环境变量 CORS_ALLOWED_ORIGINS 直接覆盖，
-     * 优先级：app.cors.allowed-origins > CORS_ALLOWED_ORIGINS > 本地开发默认值。
-     * 生产部署时只需设置 CORS_ALLOWED_ORIGINS=https://example.com 即可。</p>
+     * 优先级：app.cors.allowed-origins > CORS_ALLOWED_ORIGINS > 空。
+     * 默认值清空，避免硬编码 localhost：生产环境必须显式配置 CORS_ALLOWED_ORIGINS，
+     * mock profile 在 application-mock.yml 中提供 localhost 默认值供本地开发使用。</p>
      */
-    @Value("${app.cors.allowed-origins:${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5177,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5177}}")
+    @Value("${app.cors.allowed-origins:${CORS_ALLOWED_ORIGINS:}}")
     private String allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,

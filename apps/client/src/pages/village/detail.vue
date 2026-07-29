@@ -1,18 +1,20 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 帖子详情页
  * 展示完整帖子内容、评论列表和互动功能
  * 包含作者交互卡片（关注/私信/校友标签）、相似作者推荐和转发功能
  */
-import { ref, onUnmounted } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
 import { useMessagesStore } from "../../stores/messages";
 import { useReportStore } from "../../stores/report";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
 import { openAppPath } from "../../utils/navigation";
 import SafeImage from "../../components/common/SafeImage.vue";
+import EmptyState from "../../components/common/EmptyState.vue";
 import PostReportDialog from "../../components/social/PostReportDialog.vue";
 import { IMAGE_PATHS } from "../../config/images";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
@@ -21,6 +23,7 @@ import { resolveMediaUrl } from "../../utils/media";
 const villageStore = useVillageStore();
 const messagesStore = useMessagesStore();
 const reportStore = useReportStore();
+const { t, tm } = useI18n();
 // 修复（严格模式 noUnusedLocals）：sessionStore 声明后未在脚本/模板引用，已移除。
 // 修复（严格模式 noUnusedLocals）：loadingSimilarAuthors 从 storeToRefs 解构后未引用，已移除。
 const { currentPost, comments, loading, similarAuthors } = storeToRefs(villageStore);
@@ -102,7 +105,13 @@ function goBack() {
 }
 
 /** 举报原因选项（与产品约定，覆盖常见违规场景） */
-const REPORT_REASONS = ["垃圾广告", "辱骂攻击", "色情低俗", "违法违规", "其他"];
+const REPORT_REASONS = computed(() => [
+  t("village.detail.reportReasonSpam"),
+  t("village.detail.reportReasonAbuse"),
+  t("village.detail.reportReasonPorn"),
+  t("village.detail.reportReasonIllegal"),
+  t("village.detail.reportReasonOther"),
+]);
 
 /**
  * 长按帖子正文：弹出操作菜单（复制内容 / 举报）。
@@ -113,20 +122,22 @@ const REPORT_REASONS = ["垃圾广告", "辱骂攻击", "色情低俗", "违法�
  */
 async function handlePostLongpress() {
   if (!currentPost.value) return;
-  // 操作菜单：复制 + 举报
-  const actions = ["复制内容", "举报"];
+  // 操作菜单：复制 + 举报（Task 28: 文案走 i18n）
+  const copyContentLabel = t("village.detail.copyContent");
+  const reportLabel = t("village.detail.reportAction");
+  const actions = [copyContentLabel, reportLabel];
   try {
     const res = await uni.showActionSheet({ itemList: actions });
     const action = actions[res.tapIndex] ?? actions[0] ?? "";
-    if (action === "复制内容") {
+    if (action === copyContentLabel) {
       // 调用 uni.setClipboardData 写入剪贴板
       uni.setClipboardData({
         data: currentPost.value.content || "",
         fail: () => {
-          uni.showToast({ title: "复制失败，请重试", icon: "none" });
+          uni.showToast({ title: t("village.detail.copyFailed"), icon: "none" });
         },
       });
-    } else if (action === "举报") {
+    } else if (action === reportLabel) {
       // 触发举报弹窗
       handleReportPost();
     }
@@ -147,10 +158,11 @@ async function handleReportComment(comment: { id: string }) {
   // 1. 选择举报原因
   let reason: string;
   try {
-    const res = await uni.showActionSheet({ itemList: REPORT_REASONS });
-    // 修复（严格模式 noUncheckedIndexedAccess）：REPORT_REASONS[res.tapIndex] 索引访问返回 string | undefined，
+    const reasons = REPORT_REASONS.value;
+    const res = await uni.showActionSheet({ itemList: reasons });
+    // 修复（严格模式 noUncheckedIndexedAccess）：reasons[res.tapIndex] 索引访问返回 string | undefined，
     // 此处兜底取第一项，确保 reason 始终为 string（与 itemList 一一对应，正常流程不会越界）。
-    reason = REPORT_REASONS[res.tapIndex] ?? REPORT_REASONS[0] ?? "";
+    reason = reasons[res.tapIndex] ?? reasons[0] ?? "";
   } catch (_e) {
     // 用户取消选择，静默退出
     return;
@@ -160,11 +172,11 @@ async function handleReportComment(comment: { id: string }) {
   let description: string | undefined;
   try {
     const res = await uni.showModal({
-      title: "补充描述（可选）",
+      title: t("village.detail.reportDescTitle"),
       editable: true,
-      placeholderText: "请输入补充描述...",
-      confirmText: "提交举报",
-      cancelText: "跳过",
+      placeholderText: t("village.detail.reportDescPlaceholder"),
+      confirmText: t("village.detail.reportSubmit"),
+      cancelText: t("village.detail.reportSkip"),
     });
     if (res.confirm && res.content) {
       description = res.content;
@@ -176,9 +188,9 @@ async function handleReportComment(comment: { id: string }) {
   // 3. 调用举报接口
   try {
     await reportStore.reportTarget("COMMENT", comment.id, reason, description);
-    uni.showToast({ title: "举报已提交", icon: "success" });
+    uni.showToast({ title: t("village.detail.reportSubmitted"), icon: "success" });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "举报失败";
+    const message = err instanceof Error ? err.message : t("village.detail.reportFailed");
     uni.showToast({ title: message, icon: "none" });
   }
 }
@@ -242,10 +254,10 @@ async function submitComment() {
   try {
     await villageStore.commentPost(currentPost.value.id, commentContent.value.trim());
     commentContent.value = "";
-    uni.showToast({ title: "评论成功", icon: "success" });
-  } catch (error) {
+    uni.showToast({ title: t("village.commentSuccess"), icon: "success" });
+  } catch (_error) {
     uni.showToast({
-      title: villageStore.errorMessage || "评论失败",
+      title: villageStore.errorMessage || t("village.detail.commentFailed"),
       icon: "none",
     });
   } finally {
@@ -293,6 +305,9 @@ function openShareModal() {
 /**
  * 关闭转发弹窗
  */
+/* ========== 空操作占位（catchtap 占位 handler，mp-weixin 要求 catchtap 必须绑定 handler） ========== */
+function noop() {}
+
 function closeShareModal() {
   showShareModal.value = false;
   shareComment.value = "";
@@ -309,10 +324,10 @@ async function confirmShare() {
     await villageStore.sharePost(currentPost.value.id, shareComment.value.trim() || undefined);
     showShareModal.value = false;
     shareComment.value = "";
-    uni.showToast({ title: "转发成功", icon: "success" });
-  } catch (error) {
+    uni.showToast({ title: t("village.detail.shareSuccess"), icon: "success" });
+  } catch (_error) {
     uni.showToast({
-      title: villageStore.errorMessage || "转发失败",
+      title: villageStore.errorMessage || t("village.detail.shareFailed"),
       icon: "none",
     });
   } finally {
@@ -355,13 +370,22 @@ function sendMessageToSimilarAuthor(userId: string) {
 /** 兴趣类别 */
 type InterestCategory = "sports" | "arts" | "tech" | "life";
 
-/** 各类别关键词集合（用于兴趣 chip 颜色映射） */
-const INTEREST_KEYWORDS: Record<InterestCategory, string[]> = {
-  sports: ["运动", "健身", "跑步", "篮球", "足球", "徒步", "户外", "瑜伽", "骑行", "游泳", "羽毛球", "网球", "乒乓球"],
-  arts: ["阅读", "读书", "音乐", "电影", "绘画", "设计", "摄影", "写作", "书法", "戏剧", "舞蹈", "艺术", "文学"],
-  tech: ["编程", "科技", "互联网", "数码", "AI", "计算机", "技术", "产品", "创业"],
-  life: ["美食", "旅行", "旅游", "烹饪", "烘焙", "志愿者", "宠物", "园艺", "手工", "桌游", "生活"],
-};
+/**
+ * 各类别关键词集合（用于兴趣 chip 颜色映射）。
+ *
+ * Task 28：原本为硬编码字面量，现通过 i18n 引用 `village.interestKeywords.*`。
+ * i18n 中各 key 的中文值与原字面量保持一致，保证 `text.includes(kw)` 匹配逻辑不回归；
+ * 切换 en-US 时数组值不变（仍为中文），因为业务匹配的是用户输入的中文兴趣文本。
+ */
+const INTEREST_KEYWORDS = computed<Record<InterestCategory, string[]>>(() => {
+  const raw = tm("village.interestKeywords") as unknown as Record<InterestCategory, string[]>;
+  return {
+    sports: Array.isArray(raw.sports) ? raw.sports : [],
+    arts: Array.isArray(raw.arts) ? raw.arts : [],
+    tech: Array.isArray(raw.tech) ? raw.tech : [],
+    life: Array.isArray(raw.life) ? raw.life : [],
+  };
+});
 
 /**
  * 根据兴趣文本返回所属类别
@@ -369,8 +393,9 @@ const INTEREST_KEYWORDS: Record<InterestCategory, string[]> = {
  */
 function getInterestCategory(interest: string): InterestCategory {
   const text = interest.toLowerCase();
-  for (const category of Object.keys(INTEREST_KEYWORDS) as InterestCategory[]) {
-    if (INTEREST_KEYWORDS[category].some((kw) => text.includes(kw.toLowerCase()))) {
+  const keywordMap = INTEREST_KEYWORDS.value;
+  for (const category of Object.keys(keywordMap) as InterestCategory[]) {
+    if (keywordMap[category].some((kw) => text.includes(kw.toLowerCase()))) {
       return category;
     }
   }
@@ -406,25 +431,31 @@ onLoad((query) => {
     void villageStore.fetchSimilarAuthors(currentPost.value.id);
   }
 });
+
+// 修复（严格模式 noUnusedLocals）：handleCommentLike/noop 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ handleCommentLike, noop });
 </script>
 
 <template>
   <view class="detail-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
-      <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">返回</text>
+      <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.backAria')" @tap="goBack">
+        <text class="back-icon">{{ t("village.detail.back") }}</text>
       </view>
-      <text class="detail-header__title">帖子详情</text>
+      <text class="detail-header__title">{{ t("village.detailTitle") }}</text>
       <!-- 举报按钮：仅在帖子已加载时显示 -->
       <view
         v-if="currentPost"
         class="detail-header__report press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
+        role="button"
+        :aria-label="t('village.reportPostAria')"
         @tap="handleReportPost"
       >
-        <text class="detail-header__report-text">举报</text>
+        <text class="detail-header__report-text">{{ t("village.detail.report") }}</text>
       </view>
       <view v-else class="detail-header__spacer" />
     </view>
@@ -456,7 +487,7 @@ onLoad((query) => {
               <!-- 校友标签 -->
               <view v-if="currentPost.isAlumni" class="identity-tag identity-tag--alumni">
                 <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="identity-tag__icon" mode="aspectFit" />
-                <text class="identity-tag__text">校友</text>
+                <text class="identity-tag__text">{{ t("village.alumni") }}</text>
               </view>
             </view>
             <text class="author-info__headline">{{ currentPost.author.headline }}</text>
@@ -473,8 +504,7 @@ onLoad((query) => {
         <!-- 兴趣标签（按类别着色） -->
         <view v-if="currentPost.author.interests && currentPost.author.interests.length > 0" class="author-card__interests">
           <text
-            v-for="interest in currentPost.author.interests"
-            :key="interest"
+            v-for="interest in currentPost.author.interests" :key="interest"
             class="interest-chip"
             :class="getInterestChipClass(interest)"
           >{{ interest }}</text>
@@ -487,14 +517,16 @@ onLoad((query) => {
             :class="{ 'action-btn--follow-active': currentPost.isFollowed }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            role="button"
+            :aria-label="t('village.followAria')"
             @tap="handleFollow"
           >
             <text class="action-btn__text">
-              {{ currentPost.isFollowed ? "已关注" : "+ 关注" }}
+              {{ currentPost.isFollowed ? t("village.followed") : t("village.follow") }}
             </text>
           </view>
-          <view class="action-btn action-btn--message press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="sendMessage">
-            <text class="action-btn__text">私信</text>
+          <view class="action-btn action-btn--message press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.sendMessageAria')" @tap="sendMessage">
+            <text class="action-btn__text">{{ t("village.detail.message") }}</text>
           </view>
         </view>
       </view>
@@ -508,8 +540,7 @@ onLoad((query) => {
           <view v-if="currentPost.images.length > 0" class="post-images">
             <!-- SubTask 5.2.4 / 5.5.2：列表图片使用 SafeImage，自动 lazy-load + @error 占位图回退 -->
             <SafeImage
-              v-for="(img, idx) in currentPost.images"
-              :key="idx"
+              v-for="(img, idx) in currentPost.images" :key="idx"
               custom-class="post-image"
               :src="img"
               :fallback="IMAGE_PATHS.POST_PLACEHOLDER"
@@ -521,8 +552,7 @@ onLoad((query) => {
           <!-- 话题标签 -->
           <view v-if="currentPost.tags.length > 0" class="post-tags">
             <text
-              v-for="(tag, idx) in currentPost.tags"
-              :key="idx"
+              v-for="(tag, idx) in currentPost.tags" :key="idx"
               class="post-tag"
               @tap="goToTagPosts(tag)"
             >{{ tag }}</text>
@@ -533,9 +563,9 @@ onLoad((query) => {
         <view class="post-meta">
           <text class="post-time">{{ formatRelativeTime(currentPost.createdAt) }}</text>
           <view class="post-stats">
-            <text class="post-stats__item">{{ currentPost.shares }} 转发</text>
-            <text class="post-stats__item">{{ currentPost.comments }} 评论</text>
-            <text class="post-stats__item">{{ currentPost.likes }} 赞</text>
+            <text class="post-stats__item">{{ currentPost.shares }} {{ t("village.detail.statsShare") }}</text>
+            <text class="post-stats__item">{{ currentPost.comments }} {{ t("village.detail.statsComment") }}</text>
+            <text class="post-stats__item">{{ currentPost.likes }} {{ t("village.detail.statsLike") }}</text>
           </view>
         </view>
       </view>
@@ -543,21 +573,20 @@ onLoad((query) => {
       <!-- 评论区 -->
       <view class="comments-section">
         <view class="comments-header">
-          <text class="comments-title">评论</text>
+          <text class="comments-title">{{ t("village.detail.commentsTitle") }}</text>
           <text class="comments-count">{{ comments.length }}</text>
         </view>
 
         <!-- 加载状态 -->
         <view v-if="loading" class="comments-loading" role="status" aria-live="polite">
           <view class="loading-spinner" />
-          <text class="loading-text">加载评论中...</text>
+          <text class="loading-text">{{ t("village.detail.loadingComments") }}</text>
         </view>
 
         <!-- 评论列表 -->
         <view v-else-if="comments.length > 0" class="comments-list" role="list">
           <view
-            v-for="comment in comments"
-            :key="comment.id"
+            v-for="comment in comments" :key="comment.id"
             class="comment-item list-item"
             @longpress="handleReportComment(comment)"
           >
@@ -581,9 +610,9 @@ onLoad((query) => {
                 <view
                   class="comment-like"
                   :class="{ 'comment-like--active': comment.isLiked }"
-                  @tap.stop="handleCommentLike(comment.id)"
+                  catchtap="handleCommentLike(comment.id)"
                 >
-                  <text class="comment-like__icon">赞</text>
+                  <text class="comment-like__icon">{{ t("village.detail.commentLike") }}</text>
                   <text v-if="comment.likes > 0" class="comment-like__count">{{ comment.likes }}</text>
                 </view>
               </view>
@@ -593,21 +622,20 @@ onLoad((query) => {
 
         <!-- 空状态 -->
         <view v-else class="comments-empty">
-          <text class="comments-empty__text">暂无评论，快来抢沙发吧</text>
+          <text class="comments-empty__text">{{ t("village.detail.emptyComments") }}</text>
         </view>
       </view>
 
       <!-- ===== 相似作者推荐 ===== -->
       <view v-if="similarAuthors.length > 0" class="similar-authors-section">
         <view class="similar-authors-header">
-          <text class="similar-authors-title">你可能还想认识</text>
-          <text class="similar-authors-subtitle">兴趣相投的同学</text>
+          <text class="similar-authors-title">{{ t("village.detail.similarTitle") }}</text>
+          <text class="similar-authors-subtitle">{{ t("village.detail.similarSubtitle") }}</text>
         </view>
 
         <view class="similar-authors-list" role="list">
           <view
-            v-for="author in similarAuthors"
-            :key="author.userId"
+            v-for="author in similarAuthors" :key="author.userId"
             class="similar-author-card list-item"
           >
             <view class="similar-author-main">
@@ -631,16 +659,15 @@ onLoad((query) => {
                   <!-- 同校标签 -->
                   <view v-if="author.isAlumni" class="identity-tag identity-tag--alumni">
                     <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="identity-tag__icon" mode="aspectFit" />
-                    <text class="identity-tag__text">校友</text>
+                    <text class="identity-tag__text">{{ t("village.alumni") }}</text>
                   </view>
                 </view>
                 <text class="similar-author-headline">{{ author.headline }}</text>
                 <!-- 共同兴趣 -->
                 <view v-if="author.commonInterests.length > 0" class="similar-author-interests">
-                  <text class="common-interest-label">共同兴趣：</text>
+                  <text class="common-interest-label">{{ t("village.detail.commonInterestsLabel") }}</text>
                   <text
-                    v-for="(interest, idx) in author.commonInterests"
-                    :key="interest"
+                    v-for="(interest, idx) in author.commonInterests" :key="interest"
                     class="common-interest-chip"
                   >{{ interest }}{{ idx < author.commonInterests.length - 1 ? "、" : "" }}</text>
                 </view>
@@ -651,14 +678,16 @@ onLoad((query) => {
               <view
                 class="action-btn action-btn--follow"
                 :class="{ 'action-btn--follow-active': author.isFollowed }"
+                role="button"
+                :aria-label="t('village.followSimilarAria')"
                 @tap="handleFollowSimilarAuthor(author.userId)"
               >
                 <text class="action-btn__text">
-                  {{ author.isFollowed ? "已关注" : "+ 关注" }}
+                  {{ author.isFollowed ? t("village.followed") : t("village.follow") }}
                 </text>
               </view>
-              <view class="action-btn action-btn--message" @tap="sendMessageToSimilarAuthor(author.userId)">
-                <text class="action-btn__text">私信</text>
+              <view class="action-btn action-btn--message" role="button" :aria-label="t('village.sendMessageSimilarAria')" @tap="sendMessageToSimilarAuthor(author.userId)">
+                <text class="action-btn__text">{{ t("village.detail.message") }}</text>
               </view>
             </view>
           </view>
@@ -670,12 +699,13 @@ onLoad((query) => {
     </scroll-view>
 
     <!-- 帖子不存在 -->
-    <view v-else class="empty-state">
-      <text class="empty-state__text">帖子不存在或已被删除</text>
-      <view class="empty-state__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-text">返回广场</text>
-      </view>
-    </view>
+    <EmptyState
+      v-else
+      :title="t('village.detail.postNotExist')"
+      :action-text="t('village.detail.backToVillage')"
+      type="no-data"
+      @action="goBack"
+    />
 
     <!-- 底部互动栏 -->
     <view v-if="currentPost" class="detail-footer">
@@ -683,9 +713,9 @@ onLoad((query) => {
         <input
           v-model="commentContent"
           class="comment-input"
-          placeholder="写下你的评论..."
+          :placeholder="t('village.detail.commentInputPlaceholder')"
           confirm-type="send"
-          @confirm="submitComment" aria-label="写下你的评论..."
+          @confirm="submitComment" :aria-label="t('village.detail.commentInputPlaceholder')"
         />
       </view>
       <view class="footer-actions">
@@ -695,14 +725,16 @@ onLoad((query) => {
           :class="{ 'footer-action--active': currentPost.isShared }"
           hover-class="press-feedback--active"
           hover-stay-time="120"
+          role="button"
+          :aria-label="t('village.sharePostAria')"
           @tap="openShareModal"
         >
-          <text class="footer-action__icon">{{ currentPost.isShared ? "已转发" : "转发" }}</text>
+          <text class="footer-action__icon">{{ currentPost.isShared ? t("village.detail.shared") : t("village.detail.shareAction") }}</text>
           <text v-if="currentPost.shares > 0" class="footer-action__count">{{ currentPost.shares }}</text>
         </view>
         <!-- 私信按钮 -->
-        <view class="footer-action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="sendMessage">
-          <text class="footer-action__icon">私信</text>
+        <view class="footer-action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.sendMessageAria')" @tap="sendMessage">
+          <text class="footer-action__icon">{{ t("village.detail.message") }}</text>
         </view>
         <!-- 点赞按钮 -->
         <view
@@ -710,9 +742,11 @@ onLoad((query) => {
           :class="{ 'footer-action--active': currentPost.isLiked }"
           hover-class="press-feedback--active"
           hover-stay-time="120"
+          role="button"
+          :aria-label="t('village.likePostAria')"
           @tap="handleLike"
         >
-          <text class="footer-action__icon">{{ currentPost.isLiked ? "已赞" : "点赞" }}</text>
+          <text class="footer-action__icon">{{ currentPost.isLiked ? t("village.detail.liked") : t("village.detail.likeAction") }}</text>
           <text v-if="currentPost.likes > 0" class="footer-action__count">{{ currentPost.likes }}</text>
         </view>
       </view>
@@ -730,19 +764,19 @@ onLoad((query) => {
       class="share-modal-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="转发到我的动态"
+      :aria-label="t('village.detail.shareModalTitle')"
       @tap="closeShareModal"
     >
-      <view class="share-modal" @tap.stop>
+      <view class="share-modal" catchtap="noop">
         <!-- 弹窗标题 -->
         <view class="share-modal__header">
-          <text class="share-modal__title">转发到我的动态</text>
+          <text class="share-modal__title">{{ t("village.detail.shareModalTitle") }}</text>
           <view
             class="share-modal__close press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            aria-label="关闭"
+            :aria-label="t('village.detail.close')"
             @tap="closeShareModal"
           >
             <text class="share-modal__close-icon">X</text>
@@ -754,10 +788,10 @@ onLoad((query) => {
           <textarea
             v-model="shareComment"
             class="share-modal__textarea"
-            placeholder="说点什么吧（选填）..."
+            :placeholder="t('village.detail.shareCommentPlaceholder')"
             :maxlength="200"
             auto-height
-            aria-label="附加评论"
+            :aria-label="t('village.detail.additionalCommentLabel')"
           />
           <text class="share-modal__count">{{ shareComment.length }}/200</text>
         </view>
@@ -769,10 +803,10 @@ onLoad((query) => {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            aria-label="取消转发"
+            :aria-label="t('village.detail.cancelShare')"
             @tap="closeShareModal"
           >
-            <text class="share-modal__btn-text">取消</text>
+            <text class="share-modal__btn-text">{{ t("common.cancel") }}</text>
           </view>
           <view
             class="share-modal__btn share-modal__btn--confirm press-feedback"
@@ -780,10 +814,10 @@ onLoad((query) => {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            aria-label="确认转发"
+            :aria-label="t('village.detail.confirmShare')"
             @tap="confirmShare"
           >
-            <text class="share-modal__btn-text">{{ isSharing ? "转发中..." : "确认转发" }}</text>
+            <text class="share-modal__btn-text">{{ isSharing ? t("village.detail.sharing") : t("village.detail.confirmShare") }}</text>
           </view>
         </view>
       </view>
@@ -804,18 +838,18 @@ onLoad((query) => {
 </template>
 
 <style scoped lang="scss">
-$green-primary: var(--c-brand, #3FCF8E);
-$green-light: var(--c-brand-50, #E8F9F1);
-$pink-primary: var(--c-romance-500, #EC4899);
-$pink-light: var(--c-romance-100, #FCE7F3);
-$gold-vip: var(--c-vip-from, #C9A36A);
-$white: var(--c-neutral-0, #FFFFFF);
-$bg-page: var(--c-bg-page, #F4F6FA);
-$text-primary: var(--c-text-primary, #1F2937);
-$text-secondary: var(--c-neutral-500, #6B7280);
-$text-tertiary: var(--c-neutral-400, #9CA3AF);
-$border-light: var(--c-tint-gray-50, #F3F4F6);
-$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+$green-primary: var(--c-brand);
+$green-light: var(--c-brand-50);
+$pink-primary: var(--c-romance-500);
+$pink-light: var(--c-romance-100);
+$gold-vip: var(--c-vip-from);
+$white: var(--c-neutral-0);
+$bg-page: var(--c-bg-page);
+$text-primary: var(--c-text-primary);
+$text-secondary: var(--c-neutral-500);
+$text-tertiary: var(--c-neutral-400);
+$border-light: var(--c-tint-gray-50);
+$card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .detail-page {
   display: flex;
@@ -832,7 +866,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 60%, var(--c-romance-300, #F9A8C4) 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
   z-index: 10;
 }
 
@@ -883,7 +917,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 28rpx;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
-  transition: transform 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* 作者基础信息行 */
@@ -898,23 +932,23 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   position: relative;
   width: 88rpx;
   height: 88rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: visible;
-  background: linear-gradient(135deg, $green-light, var(--c-brand-100, #C6F0DB));
+  background: linear-gradient(135deg, $green-light, var(--c-brand-100));
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   border: 4rpx solid $green-light;
   /* Phase D1: 头像光环 - 双层品牌色阴影 */
-  box-shadow: 0 0 0 4rpx var(--c-brand-50, #E8F8F0),
-              0 0 0 8rpx var(--c-brand-100, #D1F0E0);
+  box-shadow: 0 0 0 4rpx var(--c-brand-50),
+              0 0 0 8rpx var(--c-brand-100);
 }
 
 .author-avatar__img {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
 }
 
@@ -931,13 +965,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   left: -6rpx;
   width: 32rpx;
   height: 32rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-brand-400, #3FCF8E), var(--c-brand-500, #2DB97A));
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-brand-400), var(--c-brand-500));
   border: 2rpx solid $white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2rpx 6rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  box-shadow: 0 2rpx 6rpx var(--c-brand-border-tint-stronger);
   z-index: 2;
 }
 
@@ -978,7 +1012,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .identity-tag--alumni {
   background: $green-light;
-  border: 1rpx solid var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  border: 1rpx solid var(--c-brand-border-tint-stronger);
 }
 
 .identity-tag__icon {
@@ -1026,7 +1060,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   align-items: center;
   padding: 8rpx 18rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $pink-light, var(--c-romance-200, #FBCFE8));
+  background: linear-gradient(135deg, $pink-light, var(--c-romance-200));
 }
 
 .author-tag__text {
@@ -1054,23 +1088,23 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 /* Phase D1: 兴趣 chip 按类别着色（4 种颜色） */
 .interest-chip--sports {
-  color: var(--c-brand-500, #2DB97A);
-  background: var(--c-brand-50, #E8F8F0);
+  color: var(--c-brand-500);
+  background: var(--c-brand-50);
 }
 
 .interest-chip--arts {
-  color: var(--c-lavender-500, #8B5CF6);
-  background: var(--c-lavender-50, #F5F3FF);
+  color: var(--c-lavender-500);
+  background: var(--c-lavender-50);
 }
 
 .interest-chip--tech {
-  color: var(--c-sky-500, #0EA5E9);
-  background: var(--c-sky-50, #F0F9FF);
+  color: var(--c-sky-500);
+  background: var(--c-sky-50);
 }
 
 .interest-chip--life {
-  color: var(--c-apricot-500, #F97316);
-  background: var(--c-apricot-50, #FFF7ED);
+  color: var(--c-apricot-500);
+  background: var(--c-apricot-50);
 }
 
 /* 操作按钮行 */
@@ -1083,12 +1117,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   flex: 1;
   padding: 18rpx 0;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
-  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  transition: all var(--d-fast, 120ms) ease;
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger);
 }
 
 /* #ifdef H5 */
@@ -1107,12 +1141,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   flex: 1;
   padding: 18rpx 0;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $pink-primary, var(--c-romance-400, #F472B6));
+  background: linear-gradient(135deg, $pink-primary, var(--c-romance-400));
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
-  box-shadow: 0 4rpx 12rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
+  transition: all var(--d-fast, 120ms) ease;
+  box-shadow: 0 4rpx 12rpx var(--s-romance);
 }
 
 /* #ifdef H5 */
@@ -1123,7 +1157,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .action-btn__text {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -1132,7 +1166,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .action-btn--message .action-btn__text {
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
 }
 
 /* ================================================================
@@ -1188,7 +1222,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 8rpx 18rpx;
   border-radius: var(--r-full, 9999rpx);
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1276,8 +1310,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   gap: 20rpx;
   padding: 24rpx;
   background: $bg-page;
-  border-radius: 20rpx;
-  transition: transform 0.15s ease;
+  border-radius: var(--r-lg, 20rpx);
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1296,22 +1330,22 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   position: relative;
   width: 80rpx;
   height: 80rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: visible;
-  background: linear-gradient(135deg, $green-light, var(--c-brand-100, #C6F0DB));
+  background: linear-gradient(135deg, $green-light, var(--c-brand-100));
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   /* Phase D1: 头像光环 */
-  box-shadow: 0 0 0 4rpx var(--c-brand-50, #E8F8F0),
-              0 0 0 8rpx var(--c-brand-100, #D1F0E0);
+  box-shadow: 0 0 0 4rpx var(--c-brand-50),
+              0 0 0 8rpx var(--c-brand-100);
 }
 
 .similar-author-avatar__img {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
 }
 
@@ -1328,13 +1362,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   left: -4rpx;
   width: 28rpx;
   height: 28rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-brand-400, #3FCF8E), var(--c-brand-500, #2DB97A));
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-brand-400), var(--c-brand-500));
   border: 2rpx solid $white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2rpx 6rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  box-shadow: 0 2rpx 6rpx var(--c-brand-border-tint-stronger);
   z-index: 2;
 }
 
@@ -1405,8 +1439,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .similar-author-actions .action-btn--follow {
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
-  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint-mid, var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25)));
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
+  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint-mid);
 }
 
 /* #ifdef H5 */
@@ -1422,8 +1456,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .similar-author-actions .action-btn--message {
-  background: linear-gradient(135deg, $pink-primary, var(--c-romance-400, #F472B6));
-  box-shadow: 0 4rpx 12rpx var(--c-shadow-romance-tint, var(--c-shadow-romance-tint, rgba(236, 72, 153, 0.25)));
+  background: linear-gradient(135deg, $pink-primary, var(--c-romance-400));
+  box-shadow: 0 4rpx 12rpx var(--c-shadow-romance-tint);
 }
 
 /* #ifdef H5 */
@@ -1438,7 +1472,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .similar-author-actions .action-btn--follow .action-btn__text {
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
 }
 
 .similar-author-actions .action-btn--follow-active .action-btn__text {
@@ -1446,7 +1480,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .similar-author-actions .action-btn--message .action-btn__text {
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
 }
 
 /* ========== 评论区 ========== */
@@ -1487,8 +1521,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   height: 40rpx;
   border: 4rpx solid $border-light;
   border-top-color: $green-primary;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {
@@ -1514,8 +1548,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   gap: 20rpx;
   padding: 20rpx;
   background: $bg-page;
-  border-radius: 20rpx;
-  transition: transform 0.15s ease;
+  border-radius: var(--r-lg, 20rpx);
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1527,9 +1561,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .comment-avatar {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
-  background: linear-gradient(135deg, $green-light, var(--c-brand-100, #C6F0DB));
+  background: linear-gradient(135deg, $green-light, var(--c-brand-100));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1590,7 +1624,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding: 8rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
   background: $white;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1649,9 +1683,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 .empty-state__back {
   padding: 18rpx 48rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
-  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
-  transition: all 0.15s ease;
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger);
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1662,7 +1696,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 
 .back-text {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -1675,7 +1709,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
   background: $white;
   border-top: 1rpx solid $border-light;
-  box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.03)));
+  box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .comment-input-wrap {
@@ -1706,7 +1740,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   min-width: 88rpx;
   padding: 12rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1741,7 +1775,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--c-overlay-mid-strong, var(--c-overlay-mid-strong, rgba(0, 0, 0, 0.5)));
+  background: var(--c-overlay-mid-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1753,7 +1787,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   background: $white;
   border-radius: var(--r-xxl, 28rpx);
   overflow: hidden;
-  box-shadow: 0 20rpx 60rpx var(--c-overlay-text-shadow-mid, var(--c-overlay-text-shadow-mid, rgba(0, 0, 0, 0.2)));
+  box-shadow: 0 20rpx 60rpx var(--c-overlay-text-shadow-mid);
 }
 
 .share-modal__header {
@@ -1774,12 +1808,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   /* 修复 P2（触摸目标过小）：56rpx → 88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
   width: 88rpx;
   height: 88rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: $bg-page;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1806,7 +1840,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   width: 100%;
   min-height: 140rpx;
   padding: 20rpx;
-  border-radius: 20rpx;
+  border-radius: var(--r-lg, 20rpx);
   background: $bg-page;
   font-size: var(--fs-lg, 28rpx);
   color: $text-primary;
@@ -1834,7 +1868,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1849,8 +1883,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .share-modal__btn--confirm {
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300, #5ADBA0));
-  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger);
 }
 
 .share-modal__btn--loading {
@@ -1865,6 +1899,6 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs
 }
 
 .share-modal__btn--confirm .share-modal__btn-text {
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
 }
 </style>

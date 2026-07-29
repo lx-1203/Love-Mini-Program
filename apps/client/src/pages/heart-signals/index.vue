@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 心动信号页 — 双向心动通知列表
  * 展示所有待处理/已接受/已过期的心动信号，支持接受/拒绝操作及倒计时
@@ -6,6 +6,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useLikesStore } from "../../stores/likes";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
@@ -16,6 +17,7 @@ import { likesPageRequirements } from "../../config/page-access";
 import { showErrorToast } from "../../utils/error-toast";
 // 修复（严格模式 noUnusedLocals）：IMAGE_PATHS 导入后未使用，已移除。
 
+const { t } = useI18n();
 const likesStore = useLikesStore();
 const sessionStore = useSessionStore();
 
@@ -49,11 +51,11 @@ function updateCountdowns() {
     const expiresAt = new Date(s.expiresAt).getTime();
     const diff = expiresAt - now;
     if (diff <= 0) {
-      map[s.id] = "已过期";
+      map[s.id] = t("heartSignals.expiredLabel");
     } else {
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      map[s.id] = `${hours}小时${minutes}分钟`;
+      map[s.id] = t("heartSignals.countdownHM", { hours, minutes });
     }
   }
   countdownMap.value = map;
@@ -83,11 +85,11 @@ onUnmounted(() => {
 async function handleAccept(signalId: string) {
   try {
     await likesStore.acceptHeartSignal(signalId);
-    uni.showToast({ title: "已接受心动信号，去聊天吧", icon: "success" });
+    uni.showToast({ title: t("heartSignals.acceptSuccess"), icon: "success" });
     void likesStore.fetchHeartSignals();
   } catch (error) {
     // 接受失败：按错误分类给出友好提示（网络/权限/业务）
-    showErrorToast(error, "接受失败，请重试");
+    showErrorToast(error, t("heartSignals.acceptFailed"));
     console.error("接受心动信号失败:", error);
   }
 }
@@ -95,11 +97,11 @@ async function handleAccept(signalId: string) {
 async function handleDecline(signalId: string) {
   try {
     await likesStore.declineHeartSignal(signalId);
-    uni.showToast({ title: "已拒绝", icon: "none" });
+    uni.showToast({ title: t("heartSignals.rejectSuccess"), icon: "none" });
     void likesStore.fetchHeartSignals();
   } catch (error) {
     // 拒绝失败：按错误分类给出友好提示（网络/权限/业务）
-    showErrorToast(error, "操作失败，请重试");
+    showErrorToast(error, t("heartSignals.rejectFailed"));
     console.error("拒绝心动信号失败:", error);
   }
 }
@@ -110,14 +112,14 @@ function goToUserProfile(userId: string) {
 }
 
 function getCountdown(signalId: string): string {
-  return countdownMap.value[signalId] ?? "计算中...";
+  return countdownMap.value[signalId] ?? t("heartSignals.countdownCalculating");
 }
 
 function getStatusLabel(status: string): string {
   switch (status) {
-    case "pending": return "待处理";
-    case "accepted": return "已接受";
-    case "expired": return "已过期";
+    case "pending": return t("heartSignals.statusPending");
+    case "accepted": return t("heartSignals.statusAccepted");
+    case "expired": return t("heartSignals.statusExpired");
     default: return status;
   }
 }
@@ -128,7 +130,7 @@ function getStatusLabel(status: string): string {
     <!-- 未完善资料：锁定页 -->
     <LockScreen
       v-if="!isUnlocked"
-      page-name="心动信号"
+      :page-name="$t('heartSignals.pageName')"
       :completion-percent="completionPercent"
     />
 
@@ -138,8 +140,8 @@ function getStatusLabel(status: string): string {
 
       <!-- 页面头部 -->
       <view class="page-header">
-        <text class="page-header__title">心动信号</text>
-        <text class="page-header__subtitle">双向心动，从这里开始</text>
+        <text class="page-header__title">{{ $t("heartSignals.navTitle") }}</text>
+        <text class="page-header__subtitle">{{ $t("heartSignals.navSubtitle") }}</text>
       </view>
 
       <!-- 状态筛选 Tab -->
@@ -149,7 +151,7 @@ function getStatusLabel(status: string): string {
           :class="{ 'signal-tabs__item--active': activeTab === 'pending' }"
           @tap="activeTab = 'pending'"
         >
-          <text class="signal-tabs__text">待处理</text>
+          <text class="signal-tabs__text">{{ $t("heartSignals.tabPending") }}</text>
           <view v-if="pendingSignals.length > 0" class="signal-tabs__badge">
             <text class="signal-tabs__badge-text">{{ pendingSignals.length }}</text>
           </view>
@@ -159,41 +161,41 @@ function getStatusLabel(status: string): string {
           :class="{ 'signal-tabs__item--active': activeTab === 'accepted' }"
           @tap="activeTab = 'accepted'"
         >
-          <text class="signal-tabs__text">已接受</text>
+          <text class="signal-tabs__text">{{ $t("heartSignals.tabAccepted") }}</text>
         </view>
         <view
           class="signal-tabs__item press-feedback"
           :class="{ 'signal-tabs__item--active': activeTab === 'expired' }"
           @tap="activeTab = 'expired'"
         >
-          <text class="signal-tabs__text">已过期</text>
+          <text class="signal-tabs__text">{{ $t("heartSignals.tabExpired") }}</text>
         </view>
       </view>
 
       <!-- 加载 -->
       <view v-if="loading" class="loading-state" role="status" aria-live="polite">
         <view class="loading-state__spinner" />
-        <text class="loading-state__text">加载中...</text>
+        <text class="loading-state__text">{{ $t("heartSignals.loadingText") }}</text>
       </view>
 
       <!-- 空状态 -->
       <EmptyState
         v-else-if="activeTab === 'pending' && pendingSignals.length === 0"
-        icon-kind="heart"
-        title="暂无心动信号"
-        description="多去看看推荐的人，双向喜欢后会收到心动信号"
+        type="no-data"
+        :title="$t('heartSignals.emptyPendingTitle')"
+        :description="$t('heartSignals.emptyPendingDesc')"
       />
       <EmptyState
         v-else-if="activeTab === 'accepted' && acceptedSignals.length === 0"
-        icon-kind="heart"
-        title="暂无已接受的心动信号"
-        description="接受心动信号后，双方可以开始聊天"
+        type="no-data"
+        :title="$t('heartSignals.emptyAcceptedTitle')"
+        :description="$t('heartSignals.emptyAcceptedDesc')"
       />
       <EmptyState
         v-else-if="activeTab === 'expired' && expiredSignals.length === 0"
-        icon-kind="heart"
-        title="暂无过期的心动信号"
-        description="心动信号有效期为24小时"
+        type="no-data"
+        :title="$t('heartSignals.emptyExpiredTitle')"
+        :description="$t('heartSignals.emptyExpiredDesc')"
       />
 
       <!-- 待处理信号列表 -->
@@ -212,25 +214,25 @@ function getStatusLabel(status: string): string {
               v-if="signal.fromUserAvatar"
               class="signal-card__avatar"
               :src="signal.fromUserAvatar"
-              mode="aspectFill" alt=""
+              mode="aspectFill" lazy-load alt=""
             />
             <view v-else class="signal-card__avatar-placeholder">
               <text class="signal-card__avatar-initial">{{ signal.fromUserName?.charAt(0) || '?' }}</text>
             </view>
             <view class="signal-card__user-info">
               <text class="signal-card__name">{{ signal.fromUserName }}</text>
-              <text class="signal-card__time">{{ getCountdown(signal.id) }}后过期</text>
+              <text class="signal-card__time">{{ getCountdown(signal.id) }}{{ $t("heartSignals.cardExpireSuffix") }}</text>
             </view>
           </view>
           <view class="signal-card__body">
-            <text class="signal-card__desc">TA 也对你心动了！双向心动后即可开始聊天</text>
+            <text class="signal-card__desc">{{ $t("heartSignals.cardDesc") }}</text>
           </view>
           <view class="signal-card__actions">
             <view class="signal-card__btn signal-card__btn--decline press-feedback" @tap="handleDecline(signal.id)">
-              <text class="signal-card__btn-text">拒绝</text>
+              <text class="signal-card__btn-text">{{ $t("heartSignals.rejectBtn") }}</text>
             </view>
             <view class="signal-card__btn signal-card__btn--accept press-feedback" @tap="handleAccept(signal.id)">
-              <text class="signal-card__btn-text">接受</text>
+              <text class="signal-card__btn-text">{{ $t("heartSignals.acceptBtn") }}</text>
             </view>
           </view>
           <!-- 过期倒计时进度条 -->
@@ -256,7 +258,7 @@ function getStatusLabel(status: string): string {
               v-if="signal.fromUserAvatar"
               class="signal-card__avatar signal-card__avatar--small"
               :src="signal.fromUserAvatar"
-              mode="aspectFill" alt=""
+              mode="aspectFill" lazy-load alt=""
             />
             <view v-else class="signal-card__avatar-placeholder signal-card__avatar-placeholder--small">
               <text class="signal-card__avatar-initial">{{ signal.fromUserName?.charAt(0) || '?' }}</text>
@@ -339,7 +341,7 @@ function getStatusLabel(status: string): string {
   gap: var(--sp-2);
   padding: var(--sp-4) 0;
   border-radius: var(--r-lg);
-  transition: all 0.25s ease;
+  transition: all var(--d-slow, 250ms) ease;
 }
 
 .signal-tabs__item--active {
@@ -391,7 +393,7 @@ function getStatusLabel(status: string): string {
   border: var(--sp-1) solid var(--c-neutral-100);
   border-top-color: var(--c-brand);
   border-radius: var(--r-full);
-  animation: spin 1s linear infinite;
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {
@@ -540,7 +542,7 @@ function getStatusLabel(status: string): string {
 .signal-card__countdown-bar {
   margin-top: var(--sp-5);
   height: 4rpx;
-  border-radius: 2rpx;
+  border-radius: var(--r-xs, 2rpx);
   background: var(--c-neutral-100);
   overflow: hidden;
 }
@@ -596,7 +598,7 @@ function getStatusLabel(status: string): string {
 
 /* ========== 动画 ========== */
 .animate-fade-in {
-  animation: fadeIn 0.35s ease both;
+  animation: fadeIn var(--d-slower, 350ms) ease both;
 }
 
 @keyframes fadeIn {

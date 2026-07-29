@@ -337,12 +337,12 @@ onUnmounted(() => {
   width: 8rpx;
   height: 24rpx;
   border-radius: var(--r-xs, 4rpx);
-  background: var(--c-brand-500, #22c55e);
-  animation: voice-wave 0.8s ease-in-out infinite alternate;
+  background: var(--c-brand-500, #3FCF8E);
+  animation: voice-wave var(--d-slowest, 600ms) ease-in-out infinite alternate;
 }
 
 .voice-recorder__wave-bar--cancel {
-  background: var(--c-error, #ef4444);
+  background: var(--c-error, #E5454D);
 }
 
 @keyframes voice-wave {
@@ -370,7 +370,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   border: 1rpx solid var(--c-border-light, #e5e7eb);
-  transition: all 150ms ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 .voice-recorder__btn--hover {
@@ -380,12 +380,12 @@ onUnmounted(() => {
 
 .voice-recorder__btn--recording {
   background: var(--c-brand-50, rgba(63, 207, 142, 0.08));
-  border-color: var(--c-brand-500, #22c55e);
+  border-color: var(--c-brand-500, #3FCF8E);
 }
 
 .voice-recorder__btn--cancel {
-  background: var(--c-error-bg-tint, rgba(239, 68, 68, 0.08));
-  border-color: var(--c-error, #ef4444);
+  background: var(--c-error-bg-tint, rgba(229, 69, 77, 0.1));
+  border-color: var(--c-error, #E5454D);
 }
 
 .voice-recorder__btn--disabled {
@@ -400,10 +400,10 @@ onUnmounted(() => {
 }
 
 .voice-recorder__btn--recording .voice-recorder__btn-text {
-  color: var(--c-brand-700, #15803d);
+  color: var(--c-brand-700, #1D8A5A);
 }
 
 .voice-recorder__btn--cancel .voice-recorder__btn-text {
-  color: var(--c-error, #ef4444);
+  color: var(--c-error, #E5454D);
 }
 </style>

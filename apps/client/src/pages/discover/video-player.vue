@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 视频播放页 - 全屏播放用户个人视频 (Phase D2)
  *
@@ -20,6 +20,9 @@
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic } from "../../utils/haptic";
+import EmptyState from "../../components/common/EmptyState.vue";
+// Task 33：路由路径常量化，避免硬编码字符串
+import { ROUTES } from "../../constants/routes";
 
 /**
  * 当前页面对象（最小契约）。
@@ -124,7 +127,7 @@ function handleBack() {
     uni.navigateBack();
   } else {
     // 兜底：无上一页时跳转到寻觅页
-    uni.switchTab({ url: "/pages/discover/index" });
+    uni.switchTab({ url: ROUTES.TAB.DISCOVER });
   }
 }
 
@@ -141,7 +144,7 @@ function handleRetry() {
     const url = encodeURIComponent(videoUrl.value);
     const cid = cardId.value;
     const query = `videoUrl=${url}${cid ? `&cardId=${cid}` : ""}`;
-    uni.redirectTo({ url: `/pages/discover/video-player?${query}` });
+    uni.redirectTo({ url: `${ROUTES.DISCOVER.VIDEO_PLAYER}?${query}` });
   }
 }
 
@@ -167,39 +170,35 @@ onUnmounted(() => {
       >
         <image class="video-player__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
       </view>
-      <text class="video-player__title">个人视频</text>
+      <text class="video-player__title">{{ $t("videoPlayer.navTitle") }}</text>
       <view class="video-player__topbar-placeholder" />
     </view>
 
     <!-- 主区域 -->
     <view class="video-player__main">
       <!-- 无视频 URL -->
-      <view v-if="!hasVideo" class="video-player__state">
-        <image class="video-player__state-icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" alt="" />
-        <text class="video-player__state-title">暂无视频</text>
-        <text class="video-player__state-subtitle">该用户未上传个人视频</text>
-        <view
-          class="video-player__state-btn press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          @tap="handleBack"
-        >
-          <text class="video-player__state-btn-text">返回</text>
-        </view>
-      </view>
+      <EmptyState
+        v-if="!hasVideo"
+        type="no-data"
+        :image="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION"
+        :title="$t('videoPlayer.emptyTitle')"
+        :description="$t('videoPlayer.emptyDesc')"
+        :action-text="$t('videoPlayer.emptyAction')"
+        @action="handleBack"
+      />
 
       <!-- 加载失败 -->
       <view v-else-if="isLoadError" class="video-player__state">
         <image class="video-player__state-icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" alt="" />
-        <text class="video-player__state-title">视频加载失败</text>
-        <text class="video-player__state-subtitle">请检查网络后重试</text>
+        <text class="video-player__state-title">{{ $t("videoPlayer.loadFailedTitle") }}</text>
+        <text class="video-player__state-subtitle">{{ $t("videoPlayer.loadFailedSubtitle") }}</text>
         <view
           class="video-player__state-btn press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="handleRetry"
         >
-          <text class="video-player__state-btn-text">重试</text>
+          <text class="video-player__state-btn-text">{{ $t("videoPlayer.retryBtn") }}</text>
         </view>
       </view>
 
@@ -226,7 +225,7 @@ onUnmounted(() => {
         <!-- 加载中遮罩（元数据加载前展示） -->
         <view v-if="isMetadataLoading" class="video-player__loading">
           <view class="video-player__loading-spinner" />
-          <text class="video-player__loading-text">加载中...</text>
+          <text class="video-player__loading-text">{{ $t("videoPlayer.loadingText") }}</text>
         </view>
 
         <!-- 底部时长展示（辅助原生 controls，元数据加载后展示） -->
@@ -261,7 +260,7 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: var(--sp-3) var(--sp-5);
   padding-top: calc(env(safe-area-inset-top) + var(--sp-3));
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(to bottom, var(--c-gradient-mask-strong) 0%, var(--c-gradient-mask-transparent) 100%);
   position: absolute;
   top: 0;
   left: 0;
@@ -276,9 +275,9 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--c-overlay-white-bg-tint-strong);
   /* 高不透明度降级 backdrop-filter（mp-weixin 不支持） */
-  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  border: 1rpx solid var(--c-overlay-bg-light);
 }
 
 .video-player__back-icon {
@@ -338,15 +337,15 @@ onUnmounted(() => {
 
 .video-player__state-subtitle {
   font-size: var(--fs-base);
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--c-overlay-text-tertiary);
 }
 
 .video-player__state-btn {
   margin-top: var(--sp-3);
   padding: var(--sp-3) var(--sp-8);
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.16);
-  border: 1rpx solid rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-white-bg-16);
+  border: 1rpx solid var(--c-overlay-border-mid);
 }
 
 .video-player__state-btn-text {
@@ -367,17 +366,17 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: var(--sp-4);
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--c-black-overlay-50);
   z-index: 5;
 }
 
 .video-player__loading-spinner {
   width: 56rpx;
   height: 56rpx;
-  border: 4rpx solid rgba(255, 255, 255, 0.2);
+  border: 4rpx solid var(--c-overlay-bg-light);
   border-top-color: var(--c-text-inverse);
-  border-radius: 50%;
-  animation: video-spinner 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: video-spinner var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes video-spinner {
@@ -398,7 +397,7 @@ onUnmounted(() => {
   left: 50%;
   transform: translateX(-50%);
   padding: var(--sp-2) var(--sp-5);
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--c-gradient-mask-strong);
   border-radius: var(--r-full);
   z-index: 5;
   pointer-events: none;

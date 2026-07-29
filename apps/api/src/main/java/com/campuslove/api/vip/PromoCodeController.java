@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,6 +46,7 @@ public class PromoCodeController {
      * @return 验证结果视图
      */
     @PostMapping("/validate")
+    @PreAuthorize("hasRole('USER')")
     public ValidateResultView validate(@Valid @RequestBody ValidatePromoCodeRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         return promoCodeService.validate(request.code(), userId, request.baseAmount());
@@ -57,6 +59,7 @@ public class PromoCodeController {
      * @return 兑换结果视图
      */
     @PostMapping("/redeem")
+    @PreAuthorize("hasRole('USER')")
     public RedeemResultView redeem(@Valid @RequestBody ValidatePromoCodeRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         return promoCodeService.redeem(request.code(), userId, request.baseAmount());

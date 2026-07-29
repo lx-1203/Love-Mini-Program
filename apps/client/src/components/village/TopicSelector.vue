@@ -200,8 +200,7 @@ function clearAll(): void {
 
       <view v-if="selectedTopics.length > 0" class="topic-selector__chips">
         <view
-          v-for="topic in selectedTopics"
-          :key="`sel-${topic.name}`"
+          v-for="topic in selectedTopics" :key="`sel-${topic.name}`"
           class="topic-chip topic-chip--selected press-feedback"
           hover-class="topic-chip--hover"
           hover-stay-time="100"
@@ -231,8 +230,7 @@ function clearAll(): void {
       <text class="topic-selector__hot-title">{{ t('topicSelector.hotTopics') }}</text>
       <view v-if="filteredTopics.length > 0" class="topic-selector__chips">
         <view
-          v-for="topic in filteredTopics"
-          :key="topic.id"
+          v-for="topic in filteredTopics" :key="topic.id"
           :class="[
             'topic-chip',
             'press-feedback',

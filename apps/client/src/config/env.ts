@@ -18,6 +18,9 @@
  *   if (isMockMode()) { /* mock 路径 *\/ }
  */
 
+// Task 35：从 compat/index.ts 引入平台降级函数，避免 env.ts 中散落 #ifdef 条件编译
+import { getDevApiBaseUrl } from "../compat";
+
 /** 客户端环境变量键名集合（与 vite.config.ts 的 define 列表保持一致） */
 export type ClientEnvKey =
   | "VITE_API_MODE"
@@ -140,14 +143,9 @@ function resolveApiBaseUrl(): string {
   }
   // 开发环境（H5 本地）允许使用 http://localhost 回退
   // Task 0.6.1：仅 dev 模式可使用 http（H5 本地后端），mp-weixin 合法域名强制 https
+  // Task 35：平台降级逻辑统一收敛到 compat/index.ts 的 getDevApiBaseUrl()
   if (isDev) {
-    // #ifdef H5
-    return "http://127.0.0.1:8080/api";
-    // #endif
-    // #ifndef H5
-    // 非 H5 环境（mp-weixin 等）dev 模式同样要求 https，避免运行时违规
-    return "https://127.0.0.1:8080/api";
-    // #endif
+    return getDevApiBaseUrl();
   }
   // 生产环境必须显式配置 https URL（mp-weixin 合法域名要求 https）
   // 不再回退到 http://localhost，避免误用未加密通道
@@ -220,7 +218,8 @@ export function isSentryEnabled(): boolean {
 
 // 诊断日志（仅在开发环境输出，生产环境不泄露配置信息）
 if (isDev) {
-  console.log("[ENV] 诊断:", {
+  // 修复 no-console：诊断日志改用 console.warn（允许的方法），保留开发期排查能力
+  console.warn("[ENV] 诊断:", {
     isDev,
     apiMode: clientEnv.apiMode,
     apiBaseUrl: clientEnv.apiBaseUrl,

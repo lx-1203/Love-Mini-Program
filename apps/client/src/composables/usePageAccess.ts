@@ -6,6 +6,8 @@ import { resolveProfileGuard } from "../guards/profile-guard";
 import { useUnlockGuideStore } from "../stores/unlock-guide";
 import { replaceAppPath } from "../utils/navigation";
 import { getToken } from "../services/http";
+// Task 33：路由路径常量化，避免硬编码字符串
+import { ROUTES } from "../constants/routes";
 
 /**
  * 获取当前页面路径（用于 profile-guard 弹窗文案）
@@ -35,6 +37,25 @@ function getCurrentPagePath(): string {
  */
 let isRefreshingSession = false;
 
+/**
+ * 页面访问守卫组合式函数：在 onShow 时根据会话状态与页面要求决定是否放行或重定向。
+ *
+ * <p>处理流程（顺序）：</p>
+ * <ol>
+ *   <li>会话加载中 / 离线状态：跳过守卫，避免误判与阻塞离线访问</li>
+ *   <li>token 存在但 userSession 为空：主动调用 refreshSession 恢复会话，
+ *       认证类错误跳登录，其他错误暂时放行等下次 onShow 重新检查</li>
+ *   <li>profile-guard 检查：锁定页面（likes/village/messages）未完善资料时
+ *       触发 UnlockGuideModal 弹窗，不放行</li>
+ *   <li>session-guard 检查：按 requiresAuth / profileCompleted / campusVerified /
+ *       scheduleCompleted 等条件决定放行或重定向到登录/完善资料页</li>
+ * </ol>
+ *
+ * <p>修复（P0 BUG）：原实现 token 存在但 userSession 为空时直接放行，
+ * 用户可能带着失效 token 进入受保护页面。现主动尝试 refresh，失败则跳登录。</p>
+ *
+ * @param requirements - 页面访问要求（requiresAuth / requiresProfileCompleted 等）
+ */
 export function usePageAccess(requirements: PageRequirements) {
   const sessionStore = useSessionStore();
   const unlockGuideStore = useUnlockGuideStore();
@@ -69,7 +90,7 @@ export function usePageAccess(requirements: PageRequirements) {
             // http 层 401 处理通常已触发跳转，此处兜底确保跳转（避免竞态遗漏）
             const category = (err as { category?: string })?.category;
             if (category === "auth") {
-              uni.reLaunch({ url: "/pages/login/index" });
+              uni.reLaunch({ url: ROUTES.LOGIN });
             }
             // 网络错误 / 业务错误：不跳转，由 isOffline 状态或页面自行处理
           })

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 话题详情页
  * 展示话题完整内容、作者信息、回复列表，底部回复输入框
@@ -7,13 +7,16 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useCircleStore, formatCircleTime, type ReplyItem } from "../../stores/circle";
 import { useSessionStore } from "../../stores/session";
 import { useReportStore } from "../../stores/report";
 import { openAppPath } from "../../utils/navigation";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
+import EmptyState from "../../components/common/EmptyState.vue";
 
+const { t } = useI18n();
 const circleStore = useCircleStore();
 const sessionStore = useSessionStore();
 const reportStore = useReportStore();
@@ -62,10 +65,10 @@ async function submitReply() {
   try {
     await circleStore.replyToTopic(topicId.value, replyContent.value.trim());
     replyContent.value = "";
-    uni.showToast({ title: "回复成功", icon: "success" });
+    uni.showToast({ title: t("circle.topicDetailReplySuccess"), icon: "success" });
   } catch (_e) {
     uni.showToast({
-      title: circleStore.errorMessage || "回复失败",
+      title: circleStore.errorMessage || t("circle.topicDetailReplyFailed"),
       icon: "none",
     });
   } finally {
@@ -83,7 +86,7 @@ function sayHello(reply: ReplyItem) {
   const topicTitle = currentTopic.value.title;
 
   // 基于话题上下文生成破冰文案
-  const prefillMessage = `看到你在「${topicTitle}」下的回复，觉得很有共鸣！`;
+  const prefillMessage = t("circle.topicDetailSayHelloPrefill", { topic: topicTitle });
 
   // 引用上下文：话题标题 + 回复内容 + 回复者名
   const quoteContext = JSON.stringify({
@@ -102,7 +105,7 @@ function sayHello(reply: ReplyItem) {
 
 /**
  * 跳转到作者 / 回复者个人主页（F1.3）
- * 头像点击事件使用 @tap.stop 阻止冒泡，避免触发外层卡片或长按事件
+ * 头像点击事件使用 catchtap 阻止冒泡，避免触发外层卡片或长按事件
  * @param authorId - 作者 userId
  */
 function goToAuthorProfile(authorId: string) {
@@ -118,8 +121,14 @@ function goBack() {
   uni.navigateBack();
 }
 
-/** 举报原因选项（与产品约定，覆盖常见违规场景） */
-const REPORT_REASONS = ["垃圾广告", "辱骂攻击", "色情低俗", "违法违规", "其他"];
+/** 举报原因选项（与产品约定，覆盖常见违规场景；Task 28：i18n 化计算属性） */
+const REPORT_REASONS = computed<string[]>(() => [
+  t("circle.topicDetailReportSpam"),
+  t("circle.topicDetailReportAbuse"),
+  t("circle.topicDetailReportPorn"),
+  t("circle.topicDetailReportIllegal"),
+  t("circle.topicDetailReportOther"),
+]);
 
 /**
  * 长按话题触发举报流程。
@@ -133,10 +142,10 @@ async function handleReportTopic() {
   // 1. 选择举报原因
   let reason: string;
   try {
-    const res = await uni.showActionSheet({ itemList: REPORT_REASONS });
+    const res = await uni.showActionSheet({ itemList: REPORT_REASONS.value });
     // 修复（严格模式 noUncheckedIndexedAccess）：REPORT_REASONS[res.tapIndex] 索引访问返回 string | undefined，
     // 此处兜底取第一项，确保 reason 始终为 string（与 showActionSheet 的 itemList 一一对应，正常流程不会越界）。
-    reason = REPORT_REASONS[res.tapIndex] ?? REPORT_REASONS[0] ?? "";
+    reason = REPORT_REASONS.value[res.tapIndex] ?? REPORT_REASONS.value[0] ?? "";
   } catch (_e) {
     // 用户取消选择，静默退出
     return;
@@ -146,11 +155,11 @@ async function handleReportTopic() {
   let description: string | undefined;
   try {
     const res = await uni.showModal({
-      title: "补充描述（可选）",
+      title: t("circle.topicDetailReportSupplementTitle"),
       editable: true,
-      placeholderText: "请输入补充描述...",
-      confirmText: "提交举报",
-      cancelText: "跳过",
+      placeholderText: t("circle.topicDetailReportSupplementPlaceholder"),
+      confirmText: t("circle.topicDetailReportSubmit"),
+      cancelText: t("circle.topicDetailReportSkip"),
     });
     if (res.confirm && res.content) {
       description = res.content;
@@ -162,9 +171,9 @@ async function handleReportTopic() {
   // 3. 调用举报接口
   try {
     await reportStore.reportTarget("TOPIC", topicId.value, reason, description);
-    uni.showToast({ title: "举报已提交", icon: "success" });
+    uni.showToast({ title: t("circle.topicDetailReportSubmitted"), icon: "success" });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "举报失败";
+    const message = err instanceof Error ? err.message : t("circle.topicDetailReportFailed");
     uni.showToast({ title: message, icon: "none" });
   }
 }
@@ -181,6 +190,10 @@ onMounted(() => {
     void circleStore.fetchReplies(topicId.value, 1);
   }
 });
+
+// 修复（严格模式 noUnusedLocals）：sayHello/goToAuthorProfile 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ sayHello, goToAuthorProfile });
 </script>
 
 <template>
@@ -188,9 +201,9 @@ onMounted(() => {
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">返回</text>
+        <text class="back-icon">{{ t("circle.topicDetailBack") }}</text>
       </view>
-      <text class="detail-header__title">话题详情</text>
+      <text class="detail-header__title">{{ t("circle.topicDetailNavTitle") }}</text>
       <view class="detail-header__spacer" />
     </view>
 
@@ -200,13 +213,13 @@ onMounted(() => {
       <view class="topic-author">
         <view
           class="author-avatar"
-          @tap.stop="goToAuthorProfile(currentTopic.author.userId)"
+          catchtap="goToAuthorProfile(currentTopic.author.userId)"
         >
           <image
             v-if="currentTopic.author.avatar"
             class="author-avatar__img"
             :src="resolveMediaUrl(currentTopic.author.avatar)"
-            mode="aspectFill" alt=""
+            mode="aspectFill" lazy-load alt=""
           />
           <text v-else class="author-avatar__char">{{ currentTopic.author.name[0] }}</text>
         </view>
@@ -225,8 +238,7 @@ onMounted(() => {
         <!-- 图片展示 -->
         <view v-if="currentTopic.images.length > 0" class="topic-images">
           <view
-            v-for="(img, idx) in currentTopic.images"
-            :key="idx"
+            v-for="(img, idx) in currentTopic.images" :key="idx"
             class="topic-image-wrap"
           >
             <image
@@ -242,32 +254,31 @@ onMounted(() => {
       <!-- 评论区 -->
       <view class="replies-section">
         <view class="replies-header">
-          <text class="replies-title">回复</text>
+          <text class="replies-title">{{ t("circle.topicDetailRepliesTitle") }}</text>
           <text class="replies-count">{{ replies.length }}</text>
         </view>
 
         <!-- 加载状态 -->
         <view v-if="loading" class="replies-loading">
-          <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
-          <text class="loading-text">加载回复中...</text>
+          <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('circle.topicDetailLoadingAria')" />
+          <text class="loading-text">{{ t("circle.topicDetailLoadingReplies") }}</text>
         </view>
 
         <!-- 回复列表 -->
         <view v-else-if="replies.length > 0" class="replies-list" role="list">
           <view
-            v-for="reply in replies"
-            :key="reply.id"
+            v-for="reply in replies" :key="reply.id"
             class="reply-item list-item"
           >
             <view
               class="reply-avatar"
-              @tap.stop="goToAuthorProfile(reply.author.userId)"
+              catchtap="goToAuthorProfile(reply.author.userId)"
             >
               <image
                 v-if="reply.author.avatar"
                 class="reply-avatar__img"
                 :src="resolveMediaUrl(reply.author.avatar)"
-                mode="aspectFill" alt=""
+                mode="aspectFill" lazy-load alt=""
               />
               <text v-else class="reply-avatar__char">{{ reply.author.name[0] }}</text>
             </view>
@@ -283,9 +294,9 @@ onMounted(() => {
               <view
                 v-if="reply.author.userId !== currentUserId"
                 class="reply-say-hello"
-                @tap.stop="sayHello(reply)"
+                catchtap="sayHello(reply)"
               >
-                <text class="reply-say-hello__text">打个招呼</text>
+                <text class="reply-say-hello__text">{{ t("circle.topicDetailSayHello") }}</text>
               </view>
             </view>
           </view>
@@ -293,7 +304,7 @@ onMounted(() => {
 
         <!-- 空状态 -->
         <view v-else class="replies-empty">
-          <text class="replies-empty__text">暂无回复，快来抢沙发吧</text>
+          <text class="replies-empty__text">{{ t("circle.topicDetailEmptyReplies") }}</text>
         </view>
       </view>
 
@@ -302,12 +313,13 @@ onMounted(() => {
     </scroll-view>
 
     <!-- 话题不存在 -->
-    <view v-else-if="!loading" class="empty-state">
-      <text class="empty-state__text">话题不存在或已被删除</text>
-      <view class="empty-state__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-text">返回</text>
-      </view>
-    </view>
+    <EmptyState
+      v-else-if="!loading"
+      :title="t('circle.topicDetailNotExist')"
+      :action-text="t('circle.topicDetailBack')"
+      type="no-data"
+      @action="goBack"
+    />
 
     <!-- 底部回复栏 -->
     <view v-if="currentTopic" class="detail-footer">
@@ -315,9 +327,9 @@ onMounted(() => {
         <input
           v-model="replyContent"
           class="reply-input"
-          placeholder="写下你的回复..."
+          :placeholder="t('circle.topicDetailReplyPlaceholder')"
           confirm-type="send"
-          @confirm="submitReply" aria-label="写下你的回复..."
+          @confirm="submitReply" :aria-label="t('circle.topicDetailReplyPlaceholder')"
         />
       </view>
       <view
@@ -327,7 +339,7 @@ onMounted(() => {
         hover-stay-time="120"
         @tap="submitReply"
       >
-        <text class="reply-btn__text">{{ isSubmitting ? "发送中" : "发送" }}</text>
+        <text class="reply-btn__text">{{ isSubmitting ? t("circle.topicDetailReplySending") : t("circle.topicDetailReplySend") }}</text>
       </view>
     </view>
   </view>
@@ -357,7 +369,7 @@ onMounted(() => {
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -398,7 +410,7 @@ onMounted(() => {
   background: var(--c-neutral-0);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   box-shadow: var(--s-card-soft);
-  transition: transform 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -410,7 +422,7 @@ onMounted(() => {
 .author-avatar {
   width: 72rpx;
   height: 72rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
   background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
   display: flex;
@@ -545,8 +557,8 @@ onMounted(() => {
   height: 40rpx;
   border: 4rpx solid var(--c-border-default);
   border-top-color: var(--c-brand-500);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {
@@ -572,7 +584,7 @@ onMounted(() => {
   padding: var(--sp-5);
   background: var(--c-bg-page);
   border-radius: var(--r-lg);
-  transition: transform 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -584,7 +596,7 @@ onMounted(() => {
 .reply-avatar {
   width: 56rpx;
   height: 56rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
   background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
   display: flex;
@@ -647,7 +659,7 @@ onMounted(() => {
   padding: 10rpx var(--sp-6);
   border-radius: var(--r-full);
   background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -705,7 +717,7 @@ onMounted(() => {
   border-radius: var(--r-full);
   background: var(--c-gradient-float-btn);
   box-shadow: var(--s-brand);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -742,7 +754,7 @@ onMounted(() => {
   font-size: var(--fs-lg);
   color: var(--c-text-primary);
   border: 2rpx solid transparent;
-  transition: all 0.2s ease;
+  transition: all var(--d-normal, 200ms) ease;
 }
 
 .reply-input:focus {
@@ -756,7 +768,7 @@ onMounted(() => {
   background: var(--c-gradient-float-btn);
   flex-shrink: 0;
   box-shadow: var(--s-brand-md);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */

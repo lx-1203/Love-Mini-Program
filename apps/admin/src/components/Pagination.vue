@@ -53,11 +53,17 @@ const props = withDefaults(
     pageBase?: 0 | 1;
     /** 是否禁用（如加载中） */
     disabled?: boolean;
+    /** 上一页按钮文案（未传时回退到 common.prevPage） */
+    prevText?: string;
+    /** 下一页按钮文案（未传时回退到 common.nextPage） */
+    nextText?: string;
   }>(),
   {
     total: 0,
     pageBase: 1,
     disabled: false,
+    prevText: "",
+    nextText: "",
   },
 );
 
@@ -102,6 +108,12 @@ const pageInfo = computed(() => {
   return t("common.page", { page: displayPage, totalPages: safeTotal })
     + (props.total > 0 ? `（${t("common.total", { n: props.total })}）` : "");
 });
+
+/** 实际显示上一页文案：优先 props.prevText，缺省回退到 i18n */
+const displayPrevText = computed(() => props.prevText || t("common.prevPage"));
+
+/** 实际显示下一页文案：优先 props.nextText，缺省回退到 i18n */
+const displayNextText = computed(() => props.nextText || t("common.nextPage"));
 </script>
 
 <template>
@@ -110,13 +122,13 @@ const pageInfo = computed(() => {
       class="page-button"
       :disabled="isFirst || disabled"
       @click="handlePrev"
-    >{{ t("common.prevPage") }}</button>
+    >{{ displayPrevText }}</button>
     <text class="page-info">{{ pageInfo }}</text>
     <button
       class="page-button"
       :disabled="isLast || disabled"
       @click="handleNext"
-    >{{ t("common.nextPage") }}</button>
+    >{{ displayNextText }}</button>
   </view>
 </template>
 

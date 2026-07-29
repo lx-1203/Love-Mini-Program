@@ -2,11 +2,15 @@
 /**
  * 圈子页 - 校园墙帖子浏览与发布
  */
-import { ref, onUnmounted } from "vue";
+import { ref, computed, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import BaseTabs from "../../components/common/BaseTabs.vue";
+
+/** Task 28：i18n 文案 */
+const { t } = useI18n();
 
 /** 点赞动画定时器集合，用于卸载时统一清理 */
 const likeAnimTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -19,14 +23,14 @@ const emojiIcons = {
   star: IMAGE_PATHS.ICONS_COMMON.STAR_SVG,
 } as const;
 
-// Tab 切换 - 扩展为更多分类
-const tabs = [
-  { key: "recommend", label: "推荐" },
-  { key: "following", label: "关注" },
-  { key: "campus", label: "校园" },
-  { key: "love", label: "恋爱" },
-  { key: "treehole", label: "树洞" },
-];
+// Tab 切换 - 扩展为更多分类（Task 28：label 通过 i18n 计算属性动态切换）
+const tabs = computed(() => [
+  { key: "recommend", label: t("circle.tabRecommend") },
+  { key: "following", label: t("circle.tabFollowing") },
+  { key: "campus", label: t("circle.tabCampus") },
+  { key: "love", label: t("circle.tabLove") },
+  { key: "treehole", label: t("circle.tabTreehole") },
+]);
 const activeTab = ref<string>("recommend");
 
 // 帖子数据（模拟）- 增加时间、收藏状态
@@ -159,7 +163,7 @@ function goToPost() {
 
 /** 帖子卡片点击 */
 function handleCardTap(_postId: string) {
-  uni.showToast({ title: "详情开发中", icon: "none" });
+  uni.showToast({ title: t("circle.detailDeveloping"), icon: "none" });
 }
 
 /** 分享按钮处理 */
@@ -170,9 +174,13 @@ function handleShare() {
       menus: ["shareAppMessage", "shareTimeline"],
     });
   } catch (_e) {
-    uni.showToast({ title: "分享功能开发中", icon: "none" });
+    uni.showToast({ title: t("circle.shareDeveloping"), icon: "none" });
   }
 }
+
+// 修复（严格模式 noUnusedLocals）：toggleLike/toggleFollow/toggleCollect/handleShare 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ toggleLike, toggleFollow, toggleCollect, handleShare });
 </script>
 
 <template>
@@ -180,9 +188,9 @@ function handleShare() {
     <!-- 顶部导航 -->
     <view class="circle-header">
       <view class="circle-header__top">
-        <text class="circle-header__title">圈子</text>
+        <text class="circle-header__title">{{ $t("circle.navTitle") }}</text>
         <view class="circle-header__publish" @tap="goToPost">
-          <text class="circle-header__publish-text">发布</text>
+          <text class="circle-header__publish-text">{{ $t("circle.publishBtn") }}</text>
         </view>
       </view>
       <!-- 分类标签栏 -->
@@ -202,7 +210,7 @@ function handleShare() {
           <!-- 用户信息头部 -->
           <view class="post-card__header">
             <view class="post-card__user">
-              <SafeImage :src="post.avatar" custom-class="post-card__avatar" mode="aspectFill" />
+              <SafeImage :src="post.avatar" custom-class="post-card__avatar" mode="aspectFill" :lazy-load="true" />
               <view class="post-card__meta">
                 <view class="post-card__name-row">
                   <text class="post-card__nickname">{{ post.nickname }}</text>
@@ -216,9 +224,9 @@ function handleShare() {
             <view
               class="post-card__follow"
               :class="{ 'post-card__follow--active': post.isFollowing }"
-              @tap.stop="toggleFollow(post.id)"
+              catchtap="toggleFollow(post.id)"
             >
-              <text class="post-card__follow-text">{{ post.isFollowing ? '已关注' : '+ 关注' }}</text>
+              <text class="post-card__follow-text">{{ post.isFollowing ? $t('circle.followedBtn') : $t('circle.followBtn') }}</text>
             </view>
           </view>
 
@@ -228,8 +236,7 @@ function handleShare() {
           <!-- 图片区域 -->
           <view v-if="post.images.length > 0" class="post-card__images" :class="'post-card__images--' + post.images.length">
             <view
-              v-for="(img, idx) in post.images.slice(0, 9)"
-              :key="idx"
+              v-for="(img, idx) in post.images.slice(0, 9)" :key="idx"
               class="post-card__image-wrap"
             >
               <SafeImage
@@ -257,7 +264,7 @@ function handleShare() {
             <text class="post-card__time">{{ post.time }}</text>
             <view class="post-card__actions">
               <!-- 点赞 -->
-              <view class="post-card__action" :class="{ 'post-card__action--liked': post.isLiked, 'post-card__action--animating': post.likeAnimating }" @tap.stop="toggleLike(post.id)">
+              <view class="post-card__action" :class="{ 'post-card__action--liked': post.isLiked, 'post-card__action--animating': post.likeAnimating }" catchtap="toggleLike(post.id)">
                 <image class="post-card__action-icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
                 <text class="post-card__action-count" :class="{ 'post-card__action-count--liked': post.isLiked }">{{ post.likes }}</text>
               </view>
@@ -267,12 +274,12 @@ function handleShare() {
                 <text class="post-card__action-count">{{ post.comments }}</text>
               </view>
               <!-- 分享 -->
-              <view class="post-card__action" @tap.stop="handleShare">
+              <view class="post-card__action" catchtap="handleShare">
                 <image class="post-card__action-icon" :src="emojiIcons.share" mode="aspectFit" alt="" />
                 <text v-if="post.shares > 0" class="post-card__action-count">{{ post.shares }}</text>
               </view>
               <!-- 收藏 -->
-              <view class="post-card__action" :class="{ 'post-card__action--collected': post.isCollected }" @tap.stop="toggleCollect(post.id)">
+              <view class="post-card__action" :class="{ 'post-card__action--collected': post.isCollected }" catchtap="toggleCollect(post.id)">
                 <image class="post-card__action-icon" :src="emojiIcons.star" mode="aspectFit" alt="" />
               </view>
             </view>
@@ -298,17 +305,17 @@ function handleShare() {
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   height: 100%;
-  background: var(--c-bg-page, #F4F6FA);
+  background: var(--c-bg-page);
 }
 
 /* ========== 顶部导航 ========== */
 .circle-header {
-  background: var(--c-bg-container, #FFFFFF);
+  background: var(--c-bg-container);
   padding-top: calc(env(safe-area-inset-top) + 16rpx);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs);
 }
 
 .circle-header__top {
@@ -321,15 +328,15 @@ function handleShare() {
 .circle-header__title {
   font-size: var(--fs-4xl, 40rpx);
   font-weight: 800;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary);
   letter-spacing: 1rpx;
 }
 
 .circle-header__publish {
   padding: 12rpx 28rpx;
-  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
-  border-radius: 999rpx;
-  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint-strong, var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.35)));
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-400) 100%);
+  border-radius: var(--r-full, 9999rpx);
+  box-shadow: 0 4rpx 12rpx var(--c-brand-shadow-tint-strong);
 }
 
 /* #ifdef H5 */
@@ -341,7 +348,7 @@ function handleShare() {
 
 .circle-header__publish-text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -360,10 +367,10 @@ function handleShare() {
 }
 
 .post-card {
-  background: var(--c-bg-container, #FFFFFF);
+  background: var(--c-bg-container);
   border-radius: var(--r-lg, 16rpx);
   padding: 28rpx;
-  box-shadow: 0 2rpx 12rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))), 0 1rpx 3rpx var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.03)));
+  box-shadow: 0 2rpx 12rpx var(--c-neutral-shadow-xs), 0 1rpx 3rpx var(--c-neutral-shadow-xs);
   animation: card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
@@ -403,9 +410,9 @@ function handleShare() {
 .post-card__avatar {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-bg-brand, #E8F8F0) 0%, var(--c-bg-romance, #FFF5F7) 100%);
-  border: 2rpx solid var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(63, 207, 142, 0.2)));
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
+  border: 2rpx solid var(--c-brand-border-tint);
   flex-shrink: 0;
 }
 
@@ -425,13 +432,13 @@ function handleShare() {
 .post-card__nickname {
   font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary);
 }
 
 .post-card__gender-badge {
   width: 32rpx;
   height: 32rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -440,25 +447,25 @@ function handleShare() {
 }
 
 .post-card__gender-badge--male {
-  background: var(--c-tint-blue-soft, #E8F4FD);
-  color: var(--c-info-500, #3B82F6);
+  background: var(--c-tint-blue-soft);
+  color: var(--c-info-500);
 }
 
 .post-card__gender-badge--female {
-  background: var(--c-tint-pink-soft, #FFF0F5);
-  color: var(--c-romance-500, #EC4899);
+  background: var(--c-tint-pink-soft);
+  color: var(--c-romance-500);
 }
 
 .post-card__school {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-tertiary, #9AA1AB);
+  color: var(--c-text-tertiary);
 }
 
 /* --- 关注按钮 --- */
 .post-card__follow {
   padding: 10rpx 24rpx;
-  border-radius: 999rpx;
-  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
+  border-radius: var(--r-full, 9999rpx);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-400) 100%);
   border: none;
   transition: all var(--d-normal, 200ms) ease;
   flex-shrink: 0;
@@ -472,25 +479,25 @@ function handleShare() {
 /* #endif */
 
 .post-card__follow--active {
-  background: var(--c-bg-page, #F4F6FA);
-  border: 2rpx solid var(--c-border-default, #E2E8F0);
+  background: var(--c-bg-page);
+  border: 2rpx solid var(--c-border-default);
 }
 
 .post-card__follow-text {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
 .post-card__follow--active .post-card__follow-text {
-  color: var(--c-text-tertiary, #9AA1AB);
+  color: var(--c-text-tertiary);
   font-weight: 500;
 }
 
 /* --- 正文内容 --- */
 .post-card__content {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary);
   line-height: 1.6;
   margin-bottom: 20rpx;
   display: -webkit-box;
@@ -545,7 +552,7 @@ function handleShare() {
   /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
   padding-top: 100%;
   border-radius: var(--r-md, 12rpx);
-  background: var(--c-bg-page, #F4F6FA);
+  background: var(--c-bg-page);
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -565,7 +572,7 @@ function handleShare() {
   /* mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（1:1 → 100%） */
   padding-top: calc((100% - 16rpx) / 3);
   border-radius: var(--r-md, 12rpx);
-  background: var(--c-overlay-mid-strong, var(--c-overlay-mid-strong, rgba(0,0,0,0.5)));
+  background: var(--c-overlay-mid-strong);
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -580,7 +587,7 @@ function handleShare() {
   align-items: center;
   justify-content: center;
   font-size: var(--fs-2xl, 32rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -595,18 +602,18 @@ function handleShare() {
 .post-card__topic-tag {
   font-size: var(--fs-base, 24rpx);
   padding: 8rpx 20rpx;
-  border-radius: 999rpx;
+  border-radius: var(--r-full, 9999rpx);
   font-weight: 500;
 }
 
 .post-card__topic-tag--green {
-  color: var(--c-brand-400, #2DB97A);
-  background: var(--c-bg-brand, #E8F8F0);
+  color: var(--c-brand-400);
+  background: var(--c-bg-brand);
 }
 
 .post-card__topic-tag--pink {
-  color: var(--c-romance-500, #EC4899);
-  background: var(--c-bg-romance, #FFF5F7);
+  color: var(--c-romance-500);
+  background: var(--c-bg-romance);
 }
 
 /* --- 底部互动栏 --- */
@@ -615,12 +622,12 @@ function handleShare() {
   align-items: center;
   justify-content: space-between;
   padding-top: 16rpx;
-  border-top: 1rpx solid var(--c-border-light, #EEF0F4);
+  border-top: 1rpx solid var(--c-border-light);
 }
 
 .post-card__time {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-tertiary, #9AA1AB);
+  color: var(--c-text-tertiary);
 }
 
 .post-card__actions {
@@ -656,27 +663,27 @@ function handleShare() {
 .post-card__action-icon {
   width: 36rpx;
   height: 36rpx;
-  color: var(--c-text-tertiary, #9AA1AB);
+  color: var(--c-text-tertiary);
   flex-shrink: 0;
 }
 
 .post-card__action--liked .post-card__action-icon {
-  color: var(--c-error, #E5454D);
+  color: var(--c-error);
 }
 
 .post-card__action-count {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #9AA1AB);
+  color: var(--c-text-tertiary);
   font-weight: 500;
 }
 
 .post-card__action--liked .post-card__action-count,
 .post-card__action-count--liked {
-  color: var(--c-error, #E5454D);
+  color: var(--c-error);
 }
 
 .post-card__action--collected .post-card__action-icon {
-  color: var(--c-warning, #F59E0B);
+  color: var(--c-warning);
 }
 
 /* 已删除：旧的 emoji 颜色样式 */
@@ -693,12 +700,12 @@ function handleShare() {
   bottom: calc(env(safe-area-inset-bottom) + 150rpx);
   width: 104rpx;
   height: 104rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-brand, #3FCF8E) 0%, var(--c-brand-400, #2DB97A) 100%);
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-400) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.4)));
+  box-shadow: 0 8rpx 24rpx var(--c-brand-border-tint-stronger);
   z-index: 100;
   transition: transform var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }

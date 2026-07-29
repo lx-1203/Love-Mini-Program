@@ -1,6 +1,6 @@
 package com.campuslove.api.discover;
 
-import com.campuslove.api.runtime.MockRuntimeState;
+import com.campuslove.api.mock.MockRuntimeState;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;

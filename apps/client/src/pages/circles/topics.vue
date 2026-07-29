@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 兴趣圈话题列表页
  * 展示指定兴趣圈下的话题列表，支持下拉刷新和加载更多
@@ -6,9 +6,11 @@
 import { ref, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useCircleStore, formatCircleTime } from "../../stores/circle";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+import EmptyState from "../../components/common/EmptyState.vue";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 // SubTask 5.5.2：列表页图片 @error 占位图通用方案
@@ -17,6 +19,7 @@ import { useImageFallback } from "../../composables/useImageFallback";
 /** Emoji 替换 SVG 图标路径 */
 const chatIcon = IMAGE_PATHS.ICONS_EMOJI.CHAT;
 
+const { t } = useI18n();
 const circleStore = useCircleStore();
 const { currentTopics, loading, errorMessage, topicHasMore } = storeToRefs(circleStore);
 
@@ -91,7 +94,7 @@ function goToDetail(topicId: string) {
 
 /**
  * 跳转到话题作者的个人主页（F1.3）
- * 头像点击事件使用 @tap.stop 阻止冒泡，避免触发话题卡片整体的 goToDetail
+ * 头像点击事件使用 catchtap 阻止冒泡，避免触发话题卡片整体的 goToDetail
  * @param authorId - 作者 userId
  */
 function goToAuthorProfile(authorId: string) {
@@ -126,6 +129,10 @@ onLoad((query) => {
     void circleStore.fetchTopics(circleId.value, 1);
   }
 });
+
+// 修复（严格模式 noUnusedLocals）：goToAuthorProfile 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ goToAuthorProfile });
 </script>
 
 <template>
@@ -133,16 +140,16 @@ onLoad((query) => {
     <!-- 顶部导航栏 -->
     <view class="topics-header">
       <view class="topics-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">返回</text>
+        <text class="back-icon">{{ t("circle.topicDetailBack") }}</text>
       </view>
-      <text class="topics-header__title">{{ circleName || '话题列表' }}</text>
+      <text class="topics-header__title">{{ circleName || t("circle.topicsListTitle") }}</text>
       <view class="topics-header__spacer" />
     </view>
 
     <!-- 加载状态 -->
     <view v-if="loading && currentTopics.length === 0" class="topics-state">
-      <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
-      <text class="topics-state__text">正在加载话题...</text>
+      <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('circle.topicsLoadingAria')" />
+      <text class="topics-state__text">{{ t("circle.topicsLoadingText") }}</text>
     </view>
 
     <!-- 错误状态 -->
@@ -152,7 +159,7 @@ onLoad((query) => {
       </view>
       <text class="topics-state__text">{{ errorMessage }}</text>
       <view class="topics-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="onRefresh">
-        <text class="topics-state__btn-text">重试</text>
+        <text class="topics-state__btn-text">{{ t("circle.topicsRetryBtn") }}</text>
       </view>
     </view>
 
@@ -167,16 +174,19 @@ onLoad((query) => {
       @scrolltolower="onLoadMore"
     >
       <!-- 空状态 -->
-      <view v-if="currentTopics.length === 0" class="topics-empty">
-        <image class="topics-empty__icon" :src="chatIcon" mode="aspectFit" alt="" />
-        <text class="topics-empty__title">暂无话题</text>
-        <text class="topics-empty__desc">来发第一个话题吧</text>
-      </view>
+      <EmptyState
+        v-if="currentTopics.length === 0"
+        type="no-data"
+        :image="chatIcon"
+        :title="t('circle.topicsEmptyTitle')"
+        :description="t('circle.topicsEmptyDesc')"
+        :action-text="t('circle.topicsEmptyAction')"
+        @action="goToPostTopic"
+      />
 
       <!-- 话题卡片 -->
       <view
-        v-for="topic in currentTopics"
-        :key="topic.id"
+        v-for="topic in currentTopics" :key="topic.id"
         class="topic-card list-item"
         @tap="goToDetail(topic.id)"
       >
@@ -191,7 +201,7 @@ onLoad((query) => {
           <view class="topic-card__author">
             <view
               class="topic-card__avatar"
-              @tap.stop="goToAuthorProfile(topic.author.userId)"
+              catchtap="goToAuthorProfile(topic.author.userId)"
             >
               <image
                 v-if="topic.author.avatar && !isImageFailed(`avatar-${topic.id}`)"
@@ -214,12 +224,12 @@ onLoad((query) => {
       </view>
 
       <!-- 加载更多 -->
-      <view v-if="isLoadingMore" class="load-more" role="status" aria-live="polite">
-        <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
-        <text class="load-more__text">加载中...</text>
+      <view v-if="isLoadingMore" class="load-more" role="status" aria-live="polite"><!-- 加载更多 -->
+        <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('circle.topicsLoadingAria')" />
+        <text class="load-more__text">{{ t("circle.topicsLoadMoreLoading") }}</text>
       </view>
       <view v-else-if="!topicHasMore && currentTopics.length > 0" class="load-more">
-        <text class="load-more__text">— 没有更多了 —</text>
+        <text class="load-more__text">{{ t("circle.topicsLoadMoreEnd") }}</text>
       </view>
 
       <!-- 底部留白 -->
@@ -258,7 +268,7 @@ onLoad((query) => {
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
   background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -300,8 +310,8 @@ onLoad((query) => {
   height: 44rpx;
   border: 4rpx solid var(--c-border-default);
   border-top-color: var(--c-brand-500);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: spin var(--d-loop, 1000ms) linear infinite;
 }
 
 @keyframes spin {
@@ -327,7 +337,7 @@ onLoad((query) => {
   border-radius: var(--r-full);
   background: var(--c-gradient-float-btn);
   box-shadow: var(--s-brand);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -385,7 +395,7 @@ onLoad((query) => {
   background: var(--c-neutral-0);
   border-radius: var(--r-xl);
   box-shadow: var(--s-card-soft);
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -436,7 +446,7 @@ onLoad((query) => {
 .topic-card__avatar {
   width: 44rpx;
   height: 44rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
   background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
   display: flex;
@@ -510,14 +520,14 @@ onLoad((query) => {
   bottom: calc(env(safe-area-inset-bottom) + 150rpx);
   width: 112rpx;
   height: 112rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-gradient-float-btn);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: var(--s-float-btn);
   z-index: 99;
-  transition: all 0.15s ease;
+  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */

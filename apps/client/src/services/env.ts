@@ -174,7 +174,8 @@ export function isMockMode(): boolean {
 
 // 诊断日志（仅在开发环境输出，生产环境不泄露配置信息）
 if (isDev) {
-  console.log("[ENV] 诊断:", {
+  // 修复 no-console：诊断日志改用 console.warn（允许的方法）
+  console.warn("[ENV] 诊断:", {
     isDev,
     apiMode: appEnv.apiMode,
     apiBaseUrl: appEnv.apiBaseUrl,

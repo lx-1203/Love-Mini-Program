@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 破冰话题实体，对应 icebreaker_topics 表。
  * 存储通用破冰话题模板，用于匹配破冰引导功能。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "icebreaker_topics")
 public class IcebreakerTopic {
 
@@ -42,10 +47,16 @@ public class IcebreakerTopic {
     private Boolean isActive = true;
 
     /** 创建时间 */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 更新时间 */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

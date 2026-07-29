@@ -2,8 +2,13 @@ package com.campuslove.api.chat;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +27,7 @@ public class TempChatController {
   }
 
   @PostMapping
+  @PreAuthorize("hasRole('USER')")
   public TempChatSessionView createSession(@Valid @RequestBody CreateTempChatSessionRequest request) {
     return tempChatService.createSession(request.recommendedPersonId(), request.matchId());
   }
@@ -32,6 +38,7 @@ public class TempChatController {
   }
 
   @PostMapping("/{id}/messages")
+  @PreAuthorize("hasRole('USER')")
   public TempChatSessionView sendMessage(
       @PathVariable("id") String id,
       @Valid @RequestBody ChatMessageRequest request
@@ -40,6 +47,7 @@ public class TempChatController {
   }
 
   @PostMapping("/{id}/contact-exchange/respond")
+  @PreAuthorize("hasRole('USER')")
   public TempChatSessionView respondToContactExchange(
       @PathVariable("id") String id,
       @Valid @RequestBody ContactExchangeDecisionRequest request
@@ -48,26 +56,31 @@ public class TempChatController {
   }
 
   @PostMapping("/{id}/end")
+  @PreAuthorize("hasRole('USER')")
   public TempChatSessionView endSession(@PathVariable("id") String id) {
     return tempChatService.endSession(id);
   }
 
   @PostMapping("/{id}/pin")
+  @PreAuthorize("hasRole('USER')")
   public ChatSessionSummaryView pinSession(@PathVariable("id") String id) {
     return tempChatService.pinSession(id);
   }
 
   @PostMapping("/{id}/unpin")
+  @PreAuthorize("hasRole('USER')")
   public ChatSessionSummaryView unpinSession(@PathVariable("id") String id) {
     return tempChatService.unpinSession(id);
   }
 
   @PostMapping("/{id}/read")
+  @PreAuthorize("hasRole('USER')")
   public ChatSessionSummaryView markSessionRead(@PathVariable("id") String id) {
     return tempChatService.markSessionRead(id);
   }
 
   @PostMapping("/{id}/messages/{messageId}/recall")
+  @PreAuthorize("hasRole('USER')")
   public TempChatSessionView recallMessage(
       @PathVariable("id") String id,
       @PathVariable("messageId") String messageId
@@ -77,8 +90,8 @@ public class TempChatController {
 }
 
 record CreateTempChatSessionRequest(
-    String recommendedPersonId,
-    String matchId
+    @Size(max = 64) String recommendedPersonId,
+    @Size(max = 64) String matchId
 ) {
   @AssertTrue(message = "recommendedPersonId or matchId is required")
   boolean hasEntryPoint() {
@@ -126,11 +139,12 @@ record ChatMessageView(
 }
 
 record ChatMessageRequest(
-    @NotBlank String sender,
-    @NotBlank String kind,
-    @NotBlank String body,
-    Integer durationSeconds,
-    String quoteRef
+    @NotBlank @Size(max = 16) String sender,
+    @NotBlank @Pattern(regexp = "text|voice|emoji|system",
+        message = "kind 必须为 text/voice/emoji/system") String kind,
+    @NotBlank @Size(max = 5000) String body,
+    @Min(0) @Max(3600) Integer durationSeconds,
+    @Size(max = 64) String quoteRef
 ) {
   /** 兼容旧调用（无 quoteRef） */
   public ChatMessageRequest withoutQuote() {
@@ -142,7 +156,8 @@ record ContactExchangeStateView(String proposer, String status) {
 }
 
 record ContactExchangeDecisionRequest(
-    @NotBlank String actor,
-    @NotBlank String decision
+    @NotBlank @Size(max = 16) String actor,
+    @NotBlank @Pattern(regexp = "accept|reject|revoke",
+        message = "decision 必须为 accept/reject/revoke") String decision
 ) {
 }

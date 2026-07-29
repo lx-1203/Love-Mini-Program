@@ -29,8 +29,9 @@ import type {
   PostListResponse,
   ShareView,
   SimilarAuthor,
+  // 修复 no-duplicate-imports：合并 ./types 的重复 import
+  PostFilters,
 } from "./types";
-import type { PostFilters } from "./types";
 import type { CampusFeedView } from "../../services/generated/api-types-supplement";
 
 /**

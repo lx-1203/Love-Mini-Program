@@ -1,5 +1,6 @@
 package com.campuslove.api.config;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +35,7 @@ public class ContentFilterController {
      * @return 敏感词检测结果
      */
     @PostMapping("/api/v1/content-filter/check")
-    public Map<String, Object> checkContent(@RequestBody Map<String, String> body) {
+    public Map<String, Object> checkContent(@Valid @RequestBody Map<String, String> body) {
         String content = body.get("content");
 
         if (content == null || content.isBlank()) {

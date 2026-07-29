@@ -1,0 +1,36 @@
+# EditorConfig 配置（Task 50：代码风格统一）
+# https://editorconfig.org
+# 通用的跨编辑器/IDE 格式化配置，确保不同开发者环境一致
+
+root = true
+
+[*]
+# 字符集
+charset = utf-8
+# 换行符（Windows 风格，与项目现有文件一致）
+end_of_line = crlf
+# 文件末尾保留空行
+insert_final_newline = true
+# 行尾去除多余空格
+trim_trailing_whitespace = true
+# 缩进风格
+indent_style = space
+indent_size = 2
+# 行宽（与 Prettier printWidth 一致）
+max_line_length = 100
+
+[*.{ts,tsx,js,jsx,mjs,cjs,vue,json,jsonc,json5,yml,yaml,html,css,scss,sass,less}]
+indent_size = 2
+
+[*.md]
+# Markdown 文件保留行尾空格（双空格表示换行）
+trim_trailing_whitespace = false
+max_line_length = off
+
+[Makefile]
+# Makefile 必须使用 Tab 缩进
+indent_style = tab
+
+[*.{bat,cmd,ps1}]
+# Windows 脚本保留 CRLF
+end_of_line = crlf

@@ -2,6 +2,7 @@ package com.campuslove.api.repository;
 
 import com.campuslove.api.entity.VipBill;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -41,4 +42,13 @@ public interface VipBillRepository extends JpaRepository<VipBill, Long> {
      * @return 分页账单列表
      */
     Page<VipBill> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, String status, Pageable pageable);
+
+    /**
+     * 按第三方交易号（订单号）查询账单。
+     * <p>Task 12.1：用于支付回调时按订单号查找对应账单，进行金额对账。</p>
+     *
+     * @param transactionId 第三方交易号 / 业务订单号
+     * @return 账单实体（可选）
+     */
+    Optional<VipBill> findByTransactionId(String transactionId);
 }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
@@ -75,13 +75,13 @@ defineExpose({ ariaLabel });
 .signal-icon {
   width: 72rpx;
   height: 72rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-brand-400);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  animation: heart-pulse 2.4s ease-in-out infinite;
+  animation: heart-pulse var(--d-loop-slow, 2400ms) ease-in-out infinite;
 }
 .signal-img {
   width: 40rpx;
@@ -93,11 +93,11 @@ defineExpose({ ariaLabel });
 @keyframes heart-pulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(var(--c-brand-600-rgb, 37, 99, 235), 0.3);
+    box-shadow: 0 0 0 0 var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.3));
   }
   50% {
     transform: scale(1.06);
-    box-shadow: 0 0 0 12rpx rgba(var(--c-brand-600-rgb, 37, 99, 235), 0);
+    box-shadow: 0 0 0 12rpx var(--c-brand-bg-tint, rgba(63, 207, 142, 0));
   }
 }
 
@@ -119,5 +119,16 @@ defineExpose({ ariaLabel });
   font-weight: 700;
   color: var(--c-brand-400);
   letter-spacing: -0.02em;
+}
+
+/* P6 a11y：尊重 prefers-reduced-motion，关闭心跳脉冲与背景过渡，避免前庭功能障碍用户不适 */
+@media (prefers-reduced-motion: reduce) {
+  .heart-signal {
+    animation: none !important;
+    transition: none !important;
+  }
+  .signal-icon {
+    animation: none !important;
+  }
 }
 </style>

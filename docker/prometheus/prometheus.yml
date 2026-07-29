@@ -72,16 +72,20 @@ scrape_configs:
           service: redis
     scrape_interval: 30s
 
-  # ---------- Blackbox 探针（外部可用性）----------
-  # 用于监控第三方依赖（微信 API、Agnes AI）的可用性
+  # ---------- Blackbox 探针（外部 + 内部可用性，P3-D.4 补充 admin 探针）----------
+  # 用于监控第三方依赖（微信 API、Agnes AI）与内部服务（Admin 后台）的可用性
+  # admin 为 nginx 静态站点无 Prometheus exporter，通过 blackbox HTTP 探针监控可用性
   - job_name: blackbox-http
     metrics_path: /probe
     params:
       module: [http_2xx]
     static_configs:
       - targets:
+          # 外部依赖
           - https://api.weixin.qq.com/sns/jscode2session
           - https://api.agnes-ai.com/api/health
+          # 内部服务（P3-D.4 新增 admin 可用性探针）
+          - http://admin:8080/healthz
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

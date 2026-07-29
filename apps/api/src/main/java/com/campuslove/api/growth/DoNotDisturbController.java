@@ -4,6 +4,7 @@ import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,6 +68,7 @@ public class DoNotDisturbController {
      * @return 更新后的免打扰设置视图
      */
     @PutMapping
+    @PreAuthorize("hasRole('USER')")
     public DoNotDisturbView updateSetting(@Valid @RequestBody DoNotDisturbRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         log.debug("更新用户[{}]的免打扰设置: enabled={}, time={}~{}, repeat={}",

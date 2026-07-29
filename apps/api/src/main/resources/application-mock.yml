@@ -8,6 +8,10 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      # Redisson（redisson-spring-boot-starter 引入）：mock profile 下不连接 Redis，
+      # 必须排除 RedissonAutoConfigurationV2，否则 healthEndpoint 链路尝试创建 RedissonClient
+      # 并连接 127.0.0.1:6379，导致 ApplicationContext 加载失败。
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
 
 app:
   jwt:
@@ -15,3 +19,23 @@ app:
     # 本地开发可通过 start-server.bat 或 .env 文件配置 JWT_SECRET。
     # 生成安全密钥示例：openssl rand -base64 48
     secret: ${JWT_SECRET:}
+  # CORS 允许的源列表：mock profile 下提供 localhost 默认值，
+    # 便于本地开发（前端 dev server 通常运行在 5173/5174/5177 端口）。
+    # 生产环境（real profile）由 application.yml 默认空，需通过 CORS_ALLOWED_ORIGINS 显式配置。
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5177,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5177}
+  # WebSocket 允许的 Origin 模式：mock profile 下提供 localhost 默认值，
+    # 便于本地开发联调；生产环境需通过 WEBSOCKET_ALLOWED_ORIGIN_PATTERNS 显式配置。
+  websocket:
+    allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+  # OpenAPI 文档配置：mock profile 下提供 localhost 默认值，便于本地开发联调 Swagger UI。
+  openapi:
+    local-server-url: ${OPENAPI_LOCAL_SERVER_URL:http://localhost:8080}
+    server-url: ${OPENAPI_SERVER_URL:http://localhost:8080}
+  # Agnes AI 服务配置：mock profile 下提供默认 base URL（官方文档地址），
+    # 避免 application.yml 中 api-base 默认值清空导致启动失败；
+    # mock profile 下不会真正调用 AI 服务（RealAiVideoService 仅 real profile 激活）。
+  ai:
+    agnes:
+      api-base: ${AGNES_API_BASE:https://api.agnes-ai.com/api}
+      api-key: ${AGNES_API_KEY:}

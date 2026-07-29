@@ -2,6 +2,7 @@ package com.campuslove.api.growth;
 
 import com.campuslove.api.config.Resilience4jConfig;
 import com.campuslove.api.config.WeChatConfig;
+import com.campuslove.api.utils.SensitiveDataMasker;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -13,12 +14,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 /**
  * 微信订阅消息推送服务。
  * 仅在 real profile 下激活，负责调用微信订阅消息接口。
+ *
+ * <p>日志脱敏（P0 CRITICAL FIN-00001/00002 Task 1.2）：
+ * 所有日志输出中的 openId 均通过 {@link SensitiveDataMasker#mask(String)} 脱敏，
+ * 避免日志文件、APM 链路追踪、异常堆栈中泄露用户身份标识。</p>
  */
 @Component
 @Profile("real")
@@ -156,6 +162,7 @@ public class WeChatPushService {
      * @param data       模板数据
      * @return 是否发送成功；熔断 / 重试耗尽时返回 false
      */
+    @Transactional
     @CircuitBreaker(name = Resilience4jConfig.WECHAT_API_BACKEND,
             fallbackMethod = "sendSubscribeMessageFallback")
     @Retry(name = Resilience4jConfig.WECHAT_API_BACKEND)
@@ -194,10 +201,12 @@ public class WeChatPushService {
                 return false;
             }
 
-            log.info("Subscribe message sent successfully to {}", openId);
+            log.info("Subscribe message sent successfully to openId={}",
+                    SensitiveDataMasker.mask(openId));
             return true;
         } catch (RestClientException ex) {
-            log.error("Failed to send subscribe message to {}", openId, ex);
+            log.error("Failed to send subscribe message to openId={}",
+                    SensitiveDataMasker.mask(openId), ex);
             return false;
         }
     }
@@ -219,7 +228,7 @@ public class WeChatPushService {
     private boolean sendSubscribeMessageFallback(String openId, String templateId, String page,
                                                   Map<String, TemplateDataItem> data, Throwable ex) {
         log.warn("WeChat subscribe message 调用降级: openId={}, templateId={}, errorType={}, message={}",
-                openId, templateId, ex.getClass().getSimpleName(), ex.getMessage());
+                SensitiveDataMasker.mask(openId), templateId, ex.getClass().getSimpleName(), ex.getMessage());
         return false;
     }
 
@@ -232,6 +241,7 @@ public class WeChatPushService {
      * @param interactionCount 互动数
      * @return 是否发送成功
      */
+    @Transactional
     public boolean sendSocialDigestPush(String openId, long visitorCount, long likeCount,
                                          long interactionCount) {
         String templateId = weChatConfig.getSocialDigestTemplateId();
@@ -256,6 +266,7 @@ public class WeChatPushService {
      * @param recommendCount  推荐人数
      * @return 是否发送成功
      */
+    @Transactional
     public boolean sendRecommendRefreshPush(String openId, long recommendCount) {
         String templateId = weChatConfig.getRecommendRefreshTemplateId();
         if (templateId == null || templateId.isBlank()) {

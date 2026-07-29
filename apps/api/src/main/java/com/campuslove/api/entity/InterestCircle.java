@@ -8,12 +8,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 兴趣圈实体，对应 interest_circles 表。
  * 存储圈名、图标、描述、成员数和排序权重。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "interest_circles")
 public class InterestCircle {
 
@@ -42,6 +46,9 @@ public class InterestCircle {
     private Integer sortOrder = 0;
 
     /** 记录创建时间（兴趣圈入库时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 推送偏好设置实体，对应 push_preferences 表。
  * 存储用户的小程序推送偏好，包括是否开启推送、每日最大推送次数、活跃时段等。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "push_preferences")
 public class PushPreference {
 
@@ -37,7 +42,15 @@ public class PushPreference {
     @Column(name = "active_hours", length = 50)
     private String activeHours;
 
+    /** 记录创建时间（Task 37 P2.14 审计字段补齐） */
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     /** 更新时间 */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**
@@ -95,6 +108,14 @@ public class PushPreference {
 
     public void setActiveHours(String activeHours) {
         this.activeHours = activeHours;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {

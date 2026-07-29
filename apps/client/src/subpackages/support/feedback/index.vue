@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 反馈中心页（功能9 + 功能10 入口）
  *
@@ -25,26 +25,33 @@ import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 import StatusState from "../../../components/common/StatusState.vue";
+import EmptyState from "../../../components/common/EmptyState.vue";
 import { useFeedbackStore } from "../../../stores/feedback";
-import { clientApi } from "../../../services/api";
+// 修复 no-duplicate-imports：合并 ../../../services/api 的重复 import
+import { clientApi, type UniUploadFileLike } from "../../../services/api";
 import {
   toSubmissionStatusLabel,
   toSubmissionStatusTone,
 } from "../../../view-models/feedback";
 import { errorHaptic, lightHaptic, successHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
-// 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
-import type { UniUploadFileLike } from "../../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 
+const { t } = useI18n();
+
+// 修复（严格模式 noUnusedLocals）：EmptyState 在模板第 531 行使用，
+// 但 vue-tsc 对该模板位置识别失败（疑似 catchtap 指令解析干扰），
+// 通过 defineExpose 标记为已使用，与 PageStateContainer.vue 同模式。
+defineExpose({ EmptyState });
+
 /** 反馈类型枚举常量（提取为常量，便于扩展与统一维护） */
 type FeedbackType = "feedback" | "suggestion" | "activity_proposal";
-const FEEDBACK_TYPES: { value: FeedbackType; label: string }[] = [
-  { value: "feedback", label: "反馈" },
-  { value: "suggestion", label: "建议" },
-  { value: "activity_proposal", label: "活动提案" },
-];
+const FEEDBACK_TYPES = computed<{ value: FeedbackType; label: string }[]>(() => [
+  { value: "feedback", label: t("feedback.typeFeedback") },
+  { value: "suggestion", label: t("feedback.typeSuggestion") },
+  { value: "activity_proposal", label: t("feedback.typeActivityProposal") },
+]);
 
 /** 单张图片大小上限（5MB，与后端约定一致） */
 const IMAGE_SIZE_LIMIT = 5 * 1024 * 1024;
@@ -53,7 +60,6 @@ const IMAGE_MAX_COUNT = 3;
 /** 允许的图片扩展名（用于客户端预校验，后端会再次校验） */
 const ALLOWED_EXTS = ["jpg", "jpeg", "png", "webp"];
 
-const { t } = useI18n();
 const feedbackStore = useFeedbackStore();
 const activeType = ref<FeedbackType>("feedback");
 const form = reactive({
@@ -155,7 +161,7 @@ function handleAddImage(): void {
     .catch((_e) => {
       errorHaptic();
       uni.showToast({
-        title: "需同意隐私协议后才能选择图片",
+        title: t("feedback.privacyImageDenied"),
         icon: "none",
       });
     });
@@ -391,9 +397,9 @@ function goDetail(id: number): void {
 </script>
 
 <template>
-  <AppShell title="反馈中心" subtitle="反馈、建议和活动提案共用一个入口。" :show-tab-bar="false">
-    <SectionCard title="新建提交" compact>
-      <view class="chips" role="tablist" aria-label="反馈类型">
+  <AppShell :title="t('feedback.pageTitle')" :subtitle="t('feedback.pageSubtitle')" :show-tab-bar="false">
+    <SectionCard :title="t('feedback.newSubmission')" compact>
+      <view class="chips" role="tablist" :aria-label="t('feedback.categoryAria')">
         <view
           v-for="item in FEEDBACK_TYPES"
           :key="item.value"
@@ -407,35 +413,35 @@ function goDetail(id: number): void {
           @tap="activeType = item.value"
         ><text class="chip__label">{{ item.label }}</text></view>
       </view>
-      <label class="sr-only" for="feedback-title">标题</label>
+      <label class="sr-only" for="feedback-title">{{ t('feedback.labelTitle') }}</label>
       <input
         id="feedback-title"
         v-model="form.title"
         class="field"
-        placeholder="标题"
-        aria-label="标题"
+        :placeholder="t('feedback.placeholderTitle')"
+        :aria-label="t('feedback.labelTitle')"
         aria-required="true"
         :aria-describedby="errorMessage ? 'feedback-error' : undefined"
         aria-errormessage="feedback-error"
       />
-      <label class="sr-only" for="feedback-content">反馈内容</label>
+      <label class="sr-only" for="feedback-content">{{ t('feedback.labelContent') }}</label>
       <textarea
         id="feedback-content"
         v-model="form.content"
         class="field field--textarea"
         maxlength="280"
-        aria-label="反馈内容"
+        :aria-label="t('feedback.labelContent')"
         aria-required="true"
         :aria-describedby="errorMessage ? 'feedback-error' : undefined"
         aria-errormessage="feedback-error"
       />
-      <label class="sr-only" for="feedback-wechat">选填微信号</label>
+      <label class="sr-only" for="feedback-wechat">{{ t('feedback.labelContactWechat') }}</label>
       <input
         id="feedback-wechat"
         v-model="form.contactWechat"
         class="field"
-        placeholder="选填微信号"
-        aria-label="选填微信号"
+        :placeholder="t('feedback.placeholderContactWechat')"
+        :aria-label="t('feedback.labelContactWechat')"
         :aria-describedby="errorMessage ? 'feedback-error' : undefined"
         aria-errormessage="feedback-error"
       />
@@ -479,7 +485,7 @@ function goDetail(id: number): void {
               :aria-label="t('feedback.imageRemove')"
               hover-class="image-cell__remove--pressed"
               :hover-stay-time="100"
-              @tap.stop="handleRemoveImage(idx)"
+              catchtap="handleRemoveImage(idx)"
             >
               <text class="image-cell__remove-icon" aria-hidden="true">✕</text>
             </view>
@@ -526,9 +532,11 @@ function goDetail(id: number): void {
         </view>
       </view>
 
-      <view v-if="feedbackStore.submissions.length === 0" class="empty-state">
-        <text class="empty-state__text">{{ t("feedback.historyEmpty") }}</text>
-      </view>
+      <EmptyState
+        v-if="feedbackStore.submissions.length === 0"
+        :title="t('feedback.historyEmpty')"
+        type="no-data"
+      />
 
       <view
         v-for="item in feedbackStore.submissions"
@@ -582,7 +590,7 @@ function goDetail(id: number): void {
   min-height: 88rpx;
   padding: 18rpx;
   box-sizing: border-box;
-  border-radius: 18rpx;
+  border-radius: var(--r-lg, 18rpx);
   background: var(--c-bg-page);
 }
 
@@ -664,15 +672,15 @@ function goDetail(id: number): void {
   right: 0;
   width: 88rpx;
   height: 88rpx;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-overlay-mid, rgba(15, 23, 42, 0.55));
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .image-cell__remove--pressed {
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
   transform: scale(0.95);
 }
 
@@ -707,8 +715,8 @@ function goDetail(id: number): void {
   height: 40rpx;
   border: 4rpx solid var(--c-border-default, rgba(15, 23, 42, 0.08));
   border-top-color: var(--c-brand);
-  border-radius: 50%;
-  animation: feedback-spinner 0.8s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: feedback-spinner var(--d-spinner, 800ms) linear infinite;
 }
 
 @keyframes feedback-spinner {

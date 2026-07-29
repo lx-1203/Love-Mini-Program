@@ -2,13 +2,25 @@ openapi: 3.0.3
 info:
   title: Campus Love - Check-in API
   version: 1.0.0
+  description: |
+    Daily check-in related endpoints exposed by `CheckInController`
+    (`/api/v1/check-in`). All endpoints require a valid JWT bearer token
+    unless explicitly marked as anonymous.
 servers:
-  - url: /api
+  - url: /api/v1
+    description: Versioned API gateway prefix
+tags:
+  - name: check-in
+    description: Daily check-in and make-up check-in operations
 paths:
   /check-in:
     post:
+      tags: [check-in]
       summary: Daily check-in
+      description: Records today's check-in for the authenticated user. Idempotent.
       operationId: checkIn
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Check-in result
@@ -16,14 +28,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckInView'
+              example:
+                success: true
+                consecutiveDays: 5
+                extraQuota: 1
+                extraRecommendQuota: 3
+                hotTopicsUnlocked: true
+                newUsersUnlocked: true
+                hotTopicCount: 5
+                newUserCount: 10
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /check-in/status:
     get:
+      tags: [check-in]
       summary: Get today's check-in status
+      description: Returns whether the current user has checked in today and the consecutive day count.
       operationId: getCheckInStatus
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Check-in status for today
@@ -31,51 +58,172 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckInStatusView'
+              example:
+                checkedInToday: true
+                consecutiveDays: 5
+                extraQuota: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /check-in/make-up:
+    post:
+      tags: [check-in]
+      summary: Make up a missed check-in
+      description: |
+        Allows the authenticated user to make up a missed check-in for a past
+        date within the last 7 days. Limited to 3 make-ups per calendar month;
+        first make-up is free, subsequent ones cost 50 growth points.
+      operationId: makeUpCheckIn
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MakeUpCheckInRequest'
+            example:
+              date: '2026-07-28'
+      responses:
+        '200':
+          description: Make-up check-in result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MakeUpCheckInResultView'
+              example:
+                success: true
+                checkInDate: '2026-07-28'
+                consecutiveDays: 5
+                usedMakeUpCount: 2
+                makeUpLimit: 3
+                costPoints: 50
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT bearer token issued by `/auth/wechat-login` or `/auth/refresh`.
   schemas:
     CheckInView:
       type: object
       properties:
-        checkInDate:
-          type: string
-          format: date
-          description: Check-in date (ISO format)
+        success:
+          type: boolean
+          description: Whether the check-in operation succeeded
         consecutiveDays:
           type: integer
           minimum: 0
           description: Consecutive check-in days
-        extraRecommendations:
+        extraQuota:
+          type: integer
+          minimum: 0
+          description: Extra swipe quota granted for checking in
+        extraRecommendQuota:
           type: integer
           minimum: 0
           description: Extra daily recommendations granted for checking in
+        hotTopicsUnlocked:
+          type: boolean
+          description: Whether hot topics were unlocked by this check-in
+        newUsersUnlocked:
+          type: boolean
+          description: Whether new users were unlocked by this check-in
+        hotTopicCount:
+          type: integer
+          minimum: 0
+          description: Number of hot topics unlocked
+        newUserCount:
+          type: integer
+          minimum: 0
+          description: Number of new users unlocked
       required:
-        - checkInDate
+        - success
         - consecutiveDays
-        - extraRecommendations
+        - extraQuota
+        - extraRecommendQuota
+        - hotTopicsUnlocked
+        - newUsersUnlocked
+        - hotTopicCount
+        - newUserCount
     CheckInStatusView:
       type: object
       properties:
-        checkedIn:
+        checkedInToday:
           type: boolean
           description: Whether user has checked in today
         consecutiveDays:
           type: integer
           minimum: 0
           description: Consecutive check-in days (0 if not checked in today)
+        extraQuota:
+          type: integer
+          minimum: 0
+          description: Extra swipe quota granted by today's check-in
       required:
-        - checkedIn
+        - checkedInToday
         - consecutiveDays
-    ErrorResponse:
+        - extraQuota
+    MakeUpCheckInRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Target make-up date (yyyy-MM-dd), must be within the past 7 days (excluding today).
+      required:
+        - date
+    MakeUpCheckInResultView:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the make-up operation succeeded
+        checkInDate:
+          type: string
+          format: date
+          description: Date that was successfully made up
+        consecutiveDays:
+          type: integer
+          minimum: 0
+          description: Updated consecutive check-in day count
+        usedMakeUpCount:
+          type: integer
+          minimum: 0
+          description: Make-up operations used in the current calendar month
+        makeUpLimit:
+          type: integer
+          minimum: 0
+          description: Maximum make-up operations allowed per calendar month
+        costPoints:
+          type: integer
+          minimum: 0
+          description: Growth points consumed for this make-up (0 if first free make-up)
+      required:
+        - success
+        - checkInDate
+        - consecutiveDays
+        - usedMakeUpCount
+        - makeUpLimit
+        - costPoints
+    ApiError:
       type: object
       properties:
         error:
           type: string
+          description: Machine-readable error code (e.g., `BAD_REQUEST`, `UNAUTHORIZED`).
         message:
           type: string
+          description: Human-readable error message.
       required:
         - error
         - message
@@ -85,22 +233,25 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: BAD_REQUEST
+            message: 'Invalid make-up date: date must be within the past 7 days.'
     Unauthorized:
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    NotFound:
-      description: Not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: UNAUTHORIZED
+            message: 'Missing or invalid bearer token.'
     InternalServerError:
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: INTERNAL_ERROR
+            message: 'Unexpected server error.'

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 首页 - 校园聚合页
  * 包含：学校选择器、校园圈活动、课表空档、校园墙、逛逛推荐、社交升温进度
@@ -81,6 +81,9 @@ const recommendUsers = homeRecommendedPeople.map((person, index) => ({
 const currentSchool = ref("北京大学");
 const schools = ["北京大学", "清华大学", "复旦大学", "浙江大学"];
 const showSchoolPicker = ref(false);
+
+/** 空操作占位（catchtap 占位 handler，mp-weixin 要求 catchtap 必须绑定 handler） */
+function noop() {}
 
 function selectSchool(school: string) {
   // 修复：分类（学校）切换时重新调用 fetch 数据，避免展示旧学校的内容
@@ -276,7 +279,11 @@ async function handleCheckIn() {
  * 用于 showActionSheet 展示，避免引入 date-picker 组件保持 mp-weixin 兼容。
  */
 const makeUpDateOptions = computed(() => {
-  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+  // Task 28: 周几标签抽取到 i18n（home.weekdaySun..weekdaySat）
+  const weekdays = [
+    t('home.weekdaySun'), t('home.weekdayMon'), t('home.weekdayTue'),
+    t('home.weekdayWed'), t('home.weekdayThu'), t('home.weekdayFri'), t('home.weekdaySat'),
+  ];
   const options: { value: string; label: string }[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -287,7 +294,8 @@ const makeUpDateOptions = computed(() => {
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     const value = `${year}-${month}-${day}`;
-    const label = `${month}-${day} 周${weekdays[d.getDay()]}`;
+    // Task 28: 日期标签格式抽取到 i18n（home.makeUpDateLabel）
+    const label = t('home.makeUpDateLabel', { date: `${month}-${day}`, weekday: weekdays[d.getDay()] });
     options.push({ value, label });
   }
   return options;
@@ -373,23 +381,29 @@ onMounted(() => {
   void checkInStore.fetchStatus();
   void socialProgressStore.fetchProgress();
 });
+
+// 修复（严格模式 noUnusedLocals）：noop 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ noop });
 </script>
 
 <template>
   <view class="home-page page-fade-in">
     <!-- 学校选择弹窗 -->
-    <view v-if="showSchoolPicker" class="school-picker" @tap="showSchoolPicker = false">
-      <view class="school-picker__content" @tap.stop>
+    <view v-if="showSchoolPicker" class="school-picker" role="button" :aria-label="t('common.closeAria')" @tap="showSchoolPicker = false">
+      <view class="school-picker__content" catchtap="noop">
         <view class="school-picker__header">
           <text class="school-picker__title">{{ t('home.selectSchool') }}</text>
-          <text class="school-picker__close" @tap="showSchoolPicker = false">✕</text>
+          <text class="school-picker__close" role="button" :aria-label="t('common.closeAria')" @tap="showSchoolPicker = false">✕</text>
         </view>
         <view class="school-picker__list" role="list">
           <view
-            v-for="school in schools"
-            :key="school"
+            v-for="school in schools" :key="school"
             class="school-picker__item"
             :class="{ 'school-picker__item--active': school === currentSchool }"
+            role="button"
+            :aria-label="school"
+            :aria-pressed="school === currentSchool"
             @tap="selectSchool(school)"
           >
             <text class="school-picker__item-name">{{ school }}</text>
@@ -409,7 +423,7 @@ onMounted(() => {
           </view>
           <view class="greeting-right">
             <MatchCountChip :count="remainingCount" />
-            <view class="notification-btn">
+            <view class="notification-btn" role="button" :aria-label="t('home.notificationAria')">
               <text class="notification-icon">🔔</text>
               <view class="notification-dot"></view>
             </view>
@@ -417,13 +431,13 @@ onMounted(() => {
         </view>
 
         <!-- 搜索框 -->
-        <view class="search-box press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
+        <view class="search-box press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.searchPlaceholder')" @tap="openAppPath('/pages/discover/index')">
           <image class="search-icon" :src="emojiIcons.search" mode="aspectFit" alt="" />
           <text class="search-placeholder">{{ t('home.searchPlaceholder') }}</text>
         </view>
 
         <!-- 学校选择器 -->
-        <view class="school-selector press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="showSchoolPicker = true">
+        <view class="school-selector press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.selectSchool')" @tap="showSchoolPicker = true">
           <image class="school-icon" :src="emojiIcons.school" mode="aspectFit" alt="" />
           <text class="school-name">{{ currentSchool }}</text>
           <text class="school-arrow">▼</text>
@@ -435,7 +449,7 @@ onMounted(() => {
 
       <!-- 签到入口 -->
       <view class="section-wrap">
-        <view v-if="!checkInStore.checkedIn && !checkInStore.loading" class="checkin-card card-base btn-press press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleCheckIn">
+        <view v-if="!checkInStore.checkedIn && !checkInStore.loading" class="checkin-card card-base btn-press press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.todayCheckin')" @tap="handleCheckIn">
           <view class="checkin-icon-wrap checkin-icon-wrap--gradient">
             <image class="checkin-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
           </view>
@@ -463,6 +477,8 @@ onMounted(() => {
               class="checkin-action-btn press-feedback"
               hover-class="press-feedback--active"
               hover-stay-time="120"
+              role="button"
+              :aria-label="t('home.makeUpCheckIn')"
               @tap="handleMakeUpCheckIn"
             >
               <text class="checkin-action-text">{{ t('home.makeUpCheckIn') }}</text>
@@ -471,6 +487,8 @@ onMounted(() => {
               class="checkin-action-btn checkin-action-btn--share press-feedback"
               hover-class="press-feedback--active"
               hover-stay-time="120"
+              role="button"
+              :aria-label="t('home.shareCheckIn')"
               @tap="handleShareCheckIn"
             >
               <text class="checkin-action-text">{{ t('home.shareCheckIn') }}</text>
@@ -483,49 +501,51 @@ onMounted(() => {
       <view class="section-wrap">
         <view class="function-grid-card card-base">
           <view class="function-grid">
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.nearbyPeople')" @tap="openAppPath('/pages/discover/index')">
               <view class="function-icon function-icon--pink">
                 <image class="function-emoji" :src="emojiIcons.location" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.nearbyPeople') }}</text>
             </view>
-            <view class="function-item function-item--highlight press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
+            <view class="function-item function-item--highlight press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.interestMatch')" @tap="openAppPath('/pages/discover/index')">
               <view class="function-icon function-icon--purple">
                 <image class="function-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.interestMatch') }}</text>
+              <text class="function-item__hot-badge">{{ t('home.hotBadge') }}</text>
             </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/messages/index')">
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.voiceRoom')" @tap="openAppPath('/pages/messages/index')">
               <view class="function-icon function-icon--orange">
                 <image class="function-emoji" :src="emojiIcons.microphone" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.voiceRoom') }}</text>
             </view>
-            <view class="function-item function-item--highlight press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
+            <view class="function-item function-item--highlight press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.cpMatch')" @tap="openAppPath('/pages/discover/index')">
               <view class="function-icon function-icon--red">
                 <image class="function-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.cpMatch') }}</text>
+              <text class="function-item__hot-badge">{{ t('home.hotBadge') }}</text>
             </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/subpackages/discover/activities/index')">
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.campusActivity_short')" @tap="openAppPath('/subpackages/discover/activities/index')">
               <view class="function-icon function-icon--green">
                 <image class="function-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.campusActivity_short') }}</text>
             </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/village/index')">
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.loveAgency')" @tap="openAppPath('/pages/village/index')">
               <view class="function-icon function-icon--cyan">
                 <image class="function-emoji" :src="emojiIcons.group" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.loveAgency') }}</text>
             </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/daily-question/index')">
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.truthOrDare')" @tap="openAppPath('/pages/daily-question/index')">
               <view class="function-icon function-icon--yellow">
                 <image class="function-emoji" :src="emojiIcons.chat" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.truthOrDare') }}</text>
             </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/daily-question/index')">
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.loveTest')" @tap="openAppPath('/pages/daily-question/index')">
               <view class="function-icon function-icon--blue">
                 <image class="function-emoji" :src="emojiIcons.gift" mode="aspectFit" alt="" />
               </view>
@@ -545,7 +565,7 @@ onMounted(() => {
         </view>
         <scroll-view scroll-x class="banner-scroll" :show-scrollbar="false">
           <view class="banner-list" role="list">
-            <view class="banner-card banner-card--romance press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/discover/index')">
+            <view class="banner-card banner-card--romance press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.todayFateValue')" @tap="openAppPath('/pages/discover/index')">
               <view class="banner-content">
                 <view class="banner-tag">
                   <image class="banner-tag__icon" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
@@ -556,7 +576,7 @@ onMounted(() => {
               </view>
               <image class="banner-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
             </view>
-            <view class="banner-card banner-card--green press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/subpackages/discover/activities/index')">
+            <view class="banner-card banner-card--green press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.newUserGift')" @tap="openAppPath('/subpackages/discover/activities/index')">
               <view class="banner-content">
                 <view class="banner-tag">
                   <image class="banner-tag__icon" :src="emojiIcons.gift" mode="aspectFit" alt="" />
@@ -567,7 +587,7 @@ onMounted(() => {
               </view>
               <image class="banner-emoji" :src="emojiIcons.gift" mode="aspectFit" alt="" />
             </view>
-            <view class="banner-card banner-card--warm press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/subpackages/discover/activities/index')">
+            <view class="banner-card banner-card--warm press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.weekendParty')" @tap="openAppPath('/subpackages/discover/activities/index')">
               <view class="banner-content">
                 <view class="banner-tag">
                   <image class="banner-tag__icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
@@ -578,7 +598,7 @@ onMounted(() => {
               </view>
               <image class="banner-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
             </view>
-            <view class="banner-card banner-card--purple press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/circles/index')">
+            <view class="banner-card banner-card--purple press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.graduationConfession')" @tap="openAppPath('/pages/circles/index')">
               <view class="banner-content">
                 <view class="banner-tag">
                   <image class="banner-tag__icon" :src="emojiIcons.fire" mode="aspectFit" alt="" />
@@ -597,14 +617,15 @@ onMounted(() => {
       <view class="section-wrap">
         <view class="section-header">
           <text class="section-title section-title-brand">{{ t('home.campusCircleActivity') }}</text>
-          <text class="section-more" @tap="openAppPath('/pages/circles/index')">{{ t('home.moreArrow') }}</text>
+          <text class="section-more" role="button" :aria-label="t('home.moreArrow')" @tap="openAppPath('/pages/circles/index')">{{ t('home.moreArrow') }}</text>
         </view>
         <scroll-view scroll-x class="activity-scroll" :show-scrollbar="false">
           <view class="activity-list" role="list">
             <view
-              v-for="item in activityStore.activities.slice(0, 5)"
-              :key="item.id"
+              v-for="item in activityStore.activities.slice(0, 5)" :key="item.id"
               class="activity-card-new list-item"
+              role="button"
+              :aria-label="t('home.activityCardAria', { title: item.title, time: item.scheduleText })"
               @tap="openAppPath('/subpackages/discover/activities/index')"
             >
               <view class="activity-card__image-wrap">
@@ -617,7 +638,7 @@ onMounted(() => {
                   @error="onImageError(`activity-${item.id}`)"
                 />
                 <view v-else class="activity-card__placeholder">
-                  <image class="activity-placeholder-emoji" :src="emojiIcons.celebration" mode="aspectFit" alt="" />
+                  <image class="activity-placeholder-emoji" :src="emojiIcons.celebration" mode="aspectFit" lazy-load="true" alt="" />
                 </view>
                 <view class="activity-card__status" :class="`activity-status--${item.status}`">
                   <text class="activity-status-text">{{ item.status === 'open' ? t('home.activityStatusOpen') : item.status === 'ongoing' ? t('home.activityStatusOngoing') : t('home.activityStatusPreview') }}</text>
@@ -657,7 +678,7 @@ onMounted(() => {
               <text class="user-nickname">{{ user.nickname }}</text>
               <text class="user-info">{{ user.info }}</text>
               <view class="match-tag">
-                <image class="match-tag__icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
+                <image class="match-tag__icon" :src="emojiIcons.heart" mode="aspectFit" lazy-load="true" alt="" />
                 <text class="match-text">{{ t('home.matchPercent', { n: user.matchPercent }) }}</text>
               </view>
             </view>
@@ -671,6 +692,8 @@ onMounted(() => {
           <text class="section-title section-title-brand">{{ t('home.weeklySchedule') }}</text>
           <text
             class="section-more"
+            role="button"
+            :aria-label="t('home.editArrow')"
             @tap="openAppPath('/subpackages/setup/schedule/index')"
           >{{ t('home.editArrow') }}</text>
         </view>
@@ -680,8 +703,7 @@ onMounted(() => {
           <!-- 类型图例 -->
           <view class="schedule-legend">
             <view
-              v-for="legend in scheduleLegends"
-              :key="legend.type"
+              v-for="legend in scheduleLegends" :key="legend.type"
               class="schedule-legend__item"
             >
               <view class="schedule-legend__dot" :style="{ background: legend.colorVar }"></view>
@@ -692,10 +714,12 @@ onMounted(() => {
           <!-- 周一到周日 7 天 -->
           <view class="schedule-days-new">
             <view
-              v-for="(day, index) in weekDays"
-              :key="day"
+              v-for="(day, index) in weekDays" :key="day"
               class="schedule-day-new"
               :class="{ 'schedule-day--active-new': currentDay === index }"
+              role="button"
+              :aria-label="day"
+              :aria-pressed="currentDay === index"
               @tap="currentDay = index"
             >
               <text class="schedule-day__name-new">{{ day }}</text>
@@ -705,12 +729,13 @@ onMounted(() => {
           <!-- 时段列表 -->
           <view class="schedule-slots-new">
             <view
-              v-for="slot in currentDaySlots"
-              :key="slot.index"
+              v-for="slot in currentDaySlots" :key="slot.index"
               class="schedule-slot-new press-feedback"
               :class="slot.isFree ? 'schedule-slot--free-new' : getItemClass(slot.item?.type || 'custom')"
               hover-class="press-feedback--active"
               hover-stay-time="120"
+              role="button"
+              :aria-label="`${slot.start}-${slot.end} ${slot.isFree ? t('home.freeSlotHint') : getItemTitle(slot.item)}`"
               @tap="onSlotTap(slot)"
             >
               <text class="schedule-slot__time-new">{{ slot.start }}-{{ slot.end }}</text>
@@ -720,7 +745,7 @@ onMounted(() => {
                   <text class="schedule-slot__classroom-new">{{ getItemSubtitle(slot.item) }}</text>
                 </template>
                 <view v-else class="schedule-slot__free-new">
-                  <image class="schedule-slot__free-icon" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
+                  <image class="schedule-slot__free-icon" :src="emojiIcons.sparkles" mode="aspectFit" lazy-load="true" alt="" />
                   <text class="schedule-slot__free-text">{{ t('home.freeSlotHint') }}</text>
                 </view>
               </view>
@@ -756,8 +781,7 @@ onMounted(() => {
             <text class="post-content-new">{{ post.content }}</text>
             <view v-if="post.images.length > 0" class="post-images-new">
               <view
-                v-for="(img, idx) in post.images.slice(0, 3)"
-                :key="idx"
+                v-for="(img, idx) in post.images.slice(0, 3)" :key="idx"
                 class="post-image-item img-rounded"
               >
                 <SafeImage
@@ -770,20 +794,20 @@ onMounted(() => {
             </view>
             <view class="post-footer-new">
               <view class="post-location-new">
-                <image class="post-location-emoji" :src="emojiIcons.location" mode="aspectFit" alt="" />
+                <image class="post-location-emoji" :src="emojiIcons.location" mode="aspectFit" lazy-load="true" alt="" />
                 <text class="post-location-text">{{ post.location }}</text>
               </view>
               <view class="post-actions-new">
-                <view :class="['post-action-new', post.isLiked ? 'post-action--liked' : '']" @tap="toggleLike(post.id)">
-                  <image class="post-action-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
+                <view :class="['post-action-new', post.isLiked ? 'post-action--liked' : '']" role="button" :aria-label="t('home.likeCountAria', { n: post.likes })" :aria-pressed="post.isLiked" @tap="toggleLike(post.id)">
+                  <image class="post-action-emoji" :src="emojiIcons.heart" mode="aspectFit" lazy-load="true" alt="" />
                   <text class="post-action-count">{{ post.likes }}</text>
                 </view>
-                <view class="post-action-new">
-                  <image class="post-action-emoji" :src="emojiIcons.chat" mode="aspectFit" alt="" />
+                <view class="post-action-new" role="button" :aria-label="t('home.commentCountAria', { n: post.comments })">
+                  <image class="post-action-emoji" :src="emojiIcons.chat" mode="aspectFit" lazy-load="true" alt="" />
                   <text class="post-action-count">{{ post.comments }}</text>
                 </view>
-                <view class="post-action-new">
-                  <image class="post-action-emoji" :src="emojiIcons.bookmark" mode="aspectFit" alt="" />
+                <view class="post-action-new" role="button" :aria-label="t('home.bookmarkAria')">
+                  <image class="post-action-emoji" :src="emojiIcons.bookmark" mode="aspectFit" lazy-load="true" alt="" />
                 </view>
               </view>
             </view>
@@ -795,14 +819,15 @@ onMounted(() => {
       <view class="section-wrap">
         <view class="section-header">
           <text class="section-title section-title-brand">{{ t('home.shopRecommend') }}</text>
-          <text class="section-more" @tap="openAppPath('/pages/shop/index')">{{ t('home.moreArrow') }}</text>
+          <text class="section-more" role="button" :aria-label="t('home.moreArrow')" @tap="openAppPath('/pages/shop/index')">{{ t('home.moreArrow') }}</text>
         </view>
         <scroll-view scroll-x class="shop-scroll-new" :show-scrollbar="false">
           <view class="shop-list-new">
             <view
-              v-for="item in shopItems"
-              :key="item.id"
+              v-for="item in shopItems" :key="item.id"
               class="shop-card-new list-item"
+              role="button"
+              :aria-label="t('home.shopItemAria', { title: item.title, price: item.price })"
               @tap="openAppPath('/subpackages/shop/detail/index')"
             >
               <view class="shop-image-wrap">
@@ -830,12 +855,12 @@ onMounted(() => {
             <text class="section-title section-title-brand">{{ t('home.socialProgressTitle') }}</text>
             <image class="section-title__icon" :src="emojiIcons.fire" mode="aspectFit" alt="" />
           </view>
-          <text class="section-more" @tap="toggleSocialProgress">
+          <text class="section-more" role="button" :aria-label="showSocialProgress ? t('home.collapse') : t('home.expand')" @tap="toggleSocialProgress">
             {{ showSocialProgress ? t('home.collapse') : t('home.expand') }}
           </text>
         </view>
 
-        <view v-if="!showSocialProgress" class="social-mini-card-new card-base press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="toggleSocialProgress">
+        <view v-if="!showSocialProgress" class="social-mini-card-new card-base press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.socialProgressAria', { percent: socialProgressStore.progressPercentage })" @tap="toggleSocialProgress">
           <view class="social-progress-wrap">
             <view class="social-bar-track">
               <view
@@ -864,7 +889,7 @@ onMounted(() => {
       <view class="fab-bubble">
         <text class="fab-bubble-text">{{ t('home.publishPost') }}</text>
       </view>
-      <view class="fab-button press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openAppPath('/pages/circles/index')">
+      <view class="fab-button press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.publishPost')" @tap="openAppPath('/pages/circles/index')">
         <text class="fab-icon">+</text>
       </view>
     </view>
@@ -977,12 +1002,12 @@ onMounted(() => {
   gap: var(--sp-4);
   height: 88rpx;
   /* #ifdef H5 */
-  background: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255,255,255,0.7)));
+  background: var(--c-overlay-white-text-mid);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   /* #endif */
   /* #ifndef H5 */
-  background: var(--c-overlay-white-bg-most, var(--c-overlay-white-bg-most, rgba(255,255,255,0.96)));
+  background: var(--c-overlay-white-bg-most);
   /* #endif */
   border: var(--border-subtle);
   border-radius: var(--r-xl);
@@ -1010,12 +1035,12 @@ onMounted(() => {
   gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-6);
   /* #ifdef H5 */
-  background: var(--c-overlay-white-text-mid, var(--c-overlay-white-text-mid, rgba(255,255,255,0.7)));
+  background: var(--c-overlay-white-text-mid);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   /* #endif */
   /* #ifndef H5 */
-  background: var(--c-overlay-white-bg-most, var(--c-overlay-white-bg-most, rgba(255,255,255,0.96)));
+  background: var(--c-overlay-white-bg-most);
   /* #endif */
   border: var(--border-subtle);
   border-radius: var(--r-lg);
@@ -1089,17 +1114,17 @@ onMounted(() => {
 }
 
 .checkin-icon-wrap--gradient {
-  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255,255,255,0.25)));
+  background: var(--c-overlay-white-bg-mid-strong);
 }
 
 .checkin-icon-wrap--success {
-  background: var(--c-location-bg, var(--c-location-bg, rgba(63,207,142,0.1)));
+  background: var(--c-location-bg);
 }
 
 .checkin-emoji {
   width: 56rpx;
   height: 56rpx;
-  color: var(--c-neutral-0, #ffffff);
+  color: var(--c-neutral-0);
 }
 
 .checkin-info {
@@ -1121,7 +1146,7 @@ onMounted(() => {
 
 .checkin-desc {
   font-size: var(--fs-base);
-  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255,255,255,0.85)));
+  color: var(--c-overlay-text-secondary);
 }
 
 .checkin-desc--gray {
@@ -1130,7 +1155,7 @@ onMounted(() => {
 
 .checkin-arrow {
   font-size: var(--fs-5xl);
-  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255,255,255,0.8)));
+  color: var(--c-overlay-white-text-strong);
   font-weight: 300;
 }
 
@@ -1181,7 +1206,7 @@ onMounted(() => {
   border: 2rpx solid var(--c-romance-200);
   border-radius: var(--r-lg);
   transform: scale(1.05);
-  box-shadow: 0 8rpx 24rpx var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.15)));
+  box-shadow: 0 8rpx 24rpx var(--c-romance-bg-tint);
 
   .function-icon {
     background: var(--c-romance-100);
@@ -1190,7 +1215,7 @@ onMounted(() => {
 }
 
 .function-item--highlight::before {
-  content: '热门';
+  content: '';
   position: absolute;
   top: -8rpx;
   right: -8rpx;
@@ -1201,7 +1226,23 @@ onMounted(() => {
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-lg) var(--r-lg) var(--r-lg) 0;
   z-index: 2;
-  box-shadow: 0 2rpx 8rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
+  box-shadow: 0 2rpx 8rpx var(--s-romance);
+}
+
+/* Task 28: 热门徽章文本改为 <text> 元素，支持 i18n 切换 */
+.function-item__hot-badge {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  background: linear-gradient(135deg, var(--c-romance-400), var(--c-accent-400));
+  color: var(--c-text-inverse);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-lg) var(--r-lg) var(--r-lg) 0;
+  z-index: 3;
+  box-shadow: 0 2rpx 8rpx var(--s-romance);
+  line-height: 1.2;
 }
 
 .function-icon {
@@ -1215,48 +1256,48 @@ onMounted(() => {
 
 .function-icon--pink {
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  box-shadow: 0 6rpx 16rpx var(--s-romance, var(--s-romance, rgba(236, 72, 153, 0.3)));
+  box-shadow: 0 6rpx 16rpx var(--s-romance);
 }
 
 .function-icon--purple {
-  background: linear-gradient(135deg, var(--c-lavender-500, #A78BFA) 0%, var(--c-lavender-500, #8B5CF6) 100%);
-  box-shadow: 0 6rpx 16rpx var(--c-lavender-500, var(--c-lavender-500, rgba(139, 92, 246, 0.3)));
+  background: linear-gradient(135deg, var(--c-lavender-500) 0%, var(--c-lavender-500) 100%);
+  box-shadow: 0 6rpx 16rpx var(--c-lavender-500);
 }
 
 .function-icon--orange {
-  background: linear-gradient(135deg, var(--c-accent-400, #FB923C) 0%, var(--c-accent-400) 100%);
-  box-shadow: 0 6rpx 16rpx var(--c-tag-match-to, var(--c-tag-match-to, rgba(249, 115, 22, 0.3)));
+  background: linear-gradient(135deg, var(--c-accent-400) 0%, var(--c-accent-400) 100%);
+  box-shadow: 0 6rpx 16rpx var(--c-tag-match-to);
 }
 
 .function-icon--red {
-  background: linear-gradient(135deg, var(--c-error-dark, #F87171) 0%, var(--c-error) 100%);
-  box-shadow: 0 6rpx 16rpx var(--s-action-error, var(--s-action-error, rgba(229, 69, 77, 0.3)));
+  background: linear-gradient(135deg, var(--c-error-dark) 0%, var(--c-error) 100%);
+  box-shadow: 0 6rpx 16rpx var(--s-action-error);
 }
 
 .function-icon--green {
-  background: linear-gradient(135deg, var(--c-success, #34D399) 0%, var(--c-success) 100%);
-  box-shadow: 0 6rpx 16rpx var(--s-action-success, var(--s-action-success, rgba(16, 185, 129, 0.3)));
+  background: linear-gradient(135deg, var(--c-success) 0%, var(--c-success) 100%);
+  box-shadow: 0 6rpx 16rpx var(--s-action-success);
 }
 
 .function-icon--cyan {
-  background: linear-gradient(135deg, var(--c-info-400, #22D3EE) 0%, var(--c-info-500, #06B6D4) 100%);
-  box-shadow: 0 6rpx 16rpx var(--c-info-500, var(--c-info-500, rgba(6, 182, 212, 0.3)));
+  background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
+  box-shadow: 0 6rpx 16rpx var(--c-info-500);
 }
 
 .function-icon--yellow {
-  background: linear-gradient(135deg, var(--c-gold, #FBBF24) 0%, var(--c-warning, #F59E0B) 100%);
-  box-shadow: 0 6rpx 16rpx var(--c-warning-border-tint, var(--c-warning-border-tint, rgba(245, 158, 11, 0.3)));
+  background: linear-gradient(135deg, var(--c-gold) 0%, var(--c-warning) 100%);
+  box-shadow: 0 6rpx 16rpx var(--c-warning-border-tint);
 }
 
 .function-icon--blue {
-  background: linear-gradient(135deg, var(--c-info-400, #60A5FA) 0%, var(--c-info-500, #3B82F6) 100%);
-  box-shadow: 0 6rpx 16rpx var(--s-action-super, var(--s-action-super, rgba(59, 130, 246, 0.3)));
+  background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
+  box-shadow: 0 6rpx 16rpx var(--s-action-super);
 }
 
 .function-emoji {
   width: 56rpx;
   height: 56rpx;
-  color: var(--c-neutral-0, #ffffff);
+  color: var(--c-neutral-0);
 }
 
 .function-label {
@@ -1332,7 +1373,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 30% 30%, var(--c-overlay-white-bg-tint-strong, var(--c-overlay-white-bg-tint-strong, rgba(255,255,255,0.15))) 0%, transparent 60%);
+  background: radial-gradient(circle at 30% 30%, var(--c-overlay-white-bg-tint-strong) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -1351,11 +1392,11 @@ onMounted(() => {
 }
 
 .banner-card--warm {
-  background: linear-gradient(135deg, var(--c-accent-400, #FB923C) 0%, var(--c-warning, #F59E0B) 100%);
+  background: linear-gradient(135deg, var(--c-accent-400) 0%, var(--c-warning) 100%);
 }
 
 .banner-card--purple {
-  background: linear-gradient(135deg, var(--c-lavender-500, #A78BFA) 0%, var(--c-lavender-500, #8B5CF6) 100%);
+  background: linear-gradient(135deg, var(--c-lavender-500) 0%, var(--c-lavender-500) 100%);
 }
 
 .banner-content {
@@ -1370,8 +1411,8 @@ onMounted(() => {
   align-items: center;
   gap: var(--sp-1);
   font-size: var(--fs-xs);
-  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255,255,255,0.85)));
-  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255,255,255,0.2)));
+  color: var(--c-overlay-text-secondary);
+  background: var(--c-overlay-bg-light);
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-full);
   align-self: flex-start;
@@ -1380,13 +1421,13 @@ onMounted(() => {
 .banner-tag__icon {
   width: 20rpx;
   height: 20rpx;
-  color: var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255,255,255,0.95)));
+  color: var(--c-overlay-bg-pure);
   flex-shrink: 0;
 }
 
 .banner-tag__text {
   font-size: var(--fs-xs);
-  color: var(--c-overlay-bg-pure, var(--c-overlay-bg-pure, rgba(255,255,255,0.95)));
+  color: var(--c-overlay-bg-pure);
   font-weight: 500;
 }
 
@@ -1398,7 +1439,7 @@ onMounted(() => {
 
 .banner-desc {
   font-size: var(--fs-sm);
-  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255,255,255,0.8)));
+  color: var(--c-overlay-white-text-strong);
 }
 
 .banner-emoji {
@@ -1408,7 +1449,7 @@ onMounted(() => {
   position: absolute;
   right: var(--sp-4);
   bottom: var(--sp-2);
-  color: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255,255,255,0.9)));
+  color: var(--c-overlay-bg-solid);
 }
 
 /* ========== 活动卡片 ========== */
@@ -1708,8 +1749,8 @@ onMounted(() => {
 
 /* 空闲时段 */
 .schedule-slot--free-new {
-  background: var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63,207,142,0.06)));
-  border: 1rpx dashed var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63,207,142,0.3)));
+  background: var(--c-brand-bg-tint);
+  border: 1rpx dashed var(--c-brand-border-tint-stronger);
 }
 
 /* 课程色块（蓝色） */
@@ -2061,7 +2102,7 @@ onMounted(() => {
   height: 100%;
   border-radius: var(--r-sm);
   background: var(--c-gradient-float-btn);
-  transition: width 0.5s ease;
+  transition: width var(--d-slowest, 600ms) ease;
 }
 
 .social-percent {
@@ -2121,7 +2162,7 @@ onMounted(() => {
   border-radius: var(--r-full);
   opacity: 0;
   transform: translateY(10rpx);
-  animation: fabBubble 3s ease-in-out infinite;
+  animation: fabBubble var(--d-breathe, 3000ms) ease-in-out infinite;
 }
 
 .fab-bubble-text {
@@ -2174,7 +2215,7 @@ onMounted(() => {
 .school-picker__content {
   width: 100%;
   background: var(--c-bg-container);
-  border-radius: 32rpx 32rpx 0 0;
+  border-radius: var(--r-xl, 32rpx) var(--r-xl, 32rpx) 0 0;
   padding: var(--sp-8);
   padding-bottom: calc(env(safe-area-inset-bottom) + var(--sp-8));
 }

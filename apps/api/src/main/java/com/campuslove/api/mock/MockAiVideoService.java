@@ -1,5 +1,6 @@
-package com.campuslove.api.ai;
+package com.campuslove.api.mock;
 
+import com.campuslove.api.ai.AiVideoService;
 import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;

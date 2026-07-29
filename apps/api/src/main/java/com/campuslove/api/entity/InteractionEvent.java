@@ -8,6 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 互动事件实体，对应 interaction_events 表。
@@ -15,6 +18,7 @@ import java.time.LocalDateTime;
  * 用于互动提醒增强功能。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "interaction_events")
 public class InteractionEvent {
 
@@ -51,6 +55,9 @@ public class InteractionEvent {
     private Boolean isRead = false;
 
     /** 创建时间 */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

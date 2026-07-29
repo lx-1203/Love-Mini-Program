@@ -11,6 +11,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 心动信号实体，对应 heart_signals 表。
@@ -31,6 +35,7 @@ import java.time.LocalDateTime;
  * 此处补充 created_at 单列索引。详见 V2026.05.21.0005 建表脚本。</p>
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "heart_signals",
     indexes = {
@@ -79,10 +84,16 @@ public class HeartSignal {
     private LocalDateTime expiresAt;
 
     /** 记录创建时间（心动信号发起时间，用于排序展示） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（信号状态变更时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

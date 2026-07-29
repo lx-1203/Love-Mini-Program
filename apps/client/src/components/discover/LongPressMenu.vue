@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * LongPressMenu — 长按快捷操作菜单
  *
@@ -255,7 +255,7 @@ function handleClose() {
   position: relative;
   width: 100%;
   background: var(--c-bg-container, #FFFFFF);
-  border-radius: 28rpx 28rpx 0 0;
+  border-radius: var(--r-xxl, 28rpx) var(--r-xxl, 28rpx) 0 0;
   padding: 16rpx 28rpx 28rpx;
   padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
   transform: translateY(100%);
@@ -275,7 +275,7 @@ function handleClose() {
 .long-press-menu__handle-bar {
   width: 56rpx;
   height: 6rpx;
-  border-radius: 3rpx;
+  border-radius: var(--r-xs, 3rpx);
   background: var(--c-neutral-200);
 }
 
@@ -305,7 +305,7 @@ function handleClose() {
   padding: 20rpx 16rpx;
   border-radius: var(--r-lg, 16rpx);
   margin-bottom: 8rpx;
-  transition: background 150ms ease;
+  transition: background var(--d-fast, 150ms) ease;
 }
 
 .long-press-menu__item--pressed {
@@ -315,7 +315,7 @@ function handleClose() {
 .long-press-menu__item-icon {
   width: 72rpx;
   height: 72rpx;
-  border-radius: 18rpx;
+  border-radius: var(--r-lg, 18rpx);
   display: flex;
   align-items: center;
   justify-content: center;

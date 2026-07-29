@@ -3,22 +3,21 @@ package com.campuslove.api.campus;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
-import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.ratelimit.RateLimit;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -77,7 +76,7 @@ public class CampusController {
     @GetMapping("/topics")
     public ResponseEntity<CampusTopicPageResponse> listTopics(
             @RequestParam(name = "category", required = false) String category,
-            Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
         Long userId = SecurityUtils.getCurrentUserId();
         Long schoolId = resolveSchoolId(userId);
         if (schoolId == null) {
@@ -124,7 +123,7 @@ public class CampusController {
      * 获取单个校园话题详情。
      */
     @GetMapping("/topics/{id}")
-    public ApiResponse<CampusTopicView> getTopic(@PathVariable("id") Long id) {
+    public ApiResponse<CampusTopicView> getTopic(@PathVariable("id") @Positive Long id) {
         CampusTopicView topic = campusService.getCampusTopic(id);
         return ApiResponse.ok(topic);
     }
@@ -138,6 +137,7 @@ public class CampusController {
     @PostMapping("/topics")
     @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
     @Idempotent
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<CampusTopicView> createTopic(
             @Valid @RequestBody CreateCampusTopicRequest req) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -155,8 +155,8 @@ public class CampusController {
      */
     @GetMapping("/topics/{id}/replies")
     public ResponseEntity<CampusReplyPageResponse> listReplies(
-            @PathVariable("id") Long id,
-            Pageable pageable) {
+            @PathVariable("id") @Positive Long id,
+            @PageableDefault(size = 20) Pageable pageable) {
         try {
             // 兼容历史默认值：未传 size 时回退到 20
             Pageable effective = normalizeRepliesPageable(pageable);
@@ -196,8 +196,9 @@ public class CampusController {
     @PostMapping("/topics/{id}/replies")
     @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
     @Idempotent
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<CampusTopicReplyView> createReply(
-            @PathVariable("id") Long id,
+            @PathVariable("id") @Positive Long id,
             @Valid @RequestBody CreateCampusReplyRequest req) {
         Long userId = SecurityUtils.getCurrentUserId();
         CampusTopicReplyView reply = campusService.replyCampusTopic(id, userId, req.content());
@@ -226,6 +227,7 @@ public class CampusController {
     @PostMapping("/certification")
     @RateLimit(capacity = 5, refillTokens = 0.05, key = "#request.remoteAddr")
     @Idempotent
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<CampusCertificationView> submitCertification(
             @Valid @RequestBody CampusCertificationRequest req) {
         Long userId = SecurityUtils.getCurrentUserId();

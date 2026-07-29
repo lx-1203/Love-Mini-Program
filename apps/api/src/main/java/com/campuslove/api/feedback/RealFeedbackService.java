@@ -219,6 +219,7 @@ public class RealFeedbackService implements FeedbackService {
      * @return 上传结果，含访问 URL
      */
     @Override
+    @Transactional
     public UploadedImageResult uploadImage(Long userId, MultipartFile file) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");

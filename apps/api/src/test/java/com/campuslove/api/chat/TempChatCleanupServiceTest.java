@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.redisson.api.RedissonClient;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 /**
@@ -33,6 +34,7 @@ class TempChatCleanupServiceTest {
     @Mock private TempChatSessionService sessionService;
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private TempChatSessionRepository sessionRepository;
+    @Mock private RedissonClient redissonClient;
 
     private TempChatCleanupService cleanupService;
 
@@ -41,7 +43,7 @@ class TempChatCleanupServiceTest {
         MockitoAnnotations.openMocks(this);
         when(sessionService.getMessagingTemplate()).thenReturn(messagingTemplate);
         cleanupService = new TempChatCleanupService(
-                contactExchangeRepository, sessionService, sessionRepository);
+                contactExchangeRepository, sessionService, sessionRepository, redissonClient);
     }
 
     /**

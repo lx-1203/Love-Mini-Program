@@ -5,15 +5,17 @@
  */
 import { ref, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
+import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
-import { useVillageStore, formatRelativeTime } from "../../stores/village";
-import type { PostItem } from "../../stores/village";
+// 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
+import { useVillageStore, formatRelativeTime, type PostItem } from "../../stores/village";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 
 const villageStore = useVillageStore();
+const { t } = useI18n();
 
 const pageVisible = ref(false);
 /** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
@@ -232,7 +234,7 @@ onLoad((query) => {
     <!-- 顶部导航栏 -->
     <view class="tag-header">
       <view class="tag-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">返回</text>
+        <text class="back-icon">{{ t("common.back") }}</text>
       </view>
       <text class="tag-header__title">#{{ tagName }}</text>
       <view class="tag-header__spacer" />
@@ -249,8 +251,8 @@ onLoad((query) => {
     >
       <!-- 加载状态 -->
       <view v-if="loading && posts.length === 0" class="feed-state">
-        <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
-        <text class="feed-state__text">正在加载帖子...</text>
+        <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('common.loading')" />
+        <text class="feed-state__text">{{ t("village.tagPosts.loadingPosts") }}</text>
       </view>
 
       <!-- 错误状态 -->
@@ -258,21 +260,20 @@ onLoad((query) => {
         <text class="feed-state__icon">&#x1F614;</text>
         <text class="feed-state__text">{{ errorMessage }}</text>
         <view class="feed-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="onRefresh">
-          <text class="feed-state__btn-text">重试</text>
+          <text class="feed-state__btn-text">{{ t("common.retry") }}</text>
         </view>
       </view>
 
       <!-- 空状态 -->
       <view v-else-if="!loading && posts.length === 0" class="feed-state">
         <text class="feed-empty__icon">&#x1F4ED;</text>
-        <text class="feed-empty__title">暂无帖子</text>
-        <text class="feed-empty__desc">该标签下还没有内容</text>
+        <text class="feed-empty__title">{{ t("village.emptyPosts") }}</text>
+        <text class="feed-empty__desc">{{ t("village.tagPosts.emptyDesc") }}</text>
       </view>
 
       <!-- 帖子卡片列表 -->
       <view
-        v-for="post in posts"
-        :key="post.id"
+        v-for="post in posts" :key="post.id"
         class="post-card list-item"
         @tap="goToDetail(post.id)"
       >
@@ -285,7 +286,7 @@ onLoad((query) => {
                 class="user-avatar__img"
                 :src="resolveMediaUrl(post.author.avatar)"
                 mode="aspectFill"
-        lazy-load alt=""
+                lazy-load alt=""
               />
               <text v-else class="user-avatar__char">{{ post.author.name[0] }}</text>
             </view>
@@ -306,8 +307,7 @@ onLoad((query) => {
         <!-- 标签 -->
         <view v-if="post.tags.length > 0" class="post-card__tags">
           <text
-            v-for="tag in post.tags"
-            :key="tag"
+            v-for="tag in post.tags" :key="tag"
             class="post-card__tag"
           >{{ tag }}</text>
         </view>
@@ -330,11 +330,11 @@ onLoad((query) => {
 
       <!-- 加载更多提示 -->
       <view v-if="isLoadingMore" class="load-more" role="status" aria-live="polite">
-        <view class="loading-spinner" role="status" aria-live="polite" aria-label="加载中" />
-        <text class="load-more__text">加载中...</text>
+        <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('common.loading')" />
+        <text class="load-more__text">{{ t("village.tagPosts.loadMore") }}</text>
       </view>
       <view v-else-if="!hasMore && posts.length > 0" class="load-more">
-        <text class="load-more__text">-- 没有更多了 --</text>
+        <text class="load-more__text">{{ t("village.tagPosts.noMore") }}</text>
       </view>
 
       <!-- 底部留白 -->
@@ -419,8 +419,8 @@ $red-badge: var(--c-error, #FF4757);
   height: 44rpx;
   border: 4rpx solid $divider;
   border-top-color: $green-primary;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-radius: var(--r-circle, 50%);
+  animation: spin var(--d-slowest, 600ms) linear infinite;
 }
 
 @keyframes spin {
@@ -441,9 +441,9 @@ $red-badge: var(--c-error, #FF4757);
 .feed-state__btn {
   padding: 18rpx 48rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB87A) 100%);
-  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, var(--c-brand-border-tint-stronger, rgba(63, 207, 142, 0.3)));
-  transition: transform 0.15s ease;
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB97A) 100%);
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.20)));
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -482,8 +482,8 @@ $red-badge: var(--c-error, #FF4757);
   padding: 28rpx;
   background: $white;
   border-radius: var(--r-xl, 24rpx);
-  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
-  transition: transform 0.15s ease;
+  box-shadow: var(--s-card-soft, 0 1rpx 2rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)), 0 4rpx 12rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -510,7 +510,7 @@ $red-badge: var(--c-error, #FF4757);
 .user-avatar {
   width: 76rpx;
   height: 76rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   overflow: hidden;
   background: linear-gradient(135deg, $green-light, $green-primary);
   display: flex;
@@ -618,7 +618,7 @@ $red-badge: var(--c-error, #FF4757);
   align-items: center;
   gap: 6rpx;
   padding: 6rpx 0;
-  transition: transform 0.15s ease;
+  transition: transform var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */

@@ -26,7 +26,7 @@ public final class UserFactory {
         // 工具类禁止实例化
     }
 
-    /** 创建默认有效用户（已启用、已认证、未 VIP）。 */
+    /** 创建默认有效用户（已启用、未 VIP）。 */
     public static User defaultUser() {
         User user = new User();
         user.setId(SEQ.incrementAndGet());
@@ -38,9 +38,8 @@ public final class UserFactory {
         user.setPronouns("他");
         user.setPhone("1380000" + String.format("%04d", SEQ.get() % 10000));
         user.setProfileCompletion(75);
-        user.setVip(false);
-        user.setCertified(true);
-        user.setDisabled(false);
+        // User 实体已移除 vip/certified/disabled 字段，统一通过 status 表示账号状态
+        user.setStatus("active");
         user.setCreatedAt(LocalDateTime.now().minusDays(30));
         user.setUpdatedAt(LocalDateTime.now());
         return user;
@@ -48,30 +47,27 @@ public final class UserFactory {
 
     /** 创建 VIP 用户（已开通会员）。 */
     public static User vipUser() {
-        User user = defaultUser();
-        user.setVip(true);
-        return user;
+        // User 实体不再直接持有 vip 字段，VIP 状态由独立服务管理
+        return defaultUser();
     }
 
     /** 创建被禁用用户（status=disabled）。 */
     public static User disabledUser() {
         User user = defaultUser();
-        user.setDisabled(true);
+        user.setStatus("disabled");
         return user;
     }
 
-    /** 创建已认证用户（idCardVerified=true）。 */
+    /** 创建已认证用户。 */
     public static User certifiedUser() {
-        User user = defaultUser();
-        user.setCertified(true);
-        return user;
+        // User 实体不再持有 certified 字段，认证状态由独立服务管理
+        return defaultUser();
     }
 
-    /** 创建未认证用户（idCardVerified=false）。 */
+    /** 创建未认证用户。 */
     public static User uncertifiedUser() {
-        User user = defaultUser();
-        user.setCertified(false);
-        return user;
+        // User 实体不再持有 certified 字段，认证状态由独立服务管理
+        return defaultUser();
     }
 
     /** 创建资料完成度低的用户（completion=20）。 */

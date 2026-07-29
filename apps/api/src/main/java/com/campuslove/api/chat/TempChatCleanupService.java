@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -45,13 +47,23 @@ public class TempChatCleanupService {
     private final TempChatContactExchangeRepository contactExchangeRepository;
     private final TempChatSessionService sessionService;
     private final TempChatSessionRepository sessionRepository;
+    /**
+     * Redisson 分布式锁客户端（FIN-00061）。
+     *
+     * <p>用于 {@link #cleanupExpiredSessions()} 定时任务的分布式锁，
+     * 确保多实例部署时仅一个实例执行清理，避免重复扫描与数据竞争。
+     * 本类标注 {@code @Profile("real")}，仅 real profile 加载，Redisson 必可用。</p>
+     */
+    private final RedissonClient redissonClient;
 
     public TempChatCleanupService(TempChatContactExchangeRepository contactExchangeRepository,
                                  TempChatSessionService sessionService,
-                                 TempChatSessionRepository sessionRepository) {
+                                 TempChatSessionRepository sessionRepository,
+                                 RedissonClient redissonClient) {
         this.contactExchangeRepository = contactExchangeRepository;
         this.sessionService = sessionService;
         this.sessionRepository = sessionRepository;
+        this.redissonClient = redissonClient;
     }
 
     /**
@@ -77,6 +89,18 @@ public class TempChatCleanupService {
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void cleanupExpiredSessions() {
+        // FIN-00061: 分布式锁确保多实例部署时仅一个实例执行清理任务
+        try {
+            if (!redissonClient.getLock("scheduled:tempChatCleanup")
+                    .tryLock(0, 30, TimeUnit.SECONDS)) {
+                log.debug("tempChatCleanup 定时任务已被其他实例持有，跳过本次执行");
+                return;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("tempChatCleanup 获取分布式锁被中断");
+            return;
+        }
         LocalDateTime now = LocalDateTime.now();
         int cleaned = 0;
         for (SessionPhase phase : new SessionPhase[]{SessionPhase.matching, SessionPhase.active}) {

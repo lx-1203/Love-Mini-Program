@@ -9,12 +9,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 用户会话实体，对应 user_sessions 表。
  * 存储用户登录后的 session token 及过期时间。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "user_sessions")
 public class UserSession {
 
@@ -41,6 +45,9 @@ public class UserSession {
     private LocalDateTime expiresAt;
 
     /** 记录创建时间（会话签发时间，用于审计） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

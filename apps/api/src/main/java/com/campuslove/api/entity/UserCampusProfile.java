@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 用户校园资料实体，对应 user_campus_profile 表。
  * 存储城市、校区、院系及认证状态等信息。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "user_campus_profile")
 public class UserCampusProfile {
 
@@ -42,10 +47,16 @@ public class UserCampusProfile {
     private String verificationStatus = "draft";
 
     /** 记录创建时间（校园资料入库时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 记录最近更新时间（校园资料编辑/认证状态变更时刷新） */
+
+    @LastModifiedDate
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**

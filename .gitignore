@@ -25,6 +25,9 @@ Thumbs.db
 .env.local
 .env.real.local
 *.env.local
+.env.*.local
+*.local
+verification_logs/
 
 # Logs
 *.log
@@ -165,3 +168,57 @@ specs/codebase-audit-2026-07-25/generate_consolidated.py
 test-comp.txt
 test-screenshots/
 test-results.json
+
+# ============================================================
+# 2026-07-29 上传前清理：排除一次性审计/修复脚本与临时输出
+# ============================================================
+
+# 另一个分支的完整副本（包含独立 node_modules，不应入库）
+xingji-branch/
+
+# 一次性审计扫描脚本与输出
+.audit_*.ps1
+.audit_*.txt
+.audit_scan.ps1
+.scan-baseline.txt
+.scan-chinese-baseline.txt
+audit_candidates.json
+audit_final.json
+audit_scan2.py
+audit_scan2.tsv
+api_layer_audit_report.py
+debug_lines.py
+extract_consolidated.py
+finalize_audit.py
+fix_fstrings.py
+fix_quotes*.py
+scan_audit.py
+consolidated_admin_api_lines.txt
+ADMIN-API-REAUDIT-*.md
+CONSOLIDATED-ISSUE-LIST-*.md
+
+# ESLint/验证一次性输出
+eslint-*.json
+eslint-*.txt
+verify-admin-err.txt
+verify-admin-out.txt
+
+# scripts 下一次性审计/修复脚本
+scripts/add_audit_annotations.py
+scripts/add_positive_to_pathvars.py
+scripts/analyze-scan.mjs
+scripts/analyze-vue.mjs
+scripts/audit-client-issues.csv
+scripts/audit-client-scan.mjs
+scripts/cleanup_dup_fields.py
+scripts/consolidated-issues.csv
+scripts/debug-strip.mjs
+scripts/find_corrupted_entities.py
+scripts/fix_audit_annotation_format*.py
+scripts/fix_corrupted_entities.py
+scripts/merge-final-audit.py
+scripts/scan-chinese.mjs
+
+# 客户端一次性 ARIA 扫描
+apps/client/scan-aria-results.json
+apps/client/scan-aria.cjs

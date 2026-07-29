@@ -24,6 +24,7 @@ export default {
     search: "搜索",
     reset: "重置",
     refresh: "刷新",
+    retry: "重试",
     loading: "加载中...",
     success: "操作成功",
     failed: "操作失败",
@@ -104,6 +105,8 @@ export default {
     navSensitiveWords: "敏感词库",
     navContentAudit: "内容审核",
     navMatchConfig: "匹配配置",
+    navAriaLabel: "主导航",
+    footerCopyright: "© 2026 校园恋爱 · 仅供内部运营使用",
     userMenuTitle: "管理员中心",
     userMenuProfile: "查看个人信息",
     userMenuLogout: "退出登录",
@@ -361,6 +364,8 @@ export default {
     processTitle: "标记为已处理",
     processConfirmMessage: "确定要将反馈「{title}」标记为已处理吗？",
     processedToast: "已标记为已处理",
+    processFailed: "标记处理失败，请稍后重试",
+    defaultReplyContent: "已由管理员标记为已处理",
     detailTitle: "反馈详情",
     detailContent: "反馈内容",
     detailAttachments: "附件",
@@ -512,6 +517,22 @@ export default {
     exportButton: "导出 CSV",
     exportSuccess: "已导出",
     exportFailed: "导出失败",
+    opAuditPost: "审核帖子",
+    opDeletePost: "删除帖子",
+    opDeleteComment: "删除评论",
+    opDisableUser: "禁用用户",
+    opEnableUser: "启用用户",
+    opEditUser: "编辑用户",
+    opHandleReport: "处理举报",
+    opReviewCertification: "审核认证",
+    opUpdateConfig: "更新配置",
+    opUpdateRule: "更新规则",
+    opUpdateSwitch: "更新开关",
+    opUpdateMatchConfig: "更新匹配配置",
+    opUpdateRecommendStrategy: "更新推荐策略",
+    opUpdateNotifyConfig: "更新通知配置",
+    opAddSensitiveWord: "新增敏感词",
+    opDeleteSensitiveWord: "删除敏感词",
   },
 
   /* ========== 通知配置文案 ========== */
@@ -551,7 +572,7 @@ export default {
     fieldDndEnd: "免打扰结束时间",
     saveButton: "保存配置",
     saveSuccess: "配置已保存",
-    saveFailed: "保存失败，请稍后重试",
+    saveConfigFailed: "保存失败，请稍后重试",
     resetButton: "重置默认",
     resetConfirm: "确定要重置为默认配置吗？",
     resetSuccess: "已重置为默认配置",
@@ -669,6 +690,19 @@ export default {
     resetConfirm: "确定要重置为默认配置吗？",
     resetSuccess: "已重置为默认配置",
     resetFailed: "重置失败",
+  },
+
+  /* ========== 错误状态组件文案（ErrorState.vue 专属） ========== */
+  errorState: {
+    title: "加载失败",
+    retry: "请重试",
+    networkError: "网络错误，请检查网络连接",
+  },
+
+  /* ========== 403 禁止访问页面文案（Forbidden.vue 专属） ========== */
+  forbidden: {
+    title: "无权限访问",
+    description: "抱歉，您没有访问此页面的权限，请联系管理员或返回首页",
   },
 
   /* ========== 错误信息文案（与后端 MessageSource 对齐） ========== */

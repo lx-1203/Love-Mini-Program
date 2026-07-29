@@ -14,6 +14,8 @@
 
 // 统一常量：振动反馈间隔
 import { HAPTIC_INTERVAL_MS } from "../constants/ui";
+// Task 35：平台判断收敛到 compat/index.ts，避免业务代码散落 #ifdef 条件编译
+import { supportsHapticFeedback } from "../compat";
 
 /**
  * 带类型强度的短振动参数。
@@ -30,6 +32,48 @@ interface TypedVibrateShortOptions extends UniApp.VibrateShortOptions {
 type VibrateIntensity = "light" | "medium" | "heavy";
 
 /**
+ * 待执行的振动反馈定时器集合。
+ *
+ * 修复（Task 18.6）：原 successHaptic / errorHaptic 内的 setTimeout 未保存 timer 引用，
+ * 在页面 onUnload 或组件卸载时无法 clearTimeout，导致：
+ * 1. 离开页面后仍触发振动，造成用户体验割裂
+ * 2. 组件卸载后回调执行可能访问已释放上下文
+ * 现保存到模块级 Set，在回调触发时自动从集合中移除，
+ * 并提供 clearAllHapticTimers 供页面 onUnload 主动清理。
+ */
+const pendingHapticTimers: Set<ReturnType<typeof setTimeout>> = new Set();
+
+/**
+ * 清理所有待执行的振动反馈定时器。
+ *
+ * 使用场景：页面 onUnload 或组件 unmount 时调用，避免离开页面后仍触发振动。
+ * 多次调用安全：集合为空时为空操作。
+ */
+export function clearAllHapticTimers(): void {
+  pendingHapticTimers.forEach((timer) => clearTimeout(timer));
+  pendingHapticTimers.clear();
+}
+
+/**
+ * 注册一个延迟执行的振动回调，并将 timer 加入待清理集合。
+ *
+ * @param callback - 延迟后执行的振动回调
+ * @returns setTimeout 返回的 timer 引用（已加入 pendingHapticTimers）
+ */
+function scheduleHaptic(callback: () => void): ReturnType<typeof setTimeout> {
+  const timer = setTimeout(() => {
+    pendingHapticTimers.delete(timer);
+    try {
+      callback();
+    } catch (_e) {
+      // 静默处理：振动失败不应影响业务流程
+    }
+  }, HAPTIC_INTERVAL_MS);
+  pendingHapticTimers.add(timer);
+  return timer;
+}
+
+/**
  * 触发一次短振动（带类型强度）。
  *
  * H5 端 `uni.vibrateShort` 不支持 `type` 参数或不存在，调用会静默失败；
@@ -38,13 +82,13 @@ type VibrateIntensity = "light" | "medium" | "heavy";
  * @param intensity - 振动强度：light / medium / heavy
  */
 function vibrateWithType(intensity: VibrateIntensity): void {
-  // #ifdef H5 || APP-PLUS || MP-WEIXIN
+  // Task 35：平台判断收敛到 compat/index.ts 的 supportsHapticFeedback()
+  if (!supportsHapticFeedback()) return;
   try {
     uni.vibrateShort({ type: intensity } as TypedVibrateShortOptions);
   } catch (_e) {
     // 静默失败：H5 端不支持 type 参数或 uni.vibrateShort 不存在
   }
-  // #endif
 }
 
 /**
@@ -81,8 +125,9 @@ export function heavyHaptic(): void {
  */
 export function successHaptic(): void {
   lightHaptic();
-  // 复用统一振动间隔常量，避免硬编码
-  setTimeout(() => lightHaptic(), HAPTIC_INTERVAL_MS);
+  // 修复（Task 18.6）：使用 scheduleHaptic 保存 timer 引用，
+  // 支持页面 onUnload 时通过 clearAllHapticTimers 主动清理
+  scheduleHaptic(() => lightHaptic());
 }
 
 /**
@@ -91,13 +136,9 @@ export function successHaptic(): void {
  * @returns 无返回值；调用失败时静默忽略。
  */
 export function errorHaptic(): void {
-  // #ifdef H5 || APP-PLUS || MP-WEIXIN
-  try {
-    vibrateWithType("medium");
-    // 复用统一振动间隔常量，避免硬编码
-    setTimeout(() => vibrateWithType("light"), HAPTIC_INTERVAL_MS);
-  } catch (_e) {
-    // 静默失败：H5 端不支持 type 参数或 uni.vibrateShort 不存在
-  }
-  // #endif
+  // Task 35：平台判断收敛到 vibrateWithType 内部的 supportsHapticFeedback() 检查
+  vibrateWithType("medium");
+  // 修复（Task 18.6）：使用 scheduleHaptic 保存 timer 引用，
+  // 支持页面 onUnload 时通过 clearAllHapticTimers 主动清理
+  scheduleHaptic(() => vibrateWithType("light"));
 }

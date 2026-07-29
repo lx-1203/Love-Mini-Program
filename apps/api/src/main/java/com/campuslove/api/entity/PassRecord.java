@@ -8,12 +8,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 左滑(pass)记录实体，对应 pass_records 表。
  * 记录用户执行左滑（跳过）操作的历史，用于推荐算法排除已跳过的用户。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "pass_records")
 public class PassRecord {
 
@@ -30,6 +34,9 @@ public class PassRecord {
     private Long passedUserId;
 
     /** 记录创建时间（pass 操作发生时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

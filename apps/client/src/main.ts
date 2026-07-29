@@ -1,5 +1,4 @@
-import { createSSRApp } from "vue";
-import type { App as VueApp } from "vue";
+import { createSSRApp, type App as VueApp } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";
 import gsapPlugin from "./plugins/gsap";

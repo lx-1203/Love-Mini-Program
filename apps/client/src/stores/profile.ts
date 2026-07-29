@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
 import type { components } from "../services/generated/api-types";
 import type { ProfileStats } from "../services/generated/api-types-supplement";
-import { clientApi } from "../services/api";
-// 导入 UniUploadFileLike 类型，统一上传方法签名，消除 File 类型在 mp-weixin 端的不兼容问题
-import type { UniUploadFileLike } from "../services/api";
+// 修复 no-duplicate-imports：合并 ../services/api 的重复 import
+import { clientApi, type UniUploadFileLike } from "../services/api";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // SubTask 1.4.1：loadMyPosts 复用 village API 拉取当前用户发布的帖子
@@ -459,10 +458,12 @@ export const useProfileStore = defineStore("profile", {
       this.errorMessage = null;
       try {
         if (useMock()) {
+          // ScheduleProfileRequest 中 preferredTimeWindows/courseBlocks 为可选字段，
+          // 而 ScheduleProfile（响应）中为必填。Mock 模式下用空数组兜底，保持响应契约。
           const updated: Schemas["ScheduleProfile"] = {
             preferredCampusArea: payload.preferredCampusArea,
-            preferredTimeWindows: payload.preferredTimeWindows,
-            courseBlocks: payload.courseBlocks,
+            preferredTimeWindows: payload.preferredTimeWindows ?? [],
+            courseBlocks: payload.courseBlocks ?? [],
           };
           this.scheduleProfile = clone(updated);
           await useSessionStore().refreshSession();

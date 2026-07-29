@@ -11,10 +11,15 @@ import type {
 } from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
 import { appEnv, isMockMode } from "./env";
-import { getToken, request, setToken, setRefreshToken, clearTokens } from "./http";
+import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout } from "./http";
+// Task 33：路由路径常量化，避免硬编码字符串
+import { ROUTES } from "../constants/routes";
 
 type Schemas = components["schemas"];
 type SubmissionType = Schemas["SubmissionType"];
+
+/** Task 31：文件上传默认超时时间（30s，文件上传耗时较长） */
+const UPLOAD_TIMEOUT_MS = 30000;
 
 function useMock() {
   return isMockMode();
@@ -91,6 +96,9 @@ function buildRecommendationsQuery(filter: RecommendationFilter): string {
  * - mp-weixin 端 File 类型不存在，调用方需传入带 path 字段的类 File 对象
  *   （uni.chooseImage 的返回值经包装后即可）
  *
+ * Task 31：使用 withTimeout 包装，默认 30s 超时（文件上传耗时较长）。
+ * 超时后请求被 abort，调用方收到 EnhancedApiError（category=network）。
+ *
  * @param file - 文件对象（H5 标准 File 或 uni-app 扩展的带 path 字段对象）
  * @param endpoint - 上传端点路径（不含 apiBaseUrl 前缀）
  * @param extraFields - 附带到 FormData 的额外字段（如 index）
@@ -106,7 +114,9 @@ function uploadFileViaUni<TResponse>(
   // 参数类型已收敛为 UniUploadFileLike，无需 `as unknown as UniUploadFileLike` 断言。
   const filePath = file.path ?? file.name;
 
-  return new Promise<TResponse>((resolve, reject) => {
+  // Task 31：使用 AbortController 实现超时控制
+  const controller = new AbortController();
+  const uploadPromise = new Promise<TResponse>((resolve, reject) => {
     uni.uploadFile({
       url: `${appEnv.apiBaseUrl}${endpoint}`,
       filePath,
@@ -139,6 +149,9 @@ function uploadFileViaUni<TResponse>(
       },
     });
   });
+
+  // Task 31：30s 超时控制，超时后调用方收到 EnhancedApiError（category=network, error=timeout）
+  return withTimeout(uploadPromise, UPLOAD_TIMEOUT_MS, controller.signal);
 }
 
 export const clientApi = {
@@ -423,7 +436,7 @@ export const clientApi = {
   },
   async createFeedbackIssue(payload: Schemas["SubmissionRequest"]) {
     if (useMock()) {
-      return mockFixtures.createSubmission("feedback", payload);
+      return mockFixtures.createSubmission("FEEDBACK", payload);
     }
     return request<Schemas["SubmissionRecord"], Schemas["SubmissionRequest"]>({
       url: "/feedback/issues",
@@ -433,7 +446,7 @@ export const clientApi = {
   },
   async createSuggestion(payload: Schemas["SubmissionRequest"]) {
     if (useMock()) {
-      return mockFixtures.createSubmission("suggestion", payload);
+      return mockFixtures.createSubmission("SUGGESTION", payload);
     }
     return request<Schemas["SubmissionRecord"], Schemas["SubmissionRequest"]>({
       url: "/feedback/suggestions",
@@ -443,7 +456,7 @@ export const clientApi = {
   },
   async createActivityProposal(payload: Schemas["SubmissionRequest"]) {
     if (useMock()) {
-      return mockFixtures.createSubmission("activity_proposal", payload);
+      return mockFixtures.createSubmission("ACTIVITY_PROPOSAL", payload);
     }
     return request<Schemas["SubmissionRecord"], Schemas["SubmissionRequest"]>({
       url: "/feedback/activity-proposals",
@@ -508,7 +521,7 @@ export const clientApi = {
     // 1. 先清本地 token，确保即使后端调用 hang 也能立即退出
     clearTokens();
     // 2. 立即跳转登录页（不等待后端响应）
-    uni.reLaunch({ url: "/pages/login/index" });
+    uni.reLaunch({ url: ROUTES.LOGIN });
 
     // 3. 异步通知后端使 token 失效（best effort，失败不阻塞、不抛错）
     //    使用 noRetry 避免登出接口网络错误时反复重试占用资源

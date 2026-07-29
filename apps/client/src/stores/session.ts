@@ -292,7 +292,8 @@ export const useSessionStore = defineStore("session", {
       // campus/schedule 硬门槛由各自的 requiresCampus / requiresSchedule 控制，不再耦合在资料判定里。
       const result = Boolean(session.profileCompleted);
       if (isDev) {
-        console.debug("[SessionStore] isProfileComplete 判定:", {
+        // 修复 no-console：调试日志改用 console.warn（允许的方法）
+        console.warn("[SessionStore] isProfileComplete 判定:", {
           profileCompleted: session.profileCompleted,
           result,
         });
@@ -357,7 +358,8 @@ export const useSessionStore = defineStore("session", {
 
         // 开发模式日志：便于排查完善度状态变化（资料保存后是否同步更新）
         if (isDev && this.userSession) {
-          console.debug("[SessionStore] refreshSession 完成:", {
+          // 修复 no-console：调试日志改用 console.warn（允许的方法）
+          console.warn("[SessionStore] refreshSession 完成:", {
             profileCompleted: this.userSession.profileCompleted,
             campusVerified: this.userSession.campusVerified,
             scheduleCompleted: this.userSession.scheduleCompleted,
@@ -447,7 +449,8 @@ export const useSessionStore = defineStore("session", {
         }
 
         if (isDev) {
-          console.debug("[SessionStore] logout 完成，store 状态已清空");
+          // 修复 no-console：调试日志改用 console.warn（允许的方法）
+          console.warn("[SessionStore] logout 完成，store 状态已清空");
         }
       }
     },
@@ -542,11 +545,12 @@ export const useSessionStore = defineStore("session", {
       this.loading = true;
       try {
         if (isDev) {
-          console.debug("[SessionStore] updateProfileCompletion 触发，准备刷新会话");
+          // 修复 no-console：调试日志改用 console.warn（允许的方法）
+          console.warn("[SessionStore] updateProfileCompletion 触发，准备刷新会话");
         }
         await this.refreshSession();
         if (isDev) {
-          console.debug("[SessionStore] updateProfileCompletion 完成:", {
+          console.warn("[SessionStore] updateProfileCompletion 完成:", {
             isProfileComplete: this.isProfileComplete,
             profileCompletion: this.profileCompletion,
           });

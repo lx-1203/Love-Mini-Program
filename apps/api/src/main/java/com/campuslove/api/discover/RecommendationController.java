@@ -1,11 +1,15 @@
 package com.campuslove.api.discover;
 
 import com.campuslove.api.config.SecurityUtils;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,23 +33,58 @@ public class RecommendationController {
     this.recommendationService = recommendationService;
   }
 
+  /**
+   * 获取讨论推荐列表。
+   * GET /api/recommendations/discussions
+   *
+   * <p>返回基于热度与兴趣匹配的讨论推荐，供首页"讨论"模块展示。</p>
+   *
+   * @return 讨论推荐视图列表
+   */
   @GetMapping("/recommendations/discussions")
   public List<DiscussionRecommendationView> getDiscussions() {
     return recommendationService.getDiscussions();
   }
 
+  /**
+   * 获取活动推荐列表。
+   * GET /api/recommendations/activities
+   *
+   * <p>返回基于用户偏好与报名热度的活动推荐，供首页"活动"模块展示。</p>
+   *
+   * @return 活动推荐视图列表
+   */
   @GetMapping("/recommendations/activities")
   public List<ActivityRecommendationView> getActivities() {
     return recommendationService.getActivities();
   }
 
+  /**
+   * 获取当前用户的推荐偏好设置。
+   * GET /api/recommendations/preferences
+   *
+   * <p>返回用户已保存的推荐偏好（如推荐时间、范围、校园优先级）。
+   * 未设置过偏好的用户返回默认值。</p>
+   *
+   * @return 推荐偏好视图
+   */
   @GetMapping("/recommendations/preferences")
   public RecommendationPreferencesView getPreferences() {
     return recommendationService.getPreferences();
   }
 
+  /**
+   * 更新当前用户的推荐偏好设置。
+   * PUT /api/recommendations/preferences
+   *
+   * <p>仅 USER 角色可调用。更新成功后立即生效，后续推荐结果按新偏好计算。</p>
+   *
+   * @param prefs 推荐偏好视图（含 dailyNotifyTime / scope / campusPriority）
+   * @return 更新后的推荐偏好视图
+   */
   @PutMapping("/recommendations/preferences")
-  public RecommendationPreferencesView updatePreferences(@RequestBody RecommendationPreferencesView prefs) {
+  @PreAuthorize("hasRole('USER')")
+  public RecommendationPreferencesView updatePreferences(@Valid @RequestBody RecommendationPreferencesView prefs) {
     return recommendationService.updatePreferences(prefs);
   }
 
@@ -87,7 +126,11 @@ public class RecommendationController {
             futureCity,
             keyword
     );
-    return recommendationService.getRecommendations(userId, filter);
+    // Task 15.2：隐私字段过滤白名单校验，确保推荐列表不返回手机号/身份证/真实姓名
+    // RecommendedPersonView 为 record，字段在编译期固定，本调用为防御性校验：
+    // 若未来有人向 record 误添加敏感字段，sanitize 会抛 IllegalStateException，
+    // 由 GlobalExceptionHandler 转 500，强制运维修复
+    return PrivacyFieldFilter.sanitize(recommendationService.getRecommendations(userId, filter));
   }
 
   /**
@@ -119,8 +162,9 @@ public class RecommendationController {
    * PUT /api/recommendations/preferences/me
    */
   @PutMapping("/recommendations/preferences/me")
+  @PreAuthorize("hasRole('USER')")
   public RecommendationPreferencesView savePreferences(
-          @RequestBody SavePreferencesRequest request) {
+          @Valid @RequestBody SavePreferencesRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
     return recommendationService.savePreferences(userId, request.preferredTime(), request.scope(), request.campusPriority());
   }
@@ -132,7 +176,8 @@ public class RecommendationController {
   @GetMapping("/recommendations/history")
   public List<RecommendedPersonView> getHistory() {
     Long userId = SecurityUtils.getCurrentUserId();
-    return recommendationService.getHistory(userId);
+    // Task 15.2：与 getRecommendations 一致，对历史列表应用隐私字段过滤校验
+    return PrivacyFieldFilter.sanitize(recommendationService.getHistory(userId));
   }
 }
 
@@ -158,8 +203,8 @@ record ActivityRecommendationView(
 }
 
 record RecommendationPreferencesView(
-    String dailyNotifyTime,
-    String scope,
+    @NotBlank(message = "dailyNotifyTime 不能为空") @Size(max = 16) String dailyNotifyTime,
+    @NotBlank(message = "scope 不能为空") @Size(max = 32) String scope,
     /** 校园优先：同校用户排序靠前 */
     Boolean campusPriority
 ) {
@@ -187,8 +232,8 @@ record ActivityEnrollmentView(
  * 保存偏好请求体
  */
 record SavePreferencesRequest(
-    String preferredTime,
-    String scope,
+    @NotBlank(message = "preferredTime 不能为空") @Size(max = 16) String preferredTime,
+    @NotBlank(message = "scope 不能为空") @Size(max = 32) String scope,
     /** 校园优先：同校用户推荐权重+30% */
     Boolean campusPriority
 ) {}

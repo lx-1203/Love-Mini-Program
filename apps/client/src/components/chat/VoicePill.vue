@@ -108,10 +108,10 @@ onUnmounted(() => {
   align-items: center;
   gap: 14rpx;
   padding: 18rpx 24rpx;
-  border-radius: 20rpx 4rpx 20rpx 20rpx;
+  border-radius: var(--r-lg, 20rpx) var(--r-xs, 4rpx) var(--r-lg, 20rpx) var(--r-lg, 20rpx);
   background: var(--c-bg-brand);
   color: var(--c-brand-700);
-  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04));
+  box-shadow: var(--s-sm, 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
   transition: all var(--d-normal, 200ms) ease;
   min-width: 140rpx;
 }
@@ -129,7 +129,7 @@ onUnmounted(() => {
 .voice-pill--playing {
   background: linear-gradient(135deg, var(--c-brand-400), var(--c-brand-600));
   color: var(--c-text-inverse, #FFFFFF);
-  box-shadow: 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25));
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25)));
 }
 
 .voice-pill__wave {
@@ -142,14 +142,14 @@ onUnmounted(() => {
 .voice-pill__bar {
   width: 6rpx;
   height: 12rpx;
-  border-radius: 3rpx;
+  border-radius: var(--r-xs, 3rpx);
   background: var(--c-brand-300);
-  transition: height 150ms ease, background var(--d-normal, 200ms) ease;
+  transition: height var(--d-fast, 150ms) ease, background var(--d-normal, 200ms) ease;
 }
 
 .voice-pill__bar--active {
   background: var(--c-text-inverse, #FFFFFF);
-  animation: voice-wave 0.6s ease-in-out infinite alternate;
+  animation: voice-wave var(--d-slowest, 600ms) ease-in-out infinite alternate;
 }
 
 @keyframes voice-wave {

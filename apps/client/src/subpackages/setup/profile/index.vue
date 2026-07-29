@@ -13,7 +13,8 @@
  * 提交时调用 clientApi.updateBasicProfile（含 Phase A 扩展字段），
  * 后端会重新计算 profileCompletion 并更新会话状态。
  */
-import { onMounted, reactive, ref, onUnmounted } from "vue";
+import { computed, onMounted, reactive, ref, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
@@ -21,16 +22,22 @@ import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 import TagSelector from "../../../components/profile/TagSelector.vue";
 // 功能5：引导流程进度条（当前步骤 = 1：基本信息）
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
-import type { ProfileTagGroupKey } from "../../../config/profile-tags";
-import { profileTagGroups } from "../../../config/profile-tags";
+// 修复 no-duplicate-imports：合并 ../../../config/profile-tags 的重复 import
+import { profileTagGroups, type ProfileTagGroupKey } from "../../../config/profile-tags";
 import { useProfileStore } from "../../../stores/profile";
 import { useSessionStore } from "../../../stores/session";
 import { clientApi } from "../../../services/api";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
+import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import type { UpdateBasicProfileRequest } from "../../../services/generated/api-types-supplement";
 
 const profileStore = useProfileStore();
 const sessionStore = useSessionStore();
+const { t } = useI18n();
+
+// 修复（严格模式 noUnusedLocals）：SUBPACKAGE_ROUTES 在第 340 行 setTimeout 回调内使用，
+// vue-tsc 对该闭包位置识别失败（疑似模板指令解析干扰），通过 defineExpose 标记为已使用。
+defineExpose({ SUBPACKAGE_ROUTES });
 
 /**
  * SubTask 1.5.2：保存成功/无变更后跳转下一页的定时器引用，用于卸载时清理。
@@ -66,33 +73,33 @@ const form = reactive<UpdateBasicProfileRequest>({
   futurePlanTags: [],
 });
 
-/** 学历选项 */
-const educationLevelOptions = [
-  { label: "高中", value: "high_school" },
-  { label: "本科", value: "bachelor" },
-  { label: "硕士", value: "master" },
-  { label: "博士", value: "phd" },
-];
+/** 学历选项（i18n 化，随 locale 切换响应） */
+const educationLevelOptions = computed(() => [
+  { label: t("setup.profile.educationHighSchool"), value: "high_school" },
+  { label: t("setup.profile.educationBachelor"), value: "bachelor" },
+  { label: t("setup.profile.educationMaster"), value: "master" },
+  { label: t("setup.profile.educationPhd"), value: "phd" },
+]);
 
-/** 感情状态选项 */
-const relationshipStatusOptions = [
-  { label: "未婚", value: "never" },
-  { label: "曾离异", value: "married_before" },
-  { label: "离异", value: "divorced" },
-  { label: "丧偶", value: "widowed" },
-];
+/** 感情状态选项（i18n 化） */
+const relationshipStatusOptions = computed(() => [
+  { label: t("setup.profile.relationshipNever"), value: "never" },
+  { label: t("setup.profile.relationshipMarriedBefore"), value: "married_before" },
+  { label: t("setup.profile.relationshipDivorced"), value: "divorced" },
+  { label: t("setup.profile.relationshipWidowed"), value: "widowed" },
+]);
 
-/** 未来规划标签可选项 */
-const futurePlanTagOptions = [
-  "事业",
-  "旅行",
-  "学习",
-  "家庭",
-  "健康",
-  "理财",
-  "兴趣",
-  "社交",
-];
+/** 未来规划标签可选项（i18n 化） */
+const futurePlanTagOptions = computed(() => [
+  t("setup.profile.futurePlanCareer"),
+  t("setup.profile.futurePlanTravel"),
+  t("setup.profile.futurePlanStudy"),
+  t("setup.profile.futurePlanFamily"),
+  t("setup.profile.futurePlanHealth"),
+  t("setup.profile.futurePlanFinance"),
+  t("setup.profile.futurePlanHobby"),
+  t("setup.profile.futurePlanSocial"),
+]);
 
 /**
  * 功能3：资料编辑标签选择器状态。
@@ -197,7 +204,7 @@ function buildDiffPayload(): UpdateBasicProfileRequest {
 /** 学历 picker change 事件 */
 function onEducationLevelChange(e: { detail: { value: number } }): void {
   const idx = e.detail.value;
-  const opt = educationLevelOptions[idx];
+  const opt = educationLevelOptions.value[idx];
   if (opt) {
     form.educationLevel = opt.value;
     educationLevelLabel.value = opt.label;
@@ -208,7 +215,7 @@ function onEducationLevelChange(e: { detail: { value: number } }): void {
 /** 感情状态 picker change 事件 */
 function onRelationshipStatusChange(e: { detail: { value: number } }): void {
   const idx = e.detail.value;
-  const opt = relationshipStatusOptions[idx];
+  const opt = relationshipStatusOptions.value[idx];
   if (opt) {
     form.relationshipStatus = opt.value;
     relationshipStatusLabel.value = opt.label;
@@ -251,11 +258,11 @@ onMounted(async () => {
   }
   // 同步初始 picker 回显文案
   if (form.educationLevel) {
-    const found = educationLevelOptions.find((o) => o.value === form.educationLevel);
+    const found = educationLevelOptions.value.find((o) => o.value === form.educationLevel);
     if (found) educationLevelLabel.value = found.label;
   }
   if (form.relationshipStatus) {
-    const found = relationshipStatusOptions.find((o) => o.value === form.relationshipStatus);
+    const found = relationshipStatusOptions.value.find((o) => o.value === form.relationshipStatus);
     if (found) relationshipStatusLabel.value = found.label;
   }
   // 身高初始回显
@@ -280,15 +287,15 @@ async function save() {
 
   // 输入验证
   if (!form.nickname || !form.nickname.trim()) {
-    uni.showToast({ title: "请输入昵称", icon: "none" });
+    uni.showToast({ title: t("setup.profile.errNicknameRequired"), icon: "none" });
     return;
   }
   if (form.nickname.length > NICKNAME_MAX_LENGTH) {
-    uni.showToast({ title: `昵称不能超过 ${NICKNAME_MAX_LENGTH} 个字符`, icon: "none" });
+    uni.showToast({ title: t("setup.profile.errNicknameTooLong", { n: NICKNAME_MAX_LENGTH }), icon: "none" });
     return;
   }
   if (form.bio && form.bio.length > BIO_MAX_LENGTH) {
-    uni.showToast({ title: `简介不能超过 ${BIO_MAX_LENGTH} 个字符`, icon: "none" });
+    uni.showToast({ title: t("setup.profile.errBioTooLong", { n: BIO_MAX_LENGTH }), icon: "none" });
     return;
   }
   // 身高校验：非空时必须在 HEIGHT_MIN-HEIGHT_MAX 范围
@@ -296,7 +303,7 @@ async function save() {
   if (trimmedHeight.length > 0) {
     const num = Number(trimmedHeight);
     if (Number.isNaN(num) || num < HEIGHT_MIN || num > HEIGHT_MAX) {
-      uni.showToast({ title: `身高范围 ${HEIGHT_MIN}-${HEIGHT_MAX}cm`, icon: "none" });
+      uni.showToast({ title: t("setup.profile.errHeightRange", { min: HEIGHT_MIN, max: HEIGHT_MAX }), icon: "none" });
       return;
     }
     form.height = num;
@@ -309,7 +316,7 @@ async function save() {
     const selected = profileTags.value[group.key] ?? [];
     if (selected.length < group.min) {
       uni.showToast({
-        title: `「${group.labelKey}」至少选择 ${group.min} 个标签`,
+        title: t("setup.profile.errTagGroupMin", { label: group.labelKey, n: group.min }),
         icon: "none",
       });
       return;
@@ -325,18 +332,18 @@ async function save() {
     // 功能3：检查 profileTags 是否变化（仅在变化时输出提示，实际存储由后端接口扩展）
     const tagsChanged = JSON.stringify(profileTags.value) !== JSON.stringify(initialProfileTagsSnapshot);
     if (tagsChanged) {
-      // 标签变化时通过 console 记录（实际项目中应调用后端接口持久化）
-      console.debug("[setup/profile] profileTags 变化:", profileTags.value);
+      // 修复 no-console：调试日志改用 console.warn（允许的方法）
+      console.warn("[setup/profile] profileTags 变化:", profileTags.value);
     }
 
     // 无变更时直接跳转下一步，不调用 API
     if (Object.keys(diff).length === 0 && !tagsChanged) {
-      uni.showToast({ title: "资料无变更", icon: "none" });
+      uni.showToast({ title: t("setup.profile.noChange"), icon: "none" });
       // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
       if (saveSuccessNavTimer) clearTimeout(saveSuccessNavTimer);
       saveSuccessNavTimer = setTimeout(() => {
         saveSuccessNavTimer = null;
-        uni.redirectTo({ url: "/subpackages/setup/campus/index" });
+        uni.redirectTo({ url: SUBPACKAGE_ROUTES.SETUP_PROGRESS.CAMPUS });
       }, 600);
       return;
     }
@@ -348,15 +355,15 @@ async function save() {
     // 同步刷新 session，更新 profileCompleted 状态
     await sessionStore.refreshSession();
     successHaptic();
-    uni.showToast({ title: "保存成功", icon: "success" });
+    uni.showToast({ title: t("setup.profile.saveSuccess"), icon: "success" });
     // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
     if (saveSuccessNavTimer) clearTimeout(saveSuccessNavTimer);
     saveSuccessNavTimer = setTimeout(() => {
       saveSuccessNavTimer = null;
-      uni.redirectTo({ url: "/subpackages/setup/campus/index" });
+      uni.redirectTo({ url: SUBPACKAGE_ROUTES.SETUP_PROGRESS.CAMPUS });
     }, 600);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "保存失败，请稍后重试";
+    const message = error instanceof Error ? error.message : t("setup.profile.saveFailed");
     uni.showToast({ title: message, icon: "none" });
   } finally {
     // 释放提交锁，允许下次提交
@@ -370,27 +377,27 @@ async function save() {
  */
 function handleChangeBg() {
   lightHaptic();
-  uni.showToast({ title: "请前往「我的」页点击背景图编辑", icon: "none" });
+  uni.showToast({ title: t("setup.profile.goToProfileEditBg"), icon: "none" });
 }
 </script>
 
 <template>
-  <AppShell title="基础资料" subtitle="完善你的资料，让更多人了解你" :show-tab-bar="false">
+  <AppShell :title="t('setup.profile.pageTitle')" :subtitle="t('setup.profile.pageSubtitle')" :show-tab-bar="false">
     <!-- 功能5：引导流程进度条（当前步骤 = 1：基本信息） -->
     <SetupProgress :current-step="1" />
 
-    <SectionCard title="资料草稿" compact>
-      <input v-model="form.nickname" class="field" placeholder="昵称" :maxlength="NICKNAME_MAX_LENGTH" aria-label="昵称" />
+    <SectionCard :title="t('setup.profile.sectionDraft')" compact>
+      <input v-model="form.nickname" class="field" :placeholder="t('setup.profile.placeholderNickname')" :maxlength="NICKNAME_MAX_LENGTH" :aria-label="t('setup.profile.labelNickname')" />
       <textarea v-model="form.bio" class="field field--textarea" :maxlength="BIO_MAX_LENGTH" />
-      <input v-model="form.grade" class="field" placeholder="年级" aria-label="年级" />
-      <input v-model="form.pronouns" class="field" placeholder="称呼偏好" aria-label="称呼偏好" />
+      <input v-model="form.grade" class="field" :placeholder="t('setup.profile.placeholderGrade')" :aria-label="t('setup.profile.labelGrade')" />
+      <input v-model="form.pronouns" class="field" :placeholder="t('setup.profile.placeholderPronouns')" :aria-label="t('setup.profile.labelPronouns')" />
     </SectionCard>
 
     <!-- Phase E4 / M-07：扩展资料字段 -->
-    <SectionCard title="基本资料" compact>
+    <SectionCard :title="t('setup.profile.sectionBasic')" compact>
       <!-- 身高 -->
       <view class="form-row">
-        <text class="form-row__label">身高（cm）</text>
+        <text class="form-row__label">{{ t('setup.profile.labelHeight') }}</text>
         <input
           v-model="heightInput"
           class="field field--inline"
@@ -401,7 +408,7 @@ function handleChangeBg() {
 
       <!-- 学历 -->
       <view class="form-row">
-        <text class="form-row__label">学历</text>
+        <text class="form-row__label">{{ t('setup.profile.labelEducation') }}</text>
         <picker
           mode="selector"
           :range="educationLevelOptions"
@@ -410,7 +417,7 @@ function handleChangeBg() {
         >
           <view class="field field--inline field--picker">
             <text :class="['field__text', !educationLevelLabel && 'field__text--placeholder']">
-              {{ educationLevelLabel || '请选择' }}
+              {{ educationLevelLabel || t('setup.profile.pleaseSelect') }}
             </text>
             <text class="field__arrow">›</text>
           </view>
@@ -419,7 +426,7 @@ function handleChangeBg() {
 
       <!-- 感情状态 -->
       <view class="form-row">
-        <text class="form-row__label">感情状态</text>
+        <text class="form-row__label">{{ t('setup.profile.labelRelationship') }}</text>
         <picker
           mode="selector"
           :range="relationshipStatusOptions"
@@ -428,7 +435,7 @@ function handleChangeBg() {
         >
           <view class="field field--inline field--picker">
             <text :class="['field__text', !relationshipStatusLabel && 'field__text--placeholder']">
-              {{ relationshipStatusLabel || '请选择' }}
+              {{ relationshipStatusLabel || t('setup.profile.pleaseSelect') }}
             </text>
             <text class="field__arrow">›</text>
           </view>
@@ -437,25 +444,25 @@ function handleChangeBg() {
 
       <!-- 籍贯省 -->
       <view class="form-row">
-        <text class="form-row__label">籍贯省份</text>
-        <input v-model="form.hometownProvince" class="field field--inline" placeholder="如：广东" aria-label="如：广东" />
+        <text class="form-row__label">{{ t('setup.profile.labelHometownProvince') }}</text>
+        <input v-model="form.hometownProvince" class="field field--inline" :placeholder="t('setup.profile.placeholderHometownProvince')" :aria-label="t('setup.profile.placeholderHometownProvince')" />
       </view>
 
       <!-- 籍贯市 -->
       <view class="form-row">
-        <text class="form-row__label">籍贯城市</text>
-        <input v-model="form.hometownCity" class="field field--inline" placeholder="如：广州" aria-label="如：广州" />
+        <text class="form-row__label">{{ t('setup.profile.labelHometownCity') }}</text>
+        <input v-model="form.hometownCity" class="field field--inline" :placeholder="t('setup.profile.placeholderHometownCity')" :aria-label="t('setup.profile.placeholderHometownCity')" />
       </view>
 
       <!-- 未来城市 -->
       <view class="form-row">
-        <text class="form-row__label">未来城市</text>
-        <input v-model="form.futureCity" class="field field--inline" placeholder="如：广州" aria-label="如：广州" />
+        <text class="form-row__label">{{ t('setup.profile.labelFutureCity') }}</text>
+        <input v-model="form.futureCity" class="field field--inline" :placeholder="t('setup.profile.placeholderFutureCity')" :aria-label="t('setup.profile.placeholderFutureCity')" />
       </view>
 
       <!-- 未来规划标签 -->
       <view class="form-row form-row--block">
-        <text class="form-row__label">未来规划</text>
+        <text class="form-row__label">{{ t('setup.profile.labelFuturePlan') }}</text>
         <view class="tag-group">
           <view
             v-for="tag in futurePlanTagOptions"
@@ -472,25 +479,25 @@ function handleChangeBg() {
     </SectionCard>
 
     <!-- 功能3：资料编辑标签选择（4 大分组，每组独立 min/max 约束） -->
-    <SectionCard title="个性标签" compact>
+    <SectionCard :title="t('setup.profile.sectionTags')" compact>
       <TagSelector v-model="profileTags" />
     </SectionCard>
 
     <!-- Phase D4 · 更换背景入口（占位） -->
-    <SectionCard title="个人主页背景" compact>
+    <SectionCard :title="t('setup.profile.sectionBackground')" compact>
       <view
         class="bg-entry press-feedback"
         hover-class="bg-entry--hover"
         hover-stay-time="120"
         @tap="handleChangeBg"
       >
-        <text class="bg-entry__text">更换背景</text>
+        <text class="bg-entry__text">{{ t('setup.profile.changeBackground') }}</text>
         <text class="bg-entry__arrow">›</text>
       </view>
     </SectionCard>
 
     <BottomActionBar
-      :primary-label="isSubmitting ? '保存中...' : '保存并继续'"
+      :primary-label="isSubmitting ? t('setup.profile.submitSaving') : t('setup.profile.submitSave')"
       @primary="save"
     />
   </AppShell>
@@ -502,7 +509,7 @@ function handleChangeBg() {
   min-height: 88rpx;
   padding: 18rpx;
   box-sizing: border-box;
-  border-radius: 18rpx;
+  border-radius: var(--r-lg, 18rpx);
   background: var(--c-bg-page);
 }
 

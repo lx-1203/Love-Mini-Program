@@ -10,14 +10,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,6 +49,7 @@ import org.springframework.web.bind.annotation.RestController;
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/api/v1/matches")
+@Validated
 public class MatchController {
 
   private final MatchService matchService;
@@ -63,23 +69,24 @@ public class MatchController {
 
   @GetMapping("/form-config")
   @Operation(summary = "获取匹配表单配置", description = "返回匹配意向、话题、时间窗口等表单选项配置，供前端动态渲染匹配表单。", operationId = "getMatchFormConfig")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "配置获取成功",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "配置获取成功",
                   content = @Content(schema = @Schema(implementation = MatchFormConfigView.class))),
-          @ApiResponse(responseCode = "401", description = "未授权", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授权", content = @Content)
   })
   public MatchFormConfigView getFormConfig() {
     return matchService.getFormConfig();
   }
 
   @PostMapping
+  @PreAuthorize("hasRole('USER')")
   @Operation(summary = "创建匹配请求", description = "用户提交匹配意向、话题与时间窗口，进入匹配队列。userId 从 JWT 上下文获取（忽略请求体 userId 字段以防越权）。", operationId = "createMatch")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "匹配创建成功",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "匹配创建成功",
                   content = @Content(schema = @Schema(implementation = MatchResultView.class))),
-          @ApiResponse(responseCode = "400", description = "请求参数校验失败", content = @Content),
-          @ApiResponse(responseCode = "401", description = "未授权", content = @Content),
-          @ApiResponse(responseCode = "409", description = "已存在进行中的匹配", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数校验失败", content = @Content),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授权", content = @Content),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "已存在进行中的匹配", content = @Content)
   })
   public MatchResultView createMatch(
           @Parameter(description = "匹配请求体（matchIntent/topicIds/timeWindow/durationMinutes）", required = true)
@@ -98,11 +105,12 @@ public class MatchController {
   }
 
   @PostMapping("/quick")
+  @PreAuthorize("hasRole('USER')")
   @Operation(summary = "快速匹配", description = "跳过表单填写，使用上次配置或默认值快速进入匹配队列。", operationId = "createQuickMatch")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "快速匹配创建成功",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "快速匹配创建成功",
                   content = @Content(schema = @Schema(implementation = MatchResultView.class))),
-          @ApiResponse(responseCode = "401", description = "未授权", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授权", content = @Content)
   })
   public MatchResultView createQuickMatch(
           @Parameter(description = "快速匹配请求体（仅 durationMinutes）", required = true)
@@ -118,10 +126,10 @@ public class MatchController {
 
   @GetMapping("/{id}")
   @Operation(summary = "查询匹配详情", description = "根据 matchId 查询匹配结果详情，含 partner 信息与临时聊天会话 ID。", operationId = "getMatch")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "匹配详情",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "匹配详情",
                   content = @Content(schema = @Schema(implementation = MatchResultView.class))),
-          @ApiResponse(responseCode = "404", description = "匹配不存在", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "匹配不存在", content = @Content)
   })
   public MatchResultView getMatch(
           @Parameter(description = "匹配 ID", required = true, example = "match-abc123")
@@ -139,18 +147,19 @@ public class MatchController {
    * 防止自动化脚本批量刷喜欢。</p>
    */
   @PostMapping("/like")
+  @PreAuthorize("hasRole('USER')")
   @Operation(summary = "喜欢用户（右滑）", description = "对目标用户标记为喜欢，若双向喜欢则生成 HeartSignal（匹配成功）。支持幂等性。速率限制 60 桶容量/2 令牌每秒。", operationId = "likeUser")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "操作成功，data 为 HeartSignalView（如双向喜欢则非空）",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "操作成功，data 为 HeartSignalView（如双向喜欢则非空）",
                   content = @Content(schema = @Schema(implementation = ApiResponse.class))),
-          @ApiResponse(responseCode = "400", description = "targetUserId 缺失或非法", content = @Content),
-          @ApiResponse(responseCode = "429", description = "触发限流", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "targetUserId 缺失或非法", content = @Content),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "触发限流", content = @Content)
   })
   @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
   @Idempotent
   public ApiResponse<HeartSignalView> likeUser(
           @Parameter(description = "喜欢目标请求体（targetUserId）", required = true)
-          @RequestBody LikeTargetRequest request) {
+          @Valid @RequestBody LikeTargetRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
     // 监控：记录滑动操作（like 方向），指标失败不影响主流程
     try {
@@ -175,7 +184,8 @@ public class MatchController {
    * POST /api/matches/cancel-like
    */
   @PostMapping("/cancel-like")
-  public void cancelLike(@RequestBody LikeTargetRequest request) {
+  @PreAuthorize("hasRole('USER')")
+  public void cancelLike(@Valid @RequestBody LikeTargetRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
     matchService.cancelLike(userId, request.targetUserId());
   }
@@ -205,7 +215,8 @@ public class MatchController {
    * POST /api/matches/visit
    */
   @PostMapping("/visit")
-  public void recordVisit(@RequestBody VisitTargetRequest request) {
+  @PreAuthorize("hasRole('USER')")
+  public void recordVisit(@Valid @RequestBody VisitTargetRequest request) {
     Long visitorId = SecurityUtils.getCurrentUserId();
     matchService.recordVisit(visitorId, request.visitedUserId());
   }
@@ -225,7 +236,8 @@ public class MatchController {
    * POST /api/matches/heart-signals/{id}/accept
    */
   @PostMapping("/heart-signals/{id}/accept")
-  public void acceptHeartSignal(@PathVariable("id") Long signalId) {
+  @PreAuthorize("hasRole('USER')")
+  public void acceptHeartSignal(@PathVariable("id") @Positive Long signalId) {
     Long userId = SecurityUtils.getCurrentUserId();
     matchService.acceptHeartSignal(signalId, userId);
   }
@@ -235,7 +247,8 @@ public class MatchController {
    * POST /api/matches/heart-signals/{id}/decline
    */
   @PostMapping("/heart-signals/{id}/decline")
-  public void declineHeartSignal(@PathVariable("id") Long signalId) {
+  @PreAuthorize("hasRole('USER')")
+  public void declineHeartSignal(@PathVariable("id") @Positive Long signalId) {
     Long userId = SecurityUtils.getCurrentUserId();
     matchService.declineHeartSignal(signalId, userId);
   }
@@ -248,14 +261,15 @@ public class MatchController {
    */
   @PostMapping("/pass")
   @Operation(summary = "左滑跳过用户", description = "对目标用户标记为 pass（不喜欢），不会产生匹配。支持幂等性。", operationId = "passUser")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "操作成功"),
-          @ApiResponse(responseCode = "400", description = "passedUserId 缺失", content = @Content)
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "操作成功"),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "passedUserId 缺失", content = @Content)
   })
   @Idempotent
+  @PreAuthorize("hasRole('USER')")
   public ResponseEntity<Void> passUser(
           @Parameter(description = "被跳过的目标用户 ID", required = true, example = "12345")
-          @RequestParam(name = "passedUserId") Long passedUserId) {
+          @RequestParam(name = "passedUserId") @Positive Long passedUserId) {
     Long userId = SecurityUtils.getCurrentUserId();
     matchService.passUser(userId, passedUserId);
     // 监控：记录左滑（dislike）操作
@@ -272,11 +286,12 @@ public class MatchController {
    * POST /api/matches/rewind
    */
   @PostMapping("/rewind")
+  @PreAuthorize("hasRole('USER')")
   @Operation(summary = "反悔最近一次滑动", description = "撤销最近一次 pass 操作。每日限制 1 次，超限抛 DailyLimitExceededException。", operationId = "rewind")
-  @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "反悔成功",
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "反悔成功",
                   content = @Content(schema = @Schema(implementation = ApiResponse.class))),
-          @ApiResponse(responseCode = "429", description = "DAILY_LIMIT_EXCEEDED：超出每日反悔次数限制", content = @Content)
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "DAILY_LIMIT_EXCEEDED：超出每日反悔次数限制", content = @Content)
   })
   @Idempotent
   public ApiResponse<RewindResultView> rewind() {
@@ -300,7 +315,8 @@ public class MatchController {
    * PUT /api/matches/visitors/{id}/read
    */
   @PutMapping("/visitors/{id}/read")
-  public ResponseEntity<Void> markVisitorRead(@PathVariable("id") Long id) {
+  @PreAuthorize("hasRole('USER')")
+  public ResponseEntity<Void> markVisitorRead(@PathVariable("id") @Positive Long id) {
     matchService.markVisitorRead(id);
     return ResponseEntity.ok().build();
   }
@@ -315,7 +331,7 @@ public class MatchController {
    * @return 破冰话题列表（最多 3 个）
    */
   @GetMapping("/{matchId}/icebreakers")
-  public ResponseEntity<List<IcebreakerView>> getIcebreakers(@PathVariable("matchId") Long matchId) {
+  public ResponseEntity<List<IcebreakerView>> getIcebreakers(@PathVariable("matchId") @Positive Long matchId) {
     try {
       List<IcebreakerView> icebreakers = icebreakerService.getIcebreakers(matchId);
       return ResponseEntity.ok(icebreakers);
@@ -375,15 +391,18 @@ record MatchOptionView(String id, String label) {
 }
 
 record MatchRequest(
-    Long userId,
-    @NotBlank String matchIntent,
+    @NotNull @Positive Long userId,
+    @NotBlank @Size(max = 64) String matchIntent,
     List<String> topicIds,
-    @NotBlank String timeWindow,
-    Integer durationMinutes
+    @NotBlank @Size(max = 32) String timeWindow,
+    @Min(1) @Max(180) Integer durationMinutes
 ) {
 }
 
-record QuickMatchRequest(Long userId, Integer durationMinutes) {
+record QuickMatchRequest(
+    @NotNull @Positive Long userId,
+    @Min(1) @Max(180) Integer durationMinutes
+) {
 }
 
 record MatchResultView(
@@ -402,7 +421,7 @@ record MatchResultView(
  * userId 由 SecurityUtils 自动获取，只需传入目标用户ID。
  */
 record LikeTargetRequest(
-    Long targetUserId
+    @NotNull @Positive Long targetUserId
 ) {}
 
 /**
@@ -410,5 +429,5 @@ record LikeTargetRequest(
  * visitorId 由 SecurityUtils 自动获取，只需传入被访问用户ID。
  */
 record VisitTargetRequest(
-    Long visitedUserId
+    @NotNull @Positive Long visitedUserId
 ) {}

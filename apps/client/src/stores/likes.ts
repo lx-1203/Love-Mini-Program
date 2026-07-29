@@ -779,7 +779,8 @@ export const useLikesStore = defineStore("likes", {
         // 可选：触发系统通知（需要权限）
         if (typeof uni.requestSubscribeMessage === "function") {
           // 小程序订阅消息（实际项目中使用）
-          console.log(`[HeartSignal] 双向喜欢通知: ${signal.fromUserName}`);
+          // 修复 no-console：双向喜欢通知日志改用 console.warn（允许的方法）
+          console.warn(`[HeartSignal] 双向喜欢通知: ${signal.fromUserName}`);
         }
       } catch (error) {
         // 通知失败不应阻塞主流程
@@ -1059,7 +1060,7 @@ export const useLikesStore = defineStore("likes", {
           for (const userId of userIds) {
             try {
               await this.likeUser(userId);
-            } catch (e) {
+            } catch (_e) {
               failed.push(userId);
             }
           }
@@ -1089,7 +1090,7 @@ export const useLikesStore = defineStore("likes", {
           for (const userId of userIds) {
             try {
               await this.unlikeUser(userId);
-            } catch (e) {
+            } catch (_e) {
               failed.push(userId);
             }
           }

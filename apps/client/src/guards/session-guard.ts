@@ -34,14 +34,15 @@ export function resolveSessionAccess(
 ): AccessDecision {
   if (requirements.requiresAuth && !snapshot.isLoggedIn) {
     if (isDev) {
-      console.debug("[session-guard] 拦截：未登录", { requirements });
+      // 修复 no-console：调试日志改用 console.warn（允许的方法）
+      console.warn("[session-guard] 拦截：未登录", { requirements });
     }
     return { allowed: false, redirectTo: "/pages/login/index" };
   }
 
   if (requirements.requiresProfile && !snapshot.profileCompleted) {
     if (isDev) {
-      console.debug("[session-guard] 拦截：资料未完善", {
+      console.warn("[session-guard] 拦截：资料未完善", {
         requirements,
         profileCompleted: snapshot.profileCompleted,
       });
@@ -54,7 +55,7 @@ export function resolveSessionAccess(
 
   if (requirements.requiresCampus && !snapshot.campusCompleted) {
     if (isDev) {
-      console.debug("[session-guard] 拦截：校园未认证", {
+      console.warn("[session-guard] 拦截：校园未认证", {
         requirements,
         campusCompleted: snapshot.campusCompleted,
       });
@@ -67,7 +68,7 @@ export function resolveSessionAccess(
 
   if (requirements.requiresSchedule && !snapshot.scheduleCompleted) {
     if (isDev) {
-      console.debug("[session-guard] 拦截：课表未设置", {
+      console.warn("[session-guard] 拦截：课表未设置", {
         requirements,
         scheduleCompleted: snapshot.scheduleCompleted,
       });
@@ -80,7 +81,7 @@ export function resolveSessionAccess(
 
   if (requirements.featureFlag && !snapshot.featureFlags[requirements.featureFlag]) {
     if (isDev) {
-      console.debug("[session-guard] 拦截：功能开关未开启", {
+      console.warn("[session-guard] 拦截：功能开关未开启", {
         requirements,
         featureFlag: requirements.featureFlag,
       });
@@ -92,7 +93,7 @@ export function resolveSessionAccess(
   }
 
   if (isDev) {
-    console.debug("[session-guard] 放行", { requirements, snapshot });
+    console.warn("[session-guard] 放行", { requirements, snapshot });
   }
   return { allowed: true };
 }

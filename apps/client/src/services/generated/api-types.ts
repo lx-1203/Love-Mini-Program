@@ -11,7 +11,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get login hero configuration */
+        /**
+         * Get login hero configuration
+         * @description Returns the login page hero block configuration (animation or video mode, poster, theme, copy).
+         */
         get: operations["getLoginHeroConfig"];
         put?: never;
         post?: never;
@@ -28,7 +31,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get current session */
+        /**
+         * Get current session
+         * @description Validates the Bearer token and returns the current user session view.
+         */
         get: operations["getCurrentSession"];
         put?: never;
         post?: never;
@@ -47,8 +53,114 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Exchange a WeChat login code for a session snapshot */
+        /**
+         * Exchange a WeChat login code for a session
+         * @description Receives the WeChat mini-program login code, calls `code2session` to
+         *     resolve the openId, and issues a JWT. Rate-limited to 10 bucket
+         *     capacity / 1 token every 10 seconds per IP.
+         */
         post: operations["loginWithWechat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh JWT token
+         * @description Validates the existing Bearer token and returns a fresh JWT. Rate-limited
+         *     to 20 bucket capacity / 1 token every 2 seconds per IP. Idempotent.
+         */
+        post: operations["refreshToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout
+         * @description Adds the current Bearer token to a Redis blacklist so subsequent requests with the same token return 401.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/admin/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin username/password login
+         * @description Authenticates an admin account and returns a JWT with the ADMIN role. Idempotent.
+         */
+        post: operations["loginAsAdmin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/admin/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin logout
+         * @description Same semantics as `/auth/logout`, with additional audit logging for admin sessions.
+         */
+        post: operations["logoutAsAdmin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get profile statistics
+         * @description Returns profile completion, photo count, video count, etc., for the profile page header.
+         */
+        get: operations["getProfileStats"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -62,11 +174,120 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the basic profile draft */
+        /**
+         * Get the basic profile
+         * @description Returns the current user's basic profile (nickname, bio, photos, background, etc.).
+         */
         get: operations["getBasicProfile"];
-        /** Save the basic profile draft */
+        /**
+         * Save the basic profile
+         * @description Updates nickname, gender, birthday, bio, and Phase B extended fields.
+         *     Recomputes `profileCompletion` as a weighted average
+         *     (displayName 10% + campus 10% + schedule 10% + profileCompleted 70%).
+         */
         put: operations["saveBasicProfile"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile/background": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload profile background image
+         * @description Multipart upload of the profile page background image. Validates MIME and magic bytes.
+         */
+        post: operations["uploadProfileBackground"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a photo wall image
+         * @description Multipart upload of a photo wall image at the specified `index`
+         *     (0-5). Index out of range returns 400.
+         */
+        post: operations["uploadProfilePhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile/photos/{index}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a photo wall image
+         * @description Deletes the photo wall image at the specified index (0-5).
+         */
+        delete: operations["deleteProfilePhoto"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload personal video
+         * @description Multipart upload of a personal introduction video.
+         */
+        post: operations["uploadProfileVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile/half-body": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload half-body photo
+         * @description Multipart upload of a half-body photo used for verification.
+         */
+        post: operations["uploadProfileHalfBody"];
         delete?: never;
         options?: never;
         head?: never;
@@ -80,9 +301,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get campus profile state */
+        /**
+         * Get campus profile
+         * @description Returns the campus profile (city, campus name, department, verification status).
+         */
         get: operations["getCampusProfile"];
-        /** Save campus profile */
+        /**
+         * Save campus profile
+         * @description Updates city, campus name, and department.
+         */
         put: operations["saveCampusProfile"];
         post?: never;
         delete?: never;
@@ -98,10 +325,36 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get schedule preferences */
+        /**
+         * Get schedule preferences
+         * @description Returns schedule preferences (preferred campus area, time windows, course blocks).
+         */
         get: operations["getScheduleProfile"];
-        /** Save schedule preferences */
+        /**
+         * Save schedule preferences
+         * @description Updates preferred campus area, time windows, and course blocks.
+         */
         put: operations["saveScheduleProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile/dto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get current user DTO
+         * @description Returns the desensitized `UserDto` for the current user (no openid, phone, or password fields).
+         */
+        get: operations["getCurrentUserDto"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -116,7 +369,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the home dashboard payload with schedule, AI plan fallback, recommendations, and activity entry */
+        /**
+         * Get the home dashboard payload
+         * @description Returns schedule summary, AI plan fallback, recommended people, and activity preview entries.
+         */
         get: operations["getHomeDashboard"];
         put?: never;
         post?: never;
@@ -133,112 +389,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the chat landing payload with session list and empty-state recommendations */
+        /**
+         * Get the chat landing payload
+         * @description Returns the chat session list and empty-state recommendations.
+         */
         get: operations["getChatOverview"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/form-config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get compatibility match form configuration */
-        get: operations["getMatchFormConfig"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a compatibility topic-first match ticket */
-        post: operations["createMatch"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/quick": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a compatibility quick match ticket */
-        post: operations["createQuickMatch"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a compatibility match result by id */
-        get: operations["getMatchResult"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/_debug/matches/next-status/{queueStatus}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Stage the next mock match result status for local QA */
-        post: operations["setNextMatchQueueStatus"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/_debug/errors/{status}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Simulate a mock API error response for local QA */
-        post: operations["simulateDebugError"];
         delete?: never;
         options?: never;
         head?: never;
@@ -254,7 +411,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create or reuse a temporary chat session from a recommendation or compatibility match */
+        /**
+         * Create or reuse a temporary chat session
+         * @description Creates or reuses a temporary chat session from a recommendation or a
+         *     compatibility match. At least one of `recommendedPersonId` or
+         *     `matchId` must be provided.
+         */
         post: operations["createTempChatSession"];
         delete?: never;
         options?: never;
@@ -269,7 +431,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a temporary chat session */
+        /**
+         * Get a temporary chat session
+         * @description Returns the full temporary chat session view including messages and contact-exchange state.
+         */
         get: operations["getTempChatSession"];
         put?: never;
         post?: never;
@@ -288,7 +453,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send a message to a temporary chat session */
+        /**
+         * Send a message to a temporary chat session
+         * @description Appends a new message (text/voice/emoji) to the session and returns the updated session view.
+         */
         post: operations["sendTempChatMessage"];
         delete?: never;
         options?: never;
@@ -305,7 +473,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Respond to a contact exchange prompt */
+        /**
+         * Respond to a contact exchange prompt
+         * @description Submits an `accept`/`reject`/`revoke` decision for an in-flight contact exchange.
+         */
         post: operations["respondToContactExchange"];
         delete?: never;
         options?: never;
@@ -322,7 +493,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** End a temporary chat session */
+        /**
+         * End a temporary chat session
+         * @description Marks the session as closed with reason `ended`.
+         */
         post: operations["endTempChatSession"];
         delete?: never;
         options?: never;
@@ -339,7 +513,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Pin a temporary chat session in the overview list */
+        /**
+         * Pin a temporary chat session
+         * @description Pins the session in the overview list.
+         */
         post: operations["pinTempChatSession"];
         delete?: never;
         options?: never;
@@ -356,7 +533,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Remove a temporary chat session pin in the overview list */
+        /**
+         * Unpin a temporary chat session
+         * @description Removes the pin flag from the session in the overview list.
+         */
         post: operations["unpinTempChatSession"];
         delete?: never;
         options?: never;
@@ -373,7 +553,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mark a temporary chat session as read */
+        /**
+         * Mark a temporary chat session as read
+         * @description Resets the unread count of the session to zero.
+         */
         post: operations["markTempChatSessionRead"];
         delete?: never;
         options?: never;
@@ -390,7 +573,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Recall a message in a temporary chat session */
+        /**
+         * Recall a message in a temporary chat session
+         * @description Marks the specified message as recalled.
+         */
         post: operations["recallTempChatMessage"];
         delete?: never;
         options?: never;
@@ -405,7 +591,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get discussion recommendations */
+        /**
+         * Get discussion recommendations
+         * @description Returns the list of discussion recommendations for the discover tab.
+         */
         get: operations["getDiscussionRecommendations"];
         put?: never;
         post?: never;
@@ -422,7 +611,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get activity recommendations */
+        /**
+         * Get activity recommendations
+         * @description Returns the list of activity recommendations for the discover tab.
+         */
         get: operations["getActivityRecommendations"];
         put?: never;
         post?: never;
@@ -441,7 +633,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Submit a feedback ticket */
+        /**
+         * Submit a feedback ticket
+         * @description Submits a problem report. Returns 202 Accepted. Rate-limited and idempotent.
+         */
         post: operations["createFeedbackIssue"];
         delete?: never;
         options?: never;
@@ -458,7 +653,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Submit a product suggestion */
+        /**
+         * Submit a product suggestion
+         * @description Submits a product improvement suggestion. Returns 202 Accepted. Rate-limited and idempotent.
+         */
         post: operations["createSuggestion"];
         delete?: never;
         options?: never;
@@ -475,7 +673,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Submit an activity proposal */
+        /**
+         * Submit an activity proposal
+         * @description Submits a user-proposed activity. Returns 202 Accepted. Rate-limited and idempotent.
+         */
         post: operations["createActivityProposal"];
         delete?: never;
         options?: never;
@@ -490,10 +691,54 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List current user submissions */
+        /**
+         * List current user submissions
+         * @description Returns the current user's feedback submissions, optionally filtered by type.
+         */
         get: operations["listMySubmissions"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/feedback/my-submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get submission detail
+         * @description Returns the full detail of a submission owned by the current user.
+         */
+        get: operations["getMySubmissionDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/feedback/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a feedback image attachment
+         * @description Multipart upload of an image attachment for a feedback ticket.
+         *     Supported formats: jpg/png/webp. Max size: 5 MB.
+         */
+        post: operations["uploadFeedbackImage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -507,7 +752,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List feedback and suggestion submissions for operations */
+        /**
+         * List feedback submissions for operations
+         * @description Returns all feedback and suggestion submissions for admin review.
+         */
         get: operations["listAdminFeedback"];
         put?: never;
         post?: never;
@@ -526,8 +774,51 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Convert a proposal into an activity draft */
+        /**
+         * Convert a proposal into an activity draft
+         * @description Converts an accepted activity proposal into an activity draft. Requires ADMIN role. Idempotent.
+         */
         post: operations["convertActivityProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/_debug/matches/next-status/{queueStatus}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stage the next mock match result status for local QA
+         * @description Stages the next match queue status returned by the mock match service. Intended for local QA only.
+         */
+        post: operations["setNextMatchQueueStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/_debug/errors/{status}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simulate a mock API error response for local QA
+         * @description Returns an error response with the specified HTTP status. Intended for local QA only.
+         */
+        post: operations["simulateDebugError"];
         delete?: never;
         options?: never;
         head?: never;
@@ -552,7 +843,7 @@ export interface components {
             userId: string;
             loggedIn: boolean;
             /** @enum {string} */
-            loginMethod: "wechat" | "phone";
+            loginMethod: "wechat" | "phone" | "admin";
             displayName: string;
             phoneBound: boolean;
             profileCompleted: boolean;
@@ -563,16 +854,58 @@ export interface components {
                 [key: string]: boolean;
             };
         };
+        UserSessionApiResponse: {
+            success: boolean;
+            data?: components["schemas"]["UserSession"];
+        };
+        SuccessResponse: {
+            success: boolean;
+        };
         WechatLoginRequest: {
+            /** @description WeChat mini-program login code returned by `wx.login()`. */
             code: string;
+        };
+        AdminLoginRequest: {
+            username: string;
+            password: string;
         };
         BasicProfile: {
             nickname: string;
             bio: string;
             grade: string;
             pronouns: string;
+            height?: number | null;
+            /** @enum {string|null} */
+            educationLevel?: "high_school" | "bachelor" | "master" | "phd" | null;
+            /** @enum {string|null} */
+            relationshipStatus?: "never" | "married_before" | "divorced" | "widowed" | null;
+            hometownProvince?: string | null;
+            hometownCity?: string | null;
+            futureCity?: string | null;
+            futurePlanTags?: string[];
+            photoGallery?: string[];
+            halfBodyPhotoUrl?: string | null;
+            personalVideoUrl?: string | null;
+            profileBackgroundUrl?: string | null;
+            profileCompletion?: number;
+            /** @enum {string} */
+            verificationBadgeLevel?: "none" | "school" | "email" | "idcard";
         };
-        BasicProfileRequest: components["schemas"]["BasicProfile"];
+        BasicProfileRequest: {
+            nickname: string;
+            bio: string;
+            grade: string;
+            pronouns: string;
+            height?: number | null;
+            /** @enum {string|null} */
+            educationLevel?: "high_school" | "bachelor" | "master" | "phd" | null;
+            /** @enum {string|null} */
+            relationshipStatus?: "never" | "married_before" | "divorced" | "widowed" | null;
+            hometownProvince?: string | null;
+            hometownCity?: string | null;
+            futureCity?: string | null;
+            futurePlanTags?: string[];
+        };
         CampusProfile: {
             city: string;
             campusName: string;
@@ -597,7 +930,25 @@ export interface components {
             preferredTimeWindows: string[];
             courseBlocks: components["schemas"]["ScheduleBlock"][];
         };
-        ScheduleProfileRequest: components["schemas"]["ScheduleProfile"];
+        ScheduleProfileRequest: {
+            preferredCampusArea: string;
+            preferredTimeWindows?: string[];
+            courseBlocks?: components["schemas"]["ScheduleBlock"][];
+        };
+        ProfileStatsView: {
+            followingCount: number;
+            followersCount: number;
+            likesCount: number;
+        };
+        /** @description Desensitized user DTO (no openid/phone/password fields). */
+        UserDto: {
+            /** Format: int64 */
+            id: number;
+            nickname: string;
+            avatarUrl?: string | null;
+            /** @enum {string} */
+            role: "USER" | "ADMIN";
+        };
         /** @description Generic homepage card model for schedule, free-slot, and aiPlan modules. */
         HomeCard: {
             id: string;
@@ -628,11 +979,11 @@ export interface components {
             pulseTitle?: string | null;
             pulseMeta?: string | null;
         };
-        /** @description Homepage dashboard payload. In Phase 0/1, AI planning stays inside this payload as aiPlan instead of a standalone AI endpoint. */
+        /** @description Homepage dashboard payload. AI planning stays inside this payload as `aiPlan`. */
         HomeDashboard: {
             scheduleSummary: components["schemas"]["HomeCard"];
             freeSlots: components["schemas"]["HomeCard"][];
-            /** @description Launch-scope AI planning module. When chat_ai_enabled is false, this still returns stable fallback guidance copy. */
+            /** @description Launch-scope AI planning module. Returns stable fallback copy when `chat_ai_enabled` is false. */
             aiPlan: components["schemas"]["HomeCard"];
             recommendedPeople: components["schemas"]["RecommendedPersonSummary"][];
             peopleLead: string;
@@ -661,50 +1012,6 @@ export interface components {
             pinned: boolean;
             unreadCount: number;
         };
-        MatchOption: {
-            id: string;
-            label: string;
-        };
-        MatchFormField: {
-            id: string;
-            /** @enum {string} */
-            kind: "single-select" | "multi-select" | "stepper";
-            label: string;
-            options: components["schemas"]["MatchOption"][];
-            min?: number | null;
-            max?: number | null;
-        };
-        MatchFormSection: {
-            id: string;
-            title: string;
-            fields: components["schemas"]["MatchFormField"][];
-        };
-        MatchFormConfig: {
-            sections: components["schemas"]["MatchFormSection"][];
-        };
-        MatchRequest: {
-            matchIntent: string;
-            topicIds: string[];
-            timeWindow: string;
-            durationMinutes: number;
-        };
-        QuickMatchRequest: {
-            durationMinutes: number;
-        };
-        MatchResult: {
-            id: string;
-            /** @enum {string} */
-            queueStatus: "queued" | "connected" | "expired";
-            topicLabel: string;
-            partnerHeadline: string;
-            countdownMinutes: number;
-            recommendedPrompt: string;
-            tempChatSessionId?: string | null;
-        };
-        CreateTempChatSessionRequest: {
-            recommendedPersonId?: string | null;
-            matchId?: string | null;
-        };
         ChatMessage: {
             id: string;
             /** @enum {string} */
@@ -721,22 +1028,27 @@ export interface components {
              * @enum {string}
              */
             deliveryStatus: "sent" | "delivered" | "read";
-            /** @description 引用消息的ID */
+            /** @description Quoted message ID. */
             quoteRef?: string | null;
-            /** @description 被引用消息的内容快照 */
+            /** @description Quoted message body snapshot. */
             quoteBody?: string | null;
-            /** @description 被引用消息的发送者 */
+            /** @description Sender of the quoted message. */
             quoteSender?: string | null;
         };
         ChatMessageRequest: {
             /** @enum {string} */
             sender: "self" | "peer";
             /** @enum {string} */
-            kind: "text" | "voice" | "emoji";
+            kind: "text" | "voice" | "emoji" | "system";
             body: string;
             durationSeconds?: number | null;
-            /** @description 引用消息的ID（可选） */
+            /** @description Optional quoted message ID. */
             quoteRef?: string | null;
+        };
+        /** @description At least one of `recommendedPersonId` or `matchId` must be non-empty. */
+        CreateTempChatSessionRequest: {
+            recommendedPersonId?: string | null;
+            matchId?: string | null;
         };
         ContactExchangeState: {
             /** @enum {string|null} */
@@ -748,7 +1060,7 @@ export interface components {
             /** @enum {string} */
             actor: "self" | "peer";
             /** @enum {string} */
-            decision: "accepted" | "rejected";
+            decision: "accept" | "reject" | "revoke";
         };
         TempChatSession: {
             id: string;
@@ -777,7 +1089,7 @@ export interface components {
             scheduleText: string;
         };
         /** @enum {string} */
-        SubmissionType: "feedback" | "suggestion" | "activity_proposal";
+        SubmissionType: "FEEDBACK" | "SUGGESTION" | "ACTIVITY_PROPOSAL";
         SubmissionRequest: {
             title: string;
             content: string;
@@ -794,9 +1106,31 @@ export interface components {
             /** @enum {string} */
             status: "submitted" | "processing" | "reviewed" | "planned" | "converted";
             latestReplySummary: string;
+            /** Format: date-time */
             submittedAt: string;
             /** Format: int64 */
             convertedActivityId?: number | null;
+        };
+        SubmissionRecordApiResponse: {
+            success: boolean;
+            data?: components["schemas"]["SubmissionRecord"];
+        };
+        SubmissionDetail: {
+            /** Format: int64 */
+            id: number;
+            type: components["schemas"]["SubmissionType"];
+            title: string;
+            content: string;
+            attachments?: string[];
+            latestReplyContent?: string | null;
+            /** Format: date-time */
+            submittedAt: string;
+        };
+        UploadedImageResult: {
+            url: string;
+            /** Format: int64 */
+            size: number;
+            contentType: string;
         };
         DebugNextMatchStatusResponse: {
             /** @enum {string} */
@@ -806,8 +1140,185 @@ export interface components {
             error: string;
             message: string;
         };
+        ApiError: {
+            /** @description Machine-readable error code. */
+            error: string;
+            /** @description Human-readable error message. */
+            message: string;
+        };
+        MatchFormConfig: {
+            sections: components["schemas"]["MatchFormSection"][];
+        };
+        MatchFormSection: {
+            id: string;
+            title: string;
+            fields: components["schemas"]["MatchFormField"][];
+        };
+        MatchFormField: {
+            id: string;
+            /** @enum {string} */
+            kind: "single-select" | "multi-select" | "stepper";
+            label: string;
+            options: components["schemas"]["MatchOption"][];
+            min?: number | null;
+            max?: number | null;
+        };
+        MatchOption: {
+            id: string;
+            label: string;
+        };
+        MatchRequest: {
+            /**
+             * Format: int64
+             * @description Ignored — authenticated user ID from JWT is always used.
+             */
+            userId: number;
+            matchIntent: string;
+            topicIds?: string[];
+            timeWindow: string;
+            durationMinutes: number;
+        };
+        QuickMatchRequest: {
+            /**
+             * Format: int64
+             * @description Ignored — authenticated user ID from JWT is always used.
+             */
+            userId: number;
+            durationMinutes: number;
+        };
+        MatchResult: {
+            id: string;
+            /** @enum {string} */
+            queueStatus: "queued" | "connected" | "expired";
+            topicLabel: string;
+            partnerHeadline: string;
+            countdownMinutes: number;
+            recommendedPrompt: string;
+            tempChatSessionId?: string | null;
+        };
     };
-    responses: never;
+    responses: {
+        /** @description Bad request */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "BAD_REQUEST",
+                 *       "message": "Invalid request body."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Unauthorized */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "UNAUTHORIZED",
+                 *       "message": "Missing or invalid bearer token."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Forbidden */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "FORBIDDEN",
+                 *       "message": "User disabled or insufficient role."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Not found */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "NOT_FOUND",
+                 *       "message": "Resource not found."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Conflict */
+        Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "CONFLICT",
+                 *       "message": "Resource already exists or optimistic lock conflict."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Too many requests */
+        TooManyRequests: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "RATE_LIMITED",
+                 *       "message": "Rate limit exceeded."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Payload too large */
+        PayloadTooLarge: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "PAYLOAD_TOO_LARGE",
+                 *       "message": "File exceeds 5 MB limit."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Internal server error */
+        InternalServerError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "INTERNAL_ERROR",
+                 *       "message": "Unexpected server error."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -833,6 +1344,8 @@ export interface operations {
                     "application/json": components["schemas"]["LoginHeroConfig"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     getCurrentSession: {
@@ -853,6 +1366,9 @@ export interface operations {
                     "application/json": components["schemas"]["UserSession"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     loginWithWechat: {
@@ -864,6 +1380,11 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "code": "0a1b2c3d4e5f"
+                 *     }
+                 */
                 "application/json": components["schemas"]["WechatLoginRequest"];
             };
         };
@@ -877,6 +1398,143 @@ export interface operations {
                     "application/json": components["schemas"]["UserSession"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    refreshToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Refreshed session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSessionApiResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logout successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "success": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SuccessResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    loginAsAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "username": "admin",
+                 *       "password": "********"
+                 *     }
+                 */
+                "application/json": components["schemas"]["AdminLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Admin session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSessionApiResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    logoutAsAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logout successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "success": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SuccessResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getProfileStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Profile statistics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileStatsView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     getBasicProfile: {
@@ -897,6 +1555,8 @@ export interface operations {
                     "application/json": components["schemas"]["BasicProfile"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     saveBasicProfile: {
@@ -908,6 +1568,24 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "nickname": "小明",
+                 *       "bio": "热爱生活的本科生",
+                 *       "grade": "sophomore",
+                 *       "pronouns": "he/him",
+                 *       "height": 178,
+                 *       "educationLevel": "bachelor",
+                 *       "relationshipStatus": "never",
+                 *       "hometownProvince": "Beijing",
+                 *       "hometownCity": "Beijing",
+                 *       "futureCity": "Shanghai",
+                 *       "futurePlanTags": [
+                 *         "tech",
+                 *         "travel"
+                 *       ]
+                 *     }
+                 */
                 "application/json": components["schemas"]["BasicProfileRequest"];
             };
         };
@@ -921,6 +1599,161 @@ export interface operations {
                     "application/json": components["schemas"]["BasicProfile"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    uploadProfileBackground: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated basic profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasicProfile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            413: components["responses"]["PayloadTooLarge"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    uploadProfilePhoto: {
+        parameters: {
+            query: {
+                /** @description Photo wall slot index (0-5). */
+                index: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Upload successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasicProfile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteProfilePhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Photo wall slot index (0-5). */
+                index: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deletion successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasicProfile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    uploadProfileVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Upload successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasicProfile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    uploadProfileHalfBody: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Upload successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasicProfile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     getCampusProfile: {
@@ -941,6 +1774,8 @@ export interface operations {
                     "application/json": components["schemas"]["CampusProfile"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     saveCampusProfile: {
@@ -952,6 +1787,13 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "city": "Beijing",
+                 *       "campusName": "Tsinghua University",
+                 *       "department": "Computer Science"
+                 *     }
+                 */
                 "application/json": components["schemas"]["CampusProfileRequest"];
             };
         };
@@ -965,6 +1807,9 @@ export interface operations {
                     "application/json": components["schemas"]["CampusProfile"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     getScheduleProfile: {
@@ -985,6 +1830,8 @@ export interface operations {
                     "application/json": components["schemas"]["ScheduleProfile"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     saveScheduleProfile: {
@@ -1009,6 +1856,32 @@ export interface operations {
                     "application/json": components["schemas"]["ScheduleProfile"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getCurrentUserDto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User DTO */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDto"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     getHomeDashboard: {
@@ -1020,7 +1893,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Home dashboard, including the launch-scope aiPlan module inside the dashboard payload */
+            /** @description Home dashboard payload (launch-scope aiPlan included) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1029,6 +1902,8 @@ export interface operations {
                     "application/json": components["schemas"]["HomeDashboard"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     getChatOverview: {
@@ -1049,29 +1924,11 @@ export interface operations {
                     "application/json": components["schemas"]["ChatOverview"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
-    getMatchFormConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Match form config */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MatchFormConfig"];
-                };
-            };
-        };
-    };
-    createMatch: {
+    createTempChatSession: {
         parameters: {
             query?: never;
             header?: never;
@@ -1080,65 +1937,526 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MatchRequest"];
+                /**
+                 * @example {
+                 *       "recommendedPersonId": "rec-123"
+                 *     }
+                 */
+                "application/json": components["schemas"]["CreateTempChatSessionRequest"];
             };
         };
         responses: {
-            /** @description Match result */
+            /** @description Temporary chat session */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MatchResult"];
+                    "application/json": components["schemas"]["TempChatSession"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
-    createQuickMatch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["QuickMatchRequest"];
-            };
-        };
-        responses: {
-            /** @description Match result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MatchResult"];
-                };
-            };
-        };
-    };
-    getMatchResult: {
+    getTempChatSession: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                /** @description Session ID. */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Match result */
+            /** @description Temporary chat session */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MatchResult"];
+                    "application/json": components["schemas"]["TempChatSession"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    sendTempChatMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "sender": "self",
+                 *       "kind": "text",
+                 *       "body": "你好呀"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ChatMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated temporary chat session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TempChatSession"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    respondToContactExchange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "actor": "self",
+                 *       "decision": "accept"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ContactExchangeDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated temporary chat session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TempChatSession"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    endTempChatSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated temporary chat session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TempChatSession"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    pinTempChatSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated chat session summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatSessionSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    unpinTempChatSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated chat session summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatSessionSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    markTempChatSessionRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated chat session summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatSessionSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    recallTempChatMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+                /** @description Message ID to recall. */
+                messageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated temporary chat session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TempChatSession"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getDiscussionRecommendations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discussion recommendations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscussionRecommendation"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getActivityRecommendations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activity recommendations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRecommendation"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createFeedbackIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "title": "登录失败",
+                 *       "content": "使用微信登录时返回 502",
+                 *       "contactWechat": "wxid_abc",
+                 *       "attachments": [],
+                 *       "expectedCity": "Beijing",
+                 *       "expectedCampus": "Tsinghua"
+                 *     }
+                 */
+                "application/json": components["schemas"]["SubmissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRecordApiResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRecordApiResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createActivityProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRecordApiResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listMySubmissions: {
+        parameters: {
+            query?: {
+                /** @description Optional filter by submission type. */
+                type?: components["schemas"]["SubmissionType"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Submission list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRecord"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMySubmissionDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Submission ID. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Submission detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    uploadFeedbackImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Upload successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadedImageResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            413: components["responses"]["PayloadTooLarge"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listAdminFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Admin-facing submissions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRecord"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    convertActivityProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Proposal submission ID. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Converted proposal result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRecord"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     setNextMatchQueueStatus: {
@@ -1146,6 +2464,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The queue status to stage. */
                 queueStatus: "queued" | "connected" | "expired";
             };
             cookie?: never;
@@ -1161,6 +2480,8 @@ export interface operations {
                     "application/json": components["schemas"]["DebugNextMatchStatusResponse"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
     simulateDebugError: {
@@ -1168,6 +2489,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description HTTP status code to simulate. */
                 status: 400 | 404 | 500;
             };
             cookie?: never;
@@ -1199,391 +2521,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DebugErrorResponse"];
-                };
-            };
-        };
-    };
-    createTempChatSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateTempChatSessionRequest"];
-            };
-        };
-        responses: {
-            /** @description Temporary chat session */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TempChatSession"];
-                };
-            };
-        };
-    };
-    getTempChatSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Temporary chat session */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TempChatSession"];
-                };
-            };
-        };
-    };
-    sendTempChatMessage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChatMessageRequest"];
-            };
-        };
-        responses: {
-            /** @description Updated temporary chat session */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TempChatSession"];
-                };
-            };
-        };
-    };
-    respondToContactExchange: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ContactExchangeDecisionRequest"];
-            };
-        };
-        responses: {
-            /** @description Updated temporary chat session */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TempChatSession"];
-                };
-            };
-        };
-    };
-    endTempChatSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated temporary chat session */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TempChatSession"];
-                };
-            };
-        };
-    };
-    pinTempChatSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated chat session summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChatSessionSummary"];
-                };
-            };
-        };
-    };
-    unpinTempChatSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated chat session summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChatSessionSummary"];
-                };
-            };
-        };
-    };
-    markTempChatSessionRead: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated chat session summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChatSessionSummary"];
-                };
-            };
-        };
-    };
-    recallTempChatMessage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                messageId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated chat session with recalled message */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TempChatSession"];
-                };
-            };
-        };
-    };
-    getDiscussionRecommendations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Discussion recommendations */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DiscussionRecommendation"][];
-                };
-            };
-        };
-    };
-    getActivityRecommendations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Activity recommendations */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActivityRecommendation"][];
-                };
-            };
-        };
-    };
-    createFeedbackIssue: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubmissionRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionRecord"];
-                };
-            };
-        };
-    };
-    createSuggestion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubmissionRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionRecord"];
-                };
-            };
-        };
-    };
-    createActivityProposal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubmissionRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionRecord"];
-                };
-            };
-        };
-    };
-    listMySubmissions: {
-        parameters: {
-            query?: {
-                type?: components["schemas"]["SubmissionType"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Submission list */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionRecord"][];
-                };
-            };
-        };
-    };
-    listAdminFeedback: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Admin-facing submissions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionRecord"][];
-                };
-            };
-        };
-    };
-    convertActivityProposal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Converted proposal result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionRecord"];
                 };
             };
         };

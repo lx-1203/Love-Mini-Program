@@ -104,7 +104,8 @@ export class ReconnectManager {
     this.attempts += 1;
     const delay = this.calculateDelay(this.attempts);
 
-    console.log(
+    // 修复 no-console：重连日志改用 console.warn（允许的方法）
+    console.warn(
       `[WebSocket] 将在 ${delay}ms 后进行第 ${this.attempts} 次重连（指数退避）`
     );
 

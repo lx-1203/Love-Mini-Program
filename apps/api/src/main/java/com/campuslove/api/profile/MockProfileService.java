@@ -3,7 +3,7 @@ package com.campuslove.api.profile;
 import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.campus.CampusCertificationView;
 import com.campuslove.api.media.MediaStorageService;
-import com.campuslove.api.runtime.MockRuntimeState;
+import com.campuslove.api.mock.MockRuntimeState;
 import com.campuslove.api.user.FollowUserView;
 import com.campuslove.api.user.FollowView;
 import java.util.ArrayList;

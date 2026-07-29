@@ -8,12 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 通知配置实体，对应 notify_config 表。
  * 存储各通知类型的启停状态与模板内容，由管理后台维护。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "notify_config")
 public class NotifyConfig {
 
@@ -33,6 +38,12 @@ public class NotifyConfig {
     @Column(name = "template", length = 512)
     private String template;
 
+    /** 记录创建时间（Task 37 P2.14 审计字段补齐） */
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     /**
@@ -82,6 +93,14 @@ public class NotifyConfig {
 
     public void setTemplate(String template) {
         this.template = template;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {

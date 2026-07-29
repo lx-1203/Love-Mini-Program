@@ -7,6 +7,7 @@ import com.campuslove.api.repository.CommentRepository;
 import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +61,8 @@ public class AdminCommentController {
      */
     @GetMapping
     public AdminPageView<AdminCommentSummaryView> listComments(
-            @RequestParam(name = "authorId", required = false) Long authorId,
-            @RequestParam(name = "postId", required = false) Long postId,
+            @RequestParam(name = "authorId", required = false) @Positive Long authorId,
+            @RequestParam(name = "postId", required = false) @Positive Long postId,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
@@ -106,7 +107,7 @@ public class AdminCommentController {
      */
     @DeleteMapping("/{id}")
     @Transactional
-    public ResponseEntity<Map<String, Object>> deleteComment(@PathVariable("id") Long id) {
+    public ResponseEntity<Map<String, Object>> deleteComment(@PathVariable("id") @Positive Long id) {
         SecurityUtils.getCurrentUserId();
 
         Optional<Comment> commentOpt = commentRepository.findById(id);

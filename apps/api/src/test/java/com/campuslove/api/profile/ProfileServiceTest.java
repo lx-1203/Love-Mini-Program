@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.campus.CampusCertificationView;
 import com.campuslove.api.media.MediaStorageService;
-import com.campuslove.api.runtime.MockRuntimeState;
+import com.campuslove.api.mock.MockRuntimeState;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

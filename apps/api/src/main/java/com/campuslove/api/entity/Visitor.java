@@ -8,12 +8,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 访客记录实体，对应 visitors 表。
  * 记录用户主页的访问记录，同一访客对同一用户每天只记录一次。
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "visitors")
 public class Visitor {
 
@@ -34,6 +38,9 @@ public class Visitor {
     private Boolean isRead = false;
 
     /** 记录创建时间（访客访问发生时间） */
+
+    @CreatedDate
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     /**

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 聊天详情页 - 支持私信会话和临时匿名聊天会话
  * 支持从兴趣圈"打招呼"跳转，携带预填消息和引用上下文
@@ -28,14 +28,15 @@ import { useVipRedPacketStore } from "../../stores/vip-red-packet";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { chatPageRequirements } from "../../config/page-access";
 import { IMAGE_PATHS } from "../../config/images";
+import { ROUTES } from "../../constants/routes";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { lightHaptic } from "../../utils/haptic";
 // Sentry 监控：消息发送失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
 import type { RecorderStopResult } from "../../utils/audio-recorder";
-import type { ChatMessageView } from "./types";
-// 纯逻辑模块导入（页面转场逻辑仍内联在本文件中）
+// 修复 no-duplicate-imports：合并 ./types 的重复 import
 import type {
+  ChatMessageView,
   LongPressMenuState,
   QuoteContext,
   QuoteReply,
@@ -236,15 +237,15 @@ onLoad(async (query) => {
         // 创建会话后立即加载消息（onShow 可能在 createSession 完成前已触发并 return）
         await loadSessionData();
       } else {
-        pageErrorMessage.value = "创建会话失败，请稍后重试";
+        pageErrorMessage.value = t("chat.createSessionFailed");
       }
     } catch (e) {
-      pageErrorMessage.value = e instanceof Error ? e.message : "创建会话失败";
+      pageErrorMessage.value = e instanceof Error ? e.message : t("chat.createSessionFailedShort");
     }
     return;
   }
 
-  pageErrorMessage.value = "缺少会话标识，请从聊天列表或匹配结果进入。";
+  pageErrorMessage.value = t("chat.missingSessionId");
 });
 
 onShow(() => {
@@ -305,24 +306,24 @@ const canSend = computed(() => draft.value.trim().length > 0 && !isSessionClosed
 
 /** 页面标题 */
 const pageTitle = computed(() => {
-  if (isTempSession.value) return "24小时临时聊天";
-  if (isPrivateSession.value) return currentSession.value?.partnerName || "私信";
+  if (isTempSession.value) return t("chat.tempSessionTitle");
+  if (isPrivateSession.value) return currentSession.value?.partnerName || t("chat.privateMessageTitle");
   // 通过 userId 导航但无现有会话时，标明目标用户
   if (targetUserId.value) {
     const partnerName = messagesStore.sessions.find(
       (s) => s.partnerId === targetUserId.value && s.sessionType === "private"
     )?.partnerName;
-    return partnerName || "对话中";
+    return partnerName || t("chat.conversationTitle");
   }
-  return chatStore.activeSession?.partnerName || "聊天";
+  return chatStore.activeSession?.partnerName || t("chat.chatTitle");
 });
 
 /** 页面副标题 */
 const pageSubtitle = computed(() => {
   if (isTempSession.value) {
     return tempCountdown.value
-      ? `剩余时间：${tempCountdown.value}`
-      : currentSession.value?.partnerHeadline || "双方身份匿名，24小时后自动结束";
+      ? t("chat.remainingTimeLabel", { time: tempCountdown.value })
+      : currentSession.value?.partnerHeadline || t("chat.tempSessionSubtitle");
   }
   if (isPrivateSession.value) return currentSession.value?.partnerHeadline || "";
   return chatStore.activeSession?.partnerHeadline || "";
@@ -373,7 +374,7 @@ async function sendText() {
   }
 
   if (isSessionClosed.value) {
-    uni.showToast({ title: "会话已结束，无法发送消息", icon: "none" });
+    uni.showToast({ title: t("chat.sessionClosedCannotSend"), icon: "none" });
     return;
   }
 
@@ -407,7 +408,7 @@ async function sendText() {
       source: "chat.sendText",
       sessionId: currentSessionId,
     });
-    const message = error instanceof Error ? error.message : "发送失败，请稍后重试";
+    const message = error instanceof Error ? error.message : t("chat.sendFailed");
     uni.showToast({ title: message, icon: "none" });
   }
 }
@@ -417,9 +418,9 @@ async function handleAcceptExchange() {
   if (!sessionId.value) return;
   try {
     await chatStore.acceptExchange("self");
-    uni.showToast({ title: "已同意交换联系方式", icon: "success" });
+    uni.showToast({ title: t("chat.exchangeAccepted"), icon: "success" });
   } catch (_e) {
-    uni.showToast({ title: chatStore.errorMessage || "操作失败", icon: "none" });
+    uni.showToast({ title: chatStore.errorMessage || t("chat.operationFailed"), icon: "none" });
   }
 }
 
@@ -428,9 +429,9 @@ async function handleEndSession() {
   if (!sessionId.value) return;
   try {
     await chatStore.endSession();
-    uni.showToast({ title: "会话已结束", icon: "success" });
+    uni.showToast({ title: t("chat.sessionEnded"), icon: "success" });
   } catch (_e) {
-    uni.showToast({ title: chatStore.errorMessage || "操作失败", icon: "none" });
+    uni.showToast({ title: chatStore.errorMessage || t("chat.operationFailed"), icon: "none" });
   }
 }
 
@@ -575,12 +576,12 @@ function closeLongPressMenu() {
 }
 
 /**
- * 空操作函数，用于 @tap.stop 阻止冒泡时的占位 handler。
+ * 空操作函数，用于 catchtap 阻止冒泡时的占位 handler。
  *
- * Task 1.1.7：使用 @tap.stop="noop" 实现条件编译效果。
- * uni-app 编译器在 mp-weixin 端自动将 @tap.stop 编译为 catchtap，
- * 在 H5 端保留 @tap.stop 语义。mp-weixin 的 catchtap 必须绑定 handler，
- * 因此需要 noop 作为占位。
+ * 源码层面直接使用 catchtap="noop" 阻止冒泡：
+ * mp-weixin 端 catchtap 原生阻止冒泡且必须绑定 handler，故需 noop 占位；
+ * H5 端 catchtap 不生效，需在 noop 内调用 event.stopPropagation()（此处 noop 不接收 event，
+ * 由 catchtap 的原生语义保证 mp-weixin 端冒泡阻止；H5 端冒泡由外层遮罩 @tap 兜底关闭）。
  */
 const noop = () => {};
 
@@ -604,7 +605,7 @@ function handleCopyMessage() {
   }
   // 仅支持文本/emoji 类型消息复制，语音类型不复制
   if (message.kind && message.kind !== "text" && message.kind !== "emoji") {
-    uni.showToast({ title: "当前消息类型不支持复制", icon: "none" });
+    uni.showToast({ title: t("chat.copyNotSupported"), icon: "none" });
     closeLongPressMenu();
     return;
   }
@@ -615,7 +616,7 @@ function handleCopyMessage() {
       // mp-weixin 端 success 后会自动展示内置 toast，无需重复
     },
     fail: () => {
-      uni.showToast({ title: "复制失败，请重试", icon: "none" });
+      uni.showToast({ title: t("chat.copyFailed"), icon: "none" });
     },
   });
   closeLongPressMenu();
@@ -642,7 +643,7 @@ async function handleRecallMessage() {
   if (!sessionId.value || !longPressMenu.value.messageId) return;
   try {
     await recallTempChatMessageApi(sessionId.value, longPressMenu.value.messageId);
-    uni.showToast({ title: "消息已撤回", icon: "success" });
+    uni.showToast({ title: t("chat.recalledSuccess"), icon: "success" });
     // 重新加载会话以获取最新消息
     await messagesStore.fetchSessionMessages(sessionId.value);
     // Task 1.1.1：临时会话需同步 chatStore 消息到 messagesStore 单一数据源
@@ -651,7 +652,7 @@ async function handleRecallMessage() {
       syncChatStoreMessagesToMessagesStore();
     }
   } catch (_e) {
-    uni.showToast({ title: "撤回失败", icon: "none" });
+    uni.showToast({ title: t("chat.recallFailed"), icon: "none" });
   }
   closeLongPressMenu();
 }
@@ -708,7 +709,7 @@ function goRedPacket() {
     return;
   }
   uni.navigateTo({
-    url: `/pages/chat/red-packet?sessionId=${encodeURIComponent(sessionId.value)}`,
+    url: `${ROUTES.CHAT.RED_PACKET}?sessionId=${encodeURIComponent(sessionId.value)}`,
   });
 }
 
@@ -733,7 +734,7 @@ function goVideoCall() {
     params.push(`peerUserId=${encodeURIComponent(String(peerId))}`);
   }
   uni.navigateTo({
-    url: `/pages/chat/video-call?${params.join("&")}`,
+    url: `${ROUTES.CHAT.VIDEO_CALL}?${params.join("&")}`,
   });
 }
 
@@ -874,7 +875,7 @@ function handleClaimRedPacket(redPacketId: number) {
     return;
   }
   uni.navigateTo({
-    url: `/pages/chat/red-packet?sessionId=${encodeURIComponent(sessionId.value)}&claimId=${redPacketId}`,
+    url: `${ROUTES.CHAT.RED_PACKET}?sessionId=${encodeURIComponent(sessionId.value)}&claimId=${redPacketId}`,
   });
 }
 
@@ -887,7 +888,7 @@ function handleClaimRedPacket(redPacketId: number) {
 function handleViewRedPacketDetail(redPacketId: number) {
   if (!sessionId.value) return;
   uni.navigateTo({
-    url: `/pages/chat/red-packet?sessionId=${encodeURIComponent(sessionId.value)}&claimId=${redPacketId}`,
+    url: `${ROUTES.CHAT.RED_PACKET}?sessionId=${encodeURIComponent(sessionId.value)}&claimId=${redPacketId}`,
   });
 }
 
@@ -923,7 +924,7 @@ async function handleVoiceRecorded(result: RecorderStopResult) {
       // 私信会话使用 messagesStore 的标准私信链路（暂以占位文本发送）
       await messagesStore.sendMessage(
         currentSessionId,
-        `[语音消息 ${result.durationSeconds}秒]`
+        t("chat.voiceMessagePlaceholder", { n: result.durationSeconds })
       );
     }
     uni.showToast({ title: t("chat.voiceSendSuccess"), icon: "success" });
@@ -951,6 +952,10 @@ function handleVoiceRecordCancel() {
 function handleVoiceStateChange(recording: boolean) {
   isRecording.value = recording;
 }
+
+// 修复（严格模式 noUnusedLocals）：noop 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ noop });
 </script>
 
 <template>
@@ -964,26 +969,26 @@ function handleVoiceStateChange(recording: boolean) {
     <!-- 临时匿名会话顶部提示 -->
     <view v-if="isTempSession" class="temp-banner">
       <text class="temp-banner__text">
-        {{ tempCountdown === "已结束" ? "会话已结束" : "24小时临时聊天，双方身份匿名" }}
+        {{ tempCountdown === "已结束" ? t("chat.sessionEndedLabel") : t("chat.tempBannerText") }}
       </text>
     </view>
 
     <!-- 会话状态 -->
-    <SectionCard v-if="isTempSession" title="会话状态" compact>
+    <SectionCard v-if="isTempSession" :title="t('chat.sessionStatusTitle')" compact>
       <StatusState
         v-if="chatStore.activeSession"
         tone="brand"
         :label="chatStore.activeSession.contactExchangeLabel"
       />
       <text class="meta-copy">
-        {{ chatStore.activeSession?.availabilityHint || '24 小时倒计时和联系方式交换都由状态机驱动。' }}
+        {{ chatStore.activeSession?.availabilityHint || t('chat.defaultAvailabilityHint') }}
       </text>
     </SectionCard>
 
     <!-- 消息列表 -->
-    <SectionCard title="消息" compact>
+    <SectionCard :title="t('chat.messagesTitle')" compact>
       <view v-if="pageErrorMessage" class="meta-copy">{{ pageErrorMessage }}</view>
-      <view v-else-if="messagesStore.loading" class="meta-copy">正在加载聊天详情...</view>
+      <view v-else-if="messagesStore.loading" class="meta-copy">{{ t('chat.loadingSessionDetail') }}</view>
       <view v-else-if="messagesStore.errorMessage" class="meta-copy">{{ messagesStore.errorMessage }}</view>
       <view v-else class="chat-list" role="list">
         <!-- 优先展示 messagesStore 的消息（经 DTO 转换层映射为 ChatMessageView） -->
@@ -1038,22 +1043,22 @@ function handleVoiceStateChange(recording: boolean) {
           现统一以 messagesStore 为单一数据源（Task 1.1.1），删除兜底渲染块。
         -->
         <text v-if="!messagesStore.currentMessages.length" class="meta-copy">
-          会话刚建立，还没有消息。
+          {{ t('chat.emptySessionCreated') }}
         </text>
         <text v-if="isSessionClosed" class="meta-copy meta-copy--warning">
-          会话已结束，无法继续发送消息。
+          {{ t('chat.sessionClosedHint') }}
         </text>
       </view>
     </SectionCard>
 
     <!-- 操作区 -->
-    <SectionCard title="操作" compact>
+    <SectionCard :title="t('chat.actionsTitle')" compact>
       <view v-if="pageErrorMessage" class="meta-copy">{{ pageErrorMessage }}</view>
       <template v-else>
         <!-- 引用上下文卡片（来自兴趣圈"打招呼"） -->
         <view v-if="quoteContext" class="quote-card card-base">
           <view class="quote-card__header">
-            <text class="quote-card__label">引用自「{{ quoteContext.topicTitle }}」</text>
+            <text class="quote-card__label">{{ t('chat.quoteFromTopic', { title: quoteContext.topicTitle }) }}</text>
           </view>
           <text class="quote-card__content">"{{ quoteContext.replyContent }}"</text>
           <text class="quote-card__author">-- {{ quoteContext.replyAuthorName }}</text>
@@ -1072,7 +1077,7 @@ function handleVoiceStateChange(recording: boolean) {
         <view v-if="quoteReply" class="quote-reply-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="cancelQuoteReply">
           <view class="quote-reply-bar__content">
             <text class="quote-reply-bar__label">
-              引用 {{ quoteReply.sender === 'self' ? '我' : '对方' }}：
+              {{ t('chat.quoteReplyLabel', { sender: quoteReply.sender === 'self' ? t('chat.quoteMe') : t('chat.quotePeer') }) }}
             </text>
             <text class="quote-reply-bar__body">{{ quoteReply.body }}</text>
           </view>
@@ -1092,7 +1097,7 @@ function handleVoiceStateChange(recording: boolean) {
             @tap="toggleVoiceMode"
           >
             <image v-if="!isVoiceMode" class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" alt="" />
-            <text v-else class="wechat-input-bar__icon-text wechat-input-bar__icon-text--keyboard">文</text>
+            <text v-else class="wechat-input-bar__icon-text wechat-input-bar__icon-text--keyboard">{{ t('chat.keyboardIconText') }}</text>
           </view>
 
           <!-- 文字模式：输入框 -->
@@ -1101,12 +1106,12 @@ function handleVoiceStateChange(recording: boolean) {
             v-model="draft"
             class="wechat-input-bar__input"
             :disabled="isSessionClosed"
-            :placeholder="isSessionClosed ? '会话已结束' : (quoteReply ? '输入回复...' : '输入消息...')"
+            :placeholder="isSessionClosed ? t('chat.inputPlaceholderClosed') : (quoteReply ? t('chat.inputPlaceholderReply') : t('chat.inputPlaceholderMessage'))"
             :adjust-position="true"
             @focus="onInputFocus"
             @blur="onInputBlur"
             @input="onDraftChange"
-            @keyboardheightchange="onKeyboardHeightChange" aria-label="isSessionClosed ? '会话已结束' : (quoteReply ? '输入回复...' : '输入消息...')"
+            @keyboardheightchange="onKeyboardHeightChange" :aria-label="isSessionClosed ? t('chat.inputPlaceholderClosed') : (quoteReply ? t('chat.inputPlaceholderReply') : t('chat.inputPlaceholderMessage'))"
           />
 
           <!-- 语音模式：按住说话按钮（使用 VoiceRecorder 组件） -->
@@ -1143,14 +1148,14 @@ function handleVoiceStateChange(recording: boolean) {
             hover-stay-time="120"
             @tap="onSend"
           >
-            <text class="wechat-input-bar__send-text">发送</text>
+            <text class="wechat-input-bar__send-text">{{ t('chat.send') }}</text>
           </view>
         </view>
 
         <!-- 输入框空闲提示（停留 5 秒未输入时展示） -->
         <view v-if="showIdleIcebreakerHint && shouldShowIcebreakers" class="idle-hint">
           <SafeImage :src="iconSrc.heartSignal" custom-class="idle-hint__icon" mode="aspectFit" />
-          <text class="idle-hint__text">不知道说什么？试试上面的破冰话题吧</text>
+          <text class="idle-hint__text">{{ t('chat.idleIcebreakerHint') }}</text>
         </view>
 
         <!-- 临时会话操作按钮（保留同意交换/结束会话入口） -->
@@ -1161,7 +1166,7 @@ function handleVoiceStateChange(recording: boolean) {
             hover-stay-time="120"
             @tap="handleAcceptExchange"
           >
-            <text class="temp-action-btn__text">同意交换</text>
+            <text class="temp-action-btn__text">{{ t('chat.acceptExchangeBtn') }}</text>
           </view>
           <view
             class="temp-action-btn temp-action-btn--danger press-feedback"
@@ -1169,7 +1174,7 @@ function handleVoiceStateChange(recording: boolean) {
             hover-stay-time="120"
             @tap="handleEndSession"
           >
-            <text class="temp-action-btn__text temp-action-btn__text--danger">结束会话</text>
+            <text class="temp-action-btn__text temp-action-btn__text--danger">{{ t('chat.endSessionBtn') }}</text>
           </view>
         </view>
       </template>
@@ -1177,9 +1182,8 @@ function handleVoiceStateChange(recording: boolean) {
 
     <!--
       长按菜单遮罩：遮罩点击关闭，内容区阻止冒泡（P2 弹窗遮罩点击关闭）。
-      Task 1.1.7：使用 @tap.stop="noop" 阻止冒泡。
-      uni-app 编译器在 mp-weixin 端会自动将 @tap.stop 编译为 catchtap，
-      实现条件编译效果（mp-weixin 用 catchtap，H5 用 tap.stop）。
+      源码层面直接使用 catchtap="noop" 阻止冒泡：
+      mp-weixin 端 catchtap 原生阻止冒泡；H5 端由外层遮罩 @tap 兜底关闭。
       noop 为空操作 handler，因 mp-weixin 的 catchtap 必须绑定 handler。
     -->
     <view
@@ -1188,11 +1192,11 @@ function handleVoiceStateChange(recording: boolean) {
       @tap="closeLongPressMenu"
       role="dialog"
       aria-modal="true"
-      aria-label="消息操作菜单"
+      :aria-label="t('chat.longPressMenu.ariaLabel')"
     >
       <view
         class="longpress-menu"
-        @tap.stop="noop"
+        catchtap="noop"
       >
         <!-- 复制：将消息正文写入剪贴板（P2 长按复制支持） -->
         <view
@@ -1201,9 +1205,9 @@ function handleVoiceStateChange(recording: boolean) {
           hover-stay-time="120"
           @tap="handleCopyMessage"
           role="button"
-          aria-label="复制该消息"
+          :aria-label="t('chat.longPressMenu.copyAria')"
         >
-          <text class="longpress-menu__text">复制</text>
+          <text class="longpress-menu__text">{{ t('chat.longPressMenu.copy') }}</text>
         </view>
         <view
           class="longpress-menu__item press-feedback"
@@ -1211,9 +1215,9 @@ function handleVoiceStateChange(recording: boolean) {
           hover-stay-time="120"
           @tap="handleQuoteMessage"
           role="button"
-          aria-label="引用该消息"
+          :aria-label="t('chat.longPressMenu.quoteAria')"
         >
-          <text class="longpress-menu__text">引用</text>
+          <text class="longpress-menu__text">{{ t('chat.longPressMenu.quote') }}</text>
         </view>
         <view
           v-if="longPressMenu.isSelf"
@@ -1222,9 +1226,9 @@ function handleVoiceStateChange(recording: boolean) {
           hover-stay-time="120"
           @tap="handleRecallMessage"
           role="button"
-          aria-label="撤回该消息"
+          :aria-label="t('chat.longPressMenu.recallAria')"
         >
-          <text class="longpress-menu__text longpress-menu__text--danger">撤回</text>
+          <text class="longpress-menu__text longpress-menu__text--danger">{{ t('chat.longPressMenu.recall') }}</text>
         </view>
         <view
           class="longpress-menu__item press-feedback"
@@ -1234,7 +1238,7 @@ function handleVoiceStateChange(recording: boolean) {
           role="button"
           :aria-label="t('common.cancel')"
         >
-          <text class="longpress-menu__text">取消</text>
+          <text class="longpress-menu__text">{{ t('common.cancel') }}</text>
         </view>
       </view>
     </view>
@@ -1250,7 +1254,7 @@ function handleVoiceStateChange(recording: boolean) {
     >
       <view
         class="more-menu-sheet"
-        @tap.stop="noop"
+        catchtap="noop"
       >
         <view class="more-menu-sheet__title">
           <text class="more-menu-sheet__title-text">{{ t('chat.moreMenuTitle') }}</text>
@@ -1303,7 +1307,7 @@ function handleVoiceStateChange(recording: boolean) {
   padding: var(--sp-4) var(--sp-6);
   border-radius: var(--r-lg);
   background: linear-gradient(135deg, var(--c-brand-50) 0%, var(--c-romance-50) 100%);
-  border: 1rpx solid var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15)));
+  border: 1rpx solid var(--c-brand-shadow-tint);
   text-align: center;
 }
 
@@ -1373,13 +1377,13 @@ function handleVoiceStateChange(recording: boolean) {
 .wechat-input-bar__icon-img {
   width: 44rpx;
   height: 44rpx;
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary);
   flex-shrink: 0;
 }
 
 /* 录音中状态 */
 .wechat-input-bar__icon-btn--recording {
-  background: var(--c-error, #ef4444);
+  background: var(--c-error);
   transform: scale(1.1);
 }
 
@@ -1392,9 +1396,9 @@ function handleVoiceStateChange(recording: boolean) {
 .wechat-input-bar__recording-pulse {
   width: 16rpx;
   height: 16rpx;
-  border-radius: 50%;
-  background: var(--c-neutral-0, #fff);
-  animation: recording-pulse 0.8s ease-in-out infinite;
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-neutral-0);
+  animation: recording-pulse var(--d-spinner, 800ms) ease-in-out infinite;
 }
 
 @keyframes recording-pulse {
@@ -1404,7 +1408,7 @@ function handleVoiceStateChange(recording: boolean) {
 
 .wechat-input-bar__recording-text {
   font-size: 22rpx;
-  color: var(--c-neutral-0, #fff);
+  color: var(--c-neutral-0);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -1440,7 +1444,7 @@ function handleVoiceStateChange(recording: boolean) {
 
 /* 发送按钮高亮状态（输入框非空时） */
 .wechat-input-bar__send--active {
-  background: var(--c-brand-600, #22c55e);
+  background: var(--c-brand-600);
   box-shadow: var(--s-brand-md);
 }
 
@@ -1457,8 +1461,8 @@ function handleVoiceStateChange(recording: boolean) {
 }
 
 .wechat-input-bar__voice-hold--recording {
-  background: var(--c-error, #ef4444);
-  border-color: var(--c-error, #ef4444);
+  background: var(--c-error);
+  border-color: var(--c-error);
 }
 
 .wechat-input-bar__voice-hold-text {
@@ -1524,9 +1528,9 @@ function handleVoiceStateChange(recording: boolean) {
   padding: var(--sp-3) var(--sp-5);
   margin-top: var(--sp-2);
   border-radius: var(--r-md);
-  background: linear-gradient(135deg, var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63, 207, 142, 0.05))), var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.03))));
-  border: 1rpx solid var(--c-location-bg, var(--c-location-bg, rgba(63, 207, 142, 0.1)));
-  animation: idle-fade-in 0.4s ease;
+  background: linear-gradient(135deg, var(--c-brand-bg-tint), var(--c-romance-bg-tint));
+  border: 1rpx solid var(--c-location-bg);
+  animation: idle-fade-in var(--d-bounce, 400ms) ease;
 }
 
 .idle-hint__icon {
@@ -1606,7 +1610,7 @@ function handleVoiceStateChange(recording: boolean) {
   border-radius: var(--r-md);
   background: linear-gradient(135deg, var(--c-romance-50) 0%, var(--c-bg-romance) 100%);
   border-left: 4rpx solid var(--c-romance-500);
-  animation: slide-up-in 0.2s ease;
+  animation: slide-up-in var(--d-normal, 200ms) ease;
 }
 
 .quote-reply-bar__content {
@@ -1645,7 +1649,7 @@ function handleVoiceStateChange(recording: boolean) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--c-black-overlay-mid, var(--c-black-overlay-mid, rgba(0, 0, 0, 0.4)));
+  background: var(--c-black-overlay-mid);
   z-index: 999;
   display: flex;
   align-items: center;
@@ -1661,13 +1665,13 @@ function handleVoiceStateChange(recording: boolean) {
   overflow: hidden;
   min-width: 240rpx;
   box-shadow: var(--s-lg);
-  animation: modal-scale-in 0.2s ease;
+  animation: modal-scale-in var(--d-normal, 200ms) ease;
 }
 
 .longpress-menu__item {
   padding: var(--sp-7) var(--sp-8);
   text-align: center;
-  transition: background 0.15s ease;
+  transition: background var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -1679,7 +1683,7 @@ function handleVoiceStateChange(recording: boolean) {
 
 /* #ifdef H5 */
 .longpress-menu__item--danger:active {
-  background: var(--c-error-bg-tint, var(--c-error-bg-tint, rgba(229, 69, 77, 0.08)));
+  background: var(--c-error-bg-tint);
 }
 /* #endif */
 
@@ -1700,7 +1704,7 @@ function handleVoiceStateChange(recording: boolean) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--c-black-overlay-mid, rgba(0, 0, 0, 0.4));
+  background: var(--c-black-overlay-mid);
   z-index: 999;
   display: flex;
   align-items: flex-end;
@@ -1715,12 +1719,12 @@ function handleVoiceStateChange(recording: boolean) {
 
 .more-menu-sheet {
   width: 100%;
-  background: var(--c-bg-container, #ffffff);
-  border-top-left-radius: 32rpx;
-  border-top-right-radius: 32rpx;
+  background: var(--c-bg-container);
+  border-top-left-radius: var(--r-xl, 32rpx);
+  border-top-right-radius: var(--r-xl, 32rpx);
   padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom, 0));
   box-sizing: border-box;
-  animation: more-menu-slide-up 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: more-menu-slide-up var(--d-slow, 240ms) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes more-menu-slide-up {
@@ -1731,13 +1735,13 @@ function handleVoiceStateChange(recording: boolean) {
 .more-menu-sheet__title {
   text-align: center;
   padding-bottom: 24rpx;
-  border-bottom: 1rpx solid var(--c-border-light, #e5e7eb);
+  border-bottom: 1rpx solid var(--c-border-light);
 }
 
 .more-menu-sheet__title-text {
   font-size: var(--fs-md, 28rpx);
   font-weight: 600;
-  color: var(--c-text-primary, #1a1a2e);
+  color: var(--c-text-primary);
 }
 
 .more-menu-sheet__grid {
@@ -1756,26 +1760,26 @@ function handleVoiceStateChange(recording: boolean) {
   width: 144rpx;
   padding: 16rpx 0;
   border-radius: var(--r-md, 16rpx);
-  transition: background 160ms ease-out;
+  transition: background var(--d-fast, 160ms) ease-out;
 }
 
 .more-menu-item__icon {
   width: 96rpx;
   height: 96rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .more-menu-item__icon--red {
-  background: linear-gradient(135deg, #FF7A8A 0%, #EC4899 100%);
-  box-shadow: var(--s-romance, 0 4rpx 16rpx rgba(236, 72, 153, 0.25));
+  background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
+  box-shadow: var(--s-romance);
 }
 
 .more-menu-item__icon--blue {
-  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
-  box-shadow: var(--s-info-soft, 0 4rpx 16rpx rgba(59, 130, 246, 0.25));
+  background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
+  box-shadow: var(--s-info-soft);
 }
 
 .more-menu-item__icon-emoji {
@@ -1785,7 +1789,7 @@ function handleVoiceStateChange(recording: boolean) {
 
 .more-menu-item__label {
   font-size: var(--fs-sm, 24rpx);
-  color: var(--c-text-primary, #1a1a2e);
+  color: var(--c-text-primary);
   line-height: 1.4;
 }
 
@@ -1793,16 +1797,16 @@ function handleVoiceStateChange(recording: boolean) {
   margin-top: 16rpx;
   height: 88rpx;
   border-radius: var(--r-md, 16rpx);
-  background: var(--c-bg-hover, #f5f5f7);
+  background: var(--c-bg-hover);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 160ms ease-out;
+  transition: opacity var(--d-fast, 160ms) ease-out;
 }
 
 .more-menu-sheet__cancel-text {
   font-size: var(--fs-md, 28rpx);
-  color: var(--c-text-primary, #1a1a2e);
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 

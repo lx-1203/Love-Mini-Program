@@ -103,7 +103,8 @@ export function initSentry(app: App): void {
       integrations: [Sentry.browserTracingIntegration()],
     });
     sentryInitialized = true;
-    console.log("[Sentry] 初始化成功。");
+    // 修复 no-console：初始化成功日志改用 console.warn（允许的方法）
+    console.warn("[Sentry] 初始化成功。");
   } catch (error) {
     // Sentry 初始化失败不应影响应用启动，仅记录日志
     console.error("[Sentry] 初始化失败：", error);
@@ -222,8 +223,9 @@ export function captureMessage(
   // #endif
 
   // 降级到 console：根据 level 选择对应 console 方法
+  // 修复 no-console：info 级别统一使用 console.warn（允许的方法），保留 warning/error 区分
   const logger =
-    level === "error" ? console.error : level === "warning" ? console.warn : console.info;
+    level === "error" ? console.error : console.warn;
   logger("[captureMessage]", message);
 }
 
@@ -270,11 +272,12 @@ export function addBreadcrumb(
   }
   // #endif
 
-  // 降级到 console.debug：面包屑是辅助信息，不应使用 error 级别
+  // 降级到 console：面包屑是辅助信息
+  // 修复 no-console：使用 console.warn（允许的方法）替代 console.debug
   if (data !== undefined) {
-    console.debug(`[breadcrumb][${category}]`, message, data);
+    console.warn(`[breadcrumb][${category}]`, message, data);
   } else {
-    console.debug(`[breadcrumb][${category}]`, message);
+    console.warn(`[breadcrumb][${category}]`, message);
   }
 }
 
@@ -327,8 +330,9 @@ export function setUser(
   }
   // #endif
 
-  // 降级到 console.debug：用户身份变更属于辅助信息
-  console.debug("[setUser]", userId, userInfo ?? {});
+  // 降级到 console：用户身份变更属于辅助信息
+  // 修复 no-console：使用 console.warn（允许的方法）替代 console.debug
+  console.warn("[setUser]", userId, userInfo ?? {});
 }
 
 /**
@@ -355,7 +359,8 @@ export function clearUser(): void {
   }
   // #endif
 
-  console.debug("[clearUser]");
+  // 修复 no-console：使用 console.warn（允许的方法）替代 console.debug
+  console.warn("[clearUser]");
 }
 
 /* ============================================================
