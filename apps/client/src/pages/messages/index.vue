@@ -533,7 +533,8 @@ function handleSearchClick() {
 function handleSessionLongPress(sessionId: string) {
   const session = messagesStore.sessions.find((s) => s.id === sessionId);
   if (!session) return;
-  const pinLabel = session.pinned ? t("messages.unpinSession") : t("messages.pinSession");
+  const wasPinned = session.pinned;
+  const pinLabel = wasPinned ? t("messages.unpinSession") : t("messages.pinSession");
   uni.showActionSheet({
     itemList: [pinLabel, t("common.delete")],
     itemColor: "#333333",
@@ -541,7 +542,7 @@ function handleSessionLongPress(sessionId: string) {
       if (res.tapIndex === 0) {
         messagesStore.toggleSessionPin(sessionId);
         uni.showToast({
-          title: session.pinned ? t("messages.unpinned") : t("messages.pinned"),
+          title: wasPinned ? t("messages.unpinned") : t("messages.pinned"),
           icon: "none",
         });
         return;

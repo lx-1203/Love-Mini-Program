@@ -796,11 +796,13 @@ export const useMessagesStore = defineStore("messages", {
      *
      * @param sessionId 待删除的会话 ID
      */
-    /** Phase 4.3 验收 · 置顶/取消置顶会话 */
+    /** Phase 4.3 验收 · 置顶/取消置顶会话（委托 setSessionPinned，真实模式同步后端） */
     toggleSessionPin(sessionId: string) {
       const session = this.sessions.find((s) => s.id === sessionId);
       if (session) {
-        session.pinned = !session.pinned;
+        void this.setSessionPinned(sessionId, !session.pinned).catch(() => {
+          // 失败时由 setSessionPinned 设置 errorMessage，此处不再重复处理
+        });
       }
     },
 
