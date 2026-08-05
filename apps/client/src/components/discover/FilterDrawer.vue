@@ -642,7 +642,7 @@ defineExpose({ onContentTap });
     <!-- 抽屉内容（向上滑入动画，catchtap 阻止冒泡避免点击内容区误关闭） -->
     <view
       class="filter-drawer__panel"
-      catchtap="onContentTap"
+  @tap.stop="onContentTap"
     >
       <!-- 顶部标题栏 -->
       <view class="filter-drawer__header">

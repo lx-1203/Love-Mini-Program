@@ -6,7 +6,8 @@ import { initSentry } from "./services/sentry";
 import i18n from "./i18n";
 // Phase R1：AbortController polyfill（mp-weixin 基础库无原生实现）
 // 注意：只 import 函数，不调用 patchDeprecatedApi（wx 相关逻辑仍走 MP-WEIXIN 条件分支）
-import { installAbortControllerPolyfill } from "./compat";
+import { installAbortControllerPolyfill, installUrlSearchParamsPolyfill } from "./compat";
+import { useThemeStore } from "./stores/theme";
 import { reportGlobalError } from "./utils/global-error";
 
 /** 全局错误监听器是否已注册（避免重复注册） */
@@ -88,9 +89,13 @@ export function createApp() {
   // 该模块可在任意平台安全 import（内部幂等：已有原生实现则跳过）。
   // 注：compat 模块顶层仅导出函数，无副作用，不触发 wx 访问。
   installAbortControllerPolyfill();
-
+  // 收尾轮：注入 URLSearchParams polyfill（mp-weixin 无原生实现，
+  // stores/village/api.ts 与 stores/profile.ts、feedback/history.vue 直接使用）
+  installUrlSearchParamsPolyfill();
+  // 收尾轮：深色模式初始化（恢复上次选择并应用 H5 data-theme，在 pinia 创建后执行）
   const app = createSSRApp(App);
   const pinia = createPinia();
+  useThemeStore(pinia).init();
 
   app.use(pinia);
   app.use(gsapPlugin);

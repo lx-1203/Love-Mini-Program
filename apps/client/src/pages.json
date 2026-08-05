@@ -275,6 +275,12 @@
       }
     },
     {
+      "path": "pages/profile/tasks",
+      "style": {
+        "navigationBarTitleText": "任务中心"
+      }
+    },
+    {
       "path": "pages/settings/dnd",
       "style": {
         "navigationBarTitleText": "免打扰"
@@ -284,6 +290,30 @@
       "path": "pages/feedback/history",
       "style": {
         "navigationBarTitleText": "反馈历史"
+      }
+    },
+    {
+      "path": "pages/activities/detail",
+      "style": {
+        "navigationBarTitleText": "活动详情"
+      }
+    },
+    {
+      "path": "pages/love-center/nearby",
+      "style": {
+        "navigationBarTitleText": "附近的人"
+      }
+    },
+    {
+      "path": "pages/love-center/mbti",
+      "style": {
+        "navigationBarTitleText": "MBTI 人格测试"
+      }
+    },
+    {
+      "path": "pages/love-center/consulting",
+      "style": {
+        "navigationBarTitleText": "恋爱咨询课程"
       }
     }
   ],

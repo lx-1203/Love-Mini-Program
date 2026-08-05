@@ -5,6 +5,7 @@
 import { ref, computed, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
+import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import BaseTabs from "../../components/common/BaseTabs.vue";
@@ -158,12 +159,13 @@ function toggleCollect(postId: string) {
 }
 
 function goToPost() {
-  openAppPath("/subpackages/circle/post/index");
+  openAppPath("/pages/circles/post-topic");
 }
 
-/** 帖子卡片点击 */
-function handleCardTap(_postId: string) {
-  uni.showToast({ title: t("circle.detailDeveloping"), icon: "none" });
+/** 帖子卡片点击（收尾轮：跳转村口对应帖子详情，不再 toast 占位；detail 页消费 query.id） */
+function handleCardTap(postId: string) {
+  lightHaptic();
+  openAppPath(`/pages/village/detail?id=${encodeURIComponent(postId)}`);
 }
 
 /** 分享按钮处理 */
@@ -224,7 +226,7 @@ defineExpose({ toggleLike, toggleFollow, toggleCollect, handleShare });
             <view
               class="post-card__follow"
               :class="{ 'post-card__follow--active': post.isFollowing }"
-              catchtap="toggleFollow(post.id)"
+  @tap.stop="toggleFollow(post.id)"
             >
               <text class="post-card__follow-text">{{ post.isFollowing ? $t('circle.followedBtn') : $t('circle.followBtn') }}</text>
             </view>

@@ -30,5 +30,11 @@ export const CHECKIN_HOT_TOPIC_COUNT = 3;
 /** 签到解锁新入圈用户数量（mock 模式默认值） */
 export const CHECKIN_NEW_USER_COUNT = 2;
 
+/** 每次签到获得的积分（Task D · 签到积分体系，mock 与后端缺省值） */
+export const CHECKIN_POINTS_EARNED = 5;
+
+/** mock 模式初始积分余额 */
+export const MOCK_POINTS_BALANCE = 100;
+
 /** 临时会话默认时长（毫秒）：24 小时 */
 export const TEMP_SESSION_DURATION_MS = 24 * 60 * 60 * 1000;

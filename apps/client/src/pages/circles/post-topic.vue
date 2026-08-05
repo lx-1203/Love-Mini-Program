@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 发布话题页
  * 支持标题输入、内容输入、可选图片上传
@@ -21,6 +21,88 @@ const content = ref("");
 const images = ref<string[]>([]);
 /** 当前兴趣圈 ID */
 const circleId = ref("");
+
+/* ========== Task B5：发帖编辑页增强 ========== */
+/** 发布目标（校园圈 / 兴趣圈） */
+const publishTarget = ref<"campus" | "interest">("campus");
+/** 兴趣圈模式下选择的兴趣分类 ID（如 study/sports/music/...） */
+const interestCategory = ref("");
+/** 已选话题标签（存 i18n key，最多 MAX_TAGS 个） */
+const selectedTags = ref<string[]>([]);
+/** 是否标记为喜爱内容 */
+const favoriteEnabled = ref(false);
+/** 话题标签最大选择数 */
+const MAX_TAGS = 3;
+
+/** 预设话题标签（i18n key 列表，文案统一走 vue-i18n） */
+const PRESET_TAG_KEYS = [
+  "circle.tagDating",
+  "circle.tagStudy",
+  "circle.tagTeamUp",
+  "circle.tagTreehole",
+  "circle.tagShare",
+  "circle.tagHelp",
+  "circle.tagRant",
+];
+
+/** 兴趣分类映射（与圈子 Tab 兴趣分类宫格保持一致） */
+const INTEREST_CATEGORY_KEY_MAP: Array<{ id: string; key: string }> = [
+  { id: "study", key: "circle.catStudy" },
+  { id: "sports", key: "circle.catSports" },
+  { id: "music", key: "circle.catMusic" },
+  { id: "movie", key: "circle.catMovie" },
+  { id: "travel", key: "circle.catTravel" },
+  { id: "game", key: "circle.catGame" },
+  { id: "food", key: "circle.catFood" },
+  { id: "reading", key: "circle.catReading" },
+];
+
+/** 预设标签展示列表（已翻译文案） */
+const presetTagList = computed(() => PRESET_TAG_KEYS.map((key) => ({ key, label: t(key) })));
+
+/** 兴趣分类展示列表（已翻译文案） */
+const interestCategoryList = computed(() =>
+  INTEREST_CATEGORY_KEY_MAP.map((cat) => ({ id: cat.id, name: t(cat.key) }))
+);
+
+/** 当前发布目标圈子名称（校园圈 / 兴趣分类名） */
+const targetName = computed(() => {
+  if (publishTarget.value === "campus") return t("circle.postTopicTargetCampus");
+  const cat = interestCategoryList.value.find((c) => c.id === interestCategory.value);
+  return cat ? cat.name : t("circle.postTopicCategoryHint");
+});
+
+/** 切换发布目标（切回校园圈时清空兴趣分类选择） */
+function selectPublishTarget(target: "campus" | "interest") {
+  publishTarget.value = target;
+  if (target === "campus") {
+    interestCategory.value = "";
+  }
+}
+
+/** 选择兴趣分类 */
+function selectInterestCategory(id: string) {
+  interestCategory.value = id;
+}
+
+/** 切换话题标签（最多 MAX_TAGS 个，超出提示） */
+function toggleTag(tagKey: string) {
+  const idx = selectedTags.value.indexOf(tagKey);
+  if (idx >= 0) {
+    selectedTags.value.splice(idx, 1);
+    return;
+  }
+  if (selectedTags.value.length >= MAX_TAGS) {
+    uni.showToast({ title: t("circle.postTopicMaxTags", { n: MAX_TAGS }), icon: "none" });
+    return;
+  }
+  selectedTags.value.push(tagKey);
+}
+
+/** 切换「喜爱」开关 */
+function toggleFavorite() {
+  favoriteEnabled.value = !favoriteEnabled.value;
+}
 
 /** 最大字数 */
 const MAX_LENGTH = 500;
@@ -127,10 +209,20 @@ async function submitTopic() {
   }
 
   try {
-    await circleStore.createTopic(circleId.value, {
+    // Task B5：解析目标圈子 ID —— 优先使用入口参数 circleId；
+    // 否则按发布目标推导（兴趣圈 → 兴趣分类 ID；校园圈 → 兜底 "campus-circle"）
+    const resolvedCircleId =
+      circleId.value ||
+      (publishTarget.value === "interest" && interestCategory.value
+        ? interestCategory.value
+        : "campus-circle");
+
+    await circleStore.createTopic(resolvedCircleId, {
       title: title.value.trim(),
       content: content.value.trim(),
       images: images.value,
+      tags: selectedTags.value,
+      favorite: favoriteEnabled.value,
     });
 
     uni.showToast({ title: t("circle.postTopicPublishSuccess"), icon: "success" });
@@ -204,6 +296,96 @@ circleId.value = options.circleId || "";
         <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
           <text>{{ currentLength }}/{{ MAX_LENGTH }}</text>
         </view>
+      </view>
+
+      <!-- ===== 发布到圈子选择器（Task B5） ===== -->
+      <view class="target-section">
+        <text class="section-label">{{ t('circle.postTopicPublishTo') }}</text>
+        <view class="target-options" role="radiogroup">
+          <view
+            class="target-chip press-feedback"
+            :class="{ 'target-chip--active': publishTarget === 'campus' }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="radio"
+            :aria-checked="publishTarget === 'campus'"
+            :aria-label="t('circle.postTopicTargetCampusAria')"
+            @tap="selectPublishTarget('campus')"
+          >
+            <text class="target-chip__text">{{ t('circle.postTopicTargetCampus') }}</text>
+          </view>
+          <view
+            class="target-chip press-feedback"
+            :class="{ 'target-chip--active': publishTarget === 'interest' }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="radio"
+            :aria-checked="publishTarget === 'interest'"
+            :aria-label="t('circle.postTopicTargetInterestAria')"
+            @tap="selectPublishTarget('interest')"
+          >
+            <text class="target-chip__text">{{ t('circle.postTopicTargetInterest') }}</text>
+          </view>
+        </view>
+
+        <!-- 兴趣圈模式：兴趣分类选择 -->
+        <view v-if="publishTarget === 'interest'" class="category-options">
+          <view
+            v-for="cat in interestCategoryList" :key="cat.id"
+            class="category-chip press-feedback"
+            :class="{ 'category-chip--active': interestCategory === cat.id }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('circle.postTopicTagAria', { label: cat.name })"
+            :aria-pressed="interestCategory === cat.id"
+            @tap="selectInterestCategory(cat.id)"
+          >
+            <text class="category-chip__text">{{ cat.name }}</text>
+          </view>
+        </view>
+
+        <!-- 当前发布目标圈子名称 -->
+        <view class="target-name">
+          <text class="target-name__text">{{ t('circle.postTopicSelectedTarget', { name: targetName }) }}</text>
+        </view>
+      </view>
+
+      <!-- ===== 话题标签多选（Task B5，最多 3 个） ===== -->
+      <view class="tags-section">
+        <view class="tags-section__header">
+          <text class="section-label">{{ t('circle.postTopicTagsLabel') }}</text>
+          <text class="tags-section__hint">{{ t('circle.postTopicTagsHint', { n: MAX_TAGS }) }}</text>
+        </view>
+        <view class="tags-list">
+          <view
+            v-for="tag in presetTagList" :key="tag.key"
+            class="tag-chip press-feedback"
+            :class="{ 'tag-chip--active': selectedTags.includes(tag.key) }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('circle.postTopicTagAria', { label: tag.label })"
+            :aria-pressed="selectedTags.includes(tag.key)"
+            @tap="toggleTag(tag.key)"
+          >
+            <text class="tag-chip__text">{{ tag.label }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- ===== 喜爱标签开关（Task B5） ===== -->
+      <view class="favorite-section">
+        <view class="favorite-section__left">
+          <text class="favorite-section__title">{{ t('circle.postTopicFavoriteLabel') }}</text>
+          <text class="favorite-section__desc">{{ t('circle.postTopicFavoriteDesc') }}</text>
+        </view>
+        <switch
+          :checked="favoriteEnabled"
+          color="#3FCF8E"
+          @change="toggleFavorite"
+          :aria-label="t('circle.postTopicFavoriteLabel')"
+        />
       </view>
 
       <!-- 图片上传区 -->
@@ -417,6 +599,178 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .content-count--over {
   color: $error;
+}
+
+/* ========== Task B5：发布到圈子选择器 ========== */
+.target-section {
+  padding: 28rpx;
+  background: $white;
+  border-radius: var(--r-xl, 24rpx);
+  margin-bottom: 20rpx;
+  box-shadow: $card-soft-shadow;
+}
+
+.target-options {
+  display: flex;
+  gap: 16rpx;
+}
+
+.target-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 0;
+  border-radius: var(--r-lg, 16rpx);
+  border: 2rpx solid $border-light;
+  background: $bg-page;
+  transition: all var(--d-fast, 120ms) ease;
+}
+
+.target-chip--active {
+  background: $green-light;
+  border-color: $green-primary;
+}
+
+.target-chip__text {
+  font-size: var(--fs-md, 26rpx);
+  color: $text-secondary;
+  font-weight: 500;
+}
+
+.target-chip--active .target-chip__text {
+  color: $green-primary;
+  font-weight: 700;
+}
+
+.category-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.category-chip {
+  padding: 12rpx 24rpx;
+  border-radius: var(--r-full, 9999rpx);
+  border: 2rpx solid $border-light;
+  background: $bg-page;
+  transition: all var(--d-fast, 120ms) ease;
+}
+
+.category-chip--active {
+  background: $green-light;
+  border-color: $green-primary;
+}
+
+.category-chip__text {
+  font-size: var(--fs-sm, 22rpx);
+  color: $text-secondary;
+  font-weight: 500;
+}
+
+.category-chip--active .category-chip__text {
+  color: $green-primary;
+  font-weight: 700;
+}
+
+.target-name {
+  margin-top: 20rpx;
+  padding: 16rpx 20rpx;
+  border-radius: var(--r-lg, 16rpx);
+  background: $bg-page;
+}
+
+.target-name__text {
+  font-size: var(--fs-md, 26rpx);
+  color: $green-primary;
+  font-weight: 600;
+}
+
+/* ========== Task B5：话题标签多选 ========== */
+.tags-section {
+  padding: 28rpx;
+  background: $white;
+  border-radius: var(--r-xl, 24rpx);
+  margin-bottom: 20rpx;
+  box-shadow: $card-soft-shadow;
+}
+
+.tags-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.tags-section__header .section-label {
+  margin-bottom: 0;
+}
+
+.tags-section__hint {
+  font-size: var(--fs-sm, 22rpx);
+  color: $text-tertiary;
+}
+
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.tag-chip {
+  padding: 12rpx 24rpx;
+  border-radius: var(--r-full, 9999rpx);
+  border: 2rpx solid $border-light;
+  background: $bg-page;
+  transition: all var(--d-fast, 120ms) ease;
+}
+
+.tag-chip--active {
+  background: $green-light;
+  border-color: $green-primary;
+}
+
+.tag-chip__text {
+  font-size: var(--fs-md, 26rpx);
+  color: $text-secondary;
+  font-weight: 500;
+}
+
+.tag-chip--active .tag-chip__text {
+  color: $green-primary;
+  font-weight: 700;
+}
+
+/* ========== Task B5：喜爱标签开关 ========== */
+.favorite-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx;
+  background: $white;
+  border-radius: var(--r-xl, 24rpx);
+  margin-bottom: 20rpx;
+  box-shadow: $card-soft-shadow;
+}
+
+.favorite-section__left {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.favorite-section__title {
+  font-size: var(--fs-md, 26rpx);
+  color: $text-primary;
+  font-weight: 600;
+}
+
+.favorite-section__desc {
+  font-size: var(--fs-sm, 22rpx);
+  color: $text-tertiary;
 }
 
 /* ========== 图片上传区 ========== */

@@ -191,8 +191,12 @@ page {
 // ============================================================
 
 // ---------- 自动模式：跟随系统偏好 ----------
+// 收尾轮：选择器追加 H5 端 uni-page/uni-page-body（page 元素仅 mp-weixin 存在）
+// review 修复：排除 [data-theme="light"]，保证手动浅色优先级高于系统深色
 @media (prefers-color-scheme: dark) {
-  page {
+  page:not([data-theme="light"]),
+  html:not([data-theme="light"]) uni-page,
+  html:not([data-theme="light"]) uni-page-body {
     // 背景色：深色模式使用深中性色
     --color-bg-page: #0E1116;
     --color-bg-card: #1A1F26;
@@ -256,7 +260,10 @@ page {
 // ---------- 手动模式：用户主动切换（优先级更高） ----------
 // 通过设置 page 元素的 data-theme 属性为 "dark" 启用
 // H5 端可在 <html> 或 <body> 上设置 data-theme="dark"
-page[data-theme="dark"] {
+// 收尾轮：追加 H5 选择器（html[data-theme] 前缀 + uni-page/uni-page-body）
+page[data-theme="dark"],
+html[data-theme="dark"] uni-page,
+html[data-theme="dark"] uni-page-body {
   // 背景色
   --color-bg-page: #0E1116;
   --color-bg-card: #1A1F26;

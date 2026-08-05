@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 寻觅页 - 卡片推荐 + 签到入口
  * 展示个性化用户卡片推荐，支持滑动浏览和每日签到
@@ -12,7 +12,7 @@ import { useActivityStore } from "../../stores/activity";
 import { useCheckInStore } from "../../stores/checkin";
 import { useDailyQuestionStore } from "../../stores/daily-question";
 import { useSocialProgressStore } from "../../stores/social-progress";
-import { openAppPath } from "../../utils/navigation";
+import { openAppPath, switchTabWithQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import CardSwiper from "../../components/discover/CardSwiper.vue";
 import FilterDrawer from "../../components/discover/FilterDrawer.vue";
@@ -20,6 +20,8 @@ import SafeImage from "../../components/common/SafeImage.vue";
 import HeartParticles from "../../components/common/HeartParticles.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
+// Task F：全局发帖悬浮按钮组件
+import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic } from "../../utils/haptic";
 import { showErrorToast } from "../../utils/error-toast";
@@ -40,6 +42,10 @@ const icons = {
   location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
   plus: IMAGE_PATHS.ICONS_EMOJI.PLUS,
   close: IMAGE_PATHS.ICONS_COMMON.CLOSE,
+  // Task D：签到积分 → 商城入口图标（礼物）
+  gift: IMAGE_PATHS.ICONS_EMOJI.GIFT,
+  // 任务 E4：设置入口（齿轮）
+  settings: IMAGE_PATHS.ICONS_COMMON.SETTINGS_GEAR_SVG,
 } as const;
 
 const discoverStore = useDiscoverStore();
@@ -61,6 +67,11 @@ const activityStore = useActivityStore();
 const checkInStore = useCheckInStore();
 const dailyQuestionStore = useDailyQuestionStore();
 const socialProgressStore = useSocialProgressStore();
+
+/** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
+function goToPublishTopic() {
+  openAppPath('/pages/circles/post-topic');
+}
 
 /**
  * 匹配成功跳转锁，避免快速操作触发重复跳转
@@ -481,6 +492,19 @@ function onParticlesDone() {
   isAnimating.value = false;
 }
 
+/**
+ * 跳转商城页（Task D：签到积分入口 / 积分兑换提示）。
+ * 使用 catchtap 绑定（避免冒泡），点击前触发轻振动反馈。
+ */
+function goShop() {
+  try {
+    lightHaptic();
+  } catch (_e) {
+    // 振动反馈失败时静默降级
+  }
+  openAppPath("/pages/shop/index");
+}
+
 onMounted(() => {
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
   addBreadcrumb("navigation", "page_enter", { url: "/pages/discover/index" });
@@ -510,7 +534,7 @@ watch(
 
 // 修复（严格模式 noUnusedLocals）：clearSearch 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
-defineExpose({ clearSearch });
+defineExpose({ clearSearch, goShop });
 </script>
 
 <template>
@@ -531,6 +555,10 @@ defineExpose({ clearSearch });
         <view class="discover-header__count-chip">
           <SafeImage :src="icons.match" custom-class="discover-header__count-icon" mode="aspectFit" />
           <text class="discover-header__count">{{ t('discover.remainingTimes', { n: remainingCount }) }}</text>
+        </view>
+        <!-- 任务 E4：设置入口（齿轮图标，最小插入） -->
+        <view class="discover-header__settings press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.settingsAria')" @tap="openAppPath('/pages/settings/index')">
+          <SafeImage :src="icons.settings" custom-class="discover-header__settings-icon" mode="aspectFit" />
         </view>
       </view>
     </view>
@@ -663,7 +691,8 @@ defineExpose({ clearSearch });
       <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CHECK" custom-class="checkin-success__icon" mode="aspectFit" />
       <view class="checkin-success__info">
         <text class="checkin-success__title">{{ t('discover.checkinSuccess') }}</text>
-        <text class="checkin-success__count">{{ checkInStore.extraRecommendationsText }}</text>
+        <!-- Task D：展示本次签到获得积分，保留连续签到天数展示 -->
+        <text class="checkin-success__count">{{ t('discover.checkinPointsEarned', { n: checkInStore.pointsEarned }) }}</text>
         <text v-if="checkInStore.consecutiveDaysText" class="checkin-success__streak">
           {{ checkInStore.consecutiveDaysText }}
         </text>
@@ -672,8 +701,45 @@ defineExpose({ clearSearch });
       <HeartParticles :visible="showParticles" @done="onParticlesDone" />
     </view>
 
+    <!-- 签到成功卡片下方：积分可在商城兑换权益提示（Task D） -->
+    <view
+      v-if="checkInStore.showSuccessAnimation"
+      class="checkin-points-hint press-feedback"
+      hover-class="press-feedback--active"
+      hover-stay-time="120"
+      role="button"
+      :aria-label="t('discover.pointsHint')"
+  @tap.stop="goShop"
+    >
+      <image class="checkin-points-hint__icon" :src="icons.gift" mode="aspectFit" alt="" lazy-load />
+      <text class="checkin-points-hint__text">{{ t('discover.pointsHint') }}</text>
+      <text class="checkin-points-hint__arrow">&rsaquo;</text>
+    </view>
+
     <!-- 签到权益卡片：签到成功后展示权益入口（CSS 动画淡入，3 秒后由 success 切换过来更平滑） -->
     <view v-if="checkInStore.checkedIn && !checkInStore.showSuccessAnimation" class="benefits-section animate-fade card-stagger">
+      <!-- 收尾轮改造：权益卡横向滚动单行（紧凑入口），把垂直空间还给中间卡片 -->
+      <scroll-view scroll-x class="benefits-scroll" :show-scrollbar="false">
+        <view class="benefits-row">
+        <!-- Task D：我的积分入口卡片（点击跳转商城） -->
+        <view
+          class="benefit-card card-base benefit-card--points press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('discover.myPointsAria', { n: checkInStore.pointsBalance })"
+  @tap.stop="goShop"
+        >
+          <view class="benefit-card__left">
+            <SafeImage :src="icons.gift" custom-class="benefit-card__icon" mode="aspectFit" />
+            <view class="benefit-card__info">
+              <text class="benefit-card__title">{{ t('discover.myPoints', { n: checkInStore.pointsBalance }) }}</text>
+              <text class="benefit-card__desc">{{ t('discover.pointsHint') }}</text>
+            </view>
+          </view>
+          <text class="benefit-card__arrow">&rsaquo;</text>
+        </view>
+
         <!-- 已签到徽章卡片：签到后展示「已签到」状态 -->
         <view
           class="benefit-card card-base benefit-card--quota press-feedback"
@@ -717,7 +783,7 @@ defineExpose({ clearSearch });
           hover-stay-time="120"
           role="button"
           :aria-label="t('discover.hotTopics')"
-          @tap="openAppPath('/pages/village/index?tab=hot')"
+          @tap="switchTabWithQuery('/pages/village/index', { tab: 'hot' })"
         >
           <view class="benefit-card__left">
             <SafeImage :src="icons.heartSignal" custom-class="benefit-card__icon" mode="aspectFit" />
@@ -748,6 +814,8 @@ defineExpose({ clearSearch });
           </view>
           <text class="benefit-card__arrow">&rsaquo;</text>
         </view>
+        </view>
+      </scroll-view>
     </view>
 
     <!-- 每日一问入口：签到后展示 -->
@@ -875,6 +943,9 @@ defineExpose({ clearSearch });
       <text class="match-overlay__title">{{ t('discover.matchSuccessTitle') }}</text>
       <text class="match-overlay__subtitle">{{ t('discover.matchWithPartner', { name: partnerName }) }}</text>
     </view>
+
+    <!-- Task F：全局发帖悬浮按钮（publish → 发帖编辑页） -->
+    <GlobalPublishFab @publish="goToPublishTopic" />
   </view>
 </template>
 
@@ -987,6 +1058,7 @@ defineExpose({ clearSearch });
 .discover-header__meta {
   display: flex;
   align-items: center;
+  gap: var(--sp-3);
   position: relative;
   z-index: 1;
 }
@@ -1004,6 +1076,24 @@ defineExpose({ clearSearch });
 .discover-header__count-icon {
   width: 28rpx;
   height: 28rpx;
+}
+
+/* 任务 E4：设置入口（齿轮按钮） */
+.discover-header__settings {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-xl);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-border-light);
+}
+
+.discover-header__settings-icon {
+  width: 28rpx;
+  height: 28rpx;
+  color: var(--c-text-secondary);
 }
 
 .discover-header__count {
@@ -1226,61 +1316,71 @@ defineExpose({ clearSearch });
   }
 }
 
-/* ========== 签到卡片 ========== */
+/* ========== 签到卡片（紧凑横条：高度 ≤ 96rpx，减少垂直占用让位卡片区） ========== */
 .checkin-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 var(--sp-7) var(--sp-4);
-  padding: var(--sp-6);
+  margin: 0 var(--sp-7) var(--sp-3);
+  /* 紧凑横条：padding 收缩保证整体高度 ≤ 96rpx */
+  padding: 12rpx 24rpx;
   border-radius: var(--r-xl);
   background: var(--c-gradient-brand);
   box-shadow: var(--s-brand-lg);
   border: none;
+  flex-shrink: 0;
 }
 
 .checkin-card__left {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   flex: 1;
   min-width: 0;
 }
 
 .checkin-card__icon {
-  width: 44rpx;
-  height: 44rpx;
+  width: 36rpx;
+  height: 36rpx;
   flex-shrink: 0;
 }
 
 .checkin-card__info {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
 }
 
 .checkin-card__title {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
   font-weight: 700;
   color: var(--c-text-inverse);
+  flex-shrink: 0;
+  line-height: 1.2;
 }
 
 .checkin-card__desc {
-  font-size: var(--fs-base);
+  font-size: var(--fs-xs);
   color: var(--c-overlay-text-secondary);
+  line-height: 1.2;
+  /* 单行文案：超长省略，避免换行挤压 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .checkin-card__btn {
-  min-width: 160rpx;
-  height: 64rpx;
-  padding: 0 var(--sp-6);
+  min-width: 132rpx;
+  height: 56rpx;
+  padding: 0 var(--sp-4);
   border: 0;
   border-radius: var(--r-full);
   background: var(--c-bg-container);
   color: var(--c-brand-500);
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
   font-weight: 700;
-  line-height: 64rpx;
+  line-height: 56rpx;
   text-align: center;
   flex-shrink: 0;
   transition: opacity var(--d-fast, 120ms) ease;
@@ -1325,26 +1425,26 @@ defineExpose({ clearSearch });
 }
 
 .skeleton--icon {
-  width: 44rpx;
-  height: 44rpx;
+  width: 36rpx;
+  height: 36rpx;
   border-radius: var(--r-full);
   flex-shrink: 0;
 }
 
 .skeleton--title {
-  width: 140rpx;
-  height: 28rpx;
+  width: 120rpx;
+  height: 24rpx;
   margin-bottom: var(--sp-2);
 }
 
 .skeleton--desc {
-  width: 200rpx;
-  height: 22rpx;
+  width: 160rpx;
+  height: 20rpx;
 }
 
 .skeleton--btn {
-  width: 160rpx;
-  height: 64rpx;
+  width: 132rpx;
+  height: 56rpx;
   border-radius: var(--r-full);
   flex-shrink: 0;
 }
@@ -1452,19 +1552,72 @@ defineExpose({ clearSearch });
   color: var(--c-text-tertiary);
 }
 
+/* ========== 签到成功卡片下方：积分兑换提示条（Task D） ========== */
+.checkin-points-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 var(--sp-7) var(--sp-4);
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-gold-bg-tint, rgba(251, 217, 141, 0.35)) 0%, var(--c-vip-border-light, rgba(201, 163, 106, 0.3)) 100%);
+  border: 1rpx solid var(--c-vip-border-tint, rgba(201, 163, 106, 0.35));
+  transition: transform var(--d-fast, 150ms) ease;
+}
+
+/* #ifdef H5 */
+.checkin-points-hint:active {
+  transform: scale(0.98);
+}
+/* #endif */
+
+.checkin-points-hint__icon {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+  color: var(--c-gold, #d4af37);
+}
+
+.checkin-points-hint__text {
+  flex: 1;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--c-text-primary);
+  line-height: 1.4;
+}
+
+.checkin-points-hint__arrow {
+  font-size: var(--fs-2xl);
+  color: var(--c-gold, #d4af37);
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
 /* ========== 签到权益卡片区域 ========== */
 .benefits-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
   margin: 0 var(--sp-7) var(--sp-4);
+}
+
+/* 收尾轮：权益卡横向单行滚动，紧凑入口（高度 ≤ 150rpx），释放卡片区垂直空间 */
+.benefits-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.benefits-row {
+  display: flex;
+  flex-direction: row;
+  gap: var(--sp-3);
+  padding-bottom: 8rpx;
 }
 
 .benefit-card {
   display: flex;
+  flex: 0 0 auto;
+  width: 430rpx;
   align-items: center;
   justify-content: space-between;
-  padding: var(--sp-5) var(--sp-6);
+  padding: var(--sp-4) var(--sp-5);
   border-radius: var(--r-lg);
   background: var(--c-bg-container);
   box-shadow: var(--s-card-soft);
@@ -1487,6 +1640,30 @@ defineExpose({ clearSearch });
 .benefit-card--quota {
   background: var(--c-bg-brand);
   border: var(--c-border-card-brand);
+}
+
+/* Task D：我的积分入口卡片（金色渐变区分） */
+.benefit-card--points {
+  background: linear-gradient(135deg, var(--c-gold-bg-tint, rgba(251, 217, 141, 0.4)) 0%, var(--c-vip-border-light, rgba(201, 163, 106, 0.25)) 100%);
+  border: 1rpx solid var(--c-vip-border-tint, rgba(201, 163, 106, 0.35));
+}
+
+.benefit-card--points::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4rpx;
+  background: var(--c-gold, #d4af37);
+}
+
+.benefit-card--points .benefit-card__title {
+  color: var(--c-text-primary);
+}
+
+.benefit-card--points .benefit-card__desc {
+  color: var(--c-gold, #d4af37);
 }
 
 .benefit-card--quota::before {
@@ -1617,7 +1794,13 @@ defineExpose({ clearSearch });
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-height: 0;
+  /* 卡片完整可见：H5 端占屏幕中央 60% 以上高度，mp-weixin 用 rpx 兜底 */
+  // #ifdef H5
+  min-height: 60vh;
+  // #endif
+  // #ifndef H5
+  min-height: 760rpx;
+  // #endif
 }
 
 /* ========== 错误提示 ========== */

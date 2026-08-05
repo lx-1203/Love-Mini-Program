@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 线下活动页 - 支持列表/日历双视图切换
  * 列表视图：展示所有活动卡片，支持下拉刷新、上拉加载更多
@@ -6,6 +6,8 @@
  */
 import { ref, computed } from "vue";
 import { onShow, onUnload } from "@dcloudio/uni-app";
+// 任务 E1/E2：直接导入全局 t 函数（同 session.ts 模式），避免组合式 API 声明被模板类型检查遗漏
+import { t } from "@/i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
@@ -91,7 +93,14 @@ async function toggleEnroll(activityId: string) {
   if (activityStore.enrolling || submittingId.value === activityId) return;
   submittingId.value = activityId;
   try {
-    await activityStore.enrollActivity(activityId);
+    const enrolled = await activityStore.enrollActivity(activityId);
+    // review nit 修复：报名/取消结果本地提示（mock 模式 store 内无 toast）
+    uni.showToast({
+      title: enrolled ? t("activities.enrolledToast") : t("activities.unenrolledToast"),
+      icon: "none",
+    });
+  } catch (_e) {
+    uni.showToast({ title: t("activities.enrollFailedToast"), icon: "none" });
   } finally {
     submittingId.value = "";
   }
@@ -101,6 +110,14 @@ async function toggleEnroll(activityId: string) {
 function shortDesc(desc?: string): string {
   if (!desc) return "";
   return desc.length > 50 ? desc.slice(0, 50) + "..." : desc;
+}
+
+/**
+ * 任务 E2：跳转活动详情页并携带活动 id。
+ * 详情页通过 onLoad 读取 id 匹配活动数据；未匹配时展示通用示例内容。
+ */
+function goToActivityDetail(activityId: string) {
+  openAppPath(`/pages/activities/detail?id=${encodeURIComponent(activityId)}`);
 }
 
 /* ================================================================
@@ -248,12 +265,13 @@ function goToNextMonth() {
   selectedDate.value = "";
 }
 
-/** 点击日历日期 */
+/**
+ * 点击日历日期（任务 E1 修复）：允许点选任意本月日期，
+ * 高亮选中并筛选当日活动列表；无活动时展示空态提示。
+ */
 function onCalendarDateTap(cell: CalendarCell) {
   if (!cell.isCurrentMonth) return;
-  if (activeDates.value.has(cell.dateStr)) {
-    selectedDate.value = cell.dateStr === selectedDate.value ? "" : cell.dateStr;
-  }
+  selectedDate.value = cell.dateStr === selectedDate.value ? "" : cell.dateStr;
 }
 
 /** 截断活动标题（10字内） */
@@ -275,6 +293,10 @@ function formatDateLabel(dateStr: string): string {
   const day = parseInt(dayStr, 10);
   return `${month}月${day}日`;
 }
+
+// 修复（严格模式 noUnusedLocals）：toggleEnroll 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ toggleEnroll });
 </script>
 
 <template>
@@ -340,6 +362,9 @@ function formatDateLabel(dateStr: string): string {
             v-for="item in activityStore.activities"
             :key="item.id"
             class="activity-row"
+            role="button"
+            :aria-label="t('activities.cardAria', { title: item.title })"
+            @tap="goToActivityDetail(item.id)"
           >
             <view class="row-header">
               <text class="row-title">{{ item.title }}</text>
@@ -363,11 +388,12 @@ function formatDateLabel(dateStr: string): string {
               </view>
             </view>
 
+            <!-- catchtap：阻止冒泡到卡片跳转详情，避免误触发 -->
             <button
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
               :disabled="activityStore.enrolling || submittingId === item.id"
-              @tap="toggleEnroll(item.id)"
+  @tap.stop="toggleEnroll(item.id)"
             >
               <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
               <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
@@ -469,8 +495,8 @@ function formatDateLabel(dateStr: string): string {
           </view>
         </view>
 
-        <!-- 选中日期的活动列表 -->
-        <view v-if="selectedDate && selectedDateActivities.length" class="selected-date-panel">
+        <!-- 选中日期的活动列表（任务 E1：无活动日期也可选中，展示空态） -->
+        <view v-if="selectedDate" class="selected-date-panel">
           <view class="selected-date-header">
             <view class="selected-date-header__label-row">
               <image class="selected-date-header__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CALENDAR" mode="aspectFit" alt="" />
@@ -483,6 +509,9 @@ function formatDateLabel(dateStr: string): string {
             v-for="item in selectedDateActivities"
             :key="item.id"
             class="activity-row"
+            role="button"
+            :aria-label="t('activities.cardAria', { title: item.title })"
+            @tap="goToActivityDetail(item.id)"
           >
             <view class="row-header">
               <text class="row-title">{{ item.title }}</text>
@@ -505,15 +534,21 @@ function formatDateLabel(dateStr: string): string {
               </view>
             </view>
 
+            <!-- catchtap：阻止冒泡到卡片跳转详情，避免误触发 -->
             <button
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
               :disabled="activityStore.enrolling || submittingId === item.id"
-              @tap="toggleEnroll(item.id)"
+  @tap.stop="toggleEnroll(item.id)"
             >
               <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
               <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
             </button>
+          </view>
+
+          <!-- 任务 E1：选中日期无活动时的空态提示 -->
+          <view v-if="!selectedDateActivities.length" class="selected-date-empty" role="status">
+            <text class="selected-date-empty__text">{{ t('activities.emptyForDate') }}</text>
           </view>
         </view>
 
@@ -968,5 +1003,20 @@ function formatDateLabel(dateStr: string): string {
   padding: 6rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
   font-weight: 500;
+}
+
+/* --- 选中日期无活动空态（任务 E1） --- */
+.selected-date-empty {
+  padding: 40rpx 24rpx;
+  border-radius: var(--r-lg, 20rpx);
+  background: var(--c-bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selected-date-empty__text {
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-tertiary);
 }
 </style>

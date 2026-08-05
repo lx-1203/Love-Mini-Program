@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 寻觅页 - 卡片滑动推荐组件
  *
@@ -735,6 +735,63 @@ function onSuperLike() {
   emit("superLike", currentCard.value.id);
 }
 
+/* ========== 收藏状态（组件本地维护，Task A2） ========== */
+
+/** 已收藏的卡片 ID 集合（本地状态，不强制同步后端） */
+const collectedIds = ref<Set<string>>(new Set());
+
+/** 收藏持久化 key（收尾轮：收藏跨会话保持，不再随页面销毁丢失） */
+const COLLECTED_KEY = "campus-love:collected-card-ids";
+
+/** 初始化：从本地存储恢复收藏集合 */
+try {
+  const raw = uni.getStorageSync(COLLECTED_KEY) as unknown;
+  if (Array.isArray(raw)) {
+    collectedIds.value = new Set(raw.filter((id): id is string => typeof id === "string"));
+  }
+} catch (_e) {
+  // 读取失败按空集合
+}
+
+/** 持久化收藏集合 */
+function persistCollected(): void {
+  try {
+    uni.setStorageSync(COLLECTED_KEY, Array.from(collectedIds.value));
+  } catch (_e) {
+    // 写入失败静默（仅影响下次启动恢复）
+  }
+}
+
+/**
+ * 当前卡片是否已收藏
+ * @param cardId - 卡片 ID
+ */
+function isCollected(cardId: string): boolean {
+  return collectedIds.value.has(cardId);
+}
+
+/**
+ * 切换收藏状态：收藏/取消收藏 + 轻振动反馈。
+ * 以不可变方式更新 Set，保证响应式触发。
+ */
+function onCollect() {
+  if (!currentCard.value || isFlyingOut.value) return;
+  const id = currentCard.value.id;
+  const next = new Set(collectedIds.value);
+  if (next.has(id)) {
+    next.delete(id);
+  } else {
+    next.add(id);
+  }
+  collectedIds.value = next;
+  persistCollected();
+  try {
+    lightHaptic();
+  } catch (err) {
+    console.warn("[CardSwiper] collect haptic failed:", err);
+  }
+}
+
 /**
  * 切换简介展开状态
  */
@@ -794,7 +851,7 @@ watch(
 
 // 修复（严格模式 noUnusedLocals）：onTouchMove/toggleBio/onVideoBadgeTap 通过 catchtap/catchtouchmove
 // 绑定到模板，vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
-defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
+defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
 </script>
 
 <template>
@@ -893,7 +950,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
           class="card__video-badge press-feedback"
           hover-class="card__video-badge--pressed"
           hover-stay-time="120"
-          catchtap="onVideoBadgeTap"
+  @tap.stop="onVideoBadgeTap"
           role="button"
           :aria-label="t('discover.videoBadge')"
         >
@@ -1014,7 +1071,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
           <!-- 底部：个人简介 -->
           <view
             class="card__bio"
-            catchtap="toggleBio"
+  @tap.stop="toggleBio"
             role="button"
             :aria-label="isBioExpanded ? t('home.collapse') : t('home.expand')"
           >
@@ -1068,23 +1125,35 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
       @not-interested="handleNotInterested"
     />
 
-    <!-- 底部操作区：图片资源 + hover-class 振动反馈，跨设备渲染一致 -->
+    <!-- 底部浮动操作栏：半透明叠加在卡片底部边缘（Task A3），catchtap 阻止冒泡避免被卡片手势拦截 -->
     <view v-if="currentCard" class="action-bar">
       <view
         class="action-btn action-btn--reject press-feedback"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
-        @tap="onReject"
+  @tap.stop="onReject"
         role="button"
         :aria-label="t('discover.skip')"
       >
         <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.PASS" mode="aspectFit" alt="" />
       </view>
+      <!-- 收藏按钮：本地收藏态切换，选中态金色高亮（Task A2） -->
+      <view
+        class="action-btn action-btn--collect press-feedback"
+        :class="{ 'action-btn--collected': isCollected(currentCard.id) }"
+        hover-class="action-btn--pressed"
+        hover-stay-time="120"
+  @tap.stop="onCollect"
+        role="button"
+        :aria-label="isCollected(currentCard.id) ? t('discover.collected') : t('discover.collect')"
+      >
+        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" lazy-load />
+      </view>
       <view
         class="action-btn action-btn--super press-feedback"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
-        @tap="onSuperLike"
+  @tap.stop="onSuperLike"
         role="button"
         :aria-label="t('discover.superLike')"
       >
@@ -1094,7 +1163,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
         class="action-btn action-btn--like press-feedback"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
-        @tap="onLike"
+  @tap.stop="onLike"
         role="button"
         :aria-label="t('discover.like')"
       >
@@ -1825,25 +1894,33 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
   font-weight: 500;
 }
 
-/* ========== 底部操作栏（探探风格：大圆形彩色按钮） ========== */
+/* ========== 底部浮动操作栏（Task A3：半透明叠加在卡片底部边缘，不挤压卡片本体） ========== */
 .action-bar {
+  position: absolute;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 40rpx;
-  padding: 24rpx 40rpx;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 40rpx);
-  background: linear-gradient(
-    to top,
-    var(--c-bg-page) 0%,
-    var(--c-bg-page) 50%,
-    transparent 100%
-  );
+  gap: 24rpx;
+  padding: 18rpx 28rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 18rpx);
+  border-radius: var(--r-xxl, 28rpx);
+  background: var(--c-black-overlay-mid, rgba(0, 0, 0, 0.4));
+  border: 1rpx solid var(--c-overlay-border-mid, rgba(255, 255, 255, 0.18));
+  box-shadow: var(--s-card-soft);
+  z-index: 6;
+  /* H5 端毛玻璃增强；mp-weixin 不支持 backdrop-filter，高不透明度背景降级 */
+  // #ifdef H5
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  // #endif
 }
 
 .action-btn {
-  width: 120rpx;
-  height: 120rpx;
+  width: 100rpx;
+  height: 100rpx;
   border-radius: var(--r-circle, 50%);
   display: flex;
   align-items: center;
@@ -1859,8 +1936,8 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
 }
 
 .action-btn--reject {
-  width: 112rpx;
-  height: 112rpx;
+  width: 92rpx;
+  height: 92rpx;
   background: var(--c-bg-container);
   box-shadow: var(--s-action-reject);
   border: 3rpx solid var(--c-action-reject-border);
@@ -1870,38 +1947,65 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
   box-shadow: var(--s-action-reject-pressed);
 }
 
+/* 收藏按钮：默认白底描边，收藏后金色渐变高亮（Task A2） */
+.action-btn--collect {
+  width: 88rpx;
+  height: 88rpx;
+  background: var(--c-bg-container);
+  box-shadow: var(--s-action-reject);
+  border: 3rpx solid var(--c-neutral-200);
+}
+
+.action-btn--collected {
+  background: linear-gradient(135deg, var(--c-gold, #d4af37) 0%, var(--c-accent-400, #f59e0b) 100%);
+  border-color: var(--c-gold, #d4af37);
+  box-shadow: 0 4rpx 16rpx var(--c-vip-border-tint, rgba(201, 163, 106, 0.35));
+  animation: collect-pop var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes collect-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
 .action-btn--super {
-  width: 100rpx;
-  height: 100rpx;
+  width: 88rpx;
+  height: 88rpx;
   background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
   box-shadow: var(--s-action-super);
 }
 
 .action-btn--like {
-  width: 136rpx;
-  height: 136rpx;
+  width: 116rpx;
+  height: 116rpx;
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
   box-shadow: var(--s-action-like);
 }
 
 /* 按钮图标样式（替代 emoji，跨设备渲染一致） */
 .action-btn__icon {
-  width: 56rpx;
-  height: 56rpx;
+  width: 44rpx;
+  height: 44rpx;
 }
 
 .action-btn--reject .action-btn__icon {
-  width: 44rpx;
-  height: 44rpx;
+  width: 38rpx;
+  height: 38rpx;
+}
+
+.action-btn--collect .action-btn__icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .action-btn--super .action-btn__icon {
-  width: 44rpx;
-  height: 44rpx;
+  width: 38rpx;
+  height: 38rpx;
 }
 
 .action-btn--like .action-btn__icon {
-  width: 56rpx;
-  height: 56rpx;
+  width: 48rpx;
+  height: 48rpx;
 }
 </style>

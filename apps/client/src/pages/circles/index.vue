@@ -1,12 +1,14 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 兴趣圈列表页
  * 展示所有兴趣圈，支持加入/退出操作，点击进入话题列表
  */
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCircleStore } from "../../stores/circle";
+import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import AppShell from "../../components/layout/AppShell.vue";
@@ -15,6 +17,37 @@ import PageStateContainer from "../../components/common/PageStateContainer.vue";
 const { t } = useI18n();
 const circleStore = useCircleStore();
 const { circles, loading, errorMessage } = storeToRefs(circleStore);
+
+/**
+ * Task B2：从圈子 Tab 兴趣分类宫格带入的 category 参数（study/sports/music/movie/travel/game/food/reading）。
+ * 携带该参数时，页面标题展示对应兴趣分类名称。
+ */
+const category = ref("");
+
+/** 分类 ID → i18n key 映射（与圈子 Tab 兴趣分类宫格保持一致） */
+const CATEGORY_KEY_MAP: Record<string, string> = {
+  study: "circle.catStudy",
+  sports: "circle.catSports",
+  music: "circle.catMusic",
+  movie: "circle.catMovie",
+  travel: "circle.catTravel",
+  game: "circle.catGame",
+  food: "circle.catFood",
+  reading: "circle.catReading",
+};
+
+onLoad((query) => {
+  if (query?.category) {
+    category.value = String(query.category);
+  }
+});
+
+/** 页面标题：携带 category 时展示对应兴趣分类名称，否则使用默认「兴趣圈」 */
+const pageTitle = computed(() => {
+  if (!category.value) return t("circle.circlesNavTitle");
+  const key = CATEGORY_KEY_MAP[category.value];
+  return key ? t(key) : t("circle.circlesNavTitle");
+});
 
 /**
  * 页面统一状态映射
@@ -46,8 +79,16 @@ function handleRetry() {
  * 点击兴趣圈，跳转到话题列表
  * @param circleId - 兴趣圈 ID
  */
-function goToTopics(circleId: string) {
-  openAppPath(`/pages/circles/topics?circleId=${circleId}`);
+function goToTopics(circle: { id: string; campusVerified?: boolean }) {
+  // 校园认证圈：未完成校园认证时拦截并引导认证（收尾轮）
+  if (circle.campusVerified) {
+    const sessionStore = useSessionStore();
+    if (!sessionStore.userSession?.campusName) {
+      uni.showToast({ title: t("circle.campusVerifyRequired"), icon: "none" });
+      return;
+    }
+  }
+  openAppPath(`/pages/circles/topics?circleId=${circle.id}`);
 }
 
 /**
@@ -103,7 +144,7 @@ defineExpose({ toggleJoin });
   <AppShell
     variant="standard"
     bg-variant="default"
-    :title="t('circle.circlesNavTitle')"
+    :title="pageTitle"
     :show-back="true"
     :tab-bar-safe="false"
     :fixed="true"
@@ -147,14 +188,20 @@ defineExpose({ toggleJoin });
               v-for="(circle, index) in circles" :key="circle.id"
               class="circle-card list-item"
               :style="{ animationDelay: index * 60 + 'ms' }"
-              @tap="goToTopics(circle.id)"
+              @tap="goToTopics(circle)"
             >
               <view class="circle-card__icon-wrap">
                 <image class="circle-card__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
               </view>
 
               <view class="circle-card__body">
-                <text class="circle-card__name">{{ circle.name }}</text>
+                <view class="circle-card__name-row">
+                  <text class="circle-card__name">{{ circle.name }}</text>
+                  <view v-if="circle.campusVerified" class="circle-card__badge">
+                    <image class="circle-card__badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" alt="" />
+                    <text class="circle-card__badge-text">{{ t('circle.campusBadge') }}</text>
+                  </view>
+                </view>
                 <text class="circle-card__desc">{{ circle.description }}</text>
                 <view class="circle-card__meta">
                   <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" alt="" />
@@ -168,7 +215,7 @@ defineExpose({ toggleJoin });
               <view
                 class="circle-card__action"
                 :class="{ 'circle-card__action--joined': circle.isJoined }"
-                catchtap="toggleJoin(circle.id, circle.isJoined)"
+  @tap.stop="toggleJoin(circle.id, circle.isJoined)"
               >
                 <text class="circle-card__action-text">
                   {{ circle.isJoined ? t("circle.joinedBtn") : t("circle.joinBtn") }}
@@ -445,6 +492,40 @@ defineExpose({ toggleJoin });
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 收尾轮：校园认证徽标 */
+.circle-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  min-width: 0;
+}
+
+.circle-card__name-row .circle-card__name {
+  flex: 1;
+  min-width: 0;
+}
+
+.circle-card__badge {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+  background: var(--c-tint-green-soft, #E8F7EF);
+  flex-shrink: 0;
+}
+
+.circle-card__badge-icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.circle-card__badge-text {
+  font-size: var(--fs-xs, 22rpx);
+  color: var(--c-brand-700, #15803D);
+  font-weight: 500;
 }
 
 .circle-card__desc {

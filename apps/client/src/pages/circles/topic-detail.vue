@@ -213,7 +213,7 @@ defineExpose({ sayHello, goToAuthorProfile });
       <view class="topic-author">
         <view
           class="author-avatar"
-          catchtap="goToAuthorProfile(currentTopic.author.userId)"
+  @tap.stop="goToAuthorProfile(currentTopic.author.userId)"
         >
           <image
             v-if="currentTopic.author.avatar"
@@ -272,7 +272,7 @@ defineExpose({ sayHello, goToAuthorProfile });
           >
             <view
               class="reply-avatar"
-              catchtap="goToAuthorProfile(reply.author.userId)"
+  @tap.stop="goToAuthorProfile(reply.author.userId)"
             >
               <image
                 v-if="reply.author.avatar"
@@ -294,7 +294,7 @@ defineExpose({ sayHello, goToAuthorProfile });
               <view
                 v-if="reply.author.userId !== currentUserId"
                 class="reply-say-hello"
-                catchtap="sayHello(reply)"
+  @tap.stop="sayHello(reply)"
               >
                 <text class="reply-say-hello__text">{{ t("circle.topicDetailSayHello") }}</text>
               </view>

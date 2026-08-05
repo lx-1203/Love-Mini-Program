@@ -429,3 +429,47 @@
 - typecheck 0 errors / build:mp-weixin DONE / 相关单测 49/49 通过（profile/messages）
 - H5 Chrome 实测：寻觅卡片可见（y=84）、黄色像素 0、我的页头像图片显示、编辑资料跳转成功、签到「+5 社交币/连续 1 天」正常、删除认证按钮渲染
 - 微信开发者工具 automator 在本轮多次尝试连接超时（IDE 进程状态异常，重启 4 次仍超时）——mp 端逐项实机复验待工具恢复后执行；H5 与 mp 共享页面逻辑/样式，代码修复已通过构建与单测
+
+## 第十一章：综合 UI/UX 专项修复（2026-08-05 第四轮，5 路排查 688 条）
+
+### 11.1 项目级基础设施（P0 根因）
+
+| # | 问题 | 修复 |
+|---|------|------|
+| 1 | catchtap 事件绑定失效（40 处 `catchtap="fn(arg)"` 原样透传字符串，点赞/关注/报名等核心交互静默失效） | 全量替换 `@tap.stop`（编译产物验证 `catchtap="{{circle.g}}"` 数据绑定）；模板 catchtap 残留 0 |
+| 2 | mp-weixin 无 URLSearchParams 原生实现（village/api、profile、feedback 直接使用 → ReferenceError） | `installUrlSearchParamsPolyfill`（构造/append/get/set/has/delete/toString/forEach/entries，非法编码兜底），main.ts 注入，单测 4/4 |
+| 3 | 路由断链：TabBar query（`?tab=hot/mine`）被 switchTab 静默丢弃；发帖页 `/subpackages/circle/post/index` 未注册 | `switchTabWithQuery/consumeTabQuery` storage 桥接（onShow 消费即删 + fail 清理）；发帖跳转改 `/pages/circles/post-topic`；village 新增 `cat-mine` 分类（作者=当前用户过滤） |
+| 4 | 参数契约不匹配：打招呼传 `targetUserId`（chat-session 消费 `userId`）→ 空会话；`cat-latest` 精确匹配恒空 | 改传 `userId=`；`cat-latest` 不过滤（排序驱动） |
+| 5 | 深色模式无接线（样式已备、无切换入口；H5 端 `page` 选择器不匹配） | theme store 三态（auto/dark/light）+ 设置页切换 + `html[data-theme]` H5 选择器 + media 排除 `[data-theme="light"]` |
+
+### 11.2 核心页面（spec A–E）
+
+| 模块 | 修复 |
+|------|------|
+| 寻觅页 | 权益卡横滚紧凑化（卡片区白色占比 42.6%→61.7%）；收藏持久化（storage 恢复+即写）；like/super-like 走 discoverStore 记录 |
+| 圈子页 | 校园认证圈（`campusVerified` 徽标 + 3 条 mock 话题 + 未认证拦截）；FAB 圆→方（24rpx，按压 16rpx） |
+| 首页 | 学校绑定一致化（mock `schoolBound:true` + UserSession 类型补字段）；认证前置/一次性锁定链路核对 |
+| 签到 | 积分展示/用途引导/商城联动链路确认（Task D 闭环） |
+| 活动 | 详情页报名/退出闭环（`enrollActivity` 返回 boolean + 本地 toast）；日历/示例内容核对 |
+
+### 11.3 消息/我的/FAB（spec G–I）
+
+| 模块 | 修复 |
+|------|------|
+| 消息页 | 移除会话头像硬编码 VIP 渐变边框（「莫名图标」根因）；官方号（助手+活动推送）置顶；清理 `.session-row__avatar--vip` 残留样式 |
+| 我的页 | 编辑资料按钮 min-height 88rpx 扩大热区；动态统计/打招呼图标 emoji→SVG（LIKE/MESSAGE） |
+| FAB | 五主 Tab 全接入（消息页补齐 publish→发帖页）；方形化 |
+
+### 11.4 长尾与假功能
+
+- 设置/反馈入口核对（首页+寻觅页齿轮、设置页反馈一级菜单、退出按钮均已有）
+- `docs/audit-688.md` 归档（5 维统计 688 条 + spec A-J 基线 + 修复进展 + 遗留策略）
+- circle 页帖子点击 toast「开发中」→ 跳转 `/pages/village/detail?id=`（真实详情）
+- review 6 项 findings 修复：tabQuery 消费移 onShow（blocking）、theme light 排除、polyfill 解码兜底、village 收藏持久化、nits×3
+
+### 11.5 门禁与审查
+
+- typecheck 0 errors；全量单测 **87 files / 1171 tests** 全部通过；build:mp-weixin DONE；ESLint 0 errors
+- review 复验 **ship as-is**（blocking 已消除，无新回归）；security_review **pass**（观察项已修复）
+- H5 实测：五主 Tab 渲染正常；「我的动态」真实链路：菜单点击 → switchTabWithQuery → village onShow 消费即删 → mine 分类空态正确
+- 微信开发者工具 automator 不可用（cli.bat 不存在，工具未安装）——H5 实测替代，mp 端待工具恢复复验

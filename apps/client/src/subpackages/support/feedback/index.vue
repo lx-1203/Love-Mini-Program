@@ -485,7 +485,7 @@ function goDetail(id: number): void {
               :aria-label="t('feedback.imageRemove')"
               hover-class="image-cell__remove--pressed"
               :hover-stay-time="100"
-              catchtap="handleRemoveImage(idx)"
+  @tap.stop="handleRemoveImage(idx)"
             >
               <text class="image-cell__remove-icon" aria-hidden="true">✕</text>
             </view>

@@ -210,9 +210,9 @@ export const useActivityStore = defineStore("activity", {
      * 后端请求体: ActivityEnrollRequest(userId)
      * @param activityId - 活动 ID
      */
-    async enrollActivity(activityId: string) {
+    async enrollActivity(activityId: string): Promise<boolean> {
       const activity = this.activities.find((a) => a.id === activityId);
-      if (!activity) return;
+      if (!activity) return false;
 
       this.enrolling = true;
       try {
@@ -230,7 +230,7 @@ export const useActivityStore = defineStore("activity", {
               0,
             );
           }
-          return;
+          return activity.isEnrolled;
         }
 
         // 获取当前用户 ID
@@ -256,9 +256,11 @@ export const useActivityStore = defineStore("activity", {
           activity.isEnrolled = result.enrolled;
           activity.enrollmentCount = result.enrollmentCount;
         }
+        return activity.isEnrolled;
       } catch (error) {
         this.errorMessage =
           error instanceof Error ? error.message : t("storeErrors.activity.registerFailed");
+        return false;
       } finally {
         this.enrolling = false;
       }

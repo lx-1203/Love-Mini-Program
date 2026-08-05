@@ -850,6 +850,10 @@ export interface components {
             campusVerified: boolean;
             scheduleCompleted: boolean;
             campusName?: string | null;
+            /** 校园认证绑定（收尾轮：认证+一次性绑定后为 true，绑定锁定） */
+            schoolBound?: boolean;
+            /** 绑定学校 ID（= campusName，供首页选择器回显） */
+            schoolId?: string;
             featureFlags: {
                 [key: string]: boolean;
             };

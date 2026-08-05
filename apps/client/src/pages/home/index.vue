@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 首页 - 校园聚合页
  * 包含：学校选择器、校园圈活动、课表空档、校园墙、逛逛推荐、社交升温进度
@@ -17,6 +17,8 @@ import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
 import MatchCountChip from "../../components/common/MatchCountChip.vue";
+// Task F：全局发帖悬浮按钮组件
+import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 // 功能1：首页 Banner 自动轮播组件（替换原静态横滚 Banner）
 import HomeBanner from "../../components/home/HomeBanner.vue";
 // 功能8：签到分享卡片组件
@@ -61,6 +63,7 @@ const emojiIcons = {
   // 通用图标（学校、庆典）- SVG 变体，支持 currentColor 主题色
   school: IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG,
   celebration: IMAGE_PATHS.ICONS_COMMON.CELEBRATION_SVG,
+  settings: IMAGE_PATHS.ICONS_EMOJI.SETTINGS,
 } as const;
 
 const activityStore = useActivityStore();
@@ -86,27 +89,72 @@ function openCampusActivities() {
   openAppPath('/subpackages/discover/activities/index');
 }
 
+/** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
+function goToPublishTopic() {
+  openAppPath('/pages/circles/post-topic');
+}
+
 // ==================== 推荐用户数据 ====================
 // Phase Feedback2："为你推荐"已按反馈移除，recommendUsers 不再被模板引用。
 // 保留 home-recommended-people 配置供后续运营位复用（如需恢复可重新接入）。
 
-// 学校选择
-const currentSchool = ref("北京大学");
+// ==================== 学校选择（任务 C：认证前置 + 一次性绑定） ====================
+// 初始学校取会话中的校园名称（campusName），未设置时回退默认值
+const currentSchool = ref(sessionStore.userSession?.campusName || "北京大学");
 const schools = ["北京大学", "清华大学", "复旦大学", "浙江大学"];
 const showSchoolPicker = ref(false);
+
+/** 是否已绑定学校（绑定后选择器只读，不可再切换） */
+const schoolBound = computed(() => sessionStore.isSchoolBound);
 
 /** 空操作占位（catchtap 占位 handler，mp-weixin 要求 catchtap 必须绑定 handler） */
 function noop() {}
 
-function selectSchool(school: string) {
-  // 修复：分类（学校）切换时重新调用 fetch 数据，避免展示旧学校的内容
+/**
+ * 点击学校选择器（任务 C：认证前置 + 只读态）：
+ * 1. 已绑定 → 提示"学校已绑定，如需修改请联系客服"，不打开选择器；
+ * 2. 未认证 → 弹窗提示先完成校园认证，确认后跳转认证页，不打开选择器；
+ * 3. 已认证且未绑定 → 打开学校选择器。
+ */
+function onSchoolSelectorTap() {
+  if (schoolBound.value) {
+    uni.showToast({ title: t('home.schoolBindLocked'), icon: "none" });
+    return;
+  }
+  if (!isCampusVerified.value) {
+    uni.showModal({
+      title: t('home.schoolBindAuthTitle'),
+      content: t('home.schoolBindRequireAuth'),
+      confirmText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      success: (res) => {
+        if (res.confirm) {
+          openAppPath('/pages/campus/certification');
+        }
+      },
+    });
+    return;
+  }
+  showSchoolPicker.value = true;
+}
+
+/**
+ * 选择学校（任务 C：一次性绑定）。
+ * 已认证用户选择学校后调用 sessionStore.bindSchool 写入绑定状态，
+ * 绑定成功后刷新首页数据（活动、签到、社交进度等可能随学校变化）。
+ */
+async function selectSchool(school: string) {
   if (currentSchool.value === school) {
     showSchoolPicker.value = false;
     return;
   }
+  const bound = await sessionStore.bindSchool(school);
+  if (!bound) {
+    uni.showToast({ title: t('home.schoolBindFailed'), icon: "none" });
+    return;
+  }
   currentSchool.value = school;
   showSchoolPicker.value = false;
-  // 切换学校后刷新首页数据（活动、签到、社交进度等可能随学校变化）
   refreshHomeData();
 }
 
@@ -358,8 +406,8 @@ defineExpose({ noop });
 
 <template>
   <view class="home-page page-fade-in">
-    <!-- 学校选择弹窗 -->
-    <view v-if="showSchoolPicker" class="school-picker" role="button" :aria-label="t('common.closeAria')" @tap="showSchoolPicker = false">
+    <!-- 学校选择弹窗（任务 C：已绑定后不再展示切换列表） -->
+    <view v-if="showSchoolPicker && !schoolBound" class="school-picker" role="button" :aria-label="t('common.closeAria')" @tap="showSchoolPicker = false">
       <view class="school-picker__content" catchtap="noop">
         <view class="school-picker__header">
           <text class="school-picker__title">{{ t('home.selectSchool') }}</text>
@@ -392,6 +440,10 @@ defineExpose({ noop });
           </view>
           <view class="greeting-right">
             <MatchCountChip :count="remainingCount" />
+            <!-- 任务 E4：设置入口（齿轮图标） -->
+            <view class="settings-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.settingsAria')" @tap="openAppPath('/pages/settings/index')">
+              <image class="settings-icon" :src="emojiIcons.settings" mode="aspectFit" alt="" />
+            </view>
             <view class="notification-btn" role="button" :aria-label="t('home.notificationAria')">
               <image class="notification-icon" :src="emojiIcons.bell" mode="aspectFit" alt="" />
               <view class="notification-dot"></view>
@@ -405,11 +457,22 @@ defineExpose({ noop });
           <text class="search-placeholder">{{ t('home.searchPlaceholder') }}</text>
         </view>
 
-        <!-- 学校选择器 -->
-        <view class="school-selector press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.selectSchool')" @tap="showSchoolPicker = true">
+        <!-- 学校选择器（任务 C：未认证弹窗引导认证；已绑定只读展示学校 + 锁定标记） -->
+        <view
+          class="school-selector press-feedback"
+          :class="{ 'school-selector--locked': schoolBound }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="schoolBound ? t('home.schoolBindLocked') : t('home.selectSchool')"
+          @tap="onSchoolSelectorTap"
+        >
           <image class="school-icon" :src="emojiIcons.school" mode="aspectFit" alt="" />
           <text class="school-name">{{ currentSchool }}</text>
-          <text class="school-arrow">▼</text>
+          <template v-if="schoolBound">
+            <image class="school-lock" :src="emojiIcons.lock" mode="aspectFit" lazy-load="true" alt="" />
+          </template>
+          <text v-else class="school-arrow">▼</text>
           <view class="school-badge">
             <text class="school-badge__text">{{ t('home.schoolLimited') }}</text>
           </view>
@@ -659,15 +722,8 @@ defineExpose({ noop });
       <view class="home-footer-space"></view>
     </scroll-view>
 
-    <!-- 悬浮发布按钮 -->
-    <view class="fab-container">
-      <view class="fab-bubble">
-        <text class="fab-bubble-text">{{ t('home.publishPost') }}</text>
-      </view>
-      <view class="fab-button press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.publishPost')" @tap="openAppPath('/pages/circles/index')">
-        <text class="fab-icon">+</text>
-      </view>
-    </view>
+    <!-- Task F：全局发帖悬浮按钮（publish → 发帖编辑页） -->
+    <GlobalPublishFab @publish="goToPublishTopic" />
 
     <!-- 功能8：签到分享卡片弹窗 -->
     <ShareCard
@@ -756,6 +812,24 @@ defineExpose({ noop });
 }
 
 .notification-icon {
+  width: 44rpx;
+  height: 44rpx;
+  color: var(--c-text-secondary);
+}
+
+/* 任务 E4：设置入口按钮（与通知按钮同规格，保持顶部视觉一致） */
+.settings-btn {
+  width: 88rpx;
+  height: 88rpx;
+  background: var(--c-bg-container);
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--s-md);
+}
+
+.settings-icon {
   width: 44rpx;
   height: 44rpx;
   color: var(--c-text-secondary);

@@ -610,7 +610,7 @@ defineExpose({ handleCommentLike, noop });
                 <view
                   class="comment-like"
                   :class="{ 'comment-like--active': comment.isLiked }"
-                  catchtap="handleCommentLike(comment.id)"
+  @tap.stop="handleCommentLike(comment.id)"
                 >
                   <text class="comment-like__icon">{{ t("village.detail.commentLike") }}</text>
                   <text v-if="comment.likes > 0" class="comment-like__count">{{ comment.likes }}</text>

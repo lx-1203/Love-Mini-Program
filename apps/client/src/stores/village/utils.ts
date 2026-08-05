@@ -27,10 +27,12 @@ import {
   CATEGORY_PREFIX,
   DISCOVER_CATEGORY_ID,
   FOLLOWING_CATEGORY_ID,
+  MINE_CATEGORY_ID,
   SAME_CITY_CATEGORY_ID,
 } from "./constants";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
+import { useSessionStore } from "../session";
 
 /**
  * 安全数字转换工具
@@ -245,6 +247,18 @@ export function filterAndSortPosts(
           // 全部：不过滤
           break;
       }
+    } else if (filters.categoryId === "cat-latest") {
+      // 最新：不过滤（排序由 sortBy=latest 处理，mock 帖子无 cat-latest 分类）
+      // 修复（收尾轮）：原走 else 精确匹配导致"最新"分类恒空
+    } else if (filters.categoryId === MINE_CATEGORY_ID) {
+      // 收尾轮：我的动态 —— 作者为当前用户（mock 下星野无帖子 → 空态引导发帖）
+      try {
+        const sessionStore = useSessionStore();
+        const myUserId = sessionStore.userSession?.userId ?? "";
+        result = myUserId ? result.filter((post) => post.author.userId === myUserId) : [];
+      } catch (_e) {
+        result = [];
+      }
     } else {
       result = result.filter((post) => post.categoryId === filters.categoryId);
     }
@@ -446,6 +460,13 @@ export const mockCategories: PostCategory[] = [
   { id: "cat-campus", name: "校园", icon: "school" },
   { id: "cat-latest", name: "最新", icon: "time" },
 ];
+
+/** 我的动态分类（收尾轮：内部目标分类，不出现在 Tab 栏） */
+export const mockMineCategory: PostCategory = {
+  id: "cat-mine",
+  name: "我的",
+  icon: "user",
+};
 
 /**
  * Mock 作者列表

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 村口页 - UGC社区（Phase Feedback4：三 Tab 版 关注/同城/发现）
  * 用户生成内容社区，支持三 Tab 筛选、城市切换、点赞关注等互动功能
@@ -8,9 +8,9 @@ import { onLoad, onHide, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
-import { useVillageStore, formatRelativeTime, type PostItem, type PostFilters } from "../../stores/village";
+import { useVillageStore, MINE_CATEGORY_ID, formatRelativeTime, type PostItem, type PostFilters } from "../../stores/village";
 import { useSessionStore } from "../../stores/session";
-import { openAppPath } from "../../utils/navigation";
+import { openAppPath, consumeTabQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import LockScreen from "../../components/common/LockScreen.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
@@ -25,6 +25,7 @@ import { IMAGE_PATHS } from "../../config/images";
 // SubTask 5.5.2：列表页图片 @error 占位图通用方案
 import { useImageFallback } from "../../composables/useImageFallback";
 import BaseTabs from "../../components/common/BaseTabs.vue";
+import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { showErrorToast } from "../../utils/error-toast";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
@@ -132,10 +133,8 @@ function selectDiscoverSubTab(subId: string) {
   void villageStore.fetchPosts(currentFilters.value);
 }
 
-/** 判断用户是否已完成校园认证 */
-const isCampusVerified = computed(() => {
-  return sessionStore.userSession?.campusVerified ?? false;
-});
+/** 判断用户是否已完成校园认证（Task B2：接入 session store 的 isCampusVerified getter） */
+const isCampusVerified = computed(() => sessionStore.isCampusVerified);
 
 /** 当前用户 campusName */
 const currentCampusName = computed(() => {
@@ -260,6 +259,52 @@ const displayPosts = computed<PostItem[]>(() => {
   return villageStore.filteredPosts(currentFilters.value);
 });
 
+/* ========== Task B2：圈子分区（校园圈/兴趣圈） ========== */
+/** 分区切换：campus = 校园圈（认证后展示同校帖子），interest = 兴趣圈（分类宫格） */
+const circleMode = ref<"campus" | "interest">("campus");
+
+/** 分区切换 BaseTabs 数据（校园圈/兴趣圈） */
+const circleModeTabs = computed(() => [
+  { key: "campus", label: t("village.circleModeCampus") },
+  { key: "interest", label: t("village.circleModeInterest") },
+]);
+
+/** 兴趣分类定义（学习/运动/音乐/电影/旅行/游戏/美食/阅读，复用 IMAGE_PATHS 已有 SVG 图标） */
+interface InterestCategory {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+const INTEREST_CATEGORIES = computed<InterestCategory[]>(() => [
+  { id: "study", name: t("circle.catStudy"), icon: IMAGE_PATHS.ICONS_EMOJI.BOOK },
+  { id: "sports", name: t("circle.catSports"), icon: IMAGE_PATHS.ICONS_COMMON.HIKING_SVG },
+  { id: "music", name: t("circle.catMusic"), icon: IMAGE_PATHS.ICONS_EMOJI.MUSIC },
+  { id: "movie", name: t("circle.catMovie"), icon: IMAGE_PATHS.ICONS_EMOJI.CLAPPER },
+  { id: "travel", name: t("circle.catTravel"), icon: IMAGE_PATHS.ICONS_EMOJI.PLANE },
+  { id: "game", name: t("circle.catGame"), icon: IMAGE_PATHS.ICONS_EMOJI.GAMEPAD },
+  { id: "food", name: t("circle.catFood"), icon: IMAGE_PATHS.ICONS_EMOJI.FOOD },
+  { id: "reading", name: t("circle.catReading"), icon: IMAGE_PATHS.ICONS_COMMON.OPEN_BOOK_SVG },
+]);
+
+/** 校园圈模式帖子：复用现有帖子数据源并按 campusName / isAlumni 过滤 */
+const campusCirclePosts = computed<PostItem[]>(() => {
+  const myCampus = currentCampusName.value;
+  return displayPosts.value.filter(
+    (post) => post.isAlumni || Boolean(myCampus && post.author.campusName === myCampus)
+  );
+});
+
+/** 点击兴趣分类 → 进入兴趣圈子页（携带 category 参数，Task B2） */
+function goToInterestCircle(catId: string) {
+  openAppPath(`/pages/circles/index?category=${encodeURIComponent(catId)}`);
+}
+
+/** 校园圈未认证引导卡片 → 校园认证页（Task B2） */
+function goToCampusCertification() {
+  openAppPath("/pages/campus/certification");
+}
+
 /* ========== 点赞动画状态 ========== */
 const likeAnimatingPosts = ref<Set<string>>(new Set());
 
@@ -320,8 +365,30 @@ async function handleLike(postId: string) {
   }
 }
 
-/* ========== 收藏状态（本地状态） ========== */
+/* ========== 收藏状态（本地状态，review 修复：storage 持久化跨会话保持） ========== */
 const collectedPosts = ref<Set<string>>(new Set());
+
+/** village 收藏持久化 key（与 discover 卡片收藏独立） */
+const VILLAGE_COLLECTED_KEY = "campus-love:village-collected-post-ids";
+
+/** 初始化：从本地存储恢复收藏集合 */
+try {
+  const raw = uni.getStorageSync(VILLAGE_COLLECTED_KEY) as unknown;
+  if (Array.isArray(raw)) {
+    collectedPosts.value = new Set(raw.filter((id): id is string => typeof id === "string"));
+  }
+} catch (_e) {
+  // 读取失败按空集合
+}
+
+/** 持久化收藏集合 */
+function persistVillageCollected(): void {
+  try {
+    uni.setStorageSync(VILLAGE_COLLECTED_KEY, Array.from(collectedPosts.value));
+  } catch (_e) {
+    // 写入失败静默（仅影响下次启动恢复）
+  }
+}
 
 function toggleCollect(postId: string) {
   if (collectedPosts.value.has(postId)) {
@@ -329,6 +396,7 @@ function toggleCollect(postId: string) {
   } else {
     collectedPosts.value.add(postId);
   }
+  persistVillageCollected();
 }
 
 /* ========== 关注 ========== */
@@ -351,9 +419,9 @@ function goToDetail(postId: string) {
 /* ========== 空操作占位（catchtap 占位 handler，mp-weixin 要求 catchtap 必须绑定 handler） ========== */
 function noop() {}
 
-/* ========== 发帖 ========== */
-function goToPost() {
-  openAppPath("/pages/village/post");
+/* ========== 发帖（Task B4：GlobalPublishFab publish 事件 → 发帖编辑页） ========== */
+function handlePublish() {
+  openAppPath("/pages/circles/post-topic");
 }
 
 /* ========== 去认识新朋友（匹配页入口） ========== */
@@ -383,6 +451,20 @@ onLoad((query) => {
   if (query?.tab === "hot") {
     selectedCategory.value = "cat-latest";
     saveLastCategory("cat-latest");
+  }
+});
+
+// 收尾轮 review 修复：switchTab 不支持 query，改从 storage 桥接读取（hot/mine）。
+// 消费逻辑放 onShow：switchTab 到已挂载的 Tab 页只触发 onShow 不触发 onLoad，
+// 消费即删天然防止残留被下次冷启动误消费。
+onShow(() => {
+  const bridged = consumeTabQuery();
+  if (bridged.tab === "hot") {
+    selectedCategory.value = "cat-latest";
+    saveLastCategory("cat-latest");
+  } else if (bridged.tab === "mine") {
+    selectedCategory.value = MINE_CATEGORY_ID;
+    saveLastCategory(MINE_CATEGORY_ID);
   }
 });
 
@@ -513,13 +595,20 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
             <text class="village-header__title section-title-brand">{{ t('village.title') }}</text>
             <text class="village-header__subtitle">{{ t('village.subtitle') }}</text>
           </view>
-          <view class="village-header__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.publishPostAria')" @tap="goToPost">
-            <text class="village-header__publish-text">{{ t('village.publishPost') }}</text>
-          </view>
         </view>
 
-        <!-- ===== 分类横向滚动 Tab（胶囊风格，BaseTabs） ===== -->
+        <!-- ===== 校园圈 / 兴趣圈 分区切换（Task B2） ===== -->
         <BaseTabs
+          v-model="circleMode"
+          :tabs="circleModeTabs"
+          variant="pill"
+          :scrollable="false"
+          :equal-split="true"
+        />
+
+        <!-- ===== 关注 / 同城 / 发现（仅校园圈模式显示，Task B2） ===== -->
+        <BaseTabs
+          v-if="circleMode === 'campus'"
           v-model="selectedCategory"
           :tabs="villageTabs"
           variant="pill"
@@ -529,8 +618,8 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
         />
       </view>
 
-      <!-- ===== Phase Feedback4：同城 Tab 城市选择器（自动标注城市 + 可手动切换） ===== -->
-      <view v-if="selectedCategory === 'cat-samecity' && featureFlags.villageSameCityEnabled" class="same-city-bar">
+      <!-- ===== Phase Feedback4：同城 Tab 城市选择器（自动标注城市 + 可手动切换；仅校园圈模式） ===== -->
+      <view v-if="circleMode === 'campus' && selectedCategory === 'cat-samecity' && featureFlags.villageSameCityEnabled" class="same-city-bar">
         <view class="same-city-bar__label">
           <image class="same-city-bar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PIN" mode="aspectFit" alt="" />
           <text class="same-city-bar__text">{{ t('village.sameCityLabel', { city: sameCityName }) }}</text>
@@ -547,8 +636,8 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
         </view>
       </view>
 
-      <!-- ===== Phase Feedback4：城市选择弹层 ===== -->
-      <view v-if="showCityPicker" class="city-picker" role="button" :aria-label="t('common.closeAria')" @tap="showCityPicker = false">
+      <!-- ===== Phase Feedback4：城市选择弹层（仅校园圈模式） ===== -->
+      <view v-if="circleMode === 'campus' && showCityPicker" class="city-picker" role="button" :aria-label="t('common.closeAria')" @tap="showCityPicker = false">
         <view class="city-picker__content" catchtap="noop">
           <view class="city-picker__header">
             <text class="city-picker__title">{{ t('village.cityPickerTitle') }}</text>
@@ -573,8 +662,8 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
         </view>
       </view>
 
-      <!-- ===== Phase Feedback4：发现 Tab 二级子标签（全部/校友/老乡/搭子圈） ===== -->
-      <view v-if="selectedCategory === 'cat-discover'" class="discover-sub-tabs">
+      <!-- ===== Phase Feedback4：发现 Tab 二级子标签（全部/校友/老乡/搭子圈；仅校园圈模式） ===== -->
+      <view v-if="circleMode === 'campus' && selectedCategory === 'cat-discover'" class="discover-sub-tabs">
         <view
           v-for="sub in DISCOVER_SUB_TABS"
           :key="sub.id"
@@ -591,8 +680,8 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
         </view>
       </view>
 
-      <!-- ===== 附近的人入口卡片（M-08） ===== -->
-      <view class="discover-banner press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.goToDiscoverAria')" @tap="goToDiscover">
+      <!-- ===== 附近的人入口卡片（M-08；仅校园圈模式） ===== -->
+      <view v-if="circleMode === 'campus'" class="discover-banner press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.goToDiscoverAria')" @tap="goToDiscover">
         <view class="discover-banner__content">
           <view class="discover-banner__left">
             <image class="discover-banner__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
@@ -605,13 +694,52 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
         </view>
       </view>
 
-      <!-- ===== 加载状态（骨架屏） ===== -->
-      <view v-if="loading && displayPosts.length === 0" class="village-state">
+      <!-- ===== 校园圈模式：未认证引导卡片（Task B2） ===== -->
+      <view v-if="circleMode === 'campus' && !isCampusVerified" class="circle-mode-body">
+        <view class="campus-auth-card">
+          <image class="campus-auth-card__icon" :src="IMAGE_PATHS.ICONS_EMOJI.GRAD_CAP" mode="aspectFit" lazy-load alt="" />
+          <text class="campus-auth-card__title">{{ t('village.campusAuthTitle') }}</text>
+          <text class="campus-auth-card__desc">{{ t('village.campusAuthDesc') }}</text>
+          <view
+            class="campus-auth-card__btn press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('village.campusAuthBtn')"
+            @tap="goToCampusCertification"
+          >
+            <text class="campus-auth-card__btn-text">{{ t('village.campusAuthBtn') }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- ===== 兴趣圈模式：兴趣分类宫格（Task B2） ===== -->
+      <view v-if="circleMode === 'interest'" class="circle-mode-body">
+        <view class="interest-grid" role="list">
+          <view
+            v-for="cat in INTEREST_CATEGORIES" :key="cat.id"
+            class="interest-grid__item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('village.interestGridAria', { name: cat.name })"
+            @tap="goToInterestCircle(cat.id)"
+          >
+            <view class="interest-grid__icon-wrap">
+              <image class="interest-grid__icon" :src="cat.icon" mode="aspectFit" lazy-load alt="" />
+            </view>
+            <text class="interest-grid__name">{{ cat.name }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- ===== 加载状态（骨架屏；仅校园圈模式 + 已认证） ===== -->
+      <view v-if="circleMode === 'campus' && isCampusVerified && loading && campusCirclePosts.length === 0" class="village-state">
         <Skeleton variant="list" :count="4" />
       </view>
 
-      <!-- ===== 错误状态 ===== -->
-      <view v-else-if="errorMessage && displayPosts.length === 0" class="village-state">
+      <!-- ===== 错误状态（仅校园圈模式 + 已认证） ===== -->
+      <view v-else-if="circleMode === 'campus' && isCampusVerified && errorMessage && campusCirclePosts.length === 0" class="village-state">
         <ErrorState type="network" @retry="onRefresh" />
       </view>
 
@@ -621,7 +749,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
            - @scroll 监听滚动位置，超过一屏显示回到顶部按钮
       -->
       <scroll-view
-        v-else
+        v-else-if="circleMode === 'campus' && isCampusVerified"
         class="post-feed"
         scroll-y
         :scroll-top="scrollTopValue"
@@ -635,7 +763,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
         @scroll="handleScroll"
       >
         <!-- 空状态（按 Tab 区分文案，Phase Feedback4） -->
-        <view v-if="displayPosts.length === 0" class="village-empty">
+        <view v-if="campusCirclePosts.length === 0" class="village-empty">
           <EmptyState type="no-data" :message="emptyStateMessage">
             <view class="village-empty__action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="emptyStateActionLabel" @tap="handleEmptyAction">
               <text class="village-empty__action-text">{{ emptyStateActionLabel }}</text>
@@ -643,10 +771,10 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
           </EmptyState>
         </view>
 
-        <!-- 帖子卡片列表 -->
+        <!-- 帖子卡片列表（校园圈模式：campusCirclePosts 按 campusName 过滤） -->
         <view class="post-feed__list card-stagger" role="list">
         <view
-          v-for="post in displayPosts" :key="post.id"
+          v-for="post in campusCirclePosts" :key="post.id"
           class="post-card clickable"
           hover-class="post-card--pressed"
           :hover-stay-time="100"
@@ -689,7 +817,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
             <view
               class="follow-chip"
               :class="{ 'follow-chip--active': post.isFollowed }"
-              catchtap="handleFollow(post.author.userId)"
+  @tap.stop="handleFollow(post.author.userId)"
             >
               <text class="follow-chip__text">
                 {{ post.isFollowed ? t('village.followed') : t('village.follow') }}
@@ -727,7 +855,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
               v-for="(tag, tagIdx) in post.tags" :key="tag"
               class="post-card__tag"
               :class="tagIdx % 2 === 0 ? 'post-card__tag--green' : 'post-card__tag--pink'"
-              catchtap="goToTagPosts(tag)"
+  @tap.stop="goToTagPosts(tag)"
             >{{ tag.startsWith('#') ? tag : '#' + tag }}</text>
           </view>
 
@@ -744,7 +872,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
               <view
                 class="action-btn"
                 :class="{ 'action-btn--liked': post.isLiked, 'action-btn--animating': likeAnimatingPosts.has(post.id) }"
-                catchtap="handleLike(post.id)"
+  @tap.stop="handleLike(post.id)"
               >
                 <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
                 <text v-if="post.likes > 0" class="action-btn__count" :class="{ 'action-btn__count--liked': post.isLiked }">{{ post.likes }}</text>
@@ -757,7 +885,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
               <view
                 class="action-btn"
                 :class="{ 'action-btn--collected': collectedPosts.has(post.id) }"
-                catchtap="toggleCollect(post.id)"
+  @tap.stop="toggleCollect(post.id)"
               >
                 <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" />
               </view>
@@ -779,14 +907,12 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
         <view class="feed-bottom-spacer" />
       </scroll-view>
 
-      <!-- ===== 浮动发帖按钮 (FAB) ===== -->
-      <view class="fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.publishPostAria')" @tap="goToPost">
-        <image class="fab__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PLUS" mode="aspectFit" alt="" />
-      </view>
+      <!-- ===== 全局发帖 FAB（Task B4：GlobalPublishFab，publish → 发帖编辑页） ===== -->
+      <GlobalPublishFab @publish="handlePublish" />
 
-      <!-- ===== 回到顶部按钮（P2 修复：滚动超过一屏后显示） ===== -->
+      <!-- ===== 回到顶部按钮（P2 修复：滚动超过一屏后显示；仅校园圈模式） ===== -->
       <view
-        v-if="showBackToTop"
+        v-if="showBackToTop && circleMode === 'campus'"
         class="back-to-top press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
@@ -849,26 +975,6 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
 .village-header__subtitle {
   font-size: var(--fs-sm);
   color: var(--c-text-tertiary);
-}
-
-.village-header__publish {
-  padding: var(--sp-3) var(--sp-7);
-  background: var(--c-gradient-brand);
-  border-radius: var(--r-full);
-  box-shadow: var(--s-brand);
-}
-
-/* #ifdef H5 */
-.village-header__publish:active {
-  transform: scale(0.95);
-  opacity: 0.9;
-}
-/* #endif */
-
-.village-header__publish-text {
-  font-size: var(--fs-md);
-  color: var(--c-neutral-0);
-  font-weight: 600;
 }
 
 /* ================================================================
@@ -1565,43 +1671,109 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
 }
 
 .feed-bottom-spacer {
-  height: 180rpx;
+  /* Task B4：FAB 底部留白 ≥ 220rpx，避免最后一个帖子被 FAB 遮挡 */
+  height: 220rpx;
 }
 
 /* ================================================================
-   浮动发帖按钮 (FAB)
+   Task B2：圈子分区内容容器（认证引导卡片 / 兴趣分类宫格）
    ================================================================ */
-.fab {
-  position: fixed;
-  right: var(--sp-7);
-  bottom: calc(env(safe-area-inset-bottom) + var(--sp-14));
-  width: 104rpx;
-  height: 104rpx;
+.circle-mode-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.campus-auth-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  margin: var(--sp-10) var(--sp-8);
+  padding: var(--sp-10) var(--sp-8);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
+}
+
+.campus-auth-card__icon {
+  width: 88rpx;
+  height: 88rpx;
+  color: var(--c-brand-500);
+}
+
+.campus-auth-card__title {
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  text-align: center;
+}
+
+.campus-auth-card__desc {
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.campus-auth-card__btn {
+  margin-top: var(--sp-3);
+  padding: var(--sp-4) var(--sp-10);
   border-radius: var(--r-full);
-  background: var(--c-gradient-float-btn);
+  background: var(--c-gradient-brand);
+  box-shadow: var(--s-brand);
+}
+
+.campus-auth-card__btn-text {
+  font-size: var(--fs-lg);
+  color: var(--c-neutral-0);
+  font-weight: 600;
+}
+
+.interest-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding: var(--sp-8) var(--sp-5);
+  gap: var(--sp-4);
+}
+
+.interest-grid__item {
+  width: calc((100% - var(--sp-4) * 3) / 4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-6) 0;
+  background: var(--c-bg-container);
+  border-radius: var(--r-lg);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
+}
+
+.interest-grid__icon-wrap {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--s-float-btn);
-  z-index: 99;
 }
 
-/* #ifdef H5 */
-.fab:active {
-  transform: scale(0.9);
+.interest-grid__icon {
+  width: 40rpx;
+  height: 40rpx;
+  color: var(--c-brand-500);
 }
-/* #endif */
 
-.fab__icon {
-  width: 56rpx;
-  height: 56rpx;
-  color: var(--c-neutral-0);
+.interest-grid__name {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text-primary);
 }
 
 /* ================================================================
-   回到顶部按钮（P2 修复 · 滚动到顶部按钮）
-   - 位于 FAB 上方，避免遮挡
-   - 触摸目标 88rpx × 88rpx（44px @2x），满足 iOS HIG / Material Design
+   浮动发帖按钮 (FAB) —— 已迁移至全局组件 GlobalPublishFab（Task B4）
    ================================================================ */
 .back-to-top {
   position: fixed;

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 聊天页 - 会话列表
  * 连接到 useMessagesStore 获取真实会话数据，替代硬编码模拟数据
@@ -20,6 +20,7 @@ import LockScreen from "../../components/common/LockScreen.vue";
 import AppShell from "../../components/layout/AppShell.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { messagesPageRequirements } from "../../config/page-access";
+import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 
 // 同步自定义 TabBar 选中状态（消息 = 索引 3）
 useTabBar(3);
@@ -37,18 +38,8 @@ const { loading, errorMessage } = storeToRefs(messagesStore);
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
 const completionPercent = computed(() => sessionStore.profileCompletion);
 
-/** SVG 图标资源路径 */
-const iconSrc = {
-  message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
-} as const;
-
-/** 话题推荐 */
-const topicSuggestions = computed(() => [
-  t("chat.topicWeekend"),
-  t("chat.topicBook"),
-  t("chat.topicStudy"),
-  t("chat.topicCanteen"),
-]);
+/** 默认头像（会话头像加载失败/为空时的兜底） */
+const DEFAULT_AVATAR = IMAGE_PATHS.DEFAULT_AVATAR;
 
 /** 私聊会话列表（按置顶 + 时间排序） */
 const privateSessions = computed(() => {
@@ -86,6 +77,27 @@ function formatChatTime(isoString: string | null): string {
 
 function goToChat(sessionId: string) {
   openAppPath(`/pages/chat-session/index?sessionId=${encodeURIComponent(sessionId)}`);
+}
+
+/** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
+function goToPublishTopic() {
+  openAppPath('/pages/circles/post-topic');
+}
+
+/**
+ * 点击"官方消息"系统会话卡片
+ * 当前为占位提示，后续接入官方消息中心页
+ */
+function handleOfficialTap() {
+  uni.showToast({ title: t("chat.officialWip"), icon: "none" });
+}
+
+/**
+ * 点击"小助手"系统会话卡片
+ * 当前为占位提示，后续接入助手机器人会话
+ */
+function handleAssistantTap() {
+  uni.showToast({ title: t("chat.assistantWip"), icon: "none" });
 }
 
 /** 下拉刷新 */
@@ -127,26 +139,6 @@ onShow(() => {
     :subtitle="t('chat.sessionSubtitle')"
     :tab-bar-safe="true"
   >
-    <!-- 话题推荐助手 -->
-    <view class="topic-assistant">
-        <view class="topic-assistant__label">
-          <SafeImage :src="iconSrc.message" custom-class="topic-assistant__label-icon" mode="aspectFit" />
-          <text>{{ t('chat.topicRecommend') }}</text>
-        </view>
-        <scroll-view scroll-x class="topic-scroll" show-scrollbar="false">
-          <view class="topic-list" role="list">
-            <view
-              v-for="(topic, index) in topicSuggestions" :key="index"
-              class="topic-tag press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="120"
-            >
-              <text class="topic-tag__text">{{ topic }}</text>
-            </view>
-          </view>
-        </scroll-view>
-      </view>
-
       <!-- 错误状态 -->
       <ErrorState
         v-if="errorMessage && privateSessions.length === 0"
@@ -181,6 +173,64 @@ onShow(() => {
 
         <!-- 正常内容 -->
         <view v-else class="conversation-list card-base" role="list">
+          <!-- 官方消息（系统固定卡片，不依赖 store 数据） -->
+          <view
+            class="conversation-item system-conversation-item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('chat.officialAria')"
+            @tap="handleOfficialTap"
+          >
+            <view class="conversation-item__avatar-wrap">
+              <view class="system-avatar">
+                <image class="system-avatar__img" :src="IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE" mode="aspectFit" alt="" />
+              </view>
+            </view>
+            <view class="conversation-item__content">
+              <view class="conversation-item__top">
+                <view class="conversation-item__name-wrap">
+                  <text class="conversation-item__name">{{ t('chat.officialTitle') }}</text>
+                  <view class="conversation-item__pin-icon">
+                    <image class="conversation-item__pin-img" :src="IMAGE_PATHS.ICONS_EMOJI.PIN" mode="aspectFit" alt="" />
+                  </view>
+                </view>
+              </view>
+              <view class="conversation-item__bottom">
+                <text class="conversation-item__message">{{ t('chat.officialSubtitle') }}</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 小助手（系统固定卡片，不依赖 store 数据） -->
+          <view
+            class="conversation-item system-conversation-item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('chat.assistantAria')"
+            @tap="handleAssistantTap"
+          >
+            <view class="conversation-item__avatar-wrap">
+              <view class="system-avatar">
+                <image class="system-avatar__img" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" lazy-load alt="" />
+              </view>
+            </view>
+            <view class="conversation-item__content">
+              <view class="conversation-item__top">
+                <view class="conversation-item__name-wrap">
+                  <text class="conversation-item__name">{{ t('chat.assistantTitle') }}</text>
+                  <view class="conversation-item__pin-icon">
+                    <image class="conversation-item__pin-img" :src="IMAGE_PATHS.ICONS_EMOJI.PIN" mode="aspectFit" alt="" />
+                  </view>
+                </view>
+              </view>
+              <view class="conversation-item__bottom">
+                <text class="conversation-item__message">{{ t('chat.assistantSubtitle') }}</text>
+              </view>
+            </view>
+          </view>
+
           <view
             v-for="conv in privateSessions" :key="conv.id"
             class="conversation-item press-feedback"
@@ -189,15 +239,14 @@ onShow(() => {
             @tap="goToChat(conv.id)"
           >
             <view class="conversation-item__avatar-wrap">
-              <image
-                v-if="conv.partnerAvatar"
-                class="conversation-item__avatar"
-                :src="conv.partnerAvatar"
-                mode="aspectFill"
-                lazy-load alt=""
-              />
-              <view v-else class="conversation-item__avatar-placeholder">
-                <text class="conversation-item__avatar-initial">{{ conv.partnerName?.charAt(0) || '?' }}</text>
+              <view class="conversation-item__avatar">
+                <SafeImage
+                  :src="conv.partnerAvatar"
+                  :fallback="DEFAULT_AVATAR"
+                  mode="aspectFill"
+                  :lazy-load="true"
+                  :alt="conv.partnerName || ''"
+                />
               </view>
               <!-- 在线指示器（当前暂无在线状态数据，保留结构） -->
             </view>
@@ -229,66 +278,12 @@ onShow(() => {
 
       </scroll-view>
   </AppShell>
+
+  <!-- Task F：全局发帖悬浮按钮（仅已解锁时显示，publish → 发帖编辑页） -->
+  <GlobalPublishFab v-if="isUnlocked" @publish="goToPublishTopic" />
 </template>
 
 <style scoped lang="scss">
-/* ========== 话题推荐助手 ========== */
-.topic-assistant {
-  padding: var(--sp-5) var(--sp-6);
-  margin: 0 var(--sp-8) var(--sp-5);
-  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-romance-50) 100%);
-  border-radius: var(--r-xl);
-  position: relative;
-  z-index: 1;
-}
-
-.topic-assistant__label {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: var(--fs-base);
-  color: var(--c-brand);
-  font-weight: 600;
-  margin-bottom: var(--sp-3);
-}
-
-.topic-assistant__label-icon {
-  width: var(--sp-7);
-  height: var(--sp-7);
-  opacity: 0.7;
-}
-
-.topic-scroll {
-  width: 100%;
-}
-
-.topic-list {
-  display: flex;
-  gap: var(--sp-3);
-  padding-right: 0;
-}
-
-.topic-tag {
-  flex-shrink: 0;
-  padding: var(--sp-3) var(--sp-6);
-  border-radius: var(--r-full);
-  background: var(--c-bg-container);
-  box-shadow: var(--s-sm);
-  transition: transform var(--d-fast, 120ms) ease;
-}
-
-/* #ifdef H5 */
-.topic-tag:active {
-  transform: scale(0.96);
-}
-/* #endif */
-
-.topic-tag__text {
-  font-size: var(--fs-base);
-  color: var(--c-brand);
-  font-weight: 500;
-}
-
 /* ========== 滚动区域 ========== */
 .chat-scroll {
   flex: 1;
@@ -345,10 +340,13 @@ onShow(() => {
   width: 88rpx;
   height: 88rpx;
   border-radius: var(--r-full);
+  overflow: hidden;
   background: var(--c-bg-page);
+  flex-shrink: 0;
 }
 
-.conversation-item__avatar-placeholder {
+/* 系统固定会话卡片（官方消息 / 小助手）图标头像 */
+.system-avatar {
   width: 88rpx;
   height: 88rpx;
   border-radius: var(--r-full);
@@ -356,12 +354,12 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.conversation-item__avatar-initial {
-  font-size: var(--fs-3xl);
-  font-weight: 700;
-  color: var(--c-brand);
+.system-avatar__img {
+  width: 44rpx;
+  height: 44rpx;
 }
 
 .conversation-item__content {
@@ -397,6 +395,11 @@ onShow(() => {
 .conversation-item__pin-icon {
   font-size: var(--fs-sm);
   flex-shrink: 0;
+}
+
+.conversation-item__pin-img {
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .conversation-item__time {

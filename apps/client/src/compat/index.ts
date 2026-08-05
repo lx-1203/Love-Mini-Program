@@ -484,6 +484,109 @@ export function installAbortControllerPolyfill(): void {
   });
 }
 
+/**
+ * 全局 URLSearchParams polyfill（收尾轮：mp-weixin 基础库无原生 URLSearchParams/URL，
+ * 而 stores/village/api.ts、stores/profile.ts、pages/feedback/history.vue 均直接使用，
+ * 会导致运行时 ReferenceError）。
+ *
+ * 实现覆盖本项目实际使用的 API：构造（字符串/记录）、append/get/set/has/delete、
+ * toString（encodeURIComponent）、forEach/entries。其余 API 保持 undefined 语义。
+ */
+export function installUrlSearchParamsPolyfill(): void {
+  const g = globalThis as Record<string, unknown>;
+  if (typeof g.URLSearchParams !== "undefined") {
+    // 原生可用（H5 / 新基础库），无需注入
+    return;
+  }
+
+  class PolyfillURLSearchParams {
+    private pairs: Array<[string, string]> = [];
+
+    constructor(
+      init?:
+        | string
+        | Record<string, string>
+        | Array<[string, string]>
+        | PolyfillURLSearchParams
+    ) {
+      if (!init) return;
+      if (typeof init === "string") {
+        const query = init.startsWith("?") ? init.slice(1) : init;
+        if (!query) return;
+        query.split("&").forEach((pair) => {
+          if (!pair) return;
+          const idx = pair.indexOf("=");
+          // review 修复：解码兜底——非法编码（如 a=%）原生 URLSearchParams 宽容保留原样，
+          // polyfill 需等价处理，避免 decodeURIComponent 抛 URIError
+          const safeDecode = (s: string): string => {
+            try {
+              return decodeURIComponent(s);
+            } catch (_e) {
+              return s;
+            }
+          };
+          if (idx === -1) {
+            this.pairs.push([safeDecode(pair), ""]);
+          } else {
+            this.pairs.push([safeDecode(pair.slice(0, idx)), safeDecode(pair.slice(idx + 1))]);
+          }
+        });
+      } else if (Array.isArray(init)) {
+        init.forEach(([k, v]) => this.pairs.push([String(k), String(v)]));
+      } else if (init instanceof PolyfillURLSearchParams) {
+        this.pairs = init.pairs.map(([k, v]) => [k, v]);
+      } else {
+        Object.keys(init).forEach((k) => this.pairs.push([k, String(init[k])]));
+      }
+    }
+
+    append(key: string, value: string): void {
+      this.pairs.push([String(key), String(value)]);
+    }
+
+    get(key: string): string | null {
+      const found = this.pairs.find(([k]) => k === key);
+      return found ? found[1] : null;
+    }
+
+    set(key: string, value: string): void {
+      this.delete(key);
+      this.append(key, value);
+    }
+
+    has(key: string): boolean {
+      return this.pairs.some(([k]) => k === key);
+    }
+
+    delete(key: string): void {
+      this.pairs = this.pairs.filter(([k]) => k !== key);
+    }
+
+    toString(): string {
+      return this.pairs
+        .map(
+          ([k, v]) =>
+            `${encodeURIComponent(k)}=${encodeURIComponent(v)}`
+        )
+        .join("&");
+    }
+
+    forEach(cb: (value: string, key: string) => void): void {
+      this.pairs.forEach(([k, v]) => cb(v, k));
+    }
+
+    entries(): Array<[string, string]> {
+      return this.pairs.map(([k, v]) => [k, v]);
+    }
+  }
+
+  Object.defineProperty(g, "URLSearchParams", {
+    configurable: true,
+    writable: false,
+    value: PolyfillURLSearchParams,
+  });
+}
+
 // #ifdef MP-WEIXIN
 // 仅在微信小程序平台生效（以下为微信 JSAPI 兼容层）
 

@@ -281,7 +281,7 @@ defineExpose({ noop });
     >
       <view
         class="claim-modal"
-        catchtap="noop"
+  @tap.stop="noop"
       >
         <view class="claim-modal__header">
           <text class="claim-modal__title">{{ t('vip.redPacketClaimTitle') }}</text>

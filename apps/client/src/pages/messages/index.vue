@@ -14,6 +14,7 @@ import { useProfileStore } from "../../stores/profile";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
+import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { messagesPageRequirements } from "../../config/page-access";
 import { featureFlags } from "../../config/feature-flags";
@@ -508,6 +509,11 @@ function handleOfficialTap(accountId: string) {
   });
 }
 
+/** 收尾轮：全局 FAB publish 事件 → 发帖编辑页 */
+function goToPublishTopic() {
+  openAppPath("/pages/circles/post-topic");
+}
+
 /** Phase Feedback3：心动信号改名"缘分速配"（随机匹配 + 消息解锁规则） */
 const fateMatchRuleHints = [
   "messages.heartSignalRule3",
@@ -811,7 +817,7 @@ async function handleMarkAllNotificationsRead() {
           @longpress="handleSessionLongPress(session.id)"
         >
           <view class="session-row__avatar-wrap">
-            <view class="session-row__avatar" :class="{ 'session-row__avatar--vip': true }">
+            <view class="session-row__avatar">
               <text v-if="!session.partnerAvatar" class="session-row__avatar-text">
                 {{ session.partnerName.charAt(0) }}
               </text>
@@ -945,6 +951,9 @@ async function handleMarkAllNotificationsRead() {
     @start-chat="handleMatchGuideStartChat"
     @select-icebreaker="handleMatchGuideIcebreaker"
   />
+
+  <!-- 收尾轮：全局发帖 FAB（消息页补齐，publish → 发帖编辑页） -->
+  <GlobalPublishFab @publish="goToPublishTopic" />
 </template>
 
 <style scoped lang="scss">
@@ -1522,11 +1531,6 @@ async function handleMarkAllNotificationsRead() {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.session-row__avatar--vip {
-  padding: var(--sp-1);
-  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-romance-500) 50%, var(--c-vip-to) 100%);
 }
 
 .session-row__avatar-img {

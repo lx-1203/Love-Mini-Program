@@ -18,6 +18,8 @@ import { IMAGE_PATHS } from "../../config/images";
 import { useSessionStore } from "../../stores/session";
 import { STORAGE_KEYS } from "../../constants/storage-keys";
 import { designTokens } from "../../theme/tokens";
+// 收尾轮：深色模式三态切换（auto/dark/light）
+import { useThemeStore, type ThemeMode } from "../../stores/theme";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 
@@ -25,6 +27,23 @@ import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 const operationTimers = new Set<ReturnType<typeof setTimeout>>();
 
 const { t } = useI18n();
+const themeStore = useThemeStore();
+/** 深色模式三态循环（跟随系统 → 深色 → 浅色 → 跟随系统） */
+const THEME_CYCLE: ThemeMode[] = ["auto", "dark", "light"];
+const themeModeText = computed(() => {
+  const map: Record<ThemeMode, string> = {
+    auto: t("settings.themeAuto"),
+    dark: t("settings.themeDark"),
+    light: t("settings.themeLight"),
+  };
+  return map[themeStore.mode];
+});
+function handleThemeTap(): void {
+  const idx = THEME_CYCLE.indexOf(themeStore.mode);
+  const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length] ?? "auto";
+  themeStore.setMode(next);
+  uni.showToast({ title: themeModeText.value, icon: "none" });
+}
 
 interface MenuItem {
   icon: string;
@@ -289,6 +308,15 @@ function goBack() {
   uni.navigateBack({ delta: 1 });
 }
 
+/**
+ * 任务 E4：跳转"反馈与帮助"（反馈历史页）。
+ * 路径已在 pages.json 中注册：pages/feedback/history
+ */
+function goToFeedbackHelp() {
+  lightHaptic();
+  uni.navigateTo({ url: ROUTES.FEEDBACK_HISTORY });
+}
+
 /** 账号分组菜单项（使用 computed 以响应 locale 切换） */
 const menuIcons = {
   bell: IMAGE_PATHS.ICONS_EMOJI.BELL,
@@ -296,6 +324,7 @@ const menuIcons = {
   shield: IMAGE_PATHS.ICONS_EMOJI.SHIELD,
   clipboard: IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD,
   broom: IMAGE_PATHS.ICONS_EMOJI.BROOM,
+  megaphone: IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE,
 } as const;
 
 const accountMenus = computed<MenuItem[]>(() => [
@@ -366,6 +395,31 @@ function handleMenuTap(item: MenuItem) {
     <!-- 顶部安全区占位 -->
     <view class="safe-top" />
 
+    <!-- 任务 E4：反馈与帮助（一级菜单顶部入口） -->
+    <view class="section">
+      <view class="section__title">
+        <text class="section__title-text">{{ t('settings.feedbackHelpSection') }}</text>
+      </view>
+      <view class="menu-group">
+        <view
+          class="menu-item press-feedback list-item menu-item--no-border"
+          hover-class="menu-item--hover"
+          hover-stay-time="100"
+          role="button"
+          :aria-label="t('settings.feedbackHelp')"
+          @tap="goToFeedbackHelp"
+        >
+          <view class="menu-item__left">
+            <view class="menu-item__icon settings-card--cream">
+              <image class="menu-item__emoji-img" :src="menuIcons.megaphone" mode="aspectFit" alt="" />
+            </view>
+            <text class="menu-item__label">{{ t('settings.feedbackHelp') }}</text>
+          </view>
+          <text class="menu-item__arrow">›</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 账号分组 -->
     <view class="section">
       <view class="section__title">
@@ -424,6 +478,24 @@ function handleMenuTap(item: MenuItem) {
             </view>
             <text class="menu-item__label">{{ t("dnd.title") }}</text>
           </view>
+          <text class="menu-item__arrow">›</text>
+        </view>
+        <!-- 收尾轮：深色模式三态切换 -->
+        <view
+          class="menu-item list-item press-feedback"
+          hover-class="menu-item--hover"
+          hover-stay-time="100"
+          role="button"
+          :aria-label="t('settings.themeAria')"
+          @tap="handleThemeTap"
+        >
+          <view class="menu-item__left">
+            <view class="menu-item__icon settings-card--lavender">
+              <image class="menu-item__emoji-img" :src="menuIcons.moon" mode="aspectFit" alt="" />
+            </view>
+            <text class="menu-item__label">{{ t('settings.themeMode') }}</text>
+          </view>
+          <text class="menu-item__value">{{ themeModeText }}</text>
           <text class="menu-item__arrow">›</text>
         </view>
         <view class="menu-item list-item menu-item--no-border">

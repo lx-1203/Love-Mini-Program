@@ -243,7 +243,7 @@ function mapNotificationType(backendType: string): SystemNotification["type"] {
 
 const mockSessions: MessageSession[] = [
   {
-    id: "session-private-1", partnerId: "user-2001", partnerName: "林夕", partnerAvatar: "",
+    id: "session-private-1", partnerId: "user-2001", partnerName: "林夕", partnerAvatar: "/static/default-avatar.png",
     partnerHeadline: "大二 · 喜欢电影和咖啡", lastMessagePreview: "明天下午有空吗？",
     lastMessageSentAt: "2026-05-20T18:30:00Z", unreadCount: 2, pinned: true,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,

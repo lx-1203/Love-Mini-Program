@@ -143,7 +143,7 @@ function formatTime(isoString: string): string {
         <view
           v-if="quoteRef && quoteBody"
           class="bubble__quote"
-          catchtap="handleTapQuote"
+  @tap.stop="handleTapQuote"
           role="button"
           :aria-label="t('chat.quoteAria')"
         >

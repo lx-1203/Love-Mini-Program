@@ -13,6 +13,8 @@ import {
   CHECKIN_EXTRA_QUOTA,
   CHECKIN_HOT_TOPIC_COUNT,
   CHECKIN_NEW_USER_COUNT,
+  CHECKIN_POINTS_EARNED,
+  MOCK_POINTS_BALANCE,
 } from "../constants/growth";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
@@ -52,6 +54,8 @@ export interface CheckInResult {
   hotTopicCount: number;
   /** 新入圈用户数量 */
   newUserCount: number;
+  /** 本次签到获得积分（后端可选，缺失时回退常量 CHECKIN_POINTS_EARNED） */
+  points?: number;
 }
 
 /**
@@ -61,6 +65,8 @@ interface BackendCheckInStatusView {
   checkedInToday: boolean;
   consecutiveDays: number;
   extraQuota: number;
+  /** 积分余额（可选字段，后端未提供时保留前端本地值） */
+  points?: number;
 }
 
 /**
@@ -75,6 +81,8 @@ interface BackendCheckInResultView {
   newUsersUnlocked: boolean;
   hotTopicCount: number;
   newUserCount: number;
+  /** 本次签到获得积分（可选字段，后端未提供时回退常量） */
+  points?: number;
 }
 
 /**
@@ -97,6 +105,10 @@ export interface CheckInState {
   hotTopicCount: number;
   /** 新入圈用户数量 */
   newUserCount: number;
+  /** 我的积分余额（Task D · 签到积分体系） */
+  pointsBalance: number;
+  /** 本次签到获得积分（Task D · 签到成功时设置） */
+  pointsEarned: number;
   /** 是否正在加载 */
   loading: boolean;
   /** 是否正在签到中 */
@@ -121,6 +133,9 @@ let mockCheckInStatus: CheckInStatus = {
   consecutiveDays: 0,
   extraRecommendations: 0,
 };
+
+/** mock 模式积分余额（模块级单例，与 mockCheckInStatus 生命周期一致） */
+let mockPointsBalance = MOCK_POINTS_BALANCE;
 
 // 注：ASYNC_TIMEOUT_MS / SUCCESS_ANIMATION_AUTO_DISMISS_MS
 // 由 constants/growth.ts 统一提供
@@ -211,6 +226,9 @@ export const useCheckInStore = defineStore("checkin", {
     newUsersUnlocked: false,
     hotTopicCount: 0,
     newUserCount: 0,
+    // Task D：积分体系初始状态
+    pointsBalance: MOCK_POINTS_BALANCE,
+    pointsEarned: 0,
     loading: false,
     checkingIn: false,
     showSuccessAnimation: false,
@@ -279,6 +297,8 @@ export const useCheckInStore = defineStore("checkin", {
               this.checkedIn = mockCheckInStatus.checkedIn;
               this.consecutiveDays = mockCheckInStatus.consecutiveDays;
               this.extraRecommendations = mockCheckInStatus.extraRecommendations;
+              // Task D：同步 mock 积分余额
+              this.pointsBalance = mockPointsBalance;
               return;
             }
 
@@ -297,6 +317,8 @@ export const useCheckInStore = defineStore("checkin", {
             this.checkedIn = data.checkedInToday;
             this.consecutiveDays = data.consecutiveDays;
             this.extraRecommendations = data.extraQuota;
+            // Task D：后端提供积分余额时同步，否则保留本地值
+            this.pointsBalance = data.points ?? this.pointsBalance;
           })(),
           ASYNC_TIMEOUT_MS,
           "获取签到状态超时",
@@ -353,6 +375,8 @@ export const useCheckInStore = defineStore("checkin", {
                   : mockCheckInStatus.consecutiveDays + 1,
                 extraRecommendations: CHECKIN_EXTRA_RECOMMENDATIONS,
               };
+              // Task D：mock 积分余额累加
+              mockPointsBalance += CHECKIN_POINTS_EARNED;
 
               return {
                 // 修复（严格模式 noUncheckedIndexedAccess）：split("T")[0] 索引访问返回 string | undefined，
@@ -365,6 +389,7 @@ export const useCheckInStore = defineStore("checkin", {
                 newUsersUnlocked: true,
                 hotTopicCount: CHECKIN_HOT_TOPIC_COUNT,
                 newUserCount: CHECKIN_NEW_USER_COUNT,
+                points: CHECKIN_POINTS_EARNED,
               };
             }
 
@@ -393,6 +418,7 @@ export const useCheckInStore = defineStore("checkin", {
               newUsersUnlocked: data.newUsersUnlocked,
               hotTopicCount: data.hotTopicCount,
               newUserCount: data.newUserCount,
+              points: data.points ?? CHECKIN_POINTS_EARNED,
             };
           })(),
           ASYNC_TIMEOUT_MS,
@@ -414,6 +440,9 @@ export const useCheckInStore = defineStore("checkin", {
         this.newUsersUnlocked = result.newUsersUnlocked;
         this.hotTopicCount = result.hotTopicCount;
         this.newUserCount = result.newUserCount;
+        // Task D：签到成功累加积分（后端字段缺失时回退常量 5）
+        this.pointsEarned = result.points ?? CHECKIN_POINTS_EARNED;
+        this.pointsBalance += this.pointsEarned;
 
         // 触发签到成功动画
         this.showSuccessAnimation = true;

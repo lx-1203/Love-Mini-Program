@@ -158,6 +158,8 @@ export interface CircleItem {
   topicCount: number;
   /** 当前用户是否已加入 */
   isJoined: boolean;
+  /** 校园认证圈（收尾轮：显示认证徽标；未认证用户点击需先认证） */
+  campusVerified?: boolean;
 }
 
 /**
@@ -240,6 +242,16 @@ export interface CircleState {
 
 const mockCircles: CircleItem[] = [
   {
+    id: "circle-campus",
+    name: "校园圈",
+    icon: IMAGE_PATHS.ICONS_COMMON.SCHOOL,
+    description: "本校认证同学的专属圈子：同校动态、活动与互助",
+    memberCount: 3420,
+    topicCount: 890,
+    isJoined: true,
+    campusVerified: true,
+  },
+  {
     id: "circle-1",
     name: "电影迷",
     icon: IMAGE_PATHS.ICONS_EMOJI.VIDEO,
@@ -296,6 +308,38 @@ const mockCircles: CircleItem[] = [
 ];
 
 const mockTopics: Record<string, TopicItem[]> = {
+  "circle-campus": [
+    {
+      id: "campus-topic-1",
+      circleId: "circle-campus",
+      title: "期末图书馆占座攻略",
+      content: "期末周图书馆太难占座了！分享一个经验：早上七点半前到三楼东区，人少光线好。",
+      images: [],
+      author: { userId: "user-3011", name: "晨光", avatar: "", headline: "计算机学院" },
+      replyCount: 45,
+      createdAt: new Date(Date.now() - 1000 * 60 * 40).toISOString(),
+    },
+    {
+      id: "campus-topic-2",
+      circleId: "circle-campus",
+      title: "本周六校园歌手大赛决赛，求组队观赛",
+      content: "周六晚上七点大礼堂，决赛选手都好强！想找几个同学一起去，结束后可以约夜宵。",
+      images: [],
+      author: { userId: "user-3012", name: "晚风", avatar: "", headline: "外国语学院" },
+      replyCount: 19,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+    },
+    {
+      id: "campus-topic-3",
+      circleId: "circle-campus",
+      title: "有没有同专业的学长学姐，求经验",
+      content: "大二想转专业到软件工程，有没有学长学姐可以给点建议？感谢！",
+      images: [],
+      author: { userId: "user-3013", name: "小北", avatar: "", headline: "大二在读" },
+      replyCount: 33,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
+    },
+  ],
   "circle-1": [
     {
       id: "topic-1",
@@ -599,9 +643,9 @@ export const useCircleStore = defineStore("circle", {
     /**
      * 创建新话题
      * @param circleId - 兴趣圈 ID
-     * @param data - 话题数据
+     * @param data - 话题数据（Task B5：可附加 tags 话题标签 / favorite 喜爱标记）
      */
-    async createTopic(circleId: string, data: { title: string; content: string; images?: string[] }) {
+    async createTopic(circleId: string, data: { title: string; content: string; images?: string[]; tags?: string[]; favorite?: boolean }) {
       this.errorMessage = null;
 
       try {
@@ -635,8 +679,9 @@ export const useCircleStore = defineStore("circle", {
             replyCount: 0,
             createdAt: new Date().toISOString(),
           };
+          // Task B5：mock 本地模拟附加 tags / favorite 字段，不破坏现有 TopicItem 结构
           this.currentTopics.unshift(newTopic);
-          return newTopic;
+          return { ...newTopic, tags: data.tags ?? [], favorite: data.favorite ?? false } as TopicItem;
         }
 
         // 调用后端 API: POST /api/circles/{circleId}/topics

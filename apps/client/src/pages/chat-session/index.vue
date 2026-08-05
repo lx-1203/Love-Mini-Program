@@ -1200,7 +1200,7 @@ defineExpose({ noop });
     >
       <view
         class="longpress-menu"
-        catchtap="noop"
+  @tap.stop="noop"
       >
         <!-- 复制：将消息正文写入剪贴板（P2 长按复制支持） -->
         <view
@@ -1258,7 +1258,7 @@ defineExpose({ noop });
     >
       <view
         class="more-menu-sheet"
-        catchtap="noop"
+  @tap.stop="noop"
       >
         <view class="more-menu-sheet__title">
           <text class="more-menu-sheet__title-text">{{ t('chat.moreMenuTitle') }}</text>

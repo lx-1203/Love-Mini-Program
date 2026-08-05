@@ -29,6 +29,8 @@ const mockUserSession: UserSession = {
   campusVerified: true,
   scheduleCompleted: true,
   campusName: "北京大学",
+  schoolId: "北京大学",
+  schoolBound: true,
   featureFlags: {
     chat_ai_enabled: false,
   },
@@ -307,6 +309,18 @@ export const useSessionStore = defineStore("session", {
      */
     isCampusVerified: (state): boolean => {
       return Boolean(state.userSession?.campusVerified);
+    },
+
+    /**
+     * 是否已绑定学校（任务 C：学校一次性绑定）。
+     *
+     * UserSession schema 暂未暴露 schoolBound 字段（同 profileBackgroundUrl 处理方式），
+     * 使用类型断言安全访问，避免 TS 编译错误；真实环境由后端返回该字段。
+     */
+    isSchoolBound: (state): boolean => {
+      return Boolean(
+        (state.userSession as { schoolBound?: boolean } | null)?.schoolBound,
+      );
     },
   },
   actions: {
@@ -589,6 +603,36 @@ export const useSessionStore = defineStore("session", {
       savePersistedFields({
         profileBackgroundUrl: this.profileBackgroundUrl,
       });
+    },
+
+    /**
+     * 绑定学校（任务 C：学校一次性绑定）。
+     *
+     * 已认证用户选择学校后调用，绑定成功后学校不可再切换
+     * （UI 侧配合 home 页的只读态提示处理）。
+     *
+     * Mock 风格：本地写入 userSession 的 schoolId / schoolBound / campusName 字段。
+     * 真实环境接入：应改为调用后端绑定接口（如 POST /api/schools/bind，
+     * 请求体携带 schoolId），成功后由后端返回包含 schoolBound 的最新会话。
+     *
+     * @param schoolId - 学校 ID（当前 mock 下直接使用学校名称）
+     * @returns 是否绑定成功
+     */
+    async bindSchool(schoolId: string): Promise<boolean> {
+      if (!this.userSession) return false;
+      // TODO(real-env): 真实环境在此调用后端绑定接口并 await 结果
+      this.userSession = {
+        ...this.userSession,
+        schoolId,
+        schoolBound: true,
+        // 同步校园名称，保持现有 campusName 字段（首页选择器/资料完善度依赖）一致
+        campusName: schoolId,
+      } as typeof this.userSession;
+      if (isDev) {
+        // 修复 no-console：调试日志改用 console.warn（允许的方法）
+        console.warn("[SessionStore] bindSchool 完成:", { schoolId });
+      }
+      return true;
     },
   },
 });

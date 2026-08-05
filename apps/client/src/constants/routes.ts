@@ -149,6 +149,21 @@ export const ROUTES = {
   /** 反馈历史 */
   FEEDBACK_HISTORY: "/pages/feedback/history",
 
+  /** 活动详情（任务 E2） */
+  ACTIVITY_DETAIL: "/pages/activities/detail",
+
+  /** 恋爱中心模块（任务 E3） */
+  LOVE_CENTER: {
+    /** 恋爱中心首页 */
+    INDEX: "/pages/love-center/index",
+    /** 附近的人 */
+    NEARBY: "/pages/love-center/nearby",
+    /** MBTI 人格测试 */
+    MBTI: "/pages/love-center/mbti",
+    /** 恋爱咨询课程 */
+    CONSULTING: "/pages/love-center/consulting",
+  },
+
   /** 开发者页面 */
   DEV: "/pages/dev/index",
 } as const;

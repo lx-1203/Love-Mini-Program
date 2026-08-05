@@ -1,14 +1,22 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 逛逛页 - 校内商品/票务/优惠券展示
  */
 import { ref, computed } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
+import { useCheckInStore } from "../../stores/checkin";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 
 const { t } = useI18n();
+
+// Task D：签到积分余额展示（进入页面时拉取最新余额）
+const checkInStore = useCheckInStore();
+onShow(() => {
+  void checkInStore.fetchStatus();
+});
 
 // 分类标签
 const categories = computed(() => [
@@ -99,6 +107,18 @@ function goToDetail(itemId: string) {
     <!-- 页面标题 -->
     <view class="shop-header">
       <text class="shop-header__title">{{ t('shop.pageTitle') }}</text>
+    </view>
+
+    <!-- Task D：当前积分余额展示条 -->
+    <view class="shop-points-bar">
+      <view class="shop-points-bar__left">
+        <image class="shop-points-bar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.GIFT" mode="aspectFit" alt="" lazy-load />
+        <text class="shop-points-bar__label">{{ t('shop.pointsBarTitle') }}</text>
+      </view>
+      <view class="shop-points-bar__right">
+        <text class="shop-points-bar__value">{{ checkInStore.pointsBalance }}</text>
+        <text class="shop-points-bar__hint">{{ t('discover.pointsHint') }}</text>
+      </view>
     </view>
 
     <!-- 分类标签 -->
@@ -198,6 +218,60 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   // #ifndef H5
   color: var(--c-brand); // mp-weixin 降级：使用纯色（取渐变中间色）
   // #endif
+}
+
+/* ========== Task D：积分余额展示条 ========== */
+.shop-points-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 24rpx 20rpx;
+  padding: 20rpx 28rpx;
+  border-radius: var(--r-xl, 24rpx);
+  background: linear-gradient(135deg, $gold-vip, var(--c-vip-border-light, #d9b97c));
+  box-shadow: 0 4rpx 16rpx var(--c-vip-border-tint, rgba(201, 163, 106, 0.35));
+  border: none;
+}
+
+.shop-points-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+.shop-points-bar__icon {
+  width: 40rpx;
+  height: 40rpx;
+  flex-shrink: 0;
+  color: $white;
+}
+
+.shop-points-bar__label {
+  font-size: var(--fs-md, 26rpx);
+  font-weight: 700;
+  color: $white;
+}
+
+.shop-points-bar__right {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.shop-points-bar__value {
+  font-size: var(--fs-4xl, 40rpx);
+  font-weight: 800;
+  color: $white;
+  line-height: 1;
+}
+
+.shop-points-bar__hint {
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
 }
 
 /* ========== 分类标签 ========== */

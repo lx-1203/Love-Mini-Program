@@ -11,6 +11,8 @@
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+// 任务 E3：三个内容页（附近的人 / MBTI / 恋爱咨询课程）路由常量
+import { ROUTES } from "../../constants/routes";
 
 const { t } = useI18n();
 
@@ -27,6 +29,13 @@ const testEntries = [
   { id: "mbti", icon: IMAGE_PATHS.ICONS_EMOJI.PUZZLE, titleKey: "home.mbtiTest" },
 ] as const;
 
+/** 任务 E3：快捷入口（附近的人 / MBTI 人格测试 / 恋爱咨询课程） */
+const quickEntries = [
+  { id: "nearby", icon: IMAGE_PATHS.ICONS_EMOJI.LOCATION, titleKey: "contentPages.entries.nearby", url: ROUTES.LOVE_CENTER.NEARBY },
+  { id: "mbti", icon: IMAGE_PATHS.ICONS_EMOJI.PUZZLE, titleKey: "contentPages.entries.mbti", url: ROUTES.LOVE_CENTER.MBTI },
+  { id: "consulting", icon: IMAGE_PATHS.ICONS_EMOJI.DOUBLE_HEART, titleKey: "contentPages.entries.consulting", url: ROUTES.LOVE_CENTER.CONSULTING },
+] as const;
+
 /** 返回上一页 */
 function goBack() {
   const pages = getCurrentPages();
@@ -35,6 +44,12 @@ function goBack() {
   } else {
     uni.switchTab({ url: "/pages/home/index" });
   }
+}
+
+/** 任务 E3：跳转快捷入口对应内容页 */
+function goToQuickEntry(entry: { url: string }) {
+  lightHaptic();
+  uni.navigateTo({ url: entry.url });
 }
 
 /** 点击板块：当前为占位提示，运营内容接入后替换为真实跳转 */
@@ -59,6 +74,27 @@ function onTestTap(_testId: string) {
       </view>
       <text class="love-center__title">{{ t('home.loveConsulting') }}</text>
       <view class="love-center__header-spacer" />
+    </view>
+
+    <!-- 任务 E3：快捷入口（附近的人 / MBTI 人格测试 / 恋爱咨询课程） -->
+    <view class="love-center__section">
+      <text class="love-center__section-title">{{ t('contentPages.entries.sectionTitle') }}</text>
+      <view class="love-center__quick-grid">
+        <view
+          v-for="entry in quickEntries"
+          :key="entry.id"
+          class="love-center__quick press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t(entry.titleKey)"
+          @tap="goToQuickEntry(entry)"
+        >
+          <image class="love-center__quick-icon" :src="entry.icon" mode="aspectFit" lazy-load="true" alt="" />
+          <text class="love-center__quick-title">{{ t(entry.titleKey) }}</text>
+          <text class="love-center__quick-arrow">›</text>
+        </view>
+      </view>
     </view>
 
     <!-- 恋爱咨询 4 板块 -->
@@ -225,6 +261,41 @@ function onTestTap(_testId: string) {
 }
 
 .love-center__test-arrow {
+  font-size: var(--fs-2xl, 36rpx);
+  color: var(--c-text-tertiary, #9ca3af);
+}
+
+/* ========== 任务 E3：快捷入口 ========== */
+.love-center__quick-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.love-center__quick {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-xl, 24rpx);
+  background: var(--c-bg-container, #ffffff);
+  box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
+}
+
+.love-center__quick-icon {
+  width: 48rpx;
+  height: 48rpx;
+  color: var(--c-brand-500);
+}
+
+.love-center__quick-title {
+  flex: 1;
+  font-size: var(--fs-base, 28rpx);
+  font-weight: 700;
+  color: var(--c-text-primary, #1f2937);
+}
+
+.love-center__quick-arrow {
   font-size: var(--fs-2xl, 36rpx);
   color: var(--c-text-tertiary, #9ca3af);
 }

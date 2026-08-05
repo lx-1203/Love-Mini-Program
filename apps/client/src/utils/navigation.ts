@@ -46,6 +46,51 @@ export function openAppPath(url: string) {
   uni.navigateTo({ url: normalizedUrl });
 }
 
+/** TabBar 页面 query 暂存 key（switchTab 不支持 query，用本地存储桥接） */
+const TAB_QUERY_KEY = "campus-love:tab-query";
+
+/**
+ * 切换 TabBar 页面并携带 query（收尾轮修复：switchTab 不支持 query string，
+ * 原 `openAppPath('/pages/village/index?tab=hot')` 的 query 会被静默丢弃）。
+ *
+ * 用法：源页面调用 `switchTabWithQuery('/pages/village/index', { tab: 'hot' })`；
+ * 目标页面在 onLoad/onShow 中调用 `consumeTabQuery()` 读取并消费。
+ */
+export function switchTabWithQuery(url: string, query: Record<string, string>): void {
+  const normalizedUrl = normalizeUrl(url);
+  try {
+    uni.setStorageSync(TAB_QUERY_KEY, query);
+  } catch (_e) {
+    // 存储失败时静默（query 丢失但不影响页面切换）
+  }
+  uni.switchTab({
+    url: normalizedUrl,
+    fail: () => {
+      // 收尾轮 review 修复：切换失败时清理桥接 query，避免残留被下次误消费
+      try {
+        uni.removeStorageSync(TAB_QUERY_KEY);
+      } catch (_e) {
+        // 清理失败静默
+      }
+    },
+  });
+}
+
+/** 读取并消费 TabBar query（目标页面调用一次） */
+export function consumeTabQuery(): Record<string, string> {
+  try {
+    const raw = uni.getStorageSync(TAB_QUERY_KEY) as Record<string, string> | undefined;
+    // security review：typeof 校验需排除数组（typeof [] === "object"）
+    if (raw && !Array.isArray(raw) && typeof raw === "object") {
+      uni.removeStorageSync(TAB_QUERY_KEY);
+      return raw;
+    }
+  } catch (_e) {
+    // 读取失败视为无 query
+  }
+  return {};
+}
+
 /**
  * 替换当前页面（replace 语义）。
  *

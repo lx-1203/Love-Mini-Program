@@ -52,6 +52,8 @@ export const SAME_CITY_CATEGORY_ID = "cat-samecity";
 
 /** Phase Feedback4：发现 Tab 分类 ID（校友/老乡/搭子圈） */
 export const DISCOVER_CATEGORY_ID = "cat-discover";
+/** 我的动态（收尾轮：作者=当前用户，mock 下为空态引导发帖） */
+export const MINE_CATEGORY_ID = "cat-mine";
 
 /** 分类 ID 前缀（用于去除前缀转换后端分类名） */
 export const CATEGORY_PREFIX = "cat-";

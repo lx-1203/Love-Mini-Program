@@ -201,7 +201,7 @@ defineExpose({ goToAuthorProfile });
           <view class="topic-card__author">
             <view
               class="topic-card__avatar"
-              catchtap="goToAuthorProfile(topic.author.userId)"
+  @tap.stop="goToAuthorProfile(topic.author.userId)"
             >
               <image
                 v-if="topic.author.avatar && !isImageFailed(`avatar-${topic.id}`)"

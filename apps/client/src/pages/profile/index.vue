@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 个人中心 - 我的
  * 展示用户头像、昵称、学校、签名、VIP 状态、我的动态、数据统计、资料完善度、社交升温进度、功能菜单入口
@@ -13,7 +13,7 @@ import { useProfileStore } from "../../stores/profile";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
 import { isDev } from "../../services/env";
-import { openAppPath } from "../../utils/navigation";
+import { openAppPath, switchTabWithQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import { toProfileView } from "../../view-models/profile";
 import LockScreen from "../../components/common/LockScreen.vue";
@@ -21,6 +21,8 @@ import SocialProgressIndicator from "../../components/social/SocialProgressIndic
 import SafeImage from "../../components/common/SafeImage.vue";
 import MatchCountChip from "../../components/common/MatchCountChip.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
+// Task F：全局发帖悬浮按钮组件
+import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { IMAGE_PATHS } from "../../config/images";
 // Phase Feedback6：会员功能开关（false 时隐藏所有 VIP 入口）
 import { featureFlags } from "../../config/feature-flags";
@@ -275,6 +277,8 @@ interface MenuItem {
   bgColor: string;
   label: string;
   path?: string;
+  /** TabBar 页面传参（switchTab 不支持 query，走 storage 桥接） */
+  tabQuery?: Record<string, string>;
   action?: () => void;
 }
 
@@ -283,16 +287,15 @@ const menuItems = computed<MenuItem[]>(() => [
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
     label: t("profile.myPosts"),
-    path: "/pages/village/index?tab=mine",
+    path: "/pages/village/index",
+    tabQuery: { tab: "mine" } as Record<string, string> | undefined,
   },
   /* Phase Feedback5：任务中心（新增） */
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
     bgColor: "var(--c-tint-cream-50, #FFF8E7)",
     label: t("profile.taskCenter"),
-    action: () => {
-      uni.showToast({ title: t("profile.taskCenterDesc"), icon: "none" });
-    },
+    path: "/pages/profile/tasks",
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
@@ -381,7 +384,12 @@ const bottomMenuItems = computed<MenuItem[]>(() => [
 function handleMenuTap(item: MenuItem) {
   lightHaptic(); // 菜单点击轻振动反馈
   if (item.path) {
-    openAppPath(item.path);
+    if (item.tabQuery && Object.keys(item.tabQuery).length > 0) {
+      // TabBar 页面传参（switchTab 不支持 query，走 storage 桥接）
+      switchTabWithQuery(item.path, item.tabQuery);
+    } else {
+      openAppPath(item.path);
+    }
   } else if (item.action) {
     item.action();
   }
@@ -404,7 +412,8 @@ function handleSayHi() {
   successHaptic();
   const userId = targetUserId.value;
   if (!userId) return;
-  openAppPath(`/pages/chat-session/index?targetUserId=${encodeURIComponent(userId)}`);
+  // 收尾轮修复：chat-session 端消费 query.userId（原传 targetUserId 参数被忽略）
+  openAppPath(`/pages/chat-session/index?userId=${encodeURIComponent(userId)}`);
 }
 
 /**
@@ -498,7 +507,7 @@ function handleRemoveVoice() {
  */
 function goToMyPosts() {
   lightHaptic();
-  openAppPath("/pages/village/index?tab=mine");
+  switchTabWithQuery("/pages/village/index", { tab: "mine" });
 }
 
 /**
@@ -507,7 +516,12 @@ function goToMyPosts() {
  */
 function handlePostTap(_postId: string) {
   lightHaptic();
-  openAppPath("/pages/village/index?tab=mine");
+  switchTabWithQuery("/pages/village/index", { tab: "mine" });
+}
+
+/** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
+function goToPublishTopic() {
+  openAppPath("/pages/circles/post-topic");
 }
 
 /** 退出登录 */
@@ -772,8 +786,18 @@ onUnload(() => {
       <!-- 页面顶部安全区占位 -->
       <view class="safe-top" />
 
-      <!-- 顶部右上角：匹配次数 chip（Phase C1 · 跨页面复用） -->
+      <!-- 顶部右上角：退出登录按钮 + 匹配次数 chip（Phase C1 · 跨页面复用） -->
       <view class="profile-top-bar">
+        <view
+          class="profile-logout press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('profile.logoutAria')"
+          @tap="handleLogout"
+        >
+          <image class="profile-logout__icon" :src="IMAGE_PATHS.ICONS_COMMON.LOG_OUT_SVG" mode="aspectFit" alt="" />
+        </view>
         <MatchCountChip :count="matchCount" />
       </view>
 
@@ -859,7 +883,7 @@ onUnload(() => {
           </view>
           <!-- 学校信息 -->
           <view class="user-info__school-row">
-            <image class="user-info__school-icon" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION" mode="aspectFit" alt="" />
+            <image class="user-info__school-icon" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG" mode="aspectFit" alt="" />
             <text class="user-info__school">{{ school }}</text>
           </view>
           <text class="user-info__bio">{{ bio }}</text>
@@ -873,7 +897,7 @@ onUnload(() => {
         </view>
         <!-- 对方 profile：显示"打个招呼"按钮 -->
         <view v-else class="greet-btn press-feedback" role="button" :aria-label="t('profile.sayHiAria')" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="120">
-          <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
+          <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" alt="" />
           <text class="greet-btn__text">{{ t('profile.sayHi') }}</text>
         </view>
 
@@ -1059,11 +1083,11 @@ onUnload(() => {
                 <text class="my-post-item__time">{{ post.timeLabel }}</text>
                 <view class="my-post-item__stats">
                   <view class="my-post-item__stat">
-                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" lazy-load="true" alt="" />
+                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE" mode="aspectFit" lazy-load="true" alt="" />
                     <text class="my-post-item__stat-text">{{ post.likes }}</text>
                   </view>
                   <view class="my-post-item__stat">
-                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" lazy-load="true" alt="" />
+                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" lazy-load="true" alt="" />
                     <text class="my-post-item__stat-text">{{ post.comments }}</text>
                   </view>
                 </view>
@@ -1157,6 +1181,9 @@ onUnload(() => {
       <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath('/pages/dev/index')" hover-class="dev-entry--hover" hover-stay-time="100">
         <text class="dev-entry__text">DEV</text>
       </view>
+
+      <!-- Task F：全局发帖悬浮按钮（publish → 发帖编辑页） -->
+      <GlobalPublishFab @publish="goToPublishTopic" />
 
       <!-- 底部安全区占位 -->
       <view class="safe-bottom" />
@@ -1336,10 +1363,31 @@ onUnload(() => {
   right: 0;
   z-index: 10;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: var(--sp-4);
   padding: 0 var(--sp-7);
   width: 100%;
   box-sizing: border-box;
+}
+
+/* 顶部右上角退出登录按钮（64rpx 点击热区，置于 chip 左侧） */
+.profile-logout {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-overlay-bg-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 12;
+  transition: transform var(--d-fast, 120ms) ease;
+}
+
+.profile-logout__icon {
+  width: 36rpx;
+  height: 36rpx;
 }
 
 /* 头像容器（Phase D4 · 半遮挡背景） */
@@ -1482,7 +1530,10 @@ onUnload(() => {
 }
 
 .user-info__school-icon {
-  font-size: var(--fs-xs);
+  /* 修复：png 图标未设宽高会按原图尺寸渲染，导致顶部出现超大图标；
+     改用 SVG 变体并固定 28rpx 尺寸 */
+  width: 28rpx;
+  height: 28rpx;
   line-height: 1;
 }
 
@@ -1509,17 +1560,30 @@ onUnload(() => {
 /* 编辑资料按钮 */
 .edit-btn {
   position: relative;
-  z-index: 2;
-  padding: var(--sp-3) var(--sp-6);
+  /* 修复：z-index 提升到 3，避免被上层元素（头像区域等）遮挡导致无法点击 */
+  z-index: 3;
+  /* 修复：扩大点击热区（水平 padding ≥ 80rpx、最小高度 88rpx），同时缩小图标尺寸 */
+  padding: var(--sp-4) var(--sp-11);
+  min-height: 88rpx;
   background: var(--c-brand-50);
   border-radius: var(--r-full);
   border: 2rpx solid var(--c-brand-500);
   margin-bottom: var(--sp-7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
 
   &--hover {
     transform: scale(0.96);
     background: var(--c-brand-100);
   }
+}
+
+.edit-btn__icon {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
 }
 
 .edit-btn__text {
@@ -1875,7 +1939,9 @@ onUnload(() => {
 }
 
 .vip-card__icon {
-  font-size: var(--fs-6xl);
+  /* 修复：png 图标未设宽高会按原图尺寸渲染为超大图标，固定 56rpx 尺寸 */
+  width: 56rpx;
+  height: 56rpx;
   filter: drop-shadow(0 var(--sp-1) var(--sp-2) var(--c-black-shadow-lg));
 }
 
@@ -2051,6 +2117,14 @@ onUnload(() => {
 .my-post-item__stat {
   font-size: var(--fs-sm);
   color: var(--c-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.my-post-item__stat-icon {
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .my-post-item__arrow {
@@ -2076,7 +2150,10 @@ onUnload(() => {
 }
 
 .my-posts-empty__icon {
-  font-size: 56rpx;
+  /* 修复：原 font-size 对 image 元素无效，png 会按原图尺寸渲染为超大图标；
+     固定 56rpx 尺寸 */
+  width: 56rpx;
+  height: 56rpx;
 }
 
 .my-posts-empty__text {
