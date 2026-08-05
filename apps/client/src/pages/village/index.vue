@@ -201,7 +201,8 @@ function handleEmptyAction() {
     openAppPath("/pages/discover/index");
     return;
   }
-  openAppPath("/pages/village/post");
+  // review should-fix：发帖入口统一到 /pages/circles/post-topic（原跳旧页 /pages/village/post）
+  openAppPath("/pages/circles/post-topic");
 }
 
 /* ========== 当前选中的分类 ========== */
