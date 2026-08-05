@@ -9,26 +9,6 @@ import i18n from "./i18n";
 import { installAbortControllerPolyfill } from "./compat";
 import { reportGlobalError } from "./utils/global-error";
 
-/**
- * 全局错误上报函数（统一错误出口）。
- *
- * 修复（P0 BUG）：原实现各处错误仅通过散落的 console.error 输出，
- * 缺少统一上报通道，难以后续接入监控平台或聚合排查。
- * 现提供单一入口 reportGlobalError，供 main.ts 全局错误处理器
- * （app.config.errorHandler / uni.onError / uni.onUnhandledRejection）
- * 和 App.vue 启动 try-catch 共同使用，确保所有未处理错误都通过同一通道输出。
- *
- * 监控平台对接：
- * - 内部调用 captureException（services/sentry.ts），自动适配 H5 / mp-weixin：
- *   - H5 环境：上报到 Sentry（若已配置 VITE_SENTRY_DSN）；
- *   - mp-weixin 环境：console.error + 上报到后端 /api/error-reports 接口；
- * - 同时保留 console.error 本地输出，便于开发期调试。
- *
- * @param source - 错误来源标识（如 "Vue Error"、"App.onLaunch"、"uni.onError"）
- * @param err - 错误对象或原始值
- * @param context - 可选的上下文信息（如 Vue info 字符串、生命周期阶段）
- */
-
 /** 全局错误监听器是否已注册（避免重复注册） */
 let globalErrorListenersRegistered = false;
 
