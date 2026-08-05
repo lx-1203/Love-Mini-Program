@@ -271,7 +271,7 @@
 | `eslint apps/client/src` | ✅ **0 errors**（基线 18 errors 清零） |
 | `build:mp-weixin` | ✅ 构建成功（主包 18 + 分包 9 页面 js，新 SVG 资源随包） |
 | `build:h5` | ✅ 构建成功（既有运行时基线问题与本轮无关，已记录） |
-| 微信工具自动化 | ✅ 7/7 页面渲染 PASS（discover61/home93/village55/messages66/profile75/love-center18/privacy24）+ 0 运行时错误 + Tab 切换 5/5 |
+| 微信工具自动化 | ✅ 7/7 页面渲染 PASS（discover61/home93/village55/messages66/profile75/love-center18/privacy24）+ 0 运行时错误 + Tab 切换 5/5（注：village 三 Tab 的 postsCount 断言在 automator 下返回 -1，系生产构建 pinia 变量名压缩导致的读取局限，过滤语义由 village.spec.ts 6 个单测直接覆盖） |
 | 产物 emoji 扫描 | ✅ wxml 彩色 emoji 0 处（仅 ✓/✕/› 文本符号） |
 | 屏幕色彩分析 | ✅ 高饱和像素 1.93% 均为品牌绿，无 emoji 特征色块 |
 

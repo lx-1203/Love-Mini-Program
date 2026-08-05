@@ -1101,7 +1101,7 @@ async function handleMarkAllNotificationsRead() {
 
 .entry-item__badge {
   position: absolute;
-  top: -var(--sp-2);
+  top: calc(-1 * var(--sp-2));
   right: var(--sp-2);
   min-width: var(--sp-8);
   height: var(--sp-8);
