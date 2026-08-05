@@ -114,6 +114,27 @@ const mockPrivacySettings = {
   receiveSameSchoolInfo: true,
 };
 
+/** 权限开关本地持久化 key（Phase 4.5 验收：开关状态持久化并同步后端） */
+const PRIVACY_STORAGE_KEY = "campus-love:privacy-settings";
+
+/** 读取本地持久化的权限设置（无记录时返回 mock 默认值） */
+function loadPersistedPrivacy(): { allowSameSchoolRecommend: boolean; receiveSameSchoolInfo: boolean } {
+  try {
+    const raw = uni.getStorageSync(PRIVACY_STORAGE_KEY) as
+      | { allowSameSchoolRecommend?: boolean; receiveSameSchoolInfo?: boolean }
+      | undefined;
+    if (raw && typeof raw === "object") {
+      return {
+        allowSameSchoolRecommend: Boolean(raw.allowSameSchoolRecommend),
+        receiveSameSchoolInfo: raw.receiveSameSchoolInfo !== false,
+      };
+    }
+  } catch (_e) {
+    // 读取失败时回退默认值
+  }
+  return { ...mockPrivacySettings };
+}
+
 /** Mock 我的动态列表（个人主页预览用，最多展示 3 条） */
 const mockMyPosts: MyPostSummary[] = [
   {
@@ -239,8 +260,9 @@ export const useProfileStore = defineStore("profile", {
             this.myPosts = clone(mockMyPosts);
             this.voiceStatusUrl = mockVoiceStatusUrl;
             this.voiceStatusDuration = 42;
-            this.allowSameSchoolRecommend = mockPrivacySettings.allowSameSchoolRecommend;
-            this.receiveSameSchoolInfo = mockPrivacySettings.receiveSameSchoolInfo;
+            const persistedPrivacy = loadPersistedPrivacy();
+            this.allowSameSchoolRecommend = persistedPrivacy.allowSameSchoolRecommend;
+            this.receiveSameSchoolInfo = persistedPrivacy.receiveSameSchoolInfo;
             return;
           }
 
@@ -570,6 +592,15 @@ export const useProfileStore = defineStore("profile", {
      */
     setAllowSameSchoolRecommend(allow: boolean): void {
       this.allowSameSchoolRecommend = allow;
+      // Phase 4.5 验收：权限开关状态持久化（真实环境同步后端接口，mock 模式本地存储）
+      try {
+        uni.setStorageSync(PRIVACY_STORAGE_KEY, {
+          allowSameSchoolRecommend: this.allowSameSchoolRecommend,
+          receiveSameSchoolInfo: this.receiveSameSchoolInfo,
+        });
+      } catch (_e) {
+        // 存储失败时静默（不影响当前会话状态）
+      }
     },
 
     /**
@@ -579,6 +610,15 @@ export const useProfileStore = defineStore("profile", {
      */
     setReceiveSameSchoolInfo(receive: boolean): void {
       this.receiveSameSchoolInfo = receive;
+      // Phase 4.5 验收：权限开关状态持久化
+      try {
+        uni.setStorageSync(PRIVACY_STORAGE_KEY, {
+          allowSameSchoolRecommend: this.allowSameSchoolRecommend,
+          receiveSameSchoolInfo: this.receiveSameSchoolInfo,
+        });
+      } catch (_e) {
+        // 存储失败时静默（不影响当前会话状态）
+      }
     },
 
     /**

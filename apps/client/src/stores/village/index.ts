@@ -122,46 +122,18 @@ export const useVillageStore = defineStore("village", {
   }),
 
   getters: {
-    /** 按分类过滤后的帖子 */
+    /** 按分类过滤后的帖子（与 fetchPosts 的 filterAndSortPosts 同一语义，幂等） */
     filteredPosts: (state) => {
       return (filters?: PostFilters): PostItem[] => {
-        let result = [...state.posts];
-
-        if (filters?.categoryId && filters.categoryId !== "cat-all") {
-          if (filters.categoryId === "cat-campus") {
-            // 校园分类：按同校筛选
-            try {
-              const sessionStore = useSessionStore();
-              const myCampus = sessionStore.userSession?.campusName ?? "";
-              if (myCampus) {
-                result = result.filter((post) => post.author.campusName === myCampus);
-              }
-            } catch (_e) {
-              // 无法获取 sessionStore 时忽略
-            }
-          } else {
-            result = result.filter((post) => post.categoryId === filters.categoryId);
-          }
+        // Phase 4.4 修复：委托统一过滤函数 filterAndSortPosts，
+        // 避免 getter 与 fetchPosts 双重过滤语义不一致（Tab 分类 vs 内容分类）导致列表为空
+        try {
+          const sessionStore = useSessionStore();
+          const myCampus = sessionStore.userSession?.campusName ?? "";
+          return filterAndSortPosts(state.posts, filters ?? {}, myCampus);
+        } catch (_e) {
+          return filterAndSortPosts(state.posts, filters ?? {}, undefined);
         }
-
-        if (filters?.keyword) {
-          const keyword = filters.keyword.toLowerCase();
-          result = result.filter(
-            (post) =>
-              post.title.toLowerCase().includes(keyword) ||
-              post.content.toLowerCase().includes(keyword)
-          );
-        }
-
-        if (filters?.sortBy === "hot") {
-          result.sort((a, b) => b.likes - a.likes);
-        } else {
-          result.sort(
-            (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
-          );
-        }
-
-        return result;
       };
     },
     /** 当前帖子的评论 */

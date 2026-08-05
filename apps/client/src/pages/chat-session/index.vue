@@ -14,6 +14,7 @@
 import { computed, ref, nextTick } from "vue";
 import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
+import { featureFlags } from "../../config/feature-flags";
 import AppShell from "../../components/layout/AppShell.vue";
 import SectionCard from "../../components/common/SectionCard.vue";
 import StatusState from "../../components/common/StatusState.vue";
@@ -1267,6 +1268,7 @@ defineExpose({ noop });
         </view>
         <view class="more-menu-sheet__grid">
           <view
+            v-if="featureFlags.redPacketEnabled"
             class="more-menu-item press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
@@ -1280,6 +1282,7 @@ defineExpose({ noop });
             <text class="more-menu-item__label">{{ t('chatRedPacket.entryLabel') }}</text>
           </view>
           <view
+            v-if="featureFlags.videoCallEnabled"
             class="more-menu-item press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"

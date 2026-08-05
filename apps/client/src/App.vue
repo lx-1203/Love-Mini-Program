@@ -777,4 +777,23 @@ textarea:focus {
   transform: scale(0.98);
 }
 
+/* ================================================================
+   H5 大屏适配（Phase 收尾）：限宽居中，保持移动端 750rpx 设计稿比例
+   - 移动端视口（<750px）不受影响，宽度随视口
+   - 桌面/平板视口下内容限宽居中，两侧以页面底色呈现，避免布局拉伸
+   ================================================================ */
+/* #ifdef H5 */
+body {
+  background: var(--c-bg-page, #f4f6fa);
+}
+
+#app {
+  max-width: 750px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--c-bg-page, #f4f6fa);
+  box-shadow: 0 0 40rpx rgba(15, 23, 42, 0.06);
+}
+/* #endif */
+
 </style>

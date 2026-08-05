@@ -359,12 +359,11 @@ const activeFilterCapsules = computed<{ key: keyof RecommendationFilter; label: 
 /** 是否有已应用的筛选条件 */
 const hasActiveFilters = computed(() => activeFilterCapsules.value.length > 0);
 
-/** 筛选配置：id -> 文案与图标（图标使用 SVG 路径，与模板顺序一致） */
+/** 筛选配置：id -> 文案与图标（图标使用 SVG 路径）。
+ * Phase 4.1 验收：顶部仅保留 1-2 个核心筛选 Chip，其余筛选收敛到抽屉（全部筛选）。
+ */
 const filterOptions = computed<{ id: string; icon: string; text: string }[]>(() => [
   { id: "nearby", icon: icons.location, text: t('discover.nearby') },
-  { id: "all", icon: icons.group, text: t('discover.unlimited') },
-  { id: "age18-25", icon: icons.cake, text: t('discover.ageRange18to25') },
-  { id: "match-priority", icon: icons.sparkles, text: t('discover.matchPriority') },
 ]);
 
 /**

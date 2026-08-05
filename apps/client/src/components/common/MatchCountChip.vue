@@ -23,7 +23,7 @@ import SafeImage from "./SafeImage.vue";
 const props = withDefaults(defineProps<{
   /** 剩余匹配次数 */
   count: number;
-  /** 图标资源路径，默认使用 social/match.png */
+  /** 图标资源路径，默认使用 social/match.svg */
   icon?: string;
 }>(), {
   count: 0,

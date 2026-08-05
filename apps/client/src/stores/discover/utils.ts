@@ -67,6 +67,7 @@ export function mapToDiscoverCard(
     recentPosts: raw.recentPosts,
     expectedPartner: raw.expectedPartner,
     allowMessage: raw.allowMessage,
+    ipLocation: raw.ipLocation,
   };
 }
 

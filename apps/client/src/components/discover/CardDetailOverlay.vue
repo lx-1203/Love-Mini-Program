@@ -309,6 +309,9 @@ const whisperAlreadySent = computed(() => props.card?.whisperSent ?? false);
 /** 期待的人物画像（expectedPartner 字段） */
 const expectedPartnerText = computed(() => props.card?.expectedPartner ?? "");
 
+/** IP 属地（Phase 4.1 验收新增） */
+const ipLocationText = computed(() => props.card?.ipLocation ?? "");
+
 /** 点击动态点赞（组件内状态翻转，不落库、不 mutate props） */
 function toggleMomentLike(postId: string): void {
   const posts = momentPosts.value;
@@ -319,15 +322,56 @@ function toggleMomentLike(postId: string): void {
   post.likes += post.isLiked ? 1 : -1;
 }
 
-/** 点击动态评论（提示，后续接入评论区） */
-function onMomentComment(_postId: string): void {
-  uni.showToast({ title: t("discover.momentComment"), icon: "none" });
+/** 点击动态评论（展开评论输入条，Phase 4.1 验收：真实评论交互） */
+const commentTargetId = ref<string | null>(null);
+const commentDraft = ref("");
+
+function onMomentComment(postId: string): void {
+  lightHaptic();
+  commentTargetId.value = commentTargetId.value === postId ? null : postId;
+  commentDraft.value = "";
 }
 
-/** 点击动态私信（提示付费解锁） */
-function onMomentPrivateMsg(): void {
-  uni.showToast({ title: t("discover.privateMsgPaidHint"), icon: "none" });
+/** 提交评论：计数 +1 并收起输入条（mock 语义，真实环境走评论 API） */
+function submitComment(postId: string): void {
+  const text = commentDraft.value.trim();
+  if (!text) {
+    uni.showToast({ title: t("discover.momentCommentEmpty"), icon: "none" });
+    return;
+  }
+  const post = momentPosts.value.find((p) => p.id === postId);
+  if (!post) return;
+  post.comments += 1;
+  commentDraft.value = "";
+  commentTargetId.value = null;
+  successHaptic();
+  uni.showToast({ title: t("discover.momentCommentSent"), icon: "none" });
 }
+
+/** 点击动态私信（Phase 4.1 验收：走付费校验，未解锁时弹确认，确认后进入会话） */
+function onMomentPrivateMsg(): void {
+  if (!props.card) return;
+  if (privateMsgUnlocked.value) {
+    handleMessage();
+    return;
+  }
+  uni.showModal({
+    title: t("discover.unlockMessage"),
+    content: t("discover.privateMsgPaidHint"),
+    confirmText: t("discover.unlockAndChat"),
+    cancelText: t("common.cancel"),
+    success: (res) => {
+      if (res.confirm) {
+        privateMsgUnlocked.value = true;
+        uni.showToast({ title: t("discover.unlockSuccess"), icon: "success" });
+        setTimeout(() => handleMessage(), 600);
+      }
+    },
+  });
+}
+
+/** 私信是否已解锁（组件内状态，真实环境由后端校验） */
+const privateMsgUnlocked = ref(false);
 
 /** 点击悄悄话（提示付费解锁或已发送） */
 function onWhisperTap(): void {
@@ -787,6 +831,26 @@ function onSwipeDownEnd(e: UniTouchEvent) {
                   <text class="detail-moment-item__action-count">{{ t('discover.momentPrivateMsg') }}</text>
                 </view>
               </view>
+              <!-- Phase 4.1 验收 · 评论输入条（点击评论后展开） -->
+              <view v-if="commentTargetId === post.id" class="detail-moment-comment">
+                <input
+                  class="detail-moment-comment__input"
+                  v-model="commentDraft"
+                  :placeholder="t('discover.momentCommentPlaceholder')"
+                  @confirm="submitComment(post.id)"
+                  :aria-label="t('discover.momentCommentPlaceholder')"
+                />
+                <view
+                  class="detail-moment-comment__send press-feedback"
+                  hover-class="press-feedback--active"
+                  hover-stay-time="120"
+                  role="button"
+                  :aria-label="t('common.send')"
+                  @tap="submitComment(post.id)"
+                >
+                  <text class="detail-moment-comment__send-text">{{ t('common.send') }}</text>
+                </view>
+              </view>
             </view>
           </view>
           <text v-else class="detail-moments__empty">{{ t('discover.momentsEmpty') }}</text>
@@ -798,6 +862,17 @@ function onSwipeDownEnd(e: UniTouchEvent) {
             <text class="detail-panel__title">{{ t('discover.expectedPartner') }}</text>
           </view>
           <text class="detail-expected__text">{{ expectedPartnerText }}</text>
+        </view>
+
+        <!-- Phase 4.1 验收 · IP 属地 -->
+        <view v-if="ipLocationText" class="detail-panel detail-ip">
+          <view class="detail-panel__header">
+            <text class="detail-panel__title">{{ t('discover.ipLocation') }}</text>
+          </view>
+          <view class="detail-ip__row">
+            <image class="detail-ip__icon" :src="icons.location" mode="aspectFit" alt="" />
+            <text class="detail-ip__text">{{ ipLocationText }}</text>
+          </view>
         </view>
 
         <!-- 底部留白（操作栏高度） -->
@@ -1532,6 +1607,37 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   color: var(--c-text-secondary);
 }
 
+/* Phase 4.1 验收 · 评论输入条 */
+.detail-moment-comment {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 12rpx;
+  padding: 8rpx 12rpx;
+  border-radius: var(--r-lg);
+  background: var(--c-bg-container, #ffffff);
+  border: 1rpx solid var(--c-border-light, #e5e7eb);
+}
+
+.detail-moment-comment__input {
+  flex: 1;
+  height: 64rpx;
+  font-size: var(--fs-base);
+  color: var(--c-text-primary);
+}
+
+.detail-moment-comment__send {
+  padding: 8rpx 20rpx;
+  border-radius: var(--r-full);
+  background: var(--c-brand-500);
+}
+
+.detail-moment-comment__send-text {
+  font-size: var(--fs-sm);
+  color: var(--c-text-inverse);
+  font-weight: 600;
+}
+
 .detail-moment-item__action-count {
   font-size: var(--fs-sm);
   color: var(--c-text-secondary);
@@ -1562,6 +1668,30 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   border-radius: var(--r-lg);
   background: var(--c-brand-bg-tint, #e6f9f0);
   border: 1rpx solid var(--c-brand-border-tint, #b7ecd8);
+}
+
+/* ========== Phase 4.1 验收 · IP 属地 ========== */
+.detail-ip__row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 8rpx;
+  padding: 16rpx 20rpx;
+  border-radius: var(--r-lg);
+  background: var(--c-bg-container, #ffffff);
+  border: 1rpx solid var(--c-border-light, #e5e7eb);
+}
+
+.detail-ip__icon {
+  width: 28rpx;
+  height: 28rpx;
+  color: var(--c-brand-500);
+}
+
+.detail-ip__text {
+  font-size: var(--fs-base);
+  color: var(--c-text-primary);
+  font-weight: 500;
 }
 
 /* ========== 底部留白 ========== */

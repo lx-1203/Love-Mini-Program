@@ -337,6 +337,8 @@ export interface RecommendedPerson {
   expectedPartner?: string;
   /** 是否允许私信（未解锁时需付费） */
   allowMessage?: boolean;
+  /** IP 属地（如 "江苏 · 南京"，Phase 4.1 详情页分区新增） */
+  ipLocation?: string;
 }
 
 // ===== 功能6：通知免打扰设置 =====

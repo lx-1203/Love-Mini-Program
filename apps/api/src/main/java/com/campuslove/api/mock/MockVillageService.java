@@ -307,7 +307,7 @@ public class MockVillageService implements VillageService {
     ));
 
     commentsByPost.put(1L, new ArrayList<>(List.of(
-        new CommentData(5001L, 1L, null, "好浪漫的故事！希望能找到她 🙏", 1004L, "许诺", null,
+        new CommentData(5001L, 1L, null, "好浪漫的故事！希望能找到她。", 1004L, "许诺", null,
             LocalDateTime.now().minusHours(2), null),
         new CommentData(5002L, 1L, null, "图书馆三楼靠窗确实是个好位置，光线好", 1003L, "周沐", null,
             LocalDateTime.now().minusHours(1), null)

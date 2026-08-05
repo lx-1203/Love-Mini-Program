@@ -37,6 +37,19 @@ describe("messages store", () => {
     }
   });
 
+  // Phase 4.3 验收：长按置顶/取消置顶
+  it("toggleSessionPin toggles pinned state", async () => {
+    const store = useMessagesStore();
+    await store.fetchSessions();
+
+    const target = store.sessions[0]!;
+    const before = target.pinned;
+    store.toggleSessionPin(target.id);
+    expect(target.pinned).toBe(!before);
+    store.toggleSessionPin(target.id);
+    expect(target.pinned).toBe(before);
+  });
+
   // ------------------------------------------------------------------
   // sendMessage – success
   // ------------------------------------------------------------------

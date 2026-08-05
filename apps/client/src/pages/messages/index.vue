@@ -9,6 +9,8 @@ import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { useMessagesStore, type SystemNotification } from "../../stores/messages";
+import { useLikesStore } from "../../stores/likes";
+import { useProfileStore } from "../../stores/profile";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
@@ -45,6 +47,26 @@ const sessionStore = useSessionStore();
 usePageAccess(messagesPageRequirements);
 const messagesStore = useMessagesStore();
 const socialProgressStore = useSocialProgressStore();
+
+/** Phase 4.3 验收 · 喜欢我的人数量（未解锁也展示，点击走解锁提示） */
+const likedMeCount = computed(() => {
+  try {
+    const likesStore = useLikesStore();
+    return likesStore.likedBy.length;
+  } catch (_e) {
+    return 0;
+  }
+});
+
+/** Phase 4.3 验收 · 访客数量 */
+const visitorsCount = computed(() => {
+  try {
+    const profileStore = useProfileStore();
+    return profileStore.profileStats?.visitorsCount ?? 0;
+  } catch (_e) {
+    return 0;
+  }
+});
 
 /** SVG 图标资源路径 */
 const iconSrc = {
@@ -509,25 +531,35 @@ function handleSearchClick() {
  * @param sessionId 待删除的会话 ID
  */
 function handleSessionLongPress(sessionId: string) {
-  uni.showModal({
-    title: t("messages.title"),
-    content: t("messages.deleteSessionConfirm"),
-    confirmText: t("common.delete"),
-    confirmColor: "#E5454D",
+  const session = messagesStore.sessions.find((s) => s.id === sessionId);
+  if (!session) return;
+  const pinLabel = session.pinned ? t("messages.unpinSession") : t("messages.pinSession");
+  uni.showActionSheet({
+    itemList: [pinLabel, t("common.delete")],
+    itemColor: "#333333",
     success: (res) => {
-      if (!res.confirm) return;
-      // 调用 store 删除会话，失败时由 store 设置 errorMessage
-      void messagesStore
-        .deleteSession(sessionId)
-        .then(() => {
-          uni.showToast({ title: t("messages.deleted"), icon: "success" });
-        })
-        .catch(() => {
-          uni.showToast({
-            title: messagesStore.errorMessage || t("messages.deleteFailed"),
-            icon: "none",
-          });
+      if (res.tapIndex === 0) {
+        messagesStore.toggleSessionPin(sessionId);
+        uni.showToast({
+          title: session.pinned ? t("messages.unpinned") : t("messages.pinned"),
+          icon: "none",
         });
+        return;
+      }
+      if (res.tapIndex === 1) {
+        // 调用 store 删除会话，失败时由 store 设置 errorMessage
+        void messagesStore
+          .deleteSession(sessionId)
+          .then(() => {
+            uni.showToast({ title: t("messages.deleted"), icon: "success" });
+          })
+          .catch(() => {
+            uni.showToast({
+              title: messagesStore.errorMessage || t("messages.deleteFailed"),
+              icon: "none",
+            });
+          });
+      }
     },
   });
 }
@@ -600,6 +632,9 @@ async function handleMarkAllNotificationsRead() {
             <image class="entry-item__emoji" :src="emojiIcons.heartFilled" mode="aspectFit" alt="" />
           </view>
           <text class="entry-item__text">{{ t('messages.likedMe') }}</text>
+          <view v-if="likedMeCount > 0" class="entry-item__badge entry-item__badge--locked">
+            <text class="entry-item__badge-text">{{ likedMeCount > 99 ? "99+" : likedMeCount }}</text>
+          </view>
           <image class="entry-item__lock" :src="emojiIcons.lock" mode="aspectFit" alt="" />
         </view>
         <!-- Phase Feedback3 · 访客（需解锁） -->
@@ -608,6 +643,9 @@ async function handleMarkAllNotificationsRead() {
             <image class="entry-item__emoji" :src="emojiIcons.eye" mode="aspectFit" alt="" />
           </view>
           <text class="entry-item__text">{{ t('messages.visitorsEntry') }}</text>
+          <view v-if="visitorsCount > 0" class="entry-item__badge entry-item__badge--locked">
+            <text class="entry-item__badge-text">{{ visitorsCount > 99 ? "99+" : visitorsCount }}</text>
+          </view>
           <image class="entry-item__lock" :src="emojiIcons.lock" mode="aspectFit" alt="" />
         </view>
         <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.notice')" @tap="handleEntryClick('notification')">
@@ -1075,6 +1113,10 @@ async function handleMarkAllNotificationsRead() {
 .entry-item__icon--red {
   background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
   box-shadow: 0 var(--sp-2) var(--sp-5) rgba(225, 29, 72, 0.25);
+}
+
+.entry-item__badge--locked {
+  margin-right: 8rpx;
 }
 
 .entry-item__lock {

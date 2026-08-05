@@ -796,6 +796,14 @@ export const useMessagesStore = defineStore("messages", {
      *
      * @param sessionId 待删除的会话 ID
      */
+    /** Phase 4.3 验收 · 置顶/取消置顶会话 */
+    toggleSessionPin(sessionId: string) {
+      const session = this.sessions.find((s) => s.id === sessionId);
+      if (session) {
+        session.pinned = !session.pinned;
+      }
+    },
+
     async deleteSession(sessionId: string) {
       this.errorMessage = null;
       try {

@@ -39,6 +39,7 @@ import CardDetailOverlay from "./CardDetailOverlay.vue";
 import LongPressMenu from "./LongPressMenu.vue";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+import { featureFlags } from "../../config/feature-flags";
 // Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
 import type { UniTouchEvent } from "../../compat";
 // 统一常量：手势阈值、长按时延、卡片动画参数等
@@ -82,6 +83,7 @@ const emojiIcons = {
   graduation: IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG,
   video: IMAGE_PATHS.ICONS_COMMON.CAMERA,
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
+  chat: IMAGE_PATHS.ICONS_EMOJI.CHAT,
   group: IMAGE_PATHS.ICONS_EMOJI.GROUP,
 } as const;
 
@@ -200,9 +202,10 @@ const currentDisplayImages = computed<string[]>(() => getDisplayImages(currentCa
 
 /**
  * 当前卡片是否有视频（Phase D2 · 视频角标显隐依据）。
+ * Phase 4.7：视频功能暂时下架（featureFlags.videoCallEnabled=false 时角标隐藏）。
  */
 const hasVideo = computed<boolean>(() => {
-  return !!currentCard.value?.personalVideoUrl;
+  return featureFlags.videoCallEnabled && !!currentCard.value?.personalVideoUrl;
 });
 
 /**
@@ -1023,6 +1026,22 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
               {{ isBioExpanded ? t('home.collapse') : t('home.expand') }}
             </text>
           </view>
+
+          <!-- Phase 4.1 验收 · 最新动态预览（最多 2 条：内容 + 点赞/评论计数） -->
+          <view v-if="currentCard.recentPosts && currentCard.recentPosts.length > 0" class="card__moments">
+            <view
+              v-for="post in currentCard.recentPosts.slice(0, 2)" :key="post.id"
+              class="card__moment"
+            >
+              <text class="card__moment-text">{{ post.content }}</text>
+              <view class="card__moment-meta">
+                <image class="card__moment-icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
+                <text class="card__moment-count">{{ post.likes }}</text>
+                <image class="card__moment-icon card__moment-icon--chat" :src="emojiIcons.chat" mode="aspectFit" alt="" />
+                <text class="card__moment-count">{{ post.comments }}</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
     </view>
@@ -1729,6 +1748,56 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
 /* 个人简介 */
 .card__bio {
   margin-top: 8rpx;
+}
+
+/* Phase 4.1 验收 · 卡片最新动态预览 */
+.card__moments {
+  margin-top: 12rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.card__moment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  padding: 10rpx 16rpx;
+  border-radius: var(--r-lg, 16rpx);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.card__moment-text {
+  flex: 1;
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-overlay-text-secondary);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__moment-meta {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  flex-shrink: 0;
+}
+
+.card__moment-icon {
+  width: 22rpx;
+  height: 22rpx;
+  color: var(--c-romance-500, #ec4899);
+}
+
+.card__moment-icon--chat {
+  color: var(--c-overlay-text-tertiary);
+}
+
+.card__moment-count {
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-overlay-text-tertiary);
 }
 
 .card__bio-text {

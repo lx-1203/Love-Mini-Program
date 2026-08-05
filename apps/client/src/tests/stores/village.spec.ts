@@ -327,6 +327,29 @@ describe("village store", () => {
     expect(result.length).toBe(store.posts.length);
   });
 
+  // Phase 4.4 修复：同城 Tab 按城市过滤（原实现按 categoryId 精确匹配导致同城列表恒空）
+  it("filteredPosts filters by city for same-city tab", async () => {
+    const store = useVillageStore();
+    await store.fetchPosts();
+
+    const result = store.filteredPosts({ categoryId: "cat-samecity", city: "南京" });
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((p) => p.city === "南京")).toBe(true);
+
+    // 未指定城市时不过滤（filterAndSortPosts 语义：city 为空 = 不做城市筛选，交由页面空态引导）
+    const noCity = store.filteredPosts({ categoryId: "cat-samecity", city: "" });
+    expect(noCity.length).toBe(store.posts.length);
+  });
+
+  // Phase 4.4 修复：发现 Tab 子标签（全部）应返回全部帖子（原实现按 cat-discover 精确匹配恒空）
+  it("filteredPosts discover tab returns posts with sub-tag", async () => {
+    const store = useVillageStore();
+    await store.fetchPosts();
+
+    const result = store.filteredPosts({ categoryId: "cat-discover", discoverSub: "all" });
+    expect(result.length).toBe(store.posts.length);
+  });
+
   it("filteredPosts filters by keyword", async () => {
     const store = useVillageStore();
     await store.fetchPosts();

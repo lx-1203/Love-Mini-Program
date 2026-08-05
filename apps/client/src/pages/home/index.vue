@@ -16,7 +16,6 @@ import { featureFlags } from "../../config/feature-flags";
 import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
-import SafeImage from "../../components/common/SafeImage.vue";
 import MatchCountChip from "../../components/common/MatchCountChip.vue";
 // 功能1：首页 Banner 自动轮播组件（替换原静态横滚 Banner）
 import HomeBanner from "../../components/home/HomeBanner.vue";
@@ -203,43 +202,6 @@ function onSlotTap(slot: { isFree: boolean; item?: { type: string } }): void {
   });
 }
 
-// 校园墙帖子（模拟）
-const posts = ref([
-  {
-    id: "1",
-    avatar: IMAGE_PATHS.AVATARS.AVATAR_1,
-    nickname: "小明",
-    school: "北京大学",
-    grade: "大三",
-    content: "今天在图书馆看到一本好书，推荐给大家！",
-    images: [IMAGE_PATHS.POSTS.CAMPUS_LIBRARY],
-    location: "图书馆",
-    likes: 23,
-    comments: 5,
-    isLiked: false,
-  },
-  {
-    id: "2",
-    avatar: IMAGE_PATHS.AVATARS.AVATAR_2,
-    nickname: "小红",
-    school: "清华大学",
-    grade: "大二",
-    content: "有人一起上晚自习吗？求组队！",
-    images: [IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY],
-    location: "教学楼",
-    likes: 15,
-    comments: 8,
-    isLiked: true,
-  },
-]);
-
-// 逛逛推荐（模拟）
-const shopItems = ref([
-  { id: "1", title: "校园文创帆布袋", price: 29.9, sales: 128, image: IMAGE_PATHS.PRODUCTS.MERCH_1 },
-  { id: "2", title: "音乐节早鸟票", price: 99, sales: 56, image: IMAGE_PATHS.PRODUCTS.TICKET_1 },
-  { id: "3", title: "食堂优惠券", price: 9.9, sales: 234, image: IMAGE_PATHS.PRODUCTS.FOOD_1 },
-]);
-
 // ==================== 社交升温进度 ====================
 
 /** 是否展开完整的升温进度指示器 */
@@ -248,14 +210,6 @@ const showSocialProgress = ref(false);
 /** 切换升温进度展开/收起 */
 function toggleSocialProgress() {
   showSocialProgress.value = !showSocialProgress.value;
-}
-
-function toggleLike(postId: string) {
-  const post = posts.value.find((p) => p.id === postId);
-  if (post) {
-    post.isLiked = !post.isLiked;
-    post.likes += post.isLiked ? 1 : -1;
-  }
 }
 
 /**
@@ -267,8 +221,9 @@ async function handleCheckIn() {
   if (checkInStore.loading || checkInStore.checkedIn) return;
   try {
     await checkInStore.checkIn();
+    // 签到奖励文案可配置（i18n checkinReward，mock 固定 +5 社交币）
     uni.showToast({
-      title: t('home.checkinSuccess', { n: checkInStore.consecutiveDays }),
+      title: t('home.checkinReward', { n: 5 }),
       icon: "success",
       duration: 2000,
     });
@@ -666,100 +621,6 @@ defineExpose({ noop });
             </view>
           </view>
         </view>
-      </view>
-
-      <!-- 热门动态 -->
-      <view class="section-wrap">
-        <view class="section-header">
-          <text class="section-title section-title-brand">{{ t('home.campusNews') }}</text>
-          <text class="section-more" @tap="openAppPath('/pages/circles/index')">{{ t('home.enterCircle') }}</text>
-        </view>
-        <view class="post-list-new">
-          <view v-for="post in posts" :key="post.id" class="post-card-new list-item">
-            <view class="post-card__header-new">
-              <view class="post-avatar-wrap">
-                <view class="post-avatar">
-                  <SafeImage
-                    :src="post.avatar"
-                    custom-class="post-avatar__img"
-                    mode="aspectFill"
-                    :lazy-load="true"
-                  />
-                </view>
-              </view>
-              <view class="post-meta-new">
-                <text class="post-nickname-new">{{ post.nickname }}</text>
-                <text class="post-school-new">{{ post.school }} · {{ post.grade }} · {{ t('home.hoursAgoShort', { n: 2 }) }}</text>
-              </view>
-            </view>
-            <text class="post-content-new">{{ post.content }}</text>
-            <view v-if="post.images.length > 0" class="post-images-new">
-              <view
-                v-for="(img, idx) in post.images.slice(0, 3)" :key="idx"
-                class="post-image-item img-rounded"
-              >
-                <SafeImage
-                  :src="img"
-                  custom-class="post-image__img"
-                  mode="aspectFill"
-                  :lazy-load="true"
-                />
-              </view>
-            </view>
-            <view class="post-footer-new">
-              <view class="post-location-new">
-                <image class="post-location-emoji" :src="emojiIcons.location" mode="aspectFit" lazy-load="true" alt="" />
-                <text class="post-location-text">{{ post.location }}</text>
-              </view>
-              <view class="post-actions-new">
-                <view :class="['post-action-new', post.isLiked ? 'post-action--liked' : '']" role="button" :aria-label="t('home.likeCountAria', { n: post.likes })" :aria-pressed="post.isLiked" @tap="toggleLike(post.id)">
-                  <image class="post-action-emoji" :src="emojiIcons.heart" mode="aspectFit" lazy-load="true" alt="" />
-                  <text class="post-action-count">{{ post.likes }}</text>
-                </view>
-                <view class="post-action-new" role="button" :aria-label="t('home.commentCountAria', { n: post.comments })">
-                  <image class="post-action-emoji" :src="emojiIcons.chat" mode="aspectFit" lazy-load="true" alt="" />
-                  <text class="post-action-count">{{ post.comments }}</text>
-                </view>
-                <view class="post-action-new" role="button" :aria-label="t('home.bookmarkAria')">
-                  <image class="post-action-emoji" :src="emojiIcons.bookmark" mode="aspectFit" lazy-load="true" alt="" />
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- 逛逛推荐 -->
-      <view class="section-wrap">
-        <view class="section-header">
-          <text class="section-title section-title-brand">{{ t('home.shopRecommend') }}</text>
-          <text class="section-more" role="button" :aria-label="t('home.moreArrow')" @tap="openAppPath('/pages/shop/index')">{{ t('home.moreArrow') }}</text>
-        </view>
-        <scroll-view scroll-x class="shop-scroll-new" :show-scrollbar="false">
-          <view class="shop-list-new">
-            <view
-              v-for="item in shopItems" :key="item.id"
-              class="shop-card-new list-item"
-              role="button"
-              :aria-label="t('home.shopItemAria', { title: item.title, price: item.price })"
-              @tap="openAppPath('/subpackages/shop/detail/index')"
-            >
-              <view class="shop-image-wrap">
-                <SafeImage
-                  :src="item.image"
-                  custom-class="shop-image__img"
-                  mode="aspectFill"
-                  :lazy-load="true"
-                />
-              </view>
-              <text class="shop-title-new">{{ item.title }}</text>
-              <view class="shop-bottom-new">
-                <text class="shop-price-new">¥{{ item.price }}</text>
-                <text class="shop-sales-new">{{ t('home.soldCount', { n: item.sales }) }}</text>
-              </view>
-            </view>
-          </view>
-        </scroll-view>
       </view>
 
       <!-- 社交升温进度 -->

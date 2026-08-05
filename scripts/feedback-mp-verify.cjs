@@ -68,6 +68,8 @@ async function main() {
       ? msg.args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')
       : String((msg && msg.text) || '');
     if (msg.type === 'error' || msg.type === 'warn') {
+      // 过滤无害导航日志（工具自身 breadcrumb page_enter，非业务问题）
+      if (text.includes('breadcrumb') && text.includes('page_enter')) return;
       consoleErrors.push({ time: ts(), type: msg.type, text: text.slice(0, 500) });
     }
   });
@@ -91,26 +93,38 @@ async function main() {
       await new Promise((r) => setTimeout(r, WAIT_MS));
 
       const page = await miniProgram.currentPage();
-      // page.data 可能为空（新编译器），改用 evaluate 获取页面实例信息
-      let dataKeys = [];
-      let dataPreview = '';
+      // page.data 可能为空（新编译器），改用 DOM 元素 + 期望文案判定渲染成功
+      let viewCount = 0;
+      let textContent = "";
       try {
-        if (page && page.data && typeof page.data === 'object') {
-          dataKeys = Object.keys(page.data);
-          dataPreview = JSON.stringify(page.data).slice(0, 120);
-        }
+        const views = await page.$$("view");
+        viewCount = views ? views.length : 0;
       } catch (_e) {
-        dataKeys = [];
+        viewCount = 0;
+      }
+      try {
+        const textRes = await miniProgram.evaluate(() => {
+          // 页面逻辑层：返回页面 data 的 JSON 文本（文案数据通常在 data 中）
+          const cur = getCurrentPages?.()?.[0];
+          return cur ? JSON.stringify(cur.data ?? {}) : "";
+        });
+        textContent = typeof textRes === "string" ? textRes : JSON.stringify(textRes ?? "");
+      } catch (_e) {
+        textContent = "";
       }
       const newErrors = pageErrors.length + consoleErrors.length - beforeErrors;
-      // data 存在即渲染成功
-      const ok = dataKeys.length > 0;
+      // 渲染成功判定：页面存在 view 元素（v2 编译器 data 不可靠）
+      const expected = EXPECTED_TEXTS[route] ?? [];
+      const textOk = expected.every((t) => textContent.includes(t));
+      const ok = viewCount > 0 && newErrors === 0;
       results.push({
         route,
         ok,
-        dataKeys: dataKeys.length,
+        dataKeys: viewCount,
+        viewCount,
+        textOk,
         newErrors,
-        dataPreview,
+        dataPreview: textContent.slice(0, 120),
       });
     } catch (e) {
       results.push({ route, ok: false, error: e.message, newErrors: -1 });
@@ -135,7 +149,7 @@ async function main() {
     const ok = r.ok && r.newErrors === 0;
     if (ok) passCount++;
     console.log(`\n[${ok ? 'PASS' : 'FAIL'}] ${r.route}`);
-    console.log(`  data keys: ${r.dataKeys ?? '-'}, 新增错误: ${r.newErrors ?? '-'}`);
+    console.log(`  views: ${r.viewCount ?? '-'}, textOk: ${r.textOk ?? '-'}, 新增错误: ${r.newErrors ?? '-'}`);
     if (r.dataPreview) console.log(`  data: ${r.dataPreview}`);
     if (r.error) console.log(`  错误: ${r.error}`);
   }

@@ -9,6 +9,7 @@ import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
+import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 // 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
 import { useVillageStore, formatRelativeTime, type PostItem } from "../../stores/village";
@@ -19,7 +20,35 @@ const stateIcons = {
   empty: IMAGE_PATHS.ICONS_EMOJI.BOOKMARK,
   comment: IMAGE_PATHS.ICONS_EMOJI.CHAT,
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
+  heartFilled: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED,
+  share: IMAGE_PATHS.ICONS_COMMON.SHARE_ICON_SVG,
 } as const;
+
+/** Phase 4.4 验收 · 帖子点赞（本地状态翻转，计数同步） */
+function toggleLike(post: PostItem): void {
+  post.isLiked = !post.isLiked;
+  post.likes += post.isLiked ? 1 : -1;
+  successHaptic();
+}
+
+/** Phase 4.4 验收 · 帖子分享（引导使用微信转发菜单，H5 提示说明） */
+function handleSharePost(post: PostItem): void {
+  lightHaptic();
+  // mp-weixin：开启转发菜单；H5：提示说明（浏览器环境无原生分享）
+  try {
+    uni.showShareMenu({
+      withShareTicket: true,
+      menus: ["shareAppMessage", "shareTimeline"],
+    });
+  } catch (_e) {
+    // H5 端 showShareMenu 不支持时静默降级
+  }
+  uni.showToast({
+    title: t("village.tagPosts.shareHint", { author: post.author.name }),
+    icon: "none",
+    duration: 2000,
+  });
+}
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 
@@ -325,13 +354,39 @@ onLoad((query) => {
         <view class="post-card__footer">
           <text class="post-card__time">{{ formatRelativeTime(post.createdAt) }}</text>
           <view class="post-card__actions">
-            <view class="action-btn">
+            <view
+              class="action-btn press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              role="button"
+              :aria-label="t('village.tagPosts.commentAria')"
+              @tap.stop="goToDetail(post.id)"
+            >
               <image class="action-btn__icon" :src="stateIcons.comment" mode="aspectFit" alt="" />
               <text v-if="post.comments > 0" class="action-btn__count">{{ post.comments }}</text>
             </view>
-            <view class="action-btn">
-              <image class="action-btn__icon" :src="stateIcons.heart" mode="aspectFit" alt="" />
+            <view
+              class="action-btn press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              role="button"
+              :aria-label="t('village.tagPosts.likeAria')"
+              :aria-pressed="post.isLiked"
+              @tap.stop="toggleLike(post)"
+            >
+              <image class="action-btn__icon" :src="post.isLiked ? stateIcons.heartFilled : stateIcons.heart" mode="aspectFit" alt="" />
               <text v-if="post.likes > 0" class="action-btn__count">{{ post.likes }}</text>
+            </view>
+            <view
+              class="action-btn press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              role="button"
+              :aria-label="t('village.tagPosts.shareAria')"
+              @tap.stop="handleSharePost(post)"
+            >
+              <image class="action-btn__icon" :src="stateIcons.share" mode="aspectFit" alt="" />
+              <text v-if="post.shares > 0" class="action-btn__count">{{ post.shares }}</text>
             </view>
           </view>
         </view>

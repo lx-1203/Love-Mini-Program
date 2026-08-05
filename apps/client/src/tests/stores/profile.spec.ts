@@ -27,10 +27,13 @@ vi.mock("../../services/api", () => ({
   },
 }));
 
-// stub global uni
+// stub global uni（内存存储：权限持久化测试读写）
+const specStorage = new Map<string, unknown>();
 (globalThis as any).uni = {
-  getStorageSync: vi.fn(() => null),
-  setStorageSync: vi.fn(),
+  getStorageSync: (key: string) => (specStorage.has(key) ? specStorage.get(key) : null),
+  setStorageSync: (key: string, data: unknown) => {
+    specStorage.set(key, data);
+  },
   showToast: vi.fn(),
 };
 
@@ -40,6 +43,7 @@ describe("profile store - 数据加载", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
+    specStorage.clear();
   });
 
   // ------------------------------------------------------------------
@@ -218,6 +222,7 @@ describe("profile store - 语音状态与权限（Phase Feedback5）", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
+    specStorage.clear();
   });
 
   it("setVoiceStatus 设置 60s 内语音状态", async () => {
@@ -281,6 +286,22 @@ describe("profile store - 语音状态与权限（Phase Feedback5）", () => {
 
     store.setAllowSameSchoolRecommend(false);
     expect(store.allowSameSchoolRecommend).toBe(false);
+  });
+
+  // Phase 4.5 验收：权限开关状态持久化（mock 模式写入本地存储，load() 时从存储恢复）
+  it("权限开关持久化：设置后写入本地存储", async () => {
+    const store = useProfileStore();
+    await store.load();
+    store.setAllowSameSchoolRecommend(true);
+    store.setReceiveSameSchoolInfo(false);
+
+    // 验证持久化写入（load() 有 inflight 缓存，直接断言存储内容）
+    const saved = uni.getStorageSync("campus-love:privacy-settings") as {
+      allowSameSchoolRecommend: boolean;
+      receiveSameSchoolInfo: boolean;
+    };
+    expect(saved.allowSameSchoolRecommend).toBe(true);
+    expect(saved.receiveSameSchoolInfo).toBe(false);
   });
 
   it("setReceiveSameSchoolInfo 更新接收同校信息开关", async () => {

@@ -19,6 +19,10 @@ export interface FeatureFlags {
   heartSignalEnabled: boolean;
   /** 圈子页"同城"Tab 是否启用（Phase Feedback4） */
   villageSameCityEnabled: boolean;
+  /** 视频通话功能是否启用（Phase 4.7：暂时下架，默认 false） */
+  videoCallEnabled: boolean;
+  /** 红包功能是否启用（Phase 4.7：暂时下架，默认 false） */
+  redPacketEnabled: boolean;
 }
 
 export const featureFlags: FeatureFlags = {
@@ -26,4 +30,6 @@ export const featureFlags: FeatureFlags = {
   weeklyScheduleEnabled: false,
   heartSignalEnabled: true,
   villageSameCityEnabled: true,
+  videoCallEnabled: false,
+  redPacketEnabled: false,
 };

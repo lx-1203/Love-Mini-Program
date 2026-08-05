@@ -92,6 +92,19 @@ function createInnerAudioContextStub(): InnerAudioContextStub {
 }
 
 const uniStub: Record<string, unknown> = {
+  // 内存存储（Phase 4.5：权限持久化测试用）
+  ...(() => {
+    const store = new Map<string, unknown>();
+    return {
+      __mockStorage: store,
+      setStorageSync: (key: string, data: unknown) => {
+        store.set(key, data);
+      },
+      getStorageSync: (key: string) => {
+        return store.has(key) ? store.get(key) : null;
+      },
+    };
+  })(),
   createInnerAudioContext: createInnerAudioContextStub,
   showToast: () => {},
   hideToast: () => {},
@@ -106,9 +119,7 @@ const uniStub: Record<string, unknown> = {
   },
   getClipboardData: () => {},
   setStorage: () => {},
-  setStorageSync: () => {},
   getStorage: () => {},
-  getStorageSync: () => null,
   removeStorage: () => {},
   removeStorageSync: () => {},
   clearStorage: () => {},

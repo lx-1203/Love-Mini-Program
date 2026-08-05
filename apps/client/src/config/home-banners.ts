@@ -48,8 +48,8 @@ export const homeBanners: HomeBannerItem[] = [
   {
     id: "banner-daily-fate",
     imageUrl: IMAGE_PATHS.BANNERS.HOME,
-    title: "今日缘分值98%",
-    subtitle: "3位与你高度契合的同学",
+    title: "发现心动的人",
+    subtitle: "双向喜欢即可开启聊天",
     link: "/pages/discover/index",
   },
   {

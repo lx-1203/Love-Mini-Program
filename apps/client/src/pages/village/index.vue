@@ -3,7 +3,7 @@
  * 村口页 - UGC社区（Phase Feedback4：三 Tab 版 关注/同城/发现）
  * 用户生成内容社区，支持三 Tab 筛选、城市切换、点赞关注等互动功能
  */
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { onLoad, onHide, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
@@ -466,6 +466,14 @@ onShow(() => {
 onMounted(() => {
   initSameCity();
   if (isUnlocked.value) {
+    void villageStore.fetchPosts(currentFilters.value);
+  }
+});
+
+// Phase 4.4 修复：session 异步恢复时 isUnlocked 可能从 false→true（onMounted 已错过），
+// 此时补拉帖子，避免论坛列表永远为空
+watch(isUnlocked, (unlocked) => {
+  if (unlocked) {
     void villageStore.fetchPosts(currentFilters.value);
   }
 });

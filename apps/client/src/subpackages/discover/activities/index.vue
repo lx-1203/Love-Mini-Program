@@ -618,6 +618,24 @@ function formatDateLabel(dateStr: string): string {
   padding: 0 0 16rpx;
 }
 
+/* Phase 8 验收：活动排版自适应 + 增删对称
+   - 移动端：单列流式（任意数量都整齐）
+   - H5 宽屏（>=720px）：自动切换双列网格，flex-wrap 保证增删任意数量均对称换行 */
+/* #ifdef H5 */
+@media (min-width: 720px) {
+  .activity-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .activity-row {
+    width: calc(50% - 8px);
+    box-sizing: border-box;
+  }
+}
+/* #endif */
+
 .activity-row {
   display: flex;
   flex-direction: column;

@@ -189,6 +189,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       whisperSent: false,
       expectedPartner: "希望遇到一个喜欢猫、愿意一起逛展的男生",
       allowMessage: false,
+      ipLocation: "北京 · 海淀",
       recentPosts: [
         { id: "p4001-1", content: "图书馆的橘猫今天又蹭了我一下午，太治愈了。", likes: 32, comments: 8, isLiked: false, createdAt: "2026-07-20T10:00:00Z" },
         { id: "p4001-2", content: "周末去了艺术展，被一幅蓝色调的画击中了。", likes: 56, comments: 14, isLiked: false, createdAt: "2026-07-18T10:00:00Z" },
@@ -237,6 +238,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       whisperSent: false,
       expectedPartner: "想找一个爱吃、爱笑、能一起探店的人",
       allowMessage: false,
+      ipLocation: "上海 · 杨浦",
       recentPosts: [
         { id: "p4002-1", content: "发现一家藏在巷子里的宝藏小店，强烈推荐！", likes: 89, comments: 21, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
       ],
@@ -284,6 +286,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       whisperSent: false,
       expectedPartner: "想遇到能一起看展、聊电影的男生",
       allowMessage: false,
+      ipLocation: "浙江 · 杭州",
       recentPosts: [
         { id: "p4003-1", content: "胶片冲洗出来那一刻，时间好像变慢了。", likes: 41, comments: 6, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
       ],
@@ -331,6 +334,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       whisperSent: true,
       expectedPartner: "喜欢运动、爱旅行、能吃辣的女生",
       allowMessage: false,
+      ipLocation: "江苏 · 南京",
       recentPosts: [
         { id: "p4004-1", content: "今天三分球手感火热，连进 8 个！", likes: 77, comments: 18, isLiked: false, createdAt: "2026-07-22T10:00:00Z" },
         { id: "p4004-2", content: "假期想去川西，有没有一起的？", likes: 45, comments: 30, isLiked: false, createdAt: "2026-07-15T10:00:00Z" },
@@ -379,6 +383,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       whisperSent: false,
       expectedPartner: "想遇到一个愿意听我讲故事的男生",
       allowMessage: false,
+      ipLocation: "湖北 · 武汉",
       recentPosts: [],
     },
     {
@@ -424,6 +429,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       whisperSent: false,
       expectedPartner: "欣赏有思想、爱阅读、独立的女生",
       allowMessage: false,
+      ipLocation: "广东 · 广州",
       recentPosts: [
         { id: "p4006-1", content: "博物馆新展开幕，讲解员讲得特别好。", likes: 23, comments: 5, isLiked: false, createdAt: "2026-07-17T10:00:00Z" },
       ],
@@ -471,6 +477,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       whisperSent: false,
       expectedPartner: "喜欢户外、性格开朗、热爱生活的女生",
       allowMessage: false,
+      ipLocation: "福建 · 厦门",
       recentPosts: [
         { id: "p4007-1", content: "凌晨四点的日出，值得！", likes: 66, comments: 12, isLiked: false, createdAt: "2026-07-16T10:00:00Z" },
       ],
