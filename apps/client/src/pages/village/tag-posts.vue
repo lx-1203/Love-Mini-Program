@@ -9,8 +9,17 @@ import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
+import { IMAGE_PATHS } from "../../config/images";
 // 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
 import { useVillageStore, formatRelativeTime, type PostItem } from "../../stores/village";
+
+/** 状态/互动图标（emoji 实体替换为 SVG） */
+const stateIcons = {
+  error: IMAGE_PATHS.ICONS_EMOJI.WARNING,
+  empty: IMAGE_PATHS.ICONS_EMOJI.BOOKMARK,
+  comment: IMAGE_PATHS.ICONS_EMOJI.CHAT,
+  heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
+} as const;
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 
@@ -257,7 +266,7 @@ onLoad((query) => {
 
       <!-- 错误状态 -->
       <view v-else-if="errorMessage && posts.length === 0" class="feed-state">
-        <text class="feed-state__icon">&#x1F614;</text>
+        <image class="feed-state__icon" :src="stateIcons.error" mode="aspectFit" alt="" />
         <text class="feed-state__text">{{ errorMessage }}</text>
         <view class="feed-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="onRefresh">
           <text class="feed-state__btn-text">{{ t("common.retry") }}</text>
@@ -266,7 +275,7 @@ onLoad((query) => {
 
       <!-- 空状态 -->
       <view v-else-if="!loading && posts.length === 0" class="feed-state">
-        <text class="feed-empty__icon">&#x1F4ED;</text>
+        <image class="feed-empty__icon" :src="stateIcons.empty" mode="aspectFit" alt="" />
         <text class="feed-empty__title">{{ t("village.emptyPosts") }}</text>
         <text class="feed-empty__desc">{{ t("village.tagPosts.emptyDesc") }}</text>
       </view>
@@ -317,11 +326,11 @@ onLoad((query) => {
           <text class="post-card__time">{{ formatRelativeTime(post.createdAt) }}</text>
           <view class="post-card__actions">
             <view class="action-btn">
-              <text class="action-btn__icon">&#x1F4AC;</text>
+              <image class="action-btn__icon" :src="stateIcons.comment" mode="aspectFit" alt="" />
               <text v-if="post.comments > 0" class="action-btn__count">{{ post.comments }}</text>
             </view>
             <view class="action-btn">
-              <text class="action-btn__icon">&#x2764;</text>
+              <image class="action-btn__icon" :src="stateIcons.heart" mode="aspectFit" alt="" />
               <text v-if="post.likes > 0" class="action-btn__count">{{ post.likes }}</text>
             </view>
           </view>
@@ -428,7 +437,9 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .feed-state__icon {
-  font-size: 80rpx;
+  width: 80rpx;
+  height: 80rpx;
+  color: var(--c-text-tertiary);
 }
 
 .feed-state__text {
@@ -459,7 +470,9 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .feed-empty__icon {
-  font-size: 88rpx;
+  width: 88rpx;
+  height: 88rpx;
+  color: var(--c-text-tertiary);
 }
 
 .feed-empty__title {
@@ -628,8 +641,8 @@ $red-badge: var(--c-error, #FF4757);
 /* #endif */
 
 .action-btn__icon {
-  font-size: var(--fs-lg, 28rpx);
-  line-height: 1;
+  width: 28rpx;
+  height: 28rpx;
   color: $text-tertiary;
 }
 

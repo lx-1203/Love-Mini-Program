@@ -104,6 +104,16 @@ const mockVipStatus: VipStatus = {
   expireDate: null,
 };
 
+/** Mock 60s 语音状态（Phase Feedback5：语音状态替代视频） */
+const mockVoiceStatusUrl =
+  "https://example.com/mock/voice-status.mp3";
+
+/** Mock 同校推荐权限（默认不把自己推给同校，但接收同校信息） */
+const mockPrivacySettings = {
+  allowSameSchoolRecommend: false,
+  receiveSameSchoolInfo: true,
+};
+
 /** Mock 我的动态列表（个人主页预览用，最多展示 3 条） */
 const mockMyPosts: MyPostSummary[] = [
   {
@@ -161,8 +171,14 @@ export interface ProfileState {
   myPosts: MyPostSummary[];
   /** 照片墙 URL 数组（最多 6 张，Phase E3） */
   photoGallery: string[];
-  /** 个人视频 URL（Phase E2） */
-  personalVideoUrl: string;
+  /** 60 秒语音状态 URL（Phase Feedback5：移除视频，改为语音状态） */
+  voiceStatusUrl: string;
+  /** 语音状态时长（秒，最长 60） */
+  voiceStatusDuration: number;
+  /** 是否允许推荐给本校学生（默认 false：不把自己的信息推给同校，但可收到同校信息） */
+  allowSameSchoolRecommend: boolean;
+  /** 是否接收同校信息（默认 true） */
+  receiveSameSchoolInfo: boolean;
   /** 是否正在加载 */
   loading: boolean;
   /** 错误信息 */
@@ -184,7 +200,10 @@ export const useProfileStore = defineStore("profile", {
     vipStatus: null,
     myPosts: [],
     photoGallery: [],
-    personalVideoUrl: "",
+    voiceStatusUrl: "",
+    voiceStatusDuration: 0,
+    allowSameSchoolRecommend: false,
+    receiveSameSchoolInfo: true,
     loading: false,
     errorMessage: null,
   }),
@@ -218,6 +237,10 @@ export const useProfileStore = defineStore("profile", {
             this.profileStats = clone(mockProfileStats);
             this.vipStatus = clone(mockVipStatus);
             this.myPosts = clone(mockMyPosts);
+            this.voiceStatusUrl = mockVoiceStatusUrl;
+            this.voiceStatusDuration = 42;
+            this.allowSameSchoolRecommend = mockPrivacySettings.allowSameSchoolRecommend;
+            this.receiveSameSchoolInfo = mockPrivacySettings.receiveSameSchoolInfo;
             return;
           }
 
@@ -503,41 +526,59 @@ export const useProfileStore = defineStore("profile", {
     },
 
     /**
-     * 上传个人视频（Phase E2 / M-11）。
+     * 设置 60 秒语音状态（Phase Feedback5）。
      *
-     * 调用 clientApi.uploadProfileVideo 上传至服务端，上传成功后更新 personalVideoUrl 本地状态。
+     * 语音状态为最长 60 秒的音频，替代原"个人视频"位置。
+     * Mock 模式直接更新本地状态；Real 模式待后端提供语音上传接口后接入。
      *
-     * @param file - 视频文件（mp4/mov，≤50MB，≤60s）
-     * @returns 服务端返回的视频 URL
+     * @param url - 语音文件 URL（本地临时路径或服务端 URL）
+     * @param duration - 语音时长（秒，≤60）
      */
-    async uploadVideo(file: UniUploadFileLike): Promise<string> {
+    setVoiceStatus(url: string, duration: number): void {
       this.errorMessage = null;
-      try {
-        const result = await clientApi.uploadProfileVideo(file);
-        this.personalVideoUrl = result.url;
-        return result.url;
-      } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadVideoFailed");
-        throw error;
+      // 修复（第三轮审查）：url 为空时视为清除语音状态，避免"空 URL + 非零时长"的不一致状态
+      if (!url || url.trim().length === 0) {
+        this.voiceStatusUrl = "";
+        this.voiceStatusDuration = 0;
+        return;
       }
+      const safeDuration = Math.min(Math.max(0, duration), 60);
+      if (safeDuration <= 0) {
+        this.voiceStatusUrl = "";
+        this.voiceStatusDuration = 0;
+        return;
+      }
+      this.voiceStatusUrl = url;
+      this.voiceStatusDuration = safeDuration;
     },
 
     /**
-     * 删除个人视频（Phase E2 / M-11）。
-     *
-     * 当前后端未提供独立的 DELETE /profile/video 接口，
-     * 通过清空 personalVideoUrl 本地状态实现前端交互闭环。
-     * 待后端补齐 DELETE 接口后，在此调用 clientApi.deleteProfileVideo()。
+     * 清除语音状态。
      */
-    async removeVideo(): Promise<void> {
-      this.errorMessage = null;
-      try {
-        // TODO: 后端补齐 DELETE /api/profile/video 后接入 clientApi.deleteProfileVideo()
-        this.personalVideoUrl = "";
-      } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.deleteVideoFailed");
-        throw error;
-      }
+    clearVoiceStatus(): void {
+      this.voiceStatusUrl = "";
+      this.voiceStatusDuration = 0;
+    },
+
+    /**
+     * 更新同校推荐权限（Phase Feedback5）。
+     *
+     * allowSameSchoolRecommend = true 时，自己的信息会推荐给本校学生；
+     * false 时不推荐，但仍可收到同校学生的信息（receiveSameSchoolInfo 独立控制）。
+     *
+     * @param allow - 是否允许推荐给本校学生
+     */
+    setAllowSameSchoolRecommend(allow: boolean): void {
+      this.allowSameSchoolRecommend = allow;
+    },
+
+    /**
+     * 更新是否接收同校信息（Phase Feedback5）。
+     *
+     * @param receive - 是否接收同校信息
+     */
+    setReceiveSameSchoolInfo(receive: boolean): void {
+      this.receiveSameSchoolInfo = receive;
     },
 
     /**

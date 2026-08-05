@@ -212,7 +212,7 @@ export default defineConfig(({ mode }) => ({
     // H5 构建启用 manualChunks 分包，mp-weixin 不启用（由 uni-app 自动处理）
     rollupOptions: {
       // 启用 tree-shaking，剔除未使用的导出（生产环境默认开启，显式声明便于维护）
-      treeshake: mode === "production" ? "smallest" : true,
+      treeshake: true,
       output: {
         manualChunks: resolveH5ManualChunk,
       },

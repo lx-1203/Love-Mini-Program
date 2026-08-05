@@ -90,7 +90,12 @@ const icons = {
   graduation: IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG,
   location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
+  heartOutline: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE,
   cake: IMAGE_PATHS.ICONS_EMOJI.CAKE,
+  ruler: IMAGE_PATHS.ICONS_EMOJI.RULER,
+  money: IMAGE_PATHS.ICONS_EMOJI.MONEY,
+  chat: IMAGE_PATHS.ICONS_EMOJI.CHAT,
+  mail: IMAGE_PATHS.ICONS_EMOJI.MAIL,
   pass: IMAGE_PATHS.ICONS_SOCIAL.PASS,
   superLike: IMAGE_PATHS.ICONS_SOCIAL.SUPER_LIKE,
   like: IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED,
@@ -158,10 +163,10 @@ const personalityTags = computed(() => {
 const interestCircles = computed(() => {
   const tags = props.card?.tags ?? [];
   const preset = [
-    { name: "读书会", icon: "📚", members: 128, gradient: "linear-gradient(135deg, var(--c-lavender-100) 0%, var(--c-lavender-50) 100%)" },
-    { name: "摄影社", icon: "📷", members: 89, gradient: "linear-gradient(135deg, var(--c-sky-100) 0%, var(--c-sky-50) 100%)" },
-    { name: "美食探店", icon: "🍜", members: 256, gradient: "linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-apricot-50) 100%)" },
-    { name: "徒步旅行", icon: "🥾", members: 76, gradient: "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)" },
+    { name: "读书会", icon: IMAGE_PATHS.ICONS_EMOJI.BOOK, members: 128, gradient: "linear-gradient(135deg, var(--c-lavender-100) 0%, var(--c-lavender-50) 100%)" },
+    { name: "摄影社", icon: IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON, members: 89, gradient: "linear-gradient(135deg, var(--c-sky-100) 0%, var(--c-sky-50) 100%)" },
+    { name: "美食探店", icon: IMAGE_PATHS.ICONS_EMOJI.FOOD, members: 256, gradient: "linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-apricot-50) 100%)" },
+    { name: "徒步旅行", icon: IMAGE_PATHS.ICONS_COMMON.HIKING_SVG, members: 76, gradient: "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)" },
   ];
   if (tags.length > 0) {
     // 修复（严格模式 noUncheckedIndexedAccess）：preset[idx % preset.length] 索引访问返回类型含 undefined，
@@ -170,7 +175,7 @@ const interestCircles = computed(() => {
       const presetItem = preset[idx % preset.length];
       return {
         name: tag,
-        icon: presetItem?.icon ?? "💬",
+        icon: presetItem?.icon ?? IMAGE_PATHS.ICONS_EMOJI.CHAT,
         members: 60 + ((props.card?.userId?.charCodeAt(0) ?? 0) + idx * 31) % 240,
         gradient: presetItem?.gradient ?? "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)",
       };
@@ -183,7 +188,8 @@ const interestCircles = computed(() => {
 const incomeLabel = computed(() => {
   const seed = (props.card?.userId?.charCodeAt(0) ?? 0) % 4;
   const ranges = ["3k-8k", "8k-15k", "15k-30k", "30k+"];
-  return ranges[seed];
+  // 修复（严格模式 noUncheckedIndexedAccess）：ranges[seed] 索引访问返回 string | undefined，追加兜底。
+  return ranges[seed] ?? "3k-8k";
 });
 
 /** 从 headline 提取年龄 */
@@ -217,6 +223,119 @@ const bioText = computed(() => props.card?.bio || t("cardDetail.defaultBio"));
 /** 圈成员数文案 */
 function circleMembersText(members: number): string {
   return t("cardDetail.circleMembers", { n: members });
+}
+
+/* ========== Phase Feedback1：详情页改版新增展示 ========== */
+
+/** 认证文案（机器+人工双重认证） */
+const detailVerificationLabel = computed(() => {
+  const card = props.card;
+  if (!card) return "";
+  if (card.machineVerified && card.humanVerified) return t("discover.doubleVerified");
+  if (card.machineVerified) return t("discover.machineVerified");
+  if (card.humanVerified) return t("discover.humanVerified");
+  return "";
+});
+
+/** 个人 ID 展示文案 */
+const detailDisplayIdLabel = computed(() => {
+  const card = props.card;
+  if (!card?.displayId) return "";
+  return t("discover.personalId", { id: card.displayId });
+});
+
+/** 距离文案 */
+const detailDistanceLabel = computed(() => {
+  const card = props.card;
+  if (!card) return "";
+  if (card.isSameSchool) return t("discover.sameCampusDistance");
+  const raw = card.distanceText;
+  if (!raw) return card.availability || "";
+  if (/^\d+(\.\d+)?$/.test(raw)) return `${raw}${t("discover.distanceSuffix")}`;
+  return raw;
+});
+
+/** 活跃状态文案 */
+const detailActiveLabel = computed(() => {
+  const card = props.card;
+  if (!card) return "";
+  const raw = card.activeStatusText;
+  if (raw) {
+    if (raw === "just_now") return t("discover.activeJustNow");
+    if (raw === "today") return t("discover.activeToday");
+    if (raw === "offline") return t("discover.offline");
+    const hoursMatch = raw.match(/^hours_(\d+)$/);
+    if (hoursMatch?.[1]) return t("discover.activeHoursAgo", { n: hoursMatch[1] });
+    const daysMatch = raw.match(/^days_(\d+)$/);
+    if (daysMatch?.[1]) return t("discover.activeDaysAgo", { n: daysMatch[1] });
+    return raw;
+  }
+  if (card.onlineStatus === "online") return t("discover.activeJustNow");
+  if (card.onlineStatus === "away") return t("discover.activeToday");
+  return "";
+});
+
+/** 基础资料字段（关于我分区）：身高/学历/收入/情感状态/籍贯/未来城市 */
+const basicInfoItems = computed(() => {
+  const card = props.card;
+  if (!card) return [];
+  const items: Array<{ label: string; value: string }> = [];
+  if (card.height) items.push({ label: t("cardDetail.heightLabel"), value: `${card.height}${t("cardDetail.heightUnit")}` });
+  items.push({ label: t("cardDetail.educationLabel"), value: eduLabel(card.educationLevel) });
+  items.push({ label: t("cardDetail.incomeLabel"), value: incomeLabel.value });
+  if (card.mbti) items.push({ label: t("discover.mbtiLabel"), value: card.mbti });
+  if (card.personality?.length) items.push({ label: t("discover.personalityLabel"), value: card.personality.slice(0, 2).join(" / ") });
+  return items;
+});
+
+/** 动态列表（recentPosts 字段，无则空数组）——组件内副本，避免直接 mutate props */
+const momentPosts = ref<NonNullable<DiscoverCard["recentPosts"]>>([]);
+
+// 同步 props.card.recentPosts 到组件内副本（每次卡片变化时重置，避免点赞状态残留）
+watch(
+  () => props.card?.recentPosts,
+  (posts) => {
+    momentPosts.value = posts ? posts.map((p) => ({ ...p, images: [...(p.images ?? [])] })) : [];
+  },
+  { immediate: true }
+);
+
+/** 悄悄话内容（whisper 字段） */
+const whisperText = computed(() => props.card?.whisper ?? "");
+
+/** 是否已发送悄悄话 */
+const whisperAlreadySent = computed(() => props.card?.whisperSent ?? false);
+
+/** 期待的人物画像（expectedPartner 字段） */
+const expectedPartnerText = computed(() => props.card?.expectedPartner ?? "");
+
+/** 点击动态点赞（组件内状态翻转，不落库、不 mutate props） */
+function toggleMomentLike(postId: string): void {
+  const posts = momentPosts.value;
+  if (!posts) return;
+  const post = posts.find((p) => p.id === postId);
+  if (!post) return;
+  post.isLiked = !post.isLiked;
+  post.likes += post.isLiked ? 1 : -1;
+}
+
+/** 点击动态评论（提示，后续接入评论区） */
+function onMomentComment(_postId: string): void {
+  uni.showToast({ title: t("discover.momentComment"), icon: "none" });
+}
+
+/** 点击动态私信（提示付费解锁） */
+function onMomentPrivateMsg(): void {
+  uni.showToast({ title: t("discover.privateMsgPaidHint"), icon: "none" });
+}
+
+/** 点击悄悄话（提示付费解锁或已发送） */
+function onWhisperTap(): void {
+  if (whisperAlreadySent.value) {
+    uni.showToast({ title: t("discover.whisperSent"), icon: "none" });
+    return;
+  }
+  uni.showToast({ title: t("discover.whisperPaidHint"), icon: "none" });
 }
 
 watch(
@@ -481,6 +600,16 @@ function onSwipeDownEnd(e: UniTouchEvent) {
                 <text>{{ matchScoreText }}</text>
               </view>
             </view>
+
+            <!-- Phase Feedback1 · ID / 距离 / 活跃 / 双重认证 -->
+            <view v-if="detailDisplayIdLabel || detailDistanceLabel || detailActiveLabel || detailVerificationLabel" class="detail-hero__extra-row">
+              <text v-if="detailDisplayIdLabel" class="detail-hero__extra-text">{{ detailDisplayIdLabel }}</text>
+              <text v-if="detailDistanceLabel" class="detail-hero__extra-text">{{ detailDistanceLabel }}</text>
+              <text v-if="detailActiveLabel" class="detail-hero__extra-text detail-hero__extra-text--active">
+                ● {{ detailActiveLabel }}
+              </text>
+              <text v-if="detailVerificationLabel" class="detail-hero__extra-badge">{{ detailVerificationLabel }}</text>
+            </view>
           </view>
         </view>
 
@@ -495,7 +624,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
           </view>
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--height">
-              <text class="quick-stat__icon-text">📏</text>
+              <image class="quick-stat__icon-img" :src="icons.ruler" mode="aspectFit" alt="" />
             </view>
             <text class="quick-stat__value">{{ card?.height ?? (165 + (card?.userId?.length ?? 0) % 25) }}{{ t('cardDetail.heightUnit') }}</text>
             <text class="quick-stat__label">{{ t('cardDetail.heightLabel') }}</text>
@@ -509,7 +638,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
           </view>
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--income">
-              <text class="quick-stat__icon-text">💰</text>
+              <image class="quick-stat__icon-img" :src="icons.money" mode="aspectFit" alt="" />
             </view>
             <text class="quick-stat__value">{{ incomeLabel }}</text>
             <text class="quick-stat__label">{{ t('cardDetail.incomeLabel') }}</text>
@@ -565,13 +694,110 @@ function onSwipeDownEnd(e: UniTouchEvent) {
               class="detail-circle-card"
               :style="{ background: circle.gradient }"
             >
-              <text class="detail-circle-card__icon">{{ circle.icon }}</text>
+              <image class="detail-circle-card__icon" :src="circle.icon" mode="aspectFit" alt="" />
               <view class="detail-circle-card__info">
                 <text class="detail-circle-card__name">{{ circle.name }}</text>
                 <text class="detail-circle-card__members">{{ circleMembersText(circle.members) }}</text>
               </view>
             </view>
           </view>
+        </view>
+
+        <!-- Phase Feedback1 · 关于我（基础资料） -->
+        <view v-if="basicInfoItems.length > 0" class="detail-panel detail-basic-info">
+          <view class="detail-panel__header">
+            <text class="detail-panel__title">{{ t('discover.basicInfo') }}</text>
+          </view>
+          <view class="detail-basic-info__grid">
+            <view
+              v-for="(item, idx) in basicInfoItems"
+              :key="idx"
+              class="detail-basic-info__item"
+            >
+              <text class="detail-basic-info__label">{{ item.label }}</text>
+              <text class="detail-basic-info__value">{{ item.value }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- Phase Feedback1 · 悄悄话 -->
+        <view v-if="whisperText || !whisperAlreadySent" class="detail-panel detail-whisper">
+          <view class="detail-panel__header">
+            <text class="detail-panel__title">{{ t('discover.whisperLabel') }}</text>
+          </view>
+          <view
+            class="detail-whisper__card press-feedback"
+            hover-class="detail-whisper__card--pressed"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="whisperAlreadySent ? t('discover.whisperSent') : t('discover.whisperSend')"
+            @tap="onWhisperTap"
+          >
+            <text v-if="whisperText" class="detail-whisper__text">{{ whisperText }}</text>
+            <text v-else class="detail-whisper__text detail-whisper__text--placeholder">{{ t('discover.whisperEmpty') }}</text>
+            <text class="detail-whisper__action">{{ whisperAlreadySent ? t('discover.whisperSent') : t('discover.whisperSend') }}</text>
+          </view>
+        </view>
+
+        <!-- Phase Feedback1 · 动态（点赞/评论/私信） -->
+        <view class="detail-panel detail-moments">
+          <view class="detail-panel__header">
+            <text class="detail-panel__title">{{ t('discover.moments') }}</text>
+          </view>
+          <view v-if="momentPosts.length > 0" class="detail-moments__list">
+            <view
+              v-for="post in momentPosts"
+              :key="post.id"
+              class="detail-moment-item"
+            >
+              <text class="detail-moment-item__content">{{ post.content }}</text>
+              <view class="detail-moment-item__actions">
+                <view
+                  class="detail-moment-item__action press-feedback"
+                  hover-class="press-feedback--active"
+                  hover-stay-time="120"
+                  role="button"
+                  :aria-label="t('discover.momentLike')"
+                  :aria-pressed="post.isLiked"
+                  @tap="toggleMomentLike(post.id)"
+                >
+                  <image class="detail-moment-item__action-icon" :src="post.isLiked ? icons.heart : icons.heartOutline" mode="aspectFit" alt="" />
+                  <text class="detail-moment-item__action-count">{{ post.likes }}</text>
+                </view>
+                <view
+                  class="detail-moment-item__action press-feedback"
+                  hover-class="press-feedback--active"
+                  hover-stay-time="120"
+                  role="button"
+                  :aria-label="t('discover.momentComment')"
+                  @tap="onMomentComment(post.id)"
+                >
+                  <image class="detail-moment-item__action-icon" :src="icons.chat" mode="aspectFit" alt="" />
+                  <text class="detail-moment-item__action-count">{{ post.comments }}</text>
+                </view>
+                <view
+                  class="detail-moment-item__action detail-moment-item__action--paid press-feedback"
+                  hover-class="press-feedback--active"
+                  hover-stay-time="120"
+                  role="button"
+                  :aria-label="t('discover.momentPrivateMsg')"
+                  @tap="onMomentPrivateMsg"
+                >
+                  <image class="detail-moment-item__action-icon" :src="icons.mail" mode="aspectFit" alt="" />
+                  <text class="detail-moment-item__action-count">{{ t('discover.momentPrivateMsg') }}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+          <text v-else class="detail-moments__empty">{{ t('discover.momentsEmpty') }}</text>
+        </view>
+
+        <!-- Phase Feedback1 · 期待的人物画像 -->
+        <view v-if="expectedPartnerText" class="detail-panel detail-expected">
+          <view class="detail-panel__header">
+            <text class="detail-panel__title">{{ t('discover.expectedPartner') }}</text>
+          </view>
+          <text class="detail-expected__text">{{ expectedPartnerText }}</text>
         </view>
 
         <!-- 底部留白（操作栏高度） -->
@@ -959,6 +1185,37 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   height: 22rpx;
 }
 
+/* Phase Feedback1 · 详情 hero 额外信息行（ID/距离/活跃/认证） */
+.detail-hero__extra-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 8rpx;
+}
+
+.detail-hero__extra-text {
+  font-size: var(--fs-sm);
+  color: var(--c-overlay-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.detail-hero__extra-text--active {
+  color: var(--c-success);
+  font-weight: 600;
+}
+
+.detail-hero__extra-badge {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-text-inverse);
+  background: var(--c-gradient-verify);
+  padding: 4rpx 12rpx;
+  border-radius: var(--r-full);
+}
+
 /* ========== 通用面板 ========== */
 .detail-panel {
   margin: 0 var(--page-padding) var(--sp-4);
@@ -1142,12 +1399,9 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 }
 
 .detail-circle-card__icon {
-  font-size: var(--fs-5xl, 44rpx);
   width: 56rpx;
   height: 56rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: var(--c-brand-500);
   border-radius: var(--r-circle, 50%);
   background: var(--c-overlay-bg-mid);
   flex-shrink: 0;
@@ -1172,6 +1426,142 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 .detail-circle-card__members {
   font-size: var(--fs-xs);
   color: var(--c-text-secondary);
+}
+
+/* ========== Phase Feedback1 · 关于我（基础资料） ========== */
+.detail-basic-info__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 8rpx;
+}
+
+.detail-basic-info__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding: 12rpx 20rpx;
+  border-radius: var(--r-lg);
+  background: var(--c-bg-page);
+  border: 1rpx solid var(--c-divider-light);
+  min-width: 140rpx;
+}
+
+.detail-basic-info__label {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
+}
+
+.detail-basic-info__value {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+/* ========== Phase Feedback1 · 悄悄话 ========== */
+.detail-whisper__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 8rpx;
+  padding: 20rpx 24rpx;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--c-romance-bg-tint, #fdf2f8) 0%, var(--c-romance-bg-tint-strong, #fce7f3) 100%);
+  border: 1rpx solid var(--c-romance-200, #fbcfe8);
+}
+
+.detail-whisper__card--pressed {
+  opacity: 0.8;
+}
+
+.detail-whisper__text {
+  flex: 1;
+  font-size: var(--fs-base);
+  color: var(--c-text-primary);
+}
+
+.detail-whisper__text--placeholder {
+  color: var(--c-text-tertiary);
+}
+
+.detail-whisper__action {
+  flex-shrink: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--c-romance-500, #ec4899);
+}
+
+/* ========== Phase Feedback1 · 动态 ========== */
+.detail-moments__list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.detail-moment-item {
+  padding: 16rpx 20rpx;
+  border-radius: var(--r-lg);
+  background: var(--c-bg-page);
+  border: 1rpx solid var(--c-divider-light);
+}
+
+.detail-moment-item__content {
+  font-size: var(--fs-base);
+  color: var(--c-text-primary);
+  line-height: 1.6;
+}
+
+.detail-moment-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-top: 12rpx;
+}
+
+.detail-moment-item__action {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.detail-moment-item__action-icon {
+  width: 32rpx;
+  height: 32rpx;
+  color: var(--c-text-secondary);
+}
+
+.detail-moment-item__action-count {
+  font-size: var(--fs-sm);
+  color: var(--c-text-secondary);
+}
+
+.detail-moment-item__action--paid {
+  margin-left: auto;
+  padding: 6rpx 14rpx;
+  border-radius: var(--r-full);
+  background: var(--c-brand-bg-tint, #e6f9f0);
+}
+
+.detail-moments__empty {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
+}
+
+/* ========== Phase Feedback1 · 期待的人物画像 ========== */
+.detail-expected__text {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-base);
+  color: var(--c-text-primary);
+  line-height: 1.7;
+  padding: 16rpx 20rpx;
+  border-radius: var(--r-lg);
+  background: var(--c-brand-bg-tint, #e6f9f0);
+  border: 1rpx solid var(--c-brand-border-tint, #b7ecd8);
 }
 
 /* ========== 底部留白 ========== */

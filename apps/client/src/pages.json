@@ -137,6 +137,12 @@
       }
     },
     {
+      "path": "pages/love-center/index",
+      "style": {
+        "navigationBarTitleText": "恋爱中心"
+      }
+    },
+    {
       "path": "pages/chat/index",
       "style": {
         "navigationBarTitleText": "聊天"
@@ -254,6 +260,12 @@
       "style": {
         "navigationBarTitleText": "谁看过我",
         "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/profile/privacy",
+      "style": {
+        "navigationBarTitleText": "权限设置"
       }
     },
     {

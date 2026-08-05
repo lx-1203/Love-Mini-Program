@@ -56,6 +56,38 @@ export interface DiscoverCard {
    * 由 VerificationBadge 组件消费，渲染对应色彩与图标。
    */
   verificationBadgeLevel?: string;
+  /** 展示用个人 ID（用户编号，如 "CL-1024"） */
+  displayId?: string;
+  /** 距离文案（如 "1.2km" / "同校"） */
+  distanceText?: string;
+  /** 活跃状态文案（如 "刚刚活跃" / "今天活跃" / "3 小时前活跃"） */
+  activeStatusText?: string;
+  /** 机器认证（头像/照片真实性机审） */
+  machineVerified?: boolean;
+  /** 人工认证（人工审核通过） */
+  humanVerified?: boolean;
+  /** 性格标签（如 阳光开朗/慢热） */
+  personality?: string[];
+  /** MBTI 人格类型（如 INFP） */
+  mbti?: string;
+  /** 悄悄话内容（付费可见/发送） */
+  whisper?: string;
+  /** 是否已发送悄悄话 */
+  whisperSent?: boolean;
+  /** 动态预览（卡片/详情页动态 Tab） */
+  recentPosts?: Array<{
+    id: string;
+    content: string;
+    images?: string[];
+    likes: number;
+    comments: number;
+    isLiked: boolean;
+    createdAt: string;
+  }>;
+  /** 期待的人物画像描述 */
+  expectedPartner?: string;
+  /** 是否允许私信（未解锁时需付费） */
+  allowMessage?: boolean;
 }
 
 /**

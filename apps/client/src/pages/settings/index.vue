@@ -27,8 +27,7 @@ const operationTimers = new Set<ReturnType<typeof setTimeout>>();
 const { t } = useI18n();
 
 interface MenuItem {
-  emoji: string;
-  icon?: string;
+  icon: string;
   bgColor: string;
   label: string;
   value?: string;
@@ -291,16 +290,22 @@ function goBack() {
 }
 
 /** 账号分组菜单项（使用 computed 以响应 locale 切换） */
+const menuIcons = {
+  bell: IMAGE_PATHS.ICONS_EMOJI.BELL,
+  moon: IMAGE_PATHS.ICONS_EMOJI.MOON,
+  shield: IMAGE_PATHS.ICONS_EMOJI.SHIELD,
+  clipboard: IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD,
+  broom: IMAGE_PATHS.ICONS_EMOJI.BROOM,
+} as const;
+
 const accountMenus = computed<MenuItem[]>(() => [
   {
-    emoji: "✏️",
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
     bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
     label: t("settings.editProfile"),
     action: goToProfileSetup,
   },
   {
-    emoji: "🔐",
     icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
     bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
     label: t("settings.verification"),
@@ -311,28 +316,24 @@ const accountMenus = computed<MenuItem[]>(() => [
 /** 关于分组菜单项（使用 computed 以响应 locale 切换） */
 const aboutMenus = computed<MenuItem[]>(() => [
   {
-    emoji: "📜",
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("settings.userAgreement"),
     action: viewUserAgreement,
   },
   {
-    emoji: "🔒",
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
     bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("settings.privacyPolicy"),
     action: viewPrivacyPolicy,
   },
   {
-    emoji: "🔄",
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
     bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("settings.checkUpdate"),
     action: checkUpdate,
   },
   {
-    emoji: "ℹ️",
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
     bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("settings.aboutUs"),
@@ -382,7 +383,7 @@ function handleMenuTap(item: MenuItem) {
         >
           <view class="menu-item__left">
             <view class="menu-item__icon" :style="{ background: item.bgColor }">
-              <text class="menu-item__emoji">{{ item.emoji }}</text>
+              <image class="menu-item__emoji-img" :src="item.icon" mode="aspectFit" alt="" />
             </view>
             <text class="menu-item__label">{{ item.label }}</text>
           </view>
@@ -400,7 +401,7 @@ function handleMenuTap(item: MenuItem) {
         <view class="menu-item list-item">
           <view class="menu-item__left">
             <view class="menu-item__icon settings-card--cream">
-              <text class="menu-item__emoji">🔔</text>
+              <image class="menu-item__emoji-img" :src="menuIcons.bell" mode="aspectFit" alt="" />
             </view>
             <text class="menu-item__label">{{ t('settings.messageNotification') }}</text>
           </view>
@@ -419,7 +420,7 @@ function handleMenuTap(item: MenuItem) {
         >
           <view class="menu-item__left">
             <view class="menu-item__icon settings-card--lavender">
-              <text class="menu-item__emoji">🌙</text>
+              <image class="menu-item__emoji-img" :src="menuIcons.moon" mode="aspectFit" alt="" />
             </view>
             <text class="menu-item__label">{{ t("dnd.title") }}</text>
           </view>
@@ -428,7 +429,7 @@ function handleMenuTap(item: MenuItem) {
         <view class="menu-item list-item menu-item--no-border">
           <view class="menu-item__left">
             <view class="menu-item__icon settings-card--brand">
-              <text class="menu-item__emoji">🛡️</text>
+              <image class="menu-item__emoji-img" :src="menuIcons.shield" mode="aspectFit" alt="" />
             </view>
             <text class="menu-item__label">{{ t('settings.privacyMode') }}</text>
           </view>
@@ -455,7 +456,7 @@ function handleMenuTap(item: MenuItem) {
         >
           <view class="menu-item__left">
             <view class="menu-item__icon settings-card--page">
-              <text class="menu-item__emoji">📋</text>
+              <image class="menu-item__emoji-img" :src="menuIcons.clipboard" mode="aspectFit" alt="" />
             </view>
             <text class="menu-item__label">{{ t('settings.privacyPolicy') }}</text>
           </view>
@@ -478,7 +479,7 @@ function handleMenuTap(item: MenuItem) {
         >
           <view class="menu-item__left">
             <view class="menu-item__icon settings-card--lavender">
-              <text class="menu-item__emoji">🧹</text>
+              <image class="menu-item__emoji-img" :src="menuIcons.broom" mode="aspectFit" alt="" />
             </view>
             <text class="menu-item__label">{{ t('settings.clearCache') }}</text>
           </view>
@@ -507,7 +508,7 @@ function handleMenuTap(item: MenuItem) {
         >
           <view class="menu-item__left">
             <view class="menu-item__icon" :style="{ background: item.bgColor }">
-              <text class="menu-item__emoji">{{ item.emoji }}</text>
+              <image class="menu-item__emoji-img" :src="item.icon" mode="aspectFit" alt="" />
             </view>
             <text class="menu-item__label">{{ item.label }}</text>
           </view>
@@ -676,8 +677,10 @@ function handleMenuTap(item: MenuItem) {
   background: var(--c-lavender-100, #EDE9FE);
 }
 
-.menu-item__emoji {
-  font-size: var(--fs-2xl, 32rpx);
+.menu-item__emoji-img {
+  width: 36rpx;
+  height: 36rpx;
+  color: var(--c-text-primary, #1F2329);
 }
 
 .menu-item__label {

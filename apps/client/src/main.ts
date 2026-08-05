@@ -4,6 +4,9 @@ import App from "./App.vue";
 import gsapPlugin from "./plugins/gsap";
 import { initSentry, captureException } from "./services/sentry";
 import i18n from "./i18n";
+// Phase R1：AbortController polyfill（mp-weixin 基础库无原生实现）
+// 注意：只 import 函数，不调用 patchDeprecatedApi（wx 相关逻辑仍走 MP-WEIXIN 条件分支）
+import { installAbortControllerPolyfill } from "./compat";
 
 /**
  * 全局错误上报函数（统一错误出口）。
@@ -119,6 +122,12 @@ function initMonitoringAndI18n(app: VueApp): void {
 }
 
 export function createApp() {
+  // Phase R1：注入全局 AbortController polyfill（mp-weixin 基础库无原生实现），
+  // 必须在任何 store / service 首次实例化（new AbortController）之前执行。
+  // 该模块可在任意平台安全 import（内部幂等：已有原生实现则跳过）。
+  // 注：compat 模块顶层仅导出函数，无副作用，不触发 wx 访问。
+  installAbortControllerPolyfill();
+
   const app = createSSRApp(App);
   const pinia = createPinia();
 

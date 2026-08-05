@@ -386,8 +386,106 @@ export function getTabBarInstance(): { setData?: (data: { selected: number }) =>
 // 微信JSAPI兼容层（原 patchDeprecatedApi 实现，保持向后兼容）
 // ============================================================================
 
+// Phase R1：installAbortControllerPolyfill 必须在 MP-WEIXIN 条件块之外，
+// 以便 H5 / APP 端也能 import 该函数（内部幂等：已有原生实现则跳过）。
+
+/**
+ * 全局 AbortController polyfill（Phase R1：修复微信小程序运行时 ReferenceError）。
+ *
+ * 背景：微信小程序基础库（lib 3.15.2 及以下）的 WAService 运行环境**未提供**全局
+ * `AbortController`/`AbortSignal`，而项目大量 store/service 直接执行
+ * `new AbortController()`（超时控制、请求竞态取消），在 mp-weixin 下会抛出
+ * `ReferenceError: AbortController is not defined`，导致 fetchPosts / fetchStatus /
+ * fetchCards 等请求全部 reject（表现为 uni.onUnhandledRejection 上报）。
+ *
+ * 方案：在应用启动最早阶段（createApp 之前）调用本函数，向全局注入最小实现：
+ * - 仅实现 abort() 与 signal.aborted / addEventListener / removeEventListener /
+ *   dispatchEvent，满足项目内所有使用点（请求取消 + 竞态保护）；
+ * - 若环境已存在原生实现（H5 / 高版本基础库），则跳过注入（幂等）。
+ *
+ * 注意：注入目标为 globalThis（小程序逻辑层与 H5 均指向全局对象），
+ * 必须在任何 store 首次实例化前执行，故由 main.ts 的 createApp() 最先调用。
+ */
+export function installAbortControllerPolyfill(): void {
+  const g = globalThis as Record<string, unknown>;
+  if (typeof g.AbortController !== "undefined") {
+    // 原生可用（H5 / 新基础库），无需注入
+    return;
+  }
+
+  const kAborted = "__aborted";
+
+  class PolyfillAbortSignal {
+    aborted = false;
+    onabort: ((this: AbortSignal, ev: Event) => unknown) | null = null;
+    private listeners = new Set<() => void>();
+
+    addEventListener(type: string, listener: () => void): void {
+      if (type === "abort") {
+        this.listeners.add(listener);
+      }
+    }
+
+    removeEventListener(type: string, listener: () => void): void {
+      if (type === "abort") {
+        this.listeners.delete(listener);
+      }
+    }
+
+    dispatchEvent(): boolean {
+      // 触发 abort 监听器（Event 对象在小程序环境可用性有限，直接回调）
+      this.listeners.forEach((fn) => {
+        try {
+          fn();
+        } catch (_e) {
+          // 单个监听器异常不影响其余监听器与主流程
+        }
+      });
+      if (typeof this.onabort === "function") {
+        try {
+          // 加固（security_review 复审）：部分小程序环境无全局 Event 构造器，
+          // 此处降级为传简单事件对象，避免 new Event 抛错导致 onabort 不触发。
+          const event =
+            typeof Event !== "undefined"
+              ? new Event("abort")
+              : ({ type: "abort" } as Event);
+          this.onabort.call(this as unknown as AbortSignal, event);
+        } catch (_e) {
+          // 忽略监听器内部异常
+        }
+      }
+      return true;
+    }
+  }
+
+  class PolyfillAbortController {
+    signal = new PolyfillAbortSignal();
+
+    abort(): void {
+      const sig = this.signal as unknown as Record<string, unknown>;
+      if (sig[kAborted]) {
+        return;
+      }
+      sig[kAborted] = true;
+      (sig as unknown as { aborted: boolean }).aborted = true;
+      (sig as unknown as PolyfillAbortSignal).dispatchEvent();
+    }
+  }
+
+  Object.defineProperty(g, "AbortController", {
+    configurable: true,
+    writable: false,
+    value: PolyfillAbortController,
+  });
+  Object.defineProperty(g, "AbortSignal", {
+    configurable: true,
+    writable: false,
+    value: PolyfillAbortSignal,
+  });
+}
+
 // #ifdef MP-WEIXIN
-// 仅在微信小程序平台生效
+// 仅在微信小程序平台生效（以下为微信 JSAPI 兼容层）
 
 /**
  * 微信小程序全局对象类型声明（条件编译下 TS 无法自动识别 wx）。
@@ -396,6 +494,7 @@ export function getTabBarInstance(): { setData?: (data: { selected: number }) =>
  * 强制调用方在使用具体字段前自行收敛类型，避免隐式 any 污染。
  */
 declare const wx: Record<string, unknown>;
+
 export function patchDeprecatedApi(): void {
   if (typeof wx === "undefined") return;
 

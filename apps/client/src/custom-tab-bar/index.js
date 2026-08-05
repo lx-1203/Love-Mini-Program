@@ -17,8 +17,10 @@
  *  配置映射关系（navigation.ts → 本文件）：
  *    id           → id
  *    label        → label
- *    path         → path        (注意：wx.switchTab 要求与 pages.json 的
- *                               pagePath 完全一致，不带前导斜杠)
+ *    path         → path        (注意：wx.switchTab 的 url 必须以 "/" 开头（绝对路径），
+ *                               否则微信会基于当前页面目录解析相对路径，导致
+ *                               "pages/profile/pages/discover/index is not found"
+ *                               类错误；pages.json 的 tabBar.pagePath 则不带前导斜杠)
  *    iconPath     → iconPath    (注意：静态资源路径前加 /)
  *    selectedIconPath → activeIconPath (注意：静态资源路径前加 /)
  *    prominent    → prominent
@@ -93,8 +95,11 @@ Component({
       }
 
       // 调用 wx.switchTab 切换页面
+      // 修复（Phase R2）：wx.switchTab 的 url 必须以 "/" 开头（绝对路径），
+      // 否则微信会基于当前页面目录解析相对路径，导致
+      // switchTab:fail page "pages/profile/pages/discover/index" is not found。
       wx.switchTab({
-        url: tab.path,
+        url: tab.path.startsWith("/") ? tab.path : "/" + tab.path,
         success: () => {
           // 切换成功后更新 selected 状态（立即反馈，不等页面 onShow 回传）
           this.setData({ selected: index });

@@ -31,6 +31,7 @@
  */
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { IMAGE_PATHS } from "../../config/images";
 
 /** 红包状态：PENDING 待领取 / DEPLETED 已领完 / EXPIRED 已过期 / CLAIMED 已领取 */
 type RedPacketBubbleStatus = "PENDING" | "DEPLETED" | "EXPIRED" | "CLAIMED";
@@ -174,7 +175,7 @@ function handleClick() {
   >
     <!-- 左侧红包图标 -->
     <view class="rp-bubble__icon">
-      <text class="rp-bubble__icon-emoji">🧧</text>
+      <image class="rp-bubble__icon-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.GIFT" mode="aspectFit" alt="" />
     </view>
 
     <!-- 中间文本区 -->
@@ -247,8 +248,9 @@ function handleClick() {
 }
 
 .rp-bubble__icon-emoji {
-  font-size: var(--fs-7xl, 56rpx);
-  line-height: 1;
+  width: 56rpx;
+  height: 56rpx;
+  color: var(--c-warning, #f59e0b);
 }
 
 /* ==================== 文本区 ==================== */

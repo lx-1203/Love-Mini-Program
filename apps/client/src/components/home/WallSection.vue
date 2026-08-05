@@ -43,7 +43,7 @@ defineExpose({ t });
     :aria-label="t('home.campusNews')"
   >
     <view
-      v-if="loading"
+      v-show="loading"
       class="wall-skeleton"
       v-for="i in 2"
       :key="i"
@@ -54,7 +54,7 @@ defineExpose({ t });
       <view class="skeleton-card shimmer" />
     </view>
     <WallPostCard
-      v-else
+      v-show="!loading"
       v-for="post in (posts || []).slice(0, 3)"
       :key="post.id"
       :avatar-url="post.avatarUrl"

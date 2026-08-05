@@ -14,6 +14,7 @@
  */
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { IMAGE_PATHS } from "../config/images";
 
 /** 组件 Props 定义 */
 const props = defineProps<{
@@ -104,7 +105,7 @@ defineExpose({ handleConfirm, noop });
     <view class="unlock-modal__container" @tap.stop="noop">
       <!-- 顶部图标区域 -->
       <view class="unlock-modal__icon-wrap">
-        <text class="unlock-modal__icon">🔒</text>
+        <image class="unlock-modal__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" alt="" />
       </view>
 
       <!-- 标题 -->
@@ -208,8 +209,9 @@ defineExpose({ handleConfirm, noop });
 }
 
 .unlock-modal__icon {
-  font-size: var(--fs-7xl, 56rpx);
-  line-height: 1;
+  width: 56rpx;
+  height: 56rpx;
+  color: var(--c-brand-500);
 }
 
 /* 标题 */

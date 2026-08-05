@@ -21,6 +21,7 @@ import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVipRedPacketStore } from "../../stores/vip-red-packet";
 import { lightHaptic } from "../../utils/haptic";
+import { IMAGE_PATHS } from "../../config/images";
 
 /**
  * SubTask 1.5.2：红包发送成功后的跳转定时器引用，用于卸载时清理。
@@ -56,6 +57,9 @@ function readInputValue(e: Event): string {
 }
 
 const { t } = useI18n();
+
+/** 红包页主视觉图标（emoji 替换为 SVG） */
+const heroIcon = IMAGE_PATHS.ICONS_EMOJI.GIFT;
 const store = useVipRedPacketStore();
 
 /** 当前会话 ID */
@@ -205,7 +209,7 @@ defineExpose({ noop });
     <!-- 主视觉 -->
     <view class="hero">
       <view class="hero__icon">
-        <text class="hero__icon-emoji">🧧</text>
+        <image class="hero__icon-emoji" :src="heroIcon" mode="aspectFit" alt="" />
       </view>
       <text class="hero__title">{{ t('chatRedPacket.heroTitle') }}</text>
       <text class="hero__subtitle">{{ t('chatRedPacket.heroSubtitle') }}</text>
@@ -392,8 +396,9 @@ defineExpose({ noop });
   margin-bottom: 20rpx;
 }
 .hero__icon-emoji {
-  font-size: 72rpx;
-  line-height: 1;
+  width: 72rpx;
+  height: 72rpx;
+  color: var(--c-warning, #f59e0b);
 }
 .hero__title {
   font-size: var(--fs-4xl, 40rpx);

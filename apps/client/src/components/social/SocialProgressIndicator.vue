@@ -9,7 +9,7 @@
  * @example
  * <SocialProgressIndicator />
  */
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   useSocialProgressStore,
@@ -77,7 +77,6 @@ const FUNNEL_TEXT_COLORS = [
 
 /** 前一个层级是否已进入过渡动画 */
 const animatingTierIndex = ref(-1)
-const prevTierIndex = ref(0)
 /** 层级过渡动画定时器引用，用于卸载时清理 */
 let tierAnimTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -187,26 +186,13 @@ interface StepItem {
   textColor: string
 }
 
-const steps = computed<StepItem[]>(() => {
-  const currentIdx = currentTierIndex.value
-
-  // 检测层级变化，触发过渡动画
-  if (currentIdx !== prevTierIndex.value && currentIdx > prevTierIndex.value) {
-    animatingTierIndex.value = currentIdx
-    if (tierAnimTimer) clearTimeout(tierAnimTimer)
-    tierAnimTimer = setTimeout(() => {
-      animatingTierIndex.value = -1
-      tierAnimTimer = null
-    }, 600)
-  }
-  prevTierIndex.value = currentIdx
-
-  return TIER_ORDER.map((tier, index) => {
+const steps = computed<StepItem[]>(() =>
+  TIER_ORDER.map((tier, index) => {
     const meta = TIER_META[tier]
     const status: StepItem['status'] =
-      index < currentIdx
+      index < currentTierIndex.value
         ? 'completed'
-        : index === currentIdx
+        : index === currentTierIndex.value
           ? 'current'
           : 'pending'
 
@@ -220,6 +206,18 @@ const steps = computed<StepItem[]>(() => {
       textColor: FUNNEL_TEXT_COLORS[index] ?? FUNNEL_TEXT_COLORS[0],
     }
   })
+)
+
+/** 层级升级过渡动画（副作用从 computed 移入 watch，满足 vue/no-side-effects-in-computed-properties） */
+watch(currentTierIndex, (currentIdx, prevIdx) => {
+  if (currentIdx > (prevIdx ?? 0)) {
+    animatingTierIndex.value = currentIdx
+    if (tierAnimTimer) clearTimeout(tierAnimTimer)
+    tierAnimTimer = setTimeout(() => {
+      animatingTierIndex.value = -1
+      tierAnimTimer = null
+    }, 600)
+  }
 })
 
 /** 当前层级的 label/desc（i18n） */

@@ -17,8 +17,12 @@ import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVipRedPacketStore, type RedPacketType } from "../../stores/vip-red-packet";
 import { lightHaptic } from "../../utils/haptic";
+import { IMAGE_PATHS } from "../../config/images";
 
 const { t } = useI18n();
+
+/** 红包页主视觉图标（emoji 替换为 SVG） */
+const heroIcon = IMAGE_PATHS.ICONS_EMOJI.GIFT;
 const store = useVipRedPacketStore();
 
 /**
@@ -206,7 +210,7 @@ defineExpose({ noop });
     <!-- 红包主视觉 -->
     <view class="rp-hero">
       <view class="rp-hero__icon">
-        <text class="rp-hero__icon-emoji">🧧</text>
+        <image class="rp-hero__icon-emoji" :src="heroIcon" mode="aspectFit" alt="" />
       </view>
       <text class="rp-hero__title">{{ t('vip.redPacketHeroTitle') }}</text>
       <text class="rp-hero__subtitle">{{ t('vip.redPacketHeroSubtitle') }}</text>
@@ -430,8 +434,9 @@ defineExpose({ noop });
   margin-bottom: 20rpx;
 }
 .rp-hero__icon-emoji {
-  font-size: 72rpx;
-  line-height: 1;
+  width: 72rpx;
+  height: 72rpx;
+  color: var(--c-warning, #f59e0b);
 }
 .rp-hero__title {
   font-size: var(--fs-4xl, 40rpx);

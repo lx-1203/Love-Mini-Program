@@ -31,6 +31,9 @@ const ariaLabel = computed(() =>
   })
 );
 
+/** 头像首字符（模板中避免可选链写法，保证 vue-eslint-parser 可解析） */
+const nameInitial = computed(() => (props.name ? props.name.charAt(0) : ''));
+
 // 修复（严格模式 noUnusedLocals）：ariaLabel 仅在模板的 #ifdef H5 条件编译块内引用，
 // vue-tsc 无法识别 HTML 注释内的模板绑定，故通过 defineExpose 标记为已使用。
 defineExpose({ ariaLabel });
@@ -44,7 +47,7 @@ defineExpose({ ariaLabel });
     :aria-label="ariaLabel"
   >
     <view class="chat-item-avatar">
-      <Avatar :src="avatarUrl" :name="initials || name?.charAt(0)" size="sm" :online="online" />
+      <Avatar :src="avatarUrl" :name="initials || nameInitial" size="sm" :online="online" />
     </view>
     <view class="chat-item-content">
       <view class="chat-item-top">

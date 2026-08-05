@@ -44,5 +44,14 @@ export const CATEGORY_CAMPUS_ID = "cat-campus";
 /** 全部分类 ID */
 export const CATEGORY_ALL_ID = "cat-all";
 
+/** Phase Feedback4：关注 Tab 分类 ID（匹配中点喜欢的人的动态） */
+export const FOLLOWING_CATEGORY_ID = "cat-following";
+
+/** Phase Feedback4：同城 Tab 分类 ID（按 IP/城市过滤） */
+export const SAME_CITY_CATEGORY_ID = "cat-samecity";
+
+/** Phase Feedback4：发现 Tab 分类 ID（校友/老乡/搭子圈） */
+export const DISCOVER_CATEGORY_ID = "cat-discover";
+
 /** 分类 ID 前缀（用于去除前缀转换后端分类名） */
 export const CATEGORY_PREFIX = "cat-";

@@ -14,6 +14,7 @@ import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { messagesPageRequirements } from "../../config/page-access";
+import { featureFlags } from "../../config/feature-flags";
 import MatchGuideOverlay from "../../components/social/MatchGuideOverlay.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
@@ -31,6 +32,10 @@ const emojiIcons = {
   smile: IMAGE_PATHS.ICONS_EMOJI.SMILE,
   notification: IMAGE_PATHS.ICONS_COMMON.NOTIFICATION_SVG,
   gift: IMAGE_PATHS.ICONS_EMOJI.GIFT,
+  heartFilled: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED,
+  eye: IMAGE_PATHS.ICONS_EMOJI.EYE,
+  lock: IMAGE_PATHS.ICONS_EMOJI.LOCK,
+  megaphone: IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE,
 } as const;
 
 const { t } = useI18n();
@@ -428,17 +433,65 @@ function handleEntryClick(type: string) {
     case "new-friend":
       openAppPath("/pages/likes/index");
       break;
-    case "group-chat":
-      uni.showToast({ title: t("messages.groupChatWip"), icon: "none" });
+    case "liked-me":
+      // Phase Feedback3：喜欢你的需解锁（会员/交友币/道具）。会员未上线，提示解锁方式。
+      handleUnlockTap("likedMe");
+      break;
+    case "visitors":
+      // Phase Feedback3：访客需解锁
+      handleUnlockTap("visitors");
       break;
     case "notification":
       activeTab.value = "notifications";
       break;
-    case "assistant":
-      uni.showToast({ title: t("messages.assistantWip"), icon: "none" });
-      break;
   }
 }
+
+/** Phase Feedback3：解锁提示（会员未上线 → 交友币/道具） */
+function handleUnlockTap(kind: "likedMe" | "visitors") {
+  const title =
+    kind === "likedMe"
+      ? t("messages.unlockLikedMe")
+      : t("messages.unlockVisitors");
+  uni.showModal({
+    title,
+    content: t("messages.unlockByCoin"),
+    showCancel: false,
+    confirmText: t("common.ok"),
+  });
+}
+
+/** Phase Feedback3：官方号会话列表（助手 + 活动推送） */
+const officialAccounts = [
+  {
+    id: "official-assistant",
+    nameKey: "messages.officialAssistant",
+    descKey: "messages.officialAssistantDesc",
+    icon: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED,
+  },
+  {
+    id: "official-promoter",
+    nameKey: "messages.officialPromoter",
+    descKey: "messages.officialPromoterDesc",
+    icon: IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE,
+  },
+] as const;
+
+/** 点击官方号：当前为占位提示（后续接入官方号会话页） */
+function handleOfficialTap(accountId: string) {
+  const account = officialAccounts.find((a) => a.id === accountId);
+  uni.showToast({
+    title: account ? t(account.nameKey) : "",
+    icon: "none",
+  });
+}
+
+/** Phase Feedback3：心动信号改名"缘分速配"（随机匹配 + 消息解锁规则） */
+const fateMatchRuleHints = [
+  "messages.heartSignalRule3",
+  "messages.heartSignalRule2",
+  "messages.heartSignalRule1",
+] as const;
 
 /** 搜索框点击 */
 function handleSearchClick() {
@@ -530,7 +583,7 @@ async function handleMarkAllNotificationsRead() {
         <text class="search-bar__placeholder">{{ t('messages.search') }}</text>
       </view>
 
-      <!-- 功能入口区 -->
+      <!-- 功能入口区（Phase Feedback3：新增喜欢你的/访客，移除群聊；官方号独立区块） -->
       <view class="entry-section" role="list">
         <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.newFriends')" @tap="handleEntryClick('new-friend')">
           <view class="entry-item__icon entry-item__icon--green">
@@ -541,11 +594,21 @@ async function handleMarkAllNotificationsRead() {
             <text class="entry-item__badge-text">{{ messagesStore.pendingHeartSignals.length }}</text>
           </view>
         </view>
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.groupChat')" @tap="handleEntryClick('group-chat')">
-          <view class="entry-item__icon entry-item__icon--blue">
-            <image class="entry-item__emoji" :src="emojiIcons.group" mode="aspectFit" alt="" />
+        <!-- Phase Feedback3 · 喜欢你的（需解锁） -->
+        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.likedMe')" @tap="handleEntryClick('liked-me')">
+          <view class="entry-item__icon entry-item__icon--red">
+            <image class="entry-item__emoji" :src="emojiIcons.heartFilled" mode="aspectFit" alt="" />
           </view>
-          <text class="entry-item__text">{{ t('messages.groupChat') }}</text>
+          <text class="entry-item__text">{{ t('messages.likedMe') }}</text>
+          <image class="entry-item__lock" :src="emojiIcons.lock" mode="aspectFit" alt="" />
+        </view>
+        <!-- Phase Feedback3 · 访客（需解锁） -->
+        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.visitorsEntry')" @tap="handleEntryClick('visitors')">
+          <view class="entry-item__icon entry-item__icon--blue">
+            <image class="entry-item__emoji" :src="emojiIcons.eye" mode="aspectFit" alt="" />
+          </view>
+          <text class="entry-item__text">{{ t('messages.visitorsEntry') }}</text>
+          <image class="entry-item__lock" :src="emojiIcons.lock" mode="aspectFit" alt="" />
         </view>
         <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.notice')" @tap="handleEntryClick('notification')">
           <view class="entry-item__icon entry-item__icon--orange">
@@ -558,16 +621,47 @@ async function handleMarkAllNotificationsRead() {
             </text>
           </view>
         </view>
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.assistant')" @tap="handleEntryClick('assistant')">
-          <view class="entry-item__icon entry-item__icon--pink">
-            <image class="entry-item__emoji" :src="emojiIcons.gift" mode="aspectFit" alt="" />
+      </view>
+
+      <!-- Phase Feedback3 · 官方号区块（助手 + 活动推送） -->
+      <view class="official-section" role="list">
+        <view
+          v-for="account in officialAccounts"
+          :key="account.id"
+          class="official-item press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t(account.nameKey)"
+          @tap="handleOfficialTap(account.id)"
+        >
+          <view class="official-item__avatar">
+            <image class="official-item__avatar-emoji" :src="account.icon" mode="aspectFit" alt="" />
           </view>
-          <text class="entry-item__text">{{ t('messages.assistant') }}</text>
+          <view class="official-item__info">
+            <view class="official-item__name-row">
+              <text class="official-item__name">{{ t(account.nameKey) }}</text>
+              <text class="official-item__badge">{{ t('messages.officialBadge') }}</text>
+            </view>
+            <text class="official-item__desc">{{ t(account.descKey) }}</text>
+          </view>
+          <text class="official-item__arrow">›</text>
         </view>
       </view>
 
-      <!-- 心动信号 Banner -->
-      <view v-if="hasPendingHeartSignal" class="heart-signal-banner">
+      <!-- 心动信号 Banner（Phase Feedback3：改名"缘分速配"，展示解锁规则） -->
+      <view v-if="featureFlags.heartSignalEnabled && hasPendingHeartSignal" class="heart-signal-banner">
+        <view class="heart-signal-banner__header">
+          <text class="heart-signal-banner__title">{{ t('messages.heartSignalNewName') }}</text>
+          <text class="heart-signal-banner__subtitle">{{ t('messages.heartSignalNewNameDesc') }}</text>
+        </view>
+        <view class="heart-signal-banner__rules">
+          <text
+            v-for="(rule, idx) in fateMatchRuleHints"
+            :key="idx"
+            class="heart-signal-banner__rule"
+          >• {{ t(rule) }}</text>
+        </view>
         <view
           v-for="signal in messagesStore.pendingHeartSignals" :key="signal.id"
           class="heart-signal-card list-item"
@@ -583,7 +677,7 @@ async function handleMarkAllNotificationsRead() {
             <view class="heart-signal-card__info">
               <text class="heart-signal-card__name">{{ signal.fromUserName }}</text>
               <text class="heart-signal-card__meta">
-                {{ signal.school }} · {{ signal.age }}{{ t('cardDetail.ageUnit') }} · {{ signal.city }}
+                {{ t('messages.heartSignalInitialInfo') }}
               </text>
               <text class="heart-signal-card__highlight">{{ signal.bioHighlight }}</text>
             </view>
@@ -977,6 +1071,21 @@ async function handleMarkAllNotificationsRead() {
   box-shadow: var(--s-romance);
 }
 
+/* Phase Feedback3 · 入口 emoji 文字与锁标识 */
+.entry-item__icon--red {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  box-shadow: 0 var(--sp-2) var(--sp-5) rgba(225, 29, 72, 0.25);
+}
+
+.entry-item__lock {
+  position: absolute;
+  top: var(--sp-1);
+  right: var(--sp-1);
+  width: 28rpx;
+  height: 28rpx;
+  opacity: 0.85;
+}
+
 .entry-item__emoji {
   width: 48rpx;
   height: 48rpx;
@@ -1011,7 +1120,87 @@ async function handleMarkAllNotificationsRead() {
   color: var(--c-text-inverse);
 }
 
-/* ========== 心动信号 Banner ========== */
+/* ========== 官方号区块（Phase Feedback3） ========== */
+.official-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0 var(--sp-8) var(--sp-5);
+  padding: var(--sp-4);
+  background: var(--c-bg-container, #ffffff);
+  border-radius: var(--r-xl, 24rpx);
+  box-shadow: var(--s-card-soft, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
+}
+
+.official-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-2);
+  border-radius: var(--r-lg, 20rpx);
+}
+
+.official-item__avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: var(--r-lg, 20rpx);
+  background: linear-gradient(135deg, var(--c-brand-400, #6fe0b0) 0%, var(--c-brand-500, #3fcf8e) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.official-item__avatar-emoji {
+  width: 44rpx;
+  height: 44rpx;
+  color: var(--c-brand-500);
+}
+
+.official-item__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.official-item__name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.official-item__name {
+  font-size: var(--fs-base, 28rpx);
+  font-weight: 700;
+  color: var(--c-text-primary, #1f2937);
+}
+
+.official-item__badge {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: var(--c-brand-500, #3fcf8e);
+  border: 1rpx solid var(--c-brand-300, #9be8c8);
+  background: var(--c-brand-bg-tint, #e6f9f0);
+  padding: 2rpx 10rpx;
+  border-radius: var(--r-full, 999rpx);
+}
+
+.official-item__desc {
+  font-size: var(--fs-xs, 24rpx);
+  color: var(--c-text-tertiary, #9ca3af);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.official-item__arrow {
+  font-size: var(--fs-2xl, 36rpx);
+  color: var(--c-text-tertiary, #9ca3af);
+}
+
+/* ========== 心动信号 Banner（Phase Feedback3：缘分速配） ========== */
 .heart-signal-banner {
   display: flex;
   flex-direction: column;
@@ -1019,6 +1208,38 @@ async function handleMarkAllNotificationsRead() {
   margin: 0 var(--sp-8) var(--sp-5);
   position: relative;
   z-index: 1;
+}
+
+.heart-signal-banner__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.heart-signal-banner__title {
+  font-size: var(--fs-lg, 32rpx);
+  font-weight: 700;
+  color: var(--c-text-primary, #1f2937);
+}
+
+.heart-signal-banner__subtitle {
+  font-size: var(--fs-xs, 24rpx);
+  color: var(--c-text-tertiary, #9ca3af);
+}
+
+.heart-signal-banner__rules {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-romance-bg-tint, #fdf2f8);
+  border-radius: var(--r-lg, 20rpx);
+}
+
+.heart-signal-banner__rule {
+  font-size: var(--fs-xs, 24rpx);
+  color: var(--c-romance-500, #ec4899);
+  line-height: 1.5;
 }
 
 .heart-signal-card {

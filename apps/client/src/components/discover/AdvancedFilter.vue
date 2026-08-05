@@ -496,9 +496,10 @@ defineExpose({ reset });
           hover-stay-time="120"
           @tap="toggleInterest(opt.value)"
         >
-          <text class="filter-chip__text">
-            {{ opt.emoji ? `${opt.emoji} ` : "" }}{{ opt.label }}
-          </text>
+          <view class="filter-chip__label-row">
+            <image v-if="opt.icon" class="filter-chip__icon" :src="opt.icon" mode="aspectFit" alt="" />
+            <text class="filter-chip__text">{{ opt.label }}</text>
+          </view>
         </view>
       </view>
     </view>
@@ -597,6 +598,18 @@ defineExpose({ reset });
   background: var(--c-gradient-brand);
   border-color: transparent;
   box-shadow: var(--s-brand-sm);
+}
+
+.filter-chip__label-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.filter-chip__icon {
+  width: 28rpx;
+  height: 28rpx;
+  color: var(--c-text-secondary);
 }
 
 .filter-chip__text {

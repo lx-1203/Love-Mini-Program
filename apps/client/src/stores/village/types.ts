@@ -52,6 +52,10 @@ export interface PostItem {
   isShared: boolean;
   /** 作者是否与当前用户同校 */
   isAlumni: boolean;
+  /** Phase Feedback4：帖子所属城市（同城 Tab 过滤用） */
+  city?: string;
+  /** Phase Feedback4：搭子圈标签（discover-buddy 过滤用，如"运动搭子"） */
+  buddyTags?: string[];
   createdAt: string;
 }
 
@@ -93,6 +97,10 @@ export interface PostFilters {
   sortBy?: "latest" | "hot";
   /** 当前用户 ID，用于校园分类筛选 */
   userId?: string;
+  /** Phase Feedback4：同城 Tab 城市名（如"南京"），配合 categoryId="cat-samecity" */
+  city?: string;
+  /** Phase Feedback4：发现 Tab 二级子标签（all/alumni/hometown/buddy） */
+  discoverSub?: string;
 }
 
 /**

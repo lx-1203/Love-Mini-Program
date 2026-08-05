@@ -48,13 +48,19 @@ onUnmounted(() => {
 });
 
 /** VIP 权益列表 */
+const vipEntryIcons = {
+  redPacket: IMAGE_PATHS.ICONS_EMOJI.GIFT,
+  ticket: IMAGE_PATHS.ICONS_EMOJI.TICKET,
+  bills: IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD,
+} as const;
+
 const benefits = computed<VipBenefit[]>(() => [
-  { emoji: "👀", title: t("vip.benefitSeeLikes"), desc: t("vip.benefitSeeLikesDesc") },
-  { emoji: "💝", title: t("vip.benefitUnlimitedLikes"), desc: t("vip.benefitUnlimitedLikesDesc") },
-  { emoji: "👑", title: t("vip.benefitBadge"), desc: t("vip.benefitBadgeDesc") },
-  { emoji: "🚀", title: t("vip.benefitBoost"), desc: t("vip.benefitBoostDesc") },
-  { emoji: "🎨", title: t("vip.benefitTheme"), desc: t("vip.benefitThemeDesc") },
-  { emoji: "", icon: IMAGE_PATHS.ICONS_EMOJI.CHAT, title: t("vip.benefitSuperLike"), desc: t("vip.benefitSuperLikeDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.EYE, title: t("vip.benefitSeeLikes"), desc: t("vip.benefitSeeLikesDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, title: t("vip.benefitUnlimitedLikes"), desc: t("vip.benefitUnlimitedLikesDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.CROWN, title: t("vip.benefitBadge"), desc: t("vip.benefitBadgeDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.ROCKET, title: t("vip.benefitBoost"), desc: t("vip.benefitBoostDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.PALETTE, title: t("vip.benefitTheme"), desc: t("vip.benefitThemeDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.CHAT, title: t("vip.benefitSuperLike"), desc: t("vip.benefitSuperLikeDesc") },
 ]);
 
 /** 套餐列表（从 config 引入，避免硬编码价格） */
@@ -301,7 +307,7 @@ onMounted(() => {
     <!-- VIP 头部卡片 -->
     <view class="vip-header">
       <view class="vip-header__crown">
-        <text class="vip-header__crown-emoji">👑</text>
+        <image class="vip-header__crown-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.CROWN" mode="aspectFit" alt="" />
       </view>
       <text class="vip-header__title">{{ t('vip.headerTitle') }}</text>
       <text class="vip-header__subtitle">{{ t('vip.headerSubtitle') }}</text>
@@ -322,12 +328,10 @@ onMounted(() => {
         >
           <view class="benefit-item__icon">
             <image
-              v-if="item.icon"
               class="benefit-item__icon-img"
               :src="item.icon"
               mode="aspectFit" lazy-load="true" alt=""
             />
-            <text v-else class="benefit-item__emoji">{{ item.emoji }}</text>
           </view>
           <view class="benefit-item__content">
             <text class="benefit-item__title">{{ item.title }}</text>
@@ -422,7 +426,7 @@ onMounted(() => {
           hover-class="entry-item--hover"
           hover-stay-time="100"
         >
-          <text class="entry-item__icon">🧧</text>
+          <image class="entry-item__icon" :src="vipEntryIcons.redPacket" mode="aspectFit" alt="" />
           <text class="entry-item__label">{{ t('vip.redPacketNavTitle') }}</text>
           <text class="entry-item__arrow">›</text>
         </view>
@@ -432,7 +436,7 @@ onMounted(() => {
           hover-class="entry-item--hover"
           hover-stay-time="100"
         >
-          <text class="entry-item__icon">🎫</text>
+          <image class="entry-item__icon" :src="vipEntryIcons.ticket" mode="aspectFit" alt="" />
           <text class="entry-item__label">{{ t('vip.promoCodeNavTitle') }}</text>
           <text class="entry-item__arrow">›</text>
         </view>
@@ -442,7 +446,7 @@ onMounted(() => {
           hover-class="entry-item--hover"
           hover-stay-time="100"
         >
-          <text class="entry-item__icon">📋</text>
+          <image class="entry-item__icon" :src="vipEntryIcons.bills" mode="aspectFit" alt="" />
           <text class="entry-item__label">{{ t('vip.billsNavTitle') }}</text>
           <text class="entry-item__arrow">›</text>
         </view>
@@ -565,8 +569,9 @@ onMounted(() => {
 }
 
 .vip-header__crown-emoji {
-  font-size: 72rpx;
-  line-height: 1;
+  width: 72rpx;
+  height: 72rpx;
+  color: var(--c-warning, #f59e0b);
 }
 
 .vip-header__title {
@@ -925,10 +930,10 @@ onMounted(() => {
 }
 
 .entry-item__icon {
-  font-size: var(--fs-4xl, 40rpx);
+  width: 40rpx;
+  height: 40rpx;
   margin-right: 16rpx;
-  width: 56rpx;
-  text-align: center;
+  color: var(--c-brand-500);
 }
 
 .entry-item__label {

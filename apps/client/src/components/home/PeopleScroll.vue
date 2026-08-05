@@ -36,11 +36,11 @@ function getActionText(person: Person) {
 <template>
   <scroll-view scroll-x class="people-scroll" :show-scrollbar="false">
     <view class="people-list" role="list">
-      <view v-if="loading" class="people-skeleton" v-for="i in 3" :key="i" role="listitem">
+      <view v-show="loading" class="people-skeleton" v-for="i in 3" :key="i" role="listitem">
         <view class="skeleton-card shimmer" />
       </view>
       <PersonCard
-        v-else
+        v-show="!loading"
         v-for="person in (items || []).slice(0, 5)"
         :key="person.id"
         :id="person.id"

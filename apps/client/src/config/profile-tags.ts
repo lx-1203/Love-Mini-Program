@@ -34,8 +34,8 @@ export interface ProfileTagOption {
   value: string;
   /** 标签展示文案 */
   label: string;
-  /** 可选 emoji 图标 */
-  emoji?: string;
+  /** 可选图标（SVG 路径，替换原 emoji 字符） */
+  icon?: string;
 }
 
 /**
@@ -67,16 +67,16 @@ export const profileTagGroups: ProfileTagGroup[] = [
     min: 1,
     max: 5,
     options: [
-      { value: "reading", label: "阅读", emoji: "📚" },
-      { value: "sports", label: "运动", emoji: "⚽" },
-      { value: "music", label: "音乐", emoji: "🎵" },
-      { value: "movie", label: "电影", emoji: "🎬" },
-      { value: "travel", label: "旅行", emoji: "✈️" },
-      { value: "photography", label: "摄影", emoji: "📷" },
-      { value: "gaming", label: "游戏", emoji: "🎮" },
-      { value: "cooking", label: "美食", emoji: "🍳" },
-      { value: "painting", label: "绘画", emoji: "🎨" },
-      { value: "dance", label: "舞蹈", emoji: "💃" },
+      { value: "reading", label: "阅读", icon: "/static/assets/icons/common/book.svg" },
+      { value: "sports", label: "运动", icon: "/static/assets/icons/common/trend-up.svg" },
+      { value: "music", label: "音乐", icon: "/static/assets/icons/common/music.svg" },
+      { value: "movie", label: "电影", icon: "/static/assets/icons/common/clapperboard.svg" },
+      { value: "travel", label: "旅行", icon: "/static/assets/icons/common/plane.svg" },
+      { value: "photography", label: "摄影", icon: "/static/assets/icons/common/camera.svg" },
+      { value: "gaming", label: "游戏", icon: "/static/assets/icons/common/gamepad.svg" },
+      { value: "cooking", label: "美食", icon: "/static/assets/icons/common/cooking-pot.svg" },
+      { value: "painting", label: "绘画", icon: "/static/assets/icons/common/settings-gear.svg" },
+      { value: "dance", label: "舞蹈", icon: "/static/assets/icons/common/music.svg" },
     ],
   },
   {

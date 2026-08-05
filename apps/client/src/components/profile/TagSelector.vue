@@ -128,13 +128,13 @@ function clearAll(): void {
  * 获取所有已选标签的展示信息（用于顶部已选区渲染）。
  */
 const selectedTags = computed(() => {
-  const result: Array<{ value: string; label: string; emoji?: string }> = [];
+  const result: Array<{ value: string; label: string; icon?: string }> = [];
   for (const group of profileTagGroups) {
     const list = props.modelValue[group.key] ?? [];
     for (const value of list) {
       const opt = group.options.find((o) => o.value === value);
       if (opt) {
-        result.push({ value: opt.value, label: opt.label, emoji: opt.emoji });
+        result.push({ value: opt.value, label: opt.label, icon: opt.icon });
       }
     }
   }
@@ -178,7 +178,7 @@ const selectedTags = computed(() => {
           hover-stay-time="100"
           @tap="removeTag(tag.value)"
         >
-          <text v-if="tag.emoji" class="tag-chip__emoji">{{ tag.emoji }}</text>
+          <image v-if="tag.icon" class="tag-chip__emoji" :src="tag.icon" mode="aspectFit" alt="" />
           <text class="tag-chip__text">{{ tag.label }}</text>
           <text class="tag-chip__remove">×</text>
         </view>
@@ -211,7 +211,7 @@ const selectedTags = computed(() => {
           hover-stay-time="100"
           @tap="toggleTag(group, opt.value)"
         >
-          <text v-if="opt.emoji" class="tag-chip__emoji">{{ opt.emoji }}</text>
+          <image v-if="opt.icon" class="tag-chip__emoji" :src="opt.icon" mode="aspectFit" alt="" />
           <text class="tag-chip__text">{{ opt.label }}</text>
         </view>
       </view>
@@ -345,8 +345,9 @@ const selectedTags = computed(() => {
 }
 
 .tag-chip__emoji {
-  font-size: var(--fs-sm);
-  line-height: 1;
+  width: 28rpx;
+  height: 28rpx;
+  color: var(--c-text-secondary);
 }
 
 .tag-chip__text {

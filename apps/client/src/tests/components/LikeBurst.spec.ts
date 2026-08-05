@@ -55,7 +55,8 @@ describe("LikeBurst component - 点赞爆破动画组件", () => {
     await exposed.play();
     expect(wrapper.find(".like-burst__heart").exists()).toBe(true);
     expect(wrapper.find(".like-burst__heart-icon").exists()).toBe(true);
-    expect(wrapper.find(".like-burst__heart-icon").text()).toBe("❤");
+    // emoji 替换：心形图标为 SVG image
+    expect(wrapper.find(".like-burst__heart-icon").attributes("src")).toContain("heart.svg");
   });
 
   it("play 后渲染 12 个心形粒子", async () => {

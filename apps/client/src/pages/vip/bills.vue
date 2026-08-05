@@ -17,9 +17,13 @@ import { onPullDownRefresh } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVipBillingStore, type BillType } from "../../stores/vip-billing";
 import { lightHaptic } from "../../utils/haptic";
+import { IMAGE_PATHS } from "../../config/images";
 import EmptyState from "../../components/common/EmptyState.vue";
 
 const { t } = useI18n();
+
+/** 账单页主视觉图标（emoji 替换为 SVG） */
+const heroIcon = IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD;
 const store = useVipBillingStore();
 
 /** 筛选类型：ALL / SUBSCRIBE / RENEW / REFUND */
@@ -149,7 +153,7 @@ loadBills();
     <!-- 主视觉 -->
     <view class="hero">
       <view class="hero__icon">
-        <text class="hero__icon-emoji">📋</text>
+        <image class="hero__icon-emoji" :src="heroIcon" mode="aspectFit" alt="" />
       </view>
       <text class="hero__title">{{ t('vip.billsHeroTitle') }}</text>
       <text class="hero__subtitle">{{ t('vip.billsHeroSubtitle') }}</text>
@@ -318,8 +322,9 @@ loadBills();
   margin-bottom: 12rpx;
 }
 .hero__icon-emoji {
-  font-size: var(--fs-6xl, 48rpx);
-  line-height: 1;
+  width: 48rpx;
+  height: 48rpx;
+  color: var(--c-brand-500);
 }
 .hero__title {
   font-size: var(--fs-2xl, 32rpx);

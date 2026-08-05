@@ -28,6 +28,7 @@
 import { ref, computed, onUnmounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { createAudioPlayer } from "../../utils/audio-recorder";
+import { IMAGE_PATHS } from "../../config/images";
 
 const props = withDefaults(
   defineProps<{
@@ -48,6 +49,12 @@ const props = withDefaults(
 );
 
 const { t } = useI18n();
+
+/** 语音气泡图标（emoji 替换为 SVG） */
+const voiceIcons = {
+  speakerOn: IMAGE_PATHS.ICONS_EMOJI.VOLUME_HIGH,
+  speakerOff: IMAGE_PATHS.ICONS_EMOJI.VOLUME_LOW,
+} as const;
 
 /** 播放器实例 */
 const player = createAudioPlayer();
@@ -206,8 +213,8 @@ const durationDisplay = computed(() => {
     <!-- 播放/暂停图标 -->
     <view class="voice-bubble__icon">
       <text v-if="expired || !audioUrl" class="voice-bubble__icon-emoji">⏸</text>
-      <text v-else-if="isPlaying" class="voice-bubble__icon-emoji">🔊</text>
-      <text v-else class="voice-bubble__icon-emoji">🔈</text>
+      <image v-else-if="isPlaying" class="voice-bubble__icon-emoji" :src="voiceIcons.speakerOn" mode="aspectFit" alt="" />
+      <image v-else class="voice-bubble__icon-emoji" :src="voiceIcons.speakerOff" mode="aspectFit" alt="" />
     </view>
   </view>
 </template>
@@ -316,8 +323,9 @@ const durationDisplay = computed(() => {
 }
 
 .voice-bubble__icon-emoji {
-  font-size: var(--fs-2xl, 32rpx);
-  line-height: 1;
+  width: 32rpx;
+  height: 32rpx;
+  color: var(--c-text-secondary);
 }
 
 .voice-bubble--expired .voice-bubble__icon-emoji {

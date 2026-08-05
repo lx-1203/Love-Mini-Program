@@ -60,6 +60,14 @@ export function buildPostListParams(
   if (filters?.keyword) {
     params.tag = filters.keyword;
   }
+  // Phase Feedback4：同城 Tab 城市参数
+  if (filters?.city) {
+    params.city = filters.city;
+  }
+  // Phase Feedback4：发现 Tab 二级子标签参数
+  if (filters?.discoverSub && filters.discoverSub !== "all") {
+    params.discoverSub = filters.discoverSub;
+  }
   if (filters?.sortBy) {
     params.sortBy = filters.sortBy;
   }

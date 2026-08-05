@@ -16,8 +16,12 @@ import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePromoCodeStore } from "../../stores/promo-code";
 import { lightHaptic } from "../../utils/haptic";
+import { IMAGE_PATHS } from "../../config/images";
 
 const { t } = useI18n();
+
+/** 兑换码页主视觉图标（emoji 替换为 SVG） */
+const heroIcon = IMAGE_PATHS.ICONS_EMOJI.TICKET;
 const store = usePromoCodeStore();
 
 /**
@@ -166,7 +170,7 @@ function goBack() {
     <!-- 主视觉 -->
     <view class="hero">
       <view class="hero__icon">
-        <text class="hero__icon-emoji">🎫</text>
+        <image class="hero__icon-emoji" :src="heroIcon" mode="aspectFit" alt="" />
       </view>
       <text class="hero__title">{{ t('vip.promoCodeHeroTitle') }}</text>
       <text class="hero__subtitle">{{ t('vip.promoCodeHeroSubtitle') }}</text>
@@ -383,8 +387,9 @@ function goBack() {
   margin-bottom: 20rpx;
 }
 .hero__icon-emoji {
-  font-size: 72rpx;
-  line-height: 1;
+  width: 72rpx;
+  height: 72rpx;
+  color: var(--c-brand-500);
 }
 .hero__title {
   font-size: var(--fs-4xl, 40rpx);

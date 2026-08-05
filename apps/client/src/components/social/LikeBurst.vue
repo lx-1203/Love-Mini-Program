@@ -19,6 +19,7 @@
  */
 import { ref, nextTick, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
+import { IMAGE_PATHS } from "../../config/images";
 
 const { t } = useI18n();
 
@@ -113,7 +114,7 @@ defineExpose({ t, play });
   >
     <!-- 中心大红心：弹跳缩放 -->
     <view class="like-burst__heart">
-      <text class="like-burst__heart-icon">❤</text>
+      <image class="like-burst__heart-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
     </view>
 
     <!-- 12 个心形粒子：向四周飞散 -->
@@ -128,7 +129,7 @@ defineExpose({ t, play });
         '--particle-color': p.color,
       } as Record<string, string>"
     >
-      <text class="like-burst__particle-icon">❤</text>
+      <image class="like-burst__particle-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
     </view>
   </view>
 </template>
@@ -157,9 +158,9 @@ defineExpose({ t, play });
 }
 
 .like-burst__heart-icon {
-  font-size: var(--fs-7xl, 56rpx);
+  width: 56rpx;
+  height: 56rpx;
   color: var(--c-romance-500, #EC4899);
-  text-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-stronger, rgba(236, 72, 153, 0.4));
 }
 
 @keyframes like-burst-heart {
@@ -192,10 +193,10 @@ defineExpose({ t, play });
 }
 
 .like-burst__particle-icon {
-  font-size: var(--fs-base, 24rpx);
+  width: 24rpx;
+  height: 24rpx;
   color: var(--particle-color, #EC4899);
   /* 微微旋转增加灵动感 */
-  display: inline-block;
   animation: like-burst-particle-rotate var(--d-particle, 1500ms) ease-out forwards;
   animation-delay: var(--particle-delay, 0ms);
 }

@@ -7,6 +7,7 @@
  */
 import { ref, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
+import { IMAGE_PATHS } from "../../config/images";
 
 interface PageItem {
   path: string;
@@ -104,7 +105,10 @@ function goBack() {
 
     <!-- 提示 -->
     <view class="dev-notice">
-      <text class="dev-notice__text">⚠️ 开发者模式 - 仅用于测试，上线前删除</text>
+      <view class="dev-notice__row">
+        <image class="dev-notice__icon" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" alt="" />
+        <text class="dev-notice__text">开发者模式 - 仅用于测试，上线前删除</text>
+      </view>
     </view>
 
     <!-- 页面分组列表 -->
@@ -223,6 +227,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   background: linear-gradient(135deg, var(--c-tint-amber-50) 0%, var(--c-tint-orange-50) 100%);
   border: 2rpx solid var(--c-vip-border-light);
   box-shadow: $card-soft-shadow;
+}
+
+.dev-notice__row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.dev-notice__icon {
+  width: 32rpx;
+  height: 32rpx;
+  color: $gold-vip;
+  flex-shrink: 0;
 }
 
 .dev-notice__text {

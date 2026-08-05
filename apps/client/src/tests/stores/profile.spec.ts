@@ -210,3 +210,99 @@ describe("profile store - 数据加载", () => {
     expect(store.myPosts[0]!.summary).toContain("橘猫");
   });
 });
+
+// ------------------------------------------------------------------
+// Phase Feedback5：语音状态与同校推荐权限
+// ------------------------------------------------------------------
+describe("profile store - 语音状态与权限（Phase Feedback5）", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
+
+  it("setVoiceStatus 设置 60s 内语音状态", async () => {
+    const store = useProfileStore();
+    await store.load();
+
+    store.setVoiceStatus("https://example.com/voice.mp3", 42);
+
+    expect(store.voiceStatusUrl).toBe("https://example.com/voice.mp3");
+    expect(store.voiceStatusDuration).toBe(42);
+  });
+
+  it("setVoiceStatus 超过 60s 时截断为 60s", async () => {
+    const store = useProfileStore();
+    await store.load();
+
+    store.setVoiceStatus("https://example.com/voice-long.mp3", 120);
+
+    expect(store.voiceStatusDuration).toBe(60);
+  });
+
+  it("setVoiceStatus 负数或 0 时长时清空语音状态", async () => {
+    const store = useProfileStore();
+    await store.load();
+    store.setVoiceStatus("https://example.com/voice.mp3", 30);
+
+    store.setVoiceStatus("https://example.com/voice.mp3", 0);
+
+    expect(store.voiceStatusUrl).toBe("");
+    expect(store.voiceStatusDuration).toBe(0);
+  });
+
+  it("setVoiceStatus 空 URL 时清空语音状态（避免空 URL + 非零时长不一致）", async () => {
+    const store = useProfileStore();
+    await store.load();
+    store.setVoiceStatus("https://example.com/voice.mp3", 30);
+
+    store.setVoiceStatus("", 30);
+
+    expect(store.voiceStatusUrl).toBe("");
+    expect(store.voiceStatusDuration).toBe(0);
+  });
+
+  it("clearVoiceStatus 清空语音状态", async () => {
+    const store = useProfileStore();
+    await store.load();
+    store.setVoiceStatus("https://example.com/voice.mp3", 20);
+
+    store.clearVoiceStatus();
+
+    expect(store.voiceStatusUrl).toBe("");
+    expect(store.voiceStatusDuration).toBe(0);
+  });
+
+  it("setAllowSameSchoolRecommend 更新同校推荐权限", async () => {
+    const store = useProfileStore();
+    await store.load();
+
+    store.setAllowSameSchoolRecommend(true);
+    expect(store.allowSameSchoolRecommend).toBe(true);
+
+    store.setAllowSameSchoolRecommend(false);
+    expect(store.allowSameSchoolRecommend).toBe(false);
+  });
+
+  it("setReceiveSameSchoolInfo 更新接收同校信息开关", async () => {
+    const store = useProfileStore();
+    await store.load();
+
+    store.setReceiveSameSchoolInfo(false);
+    expect(store.receiveSameSchoolInfo).toBe(false);
+
+    store.setReceiveSameSchoolInfo(true);
+    expect(store.receiveSameSchoolInfo).toBe(true);
+  });
+
+  it("load() 在 mock 模式加载默认语音与权限状态", async () => {
+    const store = useProfileStore();
+    await store.load();
+
+    expect(store.voiceStatusUrl).toBeTruthy();
+    expect(store.voiceStatusDuration).toBeGreaterThan(0);
+    expect(store.voiceStatusDuration).toBeLessThanOrEqual(60);
+    // 默认：不把自己推荐给同校，但接收同校信息
+    expect(store.allowSameSchoolRecommend).toBe(false);
+    expect(store.receiveSameSchoolInfo).toBe(true);
+  });
+});

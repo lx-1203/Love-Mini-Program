@@ -269,5 +269,24 @@ export const IMAGE_PATHS = {
     PIN:         ICONS_BASE + '/common/pin.svg',            // 📌 置顶 / 定位
     BOLT:        ICONS_BASE + '/common/bolt.svg',           // ⚡ 闪电 / 快捷
     FOOD:        ICONS_BASE + '/common/food.svg',           // 🍔 美食
+    // ===== Feedback 改版 emoji 全量替换补充映射（lucide 风格，currentColor）=====
+    MEGAPHONE:   ICONS_BASE + '/common/megaphone.svg',      // 📣 官方号 / 通知
+    PUZZLE:      ICONS_BASE + '/common/puzzle.svg',         // 🧩 MBTI / 拼图
+    GAMEPAD:     ICONS_BASE + '/common/gamepad.svg',        // 🎮 游戏
+    COOKING:     ICONS_BASE + '/common/cooking-pot.svg',    // 🍳 美食 / 烹饪
+    PLANE:       ICONS_BASE + '/common/plane.svg',          // ✈️ 旅行
+    CLAPPER:     ICONS_BASE + '/common/clapperboard.svg',   // 🎬 电影
+    MUSIC:       ICONS_BASE + '/common/music.svg',          // 🎵 音乐 / 舞蹈
+    LINK:        ICONS_BASE + '/common/link.svg',           // 🔗 绑定
+    MOON:        ICONS_BASE + '/common/moon.svg',           // 🌙 夜间 / 深色
+    TICKET:      ICONS_BASE + '/common/ticket.svg',         // 🎫 卡券 / 兑换码
+    VOLUME_HIGH: ICONS_BASE + '/common/volume-high.svg',    // 🔊 音量高
+    VOLUME_LOW:  ICONS_BASE + '/common/volume-low.svg',     // 🔈 音量低
+    VOLUME_X:    ICONS_BASE + '/common/volume-x.svg',       // 🔇 静音
+    MAIL:        ICONS_BASE + '/common/mail.svg',           // ✉️ 私信 / 悄悄话
+    PHONE:       ICONS_BASE + '/common/phone.svg',          // 📞 语音通话
+    HEART_OUTLINE: ICONS_BASE + '/heart.svg',               // 🤍 空心心（未赞）
+    DOUBLE_HEART:ICONS_BASE + '/common/heart-filled.svg',   // 💞 恋爱咨询
+    SPEECH:      ICONS_BASE + '/chat.svg',                  // 🗣️ 社交咨询
   },
 } as const;

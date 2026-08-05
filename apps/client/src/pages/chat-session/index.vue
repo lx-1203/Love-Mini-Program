@@ -71,6 +71,12 @@ const chatStore = useChatStore();
 const redPacketStore = useVipRedPacketStore();
 const { t } = useI18n();
 
+/** 会话页更多菜单图标（emoji 替换为 SVG） */
+const chatMenuIcons = {
+  redPacket: IMAGE_PATHS.ICONS_EMOJI.GIFT,
+  videoCall: IMAGE_PATHS.ICONS_EMOJI.VIDEO,
+} as const;
+
 /** SVG 图标资源路径 */
 const iconSrc = {
   heartSignal: IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL,
@@ -1269,7 +1275,7 @@ defineExpose({ noop });
             :aria-label="t('chatRedPacket.entryLabel')"
           >
             <view class="more-menu-item__icon more-menu-item__icon--red">
-              <text class="more-menu-item__icon-emoji">🧧</text>
+              <image class="more-menu-item__icon-emoji" :src="chatMenuIcons.redPacket" mode="aspectFit" alt="" />
             </view>
             <text class="more-menu-item__label">{{ t('chatRedPacket.entryLabel') }}</text>
           </view>
@@ -1282,7 +1288,7 @@ defineExpose({ noop });
             :aria-label="t('videoCall.entryLabel')"
           >
             <view class="more-menu-item__icon more-menu-item__icon--blue">
-              <text class="more-menu-item__icon-emoji">📹</text>
+              <image class="more-menu-item__icon-emoji" :src="chatMenuIcons.videoCall" mode="aspectFit" alt="" />
             </view>
             <text class="more-menu-item__label">{{ t('videoCall.entryLabel') }}</text>
           </view>
@@ -1783,8 +1789,9 @@ defineExpose({ noop });
 }
 
 .more-menu-item__icon-emoji {
-  font-size: 44rpx;
-  line-height: 1;
+  width: 44rpx;
+  height: 44rpx;
+  color: var(--c-text-inverse);
 }
 
 .more-menu-item__label {

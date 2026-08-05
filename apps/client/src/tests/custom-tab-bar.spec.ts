@@ -55,6 +55,15 @@ describe("custom-tab-bar configuration", () => {
     }
   });
 
+  it("switchTab 调用时应将 tab.path 规范化为以 / 开头的绝对路径（Phase R2）", () => {
+    // 回归：wx.switchTab 的 url 必须以 "/" 开头，否则微信会基于当前页面目录
+    // 解析相对路径（如从 pages/profile/index 切 Tab 会得到
+    // "pages/profile/pages/discover/index"），导致 switchTab 失败。
+    expect(customTabBarSource).toContain(
+      'url: tab.path.startsWith("/") ? tab.path : "/" + tab.path'
+    );
+  });
+
   it("图标路径应保留前导斜杠以指向项目根目录", () => {
     const tabs = extractTabConfig(customTabBarSource);
 

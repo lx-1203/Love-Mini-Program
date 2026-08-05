@@ -306,6 +306,8 @@ page {
   --c-gradient-warm-cool: #{$gradient-warm-cool};
   --c-gradient-sunset: #{$gradient-sunset};
   --c-gradient-float-btn: #{$gradient-float-btn};
+  /* Phase Feedback1：双重认证标识渐变（机器认证 + 人工认证徽章统一使用） */
+  --c-gradient-verify: linear-gradient(135deg, #{$warning} 0%, #F97316 100%);
 
   --c-border-light: #{$border-light};
   --c-border-default: #{$border-default};

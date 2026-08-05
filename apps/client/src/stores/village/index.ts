@@ -221,6 +221,8 @@ export const useVillageStore = defineStore("village", {
               categoryId: filters?.categoryId,
               keyword: filters?.keyword,
               sortBy: filters?.sortBy,
+              city: filters?.city,
+              discoverSub: filters?.discoverSub,
             },
             myCampus
           );

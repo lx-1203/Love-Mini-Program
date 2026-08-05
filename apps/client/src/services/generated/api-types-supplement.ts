@@ -304,6 +304,39 @@ export interface RecommendedPerson {
   profileBackgroundUrl?: string;
   /** 认证徽章级别：none/email/idcard/school */
   verificationBadgeLevel?: string;
+  // ===== Phase Feedback1：寻觅页改版新增字段 =====
+  /** 展示用个人 ID（用户编号） */
+  displayId?: string;
+  /** 距离文案（数值，单位 km；同校时为空） */
+  distanceText?: string;
+  /** 活跃状态（just_now/today/hours_{n}/days_{n}/offline） */
+  activeStatusText?: string;
+  /** 机器认证（头像/照片真实性机审） */
+  machineVerified?: boolean;
+  /** 人工认证（人工审核通过） */
+  humanVerified?: boolean;
+  /** 性格标签 */
+  personality?: string[];
+  /** MBTI 人格类型 */
+  mbti?: string;
+  /** 悄悄话内容（付费可见/发送） */
+  whisper?: string;
+  /** 是否已发送悄悄话 */
+  whisperSent?: boolean;
+  /** 动态预览 */
+  recentPosts?: Array<{
+    id: string;
+    content: string;
+    images?: string[];
+    likes: number;
+    comments: number;
+    isLiked: boolean;
+    createdAt: string;
+  }>;
+  /** 期待的人物画像描述 */
+  expectedPartner?: string;
+  /** 是否允许私信（未解锁时需付费） */
+  allowMessage?: boolean;
 }
 
 // ===== 功能6：通知免打扰设置 =====

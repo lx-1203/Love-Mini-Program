@@ -22,8 +22,7 @@ export interface VipPlan {
 
 /** VIP 权益项 */
 export interface VipBenefit {
-  emoji: string;
-  icon?: string;
+  icon: string;
   title: string;
   desc: string;
 }

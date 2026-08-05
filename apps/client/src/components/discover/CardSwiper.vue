@@ -284,6 +284,73 @@ const socialCirclesPreview = computed(() => {
   return [circles[seed], circles[(seed + 1) % circles.length]].join(" / ");
 });
 
+/* ========== Phase Feedback1：寻觅页改版新增展示 ========== */
+
+/**
+ * 活跃状态文案（基于 activeStatusText 字段）。
+ *
+ * 支持 mock 字段值：just_now / today / hours_{n} / days_{n} / offline / 自定义文案。
+ * 字段缺失时回退到 onlineStatus 推断，再兜底返回空串（模板 v-if 控制显隐）。
+ */
+const activeStatusLabel = computed(() => {
+  const card = currentCard.value;
+  if (!card) return "";
+  const raw = card.activeStatusText;
+  if (raw) {
+    if (raw === "just_now") return t('discover.activeJustNow');
+    if (raw === "today") return t('discover.activeToday');
+    if (raw === "offline") return t('discover.offline');
+    const hoursMatch = raw.match(/^hours_(\d+)$/);
+    if (hoursMatch?.[1]) return t('discover.activeHoursAgo', { n: hoursMatch[1] });
+    const daysMatch = raw.match(/^days_(\d+)$/);
+    if (daysMatch?.[1]) return t('discover.activeDaysAgo', { n: daysMatch[1] });
+    // 自定义文案直接展示
+    return raw;
+  }
+  // 回退：基于 onlineStatus 推断
+  if (card.onlineStatus === "online") return t('discover.activeJustNow');
+  if (card.onlineStatus === "away") return t('discover.activeToday');
+  return "";
+});
+
+/**
+ * 距离文案（基于 distanceText 字段）。
+ * distanceText 为纯数值时拼接 km 单位；含单位/自定义文案直接展示；同校时展示"同校"。
+ */
+const distanceLabel = computed(() => {
+  const card = currentCard.value;
+  if (!card) return "";
+  if (card.isSameSchool) return t('discover.sameCampusDistance');
+  const raw = card.distanceText;
+  if (!raw) return card.availability || "";
+  if (/^\d+(\.\d+)?$/.test(raw)) {
+    return `${raw}${t('discover.distanceSuffix')}`;
+  }
+  return raw;
+});
+
+/**
+ * 认证文案（基于 machineVerified / humanVerified 字段）。
+ * 双重认证展示"双重认证"，仅单项认证时展示对应文案，均无时返回空串。
+ */
+const verificationLabel = computed(() => {
+  const card = currentCard.value;
+  if (!card) return "";
+  if (card.machineVerified && card.humanVerified) return t('discover.doubleVerified');
+  if (card.machineVerified) return t('discover.machineVerified');
+  if (card.humanVerified) return t('discover.humanVerified');
+  return "";
+});
+
+/**
+ * 个人 ID 展示文案（基于 displayId 字段）。
+ */
+const displayIdLabel = computed(() => {
+  const card = currentCard.value;
+  if (!card?.displayId) return "";
+  return t('discover.personalId', { id: card.displayId });
+});
+
 /** 拖动时红/绿遮罩的不透明度（跟随拖动距离增强，最大 1） */
 const dragTintOpacity = computed(() => {
   if (!isDragging.value || translateX.value === 0) return { opacity: 0, transition: "none" };
@@ -877,9 +944,20 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
               size="sm"
               :show-cta-when-none="false"
             />
+            <!-- Phase Feedback1 · 双重认证文案标识（机器认证 + 人工认证） -->
+            <text v-if="verificationLabel" class="card__verify-text">{{ verificationLabel }}</text>
           </view>
 
-          <!-- 核心资料：收入 / 性格 / 社交圈 -->
+          <!-- Phase Feedback1 · 个人 ID + 活跃状态行 -->
+          <view v-if="displayIdLabel || activeStatusLabel" class="card__meta-row">
+            <text v-if="displayIdLabel" class="card__meta-text">{{ displayIdLabel }}</text>
+            <text v-if="displayIdLabel && activeStatusLabel" class="card__meta-dot">·</text>
+            <text v-if="activeStatusLabel" class="card__meta-text card__meta-text--active">
+              ● {{ activeStatusLabel }}
+            </text>
+          </view>
+
+          <!-- 核心资料：收入 / 性格 / 社交圈 / MBTI -->
           <view class="card__key-info">
             <view class="key-info-chip key-info-chip--income">
               <text class="key-info-chip__label">{{ t('discover.income') }}</text>
@@ -893,9 +971,13 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
               <text class="key-info-chip__label">{{ t('discover.circles') }}</text>
               <text class="key-info-chip__value">{{ socialCirclesPreview }}</text>
             </view>
+            <!-- Phase Feedback1 · MBTI 标签 -->
+            <view v-if="currentCard.mbti" class="key-info-chip key-info-chip--mbti">
+              <text class="key-info-chip__value">{{ currentCard.mbti }}</text>
+            </view>
           </view>
 
-          <!-- 学校、距离 -->
+          <!-- 学校、距离、活跃 -->
           <view class="card__info-row">
             <view class="card__school">
               <image class="card__school-icon" :src="emojiIcons.graduation" mode="aspectFit" alt="" />
@@ -904,7 +986,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
             <text class="card__dot">·</text>
             <view class="card__distance">
               <image class="card__distance-icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
-              <text class="card__distance-text">{{ currentCard.availability || t('discover.nearby') }}</text>
+              <text class="card__distance-text">{{ distanceLabel || currentCard.availability || t('discover.nearby') }}</text>
             </view>
           </view>
 
@@ -1450,6 +1532,47 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
 
 .key-info-chip--circles {
   background: linear-gradient(135deg, var(--c-info-500) 0%, var(--s-action-super) 100%);
+}
+
+/* Phase Feedback1 · MBTI 标签 */
+.key-info-chip--mbti {
+  background: linear-gradient(135deg, var(--c-brand-500) 0%, var(--c-brand-600, #2db97a) 100%);
+}
+
+/* Phase Feedback1 · 双重认证文案 */
+.card__verify-text {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-text-inverse);
+  background: var(--c-gradient-verify);
+  padding: 4rpx 12rpx;
+  border-radius: var(--r-full);
+  flex-shrink: 0;
+}
+
+/* Phase Feedback1 · 个人 ID + 活跃状态行 */
+.card__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 8rpx;
+}
+
+.card__meta-text {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--c-overlay-text-secondary);
+}
+
+.card__meta-text--active {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.card__meta-dot {
+  font-size: var(--fs-xs);
+  color: var(--c-overlay-text-quaternary);
 }
 
 .key-info-chip__label {

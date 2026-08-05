@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 /**
- * 村口页 - UGC社区（六分类版）
- * 用户生成内容社区，展示帖子动态、支持六分类筛选、点赞关注等互动功能
+ * 村口页 - UGC社区（Phase Feedback4：三 Tab 版 关注/同城/发现）
+ * 用户生成内容社区，支持三 Tab 筛选、城市切换、点赞关注等互动功能
  */
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { onLoad, onHide, onShow } from "@dcloudio/uni-app";
@@ -15,6 +15,8 @@ import { useTabBar } from "../../composables/useTabBar";
 import LockScreen from "../../components/common/LockScreen.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { villagePageRequirements } from "../../config/page-access";
+// Phase Feedback4：同城 Tab 功能开关（false 时隐藏城市选择器，退化为全量同城流）
+import { featureFlags } from "../../config/feature-flags";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
@@ -53,7 +55,7 @@ const completionPercent = computed(() => sessionStore.profileCompletion);
 /* ========== localStorage 键名 ========== */
 const LAST_CATEGORY_KEY = "village_last_category";
 
-/* ========== 六分类数据结构 ========== */
+/* ========== 三 Tab 数据结构（Phase Feedback4） ========== */
 interface VillageCategory {
   id: string;
   name: string;
@@ -65,17 +67,70 @@ interface VillageCategory {
   defaultSort?: "latest" | "hot";
 }
 
-/** 六分类常量定义 - 扩展为更多社交分类（name 通过 i18n 动态渲染） */
+/**
+ * Phase Feedback4：圈子页收敛为三 Tab —— 关注 / 同城 / 发现。
+ * - 关注：匹配中点喜欢的人的动态（backendKey=following）
+ * - 同城：同 IP 城市的动态，自动标注城市名（如"南京"），可手动切换
+ * - 发现：二级子标签（全部/校友/老乡/搭子圈）
+ */
 const CATEGORY_CONFIG = computed<VillageCategory[]>(() => [
-  { id: "cat-all", name: t("village.categoryAll"), icon: "fire", backendKey: "all", defaultSort: "hot" },
-  { id: "cat-following", name: t("village.categoryFollowing"), icon: "heart", backendKey: "following", defaultSort: "latest" },
-  { id: "cat-interest", name: t("village.categoryInterest"), icon: "star", backendKey: "interest", defaultSort: "latest" },
-  { id: "cat-sincere", name: t("village.categorySincere"), icon: "building", backendKey: "sincere", defaultSort: "latest" },
-  { id: "cat-campus", name: t("village.categoryCampus"), icon: "graduation", backendKey: "campus", requireCampus: true, defaultSort: "latest" },
-  { id: "cat-love", name: t("village.categoryLove"), icon: "heart", backendKey: "love", defaultSort: "latest" },
-  { id: "cat-treehole", name: t("village.categoryTreehole"), icon: "new-badge", backendKey: "treehole", defaultSort: "latest" },
-  { id: "cat-latest", name: t("village.categoryLatest"), icon: "new-badge", backendKey: "latest", defaultSort: "latest" },
+  { id: "cat-following", name: t("village.tabFollowing"), icon: "heart", backendKey: "following", defaultSort: "latest" },
+  { id: "cat-samecity", name: t("village.tabSameCity"), icon: "location", backendKey: "samecity", defaultSort: "latest" },
+  { id: "cat-discover", name: t("village.tabDiscover"), icon: "star", backendKey: "discover", defaultSort: "latest" },
 ]);
+
+/**
+ * Phase Feedback4：发现 Tab 二级子标签。
+ * - 全部：不过滤
+ * - 校友：同校帖子（isAlumni / campusName 匹配）
+ * - 老乡：同乡标签（hometown 标签）
+ * - 搭子圈：基于个人标签相似度（buddy 标签）
+ */
+const DISCOVER_SUB_TABS = computed(() => [
+  { id: "discover-all", name: t("village.discoverAll"), backendKey: "all" },
+  { id: "discover-alumni", name: t("village.discoverAlumni"), backendKey: "alumni" },
+  { id: "discover-hometown", name: t("village.discoverHometown"), backendKey: "hometown" },
+  { id: "discover-buddy", name: t("village.discoverBuddy"), backendKey: "buddy" },
+]);
+
+/** 当前发现 Tab 选中的子标签（默认全部） */
+const selectedDiscoverSubTab = ref<string>("discover-all");
+
+/** Phase Feedback4：同城 Tab 当前城市（默认从 session 校区城市推断，可手动切换） */
+const sameCityName = ref<string>("");
+
+/**
+ * 可切换的城市列表。
+ * 与 mock 帖子 city 字段保持一致（南京/杭州/上海/成都），避免切换后空列表；
+ * 真实环境接入 IP 定位 + 城市服务后扩展。
+ */
+const SAME_CITY_OPTIONS = ["南京", "杭州", "上海", "成都"];
+
+/** 是否显示城市切换器 */
+const showCityPicker = ref(false);
+
+/**
+ * 初始化同城城市：当前 mock 阶段默认"南京"；
+ * 真实环境接入 IP 定位（如 uni.getLocation 反查城市）后替换此处。
+ */
+function initSameCity() {
+  if (sameCityName.value) return;
+  sameCityName.value = "南京";
+}
+
+/** 选择城市 */
+function selectSameCity(city: string) {
+  sameCityName.value = city;
+  showCityPicker.value = false;
+  void villageStore.fetchPosts(currentFilters.value);
+}
+
+/** Phase Feedback4：选择发现 Tab 二级子标签 */
+function selectDiscoverSubTab(subId: string) {
+  if (selectedDiscoverSubTab.value === subId) return;
+  selectedDiscoverSubTab.value = subId;
+  void villageStore.fetchPosts(currentFilters.value);
+}
 
 /** 判断用户是否已完成校园认证 */
 const isCampusVerified = computed(() => {
@@ -87,12 +142,7 @@ const currentCampusName = computed(() => {
   return sessionStore.userSession?.campusName ?? "";
 });
 
-/** 当前用户 userId */
-const currentUserId = computed(() => {
-  return sessionStore.userSession?.userId ?? "";
-});
-
-/** 根据校园认证状态过滤可见分类 */
+/** 根据校园认证状态过滤可见分类（三 Tab 均无需认证，保留钩子） */
 const displayCategories = computed<VillageCategory[]>(() => {
   return CATEGORY_CONFIG.value.filter((cat) => {
     if (cat.requireCampus) return isCampusVerified.value;
@@ -100,7 +150,7 @@ const displayCategories = computed<VillageCategory[]>(() => {
   });
 });
 
-/** 从 localStorage 读取上次选择的分类，默认 "推荐" */
+/** 从 localStorage 读取上次选择的分类，默认 "关注" */
 function getLastCategory(): string {
   try {
     const saved = uni.getStorageSync(LAST_CATEGORY_KEY);
@@ -112,7 +162,7 @@ function getLastCategory(): string {
     // 修复 no-empty：catch 块不能为空，添加注释说明静默处理
     // 读取失败时回退到默认分类，不阻塞页面渲染
   }
-  return "cat-all";
+  return "cat-following";
 }
 
 /** 保存分类到 localStorage */
@@ -123,6 +173,36 @@ function saveLastCategory(catId: string) {
     // 修复 no-empty：catch 块不能为空，添加注释说明静默处理
     // 持久化失败时忽略，不影响用户当前选择
   }
+}
+
+/** 空状态文案（按当前 Tab 区分，Phase Feedback4） */
+const emptyStateMessage = computed(() => {
+  switch (selectedCategory.value) {
+    case "cat-following":
+      return t("village.followingEmpty");
+    case "cat-samecity":
+      return t("village.sameCityEmpty");
+    case "cat-discover":
+      return t("village.discoverEmpty");
+    default:
+      return t("village.emptyPosts");
+  }
+});
+
+/** 空状态操作按钮文案（关注 Tab 显示"去寻觅"引导） */
+const emptyStateActionLabel = computed(() => {
+  return selectedCategory.value === "cat-following"
+    ? t("village.goMatch")
+    : t("village.publishPost");
+});
+
+/** 空状态操作（关注 Tab → 寻觅页；其余 → 发帖） */
+function handleEmptyAction() {
+  if (selectedCategory.value === "cat-following") {
+    openAppPath("/pages/discover/index");
+    return;
+  }
+  openAppPath("/pages/village/post");
 }
 
 /* ========== 当前选中的分类 ========== */
@@ -136,11 +216,20 @@ const currentCategoryConfig = computed<VillageCategory | undefined>(() => {
 /* ========== 筛选条件 ========== */
 const currentFilters = computed<PostFilters>(() => {
   const config = currentCategoryConfig.value;
-  return {
+  const filters: PostFilters = {
     categoryId: selectedCategory.value,
     sortBy: config?.defaultSort ?? "latest",
-    userId: selectedCategory.value === "cat-campus" ? currentUserId.value : undefined,
   };
+  // 发现 Tab：透传二级子标签（all/alumni/hometown/buddy），由 store filteredPosts 消费
+  if (selectedCategory.value === "cat-discover") {
+    const sub = DISCOVER_SUB_TABS.value.find((s) => s.id === selectedDiscoverSubTab.value);
+    filters.discoverSub = sub && sub.backendKey !== "all" ? sub.backendKey : "all";
+  }
+  // 同城 Tab：透传城市名
+  if (selectedCategory.value === "cat-samecity") {
+    filters.city = sameCityName.value || undefined;
+  }
+  return filters;
 });
 
 /* ========== BaseTabs 数据 ========== */
@@ -375,6 +464,7 @@ onShow(() => {
 
 /* ========== 初始化 ========== */
 onMounted(() => {
+  initSameCity();
   if (isUnlocked.value) {
     void villageStore.fetchPosts(currentFilters.value);
   }
@@ -431,6 +521,68 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
         />
       </view>
 
+      <!-- ===== Phase Feedback4：同城 Tab 城市选择器（自动标注城市 + 可手动切换） ===== -->
+      <view v-if="selectedCategory === 'cat-samecity' && featureFlags.villageSameCityEnabled" class="same-city-bar">
+        <view class="same-city-bar__label">
+          <image class="same-city-bar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PIN" mode="aspectFit" alt="" />
+          <text class="same-city-bar__text">{{ t('village.sameCityLabel', { city: sameCityName }) }}</text>
+        </view>
+        <view
+          class="same-city-bar__switch press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('village.sameCityChange')"
+          @tap="showCityPicker = true"
+        >
+          <text class="same-city-bar__switch-text">{{ t('village.sameCityChange') }}</text>
+        </view>
+      </view>
+
+      <!-- ===== Phase Feedback4：城市选择弹层 ===== -->
+      <view v-if="showCityPicker" class="city-picker" role="button" :aria-label="t('common.closeAria')" @tap="showCityPicker = false">
+        <view class="city-picker__content" catchtap="noop">
+          <view class="city-picker__header">
+            <text class="city-picker__title">{{ t('village.cityPickerTitle') }}</text>
+            <text class="city-picker__close" role="button" :aria-label="t('common.closeAria')" @tap="showCityPicker = false">✕</text>
+          </view>
+          <scroll-view scroll-y class="city-picker__list" :show-scrollbar="false">
+            <view
+              v-for="city in SAME_CITY_OPTIONS"
+              :key="city"
+              class="city-picker__item press-feedback"
+              :class="{ 'city-picker__item--active': city === sameCityName }"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              role="button"
+              :aria-label="city"
+              @tap="selectSameCity(city)"
+            >
+              <text class="city-picker__item-name">{{ city }}</text>
+              <text v-if="city === sameCityName" class="city-picker__item-check">✓</text>
+            </view>
+          </scroll-view>
+        </view>
+      </view>
+
+      <!-- ===== Phase Feedback4：发现 Tab 二级子标签（全部/校友/老乡/搭子圈） ===== -->
+      <view v-if="selectedCategory === 'cat-discover'" class="discover-sub-tabs">
+        <view
+          v-for="sub in DISCOVER_SUB_TABS"
+          :key="sub.id"
+          class="discover-sub-tab press-feedback"
+          :class="{ 'discover-sub-tab--active': sub.id === selectedDiscoverSubTab }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="sub.name"
+          :aria-pressed="sub.id === selectedDiscoverSubTab"
+          @tap="selectDiscoverSubTab(sub.id)"
+        >
+          <text class="discover-sub-tab__text">{{ sub.name }}</text>
+        </view>
+      </view>
+
       <!-- ===== 附近的人入口卡片（M-08） ===== -->
       <view class="discover-banner press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.goToDiscoverAria')" @tap="goToDiscover">
         <view class="discover-banner__content">
@@ -474,11 +626,11 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
         @scrolltolower="onLoadMore"
         @scroll="handleScroll"
       >
-        <!-- 空状态 -->
+        <!-- 空状态（按 Tab 区分文案，Phase Feedback4） -->
         <view v-if="displayPosts.length === 0" class="village-empty">
-          <EmptyState type="no-data" :message="t('village.emptyPosts')">
-            <view class="village-empty__action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.publishPostAria')" @tap="openAppPath('/pages/village/post')">
-              <text class="village-empty__action-text">{{ t('village.publishPost') }}</text>
+          <EmptyState type="no-data" :message="emptyStateMessage">
+            <view class="village-empty__action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="emptyStateActionLabel" @tap="handleEmptyAction">
+              <text class="village-empty__action-text">{{ emptyStateActionLabel }}</text>
             </view>
           </EmptyState>
         </view>
@@ -714,6 +866,152 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
 /* ================================================================
    去认识新朋友入口卡片（M-08）
    ================================================================ */
+/* ========== Phase Feedback4：同城城市选择条 ========== */
+.same-city-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 var(--sp-8) var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-brand-bg-tint, #e6f9f0);
+  border-radius: var(--r-lg, 20rpx);
+  border: 1rpx solid var(--c-brand-border-tint, #b7ecd8);
+}
+
+.same-city-bar__label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.same-city-bar__icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.same-city-bar__text {
+  font-size: var(--fs-base, 28rpx);
+  font-weight: 700;
+  color: var(--c-brand-600, #2db97a);
+}
+
+.same-city-bar__switch {
+  padding: 6rpx 16rpx;
+  border-radius: var(--r-full, 999rpx);
+  background: var(--c-bg-container, #ffffff);
+}
+
+.same-city-bar__switch-text {
+  font-size: var(--fs-xs, 24rpx);
+  color: var(--c-brand-500, #3fcf8e);
+  font-weight: 600;
+}
+
+/* ========== Phase Feedback4：城市选择弹层 ========== */
+.city-picker {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1000);
+  background: var(--c-overlay-bg, rgba(0, 0, 0, 0.45));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.city-picker__content {
+  width: 600rpx;
+  max-height: 70vh;
+  background: var(--c-bg-container, #ffffff);
+  border-radius: var(--r-xl, 24rpx);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+}
+
+.city-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--sp-4);
+  border-bottom: 1rpx solid var(--c-divider-light, #f0f0f0);
+}
+
+.city-picker__title {
+  font-size: var(--fs-lg, 32rpx);
+  font-weight: 700;
+  color: var(--c-text-primary, #1f2937);
+}
+
+.city-picker__close {
+  font-size: var(--fs-2xl, 36rpx);
+  color: var(--c-text-tertiary, #9ca3af);
+  padding: 4rpx 12rpx;
+}
+
+.city-picker__list {
+  margin-top: var(--sp-4);
+  max-height: 50vh;
+}
+
+.city-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-4) var(--sp-3);
+  border-radius: var(--r-lg, 20rpx);
+}
+
+.city-picker__item--active {
+  background: var(--c-brand-bg-tint, #e6f9f0);
+}
+
+.city-picker__item-name {
+  font-size: var(--fs-base, 28rpx);
+  color: var(--c-text-primary, #1f2937);
+}
+
+.city-picker__item--active .city-picker__item-name {
+  color: var(--c-brand-600, #2db97a);
+  font-weight: 700;
+}
+
+.city-picker__item-check {
+  color: var(--c-brand-500, #3fcf8e);
+  font-weight: 700;
+}
+
+/* ========== Phase Feedback4：发现 Tab 二级子标签 ========== */
+.discover-sub-tabs {
+  display: flex;
+  gap: var(--sp-3);
+  margin: 0 var(--sp-8) var(--sp-4);
+  overflow-x: auto;
+}
+
+.discover-sub-tab {
+  flex-shrink: 0;
+  padding: 8rpx 24rpx;
+  border-radius: var(--r-full, 999rpx);
+  background: var(--c-bg-container, #ffffff);
+  border: 1rpx solid var(--c-divider-light, #f0f0f0);
+}
+
+.discover-sub-tab--active {
+  background: var(--c-gradient-brand, linear-gradient(135deg, #6fe0b0 0%, #3fcf8e 100%));
+  border-color: transparent;
+}
+
+.discover-sub-tab__text {
+  font-size: var(--fs-sm, 26rpx);
+  color: var(--c-text-secondary, #6b7280);
+  font-weight: 500;
+}
+
+.discover-sub-tab--active .discover-sub-tab__text {
+  color: var(--c-text-inverse, #ffffff);
+  font-weight: 600;
+}
+
 .discover-banner {
   margin: 0 var(--sp-7) var(--sp-6);
   background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-romance-400) 100%);

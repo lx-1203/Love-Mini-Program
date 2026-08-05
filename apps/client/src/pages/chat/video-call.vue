@@ -19,8 +19,22 @@ import { onLoad, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVideoCallStore, type VideoCallEndReason } from "../../stores/video-call";
 import { lightHaptic } from "../../utils/haptic";
+import { IMAGE_PATHS } from "../../config/images";
 
 const { t } = useI18n();
+
+/** 通话控制图标（emoji 替换为 SVG，lucide 风格） */
+const callIcons = {
+  video: IMAGE_PATHS.ICONS_EMOJI.VIDEO,
+  camera: IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON,
+  prohibited: IMAGE_PATHS.ICONS_EMOJI.PROHIBITED,
+  phone: IMAGE_PATHS.ICONS_EMOJI.PHONE,
+  mic: IMAGE_PATHS.ICONS_EMOJI.MICROPHONE,
+  micOff: IMAGE_PATHS.ICONS_EMOJI.VOLUME_X,
+  speaker: IMAGE_PATHS.ICONS_EMOJI.VOLUME_HIGH,
+  speakerOff: IMAGE_PATHS.ICONS_EMOJI.VOLUME_LOW,
+  switchCamera: IMAGE_PATHS.ICONS_EMOJI.REFRESH_CW,
+} as const;
 const store = useVideoCallStore();
 
 /** 是否为发起方（true）或被叫方（false） */
@@ -388,10 +402,10 @@ onMounted(() => {
     <!-- #ifndef MP-WEIXIN -->
     <!-- H5 占位（真实环境使用 video 标签接入 WebRTC） -->
     <view class="video-call-page__remote">
-      <text class="video-call-page__remote-emoji">📹</text>
+      <image class="video-call-page__remote-emoji" :src="callIcons.video" mode="aspectFit" alt="" />
     </view>
     <view class="video-call-page__local">
-      <text class="video-call-page__local-emoji">📷</text>
+      <image class="video-call-page__local-emoji" :src="callIcons.camera" mode="aspectFit" alt="" />
     </view>
     <!-- #endif -->
 
@@ -413,7 +427,7 @@ onMounted(() => {
           hover-class="call-btn--hover"
           hover-stay-time="100"
         >
-          <text class="call-btn__icon">📵</text>
+          <image class="call-btn__icon" :src="callIcons.prohibited" mode="aspectFit" alt="" />
           <text class="call-btn__label">{{ t('videoCall.rejectBtn') }}</text>
         </view>
         <view
@@ -422,7 +436,7 @@ onMounted(() => {
           hover-class="call-btn--hover"
           hover-stay-time="100"
         >
-          <text class="call-btn__icon">📞</text>
+          <image class="call-btn__icon" :src="callIcons.phone" mode="aspectFit" alt="" />
           <text class="call-btn__label">{{ t('videoCall.acceptBtn') }}</text>
         </view>
       </template>
@@ -435,7 +449,7 @@ onMounted(() => {
           hover-class="call-btn--hover"
           hover-stay-time="100"
         >
-          <text class="call-btn__icon">📵</text>
+          <image class="call-btn__icon" :src="callIcons.prohibited" mode="aspectFit" alt="" />
           <text class="call-btn__label">{{ t('videoCall.hangupBtn') }}</text>
         </view>
       </template>
@@ -449,7 +463,7 @@ onMounted(() => {
             hover-class="call-tool--hover"
             hover-stay-time="100"
           >
-            <text class="call-tool__icon">{{ micEnabled ? '🎤' : '🔇' }}</text>
+            <image class="call-tool__icon" :src="micEnabled ? callIcons.mic : callIcons.micOff" mode="aspectFit" alt="" />
             <text class="call-tool__label">{{ t('videoCall.micBtn') }}</text>
           </view>
           <view
@@ -458,7 +472,7 @@ onMounted(() => {
             hover-class="call-tool--hover"
             hover-stay-time="100"
           >
-            <text class="call-tool__icon">{{ cameraEnabled ? '📹' : '🚫' }}</text>
+            <image class="call-tool__icon" :src="cameraEnabled ? callIcons.camera : callIcons.prohibited" mode="aspectFit" alt="" />
             <text class="call-tool__label">{{ t('videoCall.cameraBtn') }}</text>
           </view>
           <view
@@ -467,7 +481,7 @@ onMounted(() => {
             hover-class="call-tool--hover"
             hover-stay-time="100"
           >
-            <text class="call-tool__icon">{{ speakerEnabled ? '🔊' : '🔈' }}</text>
+            <image class="call-tool__icon" :src="speakerEnabled ? callIcons.speaker : callIcons.speakerOff" mode="aspectFit" alt="" />
             <text class="call-tool__label">{{ t('videoCall.speakerBtn') }}</text>
           </view>
           <view
@@ -476,7 +490,7 @@ onMounted(() => {
             hover-class="call-tool--hover"
             hover-stay-time="100"
           >
-            <text class="call-tool__icon">🔄</text>
+            <image class="call-tool__icon" :src="callIcons.switchCamera" mode="aspectFit" alt="" />
             <text class="call-tool__label">{{ t('videoCall.switchCameraBtn') }}</text>
           </view>
         </view>
@@ -486,7 +500,7 @@ onMounted(() => {
           hover-class="call-btn--hover"
           hover-stay-time="100"
         >
-          <text class="call-btn__icon">📵</text>
+          <image class="call-btn__icon" :src="callIcons.prohibited" mode="aspectFit" alt="" />
           <text class="call-btn__label">{{ t('videoCall.hangupBtn') }}</text>
         </view>
       </template>
@@ -540,7 +554,8 @@ onMounted(() => {
 }
 
 .video-call-page__remote-emoji {
-  font-size: 200rpx;
+  width: 200rpx;
+  height: 200rpx;
   color: var(--c-overlay-text-placeholder);
 }
 
@@ -560,7 +575,8 @@ onMounted(() => {
 }
 
 .video-call-page__local-emoji {
-  font-size: 64rpx;
+  width: 64rpx;
+  height: 64rpx;
   color: var(--c-overlay-text-quaternary);
 }
 
@@ -629,8 +645,13 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--fs-7xl, 56rpx);
     background: var(--c-overlay-border-light);
+
+    image {
+      width: 48rpx;
+      height: 48rpx;
+      color: var(--c-text-inverse);
+    }
   }
 
   &__label {
@@ -678,7 +699,13 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--fs-6xl, 48rpx);
+    background: var(--c-overlay-border-light);
+
+    image {
+      width: 48rpx;
+      height: 48rpx;
+      color: var(--c-text-inverse);
+    }
   }
 
   &__label {

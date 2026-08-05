@@ -25,6 +25,9 @@ import {
   CATEGORY_ALL_ID,
   CATEGORY_CAMPUS_ID,
   CATEGORY_PREFIX,
+  DISCOVER_CATEGORY_ID,
+  FOLLOWING_CATEGORY_ID,
+  SAME_CITY_CATEGORY_ID,
 } from "./constants";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
@@ -189,6 +192,10 @@ export function filterAndSortPosts(
     categoryId?: string;
     keyword?: string;
     sortBy?: "latest" | "hot";
+    /** Phase Feedback4：同城 Tab 城市名 */
+    city?: string;
+    /** Phase Feedback4：发现 Tab 二级子标签 */
+    discoverSub?: string;
   },
   myCampus?: string
 ): PostItem[] {
@@ -201,6 +208,42 @@ export function filterAndSortPosts(
         result = result.filter((post) => post.author.campusName === myCampus);
       } else {
         result = [];
+      }
+    } else if (filters.categoryId === FOLLOWING_CATEGORY_ID) {
+      // Phase Feedback4：关注 Tab —— 展示匹配中点喜欢的人的动态（isFollowed=true）
+      result = result.filter((post) => post.isFollowed);
+    } else if (filters.categoryId === SAME_CITY_CATEGORY_ID) {
+      // Phase Feedback4：同城 Tab —— 按城市过滤；未选城市时展示全部（兜底避免空态）
+      if (filters.city) {
+        result = result.filter((post) => post.city === filters.city);
+      }
+    } else if (filters.categoryId === DISCOVER_CATEGORY_ID) {
+      // Phase Feedback4：发现 Tab —— 不按 categoryId 过滤，由 discoverSub 子标签决定
+      switch (filters.discoverSub) {
+        case "alumni":
+          result = result.filter((post) => post.isAlumni);
+          break;
+        case "hometown":
+          // 老乡：内容/标签含"老乡"或城市名匹配的帖子
+          result = result.filter(
+            (post) =>
+              post.tags.some((tag) => tag.includes("老乡")) ||
+              post.content.includes("老乡") ||
+              post.content.includes("同乡")
+          );
+          break;
+        case "buddy":
+          // 搭子圈：带 buddyTags 或标签含"搭子"的帖子
+          result = result.filter(
+            (post) =>
+              (post.buddyTags && post.buddyTags.length > 0) ||
+              post.tags.some((tag) => tag.includes("搭子"))
+          );
+          break;
+        case "all":
+        default:
+          // 全部：不过滤
+          break;
       }
     } else {
       result = result.filter((post) => post.categoryId === filters.categoryId);
@@ -472,6 +515,8 @@ export const mockPosts: PostItem[] = [
     isFollowed: false,
     isShared: false,
     isAlumni: false,
+    city: "南京",
+    buddyTags: ["读书搭子"],
     createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
   },
   {
@@ -490,6 +535,8 @@ export const mockPosts: PostItem[] = [
     isFollowed: true,
     isShared: true,
     isAlumni: true,
+    city: "杭州",
+    buddyTags: ["运动搭子"],
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
   {
@@ -508,6 +555,7 @@ export const mockPosts: PostItem[] = [
     isFollowed: false,
     isShared: false,
     isAlumni: false,
+    city: "南京",
     createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
   },
   {
@@ -526,6 +574,7 @@ export const mockPosts: PostItem[] = [
     isFollowed: false,
     isShared: false,
     isAlumni: false,
+    city: "上海",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
   },
   {
@@ -544,6 +593,7 @@ export const mockPosts: PostItem[] = [
     isFollowed: false,
     isShared: false,
     isAlumni: false,
+    city: "成都",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
   },
   {
@@ -559,9 +609,11 @@ export const mockPosts: PostItem[] = [
     comments: 12,
     shares: 6,
     isLiked: false,
-    isFollowed: false,
+    isFollowed: true,
     isShared: false,
-    isAlumni: false,
+    isAlumni: true,
+    city: "南京",
+    buddyTags: ["读书搭子"],
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
   },
 ];

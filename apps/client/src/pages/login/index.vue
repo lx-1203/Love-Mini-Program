@@ -15,6 +15,13 @@ import { captureException, addBreadcrumb } from "../../services/sentry";
 // 使用 vue-i18n 组合式 API 获取 t 函数（组件内优先使用 useI18n 而非全局 t）
 const { t } = useI18n();
 
+/** 登录页图标（emoji 替换为 SVG） */
+const loginIcons = {
+  mobile: IMAGE_PATHS.ICONS_EMOJI.MOBILE,
+  key: IMAGE_PATHS.ICONS_EMOJI.KEY,
+  link: IMAGE_PATHS.ICONS_EMOJI.LINK,
+} as const;
+
 const sessionStore = useSessionStore();
 const { loginHero, loading } = storeToRefs(sessionStore);
 
@@ -410,7 +417,7 @@ function openAccountBinding() {
           <view class="input-group">
             <view class="input-item">
               <view class="input-icon" aria-hidden="true">
-                <text class="input-icon-text">📱</text>
+                <image class="input-icon-text" :src="loginIcons.mobile" mode="aspectFit" alt="" />
               </view>
               <!-- P6 a11y：label 关联输入框（sr-only 视觉隐藏，屏幕阅读器可读） -->
               <label class="sr-only" for="login-phone">{{ t('login.phonePlaceholder') }}</label>
@@ -432,7 +439,7 @@ function openAccountBinding() {
 
             <view class="input-item">
               <view class="input-icon" aria-hidden="true">
-                <text class="input-icon-text">🔑</text>
+                <image class="input-icon-text" :src="loginIcons.key" mode="aspectFit" alt="" />
               </view>
               <label class="sr-only" for="login-code">{{ t('login.codePlaceholder') }}</label>
               <input
@@ -525,7 +532,7 @@ function openAccountBinding() {
             hover-stay-time="120"
             @tap="openAccountBinding"
           >
-            <text class="third-party-icon third-party-icon--bind">🔗</text>
+            <image class="third-party-icon third-party-icon--bind" :src="loginIcons.link" mode="aspectFit" alt="" />
             <text class="third-party-icon-label">{{ t('thirdPartyLogin.accountBinding') }}</text>
           </view>
         </view>
@@ -739,7 +746,9 @@ function openAccountBinding() {
 }
 
 .input-icon-text {
-  font-size: var(--fs-2xl);
+  width: 36rpx;
+  height: 36rpx;
+  color: var(--c-text-tertiary);
 }
 
 .input-field {

@@ -138,9 +138,9 @@ describe("VoiceMessageBubble component - 语音消息气泡组件", () => {
   // ------------------------------------------------------------------
   // 播放图标切换
   // ------------------------------------------------------------------
-  it("未播放且未过期时显示静音图标", () => {
+  it("未播放且未过期时显示静音图标（SVG）", () => {
     const wrapper = mountBubble({ expired: false, audioUrl: "https://cdn.example.com/a.amr" });
-    expect(wrapper.find(".voice-bubble__icon-emoji").text()).toBe("🔈");
+    expect(wrapper.find(".voice-bubble__icon-emoji").attributes("src")).toContain("volume-low.svg");
   });
 
   it("audioUrl 为空时显示暂停图标", () => {

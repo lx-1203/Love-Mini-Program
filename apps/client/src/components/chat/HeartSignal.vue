@@ -42,10 +42,8 @@ defineExpose({ ariaLabel });
         class="signal-img"
         :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL"
         mode="aspectFit"
-        <!-- #ifdef H5 -->
         role="img"
         :aria-label="titleLabel"
-        <!-- #endif -->
       />
     </view>
     <view class="signal-info">

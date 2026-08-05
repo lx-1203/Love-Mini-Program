@@ -5,7 +5,7 @@
  * 资料未完善时展示 LockScreen 锁定页面
  */
 import { computed, onMounted, ref } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
@@ -22,13 +22,13 @@ import SafeImage from "../../components/common/SafeImage.vue";
 import MatchCountChip from "../../components/common/MatchCountChip.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
 import { IMAGE_PATHS } from "../../config/images";
+// Phase Feedback6：会员功能开关（false 时隐藏所有 VIP 入口）
+import { featureFlags } from "../../config/feature-flags";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { designTokens } from "../../theme/tokens";
 // 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
 import type { UniUploadFileLike } from "../../services/api";
-// Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
-import { resolveMediaUrl } from "../../utils/media";
-// Task 0.2.4：调用 chooseImage / chooseVideo 前需检查隐私授权
+// Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
 /**
@@ -93,7 +93,7 @@ const { profileBackgroundUrl } = storeToRefs(sessionStore);
  * 照片墙 + 个人视频状态（Phase E2 / E3）
  * 从 profile store 获取，上传/删除后响应式更新
  */
-const { photoGallery, personalVideoUrl } = storeToRefs(profileStore);
+const { photoGallery } = storeToRefs(profileStore);
 
 /**
  * 上传状态（Phase E1 / E2 / E3 共用）
@@ -267,11 +267,10 @@ const stats = computed<StatItem[]>(() => {
 
 /**
  * 功能菜单项配置
- * 使用 IMAGE_PATHS 图标 + 同色系浅色背景（emoji 作为 fallback）
+ * 使用 IMAGE_PATHS 图标 + 同色系浅色背景
  */
 interface MenuItem {
-  emoji: string;
-  icon?: string;
+  icon: string;
   bgColor: string;
   label: string;
   path?: string;
@@ -280,28 +279,21 @@ interface MenuItem {
 
 const menuItems = computed<MenuItem[]>(() => [
   {
-    emoji: "💝",
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
     label: t("profile.myPosts"),
     path: "/pages/village/index?tab=mine",
   },
+  /* Phase Feedback5：任务中心（新增） */
   {
-    emoji: "⭐",
-    icon: IMAGE_PATHS.ICONS_PROFILE.FAVORITES,
-    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
-    label: t("profile.myLikes"),
-    path: "/pages/likes/index?tab=likedBy",
-  },
-  {
-    emoji: "💕",
     icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
-    bgColor: "var(--c-tint-pink-50, #FFE8EC)",
-    label: t("profile.myMatches"),
-    path: "/pages/likes/index",
+    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+    label: t("profile.taskCenter"),
+    action: () => {
+      uni.showToast({ title: t("profile.taskCenterDesc"), icon: "none" });
+    },
   },
   {
-    emoji: "👀",
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
     bgColor: "var(--c-bg-brand, #E8F8F0)",
     label: t("profile.visitors"),
@@ -309,35 +301,43 @@ const menuItems = computed<MenuItem[]>(() => [
   },
   /* 功能4：相册入口 */
   {
-    emoji: "📷",
     icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
     bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
     label: t("profile.albumTitle"),
     path: "/pages/profile/album",
   },
   {
-    emoji: "✅",
     icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
     bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
     label: t("profile.verification"),
     path: "/pages/verification/index",
   },
+  /* Phase Feedback5：帮助与客服（新增） */
   {
-    emoji: "🔬",
-    icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
-    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
-    label: t("profile.loveLab"),
-    path: "/pages/circles/index",
-  },
-  {
-    emoji: "",
     icon: IMAGE_PATHS.ICONS_EMOJI.CHAT,
     bgColor: "var(--c-sky-50, #E0F2FE)",
-    label: t("profile.feedback"),
-    path: "/subpackages/support/feedback/index",
+    label: t("profile.helpSupport"),
+    action: () => {
+      uni.showToast({ title: t("profile.helpSupportDesc"), icon: "none" });
+    },
+  },
+  /* Phase Feedback5：安全中心（新增） */
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
+    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
+    label: t("profile.safetyCenter"),
+    action: () => {
+      uni.showToast({ title: t("profile.safetyCenterDesc"), icon: "none" });
+    },
+  },
+  /* Phase Feedback5：权限（同校推荐开关） */
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
+    bgColor: "var(--c-lavender-100, #EDE9FE)",
+    label: t("profile.privacyPermission"),
+    path: "/pages/profile/privacy",
   },
   {
-    emoji: "📤",
     icon: IMAGE_PATHS.ICONS_PROFILE.SHARE,
     bgColor: "var(--c-lavender-100, #EDE9FE)",
     label: t("profile.shareFriend"),
@@ -352,14 +352,12 @@ const menuItems = computed<MenuItem[]>(() => [
 
 const bottomMenuItems = computed<MenuItem[]>(() => [
   {
-    emoji: "⚙️",
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
     bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("profile.settings"),
     path: "/pages/settings/index",
   },
   {
-    emoji: "ℹ️",
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
     bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("profile.aboutUs"),
@@ -414,6 +412,84 @@ function handleSayHi() {
 function handleVipClick() {
   lightHaptic();
   openAppPath("/pages/vip/index");
+}
+
+/* ========== Phase Feedback5：60s 语音状态 ========== */
+
+/** 语音状态 URL（来自 profile store） */
+const voiceStatusUrl = computed(() => profileStore.voiceStatusUrl);
+/** 语音时长（秒） */
+const voiceStatusDuration = computed(() => profileStore.voiceStatusDuration);
+/** 是否正在播放（演示态，真实播放接入 uni.createInnerAudioContext） */
+const isVoicePlaying = ref(false);
+/** 演示态自动停止计时器（连点播放/暂停时先清理，避免状态错乱） */
+let voicePlayTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 语音时长标签（如 0:42 / 0:05） */
+const voiceDurationLabel = computed(() => {
+  const seconds = voiceStatusDuration.value || 0;
+  const mm = Math.floor(seconds / 60);
+  const ss = seconds % 60;
+  return `${mm}:${String(ss).padStart(2, "0")}`;
+});
+
+/**
+ * 录制语音状态：真实环境接入 uni.getRecorderManager（最长 60s）。
+ * Mock/简化：直接模拟设置一段 42s 语音，保证交互闭环。
+ */
+function handleRecordVoice() {
+  lightHaptic();
+  uni.showModal({
+    title: t("profile.voiceRecord"),
+    content: t("profile.voiceStatusHint"),
+    confirmText: t("common.ok"),
+    cancelText: t("common.cancel"),
+    success: (res) => {
+      if (!res.confirm) return;
+      // 模拟录制完成（42s < 60s 上限）；真实环境替换为 RecorderManager 结果
+      profileStore.setVoiceStatus("mock://profile/voice-status", 42);
+      uni.showToast({ title: t("profile.voiceUploaded"), icon: "success" });
+    },
+  });
+}
+
+/** 播放/暂停语音状态（演示态：仅切换图标；真实播放接入 InnerAudioContext） */
+function handlePlayVoice() {
+  lightHaptic();
+  if (isVoicePlaying.value) {
+    // 暂停：清理计时器并停止
+    if (voicePlayTimer) {
+      clearTimeout(voicePlayTimer);
+      voicePlayTimer = null;
+    }
+    isVoicePlaying.value = false;
+    return;
+  }
+  isVoicePlaying.value = true;
+  // 演示 3 秒后自动停止（先清理旧计时器避免连点错乱）
+  if (voicePlayTimer) {
+    clearTimeout(voicePlayTimer);
+  }
+  voicePlayTimer = setTimeout(() => {
+    isVoicePlaying.value = false;
+    voicePlayTimer = null;
+  }, 3000);
+}
+
+/** 删除语音状态 */
+function handleRemoveVoice() {
+  uni.showModal({
+    title: t("profile.titleTip"),
+    content: t("profile.voiceDeleteConfirm"),
+    confirmText: t("common.delete"),
+    cancelText: t("common.cancel"),
+    confirmColor: designTokens.color.error,
+    success: (res) => {
+      if (!res.confirm) return;
+      profileStore.clearVoiceStatus();
+      uni.showToast({ title: t("profile.voiceDeleted"), icon: "success" });
+    },
+  });
 }
 
 /**
@@ -519,113 +595,6 @@ async function uploadBackground(file: UniUploadFileLike) {
     uploadKind.value = null;
     uploadProgress.value = "";
   }
-}
-
-/**
- * Task E2 / M-11：点击"上传个人视频"CTA 触发视频选择 + 上传。
- *
- * 流程：
- * 1. uni.chooseVideo 选择相册中的视频（maxDuration 60s，camera: back）
- * 2. 构造类 File 对象
- * 3. 调用 profileStore.uploadVideo 上传 + 更新本地状态
- *
- * Task 0.2.4：调用 chooseVideo 前先调用 ensurePrivacyAuthorized 检查隐私授权。
- */
-async function handleUploadVideo() {
-  if (isUploading.value) return;
-  lightHaptic();
-  try {
-    await ensurePrivacyAuthorized();
-  } catch (_e) {
-    uni.showToast({
-      title: t('profile.privacyRequiredVideo'),
-      icon: "none",
-    });
-    return;
-  }
-  uni.chooseVideo({
-    maxDuration: 60,
-    sourceType: ["album"],
-    camera: "back",
-    success: (res) => {
-      const tempPath = res.tempFilePath ?? "";
-      if (!tempPath) {
-        uni.showToast({ title: t("profile.noVideoSelected"), icon: "none" });
-        return;
-      }
-      const file = buildFileLike(tempPath);
-      void uploadVideo(file);
-    },
-    fail: (err) => {
-      if (!String(err?.errMsg || "").includes("cancel")) {
-        uni.showToast({ title: t("profile.chooseVideoFailed"), icon: "none" });
-      }
-    },
-  });
-}
-
-/**
- * 实际执行个人视频上传
- */
-async function uploadVideo(file: UniUploadFileLike) {
-  isUploading.value = true;
-  uploadKind.value = "video";
-  uploadProgress.value = t("profile.uploading");
-  try {
-    await profileStore.uploadVideo(file);
-    successHaptic();
-    uni.showToast({ title: t("profile.videoUploaded"), icon: "success" });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : t("profile.uploadFailed");
-    uni.showToast({ title: message, icon: "none" });
-  } finally {
-    isUploading.value = false;
-    uploadKind.value = null;
-    uploadProgress.value = "";
-  }
-}
-
-/**
- * Task E2 / M-11：点击个人视频播放图标跳转全屏播放页。
- */
-function handlePlayVideo() {
-  if (!personalVideoUrl.value) return;
-  lightHaptic();
-  const url = `/pages/discover/video-player?videoUrl=${encodeURIComponent(personalVideoUrl.value)}`;
-  openAppPath(url);
-}
-
-/**
- * Task E2 / M-11：点击个人视频删除按钮。
- * 二次确认后调用 profileStore.removeVideo 清空本地状态。
- */
-function handleRemoveVideo() {
-  if (isUploading.value) return;
-  lightHaptic();
-  uni.showModal({
-    title: t("profile.deleteVideo"),
-    content: t("profile.deleteVideoConfirm"),
-    confirmText: t("profile.delete"),
-    confirmColor: designTokens.color.error,
-    success: async (res) => {
-      if (!res.confirm) return;
-      isUploading.value = true;
-      uploadKind.value = "video";
-      uploadProgress.value = t("profile.deleting");
-      try {
-        await profileStore.removeVideo();
-        successHaptic();
-        uni.showToast({ title: t("profile.photoDeleted"), icon: "success" });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : t("profile.deleteFailed");
-        uni.showToast({ title: message, icon: "none" });
-      } finally {
-        isUploading.value = false;
-        uploadKind.value = null;
-        uploadProgress.value = "";
-      }
-    },
-  });
 }
 
 /**
@@ -771,6 +740,14 @@ onMounted(() => {
   });
   socialProgressStore.fetchProgress();
 });
+
+/** 页面卸载时清理语音演示定时器（Phase Feedback5：避免卸载后触发状态更新） */
+onUnload(() => {
+  if (voicePlayTimer) {
+    clearTimeout(voicePlayTimer);
+    voicePlayTimer = null;
+  }
+});
 </script>
 
 <template>
@@ -842,14 +819,14 @@ onMounted(() => {
 
         <!-- 头像区域 -->
         <view class="avatar-wrap">
-          <view class="avatar-ring" :class="{ 'avatar-ring--vip': isVip }">
+          <view class="avatar-ring" :class="{ 'avatar-ring--vip': featureFlags.membershipEnabled && isVip }">
             <view class="avatar-ring__inner">
               <view class="avatar">
                 <text class="avatar__text">{{ avatarInitial }}</text>
               </view>
             </view>
           </view>
-          <view v-if="isVip" class="vip-crown">
+          <view v-if="featureFlags.membershipEnabled && isVip" class="vip-crown">
             <image class="vip-crown__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           </view>
         </view>
@@ -866,8 +843,8 @@ onMounted(() => {
               :show-cta-when-none="showVerificationCta"
               @tap="handleVerificationClick"
             />
-            <!-- VIP 徽章：已开通时展示 -->
-            <view v-if="isVip" class="user-info__vip-badge">
+          <!-- VIP 徽章：仅会员功能开启时展示（Phase Feedback6：默认隐藏） -->
+            <view v-if="featureFlags.membershipEnabled && isVip" class="user-info__vip-badge">
               <image class="user-info__vip-badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
               <text class="user-info__vip-badge-text">VIP{{ vipPlanName ? " · " + vipPlanName : "" }}</text>
             </view>
@@ -905,72 +882,66 @@ onMounted(() => {
         </view>
       </view>
 
-      <!-- ==================== Task E2 / M-11：个人视频区块 ==================== -->
+      <!-- ==================== Phase Feedback5：语音状态区块（最长 60s，替代个人视频） ==================== -->
       <view v-if="isOwnProfile" class="media-section">
         <view class="section-header">
           <view class="section-header__left">
-            <text class="section-header__title">{{ t('profile.personalVideo') }}</text>
-            <text class="section-header__count">{{ t('profile.personalVideoHint') }}</text>
+            <text class="section-header__title">{{ t('profile.voiceStatus') }}</text>
+            <text class="section-header__count">{{ t('profile.voiceStatusHint') }}</text>
           </view>
         </view>
 
-        <!-- 未上传：CTA 引导上传 -->
+        <!-- 未录制：CTA 引导录制 -->
         <view
-          v-if="!personalVideoUrl"
+          v-if="!voiceStatusUrl"
           class="video-cta press-feedback"
           hover-class="video-cta--hover"
           hover-stay-time="120"
           role="button"
-          :aria-label="t('profile.uploadVideoAria')"
-          @tap="handleUploadVideo"
+          :aria-label="t('profile.recordVoiceAria')"
+          @tap="handleRecordVoice"
         >
           <view class="video-cta__icon-wrap">
-            <image
-              v-if="!isUploading || uploadKind !== 'video'"
-              class="video-cta__icon"
-              :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
-              mode="aspectFit" alt=""
-            />
-            <view v-else class="video-cta__spinner" />
+            <image class="video-cta__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MICROPHONE" mode="aspectFit" alt="" />
           </view>
-          <text class="video-cta__text">
-            {{ isUploading && uploadKind === 'video' ? uploadProgress : t('profile.uploadVideo') }}
-          </text>
-          <text class="video-cta__hint">{{ t('profile.videoHint') }}</text>
+          <text class="video-cta__text">{{ t('profile.voiceRecord') }}</text>
+          <text class="video-cta__hint">{{ t('profile.voiceStatusHint') }}</text>
         </view>
 
-        <!-- 已上传：视频缩略图 + 播放图标 + 删除按钮 -->
-        <view v-else class="video-preview">
-          <view class="video-preview__thumb" role="button" :aria-label="t('profile.playVideoAria')" @tap="handlePlayVideo">
-            <image
-              class="video-preview__thumb-img"
-              :src="resolveMediaUrl(personalVideoUrl)"
-              mode="aspectFill" lazy-load alt=""
-            />
-            <view class="video-preview__play">
-              <view class="video-preview__play-triangle" />
-            </view>
-          </view>
-          <view class="video-preview__actions">
+        <!-- 已录制：语音卡片 + 播放/删除 -->
+        <view v-else class="voice-preview">
+          <view class="voice-preview__card">
             <view
-              class="video-preview__action video-preview__action--play press-feedback"
-              hover-class="video-preview__action--hover"
-              hover-stay-time="100"
+              class="voice-preview__play press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
               role="button"
-              :aria-label="t('profile.playVideoAria')"
-              @tap="handlePlayVideo"
+              :aria-label="t('profile.playVoiceAria')"
+              @tap="handlePlayVoice"
             >
-              <text class="video-preview__action-text">{{ t('profile.play') }}</text>
+              <text class="voice-preview__play-icon">{{ isVoicePlaying ? '⏸' : '▶' }}</text>
+            </view>
+            <view class="voice-preview__info">
+              <view class="voice-preview__wave">
+                <view
+                  v-for="(_, idx) in 12"
+                  :key="idx"
+                  class="voice-preview__bar"
+                  :class="{ 'voice-preview__bar--active': isVoicePlaying }"
+                  :style="{ height: (10 + ((idx * 7) % 18)) + 'rpx' }"
+                />
+              </view>
+              <text class="voice-preview__duration">{{ voiceDurationLabel }}</text>
             </view>
             <view
-              class="video-preview__action video-preview__action--delete press-feedback"
-              hover-class="video-preview__action--hover"
-              hover-stay-time="100"
+              class="voice-preview__delete press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
               role="button"
-              :aria-label="t('profile.removeVideoAria')"
-              @tap="handleRemoveVideo"
+              :aria-label="t('profile.deleteVoiceAria')"
+              @tap="handleRemoveVoice"
             >
-              <text class="video-preview__action-text video-preview__action-text--danger">{{ t('profile.delete') }}</text>
+              <text class="voice-preview__delete-text">{{ t('profile.delete') }}</text>
             </view>
           </view>
         </view>
@@ -1021,8 +992,8 @@ onMounted(() => {
         </view>
       </view>
 
-      <!-- VIP卡片 -->
-      <view v-if="!isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="120">
+        <!-- VIP 卡片：仅会员功能开启时展示（Phase Feedback6：默认隐藏） -->
+      <view v-if="featureFlags.membershipEnabled && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="120">
         <view class="vip-card__left">
           <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           <view class="vip-card__text-wrap">
@@ -1126,12 +1097,10 @@ onMounted(() => {
           <view class="menu-item__left">
             <view class="menu-item__icon" :style="{ background: item.bgColor }">
               <SafeImage
-                v-if="item.icon"
                 :src="item.icon"
                 custom-class="menu-item__icon-img"
                 mode="aspectFit"
               />
-              <text v-else class="menu-item__emoji">{{ item.emoji }}</text>
             </view>
             <text class="menu-item__label">{{ item.label }}</text>
           </view>
@@ -1155,12 +1124,10 @@ onMounted(() => {
           <view class="menu-item__left">
             <view class="menu-item__icon" :style="{ background: item.bgColor }">
               <SafeImage
-                v-if="item.icon"
                 :src="item.icon"
                 custom-class="menu-item__icon-img"
                 mode="aspectFit"
               />
-              <text v-else class="menu-item__emoji">{{ item.emoji }}</text>
             </view>
             <text class="menu-item__label">{{ item.label }}</text>
           </view>
@@ -1733,6 +1700,76 @@ onMounted(() => {
   }
 }
 
+/* Phase Feedback5：语音状态卡片样式 */
+.voice-preview__card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-xl);
+  background: var(--c-brand-bg-tint, #e6f9f0);
+  border: 1rpx solid var(--c-brand-border-tint, #b7ecd8);
+}
+
+.voice-preview__play {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-gradient-brand, linear-gradient(135deg, #6fe0b0 0%, #3fcf8e 100%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.voice-preview__play-icon {
+  font-size: var(--fs-lg, 32rpx);
+  color: var(--c-text-inverse, #ffffff);
+}
+
+.voice-preview__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.voice-preview__wave {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  height: 32rpx;
+}
+
+.voice-preview__bar {
+  width: 6rpx;
+  border-radius: var(--r-sm, 8rpx);
+  background: var(--c-brand-300, #9be8c8);
+  transition: height var(--d-normal, 200ms) ease;
+}
+
+.voice-preview__bar--active {
+  background: var(--c-brand-500, #3fcf8e);
+}
+
+.voice-preview__duration {
+  font-size: var(--fs-xs, 24rpx);
+  color: var(--c-brand-600, #2db97a);
+  font-weight: 600;
+}
+
+.voice-preview__delete {
+  padding: 8rpx 20rpx;
+  border-radius: var(--r-full, 999rpx);
+  background: var(--c-bg-container, #ffffff);
+}
+
+.voice-preview__delete-text {
+  font-size: var(--fs-sm, 26rpx);
+  color: var(--c-error, #e5454d);
+  font-weight: 600;
+}
+
 /* 照片墙 3x2 网格 - mp-weixin 不支持 display:grid，改用 Flexbox + 子元素 width: calc */
 .photo-grid {
   display: flex;
@@ -2083,10 +2120,6 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-.menu-item__emoji {
-  font-size: var(--fs-4xl);
 }
 
 .menu-item__icon-img {

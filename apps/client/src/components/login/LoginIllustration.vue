@@ -17,10 +17,8 @@ defineProps<{
       class="illustration-img"
       :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL"
       mode="aspectFit"
-      <!-- #ifdef H5 -->
       role="img"
       aria-label="login illustration"
-      <!-- #endif -->
     />
   </view>
 </template>

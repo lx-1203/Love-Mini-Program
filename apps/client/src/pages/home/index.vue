@@ -11,6 +11,8 @@ import { useCheckInStore } from "../../stores/checkin";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
 import { useScheduleStore, WEEK_DAYS } from "../../stores/schedule";
+import { useSessionStore } from "../../stores/session";
+import { featureFlags } from "../../config/feature-flags";
 import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
@@ -21,8 +23,9 @@ import HomeBanner from "../../components/home/HomeBanner.vue";
 // 功能8：签到分享卡片组件
 import ShareCard from "../../components/common/ShareCard.vue";
 import { IMAGE_PATHS } from "../../config/images";
-// 修复：推荐用户数据从 config 动态读取，避免在页面内硬编码
-import { homeRecommendedPeople } from "../../config/home-recommended-people";
+// Phase Feedback2："为你推荐"已移除，home-recommended-people 配置保留供后续复用；
+// 如需重新启用请取消注释并接入模板。
+// import { homeRecommendedPeople } from "../../config/home-recommended-people";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 // SubTask 5.5.2：列表页图片 @error 占位图通用方案
@@ -54,6 +57,8 @@ const emojiIcons = {
   smile: IMAGE_PATHS.ICONS_EMOJI.SMILE,
   thumbsUp: IMAGE_PATHS.ICONS_EMOJI.THUMBS_UP,
   bookmark: IMAGE_PATHS.ICONS_EMOJI.BOOKMARK,
+  bell: IMAGE_PATHS.ICONS_EMOJI.BELL,
+  lock: IMAGE_PATHS.ICONS_EMOJI.LOCK,
   // 通用图标（学校、庆典）- SVG 变体，支持 currentColor 主题色
   school: IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG,
   celebration: IMAGE_PATHS.ICONS_COMMON.CELEBRATION_SVG,
@@ -63,19 +68,28 @@ const activityStore = useActivityStore();
 const checkInStore = useCheckInStore();
 const socialProgressStore = useSocialProgressStore();
 const discoverStore = useDiscoverStore();
+const sessionStore = useSessionStore();
 /** 共享 discover store 的剩余匹配次数（与寻觅页 count-chip 数据源一致） */
 const { remainingCount } = storeToRefs(discoverStore);
 
-// ==================== 推荐用户数据（从 config 动态读取，替代硬编码）====================
-// 修复：原实现硬编码 6 条推荐用户数据，调整需要修改视图代码；
-// 现统一从 config/home-recommended-people.ts 读取，运营/后端可联动维护。
-// config 中未提供 matchPercent，此处基于 index 派生展示用匹配度。
-const recommendUsers = homeRecommendedPeople.map((person, index) => ({
-  avatar: person.avatarUrl,
-  nickname: person.name,
-  info: person.headline,
-  matchPercent: 95 - index * 3,
-}));
+/** Phase Feedback2：校园活动是否仅对已认证学生开放（未认证时点击提示） */
+const isCampusVerified = computed(() => sessionStore.isCampusVerified);
+
+/**
+ * 打开校园活动：仅认证学生可用。
+ * 未认证时 toast 提示，避免直接跳转后无权限。
+ */
+function openCampusActivities() {
+  if (!isCampusVerified.value) {
+    uni.showToast({ title: t('home.campusActivityOnlyVerified'), icon: "none" });
+    return;
+  }
+  openAppPath('/subpackages/discover/activities/index');
+}
+
+// ==================== 推荐用户数据 ====================
+// Phase Feedback2："为你推荐"已按反馈移除，recommendUsers 不再被模板引用。
+// 保留 home-recommended-people 配置供后续运营位复用（如需恢复可重新接入）。
 
 // 学校选择
 const currentSchool = ref("北京大学");
@@ -424,7 +438,7 @@ defineExpose({ noop });
           <view class="greeting-right">
             <MatchCountChip :count="remainingCount" />
             <view class="notification-btn" role="button" :aria-label="t('home.notificationAria')">
-              <text class="notification-icon">🔔</text>
+              <image class="notification-icon" :src="emojiIcons.bell" mode="aspectFit" alt="" />
               <view class="notification-dot"></view>
             </view>
           </view>
@@ -497,7 +511,7 @@ defineExpose({ noop });
         </view>
       </view>
 
-      <!-- 彩色功能宫格 -->
+      <!-- 彩色功能宫格（Phase Feedback2：精简为 5 项） -->
       <view class="section-wrap">
         <view class="function-grid-card card-base">
           <view class="function-grid">
@@ -514,42 +528,29 @@ defineExpose({ noop });
               <text class="function-label">{{ t('home.interestMatch') }}</text>
               <text class="function-item__hot-badge">{{ t('home.hotBadge') }}</text>
             </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.voiceRoom')" @tap="openAppPath('/pages/messages/index')">
+            <!-- Phase Feedback2 · 恋爱咨询（恋爱咨询/恋爱课程/社交咨询/社交课程 4 板块） -->
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.loveConsulting')" @tap="openAppPath('/pages/love-center/index')">
               <view class="function-icon function-icon--orange">
-                <image class="function-emoji" :src="emojiIcons.microphone" mode="aspectFit" alt="" />
-              </view>
-              <text class="function-label">{{ t('home.voiceRoom') }}</text>
-            </view>
-            <view class="function-item function-item--highlight press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.cpMatch')" @tap="openAppPath('/pages/discover/index')">
-              <view class="function-icon function-icon--red">
-                <image class="function-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
-              </view>
-              <text class="function-label">{{ t('home.cpMatch') }}</text>
-              <text class="function-item__hot-badge">{{ t('home.hotBadge') }}</text>
-            </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.campusActivity_short')" @tap="openAppPath('/subpackages/discover/activities/index')">
-              <view class="function-icon function-icon--green">
-                <image class="function-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
-              </view>
-              <text class="function-label">{{ t('home.campusActivity_short') }}</text>
-            </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.loveAgency')" @tap="openAppPath('/pages/village/index')">
-              <view class="function-icon function-icon--cyan">
-                <image class="function-emoji" :src="emojiIcons.group" mode="aspectFit" alt="" />
-              </view>
-              <text class="function-label">{{ t('home.loveAgency') }}</text>
-            </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.truthOrDare')" @tap="openAppPath('/pages/daily-question/index')">
-              <view class="function-icon function-icon--yellow">
                 <image class="function-emoji" :src="emojiIcons.chat" mode="aspectFit" alt="" />
               </view>
-              <text class="function-label">{{ t('home.truthOrDare') }}</text>
+              <text class="function-label">{{ t('home.loveConsulting') }}</text>
             </view>
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.loveTest')" @tap="openAppPath('/pages/daily-question/index')">
+            <!-- Phase Feedback2 · 恋爱测试（MBTI 等） -->
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.loveTest')" @tap="openAppPath('/pages/love-center/index')">
               <view class="function-icon function-icon--blue">
                 <image class="function-emoji" :src="emojiIcons.gift" mode="aspectFit" alt="" />
               </view>
               <text class="function-label">{{ t('home.loveTest') }}</text>
+            </view>
+            <!-- Phase Feedback2 · 校园活动（仅认证学生可用） -->
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.campusActivity_short')" @tap="openCampusActivities">
+              <view class="function-icon function-icon--green">
+                <image class="function-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
+              </view>
+              <text class="function-label">{{ t('home.campusActivity_short') }}</text>
+              <text v-if="!isCampusVerified" class="function-item__lock-badge">
+                <image class="function-item__lock-badge-icon" :src="emojiIcons.lock" mode="aspectFit" alt="" />
+              </text>
             </view>
           </view>
         </view>
@@ -558,62 +559,6 @@ defineExpose({ noop });
       <!-- 功能1：首页 Banner 自动轮播（替换原静态横滚 Banner，置于 section-wrap 之上） -->
       <HomeBanner />
 
-      <!-- Banner轮播 -->
-      <view class="section-wrap">
-        <view class="section-header">
-          <text class="section-title section-title-brand">{{ t('home.dailyFate') }}</text>
-        </view>
-        <scroll-view scroll-x class="banner-scroll" :show-scrollbar="false">
-          <view class="banner-list" role="list">
-            <view class="banner-card banner-card--romance press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.todayFateValue')" @tap="openAppPath('/pages/discover/index')">
-              <view class="banner-content">
-                <view class="banner-tag">
-                  <image class="banner-tag__icon" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
-                  <text class="banner-tag__text">{{ t('home.dailyRecommend_short') }}</text>
-                </view>
-                <text class="banner-title">{{ t('home.todayFateValue') }}</text>
-                <text class="banner-desc">{{ t('home.todayFateDesc') }}</text>
-              </view>
-              <image class="banner-emoji" :src="emojiIcons.heart" mode="aspectFit" alt="" />
-            </view>
-            <view class="banner-card banner-card--green press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.newUserGift')" @tap="openAppPath('/subpackages/discover/activities/index')">
-              <view class="banner-content">
-                <view class="banner-tag">
-                  <image class="banner-tag__icon" :src="emojiIcons.gift" mode="aspectFit" alt="" />
-                  <text class="banner-tag__text">{{ t('home.newUserExclusive') }}</text>
-                </view>
-                <text class="banner-title">{{ t('home.newUserGift') }}</text>
-                <text class="banner-desc">{{ t('home.completeTaskBadge') }}</text>
-              </view>
-              <image class="banner-emoji" :src="emojiIcons.gift" mode="aspectFit" alt="" />
-            </view>
-            <view class="banner-card banner-card--warm press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.weekendParty')" @tap="openAppPath('/subpackages/discover/activities/index')">
-              <view class="banner-content">
-                <view class="banner-tag">
-                  <image class="banner-tag__icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
-                  <text class="banner-tag__text">{{ t('home.weekendActivity') }}</text>
-                </view>
-                <text class="banner-title">{{ t('home.weekendParty') }}</text>
-                <text class="banner-desc">{{ t('home.campusBoardGame') }}</text>
-              </view>
-              <image class="banner-emoji" :src="emojiIcons.sparkles" mode="aspectFit" alt="" />
-            </view>
-            <view class="banner-card banner-card--purple press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.graduationConfession')" @tap="openAppPath('/pages/circles/index')">
-              <view class="banner-content">
-                <view class="banner-tag">
-                  <image class="banner-tag__icon" :src="emojiIcons.fire" mode="aspectFit" alt="" />
-                  <text class="banner-tag__text">{{ t('home.hotTopic') }}</text>
-                </view>
-                <text class="banner-title">{{ t('home.graduationConfession') }}</text>
-                <text class="banner-desc">{{ t('home.speakYourMind') }}</text>
-              </view>
-              <image class="banner-emoji" :src="emojiIcons.bookmark" mode="aspectFit" alt="" />
-            </view>
-          </view>
-        </scroll-view>
-      </view>
-
-      <!-- 校园圈活动 -->
       <view class="section-wrap">
         <view class="section-header">
           <text class="section-title section-title-brand">{{ t('home.campusCircleActivity') }}</text>
@@ -653,41 +598,10 @@ defineExpose({ noop });
         </scroll-view>
       </view>
 
-      <!-- 为你推荐 -->
-      <view class="section-wrap">
-        <view class="section-header">
-          <text class="section-title section-title-brand">{{ t('home.recommendForYou') }}</text>
-          <text class="section-more section-more--green">{{ t('home.changeBatch') }}</text>
-        </view>
-        <scroll-view scroll-x class="recommend-scroll" :show-scrollbar="false">
-          <view class="recommend-list card-stagger" role="list">
-            <view class="user-card list-item" v-for="(user, i) in recommendUsers" :key="i" role="listitem">
-              <view class="user-avatar-wrap">
-                <view class="user-avatar-ring">
-                  <view class="user-avatar">
-                    <SafeImage
-                      :src="user.avatar"
-                      custom-class="user-avatar__img"
-                      mode="aspectFill"
-                      :lazy-load="true"
-                    />
-                  </view>
-                </view>
-                <view class="online-dot"></view>
-              </view>
-              <text class="user-nickname">{{ user.nickname }}</text>
-              <text class="user-info">{{ user.info }}</text>
-              <view class="match-tag">
-                <image class="match-tag__icon" :src="emojiIcons.heart" mode="aspectFit" lazy-load="true" alt="" />
-                <text class="match-text">{{ t('home.matchPercent', { n: user.matchPercent }) }}</text>
-              </view>
-            </view>
-          </view>
-        </scroll-view>
-      </view>
+      <!-- Phase Feedback2：为你推荐已移除（反馈明确不需要） -->
 
-      <!-- 本周安排 -->
-      <view class="section-wrap">
+      <!-- 本周安排（Phase Feedback2：默认隐藏，待 OCR 课表方案确认后开启 featureFlags.weeklyScheduleEnabled） -->
+      <view v-if="featureFlags.weeklyScheduleEnabled" class="section-wrap">
         <view class="section-header">
           <text class="section-title section-title-brand">{{ t('home.weeklySchedule') }}</text>
           <text
@@ -981,7 +895,9 @@ defineExpose({ noop });
 }
 
 .notification-icon {
-  font-size: var(--fs-3xl);
+  width: 44rpx;
+  height: 44rpx;
+  color: var(--c-text-secondary);
 }
 
 .notification-dot {
@@ -1304,6 +1220,22 @@ defineExpose({ noop });
   font-size: var(--fs-sm);
   color: var(--c-text-secondary);
   font-weight: 500;
+}
+
+/* 校园活动未认证锁标（emoji 替换为 SVG） */
+.function-item__lock-badge {
+  position: absolute;
+  top: 8rpx;
+  right: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.function-item__lock-badge-icon {
+  width: 28rpx;
+  height: 28rpx;
+  color: var(--c-warning, #f59e0b);
 }
 
 /* ========== 分区标题 ========== */

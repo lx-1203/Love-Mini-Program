@@ -472,7 +472,10 @@ function formatDateLabel(dateStr: string): string {
         <!-- 选中日期的活动列表 -->
         <view v-if="selectedDate && selectedDateActivities.length" class="selected-date-panel">
           <view class="selected-date-header">
-            <text class="selected-date-header__label">📅 {{ formatDateLabel(selectedDate) }}</text>
+            <view class="selected-date-header__label-row">
+              <image class="selected-date-header__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CALENDAR" mode="aspectFit" alt="" />
+              <text class="selected-date-header__label">{{ formatDateLabel(selectedDate) }}</text>
+            </view>
             <text class="selected-date-header__count">{{ selectedDateActivities.length }}个活动</text>
           </view>
 
@@ -920,6 +923,18 @@ function formatDateLabel(dateStr: string): string {
   align-items: center;
   justify-content: space-between;
   padding: 12rpx 0;
+}
+
+.selected-date-header__label-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.selected-date-header__icon {
+  width: 30rpx;
+  height: 30rpx;
+  color: var(--c-brand-500);
 }
 
 .selected-date-header__label {

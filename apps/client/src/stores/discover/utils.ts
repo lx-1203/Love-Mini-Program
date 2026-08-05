@@ -54,6 +54,19 @@ export function mapToDiscoverCard(
     height: raw.height,
     educationLevel: raw.educationLevel,
     verificationBadgeLevel: raw.verificationBadgeLevel,
+    // Phase Feedback1：寻觅页改版新增字段透传
+    displayId: raw.displayId,
+    distanceText: raw.distanceText,
+    activeStatusText: raw.activeStatusText,
+    machineVerified: raw.machineVerified,
+    humanVerified: raw.humanVerified,
+    personality: raw.personality,
+    mbti: raw.mbti,
+    whisper: raw.whisper,
+    whisperSent: raw.whisperSent,
+    recentPosts: raw.recentPosts,
+    expectedPartner: raw.expectedPartner,
+    allowMessage: raw.allowMessage,
   };
 }
 

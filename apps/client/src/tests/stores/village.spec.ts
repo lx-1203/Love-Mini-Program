@@ -65,6 +65,62 @@ describe("village store", () => {
   });
 
   // ------------------------------------------------------------------
+  // Phase Feedback4：三 Tab 过滤语义
+  // ------------------------------------------------------------------
+  it("fetchPosts with cat-following returns only followed posts", async () => {
+    const store = useVillageStore();
+    await store.fetchPosts({ categoryId: "cat-following" });
+
+    expect(store.posts.length).toBeGreaterThan(0);
+    expect(store.posts.every((p) => p.isFollowed)).toBe(true);
+  });
+
+  it("fetchPosts with cat-samecity filters by city", async () => {
+    const store = useVillageStore();
+    await store.fetchPosts({ categoryId: "cat-samecity", city: "南京" });
+
+    expect(store.posts.length).toBeGreaterThan(0);
+    expect(store.posts.every((p) => p.city === "南京")).toBe(true);
+  });
+
+  it("fetchPosts with cat-samecity and no city returns all posts (fallback)", async () => {
+    const store = useVillageStore();
+    await store.fetchPosts({ categoryId: "cat-samecity" });
+
+    // 未选城市时兜底展示全部，避免同城 Tab 空态
+    expect(store.posts.length).toBeGreaterThan(0);
+  });
+
+  it("fetchPosts with cat-discover alumni sub-tab returns only alumni posts", async () => {
+    const store = useVillageStore();
+    await store.fetchPosts({ categoryId: "cat-discover", discoverSub: "alumni" });
+
+    expect(store.posts.length).toBeGreaterThan(0);
+    expect(store.posts.every((p) => p.isAlumni)).toBe(true);
+  });
+
+  it("fetchPosts with cat-discover buddy sub-tab returns only buddy posts", async () => {
+    const store = useVillageStore();
+    await store.fetchPosts({ categoryId: "cat-discover", discoverSub: "buddy" });
+
+    expect(store.posts.length).toBeGreaterThan(0);
+    expect(
+      store.posts.every(
+        (p) =>
+          (p.buddyTags && p.buddyTags.length > 0) ||
+          p.tags.some((tag) => tag.includes("搭子"))
+      )
+    ).toBe(true);
+  });
+
+  it("fetchPosts with cat-discover all sub-tab returns all posts", async () => {
+    const store = useVillageStore();
+    await store.fetchPosts({ categoryId: "cat-discover", discoverSub: "all" });
+
+    expect(store.posts.length).toBeGreaterThan(0);
+  });
+
+  // ------------------------------------------------------------------
   // createPost – success
   // ------------------------------------------------------------------
   it("createPost adds a new post to the top of the list", async () => {

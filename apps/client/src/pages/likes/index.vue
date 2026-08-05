@@ -444,7 +444,7 @@ onShow(() => {
       <!-- 功能2：搜索输入框（300ms 防抖） -->
       <view class="likes-search">
         <view class="likes-search__box">
-          <text class="likes-search__icon">🔍</text>
+          <image class="likes-search__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" alt="" />
           <input
             class="likes-search__input"
             type="text"
@@ -1163,7 +1163,8 @@ onShow(() => {
 }
 
 .likes-search__icon {
-  font-size: 32rpx;
+  width: 32rpx;
+  height: 32rpx;
   color: var(--c-text-tertiary);
   flex-shrink: 0;
 }

@@ -22,11 +22,11 @@ defineProps<{
 <template>
   <scroll-view scroll-x class="activity-scroll" :show-scrollbar="false">
     <view class="activity-list" role="list">
-      <view v-if="loading" class="activity-skeleton" v-for="i in 3" :key="i" role="listitem">
+      <view v-show="loading" class="activity-skeleton" v-for="i in 3" :key="i" role="listitem">
         <view class="skeleton-card shimmer" />
       </view>
       <ActivityCard
-        v-else
+        v-show="!loading"
         v-for="item in (items || [])"
         :key="item.id"
         :title="item.title"

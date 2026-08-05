@@ -755,7 +755,7 @@ defineExpose({ handleCommentLike, noop });
     <!-- ===== 转发确认弹窗 ===== -->
     <!--
       无障碍（a11y）：role / aria-* 属性直接放在 view 上。
-      说明：uni-app 不支持属性级条件编译（`<!-- #ifdef H5 -->` 不能写在开标签内部），
+      说明：uni-app 不支持属性级条件编译（#ifdef H5 不能写在开标签内部），
       否则会破坏 Vue 模板解析导致下游变量被误判为未使用。
       mp-weixin 端会忽略未知 HTML 属性，因此 H5 与小程序两端均安全。
     -->
