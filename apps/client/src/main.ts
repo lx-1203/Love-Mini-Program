@@ -2,11 +2,12 @@ import { createSSRApp, type App as VueApp } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";
 import gsapPlugin from "./plugins/gsap";
-import { initSentry, captureException } from "./services/sentry";
+import { initSentry } from "./services/sentry";
 import i18n from "./i18n";
 // Phase R1：AbortController polyfill（mp-weixin 基础库无原生实现）
 // 注意：只 import 函数，不调用 patchDeprecatedApi（wx 相关逻辑仍走 MP-WEIXIN 条件分支）
 import { installAbortControllerPolyfill } from "./compat";
+import { reportGlobalError } from "./utils/global-error";
 
 /**
  * 全局错误上报函数（统一错误出口）。
@@ -27,26 +28,6 @@ import { installAbortControllerPolyfill } from "./compat";
  * @param err - 错误对象或原始值
  * @param context - 可选的上下文信息（如 Vue info 字符串、生命周期阶段）
  */
-export function reportGlobalError(source: string, err: unknown, context?: unknown): void {
-  // 1. 本地控制台输出（H5 与 mp-weixin 均保留，便于开发期调试）
-  if (context !== undefined) {
-    console.error(`[Global Error][${source}]`, err, context);
-  } else {
-    console.error(`[Global Error][${source}]`, err);
-  }
-
-  // 2. 上报到监控平台：captureException 内部根据平台分发（Sentry / 后端接口）
-  //    将 source 与 context 合并为 extra 上下文，便于在 Sentry 后台按来源筛选
-  const extra: Record<string, unknown> = { source };
-  if (context !== undefined) {
-    extra.context = context;
-  }
-  try {
-    captureException(err, extra);
-  } catch (_e) {
-    // captureException 内部已做容错，此处兜底防止极端情况影响主流程
-  }
-}
 
 /** 全局错误监听器是否已注册（避免重复注册） */
 let globalErrorListenersRegistered = false;

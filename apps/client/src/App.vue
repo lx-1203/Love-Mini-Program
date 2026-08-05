@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "./stores/session";
 import { useUnlockGuideStore } from "./stores/unlock-guide";
-import { reportGlobalError } from "./main";
+import { reportGlobalError } from "./utils/global-error";
 import UnlockGuideModal from "./components/UnlockGuideModal.vue";
 import UnlockGuideOverlay from "./components/UnlockGuideOverlay.vue";
 import { useNetworkStatus } from "./composables/useNetworkStatus";

@@ -270,7 +270,7 @@
 | `test:unit` | ✅ 86 files / 1162 tests 全部通过 |
 | `eslint apps/client/src` | ✅ **0 errors**（基线 18 errors 清零） |
 | `build:mp-weixin` | ✅ 构建成功（主包 18 + 分包 9 页面 js，新 SVG 资源随包） |
-| `build:h5` | ✅ 构建成功（既有运行时基线问题与本轮无关，已记录） |
+| `build:h5` | ✅ 构建成功；**运行时基线问题 `Cannot access 'App' before initialization` 已修复**（见 8.8，循环依赖切断） |
 | 微信工具自动化 | ✅ 7/7 页面渲染 PASS（discover61/home93/village55/messages66/profile75/love-center18/privacy24）+ 0 运行时错误 + Tab 切换 5/5（注：village 三 Tab 的 postsCount 断言在 automator 下返回 -1，系生产构建 pinia 变量名压缩导致的读取局限，过滤语义由 village.spec.ts 6 个单测直接覆盖） |
 | 产物 emoji 扫描 | ✅ wxml 彩色 emoji 0 处（仅 ✓/✕/› 文本符号） |
 | 屏幕色彩分析 | ✅ 高饱和像素 1.93% 均为品牌绿，无 emoji 特征色块 |
@@ -284,3 +284,34 @@
 | `scripts/feedback-mp-profile-debug.cjs` | profile 页偶发路由异常排查（确认为时序问题，非缺陷） |
 | `scripts/analyze_screen_saturation.py` | 屏幕截图高饱和色彩分析（emoji 特征启发式检测） |
 | 截图归档 | `verification_logs/final-20260805/`（screen-1.png 等） |
+
+### 8.8 H5 运行时基线问题修复 + Chrome MCP 浏览器实机验证（2026-08-05 第三批次）
+
+> 用户要求"用 chromemcp 启动"浏览器可视化验证，暴露并修复了 H5 平台既有运行时问题。
+
+#### 问题与根因
+
+| 项 | 内容 |
+|----|------|
+| 现象 | H5 打开即白屏，控制台 `Uncaught ReferenceError: Cannot access 'App' before initialization`（基线问题，mp-weixin 不受影响） |
+| 根因 | **循环依赖**：`main.ts` import `App.vue`（根组件），而 `App.vue` 反向 `import { reportGlobalError } from "./main"`。ES module（vite/H5）下 App.vue 模块初始化时访问 main.ts 顶部尚未初始化的 `App` 导出 → TDZ 报错。mp-weixin 因 uni-app 编译方式（每个页面独立打包）未暴露 |
+| 修复 | 将 `reportGlobalError` 从 main.ts 提取至独立模块 `src/utils/global-error.ts`；main.ts 与 App.vue 均改为从新模块 import，切断循环（`src/utils/global-error.ts` 新增 + `main.ts`/`App.vue` 各改 1 处 import + 清理 main.ts 未使用的 captureException import） |
+
+#### Chrome MCP 实机验证（用户指示执行）
+
+- 安装 `chrome-devtools-mcp`（Google 官方，v1.6.0，29 tools；因默认 node v16 不满足要求，以 node v20.19.5 全局安装并注册 stdio MCP，配置于全局 config.toml）。
+- 启动 Chrome 打开 H5 dev server（`http://localhost:5173`，iPhone 12/13 Pro 390×844 视口）。
+
+| 页面 | 渲染结果（a11y 快照 + 截图归档） |
+|------|------|
+| 寻觅 `/pages/discover/index` | ✅ 卡片（夏言/双重认证/ID:CL-4001/活跃/INFJ/北大/1.2km/80%匹配）+ 筛选栏 + 签到卡 + 5 Tab |
+| 首页 `/pages/home/index` | ✅ 问候（无 👋）+ 6 功能宫格（签到/附近/兴趣匹配/恋爱咨询/恋爱测试/校园活动）+ 动态流 + Tab |
+| 消息 `/pages/messages/index` | ✅ 新朋友/喜欢你的/访客/通知 + 官方号（恋爱助手/活动推送）+ 私信/通知 Tab + 会话列表 |
+| 圈子 `/pages/village/index` | ✅ 关注/同城/发现三 Tab + 关注空状态（无 📭 emoji） |
+| 我的 `/pages/profile/index` | ✅ 语音状态（60s/播放/删除）+ 照片墙 + 社交升温 + 12 项功能菜单（无 emoji）+ Tab |
+| 控制台 | ✅ **0 error**（仅 guard 放行 warn 日志） |
+
+- 截图归档：`verification_logs/final-20260805/h5-discover.png` / `h5-home.png` / `h5-messages.png` / `h5-profile.png` / `h5-village.png`。
+- 修复后门禁复跑：typecheck 0 errors / 单测 86 files 1162 tests / build:mp-weixin DONE / ESLint 0 errors（改动的 3 文件）。
+
+> 注：chrome-devtools-mcp 为本地开发验证工具，注册于用户全局 MCP 配置（`command = node-v20\node.exe`，`args = [chrome-devtools-mcp.js]`），供后续浏览器自动化验证复用。
