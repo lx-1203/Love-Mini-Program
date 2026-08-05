@@ -3,6 +3,7 @@ import type { components } from "../services/generated/api-types";
 import type { ProfileStats } from "../services/generated/api-types-supplement";
 // 修复 no-duplicate-imports：合并 ../services/api 的重复 import
 import { clientApi, type UniUploadFileLike } from "../services/api";
+import { IMAGE_PATHS } from "../config/images";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // SubTask 1.4.1：loadMyPosts 复用 village API 拉取当前用户发布的帖子
@@ -125,7 +126,7 @@ function loadPersistedPrivacy(): { allowSameSchoolRecommend: boolean; receiveSam
       | undefined;
     if (raw && typeof raw === "object") {
       return {
-        allowSameSchoolRecommend: Boolean(raw.allowSameSchoolRecommend),
+        allowSameSchoolRecommend: typeof raw.allowSameSchoolRecommend === "boolean" ? raw.allowSameSchoolRecommend : false,
         receiveSameSchoolInfo: raw.receiveSameSchoolInfo !== false,
       };
     }
@@ -196,6 +197,8 @@ export interface ProfileState {
   voiceStatusUrl: string;
   /** 语音状态时长（秒，最长 60） */
   voiceStatusDuration: number;
+  /** 头像 URL（mock 模式生效：本地头像；真实模式头像由后端用户接口返回，当前前端未单独接线） */
+  avatarUrl: string;
   /** 是否允许推荐给本校学生（默认 false：不把自己的信息推给同校，但可收到同校信息） */
   allowSameSchoolRecommend: boolean;
   /** 是否接收同校信息（默认 true） */
@@ -223,6 +226,7 @@ export const useProfileStore = defineStore("profile", {
     photoGallery: [],
     voiceStatusUrl: "",
     voiceStatusDuration: 0,
+    avatarUrl: "",
     allowSameSchoolRecommend: false,
     receiveSameSchoolInfo: true,
     loading: false,
@@ -260,6 +264,7 @@ export const useProfileStore = defineStore("profile", {
             this.myPosts = clone(mockMyPosts);
             this.voiceStatusUrl = mockVoiceStatusUrl;
             this.voiceStatusDuration = 42;
+            this.avatarUrl = IMAGE_PATHS.AVATARS.AVATAR_8;
             const persistedPrivacy = loadPersistedPrivacy();
             this.allowSameSchoolRecommend = persistedPrivacy.allowSameSchoolRecommend;
             this.receiveSameSchoolInfo = persistedPrivacy.receiveSameSchoolInfo;

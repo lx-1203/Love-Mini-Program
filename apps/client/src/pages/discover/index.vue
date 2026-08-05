@@ -519,7 +519,6 @@ defineExpose({ clearSearch });
     <view class="discover-atmosphere" aria-hidden="true">
       <view class="discover-atmosphere__blob discover-atmosphere__blob--pink" />
       <view class="discover-atmosphere__blob discover-atmosphere__blob--green" />
-      <view class="discover-atmosphere__blob discover-atmosphere__blob--cream" />
     </view>
 
     <!-- 页面头部 -->
@@ -930,14 +929,6 @@ defineExpose({ clearSearch });
   top: 320rpx;
   right: -140rpx;
   background: radial-gradient(circle, var(--c-brand-shadow-tint-mid) 0%, var(--c-brand-bg-tint) 70%);
-}
-
-.discover-atmosphere__blob--cream {
-  width: 320rpx;
-  height: 320rpx;
-  bottom: 200rpx;
-  left: 30%;
-  background: radial-gradient(circle, var(--c-state-ongoing-bg) 0%, var(--c-state-ongoing-bg) 70%);
 }
 
 /* ========== 页面头部 ========== */

@@ -85,19 +85,11 @@ Component({
       const tab = this.data.tabs[index];
       if (!tab) return;
 
-      // 切换 Tab 时轻震动反馈
-      if (index !== this.data.selected) {
-        try {
-          wx.vibrateShort({ type: 'light' });
-        } catch (_) {
-          // 静默失败
-        }
-      }
-
       // 调用 wx.switchTab 切换页面
       // 修复（Phase R2）：wx.switchTab 的 url 必须以 "/" 开头（绝对路径），
       // 否则微信会基于当前页面目录解析相对路径，导致
       // switchTab:fail page "pages/profile/pages/discover/index" is not found。
+      // Phase 收尾：移除切换震动反馈（用户反馈"切换总震动一下"）
       wx.switchTab({
         url: tab.path.startsWith("/") ? tab.path : "/" + tab.path,
         success: () => {

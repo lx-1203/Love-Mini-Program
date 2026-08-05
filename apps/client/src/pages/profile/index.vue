@@ -224,6 +224,7 @@ const profileView = computed(() =>
     vipStatus: profileStore.vipStatus,
     myPosts: profileStore.myPosts,
     postsTotal: profileStore.profileStats?.posts ?? 0,
+    avatarUrl: profileStore.avatarUrl,
   })
 );
 
@@ -822,7 +823,14 @@ onUnload(() => {
           <view class="avatar-ring" :class="{ 'avatar-ring--vip': featureFlags.membershipEnabled && isVip }">
             <view class="avatar-ring__inner">
               <view class="avatar">
-                <text class="avatar__text">{{ avatarInitial }}</text>
+                <SafeImage
+                  v-if="profileView.avatarUrl"
+                  :src="profileView.avatarUrl"
+                  custom-class="avatar__img"
+                  mode="aspectFill"
+                  :lazy-load="true"
+                />
+                <text v-else class="avatar__text">{{ avatarInitial }}</text>
               </view>
             </view>
           </view>
@@ -1381,6 +1389,11 @@ onUnload(() => {
   position: relative;
   z-index: 2;
   box-shadow: 0 0 0 6rpx var(--c-bg-container), 0 0 0 12rpx var(--c-brand-100);
+}
+
+.avatar__img {
+  width: 100%;
+  height: 100%;
 }
 
 .avatar__text {

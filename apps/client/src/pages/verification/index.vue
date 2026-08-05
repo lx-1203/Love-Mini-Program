@@ -200,6 +200,25 @@ function resetVerification() {
   });
 }
 
+/** 删除人工认证（解除认证状态，回到未认证） */
+function removeVerification() {
+  uni.showModal({
+    title: t("verification.removeConfirmTitle"),
+    content: t("verification.removeConfirmContent"),
+    confirmColor: "#E5454D",
+    success: (res) => {
+      if (res.confirm) {
+        status.value = "unverified";
+        studentName.value = "";
+        studentId.value = "";
+        schoolName.value = "";
+        uploadedImagePath.value = "";
+        uni.showToast({ title: t("verification.removedToast"), icon: "none" });
+      }
+    },
+  });
+}
+
 /** 返回上一页 */
 function goBack() {
   lightHaptic();
@@ -259,6 +278,11 @@ function onBlur() {
       <!-- 重新认证按钮 -->
       <view class="action-btn press-feedback" @tap="resetVerification" hover-class="action-btn--hover" hover-stay-time="100">
         <text class="action-btn__text">{{ t('verification.resetBtn') }}</text>
+      </view>
+
+      <!-- 删除认证（解除人工认定） -->
+      <view class="action-btn action-btn--danger press-feedback" @tap="removeVerification" hover-class="action-btn--hover" hover-stay-time="100">
+        <text class="action-btn__text action-btn__text--danger">{{ t('verification.removeVerificationBtn') }}</text>
       </view>
     </template>
 
@@ -734,6 +758,12 @@ function onBlur() {
     background: var(--c-bg-container);
     box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs);
   }
+
+  &--danger {
+    background: var(--c-bg-container);
+    border: 1rpx solid var(--c-error, #e5454d);
+    box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs);
+  }
 }
 
 .action-btn__text {
@@ -743,6 +773,10 @@ function onBlur() {
 
   &--secondary {
     color: var(--c-brand);
+  }
+
+  &--danger {
+    color: var(--c-error, #e5454d);
   }
 }
 </style>

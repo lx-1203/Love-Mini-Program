@@ -30,7 +30,6 @@ import { usePageAccess } from "../../composables/usePageAccess";
 import { chatPageRequirements } from "../../config/page-access";
 import { IMAGE_PATHS } from "../../config/images";
 import { ROUTES } from "../../constants/routes";
-import SafeImage from "../../components/common/SafeImage.vue";
 import { lightHaptic } from "../../utils/haptic";
 // Sentry 监控：消息发送失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
@@ -80,7 +79,6 @@ const chatMenuIcons = {
 
 /** SVG 图标资源路径 */
 const iconSrc = {
-  heartSignal: IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL,
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
   // Emoji 替换 SVG 图标
   microphone: IMAGE_PATHS.ICONS_EMOJI.MICROPHONE,
@@ -1161,7 +1159,6 @@ defineExpose({ noop });
 
         <!-- 输入框空闲提示（停留 5 秒未输入时展示） -->
         <view v-if="showIdleIcebreakerHint && shouldShowIcebreakers" class="idle-hint">
-          <SafeImage :src="iconSrc.heartSignal" custom-class="idle-hint__icon" mode="aspectFit" />
           <text class="idle-hint__text">{{ t('chat.idleIcebreakerHint') }}</text>
         </view>
 
@@ -1540,12 +1537,6 @@ defineExpose({ noop });
   background: linear-gradient(135deg, var(--c-brand-bg-tint), var(--c-romance-bg-tint));
   border: 1rpx solid var(--c-location-bg);
   animation: idle-fade-in var(--d-bounce, 400ms) ease;
-}
-
-.idle-hint__icon {
-  width: var(--sp-7);
-  height: var(--sp-7);
-  flex-shrink: 0;
 }
 
 .idle-hint__text {

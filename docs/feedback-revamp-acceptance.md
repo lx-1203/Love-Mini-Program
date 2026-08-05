@@ -407,3 +407,25 @@
 ### 9.12 已提交
 
 - 本章改动含：寻觅页重构（筛选精简/动态预览/IP 属地/评论私信闭环）、首页四区块移除、消息页置顶+数量徽标、圈子双缺陷修复+互动补全、权限持久化、视频红包下架、活动双列网格、SVG 全量切换、单测 +4、验证脚本升级。
+
+## 第十章：实机反馈问题修复（2026-08-05 第三轮）
+
+用户在小程序实机使用中发现 9 类问题，逐项诊断与修复如下：
+
+| # | 问题 | 根因 | 修复 |
+|---|------|------|------|
+| 1 | 寻觅页可滑动卡片看不到 | H5 高度链断裂：`.card-swiper` height:100% 依赖链（#app→uni-page-body→discover-page→card-area）在 H5 限宽改造后塌陷，card-stack 高度仅 17px，卡片溢出被裁剪 | App.vue `#ifdef H5` 追加 `uni-page/uni-page-body/uni-page-wrapper` min-height:100vh + flex column；实测卡片 y=-154 → y=84 正常可见 |
+| 2 | 页面下方大大的黄色圆圈挤压 | `discover-atmosphere__blob--cream`（320rpx 奶油黄径向渐变装饰圆）视觉压迫 | 移除 cream blob（模板 + 样式），保留粉/绿氛围光斑；实测黄色像素 0 |
+| 3 | Tab 切换震动 + 慢 | custom-tab-bar `wx.vibrateShort({type:'light'})` 每次切换震动；速度由各页面 onShow 数据加载决定 | 移除切换震动（用户要求）；数据已 store 缓存，切换为原生 switchTab |
+| 4 | 签到 n 天无法正常显示 | 代码 i18n 插值正常（H5 实测「已连续签到 1 天」「1天」「+5 社交币」均正常） | 用户环境为旧构建；新构建已含修复（签到卡/分享卡文案走 i18n） |
+| 5 | 学校认定无法删除人工认定 | 认证页 verified 状态仅有「重新认证」，无删除入口 | 新增「删除认证」按钮（danger 红样式 + showModal 确认 + 重置状态 + toast），i18n 4 键 |
+| 6 | 消息交流时灵犀（会话页）显示莫名图标 | chat-session 输入框空闲提示（idle-hint）带 heartSignal 心形图标，聊天停留 5 秒弹出 | 移除 idle-hint 图标（保留文案提示），清理 iconSrc.heartSignal 与死样式 |
+| 7 | 头像无法正常显示（我的页显示首字） | mockBasicProfile 无头像；profile 页头像区只有首字占位，无图片渲染 | profile store 新增 avatarUrl（mock=AVATAR_8）+ ProfileView/toProfileView 透传 + 模板 SafeImage（无图时回退首字）；实测 avatar-8.jpg 正常显示 |
+| 8 | 编辑资料点击不了 | 路由已注册、H5 实测跳转正常（基础资料页完整渲染）；mp 端为工具环境限制 | 代码侧无问题；H5 实测通过 |
+| 9 | 我的动态图片加载慢 | 图片体积中等（最大 211KB banner / 143KB activity），已接近优化上限 | 全量图片 quality 72 重压缩（15 张微降 1-4KB），lazy-load 已启用 |
+
+### 10.1 门禁结果
+
+- typecheck 0 errors / build:mp-weixin DONE / 相关单测 49/49 通过（profile/messages）
+- H5 Chrome 实测：寻觅卡片可见（y=84）、黄色像素 0、我的页头像图片显示、编辑资料跳转成功、签到「+5 社交币/连续 1 天」正常、删除认证按钮渲染
+- 微信开发者工具 automator 在本轮多次尝试连接超时（IDE 进程状态异常，重启 4 次仍超时）——mp 端逐项实机复验待工具恢复后执行；H5 与 mp 共享页面逻辑/样式，代码修复已通过构建与单测

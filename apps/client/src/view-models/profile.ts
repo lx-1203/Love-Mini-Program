@@ -35,6 +35,8 @@ export interface ProfileView {
   displayName: string;
   /** 头像首字符（无头像 URL 时占位用） */
   avatarInitial: string;
+  /** 头像 URL（收尾轮：有值时渲染图片头像） */
+  avatarUrl: string;
   /** 学校名称（取 campusProfile.campusName，回退到 session.campusName） */
   school: string;
   /** 个人签名（取 basicProfile.bio，回退到默认文案） */
@@ -114,8 +116,9 @@ export function toProfileView(params: {
   vipStatus: VipStatus | null;
   myPosts: MyPostSummary[];
   postsTotal: number;
+  avatarUrl?: string;
 }): ProfileView {
-  const { session, basicProfile, campusProfile, vipStatus, myPosts, postsTotal } = params;
+  const { session, basicProfile, campusProfile, vipStatus, myPosts, postsTotal, avatarUrl } = params;
 
   const displayName =
     basicProfile?.nickname?.trim() ||
@@ -148,6 +151,7 @@ export function toProfileView(params: {
   return {
     displayName,
     avatarInitial,
+    avatarUrl: avatarUrl ?? "",
     school,
     bio,
     isVip,

@@ -794,6 +794,15 @@ body {
   background: var(--c-bg-page, #f4f6fa);
   box-shadow: 0 0 40rpx rgba(15, 23, 42, 0.06);
 }
+
+/* 页面体高度链：uni-page-body 撑满 #app，保证页面内 flex:1 区域（如寻觅卡片区）高度正常 */
+#app uni-page,
+#app uni-page-body,
+#app uni-page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 /* #endif */
 
 </style>

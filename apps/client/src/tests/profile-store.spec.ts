@@ -106,4 +106,11 @@ describe("profile store", () => {
     });
     expect(sessionStore.userSession?.scheduleCompleted).toBe(true);
   });
+
+  // 收尾轮：mock 模式下头像 URL 由本地头像提供（修复我的页头像仅显示首字）
+  it("mock 模式下 load() 提供本地头像 avatarUrl", async () => {
+    const store = useProfileStore();
+    await store.load();
+    expect(store.avatarUrl).toContain("/static/assets/images/avatars/avatar-8.jpg");
+  });
 });
