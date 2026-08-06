@@ -13,7 +13,7 @@
  *   重试回调重新触发 loadStats()，避免运营人员面对白屏
  * - 移除所有 Mock 引用（本视图本无 Mock，仅做错误降级增强）
  */
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import {
   getStats,
   type UserStats,
@@ -25,6 +25,9 @@ import { useI18n } from "vue-i18n";
 import ErrorState from "@/components/ErrorState.vue";
 // Task 45：统一日志入口
 import { logger } from "@/utils/logger";
+import { getLocale } from "@/i18n";
+// infra R2-00455：趋势天数具名常量
+import { TREND_DAYS } from "@/utils/constants";
 
 const { t } = useI18n();
 
@@ -49,11 +52,19 @@ const stats = ref<StatCard[]>([
   { labelKey: "dashboard.statInteractionsToday", value: 0, icon: "/icons/list.svg", color: "var(--admin-color-stat-green)" },
 ]);
 
+// infra R2-00453：子接口失败标记（失败卡片降级显示，区分真实 0 与加载失败，避免误导）
+const failedStats = ref<boolean[]>([false, false, false, false]);
+
 const recentActivities = ref<ActivityItem[]>([]);
 
 const loading = ref(false);
 /** 错误信息（聚合所有子接口错误，空串表示无错误）。空串时不渲染 ErrorState。 */
 const errorMessage = ref("");
+/** infra R2-00454：最近一次成功刷新的时间（lastUpdated i18n key 消费） */
+const lastUpdated = ref("");
+/** infra R2-00456：手动刷新成功提示 */
+const refreshTip = ref("");
+let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * 加载仪表盘统计数据（Task 13：改用 getStats() 聚合接口）。
@@ -71,6 +82,8 @@ async function loadStats() {
   try {
     const overview = await getStats();
     const errors: string[] = [];
+    // infra R2-00453：每轮加载重置失败标记
+    failedStats.value = [false, false, false, false];
 
     // 用户统计
     if (overview.userStats) {
@@ -79,6 +92,8 @@ async function loadStats() {
       stats.value[1] = { labelKey: "dashboard.statActiveToday", value: userStats.activeUsersToday, icon: "/icons/bolt.svg", color: "var(--admin-color-stat-pink)" };
     } else {
       errors.push(t("dashboard.userStatsLoadFailed"));
+      failedStats.value[0] = true;
+      failedStats.value[1] = true;
     }
 
     // 活跃度统计
@@ -87,6 +102,7 @@ async function loadStats() {
       stats.value[3] = { labelKey: "dashboard.statInteractionsToday", value: activeStats.interactionsToday, icon: "/icons/list.svg", color: "var(--admin-color-stat-green)" };
     } else {
       errors.push(t("dashboard.activeStatsLoadFailed"));
+      failedStats.value[3] = true;
     }
 
     // 匹配统计
@@ -94,9 +110,15 @@ async function loadStats() {
       const matchStats: MatchStats = overview.matchStats;
       stats.value[2] = { labelKey: "dashboard.statTotalMatches", value: matchStats.totalMatches, icon: "/icons/heart-filled.svg", color: "var(--admin-color-stat-blue)" };
 
-      // 用每日匹配趋势填充"最近活动"列表（最多 5 条）
+      // 语义修正：后端暂无独立的"最近活动"接口，此处展示的是每日匹配趋势
+      // （matchStats.dailyTrend，近 30 日），因此区块标题使用 dashboard.matchTrend
+      // （"匹配趋势"）而不是"最近活动"，避免数据语义错位。
+      // 后续若后端提供真实活动流接口（GET /v1/admin/stats/activities），
+      // 可在此处替换数据源并还原标题。
+      // infra R2-00455：展示完整近 30 日趋势（原 slice(-5) 只显示 5 天，与
+      // "近 30 日"标题语义不符，其余 25 天数据被丢弃）；天数用具名常量 TREND_DAYS。
       recentActivities.value = (matchStats.dailyTrend || [])
-        .slice(-5)
+        .slice(-TREND_DAYS)
         .reverse()
         .map((item, idx) => ({
           id: `${item.date}-${idx}`,
@@ -106,6 +128,12 @@ async function loadStats() {
         }));
     } else {
       errors.push(t("dashboard.matchStatsLoadFailed"));
+      failedStats.value[2] = true;
+    }
+
+    // infra R2-00454：全部子接口成功时记录最近刷新时间
+    if (errors.length === 0) {
+      lastUpdated.value = new Date().toLocaleString(getLocale(), { hour12: false });
     }
 
     if (errors.length > 0) {
@@ -121,12 +149,32 @@ async function loadStats() {
   }
 }
 
+/**
+ * infra R2-00456：手动刷新回调（i18n dashboard.refreshButton/refreshSuccess 消费）。
+ * 原 onMounted 中 loadStats().catch() 为冗余（loadStats 内部已 try/catch，永不 reject），已删除。
+ */
+async function handleRefresh() {
+  await loadStats();
+  if (!errorMessage.value) {
+    refreshTip.value = t("dashboard.refreshSuccess");
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => {
+      refreshTip.value = "";
+      refreshTimer = null;
+    }, 3000);
+  }
+}
+
 onMounted(() => {
-  loadStats().catch((err) => {
-    logger.error("[Dashboard] load stats failed", err);
-    loading.value = false;
-    errorMessage.value = t("dashboard.loadFailed");
-  });
+  void loadStats();
+});
+
+// infra R2-00456：组件卸载时清理刷新提示定时器
+onBeforeUnmount(() => {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
+  }
 });
 </script>
 
@@ -135,6 +183,15 @@ onMounted(() => {
     <view class="page-header">
       <text class="page-title">{{ t("dashboard.title") }}</text>
       <text class="page-subtitle">{{ t("dashboard.subtitle") }}</text>
+    </view>
+
+    <!-- infra R2-00456：手动刷新按钮 + 最近更新时间（原无刷新入口，数据滞后需刷页面） -->
+    <view class="refresh-bar">
+      <button class="refresh-button" :disabled="loading" @click="handleRefresh">
+        {{ loading ? t("common.loading") : t("dashboard.refreshButton") }}
+      </button>
+      <text v-if="refreshTip" class="refresh-tip" role="status" aria-live="polite">{{ refreshTip }}</text>
+      <text v-if="lastUpdated" class="last-updated">{{ t("dashboard.lastUpdated", { time: lastUpdated }) }}</text>
     </view>
 
     <ErrorState
@@ -149,7 +206,7 @@ onMounted(() => {
 
     <view class="stats-grid">
       <view
-        v-for="stat in stats"
+        v-for="(stat, index) in stats"
         :key="stat.labelKey"
         class="stat-card"
         :style="{ '--stat-color': stat.color }"
@@ -161,7 +218,8 @@ onMounted(() => {
           <image class="stat-icon-img" :src="stat.icon" mode="aspectFit" alt="" aria-hidden="true" />
         </view>
         <view class="stat-content">
-          <text class="stat-value">{{ stat.value }}</text>
+          <!-- infra R2-00453：失败卡片降级显示（区分真实 0 与加载失败，避免数据误导） -->
+          <text class="stat-value">{{ failedStats[index] ? t("dashboard.dataUnavailable") : stat.value }}</text>
           <text class="stat-label">{{ t(stat.labelKey) }}</text>
         </view>
       </view>
@@ -169,7 +227,7 @@ onMounted(() => {
 
     <view class="content-section">
       <view class="section-header">
-        <text class="section-title">{{ t("dashboard.recentActivities") }}</text>
+        <text class="section-title">{{ t("dashboard.matchTrend") }}</text>
       </view>
 
       <view
@@ -356,5 +414,37 @@ onMounted(() => {
   text-align: center;
   color: var(--admin-color-text-quaternary);
   font-size: var(--admin-font-md);
+}
+/* infra R2-00456：刷新栏样式 */
+.refresh-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-lg);
+}
+
+.refresh-button {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  background: var(--admin-color-primary);
+  color: var(--admin-color-bg-container);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-md);
+  cursor: pointer;
+}
+
+.refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refresh-tip {
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-success);
+}
+
+.last-updated {
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-quaternary);
 }
 </style>

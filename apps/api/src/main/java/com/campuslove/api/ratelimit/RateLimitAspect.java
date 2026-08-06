@@ -1,6 +1,7 @@
 package com.campuslove.api.ratelimit;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import java.lang.reflect.Method;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -172,11 +173,45 @@ public class RateLimitAspect {
      *
      * <p>在非 Web 上下文（如异步线程、定时任务）中可能返回 null。</p>
      *
+     * <p>infra R2-00229: 反向代理（Nginx/网关）部署时所有请求的 {@code remoteAddr} 均为代理 IP，
+     * 导致全站共享同一限流桶（误伤）或被代理池轮换绕过。此处包装请求使
+     * {@code getRemoteAddr()} 优先返回 {@code X-Forwarded-For} 首地址（客户端真实 IP），
+     * 从而 {@code #request.remoteAddr} 限流键自动获得真实 IP。
+     * 注意：生产网关应清理/覆盖 X-Forwarded-For，防止客户端伪造绕过限流。</p>
+     *
      * @return 当前 HttpServletRequest，无可用请求上下文时返回 null
      */
     private HttpServletRequest currentRequest() {
         ServletRequestAttributes attrs =
                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        return attrs == null ? null : attrs.getRequest();
+        if (attrs == null) {
+            return null;
+        }
+        return new ForwardedHeaderAwareRequestWrapper(attrs.getRequest());
+    }
+
+    /**
+     * 使 {@code getRemoteAddr()} 优先返回 X-Forwarded-For 首地址的请求包装器。
+     * 未携带 X-Forwarded-For 时行为与原请求一致。
+     */
+    private static final class ForwardedHeaderAwareRequestWrapper extends HttpServletRequestWrapper {
+
+        ForwardedHeaderAwareRequestWrapper(HttpServletRequest request) {
+            super(request);
+        }
+
+        @Override
+        public String getRemoteAddr() {
+            HttpServletRequest original = (HttpServletRequest) getRequest();
+            String xff = original.getHeader("X-Forwarded-For");
+            if (xff != null && !xff.isBlank()) {
+                int comma = xff.indexOf(',');
+                String first = (comma >= 0 ? xff.substring(0, comma) : xff).trim();
+                if (!first.isEmpty()) {
+                    return first;
+                }
+            }
+            return super.getRemoteAddr();
+        }
     }
 }

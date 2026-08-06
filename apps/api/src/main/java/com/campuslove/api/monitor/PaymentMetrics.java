@@ -93,17 +93,12 @@ public class PaymentMetrics {
     /**
      * 记录一次红包发送。
      *
-     * <p>当前实现以"红包发送次数"为粒度，amount 参数仅用于未来扩展
-     * （如改为 DistributionSummary 统计金额分布时复用），当前未记录金额指标。</p>
-     *
      * @param amount 红包金额（保留参数，便于未来扩展为金额分布统计）
      */
     public void recordRedPacketSent(Number amount) {
         try {
+            // infra R2-00221: 清理注释掉的 DistributionSummary 埋点残留（死代码）
             redPacketSentCounter.increment();
-            // 未来如需统计金额分布，可在此处使用 DistributionSummary：
-            // DistributionSummary.builder("payment.red_packet.amount")
-            //     .register(meterRegistry).record(amount == null ? 0 : amount.doubleValue());
         } catch (RuntimeException e) {
             log.warn("记录 payment.red_packet.sent 指标失败, amount={}: {}", amount, e.getMessage());
         }

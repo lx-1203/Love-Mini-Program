@@ -1,9 +1,11 @@
 package com.campuslove.api.report;
 
 import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Report;
+import com.campuslove.api.ratelimit.RateLimit;
 import com.campuslove.api.repository.ReportRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -43,6 +45,9 @@ public class ReportController {
     /** 举报初始状态：待处理 */
     private static final String STATUS_PENDING = "PENDING";
 
+    /** 单用户每日举报上限（防骚扰审核队列） */
+    private static final int DAILY_REPORT_LIMIT = 20;
+
     private final ReportRepository reportRepository;
 
     public ReportController(ReportRepository reportRepository) {
@@ -59,9 +64,19 @@ public class ReportController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Idempotent
+    // infra R2-00259: 举报接口按 IP 限流 + 每日限额，防止无限骚扰审核队列
+    @RateLimit(capacity = 5, refillTokens = 0.5, key = "#request.remoteAddr")
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<ReportView> createReport(@Valid @RequestBody ReportCreateRequest req) {
         Long reporterId = SecurityUtils.getCurrentUserId();
+
+        // infra R2-00259: 每日举报限额校验
+        LocalDateTime dayStart = LocalDateTime.now().toLocalDate().atStartOfDay();
+        long todayReports = reportRepository.countByReporterIdAndCreatedAtAfter(reporterId, dayStart);
+        if (todayReports >= DAILY_REPORT_LIMIT) {
+            throw new DailyLimitExceededException("举报", DAILY_REPORT_LIMIT,
+                    "今日举报次数已达上限（" + DAILY_REPORT_LIMIT + " 次），请明日再试");
+        }
 
         Report report = new Report();
         report.setTargetType(req.targetType());

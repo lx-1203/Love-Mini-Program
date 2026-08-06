@@ -8,18 +8,33 @@
  * Task 6：将原 errors.permission 抽取到专属 forbidden.* 命名空间，
  * title 与 description 使用不同 key，避免重复文案。
  */
+import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { useSessionStore } from "../stores/session";
 
 const { t } = useI18n();
 const router = useRouter();
+const sessionStore = useSessionStore();
 
-function goHome() {
-  router.push({ name: "Dashboard" });
-}
+// infra R2-00461：登出按钮 loading 防护（防重复点击）
+const loggingOut = ref(false);
 
-function goLogin() {
-  router.push({ name: "Login" });
+/**
+ * 退出登录：先清空本地会话再跳转登录页。
+ *
+ * 死循环修复：若不清除会话直接跳 /login，守卫会把已登录用户弹回 Dashboard，
+ * 而角色不在白名单时又会被拦回 403，形成死循环。因此必须先 logout()。
+ */
+async function goLogin() {
+  if (loggingOut.value) return;
+  loggingOut.value = true;
+  try {
+    await sessionStore.logout();
+  } finally {
+    router.push({ name: "Login" });
+    loggingOut.value = false;
+  }
 }
 </script>
 
@@ -30,8 +45,11 @@ function goLogin() {
       <text class="forbidden-title">{{ t("forbidden.title") }}</text>
       <text class="forbidden-desc">{{ t("forbidden.description") }}</text>
       <view class="forbidden-actions">
-        <button class="action-primary" @click="goHome">{{ t("common.back") }}</button>
-        <button class="action-secondary" @click="goLogin">{{ t("common.logout") }}</button>
+        <!-- 死循环修复：不再提供"返回首页"（角色不足时会被守卫再次拦回 403），
+             仅保留退出登录入口，退出后回到登录页重新登录 -->
+        <button class="action-primary" :disabled="loggingOut" @click="goLogin">
+          {{ loggingOut ? t("common.loading") : t("common.logout") }}
+        </button>
       </view>
     </view>
   </view>

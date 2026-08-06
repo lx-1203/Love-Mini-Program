@@ -28,26 +28,40 @@ export function isTabPath(url: string) {
 }
 
 /**
+ * 页面跳转选项（infra R2-00132）。
+ */
+export interface OpenPathOptions {
+  /** 跳转失败回调（如目标页面不存在 / 被路由拦截时触发） */
+  fail?: (err?: unknown) => void;
+}
+
+/**
  * 打开应用内页面（push 语义）。
  *
  * - TabBar 页面：调用 `uni.switchTab`（不能携带 query string）
  * - 非 TabBar 页面：调用 `uni.navigateTo`，保留当前页在页面栈中
  *
+ * infra R2-00132: 增加可选 fail 回调，调用方可感知跳转失败（页面不存在/被拦截等），
+ * 统一由本封装处理 tab/普通页判断，避免调用点散落 switchTab/navigateTo 分支。
+ *
  * @param url - 目标页面 URL，可携带 query string（仅非 TabBar 页面有效）
+ * @param options - 跳转选项（fail 回调等）
  */
-export function openAppPath(url: string) {
+export function openAppPath(url: string, options: OpenPathOptions = {}) {
   const normalizedUrl = normalizeUrl(url);
 
   if (isTabPath(normalizedUrl)) {
-    uni.switchTab({ url: normalizedUrl });
+    uni.switchTab({ url: normalizedUrl, fail: options.fail });
     return;
   }
 
-  uni.navigateTo({ url: normalizedUrl });
+  uni.navigateTo({ url: normalizedUrl, fail: options.fail });
 }
 
 /** TabBar 页面 query 暂存 key（switchTab 不支持 query，用本地存储桥接） */
-const TAB_QUERY_KEY = "campus-love:tab-query";
+// infra R2-00132: 导出供页面（village/index 等）统一引用，
+// 避免 storage 桥接键字符串在多个文件间散落（原审计项：桥接键无常量）。
+export const TAB_QUERY_KEY = "campus-love:tab-query";
 
 /**
  * 切换 TabBar 页面并携带 query（收尾轮修复：switchTab 不支持 query string，

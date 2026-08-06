@@ -1,6 +1,7 @@
 package com.campuslove.api.auth;
 
 import com.campuslove.api.mock.MockRuntimeState;
+import com.campuslove.api.utils.SensitiveDataMasker;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,27 @@ public class MockAuthService implements AuthService {
     }
 
     @Override
+    public UserSessionView registerUser(String phone, String password, String nickname) {
+        // mock 模式下直接返回 mock 会话(忽略注册参数)
+        log.info("mock 注册用户, phone={}", SensitiveDataMasker.mask(phone));
+        return toView(runtimeState.loginWithWechat(), "mock-token-" + System.currentTimeMillis());
+    }
+
+    @Override
+    public UserSessionView loginWithPhone(String phone, String password) {
+        // mock 模式下忽略凭据,直接返回 mock 会话
+        log.info("mock 手机号登录, phone={}", SensitiveDataMasker.mask(phone));
+        return toView(runtimeState.currentSession(), "mock-token-" + System.currentTimeMillis());
+    }
+
+    @Override
+    public UserSessionView loginAsGuest() {
+        // mock 模式下直接返回 mock 会话(忽略体验账号逻辑)
+        log.info("mock 体验账号一键登录");
+        return toView(runtimeState.loginWithWechat(), "mock-guest-token-" + System.currentTimeMillis());
+    }
+
+
     public UserSessionView loginAsAdmin(String username, String password) {
         // mock 模式下忽略凭据，直接返回 mock 会话
         log.info("mock 管理员登录, username={}", username);

@@ -71,12 +71,20 @@ export interface CreateRedPacketPayload {
   blessing?: string;
 }
 
+/** infra R2-00056: mock 红包 ID 递增计数器（替代 Math.random，避免 mock 态 id 冲突） */
+let mockRedPacketSeq = 0;
+
+/**
+ * infra R2-00057: mock 红包已领取金额跟踪（redPacketId -> 已领取金额，用于按剩余金额分配）
+ */
+const mockClaimedAmounts = new Map<number, number>();
+
 /**
  * Mock 模式下生成假数据，便于 H5 调试与单元测试
  */
 function buildMockRedPacket(payload: CreateRedPacketPayload, senderId: number): RedPacketView {
   return {
-    id: Math.floor(Math.random() * 100000) + 1,
+    id: ++mockRedPacketSeq,
     senderId,
     totalAmount: payload.totalAmount,
     totalCount: payload.totalCount,
@@ -171,12 +179,25 @@ export const useVipRedPacketStore = defineStore("vip-red-packet", () => {
     }
 
     if (useMock()) {
-      // mock 模式：随机返回 1~平均金额之间的值
-      const amount = Math.floor(Math.random() * 99) + 1;
+      // infra R2-00057: mock 领取金额按红包剩余金额分配（与 totalAmount/totalCount 约束一致），
+      // 避免原随机 1-99 分与总金额无约束导致“领不完/超额”失真
+      const packet = lastCreatedPacket.value?.id === redPacketId
+        ? lastCreatedPacket.value
+        : currentDetail.value?.id === redPacketId ? currentDetail.value : null;
+      const totalAmount = packet?.totalAmount ?? 10000;
+      const totalCount = packet?.totalCount ?? 10;
+      const avg = Math.floor(totalAmount / totalCount);
+      const claimedSoFar = mockClaimedAmounts.get(redPacketId) ?? 0;
+      const remaining = totalAmount - claimedSoFar;
+      // 已领满返回 0（语义：已领完）；否则在 [1, min(2*平均, 剩余)] 间随机
+      const cap = Math.min(avg * 2, remaining);
+      const amount = remaining <= 0 ? 0 : Math.floor(Math.random() * cap) + 1;
+      mockClaimedAmounts.set(redPacketId, claimedSoFar + amount);
+      const claimedCount = Math.min(Math.floor((claimedSoFar + amount) / avg) + 1, totalCount);
       return {
         amount,
-        claimedCount: Math.floor(Math.random() * 10) + 1,
-        totalCount: 10,
+        claimedCount,
+        totalCount,
       };
     }
 

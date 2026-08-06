@@ -4,6 +4,13 @@
  * 此文件由 scripts/media-gen/generate.ts 生成后更新。
  * 在 API 调用生成前，提供本地备用素材路径映射。
  *
+ * 职责边界（infra R2-00137）：
+ * - 本文件为脚本生成产物，指向 /static/generated/** 素材（campus/activities/avatars 等）；
+ * - config/images.ts 为手工维护的统一图片路径入口（/static/assets/**），
+ *   业务代码优先使用 IMAGE_PATHS（services/agnes-video.ts 除外，其依赖本文件生成素材）；
+ * - 新资源请优先纳入 config/images.ts；生成类素材保持由脚本更新本文件，
+ *   避免两份资源索引语义混淆（原审计项：资源引用双源）。
+ *
  * 注意：CAMPUS_VIDEOS 原引用的 4 个视频文件（campus-spring.mp4 等）实际不存在于仓库中，
  * 已移除以避免运行时报错。如需启用视频背景，请先生成对应视频文件并补全路径。
  */

@@ -180,11 +180,13 @@ class MatchRecorderTest {
 
     /**
      * 场景：recordVisit 当天已访问过不重复记录。
+     * 缺陷修复：exists 派生查询参数为 LocalDateTime 时刻区间
+     * （today.atStartOfDay() ~ 明日 atStartOfDay()）。
      */
     @Test
     void recordVisit_alreadyVisitedToday_doesNotSave() {
         when(visitorRepository.existsByVisitorIdAndVisitedUserIdAndCreatedAtBetween(
-                anyLong(), anyLong(), any(LocalDate.class), any(LocalDate.class)))
+                anyLong(), anyLong(), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(true);
 
         matchRecorder.recordVisit(1L, 2L);
@@ -200,7 +202,7 @@ class MatchRecorderTest {
     @Test
     void recordVisit_firstVisit_savesAndNotifies() {
         when(visitorRepository.existsByVisitorIdAndVisitedUserIdAndCreatedAtBetween(
-                anyLong(), anyLong(), any(LocalDate.class), any(LocalDate.class)))
+                anyLong(), anyLong(), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(false);
 
         matchRecorder.recordVisit(1L, 2L);

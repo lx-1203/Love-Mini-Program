@@ -158,9 +158,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 查询用户判断是否为管理员
             // 注意：这里每次请求都查询数据库，生产环境可考虑缓存优化
             User user = userRepository.findById(userId).orElse(null);
-            if (user != null && user.isAdmin()) {
+            if (user == null) {
+                // 修复（R2）：用户已被删除时，旧 token 不得继续访问业务接口
+                throw new BadCredentialsException("用户不存在或已被删除: " + userId);
+            }
+            if (user.isDisabled()) {
+                // 修复（R2 review MED）：disabled 用户（管理后台禁用）同样拒绝，
+                // 旧实现只处理 user==null，被禁用用户的 token 仍可访问接口
+                throw new BadCredentialsException("用户已被禁用: " + userId);
+            }
+            if (user.isAdmin()) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                 log.debug("管理员用户登录，用户ID: {}", userId);
+            }
+            // infra R2-00025：超级管理员额外注入 ROLE_SUPER_ADMIN，
+            // 供敏感配置端点 @PreAuthorize("hasRole('SUPER_ADMIN')") 校验
+            if (user.isSuperAdmin()) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
             }
 
             // 验证成功后设置 SecurityContextHolder

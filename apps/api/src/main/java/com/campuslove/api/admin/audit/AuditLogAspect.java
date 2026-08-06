@@ -65,7 +65,15 @@ public class AuditLogAspect {
     private static final Set<String> SENSITIVE_FIELDS = Set.of(
             "password", "newpassword", "oldpassword", "token", "secret",
             "accesstoken", "refreshtoken", "code", "captcha", "credential",
-            "authcode", "verifycode"
+            "authcode", "verifycode",
+            // infra R2-00233: 扩展脱敏字段——手机号/证件号/邮箱/微信身份标识/API 密钥等，
+            // 避免敏感业务字段明文进入审计库
+            "phone", "mobile", "phonenumber", "telephone", "tel",
+            "idcard", "idcardnumber", "idcardno", "identitycard", "idcardurl",
+            "studentidcard", "studentidcardurl",
+            "openid", "unionid", "sessionkey", "session_key",
+            "email", "realname",
+            "apikey", "secretkey", "authorization", "privatekey"
     );
 
     /** 请求体最大记录长度，超过截断 */
@@ -103,7 +111,8 @@ public class AuditLogAspect {
             return result;
         } catch (Throwable ex) {
             responseStatus = 500;
-            errorMessage = truncate(ex.getMessage(), 500);
+            // infra R2-00232: 审计库仅存异常类型与单行化摘要，避免 SQL/堆栈等内部细节入库
+            errorMessage = truncate(buildSafeErrorMessage(ex), 500);
             throw ex;
         } finally {
             long duration = System.currentTimeMillis() - start;
@@ -176,6 +185,24 @@ public class AuditLogAspect {
         auditLog.setDurationMs(durationMs);
 
         auditLogService.saveAsync(auditLog);
+    }
+
+    /**
+     * 构建安全的异常摘要（异常类型 + 单行化消息），供审计日志存储。
+     *
+     * @param ex 原始异常
+     * @return 安全摘要字符串
+     */
+    private String buildSafeErrorMessage(Throwable ex) {
+        if (ex == null) {
+            return null;
+        }
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            return ex.getClass().getSimpleName();
+        }
+        String singleLine = message.replace('\n', ' ').replace('\r', ' ');
+        return ex.getClass().getSimpleName() + ": " + singleLine;
     }
 
     /**

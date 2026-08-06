@@ -37,12 +37,17 @@ public class BillingService {
 
     private static final Logger log = LoggerFactory.getLogger(BillingService.class);
 
-    /**
-     * 金额对账容差：1 分。
+    /** 金额对账容差：1 分。
      * <p>微信支付金额以分为单位，回调通知金额与订单金额可能因四舍五入存在 1 分差异，
      * 在容差范围内视为一致；超出容差则记录告警并返回 FAIL。</p>
      */
     private static final int AMOUNT_TOLERANCE_CENTS = 1;
+
+    /**
+     * 支付成功后授予的 VIP 时长（天）：30 天（月度套餐）。
+     * FIN HIGH-11：支付回调成功时按此天数延长 {@code vip_bills.period_end}。
+     */
+    private static final int VIP_GRANT_DAYS = 30;
 
     private final VipBillRepository vipBillRepository;
     private final PaymentCallbackLogRepository paymentCallbackLogRepository;
@@ -98,32 +103,8 @@ public class BillingService {
         }
     }
 
-    /**
-     * 查询当前用户的账单列表（全量，兼容旧接口）。
-     * <p>仅供内部或测试使用，前端请使用分页接口。</p>
-     *
-     * @param userId 用户 ID
-     * @return 账单列表视图
-     */
-    @Transactional(readOnly = true)
-    public BillListResponse listBills(Long userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
-        }
-
-        try {
-            List<VipBill> bills = vipBillRepository.findByUserIdOrderByCreatedAtDesc(userId);
-            List<BillView> views = new ArrayList<>();
-            for (VipBill bill : bills) {
-                views.add(toView(bill));
-            }
-            return new BillListResponse(views, (long) views.size(), 0, views.size(), 1);
-        } catch (DataAccessException e) {
-            // 数据库查询失败时上报，由 GlobalExceptionHandler 转换为 5xx 响应
-            log.error("账单列表查询失败：userId={}", userId, e);
-            throw new RuntimeException("账单查询失败，请稍后重试", e);
-        }
-    }
+    // infra R2-00222: 删除无分页版 listBills（无调用方，全量账单列表膨胀风险），
+    // 统一走带 page/size 的分页版本（BillingController 已接入）
 
     /**
      * 创建账单记录（支付成功后调用）。
@@ -241,6 +222,10 @@ public class BillingService {
         }
 
         // 2. 幂等键检查：若已处理过该 notification_id，直接返回 SUCCESS 不重复开通
+        // 注意（R2 review MED）：幂等仅按 notification_id 维度。同一 orderNo 若以
+        // 不同 notificationId 重复回调，会绕过此检查重复开通/顺延 VIP。
+        // 账单表 transaction_id 当前仅为普通 INDEX（非唯一约束），接入真实支付前
+        // 必须：a) 为 vip_bills.transaction_id 建唯一约束；b) 增加按 orderNo 的幂等检查。
         Optional<PaymentCallbackLog> existing = paymentCallbackLogRepository
                 .findByNotificationId(notificationId);
         if (existing.isPresent()) {
@@ -274,11 +259,24 @@ public class BillingService {
         }
 
         try {
-            // 4. 处理业务：账单状态置为 SUCCESS（实际生产应调用 VIP 开通服务延长有效期）
-            // 这里仅更新账单状态，避免重复创建账单导致 transaction_id 唯一约束冲突
+            // 4. 处理业务：账单状态置为 SUCCESS + 开通/延长 VIP 权益（FIN HIGH-11）
+            //    修复前仅更新账单状态，支付成功但用户权益未开通，支付-权益链路断裂。
+            //    开通逻辑：以 vip_bills.period_end 记录 VIP 有效期结束时间（User 实体
+            //    未定义 vipExpiresAt 字段，VipBill.periodEnd 即"VIP 有效期结束时间"，见实体注释）。
+            //    规则：取 max(当前时间, 账单原 periodEnd) + 30 天（月度套餐），
+            //    保证新订阅/续费均正确顺延，不会因续费时间点丢失剩余天数。
             bill.setStatus("SUCCESS");
             bill.setTransactionId(orderNo);
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime base = (bill.getPeriodEnd() != null && bill.getPeriodEnd().isAfter(now))
+                    ? bill.getPeriodEnd() : now;
+            bill.setPeriodEnd(base.plusDays(VIP_GRANT_DAYS));
+            if (bill.getPeriodStart() == null) {
+                bill.setPeriodStart(now);
+            }
             vipBillRepository.save(bill);
+            log.info("支付回调处理成功并开通/延长 VIP：notificationId={}, orderNo={}, userId={}, amount={}, newExpiry={}",
+                    notificationId, orderNo, userId, callbackAmount, bill.getPeriodEnd());
 
             // 5. 写日志：将本次处理结果写入 payment_callback_log 表
             writeCallbackLog(notificationId, orderNo, callbackAmount, "SUCCESS");

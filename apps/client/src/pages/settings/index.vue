@@ -218,6 +218,8 @@ function viewPrivacyPolicy() {
 }
 
 /** 清除缓存 */
+// TODO(mock): 当前为演示实现（延迟后置 0 KB）。真实链路应调用
+// uni.getStorageInfo / uni.clearStorage 并统计实际大小（review #42）。
 function clearCache() {
   lightHaptic();
   uni.showModal({
@@ -245,6 +247,8 @@ function clearCache() {
 }
 
 /** 检查更新 */
+// TODO(mock): 当前为演示实现（延迟后提示已是最新）。真实链路应接入
+// 版本检查接口或 uni.getUpdateManager（review #43）。
 function checkUpdate() {
   lightHaptic();
   uni.showLoading({ title: t("settings.checkingUpdate") });

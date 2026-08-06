@@ -5,7 +5,6 @@
 import { ref, computed } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
-import { openAppPath } from "../../utils/navigation";
 import { useCheckInStore } from "../../stores/checkin";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -97,8 +96,19 @@ const filteredItems = computed(() => {
   return shopItems.value.filter((item) => item.category === activeCategory.value);
 });
 
+/**
+ * 点击商品 → 详情。
+ * 断链修复：/subpackages/shop/detail/index 未在 pages.json 注册且目录不存在，
+ * 直接跳转会静默失败。改为 toast 提示（文案复用 circle.detailDeveloping，避免新增 i18n key）。
+ * TODO(后端/产品): 商品详情页就绪后恢复 openAppPath 跳转并移除 toast。
+ */
 function goToDetail(itemId: string) {
-  openAppPath(`/subpackages/shop/detail/index?id=${itemId}`);
+  console.warn("[shop] 商品详情页未注册，暂无法跳转 itemId =", itemId);
+  uni.showToast({
+    title: t("circle.detailDeveloping"),
+    icon: "none",
+    duration: 1500,
+  });
 }
 </script>
 

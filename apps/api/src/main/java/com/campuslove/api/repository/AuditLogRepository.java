@@ -18,11 +18,12 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
      * 多条件分页查询审计日志。
      * 任意参数为 null 时不参与过滤。
      *
-     * @param operatorId 操作者ID（可空）
-     * @param operation  操作类型（可空）
-     * @param startTime  起始时间（可空，包含）
-     * @param endTime    结束时间（可空，包含）
-     * @param pageable   分页
+     * @param operatorId    操作者ID（可空）
+     * @param operation     操作类型（可空）
+     * @param startTime     起始时间（可空，包含）
+     * @param endTime       结束时间（可空，包含）
+     * @param exceptionOnly 仅查异常日志（errorMessage 非空），null/false 时不参与过滤
+     * @param pageable      分页
      * @return 分页结果
      */
     @Query("""
@@ -31,6 +32,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
               AND (:operation  IS NULL OR a.operation = :operation)
               AND (:startTime  IS NULL OR a.createdAt >= :startTime)
               AND (:endTime    IS NULL OR a.createdAt <= :endTime)
+              AND (:exceptionOnly = false OR :exceptionOnly IS NULL OR a.errorMessage IS NOT NULL)
             ORDER BY a.createdAt DESC
             """)
     Page<AuditLog> search(
@@ -38,5 +40,6 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
             @Param("operation") String operation,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
+            @Param("exceptionOnly") Boolean exceptionOnly,
             Pageable pageable);
 }

@@ -307,7 +307,9 @@ async function chooseImage() {
       images.value.push(...compressedPaths);
     },
     fail: (err) => {
+      // infra R2-00073: 选择图片失败给出用户可见反馈（原仅 console.error 静默）
       console.error("选择图片失败:", err);
+      uni.showToast({ title: t("village.post.selectImageFailed"), icon: "none" });
     },
   });
 }
@@ -403,8 +405,22 @@ async function submitPost() {
   }
 
   try {
-    // 合并预置标签和自定义标签
-    const allTags = [...selectedPresetTags.value, ...tags.value];
+    // 合并预置标签、自定义标签与 TopicSelector 已选话题（review #23：selectedTopics 不再丢失）
+    // TopicSelector 的话题不带 # 前缀，统一补上后去重合并
+    const topicTags = selectedTopics.value.map((topic) =>
+      topic.startsWith("#") ? topic : `#${topic}`
+    );
+    const allTags = [
+      ...new Set([...selectedPresetTags.value, ...tags.value, ...topicTags]),
+    ];
+
+    // 修复（review #3）：图片上传链路缺失。
+    // TODO(后端): services/api.ts 无帖子图片上传端点；接口就绪后应在此先上传
+    // 压缩后的 tempFilePath 换取 URL 再随帖子提交，mock 模式下继续使用本地路径保证可用。
+    const localImages = images.value.filter((img) => !/^https?:\/\//.test(img));
+    if (localImages.length > 0 && appEnv.apiMode !== "mock") {
+      console.warn("[village/post] 帖子图片为本地临时路径，后端无法访问，等待上传接口接入:", localImages);
+    }
 
     await villageStore.createPost({
       categoryId: selectedCategory.value,
@@ -442,7 +458,7 @@ function goBack() {
   <view class="post-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="post-header">
-      <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
+      <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="back-icon">{{ t("common.back") }}</text>
       </view>
       <text class="post-header__title">{{ t("village.post.headerTitle") }}</text>
@@ -571,8 +587,10 @@ $green-light: var(--c-tint-green-50);
 $pink-primary: var(--c-romance-500);
 $pink-light: var(--c-tint-pink-soft);
 $bg-page: var(--c-bg-page);
-$text-primary: var(--c-neutral-800);
-$text-secondary: var(--c-text-tertiary);
+/* ui-ux 修复：$text-primary 统一为文本次要色 token（原 --c-neutral-800 语义漂移） */
+$text-primary: var(--c-text-primary);
+/* ui-ux 修复：$text-secondary 语义应为文本次要色（原映射到 tertiary） */
+$text-secondary: var(--c-text-secondary);
 $text-tertiary: var(--c-text-quaternary);
 $divider: var(--c-neutral-100);
 $white: var(--c-neutral-0);

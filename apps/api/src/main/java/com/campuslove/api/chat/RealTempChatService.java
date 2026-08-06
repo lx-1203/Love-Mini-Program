@@ -38,37 +38,18 @@ public class RealTempChatService implements TempChatService {
     private final TempChatMessageService messageService;
     private final TempChatCleanupService cleanupService;
 
-    public RealTempChatService(
-            ChatConfig chatConfig,
-            TempChatSessionRepository sessionRepository,
-            TempChatMessageRepository messageRepository,
-            TempChatContactExchangeRepository contactExchangeRepository,
-            UserRepository userRepository,
-            UserBasicProfileRepository userBasicProfileRepository,
-            UserCampusProfileRepository userCampusProfileRepository,
-            UserScheduleProfileRepository userScheduleProfileRepository,
-            RecommendationService recommendationService,
-            SimpMessagingTemplate messagingTemplate,
-            TempChatViewMapper viewMapper,
-            RedissonClient redissonClient) {
-        this.sessionService = new TempChatSessionService(
-                chatConfig,
-                sessionRepository,
-                messageRepository,
-                contactExchangeRepository,
-                userRepository,
-                userBasicProfileRepository,
-                userCampusProfileRepository,
-                userScheduleProfileRepository,
-                recommendationService,
-                messagingTemplate,
-                viewMapper);
-        this.messageService = new TempChatMessageService(messageRepository, this.sessionService);
-        this.cleanupService = new TempChatCleanupService(
-                contactExchangeRepository, this.sessionService, sessionRepository, redissonClient);
-    }
-
-    /** 内部构造器：用于单元测试直接注入组件。 */
+    /**
+     * 构造器注入三个 Spring Bean 组件（FIN HIGH-6 修复）。
+     *
+     * <p>原实现在此构造器中用 {@code new} 手动实例化 {@link TempChatSessionService} /
+     * {@link TempChatMessageService} / {@link TempChatCleanupService}，
+     * 导致这些组件的 {@code @Transactional} 代理完全失效（Spring AOP 只代理
+     * 容器管理的 Bean），本类的 {@code @Transactional} 也因此失去事务原子性。
+     * 现改为直接注入容器中的 Bean，使组件级事务代理生效。</p>
+     *
+     * <p>三个组件均为 {@code @Profile("real")} 的 Spring Bean，与本类 profile 一致，
+     * 由 Spring 容器注入；单元测试仍可通过本构造器直接注入 mocked 组件。</p>
+     */
     public RealTempChatService(TempChatSessionService sessionService,
                                 TempChatMessageService messageService,
                                 TempChatCleanupService cleanupService) {

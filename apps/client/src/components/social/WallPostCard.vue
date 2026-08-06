@@ -140,8 +140,10 @@ function onReportSubmitted() {
     </view>
     <text class="wall-content" v-if="content">{{ content }}</text>
     <view class="wall-images" v-if="images && images.length > 0">
+      <!-- 修复（P1 BUG）：v-for key 由数组下标 idx 改为稳定 id（图片 URL）。
+           图片列表变化时按内容复用/重排 DOM，避免下标 key 导致的状态错位 -->
       <view
-        v-for="(img, idx) in images.slice(0, 3)" :key="idx"
+        v-for="(img, idx) in images.slice(0, 3)" :key="img"
         class="wall-img-wrap"
       >
         <image

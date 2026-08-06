@@ -46,14 +46,14 @@ function getRecommendationAction(completion: HomeCompletionState): ChatRecommend
 
   if (tasks.length > 0) {
     return {
-      label: "先完成设置",
+      label: statusCopyMap.chatAction.completeSetup,
       mode: "complete-setup",
       target: tasks[0]!.path,
     };
   }
 
   return {
-    label: "去聊天",
+    label: statusCopyMap.chatAction.goChat,
     mode: "go-chat",
     target: "/pages/chat/index",
   };
@@ -75,11 +75,13 @@ function toContactExchangeLabel(status: Schemas["ContactExchangeState"]["status"
 
 function toSessionStatusLabel(session: Schemas["ChatSessionSummary"]) {
   if (session.phase === "closed") {
-    return session.closedReason === "ended" ? "聊天已结束" : "聊天已关闭";
+    return session.closedReason === "ended"
+      ? statusCopyMap.chatStatus.ended
+      : statusCopyMap.chatStatus.closed;
   }
 
   if (session.phase === "matching") {
-    return "等待你开场";
+    return statusCopyMap.chatStatus.waitingOpen;
   }
 
   return toContactExchangeLabel(session.contactExchangeStatus);

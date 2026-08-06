@@ -14,11 +14,17 @@ import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.config.CacheNames;
+import com.campuslove.api.config.SensitiveWordFilter;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
@@ -39,6 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RealRecommendationService implements RecommendationService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RealRecommendationService.class);
+
     private final ActivityRepository activityRepository;
     private final ActivityEnrollmentRepository activityEnrollmentRepository;
     private final CircleTopicRepository circleTopicRepository;
@@ -51,6 +59,42 @@ public class RealRecommendationService implements RecommendationService {
     private final RecommendationCacheManager cacheManager;
     private final RecommendationRanker ranker;
 
+    /**
+     * JPA 实体管理器（FIN-00040 修复：报名计数原子更新）。
+     * 为兼容既有单元测试（直接 new 构造器），可为 null：null 时回退实体读-改-写。
+     */
+    private final EntityManager entityManager;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public RealRecommendationService(
+            ActivityRepository activityRepository,
+            ActivityEnrollmentRepository activityEnrollmentRepository,
+            CircleTopicRepository circleTopicRepository,
+            PostRepository postRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
+            RecommendationStrategy recommendationStrategy,
+            UserPreferenceCalculator preferenceCalculator,
+            RecommendationCacheManager cacheManager,
+            RecommendationRanker ranker,
+            EntityManager entityManager) {
+        this.activityRepository = activityRepository;
+        this.activityEnrollmentRepository = activityEnrollmentRepository;
+        this.circleTopicRepository = circleTopicRepository;
+        this.postRepository = postRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
+        this.recommendationStrategy = recommendationStrategy;
+        this.preferenceCalculator = preferenceCalculator;
+        this.cacheManager = cacheManager;
+        this.ranker = ranker;
+        this.entityManager = entityManager;
+    }
+
+    /**
+     * 兼容旧测试的构造器（entityManager 为 null，计数更新回退实体读-改-写）。
+     *
+     * @deprecated 仅单元测试使用；Spring 注入请使用带 EntityManager 的构造器。
+     */
+    @Deprecated
     public RealRecommendationService(
             ActivityRepository activityRepository,
             ActivityEnrollmentRepository activityEnrollmentRepository,
@@ -61,15 +105,9 @@ public class RealRecommendationService implements RecommendationService {
             UserPreferenceCalculator preferenceCalculator,
             RecommendationCacheManager cacheManager,
             RecommendationRanker ranker) {
-        this.activityRepository = activityRepository;
-        this.activityEnrollmentRepository = activityEnrollmentRepository;
-        this.circleTopicRepository = circleTopicRepository;
-        this.postRepository = postRepository;
-        this.userBasicProfileRepository = userBasicProfileRepository;
-        this.recommendationStrategy = recommendationStrategy;
-        this.preferenceCalculator = preferenceCalculator;
-        this.cacheManager = cacheManager;
-        this.ranker = ranker;
+        this(activityRepository, activityEnrollmentRepository, circleTopicRepository,
+                postRepository, userBasicProfileRepository, recommendationStrategy,
+                preferenceCalculator, cacheManager, ranker, null);
     }
 
     // ---- 讨论推荐 ----
@@ -98,7 +136,8 @@ public class RealRecommendationService implements RecommendationService {
                 ));
             }
         } catch (DataAccessException e) {
-            // CircleTopic 查询失败时忽略，继续从 Post 获取
+            // FIN-00041 修复：原实现静默吞异常，补充 warn 日志便于排查
+            log.warn("查询 CircleTopic 热门话题失败，降级跳过：error={}", e.getMessage());
         }
 
         // 2. 从 Post 获取热门帖子
@@ -123,7 +162,8 @@ public class RealRecommendationService implements RecommendationService {
                 ));
             }
         } catch (DataAccessException e) {
-            // Post 查询失败时忽略
+            // FIN-00041 修复：原实现静默吞异常，补充 warn 日志便于排查
+            log.warn("查询 Post 热门帖子失败，降级跳过：error={}", e.getMessage());
         }
 
         // 3. 按热度降序排序
@@ -183,9 +223,26 @@ public class RealRecommendationService implements RecommendationService {
             enrollment.setCreatedAt(now);
             activityEnrollmentRepository.save(enrollment);
 
-            activity.setEnrollmentCount(activity.getEnrollmentCount() + 1);
-            activity.setUpdatedAt(LocalDateTime.now());
-            activityRepository.save(activity);
+            // FIN-00040 修复：enrollmentCount 改为数据库侧原子递增，消除并发报名丢失计数；
+            // entityManager 为 null（单元测试直接 new）时回退实体读-改-写
+            // infra R2-00239: bulk UPDATE 后 detach 并重查实体，避免事务提交时 flush
+            // 用陈旧值覆盖原子递增结果（脏写覆盖）
+            if (entityManager != null) {
+                entityManager.createQuery(
+                                "UPDATE Activity a SET a.enrollmentCount = a.enrollmentCount + 1, "
+                                        + "a.updatedAt = :now WHERE a.id = :activityId")
+                        .setParameter("now", now)
+                        .setParameter("activityId", activityIdLong)
+                        .executeUpdate();
+                entityManager.detach(activity);
+                Activity fresh = activityRepository.findById(activityIdLong).orElse(null);
+                if (fresh != null) {
+                    activity = fresh;
+                }
+            } else {
+                activity.setEnrollmentCount(activity.getEnrollmentCount() + 1);
+            }
+            activity.setUpdatedAt(now);
 
             return new ActivityEnrollmentView(activityId, true, activity.getEnrollmentCount());
         } else {
@@ -199,9 +256,25 @@ public class RealRecommendationService implements RecommendationService {
             activityEnrollmentRepository.delete(enrollmentOpt.orElseThrow(() ->
                     new IllegalStateException("enrollmentOpt 已确认非空但 orElseThrow 触发，数据不一致")));
 
-            activity.setEnrollmentCount(Math.max(0, activity.getEnrollmentCount() - 1));
+            // FIN-00040 修复：enrollmentCount 改为数据库侧原子递减（下限 0）
+            // infra R2-00239: bulk UPDATE 后 detach 并重查实体，避免脏写覆盖原子结果
+            if (entityManager != null) {
+                entityManager.createQuery(
+                                "UPDATE Activity a SET a.enrollmentCount = CASE "
+                                        + "WHEN a.enrollmentCount > 0 THEN a.enrollmentCount - 1 ELSE 0 END, "
+                                        + "a.updatedAt = :now WHERE a.id = :activityId")
+                        .setParameter("now", LocalDateTime.now())
+                        .setParameter("activityId", activityIdLong)
+                        .executeUpdate();
+                entityManager.detach(activity);
+                Activity fresh = activityRepository.findById(activityIdLong).orElse(null);
+                if (fresh != null) {
+                    activity = fresh;
+                }
+            } else {
+                activity.setEnrollmentCount(Math.max(0, activity.getEnrollmentCount() - 1));
+            }
             activity.setUpdatedAt(LocalDateTime.now());
-            activityRepository.save(activity);
 
             return new ActivityEnrollmentView(activityId, false, activity.getEnrollmentCount());
         }
@@ -308,8 +381,11 @@ public class RealRecommendationService implements RecommendationService {
         if (filter == null || filter.isEmpty()) {
             return recommendations;
         }
+        // infra R2-00238: 批量预加载候选用户基本资料，避免筛选逐条查库（N+1）
+        Map<Long, UserBasicProfile> basicProfileMap = loadBasicProfileMap(
+                recommendations.stream().map(RecommendedPersonView::id).toList());
         return recommendations.stream()
-                .filter(view -> matchesFilter(view, filter))
+                .filter(view -> matchesFilter(view, filter, basicProfileMap))
                 .toList();
     }
 
@@ -325,6 +401,12 @@ public class RealRecommendationService implements RecommendationService {
     // ---- 筛选匹配（视图层 in-memory 过滤，包级可见以便单元测试） ----
 
     boolean matchesFilter(RecommendedPersonView view, RecommendationFilter filter) {
+        // 单测兼容入口：无批量 Map 时回退逐条查库
+        return matchesFilter(view, filter, Collections.emptyMap());
+    }
+
+    private boolean matchesFilter(RecommendedPersonView view, RecommendationFilter filter,
+                                  Map<Long, UserBasicProfile> basicProfileMap) {
         if (filter.heightMin() != null && (view.height() == null || view.height() < filter.heightMin())) return false;
         if (filter.heightMax() != null && (view.height() == null || view.height() > filter.heightMax())) return false;
         if (!filter.educationLevels().isEmpty()
@@ -344,7 +426,10 @@ public class RealRecommendationService implements RecommendationService {
                 || filter.hometownCity() != null
                 || filter.futureCity() != null;
         if (needDbLookup) {
-            UserBasicProfile bp = userBasicProfileRepository.findByUserId(view.id()).orElse(null);
+            // infra R2-00238: 优先从批量 Map 取基本资料；Map 为空（单测直接调用）时回退查库
+            UserBasicProfile bp = (basicProfileMap == null || basicProfileMap.isEmpty())
+                    ? userBasicProfileRepository.findByUserId(view.id()).orElse(null)
+                    : basicProfileMap.get(view.id());
             if (bp == null) return false;
             if (!filter.relationshipStatuses().isEmpty()
                     && (bp.getRelationshipStatus() == null
@@ -356,6 +441,21 @@ public class RealRecommendationService implements RecommendationService {
             if (filter.futureCity() != null && !filter.futureCity().equals(bp.getFutureCity())) return false;
         }
         return true;
+    }
+
+    /**
+     * 批量加载用户基本资料 Map（userId → UserBasicProfile），避免筛选逐条查库（N+1）。
+     *
+     * @param userIds 用户 ID 列表
+     * @return 基本资料映射
+     */
+    private Map<Long, UserBasicProfile> loadBasicProfileMap(List<Long> userIds) {
+        List<Long> distinct = userIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinct.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userBasicProfileRepository.findByUserIdIn(distinct).stream()
+                .collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p, (a, b) -> a));
     }
 
     // ---- 私有辅助方法 ----

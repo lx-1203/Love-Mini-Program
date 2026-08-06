@@ -69,6 +69,7 @@ public class AdminNotifyConfigController {
      */
     @Auditable(value = AuditOperation.UPDATE_NOTIFY_CONFIG, targetType = "NOTIFY_CONFIG")
     @PutMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Transactional
     public ResponseEntity<List<NotifyConfigView>> update(
             @Valid @RequestBody NotifyConfigBatchUpdateRequest request) {

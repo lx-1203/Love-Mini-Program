@@ -49,7 +49,10 @@ public class RealSocialProgressService implements SocialProgressService {
      * @return 社交进度视图
      */
     @Override
-    @Transactional(readOnly = true)
+    // 缺陷修复（走查）：getProgress 内部调用 getOrCreateProgress 可能创建进度记录（写库），
+    // 原 @Transactional(readOnly = true) 在 MySQL 只读连接下执行写操作会抛
+    // "Connection is read-only" 异常导致 500，改为读写事务
+    @Transactional
     public SocialProgressView getProgress(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");

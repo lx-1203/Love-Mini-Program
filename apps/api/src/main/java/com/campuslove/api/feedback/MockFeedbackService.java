@@ -168,6 +168,29 @@ public class MockFeedbackService implements FeedbackService {
   }
 
   /**
+   * 管理员回复/标记反馈为已处理（Mock 实现，infra R2-00023）。
+   */
+  @Override
+  public SubmissionRecordView replyFeedback(long id, String reply) {
+    if (reply == null || reply.isBlank()) {
+      throw new IllegalArgumentException("回复内容不能为空");
+    }
+    return seedRecords.stream()
+        .filter(record -> record.id() == id)
+        .findFirst()
+        .map(record -> new SubmissionRecordView(
+            record.id(),
+            record.type(),
+            record.title(),
+            SubmissionStatus.REVIEWED,
+            reply.trim().length() > 200 ? reply.trim().substring(0, 200) + "…" : reply.trim(),
+            record.submittedAt(),
+            record.convertedActivityId()
+        ))
+        .orElseThrow(() -> new IllegalArgumentException("feedback not found"));
+  }
+
+  /**
    * 功能9：上传反馈图片附件（Mock 实现）。
    *
    * <p>Mock 模式下不实际上传文件，仅返回 mock URL 供前端调试使用。</p>

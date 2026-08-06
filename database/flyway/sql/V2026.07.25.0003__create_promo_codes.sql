@@ -21,7 +21,7 @@
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS promo_codes (
-    id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+    id              BIGINT UNSIGNED       PRIMARY KEY AUTO_INCREMENT,
     code            VARCHAR(64)  NOT NULL                COMMENT '优惠码字符串（唯一）',
     discount_type   VARCHAR(16)  NOT NULL DEFAULT 'AMOUNT' COMMENT '折扣类型 AMOUNT/PERCENT',
     discount_value  INT          NOT NULL                COMMENT '折扣值（AMOUNT为分，PERCENT为百分比0-100）',
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS promo_codes (
     valid_from      DATETIME     NOT NULL                COMMENT '有效期开始时间',
     valid_to        DATETIME     NOT NULL                COMMENT '有效期结束时间',
     status          VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE' COMMENT '状态 ACTIVE/DISABLED',
-    created_by      BIGINT                               COMMENT '创建者用户ID（管理员）',
+    created_by      BIGINT UNSIGNED                      COMMENT '创建者用户ID（管理员）',
     remark          VARCHAR(200)                         COMMENT '备注',
     created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -39,10 +39,10 @@ CREATE TABLE IF NOT EXISTS promo_codes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='VIP 优惠码表';
 
 CREATE TABLE IF NOT EXISTS promo_code_usages (
-    id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
-    promo_code_id   BIGINT       NOT NULL                COMMENT '优惠码ID',
+    id              BIGINT UNSIGNED       PRIMARY KEY AUTO_INCREMENT,
+    promo_code_id   BIGINT UNSIGNED NOT NULL                COMMENT '优惠码ID',
     code            VARCHAR(64)  NOT NULL                COMMENT '优惠码字符串（冗余）',
-    user_id         BIGINT       NOT NULL                COMMENT '使用者用户ID',
+    user_id         BIGINT UNSIGNED NOT NULL                COMMENT '使用者用户ID',
     discount_amount INT          NOT NULL                COMMENT '折扣金额（分）',
     used_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '使用时间',
     UNIQUE KEY uk_promo_code_usages (promo_code_id, user_id),

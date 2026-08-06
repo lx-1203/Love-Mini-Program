@@ -8,6 +8,8 @@ import type { InteractionEventView } from "../services/generated/api-types-suppl
 import { ASYNC_TIMEOUT_MS } from "../constants/growth";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
+// infra R2-00028: mock 头像统一走 IMAGE_PATHS 体系
+import { IMAGE_PATHS } from "../config/images";
 
 /**
  * 会话类型
@@ -181,10 +183,17 @@ export interface UnreadCountView {
 /* ========== 映射函数 ========== */
 
 function mapToMessageSession(raw: ConversationView): MessageSession {
-  // 修复（严格模式 noUnusedLocals）：原 sessionStore 在本函数内未使用，已移除。
+  // 修复（P1 BUG）：partnerId 原实现恒取 raw.userBId，当自己是会话的 userB 时
+  // partnerId 会指向自己，导致会话列表点击跳转错乱（进入自己的资料页/错误的私信）。
+  // 现根据当前登录用户判断：自己是 userA 则对方是 userB，反之亦然。
+  const sessionStore = useSessionStore();
+  // infra R2-00029: 判空逻辑简化为统一空串处理
+  const currentUserIdStr = sessionStore.userSession?.userId ?? "";
+  const isSelfUserA = currentUserIdStr.length > 0 && String(raw.userAId) === currentUserIdStr;
+  const partnerId = isSelfUserA ? String(raw.userBId) : String(raw.userAId);
   return {
     id: String(raw.id),
-    partnerId: String(raw.userBId),
+    partnerId,
     partnerName: raw.otherUserName,
     partnerAvatar: raw.otherUserAvatar || "",
     partnerHeadline: raw.headline || "",
@@ -214,6 +223,10 @@ function mapToMessageItem(raw: BackendMessageView): MessageItem {
 
 function mapToSystemNotification(raw: BackendNotificationView): SystemNotification {
   const mappedSignalType: SignalType = raw.signalType === "CONTENT" ? "CONTENT" : "SOCIAL";
+  // 修复（P1 BUG）：triggerUserId 原实现写入 raw.sourceUser?.displayName（显示名而非 ID），
+  // 导致通知跳转用户资料时按名字查 ID 失败。后端 NotificationView.sourceUser 目前只提供
+  // displayName/avatar，未暴露用户 ID —— 这里置 null 并保留 resourceId 跳转，
+  // 待后端补 sourceUserId 字段后可恢复映射（TODO(backend): 补充 sourceUser.id）。
   return {
     id: String(raw.id),
     type: mapNotificationType(raw.type),
@@ -222,28 +235,48 @@ function mapToSystemNotification(raw: BackendNotificationView): SystemNotificati
     isRead: raw.isRead,
     createdAt: raw.createdAt,
     actionUrl: null,
-    triggerUserId: raw.sourceUser?.displayName ?? null,
+    triggerUserId: null,
     resourceId: raw.referenceId ? String(raw.referenceId) : null,
     signalType: mappedSignalType,
   };
 }
 
 function mapNotificationType(backendType: string): SystemNotification["type"] {
-  const typeMap: Record<string, SystemNotification["type"]> = {
+  // infra R2-00030: 用 satisfies 校验映射值类型，类型演进时由编译器捕获遗漏
+  const typeMap = {
     "follow": "follow",
     "like": "like",
     "comment": "comment",
     "visitor": "visitor",
     "match": "interaction_match",
-  };
-  return typeMap[backendType] || "system";
+  } as const satisfies Record<string, SystemNotification["type"]>;
+  return (typeMap as Record<string, SystemNotification["type"]>)[backendType] || "system";
 }
 
 /* ========== Mock 数据 ========== */
 
+/**
+ * infra R2-00031: 互动事件字段映射（抽离 loadInteractionEvents 内联单行长映射，
+ * 统一处理后端多字段兼容与兜底）
+ */
+function mapToInteractionEvent(item: InteractionEventView): InteractionEvent {
+  return {
+    id: Number(item.id),
+    eventType: item.eventType ?? item.type,
+    triggerUserId: Number(item.triggerUserId ?? item.fromUserId ?? 0),
+    triggerUserName: String(item.triggerUserName ?? item.fromUserName ?? ""),
+    triggerUserAvatar: String(item.triggerUserAvatar ?? item.fromUserAvatar ?? ""),
+    referenceId: Number(item.referenceId ?? 0),
+    referenceType: String(item.referenceType ?? ""),
+    summary: String(item.summary ?? ""),
+    isRead: Boolean(item.isRead ?? item.read),
+    createdAt: String(item.createdAt),
+  } as InteractionEvent;
+}
+
 const mockSessions: MessageSession[] = [
   {
-    id: "session-private-1", partnerId: "user-2001", partnerName: "林夕", partnerAvatar: "/static/default-avatar.png",
+    id: "session-private-1", partnerId: "user-2001", partnerName: "林夕", partnerAvatar: IMAGE_PATHS.DEFAULT_AVATAR,
     partnerHeadline: "大二 · 喜欢电影和咖啡", lastMessagePreview: "明天下午有空吗？",
     lastMessageSentAt: "2026-05-20T18:30:00Z", unreadCount: 2, pinned: true,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
@@ -357,16 +390,21 @@ const mockNotifications: SystemNotification[] = [
 ];
 
 const mockInteractionEvents: InteractionEvent[] = [
-  { id: 1, eventType: "NEW_LIKE", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: "/static/default-avatar.png", referenceId: 0, referenceType: "profile", summary: "夏言喜欢了你", isRead: false, createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString() },
-  { id: 2, eventType: "NEW_VISITOR", triggerUserId: 4002, triggerUserName: "顾北", triggerUserAvatar: "/static/default-avatar.png", referenceId: 0, referenceType: "profile", summary: "顾北访问了你的主页", isRead: false, createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
-  { id: 3, eventType: "NEW_FOLLOW", triggerUserId: 4003, triggerUserName: "林溪", triggerUserAvatar: "/static/default-avatar.png", referenceId: 0, referenceType: "profile", summary: "林溪关注了你", isRead: true, createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-  { id: 4, eventType: "POST_LIKED", triggerUserId: 4004, triggerUserName: "周屿", triggerUserAvatar: "/static/default-avatar.png", referenceId: 42, referenceType: "post", summary: "周屿赞了你的帖子", isRead: false, createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
-  { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: "/static/default-avatar.png", referenceId: 42, referenceType: "post", summary: "夏言评论了你的帖子：\"写得真好！\"", isRead: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
-  { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "沈念", triggerUserAvatar: "/static/default-avatar.png", referenceId: 15, referenceType: "topic", summary: "沈念回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
+  { id: 1, eventType: "NEW_LIKE", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: IMAGE_PATHS.DEFAULT_AVATAR, referenceId: 0, referenceType: "profile", summary: "夏言喜欢了你", isRead: false, createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString() },
+  { id: 2, eventType: "NEW_VISITOR", triggerUserId: 4002, triggerUserName: "顾北", triggerUserAvatar: IMAGE_PATHS.DEFAULT_AVATAR, referenceId: 0, referenceType: "profile", summary: "顾北访问了你的主页", isRead: false, createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+  { id: 3, eventType: "NEW_FOLLOW", triggerUserId: 4003, triggerUserName: "林溪", triggerUserAvatar: IMAGE_PATHS.DEFAULT_AVATAR, referenceId: 0, referenceType: "profile", summary: "林溪关注了你", isRead: true, createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+  { id: 4, eventType: "POST_LIKED", triggerUserId: 4004, triggerUserName: "周屿", triggerUserAvatar: IMAGE_PATHS.DEFAULT_AVATAR, referenceId: 42, referenceType: "post", summary: "周屿赞了你的帖子", isRead: false, createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
+  { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "夏言", triggerUserAvatar: IMAGE_PATHS.DEFAULT_AVATAR, referenceId: 42, referenceType: "post", summary: "夏言评论了你的帖子：\"写得真好！\"", isRead: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
+  { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "沈念", triggerUserAvatar: IMAGE_PATHS.DEFAULT_AVATAR, referenceId: 15, referenceType: "topic", summary: "沈念回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
 ];
 
 // 注：ASYNC_TIMEOUT_MS 由 constants/growth.ts 统一提供
 
+// 注：本文件曾自带一份 withTimeout 实现（与 services/http.ts 导出的 withTimeout 重复）。
+// 因本地版本签名不同（第三参为自定义错误文案字符串，http.ts 版本第三参为 AbortSignal），
+// 且调用点依赖本地错误文案（如“加载会话列表超时”），为不改变 20+ 处调用点的错误语义，
+// 此处保留本地实现，但超时语义（clearTimeout + reject）与 services/http.ts 保持一致。
+// 后续如需统一，可改为传入 AbortSignal 并迁移调用点错误文案。
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
@@ -436,7 +474,7 @@ export const useMessagesStore = defineStore("messages", {
       try {
         await withTimeout(
           Promise.all([this.fetchSessions(), this.fetchHeartSignals(), this.fetchNotifications()]),
-          ASYNC_TIMEOUT_MS, "消息数据初始化超时，请检查网络后重试"
+          ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutBootstrap") // infra R2-00028: 超时文案 i18n 化
         );
       } catch (error) {
         if (!this.errorMessage) this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.loadMessagesFailed");
@@ -460,18 +498,19 @@ export const useMessagesStore = defineStore("messages", {
           }
           const sessionStore = useSessionStore();
           const userId = sessionStore.userSession?.userId ?? "";
-          const data = await request<ConversationView[]>({ url: `/messages/conversations?userId=${userId}`, method: "GET" });
+          // 修复：userId 拼入 URL 前 encodeURIComponent，防止特殊字符破坏 query 结构
+          const data = await request<ConversationView[]>({ url: `/messages/conversations?userId=${encodeURIComponent(userId)}`, method: "GET" });
           // 修复：旧请求返回时不再修改状态，避免覆盖新请求结果
           if (token !== fetchSessionsToken) return;
           this.sessions = data.map(mapToMessageSession).sort((a, b) => {
             if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
             return (b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0) - (a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0);
           });
-        })(), ASYNC_TIMEOUT_MS, "加载会话列表超时");
+        })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutSessions")); // infra R2-00028
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
         if (token !== fetchSessionsToken) return;
-        this.errorMessage = error instanceof Error ? error.message : "加载会话列表失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.loadSessionsFailed"); // infra R2-00028
       }
       finally {
         // 修复：仅当当前 token 仍是最新时才清 loading
@@ -497,17 +536,18 @@ export const useMessagesStore = defineStore("messages", {
           }
           const sessionStore = useSessionStore();
           const userId = sessionStore.userSession?.userId ?? "";
-          const data = await request<BackendMessageView[]>({ url: `/messages/conversations/${sessionId}/messages?userId=${userId}`, method: "GET" });
+          // 修复：sessionId/userId 拼入 URL 前 encodeURIComponent
+          const data = await request<BackendMessageView[]>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages?userId=${encodeURIComponent(userId)}`, method: "GET" });
           // 修复：旧请求返回时不再修改状态
           if (token !== fetchSessionMessagesToken) return;
           this.currentMessages = data.map(mapToMessageItem);
           const s = this.sessions.find((x) => x.id === sessionId);
           if (s) s.unreadCount = 0;
-        })(), ASYNC_TIMEOUT_MS, "加载消息超时");
+        })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMessages")); // infra R2-00028
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
         if (token !== fetchSessionMessagesToken) return;
-        this.errorMessage = error instanceof Error ? error.message : "加载消息失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.loadMessagesListFailed"); // infra R2-00028
       }
       finally {
         if (token === fetchSessionMessagesToken) {
@@ -579,9 +619,9 @@ export const useMessagesStore = defineStore("messages", {
           }
           this.currentMessages = [];
           return session;
-        })(), ASYNC_TIMEOUT_MS, "创建会话超时，请重试");
+        })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutCreateSession")); // infra R2-00028
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "创建会话失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.createSessionFailed"); // infra R2-00028
         throw error;
       }
     },
@@ -621,13 +661,13 @@ export const useMessagesStore = defineStore("messages", {
           }
           const sessionStore = useSessionStore();
           const senderId = sessionStore.userSession?.userId ?? "";
-          const result = await request<BackendMessageView, { senderId: string; content: string; kind: string }>({ url: `/messages/conversations/${sessionId}/messages`, method: "POST", data: { senderId, content, kind: "text" } });
+          const result = await request<BackendMessageView, { senderId: string; content: string; kind: string }>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`, method: "POST", data: { senderId, content, kind: "text" } });
           const mr = mapToMessageItem(result);
           this.currentMessages.push(mr);
           const s = this.sessions.find((x) => x.id === sessionId);
           if (s) { s.lastMessagePreview = content; s.lastMessageSentAt = mr.sentAt; }
           return mr;
-        })(), ASYNC_TIMEOUT_MS, "发送消息超时，请重试");
+        })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutSendMessage")); // infra R2-00028
       } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.sendMessageFailed"); throw error; }
     },
 
@@ -645,11 +685,12 @@ export const useMessagesStore = defineStore("messages", {
           }
           const sessionStore = useSessionStore();
           const userId = sessionStore.userSession?.userId ?? "";
-          const data = await request<MessageHeartSignal[]>({ url: `/matches/heart-signals?userId=${userId}`, method: "GET" });
+          // 修复：userId 拼入 URL 前 encodeURIComponent
+          const data = await request<MessageHeartSignal[]>({ url: `/matches/heart-signals?userId=${encodeURIComponent(userId)}`, method: "GET" });
           // 修复：旧请求返回时不再修改状态
           if (token !== fetchHeartSignalsToken) return;
           this.heartSignals = data;
-        })(), ASYNC_TIMEOUT_MS, "加载心动信号超时");
+        })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutSignals")); // infra R2-00028
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
         if (token !== fetchHeartSignalsToken) return;
@@ -674,18 +715,18 @@ export const useMessagesStore = defineStore("messages", {
             const expiresAt = Date.parse(signal.expiresAt);
             if (Date.now() > expiresAt) { signal.status = "expired"; throw new Error(t("storeErrors.messages.signalExpired")); }
             signal.status = "accepted";
-            const ns: MessageSession = { id: `session-private-${signal.fromUserId}`, partnerId: signal.fromUserId, partnerName: signal.fromUserName, partnerAvatar: signal.fromUserAvatar, partnerHeadline: `${signal.school || ""} · ${signal.age || ""}岁 · ${signal.city || ""}`, lastMessagePreview: "你们已成为好友，开始聊天吧", lastMessageSentAt: new Date().toISOString(), unreadCount: 0, pinned: false, phase: "active", sessionType: "private", closesAt: null, closedReason: null };
+            const ns: MessageSession = { id: `session-private-${signal.fromUserId}`, partnerId: signal.fromUserId, partnerName: signal.fromUserName, partnerAvatar: signal.fromUserAvatar, partnerHeadline: t("messages.partnerHeadlineTemplate", { school: signal.school || "", age: signal.age || "", city: signal.city || "" }), lastMessagePreview: t("messages.becameFriends"), lastMessageSentAt: new Date().toISOString(), unreadCount: 0, pinned: false, phase: "active", sessionType: "private", closesAt: null, closedReason: null }; // infra R2-00028: 会话预览文案 i18n 化
             if (!this.sessions.find((s) => s.id === ns.id)) this.sessions.unshift(ns);
             return ns;
           }
           const sessionStore = useSessionStore();
           const userId = sessionStore.userSession?.userId ?? "";
-          await request<void>({ url: `/matches/heart-signals/${signalId}/accept?userId=${userId}`, method: "POST" });
+          await request<void>({ url: `/matches/heart-signals/${encodeURIComponent(signalId)}/accept?userId=${encodeURIComponent(userId)}`, method: "POST" });
           const signal = this.heartSignals.find((s) => s.id === signalId);
           if (signal) signal.status = "accepted";
           await this.fetchSessions();
           return this.sessions.find((s) => s.sessionType === "private" && s.partnerId === signal?.fromUserId) ?? null;
-        })(), ASYNC_TIMEOUT_MS, "接受心动信号超时，请重试");
+        })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutAcceptSignal")); // infra R2-00028
       } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.acceptSignalFailed"); throw error; }
     },
 
@@ -719,17 +760,19 @@ export const useMessagesStore = defineStore("messages", {
             if (token !== fetchNotificationsToken) return;
             this.notifications = data.map(mapToSystemNotification).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
           } else {
+            // 通知列表分页：保留 size=100（与后端默认契约一致，单页拉取足够覆盖通知量），
+            // 如后续通知量大可改为 page/pageSize 滚动加载（暂未实现，避免过度设计）
             const signalParam = activeFilter === "social" ? "SOCIAL" : "CONTENT";
             const data = await request<BackendNotificationView[]>({ url: `/notifications/list?page=0&size=100&signalType=${signalParam}`, method: "GET" });
             // 修复：旧请求返回时不再修改状态
             if (token !== fetchNotificationsToken) return;
             this.notifications = data.map(mapToSystemNotification).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
           }
-        })(), ASYNC_TIMEOUT_MS, "加载通知超时");
+        })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutNotifications")); // infra R2-00028
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
         if (token !== fetchNotificationsToken) return;
-        this.errorMessage = error instanceof Error ? error.message : "加载通知失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.loadNotificationsFailed"); // infra R2-00028
       }
       finally {
         if (token === fetchNotificationsToken) {
@@ -743,7 +786,7 @@ export const useMessagesStore = defineStore("messages", {
         const n = this.notifications.find((x) => x.id === notificationId);
         if (!n || n.isRead) return;
         if (useMock()) { n.isRead = true; return; }
-        await withTimeout(request<void>({ url: `/notifications/${notificationId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, "标记通知已读超时");
+        await withTimeout(request<void>({ url: `/notifications/${notificationId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkRead")); // infra R2-00028
         n.isRead = true;
       } catch (_e) { /* 静默失败 */ }
     },
@@ -751,7 +794,7 @@ export const useMessagesStore = defineStore("messages", {
     async markAllNotificationsRead() {
       try {
         if (useMock()) { this.notifications.forEach((n) => { n.isRead = true; }); return; }
-        await withTimeout(request<void>({ url: "/notifications/read-all", method: "PUT" }), ASYNC_TIMEOUT_MS, "标记全部已读超时");
+        await withTimeout(request<void>({ url: "/notifications/read-all", method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkAllRead")); // infra R2-00028
         this.notifications.forEach((n) => { n.isRead = true; });
       } catch (error) {
         // 修复：原代码失败时仍强制标记为已读，导致 UI 与服务端数据不一致（下次刷新会"已读变未读"反弹）
@@ -764,7 +807,7 @@ export const useMessagesStore = defineStore("messages", {
     async fetchUnreadNotificationCount() {
       try {
         if (useMock()) return this.notifications.filter((n) => !n.isRead).length;
-        const result = await withTimeout(request<UnreadCountView>({ url: "/notifications/unread-count", method: "GET" }), ASYNC_TIMEOUT_MS, "获取未读通知数量超时");
+        const result = await withTimeout(request<UnreadCountView>({ url: "/notifications/unread-count", method: "GET" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutUnreadCount")); // infra R2-00028
         return result.count ?? 0;
       } catch (error) {
         // 修复：原代码失败时返回 0 会误导用户以为没有未读消息
@@ -780,10 +823,11 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) { const s = this.sessions.find((x) => x.id === sessionId); if (s) s.pinned = pinned; return; }
         const sessionStore = useSessionStore();
         const userId = sessionStore.userSession?.userId ?? "";
-        await withTimeout(request<void>({ url: `/messages/conversations/${sessionId}/pin?pinned=${pinned}&userId=${userId}`, method: "PUT" }), ASYNC_TIMEOUT_MS, "置顶操作超时");
+        // 修复：userId 拼入 URL 前 encodeURIComponent
+        await withTimeout(request<void>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/pin?pinned=${pinned}&userId=${encodeURIComponent(userId)}`, method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutPinSession")); // infra R2-00028
         const s = this.sessions.find((x) => x.id === sessionId);
         if (s) s.pinned = pinned;
-      } catch (error) { this.errorMessage = error instanceof Error ? error.message : "置顶操作失败"; throw error; }
+      } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.pinSessionFailed"); throw error; } // infra R2-00028
     },
 
     /**
@@ -816,15 +860,16 @@ export const useMessagesStore = defineStore("messages", {
         }
         const sessionStore = useSessionStore();
         const userId = sessionStore.userSession?.userId ?? "";
+        // 修复：sessionId/userId 拼入 URL 前 encodeURIComponent
         await withTimeout(
-          request<void>({ url: `/messages/conversations/${sessionId}?userId=${userId}`, method: "DELETE" }),
+          request<void>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}?userId=${encodeURIComponent(userId)}`, method: "DELETE" }),
           ASYNC_TIMEOUT_MS,
-          "删除会话超时"
+          t("storeErrors.messages.timeoutDeleteSession") // infra R2-00028
         );
         // 删除成功后从本地列表移除
         this.sessions = this.sessions.filter((s) => s.id !== sessionId);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "删除会话失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.deleteSessionFailed"); // infra R2-00028
         throw error;
       }
     },
@@ -835,10 +880,11 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) { const s = this.heartSignals.find((x) => x.id === signalId); if (s) s.status = "expired"; return; }
         const sessionStore = useSessionStore();
         const userId = sessionStore.userSession?.userId ?? "";
-        await withTimeout(request<void>({ url: `/matches/heart-signals/${signalId}/decline?userId=${userId}`, method: "POST" }), ASYNC_TIMEOUT_MS, "拒绝心动信号超时");
+        // 修复：signalId/userId 拼入 URL 前 encodeURIComponent
+        await withTimeout(request<void>({ url: `/matches/heart-signals/${encodeURIComponent(signalId)}/decline?userId=${encodeURIComponent(userId)}`, method: "POST" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutDeclineSignal")); // infra R2-00028
         const s = this.heartSignals.find((x) => x.id === signalId);
         if (s) s.status = "expired";
-      } catch (error) { this.errorMessage = error instanceof Error ? error.message : "拒绝心动信号失败"; throw error; }
+      } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.rejectSignalFailed"); throw error; } // infra R2-00028
     },
 
     onNewMessage(message: MessageItem): void {
@@ -888,15 +934,15 @@ export const useMessagesStore = defineStore("messages", {
           const data = await request<InteractionEventView[]>({ url: `/interactions?page=${page}&pageSize=20`, method: "GET" });
           // 修复：旧请求返回时不再修改状态
           if (token !== loadInteractionEventsToken) return;
-          const mapped = data.map((item) => ({ id: Number(item.id), eventType: item.eventType ?? item.type, triggerUserId: Number(item.triggerUserId ?? item.fromUserId ?? 0), triggerUserName: String(item.triggerUserName ?? item.fromUserName ?? ""), triggerUserAvatar: String(item.triggerUserAvatar ?? item.fromUserAvatar ?? ""), referenceId: Number(item.referenceId ?? 0), referenceType: String(item.referenceType ?? ""), summary: String(item.summary ?? ""), isRead: Boolean(item.isRead ?? item.read), createdAt: String(item.createdAt) })) as InteractionEvent[];
+          const mapped = data.map(mapToInteractionEvent); // infra R2-00031: 使用抽取的映射函数
           if (page === 1) this.interactionEvents = mapped;
           else this.interactionEvents = [...this.interactionEvents, ...mapped];
           this.interactionEventPage = page; this.interactionEventHasMore = mapped.length >= 20;
-        })(), ASYNC_TIMEOUT_MS, "加载互动事件超时");
+        })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutInteractions")); // infra R2-00028
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
         if (token !== loadInteractionEventsToken) return;
-        this.errorMessage = error instanceof Error ? error.message : "加载互动事件失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.loadInteractionsFailed"); // infra R2-00028
       }
       finally {
         if (token === loadInteractionEventsToken) {
@@ -908,7 +954,7 @@ export const useMessagesStore = defineStore("messages", {
     async getUnreadInteractionCount(): Promise<number> {
       try {
         if (useMock()) return this.interactionEvents.filter((e) => !e.isRead).length;
-        const result = await withTimeout(request<{ count: number }>({ url: "/interactions/unread-count", method: "GET" }), ASYNC_TIMEOUT_MS, "获取未读互动事件数超时");
+        const result = await withTimeout(request<{ count: number }>({ url: "/interactions/unread-count", method: "GET" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutUnreadInteractionCount")); // infra R2-00028
         return result.count ?? 0;
       } catch (_e) { return this.interactionEvents.filter((e) => !e.isRead).length; }
     },
@@ -918,7 +964,7 @@ export const useMessagesStore = defineStore("messages", {
         const e = this.interactionEvents.find((x) => x.id === eventId);
         if (!e || e.isRead) return;
         if (useMock()) { e.isRead = true; return; }
-        await withTimeout(request<void>({ url: `/interactions/${eventId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, "标记互动事件已读超时");
+        await withTimeout(request<void>({ url: `/interactions/${eventId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkInteractionRead")); // infra R2-00028
         e.isRead = true;
       } catch (_e) { /* 静默失败 */ }
     },
@@ -926,7 +972,7 @@ export const useMessagesStore = defineStore("messages", {
     async markAllInteractionsRead() {
       try {
         if (useMock()) { this.interactionEvents.forEach((e) => { e.isRead = true; }); return; }
-        await withTimeout(request<void>({ url: "/interactions/read-all", method: "PUT" }), ASYNC_TIMEOUT_MS, "标记全部互动事件已读超时");
+        await withTimeout(request<void>({ url: "/interactions/read-all", method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkAllInteractionsRead")); // infra R2-00028
         this.interactionEvents.forEach((e) => { e.isRead = true; });
       } catch (error) {
         // 修复：原代码失败时仍强制标记为已读，导致数据不一致

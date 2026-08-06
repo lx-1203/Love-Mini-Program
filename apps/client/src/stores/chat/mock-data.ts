@@ -12,14 +12,21 @@ import type {
   ChatSessionSummary,
   TempChatSession,
 } from "./types";
+// 展示文案 i18n 化：非组件场景使用 i18n.global.t（与 fixtures.ts 一致）。
+// mock 数据在模块加载时求值一次；如后续需要 locale 切换后实时跟随，
+// 请参照 services/mocks/fixtures.ts 改为 builder 函数在调用时解析 key。
+import { t } from "@/i18n";
 
 /** Mock 会话1：普通私信会话 */
+// 修复（P1 BUG）：recommendedPersonId 由 "rp-001" 改为 "4001"，与
+// services/mocks/fixtures.ts 的推荐人数字 id 体系对齐（4001=夏言，对应
+// i18n mockData.recommendedPeople.name1），消除三套 id 体系错位。
 export const mockSession1: TempChatSession = {
   id: "mock-session-1",
-  recommendedPersonId: "rp-001",
-  partnerName: "夏言",
-  partnerHeadline: "北京大学 · 大三 · 心理学",
-  availabilityHint: "今晚 19:00-21:00",
+  recommendedPersonId: "4001",
+  partnerName: t("mockData.recommendedPeople.name1"),
+  partnerHeadline: t("mockData.recommendedPeople.headline1"),
+  availabilityHint: t("mockData.recommendedPeople.availability1"),
   phase: "active",
   closesAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   closedReason: null,
@@ -82,12 +89,14 @@ export const mockSession1: TempChatSession = {
 };
 
 /** Mock 会话2：临时聊天会话 */
+// 修复（P1 BUG）：recommendedPersonId 由 "rp-002" 改为 "4002"（fixtures 数字体系，
+// 4002=顾北，对应 i18n mockData.recommendedPeople.name2）。
 export const mockSession2: TempChatSession = {
   id: "mock-session-2",
-  recommendedPersonId: "rp-002",
-  partnerName: "顾北",
-  partnerHeadline: "清华大学 · 研一 · 建筑学",
-  availabilityHint: "周末下午",
+  recommendedPersonId: "4002",
+  partnerName: t("mockData.recommendedPeople.name2"),
+  partnerHeadline: t("mockData.recommendedPeople.headline2"),
+  availabilityHint: t("mockData.recommendedPeople.availability2"),
   phase: "matching",
   closesAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   closedReason: null,
@@ -166,23 +175,26 @@ export const mockChatSessionSummaries: ChatSessionSummary[] = [
 /** Mock 聊天概览数据 */
 export const mockChatOverview: ChatOverview = {
   sessions: mockChatSessionSummaries,
-  emptyStateLead: "还没有临时会话时，继续从推荐的人进入。",
+  emptyStateLead: t("mockData.tempChat.emptyState"),
   recommendedPeople: [
+    // 修复（P1 BUG）：id 由 rp-003/rp-004 改为 fixtures 数字体系 4003/4004
+    // （4003=林溪、4004=周屿，对应 i18n mockData.recommendedPeople.name3/name4）。
+    // 展示文案（headline/commonGround/availability）经 i18n key 解析。
     {
-      id: "rp-003",
-      name: "林溪",
+      id: "4003",
+      name: t("mockData.recommendedPeople.name3"),
       initials: "林",
-      headline: "复旦大学 · 大二 · 日语系",
-      commonGround: "你们都选了摄影话题",
-      availability: "周三、周五晚上",
+      headline: t("mockData.recommendedPeople.headline3"),
+      commonGround: t("mockData.recommendedPeople.commonGround3"),
+      availability: t("mockData.recommendedPeople.availability3"),
     },
     {
-      id: "rp-004",
-      name: "周屿",
+      id: "4004",
+      name: t("mockData.recommendedPeople.name4"),
       initials: "周",
-      headline: "浙江大学 · 大四 · 计算机",
-      commonGround: "你们都选了运动话题",
-      availability: "每天傍晚",
+      headline: t("mockData.recommendedPeople.headline4"),
+      commonGround: t("mockData.recommendedPeople.commonGround4"),
+      availability: t("mockData.recommendedPeople.availability4"),
     },
   ],
 };

@@ -1,6 +1,7 @@
 package com.campuslove.api.campus;
 
 import com.campuslove.api.campus.event.CertificationApprovedEvent;
+import com.campuslove.api.common.ResourceConflictException;
 import com.campuslove.api.entity.CampusCertification;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.repository.CampusCertificationRepository;
@@ -71,10 +72,12 @@ public class RealCampusCertificationService implements CampusCertificationServic
             String currentStatus = existing.getStatus();
 
             if (STATUS_PENDING.equals(currentStatus)) {
-                throw new IllegalStateException("您的校园认证正在审核中，请耐心等待");
+                // 缺陷修复：重复提交（已有审核中记录）改抛 ResourceConflictException（409），
+                // 原 IllegalStateException 落入全局异常兜底返回 500
+                throw new ResourceConflictException("您的校园认证正在审核中，请耐心等待");
             }
             if (STATUS_APPROVED.equals(currentStatus)) {
-                throw new IllegalStateException("您已完成校园认证，无需重复提交");
+                throw new ResourceConflictException("您已完成校园认证，无需重复提交");
             }
             // STATUS_REJECTED: 允许重新提交覆盖
             log.info("用户 {} 重新提交校园认证（覆盖已驳回记录 id={}）", userId, existing.getId());

@@ -241,6 +241,8 @@ export interface CircleState {
 /* ========== Mock 数据 ========== */
 
 const mockCircles: CircleItem[] = [
+  // infra R2-00042: 以下兴趣圈 name/description 为 mock 演示数据（useMock 守卫），
+  // real 分支由后端下发；若作为 real 空数据兜底展示需走 t("circle.*") 本地化
   {
     id: "circle-campus",
     name: "校园圈",
@@ -664,6 +666,8 @@ export const useCircleStore = defineStore("circle", {
         }
 
         if (useMock()) {
+          // infra R2-00040: mock 话题作者从当前会话生成，避免硬编码 "user-1001"/"我" 与真实用户体系割裂
+          const me = useSessionStore().userSession;
           const newTopic: TopicItem = {
             id: `topic-${Date.now()}`,
             circleId,
@@ -671,9 +675,9 @@ export const useCircleStore = defineStore("circle", {
             content: data.content.trim(),
             images: data.images ?? [],
             author: {
-              userId: "user-1001",
-              name: "我",
-              avatar: "",
+              userId: me?.userId ?? "user-1001",
+              name: me?.displayName ?? "我",
+              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
               headline: "",
             },
             replyCount: 0,
@@ -819,13 +823,15 @@ export const useCircleStore = defineStore("circle", {
         }
 
         if (useMock()) {
+          // infra R2-00040: mock 回复作者从当前会话生成
+          const me = useSessionStore().userSession;
           const newReply: ReplyItem = {
             id: `reply-${Date.now()}`,
             topicId,
             author: {
-              userId: "user-1001",
-              name: "我",
-              avatar: "",
+              userId: me?.userId ?? "user-1001",
+              name: me?.displayName ?? "我",
+              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
               headline: "",
             },
             content: content.trim(),
@@ -919,7 +925,7 @@ export const useCircleStore = defineStore("circle", {
         this.topicPage = page;
         this.topicHasMore = data.content.length >= TOPIC_PAGE_SIZE;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载精选话题失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.circle.loadFeaturedTopicsFailed"); // infra R2-00041: 错误回退消息 i18n 化
       } finally {
         this.loading = false;
       }

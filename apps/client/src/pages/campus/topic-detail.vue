@@ -9,8 +9,8 @@
  * - 回复列表
  * - 底部回复输入框
  */
-import { ref, onMounted, onUnmounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { ref, onUnmounted } from "vue";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime } from "../../stores/campus";
@@ -20,7 +20,7 @@ import EmptyState from "../../components/common/EmptyState.vue";
 
 const campusStore = useCampusStore();
 const { t } = useI18n();
-const { currentTopic, replies, loading } = storeToRefs(campusStore);
+const { currentTopic, replies, loading, errorMessage } = storeToRefs(campusStore);
 
 const pageVisible = ref(false);
 /** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
@@ -94,33 +94,59 @@ function getDisplayName(isAnonymous: boolean, name: string): string {
   return isAnonymous ? t("campus.topicDetail.anonymousAuthor") : name;
 }
 
-onMounted(() => {
-  // 获取页面参数
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1];
-  const options = (currentPage as { options?: Record<string, string> })?.options ?? {};
-  topicId.value = options.topicId || "";
+/** 回复分页页码（从 1 开始，页面本地维护） */
+const replyPage = ref(1);
+/** 是否还有更多回复（本地估算：下一页无新增时置 false） */
+const repliesHasMore = ref(true);
+
+onLoad((query) => {
+  // 修复（review #17）：改用 onLoad(query) 取参，替代 getCurrentPages().options
+  topicId.value = query?.topicId ?? "";
 
   if (topicId.value) {
     void campusStore.fetchCampusTopicDetail(topicId.value);
     void campusStore.fetchCampusReplies(topicId.value, 1);
+  } else {
+    // infra R2-00076: topicId 缺失时给出错误态提示，避免直开链接白屏
+    uni.showToast({ title: t("storeErrors.campus.topicIdInvalid"), icon: "none" });
   }
 });
+
+/** 回复列表滚动到底：加载下一页（review #17：回复分页） */
+function onLoadMoreReplies() {
+  if (loading.value || !repliesHasMore.value || !topicId.value) return;
+  const nextPage = replyPage.value + 1;
+  const prevCount = campusStore.replies.length;
+  void campusStore.fetchCampusReplies(topicId.value, nextPage).then(() => {
+    replyPage.value = nextPage;
+    // 下一页未返回新数据 → 没有更多
+    if (campusStore.replies.length <= prevCount) {
+      repliesHasMore.value = false;
+    }
+  });
+}
+
+/** 加载失败重试（review #18：错误态区分于"话题不存在"） */
+function retryLoad() {
+  if (!topicId.value) return;
+  void campusStore.fetchCampusTopicDetail(topicId.value);
+  void campusStore.fetchCampusReplies(topicId.value, 1);
+}
 </script>
 
 <template>
   <view class="detail-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
-      <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
+      <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="back-icon">{{ t('campus.topicDetail.back') }}</text>
       </view>
       <text class="detail-header__title">{{ t('campus.topicDetail.navTitle') }}</text>
       <view class="detail-header__spacer" />
     </view>
 
-    <!-- 话题内容 -->
-    <scroll-view v-if="currentTopic" class="detail-body" scroll-y>
+    <!-- 话题内容（@scrolltolower 触发回复分页加载，review #17） -->
+    <scroll-view v-if="currentTopic" class="detail-body" scroll-y @scrolltolower="onLoadMoreReplies">
       <!-- 话题分类标签 -->
       <view class="topic-category-tag">
         <text class="category-tag">{{ CAMPUS_CATEGORY_MAP[currentTopic.category] }}</text>
@@ -211,6 +237,15 @@ onMounted(() => {
       <!-- 底部留白 -->
       <view class="body-footer" />
     </scroll-view>
+
+    <!-- 加载失败错误态（review #18：与"话题不存在"区分，提供重试） -->
+    <EmptyState
+      v-else-if="!loading && errorMessage"
+      type="network"
+      :title="t('storeErrors.campus.loadTopicDetailFailed')"
+      :action-text="t('common.retry')"
+      @action="retryLoad"
+    />
 
     <!-- 话题不存在 -->
     <EmptyState

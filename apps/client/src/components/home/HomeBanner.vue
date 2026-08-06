@@ -28,6 +28,18 @@ import { lightHaptic } from "../../utils/haptic";
 
 const { t } = useI18n();
 
+/**
+ * 渲染 Banner 标题/副标题：优先经 titleKey/subtitleKey 走 t() 翻译
+ * （支持多语言与后端运营文案），本地静态中文值仅作兜底。
+ */
+function bannerTitle(banner: HomeBannerItem): string {
+  return banner.titleKey ? t(banner.titleKey) : banner.title;
+}
+
+function bannerSubtitle(banner: HomeBannerItem): string {
+  return banner.subtitleKey ? t(banner.subtitleKey) : (banner.subtitle ?? "");
+}
+
 /** 当前轮播索引（用于指示点高亮） */
 const currentIndex = ref(0);
 
@@ -117,8 +129,8 @@ function onImageError(item: HomeBannerItem, event: Event) {
           <view class="home-banner__overlay" />
           <!-- 标题与副标题 -->
           <view class="home-banner__content">
-            <text class="home-banner__title">{{ banner.title }}</text>
-            <text v-if="banner.subtitle" class="home-banner__subtitle">{{ banner.subtitle }}</text>
+            <text class="home-banner__title">{{ bannerTitle(banner) }}</text>
+            <text v-if="banner.subtitle || banner.subtitleKey" class="home-banner__subtitle">{{ bannerSubtitle(banner) }}</text>
           </view>
         </view>
       </swiper-item>

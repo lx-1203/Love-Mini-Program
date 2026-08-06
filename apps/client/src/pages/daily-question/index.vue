@@ -62,6 +62,17 @@ onMounted(async () => {
     void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, 1);
   }
 });
+
+/**
+ * 重试加载今日问题（review #32：原实现无错误态/重试入口，
+ * 请求失败时页面停留在空白加载态）。
+ */
+async function retryQuestion() {
+  await dailyQuestionStore.fetchTodayQuestion();
+  if (todayQuestion.value) {
+    void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, 1);
+  }
+}
 </script>
 
 <template>
@@ -89,6 +100,21 @@ onMounted(async () => {
         <view v-if="loading && !todayQuestion" class="dq-state">
           <view class="loading-spinner" role="status" aria-live="polite" :aria-label="$t('dailyQuestion.loadingAria')" />
           <text class="dq-state__text">{{ $t("dailyQuestion.loadingTextProgress") }}</text>
+        </view>
+
+        <!-- 加载失败错误态（review #32：新增错误展示 + 重试入口） -->
+        <view v-else-if="dailyQuestionStore.errorMessage && !todayQuestion" class="dq-state">
+          <text class="dq-state__text">{{ dailyQuestionStore.errorMessage || $t("dailyQuestion.loadFailed") }}</text>
+          <view
+            class="dq-state__retry press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="$t('dailyQuestion.retryText')"
+            @tap="retryQuestion"
+          >
+            <text class="dq-state__retry-text">{{ $t("dailyQuestion.retryText") }}</text>
+          </view>
         </view>
 
         <!-- 问题卡片 -->
@@ -264,6 +290,19 @@ onMounted(async () => {
 .dq-state__text {
   font-size: var(--fs-md);
   color: var(--c-text-tertiary);
+}
+
+/* review #32：错误态重试按钮 */
+.dq-state__retry {
+  padding: var(--sp-3) var(--sp-8);
+  border-radius: var(--r-full);
+  background: var(--c-bg-brand);
+}
+
+.dq-state__retry-text {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-brand-700);
 }
 
 /* ========== 未签到锁定 ========== */

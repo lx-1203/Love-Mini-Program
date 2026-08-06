@@ -79,10 +79,10 @@ async function fetchPreferences() {
       campusPriority.value = true;
     }
   } catch (_e) {
-    // API 调用失败时使用默认值
-    dailyNotifyTime.value = "12:00";
-    scope.value = "campus_first";
-    campusPriority.value = true;
+    // 修复（review #28）：原 catch 只回退默认值且从不置 error=true，
+    // 模板的错误态分支（SectionCard v-else-if="error" + 重试按钮）成死代码。
+    // 现置 error=true 展示错误态与重试入口。
+    error.value = true;
   } finally {
     loading.value = false;
   }

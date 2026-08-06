@@ -6,6 +6,7 @@ import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
@@ -138,7 +139,7 @@ record CreateConversationRequest(
  * senderId 由 SecurityUtils 自动获取，只需传入内容和类型。
  */
 record SendMessageRequest(
-    @Size(max = 5000) String content,
+    @NotBlank(message = "content 不能为空") @Size(max = 5000) String content,
     @Pattern(regexp = "TEXT|IMAGE|VOICE|VIDEO|SYSTEM|EMOJI",
         message = "kind 必须为 TEXT/IMAGE/VOICE/VIDEO/SYSTEM/EMOJI")
     @Size(max = 32) String kind

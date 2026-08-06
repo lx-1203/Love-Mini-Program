@@ -46,6 +46,9 @@ class AuthControllerLogoutTest {
     @Mock
     private AuthMetrics authMetrics;
 
+    @Mock
+    private com.campuslove.api.repository.UserRepository userRepository;
+
     private AuthController controller;
 
     /** 测试用 token */
@@ -54,7 +57,16 @@ class AuthControllerLogoutTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new AuthController(authService, authMetrics);
+        // infra R2-00026:构造器改为 ObjectProvider 注入(兼容 mock 无 JPA 场景)
+        org.springframework.beans.factory.support.DefaultListableBeanFactory bf =
+                new org.springframework.beans.factory.support.DefaultListableBeanFactory();
+        bf.registerSingleton("userRepository", userRepository);
+        org.springframework.beans.factory.ObjectProvider<com.campuslove.api.repository.UserRepository> provider =
+                bf.getBeanProvider(com.campuslove.api.repository.UserRepository.class);
+        // security_review R2-LOW-01:构造器新增 Environment(mock 降级分支校验)
+        org.springframework.core.env.Environment env =
+                new org.springframework.core.env.StandardEnvironment();
+        controller = new AuthController(authService, authMetrics, provider, env);
     }
 
     /* ========== logout 场景 ========== */

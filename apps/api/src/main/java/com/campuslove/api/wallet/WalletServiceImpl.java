@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,9 +69,14 @@ public class WalletServiceImpl implements WalletService {
      *   <li>余额校验：balanceCents >= amountCents，否则抛 InsufficientBalanceException</li>
      *   <li>扣减余额，写入流水（DEBIT, balanceAfter）</li>
      * </ol>
+     *
+     * <p>修复（FIN HIGH-16）：{@code noRollbackFor = DataIntegrityViolationException.class}
+     * 配合下方 catch 内的幂等冲突重查逻辑，避免 UnexpectedRollbackException——
+     * 原实现在事务内捕获唯一约束冲突后继续提交，事务已被标记 rollback-only，
+     * 提交时抛 UnexpectedRollbackException，用户收到失败但资金实际已处理。</p>
      */
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public Long deduct(Long userId, Long amountCents, String orderId, String relatedType, String relatedId) {
         validateParams(userId, amountCents, orderId, relatedType);
 
@@ -77,6 +84,11 @@ public class WalletServiceImpl implements WalletService {
         Optional<WalletTransactionLog> existing = transactionLogRepository.findByOrderId(orderId);
         if (existing.isPresent()) {
             WalletTransactionLog logEntry = existing.get();
+            // infra R2-00266: 校验幂等命中流水的归属用户，防止调用方传错 userId 返回他人余额
+            if (logEntry.getUserId() == null || !logEntry.getUserId().equals(userId)) {
+                throw new IllegalArgumentException(
+                        "orderId 已存在但归属用户不一致: orderId=" + orderId);
+            }
             log.info("钱包扣减幂等命中：userId={}, orderId={}, amount={}, balanceAfter={}",
                     userId, orderId, logEntry.getAmount(), logEntry.getBalanceAfter());
             return logEntry.getBalanceAfter();
@@ -135,9 +147,12 @@ public class WalletServiceImpl implements WalletService {
      * 充值用户钱包余额。
      *
      * <p>处理流程同 {@link #deduct}，但方向相反（余额 += amount，写入 CREDIT 流水）。</p>
+     *
+     * <p>修复（FIN HIGH-16）：{@code noRollbackFor = DataIntegrityViolationException.class}
+     * 配合下方 catch 内的幂等冲突重查逻辑，避免 UnexpectedRollbackException。</p>
      */
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public Long recharge(Long userId, Long amountCents, String orderId, String relatedType, String relatedId) {
         validateParams(userId, amountCents, orderId, relatedType);
 
@@ -203,6 +218,20 @@ public class WalletServiceImpl implements WalletService {
     }
 
     /**
+     * 分页查询用户钱包交易流水（按创建时间倒序）。
+     *
+     * <p>只读操作，不创建钱包；流水不存在时返回空分页。</p>
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<WalletTransactionLog> listTransactions(Long userId, Pageable pageable) {
+        if (userId == null) {
+            throw new IllegalArgumentException("用户 ID 不能为空");
+        }
+        return transactionLogRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+    }
+
+    /**
      * 初始化用户钱包记录（余额 0）。
      *
      * <p>调用方需在事务内调用本方法，初始化后的钱包记录可被后续 {@code save} 持久化。</p>
@@ -245,8 +274,8 @@ public class WalletServiceImpl implements WalletService {
     /**
      * 写入钱包交易流水。
      *
-     * <p>独立 try-catch 防止流水写入失败影响主流程，但事务内会回滚。
-     * 幂等冲突由调用方处理。</p>
+     * <p>infra R2-00267: 修正注释——本方法实际无独立 try-catch，流水写入失败
+     * 由调用方（deduct/recharge）捕获处理（如幂等冲突重查），不再宣称"独立 try-catch"。</p>
      */
     private void writeTransactionLog(Long userId, String type, Long amountCents, Long balanceAfter,
                                       String orderId, String relatedType, String relatedId, String remark) {

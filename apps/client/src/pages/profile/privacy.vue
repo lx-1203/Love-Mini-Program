@@ -12,6 +12,8 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useProfileStore } from "../../stores/profile";
 import { designTokens } from "../../theme/tokens";
+// infra R2-00084: 路由路径常量化
+import { ROUTES } from "../../constants/routes";
 
 const { t } = useI18n();
 const profileStore = useProfileStore();
@@ -52,7 +54,7 @@ function goBack() {
   if (pages.length > 1) {
     uni.navigateBack();
   } else {
-    uni.switchTab({ url: "/pages/profile/index" });
+    uni.switchTab({ url: ROUTES.TAB.PROFILE }); // infra R2-00084
   }
 }
 </script>

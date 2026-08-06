@@ -30,64 +30,64 @@
 -- ---------- likes 表 ----------
 -- 任务规格：(from_user_id, created_at)、(to_user_id, created_at)、(status, created_at)
 -- 实际列名：user_id（发起方）、target_user_id（被喜欢方）、status、created_at
-CREATE INDEX IF NOT EXISTS idx_likes_user_created_at ON likes (user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_likes_target_user_created_at ON likes (target_user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_likes_status_created_at ON likes (status, created_at);
+CREATE INDEX idx_likes_user_created_at ON likes (user_id, created_at);
+CREATE INDEX idx_likes_target_user_created_at ON likes (target_user_id, created_at);
+CREATE INDEX idx_likes_status_created_at ON likes (status, created_at);
 
 -- ---------- posts 表 ----------
 -- 任务规格：(author_id, created_at)、(circle_id, created_at)、(status, created_at)
 -- 实际列名：author_id、category（无 circle_id 列）、status、created_at
 -- circle_id 仅存在于 circle_topics / circle_memberships 表，posts 无该列，跳过该项
-CREATE INDEX IF NOT EXISTS idx_posts_author_created_at ON posts (author_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_posts_status_created_at ON posts (status, created_at);
+CREATE INDEX idx_posts_author_created_at ON posts (author_id, created_at);
+CREATE INDEX idx_posts_status_created_at ON posts (status, created_at);
 
 -- ---------- post_likes 表 ----------
 -- 任务规格：(post_id, user_id) UNIQUE、(user_id, created_at)
 -- 既有 UNIQUE 约束 uk_post_likes_user_post (user_id, post_id) 已实现去重，
 -- 任务规格的 (post_id, user_id) 与之等价（仅列顺序不同），无需重复创建
-CREATE INDEX IF NOT EXISTS idx_post_likes_user_created_at ON post_likes (user_id, created_at);
+CREATE INDEX idx_post_likes_user_created_at ON post_likes (user_id, created_at);
 
 -- ---------- post_shares 表 ----------
 -- 任务规格：(post_id, created_at)、(user_id, created_at)
-CREATE INDEX IF NOT EXISTS idx_post_shares_post_created_at ON post_shares (post_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_post_shares_user_created_at ON post_shares (user_id, created_at);
+CREATE INDEX idx_post_shares_post_created_at ON post_shares (post_id, created_at);
+CREATE INDEX idx_post_shares_user_created_at ON post_shares (user_id, created_at);
 
 -- ---------- comments 表 ----------
 -- 任务规格：(post_id, created_at)、(user_id, created_at)
 -- 实际列名：post_id、author_id（评论作者 ID）、created_at
-CREATE INDEX IF NOT EXISTS idx_comments_post_created_at ON comments (post_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_comments_author_created_at ON comments (author_id, created_at);
+CREATE INDEX idx_comments_post_created_at ON comments (post_id, created_at);
+CREATE INDEX idx_comments_author_created_at ON comments (author_id, created_at);
 
 -- ---------- check_ins 表 ----------
 -- 任务规格：(user_id, check_in_date) UNIQUE、(user_id, created_at)
 -- 既有 UNIQUE 约束 uk_checkin_user_date (user_id, check_in_date) 已实现按日去重，
 -- 不重复创建 UNIQUE 索引
-CREATE INDEX IF NOT EXISTS idx_check_ins_user_created_at ON check_ins (user_id, created_at);
+CREATE INDEX idx_check_ins_user_created_at ON check_ins (user_id, created_at);
 
 -- ---------- activities 表 ----------
 -- 任务规格：(status, start_time)、(creator_id, created_at)
 -- 实际列名：status、activity_date（无 start_time 列）、created_at（无 creator_id 列）
 -- creator_id / start_time 列不存在，跳过相关索引
-CREATE INDEX IF NOT EXISTS idx_activities_status_activity_date ON activities (status, activity_date);
+CREATE INDEX idx_activities_status_activity_date ON activities (status, activity_date);
 
 -- ---------- audit_log 表 ----------
 -- 任务规格：(user_id, created_at)、(action, created_at)
 -- 实际列名：operator_id（操作者）、operation（操作类型）、created_at
-CREATE INDEX IF NOT EXISTS idx_audit_log_operator_created_at ON audit_log (operator_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_audit_log_operation_created_at ON audit_log (operation, created_at);
+CREATE INDEX idx_audit_log_operator_created_at ON audit_log (operator_id, created_at);
+CREATE INDEX idx_audit_log_operation_created_at ON audit_log (operation, created_at);
 
 -- ---------- reports 表 ----------
 -- 任务规格：(status, created_at)、(reporter_id, created_at)
-CREATE INDEX IF NOT EXISTS idx_reports_status_created_at ON reports (status, created_at);
-CREATE INDEX IF NOT EXISTS idx_reports_reporter_created_at ON reports (reporter_id, created_at);
+CREATE INDEX idx_reports_status_created_at ON reports (status, created_at);
+CREATE INDEX idx_reports_reporter_created_at ON reports (reporter_id, created_at);
 
 -- ---------- private_messages 表 ----------
 -- 任务规格：(sender_id, receiver_id, created_at)、(receiver_id, created_at, is_read)
 -- 实际表名：private_messages（任务规格中为 messages）
 -- 实际列名：conversation_id、sender_id、is_read、created_at
 -- 私信无 receiver_id（接收方由 conversation 隐含），按实际可用列建索引
-CREATE INDEX IF NOT EXISTS idx_private_messages_sender_created_at ON private_messages (sender_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_private_messages_conversation_read ON private_messages (conversation_id, is_read, created_at);
+CREATE INDEX idx_private_messages_sender_created_at ON private_messages (sender_id, created_at);
+CREATE INDEX idx_private_messages_conversation_read ON private_messages (conversation_id, is_read, created_at);
 
 -- ============================================================
 -- DOWN 回滚脚本（手动执行，Flyway 不自动回滚）

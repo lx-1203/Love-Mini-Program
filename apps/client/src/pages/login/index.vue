@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, onUnmounted } from "vue";
 import { onShow, onHide } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
@@ -11,6 +11,9 @@ import { createButtonGuard } from "../../utils/debounce";
 import { lightHaptic } from "../../utils/haptic";
 // Sentry 监控：登录失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
+import { loginWithPhone, registerUser, loginAsGuest } from "../../services/auth";
+// 展示模式（全功能展示版）：登录页「以演示者身份进入」入口
+import { isShowcaseMode } from "../../config/showcase";
 
 // 使用 vue-i18n 组合式 API 获取 t 函数（组件内优先使用 useI18n 而非全局 t）
 const { t } = useI18n();
@@ -27,7 +30,9 @@ const { loginHero, loading } = storeToRefs(sessionStore);
 
 // 表单响应式数据（必须初始化，避免模板渲染时访问 undefined）
 const phone = ref("");
-const code = ref("");
+const password = ref("");
+const nickname = ref("");
+const phoneRegisterMode = ref(false);
 const agreed = ref(false);
 const countdown = ref(0);
 const showPhoneLogin = ref(false);
@@ -79,9 +84,10 @@ onShow(() => {
 
 // 表单校验计算属性
 const isPhoneValid = computed(() => /^1[3-9]\d{9}$/.test(phone.value));
-const isCodeValid = computed(() => /^\d{4,6}$/.test(code.value));
-const canSendCode = computed(() => isPhoneValid.value && countdown.value === 0);
+const isCodeValid = computed(() => password.value.length >= 6 && password.value.length <= 64);
 const canPhoneLogin = computed(() => isPhoneValid.value && isCodeValid.value && agreed.value);
+// 注册模式额外要求昵称非空
+const canPhoneRegister = computed(() => isPhoneValid.value && isCodeValid.value && nickname.value.trim().length > 0 && agreed.value);
 
 /**
  * 安全读取登录页 Hero 文案。
@@ -93,17 +99,6 @@ const canPhoneLogin = computed(() => isPhoneValid.value && isCodeValid.value && 
 const heroTitle = computed(() => loginHero.value?.heroTitle || t("login.heroTitle"));
 const heroSubtitle = computed(() => loginHero.value?.heroSubtitle || t("login.heroSubtitle"));
 
-function startCountdown() {
-  countdown.value = 60;
-  if (countdownTimer) clearInterval(countdownTimer);
-  countdownTimer = setInterval(() => {
-    countdown.value--;
-    if (countdown.value <= 0) {
-      if (countdownTimer) clearInterval(countdownTimer);
-      countdownTimer = null;
-    }
-  }, 1000);
-}
 
 /**
  * 暂停倒计时：记录当前剩余秒数并清除 setInterval。
@@ -173,19 +168,13 @@ onUnmounted(() => {
   pausedCountdown = 0;
 });
 
-function onSendCode() {
-  if (!canSendCode.value) {
-    if (!isPhoneValid.value) {
-      uni.showToast({ title: t("login.phoneInvalid"), icon: "none" });
-    }
-    return;
-  }
-  uni.showToast({ title: t("login.codeSent"), icon: "none" });
-  startCountdown();
-}
 
 function togglePhoneLogin() {
   showPhoneLogin.value = !showPhoneLogin.value;
+}
+
+function toggleRegisterMode() {
+  phoneRegisterMode.value = !phoneRegisterMode.value;
 }
 
 /**
@@ -230,29 +219,99 @@ async function onWechatLogin() {
  */
 const onWechatLoginGuarded = createButtonGuard(onWechatLogin, 1500);
 
-function onPhoneLogin() {
+async function onPhoneLogin() {
   if (!agreed.value) {
     uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
     return;
   }
-  if (!canPhoneLogin.value) {
+  const canSubmit = phoneRegisterMode.value ? canPhoneRegister.value : canPhoneLogin.value;
+  if (!canSubmit) {
     uni.showToast({ title: t("login.phoneAndCodeInvalid"), icon: "none" });
     return;
   }
-  uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
-  if (loginNavTimer) clearTimeout(loginNavTimer);
-  loginNavTimer = setTimeout(() => {
-    replaceAppPath("/pages/discover/index");
-    loginNavTimer = null;
-  }, 1500);
+  // infra R2 联调改进:真实调用后端(参考 eladmin 账号体系)。
+  // 登录 POST /v1/auth/phone-login;注册 POST /v1/auth/register,成功即签发 JWT。
+  try {
+    if (phoneRegisterMode.value) {
+      await registerUser(phone.value.trim(), password.value, nickname.value.trim());
+      addBreadcrumb("ui", "button_click", { id: "login.register" });
+    } else {
+      await loginWithPhone(phone.value.trim(), password.value);
+      addBreadcrumb("ui", "button_click", { id: "login.phone" });
+    }
+    uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
+    if (loginNavTimer) clearTimeout(loginNavTimer);
+    loginNavTimer = setTimeout(() => {
+      replaceAppPath("/pages/discover/index");
+      loginNavTimer = null;
+    }, 1500);
+  } catch (error) {
+    captureException(error, { source: phoneRegisterMode.value ? "login.register" : "login.phone" });
+    const message = error instanceof Error ? error.message : t("login.loginFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
 }
-
 /**
  * 按钮防抖包装：手机号登录在 toast 提示与 1.5s 跳转之间不响应重复点击，
  * 避免用户连点导致多次 toast 或多次 navigateTo 入栈。
  * 防抖窗口 2000ms 覆盖 toast 显示 + 跳转延时。
  */
 const onPhoneLoginGuarded = createButtonGuard(onPhoneLogin, 2000);
+
+/**
+ * 体验账号一键登录（登录页「临时体验号」入口）。
+ *
+ * <p>委托 services/auth.ts 的 loginAsGuest() 调用 POST /v1/auth/guest-login：
+ * 后端首次自动创建固定体验账号并签发 JWT，后续复用同一账号（幂等），
+ * 无需注册/输入密码即可体验全部功能。</p>
+ *
+ * <p>错误处理：失败时展示后端返回的具体错误（含入口被配置关闭的场景），
+ * 并上报 Sentry（source=login.guest）便于后台监控。</p>
+ */
+async function onGuestLogin() {
+  if (!agreed.value) {
+    uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
+    return;
+  }
+  // 记录关键按钮点击面包屑，便于在登录失败时定位用户操作节点
+  addBreadcrumb("ui", "button_click", { id: "login.guest" });
+  try {
+    await loginAsGuest();
+    uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
+    if (loginNavTimer) clearTimeout(loginNavTimer);
+    loginNavTimer = setTimeout(() => {
+      replaceAppPath("/pages/discover/index");
+      loginNavTimer = null;
+    }, 1500);
+  } catch (error) {
+    captureException(error, { source: "login.guest" });
+    const message = error instanceof Error ? error.message : t("login.guestLoginFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
+}
+/**
+ * 按钮防抖包装：与手机号登录一致，防抖窗口 2000ms 覆盖 toast + 跳转延时。
+ */
+const onGuestLoginGuarded = createButtonGuard(onGuestLogin, 2000);
+
+/**
+ * 展示模式（全功能展示版）：以演示者身份进入全功能展示页。
+ * 仅 VITE_SHOWCASE_MODE=true 的展示构建显示该入口。
+ */
+async function enterShowcase() {
+  if (!agreed.value) {
+    uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
+    return;
+  }
+  try {
+    await loginAsGuest();
+    uni.reLaunch({ url: "/pages/showcase/index" });
+  } catch (error) {
+    captureException(error, { source: "login.showcase" });
+    const message = error instanceof Error ? error.message : t("login.guestLoginFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
+}
 
 function onAgreeTap() {
   agreed.value = !agreed.value;
@@ -411,6 +470,11 @@ function openAccountBinding() {
           <view class="btn-secondary press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="togglePhoneLogin">
             <text class="btn-secondary-text">{{ t('login.phoneLogin') }}</text>
           </view>
+
+          <view class="btn-guest press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onGuestLoginGuarded">
+            <text class="btn-guest-text">{{ t('login.guestLogin') }}</text>
+            <text class="btn-guest-desc">{{ t('login.guestLoginDesc') }}</text>
+          </view>
         </view>
 
         <view v-else class="login-form">
@@ -441,39 +505,47 @@ function openAccountBinding() {
               <view class="input-icon" aria-hidden="true">
                 <image class="input-icon-text" :src="loginIcons.key" mode="aspectFit" alt="" />
               </view>
-              <label class="sr-only" for="login-code">{{ t('login.codePlaceholder') }}</label>
+              <label class="sr-only" for="login-password">{{ t('login.passwordPlaceholder') }}</label>
               <input
-                id="login-code"
+                id="login-password"
                 class="input-field"
-                type="number"
-                maxlength="6"
-                :placeholder="t('login.codePlaceholder')"
+                type="password"
+                :placeholder="t('login.passwordPlaceholder')"
                 placeholder-class="input-placeholder"
-                v-model="code"
-                :aria-label="t('login.codePlaceholder')"
+                v-model="password"
+                :aria-label="t('login.passwordPlaceholder')"
                 aria-required="true"
-                inputmode="numeric"
               />
-              <view
-                class="send-code-btn press-feedback"
-                :class="{ 'send-code-btn--disabled': !canSendCode }"
-                hover-class="press-feedback--active"
-                hover-stay-time="120"
-                @tap="onSendCode"
-                role="button"
-                :aria-label="t('login.getCode')"
-                :aria-disabled="!canSendCode"
-              >
-                <text class="send-code-text">
-                  {{ countdown > 0 ? countdown + 's' : t('login.getCode') }}
-                </text>
+            </view>
+
+            <view v-if="phoneRegisterMode" class="input-divider" />
+
+            <view v-if="phoneRegisterMode" class="input-item">
+              <view class="input-icon" aria-hidden="true">
+                <image class="input-icon-text" :src="loginIcons.mobile" mode="aspectFit" alt="" />
               </view>
+              <label class="sr-only" for="login-nickname">{{ t('login.nicknamePlaceholder') }}</label>
+              <input
+                id="login-nickname"
+                class="input-field"
+                type="text"
+                maxlength="20"
+                :placeholder="t('login.nicknamePlaceholder')"
+                placeholder-class="input-placeholder"
+                v-model="nickname"
+                :aria-label="t('login.nicknamePlaceholder')"
+                aria-required="true"
+              />
             </view>
           </view>
 
           <view class="form-btns">
             <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onPhoneLoginGuarded">
-              <text class="btn-primary-text">{{ t('login.loginButton') }}</text>
+              <text class="btn-primary-text">{{ phoneRegisterMode ? t('login.registerButton') : t('login.loginButton') }}</text>
+            </view>
+
+            <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="toggleRegisterMode">
+              <text class="btn-text-link">{{ phoneRegisterMode ? t('login.backToLogin') : t('login.goRegister') }}</text>
             </view>
 
             <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="togglePhoneLogin">
@@ -481,6 +553,24 @@ function openAccountBinding() {
             </view>
           </view>
         </view>
+      </view>
+
+      <!-- 展示模式（全功能展示版）：以演示者身份进入全功能展示页 -->
+      <view
+        v-if="isShowcaseMode"
+        class="showcase-entry press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        @tap="enterShowcase"
+      >
+        <view class="showcase-entry__badge">
+          <text class="showcase-entry__badge-text">SHOW</text>
+        </view>
+        <view class="showcase-entry__body">
+          <text class="showcase-entry__title">以演示者身份进入展示版</text>
+          <text class="showcase-entry__desc">超级管理员模式 · 一键体验全部功能</text>
+        </view>
+        <text class="showcase-entry__arrow">›</text>
       </view>
 
       <view class="terms-wrap">
@@ -723,6 +813,40 @@ function openAccountBinding() {
   letter-spacing: 2rpx;
 }
 
+/* 一键体验按钮：虚线描边 + 品牌色，弱于主/次按钮 */
+.btn-guest {
+  width: 100%;
+  min-height: var(--btn-height-md);
+  border-radius: var(--r-xl);
+  background: var(--c-bg-container);
+  border: 2rpx dashed var(--c-border-strong, rgba(0, 0, 0, 0.12));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-4);
+}
+
+/* #ifdef H5 */
+.btn-guest:active {
+  transform: scale(0.96);
+  background: var(--c-neutral-50);
+}
+/* #endif */
+
+.btn-guest-text {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-brand);
+  letter-spacing: 2rpx;
+}
+
+.btn-guest-desc {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
+}
+
 .input-group {
   background: var(--c-neutral-50);
   border-radius: var(--r-md);
@@ -828,6 +952,61 @@ function openAccountBinding() {
   justify-content: center;
   gap: var(--sp-3);
   padding: 0 var(--sp-4);
+}
+
+/* ---------- 展示模式入口（全功能展示版） ---------- */
+.showcase-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin: var(--sp-4) var(--sp-8) 0;
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-xl, 24rpx);
+  background: linear-gradient(135deg, rgba(59, 157, 229, 0.12), rgba(124, 108, 240, 0.12));
+  border: 2rpx solid rgba(59, 157, 229, 0.35);
+  transition: all var(--d-fast, 120ms) ease;
+}
+
+.showcase-entry__badge {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-lg, 18rpx);
+  background: linear-gradient(135deg, #3B9DE5, #7C6CF0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.showcase-entry__badge-text {
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1rpx;
+}
+
+.showcase-entry__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.showcase-entry__title {
+  font-size: var(--fs-base, 26rpx);
+  font-weight: 600;
+  color: var(--c-text-primary);
+}
+
+.showcase-entry__desc {
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-text-tertiary);
+}
+
+.showcase-entry__arrow {
+  font-size: var(--fs-2xl, 32rpx);
+  color: #3B9DE5;
+  font-weight: 600;
 }
 
 .checkbox {

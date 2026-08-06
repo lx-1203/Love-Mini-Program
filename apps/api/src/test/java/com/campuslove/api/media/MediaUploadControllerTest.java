@@ -67,7 +67,7 @@ class MediaUploadControllerTest {
         MultipartFile file = new MockMultipartFile(
                 "file", "test.jpg", "image/jpeg", new byte[]{1, 2, 3});
         UploadResult uploadResult = new UploadResult(
-                "https://cdn.example.com/uploads/1/202607/uuid.jpg",
+                "https://cdn.example.com/api/v1/media/1/202607/uuid.jpg",
                 800, 600, "image/jpeg", 3L, null);
         when(storageService.store(anyLong(), any(MultipartFile.class), anyString()))
                 .thenReturn(uploadResult);

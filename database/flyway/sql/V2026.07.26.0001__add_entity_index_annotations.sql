@@ -30,37 +30,37 @@
 
 -- 1. notifications (user_id, created_at) — 用户通知按时间分页
 --    用途：通知列表分页查询，按用户+创建时间倒序获取
-CREATE INDEX IF NOT EXISTS idx_notifications_user_created_at
+CREATE INDEX idx_notifications_user_created_at
     ON notifications (user_id, created_at);
 
 -- 2. heart_signals (created_at) — 心动信号按时间排序
 --    用途：心动信号列表按时间分页，全局扫描过期信号
-CREATE INDEX IF NOT EXISTS idx_heart_signals_created_at
+CREATE INDEX idx_heart_signals_created_at
     ON heart_signals (created_at);
 
 -- 3. vip_bills (created_at) — VIP 账单按时间排序
 --    用途：账单列表按时间分页，财务对账按时间范围查询
-CREATE INDEX IF NOT EXISTS idx_vip_bills_created_at
+CREATE INDEX idx_vip_bills_created_at
     ON vip_bills (created_at);
 
 -- 4. feedback_tickets (created_at) — 反馈工单按时间排序
 --    用途：工单列表按时间分页，管理员按时间范围筛选
-CREATE INDEX IF NOT EXISTS idx_feedback_created_at
+CREATE INDEX idx_feedback_created_at
     ON feedback_tickets (created_at);
 
 -- 5. private_messages (conversation_id, created_at) — 会话消息按时间分页
 --    用途：会话内消息分页查询（任务规格 session_id+created_at 的对应）
-CREATE INDEX IF NOT EXISTS idx_private_messages_conversation_created_at
+CREATE INDEX idx_private_messages_conversation_created_at
     ON private_messages (conversation_id, created_at);
 
 -- 6. private_messages (created_at) — 消息按时间全局扫描
 --    用途：全局消息按时间排序、定时清理任务
-CREATE INDEX IF NOT EXISTS idx_private_messages_created_at
+CREATE INDEX idx_private_messages_created_at
     ON private_messages (created_at);
 
 -- 7. private_messages (delivery_status) — 按投递状态过滤
 --    用途：按投递状态（sent/delivered/read）筛选消息，任务规格 status 的对应
-CREATE INDEX IF NOT EXISTS idx_private_messages_delivery_status
+CREATE INDEX idx_private_messages_delivery_status
     ON private_messages (delivery_status);
 
 -- ============================================================

@@ -171,6 +171,8 @@ async function handleSaveImage() {
     const downloadResult = await new Promise<string>((resolve, reject) => {
       uni.downloadFile({
         url: checkinIcon,
+        // infra R2-00090: 下载超时 10s，避免弱网环境下分享图下载卡死无反馈
+        timeout: 10000,
         success: (res) => {
           if (res.statusCode === 200) {
             resolve(res.tempFilePath);

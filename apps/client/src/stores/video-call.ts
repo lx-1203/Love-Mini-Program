@@ -106,6 +106,8 @@ export interface EndCallPayload {
 
 /**
  * 生成 mock 房间号（8 位字母数字）
+ * infra R2-00098: 仅 mock 分支使用，real 信令房间号由后端/信令服务下发，
+ * 联调时以真实信令 URL 与房间号为准（见 MEDIUM 128 审计项）
  */
 function generateMockRoomId(): string {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";

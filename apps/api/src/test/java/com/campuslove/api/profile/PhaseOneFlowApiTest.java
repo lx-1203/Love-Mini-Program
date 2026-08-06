@@ -1,5 +1,6 @@
-package com.campuslove.api;
+package com.campuslove.api.profile;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -7,8 +8,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.campuslove.api.testdata.MockAllRepositoriesConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,8 +21,16 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.campuslove.api.testdata.MockAllRepositoriesConfig;
-
+/**
+ * Phase One 端到端流程 API 测试（mock profile）。
+ *
+ * <p>说明：ProfileController / ProfileVisitorController 为 {@code @Profile("real")} 专属，
+ * mock profile 下不存在 /api/v1/profile/** 的 HTTP 端点（前端走本地 mockFixtures）。
+ * 因此本测试中「保存资料推进会话完成状态」链路通过注入的 {@link ProfileService}
+ * （mock profile 下为 {@link MockProfileService}，与 real 实现接口语义等价）完成，
+ * 并继续通过 /api/v1/auth/me 验证资料保存后会话完成状态（profileCompleted /
+ * campusVerified / scheduleCompleted / campusName / displayName）被推进。</p>
+ */
 @SpringBootTest(properties = "JWT_SECRET=test-jwt-secret-for-phase-one-flow-tests-32-chars-min")
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -31,6 +42,9 @@ class PhaseOneFlowApiTest {
 
   @Autowired
   private ObjectMapper objectMapper;
+
+  @Autowired
+  private ProfileService profileService;
 
   @Test
   void profileSavesAdvanceSessionCompletionState() throws Exception {
@@ -44,42 +58,21 @@ class PhaseOneFlowApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.loggedIn").value(true));
 
-    mockMvc.perform(put("/api/v1/profile/basic")
-            .contentType(APPLICATION_JSON)
-            .content("""
-                {
-                  "nickname": "若星",
-                  "bio": "安静而明确",
-                  "grade": "大三",
-                  "pronouns": "她/她"
-                }
-                """))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.nickname").value("若星"));
+    // mock profile 下无 /api/v1/profile/** HTTP 端点（ProfileController 为 real 专属），
+    // 通过注入的 ProfileService（mock 实现 MockProfileService）保存基本资料/校园资料/课表资料，
+    // 语义与 real 端点的保存链路等价，随后由 /api/v1/auth/me 验证会话完成状态被推进。
+    BasicProfileView basic = profileService.saveBasicProfile(
+        new BasicProfileRequest("若星", "安静而明确", "大三", "她/她",
+            null, null, null, null, null, null, null));
+    assertEquals("若星", basic.nickname());
 
-    mockMvc.perform(put("/api/v1/profile/campus")
-            .contentType(APPLICATION_JSON)
-            .content("""
-                {
-                  "city": "广州",
-                  "campusName": "北校区",
-                  "department": "设计系"
-                }
-                """))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.verificationStatus").value("pending"));
+    CampusProfileView campus = profileService.saveCampusProfile(
+        new CampusProfileRequest("广州", "北校区", "设计系"));
+    assertEquals("pending", campus.verificationStatus());
 
-    mockMvc.perform(put("/api/v1/profile/schedule")
-            .contentType(APPLICATION_JSON)
-            .content("""
-                {
-                  "preferredCampusArea": "图书馆",
-                  "preferredTimeWindows": ["今晚"],
-                  "courseBlocks": []
-                }
-                """))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.preferredCampusArea").value("图书馆"));
+    ScheduleProfileView schedule = profileService.saveScheduleProfile(
+        new ScheduleProfileRequest("图书馆", List.of("今晚"), List.of()));
+    assertEquals("图书馆", schedule.preferredCampusArea());
 
     mockMvc.perform(get("/api/v1/auth/me"))
         .andExpect(status().isOk())

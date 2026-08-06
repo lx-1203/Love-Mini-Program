@@ -27,10 +27,14 @@ export interface HomeBannerItem {
   id: string;
   /** Banner 图片 URL */
   imageUrl: string;
-  /** Banner 标题（显示在图片下方/上方） */
+  /** Banner 标题（显示在图片下方/上方）；本地静态数据请改用 titleKey，经 t() 渲染以支持多语言 */
   title: string;
+  /** Banner 标题的 i18n key（config.homeBanners.{id}.title），优先于 title 使用 */
+  titleKey?: string;
   /** Banner 副标题（可选） */
   subtitle?: string;
+  /** Banner 副标题的 i18n key（config.homeBanners.{id}.subtitle），优先于 subtitle 使用 */
+  subtitleKey?: string;
   /** 点击跳转的 app 内部路径，如 /pages/discover/index */
   link: string;
 }
@@ -44,33 +48,43 @@ export interface HomeBannerItem {
  * Task 3.6.4 已接入：loadHomeBanners() 封装 GET /api/v1/config/hero-banners，
  * 视图按需调用刷新；homeBanners 作为初始渲染兜底。
  */
+// 展示文案 i18n 化（i18n-data-review #6）：title/subtitle 已抽为 i18n key（config.homeBanners.*），
+// 组件渲染时优先取 titleKey/subtitleKey 经 t() 翻译，后端返回的 title/subtitle 仍直接透传。
 export const homeBanners: HomeBannerItem[] = [
   {
     id: "banner-daily-fate",
     imageUrl: IMAGE_PATHS.BANNERS.HOME,
     title: "发现心动的人",
+    titleKey: "config.homeBanners.bannerDailyFate.title",
     subtitle: "双向喜欢即可开启聊天",
+    subtitleKey: "config.homeBanners.bannerDailyFate.subtitle",
     link: "/pages/discover/index",
   },
   {
     id: "banner-new-user",
     imageUrl: IMAGE_PATHS.POSTERS.HOME,
     title: "新人礼遇",
+    titleKey: "config.homeBanners.bannerNewUser.title",
     subtitle: "完成任务领专属徽章",
+    subtitleKey: "config.homeBanners.bannerNewUser.subtitle",
     link: "/subpackages/discover/activities/index",
   },
   {
     id: "banner-weekend-party",
     imageUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
     title: "周末派对",
+    titleKey: "config.homeBanners.bannerWeekendParty.title",
     subtitle: "校园桌游局报名中",
+    subtitleKey: "config.homeBanners.bannerWeekendParty.subtitle",
     link: "/subpackages/discover/activities/index",
   },
   {
     id: "banner-graduation",
     imageUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
     title: "毕业季告白",
+    titleKey: "config.homeBanners.bannerGraduation.title",
     subtitle: "勇敢说出心里话",
+    subtitleKey: "config.homeBanners.bannerGraduation.subtitle",
     link: "/pages/circles/index",
   },
 ];

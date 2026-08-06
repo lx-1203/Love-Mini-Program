@@ -12,11 +12,18 @@ import com.campuslove.api.repository.CircleReplyRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.InterestCircleRepository;
 import com.campuslove.api.repository.UserRepository;
+import com.campuslove.api.config.SensitiveWordFilter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -52,6 +59,18 @@ public class RealCircleService implements CircleService {
     private final InteractionEventService interactionEventService;
 
     /**
+     * 敏感词过滤器（FIN-00039 修复：createTopic 内容过滤，用法与 VillagePostService 一致）。
+     */
+    private final SensitiveWordFilter sensitiveWordFilter;
+
+    /**
+     * JPA 实体管理器（FIN-00037/00038 修复）。
+     *
+     * <p>用于圈子话题数批量统计与成员数原子更新。</p>
+     */
+    private final EntityManager entityManager;
+
+    /**
      * 构造函数，注入所有必要的 Repository 和工具类。
      *
      * @param interestCircleRepository 兴趣圈 Repository
@@ -69,7 +88,9 @@ public class RealCircleService implements CircleService {
             CircleReplyRepository circleReplyRepository,
             UserRepository userRepository,
             ObjectMapper objectMapper,
-            InteractionEventService interactionEventService) {
+            InteractionEventService interactionEventService,
+            SensitiveWordFilter sensitiveWordFilter,
+            EntityManager entityManager) {
         this.interestCircleRepository = interestCircleRepository;
         this.circleMembershipRepository = circleMembershipRepository;
         this.circleTopicRepository = circleTopicRepository;
@@ -77,6 +98,8 @@ public class RealCircleService implements CircleService {
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
         this.interactionEventService = interactionEventService;
+        this.sensitiveWordFilter = sensitiveWordFilter;
+        this.entityManager = entityManager;
     }
 
     // ==================== 圈子列表 ====================
@@ -106,11 +129,15 @@ public class RealCircleService implements CircleService {
         }
 
         // 转换为视图对象
+        // FIN-00037 修复：原实现每圈子一次 countByCircleId（N+1），
+        // 改为一次 GROUP BY 聚合查询批量统计话题数
+        List<Long> circleIds = circles.stream().map(InterestCircle::getId).toList();
+        Map<Long, Long> topicCountMap = countTopicsByCircleIds(circleIds);
+
         final List<Long> finalJoinedCircleIds = joinedCircleIds;
         return circles.stream()
                 .map(circle -> {
-                    // 查询每个圈子的话题数量
-                    long topicCount = circleTopicRepository.countByCircleId(circle.getId());
+                    long topicCount = topicCountMap.getOrDefault(circle.getId(), 0L);
                     return new CircleView(
                             circle.getId(),
                             circle.getName(),
@@ -122,6 +149,40 @@ public class RealCircleService implements CircleService {
                     );
                 })
                 .toList();
+    }
+
+    /**
+     * 批量统计多个圈子的话题数（FIN-00037 修复，避免 N+1）。
+     *
+     * @param circleIds 圈子 ID 列表
+     * @return circleId -> 话题数
+     */
+    private Map<Long, Long> countTopicsByCircleIds(List<Long> circleIds) {
+        if (circleIds == null || circleIds.isEmpty()) {
+            return Map.of();
+        }
+        if (entityManager == null) {
+            // 兼容单元测试直接 new 构造器场景（测试不覆盖 getCircles 批量统计路径时）
+            Map<Long, Long> fallback = new LinkedHashMap<>();
+            for (Long circleId : circleIds) {
+                fallback.put(circleId, circleTopicRepository.countByCircleId(circleId));
+            }
+            return fallback;
+        }
+        List<Object[]> rows = entityManager.createQuery(
+                        "SELECT t.circle.id, COUNT(t) FROM CircleTopic t "
+                                + "WHERE t.circle.id IN :circleIds GROUP BY t.circle.id",
+                        Object[].class)
+                .setParameter("circleIds", circleIds)
+                .getResultList();
+        Map<Long, Long> result = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            if (row != null && row.length >= 2 && row[0] instanceof Number circleId
+                    && row[1] instanceof Number count) {
+                result.put(circleId.longValue(), count.longValue());
+            }
+        }
+        return result;
     }
 
     // ==================== 加入/退出圈子 ====================
@@ -162,9 +223,18 @@ public class RealCircleService implements CircleService {
         membership.setJoinedAt(LocalDateTime.now());
         circleMembershipRepository.save(membership);
 
-        // 更新圈子成员数
+        // FIN-00038 修复：memberCount 改为数据库侧原子递增，消除并发加入时的丢失更新；
+        // entityManager 为 null（单元测试直接 new）时回退实体读-改-写
+        // infra R2-00015 修复：bulk UPDATE 后必须 clear 持久化上下文，否则 managed 实体
+        // circle 在事务提交 flush 时用本地旧值覆盖 bulk 原子结果（脏写回归）
+        if (entityManager != null) {
+            entityManager.createQuery(
+                            "UPDATE InterestCircle c SET c.memberCount = c.memberCount + 1 WHERE c.id = :circleId")
+                    .setParameter("circleId", circleId)
+                    .executeUpdate();
+            entityManager.clear();
+        }
         circle.setMemberCount(circle.getMemberCount() + 1);
-        interestCircleRepository.save(circle);
 
         log.info("用户成功加入圈子, userId={}, circleId={}, 当前成员数={}",
                 userId, circleId, circle.getMemberCount());
@@ -201,15 +271,24 @@ public class RealCircleService implements CircleService {
             return new CircleMembershipView(circleId, false, circle.getMemberCount());
         }
 
-        // 删除所有匹配的成员关系（理论上只有一条，但做防御性处理）
-        for (CircleMembership membership : memberships) {
-            circleMembershipRepository.delete(membership);
-        }
+        // infra R2-00265: 批量删除成员关系（原循环逐条 delete，小写放大）
+        circleMembershipRepository.deleteAllInBatch(memberships);
 
-        // 更新圈子成员数，确保不低于 0
+        // FIN-00038 修复：memberCount 改为数据库侧原子递减（下限 0），
+        // 消除并发退出时的丢失更新；entityManager 为 null（单元测试直接 new）时回退实体读-改-写
+        // infra R2-00015 修复：bulk UPDATE 后 clear 持久化上下文，防止 managed 实体脏写覆盖
         int newCount = Math.max(0, circle.getMemberCount() - memberships.size());
+        if (entityManager != null) {
+            entityManager.createQuery(
+                            "UPDATE InterestCircle c SET c.memberCount = CASE "
+                                    + "WHEN c.memberCount > :delta THEN c.memberCount - :delta ELSE 0 END "
+                                    + "WHERE c.id = :circleId")
+                    .setParameter("delta", (long) memberships.size())
+                    .setParameter("circleId", circleId)
+                    .executeUpdate();
+            entityManager.clear();
+        }
         circle.setMemberCount(newCount);
-        interestCircleRepository.save(circle);
 
         log.info("用户成功退出圈子, userId={}, circleId={}, 当前成员数={}",
                 userId, circleId, newCount);
@@ -240,9 +319,12 @@ public class RealCircleService implements CircleService {
         Page<CircleTopic> topicPage = circleTopicRepository
                 .findByCircleIdOrderByIsPinnedDescCreatedAtDesc(circleId, pageable);
 
-        // 转换为视图对象
-        List<CircleTopicView> views = topicPage.getContent().stream()
-                .map(this::toTopicView)
+        // 转换为视图对象（批量预加载作者，避免 N+1 查询）
+        List<CircleTopic> topics = topicPage.getContent();
+        Map<Long, User> authorMap = loadAuthorMap(
+                topics.stream().map(CircleTopic::getAuthorId).toList());
+        List<CircleTopicView> views = topics.stream()
+                .map(t -> toTopicView(t, authorMap))
                 .toList();
 
         return new PageImpl<>(views, pageable, topicPage.getTotalElements());
@@ -278,13 +360,22 @@ public class RealCircleService implements CircleService {
         // 验证圈子是否存在
         InterestCircle circle = findCircleOrThrow(circleId);
 
+        // FIN-00039 修复：标题与内容做敏感词过滤（与 VillagePostService 用法一致），
+        // 过滤策略为替换为 *** 而非拒绝发布，保证用户体验
+        String filteredTitle = sensitiveWordFilter != null
+                ? sensitiveWordFilter.filterWithLog(title, authorId, "CIRCLE_TOPIC")
+                : title;
+        String filteredContent = sensitiveWordFilter != null
+                ? sensitiveWordFilter.filterWithLog(content, authorId, "CIRCLE_TOPIC")
+                : content;
+
         // 创建话题实体
         LocalDateTime now = LocalDateTime.now();
         CircleTopic topic = new CircleTopic();
         topic.setCircle(circle);
         topic.setAuthorId(authorId);
-        topic.setTitle(title);
-        topic.setContent(content);
+        topic.setTitle(filteredTitle);
+        topic.setContent(filteredContent);
         topic.setImages(toJsonString(images));
         topic.setReplyCount(0);
         topic.setIsPinned(false);
@@ -339,6 +430,14 @@ public class RealCircleService implements CircleService {
             throw new IllegalArgumentException("回复内容不能为空");
         }
 
+        // infra R2-00234: 回复内容补敏感词过滤（createTopic 已有过滤，此前回复可绕过）
+        String filteredContent = sensitiveWordFilter != null
+                ? sensitiveWordFilter.filterWithLog(content, authorId, "CIRCLE_REPLY")
+                : content;
+        if (filteredContent == null || filteredContent.isBlank()) {
+            throw new IllegalArgumentException("回复内容不能为空");
+        }
+
         // 查找话题，不存在则抛出异常
         CircleTopic topic = findTopicOrThrow(topicId);
 
@@ -347,7 +446,7 @@ public class RealCircleService implements CircleService {
         CircleReply reply = new CircleReply();
         reply.setTopic(topic);
         reply.setAuthorId(authorId);
-        reply.setContent(content);
+        reply.setContent(filteredContent);
         reply.setCreatedAt(now);
 
         circleReplyRepository.save(reply);
@@ -397,9 +496,11 @@ public class RealCircleService implements CircleService {
                 ? allReplies.subList(start, end)
                 : List.of();
 
-        // 转换为视图对象
+        // 转换为视图对象（批量预加载作者，避免 N+1 查询）
+        Map<Long, User> authorMap = loadAuthorMap(
+                pageContent.stream().map(CircleReply::getAuthorId).toList());
         List<CircleReplyView> views = pageContent.stream()
-                .map(this::toReplyView)
+                .map(r -> toReplyView(r, authorMap))
                 .toList();
 
         return new PageImpl<>(views, pageable, allReplies.size());
@@ -427,9 +528,12 @@ public class RealCircleService implements CircleService {
         // 查询所有话题
         Page<CircleTopic> topicPage = circleTopicRepository.findAll(sortedPageable);
 
-        // 转换为视图对象
-        List<CircleTopicView> views = topicPage.getContent().stream()
-                .map(this::toTopicView)
+        // 转换为视图对象（批量预加载作者，避免 N+1 查询）
+        List<CircleTopic> topics = topicPage.getContent();
+        Map<Long, User> authorMap = loadAuthorMap(
+                topics.stream().map(CircleTopic::getAuthorId).toList());
+        List<CircleTopicView> views = topics.stream()
+                .map(t -> toTopicView(t, authorMap))
                 .toList();
 
         return new PageImpl<>(views, pageable, topicPage.getTotalElements());
@@ -476,6 +580,104 @@ public class RealCircleService implements CircleService {
                 .map(User::getNickname)
                 .filter(name -> name != null && !name.isBlank())
                 .orElse(DisplayConstants.UNKNOWN_USER);
+    }
+
+    /**
+     * 批量加载作者用户 Map（userId → User），避免列表转换逐条查库（N+1）。
+     *
+     * @param userIds 作者 ID 列表（可含 null/重复）
+     * @return 用户映射，空列表返回空 Map
+     */
+    private Map<Long, User> loadAuthorMap(List<Long> userIds) {
+        List<Long> distinct = userIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinct.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRepository.findByIdIn(distinct).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+    }
+
+    /**
+     * 从作者 Map 中解析用户昵称，避免逐条查库。
+     *
+     * @param userId    用户 ID
+     * @param authorMap 批量预加载的作者 Map
+     * @return 用户昵称，未知用户返回默认昵称
+     */
+    private String resolveAuthorName(Long userId, Map<Long, User> authorMap) {
+        if (userId == null) {
+            return DisplayConstants.UNKNOWN_USER;
+        }
+        User author = authorMap.get(userId);
+        if (author == null) {
+            return DisplayConstants.UNKNOWN_USER;
+        }
+        String nickname = author.getNickname();
+        return nickname != null && !nickname.isBlank() ? nickname : DisplayConstants.UNKNOWN_USER;
+    }
+
+    /**
+     * 将 CircleTopic 实体转换为 CircleTopicView（内容做截断，用于列表展示，批量版本）。
+     *
+     * @param topic     话题实体
+     * @param authorMap 批量预加载的作者 Map
+     * @return 话题视图（内容预览）
+     */
+    private CircleTopicView toTopicView(CircleTopic topic, Map<Long, User> authorMap) {
+        return new CircleTopicView(
+                topic.getId(),
+                topic.getCircle().getId(),
+                topic.getCircle().getName(),
+                topic.getAuthorId(),
+                resolveAuthorName(topic.getAuthorId(), authorMap),
+                topic.getTitle(),
+                truncate(topic.getContent(), CONTENT_PREVIEW_MAX_LENGTH),
+                parseJsonToList(topic.getImages()),
+                topic.getReplyCount() != null ? topic.getReplyCount() : 0,
+                topic.getIsPinned() != null ? topic.getIsPinned() : false,
+                topic.getCreatedAt()
+        );
+    }
+
+    /**
+     * 将 CircleTopic 实体转换为 CircleTopicView（完整内容，用于详情页，批量版本）。
+     *
+     * @param topic     话题实体
+     * @param authorMap 批量预加载的作者 Map
+     * @return 话题视图（完整内容）
+     */
+    private CircleTopicView toTopicViewFullContent(CircleTopic topic, Map<Long, User> authorMap) {
+        return new CircleTopicView(
+                topic.getId(),
+                topic.getCircle().getId(),
+                topic.getCircle().getName(),
+                topic.getAuthorId(),
+                resolveAuthorName(topic.getAuthorId(), authorMap),
+                topic.getTitle(),
+                topic.getContent(),
+                parseJsonToList(topic.getImages()),
+                topic.getReplyCount() != null ? topic.getReplyCount() : 0,
+                topic.getIsPinned() != null ? topic.getIsPinned() : false,
+                topic.getCreatedAt()
+        );
+    }
+
+    /**
+     * 将 CircleReply 实体转换为 CircleReplyView（批量版本）。
+     *
+     * @param reply     回复实体
+     * @param authorMap 批量预加载的作者 Map
+     * @return 回复视图
+     */
+    private CircleReplyView toReplyView(CircleReply reply, Map<Long, User> authorMap) {
+        return new CircleReplyView(
+                reply.getId(),
+                reply.getTopic().getId(),
+                reply.getAuthorId(),
+                resolveAuthorName(reply.getAuthorId(), authorMap),
+                reply.getContent(),
+                reply.getCreatedAt()
+        );
     }
 
     /**

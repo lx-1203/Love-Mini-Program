@@ -5,9 +5,18 @@ on:
     branches: [main, develop]
   push:
     branches: [main, develop]
+    tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: read
+  # P3-D.2 + infra #46：security-scan 需要推送镜像到 GHCR（仅 push 事件）
+  packages: write
+
+# FIN-00866 / infra #51：并发控制——同一分支的新提交自动取消进行中的旧工作流
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 # ============================================================
 # CI 完整门禁（Task 19 + Task 23 + Task 24 + P1.16 容器与部署加固 + Task 53 CI/CD 完善）
@@ -16,34 +25,57 @@ permissions:
 # - e2e 依赖所有前置 job 通过后才执行
 # - Task 24：新增 security-scan job（Trivy 漏洞扫描），位于 api-test 通过后、e2e 之前
 # - Task 19：Maven 命令统一加 -B（batch mode）避免交互式阻塞；为每个 job 配置 timeout-minutes
-#   （client-test 30min、api-test 60min、e2e 45min、其他默认 30min）
 # - P1.16（2026-07-28）：新增 phase01-verify job，运行 `npm run verify:phase01`
-#   作为最终集成门禁，覆盖 9 项关键检查：mvn compile / mvn test /
-#   admin typecheck / admin build / client typecheck / client build:mp-weixin /
-#   test:structure / lint:openapi / verify:phase01。
+#   作为最终集成门禁
 # - Task 53（2026-07-28）：CI/CD 完善
-#   1. 所有 pnpm install 改用 --frozen-lockfile（强制 lockfile 与 package.json 一致，
-#      避免意外更新依赖；如需更新依赖请本地 pnpm install 后提交 lockfile）
-#   2. 使用 actions/setup-node@v4 内置 cache: 'pnpm'（等价于显式 actions/cache@v4，
-#      缓存 ~/.local/share/pnpm/store）
-#   3. 使用 actions/setup-java@v4 内置 cache: 'maven'（等价于显式 actions/cache@v4，
-#      缓存 ~/.m2/repository）
-#   4. Trivy 安全扫描已存在（fs 扫描 apps/api 与 apps/admin），HIGH/CRITICAL 漏洞即失败
-# - 9 个 job：lint-and-structure / client-typecheck-and-build /
-#   client-test / admin-typecheck-and-build / api-compile /
-#   api-test / security-scan / phase01-verify / e2e
-# - 所有 job 默认 fail-fast：前序 job 失败时后续 job 不执行（通过 needs 依赖实现）
+#   1. 所有 pnpm install 改用 --frozen-lockfile
+#   2. 使用 actions/setup-node@v4 内置 cache: 'pnpm'
+#   3. 使用 actions/setup-java@v4 内置 cache: 'maven'
+#   4. Trivy 安全扫描（fs + image），HIGH/CRITICAL 漏洞即失败
 # - P3-D（2026-07-29）：部署加固
-#   1. D.1 security-scan 新增 Trivy image 扫描：构建 campus-love-api/campus-love-admin
-#      镜像（--target runtime 跳过 Dockerfile 内 trivy-scanner 阶段），扫描 HIGH/CRITICAL
-#   2. D.2 security-scan 新增 cosign 镜像签名：使用 sigstore/cosign-installer@v3，
-#      通过 COSIGN_PRIVATE_KEY / COSIGN_PASSWORD secrets 注入密钥；
-#      仅在 secrets 配置时执行（PR 场景跳过避免无密钥报错）
+#   1. D.1 security-scan 新增 Trivy image 扫描
+#   2. D.2 security-scan 新增 cosign 镜像签名
+# - Infra 加固（2026-08-05，infra #45-#51 / FIN-00277/00278/00866/00867）：
+#   1. cosign 签名条件改用 secrets.COSIGN_PRIVATE_KEY != ''（原 env.COSIGN_PRIVATE_KEY
+#      恒为 false，签名永不执行）
+#   2. trivy-action 由 @master 固定为 @v0.23.0（禁止未 pin 的 master 引用）
+#   3. 新增 gitleaks job：密钥扫描门禁（infra #48）
+#   4. lint-and-structure 新增 pnpm audit --prod（infra #49）
+#   5. security-scan 使用 docker/build-push-action：镜像推送至 GHCR（infra #46），
+#      并启用 gha 构建缓存（infra #51）；PR 场景只构建不推送
+#   6. 新增 concurrency 与 workflow_dispatch 触发（infra #50/#51）
+#   7. e2e 显式指定 --config=tests/e2e/playwright.config.ts（FIN-00278：
+#      根目录无 playwright.config，原命令实际无法运行），并缓存 Playwright 浏览器
+#   8. Playwright 报告 artifact 设置 retention-days（FIN-00867）
 # ============================================================
 
 jobs:
   # ----------------------------------------------------------------
-  # Job 1: 根目录 OpenAPI lint + 项目结构测试
+  # Job 0: 密钥扫描（gitleaks，infra #48）
+  # ----------------------------------------------------------------
+  gitleaks-scan:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        # 版本固定（禁止 latest）：gitleaks v8.18.4
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}":/repo \
+            gitleaks/gitleaks:v8.18.4 detect \
+            --source /repo \
+            --config /repo/.gitleaks.toml \
+            --no-banner \
+            --redact \
+            --verbose
+
+  # ----------------------------------------------------------------
+  # Job 1: 根目录 OpenAPI lint + 项目结构测试 + 依赖审计
   # ----------------------------------------------------------------
   lint-and-structure:
     name: Lint & Structure
@@ -63,6 +95,10 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # infra #49：依赖漏洞门禁（生产依赖，HIGH 及以上即失败）
+      - name: Audit dependencies
+        run: pnpm audit --prod --audit-level high
 
       - name: Run OpenAPI lint
         run: npm run lint:openapi
@@ -197,12 +233,13 @@ jobs:
         run: mvn -B -f apps/api/pom.xml test
 
   # ----------------------------------------------------------------
-  # Job 7: Trivy 安全扫描（Task 24 + P3-D.1/D.2）
+  # Job 7: Trivy 安全扫描 + GHCR 镜像推送 + cosign 签名
   # 依赖 api-test 与 admin-typecheck-and-build 通过后执行
   # 扫描策略：
   #   1. fs 扫描：扫描 apps/api 与 apps/admin 仓库源码（Task 24）
   #   2. image 扫描：构建 Docker 镜像后扫描最终 runtime 镜像（P3-D.1）
-  #   3. cosign 签名：对镜像进行签名，支持部署端验证（P3-D.2）
+  #   3. 镜像推送：push 事件（main/develop/tag）推送到 GHCR，PR 仅构建（infra #46）
+  #   4. cosign 签名：仅当 secrets.COSIGN_PRIVATE_KEY 配置时执行（infra #45）
   # HIGH/CRITICAL 漏洞即失败
   # ----------------------------------------------------------------
   security-scan:
@@ -216,8 +253,9 @@ jobs:
       - uses: actions/checkout@v4
 
       # ---------- 阶段 1：源码 fs 扫描（Task 24）----------
+      # trivy-action 固定版本（infra #47 / FIN-00277）：禁止 @master
       - name: Trivy scan API (fs)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.23.0
         with:
           scan-type: fs
           scan-ref: apps/api
@@ -225,79 +263,106 @@ jobs:
           exit-code: 1
 
       - name: Trivy scan Admin (fs)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.23.0
         with:
           scan-type: fs
           scan-ref: apps/admin
           severity: HIGH,CRITICAL
           exit-code: 1
 
-      # ---------- 阶段 2：构建 Docker 镜像（P3-D.1）----------
+      # ---------- 阶段 2：构建 Docker 镜像（P3-D.1 + infra #46/#51）----------
       # 使用 --target runtime 跳过 Dockerfile 中的 trivy-scanner 中间阶段
-      # （该阶段会在构建期触发 fs 扫描，与 CI image 扫描重复）
+      # push 仅发生在 push 事件（PR 无 GHCR 写权限，只构建验证）
       - name: Set image tag
         id: tag
         run: echo "TAG=ci-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - name: Build API image
-        run: |
-          docker build \
-            --target runtime \
-            -t campus-love-api:${{ steps.tag.outputs.TAG }} \
-            ./apps/api
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build Admin image
-        run: |
-          docker build \
-            --target runtime \
-            -t campus-love-admin:${{ steps.tag.outputs.TAG }} \
-            ./apps/admin
+      - name: Docker meta (API)
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/api
+          tags: |
+            type=raw,value=${{ steps.tag.outputs.TAG }}
+            type=sha
+
+      - name: Docker meta (Admin)
+        id: meta-admin
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/admin
+          tags: |
+            type=raw,value=${{ steps.tag.outputs.TAG }}
+            type=sha
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/api
+          target: runtime
+          tags: ${{ steps.meta-api.outputs.tags }}
+          push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Admin image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/admin
+          target: runtime
+          tags: ${{ steps.meta-admin.outputs.tags }}
+          push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # ---------- 阶段 3：镜像漏洞扫描（P3-D.1）----------
+      # infra R2-00006：metadata-action 的 outputs.tags 为逗号分隔多 tag
+      # （如 ci-<sha>,sha-<sha>），Trivy image-ref 只接受单镜像引用，
+      # 取第一个 tag 扫描即可覆盖同一镜像内容
       - name: Trivy scan API image
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.23.0
         with:
-          image-ref: campus-love-api:${{ steps.tag.outputs.TAG }}
+          image-ref: ${{ steps.meta-api.outputs.tags.split(',')[0] }}
           severity: HIGH,CRITICAL
           exit-code: '1'
 
       - name: Trivy scan Admin image
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.23.0
         with:
-          image-ref: campus-love-admin:${{ steps.tag.outputs.TAG }}
+          image-ref: ${{ steps.meta-admin.outputs.tags.split(',')[0] }}
           severity: HIGH,CRITICAL
           exit-code: '1'
 
-      # ---------- 阶段 4：镜像签名（P3-D.2）----------
-      # 仅当 COSIGN_PRIVATE_KEY secret 配置时执行（PR 场景跳过，避免无密钥报错）
+      # ---------- 阶段 4：镜像签名（P3-D.2，infra #45）----------
+      # 修复：原 if 条件 env.COSIGN_PRIVATE_KEY 在 step 级不存在（仅 env 块内有效），
+      # 恒为 false 导致签名永不执行；改为直接判断 secrets 是否配置
       - name: Install cosign
-        if: ${{ env.COSIGN_PRIVATE_KEY != '' }}
+        if: ${{ secrets.COSIGN_PRIVATE_KEY != '' }}
         uses: sigstore/cosign-installer@v3
-        env:
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
 
       - name: Sign images
-        if: ${{ env.COSIGN_PRIVATE_KEY != '' }}
+        if: ${{ secrets.COSIGN_PRIVATE_KEY != '' }}
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
-          cosign sign --key env://COSIGN_PRIVATE_KEY campus-love-api:${{ steps.tag.outputs.TAG }}
-          cosign sign --key env://COSIGN_PRIVATE_KEY campus-love-admin:${{ steps.tag.outputs.TAG }}
+          cosign sign --key env://COSIGN_PRIVATE_KEY ${{ steps.meta-api.outputs.tags }}
+          cosign sign --key env://COSIGN_PRIVATE_KEY ${{ steps.meta-admin.outputs.tags }}
 
   # ----------------------------------------------------------------
   # Job 8: Phase 01 综合验证（P1.16 新增）
-  # 运行 `npm run verify:phase01`，作为最终集成门禁，覆盖：
-  #   1. mvn -f apps/api/pom.xml compile（通过 api:test 间接覆盖）
-  #   2. mvn -f apps/api/pom.xml test
-  #   3. npm --workspace apps/admin run typecheck（前置 job 已覆盖，本 job 不重复）
-  #   4. npm --workspace apps/admin run build（前置 job 已覆盖，本 job 不重复）
-  #   5. npm --workspace apps/client run typecheck
-  #   6. npm --workspace apps/client run build:mp-weixin（通过 verify:client-builds 覆盖）
-  #   7. npm run test:structure（通过 npm run test 覆盖）
-  #   8. npm run lint:openapi
-  #   9. npm run verify:phase01（本 job 主体）
-  # 依赖 security-scan 通过后才执行；e2e 依赖本 job 通过后才执行
+  # 运行 `npm run verify:phase01`，作为最终集成门禁
   # ----------------------------------------------------------------
   phase01-verify:
     name: Phase 01 Verify
@@ -360,8 +425,27 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # infra #51：缓存 Playwright 浏览器，避免每次安装
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # FIN-00278：根目录无 playwright.config，必须显式指定配置（tests/e2e/）
       - name: Run Playwright tests
-        run: npx playwright test
+        run: npx playwright test --config=tests/e2e/playwright.config.ts
+
+      # FIN-00867：报告 artifact 设置保留期限
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/e2e/report
+          retention-days: 7

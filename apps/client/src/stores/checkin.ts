@@ -165,6 +165,11 @@ let successAnimationTimer: ReturnType<typeof setTimeout> | null = null;
  * @param errorMessage - 超时错误信息
  * @param controller - 可选的 AbortController，超时后会被 abort，调用方可据此取消后续逻辑
  */
+// 注：本文件曾自带一份 withTimeout 实现（与 services/http.ts 导出的 withTimeout 重复）。
+// 因本地版本多一个 AbortController 参数（超时后 abort，供 IIFE 通过 signal.aborted
+// 跳过后续状态修改），且调用点依赖此行为与自定义错误文案，此处保留本地实现；
+// 超时语义（clearTimeout + reject）与 services/http.ts 保持一致。
+// 后续如需统一，可改为传入 AbortSignal 并迁移调用点错误文案。
 async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
@@ -210,6 +215,8 @@ async function withTimeout<T>(
   });
 }
 
+let fetchStatusToken = 0;
+
 /**
  * 签到 Store
  *
@@ -246,39 +253,44 @@ export const useCheckInStore = defineStore("checkin", {
     /** 连续签到天数展示文本 */
     consecutiveDaysText: (state): string => {
       if (state.consecutiveDays <= 0) return "";
-      return `已连续签到 ${state.consecutiveDays} 天`;
+      return t("checkin.consecutiveDaysText", { n: state.consecutiveDays }); // infra R2-00043: 签到权益文本 i18n 化
     },
 
     /** 额外推荐次数展示文本 */
     extraRecommendationsText: (state): string => {
       if (state.extraRecommendations <= 0) return "";
-      return `今日剩余次数+${state.extraRecommendations}`;
+      return t("checkin.extraRecommendationsText", { n: state.extraRecommendations }); // infra R2-00043
     },
 
     /** 签到权益-推荐配额展示文本 */
     extraQuotaText: (state): string => {
       if (state.extraRecommendQuota <= 0) return "";
-      return `今日额外推荐配额 +${state.extraRecommendQuota}`;
+      return t("checkin.extraQuotaText", { n: state.extraRecommendQuota }); // infra R2-00043
     },
 
     /** 热门话题入口展示文本 */
     hotTopicsText: (state): string => {
       if (!state.hotTopicsUnlocked || state.hotTopicCount <= 0) return "";
-      return `今日热门话题 (${state.hotTopicCount})`;
+      return t("checkin.hotTopicsText", { n: state.hotTopicCount }); // infra R2-00043
     },
 
     /** 新入圈用户入口展示文本 */
     newUsersText: (state): string => {
       if (!state.newUsersUnlocked || state.newUserCount <= 0) return "";
-      return `新入圈用户 (${state.newUserCount})`;
+      return t("checkin.newUsersText", { n: state.newUserCount }); // infra R2-00043
     },
   },
 
   actions: {
     /**
      * 查询签到状态（GET /api/check-in/status）
+     *
+     * 修复（P1 BUG）：新增竞态 token——连续进入页面/下拉刷新时，旧请求返回后
+     * 不再覆盖新请求结果（原实现仅靠 AbortController 防超时，不防并发覆盖）。
      */
     async fetchStatus() {
+      // 竞态 token：递增计数，仅最新 token 的请求允许更新状态
+      const token = ++fetchStatusToken;
       this.loading = true;
       this.errorMessage = null;
 
@@ -289,6 +301,8 @@ export const useCheckInStore = defineStore("checkin", {
       try {
         await withTimeout(
           (async () => {
+            // 修复：旧请求（被新请求取代）返回时不再修改状态
+            if (token !== fetchStatusToken) return;
             if (useMock()) {
               // 修复：超时后不再修改状态，避免覆盖
               if (controller.signal.aborted) return;
@@ -306,12 +320,12 @@ export const useCheckInStore = defineStore("checkin", {
             const sessionStore = useSessionStore();
             const userId = sessionStore.userSession?.userId ?? "";
             const data = await request<BackendCheckInStatusView>({
-              url: `/check-in/status?userId=${userId}`,
+              url: `/check-in/status?userId=${encodeURIComponent(userId)}`,
               method: "GET",
             });
 
-            // 修复：API 返回后若已超时，不再修改状态
-            if (controller.signal.aborted) return;
+            // 修复：旧请求（被新请求取代）或超时后不再修改状态
+            if (token !== fetchStatusToken || controller.signal.aborted) return;
 
             // 映射后端字段到前端字段
             this.checkedIn = data.checkedInToday;
@@ -321,13 +335,18 @@ export const useCheckInStore = defineStore("checkin", {
             this.pointsBalance = data.points ?? this.pointsBalance;
           })(),
           ASYNC_TIMEOUT_MS,
-          "获取签到状态超时",
+          t("storeErrors.checkin.timeoutFetchStatus"), // infra R2-00045: 超时文案 i18n 化
           controller
         );
       } catch (error) {
+        // 修复：旧请求的错误不更新 errorMessage
+        if (token !== fetchStatusToken) return;
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.checkin.loadStatusFailed");
       } finally {
-        this.loading = false;
+        // 修复：仅最新 token 的请求才允许清 loading
+        if (token === fetchStatusToken) {
+          this.loading = false;
+        }
       }
     },
 
@@ -385,8 +404,8 @@ export const useCheckInStore = defineStore("checkin", {
                 extraRecommendations: CHECKIN_EXTRA_RECOMMENDATIONS,
                 consecutiveDays: mockCheckInStatus.consecutiveDays,
                 extraRecommendQuota: CHECKIN_EXTRA_QUOTA,
-                hotTopicsUnlocked: true,
-                newUsersUnlocked: true,
+                hotTopicsUnlocked: true, // infra R2-00046: mock 演示数据，real 分支由后端下发
+                newUsersUnlocked: true, // infra R2-00046
                 hotTopicCount: CHECKIN_HOT_TOPIC_COUNT,
                 newUserCount: CHECKIN_NEW_USER_COUNT,
                 points: CHECKIN_POINTS_EARNED,
@@ -442,6 +461,12 @@ export const useCheckInStore = defineStore("checkin", {
         this.newUserCount = result.newUserCount;
         // Task D：签到成功累加积分（后端字段缺失时回退常量 5）
         this.pointsEarned = result.points ?? CHECKIN_POINTS_EARNED;
+        // 注（防双计说明）：pointsEarned 是“本次签到获得”的积分，后端余额接口
+        // 返回的是累计余额，两者口径不同。此处本地累加仅用于 mock 模式与后端
+        // 未在 fetchStatus 返回 points 的场景；若后端 balance 已由 fetchStatus
+        // 同步（data.points ?? this.pointsBalance），则不会重复累加——
+        // 若未来后端在 check-in 响应中直接返回最新余额，应改为直接赋值
+        // this.pointsBalance = result.balance 而非累加，避免双计。
         this.pointsBalance += this.pointsEarned;
 
         // 触发签到成功动画
@@ -495,8 +520,8 @@ export const useCheckInStore = defineStore("checkin", {
         return result;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.checkin.makeupFailed");
-        console.error("[checkinStore.makeUpCheckIn]", error);
-        return null;
+        // infra R2-00044: 补签失败重新抛出，调用方可区分“无权限/积分不足”与“网络失败”并差异化提示
+        throw error;
       } finally {
         this.makingUp = false;
       }
@@ -508,6 +533,10 @@ export const useCheckInStore = defineStore("checkin", {
      * 修复（P1 BUG）：组件 onUnmounted 时应调用此方法，
      * 避免定时器在组件卸载后仍修改状态。
      * 也用于 HMR 热更新时清理模块级定时器。
+     *
+     * TODO(dispose-接线)：引用页面为 pages/home/index.vue、pages/daily-question/index.vue、
+     * pages/discover/index.vue、pages/shop/index.vue。本子任务受目录权限限制无法修改
+     * pages/ 目录，需在后续任务中于上述页面 onUnload 中调用 checkInStore.dispose()。
      */
     dispose() {
       if (successAnimationTimer) {

@@ -15,7 +15,7 @@
 本计划定义校园恋爱小程序在遭遇重大故障或灾难时的恢复流程，目标是：
 
 - **RTO（Recovery Time Objective）**：≤ 4 小时（核心服务恢复）
-- **RPO（Recovery Point Objective）**：≤ 24 小时（数据丢失上限）
+- **RPO（Recovery Point Objective）**：≤ 1 小时（MySQL binlog 实时同步达成,见 2.1 能力基线;上限不超过 24h）
 - **MAO（Maximum Allowable Outage）**：≤ 8 小时（最大允许中断时长）
 
 ### 0.2 适用范围
@@ -23,7 +23,7 @@
 | 范围 | 包含 | 不包含 |
 |------|------|--------|
 | 应用层 | Spring Boot API / Vue 客户端 / Admin 后台 | 第三方 SaaS（微信开放平台、阿里云 OSS） |
-| 数据层 | MySQL / Redis / Elasticsearch / RabbitMQ | 用户本地数据（小程序缓存） |
+| 数据层 | MySQL / Redis（Elasticsearch / RabbitMQ 规划中，未部署） | 用户本地数据（小程序缓存） |
 | 基础设施 | Docker / Nginx / Prometheus / Grafana | DNS / CDN（由云厂商保障） |
 | 业务场景 | 登录/匹配/聊天/社区/支付核心链路 | 客服系统、营销工具 |
 
@@ -31,8 +31,7 @@
 
 | 等级 | 定义 | 影响 | 响应时间 | 决策层级 |
 |------|------|------|----------|----------|
-| **P0 - S1** | 全站不可用 | 所有用户无法使用 | ≤ 15 分钟 | CTO + DevOps Lead |
-| **P0 - S2** | 核心功能不可用 | 登录/匹配/聊天任一不可用 | ≤ 30 分钟 | DevOps Lead + 业务负责人 |
+| **P0 - S1** | 全站不可用 | 所有用户无法使用 | ≤ 15 分钟 | CTO + DevOps Lead || **P0 - S2** | 核心功能不可用 | 登录/匹配/聊天任一不可用 | ≤ 30 分钟 | DevOps Lead + 业务负责人 |
 | **P1 - S3** | 部分功能降级 | 非核心功能异常 | ≤ 2 小时 | 值班 SRE |
 | **P2 - S4** | 单点故障 | 单个用户/小范围用户受影响 | ≤ 4 小时 | 值班 SRE |
 
@@ -73,11 +72,15 @@
 | 资源 | 备份频率 | 备份保留 | 恢复耗时 | RPO | RTO |
 |------|----------|----------|----------|-----|-----|
 | MySQL | 每天 02:00 全量 + binlog 实时 | 7 天本地 + 4 周异地 | 45s（12MB 测试） | 1h | 2h |
-| Redis | RDB 每 5 分钟 + AOF 实时 | 7 天 | 2 分钟 | 5min | 30min |
-| Elasticsearch | 每天 03:00 快照 | 14 天 | 30 分钟 | 24h | 1h |
-| RabbitMQ | 队列持久化 | N/A（持久化队列） | 重启即恢复 | 0 | 5min |
+| Redis | RDB（按 `--save 60 1000` 规则：60 秒内 ≥1000 次写才落盘） | 7 天 | 2 分钟 | ≤ 5min（受落盘规则影响，见 2.3） | 30min |
+| Elasticsearch | 未部署（规划中） | - | - | - | - |
+| RabbitMQ | 未部署（规划中） | - | - | - | - |
 | 应用镜像 | 每次 CI 构建 | 10 个版本 | 容器重启 30s | 0 | 15min |
 | 静态资源 | 实时同步 CDN | 永久 | CDN 切换 | 0 | 5min |
+
+> infra R2-00348：Redis RDB 实际按 docker-compose `--save 60 1000` 触发（非固定每 5 分钟），
+> 且 compose 未启用 AOF；Elasticsearch / RabbitMQ 当前未部署，相关行标注为规划中，
+> 原文档声称“RDB 每 5 分钟 / ES 快照 / RabbitMQ 持久化”与部署不符（RPO 声明虚假）。
 
 ### 2.2 RTO ≤ 4h 达成路径
 
@@ -97,12 +100,15 @@
 [复盘]
 ```
 
-### 2.3 RPO ≤ 24h 达成路径
+### 2.3 RPO ≤ 1h 达成路径（总体目标,上限 24h）
 
-- **MySQL**：binlog 实时同步 → RPO ≤ 1h
-- **Redis**：AOF 实时持久化 → RPO ≤ 5min
-- **Elasticsearch**：每日快照 → RPO ≤ 24h（可接受）
+- **MySQL**：binlog 实时同步（compose 已启用 `--log-bin`，见 infra R2-00007）→ RPO ≤ 1h
+- **Redis**：RDB 按 `--save 60 1000` 规则落盘，无 AOF；RPO 受写频率影响，低流量时段可能超过 5min
+- **Elasticsearch**：未部署，暂不承诺 RPO（规划中）
+- **RabbitMQ**：未部署，暂不承诺 RPO（规划中）
 - **对象存储**：版本化 + 跨区域复制 → RPO = 0
+
+> infra R2-00349：原 2.3 声称 Redis AOF 实时持久化 / ES 每日快照，均与当前部署不符，已更正。
 
 ---
 
@@ -114,9 +120,9 @@
 |------|------|------|--------|------|----------|
 | MySQL | 全量 | 每天 02:00 | 7 天本地 + 4 周异地 | 本地 + 异地 + OSS | 月度 |
 | MySQL | 增量（binlog） | 实时 | 3 天 | 本地 | 季度 PITR 演练 |
-| Redis | RDB | 每 5 分钟 | 7 天 | 本地 | 月度 |
-| Redis | AOF | 实时 | 7 天 | 本地 | 月度 |
-| Elasticsearch | 快照 | 每天 03:00 | 14 天 | OSS | 季度 |
+| Redis | RDB（`--save 60 1000` 规则触发） | 7 天 | 本地 | 月度 |
+| Redis | AOF | 未启用（compose 未配置 --appendonly） | - | - | 规划中 |
+| Elasticsearch | 快照 | 未部署 | - | - | 规划中 |
 | 应用镜像 | CI 产物 | 每次构建 | 10 个版本 | 镜像仓库 | 每次部署 |
 | 配置文件 | Git 版本 | 实时 | 永久 | Git + 异地 | 每次变更 |
 | 密钥/凭据 | KMS | 每次轮换 | 90 天 | KMS + 备份柜 | 季度 |
@@ -187,6 +193,10 @@ fi
 #### 4.1.3 故障分类与决策
 
 值班 SRE 在 15 分钟内完成故障分类，无法判断时立即升级至 DevOps Lead。
+
+> infra R2-00350：值班/on-call 轮值机制（原文档 P0 响应时间 ≤15 分钟但未定义值班制度）：
+> 当前仓库未部署独立值班系统，SRE 值班由团队轮值表（每周一轮，见团队 wiki 值班页）保障；
+> 告警触达渠道为钉钉群 + 电话（S1 级别），详见 6.2 通知矩阵。
 
 ### 4.2 场景 A：数据库完全损坏
 
@@ -584,11 +594,11 @@ SELECT MAX(created_at) FROM private_messages;
 
 ```bash
 # === MySQL ===
-docker compose exec mysql-backup ls -lh /backup/    # 查看备份
-docker compose exec mysql-backup /usr/local/bin/backup-mysql.sh    # 手动备份
-docker compose exec mysql-backup /usr/local/bin/backup-mysql.sh --dry-run    # 测试
-docker compose exec -T mysql-backup sh -c \
-  "gunzip -c /backup/<file>.sql.gz | mysql -h mysql -u root -p\"$MYSQL_ROOT_PASSWORD\" campus_love"    # 恢复
+docker compose exec backup ls -lh /backups/    # 查看备份
+docker compose exec backup /backup.sh    # 手动备份
+docker compose exec backup /backup.sh --dry-run    # 测试
+docker compose exec -T backup sh -c \
+  "gunzip -c /backups/<file>.sql.gz | mysql -h mysql -u root -p\"$MYSQL_ROOT_PASSWORD\" campus_love"    # 恢复
 
 # === Redis ===
 docker compose exec redis redis-cli PING            # 健康检查

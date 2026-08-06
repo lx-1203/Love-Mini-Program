@@ -25,6 +25,9 @@ import {
   isMessageHeartSignal,
   isSystemNotification,
 } from "../../types/guards";
+// infra R2-00127: 未知队列类型/非法数据上报 Sentry（含 mp-weixin 降级通道），
+// 替代“仅 console.warn 静默”，便于尽早发现前后端契约漂移。
+import { captureException } from "../sentry";
 
 /**
  * 将消息分发到对应的 Pinia Store
@@ -64,6 +67,12 @@ export function dispatchToStore(destination: string, data: unknown): void {
 
       default:
         console.warn(`[WebSocket] 未知队列类型: ${queueType}`);
+        // infra R2-00127: 未知队列类型可能预示后端契约变更或消息丢失，
+        // 上报 Sentry 便于尽早发现，避免消息静默丢失。
+        captureException(new Error(`[WebSocket] 未知队列类型: ${queueType}`), {
+          source: "ws-store-dispatch",
+          destination,
+        });
     }
   } catch (error) {
     console.error(`[WebSocket] Store 分发异常 [${queueType}]:`, error);
@@ -86,6 +95,11 @@ export function handleNewMessage(data: unknown): void {
     // 类型守卫：拒绝不符合 MessageItem 接口的数据
     if (!isMessageItem(data)) {
       console.warn("[WebSocket] 收到非法的私信消息数据，已忽略:", data);
+      // infra R2-00127: 数据形状不符契约时上报，便于发现前后端字段漂移
+      captureException(new Error("[WebSocket] 非法私信消息数据"), {
+        source: "ws-store-dispatch",
+        payload: data,
+      });
       return;
     }
     const message: MessageItem = data;
@@ -136,6 +150,11 @@ export function handleNewHeartSignal(data: unknown): void {
     // 类型守卫：拒绝不符合 HeartSignal 接口的数据
     if (!isHeartSignal(data)) {
       console.warn("[WebSocket] 收到非法的心动信号数据，已忽略:", data);
+      // infra R2-00127: 数据形状不符契约时上报
+      captureException(new Error("[WebSocket] 非法心动信号数据"), {
+        source: "ws-store-dispatch",
+        payload: data,
+      });
       return;
     }
     const signal: HeartSignal = data;
@@ -190,6 +209,11 @@ export function handleNewNotification(data: unknown): void {
     // 类型守卫：拒绝不符合 SystemNotification 接口的数据
     if (!isSystemNotification(data)) {
       console.warn("[WebSocket] 收到非法的通知数据，已忽略:", data);
+      // infra R2-00127: 数据形状不符契约时上报
+      captureException(new Error("[WebSocket] 非法通知数据"), {
+        source: "ws-store-dispatch",
+        payload: data,
+      });
       return;
     }
     const notification: SystemNotification = data;

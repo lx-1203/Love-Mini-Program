@@ -59,6 +59,7 @@ public class AdminConfigController {
      * 更新指定 key 的系统参数配置。
      */
     @PutMapping("/configs/{key}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<AdminConfigView> updateConfig(
             @PathVariable("key") String key,
             @Valid @RequestBody UpdateConfigRequest req) {
@@ -85,6 +86,7 @@ public class AdminConfigController {
      * 更新指定 id 的业务规则。
      */
     @PutMapping("/rules/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<AdminRuleView> updateRule(
             @PathVariable("id") @Positive Long id,
             @Valid @RequestBody UpdateRuleRequest req) {
@@ -111,6 +113,7 @@ public class AdminConfigController {
      * 切换指定 key 的功能开关状态。
      */
     @PutMapping("/switches/{key}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<AdminSwitchView> updateSwitch(
             @PathVariable("key") String key,
             @Valid @RequestBody UpdateSwitchRequest req) {

@@ -3,8 +3,9 @@
 ## Protected Branches
 
 - `main`: the only long-lived integration branch. It must stay releasable.
-- `release/YYYY-MM-DD`: stabilization branch for a dated release window.
-- `hotfix/YYYY-MM-DD-short-name`: emergency production fix branch cut from the active release branch or `main`.
+- `release/v{version}` (e.g. `release/v0.1`, `release/v1.0`): stabilization branch for a release window.
+  (infra R2-00390: naming unified with docs/CI-CD.md §2.1 — the old `release/YYYY-MM-DD` scheme was inconsistent with the documented `release/v{version}` model.)
+- `hotfix/v{version}-short-name` (e.g. `hotfix/v1.0.1-login-bug`): emergency production fix branch cut from the active release branch or `main`.
 
 ## Working Branches
 

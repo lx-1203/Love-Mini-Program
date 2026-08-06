@@ -18,10 +18,11 @@
 # ============================================================
 
 # ---------- Stage 1: Builder ----------
-FROM node:20-alpine AS builder
+FROM node:20.15.0-alpine AS builder
 
-# 安装 pnpm（与项目根 package.json 推荐包管理器一致）
-RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+# 安装 pnpm（与项目根 package.json packageManager 字段一致：pnpm@11.17.0）
+# 版本固定（infra #35），避免与仓库锁定的包管理器漂移
+RUN corepack enable && corepack prepare pnpm@11.17.0 --activate
 
 WORKDIR /build
 
@@ -29,7 +30,8 @@ WORKDIR /build
 COPY package.json pnpm-lock.yaml* ./
 
 # 安装生产与开发依赖（构建期需要 devDependencies：vite、vue-tsc 等）
-RUN pnpm install --frozen-lockfile || pnpm install
+# 强制 --frozen-lockfile：lockfile 与 package.json 不一致时构建失败而非静默回退（infra #36）
+RUN pnpm install --frozen-lockfile
 
 # 复制源码
 COPY . .
@@ -45,7 +47,7 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL} \
 RUN pnpm run build
 
 # ---------- Stage 2: Runtime ----------
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.27.3-alpine AS runtime
 
 LABEL org.opencontainers.image.title="campus-love-admin" \
       org.opencontainers.image.description="Campus Love admin console" \
@@ -80,7 +82,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 #   - 单独触发扫描：docker build --target trivy-scanner .
 # 扫描范围：builder 阶段产出的 nginx 静态文件目录（dist）
 # 退出策略：发现 HIGH/CRITICAL 漏洞时 exit-code=1，构建失败
-FROM aquasec/trivy:latest AS trivy-scanner
+# 镜像版本固定（infra 补充）：禁止 latest 浮点 tag
+FROM aquasec/trivy:0.53.0 AS trivy-scanner
 
 WORKDIR /scan
 

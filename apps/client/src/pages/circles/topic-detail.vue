@@ -188,6 +188,9 @@ onMounted(() => {
   if (topicId.value) {
     void circleStore.fetchTopicDetail(topicId.value);
     void circleStore.fetchReplies(topicId.value, 1);
+  } else {
+    // infra R2-00074: topicId 缺失时给出错误态提示，避免直开链接白屏
+    uni.showToast({ title: t("storeErrors.circle.topicIdInvalid"), icon: "none" });
   }
 });
 
@@ -255,7 +258,8 @@ defineExpose({ sayHello, goToAuthorProfile });
       <view class="replies-section">
         <view class="replies-header">
           <text class="replies-title">{{ t("circle.topicDetailRepliesTitle") }}</text>
-          <text class="replies-count">{{ replies.length }}</text>
+          <!-- review #54：改用服务端 replyCount（含未加载分页回复），而非仅本地已加载 replies.length -->
+          <text class="replies-count">{{ currentTopic.replyCount }}</text>
         </view>
 
         <!-- 加载状态 -->

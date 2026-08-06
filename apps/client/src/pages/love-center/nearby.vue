@@ -50,6 +50,14 @@ function distanceLabel(user: NearbyUser): string {
   return t("contentPages.nearby.distanceUnit", { n: user.distance });
 }
 
+/**
+ * 点击示例用户卡片（review #48：原 role="button" 无 @tap 属死卡片）。
+ * 本地示例数据无真实 userId，点击给出提示；正式数据接入后改为跳转用户主页。
+ */
+function handleUserTap() {
+  uni.showToast({ title: t("contentPages.nearby.tapHint"), icon: "none" });
+}
+
 /** 返回上一页（右上角固定按钮） */
 function goBack() {
   uni.navigateBack();
@@ -80,6 +88,7 @@ function goBack() {
               class="user-card"
               role="button"
               :aria-label="`${user.nickname}，${user.school}，${distanceLabel(user)}`"
+              @tap="handleUserTap"
             >
               <image class="user-card__avatar" :src="user.avatar" mode="aspectFill" lazy-load alt="" />
               <view class="user-card__info">

@@ -76,8 +76,10 @@ export function categorizeError(error: unknown): ToastErrorCategory {
   if (
     lower.includes("timeout") ||
     lower.includes("network") ||
-    lower.includes("abort") ||
-    lower.includes("fail") && lower.includes("timeout")
+    lower.includes("abort")
+    // 修复：原实现末尾还有 `|| lower.includes("fail") && lower.includes("timeout")`，
+    // 该条件是死代码——`includes("timeout")` 已在上方覆盖（且由于 && 优先级，
+    // 该表达式在 timeout 不包含时永远为 false），删除冗余判断。
   ) {
     return "network";
   }

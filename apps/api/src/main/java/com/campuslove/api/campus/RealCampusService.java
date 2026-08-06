@@ -173,7 +173,9 @@ public class RealCampusService implements CampusService {
         reply.setIsAnonymous(false);
         reply.setCreatedAt(now);
 
-        campusTopicReplyRepository.save(reply);
+        // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
+        // 否则下方 toCampusTopicReplyView 中 reply.getId() 为 null
+        reply = campusTopicReplyRepository.save(reply);
 
         // 增加话题回复计数
         topic.setReplyCount(topic.getReplyCount() + 1);
@@ -232,7 +234,8 @@ public class RealCampusService implements CampusService {
                     post.getShareCount(),
                     post.getCreatedAt().toString(),
                     post.getLikesCount() >= 50,
-                    false // isAlumni
+                    false, // isAlumni
+                    false // isFollowed
             ));
         }
         return result;

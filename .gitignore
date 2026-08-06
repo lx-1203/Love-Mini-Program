@@ -27,7 +27,16 @@ Thumbs.db
 *.env.local
 .env.*.local
 *.local
+# 本地开发启动脚本（含本地凭据，禁止提交）
+start-local.bat
 verification_logs/
+
+# 真实凭据环境文件（禁止提交；*.example 模板文件保留）
+.env
+!**/.env.example
+
+# 数据库备份目录（宿主机备份产物，不入库）
+backups/
 
 # Logs
 *.log
@@ -147,7 +156,6 @@ tools/flyway-12.6.1/
 tools/flyway-commandline-*.zip
 
 # 数据库初始化临时脚本（已在 flyway 迁移中体现）
-init-mysql.sql
 set-root-password.sql
 
 # 构建脚本临时产物
@@ -222,3 +230,8 @@ scripts/scan-chinese.mjs
 # 客户端一次性 ARIA 扫描
 apps/client/scan-aria-results.json
 apps/client/scan-aria.cjs
+# 本地实验启动脚本(含明文凭据,仅限本机,严禁提交)
+apps/api/start-real-r2.bat
+apps/api/make-args.cjs
+apps/api/cp-r2.txt
+apps/api/run-real.args

@@ -1,0 +1,14 @@
+# 本地开发用 Redisson 配置(infra 启动修复)
+# Redis 3.0.504(Windows)不支持 RESP3/HELLO,强制 RESP2 协议
+protocol: RESP2
+singleServerConfig:
+  address: "redis://127.0.0.1:6379"
+  database: 0
+  connectionMinimumIdleSize: 1
+  connectionPoolSize: 4
+  timeout: 3000
+  connectTimeout: 5000
+  retryAttempts: 1
+  retryInterval: 1000
+  subscriptionConnectionMinimumIdleSize: 1
+  subscriptionConnectionPoolSize: 2

@@ -148,20 +148,92 @@ public class MatchEngine {
         List<User> pagedUsers = userRepository.findAll(
                 PageRequest.of(0, matchConfig.getCandidatePageSize())).getContent();
 
-        // 5. 过滤排除用户并计算推荐分数
+        // 5. infra R2-00017 修复：批量预加载候选用户的三类档案，消除评分 N+1
+        //   （原实现对每个候选调用 3 次 findByUserId，50 候选 = 150+ 查询/次匹配）
+        List<Long> candidateIds = pagedUsers.stream()
+                .filter(u -> !excludedUserIds.contains(u.getId()))
+                .map(User::getId)
+                .toList();
+        Map<Long, UserCampusProfile> campusById = userCampusProfileRepository
+                .findByUserIdIn(candidateIds).stream()
+                .collect(java.util.stream.Collectors.toMap(UserCampusProfile::getUserId, p -> p));
+        Map<Long, Set<String>> tagsById = userBasicProfileRepository
+                .findByUserIdIn(candidateIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        com.campuslove.api.entity.UserBasicProfile::getUserId,
+                        p -> parseInterestTags(p.getInterestTags())));
+        Map<Long, String> scheduleById = userScheduleProfileRepository
+                .findByUserIdIn(candidateIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        com.campuslove.api.entity.UserScheduleProfile::getUserId,
+                        com.campuslove.api.entity.UserScheduleProfile::getPreferredTimeWindowJson));
+
+        // 6. 计算推荐分数（纯内存计算，无数据库访问）
         List<ScoredCandidate> scoredCandidates = new ArrayList<>();
         for (User candidate : pagedUsers) {
             if (excludedUserIds.contains(candidate.getId())) {
                 continue;
             }
-            int score = calculateMatchScore(candidate.getId(), myCampusName, myCityName, myTags, myTimeWindow);
+            int score = calculateMatchScoreFromMaps(
+                    candidate.getId(), myCampusName, myCityName, myTags, myTimeWindow,
+                    campusById, tagsById, scheduleById);
             scoredCandidates.add(new ScoredCandidate(candidate, score));
         }
 
-        // 6. 按推荐分数降序排序
+        // 7. 按推荐分数降序排序
         scoredCandidates.sort(Comparator.comparingInt(ScoredCandidate::score).reversed());
 
         return scoredCandidates;
+    }
+
+    /**
+     * infra R2-00017：基于批量预加载的档案 Map 计算匹配分数（无数据库访问）。
+     *
+     * @param candidateUserId 候选用户 ID
+     * @param myCampusName    当前用户校区名称
+     * @param myCityName      当前用户城市名称
+     * @param myTags          当前用户兴趣标签集合
+     * @param myTimeWindow    当前用户日程时间窗口 JSON
+     * @param campusById      候选用户校区档案（按 userId 索引）
+     * @param tagsById        候选用户兴趣标签（按 userId 索引）
+     * @param scheduleById    候选用户日程偏好（按 userId 索引）
+     * @return 推荐分数
+     */
+    public int calculateMatchScoreFromMaps(
+            Long candidateUserId, String myCampusName, String myCityName,
+            Set<String> myTags, String myTimeWindow,
+            Map<Long, UserCampusProfile> campusById,
+            Map<Long, Set<String>> tagsById,
+            Map<Long, String> scheduleById) {
+        int score = 0;
+
+        // 同校区 + 同城市
+        UserCampusProfile campus = campusById.get(candidateUserId);
+        if (campus != null) {
+            if (myCampusName.equals(campus.getCampusName())) {
+                score += matchConfig.getCampusWeight();
+            }
+            if (myCityName.equals(campus.getCityName())) {
+                score += matchConfig.getCityWeight();
+            }
+        }
+
+        // 兴趣标签匹配
+        if (!myTags.isEmpty()) {
+            Set<String> candidateTags = tagsById.getOrDefault(candidateUserId, Collections.emptySet());
+            long commonTagCount = myTags.stream()
+                    .filter(candidateTags::contains)
+                    .count();
+            score += (int) commonTagCount * matchConfig.getInterestWeight();
+        }
+
+        // 日程重叠
+        String candidateSchedule = scheduleById.get(candidateUserId);
+        if (candidateSchedule != null && hasScheduleOverlap(myTimeWindow, candidateSchedule)) {
+            score += matchConfig.getScheduleWeight();
+        }
+
+        return score;
     }
 
     /**

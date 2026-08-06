@@ -58,12 +58,21 @@ async function save() {
 
     <SectionCard title="偏好设置" compact>
       <input v-model="form.preferredCampusArea" class="field" placeholder="常去区域" aria-label="常去区域" />
-      <textarea
-        v-model="form.preferredTimeWindows[0]"
-        class="field field--textarea"
-        maxlength="60"
-        placeholder="常用空闲时段，例如今晚或本周三下午" aria-label="常用空闲时段，例如今晚或本周三下午"
-      />
+      <!-- review #66：原模板仅绑定 preferredTimeWindows[0]，其余时段无法编辑；
+           现按数组渲染全部时段输入框，提交时完整保留。 -->
+      <view
+        v-for="(_win, idx) in form.preferredTimeWindows"
+        :key="idx"
+        class="time-window-field"
+      >
+        <input
+          v-model="form.preferredTimeWindows[idx]"
+          class="field"
+          maxlength="60"
+          :placeholder="idx === 0 ? '常用空闲时段，例如今晚或本周三下午' : '补充空闲时段，例如周日下午'"
+          :aria-label="idx === 0 ? '常用空闲时段，例如今晚或本周三下午' : '补充空闲时段，例如周日下午'"
+        />
+      </view>
       <BottomActionBar primary-label="保存并进入应用" @primary="save" />
     </SectionCard>
   </AppShell>
@@ -84,5 +93,14 @@ async function save() {
 
 .field--textarea {
   min-height: 120rpx;
+}
+
+/* review #66：多个时段输入框间距 */
+.time-window-field {
+  margin-top: var(--sp-3);
+}
+
+.time-window-field:first-of-type {
+  margin-top: var(--sp-3);
 }
 </style>

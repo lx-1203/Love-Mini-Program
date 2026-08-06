@@ -24,38 +24,12 @@ import org.springframework.stereotype.Service;
 public class MockNotificationService implements NotificationService {
 
   private final AtomicLong notificationIdSeq = new AtomicLong(1);
-  private final Map<Long, NotificationState> notificationsById = new LinkedHashMap<>();
+  /** FIN-00061 修复：按用户隔离的通知存储（key=userId），消除所有用户共享内存状态互相污染 */
+  private final Map<String, List<NotificationState>> notificationsByUser = new LinkedHashMap<>();
 
   @Override
   public List<NotificationView> getNotifications(Long userId) {
-    if (userId == null) {
-      throw new IllegalArgumentException("userId is required");
-    }
-
-    if (notificationsById.isEmpty()) {
-      buildMockNotifications(String.valueOf(userId));
-    }
-
-    return notificationsById.values().stream()
-        .map(this::toNotificationView)
-        .toList();
-  }
-
-  @Override
-  public void markAsRead(Long notificationId) {
-    if (notificationId == null) {
-      throw new IllegalArgumentException("notificationId is required");
-    }
-
-    NotificationState state = notificationsById.get(notificationId);
-    if (state == null) {
-      throw new IllegalArgumentException("notification not found: " + notificationId);
-    }
-
-    notificationsById.put(notificationId,
-        new NotificationState(state.id(), state.userId(), state.type(),
-            state.sourceUserName(), state.sourceUserAvatar(),
-            state.referenceId(), state.referenceType(), true, state.createdAt()));
+    return getNotifications(userId, null, (Pageable) null);
   }
 
   @Override
@@ -64,65 +38,89 @@ public class MockNotificationService implements NotificationService {
       throw new IllegalArgumentException("userId is required");
     }
 
-    if (notificationsById.isEmpty()) {
-      buildMockNotifications(String.valueOf(userId));
-    }
-
-    long unreadCount = notificationsById.values().stream()
+    List<NotificationState> states = getOrCreateUserNotifications(String.valueOf(userId));
+    long unreadCount = states.stream()
         .filter(n -> !n.isRead())
         .count();
 
     return new UnreadCountView(unreadCount);
   }
 
-  private void buildMockNotifications(String userId) {
-    Instant now = Instant.now();
+  /**
+   * FIN-00060 修复：mock 数据按用户隔离。
+   *
+   * <p>通知来源人统一使用推荐池人设（林安/周沐/许诺/苏璃/夏野），
+   * 与 MockRuntimeState.recommendedPeople 一致，避免两套人名体系；
+   * 头像使用本地 mock 资源路径（原 cdn.campuslove.cn 编造域名必 404）。</p>
+   */
+  private List<NotificationState> getOrCreateUserNotifications(String userId) {
+    return notificationsByUser.computeIfAbsent(userId, uid -> {
+      Instant now = Instant.now();
+      List<NotificationState> states = new java.util.ArrayList<>();
+      // 推荐池人设：林安(1001)、周沐(1002)、许诺(1003)、苏璃(1004)、夏野(1005)
+      states.add(new NotificationState(
+          notificationIdSeq.getAndIncrement(), uid, "follow",
+          "林安", "/uploads/mock/avatar-linan.jpg",
+          1001L, "user", false,
+          now.minusSeconds(300).toString()
+      ));
 
-    addNotification(new NotificationState(
-        notificationIdSeq.getAndIncrement(), userId, "follow",
-        "林安", "https://cdn.campuslove.cn/avatars/linan.png",
-        1001L, "user", false,
-        now.minusSeconds(300).toString()
-    ));
+      states.add(new NotificationState(
+          notificationIdSeq.getAndIncrement(), uid, "like",
+          "周沐", "/uploads/mock/avatar-zhoumu.jpg",
+          2001L, "post", false,
+          now.minusSeconds(1800).toString()
+      ));
 
-    addNotification(new NotificationState(
-        notificationIdSeq.getAndIncrement(), userId, "like",
-        "周沐", "https://cdn.campuslove.cn/avatars/zhoumu.png",
-        2001L, "post", false,
-        now.minusSeconds(1800).toString()
-    ));
+      states.add(new NotificationState(
+          notificationIdSeq.getAndIncrement(), uid, "comment",
+          "许诺", "/uploads/mock/avatar-xunuo.jpg",
+          3001L, "comment", true,
+          now.minusSeconds(3600).toString()
+      ));
 
-    addNotification(new NotificationState(
-        notificationIdSeq.getAndIncrement(), userId, "comment",
-        "许诺", "https://cdn.campuslove.cn/avatars/xunuo.png",
-        3001L, "comment", true,
-        now.minusSeconds(3600).toString()
-    ));
+      states.add(new NotificationState(
+          notificationIdSeq.getAndIncrement(), uid, "visitor",
+          "苏璃", "/uploads/mock/avatar-suli.jpg",
+          null, null, false,
+          now.minusSeconds(7200).toString()
+      ));
 
-    addNotification(new NotificationState(
-        notificationIdSeq.getAndIncrement(), userId, "visitor",
-        "陈雨", "https://cdn.campuslove.cn/avatars/chenyu.png",
-        null, null, false,
-        now.minusSeconds(7200).toString()
-    ));
+      states.add(new NotificationState(
+          notificationIdSeq.getAndIncrement(), uid, "match",
+          "夏野", "/uploads/mock/avatar-xiaye.jpg",
+          5001L, "user", false,
+          now.minusSeconds(14400).toString()
+      ));
 
-    addNotification(new NotificationState(
-        notificationIdSeq.getAndIncrement(), userId, "match",
-        "赵阳", "https://cdn.campuslove.cn/avatars/zhaoyang.png",
-        5001L, "user", false,
-        now.minusSeconds(14400).toString()
-    ));
-
-    addNotification(new NotificationState(
-        notificationIdSeq.getAndIncrement(), userId, "like",
-        "孙悦", "https://cdn.campuslove.cn/avatars/sunyue.png",
-        2002L, "post", false,
-        now.minusSeconds(28800).toString()
-    ));
+      states.add(new NotificationState(
+          notificationIdSeq.getAndIncrement(), uid, "like",
+          "林安", "/uploads/mock/avatar-linan.jpg",
+          2002L, "post", false,
+          now.minusSeconds(28800).toString()
+      ));
+      return states;
+    });
   }
 
-  private void addNotification(NotificationState state) {
-    notificationsById.put(state.id(), state);
+  @Override
+  public void markAsRead(Long notificationId) {
+    if (notificationId == null) {
+      throw new IllegalArgumentException("notificationId is required");
+    }
+
+    for (List<NotificationState> states : notificationsByUser.values()) {
+      for (int i = 0; i < states.size(); i++) {
+        NotificationState state = states.get(i);
+        if (state.id() == notificationId) {
+          states.set(i, new NotificationState(state.id(), state.userId(), state.type(),
+              state.sourceUserName(), state.sourceUserAvatar(),
+              state.referenceId(), state.referenceType(), true, state.createdAt()));
+          return;
+        }
+      }
+    }
+    throw new IllegalArgumentException("notification not found: " + notificationId);
   }
 
   private NotificationView toNotificationView(NotificationState state) {
@@ -168,14 +166,31 @@ public class MockNotificationService implements NotificationService {
 
   @Override
   public List<NotificationView> getNotifications(Long userId, Boolean unreadOnly, Pageable pageable) {
-    // Mock 实现：委托给原有方法
-    return getNotifications(userId);
+    if (userId == null) {
+      throw new IllegalArgumentException("userId is required");
+    }
+
+    // FIN-00060 修复：原实现忽略 unreadOnly 与分页（恒返回全部），现按语义过滤 + 分页。
+    List<NotificationState> states = getOrCreateUserNotifications(String.valueOf(userId));
+    var stream = states.stream();
+    if (Boolean.TRUE.equals(unreadOnly)) {
+      stream = stream.filter(n -> !n.isRead());
+    }
+    List<NotificationView> all = stream
+        .map(this::toNotificationView)
+        .toList();
+    if (pageable == null) {
+      return all;
+    }
+    int from = (int) Math.min(pageable.getOffset(), all.size());
+    int to = (int) Math.min(from + pageable.getPageSize(), all.size());
+    return from < all.size() ? all.subList(from, to) : List.of();
   }
 
   @Override
   public List<NotificationView> getNotifications(Long userId, Boolean unreadOnly, String signalType, Pageable pageable) {
-    // Mock 实现：先获取全部通知，再按 signalType 过滤
-    List<NotificationView> allViews = getNotifications(userId);
+    // 先按 unreadOnly + 分页过滤，再按 signalType 过滤（与 RealNotificationService 语义一致）
+    List<NotificationView> allViews = getNotifications(userId, unreadOnly, pageable);
     if (signalType != null && !signalType.isBlank()) {
       return allViews.stream()
           .filter(view -> signalType.equals(view.signalType()))
@@ -191,21 +206,29 @@ public class MockNotificationService implements NotificationService {
 
   @Override
   public void markAllAsRead(Long userId) {
-    // Mock 实现：标记所有为已读
-    for (Map.Entry<Long, NotificationState> entry : notificationsById.entrySet()) {
-      NotificationState state = entry.getValue();
+    if (userId == null) {
+      throw new IllegalArgumentException("userId is required");
+    }
+    // FIN-00061 修复：仅标记当前用户的通知为已读（原实现标记全局共享状态）
+    List<NotificationState> states = getOrCreateUserNotifications(String.valueOf(userId));
+    for (int i = 0; i < states.size(); i++) {
+      NotificationState state = states.get(i);
       if (!state.isRead()) {
-        notificationsById.put(entry.getKey(),
-            new NotificationState(state.id(), state.userId(), state.type(),
-                state.sourceUserName(), state.sourceUserAvatar(),
-                state.referenceId(), state.referenceType(), true, state.createdAt()));
+        states.set(i, new NotificationState(state.id(), state.userId(), state.type(),
+            state.sourceUserName(), state.sourceUserAvatar(),
+            state.referenceId(), state.referenceType(), true, state.createdAt()));
       }
     }
   }
 
   @Override
   public void createNotification(Long userId, String type, Long sourceUserId, Long referenceId, String referenceType) {
-    // Mock 实现：无操作
+    // Mock 实现：追加到当前用户的通知列表尾部，保持可观测性
+    List<NotificationState> states = getOrCreateUserNotifications(String.valueOf(userId));
+    NotificationState state = new NotificationState(
+        notificationIdSeq.getAndIncrement(), String.valueOf(userId), type,
+        "系统", null, referenceId, referenceType, false, Instant.now().toString());
+    states.add(0, state);
   }
 
 }

@@ -59,29 +59,31 @@ public class ThirdPartyAuthController {
     /**
      * 微信第三方账号登录。
      *
-     * <p>流程：前端通过 wx.login 拿到 code，再由前端或后端调用微信接口换 openId/unionId，
-     * 此处接收的 openId 应为已换取的明文 openId（后端做 SHA-256 派生 hash 后存库）。</p>
+     * <p>流程（infra R2-00009 修复：不再信任客户端 openId）：前端通过 wx.login 获取 code，
+     * 后端调用微信 jscode2session 换取 openId/unionId，服务端校验 code 有效后才登录，
+     * 防止任意用户伪造 openId 接管他人账号。</p>
      *
-     * @param request 包含 openId 与可选 unionId 的请求体
+     * @param request 包含微信 code 的请求体
      * @return 用户会话视图（包含 JWT 令牌）
      */
     @PostMapping("/wechat")
     public UserSessionView loginWithWechat(@Valid @RequestBody WechatThirdPartyLoginRequest request) {
-        return thirdPartyAuthService.loginWithWechat(request.openId(), request.unionId());
+        return thirdPartyAuthService.loginWithWechat(request.code());
     }
 
     /**
      * Apple 第三方账号登录。
      *
-     * <p>流程：前端通过 Sign in with Apple 拿到 identityToken，
-     * 后端解码 JWT 取出 sub 字段（Apple User Identifier）传入此接口。</p>
+     * <p>流程（infra R2-00010 修复：不再信任客户端 appleIdentifier）：前端通过 Sign in with
+     * Apple 获取 identityToken，后端验签（RS256 + aud/iss/exp）后取 sub 作为账号标识，
+     * 防止攻击者传任意 identifier 伪造登录。</p>
      *
-     * @param request 包含 appleIdentifier 的请求体
+     * @param request 包含 identityToken 的请求体
      * @return 用户会话视图（包含 JWT 令牌）
      */
     @PostMapping("/apple")
     public UserSessionView loginWithApple(@Valid @RequestBody AppleLoginRequest request) {
-        return thirdPartyAuthService.loginWithApple(request.appleIdentifier());
+        return thirdPartyAuthService.loginWithApple(request.identityToken());
     }
 
     /**
@@ -160,21 +162,19 @@ public class ThirdPartyAuthController {
 /**
  * 微信第三方账号登录请求体。
  *
- * @param openId  微信 openId（必填）
- * @param unionId 微信 unionId（可空）
+ * @param code 微信 wx.login() 返回的临时 code（必填，后端换取 openId 并验签）
  */
 record WechatThirdPartyLoginRequest(
-        @NotBlank String openId,
-        String unionId
+        @NotBlank String code
 ) {
 }
 
 /**
  * Apple 第三方账号登录请求体。
  *
- * @param appleIdentifier Apple Sub Identifier（必填）
+ * @param identityToken Sign in with Apple 返回的 identityToken JWT（必填，后端验签取 sub）
  */
-record AppleLoginRequest(@NotBlank String appleIdentifier) {
+record AppleLoginRequest(@NotBlank String identityToken) {
 }
 
 /**

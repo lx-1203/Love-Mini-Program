@@ -147,10 +147,21 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
   /**
    * 兑换优惠码
    *
+   * 修复（P1 BUG）：新增防重复锁——redeeming 标志既用于 UI 展示，也作为
+   * 重入守卫。原实现仅设置标志不检查，双击兑换按钮会重复提交请求。
+   *
    * @param payload 兑换请求体
    * @returns 兑换结果视图
    */
   async function redeemCode(payload: RedeemPayload): Promise<PromoCodeRedeemView> {
+    // 防重复锁：兑换中直接返回上一次结果（避免重复兑换）
+    if (redeeming.value) {
+      if (lastRedeemResult.value) {
+        return lastRedeemResult.value;
+      }
+      // 复用页面级 i18n key「兑换中...」（storeErrors.promoCode 下无对应 key）
+      throw new Error(t("promoCode.redeeming"));
+    }
     if (!payload.code || payload.code.trim().length === 0) {
       throw new Error(t("storeErrors.promoCode.codeEmpty"));
     }
@@ -180,6 +191,10 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
       });
       lastRedeemResult.value = result;
       return result;
+    } catch (error) {
+      // infra R2-00059: 兑换失败清空上次结果，避免页面继续展示陈旧的成功/失败残留
+      lastRedeemResult.value = null;
+      throw error;
     } finally {
       redeeming.value = false;
     }

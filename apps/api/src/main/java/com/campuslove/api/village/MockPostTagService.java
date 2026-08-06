@@ -65,6 +65,7 @@ public class MockPostTagService implements PostTagService {
                         p.shareCount,
                         p.createdAt.toString(),
                         p.likesCount >= 50,
+                        false,
                         false
                 ))
                 .toList();

@@ -3,7 +3,11 @@
  * 集中管理应用名称、版本号、存储键名等
  */
 export const APP_CONFIG = {
-  /** 应用名称 */
+  /**
+   * 应用名称（静态常量，i18n-data-review #15：不随 locale 切换）。
+   * 展示场景（导航栏标题、登录页 Logo、分享卡片等）请使用 t("config.app.appName")，
+   * 本常量仅供无法访问 i18n 的极少数场景（如 storage key 前缀）作静态引用。
+   */
   APP_NAME: '校园恋爱',
   /** 版本号 */
   APP_VERSION: '1.0.0',

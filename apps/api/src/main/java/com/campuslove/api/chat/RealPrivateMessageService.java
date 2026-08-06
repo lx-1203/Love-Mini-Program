@@ -73,9 +73,29 @@ public class RealPrivateMessageService implements PrivateMessageService {
                 .toList();
         Map<Long, User> otherUserMap = batchLoadUsers(otherUserIds);
 
+        // infra R2-00247: 批量统计各会话未读数（GROUP BY），避免逐会话 count 查询（N+1）
+        Map<Long, Long> unreadMap = batchLoadUnreadCounts(
+                conversations.stream().map(PrivateConversation::getId).toList(), userId);
+
         return conversations.stream()
-                .map(conv -> toConversationView(conv, userId, otherUserMap))
+                .map(conv -> toConversationView(conv, userId, otherUserMap, unreadMap))
                 .toList();
+    }
+
+    /**
+     * 批量统计多个会话的未读消息数（会话 ID → 未读数）。
+     *
+     * @param conversationIds 会话 ID 列表
+     * @param currentUserId   当前用户 ID
+     * @return 会话 ID → 未读数 Map
+     */
+    private Map<Long, Long> batchLoadUnreadCounts(List<Long> conversationIds, Long currentUserId) {
+        if (conversationIds == null || conversationIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return messageRepository.countUnreadGroupByConversationIds(conversationIds, currentUserId).stream()
+                .collect(Collectors.toMap(PrivateMessageRepository.UnreadCountProjection::getConversationId,
+                        p -> p.getCnt() == null ? 0L : p.getCnt(), (a, b) -> a));
     }
 
     /**
@@ -90,6 +110,11 @@ public class RealPrivateMessageService implements PrivateMessageService {
         }
         if (userAId.equals(userBId)) {
             throw new IllegalArgumentException("Cannot create conversation with yourself");
+        }
+
+        // infra R2-00209: 校验对方用户存在，避免对不存在的用户创建会话
+        if (!userRepository.existsById(userBId)) {
+            throw new IllegalArgumentException("User not found: " + userBId);
         }
 
         // 查找已有会话
@@ -107,7 +132,9 @@ public class RealPrivateMessageService implements PrivateMessageService {
         conversation.setCreatedAt(now);
         conversation.setUpdatedAt(now);
 
-        conversationRepository.save(conversation);
+        // 缺陷修复：saveAndFlush 立即回填 IDENTITY 主键，保证会话视图 id 非空
+        // （实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
+        conversation = conversationRepository.saveAndFlush(conversation);
         return toConversationView(conversation, userAId);
     }
 
@@ -148,7 +175,9 @@ public class RealPrivateMessageService implements PrivateMessageService {
         message.setIsRead(false);
         message.setCreatedAt(now);
 
-        messageRepository.save(message);
+        // 缺陷修复：saveAndFlush 立即回填 IDENTITY 主键，保证消息视图 id 非空
+        // （实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
+        message = messageRepository.saveAndFlush(message);
 
         // 更新会话的最后消息信息：quote 类型提取纯文本摘要
         String preview;
@@ -275,6 +304,13 @@ public class RealPrivateMessageService implements PrivateMessageService {
      */
     private ConversationView toConversationView(PrivateConversation conv, Long currentUserId,
                                                 Map<Long, User> otherUserMap) {
+        // 单会话场景（创建/详情）：无批量未读 Map 时逐会话计数
+        return toConversationView(conv, currentUserId, otherUserMap, Collections.emptyMap());
+    }
+
+    private ConversationView toConversationView(PrivateConversation conv, Long currentUserId,
+                                                Map<Long, User> otherUserMap,
+                                                Map<Long, Long> unreadMap) {
         // 确定对方用户 ID
         Long otherUserId = conv.getUserAId().equals(currentUserId) ? conv.getUserBId() : conv.getUserAId();
 
@@ -303,9 +339,15 @@ public class RealPrivateMessageService implements PrivateMessageService {
             headline = sb.toString();
         }
 
-        // 计算未读消息数
-        int unreadCount = (int) messageRepository.countByConversationIdAndSenderIdNotAndIsRead(
-                conv.getId(), currentUserId, false);
+        // 计算未读消息数（优先使用批量预加载 Map，避免 N+1 计数）
+        int unreadCount;
+        if (unreadMap == null || unreadMap.isEmpty()) {
+            unreadCount = (int) messageRepository.countByConversationIdAndSenderIdNotAndIsRead(
+                    conv.getId(), currentUserId, false);
+        } else {
+            Long cnt = unreadMap.get(conv.getId());
+            unreadCount = cnt == null ? 0 : cnt.intValue();
+        }
 
         // 获取置顶状态
         Boolean pinned = conv.getPinned() != null ? conv.getPinned() : false;

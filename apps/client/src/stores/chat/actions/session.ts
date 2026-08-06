@@ -23,6 +23,11 @@ import {
 } from "../higher-order";
 import type { TempChatSession } from "../types";
 import type { ChatStoreThis } from "../store-type";
+// i18n 翻译函数（infra R2-00087: mock 会话占位文案 i18n 化）
+import { t } from "@/i18n";
+
+/** infra R2-00087: mock 会话 id 递增计数器（同毫秒创建避免 Date.now() 碰撞） */
+let mockSessionSeq = 0;
 
 /**
  * 加载聊天概览
@@ -73,12 +78,18 @@ export async function startFromRecommendation(
     this,
     // Mock 模式：基于推荐人ID创建临时会话
     () => {
+      // 修复（P1 BUG）：原实现 partnerName 硬编码“新匹配”，与 fixtures 推荐人
+      // 姓名体系（mockData.recommendedPeople.name1..7）脱节。现从 mock 概览的
+      // 推荐人列表按 recommendedPersonId 解析姓名/标题，查不到时才回退占位文案。
+      const person = mockChatOverview.recommendedPeople.find(
+        (p) => p.id === recommendedPersonId
+      );
       const mockNewSession: TempChatSession = {
-        id: `mock-session-${Date.now()}`,
+        id: `mock-session-${Date.now()}-${++mockSessionSeq}`, // infra R2-00087: 避免同毫秒碰撞
         recommendedPersonId,
-        partnerName: "新匹配",
-        partnerHeadline: "校园恋爱推荐",
-        availabilityHint: "今晚",
+        partnerName: person?.name ?? t("chat.mockSession.newMatchName"), // infra R2-00087
+        partnerHeadline: person?.headline ?? t("chat.mockSession.newMatchHeadline"), // infra R2-00087
+        availabilityHint: person?.availability ?? t("chat.mockSession.availabilityTonight"), // infra R2-00087
         phase: "matching",
         closesAt: new Date(Date.now() + TEMP_SESSION_DURATION_MS).toISOString(),
         closedReason: null,
@@ -107,13 +118,14 @@ export async function startFromMatch(
   await withMockMode(
     this,
     // Mock 模式：基于匹配ID创建临时会话
+    // infra R2-00087: 匹配信息回退文案走 i18n（后端匹配数据接入后可按 matchId 解析）
     () => {
       const mockNewSession: TempChatSession = {
-        id: `mock-session-${Date.now()}`,
+        id: `mock-session-${Date.now()}-${++mockSessionSeq}`, // infra R2-00087: 避免同毫秒碰撞
         recommendedPersonId: "rp-match",
-        partnerName: "匹配对象",
-        partnerHeadline: "校园恋爱匹配",
-        availabilityHint: "今晚",
+        partnerName: t("chat.mockSession.matchName"),
+        partnerHeadline: t("chat.mockSession.matchHeadline"),
+        availabilityHint: t("chat.mockSession.availabilityTonight"),
         phase: "matching",
         closesAt: new Date(Date.now() + TEMP_SESSION_DURATION_MS).toISOString(),
         closedReason: null,
@@ -145,10 +157,13 @@ export async function loadSession(
     this,
     { loadingKey: "loadingSession", errorPrefix: "聊天详情加载" },
     async () => {
-      await withMockMode(
+      const session = await withMockMode(
         this,
         // Mock 模式：从本地映射表获取会话数据
-        () => mockSessionMap[sessionId] ?? mockSession1,
+        // 修复（P1 BUG）：未知 sessionId 不再 fallback 到 mockSession1——
+        // 那样会把 A 会话的数据错位展示成 B 会话（聊天内容张冠李戴）。
+        // 现返回 null，由下方分支清空 activeSession 并提示错误/空态。
+        () => mockSessionMap[sessionId] ?? null,
         // Real 模式：调用后端 API 加载会话，并标记为已读
         async () => {
           const session = await chatTransport.loadSession(sessionId);
@@ -157,6 +172,13 @@ export async function loadSession(
         }
         // 默认 shouldRefreshOverview: true, shouldUpdateActiveSession: true
       );
+      // 修复：会话不存在（mock 未知 id / 后端 404 已由 transport 抛错）时，
+      // 显式清空 activeSession 并抛出错误，让页面展示错误态而非残留旧会话
+      if (!session) {
+        this.activeSession = null;
+        throw new Error("会话不存在或已失效");
+      }
+      return session;
     }
   );
 }
@@ -185,11 +207,17 @@ export async function setSessionPinned(
         this,
         // Mock 模式：仅更新本地概览数据中的置顶状态，不调用后端
         () => {
-          const sessionSummary = mockChatOverview.sessions.find(
+          // 修复（P1 BUG）：原实现直接修改共享常量 mockChatSessionSummaries
+          // 中的对象（sessionSummary.pinned = pinned），会污染模块级数据
+          // （页面销毁/重建后置顶状态残留）。现改为复制对象后替换数组元素。
+          const index = mockChatOverview.sessions.findIndex(
             (s) => s.id === sessionId
           );
-          if (sessionSummary) {
-            sessionSummary.pinned = pinned;
+          if (index >= 0) {
+            mockChatOverview.sessions[index] = {
+              ...mockChatOverview.sessions[index]!,
+              pinned,
+            };
           }
           return undefined;
         },

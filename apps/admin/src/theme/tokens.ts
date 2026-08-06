@@ -29,6 +29,11 @@
  *
  * tsconfig 中已通过 include 扩展包含此依赖文件，
  * typecheck 时可正确解析类型。
+ *
+ * infra R2-00471：跨包相对路径依赖的已知风险——admin 构建耦合 client 源码，
+ * client 的 tokens.ts 变更（如删除导出）可能破坏 admin typecheck/构建。
+ * 根治方案为提升为共享包（如 packages/design-tokens），由 pnpm workspace
+ * 管理版本；当前保持现状并登记 backlog。
  */
 export {
   designTokens,

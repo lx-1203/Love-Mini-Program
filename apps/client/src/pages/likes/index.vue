@@ -15,6 +15,8 @@ import { useI18n } from "vue-i18n";
 import { useLikesStore, type BatchActionType } from "../../stores/likes";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
+// infra R2-00078: 路由路径常量化
+import { ROUTES } from "../../constants/routes";
 import LockScreen from "../../components/common/LockScreen.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
@@ -79,6 +81,8 @@ const isSearchEmpty = computed(() => {
 /* ========== 功能2：搜索相关状态 ========== */
 /** 搜索输入框临时值（与 store.searchQuery 解耦，用于 300ms 防抖） */
 const searchInput = ref("");
+/** infra R2-00079: 搜索防抖时长（毫秒）——原 300 魔法数字具名化，三处清理逻辑共用同一常量 */
+const SEARCH_DEBOUNCE_MS = 300;
 /** 防抖定时器引用 */
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -100,7 +104,7 @@ function handleSearchInput(e: Event): void {
   searchDebounceTimer = setTimeout(() => {
     likesStore.setSearchQuery(value);
     searchDebounceTimer = null;
-  }, 300);
+  }, SEARCH_DEBOUNCE_MS);
 }
 
 /**
@@ -293,7 +297,7 @@ function onLikesTabChange(key: string) {
  */
 function goToChat(userId: string) {
   if (!userId) return;
-  openAppPath(`/pages/chat-session/index?userId=${encodeURIComponent(userId)}`);
+  openAppPath(`${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(userId)}`);
 }
 
 /**
@@ -313,7 +317,7 @@ function handleItemClick(userId: string) {
   if (isMutualMatch(userId)) {
     goToChat(userId);
   } else {
-    openAppPath(`/pages/profile/index?userId=${encodeURIComponent(userId)}`);
+    openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(userId)}`);
   }
 }
 
@@ -321,7 +325,7 @@ function handleItemClick(userId: string) {
  * 跳转到心动信号页
  */
 function goToHeartSignals() {
-  openAppPath("/pages/heart-signals/index");
+  openAppPath(ROUTES.HEART_SIGNALS);
 }
 
 onMounted(() => {
@@ -451,7 +455,7 @@ onShow(() => {
             :value="searchInput"
             :placeholder="t('likes.searchPlaceholder')"
             confirm-type="search"
-            @input="handleSearchInput" aria-label="t('likes.searchPlaceholder')"
+            @input="handleSearchInput" :aria-label="t('likes.searchPlaceholder')"
           />
           <view
             v-if="searchInput"

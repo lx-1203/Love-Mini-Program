@@ -25,6 +25,8 @@ const stateIcons = {
 } as const;
 
 /** Phase 4.4 验收 · 帖子点赞（本地状态翻转，计数同步） */
+// TODO(mock)：当前为页面级本地状态翻转（review #40）。真实链路应调用
+// villageStore.likePost(postId) 并以后端返回为准。
 function toggleLike(post: PostItem): void {
   post.isLiked = !post.isLiked;
   post.likes += post.isLiked ? 1 : -1;
@@ -271,7 +273,7 @@ onLoad((query) => {
   <view class="tag-posts-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="tag-header">
-      <view class="tag-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
+      <view class="tag-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="back-icon">{{ t("common.back") }}</text>
       </view>
       <text class="tag-header__title">#{{ tagName }}</text>
@@ -413,8 +415,10 @@ $green-light: var(--c-tint-green-50, #E8F9F4);
 $pink-primary: var(--c-romance-500, #EC4899);
 $pink-light: var(--c-tint-pink-soft, #FFF0F5);
 $bg-page: var(--c-bg-page, #F4F6FA);
-$text-primary: var(--c-neutral-800, #1A1A2E);
-$text-secondary: var(--c-text-tertiary, #8E8E9E);
+/* ui-ux 修复：$text-primary 统一为文本次要色 token（原 --c-neutral-800 语义漂移） */
+$text-primary: var(--c-text-primary, #1F2329);
+/* ui-ux 修复：$text-secondary 语义应为文本次要色（原映射到 tertiary） */
+$text-secondary: var(--c-text-secondary, #5B6470);
 $text-tertiary: var(--c-text-quaternary, #B8B8C8);
 $divider: var(--c-neutral-100, #EEF0F5);
 $white: var(--c-neutral-0, #FFFFFF);

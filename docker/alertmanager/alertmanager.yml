@@ -11,20 +11,37 @@
 #   - warning：聚合 5 分钟后通知，4 小时重复
 #   - info：仅归档，不通知
 # ============================================================
+#
+# ⚠️ 变量注入说明（infra #17）：
+#   prom/alertmanager 官方镜像不含 envsubst，纯 YAML 不支持 ${VAR} 展开。
+#   因此本文件使用「真实默认值 + 部署时替换」策略：
+#   - 下方所有 SMTP / Webhook 地址均为占位默认值（指向 example.com / localhost，
+#     仅保证配置语法有效，不会投递到真实渠道）
+#   - 部署时必须按下表将对应值替换为真实地址，并将变量同步维护到根目录 .env.example
+#     的「11. 告警通知配置」小节：
+#       SMTP_HOST / SMTP_FROM / SMTP_USER / SMTP_PASSWORD  →  邮件 SMTP
+#       CRITICAL_EMAIL                                     →  critical 收件人
+#       DINGTALK_CRITICAL_WEBHOOK                          →  钉钉机器人
+#       FEISHU_WARNING_WEBHOOK                             →  飞书机器人
+#       DEFAULT_WEBHOOK_URL                                →  默认归档 webhook
+#   未配置渠道时：critical 邮件发往 example.com 会失败并产生错误日志，
+#   warning 走 webhook 失败重试；info 级别直接丢弃（见 null-pager）。
+# ============================================================
 
 global:
-  # 发件人 SMTP 配置（邮件通知）
-  smtp_smarthost: '${SMTP_HOST:smtp.example.com:587}'
-  smtp_from: '${SMTP_FROM:alert@example.com}'
-  smtp_auth_username: '${SMTP_USER:}'
-  smtp_auth_password: '${SMTP_PASSWORD:}'
+  # 发件人 SMTP 配置（邮件通知）：部署时替换为真实 SMTP 服务器与账号
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_from: 'alert@example.com'
+  smtp_auth_username: ''
+  smtp_auth_password: ''
   smtp_require_tls: true
   # 告警去重窗口：相同告警在该时间内只发一次
   resolve_timeout: 5m
 
 # ---------- 告警模板 ----------
-templates:
-  - /etc/alertmanager/templates/*.tmpl
+# infra R2-00380：移除 templates 引用。docker/alertmanager 无 templates 目录且 compose 未挂载，
+# 原配置指向不存在的 /etc/alertmanager/templates/*.tmpl，自定义模板不生效。
+# critical-email 的 html 使用 Alertmanager 内置 email.default.html 模板兜底，功能不受影响。
 
 # ---------- 路由规则 ----------
 route:
@@ -36,8 +53,10 @@ route:
   group_interval: 5m
   # 重复间隔：相同告警再次发送的最小间隔
   repeat_interval: 4h
-  # 默认接收者
-  receiver: default-webhook
+  # 默认接收者（infra R2-00381）：原为 default-webhook 指向容器内不存在的
+  # http://localhost:9999，未配置渠道时所有告警反复投递失败。
+  # 现默认接 null-pager 静默丢弃；部署配置真实 DEFAULT_WEBHOOK_URL 后改回 default-webhook。
+  receiver: null-pager
   routes:
     # critical 级别：立即发送，1 小时重复
     - matchers:
@@ -77,34 +96,37 @@ inhibit_rules:
 receivers:
 
   # 默认接收者：webhook（用于调试与归档）
+  # 部署时替换 DEFAULT_WEBHOOK_URL 为真实归档接口
   - name: default-webhook
     webhook_configs:
-      - url: '${DEFAULT_WEBHOOK_URL:http://localhost:9999/webhook}'
+      - url: 'http://localhost:9999/webhook'
         send_resolved: true
         max_alerts: 0
 
   # critical 级别：邮件 + 钉钉
   - name: critical-email
     email_configs:
-      - to: '${CRITICAL_EMAIL:oncall@example.com}'
+      # 部署时替换 CRITICAL_EMAIL 为真实收件人
+      - to: 'oncall@example.com'
         subject: '[CRITICAL] {{ .CommonLabels.alertname }}'
         html: '{{ template "email.default.html" . }}'
         send_resolved: true
     webhook_configs:
-      # 钉钉机器人 webhook
-      - url: '${DINGTALK_CRITICAL_WEBHOOK:}'
+      # 钉钉机器人 webhook：部署时替换 DINGTALK_CRITICAL_WEBHOOK；
+      # 未配置时指向本地无效地址（投递失败会重试并记录日志），不影响配置加载
+      - url: 'http://localhost:9999/dingtalk-unconfigured'
         send_resolved: true
         max_alerts: 0
 
   # warning 级别：飞书群机器人
   - name: warning-webhook
     webhook_configs:
-      - url: '${FEISHU_WARNING_WEBHOOK:}'
+      # 部署时替换 FEISHU_WARNING_WEBHOOK；
+      # 未配置时指向本地无效地址（投递失败会重试并记录日志），不影响配置加载
+      - url: 'http://localhost:9999/feishu-unconfigured'
         send_resolved: true
         max_alerts: 0
 
-  # info 级别：丢弃
+  # info 级别：丢弃（FIN-01333：无任何通知配置的 receiver 自动丢弃，
+  # 不再向 localhost 无效 webhook 发送请求）
   - name: null-pager
-    webhook_configs:
-      - url: '${NULL_WEBHOOK:http://localhost:9999/null}'
-        send_resolved: false

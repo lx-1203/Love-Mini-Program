@@ -4,6 +4,33 @@
 
 ---
 
+## 〇、SLO 与错误预算（infra R2-00366）
+
+> 需求：用户要求的监控 SLO 定义。原文档仅含告警阈值，无可用性量化目标，本节约定 SLO 与错误预算，后续告警/复盘均以此为准。
+
+### 0.1 服务等级目标（SLO）
+
+| 指标 | 目标（30 天滚动窗口） | 计量方式 |
+|------|----------------------|----------|
+| API 可用性 | ≥ 99.9% | `ApiDown` / `ApiHealthCheckFailed` 之外的成功请求占比（Probe/日志） |
+| API P99 延迟 | ≤ 2s | Prometheus `http_server_requests_seconds_bucket` 分位数 |
+| 首页/H5 可用性 | ≥ 99.5% | `ApiDown` 期间首页不可达时长占比 |
+| 核心链路（登录/匹配/聊天）错误率 | ≤ 1% | `http_server_requests_seconds_count{status=~"5.."}` / 总请求 |
+| 数据库可用性 | ≥ 99.9% | MySQL 容器运行时长占比（up 指标） |
+| 备份成功率 | 100%（每日） | 备份脚本产物 + gzip -t 校验 |
+
+### 0.2 错误预算（Error Budget）
+
+- 月度错误预算 = (1 − SLO) × 当月分钟数。以 API 可用性 99.9% 计，每月允许约 43 分钟不可用。
+- 消耗规则：每次 P0/P1 故障按实际不可用时长扣减；错误预算耗尽（≤ 20% 剩余）时冻结非紧急发布，优先稳定性投入。
+- 月度复盘：每月首个工作日核对 SLO 达成与错误预算消耗，未达标需输出改进项并登记至告警规则（alert-rules.yml 的 burn-rate 记录规则为后续增强项）。
+
+### 0.3 告警与 SLO 的关系
+
+- 固定阈值告警（见 §7.2）用于“正在发生的事故”；SLO 与 burn-rate 告警用于“预算正在被快速消耗”，当前告警规则文件未含 burn-rate 规则，属已知缺口（见 infra-round2 MEDIUM 项），部署 blackbox/记录规则后补充。
+
+---
+
 ## 一、整体架构
 
 ### 1.1 工具链
@@ -98,30 +125,36 @@ CI workflow 定义在 `.github/workflows/ci.yml`，触发条件如下（对应 `
 
 | 事件 | 目标分支 | 说明 |
 |------|----------|------|
-| `pull_request` | `main`、`develop` | PR 提交时触发，所有 9 个 job 并行/串行执行 |
+| `pull_request` | `main`、`develop` | PR 提交时触发，所有 10 个 job 并行/串行执行 |
 | `push` | `main`、`develop` | 直接 push 到受保护分支时触发（含 PR 合并后的 push） |
+| `push`（tag） | `v*` | 发布 tag 推送时触发（镜像推送+签名，见 §4） |
+| `workflow_dispatch` | 任意分支 | 手动触发（Actions 页面按钮或 `gh workflow run ci.yml`） |
 
-> **手动触发**：当前 workflow **未配置** `workflow_dispatch`，不支持在 GitHub Actions 页面手动触发。如需手动运行，请通过 `gh workflow run ci.yml`（需先添加 `workflow_dispatch`）或在本地按 §11.3 复现。
+> **手动触发**：infra R2-00351 已配置 `workflow_dispatch`（ci.yml:9），可在 GitHub Actions 页面手动触发；
+> 也可通过 `gh workflow run ci.yml` 触发（见 §11.2）。
 >
-> **权限**：`permissions: contents: read`，仅只读，CI 不会推送任何产物到仓库。
+> **权限**：infra R2-00352 为 `contents: read` + `packages: write`。
+> `packages: write` 仅用于 security-scan 推镜像到 GHCR（push/tag 事件）；
+> PR 事件同样具备该权限属已知最小权限缺口，见 .github/workflows/ci.yml 注释（P3-D.2）。
 >
-> 所有 9 个 job 在 push 与 PR 事件下均会运行；`e2e` 依赖前 8 个 job 全部通过才执行。
+> 所有 10 个 job 在 push 与 PR 事件下均会运行；`e2e` 依赖前 9 个 job 全部通过才执行。
 
-### 3.2 Job 结构（9 个 Job 总览）
+### 3.2 Job 结构（10 个 Job 总览）
 
-CI 流程定义在 `.github/workflows/ci.yml`，共 **9 个 Job**（Task 53 / P1.16 新增 `phase01-verify`）。权威源以 workflow 文件为准，本文档变更须同步更新 workflow。
+CI 流程定义在 `.github/workflows/ci.yml`，共 **10 个 Job**（含 `gitleaks-scan` 密钥扫描；Task 53 / P1.16 新增 `phase01-verify`）。权威源以 workflow 文件为准，本文档变更须同步更新 workflow。
 
 | # | Job ID | 名称 | 依赖（needs） | timeout-minutes | 缓存策略 | 主要产物 |
 |---|---|---|---|---|---|---|
+| 0 | `gitleaks-scan` | Gitleaks Secret Scan | 无 | 15 | 无 | 密钥扫描报告（infra #48） |
 | 1 | `lint-and-structure` | Lint & Structure | 无 | 30 | pnpm store | OpenAPI lint（含 Spectral）+ 项目结构测试结果 |
 | 2 | `client-typecheck-and-build` | Client Typecheck & Build | 无 | 30 | pnpm store | 客户端 typecheck + H5 / mp-weixin 双构建产物 |
 | 3 | `client-test` | Client Unit Tests | 无 | 30 | pnpm store | 客户端 vitest 单元测试结果 |
 | 4 | `admin-typecheck-and-build` | Admin Typecheck & Build | 无 | 30 | pnpm store | Admin typecheck + vite build 产物 |
 | 5 | `api-compile` | API Compile | 无 | 30 | Maven `~/.m2/repository` | Maven 编译产物（target/classes） |
 | 6 | `api-test` | API Unit Tests | `api-compile` | 60 | Maven `~/.m2/repository` | Maven Surefire 测试结果 |
-| 7 | `security-scan` | Trivy Security Scan | `api-test` + `admin-typecheck-and-build` | 30 | 无（Trivy action 自带 DB 缓存） | Trivy 源码扫描报告（HIGH/CRITICAL 失败） |
+| 7 | `security-scan` | Trivy Security Scan | `api-test` + `admin-typecheck-and-build` | 30 | 无（Trivy action 自带 DB 缓存） | Trivy 源码+镜像扫描报告（HIGH/CRITICAL 失败） |
 | 8 | `phase01-verify` | Phase 01 Verify | `security-scan` | 60 | pnpm store + Maven `~/.m2/repository` | `npm run verify:phase01` 综合验证结果 |
-| 9 | `e2e` | E2E Tests | 前 8 个 job 全部通过 | 45 | pnpm store | Playwright 测试结果 |
+| 9 | `e2e` | E2E Tests | 前 9 个 job 全部通过 | 45 | pnpm store | Playwright 测试结果 |
 
 > **触发分支**：`main` 与 `develop`。所有 job 均在 `push` 与 `pull_request` 事件下运行。
 >
@@ -231,8 +264,11 @@ CI 流程定义在 `.github/workflows/ci.yml`，共 **9 个 Job**（Task 53 / P1
 | 步骤 | 命令 | 失败处理 |
 |------|------|----------|
 | Checkout | `actions/checkout@v4` | - |
-| Trivy 扫描 API 仓库 | `aquasecurity/trivy-action@master` (scan-type=fs, scan-ref=apps/api, severity=HIGH,CRITICAL, exit-code=1) | 发现 HIGH/CRITICAL 漏洞则 CI 中止 |
-| Trivy 扫描 Admin 仓库 | `aquasecurity/trivy-action@master` (scan-type=fs, scan-ref=apps/admin, severity=HIGH,CRITICAL, exit-code=1) | 发现 HIGH/CRITICAL 漏洞则 CI 中止 |
+| Trivy 扫描 API 仓库 | `aquasecurity/trivy-action@v0.23.0` (scan-type=fs, scan-ref=apps/api, severity=HIGH,CRITICAL, exit-code=1) | 发现 HIGH/CRITICAL 漏洞则 CI 中止 |
+| Trivy 扫描 Admin 仓库 | `aquasecurity/trivy-action@v0.23.0` (scan-type=fs, scan-ref=apps/admin, severity=HIGH,CRITICAL, exit-code=1) | 发现 HIGH/CRITICAL 漏洞则 CI 中止 |
+| Trivy 扫描镜像 | `aquasecurity/trivy-action@v0.23.0` (image-ref=单 tag，取 meta 输出第一个 tag) | 镜像漏洞扫描失败则 CI 中止 |
+
+> infra R2-00353：trivy-action 已由 @master 固定为 @v0.23.0（禁止未 pin 的 master 引用，见 ci.yml 注释）。
 
 > 失败行为：扫描发现 HIGH 或 CRITICAL 级别漏洞（`exit-code: 1`）即 job 失败，`phase01-verify` / `e2e` 跳过。
 > 注：Trivy 扫描范围为 `apps/api` 与 `apps/admin` 两个子目录的源码与 lockfile（pnpm-lock.yaml / Maven 依赖），用于补充依赖漏洞检测。
@@ -263,10 +299,10 @@ CI 流程定义在 `.github/workflows/ci.yml`，共 **9 个 Job**（Task 53 / P1
 > 失败行为：任一子步骤失败即 job 失败，`e2e` 跳过。
 > 注：本 job 与前置 job 有部分重复（如 typecheck / build / api test），但作为最终集成门禁，确保所有验证在同一环境串行通过，避免前置 job 缓存命中差异导致的漏检。
 
-#### Job 9: `e2e`（Playwright E2E，依赖前 8 个 job 全部通过）
+#### Job 9: `e2e`（Playwright E2E，依赖前 9 个 job 全部通过）
 
 - **timeout-minutes**：45（E2E 包含浏览器安装与多场景测试，超时时间放宽到 45 分钟）
-- **依赖**：`needs: [lint-and-structure, client-typecheck-and-build, client-test, admin-typecheck-and-build, api-compile, api-test, security-scan, phase01-verify]`，前 8 个 job 必须全部成功才会执行
+- **依赖**：`needs: [lint-and-structure, client-typecheck-and-build, client-test, admin-typecheck-and-build, api-compile, api-test, security-scan, phase01-verify]`，前 9 个 job（含 gitleaks-scan）必须全部成功才会执行
 - **缓存**：pnpm store
 
 | 步骤 | 命令 | 失败处理 |
@@ -275,17 +311,21 @@ CI 流程定义在 `.github/workflows/ci.yml`，共 **9 个 Job**（Task 53 / P1
 | Setup pnpm + Node 20 | 同前 | - |
 | 安装依赖 | `pnpm install --frozen-lockfile` | lockfile 不一致则失败 |
 | 安装 Playwright 浏览器 | `npx playwright install --with-deps chromium` | 失败则 CI 中止 |
-| 运行 Playwright 测试 | `npx playwright test` | 失败则 CI 中止 |
+| 运行 Playwright 测试 | `npx playwright test --config=tests/e2e/playwright.config.ts` | 失败则 CI 中止 |
 
-> 失败行为：任一 E2E 测试失败即 job 失败；前 8 个 job 任一失败时此 job 自动跳过（skipped）。
+> infra R2-00354：根目录无 playwright.config，必须显式指定 --config（FIN-00278 已修复）。
+
+> 失败行为：任一 E2E 测试失败即 job 失败；前 9 个 job 任一失败时此 job 自动跳过（skipped）。
 
 ### 3.3 CI 状态徽章
 
 在 `README.md` 顶部添加：
 
 ```markdown
-![CI](https://github.com/{org}/{repo}/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/lx-1203/Love-Mini-Program/actions/workflows/ci.yml/badge.svg)
 ```
+
+> infra R2-00355：CI 徽章占位符 {org}/{repo} 已替换为真实仓库（git remote 为 git@github.com:lx-1203/Love-Mini-Program.git）。
 
 ### 3.4 CI 失败排查指南
 
@@ -303,7 +343,7 @@ CI 失败时，按以下顺序定位与修复。所有 job 失败均会在 GitHu
 | `api-test` | ① 单测失败；② 集成测试失败；③ 测试超时 | 1. 查看 Surefire 报告 `apps/api/target/surefire-reports/`；2. 本地 `mvn -B -f apps/api/pom.xml test` 复现 | 修复测试逻辑或被测代码；超时时检查是否依赖外部服务 |
 | `security-scan` | ① Trivy 发现 HIGH/CRITICAL 漏洞；② Trivy DB 拉取失败 | 1. 查看 Trivy 扫描日志中的 CVE 编号与依赖；2. 本地 `trivy fs --severity HIGH,CRITICAL apps/api` 复现 | 升级有漏洞的依赖到修复版本；误报时在 `trivy.yaml` 中配置 ignore |
 | `phase01-verify` | ① 前置 job 已通过但本 job 失败（多为环境差异）；② `verify:phase01` 子步骤失败 | 1. 查看具体失败的子步骤；2. 本地 `npm run verify:phase01` 复现 | 按子步骤报错修复；注意本 job 串行执行所有验证，单点失败即整体失败 |
-| `e2e` | ① Playwright 测试失败；② 浏览器安装失败；③ 测试超时 | 1. 查看 Playwright 报告 `playwright-report/`；2. 本地 `npx playwright test` 复现 | 修复测试或被测代码；浏览器安装失败时重试 job（网络问题） |
+| `e2e` | ① Playwright 测试失败；② 浏览器安装失败；③ 测试超时 | 1. 查看 Playwright 报告 `playwright-report/`；2. 本地 `npx playwright test --config=tests/e2e/playwright.config.ts` 复现 | 修复测试或被测代码；浏览器安装失败时重试 job（网络问题） |
 
 #### 3.4.2 通用排查流程
 
@@ -326,21 +366,23 @@ CI 失败时，按以下顺序定位与修复。所有 job 失败均会在 GitHu
 
 ### 4.1 镜像构建
 
-CI 通过后，在 `main` / `release/*` 分支触发镜像构建：
+CI 通过后，在 `main` / `release/*` 分支触发镜像构建（实际由 security-scan job 的 build-push-action 完成）：
 
 ```bash
 # API 镜像（多阶段构建：Maven build → JRE runtime）
+# infra R2-00356：CI 实际 tag 为 ci-<sha7>（metadata-action type=raw）+ sha-<sha>，
+# 并禁止 latest（docker-compose 默认 TAG=dev，TAG=latest 被拒绝）。
 docker build -f apps/api/Dockerfile \
-  -t campus-love-api:${GIT_SHA} \
-  -t campus-love-api:latest \
+  -t ghcr.io/lx-1203/Love-Mini-Program/api:ci-$(git rev-parse --short=7 HEAD) \
   apps/api/
 
 # Admin 镜像（多阶段构建：Node build → nginx 静态托管）
 docker build -f apps/admin/Dockerfile \
-  -t campus-love-admin:${GIT_SHA} \
-  -t campus-love-admin:latest \
+  -t ghcr.io/lx-1203/Love-Mini-Program/admin:ci-$(git rev-parse --short=7 HEAD) \
   apps/admin/
 ```
+
+> infra R2-00357：原文档的 `:latest` 与 `GIT_SHA` 变量与 CI 实际 tag 策略冲突（CI 禁 latest），已对齐。
 
 **镜像大小预期：**
 
@@ -353,11 +395,9 @@ docker build -f apps/admin/Dockerfile \
 # 登录镜像仓库（GitHub Container Registry / Docker Hub / 私有仓库）
 echo $CR_PAT | docker login ghcr.io -u $GITHUB_USERNAME --password-stdin
 
-# 推送镜像
-docker push ghcr.io/{org}/campus-love-api:${GIT_SHA}
-docker push ghcr.io/{org}/campus-love-api:latest
-docker push ghcr.io/{org}/campus-love-admin:${GIT_SHA}
-docker push ghcr.io/{org}/campus-love-admin:latest
+# 推送镜像（infra R2-00358：与 CI tag 策略一致，ci-<sha7>，不推 latest）
+docker push ghcr.io/lx-1203/Love-Mini-Program/api:ci-$(git rev-parse --short=7 HEAD)
+docker push ghcr.io/lx-1203/Love-Mini-Program/admin:ci-$(git rev-parse --short=7 HEAD)
 ```
 
 ### 4.3 部署到目标环境
@@ -383,9 +423,9 @@ curl http://localhost:8080/actuator/health
 #### 方式二：Kubernetes（大规模部署）
 
 ```bash
-# 更新 Deployment 镜像 tag
+# 更新 Deployment 镜像 tag（infra R2-00359：与 CI tag 策略对齐）
 kubectl set image deployment/campus-love-api \
-  api=ghcr.io/{org}/campus-love-api:${GIT_SHA} \
+  api=ghcr.io/lx-1203/Love-Mini-Program/api:ci-$(git rev-parse --short=7 HEAD) \
   -n campus-love-prod
 
 # 等待 Rollout 完成
@@ -459,8 +499,8 @@ if (hash < canaryPercent) {
 ### 6.1 迁移脚本规范
 
 - 文件位置：`database/flyway/sql/`
-- 命名规范：`V{yyyy.MM.dd.HHmm}__{description}.sql`
-- 必须幂等：使用 `IF NOT EXISTS` 或 `information_schema` 检查
+- 命名规范：`V{yyyy.MM.dd.xxxx}__{description}.sql`（infra R2-00360：实际迁移为点分四段序号，如 V2026.07.25.0001；原文档写 HHmm 时间戳格式与实际不符）
+- 必须幂等：使用 `IF NOT EXISTS` 或 `information_schema` 检查（注：MySQL 8.0 不支持 `CREATE INDEX IF NOT EXISTS`，须用存储过程/information_schema 守卫）
 - 必须包含 `DOWN` 回滚脚本注释
 
 ### 6.2 迁移执行顺序
@@ -507,16 +547,26 @@ docker compose exec api ./mvnw flyway:migrate
 
 ### 7.2 告警规则（详见 `docker/prometheus/rules/alert-rules.yml`）
 
+> infra R2-00361：下表与 alert-rules.yml 实际规则名逐条对齐（原表规则名如 ApiHighP99Latency / MysqlSlowQuery / ThirdPartyApiDown 均不存在，运维按表查不到告警）。
+
 | 告警名 | 触发条件 | 持续时间 | 严重级别 | 通知方式 |
 |--------|----------|----------|----------|----------|
-| ApiHighErrorRate | 错误率 > 1% | 5m | CRITICAL | 邮件 + 钉钉 |
-| ApiHighP99Latency | P99 > 2s | 5m | WARNING | 邮件 |
-| ApiInstanceDown | 实例宕机 | 1m | CRITICAL | 邮件 + 钉钉 |
-|JvmHighMemoryUsage | JVM 堆使用 > 85% | 5m | WARNING | 邮件 |
-| MysqlSlowQuery | 慢查询 > 1s | 5m | WARNING | 邮件 |
-| MysqlConnectionSaturation | 连接使用 > 80% | 5m | CRITICAL | 邮件 + 钉钉 |
-| DiskSpaceLow | 磁盘剩余 < 20% | 5m | CRITICAL | 邮件 + 钉钉 |
-| ThirdPartyApiDown | 第三方 API 不可用 | 2m | WARNING | 邮件 |
+| ApiDown | 实例宕机（探活失败） | 1m | CRITICAL | 邮件 + 钉钉 |
+| ApiHealthCheckFailed | 健康检查失败 | 1m | CRITICAL | 邮件 + 钉钉 |
+| ApiHighLatencyP99 | P99 延迟 > 阈值 | 5m | WARNING | 邮件 |
+| ApiHighLatencyP95 | P95 延迟 > 阈值 | 5m | WARNING | 邮件 |
+| ApiSlowAverageResponse | 平均响应慢 | 5m | WARNING | 邮件 |
+| ApiHighErrorRate | 错误率 > 阈值 | 5m | CRITICAL | 邮件 + 钉钉 |
+| ApiHighClientErrorRate | 4xx 错误率 > 阈值 | 5m | WARNING | 邮件 |
+| JvmHeapMemoryHigh | JVM 堆内存 > 阈值 | 5m | WARNING | 邮件 |
+| JvmThreadsHigh | 线程数过高 | 5m | WARNING | 邮件 |
+| JvmFrequentFullGc | Full GC 频繁 | 5m | WARNING | 邮件 |
+| DbConnectionPoolHigh | 连接池使用 > 阈值 | 5m | CRITICAL | 邮件 + 钉钉 |
+| DbSlowQuery | 慢查询 > 阈值 | 5m | WARNING | 邮件 |
+| HostDiskHigh | 磁盘使用 > 阈值 | 5m | CRITICAL | 邮件 + 钉钉 |
+| HostMemoryHigh | 内存使用 > 阈值 | 5m | CRITICAL | 邮件 + 钉钉 |
+| HostCpuHigh | CPU 使用 > 阈值 | 5m | WARNING | 邮件 |
+| HighLoginFailureRate | 登录失败率过高 | 5m | WARNING | 邮件 |
 
 ### 7.3 告警通知渠道
 
@@ -540,12 +590,14 @@ docker compose exec api ./mvnw flyway:migrate
 
 ```bash
 # 手动触发备份
+# infra R2-00362：compose 实际服务名为 backup（原文档误写 db-backup），
+# 脚本容器内路径为 /backup.sh（原文档误写 /backup/scripts/backup-mysql.sh）
 docker compose --profile backup up -d
-docker compose exec db-backup /backup/scripts/backup-mysql.sh
+docker compose exec backup /backup.sh
 
 # 验证备份文件
-docker compose exec db-backup ls -lh /backup/
-docker compose exec db-backup gzip -t /backup/campus_love-2026-07-26-020000.sql.gz
+docker compose exec backup ls -lh /backups/
+docker compose exec backup gzip -t /backups/campus_love-2026-07-26-020000.sql.gz
 ```
 
 ### 8.3 恢复演练
@@ -573,7 +625,8 @@ kubectl rollout undo deployment/campus-love-api -n campus-love-prod
 
 ```bash
 # 1. 备份当前数据库（回滚前必做）
-docker compose exec db-backup /backup/scripts/backup-mysql.sh
+# infra R2-00365：compose 实际服务名为 backup，容器内脚本路径为 /backup.sh（原文档误写 db-backup）
+docker compose exec backup /backup.sh
 
 # 2. 执行 DOWN 脚本（手动，参考迁移文件末尾注释）
 mysql -h 127.0.0.1 -u campus -p campus_love < V2026.xx.xxxx__down.sql
@@ -599,7 +652,7 @@ docker compose restart api
 
 发布前请逐项确认（详见 `docs/release-checklist-template.md`）：
 
-- [ ] CI 全部 Job 通过（lint-and-structure / client-typecheck-and-build / client-test / admin-typecheck-and-build / api-compile / api-test / security-scan / phase01-verify / e2e 共 9 个 job）
+- [ ] CI 全部 Job 通过（gitleaks-scan / lint-and-structure / client-typecheck-and-build / client-test / admin-typecheck-and-build / api-compile / api-test / security-scan / phase01-verify / e2e 共 10 个 job）
 - [ ] 测试覆盖率达标（前端 ≥ 80%，后端 ≥ 70%）
 - [ ] Flyway 迁移在预发布环境验证通过
 - [ ] 镜像构建并推送成功
@@ -644,7 +697,7 @@ docker compose up -d --build api
 # 清理全部容器与数据卷（谨慎！）
 docker compose down -v
 
-# 触发 CI 手动运行
+# 触发 CI 手动运行（infra R2-00363：workflow_dispatch 已配置，命令可直接使用）
 gh workflow run ci.yml
 
 # 查看 CI 运行状态
@@ -653,7 +706,7 @@ gh run list
 
 ### 11.3 本地复现 CI Job
 
-CI 中 9 个 job 的关键步骤可在本地通过下列命令逐一复现，便于在推送前预演。所有命令均假定当前工作目录为仓库根目录 `d:/6/恋爱小程序`。
+CI 中 10 个 job（含 gitleaks-scan）的关键步骤可在本地通过下列命令逐一复现，便于在推送前预演。所有命令均假定当前工作目录为仓库根目录 `d:/6/恋爱小程序`。
 
 > **依赖安装提示**：CI 中所有 `pnpm install` 均使用 `--frozen-lockfile`（Task 53），本地首次安装或更新依赖时使用 `pnpm install`（不带该参数）以允许更新 lockfile；更新后须提交 `pnpm-lock.yaml`。
 
@@ -741,8 +794,8 @@ pnpm install --frozen-lockfile
 # 安装 Playwright 浏览器
 npx playwright install --with-deps chromium
 
-# 运行 Playwright E2E 测试
-npx playwright test
+# 运行 Playwright E2E 测试（infra R2-00364：显式指定 config，根目录无 playwright.config）
+npx playwright test --config=tests/e2e/playwright.config.ts
 ```
 
-> 完整复现：建议按 1 → 9 顺序依次执行；任一步骤失败应修复后再继续，与 CI 行为一致。
+> 完整复现：建议按 0 → 9 顺序依次执行；任一步骤失败应修复后再继续，与 CI 行为一致。

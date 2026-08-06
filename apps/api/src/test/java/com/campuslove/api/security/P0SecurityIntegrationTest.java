@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.campuslove.api.auth.JwtAuthenticationEntryPoint;
+import com.campuslove.api.auth.OnlineUserService;
 import com.campuslove.api.auth.RealAuthService;
 import com.campuslove.api.auth.RedisTokenBlacklistService;
 import com.campuslove.api.config.AesEncryptor;
@@ -158,6 +159,7 @@ class P0SecurityIntegrationTest {
         private PasswordEncoder passwordEncoder;
         private RealAuthService realAuthService;
         private RedisTokenBlacklistService tokenBlacklistService;
+        private OnlineUserService onlineUserService;
         private JwtAuthenticationFilter jwtAuthenticationFilter;
 
         /** 测试用 token（任意字符串，filter 不会真正解析，由 mock provider 决定行为） */
@@ -174,6 +176,8 @@ class P0SecurityIntegrationTest {
             MockitoAnnotations.openMocks(this);
             passwordEncoder = new PasswordEncoderConfig().passwordEncoder();
             tokenBlacklistService = new RedisTokenBlacklistService();
+            // 在线会话服务使用真实实例（本地内存降级模式），不注入 Redis 以便隔离测试
+            onlineUserService = new OnlineUserService();
 
             // 通过反射注入 mock RedisTemplate（模拟 @Autowired(required=false)）
             try {
@@ -204,7 +208,9 @@ class P0SecurityIntegrationTest {
                     passwordEncoder,
                     aesEncryptor,
                     tokenBlacklistService,
-                    ""
+                    onlineUserService,
+                    "",
+                    true
             );
 
             jwtAuthenticationFilter = new JwtAuthenticationFilter(
@@ -472,7 +478,9 @@ class P0SecurityIntegrationTest {
         private static final Long ADMIN_USER_ID = 300L;
         private static final String MONTH_SEGMENT = "202607";
         private static final String FILE_NAME = "test-avatar.jpg";
-        private static final String VALID_SUBPATH = MONTH_SEGMENT + "/" + FILE_NAME;
+        // infra R2-00013:IMAGE 已开放为社交公开资源(登录用户可读),
+        // 越权隔离测试改用语音路径以保留"非本人敏感文件不可读"的验证意图
+        private static final String VALID_SUBPATH = "voice/" + MONTH_SEGMENT + "/" + FILE_NAME;
 
         private Path tempRoot;
         private MediaAccessService mediaAccessService;
@@ -485,10 +493,15 @@ class P0SecurityIntegrationTest {
             mediaAccessController = new MediaAccessController(mediaAccessService);
 
             // 在 storageRoot/{OWNER_USER_ID}/{MONTH_SEGMENT}/ 下创建测试文件
+            // infra R2-00013:与 VALID_SUBPATH 一致,语音目录下创建
             Path ownerDir = tempRoot.resolve(OWNER_USER_ID.toString())
                     .resolve(MONTH_SEGMENT);
             Files.createDirectories(ownerDir);
             Files.writeString(ownerDir.resolve(FILE_NAME), "test-image-content");
+            Path voiceDir = tempRoot.resolve(OWNER_USER_ID.toString())
+                    .resolve("voice").resolve(MONTH_SEGMENT);
+            Files.createDirectories(voiceDir);
+            Files.writeString(voiceDir.resolve(FILE_NAME), "test-voice-content");
         }
 
         @AfterEach

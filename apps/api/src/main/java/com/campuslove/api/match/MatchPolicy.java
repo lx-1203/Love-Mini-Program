@@ -114,6 +114,7 @@ public class MatchPolicy {
      * </ol>
      *
      * @param userId 用户 ID
+     * @deprecated 请使用 {@link #tryIncrementRewind} 原子占用额度，避免限额检查与递增分离
      */
     public void incrementRewindCount(Long userId) {
         String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
@@ -132,6 +133,64 @@ public class MatchPolicy {
         } catch (RuntimeException e) {
             log.warn("写入 Redis rewind 计数失败，降级使用本地内存方案：{}", e.getMessage());
         }
+    }
+
+    /**
+     * 原子尝试占用今日一次 rewind 额度（INCR 返回值判断，修复 GET+INCR 分离的并发绕过）。
+     *
+     * <p>Redis 侧：{@code INCR} 返回值超过 {@link #REWIND_DAILY_LIMIT} 时回滚递减并返回 false；
+     * 本地降级方案：synchronized 临界区内判断。</p>
+     *
+     * @param userId 用户 ID
+     * @return true 表示成功占用额度；false 表示已达今日上限
+     */
+    public boolean tryIncrementRewind(Long userId) {
+        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String localKey = userId + ":" + dateKey;
+        try {
+            if (redisTemplate != null) {
+                String redisKey = REDIS_KEY_PREFIX_REWIND + userId + ":" + dateKey;
+                Long newValue = redisTemplate.opsForValue().increment(redisKey);
+                if (newValue != null && newValue == 1L) {
+                    redisTemplate.expire(redisKey, 36, TimeUnit.HOURS);
+                }
+                if (newValue != null && newValue > REWIND_DAILY_LIMIT) {
+                    // infra R2-00223: 超限回滚递增，保证计数不漂移
+                    redisTemplate.opsForValue().decrement(redisKey);
+                    return false;
+                }
+                return true;
+            }
+        } catch (RuntimeException e) {
+            log.warn("写入 Redis rewind 计数失败，降级使用本地内存方案：{}", e.getMessage());
+        }
+        // 本地降级方案（无 Redis 时）：临界区内判断+递增，保证单实例内原子性
+        synchronized (localRewindCount) {
+            int next = localRewindCount.getOrDefault(localKey, 0) + 1;
+            if (next > REWIND_DAILY_LIMIT) {
+                return false;
+            }
+            localRewindCount.put(localKey, next);
+            return true;
+        }
+    }
+
+    /**
+     * 回滚今日 rewind 计数（占用额度后业务失败时调用，避免先扣额度再失败）。
+     *
+     * @param userId 用户 ID
+     */
+    public void decrementRewindCount(Long userId) {
+        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String localKey = userId + ":" + dateKey;
+        try {
+            if (redisTemplate != null) {
+                redisTemplate.opsForValue().decrement(REDIS_KEY_PREFIX_REWIND + userId + ":" + dateKey);
+            }
+        } catch (RuntimeException e) {
+            log.warn("回滚 Redis rewind 计数失败：{}", e.getMessage());
+        }
+        localRewindCount.computeIfPresent(localKey, (k, v) -> v > 0 ? v - 1 : 0);
     }
 
     /**

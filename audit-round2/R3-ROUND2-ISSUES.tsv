@@ -1,0 +1,956 @@
+R2-00001|client|apps/client/src/pages/vip/index.vue|114-124|CRITICAL|subscribe() 无 useMock 分支,真实模式下"立即开通"仍走 setTimeout 模拟支付成功,从未调用 uni.requestPayment 且不通知后端|生产环境用户点击付费显示"开通成功"但未扣款、未开通 VIP,资金与体验双失控|按 apiMode 分支,real 模式接入 uni.requestPayment 完整回调(成功/取消/失败)并落后端订单
+R2-00002|client|apps/client/src/pages/login/index.vue|236-254|CRITICAL|手机号+验证码登录仅本地正则校验(4-6 位任意数字)即"登录成功"并跳转,无后端接口、不写 token、不建会话|任意输入可绕过登录墙进入主流程,后续请求 401,用户数据隔离被击穿|接入 POST /auth/phone-login 真实链路,未实现前隐藏入口
+R2-00003|client|apps/client/src/pages/login/index.vue|183-187|CRITICAL|发送验证码为纯本地演示:toast"已发送"+ 倒计时,无短信接口、无服务端校验|用户输入任意手机号即可"收到验证码",验证码登录形同虚设|接入 /auth/sms-code 接口,失败时提示且不启动倒计时
+R2-00004|client|apps/client/src/pages/verification/index.vue|177-187|CRITICAL|simulateApprove()(模拟审核通过)无 isMockMode/DEV 守卫,真实用户提交认证后在"审核中"状态可见"模拟审核通过"按钮,点击直接变 verified|恋爱认证可被用户自行伪造,身份信任体系崩塌|删除该按钮或加环境守卫,接入 GET /verification/status 轮询
+R2-00005|client|apps/client/src/pages/verification/index.vue|148-163|CRITICAL|恋爱认证(学生证)提交为本地 setTimeout 模拟 pending,无任何后端调用(TODO(后端) 自认)|认证功能整体未实现,用户提交即"审核中"且永不通过/拒绝|实现 POST /verification 与图片上传,未就绪前下线入口
+R2-00006|client|apps/client/src/stores/session.ts|618-639|CRITICAL|bindSchool 仅本地改写 userSession,不调后端(TODO(real-env) 自认:不落库/无校验/不可撤销)|刷新或重登后 schoolBound 回退,首页"绑定学校"入口反复出现,绑定无真实约束|调用 POST /api/schools/bind 并用返回会话整体替换
+R2-00007|client|apps/client/src/pages/vip/red-packet.vue|127-140|HIGH|红包创建成功后"分享"仅 toast 提示,无 uni.share/复制链接等任何真实分享能力|红包无法触达他人,付费功能形同虚设|接入微信分享/海报生成,或至少复制链接
+R2-00008|client|apps/client/src/pages/village/post.vue|416|HIGH|发帖图片仅本地预览,提交时未上传后端(TODO(后端) 自认无上传端点)|生产环境用户选的图随请求丢失,发帖体验断裂|实现 /posts/images 上传后携带 URL 提交
+R2-00009|client|apps/client/src/pages/circles/post-topic.vue|237|HIGH|兴趣圈发话题图片同样未上传(与 village/post.vue 相同 TODO)|话题配图在生产环境全部丢失|统一图片上传端点后接入
+R2-00010|client|apps/client/src/pages/campus/certification.vue|84-85,116|HIGH|学生证图片仅取 chooseImage 临时路径直接当 studentCardUrl 提交,未先上传换取 URL|后端收到 wxfile:// 临时路径无法访问,认证图片必然失败|先调上传接口再提交 URL
+R2-00011|client|apps/client/src/stores/chat/actions/messaging.ts|67|HIGH|uni.uploadFile url 硬编码 "/api/chat/voice",未拼接 appEnv.apiBaseUrl(其他请求均走 request 拼接)|apiBaseUrl 非根路径时语音上传 404/发错域名,语音消息在生产不可用|改为 `${appEnv.apiBaseUrl}/chat/voice`
+R2-00012|client|apps/client/src/pages/love-center/nearby.vue|37-45|HIGH|"附近的人"列表为 7 条硬编码示例用户,无后端 API/定位,点击仅 toast|附近的人功能未实现,生产环境展示假用户|接入位置+推荐接口,未就绪前隐藏入口
+R2-00013|client|apps/client/src/pages/activities/detail.vue|101-103|HIGH|未知活动 id 回退到内置示例活动,生产环境分享链接打开假数据|活动详情失真,用户被误导|未知 id 应展示"活动不存在"错误态
+R2-00014|client|apps/client/src/pages/activities/detail.vue|180-182,202-203|HIGH|示例活动报名/退出为本地闭环(仅置位+toast),不调后端|生产环境"报名成功"无任何服务端记录,活动主办方数据错乱|示例活动禁止报名或走真实接口
+R2-00015|client|apps/client/src/pages/profile/index.vue|453-467|HIGH|语音状态录制为演示实现:确认后直接 setVoiceStatus("mock://profile/voice-status",42),不录音不上传|真实模式语音状态是死数据,mock URL 还会触发无效请求|接入 RecorderManager+上传,未就绪前隐藏入口
+R2-00016|client|apps/client/src/pages/profile/index.vue|463|HIGH|mock:// 协议 URL 无任何环境守卫,真实模式也会写入 store|生产环境用户主页出现假语音状态|useMock 分支或删除
+R2-00017|client|apps/client/src/pages/profile/index.vue|469-490|HIGH|语音播放为"演示态":仅切换图标,3 秒后自动停,不接 InnerAudioContext|语音状态无法试听|接入真实播放
+R2-00018|client|apps/client/src/pages/settings/index.vue|221-247|HIGH|清除缓存为演示实现:延迟后置 0 KB,不调用 uni.getStorageInfo/clearStorage|用户以为缓存已清,实际未清|接入真实 storage 统计与清理
+R2-00019|client|apps/client/src/pages/settings/index.vue|250-266|HIGH|检查更新为演示实现:延迟后提示"已是最新",不接 uni.getUpdateManager|更新检查功能形同虚设|接入 getUpdateManager 或版本接口
+R2-00020|client|apps/client/src/pages/profile/album.vue|238-249|HIGH|"设为头像"仅本地重排 photoGallery,不调后端|头像更换不持久化,刷新即丢|接入头像上传接口
+R2-00021|client|apps/client/src/stores/profile.ts|598-627|HIGH|同校推荐权限开关仅本地存储,不落后端(Phase 4.5 注释自认)|跨设备/重登后设置丢失,隐私承诺无法兑现|接入 /privacy/settings 同步
+R2-00022|client|apps/client/src/stores/profile.ts|364-433|HIGH|loadMyPosts 从未被任何页面调用(全仓 grep 仅定义),real 模式"我的动态"永远为空|个人主页动态模块生产环境空白|页面接入或在 load() 中调用
+R2-00023|client|apps/client/src/stores/vip.ts|88-114|HIGH|plans 硬编码价格 18/48/128 与 config/vip-plans.ts(18/48/158)年度价不一致|两套价格数据源,支付展示与订单可能错价|删除重复 store,统一走 config
+R2-00024|client|apps/client/src/stores/vip.ts|84-411|HIGH|useVipStore 全仓无引用(仅定义处),410 行死代码含死状态 isVip/expireDate(85-86 行从未赋值)|维护成本与价格错乱风险|删除或迁移
+R2-00025|client|apps/client/src/view-models/chat.ts|49-84|HIGH|会话状态/操作文案直接使用 statusCopyMap 中文原文,未经 t() 渲染(config/status-copy.ts 自注"请改为经 t() 渲染")|聊天核心状态"等待对方加入/交换已完成/去聊天"等生产界面硬编码中文,多语言失效|改用 t("config.statusCopy.*")
+R2-00026|client|apps/client/src/stores/campus.ts|474-476|HIGH|formatAnswerTime 重复实现并硬编码"刚刚/分钟前/小时前/天前",未复用 utils/time.ts:219 且未 i18n|四处重复+多语言失效(见 circle.ts:443-445、daily-question.ts:235-238、village/utils.ts:444-447)|统一复用 utils/time.ts 的 locale 版本
+R2-00027|client|apps/client/src/stores/circle.ts|443-445|HIGH|同 campus.ts 的重复相对时间实现,硬编码中文|同上|同上
+R2-00028|client|apps/client/src/stores/daily-question.ts|235-238|HIGH|同 campus.ts 的重复相对时间实现,硬编码中文|同上|同上
+R2-00029|client|apps/client/src/stores/village/utils.ts|444-447|HIGH|同 campus.ts 的重复相对时间实现(文案还是"刚刚活跃"),硬编码中文|同上|同上
+R2-00030|client|apps/client/src/components/discover/AdvancedFilter.vue|98-109|HIGH|学校选项硬编码 10 所广州高校,未调用 config/schools.ts 的 loadSchools(),与 SCHOOLS(北大/清华等)数据源分裂|筛选学校与认证学校体系不一致,跨校匹配逻辑错乱|统一走 loadSchools()/后端 campuses
+R2-00031|client|apps/client/src/config/schools.ts|27-32|HIGH|SCHOOLS 仅 4 所高校(注释自认覆盖不足),DEFAULT_SCHOOL_ID 硬编码 'pku'(35 行)|多数学校用户无法选择本校|由后端下发完整列表
+R2-00032|client|apps/client/src/pages/home/index.vue|107|HIGH|默认学校回退硬编码 t("config.schools.pku.name"),无 session 时强制展示北京大学|非北大学生看到错误默认学校|改为通用占位
+R2-00033|client|apps/client/src/stores/messages.ts|315-365|HIGH|mock 通知 actionUrl 含 "/pages/post/detail?id=post-58"(365 行),该页面在 pages.json 不存在|mock 模式点击通知跳转白屏|改为存在的页面或移除
+R2-00034|client|apps/client/src/stores/messages.ts|702|HIGH|接受心动信号把 userId 放 query string,且 mock 分支(696 行)本地拼"你们已成为好友,开始聊天吧"硬编码中文|接口契约脆弱+文案未 i18n|对齐后端契约,文案走 t()
+R2-00035|client|apps/client/src/stores/messages.ts|744|HIGH|通知列表一次拉取 size=100 无分页(注释自认"未实现")|通知量大时首屏慢、截断|改分页加载
+R2-00036|client|apps/client/src/stores/messages.ts|918|HIGH|互动事件 hasMore 用 "mapped.length>=20" 猜测,末页恰好 20 条会多请求一次空页|多余请求与"加载中"闪烁|后端返回 totalPages 判断
+R2-00037|client|apps/client/src/stores/checkin.ts|470|HIGH|pointsBalance += pointsEarned 与 fetchStatus 同步余额可能双计(注释自认防双计不彻底)|积分余额虚高|改为后端返回余额直接赋值
+R2-00038|client|apps/client/src/stores/checkin.ts|537-541|HIGH|dispose() 从未接线(TODO(dispose-接线) 自认页面无法调用)|签到成功动画定时器页面卸载后仍触发|页面 onUnload 调用
+R2-00039|client|apps/client/src/stores/village/index.ts|899-904|HIGH|villageStore.dispose() 同样未接线(TODO 自认)|评论防抖/点赞集合在页面销毁后残留|页面 onUnload 调用
+R2-00040|client|apps/client/src/stores/discover/actions/storage.ts|125-132|HIGH|discoverStore.dispose() 同样未接线(TODO 自认)|防抖存储定时器/请求控制器残留|页面 onUnload 调用
+R2-00041|client|apps/client/src/stores/village/index.ts|323,555|HIGH|mock 帖子头像硬编码 "/static/default-avatar.png",与 IMAGE_PATHS 体系并存|头像路径散落,统一改造遗漏|改用 IMAGE_PATHS
+R2-00042|client|apps/client/src/stores/likes.ts|301,371-376|HIGH|mock 头像路径同样硬编码 "/static/default-avatar.png"|同上|同上
+R2-00043|client|apps/client/src/stores/video-call.ts|178|HIGH|mock signalingUrl 硬编码 "wss://mock.example.com/signaling",若 real 分支未覆盖会被使用|信令地址指向不存在的域名|确认 real 分支完整,删除 mock 兜底
+R2-00044|client|apps/client/src/services/auth.ts|44|HIGH|WECHAT_LOGIN_ENDPOINT="/v1/auth/wechat" 与 services/api.ts:194 "/auth/wechat-login" 两套登录端点并存|端点漂移风险,一处改动另一处 404|统一到单一常量
+R2-00045|client|apps/client/src/services/auth.ts|129,149,158,168,172-173|HIGH|登录错误消息硬编码中文("微信登录超时,请重试/您已取消微信登录"等),直接作为用户可见 toast|多语言失效,文案无法运营调整|抽 i18n key
+R2-00046|client|apps/client/src/services/http.ts|331,545,565|HIGH|"登录已过期,请重新登录" toast 硬编码中文(3 处),未走 i18n|核心登录兜底文案多语言失效|抽 i18n key
+R2-00047|client|apps/client/src/services/http.ts|466,506|HIGH|"网络请求失败/请求已取消"硬编码中文|网络错误提示多语言失效|抽 i18n key
+R2-00048|client|apps/client/src/utils/form-validator.ts|58,73,146,162|HIGH|校验默认消息硬编码中文("此项为必填项/请输入正确的手机号/邮箱/微信号"),直接展示给用户|表单校验提示无法多语言|默认值改 i18n key
+R2-00049|client|apps/client/src/stores/chat/actions/icebreakers.ts|159-160,188|HIGH|破冰话题错误消息硬编码中文拼接("破冰话题已发送,但消息追加失败:…/未知错误/加载破冰话题失败")|同上|抽 i18n key
+R2-00050|client|apps/client/src/stores/chat/actions/session.ts|173|HIGH|"会话不存在或已失效"硬编码中文错误|同上|抽 i18n key
+R2-00051|client|apps/client/src/stores/chat/actions/messaging.ts|180,213|HIGH|"发送消息失败,请重试/语音上传失败,请重试"硬编码中文|同上|抽 i18n key
+R2-00052|client|apps/client/src/stores/chat/actions/messaging.ts|82,86,91,95|HIGH|语音上传错误消息硬编码中文模板("语音上传响应缺少 url 字段/解析失败/HTTP/请求失败")|同上|抽 i18n key
+R2-00053|client|apps/client/src/stores/chat/higher-order.ts|72|HIGH|withErrorHandling 错误前缀拼接 "xxx失败" 为硬编码中文模板|所有聊天 action 错误提示多语言失效|错误文案走 t()
+R2-00054|client|apps/client/src/stores/discover/actions/swipe.ts|111,343-344|HIGH|"操作失败/超级喜欢失败,请重试/喜欢操作失败,请重试"硬编码中文|同上|抽 i18n key
+R2-00055|client|apps/client/src/stores/discover/actions/fetch.ts|147|HIGH|"加载推荐失败,请稍后重试"硬编码中文|同上|抽 i18n key
+R2-00056|client|apps/client/src/stores/home.ts|73|HIGH|"加载首页数据失败"硬编码中文|同上|抽 i18n key
+R2-00057|client|apps/client/src/stores/feedback.ts|29,48,68,88|HIGH|反馈相关 4 处错误消息硬编码中文|同上|抽 i18n key
+R2-00058|client|apps/client/src/stores/unlock-guide.ts|46,89|HIGH|"此功能"硬编码中文占位|同上|抽 i18n key
+R2-00059|client|apps/client/src/services/agnes-video.ts|166|HIGH|"未知错误"硬编码中文|同上|抽 i18n key
+R2-00060|client|apps/client/src/view-models/feedback.ts|17-28|HIGH|反馈状态文案("已提交/处理中/已查看/已排期/已转活动")硬编码中文|反馈历史页多语言失效|抽 i18n key
+R2-00061|client|apps/client/src/view-models/home.ts|76-115,131-132|HIGH|首页设置引导标题("补全基础资料/填写学校信息/先完成设置/去聊天/今日/空档")硬编码中文|首页核心引导多语言失效|抽 i18n key
+R2-00062|client|apps/client/src/view-models/profile.ts|82-88,126,134|HIGH|"刚刚/未设置昵称/未设置学校"硬编码中文|个人页多语言失效|抽 i18n key
+R2-00063|client|apps/client/src/stores/schedule.ts|45|HIGH|WEEK_DAYS 硬编码中文("周一…周日")且导出被页面展示|课表多语言失效|抽 i18n key
+R2-00064|client|apps/client/src/stores/campus.ts|138-154|HIGH|话题分类/认证状态映射硬编码中文("课程交流/已认证"等),若用于真实数据展示则多语言失效|校园页多语言失效|抽 i18n key
+R2-00065|client|apps/client/src/config/home-banners.ts|57-86|HIGH|首页横幅 title/subtitle 硬编码中文,无 i18n key|运营内容无法多语言|抽 i18n key
+R2-00066|client|apps/client/src/config/home-recommended-people.ts|24-48|HIGH|首页推荐人姓名/文案硬编码中文|同上|抽 i18n key
+R2-00067|client|apps/client/src/config/navigation.ts|29-59|HIGH|TabBar label 硬编码中文("匹配/圈子/首页/消息/我的"),与 pages.json/custom-tab-bar 三处重复|Tab 文案多语言失效且三源同步易漏|单源+t()
+R2-00068|client|apps/client/src/custom-tab-bar/index.js|41-74|HIGH|TabBar label 硬编码中文(第二处重复源)|同上|引用共享配置
+R2-00069|client|apps/client/src/config/status-copy.ts|15-40|HIGH|会话/匹配状态文案硬编码中文作为"兜底",且 view-models 直接使用|生产界面出现未翻译中文|见 view-models/chat.ts 条目
+R2-00070|client|apps/client/src/subpackages/setup/campus/index.vue|34,38,42|HIGH|资料设置页 3 处表单校验 toast 硬编码中文|设置流程多语言失效|抽 i18n key
+R2-00071|client|apps/client/src/subpackages/setup/schedule/index.vue|34,40|HIGH|时间安排页 2 处校验 toast 硬编码中文|同上|抽 i18n key
+R2-00072|client|apps/client/src/subpackages/setup/recommend-pref/index.vue|119,121|HIGH|推荐偏好页"保存成功/保存失败,请重试"硬编码中文|同上|抽 i18n key
+R2-00073|client|apps/client/src/pages/village/tag-posts.vue|28|HIGH|标签帖点赞为页面级本地翻转(TODO(mock) 自认),real 模式不落库|生产环境点赞即假|接入 likePost API
+R2-00074|client|apps/client/src/pages/vip/index.vue|116|MEDIUM|selectedPlanId 默认 "quarterly" 硬编码,与配置解耦后可能失效|默认套餐漂移|从 config 首项取
+R2-00075|client|apps/client/src/pages/vip/index.vue|421|MEDIUM|switch color 硬编码 #FFD700(原生属性)|品牌色调整需改代码|配置化
+R2-00076|client|apps/client/src/stores/vip-auto-renew.ts|186|MEDIUM|setEnabled 默认套餐硬编码 "quarterly"|与选中套餐可能不一致|显式传 planId
+R2-00077|client|apps/client/src/stores/vip.ts|272-353|MEDIUM|fetchBills mock 分支在 billsLoading 检查之后,loading 时返回空缓存且 forceRefresh 被忽略|缓存一致性弱|调整分支顺序
+R2-00078|client|apps/client/src/stores/vip.ts|286-353|MEDIUM|mock 账单硬编码日期 2026-07-25(非相对时间),时间一过展示过期数据|mock 演示失真|相对日期生成
+R2-00079|client|apps/client/src/stores/vip-billing.ts|65-113|MEDIUM|与 stores/vip.ts fetchBills 完全重复的账单 mock/分页实现(第二份)|双 store 维护,字段易漂移|合并
+R2-00080|client|apps/client/src/stores/vip-red-packet.ts|79|MEDIUM|mock 红包 id 用 Math.random 生成,可重复|mock 态红包 id 冲突|递增计数器
+R2-00081|client|apps/client/src/stores/vip-red-packet.ts|175-180|MEDIUM|mock 领取金额随机 1-99 分,与 totalCount/总金额无约束关系|mock 演示失真|按剩余金额分配
+R2-00082|client|apps/client/src/pages/vip/red-packet.vue|184-192|MEDIUM|claimId 缺失或非法时静默(无 toast/空态),领取流程无引导|链接分享后无反馈|非法参数给错误态
+R2-00083|client|apps/client/src/pages/vip/promo-code.vue|(grep 见 store)|MEDIUM|promo-code 校验仅在 store 层,页面无输入格式即时校验|体验依赖服务端|页面加轻校验
+R2-00084|client|apps/client/src/pages/chat/red-packet.vue|118|MEDIUM|发红包成功后 800ms 定时跳转期间无 loading 遮挡,可重复触发|重复创建红包风险|按钮禁用态覆盖整个流程
+R2-00085|client|apps/client/src/stores/messages.ts|915|MEDIUM|loadInteractionEvents 单行 1200+ 字符的字段映射,可读性差且重复 4 个 || 兜底|维护成本高|抽 mapToInteractionEvent 函数
+R2-00086|client|apps/client/src/stores/messages.ts|491,528,602,753,808,850,865,923|MEDIUM|8 处错误消息硬编码中文(加载会话/消息/通知/置顶/删除/拒绝信号等)|错误提示多语言失效|统一 t()
+R2-00087|client|apps/client/src/stores/messages.ts|487,524,671,749,767,775,788,805,845,862,919,935,945,953|MEDIUM|14 处 withTimeout 超时文案硬编码中文("加载会话列表超时"等)|超时提示多语言失效|统一 t()
+R2-00088|client|apps/client/src/stores/messages.ts|696|MEDIUM|"你们已成为好友,开始聊天吧"及 "·N岁·城市" 拼接硬编码中文|会话预览多语言失效|抽 i18n
+R2-00089|client|apps/client/src/stores/messages.ts|257-376|MEDIUM|mock 会话/信号/通知大量中文内容(可接受),但 partnerAvatar 硬编码路径与 IMAGE_PATHS 不一致|同上(路径类)|IMAGE_PATHS
+R2-00090|client|apps/client/src/stores/likes.ts|490,550,642,698,712,840,877,909,1114|MEDIUM|9 处错误消息硬编码中文(与周边 t() 混用)|错误提示多语言不一致|统一 t()
+R2-00091|client|apps/client/src/stores/likes.ts|1114|MEDIUM|"部分操作失败(n/m)"模板字符串硬编码中文|批量操作失败提示多语言失效|抽 i18n
+R2-00092|client|apps/client/src/stores/likes.ts|712|MEDIUM|"用户 ID 无效"硬编码,而相邻分支用 t("storeErrors.likes.userIdInvalid")|同文件两套文案体系|统一
+R2-00093|client|apps/client/src/stores/village/index.ts|234,357,393,589,637,696,719,825,886|MEDIUM|9 处错误消息硬编码中文(加载帖子/发布/评论/点赞/转发/同校动态/相似作者)|村口社区错误提示多语言失效|统一 t()
+R2-00094|client|apps/client/src/stores/village/index.ts|190-216|MEDIUM|fetchPosts mock 分支 this.hasMore=false 硬编码,real/mock 分页语义不一致|mock 无法演练分页|mock 生成多页数据
+R2-00095|client|apps/client/src/stores/village/index.ts|540-535|MEDIUM|commentPost 防抖后无内容二次校验(空白内容会直接提交)|空评论入库|防抖回调内再校验
+R2-00096|client|apps/client/src/stores/circle.ts|922|MEDIUM|"加载精选话题失败"硬编码中文(同文件其他全 t())|错误提示不一致|统一 t()
+R2-00097|client|apps/client/src/stores/circle.ts|246-303|MEDIUM|兴趣圈 name/description 硬编码中文(仅 mock 分支,但若 real 空数据兜底展示会泄漏)|同上|t() 或后端数据
+R2-00098|client|apps/client/src/stores/activity.ts|53-110|MEDIUM|mock 活动标题/描述硬编码中文;id 体系 "a-1" 与 real 数字 id 不一致|mock/real 切换时 id 类型漂移|统一 string 化
+R2-00099|client|apps/client/src/stores/activity.ts|272-276|MEDIUM|取消报名用 DELETE 携带 data body,部分网关/后端不支持 DELETE body|取消报名 404|改用 POST /cancel 或 query
+R2-00100|client|apps/client/src/stores/campus.ts|762-764,823-825|MEDIUM|发布话题/回复 mock 分支硬编码 "匿名校友/我/广州大学"|mock 数据污染展示|t() 或按 session 生成
+R2-00101|client|apps/client/src/stores/campus.ts|259-376|MEDIUM|校园话题 mock 硬编码中文+固定"广州大学"作者|mock 演示失真|相对/会话数据
+R2-00102|client|apps/client/src/stores/checkin.ts|256-280|MEDIUM|consecutiveDaysText 等 5 个 getter 硬编码中文模板("已连续签到 N 天"等)|签到权益多语言失效|抽 i18n
+R2-00103|client|apps/client/src/stores/checkin.ts|338|MEDIUM|"获取签到状态超时"硬编码中文(与 444 行 t() 混用)|超时提示不一致|统一
+R2-00104|client|apps/client/src/stores/checkin.ts|523|MEDIUM|makeUpCheckIn catch 后 console.error 并返回 null,调用方无法区分"失败"与"无权限"|补签失败无差异化提示|抛错给页面
+R2-00105|client|apps/client/src/stores/activity.ts|160-186|MEDIUM|fetchActivities 失败时保留旧列表不抛错,loadMore 无法感知失败|分页静默失败|同 village loadMore 的回退模式
+R2-00106|client|apps/client/src/stores/session.ts|22-37|MEDIUM|mockUserSession 中 schoolId 直接用学校名称"北京大学"充当 ID|ID/名称语义混淆,真实链路难迁移|mock 也使用真实 id
+R2-00107|client|apps/client/src/stores/session.ts|182-211|MEDIUM|profileFieldStatus 用 profileCompleted 代理 6 个字段,无法反映真实完成度|资料完善引导失真|后端返回字段级状态
+R2-00108|client|apps/client/src/stores/session.ts|296-302|MEDIUM|isProfileComplete getter 内嵌 isDev console.warn(生产分支也执行判断逻辑)|性能噪音|移出
+R2-00109|client|apps/client/src/stores/profile.ts|109-110|MEDIUM|mockVoiceStatusUrl 硬编码 "https://example.com/mock/voice-status.mp3"(example.com 域名)|mock 音频无法播放|本地资源或删除
+R2-00110|client|apps/client/src/stores/profile.ts|51-56|MEDIUM|mock 基本资料("星野/她她/大三")硬编码中文|同上|t()/会话数据
+R2-00111|client|apps/client/src/stores/profile.ts|266|MEDIUM|voiceStatusDuration=42 魔法数字(注释为 42s)|可读性|常量
+R2-00112|client|apps/client/src/stores/profile.ts|311-312|MEDIUM|load() real 分支 myPosts 恒为空且 "?? []" 无意义赋值,依赖从未被调用的 loadMyPosts|我的动态死链|见 HIGH 条目
+R2-00113|client|apps/client/src/stores/video-call.ts|108-118|MEDIUM|mock 房间号生成与真实信令流程脱节,real 分支未验证信令 URL 格式|通话链路 mock/real 行为差异大|联调验证
+R2-00114|client|apps/client/src/stores/chat/actions/session.ts|119-128|MEDIUM|startFromMatch mock 分支 partnerName 硬编码"匹配对象",未从匹配数据解析|mock 体验差|按 matchId 解析
+R2-00115|client|apps/client/src/stores/chat/actions/session.ts|85-87|MEDIUM|mock 回退文案"新匹配/校园恋爱推荐/今晚"硬编码中文|同上|t()
+R2-00116|client|apps/client/src/stores/chat/actions/messaging.ts|207,241|MEDIUM|voiceBody 默认 "语音消息" 硬编码中文,占位消息泄漏到真实发送|生产可能发送"语音消息"文本|H5 降级明确占位标识
+R2-00117|client|apps/client/src/features/chat/transport.ts|47,91|MEDIUM|RealChatTransport.pushVoice 与 Mock 分支 body 均为"语音消息"硬编码中文|同上|同上
+R2-00118|client|apps/client/src/pages/chat-session/index.vue|91-100,202-266|MEDIUM|sessionId 为 null 时页面无兜底空态(直接渲染空内容)|直开链接白屏|加参数缺失错误态
+R2-00119|client|apps/client/src/pages/chat-session/index.vue|407-443|MEDIUM|发送消息 catch 后仅 toast,输入框内容已清空未恢复草稿|失败消息丢失|恢复草稿
+R2-00120|client|apps/client/src/pages/chat-session/index.vue|1035|MEDIUM|messagesStore.errorMessage 直接渲染为页面文本,可能含后端原始错误串|错误文案暴露技术细节|映射友好文案
+R2-00121|client|apps/client/src/pages/chat/index.vue|78-79|MEDIUM|跳转会话用 openAppPath 字符串拼接(之前清单已报 .stop 等,此为新增路径)|路径散落|ROUTES 常量
+R2-00122|client|apps/client/src/pages/messages/index.vue|316-318|MEDIUM|错误 toast 优先展示 store.errorMessage(后端原文)|同上|映射友好文案
+R2-00123|client|apps/client/src/pages/messages/index.vue|747|MEDIUM|倒计时兜底 "--:--:--" 硬编码占位|轻微|t()
+R2-00124|client|apps/client/src/pages/messages/index.vue|855,885|MEDIUM|会话预览空值回退 t("messages.emptyTitle")("暂无消息"),语义混淆|空态文案错位|独立 key
+R2-00125|client|apps/client/src/pages/heart-signals/index.vue|69|MEDIUM|countdownTimer 30s 间隔刷新全列表,页面 onUnload 未清(仅 onHide 停)|后台资源浪费|onUnload 清理
+R2-00126|client|apps/client/src/pages/heart-signals/index.vue|93,105|MEDIUM|console.error("接受/拒绝心动信号失败")后静默,无 toast|用户无失败反馈|补 toast
+R2-00127|client|apps/client/src/pages/discover/index.vue|188-243|MEDIUM|错误处理仅设置 store errorMessage,部分场景无 toast 无重试按钮|弱网时用户困惑|统一错误态+重试
+R2-00128|client|apps/client/src/pages/discover/index.vue|521-531|MEDIUM|watch errorMessage 变化即上报 Sentry,同一错误可重复上报|噪音|去重上报
+R2-00129|client|apps/client/src/pages/discover/index.vue|930|MEDIUM|remainingCount<=3 的"限量提示"魔法数字|规则散落|常量
+R2-00130|client|apps/client/src/pages/discover/history.vue|86-95|MEDIUM|rewind 失败 catch 后仅 toast store 原始 message|同上|友好映射
+R2-00131|client|apps/client/src/pages/discover/video-player.vue|143-146|MEDIUM|分享链接用 query 拼接 videoUrl(URL 可能超长/被截断)|长视频 URL 分享失败|存储桥接或缩短
+R2-00132|client|apps/client/src/pages/village/index.vue|455-465|MEDIUM|onLoad 消费 query 与 onShow 双份消费逻辑,storage 桥接键无常量|tab 传参脆|统一常量
+R2-00133|client|apps/client/src/pages/village/index.vue|164-176|MEDIUM|两处 catch(_e) 空吞(定位失败/其他),无降级提示|静默失败|提示+降级
+R2-00134|client|apps/client/src/pages/village/detail.vue|416-425|MEDIUM|无 query.id 时依赖 store 残留 currentPost,直接分享链接可能展示他人帖子|隐私串号风险|无 id 时清空并提示
+R2-00135|client|apps/client/src/pages/village/detail.vue|144-184|MEDIUM|多处 catch(_e) 静默(定位/收藏/关注失败)|用户无感知|补提示
+R2-00136|client|apps/client/src/pages/village/post.vue|129-137|MEDIUM|选择图片失败 catch(_e) 静默|用户无反馈|toast
+R2-00137|client|apps/client/src/pages/village/post.vue|261|MEDIUM|发布前对选中图片数量/大小无前置校验(仅 store 校验数量)|超大图请求失败|前端压缩校验
+R2-00138|client|apps/client/src/pages/circles/post-topic.vue|240|MEDIUM|localImages 在 real 模式不调用上传(条件 !useMock 才跳过),mock 分支直接本地提交|同上 village|统一上传链路
+R2-00139|client|apps/client/src/pages/circles/topic-detail.vue|186-190|MEDIUM|topicId 缺失时静默空白|直开链接白屏|空态兜底
+R2-00140|client|apps/client/src/pages/circles/topics.vue|45|MEDIUM|circleId 缺失时静默(同族问题)|同上|兜底
+R2-00141|client|apps/client/src/pages/campus/topic-detail.vue|102-110|MEDIUM|topicId 缺失时静默|同上|兜底
+R2-00142|client|apps/client/src/pages/campus/index.vue|111|MEDIUM|话题分页 onLoadMoreTopic 无防抖/失败回退|快速滚动重复请求|同 village 模式
+R2-00143|client|apps/client/src/pages/campus/post-topic.vue|157|MEDIUM|发布成功 1.5s 定时跳转,期间无 loading 遮挡|重复提交|guard
+R2-00144|client|apps/client/src/pages/settings/index.vue|27|MEDIUM|operationTimers 集合仅清 clearCache/checkUpdate,其余导航 timer 未入集合|局部清理覆盖不全|统一
+R2-00145|client|apps/client/src/pages/profile/index.vue|439,486|MEDIUM|voicePlayTimer 演示 3000ms 魔法数字|可读性|常量
+R2-00146|client|apps/client/src/pages/profile/index.vue|222-237|MEDIUM|profileView 由 view-model 计算,与 profileStore 双数据源并存|状态分裂|单一数据源
+R2-00147|client|apps/client/src/pages/profile/index.vue|419|MEDIUM|打招呼跳转 chat-session?userId=,会话页需靠 userId 新建会话,mock 会话存在时行为不确定|入口行为不一致|按 sessionId 优先
+R2-00148|client|apps/client/src/pages/likes/index.vue|296,316,324|MEDIUM|openAppPath 字符串拼接路由(chat-session/profile/heart-signals)|路径散落|ROUTES
+R2-00149|client|apps/client/src/pages/likes/index.vue|83-113|MEDIUM|搜索防抖 300ms 魔法数字且三处重复清理逻辑|可维护性|useDebounce
+R2-00150|client|apps/client/src/pages/vip/bills.vue|(store)|MEDIUM|分页 loadMore 依赖 store listBills,失败时 page 不回退|断页|同 village 回退
+R2-00151|client|apps/client/src/pages/vip/promo-code.vue|(store)|MEDIUM|redeem 防重复锁在 mock 分支前,real 失败后 lastRedeemResult 残留|重复兑换提示陈旧|失败清空
+R2-00152|client|apps/client/src/services/config.ts|142|MEDIUM|loadCampuses 失败静默返回空数组,调用方(loadSchools)回退静态 4 校|学校列表长期缺失无告警|失败上报
+R2-00153|client|apps/client/src/services/api.ts|438-452|MEDIUM|simulateError dev 调试接口经 isDev 守卫但仍在 api.ts 导出,存在误用面|调试面暴露|移入 dev 模块
+R2-00154|client|apps/client/src/services/websocket/index.ts|184,246,319|MEDIUM|连接/断开/订阅日志用 console.warn 输出(已知 console 问题,但此为消息面)|调试信息生产可见|日志开关
+R2-00155|client|apps/client/src/services/websocket/index.ts|249-251|MEDIUM|disconnect 内 setTimeout 未保存引用,无法取消|快速重连时旧 close 可能关掉新连接|保存引用
+R2-00156|client|apps/client/src/services/websocket/reconnect.ts|46|MEDIUM|重连定时器 maxAttempts 后无最终降级提示|永久静默断线|提示+重试入口
+R2-00157|client|apps/client/src/services/websocket/heartbeat.ts|55-67|MEDIUM|心跳超时即断线重连,无离线事件上抛给页面|弱网抖动频繁重连|指数退避
+R2-00158|client|apps/client/src/services/websocket/store-dispatch.ts|66-215|MEDIUM|未知队列类型/非法数据仅 console.warn 静默|消息丢失无感知|Sentry 上报
+R2-00159|client|apps/client/src/utils/privacy.ts|210|MEDIUM|示例代码注释含硬编码中文 toast(仅文档)|误导|更新文档
+R2-00160|client|apps/client/src/utils/time.ts|245,364,368|MEDIUM|"刚刚/昨天/周日…" 硬编码中文,虽带 locale 分支但 zh 兜底直接写死|多语言边缘场景|key 化
+R2-00161|client|apps/client/src/config/vip-plans.ts|50,61,75|MEDIUM|价格 18/48/158 前端硬编码,后端调价需发版|价格策略僵化|后端下发
+R2-00162|client|apps/client/src/config/profile-tags.ts|75-130|MEDIUM|label 中文与 labelKey 并存,若 key 缺失静默展示中文|多语言降级无告警|缺失 key 上报
+R2-00163|client|apps/client/src/config/popular-topics.ts|41-52|MEDIUM|热门话题 name 中文与 nameKey 并存|同上|同上
+R2-00164|client|apps/client/src/components/discover/CardDetailOverlay.vue|168-169|MEDIUM|圈子推荐硬编码("美食探店/徒步旅行")|推荐内容无法运营|后端下发
+R2-00165|client|apps/client/src/components/discover/FilterDrawer.vue|108-120|MEDIUM|省市-区县映射硬编码(且文件为乱码编码)|数据维护困难|后端下发
+R2-00166|client|apps/client/src/components/chat/VoiceMessageBubble.vue|139|MEDIUM|进度 interval 未在组件销毁时清理(仅 stop 时清)|泄漏|onUnmounted 清理
+R2-00167|client|apps/client/src/components/common/Toast.vue|168|MEDIUM|leaveTimer 内再包 setTimeout 无引用管理|边缘泄漏|统一
+R2-00168|client|apps/client/src/components/common/ShareCard.vue|172|MEDIUM|uni.downloadFile 无超时/失败 toast 降级|分享图生成失败静默|补错误处理
+R2-00169|client|apps/client/src/App.vue|64-174|MEDIUM|onLaunch 同步初始化链长,异常仅上报不降级(mock/real 双路径)|启动脆弱|分段降级
+R2-00170|client|apps/client/src/main.ts|(grep)|MEDIUM|全局错误处理仅 Sentry,无用户可见兜底 toast|崩溃无提示|补 toast
+R2-00171|client|apps/client/src/guards/profile-guard.ts|24-26|MEDIUM|页面名映射硬编码中文("喜欢列表/消息")|守卫提示多语言失效|t()
+R2-00172|client|apps/client/src/pages/dev/index.vue|1|MEDIUM|DEV 开发者导航页未整体删除(注释自认"后续需整体删除"),仅 #ifdef DEV 包裹|包体膨胀+误用面|提审前移除
+R2-00173|client|apps/client/src/manifest.json|(此前已知)|MEDIUM|appid wxc67cd233d72388d0 疑为测试号(此前清单已列,保留)|提审风险|确认正式 appid
+R2-00174|client|apps/client/src/pages/discover/index.vue|84-89|LOW|文件注释为乱码(UTF-8 损坏),全项目多处存在(messages/index.vue:202-215、stores/session.ts:620、stores/village/utils.ts:8、pages/chat-session/index.vue:492-519 等)|可维护性受损|批量转码修复
+R2-00175|client|apps/client/src/pages/messages/index.vue|202-215|LOW|同上乱码注释|同上|同上
+R2-00176|client|apps/client/src/stores/session.ts|620|LOW|TODO(real-env)中文注释乱码|同上|同上
+R2-00177|client|apps/client/src/stores/village/utils.ts|8|LOW|同上|同上|同上
+R2-00178|client|apps/client/src/stores/chat/actions/messaging.ts|34|LOW|VOICE_UPLOAD_TIMEOUT_MS=30000 魔法数字无注释单位常量命名规范|可读性|加单位
+R2-00179|client|apps/client/src/stores/chat/actions/messaging.ts|127|LOW|sendId 用 Date.now() 可能碰撞(同毫秒两连发)|同 id 消息|计数器+时间戳
+R2-00180|client|apps/client/src/stores/chat/actions/messaging.ts|164|LOW|mock 模式消息 id `m-${Date.now()}` 同样碰撞风险|同上|同上
+R2-00181|client|apps/client/src/stores/chat/actions/session.ts|83|LOW|mock 会话 id `mock-session-${Date.now()}` 碰撞|同上|同上
+R2-00182|client|apps/client/src/stores/chat/actions/exchange.ts|41-50|LOW|acceptExchange 状态机三元嵌套可读性差|维护成本|状态表
+R2-00183|client|apps/client/src/stores/messages.ts|189-191|LOW|currentUserId 判空逻辑可简化为统一空串处理|可读性|简化
+R2-00184|client|apps/client/src/stores/messages.ts|243-246|LOW|typeMap 通知类型映射在模块级,类型演进易漏|类型漂移|satisfies 校验
+R2-00185|client|apps/client/src/stores/likes.ts|360-367|LOW|getter 内调用 useSessionStore(依赖注入,getter 应纯函数)|测试/调试困难|移到 action
+R2-00186|client|apps/client/src/stores/likes.ts|458-460|LOW|空注释块("静默处理")死代码|噪音|删除
+R2-00187|client|apps/client/src/stores/likes.ts|1042-1115|LOW|批量操作串联 await 无并发限制,大列表全失败|体验|批量上限
+R2-00188|client|apps/client/src/stores/village/index.ts|90-97|LOW|commentDebounceTimers 的 resolve 引用使 Map 值复杂化|维护成本|简化
+R2-00189|client|apps/client/src/stores/village/index.ts|190|LOW|filterAndSortPosts 过滤依赖 sessionStore,getter 中嵌套 try-catch|纯函数性弱|注入参数
+R2-00190|client|apps/client/src/stores/village/index.ts|230|LOW|hasMore 用 items.length>=PAGE_SIZE 猜测末页|多一次空请求|totalPages
+R2-00191|client|apps/client/src/stores/village/index.ts|319-323|LOW|mock 新帖 author.userId 硬编码 "user-1001"|mock 与真实用户体系割裂|会话 userId
+R2-00192|client|apps/client/src/stores/village/index.ts|845-865|LOW|mock 相似作者硬编码 4 人中文信息|同上|t()
+R2-00193|client|apps/client/src/stores/circle.ts|675,827|LOW|mock 评论作者 "我" 硬编码|同上|会话昵称
+R2-00194|client|apps/client/src/stores/campus.ts|762|LOW|mock 发布作者 school 硬编码 "广州大学"|同上|会话
+R2-00195|client|apps/client/src/stores/campus.ts|430-446|LOW|mock 活动/话题内容硬编码|同上|t()
+R2-00196|client|apps/client/src/stores/campus-wall.ts|29-73|LOW|campus-wall store 全为 mock 硬编码中文且无 real 分支(功能未接入)|校园墙功能未实现|接入 API 或移除
+R2-00197|client|apps/client/src/stores/checkin.ts|168-216|LOW|本地 withTimeout 与 services/http.ts 重复实现(注释自认)|重复代码|合并
+R2-00198|client|apps/client/src/stores/checkin.ts|392-411|LOW|mock 签到 hotTopicsUnlocked/newUsersUnlocked 恒 true|mock 失真|随机
+R2-00199|client|apps/client/src/stores/daily-question.ts|163-201|LOW|mock 问题/用户硬编码中文|同上|t()
+R2-00200|client|apps/client/src/stores/schedule.ts|59-113|LOW|mock 课表硬编码("高等数学/王教授")|同上|t()
+R2-00201|client|apps/client/src/stores/activity.ts|44-51|LOW|relativeDate 硬编码相对偏移|可读性|常量
+R2-00202|client|apps/client/src/stores/social-progress.ts|152|LOW|进度数据 mock 分支与 real 分支结构重复|维护成本|统一映射
+R2-00203|client|apps/client/src/stores/theme.ts|21-55|LOW|主题持久化多 catch(_e) 静默|无降级提示|告警
+R2-00204|client|apps/client/src/stores/discover/constants.ts|(MOCK_MATCH_PROBABILITY)|LOW|mock 匹配概率常量需 .env 配置,默认 0|mock 演示无匹配反馈|开发时显式配置
+R2-00205|client|apps/client/src/stores/discover/actions/rewind.ts|57|LOW|rewind mock 分支仅本地,real 无 rewind 接口时行为差异大|回看功能 mock/real 不一致|后端支持
+R2-00206|client|apps/client/src/stores/discover/actions/storage.ts|65|LOW|saveTimer 300ms 防抖,页面 onHide 未强制 flush|切后台丢最后操作|onHide flush
+R2-00207|client|apps/client/src/stores/discover/actions/history.ts|32-71|LOW|loadHistory mock 分支与 real 分支重复结构|维护成本|统一
+R2-00208|client|apps/client/src/stores/discover/api.ts|(grep)|LOW|API 函数内联 URL 与 services/api.ts 重复|端点漂移|单一来源
+R2-00209|client|apps/client/src/pages/discover/index.vue|647|LOW|clearSearch 通过 catchtap 绑定+defineExpose 暴露,兼容性 hack|维护噪音|统一事件
+R2-00210|client|apps/client/src/pages/discover/index.vue|857-865|LOW|空态 refresh 按钮无 loading 态(点击后无反馈)|体验|loading
+R2-00211|client|apps/client/src/pages/discover/index.vue|902|LOW|活动推荐区空数据时无隐藏逻辑,展示空容器|轻微|v-if
+R2-00212|client|apps/client/src/pages/village/index.vue|583-648|LOW|noop/catchtap 占位与 defineExpose hack 多处|维护噪音|统一
+R2-00213|client|apps/client/src/pages/village/index.vue|841|LOW|post.images.length 与 9 的 Math.min 魔法数字|可读性|常量
+R2-00214|client|apps/client/src/pages/village/detail.vue|312-353|LOW|多处 catch(_error) 静默+defineExpose hack|同上|统一
+R2-00215|client|apps/client/src/pages/village/detail.vue|774-817|LOW|分享弹窗 isSharing 状态与 store.sharePost 的幂等(已转发禁止)并存,语义重复|维护成本|简化
+R2-00216|client|apps/client/src/pages/village/post.vue|548|LOW|图片计数 "x/9" 直接写死 9|可读性|常量
+R2-00217|client|apps/client/src/pages/village/tag-posts.vue|94-136|LOW|页面内自建分页(不走 village store),与 store 分页逻辑重复|两套分页语义|复用 store
+R2-00218|client|apps/client/src/pages/village/tag-posts.vue|115|LOW|appEnv.apiMode==="mock" 直接判断,与其他页面 useMock() 不一致|判断方式不统一|useMock()
+R2-00219|client|apps/client/src/pages/circles/index.vue|43-52|LOW|CATEGORY_KEYWORDS 中文关键词过滤(服务端就绪后应移除,TODO 已标)|临时方案残留|后端过滤
+R2-00220|client|apps/client/src/pages/circles/index.vue|118|LOW|openAppPath 字符串拼接 topics 路由|路径散落|ROUTES
+R2-00221|client|apps/client/src/pages/campus/index.vue|182|LOW|scroll-view enhanced/bounces 属性在 mp-weixin 兼容性未知|潜在渲染差异|条件编译
+R2-00222|client|apps/client/src/pages/love-center/mbti.vue|72-87|LOW|MBTI 为 4 题简化版本地计算(注释自认),结果无持久化|测试体验浅|接入完整题库
+R2-00223|client|apps/client/src/pages/love-center/consulting.vue|43|LOW|课程报名成功仅 toast,无后续跳转|转化链路断|接报名落地
+R2-00224|client|apps/client/src/pages/love-center/index.vue|58,64|LOW|恋爱测试/咨询入口部分为 toast 占位|功能占位|接入
+R2-00225|client|apps/client/src/pages/shop/index.vue|103-107|LOW|商品详情页跳转被移除仅 toast(TODO 自认)|逛逛功能半成品|实现详情页
+R2-00226|client|apps/client/src/pages/feedback/history.vue|144|LOW|detailCache 缓存无失效策略,后端更新不感知|陈旧详情|下拉刷新失效
+R2-00227|client|apps/client/src/pages/feedback/history.vue|77-79|LOW|detailLoading/detailCache 双 Record 状态冗余|维护成本|单对象
+R2-00228|client|apps/client/src/pages/settings/dnd.vue|232-260|LOW|保存失败 errorHaptic 后无 toast 重试引导|弱反馈|补 toast
+R2-00229|client|apps/client/src/pages/profile/privacy.vue|55|LOW|返回用 switchTab 硬编码 "/pages/profile/index"|路径散落|ROUTES
+R2-00230|client|apps/client/src/pages/profile/tasks.vue|(grep)|LOW|任务中心数据源与 checkin/social-progress 混用,无统一任务模型|任务体系分裂|统一
+R2-00231|client|apps/client/src/pages/vip/bills.vue|(grep)|LOW|账单类型/状态枚举中文映射与 view-models 重复|同上|统一
+R2-00232|client|apps/client/src/components/common/EmptyState.vue|(grep)|LOW|空态文案由调用方传,未内聚 i18n|分散|内部 key
+R2-00233|client|apps/client/src/components/layout/AppShell.vue|(grep)|LOW|壳组件与 TabBar 双实现(H5 自定义 vs 原生)|平台差异维护成本|统一抽象
+R2-00234|client|apps/client/src/components/discover/LongPressMenu.vue|35-50|LOW|长按菜单 200ms 动作定时器与关闭动画定时器并存|维护成本|状态机
+R2-00235|client|apps/client/src/components/discover/CardSwiper.vue|133-140|LOW|长按定时器与动画定时器集合并存,清理逻辑分散|同上|统一
+R2-00236|client|apps/client/src/components/social/SocialProgressIndicator.vue|81-90|LOW|tierAnimTimer 单例,多实例场景互相覆盖|多组件状态错乱|per-instance
+R2-00237|client|apps/client/src/components/village/WallPostCard.vue|(grep)|LOW|帖子卡片与 village/index.vue 内联卡片重复实现|双份卡片维护|组件化
+R2-00238|client|apps/client/src/components/chat/ChatBubble.vue|85-97|LOW|catchtap 兼容 hack 蔓延|维护噪音|统一事件方案
+R2-00239|client|apps/client/src/utils/media.ts|(grep)|LOW|媒体选择与 album/certification 内联 chooseImage 重复|同上|统一
+R2-00240|client|apps/client/src/utils/navigation.ts|(grep)|LOW|openAppPath 对 tab 页/普通页的判断散落调用点|导航语义弱|封装
+R2-00241|client|apps/client/src/utils/audio-recorder.ts|543-612|LOW|播放结束定时器与组件级重复实现|同上|统一
+R2-00242|client|apps/client/src/composables/useAbortOnHide.ts|(grep)|LOW|页面隐藏即 abort 全部请求,返回前台不自动恢复|弱网重进需手动刷新|可配置保留
+R2-00243|client|apps/client/src/composables/useNetworkStatus.ts|(grep)|LOW|网络恢复回调无防抖,可能重复触发刷新|抖动|debounce
+R2-00244|client|apps/client/src/composables/usePageAccess.ts|(grep)|LOW|页面守卫与 guards/profile-guard 双实现|守卫逻辑分裂|统一
+R2-00245|client|apps/client/src/compat/index.ts|217-228|LOW|dev API 回退 127.0.0.1:8080 硬编码,与 config/env.ts 的 localhost:8080 并存|环境回退不一致|统一常量
+R2-00246|client|apps/client/src/services/env.ts|123-131|LOW|services/env.ts 与 config/env.ts 双环境封装并存(注释自认历史实现)|双入口漂移|迁移删除
+R2-00247|client|apps/client/src/services/generated/api-types.ts|(全文件)|LOW|OpenAPI 生成类型未含 token/refreshToken/vipStatus/schoolBound/profileBackgroundUrl,业务靠断言访问|类型安全缺口|重新生成+补 schema
+R2-00248|client|apps/client/src/services/api.ts|203-209|LOW|loginWithWechat 内断言访问 token 字段(见上)|同上|补类型
+R2-00249|client|apps/client/src/services/mocks/fixtures.ts|(61KB)|LOW|超大 mock 文件 61KB,维护成本高|包体/维护|拆分
+R2-00250|client|apps/client/src/stores/chat/mock-data.ts|16-17|LOW|模块加载时求值 t(),语言切换后不跟随|多语言切换失效|builder 模式
+R2-00251|client|apps/client/src/stores/chat/index.ts|61|LOW|export * from "./mock-data" 将 mock 数据暴露为公共 API,mock 引用面失控|mock 泄漏面|限制导出
+R2-00252|client|apps/client/src/stores/chat.ts|7|LOW|兼容 re-export 层(chat.ts/discover.ts/village.ts)增加间接层|维护成本|逐步移除
+R2-00253|client|apps/client/src/config/assets-index.ts|(grep)|LOW|资源索引与 config/images.ts 并存|资源引用双源|合并
+R2-00254|client|apps/client/src/theme/|(grep)|LOW|主题文件与 uni.scss/design token 并存多套变量体系|样式体系分裂|统一
+R2-00255|client|apps/client/src/pages/uni.scss|25|LOW|pages/ 下出现 uni.scss 重复文件(根 uni.scss 已存在)|构建歧义|删除
+R2-00256|client|apps/client/src/components/uni.scss|25|LOW|components/ 下同样存在重复 uni.scss|同上|删除
+R2-00257|client|apps/client/src/entry-server.js|(2KB)|LOW|SSR 入口在纯小程序项目中无实际用途|死文件|评估移除
+R2-00258|client|apps/client/src/tests/*|(大量)|LOW|测试用 (globalThis as any).uni 模式重复 60+ 次|测试样板噪音|helper 封装
+R2-00259|client|apps/client/src/stores/discover/actions/storage.ts|129|LOW|TODO(dispose-接线) 注释与页面未接线状态长期共存|技术债标记滞留|见 HIGH 条目
+R2-00260|client|apps/client/src/pages/village/tag-posts.vue|199-234|LOW|mock 帖子 getMockTagPosts 内联 6 条硬编码数据(仅 mock)|同上|t()
+R2-00261|client|apps/client/src/pages/chat/red-packet.vue|29-33|LOW|定时器清理模式重复 3 次(与 vip/red-packet 一致)|维护成本|复用 hook
+R2-00262|client|apps/client/src/pages/vip/bills.vue|(grep)|LOW|账单列表无下拉刷新入口(仅 onLoad 加载)|新账单不可见|onPullDownRefresh
+R2-00263|client|apps/client/src/pages/settings/dnd.vue|35|LOW|pageState 三态字符串枚举,无类型收窄|拼写风险|union 类型
+R2-00264|client|apps/client/src/pages/messages/index.vue|153|LOW|countdownMap 每秒重建对象触发全量渲染|性能|局部更新
+R2-00265|client|apps/client/src/pages/likes/index.vue|388-389|LOW|onShow 中 likedBy 为空才重拉,切 Tab 后数据可能陈旧|实时性|always refresh
+R2-00266|client|apps/client/src/pages/home/index.vue|277-286|LOW|签到/补签 toast 依赖 t(),但 showToast 内 duration 魔法数字 1500/1200|可读性|常量
+R2-00267|client|apps/client/src/pages/daily-question/index.vue|192|LOW|formatAnswerTime 复用 store 内实现(见 HIGH 重复条目)|同上|utils/time
+R2-00268|client|apps/client/src/features/login/hero.ts|(grep)|LOW|登录 hero mock 视频/图片地址为占位资源,生产无真实素材|首屏视觉空白|接 CMS
+R2-00269|client|apps/client/src/features/chat/session-machine.ts|(grep)|LOW|会话状态机与 chat/types 的 phase 枚举并存|状态定义双源|合并
+R2-00270|client|apps/client/src/view-models/login.ts|(grep)|LOW|hero 视图模型与 services/api 返回类型断言耦合|同上|补类型
+R2-00001|api|apps/api/src/main/java/com/campuslove/api/auth/ThirdPartyAuthController.java|68|CRITICAL|POST /api/v1/auth/third-party/wechat 公开端点直接信任客户端传入 openId,服务端仅 SHA-256 后查库,命中即签发 JWT、未命中即创建新用户,无 code2session 校验|任意用户可伪造他人 openId 直接接管账号登录;或批量生成 openId 垃圾注册|服务端调用微信 code2session/Apple identityToken 验签后再登录
+R2-00002|api|apps/api/src/main/java/com/campuslove/api/auth/ThirdPartyAuthController.java|82|CRITICAL|POST /api/v1/auth/third-party/apple 同样直接信任客户端 appleIdentifier,无 identityToken 签名/aud/iss/exp 验证|攻击者传任意 identifier 即可登录/创建账号,身份认证完全失效|接入 Sign in with Apple JWT 验签(RS256)后取 sub
+R2-00003|api|apps/api/src/main/java/com/campuslove/api/auth/ThirdPartyAuthService.java|129|HIGH|doLogin 中 openId 仅做无盐 SHA-256,未验证第三方凭据归属,与主微信登录(code2session)链路不一致|配合 Controller 形成任意身份伪造;低熵 identifier 可离线爆破|复用 WeChatClient.code2Session 或 Apple 验签
+R2-00004|api|apps/api/src/main/java/com/campuslove/api/auth/ThirdPartyAuthService.java|301|LOW|hashIdentifier 无盐 SHA-256,与 RealAuthService.hashOpenid 重复实现|代码重复;hash 可被彩虹表/字典攻击|统一抽取带盐 KDF
+R2-00005|api|apps/api/src/main/java/com/campuslove/api/chat/VoiceMessageController.java|103|HIGH|DELETE /api/v1/chat/voice/{id} 只校验 /uploads/ 前缀不校验文件归属,注释自认"不限制跨用户删除"|任意登录用户可删除他人语音文件(IDOR)|删除前解析 URL 中 userId 并与当前用户比对
+R2-00006|api|apps/api/src/main/java/com/campuslove/api/chat/VoiceMessageService.java|194|HIGH|delete(String url) 无当前用户上下文,URL 中 userId 可枚举,删除任意用户文件|语音资产被批量删除|Controller 传入 currentUserId 做归属校验
+R2-00007|api|apps/api/src/main/java/com/campuslove/api/chat/VoiceMessageController.java|132|MEDIUM|decodeUrl 将 %5C 还原为反斜杠后拼路径,跨平台路径语义不一致|Windows 部署下可能绕过前缀检查(依赖 startsWith 兜底)|统一用 URLDecoder 或仅允许 %2F
+R2-00008|api|apps/api/src/main/java/com/campuslove/api/chat/VoiceMessageService.java|137|LOW|语音 MIME 校验仅在客户端提供 ContentType 时生效,可伪造;无 magic bytes 校验(对比 LocalMediaStorageService)|伪装文件上传|补充文件头校验
+R2-00009|api|apps/api/src/main/java/com/campuslove/api/chat/VoiceMessageService.java|109|LOW|store/delete 为纯文件 IO 却标注 @Transactional|无意义事务开销|移除
+R2-00010|api|apps/api/src/main/java/com/campuslove/api/media/LocalMediaStorageService.java|94|HIGH|上传返回 URL 前缀固定为 /uploads/,而 SecurityConfig 已 denyAll /uploads/**,且无任何代码将 URL 转换为 /api/v1/media/{userId}/...|real 模式下所有上传文件 URL 不可访问,前端图片/语音/视频全部 404|返回 /api/v1/media/{userId}/... 或提供 URL 转换服务
+R2-00011|api|apps/api/src/main/java/com/campuslove/api/media/MediaAccessController.java|259|HIGH|媒体代理仅允许"本人或 ADMIN"访问,而业务中需展示他人头像/帖子图片/活动头像|社交浏览场景(查看他人资料、帖子)图片全部 403,功能不可用|按媒体类型分级授权(头像/帖子图公开读,身份证仅本人)
+R2-00012|api|apps/api/src/main/java/com/campuslove/api/media/MediaAccessService.java|99|HIGH|loadMedia 同样仅本人/管理员可读,与 MediaAccessController 双层锁死|同上|同上
+R2-00013|api|apps/api/src/main/java/com/campuslove/api/media/LocalMediaStorageService.java|398|LOW|validateMimeType 在 ContentType 为 null 时直接放行(注释"向后兼容")|弱校验,依赖 magic bytes 兜底,但视频仅校验 ftyp 4 字节|严格模式拒绝 null MIME
+R2-00014|api|apps/api/src/main/java/com/campuslove/api/media/LocalMediaStorageService.java|455|LOW|视频 magic bytes 仅校验偏移 4 的 "ftyp",攻击者可构造 ftyp 头+任意 payload|伪视频文件存储|引入 ffprobe/完整容器解析
+R2-00015|api|apps/api/src/main/java/com/campuslove/api/media/LocalMediaStorageService.java|279|MEDIUM|delete(url) 不校验调用方身份与文件归属,任何 Service 传入任意 URL 即删文件|旧头像/语音等删除链路若被诱导可删除他人文件|delete 增加 userId 参数并在路径中校验
+R2-00016|api|apps/api/src/main/java/com/campuslove/api/config/AesEncryptor.java|72|HIGH|APP_AES_SECRET 未配置时静默回退到硬编码默认密钥 "campus-love-default-aes-key-change-in-production-32bytes"|生产漏配时 openid/phone 加密等于明文(密钥公开)|启动时强制校验,缺失则 fail-fast
+R2-00017|api|apps/api/src/main/java/com/campuslove/api/config/AesEncryptor.java|52|MEDIUM|aes-secret 回退到 JWT_SECRET,签名密钥与加密密钥复用|单一密钥泄露双系统失守|独立密钥注入
+R2-00018|api|apps/api/src/main/java/com/campuslove/api/config/AesEncryptor.java|160|MEDIUM|decrypt 失败时"原样返回输入",密钥轮换/损坏后密文被当明文返回并可能回写库|数据损坏与敏感值误用|解密失败抛异常并告警
+R2-00019|api|apps/api/src/main/java/com/campuslove/api/config/AesEncryptor.java|90|LOW|deriveKey 使用无盐 SHA-256 派生,弱口令可暴力|密钥强度依赖配置熵|PBKDF2/Argon2
+R2-00020|api|apps/api/src/main/java/com/campuslove/api/config/ContentFilterController.java|45|MEDIUM|公开端点返回命中的具体敏感词列表 filteredWords,而 SecurityConfig 注释声称"不暴露敏感词字典"|攻击者可枚举完整敏感词库,规避内容审核|仅返回 hasSensitiveWords 布尔值
+R2-00021|api|apps/api/src/main/java/com/campuslove/api/config/ContentFilterController.java|37|LOW|content 无长度上限(可提交 MB 级文本触发正则扫描)|CPU 滥用|限制 5000 字符
+R2-00022|api|apps/api/src/main/java/com/campuslove/api/config/SensitiveWordFilter.java|137|LOW|containsSensitive 对每个敏感词做 contains,词库大时 O(n*m)|检查接口性能随词库线性劣化|AC 自动机
+R2-00023|api|apps/api/src/main/java/com/campuslove/api/config/SensitiveWordFilter.java|33|LOW|enabled 默认 false,若部署配置被裁剪则过滤静默关闭|内容审核失效无告警|启动时校验配置
+R2-00024|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|432|MEDIUM|replyToTopic 回复内容未做敏感词过滤(createTopic 有过滤)|敏感词绕过:回复可携带违规内容|补 filterWithLog
+R2-00025|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|225|HIGH|joinCircle bulk UPDATE 后 circle.setMemberCount(旧值+1) 使实体变脏,事务提交时 flush 用陈旧值覆盖 bulk 结果|并发加入/退出圈子成员数丢失更新|bulk 后 entityManager.clear() 或重查
+R2-00026|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|276|HIGH|leaveCircle 同样存在 bulk update 后实体脏写覆盖问题|同上|同上
+R2-00027|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|438|MEDIUM|replyToTopic 的 replyCount 读-改-写非原子|并发回复计数丢失|DB 侧原子 UPDATE
+R2-00028|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|473|MEDIUM|getReplies 无分页 SQL,findByTopicIdOrderByCreatedAtDesc 全量加载后再内存分页|话题回复量大时全表传输|Repository 分页查询
+R2-00029|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|575|MEDIUM|toTopicView/toTopicViewFullContent/toReplyView 每项调用 getAuthorName→userRepository.findById(N+1)|话题列表/回复列表每页 20+ 次额外查询|批量预加载作者 Map
+R2-00030|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|597|MEDIUM|同上(详情页与回复视图作者查询)|单帖详情 1+ 次查询|复用批量方法
+R2-00031|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|618|MEDIUM|toReplyView 每次回复 1 次作者查询|回复列表 N+1|批量预加载
+R2-00032|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|553|LOW|getAuthorName 独立查询方法易被遗漏批量优化|辅助方法层级 N+1 风险|统一走 Map
+R2-00033|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|210|LOW|joinCircle 先查再插,并发重复加入依赖无唯一约束(唯一约束缺失)|重复成员记录|加 (user_id,circle_id) 唯一索引
+R2-00034|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|262|LOW|leaveCircle 循环 delete 多条(防御性),无批量删除|小性能|deleteAllInBatch
+R2-00035|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|370|LOW|createTopic images 无 URL 归属/协议校验,可存任意外链|内容存储注入任意链接|校验 URL 白名单
+R2-00036|api|apps/api/src/main/java/com/campuslove/api/discover/RealActivityService.java|142|MEDIUM|enrollActivity 的 enrollmentCount 读-改-写非原子|并发报名计数丢失|原子 UPDATE
+R2-00037|api|apps/api/src/main/java/com/campuslove/api/discover/RealActivityService.java|184|MEDIUM|cancelEnrollment 同(读-改-写非原子)|并发取消计数漂移|原子 UPDATE
+R2-00038|api|apps/api/src/main/java/com/campuslove/api/discover/RealActivityService.java|123|LOW|报名不校验活动状态(可报名已结束/取消活动)|脏报名数据|校验 ActivityStatus
+R2-00039|api|apps/api/src/main/java/com/campuslove/api/discover/RealActivityService.java|127|LOW|报名无容量上限校验|活动超员|capacity 校验
+R2-00040|api|apps/api/src/main/java/com/campuslove/api/discover/RealRecommendationService.java|224|MEDIUM|enrollActivity bulk update 后 activity.setEnrollmentCount(旧值+1) 脏写覆盖|并发报名计数丢失(与 Circle 同类)|bulk 后 clear/重查
+R2-00041|api|apps/api/src/main/java/com/campuslove/api/discover/RealRecommendationService.java|257|MEDIUM|cancelEnrollment 分支同样脏写覆盖|同上|同上
+R2-00042|api|apps/api/src/main/java/com/campuslove/api/discover/RealRecommendationService.java|401|MEDIUM|matchesFilter 中 needDbLookup 时对每个候选用户 findByUserId(最多 20 次查询)|筛选请求 N+1|批量预加载
+R2-00043|api|apps/api/src/main/java/com/campuslove/api/discover/RealRecommendationService.java|119|LOW|getDiscussions 每次实时聚合查询(无缓存),首页/发现页高频调用|DB 压力|加 @Cacheable
+R2-00044|api|apps/api/src/main/java/com/campuslove/api/discover/RealRecommendationService.java|141|LOW|getDiscussions 帖子按 createdAt 取前 50 再按热度排序,热门老帖可能被漏|推荐质量偏差|按热度 SQL 排序
+R2-00045|api|apps/api/src/main/java/com/campuslove/api/discover/RecommendationCacheManager.java|61|MEDIUM|推荐缓存 key 仅 userId,推荐结果 5 分钟不随 like/pass 更新,且 like/pass 后未调用 evictRecommendationCache|推荐列表长时间含已互动用户|互动后主动失效
+R2-00046|api|apps/api/src/main/java/com/campuslove/api/discover/RecommendationController.java|85|MEDIUM|PUT /api/v1/recommendations/preferences 调用 deprecated updatePreferences(prefs),其实现恒抛 UnsupportedOperationException|该端点 100% 返回 500|改为调用带 userId 版本或删除端点
+R2-00047|api|apps/api/src/main/java/com/campuslove/api/discover/RecommendationController.java|71|LOW|GET /preferences 返回固定默认值,与 /preferences/me 行为不一致且已 @Deprecated 未删|前端误用拿不到真实偏好|删除废弃端点
+R2-00048|api|apps/api/src/main/java/com/campuslove/api/discover/RecommendationController.java|110|LOW|heightMin/heightMax 无范围校验(可为负数/倒挂)|过滤语义异常|@Min/@Max 校验
+R2-00049|api|apps/api/src/main/java/com/campuslove/api/discover/RecommendationController.java|119|LOW|filter 参数(教育/感情/城市)无枚举校验,任意字符串被静默过滤掉|弱校验|枚举白名单
+R2-00050|api|apps/api/src/main/java/com/campuslove/api/discover/DailyQuestionController.java|60|LOW|submitAnswer 的 isAnonymous 无@NotNull,nullable 语义模糊|匿名开关可被省略|布尔默认值明确
+R2-00051|api|apps/api/src/main/java/com/campuslove/api/discover/RealDailyQuestionService.java|253|MEDIUM|getAnswers 每回答调用 userRepository.findById(N+1)|回答列表每页 20 次查询|批量预加载
+R2-00052|api|apps/api/src/main/java/com/campuslove/api/discover/RealDailyQuestionService.java|184|MEDIUM|answerPage.map(this::toAnswerView) 逐条查库放大 N+1|同上|同上
+R2-00053|api|apps/api/src/main/java/com/campuslove/api/discover/RealDailyQuestionService.java|131|LOW|submitAnswer existsBy 检查与 save 非原子(无唯一约束兜底确认)|并发重复回答|(question_id,user_id) 唯一约束
+R2-00054|api|apps/api/src/main/java/com/campuslove/api/discover/RealDailyQuestionService.java|64|LOW|getTodayQuestion 缓存 key 仅 userId,1h TTL 跨零点返回昨日问题|凌晨 1 小时内前端展示旧题|缓存 key 加日期
+R2-00055|api|apps/api/src/main/java/com/campuslove/api/discover/RealDailyQuestionService.java|218|LOW|toQuestionView 每次 countByQuestionId 统计回答数|高频接口附加查询|实体冗余计数
+R2-00056|api|apps/api/src/main/java/com/campuslove/api/discover/PrivacyFieldFilter.java|145|LOW|反射式字段过滤在每次推荐请求执行,存在性能与维护成本|防御层开销|编译期 DTO 白名单
+R2-00057|api|apps/api/src/main/java/com/campuslove/api/village/VillageInteractionService.java|111|HIGH|likePost bulk update(likesCount-1) 后 post.setLikesCount(旧值-1) 使 managed 实体变脏,事务提交 flush 覆盖原子结果|并发点赞/取消计数丢失(FIN-00018 修复失效)|bulk 后 clear/重查或 @DynamicUpdate
+R2-00058|api|apps/api/src/main/java/com/campuslove/api/village/VillageInteractionService.java|127|HIGH|点赞分支 bulk +1 后同样实体脏写覆盖|同上|同上
+R2-00059|api|apps/api/src/main/java/com/campuslove/api/village/VillageInteractionService.java|181|MEDIUM|commentPost bulk 递增后实体 setCommentsCount 覆盖风险|并发评论计数丢失|同上
+R2-00060|api|apps/api/src/main/java/com/campuslove/api/village/VillageInteractionService.java|233|MEDIUM|sharePost bulk 递增后实体 setShareCount 覆盖风险|并发转发计数丢失|同上
+R2-00061|api|apps/api/src/main/java/com/campuslove/api/village/VillageInteractionService.java|143|LOW|likePost 返回的 likeCount 为实体内存值,与 DB 可能不一致|展示值漂移|重查最新值
+R2-00062|api|apps/api/src/main/java/com/campuslove/api/village/VillageInteractionService.java|212|LOW|sharePost 无"每人每帖一次"限制,可无限刷转发数|计数刷量|去重约束
+R2-00063|api|apps/api/src/main/java/com/campuslove/api/village/VillagePostService.java|81|MEDIUM|createPost 中 PostCategory.valueOf(category) 未捕获非法值,非法分类返回 400 而非明确错误|健壮性问题;且 CacheEvict 不触发|枚举校验前置
+R2-00064|api|apps/api/src/main/java/com/campuslove/api/village/VillagePostService.java|64|MEDIUM|CreatePostRequest.title 必填但 createPost 从不接收/存储 title,前端被迫传无用字段|API 契约与实现不符,标题功能缺失|Post 增加 title 或移除校验
+R2-00065|api|apps/api/src/main/java/com/campuslove/api/village/CreatePostRequest.java|11|MEDIUM|@NotBlank title 与实体无 title 字段矛盾|发帖必须传 title 否则 400,且 title 丢失|同上
+R2-00066|api|apps/api/src/main/java/com/campuslove/api/village/VillageController.java|281|LOW|GET /api/v1/posts/dto 与 getPosts 功能重复(FIN-00065 自认保留),已废弃未删除|双实现维护成本|删除
+R2-00067|api|apps/api/src/main/java/com/campuslove/api/village/VillageController.java|77|LOW|getPosts 的 tag 参数被传递但 VillageQueryService 未使用|标签筛选失效|实现或移除参数
+R2-00068|api|apps/api/src/main/java/com/campuslove/api/village/VillageController.java|89|LOW|campus 分类未认证返回空列表而非 401,信息差异设计|可接受但文档缺失|无
+R2-00069|api|apps/api/src/main/java/com/campuslove/api/village/VillageQueryService.java|162|MEDIUM|PostCategory.valueOf(category) 未捕获,非法分类值→500(应 400)|恶意参数可触发 500 日志刷屏|捕获转 400
+R2-00070|api|apps/api/src/main/java/com/campuslove/api/village/VillageQueryService.java|386|MEDIUM|getDiscoverPosts/getCityPosts 同样 valueOf 未捕获|同上|同上
+R2-00071|api|apps/api/src/main/java/com/campuslove/api/village/VillageQueryService.java|392|MEDIUM|getCityPosts 排序比较器内每帖调用 isSameCampus→findByUserId(每页 20-100 次查询)|城市 Tab N+1|批量预加载校区 Map
+R2-00072|api|apps/api/src/main/java/com/campuslove/api/village/VillageQueryService.java|375|MEDIUM|getCityPosts 先 DB 分页再页内内存排序,"同校优先"只对当前页生效,跨页错乱且 totalElements 为全站数|分页+排序语义错误|SQL 排序或同校过滤下推
+R2-00073|api|apps/api/src/main/java/com/campuslove/api/village/VillageQueryService.java|390|LOW|getCityPosts 内存排序后 totalElements 未反映排序后语义|分页元数据失真|同上
+R2-00074|api|apps/api/src/main/java/com/campuslove/api/village/VillageQueryService.java|223|LOW|listHotPosts 缓存 key 固定 'hot',无过期策略依赖 TTL|可接受|无
+R2-00075|api|apps/api/src/main/java/com/campuslove/api/village/VillageViewMapper.java|116|MEDIUM|toPostDetailView 单帖详情触发 5 次 DB 查询(author×2+campus×2+isLiked)|详情页高频接口查询放大|批量/合并查询
+R2-00076|api|apps/api/src/main/java/com/campuslove/api/village/VillageViewMapper.java|127|LOW|详情页两次 findByUserId 查询当前用户与作者校区|可合并|JOIN FETCH
+R2-00077|api|apps/api/src/main/java/com/campuslove/api/village/VillageViewMapper.java|143|LOW|toCommentItemView(单条版) 查库,若被循环调用则 N+1|风险点|调用方强制走批量版
+R2-00078|api|apps/api/src/main/java/com/campuslove/api/village/VillageViewMapper.java|187|LOW|isSameCampus 每次查库,已被列表路径绕过但排序路径仍用|部分路径 N+1 残留|统一 Map
+R2-00079|api|apps/api/src/main/java/com/campuslove/api/admin/AdminUserController.java|218|MEDIUM|disableUser/enableUser 未阻止对 ADMIN 用户/自身操作,可禁用其他管理员或自己|管理后台自锁/越权操作其他管理员|禁止操作 ADMIN 角色与自身
+R2-00080|api|apps/api/src/main/java/com/campuslove/api/admin/AdminUserController.java|208|LOW|updateUser 事务内自调用 getUserDetail 重复查询|冗余查询|直接构造视图
+R2-00081|api|apps/api/src/main/java/com/campuslove/api/admin/AdminUserController.java|105|LOW|searchForAdmin 昵称筛选 LIKE '%x%' 前缀通配符,数据量大时全表扫描(注释自认 FIN-00058)|管理端查询慢|全文索引/前缀匹配
+R2-00082|api|apps/api/src/main/java/com/campuslove/api/admin/AdminPostController.java|159|MEDIUM|deletePost 注释称"同时清理该帖子下所有评论(硬删除)",但实现未删除任何评论|孤儿评论残留,注释与实现漂移|补评论清理或改注释
+R2-00083|api|apps/api/src/main/java/com/campuslove/api/admin/AdminPostController.java|132|LOW|auditPost 对非 approved 一律置 rejected,无决策枚举校验|弱校验|枚举校验
+R2-00084|api|apps/api/src/main/java/com/campuslove/api/admin/AdminPostController.java|136|LOW|auditRemark 无长度上限|超长备注入库|@Size
+R2-00085|api|apps/api/src/main/java/com/campuslove/api/admin/AdminPostController.java|234|LOW|parseAuditStatus/parsePostStatus/parseCategory 非法值静默转 null(全量查询)|非法参数被吞,查询条件失效|返回 400
+R2-00086|api|apps/api/src/main/java/com/campuslove/api/admin/audit/AuditLogAspect.java|146|MEDIUM|@RequestBody 完整序列化后落库 audit_log,脱敏字段仅 10 个(不含手机号/身份证/私信内容等)|敏感业务字段明文进入审计库|按字段白名单或脱敏扩展
+R2-00087|api|apps/api/src/main/java/com/campuslove/api/admin/audit/AuditLogAspect.java|104|LOW|异常时 errorMessage=ex.getMessage() 截断 500 字符入库,可能含 SQL/堆栈敏感信息|审计库泄露内部细节|脱敏/仅存异常类型
+R2-00088|api|apps/api/src/main/java/com/campuslove/api/admin/audit/AuditLogAspect.java|197|LOW|审计时每次查 UserRepository 取操作者昵称|审计写入开销|缓存操作者信息
+R2-00089|api|apps/api/src/main/java/com/campuslove/api/admin/RealAdminConfigService.java|99|MEDIUM|updateConfig 在事务内同步 publishEvent,若订阅方同步处理则拉长事务|事务持有时间不确定|事务提交后发布(TransactionSynchronization)
+R2-00090|api|apps/api/src/main/java/com/campuslove/api/admin/RealAdminConfigService.java|101|LOW|configValue 无长度/格式校验,admin 可写任意超长值|脏配置|校验
+R2-00091|api|apps/api/src/main/java/com/campuslove/api/admin/RealAdminConfigService.java|134|LOW|listRules/listSwitches 无缓存(仅 listConfigs 有)|管理端查询每次全表|加缓存
+R2-00092|api|apps/api/src/main/java/com/campuslove/api/admin/RealAdminMatchConfigService.java|183|MEDIUM|Integer.parseInt 失败时仅日志,非法值已写入 DB 而内存 bean 未同步|DB 与运行时配置漂移|先校验后写入
+R2-00093|api|apps/api/src/main/java/com/campuslove/api/admin/RealAdminMatchConfigService.java|222|MEDIUM|配置值无范围校验(权重可设 0/负数/超大,候选页可设 0)|推荐/匹配算法行为异常|范围校验
+R2-00094|api|apps/api/src/main/java/com/campuslove/api/admin/RealAdminMatchConfigService.java|80|LOW|updateMatchConfig 任意未知 key 均写入 DB|脏 key 污染|key 白名单
+R2-00095|api|apps/api/src/main/java/com/campuslove/api/admin/SensitiveWordImportService.java|233|MEDIUM|每词 1 次 existsByWordIgnoreCase+1 次 save(5000 词=1 万次往返)|批量导入慢|saveAll 批量 + 唯一约束兜底
+R2-00096|api|apps/api/src/main/java/com/campuslove/api/admin/SensitiveWordImportService.java|126|LOW|异步导入无分布式锁,多 admin 并发导入依赖 DB 唯一约束|可接受,日志混乱|可加锁
+R2-00097|api|apps/api/src/main/java/com/campuslove/api/admin/SensitiveWordImportService.java|270|LOW|taskId 仅内存,重启后状态查询失效(注释自认)|运维体验|DB 任务表
+R2-00098|api|apps/api/src/main/java/com/campuslove/api/admin/AdminPermissionAspect.java|93|LOW|权限失败日志 endpoint 变量误用 UNKNOWN_IP 常量名(值为 unknown)|日志语义小错|改名
+R2-00099|api|apps/api/src/main/java/com/campuslove/api/admin/RealAdminStatsService.java|82|LOW|统计均 @Cacheable 5 分钟,admin 修改数据后延迟可见|可接受|无
+R2-00100|api|apps/api/src/main/java/com/campuslove/api/config/JwtAuthenticationFilter.java|103|MEDIUM|?token= 查询参数支持使 JWT 进入 URL,会落入访问日志/Referer/代理日志|token 泄露面扩大(媒体代理已限定路径但日志仍记录)|限制为媒体路径+短时效子 token
+R2-00101|api|apps/api/src/main/java/com/campuslove/api/config/JwtAuthenticationFilter.java|160|MEDIUM|每次请求 userRepository.findById 查库(注释自认)|高 QPS 下 DB 压力|缓存角色/状态
+R2-00102|api|apps/api/src/main/java/com/campuslove/api/config/JwtAuthenticationFilter.java|123|LOW|黑名单校验先 getJtiFromToken(一次签名解析)再 getUserIdFromToken(第二次解析),每请求 2 次 JWT 解析|CPU 浪费|单次解析复用 Claims
+R2-00103|api|apps/api/src/main/java/com/campuslove/api/config/JwtTokenProvider.java|313|LOW|revokeToken 以完整 token 字符串作 Redis key,key 巨大且与 jti 方案并存双写|存储浪费、双实现|统一 jti 黑名单
+R2-00104|api|apps/api/src/main/java/com/campuslove/api/config/JwtTokenProvider.java|377|LOW|定时清理 1h 间隔,本地内存黑名单在重启后清空(已注释)|单实例降级场景登出失效|可接受
+R2-00105|api|apps/api/src/main/java/com/campuslove/api/config/SecurityConfig.java|131|LOW|Swagger/API 文档仅 ADMIN 可访问,但 mock 模式 mock filter 自动注入 ADMIN 角色|mock 环境文档公开|可接受
+R2-00106|api|apps/api/src/main/java/com/campuslove/api/config/SecurityConfig.java|186|LOW|CORS allowedHeaders 未含 Idempotency-Key(WebConfig 有),两处配置不一致|real 模式跨域幂等头可能被浏览器拦截|统一
+R2-00107|api|apps/api/src/main/java/com/campuslove/api/config/SecurityConfig.java|179|LOW|CORS 与 WebConfig 双配置源,未来修改需两处同步|漂移风险|收敛一处
+R2-00108|api|apps/api/src/main/java/com/campuslove/api/config/WebSocketConfig.java|160|LOW|握手拦截器只校验签名不过期,不查 token 黑名单(CONNECT 阶段才查)|已撤销 token 仍可建立 TCP/WS 连接|握手时查黑名单
+R2-00109|api|apps/api/src/main/java/com/campuslove/api/config/WebSocketConfig.java|224|LOW|token 经 Sec-WebSocket-Protocol 明文子协议传输,日志可能记录|token 泄露面|可接受(标准方案)
+R2-00110|api|apps/api/src/main/java/com/campuslove/api/config/JwtChannelInterceptor.java|99|LOW|CONNECT 只查完整 token 黑名单,不查 jti 黑名单(与 HTTP 过滤器不一致)|登出 token 的 jti 已撤销但 WS 仍可通过|统一 jti 校验
+R2-00111|api|apps/api/src/main/java/com/campuslove/api/config/JwtChannelInterceptor.java|133|LOW|SUBSCRIBE 允许所有 /topic/** 订阅,广播消息无权限粒度|潜在敏感广播|按频道分级
+R2-00112|api|apps/api/src/main/java/com/campuslove/api/chat/MessageWebSocketHandler.java|154|MEDIUM|WebSocket 消息 content/kind 无长度与格式校验(REST 的 @Size 校验不作用于 WS),可直接 new ChatMessageRequest 绕过|超大消息刷内存/带宽|WS 侧限长+限频
+R2-00113|api|apps/api/src/main/java/com/campuslove/api/chat/MessageWebSocketHandler.java|196|LOW|私信 WS 消息仅推送不落库(与 REST 落库不一致)|消息丢失/顺序问题|统一落库
+R2-00114|api|apps/api/src/main/java/com/campuslove/api/chat/MessageWebSocketHandler.java|212|LOW|mock 降级分支直接转发未校验|mock 行为与 real 漂移|可接受(仅 mock)
+R2-00115|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatSessionService.java|418|MEDIUM|createSession 的 matchId 兜底把任意数字解析为 userId(代码 TODO 自认),可绕过推荐体系强拉任意用户建会话|骚扰任意用户+会话轰炸|matchId 归属校验
+R2-00116|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatSessionService.java|120|LOW|createSession 并发无幂等(Controller 无 @Idempotent),重复点击可建双会话|重复会话|@Idempotent+唯一约束
+R2-00117|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatSessionService.java|105|LOW|listSessions 内循环 markExpiredIfDue(每次 save 过期会话)|小写放大|批量更新
+R2-00118|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatSessionService.java|90|MEDIUM|getOverview 每次调用推荐服务生成推荐(可能 5 分钟缓存未命中时全量计算)|聊天页首屏慢|复用缓存+异步
+R2-00119|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatMessageService.java|113|LOW|引用消息支持任意 messageId(未校验同会话),可引用其他会话消息 ID|信息轻微泄露/错乱|校验同会话
+R2-00120|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatMessageService.java|70|LOW|sendMessage 无敏感词过滤(村口/私信均有)|临时聊天可发违规词|补过滤
+R2-00121|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatMessageService.java|249|LOW|撤回后 lastMessagePreview 未同步更新,预览仍显示原文|已撤回内容泄露|同步更新预览
+R2-00122|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatCleanupService.java|91|LOW|定时任务锁在 finally 释放,而 @Transactional 提交发生在方法返回后(代理),锁早于事务提交释放|多实例短暂并发清理(幂等可容忍)|事务提交后再解锁
+R2-00123|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatViewMapper.java|154|MEDIUM|getPartnerInfo 每会话 4 次查询(user+basic+campus+schedule),listSessions 每会话再 +1 次 contactExchange|会话列表 5N 次查询|批量预加载
+R2-00124|api|apps/api/src/main/java/com/campuslove/api/chat/TempChatViewMapper.java|74|LOW|toSessionView 全量加载会话消息列表,长会话响应巨大|消息量大时响应膨胀|分页
+R2-00125|api|apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java|307|MEDIUM|toConversationView 每会话一次 countByConversationIdAndSenderIdNotAndIsRead|会话列表 N+1|批量 group count
+R2-00126|api|apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java|203|MEDIUM|getMessages 查询即全量标已读(含未翻页的旧消息),GET 副作用|未读计数失真|仅标已读当前页
+R2-00127|api|apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java|245|MEDIUM|pinConversation 为会话级置顶(双方共享),置顶语义应为每用户独立|A 置顶 B 也看到置顶|每用户置顶字段
+R2-00128|api|apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java|96|LOW|createOrGetConversation 无唯一约束,并发创建双会话|重复会话|(user_a,user_b) 唯一索引
+R2-00129|api|apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java|360|LOW|buildQuotePreview 手写字符串 indexOf 解析 JSON|脆弱解析|ObjectMapper
+R2-00130|api|apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java|131|LOW|发送者校验失败抛 400 语义(应 403)|语义偏差|OperationForbiddenException
+R2-00131|api|apps/api/src/main/java/com/campuslove/api/chat/RealNotificationService.java|60|MEDIUM|getNotifications(无分页版)使用 Pageable.unpaged 全量加载,通知多时 OOM/大响应|通知列表膨胀|强制分页
+R2-00132|api|apps/api/src/main/java/com/campuslove/api/chat/RealNotificationService.java|129|MEDIUM|signalType 先分页后内存过滤,第 1 页全是另一类型时返回空,需翻多页才见数据|筛选漏数据|SQL 过滤
+R2-00133|api|apps/api/src/main/java/com/campuslove/api/chat/RealNotificationService.java|204|MEDIUM|markAllAsRead 全量加载未读再逐条 saveAll|未读量大时内存/写放大|批量 UPDATE
+R2-00134|api|apps/api/src/main/java/com/campuslove/api/chat/NotificationController.java|40|LOW|/api/v1/notifications 与 /list 重复;unread-count 与 /count 重复;read 与 /read-with-user 重复|重复端点未清理|统一收敛
+R2-00135|api|apps/api/src/main/java/com/campuslove/api/chat/RealInteractionEventService.java|152|MEDIUM|markAllAsRead 全量加载未读事件再 saveAll|写放大|批量 UPDATE
+R2-00136|api|apps/api/src/main/java/com/campuslove/api/chat/RealInteractionEventService.java|170|MEDIUM|toInteractionEventView 每事件一次 findById 查触发用户|事件列表 N+1|批量预加载
+R2-00137|api|apps/api/src/main/java/com/campuslove/api/match/RealMatchService.java|176|LOW|setForceQueued/setNextQueueStatus 在 real 实现为空壳,mock 有状态|Mock/Real 行为漂移|删除或实现
+R2-00138|api|apps/api/src/main/java/com/campuslove/api/match/RealMatchService.java|221|LOW|getLikedMe/getMyLikes 无分页,喜欢列表全量返回|列表膨胀|分页
+R2-00139|api|apps/api/src/main/java/com/campuslove/api/match/RealMatchService.java|256|LOW|getVisitors 无分页全量访客|同上|分页
+R2-00140|api|apps/api/src/main/java/com/campuslove/api/match/RealMatchService.java|288|LOW|getHeartSignals 无分页|同上|分页
+R2-00141|api|apps/api/src/main/java/com/campuslove/api/match/RealMatchService.java|336|MEDIUM|rewind 的限额检查与计数递增非原子(GET+INCR 分离),并发请求可绕过每日 1 次限制|限额绕过|Lua/INCR 原子判断
+R2-00142|api|apps/api/src/main/java/com/campuslove/api/match/MatchPolicy.java|62|MEDIUM|checkRewindLimit 与 incrementRewindCount 分离,Redis GET 与 INCR 非原子|并发绕过限额|INCR 返回值判断
+R2-00143|api|apps/api/src/main/java/com/campuslove/api/match/MatchPolicy.java|122|LOW|localRewindCount 本地内存与 Redis 双写,多实例下各实例计数不一致|计数漂移|统一 Redis
+R2-00144|api|apps/api/src/main/java/com/campuslove/api/match/MatchEngine.java|153|HIGH|findAndScoreCandidates 每候选调用 calculateMatchScore→3 次查询(campus/basic/schedule),50 候选=150+ 查询/次匹配|创建匹配接口极慢,DB 压力大|批量预加载(Map 复用,参照 RecommendationStrategy)
+R2-00145|api|apps/api/src/main/java/com/campuslove/api/match/MatchEngine.java|186|HIGH|calculateMatchScore 内 3 次独立查询是 N+1 根因|同上|批量查询注入
+R2-00146|api|apps/api/src/main/java/com/campuslove/api/match/MatchEngine.java|148|MEDIUM|候选池固定取前 50 用户,未按活跃/资料完整度过滤,大量无资料用户占据候选|匹配质量差|SQL 过滤
+R2-00147|api|apps/api/src/main/java/com/campuslove/api/match/RealIcebreakerService.java|90|MEDIUM|getIcebreakers(matchId) 无归属校验,任意用户枚举 matchId 获取匹配双方共同兴趣/学校等推荐内容|间接泄露双方资料交集|参与者校验
+R2-00148|api|apps/api/src/main/java/com/campuslove/api/match/RealIcebreakerService.java|156|LOW|getProfileBasedIcebreakers(peerUserId) 无调用方关系校验(当前无 Controller 暴露,留隐患)|未来暴露即隐私泄露|调用点校验
+R2-00149|api|apps/api/src/main/java/com/campuslove/api/match/RealIcebreakerService.java|180|LOW|破冰话题内容直接嵌入对方兴趣/学校/专业,内容模板可被枚举|资料词泄露|模板不含原始值
+R2-00150|api|apps/api/src/main/java/com/campuslove/api/match/RealIcebreakerService.java|392|LOW|buildCommonAnswerIcebreakers 加载对方全部回答列表|小性能|limit 5
+R2-00151|api|apps/api/src/main/java/com/campuslove/api/match/MatchController.java|334|LOW|getIcebreakers 无 @PreAuthorize(仅依赖全局认证)|可接受|无
+R2-00152|api|apps/api/src/main/java/com/campuslove/api/match/MatchController.java|363|LOW|GET /api/v1/matches/dto 恒返回空列表(TODO 自认)|死代码端点|删除
+R2-00153|api|apps/api/src/main/java/com/campuslove/api/match/MatchController.java|393|LOW|MatchRequest.timeWindow @NotBlank 必填但 doCreateMatch 未使用该字段|多余必填字段|调整校验
+R2-00154|api|apps/api/src/main/java/com/campuslove/api/profile/RealProfileService.java|58|HIGH|构造器用 new 手动实例化 ProfileQueryService/ProfileUpdateService,组件 @Component 同时被容器实例化,双实例并存;new 出的实例 @Transactional(readOnly)/@Cacheable 全部失效|代理注解失效、行为漂移、内存双份|改为构造器注入组件
+R2-00155|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileQueryService.java|123|MEDIUM|readOnly 事务注解因上述 new 实例化而失效|只读优化丢失|同上
+R2-00156|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileUpdateService.java|161|LOW|saveBasicProfile 每次重算 profileCompletion(多次查询)|写路径查询放大|增量更新
+R2-00157|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileUpdateService.java|451|LOW|rebuildView 每次上传后 save user+重算完善度|上传路径额外写|合并
+R2-00158|api|apps/api/src/main/java/com/campuslove/api/profile/FollowService.java|81|MEDIUM|followUser 的 followingCount/followersCount 读-改-写非原子|并发关注计数丢失|原子 UPDATE
+R2-00159|api|apps/api/src/main/java/com/campuslove/api/profile/FollowService.java|134|MEDIUM|unfollowUser 同(读-改-写非原子)|同上|同上
+R2-00160|api|apps/api/src/main/java/com/campuslove/api/profile/FollowService.java|72|LOW|关注无每日上限|刷粉|限额
+R2-00161|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileVisitorController.java|108|MEDIUM|listVisitors 无分页全量加载访客记录|高频访问用户响应膨胀|分页
+R2-00162|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileVisitorController.java|196|LOW|recordVisit 每次校验目标用户存在(1 次查询)|小性能|可接受
+R2-00163|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileController.java|132|LOW|uploadPhoto 的 index 参数无 @Min/@Max 注解(靠 Service 校验)|防御不足|加注解
+R2-00164|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileController.java|266|LOW|BasicProfileRequest 4 个必填字段(向后兼容)导致部分更新场景被迫传旧值|API 可用性|可选化
+R2-00165|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileUpdateService.java|192|LOW|uploadPhoto 索引校验 OK|无
+R2-00166|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileUpdateService.java|124|LOW|saveBasicProfile 未做敏感词过滤(nickname/bio)|资料可含违规词|过滤
+R2-00167|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileUpdateService.java|436|LOW|deleteOldMediaQuietly 删除旧文件无归属二次校验(依赖 URL 前缀)|低风险|可加归属
+R2-00168|api|apps/api/src/main/java/com/campuslove/api/user/RealOnlineStatusService.java|48|LOW|updateHeartbeat 每次写库,5 分钟心跳高并发写|写放大|Redis 心跳
+R2-00169|api|apps/api/src/main/java/com/campuslove/api/user/RealOnlineStatusService.java|88|LOW|getOnlineStatus 公开任意用户在线状态/设备类型|隐私暴露(设计如此)|可接受
+R2-00170|api|apps/api/src/main/java/com/campuslove/api/user/RealOnlineStatusService.java|153|LOW|checkAndMarkOfflineUsers 无 @Scheduled 调度点(方法存在但未被定时调用)|在线状态永不过期|补定时任务+分布式锁
+R2-00171|api|apps/api/src/main/java/com/campuslove/api/user/UserController.java|122|LOW|在线状态端点无缓存,高频轮询打库|DB 压力|缓存
+R2-00172|api|apps/api/src/main/java/com/campuslove/api/wallet/WalletServiceImpl.java|92|MEDIUM|initWallet 在 orElseGet 内 save,并发首笔交易双初始化,唯一约束冲突被当幂等冲突重查→抛 500|并发首笔扣款失败(资金安全无损)|catch 后重查钱包
+R2-00173|api|apps/api/src/main/java/com/campuslove/api/wallet/WalletServiceImpl.java|82|LOW|幂等命中不校验 userId 与流水一致性|调用方传错 userId 时返回他人余额|校验 userId
+R2-00174|api|apps/api/src/main/java/com/campuslove/api/wallet/WalletServiceImpl.java|259|LOW|writeTransactionLog 注释称"独立 try-catch"但实际无 catch,文档与实现不符|文档漂移|修正
+R2-00175|api|apps/api/src/main/java/com/campuslove/api/vip/VipRedPacketService.java|353|MEDIUM|过期分支 setStatus(EXPIRED)+save 后 throw IllegalArgumentException,事务回滚使状态更新失效|红包永不为 EXPIRED,过期红包状态滞留|noRollbackFor 或拆事务
+R2-00176|api|apps/api/src/main/java/com/campuslove/api/vip/VipRedPacketService.java|458|LOW|getRedPacketDetail(无 userId 版本)仍存在(未暴露,留后门风险)|未来误用即 IDOR|删除
+R2-00177|api|apps/api/src/main/java/com/campuslove/api/vip/VipRedPacketService.java|553|MEDIUM|calculateClaimAmount 基于实体 claimedAmount/claimedCount 计算,与原子扣减后的 remaining 不同步时有偏差|拼手气金额分配边缘错误|改用 remaining 字段
+R2-00178|api|apps/api/src/main/java/com/campuslove/api/vip/VipRedPacketService.java|195|LOW|创建红包锁在事务内获取,finally 解锁早于事务提交|锁窗口语义偏差(DB 行锁兜底)|可接受
+R2-00179|api|apps/api/src/main/java/com/campuslove/api/vip/VipRedPacketService.java|419|LOW|newClaimedCount/newRemainingCount 基于旧实体值仅用于日志与返回|展示值可能偏差|重查
+R2-00180|api|apps/api/src/main/java/com/campuslove/api/vip/AutoRenewService.java|248|MEDIUM|renewVip 每次调用生成全新 orderNo,幂等键失效;若定时任务重复调度将重复扣款|重复扣费风险|按"用户+周期"生成稳定 orderNo
+R2-00181|api|apps/api/src/main/java/com/campuslove/api/vip/AutoRenewService.java|238|LOW|renewVip 无自动调度入口(仅 Controller 开关),自动续费实际不会自动触发|功能未闭环|补定时任务+分布式锁
+R2-00182|api|apps/api/src/main/java/com/campuslove/api/vip/AutoRenewService.java|422|LOW|writeBillingLog 吞 DataAccessException,对账流水可能缺失|对账缺口|告警
+R2-00183|api|apps/api/src/main/java/com/campuslove/api/vip/BillingService.java|230|MEDIUM|handlePaymentCallback 无任何 HTTP 入口(支付回调未接入),且幂等仅按 notification_id,transaction_id 为普通索引非唯一(注释自认)|未来接入即存在伪造回调/重复开通 VIP 风险;当前支付-权益闭环断裂|接入时加签名验证+orderNo 唯一
+R2-00184|api|apps/api/src/main/java/com/campuslove/api/vip/BillingService.java|248|MEDIUM|同一 orderNo 不同 notificationId 可重复回调,每次 +30 天 VIP|VIP 无限顺延|按 orderNo 幂等
+R2-00185|api|apps/api/src/main/java/com/campuslove/api/vip/BillingService.java|264|LOW|金额对账依赖 vip_bills.amount 本身,若账单可被篡改则对账失效|对账前提脆弱|账单不可变+签名
+R2-00186|api|apps/api/src/main/java/com/campuslove/api/vip/BillingService.java|113|LOW|listBills(无分页版)保留,全量账单|列表膨胀|删除
+R2-00187|api|apps/api/src/main/java/com/campuslove/api/vip/PromoCodeService.java|113|LOW|redeem 仅消耗优惠码未与订单/支付绑定,可被反复用于预览|业务闭环不完整|绑定订单
+R2-00188|api|apps/api/src/main/java/com/campuslove/api/vip/PromoCodeService.java|199|LOW|validatePromoCode 中单用户次数 count 查询在悲观锁内,可接受|无
+R2-00189|api|apps/api/src/main/java/com/campuslove/api/campus/RealCampusService.java|204|MEDIUM|getCampusPosts(schoolId,page) 完全忽略 schoolId,返回全站帖子|同校流功能错误|按 schoolId 过滤
+R2-00190|api|apps/api/src/main/java/com/campuslove/api/campus/RealCampusService.java|245|MEDIUM|getCampusActivities 同样忽略 schoolId|同上|同上
+R2-00191|api|apps/api/src/main/java/com/campuslove/api/campus/RealCampusService.java|83|LOW|getCampusTopic 的 viewCount 读-改-写非原子|浏览计数丢失|原子 UPDATE
+R2-00192|api|apps/api/src/main/java/com/campuslove/api/campus/RealCampusService.java|179|MEDIUM|replyCampusTopic 的 replyCount 读-改-写非原子|并发回复计数丢失|原子 UPDATE
+R2-00193|api|apps/api/src/main/java/com/campuslove/api/campus/CampusController.java|88|MEDIUM|listTopics 全量加载后内存分页,话题量大时全表传输|性能与内存问题|SQL 分页
+R2-00194|api|apps/api/src/main/java/com/campuslove/api/campus/CampusController.java|163|MEDIUM|listReplies 同样全量加载内存分页|同上|同上
+R2-00195|api|apps/api/src/main/java/com/campuslove/api/campus/CampusController.java|245|MEDIUM|resolveSchoolId 使用 campusName.hashCode() 作业务 ID,哈希不稳定且可碰撞|话题归属可能错乱、跨 JVM 不一致|用真实 schoolId/主键
+R2-00196|api|apps/api/src/main/java/com/campuslove/api/campus/RealCampusCertificationService.java|83|LOW|重新提交认证覆盖旧记录,旧学生证文件未删除|文件堆积|删除旧文件
+R2-00197|api|apps/api/src/main/java/com/campuslove/api/campus/RealCampusCertificationService.java|65|LOW|studentIdCardUrl 无格式/归属校验(可传任意 URL)|脏数据|校验
+R2-00198|api|apps/api/src/main/java/com/campuslove/api/campus/CampusController.java|227|LOW|认证提交 studentIdCardUrl 无长度限制|超长 URL|@Size
+R2-00199|api|apps/api/src/main/java/com/campuslove/api/growth/RealCheckInService.java|420|MEDIUM|补签配额 usedCount 读-改-写非原子,并发补签不同日期可超配额|配额绕过|原子 INCR 或行锁
+R2-00200|api|apps/api/src/main/java/com/campuslove/api/growth/RealCheckInService.java|385|LOW|补签扣费(积分)与配额扣减无原子一致性(未见积分事务),部分失败状态不一致|补签计费漂移|同一事务
+R2-00201|api|apps/api/src/main/java/com/campuslove/api/growth/RealCheckInService.java|546|MEDIUM|getHotTopicCount 取全站前 20 帖再内存过滤"今日",老帖占位导致今日计数为 0|统计语义错误|SQL 按日过滤
+R2-00202|api|apps/api/src/main/java/com/campuslove/api/growth/RealCheckInService.java|210|LOW|重复签到路径仍执行 2 次统计查询|小性能|缓存
+R2-00203|api|apps/api/src/main/java/com/campuslove/api/growth/RealCheckInService.java|666|LOW|calculateTotalExtraQuota 基于"连续天数"而非累计签到天数计算配额|配额语义偏差|按累计
+R2-00204|api|apps/api/src/main/java/com/campuslove/api/growth/RealPushSummaryService.java|140|MEDIUM|每帖 2 次查询(countByPostId + 全部评论再内存过滤),用户帖子多时 N×2 查询|推送摘要生成慢|SQL 聚合
+R2-00205|api|apps/api/src/main/java/com/campuslove/api/growth/RealPushSummaryService.java|126|LOW|访客/喜欢全量加载后内存过滤 24h|小放大|时间过滤下推
+R2-00206|api|apps/api/src/main/java/com/campuslove/api/growth/RealPushSummaryService.java|111|LOW|摘要"今日已生成"依赖查询判断,并发生成重复|重复推送|唯一约束
+R2-00207|api|apps/api/src/main/java/com/campuslove/api/growth/RealAppConfigService.java|(未展开)|LOW|App 配置服务默认值实现,与 DB 配置未打通|功能未闭环|接入 DB
+R2-00208|api|apps/api/src/main/java/com/campuslove/api/growth/CheckInController.java|35|LOW|checkIn 无 @RateLimit(依赖幂等+Redis 锁)|可接受|无
+R2-00209|api|apps/api/src/main/java/com/campuslove/api/home/RealHomeService.java|79|MEDIUM|getDashboard 聚合 5+ 子服务(推荐/签到/每日一问/活动/帖子),无缓存无并行|首页接口慢且 DB 压力大|并行化+缓存
+R2-00210|api|apps/api/src/main/java/com/campuslove/api/home/RealHomeService.java|258|LOW|热门帖子按全局点赞取前 3,可能长期不变|首页内容固化|时间窗加权
+R2-00211|api|apps/api/src/main/java/com/campuslove/api/village/VillageController.java|127|LOW|getPostDetail 未认证可访问(依赖全局 authenticated)|可接受|无
+R2-00212|api|apps/api/src/main/java/com/campuslove/api/discover/ActivityController.java|49|LOW|活动列表 campusName 无长度校验|弱校验|@Size
+R2-00213|api|apps/api/src/main/java/com/campuslove/api/report/ReportController.java|59|LOW|举报无每日限额/重复举报检查,可无限骚扰审核队列|审核资源滥用|限额+去重
+R2-00214|api|apps/api/src/main/java/com/campuslove/api/chat/VideoCallService.java|47|MEDIUM|RINGING_TIMEOUT_SEC 定义后无定时任务执行超时,未接听通话永久 RINGING|状态泄漏|补超时任务(带分布式锁)
+R2-00215|api|apps/api/src/main/java/com/campuslove/api/chat/VideoCallService.java|51|MEDIUM|MAX_CALL_DURATION_SEC 仅用于计算展示时长,不触发自动挂断|超长通话状态滞留|定时强制结束
+R2-00216|api|apps/api/src/main/java/com/campuslove/api/chat/VideoCallController.java|58|MEDIUM|startCall 无 @RateLimit、无双方关系校验,任意用户可轰炸任意用户呼叫|骚扰+记录堆积|限流+关系校验
+R2-00217|api|apps/api/src/main/java/com/campuslove/api/chat/VideoCallService.java|228|LOW|getRecords 无分页全量通话记录|列表膨胀|分页
+R2-00218|api|apps/api/src/main/java/com/campuslove/api/ai/AiVideoController.java|57|MEDIUM|AI 生成接口无 @RateLimit/配额/计费控制,登录用户可无限调用付费上游|成本被刷爆|按用户配额+限流
+R2-00219|api|apps/api/src/main/java/com/campuslove/api/ai/AiVideoController.java|59|LOW|请求体 Map 无字段与大小限制,可传任意参数透传上游|滥用|Schema 校验
+R2-00220|api|apps/api/src/main/java/com/campuslove/api/ai/RealAiVideoService.java|222|LOW|上游响应非 JSON 时"原样透传",可能泄露上游内部错误信息|信息泄露边缘|脱敏
+R2-00221|api|apps/api/src/main/java/com/campuslove/api/auth/WeChatClient.java|145|LOW|fallback 日志记录完整 code(临时凭证)|凭证泄露边缘|脱敏
+R2-00222|api|apps/api/src/main/java/com/campuslove/api/auth/RealAuthService.java|463|LOW|历史明文密码 equals 比较(非 constant-time)+自动迁移|时序攻击边缘/技术债|一次性迁移后移除
+R2-00223|api|apps/api/src/main/java/com/campuslove/api/auth/RealAuthService.java|579|LOW|openid SHA-256 无盐(与第三方登录重复实现)|字典攻击风险|统一 KDF
+R2-00224|api|apps/api/src/main/java/com/campuslove/api/auth/RealAuthService.java|251|LOW|findOrCreateUserForWechatLogin 公开方法+重试 2 次,唯一约束冲突重试逻辑 OK|无
+R2-00225|api|apps/api/src/main/java/com/campuslove/api/auth/AuthController.java|99|LOW|wechat-login 旧路径保留与 /auth/wechat 重复|重复端点|迁移后删除
+R2-00226|api|apps/api/src/main/java/com/campuslove/api/auth/AuthController.java|304|LOW|AdminLoginRequest 无密码长度上限,超大密码触发 BCrypt 高 CPU|DoS 边缘|@Size(max=128)
+R2-00227|api|apps/api/src/main/java/com/campuslove/api/ratelimit/RateLimitAspect.java|152|MEDIUM|限流键基于 request.remoteAddr,未取 X-Forwarded-For;反向代理后全站共享代理 IP 或被代理池绕过;本地内存桶多实例不共享|限流失效/误伤|统一网关 IP+Redis 桶
+R2-00228|api|apps/api/src/main/java/com/campuslove/api/ratelimit/RateLimitBucketRegistry.java|117|LOW|桶清理无分布式锁(本地内存,可容忍)|多实例各自清理|可接受
+R2-00229|api|apps/api/src/main/java/com/campuslove/api/common/IdempotentInterceptor.java|96|LOW|Idempotency-Key 无长度上限,超长头生成超长 Redis key|资源滥用|@Size 校验头
+R2-00230|api|apps/api/src/main/java/com/campuslove/api/common/IdempotentInterceptor.java|133|LOW|幂等 key 在业务失败后仍占位至 TTL,用户无法重试(需换 key)|可用性|失败删除 key
+R2-00231|api|apps/api/src/main/java/com/campuslove/api/common/Idempotent.java|19|LOW|默认 TTL 24h 过长,写失败场景 24h 内无法重试|可用性|缩短默认
+R2-00232|api|apps/api/src/main/java/com/campuslove/api/config/GlobalExceptionHandler.java|151|LOW|余额不足响应体回显 userId/金额/余额,虽属本人数据但放大攻击面|信息冗余|精简
+R2-00233|api|apps/api/src/main/java/com/campuslove/api/config/GlobalExceptionHandler.java|90|LOW|校验错误消息含字段名与默认消息,可被用于探测字段结构|低风险|可接受
+R2-00234|api|apps/api/src/main/java/com/campuslove/api/mq/MessageProducer.java|87|MEDIUM|MQ 不可用时消息静默丢弃(仅日志),事件表补偿未实现(注释自认 FIN-00046)|通知/匹配事件丢失|outbox 模式
+R2-00235|api|apps/api/src/main/java/com/campuslove/api/mq/MatchEventConsumer.java|98|MEDIUM|消费异常全部吞掉不重投,消息丢失|通知丢失|重试+死信
+R2-00236|api|apps/api/src/main/java/com/campuslove/api/mq/MatchEventConsumer.java|116|LOW|match 事件处理非幂等,重复投递产生重复通知|重复通知|幂等键
+R2-00237|api|apps/api/src/main/java/com/campuslove/api/search/UserIndexSyncListener.java|54|LOW|ES 索引同步为桩实现(仅日志),认证通过后搜索索引不同步|功能未完成|接入 ES
+R2-00238|api|apps/api/src/main/java/com/campuslove/api/clientconfig/RealConfigService.java|142|LOW|客户端配置全部为硬编码默认值,未接 DB/CMS(注释自认)|运营无法配置|接 DB+缓存
+R2-00239|api|apps/api/src/main/java/com/campuslove/api/village/VillageQueryService.java|449|LOW|getSimilarAuthors 候选池固定 200 用户,用户量增长后新用户不可见|推荐覆盖不足|动态分页
+R2-00240|api|apps/api/src/main/java/com/campuslove/api/village/VillageQueryService.java|443|LOW|followedUserIds 全量加载关注列表|关注量大时内存|分页
+R2-00241|api|apps/api/src/main/java/com/campuslove/api/village/PostTagController.java|49|LOW|getPostsByTag 返回 List 无分页元数据|前端无法翻页|返回 Page
+R2-00242|api|apps/api/src/main/java/com/campuslove/api/village/PostTagController.java|51|LOW|tagName 无长度/存在性校验|弱校验|@Size
+R2-00243|api|apps/api/src/main/java/com/campuslove/api/chat/ChatRedPacketController.java|(未逐行)|LOW|聊天红包控制器与 VipRedPacketController 职责重叠|重复入口|收敛
+R2-00244|api|apps/api/src/main/java/com/campuslove/api/chat/InteractionEventController.java|(未逐行)|LOW|互动事件端点与 NotificationController 功能重叠|重复|收敛
+R2-00245|api|apps/api/src/main/java/com/campuslove/api/admin/AdminAuditLogService.java|49|LOW|审计异步线程池满时(队列溢出)审计丢失无告警|审计缺口|有界队列+告警
+R2-00246|api|apps/api/src/main/java/com/campuslove/api/debug/ErrorSimulationController.java|19|LOW|debug 控制器 @Profile("mock") 保护 OK|无
+R2-00247|api|apps/api/src/main/java/com/campuslove/api/debug/MatchDebugController.java|19|LOW|同上|无
+R2-00248|api|apps/api/src/main/resources/application-db.yml|65|MEDIUM|Flyway 管理员初始化 ADMIN_OPENID 默认 admin-default-openid-change-me,未配置时公开占位 openid 入库|默认凭据风险(配合密码哈希默认值)|强制配置
+R2-00249|api|apps/api/src/main/resources/application-db.yml|81|MEDIUM|admin_password_hash 含硬编码默认 BCrypt 哈希,虽注释称无已知明文,但属"默认凭据"反模式|一旦被破解即为默认后门|启动强制校验非默认值
+R2-00250|api|apps/api/src/main/resources/application-db.yml|97|LOW|RabbitMQ 默认 guest/guest 凭据|内网凭据默认值|强制配置
+R2-00251|api|apps/api/src/main/resources/application-db.yml|52|LOW|Redis 连接池 max-wait 默认 -1 无限等待,连接耗尽时线程永久阻塞|故障时线程堆积|设正数
+R2-00252|api|apps/api/src/main/resources/application.yml|188|LOW|JWT_SECRET 默认空(启动校验兜底),依赖 JwtConfig.validateSecret|配置依赖运行时校验,OK|无
+R2-00253|api|apps/api/src/main/resources/application.yml|174|LOW|CORS 默认空,生产未配置时同源限制(安全但前端跨域失败)|部署需显式配置|文档
+R2-00254|api|apps/api/src/main/java/com/campuslove/api/config/JwtConfig.java|(未逐行)|LOW|JWT 24h 有效期无 refresh token 轮换策略|长生命周期 token|缩短+刷新
+R2-00255|api|apps/api/src/main/java/com/campuslove/api/chat/MockTempChatService.java|94|LOW|mock 实现消息预览逻辑与 real 不一致|行为漂移|可接受(mock)
+R2-00256|api|apps/api/src/main/java/com/campuslove/api/match/MockMatchService.java|(未逐行)|LOW|mock 匹配服务状态机与 real 漂移|联调误导|对齐
+R2-00257|api|apps/api/src/main/java/com/campuslove/api/growth/MockCheckInService.java|(未逐行)|LOW|mock 签到无 Redis 锁/DB 约束,行为与 real 不同|联调误导|可接受
+R2-00258|api|apps/api/src/main/java/com/campuslove/api/monitor/PaymentMetrics.java|101|LOW|recordRedPacketSent 注释掉的埋点代码残留|死代码|清理
+R2-00259|api|apps/api/src/main/java/com/campuslove/api/monitor/MatchMetrics.java|120|LOW|推荐耗时 Timer 在缓存命中路径不记录|监控盲区|可接受
+R2-00260|api|apps/api/src/main/java/com/campuslove/api/config/AsyncConfig.java|(未逐行)|LOW|@Async 默认线程池队列 200,满时任务拒绝|异步任务丢失|监控+有界策略
+R2-00261|api|apps/api/src/main/java/com/campuslove/api/config/RabbitConfig.java|(未逐行)|LOW|MQ 不可用时 MessagingFallback 降级日志,无自动恢复重连告警|静默降级|告警
+R2-00262|api|apps/api/src/main/java/com/campuslove/api/entity/Post.java|103|LOW|category 默认 all,与 CreatePostRequest 必填语义重复|无
+R2-00263|api|apps/api/src/main/java/com/campuslove/api/repository/PrivateMessageRepository.java|86|LOW|markAsReadByConversationAndSenderNot 批量更新无 @Modifying 事务内 flush 顺序问题(@Modifying 已标注)|需确认 clearAutomatically|加 clearAutomatically=true
+R2-00264|api|apps/api/src/main/java/com/campuslove/api/repository/HeartSignalRepository.java|64|LOW|FUNCTION('DATE',...) 依赖 MySQL 方言,测试库(HSQL)不可用|可移植性|方言抽象
+R2-00265|api|apps/api/src/main/java/com/campuslove/api/repository/UserCampusProfileRepository.java|37|LOW|GROUP BY campusName 统计为全表扫描,数据量大时慢(admin 统计缓存兜底)|可接受|无
+R2-00266|api|apps/api/src/main/java/com/campuslove/api/repository/UserRepository.java|49|LOW|GROUP BY pronouns/gradeLabel 全表扫描|同上|无
+R2-00267|api|apps/api/src/main/java/com/campuslove/api/config/RedisConfig.java|(未逐行)|LOW|缓存 TTL 配置分散(CacheNames 常量),部分缓存无统一过期策略|配置漂移|集中管理
+R2-00268|api|apps/api/src/main/java/com/campuslove/api/config/CaffeineCacheConfig.java|(未逐行)|LOW|本地缓存与 Redis 双缓存一致性由 TTL 保证,更新时可能读到旧值|一致性窗口|双删/版本号
+R2-00269|api|apps/api/src/main/java/com/campuslove/api/config/TraceIdFilter.java|(未逐行)|LOW|traceId 未在响应头统一输出(部分错误路径有)|排查困难|统一过滤器输出
+R2-00270|api|apps/api/src/main/java/com/campuslove/api/config/OpenApiConfig.java|(未逐行)|LOW|Swagger 仅 ADMIN 可访问但接口定义含全量字段结构|信息暴露边缘|可接受
+R2-00271|api|apps/api/src/main/java/com/campuslove/api/admin/AdminCertificationController.java|(未逐行)|LOW|认证审核操作无审计日志(不在 AdminAuditLogController 范围)|审核无痕|补审计
+R2-00272|api|apps/api/src/main/java/com/campuslove/api/admin/AdminReportController.java|(未逐行)|LOW|举报处理无操作者审计字段(仅处理状态)|审计缺口|补处理人
+R2-00273|api|apps/api/src/main/java/com/campuslove/api/feedback/FeedbackController.java|113|MEDIUM|反馈附件上传返回 /uploads/ 前缀 URL,同样受 denyAll 影响不可访问|反馈图片不可见|统一媒体代理 URL
+R2-00274|api|apps/api/src/main/java/com/campuslove/api/feedback/FeedbackService.java|94|MEDIUM|UploadedImageResult 文档示例仍为 /uploads/ 路径|同上|同上
+R2-00275|api|apps/api/src/main/java/com/campuslove/api/chat/PrivateMessageController.java|61|LOW|createConversation 未校验 userB 是否存在(service 仅建会话)|对不存在用户建会话|存在性校验
+R2-00276|api|apps/api/src/main/java/com/campuslove/api/chat/PrivateMessageController.java|140|LOW|SendMessageRequest.content 无 @NotBlank(仅 @Size),空内容可发|脏消息|@NotBlank
+R2-00277|api|apps/api/src/main/java/com/campuslove/api/chat/ChatController.java|36|LOW|overview 端点直接委托 TempChatService,real/mock 行为差异大|联调漂移|可接受
+R2-00278|api|apps/api/src/main/java/com/campuslove/api/config/MockSecurityConfig.java|121|LOW|mock 模式 anyRequest().permitAll 对非 /api 路径(如内部端点)全放行|mock 环境暴露面|可接受(仅 mock)
+R2-00279|api|apps/api/src/main/java/com/campuslove/api/config/WebConfig.java|124|LOW|WebMvc CORS 与 Security CORS 双实现,real 优先级依赖 Bean 注册顺序|潜在不一致|统一
+R2-00280|api|apps/api/src/main/java/com/campuslove/api/village/VillageQueryService.java|257|LOW|getCampusCategoryPosts 两步查询(先查同校 userId 再 IN 查询),同校人数多时 IN 列表巨大|SQL 过长|JOIN 过滤
+R2-00281|api|apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java|117|LOW|getCircles 全量圈子列表无分页|圈子多时响应大|可接受(圈子量小)
+R2-00282|api|apps/api/src/main/java/com/campuslove/api/match/RealMatchService.java|121|LOW|doCreateMatch 用户存在性校验 findById 后即弃|小查询|existsById
+R2-00283|api|apps/api/src/main/java/com/campuslove/api/match/RealMatchService.java|129|LOW|候选为空时返回 pending 队列状态,无重试/通知机制|用户永远排队|补定时重试
+R2-00284|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileQueryService.java|251|LOW|getProfileStats 多次 count 查询(likes 等)|统计查询放大|缓存
+R2-00285|api|apps/api/src/main/java/com/campuslove/api/profile/ProfileQueryService.java|315|LOW|用户帖子遍历统计,帖子多时放大|同上|SQL 聚合
+R2-00286|api|apps/api/src/main/java/com/campuslove/api/village/VillageController.java|242|LOW|similar-authors 每请求执行 200 候选池全量评分,无缓存|性能|缓存
+R2-00287|api|apps/api/src/main/java/com/campuslove/api/discover/RecommendationRanker.java|174|LOW|buildHistory 无分页上限|历史列表膨胀|分页
+R2-00288|api|apps/api/src/main/java/com/campuslove/api/growth/RealDoNotDisturbService.java|109|LOW|customWeekdays 字符串解析脆弱(手写 split)|健壮性|结构化存储
+R2-00289|api|apps/api/src/main/java/com/campuslove/api/growth/WeChatPushService.java|(未逐行)|LOW|微信订阅消息推送无重试/幂等|推送丢失|重试
+R2-00290|api|apps/api/src/main/java/com/campuslove/api/campus/event/CertificationApprovedEvent.java|21|LOW|事件同步发布,订阅方异常被 RealCampusCertificationService catch 吞掉|订阅方失败静默|告警
+R2-00291|api|apps/api/src/main/java/com/campuslove/api/admin/event/ConfigUpdatedEvent.java|21|LOW|配置事件同步发布,订阅方拉长事务(前面已报)|同上
+R2-00292|api|apps/api/src/main/java/com/campuslove/api/common/BusinessException.java|(未逐行)|LOW|业务异常 message 直接透传客户端,含 userId 等上下文|信息冗余|模板化
+R2-00293|api|apps/api/src/main/java/com/campuslove/api/config/RedisHealthIndicator.java|(未逐行)|LOW|Redis 健康检查在 mock 模式可能误报 DOWN|运维噪音|profile 隔离
+R2-00294|api|apps/api/src/main/java/com/campuslove/api/config/DatabaseConfigValidator.java|(未逐行)|LOW|启动校验逻辑与 Flyway 迁移耦合|启动慢|可接受
+R2-00001|admin|apps/admin/src/views/Feedback.vue|60|CRITICAL|后端 GET /api/v1/admin/feedback 返回 ApiResponse{code,message,data,traceId} 包装(FeedbackController.java:93-94),前端 listAdminFeedback 按裸数组 FeedbackRecordView[] 直接赋值,反馈页将拿到包装对象:空态判断(feedbacks.length===0)失效、v-for 遍历对象 4 个属性渲染垃圾行|反馈管理页数据解析全错、功能不可用|http 层统一解包 ApiResponse 或后端返回裸数组(与其余 admin 端点契约对齐)
+R2-00002|admin|apps/admin/src/views/Feedback.vue|113|CRITICAL|handleConfirmProcess 调用 PUT /api/v1/admin/feedback/{id}/reply,后端 FeedbackController 无此端点(仅 GET list + POST activity-proposals/{id}/convert),必然 404|"标记已处理/回复"功能 100% 失败,反馈只能看不能处理|后端补齐 /reply 端点,或前端改用已存在端点并修正契约
+R2-00003|admin|apps/admin/src/views/AuditLogs.vue|55|CRITICAL|日期筛选发送 `${date}T00:00:00Z`(带 Z 后缀),后端 AdminAuditLogController.parseDateTime 用 ISO_LOCAL_DATE_TIME 解析(AdminAuditLogController.java:119-130),带 Z 必抛 DateTimeParseException 并返回 null|审计日志按日期范围筛选静默失效,合规追溯能力受损|前端发送纯日期 yyyy-MM-dd(后端已兼容),或后端改用 ISO_OFFSET_DATE_TIME
+R2-00004|admin|apps/admin/src/router/index.ts|41|HIGH|后端 AdminCertificationController 提供 GET /api/v1/admin/certifications + POST /{id}/review(校园认证审核),前端无对应路由/页面/API|认证申请积压,认证管理功能整体缺失|新增 Certifications 页面与 api/certifications.ts
+R2-00005|admin|apps/admin/src/router/index.ts|41|HIGH|后端 AdminCommentController 提供 GET /api/v1/admin/comments + DELETE /{id},前端 api/posts.ts:124-136 已封装 listComments/deleteComment 但无任何页面消费|评论无法审核与删除,垃圾评论无法治理|新增评论管理页
+R2-00006|admin|apps/admin/src/router/index.ts|41|HIGH|后端 AdminConfigController(configs/rules/switches 三组接口)与 api/config.ts:60-111 全部封装,但无页面/路由使用|系统参数、业务规则、功能开关完全不可管理|新增系统配置页
+R2-00007|admin|apps/admin/src/router/index.ts|41|HIGH|后端 AdminMatchConfigController(match-config/recommend-strategy)与 api/match-config.ts:28-58 已封装,无页面使用|匹配算法/推荐策略配置不可管理|新增匹配配置页
+R2-00008|admin|apps/admin/src/views/SensitiveWords.vue|194|HIGH|后端支持 POST /sensitive-words/batch-import(1 万条异步导入,返回 taskId),i18n 已备 importTitle/importFormatTip/importSuccess 等 key,页面无批量导入 UI|词库只能逐条新增,运营效率低|新增导入弹窗与 taskId 轮询
+R2-00009|admin|apps/admin/src/api/http.ts|54|HIGH|JWT 明文存 localStorage(admin_token),session.ts:92-93 同步写入,任何 XSS(如评论/帖子内容注入)可窃取管理员令牌|token 泄露即账号接管,无 HttpOnly/同源保护|迁移 HttpOnly Cookie 或缩短 token 有效期+刷新机制
+R2-00010|admin|apps/admin/src/router/guards.ts|109|HIGH|角色校验完全依赖 localStorage.admin_user(可被控制台篡改),且 super_admin 与 admin 无任何前端差异;后端所有 admin 端点仅 hasRole('ADMIN'),无超级管理员分级|普通管理员与超级管理员权限无差别,配置类操作(通知/敏感词/未来配置)无隔离,越权面|后端引入 SUPER_ADMIN 角色校验,前端按角色隐藏/禁用敏感菜单
+R2-00011|admin|apps/admin/src/views/NotifyConfig.vue|62|HIGH|通知模板/启停配置对所有 ADMIN 无差别开放,后端 AdminNotifyConfigController 也无 SUPER_ADMIN 区分|任意普通管理员可改动全局推送模板(含营销文案),无审批与隔离|按角色分级+操作审计提示
+R2-00012|admin|apps/admin/src/views/Users.vue|62|HIGH|"禁用自己"仅前端用可篡改的 localStorage(currentAdminId)拦截,后端 toggleUserStatus(AdminUserController.java:247)无自保护|篡改 localStorage 即可绕过,存在锁死账号风险|后端增加"禁用自己返回 400"校验
+R2-00013|admin|apps/admin/src/api/http.ts|158|HIGH|错误消息硬编码中文(158/160/175/179/204:"请求超时，请稍后重试"等 5 处),i18n 已提供 errors.network 等 key 但未使用|en-US 语言下所有网络/超时/解析错误仍显示中文|改用全局 t() 翻译
+R2-00014|admin|apps/admin/src/stores/session.ts|80|HIGH|登录错误消息硬编码中文(80/86/101/108/112/133 共 6 处:"用户名或密码错误"等)|en-US 下登录错误显示中文|改用 i18n key
+R2-00015|admin|apps/admin/src/views/Feedback.vue|33|HIGH|反馈列表无分页/搜索/筛选,后端 listAdminFeedback 全量返回(RealFeedbackService.java:131-133)|反馈量大时页面渲染卡顿|后端加分页参数,前端接 Pagination
+R2-00016|admin|apps/admin/src/views/SensitiveWords.vue|59|HIGH|敏感词列表无分页(注释自认后端支持 Pageable),全量加载渲染|词库数百条后 DOM 过大|接入分页查询
+R2-00017|admin|apps/admin/src/views/NotifyConfig.vue|152|HIGH|类型列直接展示后端英文枚举(config.type),未映射 i18n(notifyConfig.fieldLikeNotify 等 key 已备但未用)|zh/en 下用户都看到 LIKE_NOTIFY 之类代码|增加 typeLabel 映射函数
+R2-00018|admin|apps/admin/src/views/Users.vue|325|HIGH|后端列表返回脱敏 phone 字段但表格无手机号列;后端支持 createdAtFrom/To 时间范围筛选,前端无入口|运营无法按手机号/注册时间定位用户|补列与时间筛选
+R2-00019|admin|apps/admin/src/views/Posts.vue|54|HIGH|后端支持 authorId 筛选,前端无作者搜索;列表不展示 auditedAt(审核时间)列;审核弹窗拒绝时 remark 非必填|审核缺上下文、无作者定位、拒绝不可追溯|补作者搜索/审核时间列/拒绝必填备注
+R2-00020|admin|apps/admin/src/views/Reports.vue|278|HIGH|已处理/已驳回举报只显示"已处理"文字,处理备注(handleRemark)无处可看;处理弹窗 REJECT 不强制填写原因|误驳回无法追责复核|列表/详情展示 handleRemark,REJECT 必填
+R2-00021|admin|apps/admin/src/views/Posts.vue|301|HIGH|前端审核成功/删除成功无任何成功提示(仅静默刷新列表),操作结果不可感知|运营不确定操作是否成功|加 toast 反馈
+R2-00022|admin|apps/admin/src/views/Users.vue|190|HIGH|禁用/启用成功无 toast,仅刷新列表;失败才显示 errorMsg|同上|加成功提示
+R2-00023|admin|apps/admin/src/views/Users.vue|284|MEDIUM|列表加载失败仅 error-banner 展示,无重试按钮(仅 Feedback 页有 retryButton)|网络抖动后需手动刷新页面|统一接入 ErrorState 组件
+R2-00024|admin|apps/admin/src/views/Posts.vue|258|MEDIUM|同 Users:错误态无重试入口|同上|同上
+R2-00025|admin|apps/admin/src/views/Reports.vue|240|MEDIUM|同 Users:错误态无重试入口|同上|同上
+R2-00026|admin|apps/admin/src/views/AuditLogs.vue|198|MEDIUM|同 Users:错误态无重试入口|同上|同上
+R2-00027|admin|apps/admin/src/views/SensitiveWords.vue|234|MEDIUM|同 Users:错误态无重试入口|同上|同上
+R2-00028|admin|apps/admin/src/views/NotifyConfig.vue|131|MEDIUM|同 Users:错误态无重试入口|同上|同上
+R2-00029|admin|apps/admin/src/router/index.ts|23|MEDIUM|无 404 catch-all 路由,访问未知路径渲染空白|误输 URL 无兜底页|新增 NotFound 路由与视图
+R2-00030|admin|apps/admin/src/views/Users.vue|307|MEDIUM|无"查看详情"入口,api/users.ts:86-88 getUserDetail 定义后从未使用,i18n users.detailTitle/detailPosts 等 key 未用|无法查看用户 bio/校园/认证详情|补详情弹窗
+R2-00031|admin|apps/admin/src/views/Posts.vue|284|MEDIUM|帖子无详情查看:无图片(detailImages key 未用)、无全文(仅 80 字预览)、无作者信息页|审核/删帖决策缺上下文|补详情弹窗
+R2-00032|admin|apps/admin/src/views/Reports.vue|271|MEDIUM|被举报目标(targetId)纯文本,无跳转查看目标帖子/用户/评论,无证据截图展示(detailEvidence key 未用)|无法快速核实举报内容|目标链接+证据展示
+R2-00033|admin|apps/admin/src/views/Feedback.vue|262|MEDIUM|详情弹窗仅展示 title/latestReplySummary,无完整反馈内容、附件、回复历史(detailContent/detailAttachments/detailReplyHistory key 未用)|运营看不到反馈原文|后端补齐详情端点后展示
+R2-00034|admin|apps/admin/src/views/AuditLogs.vue|171|MEDIUM|无导出功能,i18n auditLogs.exportButton/exportSuccess/exportFailed 已备但页面无按钮|审计日志无法离线归档|加 CSV 导出
+R2-00035|admin|apps/admin/src/views/Dashboard.vue|128|MEDIUM|无手动刷新按钮,i18n dashboard.refreshSuccess/refreshFailed/lastUpdated key 未用,数据无自动轮询|看板数据滞后,运营需刷新页面|加刷新按钮/定时刷新
+R2-00036|admin|apps/admin/src/components/Pagination.vue|109|MEDIUM|分页文案拼接硬编码中文全角括号:`（${t("common.total",...)}）`|en-US 下显示中文括号|括号也走 i18n
+R2-00037|admin|apps/admin/src/views/Feedback.vue|270|MEDIUM|详情标签后硬编码全角冒号"："(detailId/detailType 等 6 处)|en-US 下冒号风格不一致|冒号纳入 i18n 文案
+R2-00038|admin|apps/admin/src/views/Users.vue|325|MEDIUM|profileCompletion 后硬编码 "%" 拼接,en-US 与 zh 共用|国际化瑕疵|数值+单位走 i18n
+R2-00039|admin|apps/admin/src/views/Reports.vue|278|MEDIUM|空值占位硬编码 "—"(Reports/Feedback/AuditLogs 多处),en-US 应显示 "-"|国际化瑕疵|统一 i18n 占位
+R2-00040|admin|apps/admin/src/views/AuditLogs.vue|185|MEDIUM|operator 筛选占位符"操作者ID"但输入任意文本,后端 parseLong 失败静默返回 null(AdminAuditLogController.java:114-117)|输入用户名等非数字时筛选不生效且无提示|改用数字输入+校验提示,或后端支持用户名模糊
+R2-00041|admin|apps/admin/src/views/AuditLogs.vue|106|MEDIUM|formatTime 直接字符串替换展示后端 LocalDateTime(服务器时区),未转用户本地时区|服务器为 UTC 时列表时间比本地晚 8 小时|统一时区转换(与 buildQuery 的 UTC 假设对齐)
+R2-00042|admin|apps/admin/src/views/AuditLogs.vue|268|MEDIUM|requestBody 脱敏正则仅匹配 `"password":"..."` 引号格式(maskSensitiveBody:144-151),嵌套 JSON/base64/无引号键名不覆盖|登录/改密类审计体可能泄露凭据|改为递归 JSON 遍历脱敏
+R2-00043|admin|apps/admin/src/views/AuditLogs.vue|249|MEDIUM|requestUrl 明文展示完整 query,若含 token/secret 参数则泄露|安全审计页自身泄露敏感参数|展示前脱敏 query
+R2-00044|admin|apps/admin/src/views/Login.vue|110|MEDIUM|开发环境登录页明文展示 dev 默认密码(devPasswordHint),若 .env.development 误配真实密码则泄露|凭据泄露风险|仅展示账号不展示密码
+R2-00045|admin|apps/admin/src/views/Reports.vue|204|MEDIUM|处理人显示为 "#{id}"(handlerPrefix),无用户名;Users 列表无最后操作人/更新时间列|审计追踪体验弱|列表展示操作人昵称
+R2-00046|admin|apps/admin/src/views/Posts.vue|337|MEDIUM|审核弹窗无作者信息/举报次数上下文,无法判断恶意用户|审核质量受限|弹窗补充作者卡片
+R2-00047|admin|apps/admin/src/views/SensitiveWords.vue|106|MEDIUM|新增去重仅比较当前已加载列表(若按分类筛选,只比较该分类子集),跨分类重复词误放行,靠后端 409 兜底但提示为"请求失败 (409)"|重复词入库体验差|去重逻辑基于全量或透传后端冲突信息
+R2-00048|admin|apps/admin/src/views/SensitiveWords.vue|265|MEDIUM|删除按钮无 :disabled,deleting 期间可连点(ConfirmDialog confirming 只锁弹窗内按钮)|重复删除请求|列表按钮同步禁用
+R2-00049|admin|apps/admin/src/views/NotifyConfig.vue|58|MEDIUM|保存按钮提交全部配置(无脏检查),未修改也全量 PUT;模板无字符数校验|误触保存覆盖未提交修改;超长模板无提示|脏检查+行级校验
+R2-00050|admin|apps/admin/src/views/NotifyConfig.vue|118|MEDIUM|无"重置默认"功能,i18n resetButton/resetConfirm 等 key 已备但后端也无 reset 端点|无法一键恢复默认模板|后端补 reset 端点或移除 key
+R2-00051|admin|apps/admin/src/views/Feedback.vue|43|MEDIUM|成功提示 toast 3 秒自动消失无手动关闭/无 aria-live|弱网用户可能错过|加持久关闭按钮
+R2-00052|admin|apps/admin/src/components/ConfirmDialog.vue|111|MEDIUM|弹窗无 Esc 关闭、无焦点陷阱/焦点恢复、遮罩点击关闭但无 aria-modal|键盘/读屏用户操作困难|补键盘与 a11y
+R2-00053|admin|apps/admin/src/views/Users.vue|367|MEDIUM|手写 modal-mask 弹窗(Users/Posts/Reports 三处重复),未复用 ConfirmDialog 之外的统一 Modal 组件|重复代码维护成本|抽公共 Modal
+R2-00054|admin|apps/admin/src/views/Posts.vue|337|MEDIUM|同 Users 手写 modal 重复|同上|同上
+R2-00055|admin|apps/admin/src/views/Reports.vue|309|MEDIUM|同 Users 手写 modal 重复|同上|同上
+R2-00056|admin|apps/admin/src/views/Users.vue|612|MEDIUM|scoped 样式残留 .pagination/.page-button/.page-info 死代码(模板已改用共享 Pagination 组件)|死样式误导后续维护|删除
+R2-00057|admin|apps/admin/src/views/Posts.vue|573|MEDIUM|同 Users 死样式残留|同上|删除
+R2-00058|admin|apps/admin/src/views/Reports.vue|571|MEDIUM|同 Users 死样式残留|同上|删除
+R2-00059|admin|apps/admin/src/views/AuditLogs.vue|564|MEDIUM|同 Users 死样式残留|同上|删除
+R2-00060|admin|apps/admin/src/api/config.ts|60|MEDIUM|listConfigs/updateConfig/listRules/updateRule/listSwitches/updateSwitch 全部封装但无调用方,死代码+功能缺失双问题|见 HIGH 系统配置缺失|实现页面或移除
+R2-00061|admin|apps/admin/src/api/match-config.ts|28|MEDIUM|getMatchConfig/updateMatchConfig/getRecommendStrategy/updateRecommendStrategy 无调用方|见 HIGH 匹配配置缺失|实现页面或移除
+R2-00062|admin|apps/admin/src/api/posts.ts|124|MEDIUM|listComments/deleteComment 无调用方(评论管理页面缺失)|见 HIGH 评论缺失|实现页面或移除
+R2-00063|admin|apps/admin/src/api/users.ts|86|MEDIUM|getUserDetail 无调用方(用户详情缺失)|见 MEDIUM 详情缺失|实现详情或移除
+R2-00064|admin|apps/admin/src/main.ts|21|MEDIUM|`app.use(router as never)` 类型断言 hack 掩盖真实类型问题|类型安全漏洞|正确类型化 Vue 插件安装
+R2-00065|admin|apps/admin/src/main.ts|25|MEDIUM|sessionStore.bootstrap() 与 App.vue:32 重复调用(两次恢复会话)|冗余异步调用,竞态窗口|只保留一处
+R2-00066|admin|apps/admin/src/i18n/locales/zh-CN.ts|188|MEDIUM|大量 i18n key 无消费方:users.actionBan/banConfirm/actionResetPassword(188-192,198)、posts.actionRestore(276)、feedback.actionClose(342)、reports.processActionBan(442)、auditLogs.exportButton(522)、sensitiveWords.importTitle(636)、contentAudit.*(647-674)、matchConfig.*(677-700) 等约 80 个|代码与文案资源脱节,暗示功能未实现或已删功能残留|按实现状态清理或补功能
+R2-00067|admin|apps/admin/src/i18n/locales/zh-CN.ts|198|MEDIUM|users.banConfirm 与 users.disableConfirmMessage 语义重复(两套封禁/禁用文案并存)|产品语义混乱|合并为单一操作文案
+R2-00068|admin|apps/admin/src/views/Layout.vue|34|MEDIUM|菜单项缺失认证审核/评论/系统配置/匹配配置(对应后端已有接口),且 i18n layout.navContentAudit/navMatchConfig 已备|功能入口缺失直接导致功能不可达|补菜单入口
+R2-00069|admin|apps/admin/src/views/Layout.vue|46|MEDIUM|displayName 回退到"管理员中心"文案,不显示真实用户名时可误导|UX 瑕疵|回退为账号
+R2-00070|admin|apps/admin/src/views/Dashboard.vue|102|MEDIUM|"匹配趋势"区块只显示最近 5 天(slice(-5)),与"近 30 日"标题语义不符;dailyTrend 其余 25 天数据丢弃|趋势信息不足|展示完整 30 日或加说明
+R2-00071|admin|apps/admin/src/views/Dashboard.vue|45|MEDIUM|统计卡片无环比/趋势/更新时间,部分子接口失败时对应卡片静默显示 0(如 activeStats 失败时 statInteractionsToday=0)|数据误导(0 与真实 0 无法区分)|失败卡片显示降级态
+R2-00072|admin|apps/admin/src/views/Dashboard.vue|128|MEDIUM|onMounted 中 loadStats().catch() 冗余(loadStats 内部已 try/catch,永不 reject)|死代码|删除 catch
+R2-00073|admin|apps/admin/src/views/Users.vue|99|MEDIUM|搜索无防抖(每按一次 Enter 全量请求),筛选 change 即请求|高频操作浪费请求|防抖+合并
+R2-00074|admin|apps/admin/src/views/Posts.vue|80|MEDIUM|同 Users 无防抖|同上|同上
+R2-00075|admin|apps/admin/src/views/Reports.vue|97|MEDIUM|同 Users 无防抖|同上|同上
+R2-00076|admin|apps/admin/src/views/AuditLogs.vue|88|MEDIUM|查询按钮+筛选无防抖,日期切换高频请求|同上|同上
+R2-00077|admin|apps/admin/src/views/Users.vue|73|MEDIUM|fetchUsers 无请求竞态防护(快速翻页时旧响应可能覆盖新数据)|分页数据错乱|请求序号/AbortController
+R2-00078|admin|apps/admin/src/views/Posts.vue|54|MEDIUM|fetchPosts 同 Users 无竞态防护|同上|同上
+R2-00079|admin|apps/admin/src/views/Reports.vue|69|MEDIUM|fetchReports 同 Users 无竞态防护|同上|同上
+R2-00080|admin|apps/admin/src/views/Feedback.vue|56|MEDIUM|fetchFeedbacks 无竞态防护|同上|同上
+R2-00081|admin|apps/admin/src/views/AuditLogs.vue|62|MEDIUM|fetchLogs 无竞态防护|同上|同上
+R2-00082|admin|apps/admin/src/views/SensitiveWords.vue|63|MEDIUM|fetchWords 无竞态防护|同上|同上
+R2-00083|admin|apps/admin/src/components/Pagination.vue|89|MEDIUM|分页仅上/下一页,无页码跳转输入(大数据量翻页痛苦)|UX 不足|加页码输入/页码列表
+R2-00084|admin|apps/admin/src/components/Pagination.vue|76|MEDIUM|isFirst 依赖 page<=1,若后端返回越界 page 无钳制;totalPages<=0 时上一页仍可点(pageBase=1,page=2,totalPages=0)|边界态按钮可用性错误|钳制 page 范围
+R2-00085|admin|apps/admin/src/views/Users.vue|270|MEDIUM|角色筛选仅有 USER/ADMIN,无 SUPER_ADMIN 选项(后端 role 枚举只有 USER/ADMIN,前端却渲染 super_admin 徽章样式 Users.vue:548)|前后端角色模型不一致|统一角色枚举
+R2-00086|admin|apps/admin/src/views/Users.vue|316|MEDIUM|role-badge class 拼接 `role-${user.role.toLowerCase()}`,若后端返回未知角色则样式丢失(仅显示裸文本)|健壮性|默认样式兜底
+R2-00087|admin|apps/admin/src/views/Posts.vue|200|MEDIUM|categoryLabel 白名单外分类直接显示英文原值|新分类无翻译|i18n 缺失回退中文
+R2-00088|admin|apps/admin/src/views/Reports.vue|175|MEDIUM|targetTypeLabel/statusLabel 未知值回退英文枚举原值|同上一行|回退 i18n 兜底
+R2-00089|admin|apps/admin/src/views/Feedback.vue|135|MEDIUM|typeLabel/statusLabel 未知枚举回退英文原值|同上|同上
+R2-00090|admin|apps/admin/src/views/AuditLogs.vue|41|MEDIUM|operationLabelMap 未覆盖的操作显示英文枚举(AUDIT_POST 等)|新操作类型无翻译|兜底映射
+R2-00091|admin|apps/admin/src/views/Feedback.vue|112|MEDIUM|默认回复文案(feedback.defaultReplyContent)写死"已由管理员标记为已处理",无个性化内容,且用户无法预览回复将发什么|用户收到模板化回复体验差|允许自定义必填
+R2-00092|admin|apps/admin/src/views/Feedback.vue|209|MEDIUM|错误态与空态共用 error-banner 顶部展示,列表区域无独立空态插图|UX 简陋|空态/错误态差异化
+R2-00093|admin|apps/admin/src/views/Users.vue|301|MEDIUM|loading/empty/error 三态共用一行 empty-cell 文案|无骨架屏,加载闪白|骨架行
+R2-00094|admin|apps/admin/src/views/Posts.vue|276|MEDIUM|同 Users 三态简陋|同上|同上
+R2-00095|admin|apps/admin/src/views/Reports.vue|260|MEDIUM|同 Users 三态简陋|同上|同上
+R2-00096|admin|apps/admin/src/views/AuditLogs.vue|218|MEDIUM|同 Users 三态简陋|同上|同上
+R2-00097|admin|apps/admin/src/views/SensitiveWords.vue|248|MEDIUM|同 Users 三态简陋|同上|同上
+R2-00098|admin|apps/admin/src/views/NotifyConfig.vue|145|MEDIUM|同 Users 三态简陋|同上|同上
+R2-00099|admin|apps/admin/src/utils/logger.ts|35|MEDIUM|logger.info 无业务调用方,debug/warn/error 使用也不均匀|日志规范未落地|统一调用规范
+R2-00100|admin|apps/admin/src/theme/tokens.ts|33|MEDIUM|adminTokens 通过相对路径 `../../../client/src/theme/tokens` 跨包引用(tsconfig include 扩展),构建耦合 client 源码|client 改动可能破坏 admin 构建|提升为共享包
+R2-00101|admin|apps/admin/src/views/Users.vue|217|MEDIUM|formatDate 每次调用 new Date().toLocaleString,大量行渲染性能开销,且无统一时间工具|性能与一致性|抽公共 date 工具
+R2-00102|admin|apps/admin/src/views/Posts.vue|163|MEDIUM|同 Users formatDate 重复实现(Users/Posts/Reports/Feedback 各一份)|重复代码|抽公共工具
+R2-00103|admin|apps/admin/src/views/Reports.vue|162|MEDIUM|同 Users formatDate 重复实现|同上|同上
+R2-00104|admin|apps/admin/src/views/Feedback.vue|177|MEDIUM|同 Users formatDate 重复实现|同上|同上
+R2-00105|admin|apps/admin/src/api/http.ts|168|MEDIUM|401 用 window.location.href 整页跳转,丢失 SPA 状态与跳转动画;且并发 401 会触发多次跳转|体验与冗余请求|统一跳转收敛
+R2-00106|admin|apps/admin/src/api/http.ts|179|MEDIUM|非 JSON 错误响应默认消息 `请求失败 (${status})` 直出 HTTP 码,未映射业务错误码(errors.* 已备)|用户看到裸状态码|按错误码翻译
+R2-00107|admin|apps/admin/src/api/http.ts|183|MEDIUM|后端 message 为 null 时 String(null)="null" 展示"null"|脏文案|空值兜底
+R2-00108|admin|apps/admin/src/api/http.ts|150|MEDIUM|无请求取消机制(组件卸载后响应仍触发状态更新,配合无竞态防护)|内存/状态泄漏风险|支持 AbortSignal
+R2-00109|admin|apps/admin/src/views/Users.vue|32|LOW|pageSize 魔法数字 20 多处重复(Users:37/Posts:39/Reports:45/AuditLogs:29),无常量|维护成本|提公共常量
+R2-00110|admin|apps/admin/src/views/Posts.vue|39|LOW|同 Users pageSize=20 魔法数字|同上|同上
+R2-00111|admin|apps/admin/src/views/Reports.vue|45|LOW|同 Users pageSize=20 魔法数字|同上|同上
+R2-00112|admin|apps/admin/src/views/AuditLogs.vue|29|LOW|同 Users size=20 魔法数字|同上|同上
+R2-00113|admin|apps/admin/src/views/Feedback.vue|49|LOW|toast 3000ms 魔法数字(NotifyConfig.vue:94 同值重复)|同上|提常量
+R2-00114|admin|apps/admin/src/views/NotifyConfig.vue|94|LOW|同 Feedback toast 3000ms|同上|同上
+R2-00115|admin|apps/admin/src/views/Dashboard.vue|102|LOW|slice(-5)/reverse() 魔法数字无注释常量|可读性|具名常量
+R2-00116|admin|apps/admin/src/views/AuditLogs.vue|155|LOW|formatDuration 中 1000 魔法数字|可读性|常量
+R2-00117|admin|apps/admin/src/stores/session.ts|116|LOW|dev 登录 user.id 硬编码 1、username 硬编码 "admin"、displayName 硬编码"系统管理员"|dev 数据失真|由环境变量注入
+R2-00118|admin|apps/admin/src/stores/session.ts|25|LOW|user 类型为 any(eslint-disable),无类型约束|类型安全|定义 AdminUser 接口
+R2-00119|admin|apps/admin/src/views/Login.vue|34|LOW|showDevHint 依赖 devUsername/devPassword 两个 computed,逻辑可合并|冗余|简化
+R2-00120|admin|apps/admin/src/App.vue|20|LOW|语言切换仅存 localStorage,不持久化到服务端/URL|多端不一致|URL query 持久化
+R2-00121|admin|apps/admin/src/App.vue|39|LOW|locale-switcher 固定悬浮右上角,登录页也显示,且无最小宽度限制|小屏遮挡|响应式处理
+R2-00122|admin|apps/admin/src/router/guards.ts|30|LOW|isTokenValid 对 dev-admin-token- 前缀直接放行(永不过期),依赖开发者配置正确|dev 环境 token 无过期约束|dev 也做基础校验
+R2-00123|admin|apps/admin/src/router/guards.ts|37|LOW|atob 解析 JWT 未处理 URL-safe base64 补齐(padding),某些 JWT 解析失败导致误判未登录|兼容性|补齐 padding
+R2-00124|admin|apps/admin/src/views/Forbidden.vue|25|LOW|goLogin 未 try/catch,sessionStore.logout 后端失败时(其内部已吞错)仍正常;但无 loading 态|双击重复登出|loading 防护
+R2-00125|admin|apps/admin/src/views/Layout.vue|73|LOW|handleConfirmLogout catch 分支与成功分支逻辑几乎相同|可读性|合并分支
+R2-00126|admin|apps/admin/src/views/Layout.vue|101|LOW|focusMainContent 无空值兜底注释说明,document 操作在 SSR 环境会崩(当前纯 CSR 可接受)|健壮性|环境守卫
+R2-00127|admin|apps/admin/src/views/Users.vue|104|LOW|handleResetFilters 后仍调用 fetchUsers(与 handleSearch 相同逻辑),无重置特化|冗余|合并
+R2-00128|admin|apps/admin/src/views/Posts.vue|85|LOW|同 Users handleResetFilters 冗余|同上|同上
+R2-00129|admin|apps/admin/src/views/Reports.vue|105|LOW|同 Users handleResetFilters 冗余|同上|同上
+R2-00130|admin|apps/admin/src/views/AuditLogs.vue|93|LOW|同 Users handleReset 冗余|同上|同上
+R2-00131|admin|apps/admin/src/views/Users.vue|367|LOW|编辑弹窗无 ESC 关闭、无表单提交(仅按钮点击)|键盘流操作不便|补 keydown 处理
+R2-00132|admin|apps/admin/src/views/Posts.vue|337|LOW|审核弹窗 radio 无默认聚焦,无 maxlength 限制 remark|UX 细节|补限制
+R2-00133|admin|apps/admin/src/views/Reports.vue|309|LOW|处理弹窗提交按钮未跟随 handleDecision 显示差异化文案(REJECT 时按钮仍叫"提交")|歧义|按决策切换文案
+R2-00134|admin|apps/admin/src/views/Users.vue|371|LOW|编辑弹窗 hint 文案"状态切换请使用列表中的禁用/启用按钮"与编辑接口支持 status 矛盾|误导|更新文案或移除
+R2-00135|admin|apps/admin/src/views/SensitiveWords.vue|207|LOW|新增输入框 maxlength 20 但后端允许 64(SensitiveWordCreateRequest @Size(max=64)),前端过严|合法词被前端拒绝|对齐后端限制
+R2-00136|admin|apps/admin/src/views/Users.vue|55|LOW|NICKNAME_MAX_LENGTH=20,后端 AdminUserUpdateRequest 校验是否 20 未核验,存在契约漂移风险|一致性|契约测试
+R2-00137|admin|apps/admin/src/views/Posts.vue|34|LOW|auditStatusFilter 默认空=全部,无"待审核优先"默认排序|运营需手动筛选|默认 pending 排序
+R2-00138|admin|apps/admin/src/views/Reports.vue|38|LOW|同 Posts 默认无 PENDING 优先|同上|同上
+R2-00139|admin|apps/admin/src/views/AuditLogs.vue|224|LOW|日志行无 hover 高亮整行可点展开(仅 details summary 可点)|交互面积小|行点击展开
+R2-00140|admin|apps/admin/src/views/AuditLogs.vue|106|LOW|createdAt 字符串直接替换展示,若后端格式变化(如含毫秒/时区)截断错误|健壮性|Date 解析兜底
+R2-00141|admin|apps/admin/src/views/NotifyConfig.vue|126|LOW|保存按钮在 loading 完成前可点击(disabled 条件含 loading,实际 OK)但无脏状态文案|UX|显示"有未保存修改"
+R2-00142|admin|apps/admin/src/views/Feedback.vue|298|LOW|ConfirmDialog slot message 中 textarea 无 maxlength 限制|超长回复|限制长度
+R2-00143|admin|apps/admin/src/api/feedback.ts|69|LOW|replyFeedback 中 encodeURIComponent(id) 对数字 ID 无意义|冗余|简化
+R2-00144|admin|apps/admin/src/api/config.ts|72|LOW|encodeURIComponent(key) 对 config key 编码,后端 @PathVariable 自动解码,双重编码风险(特殊字符 key)|边界|验证特殊 key
+R2-00145|admin|apps/admin/src/api/notify-config.ts|30|LOW|listNotifyConfigs 无返回类型标注(其余 api 均有)|类型一致性|补类型
+R2-00146|admin|apps/admin/src/api/audit-logs.ts|74|LOW|listAuditLogs 无显式返回类型标注|同上|同上
+R2-00147|admin|apps/admin/src/api/sensitive-words.ts|35|LOW|listSensitiveWords 无显式返回类型标注|同上|同上
+R2-00148|admin|apps/admin/src/api/http.ts|47|LOW|REQUEST_TIMEOUT_MS=15000 对批量/导入类慢操作(如 batch-import 异步可接受,但大导出)偏短|边界|按接口分级超时
+R2-00149|admin|apps/admin/src/i18n/locales/zh-CN.ts|89|LOW|login.footerTip 与 layout.footerCopyright 内容完全重复|资源冗余|复用
+R2-00150|admin|apps/admin/src/i18n/locales/zh-CN.ts|167|LOW|users.filterStatusAll 与 filterStatusAllShort 文案相同("全部"),双 key 冗余|资源冗余|合并
+R2-00151|admin|apps/admin/src/i18n/locales/zh-CN.ts|204|LOW|users.disableConfirm 与 disableConfirmMessage 文案相同双 key 冗余|资源冗余|合并
+R2-00152|admin|apps/admin/src/i18n/locales/zh-CN.ts|253|LOW|posts.filterStatusAll 与 posts.filterCategoryAll/categoryAll 三处"全部"|资源冗余|复用
+R2-00153|admin|apps/admin/src/i18n/locales/en-US.ts|62|LOW|en-US 中 common.chinese 仍为中文"简体中文"(语言自名,可接受但非英文)|一致性|按惯例保留或英化
+R2-00154|admin|apps/admin/src/views/Dashboard.vue|46|LOW|统计卡片 icon 路径 /icons/*.svg 硬编码,与 public/icons 目录耦合,无构建校验|图标缺失时静默|构建校验
+R2-00155|admin|apps/admin/src/views/Layout.vue|35|LOW|menuItems 图标路径硬编码(/icons/*.svg)|同上|同上
+R2-00156|admin|apps/admin/src/views/Users.vue|311|LOW|头像 img 无 onerror 兜底,头像 URL 失效显示裂图|UX|onerror 占位
+R2-00157|admin|apps/admin/src/views/Reports.vue|196|LOW|reporterDisplay 昵称脱敏:1 字昵称返回 "x*" 仍可辨识;2 字昵称 "张*" 可辨识度高|隐私边界|1 字全打码或更长脱敏
+R2-00158|admin|apps/admin/src/views/AuditLogs.vue|243|LOW|targetType 列直接显示英文枚举(POST/COMMENT/USER)|i18n 未覆盖|映射 label
+R2-00159|admin|apps/admin/src/views/AuditLogs.vue|248|LOW|requestMethod/URL 列中文环境显示 HTTP 方法无 badge 色(已有 http-method 样式但无方法-颜色映射)|视觉区分弱|按方法着色
+R2-00160|admin|apps/admin/src/views/SensitiveWords.vue|256|LOW|敏感词列 word 直接展示,无复制按钮|运营复制词不便|加复制
+R2-00161|admin|apps/admin/src/views/NotifyConfig.vue|151|LOW|表格无行 key 之外的稳定性保障(config.id 可能为 null?后端 ID 必有)|边界|id 兜底
+R2-00162|admin|apps/admin/src/views/Feedback.vue|237|LOW|列表行无 hover 操作提示/禁用态(已处理反馈仍可点"处理"|误操作|已处理行禁用
+R2-00163|admin|apps/admin/src/views/Reports.vue|287|LOW|PENDING 之外显示 handledText,但无点击查看处理详情入口(与 handleRemark 不可见同源)|同上|详情入口
+R2-00164|admin|apps/admin/src/components/ErrorState.vue|33|LOW|errorState__icon 使用 "!" 文本做图标,无 emoji 规范下可接受但样式简陋|视觉|CSS 图形
+R2-00165|admin|apps/admin/src/styles/admin-common.css|389|LOW|admin-common.css 与各视图 scoped 重复定义 .pagination/.page-button(见 MEDIUM 死样式条目)|样式膨胀|统一收敛
+R2-00166|admin|apps/admin/src/vite.config.ts|30|LOW|define 仅注入 3 个 VITE_ 变量,与 config/env.ts 读取 5 个变量清单不一致(其余走 import.meta.env 自动注入)|配置清单漂移|统一清单
+R2-00167|admin|apps/admin/src/vite.config.ts|47|LOW|build.target es2015 与现代浏览器不匹配,拖慢产物(源码已用 ?./ optional chaining 等)|性能|升级 target
+R2-00168|admin|apps/admin/src/views/Users.vue|90|LOW|catch 中 ApiError 优先展示 err.message(后端原始消息),未走 errors.* 映射,与 i18n 目标相悖|见 HIGH 硬编码条目|统一错误映射层
+R2-00169|admin|apps/admin/src/views/Posts.vue|71|LOW|同 Users 错误消息直出后端文本|同上|同上
+R2-00170|admin|apps/admin/src/views/Reports.vue|85|LOW|同 Users 错误消息直出后端文本|同上|同上
+R2-00171|admin|apps/admin/src/views/SensitiveWords.vue|71|LOW|同 Users 错误消息直出后端文本|同上|同上
+R2-00172|admin|apps/admin/src/api/http.ts|5|LOW|文件头注释仍写"从 localStorage.admin_token 读取",未提及 XSS 风险与改进方向|文档缺失|补安全说明
+R2-00173|admin|apps/admin/src/stores/session.ts|19|LOW|注释声称"后端需实现 POST /api/v1/auth/admin/login",实际后端已实现,注释过时|文档漂移|更新注释
+R2-00174|admin|apps/admin/src/views/Posts.vue|248|LOW|注释"移除 all/latest 占位分类"后,若后端新增分类(如 topic)需再次改码|可维护性|分类源驱动
+R2-00175|admin|apps/admin/src/views/Dashboard.vue|97|LOW|注释"后续若后端提供真实活动流接口"标记的未来项无 TODO 跟踪|遗忘风险|登记 backlog
+R2-00176|admin|apps/admin/src/views/SensitiveWords.vue|60|LOW|"若数据量增长可切换为分页查询"同样无 TODO 跟踪|遗忘风险|登记 backlog
+R2-00001|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql 与 V2026.07.25.0001__add_on_delete_cascade.sql|整文件|CRITICAL|同版本号 V2026.07.25.0001 两个迁移文件并存,Flyway 启动报 "Found more than one migration with version"|应用无法启动,整条迁移链断裂|重命名其中一组为 .0001a/.0001b 或递增版本号
+R2-00002|infra|database/flyway/sql/V2026.07.25.0002__create_vip_red_packets.sql 与 V2026.07.25.0002__fix_collation.sql|整文件|CRITICAL|同版本号 V2026.07.25.0002 冲突|同上|重命名版本号
+R2-00003|infra|database/flyway/sql/V2026.07.25.0003__add_missing_indexes.sql 与 V2026.07.25.0003__create_promo_codes.sql|整文件|CRITICAL|同版本号 V2026.07.25.0003 冲突|同上|重命名版本号
+R2-00004|infra|database/flyway/sql/V2026.07.25.0004__add_auto_renew_to_users.sql 与 V2026.07.25.0004__add_remaining_missing_indexes.sql|整文件|CRITICAL|同版本号 V2026.07.25.0004 冲突|同上|重命名版本号
+R2-00005|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|33|CRITICAL|CREATE INDEX IF NOT EXISTS 语法 MySQL 8.0 不支持(仅 PostgreSQL/SQLite/H2),脚本注释声称 "MySQL 8.0+ 支持" 为错误认知|该迁移在 MySQL 上必然语法错误,迁移链中断|改用 information_schema 检查或拆分为 ALTER TABLE ADD INDEX
+R2-00006|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|34|CRITICAL|同 33 行 idx_likes_target_user_created_at 使用 IF NOT EXISTS|同上|同上
+R2-00007|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|35|CRITICAL|同 33 行 idx_likes_status_created_at|同上|同上
+R2-00008|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|41|CRITICAL|同 33 行 idx_posts_author_created_at|同上|同上
+R2-00009|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|42|CRITICAL|同 33 行 idx_posts_status_created_at|同上|同上
+R2-00010|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|48|CRITICAL|同 33 行 idx_post_likes_user_created_at|同上|同上
+R2-00011|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|52|CRITICAL|同 33 行 idx_post_shares_post_created_at|同上|同上
+R2-00012|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|53|CRITICAL|同 33 行 idx_post_shares_user_created_at|同上|同上
+R2-00013|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|58|CRITICAL|同 33 行 idx_comments_post_created_at|同上|同上
+R2-00014|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|59|CRITICAL|同 33 行 idx_comments_author_created_at|同上|同上
+R2-00015|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|65|CRITICAL|同 33 行 idx_check_ins_user_created_at|同上|同上
+R2-00016|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|71|CRITICAL|同 33 行 idx_activities_status_activity_date|同上|同上
+R2-00017|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|76|CRITICAL|同 33 行 idx_audit_log_operator_created_at|同上|同上
+R2-00018|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|77|CRITICAL|同 33 行 idx_audit_log_operation_created_at|同上|同上
+R2-00019|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|81|CRITICAL|同 33 行 idx_reports_status_created_at|同上|同上
+R2-00020|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|82|CRITICAL|同 33 行 idx_reports_reporter_created_at|同上|同上
+R2-00021|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|89|CRITICAL|同 33 行 idx_private_messages_sender_created_at|同上|同上
+R2-00022|infra|database/flyway/sql/V2026.07.25.0001__add_performance_indexes.sql|90|CRITICAL|同 33 行 idx_private_messages_conversation_read|同上|同上
+R2-00023|infra|database/flyway/sql/V2026.07.26.0001__add_entity_index_annotations.sql|33|CRITICAL|CREATE INDEX IF NOT EXISTS 第 1 条 idx_notifications_user_created_at,MySQL 不支持|同上|同上
+R2-00024|infra|database/flyway/sql/V2026.07.26.0001__add_entity_index_annotations.sql|38|CRITICAL|同上 idx_heart_signals_created_at|同上|同上
+R2-00025|infra|database/flyway/sql/V2026.07.26.0001__add_entity_index_annotations.sql|43|CRITICAL|同上 idx_vip_bills_created_at|同上|同上
+R2-00026|infra|database/flyway/sql/V2026.07.26.0001__add_entity_index_annotations.sql|48|CRITICAL|同上 idx_feedback_created_at|同上|同上
+R2-00027|infra|database/flyway/sql/V2026.07.26.0001__add_entity_index_annotations.sql|53|CRITICAL|同上 idx_private_messages_conversation_created_at|同上|同上
+R2-00028|infra|database/flyway/sql/V2026.07.26.0001__add_entity_index_annotations.sql|58|CRITICAL|同上 idx_private_messages_created_at|同上|同上
+R2-00029|infra|database/flyway/sql/V2026.07.26.0001__add_entity_index_annotations.sql|63|CRITICAL|同上 idx_private_messages_delivery_status|同上|同上
+R2-00030|infra|database/flyway/sql/V2026.07.26.0004__p8_database_standardization.sql|192|CRITICAL|Part 3 使用 CREATE INDEX IF NOT EXISTS idx_private_messages_conv_delivery,MySQL 不支持|同上|同上
+R2-00031|infra|database/flyway/sql/V2026.07.26.0004__p8_database_standardization.sql|196|CRITICAL|同上 idx_users_role|同上|同上
+R2-00032|infra|database/flyway/sql/V2026.07.26.0004__p8_database_standardization.sql|200|CRITICAL|同上 idx_reports_created_at|同上|同上
+R2-00033|infra|database/flyway/sql/V2026.07.26.0004__p8_database_standardization.sql|204|CRITICAL|同上 idx_reports_handler|同上|同上
+R2-00034|infra|database/flyway/sql/V2026.07.26.0004__p8_database_standardization.sql|208|CRITICAL|同上 idx_likes_status_user_created|同上|同上
+R2-00035|infra|database/flyway/sql/V2026.07.26.0004__p8_database_standardization.sql|212|CRITICAL|同上 idx_pass_records_user_created|同上|同上
+R2-00036|infra|database/flyway/sql/V2026.07.26.0004__p8_database_standardization.sql|216|CRITICAL|同上 idx_notifications_type_created|同上|同上
+R2-00037|infra|database/flyway/sql/V2026.07.26.0004__p8_database_standardization.sql|220|CRITICAL|同上 idx_notifications_source_user|同上|同上
+R2-00038|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|184|CRITICAL|idx_user_follows_followed_created 引用列 followed_id,而 user_follows 实际列为 follower_id/following_id(V2026.05.25.0001:4-5)|ALTER TABLE 引用不存在列,迁移失败|改为 following_id
+R2-00039|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|258|CRITICAL|idx_vip_red_packets_sender_status 引用列 sender_user_id,实际为 sender_id(V2026.07.25.0002:26)|同上|改为 sender_id
+R2-00040|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|264|CRITICAL|idx_vip_red_packets_claimer_status 引用列 claimer_user_id,vip_red_packets 无此列(领取人在 vip_red_packet_claims)|同上|索引建到 vip_red_packet_claims.claimer_id 或删除
+R2-00041|infra|apps/api/src/main/resources/application-db.yml|60|CRITICAL|APP_FLYWAY_LOCATIONS 被 docker-compose.yml:231 覆盖为 filesystem:/app/db/migration,classpath:db/migration 的 4 个迁移(V2026070501001-4,含 media_asset 建表)在容器环境不加载|容器部署中 media_asset 表不存在,而 V2026.07.26.0003:153 / V2026.07.28.0004:187 / V2026.07.28.0005:148 对其执行 ALTER 必然失败;本地 IDE 与容器迁移集不一致|compose 保留两个 location 或把 4 个迁移并入 database/flyway/sql
+R2-00042|infra|database/flyway/sql/V2026.07.26.0003__add_version_columns.sql|153|CRITICAL|CALL add_version_column_if_missing('media_asset') 时 media_asset 尚未创建(见上条,容器环境永不创建)|全新容器部署迁移失败、API 无法启动|依赖表先建,或将 media_asset 建表提前
+R2-00043|infra|database/flyway/sql/V2026.07.28.0004__audit_fields.sql|187|CRITICAL|add_created_at_column_if_missing('media_asset') 同上|同上|同上
+R2-00044|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|148|CRITICAL|add_index_if_missing('media_asset',...) 同上|同上|同上
+R2-00045|infra|database/flyway/sql/V2026.07.27.0005__enum_to_varchar_check.sql|114|HIGH|DROP COLUMN status 会连带删除单列索引 idx_likes_status(V2026.07.25.0004:44 建)且不重建|ENUM→VARCHAR 后高频状态查询全表扫描,性能回归|迁移末尾重建被删索引
+R2-00046|infra|database/flyway/sql/V2026.07.27.0005__enum_to_varchar_check.sql|114|HIGH|DROP COLUMN posts.status 连带删除 idx_posts_status(0004:32 建)|同上|同上
+R2-00047|infra|database/flyway/sql/V2026.07.27.0005__enum_to_varchar_check.sql|114|HIGH|DROP COLUMN posts.category 连带删除 idx_posts_category(V2026.05.21.0003:15 建)|分类筛选退化|同上
+R2-00048|infra|database/flyway/sql/V2026.07.27.0005__enum_to_varchar_check.sql|114|HIGH|DROP COLUMN heart_signals.status 连带删除 idx_heart_signals_status(0004:40 建)|待处理信号扫描退化|同上
+R2-00049|infra|database/flyway/sql/V2026.07.27.0005__enum_to_varchar_check.sql|114|HIGH|DROP COLUMN notifications.type 连带删除 idx_notifications_type(V2026.05.23.0004:15 建)并削弱 idx_notifications_type_created 复合索引(0725.0001:77 建,type 列被移除)|通知类型查询退化|同上
+R2-00050|infra|database/flyway/sql/V2026.07.27.0005__enum_to_varchar_check.sql|114|HIGH|DROP COLUMN activities.status 连带删除 idx_activities_status(0524.0004:16 建)并削弱 idx_activities_status_activity_date|活动状态筛选退化|同上
+R2-00051|infra|database/flyway/sql/V2026.07.27.0005__enum_to_varchar_check.sql|114|HIGH|DROP COLUMN temp_chat_session.phase 连带删除 idx_temp_chat_session_phase(0527.0001:29 建)|临时会话阶段扫描退化|同上
+R2-00052|infra|database/flyway/sql/V2026.05.27.0001__create_temp_chat_tables.sql|2|HIGH|迁移开头 DROP TABLE temp_chat_contact_exchange/temp_chat_message/temp_chat_session 再重建(与 V2026.05.18.2200 重复定义表)|若执行时已有生产数据将直接丢失,不可回滚|改为 ALTER/新增迁移,禁止 DROP 重建
+R2-00053|infra|database/flyway/sql/V2026.05.18.2200__phase0_phase1_client_foundation.sql|56|MEDIUM|temp_chat_session 在此建表(phase VARCHAR)后又被 0527.0001:7-31 以 ENUM 结构重建,两份结构不一致|依赖具体执行顺序,后续迁移(0728.0005 引用 session_id)易踩空|合并为单一建表迁移
+R2-00054|infra|database/flyway/sql/V2026.06.25.0001__add_user_role_and_init_admin.sql|32|MEDIUM|ADMIN_OPENID 为占位符/空值时插入 openid='' 或 'admin-default-openid-change-me' 的 ADMIN 账号(flyway.toml:13 提供默认值)|幽灵管理员残留,若默认 openid 泄露可被利用|占位符为空则跳过 INSERT
+R2-00055|infra|database/flyway/sql/V2026.06.25.0001__add_user_role_and_init_admin.sql|21|MEDIUM|裸 ADD COLUMN role,无 IF NOT EXISTS 守卫|手工环境重跑/半迁移失败后无法恢复|information_schema 守卫
+R2-00056|infra|database/flyway/sql/V2026.06.25.0002__migrate_admin_password_to_bcrypt.sql|28|MEDIUM|裸 ADD COLUMN password,无幂等守卫|同上|同上
+R2-00057|infra|database/flyway/sql/V2026.06.25.0002__migrate_admin_password_to_bcrypt.sql|35|LOW|占位符未配置时 UPDATE 写入 password='' 空串|管理员密码为空字符串,登录校验可能被绕过(取决于应用校验逻辑)|空占位符时跳过
+R2-00058|infra|database/flyway/sql/V2026.07.25.0013__add_check_in_make_up.sql|6|MEDIUM|裸 ADD COLUMN source(同一文件其他部分有幂等,此处无)|重跑失败|加守卫
+R2-00059|infra|database/flyway/sql/V2026.07.27.0003__add_remaining_columns_for_atomic_decrement.sql|25|MEDIUM|裸 ADD COLUMN remaining_uses/max_uses_per_user,无守卫|重跑失败|加守卫
+R2-00060|infra|database/flyway/sql/V2026.07.27.0003__add_remaining_columns_for_atomic_decrement.sql|38|MEDIUM|裸 ADD COLUMN remaining_amount/remaining_count,无守卫|同上|同上
+R2-00061|infra|database/flyway/sql/V2026.07.25.0011__create_profile_visitors.sql|23|MEDIUM|UNIQUE KEY 使用表达式索引 (DATE(visited_at)),要求 MySQL 8.0.13+;低于该版本语法错误|版本兼容风险,且表达式唯一索引性能开销大|改用 visit_date 冗余列
+R2-00062|infra|database/flyway/sql/V2026.05.30.0002__create_user_online_status.sql|3|MEDIUM|表未指定 ENGINE/CHARSET/COLLATE,继承库默认排序规则|库默认 collation 不一致(init-mysql.sql 用 unicode_ci)时表级排序规则漂移|显式指定 0900_ai_ci
+R2-00063|infra|database/flyway/sql/V2026.07.28.0003__wallet_tables.sql|34|HIGH|资金核心表 user_wallet 无外键 user_id→users(id)|孤儿钱包/资金记录,审计追溯困难|加 FK
+R2-00064|infra|database/flyway/sql/V2026.07.28.0003__wallet_tables.sql|46|HIGH|wallet_transaction_log 无外键 user_id→users(id)|资金流水与用户脱钩|加 FK
+R2-00065|infra|database/flyway/sql/V2026.07.25.0002__create_vip_red_packets.sql|24|MEDIUM|vip_red_packets 无外键 sender_id→users(id)|删除用户遗留红包记录|加 FK
+R2-00066|infra|database/flyway/sql/V2026.07.25.0002__create_vip_red_packets.sql|43|MEDIUM|vip_red_packet_claims 无外键 red_packet_id→vip_red_packets、claimer_id→users|孤儿领取记录|加 FK
+R2-00067|infra|database/flyway/sql/V2026.07.25.0003__create_promo_codes.sql|23|MEDIUM|promo_codes 无外键 created_by→users(id)|创建者删除后记录悬空|加 FK
+R2-00068|infra|database/flyway/sql/V2026.07.25.0003__create_promo_codes.sql|41|MEDIUM|promo_code_usages 无外键 promo_code_id/user_id|孤儿使用记录|加 FK
+R2-00069|infra|database/flyway/sql/V2026.07.25.0005__create_vip_bills.sql|25|MEDIUM|vip_bills 无外键 user_id→users(id)|账单与用户脱钩,对账困难|加 FK
+R2-00070|infra|database/flyway/sql/V2026.07.25.0006__create_video_calls.sql|30|MEDIUM|video_calls 无外键 caller_id/callee_id→users(id)|孤儿通话记录|加 FK
+R2-00071|infra|database/flyway/sql/V2026.07.25.0007__create_video_call_records.sql|32|MEDIUM|video_call_records 无外键 caller_id/receiver_id|同上|加 FK
+R2-00072|infra|database/flyway/sql/V2026.07.25.0010__create_third_party_accounts.sql|32|MEDIUM|third_party_account(单数)与文件名/文档(复数)不一致|后续迁移混用表名易出错|统一命名
+R2-00073|infra|database/flyway/sql/V2026.07.25.0012__create_dnd_settings.sql|20|MEDIUM|dnd_settings 无外键 user_id→users(id)|删除用户残留免打扰配置|加 FK
+R2-00074|infra|database/flyway/sql/V2026.07.27.0001__payment_callback_log.sql|20|LOW|payment_callback_log 无外键(幂等日志表,可接受但未说明)|审计缺口|补外键或注释说明
+R2-00075|infra|database/flyway/sql/V2026.07.27.0002__vip_billing_log.sql|22|LOW|vip_billing_log 无外键 user_id|流水与用户脱钩|加 FK
+R2-00076|infra|database/flyway/sql/V2026.05.23.0002__create_check_ins.sql|1|MEDIUM|check_ins 无外键 user_id→users(id)|删除用户残留签到记录|加 FK
+R2-00077|infra|database/flyway/sql/V2026.05.29.0001__create_pass_records.sql|3|MEDIUM|pass_records 无外键 user_id/passed_user_id→users|孤儿 pass 记录|加 FK
+R2-00078|infra|database/flyway/sql/V2026.05.28.0002__create_social_progress.sql|20|已修复|utf8mb4_unicode_ci 排序规则已由 V2026.07.25.0002__fix_collation.sql 统一(标注状态:已修复)
+R2-00079|infra|database/flyway/sql/V2026.05.28.0008__create_daily_benefits.sql|14|已修复|utf8mb4_unicode_ci 已由 fix_collation 修复(标注状态:已修复)
+R2-00080|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|312|MEDIUM|uk_payment_callback_log_notification 与 V2026.07.27.0001:27 已建 uk_payment_callback_notification 重复(索引名不同,重复创建)|冗余唯一索引,占用空间|检查索引名再建
+R2-00081|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|318|MEDIUM|uk_third_party_account_provider_openid 与 V2026.07.25.0010:40 已建 uk_third_party_provider_open_id 重复|同上|同上
+R2-00082|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|340|LOW|uk_promo_codes_code 与 V2026.07.25.0003:37 已建 uk_promo_codes_code 同名时跳过,名称不一致则重复|冗余|同上
+R2-00083|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|346|MEDIUM|uk_dnd_settings_user 与 V2026.07.25.0012:31 已建 uk_dnd_user_id 重复|同上|同上
+R2-00084|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|352|LOW|注释写 do_not_disturb_settings,实际表名 dnd_settings|文档误导|改注释
+R2-00085|infra|database/flyway/sql/V2026.07.28.0005__add_indexes.sql|234|LOW|idx_check_ins_user_date 与既有唯一键 uk_checkin_user_date 列完全一致,冗余|空间浪费|删除
+R2-00086|infra|database/flyway/sql/V2026.07.26.0003__add_version_columns.sql|274|LOW|add_fk_if_missing 用 CONCAT 拼 DDL,表/列名未白名单校验|SQL 注入面(当前仅内部调用)|参数化或白名单
+R2-00087|infra|database/flyway/sql/V2026.07.26.0004__p8_database_standardization.sql|286|MEDIUM|Part 4 迁移 user_feedback_ticket 数据到 feedback_tickets 时字段映射不完整(handled_by→无对应,状态仅 UPPER)|历史反馈工单处理人/附件信息丢失|补映射或记录迁移报告
+R2-00088|infra|database/flyway/sql/V2026.05.28.0010__create_post_tags.sql|L3|LOW|版本号从 0008 跳至 0010,缺 0009|审计困惑,无法确定是否遗漏迁移|补空迁移或说明
+R2-00089|infra|database/flyway/sql/V2026.07.25.0006__create_video_calls.sql|30|MEDIUM|video_calls 与 video_call_records 两张通话表职责重叠(status 语义冲突)|数据双写/同步成本,易不一致|合并或明确边界
+R2-00090|infra|database/flyway/sql/V2026.07.25.0007__create_video_call_records.sql|42|LOW|updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,无默认值|NULL 行 UPDATE 不触发时间更新|加 NOT NULL DEFAULT
+R2-00091|infra|database/flyway/sql/V2026.07.28.0003__wallet_tables.sql|77|LOW|INSERT IGNORE 初始化钱包,若并发批量注册(>5000)大事务|初始化耗时长|分批处理
+R2-00092|infra|apps/api/src/main/resources/db/migration/V2026070501001__extend_user_basic_profile.sql|19|MEDIUM|裸 ADD COLUMN ×11 无幂等守卫|重跑失败|加守卫
+R2-00093|infra|apps/api/src/main/resources/db/migration/V2026070501002__create_media_asset.sql|23|MEDIUM|裸 CREATE TABLE media_asset(无 IF NOT EXISTS)|重跑失败|加 IF NOT EXISTS
+R2-00094|infra|apps/api/src/main/resources/db/migration/V2026070501002__create_media_asset.sql|35|LOW|created_at DATETIME NOT NULL 无默认值|插入必须显式提供,与业务表惯例不一致|加 DEFAULT CURRENT_TIMESTAMP
+R2-00095|infra|apps/api/src/main/resources/db/migration/V2026070501003__add_media_asset_composite_index.sql|9|MEDIUM|裸 CREATE INDEX 无幂等守卫|重跑失败|加守卫
+R2-00096|infra|apps/api/src/main/resources/db/migration/V2026070501004__add_user_verification_flags.sql|10|MEDIUM|裸 ADD COLUMN email_verified/id_card_verified|重跑失败|加守卫
+R2-00097|infra|apps/api/src/main/resources/db/migration|整目录|HIGH|版本号格式 V2026070501001(纯数字)与主目录 V2026.xx.xx.xxxx(点分)不一致,Flyway 排序时 2026070501001 排在所有 V2026.* 之后|执行顺序与直觉相反,依赖关系的迁移(media_asset)后置|统一版本格式
+R2-00098|infra|docker-compose.yml|616|HIGH|backup 服务以非 root backup 用户执行 busybox crond,但未加 -c /etc/crontabs 参数;crond 非 root 默认读 /var/spool/cron 且无法写 /var/run/crond.pid|定时备份任务不会执行或 crond 启动失败,备份静默失效|加 -c /etc/crontabs 并预建 pid 文件或用 root crond+脚本内降权
+R2-00099|infra|docker-compose.yml|617|MEDIUM|apk add mysql-client~10.11 redis~7.2 gzip tini 每次容器启动重装,未固化到镜像|启动慢、依赖上游仓库可用性|改用自定义镜像预装
+R2-00100|infra|docker-compose.yml|98|MEDIUM|--default-authentication-plugin=mysql_native_password 在 MySQL 8.0.34+ 已弃用(8.4 移除)|升级 MySQL 时启动失败;弃用警告噪音|改用 caching_sha2_password + 调整 JDBC URL
+R2-00101|infra|docker-compose.yml|239|MEDIUM|RABBITMQ_USERNAME/PASSWORD 默认 guest/guest,若启用 MQ 且未覆盖则弱凭据|消息中间件可被接管|默认置空并强制注入
+R2-00102|infra|docker-compose.yml|219|MEDIUM|CORS_ALLOWED_ORIGINS 默认值含 campuslove.example.com 占位域名|生产未覆盖时跨域策略错误|默认置空
+R2-00103|infra|docker-compose.yml|545|LOW|node-exporter 挂载 /:/host:ro,rslave 无 SELinux 标签|受限主机上只读挂载失效|加 :ro,z 或注释
+R2-00104|infra|docker-compose.yml|588|LOW|DB_PASSWORD 嵌套默认引用 MYSQL_ROOT_PASSWORD,backup 使用 root 备份|最小权限缺失,root 泄漏面大|建独立备份账号
+R2-00105|infra|apps/api/Dockerfile|68|LOW|注释声称"按层 COPY",实际一次性 COPY jar 再 extract|缓存优化未生效|按 layers 目录 COPY
+R2-00106|infra|apps/admin/Dockerfile|67|LOW|sed 替换 listen 80→8080 依赖 nginx.conf 文本,脆弱|配置变更即构建失败|直接用 8080 模板
+R2-00107|infra|apps/admin/docker/nginx.conf|46|LOW|X-XSS-Protection "1; mode=block" 已废弃且可能引入安全风险|无效响应头|移除
+R2-00108|infra|apps/admin/docker/nginx.conf|43|LOW|无 Content-Security-Policy|XSS 缓解缺失|补 CSP
+R2-00109|infra|apps/admin/docker/nginx.conf|68|LOW|/api/ 反代无 limit_req(仅 client-nginx.conf 有限流)|Admin API 可被爆破|补限流
+R2-00110|infra|docker/client-nginx.conf|7|LOW|注释"同一 campus-net 网络"过时(现为 app-net)|误导排障|改注释
+R2-00111|infra|docker/client-nginx.conf|28|LOW|无 CSP/HSTS 头|H5 安全头不完整|补
+R2-00112|infra|docker/alertmanager/alertmanager.yml|43|MEDIUM|templates 指向 /etc/alertmanager/templates/*.tmpl,但 docker/alertmanager 无 templates 目录且 compose 未挂载|自定义模板(email.default.html)不生效,回退内置模板|删除该配置或补模板
+R2-00113|infra|docker/alertmanager/alertmanager.yml|33|LOW|SMTP 占位 smtp.example.com:587 + 空认证,部署后未替换则邮件告警静默失败|critical 告警无法触达|提供部署校验脚本
+R2-00114|infra|docker/alertmanager/alertmanager.yml|99|LOW|默认 receiver 指向 http://localhost:9999(容器内无该服务)|告警全部投递失败,仅日志可见|默认接 null-pager
+R2-00115|infra|docker/grafana/provisioning/datasources/datasources.yml|12|HIGH|Prometheus 数据源未指定 uid,而 dashboards 全部引用 uid "Prometheus"(api-overview.json:16 等)|Grafana 自动生成随机 uid,所有面板显示数据源未找到,监控面板失效|provisioning 中显式 uid: Prometheus
+R2-00116|infra|docker/grafana/provisioning/datasources/datasources.yml|24|MEDIUM|Alertmanager 数据源同样未指定 uid|Grafana 告警模块引用时失效|同上
+R2-00117|infra|docker/prometheus/prometheus.yml|34|HIGH|移除 mysql-exporter/redis-exporter 后,数据库/缓存无任何指标采集|MySQL/Redis 故障、慢查询无数据,关联告警规则 DbConnectionPoolHigh 等只反映连接池|部署 exporter 或补齐容器级指标
+R2-00118|infra|docker/prometheus/prometheus.yml|55|LOW|honor_labels: true 对静态 target 无意义|配置冗余|删除
+R2-00119|infra|docker/prometheus/rules/alert-rules.yml|36|MEDIUM|spring_boot_health_status{status="DOWN"} 标签与 micrometer 实际标签(component)不符,注释"DOWN 时为 1"与常见 UP=1 语义矛盾|规则永不触发或恒触发,健康告警失真|按实际指标标签重写
+R2-00120|infra|docker/prometheus/rules/alert-rules.yml|296|HIGH|HighLoginFailureRate 使用指标 campuslove_auth_login_total{status="failed"},应用实际注册 auth.login.success/auth.login.failure(AuthMetrics.java:30-32,Prometheus 导出为 auth_login_success/auth_login_failure)|登录失败率告警永不触发,撞库无感知|改指标名
+R2-00121|infra|docker/prometheus/rules/alert-rules.yml|175|MEDIUM|JvmFrequentFullGc 统计全部 jvm_gc_pause_seconds_count 增量,G1 年轻代 GC 也计入|Full GC 告警误报频繁|按 action="end of major GC" 过滤
+R2-00122|infra|docker/prometheus/rules/alert-rules.yml|290|MEDIUM|无备份成功/失败指标与告警|备份静默失败无感知,数据安全无兜底|backup 脚本写 pushgateway/textfile 指标并加规则
+R2-00123|infra|docker/prometheus/rules/alert-rules.yml|12|MEDIUM|无 SLO / 错误预算(burn-rate)规则,告警仅固定阈值|无法量化可用性达标|补充记录规则与 burn-rate 告警
+R2-00124|infra|docker/prometheus/rules/alert-rules.yml|45|LOW|AdminDown 与第三方依赖规则全部注释停用,且 blackbox 未部署|Admin/微信/Agnes 可用性监控空白|部署 blackbox 后启用
+R2-00125|infra|docker-compose.yml|80|HIGH|全栈无日志采集组件(Loki/Promtail/ELK/Filebeat),仅 json-file 本地轮转|故障排查无集中日志、无法检索,合规审计缺日志|接入 Loki+Promtail 或 EFK
+R2-00126|infra|docker/backup/crontab|5|LOW|参考文件与 compose 动态生成逻辑重复维护|易漂移|删除或标注仅供参考
+R2-00127|infra|.github/workflows/ci.yml|14|MEDIUM|permissions.packages: write 对所有事件(含 PR)生效,最小权限原则被破坏|PR 触发的工作流具备镜像推送写权限|按事件拆分 permissions
+R2-00128|infra|.github/workflows/ci.yml|333|HIGH|Trivy scan API image 的 image-ref 传入 ${{ steps.meta-api.outputs.tags }}(逗号分隔多 tag: ci-<sha>,sha-<sha>)|trivy 只接受单镜像引用,镜像扫描步骤失败或扫描错误对象|逐 tag 扫描
+R2-00129|infra|.github/workflows/ci.yml|338|HIGH|同 333 行 Admin 镜像扫描|同上|同上
+R2-00130|infra|.github/workflows/ci.yml|397|HIGH|e2e job 无服务编排:webServer 在 CI 下为 undefined(playwright.config.ts:70),未启动 client dev server/API/MySQL,未注入 E2E_BASE_URL|Playwright 连 localhost:5173 失败,e2e 门禁必然失败或形同虚设|CI 起 docker compose 或启动 dev server
+R2-00131|infra|tests/e2e/playwright.config.ts|70|HIGH|CI 分支 webServer=undefined 且无任何替代服务,与 ci.yml 无对接|同上|同上
+R2-00132|infra|.github/workflows/ci.yml|8|HIGH|推送 tag v* 与 main/develop 走同一套流程,无 CD 部署 job、无镜像部署/回滚步骤|发布流程断裂:镜像推 GHCR 后无部署动作|补 deploy job(SSH/compose pull)
+R2-00133|infra|.github/workflows/ci.yml|3|MEDIUM|无 Flyway 迁移验证 job(空库全量迁移 + validate 校验)|重复版本号、IF NOT EXISTS 语法错误、列名错误等问题 CI 完全不拦截,生产首次启动即挂|加 MySQL 8 服务 + flyway migrate 门禁
+R2-00134|infra|.github/workflows/ci.yml|56|MEDIUM|gitleaks 仅 detect 全库,未对比 PR 增量|增量泄露可被历史豁免掩盖|--log-opts 增量扫描
+R2-00135|infra|.github/workflows/ci.yml|101|LOW|pnpm audit --audit-level high 无 --fix/无报告产物|漏洞修复不可追踪|上传 audit 报告
+R2-00136|infra|.github/workflows/ci.yml|278|LOW|ci-<sha7> tag 与 release tag 混用,无版本号递增校验|回滚困难、tag 漂移|校验 semver 或 sha 唯一
+R2-00137|infra|.github/workflows/ci.yml|287|MEDIUM|docker/metadata-action 同时产出 raw ci-<sha> 与 type=sha 两个 tag,而 compose TAG 只用一个|部署端拉取 tag 与 CI 推送 tag 集合不一致|统一 tag 策略
+R2-00138|infra|.github/workflows/ci.yml|352|LOW|cosign sign 多 tag 逗号拼接,cosign 一次只签一个引用|签名步骤可能失败|逐 tag 签名
+R2-00139|infra|package.json|43|HIGH|engines.node ">=18.0.0 <20.0.0" 与 CI actions/setup-node node-version: '20'(ci.yml:93 等)冲突,且 .npmrc:8 engine-strict=true|pnpm install --frozen-lockfile 在 Node 20 下报 Unsupported engine,CI 全部 job 依赖安装失败|统一为 20 或放宽上限
+R2-00140|infra|.npmrc|8|HIGH|engine-strict=true 与 engines 上限冲突(见上)|同上|同上
+R2-00141|infra|package.json|4|MEDIUM|version 0.1.0 与 CHANGELOG.md:38 [1.0.0]-2026-07-26 已发布版本不一致|发布产物版本漂移|同步版本
+R2-00142|infra|apps/api/pom.xml|15|MEDIUM|campus-love-api version 0.1.0 与已发布 1.0.0 不一致|jar 命名/镜像标签混乱|同步
+R2-00143|infra|CHANGELOG.md|38|MEDIUM|2026-07-28 之后新增迁移(钱包/索引/审计字段/ENUM 迁移)未记入 CHANGELOG|发布变更不可追溯|补记录
+R2-00144|infra|init-mysql.sql|1|HIGH|库名 campus_love_ci/用户 campus_love 与 compose MYSQL_DATABASE=campus_love、MYSQL_USER=campus 不一致,且密码明文 'campus_love'|部署库/账号分裂,campus_love@localhost 用户无法经网络连接,弱明文密码残留|删除该脚本或与 compose 对齐
+R2-00145|infra|init-mysql.sql|2|MEDIUM|明文密码 'campus_love' 入库文件|凭据泄露面|改用环境变量
+R2-00146|infra|.gitignore|157|MEDIUM|init-mysql.sql 被 gitignore,但 docker-compose.yml:111 挂载它|新 clone 环境无此文件,bind mount 变成空目录,初始化脚本缺失|取消忽略或改用卷内脚本
+R2-00147|infra|set-root-password.sql|1|MEDIUM|root 密码明文设为 'root'|若被执行,数据库 root 弱密码|删除该文件
+R2-00148|infra|.env.example|103|MEDIUM|CORS_ALLOWED_ORIGINS 默认含 example.com 占位域名|生产未替换时跨域配置错误|占位符化
+R2-00149|infra|.env.example|108|LOW|RABBITMQ_USERNAME=guest 明文默认|弱凭据默认值|占位符化
+R2-00150|infra|.env.example|42|LOW|DB_USERNAME=campus 与 init-mysql.sql 用户不一致|配置漂移|统一
+R2-00151|infra|.env.example|181|LOW|TAG=dev 默认(注释已警示)|生产误用 dev tag 部署|加 CI 强制校验
+R2-00152|infra|apps/api/src/main/resources/application-db.yml|65|MEDIUM|admin_openid 占位符默认 admin-default-openid-change-me|未配置 ADMIN_OPENID 时插入固定 openid 管理员|改为无默认值
+R2-00153|infra|database/flyway/flyway.toml|13|MEDIUM|CLI 路径 admin_openid 默认值同上|同上|移除默认
+R2-00154|infra|apps/api/src/main/resources/application.yml|38|MEDIUM|rabbitmq username/password 默认 guest/guest|应用启动尝试弱凭据连接|默认置空
+R2-00155|infra|apps/api/src/main/resources/application-db.yml|97|MEDIUM|同 38 行 rabbitmq guest 默认|同上|同上
+R2-00156|infra|.gitleaks.toml|39|LOW|regexes 豁免 'campus_love'(数据库名)覆盖全部文件|真实含 campus_love 的凭据串可能被放行|收紧为 URL 上下文
+R2-00157|infra|.gitleaks.toml|47|LOW|测试资源目录整目录白名单|测试中误放真实凭据不可见|按文件精确豁免
+R2-00158|infra|scripts/generate-secret.sh|30|MEDIUM|admin_hash 默认明文密码 "ChangeMe123!"|按默认生成的管理员密码弱|强制传参,无默认
+R2-00159|infra|scripts/generate-secret.sh|40|MEDIUM|密码直接内插进 python3 -c 命令字符串|含引号/特殊字符时命令注入或密码进进程参数|环境变量/文件传递
+R2-00160|infra|scripts/backup-mysql.sh|131|MEDIUM|mysqldump --password 明文进进程参数|容器内其他进程可读备份密码|改 MYSQL_PWD 环境变量
+R2-00161|infra|scripts/backup-mysql.sh|200|MEDIUM|redis-cli -a 明文密码进进程参数|同上|用 REDISCLI_AUTH
+R2-00162|infra|scripts/backup-mysql.sh|217|MEDIUM|BGSAVE 轮询 60s 超时后未检测失败,直接复制 RDB|超时后可能复制到未完成/旧 RDB,静默产生坏备份|超时即失败退出
+R2-00163|infra|scripts/backup-mysql.sh|154|LOW|mysqldump 无 --routines 依赖项 mysql.proc 权限检查|权限不足时备份失败(已有错误处理)|文档注明所需权限
+R2-00164|infra|scripts/backup-mysql.sh|53|LOW|BACKUP_DIR 默认 /backup 与 compose 注入 /backups 不一致(注释已说明)|直跑脚本与容器行为不同|统一默认值
+R2-00165|infra|scripts/backup-mysql.sh|262|LOW|清理仅按 mtime 不校验备份完整性|坏备份过期前不被发现|清理前 gzip -t 校验
+R2-00166|infra|scripts/backup-mysql.sh|46|LOW|set -e 下 redis-cli 失败处理已覆盖,但 cron 环境无 PATH 保障|cron 下 mysqldump 找不到|脚本内设置 PATH
+R2-00167|infra|docker-compose.yml|596|MEDIUM|backup 以 root 连接 MySQL 备份(DB_USER=root 默认)|最小权限缺失|独立备份账号
+R2-00168|infra|docs/DR/restore-procedure.md|66|HIGH|全篇引用不存在的服务名 mysql-backup(docker-compose 实际服务名 backup)|恢复命令全部不可执行,灾难时无法按文档恢复|批量替换为 backup
+R2-00169|infra|docs/DR/restore-procedure.md|29|MEDIUM|容器内脚本路径 /usr/local/bin/backup-mysql.sh 与 compose 挂载 /backup.sh 不符|手动触发备份命令失效|改 /backup.sh
+R2-00170|infra|docs/DR/restore-procedure.md|103|MEDIUM|恢复时 CREATE DATABASE 用 utf8mb4_unicode_ci,与生产 0900_ai_ci 不一致|恢复后库默认 collation 漂移,新表排序规则不一致|改 0900_ai_ci
+R2-00171|infra|docs/DR/restore-procedure.md|17|HIGH|声称 binlog 增量实时/PITR,但 docker-compose.yml mysql 未开启 log-bin|PITR 恢复场景实际不可行|compose 启用 binlog 或删除 PITR 章节
+R2-00172|infra|docs/DR/restore-procedure.md|271|LOW|演练记录仅 2026-07-26 一次,无季度演练证据|恢复能力未经验证|按 5.1 计划执行并记录
+R2-00173|infra|docs/DR/DRP.md|76|MEDIUM|声称 Redis RDB 每 5 分钟,compose 实际 --save 60 1000(60s 内 1000 写才落盘)|DRP 数据与部署不符,RPO 声明虚假|对齐配置
+R2-00174|infra|docs/DR/DRP.md|77|MEDIUM|声称 Elasticsearch 每日快照,项目未部署 ES|文档虚构,误导容灾规划|删除或标注未部署
+R2-00175|infra|docs/DR/DRP.md|78|MEDIUM|声称 RabbitMQ 队列持久化,compose 未部署 RabbitMQ|同上|同上
+R2-00176|infra|docs/DR/DRP.md|47|MEDIUM|数据库恢复 RPO 1h 依赖 binlog,但 binlog 未启用|RPO 目标不可达成|启用 binlog
+R2-00177|infra|docs/CI-CD.md|104|MEDIUM|声称"未配置 workflow_dispatch",实际 ci.yml:9 已配置|文档与代码不一致|更新
+R2-00178|infra|docs/CI-CD.md|106|LOW|声称 permissions 仅 contents: read,实际含 packages: write|同上|更新
+R2-00179|infra|docs/CI-CD.md|234|MEDIUM|声称 trivy-action@master,实际固定 @v0.23.0|文档过时|更新
+R2-00180|infra|docs/CI-CD.md|278|LOW|声称 npx playwright test,实际需 --config=tests/e2e/playwright.config.ts|本地复现命令失效|更新
+R2-00181|infra|docs/CI-CD.md|329|MEDIUM|4.1/4.2 镜像构建/推送命令仍含 :latest 并写 GIT_SHA,与 CI 实际 ci-<sha> tag、禁 latest 策略冲突|发布流程误导|重写
+R2-00182|infra|docs/CI-CD.md|462|LOW|迁移命名规范 V{yyyy.MM.dd.HHmm} 与实际 V{yyyy.MM.dd.xxxx} 不符|新迁移命名混乱|更新
+R2-00183|infra|docs/CI-CD.md|512|MEDIUM|7.2 告警表(ApiHighP99Latency/ApiInstanceDown/JvmHighMemoryUsage/MysqlSlowQuery/ThirdPartyApiDown 等)与 alert-rules.yml 实际规则名不符|运维按表查不到告警|同步
+R2-00184|infra|docs/CI-CD.md|544|MEDIUM|8.2 备份命令 docker compose exec db-backup 服务不存在(实际 backup)|命令失效|更新
+R2-00185|infra|docs/CI-CD.md|576|MEDIUM|9.2 数据库回滚命令引用不存在的 db-backup 服务|同上|更新
+R2-00186|infra|docs/CI-CD.md|602|LOW|发布清单列 9 个 job,实际含 gitleaks 共 10 个|清单不完整|更新
+R2-00187|infra|docs/CI-CD.md|648|LOW|"gh workflow run ci.yml" 注释与 104 行"未配置 workflow_dispatch"自相矛盾|文档内部矛盾|统一
+R2-00188|infra|DEPLOYMENT.md|705|MEDIUM|声称 admin/client 通过 API_UPSTREAM 环境变量注入后端地址,实际已写死 api:8080(infra #15)|文档过时|更新
+R2-00189|infra|DEPLOYMENT.md|764|MEDIUM|抓取目标列表含 mysql-exporter/redis-exporter/blackbox-http,实际 prometheus.yml 已移除|监控部署期望落空|更新
+R2-00190|infra|DEPLOYMENT.md|773|MEDIUM|告警类别列表(MysqlDown/RedisDown/AdminDown/JvmGcPauseHigh/MatchSuccessRateLow 等)与实际规则文件不符,HostDiskHigh 阈值 85% vs 实际 80%|运维误导|更新
+R2-00191|infra|DEPLOYMENT.md|862|LOW|声称 api-logs 卷持久化到宿主 ./logs/api,compose 实际为命名卷无 bind|日志位置描述错误|更新
+R2-00192|infra|DEPLOYMENT.md|236|LOW|JWT_SECRET 示例 "your-production-secret-32-chars-min" 弱值,照抄风险|弱密钥上线|改随机生成示例
+R2-00193|infra|DEPLOYMENT.md|307|LOW|"启动 db-backup 服务" 服务名错误(实际 backup)|命令失效|更新
+R2-00194|infra|DEPLOYMENT.md|209|MEDIUM|jar 名 campus-love-api-0.1.0.jar 与 pom/CHANGELOG 版本脱节|发布产物对不上|同步版本
+R2-00195|infra|DEPLOYMENT.md|917|LOW|回滚示例 TAG_ROLLBACK=ci-previous1234 无实际来源说明|回滚流程不可执行|补 tag 管理说明
+R2-00196|infra|docs/database-indexes.md|90|LOW|索引表列 idx_checkin_user_id/idx_checkin_date,而迁移实际仅 uk_checkin_user_date 等|文档与库不一致|同步
+R2-00197|infra|docs/branching.md|5|LOW|release/YYYY-MM-DD 命名与 CI-CD.md 的 release/v{version} 不一致,且 workflow 未监听 release/* 分支|分支策略落地不一致|统一
+R2-00198|infra|docs/CI-CD.md|110|LOW|文档称 9 个 Job,未含 gitleaks-scan(ci.yml:56)|同上|更新
+R2-00199|infra|docs/CI-CD.md|3|MEDIUM|无 SLO/错误预算定义章节(用户要求监控 SLO)|SLO 缺失|补 SLO 定义文档
+R2-00200|infra|docs/DR/restore-procedure.md|22|MEDIUM|备份存储位置写 /backup 与 compose /backups 不符|恢复时找不到文件|更新
+R2-00201|infra|docs/DR/restore-procedure.md|335|MEDIUM|7.1 dry-run 命令引用 mysql-backup 容器,同上服务名错误|校验流程失效|更新
+R2-00202|infra|docs/DR/restore-procedure.md|411|LOW|9.2 命令速查同 mysql-backup 错误|同上|更新
+R2-00203|infra|docs/DR/restore-procedure.md|315|LOW|6.3 磁盘满清理引用 mysql-backup|同上|更新
+R2-00204|infra|docs/DR/restore-procedure.md|189|LOW|mysqlbinlog 重放命令缺 --stop-position 安全边界,跨库无 --skip-gtids|PITR 可能误伤|补充参数
+R2-00205|infra|docs/DR/restore-procedure.md|421|LOW|sed 替换 DEFINER 命令在文件级执行有风险|恢复文档建议可致 SQL 破坏|改为 mysql 用户匹配
+R2-00206|infra|docs/DR/DRP.md|34|LOW|P0 响应时间 ≤15 分钟但无值班/on-call 轮值机制定义|响应承诺不可达|补值班制度
+R2-00207|infra|docs/DR/DRP.md|100|LOW|RTO/RPO 声明(RPO≤24h)与 2.1 表(RPO 1h)自相矛盾|目标不可审计|统一
+R2-00208|infra|docs/release-checklist.md|1|LOW|未核对(工作区存在,但版本与 CHANGELOG 1.0.0 对齐情况未验证)|发布门禁文本漂移|按发布周期审校
+R2-00209|infra|README.md|1|LOW|CI 徽章占位 {org}/{repo} 未替换(docs/CI-CD.md:287 同)|README 占位符未替换|替换真实仓库
+R2-00210|infra|docs/CI-CD.md|287|LOW|CI 徽章 URL 占位 {org}/{repo}|同上|同上
+R2-00211|infra|docker-compose.yml|30|已修复|P1.19 安全提示与 ${VAR:?} 强制注入已实施(标注状态:已修复)
+R2-00212|infra|docker-compose.yml|54|已修复|网络按 data-net/app-net 拆分、端口绑定 127.0.0.1、资源限制、healthcheck 密码环境变量化(FIN-01328~01340 已修复,标注状态:已修复)
+R2-00213|infra|.github/workflows/ci.yml|232|已修复|mvn 编译/测试门禁已添加(标注状态:已修复)
+R2-00214|infra|docker-compose.yml|262|已修复|Flyway 迁移目录不再挂载 initdb.d,仅挂载迁移目录(标注状态:已修复)
+R2-00215|infra|docker-compose.yml|189|已修复|TAG 默认 dev 禁止 latest(标注状态:已修复)
+R2-00216|infra|.gitleaks.toml|25|已修复|BCrypt 哈希白名单已移除,改为路径精确豁免(标注状态:已修复)

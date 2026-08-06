@@ -4,6 +4,8 @@ import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
+// 展示模式（全功能展示版）：VIP 全亮
+import { isShowcaseMode } from "../config/showcase";
 
 /**
  * VIP 会员 Store
@@ -82,7 +84,10 @@ export interface FetchBillsParams {
 }
 
 export const useVipStore = defineStore("vip", () => {
-  const isVip = ref(false);
+  /** 内部 VIP 状态（保留赋值能力，供后续购买/续费逻辑更新） */
+  const isVipRaw = ref(false);
+  /** 展示模式（全功能展示版）下 VIP 恒为 true，其余透传内部状态 */
+  const isVip = computed<boolean>(() => isShowcaseMode || isVipRaw.value);
   const expireDate = ref<string | null>(null);
 
   const plans = ref<VipPlan[]>([
@@ -273,17 +278,16 @@ export const useVipStore = defineStore("vip", () => {
     const requestedSize = params.size ?? 20;
     const forceRefresh = params.forceRefresh ?? false;
 
-    if (billsLoading.value) {
-      return {
-        items: bills.value,
-        total: billsTotal.value,
-        page: billsPage.value,
-        size: billsSize.value,
-        totalPages: billsTotalPages.value,
-      };
-    }
-
+    // infra R2-00053: mock 分支提前到 loading 检查之前——mock 为同步逻辑无并发风险，
+    // 且保证 forceRefresh 在 mock 下同样生效（重新生成相对日期账单）
     if (useMock()) {
+      // infra R2-00054: mock 账单日期改为相对当前时间生成，避免硬编码日期随时间过期
+      const DAY_MS = 24 * 60 * 60 * 1000;
+      const toLocalIso = (offsetDays: number): string => {
+        const d = new Date(Date.now() - offsetDays * DAY_MS);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      };
       const mockItems: BillView[] = [
         {
           id: 1001,
@@ -295,11 +299,11 @@ export const useVipStore = defineStore("vip", () => {
           type: "SUBSCRIBE",
           status: "SUCCESS",
           paymentMethod: "WECHAT",
-          transactionId: "wx_2026072514300001",
-          periodStart: "2026-07-25T00:00:00",
-          periodEnd: "2026-10-25T00:00:00",
+          transactionId: "wx_mock_1001",
+          periodStart: toLocalIso(0),
+          periodEnd: toLocalIso(-92),
           remark: "首次开通",
-          createdAt: "2026-07-25T14:30:00",
+          createdAt: toLocalIso(0),
         },
         {
           id: 1002,
@@ -311,11 +315,11 @@ export const useVipStore = defineStore("vip", () => {
           type: "RENEW",
           status: "SUCCESS",
           paymentMethod: "WECHAT",
-          transactionId: "wx_2026062012000002",
-          periodStart: "2026-06-20T00:00:00",
-          periodEnd: "2026-07-20T00:00:00",
+          transactionId: "wx_mock_1002",
+          periodStart: toLocalIso(30),
+          periodEnd: toLocalIso(-1),
           remark: "自动续费",
-          createdAt: "2026-06-20T12:00:00",
+          createdAt: toLocalIso(30),
         },
         {
           id: 1003,
@@ -327,9 +331,9 @@ export const useVipStore = defineStore("vip", () => {
           type: "REFUND",
           status: "REFUNDED",
           paymentMethod: "WECHAT",
-          transactionId: "wx_2026051518000003",
+          transactionId: "wx_mock_1003",
           remark: "用户申请退款",
-          createdAt: "2026-05-15T18:00:00",
+          createdAt: toLocalIso(60),
         },
       ];
       const start = requestedPage * requestedSize;
@@ -351,6 +355,16 @@ export const useVipStore = defineStore("vip", () => {
       billsTotalPages.value = mock.totalPages;
       billsLoaded.value = true;
       return mock;
+    }
+
+    if (billsLoading.value) {
+      return {
+        items: bills.value,
+        total: billsTotal.value,
+        page: billsPage.value,
+        size: billsSize.value,
+        totalPages: billsTotalPages.value,
+      };
     }
 
     // 已加载且未强制刷新且参数一致时返回缓存

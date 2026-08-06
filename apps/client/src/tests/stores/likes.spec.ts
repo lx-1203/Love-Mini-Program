@@ -19,10 +19,26 @@ const mockRequestSubscribeMessage = vi.fn();
 };
 
 import { useLikesStore } from "../../stores/likes";
+import { useSessionStore } from "../../stores/session";
 
 describe("likes store", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    // infra R2-00027：初始化 mock 会话，使 likes.currentUserId 返回 "user-1001"
+    // （原实现 P1 修复后未登录时返回空串，测试未同步导致自喜欢校验断言失败）
+    const sessionStore = useSessionStore();
+    sessionStore.userSession = {
+      userId: "user-1001",
+      loggedIn: true,
+      loginMethod: "wechat",
+      displayName: "测试用户",
+      phoneBound: false,
+      profileCompleted: true,
+      campusVerified: false,
+      scheduleCompleted: false,
+      campusName: null,
+      featureFlags: {},
+    } as any;
     vi.clearAllMocks();
   });
 

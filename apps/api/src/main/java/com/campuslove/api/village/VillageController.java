@@ -3,25 +3,13 @@ package com.campuslove.api.village;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
-import com.campuslove.api.dto.DtoMapper;
-import com.campuslove.api.dto.PostDto;
-import com.campuslove.api.entity.Post;
-import com.campuslove.api.entity.User;
 import com.campuslove.api.monitor.VillageMetrics;
 import com.campuslove.api.ratelimit.RateLimit;
-import com.campuslove.api.repository.PostRepository;
-import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -37,11 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
  * 村口帖子与转发控制器。
  * 提供帖子列表、详情、发布、点赞、评论以及转发等接口。
  * 写操作的用户ID从JWT认证上下文中获取，不再从请求参数获取。
- *
- * <p>DTO 层接入：新增 GET /api/posts/dto 端点返回 {@link PostDto} 列表，
- * 通过 {@link DtoMapper} 将 Post 实体批量转换为 DTO，
- * 与既有返回 {@code PostListResponse} 的 {@link #getPosts} 端点并存，
- * 保持方法签名兼容。</p>
  */
 @RestController
 @RequestMapping("/api/v1/posts")
@@ -54,17 +37,11 @@ public class VillageController {
    * 通过 Micrometer 暴露到 /actuator/prometheus 供 Prometheus 抓取。
    */
   private final VillageMetrics villageMetrics;
-  private final PostRepository postRepository;
-  private final UserRepository userRepository;
 
   public VillageController(VillageService villageService,
-                           VillageMetrics villageMetrics,
-                           PostRepository postRepository,
-                           UserRepository userRepository) {
+                           VillageMetrics villageMetrics) {
     this.villageService = villageService;
     this.villageMetrics = villageMetrics;
-    this.postRepository = postRepository;
-    this.userRepository = userRepository;
   }
 
   // ---------- 帖子 ----------
@@ -72,20 +49,30 @@ public class VillageController {
   /**
    * 获取帖子列表（支持分类、标签、排序、分页）。
    * 当 category=campus 时，从JWT认证上下文获取 userId 用于校园筛选。
+   * 当 authorId 非空时，仅返回该作者发布的帖子（"我的动态"场景）。
    */
   @GetMapping
   public PostListResponse getPosts(
       @RequestParam(name = "category", required = false) String category,
       @RequestParam(name = "tag", required = false) String tag,
       @RequestParam(name = "sortBy", required = false, defaultValue = "latest") String sortBy,
+      @RequestParam(name = "authorId", required = false) Long authorId,
       @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
       @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
+    // 走查补齐：按作者过滤（个人主页"我的动态"），优先于分类/标签筛选
+    if (authorId != null) {
+      return villageService.getPostsByAuthor(authorId, page, pageSize);
+    }
     // 校园分类需要从认证上下文获取 userId
+    // FIN-00064 修复：改用 SecurityUtils.isAuthenticated() 判断认证状态，
+    // 原实现 catch HttpClientErrorException.Unauthorized（HTTP 异常类型滥用），
+    // 未认证时 getCurrentUserId 抛出的 401 异常会被 GlobalExceptionHandler 捕获，
+    // 与「返回空列表」的意图耦合在异常流上。
     Long userId = null;
     if ("campus".equals(category)) {
-      try {
+      if (SecurityUtils.isAuthenticated()) {
         userId = SecurityUtils.getCurrentUserId();
-      } catch (org.springframework.web.client.HttpClientErrorException.Unauthorized e) {
+      } else {
         // 未认证时返回空列表
         return new PostListResponse(List.of(), 0, page, pageSize);
       }
@@ -247,81 +234,9 @@ public class VillageController {
     }
   }
 
-  // ---------- DTO 层接入 ----------
-
-  /**
-   * 获取帖子 DTO 列表（DTO 层示例端点）。
-   *
-   * <p>与 {@link #getPosts} 返回的 {@code PostListResponse} 并存，
-   * 用于演示 Entity -&gt; DTO 的批量转换：
-   * <ol>
-   *   <li>通过 PostRepository 分页查询最新 active 状态的帖子；</li>
-   *   <li>批量查询作者 User 实体（一次 findAllById 避免 N+1）；</li>
-   *   <li>经 {@link DtoMapper#toPostDto} 逐条转换为 {@link PostDto}，
-   *       并通过 {@link DtoMapper#toDtoList} 批量产出。</li>
-   * </ol>
-   * 计数（likeCount/commentCount）取自 Post 实体本身的累计字段，
-   * 避免在本端点触发额外的聚合查询。</p>
-   *
-   * @param page     页码（从 1 开始）
-   * @param pageSize 每页大小（1-100）
-   * @return PostDto 列表
-   */
-  @GetMapping("/dto")
-  public List<PostDto> getPostsDto(
-      @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
-      @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
-    Pageable pageable = PageRequest.of(page - 1, pageSize,
-        Sort.by(Sort.Direction.DESC, "createdAt"));
-    Page<Post> postPage = postRepository.findByStatusOrderByCreatedAtDesc(
-        Post.PostStatus.active, pageable);
-    List<Post> posts = postPage.getContent();
-    if (posts.isEmpty()) {
-      return List.of();
-    }
-    // 批量加载作者，避免 N+1 查询
-    List<Long> authorIds = posts.stream().map(Post::getAuthorId).distinct().toList();
-    Map<Long, User> authorMap = new HashMap<>();
-    if (!authorIds.isEmpty()) {
-      List<User> authors = userRepository.findAllById(authorIds);
-      for (User u : authors) {
-        authorMap.put(u.getId(), u);
-      }
-    }
-    return DtoMapper.toDtoList(posts, p -> DtoMapper.toPostDto(
-        p,
-        authorMap.get(p.getAuthorId()),
-        p.getLikesCount() != null ? p.getLikesCount().longValue() : 0L,
-        p.getCommentsCount() != null ? p.getCommentsCount().longValue() : 0L
-    ));
-  }
+  // ---------- DTO 层接入 ----------（infra R2-00218: 废弃端点 GET /posts/dto 已删除，与 getPosts 功能重复）
 }
 
 // ---------- 视图 / 请求模型 ----------
 // 注意：public record 已迁移到独立文件，便于跨包引用（如 mock 包）。
 // 下方仅保留 VillageController 内部使用的 package-private 视图。
-
-/**
- * 同校动态流中的活动简要视图。
- */
-record CampusActivityView(
-    Long id,
-    String title,
-    String scheduleText,
-    String location,
-    int enrollmentCount,
-    String status
-) {}
-
-/**
- * 同校动态流中的话题简要视图。
- */
-record CampusTopicView(
-    Long id,
-    Long circleId,
-    String circleName,
-    String title,
-    String authorName,
-    int replyCount,
-    String createdAt
-) {}

@@ -15,6 +15,7 @@ import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.DailyBenefitRepository;
 import com.campuslove.api.repository.MakeUpQuotaRepository;
 import com.campuslove.api.repository.PostRepository;
+import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -102,6 +103,14 @@ public class RealCheckInService implements CheckInService {
     private final MakeUpQuotaRepository makeUpQuotaRepository;
 
     /**
+     * JPA 实体管理器（FIN-00025/00026 修复）。
+     *
+     * <p>用于签到日历范围查询、连续天数批量查询与新入圈用户去重统计，
+     * 替代原逐日查询（31 次）与全表加载统计。</p>
+     */
+    private final EntityManager entityManager;
+
+    /**
      * 消息生产者，用于异步推送签到事件通知。
      * <p>签到成功后通过 MQ 异步推送通知（微信订阅消息、通知持久化等），
      * 避免阻塞签到主流程。MQ 不可用时由 MessageProducer 降级处理。</p>
@@ -140,7 +149,8 @@ public class RealCheckInService implements CheckInService {
                               CircleTopicRepository circleTopicRepository,
                               CircleMembershipRepository circleMembershipRepository,
                               MakeUpQuotaRepository makeUpQuotaRepository,
-                              MessageProducer messageProducer) {
+                              MessageProducer messageProducer,
+                              EntityManager entityManager) {
         this.checkInConfig = checkInConfig;
         this.checkInRepository = checkInRepository;
         this.dailyBenefitRepository = dailyBenefitRepository;
@@ -149,6 +159,7 @@ public class RealCheckInService implements CheckInService {
         this.circleMembershipRepository = circleMembershipRepository;
         this.makeUpQuotaRepository = makeUpQuotaRepository;
         this.messageProducer = messageProducer;
+        this.entityManager = entityManager;
     }
 
     /**
@@ -434,20 +445,26 @@ public class RealCheckInService implements CheckInService {
      * @return 补签后的连续签到天数
      */
     private int calculateConsecutiveDaysAfterMakeUp(Long userId, LocalDate today, LocalDate makeUpDate) {
+        // FIN-00025 修复：原实现从 today 逐日回查（N 次查询），改为一次批量查询 +
+        // 内存集合判定；补签日期视为已签到参与连续计数。
+        List<LocalDate> checkInDates = entityManager.createQuery(
+                        "SELECT c.checkInDate FROM CheckIn c "
+                                + "WHERE c.userId = :userId AND c.checkInDate <= :today "
+                                + "ORDER BY c.checkInDate DESC",
+                        LocalDate.class)
+                .setParameter("userId", userId)
+                .setParameter("today", today)
+                .getResultList();
+
+        java.util.HashSet<LocalDate> dateSet = new java.util.HashSet<>(checkInDates);
+        dateSet.add(makeUpDate);
+
         int streak = 0;
-        LocalDate checkDate = today;
-
-        while (true) {
-            Optional<CheckIn> checkIn = checkInRepository.findByUserIdAndCheckInDate(userId, checkDate);
-            // 补签日期视为已签到
-            if (checkIn.isPresent() || checkDate.equals(makeUpDate)) {
-                streak++;
-                checkDate = checkDate.minusDays(1);
-            } else {
-                break;
-            }
+        LocalDate expected = today;
+        while (dateSet.contains(expected)) {
+            streak++;
+            expected = expected.minusDays(1);
         }
-
         return streak;
     }
 
@@ -493,12 +510,21 @@ public class RealCheckInService implements CheckInService {
         LocalDate startOfMonth = yearMonth.atDay(1);
         LocalDate endOfMonth = yearMonth.atEndOfMonth();
 
-        List<Integer> checkedDays = new ArrayList<>();
-        for (LocalDate date = startOfMonth; !date.isAfter(endOfMonth); date = date.plusDays(1)) {
-            if (checkInRepository.findByUserIdAndCheckInDate(userId, date).isPresent()) {
-                checkedDays.add(date.getDayOfMonth());
-            }
-        }
+        // FIN-00025 修复：原实现逐日调用 findByUserIdAndCheckInDate（最多 31 次查询），
+        // 改为一次范围查询后内存取 dayOfMonth。
+        List<CheckIn> monthCheckIns = entityManager.createQuery(
+                        "SELECT c FROM CheckIn c WHERE c.userId = :userId "
+                                + "AND c.checkInDate BETWEEN :start AND :end",
+                        CheckIn.class)
+                .setParameter("userId", userId)
+                .setParameter("start", startOfMonth)
+                .setParameter("end", endOfMonth)
+                .getResultList();
+
+        List<Integer> checkedDays = monthCheckIns.stream()
+                .map(c -> c.getCheckInDate().getDayOfMonth())
+                .sorted()
+                .toList();
 
         log.debug("用户[{}]在{}年{}月共签到{}天", userId, yearMonth.getYear(), yearMonth.getMonthValue(), checkedDays.size());
         return checkedDays;
@@ -567,13 +593,14 @@ public class RealCheckInService implements CheckInService {
         LocalDateTime since = LocalDateTime.now().minusHours(24);
 
         try {
-            List<CircleMembership> recentMemberships = circleMembershipRepository.findAll();
-            long count = recentMemberships.stream()
-                    .filter(m -> m.getJoinedAt() != null && !m.getJoinedAt().isBefore(since))
-                    .map(CircleMembership::getUserId)
-                    .distinct()
-                    .count();
-            return (int) count;
+            // FIN-00026 修复：原实现 findAll() 全表加载后内存过滤，
+            // 改为数据库侧去重统计（COUNT(DISTINCT userId)），数据量大时避免全表传输。
+            Long count = entityManager.createQuery(
+                            "SELECT COUNT(DISTINCT m.userId) FROM CircleMembership m WHERE m.joinedAt >= :since",
+                            Long.class)
+                    .setParameter("since", since)
+                    .getSingleResult();
+            return count != null ? count.intValue() : 0;
         } catch (DataAccessException e) {
             // Task 10（FIN-00114）复核：本方法被 checkIn()（@Transactional 读写事务）自调用，
             // Spring AOP 自调用不经过代理，readOnly 提示失效，本方法实际运行在 checkIn 事务内。
@@ -602,19 +629,27 @@ public class RealCheckInService implements CheckInService {
      * @return 连续签到天数
      */
     private int calculateConsecutiveDays(Long userId, LocalDate startDate) {
-        int streak = 0;
-        LocalDate checkDate = startDate;
+        // FIN-00025 修复：原实现从 startDate 逐日回查（连续 N 天即 N 次查询），
+        // 改为一次查询用户全部 <= startDate 的签到日期（按日期倒序），内存中计算连续段。
+        List<LocalDate> checkInDates = entityManager.createQuery(
+                        "SELECT c.checkInDate FROM CheckIn c "
+                                + "WHERE c.userId = :userId AND c.checkInDate <= :startDate "
+                                + "ORDER BY c.checkInDate DESC",
+                        LocalDate.class)
+                .setParameter("userId", userId)
+                .setParameter("startDate", startDate)
+                .getResultList();
 
-        while (true) {
-            Optional<CheckIn> checkIn = checkInRepository.findByUserIdAndCheckInDate(userId, checkDate);
-            if (checkIn.isPresent()) {
+        int streak = 0;
+        LocalDate expected = startDate;
+        for (LocalDate date : checkInDates) {
+            if (date.equals(expected)) {
                 streak++;
-                checkDate = checkDate.minusDays(1);
+                expected = expected.minusDays(1);
             } else {
                 break;
             }
         }
-
         return streak;
     }
 

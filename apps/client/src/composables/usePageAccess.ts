@@ -1,5 +1,7 @@
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+// 展示模式（全功能展示版）：旁路全部页面守卫，演示者可无摩擦跳转任意页面
+import { isShowcaseMode } from "../config/showcase";
 import { useSessionStore } from "../stores/session";
 import { resolveSessionAccess, type PageRequirements } from "../guards/session-guard";
 import { resolveProfileGuard } from "../guards/profile-guard";
@@ -8,26 +10,9 @@ import { replaceAppPath } from "../utils/navigation";
 import { getToken } from "../services/http";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
-
-/**
- * 获取当前页面路径（用于 profile-guard 弹窗文案）
- * 返回标准化的路径，带前导斜杠。
- */
-function getCurrentPagePath(): string {
-  try {
-    const pages = getCurrentPages();
-    const current = pages[pages.length - 1];
-    if (!current) return "";
-    // 兼容 H5/小程序：route 不带前导斜杠，统一补上
-    const route: string | undefined =
-      (current as { route?: string }).route ??
-      (current as { $page?: { fullPath?: string } }).$page?.fullPath;
-    if (!route) return "";
-    return route.startsWith("/") ? route : `/${route}`;
-  } catch (_e) {
-    return "";
-  }
-}
+// infra R2-00140: 复用 compat 的 getCurrentPagePath（含 H5/MP 平台差异处理），
+// 消除本文件与 compat/index.ts 的重复实现（原审计项：守卫双实现/重复工具）。
+import { getCurrentPagePath } from "../compat";
 
 /**
  * 模块级刷新标志，防止多个页面 onShow 并发触发 refreshSession。
@@ -62,6 +47,12 @@ export function usePageAccess(requirements: PageRequirements) {
   const { userSession } = storeToRefs(sessionStore);
 
   onShow(() => {
+    // 展示模式（全功能展示版）：旁路全部守卫，演示者可无摩擦跳转任意页面。
+    // 仅在 VITE_SHOWCASE_MODE=true 的展示构建中生效，正式包恒为 false。
+    if (isShowcaseMode) {
+      return;
+    }
+
     // 会话还在加载中，跳过守卫检查（避免误判 isLoggedIn=false）
     if (sessionStore.loading) {
       return;

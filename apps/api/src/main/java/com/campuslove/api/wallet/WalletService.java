@@ -1,5 +1,8 @@
 package com.campuslove.api.wallet;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 /**
  * 钱包服务接口。
  *
@@ -69,4 +72,18 @@ public interface WalletService {
      * @return 余额（分），不存在则返回 0
      */
     Long getBalance(Long userId);
+
+    /**
+     * 分页查询用户钱包交易流水（按创建时间倒序）。
+     *
+     * <p>走查补齐（钱包 HTTP 端点化）：原流水查询仅存在于
+     * {@link WalletTransactionLogRepository#findByUserIdOrderByCreatedAtDesc}，
+     * 服务层未暴露给上层。此处补充服务方法，供 {@code WalletController} 的
+     * 账单/流水端点使用（"我的钱包-账单"页展示历史资金变动）。</p>
+     *
+     * @param userId   用户 ID
+     * @param pageable 分页参数（page 从 0 开始，与 VIP 账单分页惯例一致）
+     * @return 流水分页（按创建时间倒序）
+     */
+    Page<WalletTransactionLog> listTransactions(Long userId, Pageable pageable);
 }

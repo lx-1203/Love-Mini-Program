@@ -66,9 +66,26 @@ class VillagePostServiceTest {
         when(sensitiveWordFilter.filterWithLog(content, userId, "POST")).thenReturn("hello");
         when(queryService.toJsonString(any())).thenReturn("[]");
         ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
-        when(postRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+        // saveAndFlush 会先保存再 flush，用 thenAnswer 回传实体并回填主键（缺陷修复验证：返回视图 id 非空）
+        when(postRepository.saveAndFlush(captor.capture())).thenAnswer(inv -> {
+            Post p = inv.getArgument(0);
+            p.setId(100L);
+            return p;
+        });
+        when(queryService.toPostDetailView(any(Post.class), eq(userId)))
+                .thenAnswer(inv -> {
+                    Post p = inv.getArgument(0);
+                    return new PostDetailView(
+                            p.getId(), null, p.getContent(),
+                            new PostAuthorView(p.getAuthorId(), "昵称", null, ""),
+                            Post.PostCategory.all.name(),
+                            List.of("tag"), List.of(),
+                            p.getLikesCount(), p.getCommentsCount(), p.getShareCount(),
+                            p.getCreatedAt() != null ? p.getCreatedAt().toString() : null,
+                            null, false, true, false);
+                });
 
-        postService.createPost(userId, content, List.of(), List.of("tag"), "all");
+        PostDetailView view = postService.createPost(userId, content, List.of(), List.of("tag"), "all");
 
         Post saved = captor.getValue();
         assertEquals(userId, saved.getAuthorId());
@@ -77,6 +94,9 @@ class VillagePostServiceTest {
         assertEquals(0, saved.getCommentsCount());
         assertEquals(0, saved.getShareCount());
         assertEquals(Post.PostStatus.active, saved.getStatus());
+        // 缺陷修复：saveAndFlush 后返回视图的 id 必须非空（原 save() 返回 null）
+        assertEquals(100L, saved.getId());
+        assertEquals(100L, view.id());
         verify(queryService).toPostDetailView(saved, userId);
     }
 
@@ -88,9 +108,10 @@ class VillagePostServiceTest {
         Long userId = 1L;
         when(sensitiveWordFilter.filterWithLog(anyString(), eq(userId), anyString())).thenReturn("content");
         when(queryService.toJsonString(any())).thenReturn("[]");
+        when(postRepository.saveAndFlush(any(Post.class))).thenAnswer(inv -> inv.getArgument(0));
 
         postService.createPost(userId, "content", null, null, null);
 
-        verify(postRepository).save(any(Post.class));
+        verify(postRepository).saveAndFlush(any(Post.class));
     }
 }

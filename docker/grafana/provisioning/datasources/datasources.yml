@@ -10,6 +10,8 @@ datasources:
 
   # ---------- Prometheus 主数据源 ----------
   - name: Prometheus
+    # infra R2-00003:显式固定 uid,与仪表板 JSON 中 "datasource.uid": "Prometheus" 绑定
+    uid: Prometheus
     type: prometheus
     access: proxy
     url: http://prometheus:9090

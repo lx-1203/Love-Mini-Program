@@ -84,15 +84,19 @@ public class TempChatCleanupService {
      *       时间依赖应用启动时间，cron 则固定整点执行，便于运维排查。</li>
      *   <li>任务由 {@code @EnableScheduling}（已在 CampusLoveApplication 启用）调度。</li>
      *   <li>异常处理：捕获所有异常并记录日志，避免定时任务因单次失败而停止后续调度。</li>
+     *   <li>修复（FIN-00061/MED-50）：tryLock 成功后必须在 finally 中 unlock，
+     *       避免持锁线程崩溃或提前 return 导致锁长期不释放。</li>
      * </ul>
      */
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void cleanupExpiredSessions() {
         // FIN-00061: 分布式锁确保多实例部署时仅一个实例执行清理任务
+        boolean locked = false;
+        org.redisson.api.RLock lock = redissonClient.getLock("scheduled:tempChatCleanup");
         try {
-            if (!redissonClient.getLock("scheduled:tempChatCleanup")
-                    .tryLock(0, 30, TimeUnit.SECONDS)) {
+            locked = lock.tryLock(0, 30, TimeUnit.SECONDS);
+            if (!locked) {
                 log.debug("tempChatCleanup 定时任务已被其他实例持有，跳过本次执行");
                 return;
             }
@@ -101,31 +105,43 @@ public class TempChatCleanupService {
             log.warn("tempChatCleanup 获取分布式锁被中断");
             return;
         }
-        LocalDateTime now = LocalDateTime.now();
-        int cleaned = 0;
-        for (SessionPhase phase : new SessionPhase[]{SessionPhase.matching, SessionPhase.active}) {
-            try {
-                List<TempChatSession> expired = sessionRepository.findByPhaseAndClosesAtBefore(phase, now);
-                if (expired.isEmpty()) {
-                    continue;
-                }
-                for (TempChatSession session : expired) {
-                    try {
-                        if (sessionService.markExpiredIfDue(session)) {
-                            cleaned++;
-                        }
-                    } catch (RuntimeException e) {
-                        // 单条会话清理失败不阻断整体任务，记录日志后继续
-                        log.warn("清理过期会话失败: sessionUid={}, error={}",
-                                session.getSessionUid(), e.getMessage());
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            int cleaned = 0;
+            for (SessionPhase phase : new SessionPhase[]{SessionPhase.matching, SessionPhase.active}) {
+                try {
+                    List<TempChatSession> expired = sessionRepository.findByPhaseAndClosesAtBefore(phase, now);
+                    if (expired.isEmpty()) {
+                        continue;
                     }
+                    for (TempChatSession session : expired) {
+                        try {
+                            if (sessionService.markExpiredIfDue(session)) {
+                                cleaned++;
+                            }
+                        } catch (RuntimeException e) {
+                            // 单条会话清理失败不阻断整体任务，记录日志后继续
+                            log.warn("清理过期会话失败: sessionUid={}, error={}",
+                                    session.getSessionUid(), e.getMessage());
+                        }
+                    }
+                } catch (org.springframework.dao.DataAccessException e) {
+                    log.warn("扫描阶段 {} 的过期会话失败: {}", phase, e.getMessage());
                 }
-            } catch (org.springframework.dao.DataAccessException e) {
-                log.warn("扫描阶段 {} 的过期会话失败: {}", phase, e.getMessage());
             }
-        }
-        if (cleaned > 0) {
-            log.info("SubTask 5.3.1 定时清理过期临时聊天会话完成: 共清理 {} 个会话", cleaned);
+            if (cleaned > 0) {
+                log.info("SubTask 5.3.1 定时清理过期临时聊天会话完成: 共清理 {} 个会话", cleaned);
+            }
+        } finally {
+            // FIN MED-50：finally 中释放锁，确保所有路径（正常/异常/提前 return）均解锁
+            if (locked && lock.isHeldByCurrentThread()) {
+                try {
+                    lock.unlock();
+                } catch (IllegalMonitorStateException e) {
+                    // 锁已被自动释放（持锁超时），忽略
+                    log.debug("锁已被自动释放: scheduled:tempChatCleanup");
+                }
+            }
         }
     }
 
@@ -136,15 +152,24 @@ public class TempChatCleanupService {
      * 根据当前状态、操作方（actor）和决定（decision）计算新状态：
      * rejected -> 终态；accepted-by-self/peer -> 单方同意；completed -> 双方同意。</p>
      *
+     * <p>安全修复（FIN HIGH-5）：actor 不再信任客户端请求体，由服务端根据
+     * 当前用户与会话参与者关系推导（userA → "self"，userB → "peer"），
+     * 防止冒认对方接受联系交换；同时校验当前用户为会话参与者（FIN HIGH-1）。</p>
+     *
      * @param id            会话 ID
-     * @param request       决定请求（actor + decision）
-     * @param currentUserId 当前用户 ID（用于解析会话与最终视图转换）
+     * @param request       决定请求（仅使用 decision；actor 由服务端推导）
+     * @param currentUserId 当前用户 ID（用于解析会话、推导 actor 与最终视图转换）
      * @return 更新后的会话实体（调用方负责转换为视图）
      */
     @Transactional
     public TempChatSession respondToContactExchange(String id, ContactExchangeDecisionRequest request,
                                                     Long currentUserId) {
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("当前用户 ID 不能为空");
+        }
         TempChatSession session = sessionService.resolveSession(id);
+        // FIN HIGH-1：校验当前用户是会话参与者
+        sessionService.requireParticipant(session, currentUserId);
 
         // 已关闭或已过期的会话不允许操作联系交换
         if (session.getPhase() == SessionPhase.closed || session.getPhase() == SessionPhase.expired) {
@@ -152,6 +177,9 @@ public class TempChatCleanupService {
                     id, session.getPhase() == SessionPhase.closed ? "关闭" : "过期");
             return session;
         }
+
+        // FIN HIGH-5：actor 由服务端根据当前用户与会话关系推导，拒绝客户端传入值
+        String actor = session.getUserAId().equals(currentUserId) ? "self" : "peer";
 
         // 获取或创建联系交换记录
         TempChatContactExchange exchange = contactExchangeRepository.findBySessionId(session.getId())
@@ -166,8 +194,8 @@ public class TempChatCleanupService {
                 });
 
         String currentStatus = exchange.getStatus();
-        String newStatus = resolveExchangeStatus(currentStatus, request.actor(), request.decision());
-        String proposer = exchange.getProposer() == null ? request.actor() : exchange.getProposer();
+        String newStatus = resolveExchangeStatus(currentStatus, actor, request.decision());
+        String proposer = exchange.getProposer() == null ? actor : exchange.getProposer();
 
         exchange.setProposer(proposer);
         exchange.setStatus(newStatus);
@@ -189,7 +217,7 @@ public class TempChatCleanupService {
         }
 
         log.info("会话 {} 联系交换状态更新: {} -> {}, actor={}, decision={}",
-                id, currentStatus, newStatus, request.actor(), request.decision());
+                id, currentStatus, newStatus, actor, request.decision());
 
         return session;
     }
@@ -225,13 +253,21 @@ public class TempChatCleanupService {
     /**
      * 解析联系交换状态流转逻辑。
      *
+     * <p>修复（FIN MED-70）：拒绝非法 actor 值（非 self/peer 直接抛异常），
+     * 不再将未知 actor 默认按 peer 处理，防止状态机被非法输入污染。</p>
+     *
      * @param currentStatus 当前状态
      * @param actor         操作方（self / peer）
      * @param decision      决定（accepted / rejected）
      * @return 新状态
      */
     public String resolveExchangeStatus(String currentStatus, String actor, String decision) {
-        if ("rejected".equals(decision)) {
+        if (!"self".equals(actor) && !"peer".equals(actor)) {
+            throw new IllegalArgumentException("非法操作方: " + actor);
+        }
+        // 修复（R2 review HIGH）：客户端/Controller 枚举为 accept|reject|revoke，
+        // 旧实现只匹配 "rejected" 导致"拒绝"被当成"接受"——三种拒绝表达统一处理
+        if ("reject".equals(decision) || "rejected".equals(decision) || "revoke".equals(decision)) {
             return "rejected";
         }
         if ("self".equals(actor)) {

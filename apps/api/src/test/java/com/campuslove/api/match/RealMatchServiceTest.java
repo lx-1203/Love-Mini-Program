@@ -158,7 +158,9 @@ class RealMatchServiceTest {
     void rewind_whenDailyLimitExceeded_shouldThrowDailyLimitExceededException() {
         Long userId = 100L;
 
-        when(valueOperations.get(eq("rewind:count:100:" + todayKey()))).thenReturn(1);
+        // infra R2-00224: 限额改为原子 INCR 判定（INCR 返回值 > 上限即拒绝），
+        // 不再依赖先 GET 再递增的两步校验
+        when(valueOperations.increment(anyString())).thenReturn(2L);
 
         DailyLimitExceededException ex = assertThrows(DailyLimitExceededException.class,
                 () -> realMatchService.rewind(userId));
@@ -169,14 +171,16 @@ class RealMatchServiceTest {
 
         verify(passRecordRepository, never()).findByUserIdOrderByCreatedAtDesc(anyLong());
         verify(passRecordRepository, never()).delete(any());
-        verify(valueOperations, never()).increment(anyString());
+        verify(valueOperations, times(1)).increment(anyString());
+        verify(valueOperations, times(1)).decrement(anyString());
     }
 
     @Test
     void rewind_whenNoPassRecord_shouldReturnFailureWithoutConsumingQuota() {
         Long userId = 100L;
 
-        when(valueOperations.get(eq("rewind:count:100:" + todayKey()))).thenReturn(0);
+        // infra R2-00224: 先原子 INCR 占用额度，无记录时回滚（decrement）
+        when(valueOperations.increment(anyString())).thenReturn(1L);
         when(passRecordRepository.findByUserIdOrderByCreatedAtDesc(userId))
                 .thenReturn(List.of());
 
@@ -185,7 +189,8 @@ class RealMatchServiceTest {
         assertFalse(result.success(), "无 pass 记录时返回失败");
         assertEquals("没有可撤销的 pass 记录", result.message());
 
-        verify(valueOperations, never()).increment(anyString());
+        verify(valueOperations, times(1)).increment(anyString());
+        verify(valueOperations, times(1)).decrement(anyString());
         verify(passRecordRepository, never()).delete(any());
     }
 
@@ -276,15 +281,14 @@ class RealMatchServiceTest {
         Long userId = 100L;
         PassRecord pass1 = createPassRecord(11L, userId, 201L);
 
-        when(valueOperations.get(anyString())).thenReturn(0);
         when(passRecordRepository.findByUserIdOrderByCreatedAtDesc(userId))
                 .thenReturn(List.of(pass1));
-        when(valueOperations.increment(anyString())).thenReturn(1L);
+        // infra R2-00224: 第一次 INCR 返回 1（成功），第二次 INCR 返回 2（超限拒绝）
+        when(valueOperations.increment(anyString())).thenReturn(1L, 2L);
 
         RewindResultView first = realMatchService.rewind(userId);
         assertTrue(first.success());
 
-        when(valueOperations.get(anyString())).thenReturn(1);
         assertThrows(DailyLimitExceededException.class, () -> realMatchService.rewind(userId));
     }
 

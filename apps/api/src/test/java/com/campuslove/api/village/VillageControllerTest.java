@@ -17,21 +17,20 @@ class VillageControllerTest {
 
     @Mock private VillageService villageService;
     @Mock private VillageMetrics villageMetrics;
-    @Mock private PostRepository postRepository;
-    @Mock private UserRepository userRepository;
 
     private VillageController controller;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new VillageController(villageService, villageMetrics, postRepository, userRepository);
+        // infra R2-00308:废弃 GET /posts/dto 端点与 4 参构造器已移除
+        controller = new VillageController(villageService, villageMetrics);
     }
 
     @Test
     void constructor_shouldAcceptService() {
         // Arrange & Act & Assert
-        assertNotNull(new VillageController(villageService, villageMetrics, postRepository, userRepository));
+        assertNotNull(new VillageController(villageService, villageMetrics));
     }
 
     @Test

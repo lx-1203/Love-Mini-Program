@@ -77,6 +77,11 @@ async function handleValidate() {
     uni.showToast({ title: t("vip.promoCodeEmpty"), icon: "none" });
     return;
   }
+  // infra R2-00060: 输入格式即时轻校验（最终以服务端校验为准）
+  if (!/^[A-Za-z0-9-]{4,24}$/.test(codeInput.value.trim())) {
+    uni.showToast({ title: t("vip.promoCodeFormatInvalid"), icon: "none" });
+    return;
+  }
   if (orderAmountCents.value <= 0) {
     uni.showToast({ title: t("vip.promoCodeAmountInvalid"), icon: "none" });
     return;
@@ -187,7 +192,7 @@ function goBack() {
           :placeholder="t('vip.promoCodeInputPlaceholder')"
           :value="codeInput"
           maxlength="32"
-          @input="codeInput = readInputValue($event)" aria-label="t('vip.promoCodeInputPlaceholder')"
+          @input="codeInput = readInputValue($event)" :aria-label="t('vip.promoCodeInputPlaceholder')"
         />
       </view>
     </view>

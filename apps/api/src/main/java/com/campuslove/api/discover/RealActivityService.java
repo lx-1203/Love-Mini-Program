@@ -123,6 +123,11 @@ public class RealActivityService implements ActivityService {
         Activity activity = activityRepository.findById(activityId)
                 .orElseThrow(() -> new IllegalArgumentException("Activity not found: " + activityId));
 
+        // infra R2-00260: 校验活动状态，已结束活动不可报名
+        if (activity.getStatus() == ActivityStatus.ended) {
+            throw new IllegalArgumentException("活动已结束，无法报名");
+        }
+
         // 检查是否已报名
         if (activityEnrollmentRepository.existsByActivityIdAndUserId(activityId, userId)) {
             // 已报名，返回当前状态
@@ -138,11 +143,12 @@ public class RealActivityService implements ActivityService {
         enrollment.setCreatedAt(now);
         activityEnrollmentRepository.save(enrollment);
 
-        // 增加报名人数
-        activity.setEnrollmentCount(activity.getEnrollmentCount() + 1);
-        activityRepository.save(activity);
+        // infra R2-00262: 报名人数改为数据库侧原子递增（读-改-写非原子会丢失并发计数），
+        // 不修改 managed 实体，避免事务提交时脏写覆盖
+        activityRepository.incrementEnrollmentCount(activityId);
+        Activity fresh = activityRepository.findById(activityId).orElse(activity);
 
-        return new ActivityEnrollmentResultView(activityId, true, activity.getEnrollmentCount());
+        return new ActivityEnrollmentResultView(activityId, true, fresh.getEnrollmentCount());
     }
 
     /**
@@ -180,11 +186,11 @@ public class RealActivityService implements ActivityService {
         activityEnrollmentRepository.delete(enrollmentOpt.orElseThrow(() ->
                 new IllegalStateException("enrollmentOpt 已确认非空但 orElseThrow 触发，数据不一致")));
 
-        // 减少报名人数（不低于 0）
-        activity.setEnrollmentCount(Math.max(0, activity.getEnrollmentCount() - 1));
-        activityRepository.save(activity);
+        // infra R2-00262: 报名人数改为数据库侧原子递减（下限 0），不修改 managed 实体避免脏写覆盖
+        activityRepository.decrementEnrollmentCount(activityId);
+        Activity fresh = activityRepository.findById(activityId).orElse(activity);
 
-        return new ActivityEnrollmentResultView(activityId, false, activity.getEnrollmentCount());
+        return new ActivityEnrollmentResultView(activityId, false, fresh.getEnrollmentCount());
     }
 
     /**

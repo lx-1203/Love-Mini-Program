@@ -1,9 +1,8 @@
-import { createApp } from "vue";
+import { createApp, type Plugin } from "vue";
 import { createPinia } from "pinia";
 import router from "./router";
 import App from "./App.vue";
 import i18n from "./i18n";
-import { useSessionStore } from "./stores/session";
 import { setupRouterGuards } from "./router/guards";
 
 const app = createApp(App);
@@ -17,11 +16,13 @@ app.use(i18n);
 // 守卫实现见 router/guards.ts，便于单元测试复用。
 setupRouterGuards(router);
 
-// 类型断言：vue-router 4.x 的 Router 类型与 Vue Plugin 类型存在已知不匹配
-app.use(router as never);
+// infra R2-00318：类型断言收窄——Router 类型未显式实现 Vue Plugin 接口，
+// 但 vue-router 4.x 提供 install(app) 方法，可安全断言为 Plugin。
+// 原 `as never` 掩盖真实类型问题，这里用 Plugin 类型保留类型检查。
+app.use(router as unknown as Plugin);
 
-// 启动时从 localStorage 恢复会话，确保 isLoggedIn 在守卫之外也可用
-const sessionStore = useSessionStore();
-void sessionStore.bootstrap();
+// infra R2-00319：会话恢复只保留 App.vue onMounted 中的一次 bootstrap()。
+// 原 main.ts 与 App.vue 各调用一次 bootstrap()，属冗余异步调用（竞态窗口）。
+// 移除本处调用，避免两次读取 localStorage 相互覆盖。
 
 app.mount("#app");

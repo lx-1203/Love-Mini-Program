@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +32,7 @@ class TempChatMessageServiceTest {
     @Mock private TempChatMessageRepository messageRepository;
     @Mock private TempChatSessionService sessionService;
     @Mock private SimpMessagingTemplate messagingTemplate;
+    @Mock private com.campuslove.api.config.SensitiveWordFilter sensitiveWordFilter;
 
     private TempChatMessageService messageService;
 
@@ -37,7 +40,11 @@ class TempChatMessageServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         when(sessionService.getMessagingTemplate()).thenReturn(messagingTemplate);
-        messageService = new TempChatMessageService(messageRepository, sessionService);
+        // infra R2-00232:构造器新增 SensitiveWordFilter(消息敏感词过滤)
+        // infra R2-00252:默认 stub 过滤器透传原文,避免未配置 mock 时 body 被过滤为 null
+        when(sensitiveWordFilter.filterWithLog(anyString(), anyLong(), anyString()))
+                .thenAnswer(inv -> inv.getArgument(0));
+        messageService = new TempChatMessageService(messageRepository, sessionService, sensitiveWordFilter);
     }
 
     /**
@@ -114,20 +121,26 @@ class TempChatMessageServiceTest {
     }
 
     /**
-     * 场景：sendMessage peer 消息应增加 userA 未读计数。
+     * 场景：当前用户(userA)发送消息应判定为 self 消息，未读计入对方(userB)，
+     * 自身未读保持不变（修复 R2：sender 由服务端按当前用户判定，忽略客户端请求体）。
      */
     @Test
-    void sendMessage_peerMessage_incrementsUserAUnread() {
+    void sendMessage_currentUserAsUserA_marksSenderSelfAndIncrementsUserBUnread() {
         TempChatSession session = createSession(SessionPhase.active);
         session.setUserAUnreadCount(2);
         when(sessionService.resolveSession("sid")).thenReturn(session);
         when(sessionService.isSessionExpired(session)).thenReturn(false);
         when(sessionService.toMessageView(any())).thenReturn(mock(ChatMessageView.class));
+        ArgumentCaptor<TempChatMessage> captor = ArgumentCaptor.forClass(TempChatMessage.class);
+        when(messageRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
 
+        // 客户端即使传 "peer"，服务端也应判定为 self（当前用户 1L 是 userA）
         ChatMessageRequest req = new ChatMessageRequest("peer", "text", "hi", null, null);
         messageService.sendMessage("sid", req, 1L);
 
-        assertEquals(3, session.getUserAUnreadCount(), "peer 消息应增加 userA 未读计数");
+        assertEquals("self", captor.getValue().getSender(), "sender 应由服务端判定为 self");
+        assertEquals(2, session.getUserAUnreadCount(), "self 消息不应增加 userA 未读");
+        assertEquals(1, session.getUserBUnreadCount(), "self 消息应增加 userB 未读");
     }
 
     private TempChatSession createSession(SessionPhase phase) {

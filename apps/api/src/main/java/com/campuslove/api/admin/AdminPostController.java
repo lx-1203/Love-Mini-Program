@@ -159,7 +159,8 @@ public class AdminPostController {
     /**
      * 删除帖子（软删除）。
      * <p>将帖子 status 置为 deleted，保留数据用于审计。
-     * 同时清理该帖子下的所有评论（硬删除，与现有村口删除逻辑保持一致）。</p>
+     * infra R2-00270: 修正注释——当前实现不硬删除评论，评论通过帖子维度查询天然随帖子隐藏，
+     * 原注释"同时清理该帖子下所有评论（硬删除）"与实现不符，已更正。</p>
      *
      * @param id 帖子 ID
      * @return 操作结果；帖子不存在返回 404
@@ -238,7 +239,8 @@ public class AdminPostController {
         try {
             return AuditStatus.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
-            return null;
+            // infra R2-00269: 非法筛选参数直接 400，不再静默转 null 导致查询条件失效
+            throw new IllegalArgumentException("非法审核状态参数: " + value);
         }
     }
 
@@ -252,7 +254,8 @@ public class AdminPostController {
         try {
             return PostStatus.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
-            return null;
+            // infra R2-00269: 非法筛选参数直接 400
+            throw new IllegalArgumentException("非法帖子状态参数: " + value);
         }
     }
 
@@ -266,7 +269,8 @@ public class AdminPostController {
         try {
             return PostCategory.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
-            return null;
+            // infra R2-00269: 非法筛选参数直接 400
+            throw new IllegalArgumentException("非法帖子分类参数: " + value);
         }
     }
 }

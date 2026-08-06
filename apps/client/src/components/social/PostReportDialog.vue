@@ -142,8 +142,12 @@ async function submit() {
 
   submitting.value = true;
   try {
-    const reasonLabel = reasons.value.find((r) => r.key === selectedReason.value)?.label ?? selectedReason.value;
-    await reportStore.reportTarget("POST", props.postId, reasonLabel, description.value.trim() || undefined);
+    // 修复（P1 BUG）：原实现传 i18n 显示标签（reasonLabel，随语言变化）作为举报原因，
+    // 后端/运营侧无法按稳定 key 聚合统计，且切换语言后已提交记录语义漂移。
+    // 现改传稳定 key（selectedReason.value）；若后端契约要求展示名，
+    // 应在后端按 key 映射展示文案，而不是依赖前端传标签。
+    const reasonKey = selectedReason.value;
+    await reportStore.reportTarget("POST", props.postId, reasonKey, description.value.trim() || undefined);
     uni.showToast({ title: t("postReport.submitSuccess"), icon: "success" });
     emit("submitted");
     // 关闭弹窗
@@ -218,7 +222,7 @@ defineExpose({ onContentTap, selectReason, submit });
           :auto-height="true"
           :show-confirm-bar="false"
           :cursor-spacing="20"
-          :adjust-position="true" aria-label="t('postReport.otherPlaceholder')"
+          :adjust-position="true" :aria-label="t('postReport.otherPlaceholder')"
         />
         <text class="report-sheet__count">{{ description.length }}/200</text>
       </view>

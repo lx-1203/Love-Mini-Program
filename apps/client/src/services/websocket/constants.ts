@@ -54,6 +54,14 @@ export const HEARTBEAT_INTERVAL_MS = 30000;
 /** 心跳超时（毫秒） */
 export const HEARTBEAT_TIMEOUT_MS = 10000;
 
+/**
+ * 心跳连续超时容错次数。
+ *
+ * infra R2-00126: 连续 N 个心跳窗口内未收到任何服务器消息（含 pong）才判定断线重连。
+ * 弱网抖动导致单次丢包/延迟时，不再立即断开重连，降低频繁重连概率。
+ */
+export const HEARTBEAT_CONSECUTIVE_TIMEOUT_LIMIT = 2;
+
 /** STOMP 协议版本 */
 export const STOMP_VERSION = "1.2";
 

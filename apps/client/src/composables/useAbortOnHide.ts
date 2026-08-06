@@ -35,6 +35,12 @@ import { onHide, onShow } from "@dcloudio/uni-app";
  * AbortController 兼容性兜底：
  * 在极少数低版本 mp-weixin 基础库或 SSR 环境下，AbortController 可能未定义。
  * 此处提供一个最小实现，仅支持 abort() 与 signal.aborted 状态，不支持事件监听。
+ *
+ * 注（已知限制）：本兜底的 signal.addEventListener 是 no-op（空实现），
+ * 意味着 http.ts 的 request({ signal }) 无法感知 abort 事件去中止底层 uni.request
+ * ——请求仍会继续发完，仅调用方在检查 signal.aborted 时能感知取消。
+ * 这是“无原生 AbortController 环境”下的刻意降级：宁可请求发完也不能崩溃；
+ * 正常环境（H5/新基础库）使用原生实现，不受此限制。
  */
 class FallbackAbortController {
   readonly signal = {
@@ -67,21 +73,40 @@ function createController(): AbortController | FallbackAbortController {
 }
 
 /**
+ * useAbortOnHide 配置项（infra R2-00138）。
+ */
+export interface UseAbortOnHideOptions {
+  /**
+   * 页面隐藏（onHide）时是否取消挂起请求，默认 true。
+   * 弱网/切后台场景如需保留请求（如上传、长任务），可传 false 关闭 onHide 自动 abort。
+   */
+  abortOnHide?: boolean;
+  /** 组件卸载（onUnmounted）时是否取消挂起请求，默认 true */
+  abortOnUnmount?: boolean;
+}
+
+/**
  * 页面切后台取消请求的组合式函数。
  *
  * - 返回 signal 引用，调用方传入 request({ signal }) 即可让请求在 onHide 时被取消
  * - onShow 时自动重建 controller，避免上一次 abort 后无法再次发请求
  *
+ * @param options 配置项（infra R2-00138: 支持 abortOnHide/abortOnUnmount 开关，
+ *   默认行为与原实现一致——页面隐藏即取消全部请求）
  * @returns { signal, reset, abort }
  *   - signal: 当前 AbortController 的 signal（响应式，重建后会更新）
  *   - reset: 手动重建 controller（一般不需要手动调用）
  *   - abort: 手动触发 abort（一般不需要手动调用）
  */
-export function useAbortOnHide(): {
+export function useAbortOnHide(
+  options: UseAbortOnHideOptions = {}
+): {
   signal: import("vue").Ref<AbortSignal>;
   reset: () => void;
   abort: () => void;
 } {
+  const { abortOnHide = true, abortOnUnmount = true } = options;
+
   // 当前 controller 引用（非响应式，避免不必要的渲染）
   let controller: AbortController | FallbackAbortController = createController();
   // signal 响应式引用，传入 request 时需要 .value 解引用
@@ -108,10 +133,12 @@ export function useAbortOnHide(): {
     }
   }
 
-  // 页面隐藏时取消所有挂起请求
-  onHide(() => {
-    abort();
-  });
+  // 页面隐藏时取消所有挂起请求（infra R2-00138: 可通过 abortOnHide=false 关闭）
+  if (abortOnHide) {
+    onHide(() => {
+      abort();
+    });
+  }
 
   // 页面恢复显示时重建 controller，允许后续请求继续使用 signal
   onShow(() => {
@@ -121,10 +148,12 @@ export function useAbortOnHide(): {
     }
   });
 
-  // 组件卸载时也取消挂起请求，避免内存泄漏
-  onUnmounted(() => {
-    abort();
-  });
+  // 组件卸载时也取消挂起请求，避免内存泄漏（infra R2-00138: 可通过 abortOnUnmount=false 关闭）
+  if (abortOnUnmount) {
+    onUnmounted(() => {
+      abort();
+    });
+  }
 
   return { signal, reset, abort };
 }

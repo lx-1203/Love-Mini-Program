@@ -9,7 +9,7 @@
  * - 目标类型/状态通过 reports.typePost / reports.filterStatusPending 等映射
  * - 错误回退通过 reports.loadFailed / reports.handleFailed 表达
  */
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import {
   listReports,
   handleReport,
@@ -22,7 +22,11 @@ import {
 import { ApiError } from "../api/http";
 // Task 3.7.2：接入共享 Pagination 组件
 import Pagination from "../components/Pagination.vue";
+// infra R2-00412：错误态接入共享 ErrorState 组件（原无重试入口）
+import ErrorState from "../components/ErrorState.vue";
 import { useI18n } from "vue-i18n";
+import { formatDateTime } from "../utils/format";
+import { DEFAULT_PAGE_SIZE, REMARK_MAX_LENGTH } from "../utils/constants";
 
 const { t } = useI18n();
 
@@ -40,8 +44,8 @@ const targetTypeFilter = ref<"" | "POST" | "COMMENT" | "USER" | "TOPIC">("");
 
 /** 当前页码（1-based） */
 const page = ref(1);
-/** 每页大小 */
-const pageSize = ref(20);
+/** 每页大小（infra R2-00413：魔法数字收敛为公共常量） */
+const pageSize = ref(DEFAULT_PAGE_SIZE);
 /** 总记录数 */
 const total = ref(0);
 /** 总页数 */
@@ -49,12 +53,21 @@ const totalPages = ref(1);
 
 /** 当前正在处理的举报（null 表示弹窗关闭） */
 const handlingReport = ref<AdminReportView | null>(null);
-/** 处理结果：HANDLE 已处理 / REJECT 驳回 */
-const handleDecision = ref<"HANDLE" | "REJECT">("HANDLE");
+/**
+ * 处理结果：HANDLE 已处理 / REJECT 驳回。
+ * 修复：默认选中 REJECT（驳回）而非 HANDLE，
+ * 避免运营误操作把未核实的举报直接标记为已处理；
+ * 若需标记已处理需主动切换选项，误操作面大幅缩小。
+ */
+const handleDecision = ref<"HANDLE" | "REJECT">("REJECT");
 /** 处理备注 */
 const handleRemark = ref("");
 /** 提交中标志 */
 const submitting = ref(false);
+
+// infra R2-00414：筛选防抖 + 请求竞态防护（同 Users.vue 方案）
+let reqSeq = 0;
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * 拉取举报列表。
@@ -63,6 +76,7 @@ const submitting = ref(false);
 async function fetchReports() {
   loading.value = true;
   errorMsg.value = "";
+  const seq = ++reqSeq;
   try {
     const query: AdminReportListQuery = {
       page: page.value,
@@ -72,63 +86,62 @@ async function fetchReports() {
     if (targetTypeFilter.value) query.targetType = targetTypeFilter.value;
 
     const result = await listReports(query);
+    if (seq !== reqSeq) return; // 丢弃过期响应
     reports.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
+    if (seq !== reqSeq) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("reports.loadFailed");
     reports.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    loading.value = false;
+    if (seq === reqSeq) {
+      loading.value = false;
+    }
   }
 }
 
 /**
- * 触发查询：重置页码到第一页后拉取。
+ * 触发查询：重置页码到第一页后拉取（infra R2-00414：带防抖）。
  */
+function scheduleSearch() {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    searchTimer = null;
+    page.value = 1;
+    fetchReports();
+  }, 400);
+}
+
 function handleSearch() {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = null;
   page.value = 1;
   fetchReports();
 }
 
 /**
- * 重置筛选条件并刷新。
+ * 重置筛选条件并刷新（infra R2-00415：与 handleSearch 合并，原重复实现）。
  */
 function handleResetFilters() {
   statusFilter.value = "";
   targetTypeFilter.value = "";
-  page.value = 1;
-  fetchReports();
+  handleSearch();
 }
 
-/**
- * 上一页。
- */
-function handlePrevPage() {
-  if (page.value > 1) {
-    page.value--;
-    fetchReports();
-  }
-}
-
-/**
- * 下一页。
- */
-function handleNextPage() {
-  if (page.value < totalPages.value) {
-    page.value++;
-    fetchReports();
-  }
-}
-
-/**
- * Task 3.7.2：分页变更回调（由 Pagination 组件触发）。
- */
 function handlePageChange() {
   fetchReports();
 }
+
+/** infra R2-00414：组件卸载时清理防抖定时器 */
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+    searchTimer = null;
+  }
+});
 
 /**
  * 打开处理弹窗。
@@ -136,7 +149,8 @@ function handlePageChange() {
  */
 function openHandleModal(report: AdminReportView) {
   handlingReport.value = report;
-  handleDecision.value = "HANDLE";
+  // 每次打开弹窗都重置为保守默认（REJECT 驳回），防止沿用上次的 HANDLE 选择
+  handleDecision.value = "REJECT";
   handleRemark.value = "";
 }
 
@@ -165,8 +179,7 @@ async function submitHandle() {
     handleRemark.value = "";
     await fetchReports();
   } catch (err) {
-    // eslint-disable-next-line no-alert
-    alert(err instanceof ApiError ? err.message : t("reports.handleFailed"));
+    errorMsg.value = err instanceof ApiError ? err.message : t("reports.handleFailed");
   } finally {
     submitting.value = false;
   }
@@ -177,12 +190,8 @@ async function submitHandle() {
  * @param iso ISO 时间字符串或 null
  */
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString("zh-CN", { hour12: false });
-  } catch {
-    return iso;
-  }
+  // infra R2-00416：统一走 utils/format 公共工具
+  return formatDateTime(iso);
 }
 
 /**
@@ -202,10 +211,18 @@ function statusLabel(status: string): string {
 }
 
 /**
- * 举报人显示：优先 nickname，否则用 i18n 插值兜底。
+ * 举报人显示：昵称脱敏（保留首字符，其余打码），避免运营界面明文展示举报人信息。
+ * 无昵称时用 i18n 插值兜底。
  */
 function reporterDisplay(report: AdminReportView): string {
-  return report.reporterNickname || t("reports.authorFallback", { id: report.reporterId });
+  if (report.reporterNickname) {
+    const name = report.reporterNickname;
+    // infra R2-00417：1 字昵称全打码（原返回 "x*" 仍可辨识）；
+    // 2 字及以上保留首字符，其余打码
+    if (name.length <= 1) return "*";
+    return name[0] + "*".repeat(name.length - 1);
+  }
+  return t("reports.authorFallback", { id: report.reporterId });
 }
 
 /**
@@ -230,13 +247,13 @@ onMounted(() => {
 
     <!-- 筛选工具栏 -->
     <view class="toolbar">
-      <select v-model="statusFilter" class="filter-select" @change="handleSearch">
+      <select v-model="statusFilter" class="filter-select" @change="scheduleSearch">
         <option value="">{{ t("reports.filterStatusAllStatus") }}</option>
         <option value="PENDING">{{ t("reports.filterStatusPending") }}</option>
         <option value="HANDLED">{{ t("reports.filterStatusProcessed") }}</option>
         <option value="REJECTED">{{ t("reports.filterStatusRejected") }}</option>
       </select>
-      <select v-model="targetTypeFilter" class="filter-select" @change="handleSearch">
+      <select v-model="targetTypeFilter" class="filter-select" @change="scheduleSearch">
         <option value="">{{ t("reports.filterTargetAll") }}</option>
         <option value="POST">{{ t("reports.filterTargetPost") }}</option>
         <option value="COMMENT">{{ t("reports.filterTargetComment") }}</option>
@@ -246,8 +263,8 @@ onMounted(() => {
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
     </view>
 
-    <!-- 错误提示 -->
-    <view v-if="errorMsg" class="error-banner">{{ errorMsg }}</view>
+    <!-- 错误提示（infra R2-00412：接入 ErrorState 组件含重试按钮） -->
+    <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchReports" />
 
     <!-- 举报列表表格 -->
     <view class="table-container">
@@ -285,7 +302,8 @@ onMounted(() => {
               </view>
             </td>
             <td>{{ report.reason }}</td>
-            <td class="description-cell">{{ report.description || "—" }}</td>
+            <!-- infra R2-00418：空值占位符走 i18n（原硬编码 "—"） -->
+            <td class="description-cell">{{ report.description || t("common.emptyPlaceholder") }}</td>
             <td>
               <span class="status-badge" :class="`status-${report.status}`">
                 {{ statusLabel(report.status) }}
@@ -299,21 +317,18 @@ onMounted(() => {
                 class="action-button handle"
                 @click="openHandleModal(report)"
               >{{ t("reports.actionProcess") }}</button>
-              <text v-else class="handled-text">{{ t("reports.handledText") }}</text>
+              <!-- infra R2-00419：已处理/已驳回展示处理备注（handleRemark），
+                   便于误驳回追责复核（原仅显示“已处理”文字） -->
+              <text v-else class="handled-text" :title="report.handleRemark || undefined">
+                {{ t("reports.handledText") }}{{ report.handleRemark ? `：${report.handleRemark}` : "" }}
+              </text>
             </td>
           </tr>
         </tbody>
       </table>
     </view>
 
-    <!-- 分页 -->
-    <view class="pagination">
-      <button class="page-button" :disabled="page <= 1" @click="handlePrevPage">{{ t("common.prevPage") }}</button>
-      <text class="page-info">{{ t("reports.paginationInfo", { page, totalPages, total }) }}</text>
-      <button class="page-button" :disabled="page >= totalPages" @click="handleNextPage">{{ t("common.nextPage") }}</button>
-    </view>
-
-    <!-- Task 3.7.2：接入共享 Pagination 组件 -->
+    <!-- Task 3.7.2：接入共享 Pagination 组件（修复双分页：删除上方手写分页） -->
     <Pagination
       v-model:page="page"
       :total-pages="totalPages"
@@ -365,19 +380,21 @@ onMounted(() => {
         <!-- 处理备注 -->
         <view class="form-row">
           <text class="form-label">{{ t("reports.handleRemarkLabel") }}</text>
+          <!-- infra R2-00472：处理备注增加 maxlength（原无长度限制） -->
           <textarea
             v-model="handleRemark"
             class="form-textarea"
             rows="3"
+            :maxlength="REMARK_MAX_LENGTH"
             :placeholder="t('reports.handleRemarkPlaceholder')"
           />
         </view>
 
-        <!-- 操作按钮 -->
+        <!-- 操作按钮（infra R2-00420：提交按钮文案跟随处理决定，REJECT 显示“驳回”） -->
         <view class="modal-actions">
           <button class="ghost-button" @click="closeHandleModal">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="submitting" @click="submitHandle">
-            {{ submitting ? t("reports.submitting") : t("reports.submitButton") }}
+            {{ submitting ? t("reports.submitting") : (handleDecision === "REJECT" ? t("reports.submitReject") : t("reports.submitHandle")) }}
           </button>
         </view>
       </view>
@@ -585,32 +602,8 @@ onMounted(() => {
   color: var(--admin-color-text-quaternary);
 }
 
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--admin-space-lg);
-  margin-top: var(--admin-space-xxl);
-}
-
-.page-button {
-  padding: var(--admin-space-sm) var(--admin-space-lg);
-  background: var(--admin-color-bg-container);
-  border: 1px solid var(--admin-color-border);
-  border-radius: var(--admin-radius-md);
-  cursor: pointer;
-  font-size: var(--admin-font-lg);
-}
-
-.page-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.page-info {
-  font-size: var(--admin-font-lg);
-  color: var(--admin-color-text-tertiary);
-}
+/* infra R2-00421：删除死样式 .pagination/.page-button/.page-info——
+   模板已改用共享 Pagination 组件 */
 
 .modal-mask {
   position: fixed;

@@ -27,11 +27,18 @@ export const timers: {
   searchDebounceTimer: ReturnType<typeof setTimeout> | null;
   /** 右滑防抖定时器 */
   swipeRightDebounceTimer: ReturnType<typeof setTimeout> | null;
+  /**
+   * 右滑防抖被覆盖时用于 settle 旧 Promise 的 resolve 引用。
+   * 修复（P1 BUG）：原实现中防抖窗口内新调用 clearTimeout 旧定时器后，
+   * 旧调用的 Promise 永不 settle（挂起），调用方 await 永久等待。
+   */
+  swipeRightPendingResolve: (() => void) | null;
   /** 当前 fetchCards 请求的 AbortController */
   fetchCardsController: AbortController | null;
 } = {
   saveTimer: null,
   searchDebounceTimer: null,
   swipeRightDebounceTimer: null,
+  swipeRightPendingResolve: null,
   fetchCardsController: null,
 };

@@ -32,7 +32,7 @@
  * <p><b>i18n 接入</b>：通过 useI18n 读取 common.page / common.total 文案，
  * 与 Admin 全局 i18n 配置保持一致。</p>
  */
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
@@ -85,6 +85,38 @@ const isLast = computed(() => {
     : props.page >= props.totalPages - 1;
 });
 
+// infra R2-00463：页码跳转输入状态（原仅有上/下一页，大数据量翻页痛苦）
+const jumpInput = ref("");
+
+/** 可跳转的最大页码（1-based 展示） */
+const maxPage = computed(() => Math.max(props.totalPages, 1));
+
+/** 跳转输入框按键处理：Enter 触发跳转 */
+function handleJumpKeydown(e: KeyboardEvent): void {
+  if (e.key === "Enter") {
+    doJump();
+  }
+}
+
+/**
+ * 执行页码跳转（infra R2-00464：钳制 page 范围，越界输入回退到边界页）。
+ * 原实现无页码跳转且不钳制 page，后端返回越界 page 时按钮状态错误。
+ */
+function doJump(): void {
+  if (props.disabled) return;
+  const raw = parseInt(jumpInput.value, 10);
+  if (Number.isNaN(raw) || raw <= 0) {
+    jumpInput.value = "";
+    return;
+  }
+  const clamped = Math.min(raw, maxPage.value);
+  jumpInput.value = "";
+  if (clamped === (props.pageBase === 1 ? props.page : props.page + 1)) return;
+  const target = props.pageBase === 1 ? clamped : clamped - 1;
+  emit("update:page", target);
+  emit("change", target);
+}
+
 /** 上一页：触发 update:page 与 change 事件 */
 function handlePrev(): void {
   if (isFirst.value || props.disabled) return;
@@ -106,7 +138,8 @@ const pageInfo = computed(() => {
   const displayPage = props.pageBase === 1 ? props.page : props.page + 1;
   const safeTotal = Math.max(props.totalPages, 1);
   return t("common.page", { page: displayPage, totalPages: safeTotal })
-    + (props.total > 0 ? `（${t("common.total", { n: props.total })}）` : "");
+    // infra R2-00465：括号文案纳入 i18n（原硬编码全角括号，en-US 下显示中文括号）
+    + (props.total > 0 ? t("common.totalParenthesized", { n: props.total }) : "");
 });
 
 /** 实际显示上一页文案：优先 props.prevText，缺省回退到 i18n */
@@ -129,9 +162,53 @@ const displayNextText = computed(() => props.nextText || t("common.nextPage"));
       :disabled="isLast || disabled"
       @click="handleNext"
     >{{ displayNextText }}</button>
+    <!-- infra R2-00463：页码跳转输入（大数据量翻页） -->
+    <view class="page-jump">
+      <input
+        v-model="jumpInput"
+        class="jump-input"
+        type="number"
+        min="1"
+        :max="maxPage"
+        :placeholder="t('common.jumpPagePlaceholder')"
+        :disabled="disabled"
+        @keydown.enter="handleJumpKeydown"
+      />
+      <button class="page-button jump-button" :disabled="disabled || !jumpInput" @click="doJump">
+        {{ t("common.jumpTo") }}
+      </button>
+    </view>
   </view>
 </template>
 
 <style scoped>
 @import "../styles/admin-common.css";
+
+/* infra R2-00463：页码跳转输入样式 */
+.page-jump {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+}
+
+.jump-input {
+  width: 56px;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-md);
+  text-align: center;
+  background: var(--admin-color-bg-container);
+  color: var(--admin-color-text-primary);
+}
+
+.jump-input:focus {
+  outline: none;
+  border-color: var(--admin-color-primary);
+}
+
+.jump-button {
+  font-size: var(--admin-font-sm);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+}
 </style>

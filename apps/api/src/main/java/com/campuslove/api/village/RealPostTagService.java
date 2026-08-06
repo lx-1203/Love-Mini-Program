@@ -127,6 +127,7 @@ public class RealPostTagService implements PostTagService {
                 post.getShareCount(),
                 post.getCreatedAt().toString(),
                 post.getLikesCount() >= 50,
+                false,
                 false
         );
     }

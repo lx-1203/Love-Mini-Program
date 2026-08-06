@@ -5,6 +5,9 @@ import com.campuslove.api.entity.Activity.ActivityStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * 活动 Repository。
@@ -30,4 +33,25 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
      * @return 活动分页列表
      */
     Page<Activity> findByCampusNameAndStatusOrderByActivityDateAsc(String campusName, ActivityStatus status, Pageable pageable);
+
+    /**
+     * 数据库侧原子递增报名人数（消除并发报名计数丢失）。
+     *
+     * @param id 活动 ID
+     * @return 更新条数
+     */
+    @Modifying
+    @Query("UPDATE Activity a SET a.enrollmentCount = a.enrollmentCount + 1 WHERE a.id = :id")
+    int incrementEnrollmentCount(@Param("id") Long id);
+
+    /**
+     * 数据库侧原子递减报名人数（下限 0，消除并发取消计数漂移）。
+     *
+     * @param id 活动 ID
+     * @return 更新条数
+     */
+    @Modifying
+    @Query("UPDATE Activity a SET a.enrollmentCount = CASE "
+            + "WHEN a.enrollmentCount > 0 THEN a.enrollmentCount - 1 ELSE 0 END WHERE a.id = :id")
+    int decrementEnrollmentCount(@Param("id") Long id);
 }

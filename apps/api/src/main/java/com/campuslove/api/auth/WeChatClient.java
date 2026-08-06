@@ -2,6 +2,7 @@ package com.campuslove.api.auth;
 
 import com.campuslove.api.config.Resilience4jConfig;
 import com.campuslove.api.config.WeChatConfig;
+import com.campuslove.api.utils.SensitiveDataMasker;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -143,8 +144,9 @@ public class WeChatClient {
      * @return 始终返回 null，由调用方处理降级
      */
     private WeChatSessionResponse code2SessionFallback(String code, Throwable ex) {
+        // infra R2-00227: 日志中的 code（临时登录凭证）脱敏，避免凭证泄露
         log.warn("WeChat jscode2session 调用降级: code={}, errorType={}, message={}",
-                code, ex.getClass().getSimpleName(), ex.getMessage());
+                SensitiveDataMasker.maskToken(code), ex.getClass().getSimpleName(), ex.getMessage());
         return null;
     }
 
@@ -159,6 +161,9 @@ public class WeChatClient {
 
         @JsonProperty("session_key")
         private String sessionKey;
+
+        @JsonProperty("unionid")
+        private String unionid;
 
         @JsonProperty("errcode")
         private Integer errcode;
@@ -180,6 +185,14 @@ public class WeChatClient {
 
         public void setSessionKey(String sessionKey) {
             this.sessionKey = sessionKey;
+        }
+
+        public String getUnionid() {
+            return unionid;
+        }
+
+        public void setUnionid(String unionid) {
+            this.unionid = unionid;
         }
 
         public Integer getErrcode() {

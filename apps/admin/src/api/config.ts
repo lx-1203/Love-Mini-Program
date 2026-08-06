@@ -56,6 +56,10 @@ export interface UpdateSwitchRequest {
 /**
  * 获取系统参数配置列表。
  * GET /api/v1/admin/configs
+ *
+ * infra R2-00469：listConfigs/updateConfig/listRules/updateRule/listSwitches/updateSwitch
+ * 已封装但暂无页面消费（系统配置页缺失，属 HIGH 功能缺失项，由主代理处理）。
+ * 此处保留封装，待系统配置页落地后直接消费。
  */
 export function listConfigs(): Promise<AdminConfig[]> {
   return get<AdminConfig[]>("/v1/admin/configs");

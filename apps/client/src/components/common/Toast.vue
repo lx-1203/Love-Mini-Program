@@ -83,12 +83,17 @@ export function showToast(
   type: ToastOptions["type"] = "info",
   duration = 2000
 ): Promise<void> {
+  // 队列策略：若有正在展示的 Toast（含正在退出动画的 leaving 状态），
+  // 先入队等待；修复（P1 BUG）：原实现 leaving 期间直接覆盖 options，
+  // 导致退出动画与新一轮展示的计时/动画交错。现在 leaving 时也排队，
+  // 等上一个完全消失后再展示（简化方案：不打断进行中的退出动画）。
   return new Promise<void>((resolve) => {
-    // 若当前有活跃 Toast，先入队等待
-    if (active.value && !leaving.value) {
+    if (active.value) {
       queue.push({ message, type, duration, resolve });
-      // 触发当前 Toast 提前退出
-      hideToast();
+      // 仅在未开始退出动画时触发提前退出；leaving 中已有退出动画在进行
+      if (!leaving.value) {
+        hideToast();
+      }
       return;
     }
 
@@ -138,6 +143,9 @@ export function showErrorToast(
   return showToast(text, "error", duration);
 }
 
+/** infra R2-00101: 队列续播定时器引用（原内层 setTimeout 无引用管理，边缘场景泄漏） */
+let queueTimer: ReturnType<typeof setTimeout> | null = null;
+
 /** 开始隐藏 Toast（执行退出动画） */
 function hideToast() {
   if (leaving.value) return;
@@ -160,7 +168,9 @@ function hideToast() {
     if (queue.length > 0) {
       const next = queue.shift()!;
       // 异步触发，确保上一个 Toast 完全消失后再展示
-      setTimeout(() => {
+      // infra R2-00101: 保存引用以便 clearTimers 统一清理
+      queueTimer = setTimeout(() => {
+        queueTimer = null;
         showToast(next.message, next.type, next.duration).then(next.resolve);
       }, 50);
     }
@@ -176,6 +186,11 @@ function clearTimers() {
   if (leaveTimer) {
     clearTimeout(leaveTimer);
     leaveTimer = null;
+  }
+  // infra R2-00101: 队列续播定时器一并清理
+  if (queueTimer) {
+    clearTimeout(queueTimer);
+    queueTimer = null;
   }
 }
 

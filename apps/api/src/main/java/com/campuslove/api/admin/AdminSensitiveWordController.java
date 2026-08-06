@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,13 +54,17 @@ public class AdminSensitiveWordController {
     private final SensitiveWordRepository sensitiveWordRepository;
     private final SensitiveWordFilter sensitiveWordFilter;
     private final SensitiveWordImportService importService;
+    /** 缓存管理器：用于在刷新内存过滤器前主动失效敏感词列表缓存（缺陷修复） */
+    private final CacheManager cacheManager;
 
     public AdminSensitiveWordController(SensitiveWordRepository sensitiveWordRepository,
                                         SensitiveWordFilter sensitiveWordFilter,
-                                        SensitiveWordImportService importService) {
+                                        SensitiveWordImportService importService,
+                                        CacheManager cacheManager) {
         this.sensitiveWordRepository = sensitiveWordRepository;
         this.sensitiveWordFilter = sensitiveWordFilter;
         this.importService = importService;
+        this.cacheManager = cacheManager;
     }
 
     /**
@@ -91,6 +97,10 @@ public class AdminSensitiveWordController {
     @Auditable(value = AuditOperation.ADD_SENSITIVE_WORD, targetType = "SENSITIVE_WORD")
     @CacheEvict(cacheNames = CacheNames.SENSITIVE_WORDS, allEntries = true)
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    // 缺陷修复：@Transactional 保证 save 与刷新过滤器在同一个事务内，
+    // JPA FlushModeType.AUTO 下刷新查询前会自动 flush，事务内即可读到新增词，消除并发/时序竞态
+    @Transactional
     public ResponseEntity<SensitiveWordView> create(
             @Valid @RequestBody SensitiveWordCreateRequest request) {
         SecurityUtils.getCurrentUserId();
@@ -122,6 +132,7 @@ public class AdminSensitiveWordController {
     @Auditable(value = AuditOperation.DELETE_SENSITIVE_WORD, targetType = "SENSITIVE_WORD")
     @CacheEvict(cacheNames = CacheNames.SENSITIVE_WORDS, allEntries = true)
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable("id") @Positive Long id) {
         SecurityUtils.getCurrentUserId();
 
@@ -140,9 +151,19 @@ public class AdminSensitiveWordController {
      * 将数据库中的敏感词列表同步到内存 SensitiveWordFilter。
      * <p>注：SensitiveWordFilter.setKeywords 会重建内部 HashSet 和正则 Pattern，
      * 调用是线程安全的（虽然会短暂产生新的 Pattern 对象，但读多写少场景可接受）。</p>
+     *
+     * <p>缺陷修复：先主动失效 SENSITIVE_WORDS 缓存再查询。
+     * {@code findAllByOrderByCreatedAtDesc()} 带 {@code @Cacheable}（TTL 1 小时），
+     * 若直接查询会命中旧缓存导致新增词不生效（命中不稳定）；
+     * {@code @CacheEvict} 注解默认在方法返回后才清缓存，无法覆盖方法内的本次读取。</p>
      */
     private void refreshFilterKeywords() {
         try {
+            // 主动失效敏感词列表缓存，确保下方查询读取的是最新数据库数据而非旧缓存
+            org.springframework.cache.Cache cache = cacheManager.getCache(CacheNames.SENSITIVE_WORDS);
+            if (cache != null) {
+                cache.clear();
+            }
             List<String> words = sensitiveWordRepository.findAllByOrderByCreatedAtDesc().stream()
                     .map(SensitiveWord::getWord)
                     .toList();
@@ -172,6 +193,7 @@ public class AdminSensitiveWordController {
      */
     @Auditable(value = AuditOperation.ADD_SENSITIVE_WORD, targetType = "SENSITIVE_WORD")
     @PostMapping("/batch-import")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<SensitiveWordImportResult> batchImport(
             @Valid @RequestBody SensitiveWordBatchImportRequest request) {
         Long operatorId = SecurityUtils.getCurrentUserId();

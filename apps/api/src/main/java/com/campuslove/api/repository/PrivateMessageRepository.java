@@ -81,8 +81,29 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
      * @param currentUserId  当前用户 ID（排除自己发送的消息）
      * @return 更新的记录数
      */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Transactional
-    @Query("UPDATE PrivateMessage m SET m.isRead = true WHERE m.conversation.id = :conversationId AND m.sender.id <> :currentUserId AND m.isRead = false")
+    @Query("UPDATE PrivateMessage m SET m.isRead = true WHERE m.conversation.id = :conversationId AND m.senderId <> :currentUserId AND m.isRead = false")
     int markAsReadByConversationAndSenderNot(@Param("conversationId") Long conversationId, @Param("currentUserId") Long currentUserId);
+
+    /**
+     * 批量统计多个会话中指定用户的未读消息数（GROUP BY，避免会话列表逐会话 count 的 N+1）。
+     *
+     * @param conversationIds 会话 ID 集合
+     * @param currentUserId   当前用户 ID（排除自己的消息）
+     * @return 会话 ID → 未读数 投影列表
+     */
+    @Query("SELECT m.conversation.id AS conversationId, COUNT(m) AS cnt FROM PrivateMessage m "
+            + "WHERE m.conversation.id IN :conversationIds AND m.senderId <> :currentUserId AND m.isRead = false "
+            + "GROUP BY m.conversation.id")
+    List<UnreadCountProjection> countUnreadGroupByConversationIds(
+            @Param("conversationIds") List<Long> conversationIds,
+            @Param("currentUserId") Long currentUserId);
+
+    /** 未读数批量统计投影（会话 ID + 未读数）。 */
+    interface UnreadCountProjection {
+        Long getConversationId();
+
+        Long getCnt();
+    }
 }

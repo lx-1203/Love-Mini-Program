@@ -53,6 +53,44 @@ public interface AuthService {
     UserSessionView loginAsAdmin(String username, String password);
 
     /**
+     * 注册新用户（手机号 + 密码 + 昵称）。
+     *
+     * <p>参考 eladmin 的账号注册模式:手机号作为登录账号,密码 BCrypt 加密存储。
+     * 注册成功后直接签发 JWT 会话(与微信登录一致),无需再次登录。</p>
+     *
+     * @param phone    手机号(唯一,格式校验)
+     * @param password 密码(6-64 位)
+     * @param nickname 昵称(1-20 字)
+     * @return 用户会话视图(包含 JWT 令牌)
+     * @throws IllegalArgumentException 手机号已注册/参数非法时抛出
+     */
+    UserSessionView registerUser(String phone, String password, String nickname);
+
+    /**
+     * 手机号 + 密码登录。
+     *
+     * @param phone    手机号
+     * @param password 密码
+     * @return 用户会话视图(包含 JWT 令牌)
+     * @throws IllegalArgumentException 凭据无效时抛出
+     */
+    UserSessionView loginWithPhone(String phone, String password);
+
+    /**
+     * 体验账号一键登录（临时体验号）。
+     *
+     * <p>用于登录页「一键体验全部功能」：首次调用自动创建固定体验账号，
+     * 后续复用该账号（幂等），并直接签发 JWT 会话，无需注册/输入密码。</p>
+     *
+     * <p>安全说明：体验账号使用随机密码（不可通过手机号密码登录），
+     * 上线前可通过配置 {@code app.guest-login.enabled=false} 关闭该入口。</p>
+     *
+     * @return 用户会话视图(包含 JWT 令牌)
+     * @throws IllegalStateException 体验登录入口被禁用时抛出
+     */
+    UserSessionView loginAsGuest();
+
+    /**
      * 管理员登出。语义同 logout，单独提供用于审计与未来扩展。
      *
      * @param token 当前管理员 JWT 令牌

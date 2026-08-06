@@ -123,9 +123,9 @@ describe("isTokenValid - JWT 解析与过期校验", () => {
     expect(isTokenValid("a.b.c.d")).toBe(false);
   });
 
-  it("JWT payload 不含 exp 字段时视为永不过期", () => {
+  it("JWT payload 不含 exp 字段时应拒绝（安全修复：视为过期）", () => {
     const token = makeJwt({ sub: "admin" });
-    expect(isTokenValid(token)).toBe(true);
+    expect(isTokenValid(token)).toBe(false);
   });
 
   it("JWT 已过期（exp < 当前时间）应返回 false", () => {

@@ -58,64 +58,70 @@ public class ThirdPartyAuthService {
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final AesEncryptor aesEncryptor;
+    private final WeChatClient weChatClient;
+    private final AppleIdentityTokenVerifier appleIdentityTokenVerifier;
 
     public ThirdPartyAuthService(
             ThirdPartyAccountRepository thirdPartyAccountRepository,
             UserRepository userRepository,
             JwtTokenProvider jwtTokenProvider,
-            AesEncryptor aesEncryptor
+            AesEncryptor aesEncryptor,
+            WeChatClient weChatClient,
+            AppleIdentityTokenVerifier appleIdentityTokenVerifier
     ) {
         this.thirdPartyAccountRepository = thirdPartyAccountRepository;
         this.userRepository = userRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.aesEncryptor = aesEncryptor;
+        this.weChatClient = weChatClient;
+        this.appleIdentityTokenVerifier = appleIdentityTokenVerifier;
     }
 
     /**
      * 使用微信第三方账号登录。
      *
-     * <p>流程：</p>
+     * <p>流程（infra R2-00009 修复：不再信任客户端 openId）：</p>
      * <ol>
+     *   <li>调用微信 jscode2session（code 换取 openId），服务端校验 code 有效性</li>
      *   <li>对 openId 做 SHA-256 派生 hash（与主登录流程一致），作为查询键</li>
-     *   <li>按 (WECHAT, openIdHash) 查询绑定记录</li>
-     *   <li>找到则取出 userId 查询用户，签发 JWT 返回</li>
-     *   <li>未找到则创建新用户（昵称使用默认值），并写入绑定记录，签发 JWT 返回</li>
+     *   <li>按 (WECHAT, openIdHash) 查询绑定记录，命中则登录，未命中则创建用户</li>
      * </ol>
      *
-     * @param openId  微信 openId（不可为空）
-     * @param unionId 微信 unionId（可空）
+     * @param code 微信 wx.login() 返回的临时 code（不可为空）
      * @return 用户会话视图（包含 JWT 令牌）
-     * @throws IllegalArgumentException openId 为空时抛出
+     * @throws IllegalArgumentException code 为空或微信验签失败时抛出
      */
     @Transactional
-    public UserSessionView loginWithWechat(String openId, String unionId) {
-        if (openId == null || openId.isBlank()) {
-            throw new IllegalArgumentException("openId 不能为空");
+    public UserSessionView loginWithWechat(String code) {
+        if (code == null || code.isBlank()) {
+            throw new IllegalArgumentException("code 不能为空");
         }
-        return doLogin(PROVIDER_WECHAT, openId, unionId);
+        WeChatClient.WeChatSessionResponse session = weChatClient.code2Session(code);
+        if (session == null || session.getOpenid() == null || session.getOpenid().isBlank()) {
+            log.warn("微信第三方登录 code2session 返回空 openid");
+            throw new IllegalArgumentException("微信登录凭证无效，请重新登录");
+        }
+        return doLogin(PROVIDER_WECHAT, session.getOpenid(), session.getUnionid());
     }
 
     /**
      * 使用 Apple 第三方账号登录。
      *
-     * <p>流程：</p>
+     * <p>流程（infra R2-00010 修复：不再信任客户端 appleIdentifier）：</p>
      * <ol>
-     *   <li>对 Apple Sub Identifier 做 SHA-256 派生 hash 作为查询键</li>
-     *   <li>按 (APPLE, identifierHash) 查询绑定记录</li>
-     *   <li>找到则取出 userId 查询用户，签发 JWT 返回</li>
-     *   <li>未找到则创建新用户（昵称使用默认值），并写入绑定记录，签发 JWT 返回</li>
+     *   <li>验签 identityToken（RS256 签名 + iss/aud/exp + nonce），取出 sub</li>
+     *   <li>对 sub 做 SHA-256 派生 hash 作为查询键</li>
+     *   <li>按 (APPLE, subHash) 查询绑定记录，命中则登录，未命中则创建用户</li>
      * </ol>
      *
-     * @param appleIdentifier Apple Sub Identifier（不可为空）
+     * @param identityToken Sign in with Apple 返回的 identityToken JWT（不可为空）
      * @return 用户会话视图（包含 JWT 令牌）
-     * @throws IllegalArgumentException appleIdentifier 为空时抛出
+     * @throws IllegalArgumentException identityToken 为空或验签失败时抛出
      */
     @Transactional
-    public UserSessionView loginWithApple(String appleIdentifier) {
-        if (appleIdentifier == null || appleIdentifier.isBlank()) {
-            throw new IllegalArgumentException("appleIdentifier 不能为空");
-        }
-        return doLogin(PROVIDER_APPLE, appleIdentifier, null);
+    public UserSessionView loginWithApple(String identityToken) {
+        String appleSub = appleIdentityTokenVerifier.verifyAndGetSubject(identityToken);
+        return doLogin(PROVIDER_APPLE, appleSub, null);
     }
 
     /**

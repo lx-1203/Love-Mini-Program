@@ -40,14 +40,17 @@ export async function acceptExchange(
       const sessionId = this.activeSession!.id;
       const currentSession = mockSessionMap[sessionId] ?? mockSession1;
       const currentStatus = currentSession.contactExchange.status;
-      const newStatus =
-        actor === "self"
-          ? currentStatus === "accepted-by-peer"
-            ? "completed"
-            : "accepted-by-self"
-          : currentStatus === "accepted-by-self"
-            ? "completed"
-            : "accepted-by-peer";
+      // infra R2-00097: 状态机查表替代三元嵌套，可读性更佳
+      // 类型收紧：状态值必须属于会话联系方式交换状态联合类型
+      const exchangeTransitions: Record<
+        string,
+        Record<string, TempChatSession["contactExchange"]["status"]>
+      > = {
+        self: { "accepted-by-peer": "completed", "*": "accepted-by-self" },
+        peer: { "accepted-by-self": "completed", "*": "accepted-by-peer" },
+      };
+      const actorTable = exchangeTransitions[actor] ?? exchangeTransitions.self!;
+      const newStatus = actorTable[currentStatus] ?? actorTable["*"]!;
       const updatedSession: TempChatSession = {
         ...currentSession,
         contactExchange: {

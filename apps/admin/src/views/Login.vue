@@ -10,6 +10,7 @@
  */
 import { ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { sanitizeRedirect } from "../router/guards";
 import { useSessionStore } from "../stores/session";
 import { useI18n } from "vue-i18n";
 import { env } from "../config/env";
@@ -28,18 +29,19 @@ const loading = ref(false);
 const error = ref("");
 
 // 修复：默认凭据提示改为从环境变量读取，仅开发环境显示
-// Task 5：通过 env.isDev / env.devDefaultUsername / env.devDefaultPassword 引用，
+// Task 5：通过 env.isDev / env.devDefaultUsername 引用，
 // 生产环境 env.isDev 为 false，提示区块不渲染
+// infra R2-00457：仅展示开发账号、不展示默认密码——若 .env.development
+// 误配真实密码，登录页明文展示会造成凭据泄露
 const showDevHint = computed(() => {
-  return Boolean(env.isDev && devUsername.value && devPassword.value);
+  return Boolean(env.isDev && devUsername.value);
 });
 
 const devUsername = computed(() => env.devDefaultUsername);
-const devPassword = computed(() => env.devDefaultPassword);
 
 async function handleLogin() {
   if (!form.value.username || !form.value.password) {
-    error.value = t("login.usernameRequired") + " / " + t("login.passwordRequired");
+    error.value = t("login.credentialsRequired");
     return;
   }
 
@@ -48,9 +50,10 @@ async function handleLogin() {
 
   try {
     await sessionStore.login(form.value);
-    // Task 14：登录成功后优先回跳到 redirect 查询参数指向的路径，
-    // 无 redirect 时回首页，保证路由守卫拦截后的用户体验连贯
-    const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "";
+    // Task 14：登录成功后优先回跳到 redirect 查询参数指向的站内路径，
+    // 无 redirect 或参数非法（外部地址/非相对路径）时回首页。
+    // 安全修复：redirect 必须为站内相对路径，防止开放重定向。
+    const redirect = sanitizeRedirect(route.query.redirect);
     router.push(redirect || { name: "Dashboard" });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "";
@@ -104,10 +107,10 @@ async function handleLogin() {
         </button>
 
         <!-- 修复：移除硬编码默认凭据明文展示，改为从环境变量读取（仅开发环境显示）
-             生产环境（NODE_ENV=production）完全不显示默认凭据提示 -->
+             生产环境（NODE_ENV=production）完全不显示默认凭据提示
+             infra R2-00457：仅提示开发账号，不展示默认密码（防误配真实密码泄露） -->
         <view v-if="showDevHint" class="login-hint">
           <text>{{ t("login.devUsernameHint", { username: devUsername }) }}</text>
-          <text>{{ t("login.devPasswordHint", { password: devPassword }) }}</text>
         </view>
       </view>
     </view>

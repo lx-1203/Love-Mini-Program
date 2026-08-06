@@ -58,7 +58,9 @@ import {
 // 保留 re-export 以便外部旧 import 路径仍能从 "@/stores/chat" 取到这些符号
 export * from "./types";
 export * from "./constants";
-export * from "./mock-data";
+// infra R2-00094: 不再通配 re-export mock-data（限制 mock 数据引用面）；
+// 需要 mock 数据时请显式从 stores/chat/mock-data 导入
+export { mockSession1, mockSession2, mockChatSessionSummaries, mockChatOverview, mockSessionMap } from "./mock-data";
 export * from "./utils";
 export * from "./higher-order";
 

@@ -17,4 +17,12 @@ public interface UserScheduleProfileRepository extends JpaRepository<UserSchedul
      * @return 匹配的日程偏好（可能为空）
      */
     Optional<UserScheduleProfile> findByUserId(Long userId);
+
+    /**
+     * 批量查询多个用户的日程偏好（infra R2-00017：消除 MatchEngine 评分 N+1）。
+     *
+     * @param userIds 用户 ID 列表
+     * @return 匹配的日程偏好列表
+     */
+    java.util.List<UserScheduleProfile> findByUserIdIn(java.util.List<Long> userIds);
 }

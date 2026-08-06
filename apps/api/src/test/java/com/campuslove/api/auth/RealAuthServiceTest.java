@@ -51,6 +51,7 @@ class RealAuthServiceTest {
     @Mock private UserScheduleProfileRepository userScheduleProfileRepository;
     @Mock private AesEncryptor aesEncryptor;
     @Mock private TokenBlacklistService tokenBlacklistService;
+    @Mock private OnlineUserService onlineUserService;
 
     private PasswordEncoder passwordEncoder;
     private RealAuthService realAuthService;
@@ -84,7 +85,9 @@ class RealAuthServiceTest {
                 passwordEncoder,
                 aesEncryptor,
                 tokenBlacklistService,
-                ""
+                onlineUserService,
+                "",
+                true
         );
 
         // 默认 mock 返回空 Optional，避免 buildSessionView 中 NPE
@@ -158,7 +161,9 @@ class RealAuthServiceTest {
                 passwordEncoder,
                 aesEncryptor,
                 tokenBlacklistService,
-                correctHash
+                onlineUserService,
+                correctHash,
+                true
         );
 
         // Act & Assert：应通过环境变量哈希校验成功
@@ -248,7 +253,9 @@ class RealAuthServiceTest {
                 passwordEncoder,
                 aesEncryptor,
                 tokenBlacklistService,
-                plaintextEnvPassword
+                onlineUserService,
+                plaintextEnvPassword,
+                true
         );
 
         // Act：使用明文密码登录，应成功（环境变量兜底 + 明文比较）
@@ -396,5 +403,110 @@ class RealAuthServiceTest {
         user.setFollowingCount(0);
         user.setFollowersCount(0);
         return user;
+    }
+
+    /* ============================================================
+     * 体验账号一键登录（loginAsGuest）测试
+     * ============================================================ */
+
+    /**
+     * 场景 1：首次调用自动创建体验账号并签发 JWT。
+     */
+    @Test
+    void loginAsGuest_firstCall_shouldCreateGuestAccountAndIssueToken() {
+        // Arrange：体验账号不存在（首次使用）
+        when(userRepository.findByPhone("13900000000")).thenReturn(Optional.empty());
+        // save 返回传入实体（模拟 JPA 托管实体回填），否则 loginAsGuest 内 save 返回 null 导致 NPE
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(jwtTokenProvider.generateToken(any())).thenReturn("mock-guest-jwt");
+
+        // Act
+        UserSessionView session = realAuthService.loginAsGuest();
+
+        // Assert：创建了体验账号（openid 约定 guest: 前缀 + 随机密码 BCrypt）并签发 token
+        org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        User saved = captor.getValue();
+        assertEquals("13900000000", saved.getPhone());
+        assertEquals("guest:13900000000", saved.getOpenid());
+        assertEquals("体验用户", saved.getNickname());
+        assertEquals("USER", saved.getRole());
+        assertEquals("active", saved.getStatus());
+        assertNotNull(saved.getPassword(), "体验账号应设置随机密码");
+        assertFalse(saved.getPassword().isBlank(), "随机密码不应为空");
+        assertTrue(saved.getPassword().startsWith("$2"), "密码应为 BCrypt 哈希格式");
+        assertNotNull(session);
+        assertEquals("mock-guest-jwt", session.token());
+    }
+
+    /**
+     * 场景 2：体验账号已存在时复用（幂等），不再创建。
+     */
+    @Test
+    void loginAsGuest_existingAccount_shouldReuseWithoutCreating() {
+        // Arrange：体验账号已存在（第二次使用）
+        User existing = new User();
+        existing.setId(47L);
+        existing.setOpenid("guest:13900000000");
+        existing.setPhone("13900000000");
+        existing.setPassword(passwordEncoder.encode("random-secret"));
+        existing.setNickname("体验用户");
+        existing.setRole("USER");
+        existing.setStatus("active");
+        when(userRepository.findByPhone("13900000000")).thenReturn(Optional.of(existing));
+        when(jwtTokenProvider.generateToken("47")).thenReturn("mock-guest-jwt-2");
+
+        // Act
+        UserSessionView session = realAuthService.loginAsGuest();
+
+        // Assert：未触发创建（不调用 save），复用原账号并签发 token
+        verify(userRepository, never()).save(any());
+        assertEquals("47", session.userId());
+        assertEquals("mock-guest-jwt-2", session.token());
+    }
+
+    /**
+     * 场景 3：体验账号被禁用时拒绝登录。
+     */
+    @Test
+    void loginAsGuest_disabledAccount_shouldReject() {
+        // Arrange：体验账号已被管理员禁用
+        User existing = new User();
+        existing.setId(47L);
+        existing.setOpenid("guest:13900000000");
+        existing.setPhone("13900000000");
+        existing.setPassword(passwordEncoder.encode("random-secret"));
+        existing.setNickname("体验用户");
+        existing.setRole("USER");
+        existing.setStatus("disabled");
+        when(userRepository.findByPhone("13900000000")).thenReturn(Optional.of(existing));
+
+        // Act & Assert
+        assertThrows(com.campuslove.api.common.OperationForbiddenException.class,
+                () -> realAuthService.loginAsGuest());
+    }
+
+    /**
+     * 场景 4：入口被配置关闭时（app.guest-login.enabled=false）拒绝登录。
+     */
+    @Test
+    void loginAsGuest_disabledEntry_shouldReject() {
+        // Arrange：构造关闭体验入口的 service
+        RealAuthService disabledService = new RealAuthService(
+                weChatClient,
+                jwtTokenProvider,
+                userRepository,
+                userCampusProfileRepository,
+                userScheduleProfileRepository,
+                passwordEncoder,
+                aesEncryptor,
+                tokenBlacklistService,
+                onlineUserService,
+                "",
+                false
+        );
+
+        // Act & Assert
+        assertThrows(IllegalStateException.class, disabledService::loginAsGuest);
     }
 }

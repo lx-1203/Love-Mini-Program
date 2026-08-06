@@ -27,6 +27,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class RecommendationController {
 
+  /** 身高筛选下限（厘米） */
+  private static final int MIN_HEIGHT_CM = 100;
+
+  /** 身高筛选上限（厘米） */
+  private static final int MAX_HEIGHT_CM = 250;
+
+  /** educationLevel 合法取值 */
+  private static final Set<String> VALID_EDUCATION_LEVELS =
+      Set.of("high_school", "bachelor", "master", "phd");
+
+  /** relationshipStatus 合法取值 */
+  private static final Set<String> VALID_RELATIONSHIP_STATUS =
+      Set.of("never", "married_before", "divorced", "widowed");
+
   private final RecommendationService recommendationService;
 
   public RecommendationController(RecommendationService recommendationService) {
@@ -70,7 +84,9 @@ public class RecommendationController {
    */
   @GetMapping("/recommendations/preferences")
   public RecommendationPreferencesView getPreferences() {
-    return recommendationService.getPreferences();
+    // infra R2-00202: 原实现返回固定默认值（与 /preferences/me 不一致），改为按当前用户返回真实偏好
+    Long userId = SecurityUtils.getCurrentUserId();
+    return recommendationService.getPreferences(userId);
   }
 
   /**
@@ -85,14 +101,22 @@ public class RecommendationController {
   @PutMapping("/recommendations/preferences")
   @PreAuthorize("hasRole('USER')")
   public RecommendationPreferencesView updatePreferences(@Valid @RequestBody RecommendationPreferencesView prefs) {
-    return recommendationService.updatePreferences(prefs);
+    // infra R2-00203: 原实现调用 deprecated updatePreferences（恒抛 UnsupportedOperationException，端点 100% 500），
+    // 改为调用带 userId 的真实保存逻辑
+    Long userId = SecurityUtils.getCurrentUserId();
+    return recommendationService.savePreferences(
+        userId, prefs.dailyNotifyTime(), prefs.scope(), prefs.campusPriority());
   }
 
   // ---- Phase 2 新增：人物推荐端点 ----
 
   /**
    * 获取推荐人物列表。
-   * GET /api/recommendations/people
+   * GET /api/recommendations/people （别名：GET /api/recommendations）
+   *
+   * <p>缺陷修复：前端 real 模式实际调用 {@code GET /api/v1/recommendations}，
+   * 原后端仅提供 {@code /recommendations/people}，此处为同一方法增加别名路由，
+   * 两个路径共享相同逻辑（含全部可选筛选参数）。</p>
    *
    * <p>Phase B - Task B2 扩展：支持以下查询参数（均为可选）：</p>
    * <ul>
@@ -105,7 +129,7 @@ public class RecommendationController {
    * </ul>
    * <p>无参数时返回全部推荐（向后兼容）。</p>
    */
-  @GetMapping("/recommendations/people")
+  @GetMapping({"/recommendations/people", "/recommendations"})
   public List<RecommendedPersonView> getRecommendations(
           @RequestParam(value = "heightMin", required = false) Integer heightMin,
           @RequestParam(value = "heightMax", required = false) Integer heightMax,
@@ -115,6 +139,22 @@ public class RecommendationController {
           @RequestParam(value = "hometownCity", required = false) String hometownCity,
           @RequestParam(value = "futureCity", required = false) String futureCity,
           @RequestParam(value = "keyword", required = false) String keyword) {
+    // infra R2-00204: 身高范围校验，拒绝负数/倒挂区间
+    if (heightMin != null && (heightMin < MIN_HEIGHT_CM || heightMin > MAX_HEIGHT_CM)) {
+      throw new IllegalArgumentException(
+          "heightMin 必须在 " + MIN_HEIGHT_CM + "-" + MAX_HEIGHT_CM + " 厘米之间");
+    }
+    if (heightMax != null && (heightMax < MIN_HEIGHT_CM || heightMax > MAX_HEIGHT_CM)) {
+      throw new IllegalArgumentException(
+          "heightMax 必须在 " + MIN_HEIGHT_CM + "-" + MAX_HEIGHT_CM + " 厘米之间");
+    }
+    if (heightMin != null && heightMax != null && heightMin > heightMax) {
+      throw new IllegalArgumentException("heightMin 不能大于 heightMax");
+    }
+    // infra R2-00205: 教育/感情状态枚举白名单校验，非法值直接 400 而非被静默过滤
+    validateEnumFilter("educationLevel", educationLevel, VALID_EDUCATION_LEVELS);
+    validateEnumFilter("relationshipStatus", relationshipStatus, VALID_RELATIONSHIP_STATUS);
+
     Long userId = SecurityUtils.getCurrentUserId();
     RecommendationFilter filter = new RecommendationFilter(
             heightMin,
@@ -145,6 +185,26 @@ public class RecommendationController {
         .map(String::trim)
         .filter(s -> !s.isEmpty())
         .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  /**
+   * 校验逗号分隔的枚举筛选参数是否全部在合法取值内。
+   *
+   * @param paramName   参数名（用于错误消息）
+   * @param csv         逗号分隔的原始参数值（可空）
+   * @param validValues 合法取值集合
+   */
+  private void validateEnumFilter(String paramName, String csv, Set<String> validValues) {
+    if (csv == null || csv.isBlank()) {
+      return;
+    }
+    for (String v : csv.split(",")) {
+      String trimmed = v.trim();
+      if (!validValues.contains(trimmed)) {
+        throw new IllegalArgumentException(
+            paramName + " 取值非法: " + trimmed + ", 仅支持 " + String.join("/", validValues));
+      }
+    }
   }
 
   /**

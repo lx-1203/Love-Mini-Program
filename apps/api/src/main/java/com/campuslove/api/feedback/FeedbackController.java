@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -90,8 +91,26 @@ public class FeedbackController {
   }
 
   @GetMapping("/api/v1/admin/feedback")
-  public ApiResponse<List<SubmissionRecordView>> listAdminFeedback() {
-    return ApiResponse.ok(feedbackService.listAdminFeedback());
+  public List<SubmissionRecordView> listAdminFeedback() {
+    return feedbackService.listAdminFeedback();
+  }
+
+  /**
+   * 管理员回复/标记反馈为已处理（infra R2-00023 新增端点）。
+   *
+   * <p>与其余 admin 端点一致返回裸对象（不使用 ApiResponse 包装），
+   * 管理后台前端直接按数组/对象消费。</p>
+   *
+   * @param id    反馈记录 ID
+   * @param reply 回复内容（非空）
+   * @return 更新后的反馈记录（状态 REVIEWED）
+   */
+  @PutMapping("/api/v1/admin/feedback/{id}/reply")
+  @PreAuthorize("hasRole('ADMIN')")
+  public SubmissionRecordView replyFeedback(
+      @PathVariable("id") @Positive long id,
+      @Valid @RequestBody ReplyFeedbackRequest reply) {
+    return feedbackService.replyFeedback(id, reply.reply());
   }
 
   @PostMapping("/api/v1/admin/activity-proposals/{id}/convert")
@@ -164,4 +183,14 @@ public class FeedbackController {
     Long userId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(feedbackService.getSubmissionDetail(userId, id));
   }
+}
+
+/**
+ * 管理员回复反馈请求体（infra R2-00023）。
+ *
+ * @param reply 回复内容（必填，非空）
+ */
+record ReplyFeedbackRequest(
+    @jakarta.validation.constraints.NotBlank String reply
+) {
 }

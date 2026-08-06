@@ -10,6 +10,8 @@ import { useI18n } from "vue-i18n";
 import { useMessagesStore } from "../../stores/messages";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
+// infra R2-00082: 路由路径常量化
+import { ROUTES } from "../../constants/routes";
 import { useTabBar } from "../../composables/useTabBar";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
@@ -76,12 +78,12 @@ function formatChatTime(isoString: string | null): string {
 }
 
 function goToChat(sessionId: string) {
-  openAppPath(`/pages/chat-session/index?sessionId=${encodeURIComponent(sessionId)}`);
+  openAppPath(`${ROUTES.CHAT.SESSION}?sessionId=${encodeURIComponent(sessionId)}`);
 }
 
 /** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
 function goToPublishTopic() {
-  openAppPath('/pages/circles/post-topic');
+  openAppPath(ROUTES.CIRCLES.POST_TOPIC);
 }
 
 /**

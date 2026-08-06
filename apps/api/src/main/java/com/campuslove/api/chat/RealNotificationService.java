@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,9 @@ public class RealNotificationService implements NotificationService {
     public static final String SIGNAL_TYPE_SOCIAL = "SOCIAL";
     /** 内容信号类型：评论/点赞/关注/回复 */
     public static final String SIGNAL_TYPE_CONTENT = "CONTENT";
+
+    /** 无分页兼容接口的列表条数上限（infra R2-00245） */
+    private static final int MAX_LIST_LIMIT = 200;
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -55,9 +59,9 @@ public class RealNotificationService implements NotificationService {
         if (userId == null) {
             return List.of();
         }
-        // Task 2.2.1：批量预加载源用户，避免在 toNotificationView 中触发 N+1 查询
+        // infra R2-00245: 无分页兼容方法限制查询上限，避免通知量大时全量加载（OOM/大响应）
         List<Notification> notifications = notificationRepository
-                .findByUserIdOrderByCreatedAtDesc(userId, Pageable.unpaged()).getContent();
+                .findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(0, MAX_LIST_LIMIT)).getContent();
         Map<Long, User> sourceUserMap = batchLoadSourceUsers(notifications);
         return notifications.stream()
                 .map(n -> toNotificationView(n, sourceUserMap))
@@ -125,17 +129,44 @@ public class RealNotificationService implements NotificationService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        // 先获取全部通知
-        List<NotificationView> allViews = getNotifications(userId, unreadOnly, pageable);
-
-        // 如果指定了 signalType，进行内存过滤
+        // infra R2-00244: signalType 筛选下推到 SQL（原实现先分页后内存过滤，
+        // 第 1 页全是另一类型时返回空、需翻多页才见数据）
+        Page<Notification> notificationPage;
         if (signalType != null && !signalType.isBlank()) {
-            return allViews.stream()
-                    .filter(view -> signalType.equals(view.signalType()))
-                    .toList();
+            List<Notification.NotificationType> types = resolveSignalTypes(signalType);
+            notificationPage = Boolean.TRUE.equals(unreadOnly)
+                    ? notificationRepository.findByUserIdAndIsReadAndTypeInOrderByCreatedAtDesc(
+                            userId, false, types, pageable)
+                    : notificationRepository.findByUserIdAndTypeInOrderByCreatedAtDesc(
+                            userId, types, pageable);
+        } else if (Boolean.TRUE.equals(unreadOnly)) {
+            notificationPage = notificationRepository.findByUserIdAndIsReadOrderByCreatedAtDesc(
+                    userId, false, pageable);
+        } else {
+            notificationPage = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
         }
 
-        return allViews;
+        // Task 2.2.1：批量预加载源用户，避免在 toNotificationView 中触发 N+1 查询
+        Map<Long, User> sourceUserMap = batchLoadSourceUsers(notificationPage.getContent());
+        return notificationPage.getContent().stream()
+                .map(n -> toNotificationView(n, sourceUserMap))
+                .toList();
+    }
+
+    /**
+     * 将 signalType（SOCIAL/CONTENT）解析为通知类型集合，映射与 {@link #determineSignalType} 一致。
+     *
+     * @param signalType 信号分类（SOCIAL/CONTENT）
+     * @return 对应通知类型集合（未知值按 SOCIAL 处理）
+     */
+    private List<Notification.NotificationType> resolveSignalTypes(String signalType) {
+        if (SIGNAL_TYPE_CONTENT.equalsIgnoreCase(signalType)) {
+            return List.of(Notification.NotificationType.comment,
+                    Notification.NotificationType.follow);
+        }
+        return List.of(Notification.NotificationType.match,
+                Notification.NotificationType.visitor,
+                Notification.NotificationType.like);
     }
 
     /**
@@ -200,13 +231,8 @@ public class RealNotificationService implements NotificationService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        // 查找所有未读通知并标记为已读
-        List<Notification> unreadNotifications = notificationRepository
-                .findByUserIdAndIsReadOrderByCreatedAtDesc(userId, false);
-        for (Notification notification : unreadNotifications) {
-            notification.setIsRead(true);
-        }
-        notificationRepository.saveAll(unreadNotifications);
+        // infra R2-00246: 批量 UPDATE 标记已读，避免全量加载未读通知再逐条 saveAll（写放大）
+        notificationRepository.markAllAsReadByUserId(userId);
     }
 
     /**
@@ -236,7 +262,9 @@ public class RealNotificationService implements NotificationService {
         notification.setIsRead(false);
         notification.setCreatedAt(LocalDateTime.now());
 
-        notificationRepository.save(notification);
+        // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
+        // 否则下方 toNotificationView 中 notification.getId() 为 null
+        notification = notificationRepository.save(notification);
 
         // 通过 WebSocket 推送通知给目标用户
         NotificationView notificationView = toNotificationView(notification);

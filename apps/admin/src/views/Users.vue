@@ -7,20 +7,28 @@
  * - ConfirmDialog 的 title/message 通过 users.disableConfirmMessage 等插值生成
  * - 错误回退通过 users.loadFailed / users.saveFailed / users.actionFailed 表达
  */
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onBeforeUnmount } from "vue";
 import {
   listUsers,
+  createUser,
   disableUser,
   enableUser,
   updateUser,
+  getUserDetail,
   type AdminUserSummary,
+  type AdminUserDetail,
   type AdminUserListQuery,
 } from "../api/users";
+import { changePassword } from "../api/account";
 import { ApiError } from "../api/http";
 // Task 3.7.2 / 3.7.3：接入共享 Pagination 与 ConfirmDialog 组件
 import Pagination from "../components/Pagination.vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
+// infra R2-00391：错误态接入共享 ErrorState 组件（原仅 error-banner 无重试按钮）
+import ErrorState from "../components/ErrorState.vue";
 import { useI18n } from "vue-i18n";
+import { formatDateTime } from "../utils/format";
+import { DEFAULT_PAGE_SIZE, NICKNAME_MAX_LENGTH } from "../utils/constants";
 
 const { t } = useI18n();
 
@@ -33,7 +41,8 @@ const roleFilter = ref<"" | "USER" | "ADMIN">("");
 const statusFilter = ref<"" | "active" | "disabled">("");
 
 const page = ref(1);
-const pageSize = ref(20);
+// infra R2-00392：pageSize 魔法数字收敛为公共常量（原 20 多处散落）
+const pageSize = ref(DEFAULT_PAGE_SIZE);
 const total = ref(0);
 const totalPages = ref(1);
 
@@ -48,12 +57,58 @@ const confirmAction = ref<"disable" | "enable">("disable");
 const confirmTarget = ref<AdminUserSummary | null>(null);
 const confirming = ref(false);
 
-/** 通用 computed：filteredUsers 保留兼容旧模板 */
-const filteredUsers = computed(() => users.value);
+// infra R2-00393：用户详情弹窗状态（getUserDetail 首次被消费）
+const detailVisible = ref(false);
+const detailUser = ref<AdminUserDetail | null>(null);
+const detailLoading = ref(false);
+
+// ===== P1 对齐（eladmin「新增用户」+「修改密码」）弹窗状态 =====
+/** 新增用户弹窗 */
+const createVisible = ref(false);
+const createPhone = ref("");
+const createPassword = ref("");
+const createNickname = ref("");
+const creatingUser = ref(false);
+/** 修改密码弹窗 */
+const changePwdVisible = ref(false);
+const oldPassword = ref("");
+const newPassword = ref("");
+const confirmPassword = ref("");
+const changingPwd = ref(false);
+/** 弹窗内错误提示（与列表错误 errorMsg 分离，避免互扰） */
+const modalError = ref("");
+
+// infra R2-00394：搜索防抖 + 请求竞态防护——
+// 原实现每次 Enter/筛选变更都全量请求（无防抖），且快速翻页时旧响应可能覆盖新数据。
+// 统一用请求序号（reqSeq）丢弃过期响应，用 debounce 合并高频触发。
+let reqSeq = 0;
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 昵称长度上限（infra R2-00400：收敛为 utils/constants 公共常量 NICKNAME_MAX_LENGTH，
+ * 与后端 AdminUserUpdateRequest 校验一致）
+ */
+
+/**
+ * 当前登录管理员 ID（用于禁止禁用自己）。
+ * 从 localStorage.admin_user 读取，解析失败时返回 null（此时不做自保护拦截，
+ * 仅在后端存在保护逻辑时依赖后端校验）。
+ */
+const currentAdminId = computed<number | null>(() => {
+  const raw = localStorage.getItem("admin_user");
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { id?: unknown };
+    return typeof parsed.id === "number" ? parsed.id : null;
+  } catch {
+    return null;
+  }
+});
 
 async function fetchUsers() {
   loading.value = true;
   errorMsg.value = "";
+  const seq = ++reqSeq;
   try {
     const query: AdminUserListQuery = {
       page: page.value,
@@ -64,50 +119,50 @@ async function fetchUsers() {
     if (statusFilter.value) query.status = statusFilter.value;
 
     const result = await listUsers(query);
+    // infra R2-00394：丢弃过期响应（序号小于当前请求的响应不再写入状态）
+    if (seq !== reqSeq) return;
     users.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
+    if (seq !== reqSeq) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("users.loadFailed");
     users.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    loading.value = false;
+    if (seq === reqSeq) {
+      loading.value = false;
+    }
   }
 }
 
+/** infra R2-00394：搜索输入防抖（400ms），合并高频键入/筛选变更 */
+function scheduleSearch() {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    searchTimer = null;
+    page.value = 1;
+    fetchUsers();
+  }, 400);
+}
+
 function handleSearch() {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = null;
   page.value = 1;
   fetchUsers();
 }
 
+// infra R2-00395：handleResetFilters 与 handleSearch 逻辑合并——
+// 重置筛选后同样回到第一页并拉取，避免重复实现
 function handleResetFilters() {
   searchQuery.value = "";
   roleFilter.value = "";
   statusFilter.value = "";
-  page.value = 1;
-  fetchUsers();
+  handleSearch();
 }
 
-function handlePrevPage() {
-  if (page.value > 1) {
-    page.value--;
-    fetchUsers();
-  }
-}
-
-function handleNextPage() {
-  if (page.value < totalPages.value) {
-    page.value++;
-    fetchUsers();
-  }
-}
-
-/**
- * Task 3.7.2：分页变更回调（由 Pagination 组件触发）。
- * 直接复用 fetchUsers，page 已通过 v-model 同步。
- */
 function handlePageChange(newPage: number): void {
   // Pagination 组件已通过 v-model:page 同步 page.value，
   // 此处仅触发数据加载
@@ -132,7 +187,7 @@ function handleCancelEdit() {
  *
  * 调用 PUT /api/admin/users/{id}，请求体只携带变更字段（nickname）。
  * 保存过程中禁用按钮（savingEdit=true），防止重复点击产生并发更新。
- * 成功后刷新列表以同步显示最新昵称；失败时通过 alert 提示并保留弹窗，便于用户重试。
+ * 成功后刷新列表以同步显示最新昵称；失败时通过 errorMsg 提示并保留弹窗，便于用户重试。
  */
 async function handleSaveEdit() {
   if (!editingUser.value) return;
@@ -140,8 +195,12 @@ async function handleSaveEdit() {
 
   const trimmed = editNickname.value.trim();
   if (!trimmed) {
-    // eslint-disable-next-line no-alert
-    alert(t("users.nicknameRequired"));
+    errorMsg.value = t("users.nicknameRequired");
+    return;
+  }
+  // 长度校验：与输入框 maxlength 及后端校验保持一致
+  if (trimmed.length > NICKNAME_MAX_LENGTH) {
+    errorMsg.value = t("users.nicknameTooLong", { n: NICKNAME_MAX_LENGTH });
     return;
   }
 
@@ -154,15 +213,18 @@ async function handleSaveEdit() {
     // 刷新列表以同步最新昵称
     await fetchUsers();
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : t("users.saveFailed");
-    // eslint-disable-next-line no-alert
-    alert(msg);
+    errorMsg.value = err instanceof ApiError ? err.message : t("users.saveFailed");
   } finally {
     savingEdit.value = false;
   }
 }
 
 async function handleDisable(user: AdminUserSummary) {
+  // 自保护：禁止禁用当前登录账号自己（无法从 localStorage 获取 id 时跳过，依赖后端校验）
+  if (currentAdminId.value !== null && user.id === currentAdminId.value) {
+    errorMsg.value = t("users.actionFailed");
+    return;
+  }
   // Task 3.7.3：替换原生 confirm() 为 ConfirmDialog 组件
   confirmAction.value = "disable";
   confirmTarget.value = user;
@@ -194,8 +256,7 @@ async function handleConfirmAction() {
     confirmTarget.value = null;
     await fetchUsers();
   } catch (err) {
-    // eslint-disable-next-line no-alert
-    alert(err instanceof ApiError ? err.message : t("users.actionFailed"));
+    errorMsg.value = err instanceof ApiError ? err.message : t("users.actionFailed");
   } finally {
     confirming.value = false;
   }
@@ -208,20 +269,205 @@ function handleConfirmCancel() {
 }
 
 function formatDate(iso: string): string {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleString("zh-CN", { hour12: false });
-  } catch {
-    return iso;
-  }
+  // infra R2-00396：统一走 utils/format 公共工具（原各视图重复实现且每次 new Date）
+  return formatDateTime(iso);
 }
 
 function statusLabel(status: string): string {
-  return status === "active" ? t("users.statusActive") : t("users.statusDisabled");
+  switch (status) {
+    case "active":
+      return t("users.statusActive");
+    case "disabled":
+      return t("users.statusDisabled");
+    default:
+      return status;
+  }
+}
+
+/** infra R2-00402：头像加载失败兜底——隐藏裂图（URL 失效时不显示 broken image） */
+function onAvatarError(e: Event) {
+  const img = e.target as HTMLImageElement;
+  img.style.display = "none";
+}
+
+/** infra R2-00398：认证状态文案映射（详情弹窗用） */
+function verificationLabel(status: AdminUserDetail["verificationStatus"]): string {
+  switch (status) {
+    case "verified":
+      return t("users.verified");
+    case "pending":
+      return t("users.verificationPending");
+    case "rejected":
+      return t("users.verificationRejected");
+    case "draft":
+      return t("users.verificationDraft");
+    default:
+      return t("users.unverified");
+  }
 }
 
 function roleLabel(role: string): string {
-  return role === "ADMIN" ? t("users.roleAdmin") : t("users.roleUser");
+  const normalized = role.toUpperCase();
+  switch (normalized) {
+    case "ADMIN":
+      return t("users.roleAdmin");
+    case "SUPER_ADMIN":
+      return t("users.roleSuperAdmin");
+    default:
+      return t("users.roleUser");
+  }
+}
+
+/** infra R2-00397：角色徽章 class 兜底——未知角色不再拼接无效 class（样式丢失显示裸文本），
+ *  统一回退 user 徽章样式 */
+function roleBadgeClass(role: string): string {
+  const normalized = role.toUpperCase();
+  if (normalized === "SUPER_ADMIN") return "role-super-admin";
+  if (normalized === "ADMIN") return "role-admin";
+  return "role-user";
+}
+
+/**
+ * infra R2-00398：打开用户详情弹窗（消费 getUserDetail）。
+ * 原 api/users.ts getUserDetail 定义后从未使用，运营无法查看用户 bio/校园/认证详情。
+ */
+async function handleViewDetail(user: AdminUserSummary) {
+  detailUser.value = null;
+  detailVisible.value = true;
+  detailLoading.value = true;
+  try {
+    detailUser.value = await getUserDetail(user.id);
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : t("users.loadDetailFailed");
+    detailVisible.value = false;
+  } finally {
+    detailLoading.value = false;
+  }
+}
+
+function closeDetail() {
+  detailVisible.value = false;
+  detailUser.value = null;
+}
+
+/** infra R2-00399：编辑弹窗支持 Esc 关闭（键盘流操作不便） */
+function onEditKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape" && editingUser.value && !savingEdit.value) {
+    handleCancelEdit();
+  }
+}
+
+/** infra R2-00394：组件卸载时清理防抖定时器 */
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+    searchTimer = null;
+  }
+});
+
+/**
+ * P1-B：打开新增用户弹窗（eladmin「新增用户」对齐）。
+ * 打开时重置表单与错误提示。
+ */
+function openCreateUser() {
+  createPhone.value = "";
+  createPassword.value = "";
+  createNickname.value = "";
+  modalError.value = "";
+  createVisible.value = true;
+}
+
+/** P1-B：关闭新增用户弹窗（提交中禁止关闭） */
+function closeCreateUser() {
+  if (creatingUser.value) return;
+  createVisible.value = false;
+}
+
+/**
+ * P1-B：提交新增用户。
+ * 前端校验（手机号格式/密码长度/昵称长度）与后端 AdminCreateUserRequest 校验对齐，
+ * 成功后关闭弹窗并刷新列表。
+ */
+async function handleCreateUser() {
+  if (creatingUser.value) return;
+  const phone = createPhone.value.trim();
+  if (!/^1[3-9]\d{9}$/.test(phone)) {
+    modalError.value = t("users.createPhoneInvalid");
+    return;
+  }
+  if (createPassword.value.length < 6 || createPassword.value.length > 64) {
+    modalError.value = t("users.createPasswordInvalid");
+    return;
+  }
+  const nickname = createNickname.value.trim();
+  if (!nickname) {
+    modalError.value = t("users.nicknameRequired");
+    return;
+  }
+  if (nickname.length > NICKNAME_MAX_LENGTH) {
+    modalError.value = t("users.nicknameTooLong", { n: NICKNAME_MAX_LENGTH });
+    return;
+  }
+  creatingUser.value = true;
+  modalError.value = "";
+  try {
+    await createUser({ phone, password: createPassword.value, nickname });
+    createVisible.value = false;
+    await fetchUsers();
+  } catch (err) {
+    modalError.value = err instanceof ApiError ? err.message : t("users.actionFailed");
+  } finally {
+    creatingUser.value = false;
+  }
+}
+
+/**
+ * P1-A：打开修改密码弹窗（eladmin「修改密码」对齐）。
+ * 打开时重置表单与错误提示。
+ */
+function openChangePwd() {
+  oldPassword.value = "";
+  newPassword.value = "";
+  confirmPassword.value = "";
+  modalError.value = "";
+  changePwdVisible.value = true;
+}
+
+/** P1-A：关闭修改密码弹窗（提交中禁止关闭） */
+function closeChangePwd() {
+  if (changingPwd.value) return;
+  changePwdVisible.value = false;
+}
+
+/**
+ * P1-A：提交修改密码（调用 POST /api/v1/admin/account/change-password）。
+ * 前端校验（旧密码必填/新密码长度/两次输入一致）与后端 ChangePasswordRequest 校验对齐，
+ * 成功后关闭弹窗；当前会话 token 不受影响，无需重新登录。
+ */
+async function handleChangePwd() {
+  if (changingPwd.value) return;
+  if (!oldPassword.value) {
+    modalError.value = t("users.changePwdOldRequired");
+    return;
+  }
+  if (newPassword.value.length < 6 || newPassword.value.length > 64) {
+    modalError.value = t("users.changePwdNewTooShort");
+    return;
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    modalError.value = t("users.changePwdMismatch");
+    return;
+  }
+  changingPwd.value = true;
+  modalError.value = "";
+  try {
+    await changePassword({ oldPassword: oldPassword.value, newPassword: newPassword.value });
+    changePwdVisible.value = false;
+  } catch (err) {
+    modalError.value = err instanceof ApiError ? err.message : t("users.actionFailed");
+  } finally {
+    changingPwd.value = false;
+  }
 }
 
 onMounted(() => {
@@ -243,6 +489,7 @@ onMounted(() => {
         type="text"
         :placeholder="t('users.searchNicknamePlaceholder')"
         @keyup.enter="handleSearch"
+        @input="scheduleSearch"
       />
       <select v-model="roleFilter" class="filter-select" @change="handleSearch">
         <option value="">{{ t("users.filterRoleAll") }}</option>
@@ -256,9 +503,13 @@ onMounted(() => {
       </select>
       <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
+      <!-- P1 对齐：新增用户 + 修改密码入口（eladmin「用户管理」对齐） -->
+      <button class="primary-button" @click="openCreateUser">{{ t("users.actionCreateUser") }}</button>
+      <button class="ghost-button" @click="openChangePwd">{{ t("users.actionChangePassword") }}</button>
     </view>
 
-    <view v-if="errorMsg" class="error-banner">{{ errorMsg }}</view>
+    <!-- infra R2-00391：错误态接入 ErrorState 组件（含重试按钮） -->
+    <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchUsers" />
 
     <view class="table-container">
       <table class="data-table">
@@ -278,19 +529,26 @@ onMounted(() => {
           <tr v-if="loading">
             <td colspan="8" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
-          <tr v-else-if="filteredUsers.length === 0">
+          <tr v-else-if="users.length === 0">
             <td colspan="8" class="empty-cell">{{ t("users.noData") }}</td>
           </tr>
-          <tr v-for="user in filteredUsers" :key="user.id">
+          <tr v-for="user in users" :key="user.id">
             <td>{{ user.id }}</td>
             <td>
               <view class="user-cell">
-                <img v-if="user.avatarUrl" :src="user.avatarUrl" class="user-avatar" alt="" />
+                <img
+                  v-if="user.avatarUrl"
+                  :src="user.avatarUrl"
+                  class="user-avatar"
+                  alt=""
+                  @error="onAvatarError"
+                />
                 <span>{{ user.nickname }}</span>
               </view>
             </td>
             <td>
-              <span class="role-badge" :class="`role-${user.role.toLowerCase()}`">
+              <!-- infra R2-00397：roleBadgeClass 兜底未知角色样式 -->
+              <span class="role-badge" :class="roleBadgeClass(user.role)">
                 {{ roleLabel(user.role) }}
               </span>
             </td>
@@ -299,18 +557,21 @@ onMounted(() => {
                 {{ statusLabel(user.status) }}
               </span>
             </td>
-            <td>{{ user.profileCompletion }}%</td>
+            <td>{{ t("users.profileCompletionValue", { n: user.profileCompletion }) }}</td>
             <td>{{ user.followingCount }} / {{ user.followersCount }}</td>
             <td>{{ formatDate(user.createdAt) }}</td>
             <td class="action-cell">
+              <!-- infra R2-00398：查看详情入口（getUserDetail） -->
+              <button class="action-button view" @click="handleViewDetail(user)">{{ t("users.actionView") }}</button>
               <button class="action-button edit" @click="handleEdit(user)">{{ t("users.actionEdit") }}</button>
+              <!-- 自保护：当前登录管理员不可禁用自己 -->
               <button
-                v-if="user.status === 'active'"
+                v-if="user.status === 'active' && user.id !== currentAdminId"
                 class="action-button delete"
                 @click="handleDisable(user)"
               >{{ t("users.actionDisable") }}</button>
               <button
-                v-else
+                v-else-if="user.status !== 'active'"
                 class="action-button enable"
                 @click="handleEnable(user)"
               >{{ t("users.actionEnable") }}</button>
@@ -320,13 +581,7 @@ onMounted(() => {
       </table>
     </view>
 
-    <view class="pagination">
-      <button class="page-button" :disabled="page <= 1" @click="handlePrevPage">{{ t("common.prevPage") }}</button>
-      <text class="page-info">{{ t("common.page", { page, totalPages }) }}（{{ t("common.total", { n: total }) }}）</text>
-      <button class="page-button" :disabled="page >= totalPages" @click="handleNextPage">{{ t("common.nextPage") }}</button>
-    </view>
-
-    <!-- Task 3.7.2：接入共享 Pagination 组件（替代上方手写分页） -->
+    <!-- Task 3.7.2：接入共享 Pagination 组件（修复双分页：删除上方手写分页） -->
     <Pagination
       v-model:page="page"
       :total-pages="totalPages"
@@ -346,12 +601,12 @@ onMounted(() => {
       @cancel="handleConfirmCancel"
     />
 
-    <view v-if="editingUser" class="modal-mask" @click.self="handleCancelEdit">
+    <view v-if="editingUser" class="modal-mask" @click.self="handleCancelEdit" @keydown.esc="onEditKeydown">
       <view class="modal">
         <text class="modal-title">{{ t("users.editUserTitle", { name: editingUser.nickname }) }}</text>
         <view class="form-row">
           <text class="form-label">{{ t("users.nicknameLabel") }}</text>
-          <input v-model="editNickname" class="form-input" type="text" />
+          <input v-model="editNickname" class="form-input" type="text" :maxlength="NICKNAME_MAX_LENGTH" />
         </view>
         <view class="modal-actions">
           <button class="ghost-button" :disabled="savingEdit" @click="handleCancelEdit">{{ t("common.cancel") }}</button>
@@ -359,7 +614,111 @@ onMounted(() => {
             {{ savingEdit ? t("common.saving") : t("common.save") }}
           </button>
         </view>
-        <text class="modal-hint">{{ t("users.modalHint") }}</text>
+        <!-- infra R2-00401：hint 文案修正——编辑接口仅支持昵称，
+             原文案“状态切换请使用列表中的禁用/启用按钮”与编辑接口支持 status 矛盾 -->
+        <text class="modal-hint">{{ t("users.editNicknameHint") }}</text>
+      </view>
+    </view>
+
+    <!-- infra R2-00398：用户详情弹窗 -->
+    <view v-if="detailVisible" class="modal-mask" @click.self="closeDetail">
+      <view class="modal detail-modal">
+        <text class="modal-title">{{ t("users.detailTitle") }}</text>
+        <view v-if="detailLoading" class="detail-loading">{{ t("common.loading") }}</view>
+        <view v-else-if="detailUser" class="detail-body">
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.columnId") }}:</text>
+            <text>{{ detailUser.id }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.columnNickname") }}:</text>
+            <text>{{ detailUser.nickname }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.columnPhone") }}:</text>
+            <text>{{ detailUser.phone || t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.bioLabel") }}:</text>
+            <text>{{ detailUser.bio || t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.campusLabel") }}:</text>
+            <text>{{ detailUser.campusName || t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.verificationLabel") }}:</text>
+            <text>{{ verificationLabel(detailUser.verificationStatus) }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.columnProfileCompletion") }}:</text>
+            <text>{{ t("users.profileCompletionValue", { n: detailUser.profileCompletion }) }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.columnFollowing") }}:</text>
+            <text>{{ t("users.followStats", { following: detailUser.followingCount, followers: detailUser.followersCount }) }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.columnRegisteredAt") }}:</text>
+            <text>{{ formatDate(detailUser.createdAt) }}</text>
+          </view>
+        </view>
+        <view class="modal-actions">
+          <button class="ghost-button" @click="closeDetail">{{ t("common.close") }}</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- P1-B：新增用户弹窗（eladmin「新增用户」对齐） -->
+    <view v-if="createVisible" class="modal-mask" @click.self="closeCreateUser">
+      <view class="modal">
+        <text class="modal-title">{{ t("users.createUserTitle") }}</text>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.createPhoneLabel") }}</text>
+          <input v-model="createPhone" class="form-input" type="text" maxlength="11" :placeholder="t('users.createPhonePlaceholder')" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.createPasswordLabel") }}</text>
+          <input v-model="createPassword" class="form-input" type="password" :placeholder="t('users.createPasswordPlaceholder')" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.createNicknameLabel") }}</text>
+          <input v-model="createNickname" class="form-input" type="text" :maxlength="NICKNAME_MAX_LENGTH" :placeholder="t('users.createNicknamePlaceholder')" />
+        </view>
+        <text v-if="modalError" class="modal-error">{{ modalError }}</text>
+        <view class="modal-actions">
+          <button class="ghost-button" :disabled="creatingUser" @click="closeCreateUser">{{ t("common.cancel") }}</button>
+          <button class="primary-button" :disabled="creatingUser" @click="handleCreateUser">
+            {{ creatingUser ? t("common.saving") : t("common.save") }}
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <!-- P1-A：修改密码弹窗（eladmin「修改密码」对齐） -->
+    <view v-if="changePwdVisible" class="modal-mask" @click.self="closeChangePwd">
+      <view class="modal">
+        <text class="modal-title">{{ t("users.changePwdTitle") }}</text>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.changePwdOldLabel") }}</text>
+          <input v-model="oldPassword" class="form-input" type="password" :placeholder="t('users.changePwdOldPlaceholder')" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.changePwdNewLabel") }}</text>
+          <input v-model="newPassword" class="form-input" type="password" :placeholder="t('users.changePwdNewPlaceholder')" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.changePwdConfirmLabel") }}</text>
+          <input v-model="confirmPassword" class="form-input" type="password" :placeholder="t('users.changePwdConfirmPlaceholder')" />
+        </view>
+        <text v-if="modalError" class="modal-error">{{ modalError }}</text>
+        <view class="modal-actions">
+          <button class="ghost-button" :disabled="changingPwd" @click="closeChangePwd">{{ t("common.cancel") }}</button>
+          <button class="primary-button" :disabled="changingPwd" @click="handleChangePwd">
+            {{ changingPwd ? t("common.saving") : t("common.save") }}
+          </button>
+        </view>
+        <text class="modal-hint">{{ t("users.changePwdHint") }}</text>
       </view>
     </view>
   </view>
@@ -527,6 +886,11 @@ onMounted(() => {
   color: var(--admin-color-warning);
 }
 
+.role-super-admin {
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
+}
+
 .status-badge {
   display: inline-block;
   padding: var(--admin-space-xs) var(--admin-space-md);
@@ -586,31 +950,16 @@ onMounted(() => {
   background: var(--admin-color-success-softer);
 }
 
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--admin-space-lg);
-  margin-top: var(--admin-space-xxl);
+/* infra R2-00403：删除死样式 .pagination/.page-button/.page-info——
+   模板已改用共享 Pagination 组件（admin-common.css 提供样式），此处残留误导维护 */
+
+.action-button.view {
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
 }
 
-.page-button {
-  padding: var(--admin-space-sm) var(--admin-space-lg);
-  background: var(--admin-color-bg-container);
-  border: 1px solid var(--admin-color-border);
-  border-radius: var(--admin-radius-md);
-  cursor: pointer;
-  font-size: var(--admin-font-lg);
-}
-
-.page-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.page-info {
-  font-size: var(--admin-font-lg);
-  color: var(--admin-color-text-tertiary);
+.action-button.view:hover {
+  background: var(--admin-color-info-softer);
 }
 
 .modal-mask {
@@ -669,5 +1018,48 @@ onMounted(() => {
   display: block;
   font-size: var(--admin-font-sm);
   color: var(--admin-color-text-quaternary);
+}
+
+/* P1 对齐：新增用户/修改密码弹窗内的错误提示 */
+.modal-error {
+  display: block;
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-danger);
+  margin-bottom: var(--admin-space-md);
+}
+
+/* infra R2-00398：详情弹窗样式 */
+.detail-modal {
+  width: 420px;
+}
+
+.detail-loading {
+  padding: var(--admin-space-xxl);
+  text-align: center;
+  color: var(--admin-color-text-quaternary);
+}
+
+.detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-lg);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.detail-row {
+  display: flex;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-primary);
+  word-break: break-all;
+}
+
+.detail-label {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--admin-color-text-tertiary);
+  min-width: 90px;
 }
 </style>

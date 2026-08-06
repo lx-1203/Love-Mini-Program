@@ -27,6 +27,7 @@ const {
   certificationStatus,
   certificationInfo,
   isVerified,
+  topicHasMore,
 } = storeToRefs(campusStore);
 
 /** 6个话题分类Tab */
@@ -104,9 +105,25 @@ function certStatusText(status: string): string {
   }
 }
 
-onMounted(() => {
-  void campusStore.fetchCertificationStatus();
-  void campusStore.fetchCampusTopics(activeCategory.value, 1);
+/**
+ * 话题列表滚动到底：加载下一页（真实请求，page 由 store 维护）
+ * infra R2-00077: 增加 in-flight 防抖，避免快速滚动触发重复请求
+ */
+let topicLoadMoreInFlight = false;
+function onLoadMoreTopic() {
+  if (campusStore.loading || !topicHasMore.value || topicLoadMoreInFlight) return;
+  topicLoadMoreInFlight = true;
+  void campusStore.fetchCampusTopics(activeCategory.value, campusStore.topicPage + 1).finally(() => {
+    topicLoadMoreInFlight = false;
+  });
+}
+
+onMounted(async () => {
+  // 修复（review）：两个请求聚合等待，避免任一请求 reject 产生未处理 Promise
+  await Promise.allSettled([
+    campusStore.fetchCertificationStatus(),
+    campusStore.fetchCampusTopics(activeCategory.value, 1),
+  ]);
 });
 </script>
 
@@ -166,8 +183,8 @@ onMounted(() => {
         </view>
       </view>
 
-      <!-- 话题列表 -->
-      <scroll-view v-else class="topic-scroll" scroll-y :enhanced="true" :bounces="true" :show-scrollbar="false">
+      <!-- 话题列表（@scrolltolower 触发真实分页加载） -->
+      <scroll-view v-else class="topic-scroll" scroll-y :enhanced="true" :bounces="true" :show-scrollbar="false" @scrolltolower="onLoadMoreTopic">
         <view
           v-for="topic in topics" :key="topic.id"
           class="topic-card list-item"
@@ -212,13 +229,16 @@ onMounted(() => {
 $green-primary: var(--c-brand);
 $green-light: var(--c-brand-50);
 $pink-primary: var(--c-romance-500);
+/* ui-ux 修复：粉色调统一使用品牌粉 token（village/post.vue 的 $pink-light 同步收敛） */
 $pink-light: var(--c-romance-100);
 $white: var(--c-neutral-0);
 $bg-page: var(--c-bg-page);
 $text-primary: var(--c-text-primary);
-$text-secondary: var(--c-neutral-500);
-$text-tertiary: var(--c-neutral-400);
-$border-light: var(--c-tint-gray-50);
+/* ui-ux 修复：$text-secondary 语义应为文本次要色，不再映射到 neutral-500 */
+$text-secondary: var(--c-text-secondary);
+$text-tertiary: var(--c-text-tertiary);
+/* ui-ux 修复：$border-light 统一为 border 系列 token */
+$border-light: var(--c-border-light);
 $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .campus-page {

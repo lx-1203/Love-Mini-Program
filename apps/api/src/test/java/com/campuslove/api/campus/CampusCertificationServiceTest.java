@@ -1,9 +1,11 @@
 package com.campuslove.api.campus;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.campuslove.api.common.ResourceConflictException;
 import com.campuslove.api.entity.CampusCertification;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.mock.MockCampusCertificationService;
@@ -346,5 +348,42 @@ class CampusCertificationServiceTest {
         String badge = mockService.getVerificationBadgeLevel(400L);
 
         assertEquals("school", badge, "Mock 校园认证 APPROVED 应优先返回 school");
+    }
+
+    // ---- Real 实现：重复提交（缺陷修复：500 → 409）----
+
+    /**
+     * 缺陷修复：已有 PENDING（审核中）记录时重复提交，
+     * 应抛 ResourceConflictException（409），而非 IllegalStateException（兜底 500）。
+     */
+    @Test
+    void real_submitCertification_pendingExists_throwsResourceConflict() {
+        CampusCertification cert = new CampusCertification();
+        cert.setId(1L);
+        cert.setUserId(700L);
+        cert.setStatus("PENDING");
+        when(repository.findByUserId(700L)).thenReturn(Optional.of(cert));
+
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class,
+                () -> realService.submitCertification(700L, "某大学", "计算机", "card.jpg"));
+
+        assertEquals("您的校园认证正在审核中，请耐心等待", ex.getMessage());
+    }
+
+    /**
+     * 缺陷修复：已有 APPROVED 记录时重复提交，同样应抛 ResourceConflictException（409）。
+     */
+    @Test
+    void real_submitCertification_approvedExists_throwsResourceConflict() {
+        CampusCertification cert = new CampusCertification();
+        cert.setId(2L);
+        cert.setUserId(701L);
+        cert.setStatus("APPROVED");
+        when(repository.findByUserId(701L)).thenReturn(Optional.of(cert));
+
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class,
+                () -> realService.submitCertification(701L, "某大学", "计算机", "card.jpg"));
+
+        assertEquals("您已完成校园认证，无需重复提交", ex.getMessage());
     }
 }

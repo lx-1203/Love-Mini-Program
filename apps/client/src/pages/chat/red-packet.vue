@@ -62,6 +62,9 @@ const { t } = useI18n();
 const heroIcon = IMAGE_PATHS.ICONS_EMOJI.GIFT;
 const store = useVipRedPacketStore();
 
+/** infra R2-00083: 发送成功后跳转前的按钮锁——800ms 跳转窗口内禁止重复创建红包 */
+const navigatingBack = ref(false);
+
 /** 当前会话 ID */
 const sessionId = ref<string>("");
 
@@ -101,6 +104,8 @@ async function handleSend() {
     uni.showToast({ title: t("chatRedPacket.formInvalid"), icon: "none" });
     return;
   }
+  // infra R2-00083: 跳转窗口内重复点击直接返回
+  if (navigatingBack.value) return;
   if (store.creating) return;
 
   try {
@@ -112,6 +117,8 @@ async function handleSend() {
       blessing: blessingInput.value.trim() || undefined,
     });
     uni.showToast({ title: t("chatRedPacket.sendSuccess"), icon: "success" });
+    // infra R2-00083: 锁定按钮直至跳转完成
+    navigatingBack.value = true;
     // 返回上一页，让 chat-session 刷新消息流
     // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
     if (sendSuccessNavTimer) clearTimeout(sendSuccessNavTimer);
@@ -137,11 +144,13 @@ async function handleClaim() {
       title: t("vip.redPacketClaimSuccess", { amount: (result.amount / 100).toFixed(2) }),
       icon: "success",
     });
+    // 领取成功后再关闭弹窗（review #52：原 finally 无条件关闭，
+    // 失败时用户无法重试且状态残留）
+    showClaimModal.value = false;
   } catch (error) {
     const message = error instanceof Error ? error.message : t("vip.redPacketClaimFailed");
     uni.showToast({ title: message, icon: "none" });
-  } finally {
-    showClaimModal.value = false;
+    // 失败时保留弹窗，用户可重试或手动关闭
   }
 }
 
@@ -227,7 +236,7 @@ defineExpose({ noop });
           type="digit"
           :placeholder="t('chatRedPacket.amountPlaceholder')"
           :value="amountInput"
-          @input="amountInput = readInputValue($event)" aria-label="t('chatRedPacket.amountPlaceholder')"
+          @input="amountInput = readInputValue($event)" :aria-label="t('chatRedPacket.amountPlaceholder')"
         />
       </view>
     </view>
@@ -243,7 +252,7 @@ defineExpose({ noop });
           :placeholder="t('chatRedPacket.blessingPlaceholder')"
           :maxlength="200"
           :value="blessingInput"
-          @input="blessingInput = readInputValue($event)" aria-label="t('chatRedPacket.blessingPlaceholder')"
+          @input="blessingInput = readInputValue($event)" :aria-label="t('chatRedPacket.blessingPlaceholder')"
         />
       </view>
     </view>

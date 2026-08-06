@@ -132,21 +132,19 @@ public class GlobalExceptionHandler {
      *       未捕获抛出，本 handler 作为兜底返回 400 响应</li>
      * </ul>
      *
-     * <p>响应体格式（含业务错误码与余额信息，便于前端展示"余额 X，需要 Y"）：
+     * <p>响应体格式（含业务错误码，不含余额明细——infra R2-00230: 精简响应避免回显
+     * userId/金额/余额等字段放大攻击面，金额明细仅记录在服务端日志）：
      * <pre>{@code
      * {
      *   "error": "Bad Request",
-     *   "message": "余额不足：userId=123, 需要=1990 分, 当前余额=500 分",
+     *   "message": "余额不足",
      *   "status": 400,
-     *   "code": "INSUFFICIENT_BALANCE",
-     *   "userId": 123,
-     *   "amountCents": 1990,
-     *   "balanceCents": 500
+     *   "code": "INSUFFICIENT_BALANCE"
      * }
      * }</pre>
      *
      * @param ex 余额不足异常
-     * @return 标准化的 400 错误响应（含 INSUFFICIENT_BALANCE 错误码与余额信息）
+     * @return 标准化的 400 错误响应（含 INSUFFICIENT_BALANCE 错误码）
      */
     @ExceptionHandler(InsufficientBalanceException.class)
     public ResponseEntity<Map<String, Object>> handleInsufficientBalance(
@@ -155,12 +153,9 @@ public class GlobalExceptionHandler {
                 ex.getUserId(), ex.getAmountCents(), ex.getBalanceCents());
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("error", "Bad Request");
-        body.put("message", ex.getMessage());
+        body.put("message", "余额不足");
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("code", "INSUFFICIENT_BALANCE");
-        body.put("userId", ex.getUserId());
-        body.put("amountCents", ex.getAmountCents());
-        body.put("balanceCents", ex.getBalanceCents());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
@@ -482,6 +477,42 @@ public class GlobalExceptionHandler {
                 "Too Many Requests",
                 ex.getMessage(),
                 DailyLimitExceededException.ERROR_CODE);
+    }
+
+    /**
+     * 缺陷修复：处理静态资源不存在异常（未知路径）。
+     *
+     * <p>Spring Boot 3.2+ 对未匹配的 URL 抛
+     * {@link org.springframework.web.servlet.resource.NoResourceFoundException}，
+     * 原实现落入 {@link #handleGenericException(Exception)} 兜底返回 500，
+     * 未知路径应返回 404 Not Found。</p>
+     *
+     * @param ex 资源不存在异常
+     * @return 标准化的 404 错误响应
+     */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFound(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        log.warn("请求的路径不存在: {}", ex.getResourcePath());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found", "请求的路径不存在");
+    }
+
+    /**
+     * 缺陷修复：处理 HTTP 请求方法不支持异常。
+     *
+     * <p>当客户端使用错误的 HTTP 方法访问已知路径（如 GET 请求 POST 端点）时，
+     * Spring MVC 抛 {@link org.springframework.web.HttpRequestMethodNotSupportedException}，
+     * 原实现落入兜底返回 500，应返回 405 Method Not Allowed。</p>
+     *
+     * @param ex 方法不支持异常
+     * @return 标准化的 405 错误响应
+     */
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodNotSupported(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        log.warn("请求方法不支持: method={}, message={}", ex.getMethod(), ex.getMessage());
+        return buildErrorResponse(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed",
+                ex.getMessage() != null ? ex.getMessage() : "请求方法不支持");
     }
 
     /**

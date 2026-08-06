@@ -351,15 +351,6 @@ export const useLikesStore = defineStore("likes", {
     pendingHeartSignals: (state): HeartSignal[] => {
       return state.heartSignals.filter((s) => s.status === "pending");
     },
-    /** 当前用户 ID（从 session 获取，mock 模式下默认 user-1001） */
-    currentUserId(): string {
-      try {
-        const sessionStore = useSessionStore();
-        return sessionStore.userSession?.userId ?? "user-1001";
-      } catch (_e) {
-        return "user-1001";
-      }
-    },
     /**
      * 功能2：根据 searchQuery 过滤后的「喜欢我的」列表
      * 按昵称、学校（headline）、城市（headline）做包含匹配
@@ -410,6 +401,19 @@ export const useLikesStore = defineStore("likes", {
 
   actions: {
     /**
+     * infra R2-00032: 当前用户 ID（从 session 获取）。
+     * 原为 getter（getter 内调用 useSessionStore 属依赖注入，应保持纯函数），
+     * 现移入 actions 供各请求动作调用。
+     * 修复（P1 BUG）：未登录时不再回退硬编码 "user-1001"——未登录用户以他人 ID
+     * 发请求是越权前提。现返回空串，调用方（各 fetch/like 动作）需自行处理未登录场景
+     * （如提前返回或提示登录），不得以伪造 ID 发起请求。
+     */
+    currentUserId(): string {
+      const sessionStore = useSessionStore();
+      return sessionStore.userSession?.userId ? String(sessionStore.userSession.userId) : "";
+    },
+
+    /**
      * 获取我发出的喜欢列表和喜欢我的列表
      *
      * 修复（P1 BUG）：原 catch 分支未向上抛出错误，调用方无法感知加载失败，
@@ -448,17 +452,12 @@ export const useLikesStore = defineStore("likes", {
 
           this.likes = [...mockLikes];
           this.likedBy = [...mockLikedBy];
-
-          // 空列表处理：设置友好提示
-          if (this.likes.length === 0 && this.likedBy.length === 0) {
-            // 静默处理，不做额外提示，UI 层应显示空态
-          }
           return;
         }
 
         // 调用后端 API: GET /api/matches/liked-me?userId={userId}
         const likedByData = await request<LikedUserView[]>({
-          url: `/matches/liked-me?userId=${this.currentUserId}`,
+          url: `/matches/liked-me?userId=${this.currentUserId()}`,
           method: "GET",
           signal: controller.signal,
         });
@@ -470,7 +469,7 @@ export const useLikesStore = defineStore("likes", {
 
         // 调用后端 API: GET /api/matches/my-likes?userId={userId}
         const myLikesData = await request<LikedUserView[]>({
-          url: `/matches/my-likes?userId=${this.currentUserId}`,
+          url: `/matches/my-likes?userId=${this.currentUserId()}`,
           method: "GET",
           signal: controller.signal,
         });
@@ -482,7 +481,7 @@ export const useLikesStore = defineStore("likes", {
       } catch (error) {
         // 修复：被取消的请求不视为错误，不更新 errorMessage，也不清空列表
         if (controller.signal.aborted) return;
-        this.errorMessage = error instanceof Error ? error.message : "加载喜欢列表失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.likes.loadLikesFailed"); // infra R2-00033: 错误消息 i18n 化
         // 修复（P1 BUG）：失败时清空列表，避免陈旧数据被当作当前数据展示
         this.likes = [];
         this.likedBy = [];
@@ -530,7 +529,7 @@ export const useLikesStore = defineStore("likes", {
 
         // 调用后端 API: GET /api/matches/visitors?userId={userId}
         const data = await request<VisitorView[]>({
-          url: `/matches/visitors?userId=${this.currentUserId}`,
+          url: `/matches/visitors?userId=${this.currentUserId()}`,
           method: "GET",
           signal: controller.signal,
         });
@@ -542,7 +541,7 @@ export const useLikesStore = defineStore("likes", {
       } catch (error) {
         // 修复：被取消的请求不视为错误，不更新 errorMessage
         if (controller.signal.aborted) return;
-        this.errorMessage = error instanceof Error ? error.message : "加载访客记录失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.likes.loadVisitorsFailed"); // infra R2-00033
         this.visitors = [];
       } finally {
         // 修复：仅当当前 controller 仍是全局 controller 时才清 loading
@@ -578,7 +577,7 @@ export const useLikesStore = defineStore("likes", {
         }
 
         // 自喜欢检查：不能喜欢自己
-        const currentUserId = this.currentUserId;
+        const currentUserId = this.currentUserId();
         if (userId === currentUserId) {
           this.errorMessage = t("storeErrors.likes.cannotLikeSelf");
           throw new Error(t("storeErrors.likes.cannotLikeSelf"));
@@ -624,7 +623,7 @@ export const useLikesStore = defineStore("likes", {
             url: "/matches/like",
             method: "POST",
             data: {
-              userId: this.currentUserId,
+              userId: this.currentUserId(),
               targetUserId: userId,
             },
           });
@@ -634,7 +633,7 @@ export const useLikesStore = defineStore("likes", {
           throw apiError;
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "喜欢用户失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.likes.likeUserFailed"); // infra R2-00033
         throw error;
       }
     },
@@ -680,7 +679,7 @@ export const useLikesStore = defineStore("likes", {
             url: "/matches/cancel-like",
             method: "POST",
             data: {
-              userId: this.currentUserId,
+              userId: this.currentUserId(),
               targetUserId: userId,
             },
           });
@@ -690,7 +689,7 @@ export const useLikesStore = defineStore("likes", {
           throw apiError;
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "取消喜欢失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.likes.cancelLikeFailed"); // infra R2-00033
         throw error;
       }
     },
@@ -704,12 +703,12 @@ export const useLikesStore = defineStore("likes", {
     checkMutualLike(userId: string): boolean {
       // 参数校验
       if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
-        this.errorMessage = "用户 ID 无效";
+        this.errorMessage = t("storeErrors.likes.userIdInvalid"); // infra R2-00033: 与相邻分支统一走 t()
         return false;
       }
 
       // 自喜欢检查
-      const currentUserId = this.currentUserId;
+      const currentUserId = this.currentUserId();
       if (userId === currentUserId) {
         return false;
       }
@@ -751,7 +750,7 @@ export const useLikesStore = defineStore("likes", {
         fromUserId: targetUser.userId,
         fromUserName: targetUser.name,
         fromUserAvatar: targetUser.avatar,
-        toUserId: this.currentUserId, // 从 session store 获取当前用户 ID
+        toUserId: this.currentUserId(), // 从 session store 获取当前用户 ID
         status: "pending",
         sentAt: now.toISOString(),
         expiresAt: expiresAt.toISOString(),
@@ -820,7 +819,7 @@ export const useLikesStore = defineStore("likes", {
 
         // 调用后端 API: GET /api/matches/heart-signals?userId={userId}
         const data = await request<HeartSignalView[]>({
-          url: `/matches/heart-signals?userId=${this.currentUserId}`,
+          url: `/matches/heart-signals?userId=${this.currentUserId()}`,
           method: "GET",
           signal: controller.signal,
         });
@@ -832,7 +831,7 @@ export const useLikesStore = defineStore("likes", {
       } catch (error) {
         // 修复：被取消的请求不视为错误，不更新 errorMessage
         if (controller.signal.aborted) return;
-        this.errorMessage = error instanceof Error ? error.message : "加载心动信号失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.likes.loadHeartSignalsFailed"); // infra R2-00033
       } finally {
         // 修复：仅当当前 controller 仍是全局 controller 时才清 loading
         if (fetchHeartSignalsController === controller) {
@@ -860,7 +859,7 @@ export const useLikesStore = defineStore("likes", {
 
         // 调用后端 API: POST /api/matches/heart-signals/{signalId}/accept?userId={userId}
         await request<void>({
-          url: `/matches/heart-signals/${signalId}/accept?userId=${this.currentUserId}`,
+          url: `/matches/heart-signals/${signalId}/accept?userId=${this.currentUserId()}`,
           method: "POST",
         });
 
@@ -869,7 +868,7 @@ export const useLikesStore = defineStore("likes", {
           signal.status = "accepted";
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "接受心动信号失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.likes.acceptHeartSignalFailed"); // infra R2-00033
         throw error;
       }
     },
@@ -892,7 +891,7 @@ export const useLikesStore = defineStore("likes", {
 
         // 调用后端 API: POST /api/matches/heart-signals/{signalId}/decline?userId={userId}
         await request<void>({
-          url: `/matches/heart-signals/${signalId}/decline?userId=${this.currentUserId}`,
+          url: `/matches/heart-signals/${signalId}/decline?userId=${this.currentUserId()}`,
           method: "POST",
         });
 
@@ -901,7 +900,7 @@ export const useLikesStore = defineStore("likes", {
           signal.status = "expired";
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "拒绝心动信号失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.likes.rejectHeartSignalFailed"); // infra R2-00033
         throw error;
       }
     },
@@ -1056,21 +1055,25 @@ export const useLikesStore = defineStore("likes", {
       const failed: string[] = [];
       try {
         if (action === "like") {
-          // 批量喜欢：对每个 userId 调用 likeUser
-          for (const userId of userIds) {
-            try {
-              await this.likeUser(userId);
-            } catch (_e) {
-              failed.push(userId);
-            }
+          // 修复（P1 BUG）：批量喜欢由串行 await N 次改为分批并发（每批 5 个），
+          // 大幅缩短批量操作耗时；失败项仍按个记录，最后统一提示。
+          const BATCH_SIZE = 5;
+          for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+            const batch = userIds.slice(i, i + BATCH_SIZE);
+            const results = await Promise.allSettled(batch.map((userId) => this.likeUser(userId)));
+            results.forEach((r, idx) => {
+              if (r.status === "rejected") {
+                failed.push(batch[idx]!);
+              }
+            });
           }
-          // 操作完成后从 likedBy 列表移除已喜欢成功的用户
-          this.likedBy = this.likedBy.filter((item) => !failed.includes(item.userId) && !userIds.includes(item.userId) || failed.includes(item.userId));
-          // 已成功喜欢的从 likedBy 移除（避免重复展示）
+          // 操作完成后从 likedBy 列表移除已喜欢成功的用户（保留失败项，允许重试）
           this.likedBy = this.likedBy.filter((item) => !userIds.includes(item.userId) || failed.includes(item.userId));
         } else if (action === "skip") {
           // 批量跳过：从 likedBy 列表移除选中项（前端操作，无后端调用）
           // mock 模式下直接操作本地状态；real 模式下后续可扩展批量 API
+          // TODO(backend): 后端暂无 batch-skip 接口（/matches/skip 仅支持单个），
+          // real 模式暂为本地移除，不产生网络请求；接入后端后应改为批量调用。
           if (useMock()) {
             this.likedBy = this.likedBy.filter((item) => !userIds.includes(item.userId));
           } else {
@@ -1087,12 +1090,16 @@ export const useLikesStore = defineStore("likes", {
           }
         } else if (action === "cancel") {
           // 批量取消喜欢：从 likes 列表移除选中项
-          for (const userId of userIds) {
-            try {
-              await this.unlikeUser(userId);
-            } catch (_e) {
-              failed.push(userId);
-            }
+          // infra R2-00034: 与原 like 分支一致，改为分批并发（每批 5 个），避免大列表串行超时
+          const BATCH_SIZE = 5;
+          for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+            const batch = userIds.slice(i, i + BATCH_SIZE);
+            const results = await Promise.allSettled(batch.map((userId) => this.unlikeUser(userId)));
+            results.forEach((r, idx) => {
+              if (r.status === "rejected") {
+                failed.push(batch[idx]!);
+              }
+            });
           }
           // 兜底：确保本地状态一致
           this.likes = this.likes.filter((item) => !userIds.includes(item.userId) || failed.includes(item.userId));
@@ -1102,7 +1109,7 @@ export const useLikesStore = defineStore("likes", {
         this.selectedIds = [];
 
         if (failed.length > 0) {
-          this.errorMessage = `部分操作失败（${failed.length}/${userIds.length}）`;
+          this.errorMessage = t("storeErrors.likes.partialBatchFailed", { done: failed.length, total: userIds.length }); // infra R2-00033
           throw new Error(this.errorMessage);
         }
       } finally {

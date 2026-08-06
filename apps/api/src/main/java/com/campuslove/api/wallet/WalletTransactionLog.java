@@ -79,6 +79,8 @@ public class WalletTransactionLog {
     public static final String RELATED_TYPE_RED_PACKET_CLAIM = "RED_PACKET_CLAIM";
     /** 关联业务类型：红包过期退款 */
     public static final String RELATED_TYPE_RED_PACKET_REFUND = "RED_PACKET_REFUND";
+    /** 关联业务类型：钱包充值（演示/模拟充值入口，走查补齐） */
+    public static final String RELATED_TYPE_WALLET_RECHARGE = "WALLET_RECHARGE";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -39,6 +39,7 @@ public class RealProfileService implements ProfileService {
     private final ProfileQueryService queryService;
     private final ProfileUpdateService updateService;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public RealProfileService(
             UserRepository userRepository,
             UserFollowRepository userFollowRepository,
@@ -52,28 +53,16 @@ public class RealProfileService implements ProfileService {
             InteractionEventService interactionEventService,
             MediaStorageService mediaStorageService,
             CampusCertificationService campusCertificationService,
-            FollowService followService) {
-        this.queryService = new ProfileQueryService(
-                userRepository,
-                userFollowRepository,
-                userBasicProfileRepository,
-                userCampusProfileRepository,
-                userScheduleProfileRepository,
-                postRepository,
-                postLikeRepository,
-                objectMapper,
-                campusCertificationService);
-        this.updateService = new ProfileUpdateService(
-                userRepository,
-                userFollowRepository,
-                notificationRepository,
-                userBasicProfileRepository,
-                userCampusProfileRepository,
-                userScheduleProfileRepository,
-                interactionEventService,
-                mediaStorageService,
-                this.queryService,
-                followService);
+            FollowService followService,
+            jakarta.persistence.EntityManager entityManager,
+            // infra R2-00016 修复：改为注入容器管理的 Bean 实例。
+            // 原实现 new ProfileQueryService(...) 手动实例化导致：
+            //   1. 双实例并存（容器 + new），@Transactional/@Cacheable 在 new 出的实例上失效
+            //   2. 事务边界错误，只读查询可能开启写事务、缓存注解完全不生效
+            ProfileQueryService queryService,
+            ProfileUpdateService updateService) {
+        this.queryService = queryService;
+        this.updateService = updateService;
     }
 
     /** 内部构造器：用于单元测试直接注入 query/update 组件。 */

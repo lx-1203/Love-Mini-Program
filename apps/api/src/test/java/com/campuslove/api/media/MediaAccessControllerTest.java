@@ -122,18 +122,56 @@ class MediaAccessControllerTest {
     }
 
     /**
-     * 场景 2：他人访问非自己的媒体文件 → 抛出 AccessDeniedException（403）。
+     * 场景 2（infra R2-00013 更新）：他人访问非本人的语音/身份证文件 → 403；
+     * 普通图片（IMAGE）为社交公开资源，登录用户可读。
      *
      * <p>前置：Authentication.principal = OTHER_USER_ID，authorities = [ROLE_USER]</p>
-     * <p>预期：抛出 AccessDeniedException，message 包含"无权访问"</p>
+     * <p>预期：语音子路径抛出 AccessDeniedException；图片子路径返回 Resource</p>
      */
     @Test
-    void loadMedia_otherUserAccess_shouldThrowAccessDenied() {
+    void loadMedia_otherUserAccess_voice_shouldThrowAccessDenied() {
+        Authentication authentication = buildUserAuthentication(OTHER_USER_ID, false);
+
+        // 语音为高敏感文件，他人访问必须拒绝
+        AccessDeniedException ex = assertThrows(
+                AccessDeniedException.class,
+                () -> mediaAccessService.loadMedia(
+                        OWNER_USER_ID, "voice/" + VALID_SUBPATH, authentication));
+        assertTrue(ex.getMessage().contains("无权访问") || ex.getMessage().contains("拒绝"),
+                "异常信息应说明拒绝访问: " + ex.getMessage());
+    }
+
+    /**
+     * 场景 2b（infra R2-00013）：他人访问普通图片（头像/帖子图）→ 允许读取。
+     *
+     * <p>社交浏览场景（查看他人资料、帖子、活动）必须能加载图片。</p>
+     */
+    @Test
+    void loadMedia_otherUserAccess_image_shouldReturnResource() throws IOException {
+        // 准备一个真实图片文件（jpg 扩展名即可，探测走扩展名回退）
+        Path file = tempRoot.resolve(OWNER_USER_ID.toString()).resolve(MONTH_SEGMENT);
+        Files.createDirectories(file);
+        Files.write(file.resolve(FILE_NAME), new byte[]{1, 2, 3});
+
+        Authentication authentication = buildUserAuthentication(OTHER_USER_ID, false);
+        MediaAccessService.MediaFile mediaFile =
+                mediaAccessService.loadMedia(OWNER_USER_ID, VALID_SUBPATH, authentication);
+
+        assertNotNull(mediaFile, "他人访问 IMAGE 应返回非 null MediaFile");
+        assertNotNull(mediaFile.getResource(), "Resource 不应为 null");
+    }
+
+    /**
+     * 场景 2c（infra R2-00013）：身份证文件他人访问 → 403（最高敏感级别）。
+     */
+    @Test
+    void loadMedia_otherUserAccess_idCard_shouldThrowAccessDenied() {
         Authentication authentication = buildUserAuthentication(OTHER_USER_ID, false);
 
         AccessDeniedException ex = assertThrows(
                 AccessDeniedException.class,
-                () -> mediaAccessService.loadMedia(OWNER_USER_ID, VALID_SUBPATH, authentication));
+                () -> mediaAccessService.loadMedia(
+                        OWNER_USER_ID, "id_card/" + VALID_SUBPATH, authentication));
         assertTrue(ex.getMessage().contains("无权访问") || ex.getMessage().contains("拒绝"),
                 "异常信息应说明拒绝访问: " + ex.getMessage());
     }

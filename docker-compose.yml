@@ -34,15 +34,31 @@
 #   - docker-compose.yml 中所有密码字段使用 ${VAR:?error message} 形式，
 #     未设置环境变量时 docker compose 启动会失败（强制注入，无弱默认值）
 #   - 切勿将含真实凭据的 .env 文件提交到版本控制系统（.gitignore 已排除）
+#
+# 2026-08-05 Infra 加固（infra-review 45 条）：
+#   - 所有对外端口仅绑定 127.0.0.1（数据库/Redis/监控/应用服务均不暴露公网，
+#     与外层 Nginx 80/443 入网策略一致；Prometheus/Alertmanager 无认证，仅限本机访问）
+#   - Flyway 迁移目录不再挂载为 MySQL initdb.d（避免迁移脚本重复执行损坏数据），
+#     仅保留 flyway 容器自身挂载（./database/flyway/sql:/app/db/migration:ro）
+#   - 全部服务增加 deploy.resources.limits（防止 JVM/容器无限制占用宿主机资源）
+#   - healthcheck 通过容器内环境变量（MYSQL_PWD / REDISCLI_AUTH）传递密码，
+#     避免密码出现在进程参数中
+#   - 移除未使用的 mysql-backup 死卷；备份目录与 backup-mysql.sh 的 BACKUP_DIR 对齐
+#   - 网络按安全域拆分：data-net（mysql/redis/backup）与 app-net（其余服务），
+#     api 同时接入两个网络（FIN-01328）
+#   - TAG 默认值改为 dev（禁止 latest 默认上线，生产必须注入 ci-<sha> 或 release tag）
 # ============================================================
 
 version: "3.9"
 
-# ---------- 网络定义 ----------
+# ---------- 网络定义（FIN-01328：按安全域拆分）----------
 networks:
-  campus-net:
+  data-net:
     driver: bridge
-    name: campus-love-net
+    name: campus-data-net
+  app-net:
+    driver: bridge
+    name: campus-app-net
 
 # ---------- 数据卷定义 ----------
 volumes:
@@ -60,14 +76,12 @@ volumes:
     name: campus-api-uploads
   api-logs:
     name: campus-api-logs
-  mysql-backup:
-    name: campus-mysql-backup
 
 services:
 
   # ---------- 数据库（MySQL 8.0）----------
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0.39
     container_name: campus-mysql
     restart: unless-stopped
     environment:
@@ -79,22 +93,30 @@ services:
       TZ: Asia/Shanghai
     command:
       - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
+      # FIN-00853：与项目标准排序规则对齐（MySQL 8 默认 utf8mb4_0900_ai_ci）
+      - --collation-server=utf8mb4_0900_ai_ci
       - --default-authentication-plugin=mysql_native_password
       - --max_connections=200
       - --innodb_buffer_pool_size=512M
       - --slow_query_log=1
       - --long_query_time=2
       - --slow_query_log_file=/var/lib/mysql/slow.log
+      # infra R2-00007：开启 binlog 支撑 DR 文档声明的 PITR（mysqlbinlog 增量恢复）
+      - --log-bin=mysql-bin
+      - --server-id=1
+      - --binlog-format=ROW
+      - --binlog-expire-logs-seconds=604800
     ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      # 仅绑定 127.0.0.1：数据库不对外（infra #1 / FIN-00854）
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./database/flyway/sql:/docker-entrypoint-initdb.d:ro
+      # 仅保留 CI 初始化脚本；Flyway 迁移目录不挂载到 initdb.d（infra #7：
+      # 80+ 迁移脚本重复执行会损坏首次部署，且 ${admin_openid} 占位符会被原样写入）
       - ./init-mysql.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
     healthcheck:
-      # Task 22：healthcheck 同步移除默认值，引用上方已校验的环境变量
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      # 密码通过容器环境变量 MYSQL_PWD 传递，不出现在进程参数（infra #3）
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysqladmin ping -h 127.0.0.1 -uroot --silent || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -105,11 +127,22 @@ services:
         max-size: "10m"
         max-file: "5"
     networks:
-      - campus-net
+      - data-net
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1g
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - MKNOD
+      - SYS_CHROOT
 
   # ---------- 缓存（Redis 7）----------
   redis:
-    image: redis:7-alpine
+    image: redis:7.2.5-alpine
     container_name: campus-redis
     restart: unless-stopped
     command: >
@@ -119,13 +152,17 @@ services:
       --maxmemory-policy allkeys-lru
       --appendonly yes
       --save 60 1000
+    environment:
+      # 供 healthcheck 通过容器环境变量引用（避免进程参数明文，infra #3）
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      # 仅绑定 127.0.0.1：缓存不对外（infra #3 / FIN-00843）
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      # Task 22：healthcheck 同步移除默认值，引用上方已校验的环境变量
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      # REDISCLI_AUTH 从环境读取密码，redis-cli 进程参数无密码
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli --no-auth-warning ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -136,14 +173,25 @@ services:
         max-size: "10m"
         max-file: "5"
     networks:
-      - campus-net
+      - data-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - MKNOD
+      - SYS_CHROOT
 
   # ---------- 后端 API（Spring Boot）----------
   api:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
-    image: campus-love/api:${TAG:-latest}
+    image: campus-love/api:${TAG:-dev}
     container_name: campus-api
     restart: unless-stopped
     depends_on:
@@ -172,24 +220,35 @@ services:
       WECHAT_APPID: ${WECHAT_APPID:-}
       WECHAT_SECRET: ${WECHAT_SECRET:-}
       # ---------- CORS ----------
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174,http://localhost:5180}
+      # 生产必须通过 .env 配置真实域名；默认值仅保证本地开发可用（infra #41）
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://www.campuslove.example.com,https://admin.campuslove.example.com,http://localhost:5173,http://localhost:5174,http://localhost:5180}
       # ---------- AI ----------
       AGNES_API_KEY: ${AGNES_API_KEY:-}
       AGNES_API_BASE: ${AGNES_API_BASE:-https://api.agnes-ai.com/api}
       AGNES_TIMEOUT_MS: ${AGNES_TIMEOUT_MS:-30000}
       # ---------- 管理员初始化 ----------
-      ADMIN_OPENID: ${ADMIN_OPENID:-admin-default-openid-change-me}
+      # infra #8：移除公开默认值 admin-default-openid-change-me（可被冒充登录）。
+      # 生产部署必须在 .env 中配置 ADMIN_OPENID（详见 .env.example）
+      ADMIN_OPENID: ${ADMIN_OPENID:-}
       ADMIN_NICKNAME: ${ADMIN_NICKNAME:-系统管理员}
       ADMIN_INITIAL_PASSWORD_HASH: ${ADMIN_INITIAL_PASSWORD_HASH:-}
       # ---------- Flyway ----------
+      # infra R2-00001:迁移目录已单源化(database/flyway/sql 含全部迁移,
+      # 原 classpath 的 4 个 Phase A 迁移已并入主链重编号为 V2026.07.24.0001~0004,
+      # 保证 media_asset 等表在后续迁移引用前创建)
       APP_FLYWAY_LOCATIONS: filesystem:/app/db/migration
       # ---------- 媒体存储 ----------
       APP_MEDIA_STORAGE_ROOT: /app/uploads
       # ---------- RabbitMQ（可选）----------
+      # 未部署 MQ 时应用自动降级；若启用 RabbitMQ，必须在 .env 中配置强凭据，
+      # 禁止使用默认 guest/guest 上线（infra #12/#13）
       RABBITMQ_HOST: ${RABBITMQ_HOST:-}
       RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      # ---------- Swagger UI ----------
+      # infra #11：生产默认关闭 Swagger UI / /v3/api-docs，可通过 .env 覆盖
+      SWAGGER_UI_ENABLED: ${SWAGGER_UI_ENABLED:-false}
       # ---------- JVM ----------
       JAVA_OPTS: >-
         -XX:+UseContainerSupport
@@ -203,7 +262,8 @@ services:
         -Dfile.encoding=UTF-8
         -Duser.timezone=Asia/Shanghai
     ports:
-      - "${API_PORT:-8080}:8080"
+      # 仅绑定 127.0.0.1：API 由外层 Nginx 反代对外（infra #4）
+      - "127.0.0.1:${API_PORT:-8080}:8080"
     volumes:
       - api-uploads:/app/uploads
       - api-logs:/app/logs
@@ -220,7 +280,19 @@ services:
         max-size: "10m"
         max-file: "5"
     networks:
-      - campus-net
+      - data-net
+      - app-net
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1g
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - MKNOD
+      - SYS_CHROOT
 
   # ---------- 管理后台（Vue3 + nginx）----------
   admin:
@@ -230,16 +302,15 @@ services:
       args:
         VITE_API_BASE_URL: /api
         VITE_APP_VERSION: ${TAG:-0.1.0}
-    image: campus-love/admin:${TAG:-latest}
+    image: campus-love/admin:${TAG:-dev}
     container_name: campus-admin
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
-    environment:
-      API_UPSTREAM: api:8080
     ports:
-      - "${ADMIN_PORT:-5180}:8080"
+      # 仅绑定 127.0.0.1：Admin 由外层 Nginx 反代对外（infra #4）
+      - "127.0.0.1:${ADMIN_PORT:-5180}:8080"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
       interval: 30s
@@ -252,19 +323,35 @@ services:
         max-size: "10m"
         max-file: "5"
     networks:
-      - campus-net
+      - app-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256m
+    # 静态站点加固：只读根文件系统 + 丢弃全部 Linux capabilities（infra #14）
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   # ---------- 客户端 H5 预览（uni-app build → nginx 托管）----------
   # 注：mp-weixin 产物需在微信开发者工具中导入，不能用 nginx 托管
   client:
-    image: nginx:1.27-alpine
+    image: nginx:1.27.3-alpine
     container_name: campus-client
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
     ports:
-      - "${CLIENT_PORT:-5173}:80"
+      # 仅绑定 127.0.0.1：H5 由外层 Nginx 反代对外（infra #4）
+      - "127.0.0.1:${CLIENT_PORT:-5173}:80"
     volumes:
       - ./apps/client/dist/build/h5:/usr/share/nginx/html:ro
       - ./docker/client-nginx.conf:/etc/nginx/conf.d/default.conf:ro
@@ -280,7 +367,27 @@ services:
         max-size: "10m"
         max-file: "5"
     networks:
-      - campus-net
+      - app-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256m
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    security_opt:
+      - no-new-privileges:true
+    # 官方 nginx 镜像 master 以 root 启动后需 setuid 降权 worker，
+    # 因此保留 SETUID/SETGID，仅丢弃其余危险 cap
+    cap_drop:
+      - NET_RAW
+      - MKNOD
+      - SYS_CHROOT
+      - SYS_PTRACE
+      - SYS_ADMIN
     profiles:
       - client-h5
 
@@ -298,9 +405,13 @@ services:
       - --web.console.libraries=/etc/prometheus/console_libraries
       - --web.console.templates=/etc/prometheus/consoles
       - --web.enable-lifecycle
-      - --web.external-url=http://localhost:9090
+      # infra #30 / FIN-01329：external-url 与 environment 标签通过环境变量注入
+      - --web.external-url=${PROMETHEUS_EXTERNAL_URL:-http://localhost:9090}
+      - --web.external-labels=cluster=campus-love
+      - --web.external-labels=environment=${PROMETHEUS_ENVIRONMENT:-production}
     ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+      # 仅绑定 127.0.0.1（infra #4：9090 无认证，仅限本机访问）
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - prometheus-data:/prometheus
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -316,7 +427,19 @@ services:
         max-size: "10m"
         max-file: "5"
     networks:
-      - campus-net
+      - app-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512m
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   # ---------- Grafana 监控面板 ----------
   grafana:
@@ -331,11 +454,13 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_INSTALL_PLUGINS: "grafana-piechart-panel"
-      GF_SERVER_ROOT_URL: http://localhost:3001
+      # infra #30：root_url 通过环境变量注入
+      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL:-http://localhost:3001}
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
     ports:
-      - "${GRAFANA_PORT:-3001}:3000"
+      # 仅绑定 127.0.0.1（infra #4）
+      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -352,7 +477,19 @@ services:
         max-size: "10m"
         max-file: "5"
     networks:
-      - campus-net
+      - app-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512m
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   # ---------- Alertmanager 告警路由 ----------
   alertmanager:
@@ -364,9 +501,11 @@ services:
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
       - --storage.path=/alertmanager
-      - --web.external-url=http://localhost:9093
+      # infra #30：external-url 通过环境变量注入
+      - --web.external-url=${ALERTMANAGER_EXTERNAL_URL:-http://localhost:9093}
     ports:
-      - "${ALERTMANAGER_PORT:-9093}:9093"
+      # 仅绑定 127.0.0.1（infra #4：9093 无认证，仅限本机访问）
+      - "127.0.0.1:${ALERTMANAGER_PORT:-9093}:9093"
     volumes:
       - alertmanager-data:/alertmanager
       - ./docker/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
@@ -381,7 +520,23 @@ services:
         max-size: "10m"
         max-file: "5"
     networks:
-      - campus-net
+      - app-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128m
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # FIN-00850：多环境部署时告警可区分来源
+    labels:
+      app: campus-love
+      environment: ${DEPLOY_ENV:-production}
 
   # ---------- node-exporter 主机指标采集 ----------
   node-exporter:
@@ -392,11 +547,11 @@ services:
       - --path.rootfs=/host
       - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
     ports:
-      - "${NODE_EXPORTER_PORT:-9100}:9100"
+      # 仅绑定 127.0.0.1（infra #2：9100 无认证）
+      - "127.0.0.1:${NODE_EXPORTER_PORT:-9100}:9100"
     volumes:
       - /:/host:ro,rslave
     healthcheck:
-      # Task 52：补充 node-exporter 健康检查
       test: ["CMD", "wget", "-qO-", "http://localhost:9100/-/healthy"]
       interval: 30s
       timeout: 5s
@@ -408,13 +563,23 @@ services:
         max-size: "10m"
         max-file: "5"
     networks:
-      - campus-net
+      - app-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256m
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     profiles:
       - monitoring
 
   # ---------- MySQL + Redis 定时备份（cron sidecar，P3-D.3 增强）----------
   backup:
-    image: alpine:3.19
+    image: alpine:3.19.4
     container_name: campus-backup
     restart: unless-stopped
     depends_on:
@@ -437,24 +602,33 @@ services:
       # Task 22：移除默认密码，引用上方已校验的 MYSQL_ROOT_PASSWORD
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-campus_love}
+      # infra #16：备份目录与脚本 BACKUP_DIR 对齐（宿主 ./backups ↔ 容器 /backups）
+      BACKUP_DIR: /backups
       # P3-D.3：Redis 备份变量（REDIS_HOST 配置时启用 Redis 备份）
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
       REDIS_RDB_PATH: /data/redis/dump.rdb
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+      # infra #20：BACKUP_CRON 通过启动命令写入 crontab（不再硬编码 0 2 * * *）
       BACKUP_CRON: ${BACKUP_CRON:-0 2 * * *}
       TZ: Asia/Shanghai
     volumes:
       - ./scripts/backup-mysql.sh:/backup.sh:ro
       - ./backups:/backups
-      - ./docker/backup/crontab:/etc/crontabs/root:ro
       # P3-D.3：挂载 redis-data 卷（只读）以便复制 dump.rdb
       - redis-data:/data/redis:ro
-    # P3-D.3：安装 redis 客户端用于 BGSAVE 触发；mysql-client/gzip/tini 已有
-    command: /bin/sh -c "apk add --no-cache mysql-client redis gzip tini && chmod +x /backup.sh && crond -f -l 8"
+    # infra #20 / FIN-00851：crontab 由启动命令根据 BACKUP_CRON 生成，
+    # 以非 root 用户 backup 运行 crond（避免定时任务以 root 运行）
+    # apk 包锁主版本（infra #28）：alpine 3.19 仓库中 mysql-client=10.11.x、redis=7.2.x
+    command: >
+      /bin/sh -c "apk add --no-cache mysql-client~10.11 redis~7.2 gzip tini &&
+      adduser -D -H -s /sbin/nologin backup &&
+      mkdir -p /etc/crontabs /backup &&
+      chown -R backup:backup /etc/crontabs /backup /backups &&
+      printf '%s /backup.sh >> /backup/cron.log 2>&1\n' \"$${BACKUP_CRON:-0 2 * * *}\" > /etc/crontabs/backup &&
+      exec su backup -s /bin/sh -c 'crond -f -l 8 -c /etc/crontabs'"
     healthcheck:
-      # Task 52：补充 backup 容器健康检查（验证 cron 进程存活）
       test: ["CMD-SHELL", "pgrep crond > /dev/null || exit 1"]
       interval: 60s
       timeout: 5s
@@ -466,6 +640,20 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - campus-net
+      - data-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256m
+    security_opt:
+      - no-new-privileges:true
+    # 保留 SETUID/SETGID 供 su 降权使用，其余危险 cap 全部丢弃
+    cap_drop:
+      - NET_RAW
+      - MKNOD
+      - SYS_CHROOT
+      - SYS_PTRACE
+      - SYS_ADMIN
     profiles:
       - backup

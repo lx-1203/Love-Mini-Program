@@ -23,6 +23,12 @@ const isPlaying = ref(false);
 const audioCtx = ref<ReturnType<typeof uni.createInnerAudioContext> | null>(null);
 /** 模拟播放结束定时器引用（用于无音频 URL 时的 UI 状态切换） */
 let playEndTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * 暂停时的播放位置（秒）。
+ * 修复（P1 BUG）：原实现暂停后重新播放会重新设置 src（从头播放），
+ * 用户听一半暂停再继续会从头开始。现记录 pausedAt，恢复时 seek 回原位。
+ */
+let pausedAt = 0;
 
 /** ARIA 标签：根据播放状态/过期状态生成无障碍描述 */
 const ariaLabel = computed(() => {
@@ -42,16 +48,27 @@ function togglePlay() {
   // #ifdef MP-WEIXIN
   if (!audioCtx.value) {
     audioCtx.value = uni.createInnerAudioContext();
-    audioCtx.value.onEnded(() => { isPlaying.value = false; });
-    audioCtx.value.onError(() => { isPlaying.value = false; });
+    audioCtx.value.onEnded(() => { isPlaying.value = false; pausedAt = 0; });
+    audioCtx.value.onError(() => { isPlaying.value = false; pausedAt = 0; });
   }
 
   if (isPlaying.value) {
+    // 暂停：记录当前位置，便于恢复播放时 seek 回原位
+    pausedAt = audioCtx.value.currentTime || 0;
     audioCtx.value.pause();
     isPlaying.value = false;
   } else if (props.audioUrl) {
-    audioCtx.value.src = props.audioUrl;
+    // 修复（P1 BUG）：仅在 src 变化时才重新赋值，避免重设 src 导致从头播放；
+    // 恢复播放后 seek 到暂停位置（InnerAudioContext.seek 需在 play 后调用）
+    if (audioCtx.value.src !== props.audioUrl) {
+      audioCtx.value.src = props.audioUrl;
+      pausedAt = 0;
+    }
     audioCtx.value.play();
+    if (pausedAt > 0) {
+      audioCtx.value.seek(pausedAt);
+      pausedAt = 0;
+    }
     isPlaying.value = true;
   } else {
     // 无音频 URL，仅切换 UI 模拟播放状态

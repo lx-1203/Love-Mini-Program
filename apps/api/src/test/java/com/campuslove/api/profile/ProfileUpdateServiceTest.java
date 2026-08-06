@@ -50,6 +50,7 @@ class ProfileUpdateServiceTest {
     @Mock private MediaStorageService mediaStorageService;
     @Mock private ProfileQueryService queryService;
     @Mock private FollowService followService;
+    @Mock private com.campuslove.api.config.SensitiveWordFilter sensitiveWordFilter;
 
     private ProfileUpdateService updateService;
 
@@ -66,7 +67,8 @@ class ProfileUpdateServiceTest {
                 interactionEventService,
                 mediaStorageService,
                 queryService,
-                followService);
+                followService,
+                sensitiveWordFilter);
     }
 
     /**

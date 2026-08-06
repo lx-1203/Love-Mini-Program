@@ -318,3 +318,99 @@ export async function loginWithWechat(): Promise<UserSession> {
 
   return response;
 }
+
+/**
+ * 手机号 + 密码登录（infra R2 联调新增,参考 eladmin 账号体系）。
+ *
+ * <p>调用 {@code POST /v1/auth/phone-login},成功后写入 token/refreshToken。
+ * 不包含 Mock fallback——后端不可达时抛出错误,由调用方提示。</p>
+ *
+ * @param phone    手机号
+ * @param password 密码
+ * @returns 用户会话信息
+ * @throws Error 网络错误/凭据错误时抛出(含后端 message)
+ */
+export async function loginWithPhone(phone: string, password: string): Promise<UserSession> {
+  const response = await request<UserSession, { phone: string; password: string }>({
+    url: "/v1/auth/phone-login",
+    method: "POST",
+    data: { phone, password },
+    skipAuth: true,
+    noRetry: true,
+  });
+  // UserSession schema 未声明 token/refreshToken,通过 unknown 中转 + 类型守卫访问
+  const responseRecord = response as unknown as Record<string, unknown>;
+  if (typeof responseRecord.token === "string" && responseRecord.token.length > 0) {
+    setToken(responseRecord.token);
+  }
+  if (typeof responseRecord.refreshToken === "string" && responseRecord.refreshToken.length > 0) {
+    setRefreshToken(responseRecord.refreshToken);
+  }
+  return response;
+}
+
+/**
+ * 注册新用户（手机号 + 密码 + 昵称,infra R2 联调新增）。
+ *
+ * <p>调用 {@code POST /v1/auth/register},成功即签发 JWT(无需二次登录)。
+ * 不包含 Mock fallback——重复注册/参数非法时抛出错误,由调用方提示。</p>
+ *
+ * @param phone    手机号（11 位）
+ * @param password 密码（6-64 位）
+ * @param nickname 昵称（1-20 字）
+ * @returns 用户会话信息
+ * @throws Error 手机号已注册/参数非法时抛出(含后端 message)
+ */
+export async function registerUser(
+  phone: string,
+  password: string,
+  nickname: string,
+): Promise<UserSession> {
+  const response = await request<UserSession, { phone: string; password: string; nickname: string }>({
+    url: "/v1/auth/register",
+    method: "POST",
+    data: { phone, password, nickname },
+    skipAuth: true,
+    noRetry: true,
+  });
+  // UserSession schema 未声明 token/refreshToken,通过 unknown 中转 + 类型守卫访问
+  const responseRecord = response as unknown as Record<string, unknown>;
+  if (typeof responseRecord.token === "string" && responseRecord.token.length > 0) {
+    setToken(responseRecord.token);
+  }
+  if (typeof responseRecord.refreshToken === "string" && responseRecord.refreshToken.length > 0) {
+    setRefreshToken(responseRecord.refreshToken);
+  }
+  return response;
+}
+
+/**
+ * 体验账号一键登录（登录页「一键体验全部功能」临时号）。
+ *
+ * <p>调用 {@code POST /v1/auth/guest-login}：后端首次调用自动创建固定体验账号并签发 JWT，
+ * 后续复用同一账号（幂等），无需注册/输入密码即可体验全部功能。</p>
+ *
+ * <p>不含 Mock fallback——后端不可达时抛出错误,由调用方提示。
+ * 商业化上线前后端若关闭体验入口（app.guest-login.enabled=false），
+ * 本接口将返回业务错误，调用方应提示用户改用其他登录方式。</p>
+ *
+ * @returns 用户会话信息
+ * @throws Error 网络错误/入口关闭时抛出(含后端 message)
+ */
+export async function loginAsGuest(): Promise<UserSession> {
+  const response = await request<UserSession, never>({
+    url: "/v1/auth/guest-login",
+    method: "POST",
+    skipAuth: true,
+    noRetry: true,
+  });
+  // UserSession schema 未声明 token/refreshToken,通过 unknown 中转 + 类型守卫访问
+  const responseRecord = response as unknown as Record<string, unknown>;
+  if (typeof responseRecord.token === "string" && responseRecord.token.length > 0) {
+    setToken(responseRecord.token);
+  }
+  if (typeof responseRecord.refreshToken === "string" && responseRecord.refreshToken.length > 0) {
+    setRefreshToken(responseRecord.refreshToken);
+  }
+  return response;
+}

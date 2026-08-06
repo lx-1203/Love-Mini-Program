@@ -10,6 +10,8 @@ import { useI18n } from "vue-i18n";
 import { useCircleStore } from "../../stores/circle";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
+// infra R2-00102: 路由路径常量化
+import { ROUTES } from "../../constants/routes";
 import { IMAGE_PATHS } from "../../config/images";
 import AppShell from "../../components/layout/AppShell.vue";
 import PageStateContainer from "../../components/common/PageStateContainer.vue";
@@ -36,6 +38,21 @@ const CATEGORY_KEY_MAP: Record<string, string> = {
   reading: "circle.catReading",
 };
 
+/**
+ * 分类 ID → 圈子名称关键词（页面级过滤，review #21：category 参数不再只改标题）。
+ * TODO(后端): 兴趣圈列表支持按分类服务端过滤后，改由后端查询并移除本映射。
+ */
+const CATEGORY_KEYWORDS: Record<string, string> = {
+  study: "读书",
+  sports: "运动",
+  music: "音乐",
+  movie: "电影",
+  travel: "旅行",
+  game: "游戏",
+  food: "美食",
+  reading: "读书",
+};
+
 onLoad((query) => {
   if (query?.category) {
     category.value = String(query.category);
@@ -47,6 +64,18 @@ const pageTitle = computed(() => {
   if (!category.value) return t("circle.circlesNavTitle");
   const key = CATEGORY_KEY_MAP[category.value];
   return key ? t(key) : t("circle.circlesNavTitle");
+});
+
+/**
+ * 按 category 过滤后的兴趣圈列表（review #21：category 参数用于过滤而非仅改标题）。
+ * 匹配不到时回退全量列表，避免进入空页面。
+ */
+const filteredCircles = computed(() => {
+  if (!category.value) return circles.value;
+  const keyword = CATEGORY_KEYWORDS[category.value];
+  if (!keyword) return circles.value;
+  const matched = circles.value.filter((c) => c.name.includes(keyword));
+  return matched.length > 0 ? matched : circles.value;
 });
 
 /**
@@ -88,7 +117,7 @@ function goToTopics(circle: { id: string; campusVerified?: boolean }) {
       return;
     }
   }
-  openAppPath(`/pages/circles/topics?circleId=${circle.id}`);
+  openAppPath(`${ROUTES.CIRCLES.TOPICS}?circleId=${circle.id}`); // infra R2-00102
 }
 
 /**
@@ -96,7 +125,7 @@ function goToTopics(circle: { id: string; campusVerified?: boolean }) {
  * Task F1 (M-08)：从圈子页快捷发现匹配
  */
 function goToDiscover() {
-  openAppPath("/pages/discover/index");
+  openAppPath(ROUTES.TAB.DISCOVER); // infra R2-00102: 寻觅页为 Tab 页，走 TAB 分组常量
 }
 
 /**
@@ -185,7 +214,7 @@ defineExpose({ toggleJoin });
           <!-- 兴趣圈卡片 -->
           <view class="circles-card-list" role="list">
             <view
-              v-for="(circle, index) in circles" :key="circle.id"
+              v-for="(circle, index) in filteredCircles" :key="circle.id"
               class="circle-card list-item"
               :style="{ animationDelay: index * 60 + 'ms' }"
               @tap="goToTopics(circle)"
@@ -215,7 +244,7 @@ defineExpose({ toggleJoin });
               <view
                 class="circle-card__action"
                 :class="{ 'circle-card__action--joined': circle.isJoined }"
-  @tap.stop="toggleJoin(circle.id, circle.isJoined)"
+  catchtap="toggleJoin(circle.id, circle.isJoined)"
               >
                 <text class="circle-card__action-text">
                   {{ circle.isJoined ? t("circle.joinedBtn") : t("circle.joinBtn") }}

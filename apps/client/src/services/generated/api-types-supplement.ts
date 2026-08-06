@@ -8,6 +8,26 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FlexibleObject = Record<string, any>;
 
+// ===== Auth Session (login 响应补充字段) =====
+/**
+ * 登录/会话接口响应中的鉴权扩展字段。
+ *
+ * OpenAPI 生成的 Schemas["UserSession"] 暂未声明 token / refreshToken / vipStatus /
+ * schoolBound 等字段（后端按约定在登录响应中携带）。此处补充声明，业务代码经此
+ * 具名类型收敛，替代散落的 `as Record<string, unknown>` 断言。
+ * // infra R2-00120: 补充登录响应类型，消除 loginWithWechat 中的匿名断言访问
+ */
+export interface AuthSessionResult {
+  /** JWT 访问令牌（登录/刷新会话时返回） */
+  token?: string;
+  /** 刷新令牌（登录/刷新会话时返回） */
+  refreshToken?: string;
+  /** VIP 状态（none/active/expired 等，后端约定） */
+  vipStatus?: string;
+  /** 是否已绑定学校 */
+  schoolBound?: boolean;
+}
+
 // ===== Profile Stats =====
 export interface ProfileStats {
   followers: number;

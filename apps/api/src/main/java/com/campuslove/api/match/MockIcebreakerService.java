@@ -21,7 +21,8 @@ public class MockIcebreakerService implements IcebreakerService {
     public List<IcebreakerView> getMatchIcebreakers(Long userId, Long matchUserId) {
         return List.of(
                 new IcebreakerView("嗨，很高兴认识你！看到你也喜欢摄影，我也超爱～", "interests", "common_interest", 100L),
-                new IcebreakerView("你也在这个学校呀！阳光校区的图书馆你去过吗？", "campus", "same_school", 101L),
+                // FIN-00038 修复：原文"阳光校区的图书馆"与南/北/东校区体系不一致，改为中性表述
+                new IcebreakerView("你也在这个学校呀！学校的图书馆你去过吗？", "campus", "same_school", 101L),
                 new IcebreakerView("你们最近回答了同一个每日一问，可以聊聊各自的看法！", "daily", "common_answer", 102L)
         );
     }

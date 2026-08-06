@@ -44,6 +44,24 @@ public final class SecurityUtils {
     }
 
     /**
+     * 判断当前请求是否已认证（FIN-00064 修复）。
+     *
+     * <p>用于 Controller 需要区分「未认证」与「已认证」两个分支的场景
+     * （如校园分类帖子列表未登录时返回空列表），
+     * 避免通过捕获 {@link HttpClientErrorException.Unauthorized} 判断认证状态
+     * （异常类型滥用）。</p>
+     *
+     * @return true 表示已认证且 principal 可解析为用户 ID
+     */
+    public static boolean isAuthenticated() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        return parsePrincipal(authentication.getPrincipal()) != null;
+    }
+
+    /**
      * 抛出 401 Unauthorized 异常。
      *
      * @param message 错误信息

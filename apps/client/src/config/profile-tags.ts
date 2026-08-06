@@ -32,8 +32,10 @@ export type ProfileTagGroupKey =
 export interface ProfileTagOption {
   /** 标签唯一值（用于存储与比较，建议用英文 key） */
   value: string;
-  /** 标签展示文案 */
+  /** 标签展示文案（静态中文兜底，展示层请优先用 labelKey 经 t() 渲染以支持多语言） */
   label: string;
+  /** 标签展示文案的 i18n key（config.profileTags.{groupKey}.{value}，zh/en 同步） */
+  labelKey?: string;
   /** 可选图标（SVG 路径，替换原 emoji 字符） */
   icon?: string;
 }
@@ -60,6 +62,9 @@ export interface ProfileTagGroup {
  * 当前为本地静态数据，后续可无缝切换为后端 API 返回：
  *   const groups = await request<ProfileTagGroup[]>({ url: "/profile/tag-options" });
  */
+// 展示文案 i18n 化（i18n-data-review #8）：32 个标签 label 已抽为 i18n key（config.profileTags.*，zh/en 同步）。
+// 注意：value 保持英文 key（用于资料存储/localStorage 序列化与后端比对），禁止改为中文；
+// 展示层（TagSelector / AdvancedFilter 等）通过 labelKey 经 t() 映射，勿直接渲染 label。
 export const profileTagGroups: ProfileTagGroup[] = [
   {
     key: "interest",
@@ -67,16 +72,16 @@ export const profileTagGroups: ProfileTagGroup[] = [
     min: 1,
     max: 5,
     options: [
-      { value: "reading", label: "阅读", icon: "/static/assets/icons/common/book.svg" },
-      { value: "sports", label: "运动", icon: "/static/assets/icons/common/trend-up.svg" },
-      { value: "music", label: "音乐", icon: "/static/assets/icons/common/music.svg" },
-      { value: "movie", label: "电影", icon: "/static/assets/icons/common/clapperboard.svg" },
-      { value: "travel", label: "旅行", icon: "/static/assets/icons/common/plane.svg" },
-      { value: "photography", label: "摄影", icon: "/static/assets/icons/common/camera.svg" },
-      { value: "gaming", label: "游戏", icon: "/static/assets/icons/common/gamepad.svg" },
-      { value: "cooking", label: "美食", icon: "/static/assets/icons/common/cooking-pot.svg" },
-      { value: "painting", label: "绘画", icon: "/static/assets/icons/common/settings-gear.svg" },
-      { value: "dance", label: "舞蹈", icon: "/static/assets/icons/common/music.svg" },
+      { value: "reading", label: "阅读", labelKey: "config.profileTags.interest.reading", icon: "/static/assets/icons/common/book.svg" },
+      { value: "sports", label: "运动", labelKey: "config.profileTags.interest.sports", icon: "/static/assets/icons/common/trend-up.svg" },
+      { value: "music", label: "音乐", labelKey: "config.profileTags.interest.music", icon: "/static/assets/icons/common/music.svg" },
+      { value: "movie", label: "电影", labelKey: "config.profileTags.interest.movie", icon: "/static/assets/icons/common/clapperboard.svg" },
+      { value: "travel", label: "旅行", labelKey: "config.profileTags.interest.travel", icon: "/static/assets/icons/common/plane.svg" },
+      { value: "photography", label: "摄影", labelKey: "config.profileTags.interest.photography", icon: "/static/assets/icons/common/camera.svg" },
+      { value: "gaming", label: "游戏", labelKey: "config.profileTags.interest.gaming", icon: "/static/assets/icons/common/gamepad.svg" },
+      { value: "cooking", label: "美食", labelKey: "config.profileTags.interest.cooking", icon: "/static/assets/icons/common/cooking-pot.svg" },
+      { value: "painting", label: "绘画", labelKey: "config.profileTags.interest.painting", icon: "/static/assets/icons/common/pencil.svg" },
+      { value: "dance", label: "舞蹈", labelKey: "config.profileTags.interest.dance", icon: "/static/assets/icons/common/star.svg" },
     ],
   },
   {
@@ -85,14 +90,14 @@ export const profileTagGroups: ProfileTagGroup[] = [
     min: 1,
     max: 3,
     options: [
-      { value: "introvert", label: "内向" },
-      { value: "extrovert", label: "外向" },
-      { value: "rational", label: "理性" },
-      { value: "emotional", label: "感性" },
-      { value: "optimistic", label: "乐观" },
-      { value: "calm", label: "沉稳" },
-      { value: "humorous", label: "幽默" },
-      { value: "gentle", label: "温柔" },
+      { value: "introvert", label: "内向", labelKey: "config.profileTags.personality.introvert" },
+      { value: "extrovert", label: "外向", labelKey: "config.profileTags.personality.extrovert" },
+      { value: "rational", label: "理性", labelKey: "config.profileTags.personality.rational" },
+      { value: "emotional", label: "感性", labelKey: "config.profileTags.personality.emotional" },
+      { value: "optimistic", label: "乐观", labelKey: "config.profileTags.personality.optimistic" },
+      { value: "calm", label: "沉稳", labelKey: "config.profileTags.personality.calm" },
+      { value: "humorous", label: "幽默", labelKey: "config.profileTags.personality.humorous" },
+      { value: "gentle", label: "温柔", labelKey: "config.profileTags.personality.gentle" },
     ],
   },
   {
@@ -101,14 +106,14 @@ export const profileTagGroups: ProfileTagGroup[] = [
     min: 1,
     max: 4,
     options: [
-      { value: "early_bird", label: "早睡早起" },
-      { value: "night_owl", label: "熬夜党" },
-      { value: "fitness", label: "健身达人" },
-      { value: "foodie", label: "美食家" },
-      { value: "pet_lover", label: "宠物控" },
-      { value: "tea", label: "喝茶" },
-      { value: "coffee", label: "咖啡" },
-      { value: "night_run", label: "夜跑" },
+      { value: "early_bird", label: "早睡早起", labelKey: "config.profileTags.lifestyle.early_bird" },
+      { value: "night_owl", label: "熬夜党", labelKey: "config.profileTags.lifestyle.night_owl" },
+      { value: "fitness", label: "健身达人", labelKey: "config.profileTags.lifestyle.fitness" },
+      { value: "foodie", label: "美食家", labelKey: "config.profileTags.lifestyle.foodie" },
+      { value: "pet_lover", label: "宠物控", labelKey: "config.profileTags.lifestyle.pet_lover" },
+      { value: "tea", label: "喝茶", labelKey: "config.profileTags.lifestyle.tea" },
+      { value: "coffee", label: "咖啡", labelKey: "config.profileTags.lifestyle.coffee" },
+      { value: "night_run", label: "夜跑", labelKey: "config.profileTags.lifestyle.night_run" },
     ],
   },
   {
@@ -117,12 +122,39 @@ export const profileTagGroups: ProfileTagGroup[] = [
     min: 1,
     max: 3,
     options: [
-      { value: "long_term", label: "长期关系" },
-      { value: "natural", label: "顺其自然" },
-      { value: "marriage", label: "以结婚为目的" },
-      { value: "growth", label: "共同成长" },
-      { value: "independence", label: "保持独立" },
-      { value: "companionship", label: "互相陪伴" },
+      { value: "long_term", label: "长期关系", labelKey: "config.profileTags.relationship.long_term" },
+      { value: "natural", label: "顺其自然", labelKey: "config.profileTags.relationship.natural" },
+      { value: "marriage", label: "以结婚为目的", labelKey: "config.profileTags.relationship.marriage" },
+      { value: "growth", label: "共同成长", labelKey: "config.profileTags.relationship.growth" },
+      { value: "independence", label: "保持独立", labelKey: "config.profileTags.relationship.independence" },
+      { value: "companionship", label: "互相陪伴", labelKey: "config.profileTags.relationship.companionship" },
     ],
   },
 ];
+
+/**
+ * 解析标签展示文案。
+ *
+ * infra R2-00135: 优先使用 labelKey 经 translate() 渲染；labelKey 缺失或
+ * 翻译结果等于 key 原文（i18n 数据未同步）时，输出告警并回退中文 label，
+ * 避免“key 缺失静默展示中文”无法被发现。
+ *
+ * @param tag 标签选项
+ * @param translate i18n 翻译函数（如 i18n.global.t / useI18n().t）
+ * @returns 展示文案
+ */
+export function getProfileTagLabel(
+  tag: ProfileTagOption,
+  translate: (key: string) => string
+): string {
+  if (tag.labelKey) {
+    const translated = translate(tag.labelKey);
+    if (translated && translated !== tag.labelKey) {
+      return translated;
+    }
+    console.warn(
+      `[profile-tags] i18n key 缺失或未翻译: ${tag.labelKey}，回退中文 label`
+    );
+  }
+  return tag.label;
+}

@@ -15,8 +15,13 @@ import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -150,6 +155,79 @@ public class TempChatViewMapper {
         );
     }
 
+    /**
+     * 批量预加载对方用户信息 Map（partnerId → PartnerInfo），
+     * 避免会话列表逐会话 4 次查库（user/basic/campus/schedule，N+1）。
+     *
+     * @param partnerIds 对方用户 ID 列表（可含 null/重复）
+     * @return 对方用户信息映射
+     */
+    public Map<Long, PartnerInfo> loadPartnerInfoMap(List<Long> partnerIds) {
+        List<Long> distinct = partnerIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinct.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, User> userMap = userRepository.findByIdIn(distinct).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+        Map<Long, UserBasicProfile> basicMap = userBasicProfileRepository.findByUserIdIn(distinct).stream()
+                .collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p, (a, b) -> a));
+        Map<Long, UserCampusProfile> campusMap = userCampusProfileRepository.findByUserIdIn(distinct).stream()
+                .collect(Collectors.toMap(UserCampusProfile::getUserId, p -> p, (a, b) -> a));
+        Map<Long, UserScheduleProfile> scheduleMap = userScheduleProfileRepository.findByUserIdIn(distinct).stream()
+                .collect(Collectors.toMap(UserScheduleProfile::getUserId, p -> p, (a, b) -> a));
+
+        Map<Long, PartnerInfo> result = new HashMap<>();
+        for (Long id : distinct) {
+            User partner = userMap.get(id);
+            String name = partner != null ? partner.getNickname() : DisplayConstants.UNKNOWN_USER;
+            result.put(id, new PartnerInfo(name,
+                    buildHeadline(basicMap.get(id), campusMap.get(id)),
+                    buildAvailability(scheduleMap.get(id))));
+        }
+        return result;
+    }
+
+    /**
+     * 将 TempChatSession 实体转换为 ChatSessionSummaryView（批量预加载版本）。
+     *
+     * @param session        会话实体
+     * @param currentUserId  当前用户 ID
+     * @param partnerInfoMap 批量预加载的对方用户信息 Map
+     * @return 会话摘要视图
+     */
+    public ChatSessionSummaryView toSummary(TempChatSession session, Long currentUserId,
+                                            Map<Long, PartnerInfo> partnerInfoMap) {
+        Long partnerId = session.getUserAId().equals(currentUserId)
+                ? session.getUserBId() : session.getUserAId();
+        PartnerInfo partnerInfo = partnerInfoMap.get(partnerId);
+        if (partnerInfo == null) {
+            // 兜底：Map 缺失时单查（理论不发生）
+            partnerInfo = getPartnerInfo(partnerId);
+        }
+
+        int unreadCount = session.getUserAId().equals(currentUserId)
+                ? session.getUserAUnreadCount()
+                : session.getUserBUnreadCount();
+
+        String contactExchangeStatus = getContactExchangeStatus(session);
+
+        return new ChatSessionSummaryView(
+                session.getSessionUid(),
+                String.valueOf(partnerId),
+                partnerInfo.name(),
+                partnerInfo.headline(),
+                partnerInfo.availability(),
+                session.getPhase().name(),
+                session.getClosesAt().toString(),
+                session.getClosedReason(),
+                session.getLastMessagePreview(),
+                session.getLastMessageAt() != null ? session.getLastMessageAt().toString() : null,
+                contactExchangeStatus,
+                Boolean.TRUE.equals(session.getIsPinned()),
+                unreadCount
+        );
+    }
+
     /** 获取对方用户信息（昵称、简介、可用时间）。 */
     private PartnerInfo getPartnerInfo(Long partnerId) {
         User partner = userRepository.findById(partnerId).orElse(null);
@@ -210,7 +288,7 @@ public class TempChatViewMapper {
         return value != null && !value.isBlank();
     }
 
-    /** 对方用户信息内部记录。 */
-    private record PartnerInfo(String name, String headline, String availability) {
+    /** 对方用户信息内部记录（包可见，供 TempChatSessionService 批量预加载使用）。 */
+    record PartnerInfo(String name, String headline, String availability) {
     }
 }

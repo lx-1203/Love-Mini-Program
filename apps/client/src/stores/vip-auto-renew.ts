@@ -183,7 +183,12 @@ export const useAutoRenewStore = defineStore("vip-auto-renew", () => {
    */
   async function setEnabled(payload: { enabled: boolean; planId?: string }): Promise<AutoRenewStatusView> {
     if (payload.enabled) {
-      return enableAutoRenew({ planId: payload.planId ?? "quarterly" });
+      // infra R2-00055: 不再隐式回退硬编码 "quarterly"——套餐未显式指定时抛错由调用方决定，
+      // 防止自动续费套餐与用户当前选中套餐不一致
+      if (!payload.planId || payload.planId.trim().length === 0) {
+        throw new Error(t("storeErrors.vip.planRequired"));
+      }
+      return enableAutoRenew({ planId: payload.planId });
     }
     return disableAutoRenew();
   }

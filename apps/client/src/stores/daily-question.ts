@@ -157,6 +157,8 @@ export interface DailyQuestionState {
 
 /* ========== Mock 数据 ========== */
 
+// infra R2-00105: 以下每日一问 mock 数据（问题/回答内容）为演示数据（useMock 守卫），
+// real 分支由后端下发；如需多语言展示请走 i18n 或后端内容
 const mockTodayQuestion: DailyQuestion = {
   id: "dq-20260522",
   question: "你理想中的第一次约会是什么样？",

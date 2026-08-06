@@ -1,5 +1,5 @@
 -- ====================================================================
--- V2026070501001__extend_user_basic_profile.sql
+-- V2026.07.24.0001__extend_user_basic_profile.sql
 -- Phase A - Task A1: 扩展 user_basic_profile 表
 -- 新增字段：
 --   1. height               INT          (身高 cm, 120-250)
@@ -23,8 +23,8 @@ ALTER TABLE user_basic_profile
     ADD COLUMN hometown_province VARCHAR(32) NULL,
     ADD COLUMN hometown_city VARCHAR(32) NULL,
     ADD COLUMN future_city VARCHAR(32) NULL,
-    ADD COLUMN future_plan_tags JSON DEFAULT '[]',
-    ADD COLUMN photo_gallery JSON DEFAULT '[]',
+    ADD COLUMN future_plan_tags JSON DEFAULT (JSON_ARRAY()),
+    ADD COLUMN photo_gallery JSON DEFAULT (JSON_ARRAY()),
     ADD COLUMN half_body_photo_url VARCHAR(512) NULL,
     ADD COLUMN personal_video_url VARCHAR(512) NULL,
     ADD COLUMN profile_background_url VARCHAR(512) NULL;

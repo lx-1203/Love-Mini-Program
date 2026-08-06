@@ -1,5 +1,10 @@
 /**
- * 应用环境配置
+ * 应用环境配置（历史实现）
+ *
+ * @deprecated infra R2-00128: 本模块为历史环境封装，与 src/config/env.ts 双实现并存。
+ * 新代码请统一使用 src/config/env.ts（clientEnv / isMockMode / isDev / isSentryEnabled）；
+ * 本模块保留以兼容既有调用方（utils/media.ts、stores/*、pages/* 等大量引用），
+ * 待业务代码迁移完成后删除。
  *
  * 修复（P0 BUG）：原 safeReadEnv 通过 (import.meta as any).env 中间变量
  * 整体读取再下标访问，在 uni-app vite-plugin-uni 的 H5 dev 模式下
@@ -132,12 +137,12 @@ function resolveApiBaseUrl(): string {
     // #endif
   }
   // 生产环境必须显式配置 https URL（mp-weixin 合法域名要求 https）
-  // 不再回退到 http://localhost，避免误用未加密通道
-  console.error(
-    "[ENV] 生产环境未配置 VITE_API_BASE_URL，请检查构建配置。" +
-    "mp-weixin 合法域名必须为 https://，禁止回退到 http://localhost。"
+  // 修复（P1 BUG）：原实现 console.error 后仍静默回退 https://localhost:8080/api，
+  // 生产包会带着错误地址启动、所有请求 404/超时且难以排查。
+  // 现直接抛错阻止应用启动，让构建/发布时立刻暴露配置缺失。
+  throw new Error(
+    "[ENV] 生产环境未配置 VITE_API_BASE_URL，应用拒绝启动。请通过 .env.production 配置 https 接口地址（mp-weixin 合法域名必须为 https://），禁止回退到 localhost。"
   );
-  return "https://localhost:8080/api";
 }
 
 function resolveApiMode(): "real" | "mock" {

@@ -30,7 +30,7 @@
  * <p><b>i18n 接入</b>：title / confirmText / cancelText 未传时回退到
  * common.confirmTitle / common.confirmOk / common.confirmCancel。</p>
  */
-import { computed } from "vue";
+import { computed, watch, ref, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
@@ -106,6 +106,38 @@ function handleConfirm(): void {
 function stopPropagation(e: Event): void {
   e.stopPropagation();
 }
+
+// infra R2-00466：键盘可达性——Esc 关闭 + 打开时焦点移入弹窗 + 关闭后焦点恢复。
+// 原弹窗无 Esc 关闭、无焦点陷阱/焦点恢复、无 aria-modal，键盘/读屏用户操作困难。
+const confirmBtnRef = ref<HTMLElement | null>(null);
+let previouslyFocused: HTMLElement | null = null;
+
+function handleKeydown(e: KeyboardEvent): void {
+  if (e.key === "Escape") {
+    handleClose();
+  }
+}
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      previouslyFocused = document.activeElement as HTMLElement | null;
+      // 打开后聚焦确认按钮（异步等待 DOM 渲染）
+      requestAnimationFrame(() => {
+        confirmBtnRef.value?.focus();
+      });
+    } else if (previouslyFocused) {
+      // 关闭后焦点恢复到触发元素
+      previouslyFocused.focus();
+      previouslyFocused = null;
+    }
+  },
+);
+
+onBeforeUnmount(() => {
+  previouslyFocused = null;
+});
 </script>
 
 <template>
@@ -113,13 +145,17 @@ function stopPropagation(e: Event): void {
     v-if="visible"
     class="modal-mask"
     @click="handleClose"
+    @keydown="handleKeydown"
   >
     <view
       class="modal confirm-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
       :style="{ width: width + 'px' }"
       @click="stopPropagation"
     >
-      <text class="modal-title">{{ displayTitle }}</text>
+      <text id="confirm-dialog-title" class="modal-title">{{ displayTitle }}</text>
       <view v-if="message" class="confirm-message">
         <text>{{ message }}</text>
       </view>
@@ -134,6 +170,8 @@ function stopPropagation(e: Event): void {
           @click="handleClose"
         >{{ displayCancelText }}</button>
         <button
+          ref="confirmBtnRef"
+          type="button"
           :class="confirmButtonClass"
           :disabled="confirming"
           @click="handleConfirm"

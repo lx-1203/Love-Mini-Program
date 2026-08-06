@@ -2,6 +2,10 @@
 import { defineStore } from "pinia";
 import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";
+// infra R2-00099: mock 发布作者从会话生成
+import { useSessionStore } from "./session";
+// infra R2-00099: mock 头像统一 IMAGE_PATHS
+import { IMAGE_PATHS } from "../config/images";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
 
@@ -453,6 +457,13 @@ const mockActivities: CampusActivity[] = [
 const TOPIC_PAGE_SIZE = 10;
 
 /**
+ * 校园话题列表请求竞态 token。
+ * 递增计数：快速切换分类/翻页时，仅最新 token 的请求允许更新状态，
+ * 旧请求的响应被静默丢弃，避免覆盖新请求结果。
+ */
+let fetchCampusTopicsToken = 0;
+
+/**
  * 格式化相对时间
  */
 export function formatCampusTime(dateStr: string): string {
@@ -563,14 +574,21 @@ export const useCampusStore = defineStore("campus", {
      * 获取校园话题列表
      * @param category - 话题分类，默认当前分类
      * @param page - 页码（从 1 开始）
+     *
+     * 修复（P1 BUG）：新增竞态 token——快速切换分类/翻页时，旧请求返回后
+     * 不再覆盖新请求结果（旧请求的响应被静默丢弃）。
      */
     async fetchCampusTopics(category?: CampusTopicCategory, page = 1) {
+      // 竞态 token：递增计数，仅最新 token 的请求允许更新状态
+      const token = ++fetchCampusTopicsToken;
       this.loading = true;
       this.errorMessage = null;
       const targetCategory = category ?? this.activeCategory;
 
       try {
         if (useMock()) {
+          // 修复：旧请求返回时不再修改状态
+          if (token !== fetchCampusTopicsToken) return;
           const filtered = mockTopics.filter((t) => t.category === targetCategory);
           if (page === 1) {
             this.topics = [...filtered];
@@ -584,10 +602,12 @@ export const useCampusStore = defineStore("campus", {
 
         // 调用后端 API: GET /api/campus/topics?category={category}&page={page}&size={size}
         const data = await request<{ content: BackendCampusTopicView[]; totalElements: number; number: number; size: number }>({
-          url: `/campus/topics?category=${targetCategory}&page=${page - 1}&size=${TOPIC_PAGE_SIZE}`,
+          url: `/campus/topics?category=${encodeURIComponent(targetCategory)}&page=${page - 1}&size=${TOPIC_PAGE_SIZE}`,
           method: "GET",
         });
 
+        // 修复：旧请求返回时不再修改状态
+        if (token !== fetchCampusTopicsToken) return;
         const mapped = (data.content ?? []).map(mapToCampusTopicItem);
         if (page === 1) {
           this.topics = mapped;
@@ -597,9 +617,14 @@ export const useCampusStore = defineStore("campus", {
         this.topicPage = page;
         this.topicHasMore = (data.content ?? []).length >= TOPIC_PAGE_SIZE;
       } catch (error) {
+        // 修复：旧请求的错误不更新 errorMessage
+        if (token !== fetchCampusTopicsToken) return;
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.loadTopicsFailed");
       } finally {
-        this.loading = false;
+        // 修复：仅最新 token 的请求才允许清 loading
+        if (token === fetchCampusTopicsToken) {
+          this.loading = false;
+        }
       }
     },
 
@@ -731,16 +756,18 @@ export const useCampusStore = defineStore("campus", {
         }
 
         if (useMock()) {
+          // infra R2-00099: mock 发布作者从当前会话生成（原硬编码 "匿名校友/我/广州大学"）
+          const me = useSessionStore().userSession;
           const newTopic: CampusTopicItem = {
             id: `campus-topic-${Date.now()}`,
             category: data.category,
             title: data.title.trim(),
             contentPreview: data.content.trim(),
             author: {
-              userId: "user-1001",
-              name: data.isAnonymous ? "匿名校友" : "我",
-              avatar: "",
-              school: "广州大学",
+              userId: me?.userId ?? "user-1001",
+              name: data.isAnonymous ? t("campus.index.anonymousAuthor") : (me?.displayName ?? "我"),
+              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
+              school: me?.campusName ?? "",
             },
             replyCount: 0,
             isAnonymous: data.isAnonymous,
@@ -794,14 +821,16 @@ export const useCampusStore = defineStore("campus", {
         }
 
         if (useMock()) {
+          // infra R2-00106: mock 回复作者从当前会话生成（原硬编码 "匿名校友/我/广州大学"）
+          const me = useSessionStore().userSession;
           const newReply: CampusReplyItem = {
             id: `campus-reply-${Date.now()}`,
             topicId,
             author: {
-              userId: "user-1001",
-              name: isAnonymous ? "匿名校友" : "我",
-              avatar: "",
-              school: "广州大学",
+              userId: me?.userId ?? "user-1001",
+              name: isAnonymous ? t("campus.index.anonymousAuthor") : (me?.displayName ?? "我"),
+              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
+              school: me?.campusName ?? "",
             },
             content: content.trim(),
             isAnonymous,
@@ -938,8 +967,17 @@ export const useCampusStore = defineStore("campus", {
           reviewComment: result.reviewComment ?? "",
         };
       } catch (error) {
-        // 未找到认证记录是正常情况，不设置错误信息
-        if (error instanceof Error && error.message.includes("404")) {
+        // 修复（P1 BUG）：未找到认证记录是正常情况，不设置错误信息。
+        // 原实现用 error.message.includes("404") 判断，但 AppApiError.message 是
+        // 中文兜底文案（“请求的资源不存在”），不含 "404"，分支永不命中。
+        // 现改为检查 AppApiError.status === 404（错误码字符串 error === "not_found" 兜底）。
+        const isNotFound =
+          error !== null &&
+          typeof error === "object" &&
+          ("status" in error || "error" in error) &&
+          (((error as { status?: unknown }).status === 404) ||
+            ((error as { error?: unknown }).error === "not_found"));
+        if (isNotFound) {
           this.certificationStatus = "unverified";
           return;
         }

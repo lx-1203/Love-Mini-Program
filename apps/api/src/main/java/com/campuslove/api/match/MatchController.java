@@ -3,7 +3,6 @@ package com.campuslove.api.match;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
-import com.campuslove.api.dto.MatchDto;
 import com.campuslove.api.monitor.MatchMetrics;
 import com.campuslove.api.ratelimit.RateLimit;
 import io.swagger.v3.oas.annotations.Operation;
@@ -191,6 +190,46 @@ public class MatchController {
   }
 
   /**
+   * 超级喜欢。
+   * POST /api/matches/super-like
+   *
+   * <p>缺陷修复：前端调用的该端点此前不存在（404）。语义为「超级喜欢」，
+   * 当前 {@code HeartSignal}/{@code Like} 实体尚无 superLike 字段，
+   * 因此实现为调用既有的 likeUser（右滑喜欢）逻辑，行为与普通喜欢一致；
+   * 若后续实体新增 superLike 字段，可在此处扩展标记逻辑。</p>
+   */
+  @PostMapping("/super-like")
+  @PreAuthorize("hasRole('USER')")
+  @Operation(summary = "超级喜欢", description = "对目标用户执行超级喜欢。当前实现与普通喜欢一致（实体暂无 superLike 字段），若双向喜欢则生成 HeartSignal。", operationId = "superLikeUser")
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "操作成功，data 为 HeartSignalView（如双向喜欢则非空）",
+                  content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "targetUserId 缺失或非法", content = @Content),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "触发限流", content = @Content)
+  })
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
+  @Idempotent
+  public ApiResponse<HeartSignalView> superLikeUser(
+          @Parameter(description = "超级喜欢目标请求体（targetUserId）", required = true)
+          @Valid @RequestBody LikeTargetRequest request) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    try {
+      matchMetrics.recordSwipe("super_like");
+    } catch (RuntimeException ignore) {
+      // 监控逻辑失败忽略
+    }
+    HeartSignalView result = matchService.likeUser(userId, request.targetUserId());
+    if (result != null) {
+      try {
+        matchMetrics.recordMatchSuccess();
+      } catch (RuntimeException ignore) {
+        // 监控逻辑失败忽略
+      }
+    }
+    return ApiResponse.ok(result);
+  }
+
+  /**
    * 获取喜欢我的用户列表。
    * GET /api/matches/liked-me
    */
@@ -340,31 +379,7 @@ public class MatchController {
     }
   }
 
-  // ---- DTO 层接入 ----
-
-  /**
-   * 获取当前用户的匹配 DTO 列表（DTO 层示例端点）。
-   *
-   * <p>与 {@link #getHeartSignals()} 等返回 {@code *View} 的端点并存，
-   * 用于演示未来 Entity -&gt; DTO 的批量转换流程。</p>
-   *
-   * <p><strong>当前实现：</strong>项目尚不存在独立的 {@code Match} 实体，
-   * 故本端点暂返回空列表。待 Match 实体引入后，将按以下流程补全：
-   * <ol>
-   *   <li>通过 MatchRepository 查询当前用户的所有匹配关系；</li>
-   *   <li>批量加载 partner 用户实体与最近一条消息预览；</li>
-   *   <li>经 {@link com.campuslove.api.dto.DtoMapper#toMatchDto} 转换为
-   *       {@link MatchDto} 列表返回。</li>
-   * </ol>
-   * </p>
-   *
-   * @return MatchDto 列表（当前阶段恒为空）
-   */
-  @GetMapping("/dto")
-  public ResponseEntity<List<MatchDto>> getMatchesDto() {
-    // TODO: 待 Match 实体引入后，接入 MatchRepository 并调用 DtoMapper.toMatchDto
-    return ResponseEntity.ok(List.of());
-  }
+  // ---- DTO 层接入 ----（infra R2-00219: 废弃端点 GET /matches/dto 已删除，恒返回空列表的 TODO 死代码）
 }
 
 record MatchFormConfigView(List<MatchFormSectionView> sections) {
@@ -394,7 +409,8 @@ record MatchRequest(
     @NotNull @Positive Long userId,
     @NotBlank @Size(max = 64) String matchIntent,
     List<String> topicIds,
-    @NotBlank @Size(max = 32) String timeWindow,
+    // infra R2-00220: doCreateMatch 未使用 timeWindow 字段，移除必填校验避免误导前端
+    @Size(max = 32) String timeWindow,
     @Min(1) @Max(180) Integer durationMinutes
 ) {
 }

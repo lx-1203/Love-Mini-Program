@@ -65,8 +65,9 @@ export function replyFeedback(
   id: number,
   reply: string
 ): Promise<FeedbackRecordView> {
+  // infra R2-00467：id 为 number，encodeURIComponent 无实际作用，简化调用
   return put<FeedbackRecordView>(
-    `/v1/admin/feedback/${encodeURIComponent(id)}/reply`,
+    `/v1/admin/feedback/${id}/reply`,
     { reply }
   );
 }

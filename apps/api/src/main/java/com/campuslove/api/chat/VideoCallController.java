@@ -3,6 +3,7 @@ package com.campuslove.api.chat;
 import com.campuslove.api.chat.VideoCallService.VideoCallRecordView;
 import com.campuslove.api.chat.VideoCallService.VideoCallView;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -57,6 +58,8 @@ public class VideoCallController {
      */
     @PostMapping("/start")
     @ResponseStatus(HttpStatus.CREATED)
+    // infra R2-00256: 呼叫接口补限流（每 10 秒 1 次/突发 10 次按 IP），防止任意用户轰炸他人呼叫
+    @RateLimit(capacity = 10, refillTokens = 0.2, key = "#request.remoteAddr")
     @PreAuthorize("hasRole('USER')")
     public VideoCallView startCall(@Valid @RequestBody StartCallRequest request) {
         Long callerId = SecurityUtils.getCurrentUserId();

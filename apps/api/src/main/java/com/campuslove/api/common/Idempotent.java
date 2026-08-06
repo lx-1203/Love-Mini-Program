@@ -40,13 +40,13 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Idempotent {
 
-    /** 默认 TTL：24 小时（秒） */
-    long DEFAULT_TTL_SECONDS = 24L * 3600;
+    /** 默认 TTL：4 小时（秒）（infra R2-00249: 原 24h 过长，写失败后用户需等 24h 才能重试；缩短至 4h 平衡防重与可用性） */
+    long DEFAULT_TTL_SECONDS = 4L * 3600;
 
     /**
      * 幂等键 TTL（秒）。
      *
-     * <p>默认 24 小时，覆盖典型业务场景（用户重复提交、网络重试）。
+     * <p>默认 4 小时，覆盖典型业务场景（用户重复提交、网络重试）。
      * 长流程业务（如订单支付）可适当延长至 7 天。</p>
      *
      * @return TTL 秒数

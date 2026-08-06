@@ -46,11 +46,15 @@ public class NotificationController {
   /**
    * 标记指定通知为已读。
    * PUT /api/notifications/{id}/read
+   *
+   * <p>修复（FIN HIGH-13）：改调用带用户校验的版本（{@link NotificationService#markAsRead(Long, Long)}），
+   * 防止 IDOR 越权标记他人通知为已读。</p>
    */
   @PutMapping("/{id}/read")
   @PreAuthorize("hasRole('USER')")
   public void markAsRead(@PathVariable("id") @Positive Long id) {
-    notificationService.markAsRead(id);
+    Long userId = SecurityUtils.getCurrentUserId();
+    notificationService.markAsRead(id, userId);
   }
 
   /**

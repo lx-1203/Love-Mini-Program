@@ -1,6 +1,7 @@
 package com.campuslove.api.profile;
 
 import com.campuslove.api.chat.InteractionEventService;
+import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.User;
@@ -73,6 +74,7 @@ public class ProfileUpdateService {
     private final MediaStorageService mediaStorageService;
     private final ProfileQueryService queryService;
     private final FollowService followService;
+    private final SensitiveWordFilter sensitiveWordFilter;
 
     public ProfileUpdateService(
             UserRepository userRepository,
@@ -84,7 +86,8 @@ public class ProfileUpdateService {
             InteractionEventService interactionEventService,
             MediaStorageService mediaStorageService,
             ProfileQueryService queryService,
-            FollowService followService) {
+            FollowService followService,
+            SensitiveWordFilter sensitiveWordFilter) {
         this.userRepository = userRepository;
         this.userFollowRepository = userFollowRepository;
         this.notificationRepository = notificationRepository;
@@ -95,6 +98,7 @@ public class ProfileUpdateService {
         this.mediaStorageService = mediaStorageService;
         this.queryService = queryService;
         this.followService = followService;
+        this.sensitiveWordFilter = sensitiveWordFilter;
     }
 
     // ---- 基本资料保存 ----
@@ -121,8 +125,16 @@ public class ProfileUpdateService {
                     return newProfile;
                 });
 
-        profile.setNickname(request.nickname());
-        profile.setBio(request.bio());
+        // infra R2-00254: 昵称/简介补敏感词过滤（防止资料携带违规词）
+        String filteredNickname = sensitiveWordFilter != null
+                ? sensitiveWordFilter.filterWithLog(request.nickname(), currentUserId, "PROFILE_NICKNAME")
+                : request.nickname();
+        String filteredBio = request.bio() != null && sensitiveWordFilter != null
+                ? sensitiveWordFilter.filterWithLog(request.bio(), currentUserId, "PROFILE_BIO")
+                : request.bio();
+
+        profile.setNickname(filteredNickname);
+        profile.setBio(filteredBio);
         profile.setGradeLabel(request.grade());
         profile.setPronouns(request.pronouns());
         if (request.height() != null) {
@@ -152,8 +164,8 @@ public class ProfileUpdateService {
         // 同步更新 User 表
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
-        user.setNickname(request.nickname());
-        user.setBio(request.bio());
+        user.setNickname(filteredNickname);
+        user.setBio(filteredBio);
         user.setGradeLabel(request.grade());
         user.setPronouns(request.pronouns());
 

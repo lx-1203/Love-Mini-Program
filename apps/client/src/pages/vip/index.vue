@@ -22,11 +22,20 @@ import { useAutoRenewStore } from "../../stores/vip-auto-renew";
 import { createButtonGuard } from "../../utils/debounce";
 // Sentry 监控：支付失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
+import { isMockMode } from "../../services/env";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../../constants/routes";
 
 const { t } = useI18n();
 const autoRenewStore = useAutoRenewStore();
+
+/**
+ * 套餐展示文案：优先经 nameKey/periodKey/perDayKey/badgeKey 走 t() 翻译
+ * （支持多语言），本地静态中文值仅作兜底；价格等数字字段不翻译。
+ */
+function planText(_plan: VipPlan | undefined, key?: string, fallback?: string): string {
+  return key ? t(key) : (fallback ?? "");
+}
 
 /**
  * SubTask 1.5.2：mock 支付定时器引用，用于卸载时清理。
@@ -66,8 +75,20 @@ const benefits = computed<VipBenefit[]>(() => [
 /** 套餐列表（从 config 引入，避免硬编码价格） */
 const plans = ref<VipPlan[]>(VIP_PLANS);
 
+/**
+ * infra R2-00058: 默认套餐从配置首项取（不再硬编码 "quarterly"，
+ * 配置调整后默认值自动跟随；数组为空时兜底 "quarterly"）
+ */
+const DEFAULT_PLAN_ID = VIP_PLANS[0]?.id ?? "quarterly";
+
 /** 当前选中的套餐 ID */
-const selectedPlanId = ref<VipPlan["id"]>("quarterly");
+const selectedPlanId = ref<VipPlan["id"]>(DEFAULT_PLAN_ID);
+
+/**
+ * infra R2-00058: 开关激活色——switch 为原生属性不支持 CSS 变量，
+ * 常量与 styles/tokens.scss 的 --c-gold(#FFD700) 保持同步，改品牌色时两处统一调整
+ */
+const SWITCH_ACTIVE_COLOR = "#FFD700";
 
 /** 当前选中的套餐对象 */
 const selectedPlan = computed(() =>
@@ -100,11 +121,20 @@ function subscribe() {
     planId: selectedPlan.value.id,
   });
 
+  // infra R2-00021 修复：real 模式禁止假支付成功。
+  // 原实现无论环境都走 setTimeout 模拟成功——生产用户点击"立即开通"显示
+  // "开通成功"但未扣款、未开通 VIP，资金与体验双失控。
+  // 后端订单/微信支付接口未接入前，real 模式明确提示功能建设中；
+  // mock 模式保留本地演示供 UI 走查。
+  if (!isMockMode()) {
+    uni.showToast({ title: t("vip.paymentNotReady"), icon: "none" });
+    return;
+  }
+
   processing.value = true;
   uni.showLoading({ title: t("vip.processing") });
 
   // mock 模式下不调用真实支付，使用 setTimeout 模拟流程
-  // 真实环境替换为 uni.requestPayment({/* 支付参数 */})，并在 fail 回调中区分 cancel
   // SubTask 1.5.2：保存定时器引用，卸载时统一清理
   if (mockPaymentTimer) clearTimeout(mockPaymentTimer);
   const mockPayment = new Promise<{ ok: boolean; cancelled: boolean; msg?: string }>((resolve) => {
@@ -138,7 +168,7 @@ function subscribe() {
       }
       uni.showModal({
         title: t("vip.subscribeSuccess"),
-        content: `${t("vip.subscribeSuccessContent", { name: selectedPlan.value?.name ?? "", period: selectedPlan.value?.period ?? "" })}`,
+        content: `${t("vip.subscribeSuccessContent", { name: planText(selectedPlan.value, selectedPlan.value?.nameKey, selectedPlan.value?.name ?? ""), period: planText(selectedPlan.value, selectedPlan.value?.periodKey, selectedPlan.value?.period ?? "") })}`,
         showCancel: false,
         confirmText: t("profile.gotIt"),
         success: () => {
@@ -216,7 +246,7 @@ async function toggleAutoRenew() {
       uni.showModal({
         title: t("vip.autoRenewConfirmTitle"),
         content: t("vip.autoRenewConfirmContent", {
-          plan: selectedPlan.value?.name ?? "",
+          plan: selectedPlan.value ? planText(selectedPlan.value, selectedPlan.value.nameKey, selectedPlan.value.name) : "",
           date: nextBillingDate.value,
         }),
         confirmText: t("vip.autoRenewConfirm"),
@@ -359,8 +389,8 @@ onMounted(() => {
           hover-stay-time="100"
         >
           <!-- 角标 -->
-          <view v-if="plan.badge" class="plan-card__badge">
-            <text class="plan-card__badge-text">{{ plan.badge }}</text>
+          <view v-if="plan.badge || plan.badgeKey" class="plan-card__badge">
+            <text class="plan-card__badge-text">{{ planText(plan, plan.badgeKey, plan.badge) }}</text>
           </view>
 
           <!-- 选中标记 -->
@@ -369,7 +399,7 @@ onMounted(() => {
           </view>
 
           <!-- 套餐名称 -->
-          <text class="plan-card__name">{{ plan.name }}</text>
+          <text class="plan-card__name">{{ planText(plan, plan.nameKey, plan.name) }}</text>
 
           <!-- 价格 -->
           <view class="plan-card__price-row">
@@ -381,10 +411,10 @@ onMounted(() => {
           <text v-if="plan.originalPrice" class="plan-card__original-price">¥{{ plan.originalPrice }}</text>
 
           <!-- 周期 -->
-          <text class="plan-card__period">{{ plan.period }}</text>
+          <text class="plan-card__period">{{ planText(plan, plan.periodKey, plan.period) }}</text>
 
           <!-- 每日均价 -->
-          <text v-if="plan.perDay" class="plan-card__per-day">{{ plan.perDay }}</text>
+          <text v-if="plan.perDay || plan.perDayKey" class="plan-card__per-day">{{ planText(plan, plan.perDayKey, plan.perDay) }}</text>
         </view>
       </view>
     </view>
@@ -410,7 +440,7 @@ onMounted(() => {
         </view>
         <switch
           :checked="autoRenewEnabled"
-          color="#FFD700"
+          :color="SWITCH_ACTIVE_COLOR"
           :disabled="autoRenewStore.updating"
           @change="toggleAutoRenew"
         />

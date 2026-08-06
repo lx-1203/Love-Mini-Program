@@ -2,6 +2,12 @@ spring:
   application:
     name: campus-love-api
   profiles:
+    # ⚠️ 警告（FIN-00062）：spring.profiles.default 仅在「未通过环境变量/启动参数指定
+    # profile」时生效。生产部署必须显式指定 real（如 SPRING_PROFILES_ACTIVE=real 或
+    # --spring.profiles.active=real），否则会以 mock 数据模式启动，造成：
+    #   1) 所有数据为内存 mock，重启即丢；
+    #   2) MockSecurityConfig 免真实认证（本地联调用），生产环境属严重安全风险。
+    # 默认值保留 mock 仅为本地开发便利，请勿依赖此默认值部署。
     default: mock
   # Multipart 文件上传配置：允许上传最大 50MB 的单文件、50MB 的整体请求
   # 与媒体上传校验逻辑（视频 ≤50MB）保持一致
@@ -116,11 +122,14 @@ springdoc:
   # OpenAPI 文档端点路径
   api-docs:
     path: /v3/api-docs
-    enabled: ${SWAGGER_UI_ENABLED:true}
+    # FIN-00063：默认关闭（原默认 true）。生产环境默认不暴露接口文档，
+    # 需要时显式设置 SWAGGER_UI_ENABLED=true（且 SecurityConfig 中 /v3/api-docs/** 仅 ADMIN 可访问）
+    enabled: ${SWAGGER_UI_ENABLED:false}
   # Swagger UI 配置
   swagger-ui:
     path: /swagger-ui.html
-    enabled: ${SWAGGER_UI_ENABLED:true}
+    # FIN-00063：默认关闭，与 api-docs 保持同步
+    enabled: ${SWAGGER_UI_ENABLED:false}
     # 启用 Try it out 按钮默认展开
     try-it-out-enabled: true
     # 接口排序按 HTTP method 顺序（GET → POST → PUT → DELETE）
@@ -195,6 +204,12 @@ app:
     # 默认值为官方文档地址，可通过环境变量 WECHAT_JSCODE2SESSION_URL 覆盖
     # （如需走内网代理或切换微信 API 域名）。
     jscode2session-url: ${WECHAT_JSCODE2SESSION_URL:https://api.weixin.qq.com/sns/jscode2session}
+  # infra R2-00010：Apple Sign in with Apple identityToken 验签配置
+  # - bundle-id：本应用的 Bundle ID / App ID（Apple Developer 后台创建，如 com.campuslove.app）
+  # - nonce：可选防重放随机数（前端生成并传入 identityToken，与后端配置一致才通过）
+  apple:
+    bundle-id: ${APPLE_BUNDLE_ID:}
+    nonce: ${APPLE_NONCE:}
   # SubTask 1.4.5：Agnes AI 视频/图片生成服务配置
   # - API Key 必须通过环境变量 AGNES_API_KEY 配置，禁止硬编码
   # - 缺失时调用 /api/ai/** 端点会返回 401 AI_API_UNAUTHORIZED，提示运营方补全
@@ -362,11 +377,12 @@ resilience4j:
       enabled: true
 
 # 文件存储配置（Task 9）
-# - upload-prefix：上传文件 URL 访问前缀，与 WebConfig 静态资源映射一致。
-#   原 VoiceMessageService 硬编码 "/uploads/"，已改为配置注入。
+# - upload-prefix：上传文件 URL 访问前缀，与 MediaAccessController 鉴权代理路由一致
+#   （infra R2-00013/security_review：原 /uploads/ 已被 SecurityConfig denyAll，
+#   语音 URL 改为 /api/v1/media/ 使上传即走鉴权代理，不再依赖前端重写兜底）
 # - base-dir：本地存储根目录，与 LocalMediaStorageService 共享语义。
 #   原 VoiceMessageService 使用 app.media.storage-root，已统一为本配置项。
 # 两者可通过环境变量 FILE_STORAGE_PREFIX / FILE_STORAGE_BASE_DIR 覆盖。
 file-storage:
-  upload-prefix: ${FILE_STORAGE_PREFIX:/uploads/}
+  upload-prefix: ${FILE_STORAGE_PREFIX:/api/v1/media/}
   base-dir: ${FILE_STORAGE_BASE_DIR:uploads}

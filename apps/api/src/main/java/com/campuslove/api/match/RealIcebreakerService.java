@@ -1,6 +1,7 @@
 package com.campuslove.api.match;
 
 import com.campuslove.api.entity.CircleMembership;
+import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.DailyAnswer;
 import com.campuslove.api.entity.HeartSignal;
 import com.campuslove.api.entity.IcebreakerTopic;
@@ -98,6 +99,15 @@ public class RealIcebreakerService implements IcebreakerService {
 
         Long userAId = signal.getUserAId();
         Long userBId = signal.getUserBId();
+
+        // infra R2-00255: 校验当前用户是匹配双方之一，防止枚举 matchId
+        // 获取匹配双方共同兴趣/学校等资料交集（间接隐私泄露）
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        boolean participant = (userAId != null && userAId.equals(currentUserId))
+                || (userBId != null && userBId.equals(currentUserId));
+        if (!participant) {
+            throw new com.campuslove.api.common.OperationForbiddenException("无权查看该匹配的破冰话题");
+        }
 
         // 复用 getMatchIcebreakers 的逻辑
         return getMatchIcebreakers(userAId, userBId);

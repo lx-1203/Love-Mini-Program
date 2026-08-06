@@ -45,6 +45,20 @@ public interface FeedbackService {
     SubmissionRecordView convertProposal(long proposalId);
 
     /**
+     * 管理员回复/标记反馈为已处理（infra R2-00023）。
+     *
+     * <p>将反馈状态推进至 REVIEWED 并记录回复摘要。供管理后台
+     * PUT /api/v1/admin/feedback/{id}/reply 端点调用。</p>
+     *
+     * @param id    反馈记录 ID
+     * @param reply 回复内容（非空）
+     * @return 更新后的提交记录视图（状态为 REVIEWED，latestReplySummary 已刷新）
+     * @throws NoSuchElementException 反馈不存在时抛出
+     * @throws IllegalArgumentException reply 为空时抛出
+     */
+    SubmissionRecordView replyFeedback(long id, String reply);
+
+    /**
      * 功能9：上传反馈图片附件。
      *
      * <p>校验规则：

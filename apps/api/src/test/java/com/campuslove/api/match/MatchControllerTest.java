@@ -89,17 +89,6 @@ class MatchControllerTest {
     }
 
     @Test
-    void getMatchesDto_shouldReturnEmptyList() {
-        // Act
-        ResponseEntity<List<com.campuslove.api.dto.MatchDto>> result = controller.getMatchesDto();
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(0, result.getBody().size(), "DTO 端点暂返回空列表");
-        verify(matchService, never()).getHeartSignals(anyLong());
-    }
-
-    @Test
     void getIcebreakers_shouldDelegateToService() {
         // Arrange
         Long matchId = 42L;

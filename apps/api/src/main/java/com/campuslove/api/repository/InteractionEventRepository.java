@@ -6,6 +6,9 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * 互动事件 Repository。
@@ -48,6 +51,17 @@ public interface InteractionEventRepository extends JpaRepository<InteractionEve
      * @return 未读互动事件列表
      */
     List<InteractionEvent> findByUserIdAndIsRead(Long userId, Boolean isRead);
+
+    /**
+     * 批量将指定用户的全部未读互动事件标记为已读（单条 UPDATE，避免全量加载后逐条 save）。
+     *
+     * @param userId 用户 ID
+     * @return 更新条数
+     */
+    @Modifying
+    @Query("UPDATE InteractionEvent e SET e.isRead = true "
+            + "WHERE e.userId = :userId AND e.isRead = false")
+    int markAllAsReadByUserId(@Param("userId") Long userId);
 
     /**
      * 统计指定时间之后发生的互动事件数（用于活跃度统计中的"互动数"指标）。

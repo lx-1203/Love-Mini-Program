@@ -53,7 +53,7 @@ public interface MediaStorageService {
      */
     class UploadResult {
 
-        /** 访问 URL（相对路径，如 /uploads/1/202607/uuid.jpg） */
+        /** 访问 URL（相对路径，如 /api/v1/media/1/202607/uuid.jpg） */
         private final String url;
 
         /** 图片/视频宽度（像素），无法识别时为 null */

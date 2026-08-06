@@ -15,6 +15,7 @@
  */
 
 import {
+  HEARTBEAT_CONSECUTIVE_TIMEOUT_LIMIT,
   HEARTBEAT_INTERVAL_MS,
   HEARTBEAT_PING_PAYLOAD,
   HEARTBEAT_TIMEOUT_MS,
@@ -33,6 +34,14 @@ export class HeartbeatManager {
 
   /** 心跳超时定时器（超时后触发重连） */
   private heartbeatTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * 连续心跳超时计数。
+   * infra R2-00126: 收到任何服务器消息（含 pong）时由 resetTimeout() 清零；
+   * 连续 HEARTBEAT_CONSECUTIVE_TIMEOUT_LIMIT 次超时才判定断线，
+   * 弱网单次丢包/延迟不再立即断开重连。
+   */
+  private consecutiveTimeouts = 0;
 
   /**
    * 启动心跳
@@ -59,16 +68,38 @@ export class HeartbeatManager {
         // 心跳发送异常，静默处理
       }
 
-      // 设置心跳超时检测：若 HEARTBEAT_TIMEOUT_MS 内未收到任何服务器消息，则判定为超时重连
-      // 注意：onSocketMessage 收到消息（含 pong）时会通过 resetTimeout 重置此定时器
-      if (this.heartbeatTimeoutTimer) {
-        clearTimeout(this.heartbeatTimeoutTimer);
-      }
-      this.heartbeatTimeoutTimer = setTimeout(() => {
-        console.warn("[WebSocket] 心跳超时，将重连");
-        onTimeout();
-      }, HEARTBEAT_TIMEOUT_MS);
+      // 设置心跳超时检测：若 HEARTBEAT_TIMEOUT_MS 内未收到任何服务器消息，
+      // 连续超时达到容错上限后判定为断线重连；
+      // 注意：onSocketMessage 收到消息（含 pong）时会通过 resetTimeout 重置此定时器。
+      this.armTimeout(onTimeout);
     }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  /**
+   * 启动一轮心跳超时检测。
+   *
+   * infra R2-00126: 超时后不立即断线——连续超时计数达到
+   * HEARTBEAT_CONSECUTIVE_TIMEOUT_LIMIT 才触发 onTimeout（断线重连），
+   * 单次超时仅输出告警并等待下一轮，兼容弱网抖动。
+   */
+  private armTimeout(onTimeout: () => void): void {
+    if (this.heartbeatTimeoutTimer) {
+      clearTimeout(this.heartbeatTimeoutTimer);
+      this.heartbeatTimeoutTimer = null;
+    }
+    this.heartbeatTimeoutTimer = setTimeout(() => {
+      this.heartbeatTimeoutTimer = null;
+      this.consecutiveTimeouts += 1;
+      if (this.consecutiveTimeouts >= HEARTBEAT_CONSECUTIVE_TIMEOUT_LIMIT) {
+        this.consecutiveTimeouts = 0;
+        console.warn("[WebSocket] 心跳连续超时，将重连");
+        onTimeout();
+      } else {
+        console.warn(
+          `[WebSocket] 心跳超时（${this.consecutiveTimeouts}/${HEARTBEAT_CONSECUTIVE_TIMEOUT_LIMIT}），等待下一轮`
+        );
+      }
+    }, HEARTBEAT_TIMEOUT_MS);
   }
 
   /**
@@ -87,6 +118,8 @@ export class HeartbeatManager {
       clearTimeout(this.heartbeatTimeoutTimer);
       this.heartbeatTimeoutTimer = null;
     }
+    // infra R2-00126: 停止心跳时清零连续超时计数，避免下次启动沿用旧计数
+    this.consecutiveTimeouts = 0;
   }
 
   /**
@@ -98,15 +131,9 @@ export class HeartbeatManager {
    * @param onTimeout - 心跳超时的回调（由业务层提供，内部触发重连）
    */
   resetTimeout(onTimeout: () => void): void {
-    if (this.heartbeatTimeoutTimer) {
-      clearTimeout(this.heartbeatTimeoutTimer);
-      this.heartbeatTimeoutTimer = null;
-    }
-    // 重新设置超时检测：若在 HEARTBEAT_TIMEOUT_MS 内未再收到任何消息，则判定为心跳超时
-    this.heartbeatTimeoutTimer = setTimeout(() => {
-      console.warn("[WebSocket] 心跳超时，将重连");
-      onTimeout();
-    }, HEARTBEAT_TIMEOUT_MS);
+    // infra R2-00126: 收到消息说明连接正常，清零连续超时计数
+    this.consecutiveTimeouts = 0;
+    this.armTimeout(onTimeout);
   }
 }
 

@@ -9,9 +9,12 @@ import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import BaseTabs from "../../components/common/BaseTabs.vue";
+// 断链修复（review #20）：跳转 village 详情前校验帖子存在性
+import { useVillageStore } from "../../stores/village";
 
 /** Task 28：i18n 文案 */
 const { t } = useI18n();
+const villageStore = useVillageStore();
 
 /** 点赞动画定时器集合，用于卸载时统一清理 */
 const likeAnimTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -34,10 +37,25 @@ const tabs = computed(() => [
 ]);
 const activeTab = ref<string>("recommend");
 
+/**
+ * 修复（review #19）：Tab 切换增加真实过滤逻辑，不再五个 Tab 相同内容。
+ * - recommend：全部帖子
+ * - following：仅已关注作者的帖子
+ * - campus / love / treehole：按帖子 tab 分类过滤
+ */
+const filteredPosts = computed(() => {
+  if (activeTab.value === "recommend") return posts.value;
+  if (activeTab.value === "following") {
+    return posts.value.filter((p) => p.isFollowing);
+  }
+  return posts.value.filter((p) => p.tab === activeTab.value);
+});
+
 // 帖子数据（模拟）- 增加时间、收藏状态
 const posts = ref([
   {
     id: "1",
+    tab: "campus",
     avatar: "/static/default-avatar.png",
     nickname: "小明",
     school: "北京大学",
@@ -58,6 +76,7 @@ const posts = ref([
   },
   {
     id: "2",
+    tab: "campus",
     avatar: "/static/default-avatar.png",
     nickname: "小红",
     school: "清华大学",
@@ -78,6 +97,7 @@ const posts = ref([
   },
   {
     id: "3",
+    tab: "treehole",
     avatar: "/static/default-avatar.png",
     nickname: "阿杰",
     school: "复旦大学",
@@ -98,6 +118,7 @@ const posts = ref([
   },
   {
     id: "4",
+    tab: "love",
     avatar: "/static/default-avatar.png",
     nickname: "小甜甜",
     school: "浙江大学",
@@ -162,9 +183,19 @@ function goToPost() {
   openAppPath("/pages/circles/post-topic");
 }
 
-/** 帖子卡片点击（收尾轮：跳转村口对应帖子详情，不再 toast 占位；detail 页消费 query.id） */
-function handleCardTap(postId: string) {
+/**
+ * 帖子卡片点击。
+ * 断链修复（review #20）：本地 mock 帖子 id（1~4）在 village store 中不存在，
+ * 直接跳详情会显示"帖子不存在"。改为先 setCurrentPost 校验存在性，
+ * 不存在则 toast 提示。TODO(后端): circle 页接入真实帖子数据源后移除该校验。
+ */
+async function handleCardTap(postId: string) {
   lightHaptic();
+  await villageStore.setCurrentPost(postId);
+  if (!villageStore.currentPost) {
+    uni.showToast({ title: t("village.detail.postNotExist"), icon: "none" });
+    return;
+  }
   openAppPath(`/pages/village/detail?id=${encodeURIComponent(postId)}`);
 }
 
@@ -208,7 +239,7 @@ defineExpose({ toggleLike, toggleFollow, toggleCollect, handleShare });
     <!-- 帖子列表 -->
     <scroll-view scroll-y class="circle-scroll">
       <view class="post-list" role="list">
-        <view v-for="(post, index) in posts" :key="post.id" class="post-card" :style="{ animationDelay: index * 80 + 'ms' }" @tap="handleCardTap(post.id)" role="listitem">
+        <view v-for="(post, index) in filteredPosts" :key="post.id" class="post-card" :style="{ animationDelay: index * 80 + 'ms' }" @tap="handleCardTap(post.id)" role="listitem">
           <!-- 用户信息头部 -->
           <view class="post-card__header">
             <view class="post-card__user">
@@ -226,7 +257,7 @@ defineExpose({ toggleLike, toggleFollow, toggleCollect, handleShare });
             <view
               class="post-card__follow"
               :class="{ 'post-card__follow--active': post.isFollowing }"
-  @tap.stop="toggleFollow(post.id)"
+  catchtap="toggleFollow(post.id)"
             >
               <text class="post-card__follow-text">{{ post.isFollowing ? $t('circle.followedBtn') : $t('circle.followBtn') }}</text>
             </view>

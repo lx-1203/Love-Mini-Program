@@ -33,6 +33,7 @@ public class TempChatController {
   }
 
   @GetMapping("/{id}")
+  @PreAuthorize("hasRole('USER')")
   public TempChatSessionView getSession(@PathVariable("id") String id) {
     return tempChatService.getSession(id);
   }

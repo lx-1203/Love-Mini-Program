@@ -48,6 +48,8 @@ export interface AuditLogQuery {
   operation?: string;
   startDate?: string;
   endDate?: string;
+  /** 仅查异常日志（errorMessage 非空），true 时生效 */
+  exception?: boolean;
 }
 
 /** 操作类型枚举（与后端 AuditOperation 对齐，用于前端筛选下拉） */
@@ -68,6 +70,9 @@ export const AUDIT_OPERATIONS: { value: string; labelKey: string }[] = [
   { value: "UPDATE_NOTIFY_CONFIG", labelKey: "auditLogs.opUpdateNotifyConfig" },
   { value: "ADD_SENSITIVE_WORD", labelKey: "auditLogs.opAddSensitiveWord" },
   { value: "DELETE_SENSITIVE_WORD", labelKey: "auditLogs.opDeleteSensitiveWord" },
+  { value: "CHANGE_PASSWORD", labelKey: "auditLogs.opChangePassword" },
+  { value: "CREATE_USER", labelKey: "auditLogs.opCreateUser" },
+  { value: "KICK_ONLINE_USER", labelKey: "auditLogs.opKickOnlineUser" },
 ];
 
 /** 分页查询审计日志 */
@@ -79,5 +84,6 @@ export function listAuditLogs(query: AuditLogQuery = {}) {
     operation: query.operation,
     startDate: query.startDate,
     endDate: query.endDate,
+    exception: query.exception,
   });
 }

@@ -32,6 +32,18 @@ import {
 } from "./constants";
 
 /**
+ * 重连管理器配置项。
+ */
+export interface ReconnectManagerOptions {
+  /**
+   * 重连次数耗尽（达到 MAX_RECONNECT_ATTEMPTS）时触发的最终降级回调。
+   * infra R2-00125: 由业务层传入，用于输出用户/运维可见的提示
+   * （替代“永久静默断线”），并可引导用户手动重试。
+   */
+  onExhausted?: () => void;
+}
+
+/**
  * 重连管理器
  *
  * 封装重连次数计数与重连定时器的生命周期管理。
@@ -44,6 +56,13 @@ export class ReconnectManager {
 
   /** 重连定时器 */
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** 重连次数耗尽回调（infra R2-00125） */
+  private readonly onExhausted?: () => void;
+
+  constructor(options: ReconnectManagerOptions = {}) {
+    this.onExhausted = options.onExhausted;
+  }
 
   /**
    * 获取当前重连次数
@@ -98,6 +117,9 @@ export class ReconnectManager {
   schedule(onReconnect: () => void): boolean {
     if (this.attempts >= MAX_RECONNECT_ATTEMPTS) {
       console.error("[WebSocket] 已达最大重连次数，停止重连");
+      // infra R2-00125: 通知业务层做最终降级提示（默认实现为输出告警），
+      // 避免“永久静默断线”后用户无感知。
+      this.onExhausted?.();
       return false;
     }
 

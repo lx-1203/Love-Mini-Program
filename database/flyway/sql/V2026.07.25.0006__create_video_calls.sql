@@ -28,10 +28,10 @@
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS `video_calls` (
-    `id`            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键 ID',
+    `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键 ID',
     `room_id`       VARCHAR(64)  NOT NULL COMMENT '通话房间 ID（WebRTC 房间号，全局唯一）',
-    `caller_id`     BIGINT       NOT NULL COMMENT '发起方用户 ID',
-    `callee_id`     BIGINT       NOT NULL COMMENT '接收方用户 ID',
+    `caller_id`     BIGINT UNSIGNED NOT NULL COMMENT '发起方用户 ID',
+    `callee_id`     BIGINT UNSIGNED NOT NULL COMMENT '接收方用户 ID',
     `status`        VARCHAR(16)  NOT NULL DEFAULT 'RINGING' COMMENT '通话状态：RINGING/ONGOING/ENDED/MISSED/REJECTED',
     `started_at`    DATETIME     NULL COMMENT '通话开始时间（接听时刻）',
     `ended_at`      DATETIME     NULL COMMENT '通话结束时间（挂断时刻）',

@@ -1,9 +1,15 @@
 # ============================================================
-# MySQL 定时备份 crontab（Task 8.3.1）
+# MySQL 定时备份 crontab 参考（Task 8.3.1）
 # ============================================================
+# ⚠️ 2026-08-05 起本文件不再挂载到容器（infra #20）：
+#   docker-compose.yml 中 backup 服务的启动命令会根据 BACKUP_CRON 环境变量
+#   动态生成 /etc/crontabs/backup，因此修改 BACKUP_CRON 无需重建镜像：
+#     docker compose --profile backup up -d   # 读取 .env 中的 BACKUP_CRON
+#   本文件仅作为默认值（每天凌晨 2:00）与格式参考。
+#
 # cron 表达式格式：分 时 日 月 周 命令
-# 默认：每天凌晨 2:00 执行备份（与 BACKUP_CRON 环境变量对齐）
-# ============================================================
+# 默认：每天凌晨 2:00 执行备份（与 BACKUP_CRON 环境变量默认值对齐）
+#
 # 路径说明（Task 24 修复）：
 #   docker-compose.yml 中 backup 服务将宿主脚本挂载至 /backup.sh：
 #     - ./scripts/backup-mysql.sh:/backup.sh:ro

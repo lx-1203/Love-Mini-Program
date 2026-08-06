@@ -8,6 +8,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * 敏感词 Repository。
@@ -26,6 +28,15 @@ public interface SensitiveWordRepository extends JpaRepository<SensitiveWord, Lo
      * @return 是否存在
      */
     boolean existsByWordIgnoreCase(String word);
+
+    /**
+     * 批量查询已存在的敏感词（大小写不敏感，用于批量导入去重，避免逐词 exists 查询）。
+     *
+     * @param lowerWords 小写化后的词列表
+     * @return 已存在的小写敏感词列表
+     */
+    @Query("SELECT LOWER(w.word) FROM SensitiveWord w WHERE LOWER(w.word) IN :words")
+    List<String> findExistingWordsIgnoreCase(@Param("words") List<String> lowerWords);
 
     /**
      * 按敏感词文本查找（用于去重校验）。

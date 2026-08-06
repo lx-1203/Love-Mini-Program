@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm run:*)",
+      "Bash(where node:*)",
+      "Bash(pnpm -v)",
+      "Read(//c/Program Files/**)",
+      "Read(//d/codex-tools/**)",
+      "Bash(\"D:/codex-tools/node-v20.19.5-win-x64/node.exe\" -v)",
+      "Bash(export PATH=\"D:/codex-tools/node-v20.19.5-win-x64:$PATH\")",
+      "Bash(\"D:/codex-tools/node-v20.19.5-win-x64/pnpm.cmd\" -v)",
+      "Bash(\"D:/codex-tools/node-v20.19.5-win-x64/node.exe\" \"D:/codex-tools/node-v20.19.5-win-x64/node_modules/pnpm/bin/pnpm.cjs\" -v)",
+      "Bash(\"D:/codex-tools/node-v20.19.5-win-x64/node.exe\" -p \"process.version + ' | ' + process.execPath\")",
+      "Bash(\"D:/codex-tools/node-v20.19.5-win-x64/node.exe\" \"D:/codex-tools/node-v20.19.5-win-x64/node_modules/corepack/dist/corepack.js\" --version)",
+      "Bash(\"D:/codex-tools/node-v20.19.5-win-x64/node.exe\" \"D:/codex-tools/node-v20.19.5-win-x64/node_modules/corepack/dist/corepack.js\" prepare pnpm@9.15.4 --activate)",
+      "Bash(\"D:/codex-tools/node-v20.19.5-win-x64/node.exe\" \"D:/codex-tools/node-v20.19.5-win-x64/node_modules/corepack/dist/corepack.js\" pnpm -v)",
+      "Bash(D:/codex-tools/node-v20.19.5-win-x64/node.exe __TRACKED_VAR__/AppData/Local/node/corepack/v1/pnpm/9.15.4/bin/pnpm.cjs -v)",
+      "Bash(grep -oE \"VITE_SHOWCASE_MODE[^,;\\)]{0,20}\" app.js)",
+      "Bash(grep -roE \"VITE_SHOWCASE_MODE[^,;\\)]{0,25}\" --include=*.js .)",
+      "Bash(grep -roE \"VITE_SHOWCASE_MODE[^,;\\)]{0,20}\" config/showcase.js)",
+      "Bash(ls src/main/resources/application*.yml)",
+      "Bash(ls apps/api/mvnw*)",
+      "Bash(./mvnw -q compile -DskipTests)",
+      "Bash(grep -l \"wallet\" database/flyway/sql/*.sql)",
+      "Bash(./mvnw -q test -Dtest=\"Wallet*Test\")",
+      "Bash(./mvnw test:*)",
+      "Bash(D:/codex-tools/node-v20.19.5-win-x64/node.exe __TRACKED_VAR__/AppData/Local/node/corepack/v1/pnpm/9.15.4/bin/pnpm.cjs run typecheck)",
+      "Bash(D:/codex-tools/node-v20.19.5-win-x64/node.exe __TRACKED_VAR__/AppData/Local/node/corepack/v1/pnpm/9.15.4/bin/pnpm.cjs run test:unit)",
+      "Bash(export PATH=\"/d/codex-tools/node-v20.19.5-win-x64:$PATH\")",
+      "Bash(D:/codex-tools/node-v20.19.5-win-x64/node.exe __TRACKED_VAR__/AppData/Local/node/corepack/v1/pnpm/9.15.4/bin/pnpm.cjs run build:mp-weixin:showcase)"
+    ]
+  }
+}

@@ -23,6 +23,52 @@
 export type SupportedLocale = "zh-CN" | "en-US";
 
 /**
+ * 相对时间文案表（infra R2-00129）。
+ *
+ * 原实现直接在 formatRelativeTime 内硬编码中文/英文文案，现抽为具名常量表集中维护：
+ * - 行为与原先完全一致（zh 兜底中文、en 英文）；
+ * - 后续接入完整 i18n 时，仅需将本表替换为 t() 调用，调用方无需改动。
+ */
+const RELATIVE_TIME_TEXT: Record<
+  SupportedLocale,
+  {
+    justNow: string;
+    minute: (n: number) => string;
+    hour: (n: number) => string;
+    day: (n: number) => string;
+  }
+> = {
+  "zh-CN": {
+    justNow: "刚刚",
+    minute: (n) => `${n} 分钟前`,
+    hour: (n) => `${n} 小时前`,
+    day: (n) => `${n} 天前`,
+  },
+  "en-US": {
+    justNow: "just now",
+    minute: (n) => `${n} minute${n === 1 ? "" : "s"} ago`,
+    hour: (n) => `${n} hour${n === 1 ? "" : "s"} ago`,
+    day: (n) => `${n} day${n === 1 ? "" : "s"} ago`,
+  },
+};
+
+/**
+ * 聊天列表“昨天”文案表（infra R2-00129）。
+ */
+const CHAT_LIST_YESTERDAY_TEXT: Record<SupportedLocale, string> = {
+  "zh-CN": "昨天",
+  "en-US": "Yesterday",
+};
+
+/**
+ * 聊天列表星期文案表（infra R2-00129），索引与 Date.getDay() 对齐（0=周日）。
+ */
+const CHAT_LIST_WEEKDAYS_TEXT: Record<SupportedLocale, readonly string[]> = {
+  "zh-CN": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+  "en-US": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+};
+
+/**
  * 默认 locale：简体中文。
  *
  * 与 i18n/index.ts 中 createI18n({ locale: 'zh-CN' }) 保持一致。
@@ -239,36 +285,38 @@ export function formatRelativeTime(
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  // 中文相对时间文案
+  // 相对时间文案统一走具名常量表（infra R2-00129）
   if (normalizedLocale === "zh-CN") {
+    const zh = RELATIVE_TIME_TEXT["zh-CN"];
     if (diffSec < 60) {
-      return "刚刚";
+      return zh.justNow;
     }
     if (diffMin < 60) {
-      return `${diffMin} 分钟前`;
+      return zh.minute(diffMin);
     }
     if (diffHour < 24) {
-      return `${diffHour} 小时前`;
+      return zh.hour(diffHour);
     }
     if (diffDay < 7) {
-      return `${diffDay} 天前`;
+      return zh.day(diffDay);
     }
     // ≥ 7 天回退到绝对日期
     return formatDateTime(date, "date", "zh-CN");
   }
 
-  // 英文相对时间文案
+  // 英文相对时间文案（infra R2-00129）
+  const en = RELATIVE_TIME_TEXT["en-US"];
   if (diffSec < 60) {
-    return "just now";
+    return en.justNow;
   }
   if (diffMin < 60) {
-    return `${diffMin} minute${diffMin === 1 ? "" : "s"} ago`;
+    return en.minute(diffMin);
   }
   if (diffHour < 24) {
-    return `${diffHour} hour${diffHour === 1 ? "" : "s"} ago`;
+    return en.hour(diffHour);
   }
   if (diffDay < 7) {
-    return `${diffDay} day${diffDay === 1 ? "" : "s"} ago`;
+    return en.day(diffDay);
   }
   return formatDateTime(date, "date", "en-US");
 }
@@ -354,34 +402,32 @@ export function formatChatListTime(
   const inputDateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const diffDays = Math.floor((todayStart - inputDateStart) / (24 * 60 * 60 * 1000));
 
-  // 中文
+  // 中文（infra R2-00129: 文案走具名常量表）
   if (normalizedLocale === "zh-CN") {
     if (diffDays === 0) {
       // 当天，显示时间
       return formatDateTime(date, "time", "zh-CN");
     }
     if (diffDays === 1) {
-      return "昨天";
+      return CHAT_LIST_YESTERDAY_TEXT["zh-CN"];
     }
     if (diffDays > 0 && diffDays < 7) {
       // 本周内，显示星期几
-      const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-      return weekdays[date.getDay()] ?? "";
+      return CHAT_LIST_WEEKDAYS_TEXT["zh-CN"][date.getDay()] ?? "";
     }
     // 更早，显示日期
     return formatDateTime(date, "date", "zh-CN");
   }
 
-  // 英文
+  // 英文（infra R2-00129）
   if (diffDays === 0) {
     return formatDateTime(date, "time", "en-US");
   }
   if (diffDays === 1) {
-    return "Yesterday";
+    return CHAT_LIST_YESTERDAY_TEXT["en-US"];
   }
   if (diffDays > 0 && diffDays < 7) {
-    const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    return weekdays[date.getDay()] ?? "";
+    return CHAT_LIST_WEEKDAYS_TEXT["en-US"][date.getDay()] ?? "";
   }
   return formatDateTime(date, "date", "en-US");
 }

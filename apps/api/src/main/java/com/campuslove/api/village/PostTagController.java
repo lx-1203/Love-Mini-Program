@@ -2,6 +2,8 @@ package com.campuslove.api.village;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -48,7 +50,8 @@ public class PostTagController {
      */
     @GetMapping("/posts")
     public ResponseEntity<List<PostSummaryView>> getPostsByTag(
-            @RequestParam(name = "tagName") String tagName,
+            @RequestParam(name = "tagName")
+            @NotBlank(message = "tagName 不能为空") @Size(max = 32, message = "tagName 长度不能超过 32") String tagName,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
         List<PostSummaryView> posts = postTagService.getPostsByTag(tagName, page, size);

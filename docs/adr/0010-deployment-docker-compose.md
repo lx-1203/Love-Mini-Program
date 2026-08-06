@@ -173,7 +173,7 @@
 | grafana | grafana/grafana | 公网 3001 | `grafana-data` |
 | alertmanager | prom/alertmanager | 内网 9093 | `alertmanager-data` |
 | node-exporter | prom/node-exporter | 内网 9100 | - |
-| backup | 自构建（cron）| - | `mysql-backup` |
+| backup | 自构建（cron）| - | `backup` |
 
 ### 3. 网络架构
 
@@ -191,7 +191,7 @@
 
 ### 4. 数据持久化
 
-- **MySQL**：named volume `mysql-data`，每日 02:00 备份至 `mysql-backup` 卷并 rsync 至异地
+- **MySQL**：named volume `mysql-data`，每日 02:00 备份至 `backup` 卷并 rsync 至异地
 - **Redis**：named volume `redis-data`，AOF 持久化（`appendonly yes`）
 - **Prometheus**：named volume `prometheus-data`，保留 30 天
 - **Grafana**：named volume `grafana-data`，含 dashboard 配置

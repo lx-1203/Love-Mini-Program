@@ -1,6 +1,7 @@
 package com.campuslove.api.repository;
 
 import com.campuslove.api.entity.Report;
+import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,4 +29,13 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             @Param("status") String status,
             @Param("targetType") String targetType,
             Pageable pageable);
+
+    /**
+     * 统计指定举报人自指定时间起的举报数（用于每日限额校验）。
+     *
+     * @param reporterId 举报人用户 ID
+     * @param since      起始时间（含）
+     * @return 举报数
+     */
+    long countByReporterIdAndCreatedAtAfter(Long reporterId, LocalDateTime since);
 }

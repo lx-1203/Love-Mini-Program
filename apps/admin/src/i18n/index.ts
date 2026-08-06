@@ -55,13 +55,20 @@ export const t = i18n.global.t;
 /**
  * 切换当前 locale。
  *
- * 用于在用户切换语言时同步更新 i18n.global.locale.value。
- * 后续可扩展为同步持久化到 localStorage，便于下次启动恢复用户选择。
+ * 调用方：App.vue 顶部语言切换下拉（zh-CN / en-US）。
+ * 注意：该函数是 en-US 资源唯一的入口——en-US 为预留资源，
+ * 若后续不再提供语言切换入口，需同步移除 en-US 资源或保留默认 zh-CN。
  *
  * @param locale - 目标 locale，目前支持 'zh-CN' / 'en-US'
  */
 export function setLocale(locale: "zh-CN" | "en-US"): void {
   i18n.global.locale.value = locale;
+  // 持久化用户选择，下次启动恢复
+  try {
+    localStorage.setItem("admin_locale", locale);
+  } catch {
+    // localStorage 不可用（隐私模式等）时静默降级，不阻塞切换
+  }
 }
 
 /**

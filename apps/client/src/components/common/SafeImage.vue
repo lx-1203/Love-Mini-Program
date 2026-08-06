@@ -26,7 +26,7 @@
       :class="['safe-image__img', 'safe-image__img--fallback', customClass]"
       :style="customStyle"
       @error="onFallbackError"
-      @load="onLoad"
+      @load="onFallbackLoad"
     />
     <!-- fallback 也失败时显示纯色占位背景 -->
     <view v-else class="safe-image__placeholder" :class="customClass" :style="customStyle" />
@@ -79,6 +79,14 @@ const displaySrc = ref(resolveMediaUrl(props.src));
 const retryCount = ref(0);
 /** fallback 是否也加载失败 */
 const allFailed = ref(false);
+/**
+ * fallback 是否已加载成功（修复 P1 BUG：防无限循环）。
+ * 原实现 fallback 的 @load 也绑定 onLoad，而 onLoad 会重置 hasError=false，
+ * 导致「原图失败 → 切 fallback → fallback 加载成功 → 重置 hasError → 切回原图
+ * → 原图再次失败 → 再切 fallback」无限循环。现用独立标志区分：fallback 加载
+ * 成功只标记 fallbackLoaded，绝不重置 hasError。
+ */
+const fallbackLoaded = ref(false);
 
 /**
  * Task 0.3.4：将 fallback prop 经 resolveMediaUrl 处理后使用。
@@ -95,6 +103,7 @@ watch(() => props.src, (newSrc) => {
   displaySrc.value = resolveMediaUrl(newSrc);
   retryCount.value = 0;
   allFailed.value = false;
+  fallbackLoaded.value = false;
 });
 
 /** 原 src 加载失败：未达重试上限时重试，达到上限才降级到 fallback */
@@ -125,10 +134,19 @@ function onFallbackError() {
   isLoading.value = false;
 }
 
+/** fallback 加载成功：仅标记 fallbackLoaded，不重置 hasError（避免与原图无限循环切换） */
+function onFallbackLoad() {
+  fallbackLoaded.value = true;
+  allFailed.value = false;
+  isLoading.value = false;
+}
+
+/** 原图加载成功：重置全部错误状态 */
 function onLoad() {
   hasError.value = false;
   isLoading.value = false;
   allFailed.value = false;
+  fallbackLoaded.value = false;
 }
 </script>
 

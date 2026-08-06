@@ -22,7 +22,10 @@ public enum AuditOperation {
     UPDATE_RECOMMEND_STRATEGY("更新推荐策略"),
     UPDATE_NOTIFY_CONFIG("更新通知配置"),
     ADD_SENSITIVE_WORD("新增敏感词"),
-    DELETE_SENSITIVE_WORD("删除敏感词");
+    DELETE_SENSITIVE_WORD("删除敏感词"),
+    CHANGE_PASSWORD("修改密码"),
+    CREATE_USER("新增用户"),
+    KICK_ONLINE_USER("强制下线在线用户");
 
     private final String description;
 

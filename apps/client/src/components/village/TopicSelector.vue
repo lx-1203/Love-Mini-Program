@@ -69,13 +69,25 @@ const filteredTopics = computed<PopularTopic[]>(() => {
 });
 
 /**
+ * 话题展示文案：优先经 nameKey 走 t() 翻译（支持多语言），
+ * name 中文值保留用于搜索过滤/去重匹配，不参与展示。
+ */
+function topicLabel(topic: { name: string; nameKey?: string }): string {
+  return topic.nameKey ? t(topic.nameKey) : topic.name;
+}
+
+/**
  * 已选话题的展示信息（用于顶部已选区渲染）。
  */
 const selectedTopics = computed(() => {
-  return props.modelValue.map((name) => ({
-    name,
-    usageCount: popularTopics.find((p) => p.name === name)?.usageCount,
-  }));
+  return props.modelValue.map((name) => {
+    const preset = popularTopics.find((p) => p.name === name);
+    return {
+      name,
+      nameKey: preset?.nameKey,
+      usageCount: preset?.usageCount,
+    };
+  });
 });
 
 /**
@@ -206,7 +218,7 @@ function clearAll(): void {
           hover-stay-time="100"
           @tap="removeTopic(topic.name)"
         >
-          <text class="topic-chip__text">#{{ topic.name }}</text>
+          <text class="topic-chip__text">#{{ topicLabel(topic) }}</text>
           <text class="topic-chip__remove">×</text>
         </view>
       </view>
@@ -221,7 +233,7 @@ function clearAll(): void {
         v-model="searchKeyword"
         class="topic-selector__search-input"
         :placeholder="t('topicSelector.searchPlaceholder')"
-        placeholder-class="topic-selector__search-placeholder" aria-label="t('topicSelector.searchPlaceholder')"
+        placeholder-class="topic-selector__search-placeholder" :aria-label="t('topicSelector.searchPlaceholder')"
       />
     </view>
 
@@ -240,7 +252,7 @@ function clearAll(): void {
           hover-stay-time="100"
           @tap="toggleTopic(topic.name)"
         >
-          <text class="topic-chip__text">#{{ topic.name }}</text>
+          <text class="topic-chip__text">#{{ topicLabel(topic) }}</text>
           <text class="topic-chip__count">{{ topic.usageCount }}</text>
         </view>
       </view>
@@ -257,7 +269,7 @@ function clearAll(): void {
           v-model="customTopicInput"
           class="topic-selector__create-input"
           :placeholder="t('topicSelector.createTopicPlaceholder')"
-          placeholder-class="topic-selector__search-placeholder" aria-label="t('topicSelector.createTopicPlaceholder')"
+          placeholder-class="topic-selector__search-placeholder" :aria-label="t('topicSelector.createTopicPlaceholder')"
         />
         <view
           class="topic-selector__create-btn press-feedback"

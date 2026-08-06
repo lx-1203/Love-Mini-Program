@@ -1,13 +1,16 @@
 package com.campuslove.api.vip;
 
 import com.campuslove.api.entity.User;
+import com.campuslove.api.entity.VipBill;
 import com.campuslove.api.entity.VipBillingLog;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.VipBillingLogRepository;
+import com.campuslove.api.repository.VipBillRepository;
 import com.campuslove.api.wallet.InsufficientBalanceException;
 import com.campuslove.api.wallet.WalletService;
 import com.campuslove.api.wallet.WalletTransactionLog;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.redisson.api.RLock;
@@ -62,8 +65,23 @@ public class AutoRenewService {
     /** 默认续费金额（分）：1990 分 = 19.90 元（月度套餐） */
     private static final int DEFAULT_RENEW_AMOUNT_CENTS = 1990;
 
+    /**
+     * 续费对应权益时长（天）：30 天（月度套餐）。
+     * FIN HIGH-10：扣款成功后按此天数延长 VIP 到期时间（vip_bills.period_end）。
+     */
+    private static final int RENEW_PERIOD_DAYS = 30;
+
     private final UserRepository userRepository;
     private final VipBillingLogRepository vipBillingLogRepository;
+    /**
+     * VIP 账单 Repository（FIN HIGH-10 新增）。
+     *
+     * <p>用于扣款成功后延长 {@code vip_bills.period_end}（VIP 有效期结束时间）。
+     * 使用 {@code @Autowired(required = false)} 字段注入：
+     * 保持 4 参数构造器向后兼容（单元测试直接 new 时不注入，此时权益延长降级为仅日志）。</p>
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private VipBillRepository vipBillRepository;
     private final RedissonClient redissonClient;
     /**
      * Task 2（FIN-00003）：钱包服务，用于真实扣减用户余额。
@@ -217,6 +235,7 @@ public class AutoRenewService {
      * @return 续费结果视图（含订单号、金额、状态）
      * @throws IllegalArgumentException 用户 ID 为空、用户不存在或未开启自动续费时抛出
      */
+    @Transactional
     public RenewResultView renewVip(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("用户 ID 不能为空");
@@ -274,7 +293,15 @@ public class AutoRenewService {
                 log.info("自动续费扣款成功：userId={}, orderNo={}, amount={}, balanceAfter={}",
                         userId, orderNo, DEFAULT_RENEW_AMOUNT_CENTS, balanceAfter);
 
-                // 4. 写入续费流水（SUCCESS）
+                // 4. 修复（FIN HIGH-10）：扣款成功后真正延长 VIP 到期时间。
+                //    项目未在 User 实体上定义 vipExpiresAt 字段（实体无该列，DB ddl-auto=validate
+                //    不允许凭空新增），VIP 有效期结束时间以 vip_bills.period_end 为准
+                //    （见 VipBill 实体注释 "VIP 有效期结束时间"）。
+                //    规则：取 max(当前时间, 最近一笔 SUCCESS 账单的 periodEnd) + 30 天，
+                //    保证续费在已有权益基础上顺延，不会因续费时间点而丢失剩余天数。
+                extendVipExpiry(userId, orderNo);
+
+                // 5. 写入续费流水（SUCCESS）
                 writeBillingLog(userId, orderNo, DEFAULT_RENEW_AMOUNT_CENTS, "SUCCESS");
                 return new RenewResultView(orderNo, DEFAULT_RENEW_AMOUNT_CENTS, "SUCCESS", null);
             } catch (InsufficientBalanceException e) {
@@ -307,6 +334,77 @@ public class AutoRenewService {
                     log.debug("锁已被自动释放：userId={}, lockKey={}", userId, lockKey);
                 }
             }
+        }
+    }
+
+    /**
+     * 延长用户 VIP 到期时间（FIN HIGH-10）。
+     *
+     * <p>扣款成功后调用：在最近一笔 SUCCESS 账单的 periodEnd（无则当前时间）基础上
+     * 顺延 {@value #DEFAULT_RENEW_AMOUNT_CENTS} 分对应的 30 天（月度套餐）。
+     * VIP 有效期结束时间以 {@code vip_bills.period_end} 为准（User 实体未定义
+     * vipExpiresAt 字段，见 {@link com.campuslove.api.entity.VipBill} 注释）。</p>
+     *
+     * @param userId  用户 ID
+     * @param orderNo 本次续费订单号（用于日志与兜底建单）
+     */
+    private void extendVipExpiry(Long userId, String orderNo) {
+        // 兼容：单元测试直接 new 构造器时不注入 vipBillRepository，降级为仅日志
+        if (vipBillRepository == null) {
+            log.debug("vipBillRepository 未注入，跳过 VIP 到期时间延长（仅测试/降级场景）: userId={}", userId);
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime newExpiry = now.plusDays(RENEW_PERIOD_DAYS);
+
+        // 优先基于最近一笔 SUCCESS 账单顺延，避免丢失剩余权益天数
+        List<VipBill> bills = vipBillRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        if (bills == null) {
+            bills = List.of();
+        }
+        for (VipBill bill : bills) {
+            if ("SUCCESS".equals(bill.getStatus()) && bill.getPeriodEnd() != null) {
+                if (bill.getPeriodEnd().isAfter(now)) {
+                    newExpiry = bill.getPeriodEnd().plusDays(RENEW_PERIOD_DAYS);
+                }
+                break;
+            }
+        }
+
+        // 有最近一笔 SUCCESS 账单则更新其 periodEnd，否则创建一笔 RENEW 账单记录权益。
+        // 修复（R2 review MED）：target 必须选 SUCCESS 账单——旧实现取最新账单，
+        // 若最新账单为 FAILED（如余额不足记录）会把续费权益写错对象。
+        VipBill target = null;
+        for (VipBill bill : bills) {
+            if ("SUCCESS".equals(bill.getStatus())) {
+                target = bill;
+                break;
+            }
+        }
+        if (target != null) {
+            target.setPeriodEnd(newExpiry);
+            if (target.getPeriodStart() == null) {
+                target.setPeriodStart(now);
+            }
+            vipBillRepository.save(target);
+            log.info("VIP 到期时间已延长：userId={}, newExpiry={}, billId={}", userId, newExpiry, target.getId());
+        } else {
+            VipBill newBill = new VipBill();
+            newBill.setUserId(userId);
+            newBill.setPlanId("monthly");
+            newBill.setPlanName("月度会员");
+            newBill.setAmount(DEFAULT_RENEW_AMOUNT_CENTS);
+            newBill.setOriginalAmount(DEFAULT_RENEW_AMOUNT_CENTS);
+            newBill.setType("RENEW");
+            newBill.setStatus("SUCCESS");
+            newBill.setPaymentMethod("WALLET");
+            newBill.setTransactionId(orderNo);
+            newBill.setPeriodStart(now);
+            newBill.setPeriodEnd(newExpiry);
+            newBill.setRemark("自动续费扣款成功，开通/延长 VIP");
+            newBill.setCreatedAt(now);
+            vipBillRepository.save(newBill);
+            log.info("VIP 权益账单已创建：userId={}, newExpiry={}", userId, newExpiry);
         }
     }
 

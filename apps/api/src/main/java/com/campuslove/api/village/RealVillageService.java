@@ -56,6 +56,11 @@ public class RealVillageService implements VillageService {
     }
 
     @Override
+    public PostListResponse getPostsByAuthor(Long authorId, int page, int pageSize) {
+        return queryService.getPostsByAuthor(authorId, page, pageSize);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public PostDetailView getPostDetail(Long id) {
         return queryService.getPost(id);

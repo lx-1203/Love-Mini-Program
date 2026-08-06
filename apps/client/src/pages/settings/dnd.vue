@@ -205,7 +205,9 @@ function validateForm(): string | null {
       !form.value.customWeekdays ||
       form.value.customWeekdays.length === 0
     ) {
-      return t("dnd.invalidTimeRange");
+      // review #58：原实现复用 invalidTimeRange（“结束时间必须大于开始时间”），
+      // 与“未选择星期”场景语义不符；改用专门文案。
+      return t("dnd.customWeekdaysRequired");
     }
   }
   if (form.value.startTime === form.value.endTime) {

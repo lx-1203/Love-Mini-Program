@@ -1,5 +1,7 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.chat.TempChatSessionService;
+import com.campuslove.api.entity.TempChatSession;
 import com.campuslove.api.entity.VipRedPacket;
 import com.campuslove.api.entity.VipRedPacketClaim;
 import com.campuslove.api.repository.UserRepository;
@@ -12,12 +14,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -92,6 +94,17 @@ public class VipRedPacketService {
      * </p>
      */
     private final WalletService walletService;
+
+    /**
+     * 临时聊天会话服务（FIN HIGH-17 新增，可选注入）。
+     *
+     * <p>用于校验红包领取者/详情查看者为聊天会话参与者（聊天红包场景，
+     * 红包 {@code chatId} 非空时生效）。使用 {@code @Autowired(required = false)}
+     * 字段注入：单元测试直接 new 构造器时不注入（chatId 为 null 的红包
+     * 不触发会话校验），保持构造器签名向后兼容。</p>
+     */
+    @Autowired(required = false)
+    private TempChatSessionService tempChatSessionService;
 
     /**
      * Task 14（P1.12）：Redisson 客户端，用于分布式锁。
@@ -209,8 +222,10 @@ public class VipRedPacketService {
 
                 // Task 15（FIN-00171）：扣减发送方钱包余额
                 // 使用红包 ID 作为 orderId 业务幂等键，前缀 RP-SEND- 表示红包发送扣减
-                // 若扣减失败（余额不足），@Transactional 会回滚红包创建，保证红包与扣减原子性
-                String walletOrderId = "RP-SEND-" + saved.getId() + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+                // 修复（FIN LOW-71）：幂等键去除随机数后缀——原实现拼接 UUID 随机片段，
+                // 使同一红包每次创建尝试的 orderId 都不同，幂等形同虚设（重复提交会重复扣款）。
+                // 现在 orderId 仅由红包 ID 决定：同一次创建重复提交时，WalletService 幂等命中直接返回。
+                String walletOrderId = "RP-SEND-" + saved.getId();
                 Long balanceAfter = walletService.deduct(
                         senderId,
                         totalAmount.longValue(),
@@ -293,7 +308,10 @@ public class VipRedPacketService {
      * @return 领取结果视图
      * @throws IllegalArgumentException 红包不存在/已过期/已领完/已领取过/自己发的红包时抛出
      */
-    @Transactional
+    // infra R2-00264: IllegalArgumentException 不触发回滚——过期分支需要在抛异常前持久化
+    // EXPIRED 状态（旧实现因事务回滚使状态更新失效，红包永不为 EXPIRED）；
+    // 其余异常分支均无前置写操作，noRollbackFor 不影响其语义
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public ClaimResultView claimRedPacket(Long redPacketId, Long claimerId) {
         if (redPacketId == null || claimerId == null) {
             throw new IllegalArgumentException("红包 ID 与领取人 ID 不能为空");
@@ -318,6 +336,20 @@ public class VipRedPacketService {
             // 不能领取自己发的红包
             if (packet.getSenderId().equals(claimerId)) {
                 throw new IllegalArgumentException("不能领取自己发送的红包");
+            }
+
+            // FIN HIGH-17：聊天红包（chatId 非空）场景下，领取者必须是该会话的参与者，
+            // 防止非会话成员抢领聊天群内的红包
+            if (packet.getChatId() != null && !packet.getChatId().isBlank()
+                    && tempChatSessionService != null) {
+                try {
+                    TempChatSession session = tempChatSessionService.resolveSession(packet.getChatId());
+                    tempChatSessionService.requireParticipant(session, claimerId);
+                } catch (RuntimeException e) {
+                    log.warn("红包领取被拒绝：领取者不是会话参与者, redPacketId={}, claimerId={}, chatId={}",
+                            redPacketId, claimerId, packet.getChatId());
+                    throw new IllegalArgumentException("无权领取该红包：您不是该会话的成员");
+                }
             }
 
             // 检查过期
@@ -419,20 +451,48 @@ public class VipRedPacketService {
         }
     }
 
+    // infra R2-00221: 删除无 userId 归属校验的 getRedPacketDetail 重载（未暴露入口，留后门风险），
+    // 统一走带 currentUserId 的版本（FIN HIGH-17 已含 IDOR 防护）
+
     /**
-     * 查询红包详情（含领取记录）。
+     * 查询红包详情（含领取记录），并校验当前用户归属（FIN HIGH-17）。
      *
-     * @param redPacketId 红包 ID
+     * <p>允许查看的用户：红包发送者本人、已领取者、或红包所属聊天会话（chatId 非空）
+     * 的参与者。防止任意用户枚举红包 ID 查看他人红包的领取记录（IDOR）。</p>
+     *
+     * @param redPacketId   红包 ID
+     * @param currentUserId 当前用户 ID（用于归属校验）
      * @return 红包视图（含领取列表）
      * @throws IllegalArgumentException 红包不存在时抛出
+     * @throws com.campuslove.api.common.OperationForbiddenException 当前用户无权查看时抛出
      */
     @Transactional(readOnly = true)
-    public RedPacketView getRedPacketDetail(Long redPacketId) {
-        if (redPacketId == null) {
-            throw new IllegalArgumentException("红包 ID 不能为空");
+    public RedPacketView getRedPacketDetail(Long redPacketId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("当前用户 ID 不能为空");
         }
         VipRedPacket packet = redPacketRepository.findById(redPacketId)
                 .orElseThrow(() -> new IllegalArgumentException("红包不存在"));
+
+        // 归属校验：发送者本人 或 会话参与者（聊天红包）或 已领取者
+        boolean allowed = packet.getSenderId() != null && packet.getSenderId().equals(currentUserId);
+        if (!allowed && packet.getChatId() != null && !packet.getChatId().isBlank()
+                && tempChatSessionService != null) {
+            try {
+                TempChatSession session = tempChatSessionService.resolveSession(packet.getChatId());
+                tempChatSessionService.requireParticipant(session, currentUserId);
+                allowed = true;
+            } catch (RuntimeException ignored) {
+                // 会话解析失败按未授权处理，继续尝试领取者校验
+            }
+        }
+        if (!allowed) {
+            allowed = claimRepository.findByRedPacketIdAndClaimerId(redPacketId, currentUserId).isPresent();
+        }
+        if (!allowed) {
+            throw new com.campuslove.api.common.OperationForbiddenException("无权查看该红包详情");
+        }
+
         List<VipRedPacketClaim> claims = claimRepository
                 .findByRedPacketIdOrderByClaimedAtDesc(redPacketId);
         return toView(packet, claims);

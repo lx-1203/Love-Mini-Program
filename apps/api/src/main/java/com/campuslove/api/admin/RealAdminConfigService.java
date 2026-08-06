@@ -18,6 +18,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * 管理后台 - 系统配置服务真实实现。
@@ -48,6 +50,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class RealAdminConfigService implements AdminConfigService {
 
     private static final Logger log = LoggerFactory.getLogger(RealAdminConfigService.class);
+
+    /** 配置值最大长度（infra R2-00274，防止超长脏配置入库） */
+    private static final int MAX_CONFIG_VALUE_LENGTH = 2048;
 
     private final AdminAppConfigRepository configRepository;
     private final AdminAppRuleRepository ruleRepository;
@@ -105,6 +110,10 @@ public class RealAdminConfigService implements AdminConfigService {
         if (value == null) {
             throw new IllegalArgumentException("配置值不能为空");
         }
+        // infra R2-00274: 配置值长度上限校验
+        if (value.length() > MAX_CONFIG_VALUE_LENGTH) {
+            throw new IllegalArgumentException("配置值长度不能超过 " + MAX_CONFIG_VALUE_LENGTH + " 字符");
+        }
 
         AdminAppConfig config = configRepository.findByConfigKey(key)
                 .orElseThrow(() -> new IllegalArgumentException("配置项不存在: " + key));
@@ -118,19 +127,33 @@ public class RealAdminConfigService implements AdminConfigService {
 
         AdminAppConfig saved = configRepository.save(config);
 
-        // SubTask 5.3.3：发布配置更新事件，通知订阅者刷新本地缓存
-        try {
-            eventPublisher.publishEvent(ConfigUpdatedEvent.of(this, saved, operatorId));
-            log.info("SubTask 5.3.3 配置更新事件已发布: key={}, operatorId={}", key, operatorId);
-        } catch (RuntimeException e) {
-            // 事件发布失败不影响主流程，仅记录日志
-            log.warn("配置更新事件发布失败: key={}, error={}", key, e.getMessage());
+        // infra R2-00271: 事件发布推迟到事务提交后（TransactionSynchronization.afterCommit），
+        // 避免订阅方同步处理拉长事务持有时间；无活动事务时直接发布
+        Runnable publish = () -> {
+            try {
+                eventPublisher.publishEvent(ConfigUpdatedEvent.of(this, saved, operatorId));
+                log.info("SubTask 5.3.3 配置更新事件已发布: key={}, operatorId={}", key, operatorId);
+            } catch (RuntimeException e) {
+                // 事件发布失败不影响主流程，仅记录日志
+                log.warn("配置更新事件发布失败: key={}, error={}", key, e.getMessage());
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publish.run();
+                }
+            });
+        } else {
+            publish.run();
         }
 
         return toConfigView(saved);
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.SYSTEM_CONFIG, key = "'rules'")
     public List<AdminRuleView> listRules() {
         return ruleRepository.findAll().stream()
                 .map(this::toRuleView)
@@ -164,6 +187,7 @@ public class RealAdminConfigService implements AdminConfigService {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.SYSTEM_CONFIG, key = "'switches'")
     public List<AdminSwitchView> listSwitches() {
         return switchRepository.findAll().stream()
                 .map(this::toSwitchView)

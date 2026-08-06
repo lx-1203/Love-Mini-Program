@@ -593,7 +593,8 @@ class P2SecurityPenetrationTest {
         Files.writeString(ownerDir.resolve(VALID_FILE_NAME), "user-b-private-content");
 
         MediaAccessService service = new MediaAccessService(tempRoot.toString());
-        String subPath = VALID_MONTH_SEGMENT + "/" + VALID_FILE_NAME;
+        // infra R2-00013:IMAGE 为社交公开资源(登录用户可读),越权测试改用语音路径
+        String subPath = "voice/" + VALID_MONTH_SEGMENT + "/" + VALID_FILE_NAME;
 
         // Act & Assert：用户 A 访问用户 B 的文件应抛 403
         AccessDeniedException ex = assertThrows(AccessDeniedException.class,

@@ -127,6 +127,9 @@ onLoad((query) => {
       circleName.value = circle.name;
     }
     void circleStore.fetchTopics(circleId.value, 1);
+  } else {
+    // infra R2-00075: circleId 缺失时给出错误态提示，避免直开链接白屏
+    uni.showToast({ title: t("storeErrors.circle.circleIdInvalid"), icon: "none" });
   }
 });
 

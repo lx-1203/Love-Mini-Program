@@ -836,7 +836,7 @@ defineExpose({ onContentTap });
                 :placeholder="t('filterDrawer.keywordPlaceholder')"
                 placeholder-class="keyword-input__placeholder"
                 :value="keywordDraft"
-                @input="onKeywordInput" aria-label="t('filterDrawer.keywordPlaceholder')"
+                @input="onKeywordInput" :aria-label="t('filterDrawer.keywordPlaceholder')"
               />
               <text
                 v-if="keywordDraft"

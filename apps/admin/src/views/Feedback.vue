@@ -26,6 +26,8 @@ import { ApiError } from "../api/http";
 // Task 3.7.3：接入共享 ConfirmDialog 组件
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { useI18n } from "vue-i18n";
+import { formatDateTime } from "../utils/format";
+import { TOAST_DURATION_MS, REMARK_MAX_LENGTH } from "../utils/constants";
 
 const { t } = useI18n();
 
@@ -39,13 +41,26 @@ const detailFeedback = ref<FeedbackRecordView | null>(null);
 const toastMessage = ref("");
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
+// infra R2-00449：请求竞态防护（快速刷新/切换时旧响应不覆盖新数据）
+let reqSeq = 0;
+
 function showToast(msg: string) {
   if (toastTimer) clearTimeout(toastTimer);
   toastMessage.value = msg;
+  // infra R2-00450：toast 时长魔法数字收敛为公共常量
   toastTimer = setTimeout(() => {
     toastMessage.value = "";
     toastTimer = null;
-  }, 3000);
+  }, TOAST_DURATION_MS);
+}
+
+/** infra R2-00451：toast 手动关闭（弱网用户可能错过 3 秒自动消失的提示） */
+function closeToast() {
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+    toastTimer = null;
+  }
+  toastMessage.value = "";
 }
 
 /**
@@ -55,13 +70,19 @@ function showToast(msg: string) {
 async function fetchFeedbacks() {
   loading.value = true;
   errorMsg.value = "";
+  const seq = ++reqSeq;
   try {
-    feedbacks.value = await listAdminFeedback();
+    const result = await listAdminFeedback();
+    if (seq !== reqSeq) return; // 丢弃过期响应
+    feedbacks.value = result;
   } catch (err) {
+    if (seq !== reqSeq) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("feedback.loadFailed");
     feedbacks.value = [];
   } finally {
-    loading.value = false;
+    if (seq === reqSeq) {
+      loading.value = false;
+    }
   }
 }
 
@@ -82,6 +103,8 @@ const processVisible = ref(false);
 const processTarget = ref<FeedbackRecordView | null>(null);
 /** Task 13：回复接口调用中状态，传给 ConfirmDialog 的 confirming prop 禁用按钮 */
 const processLoading = ref(false);
+/** 自定义回复内容（空时使用默认回复文案） */
+const replyContent = ref("");
 
 /**
  * 标记反馈为已处理。
@@ -94,21 +117,26 @@ const processLoading = ref(false);
  */
 function handleProcess(feedback: FeedbackRecordView) {
   processTarget.value = feedback;
+  replyContent.value = ""; // 每次打开弹窗重置自定义回复
   processVisible.value = true;
 }
 
-/** Task 13：ConfirmDialog 确认回调，调用真实回复接口 */
+/** Task 13：ConfirmDialog 确认回调，调用真实回复接口（支持自定义回复内容） */
 async function handleConfirmProcess() {
   const target = processTarget.value;
   if (!target) return;
   processLoading.value = true;
   try {
-    const updated = await replyFeedback(target.id, t("feedback.defaultReplyContent"));
+    // 后端 PUT /v1/admin/feedback/{id}/reply 接收 reply 字段（见 api/feedback.ts replyFeedback），
+    // 此处支持运营自定义回复内容；留空时回退到默认回复文案。
+    const reply = replyContent.value.trim() || t("feedback.defaultReplyContent");
+    const updated = await replyFeedback(target.id, reply);
     // 用后端返回的记录替换列表中的对应项，保证状态/回复摘要与服务端一致
     const idx = feedbacks.value.findIndex((f) => f.id === updated.id);
     if (idx >= 0) feedbacks.value[idx] = updated;
     processVisible.value = false;
     processTarget.value = null;
+    replyContent.value = "";
     showToast(t("feedback.processedToast"));
   } catch (err) {
     const msg = err instanceof ApiError ? err.message : t("feedback.processFailed");
@@ -163,6 +191,13 @@ function statusClass(status: SubmissionStatus): string {
   return "submitted";
 }
 
+/**
+ * 格式化提交时间（infra R2-00452：统一走公共工具，跟随当前 i18n locale）。
+ */
+function formatDate(iso: string): string {
+  return formatDateTime(iso);
+}
+
 onMounted(() => {
   void fetchFeedbacks();
 });
@@ -183,7 +218,11 @@ onBeforeUnmount(() => {
       <text class="page-subtitle">{{ t("feedback.subtitle") }}</text>
     </view>
 
-    <view v-if="toastMessage" class="toast-message">{{ toastMessage }}</view>
+    <!-- infra R2-00451：toast 增加 role=status aria-live 与手动关闭按钮（弱网用户可保留提示） -->
+    <view v-if="toastMessage" class="toast-message" role="status" aria-live="polite">
+      <text>{{ toastMessage }}</text>
+      <button class="toast-close" type="button" aria-label="Close" @click="closeToast">×</button>
+    </view>
 
     <!-- 三态：错误 -->
     <view v-if="errorMsg" class="error-banner">
@@ -228,7 +267,7 @@ onBeforeUnmount(() => {
               </span>
             </td>
             <td>{{ feedback.latestReplySummary || "—" }}</td>
-            <td>{{ feedback.submittedAt }}</td>
+            <td>{{ t("feedback.submittedAt", { time: formatDate(feedback.submittedAt) }) }}</td>
             <td class="action-cell">
               <button class="action-button view" @click="handleView(feedback)">{{ t("feedback.actionView") }}</button>
               <button class="action-button process" @click="handleProcess(feedback)">{{ t("feedback.actionProcess") }}</button>
@@ -247,42 +286,55 @@ onBeforeUnmount(() => {
         </view>
         <view class="modal-body" v-if="detailFeedback">
           <view class="detail-row">
-            <text class="detail-label">{{ t("feedback.detailId") }}：</text>
+            <text class="detail-label">{{ t("feedback.detailId") }}</text>
             <text>{{ detailFeedback.id }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">{{ t("feedback.detailType") }}：</text>
+            <text class="detail-label">{{ t("feedback.detailType") }}</text>
             <text>{{ typeLabel(detailFeedback.type) }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">{{ t("feedback.detailLabelTitle") }}：</text>
+            <text class="detail-label">{{ t("feedback.detailLabelTitle") }}</text>
             <text>{{ detailFeedback.title }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">{{ t("feedback.detailLabelStatus") }}：</text>
+            <text class="detail-label">{{ t("feedback.detailLabelStatus") }}</text>
             <text>{{ statusLabel(detailFeedback.status) }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">{{ t("feedback.detailLatestReply") }}：</text>
+            <text class="detail-label">{{ t("feedback.detailLatestReply") }}</text>
             <text>{{ detailFeedback.latestReplySummary || "—" }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">{{ t("feedback.detailSubmittedAt") }}：</text>
-            <text>{{ detailFeedback.submittedAt }}</text>
+            <text class="detail-label">{{ t("feedback.detailSubmittedAt") }}</text>
+            <text>{{ formatDate(detailFeedback.submittedAt) }}</text>
           </view>
         </view>
       </view>
     </view>
 
-    <!-- Task 3.7.3：处理确认弹窗（替代原生 confirm） -->
+    <!-- Task 3.7.3：处理确认弹窗（支持自定义回复内容） -->
     <ConfirmDialog
       v-model:visible="processVisible"
       :title="t('feedback.processTitle')"
-      :message="processTarget ? t('feedback.processConfirmMessage', { title: processTarget.title }) : ''"
       :confirming="processLoading"
       @confirm="handleConfirmProcess"
       @cancel="handleCancelProcess"
-    />
+    >
+      <template #message>
+        <text>{{ processTarget ? t('feedback.processConfirmMessage', { title: processTarget.title }) : '' }}</text>
+        <view class="form-row">
+          <text class="form-label">{{ t("feedback.replyLabel") }}</text>
+          <textarea
+            v-model="replyContent"
+            class="form-textarea"
+            rows="3"
+            :maxlength="REMARK_MAX_LENGTH"
+            :placeholder="t('feedback.replyPlaceholder')"
+          />
+        </view>
+      </template>
+    </ConfirmDialog>
   </view>
 </template>
 
@@ -446,6 +498,10 @@ onBeforeUnmount(() => {
 }
 
 .toast-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
   padding: var(--admin-space-md-sm) var(--admin-space-lg);
   background: var(--admin-color-success-soft);
   border-left: 3px solid var(--admin-color-success);
@@ -453,6 +509,17 @@ onBeforeUnmount(() => {
   color: var(--admin-color-success);
   font-size: var(--admin-font-md);
   margin-bottom: var(--admin-space-lg);
+}
+
+/* infra R2-00451：toast 关闭按钮 */
+.toast-close {
+  border: none;
+  background: transparent;
+  color: var(--admin-color-success);
+  font-size: var(--admin-font-lg);
+  line-height: 1;
+  cursor: pointer;
+  padding: var(--admin-space-xxs);
 }
 
 .modal-overlay {
@@ -521,4 +588,25 @@ onBeforeUnmount(() => {
   color: var(--admin-color-text-tertiary);
   min-width: 80px;
 }
-</style>
+
+/* 处理弹窗内的自定义回复输入 */
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xxs);
+  margin-top: var(--admin-space-md);
+}
+
+.form-label {
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-tertiary);
+}
+
+.form-textarea {
+  padding: var(--admin-space-md-sm) var(--admin-space-sm);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-lg);
+  resize: vertical;
+  font-family: inherit;
+}</style>

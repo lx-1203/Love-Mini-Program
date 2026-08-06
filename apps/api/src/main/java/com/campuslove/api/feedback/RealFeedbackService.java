@@ -279,6 +279,35 @@ public class RealFeedbackService implements FeedbackService {
     }
 
     /**
+     * 管理员回复/标记反馈为已处理（infra R2-00023）。
+     *
+     * @param id    反馈记录 ID
+     * @param reply 回复内容（非空）
+     * @return 更新后的提交记录视图（状态 REVIEWED，latestReplySummary 已刷新）
+     */
+    @Override
+    @Transactional
+    public SubmissionRecordView replyFeedback(long id, String reply) {
+        if (reply == null || reply.isBlank()) {
+            throw new IllegalArgumentException("回复内容不能为空");
+        }
+        Feedback feedback = feedbackRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("反馈记录不存在，ID: " + id));
+
+        feedback.setStatus(SubmissionStatus.REVIEWED);
+        // 截断过长回复（latestReplySummary 列通常为 255 字符，取前 200 并加省略号）
+        String summary = reply.trim().length() > 200
+                ? reply.trim().substring(0, 200) + "…"
+                : reply.trim();
+        feedback.setLatestReplySummary(summary);
+        feedback.setUpdatedAt(LocalDateTime.now());
+
+        Feedback saved = feedbackRepository.save(feedback);
+        log.info("管理员回复反馈完成, id={}, 状态={}", id, saved.getStatus());
+        return toView(saved);
+    }
+
+    /**
      * 将 Feedback 实体转换为 SubmissionDetailView 详情视图。
      *
      * <p>与 toView 不同，详情视图包含完整 content、解析后的 attachments 数组、

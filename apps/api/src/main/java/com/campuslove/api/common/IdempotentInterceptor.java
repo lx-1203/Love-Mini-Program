@@ -61,6 +61,9 @@ public class IdempotentInterceptor implements HandlerInterceptor {
     /** 未认证场景下的用户兜底标识 */
     private static final String ANONYMOUS_USER = "anonymous";
 
+    /** 幂等键最大长度（infra R2-00248，防止超长头生成超长 Redis key） */
+    private static final int MAX_KEY_LENGTH = 128;
+
     /** Redis 操作接口（可能为 null，当 Redis 不可用时降级） */
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -96,6 +99,12 @@ public class IdempotentInterceptor implements HandlerInterceptor {
         String idempotencyKey = request.getHeader(HEADER_IDEMPOTENCY_KEY);
         if (idempotencyKey != null) {
             idempotencyKey = idempotencyKey.trim();
+        }
+
+        // infra R2-00248: 限制幂等键长度，防止超长头生成超长 Redis key（资源滥用）
+        if (idempotencyKey != null && idempotencyKey.length() > MAX_KEY_LENGTH) {
+            throw new InvalidOperationException(
+                    "Idempotency-Key 长度不能超过 " + MAX_KEY_LENGTH + " 字符");
         }
 
         if (idempotencyKey == null || idempotencyKey.isBlank()) {

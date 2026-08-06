@@ -90,7 +90,7 @@ public class AdminPermissionAspect {
     private void logPermissionFailure(org.springframework.security.access.AccessDeniedException ex) {
         String userId = resolveCurrentUserId();
         HttpServletRequest request = resolveCurrentRequest();
-        String endpoint = request != null ? request.getRequestURI() : UNKNOWN_IP;
+        String endpoint = request != null ? request.getRequestURI() : "unknown"; // infra R2-00231: 原误用 UNKNOWN_IP 常量名（值为 unknown），改为字面量避免语义混淆
         String httpMethod = request != null ? request.getMethod() : "UNKNOWN";
         String clientIp = request != null ? resolveClientIp(request) : UNKNOWN_IP;
 

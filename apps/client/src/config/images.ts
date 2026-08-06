@@ -7,6 +7,11 @@
  *
  * 使用方式：import { IMAGE_PATHS } from "@/config/images";
  * 禁止在页面/组件中硬编码 "/static/assets/..." 字符串。
+ *
+ * 相关文件（infra R2-00137）：
+ * - config/assets-index.ts 为 scripts/media-gen/generate.ts 的生成产物
+ *   （指向 /static/generated/**），与手工维护的本文件职责不同；
+ *   业务代码统一走本文件，生成素材按需引用 assets-index。
  */
 const STATIC_BASE = '/static/assets';
 const IMAGES = STATIC_BASE + '/images';

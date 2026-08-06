@@ -16,9 +16,22 @@ import org.springframework.stereotype.Component;
  * <p>降级策略（核心原则：MQ 不可用不应阻断业务流程）：</p>
  * <ol>
  *   <li>RabbitTemplate 未注入（mock 模式或 RabbitMQ 自动配置未启用）：
- *       记录日志后返回，不抛出异常</li>
- *   <li>RabbitMQ 连接或发送失败：捕获所有异常，仅记录日志，不向上抛出</li>
+ *       记录 warn 日志后返回，不抛出异常</li>
+ *   <li>RabbitMQ 连接或发送失败：捕获所有异常，记录 warn 日志，不向上抛出</li>
  * </ol>
+ *
+ * <p>⚠️ 补偿方案说明（FIN-00046，当前实现为「日志 + 丢弃」）：
+ * 事件在生产端被丢弃后，业务侧已完成的动作（如通知持久化）无法补投。
+ * 若需保证投递可靠性，可选补偿方案（按影响面从小到大）：</p>
+ * <ol>
+ *   <li><b>本地事件表 + 定时补偿</b>：发送前先落库
+ *       {@code outbox_event(event_id, payload, status, retry_count, created_at)}，
+ *       定时任务扫描未投递事件重发，成功置 FINISHED（推荐，可跨重启/多实例）；</li>
+ *   <li><b>发送方确认 + 死信队列</b>：启用 publisher-confirms，路由失败/NACK
+ *       的事件进入 DLX 死信队列，由补偿消费者重试或人工介入；</li>
+ *   <li><b>重试退避</b>：对瞬时故障（连接抖动）指数退避重试 2-3 次后再丢弃。</li>
+ * </ol>
+ * 当前业务对事件丢失容忍度较高（通知类可降级），故先保持轻量实现。
  *
  * <p>线程安全：RabbitTemplate 内部为线程安全，可在多线程环境下共享使用。</p>
  */

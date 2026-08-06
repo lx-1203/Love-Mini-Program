@@ -39,6 +39,10 @@
 
 set -euo pipefail
 
+# infra R2-00383：cron 环境 PATH 保障——cron 默认 PATH 不含 /usr/local/bin 等，
+# 直跑/容器内均可能找不到 mysqldump/redis-cli/gzip，这里显式设置最小 PATH。
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+
 # ---------- 默认值 ----------
 MYSQL_HOST="${MYSQL_HOST:-mysql}"
 MYSQL_PORT="${MYSQL_PORT:-3306}"
@@ -50,7 +54,9 @@ REDIS_HOST="${REDIS_HOST:-}"
 REDIS_PORT="${REDIS_PORT:-6379}"
 REDIS_PASSWORD="${REDIS_PASSWORD:-}"
 REDIS_RDB_PATH="${REDIS_RDB_PATH:-/data/redis/dump.rdb}"
-BACKUP_DIR="${BACKUP_DIR:-/backup}"
+# infra R2-00384：默认备份目录与 docker-compose 注入的 /backups 对齐
+#（原默认 /backup，直跑脚本与容器行为不一致）
+BACKUP_DIR="${BACKUP_DIR:-/backups}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
 BACKUP_COMPRESS_LEVEL="${BACKUP_COMPRESS_LEVEL:-6}"
 
@@ -119,16 +125,18 @@ fi
 # mysqldump 参数说明：
 #   --single-transaction: InnoDB 一致性快照，不锁表（业务可继续读写）
 #   --quick: 大表分批读取，避免 OOM
-#   --routines: 包含存储过程/函数
+#   --routines: 包含存储过程/函数（需 mysql.proc 的 SELECT 权限，见 infra R2-00385）
 #   --triggers: 包含触发器
 #   --events: 包含事件调度
 #   --set-gtid-purged=OFF: 不写 GTID 信息（兼容性更好）
 #   --hex-blob: BLOB 字段以十六进制导出，避免二进制乱码
+# infra R2-00386：密码改用 MYSQL_PWD 环境变量传递（原 --password 明文进进程参数，
+# 同机其他进程可读 /proc/<pid>/cmdline 泄露密码）
+export MYSQL_PWD="${MYSQL_PASSWORD}"
 mysqldump_args=(
     --host="${MYSQL_HOST}"
     --port="${MYSQL_PORT}"
     --user="${MYSQL_USER}"
-    --password="${MYSQL_PASSWORD}"
     --single-transaction
     --quick
     --routines
@@ -148,9 +156,17 @@ if [[ ${DRY_RUN} -eq 1 ]]; then
 fi
 
 log "Running mysqldump..."
+# infra #21：在 if 条件中执行管道（避免 set -e 直接终止），
+# 并用 PIPESTATUS 显式区分 mysqldump 与 gzip 的退出码——
+# 仅靠 if ! pipeline 的布尔判定可能因 gzip 成功而掩盖 mysqldump 失败
 if ! mysqldump "${mysqldump_args[@]}" 2>/tmp/mysqldump-err.log | gzip -"${BACKUP_COMPRESS_LEVEL}" > "${BACKUP_FILE}"; then
-    log "ERROR: mysqldump failed. Error output:"
-    cat /tmp/mysqldump-err.log >&2 || true
+    DUMP_STATUS=("${PIPESTATUS[@]}")
+    if [[ "${DUMP_STATUS[0]}" -ne 0 ]]; then
+        log "ERROR: mysqldump failed (exit code ${DUMP_STATUS[0]}). Error output:"
+        cat /tmp/mysqldump-err.log >&2 || true
+    else
+        log "ERROR: gzip compression failed (exit code ${DUMP_STATUS[1]})."
+    fi
     rm -f "${BACKUP_FILE}"
     exit 2
 fi
@@ -187,9 +203,10 @@ if [[ -n "${REDIS_HOST}" ]]; then
     REDIS_BACKUP_FILE="${BACKUP_DIR}/redis-${TIMESTAMP}.rdb"
 
     # 构造 redis-cli 参数（带密码时附加 -a）
-    redis_cli_args=(--host "${REDIS_HOST}" --port "${REDIS_PORT}")
+    # infra R2-00387：密码改用 REDISCLI_AUTH 环境变量传递（原 -a 明文进进程参数）
+    redis_cli_args=(--host "${REDIS_HOST}" --port "${REDIS_PORT}" --no-auth-warning)
     if [[ -n "${REDIS_PASSWORD}" ]]; then
-        redis_cli_args+=(--no-auth-warning -a "${REDIS_PASSWORD}")
+        export REDISCLI_AUTH="${REDIS_PASSWORD}"
     fi
 
     if [[ ${DRY_RUN} -eq 1 ]]; then
@@ -206,16 +223,25 @@ if [[ -n "${REDIS_HOST}" ]]; then
         # 轮询等待 BGSAVE 完成（最多 60 秒）
         log "Waiting for BGSAVE to complete (max 60s)..."
         WAIT_SEC=0
+        BGSAVE_DONE=0
         while [[ ${WAIT_SEC} -lt 60 ]]; do
             LAST_SAVE=$(redis-cli "${redis_cli_args[@]}" LASTSAVE 2>/dev/null || echo "0")
             NOW_TS=$(date +%s)
             # LASTSAVE 返回 Unix 时间戳；若距当前时间 < 5s 视为刚完成
             if [[ $((NOW_TS - LAST_SAVE)) -lt 5 ]]; then
+                BGSAVE_DONE=1
                 break
             fi
             sleep 2
             WAIT_SEC=$((WAIT_SEC + 2))
         done
+
+        # infra R2-00388：超时后检测失败——原实现超时仍继续复制 RDB，
+        # 可能复制到未完成/旧 RDB 静默产生坏备份；超时未完成直接失败退出
+        if [[ ${BGSAVE_DONE} -ne 1 ]]; then
+            log "ERROR: Redis BGSAVE did not complete within 60s, aborting Redis backup to avoid copying stale RDB."
+            exit 3
+        fi
 
         # 复制 RDB 文件到备份目录
         if [[ ! -f "${REDIS_RDB_PATH}" ]]; then
@@ -248,6 +274,12 @@ log "Cleaning up backups older than ${BACKUP_RETENTION_DAYS} days..."
 # 同时清理 MySQL (.sql.gz) 与 Redis (.rdb) 备份
 CLEANED_COUNT=0
 while IFS= read -r -d '' old_file; do
+    # infra R2-00389：清理前校验 gzip 完整性——坏备份（校验失败）在过期前
+    # 不应被静默删除（否则坏备份更早被发现的机会也丢失），校验失败则保留并告警
+    if [[ "${old_file}" == *.sql.gz ]] && ! gzip -t "${old_file}" 2>/dev/null; then
+        log "ERROR: integrity check failed for ${old_file}, skipping deletion (please investigate)."
+        continue
+    fi
     log "Removing old backup: ${old_file}"
     rm -f "${old_file}"
     CLEANED_COUNT=$((CLEANED_COUNT + 1))

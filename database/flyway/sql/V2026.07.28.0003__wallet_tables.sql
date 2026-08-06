@@ -32,8 +32,8 @@
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_wallet (
-    id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
-    user_id         BIGINT       NOT NULL                COMMENT '用户ID',
+    id              BIGINT UNSIGNED       PRIMARY KEY AUTO_INCREMENT,
+    user_id         BIGINT UNSIGNED       NOT NULL                COMMENT '用户ID',
     balance_cents   BIGINT       NOT NULL DEFAULT 0      COMMENT '可用余额（分）',
     frozen_cents    BIGINT       NOT NULL DEFAULT 0      COMMENT '冻结金额（分，预留）',
     version         BIGINT       NOT NULL DEFAULT 0      COMMENT '乐观锁版本号',
@@ -44,8 +44,8 @@ CREATE TABLE IF NOT EXISTS user_wallet (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户钱包账户主表';
 
 CREATE TABLE IF NOT EXISTS wallet_transaction_log (
-    id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
-    user_id         BIGINT       NOT NULL                COMMENT '用户ID',
+    id              BIGINT UNSIGNED       PRIMARY KEY AUTO_INCREMENT,
+    user_id         BIGINT UNSIGNED       NOT NULL                COMMENT '用户ID',
     type            VARCHAR(16)  NOT NULL                COMMENT '交易类型 DEBIT(扣减)/CREDIT(充值)',
     amount          BIGINT       NOT NULL                COMMENT '交易金额（分）',
     balance_after   BIGINT                               COMMENT '交易后余额（分，便于审计追溯）',

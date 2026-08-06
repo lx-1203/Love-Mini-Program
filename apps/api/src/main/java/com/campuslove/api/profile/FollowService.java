@@ -78,13 +78,12 @@ public class FollowService {
         userFollow.setCreatedAt(now);
         userFollowRepository.save(userFollow);
 
-        follower.setFollowingCount(follower.getFollowingCount() + 1);
-        follower.setUpdatedAt(now);
-        userRepository.save(follower);
-
-        target.setFollowersCount(target.getFollowersCount() + 1);
-        target.setUpdatedAt(now);
-        userRepository.save(target);
+        // infra R2-00263: 关注/粉丝计数改为数据库侧原子递增（消除并发丢失更新）；
+        // 不再修改 managed 实体计数，避免事务提交时 flush 用陈旧值覆盖原子结果
+        userRepository.incrementFollowingCount(userId, now);
+        userRepository.incrementFollowersCount(targetUserId, now);
+        Integer followingCount = follower.getFollowingCount() == null ? 1 : follower.getFollowingCount() + 1;
+        Integer followersCount = target.getFollowersCount() == null ? 1 : target.getFollowersCount() + 1;
 
         Notification notification = new Notification();
         notification.setUserId(targetUserId);
@@ -103,7 +102,7 @@ public class FollowService {
 
         log.debug("用户 {} 关注了用户 {}", userId, targetUserId);
         return new FollowView(true, userId, targetUserId,
-                follower.getFollowingCount(), target.getFollowersCount());
+                followingCount, followersCount);
     }
 
     /**
@@ -130,17 +129,17 @@ public class FollowService {
 
         userFollowRepository.deleteByFollowerIdAndFollowingId(userId, targetUserId);
 
+        // infra R2-00263: 计数改为数据库侧原子递减（下限 0），不修改 managed 实体避免脏写覆盖
         LocalDateTime now = LocalDateTime.now();
-        follower.setFollowingCount(Math.max(0, follower.getFollowingCount() - 1));
-        follower.setUpdatedAt(now);
-        userRepository.save(follower);
-
-        target.setFollowersCount(Math.max(0, target.getFollowersCount() - 1));
-        target.setUpdatedAt(now);
-        userRepository.save(target);
+        userRepository.decrementFollowingCount(userId, now);
+        userRepository.decrementFollowersCount(targetUserId, now);
+        Integer followingCount = follower.getFollowingCount() == null
+                ? 0 : Math.max(0, follower.getFollowingCount() - 1);
+        Integer followersCount = target.getFollowersCount() == null
+                ? 0 : Math.max(0, target.getFollowersCount() - 1);
 
         log.debug("用户 {} 取消关注了用户 {}", userId, targetUserId);
         return new FollowView(false, userId, targetUserId,
-                follower.getFollowingCount(), target.getFollowersCount());
+                followingCount, followersCount);
     }
 }

@@ -22,8 +22,8 @@
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS vip_red_packets (
-    id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
-    sender_id       BIGINT       NOT NULL                COMMENT '发送者用户ID',
+    id              BIGINT UNSIGNED       PRIMARY KEY AUTO_INCREMENT,
+    sender_id       BIGINT UNSIGNED NOT NULL                COMMENT '发送者用户ID',
     total_amount    INT          NOT NULL                COMMENT '红包总金额（单位：分）',
     total_count     INT          NOT NULL                COMMENT '红包总个数',
     claimed_count   INT          NOT NULL DEFAULT 0      COMMENT '已领取个数',
@@ -41,9 +41,9 @@ CREATE TABLE IF NOT EXISTS vip_red_packets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='VIP 红包表';
 
 CREATE TABLE IF NOT EXISTS vip_red_packet_claims (
-    id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
-    red_packet_id   BIGINT       NOT NULL                COMMENT '红包ID',
-    claimer_id      BIGINT       NOT NULL                COMMENT '领取人用户ID',
+    id              BIGINT UNSIGNED       PRIMARY KEY AUTO_INCREMENT,
+    red_packet_id   BIGINT UNSIGNED NOT NULL                COMMENT '红包ID',
+    claimer_id      BIGINT UNSIGNED NOT NULL                COMMENT '领取人用户ID',
     amount          INT          NOT NULL                COMMENT '领取金额（分）',
     claimed_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '领取时间',
     UNIQUE KEY uk_vip_red_packet_claims (red_packet_id, claimer_id),

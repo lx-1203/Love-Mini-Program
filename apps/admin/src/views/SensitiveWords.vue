@@ -20,7 +20,10 @@ import {
 import { ApiError } from "../api/http";
 // Task 3.7.3：接入共享 ConfirmDialog 组件，替换原生 confirm()
 import ConfirmDialog from "../components/ConfirmDialog.vue";
+// infra R2-00436：错误态接入共享 ErrorState 组件（原无重试入口）
+import ErrorState from "../components/ErrorState.vue";
 import { useI18n } from "vue-i18n";
+import { WORD_MAX_LENGTH } from "../utils/constants";
 
 const { t } = useI18n();
 
@@ -42,6 +45,9 @@ const deleteVisible = ref(false);
 const deleteTarget = ref<SensitiveWordView | null>(null);
 const deleting = ref(false);
 
+// infra R2-00437：请求竞态防护（快速切换分类时旧响应不覆盖新数据）
+let reqSeq = 0;
+
 // 分类 value → i18n label 映射
 const categoryLabelMap = computed(() => {
   const m: Record<string, string> = {};
@@ -49,17 +55,28 @@ const categoryLabelMap = computed(() => {
   return m;
 });
 
+/** infra R2-00438：敏感词长度上限收敛为公共常量（与后端 @Size(max=64) 对齐，
+ *  原前端 20 过严，合法词被前端拒绝） */
+
 /**
  * 加载敏感词列表。
  * @param category 可选分类过滤
+ *
+ * 分页说明：敏感词库规模较小（通常数百条以内），当前使用全量加载方案；
+ * 后端 AdminSensitiveWordController 支持 Pageable 分页（见 FIN-00326 修复），
+ * 若数据量增长可切换为分页查询（page/pageSize 参数 + Pagination 组件）。
+ * TODO(infra R2-00439)：数据量增长后切换分页查询并登记 backlog。
  */
 async function fetchWords(category?: string) {
   loading.value = true;
   error.value = "";
+  const seq = ++reqSeq;
   try {
     const result = await listSensitiveWords(category);
+    if (seq !== reqSeq) return; // 丢弃过期响应
     words.value = result || [];
   } catch (err: unknown) {
+    if (seq !== reqSeq) return;
     // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
     error.value =
       err instanceof ApiError
@@ -69,7 +86,9 @@ async function fetchWords(category?: string) {
           : t("sensitiveWords.loadFailed");
     words.value = [];
   } finally {
-    loading.value = false;
+    if (seq === reqSeq) {
+      loading.value = false;
+    }
   }
 }
 
@@ -83,11 +102,21 @@ function handleFilter() {
 /**
  * 提交新增敏感词。
  * 成功后清空表单并刷新列表。
+ * 校验：非空、长度上限、与已有词去重（大小写不敏感）。
  */
 async function handleCreate() {
   const word = newWord.value.trim();
   if (!word) {
     error.value = t("sensitiveWords.wordRequired");
+    return;
+  }
+  if (word.length > WORD_MAX_LENGTH) {
+    error.value = t("sensitiveWords.wordTooLong", { n: WORD_MAX_LENGTH });
+    return;
+  }
+  const lower = word.toLowerCase();
+  if (words.value.some((w) => w.word.toLowerCase() === lower)) {
+    error.value = t("sensitiveWords.wordDuplicate");
     return;
   }
   submitting.value = true;
@@ -99,12 +128,19 @@ async function handleCreate() {
     await fetchWords(filterCategory.value || undefined);
   } catch (err: unknown) {
     // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
-    error.value =
-      err instanceof ApiError
-        ? err.message
-        : err instanceof Error && err.message
+    // infra R2-00440：后端 409（资源已存在）透传为 i18n 重复提示——
+    // 原去重仅比较当前已加载列表（分类筛选时只比较子集），跨分类重复词
+    // 靠后端 409 兜底但提示为“请求失败 (409)”，现给出明确文案。
+    if (err instanceof ApiError && err.status === 409) {
+      error.value = t("sensitiveWords.wordDuplicate");
+    } else {
+      error.value =
+        err instanceof ApiError
           ? err.message
-          : t("sensitiveWords.createFailed");
+          : err instanceof Error && err.message
+            ? err.message
+            : t("sensitiveWords.createFailed");
+    }
   } finally {
     submitting.value = false;
   }
@@ -152,6 +188,18 @@ function handleCancelDelete() {
   deleteTarget.value = null;
 }
 
+/** infra R2-00441：复制敏感词到剪贴板（原无复制入口，运营复制不便） */
+async function copyWord(word: SensitiveWordView) {
+  try {
+    await navigator.clipboard.writeText(word.word);
+    // 复用错误通道做短暂成功提示不理想，这里直接静默成功；
+    // 失败时给出明确提示，避免运营误以为已复制。
+    error.value = "";
+  } catch {
+    error.value = t("sensitiveWords.copyFailed");
+  }
+}
+
 /**
  * 格式化时间：兼容 ISO 字符串，截到秒。
  */
@@ -191,6 +239,7 @@ onMounted(() => {
         v-model="newWord"
         class="filter-input"
         type="text"
+        :maxlength="WORD_MAX_LENGTH"
         :placeholder="t('sensitiveWords.wordPlaceholder')"
         @keyup.enter="handleCreate"
       />
@@ -213,7 +262,8 @@ onMounted(() => {
       </button>
     </view>
 
-    <view v-if="error" class="error-message">{{ error }}</view>
+    <!-- infra R2-00436：错误态接入 ErrorState 组件（含重试按钮，替代原 error-message） -->
+    <ErrorState v-if="error" :message="error" @retry="() => fetchWords(filterCategory || undefined)" />
 
     <view class="table-container">
       <table class="data-table">
@@ -243,8 +293,13 @@ onMounted(() => {
               <text v-else class="empty-cell">-</text>
             </td>
             <td class="time-cell">{{ formatTime(word.createdAt) }}</td>
-            <td>
-              <button class="danger-button" @click="handleDeleteClick(word)">
+            <td class="action-cell">
+              <!-- infra R2-00441：复制按钮 -->
+              <button class="ghost-button copy-button" @click="copyWord(word)">
+                {{ t("sensitiveWords.copyButton") }}
+              </button>
+              <!-- infra R2-00442：删除按钮 deleting 期间禁用（原可连点，重复删除请求） -->
+              <button class="danger-button" :disabled="deleting" @click="handleDeleteClick(word)">
                 {{ t("sensitiveWords.actionDelete") }}
               </button>
             </td>
@@ -298,6 +353,22 @@ onMounted(() => {
 .danger-button:hover {
   background: var(--admin-color-danger);
   color: var(--admin-color-bg-container);
+}
+
+.danger-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* infra R2-00441：复制按钮紧凑样式 */
+.copy-button {
+  padding: var(--admin-space-xxs) var(--admin-space-md);
+  margin-right: var(--admin-space-sm);
+  font-size: var(--admin-font-sm);
+}
+
+.action-cell {
+  white-space: nowrap;
 }
 
 .word-cell {

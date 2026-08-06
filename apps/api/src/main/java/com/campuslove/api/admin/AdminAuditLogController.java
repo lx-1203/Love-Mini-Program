@@ -55,6 +55,7 @@ public class AdminAuditLogController {
      * @param operation 操作类型枚举名（可空）
      * @param startDate 起始时间（ISO 格式，如 2026-06-01T00:00:00，可空）
      * @param endDate   结束时间（ISO 格式，可空）
+     * @param exception 仅查异常日志（errorMessage 非空），true 时生效，可空
      * @return 分页审计日志
      */
     @GetMapping
@@ -64,7 +65,8 @@ public class AdminAuditLogController {
             @RequestParam(name = "operator", required = false) String operator,
             @RequestParam(name = "operation", required = false) String operation,
             @RequestParam(name = "startDate", required = false) String startDate,
-            @RequestParam(name = "endDate", required = false) String endDate) {
+            @RequestParam(name = "endDate", required = false) String endDate,
+            @RequestParam(name = "exception", required = false) Boolean exception) {
         SecurityUtils.getCurrentUserId();
 
         // 参数归一化
@@ -76,8 +78,10 @@ public class AdminAuditLogController {
         String op = (operation != null && !operation.isBlank()) ? operation.toUpperCase() : null;
         LocalDateTime startTime = parseDateTime(startDate);
         LocalDateTime endTime = parseDateTime(endDate);
+        // 异常日志筛选：exception=true 时仅返回 errorMessage 非空的记录
+        Boolean exceptionOnly = Boolean.TRUE.equals(exception) ? Boolean.TRUE : null;
 
-        Page<AuditLog> result = auditLogService.search(operatorId, op, startTime, endTime, pageable);
+        Page<AuditLog> result = auditLogService.search(operatorId, op, startTime, endTime, exceptionOnly, pageable);
 
         List<AuditLogView> items = result.getContent().stream().map(this::toView).toList();
         AuditLogPageView view = new AuditLogPageView(

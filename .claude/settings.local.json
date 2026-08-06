@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw -q test)",
+      "Bash(export PNPM_HOME=\"$HOME/AppData/Local/node/corepack/v1/pnpm/9.15.4\")",
+      "Bash(export PATH=\"$PNPM_HOME:$PATH\")",
+      "Bash(node __TRACKED_VAR__/AppData/Local/node/corepack/v1/pnpm/9.15.4/bin/pnpm.cjs run typecheck)",
+      "Bash(node __TRACKED_VAR__/AppData/Local/node/corepack/v1/pnpm/9.15.4/bin/pnpm.cjs run test:unit)",
+      "Bash(node __TRACKED_VAR__/AppData/Local/node/corepack/v1/pnpm/9.15.4/bin/pnpm.cjs run test:unit -- village.spec.ts)"
+    ]
+  }
+}

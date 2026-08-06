@@ -42,13 +42,16 @@ class CampusControllerTest extends ControllerTestBase {
     @Mock private CampusService campusService;
     @Mock private CampusCertificationService certService;
     @Mock private UserCampusProfileRepository campusProfileRepository;
+    @Mock private com.campuslove.api.discover.ActivityService activityService;
+    @Mock private com.campuslove.api.village.VillageService villageService;
 
     private CampusController controller;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new CampusController(campusService, certService, campusProfileRepository);
+        controller = new CampusController(
+                campusService, certService, campusProfileRepository, activityService, villageService);
     }
 
     /** 创建测试用 CampusTopicView（13 字段 record）。 */
@@ -229,6 +232,7 @@ class CampusControllerTest extends ControllerTestBase {
     @Test
     void constructor_shouldAcceptAllDependencies() {
         // Arrange & Act & Assert
-        assertNotNull(new CampusController(campusService, certService, campusProfileRepository));
+        assertNotNull(new CampusController(
+                campusService, certService, campusProfileRepository, activityService, villageService));
     }
 }

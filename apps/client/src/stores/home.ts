@@ -37,8 +37,15 @@ export const useHomeStore = defineStore("home", () => {
   // ==================== Actions ====================
   /**
    * 加载首页 Dashboard 数据。
+   *
+   * 修复（P1 BUG）：新增竞态 token——快速切换页面/下拉刷新时，
+   * 旧请求返回后不再覆盖新请求结果。
    */
+  let fetchDashboardToken = 0;
+
   async function fetchDashboard() {
+    // 竞态 token：递增计数，仅最新 token 的请求允许更新状态
+    const token = ++fetchDashboardToken;
     loading.value = true;
     errorMessage.value = null;
 
@@ -46,6 +53,8 @@ export const useHomeStore = defineStore("home", () => {
       // 后端实际返回含 discussionHeat 字段，但 OpenAPI 生成类型 Schemas["HomeDashboard"]
       // 未同步更新，此处通过类型断言收敛为 HomeDashboardWithDiscussion 以保留运行时字段访问。
       const data = (await clientApi.getHomeDashboard()) as unknown as HomeDashboard;
+      // 修复：旧请求（被新请求取代）返回时不再修改状态
+      if (token !== fetchDashboardToken) return;
       dashboard.value = data;
 
       // 提取各模块数据（防御性处理：确保数组类型，避免 .slice 等数组方法调用失败）
@@ -59,11 +68,16 @@ export const useHomeStore = defineStore("home", () => {
       activityPreview.value = Array.isArray(activityPreviewRaw) ? activityPreviewRaw : [];
       discussionHeat.value = Array.isArray(discussionHeatRaw) ? discussionHeatRaw : [];
     } catch (error: unknown) {
+      // 修复：旧请求的错误不更新 errorMessage
+      if (token !== fetchDashboardToken) return;
       const msg = error instanceof Error ? error.message : "加载首页数据失败";
       errorMessage.value = msg;
       console.error("[home-store] fetchDashboard error:", error);
     } finally {
-      loading.value = false;
+      // 修复：仅最新 token 的请求才允许清 loading
+      if (token === fetchDashboardToken) {
+        loading.value = false;
+      }
     }
   }
 

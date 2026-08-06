@@ -95,5 +95,5 @@ public class DailyQuestionController {
 record DailyAnswerRequest(
     @NotNull @Positive Long questionId,
     @NotBlank @Size(max = 2000) String content,
-    Boolean isAnonymous
+    @NotNull(message = "isAnonymous 不能为空") Boolean isAnonymous
 ) {}

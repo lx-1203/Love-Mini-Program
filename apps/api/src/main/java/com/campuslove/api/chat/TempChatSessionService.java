@@ -18,6 +18,7 @@ import com.campuslove.api.repository.UserScheduleProfileRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -104,10 +105,16 @@ public class TempChatSessionService {
         Long currentUserId = resolveCurrentUserId();
         List<TempChatSession> sessions = sessionRepository.findByUserIdOrderByPinnedAndLastMessage(currentUserId);
 
+        // infra R2-00240: 批量预加载对方用户信息，避免每会话 4 次查库（N+1）
+        Map<Long, com.campuslove.api.chat.TempChatViewMapper.PartnerInfo> partnerInfoMap =
+                viewMapper.loadPartnerInfoMap(sessions.stream()
+                        .map(s -> s.getUserAId().equals(currentUserId) ? s.getUserBId() : s.getUserAId())
+                        .toList());
+
         List<ChatSessionSummaryView> result = new ArrayList<>();
         for (TempChatSession session : sessions) {
             markExpiredIfDue(session);
-            result.add(toSummary(session, currentUserId));
+            result.add(toSummary(session, currentUserId, partnerInfoMap));
         }
         return result;
     }
@@ -155,7 +162,9 @@ public class TempChatSessionService {
         session.setUserBUnreadCount(0);
         session.setCreatedAt(now);
         session.setUpdatedAt(now);
-        sessionRepository.save(session);
+        // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
+        // 否则 contactExchange.setSession 与下方 toSessionView 中 session.getId() 为 null
+        session = sessionRepository.save(session);
 
         // 创建默认的联系交换记录
         TempChatContactExchange contactExchange = new TempChatContactExchange();
@@ -180,11 +189,12 @@ public class TempChatSessionService {
     /**
      * 获取指定会话详情，包含消息列表和联系交换状态。
      * 如果会话已过期，消息列表为空。
+     * 修复（FIN HIGH-1）：校验当前用户是否为会话参与者，防止 IDOR 越权查看他人会话。
      */
     @Transactional
     public TempChatSessionView getSession(String id) {
         Long currentUserId = resolveCurrentUserId();
-        TempChatSession session = resolveSession(id);
+        TempChatSession session = resolveSessionForCurrentUser(id);
         markExpiredIfDue(session);
         return toSessionView(session, currentUserId);
     }
@@ -196,7 +206,7 @@ public class TempChatSessionService {
     @Transactional
     public TempChatSessionView endSession(String id) {
         Long currentUserId = resolveCurrentUserId();
-        TempChatSession session = resolveSession(id);
+        TempChatSession session = resolveSessionForCurrentUser(id);
 
         if (session.getPhase() == SessionPhase.closed || session.getPhase() == SessionPhase.expired) {
             log.debug("会话 {} 已{}，无需重复结束", id, session.getPhase() == SessionPhase.closed ? "关闭" : "过期");
@@ -226,7 +236,7 @@ public class TempChatSessionService {
     @Transactional
     public ChatSessionSummaryView pinSession(String id) {
         Long currentUserId = resolveCurrentUserId();
-        TempChatSession session = resolveSession(id);
+        TempChatSession session = resolveSessionForCurrentUser(id);
         session.setIsPinned(true);
         session.setUpdatedAt(LocalDateTime.now());
         sessionRepository.save(session);
@@ -240,7 +250,7 @@ public class TempChatSessionService {
     @Transactional
     public ChatSessionSummaryView unpinSession(String id) {
         Long currentUserId = resolveCurrentUserId();
-        TempChatSession session = resolveSession(id);
+        TempChatSession session = resolveSessionForCurrentUser(id);
         session.setIsPinned(false);
         session.setUpdatedAt(LocalDateTime.now());
         sessionRepository.save(session);
@@ -254,7 +264,7 @@ public class TempChatSessionService {
     @Transactional
     public ChatSessionSummaryView markSessionRead(String id) {
         Long currentUserId = resolveCurrentUserId();
-        TempChatSession session = resolveSession(id);
+        TempChatSession session = resolveSessionForCurrentUser(id);
         if (session.getUserAId().equals(currentUserId)) {
             session.setUserAUnreadCount(0);
         } else {
@@ -281,6 +291,19 @@ public class TempChatSessionService {
      */
     public ChatSessionSummaryView toSummary(TempChatSession session, Long currentUserId) {
         return viewMapper.toSummary(session, currentUserId);
+    }
+
+    /**
+     * 将 TempChatSession 实体转换为 ChatSessionSummaryView（批量预加载版本）。
+     *
+     * @param session        会话实体
+     * @param currentUserId  当前用户 ID
+     * @param partnerInfoMap 批量预加载的对方用户信息 Map
+     * @return 会话摘要视图
+     */
+    public ChatSessionSummaryView toSummary(TempChatSession session, Long currentUserId,
+                                            Map<Long, com.campuslove.api.chat.TempChatViewMapper.PartnerInfo> partnerInfoMap) {
+        return viewMapper.toSummary(session, currentUserId, partnerInfoMap);
     }
 
     /** 将消息实体转换为视图。 */
@@ -310,6 +333,42 @@ public class TempChatSessionService {
             }
         }
         return sessionOpt.orElseThrow(() -> new IllegalArgumentException("会话不存在: " + id));
+    }
+
+    /**
+     * 解析会话实体并校验当前用户（SecurityContext）是否为会话参与者。
+     *
+     * <p>修复（FIN HIGH-1）：会话 UID 格式可预测，若下游操作直接使用 {@link #resolveSession(String)}
+     * 而不校验参与者，任意登录用户可越权访问/操作他人会话（IDOR）。
+     * 所有面向用户的会话操作入口必须使用本方法。</p>
+     *
+     * @param id 会话 ID（sessionUid 或数据库 ID）
+     * @return 会话实体
+     * @throws com.campuslove.api.common.OperationForbiddenException 当前用户不是会话参与者时抛出
+     */
+    public TempChatSession resolveSessionForCurrentUser(String id) {
+        Long currentUserId = resolveCurrentUserId();
+        TempChatSession session = resolveSession(id);
+        requireParticipant(session, currentUserId);
+        return session;
+    }
+
+    /**
+     * 校验指定用户是否为会话参与者（userA / userB 之一）。
+     *
+     * @param session 会话实体
+     * @param userId  待校验用户 ID
+     * @throws com.campuslove.api.common.OperationForbiddenException 用户不是会话参与者时抛出
+     */
+    public void requireParticipant(TempChatSession session, Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("当前用户 ID 不能为空");
+        }
+        boolean participant = (session.getUserAId() != null && session.getUserAId().equals(userId))
+                || (session.getUserBId() != null && session.getUserBId().equals(userId));
+        if (!participant) {
+            throw new com.campuslove.api.common.OperationForbiddenException("无权访问该会话");
+        }
     }
 
     /** 检查会话是否已过期（当前时间超过 closesAt）。 */
@@ -369,13 +428,15 @@ public class TempChatSessionService {
                 return recommendations.get(0).id();
             }
         } catch (DataAccessException e) {
-            log.warn("从推荐服务获取推荐人信息失败，回退到 ID 解析: {}", e.getMessage());
+            log.warn("从推荐服务获取推荐人信息失败: {}", e.getMessage());
         }
 
-        if (hasText(recommendedPersonId)) {
-            Long parsed = parseUserId(recommendedPersonId);
-            if (parsed != null) return parsed;
-        }
+        // 修复（R2 review MED）：旧实现会把 recommendedPersonId 任意解析为 userId，
+        // 允许用户与任意用户建立临时会话（绕过推荐/匹配体系，对方无接受机制即被拉入）。
+        // 现仅保留 matchId 兜底（来自匹配体系的 ID 相对可信），
+        // recommendedPersonId 未命中推荐列表时不再回退到任意用户。
+        // TODO(安全): matchId 兜底仍可把任意数字解析为 userId，接入匹配体系后
+        // 应进一步校验 matchId 归属当前用户（需 MatchService 查询支持）。
         if (hasText(matchId)) {
             Long parsed = parseUserId(matchId);
             if (parsed != null) return parsed;

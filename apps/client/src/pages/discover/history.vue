@@ -10,6 +10,8 @@ import { useDiscoverStore } from "../../stores/discover";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
+// infra R2-00069: 统一错误分类 toast
+import { showErrorToast } from "../../utils/error-toast";
 
 const { t } = useI18n();
 const discoverStore = useDiscoverStore();
@@ -91,10 +93,8 @@ async function handleRewind(cardId: string) {
     // 返回寻觅页
     uni.navigateBack();
   } catch (error) {
-    uni.showToast({
-      title: error instanceof Error ? error.message : t("discoverHistory.rewindFailed"),
-      icon: "none",
-    });
+    // infra R2-00069: 不直接展示 store 原始 message（可能含技术细节），按错误分类映射友好文案
+    showErrorToast(error, t("discoverHistory.rewindFailed"));
   }
 }
 

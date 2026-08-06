@@ -150,8 +150,15 @@ public class SecurityConfig {
                 // 即登录用户才能上传文件，防止匿名用户滥用存储空间
                 // 其他所有 /api/v1/** 需要认证
                 .requestMatchers("/api/v1/**").authenticated()
-                // 其他请求放行
-                .anyRequest().permitAll()
+                // FIN-00061 修复：原实现 .anyRequest().permitAll() 将未匹配路径（含未来新增端点）
+                // 全部匿名放行，存在「新增接口默认开放」的风险。
+                // 现改为默认拒绝未认证请求（authenticated），白名单在下方显式声明：
+                //   - /api/v1/auth/**（登录/注册）、/ws/**（WebSocket 握手）、
+                //     /api/v1/content-filter/check（内容预检）、/actuator/health（健康检查）
+                //   - /error 由 Servlet 容器错误分发，放行避免 401 循环
+                // 若未来需要新增公开端点，必须在此显式加入白名单。
+                .requestMatchers("/error").permitAll()
+                .anyRequest().authenticated()
             )
             // 在 UsernamePasswordAuthenticationFilter 之前添加 JWT 过滤器
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -176,7 +183,12 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setAllowedHeaders(List.of(
+                "Authorization", "Content-Type", "X-Requested-With",
+                // infra 修复(联调):@Idempotent 强制接口(如 admin 登录)要求
+                // Idempotency-Key 请求头,未加入 CORS 允许列表导致浏览器预检被拦
+                // (net::ERR_FAILED),curl 不受 CORS 限制故表现正常。
+                "Idempotency-Key"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

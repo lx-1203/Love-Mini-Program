@@ -20,6 +20,7 @@ import com.campuslove.api.user.FollowUserView;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,39 @@ public class ProfileQueryService {
     private final PostLikeRepository postLikeRepository;
     private final ObjectMapper objectMapper;
     private final CampusCertificationService campusCertificationService;
+    /** JPA 实体管理器（FIN-00029 修复：批量点赞统计） */
+    private final EntityManager entityManager;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    public ProfileQueryService(
+            UserRepository userRepository,
+            UserFollowRepository userFollowRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
+            UserCampusProfileRepository userCampusProfileRepository,
+            UserScheduleProfileRepository userScheduleProfileRepository,
+            PostRepository postRepository,
+            PostLikeRepository postLikeRepository,
+            ObjectMapper objectMapper,
+            CampusCertificationService campusCertificationService,
+            EntityManager entityManager) {
+        this.userRepository = userRepository;
+        this.userFollowRepository = userFollowRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
+        this.userCampusProfileRepository = userCampusProfileRepository;
+        this.userScheduleProfileRepository = userScheduleProfileRepository;
+        this.postRepository = postRepository;
+        this.postLikeRepository = postLikeRepository;
+        this.objectMapper = objectMapper;
+        this.campusCertificationService = campusCertificationService;
+        this.entityManager = entityManager;
+    }
+
+    /**
+     * 兼容旧测试的构造器（entityManager 为 null，批量统计回退原逻辑）。
+     *
+     * @deprecated 仅单元测试使用；Spring 注入请使用带 EntityManager 的构造器。
+     */
+    @Deprecated
     public ProfileQueryService(
             UserRepository userRepository,
             UserFollowRepository userFollowRepository,
@@ -75,15 +108,10 @@ public class ProfileQueryService {
             PostLikeRepository postLikeRepository,
             ObjectMapper objectMapper,
             CampusCertificationService campusCertificationService) {
-        this.userRepository = userRepository;
-        this.userFollowRepository = userFollowRepository;
-        this.userBasicProfileRepository = userBasicProfileRepository;
-        this.userCampusProfileRepository = userCampusProfileRepository;
-        this.userScheduleProfileRepository = userScheduleProfileRepository;
-        this.postRepository = postRepository;
-        this.postLikeRepository = postLikeRepository;
-        this.objectMapper = objectMapper;
-        this.campusCertificationService = campusCertificationService;
+        this(userRepository, userFollowRepository, userBasicProfileRepository,
+                userCampusProfileRepository, userScheduleProfileRepository,
+                postRepository, postLikeRepository, objectMapper,
+                campusCertificationService, null);
     }
 
     // ---- 基本资料查询 ----
@@ -272,14 +300,29 @@ public class ProfileQueryService {
 
     /**
      * 计算用户所有帖子的总点赞数。
+     *
+     * <p>FIN-00029 修复：原实现每帖一次 {@code countByPostId}（N+1），
+     * 改为一次 IN 聚合查询后求和。</p>
      */
     public int calculateTotalLikesCount(Long userId) {
         List<Post> userPosts = postRepository.findByAuthorId(userId);
-        int totalLikes = 0;
-        for (Post post : userPosts) {
-            totalLikes += postLikeRepository.countByPostId(post.getId());
+        if (userPosts.isEmpty()) {
+            return 0;
         }
-        return totalLikes;
+        if (entityManager == null) {
+            // 兼容旧测试构造器（entityManager 为 null）：回退每帖一次 count 的原逻辑
+            int totalLikes = 0;
+            for (Post post : userPosts) {
+                totalLikes += postLikeRepository.countByPostId(post.getId());
+            }
+            return totalLikes;
+        }
+        List<Long> postIds = userPosts.stream().map(Post::getId).toList();
+        Long total = entityManager.createQuery(
+                        "SELECT COUNT(l) FROM PostLike l WHERE l.postId IN :postIds", Long.class)
+                .setParameter("postIds", postIds)
+                .getSingleResult();
+        return total != null ? total.intValue() : 0;
     }
 
     // ---- 视图转换与辅助方法（公开供 ProfileUpdateService 复用） ----

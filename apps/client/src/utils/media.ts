@@ -38,6 +38,8 @@
 
 import { appEnv } from "../services/env";
 import { getToken } from "../services/http";
+// infra R2-00131: 统一图片选择封装复用隐私授权守卫（chooseImages）
+import { ensurePrivacyAuthorized } from "./privacy";
 
 /**
  * 上传文件存储路径前缀。
@@ -145,6 +147,15 @@ function appendTokenIfMissing(url: string): string {
     // 未登录或 token 已过期：返回原 URL，由后端 401/403 触发 SafeImage fallback
     return url;
   }
+  // ⚠️ 安全警告（已知风险）：把 JWT 拼入图片 URL 的 query 参数，token 会暴露在：
+  // 1. 浏览器 Referer 头（图片请求会携带 Referer 给图片服务器/CDN）；
+  // 2. 代理/CDN 访问日志与浏览器历史记录；
+  // 3. 小程序网络面板（开发者工具可查）。
+  // 因此生产环境不应依赖此方案长期运行。替代方案（推荐）：
+  // - 使用 Authorization 头无法覆盖 <image> 标签请求，故可改为
+  //   后端签发短期有效（如 5 分钟）的一次性签名 URL（如 OSS 签名）；
+  // - 或由后端在登录后返回已带签名的图片 URL，前端不做拼接。
+  // 此处保留拼接能力仅为满足现有鉴权代理端点（/media/proxy/*）的契约。
   const separator = url.includes("?") ? "&" : "?";
   return `${url}${separator}${TOKEN_QUERY_PARAM}=${encodeURIComponent(token)}`;
 }
@@ -170,4 +181,96 @@ export function resolveMediaUrls(paths: Array<string | null | undefined> | null 
     }
   }
   return result;
+}
+
+/* ========== 统一图片选择封装（infra R2-00131） ========== */
+
+/**
+ * 图片选择参数。
+ */
+export interface ChooseImagesOptions {
+  /** 可选图片数量上限（默认 9，与发帖九宫格上限一致） */
+  count?: number;
+  /** 单张图片大小上限（MB），超限图片自动剔除（默认 10MB） */
+  maxSizeMB?: number;
+  /** 是否先检查微信隐私协议（默认 true，仅 mp-weixin 生效） */
+  checkPrivacy?: boolean;
+}
+
+/**
+ * 统一图片选择封装。
+ *
+ * infra R2-00131: 此前 pages/profile/album.vue、pages/campus/certification.vue 等
+ * 各自内联 chooseImage + 隐私授权样板，行为不一致且难维护。本函数统一处理：
+ * 1. 隐私协议预检查（ensurePrivacyAuthorized，未同意时 reject）
+ * 2. 数量上限（count）
+ * 3. 单张大小校验（maxSizeMB，超限图片剔除）
+ *
+ * @param options 选择参数
+ * @returns 选中图片的本地临时路径列表；用户主动取消时返回空数组
+ */
+export async function chooseImages(
+  options: ChooseImagesOptions = {}
+): Promise<string[]> {
+  const { count = 9, maxSizeMB = 10, checkPrivacy = true } = options;
+
+  if (checkPrivacy) {
+    await ensurePrivacyAuthorized();
+  }
+
+  const paths = await new Promise<string[]>((resolve, reject) => {
+    uni.chooseImage({
+      count,
+      success: (res) => {
+        // infra R2-00131: uni 类型定义中 tempFilePaths 为 string | string[]，
+        // 统一规整为数组后返回
+        const raw = res.tempFilePaths;
+        const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+        resolve(list);
+      },
+      fail: (err) => {
+        // 用户主动取消：视为空选择而非错误，避免调用方误报失败
+        if (typeof err?.errMsg === "string" && err.errMsg.includes("cancel")) {
+          resolve([]);
+        } else {
+          reject(err);
+        }
+      },
+    });
+  });
+
+  // 大小校验：剔除超过 maxSizeMB 的图片（uni.getFileInfo 失败时保守保留）
+  if (maxSizeMB <= 0 || paths.length === 0) {
+    return paths;
+  }
+  const maxBytes = maxSizeMB * 1024 * 1024;
+  const kept: string[] = [];
+  for (const p of paths) {
+    const size = await getFileSizeBytes(p);
+    if (size === null || size <= maxBytes) {
+      kept.push(p);
+    }
+  }
+  return kept;
+}
+
+/**
+ * 获取本地临时文件大小（字节）。
+ *
+ * @param path 本地临时文件路径
+ * @returns 文件大小（字节）；获取失败返回 null（调用方保守处理）
+ */
+async function getFileSizeBytes(path: string): Promise<number | null> {
+  try {
+    const info = await new Promise<{ size?: number }>((resolve, reject) => {
+      uni.getFileInfo({
+        filePath: path,
+        success: resolve,
+        fail: reject,
+      });
+    });
+    return typeof info?.size === "number" ? info.size : null;
+  } catch (_e) {
+    return null;
+  }
 }

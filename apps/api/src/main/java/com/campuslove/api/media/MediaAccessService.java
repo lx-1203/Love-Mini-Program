@@ -69,7 +69,8 @@ public class MediaAccessService {
      * <p>处理流程：
      * <ol>
      *   <li>从 {@link Authentication} 提取当前 userId 与是否 ADMIN</li>
-     *   <li>鉴权：targetUserId 必须等于当前 userId，或当前用户为 ADMIN；否则 403</li>
+     *   <li>分级鉴权（infra R2-00013）：IMAGE（头像/帖子图/活动图）登录用户均可读；
+     *       语音/视频/身份证仅本人或 ADMIN；否则 403</li>
      *   <li>路径穿越校验：subPath 不含 {@code ..}、{@code \}、绝对路径前缀</li>
      *   <li>构造磁盘绝对路径并 normalize，二次校验仍在 storageRoot 之下</li>
      *   <li>文件存在性校验，不存在则 404</li>
@@ -81,7 +82,7 @@ public class MediaAccessService {
      * @param subPath        subPath（如 {@code 202607/uuid.jpg}），不含 userId
      * @param authentication 当前请求的认证主体（由 SecurityContext 注入）
      * @return 已通过校验的 {@link MediaFile}，包含可读取的 Resource 与 MediaType
-     * @throws AccessDeniedException    当前用户无权访问该文件（非本人且非管理员）
+     * @throws AccessDeniedException    当前用户无权访问该文件（非本人且非管理员，且非公开图片）
      * @throws ResponseStatusException  路径非法或文件不存在（400/404）
      */
     public MediaFile loadMedia(Long targetUserId, String subPath, Authentication authentication) {
@@ -89,16 +90,19 @@ public class MediaAccessService {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
                     "userId 不能为空");
         }
-        // 鉴权：当前用户必须为文件归属者或管理员
+        // 分级鉴权：IMAGE 为社交公开资源（登录用户可读）；其余类型仅本人或管理员
         Long currentUserId = extractCurrentUserId(authentication);
         boolean isAdmin = hasAdminRole(authentication);
         if (currentUserId == null) {
             // 未认证（无 token 或 token 无效）
             throw new AccessDeniedException("未认证，拒绝访问媒体文件");
         }
-        if (!targetUserId.equals(currentUserId) && !isAdmin) {
-            LOGGER.warn("媒体访问被拒绝: targetUserId={}, currentUserId={}, isAdmin={}",
-                    targetUserId, currentUserId, isAdmin);
+        MediaCategory detectedType = probeMediaTypeByPath(subPath);
+        boolean isOwner = targetUserId.equals(currentUserId);
+        boolean imagePublicRead = detectedType == MediaCategory.IMAGE;
+        if (!isOwner && !isAdmin && !imagePublicRead) {
+            LOGGER.warn("媒体访问被拒绝: targetUserId={}, currentUserId={}, isAdmin={}, type={}",
+                    targetUserId, currentUserId, isAdmin, detectedType);
             throw new AccessDeniedException("无权访问该用户的媒体文件");
         }
 
@@ -277,6 +281,50 @@ public class MediaAccessService {
             }
         }
         return MediaType.APPLICATION_OCTET_STREAM;
+    }
+
+    /**
+     * infra R2-00013：按子路径推断媒体类型，用于分级授权判定。
+     *
+     * <p>与 {@link com.campuslove.api.media.MediaAccessController.MediaType#fromPath}
+     * 保持一致的分类规则：身份证/学生证关键词 → ID_CARD，voice/audio 或语音扩展名 → VOICE，
+     * 视频扩展名 → VIDEO，其余按 IMAGE（公开可读）。</p>
+     *
+     * @param subPath 子路径（如 {@code 202607/uuid.jpg} 或 {@code voice/202607/uuid.m4a}）
+     * @return 推断的媒体分类，默认 {@code IMAGE}
+     */
+    private MediaCategory probeMediaTypeByPath(String subPath) {
+        if (subPath == null || subPath.isBlank()) {
+            return MediaCategory.IMAGE;
+        }
+        String lower = subPath.toLowerCase(Locale.ROOT);
+        // 与 MediaAccessController.MediaType.fromPath 的分类规则保持一致：
+        // 身份证/认证资料（id[-_]?card|idcard|verification|certification）→ ID_CARD
+        if (lower.matches(".*(id[-_]?card|idcard|verification|certification).*")) {
+            return MediaCategory.ID_CARD;
+        }
+        // 语音（voice|audio 路径或 mp3/wav/m4a/aac/opus/amr 扩展名）
+        if (lower.matches(".*(voice|audio).*")
+                || lower.matches(".*\\.(mp3|wav|m4a|aac|opus|amr)$")) {
+            return MediaCategory.VOICE;
+        }
+        // 视频（video|videos 路径或 mp4/mov/avi/webm/mkv/flv 扩展名）
+        if (lower.matches(".*(video|videos).*")
+                || lower.matches(".*\\.(mp4|mov|avi|webm|mkv|flv)$")) {
+            return MediaCategory.VIDEO;
+        }
+        return MediaCategory.IMAGE;
+    }
+
+    /**
+     * 媒体分类枚举（与 {@link com.campuslove.api.media.MediaAccessController.MediaType} 对齐，
+     * 用于 service 层分级授权判定；命名避开 Spring 的 {@code org.springframework.http.MediaType}）。
+     */
+    public enum MediaCategory {
+        IMAGE,
+        VOICE,
+        VIDEO,
+        ID_CARD
     }
 
     /**

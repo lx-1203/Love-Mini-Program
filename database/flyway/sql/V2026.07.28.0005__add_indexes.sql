@@ -178,10 +178,10 @@ CALL add_index_if_missing('promo_code_usages', 'idx_promo_code_usages_code_used'
 CALL add_index_if_missing('user_follows', 'idx_user_follows_follower_created', 'follower_id, created_at');
 
 -- ============================================================
--- 15. user_follows (followed_id, created_at) 复合索引
+-- 15. user_follows (following_id, created_at) 复合索引
 -- ============================================================
--- 用途：用户粉丝列表按时间分页
-CALL add_index_if_missing('user_follows', 'idx_user_follows_followed_created', 'followed_id, created_at');
+-- 用途：用户粉丝列表按时间分页（实际列名为 following_id,非任务规格的 followed_id）
+CALL add_index_if_missing('user_follows', 'idx_user_follows_followed_created', 'following_id, created_at');
 
 -- ============================================================
 -- 16. post_likes (post_id, created_at) 复合索引
@@ -237,7 +237,7 @@ CALL add_index_if_missing('check_ins', 'idx_check_ins_user_date', 'user_id, chec
 -- 24. make_up_quota (user_id, year_month) 复合索引
 -- ============================================================
 -- 用途：补签额度按年月查询（findByUserIdAndYearMonth）
-CALL add_index_if_missing('make_up_quota', 'idx_make_up_quota_user_month', 'user_id, year_month');
+CALL add_index_if_missing('make_up_quota', 'idx_make_up_quota_user_month', 'user_id, `year_month`');
 
 -- ============================================================
 -- 25. reports (target_type, target_id, status) 复合索引
@@ -252,16 +252,17 @@ CALL add_index_if_missing('reports', 'idx_reports_target_status', 'target_type, 
 CALL add_index_if_missing('vip_bills', 'idx_vip_bills_user_status_created', 'user_id, status, created_at');
 
 -- ============================================================
--- 27. vip_red_packets (sender_user_id, status) 复合索引
+-- 27. vip_red_packets (sender_id, status) 复合索引
 -- ============================================================
--- 用途：发送方查询红包状态
-CALL add_index_if_missing('vip_red_packets', 'idx_vip_red_packets_sender_status', 'sender_user_id, status');
+-- 用途：发送方查询红包状态（实际列名为 sender_id,非任务规格的 sender_user_id）
+CALL add_index_if_missing('vip_red_packets', 'idx_vip_red_packets_sender_status', 'sender_id, status');
 
 -- ============================================================
--- 28. vip_red_packets (claimer_user_id, status) 复合索引
+-- 28. vip_red_packet_claims (claimer_id, claimed_at) 复合索引
 -- ============================================================
--- 用途：领取方查询红包状态
-CALL add_index_if_missing('vip_red_packets', 'idx_vip_red_packets_claimer_status', 'claimer_user_id, status');
+-- 用途：领取方查询红包记录（claimer 归属 vip_red_packet_claims 表,原任务规格
+--      vip_red_packets.claimer_user_id 列不存在,修正为 claims 表实际列）
+CALL add_index_if_missing('vip_red_packet_claims', 'idx_vip_red_packet_claims_claimer_claimed', 'claimer_id, claimed_at');
 
 -- ============================================================
 -- 29. visitors (visited_user_id, created_at) 复合索引
@@ -309,13 +310,13 @@ CALL add_index_if_missing('campus_topics', 'idx_campus_topics_school_cat_created
 -- 36. payment_callback_log (notification_id) 唯一索引
 -- ============================================================
 -- 用途：微信支付回调通知去重（findByNotificationId）
-CALL add_unique_index_if_missing('payment_callback_log', 'uk_payment_callback_log_notification', 'notification_id');
+CALL add_unique_index_if_missing('payment_callback_log', 'uk_payment_callback_notification', 'notification_id');
 
 -- ============================================================
 -- 37. third_party_account (provider, open_id) 唯一约束（如未存在）
 -- ============================================================
 -- 用途：保证同一 provider+open_id 唯一对应一个 third_party_account
-CALL add_unique_index_if_missing('third_party_account', 'uk_third_party_account_provider_openid', 'provider, open_id');
+CALL add_unique_index_if_missing('third_party_account', 'uk_third_party_provider_open_id', 'provider, open_id');
 
 -- ============================================================
 -- 38. third_party_account (user_id, provider) 唯一约束（如未存在）
@@ -349,7 +350,7 @@ CALL add_unique_index_if_missing('push_preferences', 'uk_push_preferences_user',
 -- 43. do_not_disturb_settings (user_id) 唯一约束（如未存在）
 -- ============================================================
 -- 用途：每个用户一条勿扰设置
-CALL add_unique_index_if_missing('dnd_settings', 'uk_dnd_settings_user', 'user_id');
+CALL add_unique_index_if_missing('dnd_settings', 'uk_dnd_user_id', 'user_id');
 
 -- ============================================================
 -- 44. match_config (config_key) 唯一约束（如未存在）

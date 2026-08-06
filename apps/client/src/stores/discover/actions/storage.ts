@@ -14,6 +14,9 @@ import {
   DAILY_LIMIT_TOTAL,
   SAVE_DEBOUNCE_MS,
 } from "../constants";
+
+/** 本地存储中保留的 viewedCards 最大条数（超出部分在写入前截断） */
+const MAX_VIEWED_CARDS = 200;
 import {
   getNextNoonString,
   loadDailyRecord,
@@ -74,8 +77,15 @@ export function debouncedSave(this: DiscoverStoreThis): void {
  */
 export function saveToStorage(this: DiscoverStoreThis): void {
   try {
+    // 修复（P1 BUG）：viewedCards 全量快照写入 storage 会无限增长
+    // （每条含完整卡片快照，一天滑动数百张后可能撑爆小程序存储上限）。
+    // 现仅保留最近 MAX_VIEWED_CARDS=200 条，超出部分丢弃
+    // （反悔仅对近期卡片有意义，旧记录无恢复价值）。
+    const capped = this.viewedCards.length > MAX_VIEWED_CARDS
+      ? this.viewedCards.slice(this.viewedCards.length - MAX_VIEWED_CARDS)
+      : this.viewedCards;
     saveDailyRecord(
-      this.viewedCards,
+      capped,
       this.hasRewoundToday,
       this.lastRefreshTime
     );
@@ -115,22 +125,36 @@ export function forceResetDailyLimit(this: DiscoverStoreThis): void {
  * - 页面 onUnmounted（通过 useDiscoverStore().dispose() 调用）
  * - HMR 热更新时（由 Vite 自动调用 dispose）
  * - 应用退出 / 切换账号时
+ *
+ * TODO(dispose-接线)：引用页面为 pages/discover/index.vue（主使用页）及
+ * pages/discover/history.vue、pages/home/index.vue、pages/profile/index.vue。
+ * 本子任务受目录权限限制无法修改 pages/ 目录，需在后续任务中于页面
+ * onUnload/onUnmounted 调用 discoverStore.dispose()。
  */
 export function dispose(this: DiscoverStoreThis): void {
-  // 清理存储防抖定时器
+  // infra R2-00095: 清理前先强制 flush 一次防抖存储，避免页面销毁时最后操作丢失
   if (timers.saveTimer) {
     clearTimeout(timers.saveTimer);
     timers.saveTimer = null;
+    try {
+      this.saveToStorage();
+    } catch (_e) {
+      // 存储失败忽略，不阻塞销毁
+    }
   }
   // 清理搜索防抖定时器
   if (timers.searchDebounceTimer) {
     clearTimeout(timers.searchDebounceTimer);
     timers.searchDebounceTimer = null;
   }
-  // 清理右滑防抖定时器
+  // 清理右滑防抖定时器（含被覆盖 Promise 的 resolve 引用，避免挂起）
   if (timers.swipeRightDebounceTimer) {
     clearTimeout(timers.swipeRightDebounceTimer);
     timers.swipeRightDebounceTimer = null;
+  }
+  if (timers.swipeRightPendingResolve) {
+    timers.swipeRightPendingResolve();
+    timers.swipeRightPendingResolve = null;
   }
   // 清理 fetchCards 请求控制器，取消在途请求
   if (timers.fetchCardsController) {

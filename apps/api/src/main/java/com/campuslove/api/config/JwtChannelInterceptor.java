@@ -95,6 +95,12 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             throw new org.springframework.messaging.MessageDeliveryException("Unauthorized: invalid JWT token");
         }
 
+        // 修复（R2）：校验 jti 黑名单——登出/撤销后的 token 不得建立 WebSocket 连接
+        if (jwtTokenProvider.isTokenRevoked(token)) {
+            log.warn("WebSocket CONNECT 拒绝: JWT 令牌已撤销, sessionId={}", accessor.getSessionId());
+            throw new org.springframework.messaging.MessageDeliveryException("Unauthorized: revoked JWT token");
+        }
+
         String userId = jwtTokenProvider.getUserIdFromToken(token);
         if (userId == null || userId.isBlank()) {
             log.warn("WebSocket CONNECT 拒绝: 无法从 JWT 提取用户ID, sessionId={}", accessor.getSessionId());

@@ -29,7 +29,8 @@ const mockUserSession: UserSession = {
   campusVerified: true,
   scheduleCompleted: true,
   campusName: "北京大学",
-  schoolId: "北京大学",
+  // infra R2-00047: schoolId 使用学校 ID（非名称），避免 ID/名称语义混淆（与 config/schools.ts 的 id 体系一致）
+  schoolId: "pku",
   schoolBound: true,
   featureFlags: {
     chat_ai_enabled: false,
@@ -180,6 +181,8 @@ export const useSessionStore = defineStore("session", {
      * 实际项目中应由后端返回各字段状态
      */
     profileFieldStatus: (state): ProfileFieldStatus => {
+      // infra R2-00048: 已知限制——avatar/gender/birthday/major/interestTags/bio 暂以
+      // profileCompleted 为代理（后端 UserSession 未暴露字段级状态），待后端下发后替换为真实字段判定
       const session = state.userSession;
       if (!session) {
         return {
@@ -293,13 +296,8 @@ export const useSessionStore = defineStore("session", {
       // 现统一为仅判定 profileCompleted，与 session-guard、page-access.ts 的 requiresProfile 保持一致。
       // campus/schedule 硬门槛由各自的 requiresCampus / requiresSchedule 控制，不再耦合在资料判定里。
       const result = Boolean(session.profileCompleted);
-      if (isDev) {
-        // 修复 no-console：调试日志改用 console.warn（允许的方法）
-        console.warn("[SessionStore] isProfileComplete 判定:", {
-          profileCompleted: session.profileCompleted,
-          result,
-        });
-      }
+      // infra R2-00049: 移除 isDev console.warn 调试日志（getter 高频求值，生产分支无需执行判断），
+      // 需要排查时改用一次性日志或调试工具
       return result;
     },
 
@@ -346,12 +344,9 @@ export const useSessionStore = defineStore("session", {
         this.errorMessage = null;
         this.isOffline = false;
 
-        if (useMock()) {
-          // Mock 模式：调用 API 获取最新的会话数据（支持测试 mock）
-          this.userSession = await clientApi.getSession();
-        } else {
-          this.userSession = await clientApi.getSession();
-        }
+        // 修复：原 useMock()/else 两个分支完全相同（clientApi.getSession 内部已做
+        // mock/real 分流），属死分支，合并为单一调用（语义不变）。
+        this.userSession = await clientApi.getSession();
 
         // 同步 profileBackgroundUrl：后端 UserSession schema 暂未暴露此字段，
         // 使用类型断言安全访问，避免 TS 编译错误。若后端补字段后可移除断言。
@@ -620,7 +615,31 @@ export const useSessionStore = defineStore("session", {
      */
     async bindSchool(schoolId: string): Promise<boolean> {
       if (!this.userSession) return false;
-      // TODO(real-env): 真实环境在此调用后端绑定接口并 await 结果
+      // infra R2-00020 修复：真实模式调用后端保存校园档案（POST /profile/campus），
+      // 落库后 schoolBound 刷新/重登不再回退；mock 模式保持本地改写。
+      if (!useMock()) {
+        try {
+          // CampusProfileRequest 要求 city/campusName/department 三字段
+          const payload = {
+            city: "",
+            campusName: schoolId,
+            department: "",
+          };
+          const saved = await clientApi.saveCampusProfile(payload);
+          this.userSession = {
+            ...this.userSession,
+            schoolId,
+            schoolBound: true,
+            campusName: saved?.campusName ?? schoolId,
+          } as typeof this.userSession;
+          return true;
+        } catch (error) {
+          if (isDev) {
+            console.warn("[SessionStore] bindSchool 后端保存失败:", error);
+          }
+          return false;
+        }
+      }
       this.userSession = {
         ...this.userSession,
         schoolId,
@@ -630,7 +649,7 @@ export const useSessionStore = defineStore("session", {
       } as typeof this.userSession;
       if (isDev) {
         // 修复 no-console：调试日志改用 console.warn（允许的方法）
-        console.warn("[SessionStore] bindSchool 完成:", { schoolId });
+        console.warn("[SessionStore] bindSchool 完成（本地改写）:", { schoolId });
       }
       return true;
     },

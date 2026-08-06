@@ -103,6 +103,9 @@ async function loadList(filter?: FilterType): Promise<void> {
     // feedbackStore.load 接受 SubmissionType | undefined
     // "all" 对应 undefined（不筛选）
     await feedbackStore.load(type === "all" ? undefined : type);
+    // infra R2-00103: 列表刷新成功后清空详情缓存，避免后端更新后仍展示陈旧详情
+    detailCache.value = {};
+    detailLoading.value = {};
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : t("common.networkError");
     console.error("[feedback/history.loadList]", error);

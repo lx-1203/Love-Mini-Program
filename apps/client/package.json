@@ -21,9 +21,11 @@
     "build:h5": "uni build --platform h5",
     "build:h5:real": "uni build --platform h5 --mode real",
     "dev:mp-weixin": "uni --platform mp-weixin",
-    "build:mp-weixin": "uni build --platform mp-weixin",
+    "build:mp-weixin": "uni build --platform mp-weixin --mode mp-weixin",
+    "build:mp-weixin:showcase": "uni build --platform mp-weixin --mode mp-weixin-showcase",
     "build:mp-weixin:real": "node scripts/inject-wx-appid.mjs && uni build --platform mp-weixin --mode real",
     "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run --config vitest.config.ts",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "test:watch": "vitest --config vitest.config.ts",
@@ -70,7 +72,7 @@
     "vue-tsc": "~2.0.0"
   },
   "engines": {
-    "node": ">=18.0.0 <20.0.0",
+    "node": ">=18.0.0 <21.0.0",
     "npm": ">=9.0.0"
   }
 }

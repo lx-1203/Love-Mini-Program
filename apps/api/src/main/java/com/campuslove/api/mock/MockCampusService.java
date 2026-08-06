@@ -56,7 +56,7 @@ public class MockCampusService implements CampusService {
     public CampusTopicView createCampusTopic(Long userId, Long schoolId, String category, String title, String content) {
         long id = topicIdGen.incrementAndGet();
         MockTopicData topic = new MockTopicData(
-                id, schoolId, category, title, content, null, userId,
+                id, schoolId, category, title, content, List.of(), userId,
                 "Mock校友", null, 0, 0, false,
                 LocalDateTime.now(), LocalDateTime.now()
         );
@@ -98,19 +98,19 @@ public class MockCampusService implements CampusService {
                         101L, null, "今天在图书馆遇到一个特别的人，想在校园墙上分享一下...",
                         new PostAuthorView(1001L, "星野", null, "南校区"),
                         "life", List.of("校园生活"), 128, 45, 12,
-                        LocalDateTime.now().minusHours(2).toString(), true, true
+                        LocalDateTime.now().minusHours(2).toString(), true, true, false
                 ),
                 new PostSummaryView(
                         102L, null, "高数考试自救小组招人啦！大二以上，认真不摸鱼。",
                         new PostAuthorView(1002L, "林安", null, "南校区"),
                         "study", List.of("学习", "高数"), 67, 23, 5,
-                        LocalDateTime.now().minusHours(5).toString(), false, true
+                        LocalDateTime.now().minusHours(5).toString(), false, true, false
                 ),
                 new PostSummaryView(
                         103L, null, "周末一起去后山看日出吧！记得带外套~",
                         new PostAuthorView(1003L, "周沐", null, "北校区"),
                         "activity", List.of("活动", "后山"), 89, 31, 8,
-                        LocalDateTime.now().minusDays(1).toString(), false, false
+                        LocalDateTime.now().minusDays(1).toString(), false, false, false
                 )
         );
     }
@@ -151,8 +151,12 @@ public class MockCampusService implements CampusService {
     }
 
     private CampusTopicView toTopicView(MockTopicData t) {
+        // FIN-00043/00044 修复：images 由 String（JSON 字符串）改为 List<String> 存储，
+        // 视图层仍以 JSON 字符串输出（CampusTopicView.images 为 String 契约不变）；
+        // 匿名话题 authorId/authorAvatar 一律置 null，避免泄漏真实身份
         return new CampusTopicView(
-                t.id, t.schoolId, t.category, t.title, t.content, t.images,
+                t.id, t.schoolId, t.category, t.title, t.content,
+                t.images == null || t.images.isEmpty() ? null : toJsonString(t.images),
                 t.isAnonymous ? null : t.authorId,
                 t.isAnonymous ? "匿名校友" : t.authorName,
                 t.isAnonymous ? null : t.authorAvatar,
@@ -176,58 +180,74 @@ public class MockCampusService implements CampusService {
 
     private void initMockData() {
         topics.add(new MockTopicData(
-                2001L, 1L, "course", "高数A期末考试复习资料共享",
+                2001L, 1L, "course_exchange", "高数A期末考试复习资料共享",
                 "整理了近三年的高数A期末考试真题和答案，需要的同学留言邮箱，我统一发送。也欢迎大家补充自己的复习笔记~",
-                null, 1001L, "星野", null, 15, 256, false,
+                null, 1001L, "星野", "/uploads/mock/avatar-xingye.jpg", 15, 256, false,
                 LocalDateTime.now().minusDays(1), LocalDateTime.now().minusHours(1)
         ));
         topics.add(new MockTopicData(
-                2002L, 1L, "club", "摄影社新学期招新啦！",
+                2002L, 1L, "club_recruitment", "摄影社新学期招新啦！",
                 "无论你是摄影老手还是刚入门的新人，都欢迎加入我们！每周组织一次外拍活动，器材可以共享。报名截止下周五。",
-                "[\"https://picsum.photos/400/300?photo1\"]", 1002L, "林安", null, 32, 480, false,
+                List.of("/uploads/mock/topic-photo-1.jpg"), 1002L, "林安", "/uploads/mock/avatar-linan.jpg", 32, 480, false,
                 LocalDateTime.now().minusDays(2), LocalDateTime.now().minusHours(2)
         ));
         topics.add(new MockTopicData(
-                2003L, 1L, "activity", "本周末校园音乐节志愿者招募",
+                2003L, 1L, "campus_activity", "本周末校园音乐节志愿者招募",
                 "校园音乐节需要招募20名志愿者，负责场地布置、引导和后勤。提供志愿者证书和午餐。",
-                null, 1003L, "周沐", null, 8, 180, false,
+                null, 1003L, "周沐", "/uploads/mock/avatar-zhoumu.jpg", 8, 180, false,
                 LocalDateTime.now().minusDays(3), LocalDateTime.now().minusDays(1)
         ));
         topics.add(new MockTopicData(
-                2004L, 1L, "study", "有没有一起备考四六级的小伙伴？",
+                2004L, 1L, "study_help", "有没有一起备考四六级的小伙伴？",
                 "想找几个英语搭子，每天早上7点在图书馆门口晨读30分钟，然后互相抽查单词。目前已有3人~",
-                null, 1004L, "许诺", null, 22, 320, false,
+                null, 1004L, "许诺", "/uploads/mock/avatar-xunuo.jpg", 22, 320, false,
                 LocalDateTime.now().minusDays(4), LocalDateTime.now().minusDays(2)
         ));
         topics.add(new MockTopicData(
-                2005L, 1L, "life", "学校周边美食探店合集（持续更新）",
+                2005L, 1L, "life_service", "学校周边美食探店合集（持续更新）",
                 "作为一个资深吃货，分享学校周边值得一试的美食！从南门小吃街到北门商业区，价格亲民~",
-                "[\"https://picsum.photos/400/300?food1\",\"https://picsum.photos/400/300?food2\"]",
+                List.of("/uploads/mock/topic-food-1.jpg", "/uploads/mock/topic-food-2.jpg"),
                 1001L, null, null, 45, 520, true,
                 LocalDateTime.now().minusDays(5), LocalDateTime.now().minusDays(3)
         ));
 
         // 模拟回复
         repliesByTopic.put(2001L, new ArrayList<>(List.of(
-                new MockReplyData(3001L, 2001L, 1002L, "林安", null,
+                new MockReplyData(3001L, 2001L, 1002L, "林安", "/uploads/mock/avatar-linan.jpg",
                         "太感谢了！我的邮箱是 xxx@campus.edu，麻烦发一下~", false,
                         LocalDateTime.now().minusHours(22)),
-                new MockReplyData(3002L, 2001L, 1003L, "周沐", null,
+                new MockReplyData(3002L, 2001L, 1003L, "周沐", "/uploads/mock/avatar-zhoumu.jpg",
                         "已收到，整理得很棒！我也补充了一些概率论的资料，要不要合并？", false,
                         LocalDateTime.now().minusHours(20)),
-                new MockReplyData(3003L, 2001L, 1004L, null, null,
+                // FIN-00044 修复：匿名回复 authorId 置 null，避免泄漏真实用户 ID
+                new MockReplyData(3003L, 2001L, null, null, null,
                         "求一份，谢谢学长！", true,
                         LocalDateTime.now().minusHours(18))
         )));
 
         repliesByTopic.put(2002L, new ArrayList<>(List.of(
-                new MockReplyData(3004L, 2002L, 1004L, "许诺", null,
+                new MockReplyData(3004L, 2002L, 1004L, "许诺", "/uploads/mock/avatar-xunuo.jpg",
                         "请问器材共享是免费的吗？", false,
                         LocalDateTime.now().minusDays(1).minusHours(2)),
-                new MockReplyData(3005L, 2002L, 1001L, "星野", null,
+                new MockReplyData(3005L, 2002L, 1001L, "星野", "/uploads/mock/avatar-xingye.jpg",
                         "免费的！社内器材大家轮流使用，需要提前预约就行~", false,
                         LocalDateTime.now().minusDays(1).minusHours(1))
         )));
+    }
+
+    /** 将 List<String> 序列化为 JSON 字符串（CampusTopicView.images 契约）。 */
+    private static String toJsonString(List<String> list) {
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < list.size(); i++) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append('"').append(list.get(i).replace("\"", "\\\"")).append('"');
+        }
+        return sb.append(']').toString();
     }
 
     // ---- 内部数据类 ----
@@ -238,7 +258,8 @@ public class MockCampusService implements CampusService {
         String category;
         String title;
         String content;
-        String images;
+        /** FIN-00043 修复：images 从 String（JSON 字符串）改为 List<String> 存储 */
+        List<String> images;
         Long authorId;
         String authorName;
         String authorAvatar;
@@ -249,7 +270,7 @@ public class MockCampusService implements CampusService {
         LocalDateTime updatedAt;
 
         MockTopicData(Long id, Long schoolId, String category, String title, String content,
-                      String images, Long authorId, String authorName, String authorAvatar,
+                      List<String> images, Long authorId, String authorName, String authorAvatar,
                       int replyCount, int viewCount, boolean isAnonymous,
                       LocalDateTime createdAt, LocalDateTime updatedAt) {
             this.id = id;

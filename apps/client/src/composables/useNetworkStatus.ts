@@ -20,11 +20,39 @@
  */
 import { ref, onUnmounted } from "vue";
 import { onLaunch } from "@dcloudio/uni-app";
+// infra R2-00139: 网络恢复/断开 toast 经防抖收敛，避免弱网抖动重复弹提示
+import { debounce } from "../utils/debounce";
 
 /** 全局在线状态（响应式），跨页面共享 */
 const isOnline = ref<boolean>(true);
 /** 当前网络类型（wifi / 2g / 3g / 4g / 5g / unknown / none） */
 const networkType = ref<string>("unknown");
+
+/** 网络状态变化提示防抖间隔（毫秒） */
+// infra R2-00139: 网络抖动（短时间内多次断连/恢复）时，toast 提示经防抖收敛，
+// 避免重复弹出“网络已断开/已恢复”打断用户；isOnline 状态更新保持即时。
+const NETWORK_TOAST_DEBOUNCE_MS = 500;
+
+/**
+ * 网络状态变化 toast 提示（防抖包装，infra R2-00139）。
+ */
+const notifyNetworkToast = debounce((isConnected: boolean): void => {
+  if (isConnected) {
+    // 恢复：正向反馈，鼓励用户继续操作
+    uni.showToast({
+      title: "网络已恢复",
+      icon: "success",
+      duration: 1500,
+    });
+  } else {
+    // 断网：友好提示，不阻塞用户操作
+    uni.showToast({
+      title: "网络已断开，请检查网络设置",
+      icon: "none",
+      duration: 2000,
+    });
+  }
+}, NETWORK_TOAST_DEBOUNCE_MS);
 
 /** 监听器是否已注册（避免重复注册） */
 let listenerRegistered = false;
@@ -49,21 +77,8 @@ function handleNetworkStatusChange(res: { isConnected: boolean; networkType: str
   // 仅在状态真正变化时提示，避免重复 toast
   if (wasOnline === res.isConnected) return;
 
-  if (!res.isConnected) {
-    // 断网：友好提示，不阻塞用户操作
-    uni.showToast({
-      title: "网络已断开，请检查网络设置",
-      icon: "none",
-      duration: 2000,
-    });
-  } else {
-    // 恢复：正向反馈，鼓励用户继续操作
-    uni.showToast({
-      title: "网络已恢复",
-      icon: "success",
-      duration: 1500,
-    });
-  }
+  // infra R2-00139: 提示经防抖收敛（状态更新已即时完成）
+  notifyNetworkToast(res.isConnected);
 }
 
 /**

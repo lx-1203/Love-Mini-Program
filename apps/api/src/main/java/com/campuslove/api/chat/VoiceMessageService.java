@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -38,10 +37,6 @@ import org.springframework.web.multipart.MultipartFile;
  *   <li>时长 ≤ 60 秒</li>
  * </ul>
  * </p>
- *
- * <p>事务处理：方法使用 {@link Transactional} 注解，
- * 虽然文件 IO 不参与数据库事务，但为未来扩展（如记录语音元信息到 DB）预留事务上下文，
- * 并保证异常时统一回滚 DB 操作。</p>
  *
  * <p>错误处理：参数非法抛出 {@link IllegalArgumentException}（由 GlobalExceptionHandler 转 400），
  * IO 异常抛出 {@link RuntimeException}（由 GlobalExceptionHandler 转 500）。</p>
@@ -106,7 +101,7 @@ public class VoiceMessageService {
      * @throws IllegalArgumentException 文件为空/过大/格式不支持/时长超限时抛出
      * @throws RuntimeException         IO 异常或其他未知异常时抛出
      */
-    @Transactional
+    // infra R2-00210: store/delete 为纯文件 IO，不涉及数据库，移除无意义事务开销
     public VoiceUploadResult store(Long userId, MultipartFile file, Integer duration) {
         // 入参校验：userId
         if (userId == null) {
@@ -188,11 +183,16 @@ public class VoiceMessageService {
      * <p>仅删除受管路径（{@code /uploads/} 前缀）下的文件，防止路径遍历。
      * 文件不存在时静默忽略，IO 异常抛出 {@link RuntimeException}。</p>
      *
-     * @param url 语音文件 URL
+     * <p>infra R2-00011 修复：增加归属校验——URL 格式为
+     * {@code {urlPrefix}{ownerUserId}/{yyyyMM}/{fileName}}，仅允许删除
+     * ownerUserId 与当前操作者一致的文件，杜绝跨用户删除他人语音（IDOR）。</p>
+     *
+     * @param ownerUserId 文件归属用户 ID（来自 JWT 上下文的当前用户）
+     * @param url         语音文件 URL
      * @throws RuntimeException IO 异常时抛出
      */
-    @Transactional
-    public void delete(String url) {
+    // infra R2-00210: 同上，删除为纯文件 IO，移除 @Transactional
+    public void delete(Long ownerUserId, String url) {
         try {
             if (url == null || url.isBlank()) {
                 return;
@@ -203,11 +203,29 @@ public class VoiceMessageService {
                 return;
             }
             String relative = url.substring(urlPrefix.length());
+            // security_review 修复（R2-MEDIUM-01）：归属校验必须基于 normalize 之后的
+            // 真实目标路径首段。原实现对原始 URL 首段校验，攻击者可构造
+            // {prefix}{自己}/{x}/../../{受害者}/{yyyyMM}/{file}.mp3 使首段校验通过、
+            // 实际删除却指向受害者文件（IDOR + 路径穿越）。先 normalize 再校验，
+            // 并对含 ".." 段的输入直接拒绝（纵深防御，不依赖 normalize 语义）。
+            if (relative.contains("..")) {
+                log.warn("拒绝删除含路径穿越段的语音 URL: {}", url);
+                return;
+            }
             Path target = Paths.get(storageRoot, relative).toAbsolutePath().normalize();
             Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
             if (!target.startsWith(root)) {
                 log.warn("跳过删除越界语音 URL: {}", url);
                 return;
+            }
+            // 归属校验：以 normalize 后路径的相对首段为准
+            Path relPath = root.relativize(target);
+            String ownerIdSegment = relPath.getNameCount() > 0
+                    ? relPath.getName(0).toString() : "";
+            if (ownerUserId == null || !String.valueOf(ownerUserId).equals(ownerIdSegment)) {
+                log.warn("拒绝删除他人语音文件: ownerIdSegment={}, currentUserId={}",
+                        ownerIdSegment, ownerUserId);
+                throw new IllegalArgumentException("无权删除该语音文件");
             }
             boolean deleted = Files.deleteIfExists(target);
             if (deleted) {

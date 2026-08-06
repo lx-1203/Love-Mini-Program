@@ -8,7 +8,7 @@
  * - 状态/审核状态标签通过 posts.statusActive / posts.auditStatusPending 等映射
  * - 错误回退通过 posts.loadFailed / posts.auditFailed / posts.deleteFailed 表达
  */
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import {
   listPosts,
   auditPost,
@@ -20,9 +20,13 @@ import { ApiError } from "../api/http";
 // Task 3.7.2 / 3.7.3：接入共享 Pagination 与 ConfirmDialog 组件
 import Pagination from "../components/Pagination.vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
+// infra R2-00404：错误态接入共享 ErrorState 组件（原无重试入口）
+import ErrorState from "../components/ErrorState.vue";
 import { useI18n } from "vue-i18n";
 // Task 45：统一日志入口
 import { logger } from "../utils/logger";
+import { formatDateTime } from "../utils/format";
+import { DEFAULT_PAGE_SIZE, REMARK_MAX_LENGTH } from "../utils/constants";
 
 const { t } = useI18n();
 
@@ -35,22 +39,30 @@ const statusFilter = ref<"" | "active" | "deleted" | "hidden">("");
 const categoryFilter = ref("");
 
 const page = ref(1);
-const pageSize = ref(20);
+// infra R2-00405：pageSize 魔法数字收敛为公共常量
+const pageSize = ref(DEFAULT_PAGE_SIZE);
 const total = ref(0);
 const totalPages = ref(1);
 
 const auditingPost = ref<AdminPostSummary | null>(null);
 const auditDecision = ref<"approved" | "rejected">("approved");
 const auditRemark = ref("");
+// 防重复提交：审核提交中状态
+const savingAudit = ref(false);
 
 // Task 3.7.3：删除确认弹窗状态
 const deleteVisible = ref(false);
 const deleteTarget = ref<AdminPostSummary | null>(null);
 const deleting = ref(false);
 
+// infra R2-00406：搜索/筛选防抖 + 请求竞态防护（同 Users.vue 方案）
+let reqSeq = 0;
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
 async function fetchPosts() {
   loading.value = true;
   errorMsg.value = "";
+  const seq = ++reqSeq;
   try {
     const query: AdminPostListQuery = {
       page: page.value,
@@ -61,44 +73,46 @@ async function fetchPosts() {
     if (categoryFilter.value) query.category = categoryFilter.value;
 
     const result = await listPosts(query);
+    if (seq !== reqSeq) return; // 丢弃过期响应
     posts.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
+    if (seq !== reqSeq) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("posts.loadFailed");
     posts.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    loading.value = false;
+    if (seq === reqSeq) {
+      loading.value = false;
+    }
   }
 }
 
+/** infra R2-00406：筛选变更防抖（400ms） */
+function scheduleSearch() {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    searchTimer = null;
+    page.value = 1;
+    fetchPosts();
+  }, 400);
+}
+
 function handleSearch() {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = null;
   page.value = 1;
   fetchPosts();
 }
 
+// infra R2-00407：handleResetFilters 与 handleSearch 合并（原重复实现）
 function handleResetFilters() {
   auditStatusFilter.value = "";
   statusFilter.value = "";
   categoryFilter.value = "";
-  page.value = 1;
-  fetchPosts();
-}
-
-function handlePrevPage() {
-  if (page.value > 1) {
-    page.value--;
-    fetchPosts();
-  }
-}
-
-function handleNextPage() {
-  if (page.value < totalPages.value) {
-    page.value++;
-    fetchPosts();
-  }
+  handleSearch();
 }
 
 function handleAudit(post: AdminPostSummary) {
@@ -112,8 +126,24 @@ function handleCancelAudit() {
   auditRemark.value = "";
 }
 
+/** infra R2-00410：审核弹窗 Esc 关闭（键盘流操作） */
+function onAuditKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape" && auditingPost.value && !savingAudit.value) {
+    handleCancelAudit();
+  }
+}
+
+/** infra R2-00406：组件卸载时清理防抖定时器 */
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+    searchTimer = null;
+  }
+});
+
 async function handleSaveAudit() {
-  if (!auditingPost.value) return;
+  if (!auditingPost.value || savingAudit.value) return; // 防重复提交
+  savingAudit.value = true;
   try {
     await auditPost(auditingPost.value.id, {
       decision: auditDecision.value,
@@ -125,8 +155,9 @@ async function handleSaveAudit() {
   } catch (err) {
     // Task 45：异常通过 logger 记录，便于线上问题定位
     logger.error("[Posts] audit post failed", err);
-    // eslint-disable-next-line no-alert
-    alert(err instanceof ApiError ? err.message : t("posts.auditFailed"));
+    errorMsg.value = err instanceof ApiError ? err.message : t("posts.auditFailed");
+  } finally {
+    savingAudit.value = false;
   }
 }
 
@@ -150,8 +181,7 @@ async function handleConfirmDelete() {
     deleteTarget.value = null;
     await fetchPosts();
   } catch (err) {
-    // eslint-disable-next-line no-alert
-    alert(err instanceof ApiError ? err.message : t("posts.deleteFailed"));
+    errorMsg.value = err instanceof ApiError ? err.message : t("posts.deleteFailed");
   } finally {
     deleting.value = false;
   }
@@ -171,12 +201,8 @@ function handlePageChange() {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString("zh-CN", { hour12: false });
-  } catch {
-    return iso;
-  }
+  // infra R2-00408：统一走 utils/format 公共工具
+  return formatDateTime(iso);
 }
 
 function auditStatusLabel(status: string): string {
@@ -205,6 +231,25 @@ function statusLabel(status: string): string {
   }
 }
 
+/** 分类 i18n 映射（参照 auditStatusLabel/statusLabel 的映射方式） */
+function categoryLabel(category: string): string {
+  switch (category) {
+    case "interest":
+      return t("posts.categoryInterest");
+    case "sincere":
+      return t("posts.categorySincere");
+    case "hometown":
+      return t("posts.categoryHometown");
+    case "anonymous":
+      return t("posts.categoryAnonymous");
+    case "campus":
+      return t("posts.categoryCampus");
+    default:
+      // infra R2-00409：白名单外分类回退 i18n 文案（原直接显示英文原值）
+      return t("posts.categoryUnknown");
+  }
+}
+
 function authorDisplay(post: AdminPostSummary): string {
   return post.authorNickname || t("posts.authorFallback", { id: post.authorId });
 }
@@ -222,32 +267,32 @@ onMounted(() => {
     </view>
 
     <view class="toolbar">
-      <select v-model="auditStatusFilter" class="filter-select" @change="handleSearch">
+      <select v-model="auditStatusFilter" class="filter-select" @change="scheduleSearch">
         <option value="">{{ t("posts.filterAuditStatusAll") }}</option>
         <option value="pending">{{ t("posts.auditStatusPending") }}</option>
         <option value="approved">{{ t("posts.auditStatusApproved") }}</option>
         <option value="rejected">{{ t("posts.auditStatusRejected") }}</option>
       </select>
-      <select v-model="statusFilter" class="filter-select" @change="handleSearch">
+      <select v-model="statusFilter" class="filter-select" @change="scheduleSearch">
         <option value="">{{ t("posts.filterPostStatusAll") }}</option>
         <option value="active">{{ t("posts.statusActive") }}</option>
         <option value="hidden">{{ t("posts.statusHidden") }}</option>
         <option value="deleted">{{ t("posts.statusDeleted") }}</option>
       </select>
-      <select v-model="categoryFilter" class="filter-select" @change="handleSearch">
+      <select v-model="categoryFilter" class="filter-select" @change="scheduleSearch">
         <option value="">{{ t("posts.filterCategoryAll") }}</option>
-        <option value="all">{{ t("posts.categoryAll") }}</option>
+        <!-- 修复：移除 all/latest 占位分类（后端无此分类，避免筛选结果恒为空） -->
         <option value="interest">{{ t("posts.categoryInterest") }}</option>
         <option value="sincere">{{ t("posts.categorySincere") }}</option>
         <option value="hometown">{{ t("posts.categoryHometown") }}</option>
         <option value="anonymous">{{ t("posts.categoryAnonymous") }}</option>
-        <option value="latest">{{ t("posts.categoryLatest") }}</option>
         <option value="campus">{{ t("posts.categoryCampus") }}</option>
       </select>
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
     </view>
 
-    <view v-if="errorMsg" class="error-banner">{{ errorMsg }}</view>
+    <!-- infra R2-00404：错误态接入 ErrorState 组件（含重试按钮） -->
+    <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchPosts" />
 
     <view class="table-container">
       <table class="data-table">
@@ -279,7 +324,7 @@ onMounted(() => {
                 <text>{{ authorDisplay(post) }}</text>
               </view>
             </td>
-            <td>{{ post.category }}</td>
+            <td>{{ categoryLabel(post.category) }}</td>
             <td>
               <span class="status-badge" :class="`status-${post.status}`">
                 {{ statusLabel(post.status) }}
@@ -293,7 +338,12 @@ onMounted(() => {
             <td>{{ post.likesCount }} / {{ post.commentsCount }} / {{ post.shareCount }}</td>
             <td>{{ formatDate(post.createdAt) }}</td>
             <td class="action-cell">
-              <button class="action-button audit" @click="handleAudit(post)">{{ t("posts.actionAudit") }}</button>
+              <!-- 已审核帖子不再显示审核按钮，避免重复审核 -->
+              <button
+                v-if="post.auditStatus === 'pending'"
+                class="action-button audit"
+                @click="handleAudit(post)"
+              >{{ t("posts.actionAudit") }}</button>
               <button class="action-button delete" @click="handleDelete(post)">{{ t("posts.actionDelete") }}</button>
             </td>
           </tr>
@@ -301,13 +351,7 @@ onMounted(() => {
       </table>
     </view>
 
-    <view class="pagination">
-      <button class="page-button" :disabled="page <= 1" @click="handlePrevPage">{{ t("common.prevPage") }}</button>
-      <text class="page-info">{{ t("posts.paginationInfo", { page, totalPages, total }) }}</text>
-      <button class="page-button" :disabled="page >= totalPages" @click="handleNextPage">{{ t("common.nextPage") }}</button>
-    </view>
-
-    <!-- Task 3.7.2：接入共享 Pagination 组件 -->
+    <!-- Task 3.7.2：接入共享 Pagination 组件（修复双分页：删除上方手写分页） -->
     <Pagination
       v-model:page="page"
       :total-pages="totalPages"
@@ -327,15 +371,16 @@ onMounted(() => {
       @cancel="handleCancelDelete"
     />
 
-    <view v-if="auditingPost" class="modal-mask" @click.self="handleCancelAudit">
+    <view v-if="auditingPost" class="modal-mask" @click.self="handleCancelAudit" @keydown.esc="onAuditKeydown">
       <view class="modal">
         <text class="modal-title">{{ t("posts.auditTitle", { id: auditingPost.id }) }}</text>
         <view class="post-content-box">{{ auditingPost.contentPreview }}</view>
         <view class="form-row">
           <text class="form-label">{{ t("posts.auditDecisionLabel") }}</text>
           <view class="radio-group">
+            <!-- infra R2-00410：默认聚焦通过选项，键盘可直接操作 -->
             <label class="radio-item">
-              <input v-model="auditDecision" type="radio" value="approved" />
+              <input v-model="auditDecision" type="radio" value="approved" autofocus />
               <span>{{ t("posts.auditApprovedOption") }}</span>
             </label>
             <label class="radio-item">
@@ -346,11 +391,14 @@ onMounted(() => {
         </view>
         <view class="form-row">
           <text class="form-label">{{ t("posts.auditRemarkLabel") }}</text>
-          <textarea v-model="auditRemark" class="form-textarea" rows="3" />
+          <!-- infra R2-00410：remark 增加 maxlength（原无长度限制） -->
+          <textarea v-model="auditRemark" class="form-textarea" rows="3" :maxlength="REMARK_MAX_LENGTH" />
         </view>
         <view class="modal-actions">
-          <button class="ghost-button" @click="handleCancelAudit">{{ t("common.cancel") }}</button>
-          <button class="primary-button" @click="handleSaveAudit">{{ t("posts.submitButton") }}</button>
+          <button class="ghost-button" :disabled="savingAudit" @click="handleCancelAudit">{{ t("common.cancel") }}</button>
+          <button class="primary-button" :disabled="savingAudit" @click="handleSaveAudit">
+            {{ savingAudit ? t("common.saving") : t("posts.submitButton") }}
+          </button>
         </view>
       </view>
     </view>
@@ -561,32 +609,8 @@ onMounted(() => {
   background: var(--admin-color-danger-softer);
 }
 
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--admin-space-lg);
-  margin-top: var(--admin-space-xxl);
-}
-
-.page-button {
-  padding: var(--admin-space-sm) var(--admin-space-lg);
-  background: var(--admin-color-bg-container);
-  border: 1px solid var(--admin-color-border);
-  border-radius: var(--admin-radius-md);
-  cursor: pointer;
-  font-size: var(--admin-font-lg);
-}
-
-.page-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.page-info {
-  font-size: var(--admin-font-lg);
-  color: var(--admin-color-text-tertiary);
-}
+/* infra R2-00411：删除死样式 .pagination/.page-button/.page-info——
+   模板已改用共享 Pagination 组件 */
 
 .modal-mask {
   position: fixed;

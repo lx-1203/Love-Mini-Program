@@ -53,11 +53,34 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
     /**
      * 本地内存黑名单，作为 Redis 不可用时的降级方案。
      *
-     * <p>使用 {@link ConcurrentHashMap} 保证线程安全；存储 jti 而非完整 token，
-     * 与 Redis 实现保持一致。降级场景下无法自动过期清理，依赖 JwtTokenProvider
-     * 的定时任务（{@code cleanupExpiredRevokedTokens}）间接清理。</p>
+     * <p>使用 {@link ConcurrentHashMap} 保证线程安全；key 为 jti，value 为过期时间戳
+     * （毫秒）。修复（FIN MED-49）：为每条记录记录 TTL，查询时惰性清理过期条目，
+     * 并配合 {@link #cleanupExpiredLocalEntries()} 定时清理，避免只增不减导致内存增长。
+     * 与 Redis 实现保持一致语义：条目在 JWT 自然过期后自动失效。</p>
      */
-    private final ConcurrentHashMap<String, Boolean> localBlacklist = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Long> localBlacklist = new ConcurrentHashMap<>();
+
+    /**
+     * 定时清理本地内存黑名单中的过期条目（FIN MED-49）。
+     *
+     * <p>调度策略：每小时执行一次（fixedDelay = 3600000ms），initialDelay = 1 小时。
+     * 正常路径下条目由 {@link #isRevoked} 惰性清理，本任务兜底清理长期未查询的过期条目。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 3600000L, initialDelay = 3600000L)
+    public void cleanupExpiredLocalEntries() {
+        long now = System.currentTimeMillis();
+        int removed = 0;
+        for (java.util.Map.Entry<String, Long> entry : localBlacklist.entrySet()) {
+            if (entry.getValue() == null || entry.getValue() < now) {
+                if (localBlacklist.remove(entry.getKey(), entry.getValue())) {
+                    removed++;
+                }
+            }
+        }
+        if (removed > 0) {
+            log.info("清理本地内存黑名单过期条目: 共 {} 条，剩余 {} 条", removed, localBlacklist.size());
+        }
+    }
 
     /**
      * Redis 模板，用于持久化黑名单。
@@ -92,7 +115,8 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
         }
 
         // 1. 写入本地内存（降级方案，Redis 不可用时仍能查询到）
-        localBlacklist.put(jti, Boolean.TRUE);
+        //    记录过期时间戳（FIN MED-49）：now + ttlSeconds，用于惰性/定时清理
+        localBlacklist.put(jti, System.currentTimeMillis() + ttlSeconds * 1000L);
 
         // 2. 写入 Redis（多实例共享方案），通过 try-catch 保护
         try {
@@ -153,8 +177,17 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
             log.warn("Redis unavailable, falling back to local memory blacklist (isRevoked jti={})", jti, e);
         }
 
-        // 2. 降级查本地内存
-        return localBlacklist.containsKey(jti);
+        // 2. 降级查本地内存（FIN MED-49：惰性清理过期条目，避免内存只增不减）
+        Long expireAt = localBlacklist.get(jti);
+        if (expireAt == null) {
+            return false;
+        }
+        if (expireAt < System.currentTimeMillis()) {
+            // 已过期：移除并视为未撤销（与 Redis TTL 自动清理语义一致）
+            localBlacklist.remove(jti, expireAt);
+            return false;
+        }
+        return true;
     }
 
     /**

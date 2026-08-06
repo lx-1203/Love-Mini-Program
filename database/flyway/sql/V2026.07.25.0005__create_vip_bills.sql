@@ -24,7 +24,7 @@
 
 CREATE TABLE IF NOT EXISTS vip_bills (
     id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
-    user_id         BIGINT       NOT NULL                COMMENT '用户ID',
+    user_id         BIGINT UNSIGNED NOT NULL                COMMENT '用户ID',
     plan_id         VARCHAR(32)  NOT NULL                COMMENT '套餐ID',
     plan_name       VARCHAR(64)  NOT NULL                COMMENT '套餐名称',
     amount          INT          NOT NULL                COMMENT '支付金额（分）',

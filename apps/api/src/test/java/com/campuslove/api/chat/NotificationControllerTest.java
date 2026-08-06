@@ -64,15 +64,18 @@ class NotificationControllerTest extends ControllerTestBase {
     }
 
     @Test
-    void markAsRead_shouldDelegateToServiceWithoutUserIdCheck() {
+    void markAsRead_shouldPassUserIdFromSecurityContext() {
         // Arrange
-        Long notificationId = 42L;
+        withUserId(100L, () -> {
+            Long notificationId = 42L;
 
-        // Act
-        controller.markAsRead(notificationId);
+            // Act
+            controller.markAsRead(notificationId);
 
-        // Assert
-        verify(notificationService).markAsRead(notificationId);
+            // Assert
+            // 修复（FIN HIGH-13）：markAsRead 已改为带用户归属校验的版本，防止 IDOR
+            verify(notificationService).markAsRead(eq(notificationId), eq(100L));
+        });
     }
 
     @Test

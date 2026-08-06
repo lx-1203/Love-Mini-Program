@@ -1,7 +1,6 @@
 package com.campuslove.api.config;
 
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.Map;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 public class ContentFilterController {
+
+    /** 单次检测内容最大长度（字符），防止超大文本触发正则扫描造成 CPU 滥用 */
+    private static final int MAX_CONTENT_LENGTH = 5000;
 
     private final SensitiveWordFilter sensitiveWordFilter;
 
@@ -39,34 +41,17 @@ public class ContentFilterController {
         String content = body.get("content");
 
         if (content == null || content.isBlank()) {
-            return Map.of("hasSensitiveWords", false, "filteredWords", List.of());
+            return Map.of("hasSensitiveWords", false);
         }
 
+        // infra R2-00200: 限制检测内容长度，防止超大文本触发正则扫描
+        if (content.length() > MAX_CONTENT_LENGTH) {
+            throw new IllegalArgumentException("content 长度不能超过 " + MAX_CONTENT_LENGTH + " 字符");
+        }
+
+        // infra R2-00201: 仅返回 hasSensitiveWords 布尔值，不暴露命中的敏感词字典，
+        // 防止攻击者枚举完整词库后规避内容审核
         boolean hasSensitiveWords = sensitiveWordFilter.containsSensitive(content);
-
-        // 找出具体命中的敏感词
-        List<String> filteredWords = hasSensitiveWords
-                ? findMatchedKeywords(content)
-                : List.of();
-
-        return Map.of(
-                "hasSensitiveWords", hasSensitiveWords,
-                "filteredWords", filteredWords
-        );
-    }
-
-    /**
-     * 查找内容中命中的敏感词列表。
-     * 对每个敏感词执行大小写不敏感的匹配。
-     *
-     * @param content 待检查的内容
-     * @return 命中的敏感词列表
-     */
-    private List<String> findMatchedKeywords(String content) {
-        String lowerContent = content.toLowerCase();
-        return sensitiveWordFilter.getKeywords().stream()
-                .filter(keyword -> keyword != null && !keyword.isBlank())
-                .filter(keyword -> lowerContent.contains(keyword.toLowerCase()))
-                .toList();
+        return Map.of("hasSensitiveWords", hasSensitiveWords);
     }
 }

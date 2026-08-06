@@ -214,20 +214,28 @@ public class MediaAccessController {
         AUDIT_LOG.info("media.access.granted type={} targetUserId={} mediaId={} requesterId={} isAdmin={}",
                 mediaType, userId, mediaId, extractCurrentUserId(authentication), hasAdminRole(authentication));
 
+        // security_review 修复（R2-LOW-02）：按媒体类型差异化缓存策略——
+        // IMAGE（公开社交资源）可私有缓存 1h；VOICE/VIDEO/ID_CARD（仅本人/管理员，
+        // 高敏感）禁用缓存，避免共享设备浏览器缓存残留导致隐私泄露
+        String cacheControl = mediaType == MediaType.IMAGE
+                ? "private, max-age=3600"
+                : "no-store, no-cache, must-revalidate";
         return ResponseEntity.ok()
                 .contentType(mediaFile.getMediaType())
-                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
+                .header(HttpHeaders.CACHE_CONTROL, cacheControl)
                 .body(mediaFile.getResource());
     }
 
     /**
      * Task 11.5：统一归属校验。
      *
-     * <p>对图片/语音/视频/身份证四类文件执行统一的归属校验：
+     * <p>对图片/语音/视频/身份证四类文件执行分级授权（infra R2-00013 修复）：
      * <ul>
-     *   <li>当前用户必须已认证（principal 中含 userId）</li>
-     *   <li>当前用户必须为文件归属者本人，或具备 ADMIN 角色</li>
-     *   <li>否则抛 {@link AccessDeniedException}，由 GlobalExceptionHandler 转 403</li>
+     *   <li>{@link MediaType#IMAGE}（头像/帖子图/活动图）：任何已登录用户可读——
+     *       社交浏览场景（查看他人资料、帖子、活动）必须能加载图片，否则核心功能不可用</li>
+     *   <li>{@link MediaType#VOICE} / {@link MediaType#VIDEO}：仅本人或 ADMIN</li>
+     *   <li>{@link MediaType#ID_CARD}（身份证/学生证）：仅本人或 ADMIN，拒绝时审计标注</li>
+     *   <li>未认证一律拒绝</li>
      * </ul>
      * </p>
      *
@@ -256,8 +264,12 @@ public class MediaAccessController {
             throw new AccessDeniedException("未认证，拒绝访问媒体文件");
         }
 
-        if (!targetUserId.equals(currentUserId) && !isAdmin) {
-            // 越权访问尝试（非本人且非管理员）
+        // 分级授权：IMAGE（头像/帖子图/活动图）为社交公开资源，登录用户均可读；
+        // 语音/视频/身份证仅本人或管理员可读
+        boolean isOwner = targetUserId.equals(currentUserId);
+        boolean imagePublicRead = mediaType == MediaType.IMAGE;
+        if (!isOwner && !isAdmin && !imagePublicRead) {
+            // 越权访问尝试（非本人且非管理员，且非公开图片）
             AUDIT_LOG.warn("media.access.denied.forbidden type={} targetUserId={} requesterId={} mediaId={}",
                     mediaType, targetUserId, currentUserId, mediaId);
             // 身份证越权访问尝试单独标注，便于安全审计高频告警

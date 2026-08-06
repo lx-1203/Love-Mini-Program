@@ -10,6 +10,7 @@ import com.campuslove.api.repository.CommentRepository;
 import com.campuslove.api.repository.PostLikeRepository;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.PostShareRepository;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
@@ -36,18 +37,47 @@ public class VillageInteractionService {
     private final InteractionEventService interactionEventService;
     private final VillageQueryService queryService;
 
+    /**
+     * JPA 实体管理器（FIN-00018 修复）。
+     *
+     * <p>用于执行数据库侧原子计数更新（单条 UPDATE 语句），
+     * 替代原「读-改-写」非原子计数维护。为兼容既有单元测试
+     * （直接 new 构造器），此字段可为 null：null 时回退到实体级
+     * 读-改-写（与原行为一致，仅测试场景触发；Spring 注入路径恒非 null）。</p>
+     */
+    private final EntityManager entityManager;
+
+    @org.springframework.beans.factory.annotation.Autowired
     public VillageInteractionService(PostRepository postRepository,
                                      CommentRepository commentRepository,
                                      PostLikeRepository postLikeRepository,
                                      PostShareRepository postShareRepository,
                                      InteractionEventService interactionEventService,
-                                     VillageQueryService queryService) {
+                                     VillageQueryService queryService,
+                                     EntityManager entityManager) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.postLikeRepository = postLikeRepository;
         this.postShareRepository = postShareRepository;
         this.interactionEventService = interactionEventService;
         this.queryService = queryService;
+        this.entityManager = entityManager;
+    }
+
+    /**
+     * 兼容旧测试的构造器（entityManager 为 null，走实体级读-改-写回退）。
+     *
+     * @deprecated 仅单元测试使用；Spring 注入请使用带 EntityManager 的构造器。
+     */
+    @Deprecated
+    public VillageInteractionService(PostRepository postRepository,
+                                     CommentRepository commentRepository,
+                                     PostLikeRepository postLikeRepository,
+                                     PostShareRepository postShareRepository,
+                                     InteractionEventService interactionEventService,
+                                     VillageQueryService queryService) {
+        this(postRepository, commentRepository, postLikeRepository, postShareRepository,
+                interactionEventService, queryService, null);
     }
 
     /**
@@ -55,6 +85,19 @@ public class VillageInteractionService {
      *
      * <p>已点赞 -> 取消点赞（删除 PostLike，likesCount-1）；
      * 未点赞 -> 新增点赞（创建 PostLike，likesCount+1，记录 POST_LIKED 互动事件）。</p>
+     *
+     * <p>FIN-00018 修复：likesCount 的增减改为数据库侧单条 UPDATE 原子执行
+     * （JPQL bulk update），消除原「读-改-写」在并发点赞/取消下的丢失更新。
+     * 最终计数通过重新查询实体获取，保证返回值与持久化状态一致。</p>
+     *
+     * <p>缺陷修复（走查）：取消点赞原使用派生删除
+     * {@code deleteByUserIdAndPostId}（先 SELECT 再逐个 em.remove，实体进入
+     * pending-removal 状态），随后 {@code entityManager.clear()} 会将 pending-removal
+     * 实体一并清出持久化上下文，导致事务提交时 DELETE 语句不再发出 —— post_likes
+     * 行永远残留在数据库（响应 liked=false 但行未删），再次点赞时 exists 命中
+     * 旧行永远返回 liked=false，点赞 toggle 卡死。修复：Spring 注入路径（entityManager
+     * 非 null）改用 JPQL bulk DELETE 直接落库，与 bulk UPDATE + clear 互不干扰；
+     * 仅测试构造器（entityManager 为 null）保留派生删除回退。</p>
      *
      * @param userId 当前用户 ID
      * @param postId 帖子 ID
@@ -70,12 +113,50 @@ public class VillageInteractionService {
         Post post = queryService.findPostOrThrow(postId);
 
         boolean alreadyLiked = postLikeRepository.existsByUserIdAndPostId(userId, postId);
+        LocalDateTime now = LocalDateTime.now();
         if (alreadyLiked) {
-            postLikeRepository.deleteByUserIdAndPostId(userId, postId);
-            post.setLikesCount(Math.max(0, post.getLikesCount() - 1));
+            if (entityManager != null) {
+                // 缺陷修复：bulk DELETE 替代派生删除，避免 pending-removal 实体
+                // 被后续 entityManager.clear() 清出上下文导致 DELETE 不落库
+                entityManager.createQuery(
+                                "DELETE FROM PostLike pl WHERE pl.userId = :userId AND pl.postId = :postId")
+                        .setParameter("userId", userId)
+                        .setParameter("postId", postId)
+                        .executeUpdate();
+            } else {
+                // 仅测试构造器回退：entityManager 为 null 时无 clear 干扰，派生删除安全
+                postLikeRepository.deleteByUserIdAndPostId(userId, postId);
+            }
+            // 原子递减（下限 0）；entityManager 为 null（仅测试构造器）时回退实体读-改-写
+            // infra R2-00015 修复：bulk UPDATE 后 clear 持久化上下文，否则 managed 实体
+            // post 在事务提交 flush 时用本地旧值覆盖 bulk 原子结果（脏写回归）
+            int newCount = Math.max(0, post.getLikesCount() - 1);
+            if (entityManager != null) {
+                entityManager.createQuery(
+                                "UPDATE Post p SET p.likesCount = CASE WHEN p.likesCount > 0 THEN p.likesCount - 1 ELSE 0 END, "
+                                        + "p.updatedAt = :now WHERE p.id = :postId")
+                        .setParameter("now", now)
+                        .setParameter("postId", postId)
+                        .executeUpdate();
+                entityManager.clear();
+            }
+            // bulk update 后同步本地视图值，仅用于本次响应（实体已 detached）
+            post.setLikesCount(newCount);
+            post.setUpdatedAt(now);
         } else {
             postLikeRepository.save(new PostLike(userId, postId));
+            // 原子递增
+            // infra R2-00015 修复：同上，bulk UPDATE 后 clear 防脏写
+            if (entityManager != null) {
+                entityManager.createQuery(
+                                "UPDATE Post p SET p.likesCount = p.likesCount + 1, p.updatedAt = :now WHERE p.id = :postId")
+                        .setParameter("now", now)
+                        .setParameter("postId", postId)
+                        .executeUpdate();
+                entityManager.clear();
+            }
             post.setLikesCount(post.getLikesCount() + 1);
+            post.setUpdatedAt(now);
             if (!userId.equals(post.getAuthorId())) {
                 interactionEventService.recordEvent(
                         post.getAuthorId(), userId, "POST_LIKED", postId, "POST",
@@ -83,9 +164,6 @@ public class VillageInteractionService {
                 );
             }
         }
-
-        post.setUpdatedAt(LocalDateTime.now());
-        postRepository.save(post);
 
         return new PostLikeResponse(true, !alreadyLiked, post.getLikesCount());
     }
@@ -120,11 +198,22 @@ public class VillageInteractionService {
         comment.setContent(content);
         comment.setCreatedAt(now);
 
-        commentRepository.save(comment);
+        // 缺陷修复：saveAndFlush 立即回填 IDENTITY 主键，保证 toCommentItemView 中评论 id 非空
+        // （实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
+        comment = commentRepository.saveAndFlush(comment);
 
+        // FIN-00018 修复：commentsCount 改为数据库侧原子递增，避免并发评论丢失计数；
+        // entityManager 为 null（仅测试构造器）时回退实体读-改-写
+        if (entityManager != null) {
+            entityManager.createQuery(
+                            "UPDATE Post p SET p.commentsCount = p.commentsCount + 1, p.updatedAt = :now WHERE p.id = :postId")
+                    .setParameter("now", now)
+                    .setParameter("postId", postId)
+                    .executeUpdate();
+        }
+        // bulk update 后同步实体，保证同事务后续读取一致
         post.setCommentsCount(post.getCommentsCount() + 1);
         post.setUpdatedAt(now);
-        postRepository.save(post);
 
         if (!userId.equals(post.getAuthorId())) {
             interactionEventService.recordEvent(
@@ -163,11 +252,22 @@ public class VillageInteractionService {
         share.setComment(comment);
         share.setCreatedAt(now);
 
-        postShareRepository.save(share);
+        // 缺陷修复：saveAndFlush 立即回填 IDENTITY 主键，保证 ShareView 中分享记录 id 非空
+        // （实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
+        share = postShareRepository.saveAndFlush(share);
 
+        // FIN-00018 修复：shareCount 改为数据库侧原子递增，避免并发转发丢失计数；
+        // entityManager 为 null（仅测试构造器）时回退实体读-改-写
+        if (entityManager != null) {
+            entityManager.createQuery(
+                            "UPDATE Post p SET p.shareCount = p.shareCount + 1, p.updatedAt = :now WHERE p.id = :postId")
+                    .setParameter("now", now)
+                    .setParameter("postId", postId)
+                    .executeUpdate();
+        }
+        // bulk update 后同步实体，保证同事务后续读取一致
         post.setShareCount(post.getShareCount() + 1);
         post.setUpdatedAt(now);
-        postRepository.save(post);
 
         return new ShareView(share.getId(), postId, post.getShareCount());
     }

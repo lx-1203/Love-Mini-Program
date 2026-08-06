@@ -228,7 +228,9 @@ async function handleLike() {
   try {
     await villageStore.likePost(currentPost.value.id);
   } catch (error) {
+    // review #41：原实现仅 console.error 静默失败，现补充用户可见提示
     console.error("点赞失败:", error);
+    uni.showToast({ title: t("village.likeFailed"), icon: "none" });
   }
 }
 
@@ -240,7 +242,9 @@ async function handleFollow() {
   try {
     await villageStore.followUser(currentPost.value.author.userId);
   } catch (error) {
+    // review #41：原实现仅 console.error 静默失败，现补充用户可见提示
     console.error("关注失败:", error);
+    uni.showToast({ title: t("village.followFailed"), icon: "none" });
   }
 }
 
@@ -423,6 +427,14 @@ onLoad((query) => {
       });
       return;
     }
+  }
+
+  // infra R2-00072: 无 query.id 时不再静默依赖 store 残留 currentPost
+  // （直开分享链接可能展示他人帖子），无可用帖子时清空并提示错误态
+  if (!currentPost.value) {
+    villageStore.clearCurrentPost();
+    uni.showToast({ title: t("village.detail.postNotExist"), icon: "none" });
+    return;
   }
 
   // 已有 currentPost（通过 setCurrentPost 导航而来），加载评论

@@ -3,9 +3,14 @@ package com.campuslove.api.config;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+import org.redisson.config.Protocol;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +24,7 @@ import org.springframework.data.redis.connection.lettuce.LettuceClientConfigurat
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
@@ -29,7 +34,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * <p>本配置提供以下核心能力：</p>
  * <ul>
  *   <li>基于 Lettuce 客户端的 Redis 连接工厂，启用 commons-pool2 连接池</li>
- *   <li>{@link RedisTemplate} 使用 StringRedisSerializer + GenericJackson2JsonRedisSerializer
+ *   <li>{@link RedisTemplate} 使用 StringRedisSerializer + Jackson2JsonRedisSerializer
  *       组合，保证 key 可读、value 跨服务可解析</li>
  *   <li>{@link CacheManager} 默认 TTL 30 分钟，供 @Cacheable / @CacheEvict 使用</li>
  *   <li>所有连接参数（host/port/password/database）支持环境变量外部化</li>
@@ -149,12 +154,51 @@ public class RedisConfig {
     }
 
     /**
+     * 手动构建 RedissonClient（仅本地开发 profile 激活，通过
+     * {@code app.redisson.manual-config=true} 开启，并配合启动参数排除
+     * RedissonAutoConfiguration / RedissonAutoConfigurationV2 两个自动配置）。
+     *
+     * <p>背景（本地联调修复）：Spring Boot 3 将 {@code spring.redis.*} 迁移为
+     * {@code spring.data.redis.*}，而 Redisson 3.27 的两个自动配置类行为不一致：
+     * 当 {@code spring.data.redis.password} 为空字符串时仍会发送 AUTH，导致
+     * 连接「无密码的本地 Redis」直接失败（ERR Client sent AUTH, but no password is set）。
+     * 本 Bean 显式只在密码非空白时设置密码，并强制 RESP2 协议以兼容
+     * Windows 旧版 Redis（3.0.504 不支持 RESP3/HELLO，见 redisson-dev.yaml）。</p>
+     *
+     * <p>生产环境不启用本 Bean（未设置 {@code app.redisson.manual-config}），
+     * 仍走 Redisson 自动配置 + 真实密码，行为不变。</p>
+     *
+     * @return RedissonClient 实例
+     */
+    @Bean(destroyMethod = "shutdown")
+    @ConditionalOnProperty(name = "app.redisson.manual-config", havingValue = "true")
+    public RedissonClient redissonClient() {
+        Config config = new Config();
+        // 兼容 Windows 旧版 Redis：仅支持 RESP2 协议
+        config.setProtocol(Protocol.RESP2);
+        config.useSingleServer()
+                .setAddress("redis://" + redisHost + ":" + redisPort)
+                .setDatabase(redisDatabase)
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(4)
+                .setTimeout(3000)
+                .setConnectTimeout(5000)
+                .setRetryAttempts(1)
+                .setRetryInterval(1000);
+        // 关键修复：密码为空白时不设置密码，避免发送 AUTH 导致无密码 Redis 连接失败
+        if (redisPassword != null && !redisPassword.isBlank()) {
+            config.useSingleServer().setPassword(redisPassword);
+        }
+        return Redisson.create(config);
+    }
+
+    /**
      * 自定义 RedisTemplate。
      *
      * <p>序列化策略：</p>
      * <ul>
      *   <li>key: {@link StringRedisSerializer} —— 保证 key 在 Redis CLI 中可读</li>
-     *   <li>value: {@link GenericJackson2JsonRedisSerializer} —— JSON 序列化，
+     *   <li>value: {@link Jackson2JsonRedisSerializer} —— JSON 序列化，
      *       携带类型信息，支持反序列化为原始对象</li>
      *   <li>hashKey/hashValue 同上</li>
      * </ul>
@@ -169,10 +213,15 @@ public class RedisConfig {
         template.setConnectionFactory(connectionFactory);
 
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
-        GenericJackson2JsonRedisSerializer jsonSerializer =
-                new GenericJackson2JsonRedisSerializer();
-
-        // key 与 hashKey 使用 String 序列化，保证可读性
+        // infra 修复(联调)：缓存序列化需同时满足：
+        // 1) 注册 JSR310 模块——含 LocalDateTime 的 DTO(如 AdminConfigView.updatedAt)
+        //    序列化否则抛 SerializationException(接口 500);
+        // 2) 启用 default typing——Jackson2JsonRedisSerializer 配合 activateDefaultTyping
+        //    对具体 DTO 也写入类型信息,反序列化还原具体类型。
+        //    (GenericJackson2JsonRedisSerializer 仅对 Object/抽象顶层类型写 @class,
+        //    具体 DTO 直接序列化不写类型,缓存命中后反序列化回 LinkedHashMap,
+        //    与方法返回类型转换时抛 ClassCastException——实测 500)
+        Jackson2JsonRedisSerializer<Object> jsonSerializer = redisJsonSerializer();
         template.setKeySerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
         // value 与 hashValue 使用 JSON 序列化，支持对象存储
@@ -215,7 +264,7 @@ public class RedisConfig {
                 .serializeKeysWith(RedisSerializationContext.SerializationPair
                         .fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new GenericJackson2JsonRedisSerializer()));
+                        .fromSerializer(redisJsonSerializer()));
 
         // 按 CacheName 维度配置独立 TTL
         Map<String, RedisCacheConfiguration> cacheNameTtl = new HashMap<>();
@@ -235,5 +284,30 @@ public class RedisConfig {
                 .withInitialCacheConfigurations(cacheNameTtl)
                 .transactionAware()
                 .build();
+    }
+
+    /**
+     * 构建 Redis JSON 序列化器(infra 联调修复)。
+     *
+     * <p>要点：</p>
+     * <ul>
+     *   <li>注册 {@code JavaTimeModule}：支持 LocalDateTime 等 JSR310 类型</li>
+     *   <li>启用 default typing(NON_FINAL)：Jackson2JsonRedisSerializer 默认
+     *       关闭类型信息,反序列化返回 LinkedHashMap,与缓存方法具体返回类型
+     *       (如 MatchStatsView) 转换时抛 ClassCastException(实测 500)</li>
+     * </ul>
+     */
+    @SuppressWarnings("unchecked")
+    private Jackson2JsonRedisSerializer<Object> redisJsonSerializer() {
+        com.fasterxml.jackson.databind.ObjectMapper jsonMapper =
+                new com.fasterxml.jackson.databind.ObjectMapper()
+                        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        // 对具体 DTO 类型也启用类型信息(NON_FINAL + PROPERTY),写入 @class 属性,
+        // 反序列化时还原具体类型(如 MatchStatsView),避免 LinkedHashMap 转换异常
+        jsonMapper.activateDefaultTyping(
+                jsonMapper.getPolymorphicTypeValidator(),
+                com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping.NON_FINAL,
+                com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY);
+        return new Jackson2JsonRedisSerializer<Object>(jsonMapper, Object.class);
     }
 }

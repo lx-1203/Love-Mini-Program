@@ -51,6 +51,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/profile")
 @org.springframework.validation.annotation.Validated
+// mock profile 排除了 JPA(无 Repository bean),本控制器为 real 专属;
+// mock 模式前端走本地 mockFixtures,不调用本端点
+@org.springframework.context.annotation.Profile("real")
 public class ProfileController {
 
   private final ProfileService profileService;
@@ -134,7 +137,8 @@ public class ProfileController {
                   content = @Content(mediaType = "multipart/form-data"))
           @RequestParam("file") MultipartFile file,
           @Parameter(in = ParameterIn.QUERY, description = "照片墙索引（0-5）", required = true, example = "0")
-          @RequestParam("index") int index) {
+          // infra R2-00208: 索引范围校验（0-5），与 Service 层校验保持一致
+          @RequestParam("index") @Min(0) @Max(5) int index) {
     return profileService.uploadPhoto(file, index);
   }
 

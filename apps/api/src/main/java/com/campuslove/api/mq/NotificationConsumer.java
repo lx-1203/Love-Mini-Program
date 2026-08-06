@@ -130,9 +130,19 @@ public class NotificationConsumer {
 
             // 调用微信订阅消息接口（使用 socialDigestTemplateId 作为通用通知模板）
             // 注意：实际生产应配置专门的通知模板 ID，此处复用现有配置以避免引入新配置项
+            // FIN-00048 修复：空 templateId 时显式跳过并告警——sendSubscribeMessage 内部
+            // 对空 templateId 是静默跳过，调用方无法感知，链路「永不发送」且无任何日志；
+            // 现在在调用前显式判断，保证运维可见。
+            String templateId = weChatPushService.getSocialDigestTemplateId();
+            if (templateId == null || templateId.isBlank()) {
+                log.warn("微信订阅消息 templateId 未配置，跳过推送（通知将仅持久化到站内）："
+                        + "userId={}, type={}", message.getUserId(), message.getType());
+                return;
+            }
+
             boolean sent = weChatPushService.sendSubscribeMessage(
                     openId,
-                    "", // templateId 留空，sendSubscribeMessage 内部会校验并跳过
+                    templateId,
                     DEFAULT_PUSH_PAGE,
                     data);
 
@@ -164,7 +174,11 @@ public class NotificationConsumer {
             Notification entity = new Notification();
             entity.setUserId(message.getUserId());
             entity.setType(mapType(message.getType()));
-            // NotificationMessage 未携带 sourceUserId，使用系统虚拟用户 ID
+            // TODO(FIN-00047): sourceUserId 恒为 0（系统虚拟用户）。NotificationMessage 消息体
+            // 未携带真实来源用户 ID，导致站内通知「谁互动了我」语义缺失、前端无法跳转来源用户主页。
+            // 补偿方案：在 NotificationMessage 中增加 sourceUserId 字段，由 MessageProducer 调用方
+            // （点赞/评论/关注等业务侧）在构造消息时填充真实来源用户；此处改为使用
+            // message.getSourceUserId()（null/缺省时回退 SYSTEM_SOURCE_USER_ID）。
             entity.setSourceUserId(SYSTEM_SOURCE_USER_ID);
             entity.setReferenceType(ReferenceType.user);
             entity.setIsRead(false);

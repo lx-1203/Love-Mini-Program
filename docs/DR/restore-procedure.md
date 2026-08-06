@@ -4,6 +4,8 @@
 > 适用范围：Campus Love 全栈项目的 MySQL 数据库备份与恢复流程
 > 维护者：DevOps 团队
 > 最近演练：2026-07-26（首次建立）
+> 演练节奏：按 5.1 计划每季度至少一次；当前仅有一次演练记录，
+> 下次演练后请更新本行与 5.x 章节记录（infra R2-00347）
 
 ---
 
@@ -19,14 +21,14 @@
 
 ### 1.2 备份存储位置
 
-- **本地**：`/backup`（docker-compose 中 `mysql-backup` 服务挂载的卷）
+- **本地**：`/backups`（docker-compose 中 `backup` 服务挂载的卷）
 - **异地**：`backup-server.example.com:/data/campus-love/mysql/`
 - **对象存储**（可选）：阿里云 OSS / 腾讯云 COS，按月归档
 
 ### 1.3 备份脚本
 
 - 脚本位置：`scripts/backup-mysql.sh`
-- 容器内位置：`/usr/local/bin/backup-mysql.sh`
+- 容器内位置：`/backup.sh`
 - 调度方式：cron（`docker/backup/crontab`，默认 `0 2 * * *`）
 
 ---
@@ -63,10 +65,10 @@ docker, docker-compose
 
 ```bash
 # 进入备份容器
-docker compose exec mysql-backup sh
+docker compose exec backup sh
 
 # 列出可用备份
-ls -lh /backup/
+ls -lh /backups/
 # 输出示例：
 #   -rw-r--r-- 1 root root 12M Jul 26 02:00 campus_love-20260726-020000.sql.gz
 #   -rw-r--r-- 1 root root 12M Jul 25 02:00 campus_love-20260725-020000.sql.gz
@@ -76,10 +78,10 @@ ls -lh /backup/
 
 ```bash
 # 校验 gzip 完整性
-gzip -t /backup/campus_love-20260726-020000.sql.gz && echo "OK"
+gzip -t /backups/campus_love-20260726-020000.sql.gz && echo "OK"
 
 # 预览 SQL 内容（前 50 行）
-zcat /backup/campus_love-20260726-020000.sql.gz | head -50
+zcat /backups/campus_love-20260726-020000.sql.gz | head -50
 ```
 
 #### 步骤 3：停止写入流量
@@ -100,7 +102,9 @@ docker compose exec mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}"
 
 # 在 MySQL CLI 中执行：
 DROP DATABASE IF EXISTS campus_love;
-CREATE DATABASE campus_love CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+# infra R2-00344：collation 与生产对齐（utf8mb4_0900_ai_ci，MySQL 8.0 默认），
+# 原文档写 utf8mb4_unicode_ci，恢复后新表排序规则与生产漂移
+CREATE DATABASE campus_love CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 EXIT;
 ```
 
@@ -108,14 +112,14 @@ EXIT;
 
 ```bash
 # 通过管道直接恢复（推荐，无需临时文件）
-docker compose exec -T mysql-backup sh -c \
-  "gunzip -c /backup/campus_love-20260726-020000.sql.gz | \
+docker compose exec -T backup sh -c \
+  "gunzip -c /backups/campus_love-20260726-020000.sql.gz | \
    mysql -h mysql -u root -p\"${MYSQL_ROOT_PASSWORD}\" campus_love"
 
 # 或：先解压再恢复（适合大文件，便于排查）
-docker compose exec mysql-backup sh -c \
-  "gunzip -k /backup/campus_love-20260726-020000.sql.gz"
-docker compose cp mysql-backup:/backup/campus_love-20260726-020000.sql ./restore.sql
+docker compose exec backup sh -c \
+  "gunzip -k /backups/campus_love-20260726-020000.sql.gz"
+docker compose cp backup:/backups/campus_love-20260726-020000.sql ./restore.sql
 docker compose exec -T mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" campus_love < ./restore.sql
 ```
 
@@ -170,8 +174,8 @@ TARGET_TIME="2026-07-26 14:29:59"
 
 ```bash
 # 假设最近备份是 2026-07-26 02:00
-docker compose exec -T mysql-backup sh -c \
-  "gunzip -c /backup/campus_love-20260726-020000.sql.gz | \
+docker compose exec -T backup sh -c \
+  "gunzip -c /backups/campus_love-20260726-020000.sql.gz | \
    mysql -h mysql -u root -p\"${MYSQL_ROOT_PASSWORD}\" campus_love"
 ```
 
@@ -184,7 +188,11 @@ docker compose exec mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e \
 
 # 假设 binlog 是 mysql-bin.000123
 # 重放到 14:29:59 之前
+# infra R2-00345：补充 --skip-gtids（GTID 环境跨库重放避免事务重复）与
+# --stop-position 建议——生产演练应先用 SHOW BINLOG EVENTS 定位精确 position，
+# 以 --stop-position 而非仅 --stop-datetime 作为安全边界，避免误收目标时间点之后的事务。
 docker compose exec mysql mysqlbinlog \
+  --skip-gtids \
   --stop-datetime="2026-07-26 14:29:59" \
   --database=campus_love \
   /var/lib/mysql/mysql-bin.000123 | \
@@ -206,7 +214,7 @@ docker compose exec mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" campus_love -
 
 ```bash
 # 解压备份并提取单表 SQL
-gunzip -c /backup/campus_love-20260726-020000.sql.gz > /tmp/full.sql
+gunzip -c /backups/campus_love-20260726-020000.sql.gz > /tmp/full.sql
 
 # 提取 users 表（从 "Table structure for table `users`" 到下一个表开始）
 sed -n '/-- Table structure for table `users`/,/-- Table structure for table/p' /tmp/full.sql > /tmp/users.sql
@@ -226,21 +234,21 @@ rm /tmp/full.sql /tmp/users.sql
 
 ```bash
 # 手动同步（首次或测试）
-rsync -avz --progress /backup/ backup-server:/data/campus-love/mysql/
+rsync -avz --progress /backups/ backup-server:/data/campus-love/mysql/
 
 # 自动同步（添加到 crontab）
-# 0 3 * * * rsync -avz --delete /backup/ backup-server:/data/campus-love/mysql/ >> /var/log/rsync.log 2>&1
+# 0 3 * * * rsync -avz --delete /backups/ backup-server:/data/campus-love/mysql/ >> /var/log/rsync.log 2>&1
 ```
 
 ### 4.2 推送到对象存储（OSS/COS）
 
 ```bash
 # 阿里云 OSS 示例
-ossutil cp /backup/campus_love-20260726-020000.sql.gz \
+ossutil cp /backups/campus_love-20260726-020000.sql.gz \
   oss://campus-love-backup/mysql/$(date +%Y/%m/%d)/
 
 # 腾讯云 COS 示例
-coscli cp /backup/campus_love-20260726-020000.sql.gz \
+coscli cp /backups/campus_love-20260726-020000.sql.gz \
   cos://campus-love-backup/mysql/$(date +%Y/%m/%d)/
 ```
 
@@ -312,7 +320,7 @@ coscli cp /backup/campus_love-20260726-020000.sql.gz \
 **处理**：
 
 1. 清理旧日志：`docker compose exec api find /app/logs -name '*.log' -mtime +30 -delete`
-2. 清理旧备份：`docker compose exec mysql-backup find /backup -name '*.sql.gz' -mtime +7 -delete`
+2. 清理旧备份：`docker compose exec backup find /backups -name '*.sql.gz' -mtime +7 -delete`
 3. 清理 Docker 镜像：`docker image prune -a --filter "until=168h"`
 4. 清理 Docker 卷（谨慎）：`docker volume prune`（仅删除未使用的卷）
 
@@ -332,13 +340,13 @@ coscli cp /backup/campus_love-20260726-020000.sql.gz \
 ### 7.1 dry-run 测试
 
 ```bash
-# 在 mysql-backup 容器中测试
-docker compose exec mysql-backup /usr/local/bin/backup-mysql.sh --dry-run
+# 在 backup 容器中测试
+docker compose exec backup /backup.sh --dry-run
 
 # 预期输出：
 # [2026-07-26 10:00:00] ===== MySQL Backup Start =====
 # [2026-07-26 10:00:00] Dry-run: 1
-# [2026-07-26 10:00:00] [DRY-RUN] mysqldump --host=mysql ... | gzip -6 > /backup/campus_love-...sql.gz
+# [2026-07-26 10:00:00] [DRY-RUN] mysqldump --host=mysql ... | gzip -6 > /backups/campus_love-...sql.gz
 # [2026-07-26 10:00:00] [DRY-RUN] Skipping actual execution.
 # [2026-07-26 10:00:00] ===== Dry-run complete =====
 ```
@@ -347,19 +355,19 @@ docker compose exec mysql-backup /usr/local/bin/backup-mysql.sh --dry-run
 
 ```bash
 # 手动触发一次备份
-docker compose exec mysql-backup /usr/local/bin/backup-mysql.sh
+docker compose exec backup /backup.sh
 
 # 验证备份文件
-docker compose exec mysql-backup ls -lh /backup/
-docker compose exec mysql-backup gzip -t /backup/campus_love-$(date +%Y%m%d)-*.sql.gz
+docker compose exec backup ls -lh /backups/
+docker compose exec backup gzip -t /backups/campus_love-$(date +%Y%m%d)-*.sql.gz
 ```
 
 ### 7.3 备份内容验证
 
 ```bash
 # 解压并查看 SQL 头部
-docker compose exec mysql-backup sh -c \
-  "gunzip -c /backup/campus_love-*.sql.gz | head -50"
+docker compose exec backup sh -c \
+  "gunzip -c /backups/campus_love-*.sql.gz | head -50"
 
 # 应包含：
 # -- MySQL dump 10.13  Distrib 8.0.x, for Linux (x86_64)
@@ -387,29 +395,29 @@ docker compose exec mysql-backup sh -c \
 ### 9.1 备份脚本完整路径
 
 - 宿主机：`scripts/backup-mysql.sh`
-- 容器内：`/usr/local/bin/backup-mysql.sh`
+- 容器内：`/backup.sh`
 
 ### 9.2 关键命令速查
 
 ```bash
 # 查看所有备份
-docker compose exec mysql-backup ls -lh /backup/
+docker compose exec backup ls -lh /backups/
 
 # 手动备份
-docker compose exec mysql-backup /usr/local/bin/backup-mysql.sh
+docker compose exec backup /backup.sh
 
 # dry-run 测试
-docker compose exec mysql-backup /usr/local/bin/backup-mysql.sh --dry-run
+docker compose exec backup /backup.sh --dry-run
 
 # 恢复（管道方式）
-docker compose exec -T mysql-backup sh -c \
-  "gunzip -c /backup/<file>.sql.gz | mysql -h mysql -u root -p\"$MYSQL_ROOT_PASSWORD\" campus_love"
+docker compose exec -T backup sh -c \
+  "gunzip -c /backups/<file>.sql.gz | mysql -h mysql -u root -p\"$MYSQL_ROOT_PASSWORD\" campus_love"
 
 # 进入 MySQL CLI
 docker compose exec mysql mysql -u root -p"$MYSQL_ROOT_PASSWORD" campus_love
 
 # 查看备份大小
-docker compose exec mysql-backup du -sh /backup/
+docker compose exec backup du -sh /backups/
 ```
 
 ### 9.3 常见问题
@@ -418,7 +426,13 @@ docker compose exec mysql-backup du -sh /backup/
 A: 检查 `MYSQL_PASSWORD` 环境变量是否正确，备份用户是否有 SELECT/LOCK TABLES/PROCESS 权限。
 
 **Q: 恢复时报 `ERROR 1227: Access denied; you need (at least one of) the SUPER privilege(s)`**
-A: 备份中包含 DEFINER 子句，恢复用户权限不足。在恢复前 sed 替换：`sed -i 's/DEFINER=[^*]*\*//g' backup.sql`
+A: 备份中包含 DEFINER 子句，恢复用户权限不足。
+
+infra R2-00346：不推荐对备份文件做文件级 sed 替换（`sed -i 's/DEFINER=[^*]*\*//g'`），
+文件级替换可能破坏多字节内容与转义。推荐二选一：
+1. 使用具备 SUPER/SET_USER_ID 权限的账号恢复（本仓库恢复命令统一用 root）；
+2. 恢复时按需仅处理视图/存储过程：先用 `mysqldump --no-create-db --routines` 导出到单独文件，
+   再以匹配的 mysql 用户执行 `mysql --user=<匹配用户>` 恢复。
 
 **Q: 恢复后中文乱码**
 A: 备份和恢复必须指定相同字符集。备份脚本已用 `--default-character-set=utf8mb4`，恢复时同样：`mysql --default-character-set=utf8mb4 ...`

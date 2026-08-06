@@ -1,17 +1,22 @@
 # ============================================================
 # Prometheus 抓取配置（Task 8.2.1）
 # ============================================================
-# 全局抓取间隔与超时：15s 抓取间隔，10s 抓取超时
+# 全局抓取间隔与超时：15s 抓取间隔，10s 抓取超时（timeout < interval，FIN-01334）
 # 评估间隔：每 30s 评估一次告警规则（与告警评估对齐）
+#
+# 2026-08-05 Infra 加固：
+#   - external_labels（cluster / environment）移至 docker-compose 的
+#     --web.external-labels 启动参数，通过环境变量注入（infra #44 / FIN-01329），
+#     prometheus.yml 不再硬编码 environment: production
+#   - 移除 mysql-exporter / redis-exporter / blackbox-http 抓取任务
+#     （compose 未部署对应服务，target 永久 DOWN 产生无效告警，infra #25/#18）；
+#     如需启用，请先部署对应 exporter 容器再恢复本配置
 # ============================================================
 
 global:
   scrape_interval: 15s          # 全局抓取间隔
   evaluation_interval: 30s      # 告警规则评估间隔
-  scrape_timeout: 10s           # 单次抓取超时
-  external_labels:
-    cluster: campus-love
-    environment: production
+  scrape_timeout: 10s           # 单次抓取超时（小于 scrape_interval，保证不重叠）
 
 # ---------- 告警规则文件 ----------
 rule_files:
@@ -46,8 +51,8 @@ scrape_configs:
         labels:
           service: campuslove-api
           application: campus-love-api
-    # 健康检查失败时仍尝试抓取，便于通过指标观察下线状态
-    honor_labels: true
+    # infra R2-00382：移除 honor_labels: true（仅对服务发现/relabel 场景有意义，
+    # 静态 target 上无效果，属冗余配置）
 
   # ---------- node-exporter 主机指标 ----------
   - job_name: node-exporter
@@ -55,41 +60,3 @@ scrape_configs:
       - targets: ['node-exporter:9100']
         labels:
           service: node-exporter
-
-  # ---------- MySQL exporter（可选，部署后启用）----------
-  - job_name: mysql-exporter
-    static_configs:
-      - targets: ['mysql-exporter:9104']
-        labels:
-          service: mysql
-    scrape_interval: 30s
-
-  # ---------- Redis exporter（可选，部署后启用）----------
-  - job_name: redis-exporter
-    static_configs:
-      - targets: ['redis-exporter:9121']
-        labels:
-          service: redis
-    scrape_interval: 30s
-
-  # ---------- Blackbox 探针（外部 + 内部可用性，P3-D.4 补充 admin 探针）----------
-  # 用于监控第三方依赖（微信 API、Agnes AI）与内部服务（Admin 后台）的可用性
-  # admin 为 nginx 静态站点无 Prometheus exporter，通过 blackbox HTTP 探针监控可用性
-  - job_name: blackbox-http
-    metrics_path: /probe
-    params:
-      module: [http_2xx]
-    static_configs:
-      - targets:
-          # 外部依赖
-          - https://api.weixin.qq.com/sns/jscode2session
-          - https://api.agnes-ai.com/api/health
-          # 内部服务（P3-D.4 新增 admin 可用性探针）
-          - http://admin:8080/healthz
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: blackbox-exporter:9115

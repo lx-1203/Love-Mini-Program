@@ -136,8 +136,16 @@ export async function swipeRight(
       clearTimeout(timers.swipeRightDebounceTimer);
       timers.swipeRightDebounceTimer = null;
     }
+    // 修复（P1 BUG）：被新调用覆盖的旧 Promise 不再挂起——
+    // 以“已取消”语义 resolve，让旧调用方（await 处）正常返回
+    if (timers.swipeRightPendingResolve) {
+      timers.swipeRightPendingResolve();
+      timers.swipeRightPendingResolve = null;
+    }
+    timers.swipeRightPendingResolve = resolve;
     timers.swipeRightDebounceTimer = setTimeout(() => {
       timers.swipeRightDebounceTimer = null;
+      timers.swipeRightPendingResolve = null;
       this._doSwipeRight(cardId, isSuperLike).then(resolve).catch(reject);
     }, SWIPE_RIGHT_DEBOUNCE_MS);
   });
@@ -327,7 +335,13 @@ export async function _doSwipeRight(
       await this.fetchCards();
     }
   } catch (error) {
-    this.errorMessage = isSuperLike ? "超级喜欢失败，请重试" : "喜欢操作失败，请重试";
+    // 修复（P1 BUG）：原固定文案覆盖了具体错误信息（超时/5xx/参数错误无法区分）。
+    // 现优先透传具体错误 message，仅在无法提取时使用兜底文案。
+    this.errorMessage = error instanceof Error && error.message
+      ? error.message
+      : isSuperLike
+        ? "超级喜欢失败，请重试"
+        : "喜欢操作失败，请重试";
     console.error("swipeRight error:", error);
     throw error;
   }

@@ -181,7 +181,7 @@ CALL add_index_if_missing('check_ins', 'idx_checkin_source', '(source)');
 -- ============================================================
 -- Part 3：关键索引补全（Task 8.3.5）
 -- ============================================================
--- 任务规格要求为以下表补全索引（部分已存在，本节使用 CREATE INDEX IF NOT EXISTS 幂等补全）：
+-- 任务规格要求为以下表补全索引（部分已存在，本节使用 CREATE INDEX 幂等补全）：
 --   * chat_messages → 实际表名 private_messages
 --   * users → 已有 idx_users_phone/created_at/status，补全 role 索引
 --   * reports → 已有 idx_reports_status/target/reporter，补全 created_at 索引
@@ -189,35 +189,35 @@ CALL add_index_if_missing('check_ins', 'idx_checkin_source', '(source)');
 --   * notifications → 已有 idx_notifications_user/user_read/created/type/user_created_at
 
 -- chat_messages（private_messages）会话+投递状态组合索引，覆盖后台扫描未送达消息
-CREATE INDEX IF NOT EXISTS idx_private_messages_conv_delivery
+CREATE INDEX idx_private_messages_conv_delivery
     ON private_messages (conversation_id, delivery_status, created_at);
 
 -- users.role 索引，覆盖管理后台按角色筛选用户
-CREATE INDEX IF NOT EXISTS idx_users_role
+CREATE INDEX idx_users_role
     ON users (role);
 
 -- reports.created_at 索引，覆盖管理后台按时间排序举报列表
-CREATE INDEX IF NOT EXISTS idx_reports_created_at
+CREATE INDEX idx_reports_created_at
     ON reports (created_at);
 
 -- reports.handler_id 索引，覆盖按处理人查询举报
-CREATE INDEX IF NOT EXISTS idx_reports_handler
+CREATE INDEX idx_reports_handler
     ON reports (handler_id);
 
 -- discover_swipes（likes）状态+创建时间组合索引，覆盖发现页有效喜欢列表
-CREATE INDEX IF NOT EXISTS idx_likes_status_user_created
+CREATE INDEX idx_likes_status_user_created
     ON likes (status, user_id, created_at);
 
 -- discover_swipes（pass_records）用户+创建时间组合索引，覆盖跳过记录查询
-CREATE INDEX IF NOT EXISTS idx_pass_records_user_created
+CREATE INDEX idx_pass_records_user_created
     ON pass_records (user_id, created_at);
 
 -- notifications.type+created_at 组合索引，覆盖按类型分页查询
-CREATE INDEX IF NOT EXISTS idx_notifications_type_created
+CREATE INDEX idx_notifications_type_created
     ON notifications (type, created_at);
 
 -- notifications.source_user_id 索引，覆盖按源用户查询（防刷检测）
-CREATE INDEX IF NOT EXISTS idx_notifications_source_user
+CREATE INDEX idx_notifications_source_user
     ON notifications (source_user_id);
 
 -- ============================================================

@@ -129,7 +129,9 @@ async function handleCreate() {
       content: t("vip.redPacketCreatedContent", { id: result.id }),
       showCancel: true,
       confirmText: t("vip.redPacketShare"),
-      cancelText: t("common.confirm"),
+      // 修复（review #56）：原 cancelText 用 common.confirm（“确定”），
+      // 与确认按钮“分享”语义颠倒；改为“取消”表示放弃分享、关闭弹窗。
+      cancelText: t("common.cancel"),
       success: (res) => {
         if (res.confirm) {
           uni.showToast({ title: t("vip.redPacketShareTip"), icon: "none" });
@@ -185,6 +187,9 @@ onLoad((options) => {
     if (!isNaN(id) && id > 0) {
       claimId.value = id;
       showClaimModal.value = true;
+    } else {
+      // infra R2-00061: 非法 claimId 给错误反馈，避免静默无响应
+      uni.showToast({ title: t("vip.redPacketInvalidLink"), icon: "none" });
     }
   }
 });
@@ -248,7 +253,7 @@ defineExpose({ noop });
           type="digit"
           :placeholder="t('vip.redPacketAmountPlaceholder')"
           :value="amountInput"
-          @input="amountInput = readInputValue($event)" aria-label="t('vip.redPacketAmountPlaceholder')"
+          @input="amountInput = readInputValue($event)" :aria-label="t('vip.redPacketAmountPlaceholder')"
         />
         <text v-if="selectedType === 'NORMAL' && perPacketYuan" class="amount-input__hint">
           {{ t('vip.redPacketPerPacket', { amount: perPacketYuan }) }}
@@ -267,7 +272,7 @@ defineExpose({ noop });
           type="number"
           :placeholder="t('vip.redPacketCountPlaceholder')"
           :value="countInput"
-          @input="countInput = readInputValue($event)" aria-label="t('vip.redPacketCountPlaceholder')"
+          @input="countInput = readInputValue($event)" :aria-label="t('vip.redPacketCountPlaceholder')"
         />
         <text class="count-input__suffix">{{ t('vip.redPacketCountUnit') }}</text>
       </view>
@@ -284,7 +289,7 @@ defineExpose({ noop });
           :placeholder="t('vip.redPacketBlessingPlaceholder')"
           :maxlength="200"
           :value="blessingInput"
-          @input="blessingInput = readInputValue($event)" aria-label="t('vip.redPacketBlessingPlaceholder')"
+          @input="blessingInput = readInputValue($event)" :aria-label="t('vip.redPacketBlessingPlaceholder')"
         />
       </view>
     </view>

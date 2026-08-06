@@ -73,17 +73,19 @@ public class AdminAuditLogService {
     /**
      * 分页查询审计日志。
      *
-     * @param operatorId 操作者ID（可空）
-     * @param operation  操作类型（可空）
-     * @param startTime  起始时间（可空，包含）
-     * @param endTime    结束时间（可空，包含）
-     * @param pageable   分页
+     * @param operatorId    操作者ID（可空）
+     * @param operation     操作类型（可空）
+     * @param startTime     起始时间（可空，包含）
+     * @param endTime       结束时间（可空，包含）
+     * @param exceptionOnly 仅查异常日志（errorMessage 非空），null/false 时不参与过滤
+     * @param pageable      分页
      * @return 分页审计日志
      */
     @Transactional(readOnly = true)
     public Page<AuditLog> search(Long operatorId, String operation,
                                  LocalDateTime startTime, LocalDateTime endTime,
+                                 Boolean exceptionOnly,
                                  Pageable pageable) {
-        return auditLogRepository.search(operatorId, operation, startTime, endTime, pageable);
+        return auditLogRepository.search(operatorId, operation, startTime, endTime, exceptionOnly, pageable);
     }
 }

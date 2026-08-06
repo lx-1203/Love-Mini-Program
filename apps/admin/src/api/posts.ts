@@ -1,12 +1,12 @@
 /**
- * 管理后台 - 内容管理 API 封装（帖子 + 评论 + 举报）。
+ * 管理后台 - 内容管理 API 封装（帖子 + 评论）。
  *
  * 对应后端：
  *   - com.campuslove.api.admin.AdminPostController  (/api/v1/admin/posts)
  *   - com.campuslove.api.admin.AdminCommentController (/api/v1/admin/comments)
- *   - com.campuslove.api.admin.AdminReportController  (/api/v1/admin/reports)
  *
- * 注：举报接口当前为占位实现，后端举报表后续落地后接口契约不变。
+ * 举报接口已迁移至 api/reports.ts（与后端 AdminReportController 契约对齐），
+ * 本文件不再重复定义，避免两套契约并存（FIN-0032 / findings #32）。
  */
 
 import { AdminPageView, del, get, post } from "./http";
@@ -92,6 +92,9 @@ export function deletePost(id: number): Promise<AdminPostDeleteResponse> {
 }
 
 // ---------- 评论 ----------
+// infra R2-00468：listComments/deleteComment 已封装但暂无页面消费（评论管理页缺失，
+// 属 HIGH 功能缺失项，由主代理处理）。此处保留封装避免重复实现，
+// 待评论管理页落地后直接消费；新增页面时请同步注册 Layout 菜单与路由。
 
 /** 评论列表项视图（对应后端 AdminCommentSummaryView） */
 export interface AdminCommentSummary {
@@ -133,67 +136,4 @@ export function listComments(
  */
 export function deleteComment(id: number): Promise<AdminCommentDeleteResponse> {
   return del<AdminCommentDeleteResponse>(`/v1/admin/comments/${id}`);
-}
-
-// ---------- 举报（占位） ----------
-
-/** 举报列表项视图（对应后端 AdminReportView，当前为占位） */
-export interface AdminReportSummary {
-  id: number;
-  targetType: "post" | "comment" | "user";
-  targetId: number;
-  reporterId: number;
-  reporterNickname: string | null;
-  reason: string | null;
-  description: string | null;
-  status: "pending" | "handling" | "resolved" | "dismissed";
-  handlerId: number | null;
-  handleRemark: string | null;
-  createdAt: string;
-  handledAt: string | null;
-}
-
-/** 举报处理请求体（对应后端 AdminReportHandleRequest） */
-export interface AdminReportHandleRequest {
-  result: "resolved" | "dismissed";
-  remark?: string;
-}
-
-/** 举报处理响应 */
-export interface AdminReportHandleResponse {
-  id: number;
-  result: "resolved" | "dismissed";
-  remark: string | null;
-  handlerId: number;
-  success: boolean;
-  message?: string;
-}
-
-/** 举报列表查询参数 */
-export interface AdminReportListQuery {
-  status?: "pending" | "handling" | "resolved" | "dismissed";
-  targetType?: "post" | "comment" | "user";
-  page?: number;
-  pageSize?: number;
-}
-
-/**
- * 分页查询举报列表（当前为占位实现，返回空列表）。
- * GET /api/v1/admin/reports
- */
-export function listReports(
-  query: AdminReportListQuery = {}
-): Promise<AdminPageView<AdminReportSummary>> {
-  return get<AdminPageView<AdminReportSummary>>("/v1/admin/reports", query as Record<string, unknown>);
-}
-
-/**
- * 处理举报（当前为占位实现，仅校验参数后返回成功）。
- * POST /api/v1/admin/reports/{id}/handle
- */
-export function handleReport(
-  id: number,
-  req: AdminReportHandleRequest
-): Promise<AdminReportHandleResponse> {
-  return post<AdminReportHandleResponse>(`/v1/admin/reports/${id}/handle`, req);
 }

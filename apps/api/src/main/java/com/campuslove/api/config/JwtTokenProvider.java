@@ -380,17 +380,31 @@ public class JwtTokenProvider {
         // mock profile 下 redissonClient 为 null（Redisson 已排除），跳过锁（单实例无需锁）
         if (redissonClient != null) {
             try {
-                if (!redissonClient.getLock("scheduled:jwtKeyRotation")
+                if (!redissonClient.getLock("scheduled:cleanupRevokedTokens")
                         .tryLock(0, 30, TimeUnit.SECONDS)) {
-                    log.debug("jwtKeyRotation 定时任务已被其他实例持有，跳过本次执行");
+                    log.debug("cleanupRevokedTokens 定时任务已被其他实例持有，跳过本次执行");
                     return;
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.warn("jwtKeyRotation 获取分布式锁被中断");
+                log.warn("cleanupRevokedTokens 获取分布式锁被中断");
                 return;
             }
+            try {
+                doCleanupExpiredRevokedTokens();
+            } finally {
+                // 修复（R2）：tryLock 成功后必须在 finally 释放，否则锁要等 30s 自动过期
+                redissonClient.getLock("scheduled:cleanupRevokedTokens").unlock();
+            }
+        } else {
+            doCleanupExpiredRevokedTokens();
         }
+    }
+
+    /**
+     * 实际清理逻辑（抽取以便统一在锁内执行并保证 finally 释放）。
+     */
+    private void doCleanupExpiredRevokedTokens() {
         if (revokedTokens.isEmpty()) {
             return;
         }

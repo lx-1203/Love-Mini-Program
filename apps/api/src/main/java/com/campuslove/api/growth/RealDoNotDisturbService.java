@@ -137,8 +137,10 @@ public class RealDoNotDisturbService implements DoNotDisturbService {
         setting.setStartTime(request.startTime());
         setting.setEndTime(request.endTime());
         setting.setRepeatMode(request.repeatMode());
-        // 非 CUSTOM 模式下清空 customWeekdays，避免脏数据
-        setting.setCustomWeekdays("CUSTOM".equals(request.repeatMode()) ? request.customWeekdays() : null);
+        // infra R2-00275: customWeekdays 规范化为去重排序 CSV（原手写 split 直接原样存储，
+        // 重复/乱序值会残留脏数据）
+        setting.setCustomWeekdays("CUSTOM".equals(request.repeatMode())
+                ? normalizeCustomWeekdays(request.customWeekdays()) : null);
         setting.setAllowUrgent(request.allowUrgent());
         setting.setUpdatedAt(LocalDateTime.now());
 
@@ -148,6 +150,24 @@ public class RealDoNotDisturbService implements DoNotDisturbService {
                 saved.getRepeatMode(), saved.getAllowUrgent());
 
         return toView(saved);
+    }
+
+    /**
+     * 将 customWeekdays 规范化为去重排序的 CSV（如 "3,1,1" → "1,3"）。
+     *
+     * @param raw 原始 CSV（已通过 1-7 范围校验）
+     * @return 规范化后的 CSV，null/空返回 null
+     */
+    private String normalizeCustomWeekdays(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        java.util.Set<Integer> days = new java.util.TreeSet<>();
+        for (String part : raw.split(",")) {
+            days.add(Integer.parseInt(part.trim()));
+        }
+        return days.stream().map(String::valueOf)
+                .collect(java.util.stream.Collectors.joining(","));
     }
 
     /**

@@ -224,10 +224,15 @@ public class MatchRecorder {
 
     /**
      * 检查今日是否已访问过（避免重复记录）。
+     *
+     * <p>缺陷修复：visitors.created_at 为 {@link LocalDateTime} 类型，
+     * 派生查询 Between 参数必须为 {@link LocalDateTime}。此处将日期转换为
+     * 「今日 00:00:00（含）～ 明日 00:00:00（不含）」时刻区间，
+     * 修复原 LocalDate 直传导致的 InvalidDataAccessApiUsageException（500）。</p>
      */
     public boolean existsTodayVisit(Long visitorId, Long visitedUserId, LocalDate today) {
         return visitorRepository.existsByVisitorIdAndVisitedUserIdAndCreatedAtBetween(
-                visitorId, visitedUserId, today, today.plusDays(1));
+                visitorId, visitedUserId, today.atStartOfDay(), today.plusDays(1).atStartOfDay());
     }
 
     /**

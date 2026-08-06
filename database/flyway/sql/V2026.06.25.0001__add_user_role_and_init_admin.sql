@@ -13,9 +13,9 @@
 --   * 仅当 users 表中尚不存在 role='ADMIN' 的用户时才插入，避免重复初始化。
 --   * 管理员密码不在此脚本中初始化，由应用层通过环境变量 ADMIN_PASSWORD 配置，
 --     详见 RealAuthService#loginAsAdmin。
---   * 迁移脚本中引用占位符使用双下划线语法 __admin_openid__，
+--   * 迁移脚本中引用占位符使用 Flyway 占位符语法 ${admin_openid}，
 --     与 application-db.yml 的 spring.flyway.placeholders 配合使用。
---   * 注意：为避免与 MySQL 单行注释 # 以及 Spring 属性占位符 ${...} 冲突，
+--   * 注意：为避免与 MySQL 单行注释 # 以及 Spring 属性占位符 $ 花括号 冲突，
 --     占位符采用双下划线格式。
 
 ALTER TABLE users
@@ -25,11 +25,11 @@ ALTER TABLE users
 UPDATE users SET role = 'USER' WHERE role IS NULL OR role = '';
 
 -- 初始化管理员账号（仅在不存在 ADMIN 用户时执行）
--- 使用 __admin_openid__ / __admin_nickname__ 占位符，
+-- 使用 ${admin_openid} / ${admin_nickname} 占位符，
 -- 由 application-db.yml 的 spring.flyway.placeholders 提供值。
 -- 注意：Flyway 占位符为纯文本替换，占位符值可能包含连字符等特殊字符，
 -- 必须用单引号包裹使其成为字符串字面量，否则会被解析为减法运算导致语法错误。
 INSERT INTO users (openid, nickname, role, profile_completion, following_count, followers_count, created_at, updated_at)
-SELECT '__admin_openid__', '__admin_nickname__', 'ADMIN', 100, 0, 0, NOW(), NOW()
+SELECT '${admin_openid}', '${admin_nickname}', 'ADMIN', 100, 0, 0, NOW(), NOW()
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE role = 'ADMIN' LIMIT 1);

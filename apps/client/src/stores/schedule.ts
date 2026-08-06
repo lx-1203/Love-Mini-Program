@@ -47,6 +47,7 @@ export const WEEK_DAYS = ["周一", "周二", "周三", "周四", "周五", "周
 export const useScheduleStore = defineStore("schedule", () => {
   /**
    * 课表项列表（mock 数据：3 课程 + 2 活动 + 1 自定义，覆盖周一到周日不同时段）
+   * infra R2-00104: 课表 mock 内容（课程名/教师名）为演示数据，real 分支由后端下发
    */
   const scheduleItems = ref<ScheduleItem[]>([
     // ===== 课程（3 个）=====
@@ -182,7 +183,9 @@ export const useScheduleStore = defineStore("schedule", () => {
 
   /** 添加课表项 */
   function addItem(item: Omit<ScheduleItem, "id">) {
-    const id = `s-${Date.now()}`;
+    // 修复（P1 BUG）：原实现 id = `s-${Date.now()}`，同毫秒快速添加两条会冲突
+    // （重复 key 导致列表渲染/删除错乱）。追加随机后缀保证唯一。
+    const id = `s-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     scheduleItems.value.push({ ...item, id });
   }
 

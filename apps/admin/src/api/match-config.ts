@@ -24,6 +24,10 @@ export interface UpdateKeyValueRequest {
 /**
  * 查询匹配算法配置。
  * GET /api/v1/admin/match-config
+ *
+ * infra R2-00470：getMatchConfig/updateMatchConfig/getRecommendStrategy/
+ * updateRecommendStrategy 已封装但暂无页面消费（匹配配置页缺失，属 HIGH 功能
+ * 缺失项，由主代理处理）。此处保留封装，待匹配配置页落地后直接消费。
  */
 export function getMatchConfig(): Promise<MatchConfigView> {
   return get<MatchConfigView>("/v1/admin/match-config");

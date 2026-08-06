@@ -20,6 +20,8 @@ import { useMock } from "../helpers/use-mock";
 import type { CampusFeedView } from "../../services/generated/api-types-supplement";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
+// infra R2-00037: mock 头像统一走 IMAGE_PATHS 体系
+import { IMAGE_PATHS } from "../../config/images";
 import {
   COMMENT_DEBOUNCE_MS,
   MAX_CONTENT_LENGTH,
@@ -87,7 +89,14 @@ let fetchPostsController: AbortController | null = null;
  * 导致后端创建重复评论。通过 per-post 防抖避免此问题。
  * 使用映射表而非单例，确保不同帖子的评论互不影响。
  */
-const commentDebounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+const commentDebounceTimers: Map<
+  string,
+  {
+    timer: ReturnType<typeof setTimeout>;
+    /** 被覆盖时用于 resolve 旧 Promise 的引用（修复：防抖覆盖导致 Promise 永不 settle） */
+    resolve: ((value: CommentItem | CommentItemView | undefined) => void) | null;
+  }
+> = new Map();
 
 /**
  * 正在点赞中的帖子 ID 集合（幂等守卫）。
@@ -97,6 +106,8 @@ const commentDebounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Ma
  * 使用 Set 跟踪 in-flight 的点赞操作，同一帖子的并发请求直接跳过。
  */
 const likingPostIds: Set<string> = new Set();
+/** 点赞中的评论 ID 集合（幂等守卫：同一评论在途请求未完成时拒绝重复触发） */
+const likingCommentIds: Set<string> = new Set();
 
 /**
  * 村口社区 Store
@@ -202,8 +213,14 @@ export const useVillageStore = defineStore("village", {
           // 修复：被取消的请求不修改状态
           if (controller.signal.aborted) return;
 
-          this.posts = reset ? result : [...this.posts, ...result];
-          this.hasMore = false;
+          // infra R2-00035: mock 分支模拟与 real 一致的分页语义（按 PAGE_SIZE 切片），
+          // 避免 mock 下 hasMore 恒为 false、无法演练分页加载
+          const currentPage = reset ? 1 : this.page;
+          const start = (currentPage - 1) * PAGE_SIZE;
+          const pageItems = result.slice(start, start + PAGE_SIZE);
+          this.posts = reset ? pageItems : [...this.posts, ...pageItems];
+          this.page = currentPage;
+          this.hasMore = start + PAGE_SIZE < result.length;
           return;
         }
 
@@ -222,7 +239,7 @@ export const useVillageStore = defineStore("village", {
       } catch (error) {
         // 修复：被取消的请求不视为错误，不更新 errorMessage
         if (controller.signal.aborted) return;
-        this.errorMessage = error instanceof Error ? error.message : "加载帖子失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.loadPostsFailed"); // infra R2-00038: 错误回退消息 i18n 化
       } finally {
         // 修复：仅当当前 controller 仍是全局 controller 时才清 loading
         // 避免新请求已发起时被旧请求的 finally 误清 loading
@@ -306,12 +323,14 @@ export const useVillageStore = defineStore("village", {
         }
 
         if (useMock()) {
+          // infra R2-00037: mock 作者信息从当前会话生成，避免硬编码 "user-1001" 与真实用户体系割裂
+          const me = useSessionStore().userSession;
           const newPost: PostItem = {
             id: `post-${Date.now()}`,
             author: {
-              userId: "user-1001",
-              name: "我",
-              avatar: "/static/default-avatar.png",
+              userId: me?.userId ?? "user-1001",
+              name: me?.displayName ?? "我",
+              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
               headline: "",
             },
             categoryId: data.categoryId,
@@ -345,7 +364,7 @@ export const useVillageStore = defineStore("village", {
         this.posts.unshift(newPost);
         return newPost;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "发布帖子失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.publishPostFailed"); // infra R2-00038
         throw error;
       }
     },
@@ -381,7 +400,7 @@ export const useVillageStore = defineStore("village", {
           try {
             toggleMockPostLike(this.posts, this.currentPost, postId);
           } catch (error) {
-            this.errorMessage = error instanceof Error ? error.message : "帖子不存在";
+            this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.postNotFound"); // infra R2-00038
             throw error;
           }
           return;
@@ -416,7 +435,7 @@ export const useVillageStore = defineStore("village", {
           throw error;
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "点赞操作失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.likePostFailed"); // infra R2-00038
         throw error;
       } finally {
         // 修复（P1 BUG）：清理 in-flight 标记
@@ -508,16 +527,21 @@ export const useVillageStore = defineStore("village", {
       // 修复（P1 BUG）：per-post 防抖，防止快速连续提交
       return new Promise<CommentItem | CommentItemView | undefined>((resolve, reject) => {
         // 清理上一次该帖子的防抖定时器
-        const existingTimer = commentDebounceTimers.get(postId);
-        if (existingTimer) {
-          clearTimeout(existingTimer);
+        const existing = commentDebounceTimers.get(postId);
+        if (existing) {
+          clearTimeout(existing.timer);
           commentDebounceTimers.delete(postId);
+          // 修复（P1 BUG）：被新提交覆盖的旧 Promise 不再挂起——
+          // 以“已取消”语义 resolve undefined，让旧调用方（await 处）正常返回
+          if (existing.resolve) {
+            existing.resolve(undefined);
+          }
         }
         const timer = setTimeout(() => {
           commentDebounceTimers.delete(postId);
           this._doCommentPost(postId, content).then(resolve).catch(reject);
         }, COMMENT_DEBOUNCE_MS);
-        commentDebounceTimers.set(postId, timer);
+        commentDebounceTimers.set(postId, { timer, resolve });
       });
     },
 
@@ -530,15 +554,23 @@ export const useVillageStore = defineStore("village", {
     async _doCommentPost(postId: string, content: string) {
       this.errorMessage = null;
 
+      // infra R2-00036: 防抖回调内二次校验（防御防抖窗口期间内容被清空/变更）
+      if (!content || content.trim().length === 0) {
+        this.errorMessage = t("storeErrors.village.commentContentEmpty");
+        throw new Error(t("storeErrors.village.commentContentEmpty"));
+      }
+
       try {
         if (useMock()) {
+          // infra R2-00037: mock 评论作者从当前会话生成
+          const me = useSessionStore().userSession;
           const newComment: CommentItem = {
             id: `comment-${Date.now()}`,
             postId,
             author: {
-              userId: "user-1001",
-              name: "我",
-              avatar: "/static/default-avatar.png",
+              userId: me?.userId ?? "user-1001",
+              name: me?.displayName ?? "我",
+              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
               headline: "",
             },
             content,
@@ -572,7 +604,7 @@ export const useVillageStore = defineStore("village", {
         }
         return result;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "评论失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.commentFailed"); // infra R2-00038
         throw error;
       }
     },
@@ -580,9 +612,17 @@ export const useVillageStore = defineStore("village", {
     /**
      * 点赞/取消点赞评论
      * @param commentId - 评论 ID（toggle 操作）
+     *
+     * 修复（P1 BUG）：新增幂等守卫——同一评论的点赞请求在途时拒绝重复触发，
+     * 避免快速连点导致多次 toggle（点赞数漂移或重复请求）。
      */
     async likeComment(commentId: string) {
+      // 幂等守卫：在途请求未完成时直接返回
+      if (likingCommentIds.has(commentId)) {
+        return;
+      }
       this.errorMessage = null;
+      likingCommentIds.add(commentId);
 
       try {
         if (!commentId || commentId.trim().length === 0) {
@@ -612,8 +652,10 @@ export const useVillageStore = defineStore("village", {
           comment.likes += comment.isLiked ? 1 : -1;
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "点赞评论失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.likeCommentFailed"); // infra R2-00038
         throw error;
+      } finally {
+        likingCommentIds.delete(commentId);
       }
     },
 
@@ -669,7 +711,7 @@ export const useVillageStore = defineStore("village", {
           this.currentPost.shares = result.shareCount;
         }
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "转发操作失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.sharePostFailed"); // infra R2-00038
         throw error;
       }
     },
@@ -692,7 +734,7 @@ export const useVillageStore = defineStore("village", {
         const data = await fetchCommentsApi(postId);
         this.comments = data.items.map(mapToCommentItem);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载评论失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.loadCommentsFailed"); // infra R2-00038
       } finally {
         this.loading = false;
       }
@@ -798,7 +840,7 @@ export const useVillageStore = defineStore("village", {
         this.campusFeedActivities = data.activities ?? [];
         this.campusFeedTopics = data.topics ?? [];
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载同校动态失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.loadCampusFeedFailed"); // infra R2-00038
       } finally {
         this.loadingCampusFeed = false;
       }
@@ -817,12 +859,12 @@ export const useVillageStore = defineStore("village", {
 
       try {
         if (useMock()) {
-          // Mock 数据：返回 2 个相似作者
+          // Mock 数据：返回 2 个相似作者（infra R2-00039: 仅 mock 演示用，real 分支由后端下发；头像统一 IMAGE_PATHS）
           this.similarAuthors = [
             {
               userId: "user-3004",
               name: "南风",
-              avatar: "/static/default-avatar.png",
+              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
               campusName: "北京大学",
               headline: "97年 · 深圳 · 产品经理 · 本科",
               isAlumni: true,
@@ -832,7 +874,7 @@ export const useVillageStore = defineStore("village", {
             {
               userId: "user-3005",
               name: "北岛",
-              avatar: "/static/default-avatar.png",
+              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
               campusName: "四川大学",
               headline: "93年 · 成都 · 创业者 · 博士",
               isAlumni: false,
@@ -859,7 +901,7 @@ export const useVillageStore = defineStore("village", {
           isFollowed: Boolean(a.isFollowed ?? false),
         }));
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载相似作者失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.loadSimilarAuthorsFailed"); // infra R2-00038
       } finally {
         this.loadingSimilarAuthors = false;
       }
@@ -871,6 +913,11 @@ export const useVillageStore = defineStore("village", {
      * 修复（P1 BUG）：模块级定时器与请求控制器在 HMR 热更新或页面切换时未清理，
      * 可能导致内存泄漏或已卸载组件的状态被修改。
      * 调用时机：页面 onUnmounted / HMR 热更新 / 切换账号。
+     *
+     * TODO(dispose-接线)：引用页面为 pages/village/index.vue（主列表页）及
+     * pages/village/detail.vue、pages/village/post.vue、pages/village/tag-posts.vue、
+     * pages/circle/index.vue、pages/profile/index.vue。本子任务受目录权限限制无法修改
+     * pages/ 目录，需在后续任务中于页面 onUnload 调用 villageStore.dispose()。
      */
     dispose() {
       // 清理 fetchPosts 请求控制器
@@ -882,13 +929,17 @@ export const useVillageStore = defineStore("village", {
         }
         fetchPostsController = null;
       }
-      // 清理所有评论防抖定时器
-      commentDebounceTimers.forEach((timer) => {
-        clearTimeout(timer);
+      // 清理所有评论防抖定时器（含被覆盖 Promise 的 resolve 引用）
+      commentDebounceTimers.forEach((entry) => {
+        clearTimeout(entry.timer);
+        if (entry.resolve) {
+          entry.resolve(undefined);
+        }
       });
       commentDebounceTimers.clear();
       // 清理点赞 in-flight 集合
       likingPostIds.clear();
+      likingCommentIds.clear();
     },
   },
 });

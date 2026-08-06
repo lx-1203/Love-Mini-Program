@@ -11,8 +11,10 @@ import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,12 +57,21 @@ public class SensitiveWordImportService {
     /** 单批处理数量，平衡内存占用与事务开销 */
     private static final int BATCH_SIZE = 500;
 
-    /** 任务 ID 生成用计数器（进程内，配合时间戳保证唯一） */
-    private static long taskCounter = 0L;
-
     private final SensitiveWordRepository sensitiveWordRepository;
     private final SensitiveWordFilter sensitiveWordFilter;
     private final CacheManager cacheManager;
+
+    /**
+     * 自引用代理（FIN-00044 修复）。
+     *
+     * <p>Spring AOP 基于代理，同一 Bean 内部方法调用不经过代理，
+     * {@code @Transactional} 会失效。通过 {@link Lazy} 注入自身代理，
+     * 使每批导入 {@link #importBatchTransactional} 的事务注解真正生效，
+     * 实现「每批一个事务」而非整批长事务。</p>
+     */
+    @Lazy
+    @Autowired
+    private SensitiveWordImportService self;
 
     public SensitiveWordImportService(SensitiveWordRepository sensitiveWordRepository,
                                        SensitiveWordFilter sensitiveWordFilter,
@@ -102,7 +113,9 @@ public class SensitiveWordImportService {
     /**
      * 实际的异步导入逻辑（由 {@code taskExecutor} 调度执行）。
      *
-     * <p>分批处理，每批 {@link #BATCH_SIZE} 条，独立事务；
+     * <p>分批处理，每批 {@link #BATCH_SIZE} 条，独立事务（FIN-00044 修复：
+     * {@code @Transactional} 从本方法移除，移至 {@link #importBatchTransactional}，
+     * 避免整个异步任务持有一个长事务）；
      * 全部完成后失效缓存并刷新内存过滤器。</p>
      *
      * @param taskId     任务 ID
@@ -111,7 +124,6 @@ public class SensitiveWordImportService {
      * @param operatorId 操作者用户 ID
      */
     @Async("taskExecutor")
-    @Transactional
     public void doImportAsync(String taskId, List<String> words, String category, Long operatorId) {
         long startMs = System.currentTimeMillis();
         int imported = 0;
@@ -128,7 +140,8 @@ public class SensitiveWordImportService {
                 List<String> batch = words.subList(from, to);
 
                 try {
-                    int[] batchResult = importBatch(batch, category, seen);
+                    // 通过 self 代理调用，确保 @Transactional 生效（每批独立事务，短事务释放锁）
+                    int[] batchResult = self.importBatchTransactional(batch, category, seen);
                     imported += batchResult[0];
                     skipped += batchResult[1];
                 } catch (org.springframework.dao.DataAccessException e) {
@@ -168,11 +181,24 @@ public class SensitiveWordImportService {
     }
 
     /**
-     * 导入单批敏感词（独立事务）。
+     * 导入单批敏感词（每批独立事务，FIN-00044 修复）。
      *
-     * <p>注意：本方法被 {@link #doImportAsync} 调用，由于 {@code @Async} 与
-     * {@code @Transactional} 都基于 AOP 代理，外部直接调用不会走代理，
-     * 因此本方法不标注 {@code @Transactional}，事务由调用方 {@code doImportAsync} 控制。</p>
+     * <p>本方法为 public 且标注 {@code @Transactional}，由 {@link #doImportAsync}
+     * 通过 {@code self} 代理调用（同 Bean 内部直接调用不走 AOP 代理），
+     * 确保每批数据在独立短事务中提交，避免整个异步任务持有一个长事务。</p>
+     *
+     * @param batch    单批敏感词
+     * @param category 分类
+     * @param seen     进程内去重 Set（方法内会修改）
+     * @return int[2]：[导入条数, 跳过条数]
+     */
+    @Transactional
+    public int[] importBatchTransactional(List<String> batch, String category, Set<String> seen) {
+        return importBatch(batch, category, seen);
+    }
+
+    /**
+     * 导入单批敏感词（无事务的纯处理逻辑，由 {@link #importBatchTransactional} 调用）。
      *
      * @param batch    单批敏感词
      * @param category 分类
@@ -184,6 +210,7 @@ public class SensitiveWordImportService {
         int skipped = 0;
         LocalDateTime now = LocalDateTime.now();
 
+        List<SensitiveWord> toSave = new ArrayList<>();
         for (String rawWord : batch) {
             if (rawWord == null) {
                 skipped++;
@@ -202,28 +229,37 @@ public class SensitiveWordImportService {
                 continue;
             }
 
-            // 数据库去重
-            try {
-                if (sensitiveWordRepository.existsByWordIgnoreCase(word)) {
-                    skipped++;
-                    continue;
-                }
-            } catch (org.springframework.dao.DataAccessException e) {
-                log.warn("SubTask 5.3.5 敏感词去重查询失败: word={}, error={}", word, e.getMessage());
-                // 去重查询失败时仍尝试写入，由 unique 约束兜底
-            }
+            SensitiveWord entity = new SensitiveWord();
+            entity.setWord(word);
+            entity.setCategory(category);
+            entity.setCreatedAt(now);
+            toSave.add(entity);
+        }
 
+        // infra R2-00243: 数据库去重改为批量预查询 + saveAll，
+        // 避免每词 1 次 exists + 1 次 save（5000 词 = 1 万次往返）；唯一约束仍兜底
+        if (!toSave.isEmpty()) {
+            List<String> lowerWords = toSave.stream()
+                    .map(w -> w.getWord().toLowerCase(java.util.Locale.ROOT))
+                    .toList();
+            Set<String> existing = new HashSet<>(
+                    sensitiveWordRepository.findExistingWordsIgnoreCase(lowerWords));
+            List<SensitiveWord> finalList = toSave.stream()
+                    .filter(w -> existing.add(w.getWord().toLowerCase(java.util.Locale.ROOT)))
+                    .toList();
+            skipped += toSave.size() - finalList.size();
             try {
-                SensitiveWord entity = new SensitiveWord();
-                entity.setWord(word);
-                entity.setCategory(category);
-                entity.setCreatedAt(now);
-                sensitiveWordRepository.save(entity);
-                imported++;
+                imported += sensitiveWordRepository.saveAll(finalList).size();
             } catch (org.springframework.dao.DataIntegrityViolationException e) {
-                // 可能是 unique 约束冲突（并发导入），跳过即可
-                skipped++;
-                log.debug("SubTask 5.3.5 敏感词写入跳过: word={}, error={}", word, e.getMessage());
+                // 并发导入撞 unique 约束（概率极低）：回退逐条保存，冲突跳过
+                for (SensitiveWord w : finalList) {
+                    try {
+                        sensitiveWordRepository.save(w);
+                        imported++;
+                    } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                        skipped++;
+                    }
+                }
             }
         }
 
@@ -231,10 +267,17 @@ public class SensitiveWordImportService {
     }
 
     /**
-     * 生成任务 ID（时间戳 + 进程内自增）。
+     * 生成任务 ID（FIN-00045 轻量修复）。
+     *
+     * <p>原实现为「时间戳 + 进程内自增计数器」：重启后计数器归零、多实例部署时
+     * 不同实例各自计数，均可能产生重复 taskId。现改用 UUID（全局唯一，无状态），
+     * 彻底消除撞号风险。</p>
+     *
+     * <p>已知局限（任务状态未持久化）：taskId 仅存于内存，应用重启后客户端
+     * 轮询 {@code /import/status/{taskId}} 将查不到任务；如需跨重启/多实例
+     * 状态追踪，应引入 DB 任务表（task_id 主键 + 进度/状态列）。</p>
      */
-    private static synchronized String generateTaskId() {
-        taskCounter = (taskCounter + 1) % 1_000_000L;
-        return "sw-import-" + System.currentTimeMillis() + "-" + taskCounter;
+    private static String generateTaskId() {
+        return "sw-import-" + java.util.UUID.randomUUID().toString().replace("-", "");
     }
 }

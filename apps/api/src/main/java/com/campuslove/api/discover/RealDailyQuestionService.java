@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ResourceNotFoundException;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.DailyAnswer;
@@ -10,12 +11,18 @@ import com.campuslove.api.repository.DailyQuestionRepository;
 import com.campuslove.api.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,7 +68,10 @@ public class RealDailyQuestionService implements DailyQuestionService {
      */
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = CacheNames.DAILY_QUESTION, key = "#userId", unless = "#result == null")
+    // infra R2-00236: 缓存 key 增加日期维度，修复 1h TTL 跨零点返回昨日问题的问题；
+    // submitAnswer 的 @CacheEvict 使用相同 key 表达式保持一致性
+    @Cacheable(cacheNames = CacheNames.DAILY_QUESTION,
+            key = "#userId + ':' + T(java.time.LocalDate).now()", unless = "#result == null")
     public DailyQuestionView getTodayQuestion(Long userId) {
         LocalDate today = LocalDate.now();
         log.debug("获取今日问题，日期: {}, userId: {}", today, userId);
@@ -81,10 +91,11 @@ public class RealDailyQuestionService implements DailyQuestionService {
             }
         }
 
-        // 3. 若仍无问题，抛出异常
+        // 3. 若仍无问题，抛出业务异常（缺陷修复：原 RuntimeException 导致接口 500，
+        //    改为 ResourceNotFoundException 返回 404 友好提示）
         if (question == null) {
             log.warn("系统中不存在任何每日一问记录");
-            throw new RuntimeException("暂无每日一问记录，请稍后再试");
+            throw new ResourceNotFoundException("暂无每日一问记录，请稍后再试");
         }
 
         // 4. 判断当前用户是否已回答
@@ -108,7 +119,8 @@ public class RealDailyQuestionService implements DailyQuestionService {
      */
     @Override
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.DAILY_QUESTION, key = "#userId")
+    @CacheEvict(cacheNames = CacheNames.DAILY_QUESTION,
+            key = "#userId + ':' + T(java.time.LocalDate).now()")
     public DailyAnswerView submitAnswer(Long userId, Long questionId, String content, boolean isAnonymous) {
         // 参数校验
         if (userId == null) {
@@ -141,10 +153,13 @@ public class RealDailyQuestionService implements DailyQuestionService {
         answer.setIsAnonymous(isAnonymous);
         answer.setCreatedAt(now);
 
-        dailyAnswerRepository.save(answer);
+        // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
+        // 否则下方 toAnswerView 中 answer.getId() 为 null
+        answer = dailyAnswerRepository.saveAndFlush(answer);
         log.info("回答提交成功，answerId: {}, userId: {}, questionId: {}", answer.getId(), userId, questionId);
 
-        return toAnswerView(answer);
+        // infra R2-00235: 统一走 Map 版视图转换
+        return toAnswerView(answer, loadUserMap(List.of(answer.getUserId())));
     }
 
     /**
@@ -180,8 +195,13 @@ public class RealDailyQuestionService implements DailyQuestionService {
         // 分页查询回答列表
         Page<DailyAnswer> answerPage = dailyAnswerRepository.findByQuestionIdOrderByCreatedAtDesc(questionId, pageable);
 
-        // 转换为视图
-        return answerPage.map(this::toAnswerView);
+        // infra R2-00235: 批量预加载回答作者，避免逐条查库（N+1）
+        List<DailyAnswer> answers = answerPage.getContent();
+        Map<Long, User> userMap = loadUserMap(answers.stream().map(DailyAnswer::getUserId).toList());
+        List<DailyAnswerView> views = answers.stream()
+                .map(a -> toAnswerView(a, userMap))
+                .toList();
+        return new PageImpl<>(views, pageable, answerPage.getTotalElements());
     }
 
     /**
@@ -228,14 +248,30 @@ public class RealDailyQuestionService implements DailyQuestionService {
     }
 
     /**
-     * 将 DailyAnswer 实体转换为 DailyAnswerView。
+     * 批量加载回答作者用户 Map（userId → User），避免逐条查库（N+1）。
+     *
+     * @param userIds 用户 ID 列表（可含 null/重复）
+     * @return 用户映射，空列表返回空 Map
+     */
+    private Map<Long, User> loadUserMap(List<Long> userIds) {
+        List<Long> distinct = userIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinct.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRepository.findByIdIn(distinct).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+    }
+
+    /**
+     * 将 DailyAnswer 实体转换为 DailyAnswerView（批量版本）。
      * 匿名回答显示"匿名用户"，userId 置为 null，头像为空；
      * 非匿名回答显示真实用户昵称、userId 和头像。
      *
-     * @param answer 回答实体
+     * @param answer  回答实体
+     * @param userMap 批量预加载的用户 Map
      * @return 回答视图
      */
-    private DailyAnswerView toAnswerView(DailyAnswer answer) {
+    private DailyAnswerView toAnswerView(DailyAnswer answer, Map<Long, User> userMap) {
         if (Boolean.TRUE.equals(answer.getIsAnonymous())) {
             // 匿名回答：隐藏用户信息
             return new DailyAnswerView(
@@ -249,8 +285,8 @@ public class RealDailyQuestionService implements DailyQuestionService {
             );
         }
 
-        // 非匿名回答：查询真实用户信息
-        User user = userRepository.findById(answer.getUserId()).orElse(null);
+        // 非匿名回答：从批量 Map 获取真实用户信息
+        User user = userMap.get(answer.getUserId());
         String authorName = user != null ? user.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatarUrl = user != null ? user.getAvatarUrl() : "";
 

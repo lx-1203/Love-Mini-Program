@@ -9,6 +9,7 @@ import com.campuslove.api.repository.RecommendStrategyRepository;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -34,6 +35,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class RealAdminMatchConfigService implements AdminMatchConfigService {
 
     private static final Logger log = LoggerFactory.getLogger(RealAdminMatchConfigService.class);
+
+    /** match_config 已知键白名单（infra R2-00273，防止脏 key 污染 DB） */
+    private static final Set<String> KNOWN_MATCH_CONFIG_KEYS = Set.of(
+            "heartSignalExpireHours", "candidatePageSize", "defaultChatDuration",
+            "campusWeight", "cityWeight", "interestWeight", "scheduleWeight");
+
+    /** recommend_strategy 已知键白名单 */
+    private static final Set<String> KNOWN_STRATEGY_KEYS = Set.of(
+            "dailyLimit", "discussionLimit", "candidatePageSize",
+            "campusWeight", "cityWeight", "interestWeight", "scheduleWeight",
+            "sameSchoolBoostPercent", "sameMajorWeight", "commonCircleWeight",
+            "commonDailyAnswerWeight", "circleWeight", "sameSchoolBoostEnabled");
 
     private final MatchConfigEntityRepository matchConfigRepository;
     private final RecommendStrategyRepository recommendStrategyRepository;
@@ -83,6 +96,13 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
             if (key == null || value == null) {
                 continue;
             }
+            // infra R2-00273: key 白名单，未知键不再写入 DB（原实现任意 key 均入库）
+            if (!KNOWN_MATCH_CONFIG_KEYS.contains(key)) {
+                log.warn("match_config 未知键已忽略，不入库: {}", key);
+                continue;
+            }
+            // infra R2-00272: 先校验数值格式与范围再写入，避免非法值已入库而内存 bean 未同步
+            validateMatchConfigValue(key, value);
 
             // Task 2.5.3：移除 catch(Exception) 吞异常，保证事务原子性。
             // 任意一条更新失败时整批回滚，由 GlobalExceptionHandler 统一转换为
@@ -137,6 +157,13 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
             if (key == null || value == null) {
                 continue;
             }
+            // infra R2-00273: key 白名单，未知键不再写入 DB
+            if (!KNOWN_STRATEGY_KEYS.contains(key)) {
+                log.warn("recommend_strategy 未知键已忽略，不入库: {}", key);
+                continue;
+            }
+            // infra R2-00272: 先校验再写入，避免 DB 与内存 bean 漂移
+            validateRecommendStrategyValue(key, value);
 
             // Task 2.5.3：移除 catch(Exception) 吞异常，保证事务原子性。
             RecommendStrategyEntity entity = recommendStrategyRepository.findByStrategyKey(key)
@@ -171,6 +198,81 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
         values.put("cityWeight", String.valueOf(matchConfig.getCityWeight()));
         values.put("interestWeight", String.valueOf(matchConfig.getInterestWeight()));
         values.put("scheduleWeight", String.valueOf(matchConfig.getScheduleWeight()));
+    }
+
+    /**
+     * 校验 match_config 数值格式与范围（infra R2-00272，先校验后写入）。
+     *
+     * @param key   配置键
+     * @param value 配置值
+     * @throws IllegalArgumentException 数值非法或超出范围时抛出
+     */
+    private void validateMatchConfigValue(String key, String value) {
+        try {
+            switch (key) {
+                case "heartSignalExpireHours" -> {
+                    int v = Integer.parseInt(value);
+                    if (v < 1 || v > 24 * 30) throw new NumberFormatException("range");
+                }
+                case "candidatePageSize" -> {
+                    int v = Integer.parseInt(value);
+                    if (v < 1 || v > 500) throw new NumberFormatException("range");
+                }
+                case "defaultChatDuration" -> {
+                    int v = Integer.parseInt(value);
+                    if (v < 1 || v > 180) throw new NumberFormatException("range");
+                }
+                case "campusWeight", "cityWeight", "interestWeight", "scheduleWeight" -> {
+                    int v = Integer.parseInt(value);
+                    if (v < 0 || v > 10000) throw new NumberFormatException("range");
+                }
+                default -> {
+                    // 未知键已由白名单过滤，此处不会到达
+                }
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "match_config[" + key + "=" + value + "] 数值非法或超出范围");
+        }
+    }
+
+    /**
+     * 校验 recommend_strategy 数值格式与范围（infra R2-00272）。
+     *
+     * @param key   策略键
+     * @param value 策略值
+     * @throws IllegalArgumentException 数值非法或超出范围时抛出
+     */
+    private void validateRecommendStrategyValue(String key, String value) {
+        try {
+            switch (key) {
+                case "dailyLimit", "discussionLimit" -> {
+                    int v = Integer.parseInt(value);
+                    if (v < 1 || v > 1000) throw new NumberFormatException("range");
+                }
+                case "candidatePageSize" -> {
+                    int v = Integer.parseInt(value);
+                    if (v < 1 || v > 500) throw new NumberFormatException("range");
+                }
+                case "campusWeight", "cityWeight", "interestWeight", "scheduleWeight",
+                        "sameMajorWeight", "commonCircleWeight", "commonDailyAnswerWeight",
+                        "circleWeight" -> {
+                    int v = Integer.parseInt(value);
+                    if (v < 0 || v > 10000) throw new NumberFormatException("range");
+                }
+                case "sameSchoolBoostPercent" -> {
+                    double v = Double.parseDouble(value);
+                    if (v < 0 || v > 100) throw new NumberFormatException("range");
+                }
+                case "sameSchoolBoostEnabled" -> Boolean.parseBoolean(value);
+                default -> {
+                    // 未知键已由白名单过滤，此处不会到达
+                }
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "recommend_strategy[" + key + "=" + value + "] 数值非法或超出范围");
+        }
     }
 
     /**

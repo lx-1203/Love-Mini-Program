@@ -6,10 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.campuslove.api.config.SecurityUtils;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 /**
@@ -70,31 +72,40 @@ class RecommendationControllerTest {
     @Test
     void getPreferences_shouldDelegateToService() {
         // Arrange
-        RecommendationPreferencesView view =
-                new RecommendationPreferencesView("08:00", "all", true);
-        when(recommendationService.getPreferences()).thenReturn(view);
+        // infra R2-00202:getPreferences 改为按当前用户返回真实偏好,测试需 mock 登录上下文
+        try (var mocked = Mockito.mockStatic(SecurityUtils.class)) {
+            mocked.when(SecurityUtils::getCurrentUserId).thenReturn(42L);
+            RecommendationPreferencesView view =
+                    new RecommendationPreferencesView("08:00", "all", true);
+            when(recommendationService.getPreferences(42L)).thenReturn(view);
 
-        // Act
-        RecommendationPreferencesView result = controller.getPreferences();
+            // Act
+            RecommendationPreferencesView result = controller.getPreferences();
 
-        // Assert
-        assertSame(view, result);
-        verify(recommendationService).getPreferences();
+            // Assert
+            assertSame(view, result);
+            verify(recommendationService).getPreferences(42L);
+        }
     }
 
     @Test
     void updatePreferences_shouldDelegateToService() {
         // Arrange
-        RecommendationPreferencesView prefs =
-                new RecommendationPreferencesView("10:00", "campus", false);
-        when(recommendationService.updatePreferences(prefs)).thenReturn(prefs);
+        // infra R2-00203:updatePreferences 改为调用带 userId 的真实保存逻辑,测试需 mock 登录上下文
+        try (var mocked = Mockito.mockStatic(SecurityUtils.class)) {
+            mocked.when(SecurityUtils::getCurrentUserId).thenReturn(42L);
+            RecommendationPreferencesView prefs =
+                    new RecommendationPreferencesView("10:00", "campus", false);
+            when(recommendationService.savePreferences(42L, "10:00", "campus", false))
+                    .thenReturn(prefs);
 
-        // Act
-        RecommendationPreferencesView result = controller.updatePreferences(prefs);
+            // Act
+            RecommendationPreferencesView result = controller.updatePreferences(prefs);
 
-        // Assert
-        assertSame(prefs, result);
-        verify(recommendationService).updatePreferences(prefs);
+            // Assert
+            assertSame(prefs, result);
+            verify(recommendationService).savePreferences(42L, "10:00", "campus", false);
+        }
     }
 
     @Test

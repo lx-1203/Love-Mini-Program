@@ -137,7 +137,10 @@ export interface UnlockGuideStepView {
 /**
  * 加载学校列表（Task 3.6.1）。
  *
- * @returns 学校视图列表；后端不可达时抛 EnhancedApiError，由调用方回退到本地默认值。
+ * 失败策略：后端不可达时抛 EnhancedApiError，由调用方（config/schools.ts 的
+ * loadSchools）回退到本地默认值，并输出告警（infra R2-00122），避免静默降级。
+ *
+ * @returns 学校视图列表
  */
 export async function loadCampuses(): Promise<CampusView[]> {
   return request<CampusView[]>({ url: "/config/campuses", method: "GET" });

@@ -23,6 +23,16 @@ public interface VillageService {
     PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize, Long userId);
 
     /**
+     * 按作者分页查询帖子（"我的动态"场景，走查补齐）。
+     *
+     * @param authorId 作者用户 ID
+     * @param page     页码（从 1 开始）
+     * @param pageSize 每页大小
+     * @return 该作者的帖子分页列表（按创建时间倒序）
+     */
+    PostListResponse getPostsByAuthor(Long authorId, int page, int pageSize);
+
+    /**
      * 获取帖子详情。
      */
     PostDetailView getPostDetail(Long id);

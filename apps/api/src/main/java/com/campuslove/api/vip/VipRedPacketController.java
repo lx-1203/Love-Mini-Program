@@ -87,13 +87,16 @@ public class VipRedPacketController {
 
     /**
      * 查询红包详情（含领取记录）。
+     * <p>修复（FIN HIGH-17）：传入当前用户 ID，由服务层校验归属
+     * （仅发送者本人/已领取者/会话参与者可查看），防止 IDOR 枚举查看他人红包。</p>
      *
      * @param id 红包 ID
      * @return 红包视图
      */
     @GetMapping("/{id}")
     public RedPacketView getRedPacketDetail(@PathVariable("id") @Positive Long id) {
-        return redPacketService.getRedPacketDetail(id);
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        return redPacketService.getRedPacketDetail(id, currentUserId);
     }
 }
 

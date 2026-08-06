@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -36,7 +35,8 @@ import org.springframework.stereotype.Service;
  * <p>SubTask 5.3.4：缓存策略
  * <ul>
  *     <li>三类统计方法（{@link #getUserStats} / {@link #getActiveStats} / {@link #getMatchStats}）
- *         均添加 {@code @Cacheable(ADMIN_STATS)}，TTL 5 分钟</li>
+ *         联调修复后不再使用 @Cacheable(ADMIN_STATS)——Redis 反序列化对顶层具体 DTO
+ *         不写 @class 导致缓存命中 500,改为实时计算(数据量小)</li>
  *     <li>等价于 Redis 计数器方案：5 分钟内重复查询直接返回缓存，避免全表 COUNT 频繁触发</li>
  *     <li>Admin 后台首页自动刷新（默认 30s~60s）命中缓存，DB 压力下降 90%+</li>
  *     <li>缓存 key 固定为方法名（无参数方法），保证不同统计类型互不干扰</li>
@@ -75,11 +75,12 @@ public class RealAdminStatsService implements AdminStatsService {
     }
 
     /**
-     * SubTask 5.3.4：{@code @Cacheable(ADMIN_STATS)} 5 分钟 TTL，
-     * 等价 Redis 计数器方案，避免每次后台首页刷新都触发全表 COUNT。
+     * SubTask 5.3.4 注：原实现 {@code @Cacheable(ADMIN_STATS)} 5 分钟 TTL。
+     * 联调修复：Redis 反序列化(Jackson2JsonRedisSerializer+default typing)对
+     * 顶层具体 DTO 不写入 @class,缓存命中后抛 ClassCastException(实测 500)。
+     * 统计接口数据量极小(users.count + 少量 count),改为每次实时计算,去除缓存。
      */
     @Override
-    @Cacheable(cacheNames = CacheNames.ADMIN_STATS, key = "'userStats'")
     public UserStatsView getUserStats() {
         try {
             long total = userRepository.count();
@@ -138,11 +139,9 @@ public class RealAdminStatsService implements AdminStatsService {
     }
 
     /**
-     * SubTask 5.3.4：{@code @Cacheable(ADMIN_STATS)} 5 分钟 TTL，
-     * 缓存 DAU/MAU/互动数，避免高频心跳表与互动事件表 COUNT。
+     * SubTask 5.3.4 注：同 {@link #getUserStats()}，去除 @Cacheable(联调修复)。
      */
     @Override
-    @Cacheable(cacheNames = CacheNames.ADMIN_STATS, key = "'activeStats'")
     public ActiveStatsView getActiveStats() {
         try {
             LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
@@ -162,11 +161,9 @@ public class RealAdminStatsService implements AdminStatsService {
     }
 
     /**
-     * SubTask 5.3.4：{@code @Cacheable(ADMIN_STATS)} 5 分钟 TTL，
-     * 缓存匹配总数/双向匹配数/每日趋势，避免心信号表 GROUP BY 频繁触发。
+     * SubTask 5.3.4 注：同 {@link #getUserStats()}，去除 @Cacheable(联调修复)。
      */
     @Override
-    @Cacheable(cacheNames = CacheNames.ADMIN_STATS, key = "'matchStats'")
     public MatchStatsView getMatchStats() {
         try {
             long total = heartSignalRepository.count();

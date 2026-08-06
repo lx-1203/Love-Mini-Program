@@ -3,12 +3,18 @@ package com.campuslove.api.campus;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.discover.ActivityService;
+import com.campuslove.api.discover.ActivityView;
 import com.campuslove.api.ratelimit.RateLimit;
 import com.campuslove.api.repository.UserCampusProfileRepository;
+import com.campuslove.api.village.CampusFeedView;
+import com.campuslove.api.village.VillageService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
@@ -41,14 +47,20 @@ public class CampusController {
     private final CampusService campusService;
     private final CampusCertificationService certService;
     private final UserCampusProfileRepository campusProfileRepository;
+    private final ActivityService activityService;
+    private final VillageService villageService;
 
     public CampusController(
             CampusService campusService,
             CampusCertificationService certService,
-            UserCampusProfileRepository campusProfileRepository) {
+            UserCampusProfileRepository campusProfileRepository,
+            ActivityService activityService,
+            VillageService villageService) {
         this.campusService = campusService;
         this.certService = certService;
         this.campusProfileRepository = campusProfileRepository;
+        this.activityService = activityService;
+        this.villageService = villageService;
     }
 
     // ── 校园话题 ──
@@ -236,7 +248,82 @@ public class CampusController {
         return ApiResponse.ok(cert);
     }
 
+    // ── 校园活动 ──
+
+    /**
+     * 获取校园活动列表。
+     *
+     * <p>缺陷修复（走查）：前端 {@code stores/campus.ts} 的
+     * {@code fetchCampusActivities()} 调用 {@code GET /api/v1/campus/activities}，
+     * 后端此前无此端点返回 404。此处复用 {@link ActivityService} 的 upcoming
+     * 活动数据：已绑定学校的用户按校区过滤，未绑定时返回全部活动；
+     * 响应结构按前端 {@code CampusActivity} 接口对齐（见
+     * {@link CampusActivityListItemView}）。</p>
+     *
+     * @return 校园活动列表（直接返回数组，与前端 request 封装约定一致）
+     */
+    @GetMapping("/activities")
+    public List<CampusActivityListItemView> getCampusActivities() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        String campusName = campusProfileRepository.findByUserId(userId)
+                .map(profile -> profile.getCampusName())
+                .orElse(null);
+        Page<ActivityView> page = activityService.getActivities(campusName, PageRequest.of(0, 50));
+        return page.getContent().stream().map(this::toCampusActivityItem).toList();
+    }
+
+    // ── 同校动态流 ──
+
+    /**
+     * 获取同校动态流（别名端点）。
+     *
+     * <p>缺陷修复（走查）：前端写死调用 {@code GET /api/v1/campus/feed}（见
+     * {@code stores/village/api.ts} 的 {@code fetchCampusFeedApi}），而后端实际
+     * 端点为 {@code /posts/campus-feed}（VillageController），前端请求 404。
+     * 本端点为别名，委托 {@link VillageService#getCampusFeed} 返回
+     * {@link CampusFeedView}（posts / activities / topics，与前端
+     * {@code CampusFeedView} 类型对齐）。用户 ID 从 JWT 认证上下文获取，
+     * 与 VillageController 的 campus-feed 行为一致（前端传入的 userId
+     * 查询参数不参与鉴权，防止伪造他人身份）。</p>
+     *
+     * @param page 页码（默认 0）
+     * @param size 每页大小（默认 20，上限 100）
+     * @return 同校动态流视图
+     */
+    @GetMapping("/feed")
+    public ResponseEntity<CampusFeedView> getCampusFeed(
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        try {
+            CampusFeedView feed = villageService.getCampusFeed(userId, page, size);
+            return ResponseEntity.ok(feed);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     // ── 私有辅助方法 ──
+
+    /**
+     * 将活动视图映射为前端 CampusActivity 结构。
+     *
+     * <p>缺失字段（coverUrl / endTime / maxParticipants）返回安全默认值，
+     * 避免前端渲染 undefined；startTime 取自活动日期（ISO 时间字符串）。</p>
+     */
+    private CampusActivityListItemView toCampusActivityItem(ActivityView view) {
+        return new CampusActivityListItemView(
+                view.id(),
+                view.title(),
+                view.description(),
+                "",
+                view.activityDate() != null ? view.activityDate().atStartOfDay().toString() : "",
+                "",
+                view.location(),
+                null,
+                view.enrollmentCount(),
+                null);
+    }
 
     /**
      * 从用户校园资料中解析学校ID。
@@ -336,5 +423,6 @@ record CreateCampusReplyRequest(
 record CampusCertificationRequest(
     @NotBlank @Size(max = 100) String schoolName,
     @NotBlank @Size(max = 100) String major,
-    @NotBlank String studentIdCardUrl
+    // infra R2-00215: 学生证图片 URL 长度上限，防止超长 URL 入库
+    @NotBlank @Size(max = 2048) String studentIdCardUrl
 ) {}

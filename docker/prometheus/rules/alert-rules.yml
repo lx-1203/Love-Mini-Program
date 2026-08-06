@@ -29,8 +29,11 @@ groups:
           runbook: "docs/DR/restore-procedure.md#api-下线"
 
       # API 健康检查端点异常
+      # 指标 spring_boot_health_status 由 micrometer 注册（Spring Boot 3 + actuator，
+      # apps/api/pom.xml 含 micrometer-registry-prometheus）；infra #26：表达式放宽为 > 0
+      # （gauge 在 DOWN 时为 1），并注明：若应用未暴露该指标则规则无数据、不触发
       - alert: ApiHealthCheckFailed
-        expr: spring_boot_health_status{status="DOWN"} == 1
+        expr: spring_boot_health_status{status="DOWN"} > 0
         for: 2m
         labels:
           severity: critical
@@ -40,16 +43,19 @@ groups:
           description: "组件 {{ $labels.component }} 健康检查失败，请查看日志定位根因。"
 
       # Admin 后台下线（P3-D.4：通过 blackbox 探针监控，5 分钟持续失败告警）
-      - alert: AdminDown
-        expr: probe_success{instance="http://admin:8080/healthz"} == 0
-        for: 5m
-        labels:
-          severity: critical
-          service: admin
-        annotations:
-          summary: "Admin 后台不可用"
-          description: "Admin 健康检查端点 http://admin:8080/healthz 探测失败超过 5 分钟，请检查 nginx 容器状态。"
-          runbook: "docs/DR/restore-procedure.md#admin-下线"
+      # ⚠️ 2026-08-05：compose 未部署 blackbox-exporter，probe_success 无数据源，
+      # 规则暂时停用（infra #18）。部署 blackbox-exporter 并恢复 prometheus.yml 中
+      # blackbox-http 抓取任务后，取消下方注释即可恢复 admin 可用性告警。
+      # - alert: AdminDown
+      #   expr: probe_success{instance="http://admin:8080/healthz"} == 0
+      #   for: 5m
+      #   labels:
+      #     severity: critical
+      #     service: admin
+      #   annotations:
+      #     summary: "Admin 后台不可用"
+      #     description: "Admin 健康检查端点 http://admin:8080/healthz 探测失败超过 5 分钟，请检查 nginx 容器状态。"
+      #     runbook: "docs/DR/restore-procedure.md#admin-下线"
 
   # ---------- API 性能与延迟告警 ----------
   - name: api-performance
@@ -163,9 +169,12 @@ groups:
           description: "实例 {{ $labels.instance }} 线程数 {{ $value }}，建议检查线程池配置。"
 
       # Full GC 频率过高（5 分钟内 > 5 次）
+      # infra #27：jvm_gc_pause_seconds_count 的 action 标签值随 GC 算法变化
+      # （G1/CMS/Serial 为 "end of major GC"，ZGC 等无此标签），不再按 action 过滤，
+      # 统计全部 GC 暂停次数；如需仅统计 Full GC 可在部署 GC 算法固定后按 action 过滤
       - alert: JvmFrequentFullGc
         expr: |
-          increase(jvm_gc_pause_seconds_count{action="end of major GC"}[5m]) > 5
+          increase(jvm_gc_pause_seconds_count[5m]) > 5
         for: 5m
         labels:
           severity: warning
@@ -247,32 +256,36 @@ groups:
           description: "实例 {{ $labels.instance }} CPU 使用率 {{ $value | humanizePercentage }} 持续 10 分钟。"
 
   # ---------- 第三方依赖可用性 ----------
-  - name: third-party-availability
-    interval: 30s
-    rules:
-
-      # 微信 API 探测失败
-      - alert: WechatApiUnreachable
-        expr: probe_success{instance="https://api.weixin.qq.com/sns/jscode2session"} == 0
-        for: 5m
-        labels:
-          severity: warning
-          service: wechat
-        annotations:
-          summary: "微信 API 不可达"
-          description: "微信 jscode2session 端点探测失败，登录可能受影响。"
-          runbook: "docs/DR/restore-procedure.md#第三方依赖故障"
-
-      # Agnes AI 探测失败
-      - alert: AgnesApiUnreachable
-        expr: probe_success{instance="https://api.agnes-ai.com/api/health"} == 0
-        for: 10m
-        labels:
-          severity: info
-          service: ai
-        annotations:
-          summary: "Agnes AI 不可达"
-          description: "Agnes AI 接口探测失败，AI 视频功能可能受影响。"
+  # ⚠️ 2026-08-05：以下规则依赖 blackbox-exporter 的 probe_success 指标，
+  # compose 未部署 blackbox-exporter（infra #18），规则暂时停用。
+  # 部署 blackbox-exporter 并恢复 prometheus.yml 中 blackbox-http 抓取任务后，
+  # 取消下方注释即可恢复微信 API / Agnes AI 可用性告警。
+  # - name: third-party-availability
+  #   interval: 30s
+  #   rules:
+  #
+  #     # 微信 API 探测失败
+  #     - alert: WechatApiUnreachable
+  #       expr: probe_success{instance="https://api.weixin.qq.com/sns/jscode2session"} == 0
+  #       for: 5m
+  #       labels:
+  #         severity: warning
+  #         service: wechat
+  #       annotations:
+  #         summary: "微信 API 不可达"
+  #         description: "微信 jscode2session 端点探测失败，登录可能受影响。"
+  #         runbook: "docs/DR/restore-procedure.md#第三方依赖故障"
+  #
+  #     # Agnes AI 探测失败
+  #     - alert: AgnesApiUnreachable
+  #       expr: probe_success{instance="https://api.agnes-ai.com/api/health"} == 0
+  #       for: 10m
+  #       labels:
+  #         severity: info
+  #         service: ai
+  #       annotations:
+  #         summary: "Agnes AI 不可达"
+  #         description: "Agnes AI 接口探测失败，AI 视频功能可能受影响。"
 
   # ---------- 业务指标告警 ----------
   - name: business-metrics
@@ -280,10 +293,12 @@ groups:
     rules:
 
       # 登录失败率 > 10%（5 分钟内）
+      # infra R2-00004:指标名对齐应用实际注册的 auth.login.success/failure
+      # (AuthMetrics.java:30-32,Prometheus 导出为 auth_login_success/auth_login_failure)
       - alert: HighLoginFailureRate
         expr: |
-          sum(rate(campuslove_auth_login_total{status="failed"}[5m]))
-          / sum(rate(campuslove_auth_login_total[5m])) > 0.1
+          sum(rate(auth_login_failure[5m]))
+          / (sum(rate(auth_login_failure[5m])) + sum(rate(auth_login_success[5m]))) > 0.1
         for: 5m
         labels:
           severity: warning

@@ -1,8 +1,14 @@
 // ============================================================
 // 校园恋爱小程序 - Design Tokens
-// 版本: 4.0.0 (浪漫恋爱风格UI美化版 · 陌陌/TT语音参考)
+// 版本: 4.0.1 (双源漂移修复 · 与 design-variables.scss 对齐)
 // 说明: 所有UI参数集中管理，支持主题切换，禁止硬编码
 // 设计原则: 色彩和谐 · 排版韵律 · 间距统一 · 自然舒适 · 浪漫青春
+//
+// 双源同步约定（重要）：
+// 本文件（JS 侧）与 theme/design-variables.scss（SCSS 侧）是同一设计体系的
+// 两个视图，颜色值以 scss 为准（含 P2 对比度修复），改值必须两端同步——
+// 历史上 text.tertiary 曾因仅 scss 侧修复而漂移（#9AA1AB vs #6B7280），
+// 现已在下方对齐并注释说明。
 // ============================================================
 
 export const designTokens = {
@@ -144,7 +150,9 @@ export const designTokens = {
     text: {
       primary:    '#1F2329',
       secondary:  '#5B6470',
-      tertiary:   '#9AA1AB',
+      // 对齐 design-variables.scss $text-tertiary(#6B7280)：
+      // P2 对比度修复（#9AA1AB ~2.85:1 → #6B7280 ~4.6:1，达到 WCAG AA 4.5:1）
+      tertiary:   '#6B7280',
       quaternary: '#94A3B8',
       inverse:    '#FFFFFF',
       brand:      '#3FCF8E',
@@ -259,6 +267,13 @@ export const designTokens = {
       mono:    '"SF Mono", "Fira Code", monospace',
     },
 
+    /**
+     * 字号（px，供 JS 逻辑/动态计算与 H5 场景使用）。
+     * 与 SCSS rpx 体系（--fs-*，design-variables.scss: --fs-xs:20rpx … --fs-7xl:56rpx）是
+     * 两套独立体系：仅当 750 设计稿按 1rpx = 0.5px 折算时数值近似（如 body 26px ≈ --fs-md 26rpx），
+     * 实际渲染单位不同。修改任意一侧字号时必须评估另一体系是否需要同步，
+     * 业务代码不得在样式里直接引用本 px 值，也不得在 JS 里引用 rpx 值。
+     */
     size: {
       display: 80,
       h1:      44,

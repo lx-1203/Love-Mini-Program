@@ -33,8 +33,8 @@ import org.springframework.web.bind.annotation.RestController;
  * </p>
  *
  * <p>权限说明：/api/** 路径要求已认证，操作用户 ID 从 JWT 上下文获取。
- * 当前实现不校验用户是否属于该会话，仅依赖 chatId 作为会话标识，
- * 后续可扩展为校验当前用户是否为会话成员。</p>
+ * 列表接口已校验当前用户是否为会话成员（resolveSessionForCurrentUser），
+ * 非成员返回 403，防止枚举他人会话红包列表。</p>
  *
  * <p>错误处理：
  * <ul>
@@ -54,9 +54,13 @@ public class ChatRedPacketController {
     private static final Logger log = LoggerFactory.getLogger(ChatRedPacketController.class);
 
     private final VipRedPacketService redPacketService;
+    private final TempChatSessionService tempChatSessionService;
 
-    public ChatRedPacketController(VipRedPacketService redPacketService) {
+    public ChatRedPacketController(
+            VipRedPacketService redPacketService,
+            TempChatSessionService tempChatSessionService) {
         this.redPacketService = redPacketService;
+        this.tempChatSessionService = tempChatSessionService;
     }
 
     /**
@@ -66,8 +70,8 @@ public class ChatRedPacketController {
      * 仅返回基础红包信息（含发送者、金额、状态等），不包含领取记录列表，
      * 避免数据量过大。如需查看领取详情，调用 GET /api/vip/red-packets/{id}。</p>
      *
-     * <p>权限说明：当前用户 ID 从 JWT 上下文获取（仅用于日志记录），
-     * 当前实现不校验用户是否属于该会话，后续可扩展为会话成员校验。</p>
+     * <p>权限说明：当前用户 ID 从 JWT 上下文获取；校验当前用户必须是会话参与者，
+     * 非参与者抛 OperationForbiddenException（403），防止枚举他人会话的红包列表。</p>
      *
      * @param chatId 聊天会话 ID（URL 路径参数，必填，最长 128 字符）
      * @return 红包视图列表（按创建时间倒序，不含领取记录）
@@ -81,6 +85,8 @@ public class ChatRedPacketController {
             String chatId) {
 
         Long userId = SecurityUtils.getCurrentUserId();
+        // 修复（R2 review MED）：会话成员校验，防止越权查看他人会话红包列表
+        tempChatSessionService.resolveSessionForCurrentUser(chatId);
         log.info("查询会话红包列表：userId={}, chatId={}", userId, chatId);
 
         try {

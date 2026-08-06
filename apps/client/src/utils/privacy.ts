@@ -207,6 +207,8 @@ export function checkPrivacySetting(): Promise<PrivacySettingResult> {
  *     await requirePrivacyAuthorize();
  *     uni.chooseImage({ ... });
  *   } catch (e) {
+ *     // 提示文案仅为示意（infra R2-00130）：生产环境应经 i18n t() 渲染，
+ *     // 勿在业务代码中直接复制此硬编码中文文案。
  *     uni.showToast({ title: "需同意隐私协议后才能选择图片", icon: "none" });
  *   }
  * }

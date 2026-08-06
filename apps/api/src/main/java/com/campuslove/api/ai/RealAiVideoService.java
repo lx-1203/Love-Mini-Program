@@ -204,6 +204,9 @@ public class RealAiVideoService implements AiVideoService {
         return apiKey;
     }
 
+    /** 日志中透传内容的最大长度（超出截断，防止上游内部错误信息全文落日志） */
+    private static final int MAX_RAW_LOG_LENGTH = 200;
+
     /**
      * 解析 Agnes AI 响应体为 Map。
      *
@@ -219,9 +222,26 @@ public class RealAiVideoService implements AiVideoService {
             return objectMapper.readValue(responseBody, new TypeReference<Map<String, Object>>() {});
         } catch (JsonProcessingException ex) {
             // 响应体非合法 JSON 格式（解析失败、字段类型不匹配等）
-            log.warn("Agnes AI [{}] 响应体非 JSON 格式，原样透传: {}",
-                    operation, responseBody);
+            // infra R2-00228: 日志仅记录截断后的内容，避免上游内部错误信息全文泄露到日志
+            log.warn("Agnes AI [{}] 响应体非 JSON 格式，原样透传(日志截断): {}{}",
+                    operation, truncateForLog(responseBody),
+                    responseBody.length() > MAX_RAW_LOG_LENGTH ? "…(已截断)" : "");
             return Map.of("raw", responseBody, "operation", operation);
         }
+    }
+
+    /**
+     * 将透传内容截断到 {@link #MAX_RAW_LOG_LENGTH} 字符，供日志记录使用。
+     *
+     * @param body 原始响应体
+     * @return 截断后的字符串
+     */
+    private String truncateForLog(String body) {
+        if (body == null) {
+            return "";
+        }
+        return body.length() <= MAX_RAW_LOG_LENGTH
+                ? body
+                : body.substring(0, MAX_RAW_LOG_LENGTH);
     }
 }

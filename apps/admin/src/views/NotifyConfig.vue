@@ -7,7 +7,7 @@
  * - 错误回退与成功提示通过 notifyConfig.loadFailed/saveSuccess/saveFailed 表达
  * - 加载/空数据状态复用 common.loading / notifyConfig.noData
  */
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import {
   listNotifyConfigs,
   updateNotifyConfigs,
@@ -15,7 +15,10 @@ import {
   type NotifyConfigUpdateRequest,
 } from "../api/notify-config";
 import { ApiError } from "../api/http";
+// infra R2-00443：错误态接入共享 ErrorState 组件（原无重试入口）
+import ErrorState from "../components/ErrorState.vue";
 import { useI18n } from "vue-i18n";
+import { TOAST_DURATION_MS } from "../utils/constants";
 
 const { t } = useI18n();
 
@@ -28,6 +31,41 @@ const error = ref("");
 const successMessage = ref("");
 let successTimer: ReturnType<typeof setTimeout> | null = null;
 
+// infra R2-00444：脏检查——保存前的基线快照。
+// 原实现提交全部配置（无脏检查），未修改也全量 PUT，误触保存覆盖未提交修改。
+let baseline: string = "";
+
+/** infra R2-00444：是否有未保存修改（enabled/template 任一变更） */
+const hasChanges = computed(() => {
+  const snapshot = JSON.stringify(
+    configs.value.map((c) => ({ type: c.type, enabled: c.enabled, template: c.template })),
+  );
+  return snapshot !== baseline;
+});
+
+/** infra R2-00445：通知类型英文枚举 → i18n 标签（原类型列直接展示 LIKE/COMMENT 等） */
+function typeLabel(type: string): string {
+  switch (type) {
+    case "LIKE":
+      return t("notifyConfig.fieldLikeNotify");
+    case "COMMENT":
+      return t("notifyConfig.fieldCommentNotify");
+    case "FOLLOW":
+      return t("notifyConfig.fieldFollowNotify");
+    case "MATCH":
+      return t("notifyConfig.fieldMatchNotify");
+    case "SYSTEM":
+      return t("notifyConfig.fieldSystemNotify");
+    case "VISITOR":
+      return t("notifyConfig.fieldVisitorNotify");
+    default:
+      return type;
+  }
+}
+
+/** 模板长度上限（后端校验对齐前的前端保护值，防超长模板误提交） */
+const TEMPLATE_MAX_LENGTH = 2000;
+
 /**
  * 加载全部通知配置。
  * 失败时设置 error，并清空列表。
@@ -38,6 +76,10 @@ async function fetchConfigs() {
   try {
     const result = await listNotifyConfigs();
     configs.value = result || [];
+    // infra R2-00444：加载成功后记录基线快照
+    baseline = JSON.stringify(
+      configs.value.map((c) => ({ type: c.type, enabled: c.enabled, template: c.template })),
+    );
   } catch (err: unknown) {
     // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
     error.value =
@@ -54,8 +96,19 @@ async function fetchConfigs() {
 
 /**
  * 保存全部配置：把当前所有行组装为 {type, enabled, template} 数组后批量提交。
+ * infra R2-00444：无变更时直接提示并跳过请求（防误触保存覆盖）；
+ * infra R2-00446：保存前校验模板长度，超长给出明确提示。
  */
 async function handleSave() {
+  if (!hasChanges.value) {
+    return;
+  }
+  // 模板长度校验（行级）
+  const overLong = configs.value.find((c) => (c.template || "").length > TEMPLATE_MAX_LENGTH);
+  if (overLong) {
+    error.value = t("notifyConfig.templateTooLong", { n: TEMPLATE_MAX_LENGTH });
+    return;
+  }
   saving.value = true;
   error.value = "";
   try {
@@ -66,6 +119,10 @@ async function handleSave() {
     }));
     const updated = await updateNotifyConfigs(payload);
     configs.value = updated || configs.value;
+    // 保存成功后更新基线
+    baseline = JSON.stringify(
+      configs.value.map((c) => ({ type: c.type, enabled: c.enabled, template: c.template })),
+    );
     showSuccess(t("notifyConfig.saveSuccess"));
   } catch (err: unknown) {
     // 修复 no-explicit-any：catch 类型改为 unknown，通过类型守卫收敛
@@ -88,10 +145,11 @@ function showSuccess(msg: string) {
     clearTimeout(successTimer);
   }
   successMessage.value = msg;
+  // infra R2-00447：toast 时长魔法数字收敛为公共常量
   successTimer = setTimeout(() => {
     successMessage.value = "";
     successTimer = null;
-  }, 3000);
+  }, TOAST_DURATION_MS);
 }
 
 /**
@@ -105,6 +163,14 @@ function formatTime(s?: string): string {
 onMounted(() => {
   fetchConfigs();
 });
+
+// 修复：组件卸载时清理 successTimer，避免定时器在卸载后触发更新报错
+onBeforeUnmount(() => {
+  if (successTimer) {
+    clearTimeout(successTimer);
+    successTimer = null;
+  }
+});
 </script>
 
 <template>
@@ -115,12 +181,15 @@ onMounted(() => {
     </view>
 
     <view class="toolbar">
-      <button class="primary-button" :disabled="saving || loading" @click="handleSave">
+      <button class="primary-button" :disabled="saving || loading || !hasChanges" @click="handleSave">
         {{ saving ? t("common.saving") : t("notifyConfig.saveButtonShort") }}
       </button>
+      <!-- infra R2-00448：未保存修改提示（原无脏状态文案，误触保存覆盖未提交修改） -->
+      <text v-if="hasChanges && !saving" class="unsaved-tip">{{ t("notifyConfig.unsavedChanges") }}</text>
     </view>
 
-    <view v-if="error" class="error-message">{{ error }}</view>
+    <!-- infra R2-00443：错误态接入 ErrorState 组件（含重试按钮） -->
+    <ErrorState v-if="error" :message="error" @retry="fetchConfigs" />
     <view v-if="successMessage" class="success-message">{{ successMessage }}</view>
 
     <view class="table-container">
@@ -141,7 +210,8 @@ onMounted(() => {
             <td colspan="4" class="empty-row">{{ t("notifyConfig.noData") }}</td>
           </tr>
           <tr v-for="config in configs" :key="config.id">
-            <td class="type-cell">{{ config.type }}</td>
+            <!-- infra R2-00445：类型列展示 i18n 标签（原直接展示 LIKE_NOTIFY 等英文枚举） -->
+            <td class="type-cell">{{ typeLabel(config.type) }}</td>
             <td>
               <label class="switch-label">
                 <input
@@ -157,6 +227,7 @@ onMounted(() => {
                 v-model="config.template"
                 class="template-input"
                 rows="3"
+                :maxlength="TEMPLATE_MAX_LENGTH"
                 :placeholder="t('notifyConfig.templatePlaceholder')"
               />
             </td>
@@ -226,5 +297,11 @@ onMounted(() => {
 .template-input:focus {
   outline: none;
   border-color: var(--admin-color-primary);
+}
+
+/* infra R2-00448：未保存修改提示样式 */
+.unsaved-tip {
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-warning);
 }
 </style>

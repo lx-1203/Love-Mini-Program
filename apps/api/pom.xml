@@ -184,12 +184,16 @@
     </dependency>
     <!-- byte-buddy：Mockito 5.10.0 需要 byte-buddy 1.14.10+ 才能在 JDK 21 上正常工作。
          显式声明版本以覆盖 Spring Boot 3.3.1 BOM 中较旧的 byte-buddy 版本，
-         确保 ByteBuddyInlineMockMaker 在 JDK 21 模块系统下可正确初始化。 -->
+         确保 ByteBuddyInlineMockMaker 在 JDK 21 模块系统下可正确初始化。
+         注意：hibernate-core 6.5.2 声明 byte-buddy 为 runtime 依赖（懒加载代理/字节码增强），
+         若本声明保留 test scope 会覆盖传递依赖的 runtime scope，导致打包 jar 缺失
+         byte-buddy、运行时 EntityManagerFactory 初始化 NoClassDefFoundError（本地联调实测）。
+         因此改为 runtime scope（同时满足测试与运行时）。 -->
     <dependency>
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
       <version>${byte-buddy.version}</version>
-      <scope>test</scope>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>net.bytebuddy</groupId>
@@ -301,6 +305,16 @@
             <goals>
               <goal>prepare-agent</goal>
             </goals>
+            <configuration>
+              <!-- 执行数据文件放到系统临时目录（通常为英文路径）：
+                   项目路径含非 ASCII 字符（如 D:\6\恋爱小程序）时，
+                   JaCoCo agent 在 Windows 上无法在默认 destfile
+                   (${project.build.directory}/jacoco.exec，绝对路径含中文) 创建文件，
+                   会静默失败导致执行数据缺失、覆盖率报告被跳过。
+                   改用 ${java.io.tmpdir} 并在 report/check 中显式指定同一 dataFile，
+                   各环境均可用（临时目录路径一般不含中文）。 -->
+              <destFile>${java.io.tmpdir}/jacoco-${project.artifactId}.exec</destFile>
+            </configuration>
           </execution>
           <!-- 测试阶段：生成覆盖率报告（HTML + XML + CSV） -->
           <execution>
@@ -309,6 +323,9 @@
             <goals>
               <goal>report</goal>
             </goals>
+            <configuration>
+              <dataFile>${java.io.tmpdir}/jacoco-${project.artifactId}.exec</dataFile>
+            </configuration>
           </execution>
           <!-- 校验阶段：按规则检查覆盖率是否达标 -->
           <execution>
@@ -317,6 +334,7 @@
               <goal>check</goal>
             </goals>
             <configuration>
+              <dataFile>${java.io.tmpdir}/jacoco-${project.artifactId}.exec</dataFile>
               <rules>
                 <rule>
                   <!-- BUNDLE 级别：整个模块所有类的聚合指标 -->

@@ -15,11 +15,11 @@ ALTER TABLE check_ins
 CREATE TABLE IF NOT EXISTS make_up_quota (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id BIGINT UNSIGNED NOT NULL COMMENT '用户 ID',
-    year_month VARCHAR(7) NOT NULL COMMENT '年月（yyyy-MM），每月一条',
+    `year_month` VARCHAR(7) NOT NULL COMMENT '年月（yyyy-MM），每月一条',
     used_count INT NOT NULL DEFAULT 0 COMMENT '当月已用补签次数',
     limit_count INT NOT NULL DEFAULT 3 COMMENT '当月补签次数上限（默认 3）',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_makeup_user_month (user_id, year_month),
-    KEY idx_makeup_year_month (year_month)
+    UNIQUE KEY uk_makeup_user_month (user_id, `year_month`),
+    KEY idx_makeup_year_month (`year_month`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='签到补签每月配额表';

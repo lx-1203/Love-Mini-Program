@@ -85,10 +85,11 @@ class FeedbackControllerTest {
         when(feedbackService.listAdminFeedback()).thenReturn(List.of());
 
         // Act
-        ApiResponse<List<SubmissionRecordView>> result = controller.listAdminFeedback();
+        // infra R2-00023:admin 端点改为裸返回(与其余 admin 端点契约一致,前端直接消费数组)
+        List<SubmissionRecordView> result = controller.listAdminFeedback();
 
         // Assert
-        assertNotNull(result.data(), "管理员反馈列表不应为 null");
+        assertNotNull(result, "管理员反馈列表不应为 null");
         verify(feedbackService).listAdminFeedback();
     }
 

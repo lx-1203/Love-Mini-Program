@@ -109,7 +109,8 @@ public class VoiceMessageController {
         try {
             // 简单的 URL 解码：将 %2F 还原为 /，前端调用时需 encodeURIComponent 编码
             String url = decodeUrl(id);
-            voiceMessageService.delete(url);
+            // infra R2-00011：传入当前用户 ID，Service 层校验文件归属
+            voiceMessageService.delete(userId, url);
             return new DeleteVoiceResponse(true, url);
         } catch (IllegalArgumentException e) {
             throw e;
@@ -124,20 +125,24 @@ public class VoiceMessageController {
      * 简单 URL 解码：还原 URL 编码后的路径分隔符与特殊字符。
      *
      * <p>不使用 java.net.URLDecoder：其将 + 解码为空格，与文件名中的 + 冲突。
-     * 此处仅还原 %2F / %5C / %20 等常见编码。</p>
+     * 此处仅还原 %2F / %20 / %3A 等常见编码。</p>
      *
      * @param encoded URL 编码字符串
      * @return 解码后的字符串
+     * @throws IllegalArgumentException 包含 %5C（反斜杠）时抛出，拒绝跨平台路径语义不一致
      */
     private String decodeUrl(String encoded) {
         if (encoded == null || encoded.isEmpty()) {
             return "";
         }
+        // infra R2-00211: 拒绝反斜杠编码 %5C —— Windows 下反斜杠同样被当作路径分隔符，
+        // 还原后可能绕过 /uploads/ 前缀校验（依赖 startsWith 兜底），统一仅允许 %2F 路径分隔符
+        if (encoded.contains("%5C") || encoded.contains("%5c")) {
+            throw new IllegalArgumentException("URL 包含非法字符（反斜杠）");
+        }
         return encoded
                 .replace("%2F", "/")
                 .replace("%2f", "/")
-                .replace("%5C", "\\")
-                .replace("%5c", "\\")
                 .replace("%20", " ")
                 .replace("%3A", ":")
                 .replace("%3a", ":");

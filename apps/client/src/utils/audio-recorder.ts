@@ -126,6 +126,14 @@ export function createRecorder() {
   let listenersRegistered = false;
 
   /**
+   * 取消中标志（修复 P1 BUG：cancel 双回调）。
+   * cancel() 内部调用 recorderManager.stop() 会触发系统 onStop 事件，
+   * 导致 onStop 回调与 onCancel 回调都被触发。置位后 onStop 处理器
+   * 直接消费该标志并返回，不再触发任何回调（cancel 回调已由 cancel() 触发）。
+   */
+  let cancelling = false;
+
+  /**
    * 注册 mp-weixin 录音管理器事件监听器（仅注册一次）
    */
   function registerListeners(): void {
@@ -147,6 +155,13 @@ export function createRecorder() {
 
     // 录音停止事件
     recorderManager.onStop((res: RecorderStopCallbackResult) => {
+      // 修复（P1 BUG）：cancel() 触发的 stop 事件不再重复触发回调——
+      // cancel() 已置位 cancelling 并直接触发 cancel 回调，此处消费标志后返回
+      if (cancelling) {
+        cancelling = false;
+        state = "idle";
+        return;
+      }
       const durationSeconds = Math.max(
         0,
         Math.round((Date.now() - startTimestamp) / 1000)
@@ -262,6 +277,8 @@ export function createRecorder() {
       // 已在录音中，拒绝重复开始
       return false;
     }
+    // 清除可能残留的取消标志（防御性处理，正常路径下 cancel 后应为 false）
+    cancelling = false;
 
     const mergedOptions: Required<RecorderOptions> = {
       ...DEFAULT_OPTIONS,
@@ -390,10 +407,16 @@ export function createRecorder() {
    * 取消录音（不触发 onStop，仅触发 onCancel）
    *
    * 用于用户在录音过程中主动放弃（如上滑取消）。
+   *
+   * 修复（P1 BUG）：mp-weixin 下 recorderManager.stop() 会触发系统 onStop
+   * 事件，原实现导致 onStop 与 onCancel 回调都被触发（双回调）。
+   * 现先置位 cancelling 标志，onStop 处理器消费该标志后不再触发任何回调。
    */
   function cancel(): void {
     if (state === "idle") return;
     state = "idle";
+    // 置位取消标志：系统 onStop 事件到达时被消费，避免重复触发回调
+    cancelling = true;
 
     // #ifdef MP-WEIXIN
     try {
@@ -469,6 +492,8 @@ export function createRecorder() {
     callbacks.error.length = 0;
     callbacks.cancel.length = 0;
     state = "idle";
+    // 重置取消标志，避免销毁后残留影响下一次实例使用
+    cancelling = false;
     recorderManager = null;
     listenersRegistered = false;
   }
@@ -490,6 +515,14 @@ export function createRecorder() {
     onCancel,
   };
 }
+
+/**
+ * H5 模拟播放时长（毫秒）。
+ *
+ * infra R2-00133: 原 play 内魔法数字 3000 无注释（H5/非 mp-weixin 平台无真实
+ * 音频上下文，以定时器模拟播放结束回调），抽为具名常量提升可读性。
+ */
+const SIMULATED_PLAY_DURATION_MS = 3000;
 
 /**
  * 创建音频播放器（用于播放语音消息）
@@ -590,7 +623,7 @@ export function createAudioPlayer() {
         playing = false;
         onPlayStateChange?.(false);
       }
-    }, 3000);
+    }, SIMULATED_PLAY_DURATION_MS); // infra R2-00133: 魔法数字具名化
     // #endif
   }
 

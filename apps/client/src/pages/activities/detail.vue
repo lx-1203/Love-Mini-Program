@@ -85,12 +85,17 @@ function findFromStore(id: string): ActivityItem | null {
   return activityStore.activities.find((a) => a.id === id) ?? null;
 }
 
-/** 解析并展示活动内容 */
+/** 首次拉取是否失败（用于展示错误态与重试） */
+const loadError = ref(false);
+
+/** 解析并展示活动内容（同步报名状态：isSignedUp 与 activity.isEnrolled 保持一致） */
 function resolveActivity(id: string): void {
   const fromStore = findFromStore(id);
   if (fromStore) {
     activity.value = fromStore;
     isSample.value = false;
+    isSignedUp.value = !!fromStore.isEnrolled;
+    loadError.value = false;
     return;
   }
   // store 未匹配：回退到示例活动（id 精确匹配示例；任意未知 id 展示第一个示例）
@@ -99,6 +104,8 @@ function resolveActivity(id: string): void {
   if (matched) {
     activity.value = matched;
     isSample.value = true;
+    isSignedUp.value = !!matched.isEnrolled;
+    loadError.value = false;
   }
 }
 
@@ -109,9 +116,27 @@ onLoad((options) => {
     resolveActivity(id);
     return;
   }
-  // store 尚无数据：拉取一次后再解析（失败时仍可回退示例内容）
-  void activityStore.fetchActivities().then(() => resolveActivity(id));
+  // store 尚无数据：拉取一次后再解析（失败时仍可回退示例内容，并标记错误态供重试）
+  void activityStore
+    .fetchActivities()
+    .then(() => resolveActivity(id))
+    .catch(() => {
+      loadError.value = true;
+      resolveActivity(id);
+    });
 });
+
+/** 重试：清空错误态后重新拉取 */
+function retryLoad() {
+  loadError.value = false;
+  void activityStore
+    .fetchActivities()
+    .then(() => resolveActivity(activityId.value))
+    .catch(() => {
+      loadError.value = true;
+      resolveActivity(activityId.value);
+    });
+}
 
 onMounted(() => {
   // 兜底：若 onLoad 的异步拉取未完成，页面挂载后再尝试解析一次
@@ -125,25 +150,55 @@ const coverImage = computed<string>(() => {
   return activity.value?.coverImage || IMAGE_PATHS.ACTIVITIES.ACTIVITY_1;
 });
 
-/** 活动状态文案 */
+/** 活动状态文案（open=报名中 / ongoing=进行中 / ended、closed=已结束 / 其余=预告） */
 const statusText = computed(() => {
   if (!activity.value) return "";
-  if (activity.value.status === "open") return t("activities.statusOpen");
-  if (activity.value.status === "ongoing") return t("activities.statusOngoing");
+  const status = activity.value.status;
+  if (status === "open") return t("activities.statusOpen");
+  if (status === "ongoing") return t("activities.statusOngoing");
+  if (status === "ended" || status === "closed") return t("home.activityStatusClosed");
   return t("activities.statusUpcoming");
 });
 
-/** 报名：toast 提示（真实报名链路由后端负责；收尾轮补本地报名/退出闭环） */
+/** 报名：真实链路走 store（POST /api/activities/{id}/enroll）；示例活动本地闭环 */
 const isSignedUp = ref(false);
-function handleSignup() {
+async function handleSignup() {
   lightHaptic();
+  if (activityStore.enrolling) return;
+  const id = activity.value?.id ?? "";
+  const inStore = findFromStore(id) !== null;
+  if (inStore) {
+    const ok = await activityStore.enrollActivity(id);
+    isSignedUp.value = ok;
+    uni.showToast({
+      title: ok ? t("activities.signupSuccess") : t("activities.enrollFailedToast"),
+      icon: "none",
+      duration: 2000,
+    });
+    return;
+  }
+  // 示例活动（无后端资源）：本地闭环
   isSignedUp.value = true;
   uni.showToast({ title: t("activities.signupSuccess"), icon: "none", duration: 2000 });
 }
 
-/** 退出报名（收尾轮：已报名态可退出，恢复报名按钮） */
-function handleQuitSignup() {
+/** 退出报名（收尾轮：已报名态可退出，恢复报名按钮；真实链路走 store DELETE） */
+async function handleQuitSignup() {
   lightHaptic();
+  if (activityStore.enrolling) return;
+  const id = activity.value?.id ?? "";
+  const inStore = findFromStore(id) !== null;
+  if (inStore) {
+    // enrollActivity 为切换语义：已报名时调用即为取消报名，返回最终报名状态
+    const ok = await activityStore.enrollActivity(id);
+    isSignedUp.value = ok;
+    uni.showToast({
+      title: ok ? t("activities.enrolledToast") : t("activities.unenrolledToast"),
+      icon: "none",
+      duration: 2000,
+    });
+    return;
+  }
   isSignedUp.value = false;
   uni.showToast({ title: t("activities.quitSignupSuccess"), icon: "none", duration: 2000 });
 }
@@ -212,6 +267,16 @@ function goBack() {
       <!-- 底部留白（避免遮挡报名按钮） -->
       <view class="detail-footer-space" />
     </scroll-view>
+
+    <!-- 加载/兜底状态 -->
+    <view v-else-if="loadError" class="detail-loading">
+      <view class="detail-error">
+        <text class="detail-loading__text">{{ t('storeErrors.activity.loadActivitiesFailed') }}</text>
+        <view class="detail-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.retry')" @tap="retryLoad">
+          <text class="detail-error__retry-text">{{ t('common.retry') }}</text>
+        </view>
+      </view>
+    </view>
 
     <!-- 加载/兜底状态 -->
     <view v-else class="detail-loading">
@@ -424,6 +489,29 @@ function goBack() {
   color: var(--c-text-tertiary, #9aa1ab);
 }
 
+/* 加载失败错误态 */
+.detail-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.detail-error__retry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-2) var(--sp-6);
+  border-radius: var(--r-full);
+  background: var(--c-bg-brand, #e8f8f0);
+}
+
+.detail-error__retry-text {
+  font-size: var(--fs-base, 26rpx);
+  font-weight: 600;
+  color: var(--c-brand-700, #1d9e63);
+}
+
 /* ========== 底部报名栏 ========== */
 .detail-action-bar {
   padding: var(--sp-4) var(--sp-4) calc(env(safe-area-inset-bottom) + var(--sp-4));
@@ -437,7 +525,7 @@ function goBack() {
   justify-content: center;
   height: 88rpx;
   border-radius: var(--r-full);
-  background: var(--c-gradient-brand, linear-gradient(135deg, #3fcf8e, #6fe0b0));
+  background: var(--c-gradient-brand, linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%));
 }
 
 /* 收尾轮：退出报名按钮（次级样式，避免与报名主按钮混淆） */

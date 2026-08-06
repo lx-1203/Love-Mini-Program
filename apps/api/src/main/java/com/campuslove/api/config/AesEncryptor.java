@@ -58,6 +58,10 @@ public class AesEncryptor {
     /** 解析后的 AES SecretKey */
     private SecretKey aesKey;
 
+    /** 是否启用严格模式（未配置密钥时拒绝启动，默认 true；开发环境可关闭） */
+    @Value("${app.security.strict-aes:true}")
+    private boolean strictAes;
+
     /**
      * 启动时校验并初始化 AES 密钥。
      * 密钥来源（按优先级）：
@@ -66,12 +70,21 @@ public class AesEncryptor {
      *   <li>JWT_SECRET 环境变量（兜底，开发场景共用）</li>
      * </ol>
      * 密钥长度不足 32 字节时，使用 SHA-256 派生密钥。
+     *
+     * <p>infra R2-00012 修复：未配置时不再静默使用硬编码默认密钥——
+     * 默认密钥公开在源码中，生产漏配时 openid/phone 加密等于明文。
+     * 现在严格模式下直接拒绝启动（fail-fast）。</p>
      */
     @PostConstruct
     public void init() {
         if (secret == null || secret.isBlank()) {
-            // 未配置 AES 密钥，使用内置默认密钥（仅开发/测试，生产必须配置）
-            log.warn("APP_AES_SECRET 未配置，敏感数据加密使用默认弱密钥。生产环境必须配置 APP_AES_SECRET。");
+            String msg = "APP_AES_SECRET 未配置，敏感数据（openid/phone）加密将使用公开默认密钥，"
+                    + "存在严重隐私泄露风险。请通过环境变量 APP_AES_SECRET 配置独立随机密钥"
+                    + "（至少 32 字符）。开发环境可通过 APP_SECURITY_STRICT_AES=false 临时关闭。";
+            if (strictAes) {
+                throw new IllegalStateException(msg);
+            }
+            log.warn(msg);
             secret = "campus-love-default-aes-key-change-in-production-32bytes";
         }
         // 派生固定 32 字节密钥（与 AES-256 兼容）

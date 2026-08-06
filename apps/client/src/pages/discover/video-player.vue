@@ -37,6 +37,12 @@ interface PageWithOptions {
 
 /** 视频地址（由 query 参数注入） */
 const videoUrl = ref<string>("");
+
+/**
+ * infra R2-00068: 视频 URL 存储桥接 key——长视频 URL 走本地存储传递，
+ * 避免 query 拼接导致 URL 超长被截断；query 仅传时间戳 token
+ */
+const VIDEO_URL_STORAGE_KEY = "discover:video-player-url";
 /** 关联卡片 ID（用于埋点 / 日志，不参与渲染） */
 const cardId = ref<string>("");
 /** 视频是否正在加载元数据 */
@@ -62,7 +68,18 @@ function loadQueryParams(): void {
     const currentPage = pages[pages.length - 1] as PageWithOptions | undefined;
     const options = currentPage?.options || currentPage?.$page?.options || {};
     const rawUrl = typeof options.videoUrl === "string" ? options.videoUrl : "";
-    videoUrl.value = rawUrl ? decodeURIComponent(rawUrl) : "";
+    // infra R2-00068: 优先读 storage 桥接的 URL（query 传递的长 URL 可能被截断）；
+    // 同时兼容旧版 query 直传 videoUrl
+    let url = rawUrl ? decodeURIComponent(rawUrl) : "";
+    if (!url) {
+      try {
+        const stored = uni.getStorageSync(VIDEO_URL_STORAGE_KEY);
+        if (typeof stored === "string" && stored.length > 0) url = stored;
+      } catch (_e) {
+        // 读取失败忽略，保持空值
+      }
+    }
+    videoUrl.value = url;
     cardId.value = typeof options.cardId === "string" ? options.cardId : "";
   } catch (_e) {
     videoUrl.value = "";
@@ -141,9 +158,15 @@ function handleRetry() {
   // 通过 key 重置 video 组件，触发重新加载
   // uni-app video 组件无 reload 方法，采用页面级 reLaunch 触发刷新
   if (videoUrl.value) {
-    const url = encodeURIComponent(videoUrl.value);
+    // infra R2-00068: 长 URL 走 storage 桥接，query 仅传 token，避免 URL 超长/被截断
+    try {
+      uni.setStorageSync(VIDEO_URL_STORAGE_KEY, videoUrl.value);
+    } catch (_e) {
+      // 存储失败时回退 query 直传（兼容旧路径）
+    }
+    const token = String(Date.now());
     const cid = cardId.value;
-    const query = `videoUrl=${url}${cid ? `&cardId=${cid}` : ""}`;
+    const query = `vt=${token}${cid ? `&cardId=${cid}` : ""}`;
     uni.redirectTo({ url: `${ROUTES.DISCOVER.VIDEO_PLAYER}?${query}` });
   }
 }

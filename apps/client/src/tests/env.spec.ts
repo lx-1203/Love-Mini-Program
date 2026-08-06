@@ -32,8 +32,9 @@ describe("services/env", () => {
  * 验证点：
  * - .env.mp-weixin 必须存在，因为 uni-app 在 `uni build --platform mp-weixin`
  *   时使用的 mode 为 `mp-weixin`，不会自动加载 .env.production
- * - 该文件必须显式声明 VITE_API_MODE=mock，保证微信小程序构建产物默认走 mock 模式，
- *   避免真实后端不可达导致卡片数据加载失败
+ * - 该文件必须显式声明 VITE_API_MODE=real（infra #33 有意修改：小程序发布构建
+ *   默认走真实后端；mock 仅用于本地 H5 开发调试），并显式声明
+ *   VITE_API_BASE_URL 为合法 HTTPS 地址
  */
 describe("mp-weixin environment file", () => {
   const envPath = resolve(__dirname, "../../.env.mp-weixin");
@@ -42,9 +43,9 @@ describe("mp-weixin environment file", () => {
     expect(() => readFileSync(envPath, "utf-8")).not.toThrow();
   });
 
-  it("应显式配置 VITE_API_MODE=mock", () => {
+  it("应显式配置 VITE_API_MODE=real（发布构建默认真实后端）", () => {
     const content = readFileSync(envPath, "utf-8");
-    expect(content).toMatch(/^VITE_API_MODE=mock$/m);
+    expect(content).toMatch(/^VITE_API_MODE=real$/m);
   });
 
   it("应配置合法的 VITE_API_BASE_URL", () => {

@@ -6,6 +6,7 @@ import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -48,7 +49,8 @@ public class ActivityController {
      */
     @GetMapping
     public ApiResponse<Page<ActivityView>> getActivities(
-            @RequestParam(name = "campusName", required = false) String campusName,
+            @RequestParam(name = "campusName", required = false)
+            @Size(max = 50, message = "campusName 长度不能超过 50") String campusName,
             @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
         Pageable pageable = PageRequest.of(page, size);

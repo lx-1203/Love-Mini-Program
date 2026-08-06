@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
-import { clientApi } from "../services/api";
+// 修复（严格模式 noUnusedLocals）：clientApi 已不再被本文件使用（分页契约统一后
+// fetchActivities 与 fetchMoreActivities 均直接使用 request），移除 import。
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
@@ -27,21 +28,37 @@ export interface ActivityItem {
   /** 已报名用户头像列表 */
   participantAvatars?: string[];
   isEnrolled?: boolean;
-  /** 活动状态：open=报名中, ongoing=进行中, upcoming=预告 */
-  status?: "open" | "ongoing" | "upcoming";
+  /** 活动状态：open=报名中, ongoing=进行中, upcoming=预告, ended=已结束, closed=已关闭 */
+  status?: "open" | "ongoing" | "upcoming" | "ended" | "closed";
   /** 活动封面图 */
   coverImage?: string;
 }
 
 /* ========== Mock 数据 ========== */
 
+/**
+ * 生成相对今天的日期（ISO yyyy-MM-dd）。
+ * 修复（admin-mock-review #49）：原 mock 活动日期固定 2026-05-22~29，
+ * 时间一过全部显示已过期；现改为相对当天偏移，保证 mock 数据永不过期。
+ */
+function relativeDate(daysFromToday: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromToday);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 const mockActivities: ActivityItem[] = [
+  // infra R2-00092: 以下 mock 活动标题/描述为演示数据（useMock 守卫），real 分支由后端下发；
+  // id 使用 "a-*" 字符串以兼容前端 string 化 id 契约（real 数字 id 会统一转 string）
   {
     id: "a-1",
     title: "图书馆南门咖啡散步",
     location: "南门咖啡馆",
     scheduleText: "周四 19:00-20:00",
-    date: "2026-05-22",
+    date: relativeDate(1),
     enrollCount: 12,
     description: "在安静的咖啡馆里，和志同道合的朋友一起聊天放松",
     enrollmentCount: 12,
@@ -55,7 +72,7 @@ const mockActivities: ActivityItem[] = [
     title: "电影社轻松线下碰面",
     location: "影像楼 B 厅",
     scheduleText: "周六 15:00-17:00",
-    date: "2026-05-24",
+    date: relativeDate(3),
     enrollCount: 8,
     description: "一起看电影，认识新朋友",
     enrollmentCount: 8,
@@ -69,7 +86,7 @@ const mockActivities: ActivityItem[] = [
     title: "周末篮球友谊赛",
     location: "体育馆",
     scheduleText: "周日 10:00-12:00",
-    date: "2026-05-25",
+    date: relativeDate(0),
     enrollCount: 20,
     description: "篮球爱好者集合，友谊第一比赛第二",
     enrollmentCount: 20,
@@ -83,7 +100,7 @@ const mockActivities: ActivityItem[] = [
     title: "校园音乐节",
     location: "大礼堂",
     scheduleText: "下周五 19:00-21:00",
-    date: "2026-05-29",
+    date: relativeDate(7),
     enrollCount: 56,
     description: "校园歌手大赛决赛，精彩不容错过",
     enrollmentCount: 56,
@@ -112,6 +129,8 @@ export const useActivityStore = defineStore("activity", {
     loading: false,
     /** 是否正在报名中（某个活动） */
     enrolling: false,
+    /** 报名中的活动 ID 集合（并发守卫：同一活动禁止重复提交报名/取消） */
+    enrollingActivityIds: new Set<string>() as Set<string>,
     /** 错误信息 */
     errorMessage: null as string | null,
     /** 当前页码（从 1 开始） */
@@ -134,7 +153,11 @@ export const useActivityStore = defineStore("activity", {
   actions: {
     /**
      * 获取活动列表（首次加载或刷新）
-     * Real 模式调用 GET /api/activities
+     * Real 模式调用 GET /api/recommendations/activities
+     *
+     * 修复（P1 BUG）：原实现调用 clientApi.getActivityRecommendations()（无分页参数），
+     * 与 fetchMoreActivities 的 ?page=N&pageSize=M 契约不一致。现统一走 request 并
+     * 显式传 page=1&pageSize，保证首次加载与加载更多使用同一分页契约，hasMore 判断一致。
      */
     async fetchActivities() {
       this.loading = true;
@@ -147,9 +170,12 @@ export const useActivityStore = defineStore("activity", {
           return;
         }
 
-        // 调用后端 API: GET /api/activities
+        // 调用后端 API: GET /api/recommendations/activities?page=1&pageSize={pageSize}
         // 后端返回 Page<ActivityView>
-        const data = await clientApi.getActivityRecommendations();
+        const data = await request<Schemas["ActivityRecommendation"][]>({
+          url: `/recommendations/activities?page=1&pageSize=${this.pageSize}`,
+          method: "GET",
+        });
         this.activities = data.map((item) => this.mapToActivityItem(item));
         this.page = 1;
         this.hasMore = data.length >= this.pageSize;
@@ -211,10 +237,16 @@ export const useActivityStore = defineStore("activity", {
      * @param activityId - 活动 ID
      */
     async enrollActivity(activityId: string): Promise<boolean> {
+      // 修复（P1 BUG）：并发守卫——同一活动在途的报名/取消请求未完成时
+      // 拒绝再次提交，避免快速连点触发多次报名/取消请求导致状态错乱
+      if (this.enrollingActivityIds.has(activityId)) {
+        return false;
+      }
       const activity = this.activities.find((a) => a.id === activityId);
       if (!activity) return false;
 
       this.enrolling = true;
+      this.enrollingActivityIds.add(activityId);
       try {
         if (useMock()) {
           activity.isEnrolled = !activity.isEnrolled;
@@ -239,10 +271,10 @@ export const useActivityStore = defineStore("activity", {
 
         if (activity.isEnrolled) {
           // 取消报名：调用 DELETE /api/activities/{activityId}/enroll
+          // infra R2-00093: userId 改走 query——部分网关/后端不支持 DELETE 携带 data body
           const result = await request<{ activityId: number; enrolled: boolean; enrollmentCount: number }>({
-            url: `/activities/${activityId}/enroll`,
+            url: `/activities/${activityId}/enroll?userId=${encodeURIComponent(userId)}`,
             method: "DELETE",
-            data: { userId },
           });
           activity.isEnrolled = result.enrolled;
           activity.enrollmentCount = result.enrollmentCount;
@@ -262,6 +294,7 @@ export const useActivityStore = defineStore("activity", {
           error instanceof Error ? error.message : t("storeErrors.activity.registerFailed");
         return false;
       } finally {
+        this.enrollingActivityIds.delete(activityId);
         this.enrolling = false;
       }
     },

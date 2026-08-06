@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.TempChatMessage;
 import com.campuslove.api.entity.TempChatSession;
 import com.campuslove.api.entity.TempChatSession.SessionPhase;
@@ -45,11 +46,14 @@ public class TempChatMessageService {
 
     private final TempChatMessageRepository messageRepository;
     private final TempChatSessionService sessionService;
+    private final SensitiveWordFilter sensitiveWordFilter;
 
     public TempChatMessageService(TempChatMessageRepository messageRepository,
-                                  TempChatSessionService sessionService) {
+                                  TempChatSessionService sessionService,
+                                  SensitiveWordFilter sensitiveWordFilter) {
         this.messageRepository = messageRepository;
         this.sessionService = sessionService;
+        this.sensitiveWordFilter = sensitiveWordFilter;
     }
 
     /**
@@ -58,6 +62,10 @@ public class TempChatMessageService {
      * <p>已关闭或已过期的会话不允许发送消息，但仍返回会话视图（携带当前状态）。
      * 发送消息后通过 WebSocket 推送给对方。</p>
      *
+     * <p>安全修复（FIN HIGH-3）：sender 由服务端根据当前用户与会话参与者关系判定
+     * （userA → "self"，userB → "peer"），不再信任客户端请求体中的 sender 字段，
+     * 防止冒充对方发送消息。同时校验当前用户为会话参与者（FIN HIGH-1）。</p>
+     *
      * @param id            会话 ID（sessionUid 或数据库 ID）
      * @param request       消息请求
      * @param currentUserId 当前用户 ID
@@ -65,7 +73,12 @@ public class TempChatMessageService {
      */
     @Transactional
     public TempChatSession sendMessage(String id, ChatMessageRequest request, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("当前用户 ID 不能为空");
+        }
         TempChatSession session = sessionService.resolveSession(id);
+        // FIN HIGH-1：校验当前用户是会话参与者，防止越权向他人会话发送消息
+        sessionService.requireParticipant(session, currentUserId);
 
         // 检查过期：标记并返回
         if (sessionService.isSessionExpired(session)) {
@@ -87,46 +100,63 @@ public class TempChatMessageService {
 
         LocalDateTime now = LocalDateTime.now();
 
+        // FIN HIGH-3：sender 由服务端判定，不信任客户端传入值
+        String sender = session.getUserAId().equals(currentUserId) ? "self" : "peer";
+
+        // infra R2-00252: 临时聊天消息补敏感词过滤（村口/私信已有，此处此前可绕过）
+        String filteredBody = sensitiveWordFilter != null
+                ? sensitiveWordFilter.filterWithLog(request.body(), currentUserId, "TEMP_CHAT")
+                : request.body();
+
         TempChatMessage message = new TempChatMessage();
         message.setSession(session);
-        message.setSender(request.sender());
+        message.setSender(sender);
         message.setKind(request.kind());
-        message.setBody(request.body());
+        message.setBody(filteredBody);
         message.setDurationSeconds(request.durationSeconds());
         message.setDeliveryStatus("sent");
         message.setRecalled(false);
         message.setCreatedAt(now);
 
-        // 引用回复：构造 quoteSnapshot JSON
+        // 引用回复：构造 quoteSnapshot JSON（FIN MED-36：对 JSON 特殊字符转义，防止注入/解析错乱）
+        // infra R2-00253: 引用消息校验必须属于同一会话，防止引用其他会话消息 ID
         if (request.quoteRef() != null && !request.quoteRef().isBlank()) {
             try {
                 Long quotedMsgId = Long.parseLong(request.quoteRef());
-                messageRepository.findById(quotedMsgId).ifPresent(quoted -> {
-                    String snapshot = String.format(
-                            "{\"id\":\"%s\",\"body\":\"%s\",\"sender\":\"%s\"}",
-                            quoted.getId(),
-                            quoted.getBody().replace("\"", "\\\""),
-                            quoted.getSender()
-                    );
-                    message.setQuoteSnapshot(snapshot);
-                });
+                // lambda 捕获要求变量 effectively final，而 message 在下方会被重新赋值，
+                // 因此引入 final 局部变量供 lambda 使用
+                final TempChatMessage quoteTarget = message;
+                messageRepository.findById(quotedMsgId)
+                        .filter(quoted -> quoted.getSession() != null
+                                && quoted.getSession().getId().equals(session.getId()))
+                        .ifPresent(quoted -> {
+                            String snapshot = String.format(
+                                    "{\"id\":\"%s\",\"body\":\"%s\",\"sender\":\"%s\"}",
+                                    escapeJson(quoted.getId() == null ? "" : String.valueOf(quoted.getId())),
+                                    escapeJson(quoted.getBody()),
+                                    escapeJson(quoted.getSender())
+                            );
+                            quoteTarget.setQuoteSnapshot(snapshot);
+                        });
             } catch (NumberFormatException ignored) {
                 // Task 10（FIN-00031）复核：此处 catch NumberFormatException 为输入解析异常，
-                // 触发时尚未执行任何 DB 写操作（messageRepository.save 在下方 L118），
+                // 触发时尚未执行任何 DB 写操作（messageRepository.save 在下方），
                 // 不存在"事务部分提交"风险；按设计意图跳过 quoteSnapshot 字段继续发送消息，
                 // 无需 setRollbackOnly 或重新抛出（spec SubTask 10.3 适用于 DB 异常场景）。
             }
         }
 
-        messageRepository.save(message);
+        // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
+        // 否则下方 toMessageView 中 message.getId() 为 null
+        message = messageRepository.save(message);
 
         // 更新会话最后消息信息和未读计数
-        String preview = buildMessagePreview(request.kind(), request.body());
+        String preview = buildMessagePreview(request.kind(), filteredBody);
         session.setLastMessagePreview(preview);
         session.setLastMessageAt(now);
         session.setUpdatedAt(now);
 
-        boolean isPeerMessage = "peer".equals(request.sender());
+        boolean isPeerMessage = "peer".equals(sender);
         if (isPeerMessage) {
             session.setUserAUnreadCount(session.getUserAUnreadCount() + 1);
         } else {
@@ -144,22 +174,56 @@ public class TempChatMessageService {
                 messageView
         );
 
-        log.debug("会话 {} 发送消息: sender={}, kind={}", id, request.sender(), request.kind());
+        log.debug("会话 {} 发送消息: sender={}, kind={}", id, sender, request.kind());
         return session;
+    }
+
+    /**
+     * JSON 字符串转义（FIN MED-36）：转义反斜杠、双引号、换行、回车、制表符。
+     *
+     * @param value 原始字符串（可为 null）
+     * @return 转义后的字符串（null 返回空字符串）
+     */
+    private static String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(value.length() + 16);
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '\\' -> sb.append("\\\\");
+                case '"' -> sb.append("\\\"");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default -> sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     /**
      * 撤回指定会话中的某条消息。
      * 仅发送者本人（self/peer）可在发送后 {@value #RECALL_WINDOW_MINUTES} 分钟内撤回。
      *
+     * <p>安全修复（FIN HIGH-4）：校验 currentUserId 为消息发送者本人
+     * （sender=self 且当前用户为 userA，或 sender=peer 且当前用户为 userB），
+     * 任意用户无法撤回他人消息。</p>
+     *
      * @param sessionId  会话 ID
      * @param messageId  消息 ID
-     * @param currentUserId 当前用户 ID（未使用，保留以备未来扩展权限校验）
+     * @param currentUserId 当前用户 ID（用于权限校验）
      * @return 会话实体（用于调用方转换为视图）
      */
     @Transactional
     public TempChatSession recallMessage(String sessionId, String messageId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("当前用户 ID 不能为空");
+        }
         TempChatSession session = sessionService.resolveSession(sessionId);
+        // FIN HIGH-1：校验当前用户是会话参与者
+        sessionService.requireParticipant(session, currentUserId);
 
         Long msgId;
         try {
@@ -187,6 +251,18 @@ public class TempChatMessageService {
             log.debug("系统消息不可撤回: {}", messageId);
             return session;
         }
+
+        // FIN HIGH-4：只能撤回自己发送的消息
+        // sender=self 表示消息由 userA 发出，仅 userA 可撤回；sender=peer 同理。
+        boolean isSender = ("self".equals(message.getSender())
+                && session.getUserAId() != null && session.getUserAId().equals(currentUserId))
+                || ("peer".equals(message.getSender())
+                && session.getUserBId() != null && session.getUserBId().equals(currentUserId));
+        if (!isSender) {
+            log.warn("用户 {} 尝试撤回非本人消息 {} (会话 {})", currentUserId, messageId, sessionId);
+            return session;
+        }
+
         // 超过撤回时间窗口
         if (message.getCreatedAt() != null
                 && message.getCreatedAt().isBefore(LocalDateTime.now().minusMinutes(RECALL_WINDOW_MINUTES))) {
@@ -194,9 +270,19 @@ public class TempChatMessageService {
             return session;
         }
 
+        // 记录撤回前的预览，用于判断会话预览是否需要同步更新
+        String oldPreview = buildMessagePreview(message.getKind(), message.getBody());
+
         message.setRecalled(true);
         message.setBody("[已撤回]");
         messageRepository.save(message);
+
+        // infra R2-00251: 撤回后同步更新会话预览，避免已撤回内容仍展示在会话列表
+        String recalledPreview = buildMessagePreview(message.getKind(), message.getBody());
+        if (oldPreview != null && oldPreview.equals(session.getLastMessagePreview())) {
+            session.setLastMessagePreview(recalledPreview);
+            sessionService.saveSession(session);
+        }
 
         log.debug("消息 {} 已被撤回 (会话 {})", messageId, sessionId);
         return session;

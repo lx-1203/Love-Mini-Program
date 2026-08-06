@@ -18,7 +18,8 @@
 # ============================================================
 
 # ---------- Stage 1: Builder ----------
-FROM eclipse-temurin:17-jdk AS builder
+# 镜像版本固定（infra #31）：pin 到具体小版本，禁止浮点 tag
+FROM eclipse-temurin:17.0.12-jdk AS builder
 
 WORKDIR /build
 
@@ -30,16 +31,17 @@ COPY .mvn .mvn
 COPY src ./src
 
 # 构建可执行 jar，跳过测试（CI 已执行过测试）
-# -DskipTests：编译测试代码但不执行
-# -Dmaven.test.skip=true：完全跳过测试编译与执行（更快）
+# 只保留 -DskipTests（infra #43：-DskipTests 与 -Dmaven.test.skip=true 重复，
+# 两者均跳过测试；-DskipTests 仍编译测试代码，便于 IDE/CI 复用编译产物）
 RUN chmod +x mvnw && \
-    ./mvnw clean package -DskipTests -Dmaven.test.skip=true
+    ./mvnw clean package -DskipTests
 
 # 列出分层（用于 Stage 2 按层 COPY，提升缓存命中率）
 RUN java -Djarmode=layertools -jar target/*.jar list --verbose
 
 # ---------- Stage 2: Runtime ----------
-FROM eclipse-temurin:17-jre AS runtime
+# 镜像版本固定（infra #31）：pin 到具体小版本，禁止浮点 tag
+FROM eclipse-temurin:17.0.12-jre AS runtime
 
 LABEL org.opencontainers.image.title="campus-love-api" \
       org.opencontainers.image.description="Campus Love backend API" \
@@ -117,7 +119,8 @@ CMD ["sh", "-c", "java $JAVA_OPTS org.springframework.boot.loader.launch.JarLaun
 #   - 单独触发扫描：docker build --target trivy-scanner .
 # 扫描范围：builder 阶段产出的 jar 与依赖
 # 退出策略：发现 HIGH/CRITICAL 漏洞时 exit-code=1，构建失败
-FROM aquasec/trivy:latest AS trivy-scanner
+# 镜像版本固定（infra 补充）：禁止 latest 浮点 tag
+FROM aquasec/trivy:0.53.0 AS trivy-scanner
 
 WORKDIR /scan
 

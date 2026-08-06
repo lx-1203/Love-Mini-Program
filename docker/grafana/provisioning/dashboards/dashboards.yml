@@ -13,9 +13,10 @@ providers:
     orgId: 1
     folder: Campus Love
     type: file
-    disableDeletion: false
+    # infra 补充：禁止在 UI 误删/误改由文件管理的仪表板
+    disableDeletion: true
     updateIntervalSeconds: 30
-    allowUiUpdates: true
+    allowUiUpdates: false
     options:
       # 仪表板 JSON 文件路径（与 docker-compose 挂载一致）
       path: /var/lib/grafana/dashboards

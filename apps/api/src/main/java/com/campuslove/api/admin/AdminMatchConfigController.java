@@ -51,6 +51,7 @@ public class AdminMatchConfigController {
      * 仅更新 values 中包含的 key。
      */
     @PutMapping("/match-config")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<MatchConfigView> updateMatchConfig(
             @Valid @RequestBody UpdateKeyValueRequest req) {
         Long operatorId = SecurityUtils.getCurrentUserId();
@@ -70,6 +71,7 @@ public class AdminMatchConfigController {
      * 更新推荐策略配置。
      */
     @PutMapping("/recommend-strategy")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<RecommendStrategyView> updateRecommendStrategy(
             @Valid @RequestBody UpdateKeyValueRequest req) {
         Long operatorId = SecurityUtils.getCurrentUserId();

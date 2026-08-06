@@ -78,7 +78,15 @@ public class VillagePostService {
         post.setContent(filteredContent);
         post.setImages(queryService.toJsonString(images));
         post.setTags(queryService.toJsonString(filteredTags));
-        post.setCategory(category != null ? PostCategory.valueOf(category) : PostCategory.all);
+        // infra R2-00216: 非法分类值转 400（原实现 valueOf 未捕获直接 500）
+        PostCategory postCategory;
+        try {
+            postCategory = category != null ? PostCategory.valueOf(category) : PostCategory.all;
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("不支持的帖子分类: " + category
+                    + ", 仅支持: " + java.util.Arrays.toString(PostCategory.values()));
+        }
+        post.setCategory(postCategory);
         post.setLikesCount(0);
         post.setCommentsCount(0);
         post.setShareCount(0);
@@ -86,7 +94,10 @@ public class VillagePostService {
         post.setCreatedAt(now);
         post.setUpdatedAt(now);
 
-        postRepository.save(post);
+        // 缺陷修复：使用 saveAndFlush 立即回填 IDENTITY 主键，保证返回视图中的 id 非空
+        // （原 save() 在事务提交时才生成主键，实体在构建视图时 getId() 仍为 null；
+        //  实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
+        post = postRepository.saveAndFlush(post);
         return queryService.toPostDetailView(post, userId);
     }
 

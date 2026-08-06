@@ -1,7 +1,9 @@
 package com.campuslove.api.ai;
 
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import java.util.Map;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,7 +37,13 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/ai")
+// infra 修复:AiVideoService 仅 @Profile("real") 实现,mock profile 下无 bean 可注入,
+// Controller 同步限定 real,避免 mock 模式启动失败(mock 模式前端走 mockFixtures 不调 AI 接口)
+@Profile("real")
 public class AiVideoController {
+
+    /** 请求体最大字段数（infra R2-00258，防止任意参数透传上游） */
+    private static final int MAX_PARAMS_FIELDS = 20;
 
     private final AiVideoService aiVideoService;
 
@@ -56,7 +64,11 @@ public class AiVideoController {
      */
     @PostMapping("/video/generate")
     @PreAuthorize("hasRole('USER')")
+    // infra R2-00257: AI 生成接口按 IP 限流，防止登录用户无限调用付费上游（成本控制）
+    @RateLimit(capacity = 20, refillTokens = 0.2, key = "#request.remoteAddr")
     public Map<String, Object> generateVideo(@Valid @RequestBody Map<String, Object> params) {
+        // infra R2-00258: 限制请求体字段数量
+        validateParams(params);
         return aiVideoService.generateVideo(params);
     }
 
@@ -70,8 +82,23 @@ public class AiVideoController {
      */
     @PostMapping("/image/generate")
     @PreAuthorize("hasRole('USER')")
+    // infra R2-00257: 同上，图片生成接口同样限流
+    @RateLimit(capacity = 20, refillTokens = 0.2, key = "#request.remoteAddr")
     public Map<String, Object> generateImage(@Valid @RequestBody Map<String, Object> params) {
+        validateParams(params);
         return aiVideoService.generateImage(params);
+    }
+
+    /**
+     * 校验请求体字段数量，防止任意参数透传上游（infra R2-00258）。
+     *
+     * @param params 请求体
+     * @throws IllegalArgumentException 字段数超限时抛出
+     */
+    private void validateParams(Map<String, Object> params) {
+        if (params != null && params.size() > MAX_PARAMS_FIELDS) {
+            throw new IllegalArgumentException("请求体字段数量不能超过 " + MAX_PARAMS_FIELDS);
+        }
     }
 
     /**

@@ -559,6 +559,7 @@ class AdminPermissionTest {
         @Mock private UserScheduleProfileRepository userScheduleProfileRepository;
         @Mock private AesEncryptor aesEncryptor;
         @Mock private com.campuslove.api.auth.TokenBlacklistService tokenBlacklistService;
+        @Mock private com.campuslove.api.auth.OnlineUserService onlineUserService;
 
         private PasswordEncoder passwordEncoder;
         private RealAuthService realAuthService;
@@ -578,7 +579,9 @@ class AdminPermissionTest {
                     passwordEncoder,
                     aesEncryptor,
                     tokenBlacklistService,
-                    ""
+                    onlineUserService,
+                    "",
+                    true
             );
             when(userCampusProfileRepository.findByUserId(any())).thenReturn(Optional.empty());
             when(userScheduleProfileRepository.findByUserId(any())).thenReturn(Optional.empty());

@@ -7,6 +7,8 @@ import { ref, computed, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCircleStore } from "../../stores/circle";
+// 图片上传链路（review #2）：真实模式下需先上传拿 URL 再提交，mock 模式保留本地路径
+import { useMock } from "../../stores/helpers/use-mock";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
@@ -109,6 +111,12 @@ const MAX_LENGTH = 500;
 /** 最大图片数 */
 const MAX_IMAGES = 9;
 
+/**
+ * switch 品牌色：小程序 switch 的 color 为原生属性，不支持 CSS 变量，
+ * 此处取 design token --c-brand 的实际色值，与主题保持一致（ui-ux B9 修复）。
+ */
+const brandColor = "#3FCF8E";
+
 /** 当前字数 */
 const currentLength = computed(() => content.value.length);
 /** 是否超出字数限制 */
@@ -189,10 +197,14 @@ function removeImage(index: number) {
   images.value.splice(index, 1);
 }
 
+/** 是否正在提交（review #22：防重复提交） */
+const isSubmitting = ref(false);
+
 /**
  * 发布话题
  */
 async function submitTopic() {
+  if (isSubmitting.value) return;
   if (!title.value.trim()) {
     uni.showToast({ title: t("circle.postTopicErrTitle"), icon: "none" });
     return;
@@ -208,6 +220,7 @@ async function submitTopic() {
     return;
   }
 
+  isSubmitting.value = true;
   try {
     // Task B5：解析目标圈子 ID —— 优先使用入口参数 circleId；
     // 否则按发布目标推导（兴趣圈 → 兴趣分类 ID；校园圈 → 兜底 "campus-circle"）
@@ -217,11 +230,22 @@ async function submitTopic() {
         ? interestCategory.value
         : "campus-circle");
 
+    // 修复（review #22）：提交翻译后的标签文本，而不是 i18n key
+    const tagTexts = selectedTags.value.map((key) => t(key));
+
+    // 修复（review #2）：图片上传链路缺失。
+    // TODO(后端): services/api.ts 无话题图片上传端点；接口就绪后应在此先上传
+    // tempFilePath 换取 URL 再随话题提交，mock 模式下继续使用本地路径保证可用。
+    const localImages = images.value.filter((img) => !/^https?:\/\//.test(img));
+    if (localImages.length > 0 && !useMock()) {
+      console.warn("[post-topic] 话题图片为本地临时路径，后端无法访问，等待上传接口接入:", localImages);
+    }
+
     await circleStore.createTopic(resolvedCircleId, {
       title: title.value.trim(),
       content: content.value.trim(),
       images: images.value,
-      tags: selectedTags.value,
+      tags: tagTexts,
       favorite: favoriteEnabled.value,
     });
 
@@ -237,6 +261,8 @@ async function submitTopic() {
       title: circleStore.errorMessage || t("circle.postTopicPublishFailed"),
       icon: "none",
     });
+  } finally {
+    isSubmitting.value = false;
   }
 }
 
@@ -258,7 +284,7 @@ circleId.value = options.circleId || "";
   <view class="post-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="post-header">
-      <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
+      <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="back-icon">{{ t("circle.postTopicBack") }}</text>
       </view>
       <text class="post-header__title">{{ t("circle.postTopicNavTitle") }}</text>
@@ -382,7 +408,7 @@ circleId.value = options.circleId || "";
         </view>
         <switch
           :checked="favoriteEnabled"
-          color="#3FCF8E"
+          :color="brandColor"
           @change="toggleFavorite"
           :aria-label="t('circle.postTopicFavoriteLabel')"
         />
@@ -441,9 +467,11 @@ $pink-light: var(--c-romance-50);
 $white: var(--c-neutral-0);
 $bg-page: var(--c-bg-page);
 $text-primary: var(--c-text-primary);
-$text-secondary: var(--c-neutral-500);
+/* ui-ux 修复：$text-secondary 统一映射到文本次要色 token */
+$text-secondary: var(--c-text-secondary);
 $text-tertiary: var(--c-text-tertiary);
-$border-light: var(--c-neutral-200);
+/* ui-ux 修复：$border-light 统一为 border 系列 token */
+$border-light: var(--c-border-light);
 $error: var(--c-error);
 $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 

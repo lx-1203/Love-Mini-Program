@@ -49,6 +49,14 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+/**
+ * 标签展示文案：优先经 labelKey 走 t() 翻译（支持多语言），
+ * 本地静态中文 label 仅作兜底；value 保持英文 key 用于筛选提交。
+ */
+function tagLabel(opt: { label: string; labelKey?: string }): string {
+  return opt.labelKey ? t(opt.labelKey) : opt.label;
+}
+
 /* ========== 常量 ========== */
 
 /** 年龄范围常量 */
@@ -498,7 +506,7 @@ defineExpose({ reset });
         >
           <view class="filter-chip__label-row">
             <image v-if="opt.icon" class="filter-chip__icon" :src="opt.icon" mode="aspectFit" alt="" />
-            <text class="filter-chip__text">{{ opt.label }}</text>
+            <text class="filter-chip__text">{{ tagLabel(opt) }}</text>
           </view>
         </view>
       </view>

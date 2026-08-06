@@ -125,6 +125,14 @@ function clearAll(): void {
 }
 
 /**
+ * 标签展示文案：优先经 labelKey 走 t() 翻译（支持多语言），
+ * 本地静态中文 label 仅作兜底；value 保持英文 key 用于存储/比较。
+ */
+function tagLabel(opt: { label: string; labelKey?: string }): string {
+  return opt.labelKey ? t(opt.labelKey) : opt.label;
+}
+
+/**
  * 获取所有已选标签的展示信息（用于顶部已选区渲染）。
  */
 const selectedTags = computed(() => {
@@ -134,7 +142,7 @@ const selectedTags = computed(() => {
     for (const value of list) {
       const opt = group.options.find((o) => o.value === value);
       if (opt) {
-        result.push({ value: opt.value, label: opt.label, icon: opt.icon });
+        result.push({ value: opt.value, label: tagLabel(opt), icon: opt.icon });
       }
     }
   }
@@ -212,7 +220,7 @@ const selectedTags = computed(() => {
           @tap="toggleTag(group, opt.value)"
         >
           <image v-if="opt.icon" class="tag-chip__emoji" :src="opt.icon" mode="aspectFit" alt="" />
-          <text class="tag-chip__text">{{ opt.label }}</text>
+          <text class="tag-chip__text">{{ tagLabel(opt) }}</text>
         </view>
       </view>
     </view>

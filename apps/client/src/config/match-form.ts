@@ -8,17 +8,23 @@ import { loadMatchPreferences } from "../services/config";
 
 export interface MatchFormField {
   key: string;
+  /** 字段 label（中文兜底；展示层请优先用 labelKey 经 t() 渲染） */
   label: string;
+  /** 字段 label 的 i18n key（config.matchForm.{key}.label，zh/en 同步） */
+  labelKey?: string;
   required: boolean;
   /** 选项所属分组（可选，Task 3.6.2 后端返回字段） */
   group?: string;
-  /** 偏好可选项列表（可选，Task 3.6.2 后端返回字段） */
+  /** 偏好可选项列表（可选，Task 3.6.2 后端返回字段；label 由后端下发，前端不翻译） */
   options?: { value: string; label: string }[];
 }
 
+// 展示文案 i18n 化（i18n-data-review #14）：字段 label 已抽为 i18n key（config.matchForm.*，zh/en 同步）。
+// 注意：本配置当前无页面直接引用（表单由后端 /api/v1/config/match-preferences 驱动，loadMatchFormFields 为兜底），
+// 如后续接入展示，必须通过 labelKey 经 t() 渲染，勿直接输出 label 中文兜底值。
 export const matchFormFields: MatchFormField[] = [
-  { key: 'preference', label: '匹配偏好', required: true },
-  { key: 'timeRange', label: '可聊时间', required: false },
+  { key: 'preference', label: '匹配偏好', labelKey: 'config.matchForm.preference.label', required: true },
+  { key: 'timeRange', label: '可聊时间', labelKey: 'config.matchForm.timeRange.label', required: false },
 ];
 
 /**

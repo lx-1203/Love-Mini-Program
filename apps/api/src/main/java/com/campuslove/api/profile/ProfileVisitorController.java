@@ -51,6 +51,9 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/api/v1/profile")
+// mock profile 排除了 JPA(无 Repository bean),本控制器为 real 专属;
+// mock 模式前端走本地 mockFixtures,不调用本端点
+@org.springframework.context.annotation.Profile("real")
 public class ProfileVisitorController {
 
     private static final Logger log = LoggerFactory.getLogger(ProfileVisitorController.class);

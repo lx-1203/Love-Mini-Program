@@ -14,7 +14,7 @@ import { IMAGE_PATHS } from '../../config/images';
 
 const props = withDefaults(defineProps<{
   /** 预设空状态类型 */
-  type?: 'no-data' | 'no-match' | 'no-chat';
+  type?: 'no-data' | 'no-match' | 'no-chat' | 'network';
   /** 兼容旧 prop：等价于 title */
   message?: string;
   /** 显式图标 URL（优先级最高） */
@@ -46,6 +46,7 @@ const presetIconMap: Record<string, string> = {
   'no-data': IMAGE_PATHS.ICONS_COMMON.SEARCH,
   'no-match': IMAGE_PATHS.ICONS_COMMON.CLOSE,
   'no-chat': IMAGE_PATHS.ICONS_COMMON.NOTIFICATION,
+  'network': IMAGE_PATHS.ICONS_COMMON.CLOSE,
 };
 
 /** 预设类型 → 副标题 i18n key 映射 */
@@ -53,6 +54,7 @@ const presetSubMap: Record<string, string> = {
   'no-data': t('empty.noDataSub'),
   'no-match': t('empty.noMatchSub'),
   'no-chat': t('empty.noChatSub'),
+  'network': t('empty.networkSub'),
 };
 
 const iconSrc = computed(() => props.image || presetIconMap[props.type] || IMAGE_PATHS.ICONS_COMMON.SEARCH);

@@ -11,6 +11,7 @@ import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
+import { isMockMode } from "../../services/env";
 
 const { t } = useI18n();
 
@@ -145,6 +146,9 @@ function submitVerification() {
   submitting.value = true;
   uni.showLoading({ title: t("verification.submitting") });
 
+  // TODO(后端): 无恋爱认证提交接口（services/api.ts 仅有 campus/certification 相关链路，
+  // 未提供学生证提交审核端点）。当前为本地模拟：1s 后置为 pending；
+  // 接口就绪后应上传 uploadedImagePath 换取 URL 并调用 POST /verification 提交。
   if (submitTimer) clearTimeout(submitTimer);
   submitTimer = setTimeout(() => {
     submitting.value = false;
@@ -171,7 +175,8 @@ onUnmounted(() => {
   }
 });
 
-/** 模拟审核通过（mock 模式演示用） */
+/** 模拟审核通过（mock 模式演示用）
+ * TODO(后端): 接入真实审核状态轮询（GET /verification/status）后移除本函数。 */
 function simulateApprove() {
   lightHaptic();
   status.value = "verified";
@@ -205,6 +210,7 @@ function removeVerification() {
   uni.showModal({
     title: t("verification.removeConfirmTitle"),
     content: t("verification.removeConfirmContent"),
+    // 原生属性不支持 CSS 变量：取 design token --c-error 的实际色值 #E5454D
     confirmColor: "#E5454D",
     success: (res) => {
       if (res.confirm) {
@@ -235,7 +241,7 @@ function onBlur() {
   <view class="verification-page page-fade-in">
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
-      <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">
+      <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100" role="button" :aria-label="t('common.backAria')">
         <text class="nav-bar__back-icon">‹</text>
       </view>
       <text class="nav-bar__title">{{ t('verification.navTitle') }}</text>
@@ -295,8 +301,9 @@ function onBlur() {
         </view>
       </view>
 
-      <!-- mock 演示：模拟审核通过按钮 -->
-      <view class="action-btn action-btn--secondary press-feedback" @tap="simulateApprove" hover-class="action-btn--hover" hover-stay-time="100">
+      <!-- infra R2-00019 修复：模拟审核通过按钮仅 mock 模式可见（原无环境守卫，
+           真实用户可自行伪造恋爱认证通过，身份信任体系崩塌） -->
+      <view v-if="isMockMode()" class="action-btn action-btn--secondary press-feedback" @tap="simulateApprove" hover-class="action-btn--hover" hover-stay-time="100">
         <text class="action-btn__text action-btn__text--secondary">{{ t('verification.simulateApproveBtn') }}</text>
       </view>
     </template>
@@ -386,6 +393,8 @@ function onBlur() {
           @tap="chooseImage"
           hover-class="upload-card--hover"
           hover-stay-time="100"
+          role="button"
+          :aria-label="t('verification.uploadTitle')"
         >
           <view v-if="!uploadedImagePath" class="upload-card__empty">
             <text class="upload-card__text">{{ t('verification.uploadText') }}</text>

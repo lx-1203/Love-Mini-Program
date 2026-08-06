@@ -37,6 +37,7 @@
  */
 
 import { getToken } from "../http";
+import { isDev } from "../env";
 import {
   HEARTBEAT_INTERVAL_MS,
   STOMP_VERSION,
@@ -60,6 +61,26 @@ import type {
   StompFrame,
   WsConnectionState,
 } from "./types";
+
+/**
+ * DISCONNECT 帧发出后延迟关闭底层连接的毫秒数。
+ * 修复（P1 BUG）：立即 closeSocket 会截断 DISCONNECT 帧的发送，
+ * 服务端无法感知正常下线；延迟 300ms 给帧留出发送窗口。
+ */
+const DISCONNECT_CLOSE_DELAY_MS = 300;
+
+/**
+ * WebSocket 状态/信息日志出口。
+ *
+ * infra R2-00123: 连接/断开/订阅等状态日志原直接 console.warn 输出，
+ * 生产环境亦可见（信息类噪音，且可能暴露目标地址等细节）。统一收敛到 wsTrace()：
+ * - 仅开发环境输出，生产环境静默；
+ * - 错误类日志（console.error）保持全环境输出，便于问题排查。
+ */
+function wsTrace(...args: unknown[]): void {
+  if (!isDev) return;
+  console.warn("[WebSocket]", ...args);
+}
 
 /** 自动递增的订阅计数器（模块级单例） */
 let subscriptionCounter = 0;
@@ -92,7 +113,13 @@ class WebSocketClient {
   private stateMachine = new ConnectionStateMachine();
 
   /** 重连管理器 */
-  private reconnectManager = new ReconnectManager();
+  private reconnectManager = new ReconnectManager({
+    // infra R2-00125: 重连次数耗尽时输出降级提示并保持 disconnected 状态，
+    // 业务方可监听 onStateChange 感知“已停止自动重连”，再手动 connect(token) 重试。
+    onExhausted: () => {
+      wsTrace("已达最大重连次数，已停止自动重连；可手动调用 connect(token) 重试");
+    },
+  });
 
   /** 心跳管理器 */
   private heartbeatManager = new HeartbeatManager();
@@ -114,6 +141,30 @@ class WebSocketClient {
 
   /** 待重播的订阅（重连后自动重新订阅） */
   private pendingSubscriptions: Map<string, string> = new Map();
+
+  /** 订阅 ID -> 回调 映射（修复：unsubscribe 时按 subId 精确移除回调，避免回调泄漏） */
+  private subIdCallbacks: Map<string, MessageCallback> = new Map();
+
+  /**
+   * 重连防重入标志。
+   * 修复（P1 BUG）：error 与 close 事件在部分平台会先后触发（error→close），
+   * 原实现两处都调用 handleReconnect，attempts 被双倍消耗（退避进度翻倍、
+   * 最大重连次数提前耗尽）。置位后重复触发直接忽略，定时器回调执行时复位。
+   */
+  private reconnectScheduled = false;
+
+  /** CONNECT 握手超时定时器（修复：握手无响应时避免状态机永久卡 connecting） */
+  private connectHandshakeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * 延迟关闭底层连接的定时器引用。
+   * infra R2-00124: 原 disconnect 内 setTimeout 未保存引用，快速重连/再次 disconnect
+   * 时旧定时器可能把新建立的连接关掉；现保存引用并在 cleanup() 中统一取消。
+   */
+  private disconnectCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** CONNECT 握手超时时间（毫秒）：TCP 建立后 10s 内未收到 CONNECTED 帧即判定失败 */
+  private static readonly CONNECT_HANDSHAKE_TIMEOUT_MS = 10000;
 
   /* ========== 公共方法 ========== */
 
@@ -156,8 +207,8 @@ class WebSocketClient {
     const wsUrl = buildWsUrl();
     const protocols = buildProtocols(token);
 
-    // 修复 no-console：连接过程日志改用 console.warn（允许的方法）
-    console.warn("[WebSocket] 正在连接:", wsUrl);
+    // infra R2-00123: 连接过程日志收敛到 wsTrace（仅 dev 输出）
+    wsTrace("正在连接:", wsUrl);
 
     this.socketTask = createSocketTask(wsUrl, protocols, {
       onOpen: () => {
@@ -185,8 +236,12 @@ class WebSocketClient {
   /**
    * 断开连接
    *
-   * 发送 STOMP DISCONNECT 帧后关闭 WebSocket 连接，
+   * 发送 STOMP DISCONNECT 帧后延迟关闭 WebSocket 连接，
    * 清理所有定时器和订阅状态。
+   *
+   * 修复（P1 BUG）：原实现发完 DISCONNECT 帧立即 closeSocket，
+   * 帧大概率未发出（TCP 直接断开），服务端无法感知正常下线。
+   * 现延迟 300ms 再关闭，给 DISCONNECT 帧留出发送窗口。
    */
   disconnect(): void {
     this.manualClose = true;
@@ -212,11 +267,22 @@ class WebSocketClient {
     }
 
     this.cleanup();
-    this.closeSocket();
 
     this.stompSessionReady = false;
     this.stateMachine.setState("disconnected");
-    console.warn("[WebSocket] 已断开连接");
+    wsTrace("已断开连接");
+
+    // 延迟关闭底层连接：给 DISCONNECT 帧留出发送窗口（300ms）
+    // infra R2-00124: 定时器引用保存到 disconnectCloseTimer，
+    // 快速重连/再次 disconnect 时先取消旧定时器，避免旧 close 关掉新连接。
+    if (this.disconnectCloseTimer !== null) {
+      clearTimeout(this.disconnectCloseTimer);
+      this.disconnectCloseTimer = null;
+    }
+    this.disconnectCloseTimer = setTimeout(() => {
+      this.disconnectCloseTimer = null;
+      this.closeSocket();
+    }, DISCONNECT_CLOSE_DELAY_MS);
   }
 
   /**
@@ -272,18 +338,19 @@ class WebSocketClient {
     this.pendingSubscriptions.set(subId, destination);
     this.subscriptions.set(subId, destination);
 
-    // 注册频道回调
+    // 注册频道回调（同时记录 subId→callback，供 unsubscribe 精确移除）
     if (!this.channelCallbacks.has(destination)) {
       this.channelCallbacks.set(destination, []);
     }
     this.channelCallbacks.get(destination)!.push(callback);
+    this.subIdCallbacks.set(subId, callback);
 
     // 如果已连接，立即发送 SUBSCRIBE 帧
     if (this.isConnected()) {
       this.sendSubscribeFrame(subId, destination);
     }
 
-    console.warn(`[WebSocket] 订阅频道: ${destination}, subId: ${subId}`);
+    wsTrace("订阅频道:", destination, "subId:", subId);
     return subId;
   }
 
@@ -305,16 +372,21 @@ class WebSocketClient {
     this.subscriptions.delete(subId);
     this.pendingSubscriptions.delete(subId);
 
-    // 移除频道回调
+    // 移除频道回调（修复：原实现仅按 destination 判断“是否还有其他订阅”，
+    // 同一 destination 多个订阅时旧回调仍残留在 channelCallbacks 中——回调泄漏。
+    // 现按 subIdCallbacks 精确移除本次订阅的回调，回调列表为空时删除该频道键）
+    const cb = this.subIdCallbacks.get(subId);
     const callbacks = this.channelCallbacks.get(destination);
-    if (callbacks) {
-      // 由于同一个 destination 可能有多个订阅，只移除对应的回调
-      // 这里简化处理：如果该 destination 没有更多订阅，清除所有回调
-      const hasOtherSubscription = Array.from(this.subscriptions.values()).includes(destination);
-      if (!hasOtherSubscription) {
+    if (callbacks && cb) {
+      const cbIndex = callbacks.indexOf(cb);
+      if (cbIndex >= 0) {
+        callbacks.splice(cbIndex, 1);
+      }
+      if (callbacks.length === 0) {
         this.channelCallbacks.delete(destination);
       }
     }
+    this.subIdCallbacks.delete(subId);
 
     // 如果已连接，发送 UNSUBSCRIBE 帧
     if (this.isConnected() && this.socketTask) {
@@ -331,7 +403,7 @@ class WebSocketClient {
       }
     }
 
-    console.warn(`[WebSocket] 取消订阅: ${destination}, subId: ${subId}`);
+    wsTrace("取消订阅:", destination, "subId:", subId);
   }
 
   /**
@@ -383,7 +455,7 @@ class WebSocketClient {
    * 后端 JwtChannelInterceptor 在 CONNECT 阶段提取并校验。
    */
   private onSocketOpen(): void {
-    console.warn("[WebSocket] TCP 连接已建立，发送 STOMP CONNECT 帧");
+    wsTrace("TCP 连接已建立，发送 STOMP CONNECT 帧");
 
     // 发送 STOMP CONNECT 帧
     // Authorization header 用于 STOMP 会话级认证（JwtChannelInterceptor 提取）
@@ -401,13 +473,28 @@ class WebSocketClient {
       this.socketTask.send({
         data: connectFrame,
         success: () => {
-          console.warn("[WebSocket] STOMP CONNECT 帧已发送");
+          wsTrace("STOMP CONNECT 帧已发送");
         },
         fail: (err) => {
           console.error("[WebSocket] STOMP CONNECT 帧发送失败:", err);
           this.handleReconnect();
         },
       });
+
+      // 修复（P1 BUG）：CONNECT 握手超时——TCP 已建立但服务端未在 10s 内
+      // 回复 CONNECTED 帧时，状态机会永久卡在 connecting（心跳未启动、
+      // 无任何超时路径）。现启动 10s 定时器，超时则清理并触发重连；
+      // 收到 CONNECTED 帧时由 onStompConnected 清除。
+      this.clearConnectHandshakeTimer();
+      this.connectHandshakeTimer = setTimeout(() => {
+        this.connectHandshakeTimer = null;
+        wsTrace(
+          `CONNECT 握手超时（${WebSocketClient.CONNECT_HANDSHAKE_TIMEOUT_MS}ms 未收到 CONNECTED 帧），触发重连`
+        );
+        this.stompSessionReady = false;
+        this.cleanup();
+        this.handleReconnect();
+      }, WebSocketClient.CONNECT_HANDSHAKE_TIMEOUT_MS);
     }
   }
 
@@ -451,7 +538,7 @@ class WebSocketClient {
    * 后续 handleReconnect 会再将其转为 reconnecting。
    */
   private onSocketClose(res: { code: number; reason: string }): void {
-    console.warn("[WebSocket] 连接已关闭:", res.code, res.reason);
+    wsTrace("连接已关闭:", res.code, res.reason);
     this.stompSessionReady = false;
     // 显式同步状态机：连接已断开
     this.stateMachine.setState("disconnected");
@@ -532,10 +619,13 @@ class WebSocketClient {
    * 6. 集成 Pinia Store
    */
   private onStompConnected(frame: StompFrame): void {
-    console.warn("[WebSocket] STOMP 会话已建立:", frame.headers);
+    wsTrace("STOMP 会话已建立:", frame.headers);
     this.stompSessionReady = true;
     this.reconnectManager.resetAttempts();
     this.stateMachine.setState("connected");
+
+    // 握手成功：清除 CONNECT 握手超时定时器
+    this.clearConnectHandshakeTimer();
 
     // 启动心跳
     this.heartbeatManager.start(
@@ -607,7 +697,7 @@ class WebSocketClient {
    */
   private onStompReceipt(frame: StompFrame): void {
     const receiptId = frame.headers["receipt-id"] || "";
-    console.warn(`[WebSocket] 收到 RECEIPT: ${receiptId}`);
+    wsTrace("收到 RECEIPT:", receiptId);
   }
 
   /**
@@ -636,6 +726,9 @@ class WebSocketClient {
       if (!this.stateMachine.isDisconnectedOrReconnecting()) {
         this.stateMachine.setState("disconnected");
       }
+      // 修复（P1 BUG）：先清理心跳/重连定时器再触发重连，
+      // 避免旧 heartbeat 继续运行（重复 ping/超时回调叠加）。
+      this.cleanup();
       this.handleReconnect();
     }
   }
@@ -664,7 +757,7 @@ class WebSocketClient {
       this.socketTask.send({
         data: subFrame,
         success: () => {
-          console.warn(`[WebSocket] SUBSCRIBE 帧已发送: ${destination}`);
+          wsTrace("SUBSCRIBE 帧已发送:", destination);
         },
         fail: (err) => {
           console.error(`[WebSocket] SUBSCRIBE 帧发送失败: ${destination}`, err);
@@ -754,26 +847,35 @@ class WebSocketClient {
   private handleReconnect(): void {
     if (this.manualClose) return;
 
+    // 修复（P1 BUG）：防重入——error 与 close 事件可能先后触发（error→close），
+    // 原实现两次调用 handleReconnect 会双倍消耗 attempts（指数退避进度翻倍、
+    // 最大重连次数提前耗尽）。置位后重复触发直接忽略，定时器回调执行时复位。
+    if (this.reconnectScheduled) return;
+
     if (!this.reconnectManager.canReconnect()) {
       this.stateMachine.setState("disconnected");
       return;
     }
 
+    this.reconnectScheduled = true;
     this.stateMachine.setState("reconnecting");
 
     const scheduled = this.reconnectManager.schedule(() => {
+      // 复位防重入标志：允许下一次断线触发新的重连流程
+      this.reconnectScheduled = false;
       // 重新获取最新 token
       const token = this.currentToken || getToken();
       if (token) {
         this.connect(token);
       } else {
-        console.warn("[WebSocket] 无有效 token，跳过重连");
+        wsTrace("无有效 token，跳过重连");
         this.stateMachine.setState("disconnected");
       }
     });
 
     if (!scheduled) {
       // schedule 返回 false 表示已达最大次数，状态置为 disconnected
+      this.reconnectScheduled = false;
       this.stateMachine.setState("disconnected");
     }
   }
@@ -806,11 +908,27 @@ class WebSocketClient {
   /* ========== 内部方法：状态和清理 ========== */
 
   /**
+   * 清除 CONNECT 握手超时定时器（握手成功/连接关闭/清理时调用）。
+   */
+  private clearConnectHandshakeTimer(): void {
+    if (this.connectHandshakeTimer) {
+      clearTimeout(this.connectHandshakeTimer);
+      this.connectHandshakeTimer = null;
+    }
+  }
+
+  /**
    * 清理定时器和内部状态（不断开 WebSocket 连接）
    */
   private cleanup(): void {
     this.heartbeatManager.stop();
     this.reconnectManager.cancel();
+    this.clearConnectHandshakeTimer();
+    // infra R2-00124: 一并取消延迟关闭定时器，避免残留回调在重连后关闭新连接
+    if (this.disconnectCloseTimer !== null) {
+      clearTimeout(this.disconnectCloseTimer);
+      this.disconnectCloseTimer = null;
+    }
   }
 
   /**

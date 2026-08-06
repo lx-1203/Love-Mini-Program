@@ -68,6 +68,12 @@ const isAnonymous = ref(false);
 const isSubmitting = ref(false);
 
 /**
+ * switch 品牌色：小程序 switch 的 color 为原生属性，不支持 CSS 变量，
+ * 此处取 design token --c-brand 的实际色值（ui-ux B9 修复）。
+ */
+const brandColor = "#3FCF8E";
+
+/**
  * 功能4：TopicSelector 已选话题列表（不含 # 前缀）。
  * 由 TopicSelector 组件通过 v-model 双向绑定。
  * 提交时附加到内容末尾作为 #话题 标签（后端 createCampusTopic 暂未支持 tags 字段，
@@ -174,7 +180,7 @@ function goBack() {
   <view class="post-page" :class="{ 'page-fade-in': pageVisible }">
     <!-- 顶部导航栏 -->
     <view class="post-header">
-      <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
+      <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="back-icon">{{ t('campus.postTopic.cancel') }}</text>
       </view>
       <text class="post-header__title">{{ t('campus.postTopic.navTitle') }}</text>
@@ -257,7 +263,7 @@ function goBack() {
           </view>
           <switch
             :checked="isAnonymous"
-            color="#3FCF8E"
+            :color="brandColor"
             @change="toggleAnonymous"
           />
         </view>
@@ -287,9 +293,11 @@ $pink-light: var(--c-romance-50);
 $white: var(--c-neutral-0);
 $bg-page: var(--c-bg-page);
 $text-primary: var(--c-text-primary);
-$text-secondary: var(--c-neutral-500);
+/* ui-ux 修复：$text-secondary 统一映射到文本次要色 token */
+$text-secondary: var(--c-text-secondary);
 $text-tertiary: var(--c-text-tertiary);
-$border-light: var(--c-neutral-200);
+/* ui-ux 修复：$border-light 统一为 border 系列 token */
+$border-light: var(--c-border-light);
 $error: var(--c-error);
 $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 

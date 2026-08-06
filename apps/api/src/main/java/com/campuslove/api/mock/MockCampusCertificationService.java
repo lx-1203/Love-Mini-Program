@@ -34,12 +34,14 @@ public class MockCampusCertificationService implements CampusCertificationServic
 
     public MockCampusCertificationService() {
         // 预置一条模拟认证记录：用户 1 正在审核中
+        // FIN-00039 修复：编造校名"模拟大学"改为真实存在的学校名；
+        // 学生证图片 example.com 假链接改为本地 mock 资源路径（避免必 404）
         CampusCertificationView seed = new CampusCertificationView(
                 idSeq.getAndIncrement(),
                 1L,
-                "模拟大学",
+                "广州大学",
                 "计算机科学与技术",
-                "https://example.com/student-card-1.jpg",
+                "/uploads/mock/student-card-1.jpg",
                 STATUS_PENDING,
                 "审核中",
                 null,
@@ -124,21 +126,11 @@ public class MockCampusCertificationService implements CampusCertificationServic
             }
         }
 
-        // 未找到对应 certId，创建模拟审核结果返回
-        CampusCertificationView result = new CampusCertificationView(
-                certId,
-                999L,
-                "模拟大学",
-                "计算机科学与技术",
-                "https://example.com/student-card-999.jpg",
-                status,
-                CampusCertificationView.toStatusLabel(status),
-                reviewerId,
-                reviewComment,
-                LocalDateTime.now().minusDays(3),
-                LocalDateTime.now()
-        );
-        return result;
+        // FIN-00059 修复：原实现未找到 certId 时伪造一条审核成功记录返回，
+        // 掩盖了「审核对象不存在」的事实（调用方无法区分成功与 404）。
+        // 现改为抛出 IllegalArgumentException（由 GlobalExceptionHandler 转为 400/404 语义），
+        // 与 real 侧「记录不存在即失败」的行为对齐。
+        throw new IllegalArgumentException("认证记录不存在: " + certId);
     }
 
     /**

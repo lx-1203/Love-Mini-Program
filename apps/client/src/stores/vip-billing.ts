@@ -61,8 +61,19 @@ export interface BillListParams {
   forceRefresh?: boolean;
 }
 
+/**
+ * infra R2-00062: 本 store 与 stores/vip.ts 的 fetchBills 存在重复的账单 mock/分页实现，
+ * 字段易漂移；合并需同时调整两处调用方，留待后续重构（本轮仅统一 mock 日期为相对时间）
+ */
 /** mock 数据（按时间倒序） */
 function buildMockBills(): BillView[] {
+  // infra R2-00063: mock 账单日期相对当前时间生成，避免硬编码日期随时间过期
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const toLocalIso = (offsetDays: number): string => {
+    const d = new Date(Date.now() - offsetDays * DAY_MS);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
   return [
     {
       id: 1001,
@@ -74,11 +85,11 @@ function buildMockBills(): BillView[] {
       type: "SUBSCRIBE",
       status: "SUCCESS",
       paymentMethod: "WECHAT",
-      transactionId: "wx_2026072514300001",
-      periodStart: "2026-07-25T00:00:00",
-      periodEnd: "2026-10-25T00:00:00",
+      transactionId: "wx_mock_1001",
+      periodStart: toLocalIso(0),
+      periodEnd: toLocalIso(-92),
       remark: "首次开通",
-      createdAt: "2026-07-25T14:30:00",
+      createdAt: toLocalIso(0),
     },
     {
       id: 1002,
@@ -90,11 +101,11 @@ function buildMockBills(): BillView[] {
       type: "RENEW",
       status: "SUCCESS",
       paymentMethod: "WECHAT",
-      transactionId: "wx_2026062012000002",
-      periodStart: "2026-06-20T00:00:00",
-      periodEnd: "2026-07-20T00:00:00",
+      transactionId: "wx_mock_1002",
+      periodStart: toLocalIso(30),
+      periodEnd: toLocalIso(-1),
       remark: "自动续费",
-      createdAt: "2026-06-20T12:00:00",
+      createdAt: toLocalIso(30),
     },
     {
       id: 1003,
@@ -106,9 +117,9 @@ function buildMockBills(): BillView[] {
       type: "REFUND",
       status: "REFUNDED",
       paymentMethod: "WECHAT",
-      transactionId: "wx_2026051518000003",
+      transactionId: "wx_mock_1003",
       remark: "用户申请退款",
-      createdAt: "2026-05-15T18:00:00",
+      createdAt: toLocalIso(60),
     },
   ];
 }

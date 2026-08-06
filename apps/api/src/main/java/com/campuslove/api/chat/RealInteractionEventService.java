@@ -6,7 +6,11 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.InteractionEventRepository;
 import com.campuslove.api.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -93,8 +97,12 @@ public class RealInteractionEventService implements InteractionEventService {
         Page<InteractionEvent> eventPage = interactionEventRepository
                 .findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(page, size));
 
-        return eventPage.getContent().stream()
-                .map(this::toInteractionEventView)
+        // infra R2-00241: 批量预加载触发用户信息，避免逐事件查库（N+1）
+        List<InteractionEvent> events = eventPage.getContent();
+        Map<Long, User> triggerUserMap = loadTriggerUserMap(
+                events.stream().map(InteractionEvent::getTriggerUserId).toList());
+        return events.stream()
+                .map(e -> toInteractionEventView(e, triggerUserMap))
                 .toList();
     }
 
@@ -149,25 +157,38 @@ public class RealInteractionEventService implements InteractionEventService {
             throw new IllegalArgumentException("userId 不能为空");
         }
 
-        List<InteractionEvent> unreadEvents = interactionEventRepository.findByUserIdAndIsRead(userId, false);
-        for (InteractionEvent event : unreadEvents) {
-            event.setIsRead(true);
-        }
-        interactionEventRepository.saveAll(unreadEvents);
+        // infra R2-00242: 批量 UPDATE 标记已读，避免全量加载未读事件再逐条 save（写放大）
+        int updated = interactionEventRepository.markAllAsReadByUserId(userId);
 
-        log.info("已标记 {} 个互动事件为已读, userId={}", unreadEvents.size(), userId);
+        log.info("已标记 {} 个互动事件为已读, userId={}", updated, userId);
     }
 
     /**
-     * 将 InteractionEvent 实体转换为 InteractionEventView。
-     * 从 UserRepository 查询触发用户的昵称和头像信息。
+     * 批量加载触发用户 Map（userId → User），避免逐事件查库（N+1）。
      *
-     * @param event 互动事件实体
+     * @param userIds 用户 ID 列表（可含 null/重复）
+     * @return 用户映射
+     */
+    private Map<Long, User> loadTriggerUserMap(List<Long> userIds) {
+        List<Long> distinct = userIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinct.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRepository.findByIdIn(distinct).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+    }
+
+    /**
+     * 将 InteractionEvent 实体转换为 InteractionEventView（批量预加载版本）。
+     *
+     * @param event          互动事件实体
+     * @param triggerUserMap 批量预加载的触发用户 Map
      * @return 互动事件视图
      */
-    private InteractionEventView toInteractionEventView(InteractionEvent event) {
-        // 查询触发用户信息
-        User triggerUser = userRepository.findById(event.getTriggerUserId()).orElse(null);
+    private InteractionEventView toInteractionEventView(InteractionEvent event,
+                                                        Map<Long, User> triggerUserMap) {
+        // 从批量 Map 获取触发用户信息
+        User triggerUser = triggerUserMap.get(event.getTriggerUserId());
         String nickname = triggerUser != null ? triggerUser.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatarUrl = triggerUser != null ? triggerUser.getAvatarUrl() : null;
 

@@ -233,6 +233,19 @@ public class WeChatPushService {
     }
 
     /**
+     * 获取社交动态推送模板 ID（FIN-00048 修复）。
+     *
+     * <p>暴露给 {@code mq.NotificationConsumer} 用于在调用微信订阅消息前
+     * 显式校验 templateId 是否已配置（未配置时跳过推送并告警），
+     * 避免静默空模板发送。</p>
+     *
+     * @return 社交动态模板 ID，未配置时为空字符串
+     */
+    public String getSocialDigestTemplateId() {
+        return weChatConfig.getSocialDigestTemplateId();
+    }
+
+    /**
      * 发送社交动态摘要推送。
      *
      * @param openId           用户 openid
@@ -243,8 +256,7 @@ public class WeChatPushService {
      */
     @Transactional
     public boolean sendSocialDigestPush(String openId, long visitorCount, long likeCount,
-                                         long interactionCount) {
-        String templateId = weChatConfig.getSocialDigestTemplateId();
+                                         long interactionCount) {        String templateId = weChatConfig.getSocialDigestTemplateId();
         if (templateId == null || templateId.isBlank()) {
             log.warn("Social digest template ID not configured, skip push");
             return false;
