@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
  * @param profileCompletion 资料完善度（0-100）
  * @param followingCount    关注数
  * @param followersCount    粉丝数
+ * @param campusName        管理员管辖校区名（null=全局管理员，仅管理员账号有值）
  * @param createdAt         注册时间
  */
 public record AdminUserSummaryView(
@@ -27,6 +28,7 @@ public record AdminUserSummaryView(
         Integer profileCompletion,
         Integer followingCount,
         Integer followersCount,
+        String campusName,
         LocalDateTime createdAt
 ) {
 }

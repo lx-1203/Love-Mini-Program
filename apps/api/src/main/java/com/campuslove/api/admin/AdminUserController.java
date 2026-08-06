@@ -1,5 +1,8 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.admin.audit.AuditOperation;
+import com.campuslove.api.admin.audit.Auditable;
+import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserCampusProfile;
@@ -8,7 +11,10 @@ import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +48,15 @@ import org.springframework.web.bind.annotation.RestController;
  *       需在 Phase 3 任务 17 启用 @EnableMethodSecurity 后生效</li>
  *   <li>mock 模式：MockSecurityConfig 全部放行，便于本地调试</li>
  * </ul>
+ * <p>索引建议（FIN-00058）：listUsers 的 nickname 筛选走
+ * {@code u.nickname LIKE CONCAT('%', :nickname, '%')}，前缀通配符导致该条件
+ * 无法命中普通 B-Tree 索引，数据量大时为全表扫描。建议：</p>
+ * <ul>
+ *   <li>短期：确认表数据量（<10 万行可接受）；或改用前缀匹配语义（nickname LIKE 'x%'）</li>
+ *   <li>长期：引入全文索引（MySQL FULLTEXT）或搜索引擎，或将昵称查询改为
+ *       「首字母/拼音前缀」查询以命中索引</li>
+ *   <li>参考迁移：Flyway 可增加 {@code ALTER TABLE users ADD FULLTEXT INDEX idx_nickname_ft(nickname)}</li>
+ * </ul>
  */
 @Profile("real")
 @RestController
@@ -51,12 +67,199 @@ public class AdminUserController {
 
     private final UserRepository userRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
+    private final PasswordEncoder passwordEncoder;
+    /** 校园管理员数据隔离（商业模式：每个高校一个管理员） */
+    private final AdminCampusScopeService campusScopeService;
 
     public AdminUserController(
             UserRepository userRepository,
-            UserCampusProfileRepository userCampusProfileRepository) {
+            UserCampusProfileRepository userCampusProfileRepository,
+            PasswordEncoder passwordEncoder,
+            AdminCampusScopeService campusScopeService) {
         this.userRepository = userRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.campusScopeService = campusScopeService;
+    }
+
+    /**
+     * 新增用户（后台「新增用户」对齐 eladmin 用户管理）。
+     *
+     * <p>手机号作为登录账号，密码 BCrypt 加密存储（与 {@code AuthService#registerUser} 语义一致），
+     * 创建后状态为 active、角色为 USER。</p>
+     *
+     * <p>校验：手机号格式（11 位 1[3-9] 开头）、密码 6-64 位、昵称 1-20 字、
+     * 手机号唯一（重复返回 400 业务异常）。</p>
+     *
+     * @param req 创建用户请求体
+     * @return 创建成功后的用户摘要
+     */
+    @PostMapping
+    @Transactional
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @Auditable(value = AuditOperation.CREATE_USER, targetType = "USER",
+            description = "管理员新增用户")
+    public ApiResponse<AdminUserSummaryView> createUser(@Valid @RequestBody AdminCreateUserRequest req) {
+        SecurityUtils.getCurrentUserId();
+
+        // 显式参数校验（与 AuthService.registerUser 语义一致），@Valid 注解作为第二道防线；
+        // 显式校验保证单元测试与统一中文错误文案
+        if (req.phone() == null || !req.phone().matches("^1[3-9]\\d{9}$")) {
+            throw new IllegalArgumentException("手机号格式不正确");
+        }
+        if (req.password() == null || req.password().length() < 6 || req.password().length() > 64) {
+            throw new IllegalArgumentException("密码长度须为 6-64 位");
+        }
+        if (req.nickname() == null || req.nickname().isBlank() || req.nickname().trim().length() > 20) {
+            throw new IllegalArgumentException("昵称长度须为 1-20 字");
+        }
+
+        // 手机号唯一性校验（与注册链路 registerUser 一致，防重复创建）
+        boolean phoneExists = userRepository.findByPhone(req.phone()).isPresent();
+        if (phoneExists) {
+            throw new IllegalArgumentException("该手机号已注册");
+        }
+
+        User user = new User();
+        // 约定：openid 字段存 "phone:{phone}"，与 AuthService.registerUser 保持一致，
+        // 保证同手机号用户可通过 openid/phone 两种途径被唯一识别
+        user.setOpenid("phone:" + req.phone());
+        user.setPhone(req.phone());
+        user.setPassword(passwordEncoder.encode(req.password()));
+        user.setNickname(req.nickname().trim());
+        user.setRole("USER");
+        user.setStatus("active");
+        user.setProfileCompletion(0);
+        user.setFollowingCount(0);
+        user.setFollowersCount(0);
+        LocalDateTime now = LocalDateTime.now();
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+        // 创建路径必须使用 save 返回值（@Version 乐观锁 + ID 由 JPA 回填）
+        User saved = userRepository.save(user);
+
+        return ApiResponse.ok(toSummaryView(saved));
+    }
+
+    /**
+     * 创建管理员（商业模式：每个高校一个管理员）。
+     *
+     * <p>仅超级管理员可调用。创建的管理员账号 role 为 ADMIN（校区管理员）或
+     * SUPER_ADMIN（全局超级管理员），管辖范围由 campusName 决定：
+     * <ul>
+     *   <li>campusName 为空 —— 全局管理员，可管理全部校区数据</li>
+     *   <li>campusName 非空 —— 校区管理员，仅能管理该校区用户/内容（数据隔离强制）</li>
+     * </ul>
+     * </p>
+     *
+     * <p>校验：手机号唯一、格式 11 位、密码 6-64 位、昵称 1-20 字；
+     * role 非 ADMIN/SUPER_ADMIN 时 400。</p>
+     *
+     * @param req 创建管理员请求体
+     * @return 创建成功后的管理员摘要
+     */
+    @PostMapping("/admins")
+    @Transactional
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @Auditable(value = AuditOperation.CREATE_USER, targetType = "ADMIN",
+            description = "超级管理员创建管理员（含校区管理员）")
+    public ApiResponse<AdminUserSummaryView> createAdmin(@Valid @RequestBody AdminCreateAdminRequest req) {
+        SecurityUtils.getCurrentUserId();
+
+        // 显式参数校验（与 createUser 语义一致），@Valid 注解作为第二道防线
+        if (req.phone() == null || !req.phone().matches("^1[3-9]\\d{9}$")) {
+            throw new IllegalArgumentException("手机号格式不正确");
+        }
+        if (req.password() == null || req.password().length() < 6 || req.password().length() > 64) {
+            throw new IllegalArgumentException("密码长度须为 6-64 位");
+        }
+        if (req.nickname() == null || req.nickname().isBlank() || req.nickname().trim().length() > 20) {
+            throw new IllegalArgumentException("昵称长度须为 1-20 字");
+        }
+
+        String role = req.normalizedRole();
+        // 手机号唯一性校验（与注册链路 registerUser 一致，防重复创建）
+        if (userRepository.findByPhone(req.phone()).isPresent()) {
+            throw new IllegalArgumentException("该手机号已注册");
+        }
+        // 校区管理员必须指定管辖校区（否则与全局管理员语义冲突）
+        String campusName = normalize(req.campusName());
+        if ("ADMIN".equals(role) && campusName == null) {
+            throw new IllegalArgumentException("校区管理员（ADMIN）必须指定 campusName");
+        }
+        if ("SUPER_ADMIN".equals(role) && campusName != null) {
+            throw new IllegalArgumentException("全局管理员（SUPER_ADMIN）不能指定 campusName");
+        }
+
+        User user = new User();
+        user.setOpenid("phone:" + req.phone());
+        user.setPhone(req.phone());
+        user.setPassword(passwordEncoder.encode(req.password()));
+        user.setNickname(req.nickname().trim());
+        user.setRole(role);
+        user.setCampusName(campusName);
+        user.setStatus("active");
+        user.setProfileCompletion(0);
+        user.setFollowingCount(0);
+        user.setFollowersCount(0);
+        LocalDateTime now = LocalDateTime.now();
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+        // 创建路径必须使用 save 返回值（@Version 乐观锁 + ID 由 JPA 回填）
+        User saved = userRepository.save(user);
+
+        return ApiResponse.ok(toSummaryView(saved));
+    }
+
+    /**
+     * 分页查询管理员列表（含管辖校区）。
+     *
+     * <p>仅超级管理员可调用；按角色/校区/昵称筛选，按注册时间倒序。</p>
+     *
+     * @param campusName 校区筛选（可选）
+     * @param nickname   昵称模糊关键字（可选）
+     * @param page       页码，1-based，默认 1
+     * @param pageSize   每页大小，默认 20，最大 100
+     * @return 分页管理员列表
+     */
+    @GetMapping("/admins")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public AdminPageView<AdminUserSummaryView> listAdmins(
+            @RequestParam(name = "campusName", required = false) String campusName,
+            @RequestParam(name = "nickname", required = false) String nickname,
+            @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
+            @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
+        SecurityUtils.getCurrentUserId();
+
+        String normalizedCampus = normalize(campusName);
+        String normalizedNickname = normalize(nickname);
+
+        int safePage = Math.max(1, page);
+        int safeSize = Math.max(1, Math.min(100, pageSize));
+        Pageable pageable = PageRequest.of(safePage - 1, safeSize);
+
+        // 管理员列表 = ADMIN（校区/全局运营） + SUPER_ADMIN（全局超级管理员），
+        // searchForAdmin 的 role 为单值过滤，分两次查询后按注册时间合并
+        Page<User> admins = userRepository.searchForAdmin(
+                "ADMIN", null, null, null, normalizedNickname,
+                normalizedCampus, pageable);
+        Page<User> superAdmins = userRepository.searchForAdmin(
+                "SUPER_ADMIN", null, null, null, normalizedNickname,
+                normalizedCampus, pageable);
+
+        List<AdminUserSummaryView> items = new java.util.ArrayList<>();
+        superAdmins.getContent().forEach(u -> items.add(toSummaryView(u)));
+        admins.getContent().forEach(u -> items.add(toSummaryView(u)));
+        items.sort((a, b) -> b.createdAt().compareTo(a.createdAt()));
+
+        long total = admins.getTotalElements() + superAdmins.getTotalElements();
+        return new AdminPageView<>(
+                items,
+                total,
+                safePage,
+                safeSize,
+                AdminPageView.calculateTotalPages(total, safeSize)
+        );
     }
 
     /**
@@ -67,6 +270,8 @@ public class AdminUserController {
      * @param nickname       昵称模糊关键字，可选
      * @param createdAtFrom  注册时间起（含），格式 yyyy-MM-dd'T'HH:mm:ss，可选
      * @param createdAtTo    注册时间止（含），格式 yyyy-MM-dd'T'HH:mm:ss，可选
+     * @param campusName     校区筛选（可选，按用户所属校区 user_campus_profile.campus_name 匹配）；
+     *                       当前管理员为校区管理员时强制按其管辖校区过滤（数据隔离），忽略本参数
      * @param page           页码，1-based，默认 1
      * @param pageSize       每页大小，默认 20，最大 100
      * @return 分页用户列表
@@ -78,6 +283,7 @@ public class AdminUserController {
             @RequestParam(name = "nickname", required = false) String nickname,
             @RequestParam(name = "createdAtFrom", required = false) LocalDateTime createdAtFrom,
             @RequestParam(name = "createdAtTo", required = false) LocalDateTime createdAtTo,
+            @RequestParam(name = "campusName", required = false) String campusName,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         // 当前管理员 ID（用于审计日志，目前仅调用以触发认证校验）
@@ -88,13 +294,22 @@ public class AdminUserController {
         String normalizedStatus = normalize(status);
         String normalizedNickname = normalize(nickname);
 
+        // 数据隔离（商业模式：每个高校一个管理员）：
+        // 当前管理员为校区管理员时强制按其管辖校区过滤，忽略调用方传入的 campusName，
+        // 防止校区管理员越权查看其他校区用户。
+        String effectiveCampus = campusScopeService.getCurrentAdminCampusName();
+        if (effectiveCampus == null) {
+            effectiveCampus = normalize(campusName);
+        }
+
         // 校验并构造分页参数（page 转为 0-based）
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(100, pageSize));
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
 
         Page<User> result = userRepository.searchForAdmin(
-                normalizedRole, normalizedStatus, createdAtFrom, createdAtTo, normalizedNickname, pageable);
+                normalizedRole, normalizedStatus, createdAtFrom, createdAtTo, normalizedNickname,
+                effectiveCampus, pageable);
 
         List<AdminUserSummaryView> items = result.getContent().stream()
                 .map(this::toSummaryView)
@@ -242,6 +457,18 @@ public class AdminUserController {
         }
         User user = userOpt.orElseThrow(() ->
                 new IllegalStateException("userOpt 已确认非空但 orElseThrow 触发，数据不一致"));
+
+        // infra R2-00268: 禁止对 ADMIN 角色用户与当前操作者自身执行禁用/启用，
+        // 防止管理后台自锁（禁用其他管理员或自己导致后台失守）
+        // infra R2-00025 review: SUPER_ADMIN 同样受保护，且仅 SUPER_ADMIN 可操作
+        // 其他管理员（普通 ADMIN 禁用/启用他人管理员仍被拒绝）
+        if ("ADMIN".equalsIgnoreCase(user.getRole()) || "SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "不能禁用/启用 ADMIN/SUPER_ADMIN 账号"));
+        }
+        if (user.getId() != null && user.getId().equals(adminId)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "不能对自己的账号执行该操作"));
+        }
+
         user.setStatus(newStatus);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
@@ -268,6 +495,7 @@ public class AdminUserController {
                 user.getProfileCompletion(),
                 user.getFollowingCount(),
                 user.getFollowersCount(),
+                user.getCampusName(),
                 user.getCreatedAt()
         );
     }
@@ -298,4 +526,27 @@ public class AdminUserController {
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
+}
+
+/**
+ * 新增用户请求体（后台「新增用户」，对齐 eladmin 用户管理）。
+ *
+ * <p>校验规则与 {@code AuthService#registerUser} 一致：</p>
+ * <ul>
+ *   <li>phone：11 位手机号，1[3-9] 开头</li>
+ *   <li>password：6-64 位</li>
+ *   <li>nickname：1-20 字</li>
+ * </ul>
+ *
+ * @param phone    手机号（唯一）
+ * @param password 初始密码（6-64 位）
+ * @param nickname 昵称（1-20 字）
+ */
+record AdminCreateUserRequest(
+        @NotBlank(message = "手机号不能为空")
+        @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确") String phone,
+        @NotBlank(message = "密码不能为空")
+        @Size(min = 6, max = 64, message = "密码长度须为 6-64 位") String password,
+        @NotBlank(message = "昵称不能为空")
+        @Size(min = 1, max = 20, message = "昵称长度须为 1-20 字") String nickname) {
 }

@@ -52,6 +52,20 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, roles: [...ADMIN_ROLES] },
       },
       {
+        // 商业模式：每个高校一个管理员（仅超级管理员可管理管理员账号）
+        path: "admins",
+        name: "Admins",
+        component: () => import("../views/Admins.vue"),
+        meta: { requiresAuth: true, roles: ["super_admin"] },
+      },
+      {
+        // P2 对齐（eladmin「在线用户」）：在线用户管理
+        path: "online-users",
+        name: "OnlineUsers",
+        component: () => import("../views/OnlineUsers.vue"),
+        meta: { requiresAuth: true, roles: [...ADMIN_ROLES] },
+      },
+      {
         path: "posts",
         name: "Posts",
         component: () => import("../views/Posts.vue"),
@@ -88,7 +102,39 @@ const routes: RouteRecordRaw[] = [
         component: () => import("../views/SensitiveWords.vue"),
         meta: { requiresAuth: true, roles: [...ADMIN_ROLES] },
       },
+      {
+        path: "match-config",
+        name: "MatchConfig",
+        component: () => import("../views/MatchConfig.vue"),
+        meta: { requiresAuth: true, roles: [...ADMIN_ROLES] },
+      },
+      {
+        path: "config",
+        name: "Config",
+        component: () => import("../views/Config.vue"),
+        meta: { requiresAuth: true, roles: [...ADMIN_ROLES] },
+      },
+      {
+        path: "certifications",
+        name: "Certifications",
+        component: () => import("../views/Certifications.vue"),
+        meta: { requiresAuth: true, roles: [...ADMIN_ROLES] },
+      },
+      {
+        path: "comments",
+        name: "Comments",
+        component: () => import("../views/Comments.vue"),
+        meta: { requiresAuth: true, roles: [...ADMIN_ROLES] },
+      },
     ],
+  },
+  // infra R2-00317：404 catch-all 兜底路由（必须放在路由表最后）。
+  // 原实现无兜底路由，访问未知路径渲染空白页；现在统一跳转 NotFound 视图。
+  {
+    path: "/:pathMatch(.*)*",
+    name: "NotFound",
+    component: () => import("../views/NotFound.vue"),
+    meta: { requiresAuth: false },
   },
 ];
 

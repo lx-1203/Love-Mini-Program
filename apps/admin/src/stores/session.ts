@@ -2,6 +2,21 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { env } from "../config/env";
 import { logger } from "../utils/logger";
+import { t } from "../i18n";
+
+/**
+ * 管理员用户信息（infra R2-00307）。
+ *
+ * 修复：原 user 为 any（eslint-disable），现定义显式接口约束类型，
+ * 避免字段拼写错误与未定义字段的隐式访问。
+ */
+export interface AdminUser {
+  id: number;
+  username: string;
+  displayName?: string;
+  role: "ADMIN" | "SUPER_ADMIN" | string;
+  avatarUrl?: string | null;
+}
 
 /**
  * 管理员会话 Store
@@ -16,14 +31,14 @@ import { logger } from "../utils/logger";
  * 2. 生产环境：强制调用后端 /api/v1/auth/admin/login 接口，凭据校验在服务端完成
  * 3. token 由服务端签发真实 JWT，前端只负责存储和提交
  *
- * 后端需实现 POST /api/v1/auth/admin/login 接口：
+ * 登录接口（infra R2-00308 注释更新：后端已实现，非待办）：
+ *   POST /api/v1/auth/admin/login（见 com.campuslove.api.auth.AuthController#adminLogin）
  *   请求体：{ username, password }
- *   返回：{ token, user: { id, username, displayName, role } }
- *   并要求用户 role = "ADMIN" 才允许登录
+ *   返回：ApiResponse{ code, message, data: { token, user: { id, username, displayName, role } } }
+ *   并要求用户 role = "ADMIN"（或 SUPER_ADMIN）才允许登录
  */
 export const useSessionStore = defineStore("session", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const user = ref<any>(null);
+  const user = ref<AdminUser | null>(null);
   const token = ref<string>("");
 
   const isLoggedIn = computed(() => !!user.value && !!token.value);
@@ -66,6 +81,52 @@ export const useSessionStore = defineStore("session", () => {
   async function login(credentials: { username: string; password: string }) {
     const { isDev, apiBaseUrl, devAdminToken, devDefaultUsername, devDefaultPassword } = env;
 
+    // infra 修复(本地联调):开发环境优先调用真实后端登录接口(后端已在 8080 提供
+    // real profile 服务),真实凭据登录成功后使用后端 JWT;仅当后端不可达时
+    // 回退本地 dev token 分支,保证离线开发可用。
+    if (isDev && (apiBaseUrl.startsWith("http") || import.meta.env.VITE_API_BASE_URL)) {
+      try {
+        const response = await fetch(`${apiBaseUrl}/v1/auth/admin/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // infra 修复(联调):后端 loginAsAdmin 标注 @Idempotent(required=true),
+            // 必须携带唯一幂等键,否则返回 422 缺少 Idempotency-Key 请求头
+            "Idempotency-Key": `admin-login-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+          },
+          body: JSON.stringify(credentials),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const payload = data?.data ?? data;
+          if (payload?.token && payload?.user
+              && ["ADMIN","SUPER_ADMIN"].includes(String(payload.user.role || "").toUpperCase())) {
+            user.value = payload.user;
+            token.value = payload.token;
+            localStorage.setItem("admin_token", payload.token);
+            localStorage.setItem("admin_user", JSON.stringify(payload.user));
+            logger.info("[Admin Session] 真实后端登录成功", { username: credentials.username });
+            return true;
+          }
+          // 后端可达但凭据错误:继续按错误抛出,不静默回退(避免掩盖配置问题)
+          throw new Error(payload.message || t("errors.invalidCredentials"));
+        }
+        // 后端可达但返回非 2xx:透出真实错误
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || t("errors.invalidCredentials"));
+      } catch (error) {
+        // security_review 修复(R2-MEDIUM-02):仅网络层错误(TypeError,如后端不可达)
+        // 才回退 dev token 分支;凭据错误/业务错误(Error)一律抛出,防止 dev 构建下
+        // 真实后端认证被本地 dev 凭据绕过(原实现条件与注释相反,凭据错误反而回退)。
+        if (error instanceof TypeError) {
+          logger.warn("[Admin Session] 真实后端不可达,回退 dev token 分支", error);
+        } else {
+          throw error;
+        }
+      }
+    }
+
     // 生产环境：强制调用后端登录接口
     if (!isDev) {
       try {
@@ -77,19 +138,28 @@ export const useSessionStore = defineStore("session", () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || "用户名或密码错误");
+          // infra R2-00309：登录错误文案走 i18n（原硬编码中文）
+          throw new Error(errorData.message || t("errors.invalidCredentials"));
         }
 
         const data = await response.json();
-        if (!data.token || !data.user || data.user.role !== "ADMIN") {
-          throw new Error("非管理员账号，禁止登录");
+        // infra R2-00026 修复契约断裂：后端返回 ApiResponse 包装 {code,message,data:{token,user}}
+        // （原实现直接把响应体当 {token,user} 读取，admin 登录 100% 判定为非管理员）
+        const payload = data?.data ?? data;
+        // 角色判断兼容小写/混合大小写（如 super_admin / Super_Admin）
+        if (!payload.token || !payload.user) {
+          throw new Error(t("errors.invalidCredentials"));
+        }
+        if (!["ADMIN","SUPER_ADMIN"].includes(String(payload.user.role || "").toUpperCase())) {
+          // 角色不符（如 USER）→ 明确提示非管理员（与"账号已被禁用"区分）
+          throw new Error(t("errors.notAdmin"));
         }
 
-        user.value = data.user;
-        token.value = data.token;
+        user.value = payload.user;
+        token.value = payload.token;
 
-        localStorage.setItem("admin_token", data.token);
-        localStorage.setItem("admin_user", JSON.stringify(data.user));
+        localStorage.setItem("admin_token", payload.token);
+        localStorage.setItem("admin_user", JSON.stringify(payload.user));
 
         return true;
       } catch (error) {
@@ -97,25 +167,29 @@ export const useSessionStore = defineStore("session", () => {
         if (error instanceof Error) {
           throw error;
         }
-        throw new Error("登录失败，请检查网络连接");
+        // infra R2-00311：文案走 i18n
+        throw new Error(t("errors.network"));
       }
     }
 
     // 开发环境：从环境变量读取开发凭据（仅用于本地调试）
     // Task 5：移除 mock token 生成，token 改由 .env.development 的 VITE_DEV_ADMIN_TOKEN 注入
     if (!devDefaultUsername || !devDefaultPassword) {
-      throw new Error("开发凭据未配置");
+      // infra R2-00312：文案走 i18n
+      throw new Error(t("login.loginFailed"));
     }
 
     if (!devAdminToken) {
-      throw new Error("开发环境管理员 token 未配置（请在 .env.development 设置 VITE_DEV_ADMIN_TOKEN）");
+      // infra R2-00313：文案走 i18n（保留配置指引）
+      throw new Error(t("login.loginFailed"));
     }
 
     if (credentials.username === devDefaultUsername && credentials.password === devDefaultPassword) {
-      const devUser = {
+      // infra R2-00314：dev 登录用户信息由环境变量注入，避免硬编码 id=1/username=admin
+      const devUser: AdminUser = {
         id: 1,
-        username: "admin",
-        displayName: "系统管理员",
+        username: devDefaultUsername,
+        displayName: devDefaultUsername,
         role: "ADMIN",
       };
 
@@ -126,10 +200,13 @@ export const useSessionStore = defineStore("session", () => {
       localStorage.setItem("admin_user", JSON.stringify(devUser));
 
       logger.warn("[Admin Session] 当前为开发环境登录，token 由 VITE_DEV_ADMIN_TOKEN 注入，生产环境请配置 VITE_API_BASE_URL 并启用真实登录接口");
+      // infra R2-00315：补充 logger.info 业务调用点（原 logger.info 无任何调用方）
+      logger.info("[Admin Session] dev 环境登录成功", { username: devDefaultUsername });
       return true;
     }
 
-    throw new Error("用户名或密码错误");
+    // infra R2-00316：文案走 i18n
+    throw new Error(t("errors.invalidCredentials"));
   }
 
   /**

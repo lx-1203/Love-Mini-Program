@@ -102,6 +102,21 @@ public class User {
     private String role = "USER";
 
     /**
+     * 管理员管辖校区名（商业模式：每个高校一个管理员）。
+     *
+     * <p>仅对 role 为 ADMIN/SUPER_ADMIN 的账号有意义：
+     * <ul>
+     *   <li>null —— 全局管理员（可管理全部校区数据）</li>
+     *   <li>非空 —— 校区管理员，仅能管理该校区用户/内容（数据隔离由管理端点强制执行）</li>
+     * </ul>
+     * 校区名与 user_campus_profile.campus_name（字符串）对齐。
+     * 普通用户（role=USER）该字段恒为 null。
+     * </p>
+     */
+    @Column(name = "campus_name", length = 128)
+    private String campusName;
+
+    /**
      * 密码哈希（支持管理员与密码登录的普通用户）。
      *
      * <p>存储 BCrypt 哈希值（格式 {@code $2a$10$...}），cost factor 为 10。
@@ -283,6 +298,14 @@ public class User {
         this.role = role;
     }
 
+    public String getCampusName() {
+        return campusName;
+    }
+
+    public void setCampusName(String campusName) {
+        this.campusName = campusName;
+    }
+
     /**
      * 获取密码哈希（管理员账号及密码登录的普通用户有值）。
      * @return BCrypt 哈希字符串，微信登录用户返回 null
@@ -299,9 +322,14 @@ public class User {
         this.password = password;
     }
 
-    /** 是否为管理员 */
+    /** 是否为管理员（含超级管理员） */
     public boolean isAdmin() {
-        return "ADMIN".equalsIgnoreCase(role);
+        return "ADMIN".equalsIgnoreCase(role) || "SUPER_ADMIN".equalsIgnoreCase(role);
+    }
+
+    /** 是否为超级管理员（infra R2-00025） */
+    public boolean isSuperAdmin() {
+        return "SUPER_ADMIN".equalsIgnoreCase(role);
     }
 
     /** 是否为禁用状态 */

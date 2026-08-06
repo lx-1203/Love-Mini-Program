@@ -28,27 +28,47 @@ interface MenuItem {
   name: string;
   labelKey: string;
   icon: string;
+  /** 可见角色白名单（小写）；缺省 = 所有管理员可见 */
+  roles?: string[];
 }
 
 /** 菜单项配置：name 对应 router 路由 name，labelKey 对应 i18n 文案 key。 */
 const menuItems: MenuItem[] = [
   { name: "Dashboard", labelKey: "layout.navDashboard", icon: "/icons/chart.svg" },
   { name: "Users", labelKey: "layout.navUsers", icon: "/icons/user.svg" },
+  // 商业模式：每个高校一个管理员 —— 管理员账号管理仅超级管理员可见
+  { name: "Admins", labelKey: "layout.navAdmins", icon: "/icons/user.svg", roles: ["super_admin"] },
+  { name: "OnlineUsers", labelKey: "layout.navOnlineUsers", icon: "/icons/user.svg" },
   { name: "Posts", labelKey: "layout.navPosts", icon: "/icons/file-text.svg" },
   { name: "Feedback", labelKey: "layout.navFeedback", icon: "/icons/list.svg" },
   { name: "AuditLogs", labelKey: "layout.navAuditLogs", icon: "/icons/clipboard.svg" },
   { name: "Reports", labelKey: "layout.navReports", icon: "/icons/prohibited.svg" },
   { name: "NotifyConfig", labelKey: "layout.navNotifyConfig", icon: "/icons/lock.svg" },
   { name: "SensitiveWords", labelKey: "layout.navSensitiveWords", icon: "/icons/prohibited.svg" },
+  { name: "MatchConfig", labelKey: "layout.navMatchConfig", icon: "/icons/bolt.svg" },
+  { name: "Config", labelKey: "layout.navConfig", icon: "/icons/lock.svg" },
+  { name: "Certifications", labelKey: "layout.navCertifications", icon: "/icons/eye.svg" },
+  { name: "Comments", labelKey: "layout.navComments", icon: "/icons/list.svg" },
 ];
 
-/** 当前管理员的显示名（缺失时回退到 i18n）。 */
-const displayName = computed(() => sessionStore.user?.displayName || t("layout.userMenuTitle"));
-/** 当前管理员角色（缺失时回退到 i18n）。 */
+/** 按当前管理员角色过滤菜单项（SUPER_ADMIN 可见全部，普通 ADMIN 隐藏管理员管理） */
+const visibleMenuItems = computed(() => {
+  const role = String(sessionStore.user?.role || "").toUpperCase();
+  return menuItems.filter((item) => !item.roles || item.roles.includes(role.toLowerCase()));
+});
+
+/** 当前管理员的显示名（infra R2-00458：回退到账号名 username，
+ *  原回退“管理员中心”误导——用户看不到自己是谁） */
+const displayName = computed(() =>
+  sessionStore.user?.displayName || sessionStore.user?.username || t("layout.userMenuTitle"),
+);
+/** 当前管理员角色（缺失时回退到 i18n；识别 SUPER_ADMIN / admin / super_admin 等大小写变体）。 */
 const displayRole = computed(() => {
-  const role = sessionStore.user?.role;
+  const role = String(sessionStore.user?.role || "").toUpperCase();
   if (!role) return t("users.roleAdmin");
-  return role === "ADMIN" ? t("users.roleAdmin") : t("users.roleUser");
+  if (role === "SUPER_ADMIN") return t("users.roleSuperAdmin");
+  if (role === "ADMIN") return t("users.roleAdmin");
+  return t("users.roleUser");
 });
 
 // Task 44：退出登录确认弹窗状态
@@ -73,15 +93,14 @@ async function handleConfirmLogout(): Promise<void> {
   loggingOut.value = true;
   try {
     await sessionStore.logout();
-    logoutVisible.value = false;
-    router.push({ name: "Login" });
   } catch (err) {
     // Task 45：异常通过 logger 记录，便于线上问题定位
     logger.error("[Layout] logout failed", err);
-    // 即便登出失败也跳转登录页，强制清理本地会话
+  } finally {
+    // infra R2-00459：成功/失败分支收敛——即便登出失败也跳转登录页，强制清理本地会话，
+    // 原成功与 catch 分支重复实现跳转逻辑
     logoutVisible.value = false;
     router.push({ name: "Login" });
-  } finally {
     loggingOut.value = false;
   }
 }
@@ -95,8 +114,10 @@ function handleCancelLogout(): void {
 /**
  * P6 a11y：Skip link 触发时，将焦点移到主内容区。
  * 让键盘用户跳过侧边栏导航直达主内容。
+ * infra R2-00460：增加环境守卫（测试/SSR 环境无 document）
  */
 function focusMainContent(): void {
+  if (typeof document === "undefined") return;
   const el = document.getElementById("main-content");
   if (el) {
     el.focus();
@@ -121,7 +142,7 @@ function focusMainContent(): void {
 
       <nav class="sidebar-menu">
         <router-link
-          v-for="item in menuItems"
+          v-for="item in visibleMenuItems"
           :key="item.name"
           :to="{ name: item.name }"
           class="menu-item"

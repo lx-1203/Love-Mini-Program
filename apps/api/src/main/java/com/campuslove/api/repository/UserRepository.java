@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,6 +23,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return 匹配的用户（可能为空）
      */
     Optional<User> findByOpenid(String openid);
+
+    /**
+     * 按手机号查询用户(注册/手机号登录用,infra R2 联调新增)。
+     *
+     * @param phone 手机号
+     * @return 匹配的用户(可能为空)
+     */
+    Optional<User> findByPhone(String phone);
+
+    /**
+     * 批量按 ID 查询用户（用于列表/详情视图批量预加载作者，避免 N+1 查询）。
+     *
+     * @param userIds 用户 ID 集合
+     * @return 匹配的用户列表
+     */
+    java.util.List<User> findByIdIn(java.util.List<Long> ids);
 
     /**
      * 统计指定时间之后注册的用户数（用于新增用户统计）。
@@ -77,6 +94,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
               AND (:createdAtFrom IS NULL OR u.createdAt >= :createdAtFrom)
               AND (:createdAtTo IS NULL OR u.createdAt <= :createdAtTo)
               AND (:nickname IS NULL OR :nickname = '' OR u.nickname LIKE CONCAT('%', :nickname, '%'))
+              AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
+                    SELECT 1 FROM UserCampusProfile p
+                    WHERE p.userId = u.id AND p.campusName = :campusName))
             ORDER BY u.createdAt DESC
             """)
     Page<User> searchForAdmin(
@@ -85,5 +105,30 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("createdAtFrom") LocalDateTime createdAtFrom,
             @Param("createdAtTo") LocalDateTime createdAtTo,
             @Param("nickname") String nickname,
+            @Param("campusName") String campusName,
             Pageable pageable);
+
+    // ---- 关注/粉丝计数原子更新（infra R2-00263，消除并发丢失更新） ----
+
+    @Modifying
+    @Query("UPDATE User u SET u.followingCount = COALESCE(u.followingCount, 0) + 1, "
+            + "u.updatedAt = :now WHERE u.id = :id")
+    int incrementFollowingCount(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("UPDATE User u SET u.followersCount = COALESCE(u.followersCount, 0) + 1, "
+            + "u.updatedAt = :now WHERE u.id = :id")
+    int incrementFollowersCount(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("UPDATE User u SET u.followingCount = CASE "
+            + "WHEN COALESCE(u.followingCount, 0) > 0 THEN u.followingCount - 1 ELSE 0 END, "
+            + "u.updatedAt = :now WHERE u.id = :id")
+    int decrementFollowingCount(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("UPDATE User u SET u.followersCount = CASE "
+            + "WHEN COALESCE(u.followersCount, 0) > 0 THEN u.followersCount - 1 ELSE 0 END, "
+            + "u.updatedAt = :now WHERE u.id = :id")
+    int decrementFollowersCount(@Param("id") Long id, @Param("now") LocalDateTime now);
 }
