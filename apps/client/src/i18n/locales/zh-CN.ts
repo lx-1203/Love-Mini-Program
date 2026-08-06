@@ -236,7 +236,7 @@ export default {
     viewFullProgress: "点击查看完整进度",
     publishPost: "发布动态",
     checkinSuccess: "签到成功！连续{n}天",
-    checkinReward: "签到成功！奖励 +{n} 社交币",
+    checkinReward: "签到成功！奖励 +{n} 交友币",
     checkinFailed: "签到失败，请稍后重试",
     consecutiveDays: "已连续签到 {n} 天",
     tomorrowContinue: "明日继续签到可获得更多权益",

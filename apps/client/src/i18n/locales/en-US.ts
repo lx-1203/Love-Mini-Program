@@ -236,7 +236,7 @@ export default {
     viewFullProgress: "Tap to view full progress",
     publishPost: "Post",
     checkinSuccess: "Check-in succeeded! {n} days in a row",
-    checkinReward: "Check-in success! +{n} social coins",
+    checkinReward: "Check-in success! +{n} coins",
     checkinFailed: "Check-in failed, please retry",
     consecutiveDays: "Checked in for {n} days in a row",
     tomorrowContinue: "Keep checking in tomorrow for more perks",

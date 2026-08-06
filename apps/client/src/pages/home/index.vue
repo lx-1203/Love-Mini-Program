@@ -15,6 +15,8 @@ import { useSessionStore } from "../../stores/session";
 import { featureFlags } from "../../config/feature-flags";
 import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
+// 学校选择器数据源（i18n-data-review #16：复用 config/schools.ts，避免与页面内联数组重复）
+import { SCHOOLS } from "../../config/schools";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
 import MatchCountChip from "../../components/common/MatchCountChip.vue";
 // Task F：全局发帖悬浮按钮组件
@@ -31,6 +33,8 @@ import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
 // SubTask 5.5.2：列表页图片 @error 占位图通用方案
 import { useImageFallback } from "../../composables/useImageFallback";
+// infra R2-00044: makeUpCheckIn 失败抛错后页面需按类型提示，导入结果视图类型
+import type { MakeUpCheckInResultView } from "../../services/generated/api-types-supplement";
 
 // 同步自定义 TabBar 选中状态（首页 = 索引 2）
 useTabBar(2);
@@ -100,8 +104,10 @@ function goToPublishTopic() {
 
 // ==================== 学校选择（任务 C：认证前置 + 一次性绑定） ====================
 // 初始学校取会话中的校园名称（campusName），未设置时回退默认值
-const currentSchool = ref(sessionStore.userSession?.campusName || "北京大学");
-const schools = ["北京大学", "清华大学", "复旦大学", "浙江大学"];
+// 修复（i18n-data-review #16）：学校列表复用 config/schools.ts（避免与配置重复），
+// 展示经 nameKey 走 t() 渲染；值仅用于选择器匹配与展示，不做存储。
+const currentSchool = ref(sessionStore.userSession?.campusName || t("config.schools.pku.name"));
+const schools = computed(() => SCHOOLS.map((s) => (s.nameKey ? t(s.nameKey) : s.name)));
 const showSchoolPicker = ref(false);
 
 /** 是否已绑定学校（绑定后选择器只读，不可再切换） */
@@ -352,7 +358,13 @@ function handleMakeUpCheckIn() {
  * @param date 补签日期（yyyy-MM-dd）
  */
 async function confirmMakeUp(date: string) {
-  const result = await checkInStore.makeUpCheckIn(date);
+  // infra R2-00044: makeUpCheckIn 失败时抛错，此处捕获后按 errorMessage 差异化提示
+  let result: MakeUpCheckInResultView | null = null;
+  try {
+    result = await checkInStore.makeUpCheckIn(date);
+  } catch (_e) {
+    // 抛错场景统一走下方错误提示逻辑（errorMessage 已由 store 设置）
+  }
   if (!result) {
     // store errorMessage 中包含具体原因（配额/积分等）
     const errMsg = checkInStore.errorMessage || t('home.makeUpFailed');
@@ -444,7 +456,7 @@ defineExpose({ noop });
             <view class="settings-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.settingsAria')" @tap="openAppPath('/pages/settings/index')">
               <image class="settings-icon" :src="emojiIcons.settings" mode="aspectFit" alt="" />
             </view>
-            <view class="notification-btn" role="button" :aria-label="t('home.notificationAria')">
+            <view class="notification-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.notificationAria')" @tap="openAppPath('/pages/messages/index?tab=notification')">
               <image class="notification-icon" :src="emojiIcons.bell" mode="aspectFit" alt="" />
               <view class="notification-dot"></view>
             </view>
@@ -533,7 +545,8 @@ defineExpose({ noop });
       <view class="section-wrap">
         <view class="function-grid-card card-base">
           <view class="function-grid">
-            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.nearbyPeople')" @tap="openAppPath('/pages/discover/index')">
+            <!-- Phase Feedback2 · 附近的人：跳转「附近的人」列表页 -->
+            <view class="function-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.nearbyPeople')" @tap="openAppPath('/pages/love-center/nearby')">
               <view class="function-icon function-icon--pink">
                 <image class="function-emoji" :src="emojiIcons.location" mode="aspectFit" alt="" />
               </view>
@@ -589,7 +602,7 @@ defineExpose({ noop });
               class="activity-card-new list-item"
               role="button"
               :aria-label="t('home.activityCardAria', { title: item.title, time: item.scheduleText })"
-              @tap="openAppPath('/subpackages/discover/activities/index')"
+              @tap="openCampusActivities"
             >
               <view class="activity-card__image-wrap">
                 <image

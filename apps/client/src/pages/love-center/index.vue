@@ -52,16 +52,16 @@ function goToQuickEntry(entry: { url: string }) {
   uni.navigateTo({ url: entry.url });
 }
 
-/** 点击板块：当前为占位提示，运营内容接入后替换为真实跳转 */
+/** 点击板块：恋爱咨询四板块统一进入恋爱咨询课程页 */
 function onBoardTap(_boardId: string) {
   lightHaptic();
-  uni.showToast({ title: t("home.consultingHint"), icon: "none" });
+  uni.navigateTo({ url: ROUTES.LOVE_CENTER.CONSULTING });
 }
 
-/** 点击测试：MBTI 测试入口（测试内容接入后替换） */
+/** 点击测试：进入 MBTI 人格测试页 */
 function onTestTap(_testId: string) {
   lightHaptic();
-  uni.showToast({ title: t("home.loveTestPlaceholder"), icon: "none" });
+  uni.navigateTo({ url: ROUTES.LOVE_CENTER.MBTI });
 }
 </script>
 
