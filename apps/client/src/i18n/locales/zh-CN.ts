@@ -55,6 +55,114 @@ export default {
     particlesPauseAria: "暂停粒子动画",
   },
 
+  /* ========== 配置数据展示文案（config/*.ts 的展示层 i18n，与 en-US.ts 同步） ========== */
+  config: {
+    /* config/app.ts */
+    app: {
+      appName: "校园恋爱",
+    },
+    /* config/home-banners.ts：Banner 标题/副标题 */
+    homeBanners: {
+      bannerDailyFate: { title: "发现心动的人", subtitle: "双向喜欢即可开启聊天" },
+      bannerNewUser: { title: "新人礼遇", subtitle: "完成任务领专属徽章" },
+      bannerWeekendParty: { title: "周末派对", subtitle: "校园桌游局报名中" },
+      bannerGraduation: { title: "毕业季告白", subtitle: "勇敢说出心里话" },
+    },
+    /* config/home-recommended-people.ts：推荐人卡片文案（name/initials 为人名不翻译） */
+    homeRecommendedPeople: {
+      person1: {
+        headline: "工业设计大三，偏好低压力的第一轮聊天。",
+        commonGround: "共同兴趣：电影夜和安静的咖啡馆路线",
+        availability: "合适时间：今晚 19:00 之后",
+      },
+      person2: {
+        headline: "更适合从音乐话题切入，再配一段短距离校园散步。",
+        commonGround: "节奏接近：更喜欢短时见面和明确时段",
+        availability: "合适时间：周五 16:00-18:00",
+      },
+      person3: {
+        headline: "喜欢直接定计划、边界清楚、气氛放松的咖啡聊天。",
+        commonGround: "共同偏好：校园人多时也接受室内兜底",
+        availability: "合适时间：周末下午",
+      },
+    },
+    /* config/profile-tags.ts：资料标签 label（value 保持英文 key 用于存储/比较） */
+    profileTags: {
+      interest: {
+        reading: "阅读", sports: "运动", music: "音乐", movie: "电影",
+        travel: "旅行", photography: "摄影", gaming: "游戏", cooking: "美食",
+        painting: "绘画", dance: "舞蹈",
+      },
+      personality: {
+        introvert: "内向", extrovert: "外向", rational: "理性", emotional: "感性",
+        optimistic: "乐观", calm: "沉稳", humorous: "幽默", gentle: "温柔",
+      },
+      lifestyle: {
+        early_bird: "早睡早起", night_owl: "熬夜党", fitness: "健身达人", foodie: "美食家",
+        pet_lover: "宠物控", tea: "喝茶", coffee: "咖啡", night_run: "夜跑",
+      },
+      relationship: {
+        long_term: "长期关系", natural: "顺其自然", marriage: "以结婚为目的",
+        growth: "共同成长", independence: "保持独立", companionship: "互相陪伴",
+      },
+    },
+    /* config/popular-topics.ts：热门话题名（name 字段保留中文用于搜索/去重匹配） */
+    popularTopics: {
+      topicCampusDaily: { name: "校园日常" },
+      topicConfession: { name: "表白墙" },
+      topicFindBuddy: { name: "找搭子" },
+      topicInterestShare: { name: "兴趣分享" },
+      topicHelp: { name: "求助" },
+      topicAlumni: { name: "校友动态" },
+      topicLifeRecord: { name: "生活记录" },
+      topicTechTalk: { name: "技术交流" },
+      topicExam: { name: "期末考试" },
+      topicGraduation: { name: "毕业季" },
+      topicSports: { name: "运动健身" },
+      topicFood: { name: "美食探店" },
+    },
+    /* config/schools.ts：学校名与城市 */
+    schools: {
+      pku: { name: "北京大学", city: "北京" },
+      thu: { name: "清华大学", city: "北京" },
+      fudan: { name: "复旦大学", city: "上海" },
+      zju: { name: "浙江大学", city: "杭州" },
+    },
+    /* config/vip-plans.ts：套餐名称/周期/日均价/徽章（价格为数字不翻译） */
+    vipPlans: {
+      monthly: { name: "月卡", period: "30 天", perDay: "0.6 元/天" },
+      quarterly: { name: "季卡", period: "90 天", perDay: "0.53 元/天", badge: "超值" },
+      yearly: { name: "年卡", period: "365 天", perDay: "0.43 元/天", badge: "最划算" },
+    },
+    /* config/status-copy.ts：会话/匹配状态文案 */
+    statusCopy: {
+      aiPlan: { enabled: "AI 计划已就绪", fallback: "当前使用人工编辑兜底方案" },
+      match: {
+        open: "可开始匹配", queued: "等待对方加入", connected: "会话已就绪", expired: "会话已过期",
+      },
+      contactExchange: {
+        idle: "未发起交换", pending: "等待双方确认", acceptedByPeer: "对方已同意",
+        acceptedBySelf: "你已同意", completed: "交换已完成", rejected: "交换已关闭",
+      },
+      /* view-models/chat.ts 中的会话状态/操作文案（同属 status-copy 语义） */
+      chatAction: { completeSetup: "先完成设置", goChat: "去聊天" },
+      chatStatus: { ended: "聊天已结束", closed: "聊天已关闭", waitingOpen: "等待你开场" },
+    },
+    /* config/home-sections.ts：首页区块标题 */
+    homeSections: {
+      recommended: { title: "推荐的人" },
+      activity: { title: "校园活动" },
+      village: { title: "村口动态" },
+      dailyQuestion: { title: "每日一问" },
+      checkin: { title: "每日签到" },
+    },
+    /* config/match-form.ts：匹配偏好表单字段 label */
+    matchForm: {
+      preference: { label: "匹配偏好" },
+      timeRange: { label: "可聊时间" },
+    },
+  },
+
   /* ========== TabBar 文案 ========== */
   tabs: {
     discover: "匹配",
@@ -73,7 +181,7 @@ export default {
     checkinDesc: "签到后解锁更多推荐机会",
     campusActivity: "校园活动",
     dailyRecommend: "每日推荐",
-    todayMatchPercent: "今日缘分值98%",
+    todayMatchPercent: "今日缘分值{value}%",
     weekendActivity: "周末活动",
     campusBoardGame: "校园桌游局报名中",
     campusCircleActivity: "校园圈活动",
@@ -95,7 +203,7 @@ export default {
     truthOrDare: "真心话",
     loveTest: "恋爱测试",
     dailyRecommend_short: "每日推荐",
-    todayFateValue: "今日缘分值98%",
+    todayFateValue: "今日缘分值{value}%",
     todayFateDesc: "3位与你高度契合的同学",
     newUserExclusive: "新人专属",
     newUserGift: "新人礼遇",
@@ -279,6 +387,8 @@ export default {
       subtitle: "发现身边的同校朋友",
       distanceUnit: "{n}km",
       distanceSameCampus: "同校",
+      /* review #48：示例用户卡片点击提示（真实数据接入后改为跳转用户主页） */
+      tapHint: "示例数据，正式版将接入真实用户",
     },
     mbti: {
       title: "MBTI 人格测试",
@@ -440,11 +550,14 @@ export default {
     momentCommentEmpty: "评论不能为空",
     momentCommentSent: "评论已发送",
     momentPrivateMsg: "私信",
-    privateMsgPaidHint: "私信需单独付费",
-    whisperPaidHint: "悄悄话需单独付费",
+    privateMsgPaidHint: "解锁私信需花费 {coins} 交友币（会员免费）",
+    whisperPaidHint: "解锁悄悄话需花费 {coins} 交友币（会员免费）",
     unlockMessage: "解锁私信",
     unlockAndChat: "解锁并私信",
     unlockSuccess: "解锁成功",
+    unlockFailTitle: "解锁失败",
+    whisperUnlockByVip: "VIP 会员可免费发送悄悄话",
+    whisperUnlocked: "悄悄话已解锁",
     unlockWhisper: "解锁悄悄话",
     dynamicPreview: "最新动态",
     viewAllMoments: "查看全部动态",
@@ -595,10 +708,26 @@ export default {
     remainingTimeLabel: "剩余时间：{time}",
     tempSessionSubtitle: "双方身份匿名，24小时后自动结束",
     sessionClosedCannotSend: "会话已结束，无法发送消息",
+    /* infra R2-00087: mock 会话占位文案（startFromRecommendation/startFromMatch 回退） */
+    mockSession: {
+      newMatchName: "新匹配",
+      newMatchHeadline: "校园恋爱推荐",
+      matchName: "匹配对象",
+      matchHeadline: "校园恋爱匹配",
+      availabilityTonight: "今晚",
+    },
     sendFailed: "发送失败，请稍后重试",
+    /* infra R2-00081: 消息加载失败通用文案（错误消息友好化映射用） */
+    loadFailed: "消息加载失败，请稍后重试",
+    /* infra R2-00086: H5 降级语音占位 body（无真实录音文件时的明确占位标识） */
+    voicePlaceholder: "语音消息",
     exchangeAccepted: "已同意交换联系方式",
     operationFailed: "操作失败",
     sessionEnded: "会话已结束",
+    /* review #50：结束会话确认弹窗 */
+    endSessionConfirmTitle: "结束会话",
+    endSessionConfirmContent: "结束会话后将无法继续聊天，确定要结束吗？",
+    endSessionConfirmOk: "结束",
     copyNotSupported: "当前消息类型不支持复制",
     copyFailed: "复制失败，请重试",
     recalledSuccess: "消息已撤回",
@@ -671,6 +800,8 @@ export default {
   /* ========== 个人主页文案 ========== */
   profile: {
     title: "我的",
+    // Showcase 展示版入口
+    showcaseEntry: "全功能展示",
     myPosts: "我的动态",
     myLikes: "我的喜欢",
     myMatches: "我的匹配",
@@ -968,6 +1099,8 @@ export default {
       contentTooLong: "内容不能超过{n}字",
       privacyRequiredImage: "需同意隐私协议后才能选择图片",
       publishFailed: "发布失败",
+      /* infra R2-00073: 选择图片失败提示 */
+      selectImageFailed: "选择图片失败，请重试",
       categorySincere: "诚意帖",
       categoryHometown: "同乡",
       categoryMask: "蒙面",
@@ -1015,8 +1148,16 @@ export default {
     wechatLogin: "微信一键登录",
     wechatIconText: "微",
     phoneLogin: "手机号登录",
+    guestLogin: "一键体验全部功能",
+    guestLoginDesc: "临时体验号 · 免注册，马上玩",
+    guestLoginFailed: "体验登录失败，请稍后重试",
     phonePlaceholder: "请输入手机号",
     codePlaceholder: "请输入验证码",
+    passwordPlaceholder: "请输入密码（6-64 位）",
+    nicknamePlaceholder: "请输入昵称（1-20 字）",
+    registerButton: "注 册",
+    goRegister: "没有账号？去注册",
+    backToLogin: "已有账号？去登录",
     getCode: "获取验证码",
     loginButton: "登 录",
     backToWechat: "返回微信登录",
@@ -1059,6 +1200,7 @@ export default {
     processing: "处理中...",
     paymentCancelled: "已取消支付",
     paymentFailed: "支付失败，请重试",
+    paymentNotReady: "支付功能建设中，敬请期待",
     subscribeSuccess: "开通成功",
     subscribeSuccessContent: "已成功开通 VIP {name}\n有效期：{period}\n\n（mock 模式演示，未实际支付）",
     subscribe: "立即开通",
@@ -1131,6 +1273,8 @@ export default {
     redPacketClaimSuccess: "已领取 ¥{amount}",
     redPacketClaimFailed: "领取失败",
     redPacketClaimDone: "已存入钱包",
+    /* infra R2-00061: 非法红包链接提示 */
+    redPacketInvalidLink: "红包链接无效",
 
     /* ----- VIP 优惠码 ----- */
     promoCodeNavTitle: "优惠码",
@@ -1153,6 +1297,8 @@ export default {
     promoCodeTypeAmount: "满减",
     promoCodeTypePercent: "折扣",
     promoCodeEmpty: "请输入优惠码",
+    /* infra R2-00060: 优惠码输入格式即时校验提示（轻校验，最终以服务端为准） */
+    promoCodeFormatInvalid: "优惠码格式不正确（4-24 位字母/数字/-）",
     promoCodeAmountInvalid: "订单金额无效",
     promoCodeValid: "可用，优惠 ¥{discount}",
     promoCodeInvalid: "优惠码不可用",
@@ -1403,6 +1549,12 @@ export default {
     unlockFieldPhotos: "照片",
     unlockFieldVoice: "语音状态",
     heartSignalInitialInfo: "地区 · 年龄 · 学校",
+    /* infra R2-00065: 会话预览空态/倒计时兜底独立文案（不再复用 emptyTitle 语义） */
+    countdownFallback: "--:--:--",
+    noPreview: "暂无消息预览",
+    /* infra R2-00028: 会话预览模板与建立好友文案 */
+    becameFriends: "你们已成为好友，开始聊天吧",
+    partnerHeadlineTemplate: "{school} · {age}岁 · {city}",
   },
 
   /* ========== 锁定页文案 ========== */
@@ -1796,6 +1948,8 @@ export default {
     repeatWeekdays: "工作日",
     repeatWeekends: "周末",
     repeatCustom: "自定义",
+    /* review #58：自定义模式未选择星期的校验文案 */
+    customWeekdaysRequired: "请至少选择一个星期",
     saveSuccess: "设置已保存",
     saveFailed: "保存失败，请重试",
     invalidTimeRange: "结束时间必须大于开始时间",
@@ -2214,6 +2368,15 @@ export default {
     topicsLoadMoreEnd: "— 没有更多了 —",
   },
 
+  /* ========== 签到页文案（infra R2-00043: 签到权益展示文本 i18n 化） ========== */
+  checkin: {
+    consecutiveDaysText: "已连续签到 {n} 天",
+    extraRecommendationsText: "今日剩余次数+{n}",
+    extraQuotaText: "今日额外推荐配额 +{n}",
+    hotTopicsText: "今日热门话题 ({n})",
+    newUsersText: "新入圈用户 ({n})",
+  },
+
   /* ========== 每日一问页文案（Task 28） ========== */
   dailyQuestion: {
     navTitle: "每日一问",
@@ -2230,6 +2393,8 @@ export default {
     anonymousAuthor: "匿名校友",
     loadingText: "加载中...",
     retryText: "重试",
+    /* review #32：今日问题加载失败文案 */
+    loadFailed: "问题加载失败，请稍后重试",
     /* Task 28: daily-question/index.vue 抽取补充键 */
     lockTitle: "签到后解锁",
     lockDesc: "完成今日签到即可参与每日一问",
@@ -2356,6 +2521,7 @@ export default {
     /* 签到 store */
     checkin: {
       timeout: "签到请求超时，请稍后重试",
+      timeoutFetchStatus: "获取签到状态超时",
       loadStatusFailed: "获取签到状态失败",
       checkinFailed: "签到失败，请稍后重试",
       makeupFailed: "补签失败，请稍后重试",
@@ -2438,6 +2604,15 @@ export default {
       cannotLikeSelf: "不能喜欢自己哦",
       alreadyLiked: "你已经喜欢过该用户了",
       noSelectedUsers: "请至少选择一个用户",
+      /* infra R2-00033: 错误回退消息 i18n 化 */
+      loadLikesFailed: "加载喜欢列表失败",
+      loadVisitorsFailed: "加载访客记录失败",
+      likeUserFailed: "喜欢用户失败",
+      cancelLikeFailed: "取消喜欢失败",
+      loadHeartSignalsFailed: "加载心动信号失败",
+      acceptHeartSignalFailed: "接受心动信号失败",
+      rejectHeartSignalFailed: "拒绝心动信号失败",
+      partialBatchFailed: "部分操作失败（{done}/{total}）",
     },
     /* 消息 store */
     messages: {
@@ -2464,6 +2639,25 @@ export default {
       deleteSessionFailed: "删除会话失败",
       rejectSignalFailed: "拒绝心动信号失败",
       loadInteractionsFailed: "加载互动事件失败",
+      /* infra R2-00028: 超时提示 i18n 化（与 messages.ts 中 withTimeout 调用点对应） */
+      timeoutBootstrap: "消息数据初始化超时，请检查网络后重试",
+      timeoutSessions: "加载会话列表超时",
+      timeoutMessages: "加载消息超时",
+      timeoutCreateSession: "创建会话超时，请重试",
+      timeoutSendMessage: "发送消息超时，请重试",
+      timeoutSignals: "加载心动信号超时",
+      timeoutAcceptSignal: "接受心动信号超时，请重试",
+      timeoutNotifications: "加载通知超时",
+      timeoutMarkRead: "标记通知已读超时",
+      timeoutMarkAllRead: "标记全部已读超时",
+      timeoutUnreadCount: "获取未读通知数量超时",
+      timeoutPinSession: "置顶操作超时",
+      timeoutDeleteSession: "删除会话超时",
+      timeoutDeclineSignal: "拒绝心动信号超时",
+      timeoutInteractions: "加载互动事件超时",
+      timeoutUnreadInteractionCount: "获取未读互动事件数超时",
+      timeoutMarkInteractionRead: "标记互动事件已读超时",
+      timeoutMarkAllInteractionsRead: "标记全部互动事件已读超时",
     },
     /* 寻觅 store */
     discover: {
@@ -2487,6 +2681,16 @@ export default {
       commentNotFound: "评论不存在",
       postNotFound: "帖子不存在",
       alreadyForwarded: "您已转发过该帖子",
+      /* infra R2-00038: 错误回退消息 i18n 化 */
+      loadPostsFailed: "加载帖子失败",
+      publishPostFailed: "发布帖子失败",
+      likePostFailed: "点赞操作失败",
+      commentFailed: "评论失败",
+      likeCommentFailed: "点赞评论失败",
+      sharePostFailed: "转发操作失败",
+      loadCommentsFailed: "加载评论失败",
+      loadCampusFeedFailed: "加载同校动态失败",
+      loadSimilarAuthorsFailed: "加载相似作者失败",
     },
     /* 活动 store */
     activity: {
@@ -2963,7 +3167,7 @@ export default {
       partnerHeadline: "大二，喜欢低压力的第一次见面。",
       recommendedPrompt: "可以先问问，对方心里最轻松的一次校园初见应该是什么样。",
       quickMatchTopic: "快速匹配",
-      emptyPeopleError: "No recommended people configured",
+      emptyPeopleError: "未配置推荐用户，请检查配置或稍后再试",
     },
 
     /* 反馈提交 */

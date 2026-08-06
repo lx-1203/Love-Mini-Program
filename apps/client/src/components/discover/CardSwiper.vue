@@ -422,6 +422,26 @@ const nextCardStyle = computed(() => {
 /** 简介展开状态 */
 const isBioExpanded = ref(false);
 
+/** Phase Feedback1 · 期待画像折叠区展开状态 */
+const isExpectedOpen = ref(false);
+
+/** Phase Feedback1 · 期待画像（人物画像折叠区） */
+const expectedPartnerPreview = computed(() => {
+  const card = currentCard.value;
+  if (!card?.expectedPartner) return "";
+  return card.expectedPartner.length > 22
+    ? `${card.expectedPartner.slice(0, 22)}…`
+    : card.expectedPartner;
+});
+
+/** Phase Feedback1 · 悄悄话入口展示文案（有内容展示摘要，无内容展示引导） */
+const whisperPreview = computed(() => {
+  const card = currentCard.value;
+  if (!card) return "";
+  if (card.whisper) return card.whisper;
+  return "";
+});
+
 /* ========== 卡片缩放效果（长按时缩小） ========== */
 const cardScale = computed(() => {
   if (isLongPressing.value) return CARD_SCALE_LONG_PRESS;
@@ -799,6 +819,11 @@ function toggleBio() {
   isBioExpanded.value = !isBioExpanded.value;
 }
 
+/** 切换期待画像折叠区 */
+function toggleExpected() {
+  isExpectedOpen.value = !isExpectedOpen.value;
+}
+
 /**
  * swiper 切换图片（Phase D2 新增）。
  * 由 uni-app swiper 的 @change 事件触发，更新当前页索引以驱动分页指示器。
@@ -1066,6 +1091,48 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
               v-for="(tag, idx) in currentCard.tags.slice(0, 4)" :key="idx"
               class="tag-pill"
             >{{ tag }}</text>
+          </view>
+
+          <!-- Phase Feedback1 · 悄悄话入口 -->
+          <view
+            v-if="whisperPreview || currentCard.whisper"
+            class="card__whisper press-feedback"
+            hover-class="card__whisper--pressed"
+            hover-stay-time="120"
+            @tap.stop="handleTap"
+            role="button"
+            :aria-label="t('discover.whisperLabel')"
+          >
+            <text class="card__whisper-icon">{{ currentCard.whisperSent ? '✓' : '💬' }}</text>
+            <text class="card__whisper-text" :class="{ 'card__whisper-text--sent': currentCard.whisperSent }">
+              {{ currentCard.whisperSent ? t('discover.whisperSent') : (whisperPreview || t('discover.whisperEmpty')) }}
+            </text>
+            <text class="card__whisper-action">{{ t('discover.whisperSend') }}</text>
+          </view>
+
+          <!-- Phase Feedback1 · 期待的人物画像折叠区 -->
+          <view
+            v-if="currentCard.expectedPartner"
+            class="card__expected press-feedback"
+            hover-class="card__expected--pressed"
+            hover-stay-time="120"
+            @tap.stop="toggleExpected"
+            role="button"
+            :aria-expanded="isExpectedOpen"
+            :aria-label="t('discover.expectedPartner')"
+          >
+            <view class="card__expected-head">
+              <text class="card__expected-title">{{ t('discover.expectedPartner') }}</text>
+              <text class="card__expected-toggle">{{ isExpectedOpen ? t('home.collapse') : t('home.expand') }}</text>
+            </view>
+            <text
+              v-if="isExpectedOpen"
+              class="card__expected-text"
+            >{{ currentCard.expectedPartner }}</text>
+            <text
+              v-else
+              class="card__expected-text card__expected-text--clamp"
+            >{{ expectedPartnerPreview }}</text>
           </view>
 
           <!-- 底部：个人简介 -->
@@ -1817,6 +1884,98 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
 /* 个人简介 */
 .card__bio {
   margin-top: 8rpx;
+}
+
+/* Phase Feedback1 · 悄悄话入口 */
+.card__whisper {
+  margin-top: 10rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 12rpx 18rpx;
+  border-radius: var(--r-lg, 16rpx);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.22) 0%, rgba(244, 114, 182, 0.28) 100%);
+  border: 1rpx solid rgba(244, 114, 182, 0.4);
+  transition: transform var(--d-normal, 200ms) ease, opacity var(--d-normal, 200ms) ease;
+}
+
+.card__whisper--pressed {
+  transform: scale(0.98);
+  opacity: 0.88;
+}
+
+.card__whisper-icon {
+  font-size: var(--fs-base, 24rpx);
+  flex-shrink: 0;
+}
+
+.card__whisper-text {
+  flex: 1;
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-overlay-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__whisper-text--sent {
+  color: var(--c-romance-300, #f9a8d4);
+}
+
+.card__whisper-action {
+  flex-shrink: 0;
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 700;
+  color: var(--c-romance-400, #f472b6);
+}
+
+/* Phase Feedback1 · 期待的人物画像折叠区 */
+.card__expected {
+  margin-top: 10rpx;
+  padding: 14rpx 18rpx;
+  border-radius: var(--r-lg, 16rpx);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1rpx solid var(--c-overlay-border-mid, rgba(255, 255, 255, 0.18));
+  transition: transform var(--d-normal, 200ms) ease, opacity var(--d-normal, 200ms) ease;
+}
+
+.card__expected--pressed {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.card__expected-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.card__expected-title {
+  font-size: var(--fs-sm, 22rpx);
+  font-weight: 700;
+  color: var(--c-overlay-text-primary);
+}
+
+.card__expected-toggle {
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-brand-300, #86efac);
+  font-weight: 600;
+}
+
+.card__expected-text {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-overlay-text-secondary);
+  line-height: 1.6;
+}
+
+.card__expected-text--clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Phase 4.1 验收 · 卡片最新动态预览 */

@@ -18,6 +18,8 @@
 import { ref, computed, watch, nextTick, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DiscoverCard } from "../../stores/discover";
+import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
+import { useVipStore } from "../../stores/vip";
 import VerificationBadge from "../common/VerificationBadge.vue";
 import SafeImage from "../common/SafeImage.vue";
 import { lightHaptic, mediumHaptic, successHaptic } from "../../utils/haptic";
@@ -40,6 +42,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+/** 交友币 Store（解锁私信扣费） */
+const coinsStore = useCoinsStore();
+/** VIP Store（会员解锁私信放行） */
+const vipStore = useVipStore();
 
 /** 入场动画状态 */
 const animating = ref(false);
@@ -162,6 +169,8 @@ const personalityTags = computed(() => {
 /** 兴趣圈（优先从卡片 tags 派生，否则使用模拟数据） */
 const interestCircles = computed(() => {
   const tags = props.card?.tags ?? [];
+  // infra R2-00100: 以下 4 个预设圈子为模拟数据（卡片无 tags 时的兜底展示），
+  // real 推荐内容应由后端下发，接入后替换 preset 数组
   const preset = [
     { name: "读书会", icon: IMAGE_PATHS.ICONS_EMOJI.BOOK, members: 128, gradient: "linear-gradient(135deg, var(--c-lavender-100) 0%, var(--c-lavender-50) 100%)" },
     { name: "摄影社", icon: IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON, members: 89, gradient: "linear-gradient(135deg, var(--c-sky-100) 0%, var(--c-sky-50) 100%)" },
@@ -348,38 +357,98 @@ function submitComment(postId: string): void {
   uni.showToast({ title: t("discover.momentCommentSent"), icon: "none" });
 }
 
-/** 点击动态私信（Phase 4.1 验收：走付费校验，未解锁时弹确认，确认后进入会话） */
-function onMomentPrivateMsg(): void {
-  if (!props.card) return;
-  if (privateMsgUnlocked.value) {
-    handleMessage();
+/** 私信是否已解锁（本次会话内解锁后免重复扣费） */
+const privateMsgUnlocked = ref(false);
+
+/**
+ * 解锁私信并进入会话（会员放行 / 交友币扣费）。
+ *
+ * 优先级：
+ * 1. 后端已允许（card.allowMessage=true）→ 直接进入
+ * 2. VIP 会员 → 放行
+ * 3. 其余 → 交友币扣费（UNLOCK_COST_YUAN.MESSAGE），成功后进入；余额不足提示充值
+ */
+function handleMessage(): void {
+  const card = props.card;
+  if (!card) return;
+
+  // 后端允许或会员（含展示版 VIP 全亮）→ 直接进入会话
+  if (card.allowMessage || vipStore.isVip) {
+    emitMessage();
     return;
   }
+  // 本次会话已解锁 → 直接进入
+  if (privateMsgUnlocked.value) {
+    emitMessage();
+    return;
+  }
+
   uni.showModal({
     title: t("discover.unlockMessage"),
-    content: t("discover.privateMsgPaidHint"),
+    content: t("discover.privateMsgPaidHint", { coins: UNLOCK_COST_YUAN.MESSAGE }),
     confirmText: t("discover.unlockAndChat"),
     cancelText: t("common.cancel"),
-    success: (res) => {
-      if (res.confirm) {
+    success: async (res) => {
+      if (!res.confirm) return;
+      const target = props.card;
+      if (!target) return;
+      try {
+        await coinsStore.spend("MESSAGE", target.userId);
         privateMsgUnlocked.value = true;
+        successHaptic();
         uni.showToast({ title: t("discover.unlockSuccess"), icon: "success" });
-        setTimeout(() => handleMessage(), 600);
+        setTimeout(() => emitMessage(), 500);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        uni.showModal({
+          title: t("discover.unlockFailTitle"),
+          content: message,
+          confirmText: t("common.gotIt"),
+          showCancel: false,
+        });
       }
     },
   });
 }
 
-/** 私信是否已解锁（组件内状态，真实环境由后端校验） */
-const privateMsgUnlocked = ref(false);
+/** 点击动态私信（与主发消息同一解锁流程） */
+function onMomentPrivateMsg(): void {
+  if (!props.card) return;
+  handleMessage();
+}
 
-/** 点击悄悄话（提示付费解锁或已发送） */
+/** 点击悄悄话（会员/交友币解锁发送） */
 function onWhisperTap(): void {
   if (whisperAlreadySent.value) {
     uni.showToast({ title: t("discover.whisperSent"), icon: "none" });
     return;
   }
-  uni.showToast({ title: t("discover.whisperPaidHint"), icon: "none" });
+  if (vipStore.isVip) {
+    uni.showToast({ title: t("discover.whisperUnlockByVip"), icon: "none" });
+    return;
+  }
+  // 交友币解锁：弹确认后扣费（演示流；完整悄悄话编辑页由后续版本补齐）
+  uni.showModal({
+    title: t("discover.whisperLabel"),
+    content: t("discover.whisperPaidHint", { coins: UNLOCK_COST_YUAN.WHISPER }),
+    confirmText: t("common.confirm"),
+    cancelText: t("common.cancel"),
+    success: async (res) => {
+      if (!res.confirm || !props.card) return;
+      try {
+        await coinsStore.spend("WHISPER", props.card.userId);
+        uni.showToast({ title: t("discover.whisperUnlocked"), icon: "success" });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        uni.showModal({
+          title: t("discover.unlockFailTitle"),
+          content: message,
+          confirmText: t("common.gotIt"),
+          showCancel: false,
+        });
+      }
+    },
+  });
 }
 
 watch(
@@ -446,8 +515,9 @@ function handlePass() {
 /**
  * 发消息：向父组件发射 message 事件并携带 userId。
  * 父组件（CardSwiper）负责关闭弹层并导航到 /pages/chat-session/index?userId={userId}。
+ * 由 handleMessage（解锁校验）在放行后调用。
  */
-function handleMessage() {
+function emitMessage() {
   if (!props.card) return;
   safeAction(() => {
     lightHaptic();

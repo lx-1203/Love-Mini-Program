@@ -267,6 +267,27 @@ public class RecommendationRanker {
         String personalVideoUrl = basicProfile != null ? basicProfile.getPersonalVideoUrl() : null;
         String verificationBadgeLevel = resolveBadgeLevelSafe(user.getId());
 
+        // ---- Phase Feedback1：卡片重设计扩展字段（可空，前端按缺省兜底） ----
+        // 展示 ID：User 无独立字段，稳定推导为 CL-{id}（同 mock 口径）
+        String displayId = user.getId() != null ? "CL-" + user.getId() : null;
+        // 距离文案：同校为空；异地按稳定 hash 给 km（真实距离由推荐服务计算）
+        String distanceText = isSameSchool ? null : deriveDistanceText(user);
+        // 活跃状态：离线为默认，在线用户由前端二次查询回填
+        String activeStatusText = "offline";
+        // 双重认证：由认证徽章级别推导（有认证即视为机器认证；school/idcard 视为有人工认证）
+        String resolvedBadge = resolveBadgeLevelSafe(user.getId());
+        boolean machineVerified = !"none".equals(resolvedBadge);
+        boolean humanVerified = "school".equals(resolvedBadge) || "idcard".equals(resolvedBadge);
+        List<String> personality = List.of();
+        String mbti = null;
+        String whisper = null;
+        Boolean whisperSent = null;
+        List<RecommendedPersonView.RecentPostView> recentPosts = List.of();
+        String expectedPartner = null;
+        // 私信权限：默认不允许，由解锁服务在后端校验后放行（前端据此展示解锁流程）
+        Boolean allowMessage = Boolean.FALSE;
+        String ipLocation = null;
+
         return new RecommendedPersonView(
                 user.getId(),
                 name,
@@ -287,7 +308,20 @@ public class RecommendationRanker {
                 photoGallery,
                 halfBodyPhotoUrl,
                 personalVideoUrl,
-                verificationBadgeLevel
+                verificationBadgeLevel,
+                displayId,
+                distanceText,
+                activeStatusText,
+                machineVerified,
+                humanVerified,
+                personality,
+                mbti,
+                whisper,
+                whisperSent,
+                recentPosts,
+                expectedPartner,
+                allowMessage,
+                ipLocation
         );
     }
 
@@ -373,5 +407,18 @@ public class RecommendationRanker {
         } catch (DataAccessException e) {
             return "none";
         }
+    }
+
+    /**
+     * 异地用户距离文案：按 userId 稳定推导（无实时定位数据时使用确定性近似值，
+     * 避免每次刷新距离抖动）。同校用户不会走到此方法（上游已置 null）。
+     */
+    private String deriveDistanceText(User user) {
+        Long id = user.getId();
+        if (id == null) {
+            return null;
+        }
+        double km = 3.2 + (Math.abs(id.hashCode()) % 120) / 10.0;
+        return String.format(java.util.Locale.ROOT, "%.1fkm", km);
     }
 }

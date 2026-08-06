@@ -55,6 +55,114 @@ export default {
     particlesPauseAria: "Pause particle animation",
   },
 
+  /* ========== Config data display copy (config/*.ts UI strings; keep in sync with zh-CN.ts) ========== */
+  config: {
+    /* config/app.ts */
+    app: {
+      appName: "Campus Love",
+    },
+    /* config/home-banners.ts: banner titles / subtitles */
+    homeBanners: {
+      bannerDailyFate: { title: "Discover someone special", subtitle: "Mutual likes unlock chatting" },
+      bannerNewUser: { title: "Newcomer Welcome", subtitle: "Complete tasks to earn exclusive badges" },
+      bannerWeekendParty: { title: "Weekend Party", subtitle: "Campus board game night — sign up now" },
+      bannerGraduation: { title: "Graduation Confession", subtitle: "Speak up from the heart" },
+    },
+    /* config/home-recommended-people.ts: recommended-person card copy (name/initials are proper nouns) */
+    homeRecommendedPeople: {
+      person1: {
+        headline: "Industrial design junior who prefers a low-pressure first chat.",
+        commonGround: "Common ground: movie nights and quiet café routes",
+        availability: "Good time: after 7 PM tonight",
+      },
+      person2: {
+        headline: "Better to start with music topics, then a short campus walk.",
+        commonGround: "Pace match: prefers short meetups and clear time slots",
+        availability: "Good time: Friday 4-6 PM",
+      },
+      person3: {
+        headline: "Likes direct plans, clear boundaries, and relaxed coffee chats.",
+        commonGround: "Shared preference: indoor fallback even when campus is crowded",
+        availability: "Good time: weekend afternoons",
+      },
+    },
+    /* config/profile-tags.ts: profile tag labels (value stays an English key for storage/comparison) */
+    profileTags: {
+      interest: {
+        reading: "Reading", sports: "Sports", music: "Music", movie: "Movies",
+        travel: "Travel", photography: "Photography", gaming: "Gaming", cooking: "Food",
+        painting: "Painting", dance: "Dance",
+      },
+      personality: {
+        introvert: "Introverted", extrovert: "Outgoing", rational: "Rational", emotional: "Emotional",
+        optimistic: "Optimistic", calm: "Calm", humorous: "Humorous", gentle: "Gentle",
+      },
+      lifestyle: {
+        early_bird: "Early riser", night_owl: "Night owl", fitness: "Fitness buff", foodie: "Foodie",
+        pet_lover: "Pet lover", tea: "Tea lover", coffee: "Coffee lover", night_run: "Night runner",
+      },
+      relationship: {
+        long_term: "Long-term relationship", natural: "Go with the flow", marriage: "Marriage-minded",
+        growth: "Grow together", independence: "Stay independent", companionship: "Mutual companionship",
+      },
+    },
+    /* config/popular-topics.ts: hot topic names (name field keeps Chinese for search/dedup matching) */
+    popularTopics: {
+      topicCampusDaily: { name: "Campus Daily" },
+      topicConfession: { name: "Confession Wall" },
+      topicFindBuddy: { name: "Find a Buddy" },
+      topicInterestShare: { name: "Interest Sharing" },
+      topicHelp: { name: "Help" },
+      topicAlumni: { name: "Alumni News" },
+      topicLifeRecord: { name: "Life Journal" },
+      topicTechTalk: { name: "Tech Talk" },
+      topicExam: { name: "Final Exams" },
+      topicGraduation: { name: "Graduation Season" },
+      topicSports: { name: "Sports & Fitness" },
+      topicFood: { name: "Food Hunting" },
+    },
+    /* config/schools.ts: school names and cities */
+    schools: {
+      pku: { name: "Peking University", city: "Beijing" },
+      thu: { name: "Tsinghua University", city: "Beijing" },
+      fudan: { name: "Fudan University", city: "Shanghai" },
+      zju: { name: "Zhejiang University", city: "Hangzhou" },
+    },
+    /* config/vip-plans.ts: plan name / period / per-day price / badge (prices are numbers, not translated) */
+    vipPlans: {
+      monthly: { name: "Monthly", period: "30 days", perDay: "$0.6/day" },
+      quarterly: { name: "Quarterly", period: "90 days", perDay: "$0.53/day", badge: "Best Value" },
+      yearly: { name: "Yearly", period: "365 days", perDay: "$0.43/day", badge: "Most Cost-effective" },
+    },
+    /* config/status-copy.ts: session / match status copy */
+    statusCopy: {
+      aiPlan: { enabled: "AI plan ready", fallback: "Currently using manual editorial fallback" },
+      match: {
+        open: "Ready to match", queued: "Waiting for the other party", connected: "Session ready", expired: "Session expired",
+      },
+      contactExchange: {
+        idle: "Not initiated", pending: "Waiting for both to confirm", acceptedByPeer: "The other party accepted",
+        acceptedBySelf: "You accepted", completed: "Exchange completed", rejected: "Exchange closed",
+      },
+      /* Session status / action copy used by view-models/chat.ts (same status-copy semantics) */
+      chatAction: { completeSetup: "Complete setup first", goChat: "Go to chat" },
+      chatStatus: { ended: "Chat ended", closed: "Chat closed", waitingOpen: "Waiting for you to start" },
+    },
+    /* config/home-sections.ts: home section titles */
+    homeSections: {
+      recommended: { title: "Recommended People" },
+      activity: { title: "Campus Activities" },
+      village: { title: "Village Feed" },
+      dailyQuestion: { title: "Daily Question" },
+      checkin: { title: "Daily Check-in" },
+    },
+    /* config/match-form.ts: match preference form field labels */
+    matchForm: {
+      preference: { label: "Match preference" },
+      timeRange: { label: "Available time" },
+    },
+  },
+
   /* ========== TabBar ========== */
   tabs: {
     discover: "Match",
@@ -73,7 +181,7 @@ export default {
     checkinDesc: "Check in to unlock more recommendations",
     campusActivity: "Campus Activities",
     dailyRecommend: "Daily Recommendation",
-    todayMatchPercent: "Today's match score 98%",
+    todayMatchPercent: "Today's match score {value}%",
     weekendActivity: "Weekend Activity",
     campusBoardGame: "Board game sign-up open",
     campusCircleActivity: "Campus Circle Activities",
@@ -95,7 +203,7 @@ export default {
     truthOrDare: "Truth or Dare",
     loveTest: "Love Test",
     dailyRecommend_short: "Daily Pick",
-    todayFateValue: "Today's fate score 98%",
+    todayFateValue: "Today's fate score {value}%",
     todayFateDesc: "3 classmates highly matched with you",
     newUserExclusive: "Newcomer exclusive",
     newUserGift: "Newcomer gift",
@@ -279,6 +387,8 @@ export default {
       subtitle: "Find campus friends around you",
       distanceUnit: "{n}km",
       distanceSameCampus: "Same campus",
+      /* review #48: sample user card tap hint (switch to profile navigation once real data is wired) */
+      tapHint: "Sample data — real users will be available in the full release",
     },
     mbti: {
       title: "MBTI Personality Test",
@@ -326,7 +436,7 @@ export default {
     matchSuccessTitle: "Match Success",
     matchWithPartner: "Mutual like with {name}",
     /* Default partner name when partner.name is missing */
-    partnerDefaultName: "TA",
+    partnerDefaultName: "them",
     matchPriority: "Match score first",
     todayCheckin: "Today's Check-in",
     todayQuestion: "Today's topic: What's your ideal first date?",
@@ -440,11 +550,14 @@ export default {
     momentCommentEmpty: "Comment cannot be empty",
     momentCommentSent: "Comment sent",
     momentPrivateMsg: "Message",
-    privateMsgPaidHint: "Messaging requires a separate payment",
-    whisperPaidHint: "Whisper requires a separate payment",
+    privateMsgPaidHint: "Unlock messaging for {coins} coins (free for VIP)",
+    whisperPaidHint: "Unlock whisper for {coins} coins (free for VIP)",
     unlockMessage: "Unlock messaging",
     unlockAndChat: "Unlock & message",
     unlockSuccess: "Unlocked",
+    unlockFailTitle: "Unlock failed",
+    whisperUnlockByVip: "VIP members can send whispers for free",
+    whisperUnlocked: "Whisper unlocked",
     unlockWhisper: "Unlock whisper",
     dynamicPreview: "Latest moments",
     viewAllMoments: "View all moments",
@@ -595,10 +708,26 @@ export default {
     remainingTimeLabel: "Time left: {time}",
     tempSessionSubtitle: "Both identities are anonymous. Auto-ends after 24 hours.",
     sessionClosedCannotSend: "Session ended. Cannot send messages.",
+    /* infra R2-00087: mock session placeholder copy (startFromRecommendation/startFromMatch fallbacks) */
+    mockSession: {
+      newMatchName: "New match",
+      newMatchHeadline: "Campus love recommendation",
+      matchName: "Match partner",
+      matchHeadline: "Campus love match",
+      availabilityTonight: "Tonight",
+    },
     sendFailed: "Failed to send, please retry later",
+    /* infra R2-00081: generic message load failure copy (friendly error mapping) */
+    loadFailed: "Failed to load messages, please retry later",
+    /* infra R2-00086: H5 fallback voice placeholder body */
+    voicePlaceholder: "Voice message",
     exchangeAccepted: "Contact exchange accepted",
     operationFailed: "Operation failed",
     sessionEnded: "Session ended",
+    /* review #50: confirm dialog before ending a session */
+    endSessionConfirmTitle: "End Session",
+    endSessionConfirmContent: "You won't be able to chat after ending this session. End it now?",
+    endSessionConfirmOk: "End",
     copyNotSupported: "This message type cannot be copied",
     copyFailed: "Copy failed, please retry",
     recalledSuccess: "Message recalled",
@@ -671,6 +800,8 @@ export default {
   /* ========== Profile ========== */
   profile: {
     title: "Me",
+    // Showcase entry
+    showcaseEntry: "Showcase",
     myPosts: "My Posts",
     myLikes: "My Likes",
     myMatches: "My Matches",
@@ -968,6 +1099,8 @@ export default {
       contentTooLong: "Content cannot exceed {n} characters",
       privacyRequiredImage: "Please agree to the privacy policy before selecting images",
       publishFailed: "Post failed",
+      /* infra R2-00073: image pick failure toast */
+      selectImageFailed: "Failed to pick image, please retry",
       categorySincere: "Sincere",
       categoryHometown: "Hometown",
       categoryMask: "Masked",
@@ -1015,8 +1148,16 @@ export default {
     wechatLogin: "Sign in with WeChat",
     wechatIconText: "WeChat",
     phoneLogin: "Sign in with Phone",
+    guestLogin: "Try all features instantly",
+    guestLoginDesc: "Temporary guest · No sign-up needed",
+    guestLoginFailed: "Guest sign-in failed, please retry",
     phonePlaceholder: "Enter your phone number",
     codePlaceholder: "Enter verification code",
+    passwordPlaceholder: "Enter password (6-64 chars)",
+    nicknamePlaceholder: "Enter nickname (1-20 chars)",
+    registerButton: "Register",
+    goRegister: "No account? Register",
+    backToLogin: "Have account? Login",
     getCode: "Get Code",
     loginButton: "Log In",
     backToWechat: "Back to WeChat login",
@@ -1059,6 +1200,7 @@ export default {
     processing: "Processing...",
     paymentCancelled: "Payment cancelled",
     paymentFailed: "Payment failed, please retry",
+    paymentNotReady: "Payment is under construction, coming soon",
     subscribeSuccess: "Subscription successful",
     subscribeSuccessContent: "Successfully subscribed to VIP {name}\nPeriod: {period}\n\n(Mock mode demo, no actual payment)",
     subscribe: "Subscribe Now",
@@ -1131,6 +1273,8 @@ export default {
     redPacketClaimSuccess: "Claimed ¥{amount}",
     redPacketClaimFailed: "Failed to claim",
     redPacketClaimDone: "Added to wallet",
+    /* infra R2-00061: invalid red packet link toast */
+    redPacketInvalidLink: "Invalid red packet link",
 
     /* ----- VIP Promo Code ----- */
     promoCodeNavTitle: "Promo Code",
@@ -1153,6 +1297,8 @@ export default {
     promoCodeTypeAmount: "Amount Off",
     promoCodeTypePercent: "Percent Off",
     promoCodeEmpty: "Please enter promo code",
+    /* infra R2-00060: promo code format validation hint */
+    promoCodeFormatInvalid: "Invalid promo code format (4-24 letters/digits/dashes)",
     promoCodeAmountInvalid: "Invalid order amount",
     promoCodeValid: "Available, save ¥{discount}",
     promoCodeInvalid: "Promo code unavailable",
@@ -1403,6 +1549,12 @@ export default {
     unlockFieldPhotos: "Photos",
     unlockFieldVoice: "Voice status",
     heartSignalInitialInfo: "Region · Age · School",
+    /* infra R2-00065: session preview empty / countdown fallback copy */
+    countdownFallback: "--:--:--",
+    noPreview: "No messages yet",
+    /* infra R2-00028: session preview template & became-friends copy */
+    becameFriends: "You are now friends, start chatting!",
+    partnerHeadlineTemplate: "{school} · {age} yrs · {city}",
   },
 
   /* ========== Do Not Disturb (Feature 6) ========== */
@@ -1419,6 +1571,8 @@ export default {
     repeatWeekdays: "Weekdays",
     repeatWeekends: "Weekends",
     repeatCustom: "Custom",
+    /* review #58: custom mode validation message when no weekday selected */
+    customWeekdaysRequired: "Please select at least one weekday",
     saveSuccess: "Settings saved",
     saveFailed: "Save failed, please retry",
     invalidTimeRange: "End time must be later than start time",
@@ -1461,22 +1615,22 @@ export default {
     detailReplyContent: "Reply content",
     submitSuccess: "Submitted successfully",
     submitFailed: "Submit failed, please retry later",
-    /* Task 28: 反馈类型标签 */
+    /* Task 28: Feedback type tags */
     typeFeedback: "Feedback",
     typeSuggestion: "Suggestion",
     typeActivityProposal: "Activity proposal",
-    /* Task 28: AppShell / SectionCard 文案 */
+    /* Task 28: AppShell / SectionCard copy */
     pageTitle: "Feedback Center",
     pageSubtitle: "Feedback, suggestions, and activity proposals in one entry.",
     newSubmission: "New submission",
     categoryAria: "Feedback type",
-    /* Task 28: 表单 label / placeholder / aria-label */
+    /* Task 28: Form label / placeholder / aria-label */
     labelTitle: "Title",
     placeholderTitle: "Title",
     labelContent: "Feedback content",
     labelContactWechat: "WeChat ID (optional)",
     placeholderContactWechat: "WeChat ID (optional)",
-    /* Task 28: 隐私授权拒绝提示 */
+    /* Task 28: Privacy authorization denial hint */
     privacyImageDenied: "Please accept the privacy agreement before selecting images",
   },
 
@@ -2214,6 +2368,15 @@ export default {
     topicsLoadMoreEnd: "— No more topics —",
   },
 
+  /* ========== Check-in page copy (infra R2-00043) ========== */
+  checkin: {
+    consecutiveDaysText: "Checked in {n} days in a row",
+    extraRecommendationsText: "Today's remaining +{n}",
+    extraQuotaText: "Today's extra recommendation quota +{n}",
+    hotTopicsText: "Today's hot topics ({n})",
+    newUsersText: "New users ({n})",
+  },
+
   /* ========== Daily question (Task 28) ========== */
   dailyQuestion: {
     navTitle: "Daily Question",
@@ -2230,6 +2393,8 @@ export default {
     anonymousAuthor: "Anonymous Alumnus",
     loadingText: "Loading...",
     retryText: "Retry",
+    /* review #32: failed to load today's question */
+    loadFailed: "Failed to load question, please retry",
     lockTitle: "Unlock after check-in",
     lockDesc: "Complete today's check-in to join the daily question",
     loadingAria: "Loading",
@@ -2260,7 +2425,7 @@ export default {
     privacyMode: "Privacy Mode",
     privacyModeEnabled: "Privacy mode enabled",
     privacyModeDisabled: "Privacy mode disabled",
-    /* 收尾轮：深色模式三态 */
+    /* Final round: dark mode tri-state */
     themeMode: "Dark Mode",
     themeAuto: "Follow System",
     themeDark: "Dark",
@@ -2355,6 +2520,7 @@ export default {
     /* Check-in store */
     checkin: {
       timeout: "Check-in request timed out, please retry later",
+      timeoutFetchStatus: "Timed out fetching check-in status",
       loadStatusFailed: "Failed to load check-in status",
       checkinFailed: "Check-in failed, please retry later",
       makeupFailed: "Makeup check-in failed, please retry later",
@@ -2437,6 +2603,15 @@ export default {
       cannotLikeSelf: "You cannot like yourself",
       alreadyLiked: "You have already liked this user",
       noSelectedUsers: "Please select at least one user",
+      /* infra R2-00033: error fallback messages i18n */
+      loadLikesFailed: "Failed to load likes list",
+      loadVisitorsFailed: "Failed to load visitors",
+      likeUserFailed: "Failed to like user",
+      cancelLikeFailed: "Failed to cancel like",
+      loadHeartSignalsFailed: "Failed to load heart signals",
+      acceptHeartSignalFailed: "Failed to accept heart signal",
+      rejectHeartSignalFailed: "Failed to reject heart signal",
+      partialBatchFailed: "Some operations failed ({done}/{total})",
     },
     /* Messages store */
     messages: {
@@ -2463,6 +2638,25 @@ export default {
       deleteSessionFailed: "Failed to delete session",
       rejectSignalFailed: "Failed to reject heart signal",
       loadInteractionsFailed: "Failed to load interaction events",
+      /* infra R2-00028: timeout messages i18n (paired with messages.ts withTimeout call sites) */
+      timeoutBootstrap: "Message data initialization timed out, please check your network",
+      timeoutSessions: "Timed out loading session list",
+      timeoutMessages: "Timed out loading messages",
+      timeoutCreateSession: "Timed out creating session, please retry",
+      timeoutSendMessage: "Timed out sending message, please retry",
+      timeoutSignals: "Timed out loading heart signals",
+      timeoutAcceptSignal: "Timed out accepting heart signal, please retry",
+      timeoutNotifications: "Timed out loading notifications",
+      timeoutMarkRead: "Timed out marking notification as read",
+      timeoutMarkAllRead: "Timed out marking all as read",
+      timeoutUnreadCount: "Timed out fetching unread count",
+      timeoutPinSession: "Timed out pinning session",
+      timeoutDeleteSession: "Timed out deleting session",
+      timeoutDeclineSignal: "Timed out declining heart signal",
+      timeoutInteractions: "Timed out loading interaction events",
+      timeoutUnreadInteractionCount: "Timed out fetching unread interaction count",
+      timeoutMarkInteractionRead: "Timed out marking interaction as read",
+      timeoutMarkAllInteractionsRead: "Timed out marking all interactions as read",
     },
     /* Discover store */
     discover: {
@@ -2486,6 +2680,16 @@ export default {
       commentNotFound: "Comment not found",
       postNotFound: "Post not found",
       alreadyForwarded: "You have already forwarded this post",
+      /* infra R2-00038: error fallback messages i18n */
+      loadPostsFailed: "Failed to load posts",
+      publishPostFailed: "Failed to publish post",
+      likePostFailed: "Failed to like post",
+      commentFailed: "Failed to comment",
+      likeCommentFailed: "Failed to like comment",
+      sharePostFailed: "Failed to share post",
+      loadCommentsFailed: "Failed to load comments",
+      loadCampusFeedFailed: "Failed to load campus feed",
+      loadSimilarAuthorsFailed: "Failed to load similar authors",
     },
     /* Activity store */
     activity: {
