@@ -5,13 +5,16 @@
  * Phase 3 新增：社交信号/内容信号分类筛选
  */
 import { computed, ref, onUnmounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { useMessagesStore, type SystemNotification } from "../../stores/messages";
 import { useLikesStore } from "../../stores/likes";
 import { useProfileStore } from "../../stores/profile";
 import { useSocialProgressStore } from "../../stores/social-progress";
+// Phase Feedback3 P2.4：访客/喜欢你真实解锁（交友币扣费 / 会员放行）
+import { useCoinsStore, UNLOCK_COST_YUAN, type UnlockScene } from "../../stores/coins";
+import { useVipStore } from "../../stores/vip";
 import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
 import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
@@ -157,6 +160,8 @@ const hasPendingHeartSignal = computed(() => messagesStore.pendingHeartSignals.l
 
 /** 匹配引导弹窗状态 */
 const showMatchGuide = ref(false);
+/** Phase Feedback3 P2.4：当前会话是否为「缘分速配」信号会话（用于 chat-session 渐进解锁） */
+const signalSessionId = ref<string | null>(null);
 const matchGuideData = ref({
   partnerName: "",
   partnerAvatar: "",
@@ -222,6 +227,16 @@ const errorText = computed(() => messagesStore.errorMessage || t("messages.loadF
 function handleRetry() {
   void messagesStore.fetchSessions();
 }
+
+/**
+ * 支持 ?tab=notification 深链（首页通知铃铛入口）：进入页面直接切到通知 Tab。
+ * 修复（review #45）：通知铃铛此前无跳转目标，属死按钮。
+ */
+onLoad((query) => {
+  if (query && query.tab === "notification") {
+    activeTab.value = "notifications";
+  }
+});
 
 /** 页面加载时获取数据 */
 onShow(() => {
@@ -300,24 +315,27 @@ async function handleHeartSignalChat(signalId: string) {
         activities: [],
         sessionId: session.id,
       };
+      signalSessionId.value = session.id;
       showMatchGuide.value = true;
     }
   } catch (error) {
-    // 优先使用 store 中已格式化的 errorMessage，其次按错误分类选择文案
-    const storeMessage = messagesStore.errorMessage;
-    if (storeMessage) {
-      uni.showToast({ title: storeMessage, icon: "none" });
-    } else {
-      showErrorToast(error, t("messages.operationFailed"));
-    }
+    // infra R2-00064: 不直接展示 store.errorMessage（可能含后端原始错误串），
+    // 统一走 showErrorToast 按错误分类映射友好文案
+    showErrorToast(error, t("messages.operationFailed"));
     console.error("接受心动信号失败:", error);
   }
+}
+
+/** 组装信号会话聊天页 URL（缘分速配会话附加 fromSignal=1 触发渐进解锁） */
+function buildSignalChatUrl(sessionId: string, extraQuery?: string): string {
+  const fromSignal = signalSessionId.value === sessionId ? "&fromSignal=1" : "";
+  return `/pages/chat-session/index?sessionId=${encodeURIComponent(sessionId)}${fromSignal}${extraQuery ?? ""}`;
 }
 
 /** 匹配引导：开始聊天 */
 function handleMatchGuideStartChat() {
   if (matchGuideData.value.sessionId) {
-    openSession(matchGuideData.value.sessionId);
+    openAppPath(buildSignalChatUrl(matchGuideData.value.sessionId));
   }
   showMatchGuide.value = false;
 }
@@ -326,7 +344,7 @@ function handleMatchGuideStartChat() {
 function handleMatchGuideIcebreaker(topic: string) {
   if (matchGuideData.value.sessionId) {
     // 跳转到聊天页并预填破冰话题
-    openAppPath(`/pages/chat-session/index?sessionId=${matchGuideData.value.sessionId}&icebreaker=${encodeURIComponent(topic)}`);
+    openAppPath(buildSignalChatUrl(matchGuideData.value.sessionId, `&icebreaker=${encodeURIComponent(topic)}`));
   }
   showMatchGuide.value = false;
 }
@@ -432,7 +450,13 @@ async function handleNotificationClick(notification: SystemNotification) {
   }
 
   if (type === "interaction_match" || type === "match") {
-    openAppPath("/pages/messages/index");
+    // 修复（review #29）：原实现跳 /pages/messages/index 自身（死跳转）。
+    // 优先使用通知自带的 actionUrl（如 chat-session 会话页）；缺省时留在消息页。
+    if (notification.actionUrl) {
+      openAppPath(notification.actionUrl);
+    } else {
+      openAppPath("/pages/messages/index");
+    }
     return;
   }
 
@@ -470,18 +494,56 @@ function handleEntryClick(type: string) {
   }
 }
 
-/** Phase Feedback3：解锁提示（会员未上线 → 交友币/道具） */
-function handleUnlockTap(kind: "likedMe" | "visitors") {
+/**
+ * Phase Feedback3 P2.4：访客/喜欢你真实解锁。
+ *
+ * 解锁流程：
+ * 1. 会员 → 直接放行进入喜欢页
+ * 2. 非会员 → 确认扣费弹窗（交友币），确认后调用 coinsStore.spend（幂等扣费）
+ * 3. 扣费成功 → 跳转喜欢页；余额不足/失败 → 提示错误
+ *
+ * @param kind 解锁场景：likedMe（喜欢你）/ visitors（访客）
+ */
+async function handleUnlockTap(kind: "likedMe" | "visitors") {
+  const vipStore = useVipStore();
+  const coinsStore = useCoinsStore();
+
+  // 会员免费放行
+  if (vipStore.isVip) {
+    openAppPath("/pages/likes/index");
+    return;
+  }
+
+  const scene: UnlockScene = kind === "likedMe" ? "LIKES" : "VISITORS";
+  const cost = UNLOCK_COST_YUAN[scene];
   const title =
     kind === "likedMe"
       ? t("messages.unlockLikedMe")
       : t("messages.unlockVisitors");
-  uni.showModal({
-    title,
-    content: t("messages.unlockByCoin"),
-    showCancel: false,
-    confirmText: t("common.ok"),
+
+  const confirmed = await new Promise<boolean>((resolve) => {
+    uni.showModal({
+      title,
+      content: t("messages.unlockConfirmCost", { coins: cost }),
+      confirmText: t("messages.unlockAndView"),
+      cancelText: t("common.cancel"),
+      success: (res) => resolve(!!res.confirm),
+      fail: () => resolve(false),
+    });
   });
+  if (!confirmed) return;
+
+  try {
+    await coinsStore.spend(scene, "me");
+    uni.showToast({ title: t("messages.unlockSuccess"), icon: "success" });
+    openAppPath("/pages/likes/index");
+  } catch (error) {
+    // 余额不足或扣费失败：展示错误（不跳转）
+    uni.showToast({
+      title: error instanceof Error ? error.message : t("messages.unlockFailTitle"),
+      icon: "none",
+    });
+  }
 }
 
 /** Phase Feedback3：官方号会话列表（助手 + 活动推送） */
@@ -500,13 +562,9 @@ const officialAccounts = [
   },
 ] as const;
 
-/** 点击官方号：当前为占位提示（后续接入官方号会话页） */
+/** 点击官方号：进入官方号会话页（消息计数 + 活动卡片） */
 function handleOfficialTap(accountId: string) {
-  const account = officialAccounts.find((a) => a.id === accountId);
-  uni.showToast({
-    title: account ? t(account.nameKey) : "",
-    icon: "none",
-  });
+  openAppPath(`/pages/official-chat/index?accountId=${encodeURIComponent(accountId)}`);
 }
 
 /** 收尾轮：全局 FAB publish 事件 → 发帖编辑页 */
@@ -728,7 +786,7 @@ async function handleMarkAllNotificationsRead() {
             </view>
           </view>
           <view class="heart-signal-card__right">
-            <text class="heart-signal-card__countdown">{{ countdownMap[signal.id] || "--:--:--" }}</text>
+            <text class="heart-signal-card__countdown">{{ countdownMap[signal.id] || t('messages.countdownFallback') }}</text>
             <button
               class="heart-signal-card__btn"
               :disabled="signal.status === 'expired' || countdownMap[signal.id] === t('messages.expired')"
@@ -836,7 +894,7 @@ async function handleMarkAllNotificationsRead() {
               <text class="session-row__time">{{ formatTime(session.lastMessageSentAt) }}</text>
             </view>
             <view class="session-row__bottom">
-              <text class="session-row__preview">{{ session.lastMessagePreview || t('messages.emptyTitle') }}</text>
+              <text class="session-row__preview">{{ session.lastMessagePreview || t('messages.noPreview') }}</text>
               <text v-if="session.pinned" class="session-row__pin">{{ t('messages.pinned') }}</text>
             </view>
           </view>
@@ -866,7 +924,7 @@ async function handleMarkAllNotificationsRead() {
               <text class="session-row__time">{{ formatTime(session.lastMessageSentAt) }}</text>
             </view>
             <view class="session-row__bottom">
-              <text class="session-row__preview">{{ session.lastMessagePreview || t('messages.emptyTitle') }}</text>
+              <text class="session-row__preview">{{ session.lastMessagePreview || t('messages.noPreview') }}</text>
               <text class="session-row__temp-tag">{{ t('messages.temp') }}</text>
             </view>
           </view>

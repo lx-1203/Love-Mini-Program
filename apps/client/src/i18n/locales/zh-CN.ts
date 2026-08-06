@@ -1568,6 +1568,27 @@ export default {
     /* infra R2-00028: 会话预览模板与建立好友文案 */
     becameFriends: "你们已成为好友，开始聊天吧",
     partnerHeadlineTemplate: "{school} · {age}岁 · {city}",
+    /* ========== Phase Feedback3 P2.4：访客/喜欢你解锁 + 官方号会话 + 缘分速配渐进解锁 ========== */
+    unlockConfirmCost: "解锁查看需花费 {coins} 交友币（开通会员免费）",
+    unlockAndView: "解锁并查看",
+    unlockFreeByVip: "会员免费解锁",
+    signalUnlockTitle: "缘分速配 · 渐进解锁",
+    signalUnlockProgress: "已互动 {n} 条消息",
+    signalUnlockNext: "再互发 {n} 条解锁「{field}」",
+    signalUnlockUnlocked: "已解锁「{field}」",
+    signalUnlockAllDone: "已解锁全部信息，快去查看 TA 的主页吧",
+    signalUnlockViewProfile: "查看 TA 的主页",
+    officialChatTitle: "官方号会话",
+    officialChatEmpty: "暂无官方消息",
+    officialActivityTitle: "近期活动",
+    officialActivityCta: "查看详情",
+    officialAssistantMsg1: "你好，我是恋爱助手 🤖 有任何恋爱困惑都可以问我～",
+    officialAssistantMsg2: "解锁访客 / 喜欢你：进入消息页点击对应入口，可使用交友币解锁。",
+    officialAssistantMsg3: "缘分速配玩法：随机匹配后，互发 5 条解锁更多信息，聊满 20 条解锁 TA 的主页。",
+    officialAssistantMsg4: "开通会员后，访客 / 喜欢你 / 私信全部免费解锁，快去看看吧～",
+    officialPromoterMsg1: "每日签到可领交友币，连续签到奖励翻倍！",
+    officialPromoterMsg2: "本周五晚校园操场「星空告白夜」活动报名开启，快来参加～",
+    officialPromoterMsg3: "七夕特别企划：在星空下认识心动的人，游戏与表白墙等你来解锁。",
   },
 
   /* ========== 锁定页文案 ========== */

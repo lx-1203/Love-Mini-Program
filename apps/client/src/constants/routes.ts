@@ -68,6 +68,8 @@ export const ROUTES = {
   MESSAGES: {
     /** 消息列表页 */
     INDEX: "/pages/messages/index",
+    /** 官方号会话页（Phase Feedback3 P2.4） */
+    OFFICIAL_CHAT: "/pages/official-chat/index",
   },
 
   /** 聊天模块 */

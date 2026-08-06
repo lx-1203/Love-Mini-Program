@@ -155,6 +155,12 @@
       }
     },
     {
+      "path": "pages/official-chat/index",
+      "style": {
+        "navigationBarTitleText": "官方号会话"
+      }
+    },
+    {
       "path": "pages/shop/index",
       "style": {
         "navigationBarTitleText": "逛逛"

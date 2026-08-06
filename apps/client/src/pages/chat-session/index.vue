@@ -71,6 +71,19 @@ const chatStore = useChatStore();
 const redPacketStore = useVipRedPacketStore();
 const { t } = useI18n();
 
+/**
+ * infra R2-00081: 消息错误文案友好化——store.errorMessage 可能含后端原始错误串，
+ * 技术性/HTTP 类错误串统一映射为通用文案，避免向用户暴露技术细节
+ */
+const friendlyPageError = computed(() => {
+  const raw = messagesStore.errorMessage;
+  if (!raw) return "";
+  if (/timeout|network|abort|status|HTTP|\d{3}/i.test(raw)) {
+    return t("chat.loadFailed");
+  }
+  return raw;
+});
+
 /** 会话页更多菜单图标（emoji 替换为 SVG） */
 const chatMenuIcons = {
   redPacket: IMAGE_PATHS.ICONS_EMOJI.GIFT,
@@ -94,6 +107,8 @@ const pageErrorMessage = ref<string | null>(null);
 const tempCountdown = ref("");
 /** 控制页面内容淡入动画 */
 const pageVisible = ref(false);
+/** Phase Feedback3 P2.4：是否缘分速配信号会话（?fromSignal=1，触发渐进解锁面板） */
+const fromSignal = ref(false);
 
 /** 引用上下文（来自兴趣圈回复的破冰场景） */
 const quoteContext = ref<QuoteContext | null>(null);
@@ -131,6 +146,60 @@ const userMessageCount = computed(() =>
 const shouldShowIcebreakers = computed(() => {
   return shouldShowIcebreakersVm(userMessageCount.value, pageErrorMessage.value);
 });
+
+/* ========== Phase Feedback3 P2.4：缘分速配渐进解锁 ==========
+ *
+ * 规则（与消息页 Banner 文案一致）：
+ * - 初始仅展示地区、年龄、学校
+ * - 每互动 5 条解锁一部分信息
+ * - 聊满 20 条解锁 TA 的主页
+ * 解锁进度基于当前会话的消息总数（userMessageCount 已排除 system 消息）。
+ */
+
+/** 渐进解锁档位（threshold 为解锁所需消息条数） */
+const SIGNAL_UNLOCK_LEVELS: Array<{ threshold: number; labelKey: string }> = [
+  { threshold: 0, labelKey: "messages.heartSignalInitialInfo" },
+  { threshold: 5, labelKey: "messages.unlockFieldHobby" },
+  { threshold: 10, labelKey: "messages.unlockFieldPhotos" },
+  { threshold: 15, labelKey: "messages.unlockFieldVoice" },
+  { threshold: 20, labelKey: "messages.unlockFieldProfile" },
+];
+
+/** 当前已解锁档位下标（0 起，全部解锁为 length-1） */
+const signalUnlockLevel = computed(() => {
+  const count = userMessageCount.value;
+  let level = 0;
+  for (let i = SIGNAL_UNLOCK_LEVELS.length - 1; i >= 0; i--) {
+    const lv = SIGNAL_UNLOCK_LEVELS[i];
+    if (lv && count >= lv.threshold) { level = i; break; }
+  }
+  return level;
+});
+
+/** 解锁进度百分比（以聊满 20 条为基准） */
+const signalUnlockProgressPct = computed(() =>
+  Math.min(100, Math.round((userMessageCount.value / 20) * 100))
+);
+
+/** 下一档待解锁信息（全部解锁后为 null） */
+const signalNextUnlock = computed<{ field: string; remaining: number } | null>(() => {
+  if (signalUnlockLevel.value >= SIGNAL_UNLOCK_LEVELS.length - 1) return null;
+  const next = SIGNAL_UNLOCK_LEVELS[signalUnlockLevel.value + 1];
+  if (!next) return null;
+  return {
+    field: t(next.labelKey),
+    remaining: Math.max(0, next.threshold - userMessageCount.value),
+  };
+});
+
+/** 全部解锁后查看 TA 主页 */
+function goSignalProfile() {
+  const peerId = currentSession.value?.partnerId || targetUserId.value;
+  if (!peerId) return;
+  uni.navigateTo({
+    url: `/pages/profile/index?userId=${encodeURIComponent(peerId)}`,
+  });
+}
 
 /**
  * 当前会话消息视图模型（DTO 转换层应用）
@@ -200,9 +269,25 @@ async function loadSessionData(): Promise<void> {
 }
 
 onLoad(async (query) => {
+  // ---- 缘分速配信号会话（渐进解锁） ----
+  if (query && query.fromSignal === "1") {
+    fromSignal.value = true;
+  }
+
   // ---- 预填消息参数（来自兴趣圈"打招呼"跳转） ----
   if (query && typeof query.prefillMessage === "string" && query.prefillMessage.trim().length > 0) {
     draft.value = parsePrefillMessage(query.prefillMessage);
+  }
+
+  // ---- 破冰话题参数（来自消息页匹配引导，review #30：原参数无人消费） ----
+  // 未同时携带 prefillMessage 时，将 icebreaker 预填为消息草稿，发送即发出。
+  if (
+    query &&
+    typeof query.icebreaker === "string" &&
+    query.icebreaker.trim().length > 0 &&
+    !draft.value
+  ) {
+    draft.value = parsePrefillMessage(query.icebreaker);
   }
 
   // ---- 引用上下文参数 ----
@@ -295,6 +380,18 @@ const currentSession = computed(() => {
 /** 是否为临时匿名会话 */
 const isTempSession = computed(() => currentSession.value?.sessionType === "temp_anonymous");
 
+/**
+ * 临时会话是否已到期（review #51：原实现用 tempCountdown === "已结束" 比较中文文案，
+ * 依赖展示文案判断状态；现改为基于 closesAt 计算，与文案解耦）。
+ */
+const tempSessionEnded = computed(() => {
+  const session = currentSession.value;
+  if (!session || session.sessionType !== "temp_anonymous" || !session.closesAt) {
+    return false;
+  }
+  return Date.parse(session.closesAt) - Date.now() <= 0;
+});
+
 /** 是否为私信会话 */
 const isPrivateSession = computed(() => currentSession.value?.sessionType === "private");
 
@@ -363,10 +460,13 @@ function updateTempCountdown() {
   // 使用纯函数格式化倒计时
   tempCountdown.value = formatTempCountdown(diff);
 
-  // 已结束时清理计时器
-  if (diff <= 0 && countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
+  // 已结束时清理计时器并清空倒计时文本（review #51：避免“剩余时间：已结束”文案残留）
+  if (diff <= 0) {
+    tempCountdown.value = "";
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
   }
 }
 
@@ -432,6 +532,18 @@ async function handleAcceptExchange() {
 /** 结束会话（仅临时匿名会话） */
 async function handleEndSession() {
   if (!sessionId.value) return;
+  // review #50：原实现直接结束无确认，误触会销毁整个临时会话；先弹确认框。
+  const confirmed = await new Promise<boolean>((resolve) => {
+    uni.showModal({
+      title: t("chat.endSessionConfirmTitle"),
+      content: t("chat.endSessionConfirmContent"),
+      confirmText: t("chat.endSessionConfirmOk"),
+      cancelText: t("common.cancel"),
+      success: (res) => resolve(!!res.confirm),
+      fail: () => resolve(false),
+    });
+  });
+  if (!confirmed) return;
   try {
     await chatStore.endSession();
     uni.showToast({ title: t("chat.sessionEnded"), icon: "success" });
@@ -974,7 +1086,7 @@ defineExpose({ noop });
     <!-- 临时匿名会话顶部提示 -->
     <view v-if="isTempSession" class="temp-banner">
       <text class="temp-banner__text">
-        {{ tempCountdown === "已结束" ? t("chat.sessionEndedLabel") : t("chat.tempBannerText") }}
+        {{ tempSessionEnded ? t("chat.sessionEndedLabel") : t("chat.tempBannerText") }}
       </text>
     </view>
 
@@ -990,11 +1102,46 @@ defineExpose({ noop });
       </text>
     </SectionCard>
 
+    <!-- 缘分速配：渐进解锁面板 -->
+    <SectionCard v-if="fromSignal" :title="t('messages.signalUnlockTitle')" compact>
+      <view class="signal-unlock">
+        <view class="signal-unlock__progress-row">
+          <text class="signal-unlock__count">{{ t('messages.signalUnlockProgress', { n: userMessageCount }) }}</text>
+          <text class="signal-unlock__pct">{{ signalUnlockProgressPct }}%</text>
+        </view>
+        <view class="signal-unlock__bar">
+          <view class="signal-unlock__bar-fill" :style="{ width: signalUnlockProgressPct + '%' }" />
+        </view>
+        <view class="signal-unlock__levels" role="list">
+          <view
+            v-for="(lv, idx) in SIGNAL_UNLOCK_LEVELS"
+            :key="lv.labelKey"
+            class="signal-unlock__level"
+            :class="{ 'signal-unlock__level--done': idx <= signalUnlockLevel, 'signal-unlock__level--next': idx === signalUnlockLevel + 1 }"
+          >
+            <view class="signal-unlock__level-dot">{{ idx <= signalUnlockLevel ? '✓' : idx + 1 }}</view>
+            <text class="signal-unlock__level-text">{{ t(lv.labelKey) }}</text>
+          </view>
+        </view>
+        <view class="signal-unlock__hint-row">
+          <text v-if="signalNextUnlock" class="signal-unlock__hint">
+            {{ t('messages.signalUnlockNext', { n: signalNextUnlock.remaining, field: signalNextUnlock.field }) }}
+          </text>
+          <template v-else>
+            <text class="signal-unlock__hint signal-unlock__hint--done">{{ t('messages.signalUnlockAllDone') }}</text>
+            <text class="signal-unlock__hint-action" @tap.stop="goSignalProfile">
+              {{ t('messages.signalUnlockViewProfile') }} ›
+            </text>
+          </template>
+        </view>
+      </view>
+    </SectionCard>
+
     <!-- 消息列表 -->
     <SectionCard :title="t('chat.messagesTitle')" compact>
       <view v-if="pageErrorMessage" class="meta-copy">{{ pageErrorMessage }}</view>
       <view v-else-if="messagesStore.loading" class="meta-copy">{{ t('chat.loadingSessionDetail') }}</view>
-      <view v-else-if="messagesStore.errorMessage" class="meta-copy">{{ messagesStore.errorMessage }}</view>
+      <view v-else-if="messagesStore.errorMessage" class="meta-copy">{{ friendlyPageError }}</view>
       <view v-else class="chat-list" role="list">
         <!-- 优先展示 messagesStore 的消息（经 DTO 转换层映射为 ChatMessageView） -->
         <!-- 红包消息：使用 RedPacketBubble 渲染（基于 body 前缀模式识别） -->
@@ -1334,6 +1481,120 @@ defineExpose({ noop });
   font-weight: 600;
   text-align: center;
   padding: var(--sp-4) 0;
+}
+
+/* ========== 缘分速配：渐进解锁面板 ========== */
+.signal-unlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.signal-unlock__progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.signal-unlock__count {
+  font-size: var(--fs-base);
+  color: var(--c-text-primary);
+  font-weight: 600;
+}
+
+.signal-unlock__pct {
+  font-size: var(--fs-sm);
+  color: var(--c-brand-400);
+  font-weight: 700;
+}
+
+.signal-unlock__bar {
+  height: 12rpx;
+  border-radius: var(--r-full);
+  background: var(--c-neutral-100);
+  overflow: hidden;
+}
+
+.signal-unlock__bar-fill {
+  height: 100%;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--c-brand-400), var(--c-romance-400));
+  transition: width var(--d-normal, 200ms) ease;
+}
+
+.signal-unlock__levels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.signal-unlock__level {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  opacity: 0.55;
+}
+
+.signal-unlock__level--done {
+  opacity: 1;
+}
+
+.signal-unlock__level--next {
+  opacity: 1;
+}
+
+.signal-unlock__level-dot {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: var(--r-full);
+  background: var(--c-neutral-100);
+  border: 1rpx solid var(--c-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-xs);
+  color: var(--c-text-secondary);
+  flex-shrink: 0;
+}
+
+.signal-unlock__level--done .signal-unlock__level-dot {
+  background: var(--c-brand-500);
+  border-color: var(--c-brand-500);
+  color: var(--c-text-inverse);
+}
+
+.signal-unlock__level--next .signal-unlock__level-dot {
+  border-color: var(--c-brand-400);
+  color: var(--c-brand-400);
+}
+
+.signal-unlock__level-text {
+  font-size: var(--fs-base);
+  color: var(--c-text-primary);
+}
+
+.signal-unlock__hint-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.signal-unlock__hint {
+  font-size: var(--fs-sm);
+  color: var(--c-text-secondary);
+  line-height: 1.5;
+}
+
+.signal-unlock__hint--done {
+  color: var(--c-brand-400);
+  font-weight: 600;
+}
+
+.signal-unlock__hint-action {
+  font-size: var(--fs-sm);
+  color: var(--c-romance-500);
+  font-weight: 600;
 }
 
 .chat-list {
