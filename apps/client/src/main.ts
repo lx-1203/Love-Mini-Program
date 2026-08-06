@@ -9,6 +9,8 @@ import i18n from "./i18n";
 import { installAbortControllerPolyfill, installUrlSearchParamsPolyfill } from "./compat";
 import { useThemeStore } from "./stores/theme";
 import { reportGlobalError } from "./utils/global-error";
+// 展示模式（全功能展示版）：在应用创建前应用功能开关全开
+import { applyShowcaseMode } from "./config/showcase";
 
 /** 全局错误监听器是否已注册（避免重复注册） */
 let globalErrorListenersRegistered = false;
@@ -92,6 +94,9 @@ export function createApp() {
   // 收尾轮：注入 URLSearchParams polyfill（mp-weixin 无原生实现，
   // stores/village/api.ts 与 stores/profile.ts、feedback/history.vue 直接使用）
   installUrlSearchParamsPolyfill();
+  // 展示模式（全功能展示版）：mount 前应用功能开关全开。
+  // 仅在 VITE_SHOWCASE_MODE=true 的展示构建中生效，正式包不包含。
+  applyShowcaseMode();
   // 收尾轮：深色模式初始化（恢复上次选择并应用 H5 data-theme，在 pinia 创建后执行）
   const app = createSSRApp(App);
   const pinia = createPinia();

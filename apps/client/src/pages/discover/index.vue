@@ -12,6 +12,12 @@ import { useActivityStore } from "../../stores/activity";
 import { useCheckInStore } from "../../stores/checkin";
 import { useDailyQuestionStore } from "../../stores/daily-question";
 import { useSocialProgressStore } from "../../stores/social-progress";
+// P2.7 修复：预注册懒加载组件引用的 store。
+// 本页组件链（CardSwiper→CardDetailOverlay）在页面 script 之后加载并 require
+// stores/vip，而 mp-weixin dev 模式按文件懒加载执行——若 vip 模块未被页面
+// script 依赖树先执行注册，组件加载时报 "module 'stores/vip.js' is not defined"。
+// （coins 无此问题：本页依赖链中已有 store 间接注册了它。）
+import { useVipStore } from "../../stores/vip";
 import { openAppPath, switchTabWithQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import CardSwiper from "../../components/discover/CardSwiper.vue";
@@ -64,6 +70,9 @@ const {
 } = storeToRefs(discoverStore);
 
 const activityStore = useActivityStore();
+
+// infra R2-00066: 「限量提示」展示阈值——剩余卡片数低于该值时提示，规则集中在此处管理
+const LIMIT_HINT_THRESHOLD = 3;
 const checkInStore = useCheckInStore();
 const dailyQuestionStore = useDailyQuestionStore();
 const socialProgressStore = useSocialProgressStore();
@@ -506,6 +515,12 @@ function goShop() {
 }
 
 onMounted(() => {
+  // P2.7：预注册懒加载组件引用的 store。
+  // 组件链（CardDetailOverlay）会 require stores/vip，mp-weixin dev 按文件懒加载，
+  // 模块未被页面依赖树执行注册则报 "module 'stores/vip.js' is not defined"。
+  // 真实调用（读取 isVip）确保 import 不被 tree-shake（void 引用会被摇掉）。
+  const vipStore = useVipStore();
+  void vipStore.isVip;
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
   addBreadcrumb("navigation", "page_enter", { url: "/pages/discover/index" });
   void discoverStore.fetchCards();
@@ -898,8 +913,8 @@ defineExpose({ clearSearch, goShop });
       <text class="social-hint__arrow">&rsaquo;</text>
     </view>
 
-    <!-- 活动推荐板块：卡片用完后展示 -->
-    <view v-if="!loading && !errorMessage && cards.length === 0" class="activity-recommend">
+    <!-- 活动推荐板块：卡片用完后展示（infra R2-00067: 无活动数据时整块隐藏，避免空容器） -->
+    <view v-if="!loading && !errorMessage && cards.length === 0 && activityStore.activities.length > 0" class="activity-recommend">
       <view class="activity-recommend__header">
         <text class="activity-recommend__title section-title-brand">{{ t('discover.discoverActivities') }}</text>
         <text class="activity-recommend__subtitle">{{ t('discover.discoverActivitiesDesc') }}</text>
@@ -927,7 +942,7 @@ defineExpose({ clearSearch, goShop });
     </view>
 
     <!-- 底部提示：当卡片即将用完时显示 -->
-    <view v-if="hasMore && remainingCount <= 3 && remainingCount > 0" class="limit-hint">
+    <view v-if="hasMore && remainingCount <= LIMIT_HINT_THRESHOLD && remainingCount > 0" class="limit-hint">
       <text class="limit-hint__text">{{ t('discover.remainingChances', { n: remainingCount }) }}</text>
     </view>
 

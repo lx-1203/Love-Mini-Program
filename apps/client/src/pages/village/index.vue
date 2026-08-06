@@ -129,20 +129,30 @@ const MAX_POST_IMAGES = 9;
 /**
  * Phase Feedback3 P2.5：初始化同城城市。
  *
- * 优先级：后端 IP 归属定位（/api/v1/location/ip-city）→ session 校区城市 → 默认"南京"。
- * IP 定位失败（后端不可达等）静默回退，不阻塞页面渲染；用户仍可手动切换城市。
+ * 优先级（P2.7 增强：定位权限）：
+ * 1. 手机定位（uni.getLocation，需用户授权，精确到城市）→ 城市名；
+ *    用户拒绝授权时静默回退，不弹强提醒（可在城市选择器手动改）
+ * 2. 后端 IP 归属定位（/api/v1/location/ip-city）→ 城市名
+ * 3. session 校区城市 → 默认"南京"
+ *
+ * 定位/IP 失败均静默回退，不阻塞页面渲染；用户仍可通过城市选择器手动切换。
  */
 async function initSameCity() {
   if (sameCityName.value) return;
   let detected = "";
-  try {
-    const res = await request<{ city: string }, unknown>({
-      url: "/v1/location/ip-city",
-      method: "GET",
-    });
-    detected = res?.city ?? "";
-  } catch (_e) {
-    // IP 定位失败 → 回退校区/默认城市
+  // 1) 手机定位（优先）：经纬度 → 城市名（精确，需定位权限）
+  detected = await detectCityByLocation();
+  // 2) IP 定位兜底：手机定位不可用/被拒绝时按 IP 归属
+  if (!detected) {
+    try {
+      const res = await request<{ city: string }, unknown>({
+        url: "/v1/location/ip-city",
+        method: "GET",
+      });
+      detected = res?.city ?? "";
+    } catch (_e) {
+      // IP 定位失败 → 回退校区/默认城市
+    }
   }
   const campusCity = sessionStore.userSession?.campusName ?? "";
   // 优先匹配城市池内同名城市，避免切换后空列表；否则采用定位/校区城市
@@ -150,6 +160,70 @@ async function initSameCity() {
     SAME_CITY_OPTIONS.value.find((c) => c === detected)
     ?? SAME_CITY_OPTIONS.value.find((c) => c === campusCity);
   sameCityName.value = matched ?? detected ?? "南京";
+}
+
+/**
+ * P2.7：手机定位获取城市（uni.getLocation，需用户授权）。
+ *
+ * 仅 mp-weixin/H5 支持；用户拒绝授权或定位失败时返回空串（静默回退 IP 定位）。
+ * 注意：不调用 ensurePrivacyAuthorized 强弹授权框 —— 同城 Tab 属非关键功能，
+ * 用户可在城市选择器中手动切换，避免首屏强授权打断体验。
+ */
+function detectCityByLocation(): Promise<string> {
+  return new Promise((resolve) => {
+    try {
+      uni.getLocation({
+        type: "gcj02",
+        success: (res) => {
+          // 经纬度 → 城市：优先取城市池内最近城市（简化），
+          // 生产环境应接入逆地理编码服务（如微信内置 / 后端 /api/v1/location/reverse）
+          const city = reverseGeocodeCity(res.latitude, res.longitude);
+          resolve(city);
+        },
+        fail: () => resolve(""),
+      });
+    } catch (_e) {
+      resolve("");
+    }
+  });
+}
+
+/**
+ * P2.7：经纬度简化逆地理编码 —— 按城市池中心点距离最近匹配。
+ *
+ * 城市池固定（南京/杭州/上海/成都），按球面距离选最近城市；
+ * 不在池内范围时返回空串（回退 IP 定位）。生产环境应替换为真实逆地理服务。
+ */
+function reverseGeocodeCity(latitude: number, longitude: number): string {
+  // 城市池中心点 [lat, lng]（近似）
+  const CITY_CENTERS: Array<{ city: string; lat: number; lng: number }> = [
+    { city: "南京", lat: 32.0603, lng: 118.7969 },
+    { city: "杭州", lat: 30.2741, lng: 120.1551 },
+    { city: "上海", lat: 31.2304, lng: 121.4737 },
+    { city: "成都", lat: 30.5728, lng: 104.0668 },
+  ];
+  let best = "";
+  let bestKm = 300; // 阈值：距最近城市中心 >300km 视为池外，回退 IP 定位
+  for (const c of CITY_CENTERS) {
+    const km = haversineKm(latitude, longitude, c.lat, c.lng);
+    if (km < bestKm) {
+      bestKm = km;
+      best = c.city;
+    }
+  }
+  return best;
+}
+
+/** 球面距离（Haversine，单位 km） */
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 /** 选择城市 */

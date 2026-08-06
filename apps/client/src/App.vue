@@ -6,6 +6,10 @@ import { useI18n } from "vue-i18n";
 import { useSessionStore } from "./stores/session";
 import { useUnlockGuideStore } from "./stores/unlock-guide";
 import { reportGlobalError } from "./utils/global-error";
+// 展示模式（全功能展示版）：自动以演示者身份登录，无需人工操作
+import { isShowcaseMode } from "./config/showcase";
+import { getToken } from "./services/http";
+import { loginAsGuest } from "./services/auth";
 import UnlockGuideModal from "./components/UnlockGuideModal.vue";
 import UnlockGuideOverlay from "./components/UnlockGuideOverlay.vue";
 import { useNetworkStatus } from "./composables/useNetworkStatus";
@@ -165,10 +169,25 @@ onLaunch(() => {
 
     // 修复（P0 BUG）：uni.onError / uni.onUnhandledRejection 已迁移至 main.ts 的
     // registerGlobalErrorListeners 统一注册，避免与 App.vue 重复监听导致同一错误被上报两次。
-    sessionStore.bootstrap().catch((err: unknown) => {
-      // 修复：bootstrap 异常上报到 main.ts 全局错误处理器，统一出口便于排查
-      reportGlobalError("App.onLaunch.bootstrap", err);
-    });
+    const startBootstrap = () => {
+      sessionStore.bootstrap().catch((err: unknown) => {
+        // 修复：bootstrap 异常上报到 main.ts 全局错误处理器，统一出口便于排查
+        reportGlobalError("App.onLaunch.bootstrap", err);
+      });
+    };
+
+    if (isShowcaseMode && !getToken()) {
+      // 展示模式：自动以演示者身份登录（POST /v1/auth/guest-login，后端 mock 幂等），
+      // 使资料/匹配/聊天等页面可获得真实会话与数据，无需人工走登录流程。
+      loginAsGuest()
+        .then(() => startBootstrap())
+        .catch((err: unknown) => {
+          console.warn("[Showcase] 自动游客登录失败，降级为常规 bootstrap:", err);
+          startBootstrap();
+        });
+    } else {
+      startBootstrap();
+    }
   } catch (error) {
     // 修复：启动异常上报到 main.ts 全局错误处理器，避免仅 console.error 后丢失上下文
     reportGlobalError("App.onLaunch", error);
@@ -593,7 +612,7 @@ page {
   width: 0;
   height: 0;
   border-radius: var(--r-circle, 50%);
-  background: var(--c-secondary-blue-bg-tint-light, var(--c-secondary-blue-bg-tint-light, var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15))));
+  background: var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15));
   transform: translate(-50%, -50%);
   pointer-events: none;
   opacity: 0;
@@ -678,7 +697,7 @@ page {
 }
 .card-hover:active {
   transform: scale(0.98);
-  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-md, var(--c-neutral-shadow-md, var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.06))));
+  box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-md, rgba(15, 23, 42, 0.06));
 }
 
 /* ================================================================
@@ -784,15 +803,16 @@ textarea:focus {
    ================================================================ */
 /* #ifdef H5 */
 body {
-  background: var(--c-bg-page, #f4f6fa);
+  background: var(--c-bg-page, #F4F6FA);
 }
 
 #app {
   max-width: 750px;
   margin: 0 auto;
   min-height: 100vh;
-  background: var(--c-bg-page, #f4f6fa);
-  box-shadow: 0 0 40rpx rgba(15, 23, 42, 0.06);
+  background: var(--c-bg-page, #F4F6FA);
+  /* H5 限宽容器阴影：对齐 --c-elevation-2 token（ui-ux-review #5：消除裸阴影值） */
+  box-shadow: var(--c-elevation-2, 0 4rpx 16rpx rgba(15, 23, 42, 0.08));
 }
 
 /* 页面体高度链：uni-page-body 撑满 #app，保证页面内 flex:1 区域（如寻觅卡片区）高度正常 */
