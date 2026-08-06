@@ -133,7 +133,10 @@ class RealRecommendationServiceTest {
                 new RecommendedPersonView(1L, "Alice", "A", "bio",
                         "同校", "今天有空", "北大", "/avatar1.jpg",
                         List.of("读书"), "bio", List.of(), true, false, 0,
-                        165, "bachelor", List.of(), null, null, "none"));
+                        165, "bachelor", List.of(), null, null, "none",
+                        "CL-1", "1.2km", "offline", true, false,
+                        List.of("开朗"), "INTJ", null, false, List.of(),
+                        null, false, "北京"));
         when(cacheManager.getCachedRecommendations(userId)).thenReturn(expected);
 
         List<RecommendedPersonView> result = realService.getRecommendations(userId);
@@ -162,7 +165,10 @@ class RealRecommendationServiceTest {
                 new RecommendedPersonView(1L, "Alice", "A", "bio",
                         "同校", "今天有空", "北大", "/avatar1.jpg",
                         List.of("读书"), "bio", List.of(), true, false, 0,
-                        165, "bachelor", List.of(), null, null, "none"));
+                        165, "bachelor", List.of(), null, null, "none",
+                        "CL-1", "1.2km", "offline", true, false,
+                        List.of("开朗"), "INTJ", null, false, List.of(),
+                        null, false, "北京"));
         when(cacheManager.getCachedRecommendations(userId)).thenReturn(cached);
         RecommendationFilter emptyFilter = new RecommendationFilter(
                 null, null, null, null, null, null, null, null);
@@ -183,7 +189,10 @@ class RealRecommendationServiceTest {
                 new RecommendedPersonView(2L, "Bob", "B", "bio2",
                         "同专业", "本周忙", "北大", "/avatar2.jpg",
                         List.of("运动"), "bio2", List.of(), false, true, 1,
-                        180, "master", List.of(), null, null, "verified"));
+                        180, "master", List.of(), null, null, "verified",
+                        "CL-2", "1.2km", "offline", true, false,
+                        List.of("沉稳"), "ISFJ", null, false, List.of(),
+                        null, false, "南京"));
         when(cacheManager.buildHistory(userId)).thenReturn(expected);
 
         List<RecommendedPersonView> result = realService.getHistory(userId);

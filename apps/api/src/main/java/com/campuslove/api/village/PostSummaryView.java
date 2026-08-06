@@ -17,6 +17,8 @@ public record PostSummaryView(
     int shareCount,
     String createdAt,
     boolean isHot,
-    boolean isAlumni
+    boolean isAlumni,
+    /** Phase Feedback3 P2.5：作者是否被当前用户关注（关注 Tab 打通；无当前用户上下文时 false） */
+    boolean isFollowed
 ) {
 }

@@ -27,6 +27,8 @@ import { useImageFallback } from "../../composables/useImageFallback";
 import BaseTabs from "../../components/common/BaseTabs.vue";
 import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { showErrorToast } from "../../utils/error-toast";
+// Phase Feedback3 P2.5：同城 Tab IP 定位（后端 /api/v1/location/ip-city）
+import { request } from "../../services/http";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 
@@ -38,7 +40,7 @@ const sessionStore = useSessionStore();
 // Phase 4 任务 20：接入页面访问守卫
 usePageAccess(villagePageRequirements);
 // 修复（严格模式 noUnusedLocals）：categories 从 storeToRefs 解构后未引用（页面使用 BaseTabs 的 items 而非 store categories），已移除。
-const { loading, errorMessage } = storeToRefs(villageStore);
+const { loading, errorMessage, hasMore } = storeToRefs(villageStore);
 
 // 同步自定义 TabBar 选中状态（圈子 = 索引 1）
 useTabBar(1);
@@ -101,22 +103,53 @@ const selectedDiscoverSubTab = ref<string>("discover-all");
 const sameCityName = ref<string>("");
 
 /**
- * 可切换的城市列表。
+ * 可切换的城市列表（基础池）。
  * 与 mock 帖子 city 字段保持一致（南京/杭州/上海/成都），避免切换后空列表；
- * 真实环境接入 IP 定位 + 城市服务后扩展。
+ * Phase Feedback3 P2.5：接入 IP 定位后，检测到的城市会动态并入选项。
  */
-const SAME_CITY_OPTIONS = ["南京", "杭州", "上海", "成都"];
+const SAME_CITY_OPTIONS_BASE = ["南京", "杭州", "上海", "成都"];
+
+/**
+ * Phase Feedback3 P2.5：动态城市选项 = 基础池 ∪ 当前定位城市（去重）。
+ * 避免 IP 定位到池外城市时切换器选不到当前城市。
+ */
+const SAME_CITY_OPTIONS = computed(() => {
+  if (sameCityName.value && !SAME_CITY_OPTIONS_BASE.includes(sameCityName.value)) {
+    return [...SAME_CITY_OPTIONS_BASE, sameCityName.value];
+  }
+  return SAME_CITY_OPTIONS_BASE;
+});
 
 /** 是否显示城市切换器 */
 const showCityPicker = ref(false);
 
+/** infra R2-00071: 单帖最大图片数（与 stores/village/constants.ts 的 MAX_IMAGES_COUNT 保持一致） */
+const MAX_POST_IMAGES = 9;
+
 /**
- * 初始化同城城市：当前 mock 阶段默认"南京"；
- * 真实环境接入 IP 定位（如 uni.getLocation 反查城市）后替换此处。
+ * Phase Feedback3 P2.5：初始化同城城市。
+ *
+ * 优先级：后端 IP 归属定位（/api/v1/location/ip-city）→ session 校区城市 → 默认"南京"。
+ * IP 定位失败（后端不可达等）静默回退，不阻塞页面渲染；用户仍可手动切换城市。
  */
-function initSameCity() {
+async function initSameCity() {
   if (sameCityName.value) return;
-  sameCityName.value = "南京";
+  let detected = "";
+  try {
+    const res = await request<{ city: string }, unknown>({
+      url: "/v1/location/ip-city",
+      method: "GET",
+    });
+    detected = res?.city ?? "";
+  } catch (_e) {
+    // IP 定位失败 → 回退校区/默认城市
+  }
+  const campusCity = sessionStore.userSession?.campusName ?? "";
+  // 优先匹配城市池内同名城市，避免切换后空列表；否则采用定位/校区城市
+  const matched =
+    SAME_CITY_OPTIONS.value.find((c) => c === detected)
+    ?? SAME_CITY_OPTIONS.value.find((c) => c === campusCity);
+  sameCityName.value = matched ?? detected ?? "南京";
 }
 
 /** 选择城市 */
@@ -312,7 +345,6 @@ const likeAnimatingPosts = ref<Set<string>>(new Set());
 /* ========== 下拉刷新 / 加载更多 ========== */
 const isRefreshing = ref(false);
 const isLoadingMore = ref(false);
-const hasMore = ref(true);
 
 async function onRefresh() {
   isRefreshing.value = true;
@@ -324,11 +356,12 @@ async function onRefresh() {
   }
 }
 
+/** 加载更多：真实请求下一页（走 village store 的 loadMore，含失败回退 page） */
 async function onLoadMore() {
   if (isLoadingMore.value || loading.value || !hasMore.value) return;
   isLoadingMore.value = true;
   try {
-    hasMore.value = false;
+    await villageStore.loadMore(currentFilters.value);
   } finally {
     isLoadingMore.value = false;
   }
@@ -448,10 +481,13 @@ function goToTagPosts(tagName: string) {
 }
 
 /* ========== 页面参数处理 ========== */
+// infra R2-00070: onLoad 直读 query 仅覆盖 H5 带参冷启动场景；
+// Tab 间切换的主路径由 onShow + consumeTabQuery（storage 桥接，见 utils/navigation.ts）统一消费
 onLoad((query) => {
+  // 修复：原值 cat-latest 在三 Tab 结构中不存在，hot 统一落到"发现"Tab（全量内容）
   if (query?.tab === "hot") {
-    selectedCategory.value = "cat-latest";
-    saveLastCategory("cat-latest");
+    selectedCategory.value = "cat-discover";
+    saveLastCategory("cat-discover");
   }
 });
 
@@ -461,8 +497,9 @@ onLoad((query) => {
 onShow(() => {
   const bridged = consumeTabQuery();
   if (bridged.tab === "hot") {
-    selectedCategory.value = "cat-latest";
-    saveLastCategory("cat-latest");
+    // 修复：cat-latest 已不存在，hot 落到"发现"Tab
+    selectedCategory.value = "cat-discover";
+    saveLastCategory("cat-discover");
   } else if (bridged.tab === "mine") {
     selectedCategory.value = MINE_CATEGORY_ID;
     saveLastCategory(MINE_CATEGORY_ID);
@@ -818,7 +855,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
             <view
               class="follow-chip"
               :class="{ 'follow-chip--active': post.isFollowed }"
-  @tap.stop="handleFollow(post.author.userId)"
+  catchtap="handleFollow(post.author.userId)"
             >
               <text class="follow-chip__text">
                 {{ post.isFollowed ? t('village.followed') : t('village.follow') }}
@@ -831,22 +868,22 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
             <text class="post-card__content">{{ post.content }}</text>
           </view>
 
-          <!-- 图片展示 -->
-          <view v-if="post.images.length > 0" class="post-card__images" :class="'post-card__images--' + Math.min(post.images.length, 9)" catchtap="noop">
+          <!-- 图片展示（infra R2-00071: 单帖最大图片数 9 具名化） -->
+          <view v-if="post.images.length > 0" class="post-card__images" :class="'post-card__images--' + Math.min(post.images.length, MAX_POST_IMAGES)" catchtap="noop">
             <view
-              v-for="(img, idx) in post.images.slice(0, 9)" :key="idx"
+              v-for="(img, idx) in post.images.slice(0, MAX_POST_IMAGES)" :key="idx"
               class="post-card__image-wrap"
               :class="{ 'post-card__image-wrap--single': post.images.length === 1 }"
             >
               <image
                 class="post-card__image img-rounded"
-                :src="img"
+                :src="resolveMediaUrl(img)"
                 mode="aspectFill"
                 lazy-load alt=""
               />
             </view>
-            <view v-if="post.images.length > 9" class="post-card__image-more">
-              <text class="post-card__image-more-text">+{{ post.images.length - 9 }}</text>
+            <view v-if="post.images.length > MAX_POST_IMAGES" class="post-card__image-more">
+              <text class="post-card__image-more-text">+{{ post.images.length - MAX_POST_IMAGES }}</text>
             </view>
           </view>
 
@@ -856,7 +893,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
               v-for="(tag, tagIdx) in post.tags" :key="tag"
               class="post-card__tag"
               :class="tagIdx % 2 === 0 ? 'post-card__tag--green' : 'post-card__tag--pink'"
-  @tap.stop="goToTagPosts(tag)"
+  catchtap="goToTagPosts(tag)"
             >{{ tag.startsWith('#') ? tag : '#' + tag }}</text>
           </view>
 
@@ -873,7 +910,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
               <view
                 class="action-btn"
                 :class="{ 'action-btn--liked': post.isLiked, 'action-btn--animating': likeAnimatingPosts.has(post.id) }"
-  @tap.stop="handleLike(post.id)"
+  catchtap="handleLike(post.id)"
               >
                 <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
                 <text v-if="post.likes > 0" class="action-btn__count" :class="{ 'action-btn__count--liked': post.isLiked }">{{ post.likes }}</text>
@@ -886,7 +923,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
               <view
                 class="action-btn"
                 :class="{ 'action-btn--collected': collectedPosts.has(post.id) }"
-  @tap.stop="toggleCollect(post.id)"
+  catchtap="toggleCollect(post.id)"
               >
                 <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" />
               </view>
@@ -1054,7 +1091,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
 .city-picker__title {
   font-size: var(--fs-lg, 32rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1F2329);
 }
 
 .city-picker__close {
@@ -1082,7 +1119,7 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
 
 .city-picker__item-name {
   font-size: var(--fs-base, 28rpx);
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1F2329);
 }
 
 .city-picker__item--active .city-picker__item-name {
@@ -1112,13 +1149,13 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
 }
 
 .discover-sub-tab--active {
-  background: var(--c-gradient-brand, linear-gradient(135deg, #6fe0b0 0%, #3fcf8e 100%));
+  background: var(--c-gradient-brand, linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%));
   border-color: transparent;
 }
 
 .discover-sub-tab__text {
   font-size: var(--fs-sm, 26rpx);
-  color: var(--c-text-secondary, #6b7280);
+  color: var(--c-text-secondary, #5B6470);
   font-weight: 500;
 }
 

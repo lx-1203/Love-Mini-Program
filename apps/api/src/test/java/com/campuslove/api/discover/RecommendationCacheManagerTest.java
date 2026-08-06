@@ -118,7 +118,10 @@ class RecommendationCacheManagerTest {
         RecommendedPersonView fakeView = new RecommendedPersonView(
                 500L, "历史用户", "历", "headline", "commonGround", "available",
                 "campus", "/avatar.jpg", List.of("tag"), "bio", List.of(),
-                false, false, 0, null, null, List.of(), null, null, "none");
+                false, false, 0, null, null, List.of(), null, null, "none",
+                "CL-500", "1.2km", "offline", true, false,
+                List.of("开朗"), "INTJ", null, false, List.of(),
+                null, false, "南京");
         when(recommendationRanker.buildHistory(userId))
                 .thenReturn(List.of(fakeView));
 

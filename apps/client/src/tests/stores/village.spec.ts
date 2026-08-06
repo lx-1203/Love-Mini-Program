@@ -11,6 +11,7 @@ vi.mock("../../services/env", () => ({
 }));
 
 import { useVillageStore, formatRelativeTime } from "../../stores/village";
+import { isBuddyPost } from "../../stores/village/utils";
 
 describe("village store", () => {
   beforeEach(() => {
@@ -104,13 +105,8 @@ describe("village store", () => {
     await store.fetchPosts({ categoryId: "cat-discover", discoverSub: "buddy" });
 
     expect(store.posts.length).toBeGreaterThan(0);
-    expect(
-      store.posts.every(
-        (p) =>
-          (p.buddyTags && p.buddyTags.length > 0) ||
-          p.tags.some((tag) => tag.includes("搭子"))
-      )
-    ).toBe(true);
+    // P2.5 扩展契约：buddyTags / 「搭子」标签 / 作者兴趣命中搭子关键词
+    expect(store.posts.every((p) => isBuddyPost(p))).toBe(true);
   });
 
   it("fetchPosts with cat-discover all sub-tab returns all posts", async () => {

@@ -27,6 +27,7 @@ import com.campuslove.api.repository.UserFollowRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -74,6 +75,54 @@ public class VillageQueryService {
     private final CircleTopicRepository circleTopicRepository;
     private final VillageViewMapper viewMapper;
 
+    /** 相似作者候选池大小（FIN-00024 修复：原 50 过小，扩大至与推荐算法对齐的 200） */
+    private static final int SIMILAR_AUTHOR_CANDIDATE_LIMIT = 200;
+
+    /**
+     * JPA 实体管理器（FIN-00021/00022 修复）。
+     *
+     * <p>用于同校用户 ID 集合查询与 JOIN FETCH 预加载等 Repository 未覆盖的查询，
+     * 仅在只读事务内使用。为兼容既有单元测试（直接 new 构造器），此字段可为 null：
+     * null 时对应方法回退到原查询路径（仅测试场景触发；Spring 注入路径恒非 null）。</p>
+     */
+    private final EntityManager entityManager;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public VillageQueryService(
+            PostRepository postRepository,
+            CommentRepository commentRepository,
+            PostLikeRepository postLikeRepository,
+            PostCategoryRepository postCategoryRepository,
+            UserRepository userRepository,
+            UserCampusProfileRepository userCampusProfileRepository,
+            UserFollowRepository userFollowRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
+            ObjectMapper objectMapper,
+            ActivityRepository activityRepository,
+            CircleTopicRepository circleTopicRepository,
+            VillageViewMapper viewMapper,
+            EntityManager entityManager) {
+        this.postRepository = postRepository;
+        this.commentRepository = commentRepository;
+        this.postLikeRepository = postLikeRepository;
+        this.postCategoryRepository = postCategoryRepository;
+        this.userRepository = userRepository;
+        this.userCampusProfileRepository = userCampusProfileRepository;
+        this.userFollowRepository = userFollowRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
+        this.objectMapper = objectMapper;
+        this.activityRepository = activityRepository;
+        this.circleTopicRepository = circleTopicRepository;
+        this.viewMapper = viewMapper;
+        this.entityManager = entityManager;
+    }
+
+    /**
+     * 兼容旧测试的构造器（entityManager 为 null，相关查询回退原路径）。
+     *
+     * @deprecated 仅单元测试使用；Spring 注入请使用带 EntityManager 的构造器。
+     */
+    @Deprecated
     public VillageQueryService(
             PostRepository postRepository,
             CommentRepository commentRepository,
@@ -87,36 +136,71 @@ public class VillageQueryService {
             ActivityRepository activityRepository,
             CircleTopicRepository circleTopicRepository,
             VillageViewMapper viewMapper) {
-        this.postRepository = postRepository;
-        this.commentRepository = commentRepository;
-        this.postLikeRepository = postLikeRepository;
-        this.postCategoryRepository = postCategoryRepository;
-        this.userRepository = userRepository;
-        this.userCampusProfileRepository = userCampusProfileRepository;
-        this.userFollowRepository = userFollowRepository;
-        this.userBasicProfileRepository = userBasicProfileRepository;
-        this.objectMapper = objectMapper;
-        this.activityRepository = activityRepository;
-        this.circleTopicRepository = circleTopicRepository;
-        this.viewMapper = viewMapper;
+        this(postRepository, commentRepository, postLikeRepository, postCategoryRepository,
+                userRepository, userCampusProfileRepository, userFollowRepository,
+                userBasicProfileRepository, objectMapper, activityRepository,
+                circleTopicRepository, viewMapper, null);
     }
 
     // ---- 帖子列表 ----
 
+    /**
+     * 解析帖子分类枚举，非法值抛出 IllegalArgumentException（由 GlobalExceptionHandler 转 400）。
+     */
+    private PostCategory parseCategory(String category) {
+        try {
+            return PostCategory.valueOf(category);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            // infra R2-00213: 非法分类值转 400（原实现直接 500）
+            throw new IllegalArgumentException("不支持的帖子分类: " + category
+                    + ", 仅支持: " + java.util.Arrays.toString(PostCategory.values()));
+        }
+    }
+
     @Transactional(readOnly = true)
     public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize, Long userId) {
-        Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        // FIN-00023 修复：sortBy 参数现在真正生效（原实现忽略 sortBy，恒按 createdAt 倒序）。
+        // latest=最新发布（createdAt DESC），hottest=最热（likesCount DESC）。
+        // 说明：Pageable 携带的 Sort 优先级高于派生方法名中的 OrderBy 子句（Spring Data 约定）。
+        String effectiveSort = sortBy != null ? sortBy : "latest";
+        Sort sort = "hottest".equals(effectiveSort)
+                ? Sort.by(Sort.Direction.DESC, "likesCount")
+                : Sort.by(Sort.Direction.DESC, "createdAt");
+        Pageable pageable = PageRequest.of(page - 1, pageSize, sort);
         if ("campus".equals(category)) {
             return getCampusCategoryPosts(userId, pageable);
         }
         Page<Post> postPage;
         if (category != null && !"all".equals(category)) {
-            PostCategory postCategory = PostCategory.valueOf(category);
+            PostCategory postCategory = parseCategory(category);
             postPage = postRepository.findByCategoryAndStatusOrderByCreatedAtDesc(postCategory, PostStatus.active, pageable);
         } else {
             postPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
         }
-        List<PostSummaryView> items = postPage.getContent().stream().map(this::toPostSummaryView).toList();
+        // Phase Feedback3 P2.5：主列表透传关注集合，isFollowed 随帖下发（关注 Tab 打通）
+        List<PostSummaryView> items = toPostSummaryViews(postPage.getContent(), "", loadFollowedUserIds(userId));
+        return new PostListResponse(items, (int) postPage.getTotalElements(), page, pageSize);
+    }
+
+    /**
+     * 按作者分页查询帖子（"我的动态"场景）。
+     *
+     * <p>走查补齐：前端个人主页 {@code stores/profile.ts#loadMyPosts()} 调用
+     * {@code GET /api/posts?authorId=x} 拉取当前用户发布的帖子，原实现缺少按作者
+     * 过滤能力导致该请求被忽略（返回全量帖子）。本方法按作者 + active 状态查询，
+     * 按创建时间倒序分页，与 {@link #getPosts} 视图映射保持一致。</p>
+     *
+     * @param authorId 作者用户 ID
+     * @param page     页码（从 1 开始）
+     * @param pageSize 每页大小
+     * @return 该作者的帖子分页列表
+     */
+    @Transactional(readOnly = true)
+    public PostListResponse getPostsByAuthor(Long authorId, int page, int pageSize) {
+        Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Post> postPage = postRepository.findByAuthorIdInAndStatusOrderByCreatedAtDesc(
+                List.of(authorId), PostStatus.active, pageable);
+        List<PostSummaryView> items = toPostSummaryViews(postPage.getContent(), "");
         return new PostListResponse(items, (int) postPage.getTotalElements(), page, pageSize);
     }
 
@@ -177,7 +261,7 @@ public class VillageQueryService {
     public List<PostSummaryView> listHotPosts() {
         Page<Post> postPage = postRepository.findByStatusOrderByLikesCountDesc(
                 PostStatus.active, PageRequest.of(0, 20));
-        return postPage.getContent().stream().map(this::toPostSummaryView).toList();
+        return toPostSummaryViews(postPage.getContent(), "");
     }
 
     // ---- 同校动态流 ----
@@ -187,12 +271,25 @@ public class VillageQueryService {
         if (userId == null) throw new IllegalArgumentException("userId 不能为空");
         String campusName = userCampusProfileRepository.findByUserId(userId)
                 .map(UserCampusProfile::getCampusName).orElse("");
-        List<PostSummaryView> posts = getCampusPosts(campusName);
+        // FIN-00022 修复：page/size 参数对帖子列表分页生效（原实现忽略参数，固定取前 10 条）。
+        // 活动（最多 5 条）与话题（最多 5 条）作为聚合流次要区块保持原有数量上限。
+        List<PostSummaryView> posts = getCampusPosts(campusName, page, size);
         List<CampusActivityView> activities = getCampusActivities(campusName);
         List<CampusTopicView> topics = getCampusTopics();
         return new CampusFeedView(campusName, posts, activities, topics);
     }
 
+    /**
+     * FIN-00021 修复：同校分类帖子列表。
+     *
+     * <p>原实现「全量分页后在内存过滤同校」导致两个缺陷：
+     * <ol>
+     *   <li>totalElements 返回全站帖子总数而非同校帖子总数（语义错误）；</li>
+     *   <li>当一页内同校帖子不足 pageSize 时发生跨页漏帖（分页偏移错误）。</li>
+     * </ol>
+     * 现改为两步 SQL：先查询同校用户 ID 集合，再以 {@code authorId IN (...) }
+     * 直接在数据库侧分页过滤，totalElements 与分页偏移均正确。</p>
+     */
     private PostListResponse getCampusCategoryPosts(Long userId, Pageable pageable) {
         if (userId == null) {
             return new PostListResponse(List.of(), 0, pageable.getPageNumber() + 1, pageable.getPageSize());
@@ -202,26 +299,49 @@ public class VillageQueryService {
         if (myCampusName.isEmpty()) {
             return new PostListResponse(List.of(), 0, pageable.getPageNumber() + 1, pageable.getPageSize());
         }
-        Page<Post> postPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
-        List<Post> campusPosts = new ArrayList<>();
-        for (Post post : postPage.getContent()) {
-            if (isSameCampus(post.getAuthorId(), myCampusName)) campusPosts.add(post);
+        List<Long> campusUserIds = findCampusUserIds(myCampusName);
+        if (campusUserIds.isEmpty()) {
+            return new PostListResponse(List.of(), 0, pageable.getPageNumber() + 1, pageable.getPageSize());
         }
-        List<PostSummaryView> items = campusPosts.stream()
-                .map(post -> toPostSummaryView(post, myCampusName)).toList();
+        Page<Post> postPage = postRepository.findByAuthorIdInAndStatusOrderByCreatedAtDesc(
+                campusUserIds, PostStatus.active, pageable);
+        List<PostSummaryView> items = toPostSummaryViews(postPage.getContent(), myCampusName);
         return new PostListResponse(items, (int) postPage.getTotalElements(),
                 pageable.getPageNumber() + 1, pageable.getPageSize());
     }
 
-    private List<PostSummaryView> getCampusPosts(String campusName) {
-        Page<Post> postPage = postRepository.findByStatusOrderByCreatedAtDesc(
-                PostStatus.active, PageRequest.of(0, 50));
-        List<Post> campusPosts = new ArrayList<>();
-        for (Post post : postPage.getContent()) {
-            if (campusPosts.size() >= 10) break;
-            if (!campusName.isEmpty() && isSameCampus(post.getAuthorId(), campusName)) campusPosts.add(post);
+    /** 查询指定校区下的全部用户 ID（用于同校过滤下推到 SQL）。 */
+    private List<Long> findCampusUserIds(String campusName) {
+        if (campusName == null || campusName.isEmpty()) {
+            return List.of();
         }
-        return campusPosts.stream().map(post -> toPostSummaryView(post, campusName)).toList();
+        if (entityManager == null) {
+            // 兼容旧测试构造器（entityManager 为 null）：回退全量加载 + 内存过滤
+            return userCampusProfileRepository.findAll().stream()
+                    .filter(p -> campusName.equals(p.getCampusName()))
+                    .map(UserCampusProfile::getUserId)
+                    .toList();
+        }
+        return entityManager.createQuery(
+                        "SELECT u.userId FROM UserCampusProfile u WHERE u.campusName = :campusName", Long.class)
+                .setParameter("campusName", campusName)
+                .getResultList();
+    }
+
+    /**
+     * 获取同校最新帖子（SQL 过滤 + 分页，FIN-00022 修复）。
+     *
+     * @param campusName 当前用户校区，为空时返回空列表
+     * @param page       页码（0-based，与 Controller 参数对齐）
+     * @param size       每页大小
+     */
+    private List<PostSummaryView> getCampusPosts(String campusName, int page, int size) {
+        if (campusName.isEmpty()) return List.of();
+        List<Long> campusUserIds = findCampusUserIds(campusName);
+        if (campusUserIds.isEmpty()) return List.of();
+        Page<Post> postPage = postRepository.findByAuthorIdInAndStatusOrderByCreatedAtDesc(
+                campusUserIds, PostStatus.active, PageRequest.of(Math.max(0, page), Math.max(1, size)));
+        return toPostSummaryViews(postPage.getContent(), campusName);
     }
 
     private List<CampusActivityView> getCampusActivities(String campusName) {
@@ -236,12 +356,38 @@ public class VillageQueryService {
                 .toList();
     }
 
+    /**
+     * FIN-00020 修复：同校动态流话题区块。
+     *
+     * <p>原实现逐条 {@code userRepository.findById} 查作者（N+1），且访问
+     * {@code topic.getCircle()}（LAZY）也会逐条触发 circle 查询。
+     * 现通过单条 {@code JOIN FETCH} 查询预加载 circle，并批量预加载作者，
+     * 将 N+1 压缩为 2 次查询。</p>
+     */
     private List<CampusTopicView> getCampusTopics() {
-        Page<CircleTopic> topicPage = circleTopicRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 5));
-        return topicPage.getContent().stream()
+        final List<CircleTopic> topics;
+        if (entityManager == null) {
+            // 兼容旧测试构造器（entityManager 为 null）：回退 Repository 分页查询
+            topics = circleTopicRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 5)).getContent();
+        } else {
+            // FIN-00020 修复：单条 JOIN FETCH 查询预加载 circle，避免逐条触发 LAZY 加载
+            topics = entityManager.createQuery(
+                            "SELECT t FROM CircleTopic t JOIN FETCH t.circle ORDER BY t.createdAt DESC",
+                            CircleTopic.class)
+                    .setMaxResults(5)
+                    .getResultList();
+        }
+        List<Long> authorIds = topics.stream().map(CircleTopic::getAuthorId).distinct().toList();
+        Map<Long, User> authorMap = authorIds.isEmpty()
+                ? Collections.emptyMap()
+                : userRepository.findAllById(authorIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
+        return topics.stream()
                 .map(topic -> {
-                    String authorName = userRepository.findById(topic.getAuthorId())
-                            .map(User::getNickname).orElse(DisplayConstants.UNKNOWN_USER);
+                    User author = authorMap.get(topic.getAuthorId());
+                    String authorName = author != null && author.getNickname() != null
+                            && !author.getNickname().isBlank()
+                            ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
                     return new CampusTopicView(topic.getId(), topic.getCircle().getId(),
                             topic.getCircle().getName(), topic.getTitle(), authorName,
                             topic.getReplyCount() != null ? topic.getReplyCount() : 0,
@@ -252,12 +398,12 @@ public class VillageQueryService {
     private PostListResponse getDiscoverPosts(String category, Pageable pageable) {
         Page<Post> postPage;
         if (category != null && !"all".equals(category)) {
-            PostCategory postCategory = PostCategory.valueOf(category);
+            PostCategory postCategory = parseCategory(category);
             postPage = postRepository.findByCategoryAndStatusOrderByCreatedAtDesc(postCategory, PostStatus.active, pageable);
         } else {
             postPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
         }
-        List<PostSummaryView> items = postPage.getContent().stream().map(this::toPostSummaryView).toList();
+        List<PostSummaryView> items = toPostSummaryViews(postPage.getContent(), "");
         return new PostListResponse(items, (int) postPage.getTotalElements(),
                 pageable.getPageNumber() + 1, pageable.getPageSize());
     }
@@ -272,23 +418,24 @@ public class VillageQueryService {
         }
         Page<Post> postPage;
         if (category != null && !"all".equals(category)) {
-            PostCategory postCategory = PostCategory.valueOf(category);
+            PostCategory postCategory = parseCategory(category);
             postPage = postRepository.findByCategoryAndStatusOrderByCreatedAtDesc(postCategory, PostStatus.active, pageable);
         } else {
             postPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
         }
         List<Post> allPosts = new ArrayList<>(postPage.getContent());
         if (!myCampusName.isEmpty()) {
+            // infra R2-00214: 批量预加载作者校区 Map，避免排序比较器内逐帖调用 isSameCampus 查库（N+1）
+            Map<Long, String> authorCampusMap = loadAuthorCampusMap(allPosts);
             allPosts.sort((a, b) -> {
-                boolean aSame = isSameCampus(a.getAuthorId(), myCampusName);
-                boolean bSame = isSameCampus(b.getAuthorId(), myCampusName);
+                boolean aSame = myCampusName.equals(authorCampusMap.get(a.getAuthorId()));
+                boolean bSame = myCampusName.equals(authorCampusMap.get(b.getAuthorId()));
                 if (aSame && !bSame) return -1;
                 if (!aSame && bSame) return 1;
                 return b.getCreatedAt().compareTo(a.getCreatedAt());
             });
         }
-        List<PostSummaryView> items = allPosts.stream()
-                .map(post -> toPostSummaryView(post, myCampusName)).toList();
+        List<PostSummaryView> items = toPostSummaryViews(allPosts, myCampusName);
         return new PostListResponse(items, (int) postPage.getTotalElements(),
                 pageable.getPageNumber() + 1, pageable.getPageSize());
     }
@@ -304,16 +451,34 @@ public class VillageQueryService {
         }
         Page<Post> postPage;
         if (category != null && !"all".equals(category)) {
-            PostCategory postCategory = PostCategory.valueOf(category);
+            PostCategory postCategory = parseCategory(category);
             postPage = postRepository.findByAuthorIdInAndCategoryAndStatusOrderByCreatedAtDesc(
                     followingUserIds, postCategory, PostStatus.active, pageable);
         } else {
             postPage = postRepository.findByAuthorIdInAndStatusOrderByCreatedAtDesc(
                     followingUserIds, PostStatus.active, pageable);
         }
-        List<PostSummaryView> items = postPage.getContent().stream().map(this::toPostSummaryView).toList();
+        // Phase Feedback3 P2.5：关注流所有帖子作者均在关注集合内，isFollowed 恒 true
+        List<PostSummaryView> items = toPostSummaryViews(postPage.getContent(), "",
+                Set.copyOf(followingUserIds));
         return new PostListResponse(items, (int) postPage.getTotalElements(),
                 pageable.getPageNumber() + 1, pageable.getPageSize());
+    }
+
+    /**
+     * 批量加载帖子作者校区 Map（userId → campusName）。
+     *
+     * @param posts 帖子列表
+     * @return 作者校区映射（无资料作者不在 Map 中）
+     */
+    private Map<Long, String> loadAuthorCampusMap(List<Post> posts) {
+        List<Long> authorIds = posts.stream().map(Post::getAuthorId).distinct().toList();
+        if (authorIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userCampusProfileRepository.findByUserIdIn(authorIds).stream()
+                .collect(Collectors.toMap(UserCampusProfile::getUserId,
+                        UserCampusProfile::getCampusName, (a, b) -> a));
     }
 
     // ---- 相似作者推荐 ----
@@ -334,7 +499,10 @@ public class VillageQueryService {
         Set<Long> followedUserIds = userFollowRepository.findByFollowerId(userId).stream()
                 .map(UserFollow::getFollowingId).collect(Collectors.toSet());
 
-        List<User> pagedUsers = userRepository.findAll(PageRequest.of(0, 50)).getContent();
+        // FIN-00024 修复：原实现仅取前 50 个用户作为相似作者候选池，用户量增长后
+        // 高分候选可能被截断在池外。候选池扩大为 200（与推荐算法 candidate-page-size 对齐），
+        // 仍通过 SQL 分页限制内存占用。
+        List<User> pagedUsers = userRepository.findAll(PageRequest.of(0, SIMILAR_AUTHOR_CANDIDATE_LIMIT)).getContent();
         List<Long> candidateIds = pagedUsers.stream().map(User::getId)
                 .filter(id -> !id.equals(postAuthorId) && !id.equals(userId) && !followedUserIds.contains(id))
                 .toList();
@@ -370,6 +538,51 @@ public class VillageQueryService {
     }
 
     // ---- 视图转换与辅助方法（委托至 VillageViewMapper，保留包级可见以兼容现有调用方） ----
+
+    /**
+     * 批量转换帖子摘要视图（FIN-00019 N+1 修复）。
+     *
+     * <p>一次性预加载当前页所有作者的 User 与 UserCampusProfile，
+     * 再批量转换，避免 {@link VillageViewMapper#toPostSummaryView(Post, String)}
+     * 每帖 2 次查询的 N+1 问题。</p>
+     *
+     * @param posts        帖子列表
+     * @param myCampusName 当前用户校区（可为空字符串）
+     * @return 帖子摘要视图列表
+     */
+    List<PostSummaryView> toPostSummaryViews(List<Post> posts, String myCampusName) {
+        return toPostSummaryViews(posts, myCampusName, Collections.emptySet());
+    }
+
+    /**
+     * 批量转换帖子摘要视图（带关注上下文，Phase Feedback3 P2.5）。
+     *
+     * @param posts           帖子列表
+     * @param myCampusName    当前用户校区（可为空字符串）
+     * @param followedUserIds 当前用户关注的作者 ID 集合（可为空，isFollowed 置 false）
+     */
+    List<PostSummaryView> toPostSummaryViews(List<Post> posts, String myCampusName,
+                                             Set<Long> followedUserIds) {
+        if (posts == null || posts.isEmpty()) {
+            return List.of();
+        }
+        List<Long> authorIds = posts.stream().map(Post::getAuthorId).distinct().toList();
+        Map<Long, User> authorMap = userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+        Map<Long, UserCampusProfile> campusMap = userCampusProfileRepository.findByUserIdIn(authorIds).stream()
+                .collect(Collectors.toMap(UserCampusProfile::getUserId, p -> p));
+        return viewMapper.toPostSummaryViews(posts, myCampusName, authorMap, campusMap, followedUserIds);
+    }
+
+    /** 加载当前用户关注的作者 ID 集合（无用户上下文返回空集合）。 */
+    private Set<Long> loadFollowedUserIds(Long userId) {
+        if (userId == null) {
+            return Collections.emptySet();
+        }
+        return userFollowRepository.findByFollowerId(userId).stream()
+                .map(UserFollow::getFollowingId)
+                .collect(Collectors.toSet());
+    }
 
     Post findPostOrThrow(Long postId) {
         return postRepository.findById(postId)

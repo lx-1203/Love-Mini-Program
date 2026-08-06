@@ -32,6 +32,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class VillageViewMapper {
 
+    /** 热门帖子点赞阈值（FIN-00018 修复：抽为常量，原 toPostSummaryView 中硬编码 50） */
+    static final int HOT_POST_THRESHOLD = 50;
+
     private final UserRepository userRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final PostLikeRepository postLikeRepository;
@@ -53,13 +56,93 @@ public class VillageViewMapper {
     }
 
     PostSummaryView toPostSummaryView(Post post, String myCampusName) {
+        return toPostSummaryView(post, myCampusName, java.util.Collections.emptySet());
+    }
+
+    /**
+     * 单条帖子摘要视图（带关注上下文，Phase Feedback3 P2.5）。
+     *
+     * @param post           帖子
+     * @param myCampusName   当前用户校区（用于 isAlumni）
+     * @param followedUserIds 当前用户关注的作者 ID 集合（可为空，isFollowed 置 false）
+     */
+    PostSummaryView toPostSummaryView(Post post, String myCampusName,
+                                      java.util.Set<Long> followedUserIds) {
+        // 单条转换：兼容单帖场景（如帖子详情、首页热门），每次 2 次查询可接受
         PostAuthorView author = getPostAuthorView(post.getAuthorId());
         List<String> tags = parseJsonToList(post.getTags());
         String summary = truncate(post.getContent(), 120);
         boolean isAlumni = !myCampusName.isEmpty() && isSameCampus(post.getAuthorId(), myCampusName);
+        boolean isFollowed = followedUserIds != null && followedUserIds.contains(post.getAuthorId());
         return new PostSummaryView(post.getId(), null, summary, author, post.getCategory().name(),
                 tags, post.getLikesCount(), post.getCommentsCount(), post.getShareCount(),
-                post.getCreatedAt().toString(), post.getLikesCount() >= 50, isAlumni);
+                post.getCreatedAt().toString(), post.getLikesCount() >= HOT_POST_THRESHOLD, isAlumni,
+                isFollowed);
+    }
+
+    /**
+     * 批量转换帖子摘要视图（FIN-00019 N+1 修复）。
+     *
+     * <p>列表场景（帖子列表/同校流）一次性预加载作者与校区资料，
+     * 将原本每帖 2 次查询（findById + findByUserId）压缩为 3 次批量查询，
+     * 避免 N+1。</p>
+     *
+     * @param posts     帖子列表
+     * @param myCampusName 当前用户校区（用于 isAlumni 判断，可为空字符串）
+     * @param authorMap 作者 User 批量映射（authorId -> User）
+     * @param campusMap 作者校区资料批量映射（userId -> UserCampusProfile）
+     * @return 帖子摘要视图列表
+     */
+    List<PostSummaryView> toPostSummaryViews(List<Post> posts, String myCampusName,
+                                              Map<Long, User> authorMap,
+                                              Map<Long, UserCampusProfile> campusMap) {
+        return toPostSummaryViews(posts, myCampusName, authorMap, campusMap, java.util.Collections.emptySet());
+    }
+
+    /**
+     * 批量转换帖子摘要视图（带关注上下文，Phase Feedback3 P2.5）。
+     *
+     * @param followedUserIds 当前用户关注的作者 ID 集合（为空时所有帖子 isFollowed=false）
+     */
+    List<PostSummaryView> toPostSummaryViews(List<Post> posts, String myCampusName,
+                                              Map<Long, User> authorMap,
+                                              Map<Long, UserCampusProfile> campusMap,
+                                              java.util.Set<Long> followedUserIds) {
+        return posts.stream()
+                .map(post -> toPostSummaryView(post, myCampusName, authorMap, campusMap, followedUserIds))
+                .toList();
+    }
+
+    /**
+     * 批量转换单条帖子摘要视图（预加载数据版，供 {@link #toPostSummaryViews} 内部使用）。
+     */
+    /**
+     * 批量转换单条帖子摘要视图（预加载数据版，供 {@link #toPostSummaryViews} 内部使用）。
+     */
+    private PostSummaryView toPostSummaryView(Post post, String myCampusName,
+                                              Map<Long, User> authorMap,
+                                              Map<Long, UserCampusProfile> campusMap,
+                                              java.util.Set<Long> followedUserIds) {
+        User author = authorMap != null ? authorMap.get(post.getAuthorId()) : null;
+        String nickname = author != null && author.getNickname() != null
+                ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
+        String avatarUrl = author != null ? author.getAvatarUrl() : null;
+        String campusName = "";
+        if (campusMap != null) {
+            UserCampusProfile cp = campusMap.get(post.getAuthorId());
+            if (cp != null && cp.getCampusName() != null) {
+                campusName = cp.getCampusName();
+            }
+        }
+        PostAuthorView authorView = new PostAuthorView(post.getAuthorId(), nickname, avatarUrl, campusName);
+        List<String> tags = parseJsonToList(post.getTags());
+        String summary = truncate(post.getContent(), 120);
+        boolean isAlumni = !myCampusName.isEmpty() && myCampusName.equals(campusName);
+        boolean isFollowed = followedUserIds != null && followedUserIds.contains(post.getAuthorId());
+        return new PostSummaryView(post.getId(), null, summary, authorView, post.getCategory().name(),
+                tags, post.getLikesCount(), post.getCommentsCount(), post.getShareCount(),
+                post.getCreatedAt().toString(), post.getLikesCount() >= HOT_POST_THRESHOLD, isAlumni,
+                isFollowed);
     }
 
     PostDetailView toPostDetailView(Post post, Long currentUserId) {

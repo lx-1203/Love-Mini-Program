@@ -154,6 +154,8 @@ export interface PostSummaryView {
   createdAt: string;
   isHot: boolean;
   isAlumni: boolean;
+  /** Phase Feedback3 P2.5：作者是否被当前用户关注（关注 Tab 打通；后端缺失时回退 false） */
+  isFollowed?: boolean;
 }
 
 /**
@@ -187,6 +189,8 @@ export interface PostDetailView {
   isLiked: boolean;
   isAuthor: boolean;
   isAlumni: boolean;
+  /** Phase Feedback3 P2.5：作者是否被当前用户关注 */
+  isFollowed?: boolean;
 }
 
 /**

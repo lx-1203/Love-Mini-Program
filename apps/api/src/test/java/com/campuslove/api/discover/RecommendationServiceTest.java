@@ -542,7 +542,11 @@ class RecommendationServiceTest {
                 id, "测试用户", "T", "headline", "commonGround", "available",
                 "campus", "/avatar.jpg", List.of("tag1"), "bio", List.of(),
                 false, false, 0,
-                height, educationLevel, List.of(), null, null, "none"
+                height, educationLevel, List.of(), null, null, "none",
+                // Phase Feedback1 扩展字段
+                "CL-" + id, "1.2km", "offline",
+                true, false, List.of("开朗"), "INTJ",
+                null, false, List.of(), null, false, "江苏 · 南京"
         );
     }
 
@@ -557,7 +561,11 @@ class RecommendationServiceTest {
                 tags == null ? List.of() : tags,
                 bio, List.of(),
                 false, false, 0,
-                null, null, List.of(), null, null, "none"
+                null, null, List.of(), null, null, "none",
+                // Phase Feedback1 扩展字段
+                "CL-" + id, "1.2km", "offline",
+                true, false, List.of("开朗"), "INTJ",
+                null, false, List.of(), null, false, "江苏 · 南京"
         );
     }
 
@@ -572,7 +580,11 @@ class RecommendationServiceTest {
                 base.avatarUrl(), base.tags(), base.bio(), base.images(),
                 base.isSameSchool(), base.isSameMajor(), base.commonCircleCount(),
                 height, educationLevel, base.photoGallery(),
-                base.halfBodyPhotoUrl(), base.personalVideoUrl(), base.verificationBadgeLevel()
+                base.halfBodyPhotoUrl(), base.personalVideoUrl(), base.verificationBadgeLevel(),
+                base.displayId(), base.distanceText(), base.activeStatusText(),
+                base.machineVerified(), base.humanVerified(), base.personality(),
+                base.mbti(), base.whisper(), base.whisperSent(), base.recentPosts(),
+                base.expectedPartner(), base.allowMessage(), base.ipLocation()
         );
     }
 }

@@ -34,6 +34,30 @@ import {
 import { t } from "@/i18n";
 import { useSessionStore } from "../session";
 
+/** Phase Feedback3 P2.5：搭子圈活动关键词（作者兴趣命中即视为搭子相关内容） */
+const BUDDY_ACTIVITY_KEYWORDS = [
+  "运动", "健身", "跑步", "读书", "摄影", "游戏", "旅行", "户外",
+  "徒步", "音乐", "电影", "美食", "剧本杀", "桌游", "羽毛球", "篮球",
+];
+
+/**
+ * Phase Feedback3 P2.5：判断帖子是否为搭子圈内容。
+ *
+ * 命中任一条件即视为搭子内容：
+ * - 帖子带 buddyTags
+ * - 帖子标签含「搭子」
+ * - 作者兴趣标签命中搭子活动关键词（标签聚合，扩大覆盖面）
+ */
+export function isBuddyPost(post: Pick<PostItem, "buddyTags" | "tags" | "author">): boolean {
+  return (
+    (post.buddyTags && post.buddyTags.length > 0) ||
+    post.tags.some((tag) => tag.includes("搭子")) ||
+    (post.author.interests ?? []).some((interest) =>
+      BUDDY_ACTIVITY_KEYWORDS.some((k) => interest.includes(k))
+    )
+  );
+}
+
 /**
  * 安全数字转换工具
  *
@@ -93,7 +117,8 @@ export function mapToPostItem(raw: PostSummaryView): PostItem {
     comments: raw.commentCount,
     shares: raw.shareCount,
     isLiked: false, // PostSummaryView 无 isLiked 字段
-    isFollowed: false, // PostSummaryView 无 isFollowed 字段
+    // Phase Feedback3 P2.5：后端下发 isFollowed 后透传（关注 Tab 打通），缺失回退 false
+    isFollowed: raw.isFollowed ?? false,
     isShared: false, // PostSummaryView 无 isShared 字段
     isAlumni: raw.isAlumni ?? false,
     createdAt: raw.createdAt,
@@ -116,7 +141,8 @@ export function mapDetailToPostItem(data: PostDetailView): PostItem {
     comments: data.commentCount,
     shares: data.shareCount,
     isLiked: data.isLiked,
-    isFollowed: false,
+    // Phase Feedback3 P2.5：详情页 isFollowed 透传，缺失回退 false
+    isFollowed: data.isFollowed ?? false,
     isShared: false,
     isAlumni: data.isAlumni ?? false,
     createdAt: data.createdAt,
@@ -235,12 +261,9 @@ export function filterAndSortPosts(
           );
           break;
         case "buddy":
-          // 搭子圈：带 buddyTags 或标签含"搭子"的帖子
-          result = result.filter(
-            (post) =>
-              (post.buddyTags && post.buddyTags.length > 0) ||
-              post.tags.some((tag) => tag.includes("搭子"))
-          );
+          // 搭子圈：带 buddyTags、标签含"搭子"、或作者兴趣命中搭子活动的帖子
+          // Phase Feedback3 P2.5：补充作者兴趣标签聚合，扩大搭子内容的覆盖面
+          result = result.filter(isBuddyPost);
           break;
         case "all":
         default:
