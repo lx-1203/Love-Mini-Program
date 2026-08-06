@@ -315,6 +315,18 @@
       "style": {
         "navigationBarTitleText": "恋爱咨询课程"
       }
+    },
+    {
+      "path": "pages/showcase/index",
+      "style": {
+        "navigationBarTitleText": "全功能展示"
+      }
+    },
+    {
+      "path": "pages/wallet/index",
+      "style": {
+        "navigationBarTitleText": "我的钱包"
+      }
     }
   ],
   "subPackages": [

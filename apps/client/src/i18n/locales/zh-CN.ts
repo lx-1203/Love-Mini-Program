@@ -374,6 +374,19 @@ export default {
     },
   },
 
+  /* ========== 我的钱包（交友币） ========== */
+  wallet: {
+    title: "我的钱包",
+    balanceLabel: "交友币余额",
+    balanceHint: "解锁私信 / 访客 / 喜欢你 / 悄悄话将消耗交友币",
+    recharge: "演示充值 ¥100",
+    rechargeSuccess: "充值成功 +¥{n}",
+    transactions: "收支明细",
+    income: "收入",
+    expense: "支出",
+    empty: "暂无流水记录",
+  },
+
   /* ========== 内容页（任务 E3） ========== */
   contentPages: {
     entries: {
@@ -803,7 +816,7 @@ export default {
     // Showcase 展示版入口
     showcaseEntry: "全功能展示",
     myPosts: "我的动态",
-    myLikes: "我的喜欢",
+    wallet: "我的钱包",
     myMatches: "我的匹配",
     settings: "设置",
     editProfile: "编辑资料",

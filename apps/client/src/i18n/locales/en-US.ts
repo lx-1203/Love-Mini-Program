@@ -374,6 +374,19 @@ export default {
     },
   },
 
+  /* ========== Wallet (Coins) ========== */
+  wallet: {
+    title: "My Wallet",
+    balanceLabel: "Coins Balance",
+    balanceHint: "Coins are used to unlock messages, visitors, likes, and whispers",
+    recharge: "Demo Recharge ¥100",
+    rechargeSuccess: "Recharged +¥{n}",
+    transactions: "Transactions",
+    income: "Income",
+    expense: "Expense",
+    empty: "No transactions yet",
+  },
+
   /* ========== Content pages (Task E3) ========== */
   contentPages: {
     entries: {
@@ -803,6 +816,7 @@ export default {
     // Showcase entry
     showcaseEntry: "Showcase",
     myPosts: "My Posts",
+    wallet: "My Wallet",
     myLikes: "My Likes",
     myMatches: "My Matches",
     settings: "Settings",

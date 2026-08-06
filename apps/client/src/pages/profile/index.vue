@@ -4,7 +4,7 @@
  * 展示用户头像、昵称、学校、签名、VIP 状态、我的动态、数据统计、资料完善度、社交升温进度、功能菜单入口
  * 资料未完善时展示 LockScreen 锁定页面
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { onShow, onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
@@ -12,7 +12,11 @@ import { useSessionStore } from "../../stores/session";
 import { useProfileStore } from "../../stores/profile";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
+// review #62：动态预览点击跳转帖子详情前校验存在性
+import { useVillageStore } from "../../stores/village";
 import { isDev } from "../../services/env";
+// Showcase 展示版入口
+import { isShowcaseMode } from "../../config/showcase";
 import { openAppPath, switchTabWithQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import { toProfileView } from "../../view-models/profile";
@@ -80,6 +84,7 @@ useTabBar(4);
 const profileStore = useProfileStore();
 const socialProgressStore = useSocialProgressStore();
 const discoverStore = useDiscoverStore();
+const villageStore = useVillageStore();
 
 /**
  * 个人主页顶部背景图 URL（Phase D4 / Phase E1 上传支持）
@@ -283,6 +288,17 @@ interface MenuItem {
 }
 
 const menuItems = computed<MenuItem[]>(() => [
+  /* Showcase 展示版：全功能入口（仅展示构建包可见） */
+  ...(isShowcaseMode
+    ? [
+        {
+          icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
+          bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
+          label: t("profile.showcaseEntry"),
+          path: "/pages/showcase/index",
+        } as MenuItem,
+      ]
+    : []),
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
@@ -296,6 +312,13 @@ const menuItems = computed<MenuItem[]>(() => [
     bgColor: "var(--c-tint-cream-50, #FFF8E7)",
     label: t("profile.taskCenter"),
     path: "/pages/profile/tasks",
+  },
+  /* Phase Feedback3：我的钱包（交友币余额/账单） */
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
+    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+    label: t("profile.wallet"),
+    path: "/pages/wallet/index",
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
@@ -435,6 +458,9 @@ const isVoicePlaying = ref(false);
 /** 演示态自动停止计时器（连点播放/暂停时先清理，避免状态错乱） */
 let voicePlayTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** infra R2-00080: 语音演示态自动停止时长（毫秒）——原 3000 魔法数字具名化 */
+const VOICE_DEMO_PLAY_MS = 3000;
+
 /** 语音时长标签（如 0:42 / 0:05） */
 const voiceDurationLabel = computed(() => {
   const seconds = voiceStatusDuration.value || 0;
@@ -483,7 +509,7 @@ function handlePlayVoice() {
   voicePlayTimer = setTimeout(() => {
     isVoicePlaying.value = false;
     voicePlayTimer = null;
-  }, 3000);
+  }, VOICE_DEMO_PLAY_MS);
 }
 
 /** 删除语音状态 */
@@ -511,11 +537,21 @@ function goToMyPosts() {
 }
 
 /**
- * 点击单条动态预览项（跳转到村口「我的」分区，简化处理）
- * @param postId - 帖子 ID（保留参数，便于后续接入详情页）
+ * 点击单条动态预览项（review #62：优先跳转帖子详情，不再一律跳"我的"分区）
+ * @param postId - 帖子 ID；为空或帖子不存在时回退"我的"分区
  */
-function handlePostTap(_postId: string) {
+async function handlePostTap(postId: string) {
   lightHaptic();
+  if (!postId) {
+    switchTabWithQuery("/pages/village/index", { tab: "mine" });
+    return;
+  }
+  await villageStore.setCurrentPost(postId);
+  if (villageStore.currentPost) {
+    openAppPath(`/pages/village/detail?id=${encodeURIComponent(postId)}`);
+    return;
+  }
+  // 帖子不存在（可能已被删除）：回退"我的"分区
   switchTabWithQuery("/pages/village/index", { tab: "mine" });
 }
 
@@ -730,30 +766,20 @@ const appVersion: string = (() => {
 // isDev 已从 services/env 导入
 
 /**
- * 页面显示时拉取个人主页数据
- * 修复：原仅 onMounted 调用 loadStats，切换 Tab 返回不刷新；
- * 现通过 onShow 调用 fetchProfile（包含 basic/campus/schedule/stats/vip/posts），
- * 确保每次进入个人主页都拿到最新数据。社交升温进度同步刷新。
- *
- * Task F1 / M-08：同时刷新页面 userId 参数，支持查看对方 profile
+ * 页面显示时拉取个人主页数据（review #36：仅首次 onShow 请求，消除 onMounted+onShow 双请求）
+ * onShow 在 onMounted 之前触发，首次 onShow 即覆盖首屏数据加载。
  */
+let profileRequestedOnce = false;
 onShow(() => {
   loadPageUserIdParam();
+  if (profileRequestedOnce) return;
+  profileRequestedOnce = true;
   profileStore.fetchProfile().catch((error) => {
     console.warn("[ProfilePage] fetchProfile 失败:", error);
   });
   socialProgressStore.fetchProgress().catch((error) => {
     console.warn("[ProfilePage] fetchProgress 失败:", error);
   });
-});
-
-/** 页面首次加载时获取统计数据（与 onShow 配合，确保首屏有数据） */
-onMounted(() => {
-  loadPageUserIdParam();
-  profileStore.fetchProfile().catch(() => {
-    // onShow 会重试，这里静默处理
-  });
-  socialProgressStore.fetchProgress();
 });
 
 /** 页面卸载时清理语音演示定时器（Phase Feedback5：避免卸载后触发状态更新） */
@@ -1792,7 +1818,7 @@ onUnload(() => {
   width: 80rpx;
   height: 80rpx;
   border-radius: var(--r-circle, 50%);
-  background: var(--c-gradient-brand, linear-gradient(135deg, #6fe0b0 0%, #3fcf8e 100%));
+  background: var(--c-gradient-brand, linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%));
   display: flex;
   align-items: center;
   justify-content: center;
