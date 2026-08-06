@@ -32,8 +32,9 @@ import org.springframework.web.multipart.MultipartFile;
  * <p>存储路径：{@code {storageRoot}/{userId}/{yyyyMM}/{uuid}.{ext}}
  * 默认 {@code storageRoot = ./uploads}，可通过 {@code app.media.storage-root} 配置覆盖。</p>
  *
- * <p>访问 URL：{@code /uploads/{userId}/{yyyyMM}/{uuid}.{ext}}，
- * 由 WebConfig 中 {@code /uploads/**} 静态资源映射提供服务。</p>
+ * <p>访问 URL：{@code /api/v1/media/{userId}/{yyyyMM}/{uuid}.{ext}}，
+ * 由 MediaAccessController 鉴权代理提供服务（图片登录用户可读，
+ * 语音/视频/身份证仅本人或管理员；infra R2-00014）。</p>
  *
  * <p>校验规则：
  * <ul>
@@ -64,6 +65,9 @@ public class LocalMediaStorageService implements MediaStorageService {
     /** 视频最大字节数：50 MB */
     private static final long MAX_VIDEO_BYTES = 50L * 1024 * 1024;
 
+    /** 音频最大字节数：8 MB（60s 语音 aac/mp3 通常 < 1.5MB，留足余量） */
+    private static final long MAX_AUDIO_BYTES = 8L * 1024 * 1024;
+
     /** 允许的图片扩展名（小写） */
     private static final Set<String> ALLOWED_IMAGE_EXT =
             Set.of("jpg", "jpeg", "png", "webp");
@@ -71,6 +75,10 @@ public class LocalMediaStorageService implements MediaStorageService {
     /** 允许的视频扩展名（小写） */
     private static final Set<String> ALLOWED_VIDEO_EXT =
             Set.of("mp4", "mov");
+
+    /** 允许的音频扩展名（小写）—— 微信 RecorderManager aac/mp3，兼容 wav/m4a */
+    private static final Set<String> ALLOWED_AUDIO_EXT =
+            Set.of("aac", "mp3", "m4a", "wav");
 
     /**
      * 修复：允许的图片 MIME 类型白名单，防止上传伪装文件（如 .jpg 实为可执行文件）。
@@ -87,11 +95,25 @@ public class LocalMediaStorageService implements MediaStorageService {
     private static final Set<String> ALLOWED_VIDEO_MIME =
             Set.of("video/mp4", "video/quicktime");
 
+    /**
+     * 允许的音频 MIME 类型白名单。
+     * 与 ALLOWED_AUDIO_EXT 保持一致：aac/mp3/m4a/wav 及其常见别名。
+     */
+    private static final Set<String> ALLOWED_AUDIO_MIME =
+            Set.of("audio/aac", "audio/mpeg", "audio/mp3",
+                    "audio/mp4", "audio/x-m4a", "audio/x-aac",
+                    "audio/wav", "audio/wave", "audio/x-wav");
+
     /** 月份目录格式（如 202607） */
     private static final DateTimeFormatter MONTH_FMT = DateTimeFormatter.ofPattern("yyyyMM");
 
-    /** URL 前缀（与 WebConfig 静态资源映射一致） */
-    private static final String URL_PREFIX = "/uploads/";
+    /** URL 前缀（与 MediaAccessController 鉴权代理路由一致）
+     *  infra R2-00014：原 /uploads/ 被 SecurityConfig denyAll，上传后 URL 不可访问；
+     *  改为 /api/v1/media/ 使 URL 直接走鉴权代理（图片登录用户可读，语音/视频/身份证仅本人）。 */
+    private static final String URL_PREFIX = "/api/v1/media/";
+
+    /** 旧前缀（兼容历史存量 URL 的删除操作） */
+    private static final String LEGACY_URL_PREFIX = "/uploads/";
 
     /**
      * Task 2.6.5：图片格式 magic bytes 白名单。
@@ -120,6 +142,22 @@ public class LocalMediaStorageService implements MediaStorageService {
             new byte[]{0x66, 0x74, 0x79, 0x70} // "ftyp"
     };
 
+    /**
+     * Phase Feedback5 P2.6：音频格式 magic bytes 白名单。
+     *
+     * <p>每种音频格式对应文件头部的固定字节序列：</p>
+     * <ul>
+     *   <li>aac：ADTS 帧同步字 {@code FF F1}（微信 RecorderManager 默认输出）</li>
+     *   <li>mp3：ID3v2 标签头 {@code 49 44 33}（"ID3"，微信 mp3 输出均带标签）</li>
+     *   <li>m4a：MP4 容器 ftyp box（偏移 4-7）</li>
+     *   <li>wav：RIFF + WAVE（偏移 0 与 8）</li>
+     * </ul>
+     */
+    private static final Map<String, byte[][]> AUDIO_MAGIC_BYTES = new LinkedHashMap<>();
+
+    /** 音频格式 magic bytes 的起始偏移（与 AUDIO_MAGIC_BYTES 的序列一一对应） */
+    private static final Map<String, int[]> AUDIO_MAGIC_OFFSETS = new LinkedHashMap<>();
+
     static {
         // JPEG: FF D8 FF
         IMAGE_MAGIC_BYTES.put("jpg", new byte[][]{new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}});
@@ -132,6 +170,27 @@ public class LocalMediaStorageService implements MediaStorageService {
                 new byte[]{0x52, 0x49, 0x46, 0x46}, // "RIFF"
                 new byte[]{0x57, 0x45, 0x42, 0x50}  // "WEBP" at offset 8
         });
+        // AAC: ADTS 帧同步字 FF F1（前 2 字节，偏移 0）
+        AUDIO_MAGIC_BYTES.put("aac", new byte[][]{
+                new byte[]{(byte) 0xFF, (byte) 0xF1}
+        });
+        AUDIO_MAGIC_OFFSETS.put("aac", new int[]{0});
+        // MP3: ID3v2 标签头（偏移 0）；无标签的裸 MPEG 帧流不在白名单内（微信输出均带 ID3）
+        AUDIO_MAGIC_BYTES.put("mp3", new byte[][]{
+                new byte[]{0x49, 0x44, 0x33} // "ID3"
+        });
+        AUDIO_MAGIC_OFFSETS.put("mp3", new int[]{0});
+        // M4A: MP4 容器 ftyp box（偏移 4）
+        AUDIO_MAGIC_BYTES.put("m4a", new byte[][]{
+                new byte[]{0x66, 0x74, 0x79, 0x70} // "ftyp"
+        });
+        AUDIO_MAGIC_OFFSETS.put("m4a", new int[]{4});
+        // WAV: RIFF @ 0 + WAVE @ 8
+        AUDIO_MAGIC_BYTES.put("wav", new byte[][]{
+                new byte[]{0x52, 0x49, 0x46, 0x46}, // "RIFF"
+                new byte[]{0x57, 0x41, 0x56, 0x45}  // "WAVE"
+        });
+        AUDIO_MAGIC_OFFSETS.put("wav", new int[]{0, 8});
     }
 
     /** 本地存储根目录，默认 ./uploads，相对路径基于应用工作目录 */
@@ -170,9 +229,12 @@ public class LocalMediaStorageService implements MediaStorageService {
         // 根据类型校验大小与扩展名（先做扩展名校验，再做 MIME 校验，
         // 保证不支持的扩展名优先抛出"不支持的格式"信息，便于调用方定位问题）
         boolean isVideoType = "video".equals(normalizedType);
+        boolean isAudioType = "audio".equals(normalizedType);
         long fileSize = file.getSize();
         if (isVideoType) {
             validateVideo(lowerExt, fileSize);
+        } else if (isAudioType) {
+            validateAudio(lowerExt, fileSize);
         } else {
             validateImage(lowerExt, fileSize);
         }
@@ -216,10 +278,10 @@ public class LocalMediaStorageService implements MediaStorageService {
             throw new IllegalStateException("写入上传文件失败: " + ex.getMessage(), ex);
         }
 
-        // 读取图片元信息
+        // 读取图片元信息（音频/视频无宽高）
         Integer width = null;
         Integer height = null;
-        if (!isVideoType) {
+        if (!isVideoType && !isAudioType) {
             try {
                 int[] dims = readImageDimensions(absolutePath, lowerExt);
                 width = dims[0];
@@ -232,7 +294,13 @@ public class LocalMediaStorageService implements MediaStorageService {
 
         String finalContentType = contentType;
         if (finalContentType == null || finalContentType.isBlank()) {
-            finalContentType = isVideoType ? "video/mp4" : "image/jpeg";
+            if (isVideoType) {
+                finalContentType = "video/mp4";
+            } else if (isAudioType) {
+                finalContentType = "audio/mp4";
+            } else {
+                finalContentType = "image/jpeg";
+            }
         }
 
         LOGGER.info("媒体上传成功: userId={} type={} url={} size={} ", userId, normalizedType,
@@ -269,7 +337,7 @@ public class LocalMediaStorageService implements MediaStorageService {
     /**
      * 删除已存储的媒体文件。
      *
-     * <p>仅删除受管路径（{@code /uploads/} 前缀）下的文件，
+     * <p>仅删除受管路径（{@code /api/v1/media/} 前缀，兼容历史 {@code /uploads/}）下的文件，
      * 防止通过构造 URL 删除应用其他文件。
      * 文件不存在时静默忽略，IO 异常抛出 {@link IllegalStateException}。</p>
      *
@@ -280,12 +348,17 @@ public class LocalMediaStorageService implements MediaStorageService {
         if (url == null || url.isBlank()) {
             return;
         }
-        // 仅删除受管前缀下的文件，避免路径穿越
-        if (!url.startsWith(URL_PREFIX)) {
+        // 仅删除受管前缀下的文件，避免路径穿越；兼容新旧两种前缀
+        String relative = null;
+        if (url.startsWith(URL_PREFIX)) {
+            relative = url.substring(URL_PREFIX.length());
+        } else if (url.startsWith(LEGACY_URL_PREFIX)) {
+            relative = url.substring(LEGACY_URL_PREFIX.length());
+        }
+        if (relative == null) {
             LOGGER.warn("跳过删除非受管 URL: {}", url);
             return;
         }
-        String relative = url.substring(URL_PREFIX.length());
         Path target = Paths.get(storageRoot, relative).toAbsolutePath().normalize();
         Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
         // 二次校验：normalize 后仍需在 storageRoot 之下，防止 ../ 穿越
@@ -311,7 +384,7 @@ public class LocalMediaStorageService implements MediaStorageService {
      * 背景图按图片规则校验。
      *
      * @param type 原始类型字符串
-     * @return image / video
+     * @return image / video / audio
      * @throws IllegalArgumentException 不支持的类型
      */
     private String normalizeType(String type) {
@@ -324,6 +397,9 @@ public class LocalMediaStorageService implements MediaStorageService {
         }
         if ("video".equals(lower)) {
             return "video";
+        }
+        if ("audio".equals(lower) || "voice".equals(lower)) {
+            return "audio";
         }
         throw new IllegalArgumentException("不支持的媒体类型: " + type);
     }
@@ -381,6 +457,25 @@ public class LocalMediaStorageService implements MediaStorageService {
     }
 
     /**
+     * Phase Feedback5 P2.6：校验音频扩展名与大小。
+     *
+     * <p>60s 语音状态上传（最长 60 秒 aac/mp3）。</p>
+     *
+     * @param lowerExt 扩展名（小写）
+     * @param fileSize 文件大小（字节）
+     */
+    private void validateAudio(String lowerExt, long fileSize) {
+        if (!ALLOWED_AUDIO_EXT.contains(lowerExt)) {
+            throw new IllegalArgumentException(
+                    "不支持的音频格式: " + lowerExt + "，仅支持 aac/mp3/m4a/wav");
+        }
+        if (fileSize > MAX_AUDIO_BYTES) {
+            throw new MediaSizeLimitExceededException(
+                    "音频大小超过限制（8MB）: 当前 " + (fileSize / 1024 / 1024) + "MB");
+        }
+    }
+
+    /**
      * 修复：校验上传文件 ContentType MIME 类型是否在白名单中。
      * 防止攻击者通过修改扩展名绕过校验上传恶意文件（如 .jpg 实为可执行文件）。
      *
@@ -393,7 +488,7 @@ public class LocalMediaStorageService implements MediaStorageService {
      * </p>
      *
      * @param contentType    文件 ContentType（可能为 null）
-     * @param normalizedType 归一化后的媒体类型（image/video）
+     * @param normalizedType 归一化后的媒体类型（image/video/audio）
      */
     private void validateMimeType(String contentType, String normalizedType) {
         // ContentType 为 null 时跳过 MIME 校验，仅依赖扩展名校验（向后兼容）
@@ -403,7 +498,14 @@ public class LocalMediaStorageService implements MediaStorageService {
         }
         // 取分号前的主 MIME 类型（如 "image/jpeg; charset=utf-8" → "image/jpeg"）
         String mainMime = contentType.split(";")[0].trim().toLowerCase(Locale.ROOT);
-        Set<String> allowed = "video".equals(normalizedType) ? ALLOWED_VIDEO_MIME : ALLOWED_IMAGE_MIME;
+        Set<String> allowed;
+        if ("video".equals(normalizedType)) {
+            allowed = ALLOWED_VIDEO_MIME;
+        } else if ("audio".equals(normalizedType)) {
+            allowed = ALLOWED_AUDIO_MIME;
+        } else {
+            allowed = ALLOWED_IMAGE_MIME;
+        }
         if (!allowed.contains(mainMime)) {
             throw new IllegalArgumentException(
                     "不支持的文件 MIME 类型: " + mainMime
@@ -433,7 +535,7 @@ public class LocalMediaStorageService implements MediaStorageService {
      *
      * @param file           上传文件
      * @param lowerExt       扩展名（小写）
-     * @param normalizedType 归一化后的媒体类型（image/video）
+     * @param normalizedType 归一化后的媒体类型（image/video/audio）
      */
     private void validateMagicBytes(MultipartFile file, String lowerExt, String normalizedType) {
         // 读取文件头部字节（最多 12 字节，覆盖 WebP "WEBP" @ offset 8 + 4 字节长度）
@@ -452,11 +554,18 @@ public class LocalMediaStorageService implements MediaStorageService {
 
         // 按扩展名与类型选择期望的 magic bytes
         byte[][] expectedMagic;
+        int[] offsets;
         if ("video".equals(normalizedType)) {
             // MP4/MOV 共用 ftyp box 标识
             expectedMagic = VIDEO_MAGIC_BYTES;
+            offsets = new int[]{4};
+        } else if ("audio".equals(normalizedType)) {
+            // 音频按扩展名取序列与偏移（见 AUDIO_MAGIC_BYTES / AUDIO_MAGIC_OFFSETS）
+            expectedMagic = AUDIO_MAGIC_BYTES.get(lowerExt);
+            offsets = AUDIO_MAGIC_OFFSETS.getOrDefault(lowerExt, new int[]{0});
         } else {
             expectedMagic = IMAGE_MAGIC_BYTES.get(lowerExt);
+            offsets = new int[]{0, 8};
         }
 
         if (expectedMagic == null || expectedMagic.length == 0) {
@@ -470,12 +579,7 @@ public class LocalMediaStorageService implements MediaStorageService {
         //   - 图片 jpg/png：序列 0 @ 偏移 0
         //   - WebP：序列 0 (RIFF) @ 偏移 0，序列 1 (WEBP) @ 偏移 8
         //   - 视频 mp4/mov：序列 0 (ftyp) @ 偏移 4（前 4 字节为 box size，动态值不校验）
-        int[] offsets;
-        if ("video".equals(normalizedType)) {
-            offsets = new int[]{4};
-        } else {
-            offsets = new int[]{0, 8};
-        }
+        //   - 音频 aac/mp3：序列 0 @ 偏移 0；m4a：偏移 4；wav：RIFF @ 0 + WAVE @ 8
         for (int i = 0; i < expectedMagic.length; i++) {
             byte[] magic = expectedMagic[i];
             int offset = i < offsets.length ? offsets[i] : 0;

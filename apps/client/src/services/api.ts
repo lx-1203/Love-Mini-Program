@@ -1,5 +1,6 @@
 import type { components } from "./generated/api-types";
 import type {
+  AuthSessionResult,
   DoNotDisturbRequest,
   DoNotDisturbView,
   MakeUpCheckInResultView,
@@ -10,7 +11,7 @@ import type {
   UpdateBasicProfileRequest,
 } from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
-import { appEnv, isMockMode } from "./env";
+import { appEnv, isDev, isMockMode } from "./env";
 import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout } from "./http";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
@@ -116,8 +117,14 @@ function uploadFileViaUni<TResponse>(
 
   // Task 31：使用 AbortController 实现超时控制
   const controller = new AbortController();
+  // 修复（P1 BUG）：保存 uni.uploadFile 返回的 UploadTask 引用，
+  // 超时/取消时通过 abort() 终止底层上传任务。
+  // 注：uni.uploadFile 的 abort 能力受平台限制——mp-weixin 支持
+  // task.abort()，H5 端部分实现可能仅忽略后续进度回调，属平台差异，
+  // 此处尽力而为，无法中止时至少保证 Promise 按时 reject。
+  let uploadTask: UniApp.UploadTask | undefined;
   const uploadPromise = new Promise<TResponse>((resolve, reject) => {
-    uni.uploadFile({
+    uploadTask = uni.uploadFile({
       url: `${appEnv.apiBaseUrl}${endpoint}`,
       filePath,
       name: "file",
@@ -148,6 +155,19 @@ function uploadFileViaUni<TResponse>(
         reject(new Error(err.errMsg || "上传请求失败"));
       },
     });
+
+    // 修复（P1 BUG）：abort 接入——controller 超时/外部取消时同步中止上传任务
+    controller.signal.addEventListener(
+      "abort",
+      () => {
+        try {
+          uploadTask?.abort();
+        } catch (_e) {
+          // abort 失败静默处理（任务可能已完成）
+        }
+      },
+      { once: true }
+    );
   });
 
   // Task 31：30s 超时控制，超时后调用方收到 EnhancedApiError（category=network, error=timeout）
@@ -179,9 +199,10 @@ export const clientApi = {
     // 登录成功后，将 token 保存到本地存储。
     // 后端 UserSession 中可能包含 token / refreshToken 字段（按约定保存），
     // 但 OpenAPI 生成类型 Schemas["UserSession"] 暂未声明这两个字段。
-    // 此处通过 unknown 中转 + 类型守卫收敛，替代 `as Record<string, unknown>` 反复断言，
-    // 一次性提取 resultRecord 引用，避免重复断言导致的类型噪声。
-    const resultRecord = result as unknown as Record<string, unknown>;
+    // 通过 api-types-supplement 的 AuthSessionResult 具名补充类型收敛，
+    // 替代散落的 `as Record<string, unknown>` 反复断言。
+    // infra R2-00120: 登录响应断言收敛为具名补充类型 AuthSessionResult
+    const resultRecord = result as unknown as AuthSessionResult;
     if (typeof resultRecord.token === "string" && resultRecord.token.length > 0) {
       setToken(resultRecord.token);
     }
@@ -416,7 +437,21 @@ export const clientApi = {
       method: "POST",
     });
   },
+  /**
+   * 触发后端调试错误（仅开发环境可用）。
+   *
+   * @deprecated infra R2-00121: 该接口为 dev 调试用端点（POST /_debug/errors/{status}），
+   * 已由 isDev 守卫短路保护（生产环境调用仅 console.warn 不发起请求）。
+   * 目前仅 tests/error-state.spec.ts 引用；业务代码禁止调用，
+   * 后续收敛 dev 工具面时应移入独立 dev 模块并从 clientApi 移除。
+   */
   async simulateError(status: 400 | 404 | 500) {
+    // 修复（P1 BUG）：环境守卫——simulateError 是 dev 调试用接口，
+    // 生产环境调用会向后端 /_debug/errors 发无效请求，这里直接短路返回
+    if (!isDev) {
+      console.warn("[api.simulateError] 仅限开发环境调用，已忽略");
+      return;
+    }
     if (useMock()) {
       return mockFixtures.simulateError(status);
     }
@@ -503,41 +538,33 @@ export const clientApi = {
   },
 
   /**
-   * 登出：清除本地 Token 并跳转登录页，同时异步通知后端使 token 失效。
+   * 登出：通知后端使 token 失效，再清除本地 Token 并跳转登录页。
    *
-   * 修复（P0 BUG）：原实现先 await 后端 logout 再清本地 token，
-   * 若后端 logout 接口 hang（网络超时 10s / 服务端无响应），
-   * 用户需等待超时才能退出，体验极差且可能因等待中触发的 401 刷新死锁。
+   * 修复（P1 BUG）：原实现先 clearTokens() 再异步发后端请求，导致登出请求
+   * 不带 Authorization 头，后端无法撤销 token。现改为：
+   * 1. 先发后端 logout 请求（携带 Authorization，请求拦截器在构造时附加 token），
+   *    带 5s 短超时与 noRetry，避免接口 hang 阻塞退出；
+   * 2. 无论成败，finally 中清本地 token + 跳转登录页（用户无感退出）。
    *
-   * 现改为：
-   * 1. 先清本地 token + 立即跳转登录页（用户无感退出）
-   * 2. 异步调用后端 logout（不 await，失败仅记录日志，不阻塞）
-   *
-   * 安全权衡：异步通知失败时后端旧 token 在过期时间前仍有效，
-   * 但本地已无 token，用户侧已退出；后端 token 会被 refresh 流程的
-   * refresh_token 失效间接限制（refresh_token 仍在本地被清除）。
+   * 安全权衡：后端 logout 失败时旧 token 在过期时间前仍有效，但本地已无 token，
+   * 用户侧已退出；refresh_token 同时被清除，无法续期。
    */
   async logout() {
-    // 1. 先清本地 token，确保即使后端调用 hang 也能立即退出
-    clearTokens();
-    // 2. 立即跳转登录页（不等待后端响应）
-    uni.reLaunch({ url: ROUTES.LOGIN });
-
-    // 3. 异步通知后端使 token 失效（best effort，失败不阻塞、不抛错）
-    //    使用 noRetry 避免登出接口网络错误时反复重试占用资源
     try {
-      request<void>({
+      await request<void>({
         url: "/auth/logout",
         method: "POST",
         noRetry: true,
-        // 短超时，避免长时间挂起占用资源（虽不阻塞 UI，但仍会消耗网络连接）
+        // 短超时，避免登出接口长时间挂起占用资源
         timeout: 5000,
-      }).catch((error) => {
-        console.warn("[api.logout] 后端登出接口调用失败:", error);
       });
     } catch (error) {
-      // 同步异常（如 request 构造失败）仅记录日志
-      console.warn("[api.logout] 后端登出调用异常:", error);
+      // 后端登出失败仅记录日志，不阻塞本地退出
+      console.warn("[api.logout] 后端登出接口调用失败:", error);
+    } finally {
+      // 清本地 token + 跳转登录页（无论后端结果如何都执行）
+      clearTokens();
+      uni.reLaunch({ url: ROUTES.LOGIN });
     }
   },
 
@@ -671,6 +698,27 @@ export const clientApi = {
       return mockFixtures.uploadProfileHalfBody(file);
     }
     return uploadFileViaUni<{ url: string }>(file, "/profile/half-body");
+  },
+
+  /**
+   * P2.6：上传 60s 语音状态（Phase Feedback5）。
+   *
+   * 对应后端 POST /api/v1/media/upload?type=audio&durationMs={ms} 端点，
+   * 使用 multipart/form-data（type / durationMs 以 formData 字段传递）。
+   * 音频校验：aac/mp3/m4a/wav，≤8MB。
+   *
+   * @param file - 录音临时文件（RecorderManager onStop 的 tempFilePath 包装）
+   * @param durationMs - 录音时长（毫秒）
+   * @returns 服务端返回的语音 URL
+   */
+  async uploadProfileVoice(file: UniUploadFileLike, durationMs: number): Promise<{ url: string }> {
+    if (useMock()) {
+      return mockFixtures.uploadProfileVoice(file);
+    }
+    return uploadFileViaUni<{ url: string }>(file, "/media/upload", {
+      type: "audio",
+      durationMs: String(Math.round(durationMs)),
+    });
   },
 
   /**

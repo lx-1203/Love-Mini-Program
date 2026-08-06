@@ -6,6 +6,8 @@ import { clientApi, type UniUploadFileLike } from "../services/api";
 import { IMAGE_PATHS } from "../config/images";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
+// 展示模式（全功能展示版）：VIP 全亮
+import { isShowcaseMode } from "../config/showcase";
 // SubTask 1.4.1：loadMyPosts 复用 village API 拉取当前用户发布的帖子
 import { request } from "../services/http";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
@@ -29,6 +31,18 @@ export interface VipStatus {
 }
 
 /**
+ * 规范化 VIP 状态：展示模式下强制 VIP 全亮（全功能展示版）。
+ * - 展示模式（VITE_SHOWCASE_MODE=true）：一律视为 VIP，展示全部会员权益
+ * - 非展示模式：透传原值，无 VIP 则返回默认未开通状态
+ */
+function normalizeVipStatus(status: VipStatus | null | undefined): VipStatus {
+  if (isShowcaseMode) {
+    return { isVip: true, planName: "超级管理员展示版", expireDate: null };
+  }
+  return status ?? { isVip: false, planName: "", expireDate: null };
+}
+
+/**
  * 我的动态预览项（简化版，用于个人主页列表展示）
  */
 export interface MyPostSummary {
@@ -47,6 +61,10 @@ export interface MyPostSummary {
 
 /* ========== Mock 数据 ========== */
 
+/**
+ * infra R2-00051: 以下 mock 基本/校区/日程资料为演示数据（仅 useMock 分支使用，
+ * real 分支由后端下发），中文内容不迁移 i18n，避免 mock 数据占据运营文案位
+ */
 /** Mock 基本资料数据 */
 const mockBasicProfile: Schemas["BasicProfile"] = {
   nickname: "星野",
@@ -105,9 +123,16 @@ const mockVipStatus: VipStatus = {
   expireDate: null,
 };
 
-/** Mock 60s 语音状态（Phase Feedback5：语音状态替代视频） */
+/**
+ * infra R2-00050: mock 语音状态占位地址。
+ * 原值指向无效外域 example.com（会触发无效网络请求），改为本地占位路径；
+ * 本地暂无音频资源，播放演示将静默失败，待接入真实语音资源后替换。
+ */
 const mockVoiceStatusUrl =
-  "https://example.com/mock/voice-status.mp3";
+  "/static/assets/mock/voice-status.mp3";
+
+/** infra R2-00052: mock 语音状态时长（秒）——原 42 魔法数字具名化 */
+const MOCK_VOICE_STATUS_DURATION_SECONDS = 42;
 
 /** Mock 同校推荐权限（默认不把自己推给同校，但接收同校信息） */
 const mockPrivacySettings = {
@@ -260,10 +285,10 @@ export const useProfileStore = defineStore("profile", {
             this.campusProfile = clone(mockCampusProfile);
             this.scheduleProfile = clone(mockScheduleProfile);
             this.profileStats = clone(mockProfileStats);
-            this.vipStatus = clone(mockVipStatus);
+            this.vipStatus = normalizeVipStatus(clone(mockVipStatus));
             this.myPosts = clone(mockMyPosts);
             this.voiceStatusUrl = mockVoiceStatusUrl;
-            this.voiceStatusDuration = 42;
+            this.voiceStatusDuration = MOCK_VOICE_STATUS_DURATION_SECONDS; // infra R2-00052
             this.avatarUrl = IMAGE_PATHS.AVATARS.AVATAR_8;
             const persistedPrivacy = loadPersistedPrivacy();
             this.allowSameSchoolRecommend = persistedPrivacy.allowSameSchoolRecommend;
@@ -299,14 +324,14 @@ export const useProfileStore = defineStore("profile", {
             | null
             | undefined;
           const rawVip = sessionRaw?.vipStatus;
-          this.vipStatus = {
+          this.vipStatus = normalizeVipStatus({
             isVip: Boolean(rawVip?.isVip),
             planName: typeof rawVip?.planName === "string" ? rawVip.planName : "",
             expireDate:
               typeof rawVip?.expireDate === "string" || rawVip?.expireDate === null
                 ? (rawVip.expireDate as string | null)
                 : null,
-          };
+          });
 
           // 我的动态：load() 不阻塞主流程，留空由 loadMyPosts() 按需拉取
           this.myPosts = this.myPosts ?? [];
@@ -317,7 +342,7 @@ export const useProfileStore = defineStore("profile", {
           this.campusProfile = this.campusProfile ?? null;
           this.scheduleProfile = this.scheduleProfile ?? null;
           this.profileStats = this.profileStats ?? null;
-          this.vipStatus = this.vipStatus ?? { isVip: false, planName: "", expireDate: null };
+          this.vipStatus = normalizeVipStatus(this.vipStatus);
           this.myPosts = this.myPosts ?? [];
         } finally {
           this.loading = false;
@@ -348,7 +373,7 @@ export const useProfileStore = defineStore("profile", {
      * <p>实现策略：</p>
      * <ul>
      *   <li>Mock 模式：直接返回 mockMyPosts，不发起网络请求</li>
-     *   <li>Real 模式：复用后端 GET /api/posts?userId={currentUserId} 接口拉取当前用户发布的帖子，
+     *   <li>Real 模式：复用后端 GET /api/posts?authorId={currentUserId} 接口拉取当前用户发布的帖子，
      *       取前 3 条作为个人主页预览。后端响应字段映射到 MyPostSummary：
      *       id / content 截摘要 / likes / comments / createdAt / coverImage（首图）</li>
      *   <li>错误处理：失败时清空 myPosts 并设置 errorMessage，不抛出，避免阻塞页面渲染</li>
@@ -369,7 +394,7 @@ export const useProfileStore = defineStore("profile", {
           return;
         }
 
-        // Real 模式：从 sessionStore 获取当前用户 ID，调用 /posts?userId=... 拉取
+        // Real 模式：从 sessionStore 获取当前用户 ID，调用 /posts?authorId=... 拉取
         const sessionStore = useSessionStore();
         const userId = sessionStore.userSession?.userId;
         if (!userId) {
@@ -398,7 +423,7 @@ export const useProfileStore = defineStore("profile", {
         };
 
         const query = new URLSearchParams({
-          userId: String(userId),
+          authorId: String(userId),
           page: "1",
           pageSize: "3",
         }).toString();
@@ -577,6 +602,27 @@ export const useProfileStore = defineStore("profile", {
       }
       this.voiceStatusUrl = url;
       this.voiceStatusDuration = safeDuration;
+    },
+
+    /**
+     * P2.6：上传 60s 语音状态并更新本地状态（Phase Feedback5）。
+     *
+     * Mock 模式由 fixtures 生成 mock URL；Real 模式上传到
+     * POST /api/v1/media/upload?type=audio（后端校验 aac/mp3/m4a/wav ≤8MB）。
+     *
+     * @param file - 录音临时文件（RecorderManager onStop 的 tempFilePath 包装）
+     * @param durationMs - 录音时长（毫秒），服务端按 ≤60s 收敛
+     */
+    async uploadVoice(file: UniUploadFileLike, durationMs: number): Promise<void> {
+      this.errorMessage = null;
+      try {
+        const result = await clientApi.uploadProfileVoice(file, durationMs);
+        this.setVoiceStatus(result.url, Math.round(durationMs / 1000));
+      } catch (error) {
+        this.errorMessage =
+          error instanceof Error ? error.message : t("storeErrors.profile.uploadVoiceFailed");
+        throw error;
+      }
     },
 
     /**

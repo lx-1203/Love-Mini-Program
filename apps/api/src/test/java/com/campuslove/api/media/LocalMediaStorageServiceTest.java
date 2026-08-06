@@ -87,8 +87,8 @@ class LocalMediaStorageServiceTest {
         MediaStorageService.UploadResult result = service.store(100L, file, "image");
 
         assertNotNull(result.getUrl(), "上传成功后 URL 不能为空");
-        assertTrue(result.getUrl().startsWith("/uploads/100/"),
-                "URL 应以 /uploads/{userId}/ 开头: " + result.getUrl());
+        assertTrue(result.getUrl().startsWith("/api/v1/media/100/"),
+                "URL 应以 /api/v1/media/{userId}/ 开头: " + result.getUrl());
         assertTrue(result.getUrl().endsWith(".jpg"),
                 "URL 应保留 jpg 扩展名: " + result.getUrl());
         assertEquals(TEST_IMG_W, result.getWidth(), "图片宽度应为 8");
@@ -183,7 +183,7 @@ class LocalMediaStorageServiceTest {
     }
 
     /**
-     * 场景 5：上传 background 类型 → 按图片规则校验，URL 包含 /uploads/。
+     * 场景 5：上传 background 类型 → 按图片规则校验，URL 包含 /api/v1/media/。
      */
     @Test
     void uploadBackground_shouldUseImageRules() throws Exception {
@@ -194,7 +194,7 @@ class LocalMediaStorageServiceTest {
         MediaStorageService.UploadResult result = service.store(300L, file, "background");
 
         assertNotNull(result.getUrl());
-        assertTrue(result.getUrl().startsWith("/uploads/300/"));
+        assertTrue(result.getUrl().startsWith("/api/v1/media/300/"));
         assertEquals(4, result.getWidth());
         assertEquals(4, result.getHeight());
     }
@@ -266,7 +266,96 @@ class LocalMediaStorageServiceTest {
     }
 
     /**
+     * P2.6 场景：上传 aac 音频（60s 语音状态，微信 RecorderManager 输出）
+     * → 成功，width/height 为 null（音频无宽高）。
+     */
+    @Test
+    void uploadAacAudio_shouldReturnSuccessUrl() {
+        // ADTS 帧同步字 FF F1（微信 aac 输出文件头）
+        byte[] aacBytes = new byte[]{
+                (byte) 0xFF, (byte) 0xF1, 0x50, (byte) 0x80, 0x01, 0x40, 0x40
+        };
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "voice-status.aac", "audio/aac", aacBytes);
+
+        MediaStorageService.UploadResult result = service.store(600L, file, "audio");
+
+        assertNotNull(result.getUrl(), "音频上传成功后 URL 不能为空");
+        assertTrue(result.getUrl().startsWith("/api/v1/media/600/"),
+                "URL 应以 /api/v1/media/{userId}/ 开头: " + result.getUrl());
+        assertTrue(result.getUrl().endsWith(".aac"), "URL 应保留 aac 扩展名");
+        assertEquals(null, result.getWidth(), "音频 width 应为 null");
+        assertEquals(null, result.getHeight(), "音频 height 应为 null");
+    }
+
+    /**
+     * P2.6 场景：上传 mp3 音频（带 ID3v2 标签头）→ 成功。
+     */
+    @Test
+    void uploadMp3Audio_shouldBeSupported() {
+        // ID3v2 标签头 "ID3" + 版本字节
+        byte[] mp3Bytes = new byte[]{0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00};
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "voice-status.mp3", "audio/mpeg", mp3Bytes);
+
+        MediaStorageService.UploadResult result = service.store(600L, file, "audio");
+
+        assertNotNull(result.getUrl(), "mp3 上传应成功");
+        assertTrue(result.getUrl().endsWith(".mp3"));
+    }
+
+    /**
+     * P2.6 场景：上传 9MB 音频 → 抛出 MediaSizeLimitExceededException（>8MB 限制，413 等价）。
+     */
+    @Test
+    void uploadOversizedAudio_shouldThrowMediaSizeLimitExceeded() {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn("long-voice.aac");
+        when(file.getContentType()).thenReturn("audio/aac");
+        // 模拟 9MB 文件，超过 8MB 限制
+        when(file.getSize()).thenReturn(9L * 1024 * 1024);
+
+        MediaSizeLimitExceededException ex = assertThrows(
+                MediaSizeLimitExceededException.class,
+                () -> service.store(1L, file, "audio"));
+        assertTrue(ex.getMessage().contains("超过限制"),
+                "异常信息应说明大小超限: " + ex.getMessage());
+    }
+
+    /**
+     * P2.6 场景：音频内容与扩展名声明不一致（.aac 实为图片）→ 抛出 IllegalArgumentException。
+     */
+    @Test
+    void uploadAudioWithWrongMagicBytes_shouldThrowIllegalArgument() {
+        // JPEG 文件头伪装成 .aac
+        byte[] jpegHeader = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0};
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "fake-voice.aac", "audio/aac", jpegHeader);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.store(1L, file, "audio"));
+        assertTrue(ex.getMessage().contains("magic bytes"),
+                "异常信息应说明 magic bytes 校验失败: " + ex.getMessage());
+    }
+
+    /**
+     * P2.6 场景：不支持的音频格式（.ogg）→ 抛出 IllegalArgumentException。
+     */
+    @Test
+    void uploadOggAudio_shouldThrowIllegalArgument() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "voice.ogg", "audio/ogg", new byte[]{0x4F, 0x67, 0x67, 0x53});
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.store(1L, file, "audio"));
+        assertTrue(ex.getMessage().contains("不支持的音频格式"),
+                "异常信息应说明格式不支持: " + ex.getMessage());
+    }
+
+    /**
      * 场景 10：未识别的 type 参数 → 抛出 IllegalArgumentException。
+     * （注：audio 已是受支持类型，改用 document 作为未知类型样例）
      */
     @Test
     void storeWithUnknownType_shouldThrowIllegalArgument() throws Exception {
@@ -275,7 +364,7 @@ class LocalMediaStorageServiceTest {
                 "file", "test.jpg", "image/jpeg", jpgBytes);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.store(1L, file, "audio"));
+                () -> service.store(1L, file, "document"));
         assertTrue(ex.getMessage().contains("不支持的媒体类型"),
                 "异常信息应说明类型不支持: " + ex.getMessage());
     }

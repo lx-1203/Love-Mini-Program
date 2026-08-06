@@ -24,6 +24,8 @@ vi.mock("../../services/api", () => ({
     getLoginHero: vi.fn(),
     getSession: vi.fn(),
     loginWithWechat: vi.fn(),
+    // P2.6：语音状态上传
+    uploadProfileVoice: vi.fn(),
   },
 }));
 
@@ -275,6 +277,40 @@ describe("profile store - 语音状态与权限（Phase Feedback5）", () => {
 
     expect(store.voiceStatusUrl).toBe("");
     expect(store.voiceStatusDuration).toBe(0);
+  });
+
+  // P2.6：uploadVoice 上传语音状态（毫秒转秒 + 60s 收敛）
+  it("uploadVoice 上传成功后更新语音状态（毫秒转秒）", async () => {
+    const { clientApi } = await import("../../services/api");
+    (clientApi.uploadProfileVoice as ReturnType<typeof vi.fn>).mockResolvedValue({
+      url: "mock://profile/voice/test.aac",
+    });
+    const store = useProfileStore();
+    await store.load();
+
+    await store.uploadVoice({ name: "test.aac", path: "wxfile://tmp/test.aac" }, 42300);
+
+    expect(store.voiceStatusUrl).toBe("mock://profile/voice/test.aac");
+    expect(store.voiceStatusDuration).toBe(42);
+    expect(store.errorMessage).toBeNull();
+  });
+
+  it("uploadVoice 上传失败时抛出错误并记录 errorMessage", async () => {
+    const { clientApi } = await import("../../services/api");
+    (clientApi.uploadProfileVoice as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error("上传失败")
+    );
+    const store = useProfileStore();
+    await store.load();
+    // load() 会预置 mock 语音 URL，失败不应清空已有语音状态
+    const beforeUrl = store.voiceStatusUrl;
+
+    await expect(
+      store.uploadVoice({ name: "test.aac", path: "wxfile://tmp/test.aac" }, 10000)
+    ).rejects.toThrow("上传失败");
+
+    expect(store.errorMessage).toBe("上传失败");
+    expect(store.voiceStatusUrl).toBe(beforeUrl);
   });
 
   it("setAllowSameSchoolRecommend 更新同校推荐权限", async () => {

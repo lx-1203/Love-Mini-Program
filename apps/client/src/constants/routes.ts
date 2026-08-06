@@ -133,6 +133,12 @@ export const ROUTES = {
   /** 实名认证 */
   VERIFICATION: "/pages/verification/index",
 
+  /** P2.6：帮助与客服 */
+  HELP: "/pages/help/index",
+
+  /** P2.6：安全中心 */
+  SECURITY: "/pages/security/index",
+
   /** 心动信号 */
   HEART_SIGNALS: "/pages/heart-signals/index",
 

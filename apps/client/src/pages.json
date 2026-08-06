@@ -161,6 +161,18 @@
       }
     },
     {
+      "path": "pages/help/index",
+      "style": {
+        "navigationBarTitleText": "帮助与客服"
+      }
+    },
+    {
+      "path": "pages/security/index",
+      "style": {
+        "navigationBarTitleText": "安全中心"
+      }
+    },
+    {
       "path": "pages/shop/index",
       "style": {
         "navigationBarTitleText": "逛逛"

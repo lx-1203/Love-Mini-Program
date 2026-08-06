@@ -18,6 +18,8 @@ import { isDev } from "../../services/env";
 // Showcase 展示版入口
 import { isShowcaseMode } from "../../config/showcase";
 import { openAppPath, switchTabWithQuery } from "../../utils/navigation";
+// P2.6：帮助与客服 / 安全中心独立页路由
+import { ROUTES } from "../../constants/routes";
 import { useTabBar } from "../../composables/useTabBar";
 import { toProfileView } from "../../view-models/profile";
 import LockScreen from "../../components/common/LockScreen.vue";
@@ -32,6 +34,8 @@ import { IMAGE_PATHS } from "../../config/images";
 import { featureFlags } from "../../config/feature-flags";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { designTokens } from "../../theme/tokens";
+// P2.6：语音播放 URL 解析（mock:// 演示态 / /api/v1/media/ 鉴权代理真实 URL）
+import { resolveMediaUrl } from "../../utils/media";
 // 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
 import type { UniUploadFileLike } from "../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
@@ -339,23 +343,19 @@ const menuItems = computed<MenuItem[]>(() => [
     label: t("profile.verification"),
     path: "/pages/verification/index",
   },
-  /* Phase Feedback5：帮助与客服（新增） */
+  /* Phase Feedback5：帮助与客服（P2.6 独立页） */
   {
     icon: IMAGE_PATHS.ICONS_EMOJI.CHAT,
     bgColor: "var(--c-sky-50, #E0F2FE)",
     label: t("profile.helpSupport"),
-    action: () => {
-      uni.showToast({ title: t("profile.helpSupportDesc"), icon: "none" });
-    },
+    path: ROUTES.HELP,
   },
-  /* Phase Feedback5：安全中心（新增） */
+  /* Phase Feedback5：安全中心（P2.6 独立页） */
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
     bgColor: "var(--c-tint-pink-50, #F3E8FF)",
     label: t("profile.safetyCenter"),
-    action: () => {
-      uni.showToast({ title: t("profile.safetyCenterDesc"), icon: "none" });
-    },
+    path: ROUTES.SECURITY,
   },
   /* Phase Feedback5：权限（同校推荐开关） */
   {
@@ -447,19 +447,36 @@ function handleVipClick() {
   openAppPath("/pages/vip/index");
 }
 
-/* ========== Phase Feedback5：60s 语音状态 ========== */
+/* ========== Phase Feedback5：60s 语音状态（P2.6 真实化） ========== */
 
 /** 语音状态 URL（来自 profile store） */
 const voiceStatusUrl = computed(() => profileStore.voiceStatusUrl);
 /** 语音时长（秒） */
 const voiceStatusDuration = computed(() => profileStore.voiceStatusDuration);
-/** 是否正在播放（演示态，真实播放接入 uni.createInnerAudioContext） */
+/** 是否正在播放（真实 InnerAudioContext / 演示态计时） */
 const isVoicePlaying = ref(false);
+/** P2.6：是否正在录音（真实 RecorderManager） */
+const isRecordingVoice = ref(false);
+/** P2.6：录音已用秒数（驱动录音态文案） */
+const recordingSeconds = ref(0);
+
+/** P2.6：语音最长 60 秒（RecorderManager duration 上限与后端收敛一致） */
+const VOICE_MAX_DURATION_MS = 60000;
+/** 录音最短有效时长（毫秒）：过短视为误触，不产生语音 */
+const VOICE_MIN_DURATION_MS = 1000;
+/** 演示态自动停止时长（毫秒）——mock:// URL 无真实音频，模拟播放动效 */
+const VOICE_DEMO_PLAY_MS = 3000;
+
 /** 演示态自动停止计时器（连点播放/暂停时先清理，避免状态错乱） */
 let voicePlayTimer: ReturnType<typeof setTimeout> | null = null;
-
-/** infra R2-00080: 语音演示态自动停止时长（毫秒）——原 3000 魔法数字具名化 */
-const VOICE_DEMO_PLAY_MS = 3000;
+/** P2.6：录音进度刷新定时器 */
+let recordingTickTimer: ReturnType<typeof setInterval> | null = null;
+/** 录音开始时间戳（毫秒，用于 onStop 无 duration 时兜底计算） */
+let recordingStartedAt = 0;
+/** 录音管理器（懒初始化，页面加载不创建） */
+let recorderManager: UniApp.RecorderManager | null = null;
+/** 音频播放器（懒初始化，播放时创建） */
+let voiceAudio: UniApp.InnerAudioContext | null = null;
 
 /** 语音时长标签（如 0:42 / 0:05） */
 const voiceDurationLabel = computed(() => {
@@ -469,51 +486,219 @@ const voiceDurationLabel = computed(() => {
   return `${mm}:${String(ss).padStart(2, "0")}`;
 });
 
+/** 录音中标签（如 录音中 12″） */
+const recordingLabel = computed(() => {
+  const ss = Math.min(recordingSeconds.value, 60);
+  return `${ss}″`;
+});
+
 /**
- * 录制语音状态：真实环境接入 uni.getRecorderManager（最长 60s）。
- * Mock/简化：直接模拟设置一段 42s 语音，保证交互闭环。
+ * 懒初始化录音管理器并注册回调（P2.6 真实录制）。
+ *
+ * 平台限制：mp-weixin 支持 uni.getRecorderManager；H5 端部分环境不支持，
+ * 获取失败时返回 null，由调用方降级提示。
+ */
+function getRecorder(): UniApp.RecorderManager | null {
+  if (recorderManager) {
+    return recorderManager;
+  }
+  try {
+    recorderManager = uni.getRecorderManager();
+  } catch (_e) {
+    return null;
+  }
+  recorderManager.onStop((res) => {
+    stopRecordingTicker();
+    isRecordingVoice.value = false;
+    const filePath = res?.tempFilePath ?? "";
+    if (!filePath) {
+      uni.showToast({ title: t("messages.voiceRecordFailed"), icon: "none" });
+      return;
+    }
+    // res.duration 为毫秒；缺失时按开始时间兜底计算
+    const durationMs = res?.duration && res.duration > 0
+      ? res.duration
+      : Date.now() - recordingStartedAt;
+    void finishRecording(filePath, durationMs);
+  });
+  recorderManager.onError(() => {
+    stopRecordingTicker();
+    isRecordingVoice.value = false;
+    uni.showToast({ title: t("messages.voiceRecordFailed"), icon: "none" });
+  });
+  return recorderManager;
+}
+
+/** 启动录音进度刷新（每秒 +1s，60s 上限由 RecorderManager duration 强制停止） */
+function startRecordingTicker(): void {
+  stopRecordingTicker();
+  recordingTickTimer = setInterval(() => {
+    recordingSeconds.value += 1;
+    if (recordingSeconds.value >= 60) {
+      // 到达 60s 上限由 RecorderManager 自动 onStop，此处仅停止刷新
+      stopRecordingTicker();
+    }
+  }, 1000);
+}
+
+function stopRecordingTicker(): void {
+  if (recordingTickTimer) {
+    clearInterval(recordingTickTimer);
+    recordingTickTimer = null;
+  }
+}
+
+/**
+ * 停止录音后的上传流程（P2.6 真实链路）：
+ * 1. 时长过短（<1s）视为误触，丢弃不产生语音
+ * 2. 包装 tempFilePath 为 UniUploadFileLike
+ * 3. profileStore.uploadVoice 上传（mock 生成 mock URL / real 走 /api/v1/media/upload?type=audio）
+ * 4. 成功后展示语音卡片；失败 toast 提示
+ */
+async function finishRecording(filePath: string, durationMs: number): Promise<void> {
+  const safeMs = Math.min(Math.max(0, durationMs || 0), VOICE_MAX_DURATION_MS);
+  if (safeMs < VOICE_MIN_DURATION_MS) {
+    uni.showToast({ title: t("profile.voiceTooShort"), icon: "none" });
+    return;
+  }
+  const file = buildFileLike(filePath);
+  try {
+    await profileStore.uploadVoice(file, safeMs);
+    successHaptic();
+    uni.showToast({ title: t("profile.voiceUploaded"), icon: "success" });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : t("profile.uploadFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
+}
+
+/**
+ * 录制语音状态（P2.6 真实录制，最长 60s）：
+ * - 未录制：点击开始录音（再次点击或录满 60s 自动停止）
+ * - 录音中：点击立即停止并上传
+ * - 环境不支持录音（如 H5）时降级提示
  */
 function handleRecordVoice() {
   lightHaptic();
-  uni.showModal({
-    title: t("profile.voiceRecord"),
-    content: t("profile.voiceStatusHint"),
-    confirmText: t("common.ok"),
-    cancelText: t("common.cancel"),
-    success: (res) => {
-      if (!res.confirm) return;
-      // 模拟录制完成（42s < 60s 上限）；真实环境替换为 RecorderManager 结果
-      profileStore.setVoiceStatus("mock://profile/voice-status", 42);
-      uni.showToast({ title: t("profile.voiceUploaded"), icon: "success" });
-    },
-  });
+  // 录音中：点击即停止
+  if (isRecordingVoice.value) {
+    const mgr = getRecorder();
+    if (mgr) {
+      mgr.stop();
+    } else {
+      isRecordingVoice.value = false;
+      stopRecordingTicker();
+    }
+    return;
+  }
+  const mgr = getRecorder();
+  if (!mgr) {
+    uni.showToast({ title: t("profile.voiceNotSupported"), icon: "none" });
+    return;
+  }
+  // 播放中先停止，避免录音与播放并发
+  stopVoicePlayback();
+  try {
+    recordingStartedAt = Date.now();
+    recordingSeconds.value = 0;
+    isRecordingVoice.value = true;
+    startRecordingTicker();
+    mgr.start({
+      format: "aac",
+      duration: VOICE_MAX_DURATION_MS,
+      sampleRate: 16000,
+      numberOfChannels: 1,
+      encodeBitRate: 48000,
+    });
+    uni.showToast({ title: t("profile.voiceRecording"), icon: "none" });
+  } catch (_e) {
+    isRecordingVoice.value = false;
+    stopRecordingTicker();
+    uni.showToast({ title: t("messages.voiceRecordFailed"), icon: "none" });
+  }
 }
 
-/** 播放/暂停语音状态（演示态：仅切换图标；真实播放接入 InnerAudioContext） */
+/** 停止语音播放（真实音频 stop + 演示态计时清理） */
+function stopVoicePlayback(): void {
+  if (voicePlayTimer) {
+    clearTimeout(voicePlayTimer);
+    voicePlayTimer = null;
+  }
+  try {
+    voiceAudio?.stop();
+  } catch (_e) {
+    // 停止失败静默处理（音频可能已结束）
+  }
+  isVoicePlaying.value = false;
+}
+
+/**
+ * 播放/暂停语音状态（P2.6 真实播放）：
+ * - mock:// 演示态 URL：模拟 3 秒播放动效（无真实音频源）
+ * - 真实 URL（/api/v1/media/... 鉴权代理）：createInnerAudioContext 播放，
+ *   结束/错误自动复位播放态
+ */
 function handlePlayVoice() {
   lightHaptic();
   if (isVoicePlaying.value) {
-    // 暂停：清理计时器并停止
-    if (voicePlayTimer) {
-      clearTimeout(voicePlayTimer);
-      voicePlayTimer = null;
-    }
-    isVoicePlaying.value = false;
+    stopVoicePlayback();
     return;
   }
-  isVoicePlaying.value = true;
-  // 演示 3 秒后自动停止（先清理旧计时器避免连点错乱）
-  if (voicePlayTimer) {
-    clearTimeout(voicePlayTimer);
+  const rawUrl = voiceStatusUrl.value;
+  if (!rawUrl) return;
+  // 演示态（mock URL 无真实音频，保留原计时器模拟动效）
+  if (rawUrl.startsWith("mock://")) {
+    isVoicePlaying.value = true;
+    if (voicePlayTimer) {
+      clearTimeout(voicePlayTimer);
+    }
+    voicePlayTimer = setTimeout(() => {
+      isVoicePlaying.value = false;
+      voicePlayTimer = null;
+    }, VOICE_DEMO_PLAY_MS);
+    return;
   }
-  voicePlayTimer = setTimeout(() => {
-    isVoicePlaying.value = false;
-    voicePlayTimer = null;
-  }, VOICE_DEMO_PLAY_MS);
+  // 真实播放：解析鉴权代理 URL（附带 token 查询参数）
+  const src = resolveMediaUrl(rawUrl);
+  if (!src) {
+    uni.showToast({ title: t("profile.uploadFailed"), icon: "none" });
+    return;
+  }
+  try {
+    if (!voiceAudio) {
+      voiceAudio = uni.createInnerAudioContext();
+      voiceAudio.onEnded(() => {
+        isVoicePlaying.value = false;
+      });
+      voiceAudio.onStop(() => {
+        isVoicePlaying.value = false;
+      });
+      voiceAudio.onError(() => {
+        isVoicePlaying.value = false;
+        uni.showToast({ title: t("messages.voiceRecordFailed"), icon: "none" });
+      });
+    }
+    voiceAudio.src = src;
+    voiceAudio.play();
+    isVoicePlaying.value = true;
+  } catch (_e) {
+    uni.showToast({ title: t("profile.voiceNotSupported"), icon: "none" });
+  }
 }
 
-/** 删除语音状态 */
+/** 删除语音状态（先停止播放/录音，避免残留音频上下文） */
 function handleRemoveVoice() {
+  stopVoicePlayback();
+  if (isRecordingVoice.value) {
+    isRecordingVoice.value = false;
+    stopRecordingTicker();
+    try {
+      getRecorder()?.stop();
+    } catch (_e) {
+      // 停止失败静默处理
+    }
+  }
   uni.showModal({
     title: t("profile.titleTip"),
     content: t("profile.voiceDeleteConfirm"),
@@ -782,12 +967,28 @@ onShow(() => {
   });
 });
 
-/** 页面卸载时清理语音演示定时器（Phase Feedback5：避免卸载后触发状态更新） */
+/**
+ * 页面卸载时清理语音资源（Phase Feedback5 / P2.6）：
+ * 演示定时器、录音进度定时器、录音/播放音频上下文，避免卸载后触发状态更新
+ */
 onUnload(() => {
   if (voicePlayTimer) {
     clearTimeout(voicePlayTimer);
     voicePlayTimer = null;
   }
+  stopRecordingTicker();
+  isRecordingVoice.value = false;
+  try {
+    recorderManager?.stop();
+  } catch (_e) {
+    // 停止失败静默处理
+  }
+  try {
+    voiceAudio?.destroy();
+  } catch (_e) {
+    // 销毁失败静默处理
+  }
+  voiceAudio = null;
 });
 </script>
 
@@ -949,7 +1150,7 @@ onUnload(() => {
           </view>
         </view>
 
-        <!-- 未录制：CTA 引导录制 -->
+        <!-- 未录制：CTA 引导录制（录音中切换为"录音中，点击停止"） -->
         <view
           v-if="!voiceStatusUrl"
           class="video-cta press-feedback"
@@ -959,11 +1160,15 @@ onUnload(() => {
           :aria-label="t('profile.recordVoiceAria')"
           @tap="handleRecordVoice"
         >
-          <view class="video-cta__icon-wrap">
+          <view class="video-cta__icon-wrap" :class="{ 'video-cta__icon-wrap--recording': isRecordingVoice }">
             <image class="video-cta__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MICROPHONE" mode="aspectFit" alt="" />
           </view>
-          <text class="video-cta__text">{{ t('profile.voiceRecord') }}</text>
-          <text class="video-cta__hint">{{ t('profile.voiceStatusHint') }}</text>
+          <text class="video-cta__text">
+            {{ isRecordingVoice ? t('profile.voiceRecording') : t('profile.voiceRecord') }}
+          </text>
+          <text class="video-cta__hint">
+            {{ isRecordingVoice ? recordingLabel : t('profile.voiceStatusHint') }}
+          </text>
         </view>
 
         <!-- 已录制：语音卡片 + 播放/删除 -->
@@ -1692,6 +1897,16 @@ onUnload(() => {
   align-items: center;
   justify-content: center;
   box-shadow: var(--s-sm);
+}
+
+/* P2.6：录音中红色呼吸灯提示（真实 RecorderManager 录制态） */
+.video-cta__icon-wrap--recording {
+  animation: video-cta-pulse 1s ease-in-out infinite;
+}
+
+@keyframes video-cta-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.35); }
+  50% { box-shadow: 0 0 0 12rpx rgba(244, 63, 94, 0); }
 }
 
 .video-cta__icon {

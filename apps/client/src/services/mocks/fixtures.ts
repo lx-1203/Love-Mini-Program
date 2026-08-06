@@ -53,14 +53,26 @@ type CheckInResult = {
   newUserCount: number;
 };
 
-const recommendedPeople: RecommendedPersonSummary[] = homeRecommendedPeople.map((person) => ({
-  id: person.id,
-  name: person.name,
-  initials: person.initials,
-  headline: person.headline,
-  commonGround: person.commonGround,
-  availability: person.availability,
-}));
+/**
+ * 推荐人（homeRecommendedPeople 的视图投影）构建器。
+ *
+ * 展示文案（headline/commonGround/availability）优先经 *Key 走 t() 翻译
+ * （config.homeRecommendedPeople.*，zh/en 同步），静态中文值仅作兜底；
+ * name/initials 为人名/姓氏，保持原样。
+ *
+ * 使用 builder 函数在调用时解析 i18n key，确保 locale 切换后返回的 mock
+ * 数据能跟随当前语言（与 SubTask 3.3.4 的 buildXxx() 约定一致）。
+ */
+function buildRecommendedPeople(): RecommendedPersonSummary[] {
+  return homeRecommendedPeople.map((person) => ({
+    id: person.id,
+    name: person.name,
+    initials: person.initials,
+    headline: person.headlineKey ? t(person.headlineKey) : person.headline,
+    commonGround: person.commonGroundKey ? t(person.commonGroundKey) : person.commonGround,
+    availability: person.availabilityKey ? t(person.availabilityKey) : person.availability,
+  }));
+}
 
 /**
  * 讨论推荐 mock 数据构建器（SubTask 3.3.4：i18n 化）。
@@ -711,6 +723,8 @@ const tempChatSessionMetaById: Record<
 > = {};
 
 let submissionSeed = 1000;
+// 修复（P1 BUG）：预置记录 submittedAt 由非 ISO 格式（"2026-05-18 09:18"）
+// 改为 ISO 8601 字符串，保证前端 Date.parse 解析一致（避免时区/格式歧义）。
 let submissions: SubmissionRecord[] = [
   {
     id: 1,
@@ -718,7 +732,7 @@ let submissions: SubmissionRecord[] = [
     title: t("mockData.submissions.title1"),
     status: "processing",
     latestReplySummary: t("mockData.submissions.reply1"),
-    submittedAt: "2026-05-18 09:18",
+    submittedAt: "2026-05-18T09:18:00.000+08:00",
     convertedActivityId: null,
   },
   {
@@ -727,7 +741,7 @@ let submissions: SubmissionRecord[] = [
     title: t("mockData.submissions.title2"),
     status: "reviewed",
     latestReplySummary: t("mockData.submissions.reply2"),
-    submittedAt: "2026-05-17 18:42",
+    submittedAt: "2026-05-17T18:42:00.000+08:00",
     convertedActivityId: null,
   },
 ];
@@ -798,7 +812,7 @@ function buildHomeDashboard(): HomeDashboard {
       meta: t("mockData.common.aiPlanMeta"),
       actionLabel: null,
     },
-    recommendedPeople: clone(recommendedPeople),
+    recommendedPeople: clone(buildRecommendedPeople()),
     peopleLead: t("mockData.common.peopleLead"),
     activityPreview: {
       title: t("mockData.common.activityPreviewTitle"),
@@ -834,25 +848,45 @@ function toTopicLabel(topicId?: string) {
 
 function resolveRecommendedPerson(payload: CreateTempChatSessionRequest): RecommendedPersonSummary {
   if (payload.recommendedPersonId) {
-    // 修复（严格模式 noUncheckedIndexedAccess）：recommendedPeople[0] 索引访问返回 T | undefined，
-    // 此处兜底抛错，使调用方在异常（数组为空）场景获得明确错误而非 undefined。
-    const matched = recommendedPeople.find((person) => person.id === payload.recommendedPersonId);
-    if (matched) return matched;
-    const fallback = recommendedPeople[0];
-    if (!fallback) {
-      throw new Error("No recommended people configured");
+    // 修复（P1 BUG）：推荐人存在两套 id 体系——homeRecommendedPeople 的
+    // "person-*" 前缀 id 与 buildRecommendedPersonsMock 的数字 id（4001-4007）。
+    // 原实现只查 person-* 体系，数字 id 一律静默 fallback 到 recommendedPeople[0]
+    // （错位：会话显示“林安”但实际是其他推荐人）。现两套体系都查，
+    // 均未命中时抛明确错误，不再静默兜底。
+    const personId = payload.recommendedPersonId;
+    // 体系一：person-* 前缀 id（homeRecommendedPeople）
+    const matchedByPrefix = buildRecommendedPeople().find((person) => person.id === personId);
+    if (matchedByPrefix) return matchedByPrefix;
+    // 体系二：数字 id（buildRecommendedPersonsMock，4001-4007）
+    const numericId = Number(personId);
+    if (Number.isFinite(numericId)) {
+      const matchedNumeric = buildRecommendedPersonsMock().find(
+        (person) => person.id === numericId
+      );
+      if (matchedNumeric) {
+        return {
+          id: String(matchedNumeric.id),
+          name: matchedNumeric.name,
+          initials: matchedNumeric.initials,
+          headline: matchedNumeric.headline,
+          commonGround: matchedNumeric.commonGround,
+          availability: matchedNumeric.availability,
+        };
+      }
     }
-    return fallback;
+    // 两套体系均未命中：抛明确错误，避免静默错位
+    throw new Error(`Unknown recommended person id: ${personId}`);
   }
 
-  if (!recommendedPeople.length) {
+  const people = buildRecommendedPeople();
+  if (!people.length) {
     throw new Error("No recommended people configured");
   }
 
-  const index = Math.abs((payload.matchId || "fallback").length) % recommendedPeople.length;
-  // 修复（严格模式 noUncheckedIndexedAccess）：recommendedPeople[index] 索引访问返回 T | undefined，
+  const index = Math.abs((payload.matchId || "fallback").length) % people.length;
+  // 修复（严格模式 noUncheckedIndexedAccess）：people[index] 索引访问返回 T | undefined，
   // 由于前面已校验 length > 0，且 index 由 % length 计算，理论非空，此处兜底抛错以满足类型。
-  const person = recommendedPeople[index];
+  const person = people[index];
   if (!person) {
     throw new Error("No recommended people configured");
   }
@@ -919,7 +953,8 @@ function ensureSession(id: string): TempChatSession {
     return existing;
   }
 
-  const fallback = createSessionView(recommendedPeople[0]!, id);
+  const people = buildRecommendedPeople();
+  const fallback = createSessionView(people[0]!, id);
   saveSession(fallback);
   return fallback;
 }
@@ -989,7 +1024,7 @@ function buildChatOverview(): ChatOverview {
       })
       .map((item) => toChatSessionSummary(item)),
     emptyStateLead: t("mockData.tempChat.emptyState"),
-    recommendedPeople: clone(recommendedPeople),
+    recommendedPeople: clone(buildRecommendedPeople()),
   };
 }
 
@@ -1112,18 +1147,16 @@ export const mockFixtures = {
     matchResult = buildMatchResult(`match-${Date.now()}`, t("mockData.tempChat.quickMatchTopic"), payload.durationMinutes);
     return clone(matchResult);
   },
-  getMatchResult(id: string): MatchResult {
+  getMatchResult(id: string): MatchResult | null {
+    // 修复（P1 BUG）：原实现对未知 id 伪造成功结果（用当前 matchResult 拼凑
+    // 假数据返回），掩盖了「查询不存在的匹配」这一真实错误。
+    // 现语义修正：仅当 id 与最近一次创建/查询的匹配一致时返回数据，
+    // 未知 id 返回 null，由调用方展示错误/空态。
     if (matchResult.id === id) {
       return clone(matchResult);
     }
 
-    return clone({
-      ...matchResult,
-      id,
-      queueStatus: "connected",
-      countdownMinutes: 20,
-      tempChatSessionId: `session-${id}`,
-    });
+    return null;
   },
   setNextMatchQueueStatus(status: MatchResult["queueStatus"]) {
     nextMatchQueueStatus = status;
@@ -1149,8 +1182,10 @@ export const mockFixtures = {
   sendTempChatMessage(id: string, payload: Schemas["ChatMessageRequest"]): TempChatSession {
     const current = ensureSession(id);
 
+    // 修复（P1 BUG）：已关闭会话不再静默返回原会话（调用方误以为发送成功），
+    // 改为抛出 400 业务错误，语义与真实后端一致。
     if (current.phase === "closed") {
-      return clone(current);
+      throw createMockApiError(400);
     }
 
     const nextSession: TempChatSession = {
@@ -1159,7 +1194,9 @@ export const mockFixtures = {
       messages: [
         ...current.messages,
         {
-          id: `m-${Date.now()}`,
+          // 修复（P1 BUG）：消息 id 追加随机后缀，避免同毫秒连发消息 id 冲突
+          // （消息列表按 id 去重时第二条会被吞掉）。
+          id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           sender: payload.sender,
           kind: payload.kind,
           body: payload.body,
@@ -1235,7 +1272,10 @@ export const mockFixtures = {
       title: payload.title,
       status: "submitted",
       latestReplySummary: t("mockData.submissions.queueReply"),
-      submittedAt: t("mockData.submissions.submittedAt"),
+      // 修复（P1 BUG）：原实现把 i18n 文案（mockData.submissions.submittedAt）
+      // 当作 submittedAt 时间戳，日期解析失败导致列表排序/展示异常。
+      // 改为真实提交时间（ISO 8601）。
+      submittedAt: new Date().toISOString(),
       convertedActivityId: null,
     };
     submissions = [record, ...submissions];
@@ -1378,6 +1418,9 @@ export const mockFixtures = {
    * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 profileBackgroundUrl 状态。
    */
   uploadProfileBackground(file: UniUploadFileLike): { url: string } {
+    // 注（演示限制）：mock:// 协议 URL 不会被 <image>/<video> 组件真实加载，
+    // 仅用于演示“上传成功”的流程与数据回显；真实环境由后端返回可访问的
+    // https CDN URL。若需在 mock 模式看到图片，可改用 static 资源路径。
     const url = `mock://profile/background/${encodeURIComponent(file.name)}`;
     // 修复（严格模式 noUnusedLocals）：原 profileBackgroundUrl = url 赋值已移除（变量已删除）。
     return { url };
@@ -1396,6 +1439,8 @@ export const mockFixtures = {
     if (index < 0 || index > 5) {
       throw createMockApiError(400);
     }
+    // 注（演示限制）：mock:// 协议 URL 不会被 <image> 真实加载（演示用），
+    // 真实环境由后端返回 https CDN URL。
     const url = `mock://profile/photo/${index}/${encodeURIComponent(file.name)}`;
     if (index >= photoGallery.length) {
       photoGallery = [...photoGallery, url];
@@ -1432,8 +1477,20 @@ export const mockFixtures = {
    * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 personalVideoUrl 状态。
    */
   uploadProfileVideo(file: UniUploadFileLike): { url: string } {
+    // 注（演示限制）：mock:// 协议 URL 不会被 <video> 真实加载（演示用），
+    // 真实环境由后端返回 https CDN URL。
     const url = `mock://profile/video/${encodeURIComponent(file.name)}`;
     // 修复（严格模式 noUnusedLocals）：原 personalVideoUrl = url 赋值已移除（变量已删除）。
+    return { url };
+  },
+
+  /**
+   * P2.6：上传 60s 语音状态。
+   *
+   * Mock 模式下不实际上传文件，仅生成 mock URL。
+   */
+  uploadProfileVoice(file: UniUploadFileLike): { url: string } {
+    const url = `mock://profile/voice/${encodeURIComponent(file.name)}`;
     return { url };
   },
 
@@ -1443,6 +1500,8 @@ export const mockFixtures = {
    * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 halfBodyPhotoUrl 状态。
    */
   uploadProfileHalfBody(file: UniUploadFileLike): { url: string } {
+    // 注（演示限制）：mock:// 协议 URL 不会被 <image> 真实加载（演示用），
+    // 真实环境由后端返回 https CDN URL。
     const url = `mock://profile/half-body/${encodeURIComponent(file.name)}`;
     // 修复（严格模式 noUnusedLocals）：原 halfBodyPhotoUrl = url 赋值已移除（变量已删除）。
     return { url };

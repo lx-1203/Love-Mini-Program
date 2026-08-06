@@ -31,7 +31,8 @@ import org.springframework.web.server.ResponseStatusException;
  * 返回 URL 与元信息。</p>
  *
  * <p>鉴权：路径 {@code /api/media/upload} 走标准 /api/** 鉴权链（需认证）。
- * 静态资源 {@code /uploads/**} 由 SecurityConfig 放行。</p>
+ * 返回的 URL 为 {@code /api/v1/media/...} 鉴权代理路径（infra R2-00014），
+ * 不再依赖已 denyAll 的静态资源映射。</p>
  *
  * <p>错误处理：
  * <ul>
@@ -91,7 +92,7 @@ public class MediaUploadController {
             @Parameter(in = ParameterIn.QUERY, description = "multipart 文件", required = true,
                     content = @Content(mediaType = "multipart/form-data"))
             @RequestParam("file") MultipartFile file,
-            @Parameter(in = ParameterIn.QUERY, description = "媒体类型：image / video / background", required = true, example = "image")
+            @Parameter(in = ParameterIn.QUERY, description = "媒体类型：image / video / background / audio（60s 语音状态）", required = true, example = "image")
             @RequestParam("type") String type,
             @Parameter(in = ParameterIn.QUERY, description = "视频时长（毫秒），可选", example = "15000")
             @RequestParam(value = "durationMs", required = false)
