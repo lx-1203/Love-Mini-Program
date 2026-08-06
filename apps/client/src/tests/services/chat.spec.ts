@@ -210,7 +210,9 @@ describe("chat store - messaging actions (Task 1.1)", () => {
       name: string;
       formData: { duration: string };
     };
-    expect(callArgs.url).toBe("/api/chat/voice");
+    // infra R2-00022:语音上传 URL 拼接 apiBaseUrl(测试环境 apiBaseUrl 为 http://127.0.0.1:8080/api)
+    // P3 联调：normalizeApiPath 补齐 /v1 前缀（后端统一 /api/v1 路由）
+    expect(callArgs.url).toBe("http://127.0.0.1:8080/api/v1/chat/voice");
     expect(callArgs.filePath).toBe("wxfile://tmp/voice123.m4a");
     expect(callArgs.name).toBe("file");
     expect(callArgs.formData.duration).toBe("5");

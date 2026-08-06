@@ -20,6 +20,8 @@
  */
 import type { App } from "vue";
 import { appEnv } from "./env";
+// P3 联调：错误上报端点补齐 /v1 前缀（统一后端 /api/v1 前缀约定）
+import { normalizeApiPath } from "./http";
 
 /* ============================================================
  * 平台与状态标识
@@ -368,6 +370,64 @@ export function clearUser(): void {
  * ============================================================ */
 
 /**
+ * 对上报 context 做防御性脱敏与截断。
+ *
+ * - 字符串/数组元素截断到 1000 字符，避免超大上下文撑爆上报接口；
+ * - key 名匹配敏感模式（token/authorization/password/secret/phone/idcard/cookie）
+ *   的值替换为 `***`（脱敏只做 key 名匹配，不解析嵌套语义）；
+ * - 不可 JSON 序列化的值（函数/undefined）丢弃。
+ *
+ * @param raw 原始 context 对象
+ * @returns 脱敏后的 context 对象
+ */
+const SENSITIVE_KEY_PATTERN = /token|authorization|password|secret|phone|idcard|id_card|cookie/i;
+const CONTEXT_VALUE_MAX_LENGTH = 1000;
+
+function sanitizeContextForReport(
+  raw?: Record<string, unknown>
+): Record<string, unknown> {
+  if (!raw || typeof raw !== "object") {
+    return {};
+  }
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (SENSITIVE_KEY_PATTERN.test(key)) {
+      result[key] = "***";
+      continue;
+    }
+    if (typeof value === "string") {
+      result[key] = value.length > CONTEXT_VALUE_MAX_LENGTH
+        ? `${value.slice(0, CONTEXT_VALUE_MAX_LENGTH)}…[truncated]`
+        : value;
+      continue;
+    }
+    if (typeof value === "number" || typeof value === "boolean" || value === null) {
+      result[key] = value;
+      continue;
+    }
+    if (Array.isArray(value)) {
+      // 数组仅保留前 20 项，避免长列表撑爆 payload
+      result[key] = value.slice(0, 20).map((item) =>
+        typeof item === "string" && item.length > CONTEXT_VALUE_MAX_LENGTH
+          ? `${item.slice(0, CONTEXT_VALUE_MAX_LENGTH)}…[truncated]`
+          : item
+      );
+      continue;
+    }
+    // 嵌套对象：尝试 JSON 序列化后整体截断（避免深层递归开销与循环引用风险）
+    try {
+      const serialized = JSON.stringify(value);
+      result[key] = serialized && serialized.length > CONTEXT_VALUE_MAX_LENGTH
+        ? `${serialized.slice(0, CONTEXT_VALUE_MAX_LENGTH)}…[truncated]`
+        : value;
+    } catch (_e) {
+      result[key] = "[unserializable]";
+    }
+  }
+  return result;
+}
+
+/**
  * 将错误信息上报到后端 /api/error-reports 接口。
  *
  * 使用场景：
@@ -381,19 +441,28 @@ export function clearUser(): void {
  * - payload 包含错误消息、堆栈、上下文、时间戳与平台标识。
  *
  * @param error   错误对象或原始值
- * @param context 可选的上下文信息
+ * @param contextRaw 可选的上下文信息（上报前会经 sanitizeContextForReport 脱敏/截断）
  */
 async function reportErrorToBackend(
   error: unknown,
-  context?: Record<string, unknown>
+  contextRaw?: Record<string, unknown>
 ): Promise<void> {
   try {
+    // 修复（P1 BUG）：context 全量原样上报存在两类风险——
+    // 1. 体积风险：超大对象（如完整请求体/长列表）撑爆错误上报接口；
+    // 2. 泄漏风险：URL 查询参数中的 token、Authorization 头、手机号等敏感
+    //    字段会被原样写入后端日志。
+    // 现做防御性裁剪：仅保留可序列化对象，字符串与数组截断到 1000 字符，
+    // 并对常见敏感 key（token/authorization/password/secret/phone/idcard）
+    // 做脱敏处理。注意：脱敏只覆盖 key 名匹配的字段，嵌套深层敏感字段
+    // 仍可能漏网，业务侧上报前应避免传入未过滤的原始请求对象。
+    const context = sanitizeContextForReport(contextRaw);
     // 规范化错误信息：Error 实例提取 message + stack，其他类型转为字符串
     const payload = {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack ?? undefined : undefined,
+      message: error instanceof Error ? error.message : String(error).slice(0, 2000),
+      stack: error instanceof Error ? (error.stack ?? "").slice(0, 8000) : undefined,
       name: error instanceof Error ? error.name : undefined,
-      context: context ?? {},
+      context,
       timestamp: new Date().toISOString(),
       platform: isH5 ? "h5" : "mp-weixin",
     };
@@ -401,7 +470,7 @@ async function reportErrorToBackend(
     // 使用 Promise 包装 uni.request，统一 success/fail 为 resolve
     await new Promise<void>((resolve) => {
       uni.request({
-        url: `${appEnv.apiBaseUrl}/error-reports`,
+        url: `${appEnv.apiBaseUrl}${normalizeApiPath("/error-reports")}`,
         method: "POST",
         data: payload,
         // 短超时避免错误上报阻塞过久（错误上报不应影响主流程）

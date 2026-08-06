@@ -19,6 +19,8 @@ vi.mock("../services/env", () => ({
     apiMode: "real" as const,
   },
   isMockMode: () => false,
+  // infra R2-00123:websocket 状态日志出口依赖 isDev,测试中固定为 false(静默)
+  isDev: false,
 }));
 
 vi.mock("../services/http", () => ({
@@ -138,7 +140,8 @@ describe("websocket client - token 传递方式（Phase 3 任务 15）", () => {
     wsClient.connect("test-jwt-token-abc123");
 
     expect(capturedArgs).not.toBeNull();
-    expect(capturedArgs!.url).toBe("ws://127.0.0.1:8080/api/ws/websocket");
+    // P3 联调（K2）：移除 apiBaseUrl 的 /api 后缀 —— WebSocket 端点独立注册在根路径 /ws
+    expect(capturedArgs!.url).toBe("ws://127.0.0.1:8080/ws/websocket");
   });
 
   it("应通过 WebSocket 子协议（protocols）传递 bearer.{token}", () => {

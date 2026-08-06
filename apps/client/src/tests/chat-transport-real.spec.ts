@@ -183,7 +183,7 @@ describe("chat transport real mode", () => {
     expect(requestMock).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        url: "http://127.0.0.1:8080/api/temp-chat/sessions",
+        url: "http://127.0.0.1:8080/api/v1/temp-chat/sessions",
         method: "POST",
         data: { recommendedPersonId: "person-2" },
       })
@@ -191,28 +191,28 @@ describe("chat transport real mode", () => {
     expect(requestMock).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        url: "http://127.0.0.1:8080/api/temp-chat/sessions/session-real/messages",
+        url: "http://127.0.0.1:8080/api/v1/temp-chat/sessions/session-real/messages",
         method: "POST",
       })
     );
     expect(requestMock).toHaveBeenNthCalledWith(
       3,
       expect.objectContaining({
-        url: "http://127.0.0.1:8080/api/temp-chat/sessions/session-real",
+        url: "http://127.0.0.1:8080/api/v1/temp-chat/sessions/session-real",
         method: "GET",
       })
     );
     expect(requestMock).toHaveBeenNthCalledWith(
       4,
       expect.objectContaining({
-        url: "http://127.0.0.1:8080/api/temp-chat/sessions/session-real/contact-exchange/respond",
+        url: "http://127.0.0.1:8080/api/v1/temp-chat/sessions/session-real/contact-exchange/respond",
         method: "POST",
       })
     );
     expect(requestMock).toHaveBeenNthCalledWith(
       5,
       expect.objectContaining({
-        url: "http://127.0.0.1:8080/api/temp-chat/sessions/session-real/end",
+        url: "http://127.0.0.1:8080/api/v1/temp-chat/sessions/session-real/end",
         method: "POST",
       })
     );

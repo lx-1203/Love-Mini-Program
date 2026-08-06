@@ -12,7 +12,7 @@ import type {
 } from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
 import { appEnv, isDev, isMockMode } from "./env";
-import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout } from "./http";
+import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout, normalizeApiPath } from "./http";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
 
@@ -125,7 +125,8 @@ function uploadFileViaUni<TResponse>(
   let uploadTask: UniApp.UploadTask | undefined;
   const uploadPromise = new Promise<TResponse>((resolve, reject) => {
     uploadTask = uni.uploadFile({
-      url: `${appEnv.apiBaseUrl}${endpoint}`,
+      // P3 联调：上传端点同样补齐 /v1 前缀（原未带前缀，real 模式 404）
+      url: `${appEnv.apiBaseUrl}${normalizeApiPath(endpoint)}`,
       filePath,
       name: "file",
       // 附带额外字段（如照片墙 index）

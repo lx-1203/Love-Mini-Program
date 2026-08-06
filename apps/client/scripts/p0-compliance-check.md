@@ -28,7 +28,7 @@
 | 14 | 内容安全 | 视频审核（接入微信 `security.mediaCheckAsync`） | P0-必选 | □通过 □不通过 | 待接入 |
 | 15 | 数据传输 | 全站 HTTPS（生产环境） | P0-必选 | □通过 □不通过 | Nginx + `WebConfig` |
 | 16 | 数据加密 | 凭据脱敏（`@JsonIgnore` on `password/openid`） | P0-必选 | □通过 □不通过 | `User` 实体 |
-| 17 | 数据加密 | JWT 密钥环境变量化（≥32 字符） | P0-必选 | □通过 □不通过 | `application-db.yml` |
+| 17 | 数据加密 | JWT 密钥环境变量化（≥32 字符） | P0-必选 | □通过 □不通过 | `application-real.yml` |
 | 18 | 用户注销 | 账号注销机制（前端入口 + 后端清理） | P0-必选 | □通过 □不通过 | **待补**（P1 实施） |
 | 19 | 权限隔离 | Admin 权限注解（`@PreAuthorize`） | P0-必选 | □通过 □不通过 | 11 个 Controller |
 | 20 | 媒体鉴权 | 上传目录 `denyAll` + 鉴权代理 | P0-必选 | □通过 □不通过 | `SecurityConfig` + `MediaAccessController` |
@@ -299,7 +299,7 @@ grep -n "@JsonIgnore" apps/api/src/main/java/com/campuslove/api/entity/User.java
 ### 17. JWT 密钥环境变量化（≥32 字符）
 
 **检查方法**：
-1. `application-db.yml` 中 `app.jwt.secret: ${JWT_SECRET:}`（无默认值）
+1. `application-real.yml` 中 `app.jwt.secret: ${JWT_SECRET:}`（无默认值）
 2. 启动时 `JwtConfigValidator` 校验 `JWT_SECRET` 非空且 ≥ 32 字符
 3. `.env.example` 含 `JWT_SECRET=changeme-to-strong-secret-32chars-min`
 

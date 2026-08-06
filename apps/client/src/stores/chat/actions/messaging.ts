@@ -28,10 +28,17 @@ import type { ChatStoreThis } from "../store-type";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
 // Task 31：网络请求超时控制
-import { withTimeout } from "@/services/http";
+// P3 联调：normalizeApiPath 补齐 /v1 前缀（语音上传端点原缺 /v1，real 模式 404）
+import { withTimeout, normalizeApiPath } from "@/services/http";
+// infra R2-00022：语音上传 URL 拼接 apiBaseUrl（原硬编码 /api/chat/voice，
+// apiBaseUrl 非根路径或不同域名时上传 404）
+import { appEnv } from "@/services/env";
 
 /** Task 31：语音上传默认超时时间（30s，语音文件较大） */
 const VOICE_UPLOAD_TIMEOUT_MS = 30000;
+
+/** infra R2-00085: 消息 sendId/mock 消息 id 递增计数器（同毫秒连发避免 Date.now() 碰撞） */
+let messageIdSeq = 0;
 
 /**
  * 上传语音文件到后端（Task 1.1.4）。
@@ -64,7 +71,7 @@ async function uploadVoiceFile(
   const controller = new AbortController();
   const uploadPromise = new Promise<string>((resolve, reject) => {
     uni.uploadFile({
-      url: `/api/chat/voice`,
+      url: `${appEnv.apiBaseUrl}${normalizeApiPath("/chat/voice")}`,
       filePath: tempFilePath,
       name: "file",
       formData: {
@@ -124,7 +131,8 @@ export async function sendText(
   }
 
   // 修复（P1 BUG）：生成客户端 sendId 用于跟踪消息投递状态
-  const sendId = `send-${Date.now()}`;
+  // infra R2-00085: 计数器+时间戳，避免同毫秒两连发产生重复 id
+  const sendId = `send-${Date.now()}-${++messageIdSeq}`;
   this._setMessageStatus(sendId, "sending");
 
   try {
@@ -150,7 +158,7 @@ export async function sendText(
           messages: [
             ...currentSession.messages,
             {
-              id: `m-${Date.now()}`,
+              id: `m-${Date.now()}-${++messageIdSeq}`, // infra R2-00085: 避免同毫秒碰撞
               sender: "self",
               kind: "text",
               body,
@@ -203,8 +211,8 @@ export async function sendVoice(
   }
 
   // Task 1.1.4：Real 模式下先上传录音文件，拿到 URL 后再发送消息
-  // Mock 模式或 H5 端（tempFilePath 为空）跳过上传，使用占位 body
-  let voiceBody = "语音消息";
+  // Mock 模式或 H5 端（tempFilePath 为空）跳过上传，使用占位 body（infra R2-00086: 走 i18n）
+  let voiceBody = t("chat.voicePlaceholder");
   if (tempFilePath && tempFilePath.length > 0) {
     try {
       voiceBody = await uploadVoiceFile(tempFilePath, durationSeconds);

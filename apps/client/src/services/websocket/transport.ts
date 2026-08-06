@@ -180,7 +180,11 @@ export function isPongMessage(rawData: string): boolean {
  */
 export function buildWsUrl(): string {
   const baseUrl = appEnv.apiBaseUrl.replace(/^http/, "ws");
-  return `${baseUrl}/ws/websocket`;
+  // P3 联调（K2）：移除 apiBaseUrl 的 /api 后缀 —— 该后缀仅用于 REST API 路由，
+  // WebSocket 端点由后端 WebSocketConfig 独立注册在根路径 /ws 下，
+  // 原样拼接会得到 ws://host/api/ws/websocket（握手 404）。
+  const origin = baseUrl.replace(/\/api$/, "");
+  return `${origin}/ws/websocket`;
 }
 
 /**

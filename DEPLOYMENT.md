@@ -122,12 +122,15 @@ VITE_APP_VERSION=v0.1.0
 
 ```bash
 cp .env.example .env
-# 编辑 .env 文件，至少配置以下必填项：
+# 编辑 .env 文件，至少配置以下必填项（infra #39 补全）：
+# - MYSQL_ROOT_PASSWORD / MYSQL_PASSWORD（数据库密码，compose 强制注入）
+# - REDIS_PASSWORD（Redis 密码，compose 强制注入）
 # - JWT_SECRET（≥ 32 字符，建议 openssl rand -base64 48 生成）
-# - DB_URL / DB_USERNAME / DB_PASSWORD
-# - REDIS_PASSWORD
+# - GRAFANA_ADMIN_PASSWORD（Grafana 管理员密码，compose 强制注入）
+# - DB_URL / DB_USERNAME / DB_PASSWORD（非容器化部署时使用）
+# - ADMIN_OPENID（管理员 OpenID，生产部署必填）
+# - ADMIN_INITIAL_PASSWORD_HASH（管理员初始密码 BCrypt 哈希，首次部署必填）
 # - WECHAT_APPID / WECHAT_SECRET（小程序部署必填）
-# - ADMIN_INITIAL_PASSWORD_HASH（首次部署必填）
 ```
 
 所有环境变量的语义与默认值参见 `.env.example` 注释。
@@ -301,11 +304,11 @@ docker compose --profile monitoring up -d
 ### 启动数据库备份
 
 ```bash
-# 启动 db-backup 服务（每日凌晨 2 点自动备份）
+# 启动 db-backup 服务（每日凌晨 2 点自动备份，可通过 BACKUP_CRON 修改）
 docker compose --profile backup up -d
 
-# 手动触发一次备份
-docker compose exec db-backup /backup/scripts/backup-mysql.sh
+# 手动触发一次备份（容器内脚本挂载点为 /backup.sh，infra #38 修正）
+docker compose exec backup /backup.sh
 ```
 
 ### Docker Compose 服务清单（与 `docker-compose.yml` 对齐）
@@ -316,8 +319,8 @@ docker compose exec db-backup /backup/scripts/backup-mysql.sh
 |------|------|---------------------|----------|---------|----------|----------|
 | `mysql` | `mysql:8.0` | `${MYSQL_PORT:-3306}` | 3306 | 默认 | `mysqladmin ping` (10s/5s/10次/start 30s) | json-file (10m×5) |
 | `redis` | `redis:7-alpine` | `${REDIS_PORT:-6379}` | 6379 | 默认 | `redis-cli ping` (10s/5s/5次/start 10s) | json-file (10m×5) |
-| `api` | `campus-love/api:${TAG:-latest}` | `${API_PORT:-8080}` | 8080 | 默认 | `curl /actuator/health` (30s/5s/5次/start 90s) | json-file (10m×5) |
-| `admin` | `campus-love/admin:${TAG:-latest}` | `${ADMIN_PORT:-5180}` | 8080 | 默认 | `curl /healthz` (30s/5s/3次/start 10s) | json-file (10m×5) |
+| `api` | `campus-love/api:${TAG:-dev}` | `${API_PORT:-8080}` | 8080 | 默认 | `curl /actuator/health` (30s/5s/5次/start 90s) | json-file (10m×5) |
+| `admin` | `campus-love/admin:${TAG:-dev}` | `${ADMIN_PORT:-5180}` | 8080 | 默认 | `curl /healthz` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `client` | `nginx:1.27-alpine` | `${CLIENT_PORT:-5173}` | 80 | `client-h5` | `wget /` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `prometheus` | `prom/prometheus:v2.55.0` | `${PROMETHEUS_PORT:-9090}` | 9090 | 默认 | `wget /-/healthy` (30s/5s/3次) | json-file (10m×5) |
 | `grafana` | `grafana/grafana:11.3.0` | `${GRAFANA_PORT:-3001}` | 3000 | 默认 | `wget /api/health` (30s/5s/3次/start 30s) | json-file (10m×5) |
@@ -325,7 +328,7 @@ docker compose exec db-backup /backup/scripts/backup-mysql.sh
 | `node-exporter` | `prom/node-exporter:v1.8.2` | `${NODE_EXPORTER_PORT:-9100}` | 9100 | `monitoring` | `wget /-/healthy` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `backup` | `alpine:3.19` | - | - | `backup` | `pgrep crond` (60s/5s/3次/start 30s) | json-file (10m×3) |
 
-> **健康检查说明**：`interval/timeout/retries/start_period` 格式。`mysql` 与 `redis` 的 healthcheck 命令均通过 `${VAR}` 引用环境变量中的密码，避免硬编码（Task 22 安全加固）。
+> **健康检查说明**：`interval/timeout/retries/start_period` 格式。`mysql` 与 `redis` 的 healthcheck 分别通过容器环境变量 `MYSQL_PWD` / `REDISCLI_AUTH` 传递密码，密码不出现在进程参数中（infra #3）。
 >
 > **日志驱动说明**：所有服务统一使用 `json-file` 日志驱动，通过 `max-size` 与 `max-file` 限制单文件大小（10MB）与轮转文件数（5 个，backup 为 3 个），避免日志撑满磁盘。
 >
@@ -354,11 +357,11 @@ docker compose exec db-backup /backup/scripts/backup-mysql.sh
 | `JWT_EXPIRATION_MS` | - | `86400000` | JWT 有效期（毫秒） | api |
 | `WECHAT_APPID` | - | - | 微信小程序 AppID | api |
 | `WECHAT_SECRET` | - | - | 微信小程序 AppSecret | api |
-| `CORS_ALLOWED_ORIGINS` | - | `http://localhost:5173,5174,5180` | CORS 白名单 | api |
+| `CORS_ALLOWED_ORIGINS` | - | `https://www.campuslove.example.com,https://admin.campuslove.example.com,localhost:5173/5174/5180` | CORS 白名单 | api |
 | `AGNES_API_KEY` | - | - | Agnes AI 服务密钥 | api |
 | `AGNES_API_BASE` | - | `https://api.agnes-ai.com/api` | Agnes AI 服务地址 | api |
 | `AGNES_TIMEOUT_MS` | - | `30000` | Agnes AI 超时 | api |
-| `ADMIN_OPENID` | - | `admin-default-openid-change-me` | 管理员 OpenID | api |
+| `ADMIN_OPENID` | ✅（生产） | - | 管理员 OpenID（默认空，生产必填） | api |
 | `ADMIN_NICKNAME` | - | `系统管理员` | 管理员昵称 | api |
 | `ADMIN_INITIAL_PASSWORD_HASH` | - | - | 管理员初始密码 BCrypt 哈希 | api |
 | `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` | - | 默认 guest | RabbitMQ 连接（可选） | api |
@@ -372,8 +375,9 @@ docker compose exec db-backup /backup/scripts/backup-mysql.sh
 | `ALERTMANAGER_PORT` | - | `9093` | Alertmanager 宿主机端口 | alertmanager |
 | `NODE_EXPORTER_PORT` | - | `9100` | Node Exporter 宿主机端口 | node-exporter |
 | `BACKUP_RETENTION_DAYS` | - | `7` | 备份保留天数 | backup |
-| `BACKUP_CRON` | - | `0 2 * * *` | 备份 cron 表达式 | backup |
-| `TAG` | - | `latest` | Docker 镜像 tag（CI 注入 git sha） | api、admin |
+| `BACKUP_CRON` | - | `0 2 * * *` | 备份 cron 表达式（由 backup 服务启动命令写入 crontab） | backup |
+| `BACKUP_DIR` | - | `/backups` | 备份存储目录（容器内，与宿主 `./backups` bind 挂载对齐） | backup |
+| `TAG` | - | `dev` | Docker 镜像 tag（生产必须注入 git sha / release tag，禁止 latest） | api、admin |
 
 > **安全提示**（P1.19）：docker-compose.yml 中所有密码字段使用 `${VAR:?error message}` 形式，未设置环境变量时 `docker compose up` 会失败（强制注入，无弱默认值兜底）。必填字段：`MYSQL_ROOT_PASSWORD` / `MYSQL_PASSWORD` / `REDIS_PASSWORD` / `JWT_SECRET` / `GRAFANA_ADMIN_PASSWORD`。
 
@@ -440,7 +444,7 @@ cd database/flyway
 |------|------|------------------|
 | `application.yml` | 主配置，包含非敏感默认值与环境变量占位 | 否 |
 | `application-mock.yml` | Mock profile 配置（开发环境） | 否 |
-| `application-db.yml` | Real profile 配置（数据库/Redis/Flyway） | 否（仅占位符） |
+| `application-real.yml` | Real profile 配置（数据库/Redis/Flyway） | 否（仅占位符） |
 | `application-secret.yml` | 敏感配置（密钥/密码），**不入库** | 是 |
 
 **敏感配置注入方式（按优先级）：**
@@ -451,7 +455,7 @@ cd database/flyway
 
 **禁止做法：**
 
-- ❌ 将真实密钥硬编码到 `application.yml` / `application-db.yml`
+- ❌ 将真实密钥硬编码到 `application.yml` / `application-real.yml`
 - ❌ 将含密钥的 `.env` 文件提交到版本控制系统
 - ❌ 在 Dockerfile 中通过 `ENV` 指令硬编码密钥
 
@@ -567,8 +571,8 @@ docker compose exec redis redis-cli -a "$REDIS_PASSWORD" DBSIZE
 | 配置项 | 默认值 | 说明 |
 |--------|--------|------|
 | `BACKUP_RETENTION_DAYS` | `7` | 过期清理阈值（天） |
-| `BACKUP_CRON` | `0 2 * * *` | cron 表达式（每天 02:00） |
-| `BACKUP_DIR` | `/backups`（容器内） | 备份存储目录，对应宿主 `./backups` |
+| `BACKUP_CRON` | `0 2 * * *` | cron 表达式（每天 02:00，由启动命令写入 crontab） |
+| `BACKUP_DIR` | `/backups`（compose 注入，容器内） | 备份存储目录，对应宿主 `./backups`（infra #16：与 backup-mysql.sh 的 BACKUP_DIR 环境变量对齐；脚本自身默认值为 `/backup`，compose 部署时以 `/backups` 覆盖） |
 
 **异地备份建议**：将 `./backups` 目录定期同步到对象存储（OSS/S3）或异地服务器，
 避免单机故障导致备份丢失。可使用 `rclone` 或 `aws s3 sync`：

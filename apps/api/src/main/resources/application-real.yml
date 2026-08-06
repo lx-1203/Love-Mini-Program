@@ -1,6 +1,11 @@
+# ============================================================
+# real profile 配置（P3 联调 K1）
+# 原文件名 application-db.yml 与激活的 profile 名（real）不一致：
+# Spring 仅加载 application-{active-profile}.yml，激活 real 时该文件
+# 不会被加载，导致生产部署拿不到数据库/Redis/Flyway 配置。
+# 已重命名为 application-real.yml 并对齐文档（DEPLOYMENT.md 激活 real）。
+# ============================================================
 spring:
-  profiles:
-    include: real
   datasource:
     # 数据库连接配置：通过 DB_URL / DB_USERNAME / DB_PASSWORD 环境变量外部化。
     # 启动时由 DatabaseConfigValidator 校验非空，未配置将拒绝启动。
@@ -53,18 +58,20 @@ spring:
           max-wait: ${REDIS_POOL_MAX_WAIT:-1}
   flyway:
     enabled: true
-    # 默认扫描两个位置：
-    #   1. filesystem:../../database/flyway/sql —— 既有迁移脚本目录（与项目早期保持一致）
-    #   2. classpath:db/migration —— Spring Boot 默认迁移目录，用于 Phase A 起新增的迁移
-    # 可通过环境变量 APP_FLYWAY_LOCATIONS 覆盖（如需禁用某个位置）。
-    locations: ${APP_FLYWAY_LOCATIONS:filesystem:../../database/flyway/sql,classpath:db/migration}
+    # 默认扫描 filesystem 迁移目录（单源）：
+    #   filesystem:../database/flyway/sql —— 全部迁移脚本（含原 classpath 的 4 个 Phase A
+    #   迁移，已并入主链并重编号为 V2026.07.24.0001~0004，保证 media_asset 等表在引用前创建）。
+    #   注意：相对路径基于进程工作目录（apps/api），../database 即仓库根的 database 目录；
+    #   docker 环境通过 APP_FLYWAY_LOCATIONS 覆盖为 filesystem:/app/db/migration。
+    locations: ${APP_FLYWAY_LOCATIONS:filesystem:../database/flyway/sql}
     baseline-on-migrate: false
-    # 使用双下划线占位符，避免与 MySQL 单行注释 # 以及 Spring ${...} 冲突。
-    # 用于 V2026.06.25.0001__add_user_role_and_init_admin.sql 初始化管理员账号。
+    # 使用 Flyway 默认 ${...} 占位符语法（Spring 属性风格），
+    # 迁移脚本中以 ${admin.openid} / ${admin.nickname} 引用（见 V2026.06.25.0001）。
+    # 注意：不能使用双下划线 __xxx__ 语法——Flyway 会将迁移文件名中的 __ 也当作
+    # 占位符解析导致启动失败；双下划线语法是历史遗留，已统一改为 ${...}。
     placeholders:
       admin_openid: ${ADMIN_OPENID:admin-default-openid-change-me}
       admin_nickname: ${ADMIN_NICKNAME:系统管理员}
-      # 管理员密码 BCrypt 哈希。
       #
       # Task 0.6.5：默认值改为强随机 BCrypt 哈希（cost=10，22 字符随机盐 + 31 字符哈希），
       # 该哈希由 53 字符随机串生成，无已知明文，确保即使配置泄露也无法被破解登录。

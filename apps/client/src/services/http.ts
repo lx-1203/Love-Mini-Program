@@ -13,6 +13,51 @@ import { STORAGE_KEYS, LOGIN_TOAST_DURATION_MS, LOGIN_REDIRECT_DELAY_MS } from "
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
 
+/* ========== 模块级常量 ========== */
+
+/**
+ * Token 刷新请求超时时间（毫秒）。
+ * 刷新请求必须带超时：若刷新接口无响应，refreshPromise 会永久挂起，
+ * 阻塞所有并发 401 请求。取 8s（略短于默认请求超时，让刷新失败尽早暴露）。
+ */
+const REFRESH_TIMEOUT_MS = 8000;
+
+/* ========== 路径归一化（P3 联调） ========== */
+
+/**
+ * P3 联调：API 路径归一化（/v1 前缀补齐）。
+ *
+ * 后端所有 REST 控制器统一挂在 {@code /api/v1} 前缀下，但历史调用点存在两类路径：
+ * - 已带 /v1 前缀（如 {@code /v1/auth/guest-login}、{@code /v1/location/ip-city}）
+ * - 未带前缀（如 {@code /wallet/balance}、{@code /auth/me}、{@code /media/upload}）
+ *
+ * 未带前缀的路径在 mock 模式可用（mock 按路径模式匹配），但 real/showcase 模式
+ * 请求会落到 {@code /api/xxx} 导致 404。单点归一化后调用方无需再关心前缀约定。
+ *
+ * @param path 原始请求路径（以 / 开头，如 /auth/me；或已带 /v1 前缀）
+ * @returns 归一化路径（/auth/me → /v1/auth/me；已带前缀或绝对 URL 原样返回）
+ */
+export function normalizeApiPath(path: string): string {
+  if (!path) {
+    return path;
+  }
+  // 绝对 URL（http(s):// 等外部资源）或已带 /v1 前缀 → 原样返回
+  if (
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("//") ||
+    path.startsWith("/v1/")
+  ) {
+    return path;
+  }
+  // 以 / 开头的后端路径统一补齐 /v1 前缀（/auth/me → /v1/auth/me）
+  if (path.startsWith("/")) {
+    return `/v1${path}`;
+  }
+  // 无前导斜杠的相对路径也按后端约定补齐
+  return `/v1/${path}`;
+}
+
 /* ========== 错误分类 ========== */
 
 /**
@@ -275,9 +320,13 @@ async function tryRefreshToken(): Promise<boolean> {
   try {
     const result = await new Promise<{ token?: string; refreshToken?: string }>((resolve, reject) => {
       uni.request({
-        url: `${appEnv.apiBaseUrl}/auth/refresh`,
+        // P3 联调：refresh 端点同样补齐 /v1 前缀（原缺少 /v1，real 模式 404）
+        url: `${appEnv.apiBaseUrl}${normalizeApiPath("/auth/refresh")}`,
         method: "POST",
         data: { refreshToken },
+        // 修复（P1 BUG）：刷新请求必须带超时，避免刷新接口无响应时
+        // refreshPromise 永久挂起，导致所有后续 401 请求全部被阻塞。
+        timeout: REFRESH_TIMEOUT_MS,
         success: (res) => {
           if (res.statusCode === 200) {
             resolve(res.data as { token?: string; refreshToken?: string });
@@ -577,12 +626,30 @@ function doRequest<TResponse, TBody>(
           // abort 失败静默处理（请求可能已完成）
         }
       };
+
+      // 修复（P1 BUG）：请求 settle（成功/失败）后必须移除 abort 监听器。
+      // 原实现只 addEventListener 不 remove，同一 AbortSignal 被多个请求
+      // 复用时（如 useAbortOnHide 的页面级 signal）监听器持续累积泄漏，
+      // 且后续 abort 会反复 abort 早已完成的 requestTask。
+      const removeAbortListener = () => {
+        if (typeof signal.removeEventListener === "function") {
+          signal.removeEventListener("abort", onAbort);
+        }
+      };
+      const wrappedResolve = (value: TResponse | PromiseLike<TResponse>) => { removeAbortListener(); resolve(value); };
+      const wrappedReject = (err: unknown) => { removeAbortListener(); reject(err); };
+
       // 兼容性处理：优先使用 addEventListener，不支持时回退到 onabort
       if (typeof signal.addEventListener === "function") {
         signal.addEventListener("abort", onAbort, { once: true });
       } else if (typeof (signal as { onabort?: unknown }).onabort !== "undefined") {
         (signal as { onabort: (() => void) | null }).onabort = onAbort;
       }
+
+      // 用包装后的 resolve/reject 替换原回调，确保 settle 时移除监听器
+      // （覆盖 success / fail / 401 重试 / abort 等所有结束路径）
+      resolve = wrappedResolve;
+      reject = wrappedReject;
     }
   });
 }
@@ -615,9 +682,9 @@ export async function request<TResponse, TBody = unknown>(
   const method = options.method || "GET";
   const url = options.url;
 
-  // 构建 uni.request 配置
+  // 构建 uni.request 配置（P3 联调：路径经 normalizeApiPath 补齐 /v1 前缀）
   let requestConfig: UniApp.RequestOptions = {
-    url: `${appEnv.apiBaseUrl}${options.url}`,
+    url: `${appEnv.apiBaseUrl}${normalizeApiPath(options.url)}`,
     method: options.method || "GET",
     data: options.data as Record<string, unknown> | string | ArrayBuffer | undefined,
     timeout: options.timeout ?? DEFAULT_TIMEOUT_MS,
@@ -651,6 +718,12 @@ export async function request<TResponse, TBody = unknown>(
         throw error;
       }
       lastError = error;
+      // 修复（P1 BUG）：请求被 abort（signal.aborted）后立即终止重试循环。
+      // 原实现 abort 后错误以 network 分类继续走指数退避重试，空转 N 次
+      // 且每次重试都会因 signal 已 aborted 立即失败，浪费资源。
+      if (options.signal?.aborted) {
+        throw error;
+      }
       // 仅对网络层错误重试（category=network），不对 auth/business 错误重试
       // 已达最大重试次数时也直接抛出
       if (error.category !== "network" || attempt === maxRetries) {
@@ -709,19 +782,6 @@ export function withTimeout<T>(
       return;
     }
 
-    // 监听外部 signal，联动取消
-    if (externalSignal) {
-      const onExternalAbort = () => {
-        controller.abort();
-        reject(buildNetworkError(new Error("请求已取消")));
-      };
-      if (typeof externalSignal.addEventListener === "function") {
-        externalSignal.addEventListener("abort", onExternalAbort, { once: true });
-      } else if (typeof (externalSignal as { onabort?: unknown }).onabort !== "undefined") {
-        (externalSignal as { onabort: (() => void) | null }).onabort = onExternalAbort;
-      }
-    }
-
     // 超时定时器
     const timer = setTimeout(() => {
       controller.abort();
@@ -735,14 +795,41 @@ export function withTimeout<T>(
       );
     }, timeoutMs);
 
-    // 目标 Promise 落定 → 清理定时器并透传结果
+    // 修复（P1 BUG）：外部 abort 监听器在 Promise settle 后必须移除。
+    // 原实现 addEventListener({ once: true }) 后从不 removeEventListener，
+    // 同一 signal 复用多次（页面级 signal）会累积监听器泄漏；
+    // 且 settle 后再次 abort 会调用 reject（Promise 已落定，虽无副作用但浪费）。
+    let onExternalAbort: (() => void) | null = null;
+
+    // 目标 Promise 落定 → 清理定时器/监听器并透传结果
+    const cleanup = () => {
+      clearTimeout(timer);
+      if (externalSignal && onExternalAbort && typeof externalSignal.removeEventListener === "function") {
+        externalSignal.removeEventListener("abort", onExternalAbort);
+        onExternalAbort = null;
+      }
+    };
+
+    // 监听外部 signal，联动取消
+    if (externalSignal) {
+      onExternalAbort = () => {
+        controller.abort();
+        reject(buildNetworkError(new Error("请求已取消")));
+      };
+      if (typeof externalSignal.addEventListener === "function") {
+        externalSignal.addEventListener("abort", onExternalAbort, { once: true });
+      } else if (typeof (externalSignal as { onabort?: unknown }).onabort !== "undefined") {
+        (externalSignal as { onabort: (() => void) | null }).onabort = onExternalAbort;
+      }
+    }
+
     target
       .then((value) => {
-        clearTimeout(timer);
+        cleanup();
         resolve(value);
       })
       .catch((err) => {
-        clearTimeout(timer);
+        cleanup();
         reject(err instanceof EnhancedApiError ? err : buildNetworkError(err));
       });
   });
