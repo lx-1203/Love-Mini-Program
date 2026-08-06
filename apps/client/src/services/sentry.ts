@@ -20,8 +20,6 @@
  */
 import type { App } from "vue";
 import { appEnv } from "./env";
-// P3 联调：错误上报端点补齐 /v1 前缀（统一后端 /api/v1 前缀约定）
-import { normalizeApiPath } from "./http";
 
 /* ============================================================
  * 平台与状态标识
@@ -469,8 +467,11 @@ async function reportErrorToBackend(
 
     // 使用 Promise 包装 uni.request，统一 success/fail 为 resolve
     await new Promise<void>((resolve) => {
+      // P3 联调：错误上报端点补齐 /v1 前缀。
+      // 注意：此处不复用 normalizeApiPath（http.ts），避免 http↔sentry 循环 import
+      // （sentry 被 http.js 启动期引用，反向 import http 会让 mp-weixin 模块注册不稳定）。
       uni.request({
-        url: `${appEnv.apiBaseUrl}${normalizeApiPath("/error-reports")}`,
+        url: `${appEnv.apiBaseUrl}/v1/error-reports`,
         method: "POST",
         data: payload,
         // 短超时避免错误上报阻塞过久（错误上报不应影响主流程）
