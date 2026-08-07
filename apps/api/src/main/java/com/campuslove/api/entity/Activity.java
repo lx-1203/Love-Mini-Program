@@ -66,6 +66,17 @@ public class Activity {
     @Enumerated(EnumType.STRING)
     private ActivityStatus status = ActivityStatus.upcoming;
 
+    /**
+     * 是否上架（上下架管理，V2026.08.07.0014 新增）。
+     *
+     * <p>默认 true 保证向后兼容（现有活动全部保持可见）。
+     * 下架（false）后小程序端活动列表不再展示，已报名用户仍可查看详情；
+     * 与 status（活动进行阶段）正交：已下架的活动仍可有
+     * upcoming/ongoing/ended 阶段状态。</p>
+     */
+    @Column(name = "published", nullable = false)
+    private Boolean published = true;
+
     /** 活动日期 */
     @Column(name = "activity_date")
     private LocalDate activityDate;
@@ -219,5 +230,13 @@ public class Activity {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public Boolean getPublished() {
+        return published;
+    }
+
+    public void setPublished(Boolean published) {
+        this.published = published;
     }
 }

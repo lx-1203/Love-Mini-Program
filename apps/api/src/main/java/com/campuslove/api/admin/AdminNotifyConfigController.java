@@ -33,6 +33,9 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>GET  /api/admin/notify-config       - 查询全部通知配置</li>
  *   <li>PUT  /api/admin/notify-config       - 批量更新通知配置（启用/停用/模板）</li>
  * </ul>
+ *
+ * <p>数据隔离说明：通知配置为<b>全局资源</b>（全平台统一生效，不区分校区），
+ * 不做校区数据隔离；写操作仅限 SUPER_ADMIN。</p>
  */
 @Profile("real")
 @RestController

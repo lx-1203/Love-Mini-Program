@@ -115,6 +115,8 @@ async function submitCert() {
       major: major.value.trim(),
       studentCardUrl: studentCardUrl.value,
     });
+    // P1-36：提交成功后重新拉取认证状态，刷新状态卡片（审核中/已认证）
+    void campusStore.fetchCertificationStatus();
     uni.showToast({ title: t("campus.certification.submitSuccess"), icon: "success" });
   } catch (_e) {
     uni.showToast({

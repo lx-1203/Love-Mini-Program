@@ -53,6 +53,14 @@ export default {
     imageAria: "图片",
     particlesResumeAria: "恢复粒子动画",
     particlesPauseAria: "暂停粒子动画",
+    /* P1-05：通用操作文案补全 */
+    submit: "提交",
+    submitting: "提交中...",
+    gotIt: "知道了",
+    send: "发送",
+    close: "关闭",
+    processing: "处理中...",
+    collapse: "收起",
   },
 
   /* ========== 配置数据展示文案（config/*.ts 的展示层 i18n，与 en-US.ts 同步） ========== */
@@ -400,8 +408,12 @@ export default {
       subtitle: "发现身边的同校朋友",
       distanceUnit: "{n}km",
       distanceSameCampus: "同校",
-      /* review #48：示例用户卡片点击提示（真实数据接入后改为跳转用户主页） */
-      tapHint: "示例数据，正式版将接入真实用户",
+      /* 2026-08-07：重构为寻觅卡片模式（推荐数据源） */
+      loading: "正在加载附近的同学…",
+      loadFailed: "加载失败，请重试",
+      empty: "暂时没有附近的同学",
+      likeHint: "附近的人暂不支持直接喜欢，去寻觅吧",
+      messageHint: "点击卡片查看主页后可发起聊天",
     },
     mbti: {
       title: "MBTI 人格测试",
@@ -456,7 +468,11 @@ export default {
     likeCountProgress: "你已表达 {count} 次喜欢，去看看谁也喜欢了你",
     superLikeFailed: "超级喜欢失败，请重试",
     remainingTimes: "{n} 次",
+    /* 2026-08-07 设计稿：标题行右上角剩余次数 */
+    remainingToday: "今日剩余 {n} 次",
     nearby: "附近",
+    /* 2026-08-07 设计稿：筛选标签行「附近」chip */
+    filterNearby: "附近",
     unlimited: "不限",
     ageRange18to25: "18-25岁",
     allFilters: "全部筛选",
@@ -531,6 +547,9 @@ export default {
     card: {
       emptyTitle: "暂无推荐卡片",
       refresh: "刷新推荐",
+      // D1 修复：未登录空状态引导登录（原空状态仅提供刷新，未登录用户会误以为系统无数据）
+      loginTitle: "登录后开启寻觅，遇见心动的 TA",
+      goLogin: "去登录",
     },
     /* ========== Phase Feedback1：寻觅页改版新增文案 ========== */
     personalId: "ID: {id}",
@@ -574,9 +593,41 @@ export default {
     unlockWhisper: "解锁悄悄话",
     dynamicPreview: "最新动态",
     viewAllMoments: "查看全部动态",
+    distancePrefix: "距离你",
+    momentsTitle: "TA的动态",
+    certDetailTitle: "认证详情",
+    certMethodLabel: "认证方式",
+    certReliabilityLabel: "可信度",
+    certMachineDesc: "系统自动识别头像与照片的真实性",
+    certMachineMethod: "AI 图像识别 + 活体检测",
+    certMachineReliability: "高",
+    certHumanDesc: "人工审核团队核实身份与校园资料",
+    certHumanMethod: "人工审核 + 校园信息核验",
+    certHumanReliability: "高",
+    schoolLabel: "学校",
+    maritalLabel: "婚况",
+    quickFilterTitle: "筛选",
+    scopeTitle: "匹配范围",
+    scopeAll: "不限",
+    ageRangeTitle: "年龄区间",
+    minAgeLabel: "最小年龄",
+    maxAgeLabel: "最大年龄",
+    sortTitle: "排序规则",
+    sortLatest: "最新注册",
+    sortActive: "最活跃",
+    maskUnlockHint: "互发喜欢解锁头像",
     distanceSuffix: "km",
     sameCampusDistance: "同校",
     expectedPartnerPlaceholder: "填写你期待的人物画像…",
+    /* P1-05：卡片长按/操作菜单文案（CardDetailOverlay 等使用） */
+    menuTitle: "对 TA 的操作",
+    menuDetail: "查看资料",
+    menuDetailDesc: "查看完整资料与照片",
+    menuSuperLikeDesc: "超级喜欢将优先展示给 TA",
+    menuNotInterested: "不感兴趣",
+    menuNotInterestedDesc: "减少此类推荐",
+    menuReport: "举报",
+    menuReportDesc: "提交违规内容举报",
   },
 
   /* ========== 匹配成功引导弹窗文案 ========== */
@@ -647,15 +698,26 @@ export default {
     topicStudy: "一起上自习吗？",
     topicCanteen: "食堂哪个窗口好吃？",
     topicRecommend: "话题推荐",
-    /* 消息页系统固定卡片（官方消息 / 小助手） */
-    officialTitle: "官方消息",
-    officialSubtitle: "来自官方的重要通知",
-    officialAria: "官方消息：来自官方的重要通知",
-    officialWip: "官方消息页开发中",
-    assistantTitle: "小助手",
-    assistantSubtitle: "专属恋爱助手，随时为你解答",
-    assistantAria: "小助手：专属恋爱助手，随时为你解答",
-    assistantWip: "小助手功能开发中",
+    /* 快捷功能入口区（设计需求：匿名匹配聊天 / 谁喜欢我 / 我的访客） */
+    quickEntryTitle: "快捷功能",
+    anonymousMatch: "匿名匹配聊天",
+    anonymousMatchDesc: "随机匹配陌生人",
+    likedMe: "谁喜欢我",
+    likedMeDesc: "查看喜欢你的用户",
+    myVisitors: "我的访客",
+    myVisitorsDesc: "查看访问过你主页的用户",
+    lockedEntry: "付费解锁功能",
+    unlockAllHint: "消耗 {coins} 交友币解锁全部（会员免费）",
+    unlockAllTitle: "解锁查看",
+    /* 消息页系统固定卡片（产品助手 / 活动官，设计需求） */
+    officialTitle: "产品助手",
+    officialSubtitle: "功能答疑 · 系统通知",
+    officialAria: "产品助手：功能答疑、系统通知",
+    officialWip: "产品助手功能开发中",
+    assistantTitle: "活动官",
+    assistantSubtitle: "活动推送 · 惊喜福利",
+    assistantAria: "活动官：活动推送、惊喜福利",
+    assistantWip: "活动官功能开发中",
     closed: "已关闭",
     closingSoon: "即将关闭",
     pageName: "聊天",
@@ -690,6 +752,9 @@ export default {
     icebreakerEmpty: "暂无推荐话题，试试点击\"换话题\"",
     icebreakerRefreshAria: "刷新破冰话题",
     icebreakerCardAria: "破冰话题：{content}，点击发送",
+    /* P1-11：破冰话题兜底提示 */
+    icebreakersLoadFailed: "破冰话题加载失败",
+    icebreakersNoPeer: "暂无法获取对方信息",
     heartSignalTitle: "心信号 · 今日推荐",
     heartSignalSubtitle: "系统为你推荐了 {n} 位有缘人",
     heartSignalAria: "心信号推荐，点击查看",
@@ -789,6 +854,7 @@ export default {
     emptyMyLikesDesc: "在 discover 卡片右滑，给心动的人点个赞",
     emptyVisitors: "暂无访客",
     emptyVisitorsDesc: "完善资料，让更多人发现你",
+    likedYou: "喜欢了你",
     heartSignal: "心动信号",
     pageName: "喜欢",
     monthDay: "{m}月{d}日",
@@ -818,7 +884,7 @@ export default {
     myPosts: "我的动态",
     wallet: "我的钱包",
     myMatches: "我的匹配",
-    settings: "设置",
+    settings: "通用设置",
     editProfile: "编辑资料",
     editBackground: "编辑背景图",
     logout: "退出登录",
@@ -828,6 +894,13 @@ export default {
     following: "关注",
     followers: "粉丝",
     likes: "获赞",
+    myLikes: "我喜欢的",
+    likedMe: "喜欢我的",
+    recentVisitors: "最近来访",
+    coinBalance: "交友币",
+    earnCoins: "领交友币",
+    earnReward: "得奖励",
+    myCircles: "我的圈子",
     visitors: "访客记录",
     verification: "恋爱认证",
     verificationSchool: "已认证",
@@ -910,10 +983,22 @@ export default {
     publishFirstAria: "去发布第一条动态",
     menuItemAria: "功能项：{label}",
     logoutAria: "退出登录",
+    /* ========== 2026-08-07 链路调整：未完善资料引导横幅 ========== */
+    completeBanner: "完善资料 {n}%，解锁完整功能",
+    completeBannerAction: "去完善",
+    completeBannerAria: "完善资料 {n}%，点击去完善",
+    scheduleSetting: "时间安排",
+    avatarEditAria: "点击更换头像",
+    avatarPreviewAria: "点击放大查看头像",
+    avatarUpdated: "头像已更新",
+    /* P1-05：消息中心入口（官方号会话承载系统通知） */
+    notifications: "消息中心",
     devEntryAria: "开发者入口",
     /* ========== Phase Feedback5：我的页改版新增文案 ========== */
-    voiceStatus: "语音状态",
+    voiceStatus: "语音介绍",
     voiceStatusHint: "最长 60 秒，让 TA 听到真实的你",
+    voiceOnlyTag: "仅语音 · 无视频",
+    statComingSoon: "列表页开发中，敬请期待",
     voiceRecord: "录制语音状态",
     voiceRecordStart: "开始录制",
     voiceRecordStop: "停止录制",
@@ -951,9 +1036,9 @@ export default {
     helpSupportDesc: "常见问题与在线客服",
     safetyCenter: "安全中心",
     safetyCenterDesc: "账号安全与隐私保护",
-    privacyPermission: "权限",
+    privacyPermission: "隐私权限设置",
     privacyPermissionDesc: "控制你的信息展示范围",
-    allowSameSchoolRecommend: "推荐给本校学生",
+    allowSameSchoolRecommend: "允许将我推荐给本校学生",
     allowSameSchoolRecommendDesc: "开启后，你的信息可能推荐给本校学生",
     receiveSameSchoolInfo: "接收同校信息",
     receiveSameSchoolInfoDesc: "关闭后将不再收到同校学生的推荐",
@@ -1031,6 +1116,9 @@ export default {
   village: {
     title: "圈子",
     subtitle: "校园恋爱社区",
+    /* 2026-08-07 设计稿：发现 Tab 热门话题区 */
+    hotTopics: "热门话题",
+    hotTopicViews: "浏览",
     categoryAll: "推荐",
     categoryFollowing: "关注",
     categoryInterest: "兴趣圈",
@@ -1079,6 +1167,8 @@ export default {
     sameCityLabel: "{city}",
     sameCityManual: "手动选择城市",
     sameCityChange: "切换城市",
+    sameCityDefault: "定位中",
+    publish: "发帖",
     sameCityEmpty: "同城还没有新动态",
     followingEmpty: "关注的人还没有新动态",
     followingEmptyHint: "在寻觅页右滑喜欢的人，TA 的动态会出现在这里",
@@ -1120,6 +1210,12 @@ export default {
       commentLike: "赞",
       emptyComments: "暂无评论，快来抢沙发吧",
       commentInputPlaceholder: "写下你的评论...",
+      /* P1-02 楼中楼：回复交互 */
+      reply: "回复",
+      replyTo: "回复 {name}",
+      replyToPlaceholder: "回复 @{name}",
+      replyingTo: "正在回复 {name}",
+      cancelReply: "取消回复",
       /* 相似作者推荐 */
       similarTitle: "你可能还想认识",
       similarSubtitle: "兴趣相投的同学",
@@ -1184,6 +1280,21 @@ export default {
       categoryHometown: "同乡",
       categoryMask: "蒙面",
       categoryInterest: "兴趣圈",
+      /* P1-01：标题输入（必填 5-30 字）+ 图片上传 */
+      titleLabel: "标题",
+      titlePlaceholder: "请输入标题（5-30 字）",
+      titleInvalid: "标题需为 {min}-{max} 个字",
+      uploadingImages: "图片上传中...",
+      imageUploadFailed: "图片上传失败，请重试",
+    },
+    /* P1-36：标签聚合页缺参提示 */
+    tagPostsMissingParam: "缺少标签参数",
+    /* P1-16：作者信息段（年龄 · 城市 · 学历） */
+    authorAgeUnit: "岁",
+    educationLabels: {
+      bachelor: "本科",
+      master: "硕士",
+      phd: "博士",
     },
     /* Task 28: 标签聚合页 (village/tag-posts.vue) 中文文案 */
     tagPosts: {
@@ -1299,6 +1410,8 @@ export default {
     navTitle: "开通 VIP",
     headerTitle: "校园恋爱 VIP",
     headerSubtitle: "解锁专属权益 · 遇见更多可能",
+    /* P1-08：会员功能未启用提示（VIP 页 + 三个子页守卫共用） */
+    membershipDisabled: "会员功能暂未开放",
     agreementPrefix: "开通即表示同意",
     serviceAgreement: "《VIP 服务协议》",
     autoRenewAgreement: "《自动续费协议》",
@@ -1536,6 +1649,41 @@ export default {
     },
   },
 
+  /* ========== 优惠码 Store 文案（stores/promo-code.ts 使用） ========== */
+  promoCode: {
+    /* P1-05：兑换中提示 */
+    redeeming: "兑换中，请稍候",
+  },
+
+  /* ========== 喜欢与访客页文案（likes-visitors 二级页） ========== */
+  likesVisitors: {
+    pageTitle: "喜欢与访客",
+    pageSubtitle: "谁在喜欢你，谁来看过你",
+    tabLikedMe: "喜欢我的",
+    tabVisitors: "我的访客",
+    overviewTotalViews: "总浏览量",
+    overviewTodayVisitors: "今日访客",
+    overviewTodayViews: "今日浏览量",
+    exposure: "提升曝光",
+    nameHidden: "匿名用户",
+    tagAge: "年龄",
+    tagSameCity: "同城",
+    tagUnlockHint: "解锁后查看完整资料",
+    /* 2026-08-07 消息页重构：按钮明确标注解锁方式与消耗 */
+    unlockBtn: "消耗 {coins} 交友币解锁全部",
+    unlockTitle: "解锁查看",
+    unlockConfirm: "消耗 {coins} 交友币/人解锁全部 {count} 条记录（会员免费）",
+    unlockConfirmBtn: "解锁",
+    unlockSuccess: "解锁成功",
+    unlockFail: "解锁失败，请稍后重试",
+    unlockVipFree: "会员免费解锁",
+    unlockHint: "解锁后查看全部列表",
+    emptyLikedMe: "还没有人喜欢我",
+    emptyVisitors: "暂无访客",
+    /* P1-08：会员功能未启用提示 */
+    membershipDisabled: "会员功能暂未开放",
+  },
+
   /* ========== 消息页文案 ========== */
   messages: {
     title: "消息",
@@ -1583,6 +1731,8 @@ export default {
     icebreaker3: "你平时喜欢做什么？",
     loadFailed: "加载失败，请稍后重试",
     operationFailed: "操作失败",
+    /* P1-05：语音录制失败（profile 页录音链路共用） */
+    voiceRecordFailed: "录音失败，请重试",
     mainNavAria: "主导航",
     unreadAria: "未读",
     unreadCountAria: "未读 {n} 条",
@@ -1655,6 +1805,22 @@ export default {
     officialPromoterMsg1: "每日签到可领交友币，连续签到奖励翻倍！",
     officialPromoterMsg2: "本周五晚校园操场「星空告白夜」活动报名开启，快来参加～",
     officialPromoterMsg3: "七夕特别企划：在星空下认识心动的人，游戏与表白墙等你来解锁。",
+    /* ========== 2026-08-07 消息页重构（对标微信：纯聊天属性） ========== */
+    yesterday: "昨天",
+    searchPlaceholder: "搜索昵称或聊天记录",
+    noSearchResult: "未找到相关会话",
+    anonymousMatch: "匿名匹配聊天",
+    anonymousMatchDesc: "随机匹配 · 渐进解锁",
+    likesVisitorsEntry: "喜欢与访客",
+    likesVisitorsDesc: "谁喜欢我 · 谁看过我",
+    muteSession: "免打扰",
+    unmuteSession: "恢复提醒",
+    sessionMuted: "已开启免打扰",
+    sessionUnmuted: "已关闭免打扰",
+    markAsUnread: "标为未读",
+    markAsRead: "标为已读",
+    markedUnread: "已标为未读",
+    markedRead: "已标为已读",
   },
 
   /* ========== 锁定页文案 ========== */
@@ -1687,6 +1853,8 @@ export default {
     noMatchSub: "暂时没有匹配的人",
     noChat: "暂无聊天",
     noChatSub: "还没有聊天记录",
+    /* P1-05：网络异常空状态副文案 */
+    networkSub: "请检查网络连接后重试",
   },
 
   /* ========== 错误状态文案 ========== */
@@ -1957,14 +2125,30 @@ export default {
     profile: {
       pageTitle: "基础资料",
       pageSubtitle: "完善你的资料，让更多人了解你",
-      sectionDraft: "资料草稿",
+      /* 2026-08-07 流程重构：注册第 1 步身份选择（学生/非学生分流） */
+      identityTitle: "你的身份",
+      identityHint: "身份决定注册步骤与推荐范围，随时可在「我的」中调整",
+      identityStudent: "在校学生 / 毕业生",
+      identityStudentDesc: "解锁同校匹配与校友圈子，走校园认证流程",
+      identityNonStudent: "非学生职场人士",
+      identityNonStudentDesc: "跳过校园认证，快速完成注册",
+      /* 2026-08-07 重构：去掉技术化命名「资料草稿」，统一为「基础信息」 */
+      sectionDraft: "基础信息",
       sectionBasic: "基本资料",
-      sectionTags: "个性标签",
-      sectionBackground: "个人主页背景",
+      /* P1-05：昵称输入 label / placeholder（setup/profile 页使用） */
       labelNickname: "昵称",
-      placeholderNickname: "昵称",
+      placeholderNickname: "请输入昵称",
+      /* 2026-08-07 重构：年级改为滚轮选择 */
       labelGrade: "年级",
-      placeholderGrade: "年级",
+      placeholderGrade: "选择年级",
+      gradeFreshman: "大一",
+      gradeSophomore: "大二",
+      gradeJunior: "大三",
+      gradeSenior: "大四",
+      gradeGrad1: "研一",
+      gradeGrad2: "研二",
+      gradeGrad3: "研三",
+      gradeGraduated: "已毕业",
       labelPronouns: "称呼偏好",
       placeholderPronouns: "称呼偏好",
       labelHeight: "身高（cm）",
@@ -2007,6 +2191,56 @@ export default {
       futurePlanHobby: "兴趣",
       futurePlanSocial: "社交",
     },
+    campus: {
+      /* 2026-08-07 审查重构：页面标题与步骤名统一为「校园认证」（原「学校信息」） */
+      pageTitle: "校园认证",
+      pageSubtitle: "认证后解锁同校专属匹配与校友圈子",
+      sectionSchool: "学校资料",
+      labelCity: "城市",
+      placeholderCity: "请选择城市",
+      labelSchool: "学校",
+      placeholderSchool: "请选择学校",
+      labelMajor: "专业",
+      placeholderMajor: "请选择专业",
+      /* 2026-08-07：校园认证跳过入口（醒目文字按钮，置于主按钮上方） */
+      skipLabel: "非学生？跳过此步，稍后认证",
+      saveLabel: "保存并继续",
+      saveSaving: "保存中...",
+      saveSuccess: "保存成功",
+      saveFailed: "保存失败，请稍后重试",
+      errIncomplete: "请完整选择城市、学校与专业",
+      /* 2026-08-07 审查重构：价值提示（填补下半屏空白） */
+      valueText: "完成校园认证，解锁同校专属匹配、校友圈子权限。认证信息仅用于匹配推荐，严格保密。",
+      /* 隐私说明（标题旁「?」图标弹窗） */
+      privacyTitle: "认证信息说明",
+      privacyContent: "你填写的学校与专业信息仅用于同校匹配与圈子推荐，不会在个人主页公开展示，也不会泄露给任何第三方。",
+      privacyConfirm: "我知道了",
+      privacyAria: "查看认证信息隐私说明",
+    },
+  },
+
+  /* ========== 推荐偏好设置页（P2-12：subpackages/setup/recommend-pref） ========== */
+  recommendPref: {
+    title: "推荐偏好",
+    loadingTitle: "加载中...",
+    loadingText: "正在获取推荐偏好设置...",
+    errorTitle: "加载失败",
+    errorText: "获取偏好设置时出现问题，请重试",
+    retryBtn: "重新加载",
+    timeSectionTitle: "推荐时间",
+    timeSectionSubtitle: "每天在这个时间为你刷新推荐卡片",
+    scopeSectionTitle: "推荐范围",
+    scopeSectionSubtitle: "优先推荐哪些范围的人",
+    scopeCampusFirst: "同校优先",
+    scopeCity: "同城",
+    scopeUnlimited: "不限",
+    campusPriorityTitle: "校园优先",
+    campusPrioritySubtitle: "启用后同校用户推荐权重+30%并排序靠前",
+    campusPriorityLabel: "校园优先",
+    save: "保存",
+    saving: "保存中...",
+    saveSuccess: "保存成功",
+    saveFailed: "保存失败，请重试",
   },
 
   /* ========== 推荐高级筛选（功能6） ========== */
@@ -2079,6 +2313,8 @@ export default {
     imageRemove: "移除",
     history: "历史记录",
     historyTitle: "反馈历史",
+    /* P1-05：反馈历史加载失败 */
+    historyLoadFailed: "反馈历史加载失败，请稍后重试",
     historyEmpty: "暂无反馈记录",
     historyEmptyDesc: "提交反馈后将在此处显示",
     historyStatusPending: "处理中",
@@ -2509,6 +2745,10 @@ export default {
     anonymousUser: "匿名用户",
     emptyTitle: "还没有回答",
     emptyDesc: "还没有其他人回答，快来看看吧",
+    /* P1-12：回答列表分页 */
+    loadMore: "加载更多",
+    loadingMore: "加载中...",
+    noMoreAnswers: "没有更多回答了",
   },
 
   /* ========== 设置页文案 ========== */
@@ -2532,6 +2772,8 @@ export default {
     themeDark: "深色",
     themeLight: "浅色",
     themeAria: "切换深色模式",
+    /* P1-05：设置项保存失败（如免打扰等开关保存） */
+    saveFailed: "保存失败，请重试",
     /* 隐私安全分组 */
     privacySection: "隐私安全",
     privacyPolicy: "隐私政策",
@@ -2625,6 +2867,7 @@ export default {
       loadStatusFailed: "获取签到状态失败",
       checkinFailed: "签到失败，请稍后重试",
       makeupFailed: "补签失败，请稍后重试",
+      needLogin: "请先登录后再签到",
     },
     /* 兴趣圈 store */
     circle: {
@@ -2695,6 +2938,7 @@ export default {
       saveCampusFailed: "保存校园资料失败",
       saveScheduleFailed: "保存日程资料失败",
       uploadBackgroundFailed: "上传背景图失败",
+      uploadAvatarFailed: "上传头像失败",
       uploadPhotoFailed: "上传照片失败",
       deletePhotoFailed: "删除照片失败",
       /* P2.6：60s 语音状态上传 */

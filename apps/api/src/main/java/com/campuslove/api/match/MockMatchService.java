@@ -168,6 +168,12 @@ public class MockMatchService implements MatchService {
   }
 
   @Override
+  public HeartSignalView superLikeUser(Long userId, Long targetUserId) {
+    // Mock 实现：不产生心动信号（与 likeUser 一致）
+    return null;
+  }
+
+  @Override
   public void cancelLike(Long userId, Long targetUserId) {
     // Mock 实现：无操作
   }

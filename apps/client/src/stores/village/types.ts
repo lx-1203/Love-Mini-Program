@@ -29,6 +29,12 @@ export interface PostAuthor {
   campusName?: string;
   /** 兴趣标签列表 */
   interests?: string[];
+  /** P1-16：作者年龄（后端 PostAuthorView.age，由年级推导，缺失为 null） */
+  age?: number | null;
+  /** P1-16：作者所在城市（后端 PostAuthorView.city） */
+  city?: string;
+  /** P1-16：作者学历（后端 PostAuthorView.education：bachelor/master/phd） */
+  education?: string;
 }
 
 /**
@@ -70,6 +76,12 @@ export interface CommentItem {
   likes: number;
   isLiked: boolean;
   createdAt: string;
+  /** P1-02 楼中楼：父评论 ID（null 为根评论） */
+  parentId?: string | null;
+  /** P1-02 楼中楼：回复对象昵称（楼中楼回复时展示"回复 @昵称"） */
+  replyTo?: string | null;
+  /** P1-02 楼中楼：回复子列表（根评论携带，子评论为空） */
+  replies?: CommentItem[];
 }
 
 /**
@@ -160,13 +172,19 @@ export interface PostSummaryView {
 
 /**
  * 后端 PostAuthorView 类型
- * 对应后端 record PostAuthorView(Long userId, String nickname, String avatarUrl, String campusName)
+ * 对应后端 record PostAuthorView(Long userId, String nickname, String avatarUrl, String campusName, Integer age, String city, String education)
  */
 export interface PostAuthorView {
   userId: number;
   nickname: string;
   avatarUrl: string;
   campusName: string;
+  /** P1-16：年龄（由年级推导，缺失为 null） */
+  age?: number | null;
+  /** P1-16：所在城市 */
+  city?: string;
+  /** P1-16：学历（bachelor/master/phd） */
+  education?: string;
 }
 
 /**
@@ -218,6 +236,8 @@ export interface CommentItemView {
   createdAt: string;
   isAuthor: boolean;
   replyTo: string | null;
+  /** P1-02 楼中楼：回复子列表（根评论携带，子评论为空列表） */
+  replies?: CommentItemView[];
 }
 
 /**

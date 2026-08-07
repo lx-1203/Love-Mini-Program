@@ -200,18 +200,22 @@ export async function fetchCommentsApi(
 /**
  * 创建评论
  *
+ * P1-02 楼中楼：parentId 存在时创建楼中楼回复（后端 CreateCommentRequest.parentId 可选）。
+ *
  * @param postId - 帖子 ID
  * @param content - 评论内容
+ * @param parentId - 父评论 ID（楼中楼回复；缺省为根评论）
  * @returns 后端 CommentItemView
  */
 export async function createCommentApi(
   postId: string,
-  content: string
+  content: string,
+  parentId?: string
 ): Promise<CommentItemView> {
-  return request<CommentItemView, { content: string }>({
+  return request<CommentItemView, { content: string; parentId?: number }>({
     url: `/posts/${postId}/comments`,
     method: "POST",
-    data: { content },
+    data: parentId ? { content, parentId: Number(parentId) } : { content },
   });
 }
 
@@ -233,18 +237,18 @@ export async function likeCommentApi(
  * 关注/取消关注用户
  *
  * 根据 isFollow 决定调用 POST 还是 DELETE。
+ * P2-13：当前用户 ID 由后端从 JWT 获取（UserController.followUser 仅接收 path id），
+ * 删除原 query 参数 userId。
  *
  * @param targetUserId - 被关注用户 ID
- * @param currentUserId - 当前操作用户 ID（作为 query 参数）
  * @param isFollow - true 表示关注，false 表示取消关注
  */
 export async function followUserApi(
   targetUserId: string,
-  currentUserId: string,
   isFollow: boolean
 ): Promise<void> {
   await request<void>({
-    url: `/users/${targetUserId}/follow?userId=${currentUserId}`,
+    url: `/users/${targetUserId}/follow`,
     method: isFollow ? "POST" : "DELETE",
   });
 }
@@ -255,14 +259,14 @@ export async function followUserApi(
  * 泛型 T 约束为 CampusFeedView 的子类型，调用方必须传入与后端 CampusFeedView
  * 结构兼容的类型，避免传入任意不相关类型导致类型不安全。
  *
- * @param userId - 当前用户 ID
+ * P2-13：当前用户 ID 由后端从 JWT 获取（VillageController.getCampusFeed 仅接收
+ * page/size），删除原 query 参数 userId。
+ *
  * @returns 后端 CampusFeedView
  */
-export async function fetchCampusFeedApi<T extends CampusFeedView>(
-  userId: string
-): Promise<T> {
+export async function fetchCampusFeedApi<T extends CampusFeedView>(): Promise<T> {
   return request<T>({
-    url: `/campus/feed?userId=${userId}`,
+    url: "/campus/feed",
     method: "GET",
   });
 }
@@ -270,16 +274,17 @@ export async function fetchCampusFeedApi<T extends CampusFeedView>(
 /**
  * 获取相似作者推荐
  *
+ * P2-13：当前用户 ID 由后端从 JWT 获取（VillageController.getSimilarAuthors 仅接收
+ * postId），删除原 query 参数 userId。
+ *
  * @param postId - 帖子 ID
- * @param userId - 当前用户 ID
  * @returns 包含 authors 字段的对象
  */
 export async function fetchSimilarAuthorsApi(
-  postId: string,
-  userId: string
+  postId: string
 ): Promise<{ authors: SimilarAuthor[] }> {
   return request<{ authors: SimilarAuthor[] }>({
-    url: `/posts/${postId}/similar-authors?userId=${userId}`,
+    url: `/posts/${postId}/similar-authors`,
     method: "GET",
   });
 }

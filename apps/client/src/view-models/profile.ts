@@ -64,6 +64,8 @@ export interface MyPostView {
   comments: number;
   /** 相对时间文案（如「2 小时前」） */
   timeLabel: string;
+  /** 配图缩略图（QQ 说说卡片样式，最多 3 张横排；后端有则展示） */
+  images?: string[];
 }
 
 /** 简介默认文案 */
@@ -146,6 +148,7 @@ export function toProfileView(params: {
     likes: p.likes,
     comments: p.comments,
     timeLabel: formatRelativeTime(p.createdAt),
+    images: p.coverImage ? [p.coverImage] : undefined,
   }));
 
   return {

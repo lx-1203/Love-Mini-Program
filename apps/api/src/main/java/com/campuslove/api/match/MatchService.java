@@ -59,11 +59,25 @@ public interface MatchService {
     /**
      * 喜欢用户。如果双方互相喜欢，则创建心动信号。
      *
+     * <p>A-25/A-31：重复喜欢（已存在 active like）不再返回 null，
+     * 返回 status=ALREADY_LIKED 的幂等视图；普通喜欢受每日上限限制
+     * （超限抛 DailyLimitExceededException → HTTP 429）。</p>
+     *
      * @param userId       当前用户 ID
      * @param targetUserId 目标用户 ID
-     * @return 心动信号视图（如果互相喜欢），否则返回 null
+     * @return 心动信号视图（互相喜欢时非空；重复喜欢返回幂等视图；其余场景返回 null）
      */
     HeartSignalView likeUser(Long userId, Long targetUserId);
+
+    /**
+     * 超级喜欢（super-like）。与普通喜欢行为区分：不受每日上限限制，
+     * 双向喜欢生成的心动信号 matchType=super_like（权重更高语义，由上层展示区分）。
+     *
+     * @param userId       当前用户 ID
+     * @param targetUserId 目标用户 ID
+     * @return 心动信号视图（互相喜欢时非空；重复喜欢返回幂等视图；其余场景返回 null）
+     */
+    HeartSignalView superLikeUser(Long userId, Long targetUserId);
 
     /**
      * 取消喜欢。

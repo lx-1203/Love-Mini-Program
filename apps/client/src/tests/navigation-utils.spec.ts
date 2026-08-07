@@ -21,7 +21,7 @@ describe("navigation utils", () => {
     expect(isTabPath("/pages/home/index")).toBe(true);
     expect(isTabPath("pages/village/index")).toBe(true);
     expect(isTabPath("/pages/discover/index")).toBe(true);
-    expect(isTabPath("/pages/chat/index")).toBe(true);
+    expect(isTabPath("/pages/messages/index")).toBe(true);
     expect(isTabPath("/pages/profile/index")).toBe(true);
     expect(isTabPath("/pages/chat-session/index")).toBe(false);
     expect(isTabPath("/subpackages/setup/schedule/index")).toBe(false);

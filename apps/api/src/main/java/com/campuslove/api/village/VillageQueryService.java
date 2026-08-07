@@ -145,7 +145,10 @@ public class VillageQueryService {
     // ---- 帖子列表 ----
 
     /**
-     * 解析帖子分类枚举，非法值抛出 IllegalArgumentException（由 GlobalExceptionHandler 转 400）。
+     * 解析帖子分类枚举，非法值转 400。
+     *
+     * 2026-08-07 修复：following 为前端「关注」Tab 的分类，不属于帖子分类枚举，
+     * 由 {@link #getPosts} 单独处理，不应走到枚举解析。
      */
     private PostCategory parseCategory(String category) {
         try {
@@ -170,6 +173,22 @@ public class VillageQueryService {
         if ("campus".equals(category)) {
             return getCampusCategoryPosts(userId, pageable);
         }
+        // 2026-08-07 修复：关注 Tab（category=following）——展示我关注的作者发布的帖子；
+        // 未登录或未关注任何人时返回空列表（此前 parseCategory 对 following 抛 400 导致圈子页不可用）。
+        if ("following".equals(category)) {
+            if (userId == null) {
+                return new PostListResponse(List.of(), 0, page, pageSize);
+            }
+            Set<Long> followedUserIds = loadFollowedUserIds(userId);
+            if (followedUserIds.isEmpty()) {
+                return new PostListResponse(List.of(), 0, page, pageSize);
+            }
+            Page<Post> followedPage = postRepository.findByAuthorIdInAndStatusOrderByCreatedAtDesc(
+                    new ArrayList<>(followedUserIds), PostStatus.active, pageable);
+            List<PostSummaryView> followedItems = toPostSummaryViews(
+                    followedPage.getContent(), "", followedUserIds);
+            return new PostListResponse(followedItems, (int) followedPage.getTotalElements(), page, pageSize);
+        }
         Page<Post> postPage;
         if (category != null && !"all".equals(category)) {
             PostCategory postCategory = parseCategory(category);
@@ -180,6 +199,47 @@ public class VillageQueryService {
         // Phase Feedback3 P2.5：主列表透传关注集合，isFollowed 随帖下发（关注 Tab 打通）
         List<PostSummaryView> items = toPostSummaryViews(postPage.getContent(), "", loadFollowedUserIds(userId));
         return new PostListResponse(items, (int) postPage.getTotalElements(), page, pageSize);
+    }
+
+    /**
+     * 2026-08-07 扩展：同城 / 发现分类（圈子页三 Tab）。
+     *
+     * <p>samecity：按作者校区城市过滤（Post 表无城市字段，需经作者 campus profile 关联）；
+     * discover：二级子标签 all/alumni/hometown/buddy，子标签精确过滤依赖作者资料，
+     * 当前除 all 外暂退化为全量列表（保证页面可用），精确过滤随圈子频道改造完善。</p>
+     */
+    @Transactional(readOnly = true)
+    public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize,
+                                     Long userId, String city, String discoverSub) {
+        String effectiveSort = sortBy != null ? sortBy : "latest";
+        Sort sort = "hottest".equals(effectiveSort)
+                ? Sort.by(Sort.Direction.DESC, "likesCount")
+                : Sort.by(Sort.Direction.DESC, "createdAt");
+        Pageable pageable = PageRequest.of(page - 1, pageSize, sort);
+
+        // 同城：按作者校区城市过滤
+        if ("samecity".equals(category) && city != null && !city.isBlank()) {
+            List<Long> cityUserIds = userCampusProfileRepository.findByCityName(city).stream()
+                    .map(UserCampusProfile::getUserId)
+                    .toList();
+            if (cityUserIds.isEmpty()) {
+                return new PostListResponse(List.of(), 0, page, pageSize);
+            }
+            Page<Post> cityPage = postRepository.findByAuthorIdInAndStatusOrderByCreatedAtDesc(
+                    new ArrayList<>(cityUserIds), PostStatus.active, pageable);
+            return new PostListResponse(toPostSummaryViews(cityPage.getContent(), "", loadFollowedUserIds(userId)),
+                    (int) cityPage.getTotalElements(), page, pageSize);
+        }
+
+        // 发现：all 及子标签暂返回全量 active 帖子（页面可用性优先）
+        if ("discover".equals(category)) {
+            Page<Post> discoverPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
+            return new PostListResponse(toPostSummaryViews(discoverPage.getContent(), "", loadFollowedUserIds(userId)),
+                    (int) discoverPage.getTotalElements(), page, pageSize);
+        }
+
+        // 其余分类委托原逻辑
+        return getPosts(category, tag, sortBy, page, pageSize, userId);
     }
 
     /**
@@ -217,6 +277,11 @@ public class VillageQueryService {
     @Transactional(readOnly = true)
     public PostDetailView getPost(Long postId) {
         Post post = findPostOrThrow(postId);
+        // 已下架（hidden）/已删除的帖子详情不可见：与列表过滤语义一致返回 404，
+        // 避免已下架内容通过直链详情仍然可访问（举报处理 → 审核下架后的合规闭环）
+        if (post.getStatus() != Post.PostStatus.active) {
+            throw new com.campuslove.api.common.ResourceNotFoundException("Post not found: " + postId);
+        }
         Long currentUserId = null;
         try {
             currentUserId = SecurityUtils.getCurrentUserId();
@@ -234,17 +299,62 @@ public class VillageQueryService {
     @Transactional(readOnly = true)
     public CommentListResponse getComments(Long postId, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
-        // 修复 N+1：通过 @EntityGraph 预加载 post + 批量预加载评论作者
-        Page<Comment> commentPage = commentRepository.findWithPostByPostIdOrderByCreatedAtDesc(postId, pageable);
-        List<Long> authorIds = commentPage.getContent().stream()
-                .map(Comment::getAuthorId).distinct().toList();
+        // P1-02 / A-12 楼中楼：分页查询根评论（parent_id IS NULL），再批量加载各根评论的楼中楼回复，
+        // 组装为树形结构（根评论数组，每条含 replies 子数组）
+        Page<Comment> rootPage = commentRepository.findByPostIdAndParentIdIsNullOrderByCreatedAtDesc(postId, pageable);
+        List<Comment> roots = rootPage.getContent();
+        List<Long> rootIds = roots.stream().map(Comment::getId).toList();
+
+        // 楼中楼回复（时间正序，符合楼中楼阅读习惯）
+        List<Comment> children = rootIds.isEmpty()
+                ? Collections.emptyList()
+                : commentRepository.findByPostIdAndParentIdInOrderByCreatedAtAsc(postId, rootIds);
+
+        // 批量预加载作者（根评论 + 回复），避免 N+1
+        List<Long> authorIds = java.util.stream.Stream.concat(
+                        roots.stream().map(Comment::getAuthorId),
+                        children.stream().map(Comment::getAuthorId))
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
         Map<Long, User> authorMap = authorIds.isEmpty()
                 ? Collections.emptyMap()
                 : userRepository.findAllById(authorIds).stream()
                         .collect(Collectors.toMap(User::getId, u -> u));
-        List<CommentItemView> items = commentPage.getContent().stream()
-                .map(comment -> toCommentItemView(comment, authorMap)).toList();
-        return new CommentListResponse(items, (int) commentPage.getTotalElements(), page, pageSize);
+
+        // 批量预加载回复的父评论（用于 replyTo 昵称）
+        List<Long> parentIds = children.stream()
+                .map(Comment::getParentId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, Comment> parentCommentMap = parentIds.isEmpty()
+                ? Collections.emptyMap()
+                : commentRepository.findAllById(parentIds).stream()
+                        .collect(Collectors.toMap(Comment::getId, c -> c));
+
+        // 子评论按父评论 ID 分组（replyTo = 父评论作者昵称）
+        Map<Long, List<CommentItemView>> repliesByParent = children.stream()
+                .collect(Collectors.groupingBy(
+                        Comment::getParentId,
+                        Collectors.mapping(child -> {
+                            Comment parent = parentCommentMap.get(child.getParentId());
+                            String replyTo = null;
+                            if (parent != null && parent.getAuthorId() != null) {
+                                User parentAuthor = authorMap.get(parent.getAuthorId());
+                                if (parentAuthor != null && parentAuthor.getNickname() != null) {
+                                    replyTo = parentAuthor.getNickname();
+                                }
+                            }
+                            return toCommentItemView(child, authorMap, replyTo, Collections.emptyList());
+                        }, Collectors.toList())));
+
+        // 根评论视图（携带 replies 子数组）
+        List<CommentItemView> items = roots.stream()
+                .map(root -> toCommentItemView(root, authorMap, null,
+                        repliesByParent.getOrDefault(root.getId(), Collections.emptyList())))
+                .toList();
+        return new CommentListResponse(items, (int) rootPage.getTotalElements(), page, pageSize);
     }
 
     @Transactional(readOnly = true)
@@ -615,6 +725,11 @@ public class VillageQueryService {
 
     CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap) {
         return viewMapper.toCommentItemView(comment, authorMap);
+    }
+
+    CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap,
+                                      String replyTo, java.util.List<CommentItemView> replies) {
+        return viewMapper.toCommentItemView(comment, authorMap, replyTo, replies);
     }
 
     PostAuthorView getPostAuthorView(Long authorId) {

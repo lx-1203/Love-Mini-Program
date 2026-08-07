@@ -659,8 +659,16 @@ function handleIcebreakerSelect(content: string) {
 /** 换话题：重新请求破冰话题 */
 async function handleRefreshIcebreakers() {
   const peerIdNum = resolvePeerUserId();
-  if (peerIdNum === null) return;
-  await chatStore.fetchIcebreakers(peerIdNum);
+  if (peerIdNum === null) {
+    uni.showToast({ title: t("chat.icebreakersNoPeer"), icon: "none" });
+    return;
+  }
+  try {
+    await chatStore.fetchIcebreakers(peerIdNum);
+  } catch (_e) {
+    // P1-11：破冰话题加载失败不中断页面
+    uni.showToast({ title: t("chat.icebreakersLoadFailed"), icon: "none" });
+  }
 }
 
 /** 解析对方用户 ID 为数字，用于 API 调用（委托给 view-models 纯函数） */
@@ -788,10 +796,19 @@ function handleTapQuote(_quoteRef: string) {
 async function loadIcebreakers() {
   if (!shouldShowIcebreakers.value) return;
   const peerIdNum = resolvePeerUserId();
-  if (peerIdNum === null) return;
+  // P1-11：无法解析对方用户 ID 时提示而非静默跳过
+  if (peerIdNum === null) {
+    uni.showToast({ title: t("chat.icebreakersNoPeer"), icon: "none" });
+    return;
+  }
   // 避免重复加载
   if (chatStore.icebreakerItems.length > 0) return;
-  await chatStore.fetchIcebreakers(peerIdNum);
+  try {
+    await chatStore.fetchIcebreakers(peerIdNum);
+  } catch (_e) {
+    // P1-11：破冰话题加载失败给出提示，不中断页面（onShow 异步调用无未处理拒绝）
+    uni.showToast({ title: t("chat.icebreakersLoadFailed"), icon: "none" });
+  }
 }
 
 /* ========== "+" 更多菜单：红包 / 视频通话入口 ========== */

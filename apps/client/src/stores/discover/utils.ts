@@ -12,7 +12,7 @@
 import { useMock } from "../helpers/use-mock";
 import type { RecommendedPerson } from "../../services/generated/api-types-supplement";
 import { STORAGE_KEY } from "./constants";
-import type { DiscoverCard, ViewedCardRecord } from "./types";
+import type { DiscoverCard, ViewedCardRecord, SortBy } from "./types";
 
 /**
  * 将后端 RecommendedPerson 映射为前端 DiscoverCard
@@ -62,6 +62,9 @@ export function mapToDiscoverCard(
     humanVerified: raw.humanVerified,
     personality: raw.personality,
     mbti: raw.mbti,
+    zodiac: raw.zodiac,
+    relationshipStatus: raw.relationshipStatus,
+    registeredAt: raw.registeredAt,
     whisper: raw.whisper,
     whisperSent: raw.whisperSent,
     recentPosts: raw.recentPosts,
@@ -81,6 +84,68 @@ export function mapToDiscoverCard(
  * @returns 是否为 mock 模式
  */
 export { useMock };
+
+/** 附近筛选的最大距离（km） */
+export const NEARBY_MAX_DISTANCE_KM = 20;
+
+/**
+ * 附近筛选（设计需求：匹配范围 = 附近）。
+ * 同校用户始终保留；distanceText 为数值（km）时按 ≤20km 过滤；无法判断的保留。
+ *
+ * @param cards - 卡片列表
+ * @returns 过滤后的卡片列表
+ */
+export function filterNearby(cards: DiscoverCard[]): DiscoverCard[] {
+  return cards.filter((card) => {
+    if (card.isSameSchool) return true;
+    const raw = card.distanceText;
+    if (!raw) return true;
+    const km = Number.parseFloat(raw);
+    return Number.isFinite(km) ? km <= NEARBY_MAX_DISTANCE_KM : true;
+  });
+}
+
+/**
+ * 活跃状态排序权重（越小越活跃）：
+ * just_now → today → hours_{n}（n 小优先）→ days_{n} → offline → 缺失
+ */
+function activeRank(status?: string): number {
+  if (!status) return 6;
+  if (status === "just_now") return 0;
+  if (status === "today") return 1;
+  const hoursMatch = status.match(/^hours_(\d+)$/);
+  if (hoursMatch?.[1]) return 2 + Number(hoursMatch[1]) / 100;
+  const daysMatch = status.match(/^days_(\d+)$/);
+  if (daysMatch?.[1]) return 3 + Number(daysMatch[1]) / 100;
+  if (status === "offline") return 5;
+  return 4;
+}
+
+/**
+ * 卡片排序（设计需求：匹配度优先/最新注册/最活跃）。
+ * 匹配度优先保持推荐算法原始顺序（稳定排序），不做调整。
+ *
+ * @param cards - 卡片列表
+ * @param sortBy - 排序规则
+ * @returns 排序后的卡片列表
+ */
+export function sortCards(cards: DiscoverCard[], sortBy: SortBy): DiscoverCard[] {
+  if (sortBy === "latest") {
+    return [...cards].sort((a, b) => {
+      const at = a.registeredAt ? Date.parse(a.registeredAt) : 0;
+      const bt = b.registeredAt ? Date.parse(b.registeredAt) : 0;
+      if (at === bt) return 0;
+      if (at === 0) return 1;
+      if (bt === 0) return -1;
+      return bt - at;
+    });
+  }
+  if (sortBy === "active") {
+    return [...cards].sort((a, b) => activeRank(a.activeStatusText) - activeRank(b.activeStatusText));
+  }
+  // match：保持推荐算法原始顺序
+  return cards;
+}
 
 /**
  * 带重试机制的异步执行器
@@ -108,6 +173,13 @@ export async function withRetry<T>(
       return await fn();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+      // D4 修复：鉴权类错误（401/403）不重试——重试只会放大 401 洪水
+      // （未登录冷启动场景下每个页面请求都失败，重试 3 次 = 3 倍请求量）。
+      // 认证失败必须由用户重新登录解决，不是瞬时故障。
+      const status = (error as { status?: number }).status;
+      if (status === 401 || status === 403) {
+        throw lastError;
+      }
       if (attempt < maxRetries) {
         console.warn(
           `[DiscoverStore] 第${attempt + 1}次尝试失败，将进行第${attempt + 2}次重试:`,

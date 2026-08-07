@@ -199,7 +199,7 @@ class Task12ConcurrencyTest {
 
         // 构造 VipRedPacketService（Task 14：新增 redissonClient 依赖）
         VipRedPacketService service = new VipRedPacketService(
-                redPacketRepository, claimRepository, userRepository, walletService, redissonClient);
+                redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
 
         // Act：100 个用户并发领取
         AtomicInteger successCount = new AtomicInteger(0);
@@ -343,7 +343,7 @@ class Task12ConcurrencyTest {
 
         // 构造 VipRedPacketService（Task 14：新增 redissonClient 依赖）
         VipRedPacketService service = new VipRedPacketService(
-                redPacketRepository, claimRepository, userRepository, walletService, redissonClient);
+                redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
 
         // Act：100 个用户并发领取
         AtomicInteger successCount = new AtomicInteger(0);

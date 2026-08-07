@@ -1,109 +1,117 @@
 <script setup lang="ts">
 /**
- * 附近的人（任务 E3）
+ * 附近的人（2026-08-07 重构为寻觅卡片模式）。
  *
- * 支持后台配置 H5 URL：onLoad 读取 contentPageUrls.nearbyUrl，
- * 非空则渲染 <web-view> 加载该 URL；为空则展示本地示例用户列表。
- * 右上角固定返回按钮（uni.navigateBack）。
+ * 原实现：后台配置 H5 URL 渲染 web-view，或展示本地 mock 用户列表
+ * （点击仅 toast，无真实数据）。
+ *
+ * 现改为：直接拉取推荐接口（同校区优先），复用寻觅的卡片组件
+ * CardSwiper 展示与交互（滑动/喜欢/收藏/查看主页），点击卡片进入
+ * 个人主页页。
  */
 import { ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
-import { contentPageUrls } from "../../config/content-pages";
+import CardSwiper from "../../components/discover/CardSwiper.vue";
+import { clientApi } from "../../services/api";
+import { mapToDiscoverCard } from "../../stores/discover/utils";
+import type { DiscoverCard } from "../../stores/discover/types";
 import { IMAGE_PATHS } from "../../config/images";
 
 const { t } = useI18n();
 
-/** 后台配置的 H5 URL（非空时展示 web-view） */
-const webUrl = ref("");
-
 /** 返回按钮图标 */
 const backIcon = IMAGE_PATHS.ICONS_COMMON.BACK;
 
+/** 卡片数据（与寻觅一致：推荐接口 → DiscoverCard） */
+const cards = ref<DiscoverCard[]>([]);
+/** 加载中 */
+const loading = ref(false);
+/** 错误信息（拉取失败时展示重试） */
+const errorMessage = ref("");
+
 onLoad(() => {
-  webUrl.value = contentPageUrls.nearbyUrl ?? "";
+  void loadNearbyCards();
 });
 
-/** 本地示例用户（mock 数据：昵称/学校为示例内容，真实数据由后端接口提供） */
-interface NearbyUser {
-  id: string;
-  nickname: string;
-  school: string;
-  /** 距离（km，0 表示同校） */
-  distance: number;
-  avatar: string;
-}
-
-const nearbyUsers: NearbyUser[] = [
-  { id: "u-1", nickname: "夏言", school: "北京大学", distance: 0, avatar: IMAGE_PATHS.AVATARS.AVATAR_1 },
-  { id: "u-2", nickname: "顾北", school: "清华大学", distance: 2.4, avatar: IMAGE_PATHS.AVATARS.AVATAR_2 },
-  { id: "u-3", nickname: "林溪", school: "北京大学", distance: 0.6, avatar: IMAGE_PATHS.AVATARS.AVATAR_3 },
-  { id: "u-4", nickname: "周屿", school: "北京师范大学", distance: 3.1, avatar: IMAGE_PATHS.AVATARS.AVATAR_4 },
-  { id: "u-5", nickname: "沈念", school: "中国人民大学", distance: 5.8, avatar: IMAGE_PATHS.AVATARS.AVATAR_5 },
-  { id: "u-6", nickname: "苏晚", school: "北京理工大学", distance: 4.2, avatar: IMAGE_PATHS.AVATARS.AVATAR_6 },
-  { id: "u-7", nickname: "陆辰", school: "北京大学", distance: 0, avatar: IMAGE_PATHS.AVATARS.AVATAR_7 },
-];
-
-/** 距离文案：同校显示"同校"，否则显示 {n}km */
-function distanceLabel(user: NearbyUser): string {
-  if (user.distance === 0) return t("contentPages.nearby.distanceSameCampus");
-  return t("contentPages.nearby.distanceUnit", { n: user.distance });
-}
-
-/**
- * 点击示例用户卡片（review #48：原 role="button" 无 @tap 属死卡片）。
- * 本地示例数据无真实 userId，点击给出提示；正式数据接入后改为跳转用户主页。
- */
-function handleUserTap() {
-  uni.showToast({ title: t("contentPages.nearby.tapHint"), icon: "none" });
+/** 拉取推荐卡片（同校区优先，与寻觅同一数据源） */
+async function loadNearbyCards() {
+  loading.value = true;
+  errorMessage.value = "";
+  try {
+    const people = await clientApi.getRecommendations({});
+    cards.value = people.map((person) => mapToDiscoverCard(person));
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error ? error.message : t("contentPages.nearby.loadFailed");
+  } finally {
+    loading.value = false;
+  }
 }
 
 /** 返回上一页（右上角固定按钮） */
 function goBack() {
   uni.navigateBack();
 }
+
+/** 卡片操作事件：附近的人场景不执行喜欢/超级喜欢/滑动持久化（浏览为主） */
+function handleSwipe() {
+  /* 浏览模式：不持久化滑动 */
+}
+
+function handleSuperLike() {
+  uni.showToast({ title: t("contentPages.nearby.likeHint"), icon: "none" });
+}
+
+function handleMessage() {
+  uni.showToast({ title: t("contentPages.nearby.messageHint"), icon: "none" });
+}
+
+function handleVideoTap() {
+  /* 视频功能暂未启用，忽略 */
+}
 </script>
 
 <template>
   <view class="content-page page-fade-in">
-    <!-- 后台配置 H5 URL：web-view 加载 -->
-    <web-view v-if="webUrl" :src="webUrl" class="content-webview" />
-
-    <!-- 本地示例内容 -->
-    <template v-else>
-      <view class="content-header">
-        <text class="content-header__title">{{ t('contentPages.nearby.title') }}</text>
-        <view class="content-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
-          <image class="content-header__back-icon" :src="backIcon" mode="aspectFit" alt="" />
-        </view>
+    <view class="content-header">
+      <text class="content-header__title">{{ t('contentPages.nearby.title') }}</text>
+      <view class="content-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
+        <image class="content-header__back-icon" :src="backIcon" mode="aspectFit" alt="" />
       </view>
+    </view>
 
-      <scroll-view scroll-y class="content-scroll" :show-scrollbar="false">
-        <view class="content-section">
-          <text class="content-section__title">{{ t('contentPages.nearby.subtitle') }}</text>
-          <view class="user-list" role="list">
-            <view
-              v-for="user in nearbyUsers"
-              :key="user.id"
-              class="user-card"
-              role="button"
-              :aria-label="`${user.nickname}，${user.school}，${distanceLabel(user)}`"
-              @tap="handleUserTap"
-            >
-              <image class="user-card__avatar" :src="user.avatar" mode="aspectFill" lazy-load alt="" />
-              <view class="user-card__info">
-                <text class="user-card__name">{{ user.nickname }}</text>
-                <text class="user-card__school">{{ user.school }}</text>
-              </view>
-              <view class="user-card__distance">
-                <text class="user-card__distance-text">{{ distanceLabel(user) }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-        <view class="content-footer-space" />
-      </scroll-view>
-    </template>
+    <!-- 加载中 -->
+    <view v-if="loading" class="nearby-loading">
+      <text class="nearby-loading__text">{{ t('contentPages.nearby.loading') }}</text>
+    </view>
+
+    <!-- 错误态 + 重试 -->
+    <view v-else-if="errorMessage" class="nearby-error">
+      <text class="nearby-error__text">{{ errorMessage }}</text>
+      <view class="nearby-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.retryAria')" @tap="loadNearbyCards">
+        <text class="nearby-error__retry-text">{{ t('common.retry') }}</text>
+      </view>
+    </view>
+
+    <!-- 空态 -->
+    <view v-else-if="!loading && cards.length === 0" class="nearby-empty">
+      <text class="nearby-empty__text">{{ t('contentPages.nearby.empty') }}</text>
+    </view>
+
+    <!-- 寻觅卡片（与寻觅页同一组件/交互：滑动、喜欢、点击进主页） -->
+    <!-- 附近的人 = 匿名匹配场景：masked 蒙面模式，头像模糊 + 「互发喜欢解锁头像」规则提示 -->
+    <view v-else class="nearby-card-area">
+      <CardSwiper
+        :cards="cards"
+        :remaining-count="0"
+        :masked="true"
+        @swipe="handleSwipe"
+        @superLike="handleSuperLike"
+        @videoTap="handleVideoTap"
+        @message="handleMessage"
+      />
+    </view>
   </view>
 </template>
 
@@ -111,127 +119,73 @@ function goBack() {
 .content-page {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
-  background: var(--c-bg-page, #f4f6fa);
+  height: 100vh;
+  background: var(--c-bg-page);
 }
 
-.content-webview {
-  flex: 1;
-}
-
-/* ========== 顶部栏（标题 + 右上角固定返回按钮） ========== */
 .content-header {
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-3);
-  background: linear-gradient(135deg, var(--c-brand-500, #3fcf8e) 0%, var(--c-brand-400, #6fe0b0) 100%);
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + var(--sp-4)) var(--sp-5) var(--sp-3);
+  flex-shrink: 0;
 }
 
 .content-header__title {
-  font-size: var(--fs-xl, 34rpx);
+  font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-text-primary);
 }
 
 .content-header__back {
-  position: absolute;
-  top: calc(var(--sp-4) + env(safe-area-inset-top));
-  right: var(--sp-4);
-  width: 64rpx;
-  height: 64rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-circle, 50%);
-  background: var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.2));
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--c-neutral-0);
+  box-shadow: var(--s-sm);
 }
 
 .content-header__back-icon {
-  width: 36rpx;
-  height: 36rpx;
-  color: var(--c-text-inverse, #ffffff);
+  width: 32rpx;
+  height: 32rpx;
 }
 
-.content-scroll {
+.nearby-card-area {
   flex: 1;
-  height: 0;
+  min-height: 0;
+  padding: var(--sp-2) 0;
 }
 
-.content-section {
-  margin: var(--sp-5) var(--sp-4);
-}
-
-.content-section__title {
-  display: block;
-  font-size: var(--fs-lg, 32rpx);
-  font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
-  margin-bottom: var(--sp-4);
-}
-
-/* ========== 附近的人列表 ========== */
-.user-list {
+.nearby-loading,
+.nearby-error,
+.nearby-empty {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.user-card {
-  display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--sp-4);
-  padding: var(--sp-4) var(--sp-5);
-  border-radius: var(--r-xl, 24rpx);
-  background: var(--c-bg-container, #ffffff);
-  box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
 }
 
-.user-card__avatar {
-  width: 88rpx;
-  height: 88rpx;
+.nearby-loading__text,
+.nearby-error__text,
+.nearby-empty__text {
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
+}
+
+.nearby-error__retry {
+  padding: var(--sp-2) var(--sp-6);
   border-radius: var(--r-full);
-  background: var(--c-romance-100, #ffe4ec);
-  flex-shrink: 0;
+  background: var(--c-gradient-brand);
 }
 
-.user-card__info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-  min-width: 0;
-}
-
-.user-card__name {
-  font-size: var(--fs-lg, 28rpx);
-  font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
-}
-
-.user-card__school {
-  font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-secondary, #5b6470);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-card__distance {
-  flex-shrink: 0;
-  background: var(--c-bg-brand, #e8f8f0);
-  padding: 6rpx var(--sp-3);
-  border-radius: var(--r-full);
-}
-
-.user-card__distance-text {
-  font-size: var(--fs-xs, 20rpx);
-  color: var(--c-brand-700);
+.nearby-error__retry-text {
+  font-size: var(--fs-sm);
+  color: var(--c-neutral-0);
   font-weight: 600;
-}
-
-.content-footer-space {
-  height: calc(120rpx + env(safe-area-inset-bottom));
 }
 </style>

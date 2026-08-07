@@ -88,7 +88,8 @@ class NPlusOneTest {
                 messageProducer,
                 matchEngine,
                 matchPolicy,
-                matchRecorder
+                matchRecorder,
+                null
         );
     }
 

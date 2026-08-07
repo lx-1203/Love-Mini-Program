@@ -8,9 +8,9 @@ import {
 } from "../config/page-access";
 
 describe("page access config", () => {
-  it("keeps the discover page open to any logged-in user", () => {
+  it("keeps the discover page open to any visitor (免登录可逛，登录后可互动)", () => {
     expect(discoverPageRequirements).toEqual({
-      requiresAuth: true,
+      requiresAuth: false,
       requiresProfile: false,
       requiresCampus: false,
       requiresSchedule: false,
@@ -26,10 +26,10 @@ describe("page access config", () => {
     });
   });
 
-  it("keeps the village page requiring profile completion", () => {
+  it("keeps the village page open to any visitor (免登录可浏览社区，认证类功能单独校验)", () => {
     expect(villagePageRequirements).toEqual({
-      requiresAuth: true,
-      requiresProfile: true,
+      requiresAuth: false,
+      requiresProfile: false,
       requiresCampus: false,
       requiresSchedule: false,
     });
@@ -44,9 +44,9 @@ describe("page access config", () => {
     });
   });
 
-  it("keeps the profile page open to any logged-in user", () => {
+  it("keeps the profile page open to any visitor (页内引导完善资料，编辑类功能登录后可用)", () => {
     expect(profilePageRequirements).toEqual({
-      requiresAuth: true,
+      requiresAuth: false,
       requiresProfile: false,
       requiresCampus: false,
       requiresSchedule: false,

@@ -16,6 +16,7 @@ import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.config.PasswordEncoderConfig;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.repository.SchoolRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
@@ -560,6 +561,8 @@ class AdminPermissionTest {
         @Mock private AesEncryptor aesEncryptor;
         @Mock private com.campuslove.api.auth.TokenBlacklistService tokenBlacklistService;
         @Mock private com.campuslove.api.auth.OnlineUserService onlineUserService;
+        @Mock private com.campuslove.api.repository.UserBasicProfileRepository userBasicProfileRepository;
+        @Mock private SchoolRepository schoolRepository;
 
         private PasswordEncoder passwordEncoder;
         private RealAuthService realAuthService;
@@ -574,12 +577,14 @@ class AdminPermissionTest {
                     weChatClient,
                     jwtTokenProvider,
                     userRepository,
+                    userBasicProfileRepository,
                     userCampusProfileRepository,
                     userScheduleProfileRepository,
                     passwordEncoder,
                     aesEncryptor,
                     tokenBlacklistService,
                     onlineUserService,
+                    schoolRepository,
                     "",
                     true
             );

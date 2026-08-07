@@ -12,7 +12,6 @@
 
 import { clientApi } from "../../../services/api";
 import { request } from "../../../services/http";
-import type { IcebreakerView } from "../../../services/generated/api-types-supplement";
 import { toChatSessionView } from "../../../view-models/chat";
 import {
   withErrorHandling,
@@ -66,12 +65,14 @@ export async function loadIcebreakers(
       }
 
       // Real 模式：调用后端 API: GET /api/matches/{matchId}/icebreakers
-      const data = await request<IcebreakerView>({
+      // 修复（P0-06）：响应为 IcebreakerView 数组（content/category/source/topicId），
+      // 原按 { topics: [...] } 对象解析导致 .topics 为 undefined、话题恒为空。
+      const data = await request<Array<{ content: string; category: string; source: string; topicId?: number }>>({
         url: `/matches/${matchId}/icebreakers`,
         method: "GET",
       });
-      // IcebreakerView.topics 为 { id; title }[]，提取 title 作为话题文案
-      this.icebreakerTopics = (data.topics ?? []).map((t) => t.title);
+      // 直接消费数组，取每条话题的 content 作为话题文案
+      this.icebreakerTopics = (data ?? []).map((item) => item.content);
     }
   );
 }
@@ -81,20 +82,23 @@ export async function loadIcebreakers(
  *
  * 将选中的破冰话题作为消息发送到当前活跃会话中。
  * Mock 模式直接追加消息，
- * Real 模式调用 POST /api/matches/{matchId}/icebreakers/send。
+ * Real 模式直接复用现有私信发送能力（sendText → chatTransport.pushMessage），
+ * 把话题内容作为消息内容发送。
  *
- * 修复（P1 BUG）：新增回滚保护。Real 模式下若 icebreakers/send 成功但
- * sendText 失败，破冰话题已发送到后端但消息未追加到会话，此时：
- * 1. 不回滚后端 icebreakers/send（无法撤回）
- * 2. 设置明确的 errorMessage 提示用户「破冰话题已发送，但消息追加失败」
- * 3. 不向上抛出错误（操作部分成功，不应让调用方重试整个流程导致重复发送）
+ * 修复（P0-06）：后端不存在 POST /api/matches/{matchId}/icebreakers/send 端点，
+ * 已删除该调用，话题发送完全走现有私信发送链路，避免 404。
  *
- * @param matchId - 匹配 ID
+ * 修复（P1 BUG）：新增回滚保护。Real 模式下若 sendText 失败，
+ * 设置明确的 errorMessage 提示用户消息追加失败，不向上抛出错误
+ * （操作部分成功，不应让调用方重试整个流程导致重复发送）。
+ *
+ * @param _matchId - 匹配 ID（保留签名兼容 store-type 声明；实际发送不依赖 matchId，
+ *                  由当前活跃会话承载，会话对端由页面 resolvePeerUserId 解析）
  * @param topic - 选中的破冰话题内容
  */
 export async function sendIcebreaker(
   this: ChatStoreThis,
-  matchId: number,
+  _matchId: number,
   topic: string
 ): Promise<void> {
   // 使用 withErrorHandling 统一处理错误消息，rethrow: true 保留原有向上抛出错误的行为
@@ -141,25 +145,17 @@ export async function sendIcebreaker(
         return;
       }
 
-      // Real 模式：调用后端 API: POST /api/matches/{matchId}/icebreakers/send
-      await request<void, { topic: string }>({
-        url: `/matches/${matchId}/icebreakers/send`,
-        method: "POST",
-        data: { topic },
-      });
-
-      // 修复（P1 BUG）：sendText 失败时的回滚保护
-      // icebreakers/send 已成功，若 sendText 失败，不向上抛出错误避免重复发送，
-      // 而是设置明确的 errorMessage 提示用户消息追加失败。
+      // Real 模式：修复（P0-06）无独立破冰发送端点，
+      // 直接复用现有私信发送能力（sendText → chatTransport.pushMessage），
+      // 把话题内容作为消息内容发送。
       try {
-        // 发送成功后，将话题作为普通消息追加到当前会话
         await this.sendText(topic);
       } catch (sendTextError) {
-        // sendText 内部已设置 errorMessage，此处补充提示破冰话题已发送
-        this.errorMessage = `破冰话题已发送，但消息追加失败：${
+        // sendText 内部已设置 errorMessage，此处补充提示话题发送失败
+        this.errorMessage = `破冰话题发送失败：${
           sendTextError instanceof Error ? sendTextError.message : "未知错误"
         }`;
-        // 不向上抛出，避免调用方重试导致 icebreakers/send 重复调用
+        // 不向上抛出，避免调用方重试导致重复发送
       }
     }
   );

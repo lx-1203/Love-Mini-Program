@@ -15,6 +15,8 @@ import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.DailyBenefitRepository;
 import com.campuslove.api.repository.MakeUpQuotaRepository;
 import com.campuslove.api.repository.PostRepository;
+import com.campuslove.api.wallet.WalletService;
+import com.campuslove.api.wallet.WalletTransactionLog;
 import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
@@ -118,6 +120,12 @@ public class RealCheckInService implements CheckInService {
     private final MessageProducer messageProducer;
 
     /**
+     * P0-23：钱包服务，签到成功后写入交友币 CREDIT 流水（签到奖励入账）。
+     * 奖励金额由 {@code app.checkin.reward-cents-per-check-in} 配置（默认 50 分）。
+     */
+    private final WalletService walletService;
+
+    /**
      * Task 15.1：Redis 模板，用于实现签到日限一次锁。
      *
      * <p>使用 {@link Autowired} 注入而非构造器注入，并标记 {@code required = false}，
@@ -150,7 +158,8 @@ public class RealCheckInService implements CheckInService {
                               CircleMembershipRepository circleMembershipRepository,
                               MakeUpQuotaRepository makeUpQuotaRepository,
                               MessageProducer messageProducer,
-                              EntityManager entityManager) {
+                              EntityManager entityManager,
+                              WalletService walletService) {
         this.checkInConfig = checkInConfig;
         this.checkInRepository = checkInRepository;
         this.dailyBenefitRepository = dailyBenefitRepository;
@@ -160,6 +169,7 @@ public class RealCheckInService implements CheckInService {
         this.makeUpQuotaRepository = makeUpQuotaRepository;
         this.messageProducer = messageProducer;
         this.entityManager = entityManager;
+        this.walletService = walletService;
     }
 
     /**
@@ -264,8 +274,27 @@ public class RealCheckInService implements CheckInService {
             log.warn("用户[{}]今日签到权益已存在，跳过重复创建", userId, e);
         }
 
-        // 计算额外推荐配额（基于历史签到记录）
-        int extraQuota = calculateTotalExtraQuota(userId) + checkInConfig.getExtraQuotaPerCheckIn();
+        // P0-23：签到奖励写入钱包（CREDIT 流水，relatedType=CHECKIN）。
+        // orderId 按 (userId, yyyyMMdd) 幂等：同日重复提交不会重复入账；
+        // 钱包写入失败仅记录日志，不阻断签到主流程（与权益创建降级口径一致）
+        try {
+            String orderId = "CHECKIN-" + userId + "-" + today.format(CHECKIN_DATE_FORMATTER);
+            Long balanceAfter = walletService.recharge(
+                    userId,
+                    (long) checkInConfig.getRewardCentsPerCheckIn(),
+                    orderId,
+                    WalletTransactionLog.RELATED_TYPE_CHECKIN,
+                    null);
+            log.info("用户[{}]签到奖励入账成功：amount={}分, balanceAfter={}",
+                    userId, checkInConfig.getRewardCentsPerCheckIn(), balanceAfter);
+        } catch (RuntimeException e) {
+            log.warn("用户[{}]签到奖励入账失败（不影响签到主流程）：{}", userId, e.getMessage());
+        }
+
+        // P0-23 修复（去双计）：calculateTotalExtraQuota 已按「连续签到天数 × 单次奖励」
+        // 包含本次签到（consecutiveDays 已含今天），此处不再额外 +extraQuotaPerCheckIn，
+        // 与重复签到分支（上方 existingCheckIn 路径，直接取 calculateTotalExtraQuota）口径一致
+        int extraQuota = calculateTotalExtraQuota(userId);
 
         // 查询热门话题数量和新入圈用户数量
         int hotTopicCount = getHotTopicCount();
@@ -416,10 +445,16 @@ public class RealCheckInService implements CheckInService {
             throw new IllegalArgumentException("该日期已签到，无法重复补签");
         }
 
-        // 配额记录 used_count+1
+        // P0-24 修复：配额记录 used_count+1 改为原子 UPDATE（读-改-写竞态修复）。
+        // 单条 UPDATE ... WHERE used_count < limit_count，影响行数 0 表示配额已被并发耗尽
+        int affected = makeUpQuotaRepository.incrementUsedCount(quota.getId(), LocalDateTime.now());
+        if (affected == 0) {
+            log.warn("用户[{}]补签日期[{}]配额递增失败（并发耗尽或配额不足）", userId, targetDate);
+            throw new IllegalArgumentException(
+                    "本月补签次数已用完（上限 " + quota.getLimitCount() + " 次）");
+        }
+        // 本地同步计数用于响应展示（bulk update 后实体已 detached，仅作返回数据）
         quota.setUsedCount(quota.getUsedCount() + 1);
-        quota.setUpdatedAt(LocalDateTime.now());
-        makeUpQuotaRepository.save(quota);
 
         return new MakeUpCheckInResultView(
                 true,

@@ -35,6 +35,9 @@ verification_logs/
 .env
 !**/.env.example
 
+# Flyway 本机凭据配置（含真实数据库密码，禁止提交；模板 flyway.user.toml.example 保留）
+database/flyway/flyway.user.toml
+
 # 数据库备份目录（宿主机备份产物，不入库）
 backups/
 
@@ -235,3 +238,15 @@ apps/api/start-real-r2.bat
 apps/api/make-args.cjs
 apps/api/cp-r2.txt
 apps/api/run-real.args
+
+# 本地运行临时产物（token/响应/日志快照，不入库）
+apps/api/*.json
+apps/api/*.txt
+apps/api/*.err
+apps/api/*.tmp
+tmp/
+__pycache__/
+*.pyc
+
+# AI 工具工作目录（内部 spec/evidence，不入库）
+.trae/

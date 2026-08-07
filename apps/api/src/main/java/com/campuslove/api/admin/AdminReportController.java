@@ -3,7 +3,13 @@ package com.campuslove.api.admin;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.entity.CircleTopic;
+import com.campuslove.api.entity.Comment;
+import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Report;
+import com.campuslove.api.repository.CircleTopicRepository;
+import com.campuslove.api.repository.CommentRepository;
+import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.ReportRepository;
 import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
@@ -43,6 +49,16 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>权限说明：URL 层 /api/admin/** 已限制 ADMIN 角色；
  * 方法层 @PreAuthorize 作为深度防御（需 @EnableMethodSecurity 启用后生效）。</p>
+ *
+ * <p>数据隔离（商业模式：每个高校一个管理员，委托 {@link AdminDataScope}）：</p>
+ * <ul>
+ *   <li>列表：reports 表无 campus_name 列，按<b>被举报对象所属校区</b>过滤
+ *       （USER 目标取被举报用户校区，POST/COMMENT/TOPIC 目标取内容作者校区，
+ *       均取自 user_campus_profile.campus_name）；校区管理员强制按其管辖校区过滤
+ *       （忽略调用方 campusName 参数），全局管理员可用 campusName 参数筛选</li>
+ *   <li>处理举报：读取目标举报后按被举报对象校区调用
+ *       {@link AdminDataScope#assertCampusAccess(String)} 校验越权，越权抛 403</li>
+ * </ul>
  */
 @Profile("real")
 @RestController
@@ -64,10 +80,28 @@ public class AdminReportController {
 
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
+    /** 目标对象解析：POST 目标查作者（校区隔离） */
+    private final PostRepository postRepository;
+    /** 目标对象解析：COMMENT 目标查作者（校区隔离） */
+    private final CommentRepository commentRepository;
+    /** 目标对象解析：TOPIC 目标查作者（校区隔离） */
+    private final CircleTopicRepository circleTopicRepository;
+    /** 管理端数据隔离（多管理员多校区） */
+    private final AdminDataScope adminDataScope;
 
-    public AdminReportController(ReportRepository reportRepository, UserRepository userRepository) {
+    public AdminReportController(
+            ReportRepository reportRepository,
+            UserRepository userRepository,
+            PostRepository postRepository,
+            CommentRepository commentRepository,
+            CircleTopicRepository circleTopicRepository,
+            AdminDataScope adminDataScope) {
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
+        this.postRepository = postRepository;
+        this.commentRepository = commentRepository;
+        this.circleTopicRepository = circleTopicRepository;
+        this.adminDataScope = adminDataScope;
     }
 
     /**
@@ -75,6 +109,8 @@ public class AdminReportController {
      *
      * @param status     举报状态筛选：PENDING / HANDLED / REJECTED，可选
      * @param targetType 举报目标类型筛选：POST / COMMENT / USER / TOPIC，可选
+     * @param campusName 校区筛选（按被举报对象所属校区过滤），可选；
+     *                   校区管理员强制按其管辖校区过滤，忽略本参数
      * @param page       页码，1-based，默认 1
      * @param pageSize   每页大小，默认 20，最大 100
      * @return 分页举报列表
@@ -83,6 +119,7 @@ public class AdminReportController {
     public AdminPageView<AdminReportView> listReports(
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "targetType", required = false) String targetType,
+            @RequestParam(name = "campusName", required = false) String campusName,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
@@ -95,8 +132,15 @@ public class AdminReportController {
         String normalizedStatus = normalizeFilter(status);
         String normalizedTargetType = normalizeFilter(targetType);
 
+        // 数据隔离：校区管理员强制按其管辖校区过滤，忽略调用方传入的 campusName，
+        // 防止校区管理员越权查看其他校区的举报（与 AdminUserController.listUsers 一致）
+        String scopedCampus = adminDataScope.getCurrentAdminCampusName();
+        String effectiveCampus = scopedCampus != null
+                ? scopedCampus
+                : normalizeFilter(campusName);
+
         Page<Report> result = reportRepository.findByStatusAndTargetType(
-                normalizedStatus, normalizedTargetType, pageable);
+                normalizedStatus, normalizedTargetType, effectiveCampus, pageable);
 
         // 批量预加载举报人昵称，避免 N+1 查询
         Map<Long, String> reporterNicknameMap = loadReporterNicknames(result.getContent());
@@ -137,6 +181,9 @@ public class AdminReportController {
         Report report = reportOpt.orElseThrow(() ->
                 new IllegalStateException("reportOpt 已确认非空但 orElseThrow 触发，数据不一致"));
 
+        // 数据隔离：校区管理员仅能处理本校区被举报对象的举报，越权抛 403
+        adminDataScope.assertCampusAccess(resolveReportTargetCampus(report));
+
         // 根据处理结果映射到对应状态
         String newStatus = RESULT_HANDLE.equals(req.result()) ? STATUS_HANDLED : STATUS_REJECTED;
         report.setStatus(newStatus);
@@ -155,6 +202,41 @@ public class AdminReportController {
         body.put("handledAt", report.getHandledAt());
         body.put("success", true);
         return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 解析举报目标（被举报对象）的所属校区名，用于写操作越权校验。
+     *
+     * <p>目标类型与校区映射：</p>
+     * <ul>
+     *   <li>USER：被举报用户 ID 即 targetId，直接取该用户校区</li>
+     *   <li>POST：先按 targetId 查帖子作者，再取作者校区</li>
+     *   <li>COMMENT：先按 targetId 查评论作者，再取作者校区</li>
+     *   <li>TOPIC：先按 targetId 查话题作者，再取作者校区</li>
+     * </ul>
+     * <p>目标不存在或作者无校区资料时返回 null（按 AdminDataScope 语义视为全局资源）。</p>
+     *
+     * @param report 举报实体
+     * @return 被举报对象所属校区名（可能为 null）
+     */
+    private String resolveReportTargetCampus(Report report) {
+        Long targetUserId = null;
+        if ("USER".equals(report.getTargetType())) {
+            targetUserId = report.getTargetId();
+        } else if ("POST".equals(report.getTargetType())) {
+            targetUserId = postRepository.findById(report.getTargetId())
+                    .map(Post::getAuthorId).orElse(null);
+        } else if ("COMMENT".equals(report.getTargetType())) {
+            targetUserId = commentRepository.findById(report.getTargetId())
+                    .map(Comment::getAuthorId).orElse(null);
+        } else if ("TOPIC".equals(report.getTargetType())) {
+            targetUserId = circleTopicRepository.findById(report.getTargetId())
+                    .map(CircleTopic::getAuthorId).orElse(null);
+        }
+        if (targetUserId == null) {
+            return null;
+        }
+        return adminDataScope.resolveUserCampusName(targetUserId);
     }
 
     /**

@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import com.campuslove.api.entity.VipRedPacket;
 import com.campuslove.api.entity.VipRedPacketClaim;
 import com.campuslove.api.repository.UserRepository;
+import com.campuslove.api.repository.VipBillRepository;
 import com.campuslove.api.repository.VipRedPacketClaimRepository;
 import com.campuslove.api.repository.VipRedPacketRepository;
 import com.campuslove.api.wallet.InsufficientBalanceException;
@@ -69,6 +70,8 @@ class VipRedPacketServiceTest {
     private VipRedPacketClaimRepository claimRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private VipBillRepository vipBillRepository;
     @Mock
     private WalletService walletService;
     @Mock
@@ -147,7 +150,7 @@ class VipRedPacketServiceTest {
         mockLockAcquired("red-packet-create:" + senderId);
 
         VipRedPacketService service = new VipRedPacketService(
-                redPacketRepository, claimRepository, userRepository, walletService, redissonClient);
+                redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
 
         // Act & Assert
         InsufficientBalanceException ex = assertThrows(
@@ -193,7 +196,7 @@ class VipRedPacketServiceTest {
         mockLockAcquired("red-packet-create:" + senderId);
 
         VipRedPacketService service = new VipRedPacketService(
-                redPacketRepository, claimRepository, userRepository, walletService, redissonClient);
+                redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
 
         // Act
         VipRedPacketService.RedPacketView view = service.createRedPacket(
@@ -251,7 +254,7 @@ class VipRedPacketServiceTest {
         mockLockAcquired("red-packet-claim:" + redPacketId);
 
         VipRedPacketService service = new VipRedPacketService(
-                redPacketRepository, claimRepository, userRepository, walletService, redissonClient);
+                redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
 
         // Act
         VipRedPacketService.ClaimResultView result = service.claimRedPacket(redPacketId, claimerId);
@@ -300,7 +303,7 @@ class VipRedPacketServiceTest {
         mockLockAcquired("red-packet-claim:" + redPacketId);
 
         VipRedPacketService service = new VipRedPacketService(
-                redPacketRepository, claimRepository, userRepository, walletService, redissonClient);
+                redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
 
         // Act & Assert
         IllegalArgumentException ex = assertThrows(
@@ -367,7 +370,7 @@ class VipRedPacketServiceTest {
         mockLockAcquired("red-packet-claim:" + redPacketId);
 
         VipRedPacketService service = new VipRedPacketService(
-                redPacketRepository, claimRepository, userRepository, walletService, redissonClient);
+                redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
 
         // Act：100 个用户并发领取
         AtomicInteger successCount = new AtomicInteger(0);

@@ -10,6 +10,7 @@ import com.campuslove.api.entity.Like.LikeStatus;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
+import com.campuslove.api.repository.CampusCertificationRepository;
 import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.HeartSignalRepository;
 import com.campuslove.api.repository.LikeRepository;
@@ -17,11 +18,14 @@ import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import com.campuslove.api.entity.CampusCertification;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -58,6 +62,45 @@ public class RecommendationRanker {
     private final CampusCertificationService campusCertificationService;
     private final UserPreferenceCalculator preferenceCalculator;
 
+    /**
+     * 认证记录 Repository（A-27 批量徽章级别预加载）。
+     * 可为 null（兼容旧测试构造器），为 null 时降级为逐条查询。
+     */
+    private final CampusCertificationRepository campusCertificationRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public RecommendationRanker(
+            RecommendationConfig recommendationConfig,
+            UserCampusProfileRepository userCampusProfileRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
+            UserScheduleProfileRepository userScheduleProfileRepository,
+            CircleMembershipRepository circleMembershipRepository,
+            HeartSignalRepository heartSignalRepository,
+            LikeRepository likeRepository,
+            UserRepository userRepository,
+            CampusCertificationService campusCertificationService,
+            UserPreferenceCalculator preferenceCalculator,
+            CampusCertificationRepository campusCertificationRepository) {
+        this.recommendationConfig = recommendationConfig;
+        this.userCampusProfileRepository = userCampusProfileRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
+        this.userScheduleProfileRepository = userScheduleProfileRepository;
+        this.circleMembershipRepository = circleMembershipRepository;
+        this.heartSignalRepository = heartSignalRepository;
+        this.likeRepository = likeRepository;
+        this.userRepository = userRepository;
+        this.campusCertificationService = campusCertificationService;
+        this.preferenceCalculator = preferenceCalculator;
+        this.campusCertificationRepository = campusCertificationRepository;
+    }
+
+    /**
+     * 兼容旧测试的构造器（campusCertificationRepository 为 null，
+     * 批量徽章级别预加载降级为逐条查询）。
+     *
+     * @deprecated 仅单元测试使用；Spring 注入请使用带 CampusCertificationRepository 的构造器。
+     */
+    @Deprecated
     public RecommendationRanker(
             RecommendationConfig recommendationConfig,
             UserCampusProfileRepository userCampusProfileRepository,
@@ -69,16 +112,10 @@ public class RecommendationRanker {
             UserRepository userRepository,
             CampusCertificationService campusCertificationService,
             UserPreferenceCalculator preferenceCalculator) {
-        this.recommendationConfig = recommendationConfig;
-        this.userCampusProfileRepository = userCampusProfileRepository;
-        this.userBasicProfileRepository = userBasicProfileRepository;
-        this.userScheduleProfileRepository = userScheduleProfileRepository;
-        this.circleMembershipRepository = circleMembershipRepository;
-        this.heartSignalRepository = heartSignalRepository;
-        this.likeRepository = likeRepository;
-        this.userRepository = userRepository;
-        this.campusCertificationService = campusCertificationService;
-        this.preferenceCalculator = preferenceCalculator;
+        this(recommendationConfig, userCampusProfileRepository, userBasicProfileRepository,
+                userScheduleProfileRepository, circleMembershipRepository, heartSignalRepository,
+                likeRepository, userRepository, campusCertificationService,
+                preferenceCalculator, null);
     }
 
     // ---- 排序与截断 ----
@@ -108,12 +145,18 @@ public class RecommendationRanker {
                 .limit(recommendationConfig.getDailyLimit())
                 .toList();
 
+        // A-27 修复：批量预加载该批候选的认证徽章级别（一次查询），
+        // 替代逐候选调用 getVerificationBadgeLevel 的 N+1 查询
+        Map<Long, String> badgeLevelMap = loadBadgeLevelMap(
+                topResults.stream().map(su -> su.user().getId()).filter(java.util.Objects::nonNull).toList());
+
         return topResults.stream()
                 .map(su -> toRecommendedPersonView(
                         su.user(), myCampusName, myDepartmentName, myCircleIds,
                         campusProfileMap.get(su.user().getId()),
                         basicProfileMap.get(su.user().getId()),
-                        membershipMap.getOrDefault(su.user().getId(), List.of())))
+                        membershipMap.getOrDefault(su.user().getId(), List.of()),
+                        badgeLevelMap))
                 .toList();
     }
 
@@ -219,6 +262,24 @@ public class RecommendationRanker {
             String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
             UserCampusProfile campusProfile, UserBasicProfile basicProfile,
             List<CircleMembership> memberships) {
+        // 无批量 Map 场景（单条查询/历史），badge 逐条降级查询
+        return toRecommendedPersonView(user, myCampusName, myDepartmentName, myCircleIds,
+                campusProfile, basicProfile, memberships, Collections.emptyMap());
+    }
+
+    /**
+     * 将 User 实体转换为 RecommendedPersonView（使用预加载数据，避免 N+1）。
+     *
+     * <p>A-27 扩展：接收批量预加载的认证徽章级别 Map（userId → badge level），
+     * 避免逐候选调用 {@link CampusCertificationService#getVerificationBadgeLevel}。</p>
+     *
+     * @param badgeLevelMap userId → 认证徽章级别（school/email/idcard/none）的 Map，
+     *                      为空 Map 时降级为逐条查询
+     */
+    public RecommendedPersonView toRecommendedPersonView(User user,
+            String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
+            UserCampusProfile campusProfile, UserBasicProfile basicProfile,
+            List<CircleMembership> memberships, Map<Long, String> badgeLevelMap) {
         String name = user.getNickname() != null ? user.getNickname() : "";
         String initials = extractInitials(name);
         String headline = user.getBio() != null ? user.getBio() : "";
@@ -265,7 +326,7 @@ public class RecommendationRanker {
                 : List.of();
         String halfBodyPhotoUrl = basicProfile != null ? basicProfile.getHalfBodyPhotoUrl() : null;
         String personalVideoUrl = basicProfile != null ? basicProfile.getPersonalVideoUrl() : null;
-        String verificationBadgeLevel = resolveBadgeLevelSafe(user.getId());
+        String verificationBadgeLevel = resolveBadgeLevelSafe(user.getId(), badgeLevelMap);
 
         // ---- Phase Feedback1：卡片重设计扩展字段（可空，前端按缺省兜底） ----
         // 展示 ID：User 无独立字段，稳定推导为 CL-{id}（同 mock 口径）
@@ -275,7 +336,7 @@ public class RecommendationRanker {
         // 活跃状态：离线为默认，在线用户由前端二次查询回填
         String activeStatusText = "offline";
         // 双重认证：由认证徽章级别推导（有认证即视为机器认证；school/idcard 视为有人工认证）
-        String resolvedBadge = resolveBadgeLevelSafe(user.getId());
+        String resolvedBadge = resolveBadgeLevelSafe(user.getId(), badgeLevelMap);
         boolean machineVerified = !"none".equals(resolvedBadge);
         boolean humanVerified = "school".equals(resolvedBadge) || "idcard".equals(resolvedBadge);
         List<String> personality = List.of();
@@ -398,15 +459,71 @@ public class RecommendationRanker {
     // ---- 私有辅助 ----
 
     /**
-     * 安全查询认证徽章级别。
-     * 委托 CampusCertificationService，捕获数据访问异常以避免推荐流程被认证查询失败影响。
+     * 安全查询认证徽章级别（A-27 批量版）。
+     *
+     * <p>优先从批量预加载的 Map 取数（O(1)，无 N+1）；Map 为空
+     * （单条/历史场景或未启用批量预加载）时降级为逐条调用
+     * {@link CampusCertificationService#getVerificationBadgeLevel}。</p>
+     *
+     * @param userId        用户 ID
+     * @param badgeLevelMap 批量预加载的 userId → 认证徽章级别 Map（可为空 Map）
+     * @return 徽章级别字符串（school/email/idcard/none）
      */
-    private String resolveBadgeLevelSafe(Long userId) {
+    private String resolveBadgeLevelSafe(Long userId, Map<Long, String> badgeLevelMap) {
+        if (badgeLevelMap != null && !badgeLevelMap.isEmpty()) {
+            return badgeLevelMap.getOrDefault(userId, "none");
+        }
         try {
             return campusCertificationService.getVerificationBadgeLevel(userId);
         } catch (DataAccessException e) {
             return "none";
         }
+    }
+
+    /**
+     * A-27 修复：批量预加载该批候选用户的认证徽章级别。
+     *
+     * <p>将原逐候选 {@code getVerificationBadgeLevel} 的 N 次查询压缩为 2 次：
+     * 一次查全部 APPROVED 校园认证记录 + 一次批量查基本资料（email/idcard 标志）。
+     * 判定优先级与单条实现一致：school &gt; email &gt; idcard &gt; none。</p>
+     *
+     * @param userIds 候选用户 ID 列表
+     * @return userId → 认证徽章级别 的 Map（无候选或降级场景返回空 Map）
+     */
+    private Map<Long, String> loadBadgeLevelMap(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        if (campusCertificationRepository == null) {
+            // 兼容旧测试构造器：未注入 Repository 时返回空 Map，由调用方逐条降级
+            return Collections.emptyMap();
+        }
+        Set<Long> idSet = new HashSet<>(userIds);
+        Map<Long, String> result = new HashMap<>();
+        try {
+            // 1. 校园认证 APPROVED（school 优先级最高）：一次查询全部已通过记录后内存过滤
+            for (CampusCertification cert : campusCertificationRepository
+                    .findByStatusOrderBySubmittedAtDesc("APPROVED")) {
+                if (cert.getUserId() != null && idSet.contains(cert.getUserId())) {
+                    result.put(cert.getUserId(), "school");
+                }
+            }
+            // 2. email / idcard 标志（基本资料批量查询）
+            for (UserBasicProfile bp : userBasicProfileRepository.findByUserIdIn(new ArrayList<>(idSet))) {
+                if (result.containsKey(bp.getUserId())) {
+                    continue; // school 已命中，优先级最高
+                }
+                if (Boolean.TRUE.equals(bp.getEmailVerified())) {
+                    result.put(bp.getUserId(), "email");
+                } else if (Boolean.TRUE.equals(bp.getIdCardVerified())) {
+                    result.put(bp.getUserId(), "idcard");
+                }
+            }
+        } catch (DataAccessException e) {
+            // 认证查询失败时返回空 Map，调用方逐条降级（与单条场景行为一致）
+            return Collections.emptyMap();
+        }
+        return result;
     }
 
     /**

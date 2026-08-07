@@ -1,17 +1,15 @@
 <script setup lang="ts">
 /**
- * 通用分页组件（Task 3.7.2）。
+ * 通用分页组件（复制自旧后台 apps/admin）。
  *
- * 抽取自 Users / Posts / Reports / AuditLogs 等 4 个视图的重复分页 UI 与逻辑，
  * 统一对外暴露 v-model:page 与 change 事件。
  *
  * <p><b>设计目标</b>：</p>
  * <ul>
- *   <li>替代各视图自定义的 {@code <view class="pagination">} 模板与 handlePrev/Next 函数；</li>
  *   <li>支持两种页码模型：
  *     <ul>
- *       <li>1-based（Users/Posts/Reports 默认）：page 从 1 开始，禁用条件 page <= 1</li>
- *       <li>0-based（AuditLogs Spring Data 风格）：page 从 0 开始，禁用条件 page === 0</li>
+ *       <li>1-based（默认）：page 从 1 开始，禁用条件 page <= 1</li>
+ *       <li>0-based（Spring Data 风格）：page 从 0 开始，禁用条件 page === 0</li>
  *     </ul>
  *     通过 {@code pageBase} prop 区分，默认 1-based。
  *   </li>
@@ -28,9 +26,6 @@
  *   @change="fetchUsers"
  * /&gt;
  * </pre>
- *
- * <p><b>i18n 接入</b>：通过 useI18n 读取 common.page / common.total 文案，
- * 与 Admin 全局 i18n 配置保持一致。</p>
  */
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -85,7 +80,7 @@ const isLast = computed(() => {
     : props.page >= props.totalPages - 1;
 });
 
-// infra R2-00463：页码跳转输入状态（原仅有上/下一页，大数据量翻页痛苦）
+// 页码跳转输入状态（大数据量翻页）
 const jumpInput = ref("");
 
 /** 可跳转的最大页码（1-based 展示） */
@@ -99,8 +94,7 @@ function handleJumpKeydown(e: KeyboardEvent): void {
 }
 
 /**
- * 执行页码跳转（infra R2-00464：钳制 page 范围，越界输入回退到边界页）。
- * 原实现无页码跳转且不钳制 page，后端返回越界 page 时按钮状态错误。
+ * 执行页码跳转（钳制 page 范围，越界输入回退到边界页）。
  */
 function doJump(): void {
   if (props.disabled) return;
@@ -138,7 +132,6 @@ const pageInfo = computed(() => {
   const displayPage = props.pageBase === 1 ? props.page : props.page + 1;
   const safeTotal = Math.max(props.totalPages, 1);
   return t("common.page", { page: displayPage, totalPages: safeTotal })
-    // infra R2-00465：括号文案纳入 i18n（原硬编码全角括号，en-US 下显示中文括号）
     + (props.total > 0 ? t("common.totalParenthesized", { n: props.total }) : "");
 });
 
@@ -162,7 +155,7 @@ const displayNextText = computed(() => props.nextText || t("common.nextPage"));
       :disabled="isLast || disabled"
       @click="handleNext"
     >{{ displayNextText }}</button>
-    <!-- infra R2-00463：页码跳转输入（大数据量翻页） -->
+    <!-- 页码跳转输入（大数据量翻页） -->
     <view class="page-jump">
       <input
         v-model="jumpInput"
@@ -184,7 +177,7 @@ const displayNextText = computed(() => props.nextText || t("common.nextPage"));
 <style scoped>
 @import "../styles/admin-common.css";
 
-/* infra R2-00463：页码跳转输入样式 */
+/* 页码跳转输入样式 */
 .page-jump {
   display: flex;
   align-items: center;

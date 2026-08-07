@@ -58,18 +58,22 @@ public class VillageController {
       @RequestParam(name = "sortBy", required = false, defaultValue = "latest") String sortBy,
       @RequestParam(name = "authorId", required = false) Long authorId,
       @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
-      @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
+      @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize,
+      // 2026-08-07：同城 / 发现分类参数（圈子页三 Tab）
+      @RequestParam(name = "city", required = false) String city,
+      @RequestParam(name = "discoverSub", required = false) String discoverSub) {
     // 走查补齐：按作者过滤（个人主页"我的动态"），优先于分类/标签筛选
     if (authorId != null) {
       return villageService.getPostsByAuthor(authorId, page, pageSize);
     }
-    // 校园分类需要从认证上下文获取 userId
+    // 校园分类 / 关注分类需要从认证上下文获取 userId
     // FIN-00064 修复：改用 SecurityUtils.isAuthenticated() 判断认证状态，
     // 原实现 catch HttpClientErrorException.Unauthorized（HTTP 异常类型滥用），
     // 未认证时 getCurrentUserId 抛出的 401 异常会被 GlobalExceptionHandler 捕获，
     // 与「返回空列表」的意图耦合在异常流上。
+    // 2026-08-07 修复：following（关注 Tab）同样需要 userId 过滤关注作者的帖子。
     Long userId = null;
-    if ("campus".equals(category)) {
+    if ("campus".equals(category) || "following".equals(category) || "samecity".equals(category)) {
       if (SecurityUtils.isAuthenticated()) {
         userId = SecurityUtils.getCurrentUserId();
       } else {
@@ -77,7 +81,7 @@ public class VillageController {
         return new PostListResponse(List.of(), 0, page, pageSize);
       }
     }
-    return villageService.getPosts(category, tag, sortBy, page, pageSize, userId);
+    return villageService.getPosts(category, tag, sortBy, page, pageSize, userId, city, discoverSub);
   }
 
   /**
@@ -151,7 +155,7 @@ public class VillageController {
   }
 
   /**
-   * 发表评论。
+   * 发表评论（P1-02 / A-12 楼中楼：请求体支持 parentId，非空即为楼中楼回复）。
    *
    * <p>速率限制：桶容量 30，每秒补充 1 个令牌，按客户端 IP 限流，
    * 防止评论刷屏与垃圾内容。</p>
@@ -164,7 +168,7 @@ public class VillageController {
       @PathVariable("id") @Positive Long id,
       @Valid @RequestBody CreateCommentRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    CommentItemView view = villageService.commentPost(userId, id, request.content());
+    CommentItemView view = villageService.commentPost(userId, id, request.content(), request.parentId());
     // 监控：记录评论创建事件
     try {
       villageMetrics.recordCommentCreated();
@@ -172,6 +176,26 @@ public class VillageController {
       // 监控逻辑失败忽略，不影响主流程
     }
     return ApiResponse.ok(view);
+  }
+
+  /**
+   * 点赞/取消点赞评论（M-14，幂等切换）。
+   *
+   * <p>实现复用帖子点赞模式：已点赞 → 取消点赞；未点赞 → 新增点赞并返回最新点赞数。
+   * 幂等：同一用户对同一评论仅一条点赞记录（comment_likes 表 uk_comment_likes_user_comment
+   * 唯一约束兜底）。</p>
+   *
+   * <p>速率限制：桶容量 60，每秒补充 2 个令牌，按客户端 IP 限流，
+   * 防止自动化脚本批量刷评论点赞。</p>
+   */
+  @PostMapping("/comments/{commentId}/like")
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
+  @Idempotent
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<PostLikeResponse> likeComment(@PathVariable("commentId") @Positive Long commentId) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    PostLikeResponse response = villageService.likeComment(userId, commentId);
+    return ApiResponse.ok(response);
   }
 
   // ---------- 转发 ----------

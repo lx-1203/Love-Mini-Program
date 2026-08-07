@@ -73,7 +73,7 @@ public class UserPreferenceCalculator {
      * @return 更新后的推荐偏好视图
      */
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId")
+    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "'v2:' + #userId")
     public RecommendationPreferencesView savePreferences(
             Long userId, String preferredTime, String scope, Boolean campusPriority) {
         if (userId == null) {
@@ -113,7 +113,7 @@ public class UserPreferenceCalculator {
      * @return 更新后的推荐偏好视图
      */
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId")
+    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "'v2:' + #userId")
     public RecommendationPreferencesView updatePreferences(Long userId, RecommendationPreference data) {
         if (userId == null) {
             throw new IllegalArgumentException("userId 不能为空");

@@ -29,6 +29,9 @@ public interface UserCampusProfileRepository extends JpaRepository<UserCampusPro
      */
     List<UserCampusProfile> findByUserIdIn(List<Long> userIds);
 
+    /** 2026-08-07：按城市查询校区资料（圈子「同城」Tab） */
+    List<UserCampusProfile> findByCityName(String cityName);
+
     /**
      * 按校区名称分组统计用户数（用于管理后台学校分布统计）。
      *

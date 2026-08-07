@@ -1,7 +1,10 @@
 package com.campuslove.api.clientconfig;
 
 import com.campuslove.api.config.CacheNames;
+import com.campuslove.api.entity.School;
+import com.campuslove.api.repository.SchoolRepository;
 import java.util.List;
+import java.util.Map;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RealConfigService implements ConfigService {
 
+    private final SchoolRepository schoolRepository;
+
+    public RealConfigService(SchoolRepository schoolRepository) {
+        this.schoolRepository = schoolRepository;
+    }
+
     /**
      * 内置默认学校列表，与原客户端 schools.ts 的 SCHOOLS 保持一致，
      * 用于数据库无数据或查询异常时降级返回，保证迁移期前端功能不回归。
@@ -45,6 +54,33 @@ public class RealConfigService implements ConfigService {
             new CampusView("thu", "清华大学", "北京"),
             new CampusView("fudan", "复旦大学", "上海"),
             new CampusView("zju", "浙江大学", "杭州")
+    );
+
+    /**
+     * 学校名称 → 所在城市 映射（A-36）。
+     *
+     * <p>schools 表无 city 列，城市信息按学校名称推导（与种子
+     * V2026.08.07.0022 的 city 映射一致）；未知学校返回 null
+     * （客户端 CampusView.city 为可空字段，前端按缺省兜底）。</p>
+     */
+    private static final Map<String, String> SCHOOL_CITY_MAP = Map.ofEntries(
+            Map.entry("北京大学", "北京"),
+            Map.entry("清华大学", "北京"),
+            Map.entry("复旦大学", "上海"),
+            Map.entry("浙江大学", "杭州"),
+            Map.entry("南京大学", "南京"),
+            Map.entry("武汉大学", "武汉"),
+            Map.entry("东南大学", "南京"),
+            Map.entry("广州大学", "广州"),
+            Map.entry("上海交通大学", "上海"),
+            Map.entry("中山大学", "广州"),
+            Map.entry("华中科技大学", "武汉"),
+            Map.entry("四川大学", "成都"),
+            Map.entry("西安交通大学", "西安"),
+            Map.entry("哈尔滨工业大学", "哈尔滨"),
+            Map.entry("南开大学", "天津"),
+            Map.entry("同济大学", "上海"),
+            Map.entry("中国人民大学", "北京")
     );
 
     /**
@@ -140,10 +176,28 @@ public class RealConfigService implements ConfigService {
     );
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(cacheNames = CacheNames.CLIENT_CONFIG, key = "'campuses'")
     public List<CampusView> loadCampuses() {
-        // 当前阶段：返回内置默认值。后续替换为 Repository.findAll() 并降级到默认值。
-        return DEFAULT_CAMPUSES;
+        // A-36 修复：原实现硬编码 4 所学校（pku/thu/fudan/zju），
+        // 与 schools 表实际数据脱节（新增高校不会自动出现在校区下拉）。
+        // 现改为从 schools 表查询启用中的高校，id 用 school.code（唯一编码，
+        // 与客户端 CampusView.id 的 slug 语义一致），name/city 保持响应结构。
+        try {
+            List<School> schools = schoolRepository.findByStatusOrderBySortOrderAsc("active");
+            if (schools == null || schools.isEmpty()) {
+                return DEFAULT_CAMPUSES;
+            }
+            return schools.stream()
+                    .map(school -> new CampusView(
+                            school.getCode(),
+                            school.getName(),
+                            SCHOOL_CITY_MAP.getOrDefault(school.getName(), null)))
+                    .toList();
+        } catch (RuntimeException e) {
+            // 降级保证：数据库异常时返回内置默认列表，不影响客户端首屏渲染
+            return DEFAULT_CAMPUSES;
+        }
     }
 
     @Override

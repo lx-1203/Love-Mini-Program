@@ -18,6 +18,8 @@ import { useI18n } from "vue-i18n";
 import { useVipRedPacketStore, type RedPacketType } from "../../stores/vip-red-packet";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+// P1-08：会员功能开关（false 时子页拦截返回）
+import { featureFlags } from "../../config/feature-flags";
 
 const { t } = useI18n();
 
@@ -179,6 +181,18 @@ function goBack() {
   lightHaptic();
   uni.navigateBack({ delta: 1 });
 }
+
+// P1-08：会员功能未启用时子页同样拦截（toast + 返回），避免深链进入功能页
+onLoad(() => {
+  if (!featureFlags.membershipEnabled) {
+    uni.showToast({ title: t("vip.membershipDisabled"), icon: "none" });
+    if (getCurrentPages().length > 1) {
+      uni.navigateBack();
+    } else {
+      uni.switchTab({ url: "/pages/profile/index" });
+    }
+  }
+});
 
 // 页面加载时检查 URL 参数，判断是否为领取红包流程
 onLoad((options) => {

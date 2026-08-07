@@ -54,4 +54,32 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
     @Query("UPDATE Activity a SET a.enrollmentCount = CASE "
             + "WHEN a.enrollmentCount > 0 THEN a.enrollmentCount - 1 ELSE 0 END WHERE a.id = :id")
     int decrementEnrollmentCount(@Param("id") Long id);
+
+    /**
+     * 管理后台 - 多条件分页查询活动。
+     * <p>所有筛选条件均可为 null（不参与筛选），按创建时间倒序排列。
+     * 标题为模糊匹配（LIKE '%keyword%'），campusName 精确匹配
+     * （数据隔离由调用方注入管辖校区名）。</p>
+     *
+     * @param keyword    标题模糊关键字，null 表示不筛选
+     * @param status     活动状态筛选（upcoming/ongoing/ended），null 表示不筛选
+     * @param published  上架状态筛选（true/false），null 表示不筛选
+     * @param campusName 校区名称筛选（精确匹配），null 表示不筛选
+     * @param pageable   分页参数
+     * @return 分页活动列表
+     */
+    @Query("""
+            SELECT a FROM Activity a
+            WHERE (:keyword IS NULL OR a.title LIKE CONCAT('%', :keyword, '%'))
+              AND (:status IS NULL OR a.status = :status)
+              AND (:published IS NULL OR a.published = :published)
+              AND (:campusName IS NULL OR a.campusName = :campusName)
+            ORDER BY a.createdAt DESC
+            """)
+    Page<Activity> searchForAdmin(
+            @Param("keyword") String keyword,
+            @Param("status") ActivityStatus status,
+            @Param("published") Boolean published,
+            @Param("campusName") String campusName,
+            Pageable pageable);
 }

@@ -3,6 +3,8 @@ package com.campuslove.api.repository;
 import com.campuslove.api.entity.PromoCode;
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -96,4 +98,25 @@ public interface PromoCodeRepository extends JpaRepository<PromoCode, Long> {
     @Query("UPDATE PromoCode p SET p.usedCount = p.usedCount + 1, "
             + "p.updatedAt = CURRENT_TIMESTAMP WHERE p.id = :id")
     int incrementUsedCount(@Param("id") Long id);
+
+    /**
+     * 管理后台分页查询兑换码（状态/码模糊筛选）。
+     *
+     * <p>兑换码为全局资源（createdBy 管理员），不做校区数据隔离。</p>
+     *
+     * @param status   状态 ACTIVE/DISABLED（可空）
+     * @param keyword  兑换码模糊匹配（可空）
+     * @param pageable 分页参数
+     * @return 分页兑换码列表（按创建时间倒序）
+     */
+    @Query("""
+            SELECT p FROM PromoCode p
+            WHERE (:status IS NULL OR :status = '' OR p.status = :status)
+              AND (:keyword IS NULL OR :keyword = '' OR p.code LIKE CONCAT('%', :keyword, '%'))
+            ORDER BY p.createdAt DESC
+            """)
+    Page<PromoCode> searchForAdmin(
+            @Param("status") String status,
+            @Param("keyword") String keyword,
+            Pageable pageable);
 }

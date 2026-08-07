@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 通用确认弹窗组件（Task 3.7.3）。
+ * 通用确认弹窗组件（复制自旧后台 apps/admin）。
  *
  * 替代各视图散落的 {@code confirm(...)} 原生弹窗与自定义 modal-mask 模板，
  * 统一对外暴露 v-model:visible 与 confirm/cancel 事件。
@@ -107,8 +107,7 @@ function stopPropagation(e: Event): void {
   e.stopPropagation();
 }
 
-// infra R2-00466：键盘可达性——Esc 关闭 + 打开时焦点移入弹窗 + 关闭后焦点恢复。
-// 原弹窗无 Esc 关闭、无焦点陷阱/焦点恢复、无 aria-modal，键盘/读屏用户操作困难。
+// 键盘可达性：Esc 关闭 + 打开时焦点移入弹窗 + 关闭后焦点恢复
 const confirmBtnRef = ref<HTMLElement | null>(null);
 let previouslyFocused: HTMLElement | null = null;
 
@@ -184,7 +183,7 @@ onBeforeUnmount(() => {
 <style scoped>
 @import "../styles/admin-common.css";
 
-/* ConfirmDialog 特有样式（Task 21：按钮颜色/尺寸通过 token CSS variables 引用） */
+/* ConfirmDialog 特有样式（按钮颜色/尺寸通过 token CSS variables 引用） */
 .primary-button.danger {
   background: var(--admin-color-danger);
 }

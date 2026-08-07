@@ -1,5 +1,5 @@
 /**
- * Admin 运行时配置统一封装（Task 5：移除 import.meta.env 直接引用）。
+ * Admin v2 运行时配置统一封装（复制自旧后台 apps/admin，保持契约不变）。
  *
  * 设计目标：
  * - 将 Vite 环境变量（import.meta.env.*）集中封装为类型安全的 `env` 对象，

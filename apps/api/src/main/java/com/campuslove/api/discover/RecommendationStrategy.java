@@ -157,8 +157,10 @@ public class RecommendationStrategy {
         // 7. 计算排除集合
         Set<Long> excludedUserIds = getExcludedUserIds(userId);
 
-        // 8. 分页查询候选用户
-        List<User> allUsers = userRepository.findAll(
+        // 8. 分页查询候选用户（P0-21：仅查询 status=active 且 role=USER 的普通用户，
+        //    排除禁用账号与 ADMIN/SUPER_ADMIN 管理员）
+        List<User> allUsers = userRepository.findByStatusAndRole(
+                "active", "USER",
                 PageRequest.of(0, recommendationConfig.getCandidatePageSize())).getContent();
 
         // 9. 根据 scope 过滤候选
@@ -167,6 +169,20 @@ public class RecommendationStrategy {
                 .filter(u -> !excludedUserIds.contains(u.getId()))
                 .filter(u -> filterByScope(u.getId(), scope, myCampusName, myCityName))
                 .toList();
+
+        // P0-21 空池兜底：campus_first 同校无候选时放宽到同城，再放宽到全国
+        // （排除集合已覆盖自己 + 已 like + 已 pass + 已产生双向信号）
+        if (candidates.isEmpty() && "campus_first".equals(scope)) {
+            candidates = allUsers.stream()
+                    .filter(u -> !excludedUserIds.contains(u.getId()))
+                    .filter(u -> filterByScope(u.getId(), "city", myCampusName, myCityName))
+                    .toList();
+        }
+        if (candidates.isEmpty() && "campus_first".equals(scope)) {
+            candidates = allUsers.stream()
+                    .filter(u -> !excludedUserIds.contains(u.getId()))
+                    .toList();
+        }
 
         // 10. 批量预加载候选用户的关联数据
         List<Long> candidateIds = candidates.stream().map(User::getId).toList();
@@ -275,12 +291,21 @@ public class RecommendationStrategy {
 
         Optional<UserCampusProfile> candidateCampusOpt = userCampusProfileRepository.findByUserId(candidateUserId);
         if (candidateCampusOpt.isEmpty()) {
-            return "unlimited".equals(scope);
+            // 2026-08-07 链路调整：候选用户未完善校区资料时，非 city 严格模式一律放行
+            // （原实现直接排除，导致未完善资料的用户在推荐流中永远不可见，
+            //   配合评分降级可保证列表非空；city 模式依赖城市信息，无依据时排除）
+            return !"city".equals(scope);
         }
 
         UserCampusProfile candidateCampus = candidateCampusOpt.get();
 
         if ("campus_first".equals(scope)) {
+            // 2026-08-07 链路调整：当前用户未填校区资料（体验账号/未完善资料）时
+            // 放宽为同城市匹配，避免空推荐列表；已填校区则保持同校区优先。
+            if (myCampusName == null || myCampusName.isBlank()) {
+                return myCityName == null || myCityName.isBlank()
+                        || myCityName.equals(candidateCampus.getCityName());
+            }
             return myCampusName.equals(candidateCampus.getCampusName());
         }
 

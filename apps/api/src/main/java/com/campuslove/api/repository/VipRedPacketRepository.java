@@ -2,8 +2,11 @@ package com.campuslove.api.repository;
 
 import com.campuslove.api.entity.VipRedPacket;
 import jakarta.persistence.LockModeType;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -109,4 +112,34 @@ public interface VipRedPacketRepository extends JpaRepository<VipRedPacket, Long
     @Query("UPDATE VipRedPacket p SET p.status = 'DEPLETED', p.updatedAt = CURRENT_TIMESTAMP "
             + "WHERE p.id = :id AND p.remainingCount = 0 AND p.status <> 'DEPLETED'")
     int markDepletedIfEmpty(@Param("id") Long id);
+
+    /**
+     * 管理后台分页查询红包（多条件筛选 + 校区数据隔离）。
+     *
+     * <p>红包按发送者（senderId）归属校区隔离：campusName 非空时通过 EXISTS 子查询
+     * 联 {@code UserCampusProfile.campusName} 过滤，校区管理员仅可见本校区用户发送的红包。</p>
+     *
+     * @param status        红包状态 PENDING/EXPIRED/DEPLETED（可空）
+     * @param createdAtFrom 创建起始时间（可空）
+     * @param createdAtTo   创建结束时间（可空）
+     * @param campusName    管辖校区名（可空，null/空表示不过滤）
+     * @param pageable      分页参数
+     * @return 分页红包列表（按创建时间倒序）
+     */
+    @Query("""
+            SELECT p FROM VipRedPacket p
+            WHERE (:status IS NULL OR :status = '' OR p.status = :status)
+              AND (:createdAtFrom IS NULL OR p.createdAt >= :createdAtFrom)
+              AND (:createdAtTo IS NULL OR p.createdAt <= :createdAtTo)
+              AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
+                    SELECT 1 FROM UserCampusProfile cp
+                    WHERE cp.userId = p.senderId AND cp.campusName = :campusName))
+            ORDER BY p.createdAt DESC
+            """)
+    Page<VipRedPacket> searchForAdmin(
+            @Param("status") String status,
+            @Param("createdAtFrom") LocalDateTime createdAtFrom,
+            @Param("createdAtTo") LocalDateTime createdAtTo,
+            @Param("campusName") String campusName,
+            Pageable pageable);
 }

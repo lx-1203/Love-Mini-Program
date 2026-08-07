@@ -29,6 +29,52 @@ public interface HeartSignalRepository extends JpaRepository<HeartSignal, Long> 
     );
 
     /**
+     * P0-25：查询与指定用户相关的未过期 pending 心动信号（expiresAt &gt; now 过滤）。
+     *
+     * <p>与 {@link #findByUserAIdOrUserBIdAndStatus} 的区别：额外排除已过期但尚未被
+     * 定时任务标记为 expired 的信号，避免用户列表中出现"已过期未处理"的待处理信号。</p>
+     *
+     * @param userAId 用户 A ID
+     * @param userBId 用户 B ID
+     * @param status  信号状态
+     * @param now     当前时间（仅返回 expiresAt 晚于该时刻的信号）
+     * @return 匹配的心动信号列表
+     */
+    @Query("SELECT hs FROM HeartSignal hs WHERE (hs.userAId = :userAId OR hs.userBId = :userBId) "
+            + "AND hs.status = :status AND hs.expiresAt > :now")
+    List<HeartSignal> findByUserAIdOrUserBIdAndStatusNotExpired(
+            @Param("userAId") Long userAId,
+            @Param("userBId") Long userBId,
+            @Param("status") SignalStatus status,
+            @Param("now") java.time.LocalDateTime now
+    );
+
+    /**
+     * P0-25：查询指定状态且已过期的信号（供定时任务扫描置为 expired）。
+     *
+     * @param status 信号状态（通常为 pending）
+     * @param now    当前时间（返回 expiresAt 早于该时刻的信号）
+     * @return 已过期的信号列表
+     */
+    List<HeartSignal> findByStatusAndExpiresAtBefore(SignalStatus status, java.time.LocalDateTime now);
+
+    /**
+     * P0-25：批量将已过期的 pending 信号置为 expired（定时任务调用，单条 UPDATE 原子执行）。
+     *
+     * @param now 当前时间（仅更新 expiresAt 早于该时刻的 pending 信号）
+     * @return 更新的记录数
+     */
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @org.springframework.transaction.annotation.Transactional
+    @Query("UPDATE HeartSignal hs SET hs.status = :expired, hs.updatedAt = :now "
+            + "WHERE hs.status = :pending AND hs.expiresAt < :now")
+    int expirePendingSignalsBefore(
+            @Param("pending") SignalStatus pending,
+            @Param("expired") SignalStatus expired,
+            @Param("now") java.time.LocalDateTime now
+    );
+
+    /**
      * 统计指定状态的心动信号总数。
      *
      * @param status 信号状态

@@ -40,6 +40,21 @@ public class PostTagController {
     }
 
     /**
+     * 获取热门话题列表（圈子页「热门话题」模块）。
+     * GET /api/post-tags/popular?limit=5
+     * 按帖子数降序返回前 limit 个话题，postCount 近似浏览量。
+     *
+     * @param limit 返回条数上限（默认 5，1-20）
+     * @return 热门话题视图列表
+     */
+    @GetMapping("/popular")
+    public ResponseEntity<List<PopularTagView>> getPopularTags(
+            @RequestParam(name = "limit", defaultValue = "5") @Min(1) @Max(20) int limit) {
+        List<PopularTagView> topics = postTagService.getPopularTags(limit);
+        return ResponseEntity.ok(topics);
+    }
+
+    /**
      * 根据标签名称查询帖子列表。
      * GET /api/post-tags/posts?tagName=校园日常&page=0&size=20
      *

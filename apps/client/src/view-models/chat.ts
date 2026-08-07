@@ -55,7 +55,8 @@ function getRecommendationAction(completion: HomeCompletionState): ChatRecommend
   return {
     label: statusCopyMap.chatAction.goChat,
     mode: "go-chat",
-    target: "/pages/chat/index",
+    // 2026-08-07 消息页重构：tabBar 消息 tab 已切到新版消息列表页
+    target: "/pages/messages/index",
   };
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{
-  title: string;
+  /** 卡片标题（可选：需要自定义标题行时由调用方自行渲染） */
+  title?: string;
   subtitle?: string;
   compact?: boolean;
 }>();
@@ -13,7 +14,7 @@ defineProps<{
     role="region"
     :aria-label="title"
   >
-    <text class="card__title">{{ title }}</text>
+    <text v-if="title" class="card__title">{{ title }}</text>
     <text v-if="subtitle" class="card__subtitle">{{ subtitle }}</text>
     <view class="card__body">
       <slot />

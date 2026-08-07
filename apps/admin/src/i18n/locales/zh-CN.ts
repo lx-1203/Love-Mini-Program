@@ -1,5 +1,5 @@
 /**
- * Admin 端简体中文文案资源。
+ * Admin v2 端简体中文文案资源（复制自旧后台 apps/admin，layout 段扩展 eladmin 动态菜单/多标签 key）。
  *
  * 设计说明：
  * - 按「视图/模块」分组，key 使用点号分隔命名空间（如 login.title）；
@@ -8,7 +8,9 @@
  * - 与 en-US.ts 保持结构完全一致，新增文案时需同步更新两端；
  * - 服务端错误码（errors.*）需与后端 messages_zh_CN.properties 对齐。
  *
- * Task 3.2.2 - Admin 引入 vue-i18n 国际化框架。
+ * 本骨架任务约定：页面级 key（dashboard.*、users.* 等）沿用旧后台，
+ * 由并行页面任务按需增补；本文件已包含 eladmin 动态菜单所需的全部
+ * 菜单项 key（layout.navXxx）与六个目录分组名（layout.groupXxx）。
  */
 export default {
   /* ========== 通用文案 ========== */
@@ -65,12 +67,12 @@ export default {
     skipToMain: "跳到主内容",
     profile: "个人信息",
     welcome: "欢迎",
-    // infra R2-00327：空值占位符纳入 i18n（原 Reports/Feedback/AuditLogs 硬编码 "—"）
+    // 空值占位符纳入 i18n
     emptyPlaceholder: "—",
-    // infra R2-00328：分页“共 N 条”括号纳入 i18n（原全角括号硬编码，en-US 显示中文括号）
+    // 分页“共 N 条”括号纳入 i18n
     totalParenthesized: "（共 {n} 条）",
     close: "关闭",
-    // infra R2-00329：分页页码跳转输入（Pagination 组件）
+    // 分页页码跳转输入（Pagination 组件）
     jumpPagePlaceholder: "页码",
     jumpTo: "跳转",
   },
@@ -98,27 +100,55 @@ export default {
     devPasswordHint: "开发环境默认密码：{password}",
   },
 
-  /* ========== 顶部导航布局文案 ========== */
+  /* ========== 顶部导航布局文案（eladmin 风格：动态菜单 + 多标签页） ========== */
   layout: {
     sidebarCollapse: "收起侧边栏",
     sidebarExpand: "展开侧边栏",
     breadcrumbHome: "首页",
+    /* —— 一级目录分组名（后端菜单 type=DIR 的标题） —— */
+    groupSystem: "系统管理",
+    groupContent: "内容管理",
+    groupForum: "社区论坛",
+    groupActivity: "活动运营",
+    groupBusiness: "商业运营",
+    groupConfigs: "配置中心",
+    /* —— 菜单项名称（后端菜单 type=MENU 的标题，与 router componentMap 页面一一对应） —— */
     navDashboard: "数据看板",
-    navUsers: "用户管理",
-    /* 商业模式：每个高校一个管理员（仅超级管理员可见） */
+    navMenus: "菜单管理",
+    navRoles: "角色管理",
+    navSchools: "学校管理",
+    navDicts: "字典管理",
     navAdmins: "管理员管理",
-    navOnlineUsers: "在线用户",
-    navPosts: "内容管理",
-    navFeedback: "反馈中心",
-    navReports: "举报处理",
     navAuditLogs: "审计日志",
-    navNotifyConfig: "通知配置",
+    navOnlineUsers: "在线用户",
+    navUsers: "用户管理",
+    navCertifications: "校园认证",
+    navReports: "举报处理",
+    navFeedback: "反馈中心",
     navSensitiveWords: "敏感词库",
-    navContentAudit: "内容审核",
+    navVillagePosts: "村居帖子",
+    navInterestCircles: "兴趣圈子",
+    navCircleTopics: "圈子话题",
+    navCampusTopics: "校园话题",
+    navComments: "评论管理",
+    navActivities: "活动管理",
+    navEnrollments: "报名管理",
+    navVipPlans: "VIP 套餐",
+    navVipBills: "VIP 账单",
+    navPromoCodes: "优惠码管理",
+    navWallets: "钱包管理",
+    navCoins: "金币管理",
+    navRedPackets: "红包管理",
+    navShop: "商城管理",
+    navNotifyConfig: "通知配置",
     navMatchConfig: "匹配配置",
     navConfig: "系统配置",
-    navCertifications: "校园认证",
-    navComments: "评论管理",
+    navOfficialAccounts: "官方号",
+    /* —— 多标签页（tabs-view） —— */
+    tabsClose: "关闭",
+    tabsCloseOthers: "关闭其他",
+    tabsCloseAll: "关闭全部",
+    /* —— 其他 —— */
     navAriaLabel: "主导航",
     footerCopyright: "© 2026 校园恋爱 · 仅供内部运营使用",
     userMenuTitle: "管理员中心",
@@ -128,6 +158,69 @@ export default {
     logoutSuccess: "已退出登录",
     networkError: "网络异常，请稍后重试",
     sessionExpired: "登录已过期，请重新登录",
+  },
+
+  /* ========== 后端中文菜单名翻译表（Layout.menuLabel 查表用） ==========
+   * 后端 /v1/admin/menus/current 下发 title 为中文（如「用户管理」），
+   * 侧边栏/面包屑/标签页通过 menu.<中文名> 查表翻译，未收录的标题回退原值。
+   * key 为中文本身，zh-CN 为恒等映射，en-US 提供英文翻译。 */
+  menu: {
+    系统管理: "系统管理",
+    用户与内容: "用户与内容",
+    论坛管理: "论坛管理",
+    活动运营: "活动运营",
+    商业模式: "商业模式",
+    配置管理: "配置管理",
+    数据看板: "数据看板",
+    菜单管理: "菜单管理",
+    角色管理: "角色管理",
+    高校管理: "高校管理",
+    数据字典: "数据字典",
+    管理员管理: "管理员管理",
+    审计日志: "审计日志",
+    在线用户: "在线用户",
+    用户管理: "用户管理",
+    校园认证: "校园认证",
+    举报管理: "举报管理",
+    反馈管理: "反馈管理",
+    敏感词管理: "敏感词管理",
+    村落动态: "村落动态",
+    兴趣圈管理: "兴趣圈管理",
+    圈内话题: "圈内话题",
+    校园圈话题: "校园圈话题",
+    评论管理: "评论管理",
+    活动管理: "活动管理",
+    报名管理: "报名管理",
+    "VIP 套餐": "VIP 套餐",
+    "VIP 账单": "VIP 账单",
+    兑换码: "兑换码",
+    钱包管理: "钱包管理",
+    金币管理: "金币管理",
+    红包管理: "红包管理",
+    积分商城: "积分商城",
+    通知配置: "通知配置",
+    匹配配置: "匹配配置",
+    全局配置: "全局配置",
+    官方号管理: "官方号管理",
+  },
+
+  /* ========== 商业运营（商城/兑换码/活动/报名）轻提示文案 ========== */
+  shop: {
+    created: "商品已创建",
+    updated: "商品已更新",
+    deleted: "商品已删除",
+    published: "已上架",
+    unpublished: "已下架",
+  },
+  promoCodes: {
+    exportSuccess: "已导出 CSV",
+  },
+  activities: {
+    published: "已上架",
+    unpublished: "未上架",
+  },
+  enrollments: {
+    exportSuccess: "报名数据已导出",
   },
 
   /* ========== 数据看板文案 ========== */
@@ -159,7 +252,6 @@ export default {
     activeStatsLoadFailed: "活跃度统计加载失败",
     matchStatsLoadFailed: "匹配统计加载失败",
     lastUpdated: "最近更新：{time}",
-    // infra R2-00330：看板手动刷新按钮与失败降级态文案
     refreshButton: "刷新数据",
     dataUnavailable: "数据暂不可用",
     metricLabelUsers: "用户",
@@ -199,7 +291,6 @@ export default {
     columnProfileCompletion: "资料完善度",
     columnFollowing: "关注/粉丝",
     columnActions: "操作",
-    // infra R2-00331：用户详情弹窗所需文案（getUserDetail 消费）
     columnPhone: "手机号",
     bioLabel: "个人简介",
     campusLabel: "学校",
@@ -217,7 +308,6 @@ export default {
     actionDisable: "禁用",
     actionEnable: "启用",
     actionResetPassword: "重置密码",
-    // P1 对齐（eladmin「新增用户」+「修改密码」）
     actionCreateUser: "新增用户",
     actionChangePassword: "修改密码",
     createUserTitle: "新增用户",
@@ -251,8 +341,6 @@ export default {
     unbanConfirm: "确定要解封用户 {name} 吗？",
     unbanSuccess: "已解封",
     unbanFailed: "解封失败",
-    // infra R2-00332：删除冗余 key——disableConfirm 与 disableConfirmMessage 文案完全重复，
-    // 页面实际消费 disableConfirmMessage，统一保留后者。
     disableConfirmMessage: "确定要禁用用户 {name} 吗？",
     disableUserTitle: "禁用用户",
     enableUserTitle: "启用用户",
@@ -266,8 +354,6 @@ export default {
     nicknameRequired: "昵称不能为空",
     nicknameTooLong: "昵称长度不能超过 {n} 个字符",
     editUserTitle: "编辑用户 - {name}",
-    // infra R2-00401：编辑弹窗 hint 修正——编辑接口仅支持昵称，
-    // 原文案“状态切换请使用列表中的禁用/启用按钮”与接口能力矛盾
     editNicknameHint: "此处仅可修改昵称；状态切换请使用列表中的\"禁用/启用\"按钮。",
     loadFailed: "加载用户列表失败",
     saveFailed: "保存失败",
@@ -334,6 +420,7 @@ export default {
     statusDisabled: "禁用",
     actionDisable: "禁用",
     actionEnable: "启用",
+    actionUnavailable: "不可操作",
     disableTitle: "禁用管理员",
     disableConfirm: "确定要禁用管理员 {nickname} 吗？禁用后该管理员将无法登录后台。",
     enableTitle: "启用管理员",
@@ -369,7 +456,6 @@ export default {
     filterAuditStatusAll: "全部审核状态",
     filterPostStatusAll: "全部帖子状态",
     filterCategoryAll: "全部分类",
-    // infra R2-00333：删除无消费冗余 key（posts.filterStatusAll / categoryAll 与 filterCategoryAll 重复）
     categoryInterest: "兴趣",
     categorySincere: "真诚",
     categoryHometown: "家乡",
@@ -423,7 +509,6 @@ export default {
     statsComments: "评论 {n}",
     statsShares: "分享 {n}",
     authorFallback: "用户#{id}",
-    // infra R2-00334：分类映射兜底（原白名单外直接显示英文原值）
     categoryUnknown: "其他",
     statusActive: "正常",
     statusHidden: "已隐藏",
@@ -491,7 +576,6 @@ export default {
     processedToast: "已标记为已处理",
     processFailed: "标记处理失败，请稍后重试",
     defaultReplyContent: "已由管理员标记为已处理",
-    // infra R2-00335：详情标签冒号纳入 i18n（原模板硬编码全角冒号“：”，en-US 下风格不一致）
     detailTitle: "反馈详情",
     detailContent: "反馈内容",
     detailAttachments: "附件",
@@ -576,7 +660,6 @@ export default {
     handleFailed: "处理失败",
     submitting: "提交中...",
     submitButton: "提交",
-    // infra R2-00336：提交按钮文案跟随处理决定（REJECT 时显示“驳回”，避免歧义）
     submitReject: "驳回",
     submitHandle: "标记已处理",
     targetLabel: "目标：",
@@ -619,7 +702,6 @@ export default {
     filterActionReject: "驳回",
     dateRangeSep: "至",
     queryButton: "查询",
-    // infra R2-00337：操作者 ID 筛选数字校验提示（原输入任意文本静默失效）
     operatorInvalid: "操作者ID必须为数字",
     columnId: "ID",
     columnOperator: "操作人",
@@ -648,7 +730,6 @@ export default {
     exportButton: "导出 CSV",
     exportSuccess: "已导出",
     exportFailed: "导出失败",
-    // infra R2-00338：targetType 列 i18n 映射（原直接显示英文枚举 POST/COMMENT/USER）
     targetTypePost: "帖子",
     targetTypeComment: "评论",
     targetTypeUser: "用户",
@@ -674,14 +755,26 @@ export default {
     opChangePassword: "修改密码",
     opCreateUser: "新增用户",
     opKickOnlineUser: "强制下线",
-    // P2 对齐（eladmin「异常日志」筛选）
     filterExceptionAll: "全部日志",
     filterExceptionOnly: "仅异常日志",
-    // infra R2-00434：未覆盖操作类型兜底文案
     opUnknown: "其他操作",
   },
 
   /* ========== 通知配置文案 ========== */
+  /* 官方号体系：官方号只读视图 */
+  officialAccounts: {
+    title: "官方号",
+    subtitle: "查看官方号（产品助手 / 活动运营）账号与消息流",
+    loadFailed: "官方号列表加载失败",
+    loadMessagesFailed: "消息流加载失败",
+    messageCount: "共 {n} 条消息",
+    emptyMessages: "该官方号暂无消息",
+    colType: "类型",
+    colContent: "内容",
+    colCard: "卡片",
+    colTarget: "跳转地址",
+    colPublishedAt: "发布时间",
+  },
   notifyConfig: {
     title: "通知配置",
     subtitle: "管理应用通知开关与推送策略",
@@ -697,9 +790,7 @@ export default {
     saveFailed: "保存通知配置失败",
     saveButtonShort: "保存",
     noData: "暂无通知配置",
-    // infra R2-00339：通知类型枚举 → i18n 映射（原直接展示 LIKE/COMMENT 等英文枚举）
     fieldVisitorNotify: "访客通知",
-    // infra R2-00340：保存前脏检查提示与模板长度校验
     unsavedChanges: "有未保存的修改",
     templateTooLong: "模板长度不能超过 {n} 个字符",
     sectionPush: "推送通知",
@@ -787,7 +878,6 @@ export default {
     exportFailed: "导出失败",
     loadFailed: "加载敏感词列表失败",
     noData: "暂无敏感词",
-    // infra R2-00341：敏感词复制按钮文案
     copyButton: "复制",
     copySuccess: "已复制",
     copyFailed: "复制失败",
@@ -847,7 +937,6 @@ export default {
     resetConfirm: "确定要重置为默认配置吗？",
     resetSuccess: "已重置为默认配置",
     resetFailed: "重置失败",
-    // ===== 匹配配置页（MatchConfig.vue）实际消费的 key =====
     sectionMatch: "匹配算法配置",
     sectionRecommend: "推荐策略配置",
     columnConfigKey: "配置项",
@@ -964,7 +1053,7 @@ export default {
     authorFallback: "用户#{id}",
   },
 
-  /* ========== 404 页面文案（NotFound.vue 专属，infra R2-00317） ========== */
+  /* ========== 404 页面文案（NotFound.vue 专属） ========== */
   notFound: {
     title: "页面不存在",
     description: "您访问的页面不存在或已被移除，请检查地址后重试",

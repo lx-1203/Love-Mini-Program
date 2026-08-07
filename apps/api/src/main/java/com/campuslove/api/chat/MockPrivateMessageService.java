@@ -50,4 +50,11 @@ public class MockPrivateMessageService implements PrivateMessageService {
     public void pinConversation(Long conversationId, boolean pinned, Long userId) {
         // Mock 实现：无操作
     }
+
+    // ---- M-06/P0-07：删除会话 ----
+
+    @Override
+    public void deleteConversation(Long conversationId, Long userId) {
+        // Mock 实现：无操作
+    }
 }

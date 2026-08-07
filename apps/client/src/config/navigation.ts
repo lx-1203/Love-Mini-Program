@@ -23,14 +23,26 @@ export interface AppTab {
   prominent?: boolean;
 }
 
+/**
+ * Tab 顺序（设计需求）：首页、匹配、圈子、消息、我的
+ * 注意：APP 启动默认页仍是「匹配」（pages.json 中 pages 数组第一项为
+ * pages/discover/index），tab 顺序与启动页互不影响。
+ */
 export const appTabs: AppTab[] = [
+  {
+    id: "home",
+    label: "首页",
+    path: "/pages/home/index",
+    iconPath: IMAGE_PATHS.ICONS_TABBAR.HOME_DEFAULT,
+    selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.HOME_ACTIVE,
+  },
   {
     id: "discover",
     label: "匹配",
     path: "/pages/discover/index",
     iconPath: IMAGE_PATHS.ICONS_TABBAR.DISCOVER_DEFAULT,
     selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.DISCOVER_ACTIVE,
-    // 与 custom-tab-bar/index.js 保持一致：首 tab 不使用凸起样式
+    // 与 custom-tab-bar/index.js 保持一致：不使用凸起样式
     prominent: false,
   },
   {
@@ -41,16 +53,10 @@ export const appTabs: AppTab[] = [
     selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.VILLAGE_ACTIVE,
   },
   {
-    id: "home",
-    label: "首页",
-    path: "/pages/home/index",
-    iconPath: IMAGE_PATHS.ICONS_TABBAR.HOME_DEFAULT,
-    selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.HOME_ACTIVE,
-  },
-  {
     id: "chat",
     label: "消息",
-    path: "/pages/chat/index",
+    // 2026-08-07 消息页对标微信重构：tabBar 切换到新版消息列表页（搜索/快捷入口/左滑/长按/官方号角标）
+    path: "/pages/messages/index",
     iconPath: IMAGE_PATHS.ICONS_TABBAR.CHAT_DEFAULT,
     selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.CHAT_ACTIVE,
   },

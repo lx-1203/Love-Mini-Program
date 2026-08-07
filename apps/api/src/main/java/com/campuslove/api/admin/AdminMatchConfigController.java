@@ -23,6 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
  *     <li>GET /api/admin/recommend-strategy - 推荐策略查询</li>
  *     <li>PUT /api/admin/recommend-strategy - 推荐策略更新</li>
  * </ul>
+ *
+ * <p>数据隔离说明：匹配算法/推荐策略配置为<b>全局资源</b>（全平台统一生效，
+ * 不区分校区），不做校区数据隔离；写操作仅限 SUPER_ADMIN。</p>
  */
 @Profile("real")
 @RestController

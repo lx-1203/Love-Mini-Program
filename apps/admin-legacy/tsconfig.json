@@ -1,0 +1,23 @@
+{
+  "_comment_admin_tsconfig": "apps/admin 子项目 TS 配置。通过 extends 继承根 tsconfig.base.json 的通用严格选项；本文件仅声明 admin 特有的编译选项（lib、路径别名、include 范围、references 等）。",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    /* ========== admin 特有配置 ========== */
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "../client/src/theme/**/*.ts"
+  ],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

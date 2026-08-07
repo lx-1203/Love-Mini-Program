@@ -2,6 +2,12 @@
 /**
  * 聊天页 - 会话列表
  * 连接到 useMessagesStore 获取真实会话数据，替代硬编码模拟数据
+ *
+ * P1-09：无业务入口，仅保留。
+ * tabBar「消息」已指向 /pages/messages/index（新版消息列表页），本页不再注册于
+ * pages.json（2026-08-08 移除注册），仅保留源文件以防深链/旧缓存访问时兜底。
+ * 相关引用已同步清理：pages/dev/index、pages/showcase/index 的入口条目与
+ * constants/routes.ts 的 ROUTES.TAB.CHAT（改指 /pages/messages/index）。
  */
 import { computed, onMounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
@@ -23,13 +29,18 @@ import AppShell from "../../components/layout/AppShell.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { messagesPageRequirements } from "../../config/page-access";
 import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
+// 谁喜欢我 / 我的访客：付费解锁（与 messages 页共用同一套交友币逻辑）
+import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
+import { useVipStore } from "../../stores/vip";
 
-// 同步自定义 TabBar 选中状态（消息 = 索引 3）
+// 同步自定义 TabBar 选中状态（tab 顺序：首页0/匹配1/圈子2/消息3/我的4）
 useTabBar(3);
 
 const { t } = useI18n();
 const messagesStore = useMessagesStore();
 const sessionStore = useSessionStore();
+const coinsStore = useCoinsStore();
+const vipStore = useVipStore();
 
 // 页面访问守卫
 usePageAccess(messagesPageRequirements);
@@ -87,7 +98,7 @@ function goToPublishTopic() {
 }
 
 /**
- * 点击"官方消息"系统会话卡片
+ * 点击"产品助手"系统会话卡片
  * 当前为占位提示，后续接入官方消息中心页
  */
 function handleOfficialTap() {
@@ -95,11 +106,55 @@ function handleOfficialTap() {
 }
 
 /**
- * 点击"小助手"系统会话卡片
- * 当前为占位提示，后续接入助手机器人会话
+ * 点击"活动官"系统会话卡片
+ * 当前为占位提示，后续接入活动推送会话
  */
 function handleAssistantTap() {
   uni.showToast({ title: t("chat.assistantWip"), icon: "none" });
+}
+
+/**
+ * 快捷入口：匿名匹配聊天（随机匹配陌生人）。
+ * 入口卡片，进入心动信号页。
+ */
+function handleAnonymousMatch() {
+  openAppPath(ROUTES.HEART_SIGNALS);
+}
+
+/**
+ * 快捷入口：谁喜欢我 / 我的访客（付费解锁）。
+ * 会员直接放行；其余弹确认扣交友币（UNLOCK_COST_YUAN.LIKES / VISITORS）后进入列表页。
+ * @param type - 入口类型：liked=谁喜欢我，visitors=我的访客
+ */
+function handlePaidEntry(type: "liked" | "visitors") {
+  const target = type === "liked" ? ROUTES.LIKES.INDEX : ROUTES.PROFILE.VISITORS;
+  const cost = type === "liked" ? UNLOCK_COST_YUAN.LIKES : UNLOCK_COST_YUAN.VISITORS;
+  if (vipStore.isVip) {
+    openAppPath(target);
+    return;
+  }
+  uni.showModal({
+    title: t("chat.unlockAllTitle"),
+    content: t("chat.unlockAllHint", { coins: cost }),
+    confirmText: t("common.confirm"),
+    cancelText: t("common.cancel"),
+    success: async (res) => {
+      if (!res.confirm) return;
+      try {
+        await coinsStore.spend(type === "liked" ? "LIKES" : "VISITORS", "");
+        uni.showToast({ title: t("discover.unlockSuccess"), icon: "success" });
+        setTimeout(() => openAppPath(target), 400);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        uni.showModal({
+          title: t("discover.unlockFailTitle"),
+          content: message,
+          confirmText: t("common.gotIt"),
+          showCancel: false,
+        });
+      }
+    },
+  });
 }
 
 /** 下拉刷新 */
@@ -123,6 +178,10 @@ onShow(() => {
     void messagesStore.fetchSessions();
   }
 });
+
+// 修复（严格模式 noUnusedLocals）：handleAnonymousMatch/handlePaidEntry 通过 @tap
+// 绑定在模板（v-if 条件块内），vue-tsc 无法识别该场景，故通过 defineExpose 标记为已使用。
+defineExpose({ handleAnonymousMatch, handlePaidEntry });
 </script>
 
 <template>
@@ -141,6 +200,60 @@ onShow(() => {
     :subtitle="t('chat.sessionSubtitle')"
     :tab-bar-safe="true"
   >
+      <!-- 快捷功能入口区（设计需求）：匿名匹配聊天 / 谁喜欢我 / 我的访客 -->
+      <view class="quick-entries" role="list">
+        <view
+          class="quick-entry press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('chat.anonymousMatch')"
+          @tap="handleAnonymousMatch"
+        >
+          <view class="quick-entry__icon quick-entry__icon--signal">
+            <image class="quick-entry__img" :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL" mode="aspectFit" alt="" />
+          </view>
+          <text class="quick-entry__title">{{ t('chat.anonymousMatch') }}</text>
+          <text class="quick-entry__desc">{{ t('chat.anonymousMatchDesc') }}</text>
+        </view>
+        <view
+          class="quick-entry press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('chat.likedMe')"
+          @tap="handlePaidEntry('liked')"
+        >
+          <view class="quick-entry__icon quick-entry__icon--like">
+            <image class="quick-entry__img" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
+          </view>
+          <text class="quick-entry__title">{{ t('chat.likedMe') }}</text>
+          <text class="quick-entry__desc">{{ t('chat.likedMeDesc') }}</text>
+          <!-- 小锁标识（右下角，付费解锁） -->
+          <view class="quick-entry__lock">
+            <text class="quick-entry__lock-text">🔒</text>
+          </view>
+        </view>
+        <view
+          class="quick-entry press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('chat.myVisitors')"
+          @tap="handlePaidEntry('visitors')"
+        >
+          <view class="quick-entry__icon quick-entry__icon--visitors">
+            <image class="quick-entry__img" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+          </view>
+          <text class="quick-entry__title">{{ t('chat.myVisitors') }}</text>
+          <text class="quick-entry__desc">{{ t('chat.myVisitorsDesc') }}</text>
+          <!-- 小锁标识（右下角，付费解锁） -->
+          <view class="quick-entry__lock">
+            <text class="quick-entry__lock-text">🔒</text>
+          </view>
+        </view>
+      </view>
+
       <!-- 错误状态 -->
       <ErrorState
         v-if="errorMessage && privateSessions.length === 0"
@@ -263,7 +376,10 @@ onShow(() => {
                 <text class="conversation-item__time">{{ formatChatTime(conv.lastMessageSentAt) }}</text>
               </view>
               <view class="conversation-item__bottom">
-                <text class="conversation-item__message">{{ conv.lastMessagePreview }}</text>
+                <text
+                  class="conversation-item__message"
+                  :class="{ 'conversation-item__message--read': conv.unreadCount === 0 }"
+                >{{ conv.lastMessagePreview }}</text>
                 <view v-if="conv.unreadCount > 0" class="conversation-item__badge">
                   <text class="conversation-item__badge-text">
                     {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
@@ -286,6 +402,88 @@ onShow(() => {
 </template>
 
 <style scoped lang="scss">
+/* ========== 快捷功能入口区（设计需求：3 个均等宽度浅底圆角卡片） ========== */
+.quick-entries {
+  display: flex;
+  gap: 16rpx;
+  margin: 0 var(--sp-8) var(--sp-5);
+}
+
+.quick-entry {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  padding: 24rpx 12rpx 20rpx;
+  border-radius: var(--r-xl);
+  background: var(--c-bg-brand, #f0fdf9);
+  border: 1rpx solid var(--c-brand-100, #ccfbef);
+}
+
+.quick-entry__icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4rpx;
+}
+
+.quick-entry__icon--signal {
+  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
+}
+
+.quick-entry__icon--like {
+  background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
+}
+
+.quick-entry__icon--visitors {
+  background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
+}
+
+.quick-entry__img {
+  width: 36rpx;
+  height: 36rpx;
+  filter: brightness(0) invert(1);
+}
+
+.quick-entry__title {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  text-align: center;
+}
+
+.quick-entry__desc {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* 小锁标识：右下角（设计需求，付费解锁功能） */
+.quick-entry__lock {
+  position: absolute;
+  right: 10rpx;
+  bottom: 10rpx;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 8rpx rgba(15, 23, 42, 0.12);
+}
+
+.quick-entry__lock-text {
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+
 /* ========== 滚动区域 ========== */
 .chat-scroll {
   flex: 1;
@@ -424,6 +622,12 @@ onShow(() => {
   white-space: nowrap;
   flex: 1;
   margin-right: var(--sp-4);
+}
+
+/* 已读会话弱化（设计需求：已读文字浅灰，视觉突出未读会话） */
+.conversation-item__message--read {
+  color: var(--c-text-tertiary);
+  font-weight: 400;
 }
 
 .conversation-item__badge {

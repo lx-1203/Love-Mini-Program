@@ -26,15 +26,19 @@ RUN corepack enable && corepack prepare pnpm@11.17.0 --activate
 
 WORKDIR /build
 
-# 复制 package.json 与 lockfile，先安装依赖（利用 Docker 缓存）
-COPY package.json pnpm-lock.yaml* ./
+# 构建上下文为仓库根（docker-compose.yml 中 context 已改为 "."）：
+# apps/admin 目录本身没有 lockfile，pnpm-lock.yaml / pnpm-workspace.yaml 位于仓库根，
+# 必须从仓库根复制并以 workspace 模式安装，才能使用 --frozen-lockfile 锁定版本。
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/admin/package.json apps/admin/package.json
 
 # 安装生产与开发依赖（构建期需要 devDependencies：vite、vue-tsc 等）
+# workspace 模式下仅安装仓库中实际存在的子包（apps/admin）；
 # 强制 --frozen-lockfile：lockfile 与 package.json 不一致时构建失败而非静默回退（infra #36）
 RUN pnpm install --frozen-lockfile
 
-# 复制源码
-COPY . .
+# 复制 admin 源码（其余 workspace 子包不复制，减小构建上下文）
+COPY apps/admin/ ./apps/admin/
 
 # 注入构建时变量（默认占位，可通过 --build-arg 覆盖）
 ARG VITE_API_BASE_URL=/api
@@ -43,7 +47,8 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL} \
     VITE_APP_VERSION=${VITE_APP_VERSION} \
     NODE_ENV=production
 
-# 构建生产产物
+# 构建生产产物（在 admin 包目录内执行，vite 按 apps/admin 根目录解析配置）
+WORKDIR /build/apps/admin
 RUN pnpm run build
 
 # ---------- Stage 2: Runtime ----------
@@ -57,10 +62,11 @@ LABEL org.opencontainers.image.title="campus-love-admin" \
 RUN apk add --no-cache curl
 
 # 复制自定义 nginx 配置（SPA 路由 fallback + gzip + API 反代）
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+# 注意：构建上下文已改为仓库根，nginx.conf 位于 apps/admin/docker/ 下
+COPY apps/admin/docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-# 复制构建产物到 nginx 静态目录
-COPY --from=builder /build/dist /usr/share/nginx/html
+# 复制构建产物到 nginx 静态目录（builder 在 /build/apps/admin 下构建）
+COPY --from=builder /build/apps/admin/dist /usr/share/nginx/html
 
 # 创建非 root 用户运行 nginx（nginx 默认以 root 启动 master，需调整）
 # 注：nginx master 监听 80 端口需特权，这里改用 8080 端口避免 root
@@ -88,7 +94,7 @@ FROM aquasec/trivy:0.53.0 AS trivy-scanner
 WORKDIR /scan
 
 # 复制 builder 阶段产出的静态资源到扫描目录
-COPY --from=builder /build/dist /scan/dist
+COPY --from=builder /build/apps/admin/dist /scan/dist
 
 # Trivy 文件系统扫描：HIGH+CRITICAL 级别漏洞，命中即失败
 RUN trivy fs --severity HIGH,CRITICAL --exit-code 1 /scan

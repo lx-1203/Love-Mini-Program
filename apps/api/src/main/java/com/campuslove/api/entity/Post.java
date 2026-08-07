@@ -120,6 +120,13 @@ public class Post {
     private PostStatus status = PostStatus.active;
 
     /**
+     * 是否置顶（管理后台论坛分页管理维护，村口列表置顶优先展示）。
+     * <p>对应 posts.is_pinned 列（V2026.08.07.0017 迁移新增），默认 false。</p>
+     */
+    @Column(name = "is_pinned", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    private Boolean isPinned = false;
+
+    /**
      * 审核状态。
      * <p>由管理后台审核接口维护，与 status 正交：
      * status 控制"是否软删/隐藏"，audit_status 控制"管理员审核结果"。</p>
@@ -248,6 +255,14 @@ public class Post {
 
     public void setStatus(PostStatus status) {
         this.status = status;
+    }
+
+    public Boolean getIsPinned() {
+        return isPinned;
+    }
+
+    public void setIsPinned(Boolean isPinned) {
+        this.isPinned = isPinned;
     }
 
     public AuditStatus getAuditStatus() {

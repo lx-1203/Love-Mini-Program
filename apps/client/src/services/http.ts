@@ -214,6 +214,36 @@ addRequestInterceptor((config) => {
   return config;
 });
 
+/* ========== 默认请求拦截器：写操作自动附加幂等键 ========== */
+
+/**
+ * P0-01 修复：为写操作（POST/PUT/DELETE/PATCH）自动附加幂等键。
+ *
+ * 后端 {@code @Idempotent}（IdempotentInterceptor）对标注的写端点强制要求
+ * {@code Idempotency-Key} 请求头（缺失返回 400「缺少 Idempotency-Key 请求头」），
+ * 但客户端大量调用点未手动设置该头，real 模式下会被后端拒绝。
+ *
+ * 此拦截器在请求发出前为写操作自动生成唯一幂等键（每次请求唯一），
+ * 兼容性设计：
+ * - 调用方已手动设置 Idempotency-Key 的请求（签到 / 充值 / 活动报名 / 解锁等）不覆盖，
+ *   保留业务语义（如同一用户当日签到固定 key，重复点击被后端幂等去重）；
+ * - GET 请求不加（幂等键仅用于写操作去重）。
+ */
+addRequestInterceptor((config) => {
+  const method = String(config.method || "GET").toUpperCase();
+  if (method === "POST" || method === "PUT" || method === "DELETE" || method === "PATCH") {
+    if (!config.header) {
+      config.header = {};
+    }
+    const header = config.header as Record<string, string>;
+    // 已有手动设置的幂等键不覆盖（签到/充值/解锁等固定 key 场景）
+    if (!header["Idempotency-Key"]) {
+      header["Idempotency-Key"] = `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+  }
+  return config;
+});
+
 /* ========== 默认响应拦截器：规范化错误码 ========== */
 
 /**
@@ -255,6 +285,41 @@ function normalizeErrorCode(statusCode: number): string {
   if (statusCode >= 500) return "server_error";
   return "request_error";
 }
+
+/* ========== 默认响应拦截器：ApiResponse 信封解包（2026-08-07 契约修复） ========== */
+
+/**
+ * 统一解包后端 ApiResponse<T> 信封。
+ *
+ * 后端约定（Task 2.4.2，ApiResponse Javadoc）所有 Controller 返回
+ * {code, message, data, traceId} 信封；但历史端点（auth/me、wechat-login、
+ * recommendations 等）直接返回扁平载荷，客户端调用方统一按扁平解析
+ * （如 check-in/status 的信封导致 checkedInToday 等字段在客户端被静默丢弃）。
+ *
+ * 此拦截器在 2xx 且响应体形如成功信封（code===0 且含 message/data）时，
+ * 将 response.data 替换为信封内层 data，兼容信封与扁平两种形态。
+ *
+ * 安全边界：
+ * - 仅对 2xx 生效；非 2xx 错误体（{error, message, status}）不受影响；
+ * - 仅当 code 为数字 0 且同时存在 message/data 字段才解包，
+ *   扁平载荷（如 UserSessionView / LoginHeroConfig / 数组）不含这些字段，原样透传。
+ */
+addResponseInterceptor((response) => {
+  const { statusCode, data } = response;
+  if (statusCode >= 200 && statusCode < 300 && data && typeof data === "object") {
+    const record = data as Record<string, unknown>;
+    if (
+      typeof record.code === "number" &&
+      record.code === 0 &&
+      typeof record.message === "string" &&
+      "data" in record
+    ) {
+      // 信封内层 data 为业务载荷，类型与响应类型参数一致（unknown → 目标泛型）
+      response.data = record.data as UniApp.RequestSuccessCallbackResult["data"];
+    }
+  }
+  return response;
+});
 
 /* ========== 401 处理：并发刷新队列（Promise 队列模式） ========== */
 
@@ -310,26 +375,38 @@ let refreshPromise: Promise<string> | null = null;
 /**
  * 尝试刷新 Token。
  * 如果刷新成功，更新存储并返回 true；否则返回 false。
+ *
+ * 修复（P0-02）：后端 AuthController.refreshToken 从 Authorization 头提取旧令牌，
+ * 请求体字段已废弃——原实现带 { refreshToken } body 且无认证头，real 模式 401。
+ * 现改为：取当前访问令牌（getToken()），携带 Authorization: Bearer 头、
+ * 不放 body 调用 POST /auth/refresh；成功后 setToken 返回 true，无 token 直接返回 false。
+ * （getRefreshToken/setRefreshToken 保留导出供其他引用方使用，本流程不再依赖 refreshToken）
  */
 async function tryRefreshToken(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
+  const token = getToken();
+  if (!token) {
     return false;
   }
 
   try {
-    const result = await new Promise<{ token?: string; refreshToken?: string }>((resolve, reject) => {
+    const result = await new Promise<{ token?: string }>((resolve, reject) => {
       uni.request({
         // P3 联调：refresh 端点同样补齐 /v1 前缀（原缺少 /v1，real 模式 404）
         url: `${appEnv.apiBaseUrl}${normalizeApiPath("/auth/refresh")}`,
         method: "POST",
-        data: { refreshToken },
+        // P0-02：不放 body，旧令牌通过 Authorization 头传递；
+        // 每次刷新生成唯一幂等键（后端 @Idempotent 强制要求 Idempotency-Key 头）
+        header: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "Idempotency-Key": `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        },
         // 修复（P1 BUG）：刷新请求必须带超时，避免刷新接口无响应时
         // refreshPromise 永久挂起，导致所有后续 401 请求全部被阻塞。
         timeout: REFRESH_TIMEOUT_MS,
         success: (res) => {
           if (res.statusCode === 200) {
-            resolve(res.data as { token?: string; refreshToken?: string });
+            resolve(res.data as { token?: string });
           } else {
             reject(new Error("Token refresh failed"));
           }
@@ -340,9 +417,6 @@ async function tryRefreshToken(): Promise<boolean> {
 
     if (result.token) {
       setToken(result.token);
-      if (result.refreshToken) {
-        setRefreshToken(result.refreshToken);
-      }
       return true;
     }
   } catch (_e) {
@@ -631,13 +705,21 @@ function doRequest<TResponse, TBody>(
       // 原实现只 addEventListener 不 remove，同一 AbortSignal 被多个请求
       // 复用时（如 useAbortOnHide 的页面级 signal）监听器持续累积泄漏，
       // 且后续 abort 会反复 abort 早已完成的 requestTask。
+      //
+      // 修复（P0 BUG / 2026-08-07）：原实现直接 `resolve = wrappedResolve`，
+      // 而 wrappedResolve 闭包内调用的是同一个局部变量 resolve——重赋值后
+      // 闭包内 resolve 指向 wrappedResolve 自身，任何 settle 都会无限递归
+      // （RangeError: Maximum call stack size exceeded at removeEventListener）。
+      // 必须先保存原始 resolve/reject 引用，包装函数调用原始引用。
+      const originalResolve = resolve;
+      const originalReject = reject;
       const removeAbortListener = () => {
         if (typeof signal.removeEventListener === "function") {
           signal.removeEventListener("abort", onAbort);
         }
       };
-      const wrappedResolve = (value: TResponse | PromiseLike<TResponse>) => { removeAbortListener(); resolve(value); };
-      const wrappedReject = (err: unknown) => { removeAbortListener(); reject(err); };
+      const wrappedResolve = (value: TResponse | PromiseLike<TResponse>) => { removeAbortListener(); originalResolve(value); };
+      const wrappedReject = (err: unknown) => { removeAbortListener(); originalReject(err); };
 
       // 兼容性处理：优先使用 addEventListener，不支持时回退到 onabort
       if (typeof signal.addEventListener === "function") {

@@ -146,11 +146,28 @@ public class MatchRecorder {
      */
     @Transactional
     public HeartSignal createMutualSignal(Long userId, Long targetUserId, LocalDateTime now) {
+        return createMutualSignal(userId, targetUserId, now, "mutual_like");
+    }
+
+    /**
+     * 创建双向喜欢的心动信号（支持匹配类型区分）。
+     *
+     * <p>A-25/A-31：超级喜欢生成的信号 matchType=super_like，与普通喜欢
+     * （mutual_like）区分——super-like 不受每日上限限制且权重更高，
+     * 上层（推荐/匹配）可按 matchType 差异化处理。</p>
+     *
+     * @param userId       用户 A ID
+     * @param targetUserId 用户 B ID
+     * @param now          当前时间
+     * @param matchType    匹配类型（mutual_like / super_like）
+     */
+    @Transactional
+    public HeartSignal createMutualSignal(Long userId, Long targetUserId, LocalDateTime now, String matchType) {
         HeartSignal signal = new HeartSignal();
         signal.setUserAId(userId);
         signal.setUserBId(targetUserId);
         signal.setStatus(SignalStatus.pending);
-        signal.setMatchType("mutual_like");
+        signal.setMatchType(matchType != null ? matchType : "mutual_like");
         signal.setExpiresAt(now.plusHours(matchConfig.getHeartSignalExpireHours()));
         signal.setCreatedAt(now);
         signal.setUpdatedAt(now);

@@ -44,6 +44,9 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>DELETE /api/admin/sensitive-words/{id}           - 删除敏感词</li>
  *   <li>POST   /api/admin/sensitive-words/batch-import   - SubTask 5.3.5：批量异步导入敏感词</li>
  * </ul>
+ *
+ * <p>数据隔离说明：敏感词为<b>全局资源</b>（作用于全平台内容过滤，不区分校区），
+ * 不做校区数据隔离；新增/删除仅限 SUPER_ADMIN。</p>
  */
 @Profile("real")
 @RestController

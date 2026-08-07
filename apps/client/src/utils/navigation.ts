@@ -38,24 +38,106 @@ export interface OpenPathOptions {
 /**
  * 打开应用内页面（push 语义）。
  *
- * - TabBar 页面：调用 `uni.switchTab`（不能携带 query string）
+ * - TabBar 页面：调用 `uni.switchTab`（不能携带 query string）。
+ *   若 URL 带 query，P1-04 修复：将 query 写入 pending-tab-query storage 桥接
+ *   （JSON 存 {path, query}）后再 switchTab，目标 Tab 页在 onShow 中经
+ *   consumePendingTabQuery 读取消费，避免 query 被静默丢弃。
  * - 非 TabBar 页面：调用 `uni.navigateTo`，保留当前页在页面栈中
  *
  * infra R2-00132: 增加可选 fail 回调，调用方可感知跳转失败（页面不存在/被拦截等），
  * 统一由本封装处理 tab/普通页判断，避免调用点散落 switchTab/navigateTo 分支。
  *
- * @param url - 目标页面 URL，可携带 query string（仅非 TabBar 页面有效）
+ * @param url - 目标页面 URL，可携带 query string（TabBar 页面的 query 走 storage 桥接）
  * @param options - 跳转选项（fail 回调等）
  */
 export function openAppPath(url: string, options: OpenPathOptions = {}) {
   const normalizedUrl = normalizeUrl(url);
 
   if (isTabPath(normalizedUrl)) {
+    // P1-04：tab 页带 query 时先写入 storage 桥接，再 switchTab
+    // （uni.switchTab 不支持 query，直接调用会报 "can not navigateTo a tabbar page" 或静默丢弃）
+    const queryIndex = normalizedUrl.indexOf("?");
+    if (queryIndex >= 0) {
+      const path = normalizedUrl.slice(0, queryIndex);
+      const queryStr = normalizedUrl.slice(queryIndex + 1);
+      const query: Record<string, string> = {};
+      // 手动解析 query string（避免依赖 mp-weixin 可能缺失的 URLSearchParams）
+      try {
+        if (queryStr) {
+          queryStr.split("&").forEach((pair) => {
+            const eqIdx = pair.indexOf("=");
+            if (eqIdx > 0) {
+              const key = pair.slice(0, eqIdx);
+              const value = pair.slice(eqIdx + 1);
+              if (key) {
+                query[key] = decodeURIComponent(value);
+              }
+            }
+          });
+        }
+      } catch (_e) {
+        // query 解析失败（如非法转义）时视为无 query，按普通 tab 切换处理
+      }
+      storePendingTabQuery(path, query);
+      uni.switchTab({ url: path, fail: options.fail });
+      return;
+    }
     uni.switchTab({ url: normalizedUrl, fail: options.fail });
     return;
   }
 
   uni.navigateTo({ url: normalizedUrl, fail: options.fail });
+}
+
+/**
+ * TabBar 页面带参跳转的 storage 桥接 key（P1-04）。
+ *
+ * 存 JSON {path, query}：path 用于目标页面匹配自身路径，避免跨 Tab 误消费；
+ * query 为解析后的参数对象。与既有 TAB_QUERY_KEY（switchTabWithQuery，无 path 匹配）
+ * 互补：本桥接供 openAppPath 通用入口使用，village Tab 的显式 tab=hot/mine 仍走旧键。
+ */
+export const PENDING_TAB_QUERY_KEY = "campus-love:pending-tab-query";
+
+/** 写入待消费的 Tab 页 query（openAppPath 内部使用） */
+export function storePendingTabQuery(path: string, query: Record<string, string>): void {
+  try {
+    uni.setStorageSync(PENDING_TAB_QUERY_KEY, { path, query });
+  } catch (_e) {
+    // 存储失败时静默（query 丢失但不影响页面切换）
+  }
+}
+
+/**
+ * 消费匹配指定路径的 Tab 页 query（P1-04）。
+ *
+ * 目标 Tab 页在 onShow/onLoad 中调用：仅当存储的 path 与当前页面路径一致时
+ * 读取并清除 query（即读即清，防止残留被下次冷启动误消费）。
+ *
+ * @param path - 当前页面路径（如 "/pages/profile/index"）
+ * @returns 匹配的 query 对象；不匹配或不存在时返回空对象
+ */
+export function consumePendingTabQuery(path: string): Record<string, string> {
+  try {
+    const raw = uni.getStorageSync(PENDING_TAB_QUERY_KEY) as
+      | { path?: string; query?: Record<string, string> }
+      | undefined;
+    if (
+      raw &&
+      !Array.isArray(raw) &&
+      typeof raw === "object" &&
+      typeof raw.path === "string" &&
+      raw.path === path &&
+      raw.query &&
+      typeof raw.query === "object" &&
+      !Array.isArray(raw.query)
+    ) {
+      uni.removeStorageSync(PENDING_TAB_QUERY_KEY);
+      return raw.query;
+    }
+  } catch (_e) {
+    // 读取失败视为无 query
+  }
+  return {};
 }
 
 /** TabBar 页面 query 暂存 key（switchTab 不支持 query，用本地存储桥接） */

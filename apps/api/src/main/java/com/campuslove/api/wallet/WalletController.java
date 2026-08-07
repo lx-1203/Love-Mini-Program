@@ -1,16 +1,26 @@
 package com.campuslove.api.wallet;
 
+import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,10 +63,50 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 public class WalletController {
 
-    private final WalletService walletService;
+    private static final Logger log = LoggerFactory.getLogger(WalletController.class);
 
-    public WalletController(WalletService walletService) {
+    /** 演示充值每日计数 Redis key 前缀（P0-15 演示充值风控）。 */
+    private static final String REDIS_KEY_PREFIX_DEMO_RECHARGE = "demo-recharge:count:";
+
+    /** 日期格式（yyyyMMdd），用于组装每日计数 key。 */
+    private static final DateTimeFormatter DATE_KEY_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    /** 每日演示充值计数 TTL：36 小时（覆盖跨自然日，避免 Redis 无限增长）。 */
+    private static final long DEMO_RECHARGE_COUNT_TTL_HOURS = 36L;
+
+    private final WalletService walletService;
+    /**
+     * P0-17：商业化解锁服务（喜欢我列表 / 访客列表付费解锁）。
+     * 双 profile 可用：real 走 {@link RealWalletUnlockService}（数据库），
+     * mock 走 {@link MockWalletUnlockService}（内存）。
+     */
+    private final WalletUnlockService walletUnlockService;
+
+    /**
+     * P0-15：演示充值开关（配置 app.demo-recharge.enabled）。
+     * 默认开启（保留演示能力）；生产环境必须通过 APP_DEMO_RECHARGE_ENABLED=false 关闭，
+     * 并接入支付网关回调入账（见 {@link #recharge} 说明）。
+     */
+    @Value("${app.demo-recharge.enabled:true}")
+    private boolean demoRechargeEnabled;
+
+    /** P0-15：每用户每日演示充值次数上限（配置 app.demo-recharge.daily-limit，默认 5 次）。 */
+    @Value("${app.demo-recharge.daily-limit:5}")
+    private int demoRechargeDailyLimit;
+
+    /**
+     * Redis 模板（可选注入）：演示充值每日计数持久化。
+     * Redis 不可用时降级到本地内存 {@link #localDemoRechargeCount}（单实例方案）。
+     */
+    @Autowired(required = false)
+    private RedisTemplate<String, Object> redisTemplate;
+
+    /** Redis 不可用时的本地内存每日计数降级方案。 */
+    private final ConcurrentHashMap<String, Integer> localDemoRechargeCount = new ConcurrentHashMap<>();
+
+    public WalletController(WalletService walletService, WalletUnlockService walletUnlockService) {
         this.walletService = walletService;
+        this.walletUnlockService = walletUnlockService;
     }
 
     /**
@@ -99,6 +149,15 @@ public class WalletController {
      * <b>生产环境必须接入支付网关（微信支付/支付宝）+ 支付回调验签</b>，
      * 仅在支付回调确认成功后入账，本端点应替换为"创建充值订单"语义。</p>
      *
+     * <p>P0-15 演示充值风控：</p>
+     * <ul>
+     *   <li>开关控制：{@code app.demo-recharge.enabled} 默认开启（保留本地演示/联调），
+     *       生产环境必须通过 {@code APP_DEMO_RECHARGE_ENABLED=false} 关闭，关闭后本端点返回业务错误</li>
+     *   <li>每日上限：每用户每日最多演示充值 {@code app.demo-recharge.daily-limit} 次（默认 5），
+     *       通过 Redis 计数（key {@code demo-recharge:count:{userId}:{yyyyMMdd}}，INCR 原子递增），
+     *       Redis 不可用时降级到本地内存计数；超限返回 429 DAILY_LIMIT_EXCEEDED</li>
+     * </ul>
+     *
      * <p>幂等：{@link Idempotent}（Idempotency-Key 头）防止重复提交；
      * 服务层 orderId（UUID）配合 order_id 唯一索引兜底。</p>
      *
@@ -110,12 +169,90 @@ public class WalletController {
     @PreAuthorize("hasRole('USER')")
     public WalletRechargeView recharge(@Valid @RequestBody RechargeRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
+        // P0-15：演示充值开关——生产环境关闭后禁止直接入账（必须走支付网关回调）
+        if (!demoRechargeEnabled) {
+            log.warn("演示充值已被配置禁用（app.demo-recharge.enabled=false），userId={}", userId);
+            throw new IllegalStateException("演示充值已关闭，请通过官方充值渠道完成支付");
+        }
+        // P0-15：每日演示充值次数上限（原子占用额度，超限回滚递增）
+        if (!tryIncrementDemoRechargeCount(userId)) {
+            throw new DailyLimitExceededException(
+                    "演示充值",
+                    demoRechargeDailyLimit,
+                    "今日演示充值次数已用完（上限 " + demoRechargeDailyLimit + " 次），请明日再来");
+        }
         // 演示充值：服务端生成订单号（UUID）；生产接入支付后，orderId 应由支付回调上下文确定
         String orderId = "WALLET-RECHARGE-" + UUID.randomUUID();
         Long balanceAfter = walletService.recharge(userId, request.amountCents(), orderId,
                 WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE, null);
         return new WalletRechargeView(balanceAfter, request.amountCents(), orderId,
                 WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE);
+    }
+
+    /**
+     * P0-15：原子尝试占用今日一次演示充值额度（INCR 返回值判断，参考 MatchPolicy 反悔计数模式）。
+     *
+     * <p>Redis 侧：{@code INCR} 返回值超过 {@link #demoRechargeDailyLimit} 时回滚递减并返回 false；
+     * 本地降级方案：synchronized 临界区内判断。首次递增时设置 36 小时 TTL 自动清理。</p>
+     *
+     * @param userId 用户 ID
+     * @return true 表示成功占用额度；false 表示已达今日上限
+     */
+    private boolean tryIncrementDemoRechargeCount(Long userId) {
+        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String localKey = userId + ":" + dateKey;
+        try {
+            if (redisTemplate != null) {
+                String redisKey = REDIS_KEY_PREFIX_DEMO_RECHARGE + userId + ":" + dateKey;
+                Long newValue = redisTemplate.opsForValue().increment(redisKey);
+                if (newValue != null && newValue == 1L) {
+                    redisTemplate.expire(redisKey, DEMO_RECHARGE_COUNT_TTL_HOURS, TimeUnit.HOURS);
+                }
+                if (newValue != null && newValue > demoRechargeDailyLimit) {
+                    // 超限回滚递增，保证计数不漂移
+                    redisTemplate.opsForValue().decrement(redisKey);
+                    return false;
+                }
+                return true;
+            }
+        } catch (RuntimeException e) {
+            log.warn("写入 Redis 演示充值计数失败，降级使用本地内存方案：{}", e.getMessage());
+        }
+        // 本地降级方案（无 Redis 时）：临界区内判断+递增，保证单实例内原子性
+        synchronized (localDemoRechargeCount) {
+            int next = localDemoRechargeCount.getOrDefault(localKey, 0) + 1;
+            if (next > demoRechargeDailyLimit) {
+                return false;
+            }
+            localDemoRechargeCount.put(localKey, next);
+            return true;
+        }
+    }
+
+    /**
+     * 商业化解锁（P0-17）：解锁"喜欢我列表 / 访客列表"等内容。
+     *
+     * <p>契约（客户端依赖）：</p>
+     * <ul>
+     *   <li>请求体 {@code {targetType, targetId}}，targetType ∈ {LIKED_ME, VISITOR}（白名单）</li>
+     *   <li>已解锁：直接返回 {@code {unlocked:true, balance}}，不重复扣费</li>
+     *   <li>未解锁：按配置单价（{@code app.unlock-price.liked-me / app.unlock-price.visitor}，
+     *       单位分）扣费并记录解锁，返回 {@code {unlocked:true, balance}}</li>
+     *   <li>余额不足：返回 400 INSUFFICIENT_BALANCE 业务错误（GlobalExceptionHandler 统一映射）</li>
+     * </ul>
+     *
+     * <p>幂等：{@link Idempotent}（Idempotency-Key 头）+ 服务层 orderId 唯一索引
+     * + wallet_unlocks 表 uk_user_target 唯一约束三重保障，重复解锁不重复扣费。</p>
+     *
+     * @param request 解锁请求体（targetType：解锁目标类型；targetId：目标用户 ID）
+     * @return 解锁结果视图（{@code {unlocked:true, balance}}）
+     */
+    @PostMapping("/unlock")
+    @Idempotent
+    @PreAuthorize("hasRole('USER')")
+    public WalletUnlockView unlock(@Valid @RequestBody UnlockRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return walletUnlockService.unlock(userId, request.targetType(), request.targetId());
     }
 
     /**
@@ -230,4 +367,18 @@ record RechargeRequest(
         @Min(value = 1, message = "充值金额必须大于 0")
         @Max(value = 100_000_000, message = "单次充值金额超出上限")
         Long amountCents) {
+}
+
+/**
+ * 商业化解锁请求体（P0-17）。
+ *
+ * @param targetType 解锁目标类型：LIKED_ME（喜欢我列表）/ VISITOR（访客列表），服务层白名单校验
+ * @param targetId   解锁目标 ID（对方用户 ID）
+ */
+record UnlockRequest(
+        @NotNull(message = "解锁类型不能为空")
+        String targetType,
+        @NotNull(message = "解锁目标 ID 不能为空")
+        @Min(value = 1, message = "解锁目标 ID 必须为正数")
+        Long targetId) {
 }

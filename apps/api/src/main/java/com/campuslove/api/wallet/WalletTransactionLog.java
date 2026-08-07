@@ -81,6 +81,14 @@ public class WalletTransactionLog {
     public static final String RELATED_TYPE_RED_PACKET_REFUND = "RED_PACKET_REFUND";
     /** 关联业务类型：钱包充值（演示/模拟充值入口，走查补齐） */
     public static final String RELATED_TYPE_WALLET_RECHARGE = "WALLET_RECHARGE";
+    /** 关联业务类型：签到奖励入账（P0-23 签到钱包联动） */
+    public static final String RELATED_TYPE_CHECKIN = "CHECKIN";
+    /** 关联业务类型：商业化解锁-喜欢我列表（P0-17，targetId=对方用户 ID） */
+    public static final String RELATED_TYPE_UNLOCK_LIKED_ME = "UNLOCK_LIKED_ME";
+    /** 关联业务类型：商业化解锁-访客列表（P0-17，targetId=对方用户 ID） */
+    public static final String RELATED_TYPE_UNLOCK_VISITOR = "UNLOCK_VISITOR";
+    /** 关联业务类型：AI 情话解锁（预留，P0-17 白名单成员） */
+    public static final String RELATED_TYPE_SWEET_TALK = "SWEET_TALK";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

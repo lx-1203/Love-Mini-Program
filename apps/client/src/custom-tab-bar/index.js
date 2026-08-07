@@ -37,12 +37,20 @@ Component({
   data: {
     tabs: [
       {
+        id: "home",
+        label: "首页",
+        path: "pages/home/index",
+        iconPath: "/static/assets/icons/tabbar/home-default.png",
+        activeIconPath: "/static/assets/icons/tabbar/home-active.png",
+        prominent: false,
+      },
+      {
         id: "discover",
         label: "匹配",
         path: "pages/discover/index",
         iconPath: "/static/assets/icons/tabbar/discover-default.png",
         activeIconPath: "/static/assets/icons/tabbar/discover-active.png",
-        // discover 作为首 tab，不再使用中间凸起样式，避免视觉/热区错位导致切换异常
+        // 匹配页是启动默认页（pages 数组第一项），但 tab 顺序中位于第 2 位
         prominent: false,
       },
       {
@@ -54,17 +62,9 @@ Component({
         prominent: false,
       },
       {
-        id: "home",
-        label: "首页",
-        path: "pages/home/index",
-        iconPath: "/static/assets/icons/tabbar/home-default.png",
-        activeIconPath: "/static/assets/icons/tabbar/home-active.png",
-        prominent: false,
-      },
-      {
         id: "chat",
         label: "消息",
-        path: "pages/chat/index",
+        path: "pages/messages/index",
         iconPath: "/static/assets/icons/tabbar/chat-default.png",
         activeIconPath: "/static/assets/icons/tabbar/chat-active.png",
         prominent: false,
@@ -79,7 +79,24 @@ Component({
       },
     ],
   },
+  // 按当前页面路由动态同步选中态：
+  // 冷启动默认页是「匹配」（discover，第 2 个 tab），若经分享/场景值
+  // 直达任意 tab 页，也需让高亮跟随实际页面，不能依赖 selected 默认值 0。
+  pageLifetimes: {
+    show() {
+      this.syncSelected();
+    },
+  },
   methods: {
+    syncSelected() {
+      const pages = getCurrentPages();
+      if (!pages || !pages.length) return;
+      const route = pages[pages.length - 1].route || "";
+      const index = this.data.tabs.findIndex((tab) => tab.path === route);
+      if (index >= 0 && index !== this.data.selected) {
+        this.setData({ selected: index });
+      }
+    },
     switchTab(e) {
       const index = e.currentTarget.dataset.index;
       const tab = this.data.tabs[index];

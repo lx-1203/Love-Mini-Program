@@ -13,12 +13,27 @@
  * - 金额单位：分 ↔ 元转换在前端完成
  */
 import { ref, computed } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { usePromoCodeStore } from "../../stores/promo-code";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+// P1-08：会员功能开关（false 时子页拦截返回）
+import { featureFlags } from "../../config/feature-flags";
 
 const { t } = useI18n();
+
+// P1-08：会员功能未启用时拦截（toast + 返回），避免深链进入功能页
+onLoad(() => {
+  if (!featureFlags.membershipEnabled) {
+    uni.showToast({ title: t("vip.membershipDisabled"), icon: "none" });
+    if (getCurrentPages().length > 1) {
+      uni.navigateBack();
+    } else {
+      uni.switchTab({ url: "/pages/profile/index" });
+    }
+  }
+});
 
 /** 兑换码页主视觉图标（emoji 替换为 SVG） */
 const heroIcon = IMAGE_PATHS.ICONS_EMOJI.TICKET;
@@ -91,7 +106,7 @@ async function handleValidate() {
   try {
     const result = await store.validateCode({
       code: codeInput.value.trim(),
-      orderAmount: orderAmountCents.value,
+      baseAmount: orderAmountCents.value,
     });
     if (result.available) {
       uni.showToast({
@@ -121,7 +136,7 @@ async function handleRedeem() {
   try {
     const result = await store.redeemCode({
       code: codeInput.value.trim(),
-      orderAmount: orderAmountCents.value,
+      baseAmount: orderAmountCents.value,
     });
     if (result.success) {
       uni.showModal({

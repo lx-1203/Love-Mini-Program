@@ -27,6 +27,7 @@
 
 import { defineStore } from "pinia";
 import { watch } from "vue";
+import { useSessionStore } from "../session";
 import {
   DAILY_LIMIT_TOTAL,
   EMPTY_RECOMMENDATION_FILTER,
@@ -61,12 +62,16 @@ import {
 import {
   setFilter,
   setRecommendationFilter,
+  setSortBy,
+  setMatchScope,
+  setNearbyScope,
   resetFilter,
   setAdvancedFilter,
   resetAdvancedFilter,
   openFilterDrawer,
   closeFilterDrawer,
   setSearchKeyword,
+  applyQuickFilter,
 } from "./actions/filter";
 import {
   loadHistory,
@@ -109,6 +114,9 @@ const _useDiscoverStore = defineStore("discover", {
       onlineStatusMap: {},
       lastSwipeResult: null,
       activeFilter: "nearby",
+      // 设计需求默认值：匹配度优先 + 不限范围
+      sortBy: "match",
+      matchScope: "all",
       recommendationFilter: { ...EMPTY_RECOMMENDATION_FILTER },
       isFilterDrawerOpen: false,
       searchKeyword: "",
@@ -130,6 +138,9 @@ const _useDiscoverStore = defineStore("discover", {
     },
     /** 今日剩余数量（含签到额外配额） */
     remainingCount: (state): number => {
+      // 2026-08-07 超级测试账号：匹配次数无限（本地联调放行）
+      const sessionStore = useSessionStore();
+      if (sessionStore.isSuperTestAccount) return 999;
       return Math.max(0, state.dailyLimit + state.extraQuota - state.viewedCards.length);
     },
     /** 是否达到每日上限 */
@@ -184,6 +195,10 @@ const _useDiscoverStore = defineStore("discover", {
     // === 筛选相关 Actions（来自 ./actions/filter） ===
     setFilter,
     setRecommendationFilter,
+    setSortBy,
+    setMatchScope,
+    setNearbyScope,
+    applyQuickFilter,
     resetFilter,
     setAdvancedFilter,
     resetAdvancedFilter,

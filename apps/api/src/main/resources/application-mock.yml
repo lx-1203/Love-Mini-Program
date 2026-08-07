@@ -14,6 +14,10 @@ spring:
       - org.redisson.spring.starter.RedissonAutoConfigurationV2
 
 app:
+  # P0-14：mock（本地演示）profile 下体验账号入口默认开启，保证本地演示可用；
+  # 商业化/生产环境默认关闭（application.yml 默认 false），可通过 APP_GUEST_LOGIN_ENABLED 覆盖。
+  guest-login:
+    enabled: ${APP_GUEST_LOGIN_ENABLED:true}
   jwt:
     # JWT 密钥由环境变量 JWT_SECRET 提供，启动时校验非空且长度 >= 32。
     # 本地开发可通过 start-server.bat 或 .env 文件配置 JWT_SECRET。

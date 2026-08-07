@@ -53,6 +53,14 @@ export default {
     imageAria: "Image",
     particlesResumeAria: "Resume particle animation",
     particlesPauseAria: "Pause particle animation",
+    /* P1-05: Common action copy */
+    submit: "Submit",
+    submitting: "Submitting...",
+    gotIt: "Got it",
+    send: "Send",
+    close: "Close",
+    processing: "Processing...",
+    collapse: "Collapse",
   },
 
   /* ========== Config data display copy (config/*.ts UI strings; keep in sync with zh-CN.ts) ========== */
@@ -400,8 +408,12 @@ export default {
       subtitle: "Find campus friends around you",
       distanceUnit: "{n}km",
       distanceSameCampus: "Same campus",
-      /* review #48: sample user card tap hint (switch to profile navigation once real data is wired) */
-      tapHint: "Sample data — real users will be available in the full release",
+      /* 2026-08-07: rebuilt with discover card mode (recommendation feed) */
+      loading: "Loading campus friends…",
+      loadFailed: "Failed to load, please retry",
+      empty: "No campus friends nearby yet",
+      likeHint: "Likes are not supported here — try Discover",
+      messageHint: "Open the profile to start a chat",
     },
     mbti: {
       title: "MBTI Personality Test",
@@ -456,7 +468,11 @@ export default {
     likeCountProgress: "You've liked {count} times. See who liked you back",
     superLikeFailed: "Super like failed, please retry",
     remainingTimes: "{n} times",
+    /* 2026-08-07 design: remaining count in header row */
+    remainingToday: "{n} left today",
     nearby: "Nearby",
+    /* 2026-08-07 design: "Nearby" filter chip */
+    filterNearby: "Nearby",
     unlimited: "Any",
     ageRange18to25: "18-25",
     allFilters: "All filters",
@@ -531,6 +547,9 @@ export default {
     card: {
       emptyTitle: "No recommendation cards",
       refresh: "Refresh recommendations",
+      // D1 fix: guide unauthenticated users to log in instead of showing an empty state
+      loginTitle: "Log in to start discovering",
+      goLogin: "Log in",
     },
     /* ========== Phase Feedback1: Discover page revamp ========== */
     personalId: "ID: {id}",
@@ -574,9 +593,41 @@ export default {
     unlockWhisper: "Unlock whisper",
     dynamicPreview: "Latest moments",
     viewAllMoments: "View all moments",
+    distancePrefix: "Distance: ",
+    momentsTitle: "Their moments",
+    certDetailTitle: "Verification Details",
+    certMethodLabel: "Method",
+    certReliabilityLabel: "Reliability",
+    certMachineDesc: "System automatically verifies the authenticity of photos",
+    certMachineMethod: "AI image recognition + liveness detection",
+    certMachineReliability: "High",
+    certHumanDesc: "Human review team verifies identity and campus info",
+    certHumanMethod: "Manual review + campus info check",
+    certHumanReliability: "High",
+    schoolLabel: "School",
+    maritalLabel: "Status",
+    quickFilterTitle: "Filters",
+    scopeTitle: "Match range",
+    scopeAll: "All",
+    ageRangeTitle: "Age range",
+    minAgeLabel: "Min age",
+    maxAgeLabel: "Max age",
+    sortTitle: "Sort by",
+    sortLatest: "Newest",
+    sortActive: "Most active",
+    maskUnlockHint: "Mutual likes unlock the avatar",
     distanceSuffix: "km",
     sameCampusDistance: "Same campus",
     expectedPartnerPlaceholder: "Describe your expected partner...",
+    /* P1-05: Card long-press / action menu copy */
+    menuTitle: "Actions for this person",
+    menuDetail: "View profile",
+    menuDetailDesc: "View full profile and photos",
+    menuSuperLikeDesc: "Super Likes get shown to them first",
+    menuNotInterested: "Not interested",
+    menuNotInterestedDesc: "See fewer recommendations like this",
+    menuReport: "Report",
+    menuReportDesc: "Submit a report for violations",
   },
 
   /* ========== Match guide overlay ========== */
@@ -647,15 +698,26 @@ export default {
     topicStudy: "Want to study together?",
     topicCanteen: "Which canteen stall is the best?",
     topicRecommend: "Topic picks",
-    /* Fixed system session cards on the Messages page (Official / Assistant) */
-    officialTitle: "Official",
-    officialSubtitle: "Important notices from us",
-    officialAria: "Official messages: important notices from us",
-    officialWip: "Official messages page coming soon",
-    assistantTitle: "Assistant",
-    assistantSubtitle: "Your love assistant, always here to help",
-    assistantAria: "Assistant: your love assistant, always here to help",
-    assistantWip: "Assistant feature coming soon",
+    /* Quick entries (Design: Anonymous chat / Who liked me / My visitors) */
+    quickEntryTitle: "Quick actions",
+    anonymousMatch: "Anonymous chat",
+    anonymousMatchDesc: "Random match with a stranger",
+    likedMe: "Who liked me",
+    likedMeDesc: "See users who liked you",
+    myVisitors: "My visitors",
+    myVisitorsDesc: "See who visited your profile",
+    lockedEntry: "Paid feature",
+    unlockAllHint: "Spend {coins} coins to unlock all (free for members)",
+    unlockAllTitle: "Unlock to view",
+    /* Fixed system session cards on the Messages page (Product assistant / Events) */
+    officialTitle: "Product Assistant",
+    officialSubtitle: "FAQ · System notices",
+    officialAria: "Product Assistant: FAQ and system notices",
+    officialWip: "Product Assistant coming soon",
+    assistantTitle: "Event Officer",
+    assistantSubtitle: "Event pushes · Surprise perks",
+    assistantAria: "Event Officer: event pushes and perks",
+    assistantWip: "Event Officer coming soon",
     closed: "Closed",
     closingSoon: "Closing soon",
     pageName: "Chat",
@@ -690,6 +752,9 @@ export default {
     icebreakerEmpty: "No suggestions. Try \"Refresh\"",
     icebreakerRefreshAria: "Refresh icebreakers",
     icebreakerCardAria: "Icebreaker: {content}, tap to send",
+    /* P1-11: Icebreaker fallback notices */
+    icebreakersLoadFailed: "Failed to load icebreakers",
+    icebreakersNoPeer: "Cannot get peer info right now",
     heartSignalTitle: "Heart Signal · Today's pick",
     heartSignalSubtitle: "We picked {n} matches for you",
     heartSignalAria: "Heart signal recommendation, tap to view",
@@ -789,6 +854,7 @@ export default {
     emptyMyLikesDesc: "Swipe right on Discover to like someone",
     emptyVisitors: "No visitor records",
     emptyVisitorsDesc: "Complete your profile to be discovered",
+    likedYou: "Liked you",
     heartSignal: "Heart signals",
     pageName: "Likes",
     monthDay: "{m}/{d}",
@@ -818,7 +884,7 @@ export default {
     myPosts: "My Posts",
     wallet: "My Wallet",
     myMatches: "My Matches",
-    settings: "Settings",
+    settings: "General Settings",
     editProfile: "Edit Profile",
     editBackground: "Edit Background",
     logout: "Log Out",
@@ -828,6 +894,13 @@ export default {
     following: "Following",
     followers: "Followers",
     likes: "Likes",
+    myLikes: "My likes",
+    likedMe: "Liked me",
+    recentVisitors: "Recent visitors",
+    coinBalance: "Coins",
+    earnCoins: "Earn coins",
+    earnReward: "Earn rewards",
+    myCircles: "My circles",
     visitors: "Visitor records",
     verification: "Verification",
     verificationSchool: "Verified",
@@ -910,10 +983,22 @@ export default {
     publishFirstAria: "Publish your first post",
     menuItemAria: "Menu item: {label}",
     logoutAria: "Log out",
+    /* ========== 2026-08-07 flow adjustment: profile completion banner ========== */
+    completeBanner: "Complete your profile {n}% to unlock all features",
+    completeBannerAction: "Complete now",
+    completeBannerAria: "Complete profile {n}%, tap to complete",
+    scheduleSetting: "Schedule",
+    avatarEditAria: "Tap to change avatar",
+    avatarPreviewAria: "Tap to preview avatar",
+    avatarUpdated: "Avatar updated",
+    /* P1-05: Message center entry (system notifications via official account) */
+    notifications: "Message Center",
     devEntryAria: "Developer entry",
     /* ========== Phase Feedback5: Profile page revamp ========== */
-    voiceStatus: "Voice status",
+    voiceStatus: "Voice intro",
     voiceStatusHint: "Up to 60 seconds, let them hear the real you",
+    voiceOnlyTag: "Voice only · No video",
+    statComingSoon: "List page coming soon",
     voiceRecord: "Record voice status",
     voiceRecordStart: "Start recording",
     voiceRecordStop: "Stop recording",
@@ -951,9 +1036,9 @@ export default {
     helpSupportDesc: "FAQ and online support",
     safetyCenter: "Safety center",
     safetyCenterDesc: "Account safety & privacy",
-    privacyPermission: "Permissions",
+    privacyPermission: "Privacy & permissions",
     privacyPermissionDesc: "Control how your info is shown",
-    allowSameSchoolRecommend: "Recommend to same-school students",
+    allowSameSchoolRecommend: "Allow recommending me to same-school students",
     allowSameSchoolRecommendDesc: "When on, your profile may be shown to same-school students",
     receiveSameSchoolInfo: "Receive same-school info",
     receiveSameSchoolInfoDesc: "When off, you won't get same-school recommendations",
@@ -1031,6 +1116,9 @@ export default {
   village: {
     title: "Circles",
     subtitle: "Campus Love Community",
+    /* 2026-08-07 design: hot topics section on Discover tab */
+    hotTopics: "Hot Topics",
+    hotTopicViews: "views",
     categoryAll: "For You",
     categoryFollowing: "Following",
     categoryInterest: "Interest Circles",
@@ -1079,6 +1167,8 @@ export default {
     sameCityLabel: "{city}",
     sameCityManual: "Choose city manually",
     sameCityChange: "Change city",
+    sameCityDefault: "Locating…",
+    publish: "Post",
     sameCityEmpty: "No new posts in your city",
     followingEmpty: "No new posts from people you follow",
     followingEmptyHint: "Swipe right on someone in Discover and their moments will show here",
@@ -1120,6 +1210,12 @@ export default {
       commentLike: "Like",
       emptyComments: "No comments yet. Be the first!",
       commentInputPlaceholder: "Write a comment...",
+      /* P1-02 nested replies: reply interaction */
+      reply: "Reply",
+      replyTo: "Reply to {name}",
+      replyToPlaceholder: "Reply to @{name}",
+      replyingTo: "Replying to {name}",
+      cancelReply: "Cancel reply",
       /* Similar authors */
       similarTitle: "You might also want to meet",
       similarSubtitle: "People with similar interests",
@@ -1184,6 +1280,21 @@ export default {
       categoryHometown: "Hometown",
       categoryMask: "Masked",
       categoryInterest: "Interest",
+      /* P1-01: Title input (required 5-30 chars) + image upload */
+      titleLabel: "Title",
+      titlePlaceholder: "Enter a title (5-30 characters)",
+      titleInvalid: "Title must be {min}-{max} characters",
+      uploadingImages: "Uploading images...",
+      imageUploadFailed: "Failed to upload images, please retry",
+    },
+    /* P1-36: Tag posts page missing param notice */
+    tagPostsMissingParam: "Missing tag parameter",
+    /* P1-16: Author meta (age · city · education) */
+    authorAgeUnit: "y/o",
+    educationLabels: {
+      bachelor: "Bachelor",
+      master: "Master",
+      phd: "PhD",
     },
     /* Task 28: Tag posts page (village/tag-posts.vue) i18n */
     tagPosts: {
@@ -1299,6 +1410,8 @@ export default {
     navTitle: "Open VIP",
     headerTitle: "Campus Love VIP",
     headerSubtitle: "Unlock exclusive perks · Meet more possibilities",
+    /* P1-08: Membership disabled notice (VIP page + sub-pages guard) */
+    membershipDisabled: "Membership is not available yet",
     agreementPrefix: "By subscribing you agree to",
     serviceAgreement: "VIP Service Agreement",
     autoRenewAgreement: "Auto-Renewal Agreement",
@@ -1536,6 +1649,41 @@ export default {
     },
   },
 
+  /* ========== Promo code store copy (stores/promo-code.ts) ========== */
+  promoCode: {
+    /* P1-05: Redeeming in progress */
+    redeeming: "Redeeming, please wait",
+  },
+
+  /* ========== Likes & Visitors page (likes-visitors secondary page) ========== */
+  likesVisitors: {
+    pageTitle: "Likes & Visitors",
+    pageSubtitle: "Who likes you, who visited you",
+    tabLikedMe: "Liked me",
+    tabVisitors: "My visitors",
+    overviewTotalViews: "Total views",
+    overviewTodayVisitors: "Visitors today",
+    overviewTodayViews: "Views today",
+    exposure: "Boost exposure",
+    nameHidden: "Anonymous",
+    tagAge: "Age",
+    tagSameCity: "Nearby",
+    tagUnlockHint: "Unlock to view full profile",
+    /* 2026-08-07 Messages redesign: button states the unlock method and cost */
+    unlockBtn: "Unlock all with {coins} coins",
+    unlockTitle: "Unlock to view",
+    unlockConfirm: "Spend {coins} coins per person to unlock all {count} records (free for members)",
+    unlockConfirmBtn: "Unlock",
+    unlockSuccess: "Unlocked",
+    unlockFail: "Unlock failed, try again later",
+    unlockVipFree: "Free for members",
+    unlockHint: "Unlock to view the full list",
+    emptyLikedMe: "No one has liked you yet",
+    emptyVisitors: "No visitors yet",
+    /* P1-08: Membership disabled notice */
+    membershipDisabled: "Membership is not available yet",
+  },
+
   /* ========== Messages ========== */
   messages: {
     title: "Messages",
@@ -1583,6 +1731,8 @@ export default {
     icebreaker3: "What do you like to do?",
     loadFailed: "Load failed, please retry",
     operationFailed: "Operation failed",
+    /* P1-05: Voice recording failed (shared by profile recording flow) */
+    voiceRecordFailed: "Recording failed, please retry",
     mainNavAria: "Main navigation",
     unreadAria: "Unread",
     unreadCountAria: "Unread {n}",
@@ -1655,6 +1805,22 @@ export default {
     officialPromoterMsg1: "Check in daily for coins; streaks double the reward!",
     officialPromoterMsg2: "Friday night \"Starry Confession\" event on campus is now open for sign-up!",
     officialPromoterMsg3: "Qixi special: meet your match under the stars!",
+    /* ========== 2026-08-07 Messages redesign (WeChat-style, chat-only) ========== */
+    yesterday: "Yesterday",
+    searchPlaceholder: "Search by name or chat history",
+    noSearchResult: "No conversations found",
+    anonymousMatch: "Anonymous match",
+    anonymousMatchDesc: "Random match · progressive unlock",
+    likesVisitorsEntry: "Likes & Visitors",
+    likesVisitorsDesc: "Who likes me · who viewed me",
+    muteSession: "Mute",
+    unmuteSession: "Unmute",
+    sessionMuted: "Muted",
+    sessionUnmuted: "Unmuted",
+    markAsUnread: "Mark as unread",
+    markAsRead: "Mark as read",
+    markedUnread: "Marked as unread",
+    markedRead: "Marked as read",
   },
 
   /* ========== Do Not Disturb (Feature 6) ========== */
@@ -1702,6 +1868,8 @@ export default {
     imageRemove: "Remove",
     history: "History",
     historyTitle: "Feedback history",
+    /* P1-05: Feedback history load failed */
+    historyLoadFailed: "Failed to load feedback history, please retry",
     historyEmpty: "No feedback records yet",
     historyEmptyDesc: "Submitted feedback will appear here",
     historyStatusPending: "Processing",
@@ -1842,6 +2010,8 @@ export default {
     noMatchSub: "No matches right now",
     noChat: "No chats",
     noChatSub: "No chat history yet",
+    /* P1-05: Network error empty-state subtitle */
+    networkSub: "Please check your network connection and try again",
   },
 
   /* ========== Error state ========== */
@@ -2112,14 +2282,29 @@ export default {
     profile: {
       pageTitle: "Basic profile",
       pageSubtitle: "Complete your profile so more people can know you",
-      sectionDraft: "Profile draft",
-      sectionBasic: "Basic info",
-      sectionTags: "Personality tags",
-      sectionBackground: "Profile background",
+      /* 2026-08-07: identity selection at registration step 1 (student / non-student branch) */
+      identityTitle: "Your identity",
+      identityHint: "Identity decides your registration steps and match scope; adjust anytime in Me",
+      identityStudent: "Student / Graduate",
+      identityStudentDesc: "Unlock same-school matching and alumni circles via campus verification",
+      identityNonStudent: "Non-student professional",
+      identityNonStudentDesc: "Skip campus verification and finish registration faster",
+      /* 2026-08-07: renamed from "Profile draft" */
+      sectionDraft: "Basic info",
+      sectionBasic: "Profile details",
+      /* P1-05: Nickname input label / placeholder */
       labelNickname: "Nickname",
-      placeholderNickname: "Nickname",
+      placeholderNickname: "Enter your nickname",
       labelGrade: "Grade",
-      placeholderGrade: "Grade",
+      placeholderGrade: "Select grade",
+      gradeFreshman: "Freshman",
+      gradeSophomore: "Sophomore",
+      gradeJunior: "Junior",
+      gradeSenior: "Senior",
+      gradeGrad1: "Grad year 1",
+      gradeGrad2: "Grad year 2",
+      gradeGrad3: "Grad year 3",
+      gradeGraduated: "Graduated",
       labelPronouns: "Pronouns",
       placeholderPronouns: "Pronouns",
       labelHeight: "Height (cm)",
@@ -2162,6 +2347,56 @@ export default {
       futurePlanHobby: "Hobby",
       futurePlanSocial: "Social",
     },
+    campus: {
+      /* 2026-08-07 review: page title unified with step name "Campus verify" */
+      pageTitle: "Campus verify",
+      pageSubtitle: "Verify to unlock same-school matching and alumni circles",
+      sectionSchool: "School info",
+      labelCity: "City",
+      placeholderCity: "Select city",
+      labelSchool: "School",
+      placeholderSchool: "Select school",
+      labelMajor: "Major",
+      placeholderMajor: "Select major",
+      /* 2026-08-07: campus verification skip entry (prominent text button above primary) */
+      skipLabel: "Not a student? Skip this step",
+      saveLabel: "Save & continue",
+      saveSaving: "Saving...",
+      saveSuccess: "Saved successfully",
+      saveFailed: "Save failed, please retry later",
+      errIncomplete: "Please select city, school and major",
+      /* 2026-08-07 review: value proposition to fill lower blank space */
+      valueText: "Completing campus verification unlocks same-school matching and alumni circles. Your info is used only for matching and kept strictly private.",
+      /* Privacy explainer (tapped via "?" icon next to the section title) */
+      privacyTitle: "About verification info",
+      privacyContent: "Your school and major are used only for same-school matching and circle recommendations. They are never shown publicly on your profile or shared with third parties.",
+      privacyConfirm: "Got it",
+      privacyAria: "View privacy note about verification info",
+    },
+  },
+
+  /* ========== Recommendation preferences page (P2-12: subpackages/setup/recommend-pref) ========== */
+  recommendPref: {
+    title: "Recommendation Preferences",
+    loadingTitle: "Loading...",
+    loadingText: "Loading your recommendation preferences...",
+    errorTitle: "Load failed",
+    errorText: "Something went wrong while loading preferences, please retry",
+    retryBtn: "Reload",
+    timeSectionTitle: "Recommended time",
+    timeSectionSubtitle: "We refresh your recommendations at this time every day",
+    scopeSectionTitle: "Recommendation scope",
+    scopeSectionSubtitle: "Which people to recommend first",
+    scopeCampusFirst: "Same school first",
+    scopeCity: "Same city",
+    scopeUnlimited: "No limit",
+    campusPriorityTitle: "Campus priority",
+    campusPrioritySubtitle: "Boost same-school users by 30% and rank them first",
+    campusPriorityLabel: "Campus priority",
+    save: "Save",
+    saving: "Saving...",
+    saveSuccess: "Saved",
+    saveFailed: "Failed to save, please retry",
   },
 
   /* ========== Advanced Filter (Feature 6) ========== */
@@ -2508,6 +2743,10 @@ export default {
     anonymousUser: "Anonymous User",
     emptyTitle: "No answers yet",
     emptyDesc: "No one has answered yet. Come take a look",
+    /* P1-12: Answer list pagination */
+    loadMore: "Load more",
+    loadingMore: "Loading...",
+    noMoreAnswers: "No more answers",
   },
 
   /* ========== Settings ========== */
@@ -2531,6 +2770,8 @@ export default {
     themeDark: "Dark",
     themeLight: "Light",
     themeAria: "Toggle dark mode",
+    /* P1-05: Settings save failed */
+    saveFailed: "Failed to save, please retry",
     /* Privacy & Security section */
     privacySection: "Privacy & Security",
     privacyPolicy: "Privacy Policy",
@@ -2624,6 +2865,7 @@ export default {
       loadStatusFailed: "Failed to load check-in status",
       checkinFailed: "Check-in failed, please retry later",
       makeupFailed: "Makeup check-in failed, please retry later",
+      needLogin: "Please sign in before checking in",
     },
     /* Circle store */
     circle: {
@@ -2694,6 +2936,7 @@ export default {
       saveCampusFailed: "Failed to save campus profile",
       saveScheduleFailed: "Failed to save schedule profile",
       uploadBackgroundFailed: "Failed to upload background image",
+      uploadAvatarFailed: "Failed to upload avatar",
       uploadPhotoFailed: "Failed to upload photo",
       deletePhotoFailed: "Failed to delete photo",
       /* P2.6：60s 语音状态上传 */

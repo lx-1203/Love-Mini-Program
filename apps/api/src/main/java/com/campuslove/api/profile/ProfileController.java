@@ -101,6 +101,29 @@ public class ProfileController {
   }
 
   /**
+   * 上传头像（2026-08-07 新增）。
+   * POST /api/profile/avatar
+   *
+   * 头像存储在 users.avatar_url（而非 user_basic_profile），
+   * 由推荐卡片（DiscoverCard.avatar）、个人主页共用。
+   */
+  @PostMapping("/avatar")
+  @PreAuthorize("hasRole('USER')")
+  @Operation(summary = "上传头像", description = "上传用户头像，校验 MIME 与 magic bytes，更新 users.avatar_url。", operationId = "uploadAvatar")
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "上传成功，返回更新后的资料",
+                  content = @Content(schema = @Schema(implementation = BasicProfileView.class))),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "格式不支持", content = @Content),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "413", description = "文件过大", content = @Content)
+  })
+  public BasicProfileView uploadAvatar(
+          @Parameter(in = ParameterIn.QUERY, description = "头像文件", required = true,
+                  content = @Content(mediaType = "multipart/form-data"))
+          @RequestParam("file") MultipartFile file) {
+    return profileService.uploadAvatar(file);
+  }
+
+  /**
    * 上传个人主页背景图。
    * POST /api/profile/background
    */
@@ -257,7 +280,8 @@ record BasicProfileView(
     String personalVideoUrl,
     String profileBackgroundUrl,
     int profileCompletion,
-    String verificationBadgeLevel
+    String verificationBadgeLevel,
+    String avatarUrl
 ) {
 }
 
@@ -287,7 +311,9 @@ record BasicProfileRequest(
     /** 未来计划定居城市，可空 */
     @Size(max = 32) String futureCity,
     /** 未来规划标签列表，可空 */
-    List<String> futurePlanTags
+    List<String> futurePlanTags,
+    /** 头像 URL（2026-08-07 新增，可空；非空时更新 users.avatar_url） */
+    @Size(max = 512) String avatarUrl
 ) {
 }
 

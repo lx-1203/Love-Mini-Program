@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n';
 defineProps<{
   primaryLabel: string;
   secondaryLabel?: string;
+  /** 2026-08-07：主按钮禁用态（表单未完成时置灰不可点击） */
+  disabled?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -35,8 +37,11 @@ const emit = defineEmits<{
     </button>
     <button
       class="bar__primary"
-      @tap="emit('primary')"
+      :class="{ 'bar__primary--disabled': disabled }"
+      :disabled="disabled"
+      :aria-disabled="disabled || undefined"
       :aria-label="primaryLabel"
+      @tap="!disabled && emit('primary')"
     >
       {{ primaryLabel }}
     </button>
@@ -73,6 +78,17 @@ const emit = defineEmits<{
   transform: scale(0.97);
   transition: all var(--d-fast, 120ms) cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--s-brand-md);
+}
+
+/* 2026-08-07：禁用态（表单未完成时置灰、不可点击、无投影） */
+.bar__primary--disabled {
+  background: var(--c-neutral-200, #E5E8EC);
+  color: var(--c-text-tertiary, #8A919C);
+  box-shadow: none;
+}
+.bar__primary--disabled:active {
+  transform: none;
+  box-shadow: none;
 }
 
 .bar__secondary {

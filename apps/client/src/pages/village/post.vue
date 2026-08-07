@@ -12,6 +12,10 @@ import { useVillageStore } from "../../stores/village";
 import TopicSelector from "../../components/village/TopicSelector.vue";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
+// P1-01：real 模式图片上传走 clientApi.uploadPostImage（/media/upload?type=image）
+import { clientApi } from "../../services/api";
+// P1-01：mock / real 模式分发判断（mock 下图片保留本地路径）
+import { useMock } from "../../stores/helpers/use-mock";
 // 统一常量：帖子内容/图片限制、草稿存储键、压缩质量等
 import {
   POST_MAX_LENGTH,
@@ -21,6 +25,8 @@ import {
   POST_SUBMIT_NAVIGATE_BACK_MS,
   IMAGE_COMPRESS_QUALITY,
   DEFAULT_CATEGORY_ID,
+  POST_TITLE_MIN_LENGTH,
+  POST_TITLE_MAX_LENGTH,
 } from "../../constants/village";
 import {
   POST_DRAFT_SAVE_DEBOUNCE_MS,
@@ -35,6 +41,8 @@ const { t } = useI18n();
 
 // 注：POST_DRAFT_STORAGE_KEY 由 constants/village 统一提供
 
+/** 帖子标题（P1-01：必填，5-30 字） */
+const title = ref("");
 /** 文字内容 */
 const content = ref("");
 /** 已上传的图片列表 */
@@ -98,6 +106,9 @@ onUnmounted(() => {
 const currentLength = computed(() => content.value.length);
 /** 是否超出字数限制 */
 const isOverLimit = computed(() => currentLength.value > POST_MAX_LENGTH);
+
+/** 标题是否超出长度限制（P1-01） */
+const isTitleOverLimit = computed(() => title.value.length > POST_TITLE_MAX_LENGTH);
 
 /** 分类选项 */
 const categoryOptions = computed(() => [
@@ -166,7 +177,7 @@ onMounted(() => {
   // 唯一例外是 selectedTopics 内部对象属性变化（如选中状态切换），但实际使用中是替换整个数组，
   // 故可安全去掉 deep。
   watch(
-    [content, images, tags, tagInput, selectedCategory, selectedPresetTags, selectedTopics],
+    [title, content, images, tags, tagInput, selectedCategory, selectedPresetTags, selectedTopics],
     () => {
       scheduleDraftSave();
     }
@@ -195,6 +206,7 @@ function scheduleDraftSave() {
 function saveDraft() {
   try {
     uni.setStorageSync(POST_DRAFT_STORAGE_KEY, {
+      title: title.value,
       content: content.value,
       images: images.value,
       tags: tags.value,
@@ -216,6 +228,7 @@ function saveDraft() {
 function restoreDraft() {
   try {
     const draft = uni.getStorageSync(POST_DRAFT_STORAGE_KEY) as {
+      title?: string;
       content?: string;
       images?: string[];
       tags?: string[];
@@ -225,6 +238,9 @@ function restoreDraft() {
       selectedTopics?: string[];
     } | null;
     if (!draft) return;
+    if (typeof draft.title === "string") {
+      title.value = draft.title;
+    }
     if (typeof draft.content === "string" && draft.content) {
       content.value = draft.content;
     }
@@ -394,6 +410,16 @@ function onTagConfirm() {
  * 发布帖子
  */
 async function submitPost() {
+  const trimmedTitle = title.value.trim();
+  // P1-01：标题必填 + 长度校验（5-30 字）
+  if (trimmedTitle.length < POST_TITLE_MIN_LENGTH || trimmedTitle.length > POST_TITLE_MAX_LENGTH) {
+    uni.showToast({
+      title: t("village.post.titleInvalid", { min: POST_TITLE_MIN_LENGTH, max: POST_TITLE_MAX_LENGTH }),
+      icon: "none",
+    });
+    return;
+  }
+
   if (!content.value.trim()) {
     uni.showToast({ title: t("village.contentRequired"), icon: "none" });
     return;
@@ -414,19 +440,41 @@ async function submitPost() {
       ...new Set([...selectedPresetTags.value, ...tags.value, ...topicTags]),
     ];
 
-    // 修复（review #3）：图片上传链路缺失。
-    // TODO(后端): services/api.ts 无帖子图片上传端点；接口就绪后应在此先上传
-    // 压缩后的 tempFilePath 换取 URL 再随帖子提交，mock 模式下继续使用本地路径保证可用。
+    // P1-01：real 模式先将本地临时图片逐个上传换取 URL 再提交；
+    // mock 模式继续使用本地路径（后端 mock 无上传端点，保持原行为不破坏）。
+    let finalImages = images.value;
     const localImages = images.value.filter((img) => !/^https?:\/\//.test(img));
-    if (localImages.length > 0 && appEnv.apiMode !== "mock") {
-      console.warn("[village/post] 帖子图片为本地临时路径，后端无法访问，等待上传接口接入:", localImages);
+    if (localImages.length > 0 && !useMock()) {
+      uni.showLoading({ title: t("village.post.uploadingImages") });
+      try {
+        const uploadedUrls: string[] = [];
+        for (const img of localImages) {
+          const result = await clientApi.uploadPostImage({
+            name: `post-image-${Date.now()}.jpg`,
+            path: img,
+          });
+          uploadedUrls.push(result.url);
+        }
+        // 已上传成功的图片换成远端 URL（顺序与选择顺序一致），原先已是 http 的保留
+        finalImages = [
+          ...images.value.filter((img) => /^https?:\/\//.test(img)),
+          ...uploadedUrls,
+        ];
+      } catch (error) {
+        console.error("帖子图片上传失败:", error);
+        uni.hideLoading();
+        uni.showToast({ title: t("village.post.imageUploadFailed"), icon: "none" });
+        return;
+      } finally {
+        uni.hideLoading();
+      }
     }
 
     await villageStore.createPost({
       categoryId: selectedCategory.value,
-      title: "",
+      title: trimmedTitle,
       content: content.value.trim(),
-      images: images.value,
+      images: finalImages,
       tags: allTags,
     });
 
@@ -464,11 +512,27 @@ function goBack() {
       <text class="post-header__title">{{ t("village.post.headerTitle") }}</text>
       <button
         class="post-header__submit"
-        :disabled="!content.trim() || isOverLimit"
+        :disabled="!title.trim() || isTitleOverLimit || !content.trim() || isOverLimit"
         @tap="submitPost"
       >
         <text class="submit-text">{{ t("village.submit") }}</text>
       </button>
+    </view>
+
+    <!-- P1-01：标题输入（必填，5-30 字；样式参考 circles/post-topic 标题输入） -->
+    <view class="title-section">
+      <text class="section-label">{{ t("village.post.titleLabel") }}</text>
+      <input
+        v-model="title"
+        class="title-input"
+        :class="{ 'title-input--over': isTitleOverLimit }"
+        :placeholder="t('village.post.titlePlaceholder')"
+        :maxlength="POST_TITLE_MAX_LENGTH"
+        :aria-label="t('village.post.titlePlaceholder')"
+      />
+      <view class="title-count" :class="{ 'title-count--over': isTitleOverLimit }">
+        <text>{{ title.length }}/{{ POST_TITLE_MAX_LENGTH }}</text>
+      </view>
     </view>
 
     <!-- 分类选择 -->
@@ -660,6 +724,44 @@ $red-badge: var(--c-error);
 
 .post-header__submit[disabled] .submit-text {
   color: $text-tertiary;
+}
+
+/* ========== P1-01：标题输入区（样式参考 circles/post-topic 标题输入） ========== */
+.title-section {
+  padding: 28rpx 32rpx;
+  background: $white;
+  margin: 16rpx 24rpx 0;
+  border-radius: var(--r-xl, 24rpx);
+  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
+}
+
+.title-input {
+  width: 100%;
+  font-size: var(--fs-xl, 30rpx);
+  font-weight: 600;
+  color: $text-primary;
+  padding: 16rpx 20rpx;
+  border-radius: var(--r-lg, 16rpx);
+  background: $bg-page;
+  border: 2rpx solid transparent;
+  transition: all var(--d-normal, 200ms) ease;
+  box-sizing: border-box;
+}
+
+.title-input--over {
+  border-color: $red-badge;
+}
+
+.title-count {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12rpx;
+  font-size: var(--fs-base, 24rpx);
+  color: $text-tertiary;
+}
+
+.title-count--over {
+  color: $red-badge;
 }
 
 /* ========== 分类选择 ========== */

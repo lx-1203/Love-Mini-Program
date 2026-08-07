@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -98,5 +99,22 @@ public class ConfigController {
     public ResponseEntity<List<UnlockGuideStepView>> getUnlockGuideSteps() {
         SecurityUtils.getCurrentUserId();
         return ResponseEntity.ok(configService.loadUnlockGuideSteps());
+    }
+
+    /**
+     * 获取法律文本（P0-22）。
+     *
+     * <p>客户端调用路径为 {@code /v1/config/legal}（normalizeApiPath 自动补 /v1，
+     * 后端 base 为 /api/v1），本端点映射 {@code /config/legal} 即可命中。
+     * 登录前（注册页/登录页）即需要展示条款，因此该端点在 SecurityConfig 中
+     * 标记为 permitAll，不要求携带鉴权头。</p>
+     *
+     * @param type 文本类型：privacy_policy / user_agreement
+     * @return 法律文本视图（title / content / updatedAt）
+     */
+    @GetMapping("/legal")
+    public ResponseEntity<LegalTextView> getLegalText(
+            @RequestParam("type") String type) {
+        return ResponseEntity.ok(LegalTextProvider.getLegalText(type));
     }
 }

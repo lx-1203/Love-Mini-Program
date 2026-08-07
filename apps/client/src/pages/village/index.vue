@@ -8,7 +8,7 @@ import { onLoad, onHide, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
-import { useVillageStore, MINE_CATEGORY_ID, formatRelativeTime, type PostItem, type PostFilters } from "../../stores/village";
+import { useVillageStore, MINE_CATEGORY_ID, formatRelativeTime, type PostItem, type PostFilters, type PostAuthor } from "../../stores/village";
 import { useSessionStore } from "../../stores/session";
 import { openAppPath, consumeTabQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
@@ -16,7 +16,6 @@ import LockScreen from "../../components/common/LockScreen.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { villagePageRequirements } from "../../config/page-access";
 // Phase Feedback4：同城 Tab 功能开关（false 时隐藏城市选择器，退化为全量同城流）
-import { featureFlags } from "../../config/feature-flags";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
@@ -26,6 +25,8 @@ import { IMAGE_PATHS } from "../../config/images";
 import { useImageFallback } from "../../composables/useImageFallback";
 import BaseTabs from "../../components/common/BaseTabs.vue";
 import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
+// 2026-08-07 设计稿：发现 Tab「热门话题」模块（主话题大卡 + 四宫格）
+import HotTopicsSection from "../../components/village/HotTopicsSection.vue";
 import { showErrorToast } from "../../utils/error-toast";
 // Phase Feedback3 P2.5：同城 Tab IP 定位（后端 /api/v1/location/ip-city）
 import { request } from "../../services/http";
@@ -43,7 +44,7 @@ usePageAccess(villagePageRequirements);
 const { loading, errorMessage, hasMore } = storeToRefs(villageStore);
 
 // 同步自定义 TabBar 选中状态（圈子 = 索引 1）
-useTabBar(1);
+useTabBar(2);
 
 // SubTask 5.5.2：列表页图片 @error 占位图 —— 失败 key 集合与判断函数
 // 注意：使用对象引用而非解构，避免 vue-tsc 在某些场景下误报 "All destructured elements are unused"
@@ -83,21 +84,19 @@ const CATEGORY_CONFIG = computed<VillageCategory[]>(() => [
 ]);
 
 /**
- * Phase Feedback4：发现 Tab 二级子标签。
- * - 全部：不过滤
- * - 校友：同校帖子（isAlumni / campusName 匹配）
+ * Phase Feedback4：发现 Tab 二级子标签（设计需求：校友/老乡/搭子圈，默认选中「校友」）。
+ * - 校友：同校帖子（isAlumni / campusName 匹配），默认优先
  * - 老乡：同乡标签（hometown 标签）
  * - 搭子圈：基于个人标签相似度（buddy 标签）
  */
 const DISCOVER_SUB_TABS = computed(() => [
-  { id: "discover-all", name: t("village.discoverAll"), backendKey: "all" },
   { id: "discover-alumni", name: t("village.discoverAlumni"), backendKey: "alumni" },
   { id: "discover-hometown", name: t("village.discoverHometown"), backendKey: "hometown" },
   { id: "discover-buddy", name: t("village.discoverBuddy"), backendKey: "buddy" },
 ]);
 
-/** 当前发现 Tab 选中的子标签（默认全部） */
-const selectedDiscoverSubTab = ref<string>("discover-all");
+/** 当前发现 Tab 选中的子标签（设计需求：默认选中「校友」） */
+const selectedDiscoverSubTab = ref<string>("discover-alumni");
 
 /** Phase Feedback4：同城 Tab 当前城市（默认从 session 校区城市推断，可手动切换） */
 const sameCityName = ref<string>("");
@@ -403,6 +402,29 @@ const campusCirclePosts = computed<PostItem[]>(() => {
   );
 });
 
+/* ========== P1-16：帖子头部作者信息（年龄 · 城市 · 学历） ========== */
+
+/**
+ * 组装作者信息段文案："{age}岁 · {city} · {education}"。
+ * 任一字段缺失时跳过对应段；全部缺失返回空串（模板隐藏该段）。
+ */
+function authorMetaText(author: PostAuthor): string {
+  const parts: string[] = [];
+  if (typeof author.age === "number" && !Number.isNaN(author.age) && author.age > 0) {
+    parts.push(`${author.age}${t("village.authorAgeUnit")}`);
+  }
+  if (author.city) {
+    parts.push(author.city);
+  }
+  if (author.education) {
+    const label = t(`village.educationLabels.${author.education}`);
+    if (label && !label.startsWith("village.")) {
+      parts.push(label);
+    }
+  }
+  return parts.join(" · ");
+}
+
 /** 点击兴趣分类 → 进入兴趣圈子页（携带 category 参数，Task B2） */
 function goToInterestCircle(catId: string) {
   openAppPath(`/pages/circles/index?category=${encodeURIComponent(catId)}`);
@@ -702,10 +724,35 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
     <template v-else>
       <!-- ===== 页面头部 ===== -->
       <view class="village-header">
+        <!-- 顶部功能栏（设计需求）：左定位城市名（加粗，可点击修改）| 中社区名 | 右发帖按钮（主色填充） -->
         <view class="village-header__top">
+          <view
+            v-if="circleMode === 'campus'"
+            class="village-header__location press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('village.sameCityChange')"
+            @tap="showCityPicker = true"
+          >
+            <image class="village-header__location-icon" :src="IMAGE_PATHS.ICONS_EMOJI.PIN" mode="aspectFit" alt="" />
+            <text class="village-header__location-city">{{ sameCityName || t('village.sameCityDefault') }}</text>
+            <image class="village-header__location-chevron" :src="IMAGE_PATHS.ICONS_COMMON.CHEVRON_DOWN_SVG" mode="aspectFit" alt="" />
+          </view>
+          <view v-else class="village-header__location-spacer" />
           <view class="village-header__title-wrap">
             <text class="village-header__title section-title-brand">{{ t('village.title') }}</text>
             <text class="village-header__subtitle">{{ t('village.subtitle') }}</text>
+          </view>
+          <view
+            class="village-header__publish press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('village.publish')"
+            @tap="handlePublish"
+          >
+            <text class="village-header__publish-text">{{ t('village.publish') }}</text>
           </view>
         </view>
 
@@ -718,35 +765,19 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
           :equal-split="true"
         />
 
-        <!-- ===== 关注 / 同城 / 发现（仅校园圈模式显示，Task B2） ===== -->
+        <!-- ===== 关注 / 同城 / 发现（仅校园圈模式显示，Task B2；设计需求：选中态主色下划线+文字加粗） ===== -->
         <BaseTabs
           v-if="circleMode === 'campus'"
           v-model="selectedCategory"
           :tabs="villageTabs"
-          variant="pill"
+          variant="underline"
           :scrollable="true"
           :equal-split="false"
           @change="onCategoryChange"
         />
       </view>
 
-      <!-- ===== Phase Feedback4：同城 Tab 城市选择器（自动标注城市 + 可手动切换；仅校园圈模式） ===== -->
-      <view v-if="circleMode === 'campus' && selectedCategory === 'cat-samecity' && featureFlags.villageSameCityEnabled" class="same-city-bar">
-        <view class="same-city-bar__label">
-          <image class="same-city-bar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PIN" mode="aspectFit" alt="" />
-          <text class="same-city-bar__text">{{ t('village.sameCityLabel', { city: sameCityName }) }}</text>
-        </view>
-        <view
-          class="same-city-bar__switch press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="t('village.sameCityChange')"
-          @tap="showCityPicker = true"
-        >
-          <text class="same-city-bar__switch-text">{{ t('village.sameCityChange') }}</text>
-        </view>
-      </view>
+      <!-- 城市选择已并入顶部功能栏（左侧城市名，点击修改）；城市选择弹层见下 -->
 
       <!-- ===== Phase Feedback4：城市选择弹层（仅校园圈模式） ===== -->
       <view v-if="circleMode === 'campus' && showCityPicker" class="city-picker" role="button" :aria-label="t('common.closeAria')" @tap="showCityPicker = false">
@@ -791,6 +822,9 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
           <text class="discover-sub-tab__text">{{ sub.name }}</text>
         </view>
       </view>
+
+      <!-- ===== 2026-08-07 设计稿：发现 Tab 热门话题区（主话题大卡 + 四宫格；仅发现 Tab 显示，关注/同城不显示） ===== -->
+      <HotTopicsSection v-if="circleMode === 'campus' && selectedCategory === 'cat-discover'" />
 
       <!-- ===== 附近的人入口卡片（M-08；仅校园圈模式） ===== -->
       <view v-if="circleMode === 'campus'" class="discover-banner press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.goToDiscoverAria')" @tap="goToDiscover">
@@ -923,6 +957,10 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
                     class="user-info__campus-badge"
                   >{{ t('village.alumni') }}</text>
                 </view>
+                <!-- P1-16：作者年龄 · 城市 · 学历（无值则隐藏该段） -->
+                <text v-if="authorMetaText(post.author)" class="user-info__meta">
+                  {{ authorMetaText(post.author) }}
+                </text>
                 <text class="user-info__headline">{{ post.author.headline || t('village.recentlyActive') }}</text>
               </view>
             </view>
@@ -1071,6 +1109,44 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
   padding: 0 var(--sp-7) var(--sp-5);
 }
 
+/* 顶部功能栏：左定位城市名（设计需求，加粗可点击） */
+.village-header__location {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 16rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-brand, #f0fdf9);
+  border: 1rpx solid var(--c-brand-100, #ccfbef);
+  max-width: 240rpx;
+}
+
+.village-header__location-icon {
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
+}
+
+.village-header__location-city {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--c-brand-700, #0f766e);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.village-header__location-chevron {
+  width: 22rpx;
+  height: 22rpx;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.village-header__location-spacer {
+  width: 200rpx;
+}
+
 .village-header__title-wrap {
   display: flex;
   align-items: baseline;
@@ -1087,6 +1163,20 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
 .village-header__subtitle {
   font-size: var(--fs-sm);
   color: var(--c-text-tertiary);
+}
+
+/* 顶部功能栏：右发帖按钮（设计需求，品牌主色填充） */
+.village-header__publish {
+  padding: 10rpx 28rpx;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
+  box-shadow: var(--s-brand-soft, 0 4rpx 16rpx rgba(63, 207, 142, 0.25));
+}
+
+.village-header__publish-text {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: #ffffff;
 }
 
 /* ================================================================
@@ -1481,12 +1571,13 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
   width: 26rpx;
   height: 26rpx;
   border-radius: var(--r-full);
-  background: var(--c-gradient-brand);
-  border: 2rpx solid var(--c-neutral-0);
+  /* 2026-08-07：认证徽章金色凸显 */
+  background: linear-gradient(135deg, #ffe9b8 0%, #f0c96a 100%);
+  border: 2rpx solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--s-brand-sm);
+  box-shadow: 0 2rpx 6rpx rgba(232, 195, 106, 0.55);
   z-index: 2;
 }
 
@@ -1521,15 +1612,30 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
   min-width: 0;
 }
 
+/* 2026-08-07：认证成就标签金色凸显（贴吧式：名字下方小标签） */
 .user-info__campus-badge {
   font-size: var(--fs-xs);
-  color: var(--c-neutral-0);
-  background: var(--c-gradient-brand);
+  color: #8a5a00;
+  background: linear-gradient(135deg, #ffe9b8 0%, #f7d488 100%);
+  border: 1rpx solid #e8c36a;
   padding: 2rpx var(--sp-3);
   border-radius: var(--r-full);
   font-weight: 600;
   line-height: 1.6;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+/* P1-16：作者信息段（年龄 · 城市 · 学历） */
+.user-info__meta {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-info__headline {

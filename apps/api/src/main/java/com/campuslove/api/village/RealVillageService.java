@@ -56,6 +56,13 @@ public class RealVillageService implements VillageService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize,
+                                     Long userId, String city, String discoverSub) {
+        return queryService.getPosts(category, tag, sortBy, page, pageSize, userId, city, discoverSub);
+    }
+
+    @Override
     public PostListResponse getPostsByAuthor(Long authorId, int page, int pageSize) {
         return queryService.getPostsByAuthor(authorId, page, pageSize);
     }
@@ -87,7 +94,8 @@ public class RealVillageService implements VillageService {
     @Override
     @Transactional
     public CommentItemView createComment(Long userId, Long postId, @Valid CreateCommentRequest request) {
-        return interactionService.commentPost(userId, postId, request.content());
+        // P1-02 / A-12 楼中楼：透传 parentId（null 为根评论）
+        return interactionService.commentPost(userId, postId, request.content(), request.parentId());
     }
 
     @Override
@@ -119,6 +127,10 @@ public class RealVillageService implements VillageService {
             // 无需 setRollbackOnly 或重新抛出（spec SubTask 10.5/10.6 适用于 DB 异常场景）。
         }
         Post post = queryService.findPostOrThrow(postId);
+        // 已下架（hidden）/已删除的帖子详情不可见：返回 404，与列表过滤语义一致
+        if (post.getStatus() != Post.PostStatus.active) {
+            throw new com.campuslove.api.common.ResourceNotFoundException("Post not found: " + postId);
+        }
         return queryService.toPostDetailView(post, currentUserId);
     }
 
@@ -138,6 +150,18 @@ public class RealVillageService implements VillageService {
     @Transactional
     public CommentItemView commentPost(Long userId, Long postId, String content) {
         return interactionService.commentPost(userId, postId, content);
+    }
+
+    @Override
+    @Transactional
+    public PostLikeResponse likeComment(Long userId, Long commentId) {
+        return interactionService.likeComment(userId, commentId);
+    }
+
+    @Override
+    @Transactional
+    public CommentItemView commentPost(Long userId, Long postId, String content, Long parentId) {
+        return interactionService.commentPost(userId, postId, content, parentId);
     }
 
     @Override

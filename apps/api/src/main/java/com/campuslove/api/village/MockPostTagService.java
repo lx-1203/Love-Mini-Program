@@ -3,7 +3,9 @@ package com.campuslove.api.village;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +36,23 @@ public class MockPostTagService implements PostTagService {
     @Override
     public List<String> getTags() {
         return PRESET_TAGS;
+    }
+
+    @Override
+    public List<PopularTagView> getPopularTags(int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+
+        // 按帖子数降序聚合（浏览量由帖子数近似）
+        return taggedPosts.stream()
+                .flatMap(p -> p.tags.stream().map(tag -> Map.entry(tag, 1)))
+                .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(limit)
+                .map(e -> new PopularTagView(e.getKey(), e.getValue(), ""))
+                .toList();
     }
 
     @Override

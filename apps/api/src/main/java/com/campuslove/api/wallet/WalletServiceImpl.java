@@ -2,6 +2,7 @@ package com.campuslove.api.wallet;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -40,7 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
  *   </li>
  *   <li>数据库异常包装为 RuntimeException 抛出，避免泄漏堆栈</li>
  *   <li>幂等冲突（DataIntegrityViolationException on order_id）静默处理，
- *       重新查询已存在的流水并返回，符合幂等语义</li>
+ *       重新查询已存在的流水并返回，符合幂等语义；
+ *       P0-16：若冲突后重查为空（非 order_id 键冲突场景），强制回滚事务，
+ *       防止同 orderId 二次入账/扣款</li>
  * </ul>
  */
 @Profile("real")
@@ -48,6 +51,34 @@ import org.springframework.transaction.annotation.Transactional;
 public class WalletServiceImpl implements WalletService {
 
     private static final Logger log = LoggerFactory.getLogger(WalletServiceImpl.class);
+
+    /**
+     * P0-17：扣减（deduct）允许的 relatedType 白名单。
+     *
+     * <p>防止客户端通过 {@code /wallet/deduct} 通用扣费端点以任意 relatedType 消费余额
+     * （业务上每个扣费场景必须走对应入口/下单链路）。集合依据现有调用方确定：</p>
+     * <ul>
+     *   <li>VIP_RENEW：VIP 自动续费（AutoRenewService）</li>
+     *   <li>RED_PACKET_SEND：红包发送（VipRedPacketService）</li>
+     *   <li>ADMIN_ADJUST：管理后台余额调整（AdminWalletController）</li>
+     *   <li>MESSAGE_UNLOCK / VISITORS_UNLOCK / LIKES_UNLOCK / WHISPER_UNLOCK：客户端
+     *       旧版解锁扣费（/wallet/deduct 直调，兼容过渡期）</li>
+     *   <li>UNLOCK_LIKED_ME / UNLOCK_VISITOR：P0-17 商业化解锁（/wallet/unlock 内部扣费）</li>
+     *   <li>SWEET_TALK：AI 情话解锁（预留）</li>
+     * </ul>
+     */
+    private static final Set<String> DEDUCT_RELATED_TYPE_WHITELIST = Set.of(
+            WalletTransactionLog.RELATED_TYPE_VIP_RENEW,
+            WalletTransactionLog.RELATED_TYPE_RED_PACKET_SEND,
+            WalletTransactionLog.RELATED_TYPE_UNLOCK_LIKED_ME,
+            WalletTransactionLog.RELATED_TYPE_UNLOCK_VISITOR,
+            WalletTransactionLog.RELATED_TYPE_SWEET_TALK,
+            "ADMIN_ADJUST",
+            "MESSAGE_UNLOCK",
+            "VISITORS_UNLOCK",
+            "LIKES_UNLOCK",
+            "WHISPER_UNLOCK"
+    );
 
     private final UserWalletRepository userWalletRepository;
     private final WalletTransactionLogRepository transactionLogRepository;
@@ -79,6 +110,11 @@ public class WalletServiceImpl implements WalletService {
     @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public Long deduct(Long userId, Long amountCents, String orderId, String relatedType, String relatedId) {
         validateParams(userId, amountCents, orderId, relatedType);
+        // P0-17：relatedType 白名单校验——未登记的业务类型禁止扣费（返回 400）
+        if (!DEDUCT_RELATED_TYPE_WHITELIST.contains(relatedType)) {
+            log.warn("钱包扣减被拒绝：relatedType 不在白名单, userId={}, relatedType={}", userId, relatedType);
+            throw new IllegalArgumentException("不支持的扣费业务类型: " + relatedType);
+        }
 
         // 幂等校验：orderId 已存在则直接返回已处理结果
         Optional<WalletTransactionLog> existing = transactionLogRepository.findByOrderId(orderId);
@@ -132,11 +168,22 @@ public class WalletServiceImpl implements WalletService {
             throw e;
         } catch (DataIntegrityViolationException e) {
             // 幂等冲突：orderId 唯一索引冲突（并发场景下另一事务已先写入）
-            // 重新查询已存在的流水并返回，符合幂等语义
+            // 重新查询已存在的流水并返回，符合幂等语义（noRollbackFor 仅豁免该分支）
             log.info("钱包扣减幂等冲突，重新查询：userId={}, orderId={}", userId, orderId);
-            return transactionLogRepository.findByOrderId(orderId)
-                    .map(WalletTransactionLog::getBalanceAfter)
-                    .orElseThrow(() -> new RuntimeException("钱包扣减失败且幂等查询无记录", e));
+            Optional<WalletTransactionLog> conflictExisting = transactionLogRepository.findByOrderId(orderId);
+            if (conflictExisting.isPresent()) {
+                // 唯一键冲突且重查命中：另一事务已处理该 orderId，直接返回其结果（幂等语义）
+                return conflictExisting.get().getBalanceAfter();
+            }
+            // P0-16 修复：幂等冲突但重查为空——说明冲突并非 order_id 唯一键
+            // （或其他约束冲突/事务未提交可见性），此时【必须强制回滚】：
+            // 若提交，钱包余额变更（若已 flush）会落库但流水未写入，orderId 幂等键失效，
+            // 同一 orderId 重试会再次扣款/入账（二次入账/扣款）。显式标记 rollback + 抛
+            // 普通 RuntimeException 双保险，保证本次变更整体回滚。
+            log.warn("钱包扣减幂等冲突且重查为空，强制回滚：userId={}, orderId={}", userId, orderId);
+            org.springframework.transaction.interceptor.TransactionAspectSupport
+                    .currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException("钱包扣减失败且幂等查询无记录，已回滚", e);
         } catch (DataAccessException e) {
             log.error("钱包扣减数据库异常：userId={}, orderId={}", userId, orderId, e);
             throw new RuntimeException("钱包扣减失败，请稍后重试", e);
@@ -190,11 +237,20 @@ public class WalletServiceImpl implements WalletService {
                     userId, amountCents, balanceAfter, orderId);
             return balanceAfter;
         } catch (DataIntegrityViolationException e) {
-            // 幂等冲突：orderId 唯一索引冲突
+            // 幂等冲突：orderId 唯一索引冲突（并发场景下另一事务已先写入）
+            // 重新查询已存在的流水并返回，符合幂等语义（noRollbackFor 仅豁免该分支）
             log.info("钱包充值幂等冲突，重新查询：userId={}, orderId={}", userId, orderId);
-            return transactionLogRepository.findByOrderId(orderId)
-                    .map(WalletTransactionLog::getBalanceAfter)
-                    .orElseThrow(() -> new RuntimeException("钱包充值失败且幂等查询无记录", e));
+            Optional<WalletTransactionLog> conflictExisting = transactionLogRepository.findByOrderId(orderId);
+            if (conflictExisting.isPresent()) {
+                // 唯一键冲突且重查命中：另一事务已处理该 orderId，直接返回其结果（幂等语义）
+                return conflictExisting.get().getBalanceAfter();
+            }
+            // P0-16 修复：幂等冲突但重查为空——强制回滚，防止同 orderId 二次入账
+            // （详见 deduct 同分支注释）。
+            log.warn("钱包充值幂等冲突且重查为空，强制回滚：userId={}, orderId={}", userId, orderId);
+            org.springframework.transaction.interceptor.TransactionAspectSupport
+                    .currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException("钱包充值失败且幂等查询无记录，已回滚", e);
         } catch (DataAccessException e) {
             log.error("钱包充值数据库异常：userId={}, orderId={}", userId, orderId, e);
             throw new RuntimeException("钱包充值失败，请稍后重试", e);

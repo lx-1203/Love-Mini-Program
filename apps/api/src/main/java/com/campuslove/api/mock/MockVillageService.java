@@ -68,6 +68,14 @@ public class MockVillageService implements VillageService {
   }
 
   @Override
+  public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize,
+                                   Long userId, String city, String discoverSub) {
+    // Mock 模式：同城（city）与发现二级子标签（discoverSub）简化为不额外过滤，
+    // 与既有 mock 语义一致（真实过滤逻辑见 RealVillageService）。
+    return getPosts(category, tag, sortBy, page, pageSize, userId);
+  }
+
+  @Override
   public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize, Long userId) {
     List<PostData> filtered = posts.stream()
         .filter(p -> category == null || "all".equals(category) || p.category.equals(category))

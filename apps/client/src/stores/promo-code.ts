@@ -54,18 +54,16 @@ export interface PromoCodeRedeemView {
 export interface ValidatePayload {
   /** 优惠码字符串 */
   code: string;
-  /** 订单金额（分），用于计算优惠后金额 */
-  orderAmount: number;
+  /** 基础金额（分），用于计算优惠后金额（对齐后端 ValidatePromoCodeRequest.baseAmount） */
+  baseAmount: number;
 }
 
 /** 兑换请求体 */
 export interface RedeemPayload {
   /** 优惠码字符串 */
   code: string;
-  /** 订单金额（分） */
-  orderAmount: number;
-  /** 关联订单 ID（可选，用于追溯） */
-  orderId?: string;
+  /** 基础金额（分），对齐后端 ValidatePromoCodeRequest.baseAmount */
+  baseAmount: number;
 }
 
 /**
@@ -96,7 +94,7 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
     if (!payload.code || payload.code.trim().length === 0) {
       throw new Error(t("storeErrors.promoCode.codeEmpty"));
     }
-    if (payload.orderAmount < 0) {
+    if (payload.baseAmount < 0) {
       throw new Error(t("storeErrors.promoCode.amountNegative"));
     }
 
@@ -116,14 +114,14 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
         return mock;
       }
       // 默认按 AMOUNT 优惠 1000 分（10 元）
-      const discountAmount = Math.min(1000, payload.orderAmount);
+      const discountAmount = Math.min(1000, payload.baseAmount);
       const mock: PromoCodeValidateView = {
         code,
         discountType: "AMOUNT",
         discountValue: 1000,
         description: "立减 10 元",
         discountAmount,
-        payableAmount: payload.orderAmount - discountAmount,
+        payableAmount: payload.baseAmount - discountAmount,
         available: true,
       };
       lastValidation.value = mock;
@@ -165,18 +163,18 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
     if (!payload.code || payload.code.trim().length === 0) {
       throw new Error(t("storeErrors.promoCode.codeEmpty"));
     }
-    if (payload.orderAmount < 0) {
+    if (payload.baseAmount < 0) {
       throw new Error(t("storeErrors.promoCode.amountNegative"));
     }
 
     if (useMock()) {
       const code = payload.code.trim().toUpperCase();
-      const discountAmount = Math.min(1000, payload.orderAmount);
+      const discountAmount = Math.min(1000, payload.baseAmount);
       const mock: PromoCodeRedeemView = {
         code,
         success: true,
         discountAmount,
-        payableAmount: payload.orderAmount - discountAmount,
+        payableAmount: payload.baseAmount - discountAmount,
       };
       lastRedeemResult.value = mock;
       return mock;

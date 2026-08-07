@@ -191,6 +191,10 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       hometownCity: t("mockData.recommendedPeople.hometownCity1"),
       futureCity: t("mockData.recommendedPeople.futureCity1"),
       displayId: "CL-4001",
+
+      zodiac: "天秤座",
+
+      registeredAt: "2026-03-12T08:00:00Z",
       distanceText: "1.2",
       activeStatusText: "just_now",
       machineVerified: true,
@@ -240,6 +244,10 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       hometownCity: t("mockData.recommendedPeople.hometownCity2"),
       futureCity: t("mockData.recommendedPeople.futureCity2"),
       displayId: "CL-4002",
+
+      zodiac: "水瓶座",
+
+      registeredAt: "2025-11-02T08:00:00Z",
       distanceText: "0.8",
       activeStatusText: "today",
       machineVerified: true,
@@ -288,6 +296,10 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       hometownCity: t("mockData.recommendedPeople.hometownCity3"),
       futureCity: t("mockData.recommendedPeople.futureCity3"),
       displayId: "CL-4003",
+
+      zodiac: "双子座",
+
+      registeredAt: "2026-01-15T08:00:00Z",
       distanceText: "3.5",
       activeStatusText: "hours_3",
       machineVerified: true,
@@ -336,6 +348,10 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       hometownCity: t("mockData.recommendedPeople.hometownCity4"),
       futureCity: t("mockData.recommendedPeople.futureCity4"),
       displayId: "CL-4004",
+
+      zodiac: "狮子座",
+
+      registeredAt: "2025-09-20T08:00:00Z",
       distanceText: "2.1",
       activeStatusText: "just_now",
       machineVerified: true,
@@ -385,6 +401,10 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       hometownCity: t("mockData.recommendedPeople.hometownCity5"),
       futureCity: t("mockData.recommendedPeople.futureCity5"),
       displayId: "CL-4005",
+
+      zodiac: "处女座",
+
+      registeredAt: "2026-02-08T08:00:00Z",
       distanceText: "5.0",
       activeStatusText: "days_2",
       machineVerified: false,
@@ -431,6 +451,10 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       hometownCity: t("mockData.recommendedPeople.hometownCity6"),
       futureCity: t("mockData.recommendedPeople.futureCity6"),
       displayId: "CL-4006",
+
+      zodiac: "摩羯座",
+
+      registeredAt: "2025-12-25T08:00:00Z",
       distanceText: "0.5",
       activeStatusText: "today",
       machineVerified: true,
@@ -479,6 +503,10 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       hometownCity: t("mockData.recommendedPeople.hometownCity7"),
       futureCity: t("mockData.recommendedPeople.futureCity7"),
       displayId: "CL-4007",
+
+      zodiac: "金牛座",
+
+      registeredAt: "2026-05-30T08:00:00Z",
       distanceText: "4.2",
       activeStatusText: "hours_8",
       machineVerified: true,
@@ -1469,19 +1497,6 @@ export const mockFixtures = {
       ...photoGallery.slice(0, index),
       ...photoGallery.slice(index + 1),
     ];
-  },
-
-  /**
-   * 上传个人视频。
-   *
-   * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 personalVideoUrl 状态。
-   */
-  uploadProfileVideo(file: UniUploadFileLike): { url: string } {
-    // 注（演示限制）：mock:// 协议 URL 不会被 <video> 真实加载（演示用），
-    // 真实环境由后端返回 https CDN URL。
-    const url = `mock://profile/video/${encodeURIComponent(file.name)}`;
-    // 修复（严格模式 noUnusedLocals）：原 personalVideoUrl = url 赋值已移除（变量已删除）。
-    return { url };
   },
 
   /**

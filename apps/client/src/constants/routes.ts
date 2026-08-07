@@ -31,8 +31,8 @@ export const ROUTES = {
     VILLAGE: "/pages/village/index",
     /** 首页 */
     HOME: "/pages/home/index",
-    /** 消息页 */
-    CHAT: "/pages/chat/index",
+    /** 消息页（P1-09：tabBar 指向新版消息列表页；旧 /pages/chat/index 已移除注册） */
+    CHAT: "/pages/messages/index",
     /** 我的页 */
     PROFILE: "/pages/profile/index",
   },
@@ -52,6 +52,8 @@ export const ROUTES = {
   LIKES: {
     /** 喜欢页（互相喜欢列表） */
     INDEX: "/pages/likes/index",
+    /** 2026-08-07 消息页重构：喜欢与访客独立二级页（喜欢我的 / 我的访客 + 解锁） */
+    VISITORS_LIKES: "/pages/likes-visitors/index",
   },
 
   /** 村口社区模块 */

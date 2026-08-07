@@ -45,10 +45,12 @@ async function handleRecharge() {
   lightHaptic();
   try {
     const orderId = `RECHARGE-DEMO-${Date.now()}`;
-    await request<{ balanceAfterCents: number }, { amountCents: number; orderId: string }>({
+    // 修复（P0-12）：后端 RechargeRequest 仅含 amountCents（orderId 由服务端生成），
+    // 删除请求体中的 orderId 字段；orderId 仅作为 Idempotency-Key 请求头防重复提交
+    await request<{ balanceAfterCents: number }, { amountCents: number }>({
       url: "/wallet/recharge",
       method: "POST",
-      data: { amountCents: 10000, orderId },
+      data: { amountCents: 10000 },
       headers: { "Idempotency-Key": orderId },
     });
     await Promise.all([
@@ -73,14 +75,23 @@ function goBack() {
   }
 }
 
+/**
+ * P1-18：判断流水是否为收入。
+ * 兼容两种取值：服务层流水类型为 CREDIT（收入）/ DEBIT（支出），
+ * 种子/历史数据可能为 INCOME / EXPENSE，统一按收入/支出语义归类。
+ */
+function isIncome(type?: string): boolean {
+  return type === "CREDIT" || type === "INCOME";
+}
+
 /** 流水类型文案（收入/支出） */
 function typeLabel(type?: string): string {
-  return type === "CREDIT" ? t("wallet.income") : t("wallet.expense");
+  return isIncome(type) ? t("wallet.income") : t("wallet.expense");
 }
 
 /** 金额文本（收入 +，支出 -） */
 function amountText(item: { type?: string; amount: number }): string {
-  const sign = item.type === "CREDIT" ? "+" : "-";
+  const sign = isIncome(item.type) ? "+" : "-";
   return `${sign}¥${(item.amount / 100).toFixed(0)}`;
 }
 </script>
@@ -119,7 +130,7 @@ function amountText(item: { type?: string; amount: number }): string {
             <text class="wallet__tx-type">{{ typeLabel(tx.type) }}</text>
             <text class="wallet__tx-remark">{{ tx.remark || tx.relatedType || '' }}</text>
           </view>
-          <text class="wallet__tx-amount" :class="{ 'wallet__tx-amount--income': tx.type === 'CREDIT' }">
+          <text class="wallet__tx-amount" :class="{ 'wallet__tx-amount--income': isIncome(tx.type) }">
             {{ amountText(tx) }}
           </text>
         </view>

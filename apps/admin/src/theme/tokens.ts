@@ -1,9 +1,9 @@
 // ============================================================
-// Admin 设计 Token - 与客户端共享同一来源（Single Source of Truth）
+// Admin v2 设计 Token - 与客户端共享同一来源（Single Source of Truth）
 // ------------------------------------------------------------
-// Task 3.1.2 - Admin 接入同一 Token 系统：通过 re-export 客户端
-// `apps/client/src/theme/tokens.ts` 实现"设计 Token 三合一"，
-// 客户端与 Admin 共用一套 Token 数据，避免双套维护导致的视觉漂移。
+// 通过 re-export 客户端 `apps/client/src/theme/tokens.ts` 实现
+// "设计 Token 三合一"，客户端与 Admin v2 共用一套 Token 数据，
+// 避免双套维护导致的视觉漂移。
 //
 // Token 主色（参考 project_memory）：
 //   - 薄荷绿主色：#3FCF8E（brand.400）— 用于交互态、品牌色按钮、链接
@@ -16,7 +16,7 @@
 //   const darkTokens = getThemeTokens("dark");
 //   const adminPrimary = adminTokens.colors.primary; // #667eea
 //
-// Task 21：adminTokens 用于补齐 Admin 后台特有的语义化 token，
+// adminTokens 用于补齐 Admin v2 后台特有的语义化 token，
 // 与 admin-common.css 中 :root 变量保持一致，便于主题切换/暗色模式落地。
 // ============================================================
 
@@ -24,16 +24,11 @@
  * Re-export 自客户端 Token 单一来源。
  *
  * 路径说明：使用相对路径 `../../../client/src/theme/tokens`，
- * 因 admin 与 client 同属 monorepo apps/* workspace，
+ * 因 admin-v2 与 client 同属 monorepo apps/* workspace，
  * 通过相对路径确保 Token 数据仅存于 client 一处。
  *
  * tsconfig 中已通过 include 扩展包含此依赖文件，
  * typecheck 时可正确解析类型。
- *
- * infra R2-00471：跨包相对路径依赖的已知风险——admin 构建耦合 client 源码，
- * client 的 tokens.ts 变更（如删除导出）可能破坏 admin typecheck/构建。
- * 根治方案为提升为共享包（如 packages/design-tokens），由 pnpm workspace
- * 管理版本；当前保持现状并登记 backlog。
  */
 export {
   designTokens,
@@ -46,7 +41,7 @@ export {
 export type { ThemeMode } from "../../../client/src/theme/tokens";
 
 /**
- * Admin 后台语义化 Token（Task 21）。
+ * Admin v2 后台语义化 Token。
  *
  * 用于补齐 admin-common.css 中 :root CSS 变量所需的语义化命名，
  * 颜色与像素尺寸的单一来源。任何视图层应通过 `var(--token-name)`
@@ -72,16 +67,16 @@ export const adminTokens = {
     infoSofter: "#bae7ff",
     accent: "#2f54eb",
     accentSoft: "#f0f5ff",
-    // Task 43：渐变辅助色（Login/Forbidden 渐变背景）
+    // 渐变辅助色（Login/Forbidden 渐变背景）
     gradientSecondary: "#764ba2",
     skipLink: "#3FCF8E",
     skipLinkFg: "#ffffff",
-    // Task 43：Danger 加深色（ErrorState 标题/正文/hover）
+    // Danger 加深色（ErrorState 标题/正文/hover）
     dangerBorder: "#ffa39e",
     dangerTitle: "#a8071a",
     dangerMessage: "#5c0011",
     dangerActive: "#cf1322",
-    // Task 43：Stat 卡片配色（Dashboard 统计卡片图标背景）
+    // Stat 卡片配色（Dashboard 统计卡片图标背景）
     statPrimary: "#667eea",
     statPink: "#f093fb",
     statBlue: "#4facfe",
@@ -98,6 +93,14 @@ export const adminTokens = {
     bgSubtle: "#f9f9f9",
     bgHover: "#f5f5f5",
     overlay: "rgba(0, 0, 0, 0.4)",
+    // eladmin 风格侧边栏专用色（Layout 深色侧边栏）
+    sidebarBg: "#304156",
+    sidebarBgActive: "#263445",
+    sidebarText: "#bfcbd9",
+    sidebarTextActive: "#ffffff",
+    sidebarLogoBg: "#2b3a4d",
+    headerBg: "#ffffff",
+    tabsBg: "#f0f2f5",
   },
   spacing: {
     xs: 4,

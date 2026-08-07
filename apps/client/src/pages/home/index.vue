@@ -3,7 +3,7 @@
  * 首页 - 校园聚合页
  * 包含：学校选择器、校园圈活动、课表空档、校园墙、逛逛推荐、社交升温进度
  */
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useActivityStore } from "../../stores/activity";
@@ -37,7 +37,7 @@ import { useImageFallback } from "../../composables/useImageFallback";
 import type { MakeUpCheckInResultView } from "../../services/generated/api-types-supplement";
 
 // 同步自定义 TabBar 选中状态（首页 = 索引 2）
-useTabBar(2);
+useTabBar(0);
 
 // SubTask 5.5.2：列表页图片 @error 占位图 —— 失败 key 集合与判断函数
 // 注意：使用对象引用而非解构，避免 vue-tsc 在某些场景下误报 "All destructured elements are unused"
@@ -78,19 +78,25 @@ const sessionStore = useSessionStore();
 /** 共享 discover store 的剩余匹配次数（与寻觅页 count-chip 数据源一致） */
 const { remainingCount } = storeToRefs(discoverStore);
 
-/** Phase Feedback2：校园活动是否仅对已认证学生开放（未认证时点击提示） */
+/** 是否已通过校园认证（用于宫格「校园活动」入口的锁徽标提示，不再拦截跳转） */
 const isCampusVerified = computed(() => sessionStore.isCampusVerified);
 
 /**
- * 打开校园活动：仅认证学生可用。
- * 未认证时 toast 提示，避免直接跳转后无权限。
+ * 打开校园活动列表（2026-08-07 链路调整）。
+ *
+ * 原实现：仅认证学生可用，未认证弹 toast 拦截（用户反馈"点了没反应"）。
+ * 现放开为：所有用户可浏览活动列表（活动为公开内容，报名等操作在详情页
+ * 内再按登录/认证状态引导），与「圈子可看大致活动」的链路设计一致。
  */
 function openCampusActivities() {
-  if (!isCampusVerified.value) {
-    uni.showToast({ title: t('home.campusActivityOnlyVerified'), icon: "none" });
-    return;
-  }
   openAppPath('/subpackages/discover/activities/index');
+}
+
+/**
+ * 打开活动详情页（2026-08-07：活动卡片点击跳转对应详情，而非统一列表页）。
+ */
+function openActivityDetail(activityId: string) {
+  openAppPath(`/pages/activities/detail?id=${encodeURIComponent(activityId)}`);
 }
 
 /** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
@@ -167,8 +173,17 @@ async function selectSchool(school: string) {
 /**
  * 刷新首页数据：学校切换或下拉刷新时调用。
  * 统一触发各 store 的 fetch，避免分散调用导致遗漏。
+ *
+ * D1 修复：未登录时直接跳过——activity/social-progress 均为需鉴权接口，
+ * 游客下拉刷新会触发 401（与发现页冷启动 401 洪水同类问题）。
  */
 function refreshHomeData() {
+  if (!sessionStore.isLoggedIn) return;
+  loadHomeData();
+}
+
+/** D1 修复：集中首页数据请求，登录态守卫下统一调用 */
+function loadHomeData() {
   void activityStore.fetchActivities();
   void checkInStore.fetchStatus();
   void socialProgressStore.fetchProgress();
@@ -406,10 +421,22 @@ function handleCloseShareCard() {
 }
 
 onMounted(() => {
-  void activityStore.fetchActivities();
-  void checkInStore.fetchStatus();
-  void socialProgressStore.fetchProgress();
+  // D1 修复：未登录时禁止发鉴权请求（否则冷启动 → 401 洪水）。
+  // 已登录直接拉取；登录态变化后（如从登录页返回）由下方 watch 自动补发。
+  if (sessionStore.isLoggedIn) {
+    loadHomeData();
+  }
 });
+
+// D1 修复：登录成功后补发首页数据（解决「登录回来数据不加载」）
+watch(
+  () => sessionStore.isLoggedIn,
+  (loggedIn) => {
+    if (loggedIn) {
+      loadHomeData();
+    }
+  }
+);
 
 // 修复（严格模式 noUnusedLocals）：noop 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
@@ -452,14 +479,8 @@ defineExpose({ noop });
           </view>
           <view class="greeting-right">
             <MatchCountChip :count="remainingCount" />
-            <!-- 任务 E4：设置入口（齿轮图标） -->
-            <view class="settings-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.settingsAria')" @tap="openAppPath('/pages/settings/index')">
-              <image class="settings-icon" :src="emojiIcons.settings" mode="aspectFit" alt="" />
-            </view>
-            <view class="notification-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.notificationAria')" @tap="openAppPath('/pages/messages/index?tab=notification')">
-              <image class="notification-icon" :src="emojiIcons.bell" mode="aspectFit" alt="" />
-              <view class="notification-dot"></view>
-            </view>
+            <!-- 2026-08-07 链路调整：设置/提醒入口收拢至「我的」页统一管理（原齿轮/铃铛移除），
+                 避免各页入口跳转目标不一致导致出错 -->
           </view>
         </view>
 
@@ -602,7 +623,7 @@ defineExpose({ noop });
               class="activity-card-new list-item"
               role="button"
               :aria-label="t('home.activityCardAria', { title: item.title, time: item.scheduleText })"
-              @tap="openCampusActivities"
+              @tap="openActivityDetail(item.id)"
             >
               <view class="activity-card__image-wrap">
                 <image

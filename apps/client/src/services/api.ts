@@ -27,6 +27,22 @@ function useMock() {
 }
 
 /**
+ * 生成本地日期字符串（yyyy-MM-dd），用于签到/补签的幂等键。
+ *
+ * 说明：不使用 toISOString()（UTC 时区在凌晨会得到错误的日期），
+ * 且不引入时间库，直接按本地时区格式化。
+ *
+ * @param d 目标日期
+ * @returns yyyy-MM-dd（本地时区）
+ */
+export function localDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
  * uni-app 上传文件所需的类 File 对象（mp-weixin 端无标准 File 类型）。
  *
  * 与 Web File 接口的差异：
@@ -322,18 +338,22 @@ export const clientApi = {
    * 获取基于对方资料的破冰话题列表（私信场景）。
    * 返回结构化的破冰话题，含 id、content、category、source 字段。
    * Mock 模式下返回本地硬编码数据。
+   *
+   * 修复（P0-06）：后端不存在按对方用户 ID 的破冰端点
+   * （原 GET /api/match/icebreakers/profile/{peerUserId} 为死端点，404），
+   * 现有唯一端点为 GET /api/matches/{matchId}/icebreakers（按心动信号 matchId，
+   * 见 MatchController.getIcebreakers，响应为 IcebreakerView 数组）。
+   * 私信会话调用方仅持有会话对端用户 ID（chat-session 的 resolvePeerUserId），
+   * 无法推导 matchId，Real 模式返回空列表避免请求不存在的端点；
+   * 匹配场景的话题获取走 chat store 的 loadIcebreakers(matchId)（同文件端点）。
    * @param peerUserId - 对方的用户 ID
    */
   async getIcebreakers(peerUserId: number) {
     if (useMock()) {
       return mockFixtures.getIcebreakers(peerUserId);
     }
-    return request<{
-      items: Array<{ id: number; content: string; category: string; source: string }>;
-    }>({
-      // 修复：移除前导 /api，避免与 apiBaseUrl 拼接后变成 /api/api/match/...
-      url: `/match/icebreakers/profile/${peerUserId}`,
-    });
+    // Real 模式：无对端可用端点，返回空列表（话题功能由匹配维度端点承载）
+    return { items: [] as Array<{ id: number; content: string; category: string; source: string }> };
   },
 
   async getDiscussionRecommendations() {
@@ -510,9 +530,12 @@ export const clientApi = {
     if (useMock()) {
       return mockFixtures.checkIn();
     }
+    // 后端 @Idempotent 校验（IdempotentInterceptor，Redis key 按 {key}:{userId} 隔离）：
+    // 以日期为幂等键，同一天内的重复/重试签到返回同一结果，杜绝重复扣权益。
     return request<CheckInResultResponse>({
       url: "/check-in",
       method: "POST",
+      headers: { "Idempotency-Key": `checkin-${localDateKey(new Date())}` },
     });
   },
 
@@ -630,6 +653,22 @@ export const clientApi = {
   },
 
   /**
+   * 上传头像（2026-08-07 新增接线）。
+   *
+   * 对应后端 POST /api/profile/avatar 端点，使用 multipart/form-data。
+   * 头像存于 users.avatar_url，由推荐卡片与个人主页共用。
+   *
+   * @param file - 头像图片文件（jpg/png/webp，≤10MB）
+   * @returns 更新后的基本资料视图（含 avatarUrl）
+   */
+  async uploadAvatar(file: UniUploadFileLike): Promise<{ avatarUrl?: string; url?: string }> {
+    if (useMock()) {
+      return mockFixtures.uploadProfileBackground(file);
+    }
+    return uploadFileViaUni<{ avatarUrl?: string }>(file, "/profile/avatar");
+  },
+
+  /**
    * 上传照片墙指定索引（0-5）。
    *
    * 对应后端 POST /api/profile/photos 端点，使用 multipart/form-data，
@@ -671,22 +710,6 @@ export const clientApi = {
   },
 
   /**
-   * 上传个人视频。
-   *
-   * 对应后端 POST /api/profile/video 端点，使用 multipart/form-data。
-   * 视频校验：mp4/mov，≤50MB，≤60s。
-   *
-   * @param file - 视频文件
-   * @returns 服务端返回的视频 URL
-   */
-  async uploadProfileVideo(file: UniUploadFileLike): Promise<{ url: string }> {
-    if (useMock()) {
-      return mockFixtures.uploadProfileVideo(file);
-    }
-    return uploadFileViaUni<{ url: string }>(file, "/profile/video");
-  },
-
-  /**
    * 上传半身照。
    *
    * 对应后端 POST /api/profile/half-body 端点，使用 multipart/form-data。
@@ -720,6 +743,34 @@ export const clientApi = {
       type: "audio",
       durationMs: String(Math.round(durationMs)),
     });
+  },
+
+  /**
+   * 上传帖子图片（P1-01）。
+   *
+   * 对应后端 POST /api/v1/media/upload?type=image 端点，使用 multipart/form-data。
+   * 图片校验：jpg/jpeg/png/webp，≤10MB（LocalMediaStorageService）。
+   * 兼容信封与扁平两种响应形态：后端返回 ApiResponse 信封 {data:{url,...}}，
+   * 个别环境可能扁平返回 {url}，此处统一取 url。
+   *
+   * Mock 模式下直接返回本地路径（与现有图片链路一致，保持 mock 行为不破坏）。
+   *
+   * @param file - 图片文件（uni.chooseImage 的 tempFilePaths 包装）
+   * @returns 服务端返回的图片 URL
+   */
+  async uploadPostImage(file: UniUploadFileLike): Promise<{ url: string }> {
+    if (useMock()) {
+      return { url: file.path ?? file.name };
+    }
+    const raw = await uploadFileViaUni<{ url?: string; data?: { url?: string } }>(file, "/media/upload", {
+      type: "image",
+    });
+    // 兼容信封（{data:{url}}）与扁平（{url}）两种响应形态
+    const url = raw?.url ?? raw?.data?.url;
+    if (!url) {
+      throw new Error("上传响应缺少图片 URL");
+    }
+    return { url };
   },
 
   /**
@@ -792,10 +843,12 @@ export const clientApi = {
     if (useMock()) {
       return mockFixtures.makeUpCheckIn(date);
     }
+    // 与签到一致：以补签日期为幂等键，同一日期重复补签返回同一结果
     return request<MakeUpCheckInResultView, { date: string }>({
       url: "/check-in/make-up",
       method: "POST",
       data: { date },
+      headers: { "Idempotency-Key": `makeup-${date}` },
     });
   },
 

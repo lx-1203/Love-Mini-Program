@@ -23,6 +23,16 @@ public interface VillageService {
     PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize, Long userId);
 
     /**
+     * 获取帖子列表（2026-08-07 扩展：同城 / 发现分类）。
+     *
+     * @param userId       当前用户 ID（校园/关注分类需要）
+     * @param city         同城分类的城市名（category=samecity 时生效）
+     * @param discoverSub  发现分类的二级子标签（all/alumni/hometown/buddy）
+     */
+    PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize,
+                              Long userId, String city, String discoverSub);
+
+    /**
      * 按作者分页查询帖子（"我的动态"场景，走查补齐）。
      *
      * @param authorId 作者用户 ID
@@ -135,6 +145,38 @@ public interface VillageService {
      * @return 评论项视图
      */
     CommentItemView commentPost(Long userId, Long postId, String content);
+
+    /**
+     * 点赞/取消点赞评论（M-14，幂等切换）。
+     *
+     * <p>默认实现：返回静态成功响应（likeCount=1），供未升级的 mock 实现
+     * （MockVillageService）编译兼容并保持演示可用；real 实现（RealVillageService）
+     * 覆写为真实点赞记录 + 计数。</p>
+     *
+     * @param userId    当前用户 ID
+     * @param commentId 评论 ID
+     * @return 点赞响应（liked：当前是否已点赞；likeCount：最新点赞数）
+     */
+    default PostLikeResponse likeComment(Long userId, Long commentId) {
+        return new PostLikeResponse(true, true, 1);
+    }
+
+    /**
+     * 评论帖子（P1-02 / A-12 楼中楼：支持 parentId 楼中楼回复）。
+     *
+     * <p>默认实现：忽略 parentId 委托 {@link #commentPost(Long, Long, String)}，
+     * 供未升级的 mock 实现（MockVillageService）编译兼容；real 实现
+     * （RealVillageService）覆写为完整楼中楼逻辑。</p>
+     *
+     * @param userId   评论者用户 ID
+     * @param postId   帖子 ID
+     * @param content  评论内容
+     * @param parentId 父评论 ID（楼中楼回复；null 为根评论）
+     * @return 评论项视图
+     */
+    default CommentItemView commentPost(Long userId, Long postId, String content, Long parentId) {
+        return commentPost(userId, postId, content);
+    }
 
     /**
      * 转发帖子。

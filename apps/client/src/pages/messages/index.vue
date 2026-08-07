@@ -1,87 +1,58 @@
 <script setup lang="ts">
 /**
- * 消息页 - 私信+心动信号+系统通知
- * 展示私信聊天列表、心动信号通知和系统通知
- * Phase 3 新增：社交信号/内容信号分类筛选
+ * 消息页（2026-08-07 对标微信重构）。
+ *
+ * 页面结构（从上到下）：
+ * 1. 顶部导航栏：左侧加粗「消息」大标题 + 右侧搜索图标（点击展开搜索，按昵称/预览过滤会话）
+ * 2. 快捷功能入口（仅一行两个轻量卡片）：「匿名匹配聊天」/「喜欢与访客」（独立二级页）
+ * 3. 会话列表（页面主体）：
+ *    - 排序：置顶会话固定最前，其余按最后一条消息时间倒序（微信同款）
+ *    - 单条会话：圆形头像（用户头像 / 官方号专属图标头像 / 匿名蒙面头像）+ 昵称（官方号带「官方」角标）
+ *      + 最后一条消息预览 + 时间 + 未读数字红点（超过 99 显示 99+）；免打扰会话显示静音角标
+ *    - 左滑会话：露出「免打扰」「删除」操作，操作后即时生效
+ *    - 长按会话：操作菜单（置顶/取消置顶、标为未读/标为已读、删除会话）
+ *    - 点击会话：官方号 → 官方号会话页；其余 → 聊天详情页（进入后未读红点消除，返回同步更新）
+ *
+ * 移除（消息页纯聊天属性）：分类 Tab（私信/系统通知）、通知列表、心动信号 Banner、
+ * 社交升温入口、内嵌喜欢/访客入口栏、全局发帖 FAB——系统通知由「产品助手号」官方会话承载。
  */
-import { computed, ref, onUnmounted } from "vue";
+import { computed, reactive, ref } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
-import { useMessagesStore, type SystemNotification } from "../../stores/messages";
-import { useLikesStore } from "../../stores/likes";
-import { useProfileStore } from "../../stores/profile";
-import { useSocialProgressStore } from "../../stores/social-progress";
-// Phase Feedback3 P2.4：访客/喜欢你真实解锁（交友币扣费 / 会员放行）
-import { useCoinsStore, UNLOCK_COST_YUAN, type UnlockScene } from "../../stores/coins";
-import { useVipStore } from "../../stores/vip";
-import { openAppPath } from "../../utils/navigation";
-import LockScreen from "../../components/common/LockScreen.vue";
-import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
+import { useMessagesStore, type MessageSession } from "../../stores/messages";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { messagesPageRequirements } from "../../config/page-access";
-import { featureFlags } from "../../config/feature-flags";
-import MatchGuideOverlay from "../../components/social/MatchGuideOverlay.vue";
+import { useTabBar } from "../../composables/useTabBar";
+import { openAppPath } from "../../utils/navigation";
+import { ROUTES } from "../../constants/routes";
+
+// 2026-08-07 消息页重构收尾：新版消息页挂上 tabBar 后需同步选中态（tab 顺序：首页0/匹配1/圈子2/消息3/我的4）
+useTabBar(3);
+import LockScreen from "../../components/common/LockScreen.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
 import PageStateContainer from "../../components/common/PageStateContainer.vue";
-import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
-import BaseTabs, { type BaseTab } from "../../components/common/BaseTabs.vue";
-import { showErrorToast } from "../../utils/error-toast";
-
-/** Emoji 替换 SVG 图标路径 */
-const emojiIcons = {
-  search: IMAGE_PATHS.ICONS_EMOJI.SEARCH,
-  group: IMAGE_PATHS.ICONS_EMOJI.GROUP,
-  smile: IMAGE_PATHS.ICONS_EMOJI.SMILE,
-  notification: IMAGE_PATHS.ICONS_COMMON.NOTIFICATION_SVG,
-  gift: IMAGE_PATHS.ICONS_EMOJI.GIFT,
-  heartFilled: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED,
-  eye: IMAGE_PATHS.ICONS_EMOJI.EYE,
-  lock: IMAGE_PATHS.ICONS_EMOJI.LOCK,
-  megaphone: IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE,
-} as const;
+import { IMAGE_PATHS } from "../../config/images";
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
-
-// Phase 4 任务 20：接入页面访问守卫，触发 UnlockGuideModal 引导（替代静默重定向）
-usePageAccess(messagesPageRequirements);
 const messagesStore = useMessagesStore();
-const socialProgressStore = useSocialProgressStore();
 
-/** Phase 4.3 验收 · 喜欢我的人数量（未解锁也展示，点击走解锁提示） */
-const likedMeCount = computed(() => {
-  try {
-    const likesStore = useLikesStore();
-    return likesStore.likedBy.length;
-  } catch (_e) {
-    return 0;
-  }
-});
+// Phase 4 任务 20：接入页面访问守卫（资料未完善时展示 LockScreen 引导）
+usePageAccess(messagesPageRequirements);
 
-/** Phase 4.3 验收 · 访客数量 */
-const visitorsCount = computed(() => {
-  try {
-    const profileStore = useProfileStore();
-    return profileStore.profileStats?.visitorsCount ?? 0;
-  } catch (_e) {
-    return 0;
-  }
-});
-
-/** SVG 图标资源路径 */
+/** 图标资源 */
 const iconSrc = {
-  likeFilled: IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED,
-  like: IMAGE_PATHS.ICONS_SOCIAL.LIKE,
-  heartSignal: IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL,
-  visitor: IMAGE_PATHS.ICONS_SOCIAL.VISITOR,
-  comment: IMAGE_PATHS.ICONS_SOCIAL.COMMENT,
-  follow: IMAGE_PATHS.ICONS_SOCIAL.FOLLOW,
+  search: IMAGE_PATHS.ICONS_EMOJI.SEARCH,
+  close: IMAGE_PATHS.ICONS_COMMON.CLOSE,
+  mute: IMAGE_PATHS.ICONS_EMOJI.PROHIBITED,
   match: IMAGE_PATHS.ICONS_SOCIAL.MATCH,
-  message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
+  visitor: IMAGE_PATHS.ICONS_SOCIAL.VISITOR,
+  officialAssistant: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED,
+  officialPromoter: IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE,
 } as const;
 
 /** 资料是否已完善 */
@@ -89,92 +60,40 @@ const isUnlocked = computed(() => sessionStore.isProfileComplete);
 /** 完善度百分比 */
 const completionPercent = computed(() => sessionStore.profileCompletion);
 
-/** 当前选中的标签页：private | notifications */
-const activeTab = ref<"private" | "notifications">("private");
+/* ==================== 搜索 ==================== */
+
+/** 搜索是否展开 */
+const searchActive = ref(false);
+/** 搜索关键词（按昵称 / 最后一条消息预览过滤） */
+const searchKeyword = ref("");
+
+function toggleSearch() {
+  searchActive.value = !searchActive.value;
+  if (!searchActive.value) searchKeyword.value = "";
+}
+
+function clearSearch() {
+  searchKeyword.value = "";
+}
+
+/* ==================== 会话列表 ==================== */
 
 /**
- * 功能5：通知分类筛选类型
- * - all: 全部通知
- * - interaction: 互动类（like/comment/follow/visitor/interaction_like）
- * - system: 系统类（system/activity）
- * - chat: 聊天类（match/interaction_match，匹配后通常会发起聊天）
+ * 会话列表（合并普通私信 / 匿名匹配 / 官方号）：
+ * 置顶会话固定最前，其余按最后一条消息时间倒序（对标微信）。
  */
-type NotificationCategory = "all" | "interaction" | "system" | "chat";
-
-/** 功能5：当前选中的通知分类 */
-const categoryFilter = ref<NotificationCategory>("all");
-
-/** 主分类标签配置：私信 / 系统通知，徽章显示未读数 */
-const mainTabs = computed(() => [
-  { key: "private", label: t("messages.private"), badge: messagesStore.totalUnreadCount || undefined },
-  { key: "notifications", label: t("messages.systemNotifications"), badge: messagesStore.unreadNotificationCount || undefined },
-]);
-
-/**
- * 功能5：通知分类标签配置：全部 / 互动 / 系统 / 聊天
- * 替代原 signalTabs，提供更直观的业务分类入口
- */
-const categoryTabs = computed<BaseTab[]>(() => [
-  { key: "all", label: t("messages.categoryAll") },
-  { key: "interaction", label: t("messages.categoryInteraction") },
-  { key: "system", label: t("messages.categorySystem") },
-  { key: "chat", label: t("messages.categoryChat") },
-]);
-
-/**
- * 功能5：通知类型分组常量。
- *
- * 性能优化（P1）：原实现将三个 Set 声明在 computed 内部，每次 computed 重新求值都会重建 Set，
- * 在通知列表较大或频繁切换 categoryFilter 时会产生不必要的 GC 压力。
- * 现将常量 Set 提到 computed 外部，仅初始化一次，computed 内部直接复用引用。
- */
-const INTERACTION_TYPES = new Set(["like", "comment", "follow", "visitor", "interaction_like"]);
-const SYSTEM_TYPES = new Set(["system", "activity"]);
-const CHAT_TYPES = new Set(["match", "interaction_match"]);
-
-/**
- * 功能5：根据 categoryFilter 过滤后的通知列表
- * - all: 返回全部通知
- * - interaction: like/comment/follow/visitor/interaction_like 类通知
- * - system: system/activity 类通知
- * - chat: match/interaction_match 类通知（匹配后通常发起聊天）
- */
-const categorizedNotifications = computed(() => {
-  const list = messagesStore.filteredNotifications;
-  if (categoryFilter.value === "all") return list;
-  if (categoryFilter.value === "interaction") {
-    return list.filter((n) => INTERACTION_TYPES.has(n.type));
-  }
-  if (categoryFilter.value === "system") {
-    return list.filter((n) => SYSTEM_TYPES.has(n.type));
-  }
-  // chat
-  return list.filter((n) => CHAT_TYPES.has(n.type));
-});
-
-/** 倒计时显示文本映射 */
-const countdownMap = ref<Record<string, string>>({});
-
-/** 是否有待处理的心动信号 */
-const hasPendingHeartSignal = computed(() => messagesStore.pendingHeartSignals.length > 0);
-
-/** 匹配引导弹窗状态 */
-const showMatchGuide = ref(false);
-/** Phase Feedback3 P2.4：当前会话是否为「缘分速配」信号会话（用于 chat-session 渐进解锁） */
-const signalSessionId = ref<string | null>(null);
-const matchGuideData = ref({
-  partnerName: "",
-  partnerAvatar: "",
-  icebreakers: [] as string[],
-  commonCircles: [] as Array<{ id: string; name: string; icon: string }>,
-  activities: [] as Array<{ id: string; title: string; scheduleText: string }>,
-  sessionId: "",
-});
-
-/** 私信列表（按置顶+时间排序） */
-const privateSessionList = computed(() => {
-  const list = messagesStore.sessions.filter((s) => s.sessionType === "private");
-  return [...list].sort((a, b) => {
+const sessionList = computed(() => {
+  const keyword = searchKeyword.value.trim().toLowerCase();
+  const base = keyword
+    ? messagesStore.sessions.filter(
+        (s) =>
+          // 修复（P2-06）：partnerName 可能为空（后端 otherUserName 空值），
+          // toLowerCase 前统一兜底，避免空值崩溃
+          (s.partnerName || "").toLowerCase().includes(keyword) ||
+          (s.lastMessagePreview || "").toLowerCase().includes(keyword),
+      )
+    : messagesStore.sessions;
+  return [...base].sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     const aTime = a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0;
     const bTime = b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0;
@@ -182,470 +101,226 @@ const privateSessionList = computed(() => {
   });
 });
 
-/** 临时匿名会话列表 */
-const tempSessionList = computed(() => {
-  return messagesStore.sessions.filter((s) => s.sessionType === "temp_anonymous");
-});
+/** 搜索无结果提示 */
+const showNoSearchResult = computed(
+  () => searchActive.value && searchKeyword.value.trim().length > 0 && sessionList.value.length === 0,
+);
 
-/**
- * 系统通知列表
- * 功能5：使用 categorizedNotifications，根据 categoryFilter 过滤
- * Phase 3：原 filteredNotifications 仍作为底层数据源
- */
-const notificationList = computed(() => categorizedNotifications.value);
-
-/** 是否显示空状态 */
-const showEmptyState = computed(() => {
-  if (activeTab.value === "private") {
-    return privateSessionList.value.length === 0 && tempSessionList.value.length === 0;
-  }
-  return notificationList.value.length === 0;
-});
-
-/**
- * 统一页面状态映射
- * - loading → loading
- * - errorMessage → error
- * - showEmptyState → empty
- * - 其他 → content（私信列表 / 系统通知列表）
- */
+/** 页面统一状态：loading / error / empty / content */
 const pageState = computed<"loading" | "error" | "empty" | "content">(() => {
-  if (messagesStore.loading) return "loading";
-  if (messagesStore.errorMessage) return "error";
-  if (showEmptyState.value) return "empty";
+  if (messagesStore.loading && messagesStore.sessions.length === 0) return "loading";
+  if (messagesStore.errorMessage && messagesStore.sessions.length === 0) return "error";
+  if (messagesStore.sessions.length === 0) return "empty";
   return "content";
 });
 
-/**
- * 错误态展示文案（复用 store 中的 errorMessage，缺失时回退到通用文案）
- */
 const errorText = computed(() => messagesStore.errorMessage || t("messages.loadFailed"));
 
-/**
- * 重试：重新拉取会话列表
- */
 function handleRetry() {
   void messagesStore.fetchSessions();
 }
 
-/**
- * 支持 ?tab=notification 深链（首页通知铃铛入口）：进入页面直接切到通知 Tab。
- * 修复（review #45）：通知铃铛此前无跳转目标，属死按钮。
- */
-onLoad((query) => {
-  if (query && query.tab === "notification") {
-    activeTab.value = "notifications";
-  }
-});
+/* ==================== 左滑操作（免打扰 / 删除） ==================== */
 
-/** 页面加载时获取数据 */
-onShow(() => {
-  if (isUnlocked.value) {
-    void messagesStore.bootstrap();
-    void socialProgressStore.fetchProgress();
-    startCountdownTimers();
-  }
-});
+/** 当前展开左滑操作的会话 ID（同一时间仅一个） */
+const openId = ref<string | null>(null);
 
-onUnmounted(() => {
-  if (countdownInterval) {
-    clearInterval(countdownInterval);
-    countdownInterval = null;
-  }
-});
+/** 触摸起点与滑动位移（用于区分点击与左滑） */
+const touch = reactive<{
+  id: string;
+  startX: number;
+  startY: number;
+  deltaX: number;
+  moved: boolean;
+}>({ id: "", startX: 0, startY: 0, deltaX: 0, moved: false });
 
-/**
- * 启动心动信号倒计时定时器
- */
-let countdownInterval: ReturnType<typeof setInterval> | null = null;
+/** 触摸事件类型（mp-weixin 的 touches 为 TouchList） */
+type TouchEventLike = { touches?: TouchList };
 
-function startCountdownTimers() {
-  if (countdownInterval) {
-    clearInterval(countdownInterval);
-  }
-
-  updateCountdowns();
-  countdownInterval = setInterval(updateCountdowns, 1000);
+function onRowTouchStart(e: TouchEventLike, sessionId: string) {
+  const p = e.touches?.[0];
+  if (!p) return;
+  touch.id = sessionId;
+  touch.startX = p.clientX;
+  touch.startY = p.clientY;
+  touch.deltaX = 0;
+  touch.moved = false;
 }
 
-function updateCountdowns() {
-  const now = Date.now();
-  messagesStore.pendingHeartSignals.forEach((signal) => {
-    const expiresAt = Date.parse(signal.expiresAt);
-    const diff = expiresAt - now;
+function onRowTouchMove(e: TouchEventLike, sessionId: string) {
+  if (touch.id !== sessionId) return;
+  const p = e.touches?.[0];
+  if (!p) return;
+  const dx = p.clientX - touch.startX;
+  const dy = p.clientY - touch.startY;
+  touch.deltaX = dx;
+  // 仅当水平位移占主导时判定为左滑手势（避免纵向滚动误触）
+  if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+    touch.moved = true;
+  }
+}
 
-    if (diff <= 0) {
-      countdownMap.value[signal.id] = t("messages.expired");
-      signal.status = "expired";
-    } else {
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      countdownMap.value[signal.id] = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+function onRowTouchEnd(_e: unknown, sessionId: string) {
+  if (touch.id !== sessionId) return;
+  if (touch.moved) {
+    // 左滑展开 / 右滑收起
+    if (touch.deltaX < -40) {
+      openId.value = sessionId;
+    } else if (openId.value === sessionId) {
+      openId.value = null;
     }
+  }
+}
+
+function closeActions() {
+  openId.value = null;
+}
+
+/** 会话行位移样式（左滑展开操作层） */
+function rowStyle(sessionId: string) {
+  return {
+    transform: openId.value === sessionId ? "translateX(-200rpx)" : "translateX(0)",
+  };
+}
+
+/** 切换免打扰（左滑操作，即时生效） */
+function toggleMute(session: MessageSession) {
+  const next = !session.muted;
+  messagesStore.setSessionMuted(session.id, next);
+  uni.showToast({
+    title: next ? t("messages.sessionMuted") : t("messages.sessionUnmuted"),
+    icon: "none",
+  });
+  closeActions();
+}
+
+/** 删除会话（左滑操作，确认后删除） */
+function confirmDeleteSession(sessionId: string) {
+  closeActions();
+  uni.showModal({
+    title: t("common.delete"),
+    content: t("messages.deleteSessionConfirm"),
+    confirmColor: "#E5454D",
+    success: (res) => {
+      if (!res.confirm) return;
+      void messagesStore
+        .deleteSession(sessionId)
+        .then(() => {
+          uni.showToast({ title: t("messages.deleted"), icon: "success" });
+        })
+        .catch(() => {
+          uni.showToast({
+            title: messagesStore.errorMessage || t("messages.deleteFailed"),
+            icon: "none",
+          });
+        });
+    },
   });
 }
 
-/**
- * 跳转到聊天详情页
- */
-function openSession(sessionId: string) {
-  openAppPath(`/pages/chat-session/index?sessionId=${sessionId}`);
-}
+/* ==================== 长按菜单（置顶 / 标为未读 / 删除） ==================== */
 
-/**
- * 处理心动信号「直接开聊」
- * 接受信号后展示匹配引导弹窗
- */
-async function handleHeartSignalChat(signalId: string) {
-  try {
-    const session = await messagesStore.acceptHeartSignal(signalId);
-    if (session) {
-      // 获取匹配对象信息
-      const signal = messagesStore.pendingHeartSignals.find(s => s.id === signalId);
-      matchGuideData.value = {
-        partnerName: signal?.fromUserName ?? t("messages.partner"),
-        partnerAvatar: signal?.fromUserAvatar ?? "",
-        icebreakers: [
-          t("messages.icebreaker1"),
-          t("messages.icebreaker2"),
-          t("messages.icebreaker3"),
-        ],
-        commonCircles: [],
-        activities: [],
-        sessionId: session.id,
-      };
-      signalSessionId.value = session.id;
-      showMatchGuide.value = true;
-    }
-  } catch (error) {
-    // infra R2-00064: 不直接展示 store.errorMessage（可能含后端原始错误串），
-    // 统一走 showErrorToast 按错误分类映射友好文案
-    showErrorToast(error, t("messages.operationFailed"));
-    console.error("接受心动信号失败:", error);
-  }
-}
-
-/** 组装信号会话聊天页 URL（缘分速配会话附加 fromSignal=1 触发渐进解锁） */
-function buildSignalChatUrl(sessionId: string, extraQuery?: string): string {
-  const fromSignal = signalSessionId.value === sessionId ? "&fromSignal=1" : "";
-  return `/pages/chat-session/index?sessionId=${encodeURIComponent(sessionId)}${fromSignal}${extraQuery ?? ""}`;
-}
-
-/** 匹配引导：开始聊天 */
-function handleMatchGuideStartChat() {
-  if (matchGuideData.value.sessionId) {
-    openAppPath(buildSignalChatUrl(matchGuideData.value.sessionId));
-  }
-  showMatchGuide.value = false;
-}
-
-/** 匹配引导：选择破冰话题 */
-function handleMatchGuideIcebreaker(topic: string) {
-  if (matchGuideData.value.sessionId) {
-    // 跳转到聊天页并预填破冰话题
-    openAppPath(buildSignalChatUrl(matchGuideData.value.sessionId, `&icebreaker=${encodeURIComponent(topic)}`));
-  }
-  showMatchGuide.value = false;
-}
-
-/** 匹配引导：关闭 */
-function handleMatchGuideClose() {
-  showMatchGuide.value = false;
-}
-
-/**
- * 格式化时间显示
- */
-function formatTime(isoString: string | null): string {
-  if (!isoString) return "";
-  const date = new Date(isoString);
-  const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
-  if (isToday) {
-    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-  }
-  return `${date.getMonth() + 1}/${date.getDate()}`;
-}
-
-/**
- * Phase 3：根据 signalType 获取通知图标 SVG 路径
- * 社交信号：红心/火焰等温暖图标
- * 内容信号：评论/点赞等中性图标
- */
-function getNotificationIcon(notification: SystemNotification): string {
-  // 优先按 signalType 分类
-  if (notification.signalType === "SOCIAL") {
-    switch (notification.type) {
-      case "match":
-      case "interaction_match":
-        return iconSrc.match;
-      case "like":
-        return iconSrc.likeFilled;
-      case "visitor":
-        return iconSrc.visitor;
-      default:
-        return iconSrc.likeFilled;
-    }
-  }
-  // CONTENT 信号
-  switch (notification.type) {
-    case "comment":
-      return iconSrc.comment;
-    case "follow":
-      return iconSrc.follow;
-    case "interaction_like":
-      return iconSrc.like;
-    default:
-      return iconSrc.comment;
-  }
-}
-
-/**
- * Phase 3：获取通知信号类型对应的 CSS class
- */
-function getSignalClass(notification: SystemNotification): string {
-  return notification.signalType === "SOCIAL" ? "signal-social" : "signal-content";
-}
-
-/**
- * Phase 3：获取信号类型标签文本
- */
-function getSignalLabel(notification: SystemNotification): string {
-  return notification.signalType === "SOCIAL" ? t("messages.socialSignal") : t("messages.contentSignal");
-}
-
-/**
- * Phase 3：获取通知操作按钮文本
- * 社交信号 → "立即查看"（红色强调）
- * 内容信号 → "查看详情"（蓝色）
- */
-function getActionLabel(notification: SystemNotification): string {
-  return notification.signalType === "SOCIAL" ? t("messages.viewNow") : t("messages.viewDetail");
-}
-
-/**
- * 处理通知点击，根据类型跳转到不同页面
- */
-async function handleNotificationClick(notification: SystemNotification) {
-  // 标记已读
-  await messagesStore.markNotificationRead(notification.id);
-
-  const type = notification.type;
-  if (type === "follow" || type === "visitor") {
-    if (type === "visitor") {
-      openAppPath("/pages/likes/index");
-    } else {
-      openAppPath("/pages/profile/index?userId=" + notification.triggerUserId);
-    }
-    return;
-  }
-
-  if (type === "interaction_like" || type === "comment" || type === "like") {
-    const postId = notification.resourceId;
-    if (postId) {
-      openAppPath(`/pages/village/detail?id=${postId}`);
-    }
-    return;
-  }
-
-  if (type === "interaction_match" || type === "match") {
-    // 修复（review #29）：原实现跳 /pages/messages/index 自身（死跳转）。
-    // 优先使用通知自带的 actionUrl（如 chat-session 会话页）；缺省时留在消息页。
-    if (notification.actionUrl) {
-      openAppPath(notification.actionUrl);
-    } else {
-      openAppPath("/pages/messages/index");
-    }
-    return;
-  }
-
-  if (notification.actionUrl) {
-    openAppPath(notification.actionUrl);
-  }
-}
-
-/** 判断心动信号是否即将过期（<2小时） */
-function isSignalExpiringSoon(signal: { expiresAt: string; status: string }): boolean {
-  if (signal.status === "expired") return false;
-  const expiresAt = Date.parse(signal.expiresAt);
-  const now = Date.now();
-  const remainingMs = expiresAt - now;
-  return remainingMs > 0 && remainingMs < 2 * 60 * 60 * 1000;
-}
-
-/** 功能入口点击 */
-function handleEntryClick(type: string) {
-  switch (type) {
-    case "new-friend":
-      openAppPath("/pages/likes/index");
-      break;
-    case "liked-me":
-      // Phase Feedback3：喜欢你的需解锁（会员/交友币/道具）。会员未上线，提示解锁方式。
-      handleUnlockTap("likedMe");
-      break;
-    case "visitors":
-      // Phase Feedback3：访客需解锁
-      handleUnlockTap("visitors");
-      break;
-    case "notification":
-      activeTab.value = "notifications";
-      break;
-  }
-}
-
-/**
- * Phase Feedback3 P2.4：访客/喜欢你真实解锁。
- *
- * 解锁流程：
- * 1. 会员 → 直接放行进入喜欢页
- * 2. 非会员 → 确认扣费弹窗（交友币），确认后调用 coinsStore.spend（幂等扣费）
- * 3. 扣费成功 → 跳转喜欢页；余额不足/失败 → 提示错误
- *
- * @param kind 解锁场景：likedMe（喜欢你）/ visitors（访客）
- */
-async function handleUnlockTap(kind: "likedMe" | "visitors") {
-  const vipStore = useVipStore();
-  const coinsStore = useCoinsStore();
-
-  // 会员免费放行
-  if (vipStore.isVip) {
-    openAppPath("/pages/likes/index");
-    return;
-  }
-
-  const scene: UnlockScene = kind === "likedMe" ? "LIKES" : "VISITORS";
-  const cost = UNLOCK_COST_YUAN[scene];
-  const title =
-    kind === "likedMe"
-      ? t("messages.unlockLikedMe")
-      : t("messages.unlockVisitors");
-
-  const confirmed = await new Promise<boolean>((resolve) => {
-    uni.showModal({
-      title,
-      content: t("messages.unlockConfirmCost", { coins: cost }),
-      confirmText: t("messages.unlockAndView"),
-      cancelText: t("common.cancel"),
-      success: (res) => resolve(!!res.confirm),
-      fail: () => resolve(false),
-    });
-  });
-  if (!confirmed) return;
-
-  try {
-    await coinsStore.spend(scene, "me");
-    uni.showToast({ title: t("messages.unlockSuccess"), icon: "success" });
-    openAppPath("/pages/likes/index");
-  } catch (error) {
-    // 余额不足或扣费失败：展示错误（不跳转）
-    uni.showToast({
-      title: error instanceof Error ? error.message : t("messages.unlockFailTitle"),
-      icon: "none",
-    });
-  }
-}
-
-/** Phase Feedback3：官方号会话列表（助手 + 活动推送） */
-const officialAccounts = [
-  {
-    id: "official-assistant",
-    nameKey: "messages.officialAssistant",
-    descKey: "messages.officialAssistantDesc",
-    icon: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED,
-  },
-  {
-    id: "official-promoter",
-    nameKey: "messages.officialPromoter",
-    descKey: "messages.officialPromoterDesc",
-    icon: IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE,
-  },
-] as const;
-
-/** 点击官方号：进入官方号会话页（消息计数 + 活动卡片） */
-function handleOfficialTap(accountId: string) {
-  openAppPath(`/pages/official-chat/index?accountId=${encodeURIComponent(accountId)}`);
-}
-
-/** 收尾轮：全局 FAB publish 事件 → 发帖编辑页 */
-function goToPublishTopic() {
-  openAppPath("/pages/circles/post-topic");
-}
-
-/** Phase Feedback3：心动信号改名"缘分速配"（随机匹配 + 消息解锁规则） */
-const fateMatchRuleHints = [
-  "messages.heartSignalRule3",
-  "messages.heartSignalRule2",
-  "messages.heartSignalRule1",
-] as const;
-
-/** 搜索框点击 */
-function handleSearchClick() {
-  uni.showToast({ title: t("messages.searchWip"), icon: "none" });
-}
-
-/**
- * 长按私信会话触发删除流程。
- *
- * 流程：
- * 1. 弹出确认 Modal，避免误触删除重要会话
- * 2. 用户确认后调用 messagesStore.deleteSession
- * 3. 成功 toast 提示，失败 toast 提示错误信息
- *
- * @param sessionId 待删除的会话 ID
- */
-function handleSessionLongPress(sessionId: string) {
-  const session = messagesStore.sessions.find((s) => s.id === sessionId);
-  if (!session) return;
-  const wasPinned = session.pinned;
-  const pinLabel = wasPinned ? t("messages.unpinSession") : t("messages.pinSession");
+function handleSessionLongPress(session: MessageSession) {
+  closeActions();
+  const itemList = [
+    session.pinned ? t("messages.unpinSession") : t("messages.pinSession"),
+    session.unreadCount > 0 ? t("messages.markAsRead") : t("messages.markAsUnread"),
+    t("common.delete"),
+  ];
   uni.showActionSheet({
-    itemList: [pinLabel, t("common.delete")],
+    itemList,
     itemColor: "#333333",
     success: (res) => {
       if (res.tapIndex === 0) {
-        messagesStore.toggleSessionPin(sessionId);
+        messagesStore.toggleSessionPin(session.id);
         uni.showToast({
-          title: wasPinned ? t("messages.unpinned") : t("messages.pinned"),
+          title: session.pinned ? t("messages.unpinned") : t("messages.pinned"),
           icon: "none",
         });
         return;
       }
       if (res.tapIndex === 1) {
-        // 调用 store 删除会话，失败时由 store 设置 errorMessage
-        void messagesStore
-          .deleteSession(sessionId)
-          .then(() => {
-            uni.showToast({ title: t("messages.deleted"), icon: "success" });
-          })
-          .catch(() => {
-            uni.showToast({
-              title: messagesStore.errorMessage || t("messages.deleteFailed"),
-              icon: "none",
-            });
-          });
+        if (session.unreadCount > 0) {
+          messagesStore.markSessionRead(session.id);
+          uni.showToast({ title: t("messages.markedRead"), icon: "none" });
+        } else {
+          messagesStore.markSessionUnread(session.id);
+          uni.showToast({ title: t("messages.markedUnread"), icon: "none" });
+        }
+        return;
+      }
+      if (res.tapIndex === 2) {
+        confirmDeleteSession(session.id);
       }
     },
   });
 }
 
-/**
- * 一键标记所有通知为已读。
- *
- * 调用 messagesStore.markAllNotificationsRead，成功后 toast 提示；
- * 失败时 store 会保留未读状态，此处 toast 提示用户重试。
- */
-async function handleMarkAllNotificationsRead() {
-  try {
-    await messagesStore.markAllNotificationsRead();
-    uni.showToast({ title: t("messages.markAllReadSuccess"), icon: "success" });
-  } catch (error) {
-    uni.showToast({
-      title: error instanceof Error ? error.message : t("messages.markAllReadFailed"),
-      icon: "none",
-    });
+/* ==================== 跳转 ==================== */
+
+/** 点击会话：官方号 → 官方号会话页；其余 → 聊天详情页（未读红点进入后消除） */
+function openSession(session: MessageSession) {
+  if (openId.value === session.id) {
+    closeActions();
+    return;
   }
+  if (session.isOfficial && session.officialAccountId) {
+    openAppPath(`${ROUTES.MESSAGES.OFFICIAL_CHAT}?accountId=${encodeURIComponent(session.officialAccountId)}`);
+    return;
+  }
+  openAppPath(`${ROUTES.CHAT.SESSION}?sessionId=${encodeURIComponent(session.id)}`);
 }
+
+/** 快捷入口：匿名匹配聊天（原心动信号匹配池） */
+function goMatchPool() {
+  openAppPath(ROUTES.HEART_SIGNALS);
+}
+
+/** 快捷入口：喜欢与访客（独立二级页） */
+function goLikesVisitors() {
+  openAppPath(ROUTES.LIKES.VISITORS_LIKES);
+}
+
+/* ==================== 展示辅助 ==================== */
+
+/** 官方号头像图标（按 accountId 区分） */
+function officialIcon(accountId?: string): string {
+  return accountId === "official-promoter" ? iconSrc.officialPromoter : iconSrc.officialAssistant;
+}
+
+/** 时间格式化（对标微信）：今天 → HH:mm；昨天 → 「昨天」；更早 → M/D */
+function formatTime(isoString: string | null): string {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const time = date.getTime();
+  if (time >= todayStart) {
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+  if (time >= todayStart - 24 * 60 * 60 * 1000) {
+    return t("messages.yesterday");
+  }
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+/* ==================== 生命周期 ==================== */
+
+/**
+ * 兼容旧深链 ?tab=notification（原通知 Tab 已移除）：
+ * 系统通知现由「产品助手号」官方会话承载，直接进入该会话。
+ */
+onLoad((query) => {
+  if (query && query.tab === "notification") {
+    openAppPath(`${ROUTES.MESSAGES.OFFICIAL_CHAT}?accountId=${encodeURIComponent("official-assistant")}`);
+  }
+});
+
+onShow(() => {
+  if (isUnlocked.value) {
+    void messagesStore.bootstrap();
+  }
+});
 </script>
 
 <template>
@@ -661,196 +336,81 @@ async function handleMarkAllNotificationsRead() {
     <template v-else>
       <!-- 页面顶部渐变氛围 -->
       <view class="messages-header-overlay" />
-      
-      <!-- 页面标题 -->
+
+      <!-- 顶部导航栏：加粗「消息」标题 + 右侧搜索图标 -->
       <view class="messages-header">
         <text class="messages-header__title">{{ t('messages.title') }}</text>
-        <view v-if="messagesStore.totalUnreadCount > 0" class="messages-header__badge">
-          <text class="messages-header__badge-text">
-            {{ messagesStore.totalUnreadCount > 99 ? "99+" : messagesStore.totalUnreadCount }}
-          </text>
-        </view>
-      </view>
-
-      <!-- 搜索框 -->
-      <view class="search-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.search')" @tap="handleSearchClick">
-        <view class="search-bar__icon">
-          <image :src="emojiIcons.search" mode="aspectFit" alt="" />
-        </view>
-        <text class="search-bar__placeholder">{{ t('messages.search') }}</text>
-      </view>
-
-      <!-- 功能入口区（Phase Feedback3：新增喜欢你的/访客，移除群聊；官方号独立区块） -->
-      <view class="entry-section" role="list">
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.newFriends')" @tap="handleEntryClick('new-friend')">
-          <view class="entry-item__icon entry-item__icon--green">
-            <image class="entry-item__emoji" :src="emojiIcons.smile" mode="aspectFit" alt="" />
-          </view>
-          <text class="entry-item__text">{{ t('messages.newFriends') }}</text>
-          <view v-if="messagesStore.pendingHeartSignals.length > 0" class="entry-item__badge">
-            <text class="entry-item__badge-text">{{ messagesStore.pendingHeartSignals.length }}</text>
-          </view>
-        </view>
-        <!-- Phase Feedback3 · 喜欢你的（需解锁） -->
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.likedMe')" @tap="handleEntryClick('liked-me')">
-          <view class="entry-item__icon entry-item__icon--red">
-            <image class="entry-item__emoji" :src="emojiIcons.heartFilled" mode="aspectFit" alt="" />
-          </view>
-          <text class="entry-item__text">{{ t('messages.likedMe') }}</text>
-          <view v-if="likedMeCount > 0" class="entry-item__badge entry-item__badge--locked">
-            <text class="entry-item__badge-text">{{ likedMeCount > 99 ? "99+" : likedMeCount }}</text>
-          </view>
-          <image class="entry-item__lock" :src="emojiIcons.lock" mode="aspectFit" alt="" />
-        </view>
-        <!-- Phase Feedback3 · 访客（需解锁） -->
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.visitorsEntry')" @tap="handleEntryClick('visitors')">
-          <view class="entry-item__icon entry-item__icon--blue">
-            <image class="entry-item__emoji" :src="emojiIcons.eye" mode="aspectFit" alt="" />
-          </view>
-          <text class="entry-item__text">{{ t('messages.visitorsEntry') }}</text>
-          <view v-if="visitorsCount > 0" class="entry-item__badge entry-item__badge--locked">
-            <text class="entry-item__badge-text">{{ visitorsCount > 99 ? "99+" : visitorsCount }}</text>
-          </view>
-          <image class="entry-item__lock" :src="emojiIcons.lock" mode="aspectFit" alt="" />
-        </view>
-        <view class="entry-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('messages.notice')" @tap="handleEntryClick('notification')">
-          <view class="entry-item__icon entry-item__icon--orange">
-            <image class="entry-item__emoji" :src="emojiIcons.notification" mode="aspectFit" alt="" />
-          </view>
-          <text class="entry-item__text">{{ t('messages.notice') }}</text>
-          <view v-if="messagesStore.unreadNotificationCount > 0" class="entry-item__badge">
-            <text class="entry-item__badge-text">
-              {{ messagesStore.unreadNotificationCount > 99 ? "99+" : messagesStore.unreadNotificationCount }}
-            </text>
+        <view class="messages-header__actions">
+          <view
+            class="messages-header__search-btn press-feedback"
+            :class="{ 'messages-header__search-btn--active': searchActive }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('messages.search')"
+            @tap="toggleSearch"
+          >
+            <image class="messages-header__search-icon" :src="iconSrc.search" mode="aspectFit" alt="" />
           </view>
         </view>
       </view>
 
-      <!-- Phase Feedback3 · 官方号区块（助手 + 活动推送） -->
-      <view class="official-section" role="list">
+      <!-- 搜索输入框（展开态，按昵称/聊天记录过滤会话） -->
+      <view v-if="searchActive" class="search-bar">
+        <image class="search-bar__icon" :src="iconSrc.search" mode="aspectFit" alt="" />
+        <input
+          v-model="searchKeyword"
+          class="search-bar__input"
+          :placeholder="t('messages.searchPlaceholder')"
+          confirm-type="search"
+          :aria-label="t('messages.searchPlaceholder')"
+        />
+        <view v-if="searchKeyword" class="search-bar__clear" role="button" :aria-label="t('common.clear')" @tap="clearSearch">
+          <image class="search-bar__clear-icon" :src="iconSrc.close" mode="aspectFit" alt="" />
+        </view>
+      </view>
+
+      <!-- 快捷功能入口（仅一行两个轻量卡片，不混入会话列表） -->
+      <view class="quick-entries">
         <view
-          v-for="account in officialAccounts"
-          :key="account.id"
-          class="official-item press-feedback"
+          class="quick-card press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           role="button"
-          :aria-label="t(account.nameKey)"
-          @tap="handleOfficialTap(account.id)"
+          :aria-label="t('messages.anonymousMatch')"
+          @tap="goMatchPool"
         >
-          <view class="official-item__avatar">
-            <image class="official-item__avatar-emoji" :src="account.icon" mode="aspectFit" alt="" />
+          <view class="quick-card__icon quick-card__icon--match">
+            <image class="quick-card__icon-img" :src="iconSrc.match" mode="aspectFit" alt="" />
           </view>
-          <view class="official-item__info">
-            <view class="official-item__name-row">
-              <text class="official-item__name">{{ t(account.nameKey) }}</text>
-              <text class="official-item__badge">{{ t('messages.officialBadge') }}</text>
-            </view>
-            <text class="official-item__desc">{{ t(account.descKey) }}</text>
+          <view class="quick-card__body">
+            <text class="quick-card__title">{{ t('messages.anonymousMatch') }}</text>
+            <text class="quick-card__desc">{{ t('messages.anonymousMatchDesc') }}</text>
           </view>
-          <text class="official-item__arrow">›</text>
-        </view>
-      </view>
-
-      <!-- 心动信号 Banner（Phase Feedback3：改名"缘分速配"，展示解锁规则） -->
-      <view v-if="featureFlags.heartSignalEnabled && hasPendingHeartSignal" class="heart-signal-banner">
-        <view class="heart-signal-banner__header">
-          <text class="heart-signal-banner__title">{{ t('messages.heartSignalNewName') }}</text>
-          <text class="heart-signal-banner__subtitle">{{ t('messages.heartSignalNewNameDesc') }}</text>
-        </view>
-        <view class="heart-signal-banner__rules">
-          <text
-            v-for="(rule, idx) in fateMatchRuleHints"
-            :key="idx"
-            class="heart-signal-banner__rule"
-          >• {{ t(rule) }}</text>
         </view>
         <view
-          v-for="signal in messagesStore.pendingHeartSignals" :key="signal.id"
-          class="heart-signal-card list-item"
-          :class="{ 'heart-signal-card--expiring': isSignalExpiringSoon(signal) }"
+          class="quick-card press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('messages.likesVisitorsEntry')"
+          @tap="goLikesVisitors"
         >
-          <view class="heart-signal-card__left">
-            <view class="heart-signal-card__avatar">
-              <text v-if="!signal.fromUserAvatar" class="heart-signal-card__avatar-text">
-                {{ signal.fromUserName.charAt(0) }}
-              </text>
-              <SafeImage v-else :src="signal.fromUserAvatar" custom-class="heart-signal-card__avatar-img" mode="aspectFill" :lazy-load="true" />
-            </view>
-            <view class="heart-signal-card__info">
-              <text class="heart-signal-card__name">{{ signal.fromUserName }}</text>
-              <text class="heart-signal-card__meta">
-                {{ t('messages.heartSignalInitialInfo') }}
-              </text>
-              <text class="heart-signal-card__highlight">{{ signal.bioHighlight }}</text>
-            </view>
+          <view class="quick-card__icon quick-card__icon--visitors">
+            <image class="quick-card__icon-img" :src="iconSrc.visitor" mode="aspectFit" alt="" />
           </view>
-          <view class="heart-signal-card__right">
-            <text class="heart-signal-card__countdown">{{ countdownMap[signal.id] || t('messages.countdownFallback') }}</text>
-            <button
-              class="heart-signal-card__btn"
-              :disabled="signal.status === 'expired' || countdownMap[signal.id] === t('messages.expired')"
-              @tap="handleHeartSignalChat(signal.id)"
-            >
-              {{ countdownMap[signal.id] === t("messages.expired") ? t("messages.expired") : t("messages.startChatNow") }}
-            </button>
+          <view class="quick-card__body">
+            <text class="quick-card__title">{{ t('messages.likesVisitorsEntry') }}</text>
+            <text class="quick-card__desc">{{ t('messages.likesVisitorsDesc') }}</text>
           </view>
         </view>
       </view>
 
-      <!-- 社交升温迷你入口 -->
-      <view
-        v-if="socialProgressStore.progress && socialProgressStore.progress.currentTier !== 'L6_SCENE'"
-        class="social-warming-hint press-feedback"
-        hover-class="press-feedback--active"
-        hover-stay-time="120"
-        role="button"
-        :aria-label="t('messages.socialWarming')"
-        @tap="openAppPath('/pages/profile/index')"
-      >
-        <SafeImage :src="iconSrc.heartSignal" custom-class="social-warming-hint__icon" mode="aspectFit" />
-        <text class="social-warming-hint__text">
-          {{ t('messages.socialWarming') }} {{ socialProgressStore.progress.progressPercentage ?? 0 }}%
-        </text>
-        <text class="social-warming-hint__action">{{ t('messages.viewDetailArrow') }}</text>
-      </view>
-
-      <!-- 主分类标签：私信 / 系统通知 -->
-      <BaseTabs
-        v-model="activeTab"
-        :tabs="mainTabs"
-        variant="underline"
-        :equal-split="false"
-        badge-color="var(--c-error, #E5454D)"
-      />
-
-      <!-- 功能5：通知分类筛选 Tab（全部 / 互动 / 系统 / 聊天） -->
-      <BaseTabs
-        v-if="activeTab === 'notifications'"
-        v-model="categoryFilter"
-        :tabs="categoryTabs"
-        variant="pill"
-        :equal-split="false"
-      />
-
-      <!-- 一键标记所有通知为已读（仅在通知 Tab 且存在未读时显示） -->
-      <view
-        v-if="activeTab === 'notifications' && messagesStore.unreadNotificationCount > 0"
-        class="mark-all-read-btn press-feedback"
-        hover-class="press-feedback--active"
-        hover-stay-time="120"
-        role="button"
-        :aria-label="t('messages.markAllRead')"
-        @tap="handleMarkAllNotificationsRead"
-      >
-        <text class="mark-all-read-btn__text">{{ t('messages.markAllRead') }}</text>
-      </view>
-
-      <!-- 统一页面状态容器：loading / error / empty / content 四态切换 -->
+      <!-- 统一页面状态容器：loading / error / empty / content -->
       <PageStateContainer :state="pageState" :error-text="errorText" @retry="handleRetry">
         <template #loading>
           <view class="messages-loading">
-            <Skeleton variant="list" :count="4" />
+            <Skeleton variant="list" :count="5" />
           </view>
         </template>
         <template #error>
@@ -864,161 +424,112 @@ async function handleMarkAllNotificationsRead() {
           </view>
         </template>
         <template #default>
-          <!-- 私信列表 -->
-          <view v-if="activeTab === 'private'" class="session-list" role="list">
-        <view
-          v-for="(session, index) in privateSessionList" :key="session.id"
-          class="session-row list-item"
-          :class="{ 'session-row--pinned': session.pinned, 'session-row--last': index === privateSessionList.length - 1 && tempSessionList.length === 0 }"
-          hover-class="session-row--hover"
-          @tap="openSession(session.id)"
-          @longpress="handleSessionLongPress(session.id)"
-        >
-          <view class="session-row__avatar-wrap">
-            <view class="session-row__avatar">
-              <text v-if="!session.partnerAvatar" class="session-row__avatar-text">
-                {{ session.partnerName.charAt(0) }}
-              </text>
-              <SafeImage v-else :src="session.partnerAvatar" custom-class="session-row__avatar-img" mode="aspectFill" :lazy-load="true" />
-              <view class="session-row__online-dot"></view>
+          <!-- 会话列表 -->
+          <view class="session-list" role="list" @tap="closeActions">
+            <!-- 搜索无结果提示 -->
+            <view v-if="showNoSearchResult" class="session-list__no-result">
+              <text class="session-list__no-result-text">{{ t('messages.noSearchResult') }}</text>
             </view>
-            <view v-if="session.unreadCount > 0" class="session-row__unread">
-              <text class="session-row__unread-text">
-                {{ session.unreadCount > 99 ? "99+" : session.unreadCount }}
-              </text>
-            </view>
-          </view>
-          <view class="session-row__content">
-            <view class="session-row__top">
-              <text class="session-row__name">{{ session.partnerName }}</text>
-              <text class="session-row__time">{{ formatTime(session.lastMessageSentAt) }}</text>
-            </view>
-            <view class="session-row__bottom">
-              <text class="session-row__preview">{{ session.lastMessagePreview || t('messages.noPreview') }}</text>
-              <text v-if="session.pinned" class="session-row__pin">{{ t('messages.pinned') }}</text>
-            </view>
-          </view>
-        </view>
 
-        <!-- 临时匿名会话 -->
-        <view
-          v-for="(session, index) in tempSessionList" :key="session.id"
-          class="session-row list-item session-row--temp"
-          :class="{ 'session-row--last': index === tempSessionList.length - 1 }"
-          hover-class="session-row--hover"
-          @tap="openSession(session.id)"
-        >
-          <view class="session-row__avatar-wrap">
-            <view class="session-row__avatar session-row__avatar--temp">
-              <text class="session-row__avatar-text">?</text>
-            </view>
-            <view v-if="session.unreadCount > 0" class="session-row__unread">
-              <text class="session-row__unread-text">
-                {{ session.unreadCount > 99 ? "99+" : session.unreadCount }}
-              </text>
-            </view>
-          </view>
-          <view class="session-row__content">
-            <view class="session-row__top">
-              <text class="session-row__name">{{ session.partnerName }}</text>
-              <text class="session-row__time">{{ formatTime(session.lastMessageSentAt) }}</text>
-            </view>
-            <view class="session-row__bottom">
-              <text class="session-row__preview">{{ session.lastMessagePreview || t('messages.noPreview') }}</text>
-              <text class="session-row__temp-tag">{{ t('messages.temp') }}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- Phase 3：系统通知列表（含信号分类样式） -->
-      <view v-else-if="activeTab === 'notifications'" class="notification-list" role="list">
-        <view
-          v-for="(notification, index) in notificationList" :key="notification.id"
-          class="notification-row list-item"
-          :class="[
-            { 'notification-row--unread': !notification.isRead, 'notification-row--last': index === notificationList.length - 1 },
-            getSignalClass(notification)
-          ]"
-          hover-class="notification-row--hover"
-          @tap="handleNotificationClick(notification)"
-        >
-          <!-- 信号类型图标 -->
-          <view
-            class="notification-row__icon"
-            :class="`notification-row__icon--${notification.signalType === 'SOCIAL' ? 'social' : 'content'}`"
-          >
-            <SafeImage
-              :src="getNotificationIcon(notification)"
-              custom-class="notification-row__icon-img"
-              mode="aspectFit"
-            />
-          </view>
-
-          <!-- 通知内容区 -->
-          <view class="notification-row__content">
-            <view class="notification-row__top">
-              <!-- 信号类型标签 + 标题 -->
-              <view class="notification-row__title-row">
-                <text
-                  class="notification-row__signal-tag"
-                  :class="`notification-row__signal-tag--${notification.signalType === 'SOCIAL' ? 'social' : 'content'}`"
+            <view
+              v-for="session in sessionList" :key="session.id"
+              class="session-wrap"
+            >
+              <!-- 左滑操作层（免打扰 / 删除） -->
+              <view class="session-wrap__actions">
+                <view
+                  class="session-wrap__action session-wrap__action--mute"
+                  role="button"
+                  :aria-label="session.muted ? t('messages.unmuteSession') : t('messages.muteSession')"
+                  @tap="toggleMute(session)"
                 >
-                  {{ getSignalLabel(notification) }}
-                </text>
-                <text class="notification-row__title">{{ notification.title }}</text>
+                  <image class="session-wrap__action-icon" :src="iconSrc.mute" mode="aspectFit" alt="" />
+                  <text class="session-wrap__action-text">
+                    {{ session.muted ? t('messages.unmuteSession') : t('messages.muteSession') }}
+                  </text>
+                </view>
+                <view
+                  class="session-wrap__action session-wrap__action--delete"
+                  role="button"
+                  :aria-label="t('common.delete')"
+                  @tap="confirmDeleteSession(session.id)"
+                >
+                  <text class="session-wrap__action-text">{{ t('common.delete') }}</text>
+                </view>
               </view>
-              <text class="notification-row__time">{{ formatTime(notification.createdAt) }}</text>
-            </view>
-            <text class="notification-row__body">{{ notification.content }}</text>
 
-            <!-- Phase 3：差异化操作按钮 -->
-            <view class="notification-row__action">
-              <text
-                class="notification-row__action-btn"
-                :class="`notification-row__action-btn--${notification.signalType === 'SOCIAL' ? 'social' : 'content'}`"
+              <!-- 会话行 -->
+              <view
+                class="session-row"
+                :class="{ 'session-row--open': openId === session.id }"
+                :style="rowStyle(session.id)"
+                hover-class="session-row--hover"
+                @tap="openSession(session)"
+                @longpress="handleSessionLongPress(session)"
+                @touchstart="onRowTouchStart($event, session.id)"
+                @touchmove="onRowTouchMove($event, session.id)"
+                @touchend="onRowTouchEnd($event, session.id)"
               >
-                {{ getActionLabel(notification) }}
-              </text>
+                <!-- 头像：用户头像 / 官方号专属图标 / 匿名蒙面头像 -->
+                <view class="session-row__avatar-wrap">
+                  <view
+                    v-if="session.isOfficial"
+                    class="session-row__avatar session-row__avatar--official"
+                  >
+                    <image class="session-row__avatar-official-icon" :src="officialIcon(session.officialAccountId)" mode="aspectFit" alt="" />
+                  </view>
+                  <view
+                    v-else-if="session.sessionType === 'temp_anonymous'"
+                    class="session-row__avatar session-row__avatar--temp"
+                  >
+                    <text class="session-row__avatar-text">?</text>
+                  </view>
+                  <view v-else class="session-row__avatar">
+                    <text v-if="!session.partnerAvatar" class="session-row__avatar-text">
+                      {{ session.partnerName.charAt(0) }}
+                    </text>
+                    <SafeImage v-else :src="session.partnerAvatar" custom-class="session-row__avatar-img" mode="aspectFill" :lazy-load="true" />
+                  </view>
+                  <!-- 未读红点（数字居中，99+） -->
+                  <view v-if="session.unreadCount > 0" class="session-row__unread">
+                    <text class="session-row__unread-text">
+                      {{ session.unreadCount > 99 ? "99+" : session.unreadCount }}
+                    </text>
+                  </view>
+                </view>
+
+                <!-- 中间文字区：昵称行 + 预览行 -->
+                <view class="session-row__content">
+                  <view class="session-row__top">
+                    <text class="session-row__name">{{ session.partnerName }}</text>
+                    <!-- 官方号灰色角标 -->
+                    <text v-if="session.isOfficial" class="session-row__official-badge">{{ t('messages.officialBadge') }}</text>
+                    <!-- 免打扰静音角标 -->
+                    <image v-if="session.muted" class="session-row__muted-icon" :src="iconSrc.mute" mode="aspectFit" alt="" />
+                  </view>
+                  <view class="session-row__bottom">
+                    <text class="session-row__preview">{{ session.lastMessagePreview || t('messages.noPreview') }}</text>
+                  </view>
+                </view>
+
+                <!-- 右侧状态区：时间 + 置顶标记 -->
+                <view class="session-row__right">
+                  <text class="session-row__time">{{ formatTime(session.lastMessageSentAt) }}</text>
+                  <text v-if="session.pinned" class="session-row__pin">{{ t('messages.pinned') }}</text>
+                </view>
+              </view>
             </view>
           </view>
-
-          <!-- 未读标记点（根据信号类型显示不同颜色） -->
-          <view
-            v-if="!notification.isRead"
-            class="notification-row__dot"
-            :class="`notification-row__dot--${notification.signalType === 'SOCIAL' ? 'social' : 'content'}`"
-          />
-        </view>
-      </view>
         </template>
       </PageStateContainer>
     </template>
   </view>
-
-  <!-- 匹配成功引导弹窗 -->
-  <MatchGuideOverlay
-    v-if="showMatchGuide"
-    :partner-name="matchGuideData.partnerName"
-    :partner-avatar="matchGuideData.partnerAvatar"
-    :icebreakers="matchGuideData.icebreakers"
-    :common-circles="matchGuideData.commonCircles"
-    :activities="matchGuideData.activities"
-    :session-id="matchGuideData.sessionId"
-    @close="handleMatchGuideClose"
-    @start-chat="handleMatchGuideStartChat"
-    @select-icebreaker="handleMatchGuideIcebreaker"
-  />
-
-  <!-- 收尾轮：全局发帖 FAB（消息页补齐，publish → 发帖编辑页） -->
-  <GlobalPublishFab @publish="goToPublishTopic" />
 </template>
 
 <style scoped lang="scss">
 .messages-page {
   display: flex;
   flex-direction: column;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   min-height: 100%;
   background: var(--c-gradient-page);
   padding: 0;
@@ -1038,11 +549,11 @@ async function handleMarkAllNotificationsRead() {
   z-index: 0;
 }
 
-/* ========== 页面标题 ========== */
+/* ========== 顶部导航栏 ========== */
 .messages-header {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
+  justify-content: space-between;
   padding: var(--sp-6) var(--sp-8) var(--sp-4);
   position: relative;
   z-index: 1;
@@ -1055,30 +566,41 @@ async function handleMarkAllNotificationsRead() {
   letter-spacing: 1rpx;
 }
 
-.messages-header__badge {
-  min-width: var(--sp-9);
-  height: var(--sp-9);
-  padding: 0 var(--sp-2);
-  border-radius: var(--r-full);
-  background: var(--c-error);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.messages-header__badge-text {
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--c-text-inverse);
-}
-
-/* ========== 搜索框 ========== */
-.search-bar {
+.messages-header__actions {
   display: flex;
   align-items: center;
   gap: var(--sp-4);
-  margin: 0 var(--sp-8) var(--sp-6);
-  padding: var(--sp-5) var(--sp-7);
+}
+
+.messages-header__search-btn {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  box-shadow: var(--s-card-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &--active {
+    background: var(--c-bg-brand);
+    border-color: var(--c-brand-300);
+  }
+}
+
+.messages-header__search-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+/* ========== 搜索输入框 ========== */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0 var(--sp-8) var(--sp-4);
+  padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-xl);
   background: var(--c-bg-container);
   box-shadow: var(--s-card-soft);
@@ -1088,433 +610,104 @@ async function handleMarkAllNotificationsRead() {
 }
 
 .search-bar__icon {
-  width: 36rpx;
-  height: 36rpx;
-  margin-right: var(--sp-2);
-  opacity: 0.5;
-  color: var(--c-text-tertiary);
+  width: 32rpx;
+  height: 32rpx;
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  opacity: 0.5;
 }
 
-.search-bar__icon image {
-  width: 100%;
-  height: 100%;
-}
-
-.search-bar__placeholder {
+.search-bar__input {
+  flex: 1;
+  min-width: 0;
   font-size: var(--fs-lg);
-  color: var(--c-text-tertiary);
+  color: var(--c-text-primary);
 }
 
-/* ========== 一键标记所有通知为已读按钮 ========== */
-.mark-all-read-btn {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin: 0 var(--sp-8) var(--sp-3);
-  padding: var(--sp-2) var(--sp-4);
-}
-
-.mark-all-read-btn__text {
-  font-size: var(--fs-sm);
-  color: var(--c-brand-500);
-  font-weight: 500;
-}
-
-/* ========== 功能入口区 ========== */
-.entry-section {
-  display: flex;
-  justify-content: space-around;
-  padding: var(--sp-2) var(--sp-8) var(--sp-8);
-  position: relative;
-  z-index: 1;
-}
-
-.entry-item {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-3);
-}
-
-.entry-item__icon {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: var(--r-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--d-normal, 200ms) ease;
-}
-
-/* #ifdef H5 */
-.entry-item:active .entry-item__icon {
-  transform: scale(0.95);
-}
-/* #endif */
-
-.entry-item__icon--green {
-  background: var(--c-gradient-brand);
-  box-shadow: var(--s-brand);
-}
-
-.entry-item__icon--blue {
-  background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
-  box-shadow: 0 var(--sp-2) var(--sp-5) var(--s-action-super);
-}
-
-.entry-item__icon--orange {
-  background: linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-accent-400) 100%);
-  box-shadow: 0 var(--sp-2) var(--sp-5) var(--c-tag-match-to);
-}
-
-.entry-item__icon--pink {
-  background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  box-shadow: var(--s-romance);
-}
-
-/* Phase Feedback3 · 入口 emoji 文字与锁标识 */
-.entry-item__icon--red {
-  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
-  box-shadow: 0 var(--sp-2) var(--sp-5) rgba(225, 29, 72, 0.25);
-}
-
-.entry-item__badge--locked {
-  margin-right: 8rpx;
-}
-
-.entry-item__lock {
-  position: absolute;
-  top: var(--sp-1);
-  right: var(--sp-1);
-  width: 28rpx;
-  height: 28rpx;
-  opacity: 0.85;
-}
-
-.entry-item__emoji {
+.search-bar__clear {
   width: 48rpx;
   height: 48rpx;
-  color: var(--c-neutral-0);
-  flex-shrink: 0;
-}
-
-.entry-item__text {
-  font-size: var(--fs-base);
-  color: var(--c-text-secondary);
-  font-weight: 500;
-}
-
-.entry-item__badge {
-  position: absolute;
-  top: calc(-1 * var(--sp-2));
-  right: var(--sp-2);
-  min-width: var(--sp-8);
-  height: var(--sp-8);
-  padding: 0 var(--sp-2);
-  border-radius: var(--r-full);
-  background: var(--c-error);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--sp-1) solid var(--c-bg-page);
-}
-
-.entry-item__badge-text {
-  font-size: 18rpx;
-  font-weight: 700;
-  color: var(--c-text-inverse);
-}
-
-/* ========== 官方号区块（Phase Feedback3） ========== */
-.official-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  margin: 0 var(--sp-8) var(--sp-5);
-  padding: var(--sp-4);
-  background: var(--c-bg-container, #ffffff);
-  border-radius: var(--r-xl, 24rpx);
-  box-shadow: var(--s-card-soft, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
-}
-
-.official-item {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  padding: var(--sp-3) var(--sp-2);
-  border-radius: var(--r-lg, 20rpx);
-}
-
-.official-item__avatar {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: var(--r-lg, 20rpx);
-  background: linear-gradient(135deg, var(--c-brand-400, #6fe0b0) 0%, var(--c-brand-500, #3fcf8e) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.official-item__avatar-emoji {
-  width: 44rpx;
-  height: 44rpx;
-  color: var(--c-brand-500);
+.search-bar__clear-icon {
+  width: 32rpx;
+  height: 32rpx;
+  opacity: 0.6;
 }
 
-.official-item__info {
-  flex: 1;
+/* ========== 快捷功能入口（一行两个轻量卡片） ========== */
+.quick-entries {
   display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-  min-width: 0;
-}
-
-.official-item__name-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-}
-
-.official-item__name {
-  font-size: var(--fs-base, 28rpx);
-  font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
-}
-
-.official-item__badge {
-  font-size: 20rpx;
-  font-weight: 600;
-  color: var(--c-brand-500, #3fcf8e);
-  border: 1rpx solid var(--c-brand-300, #9be8c8);
-  background: var(--c-brand-bg-tint, #e6f9f0);
-  padding: 2rpx 10rpx;
-  border-radius: var(--r-full, 999rpx);
-}
-
-.official-item__desc {
-  font-size: var(--fs-xs, 24rpx);
-  color: var(--c-text-tertiary, #9ca3af);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.official-item__arrow {
-  font-size: var(--fs-2xl, 36rpx);
-  color: var(--c-text-tertiary, #9ca3af);
-}
-
-/* ========== 心动信号 Banner（Phase Feedback3：缘分速配） ========== */
-.heart-signal-banner {
-  display: flex;
-  flex-direction: column;
   gap: var(--sp-4);
-  margin: 0 var(--sp-8) var(--sp-5);
+  margin: 0 var(--sp-8) var(--sp-6);
   position: relative;
   z-index: 1;
 }
 
-.heart-signal-banner__header {
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-}
-
-.heart-signal-banner__title {
-  font-size: var(--fs-lg, 32rpx);
-  font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
-}
-
-.heart-signal-banner__subtitle {
-  font-size: var(--fs-xs, 24rpx);
-  color: var(--c-text-tertiary, #9ca3af);
-}
-
-.heart-signal-banner__rules {
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-  padding: var(--sp-3) var(--sp-4);
-  background: var(--c-romance-bg-tint, #fdf2f8);
-  border-radius: var(--r-lg, 20rpx);
-}
-
-.heart-signal-banner__rule {
-  font-size: var(--fs-xs, 24rpx);
-  color: var(--c-romance-500, #ec4899);
-  line-height: 1.5;
-}
-
-.heart-signal-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--sp-5);
-  padding: var(--sp-6);
-  border-radius: var(--r-xl);
-  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-romance-50) 100%);
-  border: 1rpx solid var(--c-brand-shadow-tint);
-}
-
-.heart-signal-card--expiring {
-  border-color: var(--c-error);
-  border-width: 2rpx;
-  animation: heart-signal-blink var(--d-particle, 1500ms) ease-in-out infinite;
-}
-
-@keyframes heart-signal-blink {
-  0%, 100% {
-    border-color: var(--c-error);
-    box-shadow: 0 0 0 0 var(--c-error-bg-tint);
-  }
-  50% {
-    border-color: var(--c-shadow-romance-tint-stronger);
-    box-shadow: 0 0 var(--sp-5) var(--s-romance);
-  }
-}
-
-.heart-signal-card__left {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-5);
+.quick-card {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-xl);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  box-shadow: var(--s-card-soft);
   min-width: 0;
 }
 
-.heart-signal-card__avatar {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: var(--r-full);
-  background: linear-gradient(135deg, var(--c-brand), var(--c-romance-500));
+.quick-card__icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: var(--s-brand-sm);
+
+  &--match {
+    background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
+  }
+
+  &--visitors {
+    background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
+  }
 }
 
-.heart-signal-card__avatar-text {
-  font-size: var(--fs-2xl);
-  font-weight: 700;
-  color: var(--c-text-inverse);
+.quick-card__icon-img {
+  width: 36rpx;
+  height: 36rpx;
 }
 
-.heart-signal-card__avatar-img {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: var(--r-full);
-}
-
-.heart-signal-card__info {
+.quick-card__body {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
+  gap: 2rpx;
   min-width: 0;
 }
 
-.heart-signal-card__name {
-  font-size: var(--fs-lg);
+.quick-card__title {
+  font-size: var(--fs-base);
   font-weight: 700;
   color: var(--c-text-primary);
-  /* 修复（P1 BUG）：原实现缺少文本裁剪，长昵称会推动布局错乱 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100%;
 }
 
-.heart-signal-card__meta {
-  font-size: var(--fs-sm);
-  color: var(--c-text-secondary);
-}
-
-.heart-signal-card__highlight {
-  font-size: var(--fs-sm);
-  color: var(--c-brand);
-  line-height: 1.4;
-  font-weight: 500;
-}
-
-.heart-signal-card__right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--sp-2);
-  flex-shrink: 0;
-}
-
-.heart-signal-card__countdown {
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--c-error);
-  font-variant-numeric: tabular-nums;
-}
-
-.heart-signal-card__btn {
-  min-width: 140rpx;
-  height: 56rpx;
-  padding: 0 var(--sp-5);
-  border: 0;
-  border-radius: var(--r-full);
-  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-romance-500) 100%);
-  color: var(--c-text-inverse);
-  font-size: var(--fs-base);
-  font-weight: 700;
-  line-height: 56rpx;
-  text-align: center;
-  box-shadow: var(--s-brand);
-}
-
-.heart-signal-card__btn::after {
-  border: none;
-}
-
-.heart-signal-card__btn:disabled {
-  background: var(--c-neutral-100);
+.quick-card__desc {
+  font-size: 20rpx;
   color: var(--c-text-tertiary);
-  box-shadow: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ========== 社交升温迷你入口 ========== */
-.social-warming-hint {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-4) var(--sp-6);
-  margin: 0 var(--sp-8) var(--sp-4);
-  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-romance-50));
-  border-radius: var(--r-lg);
-  position: relative;
-  z-index: 1;
-}
-
-.social-warming-hint__icon {
-  width: var(--sp-7);
-  height: var(--sp-7);
-  flex-shrink: 0;
-}
-
-.social-warming-hint__text {
-  flex: 1;
-  font-size: var(--fs-base);
-  color: var(--c-brand);
-  font-weight: 600;
-}
-
-.social-warming-hint__action {
-  font-size: var(--fs-sm);
-  color: var(--c-romance-500);
-  font-weight: 500;
-}
-
-/* ========== 加载与错误状态 ========== */
+/* ========== 加载 / 错误 / 空状态 ========== */
 .messages-loading,
 .messages-error {
   display: flex;
@@ -1525,7 +718,6 @@ async function handleMarkAllNotificationsRead() {
   z-index: 1;
 }
 
-/* ========== 空状态 ========== */
 .messages-empty {
   flex: 1;
   display: flex;
@@ -1550,6 +742,63 @@ async function handleMarkAllNotificationsRead() {
   z-index: 1;
 }
 
+.session-list__no-result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-10) var(--sp-8);
+}
+
+.session-list__no-result-text {
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
+}
+
+/* 会话包裹层：操作层固定在行下方，行左滑露出 */
+.session-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.session-wrap__actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.session-wrap__action {
+  width: 100rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+
+  &--mute {
+    background: var(--c-neutral-400);
+  }
+
+  &--delete {
+    background: var(--c-error);
+  }
+}
+
+.session-wrap__action-icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.session-wrap__action-text {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: var(--c-text-inverse);
+  line-height: 1.3;
+}
+
+/* 会话行（左滑时位移露出操作层） */
 .session-row {
   display: flex;
   align-items: center;
@@ -1557,7 +806,8 @@ async function handleMarkAllNotificationsRead() {
   padding: var(--sp-6) var(--sp-8);
   background: var(--c-bg-container);
   position: relative;
-  transition: transform var(--d-fast, 120ms) ease, background 0.15s ease;
+  z-index: 1;
+  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1), background 0.15s ease;
 }
 
 .session-row:not(.session-row--last)::after {
@@ -1572,9 +822,9 @@ async function handleMarkAllNotificationsRead() {
 
 .session-row--hover {
   background: var(--c-neutral-50);
-  transform: scale(0.98);
 }
 
+/* 头像区 */
 .session-row__avatar-wrap {
   position: relative;
   flex-shrink: 0;
@@ -1582,8 +832,8 @@ async function handleMarkAllNotificationsRead() {
 
 .session-row__avatar {
   position: relative;
-  width: 80rpx;
-  height: 80rpx;
+  width: 88rpx;
+  height: 88rpx;
   border-radius: var(--r-full);
   background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand));
   display: flex;
@@ -1591,17 +841,28 @@ async function handleMarkAllNotificationsRead() {
   justify-content: center;
 }
 
+/* 官方号：品牌色圆角方形专属头像 */
+.session-row__avatar--official {
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
+}
+
+.session-row__avatar-official-icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+/* 匿名匹配：深灰蒙面头像 */
+.session-row__avatar--temp {
+  background: linear-gradient(135deg, var(--c-neutral-300), var(--c-neutral-400));
+}
+
 .session-row__avatar-img {
-  width: 72rpx;
-  height: 72rpx;
+  width: 88rpx;
+  height: 88rpx;
   border-radius: var(--r-full);
   border: var(--sp-1) solid var(--c-bg-container);
   box-sizing: border-box;
-}
-
-.session-row__avatar--temp {
-  background: linear-gradient(135deg, var(--c-neutral-100), var(--c-neutral-200));
-  padding: 0;
 }
 
 .session-row__avatar-text {
@@ -1614,17 +875,7 @@ async function handleMarkAllNotificationsRead() {
   color: var(--c-text-secondary);
 }
 
-.session-row__online-dot {
-  position: absolute;
-  right: var(--sp-1);
-  bottom: var(--sp-1);
-  width: 18rpx;
-  height: 18rpx;
-  border-radius: var(--r-full);
-  background: var(--c-success);
-  border: var(--sp-1) solid var(--c-bg-container);
-}
-
+/* 未读红点（数字居中，99+） */
 .session-row__unread {
   position: absolute;
   top: -6rpx;
@@ -1638,7 +889,8 @@ async function handleMarkAllNotificationsRead() {
   align-items: center;
   justify-content: center;
   border: var(--sp-1) solid var(--c-bg-container);
-  z-index: 1;
+  z-index: 2;
+  box-sizing: border-box;
 }
 
 .session-row__unread-text {
@@ -1647,6 +899,7 @@ async function handleMarkAllNotificationsRead() {
   color: var(--c-text-inverse);
 }
 
+/* 中间文字区 */
 .session-row__content {
   flex: 1;
   display: flex;
@@ -1657,9 +910,9 @@ async function handleMarkAllNotificationsRead() {
 
 .session-row__top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: var(--sp-4);
+  gap: var(--sp-2);
+  min-width: 0;
 }
 
 .session-row__name {
@@ -1669,21 +922,34 @@ async function handleMarkAllNotificationsRead() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
-  min-width: 0;
+  max-width: 100%;
 }
 
-.session-row__time {
-  font-size: var(--fs-xs);
-  color: var(--c-text-tertiary);
+/* 官方号灰色角标 */
+.session-row__official-badge {
+  font-size: 18rpx;
+  font-weight: 600;
+  color: var(--c-text-secondary);
+  border: 1rpx solid var(--c-border-default);
+  background: var(--c-neutral-50);
+  padding: 2rpx 10rpx;
+  border-radius: var(--r-full);
   flex-shrink: 0;
+}
+
+/* 免打扰静音角标 */
+.session-row__muted-icon {
+  width: 28rpx;
+  height: 28rpx;
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .session-row__bottom {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: var(--sp-3);
+  min-width: 0;
 }
 
 .session-row__preview {
@@ -1697,207 +963,27 @@ async function handleMarkAllNotificationsRead() {
   min-width: 0;
 }
 
-.session-row__pin,
-.session-row__temp-tag {
+/* 右侧状态区 */
+.session-row__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+.session-row__time {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
+}
+
+.session-row__pin {
   font-size: 18rpx;
   font-weight: 600;
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-sm);
-  flex-shrink: 0;
-}
-
-.session-row__pin {
   background: var(--c-bg-brand);
   color: var(--c-brand);
-}
-
-.session-row__temp-tag {
-  background: var(--c-romance-50);
-  color: var(--c-romance-500);
-}
-
-/* ========== Phase 3：通知列表 ========== */
-.notification-list {
-  margin: 0 var(--sp-8);
-  background: var(--c-bg-container);
-  border-radius: var(--r-xl);
-  overflow: hidden;
-  box-shadow: var(--s-card-soft);
-  border: var(--c-border-card);
-  position: relative;
-  z-index: 1;
-}
-
-.notification-row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-6);
-  padding: var(--sp-6) var(--sp-8);
-  background: var(--c-bg-container);
-  position: relative;
-  transition: transform var(--d-fast, 120ms) ease, background 0.15s ease;
-}
-
-.notification-row:not(.notification-row--last)::after {
-  content: "";
-  position: absolute;
-  left: 136rpx;
-  right: 0;
-  bottom: 0;
-  height: 1rpx;
-  background: var(--c-divider-light);
-}
-
-.notification-row--hover {
-  background: var(--c-neutral-50);
-  transform: scale(0.98);
-}
-
-.notification-row--unread {
-  background: var(--c-gradient-card-atmosphere);
-}
-
-/* 社交信号未读行高亮 */
-.notification-row--unread.signal-social {
-  background: var(--c-romance-bg-tint);
-}
-
-/* 内容信号未读行高亮 */
-.notification-row--unread.signal-content {
-  background: var(--c-brand-bg-tint);
-}
-
-/* ===== 通知图标 ===== */
-.notification-row__icon {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: var(--r-full);
-  background: var(--c-bg-brand);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-}
-
-.notification-row__icon-img {
-  width: 34rpx;
-  height: 34rpx;
-}
-
-.notification-row__icon--social {
-  background: linear-gradient(135deg, var(--c-romance-50), var(--c-romance-100));
-}
-
-.notification-row__icon--content {
-  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-100));
-}
-
-/* ===== 通知内容区 ===== */
-.notification-row__content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  min-width: 0;
-}
-
-.notification-row__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--sp-4);
-}
-
-.notification-row__title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  flex: 1;
-  min-width: 0;
-}
-
-/* 信号类型标签 */
-.notification-row__signal-tag {
-  font-size: 18rpx;
-  font-weight: 600;
-  padding: 2rpx var(--sp-2);
-  border-radius: var(--r-xs);
-  flex-shrink: 0;
-  line-height: 1.6;
-}
-
-.notification-row__signal-tag--social {
-  background: var(--c-romance-50);
-  color: var(--c-romance-500);
-}
-
-.notification-row__signal-tag--content {
-  background: var(--c-bg-brand);
-  color: var(--c-brand);
-}
-
-.notification-row__title {
-  font-size: var(--fs-md);
-  font-weight: 600;
-  color: var(--c-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.notification-row__time {
-  font-size: var(--fs-xs);
-  color: var(--c-text-tertiary);
-  flex-shrink: 0;
-}
-
-.notification-row__body {
-  font-size: var(--fs-base);
-  color: var(--c-text-secondary);
-  line-height: 1.5;
-}
-
-/* 操作按钮区域 */
-.notification-row__action {
-  display: flex;
-  margin-top: var(--sp-2);
-}
-
-.notification-row__action-btn {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  padding: var(--sp-2) var(--sp-6);
-  border-radius: var(--r-full);
-  line-height: 1.4;
-  transition: all var(--d-normal, 200ms) ease;
-}
-
-/* 社交信号按钮：粉色 */
-.notification-row__action-btn--social {
-  background: var(--c-romance-50);
-  color: var(--c-romance-500);
-}
-
-/* 内容信号按钮：绿色 */
-.notification-row__action-btn--content {
-  background: var(--c-bg-brand);
-  color: var(--c-brand);
-}
-
-/* 未读标记点 */
-.notification-row__dot {
-  width: 14rpx;
-  height: 14rpx;
-  border-radius: var(--r-full);
-  flex-shrink: 0;
-  margin-top: var(--sp-2);
-}
-
-.notification-row__dot--social {
-  background: var(--c-romance-500);
-}
-
-.notification-row__dot--content {
-  background: var(--c-brand);
 }
 </style>

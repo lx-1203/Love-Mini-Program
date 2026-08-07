@@ -471,11 +471,8 @@ export const useVillageStore = defineStore("village", {
           return;
         }
 
-        // 获取当前用户 ID
-        const sessionStore = useSessionStore();
-        const currentUserId = sessionStore.userSession?.userId ?? "";
-
-        await followUserApi(userId, currentUserId, !isCurrentlyFollowed);
+        // P2-13：关注接口 userId 由后端 JWT 获取，客户端不再携带
+        await followUserApi(userId, !isCurrentlyFollowed);
 
         // 更新本地状态：该用户所有帖子的 isFollowed 统一更新
         const newFollowedState = !isCurrentlyFollowed;
@@ -502,8 +499,9 @@ export const useVillageStore = defineStore("village", {
      *
      * @param postId - 帖子 ID
      * @param content - 评论内容
+     * @param parentId - 父评论 ID（P1-02 楼中楼回复，缺省为根评论）
      */
-    async commentPost(postId: string, content: string) {
+    async commentPost(postId: string, content: string, parentId?: string) {
       this.errorMessage = null;
 
       // 内容非空检查（在防抖前执行，确保用户立即收到错误反馈）
@@ -539,7 +537,7 @@ export const useVillageStore = defineStore("village", {
         }
         const timer = setTimeout(() => {
           commentDebounceTimers.delete(postId);
-          this._doCommentPost(postId, content).then(resolve).catch(reject);
+          this._doCommentPost(postId, content, parentId).then(resolve).catch(reject);
         }, COMMENT_DEBOUNCE_MS);
         commentDebounceTimers.set(postId, { timer, resolve });
       });
@@ -550,8 +548,9 @@ export const useVillageStore = defineStore("village", {
      *
      * @param postId - 帖子 ID
      * @param content - 评论内容
+     * @param parentId - 父评论 ID（P1-02 楼中楼回复）
      */
-    async _doCommentPost(postId: string, content: string) {
+    async _doCommentPost(postId: string, content: string, parentId?: string) {
       this.errorMessage = null;
 
       // infra R2-00036: 防抖回调内二次校验（防御防抖窗口期间内容被清空/变更）
@@ -561,9 +560,27 @@ export const useVillageStore = defineStore("village", {
       }
 
       try {
+        // P1-02 楼中楼：本地插入评论（根评论追加到列表，回复追加到父评论 replies）
+        const appendComment = (comment: CommentItem): void => {
+          if (parentId) {
+            const parent = this.comments.find((c) => c.id === parentId);
+            if (parent) {
+              parent.replies = [...(parent.replies ?? []), comment];
+            } else {
+              // 父评论不在当前列表（异常兜底）：按根评论展示
+              this.comments.push(comment);
+            }
+          } else {
+            this.comments.push(comment);
+          }
+        };
+
         if (useMock()) {
           // infra R2-00037: mock 评论作者从当前会话生成
           const me = useSessionStore().userSession;
+          const parent = parentId
+            ? this.comments.find((c) => c.id === parentId)
+            : undefined;
           const newComment: CommentItem = {
             id: `comment-${Date.now()}`,
             postId,
@@ -577,8 +594,11 @@ export const useVillageStore = defineStore("village", {
             likes: 0,
             isLiked: false,
             createdAt: new Date().toISOString(),
+            parentId: parentId ?? null,
+            replyTo: parent?.author.name ?? null,
+            replies: [],
           };
-          this.comments.push(newComment);
+          appendComment(newComment);
 
           const post = this.posts.find((p) => p.id === postId);
           if (post) {
@@ -590,10 +610,10 @@ export const useVillageStore = defineStore("village", {
           return newComment;
         }
 
-        // 调用后端 API: POST /api/posts/{postId}/comments
-        const result = await createCommentApi(postId, content);
+        // 调用后端 API: POST /api/posts/{postId}/comments（P1-02：带 parentId 创建楼中楼回复）
+        const result = await createCommentApi(postId, content, parentId);
         const mappedComment = mapToCommentItem(result);
-        this.comments.push(mappedComment);
+        appendComment(mappedComment);
 
         const post = this.posts.find((p) => p.id === postId);
         if (post) {
@@ -829,10 +849,8 @@ export const useVillageStore = defineStore("village", {
           return;
         }
 
-        // 调用后端 API: GET /api/campus/feed
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
-        const data = await fetchCampusFeedApi<CampusFeedView>(userId);
+        // 调用后端 API: GET /api/campus/feed（P2-13：userId 由后端 JWT 获取）
+        const data = await fetchCampusFeedApi<CampusFeedView>();
 
         // 将后端 CampusFeedView 中的帖子映射为前端 PostItem
         this.campusFeedPosts = (data.posts ?? []).map(mapCampusFeedPost);
@@ -885,10 +903,8 @@ export const useVillageStore = defineStore("village", {
           return;
         }
 
-        // 调用后端 API: GET /api/posts/{postId}/similar-authors?userId={userId}
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
-        const data = await fetchSimilarAuthorsApi(postId, userId);
+        // 调用后端 API: GET /api/posts/{postId}/similar-authors（P2-13：userId 由后端 JWT 获取）
+        const data = await fetchSimilarAuthorsApi(postId);
 
         this.similarAuthors = (data.authors ?? []).map((a: SimilarAuthor) => ({
           userId: String(a.userId ?? ""),
@@ -916,7 +932,7 @@ export const useVillageStore = defineStore("village", {
      *
      * TODO(dispose-接线)：引用页面为 pages/village/index.vue（主列表页）及
      * pages/village/detail.vue、pages/village/post.vue、pages/village/tag-posts.vue、
-     * pages/circle/index.vue、pages/profile/index.vue。本子任务受目录权限限制无法修改
+     * pages/profile/index.vue。本子任务受目录权限限制无法修改
      * pages/ 目录，需在后续任务中于页面 onUnload 调用 villageStore.dispose()。
      */
     dispose() {

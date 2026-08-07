@@ -40,6 +40,16 @@ public interface ProfileService {
     BasicProfileView uploadBackground(MultipartFile file);
 
     /**
+     * 上传头像（2026-08-07 新增）。
+     *
+     * 头像存于 users.avatar_url，由推荐卡片与个人主页共用。
+     *
+     * @param file multipart 头像文件（jpg/png/webp）
+     * @return 更新后的基本资料视图（包含新头像 URL）
+     */
+    BasicProfileView uploadAvatar(MultipartFile file);
+
+    /**
      * 上传照片墙图片到指定索引。
      * 索引范围 0-5，若该位置已有照片则覆盖；超过 6 张返回 400。
      *

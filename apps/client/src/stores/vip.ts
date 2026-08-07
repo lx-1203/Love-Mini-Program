@@ -86,8 +86,21 @@ export interface FetchBillsParams {
 export const useVipStore = defineStore("vip", () => {
   /** 内部 VIP 状态（保留赋值能力，供后续购买/续费逻辑更新） */
   const isVipRaw = ref(false);
+  /**
+   * dev 模式会员身份模拟开关（2026-08-07 超级测试账号体系）。
+   * dev 调试页可切换普通用户/会员身份，模拟不同权限的前端展示效果。
+   */
+  const isDevVipSimulated = computed<boolean>(() => {
+    try {
+      return uni.getStorageSync("campus-love:dev-vip-sim") === "1";
+    } catch (_e) {
+      return false;
+    }
+  });
   /** 展示模式（全功能展示版）下 VIP 恒为 true，其余透传内部状态 */
-  const isVip = computed<boolean>(() => isShowcaseMode || isVipRaw.value);
+  const isVip = computed<boolean>(
+    () => isShowcaseMode || isVipRaw.value || isDevVipSimulated.value,
+  );
   const expireDate = ref<string | null>(null);
 
   const plans = ref<VipPlan[]>([

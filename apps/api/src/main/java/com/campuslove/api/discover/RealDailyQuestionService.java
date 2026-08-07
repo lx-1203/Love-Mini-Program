@@ -1,6 +1,8 @@
 package com.campuslove.api.discover;
 
 import com.campuslove.api.common.ResourceNotFoundException;
+import com.campuslove.api.common.ResourceConflictException;
+import com.campuslove.api.common.InvalidOperationException;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.DailyAnswer;
@@ -139,9 +141,10 @@ public class RealDailyQuestionService implements DailyQuestionService {
         DailyQuestion question = dailyQuestionRepository.findById(questionId)
                 .orElseThrow(() -> new IllegalArgumentException("问题不存在: " + questionId));
 
-        // 检查是否重复回答
+        // 检查是否重复回答（infra R2 修复：原 IllegalStateException 无专属 handler
+        // 会落入 500 兜底；改为 ResourceConflictException 返回 409 友好业务错误）
         if (dailyAnswerRepository.existsByQuestionIdAndUserId(questionId, userId)) {
-            throw new IllegalStateException("您已经回答过该问题，不能重复回答");
+            throw new ResourceConflictException("您已经回答过该问题，不能重复回答");
         }
 
         // 创建回答记录
@@ -183,8 +186,9 @@ public class RealDailyQuestionService implements DailyQuestionService {
                 questionId, currentUserId, pageable.getPageNumber(), pageable.getPageSize());
 
         // 权限检查：只有已回答的用户才能查看
+        // （infra R2 修复：原 IllegalStateException 落入 500，改为 InvalidOperationException 返回 400）
         if (currentUserId != null && !hasAnswered(currentUserId, questionId)) {
-            throw new IllegalStateException("请先回答问题才能查看其他人的回答");
+            throw new InvalidOperationException("请先回答问题才能查看其他人的回答");
         }
 
         // 查询问题是否存在

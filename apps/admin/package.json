@@ -2,7 +2,7 @@
   "name": "@campus-love/admin",
   "private": true,
   "version": "0.1.0",
-  "description": "Admin console for moderation, feedback triage, and activity proposal review.",
+  "description": "Admin console (eladmin-style: dynamic menus + role permissions + multi-tab views), rebuilt from the eladmin reference.",
   "sideEffects": [
     "*.css",
     "*.scss",
@@ -18,8 +18,7 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
-    "test:unit": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "vue": "~3.4.0",

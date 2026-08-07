@@ -32,7 +32,10 @@ import org.springframework.web.bind.annotation.RestController;
  * </ul>
  *
  * <p>当前实现：任何已认证用户可访问（与 AdminCertificationController 保持一致）。
- * 生产环境应叠加角色校验（如 @PreAuthorize("hasRole('ADMIN')")），但本任务不修改 SecurityConfig。
+ * 生产环境应叠加角色校验（如 @PreAuthorize("hasRole('ADMIN')")），但本任务不修改 SecurityConfig。</p>
+ *
+ * <p>数据隔离说明：系统参数/业务规则/功能开关均为<b>全局资源</b>（全平台统一生效，
+ * 不区分校区），不做校区数据隔离；写操作（更新/切换）仅限 SUPER_ADMIN。</p>
  */
 @Profile("real")
 @RestController

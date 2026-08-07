@@ -21,7 +21,7 @@
 #   2. docker compose up -d
 #   3. 访问：
 #      - API:        http://localhost:8080
-#      - Admin:      http://localhost:5180
+#      - Admin:      http://localhost:5177
 #      - Client H5:  http://localhost:5173
 #      - Grafana:    http://localhost:3001
 #      - Prometheus: http://localhost:9090
@@ -221,7 +221,7 @@ services:
       WECHAT_SECRET: ${WECHAT_SECRET:-}
       # ---------- CORS ----------
       # 生产必须通过 .env 配置真实域名；默认值仅保证本地开发可用（infra #41）
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://www.campuslove.example.com,https://admin.campuslove.example.com,http://localhost:5173,http://localhost:5174,http://localhost:5180}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://www.campuslove.example.com,https://admin.campuslove.example.com,http://localhost:5173,http://localhost:5174,http://localhost:5177}
       # ---------- AI ----------
       AGNES_API_KEY: ${AGNES_API_KEY:-}
       AGNES_API_BASE: ${AGNES_API_BASE:-https://api.agnes-ai.com/api}
@@ -241,11 +241,11 @@ services:
       APP_MEDIA_STORAGE_ROOT: /app/uploads
       # ---------- RabbitMQ（可选）----------
       # 未部署 MQ 时应用自动降级；若启用 RabbitMQ，必须在 .env 中配置强凭据，
-      # 禁止使用默认 guest/guest 上线（infra #12/#13）
+      # 禁止使用默认 guest/guest 上线（infra #12/#13）：未配置时 compose 直接报错终止
       RABBITMQ_HOST: ${RABBITMQ_HOST:-}
       RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
-      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:?RABBITMQ_USERNAME is required (no guest default)}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required (no guest default)}
       # ---------- Swagger UI ----------
       # infra #11：生产默认关闭 Swagger UI / /v3/api-docs，可通过 .env 覆盖
       SWAGGER_UI_ENABLED: ${SWAGGER_UI_ENABLED:-false}
@@ -297,8 +297,10 @@ services:
   # ---------- 管理后台（Vue3 + nginx）----------
   admin:
     build:
-      context: ./apps/admin
-      dockerfile: Dockerfile
+      # 构建上下文为仓库根：apps/admin 无独立 lockfile，
+      # Dockerfile 需从根目录 COPY pnpm-lock.yaml / pnpm-workspace.yaml（workspace 安装）
+      context: .
+      dockerfile: apps/admin/Dockerfile
       args:
         VITE_API_BASE_URL: /api
         VITE_APP_VERSION: ${TAG:-0.1.0}
@@ -310,7 +312,7 @@ services:
         condition: service_healthy
     ports:
       # 仅绑定 127.0.0.1：Admin 由外层 Nginx 反代对外（infra #4）
-      - "127.0.0.1:${ADMIN_PORT:-5180}:8080"
+      - "127.0.0.1:${ADMIN_PORT:-5177}:8080"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
       interval: 30s

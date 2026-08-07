@@ -4,8 +4,8 @@
  * 展示话题完整内容、作者信息、回复列表，底部回复输入框
  * 支持从回复直接"打招呼"跳转到私信会话
  */
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { ref, computed, onUnmounted } from "vue";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCircleStore, formatCircleTime, type ReplyItem } from "../../stores/circle";
@@ -178,12 +178,11 @@ async function handleReportTopic() {
   }
 }
 
-onMounted(() => {
-  // 获取页面参数
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1];
-  const options = (currentPage as { options?: Record<string, string> })?.options ?? {};
-  topicId.value = options.topicId || "";
+onLoad((query) => {
+  // P1-03 修复（review）：改用 onLoad(query) 取参，替代 getCurrentPages().options。
+  // 原实现依赖页面栈读取参数，H5 端直开链接/分享进入时 getCurrentPages 拿不到 query，
+  // 导致话题详情恒为空。onLoad 的 query 由路由统一注入，mp-weixin 与 H5 双端可靠。
+  topicId.value = query?.topicId ?? "";
 
   if (topicId.value) {
     void circleStore.fetchTopicDetail(topicId.value);

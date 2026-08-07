@@ -1,36 +1,36 @@
 <script setup lang="ts">
 /**
- * 403 禁止访问页面（Task 14 + Task 6 i18n 抽取）。
+ * 403 禁止访问页面（复制自旧后台 apps/admin）。
  *
- * 当路由守卫检测到当前用户角色不在 to.meta.roles 白名单中时跳转至此。
- * 提供返回首页与重新登录入口，避免用户卡死在无权限页面。
- *
- * Task 6：将原 errors.permission 抽取到专属 forbidden.* 命名空间，
- * title 与 description 使用不同 key，避免重复文案。
+ * 当路由守卫检测到动态菜单加载失败 / 未注册路径兜底时跳转至此。
+ * 提供退出登录入口，避免用户卡死在无权限页面（退出后回到登录页重新登录）。
  */
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useSessionStore } from "../stores/session";
+import { useMenuStore } from "../stores/menu";
 
 const { t } = useI18n();
 const router = useRouter();
 const sessionStore = useSessionStore();
+const menuStore = useMenuStore();
 
-// infra R2-00461：登出按钮 loading 防护（防重复点击）
+// 登出按钮 loading 防护（防重复点击）
 const loggingOut = ref(false);
 
 /**
- * 退出登录：先清空本地会话再跳转登录页。
+ * 退出登录：先清空本地会话与菜单再跳转登录页。
  *
- * 死循环修复：若不清除会话直接跳 /login，守卫会把已登录用户弹回 Dashboard，
- * 而角色不在白名单时又会被拦回 403，形成死循环。因此必须先 logout()。
+ * 死循环修复：若不清除会话直接跳 /login，守卫会把已登录用户弹回首页，
+ * 形成循环；必须先 logout()。
  */
 async function goLogin() {
   if (loggingOut.value) return;
   loggingOut.value = true;
   try {
     await sessionStore.logout();
+    menuStore.reset();
   } finally {
     router.push({ name: "Login" });
     loggingOut.value = false;
@@ -45,8 +45,7 @@ async function goLogin() {
       <text class="forbidden-title">{{ t("forbidden.title") }}</text>
       <text class="forbidden-desc">{{ t("forbidden.description") }}</text>
       <view class="forbidden-actions">
-        <!-- 死循环修复：不再提供"返回首页"（角色不足时会被守卫再次拦回 403），
-             仅保留退出登录入口，退出后回到登录页重新登录 -->
+        <!-- 仅保留退出登录入口（角色不足时返回首页会被守卫再次拦回） -->
         <button class="action-primary" :disabled="loggingOut" @click="goLogin">
           {{ loggingOut ? t("common.loading") : t("common.logout") }}
         </button>
@@ -105,8 +104,7 @@ async function goLogin() {
   justify-content: center;
 }
 
-.action-primary,
-.action-secondary {
+.action-primary {
   padding: var(--admin-space-md-sm) var(--admin-space-xl);
   border: none;
   border-radius: var(--admin-radius-lg);
@@ -114,23 +112,11 @@ async function goLogin() {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.action-primary {
   background: var(--admin-color-primary);
   color: var(--admin-color-bg-container);
 }
 
 .action-primary:hover {
   background: var(--admin-color-primary-hover);
-}
-
-.action-secondary {
-  background: var(--admin-color-bg-hover);
-  color: var(--admin-color-text-tertiary);
-}
-
-.action-secondary:hover {
-  background: var(--admin-color-bg-hover);
 }
 </style>

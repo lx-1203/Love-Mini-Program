@@ -2,7 +2,9 @@ import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
 import { isDev } from "../services/env";
 // 微信登录真实链路（Task 0.1.1）：services/auth.ts 封装 wx.login + POST /v1/auth/wechat
-import { loginWithWechat as authLoginWithWechat } from "../services/auth";
+import { loginWithWechat as authLoginWithWechat, loginAsGuest } from "../services/auth";
+// JWT token 存取：bootstrap 检测到失效 token 时清除并以体验账号重登
+import { getToken, clearTokens } from "../services/http";
 // Sentry 监控：登录成功关联用户身份，退出登录清除用户上下文
 import { setUser, clearUser } from "../services/sentry";
 import { toLoginHeroView } from "../view-models/login";
@@ -320,6 +322,16 @@ export const useSessionStore = defineStore("session", {
         (state.userSession as { schoolBound?: boolean } | null)?.schoolBound,
       );
     },
+
+    /**
+     * 是否超级测试账号（2026-08-07 本地联调账号体系）。
+     *
+     * 种子脚本 V2026.08.07.0004 固定 userId = 100000（openid=local-dev-admin-openid-123456），
+     * 前端据此放行：匹配次数无限 / 付费解锁免费 / dev 页身份切换。
+     */
+    isSuperTestAccount: (state): boolean => {
+      return state.userSession?.userId === "100000";
+    },
   },
   actions: {
     /**
@@ -483,7 +495,20 @@ export const useSessionStore = defineStore("session", {
             clientApi.getSession(),
           ]);
           this.loginHero = toLoginHeroView(hero);
-          this.userSession = session;
+
+          // 修复（Bootstrap 失效 token）：后端对无效/过期 token 的 /auth/me 容错返回
+          // HTTP 200 + loggedIn=false（而非 401）。若本地残留过期 token，旧逻辑把
+          // userSession 置为未登录态但不清除 storage token → 页面请求仍携带过期 token
+          // → 401 → refresh 链路不可达（UserSessionView 无 refreshToken）→ 401 雪崩
+          // （表现为「登录已过期，请重新登录」级联）。现检测该场景：清除失效 token
+          // 并以体验账号自动重登（与 App.vue 无 token 时 loginAsGuest 的一键体验一致）。
+          if (!session?.loggedIn && getToken()) {
+            clearTokens();
+            console.warn("[SessionStore] 检测到失效 token，已清除并以体验账号自动重登");
+            this.userSession = await loginAsGuest();
+          } else {
+            this.userSession = session;
+          }
         }
 
         // 应用启动时同步 Sentry 用户身份：H5 冷启动后用户身份不丢失

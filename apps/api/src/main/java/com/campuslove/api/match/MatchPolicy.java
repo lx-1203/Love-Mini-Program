@@ -35,14 +35,23 @@ public class MatchPolicy {
     /** rewind 每日允许次数上限。业务规则：每个用户每天最多反悔 1 次。 */
     public static final int REWIND_DAILY_LIMIT = 1;
 
+    /** 普通 like 每日允许次数上限（A-25/A-31）。业务规则：普通喜欢每日 30 次，超级喜欢不受限。 */
+    public static final int LIKE_DAILY_LIMIT = 30;
+
     /** Redis 中存储 rewind 每日计数器的 key 前缀，TTL 36 小时。 */
     public static final String REDIS_KEY_PREFIX_REWIND = "rewind:count:";
+
+    /** Redis 中存储 like 每日计数器的 key 前缀，TTL 36 小时。 */
+    public static final String REDIS_KEY_PREFIX_LIKE = "like:count:";
 
     /** 日期格式（yyyy-MM-dd），用于组装 Redis key 与本地降级 map 的 key */
     private static final DateTimeFormatter DATE_KEY_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     /** Redis 不可用时的本地内存降级方案（单实例方案，生产应依赖 Redis）。 */
     private final ConcurrentHashMap<String, Integer> localRewindCount = new ConcurrentHashMap<>();
+
+    /** Redis 不可用时的 like 每日计数本地内存降级方案（单实例方案）。 */
+    private final ConcurrentHashMap<String, Integer> localLikeCount = new ConcurrentHashMap<>();
 
     /**
      * Redis 模板，用于持久化 rewind 每日计数器。
@@ -191,6 +200,47 @@ public class MatchPolicy {
             log.warn("回滚 Redis rewind 计数失败：{}", e.getMessage());
         }
         localRewindCount.computeIfPresent(localKey, (k, v) -> v > 0 ? v - 1 : 0);
+    }
+
+    /**
+     * 原子尝试占用今日一次普通 like 额度（INCR 返回值判断，修复 GET+INCR 分离的并发绕过）。
+     *
+     * <p>A-25/A-31：普通喜欢每日上限 {@link #LIKE_DAILY_LIMIT} 次；超级喜欢不受本方法限制
+     * （走 RealMatchService.superLikeUser 不经此计数）。实现与 rewind 计数一致：
+     * Redis INCR 原子判断 + 本地内存降级。</p>
+     *
+     * @param userId 用户 ID
+     * @return true 表示成功占用额度；false 表示已达今日上限
+     */
+    public boolean tryIncrementLike(Long userId) {
+        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String localKey = userId + ":" + dateKey;
+        try {
+            if (redisTemplate != null) {
+                String redisKey = REDIS_KEY_PREFIX_LIKE + userId + ":" + dateKey;
+                Long newValue = redisTemplate.opsForValue().increment(redisKey);
+                if (newValue != null && newValue == 1L) {
+                    redisTemplate.expire(redisKey, 36, TimeUnit.HOURS);
+                }
+                if (newValue != null && newValue > LIKE_DAILY_LIMIT) {
+                    // 超限回滚递增，保证计数不漂移
+                    redisTemplate.opsForValue().decrement(redisKey);
+                    return false;
+                }
+                return true;
+            }
+        } catch (RuntimeException e) {
+            log.warn("写入 Redis like 计数失败，降级使用本地内存方案：{}", e.getMessage());
+        }
+        // 本地降级方案（无 Redis 时）：临界区内判断+递增，保证单实例内原子性
+        synchronized (localLikeCount) {
+            int next = localLikeCount.getOrDefault(localKey, 0) + 1;
+            if (next > LIKE_DAILY_LIMIT) {
+                return false;
+            }
+            localLikeCount.put(localKey, next);
+            return true;
+        }
     }
 
     /**

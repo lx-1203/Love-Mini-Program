@@ -2,6 +2,7 @@ package com.campuslove.api.village;
 
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.config.CacheNames;
+import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.Comment;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.PostLike;
@@ -34,6 +35,10 @@ public class VillageInteractionService {
     private final CommentRepository commentRepository;
     private final PostLikeRepository postLikeRepository;
     private final PostShareRepository postShareRepository;
+    /**
+     * M-14：评论点赞 Repository（评论点赞记录持久化 + 计数）。
+     */
+    private final CommentLikeRepository commentLikeRepository;
     private final InteractionEventService interactionEventService;
     private final VillageQueryService queryService;
 
@@ -47,25 +52,36 @@ public class VillageInteractionService {
      */
     private final EntityManager entityManager;
 
+    /**
+     * 敏感词过滤器（M-14）：评论/楼中楼回复创建时过滤，与发帖（VillagePostService）口径一致。
+     * 仅测试构造器注入为 null，此时跳过过滤（与旧行为一致）。
+     */
+    private final SensitiveWordFilter sensitiveWordFilter;
+
     @org.springframework.beans.factory.annotation.Autowired
     public VillageInteractionService(PostRepository postRepository,
                                      CommentRepository commentRepository,
                                      PostLikeRepository postLikeRepository,
                                      PostShareRepository postShareRepository,
+                                     CommentLikeRepository commentLikeRepository,
                                      InteractionEventService interactionEventService,
                                      VillageQueryService queryService,
-                                     EntityManager entityManager) {
+                                     EntityManager entityManager,
+                                     SensitiveWordFilter sensitiveWordFilter) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.postLikeRepository = postLikeRepository;
         this.postShareRepository = postShareRepository;
+        this.commentLikeRepository = commentLikeRepository;
         this.interactionEventService = interactionEventService;
         this.queryService = queryService;
         this.entityManager = entityManager;
+        this.sensitiveWordFilter = sensitiveWordFilter;
     }
 
     /**
-     * 兼容旧测试的构造器（entityManager 为 null，走实体级读-改-写回退）。
+     * 兼容旧测试的构造器（entityManager 为 null，走实体级读-改-写回退；
+     * sensitiveWordFilter / commentLikeRepository 为 null，跳过敏感词过滤与评论点赞）。
      *
      * @deprecated 仅单元测试使用；Spring 注入请使用带 EntityManager 的构造器。
      */
@@ -77,7 +93,7 @@ public class VillageInteractionService {
                                      InteractionEventService interactionEventService,
                                      VillageQueryService queryService) {
         this(postRepository, commentRepository, postLikeRepository, postShareRepository,
-                interactionEventService, queryService, null);
+                null, interactionEventService, queryService, null, null);
     }
 
     /**
@@ -169,19 +185,70 @@ public class VillageInteractionService {
     }
 
     /**
-     * 评论帖子。
+     * 切换评论点赞状态（M-14，幂等）。
      *
-     * <p>创建 Comment 记录，递增 commentsCount，记录 POST_COMMENTED 互动事件。</p>
+     * <p>复用帖子点赞 {@link #likePost} 模式：已点赞 → 取消点赞（删除 CommentLike 记录）；
+     * 未点赞 → 新增点赞（CommentLike 唯一约束兜底防重）。点赞数由 comment_likes
+     * 实时统计（comments 表无冗余计数列），返回最新点赞数供前端刷新。</p>
      *
-     * @param userId  评论者用户 ID
-     * @param postId  帖子 ID
-     * @param content 评论内容
-     * @return 评论项视图
-     * @throws IllegalArgumentException 当 userId 或 content 为空时
+     * @param userId    当前用户 ID
+     * @param commentId 评论 ID
+     * @return 点赞响应（success=true，liked 表示当前状态，likeCount 为最新计数）
+     * @throws IllegalArgumentException 当 userId 为空或评论不存在时
+     */
+    @Transactional
+    public PostLikeResponse likeComment(Long userId, Long commentId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        if (commentId == null) {
+            throw new IllegalArgumentException("commentId is required");
+        }
+        // 评论存在性校验（不存在抛 400）
+        commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("评论不存在: " + commentId));
+
+        boolean alreadyLiked = commentLikeRepository.existsByUserIdAndCommentId(userId, commentId);
+        if (alreadyLiked) {
+            // 取消点赞
+            commentLikeRepository.deleteByUserIdAndCommentId(userId, commentId);
+        } else {
+            // 新增点赞（唯一约束兜底并发重复点赞）
+            commentLikeRepository.save(new CommentLike(userId, commentId));
+        }
+        long likeCount = commentLikeRepository.countByCommentId(commentId);
+        return new PostLikeResponse(true, !alreadyLiked, (int) likeCount);
+    }
+
+    /**
+     * 评论帖子（根评论，兼容旧调用）。
+     *
+     * @see #commentPost(Long, Long, String, Long)
      */
     @Transactional
     @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
     public CommentItemView commentPost(Long userId, Long postId, String content) {
+        return commentPost(userId, postId, content, null);
+    }
+
+    /**
+     * 评论帖子（P1-02 / A-12 楼中楼：支持 parentId 楼中楼回复）。
+     *
+     * <p>创建 Comment 记录（parentId 非空时为楼中楼回复），递增 commentsCount，
+     * 记录 POST_COMMENTED 互动事件。M-14：评论内容经 {@link SensitiveWordFilter} 过滤
+     * （与发帖口径一致，场景标记 POST_COMMENT）。</p>
+     *
+     * @param userId   评论者用户 ID
+     * @param postId   帖子 ID
+     * @param content  评论内容
+     * @param parentId 父评论 ID（楼中楼回复；null 为根评论）
+     * @return 评论项视图
+     * @throws IllegalArgumentException 当 userId/content 为空，或 parentId 对应父评论不存在
+     *                                  /不属于该帖子时抛出
+     */
+    @Transactional
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    public CommentItemView commentPost(Long userId, Long postId, String content, Long parentId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
@@ -191,11 +258,26 @@ public class VillageInteractionService {
 
         Post post = queryService.findPostOrThrow(postId);
 
+        // 楼中楼回复：校验父评论存在且属于同一帖子，防止跨帖回复
+        if (parentId != null) {
+            Comment parent = commentRepository.findById(parentId)
+                    .orElseThrow(() -> new IllegalArgumentException("父评论不存在: " + parentId));
+            if (parent.getPost() == null || !postId.equals(parent.getPost().getId())) {
+                throw new IllegalArgumentException("父评论不属于该帖子，无法回复");
+            }
+        }
+
+        // M-14：评论/回复内容敏感词过滤（与发帖 VillagePostService 一致）
+        String filteredContent = sensitiveWordFilter != null
+                ? sensitiveWordFilter.filterWithLog(content, userId, "POST_COMMENT")
+                : content;
+
         LocalDateTime now = LocalDateTime.now();
         Comment comment = new Comment();
         comment.setPost(post);
         comment.setAuthorId(userId);
-        comment.setContent(content);
+        comment.setContent(filteredContent);
+        comment.setParentId(parentId);
         comment.setCreatedAt(now);
 
         // 缺陷修复：saveAndFlush 立即回填 IDENTITY 主键，保证 toCommentItemView 中评论 id 非空

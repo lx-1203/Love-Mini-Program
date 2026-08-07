@@ -22,12 +22,15 @@ public record AdminLoginView(
      * @param username    登录用户名（user.openid 字段）
      * @param displayName 显示名
      * @param role        角色（ADMIN / SUPER_ADMIN）
+     * @param campusName  管辖校区名（users.campus_name，C-04：供 admin 前端
+     *                    session.ts 读取 user.campusName 展示校区；超级管理员可为空）
      */
     public record AdminUserInfo(
             Long id,
             String username,
             String displayName,
-            String role
+            String role,
+            String campusName
     ) {
     }
 }

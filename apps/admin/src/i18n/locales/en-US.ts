@@ -1,14 +1,16 @@
 /**
- * Admin English (United States) locale messages.
+ * Admin v2 English (United States) locale messages.
+ * (Copied from apps/admin, layout section extended with eladmin dynamic menu / multi-tab keys.)
  *
  * Design notes:
  * - Grouped by view/module; keys use dot-separated namespaces (e.g. login.title);
- * - Covers Admin core views: Login / Layout / Dashboard / Users / Posts / Feedback /
- *   Reports / AuditLogs / NotifyConfig / SensitiveWords / ContentAudit;
  * - Must keep the exact same structure as zh-CN.ts; new entries must be added to both;
  * - Server error codes (errors.*) must align with backend messages_en_US.properties.
  *
- * Task 3.2.2 - Admin vue-i18n internationalization framework.
+ * Skeleton-task convention: page-level keys (dashboard.*, users.* etc.) are carried
+ * over from the legacy admin and will be extended by parallel page tasks. This file
+ * already contains every menu key (layout.navXxx) and the six directory group names
+ * (layout.groupXxx) required by the eladmin dynamic menu.
  */
 export default {
   /* ========== Common ========== */
@@ -65,12 +67,9 @@ export default {
     skipToMain: "Skip to main content",
     profile: "Profile",
     welcome: "Welcome",
-    // infra R2-00327: empty placeholder via i18n (was hardcoded "—")
     emptyPlaceholder: "-",
-    // infra R2-00328: "total N" parenthesis via i18n (was hardcoded full-width)
     totalParenthesized: " ({n} in total)",
     close: "Close",
-    // infra R2-00329: pagination jump input (Pagination component)
     jumpPagePlaceholder: "Page",
     jumpTo: "Go",
   },
@@ -98,27 +97,55 @@ export default {
     devPasswordHint: "Dev default password: {password}",
   },
 
-  /* ========== Layout ========== */
+  /* ========== Layout (eladmin style: dynamic menu + multi-tab views) ========== */
   layout: {
     sidebarCollapse: "Collapse sidebar",
     sidebarExpand: "Expand sidebar",
     breadcrumbHome: "Home",
+    /* —— Directory group names (backend menu type=DIR titles) —— */
+    groupSystem: "System",
+    groupContent: "Content",
+    groupForum: "Forum",
+    groupActivity: "Activity",
+    groupBusiness: "Business",
+    groupConfigs: "Configs",
+    /* —— Menu item names (backend menu type=MENU titles, one-to-one with router componentMap pages) —— */
     navDashboard: "Dashboard",
-    navUsers: "Users",
-    /* Business model: one admin per university (super admin only) */
+    navMenus: "Menus",
+    navRoles: "Roles",
+    navSchools: "Schools",
+    navDicts: "Dicts",
     navAdmins: "Admins",
-    navOnlineUsers: "Online Users",
-    navPosts: "Content",
-    navFeedback: "Feedback",
-    navReports: "Reports",
     navAuditLogs: "Audit Logs",
-    navNotifyConfig: "Notify Config",
+    navOnlineUsers: "Online Users",
+    navUsers: "Users",
+    navCertifications: "Certifications",
+    navReports: "Reports",
+    navFeedback: "Feedback",
     navSensitiveWords: "Sensitive Words",
-    navContentAudit: "Content Audit",
+    navVillagePosts: "Village Posts",
+    navInterestCircles: "Interest Circles",
+    navCircleTopics: "Circle Topics",
+    navCampusTopics: "Campus Topics",
+    navComments: "Comments",
+    navActivities: "Activities",
+    navEnrollments: "Enrollments",
+    navVipPlans: "VIP Plans",
+    navVipBills: "VIP Bills",
+    navPromoCodes: "Promo Codes",
+    navWallets: "Wallets",
+    navCoins: "Coins",
+    navRedPackets: "Red Packets",
+    navShop: "Shop",
+    navNotifyConfig: "Notify Config",
     navMatchConfig: "Match Config",
     navConfig: "System Config",
-    navCertifications: "Certifications",
-    navComments: "Comments",
+    navOfficialAccounts: "Official Accounts",
+    /* —— Multi-tab (tabs-view) —— */
+    tabsClose: "Close",
+    tabsCloseOthers: "Close Others",
+    tabsCloseAll: "Close All",
+    /* —— Others —— */
     navAriaLabel: "Main navigation",
     footerCopyright: "© 2026 Campus Love · Internal use only",
     userMenuTitle: "Admin Center",
@@ -128,6 +155,68 @@ export default {
     logoutSuccess: "Logged out",
     networkError: "Network error, please retry",
     sessionExpired: "Session expired, please log in again",
+  },
+
+  /* ========== Backend Chinese menu title lookup table (used by Layout.menuLabel) ==========
+   * Backend /v1/admin/menus/current returns Chinese titles (e.g. 用户管理);
+   * sidebar/breadcrumb/tabs translate via menu.<Chinese title>, fall back to the raw title if missing. */
+  menu: {
+    系统管理: "System",
+    用户与内容: "Users & Content",
+    论坛管理: "Forum",
+    活动运营: "Activities",
+    商业模式: "Business",
+    配置管理: "Configuration",
+    数据看板: "Dashboard",
+    菜单管理: "Menus",
+    角色管理: "Roles",
+    高校管理: "Schools",
+    数据字典: "Dicts",
+    管理员管理: "Admins",
+    审计日志: "Audit Logs",
+    在线用户: "Online Users",
+    用户管理: "Users",
+    校园认证: "Certifications",
+    举报管理: "Reports",
+    反馈管理: "Feedback",
+    敏感词管理: "Sensitive Words",
+    村落动态: "Village Posts",
+    兴趣圈管理: "Interest Circles",
+    圈内话题: "Circle Topics",
+    校园圈话题: "Campus Topics",
+    评论管理: "Comments",
+    活动管理: "Activities",
+    报名管理: "Enrollments",
+    "VIP 套餐": "VIP Plans",
+    "VIP 账单": "VIP Bills",
+    兑换码: "Promo Codes",
+    钱包管理: "Wallets",
+    金币管理: "Coins",
+    红包管理: "Red Packets",
+    积分商城: "Shop",
+    通知配置: "Notify Config",
+    匹配配置: "Match Config",
+    全局配置: "System Config",
+    官方号管理: "Official Accounts",
+  },
+
+  /* ========== Business operations (shop / promo codes / activities / enrollments) toasts ========== */
+  shop: {
+    created: "Item created",
+    updated: "Item updated",
+    deleted: "Item deleted",
+    published: "Published",
+    unpublished: "Unpublished",
+  },
+  promoCodes: {
+    exportSuccess: "CSV exported",
+  },
+  activities: {
+    published: "Published",
+    unpublished: "Not published",
+  },
+  enrollments: {
+    exportSuccess: "Enrollment data exported",
   },
 
   /* ========== Dashboard ========== */
@@ -159,7 +248,6 @@ export default {
     activeStatsLoadFailed: "Failed to load activity stats",
     matchStatsLoadFailed: "Failed to load match stats",
     lastUpdated: "Last updated: {time}",
-    // infra R2-00330: dashboard refresh button & degraded state text
     refreshButton: "Refresh Data",
     dataUnavailable: "Data unavailable",
     metricLabelUsers: "Users",
@@ -199,7 +287,6 @@ export default {
     columnProfileCompletion: "Profile Completion",
     columnFollowing: "Following/Followers",
     columnActions: "Actions",
-    // infra R2-00331: user detail modal texts (consumed by getUserDetail)
     columnPhone: "Phone",
     bioLabel: "Bio",
     campusLabel: "School",
@@ -217,7 +304,6 @@ export default {
     actionDisable: "Disable",
     actionEnable: "Enable",
     actionResetPassword: "Reset Password",
-    // P1 alignment (eladmin "Create User" + "Change Password")
     actionCreateUser: "Create User",
     actionChangePassword: "Change Password",
     createUserTitle: "Create User",
@@ -251,7 +337,6 @@ export default {
     unbanConfirm: "Unban user {name}?",
     unbanSuccess: "Unbanned",
     unbanFailed: "Unban failed",
-    // infra R2-00332: removed duplicate key disableConfirm (identical to disableConfirmMessage)
     disableConfirmMessage: "Disable user {name}?",
     disableUserTitle: "Disable User",
     enableUserTitle: "Enable User",
@@ -265,7 +350,6 @@ export default {
     nicknameRequired: "Nickname cannot be empty",
     nicknameTooLong: "Nickname cannot exceed {n} characters",
     editUserTitle: "Edit User - {name}",
-    // infra R2-00401: edit hint fixed — the edit endpoint only supports nickname
     editNicknameHint: "Only the nickname can be edited here; use the Disable/Enable buttons in the list to switch status.",
     loadFailed: "Failed to load user list",
     saveFailed: "Save failed",
@@ -332,6 +416,7 @@ export default {
     statusDisabled: "Disabled",
     actionDisable: "Disable",
     actionEnable: "Enable",
+    actionUnavailable: "Not available",
     disableTitle: "Disable Admin",
     disableConfirm: "Disable admin {nickname}? They will not be able to log in afterwards.",
     enableTitle: "Enable Admin",
@@ -367,7 +452,6 @@ export default {
     filterAuditStatusAll: "All Audit Status",
     filterPostStatusAll: "All Post Status",
     filterCategoryAll: "All Categories",
-    // infra R2-00333: removed unused duplicate keys (filterStatusAll / categoryAll)
     categoryInterest: "Interest",
     categorySincere: "Sincere",
     categoryHometown: "Hometown",
@@ -421,7 +505,6 @@ export default {
     statsComments: "{n} comments",
     statsShares: "{n} shares",
     authorFallback: "User #{id}",
-    // infra R2-00334: category fallback for unknown categories (was raw enum)
     categoryUnknown: "Other",
     statusActive: "Active",
     statusHidden: "Hidden",
@@ -489,7 +572,6 @@ export default {
     processedToast: "Marked as processed",
     processFailed: "Failed to mark as processed, please retry later",
     defaultReplyContent: "Marked as processed by admin",
-    // infra R2-00335: detail label colons moved into i18n (full-width in zh, half-width in en)
     detailTitle: "Feedback Detail",
     detailContent: "Content",
     detailAttachments: "Attachments",
@@ -574,7 +656,6 @@ export default {
     handleFailed: "Handle failed",
     submitting: "Submitting...",
     submitButton: "Submit",
-    /* infra R2-00336：提交按钮文案跟随处理决定（REJECT 时显示 Reject） */
     submitReject: "Reject",
     submitHandle: "Mark handled",
     targetLabel: "Target: ",
@@ -617,7 +698,6 @@ export default {
     filterActionReject: "Reject",
     dateRangeSep: "to",
     queryButton: "Query",
-    // infra R2-00337: operator ID numeric validation hint
     operatorInvalid: "Operator ID must be a number",
     columnId: "ID",
     columnOperator: "Operator",
@@ -646,7 +726,6 @@ export default {
     exportButton: "Export CSV",
     exportSuccess: "Exported",
     exportFailed: "Export failed",
-    // infra R2-00338: targetType column i18n mapping (was raw enum POST/COMMENT/USER)
     targetTypePost: "Post",
     targetTypeComment: "Comment",
     targetTypeUser: "User",
@@ -672,14 +751,26 @@ export default {
     opChangePassword: "Change Password",
     opCreateUser: "Create User",
     opKickOnlineUser: "Force Offline",
-    // P2 alignment (eladmin "Exception Logs" filter)
     filterExceptionAll: "All Logs",
     filterExceptionOnly: "Exceptions Only",
-    // infra R2-00434: fallback label for unmapped operation types
     opUnknown: "Other Operation",
   },
 
   /* ========== NotifyConfig ========== */
+  /* Official accounts: read-only view */
+  officialAccounts: {
+    title: "Official Accounts",
+    subtitle: "View official accounts (Assistant / Promoter) and message streams",
+    loadFailed: "Failed to load official accounts",
+    loadMessagesFailed: "Failed to load message stream",
+    messageCount: "{n} messages",
+    emptyMessages: "No messages yet",
+    colType: "Type",
+    colContent: "Content",
+    colCard: "Card",
+    colTarget: "Target",
+    colPublishedAt: "Published At",
+  },
   notifyConfig: {
     title: "Notification Config",
     subtitle: "Manage notification toggles and push strategies",
@@ -695,9 +786,7 @@ export default {
     saveFailed: "Failed to save notification configs",
     saveButtonShort: "Save",
     noData: "No notification configs",
-    // infra R2-00339: notify type enum → i18n mapping (was raw LIKE/COMMENT)
     fieldVisitorNotify: "Visitor Notification",
-    // infra R2-00340: unsaved-changes hint & template length validation
     unsavedChanges: "Unsaved changes",
     templateTooLong: "Template must be no more than {n} characters",
     sectionPush: "Push Notifications",
@@ -728,7 +817,7 @@ export default {
     resetFailed: "Reset failed",
   },
 
-  /* ========== 敏感词库文案 ========== */
+  /* ========== Sensitive Words ========== */
   sensitiveWords: {
     title: "Sensitive Words",
     pageTitle: "Sensitive Word Management",
@@ -785,7 +874,6 @@ export default {
     exportFailed: "Export failed",
     loadFailed: "Failed to load sensitive words",
     noData: "No sensitive words",
-    // infra R2-00341: copy button texts
     copyButton: "Copy",
     copySuccess: "Copied",
     copyFailed: "Copy failed",
@@ -845,7 +933,6 @@ export default {
     resetConfirm: "Reset to default config?",
     resetSuccess: "Reset to default",
     resetFailed: "Reset failed",
-    // ===== keys actually consumed by MatchConfig.vue =====
     sectionMatch: "Match Algorithm Config",
     sectionRecommend: "Recommend Strategy Config",
     columnConfigKey: "Config Item",
@@ -962,7 +1049,7 @@ export default {
     authorFallback: "User #{id}",
   },
 
-  /* ========== 404 page texts (NotFound.vue, infra R2-00317) ========== */
+  /* ========== 404 page texts (NotFound.vue) ========== */
   notFound: {
     title: "Page Not Found",
     description: "The page you requested does not exist or has been removed. Please check the URL.",

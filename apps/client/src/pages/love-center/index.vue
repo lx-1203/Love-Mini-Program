@@ -52,13 +52,21 @@ function goToQuickEntry(entry: { url: string }) {
   uni.navigateTo({ url: entry.url });
 }
 
-/** 点击板块：恋爱咨询四板块统一进入恋爱咨询课程页 */
-function onBoardTap(_boardId: string) {
+/**
+ * 点击四板块（2026-08-07 落地真实内容源）：
+ * - 恋爱课程 / 社交课程 → 咨询课程页（web-view 加载国家高等教育智慧教育平台《爱情心理学》）
+ * - 恋爱咨询 / 社交咨询 → 帮助与客服页（在线咨询：AI 恋爱助手 + 人工客服入口）
+ */
+function onBoardTap(boardId: string) {
   lightHaptic();
+  if (boardId === "love-consulting" || boardId === "social-consulting") {
+    uni.navigateTo({ url: ROUTES.HELP });
+    return;
+  }
   uni.navigateTo({ url: ROUTES.LOVE_CENTER.CONSULTING });
 }
 
-/** 点击测试：进入 MBTI 人格测试页 */
+/** 点击测试：进入 MBTI 人格测试页（web-view 加载十六型本土化测试） */
 function onTestTap(_testId: string) {
   lightHaptic();
   uni.navigateTo({ url: ROUTES.LOVE_CENTER.MBTI });

@@ -119,6 +119,20 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 // 公开端点：内容敏感词预检查（前端实时提示，不暴露敏感词字典）
                 .requestMatchers("/api/v1/content-filter/check").permitAll()
+                // 公开端点：应用启动期静态配置（登录页 Hero 等），
+                // 未登录用户也需要在冷启动时拉取，不可要求认证（FIN-00061 收紧后曾遗漏）。
+                .requestMatchers("/api/v1/app-config/**").permitAll()
+                // 公开端点：IP 归属地查询（仅 IP→城市映射，不含用户数据），
+                // 支持免登录浏览同城内容时定位城市。
+                .requestMatchers("/api/v1/location/ip-city").permitAll()
+                // D3 修复：客户端错误上报端点 permitAll 放行。
+                // 未登录阶段（冷启动 /app-config、/auth/me 失败）也需要上报能力；
+                // 此前未放行导致每次上报都 401，形成「上报失败→再捕获→再上报」级联噪音。
+                .requestMatchers("/api/v1/error-reports").permitAll()
+                // P0-22：法律文本端点 permitAll 放行。
+                // 登录前（注册页/登录页勾选协议）即需要拉取用户协议/隐私政策，
+                // 客户端该请求不携带鉴权头；内容为内嵌静态常量，无用户数据泄露风险。
+                .requestMatchers("/api/v1/config/legal").permitAll()
                 // Task 8.4.1：springdoc-openapi Swagger UI 与 OpenAPI 文档端点
                 // 仅 ADMIN 可访问，避免生产环境暴露接口结构。
                 // 开发环境可通过 SWAGGER_UI_ENABLED=true 环境变量在 application-dev.yml 中放开

@@ -15,7 +15,7 @@ import EmptyState from "../../components/common/EmptyState.vue";
 const { t } = useI18n();
 const dailyQuestionStore = useDailyQuestionStore();
 const checkInStore = useCheckInStore();
-const { todayQuestion, answers, hasAnswered, loading } = storeToRefs(dailyQuestionStore);
+const { todayQuestion, answers, hasAnswered, loading, answerPage, answerHasMore } = storeToRefs(dailyQuestionStore);
 
 /** 回答内容 */
 const answerContent = ref("");
@@ -73,6 +73,21 @@ async function retryQuestion() {
     void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, 1);
   }
 }
+
+/**
+ * P1-12：回答列表分页加载更多。
+ * store 已维护 answerPage / answerHasMore（fetchAnswers 按页追加），
+ * 这里仅需推进页码；加载失败由 store 设置 errorMessage，不中断页面。
+ */
+function loadMoreAnswers(): void {
+  if (!todayQuestion.value || !answerHasMore.value || loading.value) return;
+  void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, answerPage.value + 1);
+}
+
+/** 回答列表滚动到底：触发加载更多（scroll-view 的 scrolltolower） */
+function onAnswersScrollLower(): void {
+  loadMoreAnswers();
+}
 </script>
 
 <template>
@@ -86,7 +101,7 @@ async function retryQuestion() {
       <view class="dq-header__spacer" />
     </view>
 
-    <scroll-view class="dq-body" scroll-y>
+    <scroll-view class="dq-body" scroll-y @scrolltolower="onAnswersScrollLower">
       <!-- 未签到提示 -->
       <view v-if="!checkInStore.checkedIn" class="lock-card">
         <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="lock-card__icon" mode="aspectFit" />
@@ -193,6 +208,22 @@ async function retryQuestion() {
               </view>
             </view>
             <text class="answer-card__content">{{ answer.content }}</text>
+          </view>
+
+          <!-- P1-12：加载更多按钮（还有更多数据时显示） -->
+          <view
+            v-if="answerHasMore"
+            class="answers-load-more press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="$t('dailyQuestion.loadMore')"
+            @tap="loadMoreAnswers"
+          >
+            <text class="answers-load-more__text">{{ loading ? $t("dailyQuestion.loadingMore") : $t("dailyQuestion.loadMore") }}</text>
+          </view>
+          <view v-else-if="answers.length > 0" class="answers-load-more">
+            <text class="answers-load-more__text">{{ $t("dailyQuestion.noMoreAnswers") }}</text>
           </view>
         </view>
 
@@ -624,6 +655,24 @@ async function retryQuestion() {
   background: var(--c-bg-page);
   padding: var(--sp-5);
   border-radius: var(--r-md);
+}
+
+/* P1-12：加载更多按钮 */
+.answers-load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  margin-top: var(--sp-4);
+}
+
+.answers-load-more__text {
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
+  font-weight: 500;
 }
 
 .answers-empty {

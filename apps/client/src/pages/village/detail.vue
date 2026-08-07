@@ -8,7 +8,7 @@ import { ref, computed, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useVillageStore, formatRelativeTime } from "../../stores/village";
+import { useVillageStore, formatRelativeTime, type CommentItem, type PostAuthor } from "../../stores/village";
 import { useMessagesStore } from "../../stores/messages";
 import { useReportStore } from "../../stores/report";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
@@ -32,6 +32,18 @@ const { currentPost, comments, loading, similarAuthors } = storeToRefs(villageSt
 const commentContent = ref("");
 /** 是否正在提交评论 */
 const isSubmitting = ref(false);
+/**
+ * P1-02 楼中楼：正在回复的根评论（null 表示普通根评论输入）。
+ * 点击某条根评论的「回复」按钮后置为对应评论，提交时携带其 id 作为 parentId。
+ */
+const replyingTo = ref<CommentItem | null>(null);
+
+/** 回复模式下输入框 placeholder（"回复 @昵称"） */
+const replyPlaceholder = computed(() =>
+  replyingTo.value
+    ? t("village.detail.replyToPlaceholder", { name: replyingTo.value.author.name })
+    : t("village.detail.commentInputPlaceholder"),
+);
 /** 转发弹窗是否显示 */
 const showShareModal = ref(false);
 /** 转发附加评论 */
@@ -54,6 +66,27 @@ const showReportDialog = ref(false);
  * </ul>
  */
 const failedImageKeys = ref<Set<string>>(new Set());
+
+/**
+ * P1-16：组装作者信息段文案："{age}岁 · {city} · {education}"。
+ * 任一字段缺失时跳过对应段；全部缺失返回空串（模板隐藏该段）。
+ */
+function authorMetaText(author: PostAuthor): string {
+  const parts: string[] = [];
+  if (typeof author.age === "number" && !Number.isNaN(author.age) && author.age > 0) {
+    parts.push(`${author.age}${t("village.authorAgeUnit")}`);
+  }
+  if (author.city) {
+    parts.push(author.city);
+  }
+  if (author.education) {
+    const label = t(`village.educationLabels.${author.education}`);
+    if (label && !label.startsWith("village.")) {
+      parts.push(label);
+    }
+  }
+  return parts.join(" · ");
+}
 
 /**
  * SubTask 5.5.2：图片 @error 回调。
@@ -249,15 +282,20 @@ async function handleFollow() {
 }
 
 /**
- * 提交评论
+ * 提交评论（P1-02：回复模式下携带 parentId 创建楼中楼回复）
  */
 async function submitComment() {
   if (!currentPost.value || !commentContent.value.trim()) return;
 
   isSubmitting.value = true;
   try {
-    await villageStore.commentPost(currentPost.value.id, commentContent.value.trim());
+    await villageStore.commentPost(
+      currentPost.value.id,
+      commentContent.value.trim(),
+      replyingTo.value?.id ?? undefined,
+    );
     commentContent.value = "";
+    replyingTo.value = null;
     uni.showToast({ title: t("village.commentSuccess"), icon: "success" });
   } catch (_error) {
     uni.showToast({
@@ -267,6 +305,20 @@ async function submitComment() {
   } finally {
     isSubmitting.value = false;
   }
+}
+
+/**
+ * P1-02 楼中楼：点击根评论「回复」按钮，进入回复模式。
+ * 输入框聚焦后提交将携带 parentId。
+ */
+function startReply(comment: CommentItem) {
+  replyingTo.value = comment;
+}
+
+/** 取消回复模式（不提交） */
+function cancelReply() {
+  replyingTo.value = null;
+  commentContent.value = "";
 }
 
 /**
@@ -503,6 +555,10 @@ defineExpose({ handleCommentLike, noop });
               </view>
             </view>
             <text class="author-info__headline">{{ currentPost.author.headline }}</text>
+            <!-- P1-16：作者年龄 · 城市 · 学历（无值则隐藏该段） -->
+            <text v-if="authorMetaText(currentPost.author)" class="author-info__meta">
+              {{ authorMetaText(currentPost.author) }}
+            </text>
           </view>
         </view>
 
@@ -586,7 +642,9 @@ defineExpose({ handleCommentLike, noop });
       <view class="comments-section">
         <view class="comments-header">
           <text class="comments-title">{{ t("village.detail.commentsTitle") }}</text>
-          <text class="comments-count">{{ comments.length }}</text>
+          <!-- P1-02：计数改用服务端总数（currentPost.comments 来自详情 commentCount），
+               替代本地 comments.length（树形结构下根评论数 ≠ 总评论数） -->
+          <text class="comments-count">{{ currentPost.comments }}</text>
         </view>
 
         <!-- 加载状态 -->
@@ -595,7 +653,7 @@ defineExpose({ handleCommentLike, noop });
           <text class="loading-text">{{ t("village.detail.loadingComments") }}</text>
         </view>
 
-        <!-- 评论列表 -->
+        <!-- 评论列表（P1-02 楼中楼：根评论 + 缩进子评论） -->
         <view v-else-if="comments.length > 0" class="comments-list" role="list">
           <view
             v-for="comment in comments" :key="comment.id"
@@ -626,6 +684,57 @@ defineExpose({ handleCommentLike, noop });
                 >
                   <text class="comment-like__icon">{{ t("village.detail.commentLike") }}</text>
                   <text v-if="comment.likes > 0" class="comment-like__count">{{ comment.likes }}</text>
+                </view>
+                <!-- P1-02 楼中楼：根评论「回复」按钮，点击进入回复模式 -->
+                <view
+                  class="comment-reply-btn press-feedback"
+                  hover-class="press-feedback--active"
+                  hover-stay-time="120"
+                  role="button"
+                  :aria-label="t('village.detail.replyTo', { name: comment.author.name })"
+                  @tap.stop="startReply(comment)"
+                >
+                  <text class="comment-reply-btn__text">{{ t("village.detail.reply") }}</text>
+                </view>
+              </view>
+
+              <!-- P1-02 楼中楼：缩进子评论（显示"回复 @昵称"） -->
+              <view v-if="comment.replies && comment.replies.length > 0" class="comment-replies">
+                <view
+                  v-for="reply in comment.replies" :key="reply.id"
+                  class="comment-reply list-item"
+                  @longpress="handleReportComment(reply)"
+                >
+                  <view class="comment-reply__avatar">
+                    <image
+                      v-if="reply.author.avatar && !isImageFailed('reply-' + reply.id)"
+                      class="comment-reply__avatar-img"
+                      :src="resolveMediaUrl(reply.author.avatar)"
+                      mode="aspectFill" lazy-load alt=""
+                      @error="onImageError('reply-' + reply.id)"
+                    />
+                    <text v-else class="comment-reply__avatar-text">{{ reply.author.name[0] }}</text>
+                  </view>
+                  <view class="comment-reply__content">
+                    <view class="comment-reply__header">
+                      <text class="comment-reply__author">{{ reply.author.name }}</text>
+                      <text class="comment-reply__time">{{ formatRelativeTime(reply.createdAt) }}</text>
+                    </view>
+                    <!-- 回复对象昵称（replyTo 缺失时不显示前缀） -->
+                    <text class="comment-reply__text">
+                      <text v-if="reply.replyTo" class="comment-reply__text-ref">回复 @{{ reply.replyTo }}：</text>{{ reply.content }}
+                    </text>
+                    <view class="comment-actions">
+                      <view
+                        class="comment-like"
+                        :class="{ 'comment-like--active': reply.isLiked }"
+  @tap.stop="handleCommentLike(reply.id)"
+                      >
+                        <text class="comment-like__icon">{{ t("village.detail.commentLike") }}</text>
+                        <text v-if="reply.likes > 0" class="comment-like__count">{{ reply.likes }}</text>
+                      </view>
+                    </view>
+                  </view>
                 </view>
               </view>
             </view>
@@ -722,12 +831,19 @@ defineExpose({ handleCommentLike, noop });
     <!-- 底部互动栏 -->
     <view v-if="currentPost" class="detail-footer">
       <view class="comment-input-wrap">
+        <!-- P1-02 楼中楼：回复模式下 placeholder 变为"回复 @昵称"，并展示取消按钮 -->
+        <view v-if="replyingTo" class="reply-mode-bar">
+          <text class="reply-mode-bar__text">{{ t("village.detail.replyingTo", { name: replyingTo.author.name }) }}</text>
+          <view class="reply-mode-bar__cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.detail.cancelReply')" @tap="cancelReply">
+            <text class="reply-mode-bar__cancel-text">{{ t("common.cancel") }}</text>
+          </view>
+        </view>
         <input
           v-model="commentContent"
           class="comment-input"
-          :placeholder="t('village.detail.commentInputPlaceholder')"
+          :placeholder="replyPlaceholder"
           confirm-type="send"
-          @confirm="submitComment" :aria-label="t('village.detail.commentInputPlaceholder')"
+          @confirm="submitComment" :aria-label="replyPlaceholder"
         />
       </view>
       <view class="footer-actions">
@@ -1043,6 +1159,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   gap: 12rpx;
   margin-bottom: 6rpx;
+}
+
+/* P1-16：作者信息段（年龄 · 城市 · 学历） */
+.author-info__meta {
+  font-size: var(--fs-sm, 22rpx);
+  color: $text-tertiary;
+  opacity: 0.9;
 }
 
 .author-info__headline {
@@ -1627,6 +1750,132 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .comment-actions {
   display: flex;
   align-items: center;
+  gap: 16rpx;
+}
+
+/* P1-02 楼中楼：根评论「回复」按钮 */
+.comment-reply-btn {
+  display: flex;
+  align-items: center;
+  padding: 8rpx 16rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: $white;
+}
+
+.comment-reply-btn__text {
+  font-size: var(--fs-base, 24rpx);
+  color: $green-primary;
+  font-weight: 500;
+}
+
+/* P1-02 楼中楼：缩进子评论容器（左竖线 + 左内边距形成层级感） */
+.comment-replies {
+  margin-top: 16rpx;
+  border-left: 4rpx solid $green-light;
+  padding-left: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.comment-reply {
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx;
+  background: $bg-page;
+  border-radius: var(--r-lg, 20rpx);
+}
+
+.comment-reply__avatar {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: var(--r-circle, 50%);
+  overflow: hidden;
+  background: linear-gradient(135deg, $green-light, var(--c-brand-100));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.comment-reply__avatar-img {
+  width: 100%;
+  height: 100%;
+}
+
+.comment-reply__avatar-text {
+  font-size: var(--fs-md, 26rpx);
+  font-weight: 600;
+  color: $green-primary;
+}
+
+.comment-reply__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-reply__header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 6rpx;
+}
+
+.comment-reply__author {
+  font-size: var(--fs-md, 26rpx);
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.comment-reply__time {
+  font-size: var(--fs-xs, 20rpx);
+  color: $text-tertiary;
+}
+
+.comment-reply__text {
+  font-size: var(--fs-md, 26rpx);
+  color: $text-secondary;
+  line-height: 1.6;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+/* "回复 @昵称"前缀高亮 */
+.comment-reply__text-ref {
+  color: $green-primary;
+}
+
+/* P1-02 楼中楼：底部回复模式提示栏 */
+.reply-mode-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 8rpx 16rpx;
+  margin-bottom: 8rpx;
+  border-radius: var(--r-lg, 20rpx);
+  background: $green-light;
+}
+
+.reply-mode-bar__text {
+  font-size: var(--fs-md, 26rpx);
+  color: $green-primary;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reply-mode-bar__cancel {
+  padding: 6rpx 20rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: $white;
+  flex-shrink: 0;
+}
+
+.reply-mode-bar__cancel-text {
+  font-size: var(--fs-sm, 22rpx);
+  color: $text-tertiary;
 }
 
 .comment-like {

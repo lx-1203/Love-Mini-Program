@@ -3,12 +3,17 @@
  * SetupProgress - 引导流程进度条组件（功能5）。
  *
  * 功能：
- * - 横向展示 5 个引导步骤：基本信息 → 校园认证 → 推荐偏好 → 课表导入 → 完成
+ * - 横向展示引导步骤（支持三种身份分支，见 variant）
  * - 顶部显示当前步骤文案（第 n/total 步 + 步骤名称）
  * - 步骤间用连接线连接
  * - 已完成步骤显示对勾（✓）
  * - 当前步骤高亮显示（品牌色 + 脉冲动画）
  * - 未到达步骤灰色显示
+ *
+ * 身份分支（2026-08-07 注册流程重构）：
+ * - variant="full"（默认，5 步）：基本信息 → 校园认证 → 推荐偏好 → 课表导入 → 完成
+ * - variant="student"（4 步）：基本信息 → 校园认证 → 推荐偏好 → 完成（课表导入移出主流程）
+ * - variant="non-student"（3 步）：基本信息 → 推荐偏好 → 完成（跳过校园认证）
  *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类
@@ -30,22 +35,23 @@ import { useI18n } from "vue-i18n";
 const props = withDefaults(defineProps<{
   /** 当前步骤（1-based，1~totalSteps） */
   currentStep: number;
-  /** 总步骤数（默认 5） */
+  /** 总步骤数（仅 variant="full" 时生效，默认 5） */
   totalSteps?: number;
+  /** 身份分支：full=完整 5 步 / student=学生 4 步 / non-student=非学生 3 步 */
+  variant?: "full" | "student" | "non-student";
 }>(), {
   totalSteps: 5,
+  variant: "full",
 });
 
 const { t } = useI18n();
 
 /**
- * 步骤定义（与 i18n key 对齐）。
- *
- * 顺序固定：基本信息 → 校园认证 → 推荐偏好 → 课表导入 → 完成。
- * 与 subpackages/setup/{profile,campus,recommend-pref,schedule}/index.vue 的跳转链路一致：
- *   profile(1) → campus(2) → recommend-pref(3) → schedule(4) → 完成(5)
+ * 完整 5 步定义（与 i18n key 对齐）：
+ * 基本信息 → 校园认证 → 推荐偏好 → 课表导入 → 完成。
+ * 与 subpackages/setup/{profile,campus,recommend-pref,schedule}/index.vue 的历史链路一致。
  */
-const STEP_DEFS = [
+const STEP_DEFS_FULL = [
   { key: "stepBasicInfo", descKey: "stepBasicInfoDesc" },
   { key: "stepCampus", descKey: "stepCampusDesc" },
   { key: "stepRecommend", descKey: "stepRecommendDesc" },
@@ -54,13 +60,57 @@ const STEP_DEFS = [
 ] as const;
 
 /**
- * 安全的当前步骤（clamp 到 [1, totalSteps]，非数字时回退到 1）。
+ * 学生 4 步定义（2026-08-07 流程重构：课表导入移出主流程，改为注册后可选工具）：
+ * 基本信息 → 校园认证 → 推荐偏好 → 完成
+ */
+const STEP_DEFS_STUDENT = [
+  { key: "stepBasicInfo", descKey: "stepBasicInfoDesc" },
+  { key: "stepCampus", descKey: "stepCampusDesc" },
+  { key: "stepRecommend", descKey: "stepRecommendDesc" },
+  { key: "stepComplete", descKey: "stepCompleteDesc" },
+] as const;
+
+/**
+ * 非学生 3 步定义（2026-08-07 流程重构：跳过校园认证）：
+ * 基本信息 → 推荐偏好 → 完成
+ */
+const STEP_DEFS_NON_STUDENT = [
+  { key: "stepBasicInfo", descKey: "stepBasicInfoDesc" },
+  { key: "stepRecommend", descKey: "stepRecommendDesc" },
+  { key: "stepComplete", descKey: "stepCompleteDesc" },
+] as const;
+
+/**
+ * 当前身份分支的步骤定义。
+ */
+const stepDefs = computed<ReadonlyArray<{ key: string; descKey: string }>>(() => {
+  switch (props.variant) {
+    case "student":
+      return STEP_DEFS_STUDENT;
+    case "non-student":
+      return STEP_DEFS_NON_STUDENT;
+    default:
+      return STEP_DEFS_FULL;
+  }
+});
+
+/**
+ * 当前身份分支的总步骤数。
+ */
+const effectiveTotal = computed<number>(() => {
+  if (props.variant === "student") return STEP_DEFS_STUDENT.length;
+  if (props.variant === "non-student") return STEP_DEFS_NON_STUDENT.length;
+  return Math.max(1, props.totalSteps);
+});
+
+/**
+ * 安全的当前步骤（clamp 到 [1, effectiveTotal]，非数字时回退到 1）。
  */
 const safeCurrentStep = computed<number>(() => {
   const raw = Number(props.currentStep);
   if (!Number.isFinite(raw)) return 1;
   const min = 1;
-  const max = Math.max(1, props.totalSteps);
+  const max = effectiveTotal.value;
   return Math.min(max, Math.max(min, Math.floor(raw)));
 });
 
@@ -69,7 +119,7 @@ const safeCurrentStep = computed<number>(() => {
  * 每个步骤附带：序号、i18n key、状态（completed / current / upcoming）。
  */
 const renderSteps = computed(() => {
-  return STEP_DEFS.map((def, idx) => {
+  return stepDefs.value.map((def, idx) => {
     const stepNo = idx + 1;
     let status: "completed" | "current" | "upcoming";
     if (stepNo < safeCurrentStep.value) {
@@ -94,7 +144,7 @@ const renderSteps = computed(() => {
 const currentStepText = computed(() => {
   return t("setupProgress.currentStep", {
     n: safeCurrentStep.value,
-    total: props.totalSteps,
+    total: effectiveTotal.value,
   });
 });
 
@@ -102,7 +152,7 @@ const currentStepText = computed(() => {
  * 当前步骤的名称。
  */
 const currentStepLabel = computed(() => {
-  const def = STEP_DEFS[safeCurrentStep.value - 1];
+  const def = stepDefs.value[safeCurrentStep.value - 1];
   return def ? t(`setupProgress.${def.key}`) : "";
 });
 </script>

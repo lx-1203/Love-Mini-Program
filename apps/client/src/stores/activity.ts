@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 // 修复（严格模式 noUnusedLocals）：clientApi 已不再被本文件使用（分页契约统一后
 // fetchActivities 与 fetchMoreActivities 均直接使用 request），移除 import。
 import { request } from "../services/http";
-import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 import type { components } from "../services/generated/api-types";
 // 统一图片资源路径常量，避免在 store 中硬编码字符串
@@ -265,25 +264,25 @@ export const useActivityStore = defineStore("activity", {
           return activity.isEnrolled;
         }
 
-        // 获取当前用户 ID
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
-
+        // P2-13：报名/取消报名 userId 均由后端 JWT 获取，客户端不再获取/携带
         if (activity.isEnrolled) {
           // 取消报名：调用 DELETE /api/activities/{activityId}/enroll
-          // infra R2-00093: userId 改走 query——部分网关/后端不支持 DELETE 携带 data body
+          // P2-13: userId 由后端 JWT 获取（ActivityController.enrollActivity 仅接收 path id），删除 query
+          // 2026-08-07 修复：后端 @Idempotent 校验，必须携带 Idempotency-Key（按操作区分，避免与报名 key 冲突）
           const result = await request<{ activityId: number; enrolled: boolean; enrollmentCount: number }>({
-            url: `/activities/${activityId}/enroll?userId=${encodeURIComponent(userId)}`,
+            url: `/activities/${activityId}/enroll`,
             method: "DELETE",
+            headers: { "Idempotency-Key": `activity-cancel-${activityId}` },
           });
           activity.isEnrolled = result.enrolled;
           activity.enrollmentCount = result.enrollmentCount;
         } else {
           // 报名：调用 POST /api/activities/{activityId}/enroll
+          // P2-13: userId 由后端 JWT 获取（ActivityController.enrollActivity 无请求体 userId 字段），删除 body 字段
           const result = await request<{ activityId: number; enrolled: boolean; enrollmentCount: number }>({
             url: `/activities/${activityId}/enroll`,
             method: "POST",
-            data: { userId },
+            headers: { "Idempotency-Key": `activity-enroll-${activityId}` },
           });
           activity.isEnrolled = result.enrolled;
           activity.enrollmentCount = result.enrollmentCount;
@@ -312,9 +311,7 @@ export const useActivityStore = defineStore("activity", {
           return this.activities.find((a) => a.id === activityId) ?? null;
         }
 
-        // 调用后端 API: GET /api/activities/{activityId}
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
+        // 调用后端 API: GET /api/activities/{activityId}（P2-13：userId 由后端 JWT 获取，不再携带 query）
         const data = await request<{
           id: number;
           title: string;
@@ -327,7 +324,7 @@ export const useActivityStore = defineStore("activity", {
           activityDate: string;
           isEnrolled: boolean;
         }>({
-          url: `/activities/${activityId}?userId=${userId}`,
+          url: `/activities/${activityId}`,
           method: "GET",
         });
 

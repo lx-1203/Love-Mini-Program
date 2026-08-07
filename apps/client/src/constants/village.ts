@@ -13,6 +13,12 @@
 /** 帖子内容最大长度（字符） */
 export const POST_MAX_LENGTH = 1000;
 
+/** 帖子标题最小长度（字符，P1-01 必填校验） */
+export const POST_TITLE_MIN_LENGTH = 5;
+
+/** 帖子标题最大长度（字符） */
+export const POST_TITLE_MAX_LENGTH = 30;
+
 /** 帖子最大图片数量 */
 export const POST_MAX_IMAGES = 9;
 

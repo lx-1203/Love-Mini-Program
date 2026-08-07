@@ -90,8 +90,13 @@ async function handleRewind(cardId: string) {
       title: t("discoverHistory.rewindSuccess"),
       icon: "success",
     });
-    // 返回寻觅页
-    uni.navigateBack();
+    // P1-36：页面栈深度为 1（直开链接进入本页）时无法 navigateBack，
+    // 改用 switchTab 返回寻觅页；否则正常返回上一页
+    if (getCurrentPages().length <= 1) {
+      uni.switchTab({ url: "/pages/discover/index" });
+    } else {
+      uni.navigateBack();
+    }
   } catch (error) {
     // infra R2-00069: 不直接展示 store 原始 message（可能含技术细节），按错误分类映射友好文案
     showErrorToast(error, t("discoverHistory.rewindFailed"));
@@ -169,7 +174,7 @@ onUnmounted(() => {
       >
         <view class="card-main">
           <SafeImage
-            :src="getCardDetail(record.cardId)?.avatar || '/static/default-avatar.png'"
+            :src="getCardDetail(record.cardId)?.avatar || IMAGE_PATHS.DEFAULT_AVATAR"
             custom-class="card-avatar"
             mode="aspectFill"
             :lazy-load="true"

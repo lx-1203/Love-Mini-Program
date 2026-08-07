@@ -1,11 +1,15 @@
 <script setup lang="ts">
+/**
+ * Admin v2 根组件：router-view 根容器 + 语言切换入口。
+ *
+ * 会话恢复（bootstrap）已由 main.ts 负责，此处不再重复调用。
+ * 登录页（route.name === 'Login'）隐藏语言切换器，避免视觉干扰。
+ */
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import { useSessionStore } from "./stores/session";
 import { setLocale, getLocale } from "./i18n";
 
-const sessionStore = useSessionStore();
 const route = useRoute();
 const { t } = useI18n();
 
@@ -19,11 +23,10 @@ function handleLocaleChange(event: Event): void {
   }
 }
 
-onMounted(async () => {
-  // 启动时恢复用户上次选择的语言（无记录时保持默认 zh-CN）；
-  // en-US 为预留资源，通过此语言切换入口可达（对应 i18n/setLocale 注释）
+onMounted(() => {
+  // 启动时恢复用户上次选择的语言（无记录时保持默认 zh-CN）
   try {
-    const saved = localStorage.getItem("admin_locale");
+    const saved = localStorage.getItem("admin_v2_locale");
     if (saved === "zh-CN" || saved === "en-US") {
       setLocale(saved);
       currentLocale.value = saved;
@@ -31,15 +34,12 @@ onMounted(async () => {
   } catch {
     // localStorage 不可用时忽略，保持默认语言
   }
-  await sessionStore.bootstrap();
 });
 </script>
 
 <template>
   <div class="app-container">
-    <!-- 语言切换入口（i18n/setLocale 的唯一调用方，en-US 资源通过此处可达）
-         infra R2-00462：登录页隐藏语言切换器（原固定悬浮右上角，登录页也显示，
-         视觉干扰且无实际用途） -->
+    <!-- 语言切换入口（i18n/setLocale 的唯一调用方，登录页隐藏） -->
     <div v-if="route.name !== 'Login'" class="locale-switcher">
       <label class="locale-label" :for="'locale-select'">{{ t("common.language") }}</label>
       <select

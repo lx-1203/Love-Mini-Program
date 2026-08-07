@@ -335,6 +335,6 @@ class RealProfileServiceTest {
                 "广东省", "广州市", "广州市",
                 List.of("买房", "养猫"), List.of(),
                 "/half.jpg", "/video.mp4", "/bg.jpg",
-                85, "school");
+                85, "school", null);
     }
 }

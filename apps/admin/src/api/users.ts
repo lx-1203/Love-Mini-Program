@@ -32,7 +32,7 @@ export interface AdminUserDetail {
   gradeLabel: string | null;
   pronouns: string | null;
   phone: string | null;
-  role: "USER" | "ADMIN";
+  role: "USER" | "ADMIN" | "SUPER_ADMIN";
   status: "active" | "disabled";
   profileCompletion: number;
   followingCount: number;
@@ -63,20 +63,6 @@ export interface AdminUserListQuery {
   campusName?: string;
   page?: number;
   pageSize?: number;
-}
-
-/** 创建管理员请求体（对应后端 AdminCreateAdminRequest） */
-export interface AdminCreateAdminRequest {
-  /** 手机号（11 位，1[3-9] 开头，唯一，登录账号） */
-  phone: string;
-  /** 初始密码（6-64 位） */
-  password: string;
-  /** 昵称（1-20 字） */
-  nickname: string;
-  /** 角色：ADMIN（校区管理员）/ SUPER_ADMIN（全局超级管理员），默认 ADMIN */
-  role?: "ADMIN" | "SUPER_ADMIN";
-  /** 管辖校区名：ADMIN 必填；SUPER_ADMIN 必须为空 */
-  campusName?: string | null;
 }
 
 /** 禁用/启用操作响应 */
@@ -118,28 +104,11 @@ export async function createUser(req: AdminCreateUserRequest): Promise<AdminUser
 }
 
 /**
- * 创建管理员（商业模式：每个高校一个管理员）。
- * POST /api/v1/admin/users/admins
- * 仅超级管理员可调用；ADMIN 角色必须指定 campusName（校区管理员）。
+ * 创建管理员 / 分页查询管理员列表（含管辖校区）。
+ * 统一实现见 api/system.ts（管理员管理域）——本文件曾存在双份实现，
+ * 现改为从 system.ts 直接 re-export，避免同一端点两套封装漂移。
  */
-export async function createAdmin(req: AdminCreateAdminRequest): Promise<AdminUserSummary> {
-  const body = await post<unknown>("/v1/admin/users/admins", req);
-  return unwrapApiData<AdminUserSummary>(body) as AdminUserSummary;
-}
-
-/**
- * 分页查询管理员列表（含管辖校区）。
- * GET /api/v1/admin/users/admins
- * 仅超级管理员可调用。
- */
-export function listAdmins(
-  query: { campusName?: string; nickname?: string; page?: number; pageSize?: number } = {}
-): Promise<AdminPageView<AdminUserSummary>> {
-  return get<AdminPageView<AdminUserSummary>>(
-    "/v1/admin/users/admins",
-    query as Record<string, unknown>
-  );
-}
+export { createAdmin, listAdmins } from "./system";
 
 /**
  * 查询用户详情。

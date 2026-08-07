@@ -262,10 +262,20 @@ function goBack() {
 
 onLoad((query) => {
   const raw = query?.tagName;
-  if (raw && typeof raw === "string") {
+  if (raw && typeof raw === "string" && raw.trim().length > 0) {
     tagName.value = decodeURIComponent(raw);
+    loadPosts(true);
+    return;
   }
-  loadPosts(true);
+  // P1-36：无 tagName 参数时提示并返回，不再发空请求
+  uni.showToast({ title: t("village.tagPostsMissingParam"), icon: "none" });
+  setTimeout(() => {
+    if (getCurrentPages().length > 1) {
+      uni.navigateBack();
+    } else {
+      uni.switchTab({ url: "/pages/village/index" });
+    }
+  }, 600);
 });
 </script>
 

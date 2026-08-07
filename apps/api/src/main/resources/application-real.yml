@@ -56,14 +56,21 @@ spring:
           min-idle: ${REDIS_POOL_MIN_IDLE:0}
           # 连接池最大等待时间（毫秒）：默认 -1（无限等待），生产建议设置为正数避免线程阻塞
           max-wait: ${REDIS_POOL_MAX_WAIT:-1}
+  # ============ 演示/体验相关开关（real profile） ============
+  # P0-15 ⚠️ 生产警告：演示充值默认开启仅为保留本地联调/演示能力。
+  # 生产环境【必须】通过 APP_DEMO_RECHARGE_ENABLED=false 关闭直接入账，
+  # 并接入支付网关（微信支付/支付宝）+ 回调验签后再入账。
+  # P0-14 ⚠️ 生产警告：体验账号入口（app.guest-login.enabled）默认关闭，
+  # 本地联调可通过 APP_GUEST_LOGIN_ENABLED=true 临时开启，上线前确认关闭。
   flyway:
     enabled: true
     # 默认扫描 filesystem 迁移目录（单源）：
-    #   filesystem:../database/flyway/sql —— 全部迁移脚本（含原 classpath 的 4 个 Phase A
+    #   filesystem:../../database/flyway/sql —— 全部迁移脚本（含原 classpath 的 4 个 Phase A
     #   迁移，已并入主链并重编号为 V2026.07.24.0001~0004，保证 media_asset 等表在引用前创建）。
-    #   注意：相对路径基于进程工作目录（apps/api），../database 即仓库根的 database 目录；
+    #   注意：相对路径基于进程工作目录（apps/api），../../database 即仓库根的 database 目录
+    #   （与 .env.example 中 APP_FLYWAY_LOCATIONS 的默认值保持一致）；
     #   docker 环境通过 APP_FLYWAY_LOCATIONS 覆盖为 filesystem:/app/db/migration。
-    locations: ${APP_FLYWAY_LOCATIONS:filesystem:../database/flyway/sql}
+    locations: ${APP_FLYWAY_LOCATIONS:filesystem:../../database/flyway/sql}
     baseline-on-migrate: false
     # 使用 Flyway 默认 ${...} 占位符语法（Spring 属性风格），
     # 迁移脚本中以 ${admin.openid} / ${admin.nickname} 引用（见 V2026.06.25.0001）。
@@ -117,3 +124,11 @@ spring:
           # 重试间隔乘数：每次重试间隔 = initial-interval * multiplier^(n-1)
           # 默认 1.0（等间隔），1.5 表示指数退避
           multiplier: ${RABBITMQ_RETRY_MULTIPLIER:1.5}
+
+# RabbitMQ 为可选降级依赖（未安装时 MessagingFallback 兜底为日志模式），
+# 禁用其健康指示器，避免可选组件不可用导致 /actuator/health 整体 DOWN。
+# 关键依赖（MySQL/Redis）仍正常参与健康检查。
+management:
+  health:
+    rabbit:
+      enabled: ${RABBITMQ_HEALTH_ENABLED:false}

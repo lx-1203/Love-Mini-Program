@@ -48,7 +48,7 @@ class WalletControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new WalletController(walletService);
+        controller = new WalletController(walletService, null);
     }
 
     @Test
@@ -168,6 +168,6 @@ class WalletControllerTest {
     @Test
     @DisplayName("构造函数注入校验")
     void constructor_shouldAcceptService() {
-        assertNotNull(new WalletController(walletService));
+        assertNotNull(new WalletController(walletService, null));
     }
 }

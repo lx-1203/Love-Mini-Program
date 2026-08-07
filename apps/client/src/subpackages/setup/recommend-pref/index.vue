@@ -1,18 +1,33 @@
 ﻿<script setup lang="ts">
 /**
- * 推荐偏好设置页（功能5：当前步骤 = 3：推荐偏好）。
+ * 推荐偏好设置页（功能5：推荐偏好）。
  *
- * 跳转链路：profile(1) → campus(2) → recommend-pref(3) → schedule(4) → 完成(5)
+ * 跳转链路（2026-08-07 流程重构，按身份分支）：
+ *   学生：profile(1) → campus(2) → recommend-pref(3) → 完成(4)
+ *   非学生：profile(1) → recommend-pref(2) → 完成(3)
+ * 保存成功后进入 /pages/discover/index（对应「完成」步骤）。
  */
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
-// 修复（严格模式 noUnusedLocals）：appEnv 导入后未使用，已移除。
-// 功能5：引导流程进度条（当前步骤 = 3：推荐偏好）
+// 功能5：引导流程进度条（推荐偏好，学生分支步骤 3、非学生分支步骤 2）
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { request } from "../../../services/http";
 import { useSessionStore } from "../../../stores/session";
+// 2026-08-07 流程重构：按身份分支展示步骤进度
+import { loadIdentity } from "../../../config/identity";
+import { replaceAppPath } from "../../../utils/navigation";
+
+// P2-12：文案全部走 i18n（key 见 locales/zh-CN.ts / en-US.ts 的 recommendPref 命名空间）
+const { t } = useI18n();
+
+/** 当前身份（学生 4 步 / 非学生 3 步），驱动步骤进度条 */
+const identity = loadIdentity();
+/** 学生分支当前步骤 = 3（/4）；非学生分支当前步骤 = 2（/3） */
+const setupCurrentStep = computed(() => (identity === "non_student" ? 2 : 3));
+const setupVariant = computed(() => (identity === "non_student" ? "non-student" : "student"));
 
 // ==================== 类型定义 ====================
 
@@ -49,9 +64,9 @@ const timeOptions = [
 ];
 
 const scopeOptions = [
-  { label: "同校优先", value: "campus_first" as const },
-  { label: "同城", value: "city" as const },
-  { label: "不限", value: "unlimited" as const },
+  { label: t("recommendPref.scopeCampusFirst"), value: "campus_first" as const },
+  { label: t("recommendPref.scopeCity"), value: "city" as const },
+  { label: t("recommendPref.scopeUnlimited"), value: "unlimited" as const },
 ];
 
 // ==================== 数据获取 ====================
@@ -65,9 +80,10 @@ async function fetchPreferences() {
     const userId = sessionStore.userSession?.userId;
 
     if (userId) {
-      // 从后端 API 获取偏好设置
+      // P0-03 修复：后端按 JWT 取当前用户，路径不带 userId，
+      // 统一走 GET /api/recommendations/preferences/me（原带数字路径段 404）
       const data = await request<RecommendationPreferences>({
-        url: `/recommendations/preferences/${userId}`,
+        url: `/recommendations/preferences/me`,
       });
       dailyNotifyTime.value = data.dailyNotifyTime || "12:00";
       scope.value = (data.scope as "campus_first" | "city" | "unlimited") || "campus_first";
@@ -95,7 +111,7 @@ function retry() {
 
 // ==================== 保存操作 ====================
 
-/** 保存偏好设置 */
+/** 保存偏好设置（2026-08-07 流程重构：保存后进入应用，对应「完成」步骤） */
 async function savePreferences() {
   if (saving.value) return;
   saving.value = true;
@@ -104,21 +120,26 @@ async function savePreferences() {
     const userId = sessionStore.userSession?.userId;
 
     if (userId) {
-      // 调用后端 API 保存偏好设置
-      await request<RecommendationPreferences, { dailyNotifyTime: string; scope: string; campusPriority: boolean }>({
-        url: `/recommendations/preferences/${userId}`,
+      // P0-03 修复：保存偏好走 PUT /api/recommendations/preferences/me（不带 userId 路径段），
+      // 请求体字段对齐后端 SavePreferencesRequest（preferredTime/scope/campusPriority）；
+      // 页面值已在 fetchPreferences 时由 GET 回填，此处全量提交已设置的字段。
+      await request<RecommendationPreferences, { preferredTime: string; scope: string; campusPriority: boolean }>({
+        url: `/recommendations/preferences/me`,
         method: "PUT",
         data: {
-          dailyNotifyTime: dailyNotifyTime.value,
+          // 后端 SavePreferencesRequest.preferredTime 对应前端 dailyNotifyTime（每日推荐时间）
+          preferredTime: dailyNotifyTime.value,
           scope: scope.value,
           campusPriority: campusPriority.value,
         },
       });
     }
 
-    uni.showToast({ title: "保存成功", icon: "success" });
+    uni.showToast({ title: t("recommendPref.saveSuccess"), icon: "success" });
+    // 完成引导流程，进入寻觅
+    replaceAppPath("/pages/discover/index");
   } catch (_e) {
-    uni.showToast({ title: "保存失败，请重试", icon: "none" });
+    uni.showToast({ title: t("recommendPref.saveFailed"), icon: "none" });
   } finally {
     saving.value = false;
   }
@@ -134,29 +155,29 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppShell title="推荐计划设置" :show-tab-bar="false">
-    <!-- 功能5：引导流程进度条（当前步骤 = 3：推荐偏好） -->
-    <SetupProgress :current-step="3" />
+  <AppShell :title="t('recommendPref.title')" :show-tab-bar="false">
+    <!-- 功能5：引导流程进度条（推荐偏好；学生分支步骤 3/4，非学生分支步骤 2/3） -->
+    <SetupProgress :current-step="setupCurrentStep" :variant="setupVariant" />
 
     <!-- 加载状态 -->
-    <SectionCard v-if="loading" title="加载中..." compact>
+    <SectionCard v-if="loading" :title="t('recommendPref.loadingTitle')" compact>
       <view class="loading-container">
-        <text class="loading-text">正在获取推荐偏好设置...</text>
+        <text class="loading-text">{{ t('recommendPref.loadingText') }}</text>
       </view>
     </SectionCard>
 
     <!-- 错误状态 -->
-    <SectionCard v-else-if="error" title="加载失败" compact>
+    <SectionCard v-else-if="error" :title="t('recommendPref.errorTitle')" compact>
       <view class="error-container">
-        <text class="error-text">获取偏好设置时出现问题，请重试</text>
-        <button class="retry-btn" @tap="retry">重新加载</button>
+        <text class="error-text">{{ t('recommendPref.errorText') }}</text>
+        <button class="retry-btn" @tap="retry">{{ t('recommendPref.retryBtn') }}</button>
       </view>
     </SectionCard>
 
     <!-- 正常表单 -->
     <template v-else>
       <!-- 每日推荐时间 -->
-      <SectionCard title="推荐时间" subtitle="每天在这个时间为你刷新推荐卡片" compact>
+      <SectionCard :title="t('recommendPref.timeSectionTitle')" :subtitle="t('recommendPref.timeSectionSubtitle')" compact>
         <view class="option-group">
           <view
             v-for="opt in timeOptions"
@@ -171,7 +192,7 @@ onMounted(() => {
       </SectionCard>
 
       <!-- 推荐范围 -->
-      <SectionCard title="推荐范围" subtitle="优先推荐哪些范围的人" compact>
+      <SectionCard :title="t('recommendPref.scopeSectionTitle')" :subtitle="t('recommendPref.scopeSectionSubtitle')" compact>
         <view class="option-group">
           <view
             v-for="opt in scopeOptions"
@@ -186,9 +207,9 @@ onMounted(() => {
       </SectionCard>
 
       <!-- 校园优先 -->
-      <SectionCard title="校园优先" subtitle="启用后同校用户推荐权重+30%并排序靠前" compact>
+      <SectionCard :title="t('recommendPref.campusPriorityTitle')" :subtitle="t('recommendPref.campusPrioritySubtitle')" compact>
         <view class="toggle-row" @tap="campusPriority = !campusPriority">
-          <text class="toggle-label">校园优先</text>
+          <text class="toggle-label">{{ t('recommendPref.campusPriorityLabel') }}</text>
           <view class="toggle-switch" :class="{ 'toggle-switch--on': campusPriority }">
             <view class="toggle-knob" />
           </view>
@@ -197,7 +218,7 @@ onMounted(() => {
 
       <!-- 保存按钮 -->
       <BottomActionBar
-        :primary-label="saving ? '保存中...' : '保存'"
+        :primary-label="saving ? t('recommendPref.saving') : t('recommendPref.save')"
         @primary="savePreferences"
       />
     </template>

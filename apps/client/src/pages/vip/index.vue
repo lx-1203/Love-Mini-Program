@@ -14,6 +14,7 @@
  * - 金额单位：分 ↔ 元转换在前端完成
  */
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
@@ -25,9 +26,38 @@ import { captureException, addBreadcrumb } from "../../services/sentry";
 import { isMockMode } from "../../services/env";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../../constants/routes";
+// P1-08：会员功能开关（false 时本页禁用所有购买/续费交互且不发起后端请求）
+import { featureFlags } from "../../config/feature-flags";
 
 const { t } = useI18n();
 const autoRenewStore = useAutoRenewStore();
+
+/** P1-08：会员功能是否未启用（未启用时页面整体禁用） */
+const membershipDisabled = computed(() => !featureFlags.membershipEnabled);
+
+/**
+ * P1-08：会员功能未启用时的统一守卫——toast 提示并返回。
+ * 从页面入口进入（如"我的 → VIP"）时 onLoad 拦截；
+ * 页面内交互（套餐/权益/自动续费）在 flag=false 时也全部短路，不发后端请求。
+ */
+function guardMembershipDisabled(): boolean {
+  if (!featureFlags.membershipEnabled) {
+    uni.showToast({ title: t("vip.membershipDisabled"), icon: "none" });
+    return true;
+  }
+  return false;
+}
+
+onLoad(() => {
+  if (guardMembershipDisabled()) {
+    // 直接返回上一页；无栈（直开链接）时回退到「我的」Tab
+    if (getCurrentPages().length > 1) {
+      uni.navigateBack();
+    } else {
+      uni.switchTab({ url: ROUTES.TAB.PROFILE });
+    }
+  }
+});
 
 /**
  * 套餐展示文案：优先经 nameKey/periodKey/perDayKey/badgeKey 走 t() 翻译
@@ -111,6 +141,8 @@ function selectPlan(plan: VipPlan) {
  * - success：开通成功，提示后返回上一页
  */
 function subscribe() {
+  // P1-08：会员功能未启用时短路，不发起任何请求
+  if (guardMembershipDisabled()) return;
   lightHaptic();
   if (processing.value) return;
   if (!selectedPlan.value) return;
@@ -236,6 +268,8 @@ const nextBillingDate = computed(() => {
 
 /** 切换自动续费开关 */
 async function toggleAutoRenew() {
+  // P1-08：会员功能未启用时短路（开关禁用且不发起后端请求）
+  if (guardMembershipDisabled()) return;
   lightHaptic();
   if (autoRenewStore.updating) return;
 
@@ -313,6 +347,9 @@ onMounted(() => {
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
   addBreadcrumb("navigation", "page_enter", { url: "/pages/vip/index" });
 
+  // P1-08：会员功能未启用时不发起自动续费状态请求
+  if (!featureFlags.membershipEnabled) return;
+
   // 忽略错误，状态默认为关闭
   void autoRenewStore.fetchStatus().catch(() => {
     // 静默处理，不提示错误
@@ -383,8 +420,9 @@ onMounted(() => {
           :class="{
             'plan-card--selected': plan.id === selectedPlanId,
             'plan-card--popular': plan.popular,
+            'plan-card--disabled': membershipDisabled,
           }"
-          @tap="selectPlan(plan)"
+          @tap="membershipDisabled ? undefined : selectPlan(plan)"
           hover-class="plan-card--hover"
           hover-stay-time="100"
         >
@@ -441,7 +479,7 @@ onMounted(() => {
         <switch
           :checked="autoRenewEnabled"
           :color="SWITCH_ACTIVE_COLOR"
-          :disabled="autoRenewStore.updating"
+          :disabled="autoRenewStore.updating || membershipDisabled"
           @change="toggleAutoRenew"
         />
       </view>
@@ -493,8 +531,8 @@ onMounted(() => {
       </view>
       <view
         class="footer__btn press-feedback"
-        :class="{ 'footer__btn--disabled': processing }"
-        @tap="subscribeGuarded"
+        :class="{ 'footer__btn--disabled': processing || membershipDisabled }"
+        @tap="membershipDisabled ? guardMembershipDisabled() : subscribeGuarded()"
         hover-class="footer__btn--hover"
         hover-stay-time="100"
       >
@@ -735,6 +773,12 @@ onMounted(() => {
 
   &--popular {
     border-color: var(--c-vip-border-tint);
+  }
+
+  /* P1-08：会员功能未启用时套餐卡整体禁用（置灰 + 不可点） */
+  &--disabled {
+    opacity: 0.45;
+    pointer-events: none;
   }
 }
 

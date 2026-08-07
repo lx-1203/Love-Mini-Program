@@ -77,6 +77,12 @@
       }
     },
     {
+      "path": "pages/likes-visitors/index",
+      "style": {
+        "navigationBarTitleText": "喜欢与访客"
+      }
+    },
+    {
       "path": "pages/village/index",
       "style": {
         "navigationBarTitleText": "村口"
@@ -140,12 +146,6 @@
       "path": "pages/love-center/index",
       "style": {
         "navigationBarTitleText": "恋爱中心"
-      }
-    },
-    {
-      "path": "pages/chat/index",
-      "style": {
-        "navigationBarTitleText": "聊天"
       }
     },
     {
@@ -469,6 +469,12 @@
     "borderStyle": "black",
     "list": [
       {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "static/assets/icons/tabbar/home-default.png",
+        "selectedIconPath": "static/assets/icons/tabbar/home-active.png"
+      },
+      {
         "pagePath": "pages/discover/index",
         "text": "匹配",
         "iconPath": "static/assets/icons/tabbar/discover-default.png",
@@ -481,13 +487,7 @@
         "selectedIconPath": "static/assets/icons/tabbar/village-active.png"
       },
       {
-        "pagePath": "pages/home/index",
-        "text": "首页",
-        "iconPath": "static/assets/icons/tabbar/home-default.png",
-        "selectedIconPath": "static/assets/icons/tabbar/home-active.png"
-      },
-      {
-        "pagePath": "pages/chat/index",
+        "pagePath": "pages/messages/index",
         "text": "消息",
         "iconPath": "static/assets/icons/tabbar/chat-default.png",
         "selectedIconPath": "static/assets/icons/tabbar/chat-active.png"

@@ -407,8 +407,55 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  # ========== 热门话题（2026-08-07 圈子页「热门话题」模块） ==========
+  /post-tags/popular:
+    get:
+      summary: Get popular topics (aggregated from post tags)
+      operationId: getPopularTags
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 5
+          description: Max number of topics to return
+      responses:
+        '200':
+          description: List of popular topics, sorted by post count descending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PopularTagView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   schemas:
+    # ===== 热门话题（2026-08-07） =====
+    PopularTagView:
+      type: object
+      required: [tagName]
+      properties:
+        tagName:
+          type: string
+          description: Topic name (aggregated from post tag)
+        postCount:
+          type: integer
+          format: int64
+          description: Number of posts under this tag (used as approximate views)
+        coverUrl:
+          type: string
+          description: First image of the latest post with images under this tag; empty when none
+
     # ===== 帖子相关 Schema =====
     PostAuthor:
       type: object

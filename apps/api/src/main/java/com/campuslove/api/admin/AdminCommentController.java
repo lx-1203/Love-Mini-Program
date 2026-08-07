@@ -30,6 +30,17 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 管理后台 - 评论管理控制器。
  * <p>提供评论分页列表与删除接口。</p>
+ *
+ * <p>数据隔离（商业模式：每个高校一个管理员，委托 {@link AdminDataScope}）：</p>
+ * <ul>
+ *   <li>列表：comments 表无 campus_name 列，按<b>评论作者所属校区</b>过滤
+ *       （作者校区取自 user_campus_profile.campus_name，与 AdminUserController 语义一致）；
+ *       校区管理员强制按其管辖校区过滤（忽略调用方 campusName 参数），
+ *       全局管理员（SUPER_ADMIN 或 ADMIN 无校区）可用 campusName 参数筛选</li>
+ *   <li>删除：读取目标评论后按作者校区调用
+ *       {@link AdminDataScope#assertCampusAccess(String)} 校验越权，越权抛 403</li>
+ * </ul>
+ *
  * <p>权限说明：URL 层 /api/admin/** 已限制 ADMIN 角色；
  * 方法层 @PreAuthorize 作为深度防御（需 @EnableMethodSecurity 启用后生效）。</p>
  */
@@ -42,44 +53,51 @@ public class AdminCommentController {
 
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
+    /** 管理端数据隔离（多管理员多校区） */
+    private final AdminDataScope adminDataScope;
 
     public AdminCommentController(
             CommentRepository commentRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            AdminDataScope adminDataScope) {
         this.commentRepository = commentRepository;
         this.userRepository = userRepository;
+        this.adminDataScope = adminDataScope;
     }
 
     /**
      * 分页查询评论列表。
      *
-     * @param authorId 作者用户 ID 筛选，可选
-     * @param postId   关联帖子 ID 筛选，可选（不限定帖子时传 null）
-     * @param page     页码，1-based，默认 1
-     * @param pageSize 每页大小，默认 20，最大 100
+     * @param authorId   作者用户 ID 筛选，可选
+     * @param postId     关联帖子 ID 筛选，可选（不限定帖子时传 null）
+     * @param campusName 校区筛选（按评论作者所属校区过滤），可选；
+     *                   校区管理员强制按其管辖校区过滤，忽略本参数
+     * @param page       页码，1-based，默认 1
+     * @param pageSize   每页大小，默认 20，最大 100
      * @return 分页评论列表
      */
     @GetMapping
     public AdminPageView<AdminCommentSummaryView> listComments(
             @RequestParam(name = "authorId", required = false) @Positive Long authorId,
             @RequestParam(name = "postId", required = false) @Positive Long postId,
+            @RequestParam(name = "campusName", required = false) String campusName,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
+
+        // 数据隔离：校区管理员强制按其管辖校区过滤，忽略调用方传入的 campusName，
+        // 防止校区管理员越权查看其他校区评论（与 AdminUserController.listUsers 一致）
+        String scopedCampus = adminDataScope.getCurrentAdminCampusName();
+        String effectiveCampus = scopedCampus != null
+                ? scopedCampus
+                : normalize(campusName);
 
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(100, pageSize));
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
 
-        // 优先按作者筛选；否则按帖子筛选；否则全量
-        Page<Comment> result;
-        if (authorId != null) {
-            result = commentRepository.findByAuthorIdOrderByCreatedAtDesc(authorId, pageable);
-        } else if (postId != null) {
-            result = commentRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
-        } else {
-            result = commentRepository.findAllByOrderByCreatedAtDesc(pageable);
-        }
+        Page<Comment> result = commentRepository.searchForAdmin(
+                authorId, postId, effectiveCampus, pageable);
 
         // 批量预加载作者昵称，避免 N+1 查询
         Map<Long, String> authorNicknameMap = loadAuthorNicknames(result.getContent());
@@ -114,6 +132,10 @@ public class AdminCommentController {
         if (commentOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+        Comment comment = commentOpt.get();
+        // 数据隔离：校区管理员仅能删除本校区作者的评论，越权抛 403
+        adminDataScope.assertCampusAccess(
+                adminDataScope.resolveUserCampusName(comment.getAuthorId()));
 
         commentRepository.deleteById(id);
 
@@ -121,6 +143,20 @@ public class AdminCommentController {
         body.put("id", id);
         body.put("success", true);
         return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 空串转 null 归一化。
+     *
+     * @param value 原始值
+     * @return 去首尾空白后的值；null 或空白返回 null
+     */
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**

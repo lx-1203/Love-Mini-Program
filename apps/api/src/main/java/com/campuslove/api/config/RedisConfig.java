@@ -287,7 +287,16 @@ public class RedisConfig {
     }
 
     /**
-     * 构建 Redis JSON 序列化器(infra 联调修复)。
+     * Redis JSON 序列化器单例（P0-20 统一序列化配置）。
+     *
+     * <p>RedisTemplate 与 CacheManager 两条读写链路共用同一实例，保证序列化
+     * 配置（含类型信息）完全一致，避免「写入侧与读取侧 Jackson 配置不一致」
+     * 导致的反序列化失败（Unexpected token / missing type id）。</p>
+     */
+    private volatile Jackson2JsonRedisSerializer<Object> sharedJsonSerializer;
+
+    /**
+     * 构建 Redis JSON 序列化器(infra 联调修复，P0-20 改为懒加载单例)。
      *
      * <p>要点：</p>
      * <ul>
@@ -295,19 +304,28 @@ public class RedisConfig {
      *   <li>启用 default typing(NON_FINAL)：Jackson2JsonRedisSerializer 默认
      *       关闭类型信息,反序列化返回 LinkedHashMap,与缓存方法具体返回类型
      *       (如 MatchStatsView) 转换时抛 ClassCastException(实测 500)</li>
+     *   <li>单例复用：RedisTemplate 与 CacheManager 共用同一实例，读写两侧
+     *       Jackson 配置（含类型信息）严格一致</li>
      * </ul>
      */
     @SuppressWarnings("unchecked")
     private Jackson2JsonRedisSerializer<Object> redisJsonSerializer() {
-        com.fasterxml.jackson.databind.ObjectMapper jsonMapper =
-                new com.fasterxml.jackson.databind.ObjectMapper()
-                        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
-        // 对具体 DTO 类型也启用类型信息(NON_FINAL + PROPERTY),写入 @class 属性,
-        // 反序列化时还原具体类型(如 MatchStatsView),避免 LinkedHashMap 转换异常
-        jsonMapper.activateDefaultTyping(
-                jsonMapper.getPolymorphicTypeValidator(),
-                com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping.NON_FINAL,
-                com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY);
-        return new Jackson2JsonRedisSerializer<Object>(jsonMapper, Object.class);
+        if (sharedJsonSerializer == null) {
+            synchronized (this) {
+                if (sharedJsonSerializer == null) {
+                    com.fasterxml.jackson.databind.ObjectMapper jsonMapper =
+                            new com.fasterxml.jackson.databind.ObjectMapper()
+                                    .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+                    // 对具体 DTO 类型也启用类型信息(NON_FINAL + PROPERTY),写入 @class 属性,
+                    // 反序列化时还原具体类型(如 MatchStatsView),避免 LinkedHashMap 转换异常
+                    jsonMapper.activateDefaultTyping(
+                            jsonMapper.getPolymorphicTypeValidator(),
+                            com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping.NON_FINAL,
+                            com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY);
+                    sharedJsonSerializer = new Jackson2JsonRedisSerializer<Object>(jsonMapper, Object.class);
+                }
+            }
+        }
+        return sharedJsonSerializer;
     }
 }

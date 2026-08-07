@@ -169,6 +169,11 @@ public class ProfileUpdateService {
         user.setGradeLabel(request.grade());
         user.setPronouns(request.pronouns());
 
+        // 2026-08-07：头像 URL 可选更新（非空时写入 users.avatar_url）
+        if (request.avatarUrl() != null && !request.avatarUrl().isBlank()) {
+            user.setAvatarUrl(request.avatarUrl());
+        }
+
         // 重新计算资料完善度并保存
         user.setProfileCompletion(queryService.calculateProfileCompletion(currentUserId));
         user.setUpdatedAt(now);
@@ -178,6 +183,28 @@ public class ProfileUpdateService {
     }
 
     // ---- 媒体上传 ----
+
+    /**
+     * 上传头像（2026-08-07 新增）。
+     *
+     * 头像存于 users.avatar_url，由推荐卡片（DiscoverCard.avatar）与个人主页共用。
+     * 覆盖前先删除旧文件，避免文件堆积。
+     */
+    @Transactional
+    public BasicProfileView uploadAvatar(MultipartFile file) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        MediaStorageService.UploadResult result = mediaStorageService.store(currentUserId, file, "avatar");
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+        deleteOldMediaQuietly(user.getAvatarUrl());
+        user.setAvatarUrl(result.getUrl());
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        // 返回含头像 URL 的最新资料视图（含自动创建的 basic profile 记录）
+        UserBasicProfile profile = ensureBasicProfile(currentUserId);
+        profile.setUpdatedAt(LocalDateTime.now());
+        return queryService.toBasicProfileView(profile, user);
+    }
 
     /**
      * 上传个人主页背景图。

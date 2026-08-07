@@ -13,18 +13,32 @@
  * - 不使用 import.meta.env
  */
 import { ref, computed } from "vue";
-import { onPullDownRefresh } from "@dcloudio/uni-app";
+import { onLoad, onPullDownRefresh } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVipBillingStore, type BillType } from "../../stores/vip-billing";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import EmptyState from "../../components/common/EmptyState.vue";
+// P1-08：会员功能开关（false 时子页拦截返回）
+import { featureFlags } from "../../config/feature-flags";
 
 const { t } = useI18n();
 
 /** 账单页主视觉图标（emoji 替换为 SVG） */
 const heroIcon = IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD;
 const store = useVipBillingStore();
+
+// P1-08：会员功能未启用时拦截（toast + 返回），避免深链进入功能页
+onLoad(() => {
+  if (!featureFlags.membershipEnabled) {
+    uni.showToast({ title: t("vip.membershipDisabled"), icon: "none" });
+    if (getCurrentPages().length > 1) {
+      uni.navigateBack();
+    } else {
+      uni.switchTab({ url: "/pages/profile/index" });
+    }
+  }
+});
 
 /** 筛选类型：ALL / SUBSCRIBE / RENEW / REFUND */
 const filterType = ref<"ALL" | BillType>("ALL");

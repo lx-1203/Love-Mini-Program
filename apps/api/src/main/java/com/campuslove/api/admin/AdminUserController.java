@@ -238,27 +238,22 @@ public class AdminUserController {
         int safeSize = Math.max(1, Math.min(100, pageSize));
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
 
-        // 管理员列表 = ADMIN（校区/全局运营） + SUPER_ADMIN（全局超级管理员），
-        // searchForAdmin 的 role 为单值过滤，分两次查询后按注册时间合并
-        Page<User> admins = userRepository.searchForAdmin(
-                "ADMIN", null, null, null, normalizedNickname,
-                normalizedCampus, pageable);
-        Page<User> superAdmins = userRepository.searchForAdmin(
-                "SUPER_ADMIN", null, null, null, normalizedNickname,
-                normalizedCampus, pageable);
+        // 管理员列表 = ADMIN（校区/全局运营） + SUPER_ADMIN（全局超级管理员）。
+        // 修复：原实现分两次单角色查询后内存合并，单页最多返回 2×pageSize 条、
+        // 跨页全局排序不成立、可能重复/遗漏；现由 searchAllAdmins 一次查询覆盖两类角色
+        Page<User> admins = userRepository.searchAllAdmins(
+                normalizedNickname, normalizedCampus, pageable);
 
-        List<AdminUserSummaryView> items = new java.util.ArrayList<>();
-        superAdmins.getContent().forEach(u -> items.add(toSummaryView(u)));
-        admins.getContent().forEach(u -> items.add(toSummaryView(u)));
-        items.sort((a, b) -> b.createdAt().compareTo(a.createdAt()));
+        List<AdminUserSummaryView> items = admins.getContent().stream()
+                .map(this::toSummaryView)
+                .toList();
 
-        long total = admins.getTotalElements() + superAdmins.getTotalElements();
         return new AdminPageView<>(
                 items,
-                total,
+                admins.getTotalElements(),
                 safePage,
                 safeSize,
-                AdminPageView.calculateTotalPages(total, safeSize)
+                AdminPageView.calculateTotalPages(admins.getTotalElements(), safeSize)
         );
     }
 
@@ -458,12 +453,15 @@ public class AdminUserController {
         User user = userOpt.orElseThrow(() ->
                 new IllegalStateException("userOpt 已确认非空但 orElseThrow 触发，数据不一致"));
 
-        // infra R2-00268: 禁止对 ADMIN 角色用户与当前操作者自身执行禁用/启用，
-        // 防止管理后台自锁（禁用其他管理员或自己导致后台失守）
-        // infra R2-00025 review: SUPER_ADMIN 同样受保护，且仅 SUPER_ADMIN 可操作
-        // 其他管理员（普通 ADMIN 禁用/启用他人管理员仍被拒绝）
-        if ("ADMIN".equalsIgnoreCase(user.getRole()) || "SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "不能禁用/启用 ADMIN/SUPER_ADMIN 账号"));
+        // 权限模型（商业模式：超级管理员管理校区管理员）：
+        // - 任何人不允许禁用/启用 SUPER_ADMIN（防止超级管理员账号被锁）
+        // - 校区管理员（ADMIN）不能禁用/启用任何管理员（仅 SUPER_ADMIN 可操作 ADMIN）
+        // - 任何人不允许操作自己的账号
+        if ("SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "不能禁用/启用超级管理员账号"));
+        }
+        if ("ADMIN".equalsIgnoreCase(user.getRole()) && !isSuperAdminOperator(adminId)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "校区管理员无权禁用/启用其他管理员账号"));
         }
         if (user.getId() != null && user.getId().equals(adminId)) {
             return ResponseEntity.badRequest().body(Map.of("error", "不能对自己的账号执行该操作"));
@@ -479,6 +477,23 @@ public class AdminUserController {
         body.put("operatorId", adminId);
         body.put("success", true);
         return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 判断当前操作者是否为超级管理员（SUPER_ADMIN）。
+     *
+     * <p>用于权限模型：仅超级管理员可以对校区管理员（ADMIN）执行禁用/启用。</p>
+     *
+     * @param adminId 操作者用户 ID
+     * @return true 表示操作者为超级管理员
+     */
+    private boolean isSuperAdminOperator(Long adminId) {
+        if (adminId == null) {
+            return false;
+        }
+        return userRepository.findById(adminId)
+                .map(u -> "SUPER_ADMIN".equalsIgnoreCase(u.getRole()))
+                .orElse(false);
     }
 
     /**

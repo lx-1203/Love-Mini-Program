@@ -337,6 +337,12 @@ export interface RecommendedPerson {
   humanVerified?: boolean;
   /** 性格标签 */
   personality?: string[];
+  /** 感情状态：never/married_before/divorced/widowed（2026-08-07 补充字段） */
+  relationshipStatus?: string;
+  /** 星座（如 金牛座，mock 数据填充） */
+  zodiac?: string;
+  /** 注册时间（ISO 字符串，用于"最新注册"排序；mock 数据填充） */
+  registeredAt?: string;
   /** MBTI 人格类型 */
   mbti?: string;
   /** 悄悄话内容（付费可见/发送） */
@@ -454,4 +460,41 @@ export interface SubmissionDetailView {
   submittedAt: string;
   /** 转换后的活动 ID（仅 ACTIVITY_PROPOSAL 类型有值） */
   convertedActivityId: number | null;
+}
+
+// ===== 官方号体系（2026-08-07，契约见 docs/openapi/official-accounts.yaml） =====
+/**
+ * 官方账号视图。
+ * 官方号 = 产品助手号（official-assistant）/ 活动运营号（official-promoter），
+ * 会话进消息列表、官方号会话页展示元信息。
+ */
+export interface OfficialAccountView {
+  id: number;
+  /** 官方号唯一标识（official-assistant / official-promoter） */
+  code: string;
+  /** 官方号名称（如 产品助手） */
+  name: string;
+  /** 官方号简介 */
+  description: string;
+  /** 官方号专属头像 URL（空时前端用默认图标兜底） */
+  iconUrl: string;
+}
+
+/**
+ * 官方号消息视图。
+ * text 类型仅 content 有效；card 类型附带卡片字段（标题/描述/角标/CTA）。
+ */
+export interface OfficialMessageView {
+  id: number;
+  /** 消息类型：text 文本 / card 活动卡片 */
+  messageType: 'text' | 'card';
+  /** 消息正文（card 类型为卡片副标题文案） */
+  content: string;
+  cardTitle: string | null;
+  cardDesc: string | null;
+  cardTag: string | null;
+  /** 活动卡片 CTA 跳转地址 */
+  cardTargetUrl: string | null;
+  /** 发布时间（ISO 字符串） */
+  publishedAt: string;
 }

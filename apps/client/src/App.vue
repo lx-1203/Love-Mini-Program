@@ -718,22 +718,22 @@ page {
 }
 
 /* ================================================================
-   底部安全区 - 为自定义 TabBar 预留空间（固定底部 ~160rpx）
+   底部安全区 - 为自定义 TabBar 预留空间（56px = 112rpx + 安全区）
    ================================================================ */
 .page-bottom-safe {
-  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(112rpx + env(safe-area-inset-bottom));
 }
 
 /* 带缩进的底部安全区（内边距与左右边距一致） */
 .page-bottom-safe--inset {
-  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(112rpx + env(safe-area-inset-bottom));
   padding-left: var(--sp-7);
   padding-right: var(--sp-7);
 }
 
 /* TabBar 容器高度参考（供页面计算偏移用） */
 page {
-  --tabbar-height: calc(140rpx + env(safe-area-inset-bottom));
+  --tabbar-height: calc(112rpx + env(safe-area-inset-bottom));
 }
 
 /* ================================================================

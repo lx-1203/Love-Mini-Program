@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.entity.UserCampusProfile;
+import com.campuslove.api.repository.SchoolRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.testdata.ControllerTestBase;
 import java.time.LocalDateTime;
@@ -42,6 +43,7 @@ class CampusControllerTest extends ControllerTestBase {
     @Mock private CampusService campusService;
     @Mock private CampusCertificationService certService;
     @Mock private UserCampusProfileRepository campusProfileRepository;
+    @Mock private SchoolRepository schoolRepository;
     @Mock private com.campuslove.api.discover.ActivityService activityService;
     @Mock private com.campuslove.api.village.VillageService villageService;
 
@@ -51,7 +53,7 @@ class CampusControllerTest extends ControllerTestBase {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         controller = new CampusController(
-                campusService, certService, campusProfileRepository, activityService, villageService);
+                campusService, certService, campusProfileRepository, schoolRepository, activityService, villageService);
     }
 
     /** 创建测试用 CampusTopicView（13 字段 record）。 */
@@ -233,6 +235,6 @@ class CampusControllerTest extends ControllerTestBase {
     void constructor_shouldAcceptAllDependencies() {
         // Arrange & Act & Assert
         assertNotNull(new CampusController(
-                campusService, certService, campusProfileRepository, activityService, villageService));
+                campusService, certService, campusProfileRepository, schoolRepository, activityService, villageService));
     }
 }

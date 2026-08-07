@@ -45,8 +45,10 @@ public class RecommendationCacheManager {
     /**
      * 获取指定用户的推荐人物列表（带缓存）。
      *
-     * <p>缓存策略：{@link CacheNames#MATCH_RECOMMEND}，key 为 userId。
-     * 结果为 null 或空列表时不缓存（unless 条件），避免缓存穿透。</p>
+     * <p>缓存策略：{@link CacheNames#MATCH_RECOMMEND}，key 为 {@code v2:{userId}}
+     * （P0-20 修复：加版本前缀绕开历史序列化器写入的旧键类型残留，避免反序列化
+     * 报 Unexpected token / missing type id）。结果为 null 或空列表时不缓存
+     * （unless 条件），避免缓存穿透。</p>
      *
      * <p>实现说明：内部委托 {@link RecommendationStrategy#doRecommend} 进行评分，
      * 再委托 {@link RecommendationRanker#rankAndConvert(RecommendationStrategy.RecommendResult)}
@@ -58,7 +60,7 @@ public class RecommendationCacheManager {
      * @param userId 当前用户 ID
      * @return 推荐人物视图列表
      */
-    @Cacheable(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId",
+    @Cacheable(cacheNames = CacheNames.MATCH_RECOMMEND, key = "'v2:' + #userId",
             unless = "#result == null || #result.isEmpty()")
     public List<RecommendedPersonView> getCachedRecommendations(Long userId) {
         long startNanos = System.nanoTime();
@@ -87,9 +89,12 @@ public class RecommendationCacheManager {
      *   <li>运营后台批量刷新推荐时调用</li>
      * </ul>
      *
+     * <p>key 与 {@link #getCachedRecommendations} 的 {@code v2:} 前缀保持一致
+     * （P0-20），确保能命中并清除同一缓存键。</p>
+     *
      * @param userId 用户 ID
      */
-    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId")
+    @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "'v2:' + #userId")
     public void evictRecommendationCache(Long userId) {
         // 空实现，仅依赖 @CacheEvict 注解触发缓存失效
     }

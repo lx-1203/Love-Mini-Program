@@ -4,12 +4,6 @@
  * 对应后端 AdminStatsController（@RequestMapping("/api/v1/admin/stats")）。
  * 前端 API_BASE_URL 默认为 "/api"，因此 path 参数以 "/v1/admin/stats/*" 开头，
  * 拼接后实际请求 URL 为 "/api/v1/admin/stats/*"，与后端映射一致。
- *
- * Task 13 改造点：
- * - 修正路径前缀：旧代码使用 "/admin/stats/*"（实际命中 /api/admin/stats/*，404），
- *   改为 "/v1/admin/stats/*" 与后端 @RequestMapping 对齐
- * - 新增 getStats() 聚合接口：一次调用拉取三类统计，供 Dashboard 统一消费
- * - 移除所有 Mock 引用（本文件本无 Mock，仅做路径修正与聚合函数补齐）
  */
 import { get } from "./http";
 

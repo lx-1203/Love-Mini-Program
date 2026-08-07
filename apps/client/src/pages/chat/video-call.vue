@@ -229,13 +229,17 @@ function hangupCall() {
 
 /**
  * 调用 store.endCall 上报通话结果
+ *
+ * 修复（P0-09）：后端 EndCallRequest 以 roomId 定位通话（不再用 callId），
+ * 且被叫方经 syncFromRoute 进入时 currentCall.id 恒为 0（原实现会直接 return，
+ * 导致被叫方挂断/拒接从不上报）；改为传 roomId 并在 store 内映射结束原因。
  */
 async function endCallWithReason(reason: VideoCallEndReason) {
-  const callId = store.currentCall?.id ?? 0;
-  if (!callId) return;
+  const roomId = store.currentCall?.roomId ?? "";
+  if (!roomId) return;
   try {
     await store.endCall({
-      callId,
+      roomId,
       endReason: reason,
       durationSec: durationSec.value,
     });

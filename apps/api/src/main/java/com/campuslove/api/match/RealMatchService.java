@@ -5,6 +5,8 @@ import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.MatchConfig;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.wallet.WalletUnlock;
+import com.campuslove.api.wallet.WalletUnlockService;
 import com.campuslove.api.entity.HeartSignal;
 import com.campuslove.api.entity.HeartSignal.SignalStatus;
 import com.campuslove.api.entity.Like;
@@ -57,6 +59,12 @@ public class RealMatchService implements MatchService {
      */
     private final com.campuslove.api.repository.VisitorRepository visitorRepository;
 
+    /**
+     * P0-17：商业化解锁服务，用于 liked-me / visitors 列表附加 unlocked 状态字段。
+     * 双 profile 均有实现（real 数据库 / mock 内存），注入安全。
+     */
+    private final WalletUnlockService walletUnlockService;
+
     public RealMatchService(
             MatchConfig matchConfig,
             LikeRepository likeRepository,
@@ -73,7 +81,8 @@ public class RealMatchService implements MatchService {
             MessageProducer messageProducer,
             MatchEngine matchEngine,
             MatchPolicy matchPolicy,
-            MatchRecorder matchRecorder) {
+            MatchRecorder matchRecorder,
+            WalletUnlockService walletUnlockService) {
         this.matchConfig = matchConfig;
         this.likeRepository = likeRepository;
         this.heartSignalRepository = heartSignalRepository;
@@ -82,6 +91,7 @@ public class RealMatchService implements MatchService {
         this.matchEngine = matchEngine;
         this.matchPolicy = matchPolicy;
         this.matchRecorder = matchRecorder;
+        this.walletUnlockService = walletUnlockService;
     }
 
     // ---- Phase 1 存根方法 ----
@@ -187,10 +197,46 @@ public class RealMatchService implements MatchService {
 
     // ---- Phase 2 核心实现：社交功能 ----
 
+    /**
+     * 幂等喜欢视图的 status 值（A-25 修复）：重复喜欢（已存在 active like）时返回，
+     * 标识"已喜欢过、未产生新信号"。HeartSignal.SignalStatus 枚举无对应值
+     * （枚举与数据库 ENUM 列强绑定，不宜扩展），故以视图层常量表达。
+     */
+    public static final String HEART_SIGNAL_STATUS_ALREADY_LIKED = "ALREADY_LIKED";
+
     /** 喜欢用户。如果双方互相喜欢，则创建心动信号并推送通知。 */
     @Override
     @Transactional
     public HeartSignalView likeUser(Long userId, Long targetUserId) {
+        // A-25/A-31：普通 like 每日上限（超级喜欢走 superLikeUser 不受限）
+        if (!matchPolicy.tryIncrementLike(userId)) {
+            log.info("用户[{}]今日普通喜欢次数已达上限({}/{})，拒绝 like", userId,
+                    MatchPolicy.LIKE_DAILY_LIMIT, MatchPolicy.LIKE_DAILY_LIMIT);
+            throw new DailyLimitExceededException(
+                    "喜欢",
+                    MatchPolicy.LIKE_DAILY_LIMIT,
+                    "今日喜欢次数已用完（上限 " + MatchPolicy.LIKE_DAILY_LIMIT + " 次），请明日再来");
+        }
+        return doLike(userId, targetUserId, "mutual_like");
+    }
+
+    /** 超级喜欢：不受每日上限限制，双向喜欢信号 matchType=super_like 与普通喜欢区分。 */
+    @Override
+    @Transactional
+    public HeartSignalView superLikeUser(Long userId, Long targetUserId) {
+        log.info("超级喜欢：userId={}, targetUserId={}", userId, targetUserId);
+        return doLike(userId, targetUserId, "super_like");
+    }
+
+    /**
+     * 喜欢/超级喜欢内部流程：创建/激活 like → 双向喜欢则创建心动信号并推送通知。
+     *
+     * @param userId       当前用户 ID
+     * @param targetUserId 目标用户 ID
+     * @param matchType    双向喜欢信号的匹配类型（mutual_like 普通喜欢 / super_like 超级喜欢）
+     * @return 心动信号视图（互相喜欢时非空；重复喜欢返回幂等视图；其余场景返回 null）
+     */
+    private HeartSignalView doLike(Long userId, Long targetUserId, String matchType) {
         if (userId == null || targetUserId == null) {
             throw new IllegalArgumentException("userId and targetUserId are required");
         }
@@ -199,7 +245,16 @@ public class RealMatchService implements MatchService {
         Optional<Like> existingLike = matchRecorder.findExistingLike(userId, targetUserId);
         if (existingLike.isPresent()) {
             Like like = existingLike.get();
-            if (like.getStatus() == LikeStatus.active) return null;
+            if (like.getStatus() == LikeStatus.active) {
+                // A-25 幂等修复：重复喜欢不再返回 null（前端将 null 视为操作失败），
+                // 返回 status=ALREADY_LIKED 的幂等视图，标识"已喜欢过"
+                log.info("重复喜欢（幂等返回）：userId={}, targetUserId={}", userId, targetUserId);
+                return new HeartSignalView(
+                        like.getId(), userId, targetUserId, HEART_SIGNAL_STATUS_ALREADY_LIKED,
+                        null,
+                        like.getCreatedAt() != null ? like.getCreatedAt().toString() : null,
+                        null, null);
+            }
             matchRecorder.reactivateLike(like, now);
         } else {
             matchRecorder.createLike(userId, targetUserId, now);
@@ -207,7 +262,7 @@ public class RealMatchService implements MatchService {
         matchRecorder.recordNewLikeEvent(targetUserId, userId);
 
         if (matchRecorder.findReverseActiveLike(targetUserId, userId).isPresent()) {
-            HeartSignal signal = matchRecorder.createMutualSignal(userId, targetUserId, now);
+            HeartSignal signal = matchRecorder.createMutualSignal(userId, targetUserId, now, matchType);
             HeartSignalView signalView = matchRecorder.toHeartSignalView(signal);
             matchRecorder.pushHeartSignalNotification(userId, targetUserId, signalView);
             matchRecorder.publishMatchEvent(userId, targetUserId, "match");
@@ -230,7 +285,8 @@ public class RealMatchService implements MatchService {
     public List<LikedUserView> getLikedMe(Long userId) {
         if (userId == null) throw new IllegalArgumentException("userId is required");
         List<Like> likes = likeRepository.findByTargetUserIdAndStatus(userId, LikeStatus.active);
-        return mapToLikedUserViews(likes, Like::getUserId, Like::getTargetUserId);
+        return mapToLikedUserViews(likes, Like::getUserId, Like::getTargetUserId,
+                WalletUnlock.TARGET_TYPE_LIKED_ME, userId);
     }
 
     @Override
@@ -238,16 +294,23 @@ public class RealMatchService implements MatchService {
     public List<LikedUserView> getMyLikes(Long userId) {
         if (userId == null) throw new IllegalArgumentException("userId is required");
         List<Like> likes = likeRepository.findByUserIdAndStatus(userId, LikeStatus.active);
-        return mapToLikedUserViews(likes, Like::getTargetUserId, Like::getUserId);
+        // 我的喜欢列表（我发出的）不涉及解锁查看，unlocked 恒为 true（unlockTargetType 传 null）
+        return mapToLikedUserViews(likes, Like::getTargetUserId, Like::getUserId, null, userId);
     }
 
     /** 将 Like 列表转换为 LikedUserView 列表，复用批量预加载避免 N+1。 */
     private List<LikedUserView> mapToLikedUserViews(List<Like> likes,
                                                     Function<Like, Long> targetIdExtractor,
-                                                    Function<Like, Long> ownerIdExtractor) {
+                                                    Function<Like, Long> ownerIdExtractor,
+                                                    String unlockTargetType,
+                                                    Long currentUserId) {
         List<Long> userIds = likes.stream().map(targetIdExtractor).distinct().toList();
         Map<Long, User> userMap = matchRecorder.batchLoadUsers(userIds);
         Map<Long, UserCampusProfile> campusMap = matchRecorder.batchLoadCampusProfiles(userIds);
+        // P0-17：批量查询已解锁的目标 ID 集合（unlockTargetType 为 null 时表示无需解锁的列表）
+        java.util.Set<Long> unlockedIds = unlockTargetType == null
+                ? java.util.Set.of()
+                : walletUnlockService.findUnlockedTargetIds(currentUserId, unlockTargetType, userIds);
         return likes.stream()
                 .map(like -> {
                     Long otherId = targetIdExtractor.apply(like);
@@ -257,7 +320,7 @@ public class RealMatchService implements MatchService {
                     UserCampusProfile campus = campusMap.get(otherId);
                     String campusName = campus != null ? campus.getCampusName() : "";
                     return new LikedUserView(otherId, nickname, avatarUrl, campusName,
-                            like.getCreatedAt().toString());
+                            like.getCreatedAt().toString(), unlockedIds.contains(otherId));
                 })
                 .toList();
     }
@@ -270,6 +333,9 @@ public class RealMatchService implements MatchService {
         List<Long> visitorIds = visitors.stream().map(Visitor::getVisitorId).distinct().toList();
         Map<Long, User> userMap = matchRecorder.batchLoadUsers(visitorIds);
         Map<Long, UserCampusProfile> campusMap = matchRecorder.batchLoadCampusProfiles(visitorIds);
+        // P0-17：批量查询已解锁的访客 ID 集合（unlocked 状态随列表下发）
+        java.util.Set<Long> unlockedIds = walletUnlockService.findUnlockedTargetIds(
+                userId, WalletUnlock.TARGET_TYPE_VISITOR, visitorIds);
         return visitors.stream()
                 .map(v -> {
                     User u = userMap.get(v.getVisitorId());
@@ -278,7 +344,7 @@ public class RealMatchService implements MatchService {
                     UserCampusProfile campus = campusMap.get(v.getVisitorId());
                     String campusName = campus != null ? campus.getCampusName() : "";
                     return new VisitorView(v.getVisitorId(), nickname, avatarUrl, campusName,
-                            v.getCreatedAt().toString());
+                            v.getCreatedAt().toString(), unlockedIds.contains(v.getVisitorId()));
                 })
                 .toList();
     }
@@ -298,8 +364,9 @@ public class RealMatchService implements MatchService {
     @Transactional(readOnly = true)
     public List<HeartSignalView> getHeartSignals(Long userId) {
         if (userId == null) throw new IllegalArgumentException("userId is required");
-        List<HeartSignal> signals = heartSignalRepository.findByUserAIdOrUserBIdAndStatus(
-                userId, userId, SignalStatus.pending);
+        // P0-25：查询加 expiresAt > now 过滤——已过期（含尚未被定时任务标记）的信号不进入待处理列表
+        List<HeartSignal> signals = heartSignalRepository.findByUserAIdOrUserBIdAndStatusNotExpired(
+                userId, userId, SignalStatus.pending, LocalDateTime.now());
         List<Long> userAIds = signals.stream()
                 .map(HeartSignal::getUserAId)
                 .filter(java.util.Objects::nonNull)
@@ -309,6 +376,34 @@ public class RealMatchService implements MatchService {
         return signals.stream()
                 .map(signal -> matchRecorder.toHeartSignalView(signal, userAMap))
                 .toList();
+    }
+
+    /**
+     * P0-25：心动信号过期清理定时任务。
+     *
+     * <p>每 1 小时执行一次：将已超过 expiresAt 的 pending 信号批量置为 expired，
+     * 与查询侧的 {@code expiresAt > now} 过滤形成闭环（查询兜底 + 定时清理），
+     * 保证待处理信号列表不再出现过期数据。</p>
+     *
+     * <p>由 {@code @EnableScheduling}（CampusLoveApplication 已启用）调度；
+     * real profile 下激活，mock 不执行。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 3_600_000L, initialDelay = 3_600_000L)
+    @Transactional
+    public void expireOverdueHeartSignals() {
+        LocalDateTime now = LocalDateTime.now();
+        int updated;
+        try {
+            updated = heartSignalRepository.expirePendingSignalsBefore(
+                    SignalStatus.pending, SignalStatus.expired, now);
+        } catch (RuntimeException e) {
+            // 定时任务异常仅记录日志，不影响后续调度
+            log.error("心动信号过期清理任务执行失败：{}", e.getMessage(), e);
+            return;
+        }
+        if (updated > 0) {
+            log.info("心动信号过期清理完成：{} 条 pending 信号已置为 expired", updated);
+        }
     }
 
     @Override

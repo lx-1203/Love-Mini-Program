@@ -70,6 +70,12 @@ export interface DiscoverCard {
   personality?: string[];
   /** MBTI 人格类型（如 INFP） */
   mbti?: string;
+  /** 星座（如 金牛座） */
+  zodiac?: string;
+  /** 婚况：never/married_before/divorced/widowed */
+  relationshipStatus?: string;
+  /** 注册时间（ISO 字符串，用于"最新注册"排序） */
+  registeredAt?: string;
   /** 悄悄话内容（付费可见/发送） */
   whisper?: string;
   /** 是否已发送悄悄话 */
@@ -96,6 +102,16 @@ export interface DiscoverCard {
  * 滑动操作类型
  */
 export type SwipeDirection = "left" | "right";
+
+/**
+ * 排序规则（设计需求：匹配度优先/最新注册/最活跃）
+ */
+export type SortBy = "match" | "latest" | "active";
+
+/**
+ * 匹配范围（设计需求：不限/附近）
+ */
+export type MatchScope = "all" | "nearby";
 
 /**
  * 已查看卡片记录
@@ -158,6 +174,16 @@ export interface DiscoverState {
   } | null;
   /** 当前筛选 ID（nearby/all/age18-25/match-priority，用于 UI chip 高亮） */
   activeFilter: string;
+  /**
+   * 排序规则（设计需求）：匹配度优先（默认）/最新注册/最活跃。
+   * 客户端排序，作用于 fetchCards 返回的卡片列表。
+   */
+  sortBy: SortBy;
+  /**
+   * 匹配范围（设计需求）：不限（默认）/附近。
+   * 附近 = 过滤距离 ≤ 20km 的用户（mock 按 distanceText，real 透传 distanceMax）。
+   */
+  matchScope: MatchScope;
   /**
    * 推荐筛选条件对象（Phase C 新增）。
    *

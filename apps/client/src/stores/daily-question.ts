@@ -329,14 +329,12 @@ export const useDailyQuestionStore = defineStore("daily-question", {
         }
 
         // 调用后端 API: POST /api/daily-question/answer
-        // 后端请求体: DailyAnswerRequest(userId, questionId, content, isAnonymous)
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
-        const result = await request<BackendDailyAnswerView, { userId: string; questionId: string; content: string; isAnonymous: boolean }>({
+        // 修复（P0-12）：后端 DailyAnswerRequest(questionId, content, isAnonymous)
+        // 不含 userId（从 JWT 获取），删除请求体中多余的 userId 字段
+        const result = await request<BackendDailyAnswerView, { questionId: string; content: string; isAnonymous: boolean }>({
           url: `/daily-question/answer`,
           method: "POST",
           data: {
-            userId,
             questionId,
             content: content.trim(),
             isAnonymous,

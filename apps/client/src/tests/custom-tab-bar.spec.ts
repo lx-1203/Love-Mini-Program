@@ -77,10 +77,11 @@ describe("custom-tab-bar configuration", () => {
     const tabs = extractTabConfig(customTabBarSource);
 
     expect(tabs.length).toBe(pagesJson.tabBar.list.length);
+    // 设计需求顺序：首页、匹配、圈子、消息、我的
     expect(tabs.map((tab) => tab.id)).toEqual([
+      "home",
       "discover",
       "village",
-      "home",
       "chat",
       "profile",
     ]);

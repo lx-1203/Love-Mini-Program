@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,6 +29,16 @@ import org.springframework.web.bind.annotation.RestController;
  * 管理后台 - 校园认证审核控制器。
  * 提供待审核列表、审核通过/拒绝等管理功能。
  * 当前实现：任何已认证用户可访问（简易版），生产环境应增加角色校验。
+ *
+ * <p>数据隔离（商业模式：每个高校一个管理员，委托 {@link AdminDataScope}）：</p>
+ * <ul>
+ *   <li>列表：campus_certifications 表无 campus_name 列，按<b>申请人所属校区</b>过滤
+ *       （申请人校区取自 user_campus_profile.campus_name，与 AdminUserController 语义一致）；
+ *       校区管理员强制按其管辖校区过滤（忽略调用方 campusName 参数），
+ *       全局管理员（SUPER_ADMIN 或 ADMIN 无校区）可用 campusName 参数筛选</li>
+ *   <li>审核：读取目标认证记录后按申请人校区调用
+ *       {@link AdminDataScope#assertCampusAccess(String)} 校验越权，越权抛 403</li>
+ * </ul>
  */
 @Profile("real")
 @RestController
@@ -37,30 +48,50 @@ public class AdminCertificationController {
 
     private final CampusCertificationService certService;
     private final CampusCertificationRepository certRepository;
+    /** 管理端数据隔离（多管理员多校区） */
+    private final AdminDataScope adminDataScope;
 
     public AdminCertificationController(
             CampusCertificationService certService,
-            CampusCertificationRepository certRepository) {
+            CampusCertificationRepository certRepository,
+            AdminDataScope adminDataScope) {
         this.certService = certService;
         this.certRepository = certRepository;
+        this.adminDataScope = adminDataScope;
     }
 
     /**
-     * 获取认证列表（支持按状态筛选）。
+     * 获取认证列表（支持按状态/校区筛选）。
      * 默认返回所有待审核的认证申请。
+     *
+     * @param status     认证状态筛选：PENDING / APPROVED / REJECTED / ALL，默认 PENDING
+     * @param campusName 校区筛选（按申请人所属校区过滤），可选；
+     *                   校区管理员强制按其管辖校区过滤，忽略本参数
+     * @return 认证记录列表
      */
     @GetMapping
     public ResponseEntity<List<CampusCertificationView>> listCertifications(
-            @RequestParam(name = "status", defaultValue = "PENDING") String status) {
+            @RequestParam(name = "status", defaultValue = "PENDING") String status,
+            @RequestParam(name = "campusName", required = false) String campusName) {
         // 验证当前用户已登录
         SecurityUtils.getCurrentUserId();
 
-        List<CampusCertification> certifications;
-        if ("ALL".equalsIgnoreCase(status)) {
-            certifications = certRepository.findAllByOrderBySubmittedAtDesc();
+        // 数据隔离：校区管理员强制按其管辖校区过滤，忽略调用方传入的 campusName，
+        // 防止校区管理员越权查看其他校区的认证申请（与 AdminUserController.listUsers 一致）
+        String scopedCampus = adminDataScope.getCurrentAdminCampusName();
+        String effectiveCampus = scopedCampus != null
+                ? scopedCampus
+                : normalize(campusName);
+
+        String normalizedStatus = normalize(status);
+        if (normalizedStatus == null) {
+            normalizedStatus = "PENDING";
         } else {
-            certifications = certRepository.findByStatusOrderBySubmittedAtDesc(status);
+            // 统一转大写：兼容原实现 "ALL".equalsIgnoreCase(status) 的大小写不敏感语义
+            normalizedStatus = normalizedStatus.toUpperCase();
         }
+        List<CampusCertification> certifications =
+                certRepository.searchForAdmin(normalizedStatus, effectiveCampus);
 
         List<CampusCertificationView> views = certifications.stream()
                 .map(this::toView)
@@ -83,6 +114,14 @@ public class AdminCertificationController {
             @Valid @RequestBody ReviewCertificationRequest req) {
         Long reviewerId = SecurityUtils.getCurrentUserId();
 
+        // 数据隔离：校区管理员仅能审核本校区用户的认证申请，越权抛 403
+        Optional<CampusCertification> certOpt = certRepository.findById(certId);
+        if (certOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        adminDataScope.assertCampusAccess(
+                adminDataScope.resolveUserCampusName(certOpt.get().getUserId()));
+
         try {
             CampusCertificationView result = certService.reviewCertification(
                     certId, req.status(), reviewerId, req.comment());
@@ -90,6 +129,20 @@ public class AdminCertificationController {
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    /**
+     * 空串转 null 归一化。
+     *
+     * @param value 原始值
+     * @return 去首尾空白后的值；null 或空白返回 null
+     */
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**

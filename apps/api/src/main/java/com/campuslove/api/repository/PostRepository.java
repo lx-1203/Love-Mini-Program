@@ -93,11 +93,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * 管理后台 - 多条件分页查询帖子。
      * <p>所有筛选条件均可为 null（不参与筛选），按创建时间倒序排列。</p>
      * <p>此查询不限制 PostStatus，便于管理员查看包含已删除/隐藏在内的所有帖子。</p>
+     * <p>数据隔离（商业模式：每个高校一个管理员）：posts 表无 campus_name 列，
+     * campusName 非空时按<b>作者所属校区</b>过滤（EXISTS 子查询关联
+     * {@code UserCampusProfile.campusName}，与 AdminUserController 语义一致）。</p>
      *
      * @param auditStatus 审核状态筛选（pending/approved/rejected），null 表示不筛选
      * @param status      帖子状态筛选（active/deleted/hidden），null 表示不筛选
      * @param category    帖子分类筛选，null 表示不筛选
      * @param authorId    作者用户 ID 筛选，null 表示不筛选
+     * @param campusName  校区筛选（按作者所属校区过滤），null/空表示不筛选
      * @param pageable    分页参数
      * @return 分页帖子列表
      */
@@ -107,6 +111,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
               AND (:status IS NULL OR p.status = :status)
               AND (:category IS NULL OR p.category = :category)
               AND (:authorId IS NULL OR p.authorId = :authorId)
+              AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
+                    SELECT 1 FROM UserCampusProfile ucp
+                    WHERE ucp.userId = p.authorId AND ucp.campusName = :campusName))
             ORDER BY p.createdAt DESC
             """)
     Page<Post> searchForAdmin(
@@ -114,6 +121,38 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("status") PostStatus status,
             @Param("category") PostCategory category,
             @Param("authorId") Long authorId,
+            @Param("campusName") String campusName,
+            Pageable pageable);
+
+    /**
+     * 管理后台 - 村落动态精细化管理分页查询。
+     * <p>区别于 {@link #searchForAdmin}：支持内容关键字模糊筛选与校区隔离
+     * （posts 表无 campus_name 列，校区隔离按作者所属校区过滤：
+     * 作者校区取自 user_campus_profile.campus_name，与 AdminUserController 语义一致），
+     * 且置顶帖子优先展示（isPinned DESC）。</p>
+     *
+     * @param auditStatus 审核状态筛选（pending/approved/rejected），null 表示不筛选
+     * @param status      帖子状态筛选（active/deleted/hidden），null 表示不筛选
+     * @param keyword     内容模糊关键字（村落动态帖子无标题字段，仅匹配内容），可空
+     * @param campusName  校区筛选（按作者所属校区过滤），可空
+     * @param pageable    分页参数
+     * @return 分页帖子列表（置顶优先，按创建时间倒序）
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE (:auditStatus IS NULL OR p.auditStatus = :auditStatus)
+              AND (:status IS NULL OR p.status = :status)
+              AND (:keyword IS NULL OR :keyword = '' OR p.content LIKE CONCAT('%', :keyword, '%'))
+              AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
+                    SELECT 1 FROM UserCampusProfile ucp
+                    WHERE ucp.userId = p.authorId AND ucp.campusName = :campusName))
+            ORDER BY p.isPinned DESC, p.createdAt DESC
+            """)
+    Page<Post> searchForVillageAdmin(
+            @Param("auditStatus") AuditStatus auditStatus,
+            @Param("status") PostStatus status,
+            @Param("keyword") String keyword,
+            @Param("campusName") String campusName,
             Pageable pageable);
 
     /**

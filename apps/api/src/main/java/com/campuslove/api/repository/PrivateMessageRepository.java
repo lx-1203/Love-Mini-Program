@@ -106,4 +106,15 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
 
         Long getCnt();
     }
+
+    /**
+     * M-06/P0-07：批量删除指定会话的全部消息（删除会话时级联清理）。
+     *
+     * @param conversationId 会话 ID
+     * @return 删除的消息条数
+     */
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("DELETE FROM PrivateMessage m WHERE m.conversation.id = :conversationId")
+    int deleteByConversationId(@Param("conversationId") Long conversationId);
 }

@@ -24,6 +24,8 @@ import com.campuslove.api.config.PasswordEncoderConfig;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.media.MediaAccessController;
 import com.campuslove.api.media.MediaAccessService;
+import com.campuslove.api.repository.SchoolRepository;
+import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
@@ -147,6 +149,8 @@ class P0SecurityIntegrationTest {
         @Mock private com.campuslove.api.auth.WeChatClient weChatClient;
         @Mock private JwtTokenProvider jwtTokenProvider;
         @Mock private UserRepository userRepository;
+        @Mock private UserBasicProfileRepository userBasicProfileRepository;
+        @Mock private SchoolRepository schoolRepository;
         @Mock private UserCampusProfileRepository userCampusProfileRepository;
         @Mock private UserScheduleProfileRepository userScheduleProfileRepository;
         @Mock private AesEncryptor aesEncryptor;
@@ -203,12 +207,14 @@ class P0SecurityIntegrationTest {
                     weChatClient,
                     jwtTokenProvider,
                     userRepository,
+                    userBasicProfileRepository,
                     userCampusProfileRepository,
                     userScheduleProfileRepository,
                     passwordEncoder,
                     aesEncryptor,
                     tokenBlacklistService,
                     onlineUserService,
+                    schoolRepository,
                     "",
                     true
             );

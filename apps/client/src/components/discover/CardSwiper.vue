@@ -40,6 +40,9 @@ import LongPressMenu from "./LongPressMenu.vue";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { featureFlags } from "../../config/feature-flags";
+// 悄悄话付费解锁（与 CardDetailOverlay 共用同一套交友币逻辑）
+import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
+import { useVipStore } from "../../stores/vip";
 // Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
 import type { UniTouchEvent } from "../../compat";
 // 统一常量：手势阈值、长按时延、卡片动画参数等
@@ -77,6 +80,9 @@ import {
 
 const { t } = useI18n();
 
+const coinsStore = useCoinsStore();
+const vipStore = useVipStore();
+
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
   location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
@@ -85,6 +91,7 @@ const emojiIcons = {
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
   chat: IMAGE_PATHS.ICONS_EMOJI.CHAT,
   group: IMAGE_PATHS.ICONS_EMOJI.GROUP,
+  message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
 } as const;
 
 const props = defineProps<{
@@ -92,6 +99,12 @@ const props = defineProps<{
   cards: DiscoverCard[];
   /** 每日剩余次数 */
   remainingCount: number;
+  /**
+   * 蒙面匿名模式（设计改进方案 · 附近的人）：
+   * 未解锁时头像模糊、昵称隐藏为 ????，卡片中上部展示解锁规则提示；
+   * 其余信息（ID/认证/活跃/距离/基础资料/标签）照常展示。
+   */
+  masked?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -201,6 +214,19 @@ function getDisplayImages(card: DiscoverCard | null): string[] {
 const currentDisplayImages = computed<string[]>(() => getDisplayImages(currentCard.value));
 
 /**
+ * 背景大图 custom-class（蒙面模式下叠加模糊样式）。
+ * SafeImage 将 custom-class 透传到根 image 元素。
+ */
+const bgCustomClass = computed<string>(() =>
+  props.masked ? "card__bg card__bg--masked" : "card__bg"
+);
+
+/** 蒙面模式下展示的昵称（隐藏真实昵称） */
+const displayName = computed<string>(() =>
+  props.masked ? "????" : (currentCard.value?.name ?? "")
+);
+
+/**
  * 当前卡片是否有视频（Phase D2 · 视频角标显隐依据）。
  * Phase 4.7：视频功能暂时下架（featureFlags.videoCallEnabled=false 时角标隐藏）。
  */
@@ -244,48 +270,9 @@ const matchScore = computed(() => {
 const incomeLabel = computed(() => {
   const seed = (currentCard.value?.userId?.charCodeAt(0) ?? 0) % 4;
   const ranges = ["3k-8k", "8k-15k", "15k-30k", "30k+"];
-  return ranges[seed];
+  return ranges[seed] ?? "3k-8k";
 });
 
-/** 性格预览（优先取前两个标签，否则用固定性格词表按 userId 稳定选取） */
-const personalityPreview = computed(() => {
-  const card = currentCard.value;
-  const tags = card?.tags ?? [];
-  if (tags.length > 0) {
-    return tags.slice(0, 2).join(" · ");
-  }
-  const moods = [
-    t('discover.personalityOutgoing'),
-    t('discover.personalityGentle'),
-    t('discover.personalityHumorous'),
-    t('discover.personalityArtistic'),
-    t('discover.personalitySporty'),
-    t('discover.personalityRational'),
-  ];
-  const seed = (card?.userId?.charCodeAt(0) ?? 0) % moods.length;
-  return [moods[seed], moods[(seed + 1) % moods.length]].join(" · ");
-});
-
-/** 社交圈预览（优先取前两个标签，否则用兴趣圈词表按 userId 稳定选取） */
-const socialCirclesPreview = computed(() => {
-  const card = currentCard.value;
-  const tags = card?.tags ?? [];
-  if (tags.length > 0) {
-    return tags.slice(0, 2).join(" / ");
-  }
-  const circles = [
-    t('discover.circleReading'),
-    t('discover.circlePhotography'),
-    t('discover.circleFood'),
-    t('discover.circleHiking'),
-    t('discover.circleMusic'),
-    t('discover.circleMurder'),
-    t('discover.circleExam'),
-    t('discover.circleDance'),
-  ];
-  const seed = (card?.userId?.charCodeAt(0) ?? 0) % circles.length;
-  return [circles[seed], circles[(seed + 1) % circles.length]].join(" / ");
-});
 
 /* ========== Phase Feedback1：寻觅页改版新增展示 ========== */
 
@@ -302,7 +289,8 @@ const activeStatusLabel = computed(() => {
   if (raw) {
     if (raw === "just_now") return t('discover.activeJustNow');
     if (raw === "today") return t('discover.activeToday');
-    if (raw === "offline") return t('discover.offline');
+    // 设计改进方案：弱化「离线」展示——不占用显眼位置，避免打击互动意愿
+    if (raw === "offline") return "";
     const hoursMatch = raw.match(/^hours_(\d+)$/);
     if (hoursMatch?.[1]) return t('discover.activeHoursAgo', { n: hoursMatch[1] });
     const daysMatch = raw.match(/^days_(\d+)$/);
@@ -434,13 +422,148 @@ const expectedPartnerPreview = computed(() => {
     : card.expectedPartner;
 });
 
-/** Phase Feedback1 · 悄悄话入口展示文案（有内容展示摘要，无内容展示引导） */
-const whisperPreview = computed(() => {
-  const card = currentCard.value;
-  if (!card) return "";
-  if (card.whisper) return card.whisper;
-  return "";
+/* ========== 设计需求改版：身份头部区 / 基础资料区 / 标签两行 ========== */
+
+/** 认证详情弹窗显隐 */
+const showCertDetail = ref(false);
+
+/** 距离文案（「距离你12km」前缀格式，需求示例） */
+const identityDistance = computed(() => {
+  const label = distanceLabel.value;
+  if (!label) return "";
+  return `${t('discover.distancePrefix')}${label}`;
 });
+
+/** 学历展示文案（与 CardDetailOverlay 对齐） */
+const educationLabel = computed(() => {
+  const level = currentCard.value?.educationLevel;
+  if (!level) return "";
+  const map: Record<string, string> = {
+    high_school: t('discover.educationHighSchool'),
+    bachelor: t('discover.educationBachelor'),
+    master: t('discover.educationMaster'),
+    phd: t('discover.educationPhd'),
+  };
+  return map[level] ?? "";
+});
+
+/** 婚况展示文案（relationshipStatus → 中文） */
+const maritalLabel = computed(() => {
+  const status = currentCard.value?.relationshipStatus;
+  if (!status) return "";
+  const map: Record<string, string> = {
+    never: t('discover.relationshipNever'),
+    married_before: t('discover.relationshipMarriedBefore'),
+    divorced: t('discover.relationshipDivorced'),
+    widowed: t('discover.relationshipWidowed'),
+  };
+  return map[status] ?? "";
+});
+
+/**
+ * 基础资料区：横向排列 年龄/学校/学历/收入/身高/婚况（每项带小图标）。
+ * 数据缺失的项自动隐藏，保持版面规整。
+ */
+const basicInfoItems = computed(() => {
+  const card = currentCard.value;
+  if (!card) return [];
+  const items: Array<{ key: string; icon: string; label: string; value: string }> = [];
+  items.push({
+    key: "age",
+    icon: emojiIcons.heart,
+    label: t('cardDetail.ageLabel'),
+    value: `${extractAge(card.headline)}${t('discover.ageUnit')}`,
+  });
+  const school = card.campusName || card.headline?.split('·')[0]?.trim();
+  if (school) {
+    items.push({ key: "school", icon: emojiIcons.graduation, label: t('discover.schoolLabel'), value: school });
+  }
+  if (educationLabel.value) {
+    items.push({ key: "education", icon: emojiIcons.graduation, label: t('cardDetail.educationLabel'), value: educationLabel.value });
+  }
+  items.push({
+    key: "income",
+    icon: emojiIcons.heart,
+    label: t('cardDetail.incomeLabel'),
+    value: incomeLabel.value,
+  });
+  if (card.height) {
+    items.push({
+      key: "height",
+      icon: emojiIcons.heart,
+      label: t('cardDetail.heightLabel'),
+      value: `${card.height}${t('cardDetail.heightUnit')}`,
+    });
+  }
+  if (maritalLabel.value) {
+    items.push({ key: "marital", icon: emojiIcons.heart, label: t('discover.maritalLabel'), value: maritalLabel.value });
+  }
+  return items;
+});
+
+/**
+ * 标签区第二行：性格 + MBTI + 星座（需求示例"金牛座+ENFP 浪漫造梦师"）。
+ */
+const traitChips = computed(() => {
+  const card = currentCard.value;
+  if (!card) return [];
+  const chips: string[] = [];
+  if (card.zodiac && card.mbti) {
+    chips.push(`${card.zodiac}+${card.mbti}`);
+  } else if (card.zodiac) {
+    chips.push(card.zodiac);
+  } else if (card.mbti) {
+    chips.push(card.mbti);
+  }
+  const firstPersonality = card.personality?.[0];
+  if (firstPersonality) {
+    chips.push(firstPersonality);
+  }
+  return chips;
+});
+
+/**
+ * 底部操作栏「悄悄话」：付费私信入口。
+ * 优先级：后端已允许（allowMessage）或会员 → 直接进入会话；
+ * 其余 → 交友币扣费（UNLOCK_COST_YUAN.WHISPER）后进入会话。
+ */
+function onWhisperTap(): void {
+  const card = currentCard.value;
+  if (!card || isFlyingOut.value) return;
+  if (card.allowMessage || vipStore.isVip) {
+    emit("message", card.userId);
+    return;
+  }
+  uni.showModal({
+    title: t("discover.whisperLabel"),
+    content: t("discover.whisperPaidHint", { coins: UNLOCK_COST_YUAN.WHISPER }),
+    confirmText: t("common.confirm"),
+    cancelText: t("common.cancel"),
+    success: async (res) => {
+      if (!res.confirm || !currentCard.value) return;
+      const target = currentCard.value;
+      try {
+        await coinsStore.spend("WHISPER", target.userId);
+        uni.showToast({ title: t("discover.unlockSuccess"), icon: "success" });
+        setTimeout(() => emit("message", target.userId), 500);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        uni.showModal({
+          title: t("discover.unlockFailTitle"),
+          content: message,
+          confirmText: t("common.gotIt"),
+          showCancel: false,
+        });
+      }
+    },
+  });
+}
+
+/** 点击动态预览条目 → 打开全屏详情页（详情页底部含「私信」按钮） */
+function onMomentTap(): void {
+  if (!currentCard.value || isFlyingOut.value) return;
+  showDetail.value = true;
+}
 
 /* ========== 卡片缩放效果（长按时缩小） ========== */
 const cardScale = computed(() => {
@@ -755,63 +878,6 @@ function onSuperLike() {
   emit("superLike", currentCard.value.id);
 }
 
-/* ========== 收藏状态（组件本地维护，Task A2） ========== */
-
-/** 已收藏的卡片 ID 集合（本地状态，不强制同步后端） */
-const collectedIds = ref<Set<string>>(new Set());
-
-/** 收藏持久化 key（收尾轮：收藏跨会话保持，不再随页面销毁丢失） */
-const COLLECTED_KEY = "campus-love:collected-card-ids";
-
-/** 初始化：从本地存储恢复收藏集合 */
-try {
-  const raw = uni.getStorageSync(COLLECTED_KEY) as unknown;
-  if (Array.isArray(raw)) {
-    collectedIds.value = new Set(raw.filter((id): id is string => typeof id === "string"));
-  }
-} catch (_e) {
-  // 读取失败按空集合
-}
-
-/** 持久化收藏集合 */
-function persistCollected(): void {
-  try {
-    uni.setStorageSync(COLLECTED_KEY, Array.from(collectedIds.value));
-  } catch (_e) {
-    // 写入失败静默（仅影响下次启动恢复）
-  }
-}
-
-/**
- * 当前卡片是否已收藏
- * @param cardId - 卡片 ID
- */
-function isCollected(cardId: string): boolean {
-  return collectedIds.value.has(cardId);
-}
-
-/**
- * 切换收藏状态：收藏/取消收藏 + 轻振动反馈。
- * 以不可变方式更新 Set，保证响应式触发。
- */
-function onCollect() {
-  if (!currentCard.value || isFlyingOut.value) return;
-  const id = currentCard.value.id;
-  const next = new Set(collectedIds.value);
-  if (next.has(id)) {
-    next.delete(id);
-  } else {
-    next.add(id);
-  }
-  collectedIds.value = next;
-  persistCollected();
-  try {
-    lightHaptic();
-  } catch (err) {
-    console.warn("[CardSwiper] collect haptic failed:", err);
-  }
-}
-
 /**
  * 切换简介展开状态
  */
@@ -876,7 +942,7 @@ watch(
 
 // 修复（严格模式 noUnusedLocals）：onTouchMove/toggleBio/onVideoBadgeTap 通过 catchtap/catchtouchmove
 // 绑定到模板，vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
-defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
+defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
 </script>
 
 <template>
@@ -907,7 +973,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
           :lazy-load="true"
         />
         <view v-else class="card__bg card__bg--placeholder">
-          <text class="card__placeholder-text">{{ nextCard.name[0] }}</text>
+          <text class="card__placeholder-text">{{ (nextCard.name || '?')[0] }}</text>
         </view>
       </view>
 
@@ -918,7 +984,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
         <SafeImage
           v-if="currentDisplayImages.length === 1"
           :src="currentDisplayImages[0]"
-          custom-class="card__bg"
+          :custom-class="bgCustomClass"
           mode="aspectFill"
         />
         <swiper
@@ -938,16 +1004,18 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
             <!-- 性能优化：开启 lazy-load，仅在网络图片进入视口时加载，减少首屏并发请求数 -->
             <SafeImage
               :src="imageUrl"
-              custom-class="card__bg"
+              :custom-class="bgCustomClass"
               mode="aspectFill"
               :lazy-load="true"
             />
           </swiper-item>
         </swiper>
 
-        <!-- 无图兜底：渐变背景 + 昵称首字 -->
+        <!-- 无图兜底（2026-08-07）：头像框 + 昵称首字/蒙面问号，替代纯渐变背景 -->
         <view v-else class="card__bg card__bg--placeholder">
-          <text class="card__placeholder-text">{{ currentCard.name[0] }}</text>
+          <view class="card__avatar-frame">
+            <text class="card__placeholder-text">{{ masked ? '?' : (currentCard.name || '?')[0] }}</text>
+          </view>
         </view>
 
         <!-- 渐变遮罩（Phase D2 · 下半区加强渐变以提升文字可读性） -->
@@ -963,11 +1031,44 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
           :style="dragTintOpacity"
         />
 
-        <!-- 顶部在线状态 -->
-        <view class="card__online-badge" v-if="currentCard.onlineStatus === 'online'">
-          <view class="card__online-dot" />
-          <text class="card__online-text">{{ t('chat.online') }}</text>
+        <!-- 身份头部区（设计需求）：左侧露脸头像（方形圆角）+ 右侧 ID/双重认证/活跃状态/距离 -->
+        <view class="card__identity">
+          <view class="card__identity-avatar">
+            <SafeImage
+              v-if="currentCard.avatar"
+              :src="currentCard.avatar"
+              :custom-class="masked ? 'card__identity-avatar-img card__identity-avatar-img--masked' : 'card__identity-avatar-img'"
+              mode="aspectFill"
+            />
+            <text v-else class="card__identity-avatar-text">{{ masked ? '?' : (currentCard.name || '?')[0] }}</text>
+          </view>
+          <view class="card__identity-info">
+            <view class="card__identity-row">
+              <text v-if="displayIdLabel" class="card__identity-id">{{ displayIdLabel }}</text>
+              <view
+                v-if="verificationLabel"
+                class="card__identity-cert press-feedback"
+                hover-class="card__identity-cert--pressed"
+                hover-stay-time="120"
+                @tap.stop="showCertDetail = true"
+                role="button"
+                :aria-label="t('discover.certDetailTitle')"
+              >
+                <text class="card__identity-cert-text">{{ verificationLabel }}</text>
+                <text class="card__identity-cert-arrow">›</text>
+              </view>
+            </view>
+            <view class="card__identity-row">
+              <text v-if="activeStatusLabel" class="card__identity-status">
+                <text class="card__identity-status-dot">●</text>{{ activeStatusLabel }}
+              </text>
+              <text v-if="activeStatusLabel && identityDistance" class="card__identity-sep">·</text>
+              <text v-if="identityDistance" class="card__identity-distance">{{ identityDistance }}</text>
+            </view>
+          </view>
         </view>
+
+        <!-- 在线状态已并入身份头部区（活跃状态行），此处不再单独展示 -->
 
         <!-- Phase D2 · 视频角标（右上角，personalVideoUrl 存在时展示） -->
         <view
@@ -1016,68 +1117,41 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
           <text class="swipe-indicator__text">{{ translateX > 0 ? t('discover.like') : t('discover.skip') }}</text>
         </view>
 
+        <!-- 蒙面匿名解锁规则提示（设计改进方案：替代突兀的大号问号，明确解锁条件） -->
+        <view v-if="masked" class="card__masked-hint">
+          <text class="card__masked-hint-icon">🔒</text>
+          <text class="card__masked-hint-text">{{ t('discover.maskUnlockHint') }}</text>
+        </view>
+
         <!-- 卡片内容 -->
         <view class="card__content">
-          <!-- 昵称 + 年龄 + 认证 -->
+          <!-- 昵称 + 年龄（蒙面时昵称隐藏为 ????） -->
           <view class="card__name-row">
-            <text class="card__name">{{ currentCard.name }}</text>
+            <text class="card__name">{{ displayName }}</text>
             <text class="card__age">{{ extractAge(currentCard.headline) }}{{ t('discover.ageUnit') }}</text>
-            <!-- Phase D3 · 集成 VerificationBadge -->
+            <!-- Phase D3 · 集成 VerificationBadge（学校/邮箱/实名徽章） -->
             <VerificationBadge
               v-if="currentCard.verificationBadgeLevel"
               :level="(currentCard.verificationBadgeLevel as 'none' | 'school' | 'email' | 'idcard')"
               size="sm"
               :show-cta-when-none="false"
             />
-            <!-- Phase Feedback1 · 双重认证文案标识（机器认证 + 人工认证） -->
-            <text v-if="verificationLabel" class="card__verify-text">{{ verificationLabel }}</text>
           </view>
 
-          <!-- Phase Feedback1 · 个人 ID + 活跃状态行 -->
-          <view v-if="displayIdLabel || activeStatusLabel" class="card__meta-row">
-            <text v-if="displayIdLabel" class="card__meta-text">{{ displayIdLabel }}</text>
-            <text v-if="displayIdLabel && activeStatusLabel" class="card__meta-dot">·</text>
-            <text v-if="activeStatusLabel" class="card__meta-text card__meta-text--active">
-              ● {{ activeStatusLabel }}
-            </text>
-          </view>
-
-          <!-- 核心资料：收入 / 性格 / 社交圈 / MBTI -->
-          <view class="card__key-info">
-            <view class="key-info-chip key-info-chip--income">
-              <text class="key-info-chip__label">{{ t('discover.income') }}</text>
-              <text class="key-info-chip__value">{{ incomeLabel }}</text>
-            </view>
-            <view class="key-info-chip key-info-chip--personality">
-              <text class="key-info-chip__value">{{ personalityPreview }}</text>
-            </view>
-            <view class="key-info-chip key-info-chip--circles">
-              <image class="key-info-chip__icon" :src="emojiIcons.group" mode="aspectFit" alt="" />
-              <text class="key-info-chip__label">{{ t('discover.circles') }}</text>
-              <text class="key-info-chip__value">{{ socialCirclesPreview }}</text>
-            </view>
-            <!-- Phase Feedback1 · MBTI 标签 -->
-            <view v-if="currentCard.mbti" class="key-info-chip key-info-chip--mbti">
-              <text class="key-info-chip__value">{{ currentCard.mbti }}</text>
+          <!-- 基础资料区（设计需求）：横向排列 年龄/学校/学历/收入/身高/婚况，每项带小图标 -->
+          <view v-if="basicInfoItems.length > 0" class="card__basic-info">
+            <view
+              v-for="item in basicInfoItems" :key="item.key + item.value"
+              class="basic-info-item"
+            >
+              <image class="basic-info-item__icon" :src="item.icon" mode="aspectFit" alt="" />
+              <text class="basic-info-item__label">{{ item.label }}</text>
+              <text class="basic-info-item__value">{{ item.value }}</text>
             </view>
           </view>
 
-          <!-- 学校、距离、活跃 -->
-          <view class="card__info-row">
-            <view class="card__school">
-              <image class="card__school-icon" :src="emojiIcons.graduation" mode="aspectFit" alt="" />
-              <text class="card__school-text">{{ currentCard.campusName || currentCard.headline?.split('·')[0]?.trim() || t('discover.sameSchoolStudent') }}</text>
-            </view>
-            <text class="card__dot">·</text>
-            <view class="card__distance">
-              <image class="card__distance-icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
-              <text class="card__distance-text">{{ distanceLabel || currentCard.availability || t('discover.nearby') }}</text>
-            </view>
-          </view>
-
-          <!-- 校园标签 -->
+          <!-- 属性标签（设计改进方案：去掉与距离区重复的「同校」标签，匹配度统一品牌主色） -->
           <view class="card__campus-tags">
-            <text v-if="currentCard.isSameSchool" class="campus-tag campus-tag--school">{{ t('home.personSameSchool') }}</text>
             <text v-if="currentCard.isSameMajor" class="campus-tag campus-tag--major">{{ t('home.personSameMajor') }}</text>
             <text class="campus-tag campus-tag--match">
               <image class="campus-tag__icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
@@ -1085,7 +1159,23 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
             </text>
           </view>
 
-          <!-- 标签区 -->
+          <!-- 自我描述区（设计需求）：默认 3 行，右下角「展开」 -->
+          <view
+            class="card__bio"
+            @tap.stop="toggleBio"
+            role="button"
+            :aria-label="isBioExpanded ? t('home.collapse') : t('home.expand')"
+          >
+            <text
+              class="card__bio-text"
+              :class="{ 'card__bio-text--expanded': isBioExpanded }"
+            >{{ currentCard.bio || t('discover.defaultBio') }}</text>
+            <text v-if="(currentCard.bio && currentCard.bio.length > 30) || !currentCard.bio" class="card__bio-more">
+              {{ isBioExpanded ? t('home.collapse') : t('home.expand') }}
+            </text>
+          </view>
+
+          <!-- 标签区（设计需求）：第一行喜好标签，浅底色胶囊 + 深色文字 -->
           <view v-if="currentCard.tags && currentCard.tags.length > 0" class="card__tags">
             <text
               v-for="(tag, idx) in currentCard.tags.slice(0, 4)" :key="idx"
@@ -1093,24 +1183,15 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
             >{{ tag }}</text>
           </view>
 
-          <!-- Phase Feedback1 · 悄悄话入口 -->
-          <view
-            v-if="whisperPreview || currentCard.whisper"
-            class="card__whisper press-feedback"
-            hover-class="card__whisper--pressed"
-            hover-stay-time="120"
-            @tap.stop="handleTap"
-            role="button"
-            :aria-label="t('discover.whisperLabel')"
-          >
-            <text class="card__whisper-icon">{{ currentCard.whisperSent ? '✓' : '💬' }}</text>
-            <text class="card__whisper-text" :class="{ 'card__whisper-text--sent': currentCard.whisperSent }">
-              {{ currentCard.whisperSent ? t('discover.whisperSent') : (whisperPreview || t('discover.whisperEmpty')) }}
-            </text>
-            <text class="card__whisper-action">{{ t('discover.whisperSend') }}</text>
+          <!-- 标签区第二行：性格 + MBTI + 星座（如"金牛座+ENFP 浪漫造梦师"） -->
+          <view v-if="traitChips.length > 0" class="card__traits">
+            <text
+              v-for="(chip, idx) in traitChips" :key="idx"
+              class="trait-pill"
+            >{{ chip }}</text>
           </view>
 
-          <!-- Phase Feedback1 · 期待的人物画像折叠区 -->
+          <!-- 期待画像区（设计需求）：小标题「我期待遇见的你」 -->
           <view
             v-if="currentCard.expectedPartner"
             class="card__expected press-feedback"
@@ -1135,34 +1216,32 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
             >{{ expectedPartnerPreview }}</text>
           </view>
 
-          <!-- 底部：个人简介 -->
-          <view
-            class="card__bio"
-  @tap.stop="toggleBio"
-            role="button"
-            :aria-label="isBioExpanded ? t('home.collapse') : t('home.expand')"
-          >
-            <text
-              class="card__bio-text"
-              :class="{ 'card__bio-text--expanded': isBioExpanded }"
-            >{{ currentCard.bio || t('discover.defaultBio') }}</text>
-            <text v-if="(currentCard.bio && currentCard.bio.length > 30) || !currentCard.bio" class="card__bio-more">
-              {{ isBioExpanded ? t('home.collapse') : t('home.expand') }}
-            </text>
-          </view>
-
-          <!-- Phase 4.1 验收 · 最新动态预览（最多 2 条：内容 + 点赞/评论计数） -->
+          <!-- 动态预览区（2026-08-07 设计稿）：小标题「TA的动态」+ 最新 1 条动态（缩略图 + 文案前半段 + 点赞/评论数），点击跳转完整动态页 -->
           <view v-if="currentCard.recentPosts && currentCard.recentPosts.length > 0" class="card__moments">
+            <text class="card__moments-title">{{ t('discover.momentsTitle') }}</text>
             <view
-              v-for="post in currentCard.recentPosts.slice(0, 2)" :key="post.id"
-              class="card__moment"
+              v-for="post in currentCard.recentPosts.slice(0, 1)" :key="post.id"
+              class="card__moment press-feedback"
+              hover-class="card__moment--pressed"
+              hover-stay-time="120"
+              @tap.stop="onMomentTap"
+              role="button"
+              :aria-label="t('discover.dynamicPreview')"
             >
-              <text class="card__moment-text">{{ post.content }}</text>
-              <view class="card__moment-meta">
-                <image class="card__moment-icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
-                <text class="card__moment-count">{{ post.likes }}</text>
-                <image class="card__moment-icon card__moment-icon--chat" :src="emojiIcons.chat" mode="aspectFit" alt="" />
-                <text class="card__moment-count">{{ post.comments }}</text>
+              <image
+                v-if="post.images && post.images[0]"
+                class="card__moment-thumb"
+                :src="post.images[0]"
+                mode="aspectFill"
+              />
+              <view class="card__moment-main">
+                <text class="card__moment-text card__moment-text--clamp2">{{ post.content }}</text>
+                <view class="card__moment-meta">
+                  <image class="card__moment-icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
+                  <text class="card__moment-count">{{ post.likes }}</text>
+                  <image class="card__moment-icon card__moment-icon--chat" :src="emojiIcons.chat" mode="aspectFit" alt="" />
+                  <text class="card__moment-count">{{ post.comments }}</text>
+                </view>
               </view>
             </view>
           </view>
@@ -1192,49 +1271,71 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
       @not-interested="handleNotInterested"
     />
 
-    <!-- 底部浮动操作栏：半透明叠加在卡片底部边缘（Task A3），catchtap 阻止冒泡避免被卡片手势拦截 -->
+    <!-- 底部固定操作栏（设计需求）：不喜欢 | 悄悄话（中间最大，品牌主色填充）| 喜欢 -->
+    <!-- catchtap 阻止冒泡避免被卡片手势拦截 -->
     <view v-if="currentCard" class="action-bar">
       <view
         class="action-btn action-btn--reject press-feedback"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
-  @tap.stop="onReject"
+        @tap.stop="onReject"
         role="button"
         :aria-label="t('discover.skip')"
       >
         <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.PASS" mode="aspectFit" alt="" />
-      </view>
-      <!-- 收藏按钮：本地收藏态切换，选中态金色高亮（Task A2） -->
-      <view
-        class="action-btn action-btn--collect press-feedback"
-        :class="{ 'action-btn--collected': isCollected(currentCard.id) }"
-        hover-class="action-btn--pressed"
-        hover-stay-time="120"
-  @tap.stop="onCollect"
-        role="button"
-        :aria-label="isCollected(currentCard.id) ? t('discover.collected') : t('discover.collect')"
-      >
-        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" lazy-load />
+        <text class="action-btn__label">{{ t('discover.skip') }}</text>
       </view>
       <view
-        class="action-btn action-btn--super press-feedback"
+        class="action-btn action-btn--whisper press-feedback"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
-  @tap.stop="onSuperLike"
+        @tap.stop="onWhisperTap"
         role="button"
-        :aria-label="t('discover.superLike')"
+        :aria-label="t('discover.whisperLabel')"
       >
-        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.SUPER_LIKE" mode="aspectFit" alt="" />
+        <image class="action-btn__icon" :src="emojiIcons.message" mode="aspectFit" alt="" />
+        <text class="action-btn__whisper-label">{{ t('discover.whisperLabel') }}</text>
       </view>
       <view
         class="action-btn action-btn--like press-feedback"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
-  @tap.stop="onLike"
+        @tap.stop="onLike"
         role="button"
         :aria-label="t('discover.like')"
       >
         <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
+        <text class="action-btn__label">{{ t('discover.like') }}</text>
+      </view>
+    </view>
+
+    <!-- 认证详情弹窗（设计需求）：点击双重认证标识弹出，展示机器/人工认证的方式与可信度 -->
+    <view v-if="showCertDetail" class="cert-modal" @tap.stop="showCertDetail = false">
+      <view class="cert-modal__panel" @tap.stop>
+        <text class="cert-modal__title">{{ t('discover.certDetailTitle') }}</text>
+        <view class="cert-modal__item">
+          <view class="cert-modal__item-head">
+            <text class="cert-modal__item-name">{{ t('discover.machineVerified') }}</text>
+            <text class="cert-modal__item-badge">
+              {{ t('discover.certReliabilityLabel') }}：{{ t('discover.certMachineReliability') }}
+            </text>
+          </view>
+          <text class="cert-modal__item-desc">{{ t('discover.certMachineDesc') }}</text>
+          <text class="cert-modal__item-method">{{ t('discover.certMethodLabel') }}：{{ t('discover.certMachineMethod') }}</text>
+        </view>
+        <view class="cert-modal__item">
+          <view class="cert-modal__item-head">
+            <text class="cert-modal__item-name">{{ t('discover.humanVerified') }}</text>
+            <text class="cert-modal__item-badge">
+              {{ t('discover.certReliabilityLabel') }}：{{ t('discover.certHumanReliability') }}
+            </text>
+          </view>
+          <text class="cert-modal__item-desc">{{ t('discover.certHumanDesc') }}</text>
+          <text class="cert-modal__item-method">{{ t('discover.certMethodLabel') }}：{{ t('discover.certHumanMethod') }}</text>
+        </view>
+        <view class="cert-modal__close" role="button" :aria-label="t('common.close')" @tap.stop="showCertDetail = false">
+          <text class="cert-modal__close-text">{{ t('common.gotIt') }}</text>
+        </view>
       </view>
     </view>
   </view>
@@ -1356,10 +1457,64 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 50%, var(--c-brand-400) 100%);
 }
 
+/* 蒙面匿名模式（设计改进方案）：头像模糊处理，隐藏身份细节 */
+.card__bg--masked {
+  filter: blur(28rpx) brightness(0.72);
+  transform: scale(1.08);
+}
+
+/* 蒙面解锁规则提示条（替代突兀的大号问号，明确解锁条件） */
+.card__masked-hint {
+  position: absolute;
+  top: 216rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 12rpx 28rpx;
+  border-radius: var(--r-full);
+  background: rgba(15, 23, 42, 0.55);
+  border: 1rpx solid rgba(255, 255, 255, 0.25);
+  /* #ifdef H5 */
+  backdrop-filter: blur(12rpx);
+  /* #endif */
+}
+
+.card__masked-hint-icon {
+  font-size: var(--fs-base);
+  line-height: 1;
+}
+
+.card__masked-hint-text {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* 身份头部区小头像同样模糊（蒙面时） */
+:deep(.card__identity-avatar-img--masked) {
+  filter: blur(10rpx);
+}
+
+/* 2026-08-07：无头像用户显示头像框（白圈 + 渐变底 + 昵称首字） */
+.card__avatar-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 260rpx;
+  height: 260rpx;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--c-brand-100) 0%, var(--c-brand-300) 100%);
+  border: 10rpx solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.18);
+}
+
 .card__placeholder-text {
   font-size: var(--fs-display);
   font-weight: 700;
-  color: var(--c-overlay-text-placeholder);
+  color: var(--c-brand-700);
 }
 
 /* ========== Phase D2 · 照片墙 swiper 大图区（4:5 比例） ========== */
@@ -1655,133 +1810,150 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
   font-weight: 700;
 }
 
-/* 核心资料：收入 / 性格 / 社交圈 */
-.card__key-info {
+/* ========== 身份头部区（设计需求：左侧露脸头像 + 右侧 ID/双重认证/活跃/距离） ========== */
+.card__identity {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 28rpx 32rpx;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 12rpx;
-  margin-top: 4rpx;
+  gap: 20rpx;
+  z-index: 4;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 60%, transparent 100%);
 }
 
-.key-info-chip {
+.card__identity-avatar {
+  width: 176rpx;
+  height: 176rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+  border: 3rpx solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+}
+
+.card__identity-avatar-img {
+  width: 100%;
+  height: 100%;
+}
+
+.card__identity-avatar-text {
+  font-size: var(--fs-4xl);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.card__identity-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  min-width: 0;
+}
+
+.card__identity-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  flex-wrap: wrap;
+}
+
+.card__identity-id {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.card__identity-cert {
   display: inline-flex;
   align-items: center;
   gap: 6rpx;
-  padding: 8rpx 18rpx;
+  padding: 4rpx 14rpx;
   border-radius: var(--r-full);
-  border: 1rpx solid var(--c-overlay-border-mid);
+  background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
+}
+
+.card__identity-cert--pressed {
+  opacity: 0.85;
+}
+
+.card__identity-cert-text {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.card__identity-cert-arrow {
   font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--c-text-inverse);
-  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg);
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.key-info-chip--income {
-  background: linear-gradient(135deg, var(--c-accent-bg-tint) 0%, var(--c-accent-bg-tint-mid) 100%);
-}
-
-.key-info-chip--personality {
-  background: linear-gradient(135deg, var(--c-romance-bg-tint-strong) 0%, var(--c-romance-500) 100%);
-}
-
-.key-info-chip--circles {
-  background: linear-gradient(135deg, var(--c-info-500) 0%, var(--s-action-super) 100%);
-}
-
-/* Phase Feedback1 · MBTI 标签 */
-.key-info-chip--mbti {
-  background: linear-gradient(135deg, var(--c-brand-500) 0%, var(--c-brand-600, #2db97a) 100%);
-}
-
-/* Phase Feedback1 · 双重认证文案 */
-.card__verify-text {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--c-text-inverse);
-  background: var(--c-gradient-verify);
-  padding: 4rpx 12rpx;
-  border-radius: var(--r-full);
-  flex-shrink: 0;
-}
-
-/* Phase Feedback1 · 个人 ID + 活跃状态行 */
-.card__meta-row {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  margin-top: 8rpx;
-}
-
-.card__meta-text {
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  color: var(--c-overlay-text-secondary);
-}
-
-.card__meta-text--active {
-  display: flex;
+.card__identity-status {
+  display: inline-flex;
   align-items: center;
   gap: 6rpx;
-}
-
-.card__meta-dot {
   font-size: var(--fs-xs);
-  color: var(--c-overlay-text-quaternary);
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.key-info-chip__label {
+.card__identity-status-dot {
+  color: #4ade80;
+  font-size: var(--fs-xs);
+}
+
+.card__identity-sep {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.card__identity-distance {
+  font-size: var(--fs-xs);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ========== 基础资料区（设计需求：横向排列，每项带小图标辅助识别） ========== */
+.card__basic-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10rpx 20rpx;
+  margin-top: 4rpx;
+}
+
+.basic-info-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  max-width: 50%;
+  min-width: 0;
+}
+
+.basic-info-item__icon {
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+.basic-info-item__label {
   font-size: var(--fs-xs);
   font-weight: 500;
   color: var(--c-overlay-text-secondary);
-}
-
-.key-info-chip__icon {
-  width: 22rpx;
-  height: 22rpx;
   flex-shrink: 0;
-  filter: brightness(0) invert(1);
 }
 
-.key-info-chip__value {
-  font-size: var(--fs-sm);
+.basic-info-item__value {
+  font-size: var(--fs-md);
   font-weight: 700;
   color: var(--c-text-inverse);
-}
-
-/* 学校、距离信息行 */
-.card__info-row {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.card__school,
-.card__distance {
-  font-size: var(--fs-md);
-  color: var(--c-overlay-text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-}
-
-.card__school-icon,
-.card__distance-icon {
-  width: 24rpx;
-  height: 24rpx;
-  color: var(--c-overlay-text-primary);
-  flex-shrink: 0;
-}
-
-.card__school-text,
-.card__distance-text {
-  font-size: var(--fs-md);
-  color: var(--c-overlay-text-secondary);
-}
-
-.card__dot {
-  font-size: var(--fs-md);
-  color: var(--c-overlay-text-quaternary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 校园标签 */
@@ -1825,10 +1997,11 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
 }
 
 .campus-tag--match {
-  background: linear-gradient(135deg, var(--c-tag-match-from), var(--c-tag-match-to));
+  /* 设计改进方案：匹配度标签统一为品牌主色（原红棕渐变），融入整体视觉规范 */
+  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
   color: var(--c-text-inverse);
-  border: 1rpx solid var(--c-overlay-border-stronger);
-  box-shadow: 0 4rpx 16rpx var(--c-shadow-romance-tint-strong);
+  border: 1rpx solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.35);
   animation: match-pulse var(--d-loop-slow, 2000ms) ease-in-out infinite;
 }
 
@@ -1837,7 +2010,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
   50% { box-shadow: 0 0 0 10rpx var(--c-romance-bg-tint); }
 }
 
-/* 标签区 */
+/* 标签区（设计需求）：第一行喜好标签，浅底色 + 深色文字，圆角小胶囊 */
 .card__tags {
   display: flex;
   flex-wrap: wrap;
@@ -1847,86 +2020,38 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
 
 .tag-pill {
   display: inline-flex;
-  padding: 10rpx 24rpx;
+  padding: 8rpx 22rpx;
   border-radius: var(--r-full);
-  background: var(--c-overlay-bg-light);
-  color: var(--c-text-inverse);
+  background: rgba(255, 255, 255, 0.92);
+  color: #334155;
   font-size: var(--fs-base);
-  font-weight: 500;
-  border: 1rpx solid var(--c-overlay-border-mid);
+  font-weight: 600;
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
 }
 
-/* 标签色彩编码：兴趣(绿) / 性格(粉) / 生活(橙) / 校园(蓝) */
-.tag-pill:nth-child(4n+1) {
-  background: var(--c-brand-border-tint-stronger);
-  border-color: var(--c-brand-border-tint-stronger);
-  color: var(--c-tint-green-50);
-}
-
-.tag-pill:nth-child(4n+2) {
-  background: var(--c-romance-border-tint);
-  border-color: var(--c-romance-border-tint);
-  color: var(--c-tint-pink-50);
-}
-
-.tag-pill:nth-child(4n+3) {
-  background: var(--c-state-ongoing-bg);
-  border-color: var(--c-state-ongoing-bg);
-  color: var(--c-tint-orange-50);
-}
-
-.tag-pill:nth-child(4n+4) {
-  background: var(--c-secondary-blue-shadow-soft);
-  border-color: var(--c-secondary-blue-shadow);
-  color: var(--c-tint-blue-50);
-}
-
-/* 个人简介 */
-.card__bio {
-  margin-top: 8rpx;
-}
-
-/* Phase Feedback1 · 悄悄话入口 */
-.card__whisper {
-  margin-top: 10rpx;
+/* 第二行：性格 + MBTI + 星座（如"金牛座+ENFP 浪漫造梦师"） */
+.card__traits {
   display: flex;
-  align-items: center;
-  gap: 10rpx;
-  padding: 12rpx 18rpx;
-  border-radius: var(--r-lg, 16rpx);
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.22) 0%, rgba(244, 114, 182, 0.28) 100%);
-  border: 1rpx solid rgba(244, 114, 182, 0.4);
-  transition: transform var(--d-normal, 200ms) ease, opacity var(--d-normal, 200ms) ease;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 2rpx;
 }
 
-.card__whisper--pressed {
-  transform: scale(0.98);
-  opacity: 0.88;
+.trait-pill {
+  display: inline-flex;
+  padding: 8rpx 22rpx;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.92) 0%, rgba(20, 184, 166, 0.92) 100%);
+  color: #ffffff;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  border: 1rpx solid rgba(45, 212, 191, 0.5);
 }
 
-.card__whisper-icon {
-  font-size: var(--fs-base, 24rpx);
-  flex-shrink: 0;
-}
-
-.card__whisper-text {
-  flex: 1;
-  font-size: var(--fs-sm, 22rpx);
-  color: var(--c-overlay-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card__whisper-text--sent {
-  color: var(--c-romance-300, #f9a8d4);
-}
-
-.card__whisper-action {
-  flex-shrink: 0;
-  font-size: var(--fs-xs, 20rpx);
-  font-weight: 700;
-  color: var(--c-romance-400, #f472b6);
+/* 自我描述区（设计需求）：默认 3 行，右下角「展开」按钮 */
+.card__bio {
+  position: relative;
+  margin-top: 8rpx;
 }
 
 /* Phase Feedback1 · 期待的人物画像折叠区 */
@@ -1978,7 +2103,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
   overflow: hidden;
 }
 
-/* Phase 4.1 验收 · 卡片最新动态预览 */
+/* 动态预览区（设计需求）：小标题「TA的动态」+ 最新 2 条，点击进详情 */
 .card__moments {
   margin-top: 12rpx;
   display: flex;
@@ -1986,23 +2111,55 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
   gap: 8rpx;
 }
 
+.card__moments-title {
+  font-size: var(--fs-sm, 22rpx);
+  font-weight: 700;
+  color: var(--c-overlay-text-primary);
+}
+
 .card__moment {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 12rpx;
   padding: 10rpx 16rpx;
   border-radius: var(--r-lg, 16rpx);
   background: rgba(255, 255, 255, 0.12);
+  transition: transform var(--d-normal, 200ms) ease, opacity var(--d-normal, 200ms) ease;
+}
+
+.card__moment--pressed {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.card__moment-thumb {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: var(--r-md, 12rpx);
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.card__moment-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
 }
 
 .card__moment-text {
-  flex: 1;
   font-size: var(--fs-sm, 22rpx);
   color: var(--c-overlay-text-secondary);
   line-height: 1.5;
-  white-space: nowrap;
   overflow: hidden;
+}
+
+/* 文案前 2 行省略（设计需求） */
+.card__moment-text--clamp2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   text-overflow: ellipsis;
 }
 
@@ -2033,7 +2190,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
   color: var(--c-overlay-text-secondary);
   line-height: 1.7;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2045,15 +2202,19 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
   display: block;
 }
 
+/* 「展开」按钮：右下角（设计需求），配底部渐隐保证可读性 */
 .card__bio-more {
+  position: absolute;
+  right: 0;
+  bottom: 0;
   font-size: var(--fs-base);
-  color: var(--c-overlay-text-tertiary);
-  margin-top: 8rpx;
-  display: inline-block;
-  font-weight: 500;
+  color: var(--c-brand-300, #86efac);
+  font-weight: 600;
+  padding: 2rpx 10rpx 2rpx 24rpx;
+  background: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.85) 40%);
 }
 
-/* ========== 底部浮动操作栏（Task A3：半透明叠加在卡片底部边缘，不挤压卡片本体） ========== */
+/* ========== 底部固定操作栏（设计需求：不喜欢 | 悄悄话 | 喜欢，中间最大） ========== */
 .action-bar {
   position: absolute;
   left: 24rpx;
@@ -2062,7 +2223,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24rpx;
+  gap: 28rpx;
   padding: 18rpx 28rpx;
   padding-bottom: calc(env(safe-area-inset-bottom) + 18rpx);
   border-radius: var(--r-xxl, 28rpx);
@@ -2078,25 +2239,26 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
 }
 
 .action-btn {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: var(--r-circle, 50%);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 6rpx;
+  border-radius: var(--r-circle, 50%);
   transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1), filter var(--d-normal, 200ms) ease;
 }
 
 /* 通用按压态（替代 :active，兼容 mp-weixin） */
 .action-btn--pressed {
-  transform: scale(0.78);
+  transform: scale(0.88);
   filter: brightness(0.92);
   box-shadow: var(--s-action-pressed);
 }
 
+/* 不喜欢：灰色图标按钮（最小） */
 .action-btn--reject {
-  width: 92rpx;
-  height: 92rpx;
+  width: 96rpx;
+  height: 96rpx;
   background: var(--c-bg-container);
   box-shadow: var(--s-action-reject);
   border: 3rpx solid var(--c-action-reject-border);
@@ -2106,35 +2268,16 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
   box-shadow: var(--s-action-reject-pressed);
 }
 
-/* 收藏按钮：默认白底描边，收藏后金色渐变高亮（Task A2） */
-.action-btn--collect {
-  width: 88rpx;
-  height: 88rpx;
-  background: var(--c-bg-container);
-  box-shadow: var(--s-action-reject);
-  border: 3rpx solid var(--c-neutral-200);
+/* 悄悄话：品牌主色填充按钮（中间、最大、最醒目） */
+.action-btn--whisper {
+  width: 156rpx;
+  height: 156rpx;
+  background: linear-gradient(135deg, var(--c-brand-400, #2dd4bf) 0%, var(--c-brand-500, #3fcf8e) 100%);
+  box-shadow: 0 8rpx 28rpx rgba(63, 207, 142, 0.45), var(--s-action-like);
+  border: 4rpx solid rgba(255, 255, 255, 0.9);
 }
 
-.action-btn--collected {
-  background: linear-gradient(135deg, var(--c-gold, #d4af37) 0%, var(--c-accent-400, #f59e0b) 100%);
-  border-color: var(--c-gold, #d4af37);
-  box-shadow: 0 4rpx 16rpx var(--c-vip-border-tint, rgba(201, 163, 106, 0.35));
-  animation: collect-pop var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes collect-pop {
-  0% { transform: scale(1); }
-  45% { transform: scale(1.22); }
-  100% { transform: scale(1); }
-}
-
-.action-btn--super {
-  width: 88rpx;
-  height: 88rpx;
-  background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
-  box-shadow: var(--s-action-super);
-}
-
+/* 喜欢：品牌主色图标按钮 */
 .action-btn--like {
   width: 116rpx;
   height: 116rpx;
@@ -2149,22 +2292,122 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap, onCollect });
 }
 
 .action-btn--reject .action-btn__icon {
-  width: 38rpx;
-  height: 38rpx;
-}
-
-.action-btn--collect .action-btn__icon {
   width: 40rpx;
   height: 40rpx;
 }
 
-.action-btn--super .action-btn__icon {
-  width: 38rpx;
-  height: 38rpx;
+.action-btn--whisper .action-btn__icon {
+  width: 56rpx;
+  height: 56rpx;
+  filter: brightness(0) invert(1);
 }
 
 .action-btn--like .action-btn__icon {
   width: 48rpx;
   height: 48rpx;
+}
+
+.action-btn__label {
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.action-btn__whisper-label {
+  font-size: var(--fs-base, 24rpx);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ========== 认证详情弹窗（设计需求） ========== */
+.cert-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+  padding: 40rpx;
+}
+
+.cert-modal__panel {
+  width: 100%;
+  max-width: 640rpx;
+  background: #ffffff;
+  border-radius: var(--r-2xl, 32rpx);
+  padding: 36rpx 32rpx 28rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.cert-modal__title {
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  text-align: center;
+}
+
+.cert-modal__item {
+  background: var(--c-bg-container, #f8fafc);
+  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border-radius: var(--r-lg, 16rpx);
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.cert-modal__item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.cert-modal__item-name {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.cert-modal__item-badge {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-brand-600, #0d9488);
+  background: var(--c-brand-50, #f0fdf9);
+  padding: 4rpx 12rpx;
+  border-radius: var(--r-full);
+}
+
+.cert-modal__item-desc {
+  font-size: var(--fs-base);
+  color: var(--c-text-secondary);
+  line-height: 1.6;
+}
+
+.cert-modal__item-method {
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
+}
+
+.cert-modal__close {
+  margin-top: 8rpx;
+  align-self: center;
+  min-width: 320rpx;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
+}
+
+.cert-modal__close-text {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: #ffffff;
 }
 </style>

@@ -24,10 +24,11 @@ import { createPinia, setActivePinia } from "pinia";
  */
 vi.mock("../../services/env", () => ({
   appEnv: {
-    apiMode: "mock",
+    apiMode: "real",
     apiBaseUrl: "http://127.0.0.1:8080/api",
   },
-  isMockMode: () => true,
+  // bootstrap 失效 token 用例需走 real 分支（mock 分支不调 clientApi）
+  isMockMode: () => false,
   isDev: false,
 }));
 
@@ -53,15 +54,21 @@ vi.mock("../../services/sentry", () => ({
 
 vi.mock("../../services/auth", () => ({
   loginWithWechat: vi.fn(),
+  loginAsGuest: vi.fn(),
 }));
 
 (globalThis as any).uni = {
   getStorageSync: vi.fn(() => null),
   setStorageSync: vi.fn(),
+  removeStorageSync: vi.fn(),
   showToast: vi.fn(),
 };
 
+import { MOCK_LOGIN_HERO } from "../../features/login/hero";
+
 import { useSessionStore } from "../../stores/session";
+import { clientApi } from "../../services/api";
+import { loginAsGuest } from "../../services/auth";
 import type { components } from "../../services/generated/api-types";
 
 type UserSession = components["schemas"]["UserSession"];
@@ -241,6 +248,72 @@ describe("session store - profileCompletion 加权平均算法（SubTask 1.4.2�
       expect(store.profileCompletion).toBeGreaterThanOrEqual(0);
       expect(store.profileCompletion).toBeLessThanOrEqual(100);
     }
+  });
+});
+
+describe("session store - bootstrap 失效 token 自动重登（401 雪崩修复）", () => {
+  const guestSession = makeSession({
+    userId: "47",
+    displayName: "体验用户",
+    profileCompleted: true,
+    campusVerified: true,
+    scheduleCompleted: true,
+    campusName: "北京大学",
+  });
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+    // 默认：storage 无 token（getSession 返回未登录态）
+    vi.mocked(uni.getStorageSync).mockReturnValue(null);
+    vi.mocked(clientApi.getLoginHero).mockResolvedValue(MOCK_LOGIN_HERO as any);
+  });
+
+  it("storage 残留过期 token 且 getSession 返回 loggedIn=false 时，清 token 并自动游客重登", async () => {
+    const getStorageSync = vi.mocked(uni.getStorageSync);
+    const removeStorageSync = vi.mocked(uni.removeStorageSync);
+
+    // 场景复现：storage 里有昨天留下的过期 token（存储键为 "token"）
+    getStorageSync.mockImplementation((key: string) =>
+      key === "token" ? "expired-token-123" : null
+    );
+    vi.mocked(clientApi.getSession).mockResolvedValue(
+      makeSession({ loggedIn: false, userId: null, token: null }) as any
+    );
+    vi.mocked(loginAsGuest).mockResolvedValue(guestSession as any);
+
+    const store = useSessionStore();
+    await store.bootstrap();
+
+    // 过期 token 已被清除
+    expect(removeStorageSync).toHaveBeenCalledWith("token");
+    // 已用体验账号重新登录
+    expect(loginAsGuest).toHaveBeenCalledTimes(1);
+    expect(store.userSession?.loggedIn).toBe(true);
+    expect(store.userSession?.userId).toBe("47");
+  });
+
+  it("无本地 token 且 getSession 返回未登录时，不触发游客重登", async () => {
+    vi.mocked(clientApi.getSession).mockResolvedValue(
+      makeSession({ loggedIn: false, userId: null, token: null }) as any
+    );
+
+    const store = useSessionStore();
+    await store.bootstrap();
+
+    expect(loginAsGuest).not.toHaveBeenCalled();
+    expect(store.userSession?.loggedIn).toBe(false);
+  });
+
+  it("token 仍有效（loggedIn=true）时，不触发游客重登", async () => {
+    vi.mocked(uni.getStorageSync).mockReturnValue("valid-token-456");
+    vi.mocked(clientApi.getSession).mockResolvedValue(guestSession as any);
+
+    const store = useSessionStore();
+    await store.bootstrap();
+
+    expect(loginAsGuest).not.toHaveBeenCalled();
+    expect(store.userSession?.userId).toBe("47");
   });
 });
 

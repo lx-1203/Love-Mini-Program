@@ -6,11 +6,14 @@ import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserScheduleProfile;
+import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import com.campuslove.api.repository.SchoolRepository;
 import com.campuslove.api.utils.SensitiveDataMasker;
 import io.jsonwebtoken.JwtException;
 import java.time.LocalDateTime;
@@ -55,6 +58,7 @@ public class RealAuthService implements AuthService {
     private final WeChatClient weChatClient;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+    private final UserBasicProfileRepository userBasicProfileRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final UserScheduleProfileRepository userScheduleProfileRepository;
     /**
@@ -83,6 +87,12 @@ public class RealAuthService implements AuthService {
     private final OnlineUserService onlineUserService;
 
     /**
+     * 高校 Repository：登录时校验管理员所属高校状态
+     * （商业模式：高校被停用后，该校管理员登录被拒）。
+     */
+    private final SchoolRepository schoolRepository;
+
+    /**
      * 管理员登录密码哈希，由环境变量 ADMIN_PASSWORD 配置。
      * <p>注意：值必须为 BCrypt 哈希（格式 {@code $...}），而非明文。
      * 可通过 {@link com.campuslove.api.config.PasswordEncoderConfig#encodePassword(String)} 生成。</p>
@@ -91,33 +101,45 @@ public class RealAuthService implements AuthService {
     private final String adminPassword;
 
     /**
-     * 体验账号一键登录入口开关（配置 app.guest-login.enabled，默认开启）。
-     * 本地联调/体验默认开启；商业化上线前应设置为 false 关闭体验入口。
+     * 体验账号一键登录入口开关（配置 app.guest-login.enabled，默认关闭）。
+     * <p>P0-14 修复：商业化默认关闭体验入口，本地演示可通过
+     * {@code APP_GUEST_LOGIN_ENABLED=true} 或 {@code --app.guest-login.enabled=true}
+     * 运行参数覆盖开启，体验功能本身保留。</p>
      */
     private final boolean guestLoginEnabled;
+
+    /**
+     * P0-14：体验账号黑名单手机号（仅体验入口可登录，禁止通过注册/手机号登录占用）。
+     * 与 {@link #loginAsGuest()} 中固定体验手机号保持一致。
+     */
+    private static final String GUEST_BLACKLIST_PHONE = "13900000000";
 
     public RealAuthService(
             WeChatClient weChatClient,
             JwtTokenProvider jwtTokenProvider,
             UserRepository userRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
             UserCampusProfileRepository userCampusProfileRepository,
             UserScheduleProfileRepository userScheduleProfileRepository,
             PasswordEncoder passwordEncoder,
             AesEncryptor aesEncryptor,
             TokenBlacklistService tokenBlacklistService,
             OnlineUserService onlineUserService,
+            SchoolRepository schoolRepository,
             @Value("${app.admin.password:}") String adminPassword,
-            @Value("${app.guest-login.enabled:true}") boolean guestLoginEnabled
+            @Value("${app.guest-login.enabled:false}") boolean guestLoginEnabled
     ) {
         this.weChatClient = weChatClient;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userRepository = userRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userScheduleProfileRepository = userScheduleProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.aesEncryptor = aesEncryptor;
         this.tokenBlacklistService = tokenBlacklistService;
         this.onlineUserService = onlineUserService;
+        this.schoolRepository = schoolRepository;
         this.adminPassword = adminPassword;
         this.guestLoginEnabled = guestLoginEnabled;
     }
@@ -415,6 +437,11 @@ public class RealAuthService implements AuthService {
         if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
             throw new IllegalArgumentException("手机号格式不正确");
         }
+        // P0-14：体验账号黑名单——13900000000 为体验入口专用手机号，禁止注册新账号
+        if (GUEST_BLACKLIST_PHONE.equals(phone)) {
+            log.warn("黑名单手机号注册被拒绝：phone={}", SensitiveDataMasker.mask(phone));
+            throw new IllegalArgumentException("该手机号不可注册");
+        }
         if (password == null || password.length() < 6 || password.length() > 64) {
             throw new IllegalArgumentException("密码长度须为 6-64 位");
         }
@@ -437,7 +464,15 @@ public class RealAuthService implements AuthService {
         user.setFollowersCount(0);
         user.setCreatedAt(java.time.LocalDateTime.now());
         user.setUpdatedAt(java.time.LocalDateTime.now());
-        User saved = userRepository.save(user);
+        User saved;
+        try {
+            saved = userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            // A-34：手机号唯一约束冲突兜底（uk_users_phone / uk_users_openid）
+            // 并发注册同一手机号或 openid 派生冲突时，返回友好业务错误而非 500
+            log.warn("注册唯一约束冲突：phone={}, error={}", SensitiveDataMasker.mask(phone), ex.getMessage());
+            throw new IllegalArgumentException("该手机号已注册，请直接登录");
+        }
         log.info("新用户注册成功: userId={}, phone={}", saved.getId(), SensitiveDataMasker.mask(phone));
         String token = jwtTokenProvider.generateToken(String.valueOf(saved.getId()));
         // 记录在线会话（eladmin「在线用户」对齐）：注册成功即自动登录，视为在线用户，
@@ -457,6 +492,11 @@ public class RealAuthService implements AuthService {
     public UserSessionView loginWithPhone(String phone, String password) {
         if (phone == null || phone.isBlank() || password == null || password.isBlank()) {
             throw new InvalidCredentialsException("手机号或密码错误");
+        }
+        // P0-14：体验账号黑名单——13900000000 仅体验入口可登录，禁止手机号+密码路径占用
+        if (GUEST_BLACKLIST_PHONE.equals(phone)) {
+            log.warn("黑名单手机号登录被拒绝：phone={}", SensitiveDataMasker.mask(phone));
+            throw new IllegalArgumentException("该手机号不可登录");
         }
         User user = userRepository.findByPhone(phone).orElse(null);
         if (user == null) {
@@ -495,7 +535,7 @@ public class RealAuthService implements AuthService {
             log.warn("体验账号登录入口已被配置禁用（app.guest-login.enabled=false）");
             throw new IllegalStateException("体验账号入口已关闭，请使用其他方式登录");
         }
-        String guestPhone = "13900000000";
+        String guestPhone = GUEST_BLACKLIST_PHONE;
         User user = userRepository.findByPhone(guestPhone).orElse(null);
         if (user == null) {
             // 首次使用：自动创建体验账号（随机密码，防止通过手机号密码登录）
@@ -513,6 +553,9 @@ public class RealAuthService implements AuthService {
             user.setUpdatedAt(LocalDateTime.now());
             user = userRepository.save(user);
             log.info("体验账号首次创建成功: userId={}", user.getId());
+            // 一键体验：自动预填完整资料（基本资料/校园认证/课表），
+            // 使 profile_completion=100，登录后所有页面立即可用
+            provisionGuestProfile(user);
         }
         if (user.isDisabled()) {
             throw new com.campuslove.api.common.OperationForbiddenException("体验账号已被禁用，请联系管理员");
@@ -521,6 +564,65 @@ public class RealAuthService implements AuthService {
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 guest
         recordOnlineSession(user.getId(), token, "guest");
         return buildSessionView(user, token);
+    }
+
+    /**
+     * 体验账号资料预填（一键体验）。
+     *
+     * <p>新建体验账号时自动创建基本资料、校园认证（verified）与课表，
+     * 并将 profile_completion 置为 100，使「临时体验号」登录后即可使用全部功能，
+     * 无需再手动完善资料（与 database/complete-guest-account.sql 口径一致）。
+     * 仅首次创建时执行；已存在资料的账号不受影响（幂等）。</p>
+     *
+     * @param user 刚创建的体验账号
+     */
+    private void provisionGuestProfile(User user) {
+        Long userId = user.getId();
+        try {
+            // 1. 基本资料（昵称/简介/年级/代词/兴趣标签/身高/学历/婚况/籍贯/未来城市）
+            if (userBasicProfileRepository.findByUserId(userId).isEmpty()) {
+                UserBasicProfile basic = new UserBasicProfile();
+                basic.setUserId(userId);
+                basic.setNickname("体验用户");
+                basic.setBio("热爱生活，喜欢图书馆的下午和操场晚风。想认识有趣的灵魂。");
+                basic.setGradeLabel("大三");
+                basic.setPronouns("TA");
+                basic.setInterestTags("[\"阅读\",\"旅行\",\"摄影\",\"音乐\",\"美食\"]");
+                basic.setHeight(170);
+                basic.setEducationLevel("bachelor");
+                basic.setRelationshipStatus("never");
+                basic.setHometownProvince("北京");
+                basic.setHometownCity("北京");
+                basic.setFutureCity("北京");
+                basic.setFuturePlanTags("[\"旅行\",\"读书\",\"事业\",\"健康\"]");
+                userBasicProfileRepository.save(basic);
+            }
+            // 2. 校园资料（直接置为已认证通过）
+            if (userCampusProfileRepository.findByUserId(userId).isEmpty()) {
+                UserCampusProfile campus = new UserCampusProfile();
+                campus.setUserId(userId);
+                campus.setCityName("北京");
+                campus.setCampusName("北京大学");
+                campus.setDepartmentName("工业设计");
+                campus.setVerificationStatus("verified");
+                userCampusProfileRepository.save(campus);
+            }
+            // 3. 课表偏好
+            if (userScheduleProfileRepository.findByUserId(userId).isEmpty()) {
+                UserScheduleProfile schedule = new UserScheduleProfile();
+                schedule.setUserId(userId);
+                schedule.setPreferredCampusArea("图书馆");
+                schedule.setPreferredTimeWindowJson("[]");
+                schedule.setCourseBlockJson("[]");
+                userScheduleProfileRepository.save(schedule);
+            }
+            // 4. 完善度 100
+            user.setProfileCompletion(100);
+            userRepository.save(user);
+            log.info("体验账号资料预填完成: userId={}", userId);
+        } catch (DataAccessException ex) {
+            log.error("体验账号资料预填失败, userId={}: {}", userId, ex.getMessage(), ex);
+        }
     }
 
     @Override
@@ -547,6 +649,19 @@ public class RealAuthService implements AuthService {
         if (user.isDisabled()) {
             log.warn("禁用管理员账号尝试登录, userId={}, username={}", user.getId(), username);
             throw new AdminDisabledException("管理员账号已被禁用，请联系超级管理员");
+        }
+
+        // 3.5 高校状态校验（商业模式：每个高校一个管理员）。
+        //     校区管理员（ADMIN 且 campusName 非空）登录时，校验其所属高校
+        //     （schools.name = user.campus_name）未停用；高校被停用后该校管理员登录被拒。
+        if (user.isAdmin() && user.getCampusName() != null && !user.getCampusName().isBlank()) {
+            schoolRepository.findByName(user.getCampusName().trim()).ifPresent(school -> {
+                if (!"active".equalsIgnoreCase(school.getStatus())) {
+                    log.warn("高校停用，拒绝管理员登录: userId={}, username={}, campus={}",
+                            user.getId(), username, user.getCampusName());
+                    throw new AdminDisabledException("所在高校已被停用，请联系超级管理员");
+                }
+            });
         }
 
         // 4. 校验密码：优先使用数据库 password 字段，环境变量 ADMIN_PASSWORD 作为兜底。

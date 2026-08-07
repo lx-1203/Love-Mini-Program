@@ -1,0 +1,459 @@
+{
+  "errors": [
+    {
+      "time": "2026-08-07 16:42:48.387",
+      "type": "console",
+      "text": "[Global Error][Vue Error] {} https://vuejs.org/error-reference/#runtime-1"
+    },
+    {
+      "time": "2026-08-07 16:42:48.387",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"Vue Error\",\"context\":\"https://vuejs.org/error-reference/#runtime-1\"}"
+    },
+    {
+      "time": "2026-08-07 16:42:59.811",
+      "type": "console",
+      "text": "[Global Error][Vue Error] {} https://vuejs.org/error-reference/#runtime-1"
+    },
+    {
+      "time": "2026-08-07 16:42:59.811",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"Vue Error\",\"context\":\"https://vuejs.org/error-reference/#runtime-1\"}"
+    },
+    {
+      "time": "2026-08-07 16:44:09.938",
+      "type": "console",
+      "text": "[captureException] {\"name\":\"EnhancedApiError\",\"status\":400,\"error\":\"Validation Failed\",\"category\":\"business\"} {\"source\":\"http\",\"http_url\":\"/post-tags/posts?tagName=&page=0&size=20\",\"http_status\":400}"
+    },
+    {
+      "time": "2026-08-07 16:47:23.697",
+      "type": "console",
+      "text": "[Global Error][Vue Error] {} https://vuejs.org/error-reference/#runtime-1"
+    },
+    {
+      "time": "2026-08-07 16:47:23.698",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"Vue Error\",\"context\":\"https://vuejs.org/error-reference/#runtime-1\"}"
+    },
+    {
+      "time": "2026-08-07 16:47:35.074",
+      "type": "console",
+      "text": "[Global Error][Vue Error] {} https://vuejs.org/error-reference/#runtime-1"
+    },
+    {
+      "time": "2026-08-07 16:47:35.075",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"Vue Error\",\"context\":\"https://vuejs.org/error-reference/#runtime-1\"}"
+    },
+    {
+      "time": "2026-08-07 16:47:35.226",
+      "type": "console",
+      "text": "[captureException] {\"name\":\"EnhancedApiError\",\"status\":422,\"error\":\"Unprocessable Entity\",\"category\":\"business\"} {\"source\":\"http\",\"http_url\":\"/daily-question/answers?questionId=2&page=0&size=20\",\"http_status\":422}"
+    },
+    {
+      "time": "2026-08-07 16:48:32.926",
+      "type": "console",
+      "text": "[Global Error][Vue Error] {} https://vuejs.org/error-reference/#runtime-1"
+    },
+    {
+      "time": "2026-08-07 16:48:32.926",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"Vue Error\",\"context\":\"https://vuejs.org/error-reference/#runtime-1\"}"
+    },
+    {
+      "time": "2026-08-07 16:51:39.315",
+      "type": "console",
+      "text": "[captureException] {\"name\":\"EnhancedApiError\",\"status\":404,\"error\":\"Not Found\",\"category\":\"business\"} {\"source\":\"http\",\"http_url\":\"/recommendations/preferences/1\",\"http_status\":404}"
+    },
+    {
+      "time": "2026-08-07 16:52:28.881",
+      "type": "console",
+      "text": "[captureException] {\"name\":\"EnhancedApiError\",\"status\":404,\"error\":\"Not Found\",\"category\":\"business\"} {\"source\":\"http\",\"http_url\":\"/v1/config/legal?type=privacy_policy\",\"http_status\":404}"
+    },
+    {
+      "time": "2026-08-07 16:52:40.678",
+      "type": "console",
+      "text": "[captureException] {\"name\":\"EnhancedApiError\",\"status\":404,\"error\":\"Not Found\",\"category\":\"business\"} {\"source\":\"http\",\"http_url\":\"/v1/config/legal?type=user_agreement\",\"http_status\":404}"
+    }
+  ],
+  "results": [
+    {
+      "name": "home",
+      "route": "/pages/home/index",
+      "ok": true,
+      "size": 225535,
+      "newErrors": 0
+    },
+    {
+      "name": "discover",
+      "route": "/pages/discover/index",
+      "ok": true,
+      "size": 57821,
+      "newErrors": 0
+    },
+    {
+      "name": "discover-history",
+      "route": "/pages/discover/history",
+      "ok": true,
+      "size": 20320,
+      "newErrors": 2
+    },
+    {
+      "name": "discover-video-player",
+      "route": "/pages/discover/video-player?userId=47",
+      "ok": true,
+      "size": 10907,
+      "newErrors": 2
+    },
+    {
+      "name": "likes",
+      "route": "/pages/likes/index",
+      "ok": true,
+      "size": 119573,
+      "newErrors": 0
+    },
+    {
+      "name": "likes-visitors",
+      "route": "/pages/likes-visitors/index",
+      "ok": true,
+      "size": 149502,
+      "newErrors": 0
+    },
+    {
+      "name": "village",
+      "route": "/pages/village/index",
+      "ok": true,
+      "size": 116882,
+      "newErrors": 0
+    },
+    {
+      "name": "village-post",
+      "route": "/pages/village/post",
+      "ok": true,
+      "size": 94279,
+      "newErrors": 0
+    },
+    {
+      "name": "village-detail",
+      "route": "/pages/village/detail?id=352",
+      "ok": true,
+      "size": 118492,
+      "newErrors": 0
+    },
+    {
+      "name": "village-tag-posts",
+      "route": "/pages/village/tag-posts?tag=摄影",
+      "ok": true,
+      "size": 31645,
+      "newErrors": 1
+    },
+    {
+      "name": "messages",
+      "route": "/pages/messages/index",
+      "ok": true,
+      "size": 122099,
+      "newErrors": 0
+    },
+    {
+      "name": "chat",
+      "route": "/pages/chat/index?conversationId=11",
+      "ok": true,
+      "size": 135552,
+      "newErrors": 0
+    },
+    {
+      "name": "chat-session",
+      "route": "/pages/chat-session/index?conversationId=11",
+      "ok": true,
+      "size": 30063,
+      "newErrors": 0
+    },
+    {
+      "name": "official-chat",
+      "route": "/pages/official-chat/index?accountId=1",
+      "ok": true,
+      "size": 107892,
+      "newErrors": 0
+    },
+    {
+      "name": "profile",
+      "route": "/pages/profile/index",
+      "ok": true,
+      "size": 124984,
+      "newErrors": 0
+    },
+    {
+      "name": "profile-visitors",
+      "route": "/pages/profile/visitors",
+      "ok": true,
+      "size": 34624,
+      "newErrors": 0
+    },
+    {
+      "name": "profile-privacy",
+      "route": "/pages/profile/privacy",
+      "ok": true,
+      "size": 32630,
+      "newErrors": 0
+    },
+    {
+      "name": "profile-album",
+      "route": "/pages/profile/album",
+      "ok": true,
+      "size": 38535,
+      "newErrors": 0
+    },
+    {
+      "name": "profile-tasks",
+      "route": "/pages/profile/tasks",
+      "ok": true,
+      "size": 76504,
+      "newErrors": 0
+    },
+    {
+      "name": "circles",
+      "route": "/pages/circles/index",
+      "ok": true,
+      "size": 141640,
+      "newErrors": 0
+    },
+    {
+      "name": "circles-topics",
+      "route": "/pages/circles/topics",
+      "ok": true,
+      "size": 45923,
+      "newErrors": 0
+    },
+    {
+      "name": "circles-topic-detail",
+      "route": "/pages/circles/topic-detail?id=1",
+      "ok": true,
+      "size": 34306,
+      "newErrors": 0
+    },
+    {
+      "name": "circles-post-topic",
+      "route": "/pages/circles/post-topic",
+      "ok": true,
+      "size": 61251,
+      "newErrors": 0
+    },
+    {
+      "name": "campus",
+      "route": "/pages/campus/index",
+      "ok": true,
+      "size": 39941,
+      "newErrors": 0
+    },
+    {
+      "name": "campus-post-topic",
+      "route": "/pages/campus/post-topic",
+      "ok": true,
+      "size": 98786,
+      "newErrors": 0
+    },
+    {
+      "name": "campus-topic-detail",
+      "route": "/pages/campus/topic-detail?id=1",
+      "ok": true,
+      "size": 34568,
+      "newErrors": 0
+    },
+    {
+      "name": "campus-certification",
+      "route": "/pages/campus/certification",
+      "ok": true,
+      "size": 25598,
+      "newErrors": 2
+    },
+    {
+      "name": "daily-question",
+      "route": "/pages/daily-question/index",
+      "ok": true,
+      "size": 24783,
+      "newErrors": 3
+    },
+    {
+      "name": "love-center",
+      "route": "/pages/love-center/index",
+      "ok": true,
+      "size": 60763,
+      "newErrors": 0
+    },
+    {
+      "name": "love-center-nearby",
+      "route": "/pages/love-center/nearby",
+      "ok": true,
+      "size": 102256,
+      "newErrors": 0
+    },
+    {
+      "name": "love-center-mbti",
+      "route": "/pages/love-center/mbti",
+      "ok": true,
+      "size": 104227,
+      "newErrors": 0
+    },
+    {
+      "name": "love-center-consulting",
+      "route": "/pages/love-center/consulting",
+      "ok": true,
+      "size": 84370,
+      "newErrors": 0
+    },
+    {
+      "name": "heart-signals",
+      "route": "/pages/heart-signals/index",
+      "ok": true,
+      "size": 29103,
+      "newErrors": 2
+    },
+    {
+      "name": "help",
+      "route": "/pages/help/index",
+      "ok": true,
+      "size": 102034,
+      "newErrors": 0
+    },
+    {
+      "name": "security",
+      "route": "/pages/security/index",
+      "ok": true,
+      "size": 86364,
+      "newErrors": 0
+    },
+    {
+      "name": "shop",
+      "route": "/pages/shop/index",
+      "ok": true,
+      "size": 313131,
+      "newErrors": 0
+    },
+    {
+      "name": "settings",
+      "route": "/pages/settings/index",
+      "ok": true,
+      "size": 76649,
+      "newErrors": 0
+    },
+    {
+      "name": "settings-dnd",
+      "route": "/pages/settings/dnd",
+      "ok": true,
+      "size": 75707,
+      "newErrors": 0
+    },
+    {
+      "name": "verification",
+      "route": "/pages/verification/index",
+      "ok": true,
+      "size": 89523,
+      "newErrors": 0
+    },
+    {
+      "name": "vip",
+      "route": "/pages/vip/index",
+      "ok": true,
+      "size": 136926,
+      "newErrors": 0
+    },
+    {
+      "name": "vip-promo-code",
+      "route": "/pages/vip/promo-code",
+      "ok": true,
+      "size": 57362,
+      "newErrors": 0
+    },
+    {
+      "name": "vip-bills",
+      "route": "/pages/vip/bills",
+      "ok": true,
+      "size": 39658,
+      "newErrors": 0
+    },
+    {
+      "name": "wallet",
+      "route": "/pages/wallet/index",
+      "ok": true,
+      "size": 75570,
+      "newErrors": 0
+    },
+    {
+      "name": "feedback-history",
+      "route": "/pages/feedback/history",
+      "ok": true,
+      "size": 32231,
+      "newErrors": 0
+    },
+    {
+      "name": "showcase",
+      "route": "/pages/showcase/index",
+      "ok": true,
+      "size": 57805,
+      "newErrors": 0
+    },
+    {
+      "name": "sub-setup-profile",
+      "route": "/subpackages/setup/profile/index",
+      "ok": true,
+      "size": 87293,
+      "newErrors": 0
+    },
+    {
+      "name": "sub-setup-campus",
+      "route": "/subpackages/setup/campus/index",
+      "ok": true,
+      "size": 68295,
+      "newErrors": 0
+    },
+    {
+      "name": "sub-setup-schedule",
+      "route": "/subpackages/setup/schedule/index",
+      "ok": true,
+      "size": 34548,
+      "newErrors": 0
+    },
+    {
+      "name": "sub-setup-recommend-pref",
+      "route": "/subpackages/setup/recommend-pref/index",
+      "ok": true,
+      "size": 37130,
+      "newErrors": 1
+    },
+    {
+      "name": "sub-support-feedback",
+      "route": "/subpackages/support/feedback/index",
+      "ok": true,
+      "size": 59797,
+      "newErrors": 0
+    },
+    {
+      "name": "sub-discover-discussions",
+      "route": "/subpackages/discover/discussions/index",
+      "ok": true,
+      "size": 107128,
+      "newErrors": 0
+    },
+    {
+      "name": "sub-discover-activities",
+      "route": "/subpackages/discover/activities/index",
+      "ok": true,
+      "size": 112826,
+      "newErrors": 0
+    },
+    {
+      "name": "sub-legal-privacy",
+      "route": "/subpackages/legal/privacy/index",
+      "ok": true,
+      "size": 223676,
+      "newErrors": 1
+    },
+    {
+      "name": "sub-legal-agreement",
+      "route": "/subpackages/legal/agreement/index",
+      "ok": true,
+      "size": 223283,
+      "newErrors": 1
+    }
+  ]
+}

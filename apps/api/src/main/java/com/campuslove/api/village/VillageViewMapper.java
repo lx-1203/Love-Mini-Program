@@ -7,6 +7,7 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.repository.PostLikeRepository;
+import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,6 +15,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -37,16 +40,19 @@ public class VillageViewMapper {
 
     private final UserRepository userRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
+    private final UserBasicProfileRepository userBasicProfileRepository;
     private final PostLikeRepository postLikeRepository;
     private final ObjectMapper objectMapper;
 
     public VillageViewMapper(
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
             PostLikeRepository postLikeRepository,
             ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
         this.postLikeRepository = postLikeRepository;
         this.objectMapper = objectMapper;
     }
@@ -108,33 +114,53 @@ public class VillageViewMapper {
                                               Map<Long, User> authorMap,
                                               Map<Long, UserCampusProfile> campusMap,
                                               java.util.Set<Long> followedUserIds) {
+        // P1-16：批量预加载作者基础资料（一次查询），避免逐帖查库（N+1），
+        // 供 age/education 字段映射使用
+        List<Long> authorIds = posts.stream()
+                .map(Post::getAuthorId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, UserBasicProfile> basicProfileMap = authorIds.isEmpty()
+                ? java.util.Collections.emptyMap()
+                : userBasicProfileRepository.findByUserIdIn(authorIds).stream()
+                        .collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p, (a, b) -> a));
         return posts.stream()
-                .map(post -> toPostSummaryView(post, myCampusName, authorMap, campusMap, followedUserIds))
+                .map(post -> toPostSummaryView(post, myCampusName, authorMap, campusMap,
+                        basicProfileMap, followedUserIds))
                 .toList();
     }
 
     /**
      * 批量转换单条帖子摘要视图（预加载数据版，供 {@link #toPostSummaryViews} 内部使用）。
      */
-    /**
-     * 批量转换单条帖子摘要视图（预加载数据版，供 {@link #toPostSummaryViews} 内部使用）。
-     */
     private PostSummaryView toPostSummaryView(Post post, String myCampusName,
                                               Map<Long, User> authorMap,
                                               Map<Long, UserCampusProfile> campusMap,
+                                              Map<Long, UserBasicProfile> basicProfileMap,
                                               java.util.Set<Long> followedUserIds) {
         User author = authorMap != null ? authorMap.get(post.getAuthorId()) : null;
         String nickname = author != null && author.getNickname() != null
                 ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatarUrl = author != null ? author.getAvatarUrl() : null;
         String campusName = "";
+        String city = null;
         if (campusMap != null) {
             UserCampusProfile cp = campusMap.get(post.getAuthorId());
             if (cp != null && cp.getCampusName() != null) {
                 campusName = cp.getCampusName();
             }
+            if (cp != null && cp.getCityName() != null) {
+                city = cp.getCityName();
+            }
         }
-        PostAuthorView authorView = new PostAuthorView(post.getAuthorId(), nickname, avatarUrl, campusName);
+        // P1-16：作者年龄/学历来自基本资料（批量预加载，无 N+1）
+        UserBasicProfile bp = basicProfileMap != null ? basicProfileMap.get(post.getAuthorId()) : null;
+        Integer age = bp != null
+                ? PostAuthorView.deriveAgeFromGradeLabel(bp.getGradeLabel()) : null;
+        String education = bp != null ? bp.getEducationLevel() : null;
+        PostAuthorView authorView = new PostAuthorView(
+                post.getAuthorId(), nickname, avatarUrl, campusName, age, city, education);
         List<String> tags = parseJsonToList(post.getTags());
         String summary = truncate(post.getContent(), 120);
         boolean isAlumni = !myCampusName.isEmpty() && myCampusName.equals(campusName);
@@ -177,26 +203,47 @@ public class VillageViewMapper {
         CommentAuthorView authorView = new CommentAuthorView(comment.getAuthorId(),
                 author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER,
                 author != null ? author.getAvatarUrl() : null);
-        return new CommentItemView(comment.getId(), comment.getPost().getId(), null, authorView,
+        return new CommentItemView(comment.getId(), comment.getPost().getId(), comment.getParentId(), authorView,
                 comment.getContent(), 0, comment.getCreatedAt().toString(), false, null);
     }
 
     CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap) {
+        return toCommentItemView(comment, authorMap, null, java.util.List.of());
+    }
+
+    /**
+     * P1-02 / A-12 楼中楼：转换为评论项视图（带回复对象昵称与楼中楼回复列表）。
+     *
+     * @param comment  评论实体
+     * @param authorMap 作者批量预加载 Map
+     * @param replyTo  回复对象昵称（楼中楼回复场景）
+     * @param replies  楼中楼回复列表（根评论携带，子评论为空）
+     */
+    CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap,
+                                      String replyTo, java.util.List<CommentItemView> replies) {
         User author = authorMap != null ? authorMap.get(comment.getAuthorId()) : null;
         CommentAuthorView authorView = new CommentAuthorView(comment.getAuthorId(),
                 author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER,
                 author != null ? author.getAvatarUrl() : null);
-        return new CommentItemView(comment.getId(), comment.getPost().getId(), null, authorView,
-                comment.getContent(), 0, comment.getCreatedAt().toString(), false, null);
+        return new CommentItemView(comment.getId(), comment.getPost().getId(), comment.getParentId(), authorView,
+                comment.getContent(), 0, comment.getCreatedAt().toString(), false, replyTo,
+                replies != null ? replies : java.util.List.of());
     }
 
     PostAuthorView getPostAuthorView(Long authorId) {
         User author = userRepository.findById(authorId).orElse(null);
         String nickname = author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatarUrl = author != null ? author.getAvatarUrl() : null;
-        String campusName = userCampusProfileRepository.findByUserId(authorId)
-                .map(UserCampusProfile::getCampusName).orElse("");
-        return new PostAuthorView(authorId, nickname, avatarUrl, campusName);
+        // P1-16：作者城市来自校园资料，年龄/学历来自基本资料（单条场景，直接查询）
+        UserCampusProfile campusProfile = userCampusProfileRepository.findByUserId(authorId).orElse(null);
+        String campusName = campusProfile != null && campusProfile.getCampusName() != null
+                ? campusProfile.getCampusName() : "";
+        String city = campusProfile != null ? campusProfile.getCityName() : null;
+        UserBasicProfile basicProfile = userBasicProfileRepository.findByUserId(authorId).orElse(null);
+        Integer age = basicProfile != null
+                ? PostAuthorView.deriveAgeFromGradeLabel(basicProfile.getGradeLabel()) : null;
+        String education = basicProfile != null ? basicProfile.getEducationLevel() : null;
+        return new PostAuthorView(authorId, nickname, avatarUrl, campusName, age, city, education);
     }
 
     SimilarAuthorView buildSimilarAuthorView(Long candidateId, User user,

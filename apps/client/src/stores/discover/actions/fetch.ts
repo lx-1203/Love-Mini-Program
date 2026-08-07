@@ -20,7 +20,9 @@ import {
   RETRY_DELAY_MS,
 } from "../constants";
 import {
+  filterNearby,
   mapToDiscoverCard,
+  sortCards,
   useMock,
   withRetry,
 } from "../utils";
@@ -105,6 +107,11 @@ export async function fetchCards(this: DiscoverStoreThis): Promise<void> {
           availableCards = rawData.map((item) => mapToDiscoverCard(item));
         }
 
+        // 匹配范围（设计需求）：附近 = 过滤距离 ≤20km；不限 = 不过滤
+        if (this.matchScope === "nearby") {
+          availableCards = filterNearby(availableCards);
+        }
+
         // 同校加权：优先展示同校用户
         try {
           const sessionStore = useSessionStore();
@@ -124,6 +131,9 @@ export async function fetchCards(this: DiscoverStoreThis): Promise<void> {
         } catch (_e) {
           // session store 不可用时忽略，不影响正常流程
         }
+
+        // 排序规则（设计需求）：匹配度优先/最新注册/最活跃
+        availableCards = sortCards(availableCards, this.sortBy);
 
         // 修复：写入前再次检查是否已取消
         if (controller.signal.aborted) {

@@ -3,6 +3,8 @@ package com.campuslove.api.repository;
 import com.campuslove.api.entity.ActivityEnrollment;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -44,4 +46,21 @@ public interface ActivityEnrollmentRepository extends JpaRepository<ActivityEnro
      * @return 是否已报名
      */
     boolean existsByActivityIdAndUserId(Long activityId, Long userId);
+
+    /**
+     * 根据活动 ID 分页查询报名记录，按报名时间倒序排列（管理后台报名列表）。
+     *
+     * @param activityId 活动 ID
+     * @param pageable   分页参数
+     * @return 报名记录分页列表（最新报名在前）
+     */
+    Page<ActivityEnrollment> findByActivityIdOrderByEnrolledAtDesc(Long activityId, Pageable pageable);
+
+    /**
+     * 根据活动 ID 删除全部报名记录（删除活动时清理孤儿数据）。
+     *
+     * @param activityId 活动 ID
+     * @return 删除条数
+     */
+    long deleteByActivityId(Long activityId);
 }

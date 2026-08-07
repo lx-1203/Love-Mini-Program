@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Profile("real")
 @Service
 public class RealPrivateMessageService implements PrivateMessageService {
+
+    private static final Logger log = LoggerFactory.getLogger(RealPrivateMessageService.class);
 
     private final PrivateConversationRepository conversationRepository;
     private final PrivateMessageRepository messageRepository;
@@ -274,6 +278,38 @@ public class RealPrivateMessageService implements PrivateMessageService {
         conversation.setPinned(pinned);
         conversation.setUpdatedAt(LocalDateTime.now());
         conversationRepository.save(conversation);
+    }
+
+    // ---- M-06/P0-07：删除会话 ----
+
+    /**
+     * 删除会话及其全部消息（仅会话参与者可操作）。
+     *
+     * <p>流程：校验参与者身份 → 批量删除会话消息 → 删除会话记录。
+     * 同一事务内原子执行，任一步失败全部回滚。</p>
+     */
+    @Override
+    @Transactional
+    public void deleteConversation(Long conversationId, Long userId) {
+        if (conversationId == null || userId == null) {
+            throw new IllegalArgumentException("conversationId and userId are required");
+        }
+
+        PrivateConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
+
+        // 校验用户是否为会话参与者，防止任意用户删除他人会话（IDOR）
+        if (!conversation.getUserAId().equals(userId) && !conversation.getUserBId().equals(userId)) {
+            throw new IllegalArgumentException("User is not a participant of this conversation");
+        }
+
+        // 批量删除会话消息（级联清理）
+        int deletedMessages = messageRepository.deleteByConversationId(conversationId);
+        // 删除会话记录
+        conversationRepository.delete(conversation);
+
+        log.info("会话已删除：conversationId={}, userId={}, 消息清理 {} 条",
+                conversationId, userId, deletedMessages);
     }
 
     // ---- 私有辅助方法 ----

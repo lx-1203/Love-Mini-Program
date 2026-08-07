@@ -350,7 +350,8 @@ public class ProfileQueryService {
                 profile.getPersonalVideoUrl(),
                 profile.getProfileBackgroundUrl(),
                 completion,
-                badgeLevel
+                badgeLevel,
+                user.getAvatarUrl()
         );
     }
 

@@ -307,6 +307,11 @@ export const useProfileStore = defineStore("profile", {
           this.scheduleProfile = schedule;
           this.profileStats = stats;
 
+          // 2026-08-07：头像 URL 从 GET /profile/basic 响应中同步
+          // （BasicProfileView 已新增 avatarUrl 字段，存于 users.avatar_url）
+          const basicRaw = basic as { avatarUrl?: string } | null;
+          this.avatarUrl = typeof basicRaw?.avatarUrl === "string" ? basicRaw.avatarUrl : "";
+
           // SubTask 1.4.1：解析 vipStatus。
           // 当前后端 UserSession schema 暂未声明 vipStatus 字段，但实际响应可能已包含
           // （后端 DTO 扩展常常先于 OpenAPI 重新生成）。这里通过类型断言安全读取：
@@ -573,6 +578,37 @@ export const useProfileStore = defineStore("profile", {
         return url;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadBackgroundFailed");
+        throw error;
+      }
+    },
+
+    /**
+     * 上传头像（2026-08-07 新增接线）。
+     *
+     * 调用后端 POST /profile/avatar（更新 users.avatar_url），
+     * 成功后同步更新本 store 的 avatarUrl 与 basicProfile.avatarUrl，
+     * 使个人主页与推荐卡片均可显示新头像。
+     *
+     * @param file - 头像图片文件（jpg/png/webp，≤10MB）
+     * @returns 服务端返回的图片 URL
+     */
+    async uploadAvatar(file: UniUploadFileLike): Promise<string> {
+      this.errorMessage = null;
+      try {
+        const view = await clientApi.uploadAvatar(file);
+        const url = (view as { avatarUrl?: string; url?: string } | null)?.avatarUrl
+          ?? (view as { url?: string } | null)?.url
+          ?? "";
+        this.avatarUrl = url;
+        if (this.basicProfile) {
+          this.basicProfile = {
+            ...this.basicProfile,
+            avatarUrl: url,
+          } as typeof this.basicProfile;
+        }
+        return url;
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadAvatarFailed");
         throw error;
       }
     },

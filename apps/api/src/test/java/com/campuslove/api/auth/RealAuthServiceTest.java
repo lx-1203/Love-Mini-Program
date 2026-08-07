@@ -4,6 +4,8 @@ import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.config.PasswordEncoderConfig;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.repository.SchoolRepository;
+import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
@@ -47,6 +49,8 @@ class RealAuthServiceTest {
     @Mock private WeChatClient weChatClient;
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private UserRepository userRepository;
+    @Mock private UserBasicProfileRepository userBasicProfileRepository;
+    @Mock private SchoolRepository schoolRepository;
     @Mock private UserCampusProfileRepository userCampusProfileRepository;
     @Mock private UserScheduleProfileRepository userScheduleProfileRepository;
     @Mock private AesEncryptor aesEncryptor;
@@ -80,12 +84,14 @@ class RealAuthServiceTest {
                 weChatClient,
                 jwtTokenProvider,
                 userRepository,
+                userBasicProfileRepository,
                 userCampusProfileRepository,
                 userScheduleProfileRepository,
                 passwordEncoder,
                 aesEncryptor,
                 tokenBlacklistService,
                 onlineUserService,
+                schoolRepository,
                 "",
                 true
         );
@@ -156,12 +162,14 @@ class RealAuthServiceTest {
                 weChatClient,
                 jwtTokenProvider,
                 userRepository,
+                userBasicProfileRepository,
                 userCampusProfileRepository,
                 userScheduleProfileRepository,
                 passwordEncoder,
                 aesEncryptor,
                 tokenBlacklistService,
                 onlineUserService,
+                schoolRepository,
                 correctHash,
                 true
         );
@@ -248,12 +256,14 @@ class RealAuthServiceTest {
                 weChatClient,
                 jwtTokenProvider,
                 userRepository,
+                userBasicProfileRepository,
                 userCampusProfileRepository,
                 userScheduleProfileRepository,
                 passwordEncoder,
                 aesEncryptor,
                 tokenBlacklistService,
                 onlineUserService,
+                schoolRepository,
                 plaintextEnvPassword,
                 true
         );
@@ -424,9 +434,10 @@ class RealAuthServiceTest {
         UserSessionView session = realAuthService.loginAsGuest();
 
         // Assert：创建了体验账号（openid 约定 guest: 前缀 + 随机密码 BCrypt）并签发 token
+        // 2026-08-07：首次创建后 provisionGuestProfile 会再次 save（完善度 100），故共 2 次
         org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        User saved = captor.getValue();
+        verify(userRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        User saved = captor.getAllValues().get(0);
         assertEquals("13900000000", saved.getPhone());
         assertEquals("guest:13900000000", saved.getOpenid());
         assertEquals("体验用户", saved.getNickname());
@@ -496,12 +507,14 @@ class RealAuthServiceTest {
                 weChatClient,
                 jwtTokenProvider,
                 userRepository,
+                userBasicProfileRepository,
                 userCampusProfileRepository,
                 userScheduleProfileRepository,
                 passwordEncoder,
                 aesEncryptor,
                 tokenBlacklistService,
                 onlineUserService,
+                schoolRepository,
                 "",
                 false
         );

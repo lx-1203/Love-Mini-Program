@@ -10,11 +10,16 @@ import com.campuslove.api.entity.CampusTopic;
 import com.campuslove.api.entity.CampusTopicReply;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostStatus;
+import com.campuslove.api.entity.School;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.entity.UserBasicProfile;
+import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.CampusTopicReplyRepository;
 import com.campuslove.api.repository.CampusTopicRepository;
 import com.campuslove.api.repository.PostRepository;
+import com.campuslove.api.repository.SchoolRepository;
+import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.village.PostAuthorView;
@@ -50,6 +55,8 @@ public class RealCampusService implements CampusService {
     private final ActivityRepository activityRepository;
     private final UserRepository userRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
+    private final SchoolRepository schoolRepository;
+    private final UserBasicProfileRepository userBasicProfileRepository;
     private final ObjectMapper objectMapper;
     private final SensitiveWordFilter sensitiveWordFilter;
 
@@ -60,6 +67,8 @@ public class RealCampusService implements CampusService {
             ActivityRepository activityRepository,
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
+            SchoolRepository schoolRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
             ObjectMapper objectMapper,
             SensitiveWordFilter sensitiveWordFilter) {
         this.campusTopicRepository = campusTopicRepository;
@@ -68,6 +77,8 @@ public class RealCampusService implements CampusService {
         this.activityRepository = activityRepository;
         this.userRepository = userRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
+        this.schoolRepository = schoolRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
         this.objectMapper = objectMapper;
         this.sensitiveWordFilter = sensitiveWordFilter;
     }
@@ -204,21 +215,55 @@ public class RealCampusService implements CampusService {
     @Override
     @Transactional(readOnly = true)
     public List<PostSummaryView> getCampusPosts(Long schoolId, int page) {
-        // 获取最新的活跃帖子，按创建时间倒序分页
-        Page<Post> postPage = postRepository.findByStatusOrderByCreatedAtDesc(
-                PostStatus.active, PageRequest.of(page, 20));
+        // P0-26 修复：原实现忽略 schoolId 直接返回全站帖子。
+        // 现按作者 user_campus_profile 过滤，只返回同校内容（对外响应结构不变）。
+        // 先解析 schoolId → 校区名，再取较宽窗口（200 条）内存过滤后按页切片，
+        // 避免引入跨表分页查询的复杂度（数据量级下 200 条窗口足够）。
+        String schoolName = resolveSchoolName(schoolId);
+        if (schoolName == null || schoolName.isBlank()) {
+            return List.of();
+        }
+        List<Post> allPosts = postRepository.findByStatusOrderByCreatedAtDesc(
+                PostStatus.active, PageRequest.of(0, 200)).getContent();
 
-        // Task 2.2.3：批量预加载帖子作者信息，避免在循环中触发 N+1 查询
-        List<Long> authorIds = postPage.getContent().stream()
+        // 批量预加载作者校区资料，仅保留同校作者（一次查询，无 N+1）
+        List<Long> authorIds = allPosts.stream()
                 .map(Post::getAuthorId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-        Map<Long, User> authorMap = batchLoadUsers(authorIds);
+        Map<Long, UserCampusProfile> campusMap = userCampusProfileRepository
+                .findByUserIdIn(authorIds).stream()
+                .collect(Collectors.toMap(UserCampusProfile::getUserId, p -> p, (a, b) -> a));
+        List<Post> sameSchoolPosts = allPosts.stream()
+                .filter(post -> schoolName.equals(
+                        campusMap.get(post.getAuthorId()) != null
+                                ? campusMap.get(post.getAuthorId()).getCampusName()
+                                : null))
+                .toList();
+
+        // 内存分页切片（与原 20 条/页语义一致）
+        int pageSize = 20;
+        int from = Math.max(0, page) * pageSize;
+        if (from >= sameSchoolPosts.size()) {
+            return List.of();
+        }
+        List<Post> pagePosts = sameSchoolPosts.subList(from, Math.min(from + pageSize, sameSchoolPosts.size()));
+
+        // 批量预加载作者信息与基本资料，避免在循环中触发 N+1 查询
+        List<Long> pageAuthorIds = pagePosts.stream()
+                .map(Post::getAuthorId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, User> authorMap = batchLoadUsers(pageAuthorIds);
+        Map<Long, UserBasicProfile> basicProfileMap = userBasicProfileRepository
+                .findByUserIdIn(pageAuthorIds).stream()
+                .collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p, (a, b) -> a));
 
         List<PostSummaryView> result = new ArrayList<>();
-        for (Post post : postPage.getContent()) {
-            PostAuthorView author = getPostAuthorView(post.getAuthorId(), authorMap);
+        for (Post post : pagePosts) {
+            PostAuthorView author = getPostAuthorView(post.getAuthorId(), authorMap, campusMap, basicProfileMap);
             List<String> tags = parseJsonToList(post.getTags());
             String summary = truncate(post.getContent(), 120);
 
@@ -246,9 +291,15 @@ public class RealCampusService implements CampusService {
     @Override
     @Transactional(readOnly = true)
     public List<ActivityView> getCampusActivities(Long schoolId, int page) {
-        // 获取即将开始的活动
-        Page<Activity> activityPage = activityRepository.findByStatusOrderByActivityDateAsc(
-                ActivityStatus.upcoming, PageRequest.of(page, 20));
+        // P0-26 修复：原实现忽略 schoolId 直接返回全站活动。
+        // 活动表自带 campus_name（组织者发布时写入的校区），按学校名精确过滤，
+        // 与校区管理员管辖口径一致，只返回同校活动。
+        String schoolName = resolveSchoolName(schoolId);
+        if (schoolName == null || schoolName.isBlank()) {
+            return List.of();
+        }
+        Page<Activity> activityPage = activityRepository.findByCampusNameAndStatusOrderByActivityDateAsc(
+                schoolName, ActivityStatus.upcoming, PageRequest.of(page, 20));
 
         return activityPage.getContent().stream()
                 .map(activity -> new ActivityView(
@@ -437,26 +488,64 @@ public class RealCampusService implements CampusService {
         User author = userRepository.findById(authorId).orElse(null);
         String nickname = author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatarUrl = author != null ? author.getAvatarUrl() : null;
-
-        return new PostAuthorView(authorId, nickname, avatarUrl, "");
+        // P1-16：城市来自校园资料，年龄/学历来自基本资料（单条场景直接查询）
+        UserCampusProfile campusProfile = userCampusProfileRepository.findByUserId(authorId).orElse(null);
+        UserBasicProfile basicProfile = userBasicProfileRepository.findByUserId(authorId).orElse(null);
+        return buildPostAuthorView(authorId, nickname, avatarUrl, campusProfile, basicProfile);
     }
 
     /**
-     * 获取帖子作者视图（批量场景）。
+     * 获取帖子作者视图（同校流批量场景，P1-16）。
      *
-     * <p>Task 2.2.3：从预加载的 author Map 中按 authorId 取出 User 实体（O(1)，无 N+1 查询），
-     * Map 中不存在时按"未知用户"处理。</p>
+     * <p>从预加载的 author Map / campus Map / basicProfile Map 中取数（O(1)，无 N+1 查询），
+     * 三个 Map 均可能为空 Map，缺失时按"未知用户/空字段"处理。</p>
      *
-     * @param authorId   作者用户 ID
-     * @param authorMap authorId → User 实体的 Map（可能为空 Map）
+     * @param authorId          作者用户 ID
+     * @param authorMap         authorId → User 实体的 Map（可能为空 Map）
+     * @param campusMap         userId → UserCampusProfile 实体的 Map（可能为空 Map）
+     * @param basicProfileMap   userId → UserBasicProfile 实体的 Map（可能为空 Map）
      * @return 帖子作者视图
      */
-    private PostAuthorView getPostAuthorView(Long authorId, Map<Long, User> authorMap) {
+    private PostAuthorView getPostAuthorView(Long authorId, Map<Long, User> authorMap,
+                                             Map<Long, UserCampusProfile> campusMap,
+                                             Map<Long, UserBasicProfile> basicProfileMap) {
         User author = authorMap != null ? authorMap.get(authorId) : null;
         String nickname = author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
         String avatarUrl = author != null ? author.getAvatarUrl() : null;
+        UserCampusProfile campusProfile = campusMap != null ? campusMap.get(authorId) : null;
+        UserBasicProfile basicProfile = basicProfileMap != null ? basicProfileMap.get(authorId) : null;
+        return buildPostAuthorView(authorId, nickname, avatarUrl, campusProfile, basicProfile);
+    }
 
-        return new PostAuthorView(authorId, nickname, avatarUrl, "");
+    /**
+     * 组装作者视图（P1-16：age/city/education 扩展字段）。
+     *
+     * <p>age 由年级标签推导（见 {@link PostAuthorView#deriveAgeFromGradeLabel}），
+     * city 取自校园资料 city_name，education 取自基本资料 education_level。</p>
+     */
+    private PostAuthorView buildPostAuthorView(Long authorId, String nickname, String avatarUrl,
+                                               UserCampusProfile campusProfile,
+                                               UserBasicProfile basicProfile) {
+        String campusName = campusProfile != null && campusProfile.getCampusName() != null
+                ? campusProfile.getCampusName() : "";
+        String city = campusProfile != null ? campusProfile.getCityName() : null;
+        Integer age = basicProfile != null
+                ? PostAuthorView.deriveAgeFromGradeLabel(basicProfile.getGradeLabel()) : null;
+        String education = basicProfile != null ? basicProfile.getEducationLevel() : null;
+        return new PostAuthorView(authorId, nickname, avatarUrl, campusName, age, city, education);
+    }
+
+    /**
+     * 解析 schoolId → 校区名（P0-26 数据隔离辅助）。
+     *
+     * @param schoolId schools 表主键
+     * @return 校区全称；schoolId 为空或学校不存在时返回 null
+     */
+    private String resolveSchoolName(Long schoolId) {
+        if (schoolId == null) {
+            return null;
+        }
+        return schoolRepository.findById(schoolId).map(School::getName).orElse(null);
     }
 
     /**

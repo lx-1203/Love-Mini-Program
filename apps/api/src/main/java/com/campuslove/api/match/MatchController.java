@@ -193,14 +193,13 @@ public class MatchController {
    * 超级喜欢。
    * POST /api/matches/super-like
    *
-   * <p>缺陷修复：前端调用的该端点此前不存在（404）。语义为「超级喜欢」，
-   * 当前 {@code HeartSignal}/{@code Like} 实体尚无 superLike 字段，
-   * 因此实现为调用既有的 likeUser（右滑喜欢）逻辑，行为与普通喜欢一致；
-   * 若后续实体新增 superLike 字段，可在此处扩展标记逻辑。</p>
+   * <p>A-25/A-31：超级喜欢与普通喜欢行为区分——不受每日普通喜欢上限（30 次/日）限制，
+   * 双向喜欢生成的心动信号 matchType=super_like（权重更高语义，由上层按类型区分展示）。
+   * 实体无 superLike 列（不落库标记），通过信号匹配类型与行为差异表达。</p>
    */
   @PostMapping("/super-like")
   @PreAuthorize("hasRole('USER')")
-  @Operation(summary = "超级喜欢", description = "对目标用户执行超级喜欢。当前实现与普通喜欢一致（实体暂无 superLike 字段），若双向喜欢则生成 HeartSignal。", operationId = "superLikeUser")
+  @Operation(summary = "超级喜欢", description = "对目标用户执行超级喜欢。不受每日普通喜欢上限限制；若双向喜欢则生成 matchType=super_like 的 HeartSignal。", operationId = "superLikeUser")
   @io.swagger.v3.oas.annotations.responses.ApiResponses({
           @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "操作成功，data 为 HeartSignalView（如双向喜欢则非空）",
                   content = @Content(schema = @Schema(implementation = ApiResponse.class))),
@@ -218,7 +217,7 @@ public class MatchController {
     } catch (RuntimeException ignore) {
       // 监控逻辑失败忽略
     }
-    HeartSignalView result = matchService.likeUser(userId, request.targetUserId());
+    HeartSignalView result = matchService.superLikeUser(userId, request.targetUserId());
     if (result != null) {
       try {
         matchMetrics.recordMatchSuccess();
@@ -406,7 +405,9 @@ record MatchOptionView(String id, String label) {
 }
 
 record MatchRequest(
-    @NotNull @Positive Long userId,
+    // infra R2 修复：userId 已改为从 JWT 安全上下文获取（见 createMatch），
+    // 此处不再强制请求体携带，避免自相矛盾的校验（传了会被忽略，不传反而 400）
+    Long userId,
     @NotBlank @Size(max = 64) String matchIntent,
     List<String> topicIds,
     // infra R2-00220: doCreateMatch 未使用 timeWindow 字段，移除必填校验避免误导前端
@@ -416,7 +417,8 @@ record MatchRequest(
 }
 
 record QuickMatchRequest(
-    @NotNull @Positive Long userId,
+    // 同上：userId 从 JWT 获取，请求体无需也不应携带
+    Long userId,
     @Min(1) @Max(180) Integer durationMinutes
 ) {
 }

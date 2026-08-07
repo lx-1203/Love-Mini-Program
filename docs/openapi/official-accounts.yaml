@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: Campus Love - Official Accounts API
+  version: 1.0.0
+  description: |
+    Official account endpoints exposed by `OfficialAccountController`
+    (`/api/v1/official-accounts`). Two official accounts exist:
+    `official-assistant` (产品助手, system notices & help) and
+    `official-promoter` (活动运营, events & benefits). All endpoints
+    require a valid JWT bearer token.
+servers:
+  - url: /api/v1
+    description: Versioned API gateway prefix
+tags:
+  - name: official-accounts
+    description: Official account list and message streams
+paths:
+  /official-accounts:
+    get:
+      tags: [official-accounts]
+      summary: Get enabled official accounts
+      description: Returns the list of enabled official accounts ordered by sortOrder ascending.
+      operationId: getOfficialAccounts
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of official accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OfficialAccountView'
+              example:
+                - id: 1
+                  code: official-assistant
+                  name: 产品助手
+                  description: 系统通知 · 功能答疑
+                  iconUrl: ''
+                - id: 2
+                  code: official-promoter
+                  name: 活动运营
+                  description: 活动推送 · 福利通知
+                  iconUrl: ''
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /official-accounts/{code}/messages:
+    get:
+      tags: [official-accounts]
+      summary: Get message stream of an official account
+      description: |
+        Returns the message stream of an official account ordered by
+        publishedAt ascending. `text` messages carry only `content`;
+        `card` messages also carry card fields (title/desc/tag/targetUrl).
+        Unknown or disabled account codes return an empty list.
+      operationId: getOfficialAccountMessages
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+            maxLength: 32
+          description: Official account code (official-assistant / official-promoter)
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OfficialMessageView'
+              example:
+                - id: 101
+                  messageType: text
+                  content: 你好，我是产品助手 🤖
+                  cardTitle: null
+                  cardDesc: null
+                  cardTag: null
+                  cardTargetUrl: null
+                  publishedAt: '2026-08-03T08:00:00'
+                - id: 204
+                  messageType: card
+                  content: 在星空下认识心动的人，游戏与表白墙等你来解锁。
+                  cardTitle: 七夕特别企划：星空告白夜
+                  cardDesc: 在星空下认识心动的人，游戏与表白墙等你来解锁。
+                  cardTag: 七夕限定
+                  cardTargetUrl: /pages/activities/detail?id=qixi-2026
+                  publishedAt: '2026-08-06T08:00:00'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    OfficialAccountView:
+      type: object
+      required: [id, code, name]
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+          description: Unique official account code
+        name:
+          type: string
+          description: Display name (e.g. 产品助手)
+        description:
+          type: string
+          description: Short description
+        iconUrl:
+          type: string
+          description: Official icon URL (empty -> frontend fallback icon)
+    OfficialMessageView:
+      type: object
+      required: [id, messageType, content, publishedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        messageType:
+          type: string
+          enum: [text, card]
+        content:
+          type: string
+          description: Message body (card type -> subtitle text)
+        cardTitle:
+          type: string
+          nullable: true
+        cardDesc:
+          type: string
+          nullable: true
+        cardTag:
+          type: string
+          nullable: true
+        cardTargetUrl:
+          type: string
+          nullable: true
+          description: Activity card CTA target
+        publishedAt:
+          type: string
+          format: date-time
+  responses:
+    BadRequest:
+      description: Invalid request (validation failed)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+              message:
+                type: string
+              traceId:
+                type: string
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+              message:
+                type: string
+              traceId:
+                type: string
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+              message:
+                type: string
+              traceId:
+                type: string

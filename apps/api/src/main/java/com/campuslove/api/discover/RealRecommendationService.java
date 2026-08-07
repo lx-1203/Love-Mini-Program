@@ -15,6 +15,7 @@ import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
+import com.campuslove.api.growth.RecommendQuotaService;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -26,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -64,6 +64,14 @@ public class RealRecommendationService implements RecommendationService {
      * 为兼容既有单元测试（直接 new 构造器），可为 null：null 时回退实体读-改-写。
      */
     private final EntityManager entityManager;
+
+    /**
+     * 每日推荐配额服务（P0-24：签到赠送配额 + 基础额度联动扣减）。
+     * real profile 由 Spring 注入；单元测试 / mock 场景为 null 时跳过配额限制。
+     * 采用字段注入（required=false）而非构造器参数，避免破坏既有单测构造器。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private RecommendQuotaService recommendQuotaService;
 
     @org.springframework.beans.factory.annotation.Autowired
     public RealRecommendationService(
@@ -366,10 +374,19 @@ public class RealRecommendationService implements RecommendationService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = CacheNames.MATCH_RECOMMEND, key = "#userId")
     public List<RecommendedPersonView> getRecommendations(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
+        }
+        // P0-20 修复：去除此处与外层 RecommendationCacheManager.getCachedRecommendations
+        // 的双重 @Cacheable 冗余。有效缓存层保留在 RecommendationCacheManager（带
+        // unless 空结果保护 + 主动失效方法），此处仅做委托，避免同键嵌套缓存。
+        //
+        // P0-24 修复：推荐配额消费——每次拉取按次扣减（签到赠送的额外配额与基础
+        // 额度联动，见 RecommendQuotaService）。配额用尽返回空列表（前端已有空态
+        // 兜底）；服务未注入（单元测试 / mock 场景）时跳过配额限制。
+        if (recommendQuotaService != null && !recommendQuotaService.tryConsume(userId)) {
+            return List.of();
         }
         return cacheManager.getCachedRecommendations(userId);
     }

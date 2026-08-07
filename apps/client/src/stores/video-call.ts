@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { request } from "../services/http";
+import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
@@ -81,8 +82,6 @@ export interface VideoCallRecordView {
 export interface StartCallPayload {
   /** 被叫用户 ID */
   calleeId: number;
-  /** 关联聊天会话 ID（可选，用于消息流上下文） */
-  chatId?: string;
 }
 
 /** 发起通话响应（含房间号与房间临时 token） */
@@ -96,12 +95,38 @@ export interface StartCallResult {
 
 /** 结束通话请求体 */
 export interface EndCallPayload {
-  /** 通话 ID */
-  callId: number;
-  /** 结束原因 */
+  /** 通话房间 ID（后端 EndCallRequest.roomId） */
+  roomId: string;
+  /** 结束原因（客户端语义：HANGUP / REJECTED / TIMEOUT / ERROR） */
   endReason: VideoCallEndReason;
   /** 实际通话时长（秒，仅在 ONGOING -> ENDED 时填充） */
   durationSec?: number;
+}
+
+/**
+ * 将客户端结束原因映射为后端 EndCallRequest.endReason 枚举值。
+ *
+ * 修复（P0-09）：后端仅接受 CALLER_HANGUP / CALLEE_HANGUP / TIMEOUT / NETWORK_ERROR，
+ * 客户端原 HANGUP / REJECTED / ERROR 枚举不在白名单内（400）。
+ * - HANGUP：发起方挂断 → CALLER_HANGUP；被叫方挂断 → CALLEE_HANGUP
+ * - REJECTED：被叫方拒接 → CALLEE_HANGUP
+ * - TIMEOUT：超时未接听，保持 TIMEOUT
+ * - ERROR：网络/异常中断 → NETWORK_ERROR
+ *
+ * @param reason 客户端结束原因
+ * @param isCaller 当前用户是否为发起方（HANGUP 分支区分 CALLER/CALLEE 用）
+ */
+function mapEndReason(reason: VideoCallEndReason, isCaller: boolean): string {
+  switch (reason) {
+    case "HANGUP":
+      return isCaller ? "CALLER_HANGUP" : "CALLEE_HANGUP";
+    case "REJECTED":
+      return "CALLEE_HANGUP";
+    case "TIMEOUT":
+      return "TIMEOUT";
+    case "ERROR":
+      return "NETWORK_ERROR";
+  }
 }
 
 /**
@@ -211,7 +236,7 @@ export const useVideoCallStore = defineStore("video-call", () => {
    * @returns 更新后的通话视图
    */
   async function endCall(payload: EndCallPayload): Promise<VideoCallView> {
-    if (!payload.callId || payload.callId <= 0) {
+    if (!payload.roomId || payload.roomId.trim().length === 0) {
       throw new Error(t("storeErrors.videoCall.callIdInvalid"));
     }
     if (ending.value) {
@@ -233,10 +258,20 @@ export const useVideoCallStore = defineStore("video-call", () => {
 
     ending.value = true;
     try {
-      const result = await request<VideoCallView, EndCallPayload>({
+      // 修复（P0-09）：请求体对齐后端 EndCallRequest{ roomId, endReason }，
+      // 不再发送 callId/durationSec；endReason 映射为后端枚举
+      const sessionStore = useSessionStore();
+      const currentUserId = sessionStore.userSession?.userId ?? "";
+      const isCaller =
+        currentCall.value?.callerId != null &&
+        String(currentCall.value.callerId) === currentUserId;
+      const result = await request<VideoCallView, { roomId: string; endReason: string }>({
         url: "/chat/video-call/end",
         method: "POST",
-        data: payload,
+        data: {
+          roomId: payload.roomId,
+          endReason: mapEndReason(payload.endReason, isCaller),
+        },
       });
       currentCall.value = result;
       return result;

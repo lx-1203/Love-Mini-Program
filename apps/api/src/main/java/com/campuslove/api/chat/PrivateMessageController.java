@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import com.campuslove.api.ratelimit.RateLimit;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -122,6 +123,23 @@ public class PrivateMessageController {
             @RequestParam boolean pinned) {
         Long userId = SecurityUtils.getCurrentUserId();
         privateMessageService.pinConversation(conversationId, pinned, userId);
+        return ApiResponse.ok(null);
+    }
+
+    // ---- M-06/P0-07：删除会话 ----
+
+    /**
+     * 删除会话及其全部消息。
+     * DELETE /api/messages/conversations/{id}
+     *
+     * <p>仅会话参与者可操作（服务层校验归属，防 IDOR）；
+     * 删除后双方会话均不可见，消息一并清理。</p>
+     */
+    @DeleteMapping("/conversations/{id}")
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<Void> deleteConversation(@PathVariable("id") @Positive Long conversationId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        privateMessageService.deleteConversation(conversationId, userId);
         return ApiResponse.ok(null);
     }
 }

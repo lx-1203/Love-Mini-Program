@@ -115,7 +115,7 @@ npm run client:dev:h5
 
 # 终端 3（可选）：Admin 后台
 cd apps/admin && pnpm install && pnpm dev
-# 浏览器访问 http://localhost:5180
+# 浏览器访问 http://localhost:5177
 ```
 
 ### 启动（Real 模式，接入真实后端）
@@ -184,7 +184,7 @@ npm --workspace apps/client run test:e2e            # Playwright 端到端测试
 ```bash
 cd apps/admin
 pnpm install
-pnpm dev          # 开发（http://localhost:5180）
+pnpm dev          # 开发（http://localhost:5177）
 pnpm build        # 生产构建（含 vue-tsc 类型检查）
 pnpm typecheck    # 仅类型检查
 pnpm test:unit    # vitest 单元测试

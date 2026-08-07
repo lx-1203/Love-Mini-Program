@@ -5,10 +5,10 @@
  * 每个 Tab 页必须在 onShow 中调用 getTabBar().setData({ selected: N })
  * 来告知 TabBar 组件当前选中的是哪个 tab，否则图标和选中状态不会更新。
  *
- * 用法：
- *   useTabBar(0);  // 在 pages/discover/index.vue 中
- *   useTabBar(1);  // 在 pages/village/index.vue 中
- *   useTabBar(2);  // 在 pages/home/index.vue 中
+ * 用法（tab 顺序：首页、匹配、圈子、消息、我的）：
+ *   useTabBar(0);  // 在 pages/home/index.vue 中
+ *   useTabBar(1);  // 在 pages/discover/index.vue 中
+ *   useTabBar(2);  // 在 pages/village/index.vue 中
  *   useTabBar(3);  // 在 pages/chat/index.vue 中
  *   useTabBar(4);  // 在 pages/profile/index.vue 中
  */

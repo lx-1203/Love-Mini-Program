@@ -180,7 +180,7 @@ pnpm install
 pnpm dev
 ```
 
-Admin 后台将在 http://localhost:5180 启动。
+Admin 后台将在 http://localhost:5177 启动。
 
 ## 微信小程序构建
 
@@ -320,7 +320,7 @@ docker compose exec backup /backup.sh
 | `mysql` | `mysql:8.0` | `${MYSQL_PORT:-3306}` | 3306 | 默认 | `mysqladmin ping` (10s/5s/10次/start 30s) | json-file (10m×5) |
 | `redis` | `redis:7-alpine` | `${REDIS_PORT:-6379}` | 6379 | 默认 | `redis-cli ping` (10s/5s/5次/start 10s) | json-file (10m×5) |
 | `api` | `campus-love/api:${TAG:-dev}` | `${API_PORT:-8080}` | 8080 | 默认 | `curl /actuator/health` (30s/5s/5次/start 90s) | json-file (10m×5) |
-| `admin` | `campus-love/admin:${TAG:-dev}` | `${ADMIN_PORT:-5180}` | 8080 | 默认 | `curl /healthz` (30s/5s/3次/start 10s) | json-file (10m×5) |
+| `admin` | `campus-love/admin:${TAG:-dev}` | `${ADMIN_PORT:-5177}` | 8080 | 默认 | `curl /healthz` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `client` | `nginx:1.27-alpine` | `${CLIENT_PORT:-5173}` | 80 | `client-h5` | `wget /` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `prometheus` | `prom/prometheus:v2.55.0` | `${PROMETHEUS_PORT:-9090}` | 9090 | 默认 | `wget /-/healthy` (30s/5s/3次) | json-file (10m×5) |
 | `grafana` | `grafana/grafana:11.3.0` | `${GRAFANA_PORT:-3001}` | 3000 | 默认 | `wget /api/health` (30s/5s/3次/start 30s) | json-file (10m×5) |
@@ -357,7 +357,7 @@ docker compose exec backup /backup.sh
 | `JWT_EXPIRATION_MS` | - | `86400000` | JWT 有效期（毫秒） | api |
 | `WECHAT_APPID` | - | - | 微信小程序 AppID | api |
 | `WECHAT_SECRET` | - | - | 微信小程序 AppSecret | api |
-| `CORS_ALLOWED_ORIGINS` | - | `https://www.campuslove.example.com,https://admin.campuslove.example.com,localhost:5173/5174/5180` | CORS 白名单 | api |
+| `CORS_ALLOWED_ORIGINS` | - | `https://www.campuslove.example.com,https://admin.campuslove.example.com,localhost:5173/5174/5177` | CORS 白名单 | api |
 | `AGNES_API_KEY` | - | - | Agnes AI 服务密钥 | api |
 | `AGNES_API_BASE` | - | `https://api.agnes-ai.com/api` | Agnes AI 服务地址 | api |
 | `AGNES_TIMEOUT_MS` | - | `30000` | Agnes AI 超时 | api |
@@ -366,7 +366,7 @@ docker compose exec backup /backup.sh
 | `ADMIN_INITIAL_PASSWORD_HASH` | - | - | 管理员初始密码 BCrypt 哈希 | api |
 | `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` | - | 默认 guest | RabbitMQ 连接（可选） | api |
 | `API_PORT` | - | `8080` | API 宿主机端口 | api |
-| `ADMIN_PORT` | - | `5180` | Admin 宿主机端口 | admin |
+| `ADMIN_PORT` | - | `5177` | Admin 宿主机端口 | admin |
 | `CLIENT_PORT` | - | `5173` | Client H5 宿主机端口 | client |
 | `GRAFANA_ADMIN_USER` | - | `admin` | Grafana 管理员账号 | grafana |
 | `GRAFANA_ADMIN_PASSWORD` | ✅ | - | Grafana 管理员密码 | grafana |
@@ -683,7 +683,7 @@ server {
     # deny  all;
 
     location / {
-        proxy_pass http://127.0.0.1:5180/;
+        proxy_pass http://127.0.0.1:5177/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -691,7 +691,7 @@ server {
 }
 ```
 
-> 容器内的 `apps/admin/docker/nginx.conf` 与 `docker/client-nginx.conf` 已配置 SPA fallback、gzip、安全响应头、`/api/` 反代；外层 Nginx 仅负责 SSL 终止与域名路由，将流量转发到对应宿主机端口（8080/5180/5173）。
+> 容器内的 `apps/admin/docker/nginx.conf` 与 `docker/client-nginx.conf` 已配置 SPA fallback、gzip、安全响应头、`/api/` 反代；外层 Nginx 仅负责 SSL 终止与域名路由，将流量转发到对应宿主机端口（8080/5177/5173）。
 
 ## Nginx 配置
 

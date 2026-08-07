@@ -8,6 +8,75 @@
 import { ref, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { IMAGE_PATHS } from "../../config/images";
+// 2026-08-07 超级测试账号体系：dev 页一键登录 / 会员身份切换
+import { loginWithPhone } from "../../services/auth";
+import { useSessionStore } from "../../stores/session";
+import { replaceAppPath } from "../../utils/navigation";
+
+const sessionStore = useSessionStore();
+
+/** 超级测试账号凭据（与后端种子 V2026.08.07.0004 一致：userId=100000） */
+const SUPER_ACCOUNT_PHONE = "19900000000";
+const SUPER_ACCOUNT_PASSWORD = "Admin@12345";
+
+/** 超级账号登录中 */
+const superLoginBusy = ref(false);
+
+/**
+ * 一键登录超级测试账号（手机号 + 密码）。
+ * 登录成功跳转寻觅页；登录态恢复由 session guard 完成。
+ */
+async function loginSuperAccount() {
+  if (superLoginBusy.value) return;
+  superLoginBusy.value = true;
+  try {
+    await loginWithPhone(SUPER_ACCOUNT_PHONE, SUPER_ACCOUNT_PASSWORD);
+    uni.showToast({ title: "超级账号登录成功", icon: "success" });
+    setTimeout(() => {
+      replaceAppPath("/pages/discover/index");
+    }, 800);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "登录失败";
+    uni.showToast({ title: message, icon: "none" });
+  } finally {
+    superLoginBusy.value = false;
+  }
+}
+
+/** 会员身份模拟开关（dev 页切换，vip store 读取） */
+const devVipSim = ref(false);
+const VIP_SIM_KEY = "campus-love:dev-vip-sim";
+
+/** 读取当前会员模拟状态 */
+function loadVipSim() {
+  try {
+    devVipSim.value = uni.getStorageSync(VIP_SIM_KEY) === "1";
+  } catch (_e) {
+    devVipSim.value = false;
+  }
+}
+
+/** 切换会员身份模拟（即时生效） */
+function toggleVipSim() {
+  devVipSim.value = !devVipSim.value;
+  try {
+    uni.setStorageSync(VIP_SIM_KEY, devVipSim.value ? "1" : "0");
+  } catch (_e) {
+    // 存储失败不影响本次会话
+  }
+  uni.showToast({
+    title: devVipSim.value ? "已模拟会员身份（解锁全开）" : "已恢复普通用户身份",
+    icon: "none",
+  });
+}
+
+/** 是否为超级测试账号（当前会话） */
+const isSuperLoggedIn = ref(false);
+function refreshSuperState() {
+  isSuperLoggedIn.value = sessionStore.isSuperTestAccount;
+  loadVipSim();
+}
+void refreshSuperState;
 
 interface PageItem {
   path: string;
@@ -22,6 +91,8 @@ let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
 
 onShow(() => {
   pageVisible.value = false;
+  // 2026-08-07 超级测试账号：刷新登录态与会员模拟状态
+  refreshSuperState();
   if (pageEnterTimer) clearTimeout(pageEnterTimer);
   pageEnterTimer = setTimeout(() => {
     pageEnterTimer = null;
@@ -56,7 +127,6 @@ const pages: PageItem[] = [
   { path: "/pages/circles/topic-detail", title: "话题详情", group: "主包" },
   { path: "/pages/circles/post-topic", title: "发布话题", group: "主包" },
   { path: "/pages/daily-question/index", title: "每日一问", group: "主包" },
-  { path: "/pages/chat/index", title: "聊天", group: "主包" },
   { path: "/pages/chat-session/index", title: "会话", group: "主包" },
   // 子包页面
   { path: "/subpackages/setup/profile/index", title: "基础资料", group: "设置子包" },
@@ -108,6 +178,35 @@ function goBack() {
       <view class="dev-notice__row">
         <image class="dev-notice__icon" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" alt="" />
         <text class="dev-notice__text">开发者模式 - 仅用于测试，上线前删除</text>
+      </view>
+    </view>
+
+    <!-- 2026-08-07 超级测试账号体系：一键登录 / 会员身份切换 -->
+    <view class="dev-group">
+      <text class="dev-group__title">超级测试账号</text>
+      <view class="dev-group__list" role="list">
+        <view
+          class="dev-item list-item"
+          role="button"
+          @tap="loginSuperAccount"
+        >
+          <view class="dev-item__left">
+            <text class="dev-item__title">{{ isSuperLoggedIn ? '已登录超级账号' : '一键登录超级测试账号' }}</text>
+            <text class="dev-item__path">{{ SUPER_ACCOUNT_PHONE }} / Admin@12345</text>
+          </view>
+          <text class="dev-item__arrow">{{ superLoginBusy ? '…' : '→' }}</text>
+        </view>
+        <view
+          class="dev-item list-item"
+          role="button"
+          @tap="toggleVipSim"
+        >
+          <view class="dev-item__left">
+            <text class="dev-item__title">{{ devVipSim ? '当前：会员身份（解锁全开）' : '当前：普通用户身份' }}</text>
+            <text class="dev-item__path">点击切换 会员/普通 身份（模拟前端展示效果）</text>
+          </view>
+          <text class="dev-item__arrow">→</text>
+        </view>
       </view>
     </view>
 

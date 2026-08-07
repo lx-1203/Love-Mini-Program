@@ -1,16 +1,17 @@
 /**
- * 管理后台 API 请求工具。
+ * Admin v2 API 请求工具（复制自旧后台 apps/admin，token key 改为 admin_v2_token）。
+ *
  * 封装 fetch，统一处理：
  *  - API base URL（来自 VITE_API_BASE_URL 环境变量，回退到 /api，由 vite proxy 转发到后端）
- *  - JWT token（从 localStorage.admin_token 读取）
+ *  - JWT token（从 localStorage.admin_v2_token 读取，与旧后台 admin_token 隔离）
  *  - JSON 序列化/反序列化
  *  - 查询参数序列化
- *  - 401 自动登出并跳转登录页（Task 14：携带 redirect 参数便于回跳）
+ *  - 401 自动登出并跳转登录页（携带 redirect 参数便于回跳）
  *  - 错误响应处理
  *
  * 安全说明（infra R2-00300）：
- * JWT 目前明文存储于 localStorage（admin_token），任何 XSS（如评论/帖子内容注入）
- * 均可窃取管理员令牌。改进方向（需后端协同）：
+ * JWT 目前明文存储于 localStorage（admin_v2_token），任何 XSS 均可窃取管理员令牌。
+ * 改进方向（需后端协同）：
  *   1. 迁移 HttpOnly Cookie + CSRF 防护；
  *   2. 或缩短 token 有效期并引入刷新机制；
  *   3. 至少应限制 token 作用域（audience）与来源站点（sameSite）。
@@ -64,21 +65,18 @@ export class ApiError extends Error {
   }
 }
 
-/** API 基础 URL：统一通过 config/env.ts 封装读取（Task 5：移除 import.meta.env 直接引用） */
+/** API 基础 URL：统一通过 config/env.ts 封装读取 */
 export const API_BASE_URL = env.apiBaseUrl;
 
 /**
  * 常规请求超时时间（毫秒）。
- *
- * 修复 FIN-00873~00883：所有 API 模块共用此超时，
- * 通过 AbortController 中止慢请求，避免页面长时间挂起。
+ * 所有 API 模块共用此超时，通过 AbortController 中止慢请求，避免页面长时间挂起。
  */
 export const REQUEST_TIMEOUT_MS = 15000;
 
 /**
  * 长耗时操作（批量导入/导出类）超时时间（毫秒）。
- *
- * infra R2-00301：默认 15s 对批量导入/导出类慢操作偏短，
+ * 默认 15s 对批量导入/导出类慢操作偏短，
  * 需要长超时的调用方显式传入该值（见 request 的 timeout 参数）。
  */
 export const LONG_REQUEST_TIMEOUT_MS = 120000;
@@ -88,7 +86,7 @@ export const LONG_REQUEST_TIMEOUT_MS = 120000;
  * @returns JWT token 字符串，未登录时返回空字符串
  */
 function getToken(): string {
-  return localStorage.getItem("admin_token") || "";
+  return localStorage.getItem("admin_v2_token") || "";
 }
 
 /**
@@ -169,7 +167,7 @@ export async function post<T>(path: string, body?: unknown, timeout?: number): P
 }
 
 /**
- * infra R2-00303：401 跳转收敛标志。
+ * 401 跳转收敛标志。
  * 并发多个请求同时收到 401 时，只触发一次整页跳转。
  */
 let redirecting = false;
@@ -199,7 +197,7 @@ async function request<T>(path: string, init: RequestInit, timeout: number = REQ
       signal: controller.signal,
     });
   } catch (err) {
-    // 区分超时中止与其他网络错误（文案走 i18n，infra R2-00302）
+    // 区分超时中止与其他网络错误（文案走 i18n）
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new ApiError(408, t("errors.network"));
     }
@@ -209,13 +207,12 @@ async function request<T>(path: string, init: RequestInit, timeout: number = REQ
   }
 
   // 401 未授权：清除本地凭据并跳转登录页
-  // 与 session.ts 中的 localStorage key 保持一致：admin_token / admin_user
-  // Task 14：携带 redirect 参数，便于登录后回跳到当前被拦截的页面
-  // infra R2-00303：并发 401 会触发多次整页跳转（丢失 SPA 状态），
-  // 通过模块级 redirecting 标志收敛为一次跳转（1s 窗口内只跳一次）。
+  // 与 session.ts 中的 localStorage key 保持一致：admin_v2_token / admin_v2_user
+  // 携带 redirect 参数，便于登录后回跳到当前被拦截的页面；
+  // 通过模块级 redirecting 标志收敛并发 401 为一次跳转（1s 窗口内只跳一次）。
   if (response.status === 401) {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_user");
+    localStorage.removeItem("admin_v2_token");
+    localStorage.removeItem("admin_v2_user");
     if (typeof window !== "undefined" && window.location.pathname !== "/login") {
       if (!redirecting) {
         redirecting = true;
@@ -236,15 +233,14 @@ async function request<T>(path: string, init: RequestInit, timeout: number = REQ
     try {
       body = await response.json();
       if (body && typeof body === "object" && "message" in body) {
-        // infra R2-00304：后端 message 为 null/空串时兜底，避免展示 "null" 脏文案
+        // 后端 message 为 null/空串时兜底，避免展示 "null" 脏文案
         const raw = (body as { message: unknown }).message;
         message = raw == null || String(raw).trim() === "" ? "" : String(raw);
       }
     } catch {
       // 非 JSON 错误响应，message 保持空串，走下方状态码映射
     }
-    // infra R2-00305：错误码映射——后端未返回可读 message 时，
-    // 按 HTTP 状态码翻译为用户可读文案（errors.* 已备），而非直出裸状态码。
+    // 错误码映射：后端未返回可读 message 时，按 HTTP 状态码翻译为用户可读文案
     if (!message) {
       if (response.status >= 500) {
         message = t("errors.server");
@@ -271,11 +267,10 @@ async function request<T>(path: string, init: RequestInit, timeout: number = REQ
   if (!text) {
     return null as T;
   }
-  // 修复：JSON.parse 包 try/catch，后端返回非 JSON 内容时给出可读错误而非抛出 SyntaxError
+  // JSON.parse 包 try/catch，后端返回非 JSON 内容时给出可读错误而非抛出 SyntaxError
   try {
     return JSON.parse(text) as T;
   } catch {
-    // infra R2-00306：解析失败文案走 i18n
     throw new ApiError(response.status, t("errors.unknown"), text);
   }
 }

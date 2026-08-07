@@ -265,6 +265,13 @@ interface UploadResponse {
 - 订阅 topic：`/user/queue/messages`、`/user/queue/notifications`
 - 发送 topic：`/app/chat.send`
 
+### 3.6.1 官方号域（Official Account）
+
+| Method | Path | 鉴权 | 描述 |
+|--------|------|------|------|
+| GET | `/api/v1/official-accounts` | ✅ | 启用官方号列表（产品助手号/活动运营号，按 sortOrder 升序） |
+| GET | `/api/v1/official-accounts/{code}/messages` | ✅ | 官方号消息流（发布时间升序；text 文本 / card 活动卡片，含 CTA） |
+
 ### 3.7 校园域（Campus）
 
 | Method | Path | 鉴权 | 描述 |
@@ -289,6 +296,8 @@ interface UploadResponse {
 | POST | `/api/v1/village/posts/{id}/share` | ✅ | 分享 |
 | POST | `/api/v1/village/posts/{id}/report` | ✅ | 举报 |
 | GET | `/api/v1/village/tags/popular` | ✅ | 热门标签 |
+| GET | `/api/v1/post-tags/popular?limit=5` | ✅ | 热门话题（标签聚合，含帖子数与封面图） |
+| GET | `/api/v1/post-tags/posts?tagName=&page=&size=` | ✅ | 按话题标签查询帖子 |
 
 ### 3.9 圈子域（Circle）
 
@@ -393,33 +402,166 @@ interface UploadResponse {
 
 ### 3.20 管理端（Admin）
 
-> 所有 `/api/v1/admin/**` 接口要求 `@PreAuthorize("hasRole('ADMIN')")`，并经 `AdminPermissionAspect` 切面二次校验。
+> 所有 `/api/v1/admin/**` 接口要求登录且类级 `@PreAuthorize("hasRole('ADMIN')")`，
+> 并经 `AdminPermissionAspect` 切面二次校验；表中标注「仅 SUPER_ADMIN」的写操作
+> 额外要求全局超级管理员角色（ADMIN=校区管理员，SUPER_ADMIN=全局超级管理员）。
+> 本表按 `apps/api/src/main/java/com/campuslove/api/admin/` 下 27 个 Controller
+> 的真实路由重建，旧契约中已不存在的端点见表后说明。
 
-| Method | Path | 描述 |
-|--------|------|------|
-| GET | `/api/v1/admin/users` | 用户列表（分页+搜索） |
-| PUT | `/api/v1/admin/users/{id}` | 更新用户（封禁/解禁/调级） |
-| GET | `/api/v1/admin/posts` | 帖子审核列表 |
-| PUT | `/api/v1/admin/posts/{id}/audit` | 审核帖子 |
-| GET | `/api/v1/admin/comments` | 评论列表 |
-| DELETE | `/api/v1/admin/comments/{id}` | 删除评论 |
-| GET | `/api/v1/admin/reports` | 举报列表 |
-| PUT | `/api/v1/admin/reports/{id}/handle` | 处理举报 |
-| GET | `/api/v1/admin/feedback` | 反馈列表 |
-| GET | `/api/v1/admin/audit-logs` | 审计日志 |
-| GET | `/api/v1/admin/stats/dashboard` | 仪表盘统计 |
-| GET | `/api/v1/admin/stats/users` | 用户统计 |
-| GET | `/api/v1/admin/stats/matches` | 匹配统计 |
-| GET | `/api/v1/admin/configs` | 系统配置 |
-| PUT | `/api/v1/admin/configs` | 更新配置 |
-| GET | `/api/v1/admin/match-config` | 匹配配置 |
-| PUT | `/api/v1/admin/match-config` | 更新匹配配置 |
-| GET | `/api/v1/admin/notify-config` | 通知配置 |
-| PUT | `/api/v1/admin/notify-config` | 更新通知配置 |
-| GET | `/api/v1/admin/sensitive-words` | 敏感词列表 |
-| POST | `/api/v1/admin/sensitive-words/import` | 导入敏感词 |
-| GET | `/api/v1/admin/certifications` | 认证审核列表 |
-| PUT | `/api/v1/admin/certifications/{id}/audit` | 审核认证 |
+#### 账号与会话
+
+| Method | Path | 权限 | 描述 |
+|--------|------|------|------|
+| POST | `/api/v1/admin/account/change-password` | 仅 SUPER_ADMIN | 管理员修改密码 |
+| GET | `/api/v1/admin/online-users` | 仅 SUPER_ADMIN | 在线用户列表 |
+| POST | `/api/v1/admin/online-users/{userId}/kick` | 仅 SUPER_ADMIN | 强制下线用户 |
+
+#### 用户与内容
+
+| Method | Path | 权限 | 描述 |
+|--------|------|------|------|
+| GET | `/api/v1/admin/users` | ADMIN | 用户列表（分页+搜索，校区管理员自动按管辖校区过滤） |
+| POST | `/api/v1/admin/users` | 仅 SUPER_ADMIN | 新增用户 |
+| GET | `/api/v1/admin/users/{id}` | ADMIN | 用户详情 |
+| PUT | `/api/v1/admin/users/{id}` | ADMIN | 编辑用户（昵称等） |
+| POST | `/api/v1/admin/users/{id}/disable` | ADMIN | 禁用用户 |
+| POST | `/api/v1/admin/users/{id}/enable` | ADMIN | 启用用户 |
+| GET | `/api/v1/admin/users/admins` | 仅 SUPER_ADMIN | 管理员列表（含管辖校区） |
+| POST | `/api/v1/admin/users/admins` | 仅 SUPER_ADMIN | 创建管理员（校区管理员绑定高校） |
+| GET | `/api/v1/admin/certifications` | ADMIN | 认证审核列表 |
+| POST | `/api/v1/admin/certifications/{id}/review` | ADMIN | 审核认证（通过/拒绝） |
+| GET | `/api/v1/admin/reports` | ADMIN | 举报列表 |
+| POST | `/api/v1/admin/reports/{id}/handle` | ADMIN | 处理举报 |
+| GET | `/api/v1/admin/feedback` | ADMIN | 反馈列表 |
+| PUT | `/api/v1/admin/feedback/{id}/reply` | ADMIN | 回复反馈 |
+| POST | `/api/v1/admin/activity-proposals/{id}/convert` | ADMIN | 活动提案转活动 |
+| GET | `/api/v1/admin/sensitive-words` | ADMIN | 敏感词列表 |
+| POST | `/api/v1/admin/sensitive-words` | 仅 SUPER_ADMIN | 新增敏感词 |
+| POST | `/api/v1/admin/sensitive-words/batch-import` | 仅 SUPER_ADMIN | 批量异步导入敏感词（返回受理结果） |
+| DELETE | `/api/v1/admin/sensitive-words/{id}` | 仅 SUPER_ADMIN | 删除敏感词 |
+
+#### 论坛
+
+| Method | Path | 权限 | 描述 |
+|--------|------|------|------|
+| GET | `/api/v1/admin/forum/village-posts` | ADMIN | 村落动态列表 |
+| GET | `/api/v1/admin/forum/village-posts/{id}` | ADMIN | 村落动态详情 |
+| POST | `/api/v1/admin/forum/village-posts/{id}/audit` | ADMIN | 审核村落动态 |
+| POST | `/api/v1/admin/forum/village-posts/{id}/pin` | ADMIN | 置顶村落动态 |
+| POST | `/api/v1/admin/forum/village-posts/{id}/unpin` | ADMIN | 取消置顶 |
+| DELETE | `/api/v1/admin/forum/village-posts/{id}` | ADMIN | 删除村落动态 |
+| GET | `/api/v1/admin/forum/village-posts/{id}/comments` | ADMIN | 动态评论列表 |
+| GET | `/api/v1/admin/forum/circles` | ADMIN | 兴趣圈列表 |
+| POST | `/api/v1/admin/forum/circles` | ADMIN | 新增兴趣圈 |
+| PUT | `/api/v1/admin/forum/circles/{id}` | ADMIN | 编辑兴趣圈 |
+| DELETE | `/api/v1/admin/forum/circles/{id}` | ADMIN | 删除兴趣圈 |
+| GET | `/api/v1/admin/forum/circles/{id}/topics` | ADMIN | 圈内话题列表 |
+| POST | `/api/v1/admin/forum/circles/topics/{id}/pin` | ADMIN | 置顶圈内话题 |
+| POST | `/api/v1/admin/forum/circles/topics/{id}/unpin` | ADMIN | 取消置顶圈内话题 |
+| DELETE | `/api/v1/admin/forum/circles/topics/{id}` | ADMIN | 删除圈内话题 |
+| GET | `/api/v1/admin/forum/campus-topics` | ADMIN | 校园圈话题列表 |
+| POST | `/api/v1/admin/forum/campus-topics/{id}/audit` | ADMIN | 审核校园圈话题 |
+| DELETE | `/api/v1/admin/forum/campus-topics/{id}` | ADMIN | 删除校园圈话题 |
+| GET | `/api/v1/admin/posts` | ADMIN | 帖子审核列表 |
+| POST | `/api/v1/admin/posts/{id}/audit` | ADMIN | 审核帖子 |
+| DELETE | `/api/v1/admin/posts/{id}` | ADMIN | 删除帖子 |
+| GET | `/api/v1/admin/comments` | ADMIN | 评论列表 |
+| DELETE | `/api/v1/admin/comments/{id}` | ADMIN | 删除评论 |
+
+#### 活动
+
+| Method | Path | 权限 | 描述 |
+|--------|------|------|------|
+| GET | `/api/v1/admin/activities` | ADMIN | 活动列表（分页+筛选） |
+| GET | `/api/v1/admin/activities/{id}` | ADMIN | 活动详情 |
+| POST | `/api/v1/admin/activities` | ADMIN | 新增活动 |
+| PUT | `/api/v1/admin/activities/{id}` | ADMIN | 编辑活动 |
+| DELETE | `/api/v1/admin/activities/{id}` | ADMIN | 删除活动（报名记录一并清除） |
+| POST | `/api/v1/admin/activities/{id}/publish` | ADMIN | 上架活动 |
+| POST | `/api/v1/admin/activities/{id}/unpublish` | ADMIN | 下架活动 |
+| GET | `/api/v1/admin/activities/{id}/enrollments` | ADMIN | 报名列表 |
+| GET | `/api/v1/admin/activities/{id}/enrollments/export` | ADMIN | 报名 CSV 导出 |
+
+#### 商业运营
+
+| Method | Path | 权限 | 描述 |
+|--------|------|------|------|
+| GET | `/api/v1/admin/business/vip/bills` | ADMIN | VIP 账单列表 |
+| GET | `/api/v1/admin/business/vip/bills/{id}` | ADMIN | VIP 账单详情 |
+| GET | `/api/v1/admin/business/vip/red-packets` | ADMIN | 红包列表 |
+| GET | `/api/v1/admin/business/promo-codes` | ADMIN | 兑换码列表 |
+| POST | `/api/v1/admin/business/promo-codes/batch` | ADMIN | 批量生成兑换码 |
+| POST | `/api/v1/admin/business/promo-codes/{id}/disable` | ADMIN | 作废兑换码 |
+| GET | `/api/v1/admin/business/promo-codes/export` | ADMIN | 兑换码 CSV 导出 |
+| GET | `/api/v1/admin/business/wallets` | ADMIN | 钱包列表 |
+| GET | `/api/v1/admin/business/wallets/transactions` | ADMIN | 钱包流水 |
+| POST | `/api/v1/admin/business/wallets/{userId}/adjust` | ADMIN | 钱包余额调整 |
+| GET | `/api/v1/admin/business/coins` | ADMIN | 金币列表 |
+| GET | `/api/v1/admin/business/shop` | ADMIN | 商城商品列表 |
+| POST | `/api/v1/admin/business/shop` | ADMIN | 新增商品 |
+| PUT | `/api/v1/admin/business/shop/{id}` | ADMIN | 编辑商品 |
+| POST | `/api/v1/admin/business/shop/{id}/publish` | ADMIN | 上架商品 |
+| POST | `/api/v1/admin/business/shop/{id}/unpublish` | ADMIN | 下架商品 |
+| DELETE | `/api/v1/admin/business/shop/{id}` | ADMIN | 删除商品 |
+
+#### 配置与系统
+
+| Method | Path | 权限 | 描述 |
+|--------|------|------|------|
+| GET | `/api/v1/admin/configs` | ADMIN | 系统参数配置 |
+| PUT | `/api/v1/admin/configs/{key}` | 仅 SUPER_ADMIN | 更新参数配置 |
+| GET | `/api/v1/admin/rules` | ADMIN | 业务规则 |
+| PUT | `/api/v1/admin/rules/{id}` | 仅 SUPER_ADMIN | 更新业务规则 |
+| GET | `/api/v1/admin/switches` | ADMIN | 功能开关 |
+| PUT | `/api/v1/admin/switches/{key}` | 仅 SUPER_ADMIN | 更新功能开关 |
+| GET | `/api/v1/admin/match-config` | ADMIN | 匹配算法配置 |
+| PUT | `/api/v1/admin/match-config` | 仅 SUPER_ADMIN | 更新匹配算法配置 |
+| GET | `/api/v1/admin/recommend-strategy` | ADMIN | 推荐策略配置 |
+| PUT | `/api/v1/admin/recommend-strategy` | 仅 SUPER_ADMIN | 更新推荐策略配置 |
+| GET | `/api/v1/admin/notify-config` | ADMIN | 通知配置 |
+| PUT | `/api/v1/admin/notify-config` | 仅 SUPER_ADMIN | 更新通知配置 |
+| GET | `/api/v1/admin/official-accounts` | ADMIN | 官方号列表 |
+| GET | `/api/v1/admin/official-accounts/{code}/messages` | ADMIN | 官方号消息流 |
+| GET | `/api/v1/admin/audit-logs` | ADMIN | 审计日志（分页） |
+| GET | `/api/v1/admin/stats/users` | ADMIN | 用户统计 |
+| GET | `/api/v1/admin/stats/active` | ADMIN | 活跃统计 |
+| GET | `/api/v1/admin/stats/matches` | ADMIN | 匹配统计 |
+| GET | `/api/v1/admin/menus/current` | ADMIN | 当前管理员可见菜单树 |
+| GET | `/api/v1/admin/menus` | 仅 SUPER_ADMIN | 全量菜单树 |
+| GET | `/api/v1/admin/menus/{id}` | 仅 SUPER_ADMIN | 菜单详情 |
+| POST | `/api/v1/admin/menus` | 仅 SUPER_ADMIN | 新增菜单 |
+| PUT | `/api/v1/admin/menus/{id}` | 仅 SUPER_ADMIN | 编辑菜单 |
+| DELETE | `/api/v1/admin/menus/{id}` | 仅 SUPER_ADMIN | 删除菜单 |
+| GET | `/api/v1/admin/schools` | ADMIN | 高校列表 |
+| GET | `/api/v1/admin/schools/options` | ADMIN | 启用高校下拉选项 |
+| GET | `/api/v1/admin/schools/{id}` | ADMIN | 高校详情 |
+| POST | `/api/v1/admin/schools` | 仅 SUPER_ADMIN | 新增高校 |
+| PUT | `/api/v1/admin/schools/{id}` | 仅 SUPER_ADMIN | 编辑高校 |
+| POST | `/api/v1/admin/schools/{id}/status` | 仅 SUPER_ADMIN | 启用/停用高校 |
+| DELETE | `/api/v1/admin/schools/{id}` | 仅 SUPER_ADMIN | 删除高校 |
+| GET | `/api/v1/admin/dicts` | ADMIN | 字典列表 |
+| GET | `/api/v1/admin/dicts/{id}` | ADMIN | 字典详情 |
+| GET | `/api/v1/admin/dicts/{code}/items` | ADMIN | 字典条目 |
+| POST | `/api/v1/admin/dicts` | 仅 SUPER_ADMIN | 新增字典 |
+| PUT | `/api/v1/admin/dicts/{id}` | 仅 SUPER_ADMIN | 编辑字典 |
+| DELETE | `/api/v1/admin/dicts/{id}` | 仅 SUPER_ADMIN | 删除字典 |
+| POST | `/api/v1/admin/dicts/{dictId}/items` | 仅 SUPER_ADMIN | 新增字典条目 |
+| PUT | `/api/v1/admin/dicts/items/{itemId}` | 仅 SUPER_ADMIN | 编辑字典条目 |
+| DELETE | `/api/v1/admin/dicts/items/{itemId}` | 仅 SUPER_ADMIN | 删除字典条目 |
+| GET | `/api/v1/admin/roles` | 仅 SUPER_ADMIN | 角色列表 |
+| GET | `/api/v1/admin/roles/{id}` | 仅 SUPER_ADMIN | 角色详情 |
+| GET | `/api/v1/admin/roles/{id}/menus` | 仅 SUPER_ADMIN | 角色已分配菜单 id |
+| POST | `/api/v1/admin/roles` | 仅 SUPER_ADMIN | 新增角色 |
+| PUT | `/api/v1/admin/roles/{id}` | 仅 SUPER_ADMIN | 编辑角色 |
+| PUT | `/api/v1/admin/roles/{id}/menus` | 仅 SUPER_ADMIN | 保存角色菜单分配 |
+| DELETE | `/api/v1/admin/roles/{id}` | 仅 SUPER_ADMIN | 删除角色 |
+
+> **旧契约变更说明**：以下旧表端点已不存在，以本表为准——
+> - `GET /stats/dashboard` → 拆分为 `/stats/users`、`/stats/active`、`/stats/matches`
+> - `POST /sensitive-words/import` → `/sensitive-words/batch-import`（异步受理）
+> - `PUT /certifications/{id}/audit` → `POST /certifications/{id}/review`
+> - `PUT /reports/{id}/handle` → `POST /reports/{id}/handle`
+> - `PUT /configs`（整体更新）→ `PUT /configs/{key}`（单键更新）
 
 ---
 

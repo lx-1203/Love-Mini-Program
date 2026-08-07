@@ -56,4 +56,30 @@ public interface CircleTopicRepository extends JpaRepository<CircleTopic, Long> 
      * @return 分页话题列表
      */
     Page<CircleTopic> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    /**
+     * 管理后台 - 某兴趣圈内话题分页查询（置顶优先，按创建时间倒序）。
+     * <p>支持作者 ID 与关键字（标题/内容模糊）筛选，并通过 @EntityGraph
+     * 一次性预加载 circle 关联，避免 N+1 查询。</p>
+     *
+     * @param circleId 所属圈子 ID（必填）
+     * @param authorId 作者用户 ID 筛选，null 表示不筛选
+     * @param keyword  标题/内容模糊关键字，可空
+     * @param pageable 分页参数
+     * @return 分页话题列表（circle 已被预加载）
+     */
+    @EntityGraph(attributePaths = "circle")
+    @Query("""
+            SELECT t FROM CircleTopic t
+            WHERE t.circle.id = :circleId
+              AND (:authorId IS NULL OR t.authorId = :authorId)
+              AND (:keyword IS NULL OR :keyword = '' OR t.title LIKE CONCAT('%', :keyword, '%')
+                   OR t.content LIKE CONCAT('%', :keyword, '%'))
+            ORDER BY t.isPinned DESC, t.createdAt DESC
+            """)
+    Page<CircleTopic> searchForAdmin(
+            @Param("circleId") Long circleId,
+            @Param("authorId") Long authorId,
+            @Param("keyword") String keyword,
+            Pageable pageable);
 }

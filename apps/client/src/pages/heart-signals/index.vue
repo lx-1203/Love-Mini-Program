@@ -48,8 +48,10 @@ function updateCountdowns() {
   const now = Date.now();
   const map: Record<string, string> = {};
   for (const s of pendingSignals.value) {
+    // P2-02：expiresAt 无效（空/非法日期）时直接显示"已过期"，
+    // 避免 NaN 小时 NaN 分的倒计时文案
     const expiresAt = new Date(s.expiresAt).getTime();
-    const diff = expiresAt - now;
+    const diff = Number.isNaN(expiresAt) ? 0 : expiresAt - now;
     if (diff <= 0) {
       map[s.id] = t("heartSignals.expiredLabel");
     } else {

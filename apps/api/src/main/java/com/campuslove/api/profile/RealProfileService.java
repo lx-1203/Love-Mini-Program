@@ -93,6 +93,12 @@ public class RealProfileService implements ProfileService {
 
     @Override
     @Transactional
+    public BasicProfileView uploadAvatar(MultipartFile file) {
+        return updateService.uploadAvatar(file);
+    }
+
+    @Override
+    @Transactional
     public BasicProfileView uploadPhoto(MultipartFile file, int index) {
         return updateService.uploadPhoto(file, index);
     }

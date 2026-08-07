@@ -86,6 +86,15 @@ public class MockProfileService implements ProfileService {
   }
 
   @Override
+  public BasicProfileView uploadAvatar(MultipartFile file) {
+    // Mock 模式：头像 URL 存于 users.avatar_url（由 MockAuthService 管理），
+    // 此处仅校验并落盘文件，返回当前基本资料视图。
+    doUpload(file, "avatar");
+    MockRuntimeState.BasicProfileData current = runtimeState.basicProfile();
+    return toView(current, computeProfileCompletion(current));
+  }
+
+  @Override
   public BasicProfileView uploadPhoto(MultipartFile file, int index) {
     if (index < 0 || index >= PHOTO_GALLERY_MAX) {
       throw new IllegalArgumentException(
@@ -394,7 +403,8 @@ public class MockProfileService implements ProfileService {
         p.personalVideoUrl(),
         p.profileBackgroundUrl(),
         completion,
-        resolveBadgeLevel()
+        resolveBadgeLevel(),
+        null
     );
   }
 

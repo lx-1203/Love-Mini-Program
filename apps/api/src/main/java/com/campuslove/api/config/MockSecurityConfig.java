@@ -65,6 +65,7 @@ public class MockSecurityConfig {
             "/api/v1/auth/**",
             "/ws/**",
             "/api/v1/content-filter/check",
+            "/api/v1/error-reports",
             "/actuator/health",
             "/actuator/health/**"
     );
@@ -126,6 +127,13 @@ public class MockSecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 // 内容审查公开端点
                 .requestMatchers("/api/v1/content-filter/check").permitAll()
+                // 公开端点：应用启动期静态配置（登录页 Hero 等，未登录冷启动需要）
+                .requestMatchers("/api/v1/app-config/**").permitAll()
+                // 公开端点：IP 归属地查询（仅 IP→城市映射，免登录浏览同城需要）
+                .requestMatchers("/api/v1/location/ip-city").permitAll()
+                // D3 修复：客户端错误上报端点 permitAll 放行（与 real profile 对齐），
+                // 未登录阶段的上报能力需要保持，避免 401 级联噪音
+                .requestMatchers("/api/v1/error-reports").permitAll()
                 // Task 11.1：Swagger UI / OpenAPI 文档端点仅 ADMIN 可访问（与 real profile 一致）
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
                                  "/v3/api-docs/**", "/v3/api-docs.yaml").hasRole("ADMIN")

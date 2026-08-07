@@ -13,7 +13,8 @@ campus-love-monorepo/
 ├── apps/                          # 应用模块
 │   ├── api/                       # Spring Boot 后端 API
 │   ├── client/                    # uni-app 前端 (微信小程序/H5)
-│   └── admin/                     # 后台管理 (预留)
+│   ├── admin/                     # 后台管理 (eladmin 风格重构版，动态菜单 + 角色权限 + 多租户)
+│   └── admin-legacy/              # 旧版后台 (回退备份，端口 5178)
 ├── database/                      # 数据库
 │   └── flyway/                    # Flyway 数据库迁移
 ├── docs/                          # 文档

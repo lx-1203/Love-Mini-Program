@@ -167,7 +167,7 @@
 | mysql | mysql:8.0 | 内网 3306 | `mysql-data` |
 | redis | redis:7-alpine | 内网 6379 | `redis-data` |
 | api | 自构建（多阶段）| 公网 8080 | `api-uploads`、`api-logs` |
-| admin | 自构建（nginx）| 公网 5180 | - |
+| admin | 自构建（nginx）| 公网 5177 | - |
 | client | 自构建（nginx）| 公网 5173（可选） | - |
 | prometheus | prom/prometheus | 内网 9090 | `prometheus-data` |
 | grafana | grafana/grafana | 公网 3001 | `grafana-data` |
@@ -179,7 +179,7 @@
 
 ```
 公网 ── nginx (反向代理) ──┬── api:8080 (HTTPS)
-                            ├── admin:5180 (HTTPS)
+                            ├── admin:5177 (HTTPS)
                             └── grafana:3001 (HTTPS, IP 白名单)
 
 内网 campus-net ──┬── mysql:3306 (仅内网)

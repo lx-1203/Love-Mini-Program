@@ -1,23 +1,26 @@
 <script setup lang="ts">
 /**
- * Admin 登录视图（SubTask 3.3.2 i18n 化 + Task 5 移除 import.meta.env）。
+ * Admin v2 登录视图（复制自旧后台 apps/admin 逻辑，token key 改 admin_v2_token）。
  *
- * 改造点：
- * - 标题/副标题/标签/占位符/按钮/错误提示全部走 i18n
- * - 错误回退消息（如 "登录失败"）改为 errors.* key
- * - 开发环境账号提示通过 i18n 模板插值，便于英文版展示
- * - Task 5：所有 import.meta.env.VITE_* 改为通过 config/env.ts 统一封装的 env 对象引用
+ * 关键差异：
+ * - 登录成功后调用 menuStore.loadMenus() + addDynamicRoutes()，
+ *   确保跳转目标（Dashboard 等动态路由）已注册；
+ * - 回跳 redirect 参数通过 sanitizeRedirect 校验（防开放重定向）；
+ * - 开发环境账号提示从环境变量读取，生产环境不渲染。
  */
 import { ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { sanitizeRedirect } from "../router/guards";
 import { useSessionStore } from "../stores/session";
+import { useMenuStore, findFirstMenuPath } from "../stores/menu";
 import { useI18n } from "vue-i18n";
 import { env } from "../config/env";
+import { addDynamicRoutes } from "../router";
 
 const router = useRouter();
 const route = useRoute();
 const sessionStore = useSessionStore();
+const menuStore = useMenuStore();
 const { t } = useI18n();
 
 const form = ref({
@@ -28,16 +31,8 @@ const form = ref({
 const loading = ref(false);
 const error = ref("");
 
-// 修复：默认凭据提示改为从环境变量读取，仅开发环境显示
-// Task 5：通过 env.isDev / env.devDefaultUsername 引用，
-// 生产环境 env.isDev 为 false，提示区块不渲染
-// infra R2-00457：仅展示开发账号、不展示默认密码——若 .env.development
-// 误配真实密码，登录页明文展示会造成凭据泄露
-const showDevHint = computed(() => {
-  return Boolean(env.isDev && devUsername.value);
-});
-
-const devUsername = computed(() => env.devDefaultUsername);
+// 仅开发环境显示默认账号提示（不展示密码，防误配真实密码泄露）
+const showDevHint = computed(() => Boolean(env.isDev && env.devDefaultUsername));
 
 async function handleLogin() {
   if (!form.value.username || !form.value.password) {
@@ -50,14 +45,20 @@ async function handleLogin() {
 
   try {
     await sessionStore.login(form.value);
-    // Task 14：登录成功后优先回跳到 redirect 查询参数指向的站内路径，
-    // 无 redirect 或参数非法（外部地址/非相对路径）时回首页。
-    // 安全修复：redirect 必须为站内相对路径，防止开放重定向。
+    // 登录成功后立即拉取动态菜单并注册路由，保证跳转目标可用
+    await menuStore.loadMenus();
+    addDynamicRoutes(menuStore.menuTree);
+    // 优先回跳 redirect 查询参数指向的站内路径（已校验 + 已注册，防止 404/越权路径）；
+    // 否则跳转当前角色菜单树中第一个可跳转菜单（校区管理员无 Dashboard 权限时避免 403）
     const redirect = sanitizeRedirect(route.query.redirect);
-    router.push(redirect || { name: "Dashboard" });
+    if (redirect && router.resolve(redirect).name !== "NotFound") {
+      router.push(redirect);
+    } else {
+      const fallback = findFirstMenuPath(menuStore.menuTree);
+      router.push(fallback ?? "/");
+    }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "";
-    // 后端返回的错误信息已由拦截器根据错误码翻译，这里仅做兜底
     error.value = message || t("login.loginFailed");
   } finally {
     loading.value = false;
@@ -106,11 +107,9 @@ async function handleLogin() {
           {{ loading ? t("login.loggingIn") : t("login.loginButton") }}
         </button>
 
-        <!-- 修复：移除硬编码默认凭据明文展示，改为从环境变量读取（仅开发环境显示）
-             生产环境（NODE_ENV=production）完全不显示默认凭据提示
-             infra R2-00457：仅提示开发账号，不展示默认密码（防误配真实密码泄露） -->
+        <!-- 开发环境默认账号提示（仅开发环境显示账号，不显示密码） -->
         <view v-if="showDevHint" class="login-hint">
-          <text>{{ t("login.devUsernameHint", { username: devUsername }) }}</text>
+          <text>{{ t("login.devUsernameHint", { username: env.devDefaultUsername }) }}</text>
         </view>
       </view>
     </view>

@@ -281,7 +281,8 @@
         <version>3.4.1</version>
         <configuration>
           <excludes>
-            <exclude>com/campuslove/api/mock/**</exclude>
+            <!-- 临时取消排除，使 mock 类在本地 mock 模式 jar 中可用 -->
+            <!-- <exclude>com/campuslove/api/mock/**</exclude> -->
           </excludes>
         </configuration>
       </plugin>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 错误状态组件（Task 13 + Task 6 i18n 抽取）。
+ * 错误状态组件（复制自旧后台 apps/admin）。
  *
  * 用途：在 Dashboard / Feedback / AuditLogs 等视图的数据加载失败时，
  * 提供统一的错误展示与重试入口，避免每个视图各写一套错误降级 UI。
@@ -10,9 +10,6 @@
  * - 文案走 i18n（errorState.* 命名空间），便于多语言
  * - 通过 props 接收 message，由父组件决定错误来源（API 错误、聚合错误等）
  * - 通过 emit('retry') 通知父组件触发重试，组件本身不关心重试逻辑
- *
- * Task 6：将原 errors.unknown / common.retry 抽取到专属 errorState.* 命名空间，
- * 新增 errorState.networkError 作为 message 为空时的兜底文案。
  */
 import { useI18n } from "vue-i18n";
 

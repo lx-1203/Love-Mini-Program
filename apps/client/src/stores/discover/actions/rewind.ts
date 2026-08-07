@@ -10,7 +10,6 @@
  * this 类型，因为 Pinia Option API 的 this 类型推断在拆分到独立文件后失效。
  */
 
-import { useSessionStore } from "../../session";
 import {
   MAX_UNDO_COUNT_PER_SESSION,
 } from "../constants";
@@ -82,11 +81,9 @@ export async function rewindCard(this: DiscoverStoreThis, cardId: string): Promi
       return;
     }
 
-    // 反悔操作：调用后端 rewind 端点
+    // 反悔操作：调用后端 rewind 端点（P2-13：userId 由后端 JWT 获取，客户端不再携带）
     // POST /api/matches/rewind
-    const sessionStore = useSessionStore();
-    const currentUserId = sessionStore.userSession?.userId ?? "";
-    await rewindCardApi(currentUserId);
+    await rewindCardApi();
 
     // 从已查看列表中移除最后一条记录，并取出卡片快照
     const lastViewed = this.viewedCards[this.viewedCards.length - 1];

@@ -5,6 +5,7 @@ import com.campuslove.api.entity.TempChatSession;
 import com.campuslove.api.entity.VipRedPacket;
 import com.campuslove.api.entity.VipRedPacketClaim;
 import com.campuslove.api.repository.UserRepository;
+import com.campuslove.api.repository.VipBillRepository;
 import com.campuslove.api.repository.VipRedPacketClaimRepository;
 import com.campuslove.api.repository.VipRedPacketRepository;
 import com.campuslove.api.wallet.WalletService;
@@ -81,6 +82,11 @@ public class VipRedPacketService {
     private final VipRedPacketClaimRepository claimRepository;
     private final UserRepository userRepository;
     /**
+     * P0-28：VIP 账单 Repository，用于校验用户 VIP 身份（红包为 VIP 权益）。
+     * VIP 身份判定：存在 status=SUCCESS 且 period_end 未过期的 vip_bills 记录。
+     */
+    private final VipBillRepository vipBillRepository;
+    /**
      * Task 15（FIN-00171）：钱包服务，用于真实扣减发送方余额 / 充值领取者钱包。
      *
      * <p>替代前序版本中"仅扣减红包剩余份数未充值到领取者钱包"的 mock 逻辑：
@@ -118,11 +124,13 @@ public class VipRedPacketService {
     public VipRedPacketService(VipRedPacketRepository redPacketRepository,
                                VipRedPacketClaimRepository claimRepository,
                                UserRepository userRepository,
+                               VipBillRepository vipBillRepository,
                                WalletService walletService,
                                RedissonClient redissonClient) {
         this.redPacketRepository = redPacketRepository;
         this.claimRepository = claimRepository;
         this.userRepository = userRepository;
+        this.vipBillRepository = vipBillRepository;
         this.walletService = walletService;
         this.redissonClient = redissonClient;
     }
@@ -186,6 +194,9 @@ public class VipRedPacketService {
         if (!userRepository.existsById(senderId)) {
             throw new IllegalArgumentException("发送者用户不存在");
         }
+
+        // P0-28：红包为 VIP 权益——发送者必须是有效 VIP（非 VIP 抛 403 业务错误）
+        requireVip(senderId, "发送红包");
 
         // Task 14（P1.12）：获取分布式锁 red-packet-create:{senderId}，防止同一发送者并发创建
         String lockKey = "red-packet-create:" + senderId;
@@ -328,6 +339,9 @@ public class VipRedPacketService {
                 log.warn("红包领取获取锁失败，已有任务在执行：redPacketId={}", redPacketId);
                 throw new IllegalStateException("红包领取繁忙，请稍后重试");
             }
+
+            // P0-28：红包为 VIP 权益——领取者必须是有效 VIP（非 VIP 抛 403 业务错误）
+            requireVip(claimerId, "领取红包");
 
             // 1. 悲观锁查询红包（SELECT ... FOR UPDATE），锁住红包行防止并发读取到过期状态
             VipRedPacket packet = redPacketRepository.findByIdForUpdate(redPacketId)
@@ -526,6 +540,27 @@ public class VipRedPacketService {
             // 数据库查询失败时上报，由 GlobalExceptionHandler 转换为 5xx 响应
             log.error("按会话查询红包列表失败：chatId={}", chatId, e);
             throw new RuntimeException("查询红包列表失败，请稍后重试", e);
+        }
+    }
+
+    /**
+     * P0-28：校验用户 VIP 身份（红包创建/领取为 VIP 权益）。
+     *
+     * <p>VIP 身份判定口径与 AutoRenewService 一致：存在 status=SUCCESS 且
+     * period_end 未过期的 vip_bills 记录即视为有效 VIP。非 VIP 抛
+     * {@link com.campuslove.api.common.OperationForbiddenException}（HTTP 403）。</p>
+     *
+     * @param userId 用户 ID
+     * @param action 操作描述（用于错误提示与日志）
+     */
+    private void requireVip(Long userId, String action) {
+        boolean isVip = vipBillRepository != null
+                && vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
+                        userId, "SUCCESS", LocalDateTime.now());
+        if (!isVip) {
+            log.warn("{}被拒绝：用户[{}]非有效 VIP", action, userId);
+            throw new com.campuslove.api.common.OperationForbiddenException(
+                    "仅 VIP 会员可" + action + "，请先开通 VIP");
         }
     }
 

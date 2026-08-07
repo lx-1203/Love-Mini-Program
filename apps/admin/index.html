@@ -5,15 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#3FCF8E" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0E1116" media="(prefers-color-scheme: dark)" />
-    <meta name="description" content="校园恋爱小程序管理后台 - 内容审核、用户管理、运营配置" />
-    <title>校园恋爱小程序 - 管理后台</title>
+    <meta name="description" content="校园恋爱管理后台 v2 - eladmin 风格：动态菜单 + 多标签页" />
+    <title>校园恋爱管理后台</title>
     <!--
-      资源预加载：通过 dns-prefetch / preconnect 提前完成 DNS 解析与 TLS 握手，
-      降低首屏 API 请求的连接耗时。具体域名由 .env.[mode] 中的 VITE_API_BASE_URL 决定。
-      生产环境部署时，建议替换为真实后端域名。
+      注意：不再硬编码任何本机地址（127.0.0.1:8080 等）的 dns-prefetch / preconnect。
+      生产环境 API 走同源反向代理（VITE_API_BASE_URL=/api，见 .env.production），
+      同源请求无需预连接；如需预加载外部域名，由部署配置按需注入。
     -->
-    <link rel="dns-prefetch" href="//127.0.0.1" />
-    <link rel="preconnect" href="http://127.0.0.1:8080" crossorigin />
   </head>
   <body>
     <div id="app"></div>

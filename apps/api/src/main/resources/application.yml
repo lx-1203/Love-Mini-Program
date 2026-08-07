@@ -192,6 +192,22 @@ app:
     # 签发 token 时写入 JWT header kid（Key ID），验证时按 kid 选择对应版本密钥。
     # 轮换时递增版本号并配套更新 KMS/Vault 中的密钥。
     key-version: ${JWT_KEY_VERSION:1}
+  # P0-14：体验账号一键登录入口开关。
+  # 商业化默认关闭（false）；本地演示/联调可通过 APP_GUEST_LOGIN_ENABLED=true
+  # 或启动参数 --app.guest-login.enabled=true 覆盖开启（mock profile 默认开启）。
+  guest-login:
+    enabled: ${APP_GUEST_LOGIN_ENABLED:false}
+  # P0-15：演示充值风控。
+  # enabled：演示充值开关，默认开启（保留本地演示/联调能力）；
+  #   ⚠️ 生产环境必须通过 APP_DEMO_RECHARGE_ENABLED=false 关闭，接入支付网关回调入账。
+  # daily-limit：每用户每日演示充值次数上限。
+  demo-recharge:
+    enabled: ${APP_DEMO_RECHARGE_ENABLED:true}
+    daily-limit: ${APP_DEMO_RECHARGE_DAILY_LIMIT:5}
+  # P0-17：商业化解锁单价（单位：分）。liked-me=喜欢我列表解锁，visitor=访客列表解锁。
+  unlock-price:
+    liked-me: ${APP_UNLOCK_PRICE_LIKED_ME:300}
+    visitor: ${APP_UNLOCK_PRICE_VISITOR:300}
   wechat:
     # Task 0.6.3：微信小程序 AppID/AppSecret 通过环境变量注入
     # 环境变量命名规范：全大写 + 下划线（与 .env.example 保持一致）
@@ -242,6 +258,8 @@ app:
     session-expire-hours: 24
   checkin:
     extra-quota-per-check-in: 3
+    # P0-23：每次签到奖励的交友币金额（单位：分，默认 50 分 = 0.5 元）
+    reward-cents-per-check-in: ${CHECKIN_REWARD_CENTS:50}
   content-filter:
     enabled: true
     keywords:

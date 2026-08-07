@@ -4,6 +4,8 @@ import type { MakeUpCheckInResultView } from "../services/generated/api-types-su
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
+// 幂等键日期工具：与 services/api.ts 的 localDateKey 保持同一实现
+import { localDateKey } from "../services/api";
 // 统一常量：异步超时、签到成功动画收起延迟、补签上限、签到权益各项默认值
 import {
   ASYNC_TIMEOUT_MS,
@@ -316,11 +318,19 @@ export const useCheckInStore = defineStore("checkin", {
               return;
             }
 
-            // 调用后端 API: GET /api/check-in/status?userId={userId}
+            // 调用后端 API: GET /api/check-in/status（P2-13：userId 由后端 JWT 获取，不再携带 query）
             const sessionStore = useSessionStore();
             const userId = sessionStore.userSession?.userId ?? "";
+            // D2 修复：未登录时无 userId，直接返回，避免无效请求（401/网络噪音）
+            if (!userId) {
+              if (token !== fetchStatusToken) return;
+              this.checkedIn = false;
+              this.consecutiveDays = 0;
+              this.extraRecommendations = 0;
+              return;
+            }
             const data = await request<BackendCheckInStatusView>({
-              url: `/check-in/status?userId=${encodeURIComponent(userId)}`,
+              url: "/check-in/status",
               method: "GET",
             });
 
@@ -412,12 +422,19 @@ export const useCheckInStore = defineStore("checkin", {
               };
             }
 
-            // 调用后端 API: POST /api/check-in?userId={userId}
+            // 调用后端 API: POST /api/check-in（P2-13：userId 由后端 JWT 获取，不再携带 query）
             const sessionStore = useSessionStore();
             const userId = sessionStore.userSession?.userId ?? "";
+            // D2 修复：未登录时无 userId，直接抛出业务错误，避免无效请求
+            if (!userId) {
+              throw new Error(t("storeErrors.checkin.needLogin"));
+            }
+            // 后端 @Idempotent 校验：以日期为幂等键（Redis key 按 {key}:{userId} 隔离），
+            // 同一天内的重复/重试签到返回同一结果，杜绝重复扣权益。
             const data = await request<BackendCheckInResultView>({
-              url: `/check-in?userId=${userId}`,
+              url: "/check-in",
               method: "POST",
+              headers: { "Idempotency-Key": `checkin-${localDateKey(new Date())}` },
             });
 
             // 修复：API 返回后若已超时，不再继续处理

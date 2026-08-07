@@ -1,17 +1,10 @@
 <script setup lang="ts">
 /**
- * Admin 数据看板视图（SubTask 3.3.2 i18n 化 / Task 13 真实数据 + 错误降级）。
+ * Admin 数据看板视图（复制自旧后台 apps/admin，适配 admin-v2；使用 @/ 别名导入）。
  *
- * 改造点：
- * - 标题/副标题/统计卡片 label/加载中文案全部走 i18n key
- * - 三个统计接口的失败提示通过 dashboard.userStatsLoadFailed 等回退
- * - "最近活动"列表文案改走 dashboard.recentActivities 与 common.noData
- *
- * Task 13 改造点：
+ * - 四个统计卡片 + 匹配趋势列表
  * - 通过 getStats() 聚合接口一次性拉取三类统计，统一错误降级
- * - 引入 ErrorState 组件：当 errors.length > 0 时展示错误条 + 重试按钮，
- *   重试回调重新触发 loadStats()，避免运营人员面对白屏
- * - 移除所有 Mock 引用（本视图本无 Mock，仅做错误降级增强）
+ * - 引入 ErrorState 组件：errors.length > 0 时展示错误条 + 重试按钮
  */
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import {
@@ -21,12 +14,9 @@ import {
   type MatchStats,
 } from "@/api/stats";
 import { useI18n } from "vue-i18n";
-// Task 13：接入共享 ErrorState 组件，统一错误降级 UI
 import ErrorState from "@/components/ErrorState.vue";
-// Task 45：统一日志入口
 import { logger } from "@/utils/logger";
 import { getLocale } from "@/i18n";
-// infra R2-00455：趋势天数具名常量
 import { TREND_DAYS } from "@/utils/constants";
 
 const { t } = useI18n();
@@ -34,7 +24,8 @@ const { t } = useI18n();
 interface StatCard {
   labelKey: string;
   value: number | string;
-  icon: string;
+  /** 内联 SVG 图标标识（users/bolt/heart/list），不再引用 public/icons 下的静态文件 */
+  icon: "users" | "bolt" | "heart" | "list";
   color: string;
 }
 
@@ -46,13 +37,13 @@ interface ActivityItem {
 }
 
 const stats = ref<StatCard[]>([
-  { labelKey: "dashboard.statTotalUsers", value: 0, icon: "/icons/user.svg", color: "var(--admin-color-stat-primary)" },
-  { labelKey: "dashboard.statActiveToday", value: 0, icon: "/icons/bolt.svg", color: "var(--admin-color-stat-pink)" },
-  { labelKey: "dashboard.statTotalMatches", value: 0, icon: "/icons/heart-filled.svg", color: "var(--admin-color-stat-blue)" },
-  { labelKey: "dashboard.statInteractionsToday", value: 0, icon: "/icons/list.svg", color: "var(--admin-color-stat-green)" },
+  { labelKey: "dashboard.statTotalUsers", value: 0, icon: "users", color: "var(--admin-color-stat-primary)" },
+  { labelKey: "dashboard.statActiveToday", value: 0, icon: "bolt", color: "var(--admin-color-stat-pink)" },
+  { labelKey: "dashboard.statTotalMatches", value: 0, icon: "heart", color: "var(--admin-color-stat-blue)" },
+  { labelKey: "dashboard.statInteractionsToday", value: 0, icon: "list", color: "var(--admin-color-stat-green)" },
 ]);
 
-// infra R2-00453：子接口失败标记（失败卡片降级显示，区分真实 0 与加载失败，避免误导）
+// 子接口失败标记（失败卡片降级显示，区分真实 0 与加载失败，避免误导）
 const failedStats = ref<boolean[]>([false, false, false, false]);
 
 const recentActivities = ref<ActivityItem[]>([]);
@@ -60,20 +51,15 @@ const recentActivities = ref<ActivityItem[]>([]);
 const loading = ref(false);
 /** 错误信息（聚合所有子接口错误，空串表示无错误）。空串时不渲染 ErrorState。 */
 const errorMessage = ref("");
-/** infra R2-00454：最近一次成功刷新的时间（lastUpdated i18n key 消费） */
+/** 最近一次成功刷新的时间 */
 const lastUpdated = ref("");
-/** infra R2-00456：手动刷新成功提示 */
+/** 手动刷新成功提示 */
 const refreshTip = ref("");
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * 加载仪表盘统计数据（Task 13：改用 getStats() 聚合接口）。
- *
+ * 加载仪表盘统计数据（改用 getStats() 聚合接口）。
  * 三个子接口并行调用，任一失败记录错误但不阻塞其他。
- * 全部失败或部分失败时，errorMessage 非空，触发 ErrorState 降级展示与重试入口。
- *
- * Task 46：包裹 try/catch + finally，确保网络异常时 loading 状态被正确重置，
- * 避免页面卡在"加载中"骨架；异常通过 logger 记录便于线上问题定位。
  */
 async function loadStats() {
   loading.value = true;
@@ -82,14 +68,14 @@ async function loadStats() {
   try {
     const overview = await getStats();
     const errors: string[] = [];
-    // infra R2-00453：每轮加载重置失败标记
+    // 每轮加载重置失败标记
     failedStats.value = [false, false, false, false];
 
     // 用户统计
     if (overview.userStats) {
       const userStats: UserStats = overview.userStats;
-      stats.value[0] = { labelKey: "dashboard.statTotalUsers", value: userStats.totalUsers, icon: "/icons/user.svg", color: "var(--admin-color-stat-primary)" };
-      stats.value[1] = { labelKey: "dashboard.statActiveToday", value: userStats.activeUsersToday, icon: "/icons/bolt.svg", color: "var(--admin-color-stat-pink)" };
+      stats.value[0] = { labelKey: "dashboard.statTotalUsers", value: userStats.totalUsers, icon: "users", color: "var(--admin-color-stat-primary)" };
+      stats.value[1] = { labelKey: "dashboard.statActiveToday", value: userStats.activeUsersToday, icon: "bolt", color: "var(--admin-color-stat-pink)" };
     } else {
       errors.push(t("dashboard.userStatsLoadFailed"));
       failedStats.value[0] = true;
@@ -99,7 +85,7 @@ async function loadStats() {
     // 活跃度统计
     if (overview.activeStats) {
       const activeStats: ActiveStats = overview.activeStats;
-      stats.value[3] = { labelKey: "dashboard.statInteractionsToday", value: activeStats.interactionsToday, icon: "/icons/list.svg", color: "var(--admin-color-stat-green)" };
+      stats.value[3] = { labelKey: "dashboard.statInteractionsToday", value: activeStats.interactionsToday, icon: "list", color: "var(--admin-color-stat-green)" };
     } else {
       errors.push(t("dashboard.activeStatsLoadFailed"));
       failedStats.value[3] = true;
@@ -108,15 +94,10 @@ async function loadStats() {
     // 匹配统计
     if (overview.matchStats) {
       const matchStats: MatchStats = overview.matchStats;
-      stats.value[2] = { labelKey: "dashboard.statTotalMatches", value: matchStats.totalMatches, icon: "/icons/heart-filled.svg", color: "var(--admin-color-stat-blue)" };
+      stats.value[2] = { labelKey: "dashboard.statTotalMatches", value: matchStats.totalMatches, icon: "heart", color: "var(--admin-color-stat-blue)" };
 
       // 语义修正：后端暂无独立的"最近活动"接口，此处展示的是每日匹配趋势
-      // （matchStats.dailyTrend，近 30 日），因此区块标题使用 dashboard.matchTrend
-      // （"匹配趋势"）而不是"最近活动"，避免数据语义错位。
-      // 后续若后端提供真实活动流接口（GET /v1/admin/stats/activities），
-      // 可在此处替换数据源并还原标题。
-      // infra R2-00455：展示完整近 30 日趋势（原 slice(-5) 只显示 5 天，与
-      // "近 30 日"标题语义不符，其余 25 天数据被丢弃）；天数用具名常量 TREND_DAYS。
+      // （matchStats.dailyTrend，近 30 日），因此区块标题使用 dashboard.matchTrend。
       recentActivities.value = (matchStats.dailyTrend || [])
         .slice(-TREND_DAYS)
         .reverse()
@@ -131,7 +112,7 @@ async function loadStats() {
       failedStats.value[2] = true;
     }
 
-    // infra R2-00454：全部子接口成功时记录最近刷新时间
+    // 全部子接口成功时记录最近刷新时间
     if (errors.length === 0) {
       lastUpdated.value = new Date().toLocaleString(getLocale(), { hour12: false });
     }
@@ -140,18 +121,18 @@ async function loadStats() {
       errorMessage.value = errors.join("；");
     }
   } catch (err) {
-    // Task 45：异常通过 logger 记录，便于线上问题定位
     logger.error("[Dashboard] load stats failed", err);
     errorMessage.value = t("dashboard.loadFailed");
+    // getStats 整体异常（如网络层 fetch 失败）时同样置位失败标记，
+    // 避免 4 张卡片显示真实 0 误导运营
+    failedStats.value = [true, true, true, true];
   } finally {
-    // Task 46：finally 确保无论成功/失败都重置 loading 状态
     loading.value = false;
   }
 }
 
 /**
- * infra R2-00456：手动刷新回调（i18n dashboard.refreshButton/refreshSuccess 消费）。
- * 原 onMounted 中 loadStats().catch() 为冗余（loadStats 内部已 try/catch，永不 reject），已删除。
+ * 手动刷新回调。
  */
 async function handleRefresh() {
   await loadStats();
@@ -169,7 +150,7 @@ onMounted(() => {
   void loadStats();
 });
 
-// infra R2-00456：组件卸载时清理刷新提示定时器
+// 组件卸载时清理刷新提示定时器
 onBeforeUnmount(() => {
   if (refreshTimer) {
     clearTimeout(refreshTimer);
@@ -185,7 +166,7 @@ onBeforeUnmount(() => {
       <text class="page-subtitle">{{ t("dashboard.subtitle") }}</text>
     </view>
 
-    <!-- infra R2-00456：手动刷新按钮 + 最近更新时间（原无刷新入口，数据滞后需刷页面） -->
+    <!-- 手动刷新按钮 + 最近更新时间 -->
     <view class="refresh-bar">
       <button class="refresh-button" :disabled="loading" @click="handleRefresh">
         {{ loading ? t("common.loading") : t("dashboard.refreshButton") }}
@@ -215,10 +196,46 @@ onBeforeUnmount(() => {
         tabindex="0"
       >
         <view class="stat-icon" :style="{ background: stat.color }">
-          <image class="stat-icon-img" :src="stat.icon" mode="aspectFit" alt="" aria-hidden="true" />
+          <!-- 内联 SVG 图标（public/icons 目录已删除，不再引用静态图标文件） -->
+          <svg
+            v-if="stat.icon === 'users'"
+            class="stat-icon-img"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5Z" />
+          </svg>
+          <svg
+            v-else-if="stat.icon === 'bolt'"
+            class="stat-icon-img"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6l.5-8H13Z" />
+          </svg>
+          <svg
+            v-else-if="stat.icon === 'heart'"
+            class="stat-icon-img"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M12 21.35 10.55 20.03C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35Z" />
+          </svg>
+          <svg
+            v-else
+            class="stat-icon-img"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M4 6h2v2H4V6Zm4 0h12v2H8V6ZM4 11h2v2H4v-2Zm4 0h12v2H8v-2ZM4 16h2v2H4v-2Zm4 0h12v2H8v-2Z" />
+          </svg>
         </view>
         <view class="stat-content">
-          <!-- infra R2-00453：失败卡片降级显示（区分真实 0 与加载失败，避免数据误导） -->
+          <!-- 失败卡片降级显示（区分真实 0 与加载失败，避免数据误导） -->
           <text class="stat-value">{{ failedStats[index] ? t("dashboard.dataUnavailable") : stat.value }}</text>
           <text class="stat-label">{{ t(stat.labelKey) }}</text>
         </view>
@@ -233,7 +250,7 @@ onBeforeUnmount(() => {
       <view
         class="activity-list"
         role="img"
-        :aria-label="t('dashboard.recentActivities')"
+        :aria-label="t('dashboard.matchTrend')"
         tabindex="0"
       >
         <view
@@ -256,7 +273,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Task 3.7.1：接入共享样式表，复用 page-header / page-title / page-subtitle / error-banner */
 @import "../styles/admin-common.css";
 
 .dashboard {
@@ -300,7 +316,7 @@ onBeforeUnmount(() => {
   box-shadow: var(--admin-shadow-lg);
 }
 
-/* Task 21：键盘导航聚焦轮廓，避免聚焦后无视觉反馈 */
+/* 键盘导航聚焦轮廓，避免聚焦后无视觉反馈 */
 .stat-card:focus-visible {
   outline: 2px solid var(--admin-color-primary);
   outline-offset: 2px;
@@ -319,7 +335,8 @@ onBeforeUnmount(() => {
 .stat-icon-img {
   width: 28px;
   height: 28px;
-  filter: brightness(0) invert(1);
+  /* 内联 SVG 使用 currentColor 填充，此处置白（深色底上显示） */
+  color: #fff;
 }
 
 .stat-content {
@@ -364,7 +381,7 @@ onBeforeUnmount(() => {
   gap: var(--admin-space-lg);
 }
 
-/* Task 21：键盘导航聚焦轮廓 */
+/* 键盘导航聚焦轮廓 */
 .activity-list:focus-visible {
   outline: 2px solid var(--admin-color-primary);
   outline-offset: 2px;
@@ -415,7 +432,8 @@ onBeforeUnmount(() => {
   color: var(--admin-color-text-quaternary);
   font-size: var(--admin-font-md);
 }
-/* infra R2-00456：刷新栏样式 */
+
+/* 刷新栏样式 */
 .refresh-bar {
   display: flex;
   align-items: center;

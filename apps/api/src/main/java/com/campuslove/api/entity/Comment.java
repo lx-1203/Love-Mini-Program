@@ -41,6 +41,13 @@ public class Comment {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    /**
+     * 父评论 ID（楼中楼回复，P1-02 后端部分 / A-12）。
+     * null 表示根评论；非 null 表示该评论是 parentId 对应评论的楼中楼回复。
+     */
+    @Column(name = "parent_id")
+    private Long parentId;
+
     /** 记录创建时间（评论发布时间，用于排序展示） */
 
     @CreatedDate
@@ -94,6 +101,14 @@ public class Comment {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public Long getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
     }
 
     public LocalDateTime getCreatedAt() {

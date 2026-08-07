@@ -1,5 +1,5 @@
 // ============================================================
-// Admin 公共格式化工具（infra R2-00322）
+// Admin v2 公共格式化工具（复制自旧后台 apps/admin）
 // ------------------------------------------------------------
 // 背景：Users / Posts / Reports / Feedback / AuditLogs 五个视图
 // 各自维护一份 formatDate/formatDuration 实现，行为不一致且重复。
@@ -46,7 +46,7 @@ export function formatTimeCompact(iso?: string | null, fallback: string = "-"): 
   return iso.replace("T", " ").slice(0, 19) || fallback;
 }
 
-/** 一秒钟的毫秒数（infra R2-00323：消除魔法数字 1000） */
+/** 一秒钟的毫秒数（消除魔法数字 1000） */
 export const MILLIS_PER_SECOND = 1000;
 
 /**
@@ -80,11 +80,9 @@ function isSensitiveKey(key: string): boolean {
 }
 
 /**
- * 递归 JSON 脱敏（infra R2-00324）。
+ * 递归 JSON 脱敏。
  *
- * 修复：原实现仅用正则匹配 `"password":"..."` 引号格式，
- * 嵌套 JSON、数字/布尔值、无引号键名均不覆盖，可能泄露凭据。
- * 现改为：先尝试 JSON.parse 后递归遍历（覆盖任意嵌套层级），
+ * 先尝试 JSON.parse 后递归遍历（覆盖任意嵌套层级），
  * 解析失败再回退正则替换（覆盖非 JSON 文本）。
  *
  * @param raw 原始文本（JSON 字符串或任意文本）
@@ -120,9 +118,9 @@ function maskValue(value: unknown): unknown {
 }
 
 /**
- * URL query 参数脱敏（infra R2-00325）。
+ * URL query 参数脱敏。
  *
- * 修复：审计日志 requestUrl 明文展示完整 query，若含 token/secret
+ * 审计日志 requestUrl 明文展示完整 query，若含 token/secret
  * 等敏感参数会泄露凭据；展示前把敏感参数值替换为 ******。
  */
 export function maskSensitiveUrl(url?: string | null): string {

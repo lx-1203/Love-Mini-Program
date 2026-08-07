@@ -66,4 +66,15 @@ public interface PrivateMessageService {
      * @param userId         当前用户 ID（用于验证）
      */
     void pinConversation(Long conversationId, boolean pinned, Long userId);
+
+    // ---- M-06/P0-07：删除会话 ----
+
+    /**
+     * 删除会话及其全部消息（仅会话参与者可操作）。
+     *
+     * @param conversationId 会话 ID
+     * @param userId         当前用户 ID（用于验证参与者身份）
+     * @throws IllegalArgumentException 会话不存在或当前用户非会话参与者时抛出
+     */
+    void deleteConversation(Long conversationId, Long userId);
 }

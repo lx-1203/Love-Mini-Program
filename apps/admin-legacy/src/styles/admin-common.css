@@ -1,0 +1,536 @@
+/* ============================================================
+ * Admin 共享样式表（Task 3.7.1 / Task 21 token 化）
+ * ------------------------------------------------------------
+ * 抽取自 Users / Posts / Feedback / Reports / AuditLogs /
+ * SensitiveWords / NotifyConfig / Dashboard 等 8 个视图的重复
+ * 样式定义，统一在此维护，避免样式漂移与一致性偏差。
+ *
+ * 设计原则：
+ *   1. 单一来源：所有视图共享的页头、工具栏、按钮、表格、分页、
+ *      弹窗、表单等基础样式集中定义；
+ *   2. 视图特有样式仍在各 .vue 文件 <style scoped> 中维护，
+ *      本文件仅抽取重复部分；
+ *   3. Task 21：颜色与像素尺寸统一通过 :root CSS variables 引用，
+ *      token 定义见 `apps/admin/src/theme/tokens.ts` 的 adminTokens。
+ *      视图层引用 .primary-button 等类即可获得统一视觉，
+ *      且未来主题切换/暗色模式仅需覆盖 :root 变量。
+ *
+ * 使用方式：
+ *   <style scoped>
+ *   @import "../styles/admin-common.css";
+ *   /* 视图特有样式 *\/
+ *   .users-page { ... }
+ *   </style>
+ *
+ * 注意：因 <style scoped> 限定作用域，@import 进来的样式
+ * 仅作用于当前组件，不会污染全局。:root 选择器在 scoped 模式下
+ * 仍会生效（CSS 规范：:root 始终指向文档根元素）。
+ * ============================================================ */
+
+/* ========== 设计 Token（Task 21） ========== */
+/* 颜色与像素尺寸的单一来源，与 adminTokens (theme/tokens.ts) 对齐 */
+:root {
+  /* —— 主色与交互态 —— */
+  --admin-color-primary: #667eea;
+  --admin-color-primary-hover: #5568d3;
+  --admin-color-primary-soft: #e6f7ff;
+  --admin-color-primary-softer: #bae7ff;
+
+  /* —— 语义色 —— */
+  --admin-color-success: #52c41a;
+  --admin-color-success-soft: #f6ffed;
+  --admin-color-success-softer: #d9f7be;
+  --admin-color-warning: #fa8c16;
+  --admin-color-warning-soft: #fff7e6;
+  --admin-color-danger: #f5222d;
+  --admin-color-danger-hover: #d4380d;
+  --admin-color-danger-soft: #fff1f0;
+  --admin-color-danger-softer: #ffccc7;
+  --admin-color-info: #1890ff;
+  --admin-color-info-soft: #e6f7ff;
+  --admin-color-info-softer: #bae7ff;
+  --admin-color-accent: #2f54eb;
+  --admin-color-accent-soft: #f0f5ff;
+
+  /* —— 渐变辅助色（Task 43：用于 Login/Forbidden 页面渐变背景） —— */
+  --admin-color-gradient-secondary: #764ba2;
+  --admin-color-skip-link: #3FCF8E;
+  --admin-color-skip-link-fg: #ffffff;
+
+  /* —— Danger 加深色（Task 43：用于 ErrorState 标题/正文/hover） —— */
+  --admin-color-danger-border: #ffa39e;
+  --admin-color-danger-title: #a8071a;
+  --admin-color-danger-message: #5c0011;
+  --admin-color-danger-active: #cf1322;
+
+  /* —— Stat 卡片配色（Task 43：用于 Dashboard 统计卡片图标背景） —— */
+  --admin-color-stat-primary: #667eea;
+  --admin-color-stat-pink: #f093fb;
+  --admin-color-stat-blue: #4facfe;
+  --admin-color-stat-green: #43e97b;
+
+  /* —— 文本色（四级） —— */
+  --admin-color-text-primary: #333;
+  --admin-color-text-secondary: #555;
+  --admin-color-text-tertiary: #666;
+  --admin-color-text-quaternary: #999;
+  --admin-color-text-placeholder: #ccc;
+
+  /* —— 边框与背景 —— */
+  --admin-color-border: #e0e0e0;
+  --admin-color-border-light: #f0f0f0;
+  --admin-color-bg-page: #f5f5f5;
+  --admin-color-bg-container: #ffffff;
+  --admin-color-bg-subtle: #f9f9f9;
+  --admin-color-bg-hover: #f5f5f5;
+  --admin-color-overlay: rgba(0, 0, 0, 0.4);
+
+  /* —— 间距 —— */
+  --admin-space-xs: 4px;
+  --admin-space-xxs: 6px;
+  --admin-space-sm: 8px;
+  --admin-space-md-sm: 10px;
+  --admin-space-md: 12px;
+  --admin-space-md-lg: 14px;
+  --admin-space-lg: 16px;
+  --admin-space-xl: 20px;
+  --admin-space-xxl: 24px;
+  --admin-space-xxxl: 32px;
+  --admin-space-section: 40px;
+
+  /* —— 圆角 —— */
+  --admin-radius-sm: 4px;
+  --admin-radius-md: 6px;
+  --admin-radius-lg: 8px;
+  --admin-radius-xl: 12px;
+  --admin-radius-xxl: 16px;
+
+  /* —— 字号 —— */
+  --admin-font-xs: 11px;
+  --admin-font-sm: 12px;
+  --admin-font-md: 13px;
+  --admin-font-lg: 14px;
+  --admin-font-xl: 16px;
+  --admin-font-xxl: 18px;
+  --admin-font-xxxl: 24px;
+  --admin-font-display: 28px;
+  --admin-font-display-xl: 72px;
+
+  /* —— 阴影 —— */
+  --admin-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --admin-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.16);
+  --admin-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== 页面容器与页头 ========== */
+
+.page-header {
+  margin-bottom: var(--admin-space-xxl);
+}
+
+.page-title {
+  display: block;
+  font-size: var(--admin-font-display);
+  font-weight: 700;
+  color: var(--admin-color-text-primary);
+  margin-bottom: var(--admin-space-xs);
+}
+
+.page-subtitle {
+  display: block;
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-quaternary);
+}
+
+/* ========== 工具栏 ========== */
+
+.toolbar {
+  display: flex;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xxl);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  max-width: 320px;
+  padding: var(--admin-space-md-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--admin-color-primary);
+}
+
+.filter-input {
+  padding: var(--admin-space-md-sm) var(--admin-space-md-lg);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
+  min-width: 140px;
+}
+
+.filter-select {
+  padding: var(--admin-space-md-sm) var(--admin-space-md-lg);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
+  background: var(--admin-color-bg-container);
+  min-width: 160px;
+}
+
+/* ========== 按钮 ========== */
+
+.primary-button {
+  padding: var(--admin-space-md-sm) var(--admin-space-xl);
+  background: var(--admin-color-primary);
+  color: var(--admin-color-bg-container);
+  border: none;
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.primary-button:hover {
+  background: var(--admin-color-primary-hover);
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ghost-button {
+  padding: var(--admin-space-md-sm) var(--admin-space-xl);
+  background: transparent;
+  color: var(--admin-color-text-tertiary);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ghost-button:hover {
+  background: var(--admin-color-bg-hover);
+}
+
+.ghost-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.secondary-button {
+  padding: var(--admin-space-md-sm) var(--admin-space-xl);
+  background: var(--admin-color-bg-hover);
+  color: var(--admin-color-text-primary);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-lg);
+  font-size: var(--admin-font-lg);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondary-button:hover {
+  background: var(--admin-color-bg-hover);
+}
+
+/* ========== 错误/成功提示条 ========== */
+
+.error-banner,
+.error-message {
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border-radius: var(--admin-radius-lg);
+  margin-bottom: var(--admin-space-lg);
+  font-size: var(--admin-font-lg);
+}
+
+.success-message {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  background: var(--admin-color-success-soft);
+  border-left: 3px solid var(--admin-color-success);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-color-success);
+  font-size: var(--admin-font-md);
+  margin-bottom: var(--admin-space-lg);
+}
+
+/* ========== 表格容器 ========== */
+
+.table-container {
+  background: var(--admin-color-bg-container);
+  border-radius: var(--admin-radius-xl);
+  overflow: hidden;
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--admin-space-md-lg) var(--admin-space-lg);
+  text-align: left;
+  border-bottom: 1px solid var(--admin-color-border-light);
+  font-size: var(--admin-font-md);
+}
+
+.data-table th {
+  background: var(--admin-color-bg-subtle);
+  font-size: var(--admin-font-sm);
+  font-weight: 600;
+  color: var(--admin-color-text-tertiary);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.data-table tbody tr:hover {
+  background: var(--admin-color-bg-subtle);
+}
+
+.empty-cell,
+.empty-row {
+  text-align: center;
+  color: var(--admin-color-text-quaternary);
+  padding: var(--admin-space-section) var(--admin-space-lg);
+}
+
+/* ========== 状态/角色徽章 ========== */
+
+.status-badge,
+.role-badge {
+  display: inline-block;
+  padding: var(--admin-space-xs) var(--admin-space-md-sm);
+  border-radius: var(--admin-space-md);
+  font-size: var(--admin-font-sm);
+  font-weight: 500;
+}
+
+.status-active {
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
+}
+
+.status-disabled {
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
+}
+
+.role-user {
+  background: var(--admin-color-accent-soft);
+  color: var(--admin-color-accent);
+}
+
+.role-admin {
+  background: var(--admin-color-warning-soft);
+  color: var(--admin-color-warning);
+}
+
+/* ========== 操作按钮 ========== */
+
+.action-cell {
+  display: flex;
+  gap: var(--admin-space-sm);
+}
+
+.action-button {
+  padding: var(--admin-space-xxs) var(--admin-space-md);
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-button.edit,
+.action-button.audit,
+.action-button.handle {
+  background: var(--admin-color-info-soft);
+  color: var(--admin-color-info);
+}
+
+.action-button.edit:hover,
+.action-button.audit:hover,
+.action-button.handle:hover {
+  background: var(--admin-color-info-softer);
+}
+
+.action-button.delete {
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
+}
+
+.action-button.delete:hover {
+  background: var(--admin-color-danger-softer);
+}
+
+.action-button.enable {
+  background: var(--admin-color-success-soft);
+  color: var(--admin-color-success);
+}
+
+.action-button.enable:hover {
+  background: var(--admin-color-success-softer);
+}
+
+/* ========== 分页 ========== */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-lg);
+  margin-top: var(--admin-space-xxl);
+}
+
+.pagination-actions {
+  display: flex;
+  gap: var(--admin-space-sm);
+}
+
+.page-button {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  background: var(--admin-color-bg-container);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  font-size: var(--admin-font-lg);
+  transition: all 0.2s;
+}
+
+.page-button:hover:not(:disabled) {
+  background: var(--admin-color-bg-hover);
+}
+
+.page-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.page-info,
+.pagination-info {
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-tertiary);
+}
+
+/* ========== 弹窗与表单 ========== */
+
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: var(--admin-color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--admin-color-bg-container);
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-xxl);
+  width: 360px;
+  max-width: 90%;
+  box-shadow: var(--admin-shadow-md);
+}
+
+.modal-title {
+  display: block;
+  font-size: var(--admin-font-xxl);
+  font-weight: 600;
+  margin-bottom: var(--admin-space-lg);
+  color: var(--admin-color-text-primary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-md);
+}
+
+.modal-hint {
+  display: block;
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-quaternary);
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xxs);
+  margin-bottom: var(--admin-space-lg);
+}
+
+.form-label {
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-tertiary);
+}
+
+.form-input {
+  padding: var(--admin-space-md-sm) var(--admin-space-sm);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-lg);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--admin-color-primary);
+}
+
+.form-textarea {
+  padding: var(--admin-space-md-sm) var(--admin-space-sm);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-lg);
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+/* ========== 单选/复选组 ========== */
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xxs);
+  cursor: pointer;
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-primary);
+}
+
+/* ========== 通用工具类 ========== */
+
+.text-secondary {
+  color: var(--admin-color-text-quaternary);
+  font-size: var(--admin-font-lg);
+}
+
+.text-mono {
+  font-family: "JetBrains Mono", "Consolas", monospace;
+}
+
+.divider {
+  width: 1px;
+  height: var(--admin-space-xxl);
+  background: var(--admin-color-border);
+  margin: 0 var(--admin-space-xs);
+}

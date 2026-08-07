@@ -220,13 +220,29 @@ public class RecommendationController {
   /**
    * 保存推荐偏好设置。
    * PUT /api/recommendations/preferences/me
+   *
+   * <p>A-40 修复：允许部分字段更新（PATCH 语义兼容）——请求中缺失的字段
+   * 读取现有偏好保持原值后整体保存，仅对传入字段做非空/合法值校验；
+   * 从未保存过偏好的用户按默认值合并（12:00 / campus_first / true）。</p>
    */
   @PutMapping("/recommendations/preferences/me")
   @PreAuthorize("hasRole('USER')")
   public RecommendationPreferencesView savePreferences(
           @Valid @RequestBody SavePreferencesRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return recommendationService.savePreferences(userId, request.preferredTime(), request.scope(), request.campusPriority());
+    // 先读现有偏好（未保存时返回默认值），再合并传入字段，保持缺失字段原值
+    RecommendationPreferencesView existing = recommendationService.getPreferences(userId);
+    String preferredTime = request.preferredTime() != null
+            ? request.preferredTime() : existing.dailyNotifyTime();
+    String scope = request.scope() != null
+            ? request.scope() : existing.scope();
+    if (!UserPreferenceCalculator.VALID_SCOPES.contains(scope)) {
+      throw new IllegalArgumentException(
+          "推荐范围(scope)无效，有效值: campus_first, city, unlimited，当前值: " + scope);
+    }
+    Boolean campusPriority = request.campusPriority() != null
+            ? request.campusPriority() : existing.campusPriority();
+    return recommendationService.savePreferences(userId, preferredTime, scope, campusPriority);
   }
 
   /**
@@ -289,11 +305,15 @@ record ActivityEnrollmentView(
 }
 
 /**
- * 保存偏好请求体
+ * 保存偏好请求体（A-40：支持部分字段更新）。
+ *
+ * <p>字段均为可空：仅传入的字段参与更新，缺失字段由服务端读取现有偏好
+ * 保持原值（见 {@code savePreferences} 的合并逻辑），避免 @NotBlank
+ * 强制全量提交导致客户端部分更新被 400 拒绝。</p>
  */
 record SavePreferencesRequest(
-    @NotBlank(message = "preferredTime 不能为空") @Size(max = 16) String preferredTime,
-    @NotBlank(message = "scope 不能为空") @Size(max = 32) String scope,
+    @Size(max = 16) String preferredTime,
+    @Size(max = 32) String scope,
     /** 校园优先：同校用户推荐权重+30% */
     Boolean campusPriority
 ) {}

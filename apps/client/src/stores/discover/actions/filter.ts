@@ -16,7 +16,9 @@ import {
   SEARCH_DEBOUNCE_MS,
 } from "../constants";
 import { timers } from "../timers";
+import { NEARBY_MAX_DISTANCE_KM } from "../utils";
 import type { DiscoverStoreThis } from "../store-type";
+import type { MatchScope, SortBy } from "../types";
 
 /**
  * 设置筛选条件并刷新推荐列表
@@ -30,6 +32,69 @@ import type { DiscoverStoreThis } from "../store-type";
 export function setFilter(this: DiscoverStoreThis, filterId: string): void {
   this.activeFilter = filterId;
   // 切换筛选后重新加载推荐卡片
+  void this.fetchCards();
+}
+
+/**
+ * P2-04：附近筛选一键应用（顶部"附近"chip 场景）。
+ *
+ * 原页面实现依次调用 setFilter("nearby") + setMatchScope("nearby")，
+ * 两者各自触发一次 fetchCards → 连续两次重复请求。
+ * 此处合并为一次：同步更新 activeFilter（chip 高亮）与 matchScope（附近限定距离），
+ * 仅触发一次卡片刷新。
+ */
+export function setNearbyScope(this: DiscoverStoreThis): void {
+  this.activeFilter = "nearby";
+  this.matchScope = "nearby";
+  this.recommendationFilter = {
+    ...this.recommendationFilter,
+    distanceMax: NEARBY_MAX_DISTANCE_KM,
+  };
+  void this.fetchCards();
+}
+
+/**
+ * 设置排序规则（设计需求：匹配度优先/最新注册/最活跃）。
+ * 立即生效并刷新推荐列表。
+ */
+export function setSortBy(this: DiscoverStoreThis, sortBy: SortBy): void {
+  this.sortBy = sortBy;
+  void this.fetchCards();
+}
+
+/**
+ * 设置匹配范围（设计需求：不限/附近）。
+ * 立即生效并刷新推荐列表。
+ */
+export function setMatchScope(this: DiscoverStoreThis, scope: MatchScope): void {
+  this.matchScope = scope;
+  // 附近 = 限定距离，同时透传 distanceMax 给后端
+  if (scope === "nearby") {
+    this.recommendationFilter = { ...this.recommendationFilter, distanceMax: NEARBY_MAX_DISTANCE_KM };
+  } else {
+    this.recommendationFilter = { ...this.recommendationFilter, distanceMax: undefined };
+  }
+  void this.fetchCards();
+}
+
+/**
+ * 应用快速筛选（设计需求：顶部筛选栏 = 匹配范围 + 年龄区间 + 排序规则）。
+ * 一次性更新所有状态并只触发一次刷新，避免多次 fetchCards。
+ *
+ * @param payload - 快速筛选结果（QuickFilterSheet 确认回调）
+ */
+export function applyQuickFilter(
+  this: DiscoverStoreThis,
+  payload: { matchScope: MatchScope; sortBy: SortBy; ageMin: number; ageMax: number }
+): void {
+  this.matchScope = payload.matchScope;
+  this.sortBy = payload.sortBy;
+  this.recommendationFilter = {
+    ...this.recommendationFilter,
+    ageMin: payload.ageMin,
+    ageMax: payload.ageMax,
+    distanceMax: payload.matchScope === "nearby" ? NEARBY_MAX_DISTANCE_KM : undefined,
+  };
   void this.fetchCards();
 }
 

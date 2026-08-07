@@ -27,4 +27,13 @@ public interface PostTagService {
      * @return 帖子摘要视图列表
      */
     List<PostSummaryView> getPostsByTag(String tagName, int page, int size);
+
+    /**
+     * 获取热门话题列表（2026-08-07 圈子页「热门话题」模块）。
+     * 按帖子数降序取前 limit 个话题，postCount 近似浏览量。
+     *
+     * @param limit 返回条数上限
+     * @return 热门话题视图列表（按帖子数降序）
+     */
+    List<PopularTagView> getPopularTags(int limit);
 }

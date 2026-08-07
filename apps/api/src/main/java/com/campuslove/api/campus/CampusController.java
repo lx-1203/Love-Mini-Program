@@ -5,7 +5,10 @@ import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.discover.ActivityService;
 import com.campuslove.api.discover.ActivityView;
+import com.campuslove.api.entity.School;
+import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.ratelimit.RateLimit;
+import com.campuslove.api.repository.SchoolRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.village.CampusFeedView;
 import com.campuslove.api.village.VillageService;
@@ -47,6 +50,7 @@ public class CampusController {
     private final CampusService campusService;
     private final CampusCertificationService certService;
     private final UserCampusProfileRepository campusProfileRepository;
+    private final SchoolRepository schoolRepository;
     private final ActivityService activityService;
     private final VillageService villageService;
 
@@ -54,11 +58,13 @@ public class CampusController {
             CampusService campusService,
             CampusCertificationService certService,
             UserCampusProfileRepository campusProfileRepository,
+            SchoolRepository schoolRepository,
             ActivityService activityService,
             VillageService villageService) {
         this.campusService = campusService;
         this.certService = certService;
         this.campusProfileRepository = campusProfileRepository;
+        this.schoolRepository = schoolRepository;
         this.activityService = activityService;
         this.villageService = villageService;
     }
@@ -92,9 +98,9 @@ public class CampusController {
         Long userId = SecurityUtils.getCurrentUserId();
         Long schoolId = resolveSchoolId(userId);
         if (schoolId == null) {
-            // 未绑定学校时返回空页，保持响应结构一致
-            Page<CampusTopicView> empty = new PageImpl<>(List.of(), pageable, 0);
-            return ResponseEntity.ok(CampusTopicPageResponse.from(empty));
+            // A-26 修复：未绑定学校（或学校不在 schools 表）时返回明确业务错误，
+            // 而非静默空列表——引导用户先完成校园认证/绑定学校
+            throw new IllegalArgumentException("请先完成校园认证/绑定学校，再查看校园话题");
         }
 
         List<CampusTopicView> allTopics = campusService.getCampusTopics(schoolId, category);
@@ -326,12 +332,21 @@ public class CampusController {
     }
 
     /**
-     * 从用户校园资料中解析学校ID。
-     * 使用 campusName 的 hashCode 作为 schoolId（与现有推荐算法一致）。
+     * 从用户校园资料中解析学校ID（P0-18）。
+     *
+     * <p>修复：原实现使用 {@code campusName.hashCode()} 推导 schoolId，与
+     * schools 表真实主键不一致，导致校园话题种子、管理员管辖校区等按
+     * school_id 关联的数据全部无法命中。现改为按校区名查询 schools 表
+     * 返回真实 id；schools 表无该校或用户未绑定学校时返回 null。</p>
+     *
+     * @param userId 当前用户 ID
+     * @return schools 表主键 id；未绑定学校或学校不在库中时返回 null
      */
     private Long resolveSchoolId(Long userId) {
         return campusProfileRepository.findByUserId(userId)
-                .map(profile -> (long) profile.getCampusName().hashCode())
+                .map(UserCampusProfile::getCampusName)
+                .flatMap(schoolRepository::findByName)
+                .map(School::getId)
                 .orElse(null);
     }
 }

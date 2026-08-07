@@ -1,10 +1,13 @@
 package com.campuslove.api.wallet;
 
+import com.campuslove.api.entity.UserCampusProfile;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * 钱包交易流水 Repository。
@@ -55,4 +58,31 @@ public interface WalletTransactionLogRepository extends JpaRepository<WalletTran
      * @return 流水列表
      */
     List<WalletTransactionLog> findByRelatedTypeAndRelatedId(String relatedType, String relatedId);
+
+    /**
+     * 管理后台分页查询钱包流水（多条件筛选 + 校区数据隔离）。
+     *
+     * <p>流水按用户归属校区隔离：campusName 非空时通过 EXISTS 子查询
+     * 联 {@code UserCampusProfile.campusName} 过滤，校区管理员仅可见本校区用户的流水。</p>
+     *
+     * @param userId     用户 ID（可空）
+     * @param type       交易类型 DEBIT/CREDIT（可空）
+     * @param campusName 管辖校区名（可空，null/空表示不过滤）
+     * @param pageable   分页参数
+     * @return 分页流水列表（按创建时间倒序）
+     */
+    @Query("""
+            SELECT t FROM WalletTransactionLog t
+            WHERE (:userId IS NULL OR t.userId = :userId)
+              AND (:type IS NULL OR :type = '' OR t.type = :type)
+              AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
+                    SELECT 1 FROM UserCampusProfile p
+                    WHERE p.userId = t.userId AND p.campusName = :campusName))
+            ORDER BY t.createdAt DESC
+            """)
+    Page<WalletTransactionLog> searchForAdmin(
+            @Param("userId") Long userId,
+            @Param("type") String type,
+            @Param("campusName") String campusName,
+            Pageable pageable);
 }

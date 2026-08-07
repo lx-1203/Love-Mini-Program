@@ -5,9 +5,8 @@ validateMigrationNaming = true
 validateOnMigrate = true
 # Task 25.1：禁止在已有非空数据库上自动 baseline，避免跳过历史迁移。
 baselineOnMigrate = false
-# 使用双下划线占位符，避免与 MySQL 单行注释 # 冲突。
-placeholderPrefix = "__"
-placeholderSuffix = "__"
+# C-19：占位符统一使用 Flyway 默认 ${...} 语法（与 Spring Boot application-real.yml 一致），
+# 不再自定义双下划线 __xxx__（历史上曾因迁移文件名中的 __ 被当作占位符解析导致启动失败）。
 
 [flyway.placeholders]
 admin_openid = "admin-default-openid-change-me"
@@ -19,5 +18,5 @@ admin_nickname = "系统管理员"
 #   2. 环境变量：export FLYWAY_PLACEHOLDERS_ADMIN_PASSWORD_HASH='$2a$10$...'
 # 生成方法：python -c "import bcrypt; print(bcrypt.hashpw(b'YOUR-PASSWORD', bcrypt.gensalt(10)).decode())"
 # ⚠️ 未设置环境变量时，flyway migrate 将因占位符缺失而失败（这是预期行为，避免使用弱默认值上线）。
-# 注：Spring Boot 启动时通过 application-db.yml 中的 ${ADMIN_INITIAL_PASSWORD_HASH:...} 注入，
+# 注：Spring Boot 启动时通过 application-real.yml 中的 ${ADMIN_INITIAL_PASSWORD_HASH:...} 注入，
 # 与本文件（独立 flyway CLI 用途）独立。

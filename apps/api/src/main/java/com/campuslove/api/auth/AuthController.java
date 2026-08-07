@@ -109,10 +109,9 @@ public class AuthController {
      * @return 用户会话视图(包含 JWT 令牌)
      */
     @PostMapping("/register")
-    public ApiResponse<UserSessionView> register(@Valid @RequestBody RegisterRequest request) {
-        UserSessionView session = authService.registerUser(
+    public UserSessionView register(@Valid @RequestBody RegisterRequest request) {
+        return authService.registerUser(
                 request.phone(), request.password(), request.nickname());
-        return ApiResponse.ok(session);
     }
 
     /**
@@ -122,9 +121,8 @@ public class AuthController {
      * @return 用户会话视图(包含 JWT 令牌)
      */
     @PostMapping("/phone-login")
-    public ApiResponse<UserSessionView> phoneLogin(@Valid @RequestBody PhoneLoginRequest request) {
-        UserSessionView session = authService.loginWithPhone(request.phone(), request.password());
-        return ApiResponse.ok(session);
+    public UserSessionView phoneLogin(@Valid @RequestBody PhoneLoginRequest request) {
+        return authService.loginWithPhone(request.phone(), request.password());
     }
 
     /**
@@ -139,9 +137,8 @@ public class AuthController {
      * @return 用户会话视图(包含 JWT 令牌)
      */
     @PostMapping("/guest-login")
-    public ApiResponse<UserSessionView> guestLogin() {
-        UserSessionView session = authService.loginAsGuest();
-        return ApiResponse.ok(session);
+    public UserSessionView guestLogin() {
+        return authService.loginAsGuest();
     }
 
 
@@ -209,7 +206,7 @@ public class AuthController {
     })
     @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
     @Idempotent
-    public ApiResponse<UserSessionView> refreshToken(
+    public UserSessionView refreshToken(
             @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true)
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader
     ) {
@@ -221,7 +218,7 @@ public class AuthController {
         } catch (RuntimeException ignore) {
             // 监控逻辑失败忽略，不影响主流程
         }
-        return ApiResponse.ok(session);
+        return session;
     }
 
     /**
@@ -314,7 +311,9 @@ public class AuthController {
                                 userId,
                                 request.username(),
                                 session.displayName(),
-                                mockRole
+                                mockRole,
+                                // C-04：mock 分支无 JPA 仓库，校区名取会话视图中的 campusName
+                                session != null ? session.campusName() : null
                         )
                 );
                 return ApiResponse.ok(mockView);
@@ -335,7 +334,9 @@ public class AuthController {
                             userId,
                             username,
                             admin.getNickname() != null ? admin.getNickname() : username,
-                            role
+                            role,
+                            // C-04：校区名取自 users.campus_name（admin 前端 session.ts 读 user.campusName）
+                            admin.getCampusName()
                     )
             );
             return ApiResponse.ok(view);

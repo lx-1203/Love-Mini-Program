@@ -248,9 +248,13 @@ const hasHeartSignal = computed(() => heartSignals.value.length > 0);
  * 格式化时间显示
  * @param isoString - ISO 时间字符串
  * @returns 友好时间文本
+ *
+ * P2-01：无效/空时间返回空串，避免展示"NaN月 NaN日"。
  */
 function formatTime(isoString: string): string {
+  if (!isoString) return "";
   const date = new Date(isoString);
+  if (isNaN(date.getTime())) return "";
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMinutes = Math.floor(diffMs / (1000 * 60));
@@ -395,6 +399,16 @@ onShow(() => {
     void likesStore.fetchHeartSignals();
   }
 });
+
+/**
+ * P1-10：错误态重试——与 onLoad 加载的完整数据源对齐，
+ * 同时重试喜欢列表、心动信号与访客列表，避免仅重试部分数据。
+ */
+function retryLoad(): void {
+  void likesStore.fetchLikes();
+  void likesStore.fetchHeartSignals();
+  void likesStore.fetchVisitors();
+}
 </script>
 
 <template>
@@ -485,9 +499,9 @@ onShow(() => {
         <Skeleton variant="list" :count="4" />
       </view>
 
-      <!-- 错误状态：网络异常或后端错误时展示，附带重试按钮 -->
+      <!-- 错误状态：网络异常或后端错误时展示，附带重试按钮（P1-10：重试全部数据源） -->
       <view v-else-if="errorMessage" class="likes-error" role="alert">
-        <ErrorState type="network" @retry="() => likesStore.fetchLikes()" />
+        <ErrorState type="network" @retry="retryLoad" />
       </view>
 
       <!-- 喜欢我的列表 -->
@@ -534,7 +548,7 @@ onShow(() => {
                 lazy-load alt=""
               />
               <view v-else class="likes-card__avatar-placeholder">
-                <text class="likes-card__avatar-initial">{{ item.name.charAt(0) }}</text>
+                <text class="likes-card__avatar-initial">{{ (item.name || '?').charAt(0) }}</text>
               </view>
             </view>
             <view class="likes-card__info">
@@ -603,7 +617,7 @@ onShow(() => {
                 lazy-load alt=""
               />
               <view v-else class="likes-card__avatar-placeholder">
-                <text class="likes-card__avatar-initial">{{ item.name.charAt(0) }}</text>
+                <text class="likes-card__avatar-initial">{{ (item.name || '?').charAt(0) }}</text>
               </view>
             </view>
             <view class="likes-card__info">
@@ -671,7 +685,7 @@ onShow(() => {
                 lazy-load alt=""
               />
               <view v-else class="likes-card__avatar-placeholder">
-                <text class="likes-card__avatar-initial">{{ item.name.charAt(0) }}</text>
+                <text class="likes-card__avatar-initial">{{ (item.name || '?').charAt(0) }}</text>
               </view>
               <!-- 新访客标记 -->
               <view v-if="item.isNew" class="likes-card__new-dot" />

@@ -4,28 +4,28 @@
  * 展示个性化用户卡片推荐，支持滑动浏览和每日签到
  */
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-// 修复 no-duplicate-imports：合并 ../../stores/discover 的重复 import
-import { useDiscoverStore, type SwipeDirection } from "../../stores/discover";
-import { useActivityStore } from "../../stores/activity";
+import { useDiscoverStore, type SwipeDirection, type MatchScope, type SortBy } from "../../stores/discover";
 import { useCheckInStore } from "../../stores/checkin";
 import { useDailyQuestionStore } from "../../stores/daily-question";
-import { useSocialProgressStore } from "../../stores/social-progress";
 // P2.7 修复：预注册懒加载组件引用的 store。
 // 本页组件链（CardSwiper→CardDetailOverlay）在页面 script 之后加载并 require
 // stores/vip，而 mp-weixin dev 模式按文件懒加载执行——若 vip 模块未被页面
 // script 依赖树先执行注册，组件加载时报 "module 'stores/vip.js' is not defined"。
-// （coins 无此问题：本页依赖链中已有 store 间接注册了它。）
 import { useVipStore } from "../../stores/vip";
-import { openAppPath, switchTabWithQuery } from "../../utils/navigation";
+import { useSessionStore } from "../../stores/session";
+import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import CardSwiper from "../../components/discover/CardSwiper.vue";
-import FilterDrawer from "../../components/discover/FilterDrawer.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import HeartParticles from "../../components/common/HeartParticles.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
+// 2026-08-07 设计稿：顶部筛选标签行接线（组件已备好，此前仅挂 Storybook）
+import QuickFilterSheet from "../../components/discover/QuickFilterSheet.vue";
+import FilterDrawer from "../../components/discover/FilterDrawer.vue";
 // Task F：全局发帖悬浮按钮组件
 import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { IMAGE_PATHS } from "../../config/images";
@@ -33,53 +33,40 @@ import { lightHaptic } from "../../utils/haptic";
 import { showErrorToast } from "../../utils/error-toast";
 // Sentry 监控：推荐加载 / 滑动失败上报异常，页面切换记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
-import type { RecommendationFilter } from "../../services/generated/api-types-supplement";
 
-/** 图标资源路径 */
+/** 图标资源路径（仅保留本页模板实际引用的图标） */
 const icons = {
-  checkin: IMAGE_PATHS.ICONS_SOCIAL.CHECKIN,
-  match: IMAGE_PATHS.ICONS_SOCIAL.MATCH,
   heartSignal: IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL,
-  follow: IMAGE_PATHS.ICONS_SOCIAL.FOLLOW,
-  likeFilled: IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED,
   // Emoji 替换 SVG 图标
   search: IMAGE_PATHS.ICONS_EMOJI.SEARCH,
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
   location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
-  plus: IMAGE_PATHS.ICONS_EMOJI.PLUS,
-  close: IMAGE_PATHS.ICONS_COMMON.CLOSE,
-  // Task D：签到积分 → 商城入口图标（礼物）
-  gift: IMAGE_PATHS.ICONS_EMOJI.GIFT,
-  // 任务 E4：设置入口（齿轮）
-  settings: IMAGE_PATHS.ICONS_COMMON.SETTINGS_GEAR_SVG,
 } as const;
 
+const sessionStore = useSessionStore();
 const discoverStore = useDiscoverStore();
 const { t } = useI18n();
 
-// 同步自定义 TabBar 选中状态（匹配 = 索引 0）
-useTabBar(0);
+// 同步自定义 TabBar 选中状态（tab 顺序：首页0/匹配1/圈子2/消息3/我的4）
+useTabBar(1);
 const {
   cards,
   remainingCount,
-  hasMore,
   loading,
   errorMessage,
-  recommendationFilter,
-  isFilterDrawerOpen,
 } = storeToRefs(discoverStore);
 
-const activityStore = useActivityStore();
-
-// infra R2-00066: 「限量提示」展示阈值——剩余卡片数低于该值时提示，规则集中在此处管理
-const LIMIT_HINT_THRESHOLD = 3;
 const checkInStore = useCheckInStore();
 const dailyQuestionStore = useDailyQuestionStore();
-const socialProgressStore = useSocialProgressStore();
 
 /** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
 function goToPublishTopic() {
   openAppPath('/pages/circles/post-topic');
+}
+
+/** D1 修复：未登录空状态「去登录」→ 登录页 */
+function goLogin() {
+  openAppPath('/pages/login/index');
 }
 
 /**
@@ -276,18 +263,79 @@ async function reloadCards() {
   await discoverStore.fetchCards();
 }
 
-/* ========== 筛选栏与搜索框交互 ========== */
+/* ========== 筛选区交互（2026-08-07 设计稿：顶部筛选标签行 + 快捷筛选 + 高级筛选抽屉） ========== */
 
-/** 当前选中的筛选项 ID（默认附近） */
-const activeFilter = ref("nearby");
+/** 快捷筛选弹窗（范围/年龄/排序）显隐 */
+const quickFilterVisible = ref(false);
+
+/** 快捷筛选确认回调：一次性应用范围+年龄+排序并刷新卡片 */
+function onQuickFilterApply(payload: {
+  matchScope: MatchScope;
+  sortBy: SortBy;
+  ageMin: number;
+  ageMax: number;
+}): void {
+  discoverStore.applyQuickFilter(payload);
+  lightHaptic();
+}
+
+/** 附近 chip：切换附近范围（P2-04：合并为一次请求，避免重复 fetchCards） */
+function onNearbyChip(): void {
+  discoverStore.setNearbyScope();
+  lightHaptic();
+}
+
+/** 当前生效的匹配范围（用于 chip 文案与高亮） */
+const activeMatchScope = computed(() => discoverStore.matchScope);
+
+/** 当前生效的排序规则 */
+const activeSortBy = computed(() => discoverStore.sortBy);
+
+/** 当前生效的年龄区间（缺省 18-35） */
+const activeAgeMin = computed(() => discoverStore.recommendationFilter.ageMin ?? 18);
+const activeAgeMax = computed(() => discoverStore.recommendationFilter.ageMax ?? 35);
+
+/** 范围 chip 文案（不限/附近；同城/同校为后续枚举扩展，见 MatchScope 注释） */
+const scopeChipLabel = computed(() =>
+  activeMatchScope.value === "nearby" ? t("discover.nearby") : t("discover.unlimited"),
+);
+
+/** 年龄 chip 文案（如 "18-35岁"） */
+const ageChipLabel = computed(() => `${activeAgeMin.value}-${activeAgeMax.value}${t("discover.ageUnit")}`);
+
+/** 排序 chip 文案（匹配度优先/最新注册/最活跃） */
+const sortChipLabel = computed(() => {
+  if (activeSortBy.value === "latest") return t("discover.sortLatest");
+  if (activeSortBy.value === "active") return t("discover.sortActive");
+  return t("discover.matchPriority");
+});
+
+/** 高级筛选是否已应用（用于「全部筛选」chip 高亮 + 计数角标） */
+const hasAdvancedFilter = computed(() => {
+  const f = discoverStore.recommendationFilter;
+  return Boolean(
+    f.heightMin ||
+      f.heightMax ||
+      f.educationLevel?.length ||
+      f.relationshipStatus?.length ||
+      f.hometownProvince ||
+      f.hometownCity ||
+      f.futureCity ||
+      f.keyword ||
+      f.gender ||
+      f.schools?.length ||
+      f.interests?.length ||
+      f.onlineOnly
+  );
+});
+
+/* ========== 搜索框交互（2026-08-07 设计稿：顶部常驻通栏搜索框） ========== */
 
 /** 搜索关键字（双向绑定到 input） */
 const searchKeyword = ref("");
 
 /**
  * 搜索输入框聚焦状态（双向控制）。
- *
- * P2 修复（搜索框自动聚焦）：
  * - 通过 :focus 绑定控制 input 的聚焦/失焦
  * - 用户点击搜索框区域（含放大镜图标）时调用 focusSearchInput 触发聚焦
  * - 失焦后 reset 为 false，便于下次再次触发（mp-weixin input focus 属性需先 false 再 true 才能重新聚焦）
@@ -309,142 +357,9 @@ function focusSearchInput() {
   searchInputFocused.value = true;
 }
 
-/** 学历标签映射（与 FilterDrawer EDUCATION_OPTIONS 对齐，使用 computed 以响应 locale 切换） */
-const EDUCATION_LABEL_MAP = computed<Record<string, string>>(() => ({
-  high_school: t("discover.educationHighSchool"),
-  bachelor: t("discover.educationBachelor"),
-  master: t("discover.educationMaster"),
-  phd: t("discover.educationPhd"),
-}));
-
-/** 感情状态标签映射（与 FilterDrawer RELATIONSHIP_OPTIONS 对齐，使用 computed 以响应 locale 切换） */
-const RELATIONSHIP_LABEL_MAP = computed<Record<string, string>>(() => ({
-  never: t("discover.relationshipNever"),
-  married_before: t("discover.relationshipMarriedBefore"),
-  divorced: t("discover.relationshipDivorced"),
-  widowed: t("discover.relationshipWidowed"),
-}));
-
-/**
- * 已应用的筛选条件胶囊列表（基于 recommendationFilter 派生）。
- * 用于在筛选栏下方展示当前生效的筛选条件，每个胶囊可单独删除。
- */
-const activeFilterCapsules = computed<{ key: keyof RecommendationFilter; label: string }[]>(() => {
-  const filter = recommendationFilter.value;
-  const capsules: { key: keyof RecommendationFilter; label: string }[] = [];
-
-  // 身高范围
-  if (filter.heightMin !== undefined || filter.heightMax !== undefined) {
-    const min = filter.heightMin ?? 120;
-    const max = filter.heightMax ?? 250;
-    capsules.push({ key: "heightMin", label: `${min}-${max}cm` });
-  }
-
-  // 学历多选
-  if (filter.educationLevel && filter.educationLevel.length > 0) {
-    const labels = filter.educationLevel.map((v) => EDUCATION_LABEL_MAP.value[v] ?? v).join("/");
-    capsules.push({ key: "educationLevel", label: labels });
-  }
-
-  // 感情状态
-  if (filter.relationshipStatus && filter.relationshipStatus.length > 0) {
-    const labels = filter.relationshipStatus.map((v) => RELATIONSHIP_LABEL_MAP.value[v] ?? v).join("/");
-    capsules.push({ key: "relationshipStatus", label: labels });
-  }
-
-  // 籍贯
-  if (filter.hometownProvince) {
-    const citySuffix = filter.hometownCity && filter.hometownCity !== filter.hometownProvince
-      ? ` ${filter.hometownCity}`
-      : "";
-    capsules.push({ key: "hometownProvince", label: `${filter.hometownProvince}${citySuffix}` });
-  }
-
-  // 未来城市
-  if (filter.futureCity) {
-    capsules.push({ key: "futureCity", label: `${t("discover.futureCityPrefix")}${filter.futureCity}` });
-  }
-
-  // 关键词
-  if (filter.keyword) {
-    capsules.push({ key: "keyword", label: `${t("discover.keywordPrefix")}${filter.keyword}` });
-  }
-
-  return capsules;
-});
-
-/** 是否有已应用的筛选条件 */
-const hasActiveFilters = computed(() => activeFilterCapsules.value.length > 0);
-
-/** 筛选配置：id -> 文案与图标（图标使用 SVG 路径）。
- * Phase 4.1 验收：顶部仅保留 1-2 个核心筛选 Chip，其余筛选收敛到抽屉（全部筛选）。
- */
-const filterOptions = computed<{ id: string; icon: string; text: string }[]>(() => [
-  { id: "nearby", icon: icons.location, text: t('discover.nearby') },
-]);
-
-/**
- * 切换筛选 chip
- * - "all-filters" 触发筛选抽屉打开（不修改 activeFilter）
- * - 其他 ID 走原 chip 高亮 + setFilter 逻辑
- * @param filterId - 筛选项 ID
- */
-function onFilterChipTap(filterId: string) {
-  if (filterId === "all-filters") {
-    lightHaptic();
-    discoverStore.openFilterDrawer();
-    return;
-  }
-  activeFilter.value = filterId;
-  // 触发 store 筛选逻辑（刷新推荐列表）
-  discoverStore.setFilter(filterId);
-}
-
-/**
- * FilterDrawer 应用筛选回调。
- * 由抽屉确认按钮触发，将最终 RecommendationFilter 应用到 store 并刷新列表。
- * @param filter - 用户确认后的筛选条件对象
- */
-function onApplyFilter(filter: RecommendationFilter) {
-  discoverStore.setRecommendationFilter(filter);
-}
-
-/**
- * FilterDrawer 重置回调。
- * 由抽屉重置按钮触发，清空 store 中的所有筛选条件。
- */
-function onResetFilter() {
-  discoverStore.resetFilter();
-}
-
-/**
- * 删除单个已应用筛选胶囊。
- * 通过浅拷贝当前 filter 后删除对应字段，再回写到 store。
- * @param key - 要删除的筛选字段名
- */
-function removeFilterCapsule(key: keyof RecommendationFilter) {
-  lightHaptic();
-  const next: RecommendationFilter = { ...recommendationFilter.value };
-  if (key === "heightMin") {
-    // 身高范围一并清除（避免下限被删后上限孤立）
-    delete next.heightMin;
-    delete next.heightMax;
-  } else if (key === "hometownProvince") {
-    // 籍贯省市一并清除
-    delete next.hometownProvince;
-    delete next.hometownCity;
-  } else {
-    delete next[key];
-  }
-  discoverStore.setRecommendationFilter(next);
-}
-
-/**
- * 清空所有已应用筛选条件。
- */
-function clearAllFilters() {
-  lightHaptic();
-  discoverStore.resetFilter();
+/** 搜索框失焦：仅重置聚焦状态 */
+function onSearchBlur() {
+  searchInputFocused.value = false;
 }
 
 /**
@@ -457,9 +372,7 @@ function onSearchInput() {
 
 /**
  * 清空搜索框
- *
- * P2 修复（搜索框自动聚焦）：清空后自动 refocus 输入框，
- * 便于用户连续输入新关键词，无需再次手动点击输入框。
+ * 清空后自动 refocus 输入框，便于用户连续输入新关键词
  */
 function clearSearch() {
   searchKeyword.value = "";
@@ -523,11 +436,47 @@ onMounted(() => {
   void vipStore.isVip;
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
   addBreadcrumb("navigation", "page_enter", { url: "/pages/discover/index" });
-  void discoverStore.fetchCards();
-  void activityStore.fetchActivities();
-  void checkInStore.fetchStatus();
-  void socialProgressStore.fetchProgress();
+  // D1 修复：未登录时禁止发鉴权请求（否则冷启动 → 401 洪水）。
+  // 已登录直接拉取；登录态变化后（如从登录页返回）自动补发。
+  if (sessionStore.isLoggedIn) {
+    loadDiscoverData();
+  }
 });
+
+// D1 修复：登录成功后补发发现页数据（解决「登录回来数据不加载」）
+watch(
+  () => sessionStore.isLoggedIn,
+  (loggedIn) => {
+    if (loggedIn) {
+      loadDiscoverData();
+    }
+  }
+);
+
+/**
+ * P1-06：每日限额跨天重置。
+ *
+ * onShow 时调用 store 的 resetDailyLimit：其内部对比本地存储的日期与当前日期，
+ * 跨天时才清空 viewedCards / hasRewoundToday 等状态（同日调用为空操作）。
+ * 跨天重置会更新 lastRefreshTime，据此判断是否需要补拉卡片。
+ */
+onShow(() => {
+  const lastRefreshBefore = discoverStore.lastRefreshTime;
+  discoverStore.resetDailyLimit();
+  if (
+    discoverStore.lastRefreshTime !== lastRefreshBefore &&
+    sessionStore.isLoggedIn
+  ) {
+    loadDiscoverData();
+  }
+});
+
+/** D1 修复：集中发现页三个数据请求，登录态守卫下统一调用 */
+function loadDiscoverData() {
+  void discoverStore.fetchCards();
+  void checkInStore.fetchStatus();
+  void dailyQuestionStore.fetchTodayQuestion();
+}
 
 /**
  * 监听推荐卡片加载错误，上报到 Sentry 便于排查接口 / 数据问题。
@@ -549,107 +498,90 @@ watch(
 
 // 修复（严格模式 noUnusedLocals）：clearSearch 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
-defineExpose({ clearSearch, goShop });
+defineExpose({ clearSearch });
 </script>
 
 <template>
+  <!-- 寻觅/匹配页：浅青绿色背景，纵向排布，核心匹配卡片区占据主视觉 -->
   <view class="discover-page page-bottom-safe page-fade-in">
-    <!-- 浪漫氛围背景层：模糊光斑营造若隐若现的浪漫感（mp-weixin 降级为静态色块） -->
-    <view class="discover-atmosphere" aria-hidden="true">
-      <view class="discover-atmosphere__blob discover-atmosphere__blob--pink" />
-      <view class="discover-atmosphere__blob discover-atmosphere__blob--green" />
-    </view>
-
-    <!-- 页面头部 -->
+    <!-- 标题行（2026-08-07 设计稿）：左「寻觅 发现心动的人」，右「今日剩余 X 次」 -->
     <view class="discover-header">
-      <view class="discover-header__title-area">
+      <view class="discover-header__titles">
         <text class="discover-header__title">{{ t('discover.title') }}</text>
         <text class="discover-header__subtitle">{{ t('discover.subtitle') }}</text>
       </view>
-      <view class="discover-header__meta">
-        <view class="discover-header__count-chip">
-          <SafeImage :src="icons.match" custom-class="discover-header__count-icon" mode="aspectFit" />
-          <text class="discover-header__count">{{ t('discover.remainingTimes', { n: remainingCount }) }}</text>
-        </view>
-        <!-- 任务 E4：设置入口（齿轮图标，最小插入） -->
-        <view class="discover-header__settings press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.settingsAria')" @tap="openAppPath('/pages/settings/index')">
-          <SafeImage :src="icons.settings" custom-class="discover-header__settings-icon" mode="aspectFit" />
-        </view>
-      </view>
+      <text class="discover-header__count">{{ t('discover.remainingToday', { n: remainingCount }) }}</text>
     </view>
 
-    <!-- 筛选栏 -->
+    <!-- 筛选标签行（2026-08-07 设计稿）：附近[定位] / 范围 / 年龄 / 排序 + 全部筛选 -->
     <view class="filter-bar">
-      <scroll-view scroll-x class="filter-scroll" :show-scrollbar="false">
-        <view class="filter-list" role="list">
+      <scroll-view class="filter-scroll" scroll-x :show-scrollbar="false">
+        <view class="filter-list">
+          <!-- 附近（定位）：点击切换附近范围 -->
           <view
-            v-for="filter in filterOptions" :key="filter.id"
-            class="filter-chip press-feedback"
-            :class="{ 'filter-chip--active': activeFilter === filter.id }"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
+            class="filter-chip"
+            :class="{ 'filter-chip--active': activeMatchScope === 'nearby' }"
             role="button"
-            :aria-label="filter.text"
-            :aria-pressed="activeFilter === filter.id"
-            @tap="onFilterChipTap(filter.id)"
+            :aria-label="t('discover.filterNearby')"
+            @tap="onNearbyChip"
           >
-            <image class="filter-chip__icon" :src="filter.icon" mode="aspectFit" alt="" />
-            <text class="filter-chip__text">{{ filter.text }}</text>
+            <image class="filter-chip__icon" :src="icons.location" mode="aspectFit" alt="" />
+            <text class="filter-chip__text">{{ t('discover.filterNearby') }}</text>
           </view>
-          <!-- 全部筛选 chip：点击打开筛选抽屉（H-07 + M-16） -->
+          <!-- 范围：打开快捷筛选 -->
           <view
-            class="filter-chip filter-chip--all press-feedback"
-            :class="{ 'filter-chip--has-active': hasActiveFilters }"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
+            class="filter-chip filter-chip--quick"
+            role="button"
+            :aria-label="t('discover.scopeTitle')"
+            @tap="quickFilterVisible = true"
+          >
+            <text class="filter-chip__text filter-chip__text--summary">{{ scopeChipLabel }}</text>
+            <text class="filter-chip__chevron">▾</text>
+          </view>
+          <!-- 年龄：打开快捷筛选 -->
+          <view
+            class="filter-chip filter-chip--quick"
+            role="button"
+            :aria-label="t('discover.ageRangeTitle')"
+            @tap="quickFilterVisible = true"
+          >
+            <text class="filter-chip__text filter-chip__text--summary">{{ ageChipLabel }}</text>
+            <text class="filter-chip__chevron">▾</text>
+          </view>
+          <!-- 排序：打开快捷筛选 -->
+          <view
+            class="filter-chip filter-chip--quick"
+            role="button"
+            :aria-label="t('discover.sortTitle')"
+            @tap="quickFilterVisible = true"
+          >
+            <text class="filter-chip__text filter-chip__text--summary">{{ sortChipLabel }}</text>
+            <text class="filter-chip__chevron">▾</text>
+          </view>
+          <!-- 全部筛选：打开高级筛选抽屉（有已应用筛选时暖色高亮 + 计数角标） -->
+          <view
+            class="filter-chip filter-chip--all"
+            :class="{ 'filter-chip--has-active': hasAdvancedFilter }"
             role="button"
             :aria-label="t('discover.allFilters')"
-            @tap="onFilterChipTap('all-filters')"
+            @tap="discoverStore.openFilterDrawer()"
           >
-            <image class="filter-chip__icon" :src="icons.plus" mode="aspectFit" alt="" />
             <text class="filter-chip__text">{{ t('discover.allFilters') }}</text>
-            <view v-if="hasActiveFilters" class="filter-chip__count-badge">
-              <text class="filter-chip__count-text">{{ activeFilterCapsules.length }}</text>
+            <view v-if="hasAdvancedFilter" class="filter-chip__count-badge">
+              <text class="filter-chip__count-text">•</text>
             </view>
           </view>
         </view>
       </scroll-view>
     </view>
 
-    <!-- 已应用的筛选条件胶囊栏（仅在存在筛选条件时展示） -->
-    <view v-if="hasActiveFilters" class="active-capsules">
-      <scroll-view scroll-x class="active-capsules__scroll" :show-scrollbar="false">
-        <view class="active-capsules__list" role="list">
-          <view
-            v-for="capsule in activeFilterCapsules" :key="capsule.key"
-            class="active-capsule press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            role="button"
-            :aria-label="capsule.label"
-            @tap="removeFilterCapsule(capsule.key)"
-          >
-            <text class="active-capsule__text">{{ capsule.label }}</text>
-            <image class="active-capsule__close-img" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" mode="aspectFit" alt="" />
-          </view>
-          <view
-            class="active-capsule active-capsule--clear press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            role="button"
-            :aria-label="t('discover.clear')"
-            @tap="clearAllFilters"
-          >
-            <text class="active-capsule__text active-capsule__text--clear">{{ t('discover.clear') }}</text>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-
-    <!-- 搜索框 -->
-    <!-- P2 修复（搜索框自动聚焦）：容器 @tap 触发 focusSearchInput，扩大可点击区域；
-         input 绑定 :focus 与 @blur，blur 后 reset 为 false 才能再次触发 focus -->
-    <view class="search-box" role="button" :aria-label="t('discover.searchPlaceholder')" @tap="focusSearchInput">
+    <!-- 顶部搜索栏：状态栏下方通栏排布，白色圆角矩形，左侧放大镜图标 -->
+    <view
+      class="search-box"
+      role="search"
+      :aria-label="t('discover.searchPlaceholder')"
+      @tap="focusSearchInput"
+    >
       <image class="search-icon" :src="icons.search" mode="aspectFit" alt="" />
       <input
         class="search-input"
@@ -657,48 +589,77 @@ defineExpose({ clearSearch, goShop });
         v-model="searchKeyword"
         :focus="searchInputFocused"
         @input="onSearchInput"
-        @blur="searchInputFocused = false" :aria-label="t('discover.searchPlaceholder')"
+        @blur="onSearchBlur"
+        :aria-label="t('discover.searchPlaceholder')"
       />
-      <image v-if="searchKeyword" class="search-clear-img" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" mode="aspectFit" catchtap="clearSearch" alt="" />
+      <image
+        v-if="searchKeyword"
+        class="search-clear-img"
+        :src="IMAGE_PATHS.ICONS_COMMON.CLOSE"
+        mode="aspectFit"
+        catchtap="clearSearch"
+        alt=""
+      />
     </view>
 
-    <!-- 筛选抽屉（H-07 + M-16）：底部滑入，控制身高/学历/感情状态/籍贯/未来城市/关键词 -->
-    <FilterDrawer
-      :visible="isFilterDrawerOpen"
-      :filter="recommendationFilter"
-      @update:visible="isFilterDrawerOpen = $event"
-      @apply="onApplyFilter"
-      @reset="onResetFilter"
-    />
-
-    <!-- 签到卡片骨架屏：loading 时显示占位，避免页面空白 -->
-    <view v-if="checkInStore.loading" class="checkin-card card-base checkin-card--skeleton">
-      <view class="checkin-card__left">
-        <view class="skeleton skeleton--icon" />
-        <view class="checkin-card__info">
+    <!-- 运营功能卡片组：搜索栏下方左右并排两张等高圆角卡片 -->
+    <!-- 加载态：双卡骨架屏占位 -->
+    <view v-if="checkInStore.loading" class="top-cards">
+      <view class="top-card top-card--points top-card--skeleton">
+        <view class="top-card__side top-card__side--gold" />
+        <view class="top-card__body">
           <view class="skeleton skeleton--title" />
           <view class="skeleton skeleton--desc" />
         </view>
       </view>
-      <view class="skeleton skeleton--btn" />
-    </view>
-
-    <!-- 签到卡片：今日未签到时展示（CSS 动画淡入，签到后切换更平滑） -->
-    <view v-if="!checkInStore.checkedIn && !checkInStore.loading" class="checkin-card card-base animate-fade">
-      <view class="checkin-card__left">
-        <SafeImage :src="icons.checkin" custom-class="checkin-card__icon" mode="aspectFit" />
-        <view class="checkin-card__info">
-          <text class="checkin-card__title">{{ t('discover.todayCheckin') }}</text>
-          <text class="checkin-card__desc">{{ t('discover.getMoreRecommend') }}</text>
+      <view class="top-card top-card--checkin top-card--skeleton">
+        <view class="top-card__side top-card__side--green" />
+        <view class="top-card__body">
+          <view class="skeleton skeleton--title" />
+          <view class="skeleton skeleton--desc" />
         </view>
       </view>
-      <button
-        class="checkin-card__btn"
-        :disabled="checkInStore.checkingIn || isAnimating"
+    </view>
+
+    <!-- 已加载：积分卡 + 签到卡 -->
+    <view v-else class="top-cards">
+      <!-- 左侧积分卡：浅黄底 + 黄色装饰竖边，点击跳转积分商城 -->
+      <view
+        class="top-card top-card--points press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('discover.myPointsAria', { n: checkInStore.pointsBalance })"
+        @tap="goShop"
+      >
+        <view class="top-card__side top-card__side--gold" />
+        <view class="top-card__body">
+          <text class="top-card__title">{{ t('discover.myPoints', { n: checkInStore.pointsBalance }) }}</text>
+          <text class="top-card__desc top-card__desc--gold">{{ t('discover.pointsHint') }}</text>
+        </view>
+        <text class="top-card__arrow">&rsaquo;</text>
+      </view>
+
+      <!-- 右侧签到卡：浅绿底 + 绿色装饰竖边；未签到=立即签到，已签到=已签到+连续天数 -->
+      <view
+        class="top-card top-card--checkin press-feedback"
+        :class="{ 'top-card--done': checkInStore.checkedIn }"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="checkInStore.checkedIn ? t('discover.alreadyCheckedIn') : t('discover.todayCheckin')"
         @tap="handleCheckIn"
       >
-        {{ checkInStore.checkingIn ? t('discover.checkinInProgress') : (isAnimating ? t('discover.checkinSuccess') : t('discover.checkinNow')) }}
-      </button>
+        <view class="top-card__side top-card__side--green" />
+        <view class="top-card__body">
+          <text class="top-card__title">
+            {{ checkInStore.checkedIn ? t('discover.alreadyCheckedIn') : t('discover.todayCheckin') }}
+          </text>
+          <text class="top-card__desc top-card__desc--green">
+            {{ checkInStore.checkedIn ? (checkInStore.consecutiveDaysText || t('discover.tomorrowContinue')) : t('discover.getMoreRecommend') }}
+          </text>
+        </view>
+      </view>
     </view>
 
     <!-- 签到成功提示（CSS 动画淡入）+ 心形粒子撒花动画覆盖层 -->
@@ -706,139 +667,23 @@ defineExpose({ clearSearch, goShop });
       <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CHECK" custom-class="checkin-success__icon" mode="aspectFit" />
       <view class="checkin-success__info">
         <text class="checkin-success__title">{{ t('discover.checkinSuccess') }}</text>
-        <!-- Task D：展示本次签到获得积分，保留连续签到天数展示 -->
         <text class="checkin-success__count">{{ t('discover.checkinPointsEarned', { n: checkInStore.pointsEarned }) }}</text>
         <text v-if="checkInStore.consecutiveDaysText" class="checkin-success__streak">
           {{ checkInStore.consecutiveDaysText }}
         </text>
       </view>
-      <!-- 心形粒子撒花动画：1.5s 后由 done 事件触发 onParticlesDone，重置 showParticles 并释放 isAnimating 锁 -->
+      <!-- 心形粒子撒花动画：1.5s 后由 done 事件触发 onParticlesDone -->
       <HeartParticles :visible="showParticles" @done="onParticlesDone" />
     </view>
 
-    <!-- 签到成功卡片下方：积分可在商城兑换权益提示（Task D） -->
+    <!-- 每日一问轻量入口：通栏浅粉色圆角卡片，点击进入话题详情页 -->
     <view
-      v-if="checkInStore.showSuccessAnimation"
-      class="checkin-points-hint press-feedback"
-      hover-class="press-feedback--active"
-      hover-stay-time="120"
-      role="button"
-      :aria-label="t('discover.pointsHint')"
-  @tap.stop="goShop"
-    >
-      <image class="checkin-points-hint__icon" :src="icons.gift" mode="aspectFit" alt="" lazy-load />
-      <text class="checkin-points-hint__text">{{ t('discover.pointsHint') }}</text>
-      <text class="checkin-points-hint__arrow">&rsaquo;</text>
-    </view>
-
-    <!-- 签到权益卡片：签到成功后展示权益入口（CSS 动画淡入，3 秒后由 success 切换过来更平滑） -->
-    <view v-if="checkInStore.checkedIn && !checkInStore.showSuccessAnimation" class="benefits-section animate-fade card-stagger">
-      <!-- 收尾轮改造：权益卡横向滚动单行（紧凑入口），把垂直空间还给中间卡片 -->
-      <scroll-view scroll-x class="benefits-scroll" :show-scrollbar="false">
-        <view class="benefits-row">
-        <!-- Task D：我的积分入口卡片（点击跳转商城） -->
-        <view
-          class="benefit-card card-base benefit-card--points press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="t('discover.myPointsAria', { n: checkInStore.pointsBalance })"
-  @tap.stop="goShop"
-        >
-          <view class="benefit-card__left">
-            <SafeImage :src="icons.gift" custom-class="benefit-card__icon" mode="aspectFit" />
-            <view class="benefit-card__info">
-              <text class="benefit-card__title">{{ t('discover.myPoints', { n: checkInStore.pointsBalance }) }}</text>
-              <text class="benefit-card__desc">{{ t('discover.pointsHint') }}</text>
-            </view>
-          </view>
-          <text class="benefit-card__arrow">&rsaquo;</text>
-        </view>
-
-        <!-- 已签到徽章卡片：签到后展示「已签到」状态 -->
-        <view
-          class="benefit-card card-base benefit-card--quota press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-        >
-          <view class="benefit-card__left">
-            <SafeImage :src="icons.checkin" custom-class="benefit-card__icon" mode="aspectFit" />
-            <view class="benefit-card__info">
-              <text class="benefit-card__title">{{ t('discover.alreadyCheckedIn') }}</text>
-              <text class="benefit-card__desc">{{ checkInStore.consecutiveDaysText || t('discover.tomorrowContinue') }}</text>
-            </view>
-          </view>
-          <image class="benefit-card__arrow-img" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE" mode="aspectFit" alt="" />
-        </view>
-
-        <!-- 推荐配额权益 -->
-        <view
-          v-if="checkInStore.extraQuotaText"
-          class="benefit-card card-base benefit-card--quota press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="checkInStore.extraQuotaText"
-          @tap="openAppPath('/pages/likes/index')"
-        >
-          <view class="benefit-card__left">
-            <SafeImage :src="icons.match" custom-class="benefit-card__icon" mode="aspectFit" />
-            <view class="benefit-card__info">
-              <text class="benefit-card__title">{{ t('discover.recommendQuotaBoost') }}</text>
-              <text class="benefit-card__desc">{{ checkInStore.extraQuotaText }}</text>
-            </view>
-          </view>
-        </view>
-
-        <!-- 热门话题入口（可点击跳转） -->
-        <view
-          v-if="checkInStore.hotTopicsText"
-          class="benefit-card card-base benefit-card--clickable press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="t('discover.hotTopics')"
-          @tap="switchTabWithQuery('/pages/village/index', { tab: 'hot' })"
-        >
-          <view class="benefit-card__left">
-            <SafeImage :src="icons.heartSignal" custom-class="benefit-card__icon" mode="aspectFit" />
-            <view class="benefit-card__info">
-              <text class="benefit-card__title">{{ t('discover.hotTopics') }}</text>
-              <text class="benefit-card__desc">{{ checkInStore.hotTopicsText }}</text>
-            </view>
-          </view>
-          <text class="benefit-card__arrow">&rsaquo;</text>
-        </view>
-
-        <!-- 新入圈用户入口（可点击跳转） -->
-        <view
-          v-if="checkInStore.newUsersText"
-          class="benefit-card card-base benefit-card--clickable press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="t('discover.newCircleUsers')"
-          @tap="openAppPath('/pages/circles/index')"
-        >
-          <view class="benefit-card__left">
-            <SafeImage :src="icons.follow" custom-class="benefit-card__icon" mode="aspectFit" />
-            <view class="benefit-card__info">
-              <text class="benefit-card__title">{{ t('discover.newCircleUsers') }}</text>
-              <text class="benefit-card__desc">{{ checkInStore.newUsersText }}</text>
-            </view>
-          </view>
-          <text class="benefit-card__arrow">&rsaquo;</text>
-        </view>
-        </view>
-      </scroll-view>
-    </view>
-
-    <!-- 每日一问入口：签到后展示 -->
-    <view
-      v-if="checkInStore.checkedIn && !checkInStore.showSuccessAnimation"
+      v-if="!checkInStore.showSuccessAnimation"
       class="daily-question-card card-base press-feedback"
       hover-class="press-feedback--active"
       hover-stay-time="120"
+      role="button"
+      :aria-label="t('discover.dailyQuestion')"
       @tap="openAppPath('/pages/daily-question/index')"
     >
       <view class="daily-question-card__left">
@@ -846,9 +691,6 @@ defineExpose({ clearSearch, goShop });
         <view class="daily-question-card__info">
           <text class="daily-question-card__title">{{ t('discover.dailyQuestion') }}</text>
           <text class="daily-question-card__desc">{{ dailyQuestionStore.todayQuestion?.question ?? t('discover.todayQuestion') }}</text>
-          <text v-if="checkInStore.consecutiveDaysText" class="daily-question-card__streak">
-            {{ checkInStore.consecutiveDaysText }}
-          </text>
         </view>
       </view>
       <text class="daily-question-card__arrow">&rsaquo;</text>
@@ -868,10 +710,23 @@ defineExpose({ clearSearch, goShop });
       </view>
     </view>
 
-    <!-- 空状态：无可推荐卡片时引导用户调整筛选或刷新 -->
+    <!-- 空状态：未登录时引导登录（D1 修复）；已登录无可推荐卡片时引导刷新 -->
     <view v-else-if="cards.length === 0" class="card-empty-wrap">
-      <EmptyState type="no-data" :message="t('discover.card.emptyTitle')">
+      <EmptyState
+        type="no-data"
+        :message="sessionStore.isLoggedIn ? t('discover.card.emptyTitle') : t('discover.card.loginTitle')"
+      >
         <view
+          v-if="!sessionStore.isLoggedIn"
+          class="card-empty__action press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="goLogin"
+        >
+          <text class="card-empty__action-text">{{ t('discover.card.goLogin') }}</text>
+        </view>
+        <view
+          v-else
           class="card-empty__action press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
@@ -882,7 +737,7 @@ defineExpose({ clearSearch, goShop });
       </EmptyState>
     </view>
 
-    <!-- 卡片滑动区域 -->
+    <!-- 核心匹配卡片区（页面主体核心）：占据页面中间 60%-70% 纵向空间 -->
     <view v-else class="card-area">
       <CardSwiper
         :cards="cards"
@@ -892,58 +747,6 @@ defineExpose({ clearSearch, goShop });
         @videoTap="handleVideoTap"
         @message="handleMessage"
       />
-    </view>
-
-    <!-- 社交升温提示：有社交进度时展示 -->
-    <view
-      v-if="!loading && socialProgressStore.progress && socialProgressStore.progress.likeCount > 0"
-      class="social-hint press-feedback"
-      hover-class="press-feedback--active"
-      hover-stay-time="120"
-      role="button"
-      :aria-label="t('discover.likeCountProgress', { count: socialProgressStore.progress.likeCount })"
-      @tap="openAppPath('/pages/likes/index')"
-    >
-      <view class="social-hint__left">
-        <SafeImage :src="icons.likeFilled" custom-class="social-hint__icon" mode="aspectFit" />
-        <text class="social-hint__text">
-          {{ t('discover.likeCountProgress', { count: socialProgressStore.progress.likeCount }) }}
-        </text>
-      </view>
-      <text class="social-hint__arrow">&rsaquo;</text>
-    </view>
-
-    <!-- 活动推荐板块：卡片用完后展示（infra R2-00067: 无活动数据时整块隐藏，避免空容器） -->
-    <view v-if="!loading && !errorMessage && cards.length === 0 && activityStore.activities.length > 0" class="activity-recommend">
-      <view class="activity-recommend__header">
-        <text class="activity-recommend__title section-title-brand">{{ t('discover.discoverActivities') }}</text>
-        <text class="activity-recommend__subtitle">{{ t('discover.discoverActivitiesDesc') }}</text>
-      </view>
-      <view class="activity-list" role="list">
-        <view
-          v-for="(item, idx) in activityStore.activities.slice(0, 3)" :key="item.id"
-          class="activity-card list-item animate-fade-in"
-          :style="{ animationDelay: idx * 80 + 'ms' }"
-          role="button"
-          :aria-label="t('home.activityCardAria', { title: item.title, time: item.scheduleText, location: item.location })"
-          @tap="openAppPath('/subpackages/discover/activities/index')"
-        >
-          <view class="activity-card__info">
-            <text class="activity-card__title">{{ item.title }}</text>
-            <text class="activity-card__location">{{ item.location }}</text>
-            <text class="activity-card__time">{{ item.scheduleText }}</text>
-          </view>
-          <text class="activity-card__arrow">&rsaquo;</text>
-        </view>
-      </view>
-      <view class="activity-recommend__more press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('discover.viewMoreActivities')" @tap="openAppPath('/subpackages/discover/activities/index')">
-        <text class="activity-recommend__more-text">{{ t('discover.viewMoreActivities') }}</text>
-      </view>
-    </view>
-
-    <!-- 底部提示：当卡片即将用完时显示 -->
-    <view v-if="hasMore && remainingCount <= LIMIT_HINT_THRESHOLD && remainingCount > 0" class="limit-hint">
-      <text class="limit-hint__text">{{ t('discover.remainingChances', { n: remainingCount }) }}</text>
     </view>
 
     <!-- 匹配成功双头像碰撞动画 overlay -->
@@ -959,8 +762,26 @@ defineExpose({ clearSearch, goShop });
       <text class="match-overlay__subtitle">{{ t('discover.matchWithPartner', { name: partnerName }) }}</text>
     </view>
 
-    <!-- Task F：全局发帖悬浮按钮（publish → 发帖编辑页） -->
+    <!-- 悬浮发布按钮：页面右下角，悬浮在所有内容之上 -->
     <GlobalPublishFab @publish="goToPublishTopic" />
+
+    <!-- 快捷筛选底部弹窗（范围/年龄/排序） -->
+    <QuickFilterSheet
+      v-model:visible="quickFilterVisible"
+      :match-scope="activeMatchScope"
+      :sort-by="activeSortBy"
+      :age-min="activeAgeMin"
+      :age-max="activeAgeMax"
+      @apply="onQuickFilterApply"
+    />
+
+    <!-- 高级筛选抽屉（身高/学历/感情状态/籍贯/关键词 + 性别/年龄/学校/距离/兴趣/在线状态） -->
+    <FilterDrawer
+      v-model:visible="discoverStore.isFilterDrawerOpen"
+      :filter="discoverStore.recommendationFilter"
+      @apply="discoverStore.setRecommendationFilter"
+      @reset="discoverStore.resetFilter"
+    />
   </view>
 </template>
 
@@ -972,11 +793,13 @@ defineExpose({ clearSearch, goShop });
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   min-height: 100%;
-  /* 浪漫粉绿渐变：粉→薄荷绿→中性灰三段过渡，对齐青藤参考 */
-  background: var(--c-gradient-page-romance);
+  /* 2026-08-07 设计稿：页面背景统一为浅青绿色（实色，非渐变） */
+  background: var(--c-bg-brand);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 120rpx;
+  /* 顶部状态栏安全距离 + 底部底导航留白（含 FAB 与底导航高度） */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: 180rpx;
 }
 
 /* ========== 浪漫氛围背景层（卡片轻微高斯模糊光斑） ========== */
@@ -1088,7 +911,7 @@ defineExpose({ clearSearch, goShop });
   border: 1rpx solid var(--c-brand-border-tint);
 }
 
-.discover-header__count-icon {
+:deep(.discover-header__count-icon) {
   width: 28rpx;
   height: 28rpx;
 }
@@ -1105,7 +928,7 @@ defineExpose({ clearSearch, goShop });
   border: 1rpx solid var(--c-border-light);
 }
 
-.discover-header__settings-icon {
+:deep(.discover-header__settings-icon) {
   width: 28rpx;
   height: 28rpx;
   color: var(--c-text-secondary);
@@ -1123,6 +946,38 @@ defineExpose({ clearSearch, goShop });
   // #ifndef H5
   color: var(--c-brand-500);
   // #endif
+}
+
+/* ========== 标题行（2026-08-07 设计稿：寻觅 + 发现心动的人 + 今日剩余次数） ========== */
+.discover-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: var(--sp-4) var(--sp-8) var(--sp-3);
+}
+
+.discover-header__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.discover-header__title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--c-text-primary);
+  line-height: 1.2;
+}
+
+.discover-header__subtitle {
+  font-size: var(--fs-base);
+  color: var(--c-text-tertiary);
+}
+
+.discover-header__count {
+  font-size: var(--fs-base);
+  color: var(--c-text-tertiary);
+  padding-bottom: 6rpx;
 }
 
 /* ========== 筛选栏 ========== */
@@ -1236,6 +1091,48 @@ defineExpose({ clearSearch, goShop });
   font-weight: 600;
 }
 
+/* 快速筛选 chip（设计需求：左侧筛选下拉按钮，展示当前生效的筛选摘要） */
+.filter-chip--quick {
+  max-width: 420rpx;
+}
+
+.filter-chip__text--summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260rpx;
+}
+
+.filter-chip__chevron {
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.filter-chip--active .filter-chip__chevron {
+  filter: brightness(0) invert(1);
+}
+
+/* 搜索图标按钮（设计需求：收起态为图标，点击展开搜索框） */
+.search-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  margin: 0 var(--sp-7) var(--sp-3) auto;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-neutral-200);
+  box-shadow: var(--s-xs);
+}
+
+.search-toggle__icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
 /* ========== 已应用筛选条件胶囊栏 ========== */
 .active-capsules {
   padding: 0 var(--sp-7) var(--sp-3);
@@ -1292,22 +1189,16 @@ defineExpose({ clearSearch, goShop });
   font-weight: 500;
 }
 
-/* ========== 搜索框 ========== */
+/* ========== 搜索框（2026-08-07 设计稿：顶部通栏，状态栏下方） ========== */
 .search-box {
   display: flex;
   align-items: center;
-  margin: var(--sp-4) var(--sp-7);
+  /* 通栏排布：左右留 20rpx 边距，顶部紧贴状态栏下方 */
+  margin: var(--sp-3) var(--sp-5) 0;
   padding: var(--sp-3) var(--sp-5);
-  background: var(--c-overlay-white-text-strong);
-  /* #ifdef H5 */
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  /* #endif */
-  /* #ifndef H5 */
-  opacity: 0.96;
-  /* #endif */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl);
-  border: var(--border-subtle);
+  border: 1rpx solid var(--c-border-light);
   box-shadow: var(--s-xs);
 
   .search-icon {
@@ -1324,11 +1215,129 @@ defineExpose({ clearSearch, goShop });
     color: var(--c-text-primary);
   }
 
-  .search-clear {
-    font-size: var(--fs-md);
-    color: var(--c-text-tertiary);
-    padding: var(--sp-1) var(--sp-2);
+  /* 清空按钮图标（替换原 search-clear 文字版本） */
+  .search-clear-img {
+    width: 32rpx;
+    height: 32rpx;
+    margin-left: var(--sp-2);
+    flex-shrink: 0;
   }
+}
+
+/* ========== 2026-08-07 精简：签到权益轻量横条 ========== */
+.benefits-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0 var(--sp-5) var(--sp-3);
+}
+
+.benefit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx var(--sp-3);
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  box-shadow: var(--s-card-soft);
+}
+
+.benefit-pill__icon {
+  width: 28rpx;
+  height: 28rpx;
+  flex-shrink: 0;
+}
+
+.benefit-pill__text {
+  font-size: var(--fs-xs);
+  color: var(--c-text-secondary);
+  font-weight: 500;
+}
+
+/* ========== 2026-08-07 设计稿落地：顶部运营双卡（积分 + 签到，并排固定） ========== */
+.top-cards {
+  display: flex;
+  gap: var(--sp-3);
+  margin: 0 var(--sp-5) var(--sp-3);
+}
+
+.top-card {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: var(--sp-4) var(--sp-3);
+  border-radius: var(--r-lg);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
+}
+
+.top-card--points {
+  background: #fffbe9;
+}
+
+.top-card--checkin {
+  background: #eefaf3;
+}
+
+.top-card__side {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8rpx;
+}
+
+.top-card__side--gold {
+  background: linear-gradient(180deg, #f0c96a 0%, #d4af37 100%);
+}
+
+.top-card__side--green {
+  background: linear-gradient(180deg, var(--c-brand-400) 0%, var(--c-brand-600) 100%);
+}
+
+.top-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding-left: var(--sp-2);
+}
+
+.top-card__title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-card__desc {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-card__desc--gold {
+  color: #b8860b;
+}
+
+.top-card__desc--green {
+  color: var(--c-brand-600);
+}
+
+.top-card__arrow {
+  font-size: var(--fs-xl);
+  color: var(--c-text-tertiary);
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 /* ========== 签到卡片（紧凑横条：高度 ≤ 96rpx，减少垂直占用让位卡片区） ========== */
@@ -1354,7 +1363,7 @@ defineExpose({ clearSearch, goShop });
   min-width: 0;
 }
 
-.checkin-card__icon {
+:deep(.checkin-card__icon) {
   width: 36rpx;
   height: 36rpx;
   flex-shrink: 0;
@@ -1525,7 +1534,7 @@ defineExpose({ clearSearch, goShop });
   }
 }
 
-.checkin-success__icon {
+:deep(.checkin-success__icon) {
   width: 48rpx;
   height: 48rpx;
   flex-shrink: 0;
@@ -1700,7 +1709,7 @@ defineExpose({ clearSearch, goShop });
   padding-left: var(--sp-2);
 }
 
-.benefit-card__icon {
+:deep(.benefit-card__icon) {
   width: 40rpx;
   height: 40rpx;
   flex-shrink: 0;
@@ -1711,6 +1720,15 @@ defineExpose({ clearSearch, goShop });
   flex-direction: column;
   gap: var(--sp-1);
   min-width: 0;
+}
+
+/* 2026-08-07 修复：已签到卡右侧对勾图标无尺寸约束，
+   按 SVG 原始像素渲染成大图覆盖文字（截图"大号环形对勾图标遮挡"），
+   统一为 32rpx 小图标并与左侧信息垂直居中对齐 */
+.benefit-card__arrow-img {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
 }
 
 .benefit-card__title {
@@ -1788,13 +1806,6 @@ defineExpose({ clearSearch, goShop });
   white-space: nowrap;
 }
 
-.daily-question-card__streak {
-  font-size: var(--fs-sm);
-  color: var(--c-romance-500);
-  font-weight: 500;
-  margin-top: var(--sp-1);
-}
-
 .daily-question-card__arrow {
   font-size: var(--fs-3xl);
   color: var(--c-romance-500);
@@ -1809,12 +1820,15 @@ defineExpose({ clearSearch, goShop });
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* 卡片完整可见：H5 端占屏幕中央 60% 以上高度，mp-weixin 用 rpx 兜底 */
+  /* 2026-08-07 设计稿：核心匹配卡片区占据页面中间 60%-70% 纵向空间 */
   // #ifdef H5
-  min-height: 60vh;
+  min-height: 65vh;
   // #endif
   // #ifndef H5
-  min-height: 760rpx;
+  /* mp-weixin 不支持 100vh，用 rpx 兜底。
+     普通手机可视区约 1300-1624rpx，65% ≈ 850-1050rpx；
+     设为 1050rpx 保证卡片区稳定占据主视觉空间 */
+  min-height: 1050rpx;
   // #endif
 }
 
@@ -1880,6 +1894,9 @@ defineExpose({ clearSearch, goShop });
   justify-content: center;
   gap: var(--sp-5);
   padding: var(--sp-6) var(--sp-5);
+  /* 2026-08-07 修复：加载期撑满剩余高度（mp-weixin 端 flex:1 在内容少时可能塌缩，
+     导致页面下半部分大面积空白、视觉上"头重脚轻"） */
+  min-height: 60vh;
 }
 
 .card-skeleton-hint {

@@ -279,10 +279,12 @@ export async function _doSwipeRight(
     );
 
     // 保存匹配结果供页面使用
+    // 修复（P0-11）：partnerName 以卡片数据为准——后端 HeartSignalView.fromUserName
+    // 是信号发起方（userA）昵称，本端右滑后可能是自己，不能作为「对方昵称」展示
     this.lastSwipeResult = {
       matched: result.matched,
       matchId: result.matchId,
-      partnerName: result.partnerName,
+      partnerName: result.matched ? card.name : undefined,
       cardId,
     };
 

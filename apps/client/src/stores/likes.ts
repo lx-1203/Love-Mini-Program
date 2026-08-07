@@ -12,7 +12,7 @@ export type HeartSignalStatus = "pending" | "accepted" | "expired";
 
 /**
  * 后端 LikedUserView 类型
- * 对应后端 record LikedUserView(Long userId, String nickname, String avatarUrl, String campusName, String likedAt)
+ * 对应后端 record LikedUserView(Long userId, String nickname, String avatarUrl, String campusName, String likedAt, boolean unlocked)
  */
 export interface LikedUserView {
   userId: number;
@@ -20,11 +20,13 @@ export interface LikedUserView {
   avatarUrl: string;
   campusName: string;
   likedAt: string;
+  /** P0-17：当前用户是否已解锁该条信息（未解锁由前端打码并引导解锁） */
+  unlocked: boolean;
 }
 
 /**
  * 后端 VisitorView 类型
- * 对应后端 record VisitorView(Long visitorId, String nickname, String avatarUrl, String campusName, String visitedAt)
+ * 对应后端 record VisitorView(Long visitorId, String nickname, String avatarUrl, String campusName, String visitedAt, boolean unlocked)
  */
 export interface VisitorView {
   visitorId: number;
@@ -32,6 +34,8 @@ export interface VisitorView {
   avatarUrl: string;
   campusName: string;
   visitedAt: string;
+  /** P0-17：当前用户是否已解锁该条信息（未解锁由前端打码并引导解锁） */
+  unlocked: boolean;
 }
 
 /**
@@ -53,6 +57,8 @@ export interface HeartSignalView {
 
 /**
  * 将后端 LikedUserView 映射为前端 LikeRecord
+ *
+ * P0-17：透传服务端 unlocked 字段（后端缺失时默认 false，展示未解锁打码态）。
  */
 function mapToLikeRecord(raw: LikedUserView): LikeRecord {
   return {
@@ -62,11 +68,14 @@ function mapToLikeRecord(raw: LikedUserView): LikeRecord {
     avatar: raw.avatarUrl || "",
     headline: raw.campusName || "",
     likedAt: raw.likedAt,
+    unlocked: raw.unlocked === true,
   };
 }
 
 /**
  * 将后端 VisitorView 映射为前端 VisitorRecord
+ *
+ * P0-17：透传服务端 unlocked 字段（后端缺失时默认 false，展示未解锁打码态）。
  */
 function mapToVisitorRecord(raw: VisitorView): VisitorRecord {
   return {
@@ -77,6 +86,7 @@ function mapToVisitorRecord(raw: VisitorView): VisitorRecord {
     headline: raw.campusName || "",
     visitedAt: raw.visitedAt,
     isNew: false, // 后端 VisitorView 无 isNew 字段，默认为 false
+    unlocked: raw.unlocked === true,
   };
 }
 
@@ -107,6 +117,11 @@ export interface LikeRecord {
   headline: string;
   likedAt: string;
   /**
+   * P0-17：当前用户是否已解锁该条喜欢信息。
+   * 服务端 LikedUserView.unlocked 透传；未解锁时前端打码并引导解锁。
+   */
+  unlocked?: boolean;
+  /**
    * 认证徽章级别：none/email/idcard/school（Phase D3 新增）。
    * 后端 LikedUserView 暂未返回此字段，由前端可选消费：
    * - 字段存在且非 "none" 时，VerificationBadge 渲染对应徽章
@@ -126,6 +141,11 @@ export interface VisitorRecord {
   headline: string;
   visitedAt: string;
   isNew: boolean;
+  /**
+   * P0-17：当前用户是否已解锁该条访客信息。
+   * 服务端 VisitorView.unlocked 透传；未解锁时前端打码并引导解锁。
+   */
+  unlocked?: boolean;
   /**
    * 认证徽章级别：none/email/idcard/school（Phase D3 新增）。
    * 与 LikeRecord.verificationBadgeLevel 同义，用于访客卡片渲染徽章。
@@ -218,7 +238,7 @@ const mockLikedBy: LikeRecord[] = [
     id: "like-3",
     userId: "user-2003",
     name: "苏晴",
-    avatar: "/static/default-avatar.png",
+    avatar: "/static/assets/images/avatars/avatar-28.jpg",
     headline: "中山大学 · 大一 · 摄影爱好者",
     likedAt: "2026-05-20T16:45:00Z",
     verificationBadgeLevel: "school",
@@ -227,7 +247,7 @@ const mockLikedBy: LikeRecord[] = [
     id: "like-4",
     userId: "user-2004",
     name: "周然",
-    avatar: "/static/default-avatar.png",
+    avatar: "/static/assets/images/avatars/avatar-29.jpg",
     headline: "华南理工 · 研一 · 喜欢夜跑",
     likedAt: "2026-05-18T09:20:00Z",
     verificationBadgeLevel: "email",
@@ -236,7 +256,7 @@ const mockLikedBy: LikeRecord[] = [
     id: "like-5",
     userId: "user-2006",
     name: "叶知秋",
-    avatar: "/static/default-avatar.png",
+    avatar: "/static/assets/images/avatars/avatar-30.jpg",
     headline: "暨南大学 · 大二 · 文学系",
     likedAt: "2026-05-17T20:10:00Z",
   },
@@ -244,10 +264,160 @@ const mockLikedBy: LikeRecord[] = [
     id: "like-6",
     userId: "user-2007",
     name: "沈星河",
-    avatar: "/static/default-avatar.png",
+    avatar: "/static/assets/images/avatars/avatar-31.jpg",
     headline: "广东工业 · 大三 · 篮球队",
     likedAt: "2026-05-16T14:00:00Z",
     verificationBadgeLevel: "idcard",
+  },
+  {
+    id: "like-7",
+    userId: "user-2200",
+    name: "叶知秋",
+    avatar: "/static/assets/images/avatars/avatar-28.jpg",
+    headline: "北京大学 · 大1 · 自习搭子",
+    likedAt: "2026-05-15T10:00:00Z",
+    verificationBadgeLevel: "school"
+  },
+  {
+    id: "like-8",
+    userId: "user-2201",
+    name: "沈星河",
+    avatar: "/static/assets/images/avatars/avatar-29.jpg",
+    headline: "复旦大学 · 大2 · 骑行党",
+    likedAt: "2026-05-14T11:01:00Z",
+  },
+  {
+    id: "like-9",
+    userId: "user-2202",
+    name: "江晚吟",
+    avatar: "/static/assets/images/avatars/avatar-30.jpg",
+    headline: "浙江大学 · 大3 · 烘焙达人",
+    likedAt: "2026-05-13T12:02:00Z",
+  },
+  {
+    id: "like-10",
+    userId: "user-2203",
+    name: "陆离",
+    avatar: "/static/assets/images/avatars/avatar-31.jpg",
+    headline: "南京大学 · 大4 · 桌游狂热",
+    likedAt: "2026-05-12T13:03:00Z",
+    verificationBadgeLevel: "school"
+  },
+  {
+    id: "like-11",
+    userId: "user-2204",
+    name: "温言",
+    avatar: "/static/assets/images/avatars/avatar-32.jpg",
+    headline: "武汉大学 · 大1 · 猫奴",
+    likedAt: "2026-05-11T14:04:00Z",
+  },
+  {
+    id: "like-12",
+    userId: "user-2205",
+    name: "白夜",
+    avatar: "/static/assets/images/avatars/avatar-33.jpg",
+    headline: "四川大学 · 大2 · 旅行博主",
+    likedAt: "2026-05-10T15:05:00Z",
+  },
+  {
+    id: "like-13",
+    userId: "user-2206",
+    name: "许清欢",
+    avatar: "/static/assets/images/avatars/avatar-34.jpg",
+    headline: "厦门大学 · 大3 · 图书馆常客",
+    likedAt: "2026-05-09T16:06:00Z",
+    verificationBadgeLevel: "school"
+  },
+  {
+    id: "like-14",
+    userId: "user-2207",
+    name: "顾北辰",
+    avatar: "/static/assets/images/avatars/avatar-35.jpg",
+    headline: "天津大学 · 大4 · 吉他手",
+    likedAt: "2026-05-08T17:07:00Z",
+  },
+  {
+    id: "like-15",
+    userId: "user-2208",
+    name: "林晚",
+    avatar: "/static/assets/images/avatars/avatar-36.jpg",
+    headline: "中南大学 · 大1 · 羽毛球",
+    likedAt: "2026-05-07T18:08:00Z",
+  },
+  {
+    id: "like-16",
+    userId: "user-2209",
+    name: "沈知微",
+    avatar: "/static/assets/images/avatars/avatar-37.jpg",
+    headline: "大连理工 · 大2 · 瑜伽",
+    likedAt: "2026-05-06T19:09:00Z",
+    verificationBadgeLevel: "school"
+  },
+  {
+    id: "like-17",
+    userId: "user-2210",
+    name: "苏黎",
+    avatar: "/static/assets/images/avatars/avatar-38.jpg",
+    headline: "重庆大学 · 大3 · 钢琴",
+    likedAt: "2026-05-15T20:10:00Z",
+  },
+  {
+    id: "like-18",
+    userId: "user-2211",
+    name: "周子衿",
+    avatar: "/static/assets/images/avatars/avatar-39.jpg",
+    headline: "西安交大 · 大4 · 话剧社",
+    likedAt: "2026-05-14T21:11:00Z",
+  },
+  {
+    id: "like-19",
+    userId: "user-2212",
+    name: "陆时寒",
+    avatar: "/static/assets/images/avatars/avatar-40.jpg",
+    headline: "中国人民大学 · 大1 · 羽毛球",
+    likedAt: "2026-05-13T10:12:00Z",
+    verificationBadgeLevel: "school"
+  },
+  {
+    id: "like-20",
+    userId: "user-2213",
+    name: "叶青梧",
+    avatar: "/static/assets/images/avatars/avatar-41.jpg",
+    headline: "北京师范 · 大2 · 咖啡控",
+    likedAt: "2026-05-12T11:13:00Z",
+  },
+  {
+    id: "like-21",
+    userId: "user-2214",
+    name: "江疏影",
+    avatar: "/static/assets/images/avatars/avatar-42.jpg",
+    headline: "上海交大 · 大3 · 动漫宅",
+    likedAt: "2026-05-11T12:14:00Z",
+  },
+  {
+    id: "like-22",
+    userId: "user-2215",
+    name: "顾南烟",
+    avatar: "/static/assets/images/avatars/avatar-43.jpg",
+    headline: "同济大学 · 大4 · 登山队",
+    likedAt: "2026-05-10T13:15:00Z",
+    verificationBadgeLevel: "school"
+  },
+  {
+    id: "like-23",
+    userId: "user-2216",
+    name: "林夕",
+    avatar: "/static/assets/images/avatars/avatar-44.jpg",
+    headline: "中山大学 · 大1 · 摄影爱好者",
+    likedAt: "2026-05-09T14:16:00Z",
+  },
+  {
+    id: "like-24",
+    userId: "user-2217",
+    name: "陈默",
+    avatar: "/static/assets/images/avatars/avatar-45.jpg",
+    headline: "华南理工 · 大2 · 喜欢夜跑",
+    likedAt: "2026-05-08T15:17:00Z",
   },
 ];
 
@@ -256,7 +426,7 @@ const mockVisitors: VisitorRecord[] = [
     id: "visit-1",
     userId: "user-2003",
     name: "苏晴",
-    avatar: "/static/default-avatar.png",
+    avatar: "/static/assets/images/avatars/avatar-32.jpg",
     headline: "中山大学 · 大一 · 摄影爱好者",
     visitedAt: "2026-05-20T16:45:00Z",
     isNew: true,
@@ -266,7 +436,7 @@ const mockVisitors: VisitorRecord[] = [
     id: "visit-2",
     userId: "user-2005",
     name: "顾言",
-    avatar: "/static/default-avatar.png",
+    avatar: "/static/assets/images/avatars/avatar-33.jpg",
     headline: "星海音乐 · 大二 · 音乐社",
     visitedAt: "2026-05-19T08:00:00Z",
     isNew: false,
@@ -275,11 +445,187 @@ const mockVisitors: VisitorRecord[] = [
     id: "visit-3",
     userId: "user-2008",
     name: "江晚吟",
-    avatar: "/static/default-avatar.png",
+    avatar: "/static/assets/images/avatars/avatar-34.jpg",
     headline: "华南师范 · 大一 · 舞蹈队",
     visitedAt: "2026-05-15T18:30:00Z",
     isNew: false,
     verificationBadgeLevel: "email",
+  },
+  {
+    id: "visit-4",
+    userId: "user-2300",
+    name: "温言",
+    avatar: "/static/assets/images/avatars/avatar-36.jpg",
+    headline: "武汉大学 · 大1 · 猫奴",
+    visitedAt: "2026-05-14T09:00:00Z",
+    isNew: true,
+  },
+  {
+    id: "visit-5",
+    userId: "user-2301",
+    name: "白夜",
+    avatar: "/static/assets/images/avatars/avatar-37.jpg",
+    headline: "四川大学 · 大2 · 旅行博主",
+    visitedAt: "2026-05-13T10:01:00Z",
+    isNew: false,
+    verificationBadgeLevel: "email"
+  },
+  {
+    id: "visit-6",
+    userId: "user-2302",
+    name: "许清欢",
+    avatar: "/static/assets/images/avatars/avatar-38.jpg",
+    headline: "厦门大学 · 大3 · 图书馆常客",
+    visitedAt: "2026-05-12T11:02:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-7",
+    userId: "user-2303",
+    name: "顾北辰",
+    avatar: "/static/assets/images/avatars/avatar-39.jpg",
+    headline: "天津大学 · 大4 · 吉他手",
+    visitedAt: "2026-05-11T12:03:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-8",
+    userId: "user-2304",
+    name: "林晚",
+    avatar: "/static/assets/images/avatars/avatar-40.jpg",
+    headline: "中南大学 · 大1 · 羽毛球",
+    visitedAt: "2026-05-10T13:04:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-9",
+    userId: "user-2305",
+    name: "沈知微",
+    avatar: "/static/assets/images/avatars/avatar-41.jpg",
+    headline: "大连理工 · 大2 · 瑜伽",
+    visitedAt: "2026-05-09T14:05:00Z",
+    isNew: true,
+    verificationBadgeLevel: "email"
+  },
+  {
+    id: "visit-10",
+    userId: "user-2306",
+    name: "苏黎",
+    avatar: "/static/assets/images/avatars/avatar-42.jpg",
+    headline: "重庆大学 · 大3 · 钢琴",
+    visitedAt: "2026-05-08T15:06:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-11",
+    userId: "user-2307",
+    name: "周子衿",
+    avatar: "/static/assets/images/avatars/avatar-43.jpg",
+    headline: "西安交大 · 大4 · 话剧社",
+    visitedAt: "2026-05-07T16:07:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-12",
+    userId: "user-2308",
+    name: "陆时寒",
+    avatar: "/static/assets/images/avatars/avatar-44.jpg",
+    headline: "中国人民大学 · 大1 · 羽毛球",
+    visitedAt: "2026-05-06T17:08:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-13",
+    userId: "user-2309",
+    name: "叶青梧",
+    avatar: "/static/assets/images/avatars/avatar-45.jpg",
+    headline: "北京师范 · 大2 · 咖啡控",
+    visitedAt: "2026-05-05T18:09:00Z",
+    isNew: false,
+    verificationBadgeLevel: "email"
+  },
+  {
+    id: "visit-14",
+    userId: "user-2310",
+    name: "江疏影",
+    avatar: "/static/assets/images/avatars/avatar-46.jpg",
+    headline: "上海交大 · 大3 · 动漫宅",
+    visitedAt: "2026-05-14T19:10:00Z",
+    isNew: true,
+  },
+  {
+    id: "visit-15",
+    userId: "user-2311",
+    name: "顾南烟",
+    avatar: "/static/assets/images/avatars/avatar-47.jpg",
+    headline: "同济大学 · 大4 · 登山队",
+    visitedAt: "2026-05-13T20:11:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-16",
+    userId: "user-2312",
+    name: "林夕",
+    avatar: "/static/assets/images/avatars/avatar-48.jpg",
+    headline: "中山大学 · 大1 · 摄影爱好者",
+    visitedAt: "2026-05-12T21:12:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-17",
+    userId: "user-2313",
+    name: "陈默",
+    avatar: "/static/assets/images/avatars/avatar-49.jpg",
+    headline: "华南理工 · 大2 · 喜欢夜跑",
+    visitedAt: "2026-05-11T09:13:00Z",
+    isNew: false,
+    verificationBadgeLevel: "email"
+  },
+  {
+    id: "visit-18",
+    userId: "user-2314",
+    name: "顾言",
+    avatar: "/static/assets/images/avatars/avatar-28.jpg",
+    headline: "暨南大学 · 大3 · 文学系",
+    visitedAt: "2026-05-10T10:14:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-19",
+    userId: "user-2315",
+    name: "夏言",
+    avatar: "/static/assets/images/avatars/avatar-29.jpg",
+    headline: "广东工业 · 大4 · 篮球队",
+    visitedAt: "2026-05-09T11:15:00Z",
+    isNew: true,
+  },
+  {
+    id: "visit-20",
+    userId: "user-2316",
+    name: "苏晴",
+    avatar: "/static/assets/images/avatars/avatar-30.jpg",
+    headline: "星海音乐 · 大1 · 音乐社",
+    visitedAt: "2026-05-08T12:16:00Z",
+    isNew: false,
+  },
+  {
+    id: "visit-21",
+    userId: "user-2317",
+    name: "周然",
+    avatar: "/static/assets/images/avatars/avatar-31.jpg",
+    headline: "华南师范 · 大2 · 舞蹈队",
+    visitedAt: "2026-05-07T13:17:00Z",
+    isNew: false,
+    verificationBadgeLevel: "email"
+  },
+  {
+    id: "visit-22",
+    userId: "user-2318",
+    name: "叶知秋",
+    avatar: "/static/assets/images/avatars/avatar-32.jpg",
+    headline: "北京大学 · 大3 · 自习搭子",
+    visitedAt: "2026-05-06T14:18:00Z",
+    isNew: false,
   },
 ];
 
@@ -450,14 +796,15 @@ export const useLikesStore = defineStore("likes", {
           // 修复：被取消的请求不修改状态
           if (controller.signal.aborted) return;
 
-          this.likes = [...mockLikes];
-          this.likedBy = [...mockLikedBy];
+          // P0-17：mock 演示数据视为已解锁（unlocked=true），保证走查时可完整浏览
+          this.likes = mockLikes.map((item) => ({ ...item, unlocked: true }));
+          this.likedBy = mockLikedBy.map((item) => ({ ...item, unlocked: true }));
           return;
         }
 
-        // 调用后端 API: GET /api/matches/liked-me?userId={userId}
+        // 调用后端 API: GET /api/matches/liked-me（P2-13：userId 由后端 JWT 获取，不再携带 query）
         const likedByData = await request<LikedUserView[]>({
-          url: `/matches/liked-me?userId=${this.currentUserId()}`,
+          url: "/matches/liked-me",
           method: "GET",
           signal: controller.signal,
         });
@@ -467,9 +814,9 @@ export const useLikesStore = defineStore("likes", {
 
         this.likedBy = likedByData.map(mapToLikeRecord);
 
-        // 调用后端 API: GET /api/matches/my-likes?userId={userId}
+        // 调用后端 API: GET /api/matches/my-likes（P2-13：userId 由后端 JWT 获取）
         const myLikesData = await request<LikedUserView[]>({
-          url: `/matches/my-likes?userId=${this.currentUserId()}`,
+          url: "/matches/my-likes",
           method: "GET",
           signal: controller.signal,
         });
@@ -523,13 +870,14 @@ export const useLikesStore = defineStore("likes", {
         if (useMock()) {
           // 修复：被取消的请求不修改状态
           if (controller.signal.aborted) return;
-          this.visitors = [...mockVisitors];
+          // P0-17：mock 演示数据视为已解锁（unlocked=true）
+          this.visitors = mockVisitors.map((item) => ({ ...item, unlocked: true }));
           return;
         }
 
-        // 调用后端 API: GET /api/matches/visitors?userId={userId}
+        // 调用后端 API: GET /api/matches/visitors（P2-13：userId 由后端 JWT 获取）
         const data = await request<VisitorView[]>({
-          url: `/matches/visitors?userId=${this.currentUserId()}`,
+          url: "/matches/visitors",
           method: "GET",
           signal: controller.signal,
         });
@@ -542,7 +890,10 @@ export const useLikesStore = defineStore("likes", {
         // 修复：被取消的请求不视为错误，不更新 errorMessage
         if (controller.signal.aborted) return;
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.likes.loadVisitorsFailed"); // infra R2-00033
+        // P1-10 修复：与 fetchLikes 对齐——失败时清空列表并向上抛出错误，
+        // 调用方可据此展示重试入口，避免陈旧数据被当作当前数据展示
         this.visitors = [];
+        throw error;
       } finally {
         // 修复：仅当当前 controller 仍是全局 controller 时才清 loading
         if (fetchVisitorsController === controller) {
@@ -550,6 +901,39 @@ export const useLikesStore = defineStore("likes", {
           fetchVisitorsController = null;
         }
       }
+    },
+
+    /**
+     * P0-17：解锁「喜欢我 / 访客」单条记录（服务端扣费）。
+     *
+     * 对应后端 POST /api/v1/wallet/unlock，body {targetType, targetId}：
+     * - 已解锁：直接返回 {unlocked: true, balance}，不重复扣费（服务端幂等）
+     * - 未解锁：按配置单价扣费并记录解锁，返回 {unlocked: true, balance}
+     * - 余额不足：后端返回 INSUFFICIENT_BALANCE 业务错误，此处向上抛出，
+     *   由页面 toast 展示后端错误信息
+     *
+     * 幂等：携带 Idempotency-Key 头（unlock-{type}-{userId}），后端按 orderId
+     * 唯一索引兜底，重复解锁不重复扣费。
+     *
+     * Mock 模式：直接视为解锁成功（不产生网络请求），保证 mock 走查可用。
+     *
+     * @param targetType - 解锁目标类型：LIKED_ME（喜欢我的）/ VISITOR（访客）
+     * @param targetUserId - 目标用户 ID
+     * @returns 服务端解锁结果（balance 单位：分）
+     */
+    async unlockUser(
+      targetType: "LIKED_ME" | "VISITOR",
+      targetUserId: string | number
+    ): Promise<{ unlocked: boolean; balance: number }> {
+      if (useMock()) {
+        return { unlocked: true, balance: 0 };
+      }
+      return request<{ unlocked: boolean; balance: number }, { targetType: string; targetId: number }>({
+        url: "/wallet/unlock",
+        method: "POST",
+        data: { targetType, targetId: Number(targetUserId) },
+        headers: { "Idempotency-Key": `unlock-${targetType}-${targetUserId}` },
+      });
     },
 
     /**
@@ -618,12 +1002,12 @@ export const useLikesStore = defineStore("likes", {
 
         try {
           // 调用后端 API: POST /api/matches/like
-          // 后端请求体: { userId: Long, targetUserId: Long }
+          // 修复（P0-12）：后端 LikeTargetRequest 仅含 targetUserId（userId 从 JWT 获取），
+          // 删除请求体中多余的 userId 字段
           await request<HeartSignalView>({
             url: "/matches/like",
             method: "POST",
             data: {
-              userId: this.currentUserId(),
               targetUserId: userId,
             },
           });
@@ -674,12 +1058,12 @@ export const useLikesStore = defineStore("likes", {
 
         try {
           // 调用后端 API: POST /api/matches/cancel-like
-          // 后端请求体: { userId: Long, targetUserId: Long }
+          // 修复（P0-12）：后端 LikeTargetRequest 仅含 targetUserId（userId 从 JWT 获取），
+          // 删除请求体中多余的 userId 字段
           await request<void>({
             url: "/matches/cancel-like",
             method: "POST",
             data: {
-              userId: this.currentUserId(),
               targetUserId: userId,
             },
           });
@@ -817,9 +1201,9 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // 调用后端 API: GET /api/matches/heart-signals?userId={userId}
+        // 调用后端 API: GET /api/matches/heart-signals（P2-13：userId 由后端 JWT 获取）
         const data = await request<HeartSignalView[]>({
-          url: `/matches/heart-signals?userId=${this.currentUserId()}`,
+          url: "/matches/heart-signals",
           method: "GET",
           signal: controller.signal,
         });
@@ -857,9 +1241,9 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // 调用后端 API: POST /api/matches/heart-signals/{signalId}/accept?userId={userId}
+        // 调用后端 API: POST /api/matches/heart-signals/{signalId}/accept（P2-13：userId 由后端 JWT 获取）
         await request<void>({
-          url: `/matches/heart-signals/${signalId}/accept?userId=${this.currentUserId()}`,
+          url: `/matches/heart-signals/${signalId}/accept`,
           method: "POST",
         });
 
@@ -889,9 +1273,9 @@ export const useLikesStore = defineStore("likes", {
           return;
         }
 
-        // 调用后端 API: POST /api/matches/heart-signals/{signalId}/decline?userId={userId}
+        // 调用后端 API: POST /api/matches/heart-signals/{signalId}/decline（P2-13：userId 由后端 JWT 获取）
         await request<void>({
-          url: `/matches/heart-signals/${signalId}/decline?userId=${this.currentUserId()}`,
+          url: `/matches/heart-signals/${signalId}/decline`,
           method: "POST",
         });
 

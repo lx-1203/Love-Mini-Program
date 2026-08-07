@@ -486,11 +486,9 @@ export const useCircleStore = defineStore("circle", {
           return;
         }
 
-        // 调用后端 API: GET /api/circles?userId={userId}
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
+        // 调用后端 API: GET /api/circles（P2-13：userId 由后端 JWT 获取，CircleController.getCircles 无 userId 参数）
         const data = await request<BackendCircleView[]>({
-          url: `/circles?userId=${userId}`,
+          url: "/circles",
           method: "GET",
         });
         this.circles = data.map(mapToCircleItem);
@@ -689,14 +687,12 @@ export const useCircleStore = defineStore("circle", {
         }
 
         // 调用后端 API: POST /api/circles/{circleId}/topics
-        // 后端请求体: CreateTopicRequest(authorId, title, content, images)
-        const sessionStore = useSessionStore();
-        const authorId = sessionStore.userSession?.userId ?? "";
-        const result = await request<BackendCircleTopicView, { authorId: string; title: string; content: string; images?: string[] }>({
+        // 修复（P0-12）：后端 CreateTopicRequest(title, content, images) 不含
+        // authorId（从 JWT 获取），删除请求体中多余的 authorId 字段
+        const result = await request<BackendCircleTopicView, { title: string; content: string; images?: string[] }>({
           url: `/circles/${circleId}/topics`,
           method: "POST",
           data: {
-            authorId,
             title: data.title.trim(),
             content: data.content.trim(),
             images: data.images ?? [],
@@ -851,13 +847,12 @@ export const useCircleStore = defineStore("circle", {
         }
 
         // 调用后端 API: POST /api/circles/topics/{topicId}/replies
-        // 后端请求体: CreateReplyRequest(authorId, content)
-        const sessionStore = useSessionStore();
-        const authorId = sessionStore.userSession?.userId ?? "";
-        const result = await request<BackendCircleReplyView, { authorId: string; content: string }>({
+        // 修复（P0-12）：后端 CreateReplyRequest(content) 不含 authorId（从 JWT 获取），
+        // 删除请求体中多余的 authorId 字段
+        const result = await request<BackendCircleReplyView, { content: string }>({
           url: `/circles/topics/${topicId}/replies`,
           method: "POST",
-          data: { authorId, content: content.trim() },
+          data: { content: content.trim() },
         });
 
         const mappedResult = mapToReplyItem(result);

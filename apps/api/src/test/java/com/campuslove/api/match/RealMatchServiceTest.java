@@ -124,7 +124,8 @@ class RealMatchServiceTest {
                         objectMapper
                 ),
                 matchPolicy,
-                matchRecorder
+                matchRecorder,
+                null
         );
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);

@@ -18,22 +18,52 @@ import { useI18n } from "vue-i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
-// 功能3：资料编辑标签选择器（替换原有 futurePlanTagOptions 内联实现）
-import TagSelector from "../../../components/profile/TagSelector.vue";
 // 功能5：引导流程进度条（当前步骤 = 1：基本信息）
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
-// 修复 no-duplicate-imports：合并 ../../../config/profile-tags 的重复 import
-import { profileTagGroups, type ProfileTagGroupKey } from "../../../config/profile-tags";
 import { useProfileStore } from "../../../stores/profile";
 import { useSessionStore } from "../../../stores/session";
 import { clientApi } from "../../../services/api";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import type { UpdateBasicProfileRequest } from "../../../services/generated/api-types-supplement";
+// 2026-08-07 流程重构：注册第 1 步身份选择（学生/非学生），决定后续分支
+import {
+  loadIdentity,
+  saveIdentity,
+  type UserIdentity,
+} from "../../../config/identity";
 
 const profileStore = useProfileStore();
 const sessionStore = useSessionStore();
 const { t } = useI18n();
+
+/**
+ * 2026-08-07 流程重构：用户身份（注册第 1 步选择）。
+ * - student（在校学生/毕业生）：基本信息 → 校园认证 → 推荐偏好 → 完成
+ * - non_student（非学生职场人士）：基本信息 → 推荐偏好 → 完成（跳过校园认证）
+ */
+const identity = ref<UserIdentity>(loadIdentity());
+
+/** 身份选项（i18n 化） */
+const identityOptions = computed(() => [
+  { value: "student" as const, label: t("setup.profile.identityStudent"), desc: t("setup.profile.identityStudentDesc") },
+  { value: "non_student" as const, label: t("setup.profile.identityNonStudent"), desc: t("setup.profile.identityNonStudentDesc") },
+]);
+
+/** 身份选择 change 事件（即时持久化） */
+function onIdentityChange(value: UserIdentity): void {
+  if (identity.value === value) return;
+  identity.value = value;
+  saveIdentity(value);
+  lightHaptic();
+}
+
+/** 按身份分流：学生 → 校园认证（步骤 2/4）；非学生 → 推荐偏好（步骤 2/3，跳过校园认证） */
+function getNextSetupPath(): string {
+  return identity.value === "non_student"
+    ? SUBPACKAGE_ROUTES.SETUP_PROGRESS.RECOMMEND_PREF
+    : SUBPACKAGE_ROUTES.SETUP_PROGRESS.CAMPUS;
+}
 
 // 修复（严格模式 noUnusedLocals）：SUBPACKAGE_ROUTES 在第 340 行 setTimeout 回调内使用，
 // vue-tsc 对该闭包位置识别失败（疑似模板指令解析干扰），通过 defineExpose 标记为已使用。
@@ -58,7 +88,10 @@ onUnmounted(() => {
   }
 });
 
-/** 表单数据（含 Phase A 扩展字段） */
+/**
+ * 表单数据（含 Phase A 扩展字段）。
+ * 2026-08-07 链路调整：移除 futurePlanTags（与个性标签重复，属进阶内容后置）。
+ */
 const form = reactive<UpdateBasicProfileRequest>({
   nickname: "",
   bio: "",
@@ -70,7 +103,6 @@ const form = reactive<UpdateBasicProfileRequest>({
   hometownProvince: "",
   hometownCity: "",
   futureCity: "",
-  futurePlanTags: [],
 });
 
 /** 学历选项（i18n 化，随 locale 切换响应） */
@@ -89,43 +121,65 @@ const relationshipStatusOptions = computed(() => [
   { label: t("setup.profile.relationshipWidowed"), value: "widowed" },
 ]);
 
-/** 未来规划标签可选项（i18n 化） */
-const futurePlanTagOptions = computed(() => [
-  t("setup.profile.futurePlanCareer"),
-  t("setup.profile.futurePlanTravel"),
-  t("setup.profile.futurePlanStudy"),
-  t("setup.profile.futurePlanFamily"),
-  t("setup.profile.futurePlanHealth"),
-  t("setup.profile.futurePlanFinance"),
-  t("setup.profile.futurePlanHobby"),
-  t("setup.profile.futurePlanSocial"),
-]);
-
-/**
- * 功能3：资料编辑标签选择器状态。
- * 按 4 大分组（兴趣 / 性格 / 生活方式 / 感情观）存储已选标签值。
- * 由 TagSelector 组件通过 v-model 双向绑定。
- */
-const profileTags = ref<Partial<Record<ProfileTagGroupKey, string[]>>>({});
-
-/**
- * 初始 profileTags 快照（用于提交时 diff 比对）。
- */
-let initialProfileTagsSnapshot: Partial<Record<ProfileTagGroupKey, string[]>> = {};
-
 /** 当前选中的学历（用于 picker 回显） */
 const educationLevelLabel = ref<string>("");
 /** 当前选中的感情状态（用于 picker 回显） */
 const relationshipStatusLabel = ref<string>("");
-/** 身高输入字符串（与 form.height 解耦，提交时校验并转换） */
-const heightInput = ref<string>("");
 
 /**
- * 身高范围常量（提取硬编码值，便于统一维护）
- * 对应后端 UpdateBasicProfileRequest.height 取值范围
+ * 2026-08-07 重构：标准化信息改用选择器（审查意见）。
+ * - 身高：滚轮选择 140-200（原 120-250 输入框既低效又不符合常识）
+ * - 年级：滚轮选择（大一~大四/研一~研三/已毕业），替代自由输入
  */
-const HEIGHT_MIN = 120;
-const HEIGHT_MAX = 250;
+
+/** 年级选项（i18n 化） */
+const gradeOptions = computed(() => [
+  t("setup.profile.gradeFreshman"),
+  t("setup.profile.gradeSophomore"),
+  t("setup.profile.gradeJunior"),
+  t("setup.profile.gradeSenior"),
+  t("setup.profile.gradeGrad1"),
+  t("setup.profile.gradeGrad2"),
+  t("setup.profile.gradeGrad3"),
+  t("setup.profile.gradeGraduated"),
+]);
+
+/** 年级 picker 回显 */
+const gradeLabel = ref<string>("");
+
+/** 身高选项（140-200 cm，步长 1） */
+const heightOptions = computed(() => {
+  const list: string[] = [];
+  for (let h = 140; h <= 200; h++) {
+    list.push(`${h}cm`);
+  }
+  return list;
+});
+
+/** 身高 picker 回显 */
+const heightLabel = ref<string>("");
+
+/** 年级 picker change 事件 */
+function onGradeChange(e: { detail: { value: number } }): void {
+  const idx = e.detail.value;
+  const opt = gradeOptions.value[idx];
+  if (opt) {
+    form.grade = opt;
+    gradeLabel.value = opt;
+    lightHaptic();
+  }
+}
+
+/** 身高 picker change 事件（140-200，存储数字） */
+function onHeightChange(e: { detail: { value: number } }): void {
+  const idx = e.detail.value;
+  const opt = heightOptions.value[idx];
+  if (opt) {
+    form.height = 140 + idx;
+    heightLabel.value = opt;
+    lightHaptic();
+  }
+}
 
 /**
  * 字符长度限制常量（提取硬编码值，便于统一维护）。
@@ -191,13 +245,6 @@ function buildDiffPayload(): UpdateBasicProfileRequest {
     diff.futureCity = form.futureCity;
   }
 
-  // 数组字段：通过 JSON 序列化比较内容是否一致
-  const currentTags = JSON.stringify(form.futurePlanTags ?? []);
-  const initialTags = JSON.stringify(initialFormSnapshot.futurePlanTags ?? []);
-  if (currentTags !== initialTags) {
-    diff.futurePlanTags = form.futurePlanTags;
-  }
-
   return diff;
 }
 
@@ -223,22 +270,6 @@ function onRelationshipStatusChange(e: { detail: { value: number } }): void {
   }
 }
 
-/** 切换未来规划标签选中态 */
-function toggleFuturePlanTag(tag: string): void {
-  lightHaptic();
-  const list = form.futurePlanTags ?? [];
-  const idx = list.indexOf(tag);
-  if (idx >= 0) {
-    form.futurePlanTags = [...list.slice(0, idx), ...list.slice(idx + 1)];
-  } else {
-    form.futurePlanTags = [...list, tag];
-  }
-}
-
-/** 判断标签是否已选中 */
-function isFuturePlanTagSelected(tag: string): boolean {
-  return (form.futurePlanTags ?? []).includes(tag);
-}
 
 onMounted(async () => {
   await profileStore.load();
@@ -265,20 +296,18 @@ onMounted(async () => {
     const found = relationshipStatusOptions.value.find((o) => o.value === form.relationshipStatus);
     if (found) relationshipStatusLabel.value = found.label;
   }
-  // 身高初始回显
+  // 身高/年级初始回显（picker）
   if (form.height !== undefined) {
-    heightInput.value = String(form.height);
+    heightLabel.value = `${form.height}cm`;
+  }
+  if (form.grade) {
+    gradeLabel.value = form.grade;
   }
 
-  // 保存初始表单快照，用于提交时 diff 比对（深拷贝 futurePlanTags 数组）
+  // 保存初始表单快照，用于提交时 diff 比对
   initialFormSnapshot = {
     ...form,
-    futurePlanTags: [...(form.futurePlanTags ?? [])],
   };
-  // 功能3：保存初始 profileTags 快照（深拷贝每个分组的数组）
-  initialProfileTagsSnapshot = Object.fromEntries(
-    Object.entries(profileTags.value).map(([k, v]) => [k, [...(v ?? [])]]),
-  );
 });
 
 async function save() {
@@ -298,52 +327,21 @@ async function save() {
     uni.showToast({ title: t("setup.profile.errBioTooLong", { n: BIO_MAX_LENGTH }), icon: "none" });
     return;
   }
-  // 身高校验：非空时必须在 HEIGHT_MIN-HEIGHT_MAX 范围
-  const trimmedHeight = heightInput.value.trim();
-  if (trimmedHeight.length > 0) {
-    const num = Number(trimmedHeight);
-    if (Number.isNaN(num) || num < HEIGHT_MIN || num > HEIGHT_MAX) {
-      uni.showToast({ title: t("setup.profile.errHeightRange", { min: HEIGHT_MIN, max: HEIGHT_MAX }), icon: "none" });
-      return;
-    }
-    form.height = num;
-  } else {
-    form.height = undefined;
-  }
-
-  // 功能3：校验每个分组的 min 选择数约束
-  for (const group of profileTagGroups) {
-    const selected = profileTags.value[group.key] ?? [];
-    if (selected.length < group.min) {
-      uni.showToast({
-        title: t("setup.profile.errTagGroupMin", { label: group.labelKey, n: group.min }),
-        icon: "none",
-      });
-      return;
-    }
-  }
-
   // 加锁，进入提交流程
   isSubmitting.value = true;
   try {
     // 构建 diff：仅提交变更字段，避免无谓的网络请求与后端覆盖
     const diff = buildDiffPayload();
 
-    // 功能3：检查 profileTags 是否变化（仅在变化时输出提示，实际存储由后端接口扩展）
-    const tagsChanged = JSON.stringify(profileTags.value) !== JSON.stringify(initialProfileTagsSnapshot);
-    if (tagsChanged) {
-      // 修复 no-console：调试日志改用 console.warn（允许的方法）
-      console.warn("[setup/profile] profileTags 变化:", profileTags.value);
-    }
-
     // 无变更时直接跳转下一步，不调用 API
-    if (Object.keys(diff).length === 0 && !tagsChanged) {
+    if (Object.keys(diff).length === 0) {
       uni.showToast({ title: t("setup.profile.noChange"), icon: "none" });
       // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
+      // 2026-08-07 流程重构：按身份分流（学生 → 校园认证；非学生 → 推荐偏好）
       if (saveSuccessNavTimer) clearTimeout(saveSuccessNavTimer);
       saveSuccessNavTimer = setTimeout(() => {
         saveSuccessNavTimer = null;
-        uni.redirectTo({ url: SUBPACKAGE_ROUTES.SETUP_PROGRESS.CAMPUS });
+        uni.redirectTo({ url: getNextSetupPath() });
       }, 600);
       return;
     }
@@ -357,10 +355,11 @@ async function save() {
     successHaptic();
     uni.showToast({ title: t("setup.profile.saveSuccess"), icon: "success" });
     // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
+    // 2026-08-07 流程重构：按身份分流（学生 → 校园认证；非学生 → 推荐偏好）
     if (saveSuccessNavTimer) clearTimeout(saveSuccessNavTimer);
     saveSuccessNavTimer = setTimeout(() => {
       saveSuccessNavTimer = null;
-      uni.redirectTo({ url: SUBPACKAGE_ROUTES.SETUP_PROGRESS.CAMPUS });
+      uni.redirectTo({ url: getNextSetupPath() });
     }, 600);
   } catch (error) {
     const message = error instanceof Error ? error.message : t("setup.profile.saveFailed");
@@ -370,40 +369,78 @@ async function save() {
     isSubmitting.value = false;
   }
 }
-
-/**
- * 更换个人主页背景（Phase D4 · 占位入口）
- * 前序 Phase E1 已在 profile 页实现上传，此处保留入口跳转回 profile 页操作
- */
-function handleChangeBg() {
-  lightHaptic();
-  uni.showToast({ title: t("setup.profile.goToProfileEditBg"), icon: "none" });
-}
 </script>
 
 <template>
   <AppShell :title="t('setup.profile.pageTitle')" :subtitle="t('setup.profile.pageSubtitle')" :show-tab-bar="false">
-    <!-- 功能5：引导流程进度条（当前步骤 = 1：基本信息） -->
-    <SetupProgress :current-step="1" />
+    <!-- 功能5：引导流程进度条（当前步骤 = 1：基本信息）
+         2026-08-07 流程重构：按身份分支展示步骤（学生 4 步 / 非学生 3 步） -->
+    <SetupProgress :current-step="1" :variant="identity === 'non_student' ? 'non-student' : 'student'" />
+
+    <!-- 2026-08-07 流程重构：身份选择（注册第 1 步）——
+         学生走校园认证分支，非学生直接跳过校园认证进入推荐偏好 -->
+    <SectionCard :title="t('setup.profile.identityTitle')" :subtitle="t('setup.profile.identityHint')" compact>
+      <view class="identity-group">
+        <view
+          v-for="opt in identityOptions"
+          :key="opt.value"
+          class="identity-option"
+          :class="{ 'identity-option--selected': identity === opt.value }"
+          role="radio"
+          :aria-checked="identity === opt.value"
+          :aria-label="opt.label"
+          @tap="onIdentityChange(opt.value)"
+        >
+          <view class="identity-option__radio" :class="{ 'identity-option__radio--checked': identity === opt.value }">
+            <view v-if="identity === opt.value" class="identity-option__dot" />
+          </view>
+          <view class="identity-option__main">
+            <text class="identity-option__label">{{ opt.label }}</text>
+            <text class="identity-option__desc">{{ opt.desc }}</text>
+          </view>
+        </view>
+      </view>
+    </SectionCard>
 
     <SectionCard :title="t('setup.profile.sectionDraft')" compact>
       <input v-model="form.nickname" class="field" :placeholder="t('setup.profile.placeholderNickname')" :maxlength="NICKNAME_MAX_LENGTH" :aria-label="t('setup.profile.labelNickname')" />
       <textarea v-model="form.bio" class="field field--textarea" :maxlength="BIO_MAX_LENGTH" />
-      <input v-model="form.grade" class="field" :placeholder="t('setup.profile.placeholderGrade')" :aria-label="t('setup.profile.labelGrade')" />
+      <!-- 2026-08-07 重构：年级改滚轮选择（替代自由输入，标准化信息用选择器） -->
+      <view class="form-row">
+        <text class="form-row__label">{{ t('setup.profile.labelGrade') }}</text>
+        <picker
+          mode="selector"
+          :range="gradeOptions"
+          @change="onGradeChange"
+        >
+          <view class="field field--inline field--picker">
+            <text :class="['field__text', !gradeLabel && 'field__text--placeholder']">
+              {{ gradeLabel || t('setup.profile.pleaseSelect') }}
+            </text>
+            <text class="field__arrow">›</text>
+          </view>
+        </picker>
+      </view>
       <input v-model="form.pronouns" class="field" :placeholder="t('setup.profile.placeholderPronouns')" :aria-label="t('setup.profile.labelPronouns')" />
     </SectionCard>
 
     <!-- Phase E4 / M-07：扩展资料字段 -->
     <SectionCard :title="t('setup.profile.sectionBasic')" compact>
-      <!-- 身高 -->
+      <!-- 身高（2026-08-07 重构：滚轮选择 140-200，替代输入框） -->
       <view class="form-row">
         <text class="form-row__label">{{ t('setup.profile.labelHeight') }}</text>
-        <input
-          v-model="heightInput"
-          class="field field--inline"
-          type="number"
-          placeholder="120-250" aria-label="120-250"
-        />
+        <picker
+          mode="selector"
+          :range="heightOptions"
+          @change="onHeightChange"
+        >
+          <view class="field field--inline field--picker">
+            <text :class="['field__text', !heightLabel && 'field__text--placeholder']">
+              {{ heightLabel || t('setup.profile.pleaseSelect') }}
+            </text>
+            <text class="field__arrow">›</text>
+          </view>
+        </picker>
       </view>
 
       <!-- 学历 -->
@@ -459,42 +496,11 @@ function handleChangeBg() {
         <text class="form-row__label">{{ t('setup.profile.labelFutureCity') }}</text>
         <input v-model="form.futureCity" class="field field--inline" :placeholder="t('setup.profile.placeholderFutureCity')" :aria-label="t('setup.profile.placeholderFutureCity')" />
       </view>
-
-      <!-- 未来规划标签 -->
-      <view class="form-row form-row--block">
-        <text class="form-row__label">{{ t('setup.profile.labelFuturePlan') }}</text>
-        <view class="tag-group">
-          <view
-            v-for="tag in futurePlanTagOptions"
-            :key="tag"
-            :class="['tag-chip', isFuturePlanTagSelected(tag) && 'tag-chip--selected']"
-            hover-class="tag-chip--hover"
-            hover-stay-time="100"
-            @tap="toggleFuturePlanTag(tag)"
-          >
-            <text class="tag-chip__text">{{ tag }}</text>
-          </view>
-        </view>
-      </view>
     </SectionCard>
 
-    <!-- 功能3：资料编辑标签选择（4 大分组，每组独立 min/max 约束） -->
-    <SectionCard :title="t('setup.profile.sectionTags')" compact>
-      <TagSelector v-model="profileTags" />
-    </SectionCard>
-
-    <!-- Phase D4 · 更换背景入口（占位） -->
-    <SectionCard :title="t('setup.profile.sectionBackground')" compact>
-      <view
-        class="bg-entry press-feedback"
-        hover-class="bg-entry--hover"
-        hover-stay-time="120"
-        @tap="handleChangeBg"
-      >
-        <text class="bg-entry__text">{{ t('setup.profile.changeBackground') }}</text>
-        <text class="bg-entry__arrow">›</text>
-      </view>
-    </SectionCard>
+    <!-- 2026-08-07 重构：移除「未来规划」「个性标签」「更换背景」模块——
+         标签与规划属进阶个性化内容（注册后可在「我的」完善），
+         背景属装扮设置；基础资料回归「少而精、快速完成」原则。 -->
 
     <BottomActionBar
       :primary-label="isSubmitting ? t('setup.profile.submitSaving') : t('setup.profile.submitSave')"
@@ -559,6 +565,74 @@ function handleChangeBg() {
   font-size: var(--fs-sm);
   color: var(--c-text-secondary);
   font-weight: 500;
+}
+
+/* 2026-08-07 流程重构：身份选择（单选卡片） */
+.identity-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.identity-option {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--c-bg-page);
+  border: 2rpx solid var(--c-border-light);
+  transition: all var(--d-normal, 200ms) ease;
+
+  &--selected {
+    border-color: var(--c-brand-700);
+    background: var(--c-bg-brand);
+  }
+}
+
+.identity-option__radio {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: var(--r-circle, 50%);
+  border: 3rpx solid var(--c-border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &--checked {
+    border-color: var(--c-brand-700);
+  }
+}
+
+.identity-option__dot {
+  width: 26rpx;
+  height: 26rpx;
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-brand-700);
+}
+
+.identity-option__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.identity-option__label {
+  font-size: var(--fs-lg);
+  color: var(--c-text-primary);
+  font-weight: 600;
+}
+
+.identity-option__desc {
+  font-size: var(--fs-sm);
+  color: var(--c-text-secondary);
+  line-height: 1.5;
+}
+
+.identity-option--selected .identity-option__label {
+  color: var(--c-brand-700);
 }
 
 /* Phase E4 / M-07：标签 chip 组 */

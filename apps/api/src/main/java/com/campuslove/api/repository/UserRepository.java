@@ -33,6 +33,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByPhone(String phone);
 
     /**
+     * 推荐候选池分页查询（P0-21）。
+     *
+     * <p>仅返回可被推荐的普通用户：status=active（账号可用）、role=USER
+     * （排除 ADMIN/SUPER_ADMIN，管理员账号不进入匹配候选池）。</p>
+     *
+     * @param status   账号状态（active/disabled）
+     * @param role     用户角色（USER）
+     * @param pageable 分页参数
+     * @return 候选用户分页列表
+     */
+    Page<User> findByStatusAndRole(String status, String role, Pageable pageable);
+
+    /**
      * 批量按 ID 查询用户（用于列表/详情视图批量预加载作者，避免 N+1 查询）。
      *
      * @param userIds 用户 ID 集合
@@ -104,6 +117,32 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("status") String status,
             @Param("createdAtFrom") LocalDateTime createdAtFrom,
             @Param("createdAtTo") LocalDateTime createdAtTo,
+            @Param("nickname") String nickname,
+            @Param("campusName") String campusName,
+            Pageable pageable);
+
+    /**
+     * 分页查询全部管理员（ADMIN + SUPER_ADMIN）。
+     *
+     * <p>修复：AdminUserController.listAdmins 原对 ADMIN/SUPER_ADMIN 各查一页后
+     * 内存合并，单页最多返回 2×pageSize 条、跨页全局排序不成立、可能重复/遗漏。
+     * 本方法一次查询同时覆盖两类角色，保证分页语义正确。</p>
+     *
+     * @param nickname   昵称模糊匹配（可空）
+     * @param campusName 管辖校区筛选（可空，匹配 UserCampusProfile.campusName）
+     * @param pageable   分页
+     * @return 分页管理员列表（按注册时间倒序）
+     */
+    @Query("""
+            SELECT u FROM User u
+            WHERE u.role IN ('ADMIN', 'SUPER_ADMIN')
+              AND (:nickname IS NULL OR :nickname = '' OR u.nickname LIKE CONCAT('%', :nickname, '%'))
+              AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
+                    SELECT 1 FROM UserCampusProfile p
+                    WHERE p.userId = u.id AND p.campusName = :campusName))
+            ORDER BY u.createdAt DESC
+            """)
+    Page<User> searchAllAdmins(
             @Param("nickname") String nickname,
             @Param("campusName") String campusName,
             Pageable pageable);

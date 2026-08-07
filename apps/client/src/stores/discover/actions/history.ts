@@ -10,7 +10,6 @@
  * this 类型，因为 Pinia Option API 的 this 类型推断在拆分到独立文件后失效。
  */
 
-import { useSessionStore } from "../../session";
 import {
   fetchOnlineStatusApi,
   fetchRecommendationHistoryApi,
@@ -35,10 +34,8 @@ export async function loadHistory(
       return;
     }
 
-    // 调用后端 API: GET /api/recommendations/history?userId={userId}
-    const sessionStore = useSessionStore();
-    const userId = sessionStore.userSession?.userId ?? "";
-    const rawData = await fetchRecommendationHistoryApi(userId);
+    // 调用后端 API: GET /api/recommendations/history（P2-13：userId 由后端 JWT 获取）
+    const rawData = await fetchRecommendationHistoryApi();
 
     // 将后端数据映射为 ViewedCardRecord（方向统一为 right，表示历史记录）
     this.historyCards = rawData.map((item) => ({

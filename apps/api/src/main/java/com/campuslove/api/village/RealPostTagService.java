@@ -107,6 +107,48 @@ public class RealPostTagService implements PostTagService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<PopularTagView> getPopularTags(int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+
+        // 遍历预置标签：聚合帖子数 + 取最新带图帖子首图作为封面
+        // 帖子量小，逐标签查询可接受；数据量大后可改为单条聚合 SQL
+        return PRESET_TAGS.stream()
+                .map(tag -> {
+                    List<PostTag> tagRecords = postTagRepository.findByTagName(tag);
+                    List<Long> postIds = tagRecords.stream()
+                            .map(PostTag::getPostId)
+                            .distinct()
+                            .toList();
+                    if (postIds.isEmpty()) {
+                        return new PopularTagView(tag, 0L, "");
+                    }
+                    long count = postIds.size();
+                    String coverUrl = postRepository
+                            .findByIdInAndStatusOrderByCreatedAtDesc(
+                                    postIds, PostStatus.active, PageRequest.of(0, 1))
+                            .getContent().stream()
+                            .findFirst()
+                            .map(this::firstImage)
+                            .orElse("");
+                    return new PopularTagView(tag, count, coverUrl);
+                })
+                .sorted((a, b) -> Long.compare(b.postCount(), a.postCount()))
+                .limit(limit)
+                .toList();
+    }
+
+    /**
+     * 取帖子首图 URL（images JSON 数组第一个元素，无图返回空串）。
+     */
+    private String firstImage(Post post) {
+        List<String> images = parseJsonToList(post.getImages());
+        return images.isEmpty() ? "" : images.get(0);
+    }
+
     /**
      * 将 Post 实体转换为 PostSummaryView。
      */

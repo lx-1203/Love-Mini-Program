@@ -1,28 +1,39 @@
-import { createApp, type Plugin } from "vue";
+import { createApp } from "vue";
 import { createPinia } from "pinia";
 import router from "./router";
 import App from "./App.vue";
 import i18n from "./i18n";
+import { useSessionStore } from "./stores/session";
 import { setupRouterGuards } from "./router/guards";
 
+/**
+ * Admin v2 应用入口。
+ *
+ * 初始化顺序（有依赖关系，不可随意调换）：
+ * 1. createApp + pinia —— store 先就绪；
+ * 2. i18n —— 非组件场景（api/stores）通过全局 t() 使用文案；
+ * 3. setupRouterGuards(router) —— 守卫内部使用 useSessionStore / useMenuStore，
+ *    必须在 pinia 安装之后注册；
+ * 4. bootstrap() —— 从 localStorage 恢复会话（admin_v2_token / admin_v2_user）；
+ * 5. mount。
+ *
+ * 动态路由说明：菜单由守卫按需加载（首次进入受保护路由时
+ * 调用 menuStore.loadMenus() + addDynamicRoutes()），无需在此处预加载。
+ */
 const app = createApp(App);
 const pinia = createPinia();
 
 app.use(pinia);
-// 注册 vue-i18n：提供 $t 全局方法与 useI18n() 组合式 API（Task 3.2.2）
 app.use(i18n);
 
-// Task 14：在 pinia 就绪后注册路由守卫，确保 localStorage 读取与角色校验生效。
-// 守卫实现见 router/guards.ts，便于单元测试复用。
+// 在 pinia 就绪后注册路由守卫（守卫内使用 useSessionStore / useMenuStore）
 setupRouterGuards(router);
 
-// infra R2-00318：类型断言收窄——Router 类型未显式实现 Vue Plugin 接口，
-// 但 vue-router 4.x 提供 install(app) 方法，可安全断言为 Plugin。
-// 原 `as never` 掩盖真实类型问题，这里用 Plugin 类型保留类型检查。
-app.use(router as unknown as Plugin);
+// 类型断言：vue-router 4.x 的 Router 类型与 Vue Plugin 类型存在已知不匹配
+app.use(router as never);
 
-// infra R2-00319：会话恢复只保留 App.vue onMounted 中的一次 bootstrap()。
-// 原 main.ts 与 App.vue 各调用一次 bootstrap()，属冗余异步调用（竞态窗口）。
-// 移除本处调用，避免两次读取 localStorage 相互覆盖。
+// 启动时从 localStorage 恢复会话，确保 isLoggedIn 在守卫之外也可用
+const sessionStore = useSessionStore();
+void sessionStore.bootstrap();
 
 app.mount("#app");

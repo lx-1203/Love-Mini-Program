@@ -4,6 +4,11 @@ import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // 修复（严格模式 noUnusedLocals）：components 类型未在本文件引用，已移除。
 import type { InteractionEventView } from "../services/generated/api-types-supplement";
+// 2026-08-07 官方号体系：官方号账号/消息流类型（契约见 docs/openapi/official-accounts.yaml）
+import type {
+  OfficialAccountView,
+  OfficialMessageView,
+} from "../services/generated/api-types-supplement";
 // 统一常量：异步操作超时时间
 import { ASYNC_TIMEOUT_MS } from "../constants/growth";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
@@ -44,6 +49,18 @@ export interface MessageSession {
   sessionType: SessionType;
   closesAt?: string | null;
   closedReason?: "expired" | "ended" | null;
+  /**
+   * 2026-08-07 消息页重构：会话免打扰（左滑操作设置）。
+   * 免打扰会话不再在列表顶栏统计未读数（unreadCount 保留展示红点）。
+   */
+  muted?: boolean;
+  /**
+   * 2026-08-07 消息页重构：是否官方号会话。
+   * 官方号会话点击进入 official-chat 页（产品助手号 / 活动运营号）。
+   */
+  isOfficial?: boolean;
+  /** 官方号账号 ID（isOfficial=true 时有效，对应 official-chat 的 accountId） */
+  officialAccountId?: string;
 }
 
 /**
@@ -194,7 +211,9 @@ function mapToMessageSession(raw: ConversationView): MessageSession {
   return {
     id: String(raw.id),
     partnerId,
-    partnerName: raw.otherUserName,
+    // 修复（P2-06）：otherUserName 可能为空，统一兜底为空串，
+    // 避免下游（如消息页搜索 partnerName.toLowerCase()）空值崩溃
+    partnerName: raw.otherUserName || "",
     partnerAvatar: raw.otherUserAvatar || "",
     partnerHeadline: raw.headline || "",
     lastMessagePreview: raw.lastMessagePreview,
@@ -274,30 +293,61 @@ function mapToInteractionEvent(item: InteractionEventView): InteractionEvent {
   } as InteractionEvent;
 }
 
+/**
+ * Mock 会话数据（2026-08-07 消息页重构：覆盖全部展示状态）：
+ * - 置顶 + 未读（session-private-1）
+ * - 未读 99+（session-private-4）
+ * - 免打扰（session-private-2，muted）
+ * - 官方号：产品助手号（带未读）/ 活动运营号
+ * - 匿名匹配会话（temp_anonymous，蒙面头像）
+ * - 多种消息预览类型：[语音] / [图片] / [表情]
+ * 时间基于当前时刻动态生成，保证列表排序与「今天/昨天/更早」展示始终真实。
+ */
 const mockSessions: MessageSession[] = [
   {
     id: "session-private-1", partnerId: "user-2001", partnerName: "林夕", partnerAvatar: IMAGE_PATHS.DEFAULT_AVATAR,
     partnerHeadline: "大二 · 喜欢电影和咖啡", lastMessagePreview: "明天下午有空吗？",
-    lastMessageSentAt: "2026-05-20T18:30:00Z", unreadCount: 2, pinned: true,
+    lastMessageSentAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(), unreadCount: 2, pinned: true,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
   },
   {
     id: "session-private-2", partnerId: "user-2002", partnerName: "陈默", partnerAvatar: "",
-    partnerHeadline: "大三 · 自习搭子", lastMessagePreview: "图书馆三楼见",
-    lastMessageSentAt: "2026-05-19T21:00:00Z", unreadCount: 0, pinned: false,
+    partnerHeadline: "大三 · 自习搭子", lastMessagePreview: "[语音] 30″",
+    lastMessageSentAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(), unreadCount: 0, pinned: false,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
+    muted: true,
+  },
+  {
+    id: "session-official-assistant", partnerId: "official-assistant", partnerName: "产品助手",
+    partnerAvatar: "", partnerHeadline: "系统通知 · 功能答疑", lastMessagePreview: "你的校园认证已通过审核 🎉",
+    lastMessageSentAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), unreadCount: 3, pinned: false,
+    phase: "active", sessionType: "private", closesAt: null, closedReason: null,
+    isOfficial: true, officialAccountId: "official-assistant",
+  },
+  {
+    id: "session-private-4", partnerId: "user-2006", partnerName: "夏言", partnerAvatar: IMAGE_PATHS.DEFAULT_AVATAR,
+    partnerHeadline: "大四 · 周末爬山", lastMessagePreview: "[图片] 给你看看周末拍的风景",
+    lastMessageSentAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), unreadCount: 128, pinned: false,
+    phase: "active", sessionType: "private", closesAt: null, closedReason: null,
+  },
+  {
+    id: "session-temp-1", partnerId: "user-2004", partnerName: "匿名匹配 · 星河", partnerAvatar: "",
+    partnerHeadline: "匿名匹配聊天", lastMessagePreview: "你好奇的天文馆我也去过！",
+    lastMessageSentAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), unreadCount: 1, pinned: false,
+    phase: "active", sessionType: "temp_anonymous", closesAt: null, closedReason: null,
   },
   {
     id: "session-private-3", partnerId: "user-2005", partnerName: "顾言", partnerAvatar: "",
-    partnerHeadline: "研一 · 摄影爱好者", lastMessagePreview: "上次拍的那组照片发你了",
-    lastMessageSentAt: "2026-05-18T14:20:00Z", unreadCount: 5, pinned: false,
+    partnerHeadline: "研一 · 摄影爱好者", lastMessagePreview: "[表情] 😂 笑死",
+    lastMessageSentAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), unreadCount: 5, pinned: false,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
   },
   {
-    id: "session-temp-1", partnerId: "user-2004", partnerName: "对方", partnerAvatar: "",
-    partnerHeadline: "24小时临时聊天", lastMessagePreview: "嗨，我是通过匹配进来的",
-    lastMessageSentAt: "2026-05-20T20:00:00Z", unreadCount: 1, pinned: false,
-    phase: "active", sessionType: "temp_anonymous", closesAt: "2026-05-21T20:00:00Z", closedReason: null,
+    id: "session-official-promoter", partnerId: "official-promoter", partnerName: "活动运营",
+    partnerAvatar: "", partnerHeadline: "活动推送 · 福利通知", lastMessagePreview: "本周五同城桌游局报名开启，名额有限",
+    lastMessageSentAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), unreadCount: 0, pinned: false,
+    phase: "active", sessionType: "private", closesAt: null, closedReason: null,
+    isOfficial: true, officialAccountId: "official-promoter",
   },
 ];
 
@@ -490,19 +540,57 @@ export const useMessagesStore = defineStore("messages", {
           if (useMock()) {
             // 修复：旧请求返回时不再修改状态，避免覆盖新请求结果
             if (token !== fetchSessionsToken) return;
-            this.sessions = [...mockSessions].sort((a, b) => {
-              if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-              return (b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0) - (a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0);
-            });
+            // 2026-08-07 消息页重构：mock 模式保留运行期状态（已读清零/置顶/免打扰/删除），
+            // 避免「进入会话清空红点 → 返回列表刷新后红点反弹」的假数据现象。
+            const runtime = new Map(this.sessions.map((s) => [s.id, s]));
+            const isFirstLoad = this.sessions.length === 0;
+            this.sessions = mockSessions
+              // 首次加载全部会话；非首次仅保留仍存在的会话（已删除的不再出现）
+              .filter((m) => isFirstLoad || runtime.has(m.id))
+              .map((m) => {
+                const live = runtime.get(m.id);
+                return live
+                  ? { ...m, unreadCount: live.unreadCount, pinned: live.pinned, muted: live.muted ?? m.muted, lastMessagePreview: live.lastMessagePreview, lastMessageSentAt: live.lastMessageSentAt }
+                  : { ...m };
+              })
+              .sort((a, b) => {
+                if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+                return (b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0) - (a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0);
+              });
             return;
           }
-          const sessionStore = useSessionStore();
-          const userId = sessionStore.userSession?.userId ?? "";
-          // 修复：userId 拼入 URL 前 encodeURIComponent，防止特殊字符破坏 query 结构
-          const data = await request<ConversationView[]>({ url: `/messages/conversations?userId=${encodeURIComponent(userId)}`, method: "GET" });
+          // P2-13：会话列表接口 userId 由后端 JWT 获取（PrivateMessageController 无 userId 参数），不再携带 query
+          const data = await request<ConversationView[]>({ url: "/messages/conversations", method: "GET" });
+          // 2026-08-07 官方号体系：real 模式并行拉取官方号账号 + 消息流，
+          // 映射为 isOfficial 会话与普通会话一起排序（官方未读先置 0，后端暂未计数）
+          const [officialAccounts, ...accountMessages] = await Promise.all([
+            request<OfficialAccountView[]>({ url: "/official-accounts", method: "GET" }).catch(() => []),
+            ...["official-assistant", "official-promoter"].map((code) =>
+              request<OfficialMessageView[]>({ url: `/official-accounts/${encodeURIComponent(code)}/messages`, method: "GET" }).catch(() => [])
+            ),
+          ]);
           // 修复：旧请求返回时不再修改状态，避免覆盖新请求结果
           if (token !== fetchSessionsToken) return;
-          this.sessions = data.map(mapToMessageSession).sort((a, b) => {
+          const officialSessions: MessageSession[] = officialAccounts.map((acc, idx) => {
+            const messages = accountMessages[idx] ?? [];
+            const latest = messages[messages.length - 1];
+            return {
+              id: `official-${acc.code}`,
+              partnerId: acc.code,
+              partnerName: acc.name,
+              partnerAvatar: acc.iconUrl || "",
+              partnerHeadline: acc.description,
+              lastMessagePreview: latest?.content ?? "",
+              lastMessageSentAt: latest?.publishedAt ?? null,
+              unreadCount: 0,
+              pinned: false,
+              phase: "active",
+              sessionType: "private",
+              isOfficial: true,
+              officialAccountId: acc.code,
+            };
+          });
+          this.sessions = [...data.map(mapToMessageSession), ...officialSessions].sort((a, b) => {
             if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
             return (b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0) - (a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0);
           });
@@ -534,10 +622,8 @@ export const useMessagesStore = defineStore("messages", {
             if (s) s.unreadCount = 0;
             return;
           }
-          const sessionStore = useSessionStore();
-          const userId = sessionStore.userSession?.userId ?? "";
-          // 修复：sessionId/userId 拼入 URL 前 encodeURIComponent
-          const data = await request<BackendMessageView[]>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages?userId=${encodeURIComponent(userId)}`, method: "GET" });
+          // P2-13：会话消息接口 userId 由后端 JWT 获取（PrivateMessageController 无 userId 参数），不再携带 query
+          const data = await request<BackendMessageView[]>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`, method: "GET" });
           // 修复：旧请求返回时不再修改状态
           if (token !== fetchSessionMessagesToken) return;
           this.currentMessages = data.map(mapToMessageItem);
@@ -659,9 +745,9 @@ export const useMessagesStore = defineStore("messages", {
             if (s) { s.lastMessagePreview = content; s.lastMessageSentAt = nm.sentAt; }
             return nm;
           }
-          const sessionStore = useSessionStore();
-          const senderId = sessionStore.userSession?.userId ?? "";
-          const result = await request<BackendMessageView, { senderId: string; content: string; kind: string }>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`, method: "POST", data: { senderId, content, kind: "text" } });
+          // 修复（P0-12）：后端 SendMessageRequest 不含 senderId（从 JWT 取当前用户），
+          // 请求体仅发送内容与类型，删除多余字段避免后端契约不匹配
+          const result = await request<BackendMessageView, { content: string; kind: string }>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`, method: "POST", data: { content, kind: "text" } });
           const mr = mapToMessageItem(result);
           this.currentMessages.push(mr);
           const s = this.sessions.find((x) => x.id === sessionId);
@@ -683,10 +769,8 @@ export const useMessagesStore = defineStore("messages", {
             this.heartSignals = [...mockHeartSignals];
             return;
           }
-          const sessionStore = useSessionStore();
-          const userId = sessionStore.userSession?.userId ?? "";
-          // 修复：userId 拼入 URL 前 encodeURIComponent
-          const data = await request<MessageHeartSignal[]>({ url: `/matches/heart-signals?userId=${encodeURIComponent(userId)}`, method: "GET" });
+          // P2-13：心动信号列表接口 userId 由后端 JWT 获取（MatchController.getHeartSignals 无 userId 参数），不再携带 query
+          const data = await request<MessageHeartSignal[]>({ url: "/matches/heart-signals", method: "GET" });
           // 修复：旧请求返回时不再修改状态
           if (token !== fetchHeartSignalsToken) return;
           this.heartSignals = data;
@@ -719,9 +803,8 @@ export const useMessagesStore = defineStore("messages", {
             if (!this.sessions.find((s) => s.id === ns.id)) this.sessions.unshift(ns);
             return ns;
           }
-          const sessionStore = useSessionStore();
-          const userId = sessionStore.userSession?.userId ?? "";
-          await request<void>({ url: `/matches/heart-signals/${encodeURIComponent(signalId)}/accept?userId=${encodeURIComponent(userId)}`, method: "POST" });
+          // P2-13：接受心动信号接口 userId 由后端 JWT 获取，不再携带 query
+          await request<void>({ url: `/matches/heart-signals/${encodeURIComponent(signalId)}/accept`, method: "POST" });
           const signal = this.heartSignals.find((s) => s.id === signalId);
           if (signal) signal.status = "accepted";
           await this.fetchSessions();
@@ -821,10 +904,8 @@ export const useMessagesStore = defineStore("messages", {
       this.errorMessage = null;
       try {
         if (useMock()) { const s = this.sessions.find((x) => x.id === sessionId); if (s) s.pinned = pinned; return; }
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
-        // 修复：userId 拼入 URL 前 encodeURIComponent
-        await withTimeout(request<void>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/pin?pinned=${pinned}&userId=${encodeURIComponent(userId)}`, method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutPinSession")); // infra R2-00028
+        // P2-13：置顶接口 userId 由后端 JWT 获取（PrivateMessageController 仅接收 pinned 参数），不再携带 query
+        await withTimeout(request<void>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/pin?pinned=${pinned}`, method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutPinSession")); // infra R2-00028
         const s = this.sessions.find((x) => x.id === sessionId);
         if (s) s.pinned = pinned;
       } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.pinSessionFailed"); throw error; } // infra R2-00028
@@ -850,6 +931,37 @@ export const useMessagesStore = defineStore("messages", {
       }
     },
 
+    /**
+     * 2026-08-07 消息页重构：设置会话免打扰（左滑操作）。
+     * 免打扰仅影响新消息通知提醒，未读红点仍正常展示。
+     */
+    setSessionMuted(sessionId: string, muted: boolean) {
+      const session = this.sessions.find((s) => s.id === sessionId);
+      if (session) session.muted = muted;
+    },
+
+    /**
+     * 2026-08-07 消息页重构：标为未读（长按菜单）。
+     * 将已读会话重新标记为 1 条未读，恢复红色角标。
+     */
+    markSessionUnread(sessionId: string) {
+      const session = this.sessions.find((s) => s.id === sessionId);
+      if (session) {
+        session.unreadCount = Math.max(1, session.unreadCount);
+      }
+    },
+
+    /**
+     * 2026-08-07 消息页重构：标为已读（长按菜单）。
+     * 手动消除未读红点。
+     */
+    markSessionRead(sessionId: string) {
+      const session = this.sessions.find((s) => s.id === sessionId);
+      if (session) {
+        session.unreadCount = 0;
+      }
+    },
+
     async deleteSession(sessionId: string) {
       this.errorMessage = null;
       try {
@@ -858,11 +970,9 @@ export const useMessagesStore = defineStore("messages", {
           this.sessions = this.sessions.filter((s) => s.id !== sessionId);
           return;
         }
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
-        // 修复：sessionId/userId 拼入 URL 前 encodeURIComponent
+        // P2-13：删除会话接口 userId 由后端 JWT 获取（PrivateMessageController 仅接收 path id），不再携带 query
         await withTimeout(
-          request<void>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}?userId=${encodeURIComponent(userId)}`, method: "DELETE" }),
+          request<void>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}`, method: "DELETE" }),
           ASYNC_TIMEOUT_MS,
           t("storeErrors.messages.timeoutDeleteSession") // infra R2-00028
         );
@@ -878,10 +988,8 @@ export const useMessagesStore = defineStore("messages", {
       this.errorMessage = null;
       try {
         if (useMock()) { const s = this.heartSignals.find((x) => x.id === signalId); if (s) s.status = "expired"; return; }
-        const sessionStore = useSessionStore();
-        const userId = sessionStore.userSession?.userId ?? "";
-        // 修复：signalId/userId 拼入 URL 前 encodeURIComponent
-        await withTimeout(request<void>({ url: `/matches/heart-signals/${encodeURIComponent(signalId)}/decline?userId=${encodeURIComponent(userId)}`, method: "POST" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutDeclineSignal")); // infra R2-00028
+        // P2-13：拒绝心动信号接口 userId 由后端 JWT 获取，不再携带 query
+        await withTimeout(request<void>({ url: `/matches/heart-signals/${encodeURIComponent(signalId)}/decline`, method: "POST" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutDeclineSignal")); // infra R2-00028
         const s = this.heartSignals.find((x) => x.id === signalId);
         if (s) s.status = "expired";
       } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.rejectSignalFailed"); throw error; } // infra R2-00028
@@ -931,7 +1039,8 @@ export const useMessagesStore = defineStore("messages", {
             this.interactionEventPage = page; this.interactionEventHasMore = false;
             return;
           }
-          const data = await request<InteractionEventView[]>({ url: `/interactions?page=${page}&pageSize=20`, method: "GET" });
+          // 修复（P0-04）：互动事件端点统一挂 /notifications 前缀，分页参数为 size（后端 InteractionEventController 契约）
+          const data = await request<InteractionEventView[]>({ url: `/notifications/interactions?page=${page}&size=20`, method: "GET" });
           // 修复：旧请求返回时不再修改状态
           if (token !== loadInteractionEventsToken) return;
           const mapped = data.map(mapToInteractionEvent); // infra R2-00031: 使用抽取的映射函数
@@ -954,7 +1063,7 @@ export const useMessagesStore = defineStore("messages", {
     async getUnreadInteractionCount(): Promise<number> {
       try {
         if (useMock()) return this.interactionEvents.filter((e) => !e.isRead).length;
-        const result = await withTimeout(request<{ count: number }>({ url: "/interactions/unread-count", method: "GET" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutUnreadInteractionCount")); // infra R2-00028
+        const result = await withTimeout(request<{ count: number }>({ url: "/notifications/interactions/unread-count", method: "GET" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutUnreadInteractionCount")); // infra R2-00028
         return result.count ?? 0;
       } catch (_e) { return this.interactionEvents.filter((e) => !e.isRead).length; }
     },
@@ -964,7 +1073,7 @@ export const useMessagesStore = defineStore("messages", {
         const e = this.interactionEvents.find((x) => x.id === eventId);
         if (!e || e.isRead) return;
         if (useMock()) { e.isRead = true; return; }
-        await withTimeout(request<void>({ url: `/interactions/${eventId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkInteractionRead")); // infra R2-00028
+        await withTimeout(request<void>({ url: `/notifications/interactions/${eventId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkInteractionRead")); // infra R2-00028
         e.isRead = true;
       } catch (_e) { /* 静默失败 */ }
     },
@@ -972,7 +1081,7 @@ export const useMessagesStore = defineStore("messages", {
     async markAllInteractionsRead() {
       try {
         if (useMock()) { this.interactionEvents.forEach((e) => { e.isRead = true; }); return; }
-        await withTimeout(request<void>({ url: "/interactions/read-all", method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkAllInteractionsRead")); // infra R2-00028
+        await withTimeout(request<void>({ url: "/notifications/interactions/read-all", method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkAllInteractionsRead")); // infra R2-00028
         this.interactionEvents.forEach((e) => { e.isRead = true; });
       } catch (error) {
         // 修复：原代码失败时仍强制标记为已读，导致数据不一致

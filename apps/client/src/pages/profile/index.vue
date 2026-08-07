@@ -10,6 +10,8 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { useProfileStore } from "../../stores/profile";
+import { useLikesStore } from "../../stores/likes";
+import { useCoinsStore } from "../../stores/coins";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
 // review #62：动态预览点击跳转帖子详情前校验存在性
@@ -17,7 +19,7 @@ import { useVillageStore } from "../../stores/village";
 import { isDev } from "../../services/env";
 // Showcase 展示版入口
 import { isShowcaseMode } from "../../config/showcase";
-import { openAppPath, switchTabWithQuery } from "../../utils/navigation";
+import { openAppPath, switchTabWithQuery, consumePendingTabQuery } from "../../utils/navigation";
 // P2.6：帮助与客服 / 安全中心独立页路由
 import { ROUTES } from "../../constants/routes";
 import { useTabBar } from "../../composables/useTabBar";
@@ -86,6 +88,8 @@ const sessionStore = useSessionStore();
 // 同步自定义 TabBar 选中状态（我的 = 索引 4）
 useTabBar(4);
 const profileStore = useProfileStore();
+const likesStore = useLikesStore();
+const coinsStore = useCoinsStore();
 const socialProgressStore = useSocialProgressStore();
 const discoverStore = useDiscoverStore();
 const villageStore = useVillageStore();
@@ -101,8 +105,9 @@ const villageStore = useVillageStore();
 const { profileBackgroundUrl } = storeToRefs(sessionStore);
 
 /**
- * 照片墙 + 个人视频状态（Phase E2 / E3）
+ * 照片墙状态（Phase E2 / E3）
  * 从 profile store 获取，上传/删除后响应式更新
+ * （设计需求：个人页无视频，仅语音介绍 60s——2026-08-07 已移除视频区块）
  */
 const { photoGallery } = storeToRefs(profileStore);
 
@@ -111,8 +116,9 @@ const { photoGallery } = storeToRefs(profileStore);
  * - isUploading: 是否正在上传中（控制 loading 蒙层显示）
  * - uploadProgress: 上传进度文案（如 "上传中..." / "删除中..."）
  * - uploadKind: 当前上传类型，用于在 UI 中精确控制蒙层位置
+ * （设计需求：无视频上传，故 UploadKind 不含 "video"）
  */
-type UploadKind = "background" | "video" | "photo" | null;
+type UploadKind = "background" | "photo" | "avatar" | null;
 const isUploading = ref<boolean>(false);
 const uploadProgress = ref<string>("");
 const uploadKind = ref<UploadKind>(null);
@@ -155,6 +161,16 @@ const { remainingCount: matchCount } = storeToRefs(discoverStore);
 const targetUserId = ref<string>("");
 
 function loadPageUserIdParam(): void {
+  // P1-04：优先消费 pending-tab-query 桥接（openAppPath 跳转本 Tab 页携带的 query）。
+  // 本页是 Tab 页，switchTab 无法携带 query string，openAppPath 将 query 写入
+  // storage（匹配 /pages/profile/index），这里 onShow 时读取即清，避免残留。
+  const bridged = consumePendingTabQuery("/pages/profile/index");
+  const bridgedUserId = bridged.userId;
+  if (typeof bridgedUserId === "string" && bridgedUserId.length > 0) {
+    targetUserId.value = bridgedUserId;
+    return;
+  }
+  // 兜底：getCurrentPages 直读页面 options（直开链接 / H5 冷启动场景）
   try {
     const pages = getCurrentPages();
     const currentPage = pages[pages.length - 1] as PageWithOptions | undefined;
@@ -182,10 +198,19 @@ const isOwnProfile = computed(() => {
   return String(targetUserId.value) === String(currentUserId.value);
 });
 
-/** 资料是否已完善（三个硬门槛全部完成） */
-const isUnlocked = computed(() => sessionStore.isProfileComplete);
+/**
+ * 页面是否解锁（2026-08-07 链路调整）。
+ *
+ * 原实现：isProfileComplete 完成才解锁，「我的」整页被 LockScreen 锁死，
+ * 未完善资料的用户（如体验账号）无法进入任何设置/退出。
+ *
+ * 现放宽为：登录即可进入「我的」；未完善资料时页面顶部显示
+ * 完善引导横幅（见模板 profile-complete-banner），不再锁死整页。
+ * 未登录时仍显示 LockScreen（引导登录）。
+ */
+const isUnlocked = computed(() => sessionStore.isLoggedIn);
 
-/** 完善度百分比（0-100） */
+/** 完善度百分比（0-100），用于未完善时的引导横幅 */
 const completionPercent = computed(() => sessionStore.profileCompletion);
 
 /**
@@ -266,16 +291,50 @@ const myPostsTotal = computed(() => profileView.value.myPostsTotal);
 interface StatItem {
   label: string;
   value: number | string;
+  /** 付费解锁项（右上角小锁标识） */
+  locked?: boolean;
+  /** 点击跳转目标 */
+  path?: string;
 }
 
+/**
+ * 核心数据统计栏（QQ 主页改造方案）：
+ * 我喜欢的 / 喜欢我的（🔒）/ 最近来访（🔒）/ 获赞
+ */
 const stats = computed<StatItem[]>(() => {
   const s = profileStore.profileStats;
   return [
-    { label: t("profile.following"), value: s?.followingCount ?? 0 },
-    { label: t("profile.followers"), value: s?.followersCount ?? 0 },
-    { label: t("profile.likes"), value: s?.likesCount ?? 0 },
+    { label: t("profile.myLikes"), value: likesStore.likes.length, path: "/pages/likes/index" },
+    { label: t("profile.likedMe"), value: likesStore.likedBy.length, locked: true, path: "/pages/likes-visitors/index" },
+    { label: t("profile.recentVisitors"), value: likesStore.visitors.length, locked: true, path: "/pages/likes-visitors/index" },
+    { label: t("profile.likes"), value: s?.likesCount ?? 0, path: "/pages/likes/index" },
   ];
 });
+
+/**
+ * 统计栏点击（QQ 主页改造方案）：
+ * 喜欢我的/最近来访 → 喜欢与访客页（页内解锁）；我喜欢的/获赞 → 列表页。
+ */
+function handleStatTap(index: number) {
+  lightHaptic();
+  const item = stats.value[index];
+  if (item?.path) {
+    openAppPath(item.path);
+  } else {
+    uni.showToast({ title: t("profile.statComingSoon"), icon: "none" });
+  }
+}
+
+/** 点击头像放大查看（QQ 主页交互：头像仅预览，修改走编辑资料） */
+function handleAvatarPreview() {
+  const url = profileView.value.avatarUrl;
+  if (!url) return;
+  try {
+    uni.previewImage({ urls: [url], current: url });
+  } catch (_e) {
+    // 预览失败静默
+  }
+}
 
 /**
  * 功能菜单项配置
@@ -286,11 +345,18 @@ interface MenuItem {
   bgColor: string;
   label: string;
   path?: string;
+  /** 右侧标注（如「领交友币」「得奖励」、余额） */
+  hint?: string;
   /** TabBar 页面传参（switchTab 不支持 query，走 storage 桥接） */
   tabQuery?: Record<string, string>;
   action?: () => void;
 }
 
+/**
+ * 核心功能列表区（QQ 主页改造方案）：
+ * 任务中心（领交友币）→ 交友币（余额）→ 我的圈子 → 恋爱咨询与测试 →
+ * 推荐给好友（得奖励）→ 帮助与客服；其余功能入口排在后面。
+ */
 const menuItems = computed<MenuItem[]>(() => [
   /* Showcase 展示版：全功能入口（仅展示构建包可见） */
   ...(isShowcaseMode
@@ -303,26 +369,63 @@ const menuItems = computed<MenuItem[]>(() => [
         } as MenuItem,
       ]
     : []),
+  /* 1. 任务中心（每日任务、交友币奖励） */
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
+    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+    label: t("profile.taskCenter"),
+    hint: t("profile.earnCoins"),
+    path: "/pages/profile/tasks",
+  },
+  /* 2. 交友币（当前余额） */
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
+    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+    label: t("profile.coinBalance"),
+    hint: `${coinsStore.balanceYuan} 币`,
+    path: "/pages/wallet/index",
+  },
+  /* 3. 我的圈子（加入的圈子 + 发布的圈子帖子） */
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
+    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
+    label: t("profile.myCircles"),
+    path: ROUTES.CIRCLES.INDEX,
+  },
+  /* 4. 恋爱咨询与测试（恋爱咨询/课程/社交/MBTI 聚合） */
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
+    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
+    label: t("profile.loveLab"),
+    path: ROUTES.LOVE_CENTER.INDEX,
+  },
+  /* 5. 推荐给好友（得奖励） */
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.SHARE,
+    bgColor: "var(--c-lavender-100, #EDE9FE)",
+    label: t("profile.shareFriend"),
+    hint: t("profile.earnReward"),
+    action: () => {
+      uni.showShareMenu({
+        withShareTicket: true,
+        menus: ["shareAppMessage", "shareTimeline"],
+      });
+    },
+  },
+  /* 6. 帮助与客服（常见问题、联系人工客服） */
+  {
+    icon: IMAGE_PATHS.ICONS_EMOJI.CHAT,
+    bgColor: "var(--c-sky-50, #E0F2FE)",
+    label: t("profile.helpSupport"),
+    path: ROUTES.HELP,
+  },
+  /* ===== 其余功能入口 ===== */
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
     label: t("profile.myPosts"),
     path: "/pages/village/index",
     tabQuery: { tab: "mine" } as Record<string, string> | undefined,
-  },
-  /* Phase Feedback5：任务中心（新增） */
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
-    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
-    label: t("profile.taskCenter"),
-    path: "/pages/profile/tasks",
-  },
-  /* Phase Feedback3：我的钱包（交友币余额/账单） */
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
-    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
-    label: t("profile.wallet"),
-    path: "/pages/wallet/index",
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
@@ -343,47 +446,51 @@ const menuItems = computed<MenuItem[]>(() => [
     label: t("profile.verification"),
     path: "/pages/verification/index",
   },
-  /* Phase Feedback5：帮助与客服（P2.6 独立页） */
+  /* 2026-08-07 链路调整：时间安排/课表为可选项 */
   {
-    icon: IMAGE_PATHS.ICONS_EMOJI.CHAT,
-    bgColor: "var(--c-sky-50, #E0F2FE)",
-    label: t("profile.helpSupport"),
-    path: ROUTES.HELP,
+    icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
+    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+    label: t("profile.scheduleSetting"),
+    path: "/subpackages/setup/schedule/index",
   },
-  /* Phase Feedback5：安全中心（P2.6 独立页） */
+  /* 2026-08-07 消息页重构：系统通知由「产品助手号」官方会话承载 */
   {
-    icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
-    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
-    label: t("profile.safetyCenter"),
-    path: ROUTES.SECURITY,
+    icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
+    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
+    label: t("profile.notifications"),
+    path: "/pages/official-chat/index?accountId=official-assistant",
   },
-  /* Phase Feedback5：权限（同校推荐开关） */
+]);
+
+/**
+ * 系统与隐私设置区（QQ 主页改造方案）：
+ * 隐私权限设置（同校推荐开关，核心突出）→ 安全中心 → 通用设置
+ */
+const settingsMenuItems = computed<MenuItem[]>(() => [
+  /* 1. 隐私权限设置（核心隐私项单独突出） */
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
     bgColor: "var(--c-lavender-100, #EDE9FE)",
     label: t("profile.privacyPermission"),
     path: "/pages/profile/privacy",
   },
+  /* 2. 安全中心（账号安全、举报记录、黑名单） */
   {
-    icon: IMAGE_PATHS.ICONS_PROFILE.SHARE,
-    bgColor: "var(--c-lavender-100, #EDE9FE)",
-    label: t("profile.shareFriend"),
-    action: () => {
-      uni.showShareMenu({
-        withShareTicket: true,
-        menus: ["shareAppMessage", "shareTimeline"],
-      });
-    },
+    icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
+    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
+    label: t("profile.safetyCenter"),
+    path: ROUTES.SECURITY,
   },
-]);
-
-const bottomMenuItems = computed<MenuItem[]>(() => [
+  /* 3. 通用设置（通知管理、缓存清理、账号与安全、关于我们） */
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
     bgColor: "var(--c-bg-page, #F4F6FA)",
     label: t("profile.settings"),
     path: "/pages/settings/index",
   },
+]);
+
+const bottomMenuItems = computed<MenuItem[]>(() => [
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
     bgColor: "var(--c-bg-page, #F4F6FA)",
@@ -424,6 +531,14 @@ function handleMenuTap(item: MenuItem) {
 function goToProfileSetup() {
   lightHaptic();
   openAppPath("/subpackages/setup/profile/index");
+}
+
+/**
+ * 未完善资料引导横幅点击：跳转资料完善流程（2026-08-07 链路调整）。
+ * 与 goToProfileSetup 共用入口，语义上引导用户完成资料。
+ */
+function goCompleteProfile() {
+  goToProfileSetup();
 }
 
 /**
@@ -1013,6 +1128,23 @@ onUnload(() => {
       <!-- 页面顶部安全区占位 -->
       <view class="safe-top" />
 
+      <!-- 未完善资料：顶部完善引导横幅（2026-08-07 链路调整，替代整页锁定） -->
+      <view
+        v-if="!sessionStore.isProfileComplete"
+        class="profile-complete-banner press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('profile.completeBannerAria', { n: completionPercent })"
+        @tap="goCompleteProfile"
+      >
+        <text class="profile-complete-banner__text">
+          {{ t('profile.completeBanner', { n: completionPercent }) }}
+        </text>
+        <text class="profile-complete-banner__action">{{ t('profile.completeBannerAction') }}</text>
+        <text class="profile-complete-banner__arrow">&rsaquo;</text>
+      </view>
+
       <!-- 顶部右上角：退出登录按钮 + 匹配次数 chip（Phase C1 · 跨页面复用） -->
       <view class="profile-top-bar">
         <view
@@ -1069,8 +1201,15 @@ onUnload(() => {
           </view>
         </view>
 
-        <!-- 头像区域 -->
-        <view class="avatar-wrap">
+        <!-- 头像 + 信息区（设计需求：左侧圆形头像，右侧昵称/认证/签名/编辑资料按钮） -->
+        <view class="profile-info__main">
+        <!-- 头像区域（QQ 主页改造方案：点击头像放大查看；修改头像走编辑资料页） -->
+        <view
+          class="avatar-wrap"
+          role="button"
+          :aria-label="t('profile.avatarPreviewAria')"
+          @tap="handleAvatarPreview"
+        >
           <view class="avatar-ring" :class="{ 'avatar-ring--vip': featureFlags.membershipEnabled && isVip }">
             <view class="avatar-ring__inner">
               <view class="avatar">
@@ -1083,6 +1222,16 @@ onUnload(() => {
                 />
                 <text v-else class="avatar__text">{{ avatarInitial }}</text>
               </view>
+              <!-- 自己主页：右上角相机小标 -->
+              <view v-if="isOwnProfile" class="avatar-camera press-feedback">
+                <image
+                  v-if="!(isUploading && uploadKind === 'avatar')"
+                  class="avatar-camera__icon"
+                  :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
+                  mode="aspectFit" alt=""
+                />
+                <view v-else class="avatar-camera__spinner" />
+              </view>
             </view>
           </view>
           <view v-if="featureFlags.membershipEnabled && isVip" class="vip-crown">
@@ -1090,6 +1239,7 @@ onUnload(() => {
           </view>
         </view>
 
+        <view class="profile-info__right">
         <!-- 用户信息 -->
         <view class="user-info">
           <view class="user-info__name-row">
@@ -1127,25 +1277,41 @@ onUnload(() => {
           <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" alt="" />
           <text class="greet-btn__text">{{ t('profile.sayHi') }}</text>
         </view>
+        </view>
+        </view>
 
-        <!-- 数据统计栏 -->
+        <!-- 核心数据统计栏（QQ 主页改造方案：我喜欢的/喜欢我的🔒/最近来访🔒/获赞，点击进对应页） -->
         <view class="stats-bar">
           <view
             v-for="(stat, index) in stats"
             :key="index"
-            class="stats-bar__item list-item"
+            class="stats-bar__item list-item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="stat.label"
+            @tap="handleStatTap(index)"
           >
-            <text class="stats-bar__value">{{ stat.value }}</text>
+            <view class="stats-bar__value-wrap">
+              <text class="stats-bar__value">{{ stat.value }}</text>
+              <!-- 付费解锁项：右上角小锁标识（QQ 主页方案） -->
+              <view v-if="stat.locked" class="stats-bar__lock">
+                <text class="stats-bar__lock-text">🔒</text>
+              </view>
+            </view>
             <text class="stats-bar__label">{{ stat.label }}</text>
           </view>
         </view>
       </view>
 
-      <!-- ==================== Phase Feedback5：语音状态区块（最长 60s，替代个人视频） ==================== -->
+      <!-- ==================== Phase Feedback5：语音介绍区块（最长 60s，替代个人视频；设计需求：仅语音，无视频） ==================== -->
       <view v-if="isOwnProfile" class="media-section">
         <view class="section-header">
           <view class="section-header__left">
             <text class="section-header__title">{{ t('profile.voiceStatus') }}</text>
+            <view class="voice-only-tag">
+              <text class="voice-only-tag__text">{{ t('profile.voiceOnlyTag') }}</text>
+            </view>
             <text class="section-header__count">{{ t('profile.voiceStatusHint') }}</text>
           </view>
         </view>
@@ -1295,7 +1461,7 @@ onUnload(() => {
           </view>
         </view>
 
-        <!-- 动态列表（有数据时） -->
+        <!-- 动态列表（有数据时，QQ 空间说说卡片样式：时间→正文3行→配图横排→点赞评论） -->
         <view v-if="myPostsPreview.length > 0" class="my-posts-list" role="list">
           <view
             v-for="(post, index) in myPostsPreview"
@@ -1308,23 +1474,35 @@ onUnload(() => {
             hover-class="my-post-item--hover"
             hover-stay-time="100"
           >
-            <view class="my-post-item__content">
-              <text class="my-post-item__summary">{{ post.summary }}</text>
-              <view class="my-post-item__meta">
-                <text class="my-post-item__time">{{ post.timeLabel }}</text>
-                <view class="my-post-item__stats">
-                  <view class="my-post-item__stat">
-                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE" mode="aspectFit" lazy-load="true" alt="" />
-                    <text class="my-post-item__stat-text">{{ post.likes }}</text>
-                  </view>
-                  <view class="my-post-item__stat">
-                    <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" lazy-load="true" alt="" />
-                    <text class="my-post-item__stat-text">{{ post.comments }}</text>
-                  </view>
-                </view>
+            <!-- 说说头部：发布时间 + 更多 -->
+            <view class="my-post-item__head">
+              <text class="my-post-item__time">{{ post.timeLabel }}</text>
+              <text class="my-post-item__more">⋯</text>
+            </view>
+            <!-- 说说正文（最多 3 行） -->
+            <text class="my-post-item__summary">{{ post.summary }}</text>
+            <!-- 配图缩略图（最多 3 张横排，有图才展示） -->
+            <view v-if="post.images && post.images.length > 0" class="my-post-item__images">
+              <image
+                v-for="(img, imgIdx) in post.images.slice(0, 3)" :key="imgIdx"
+                class="my-post-item__img"
+                :src="img"
+                mode="aspectFill"
+                lazy-load
+                alt=""
+              />
+            </view>
+            <!-- 说说底部：点赞 / 评论 -->
+            <view class="my-post-item__stats">
+              <view class="my-post-item__stat">
+                <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE" mode="aspectFit" lazy-load="true" alt="" />
+                <text class="my-post-item__stat-text">{{ post.likes }}</text>
+              </view>
+              <view class="my-post-item__stat">
+                <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" lazy-load="true" alt="" />
+                <text class="my-post-item__stat-text">{{ post.comments }}</text>
               </view>
             </view>
-            <text class="my-post-item__arrow">›</text>
           </view>
         </view>
 
@@ -1344,7 +1522,7 @@ onUnload(() => {
         </view>
       </view>
 
-      <!-- 功能菜单列表 -->
+      <!-- 核心功能列表区（QQ 主页改造方案） -->
       <view class="menu-group">
         <view
           v-for="(item, index) in menuItems"
@@ -1367,11 +1545,40 @@ onUnload(() => {
             </view>
             <text class="menu-item__label">{{ item.label }}</text>
           </view>
+          <!-- 右侧标注（领交友币/余额/得奖励） -->
+          <text v-if="item.hint" class="menu-item__hint">{{ item.hint }}</text>
           <text class="menu-item__arrow">›</text>
         </view>
       </view>
 
-      <!-- 底部菜单（设置、关于） -->
+      <!-- 系统与隐私设置区（QQ 主页改造方案：核心隐私项单独突出） -->
+      <view class="menu-group menu-group--settings">
+        <view
+          v-for="(item, index) in settingsMenuItems"
+          :key="index"
+          class="menu-item press-feedback list-item"
+          :class="{ 'menu-item--no-border': index === settingsMenuItems.length - 1 }"
+          role="button"
+          :aria-label="t('profile.menuItemAria', { label: item.label })"
+          @tap="handleMenuTap(item)"
+          hover-class="menu-item--hover"
+          hover-stay-time="100"
+        >
+          <view class="menu-item__left">
+            <view class="menu-item__icon" :style="{ background: item.bgColor }">
+              <SafeImage
+                :src="item.icon"
+                custom-class="menu-item__icon-img"
+                mode="aspectFit"
+              />
+            </view>
+            <text class="menu-item__label">{{ item.label }}</text>
+          </view>
+          <text class="menu-item__arrow">›</text>
+        </view>
+      </view>
+
+      <!-- 底部菜单（关于） -->
       <view class="menu-group">
         <view
           v-for="(item, index) in bottomMenuItems"
@@ -1499,6 +1706,38 @@ onUnload(() => {
   padding: 0;
 }
 
+/* 头像 + 信息 横排布局（设计需求：左圆形头像，右昵称/认证/签名/编辑按钮） */
+.profile-info__main {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  width: 100%;
+  padding: 0 var(--sp-7);
+}
+
+.profile-info__right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+/* 语音介绍「仅语音 · 无视频」标注（设计需求） */
+.voice-only-tag {
+  padding: 4rpx 14rpx;
+  border-radius: var(--r-full);
+  background: var(--c-brand-50, #f0fdf9);
+  border: 1rpx solid var(--c-brand-200, #99f6e0);
+}
+
+.voice-only-tag__text {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-brand-600, #0d9488);
+}
+
 /* 顶部背景图（Phase D4 · 可配置，默认品牌色渐变） */
 .profile-bg {
   position: relative;
@@ -1586,6 +1825,36 @@ onUnload(() => {
   font-weight: 600;
 }
 
+/* 未完善资料：完善引导横幅（2026-08-07 链路调整） */
+.profile-complete-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: calc(env(safe-area-inset-top) + var(--sp-5)) var(--sp-5) 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--c-brand-50);
+  border: 1rpx solid var(--c-brand-200);
+}
+
+.profile-complete-banner__text {
+  flex: 1;
+  font-size: var(--fs-sm);
+  color: var(--c-text-primary);
+}
+
+.profile-complete-banner__action {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-brand-700);
+}
+
+.profile-complete-banner__arrow {
+  font-size: var(--fs-xl);
+  color: var(--c-brand-600);
+  line-height: 1;
+}
+
 /* 顶部右上角 chip 容器（Phase C1） */
 .profile-top-bar {
   position: absolute;
@@ -1645,12 +1914,49 @@ onUnload(() => {
 }
 
 .avatar-ring__inner {
+  position: relative;
   width: 100%;
   height: 100%;
   border-radius: var(--r-full);
   padding: 6rpx;
   background: var(--c-neutral-0);
   box-shadow: var(--s-sm);
+}
+
+/* 2026-08-07：头像右上角相机小标（自己主页可编辑） */
+.avatar-camera {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: var(--c-brand-500);
+  border: 4rpx solid var(--c-neutral-0);
+  box-shadow: var(--s-sm);
+}
+
+.avatar-camera__icon {
+  width: 28rpx;
+  height: 28rpx;
+}
+
+.avatar-camera__spinner {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  animation: avatar-camera-spin 800ms linear infinite;
+}
+
+@keyframes avatar-camera-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* P3 修复：复用 _components.scss 的 .base-avatar 设计令牌，避免与 Avatar.vue 重复定义
@@ -1702,12 +2008,12 @@ onUnload(() => {
   to { transform: rotate(360deg); }
 }
 
-/* 用户信息 */
+/* 用户信息（设计需求：位于头像右侧，左对齐） */
 .user-info {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin-bottom: var(--sp-6);
+  align-items: flex-start;
+  margin-bottom: var(--sp-2);
 }
 
 /* 昵称行（昵称 + VIP 徽章） */
@@ -1845,10 +2151,36 @@ onUnload(() => {
   gap: 6rpx;
 }
 
+/* 数字 + 小锁（QQ 主页方案：付费解锁项右上角锁标识） */
+.stats-bar__value-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .stats-bar__value {
   font-size: var(--fs-4xl);
   font-weight: 700;
   color: var(--c-text-primary);
+  line-height: 1;
+}
+
+.stats-bar__lock {
+  position: absolute;
+  top: -14rpx;
+  right: -26rpx;
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-neutral-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stats-bar__lock-text {
+  font-size: var(--fs-xs);
   line-height: 1;
 }
 
@@ -2324,24 +2656,25 @@ onUnload(() => {
 .my-post-item__summary {
   font-size: var(--fs-lg);
   color: var(--c-text-primary);
-  line-height: 1.4;
+  line-height: 1.5;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  /* QQ 说说卡片：正文最多展示 3 行 */
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   word-break: break-all;
   /* #ifndef H5 */
   /* mp-weixin: -webkit-line-clamp 支持有限，使用 max-height 兜底防止溢出 */
-  max-height: 2.8em;
+  max-height: 4.5em;
   /* #endif */
 }
 
-.my-post-item__meta {
+/* QQ 说说卡片：头部（发布时间 + 更多） */
+.my-post-item__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-4);
 }
 
 .my-post-item__time {
@@ -2349,10 +2682,32 @@ onUnload(() => {
   color: var(--c-text-tertiary);
 }
 
+.my-post-item__more {
+  font-size: var(--fs-2xl);
+  color: var(--c-neutral-300);
+  line-height: 1;
+  padding: 0 var(--sp-2);
+}
+
+/* QQ 说说卡片：配图缩略图（最多 3 张横排） */
+.my-post-item__images {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+.my-post-item__img {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: var(--r-md);
+  background: var(--c-bg-page);
+}
+
 .my-post-item__stats {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
+  gap: var(--sp-6);
+  margin-top: var(--sp-1);
 }
 
 .my-post-item__stat {
@@ -2464,11 +2819,22 @@ onUnload(() => {
   font-weight: 500;
 }
 
+/* 右侧标注（领交友币/余额/得奖励） */
+.menu-item__hint {
+  font-size: var(--fs-sm);
+  color: var(--c-brand-600, #0d9488);
+  background: var(--c-brand-50, #f0fdf9);
+  padding: 4rpx 14rpx;
+  border-radius: var(--r-full);
+  flex-shrink: 0;
+}
+
 .menu-item__arrow {
   font-size: var(--fs-5xl);
   color: var(--c-neutral-300);
   font-weight: 300;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 /* ==================== 退出登录 ==================== */

@@ -38,6 +38,17 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 管理后台 - 帖子管理控制器。
  * <p>提供帖子分页列表、审核（通过/拒绝）、删除等接口。</p>
+ *
+ * <p>数据隔离（商业模式：每个高校一个管理员，委托 {@link AdminDataScope}）：</p>
+ * <ul>
+ *   <li>列表：posts 表无 campus_name 列，按<b>作者所属校区</b>过滤
+ *       （作者校区取自 user_campus_profile.campus_name，与 AdminUserController 语义一致）；
+ *       校区管理员强制按其管辖校区过滤（忽略调用方 campusName 参数），
+ *       全局管理员（SUPER_ADMIN 或 ADMIN 无校区）可用 campusName 参数筛选</li>
+ *   <li>审核/删除：读取目标帖子后按作者校区调用
+ *       {@link AdminDataScope#assertCampusAccess(String)} 校验越权，越权抛 403</li>
+ * </ul>
+ *
  * <p>权限说明：URL 层 /api/admin/** 已限制 ADMIN 角色；
  * 方法层 @PreAuthorize 作为深度防御（需 @EnableMethodSecurity 启用后生效）。</p>
  */
@@ -51,23 +62,29 @@ public class AdminPostController {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    /** 管理端数据隔离（多管理员多校区） */
+    private final AdminDataScope adminDataScope;
 
     public AdminPostController(
             PostRepository postRepository,
             UserRepository userRepository,
-            CommentRepository commentRepository) {
+            CommentRepository commentRepository,
+            AdminDataScope adminDataScope) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
+        this.adminDataScope = adminDataScope;
     }
 
     /**
-     * 分页查询帖子列表（支持审核状态/帖子状态/分类/作者筛选）。
+     * 分页查询帖子列表（支持审核状态/帖子状态/分类/作者/校区筛选）。
      *
      * @param auditStatus 审核状态：pending / approved / rejected，可选
      * @param status      帖子状态：active / deleted / hidden，可选
      * @param category    分类：all/interest/sincere/hometown/anonymous/latest/campus，可选
      * @param authorId    作者用户 ID，可选
+     * @param campusName  校区筛选（按作者所属校区过滤），可选；
+     *                    校区管理员强制按其管辖校区过滤，忽略本参数
      * @param page        页码，1-based，默认 1
      * @param pageSize    每页大小，默认 20，最大 100
      * @return 分页帖子列表
@@ -78,6 +95,7 @@ public class AdminPostController {
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "category", required = false) String category,
             @RequestParam(name = "authorId", required = false) @Positive Long authorId,
+            @RequestParam(name = "campusName", required = false) String campusName,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
@@ -86,12 +104,19 @@ public class AdminPostController {
         PostStatus postStatusEnum = parsePostStatus(status);
         PostCategory categoryEnum = parseCategory(category);
 
+        // 数据隔离：校区管理员强制按其管辖校区过滤，忽略调用方传入的 campusName，
+        // 防止校区管理员越权查看其他校区帖子（与 AdminUserController.listUsers 一致）
+        String scopedCampus = adminDataScope.getCurrentAdminCampusName();
+        String effectiveCampus = scopedCampus != null
+                ? scopedCampus
+                : normalize(campusName);
+
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(100, pageSize));
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
 
         Page<Post> result = postRepository.searchForAdmin(
-                auditStatusEnum, postStatusEnum, categoryEnum, authorId, pageable);
+                auditStatusEnum, postStatusEnum, categoryEnum, authorId, effectiveCampus, pageable);
 
         // 批量预加载作者昵称，避免 N+1 查询
         Map<Long, String> authorNicknameMap = loadAuthorNicknames(result.getContent());
@@ -128,6 +153,10 @@ public class AdminPostController {
             return ResponseEntity.notFound().build();
         }
         Post post = postOpt.get();
+
+        // 数据隔离：校区管理员仅能审核本校区作者的帖子，越权抛 403
+        adminDataScope.assertCampusAccess(
+                adminDataScope.resolveUserCampusName(post.getAuthorId()));
 
         AuditStatus newStatus = "approved".equals(req.decision())
                 ? AuditStatus.approved
@@ -176,6 +205,9 @@ public class AdminPostController {
         }
         Post post = postOpt.orElseThrow(() ->
                 new IllegalStateException("postOpt 已确认非空但 orElseThrow 触发，数据不一致"));
+        // 数据隔离：校区管理员仅能删除本校区作者的帖子，越权抛 403
+        adminDataScope.assertCampusAccess(
+                adminDataScope.resolveUserCampusName(post.getAuthorId()));
         post.setStatus(PostStatus.deleted);
         post.setUpdatedAt(LocalDateTime.now());
         postRepository.save(post);
@@ -227,6 +259,20 @@ public class AdminPostController {
                 post.getCreatedAt(),
                 post.getAuditedAt()
         );
+    }
+
+    /**
+     * 空串转 null 归一化。
+     *
+     * @param value 原始值
+     * @return 去首尾空白后的值；null 或空白返回 null
+     */
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**

@@ -9,28 +9,29 @@ const runtimePagesJson = pagesJson;
 
 describe("app tab navigation", () => {
   it("keeps the final five tabs in the expected order", () => {
+    // 设计需求顺序：首页、匹配、圈子、消息、我的
     expect(appTabs.map((tab) => tab.id)).toEqual([
+      "home",
       "discover",
       "village",
-      "home",
       "chat",
       "profile",
     ]);
     expect(appTabs.map((tab) => tab.path)).toEqual([
+      "/pages/home/index",
       "/pages/discover/index",
       "/pages/village/index",
-      "/pages/home/index",
-      "/pages/chat/index",
+      "/pages/messages/index",
       "/pages/profile/index",
     ]);
   });
 
   it("matches the uni-app tabBar configuration", () => {
     const expectedTabPaths = [
+      "pages/home/index",
       "pages/discover/index",
       "pages/village/index",
-      "pages/home/index",
-      "pages/chat/index",
+      "pages/messages/index",
       "pages/profile/index",
     ];
 

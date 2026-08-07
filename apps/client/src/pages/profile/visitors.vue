@@ -3,7 +3,8 @@
  * 个人主页访客记录页（功能3）
  *
  * 展示当前用户主页的访客历史记录，按访问时间倒序排列。
- * 数据来源：后端 GET /api/profile/visitors（ProfileVisitorController.listVisitors）
+ * 数据来源（P1-13）：复用 likes store 的访客数据（GET /api/matches/visitors），
+ * 与「喜欢与访客」页保持一致；不再单独调用 GET /api/profile/visitors。
  *
  * 页面功能：
  * - 加载访客列表（首次进入自动加载，下拉刷新）
@@ -19,9 +20,9 @@
  */
 import { ref, computed, onMounted } from "vue";
 import { onPullDownRefresh } from "@dcloudio/uni-app";
+import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { request } from "../../services/http";
-import { appEnv } from "../../services/env";
+import { useLikesStore } from "../../stores/likes";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -29,29 +30,43 @@ import { errorHaptic, lightHaptic } from "../../utils/haptic";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 
-/** 后端 ProfileVisitorView 类型 */
-interface ProfileVisitorView {
+/** 前端展示用的访客记录（带分组标签） */
+interface VisitorItem {
   visitorId: number;
   nickname: string;
   avatarUrl: string;
   campusName: string;
   visitedAt: string;
-}
-
-/** 前端展示用的访客记录（带分组标签） */
-interface VisitorItem extends ProfileVisitorView {
   /** 时间分组：today / yesterday / earlier */
   group: "today" | "yesterday" | "earlier";
 }
 
 const { t } = useI18n();
+const likesStore = useLikesStore();
 
-/** 访客列表（原始数据） */
-const visitors = ref<ProfileVisitorView[]>([]);
 /** 是否正在加载 */
 const loading = ref<boolean>(false);
 /** 错误信息（用于错误状态展示） */
 const errorMessage = ref<string | null>(null);
+
+/** likes store 访客列表（P1-13 数据源） */
+const { visitors: likesVisitors } = storeToRefs(likesStore);
+
+/**
+ * 访客列表（原始数据，P1-13：由 likes store 的 /matches/visitors 派生）。
+ * likes store 的 VisitorRecord（userId/name/avatar/headline/visitedAt）
+ * 映射为本页展示结构，headline 即访客学校信息。
+ */
+const visitors = computed<VisitorItem[]>(() =>
+  likesVisitors.value.map((v) => ({
+    visitorId: Number(v.userId),
+    nickname: v.name,
+    avatarUrl: v.avatar,
+    campusName: v.headline,
+    visitedAt: v.visitedAt,
+    group: "earlier",
+  })),
+);
 
 /**
  * 将 ISO 时间字符串解析为 Date 对象
@@ -142,51 +157,20 @@ function groupTitle(group: "today" | "yesterday" | "earlier"): string {
 /**
  * 加载访客列表（功能3核心）
  *
+ * P1-13：数据源统一为 likes store 的 /matches/visitors（与「喜欢与访客」页一致），
+ * mock/real 分发由 store 内部处理。
+ *
  * 错误处理：
  * - 网络错误：设置 errorMessage，展示错误状态
- * - mock 模式：返回 mock 数据
  * - 401：由 http 拦截器统一处理
  */
 async function loadVisitors(): Promise<void> {
   loading.value = true;
   errorMessage.value = null;
   try {
-    if (appEnv.apiMode === "mock") {
-      // mock 模式：构造测试数据
-      const now = Date.now();
-      visitors.value = [
-        {
-          visitorId: 2003,
-          nickname: "苏晴",
-          avatarUrl: "",
-          campusName: "中山大学",
-          visitedAt: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          visitorId: 2005,
-          nickname: "顾言",
-          avatarUrl: "",
-          campusName: "星海音乐学院",
-          visitedAt: new Date(now - 26 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          visitorId: 2008,
-          nickname: "江晚吟",
-          avatarUrl: "",
-          campusName: "华南师范",
-          visitedAt: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
-      return;
-    }
-    const data = await request<ProfileVisitorView[]>({
-      url: "/profile/visitors",
-      method: "GET",
-    });
-    visitors.value = Array.isArray(data) ? data : [];
+    await likesStore.fetchVisitors();
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : t("common.networkError");
-    visitors.value = [];
   } finally {
     loading.value = false;
   }

@@ -446,6 +446,18 @@ async function reportErrorToBackend(
   contextRaw?: Record<string, unknown>
 ): Promise<void> {
   try {
+    // D3 修复：未登录（无 token）时静默跳过上报。
+    // 冷启动未登录阶段 /app-config、/auth/me、/recommendations 等请求
+    // 必然失败，逐个上报只会产生 401/网络噪音；
+    // 且 /v1/error-reports 本身无 permitAll 放行，无 token 上报必然 401 级联。
+    // 直接读 storage（不 import http.ts，避免 http↔sentry 循环 import）。
+    try {
+      const hasToken = !!uni.getStorageSync("token");
+      if (!hasToken) return;
+    } catch (_e) {
+      // storage 读取异常时按无 token 处理，静默跳过
+      return;
+    }
     // 修复（P1 BUG）：context 全量原样上报存在两类风险——
     // 1. 体积风险：超大对象（如完整请求体/长列表）撑爆错误上报接口；
     // 2. 泄漏风险：URL 查询参数中的 token、Authorization 头、手机号等敏感
