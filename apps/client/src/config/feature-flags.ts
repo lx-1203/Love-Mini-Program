@@ -26,10 +26,13 @@ export interface FeatureFlags {
 }
 
 export const featureFlags: FeatureFlags = {
-  membershipEnabled: false,
-  weeklyScheduleEnabled: false,
+  // 2026-08-08 体验走查：全开以便体验账号走通所有链路（会员/视频通话/红包/本周安排）。
+  // 注意：real 模式下 VIP 支付仍提示"建设中"（后端未接入微信支付，见 vip/index.vue subscribe()）；
+  // 红包/视频通话后端端点真实存在（vip/red-packets、chat/video-call）。
+  membershipEnabled: true,
+  weeklyScheduleEnabled: true,
   heartSignalEnabled: true,
   villageSameCityEnabled: true,
-  videoCallEnabled: false,
-  redPacketEnabled: false,
+  videoCallEnabled: true,
+  redPacketEnabled: true,
 };

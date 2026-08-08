@@ -105,6 +105,10 @@ const props = defineProps<{
    * 其余信息（ID/认证/活跃/距离/基础资料/标签）照常展示。
    */
   masked?: boolean;
+  /** [AUTOSHOT] 仅测试钩子：卡片就绪后自动打开详情弹层（一次），正常使用不传 */
+  autoOpenDetail?: boolean;
+  /** [AUTOSHOT] 仅测试钩子：透传给 CardDetailOverlay 的 initialAnchor */
+  detailAnchor?: string;
 }>();
 
 const emit = defineEmits<{
@@ -140,6 +144,20 @@ const isEntering = ref(false);
 const isLongPressing = ref(false);
 /** 是否显示详情弹出层 */
 const showDetail = ref(false);
+
+/**
+ * [AUTOSHOT] 仅测试钩子：autoOpenDetail 为 true 且首卡就绪时自动打开详情弹层（仅一次）。
+ * 正常使用不传该 prop，此逻辑零影响。
+ */
+watch(
+  () => [props.autoOpenDetail, props.cards[0]?.userId] as const,
+  ([auto, firstCardId]) => {
+    if (auto && firstCardId && !showDetail.value) {
+      showDetail.value = true;
+    }
+  },
+  { immediate: true }
+);
 /** 是否显示快捷菜单 */
 const showMenu = ref(false);
 /** 长按定时器 */
@@ -249,8 +267,13 @@ const imageCount = computed<number>(() => currentDisplayImages.value.length);
  */
 const currentImageIndex = ref<number>(0);
 
-/** 从headline中提取年龄 */
-const extractAge = (headline?: string): string => {
+/**
+ * 年龄提取（2026-08-08 精简卡片）：优先后端真实 age 字段，
+ * 缺失时回退 headline 正则（旧数据兼容）。
+ */
+const extractAge = (card?: DiscoverCard): string => {
+  if (card?.age) return String(card.age);
+  const headline = card?.headline;
   if (!headline) return DEFAULT_AGE_FALLBACK;
   const match = headline.match(/(\d{2})\s*岁/);
   // 修复（严格模式 noUncheckedIndexedAccess）：match[1] 索引访问返回 string | undefined，
@@ -266,11 +289,17 @@ const matchScore = computed(() => {
   return Math.min(MATCH_SCORE_MAX, MATCH_SCORE_BASE + base * MATCH_SCORE_STEP);
 });
 
-/** 月收入展示（与 CardDetailOverlay 对齐，基于 userId 做稳定映射） */
-const incomeLabel = computed(() => {
-  const seed = (currentCard.value?.userId?.charCodeAt(0) ?? 0) % 4;
-  const ranges = ["3k-8k", "8k-15k", "15k-30k", "30k+"];
-  return ranges[seed] ?? "3k-8k";
+/**
+ * 学校/学历文案（昵称行）：优先校区名，其次 headline 拆分，再回退学历层级。
+ * 精简卡片蒙层第一行展示（昵称 + 年龄 + 学校/学历）。
+ */
+const schoolLabel = computed(() => {
+  const card = currentCard.value;
+  if (!card) return "";
+  if (card.campusName) return card.campusName;
+  const fromHeadline = card.headline?.split("·")[0]?.trim();
+  if (fromHeadline) return fromHeadline;
+  return educationLabel.value;
 });
 
 
@@ -407,22 +436,10 @@ const nextCardStyle = computed(() => {
   };
 });
 
-/** 简介展开状态 */
-const isBioExpanded = ref(false);
-
-/** Phase Feedback1 · 期待画像折叠区展开状态 */
-const isExpectedOpen = ref(false);
-
-/** Phase Feedback1 · 期待画像（人物画像折叠区） */
-const expectedPartnerPreview = computed(() => {
-  const card = currentCard.value;
-  if (!card?.expectedPartner) return "";
-  return card.expectedPartner.length > 22
-    ? `${card.expectedPartner.slice(0, 22)}…`
-    : card.expectedPartner;
-});
-
-/* ========== 设计需求改版：身份头部区 / 基础资料区 / 标签两行 ========== */
+/* ========== 设计需求改版：身份头部区 / 基础资料区 / 标签两行 ==========
+ * 2026-08-08 精简卡片：卡片仅保留「头像 + 右上双认证角标 + 蒙层 4 行
+ * （昵称年龄学校学历 / 距离活跃匹配度 / 一行简介 / 3-4 兴趣标签）」，
+ * 基础资料/性格 MBTI/期待画像/动态预览全部移入 CardDetailOverlay 详情页。 */
 
 /** 认证详情弹窗显隐 */
 const showCertDetail = ref(false);
@@ -445,81 +462,6 @@ const educationLabel = computed(() => {
     phd: t('discover.educationPhd'),
   };
   return map[level] ?? "";
-});
-
-/** 婚况展示文案（relationshipStatus → 中文） */
-const maritalLabel = computed(() => {
-  const status = currentCard.value?.relationshipStatus;
-  if (!status) return "";
-  const map: Record<string, string> = {
-    never: t('discover.relationshipNever'),
-    married_before: t('discover.relationshipMarriedBefore'),
-    divorced: t('discover.relationshipDivorced'),
-    widowed: t('discover.relationshipWidowed'),
-  };
-  return map[status] ?? "";
-});
-
-/**
- * 基础资料区：横向排列 年龄/学校/学历/收入/身高/婚况（每项带小图标）。
- * 数据缺失的项自动隐藏，保持版面规整。
- */
-const basicInfoItems = computed(() => {
-  const card = currentCard.value;
-  if (!card) return [];
-  const items: Array<{ key: string; icon: string; label: string; value: string }> = [];
-  items.push({
-    key: "age",
-    icon: emojiIcons.heart,
-    label: t('cardDetail.ageLabel'),
-    value: `${extractAge(card.headline)}${t('discover.ageUnit')}`,
-  });
-  const school = card.campusName || card.headline?.split('·')[0]?.trim();
-  if (school) {
-    items.push({ key: "school", icon: emojiIcons.graduation, label: t('discover.schoolLabel'), value: school });
-  }
-  if (educationLabel.value) {
-    items.push({ key: "education", icon: emojiIcons.graduation, label: t('cardDetail.educationLabel'), value: educationLabel.value });
-  }
-  items.push({
-    key: "income",
-    icon: emojiIcons.heart,
-    label: t('cardDetail.incomeLabel'),
-    value: incomeLabel.value,
-  });
-  if (card.height) {
-    items.push({
-      key: "height",
-      icon: emojiIcons.heart,
-      label: t('cardDetail.heightLabel'),
-      value: `${card.height}${t('cardDetail.heightUnit')}`,
-    });
-  }
-  if (maritalLabel.value) {
-    items.push({ key: "marital", icon: emojiIcons.heart, label: t('discover.maritalLabel'), value: maritalLabel.value });
-  }
-  return items;
-});
-
-/**
- * 标签区第二行：性格 + MBTI + 星座（需求示例"金牛座+ENFP 浪漫造梦师"）。
- */
-const traitChips = computed(() => {
-  const card = currentCard.value;
-  if (!card) return [];
-  const chips: string[] = [];
-  if (card.zodiac && card.mbti) {
-    chips.push(`${card.zodiac}+${card.mbti}`);
-  } else if (card.zodiac) {
-    chips.push(card.zodiac);
-  } else if (card.mbti) {
-    chips.push(card.mbti);
-  }
-  const firstPersonality = card.personality?.[0];
-  if (firstPersonality) {
-    chips.push(firstPersonality);
-  }
-  return chips;
 });
 
 /**
@@ -557,12 +499,6 @@ function onWhisperTap(): void {
       }
     },
   });
-}
-
-/** 点击动态预览条目 → 打开全屏详情页（详情页底部含「私信」按钮） */
-function onMomentTap(): void {
-  if (!currentCard.value || isFlyingOut.value) return;
-  showDetail.value = true;
 }
 
 /* ========== 卡片缩放效果（长按时缩小） ========== */
@@ -814,7 +750,6 @@ function performFlyOut(direction: SwipeDirection) {
     translateX.value = 0;
     rotate.value = 0;
     opacity.value = 1;
-    isBioExpanded.value = false;
     currentImageIndex.value = 0;
 
     // 触发新卡片入场动画
@@ -878,17 +813,7 @@ function onSuperLike() {
   emit("superLike", currentCard.value.id);
 }
 
-/**
- * 切换简介展开状态
- */
-function toggleBio() {
-  isBioExpanded.value = !isBioExpanded.value;
-}
-
-/** 切换期待画像折叠区 */
-function toggleExpected() {
-  isExpectedOpen.value = !isExpectedOpen.value;
-}
+/** 2026-08-08 精简卡片：简介/期待画像改单行/移除，折叠交互随区块一并删除 */
 
 /**
  * swiper 切换图片（Phase D2 新增）。
@@ -942,7 +867,7 @@ watch(
 
 // 修复（严格模式 noUnusedLocals）：onTouchMove/toggleBio/onVideoBadgeTap 通过 catchtap/catchtouchmove
 // 绑定到模板，vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
-defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
+defineExpose({ onTouchMove, onVideoBadgeTap });
 </script>
 
 <template>
@@ -1031,44 +956,22 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
           :style="dragTintOpacity"
         />
 
-        <!-- 身份头部区（设计需求）：左侧露脸头像（方形圆角）+ 右侧 ID/双重认证/活跃状态/距离 -->
+        <!-- 身份头部区（2026-08-08 精简卡片）：左上个人 ID 小字 + 右上双重认证角标（点击弹认证详情） -->
         <view class="card__identity">
-          <view class="card__identity-avatar">
-            <SafeImage
-              v-if="currentCard.avatar"
-              :src="currentCard.avatar"
-              :custom-class="masked ? 'card__identity-avatar-img card__identity-avatar-img--masked' : 'card__identity-avatar-img'"
-              mode="aspectFill"
-            />
-            <text v-else class="card__identity-avatar-text">{{ masked ? '?' : (currentCard.name || '?')[0] }}</text>
-          </view>
-          <view class="card__identity-info">
-            <view class="card__identity-row">
-              <text v-if="displayIdLabel" class="card__identity-id">{{ displayIdLabel }}</text>
-              <view
-                v-if="verificationLabel"
-                class="card__identity-cert press-feedback"
-                hover-class="card__identity-cert--pressed"
-                hover-stay-time="120"
-                @tap.stop="showCertDetail = true"
-                role="button"
-                :aria-label="t('discover.certDetailTitle')"
-              >
-                <text class="card__identity-cert-text">{{ verificationLabel }}</text>
-                <text class="card__identity-cert-arrow">›</text>
-              </view>
-            </view>
-            <view class="card__identity-row">
-              <text v-if="activeStatusLabel" class="card__identity-status">
-                <text class="card__identity-status-dot">●</text>{{ activeStatusLabel }}
-              </text>
-              <text v-if="activeStatusLabel && identityDistance" class="card__identity-sep">·</text>
-              <text v-if="identityDistance" class="card__identity-distance">{{ identityDistance }}</text>
-            </view>
+          <text v-if="displayIdLabel" class="card__identity-id">{{ displayIdLabel }}</text>
+          <view
+            v-if="verificationLabel"
+            class="card__identity-cert press-feedback"
+            hover-class="card__identity-cert--pressed"
+            hover-stay-time="120"
+            @tap.stop="showCertDetail = true"
+            role="button"
+            :aria-label="t('discover.certDetailTitle')"
+          >
+            <text class="card__identity-cert-text">{{ verificationLabel }}</text>
+            <text class="card__identity-cert-arrow">›</text>
           </view>
         </view>
-
-        <!-- 在线状态已并入身份头部区（活跃状态行），此处不再单独展示 -->
 
         <!-- Phase D2 · 视频角标（右上角，personalVideoUrl 存在时展示） -->
         <view
@@ -1123,12 +1026,13 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
           <text class="card__masked-hint-text">{{ t('discover.maskUnlockHint') }}</text>
         </view>
 
-        <!-- 卡片内容 -->
+        <!-- 卡片内容（2026-08-08 精简蒙层 4 行：决策信息一屏呈现，详情字段移入详情页） -->
         <view class="card__content">
-          <!-- 昵称 + 年龄（蒙面时昵称隐藏为 ????） -->
+          <!-- 行 1：昵称 + 年龄 + 学校/学历（蒙面时昵称隐藏为 ????） -->
           <view class="card__name-row">
             <text class="card__name">{{ displayName }}</text>
-            <text class="card__age">{{ extractAge(currentCard.headline) }}{{ t('discover.ageUnit') }}</text>
+            <text class="card__age">{{ extractAge(currentCard) }}{{ t('discover.ageUnit') }}</text>
+            <text v-if="schoolLabel" class="card__school">{{ schoolLabel }}</text>
             <!-- Phase D3 · 集成 VerificationBadge（学校/邮箱/实名徽章） -->
             <VerificationBadge
               v-if="currentCard.verificationBadgeLevel"
@@ -1138,121 +1042,35 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
             />
           </view>
 
-          <!-- 基础资料区（设计需求）：横向排列 年龄/学校/学历/收入/身高/婚况，每项带小图标 -->
-          <view v-if="basicInfoItems.length > 0" class="card__basic-info">
-            <view
-              v-for="item in basicInfoItems" :key="item.key + item.value"
-              class="basic-info-item"
-            >
-              <image class="basic-info-item__icon" :src="item.icon" mode="aspectFit" alt="" />
-              <text class="basic-info-item__label">{{ item.label }}</text>
-              <text class="basic-info-item__value">{{ item.value }}</text>
-            </view>
-          </view>
-
-          <!-- 属性标签（设计改进方案：去掉与距离区重复的「同校」标签，匹配度统一品牌主色） -->
-          <view class="card__campus-tags">
-            <text v-if="currentCard.isSameMajor" class="campus-tag campus-tag--major">{{ t('home.personSameMajor') }}</text>
-            <text class="campus-tag campus-tag--match">
-              <image class="campus-tag__icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
-              {{ matchScore }}{{ t('discover.matchSuffix') }}
+          <!-- 行 2：距离 · 活跃状态 · 匹配度（决策辅助） -->
+          <view class="card__meta-row">
+            <text v-if="identityDistance" class="card__meta">{{ identityDistance }}</text>
+            <text v-if="activeStatusLabel" class="card__meta card__meta--active">
+              {{ activeStatusLabel }}
             </text>
+            <text class="card__meta card__meta--match">{{ matchScore }}{{ t('discover.matchSuffix') }}</text>
           </view>
 
-          <!-- 自我描述区（设计需求）：默认 3 行，右下角「展开」 -->
-          <view
-            class="card__bio"
-            @tap.stop="toggleBio"
-            role="button"
-            :aria-label="isBioExpanded ? t('home.collapse') : t('home.expand')"
-          >
-            <text
-              class="card__bio-text"
-              :class="{ 'card__bio-text--expanded': isBioExpanded }"
-            >{{ currentCard.bio || t('discover.defaultBio') }}</text>
-            <text v-if="(currentCard.bio && currentCard.bio.length > 30) || !currentCard.bio" class="card__bio-more">
-              {{ isBioExpanded ? t('home.collapse') : t('home.expand') }}
-            </text>
-          </view>
+          <!-- 行 3：一行自我简介（单行省略，详情页完整展示） -->
+          <text class="card__bio-line">{{ currentCard.bio || t('discover.defaultBio') }}</text>
 
-          <!-- 标签区（设计需求）：第一行喜好标签，浅底色胶囊 + 深色文字 -->
+          <!-- 行 4：3-4 个核心兴趣标签（统一浅底色胶囊） -->
           <view v-if="currentCard.tags && currentCard.tags.length > 0" class="card__tags">
             <text
               v-for="(tag, idx) in currentCard.tags.slice(0, 4)" :key="idx"
               class="tag-pill"
             >{{ tag }}</text>
           </view>
-
-          <!-- 标签区第二行：性格 + MBTI + 星座（如"金牛座+ENFP 浪漫造梦师"） -->
-          <view v-if="traitChips.length > 0" class="card__traits">
-            <text
-              v-for="(chip, idx) in traitChips" :key="idx"
-              class="trait-pill"
-            >{{ chip }}</text>
-          </view>
-
-          <!-- 期待画像区（设计需求）：小标题「我期待遇见的你」 -->
-          <view
-            v-if="currentCard.expectedPartner"
-            class="card__expected press-feedback"
-            hover-class="card__expected--pressed"
-            hover-stay-time="120"
-            @tap.stop="toggleExpected"
-            role="button"
-            :aria-expanded="isExpectedOpen"
-            :aria-label="t('discover.expectedPartner')"
-          >
-            <view class="card__expected-head">
-              <text class="card__expected-title">{{ t('discover.expectedPartner') }}</text>
-              <text class="card__expected-toggle">{{ isExpectedOpen ? t('home.collapse') : t('home.expand') }}</text>
-            </view>
-            <text
-              v-if="isExpectedOpen"
-              class="card__expected-text"
-            >{{ currentCard.expectedPartner }}</text>
-            <text
-              v-else
-              class="card__expected-text card__expected-text--clamp"
-            >{{ expectedPartnerPreview }}</text>
-          </view>
-
-          <!-- 动态预览区（2026-08-07 设计稿）：小标题「TA的动态」+ 最新 1 条动态（缩略图 + 文案前半段 + 点赞/评论数），点击跳转完整动态页 -->
-          <view v-if="currentCard.recentPosts && currentCard.recentPosts.length > 0" class="card__moments">
-            <text class="card__moments-title">{{ t('discover.momentsTitle') }}</text>
-            <view
-              v-for="post in currentCard.recentPosts.slice(0, 1)" :key="post.id"
-              class="card__moment press-feedback"
-              hover-class="card__moment--pressed"
-              hover-stay-time="120"
-              @tap.stop="onMomentTap"
-              role="button"
-              :aria-label="t('discover.dynamicPreview')"
-            >
-              <image
-                v-if="post.images && post.images[0]"
-                class="card__moment-thumb"
-                :src="post.images[0]"
-                mode="aspectFill"
-              />
-              <view class="card__moment-main">
-                <text class="card__moment-text card__moment-text--clamp2">{{ post.content }}</text>
-                <view class="card__moment-meta">
-                  <image class="card__moment-icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
-                  <text class="card__moment-count">{{ post.likes }}</text>
-                  <image class="card__moment-icon card__moment-icon--chat" :src="emojiIcons.chat" mode="aspectFit" alt="" />
-                  <text class="card__moment-count">{{ post.comments }}</text>
-                </view>
-              </view>
-            </view>
-          </view>
         </view>
       </view>
     </view>
 
     <!-- 卡片详情弹出层 -->
+    <!-- [AUTOSHOT] detail-anchor 透传给详情弹层（测试钩子，正常使用为空） -->
     <CardDetailOverlay
       :visible="showDetail"
       :card="currentCard"
+      :initial-anchor="detailAnchor"
       @close="closeDetail"
       @like="() => { closeDetail(); onLike(); }"
       @superLike="() => { closeDetail(); onSuperLike(); }"
@@ -1810,7 +1628,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
   font-weight: 700;
 }
 
-/* ========== 身份头部区（设计需求：左侧露脸头像 + 右侧 ID/双重认证/活跃/距离） ========== */
+/* ========== 身份头部区（2026-08-08 精简卡片：左上 ID + 右上双重认证角标） ========== */
 .card__identity {
   position: absolute;
   top: 0;
@@ -1819,54 +1637,18 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
   padding: 28rpx 32rpx;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 20rpx;
   z-index: 4;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 60%, transparent 100%);
-}
-
-.card__identity-avatar {
-  width: 176rpx;
-  height: 176rpx;
-  border-radius: 20rpx;
-  overflow: hidden;
-  border: 3rpx solid rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
-}
-
-.card__identity-avatar-img {
-  width: 100%;
-  height: 100%;
-}
-
-.card__identity-avatar-text {
-  font-size: var(--fs-4xl);
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.card__identity-info {
-  display: flex;
-  flex-direction: column;
-  gap: 10rpx;
-  min-width: 0;
-}
-
-.card__identity-row {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-  flex-wrap: wrap;
+  /* 两端渐变仅压暗顶部两角，保证 ID/认证角标可读，不遮挡中部头像 */
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.15) 55%, transparent 100%);
 }
 
 .card__identity-id {
   font-size: var(--fs-md);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1rpx 6rpx rgba(0, 0, 0, 0.4);
 }
 
 .card__identity-cert {
@@ -1876,6 +1658,7 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
   padding: 4rpx 14rpx;
   border-radius: var(--r-full);
   background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.25);
 }
 
 .card__identity-cert--pressed {
@@ -1893,124 +1676,66 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
   color: rgba(255, 255, 255, 0.9);
 }
 
-.card__identity-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6rpx;
-  font-size: var(--fs-xs);
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.card__identity-status-dot {
-  color: #4ade80;
-  font-size: var(--fs-xs);
-}
-
-.card__identity-sep {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.card__identity-distance {
-  font-size: var(--fs-xs);
-  color: rgba(255, 255, 255, 0.85);
-}
-
-/* ========== 基础资料区（设计需求：横向排列，每项带小图标辅助识别） ========== */
-.card__basic-info {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10rpx 20rpx;
-  margin-top: 4rpx;
-}
-
-.basic-info-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6rpx;
-  max-width: 50%;
-  min-width: 0;
-}
-
-.basic-info-item__icon {
-  width: 24rpx;
-  height: 24rpx;
-  flex-shrink: 0;
-  filter: brightness(0) invert(1);
-  opacity: 0.9;
-}
-
-.basic-info-item__label {
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  color: var(--c-overlay-text-secondary);
-  flex-shrink: 0;
-}
-
-.basic-info-item__value {
-  font-size: var(--fs-md);
-  font-weight: 700;
-  color: var(--c-text-inverse);
+/* ========== 精简卡片蒙层 4 行（2026-08-08：昵称年龄学校学历 / 距离活跃匹配度 / 一行简介 / 兴趣标签） ========== */
+/* 行 1：昵称 + 年龄 + 学校/学历（学校为浅色半透明胶囊，防长校名溢出） */
+.card__school {
+  font-size: var(--fs-sm, 22rpx);
+  font-weight: 600;
+  color: var(--c-overlay-text-primary);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1rpx solid rgba(255, 255, 255, 0.25);
+  padding: 6rpx 16rpx;
+  border-radius: var(--r-full);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 320rpx;
 }
 
-/* 校园标签 */
-.card__campus-tags {
+/* 行 2：距离 · 活跃状态 · 匹配度（决策辅助，弱化视觉强调） */
+.card__meta-row {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 12rpx;
-  margin-top: 4rpx;
+  gap: 10rpx 20rpx;
+  margin-top: 2rpx;
 }
 
-.campus-tag {
+.card__meta {
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-overlay-text-primary);
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
-  gap: 4rpx;
-  padding: 8rpx 20rpx;
-  border-radius: var(--r-full);
-  font-size: var(--fs-base);
+  gap: 6rpx;
+}
+
+.card__meta--active::before {
+  content: "";
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: #4ade80;
+  display: inline-block;
+}
+
+.card__meta--match {
+  color: var(--c-brand-300, #86efac);
   font-weight: 700;
-  /* mp-weixin 不支持，H5 保留毛玻璃 */
-  // #ifdef H5
-  backdrop-filter: blur(8rpx);
-  // #endif
 }
 
-.campus-tag__icon {
-  width: 24rpx;
-  height: 24rpx;
-  flex-shrink: 0;
+/* 行 3：一行自我简介（单行省略，完整展示在详情页） */
+.card__bio-line {
+  font-size: var(--fs-md);
+  color: var(--c-overlay-text-secondary);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: var(--c-card-bio-shadow);
 }
 
-.campus-tag--school {
-  background: var(--c-tag-school-overlay);
-  color: var(--c-text-inverse);
-  border: 1rpx solid var(--c-overlay-border-strong);
-}
-
-.campus-tag--major {
-  background: var(--c-tag-major-overlay);
-  color: var(--c-text-inverse);
-  border: 1rpx solid var(--c-overlay-border-strong);
-}
-
-.campus-tag--match {
-  /* 设计改进方案：匹配度标签统一为品牌主色（原红棕渐变），融入整体视觉规范 */
-  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
-  color: var(--c-text-inverse);
-  border: 1rpx solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 4rpx 16rpx rgba(63, 207, 142, 0.35);
-  animation: match-pulse var(--d-loop-slow, 2000ms) ease-in-out infinite;
-}
-
-@keyframes match-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 var(--c-shadow-romance-tint-stronger); }
-  50% { box-shadow: 0 0 0 10rpx var(--c-romance-bg-tint); }
-}
-
-/* 标签区（设计需求）：第一行喜好标签，浅底色 + 深色文字，圆角小胶囊 */
+/* 行 4：兴趣标签（统一浅底色胶囊 + 深色文字，视觉规整） */
 .card__tags {
   display: flex;
   flex-wrap: wrap;
@@ -2027,191 +1752,6 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
   font-size: var(--fs-base);
   font-weight: 600;
   border: 1rpx solid rgba(255, 255, 255, 0.6);
-}
-
-/* 第二行：性格 + MBTI + 星座（如"金牛座+ENFP 浪漫造梦师"） */
-.card__traits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-  margin-top: 2rpx;
-}
-
-.trait-pill {
-  display: inline-flex;
-  padding: 8rpx 22rpx;
-  border-radius: var(--r-full);
-  background: linear-gradient(135deg, rgba(45, 212, 191, 0.92) 0%, rgba(20, 184, 166, 0.92) 100%);
-  color: #ffffff;
-  font-size: var(--fs-base);
-  font-weight: 600;
-  border: 1rpx solid rgba(45, 212, 191, 0.5);
-}
-
-/* 自我描述区（设计需求）：默认 3 行，右下角「展开」按钮 */
-.card__bio {
-  position: relative;
-  margin-top: 8rpx;
-}
-
-/* Phase Feedback1 · 期待的人物画像折叠区 */
-.card__expected {
-  margin-top: 10rpx;
-  padding: 14rpx 18rpx;
-  border-radius: var(--r-lg, 16rpx);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1rpx solid var(--c-overlay-border-mid, rgba(255, 255, 255, 0.18));
-  transition: transform var(--d-normal, 200ms) ease, opacity var(--d-normal, 200ms) ease;
-}
-
-.card__expected--pressed {
-  transform: scale(0.98);
-  opacity: 0.9;
-}
-
-.card__expected-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12rpx;
-}
-
-.card__expected-title {
-  font-size: var(--fs-sm, 22rpx);
-  font-weight: 700;
-  color: var(--c-overlay-text-primary);
-}
-
-.card__expected-toggle {
-  font-size: var(--fs-xs, 20rpx);
-  color: var(--c-brand-300, #86efac);
-  font-weight: 600;
-}
-
-.card__expected-text {
-  display: block;
-  margin-top: 8rpx;
-  font-size: var(--fs-sm, 22rpx);
-  color: var(--c-overlay-text-secondary);
-  line-height: 1.6;
-}
-
-.card__expected-text--clamp {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* 动态预览区（设计需求）：小标题「TA的动态」+ 最新 2 条，点击进详情 */
-.card__moments {
-  margin-top: 12rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-
-.card__moments-title {
-  font-size: var(--fs-sm, 22rpx);
-  font-weight: 700;
-  color: var(--c-overlay-text-primary);
-}
-
-.card__moment {
-  display: flex;
-  align-items: flex-start;
-  gap: 12rpx;
-  padding: 10rpx 16rpx;
-  border-radius: var(--r-lg, 16rpx);
-  background: rgba(255, 255, 255, 0.12);
-  transition: transform var(--d-normal, 200ms) ease, opacity var(--d-normal, 200ms) ease;
-}
-
-.card__moment--pressed {
-  transform: scale(0.98);
-  opacity: 0.9;
-}
-
-.card__moment-thumb {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: var(--r-md, 12rpx);
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.card__moment-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-}
-
-.card__moment-text {
-  font-size: var(--fs-sm, 22rpx);
-  color: var(--c-overlay-text-secondary);
-  line-height: 1.5;
-  overflow: hidden;
-}
-
-/* 文案前 2 行省略（设计需求） */
-.card__moment-text--clamp2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  text-overflow: ellipsis;
-}
-
-.card__moment-meta {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  flex-shrink: 0;
-}
-
-.card__moment-icon {
-  width: 22rpx;
-  height: 22rpx;
-  color: var(--c-romance-500, #ec4899);
-}
-
-.card__moment-icon--chat {
-  color: var(--c-overlay-text-tertiary);
-}
-
-.card__moment-count {
-  font-size: var(--fs-xs, 20rpx);
-  color: var(--c-overlay-text-tertiary);
-}
-
-.card__bio-text {
-  font-size: var(--fs-md);
-  color: var(--c-overlay-text-secondary);
-  line-height: 1.7;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-shadow: var(--c-card-bio-shadow);
-}
-
-.card__bio-text--expanded {
-  -webkit-line-clamp: unset;
-  display: block;
-}
-
-/* 「展开」按钮：右下角（设计需求），配底部渐隐保证可读性 */
-.card__bio-more {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  font-size: var(--fs-base);
-  color: var(--c-brand-300, #86efac);
-  font-weight: 600;
-  padding: 2rpx 10rpx 2rpx 24rpx;
-  background: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.85) 40%);
 }
 
 /* ========== 底部固定操作栏（设计需求：不喜欢 | 悄悄话 | 喜欢，中间最大） ========== */
@@ -2268,19 +1808,19 @@ defineExpose({ onTouchMove, toggleBio, onVideoBadgeTap });
   box-shadow: var(--s-action-reject-pressed);
 }
 
-/* 悄悄话：品牌主色填充按钮（中间、最大、最醒目） */
+/* 悄悄话：品牌主色填充按钮（中间、最大、最醒目；规格 64px = 128rpx） */
 .action-btn--whisper {
-  width: 156rpx;
-  height: 156rpx;
+  width: 128rpx;
+  height: 128rpx;
   background: linear-gradient(135deg, var(--c-brand-400, #2dd4bf) 0%, var(--c-brand-500, #3fcf8e) 100%);
   box-shadow: 0 8rpx 28rpx rgba(63, 207, 142, 0.45), var(--s-action-like);
   border: 4rpx solid rgba(255, 255, 255, 0.9);
 }
 
-/* 喜欢：品牌主色图标按钮 */
+/* 喜欢：粉色渐变图标按钮（规格 56px = 112rpx） */
 .action-btn--like {
-  width: 116rpx;
-  height: 116rpx;
+  width: 112rpx;
+  height: 112rpx;
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
   box-shadow: var(--s-action-like);
 }

@@ -166,6 +166,14 @@ public class MockRecommendationService implements RecommendationService {
   private static final List<String> ACTIVE_POOL =
       List.of("just_now", "today", "hours_2", "offline", "hours_5", "days_1");
 
+  /** 职业候选池（V2026.08.08.0015，与 real 种子口径一致） */
+  private static final List<String> OCCUPATION_POOL =
+      List.of("产品经理", "互联网运营", "研究生在读", "程序员", "设计", "自媒体");
+
+  /** 月收入档位候选池（V2026.08.08.0015，与 real 种子口径一致） */
+  private static final List<String> INCOME_POOL =
+      List.of("3k-8k", "8k-15k", "15k-30k", "30k+");
+
   /**
    * 将 mock 数据记录转换为推荐人物视图。
    *
@@ -273,7 +281,12 @@ public class MockRecommendationService implements RecommendationService {
         recentPosts,
         expectedPartner,
         allowMessage,
-        ipLocation
+        ipLocation,
+        // V2026.08.08.0015：卡片完整字段（mock 稳定推导，与 real 口径一致）
+        OCCUPATION_POOL.get(Math.abs(person.name().hashCode()) % OCCUPATION_POOL.size()),
+        INCOME_POOL.get(Math.abs(person.name().hashCode()) % INCOME_POOL.size()),
+        person.age(),
+        "2026-03-12T08:00:00"
     );
   }
 
@@ -398,6 +411,17 @@ public class MockRecommendationService implements RecommendationService {
           && person.interestTags().stream()
               .anyMatch(t -> t != null && t.toLowerCase(Locale.ROOT).contains(kw));
       if (!(inName || inBio || inTags)) {
+        return false;
+      }
+    }
+    // 8. age 范围（闭区间，V2026.08.08.0015）
+    if (filter.ageMin() != null) {
+      if (person.age() == null || person.age() < filter.ageMin()) {
+        return false;
+      }
+    }
+    if (filter.ageMax() != null) {
+      if (person.age() == null || person.age() > filter.ageMax()) {
         return false;
       }
     }

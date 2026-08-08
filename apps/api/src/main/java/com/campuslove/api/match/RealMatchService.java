@@ -1,6 +1,7 @@
 package com.campuslove.api.match;
 
 import com.campuslove.api.chat.InteractionEventService;
+import com.campuslove.api.chat.PrivateMessageService;
 import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.MatchConfig;
@@ -65,6 +66,12 @@ public class RealMatchService implements MatchService {
      */
     private final WalletUnlockService walletUnlockService;
 
+    /**
+     * 私信会话服务：双向匹配成功后自动创建/获取免费会话（2026-08-08 走查交付）。
+     * 消息页即时可见新会话，无需用户手动发起。幂等（已存在则直接返回）。
+     */
+    private final PrivateMessageService privateMessageService;
+
     public RealMatchService(
             MatchConfig matchConfig,
             LikeRepository likeRepository,
@@ -82,7 +89,8 @@ public class RealMatchService implements MatchService {
             MatchEngine matchEngine,
             MatchPolicy matchPolicy,
             MatchRecorder matchRecorder,
-            WalletUnlockService walletUnlockService) {
+            WalletUnlockService walletUnlockService,
+            PrivateMessageService privateMessageService) {
         this.matchConfig = matchConfig;
         this.likeRepository = likeRepository;
         this.heartSignalRepository = heartSignalRepository;
@@ -92,6 +100,7 @@ public class RealMatchService implements MatchService {
         this.matchPolicy = matchPolicy;
         this.matchRecorder = matchRecorder;
         this.walletUnlockService = walletUnlockService;
+        this.privateMessageService = privateMessageService;
     }
 
     // ---- Phase 1 存根方法 ----
@@ -266,9 +275,29 @@ public class RealMatchService implements MatchService {
             HeartSignalView signalView = matchRecorder.toHeartSignalView(signal);
             matchRecorder.pushHeartSignalNotification(userId, targetUserId, signalView);
             matchRecorder.publishMatchEvent(userId, targetUserId, "match");
+            // 2026-08-08 走查交付：双向匹配成功后自动创建/获取免费会话（消息页即时可见）。
+            // 异常不影响匹配主流程（like/heart-signal 已提交，会话可后续手动创建）。
+            createFreeConversation(userId, targetUserId);
             return signalView;
         }
         return null;
+    }
+
+    /**
+     * 双向匹配成功后自动创建/获取免费会话。
+     *
+     * <p>{@link PrivateMessageService#createOrGetConversation} 幂等（双向对称查询，
+     * 已存在则直接返回），重复匹配不会重复建会话；异常仅记录日志，
+     * 绝不阻塞匹配主流程返回。</p>
+     */
+    private void createFreeConversation(Long userAId, Long userBId) {
+        try {
+            privateMessageService.createOrGetConversation(userAId, userBId);
+            log.info("双向匹配自动建会话成功：userAId={}, userBId={}", userAId, userBId);
+        } catch (Exception e) {
+            log.warn("双向匹配成功但会话创建失败（不影响匹配结果）：userAId={}, userBId={}, err={}",
+                    userAId, userBId, e.getMessage());
+        }
     }
 
     @Override

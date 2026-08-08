@@ -76,6 +76,12 @@ export interface DiscoverCard {
   relationshipStatus?: string;
   /** 注册时间（ISO 字符串，用于"最新注册"排序） */
   registeredAt?: string;
+  /** 职业（展示文本，如 产品经理；2026-08-08 后端真实字段） */
+  occupation?: string;
+  /** 月收入档位（3k-8k / 8k-15k / 15k-30k / 30k+） */
+  incomeRange?: string;
+  /** 年龄（由出生年份推导） */
+  age?: number;
   /** 悄悄话内容（付费可见/发送） */
   whisper?: string;
   /** 是否已发送悄悄话 */
@@ -163,6 +169,8 @@ export interface DiscoverState {
   loading: boolean;
   /** 错误信息 */
   errorMessage: string | null;
+  /** 后端推荐配额是否耗尽（P0-31 修复，与服务端 recommend-quota 计数同源） */
+  quotaExhausted: boolean;
   /** 在线状态映射表：userId -> 在线状态 */
   onlineStatusMap: Record<string, "online" | "away" | "offline">;
   /** 最近一次滑动结果（用于判断是否匹配成功） */

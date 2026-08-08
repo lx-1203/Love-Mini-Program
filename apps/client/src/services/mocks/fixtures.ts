@@ -195,6 +195,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       zodiac: "天秤座",
 
       registeredAt: "2026-03-12T08:00:00Z",
+      age: 21,
+      occupation: "产品经理",
+      incomeRange: "8k-15k",
       distanceText: "1.2",
       activeStatusText: "just_now",
       machineVerified: true,
@@ -248,6 +251,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       zodiac: "水瓶座",
 
       registeredAt: "2025-11-02T08:00:00Z",
+      age: 24,
+      occupation: "研究生在读",
+      incomeRange: "3k-8k",
       distanceText: "0.8",
       activeStatusText: "today",
       machineVerified: true,
@@ -300,6 +306,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       zodiac: "双子座",
 
       registeredAt: "2026-01-15T08:00:00Z",
+      age: 22,
+      occupation: "程序员",
+      incomeRange: "15k-30k",
       distanceText: "3.5",
       activeStatusText: "hours_3",
       machineVerified: true,
@@ -352,6 +361,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       zodiac: "狮子座",
 
       registeredAt: "2025-09-20T08:00:00Z",
+      age: 25,
+      occupation: "自媒体",
+      incomeRange: "30k+",
       distanceText: "2.1",
       activeStatusText: "just_now",
       machineVerified: true,
@@ -405,6 +417,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       zodiac: "处女座",
 
       registeredAt: "2026-02-08T08:00:00Z",
+      age: 23,
+      occupation: "设计",
+      incomeRange: "8k-15k",
       distanceText: "5.0",
       activeStatusText: "days_2",
       machineVerified: false,
@@ -455,6 +470,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       zodiac: "摩羯座",
 
       registeredAt: "2025-12-25T08:00:00Z",
+      age: 26,
+      occupation: "互联网运营",
+      incomeRange: "15k-30k",
       distanceText: "0.5",
       activeStatusText: "today",
       machineVerified: true,
@@ -507,6 +525,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       zodiac: "金牛座",
 
       registeredAt: "2026-05-30T08:00:00Z",
+      age: 20,
+      occupation: "学生",
+      incomeRange: "3k-8k",
       distanceText: "4.2",
       activeStatusText: "hours_8",
       machineVerified: true,
@@ -1578,6 +1599,17 @@ export const mockFixtures = {
       // 未来城市筛选
       if (filter.futureCity) {
         if (person.futureCity !== filter.futureCity) {
+          return false;
+        }
+      }
+      // 年龄范围筛选（2026-08-08 与后端 ageMin/ageMax 同语义）
+      if (filter.ageMin !== undefined) {
+        if (person.age === undefined || person.age < filter.ageMin) {
+          return false;
+        }
+      }
+      if (filter.ageMax !== undefined) {
+        if (person.age === undefined || person.age > filter.ageMax) {
           return false;
         }
       }

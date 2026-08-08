@@ -943,9 +943,13 @@ public class RealAuthService implements AuthService {
     private UserSessionView buildSessionView(User user, String token) {
         Long userId = user.getId();
 
-        // profileCompleted: profileCompletion >= 100 视为已完成
+        // profileCompleted: profileCompletion >= 50 视为已完成（P0-34/P0-35 修复，2026-08-08）。
+        // 完成度 = 基本资料昵称30 + 校园资料30 + 日程20 + 兴趣标签20（后两项为加分项）。
+        // 注册流程走完的最低完成度：学生 = 基本资料30+校园30+日程20 = 80；
+        // 非学生（跳过校园认证）= 基本资料30+日程20 = 50。阈值 50 保证两类注册
+        // 用户走完流程即解锁全部功能；校园认证/兴趣标签作为注册后的补充加分。
         boolean profileCompleted = user.getProfileCompletion() != null
-                && user.getProfileCompletion() >= 100;
+                && user.getProfileCompletion() >= 50;
 
         // campusVerified: 查询 UserCampusProfile 是否存在且 verificationStatus == "verified"
         boolean campusVerified = false;

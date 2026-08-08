@@ -60,8 +60,10 @@ function onIdentityChange(value: UserIdentity): void {
 
 /** 按身份分流：学生 → 校园认证（步骤 2/4）；非学生 → 推荐偏好（步骤 2/3，跳过校园认证） */
 function getNextSetupPath(): string {
+  // P0-35 修复：非学生跳过校园认证，进入时间安排（完成度 30+20=50，配合日程后
+  // 注册流程可解锁；学生流程 基本资料→校园→日程 完成度 80 → profileCompleted=true）
   return identity.value === "non_student"
-    ? SUBPACKAGE_ROUTES.SETUP_PROGRESS.RECOMMEND_PREF
+    ? SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE
     : SUBPACKAGE_ROUTES.SETUP_PROGRESS.CAMPUS;
 }
 

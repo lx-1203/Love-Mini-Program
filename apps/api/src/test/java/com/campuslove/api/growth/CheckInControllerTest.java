@@ -48,7 +48,7 @@ class CheckInControllerTest {
         // Arrange
         Long userId = 100L;
         CheckInResultView view = new CheckInResultView(
-                true, 5, 100, 0, false, false, 0, 0);
+                true, 5, 100, 0, false, false, 0, 0, 50);
 
         // 使用 mockStatic 模拟 SecurityUtils 静态方法
         try (MockedStatic<SecurityUtils> mocked = Mockito.mockStatic(SecurityUtils.class)) {
@@ -69,7 +69,7 @@ class CheckInControllerTest {
     void getStatus_shouldDelegateToService() {
         // Arrange
         Long userId = 200L;
-        CheckInStatusView view = new CheckInStatusView(true, 3, 0);
+        CheckInStatusView view = new CheckInStatusView(true, 3, 0, 100L);
 
         try (MockedStatic<SecurityUtils> mocked = Mockito.mockStatic(SecurityUtils.class)) {
             mocked.when(SecurityUtils::getCurrentUserId).thenReturn(userId);

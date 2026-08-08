@@ -16,6 +16,7 @@ import java.util.Set;
  *   <li>{@code hometownProvince} / {@code hometownCity} —— 籍贯省/市</li>
  *   <li>{@code futureCity} —— 未来定居城市</li>
  *   <li>{@code keyword} —— 模糊匹配 nickname/bio/interestTags</li>
+ *   <li>{@code ageMin} / {@code ageMax} —— 年龄范围（闭区间，由出生年份推导）</li>
  * </ul>
  */
 public record RecommendationFilter(
@@ -26,7 +27,9 @@ public record RecommendationFilter(
         String hometownProvince,
         String hometownCity,
         String futureCity,
-        String keyword
+        String keyword,
+        Integer ageMin,
+        Integer ageMax
 ) {
     /**
      * 紧凑构造器：将 null 与空字符串规整为 null，将 List 规整为不可变 Set。
@@ -54,6 +57,8 @@ public record RecommendationFilter(
                 && hometownProvince == null
                 && hometownCity == null
                 && futureCity == null
-                && keyword == null;
+                && keyword == null
+                && ageMin == null
+                && ageMax == null;
     }
 }

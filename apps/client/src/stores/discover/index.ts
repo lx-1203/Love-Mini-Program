@@ -111,6 +111,9 @@ const _useDiscoverStore = defineStore("discover", {
       hasMore: true,
       loading: false,
       errorMessage: null,
+      // P0-31 修复（2026-08-08）：后端推荐配额耗尽标记（配额与服务端 recommend-quota
+      // Redis 计数同源），空列表且配额耗尽时页面展示"今日次数已用完"而非误导性"暂无推荐"
+      quotaExhausted: false,
       onlineStatusMap: {},
       lastSwipeResult: null,
       activeFilter: "nearby",

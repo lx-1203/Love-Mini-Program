@@ -115,6 +115,39 @@ public class UserBasicProfile {
     private String profileBackgroundUrl;
 
     /**
+     * 职业（展示文本，如 "产品经理"）。
+     * 寻觅页卡片/详情页基础资料栏展示，可空表示未填写。
+     */
+    @Column(name = "occupation", length = 64)
+    private String occupation;
+
+    /**
+     * 月收入档位（3k-8k / 8k-15k / 15k-30k / 30k+）。
+     * 直接存储展示文案，避免 range key + 前端映射的双份维护。
+     */
+    @Column(name = "income_range", length = 16)
+    private String incomeRange;
+
+    /**
+     * 性格标签列表（JSON 数组，如 ["阳光开朗","共情力强"]，默认空数组）。
+     * 寻觅页详情页「性格与MBTI」分区展示。
+     */
+    @Column(name = "personality_tags", columnDefinition = "JSON DEFAULT '[]'")
+    private String personalityTags = "[]";
+
+    /** MBTI 人格类型（如 INFJ），可空 */
+    @Column(name = "mbti", length = 8)
+    private String mbti;
+
+    /** 期待的人物画像描述（如 "真诚、边界感清晰…"），可空 */
+    @Column(name = "expected_partner", length = 255)
+    private String expectedPartner;
+
+    /** 出生年份（年龄 = 当前年份 - birth_year），可空 */
+    @Column(name = "birth_year")
+    private Integer birthYear;
+
+    /**
      * 邮箱认证标志（Phase B - Task B3.3）。
      * true 表示用户已通过邮箱认证，可用于徽章级别 "email"。
      * 默认 false，由邮箱认证流程置位。
@@ -302,6 +335,54 @@ public class UserBasicProfile {
 
     public void setProfileBackgroundUrl(String profileBackgroundUrl) {
         this.profileBackgroundUrl = profileBackgroundUrl;
+    }
+
+    public String getOccupation() {
+        return occupation;
+    }
+
+    public void setOccupation(String occupation) {
+        this.occupation = occupation;
+    }
+
+    public String getIncomeRange() {
+        return incomeRange;
+    }
+
+    public void setIncomeRange(String incomeRange) {
+        this.incomeRange = incomeRange;
+    }
+
+    public String getPersonalityTags() {
+        return personalityTags;
+    }
+
+    public void setPersonalityTags(String personalityTags) {
+        this.personalityTags = personalityTags != null ? personalityTags : "[]";
+    }
+
+    public String getMbti() {
+        return mbti;
+    }
+
+    public void setMbti(String mbti) {
+        this.mbti = mbti;
+    }
+
+    public String getExpectedPartner() {
+        return expectedPartner;
+    }
+
+    public void setExpectedPartner(String expectedPartner) {
+        this.expectedPartner = expectedPartner;
+    }
+
+    public Integer getBirthYear() {
+        return birthYear;
+    }
+
+    public void setBirthYear(Integer birthYear) {
+        this.birthYear = birthYear;
     }
 
     public Boolean getEmailVerified() {

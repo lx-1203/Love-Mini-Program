@@ -20,6 +20,7 @@ import { useI18n } from "vue-i18n";
 import type { DiscoverCard } from "../../stores/discover";
 import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
 import { useVipStore } from "../../stores/vip";
+import { useReportStore } from "../../stores/report";
 import VerificationBadge from "../common/VerificationBadge.vue";
 import SafeImage from "../common/SafeImage.vue";
 import { lightHaptic, mediumHaptic, successHaptic } from "../../utils/haptic";
@@ -31,6 +32,8 @@ import type { UniTouchEvent } from "../../compat";
 const props = defineProps<{
   visible: boolean;
   card: DiscoverCard | null;
+  /** [AUTOSHOT] 仅测试钩子：打开后自动滚动到指定面板（如 panel-quick），正常使用不传 */
+  initialAnchor?: string;
 }>();
 
 const emit = defineEmits<{
@@ -47,13 +50,21 @@ const { t } = useI18n();
 const coinsStore = useCoinsStore();
 /** VIP Store（会员解锁私信放行） */
 const vipStore = useVipStore();
+/** 举报 Store（更多操作 · 举报用户） */
+const reportStore = useReportStore();
 
 /** 入场动画状态 */
 const animating = ref(false);
 /** 当前图片索引 */
 const currentImageIndex = ref(0);
-/** 个人简介是否展开（默认展开，长文可收起） */
-const isBioExpanded = ref(true);
+/** 个人简介是否展开（2026-08-08：默认收起，超长文点击「展开」） */
+const isBioExpanded = ref(false);
+
+/** 简介「展开」按钮阈值（2026-08-08：超过约 5 行 ≈ 100 字才显示展开交互） */
+const BIO_TOGGLE_THRESHOLD = 100;
+
+/** 简介是否需要「展开」按钮（短文完整展示、无多余交互） */
+const bioNeedsToggle = computed(() => (props.card?.bio?.length ?? 0) > BIO_TOGGLE_THRESHOLD);
 
 /**
  * SubTask 1.5.2：关闭动画定时器引用，用于组件卸载时清理。
@@ -98,9 +109,9 @@ const icons = {
   location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
   heartOutline: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE,
-  cake: IMAGE_PATHS.ICONS_EMOJI.CAKE,
   ruler: IMAGE_PATHS.ICONS_EMOJI.RULER,
   money: IMAGE_PATHS.ICONS_EMOJI.MONEY,
+  clipboard: IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD,
   chat: IMAGE_PATHS.ICONS_EMOJI.CHAT,
   mail: IMAGE_PATHS.ICONS_EMOJI.MAIL,
   pass: IMAGE_PATHS.ICONS_SOCIAL.PASS,
@@ -155,9 +166,12 @@ const gradeText = computed(() => {
   return parts[1] || t("cardDetail.defaultGrade");
 });
 
-/** 性格标签（优先使用卡片 tags，否则使用默认标签） */
+/**
+ * 性格标签（2026-08-08 分区修正：只用 personality 字段，不再误用兴趣 tags）。
+ * 缺失时使用 i18n 默认标签兜底（保持版面）。
+ */
 const personalityTags = computed(() => {
-  const tags = props.card?.tags ?? [];
+  const tags = props.card?.personality ?? [];
   if (tags.length > 0) return tags.slice(0, 6);
   return t("cardDetail.personalityTags")
     .split(",")
@@ -166,44 +180,59 @@ const personalityTags = computed(() => {
     .slice(0, 4);
 });
 
+/**
+ * 兴趣爱好标签（2026-08-08 新增分区：与「性格与MBTI」分离展示）。
+ * 取自 card.tags，统一浅底色胶囊，无则隐藏分区。
+ */
+const interestTags = computed(() => props.card?.tags ?? []);
+
+/** 性格与 MBTI 分区文案（如 "INFJ · 阳光开朗"），缺失时隐藏 */
+const personalityMbtiText = computed(() => {
+  const parts: string[] = [];
+  if (props.card?.mbti) parts.push(props.card.mbti);
+  const first = props.card?.personality?.[0];
+  if (first) parts.push(first);
+  return parts.join(" · ");
+});
+
 /** 兴趣圈（优先从卡片 tags 派生，否则使用模拟数据） */
 const interestCircles = computed(() => {
   const tags = props.card?.tags ?? [];
   // infra R2-00100: 以下 4 个预设圈子为模拟数据（卡片无 tags 时的兜底展示），
   // real 推荐内容应由后端下发，接入后替换 preset 数组
+  // 2026-08-08 验收修复：移除未消费的 gradient 字段（模板统一白底，杜绝多色杂乱）
   const preset = [
-    { name: "读书会", icon: IMAGE_PATHS.ICONS_EMOJI.BOOK, members: 128, gradient: "linear-gradient(135deg, var(--c-lavender-100) 0%, var(--c-lavender-50) 100%)" },
-    { name: "摄影社", icon: IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON, members: 89, gradient: "linear-gradient(135deg, var(--c-sky-100) 0%, var(--c-sky-50) 100%)" },
-    { name: "美食探店", icon: IMAGE_PATHS.ICONS_EMOJI.FOOD, members: 256, gradient: "linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-apricot-50) 100%)" },
-    { name: "徒步旅行", icon: IMAGE_PATHS.ICONS_COMMON.HIKING_SVG, members: 76, gradient: "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)" },
+    { name: "读书会", icon: IMAGE_PATHS.ICONS_EMOJI.BOOK, members: 128 },
+    { name: "摄影社", icon: IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON, members: 89 },
+    { name: "美食探店", icon: IMAGE_PATHS.ICONS_EMOJI.FOOD, members: 256 },
+    { name: "徒步旅行", icon: IMAGE_PATHS.ICONS_COMMON.HIKING_SVG, members: 76 },
   ];
   if (tags.length > 0) {
     // 修复（严格模式 noUncheckedIndexedAccess）：preset[idx % preset.length] 索引访问返回类型含 undefined，
-    // 此处通过局部变量 + 兜底默认值，确保 icon / gradient 始终为 string。
+    // 此处通过局部变量 + 兜底默认值，确保 icon 始终为 string。
     return tags.slice(0, 4).map((tag, idx) => {
       const presetItem = preset[idx % preset.length];
       return {
         name: tag,
         icon: presetItem?.icon ?? IMAGE_PATHS.ICONS_EMOJI.CHAT,
         members: 60 + ((props.card?.userId?.charCodeAt(0) ?? 0) + idx * 31) % 240,
-        gradient: presetItem?.gradient ?? "linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%)",
       };
     });
   }
   return preset;
 });
 
-/** 收入范围（模拟，后续接入后端） */
-const incomeLabel = computed(() => {
-  const seed = (props.card?.userId?.charCodeAt(0) ?? 0) % 4;
-  const ranges = ["3k-8k", "8k-15k", "15k-30k", "30k+"];
-  // 修复（严格模式 noUncheckedIndexedAccess）：ranges[seed] 索引访问返回 string | undefined，追加兜底。
-  return ranges[seed] ?? "3k-8k";
-});
+/** 月收入档位（2026-08-08 后端真实字段，缺失时展示占位符） */
+const incomeLabel = computed(() => props.card?.incomeRange || "--");
 
-/** 从 headline 提取年龄 */
+/** 职业（2026-08-08 验收修复：快速资料卡第四格，缺失时展示占位符） */
+const occupationText = computed(() => props.card?.occupation || "--");
+
+/** 年龄（2026-08-08 优先后端真实 age 字段，缺失时回退 headline 正则） */
 const ageText = computed(() => {
-  const h = props.card?.headline ?? "";
+  const card = props.card;
+  if (card?.age) return String(card.age);
+  const h = card?.headline ?? "";
   const m = h.match(/(\d{2})\s*岁/);
   return m ? m[1] : "22";
 });
@@ -284,16 +313,33 @@ const detailActiveLabel = computed(() => {
   return "";
 });
 
-/** 基础资料字段（关于我分区）：身高/学历/收入/情感状态/籍贯/未来城市 */
+/**
+ * 基础资料字段（关于我分区，2 行 4 列网格）：
+ * 身高 / 职业 / 月收入 / 感情状态 / 籍贯 / 所在城市 / 星座 / 学历。
+ * 数据缺失的项自动隐藏（籍贯/所在城市由 ipLocation "省 · 市" 拆分派生）。
+ */
 const basicInfoItems = computed(() => {
   const card = props.card;
   if (!card) return [];
   const items: Array<{ label: string; value: string }> = [];
   if (card.height) items.push({ label: t("cardDetail.heightLabel"), value: `${card.height}${t("cardDetail.heightUnit")}` });
-  items.push({ label: t("cardDetail.educationLabel"), value: eduLabel(card.educationLevel) });
+  if (card.occupation) items.push({ label: t("cardDetail.occupationLabel"), value: card.occupation });
   items.push({ label: t("cardDetail.incomeLabel"), value: incomeLabel.value });
-  if (card.mbti) items.push({ label: t("discover.mbtiLabel"), value: card.mbti });
-  if (card.personality?.length) items.push({ label: t("discover.personalityLabel"), value: card.personality.slice(0, 2).join(" / ") });
+  if (card.relationshipStatus) {
+    const map: Record<string, string> = {
+      never: t("discover.relationshipNever"),
+      married_before: t("discover.relationshipMarriedBefore"),
+      divorced: t("discover.relationshipDivorced"),
+      widowed: t("discover.relationshipWidowed"),
+    };
+    items.push({ label: t("discover.maritalLabel"), value: map[card.relationshipStatus] ?? card.relationshipStatus });
+  }
+  // 籍贯/所在城市：由 ipLocation（"省 · 市"）拆分派生，与后端 deriveIpLocation 口径一致
+  const locationParts = (card.ipLocation ?? "").split("·").map((s) => s.trim()).filter(Boolean);
+  if (locationParts[0]) items.push({ label: t("cardDetail.hometownProvinceLabel"), value: locationParts[0] });
+  if (locationParts[1]) items.push({ label: t("cardDetail.hometownCityLabel"), value: locationParts[1] });
+  if (card.zodiac) items.push({ label: t("cardDetail.zodiacLabel"), value: card.zodiac });
+  items.push({ label: t("cardDetail.educationLabel"), value: eduLabel(card.educationLevel) });
   return items;
 });
 
@@ -451,6 +497,9 @@ function onWhisperTap(): void {
   });
 }
 
+/** [AUTOSHOT] 仅测试钩子：detail-scroll 的 scroll-into-view 目标面板 id */
+const anchorId = ref("");
+
 watch(
   () => props.visible,
   (val) => {
@@ -458,8 +507,13 @@ watch(
       currentImageIndex.value = 0;
       isBioExpanded.value = true;
       nextTick(() => { animating.value = true; });
+      // [AUTOSHOT] 测试钩子：等开启动画结束后滚动到指定面板（scroll-into-view 值变化触发一次）
+      if (props.initialAnchor) {
+        setTimeout(() => { anchorId.value = props.initialAnchor as string; }, 360);
+      }
     } else {
       animating.value = false;
+      anchorId.value = "";
     }
   }
 );
@@ -491,14 +545,6 @@ function handleLike() {
   }, t("cardDetail.likeFailed"));
 }
 
-/** 超级喜欢 */
-function handleSuperLike() {
-  if (!props.card) return;
-  safeAction(() => {
-    successHaptic();
-    emit("superLike", props.card!.id);
-  }, t("cardDetail.superLikeFailed"));
-}
 
 /** 跳过 */
 function handlePass() {
@@ -542,6 +588,102 @@ function toggleBio() {
     lightHaptic();
     isBioExpanded.value = !isBioExpanded.value;
   }, t("cardDetail.bioToggleFailed"));
+}
+
+/* ========== 2026-08-08：兴趣圈 / 动态详情 / 查看全部 跳转 ========== */
+
+/** 点击兴趣圈卡片 → 跳转圈子社区页 */
+function onCircleTap(circleName: string): void {
+  safeAction(() => {
+    lightHaptic();
+    openAppPath(`/pages/village/index?focus=${encodeURIComponent(circleName)}`);
+  }, t("cardDetail.circleNavFailed"));
+}
+
+/** 点击单条动态 → 跳转动态详情页（贴吧式楼中楼评论区，pages/village/detail） */
+function onMomentTap(post: { id: string }): void {
+  safeAction(() => {
+    lightHaptic();
+    openAppPath(`/pages/village/detail?id=${encodeURIComponent(post.id)}`);
+  }, t("cardDetail.momentNavFailed"));
+}
+
+/** 「查看全部」→ 跳转圈子社区（TA 的动态独立列表页后端暂未提供，见验收报告遗留说明） */
+function onMomentsAllTap(): void {
+  safeAction(() => {
+    lightHaptic();
+    openAppPath("/pages/village/index");
+  }, t("cardDetail.momentsAllNavFailed"));
+}
+
+/* ========== 2026-08-08：更多操作（举报用户 / 不感兴趣） ========== */
+
+/** 举报原因候选（与 circles/topic-detail 同口径） */
+const REPORT_REASONS = computed<string[]>(() => [
+  t("discover.reportReason1"),
+  t("discover.reportReason2"),
+  t("discover.reportReason3"),
+  t("discover.reportReason4"),
+]);
+
+/**
+ * 顶部「更多」→ ActionSheet：举报用户（真实举报流程，targetType=USER）/
+ * 不感兴趣（等价左滑）。拉黑后端暂无接口，见验收报告遗留说明。
+ */
+async function onMoreTap(): Promise<void> {
+  if (!props.card) return;
+  let actionIndex: number;
+  try {
+    const res = await uni.showActionSheet({
+      itemList: [t("discover.moreReportUser"), t("discover.moreNotInterested")],
+    });
+    actionIndex = res.tapIndex;
+  } catch (_e) {
+    // 用户取消，静默退出
+    return;
+  }
+
+  if (actionIndex === 1) {
+    // 不感兴趣：等价左滑（复用 pass 流程）
+    lightHaptic();
+    emit("pass", props.card.id);
+    scheduleCloseEmit(320);
+    return;
+  }
+
+  // 举报用户：选择原因 → 可选补充描述 → 提交
+  let reason: string;
+  try {
+    const reasons = REPORT_REASONS.value;
+    const res = await uni.showActionSheet({ itemList: reasons });
+    reason = reasons[res.tapIndex] ?? reasons[0] ?? "";
+  } catch (_e) {
+    return;
+  }
+
+  let description: string | undefined;
+  try {
+    const res = await uni.showModal({
+      title: t("village.detail.reportDescTitle"),
+      editable: true,
+      placeholderText: t("village.detail.reportDescPlaceholder"),
+      confirmText: t("village.detail.reportSubmit"),
+      cancelText: t("village.detail.reportSkip"),
+    });
+    if (res.confirm && res.content) {
+      description = res.content;
+    }
+  } catch (_e) {
+    // 取消则不附加描述，继续提交
+  }
+
+  try {
+    await reportStore.reportTarget("USER", String(props.card.userId), reason, description);
+    uni.showToast({ title: t("discover.moreReportSubmitted"), icon: "success" });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : t("discover.moreReportFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
 }
 
 /* ========== 顶部栏下滑关闭手势 ========== */
@@ -642,11 +784,23 @@ function onSwipeDownEnd(e: UniTouchEvent) {
           >
             <text class="detail-top-bar__more-text">{{ t('cardDetail.homePage') }}</text>
           </view>
+          <!-- 更多操作（举报用户 / 不感兴趣） -->
+          <view
+            class="detail-top-bar__btn detail-top-bar__btn--ellipsis press-feedback"
+            hover-class="detail-top-bar__btn--pressed"
+            :hover-stay-time="120"
+            @tap="onMoreTap"
+            role="button"
+            :aria-label="t('discover.moreActions')"
+          >
+            <text class="detail-top-bar__ellipsis-text">⋯</text>
+          </view>
         </view>
       </view>
 
       <!-- 可滚动内容区 -->
-      <scroll-view scroll-y class="detail-scroll" enhanced :show-scrollbar="false">
+      <!-- [AUTOSHOT] scroll-into-view 由测试钩子 initialAnchor 驱动，正常使用为空 -->
+      <scroll-view scroll-y class="detail-scroll" enhanced :show-scrollbar="false" :scroll-into-view="anchorId">
         <!-- 大图轮播区 -->
         <view class="detail-hero">
           <swiper
@@ -727,15 +881,10 @@ function onSwipeDownEnd(e: UniTouchEvent) {
           </view>
         </view>
 
-        <!-- 快速资料卡片：年龄 / 身高 / 学历 / 月收入 -->
-        <view class="detail-panel detail-quick-stats">
-          <view class="quick-stat">
-            <view class="quick-stat__icon quick-stat__icon--age">
-              <image class="quick-stat__icon-img" :src="icons.cake" mode="aspectFit" alt="" />
-            </view>
-            <text class="quick-stat__value">{{ ageText }}{{ t('cardDetail.ageUnit') }}</text>
-            <text class="quick-stat__label">{{ t('cardDetail.ageLabel') }}</text>
-          </view>
+        <!-- 快速资料卡片：身高 / 学历 / 月收入（2026-08-08 验收修复：移除「年龄」——
+             hero 区已展示年龄，避免同屏重复；身高/学历/月收入在「关于我」网格有完整版，
+             此处保留为快速决策信息） -->
+        <view id="panel-quick" class="detail-panel detail-quick-stats">
           <view class="quick-stat">
             <view class="quick-stat__icon quick-stat__icon--height">
               <image class="quick-stat__icon-img" :src="icons.ruler" mode="aspectFit" alt="" />
@@ -757,6 +906,14 @@ function onSwipeDownEnd(e: UniTouchEvent) {
             <text class="quick-stat__value">{{ incomeLabel }}</text>
             <text class="quick-stat__label">{{ t('cardDetail.incomeLabel') }}</text>
           </view>
+          <!-- 2026-08-08 验收修复：第四格补充「职业」，与 hero 区字段互补 -->
+          <view class="quick-stat">
+            <view class="quick-stat__icon quick-stat__icon--occupation">
+              <image class="quick-stat__icon-img" :src="icons.clipboard" mode="aspectFit" alt="" />
+            </view>
+            <text class="quick-stat__value">{{ occupationText }}</text>
+            <text class="quick-stat__label">{{ t('cardDetail.occupationLabel') }}</text>
+          </view>
         </view>
 
         <!-- 个人简介 -->
@@ -768,7 +925,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
         >
           <view class="detail-panel__header">
             <text class="detail-panel__title">{{ t('cardDetail.bioTitle') }}</text>
-            <text class="detail-panel__toggle">{{ bioToggleText }}</text>
+            <text v-if="bioNeedsToggle" class="detail-panel__toggle">{{ bioToggleText }}</text>
           </view>
           <text
             class="detail-bio__text"
@@ -778,47 +935,69 @@ function onSwipeDownEnd(e: UniTouchEvent) {
           </text>
         </view>
 
-        <!-- 性格标签 -->
+        <!-- 性格与 MBTI（2026-08-08 分区修正：只用 personality 字段，不再误放兴趣爱好） -->
         <view class="detail-panel detail-personality">
           <view class="detail-panel__header">
             <text class="detail-panel__title">{{ t('cardDetail.personalityTitle') }}</text>
+            <text v-if="personalityMbtiText" class="detail-panel__subtitle">{{ personalityMbtiText }}</text>
           </view>
           <view class="detail-tags">
             <text
               v-for="(tag, idx) in personalityTags"
               :key="idx"
-              class="detail-tag"
-              :class="`detail-tag--${idx % 4}`"
+              class="detail-tag detail-tag--uniform"
             >
               {{ tag }}
             </text>
           </view>
         </view>
 
-        <!-- 兴趣圈 -->
-        <view class="detail-panel detail-circles">
+        <!-- 兴趣爱好（2026-08-08 新增分区：统一浅底色胶囊，取代原多色标签） -->
+        <view v-if="interestTags.length > 0" class="detail-panel detail-hobbies">
+          <view class="detail-panel__header">
+            <text class="detail-panel__title">{{ t('cardDetail.hobbiesTitle') }}</text>
+          </view>
+          <view class="detail-tags">
+            <text
+              v-for="(tag, idx) in interestTags.slice(0, 8)"
+              :key="idx"
+              class="detail-tag detail-tag--uniform"
+            >
+              {{ tag }}
+            </text>
+          </view>
+        </view>
+
+        <!-- 兴趣圈（点击跳转对应圈子页） -->
+        <view id="panel-circles" class="detail-panel detail-circles">
           <view class="detail-panel__header">
             <text class="detail-panel__title">{{ t('cardDetail.circlesTitle') }}</text>
             <text class="detail-panel__subtitle">{{ circlesCountText }}</text>
           </view>
-          <view class="detail-circles__grid">
-            <view
-              v-for="(circle, idx) in interestCircles"
-              :key="idx"
-              class="detail-circle-card"
-              :style="{ background: circle.gradient }"
-            >
-              <image class="detail-circle-card__icon" :src="circle.icon" mode="aspectFit" alt="" />
-              <view class="detail-circle-card__info">
-                <text class="detail-circle-card__name">{{ circle.name }}</text>
-                <text class="detail-circle-card__members">{{ circleMembersText(circle.members) }}</text>
+          <scroll-view scroll-x class="detail-circles__scroll" :show-scrollbar="false">
+            <view class="detail-circles__row">
+              <view
+                v-for="(circle, idx) in interestCircles"
+                :key="idx"
+                class="detail-circle-card press-feedback"
+                hover-class="detail-circle-card--pressed"
+                hover-stay-time="120"
+                @tap="onCircleTap(circle.name)"
+                role="button"
+                :aria-label="t('cardDetail.circlesTitle') + ' ' + circle.name"
+              >
+                <image class="detail-circle-card__icon" :src="circle.icon" mode="aspectFit" alt="" />
+                <view class="detail-circle-card__info">
+                  <text class="detail-circle-card__name">{{ circle.name }}</text>
+                  <text class="detail-circle-card__members">{{ circleMembersText(circle.members) }}</text>
+                </view>
               </view>
             </view>
-          </view>
+          </scroll-view>
         </view>
 
         <!-- Phase Feedback1 · 关于我（基础资料） -->
-        <view v-if="basicInfoItems.length > 0" class="detail-panel detail-basic-info">
+        <view id="panel-basic" v-if="basicInfoItems.length > 0" class="detail-panel detail-basic-info">
           <view class="detail-panel__header">
             <text class="detail-panel__title">{{ t('discover.basicInfo') }}</text>
           </view>
@@ -853,16 +1032,29 @@ function onSwipeDownEnd(e: UniTouchEvent) {
           </view>
         </view>
 
-        <!-- Phase Feedback1 · 动态（点赞/评论/私信） -->
-        <view class="detail-panel detail-moments">
+        <!-- Phase Feedback1 · 动态（贴吧式：发布时间 → 正文+配图 → 点赞/评论；点击进详情页） -->
+        <view id="panel-moments" class="detail-panel detail-moments">
           <view class="detail-panel__header">
             <text class="detail-panel__title">{{ t('discover.moments') }}</text>
+            <text
+              class="detail-panel__more press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              role="button"
+              :aria-label="t('discover.momentsAll')"
+              @tap="onMomentsAllTap"
+            >{{ t('discover.momentsAll') }}</text>
           </view>
           <view v-if="momentPosts.length > 0" class="detail-moments__list">
             <view
               v-for="post in momentPosts"
               :key="post.id"
-              class="detail-moment-item"
+              class="detail-moment-item press-feedback"
+              hover-class="detail-moment-item--pressed"
+              hover-stay-time="120"
+              @tap="onMomentTap(post)"
+              role="button"
+              :aria-label="t('discover.momentDetailAria')"
             >
               <text class="detail-moment-item__content">{{ post.content }}</text>
               <view class="detail-moment-item__actions">
@@ -873,7 +1065,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
                   role="button"
                   :aria-label="t('discover.momentLike')"
                   :aria-pressed="post.isLiked"
-                  @tap="toggleMomentLike(post.id)"
+                  @tap.stop="toggleMomentLike(post.id)"
                 >
                   <image class="detail-moment-item__action-icon" :src="post.isLiked ? icons.heart : icons.heartOutline" mode="aspectFit" alt="" />
                   <text class="detail-moment-item__action-count">{{ post.likes }}</text>
@@ -884,7 +1076,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
                   hover-stay-time="120"
                   role="button"
                   :aria-label="t('discover.momentComment')"
-                  @tap="onMomentComment(post.id)"
+                  @tap.stop="onMomentComment(post.id)"
                 >
                   <image class="detail-moment-item__action-icon" :src="icons.chat" mode="aspectFit" alt="" />
                   <text class="detail-moment-item__action-count">{{ post.comments }}</text>
@@ -895,7 +1087,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
                   hover-stay-time="120"
                   role="button"
                   :aria-label="t('discover.momentPrivateMsg')"
-                  @tap="onMomentPrivateMsg"
+                  @tap.stop="onMomentPrivateMsg"
                 >
                   <image class="detail-moment-item__action-icon" :src="icons.mail" mode="aspectFit" alt="" />
                   <text class="detail-moment-item__action-count">{{ t('discover.momentPrivateMsg') }}</text>
@@ -907,7 +1099,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
                   class="detail-moment-comment__input"
                   v-model="commentDraft"
                   :placeholder="t('discover.momentCommentPlaceholder')"
-                  @confirm="submitComment(post.id)"
+                  @confirm.stop="submitComment(post.id)"
                   :aria-label="t('discover.momentCommentPlaceholder')"
                 />
                 <view
@@ -927,7 +1119,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
         </view>
 
         <!-- Phase Feedback1 · 期待的人物画像 -->
-        <view v-if="expectedPartnerText" class="detail-panel detail-expected">
+        <view id="panel-expected" v-if="expectedPartnerText" class="detail-panel detail-expected">
           <view class="detail-panel__header">
             <text class="detail-panel__title">{{ t('discover.expectedPartner') }}</text>
           </view>
@@ -949,7 +1141,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
         <view class="detail-bottom-spacer" />
       </scroll-view>
 
-      <!-- 底部固定操作栏：跳过 / 超级喜欢 / 喜欢 / 发消息 -->
+      <!-- 底部固定操作栏（2026-08-08 与匹配主页统一三键）：不喜欢 / 发私信 / 喜欢 -->
       <view class="detail-action-bar">
         <view
           class="detail-action-bar__btn detail-action-bar__btn--pass"
@@ -963,15 +1155,15 @@ function onSwipeDownEnd(e: UniTouchEvent) {
           <text class="detail-action-bar__label">{{ t('cardDetail.passLabel') }}</text>
         </view>
         <view
-          class="detail-action-bar__btn detail-action-bar__btn--super"
+          class="detail-action-bar__btn detail-action-bar__btn--msg"
           hover-class="detail-action-bar__btn--pressed"
           :hover-stay-time="120"
-          @tap="handleSuperLike"
+          @tap="handleMessage"
           role="button"
-          :aria-label="t('cardDetail.superLikeAria')"
+          :aria-label="t('cardDetail.messageAria')"
         >
-          <image class="detail-action-bar__icon" :src="icons.superLike" mode="aspectFit" alt="" />
-          <text class="detail-action-bar__label">{{ t('cardDetail.superLikeLabel') }}</text>
+          <image class="detail-action-bar__icon" :src="icons.message" mode="aspectFit" alt="" />
+          <text class="detail-action-bar__label">{{ t('cardDetail.messageLabel') }}</text>
         </view>
         <view
           class="detail-action-bar__btn detail-action-bar__btn--like"
@@ -983,17 +1175,6 @@ function onSwipeDownEnd(e: UniTouchEvent) {
         >
           <image class="detail-action-bar__icon" :src="icons.like" mode="aspectFit" alt="" />
           <text class="detail-action-bar__label">{{ t('cardDetail.likeLabel') }}</text>
-        </view>
-        <view
-          class="detail-action-bar__btn detail-action-bar__btn--msg"
-          hover-class="detail-action-bar__btn--pressed"
-          :hover-stay-time="120"
-          @tap="handleMessage"
-          role="button"
-          :aria-label="t('cardDetail.messageAria')"
-        >
-          <image class="detail-action-bar__icon" :src="icons.message" mode="aspectFit" alt="" />
-          <text class="detail-action-bar__label">{{ t('cardDetail.messageLabel') }}</text>
         </view>
       </view>
     </view>
@@ -1112,6 +1293,14 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   width: auto;
   padding: 0 20rpx;
   border-radius: var(--r-full);
+}
+
+.detail-top-bar__ellipsis-text {
+  font-size: 40rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-text-inverse);
+  padding: 0 8rpx 8rpx;
 }
 
 .detail-top-bar__more-text {
@@ -1384,6 +1573,13 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   color: var(--c-text-primary);
 }
 
+.detail-panel__more {
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-brand-500, #3fcf8e);
+  font-weight: 600;
+  padding: 4rpx 8rpx;
+}
+
 .detail-panel__subtitle {
   font-size: var(--fs-sm);
   color: var(--c-text-tertiary);
@@ -1428,9 +1624,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   margin-bottom: 2rpx;
 }
 
-.quick-stat__icon--age {
-  background: linear-gradient(135deg, var(--c-romance-100) 0%, var(--c-romance-50) 100%);
-}
+/* 2026-08-08 验收修复：移除 .quick-stat__icon--age（年龄 stat 已从快速资料卡移除） */
 
 .quick-stat__icon--height {
   background: linear-gradient(135deg, var(--c-brand-100) 0%, var(--c-brand-50) 100%);
@@ -1442,6 +1636,11 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 
 .quick-stat__icon--income {
   background: linear-gradient(135deg, var(--c-apricot-100) 0%, var(--c-apricot-50) 100%);
+}
+
+/* 2026-08-08 验收修复：职业格（替代原年龄格） */
+.quick-stat__icon--occupation {
+  background: linear-gradient(135deg, var(--c-lavender-100) 0%, var(--c-lavender-50) 100%);
 }
 
 .quick-stat__icon-text {
@@ -1504,31 +1703,10 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   color: var(--c-brand-700);
 }
 
-.detail-tag--1 {
-  background: var(--c-romance-100);
-  border-color: var(--c-romance-200);
-  color: var(--c-romance-700);
-}
-
-.detail-tag--2 {
-  background: var(--c-lavender-100);
-  border-color: var(--c-lavender-100);
-  color: var(--c-lavender-500);
-}
-
-.detail-tag--3 {
-  background: var(--c-apricot-100);
-  border-color: var(--c-apricot-100);
-  color: var(--c-apricot-500);
-}
+/* 2026-08-08 验收修复：移除多色死样式 .detail-tag--1/2/3（模板统一 detail-tag--uniform） */
 
 /* ========== 兴趣圈网格 ========== */
-/* mp-weixin 不支持 display:grid，2 列等宽布局改用 Flexbox + 子元素 width: calc */
-.detail-circles__grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-3);
-}
+/* 2026-08-08 验收修复：移除未消费的 .detail-circles__grid（模板使用 detail-circles__row + scroll-x） */
 
 .detail-circle-card {
   /* 2 列布局：每行 2 个，gap var(--sp-3) 共 1 个间隙 → width = calc((100% - sp-3) / 2) */
@@ -1582,14 +1760,16 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 }
 
 .detail-basic-info__item {
+  /* 2 行 4 列（2026-08-08）：每行 4 个，gap 12rpx 共 3 个间隙 */
+  width: calc((100% - 36rpx) / 4);
   display: flex;
   flex-direction: column;
   gap: 4rpx;
-  padding: 12rpx 20rpx;
+  padding: 12rpx 16rpx;
   border-radius: var(--r-lg);
   background: var(--c-bg-page);
   border: 1rpx solid var(--c-divider-light);
-  min-width: 140rpx;
+  box-sizing: border-box;
 }
 
 .detail-basic-info__label {
@@ -1650,6 +1830,11 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   border-radius: var(--r-lg);
   background: var(--c-bg-page);
   border: 1rpx solid var(--c-divider-light);
+}
+
+.detail-moment-item--pressed {
+  transform: scale(0.99);
+  opacity: 0.92;
 }
 
 .detail-moment-item__content {
@@ -1813,10 +1998,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   box-shadow: var(--s-sm);
 }
 
-.detail-action-bar__btn--super {
-  background: linear-gradient(135deg, var(--c-info-400) 0%, var(--c-info-500) 100%);
-  box-shadow: var(--s-action-super);
-}
+/* 2026-08-08 验收修复：移除未消费的 .detail-action-bar__btn--super 死样式（模板三键为 pass/msg/like） */
 
 .detail-action-bar__btn--like {
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
@@ -1850,7 +2032,6 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   color: var(--c-text-secondary);
 }
 
-.detail-action-bar__btn--super .detail-action-bar__label,
 .detail-action-bar__btn--like .detail-action-bar__label,
 .detail-action-bar__btn--msg .detail-action-bar__label {
   color: var(--c-text-inverse);

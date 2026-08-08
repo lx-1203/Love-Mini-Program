@@ -254,15 +254,17 @@ class CacheTest {
     }
 
     /**
-     * 场景 10：推荐列表查询应添加 {@code @Cacheable(MATCH_RECOMMEND)}。
+     * 场景 10：推荐列表查询不应再携带 {@code @Cacheable}（P0-20 修复）。
+     *
+     * <p>原双重 @Cacheable（此处 + RecommendationCacheManager）同键嵌套冗余，
+     * P0-20 已移除方法级注解，有效缓存层保留在 RecommendationCacheManager
+     * （带 unless 空结果保护 + 主动失效方法）。此处断言注解已移除，防止回归。</p>
      */
     @Test
-    void realRecommendationService_getRecommendations_shouldBeCacheable() throws Exception {
+    void realRecommendationService_getRecommendations_shouldNotBeCacheable() throws Exception {
         Method m = RealRecommendationService.class.getMethod("getRecommendations", Long.class);
         Cacheable cacheable = m.getAnnotation(Cacheable.class);
-        assertNotNull(cacheable, "getRecommendations 应添加 @Cacheable 注解");
-        assertEquals(CacheNames.MATCH_RECOMMEND, cacheable.cacheNames()[0]);
-        assertEquals("#userId", cacheable.key());
+        assertNull(cacheable, "P0-20：方法级 @Cacheable 应已移除，缓存统一由 RecommendationCacheManager 承载");
     }
 
     /**

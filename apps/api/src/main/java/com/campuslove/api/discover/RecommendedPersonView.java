@@ -92,17 +92,37 @@ public record RecommendedPersonView(
     /** 是否允许私信（未解锁时需付费；未提供时默认 false） */
     Boolean allowMessage,
     /** IP 属地（如 江苏 · 南京） */
-    String ipLocation
+    String ipLocation,
+    // ---- V2026.08.08.0015：寻觅页卡片完整字段 ----
+    /** 职业（展示文本，如 产品经理），可空 */
+    String occupation,
+    /** 月收入档位（3k-8k / 8k-15k / 15k-30k / 30k+），可空 */
+    String incomeRange,
+    /** 年龄（由出生年份推导），可空 */
+    Integer age,
+    /** 注册时间（ISO 字符串，供「最新注册」排序），可空 */
+    String registeredAt
 ) {
     /**
-     * 紧凑构造器：确保 List 字段非 null，避免下游 NPE。
+     * 紧凑构造器：确保 List 字段非 null 且不含 null 元素，避免下游 NPE。
+     *
+     * <p>2026-08-08 修复：存量 JSON 数组可能含 null 元素（如 photo_gallery 出现
+     * [null]），List.copyOf 会抛 NPE 导致整个推荐列表 500——统一过滤 null 元素。</p>
      */
     public RecommendedPersonView {
-        tags = tags == null ? List.of() : List.copyOf(tags);
-        images = images == null ? List.of() : List.copyOf(images);
-        photoGallery = photoGallery == null ? List.of() : List.copyOf(photoGallery);
-        personality = personality == null ? List.of() : List.copyOf(personality);
-        recentPosts = recentPosts == null ? List.of() : List.copyOf(recentPosts);
+        tags = filterNullElements(tags);
+        images = filterNullElements(images);
+        photoGallery = filterNullElements(photoGallery);
+        personality = filterNullElements(personality);
+        recentPosts = filterNullElements(recentPosts);
+    }
+
+    /** 过滤列表中的 null 元素（null 列表 → 空列表）。 */
+    private static <T> List<T> filterNullElements(List<T> list) {
+        if (list == null) {
+            return List.of();
+        }
+        return list.stream().filter(java.util.Objects::nonNull).toList();
     }
 
     /**

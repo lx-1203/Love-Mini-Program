@@ -426,6 +426,9 @@ public class RealRecommendationService implements RecommendationService {
                                   Map<Long, UserBasicProfile> basicProfileMap) {
         if (filter.heightMin() != null && (view.height() == null || view.height() < filter.heightMin())) return false;
         if (filter.heightMax() != null && (view.height() == null || view.height() > filter.heightMax())) return false;
+        // V2026.08.08.0015：年龄筛选（闭区间，年龄由出生年份推导；无年龄视为不满足该维度）
+        if (filter.ageMin() != null && (view.age() == null || view.age() < filter.ageMin())) return false;
+        if (filter.ageMax() != null && (view.age() == null || view.age() > filter.ageMax())) return false;
         if (!filter.educationLevels().isEmpty()
                 && (view.educationLevel() == null || !filter.educationLevels().contains(view.educationLevel()))) {
             return false;

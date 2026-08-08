@@ -143,6 +143,23 @@ export async function fetchCards(this: DiscoverStoreThis): Promise<void> {
         this.cards = availableCards;
         this.hasMore = availableCards.length > 0 && !this.isLimitReached;
 
+        // P0-31 修复：空列表时查询后端配额，区分「今日次数已用完」与「暂无推荐」。
+        // 后端 recommend-quota Redis 计数与前端本地 viewedCards 不同源（前端计数仅
+        // 反映本次会话滑动量，后端按拉取次数扣减），必须以服务端为准，避免配额耗尽
+        // 后页面显示误导性的"暂无推荐+刷新"（刷新永远无效）。
+        if (availableCards.length === 0) {
+          try {
+            const { clientApi } = await import("../../../services/api");
+            const quota = await clientApi.getRecommendationQuota();
+            this.quotaExhausted = quota.remaining !== -1 && quota.remaining <= 0;
+          } catch (_e) {
+            // 配额查询失败不影响主流程，保留默认 false（按"暂无推荐"展示）
+            this.quotaExhausted = false;
+          }
+        } else {
+          this.quotaExhausted = false;
+        }
+
         // 同步更新历史记录和已拒绝记录
         this.syncHistoryCards();
       },

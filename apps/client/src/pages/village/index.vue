@@ -10,6 +10,7 @@ import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
 import { useVillageStore, MINE_CATEGORY_ID, formatRelativeTime, type PostItem, type PostFilters, type PostAuthor } from "../../stores/village";
 import { useSessionStore } from "../../stores/session";
+import { useDailyQuestionStore } from "../../stores/daily-question";
 import { openAppPath, consumeTabQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 import LockScreen from "../../components/common/LockScreen.vue";
@@ -37,6 +38,8 @@ import { resolveMediaUrl } from "../../utils/media";
 const { t } = useI18n();
 const villageStore = useVillageStore();
 const sessionStore = useSessionStore();
+// 2026-08-08：每日一问入口自寻觅页迁入圈子页（社区话题场景），文案轻量展示
+const dailyQuestionStore = useDailyQuestionStore();
 
 // Phase 4 任务 20：接入页面访问守卫
 usePageAccess(villagePageRequirements);
@@ -676,6 +679,10 @@ onShow(() => {
       scrollTopValue.value = saved;
     }, 50);
   }
+  // 2026-08-08：每日一问轻量入口文案（失败静默，入口显示兜底文案）
+  if (sessionStore.isLoggedIn) {
+    void dailyQuestionStore.fetchTodayQuestion();
+  }
 });
 
 /* ========== 初始化 ========== */
@@ -778,6 +785,32 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
       </view>
 
       <!-- 城市选择已并入顶部功能栏（左侧城市名，点击修改）；城市选择弹层见下 -->
+
+      <!-- ===== 2026-08-08 重构：每日一问轻量入口（自寻觅页迁入，社区话题场景；仅校园圈模式，全 tab 展示） ===== -->
+      <view
+        v-if="circleMode === 'campus'"
+        class="village-daily-entry press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('village.dailyQuestion')"
+        @tap="openAppPath('/pages/daily-question/index')"
+      >
+        <image class="village-daily-entry__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL" mode="aspectFit" alt="" />
+        <view class="village-daily-entry__info">
+          <view class="village-daily-entry__title-row">
+            <text class="village-daily-entry__title">{{ t('village.dailyQuestion') }}</text>
+            <text
+              v-if="dailyQuestionStore.todayQuestion?.hasAnswered"
+              class="village-daily-entry__answered"
+            >{{ t('village.dailyQuestionAnswered') }}</text>
+          </view>
+          <text class="village-daily-entry__desc">
+            {{ dailyQuestionStore.todayQuestion?.question ?? t('village.dailyQuestionDesc') }}
+          </text>
+        </view>
+        <text class="village-daily-entry__arrow">&rsaquo;</text>
+      </view>
 
       <!-- ===== Phase Feedback4：城市选择弹层（仅校园圈模式） ===== -->
       <view v-if="circleMode === 'campus' && showCityPicker" class="city-picker" role="button" :aria-label="t('common.closeAria')" @tap="showCityPicker = false">
@@ -1377,6 +1410,79 @@ defineExpose({ handleLike, toggleCollect, handleFollow, noop, goToAuthorProfile,
   font-size: var(--fs-4xl);
   color: var(--c-neutral-0);
   font-weight: 300;
+}
+
+/* ================================================================
+   2026-08-08 重构：每日一问轻量入口（自寻觅页迁入，白底圆角横卡，主题色系）
+   ================================================================ */
+.village-daily-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin: 0 var(--sp-7) var(--sp-5);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  border: 1rpx solid var(--c-border-light);
+  box-shadow: var(--s-card-soft);
+  transition: transform var(--d-fast, 150ms) ease;
+}
+
+/* #ifdef H5 */
+.village-daily-entry:active {
+  transform: scale(0.98);
+}
+/* #endif */
+
+.village-daily-entry__icon {
+  width: 44rpx;
+  height: 44rpx;
+  flex-shrink: 0;
+  color: var(--c-brand-500);
+}
+
+.village-daily-entry__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.village-daily-entry__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.village-daily-entry__title {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.village-daily-entry__answered {
+  font-size: var(--fs-xs);
+  color: var(--c-brand-500);
+  font-weight: 600;
+  padding: 2rpx 12rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-brand);
+}
+
+.village-daily-entry__desc {
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.village-daily-entry__arrow {
+  font-size: var(--fs-3xl);
+  color: var(--c-text-tertiary);
+  font-weight: 300;
+  flex-shrink: 0;
 }
 
 /* ================================================================

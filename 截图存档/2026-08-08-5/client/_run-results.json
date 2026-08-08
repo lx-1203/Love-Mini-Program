@@ -1,0 +1,84 @@
+{
+  "results": [
+    {
+      "name": "d00-skeleton",
+      "route": "/pages/discover/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "d01-discover",
+      "route": "/pages/discover/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d02-detail-top",
+      "route": "/pages/discover/index?shot=detail&anchor=panel-quick",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d03-detail-basic",
+      "route": "/pages/discover/index?shot=detail&anchor=panel-basic",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d04-detail-circles",
+      "route": "/pages/discover/index?shot=detail&anchor=panel-circles",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d05-detail-moments",
+      "route": "/pages/discover/index?shot=detail&anchor=panel-moments",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d06-detail-expected",
+      "route": "/pages/discover/index?shot=detail&anchor=panel-expected",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d07-checkin",
+      "route": "/pages/discover/index?shot=checkin",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d08-filter",
+      "route": "/pages/discover/index?shot=filter",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d09-history",
+      "route": "/pages/discover/history",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d10-likes",
+      "route": "/pages/likes/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d11-messages",
+      "route": "/pages/messages/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "d12-profile",
+      "route": "/pages/profile/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    }
+  ],
+  "round": 1,
+  "ts": "2026-08-08 08:49:15.995"
+}

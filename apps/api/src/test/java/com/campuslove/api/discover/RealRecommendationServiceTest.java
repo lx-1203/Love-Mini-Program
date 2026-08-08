@@ -136,7 +136,7 @@ class RealRecommendationServiceTest {
                         165, "bachelor", List.of(), null, null, "none",
                         "CL-1", "1.2km", "offline", true, false,
                         List.of("开朗"), "INTJ", null, false, List.of(),
-                        null, false, "北京"));
+                        null, false, "北京", null, null, null, null));
         when(cacheManager.getCachedRecommendations(userId)).thenReturn(expected);
 
         List<RecommendedPersonView> result = realService.getRecommendations(userId);
@@ -168,10 +168,10 @@ class RealRecommendationServiceTest {
                         165, "bachelor", List.of(), null, null, "none",
                         "CL-1", "1.2km", "offline", true, false,
                         List.of("开朗"), "INTJ", null, false, List.of(),
-                        null, false, "北京"));
+                        null, false, "北京", null, null, null, null));
         when(cacheManager.getCachedRecommendations(userId)).thenReturn(cached);
         RecommendationFilter emptyFilter = new RecommendationFilter(
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null);
 
         List<RecommendedPersonView> result = realService.getRecommendations(userId, emptyFilter);
 
@@ -192,7 +192,7 @@ class RealRecommendationServiceTest {
                         180, "master", List.of(), null, null, "verified",
                         "CL-2", "1.2km", "offline", true, false,
                         List.of("沉稳"), "ISFJ", null, false, List.of(),
-                        null, false, "南京"));
+                        null, false, "南京", null, null, null, null));
         when(cacheManager.buildHistory(userId)).thenReturn(expected);
 
         List<RecommendedPersonView> result = realService.getHistory(userId);

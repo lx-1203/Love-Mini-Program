@@ -112,12 +112,13 @@ class RealVillageServiceTest {
         // CreateCommentRequest(content, parentId)
         CreateCommentRequest request = new CreateCommentRequest("评论内容", null);
         CommentItemView expected = buildCommentItemView(10L, 1L, 100L);
-        when(interactionService.commentPost(100L, 1L, "评论内容")).thenReturn(expected);
+        // P1-02 楼中楼：业务透传 4 参（content + parentId），测试 mock 需同步新签名
+        when(interactionService.commentPost(100L, 1L, "评论内容", null)).thenReturn(expected);
 
         CommentItemView result = realService.createComment(100L, 1L, request);
 
         assertSame(expected, result);
-        verify(interactionService, times(1)).commentPost(100L, 1L, "评论内容");
+        verify(interactionService, times(1)).commentPost(100L, 1L, "评论内容", null);
     }
 
     /**

@@ -355,6 +355,70 @@ export function supportsHapticFeedback(): boolean {
 }
 
 /**
+ * 小程序胶囊按钮（右上角菜单）位置信息。
+ *
+ * 与 wx.getMenuButtonBoundingClientRect 返回结构一致，字段单位为 px。
+ * mp-weixin 端由 uni.getMenuButtonBoundingClientRect 提供；其他平台无胶囊，返回 null。
+ */
+export interface MenuButtonRect {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Task 36：获取小程序右上角胶囊按钮位置（mp-weixin 独有能力，其他平台返回 null）。
+ *
+ * 设计目的：自定义导航（navigationStyle: custom）下，页面右上角元素（标题计数、
+ * 筛选标签等）可能被胶囊遮挡，业务代码通过本函数测量胶囊右缘以预留安全距离。
+ * 异常（低版本基础库无此 API / 非小程序平台）时返回 null，调用方自行兜底。
+ *
+ * @returns 胶囊矩形信息（px）或 null
+ */
+export function getMenuButtonRect(): MenuButtonRect | null {
+  // #ifdef MP-WEIXIN
+  try {
+    const rect = uni.getMenuButtonBoundingClientRect();
+    if (rect && typeof rect.right === "number" && rect.right > 0) {
+      return {
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+      };
+    }
+  } catch (_e) {
+    // 低版本基础库无此 API，返回 null 由调用方走 CSS 兜底
+  }
+  return null;
+  // #endif
+  // #ifndef MP-WEIXIN
+  return null;
+  // #endif
+}
+
+/**
+ * Task 36：安全获取窗口宽度（px）。
+ *
+ * 基于 safeGetSystemInfo() 统一取值，H5 端回退 window.innerWidth。
+ *
+ * @returns 窗口宽度（px），获取失败时返回 375（常规设计稿宽度兜底）
+ */
+export function getWindowWidth(): number {
+  const info = safeGetSystemInfo();
+  const width = info.windowWidth;
+  if (typeof width === "number" && width > 0) {
+    return width;
+  }
+  return 375;
+}
+
+/**
  * Task 35：获取 mp-weixin 自定义 TabBar 实例（其他平台返回 null）。
  *
  * mp-weixin 自定义 TabBar 模式下，页面实例通过 getTabBar() 暴露 TabBar 组件实例，

@@ -3,6 +3,7 @@ package com.campuslove.api.campus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.entity.School;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.repository.SchoolRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
@@ -72,6 +74,14 @@ class CampusControllerTest extends ControllerTestBase {
                 false, "2026-07-26T10:00:00");
     }
 
+    /** 创建测试用 School 实体（resolveSchoolId 依赖 schools 表映射）。 */
+    private School school(Long id) {
+        School school = new School();
+        school.setId(id);
+        school.setName("测试大学");
+        return school;
+    }
+
     /** 创建测试用 CampusCertificationView（POJO）。 */
     private CampusCertificationView buildCertView(Long id, Long userId, String status) {
         return new CampusCertificationView(
@@ -82,17 +92,13 @@ class CampusControllerTest extends ControllerTestBase {
 
     @Test
     void listTopics_shouldReturnEmptyPageWhenUserNotBoundToSchool() {
-        // Arrange：用户未绑定学校
+        // Arrange：用户未绑定学校（A-26 修复：返回明确业务错误引导认证，而非静默空列表）
         withUserId(100L, () -> {
             when(campusProfileRepository.findByUserId(100L)).thenReturn(Optional.empty());
 
-            // Act
-            ResponseEntity<CampusTopicPageResponse> resp = controller.listTopics(
-                    null, PageRequest.of(0, 10));
-
-            // Assert
-            assertNotNull(resp.getBody());
-            assertEquals(0, resp.getBody().totalElements(), "未绑定学校应返回空页");
+            // Act & Assert
+            assertThrows(IllegalArgumentException.class, () -> controller.listTopics(
+                    null, PageRequest.of(0, 10)), "未绑定学校应抛业务错误提示先完成校园认证");
         });
     }
 
@@ -103,6 +109,8 @@ class CampusControllerTest extends ControllerTestBase {
             UserCampusProfile profile = new UserCampusProfile();
             profile.setCampusName("测试大学");
             when(campusProfileRepository.findByUserId(100L)).thenReturn(Optional.of(profile));
+            // A-26：resolveSchoolId 需经 schools 表映射出 schoolId
+            when(schoolRepository.findByName("测试大学")).thenReturn(Optional.of(school(1L)));
 
             CampusTopicView topic = buildTopicView(1L, "图书馆开门时间");
             when(campusService.getCampusTopics(anyLong(), any())).thenReturn(List.of(topic));
@@ -139,6 +147,8 @@ class CampusControllerTest extends ControllerTestBase {
             UserCampusProfile profile = new UserCampusProfile();
             profile.setCampusName("测试大学");
             when(campusProfileRepository.findByUserId(100L)).thenReturn(Optional.of(profile));
+            // A-26：createTopic 同样经 resolveSchoolId 校验学校
+            when(schoolRepository.findByName("测试大学")).thenReturn(Optional.of(school(1L)));
 
             CampusTopicView created = buildTopicView(1L, "新话题");
             when(campusService.createCampusTopic(eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容")))

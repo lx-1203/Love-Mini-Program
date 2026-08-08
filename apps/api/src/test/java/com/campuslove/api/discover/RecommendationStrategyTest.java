@@ -233,15 +233,19 @@ class RecommendationStrategyTest {
     }
 
     /**
-     * 场景：scope=campus_first 时，候选用户无校区资料应不通过。
+     * 场景：scope=campus_first 时，候选用户无校区资料应放行（2026-08-07 链路调整）。
+     *
+     * <p>原实现直接排除未完善资料用户，导致其在推荐流中永远不可见；
+     * 调整后非 city 严格模式一律放行（配合评分降级保证列表非空）。</p>
      */
     @Test
-    void filterByScope_campusFirst_noCampusProfile_returnsFalse() {
+    void filterByScope_campusFirst_noCampusProfile_returnsTrue() {
         Long candidateId = 4L;
         when(userCampusProfileRepository.findByUserId(candidateId))
                 .thenReturn(Optional.empty());
 
-        assertFalse(strategy.filterByScope(candidateId, "campus_first", "北大", "北京"));
+        assertTrue(strategy.filterByScope(candidateId, "campus_first", "北大", "北京"),
+                "2026-08-07 链路调整：无校区资料时非 city 模式放行");
     }
 
     // ============ calculateScoreOptimized ============

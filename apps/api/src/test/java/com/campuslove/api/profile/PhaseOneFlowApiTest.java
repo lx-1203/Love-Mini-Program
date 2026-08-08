@@ -63,7 +63,7 @@ class PhaseOneFlowApiTest {
     // 语义与 real 端点的保存链路等价，随后由 /api/v1/auth/me 验证会话完成状态被推进。
     BasicProfileView basic = profileService.saveBasicProfile(
         new BasicProfileRequest("若星", "安静而明确", "大三", "她/她",
-            null, null, null, null, null, null, null, null));
+            null, null, null, null, null, null, null, null, null));
     assertEquals("若星", basic.nickname());
 
     CampusProfileView campus = profileService.saveCampusProfile(

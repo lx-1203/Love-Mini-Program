@@ -120,14 +120,29 @@ onLaunch(() => {
           }
         };
 
+        // P0-2 修复（2026-08-08）：隐私授权 modal 防重入——
+        // 微信隐私接口并发触发（如选图+定位同时）时 onNeedPrivacyAuthorization 会被
+        // 多次回调，若每次都弹 uni.showModal 会叠弹全屏弹窗，期间页面所有点击被吞
+        // （表现为"登录后能看不能点"）。加模块级 pending 标志：已有弹窗在展示时，
+        // 后续回调直接 resolve('disagree')（拒绝本次），待当前弹窗结束后由系统/业务
+        // 层再次触发授权流程，避免阻塞页面。
+        let privacyModalPending = false;
+
         onNeed((resolve: PrivacyResolve) => {
           // 弹出隐私协议确认 modal，提供"同意并继续"与"查看协议"两个按钮
+          if (privacyModalPending) {
+            // 已有弹窗在展示：拒绝本次触发，不叠弹
+            resolve({ event: "disagree" });
+            return;
+          }
+          privacyModalPending = true;
           uni.showModal({
             title: PRIVACY_TITLE,
             content: PRIVACY_CONTENT,
             confirmText: t("legal.consent.agree"),
             cancelText: t("legal.consent.viewAgreementShort"),
             success: (modalRes) => {
+              privacyModalPending = false;
               if (modalRes.confirm) {
                 // 用户点击"同意并继续"→ 同意隐私协议，buttonId='accept' 供埋点
                 resolve({ buttonId: "accept", event: "agree" });
@@ -157,6 +172,7 @@ onLaunch(() => {
             },
             fail: () => {
               // modal 调用失败（如小程序环境异常）→ 默认不同意，避免静默同意
+              privacyModalPending = false;
               resolve({ event: "disagree" });
             },
           });

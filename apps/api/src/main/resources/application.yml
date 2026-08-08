@@ -216,6 +216,9 @@ app:
     # 申请地址：https://mp.weixin.qq.com/
     app-id: ${WECHAT_APPID:}
     app-secret: ${WECHAT_SECRET:}
+    # P0-33 修复（2026-08-08）：本地联调降级开关（WECHAT_DEV_FALLBACK_ENABLED=true 时
+    # 微信登录按 code 派生 dev-wechat-{code} 走正常链路；生产必须保持关闭）
+    dev-fallback-enabled: ${WECHAT_DEV_FALLBACK_ENABLED:false}
     # Task 9：微信 jscode2session 接口 base URL，原在 WeChatClient.java 硬编码。
     # 默认值为官方文档地址，可通过环境变量 WECHAT_JSCODE2SESSION_URL 覆盖
     # （如需走内网代理或切换微信 API 域名）。
@@ -239,7 +242,7 @@ app:
       api-key: ${AGNES_API_KEY:}
       timeout-ms: ${AGNES_TIMEOUT_MS:30000}
   recommendation:
-    daily-limit: 10
+    daily-limit: ${APP_RECOMMENDATION_DAILY_LIMIT:30}
     discussion-limit: 10
     candidate-page-size: 200
     campus-weight: 50

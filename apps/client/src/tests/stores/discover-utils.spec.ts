@@ -28,6 +28,11 @@ describe("mapToDiscoverCard (Phase Feedback1 字段透传)", () => {
       whisperSent: false,
       expectedPartner: "喜欢猫、愿意一起逛展",
       allowMessage: false,
+      // 2026-08-08：卡片完整字段（后端真实数据）
+      occupation: "产品经理",
+      incomeRange: "15k-30k",
+      age: 23,
+      registeredAt: "2026-03-12T08:00:00Z",
       recentPosts: [
         {
           id: "p1",
@@ -55,6 +60,11 @@ describe("mapToDiscoverCard (Phase Feedback1 字段透传)", () => {
     expect(card.allowMessage).toBe(false);
     expect(card.recentPosts).toHaveLength(1);
     expect(card.recentPosts?.[0]?.likes).toBe(32);
+    // 2026-08-08 新字段透传
+    expect(card.occupation).toBe("产品经理");
+    expect(card.incomeRange).toBe("15k-30k");
+    expect(card.age).toBe(23);
+    expect(card.registeredAt).toBe("2026-03-12T08:00:00Z");
   });
 
   it("缺省字段透传为 undefined（不产生假数据）", () => {
@@ -77,5 +87,8 @@ describe("mapToDiscoverCard (Phase Feedback1 字段透传)", () => {
     expect(card.whisper).toBeUndefined();
     expect(card.recentPosts).toBeUndefined();
     expect(card.expectedPartner).toBeUndefined();
+    expect(card.occupation).toBeUndefined();
+    expect(card.incomeRange).toBeUndefined();
+    expect(card.age).toBeUndefined();
   });
 });

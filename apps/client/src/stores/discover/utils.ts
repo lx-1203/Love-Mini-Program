@@ -65,6 +65,10 @@ export function mapToDiscoverCard(
     zodiac: raw.zodiac,
     relationshipStatus: raw.relationshipStatus,
     registeredAt: raw.registeredAt,
+    // 2026-08-08：卡片完整字段透传（后端真实数据，替换前端 hash 伪造）
+    occupation: raw.occupation,
+    incomeRange: raw.incomeRange,
+    age: raw.age,
     whisper: raw.whisper,
     whisperSent: raw.whisperSent,
     recentPosts: raw.recentPosts,
@@ -107,18 +111,21 @@ export function filterNearby(cards: DiscoverCard[]): DiscoverCard[] {
 
 /**
  * 活跃状态排序权重（越小越活跃）：
- * just_now → today → hours_{n}（n 小优先）→ days_{n} → offline → 缺失
+ * online(在线) → just_now → today → hours_{n}（n 小优先）→ away(离开) →
+ * days_{n} → offline → 缺失
+ * （online/away 为 onlineStatus 批量回填值，2026-08-08 接入）
  */
 function activeRank(status?: string): number {
-  if (!status) return 6;
-  if (status === "just_now") return 0;
+  if (!status) return 7;
+  if (status === "online" || status === "just_now") return 0;
   if (status === "today") return 1;
   const hoursMatch = status.match(/^hours_(\d+)$/);
   if (hoursMatch?.[1]) return 2 + Number(hoursMatch[1]) / 100;
+  if (status === "away") return 3;
   const daysMatch = status.match(/^days_(\d+)$/);
-  if (daysMatch?.[1]) return 3 + Number(daysMatch[1]) / 100;
-  if (status === "offline") return 5;
-  return 4;
+  if (daysMatch?.[1]) return 4 + Number(daysMatch[1]) / 100;
+  if (status === "offline") return 6;
+  return 5;
 }
 
 /**
@@ -141,7 +148,13 @@ export function sortCards(cards: DiscoverCard[], sortBy: SortBy): DiscoverCard[]
     });
   }
   if (sortBy === "active") {
-    return [...cards].sort((a, b) => activeRank(a.activeStatusText) - activeRank(b.activeStatusText));
+    // 2026-08-08：real 模式 activeStatusText 恒为 offline 占位，优先用已回填的
+    // onlineStatus（fetchOnlineStatus 批量查询）排序，再回退 activeStatusText。
+    return [...cards].sort((a, b) => {
+      const ra = activeRank(a.onlineStatus ?? a.activeStatusText);
+      const rb = activeRank(b.onlineStatus ?? b.activeStatusText);
+      return ra - rb;
+    });
   }
   // match：保持推荐算法原始顺序
   return cards;

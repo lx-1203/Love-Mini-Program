@@ -240,6 +240,12 @@ async function onPhoneLogin() {
       addBreadcrumb("ui", "button_click", { id: "login.phone" });
     }
     uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
+    // P0-32 修复（2026-08-08）：手机号/注册登录只 setToken 不更新 userSession，
+    // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
+    // 消除"登录成功但页面仍认为未登录"的间隙（失败不影响登录，仅记录）
+    sessionStore.refreshSession().catch((err: unknown) => {
+      console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
+    });
     if (loginNavTimer) clearTimeout(loginNavTimer);
     loginNavTimer = setTimeout(() => {
       replaceAppPath("/pages/discover/index");
@@ -278,6 +284,12 @@ async function onGuestLogin() {
   try {
     await loginAsGuest();
     uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
+    // P0-32 修复（2026-08-08）：手机号/注册登录只 setToken 不更新 userSession，
+    // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
+    // 消除"登录成功但页面仍认为未登录"的间隙（失败不影响登录，仅记录）
+    sessionStore.refreshSession().catch((err: unknown) => {
+      console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
+    });
     if (loginNavTimer) clearTimeout(loginNavTimer);
     loginNavTimer = setTimeout(() => {
       replaceAppPath("/pages/discover/index");
@@ -406,6 +418,12 @@ async function onAppleLogin() {
     // 此处省略与后端 /api/auth/third-party/apple 的 token 交换，
     // 实际接入时由 services/api.ts 中 loginWithApple 方法完成
     uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
+    // P0-32 修复（2026-08-08）：手机号/注册登录只 setToken 不更新 userSession，
+    // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
+    // 消除"登录成功但页面仍认为未登录"的间隙（失败不影响登录，仅记录）
+    sessionStore.refreshSession().catch((err: unknown) => {
+      console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
+    });
     if (loginNavTimer) clearTimeout(loginNavTimer);
     loginNavTimer = setTimeout(() => {
       replaceAppPath("/pages/discover/index");

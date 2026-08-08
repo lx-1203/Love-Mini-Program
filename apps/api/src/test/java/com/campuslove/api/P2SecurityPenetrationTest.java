@@ -168,7 +168,7 @@ class P2SecurityPenetrationTest {
         authenticateAs(USER_A_ID);
         String maliciousKeyword = "' OR 1=1 --";
         RecommendationFilter expectedFilter = new RecommendationFilter(
-                null, null, Set.of(), Set.of(), null, null, null, maliciousKeyword);
+                null, null, Set.of(), Set.of(), null, null, null, maliciousKeyword, null, null);
         when(recommendationService.getRecommendations(eq(USER_A_ID), any(RecommendationFilter.class)))
                 .thenReturn(List.of());
 
@@ -176,7 +176,7 @@ class P2SecurityPenetrationTest {
 
         // Act：调用 controller，恶意 keyword 应作为字符串原样传递
         List<RecommendedPersonView> result = controller.getRecommendations(
-                null, null, null, null, null, null, null, maliciousKeyword);
+                null, null, null, null, null, null, null, maliciousKeyword, null, null);
 
         // Assert：service 收到的 filter 应包含原始 keyword（JPA 已使用参数化查询）
         assertNotNull(result);
@@ -196,7 +196,7 @@ class P2SecurityPenetrationTest {
         authenticateAs(USER_A_ID);
         String maliciousPayload = "'; DROP TABLE users; --";
         RecommendationFilter expectedFilter = new RecommendationFilter(
-                null, null, Set.of(), Set.of(), maliciousPayload, null, null, null);
+                null, null, Set.of(), Set.of(), maliciousPayload, null, null, null, null, null);
         when(recommendationService.getRecommendations(eq(USER_A_ID), any(RecommendationFilter.class)))
                 .thenReturn(List.of());
 
@@ -204,7 +204,7 @@ class P2SecurityPenetrationTest {
 
         // Act
         controller.getRecommendations(
-                null, null, null, null, maliciousPayload, null, null, null);
+                null, null, null, null, maliciousPayload, null, null, null, null, null);
 
         // Assert：filter 对象中 hometownProvince 应为原始 payload
         verify(recommendationService).getRecommendations(eq(USER_A_ID), eq(expectedFilter));
@@ -222,7 +222,7 @@ class P2SecurityPenetrationTest {
         authenticateAs(USER_A_ID);
         String unionPayload = "1' UNION SELECT password FROM users--";
         RecommendationFilter expectedFilter = new RecommendationFilter(
-                null, null, Set.of(), Set.of(), null, unionPayload, unionPayload, unionPayload);
+                null, null, Set.of(), Set.of(), null, unionPayload, unionPayload, unionPayload, null, null);
         when(recommendationService.getRecommendations(eq(USER_A_ID), any(RecommendationFilter.class)))
                 .thenReturn(List.of());
 
@@ -230,7 +230,7 @@ class P2SecurityPenetrationTest {
 
         // Act
         controller.getRecommendations(
-                null, null, null, null, null, unionPayload, unionPayload, unionPayload);
+                null, null, null, null, null, unionPayload, unionPayload, unionPayload, null, null);
 
         // Assert
         verify(recommendationService).getRecommendations(eq(USER_A_ID), eq(expectedFilter));
@@ -248,7 +248,7 @@ class P2SecurityPenetrationTest {
         authenticateAs(USER_A_ID);
         String maliciousKeyword = "test; SELECT pg_sleep(1000); --";
         RecommendationFilter expectedFilter = new RecommendationFilter(
-                null, null, Set.of(), Set.of(), null, null, null, maliciousKeyword);
+                null, null, Set.of(), Set.of(), null, null, null, maliciousKeyword, null, null);
         when(recommendationService.getRecommendations(eq(USER_A_ID), any(RecommendationFilter.class)))
                 .thenReturn(List.of());
 
@@ -256,7 +256,7 @@ class P2SecurityPenetrationTest {
 
         // Act & Assert：不应抛异常，参数应被原样传递
         assertDoesNotThrow(() -> controller.getRecommendations(
-                null, null, null, null, null, null, null, maliciousKeyword));
+                null, null, null, null, null, null, null, maliciousKeyword, null, null));
         verify(recommendationService).getRecommendations(eq(USER_A_ID), eq(expectedFilter));
     }
 
@@ -572,7 +572,7 @@ class P2SecurityPenetrationTest {
         // Act & Assert
         assertThrows(org.springframework.web.client.HttpClientErrorException.Unauthorized.class,
                 () -> controller.getRecommendations(
-                        null, null, null, null, null, null, null, null),
+                        null, null, null, null, null, null, null, null, null, null),
                 "未认证访问推荐接口应抛 401");
 
         verify(recommendationService, never()).getRecommendations(anyLong(), any(RecommendationFilter.class));

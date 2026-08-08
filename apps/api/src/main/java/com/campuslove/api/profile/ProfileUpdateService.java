@@ -158,6 +158,10 @@ public class ProfileUpdateService {
         if (request.futurePlanTags() != null) {
             profile.setFuturePlanTags(queryService.serializeListToJson(request.futurePlanTags()));
         }
+        // P0-34 修复（2026-08-08）：兴趣标签写入（此前缺失 → 完善度差 20 分 → 无法解锁）
+        if (request.interestTags() != null) {
+            profile.setInterestTags(queryService.serializeListToJson(request.interestTags()));
+        }
         profile.setUpdatedAt(now);
         userBasicProfileRepository.save(profile);
 

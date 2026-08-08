@@ -112,7 +112,7 @@ async function main() {
   await new Promise((r) => setTimeout(r, 4000));
   // 注入有效 token（2026-08-08 排查：evaluate 沙箱无 uni，改用 callWxMethod setStorage）
   try {
-    await miniProgram.callWxMethod('setStorage', { key: 'token', data: 'eyJraWQiOiIxIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0NyIsImp0aSI6IjZjNTM2NmIxLWNlZTMtNGMzZi05ODJmLTgwOTZhM2Y0OTNkYSIsImlhdCI6MTc4NjE1NDE1NiwiZXhwIjoxNzg2MjQwNTU2fQ.Xha1-Ax0ssbJNxcSyt7x-q32qyPgcm1vEO6xupuHe4w' });
+    await miniProgram.callWxMethod('setStorage', { key: 'token', data: 'eyJraWQiOiIxIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0NyIsImp0aSI6ImZkMDFiNWExLWYwZDgtNGNiYy05YzY0LWY4MDRhNjRmMTNlZCIsImlhdCI6MTc4NjE1NzY5MSwiZXhwIjoxNzg2MjQ0MDkxfQ.dx4qPW2WOOIH6sT8HrnTMDt1NtX61ZrvV17Tat26b7M' });
     await miniProgram.callWxMethod('setStorage', { key: 'refreshToken', data: '' });
     console.log('[${ts()}] token injected via setStorage');
   } catch (e) {

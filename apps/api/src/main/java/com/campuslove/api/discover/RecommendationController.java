@@ -33,6 +33,12 @@ public class RecommendationController {
   /** 身高筛选上限（厘米） */
   private static final int MAX_HEIGHT_CM = 250;
 
+  /** 年龄筛选下限（岁） */
+  private static final int MIN_AGE = 18;
+
+  /** 年龄筛选上限（岁） */
+  private static final int MAX_AGE = 60;
+
   /** educationLevel 合法取值 */
   private static final Set<String> VALID_EDUCATION_LEVELS =
       Set.of("high_school", "bachelor", "master", "phd");
@@ -43,8 +49,34 @@ public class RecommendationController {
 
   private final RecommendationService recommendationService;
 
+  /** 推荐配额服务（P0-24/P0-31 修复：配额查询端点）。real profile 注入；mock 为 null。 */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.campuslove.api.growth.RecommendQuotaService recommendQuotaService;
+
   public RecommendationController(RecommendationService recommendationService) {
     this.recommendationService = recommendationService;
+  }
+
+  /**
+   * 查询当前用户今日推荐配额使用情况。
+   * GET /api/recommendations/quota
+   *
+   * <p>返回 {dailyLimit, used, remaining}，供前端在推荐列表为空时区分
+   * 「今日次数已用完」与「暂无推荐」，避免配额耗尽后页面空白且无提示。</p>
+   */
+  @GetMapping("/recommendations/quota")
+  public java.util.Map<String, Object> getRecommendationQuota() {
+    Long userId = SecurityUtils.getCurrentUserId();
+    if (recommendQuotaService == null) {
+      // mock / 服务未注入：返回无限制语义
+      return java.util.Map.of("dailyLimit", -1, "used", 0, "remaining", -1);
+    }
+    int dailyLimit = recommendQuotaService.getDailyQuota(userId);
+    int used = recommendQuotaService.getUsedCount(userId);
+    return java.util.Map.of(
+        "dailyLimit", dailyLimit,
+        "used", used,
+        "remaining", Math.max(0, dailyLimit - used));
   }
 
   /**
@@ -138,7 +170,9 @@ public class RecommendationController {
           @RequestParam(value = "hometownProvince", required = false) String hometownProvince,
           @RequestParam(value = "hometownCity", required = false) String hometownCity,
           @RequestParam(value = "futureCity", required = false) String futureCity,
-          @RequestParam(value = "keyword", required = false) String keyword) {
+          @RequestParam(value = "keyword", required = false) String keyword,
+          @RequestParam(value = "ageMin", required = false) Integer ageMin,
+          @RequestParam(value = "ageMax", required = false) Integer ageMax) {
     // infra R2-00204: 身高范围校验，拒绝负数/倒挂区间
     if (heightMin != null && (heightMin < MIN_HEIGHT_CM || heightMin > MAX_HEIGHT_CM)) {
       throw new IllegalArgumentException(
@@ -150,6 +184,16 @@ public class RecommendationController {
     }
     if (heightMin != null && heightMax != null && heightMin > heightMax) {
       throw new IllegalArgumentException("heightMin 不能大于 heightMax");
+    }
+    // V2026.08.08.0015: 年龄范围校验（18-60，拒绝倒挂），接通前端年龄筛选
+    if (ageMin != null && (ageMin < MIN_AGE || ageMin > MAX_AGE)) {
+      throw new IllegalArgumentException("ageMin 必须在 " + MIN_AGE + "-" + MAX_AGE + " 岁之间");
+    }
+    if (ageMax != null && (ageMax < MIN_AGE || ageMax > MAX_AGE)) {
+      throw new IllegalArgumentException("ageMax 必须在 " + MIN_AGE + "-" + MAX_AGE + " 岁之间");
+    }
+    if (ageMin != null && ageMax != null && ageMin > ageMax) {
+      throw new IllegalArgumentException("ageMin 不能大于 ageMax");
     }
     // infra R2-00205: 教育/感情状态枚举白名单校验，非法值直接 400 而非被静默过滤
     validateEnumFilter("educationLevel", educationLevel, VALID_EDUCATION_LEVELS);
@@ -164,7 +208,9 @@ public class RecommendationController {
             hometownProvince,
             hometownCity,
             futureCity,
-            keyword
+            keyword,
+            ageMin,
+            ageMax
     );
     // Task 15.2：隐私字段过滤白名单校验，确保推荐列表不返回手机号/身份证/真实姓名
     // RecommendedPersonView 为 record，字段在编译期固定，本调用为防御性校验：

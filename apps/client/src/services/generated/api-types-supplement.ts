@@ -229,6 +229,8 @@ export interface UpdateBasicProfileRequest {
   futureCity?: string;
   /** 未来规划标签数组 */
   futurePlanTags?: string[];
+  /** 兴趣标签数组（P0-34 修复：后端 BasicProfileRequest 已补该字段，注册后可在「我的」完善） */
+  interestTags?: string[];
 }
 
 /**
@@ -343,6 +345,12 @@ export interface RecommendedPerson {
   zodiac?: string;
   /** 注册时间（ISO 字符串，用于"最新注册"排序；mock 数据填充） */
   registeredAt?: string;
+  /** 职业（展示文本，如 产品经理；2026-08-08 后端真实字段） */
+  occupation?: string;
+  /** 月收入档位（3k-8k / 8k-15k / 15k-30k / 30k+） */
+  incomeRange?: string;
+  /** 年龄（由出生年份推导） */
+  age?: number;
   /** MBTI 人格类型 */
   mbti?: string;
   /** 悄悄话内容（付费可见/发送） */

@@ -250,3 +250,6 @@ __pycache__/
 
 # AI 工具工作目录（内部 spec/evidence，不入库）
 .trae/
+
+# 微信开发者工具个人配置（含个人 openid，禁止提交）
+project.private.config.json

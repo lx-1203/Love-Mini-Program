@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "name": "l1-login",
+      "ok": true,
+      "size": 259150
+    },
+    {
+      "name": "l2-after-login",
+      "ok": true,
+      "size": 259112
+    },
+    {
+      "name": "l3-discover",
+      "ok": true,
+      "size": 259342
+    },
+    {
+      "name": "l4-after-left-swipe",
+      "ok": true,
+      "size": 259112
+    },
+    {
+      "name": "l5-after-right-swipe",
+      "ok": true,
+      "size": 259112
+    },
+    {
+      "name": "l13-history",
+      "ok": true,
+      "size": 37003
+    },
+    {
+      "name": "l14-likes",
+      "ok": true,
+      "size": 138851
+    },
+    {
+      "name": "l15-messages",
+      "ok": true,
+      "size": 142363
+    },
+    {
+      "name": "l16-profile",
+      "ok": true,
+      "size": 259212
+    }
+  ],
+  "ts": "2026-08-08 09:12:58.349"
+}

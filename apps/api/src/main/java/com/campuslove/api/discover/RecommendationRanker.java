@@ -18,7 +18,10 @@ import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.entity.CampusCertification;
+import com.campuslove.api.entity.Post;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,6 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 /**
@@ -68,6 +72,12 @@ public class RecommendationRanker {
      */
     private final CampusCertificationRepository campusCertificationRepository;
 
+    /**
+     * 帖子 Repository（V2026.08.08.0015：动态预览批量加载）。
+     * 可为 null（兼容旧测试构造器），为 null 时动态预览为空列表。
+     */
+    private final PostRepository postRepository;
+
     @org.springframework.beans.factory.annotation.Autowired
     public RecommendationRanker(
             RecommendationConfig recommendationConfig,
@@ -80,7 +90,8 @@ public class RecommendationRanker {
             UserRepository userRepository,
             CampusCertificationService campusCertificationService,
             UserPreferenceCalculator preferenceCalculator,
-            CampusCertificationRepository campusCertificationRepository) {
+            CampusCertificationRepository campusCertificationRepository,
+            PostRepository postRepository) {
         this.recommendationConfig = recommendationConfig;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userBasicProfileRepository = userBasicProfileRepository;
@@ -92,13 +103,14 @@ public class RecommendationRanker {
         this.campusCertificationService = campusCertificationService;
         this.preferenceCalculator = preferenceCalculator;
         this.campusCertificationRepository = campusCertificationRepository;
+        this.postRepository = postRepository;
     }
 
     /**
-     * 兼容旧测试的构造器（campusCertificationRepository 为 null，
-     * 批量徽章级别预加载降级为逐条查询）。
+     * 兼容旧测试的构造器（campusCertificationRepository 与 postRepository 为 null，
+     * 批量徽章级别预加载降级为逐条查询，动态预览为空列表）。
      *
-     * @deprecated 仅单元测试使用；Spring 注入请使用带 CampusCertificationRepository 的构造器。
+     * @deprecated 仅单元测试使用；Spring 注入请使用带 CampusCertificationRepository / PostRepository 的构造器。
      */
     @Deprecated
     public RecommendationRanker(
@@ -115,7 +127,7 @@ public class RecommendationRanker {
         this(recommendationConfig, userCampusProfileRepository, userBasicProfileRepository,
                 userScheduleProfileRepository, circleMembershipRepository, heartSignalRepository,
                 likeRepository, userRepository, campusCertificationService,
-                preferenceCalculator, null);
+                preferenceCalculator, null, null);
     }
 
     // ---- 排序与截断 ----
@@ -147,8 +159,14 @@ public class RecommendationRanker {
 
         // A-27 修复：批量预加载该批候选的认证徽章级别（一次查询），
         // 替代逐候选调用 getVerificationBadgeLevel 的 N+1 查询
-        Map<Long, String> badgeLevelMap = loadBadgeLevelMap(
-                topResults.stream().map(su -> su.user().getId()).filter(java.util.Objects::nonNull).toList());
+        List<Long> candidateIds = topResults.stream()
+                .map(su -> su.user().getId()).filter(java.util.Objects::nonNull).toList();
+        Map<Long, String> badgeLevelMap = loadBadgeLevelMap(candidateIds);
+
+        // V2026.08.08.0015：批量加载候选用户最新动态（一次查询，按创建时间倒序），
+        // 内存按作者分组取每条最新动态，替代逐候选查询的 N+1
+        Map<Long, RecommendedPersonView.RecentPostView> recentPostMap =
+                loadRecentPostMap(candidateIds);
 
         return topResults.stream()
                 .map(su -> toRecommendedPersonView(
@@ -156,7 +174,7 @@ public class RecommendationRanker {
                         campusProfileMap.get(su.user().getId()),
                         basicProfileMap.get(su.user().getId()),
                         membershipMap.getOrDefault(su.user().getId(), List.of()),
-                        badgeLevelMap))
+                        badgeLevelMap, recentPostMap))
                 .toList();
     }
 
@@ -262,9 +280,10 @@ public class RecommendationRanker {
             String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
             UserCampusProfile campusProfile, UserBasicProfile basicProfile,
             List<CircleMembership> memberships) {
-        // 无批量 Map 场景（单条查询/历史），badge 逐条降级查询
+        // 无批量 Map 场景（单条查询/历史），badge 逐条降级查询、动态预览为空
         return toRecommendedPersonView(user, myCampusName, myDepartmentName, myCircleIds,
-                campusProfile, basicProfile, memberships, Collections.emptyMap());
+                campusProfile, basicProfile, memberships, Collections.emptyMap(),
+                Collections.emptyMap());
     }
 
     /**
@@ -280,6 +299,25 @@ public class RecommendationRanker {
             String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
             UserCampusProfile campusProfile, UserBasicProfile basicProfile,
             List<CircleMembership> memberships, Map<Long, String> badgeLevelMap) {
+        return toRecommendedPersonView(user, myCampusName, myDepartmentName, myCircleIds,
+                campusProfile, basicProfile, memberships, badgeLevelMap,
+                Collections.emptyMap());
+    }
+
+    /**
+     * 将 User 实体转换为 RecommendedPersonView（使用预加载数据，避免 N+1）。
+     *
+     * <p>V2026.08.08.0015 扩展：接收批量预加载的最新动态 Map（userId → 最新动态预览），
+     * 为空 Map 时动态预览为空列表（历史/单条查询场景）。</p>
+     *
+     * @param badgeLevelMap   userId → 认证徽章级别 Map，为空时降级为逐条查询
+     * @param recentPostMap   userId → 最新动态预览 Map，为空时动态预览为空列表
+     */
+    public RecommendedPersonView toRecommendedPersonView(User user,
+            String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
+            UserCampusProfile campusProfile, UserBasicProfile basicProfile,
+            List<CircleMembership> memberships, Map<Long, String> badgeLevelMap,
+            Map<Long, RecommendedPersonView.RecentPostView> recentPostMap) {
         String name = user.getNickname() != null ? user.getNickname() : "";
         String initials = extractInitials(name);
         String headline = user.getBio() != null ? user.getBio() : "";
@@ -339,15 +377,36 @@ public class RecommendationRanker {
         String resolvedBadge = resolveBadgeLevelSafe(user.getId(), badgeLevelMap);
         boolean machineVerified = !"none".equals(resolvedBadge);
         boolean humanVerified = "school".equals(resolvedBadge) || "idcard".equals(resolvedBadge);
-        List<String> personality = List.of();
-        String mbti = null;
+        // ---- V2026.08.08.0015：完整画像字段（真实数据填充，不再占位） ----
+        // 性格标签：personality_tags JSON → List
+        List<String> personality = basicProfile != null
+                ? preferenceCalculator.parseStringList(basicProfile.getPersonalityTags())
+                : List.of();
+        String mbti = basicProfile != null ? basicProfile.getMbti() : null;
         String whisper = null;
         Boolean whisperSent = null;
-        List<RecommendedPersonView.RecentPostView> recentPosts = List.of();
-        String expectedPartner = null;
+        // 动态预览：从批量预加载的 Map 取该用户最新一条动态（空 Map 时为空列表）
+        List<RecommendedPersonView.RecentPostView> recentPosts =
+                recentPostMap != null && recentPostMap.containsKey(user.getId())
+                        ? List.of(recentPostMap.get(user.getId()))
+                        : List.of();
+        String expectedPartner = basicProfile != null ? basicProfile.getExpectedPartner() : null;
         // 私信权限：默认不允许，由解锁服务在后端校验后放行（前端据此展示解锁流程）
         Boolean allowMessage = Boolean.FALSE;
-        String ipLocation = null;
+        // IP 属地：由籍贯省/市推导（如 "江苏 · 南京"），与 mock 口径一致
+        String ipLocation = deriveIpLocation(basicProfile);
+
+        // ---- V2026.08.08.0015：卡片完整字段 ----
+        String occupation = basicProfile != null ? basicProfile.getOccupation() : null;
+        String incomeRange = basicProfile != null ? basicProfile.getIncomeRange() : null;
+        // 年龄：出生年份推导（2026 口径），无出生年份时为空
+        Integer age = basicProfile != null && basicProfile.getBirthYear() != null
+                ? Year.now().getValue() - basicProfile.getBirthYear()
+                : null;
+        // 注册时间：ISO 字符串（供「最新注册」排序）
+        String registeredAt = user.getCreatedAt() != null
+                ? user.getCreatedAt().toString()
+                : null;
 
         return new RecommendedPersonView(
                 user.getId(),
@@ -382,7 +441,11 @@ public class RecommendationRanker {
                 recentPosts,
                 expectedPartner,
                 allowMessage,
-                ipLocation
+                ipLocation,
+                occupation,
+                incomeRange,
+                age,
+                registeredAt
         );
     }
 
@@ -537,5 +600,77 @@ public class RecommendationRanker {
         }
         double km = 3.2 + (Math.abs(id.hashCode()) % 120) / 10.0;
         return String.format(java.util.Locale.ROOT, "%.1fkm", km);
+    }
+
+    /**
+     * V2026.08.08.0015：批量加载候选用户的最新动态预览（一次查询避免 N+1）。
+     *
+     * <p>按创建时间倒序取「候选数 × 2」条（种子数据每用户最多 2 条），
+     * 内存中按作者分组、每组取第一条（即该作者最新动态）。
+     * postRepository 为 null（旧测试构造器）或查询失败时返回空 Map。</p>
+     *
+     * @param userIds 候选用户 ID 列表
+     * @return userId → 最新动态预览 的 Map
+     */
+    private Map<Long, RecommendedPersonView.RecentPostView> loadRecentPostMap(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty() || postRepository == null) {
+            return Collections.emptyMap();
+        }
+        try {
+            List<Post> posts = postRepository
+                    .findByAuthorIdInAndStatusOrderByCreatedAtDesc(
+                            new ArrayList<>(userIds),
+                            Post.PostStatus.active,
+                            PageRequest.of(0, Math.max(userIds.size() * 2, 10)))
+                    .getContent();
+            Map<Long, RecommendedPersonView.RecentPostView> result = new HashMap<>();
+            for (Post post : posts) {
+                // 已按 createdAt 倒序，第一个出现的作者即其最新动态
+                result.putIfAbsent(post.getAuthorId(), toRecentPostView(post));
+            }
+            return result;
+        } catch (DataAccessException e) {
+            // 动态查询失败时返回空 Map，动态预览为空列表（不影响推荐主流程）
+            return Collections.emptyMap();
+        }
+    }
+
+    /**
+     * V2026.08.08.0015：将 Post 实体转换为动态预览视图。
+     */
+    private RecommendedPersonView.RecentPostView toRecentPostView(Post post) {
+        if (post == null) {
+            return null;
+        }
+        List<String> images = post.getImages() != null
+                ? preferenceCalculator.parseStringList(post.getImages())
+                : List.of();
+        return new RecommendedPersonView.RecentPostView(
+                String.valueOf(post.getId()),
+                post.getContent() != null ? post.getContent() : "",
+                images,
+                post.getLikesCount() != null ? post.getLikesCount() : 0L,
+                post.getCommentsCount() != null ? post.getCommentsCount() : 0L,
+                false,
+                post.getCreatedAt() != null ? post.getCreatedAt().toString() : null);
+    }
+
+    /**
+     * V2026.08.08.0015：IP 属地由籍贯省/市推导（如 "江苏 · 南京"）。
+     * 仅有省份时返回省名；均无时返回 null（前端隐藏该行）。
+     */
+    private String deriveIpLocation(UserBasicProfile basicProfile) {
+        if (basicProfile == null) {
+            return null;
+        }
+        String province = basicProfile.getHometownProvince();
+        String city = basicProfile.getHometownCity();
+        if (province == null || province.isBlank()) {
+            return null;
+        }
+        if (city == null || city.isBlank()) {
+            return province;
+        }
+        return province + " · " + city;
     }
 }

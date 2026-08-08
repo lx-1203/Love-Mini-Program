@@ -72,6 +72,37 @@ describe("mock fixtures", () => {
     expect(mockFixtures.getChatOverview().sessions[0]?.unreadCount).toBe(0);
   });
 
+
+  it("filters recommended people by age range (2026-08-08)", () => {
+    const people = mockFixtures.getRecommendations({
+      heightMin: undefined,
+      heightMax: undefined,
+      educationLevel: undefined,
+      relationshipStatus: undefined,
+      hometownProvince: undefined,
+      hometownCity: undefined,
+      futureCity: undefined,
+      keyword: undefined,
+      gender: undefined,
+      ageMin: 22,
+      ageMax: 24,
+      schools: undefined,
+      distanceMax: undefined,
+      interests: undefined,
+      onlineOnly: undefined,
+    });
+
+    expect(people.length).toBeGreaterThan(0);
+    for (const person of people) {
+      expect(person.age).toBeGreaterThanOrEqual(22);
+      expect(person.age).toBeLessThanOrEqual(24);
+    }
+
+    // 全量 person 应至少有一个超出该区间（证明过滤真实生效）
+    const all = mockFixtures.getRecommendations({});
+    expect(all.some((p) => (p.age ?? 0) < 22 || (p.age ?? 99) > 24)).toBe(true);
+  });
+
   it("can stage queued match results and read them back by id", () => {
     mockFixtures.setNextMatchQueueStatus("queued");
 

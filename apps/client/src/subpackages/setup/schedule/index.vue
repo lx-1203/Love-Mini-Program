@@ -2,9 +2,9 @@
 /**
  * 时间安排页（课表导入，可选工具）。
  *
- * 2026-08-07 流程重构：课表导入移出注册主流程（学生路径不再经过本页），
- * 改为注册完成后在「我的」/首页入口可选开启。本页不展示引导流程进度条。
- * 保存成功后跳转到 /pages/discover/index。
+ * P0-35 修复（2026-08-08）：时间安排回到注册主流程（学生：基本资料→校园→日程→
+ * 推荐偏好；非学生：基本资料→日程→推荐偏好）。完成度链路：
+ * 基本资料30 + 校园30(学生) + 日程20 = 80 → profileCompleted=true → 解锁全部功能。
  */
 import { onMounted, reactive } from "vue";
 import AppShell from "../../../components/layout/AppShell.vue";
@@ -12,6 +12,7 @@ import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 import { useProfileStore } from "../../../stores/profile";
 import { replaceAppPath } from "../../../utils/navigation";
+import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
 
 const profileStore = useProfileStore();
 const form = reactive({
@@ -42,7 +43,9 @@ async function save() {
 
   try {
     await profileStore.saveScheduleProfile({ ...form });
-    replaceAppPath("/pages/discover/index");
+    // P0-35 修复：日程保存后进入推荐偏好（注册流程最后一步），
+    // 走完 = 基本资料30+校园30(学生)+日程20 = 80 → profileCompleted=true → 解锁
+    replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.RECOMMEND_PREF);
   } catch (error) {
     const message = error instanceof Error ? error.message : "保存失败，请稍后重试";
     uni.showToast({ title: message, icon: "none" });

@@ -223,13 +223,14 @@ public class RealCheckInService implements CheckInService {
 
             if (existingBenefit.isPresent()) {
                 DailyBenefit benefit = existingBenefit.get();
+                // 已签到重复提交：本次无新增奖励，points 返回 0（防前端双计）
                 return new CheckInResultView(false, consecutiveDays, extraQuota,
                         benefit.getExtraRecommendQuota(), benefit.getHotTopicsUnlocked(),
-                        benefit.getNewUsersUnlocked(), hotTopicCount, newUserCount);
+                        benefit.getNewUsersUnlocked(), hotTopicCount, newUserCount, 0);
             }
 
             return new CheckInResultView(false, consecutiveDays, extraQuota,
-                    extraQuota, true, true, hotTopicCount, newUserCount);
+                    extraQuota, true, true, hotTopicCount, newUserCount, 0);
         }
 
         // 计算连续签到天数
@@ -308,9 +309,11 @@ public class RealCheckInService implements CheckInService {
                 checkInConfig.getExtraQuotaPerCheckIn(),
                 Instant.now()));
 
+        // 本次签到获得积分 = 单次签到奖励（cents）。⚠️ 必须是"本次获得"而非余额，
+        // 前端 checkin store 按 pointsBalance += pointsEarned 累加，误传余额会双计。
         return new CheckInResultView(true, consecutiveDays, extraQuota,
                 checkInConfig.getExtraQuotaPerCheckIn(), true, true,
-                hotTopicCount, newUserCount);
+                hotTopicCount, newUserCount, checkInConfig.getRewardCentsPerCheckIn());
     }
 
     /**
@@ -338,7 +341,16 @@ public class RealCheckInService implements CheckInService {
         int consecutiveDays = calculateConsecutiveDays(userId, today);
         int extraQuota = calculateTotalExtraQuota(userId);
 
-        return new CheckInStatusView(checkedInToday, consecutiveDays, extraQuota);
+        // 积分余额 = 交友币钱包余额（cents），签到弹窗「我的积分」展示。
+        // 钱包不存在/查询异常时降级为 0，不阻断签到状态查询。
+        long points = 0L;
+        try {
+            points = walletService.getBalance(userId);
+        } catch (RuntimeException e) {
+            log.warn("用户[{}]查询钱包余额失败（降级为 0）：{}", userId, e.getMessage());
+        }
+
+        return new CheckInStatusView(checkedInToday, consecutiveDays, extraQuota, points);
     }
 
     /**

@@ -83,6 +83,21 @@ public class WeChatClient {
             throw new IllegalArgumentException("WeChat login code must not be blank");
         }
 
+        // P0-33 修复（2026-08-08）：本地联调 dev 降级——
+        // WECHAT_APPID/WECHAT_SECRET 未配置（本地/CI 环境）时微信 API 必然失败
+        // （errcode=41002 appid missing → 502），微信登录按钮不可用。
+        // 开启 app.wechat.dev-fallback-enabled（WECHAT_DEV_FALLBACK_ENABLED=true）
+        // 后按 code 派生固定 openid（dev-wechat-{code}），走正常登录/注册链路，
+        // 与 ADMIN_OPENID 本地联调体系对齐。生产环境必须保持关闭。
+        if (weChatConfig.isDevFallbackEnabled()) {
+            log.warn("WeChat dev-fallback 生效（WECHAT_DEV_FALLBACK_ENABLED=true，仅限本地联调）: code={}",
+                    SensitiveDataMasker.maskToken(code));
+            WeChatSessionResponse devResp = new WeChatSessionResponse();
+            devResp.setOpenid("dev-wechat-" + code);
+            devResp.setSessionKey("dev-session-key");
+            return devResp;
+        }
+
         String url = jscode2sessionBaseUrl + JSCODE2SESSION_QUERY;
         // URI 变量由 RestClient 自动 URL 编码，避免直接字符串拼接导致的特殊字符注入风险
         Map<String, String> uriVariables = Map.of(

@@ -31,6 +31,7 @@ import { chatPageRequirements } from "../../config/page-access";
 import { IMAGE_PATHS } from "../../config/images";
 import { ROUTES } from "../../constants/routes";
 import { lightHaptic } from "../../utils/haptic";
+import { openAppPath } from "../../utils/navigation";
 // Sentry 监控：消息发送失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
 import type { RecorderStopResult } from "../../utils/audio-recorder";
@@ -196,9 +197,9 @@ const signalNextUnlock = computed<{ field: string; remaining: number } | null>((
 function goSignalProfile() {
   const peerId = currentSession.value?.partnerId || targetUserId.value;
   if (!peerId) return;
-  uni.navigateTo({
-    url: `/pages/profile/index?userId=${encodeURIComponent(peerId)}`,
-  });
+  // P0-1 修复（2026-08-08）：profile 是 tabBar 页，navigateTo 会 fail（can not navigateTo
+  // a tabbar page）→ 改用 openAppPath（switchTab + pending-tab-query 桥接传 userId）
+  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(peerId)}`);
 }
 
 /**

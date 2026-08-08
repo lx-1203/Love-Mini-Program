@@ -80,6 +80,13 @@ function buildRecommendationsQuery(filter: RecommendationFilter): string {
   if (filter.heightMax !== undefined) {
     parts.push(`heightMax=${encodeURIComponent(String(filter.heightMax))}`);
   }
+  // 2026-08-08：年龄筛选接线（后端 V2026.08.08.0015 新增 ageMin/ageMax 参数）
+  if (filter.ageMin !== undefined) {
+    parts.push(`ageMin=${encodeURIComponent(String(filter.ageMin))}`);
+  }
+  if (filter.ageMax !== undefined) {
+    parts.push(`ageMax=${encodeURIComponent(String(filter.ageMax))}`);
+  }
   if (filter.educationLevel && filter.educationLevel.length > 0) {
     parts.push(
       `educationLevel=${encodeURIComponent(filter.educationLevel.join(","))}`
@@ -791,6 +798,28 @@ export const clientApi = {
     const query = buildRecommendationsQuery(filter);
     return request<RecommendedPerson[]>({
       url: `/recommendations${query}`,
+      method: "GET",
+    });
+  },
+
+  /**
+   * 查询今日推荐配额使用情况（P0-31 修复）。
+   *
+   * <p>后端 {@code GET /api/v1/recommendations/quota} 返回
+   * {@code {dailyLimit, used, remaining}}；remaining=-1 表示无限制（mock/服务未注入）。</p>
+   *
+   * @returns 配额视图（dailyLimit/used/remaining）
+   */
+  async getRecommendationQuota(): Promise<{
+    dailyLimit: number;
+    used: number;
+    remaining: number;
+  }> {
+    if (useMock()) {
+      return { dailyLimit: -1, used: 0, remaining: -1 };
+    }
+    return request({
+      url: "/recommendations/quota",
       method: "GET",
     });
   },

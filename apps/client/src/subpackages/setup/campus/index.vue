@@ -150,7 +150,9 @@ async function save() {
     await profileStore.saveCampusProfile({ ...form });
     successHaptic();
     uni.showToast({ title: t("setup.campus.saveSuccess"), icon: "success" });
-    replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.RECOMMEND_PREF);
+    // P0-35 修复（2026-08-08）：注册流程补回「时间安排」步骤（原直接跳推荐偏好，
+    // 完成度 30+30+0=60 < 80 → profileCompleted 恒 false → 注册后锁屏全部功能）
+    replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE);
   } catch (error) {
     const message = error instanceof Error ? error.message : t("setup.campus.saveFailed");
     uni.showToast({ title: message, icon: "none" });
@@ -165,7 +167,8 @@ async function save() {
  * 后续可在「我的 → 校园认证」中补认证（同校匹配能力随之解锁）。
  */
 function skip() {
-  replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.RECOMMEND_PREF);
+  // P0-35 修复：跳过校园认证同样进入时间安排步骤（保持完成度链路完整）
+  replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE);
 }
 </script>
 

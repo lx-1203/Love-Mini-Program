@@ -66,6 +66,8 @@ class NPlusOneTest {
     @Mock private MatchEngine matchEngine;
     @Mock private MatchPolicy matchPolicy;
     @Mock private MatchRecorder matchRecorder;
+    @Mock private com.campuslove.api.wallet.WalletUnlockService walletUnlockService;
+    @Mock private com.campuslove.api.chat.PrivateMessageService privateMessageService;
 
     private RealMatchService realMatchService;
 
@@ -89,7 +91,9 @@ class NPlusOneTest {
                 matchEngine,
                 matchPolicy,
                 matchRecorder,
-                null
+                walletUnlockService,
+                // 2026-08-08 未提交改动：RealMatchService 新增 PrivateMessageService 注入
+                privateMessageService
         );
     }
 

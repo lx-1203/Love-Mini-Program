@@ -1,8 +1,12 @@
 package com.campuslove.api.match;
 
 import com.campuslove.api.chat.InteractionEventService;
+import com.campuslove.api.chat.PrivateMessageService;
 import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.config.MatchConfig;
+import com.campuslove.api.entity.HeartSignal;
+import com.campuslove.api.entity.Like;
+import com.campuslove.api.entity.Like.LikeStatus;
 import com.campuslove.api.entity.PassRecord;
 import com.campuslove.api.mq.MessageProducer;
 import com.campuslove.api.repository.HeartSignalRepository;
@@ -16,6 +20,7 @@ import com.campuslove.api.repository.VisitorRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -26,6 +31,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,6 +78,7 @@ class RealMatchServiceTest {
     @Mock private MessageProducer messageProducer;
     @Mock private RedisTemplate<String, Object> redisTemplate;
     @Mock private ValueOperations<String, Object> valueOperations;
+    @Mock private PrivateMessageService privateMessageService;
 
     private RealMatchService realMatchService;
     private MatchPolicy matchPolicy;
@@ -125,7 +133,8 @@ class RealMatchServiceTest {
                 ),
                 matchPolicy,
                 matchRecorder,
-                null
+                null,
+                privateMessageService
         );
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
@@ -291,6 +300,107 @@ class RealMatchServiceTest {
         assertTrue(first.success());
 
         assertThrows(DailyLimitExceededException.class, () -> realMatchService.rewind(userId));
+    }
+
+    // ==================================================================
+    // 双向匹配自动建会话（2026-08-08 走查交付）
+    // ==================================================================
+
+    @Test
+    void likeUser_whenMutual_shouldCreateFreeConversation() {
+        Long userId = 100L;
+        Long targetUserId = 200L;
+        LocalDateTime now = LocalDateTime.now();
+
+        // 普通喜欢配额：INCR 返回 1（未超限）
+        when(valueOperations.increment(anyString())).thenReturn(1L);
+        // 无既有 like → 走 createLike
+        when(likeRepository.findByUserIdAndTargetUserId(userId, targetUserId))
+                .thenReturn(Optional.empty());
+        when(likeRepository.save(any(Like.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        // 反向 active like 存在 → 双向匹配
+        Like reverseLike = new Like();
+        reverseLike.setId(99L);
+        reverseLike.setUserId(targetUserId);
+        reverseLike.setTargetUserId(userId);
+        reverseLike.setStatus(LikeStatus.active);
+        reverseLike.setCreatedAt(now);
+        when(likeRepository.findByUserIdAndTargetUserId(targetUserId, userId))
+                .thenReturn(Optional.of(reverseLike));
+        // 心动信号保存与视图转换
+        HeartSignal signal = new HeartSignal();
+        signal.setId(1L);
+        signal.setUserAId(userId);
+        signal.setUserBId(targetUserId);
+        signal.setStatus(HeartSignal.SignalStatus.pending);
+        signal.setExpiresAt(now.plusHours(1));
+        signal.setCreatedAt(now);
+        when(heartSignalRepository.save(any(HeartSignal.class))).thenReturn(signal);
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+
+        HeartSignalView view = realMatchService.likeUser(userId, targetUserId);
+
+        assertNotNull(view, "双向匹配应返回心动信号视图");
+        verify(privateMessageService).createOrGetConversation(userId, targetUserId);
+    }
+
+    @Test
+    void likeUser_whenOneSided_shouldNotCreateConversation() {
+        Long userId = 100L;
+        Long targetUserId = 200L;
+
+        when(valueOperations.increment(anyString())).thenReturn(1L);
+        when(likeRepository.findByUserIdAndTargetUserId(userId, targetUserId))
+                .thenReturn(Optional.empty());
+        when(likeRepository.save(any(Like.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        // 无反向 like → 单向喜欢
+        when(likeRepository.findByUserIdAndTargetUserId(targetUserId, userId))
+                .thenReturn(Optional.empty());
+
+        HeartSignalView view = realMatchService.likeUser(userId, targetUserId);
+
+        assertNull(view, "单向喜欢不返回信号");
+        verify(privateMessageService, never()).createOrGetConversation(anyLong(), anyLong());
+    }
+
+    @Test
+    void likeUser_whenConversationCreationFails_shouldStillReturnMatch() {
+        Long userId = 100L;
+        Long targetUserId = 200L;
+        LocalDateTime now = LocalDateTime.now();
+
+        when(valueOperations.increment(anyString())).thenReturn(1L);
+        when(likeRepository.findByUserIdAndTargetUserId(userId, targetUserId))
+                .thenReturn(Optional.empty());
+        when(likeRepository.save(any(Like.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        Like reverseLike = new Like();
+        reverseLike.setId(99L);
+        reverseLike.setUserId(targetUserId);
+        reverseLike.setTargetUserId(userId);
+        reverseLike.setStatus(LikeStatus.active);
+        reverseLike.setCreatedAt(now);
+        when(likeRepository.findByUserIdAndTargetUserId(targetUserId, userId))
+                .thenReturn(Optional.of(reverseLike));
+        HeartSignal signal = new HeartSignal();
+        signal.setId(1L);
+        signal.setUserAId(userId);
+        signal.setUserBId(targetUserId);
+        signal.setStatus(HeartSignal.SignalStatus.pending);
+        signal.setExpiresAt(now.plusHours(1));
+        signal.setCreatedAt(now);
+        when(heartSignalRepository.save(any(HeartSignal.class))).thenReturn(signal);
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+        // 会话创建抛异常：不得影响匹配主流程
+        when(privateMessageService.createOrGetConversation(userId, targetUserId))
+                .thenThrow(new RuntimeException("conversation db down"));
+
+        HeartSignalView view = realMatchService.likeUser(userId, targetUserId);
+
+        assertNotNull(view, "会话创建失败不应影响匹配结果");
+        verify(privateMessageService).createOrGetConversation(userId, targetUserId);
     }
 
     // ==================================================================

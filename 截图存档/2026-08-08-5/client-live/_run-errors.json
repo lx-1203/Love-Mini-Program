@@ -1,0 +1,30 @@
+{
+  "errors": [
+    {
+      "time": "2026-08-08 09:12:49.155",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"http\",\"http_url\":\"/profile/basic\",\"http_status\":401}"
+    },
+    {
+      "time": "2026-08-08 09:12:49.156",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"http\",\"http_url\":\"/profile/stats\",\"http_status\":401}"
+    },
+    {
+      "time": "2026-08-08 09:12:49.157",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"http\",\"http_url\":\"/growth/social-progress\",\"http_status\":401}"
+    },
+    {
+      "time": "2026-08-08 09:12:49.157",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"http\",\"http_url\":\"/profile/schedule\",\"http_status\":401}"
+    },
+    {
+      "time": "2026-08-08 09:12:49.159",
+      "type": "console",
+      "text": "[captureException] {} {\"source\":\"http\",\"http_url\":\"/profile/campus\",\"http_status\":401}"
+    }
+  ],
+  "ts": "2026-08-08 09:12:58.342"
+}

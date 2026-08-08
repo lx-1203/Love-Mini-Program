@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -129,6 +131,11 @@ class WalletControllerTest {
         Long userId = 3001L;
         RechargeRequest request = new RechargeRequest(5000L);
 
+        // P0-15：演示充值开关默认随配置关闭（生产化），测试内显式开启以验证委托链路
+        org.springframework.test.util.ReflectionTestUtils.setField(controller, "demoRechargeEnabled", true);
+        // 每日演示充值次数上限放宽，避免跨用例累计触发限流
+        org.springframework.test.util.ReflectionTestUtils.setField(controller, "demoRechargeDailyLimit", 100);
+
         try (MockedStatic<SecurityUtils> mocked = Mockito.mockStatic(SecurityUtils.class)) {
             mocked.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
             when(walletService.recharge(eq(userId), eq(5000L), anyString(),
@@ -145,6 +152,23 @@ class WalletControllerTest {
             assertTrue(view.orderId().startsWith("WALLET-RECHARGE-"), "订单号应有业务前缀");
             verify(walletService).recharge(eq(userId), eq(5000L), anyString(),
                     eq(WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE), any());
+        }
+    }
+
+    @Test
+    @DisplayName("P0-15：演示充值关闭时 recharge 应抛业务错误（生产守卫）")
+    void recharge_demoDisabled_shouldThrow() {
+        Long userId = 3002L;
+        RechargeRequest request = new RechargeRequest(5000L);
+
+        org.springframework.test.util.ReflectionTestUtils.setField(controller, "demoRechargeEnabled", false);
+
+        try (MockedStatic<SecurityUtils> mocked = Mockito.mockStatic(SecurityUtils.class)) {
+            mocked.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
+
+            assertThrows(IllegalStateException.class, () -> controller.recharge(request),
+                    "演示充值关闭时应抛业务错误引导走官方渠道");
+            verify(walletService, never()).recharge(anyLong(), anyLong(), anyString(), any(), any());
         }
     }
 

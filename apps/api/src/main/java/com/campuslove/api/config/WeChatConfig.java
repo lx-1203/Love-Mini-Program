@@ -20,6 +20,21 @@ public class WeChatConfig {
     private String appSecret;
 
     /**
+     * 本地联调降级开关（P0-33 修复）：WECHAT_APPID/WECHAT_SECRET 未配置时
+     * 微信登录必然 502；开启后 code2Session 按 code 派生固定 openid（dev-wechat-{code}），
+     * 走正常登录/注册链路。生产环境必须保持关闭（默认 false）。
+     */
+    private boolean devFallbackEnabled = false;
+
+    public boolean isDevFallbackEnabled() {
+        return devFallbackEnabled;
+    }
+
+    public void setDevFallbackEnabled(boolean devFallbackEnabled) {
+        this.devFallbackEnabled = devFallbackEnabled;
+    }
+
+    /**
      * 社交摘要推送模板ID。
      */
     private String socialDigestTemplateId = "";

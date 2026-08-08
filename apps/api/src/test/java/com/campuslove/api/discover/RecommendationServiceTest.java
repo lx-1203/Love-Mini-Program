@@ -80,7 +80,7 @@ class RecommendationServiceTest {
     @Test
     void filter_isEmpty_allNull_returnsTrue() {
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null);
         assertTrue(filter.isEmpty(), "全空筛选条件应判定为空");
     }
 
@@ -90,7 +90,7 @@ class RecommendationServiceTest {
     @Test
     void filter_isEmpty_blankStringsNormalized_returnsTrue() {
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, "  ", "", "   ", "  ");
+                null, null, null, null, "  ", "", "   ", "  ", null, null);
         assertTrue(filter.isEmpty(), "空白字符串应被规整为 null，isEmpty 仍为 true");
     }
 
@@ -100,21 +100,21 @@ class RecommendationServiceTest {
     @Test
     void filter_isEmpty_anyDimensionActive_returnsFalse() {
         assertFalse(new RecommendationFilter(
-                170, null, null, null, null, null, null, null).isEmpty());
+                170, null, null, null, null, null, null, null, null, null).isEmpty());
         assertFalse(new RecommendationFilter(
-                null, 185, null, null, null, null, null, null).isEmpty());
+                null, 185, null, null, null, null, null, null, null, null).isEmpty());
         assertFalse(new RecommendationFilter(
-                null, null, Set.of("bachelor"), null, null, null, null, null).isEmpty());
+                null, null, Set.of("bachelor"), null, null, null, null, null, null, null).isEmpty());
         assertFalse(new RecommendationFilter(
-                null, null, null, Set.of("never"), null, null, null, null).isEmpty());
+                null, null, null, Set.of("never"), null, null, null, null, null, null).isEmpty());
         assertFalse(new RecommendationFilter(
-                null, null, null, null, "广东省", null, null, null).isEmpty());
+                null, null, null, null, "广东省", null, null, null, null, null).isEmpty());
         assertFalse(new RecommendationFilter(
-                null, null, null, null, null, "广州市", null, null).isEmpty());
+                null, null, null, null, null, "广州市", null, null, null, null).isEmpty());
         assertFalse(new RecommendationFilter(
-                null, null, null, null, null, null, "深圳市", null).isEmpty());
+                null, null, null, null, null, null, "深圳市", null, null, null).isEmpty());
         assertFalse(new RecommendationFilter(
-                null, null, null, null, null, null, null, "摄影").isEmpty());
+                null, null, null, null, null, null, null, "摄影", null, null).isEmpty());
     }
 
     /**
@@ -123,7 +123,7 @@ class RecommendationServiceTest {
     @Test
     void filter_nullSetsNormalized_toEmptyImmutableSet() {
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null);
         assertTrue(filter.educationLevels().isEmpty());
         assertTrue(filter.relationshipStatuses().isEmpty());
     }
@@ -137,7 +137,7 @@ class RecommendationServiceTest {
     void matchesFilter_heightInRange_returnsTrue() {
         RecommendedPersonView view = buildView(180, null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                170, 185, null, null, null, null, null, null);
+                170, 185, null, null, null, null, null, null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -149,7 +149,7 @@ class RecommendationServiceTest {
     void matchesFilter_heightBelowMin_returnsFalse() {
         RecommendedPersonView view = buildView(165, null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                170, 185, null, null, null, null, null, null);
+                170, 185, null, null, null, null, null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -161,7 +161,7 @@ class RecommendationServiceTest {
     void matchesFilter_heightAboveMax_returnsFalse() {
         RecommendedPersonView view = buildView(190, null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                170, 185, null, null, null, null, null, null);
+                170, 185, null, null, null, null, null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -173,7 +173,7 @@ class RecommendationServiceTest {
     void matchesFilter_heightNullWithRange_returnsFalse() {
         RecommendedPersonView view = buildView(null, null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                170, 185, null, null, null, null, null, null);
+                170, 185, null, null, null, null, null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -185,7 +185,7 @@ class RecommendationServiceTest {
     void matchesFilter_heightMinOnly_checksLowerBound() {
         RecommendedPersonView view = buildView(175, null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                170, null, null, null, null, null, null, null);
+                170, null, null, null, null, null, null, null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -197,7 +197,7 @@ class RecommendationServiceTest {
     void matchesFilter_heightEqualsMin_returnsTrue() {
         RecommendedPersonView view = buildView(170, null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                170, 185, null, null, null, null, null, null);
+                170, 185, null, null, null, null, null, null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -211,7 +211,7 @@ class RecommendationServiceTest {
     void matchesFilter_educationInSet_returnsTrue() {
         RecommendedPersonView view = buildView(null, "bachelor", null);
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, Set.of("bachelor", "master"), null, null, null, null, null);
+                null, null, Set.of("bachelor", "master"), null, null, null, null, null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -223,7 +223,7 @@ class RecommendationServiceTest {
     void matchesFilter_educationNotInSet_returnsFalse() {
         RecommendedPersonView view = buildView(null, "phd", null);
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, Set.of("bachelor", "master"), null, null, null, null, null);
+                null, null, Set.of("bachelor", "master"), null, null, null, null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -235,7 +235,7 @@ class RecommendationServiceTest {
     void matchesFilter_educationNullWithSet_returnsFalse() {
         RecommendedPersonView view = buildView(null, null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, Set.of("bachelor"), null, null, null, null, null);
+                null, null, Set.of("bachelor"), null, null, null, null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -249,7 +249,7 @@ class RecommendationServiceTest {
     void matchesFilter_keywordMatchesName_returnsTrue() {
         RecommendedPersonView view = buildViewWithName("摄影少女", null, null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, null, "摄影");
+                null, null, null, null, null, null, null, "摄影", null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -261,7 +261,7 @@ class RecommendationServiceTest {
     void matchesFilter_keywordMatchesBio_returnsTrue() {
         RecommendedPersonView view = buildViewWithName("用户A", "热爱摄影与阅读", null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, null, "摄影");
+                null, null, null, null, null, null, null, "摄影", null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -274,7 +274,7 @@ class RecommendationServiceTest {
         RecommendedPersonView view = buildViewWithName("用户B", null,
                 List.of("摄影", "旅行"), null);
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, null, "摄影");
+                null, null, null, null, null, null, null, "摄影", null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -286,7 +286,7 @@ class RecommendationServiceTest {
     void matchesFilter_keywordCaseInsensitive_returnsTrue() {
         RecommendedPersonView view = buildViewWithName("Photographer", null, null, null);
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, null, "PHOTO");
+                null, null, null, null, null, null, null, "PHOTO", null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -299,7 +299,7 @@ class RecommendationServiceTest {
         RecommendedPersonView view = buildViewWithName("用户C", "热爱阅读",
                 List.of("阅读"), null);
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, null, "摄影");
+                null, null, null, null, null, null, null, "摄影", null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -318,7 +318,7 @@ class RecommendationServiceTest {
 
         RecommendationFilter filter = new RecommendationFilter(
                 null, null, null, Set.of("never", "divorced"),
-                null, null, null, null);
+                null, null, null, null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -335,7 +335,7 @@ class RecommendationServiceTest {
 
         RecommendationFilter filter = new RecommendationFilter(
                 null, null, null, Set.of("never", "divorced"),
-                null, null, null, null);
+                null, null, null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -351,7 +351,7 @@ class RecommendationServiceTest {
         when(userBasicProfileRepository.findByUserId(100L)).thenReturn(Optional.of(bp));
 
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, "广东省", null, null, null);
+                null, null, null, null, "广东省", null, null, null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -367,7 +367,7 @@ class RecommendationServiceTest {
         when(userBasicProfileRepository.findByUserId(100L)).thenReturn(Optional.of(bp));
 
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, "广东省", null, null, null);
+                null, null, null, null, "广东省", null, null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -383,7 +383,7 @@ class RecommendationServiceTest {
         when(userBasicProfileRepository.findByUserId(100L)).thenReturn(Optional.of(bp));
 
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, "广州市", null, null);
+                null, null, null, null, null, "广州市", null, null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -399,7 +399,7 @@ class RecommendationServiceTest {
         when(userBasicProfileRepository.findByUserId(100L)).thenReturn(Optional.of(bp));
 
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, "广州市", null, null);
+                null, null, null, null, null, "广州市", null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -415,7 +415,7 @@ class RecommendationServiceTest {
         when(userBasicProfileRepository.findByUserId(100L)).thenReturn(Optional.of(bp));
 
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, "广州市", null);
+                null, null, null, null, null, null, "广州市", null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -431,7 +431,7 @@ class RecommendationServiceTest {
         when(userBasicProfileRepository.findByUserId(100L)).thenReturn(Optional.of(bp));
 
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, "广州市", null);
+                null, null, null, null, null, null, "广州市", null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -445,7 +445,7 @@ class RecommendationServiceTest {
         when(userBasicProfileRepository.findByUserId(100L)).thenReturn(Optional.empty());
 
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, Set.of("never"), null, null, null, null);
+                null, null, null, Set.of("never"), null, null, null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -461,7 +461,7 @@ class RecommendationServiceTest {
         view = withHeightAndEdu(view, 175, "bachelor");
         // 不需要 DB 回查（无 relationship/hometown/future 维度）
         RecommendationFilter filter = new RecommendationFilter(
-                170, 185, Set.of("bachelor", "master"), null, null, null, null, "摄影");
+                170, 185, Set.of("bachelor", "master"), null, null, null, null, "摄影", null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -475,7 +475,7 @@ class RecommendationServiceTest {
                 List.of("阅读"), 100L);
         view = withHeightAndEdu(view, 175, "bachelor");
         RecommendationFilter filter = new RecommendationFilter(
-                170, 185, Set.of("bachelor"), null, null, null, null, "摄影");
+                170, 185, Set.of("bachelor"), null, null, null, null, "摄影", null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -494,7 +494,7 @@ class RecommendationServiceTest {
 
         RecommendationFilter filter = new RecommendationFilter(
                 170, 185, Set.of("bachelor"), Set.of("never"),
-                "广东省", null, "广州市", null);
+                "广东省", null, "广州市", null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
     }
@@ -511,7 +511,7 @@ class RecommendationServiceTest {
 
         RecommendationFilter filter = new RecommendationFilter(
                 170, 185, Set.of("bachelor"), Set.of("never"),
-                null, null, null, null);
+                null, null, null, null, null, null);
 
         assertFalse(realService.matchesFilter(view, filter));
     }
@@ -525,7 +525,7 @@ class RecommendationServiceTest {
     void matchesFilter_emptyFilter_returnsTrueWithoutDbLookup() {
         RecommendedPersonView view = buildView(180, "bachelor", 100L);
         RecommendationFilter filter = new RecommendationFilter(
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null);
 
         assertTrue(realService.matchesFilter(view, filter));
         // 验证未触发 DB 查询（isEmpty 时 needDbLookup 应为 false）
@@ -547,7 +547,7 @@ class RecommendationServiceTest {
                 "CL-" + id, "1.2km", "offline",
                 true, false, List.of("开朗"), "INTJ",
                 null, false, List.of(), null, false, "江苏 · 南京"
-        );
+        , null, null, null, null);
     }
 
     /**
@@ -566,7 +566,7 @@ class RecommendationServiceTest {
                 "CL-" + id, "1.2km", "offline",
                 true, false, List.of("开朗"), "INTJ",
                 null, false, List.of(), null, false, "江苏 · 南京"
-        );
+        , null, null, null, null);
     }
 
     /**
@@ -585,6 +585,6 @@ class RecommendationServiceTest {
                 base.machineVerified(), base.humanVerified(), base.personality(),
                 base.mbti(), base.whisper(), base.whisperSent(), base.recentPosts(),
                 base.expectedPartner(), base.allowMessage(), base.ipLocation()
-        );
+        , null, null, null, null);
     }
 }

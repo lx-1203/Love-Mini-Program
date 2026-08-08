@@ -312,6 +312,10 @@ record BasicProfileRequest(
     @Size(max = 32) String futureCity,
     /** 未来规划标签列表，可空 */
     List<String> futurePlanTags,
+    /** 兴趣标签列表（P0-34 修复：此前 BasicProfileRequest 缺该字段，
+     *  前端提交的 interestTags 被 Jackson 静默丢弃 → 资料完善度永远差 20 分
+     *  → profileCompleted 恒 false → 新账号无法解锁全部功能） */
+    List<String> interestTags,
     /** 头像 URL（2026-08-07 新增，可空；非空时更新 users.avatar_url） */
     @Size(max = 512) String avatarUrl
 ) {

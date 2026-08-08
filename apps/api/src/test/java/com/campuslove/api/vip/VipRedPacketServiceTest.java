@@ -147,6 +147,10 @@ class VipRedPacketServiceTest {
         when(walletService.deduct(eq(senderId), eq(totalAmount.longValue()), anyString(),
                 eq(WalletTransactionLog.RELATED_TYPE_RED_PACKET_SEND), eq("1")))
                 .thenThrow(new InsufficientBalanceException(senderId, totalAmount.longValue(), 50L));
+        // 2026-08-08 走查新增守卫：红包创建/领取要求有效 VIP（requireVip），
+        // 测试补 VIP 会员存根（vip_bills 存在未过期 SUCCESS 记录）
+        when(vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
+                anyLong(), eq("SUCCESS"), any(LocalDateTime.class))).thenReturn(true);
         mockLockAcquired("red-packet-create:" + senderId);
 
         VipRedPacketService service = new VipRedPacketService(
@@ -193,6 +197,10 @@ class VipRedPacketServiceTest {
         when(walletService.deduct(eq(senderId), eq(totalAmount.longValue()), anyString(),
                 eq(WalletTransactionLog.RELATED_TYPE_RED_PACKET_SEND), eq("2")))
                 .thenReturn(500L); // 余额 1000 - 500 = 500
+        // 2026-08-08 走查新增守卫：红包创建/领取要求有效 VIP（requireVip），
+        // 测试补 VIP 会员存根（vip_bills 存在未过期 SUCCESS 记录）
+        when(vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
+                anyLong(), eq("SUCCESS"), any(LocalDateTime.class))).thenReturn(true);
         mockLockAcquired("red-packet-create:" + senderId);
 
         VipRedPacketService service = new VipRedPacketService(
@@ -251,6 +259,10 @@ class VipRedPacketServiceTest {
                 eq(WalletTransactionLog.RELATED_TYPE_RED_PACKET_CLAIM), eq("10")))
                 .thenReturn(100L);
         lenient().when(redPacketRepository.markDepletedIfEmpty(redPacketId)).thenReturn(1);
+        // 2026-08-08 走查新增守卫：红包创建/领取要求有效 VIP（requireVip），
+        // 测试补 VIP 会员存根（vip_bills 存在未过期 SUCCESS 记录）
+        when(vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
+                anyLong(), eq("SUCCESS"), any(LocalDateTime.class))).thenReturn(true);
         mockLockAcquired("red-packet-claim:" + redPacketId);
 
         VipRedPacketService service = new VipRedPacketService(
@@ -300,6 +312,10 @@ class VipRedPacketServiceTest {
         when(redPacketRepository.findByIdForUpdate(redPacketId)).thenReturn(Optional.of(packet));
         when(claimRepository.findByRedPacketIdAndClaimerId(redPacketId, claimerId))
                 .thenReturn(Optional.of(existingClaim));
+        // 2026-08-08 走查新增守卫：红包创建/领取要求有效 VIP（requireVip），
+        // 测试补 VIP 会员存根（vip_bills 存在未过期 SUCCESS 记录）
+        when(vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
+                anyLong(), eq("SUCCESS"), any(LocalDateTime.class))).thenReturn(true);
         mockLockAcquired("red-packet-claim:" + redPacketId);
 
         VipRedPacketService service = new VipRedPacketService(
@@ -367,6 +383,10 @@ class VipRedPacketServiceTest {
         when(claimRepository.save(any(VipRedPacketClaim.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(walletService.recharge(anyLong(), anyLong(), anyString(), anyString(), anyString()))
                 .thenReturn(100L);
+        // 2026-08-08 走查新增守卫：红包创建/领取要求有效 VIP（requireVip），
+        // 测试补 VIP 会员存根（vip_bills 存在未过期 SUCCESS 记录）
+        when(vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
+                anyLong(), eq("SUCCESS"), any(LocalDateTime.class))).thenReturn(true);
         mockLockAcquired("red-packet-claim:" + redPacketId);
 
         VipRedPacketService service = new VipRedPacketService(

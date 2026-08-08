@@ -198,6 +198,9 @@ class Task12ConcurrencyTest {
         lenient().doNothing().when(rLock).unlock();
 
         // 构造 VipRedPacketService（Task 14：新增 redissonClient 依赖）
+        // 2026-08-08 守卫：红包创建/领取要求有效 VIP（requireVip）
+        when(vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
+                anyLong(), eq("SUCCESS"), any(LocalDateTime.class))).thenReturn(true);
         VipRedPacketService service = new VipRedPacketService(
                 redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
 
@@ -342,6 +345,9 @@ class Task12ConcurrencyTest {
         lenient().doNothing().when(rLock).unlock();
 
         // 构造 VipRedPacketService（Task 14：新增 redissonClient 依赖）
+        // 2026-08-08 守卫：红包创建/领取要求有效 VIP（requireVip）
+        when(vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
+                anyLong(), eq("SUCCESS"), any(LocalDateTime.class))).thenReturn(true);
         VipRedPacketService service = new VipRedPacketService(
                 redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
 

@@ -1,0 +1,353 @@
+{
+  "results": [
+    {
+      "name": "01-home",
+      "route": "/pages/home/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "02-discover",
+      "route": "/pages/discover/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "03-discover-history",
+      "route": "/pages/discover/history",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "04-discover-video-player",
+      "route": "/pages/discover/video-player",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "05-likes",
+      "route": "/pages/likes/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "06-likes-visitors",
+      "route": "/pages/likes-visitors/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "07-village",
+      "route": "/pages/village/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "08-village-post",
+      "route": "/pages/village/post",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "09-village-detail",
+      "route": "/pages/village/detail?id=352",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "10-village-tag-posts",
+      "route": "/pages/village/tag-posts?tagName=%E7%94%9F%E6%B4%BB%E8%AE%B0%E5%BD%95",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "11-messages",
+      "route": "/pages/messages/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "13-chat-session",
+      "route": "/pages/chat-session/index?sessionId=1",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "14-official-chat",
+      "route": "/pages/official-chat/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "15-profile",
+      "route": "/pages/profile/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "16-profile-visitors",
+      "route": "/pages/profile/visitors",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "17-profile-privacy",
+      "route": "/pages/profile/privacy",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "18-profile-album",
+      "route": "/pages/profile/album",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "19-profile-tasks",
+      "route": "/pages/profile/tasks",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "20-circles",
+      "route": "/pages/circles/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "21-circles-topics",
+      "route": "/pages/circles/topics?circleId=1",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "22-circles-topic-detail",
+      "route": "/pages/circles/topic-detail?topicId=1",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "23-circles-post-topic",
+      "route": "/pages/circles/post-topic",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "24-campus",
+      "route": "/pages/campus/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "25-campus-post-topic",
+      "route": "/pages/campus/post-topic",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "26-campus-topic-detail",
+      "route": "/pages/campus/topic-detail?topicId=1",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "27-campus-certification",
+      "route": "/pages/campus/certification",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "28-daily-question",
+      "route": "/pages/daily-question/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "29-love-center",
+      "route": "/pages/love-center/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "30-love-center-nearby",
+      "route": "/pages/love-center/nearby",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "31-love-center-mbti",
+      "route": "/pages/love-center/mbti",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "32-love-center-consulting",
+      "route": "/pages/love-center/consulting",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "33-heart-signals",
+      "route": "/pages/heart-signals/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "34-help",
+      "route": "/pages/help/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "35-security",
+      "route": "/pages/security/index",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "36-shop",
+      "route": "/pages/shop/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "37-settings",
+      "route": "/pages/settings/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "38-settings-dnd",
+      "route": "/pages/settings/dnd",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "39-verification",
+      "route": "/pages/verification/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "40-vip",
+      "route": "/pages/vip/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "41-vip-promo-code",
+      "route": "/pages/vip/promo-code",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "42-vip-bills",
+      "route": "/pages/vip/bills",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "43-wallet",
+      "route": "/pages/wallet/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "44-feedback-history",
+      "route": "/pages/feedback/history",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "45-showcase",
+      "route": "/pages/showcase/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "46-sub-setup-profile",
+      "route": "/subpackages/setup/profile/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "47-sub-setup-campus",
+      "route": "/subpackages/setup/campus/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "48-sub-setup-schedule",
+      "route": "/subpackages/setup/schedule/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "49-sub-setup-recommend-pref",
+      "route": "/subpackages/setup/recommend-pref/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "50-sub-support-feedback",
+      "route": "/subpackages/support/feedback/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "51-sub-discover-discussions",
+      "route": "/subpackages/discover/discussions/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "52-sub-discover-activities",
+      "route": "/subpackages/discover/activities/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "53-sub-legal-privacy",
+      "route": "/subpackages/legal/privacy/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "54-sub-legal-agreement",
+      "route": "/subpackages/legal/agreement/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "55-chat-red-packet",
+      "route": "/pages/chat/red-packet",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "56-chat-video-call",
+      "route": "/pages/chat/video-call",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "57-activities-detail",
+      "route": "/pages/activities/detail?id=1",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "58-vip-red-packet",
+      "route": "/pages/vip/red-packet",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    },
+    {
+      "name": "59-login",
+      "route": "/pages/login/index",
+      "ok": false,
+      "error": "Connection closed, check if wechat web devTools is still running"
+    }
+  ],
+  "ts": "2026-08-08 03:05:18.077"
+}

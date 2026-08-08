@@ -776,4 +776,90 @@ page {
 .border-card { border: var(--c-border-card); }
 .border-card-brand { border: var(--c-border-card-brand); }
 
+/* ============================================================
+   TDesign 兼容 token（从 uni.scss 迁移，2026-08-08）
+   原位置在 uni.scss 的 page {} 块，被 uni-app 注入每个组件的
+   scoped 编译 → 组件 wxss 生成 page.data-v-xxx 标签选择器 →
+   微信开发者工具警告。此处由 App.vue 全局样式引入（非 scoped），
+   page 替代 :root（mp-weixin 不支持 :root 伪类），token 全局生效。
+   ============================================================ */
+page {
+  --td-brand-color-1: #F0F5FF;
+  --td-brand-color-2: #DBEAFE;
+  --td-brand-color-3: #BBDAFF;
+  --td-brand-color-4: #9BB8FF;
+  --td-brand-color-5: #7B9CFF;
+  --td-brand-color-6: #5B7FFF;
+  --td-brand-color-7: #4C6EF5;
+  --td-brand-color-8: #3D5FEE;
+  --td-brand-color-9: #3351D4;
+
+  /* 语义色 */
+  --td-success-color: #10B981;
+  --td-warning-color: #F59E0B;
+  --td-error-color: #EF4444;
+  --td-info-color: #5B7FFF;
+
+  /* 文本色（BlueGray 调，含 12% 蓝调倾向） */
+  --td-text-color-primary: #1E293B;
+  --td-text-color-secondary: #475569;
+  --td-text-color-placeholder: #94A3B8;
+  --td-text-color-disabled: #CBD5E1;
+
+  /* 背景色 */
+  --td-bg-color-container: #FFFFFF;
+  --td-bg-app-page: #F8FAFC;
+  --td-bg-color-surface: #F1F5F9;
+  --td-bg-color-secondary: #E2E8F0;
+
+  /* 边框 */
+  --td-border-level-1-color: #E2E8F0;
+  --td-border-level-2-color: #CBD5E1;
+
+  /* 圆角（分级：8/12/16/20/9999） */
+  --td-radius-small: 8px;
+  --td-radius-medium: 12px;
+  --td-radius-large: 16px;
+  --td-radius-xl: 20px;
+  --td-radius-full: 9999px;
+
+  /* 阴影（3 级高程，中性色调） */
+  --td-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.03);
+  --td-shadow-2: 0 2px 8px rgba(15, 23, 42, 0.04);
+  --td-shadow-3: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --td-shadow-4: 0 8px 32px rgba(15, 23, 42, 0.08);
+  --td-shadow-brand: 0 4px 16px rgba(91, 127, 255, 0.25);
+
+  /* 字体（Major Third 1.25x 比例尺） */
+  --td-font-title-large: 32px;
+  --td-font-title-medium: 26px;
+  --td-font-title-small: 20px;
+  --td-font-body-medium: 16px;
+  --td-font-body-small: 13px;
+  --td-font-caption: 11px;
+
+  /* 间距（4px 网格） */
+  --td-spacing-1: 4px;
+  --td-spacing-2: 8px;
+  --td-spacing-3: 12px;
+  --td-spacing-4: 16px;
+  --td-spacing-5: 20px;
+  --td-spacing-6: 24px;
+  --td-spacing-7: 32px;
+  --td-spacing-8: 40px;
+
+  /* 层级 */
+  --td-z-modal: 400;
+
+  /* 动效 */
+  --td-duration-fast: 120ms;
+  --td-duration-base: 200ms;
+  --td-duration-slow: 350ms;
+
+  /* ===== 自定义扩展变量 ===== */
+  --color-page-atmosphere: linear-gradient(180deg, #F0F5FF 0%, #F8FAFC 100%);
+  --shadow-brand-sm: 0 2px 8px rgba(91, 127, 255, 0.15);
+  --shadow-brand-md: 0 4px 16px rgba(91, 127, 255, 0.20);
+}
+
 
