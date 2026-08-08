@@ -165,7 +165,7 @@ public class VillageViewMapper {
         String summary = truncate(post.getContent(), 120);
         boolean isAlumni = !myCampusName.isEmpty() && myCampusName.equals(campusName);
         boolean isFollowed = followedUserIds != null && followedUserIds.contains(post.getAuthorId());
-        return new PostSummaryView(post.getId(), null, summary, authorView, post.getCategory().name(),
+        return new PostSummaryView(post.getId(), post.getTitle(), summary, authorView, post.getCategory().name(),
                 tags, post.getLikesCount(), post.getCommentsCount(), post.getShareCount(),
                 post.getCreatedAt().toString(), post.getLikesCount() >= HOT_POST_THRESHOLD, isAlumni,
                 isFollowed);

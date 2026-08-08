@@ -492,8 +492,9 @@ const nextCardStyle = computed(() => {
 /** 认证详情弹窗显隐 */
 const showCertDetail = ref(false);
 
-/** 距离文案（「距离你12km」前缀格式，需求示例） */
+/** 距离文案（「距离你12km」前缀格式，需求示例；同校时直接展示「同校」避免「距离你同校」） */
 const identityDistance = computed(() => {
+  if (currentCard.value?.isSameSchool) return t('discover.sameCampusDistance');
   const label = distanceLabel.value;
   if (!label) return "";
   return `${t('discover.distancePrefix')}${label}`;

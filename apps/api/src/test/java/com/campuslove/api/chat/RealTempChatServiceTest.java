@@ -76,19 +76,20 @@ class RealTempChatServiceTest {
     }
 
     /**
-     * 场景：createSession(recommendedPersonId, matchId) 应委托 sessionService.createSession。
+     * 场景：createSession(recommendedPersonId, matchId, signalId) 应委托 sessionService.createSession。
      */
     @Test
     void createSession_delegatesToSessionService() {
         String recommendedPersonId = "rp-1";
         String matchId = "match-1";
+        String signalId = "signal-1";
         TempChatSessionView expected = buildSessionView("session-1", "rp-1", "Alice");
-        when(sessionService.createSession(recommendedPersonId, matchId)).thenReturn(expected);
+        when(sessionService.createSession(recommendedPersonId, matchId, signalId)).thenReturn(expected);
 
-        TempChatSessionView result = realService.createSession(recommendedPersonId, matchId);
+        TempChatSessionView result = realService.createSession(recommendedPersonId, matchId, signalId);
 
         assertSame(expected, result);
-        verify(sessionService, times(1)).createSession(recommendedPersonId, matchId);
+        verify(sessionService, times(1)).createSession(recommendedPersonId, matchId, signalId);
     }
 
     /**

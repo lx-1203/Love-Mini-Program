@@ -42,7 +42,7 @@ class VillagePostServiceTest {
     @Test
     void createPost_nullUserId_throwsException() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> postService.createPost(null, "content", List.of(), List.of(), "all"));
+                () -> postService.createPost(null, "测试标题五字", "content", List.of(), List.of(), "all"));
         assertEquals("userId is required", ex.getMessage());
     }
 
@@ -52,7 +52,7 @@ class VillagePostServiceTest {
     @Test
     void createPost_blankContent_throwsException() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> postService.createPost(1L, "  ", List.of(), List.of(), "all"));
+                () -> postService.createPost(1L, "测试标题五字", "  ", List.of(), List.of(), "all"));
         assertEquals("content is required", ex.getMessage());
     }
 
@@ -85,7 +85,7 @@ class VillagePostServiceTest {
                             null, false, true, false);
                 });
 
-        PostDetailView view = postService.createPost(userId, content, List.of(), List.of("tag"), "all");
+        PostDetailView view = postService.createPost(userId, "测试标题五字", content, List.of(), List.of("tag"), "all");
 
         Post saved = captor.getValue();
         assertEquals(userId, saved.getAuthorId());
@@ -110,7 +110,7 @@ class VillagePostServiceTest {
         when(queryService.toJsonString(any())).thenReturn("[]");
         when(postRepository.saveAndFlush(any(Post.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        postService.createPost(userId, "content", null, null, null);
+        postService.createPost(userId, "测试标题五字", "content", null, null, null);
 
         verify(postRepository).saveAndFlush(any(Post.class));
     }
