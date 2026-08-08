@@ -2,7 +2,7 @@ R4-00001|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|418-420|F|P1
 R4-00002|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|588-589|H|P3|展示模式入口中文文案硬编码"以演示者身份进入展示版/超级管理员模式 · 一键体验全部功能"，绕过 i18n（页内其余文案均走 t()）|展示构建文案无法随语言切换|文案迁移到 i18n 资源|fixed|batch-4|
 R4-00003|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|37|T|P3|验证码倒计时状态机死代码：countdown/pauseCountdown/resumeCountdown（L107-138）与 .send-code-btn 样式（L914-940）无消费方——本页为手机号+密码登录，模板无验证码 UI|维护成本与误导（后人以为有验证码功能）|删除倒计时逻辑与对应样式|fixed|batch-4|
 R4-00004|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|257-271|F|P1|空闲时段 ActionSheet 三选项（添加课程/活动/自定义）选中后仅 toast"编辑中"（courseEditing 等）无任何后续，功能未闭环|用户无法在首页添加课表安排，入口为假按钮|接入 schedule 编辑链路或移除入口（依赖后端端点/产品决策，Batch4 复查）|partial|batch-2|
-R4-00005|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|295|H|P2|签到成功 toast 奖励硬编码 n=5（t('home.checkinReward', { n: 5 })），与 L411 earnedPoints（extraRecommendations || 5）动态值可脱节|后端奖励非 5 时 toast 与分享卡片数字矛盾，误导用户|奖励数从 store 结果取|
+R4-00005|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|295|H|P2|签到成功 toast 奖励硬编码 n=5（t('home.checkinReward', { n: 5 })），与 L411 earnedPoints（extraRecommendations | 5）动态值可脱节|后端奖励非 5 时 toast 与分享卡片数字矛盾，误导用户|fixed||
 R4-00006|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|835-881|T|P3|死样式集群：.notification-btn/.settings-btn/.notification-dot（L835-881）、.banner-*（L1248-1354）、.recommend-*（L1468-1568）、.post-*（L1746-1967）、.shop-*（L1902-1967）、.fab-*（L2049-2101）模板均无引用（注释已移除对应模块）|产物体积与样式维护成本|删除未引用样式块|fixed|batch-4|
 R4-00007|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|39-40|T|P3|注释"首页 = 索引 2"与 useTabBar(0) 实参矛盾（discover/index.vue L50 注释称"tab 顺序：首页0/匹配1…"），两页注释互斥|误导 tab 索引维护，改 tab 时易出错|统一修正注释|fixed|batch-4|
 R4-00008|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|619-650|F|P3|活动横滚区无空态：activityStore.activities 为空时仅渲染空白横向滚动区，无提示|空数据时页面模块显空白|增加空态占位|fixed|batch-4|
@@ -77,12 +77,12 @@ R4-00076|d:\6\恋爱小程序\apps\client\src\pages\chat-session\index.vue|193|H
 R4-00077|d:\6\恋爱小程序\apps\client\src\pages\chat-session\view-models.ts|97|H|P3|formatTempCountdown 返回硬编码中文“已结束”绕过 i18n|en-US 下显示中文|改由调用方 t() 处理|fixed|batch-4|
 R4-00078|d:\6\恋爱小程序\apps\client\src\pages\chat-session\view-models.ts|304|H|P3|星期文案 “星期${“日一二三四五六”[d.getDay()]}” 硬编码中文|en-US 下显示中文星期|走 i18n|fixed|batch-4|
 R4-00079|d:\6\恋爱小程序\apps\client\src\pages\chat\index.vue|1-10,165|T|P3|聊天旧页已从 pages.json 移除注册（注释自述），页面与 ROUTES.TAB.CHAT 引用已清理，成为死文件|死代码增加维护面|删除文件或恢复注册|fixed|batch-4|
-R4-00080|d:\6\恋爱小程序\apps\client\src\pages\messages\index.vue|489|B|P3|session.partnerName.charAt(0) 无空值守卫（本文件 91 行注释确认后端 otherUserName 可能为空），null 时抛 TypeError|会话头像字母崩溃，整页渲染中断|(partnerName||“?”).charAt(0)|
+R4-00080|d:\6\恋爱小程序\apps\client\src\pages\messages\index.vue|489|B|P3|session.partnerName.charAt(0) 无空值守卫（本文件 91 行注释确认后端 otherUserName 可能为空），null 时抛 TypeError|会话头像字母崩溃，整页渲染中断|(partnerName|fixed|“?”).charAt(0)|
 R4-00081|d:\6\恋爱小程序\apps\client\src\pages\messages\index.vue|315|H|P3|硬编码官方号 code “official-assistant” 拼接跳转路径|code 变更需多处同步|收敛到常量|fixed|batch-4|
 R4-00082|d:\6\恋爱小程序\apps\client\src\pages\official-chat\index.vue|206-221|S|P2|real 模式加载官方号消息失败时静默回退 mock 本地文案，用户看到与后端不一致的“官方消息”|伪造官方内容展示给真实用户，信任受损|失败态展示错误提示而非 mock 数据|fixed|batch-3|
 R4-00083|d:\6\恋爱小程序\apps\client\src\pages\official-chat\index.vue|142|H|P3|魔法数字 6*3600*1000 生成 mock 消息时间偏移|可读性差|提常量|fixed|batch-4|
 R4-00084|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|199,203,208,231,278,283,288,298,325|H|P3|9 处页面路径字面量硬编码（/pages/circles/index、/pages/campus/certification、/pages/village/detail 等）|路径散落，路由调整易漏|统一走 ROUTES|fixed|batch-4|
-R4-00085|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|634|B|P3|topic.author.name[0] 无空值守卫，昵称空/null 时崩溃或渲染 undefined|话题作者昵称异常时列表渲染中断|(name||“?”)[0]|
+R4-00085|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|634|B|P3|topic.author.name[0] 无空值守卫，昵称空/null 时崩溃或渲染 undefined|话题作者昵称异常时列表渲染中断|(name|fixed|“?”)[0]|
 R4-00086|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|610,753,803,878|B|P3|4 处 author/comment/reply/similar 昵称取首字符 name[0] 均无空值守卫（null 时 TypeError）|昵称异常时评论/作者区渲染中断|统一兜底占位字符|fixed|batch-3|
 R4-00087|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|558-559,846-850|F|P2|评论仅 fetchComments 拉第一页（store 端 fetchCommentsApi(postId) 无分页参数），契约 CommentListResponse 含 total/page/pageSize，超 20 条评论无法查看|大帖评论区截断，内容不可达|接入分页加载更多|fixed|batch-3|
 R4-00088|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|84,293,300,410,412,482,484|H|P3|7 处页面路径字面量（/pages/profile/index、/pages/village/tag-posts、/pages/activities/detail、/pages/chat-session/index）|路径散落|统一走 ROUTES|fixed|batch-4|
@@ -142,7 +142,7 @@ R4-00141|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|455|H|P3|直接
 R4-00142|d:\6\恋爱小程序\apps\client\src\services\video-call.ts|178-181|H|P3|startCall 默认参数 callerId=1（mock 分支使用）|mock 发起方身份魔法数字，与真实 userId 体系割裂|从 session 获取|fixed|batch-4|
 R4-00143|d:\6\恋爱小程序\apps\client\src\services\video-call.ts|205|H|P3|mock signalingUrl 硬编码 "wss://mock.example.com/signaling"|mock 地址指向不存在的域名，联调误导|改为可配置或本地占位|fixed|batch-4|
 R4-00144|d:\6\恋爱小程序\apps\client\src\services\http.ts|442|H|P3|401 跳转 toast 硬编码「登录已过期，请重新登录」（656/676 重复出现）|绕过 i18n，en 语言显示中文|抽公共文案常量走 i18n|fixed|batch-4|
-R4-00145|d:\6\恋爱小程序\apps\client\src\components\common\SafeImage.vue|6|H|P3|aria-label 兜底硬编码「图片」（alt || '图片'）|无障碍文案绕过 i18n|改走 t()|
+R4-00145|d:\6\恋爱小程序\apps\client\src\components\common\SafeImage.vue|6|H|P3|aria-label 兜底硬编码「图片」（alt | '图片'）|无障碍文案绕过 i18n|fixed||
 R4-00146|d:\6\恋爱小程序\apps\client\src\components\discover\CardDetailOverlay.vue|226|F|P2|兴趣圈成员数用 hash 伪造：members = 60 + (userId.charCodeAt(0) + idx*31) % 240|详情页展示的圈子人数为随机伪造值，与真实圈子数据脱节，误导用户|由后端圈子接口下发真实成员数（依赖后端端点/产品决策，Batch4 复查）|partial|batch-2|
 R4-00147|d:\6\恋爱小程序\apps\client\src\components\discover\CardDetailOverlay.vue|249-252|F|P2|匹配度分数前端伪造：Math.min(98, 80 + commonCircleCount*5)|匹配度非后端计算值，UI 展示的数字与推荐排序依据不一致|后端下发 matchScore 字段（依赖后端端点/产品决策，Batch4 复查）|partial|batch-2|
 R4-00148|d:\6\恋爱小程序\apps\client\src\services\env.ts|4|T|P2|@deprecated 历史 env 实现与 src/config/env.ts 双实现并存，仍被 utils/media.ts、stores/*、pages/* 大量引用|双环境配置真相源，修改一处另一处不同步导致行为漂移（如超时/回退逻辑）|完成迁移后删除 services/env.ts|fixed|batch-3|
