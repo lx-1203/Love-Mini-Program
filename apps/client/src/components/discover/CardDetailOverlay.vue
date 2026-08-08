@@ -20,7 +20,10 @@ import { useI18n } from "vue-i18n";
 import type { DiscoverCard } from "../../stores/discover";
 import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
 import { useVipStore } from "../../stores/vip";
+import { useSessionStore } from "../../stores/session";
 import { useReportStore } from "../../stores/report";
+// 2026-08-08 走查 P1：VIP 免费放行点统一受 membershipEnabled 门控
+import { featureFlags } from "../../config/feature-flags";
 import VerificationBadge from "../common/VerificationBadge.vue";
 import SafeImage from "../common/SafeImage.vue";
 import { lightHaptic, mediumHaptic, successHaptic } from "../../utils/haptic";
@@ -52,6 +55,11 @@ const coinsStore = useCoinsStore();
 const vipStore = useVipStore();
 /** 举报 Store（更多操作 · 举报用户） */
 const reportStore = useReportStore();
+/** 会话 Store（超级测试账号旁路） */
+const sessionStore = useSessionStore();
+
+/** 超级测试账号（2026-08-08 走查 P1：悄悄话/私信免费旁路） */
+const isSuperTest = computed(() => sessionStore.isSuperTestAccount);
 
 /** 入场动画状态 */
 const animating = ref(false);
@@ -411,15 +419,16 @@ const privateMsgUnlocked = ref(false);
  *
  * 优先级：
  * 1. 后端已允许（card.allowMessage=true）→ 直接进入
- * 2. VIP 会员 → 放行
- * 3. 其余 → 交友币扣费（UNLOCK_COST_YUAN.MESSAGE），成功后进入；余额不足提示充值
+ * 2. VIP 会员（membershipEnabled 门控）→ 放行
+ * 3. 超级测试账号 → 放行（2026-08-08 走查 P1：本地联调账号全功能）
+ * 4. 其余 → 交友币扣费（UNLOCK_COST_YUAN.MESSAGE），成功后进入；余额不足提示充值
  */
 function handleMessage(): void {
   const card = props.card;
   if (!card) return;
 
-  // 后端允许或会员（含展示版 VIP 全亮）→ 直接进入会话
-  if (card.allowMessage || vipStore.isVip) {
+  // 后端允许、会员（门控）或超级测试账号 → 直接进入会话
+  if (card.allowMessage || (featureFlags.membershipEnabled && vipStore.isVip) || isSuperTest.value) {
     emitMessage();
     return;
   }
@@ -463,14 +472,19 @@ function onMomentPrivateMsg(): void {
   handleMessage();
 }
 
-/** 点击悄悄话（会员/交友币解锁发送） */
+/** 点击悄悄话（会员/交友币解锁发送；会员未启用时仅交友币路径） */
 function onWhisperTap(): void {
   if (whisperAlreadySent.value) {
     uni.showToast({ title: t("discover.whisperSent"), icon: "none" });
     return;
   }
-  if (vipStore.isVip) {
+  // 2026-08-08 走查 P1：VIP 免费放行受 membershipEnabled 门控；超级测试账号直通
+  if (featureFlags.membershipEnabled && vipStore.isVip) {
     uni.showToast({ title: t("discover.whisperUnlockByVip"), icon: "none" });
+    return;
+  }
+  if (isSuperTest.value) {
+    emitMessage();
     return;
   }
   // 交友币解锁：弹确认后扣费（演示流；完整悄悄话编辑页由后续版本补齐）

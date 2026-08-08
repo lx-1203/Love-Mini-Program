@@ -202,8 +202,8 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
       <text class="page-header__subtitle">{{ t('likesVisitors.pageSubtitle') }}</text>
     </view>
 
-    <!-- 轻量「提升曝光」入口（不弹窗、不打断浏览） -->
-    <view class="exposure-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('likesVisitors.exposure')" @tap="goToExposure">
+    <!-- 轻量「提升曝光」入口（不弹窗、不打断浏览；2026-08-08 走查 P1：会员未启用时整条隐藏） -->
+    <view v-if="featureFlags.membershipEnabled" class="exposure-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('likesVisitors.exposure')" @tap="goToExposure">
       <image class="exposure-bar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE" mode="aspectFit" alt="" />
       <text class="exposure-bar__text">{{ t('likesVisitors.exposure') }}</text>
       <text class="exposure-bar__arrow">›</text>

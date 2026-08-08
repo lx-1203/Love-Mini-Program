@@ -43,6 +43,8 @@ import { featureFlags } from "../../config/feature-flags";
 // 悄悄话付费解锁（与 CardDetailOverlay 共用同一套交友币逻辑）
 import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
 import { useVipStore } from "../../stores/vip";
+// 2026-08-08 走查 P1：超级测试账号悄悄话免费旁路（会话 store 的 isSuperTestAccount getter）
+import { useSessionStore } from "../../stores/session";
 // Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
 import type { UniTouchEvent } from "../../compat";
 // 统一常量：手势阈值、长按时延、卡片动画参数等
@@ -82,6 +84,10 @@ const { t } = useI18n();
 
 const coinsStore = useCoinsStore();
 const vipStore = useVipStore();
+const sessionStore = useSessionStore();
+
+/** 超级测试账号（2026-08-08 走查 P1：悄悄话免费旁路） */
+const isSuperTest = computed(() => sessionStore.isSuperTestAccount);
 
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
@@ -508,13 +514,13 @@ const educationLabel = computed(() => {
 
 /**
  * 底部操作栏「悄悄话」：付费私信入口。
- * 优先级：后端已允许（allowMessage）或会员 → 直接进入会话；
+ * 优先级：后端已允许（allowMessage）、会员（membershipEnabled 门控）或超级测试账号 → 直接进入会话；
  * 其余 → 交友币扣费（UNLOCK_COST_YUAN.WHISPER）后进入会话。
  */
 function onWhisperTap(): void {
   const card = currentCard.value;
   if (!card || isFlyingOut.value) return;
-  if (card.allowMessage || vipStore.isVip) {
+  if (card.allowMessage || (featureFlags.membershipEnabled && vipStore.isVip) || isSuperTest.value) {
     emit("message", card.userId);
     return;
   }

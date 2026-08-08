@@ -32,6 +32,8 @@ import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 // 谁喜欢我 / 我的访客：付费解锁（与 messages 页共用同一套交友币逻辑）
 import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
 import { useVipStore } from "../../stores/vip";
+// 2026-08-08 走查 P1：VIP 免费放行点统一受 membershipEnabled 门控
+import { featureFlags } from "../../config/feature-flags";
 
 // 同步自定义 TabBar 选中状态（tab 顺序：首页0/匹配1/圈子2/消息3/我的4）
 useTabBar(3);
@@ -123,13 +125,14 @@ function handleAnonymousMatch() {
 
 /**
  * 快捷入口：谁喜欢我 / 我的访客（付费解锁）。
- * 会员直接放行；其余弹确认扣交友币（UNLOCK_COST_YUAN.LIKES / VISITORS）后进入列表页。
+ * 会员（membershipEnabled 门控）直接放行；其余弹确认扣交友币（UNLOCK_COST_YUAN.LIKES / VISITORS）后进入列表页。
  * @param type - 入口类型：liked=谁喜欢我，visitors=我的访客
  */
 function handlePaidEntry(type: "liked" | "visitors") {
   const target = type === "liked" ? ROUTES.LIKES.INDEX : ROUTES.PROFILE.VISITORS;
   const cost = type === "liked" ? UNLOCK_COST_YUAN.LIKES : UNLOCK_COST_YUAN.VISITORS;
-  if (vipStore.isVip) {
+  // 2026-08-08 走查 P1：VIP 免费放行受 membershipEnabled 门控（会员未启用时仅交友币路径）
+  if (featureFlags.membershipEnabled && vipStore.isVip) {
     openAppPath(target);
     return;
   }
