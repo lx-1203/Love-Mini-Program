@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.DoNotDisturbSetting;
 import com.campuslove.api.repository.DoNotDisturbSettingRepository;
 import java.time.LocalDateTime;
@@ -142,7 +143,7 @@ public class RealDoNotDisturbService implements DoNotDisturbService {
         setting.setCustomWeekdays("CUSTOM".equals(request.repeatMode())
                 ? normalizeCustomWeekdays(request.customWeekdays()) : null);
         setting.setAllowUrgent(request.allowUrgent());
-        setting.setUpdatedAt(LocalDateTime.now());
+        setting.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         DoNotDisturbSetting saved = repository.save(setting);
         log.info("用户[{}]免打扰设置已更新: enabled={}, time={}~{}, repeat={}, allowUrgent={}",

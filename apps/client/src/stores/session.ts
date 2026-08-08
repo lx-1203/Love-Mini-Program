@@ -11,6 +11,8 @@ import { toLoginHeroView } from "../view-models/login";
 import { MOCK_LOGIN_HERO } from "../features/login/hero";
 import { useMock } from "./helpers/use-mock";
 import type { components } from "../services/generated/api-types";
+// R4-00167: bindSchool 城市兜底（按学校名查城市表）
+import { SCHOOLS } from "../config/schools";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
 
@@ -658,11 +660,29 @@ export const useSessionStore = defineStore("session", {
       // 落库后 schoolBound 刷新/重登不再回退；mock 模式保持本地改写。
       if (!useMock()) {
         try {
+          // 修复（R4-00167）：CampusProfileRequest 的 city/department 标注 @NotBlank，
+          // 原实现传空串导致真实模式恒 400。现优先取用户已认证的真实校园资料
+          // （GET /profile/campus 返回的 city/department），其次按学校名查
+          // config/schools.ts 城市表兜底；仅当两者都缺失时才保留空串
+          // （该路径仅未认证用户可达，首页学校选择器本应不可见）。
+          let city = "";
+          let department = "";
+          try {
+            const existing = await clientApi.getCampusProfile();
+            city = existing?.city ?? "";
+            department = existing?.department ?? "";
+          } catch (_e) {
+            // 未认证/无档案：静默降级，走 SCHOOLS 城市表
+          }
+          if (!city) {
+            city =
+              SCHOOLS.find((s) => s.name === schoolId || t(s.nameKey ?? "") === schoolId)?.city ?? "";
+          }
           // CampusProfileRequest 要求 city/campusName/department 三字段
           const payload = {
-            city: "",
+            city,
             campusName: schoolId,
-            department: "",
+            department,
           };
           const saved = await clientApi.saveCampusProfile(payload);
           this.userSession = {

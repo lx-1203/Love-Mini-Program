@@ -33,6 +33,8 @@ import {
   AI_API_UNAUTHORIZED_CODE,
   AI_API_ERROR_CODE,
 } from "../constants/api";
+// R4-batch2: AI 错误提示文案 i18n 化
+import { t } from "@/i18n";
 
 // ===== 后端代理端点（去掉 /api 前缀，由 http.ts 拼接 apiBaseUrl） =====
 const BACKEND_AI_VIDEO = "/ai/video/generate";
@@ -129,7 +131,7 @@ function wrapAiError(error: unknown, operation: string): AppApiError {
       return new AppApiError({
         status: error.status,
         error: AI_API_UNAUTHORIZED_CODE,
-        message: "AI 服务未授权，请联系管理员检查 API Key 配置",
+        message: t("apiErrors.aiUnauthorized"),
         details: { operation, upstreamMessage: error.message },
       });
     }
@@ -137,7 +139,7 @@ function wrapAiError(error: unknown, operation: string): AppApiError {
       return new AppApiError({
         status: error.status,
         error: AI_API_ERROR_CODE,
-        message: "AI 服务暂时不可用，请稍后重试",
+        message: t("apiErrors.aiUnavailable"),
         details: { operation, upstreamMessage: error.message },
       });
     }
@@ -146,7 +148,7 @@ function wrapAiError(error: unknown, operation: string): AppApiError {
       return new AppApiError({
         status: 401,
         error: AI_API_UNAUTHORIZED_CODE,
-        message: "AI 服务未授权，请联系管理员检查 API Key 配置",
+        message: t("apiErrors.aiUnauthorized"),
         details: { operation, upstreamMessage: error.message },
       });
     }
@@ -155,7 +157,7 @@ function wrapAiError(error: unknown, operation: string): AppApiError {
       return new AppApiError({
         status: error.status,
         error: AI_API_ERROR_CODE,
-        message: "AI 服务暂时不可用，请稍后重试",
+        message: t("apiErrors.aiUnavailable"),
         details: { operation, upstreamMessage: error.message },
       });
     }
@@ -167,7 +169,7 @@ function wrapAiError(error: unknown, operation: string): AppApiError {
   return new AppApiError({
     status: 0,
     error: AI_API_ERROR_CODE,
-    message: "AI 服务暂时不可用，请稍后重试",
+    message: t("apiErrors.aiUnavailable"),
     details: { operation, rawError: message },
   });
 }

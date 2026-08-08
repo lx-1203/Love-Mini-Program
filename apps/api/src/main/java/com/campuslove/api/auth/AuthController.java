@@ -117,10 +117,15 @@ public class AuthController {
     /**
      * 手机号 + 密码登录。
      *
+     * <p>R4-00263：公开端点补 {@code @RateLimit}（桶容量 10，每 10 秒补充 1 个令牌，
+     * 按客户端 IP 限流）——与 wechat-login/admin/login 的限流口径一致，
+     * 防止手机号+密码无限次爆破尝试（撞库/枚举风险）。</p>
+     *
      * @param request 登录请求(phone/password)
      * @return 用户会话视图(包含 JWT 令牌)
      */
     @PostMapping("/phone-login")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
     public UserSessionView phoneLogin(@Valid @RequestBody PhoneLoginRequest request) {
         return authService.loginWithPhone(request.phone(), request.password());
     }

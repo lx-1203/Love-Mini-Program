@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.AuditLog;
 import com.campuslove.api.repository.AuditLogRepository;
 import java.time.LocalDateTime;
@@ -53,7 +54,7 @@ public class AdminAuditLogService {
             return;
         }
         if (auditLog.getCreatedAt() == null) {
-            auditLog.setCreatedAt(LocalDateTime.now());
+            auditLog.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         }
         try {
             auditLogRepository.save(auditLog);

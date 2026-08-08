@@ -1,6 +1,10 @@
 package com.campuslove.api.discover;
 
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.wallet.InsufficientBalanceException;
+import com.campuslove.api.wallet.WalletService;
+import com.campuslove.api.wallet.WalletTransactionLog;
+import com.campuslove.api.wallet.WalletTransactionLogRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -9,8 +13,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -52,6 +60,28 @@ public class RecommendationController {
   /** 推荐配额服务（P0-24/P0-31 修复：配额查询端点）。real profile 注入；mock 为 null。 */
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.campuslove.api.growth.RecommendQuotaService recommendQuotaService;
+
+  /**
+   * 推荐排序器（R4-00314：悄悄话文案解析）。real profile 注入；mock 为 null。
+   * 仅解锁接口（GET /recommendations/{userId}/whisper）使用。
+   */
+  @Autowired(required = false)
+  private RecommendationRanker recommendationRanker;
+
+  /** 钱包服务（R4-00314：悄悄话解锁扣费）。real profile 注入；mock 为 null。 */
+  @Autowired(required = false)
+  private WalletService walletService;
+
+  /** 钱包流水 Repository（R4-00314：悄悄话/私信解锁状态查询）。real profile 注入；mock 为 null。 */
+  @Autowired(required = false)
+  private WalletTransactionLogRepository walletTransactionLogRepository;
+
+  /**
+   * 悄悄话解锁单价（分）（R4-00314，配置 app.unlock-price.whisper，默认 200 分 = 2 元，
+   * 与客户端定价镜像 UNLOCK_COST_YUAN.WHISPER 对齐）。服务端定价，客户端仅展示提示。
+   */
+  @Value("${app.unlock-price.whisper:200}")
+  private int whisperPriceCents;
 
   public RecommendationController(RecommendationService recommendationService) {
     this.recommendationService = recommendationService;
@@ -301,6 +331,130 @@ public class RecommendationController {
     // Task 15.2：与 getRecommendations 一致，对历史列表应用隐私字段过滤校验
     return PrivacyFieldFilter.sanitize(recommendationService.getHistory(userId));
   }
+
+  // ---- R4-00314：悄悄话解锁链路（付费可见内容服务端保护） ----
+
+  /**
+   * 查询悄悄话内容（付费解锁后可见）。
+   * GET /api/v1/recommendations/{userId}/whisper
+   *
+   * <p>R4-00314：悄悄话文案不再随推荐列表下发，本端点按解锁状态返回：
+   * 当前用户已为该目标付费解锁（wallet_transaction_log 存在
+   * MESSAGE_UNLOCK / WHISPER_UNLOCK 流水）时返回完整文案；未解锁返回
+   * {@code {unlocked:false, whisper:null}}，不泄露付费内容。</p>
+   *
+   * @param targetUserId 目标用户 ID
+   * @return 悄悄话视图（unlocked / whisper / balanceCents）
+   */
+  @GetMapping("/recommendations/{userId}/whisper")
+  @PreAuthorize("hasRole('USER')")
+  public WhisperUnlockView getWhisper(@PathVariable("userId") Long targetUserId) {
+    if (targetUserId == null || targetUserId <= 0) {
+      throw new IllegalArgumentException("目标用户 ID 必须为正数");
+    }
+    Long currentUserId = SecurityUtils.getCurrentUserId();
+    if (isMessageOrWhisperUnlocked(currentUserId, targetUserId)) {
+      String whisper = recommendationRanker != null
+              ? recommendationRanker.resolveWhisper(targetUserId) : null;
+      return new WhisperUnlockView(true, whisper, balanceCents(currentUserId));
+    }
+    return new WhisperUnlockView(false, null, balanceCents(currentUserId));
+  }
+
+  /**
+   * 付费解锁悄悄话并返回内容（幂等）。
+   * POST /api/v1/recommendations/{userId}/whisper/unlock
+   *
+   * <p>R4-00314：悄悄话扣费链路消费方——按服务端定价
+   * （{@code app.unlock-price.whisper}，默认 200 分 = 2 元）扣减钱包并写入
+   * WHISPER_UNLOCK 流水（orderId={@code UNLOCK-WHISPER-{targetUserId}}，
+   * order_id 唯一索引保证同一目标只扣一次费），随后返回悄悄话内容。</p>
+   *
+   * @param targetUserId 目标用户 ID
+   * @return 悄悄话视图（解锁成功后 unlocked=true 且含完整文案）
+   * @throws InsufficientBalanceException 余额不足时抛出（HTTP 409）
+   */
+  @PostMapping("/recommendations/{userId}/whisper/unlock")
+  @PreAuthorize("hasRole('USER')")
+  public WhisperUnlockView unlockWhisper(@PathVariable("userId") Long targetUserId) {
+    if (targetUserId == null || targetUserId <= 0) {
+      throw new IllegalArgumentException("目标用户 ID 必须为正数");
+    }
+    Long currentUserId = SecurityUtils.getCurrentUserId();
+    if (currentUserId.equals(targetUserId)) {
+      throw new IllegalArgumentException("不能对本人解锁悄悄话");
+    }
+    // 已解锁直接放行（不重复扣费，幂等）
+    if (isMessageOrWhisperUnlocked(currentUserId, targetUserId)) {
+      String whisper = recommendationRanker != null
+              ? recommendationRanker.resolveWhisper(targetUserId) : null;
+      return new WhisperUnlockView(true, whisper, balanceCents(currentUserId));
+    }
+    if (walletService == null) {
+      // mock profile：钱包服务不可用，返回解锁成功但不含扣费（本地演示语义）
+      String whisper = recommendationRanker != null
+              ? recommendationRanker.resolveWhisper(targetUserId) : null;
+      return new WhisperUnlockView(true, whisper, null);
+    }
+    // 服务端定价扣费（幂等：order_id 唯一索引兜底）
+    Long balanceAfter = walletService.deduct(
+            currentUserId,
+            (long) whisperPriceCents,
+            "UNLOCK-WHISPER-" + targetUserId,
+            WalletTransactionLog.RELATED_TYPE_WHISPER_UNLOCK,
+            String.valueOf(targetUserId));
+    String whisper = recommendationRanker != null
+            ? recommendationRanker.resolveWhisper(targetUserId) : null;
+    return new WhisperUnlockView(true, whisper, balanceAfter);
+  }
+
+  /**
+   * 查询当前用户是否已对目标用户解锁私信/悄悄话
+   * （wallet_transaction_log 存在 MESSAGE_UNLOCK / WHISPER_UNLOCK 流水）。
+   */
+  private boolean isMessageOrWhisperUnlocked(Long currentUserId, Long targetUserId) {
+    if (walletTransactionLogRepository == null) {
+      return false;
+    }
+    try {
+      return !walletTransactionLogRepository
+              .findByUserIdAndRelatedTypeInAndRelatedIdIn(
+                      currentUserId,
+                      List.of(WalletTransactionLog.RELATED_TYPE_MESSAGE_UNLOCK,
+                              WalletTransactionLog.RELATED_TYPE_WHISPER_UNLOCK),
+                      List.of(String.valueOf(targetUserId)))
+              .isEmpty();
+    } catch (RuntimeException e) {
+      // 解锁状态查询失败降级为未解锁（不影响主流程）
+      return false;
+    }
+  }
+
+  /** 查询当前用户钱包余额（分）；钱包服务不可用时返回 null。 */
+  private Long balanceCents(Long userId) {
+    if (walletService == null) {
+      return null;
+    }
+    try {
+      return walletService.getBalance(userId);
+    } catch (RuntimeException e) {
+      return null;
+    }
+  }
+}
+
+/**
+ * 悄悄话视图（R4-00314 解锁接口返回体）。
+ *
+ * @param unlocked     当前用户是否已解锁该悄悄话
+ * @param whisper      悄悄话文案（未解锁时为 null，不泄露付费内容）
+ * @param balanceCents 当前用户钱包余额（分，查询失败或服务不可用时为 null）
+ */
+record WhisperUnlockView(
+        boolean unlocked,
+        String whisper,
+        Long balanceCents
+) {
 }
 
 // ---- Views ----

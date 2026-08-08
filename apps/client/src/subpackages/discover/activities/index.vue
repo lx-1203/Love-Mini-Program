@@ -301,13 +301,13 @@ defineExpose({ toggleEnroll });
 
 <template>
   <AppShell
-    title="线下活动"
-    subtitle="从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。"
+    :title="t('activities.sectionTitle')"
+    :subtitle="t('activities.sectionSubtitle')"
     :show-tab-bar="false"
   >
     <!-- 加载中（无缓存） -->
     <view v-if="activityStore.loading && !activityStore.activities.length" class="status-box">
-      <text class="status-text">正在加载活动内容...</text>
+      <text class="status-text">{{ t("activities.loadingContent") }}</text>
     </view>
 
     <!-- 加载失败（无缓存） -->
@@ -316,7 +316,7 @@ defineExpose({ toggleEnroll });
       class="status-box"
     >
       <text class="status-text status-text--error">{{ activityStore.errorMessage }}</text>
-      <button class="retry-btn" @tap="activityStore.fetchActivities()">重试</button>
+      <button class="retry-btn" @tap="activityStore.fetchActivities()">{{ t("common.retry") }}</button>
     </view>
 
     <!-- 暂无活动 -->
@@ -335,14 +335,14 @@ defineExpose({ toggleEnroll });
             :class="{ 'view-toggle__btn--active': viewMode === 'list' }"
             @tap="switchView('list')"
           >
-            <text class="view-toggle__text">列表</text>
+            <text class="view-toggle__text">{{ t("activities.listTab") }}</text>
           </view>
           <view
             class="view-toggle__btn"
             :class="{ 'view-toggle__btn--active': viewMode === 'calendar' }"
             @tap="switchView('calendar')"
           >
-            <text class="view-toggle__text">日历</text>
+            <text class="view-toggle__text">{{ t("activities.calendarTab") }}</text>
           </view>
         </view>
       </view>
@@ -371,7 +371,7 @@ defineExpose({ toggleEnroll });
               <!-- 参与意向人数标记（同校可见） -->
               <view v-if="(item.enrollmentCount ?? item.enrollCount ?? 0) > 0" class="row-enrollment">
                 <text class="enrollment-count">{{ item.enrollmentCount ?? item.enrollCount ?? 0 }}</text>
-                <text class="enrollment-label">人已报名</text>
+                <text class="enrollment-label">{{ t("activities.enrolledLabel") }}</text>
               </view>
             </view>
 
@@ -396,26 +396,26 @@ defineExpose({ toggleEnroll });
   @tap.stop="toggleEnroll(item.id)"
             >
               <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
-              <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
+              <text v-else>{{ item.isEnrolled ? t('activities.interestedDone') : t('activities.interested') }}</text>
             </button>
           </view>
         </view>
 
         <!-- 加载更多提示 -->
         <view v-if="activityStore.loading && activityStore.activities.length" class="loading-more" role="status" aria-live="polite">
-          <text class="loading-more__text">加载中...</text>
+          <text class="loading-more__text">{{ t("common.loading") }}</text>
         </view>
         <view v-else-if="!activityStore.hasMore && activityStore.activities.length" class="loading-more" role="status" aria-live="polite">
-          <text class="loading-more__text">没有更多活动了</text>
+          <text class="loading-more__text">{{ t("activities.noMore") }}</text>
         </view>
 
         <SectionCard
-          title="下一步"
-          subtitle="看到合适活动后，可以继续去寻觅，也可以提交新的活动提案。"
+          :title="t('activities.nextTitle')"
+          :subtitle="t('activities.nextSubtitle')"
         >
           <BottomActionBar
-            primary-label="去寻觅"
-            secondary-label="提交活动提案"
+            :primary-label="t('activities.goExplore')"
+            :secondary-label="t('activities.submitProposal')"
             @primary="openAppPath('/pages/discover/index')"
             @secondary="openAppPath('/subpackages/support/feedback/index')"
           />
@@ -489,7 +489,7 @@ defineExpose({ toggleEnroll });
               class="calendar-cell__count"
             >
               <text class="calendar-cell__count-text">
-                {{ getDateEnrollCount(cell.dateStr) }}人
+                {{ t("activities.peopleCount", { n: getDateEnrollCount(cell.dateStr) }) }}
               </text>
             </view>
           </view>
@@ -502,7 +502,7 @@ defineExpose({ toggleEnroll });
               <image class="selected-date-header__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CALENDAR" mode="aspectFit" alt="" />
               <text class="selected-date-header__label">{{ formatDateLabel(selectedDate) }}</text>
             </view>
-            <text class="selected-date-header__count">{{ selectedDateActivities.length }}个活动</text>
+            <text class="selected-date-header__count">{{ t("activities.activityCount", { n: selectedDateActivities.length }) }}</text>
           </view>
 
           <view
@@ -517,7 +517,7 @@ defineExpose({ toggleEnroll });
               <text class="row-title">{{ item.title }}</text>
               <view v-if="(item.enrollmentCount ?? item.enrollCount ?? 0) > 0" class="row-enrollment">
                 <text class="enrollment-count">{{ item.enrollmentCount ?? item.enrollCount ?? 0 }}</text>
-                <text class="enrollment-label">人已报名</text>
+                <text class="enrollment-label">{{ t("activities.enrolledLabel") }}</text>
               </view>
             </view>
 
@@ -542,7 +542,7 @@ defineExpose({ toggleEnroll });
   @tap.stop="toggleEnroll(item.id)"
             >
               <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
-              <text v-else>{{ item.isEnrolled ? '已感兴趣' : '感兴趣' }}</text>
+              <text v-else>{{ item.isEnrolled ? t('activities.interestedDone') : t('activities.interested') }}</text>
             </button>
           </view>
 
@@ -554,12 +554,12 @@ defineExpose({ toggleEnroll });
 
         <!-- 日历底部操作栏 -->
         <SectionCard
-          title="下一步"
-          subtitle="看到合适活动后，可以继续去寻觅，也可以提交新的活动提案。"
+          :title="t('activities.nextTitle')"
+          :subtitle="t('activities.nextSubtitle')"
         >
           <BottomActionBar
-            primary-label="去寻觅"
-            secondary-label="提交活动提案"
+            :primary-label="t('activities.goExplore')"
+            :secondary-label="t('activities.submitProposal')"
             @primary="openAppPath('/pages/discover/index')"
             @secondary="openAppPath('/subpackages/support/feedback/index')"
           />

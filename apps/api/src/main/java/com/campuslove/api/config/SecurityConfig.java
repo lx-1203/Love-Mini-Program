@@ -133,6 +133,10 @@ public class SecurityConfig {
                 // 登录前（注册页/登录页勾选协议）即需要拉取用户协议/隐私政策，
                 // 客户端该请求不携带鉴权头；内容为内嵌静态常量，无用户数据泄露风险。
                 .requestMatchers("/api/v1/config/legal").permitAll()
+                // R4-00318：微信支付回调端点 permitAll 放行。
+                // 由微信服务器调用（无 JWT），验签在端点内部完成（当前为骨架实现，
+                // 微信支付 SDK 接入前不得在生产启用——见 BillingController 类注释）。
+                .requestMatchers("/api/v1/vip/payment-callback").permitAll()
                 // Task 8.4.1：springdoc-openapi Swagger UI 与 OpenAPI 文档端点
                 // 仅 ADMIN 可访问，避免生产环境暴露接口结构。
                 // 开发环境可通过 SWAGGER_UI_ENABLED=true 环境变量在 application-dev.yml 中放开

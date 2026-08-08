@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.RecommendationConfig;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -101,7 +102,7 @@ public class RecommendQuotaService {
      * @return 已用次数
      */
     public int getUsedCount(Long userId) {
-        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
         try {
             if (redisTemplate != null) {
                 Object value = redisTemplate.opsForValue().get(REDIS_KEY_PREFIX + userId + ":" + dateKey);
@@ -126,7 +127,7 @@ public class RecommendQuotaService {
      * @return true 表示成功占用一次配额；false 表示已达今日上限
      */
     public boolean tryConsume(Long userId) {
-        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
         String localKey = userId + ":" + dateKey;
         int dailyQuota = getDailyQuota(userId);
         try {

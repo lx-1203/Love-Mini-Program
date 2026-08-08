@@ -1,5 +1,6 @@
 package com.campuslove.api.mq;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.Notification.NotificationType;
 import com.campuslove.api.entity.Notification.ReferenceType;
@@ -235,7 +236,7 @@ public class MatchEventConsumer {
             entity.setSourceUserId(sourceUserId != null ? sourceUserId : SYSTEM_SOURCE_USER_ID);
             entity.setReferenceType(ReferenceType.user);
             entity.setIsRead(false);
-            entity.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now());
+            entity.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now(TimeZones.BUSINESS));
             notificationRepository.save(entity);
             log.debug("匹配事件通知已持久化：receiverId={}, type={}, title={}",
                     receiverId, type, title);
@@ -253,8 +254,8 @@ public class MatchEventConsumer {
      */
     private LocalDateTime toLocalDateTime(java.time.Instant instant) {
         if (instant == null) {
-            return LocalDateTime.now();
+            return LocalDateTime.now(TimeZones.BUSINESS);
         }
-        return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        return LocalDateTime.ofInstant(instant, TimeZones.BUSINESS);
     }
 }

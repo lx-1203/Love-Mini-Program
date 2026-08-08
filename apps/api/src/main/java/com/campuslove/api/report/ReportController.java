@@ -1,5 +1,6 @@
 package com.campuslove.api.report;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.common.Idempotent;
@@ -71,7 +72,7 @@ public class ReportController {
         Long reporterId = SecurityUtils.getCurrentUserId();
 
         // infra R2-00259: 每日举报限额校验
-        LocalDateTime dayStart = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime dayStart = LocalDateTime.now(TimeZones.BUSINESS).toLocalDate().atStartOfDay();
         long todayReports = reportRepository.countByReporterIdAndCreatedAtAfter(reporterId, dayStart);
         if (todayReports >= DAILY_REPORT_LIMIT) {
             throw new DailyLimitExceededException("举报", DAILY_REPORT_LIMIT,
@@ -85,7 +86,7 @@ public class ReportController {
         report.setReason(req.reason());
         report.setDescription(req.description());
         report.setStatus(STATUS_PENDING);
-        report.setCreatedAt(LocalDateTime.now());
+        report.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         Report saved = reportRepository.save(report);
 

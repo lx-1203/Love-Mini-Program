@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -189,7 +190,7 @@ public class AdminReportController {
         report.setStatus(newStatus);
         report.setHandlerId(handlerId);
         report.setHandleRemark(req.remark());
-        report.setHandledAt(LocalDateTime.now());
+        report.setHandledAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         reportRepository.save(report);
 

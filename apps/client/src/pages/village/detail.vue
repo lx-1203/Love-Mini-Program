@@ -809,7 +809,7 @@ defineExpose({ handleCommentLike, noop });
                     </view>
                     <!-- 回复对象昵称（replyTo 缺失时不显示前缀） -->
                     <text class="comment-reply__text">
-                      <text v-if="reply.replyTo" class="comment-reply__text-ref">回复 @{{ reply.replyTo }}：</text>{{ reply.content }}
+                      <text v-if="reply.replyTo" class="comment-reply__text-ref">{{ t("village.replyToPrefix", { name: reply.replyTo }) }}</text>{{ reply.content }}
                     </text>
                     <view class="comment-actions">
                       <view

@@ -1,5 +1,6 @@
 package com.campuslove.api.campus;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SensitiveWordFilter;
@@ -109,9 +110,16 @@ public class RealCampusService implements CampusService {
             topics = campusTopicRepository.findBySchoolIdOrderByCreatedAtDesc(schoolId);
         }
 
+        // R4-00385：客户端查询层按 status='active' 过滤——管理端软删/隐藏的话题
+        // （AdminCampusTopicController.deleteTopic / reject 审核置 hidden）不再对
+        // 客户端校园圈列表可见，删除/下架功能真正生效（原注释自认未过滤的缺口）。
+        List<CampusTopic> activeTopics = topics.stream()
+                .filter(t -> t.getStatus() == CampusTopic.TopicStatus.active)
+                .toList();
+
         // Task 2.2.3：批量预加载作者信息，避免在 toCampusTopicView 中触发 N+1 查询
-        Map<Long, User> authorMap = batchLoadAuthors(topics);
-        return topics.stream()
+        Map<Long, User> authorMap = batchLoadAuthors(activeTopics);
+        return activeTopics.stream()
                 .map(topic -> toCampusTopicView(topic, authorMap))
                 .toList();
     }
@@ -137,7 +145,7 @@ public class RealCampusService implements CampusService {
         String filteredContent = sensitiveWordFilter.filterWithLog(
                 content != null ? content : "", userId, "CAMPUS_TOPIC_CONTENT");
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         CampusTopic topic = new CampusTopic();
         topic.setSchoolId(schoolId);
         topic.setCategory(category);
@@ -176,7 +184,7 @@ public class RealCampusService implements CampusService {
 
         CampusTopic topic = findTopicOrThrow(topicId);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         CampusTopicReply reply = new CampusTopicReply();
         reply.setTopicId(topicId);
         reply.setAuthorId(userId);

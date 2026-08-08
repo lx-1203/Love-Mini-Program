@@ -1,5 +1,6 @@
 package com.campuslove.api.campus;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.campus.event.CertificationApprovedEvent;
 import com.campuslove.api.common.ResourceConflictException;
 import com.campuslove.api.entity.CampusCertification;
@@ -85,7 +86,7 @@ public class RealCampusCertificationService implements CampusCertificationServic
             existing.setMajor(major);
             existing.setStudentIdCardUrl(studentIdCardUrl);
             existing.setStatus(STATUS_PENDING);
-            existing.setSubmittedAt(LocalDateTime.now());
+            existing.setSubmittedAt(LocalDateTime.now(TimeZones.BUSINESS));
             existing.setReviewerId(null);
             existing.setReviewComment(null);
             existing.setReviewedAt(null);
@@ -100,7 +101,7 @@ public class RealCampusCertificationService implements CampusCertificationServic
         certification.setMajor(major);
         certification.setStudentIdCardUrl(studentIdCardUrl);
         certification.setStatus(STATUS_PENDING);
-        certification.setSubmittedAt(LocalDateTime.now());
+        certification.setSubmittedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         CampusCertification saved = campusCertificationRepository.save(certification);
         log.info("用户 {} 提交校园认证申请，记录 id={}", userId, saved.getId());
@@ -158,7 +159,7 @@ public class RealCampusCertificationService implements CampusCertificationServic
         certification.setStatus(status);
         certification.setReviewerId(reviewerId);
         certification.setReviewComment(reviewComment);
-        certification.setReviewedAt(LocalDateTime.now());
+        certification.setReviewedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         CampusCertification saved = campusCertificationRepository.save(certification);
         log.info("审核人 {} 将认证记录 id={} 审核为: {}", reviewerId, certId, status);

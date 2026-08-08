@@ -20,7 +20,21 @@
 --      - 动态预览 ← posts（作者最新帖子）
 --
 --   幂等性：固定 id + WHERE NOT EXISTS，可安全重跑。
+--
+--   R4-00420 环境守卫：本迁移整体包在存储过程守卫中，仅当 Flyway 占位符
+--   demo_seed=true（演示/验收环境，DEMO_SEED=true）时执行数据写入；
+--   生产（默认 demo_seed=false）不会灌入虚拟用户，推荐池不混入假数据、
+--   手机号段不被占用。注意：修改本文件会改变迁移 checksum，已应用本迁移的
+--   环境需在开启校验前按 demo_seed 语义重新评估（validateOnMigrate=true 时
+--   会报 checksum mismatch，属预期——见 R4 审计处置）。
 -- ============================================================
+
+-- ========== R4-00420 守卫开始（demo_seed=true 才执行下方全部语句） ==========
+DELIMITER $$
+DROP PROCEDURE IF EXISTS seed_50_virtual_users_guard $$
+CREATE PROCEDURE seed_50_virtual_users_guard()
+BEGIN
+  IF '${demo_seed}' = 'true' THEN
 
 -- ========== 0. 扩大推荐候选池（否则新用户不进匹配页） ==========
 UPDATE match_config
@@ -487,3 +501,11 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = 10056);
 -- 说明：user_basic_profile / user_campus_profile / posts
 --       在 V2026.08.07.0022 迁移中批量补齐（单文件过大会超限）。
 -- ============================================================
+
+  END IF;
+END $$
+DELIMITER ;
+-- ========== R4-00420 守卫结束 ==========
+
+CALL seed_50_virtual_users_guard();
+DROP PROCEDURE seed_50_virtual_users_guard;

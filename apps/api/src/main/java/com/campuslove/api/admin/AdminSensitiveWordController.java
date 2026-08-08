@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.config.CacheNames;
@@ -39,10 +40,11 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>接口：</p>
  * <ul>
- *   <li>GET    /api/admin/sensitive-words                - 敏感词列表（支持可选 category 过滤）</li>
- *   <li>POST   /api/admin/sensitive-words                - 新增敏感词</li>
- *   <li>DELETE /api/admin/sensitive-words/{id}           - 删除敏感词</li>
- *   <li>POST   /api/admin/sensitive-words/batch-import   - SubTask 5.3.5：批量异步导入敏感词</li>
+ *   <li>GET    /api/admin/sensitive-words                     - 敏感词列表（支持可选 category 过滤）</li>
+ *   <li>POST   /api/admin/sensitive-words                     - 新增敏感词</li>
+ *   <li>DELETE /api/admin/sensitive-words/{id}                - 删除敏感词</li>
+ *   <li>POST   /api/admin/sensitive-words/batch-import        - SubTask 5.3.5：批量异步导入敏感词</li>
+ *   <li>GET    /api/admin/sensitive-words/import/status/{taskId} - R4-00382：查询异步导入任务状态</li>
  * </ul>
  *
  * <p>数据隔离说明：敏感词为<b>全局资源</b>（作用于全平台内容过滤，不区分校区），
@@ -116,7 +118,7 @@ public class AdminSensitiveWordController {
         SensitiveWord entity = new SensitiveWord();
         entity.setWord(word);
         entity.setCategory(request.category());
-        entity.setCreatedAt(LocalDateTime.now());
+        entity.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         SensitiveWord saved = sensitiveWordRepository.save(entity);
 
         // 同步刷新内存敏感词过滤器
@@ -203,6 +205,25 @@ public class AdminSensitiveWordController {
         SensitiveWordImportResult result = importService.importBatchAsync(
                 request.words(), request.category(), operatorId);
         return ResponseEntity.accepted().body(result);
+    }
+
+    /**
+     * 查询批量异步导入任务状态（R4-00382）。
+     * GET /api/v1/admin/sensitive-words/import/status/{taskId}
+     *
+     * <p>补全 {@link SensitiveWordImportService} Javadoc 承诺的轮询端点（此前仅
+     * batch-import 受理接口，任务状态黑盒）。返回任务受理/执行/完成/失败的最新
+     * 进度快照（status ∈ ACCEPTED/RUNNING/DONE/FAILED/EMPTY_INPUT）。</p>
+     *
+     * @param taskId 任务 ID（batch-import 受理结果返回）
+     * @return 任务状态快照
+     * @throws IllegalArgumentException 任务不存在时抛出（404 语义，状态仅存内存，
+     *         应用重启后任务状态丢失属已知局限，见 SensitiveWordImportService）
+     */
+    @GetMapping("/import/status/{taskId}")
+    public SensitiveWordImportResult getImportStatus(@PathVariable String taskId) {
+        return importService.getTaskStatus(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("任务不存在或已过期: taskId=" + taskId));
     }
 
     private SensitiveWordView toView(SensitiveWord entity) {

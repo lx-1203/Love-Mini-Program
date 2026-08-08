@@ -1,5 +1,6 @@
 package com.campuslove.api.media;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.Resilience4jConfig;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -249,7 +250,7 @@ public class LocalMediaStorageService implements MediaStorageService {
         validateMagicBytes(file, lowerExt, normalizedType);
 
         // 计算存储路径与 URL
-        String monthSegment = LocalDate.now().format(MONTH_FMT);
+        String monthSegment = LocalDate.now(TimeZones.BUSINESS).format(MONTH_FMT);
         // 存储文件名使用 UUID，不依赖原始文件名，进一步消除路径遍历风险
         String fileName = UUID.randomUUID().toString() + "." + lowerExt;
         Path relativePath = Paths.get(String.valueOf(userId), monthSegment, fileName);

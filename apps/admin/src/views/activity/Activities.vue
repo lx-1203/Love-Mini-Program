@@ -81,7 +81,7 @@ async function fetchActivities(): Promise<void> {
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载活动列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("activities.loadFailed");
     activities.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -181,7 +181,7 @@ async function openEdit(activity: ActivitySummary): Promise<void> {
     modalError.value = "";
     formVisible.value = true;
   } catch (err: unknown) {
-    errorMsg.value = err instanceof ApiError ? err.message : "加载活动详情失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("activities.detailLoadFailed");
   }
 }
 
@@ -197,19 +197,19 @@ async function handleSave(): Promise<void> {
   const f = form.value;
   // 必填字段前端预校验（title/location/scheduleText/description）
   if (!f.title.trim()) {
-    modalError.value = "活动标题不能为空";
+    modalError.value = t("activities.titleRequired");
     return;
   }
   if (!f.location.trim()) {
-    modalError.value = "活动地点不能为空";
+    modalError.value = t("activities.locationRequired");
     return;
   }
   if (!f.scheduleText.trim()) {
-    modalError.value = "活动时间描述不能为空";
+    modalError.value = t("activities.scheduleTextRequired");
     return;
   }
   if (!f.description.trim()) {
-    modalError.value = "活动描述不能为空";
+    modalError.value = t("activities.descriptionRequired");
     return;
   }
   const payload: ActivityForm = {
@@ -233,7 +233,7 @@ async function handleSave(): Promise<void> {
     formVisible.value = false;
     await fetchActivities();
   } catch (err: unknown) {
-    modalError.value = err instanceof ApiError ? err.message : "保存失败";
+    modalError.value = err instanceof ApiError ? err.message : t("activities.saveFailed");
   } finally {
     saving.value = false;
   }
@@ -249,19 +249,20 @@ const confirming = ref(false);
 /** 弹窗标题与正文：按 action 生成 */
 const confirmTitle = () =>
   confirmAction.value === "publish"
-    ? "上架活动"
+    ? t("activities.publishTitle")
     : confirmAction.value === "unpublish"
-      ? "下架活动"
-      : "删除活动";
+      ? t("activities.unpublishTitle")
+      : t("activities.deleteTitle");
 
 const confirmMessage = () => {
   const target = confirmTarget.value;
   if (!target) return "";
   if (confirmAction.value === "delete") {
-    return `确定要删除活动「${target.title}」吗？其报名记录将一并清除，此操作不可恢复。`;
+    return t("activities.deleteConfirmMessage", { title: target.title });
   }
-  const verb = confirmAction.value === "publish" ? "上架" : "下架";
-  return `确定要${verb}活动「${target.title}」吗？`;
+  return confirmAction.value === "publish"
+    ? t("activities.publishConfirm", { title: target.title })
+    : t("activities.unpublishConfirm", { title: target.title });
 };
 
 /** 打开确认弹窗（上架/下架/删除共用） */
@@ -288,7 +289,7 @@ async function handleConfirm(): Promise<void> {
     confirmTarget.value = null;
     await fetchActivities();
   } catch (err: unknown) {
-    errorMsg.value = err instanceof ApiError ? err.message : "操作失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("activities.actionFailed");
     confirmVisible.value = false;
   } finally {
     confirming.value = false;
@@ -311,11 +312,11 @@ function viewEnrollments(activity: ActivitySummary): void {
 function statusLabel(status: string | null): string {
   switch (status) {
     case "upcoming":
-      return "即将开始";
+      return t("activities.statusUpcoming");
     case "ongoing":
-      return "进行中";
+      return t("activities.statusOngoing");
     case "ended":
-      return "已结束";
+      return t("activities.statusEnded");
     default:
       return status ?? "—";
   }
@@ -330,7 +331,7 @@ onMounted(() => {
   <view class="activities-page">
     <view class="page-header">
       <text class="page-title">{{ t("layout.navActivities") }}</text>
-      <text class="page-subtitle">维护活动信息、上架状态与报名数据</text>
+      <text class="page-subtitle">{{ t("activities.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
@@ -338,22 +339,22 @@ onMounted(() => {
         v-model="keyword"
         class="search-input"
         type="text"
-        placeholder="搜索活动标题..."
+        :placeholder="t('activities.searchPlaceholder')"
         @keyup.enter="handleSearch"
       />
       <select v-model="statusFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部状态</option>
-        <option value="upcoming">即将开始</option>
-        <option value="ongoing">进行中</option>
-        <option value="ended">已结束</option>
+        <option value="">{{ t("activities.filterStatusAll") }}</option>
+        <option value="upcoming">{{ t("activities.statusUpcoming") }}</option>
+        <option value="ongoing">{{ t("activities.statusOngoing") }}</option>
+        <option value="ended">{{ t("activities.statusEnded") }}</option>
       </select>
       <select v-model="publishedFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部上架状态</option>
+        <option value="">{{ t("activities.filterPublishedAll") }}</option>
         <option value="true">{{ t("activities.published") }}</option>
         <option value="false">{{ t("activities.unpublished") }}</option>
       </select>
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
-      <button class="primary-button" @click="openCreate">新建活动</button>
+      <button class="primary-button" @click="openCreate">{{ t("activities.createButton") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchActivities" />
@@ -362,15 +363,15 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">标题</th>
-            <th scope="col">地点</th>
-            <th scope="col">校区</th>
-            <th scope="col">状态</th>
-            <th scope="col">上架状态</th>
-            <th scope="col">报名人数</th>
-            <th scope="col">活动日期</th>
-            <th scope="col">创建时间</th>
+            <th scope="col">{{ t("activities.columnId") }}</th>
+            <th scope="col">{{ t("activities.columnTitle") }}</th>
+            <th scope="col">{{ t("activities.columnLocation") }}</th>
+            <th scope="col">{{ t("activities.columnCampus") }}</th>
+            <th scope="col">{{ t("activities.columnStatus") }}</th>
+            <th scope="col">{{ t("activities.columnPublished") }}</th>
+            <th scope="col">{{ t("activities.columnEnrollments") }}</th>
+            <th scope="col">{{ t("activities.columnDate") }}</th>
+            <th scope="col">{{ t("activities.columnCreatedAt") }}</th>
             <th scope="col">{{ t("common.actions") }}</th>
           </tr>
         </thead>
@@ -379,7 +380,7 @@ onMounted(() => {
             <td colspan="10" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="activities.length === 0">
-            <td colspan="10" class="empty-row">暂无活动数据</td>
+            <td colspan="10" class="empty-row">{{ t("activities.noData") }}</td>
           </tr>
           <tr v-for="activity in activities" :key="activity.id">
             <td>{{ activity.id }}</td>
@@ -405,9 +406,9 @@ onMounted(() => {
                 v-if="activity.published"
                 class="action-button delete"
                 @click="askConfirm('unpublish', activity)"
-              >下架</button>
-              <button v-else class="action-button enable" @click="askConfirm('publish', activity)">上架</button>
-              <button class="action-button handle" @click="viewEnrollments(activity)">查看报名</button>
+              >{{ t("activities.actionUnpublish") }}</button>
+              <button v-else class="action-button enable" @click="askConfirm('publish', activity)">{{ t("activities.actionPublish") }}</button>
+              <button class="action-button handle" @click="viewEnrollments(activity)">{{ t("activities.actionViewEnrollments") }}</button>
               <button class="action-button delete" @click="askConfirm('delete', activity)">{{ t("common.delete") }}</button>
             </td>
           </tr>
@@ -426,45 +427,47 @@ onMounted(() => {
     <!-- 新增/编辑活动弹窗 -->
     <view v-if="formVisible" class="modal-mask" @click.self="closeForm">
       <view class="modal activity-form-modal">
-        <text class="modal-title">{{ editingId === null ? "新建活动" : `编辑活动 #${editingId}` }}</text>
+        <text class="modal-title">
+          {{ editingId === null ? t("activities.createTitle") : t("activities.editTitle", { id: editingId }) }}
+        </text>
 
         <view class="form-row">
-          <text class="form-label">活动标题</text>
-          <input v-model="form.title" class="form-input" type="text" maxlength="128" placeholder="请输入活动标题（必填）" />
+          <text class="form-label">{{ t("activities.titleLabel") }}</text>
+          <input v-model="form.title" class="form-input" type="text" maxlength="128" :placeholder="t('activities.titlePlaceholder')" />
         </view>
         <view class="form-row">
-          <text class="form-label">活动地点</text>
-          <input v-model="form.location" class="form-input" type="text" maxlength="256" placeholder="请输入活动地点（必填）" />
+          <text class="form-label">{{ t("activities.locationLabel") }}</text>
+          <input v-model="form.location" class="form-input" type="text" maxlength="256" :placeholder="t('activities.locationPlaceholder')" />
         </view>
         <view class="form-row">
-          <text class="form-label">活动时间描述</text>
-          <input v-model="form.scheduleText" class="form-input" type="text" maxlength="128" placeholder="如：每周五 19:00-21:00（必填）" />
+          <text class="form-label">{{ t("activities.scheduleTextLabel") }}</text>
+          <input v-model="form.scheduleText" class="form-input" type="text" maxlength="128" :placeholder="t('activities.scheduleTextPlaceholder')" />
         </view>
         <view class="form-row">
-          <text class="form-label">活动描述</text>
-          <textarea v-model="form.description" class="form-textarea" rows="3" placeholder="请输入活动描述（必填）" />
+          <text class="form-label">{{ t("activities.descriptionLabel") }}</text>
+          <textarea v-model="form.description" class="form-textarea" rows="3" :placeholder="t('activities.descriptionPlaceholder')" />
         </view>
         <view class="form-row form-row-inline">
           <view class="form-col">
-            <text class="form-label">城市</text>
-            <input v-model="form.cityName" class="form-input" type="text" maxlength="64" placeholder="如：南京" />
+            <text class="form-label">{{ t("activities.cityLabel") }}</text>
+            <input v-model="form.cityName" class="form-input" type="text" maxlength="64" :placeholder="t('activities.cityPlaceholder')" />
           </view>
           <view class="form-col">
-            <text class="form-label">校区</text>
-            <input v-model="form.campusName" class="form-input" type="text" maxlength="128" placeholder="如：南京大学" />
+            <text class="form-label">{{ t("activities.campusLabel") }}</text>
+            <input v-model="form.campusName" class="form-input" type="text" maxlength="128" :placeholder="t('activities.campusPlaceholder')" />
           </view>
         </view>
         <view class="form-row form-row-inline">
           <view class="form-col">
-            <text class="form-label">活动日期</text>
+            <text class="form-label">{{ t("activities.dateLabel") }}</text>
             <input v-model="form.activityDate" class="form-input" type="date" />
           </view>
           <view class="form-col">
-            <text class="form-label">活动状态</text>
+            <text class="form-label">{{ t("activities.statusLabel") }}</text>
             <select v-model="form.status" class="form-input">
-              <option value="upcoming">即将开始</option>
-              <option value="ongoing">进行中</option>
-              <option value="ended">已结束</option>
+              <option value="upcoming">{{ t("activities.statusUpcoming") }}</option>
+              <option value="ongoing">{{ t("activities.statusOngoing") }}</option>
+              <option value="ended">{{ t("activities.statusEnded") }}</option>
             </select>
           </view>
         </view>
@@ -486,7 +489,13 @@ onMounted(() => {
       :title="confirmTitle()"
       :message="confirmMessage()"
       :danger="confirmAction === 'delete'"
-      :confirm-text="confirmAction === 'delete' ? t('common.delete') : confirmAction === 'publish' ? '上架' : '下架'"
+      :confirm-text="
+        confirmAction === 'delete'
+          ? t('common.delete')
+          : confirmAction === 'publish'
+            ? t('activities.actionPublish')
+            : t('activities.actionUnpublish')
+      "
       :confirming="confirming"
       @confirm="handleConfirm"
       @cancel="handleCancelConfirm"

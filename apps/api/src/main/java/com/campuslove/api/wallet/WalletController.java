@@ -1,5 +1,6 @@
 package com.campuslove.api.wallet;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
@@ -202,7 +203,7 @@ public class WalletController {
      * @return true 表示成功占用额度；false 表示已达今日上限
      */
     private boolean tryIncrementDemoRechargeCount(Long userId) {
-        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
         String localKey = userId + ":" + dateKey;
         try {
             if (redisTemplate != null) {

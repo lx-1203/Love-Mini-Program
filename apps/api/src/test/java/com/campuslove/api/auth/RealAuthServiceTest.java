@@ -9,6 +9,7 @@ import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -420,12 +422,11 @@ class RealAuthServiceTest {
      * ============================================================ */
 
     /**
-     * 场景 1：首次调用自动创建体验账号并签发 JWT。
+     * 场景 1（R4-00251）：每次调用创建独立临时体验账号并签发 JWT——会话身份完全隔离，
+     * 不再共用固定账号（13900000000）。账号 phone 为空、openid 为 guest:{UUID} 全局唯一。
      */
     @Test
     void loginAsGuest_firstCall_shouldCreateGuestAccountAndIssueToken() {
-        // Arrange：体验账号不存在（首次使用）
-        when(userRepository.findByPhone("13900000000")).thenReturn(Optional.empty());
         // save 返回传入实体（模拟 JPA 托管实体回填），否则 loginAsGuest 内 save 返回 null 导致 NPE
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(jwtTokenProvider.generateToken(any())).thenReturn("mock-guest-jwt");
@@ -433,13 +434,15 @@ class RealAuthServiceTest {
         // Act
         UserSessionView session = realAuthService.loginAsGuest();
 
-        // Assert：创建了体验账号（openid 约定 guest: 前缀 + 随机密码 BCrypt）并签发 token
-        // 2026-08-07：首次创建后 provisionGuestProfile 会再次 save（完善度 100），故共 2 次
+        // Assert：创建了独立体验账号（openid 约定 guest: 前缀 + 随机密码 BCrypt）并签发 token
+        // 创建后 provisionGuestProfile 会再次 save（完善度 100），故共 2 次
         org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
         verify(userRepository, org.mockito.Mockito.times(2)).save(captor.capture());
         User saved = captor.getAllValues().get(0);
-        assertEquals("13900000000", saved.getPhone());
-        assertEquals("guest:13900000000", saved.getOpenid());
+        assertNull(saved.getPhone(), "R4-00251：体验账号不占用手机号段");
+        assertNotNull(saved.getOpenid(), "体验账号 openid 应非空");
+        assertTrue(saved.getOpenid().startsWith("guest:"), "openid 应为 guest: 前缀");
+        assertNotEquals("guest:13900000000", saved.getOpenid(), "R4-00251：不再复用固定体验账号");
         assertEquals("体验用户", saved.getNickname());
         assertEquals("USER", saved.getRole());
         assertEquals("active", saved.getStatus());
@@ -451,54 +454,30 @@ class RealAuthServiceTest {
     }
 
     /**
-     * 场景 2：体验账号已存在时复用（幂等），不再创建。
+     * 场景 2（R4-00251）：两次登录创建两个不同账号（会话数据隔离），
+     * 不再复用同一账号导致私信/匹配/点赞数据互相污染。
      */
     @Test
-    void loginAsGuest_existingAccount_shouldReuseWithoutCreating() {
-        // Arrange：体验账号已存在（第二次使用）
-        User existing = new User();
-        existing.setId(47L);
-        existing.setOpenid("guest:13900000000");
-        existing.setPhone("13900000000");
-        existing.setPassword(passwordEncoder.encode("random-secret"));
-        existing.setNickname("体验用户");
-        existing.setRole("USER");
-        existing.setStatus("active");
-        when(userRepository.findByPhone("13900000000")).thenReturn(Optional.of(existing));
-        when(jwtTokenProvider.generateToken("47")).thenReturn("mock-guest-jwt-2");
+    void loginAsGuest_twoCalls_shouldCreateIsolatedAccounts() {
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(jwtTokenProvider.generateToken(any())).thenReturn("mock-guest-jwt");
 
-        // Act
-        UserSessionView session = realAuthService.loginAsGuest();
+        // Act：连续两次登录
+        realAuthService.loginAsGuest();
+        realAuthService.loginAsGuest();
 
-        // Assert：未触发创建（不调用 save），复用原账号并签发 token
-        verify(userRepository, never()).save(any());
-        assertEquals("47", session.userId());
-        assertEquals("mock-guest-jwt-2", session.token());
+        // Assert：每次调用都创建新账号，且 openid 互不相同（会话身份隔离）
+        org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
+        verify(userRepository, org.mockito.Mockito.times(4)).save(captor.capture());
+        List<User> created = captor.getAllValues();
+        User first = created.get(0);
+        User second = created.get(2);
+        assertNotEquals(first.getOpenid(), second.getOpenid(),
+                "R4-00251：两次体验登录必须创建不同会话账号");
     }
 
     /**
-     * 场景 3：体验账号被禁用时拒绝登录。
-     */
-    @Test
-    void loginAsGuest_disabledAccount_shouldReject() {
-        // Arrange：体验账号已被管理员禁用
-        User existing = new User();
-        existing.setId(47L);
-        existing.setOpenid("guest:13900000000");
-        existing.setPhone("13900000000");
-        existing.setPassword(passwordEncoder.encode("random-secret"));
-        existing.setNickname("体验用户");
-        existing.setRole("USER");
-        existing.setStatus("disabled");
-        when(userRepository.findByPhone("13900000000")).thenReturn(Optional.of(existing));
-
-        // Act & Assert
-        assertThrows(com.campuslove.api.common.OperationForbiddenException.class,
-                () -> realAuthService.loginAsGuest());
-    }
-
-    /**
-     * 场景 4：入口被配置关闭时（app.guest-login.enabled=false）拒绝登录。
+     * 场景 3：入口被配置关闭时（app.guest-login.enabled=false）拒绝登录。
      */
     @Test
     void loginAsGuest_disabledEntry_shouldReject() {

@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.mock.MockRuntimeState;
 import java.time.LocalDate;
 import java.util.List;
@@ -40,7 +41,7 @@ public class MockActivityService implements ActivityService {
                         item.enrollmentCount(),
                         item.participantAvatars(),
                         "upcoming",
-                        LocalDate.now().plusDays(1)
+                        LocalDate.now(TimeZones.BUSINESS).plusDays(1)
                 ))
                 .toList();
 
@@ -70,7 +71,7 @@ public class MockActivityService implements ActivityService {
                 activity.enrollmentCount(),
                 activity.participantAvatars(),
                 "upcoming",
-                LocalDate.now().plusDays(1),
+                LocalDate.now(TimeZones.BUSINESS).plusDays(1),
                 isEnrolled
         );
     }

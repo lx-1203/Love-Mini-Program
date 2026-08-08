@@ -762,43 +762,72 @@ components:
         - success
     LikedUserView:
       type: object
+      description: |
+        A user who liked the current user. Server-side paywall masking (R4-00313):
+        entries with `unlocked=false` are masked — `nickname` is a placeholder
+        ("神秘用户"), `avatarUrl` and `campusName` are `null`. The first 2 entries
+        are always free to view (`unlocked=true`); the rest require
+        `POST /api/v1/wallet/unlock` (targetType=LIKED_ME).
       properties:
         userId:
           type: integer
           format: int64
         nickname:
           type: string
+          description: Real nickname when unlocked; placeholder when masked.
         avatarUrl:
           type: string
           nullable: true
+          description: Real avatar when unlocked; null when masked.
         campusName:
           type: string
           nullable: true
+          description: Real campus when unlocked; empty string when masked.
         likedAt:
           type: string
           format: date-time
+        unlocked:
+          type: boolean
+          description: Whether the current user has unlocked (paid) this entry's full info.
       required:
         - userId
         - nickname
         - likedAt
+        - unlocked
     VisitorView:
       type: object
+      description: |
+        A profile visitor. Server-side paywall masking (R4-00313): entries with
+        `unlocked=false` are masked — `nickname` is a placeholder ("神秘用户"),
+        `avatarUrl` and `campusName` are `null`. The first 2 entries are always
+        free to view; the rest require `POST /api/v1/wallet/unlock`
+        (targetType=VISITOR).
       properties:
         visitorId:
           type: integer
           format: int64
         nickname:
           type: string
+          description: Real nickname when unlocked; placeholder when masked.
         avatarUrl:
           type: string
           nullable: true
+          description: Real avatar when unlocked; null when masked.
+        campusName:
+          type: string
+          nullable: true
+          description: Real campus when unlocked; empty string when masked.
         visitedAt:
           type: string
           format: date-time
+        unlocked:
+          type: boolean
+          description: Whether the current user has unlocked (paid) this entry's full info.
       required:
         - visitorId
         - nickname
         - visitedAt
+        - unlocked
     IcebreakerView:
       type: object
       properties:

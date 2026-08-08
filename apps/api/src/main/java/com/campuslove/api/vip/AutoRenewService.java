@@ -1,5 +1,6 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.VipBill;
 import com.campuslove.api.entity.VipBillingLog;
@@ -17,10 +18,15 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * VIP 自动续费服务。
@@ -92,6 +98,24 @@ public class AutoRenewService {
      */
     private final WalletService walletService;
 
+    /**
+     * 自引用代理（R4-00316）。
+     *
+     * <p>Spring AOP 基于代理，同一 Bean 内部方法调用不经过代理：
+     * 定时扫描任务 {@link #runRenewScan} 必须通过本代理调用 {@link #renewVip}，
+     * 否则 {@code @Transactional} 失效、无活动事务时
+     * {@link TransactionSynchronizationManager#registerSynchronization} 会抛异常
+     * （R4-00317 锁边界修复依赖事务存在）。</p>
+     */
+    @Lazy
+    @Autowired
+    private AutoRenewService self;
+
+    /**
+     * 自动续费扫描窗口（小时）：VIP 距到期 24 小时内触发续费（含已过期）。
+     */
+    private static final long RENEW_WINDOW_HOURS = 24L;
+
     public AutoRenewService(UserRepository userRepository,
                             VipBillingLogRepository vipBillingLogRepository,
                             RedissonClient redissonClient,
@@ -100,6 +124,100 @@ public class AutoRenewService {
         this.vipBillingLogRepository = vipBillingLogRepository;
         this.redissonClient = redissonClient;
         this.walletService = walletService;
+    }
+
+    /**
+     * 自动续费定时扫描（R4-00316）。
+     *
+     * <p>每 6 小时执行一次：扫描全部开启自动续费的用户，对「VIP 距到期 24 小时
+     * 内（含已过期）」的用户逐个触发 {@link #renewVip}（经 self 代理保证事务生效）。
+     * 单用户续费失败（余额不足等）仅记录日志，不阻断其他用户。</p>
+     *
+     * <p>幂等说明：续费成功后 VIP 到期时间顺延 30 天，自然移出扫描窗口，
+     * 不会因每 6 小时扫描而重复扣费；失败用户留在窗口内下次重试（失败不扣费）。</p>
+     *
+     * @return 扫描结果汇总（scanned 扫描数 / renewed 续费成功数 / failed 失败数）
+     */
+    public RenewScanResult runRenewScan() {
+        List<User> users;
+        try {
+            users = userRepository.findByAutoRenewEnabledTrue();
+        } catch (DataAccessException e) {
+            log.error("自动续费扫描查询用户失败：{}", e.getMessage());
+            return new RenewScanResult(0, 0, 0);
+        }
+        int scanned = 0;
+        int renewed = 0;
+        int failed = 0;
+        for (User user : users) {
+            if (!isVipExpiringSoon(user.getId())) {
+                continue;
+            }
+            scanned++;
+            try {
+                RenewResultView result = self.renewVip(user.getId());
+                if ("SUCCESS".equals(result.status())) {
+                    renewed++;
+                } else {
+                    failed++;
+                    log.info("自动续费扫描：用户 {} 续费未成功：status={}, message={}",
+                            user.getId(), result.status(), result.message());
+                }
+            } catch (RuntimeException e) {
+                failed++;
+                log.warn("自动续费扫描：用户 {} 续费异常：{}", user.getId(), e.getMessage());
+            }
+        }
+        log.info("自动续费扫描完成：scanned={}, renewed={}, failed={}", scanned, renewed, failed);
+        return new RenewScanResult(scanned, renewed, failed);
+    }
+
+    /**
+     * 定时调度入口（R4-00316）。
+     * 每 6 小时执行一次（首次延迟 1 分钟，等待应用完全就绪）。
+     */
+    @Scheduled(cron = "0 0 */6 * * *", initialDelay = 60_000)
+    public void scheduledRenewScan() {
+        runRenewScan();
+    }
+
+    /**
+     * 判断用户 VIP 是否处于续费窗口（距到期 24 小时内，含已过期）。
+     *
+     * <p>以最近一笔 SUCCESS 账单的 periodEnd 为 VIP 到期时间；无 SUCCESS 账单
+     * （从未开通 VIP）或未注入 vipBillRepository（测试/降级场景）时不触发。</p>
+     */
+    private boolean isVipExpiringSoon(Long userId) {
+        if (vipBillRepository == null) {
+            return false;
+        }
+        try {
+            List<VipBill> bills = vipBillRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            if (bills == null || bills.isEmpty()) {
+                return false;
+            }
+            LocalDateTime windowEnd = LocalDateTime.now(TimeZones.BUSINESS).plusHours(RENEW_WINDOW_HOURS);
+            for (VipBill bill : bills) {
+                if ("SUCCESS".equals(bill.getStatus()) && bill.getPeriodEnd() != null) {
+                    // periodEnd <= now + 24h（含已过期）即进入续费窗口
+                    return !bill.getPeriodEnd().isAfter(windowEnd);
+                }
+            }
+            return false;
+        } catch (DataAccessException e) {
+            log.warn("查询用户 VIP 到期时间失败，跳过续费扫描：userId={}, error={}", userId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 自动续费扫描结果汇总。
+     *
+     * @param scanned 进入续费窗口并尝试续费的用户数
+     * @param renewed 续费成功数
+     * @param failed  续费失败数（余额不足 / 异常）
+     */
+    public record RenewScanResult(int scanned, int renewed, int failed) {
     }
 
     /**
@@ -245,6 +363,9 @@ public class AutoRenewService {
         String lockKey = "auto-renew:" + userId;
         RLock lock = redissonClient.getLock(lockKey);
         boolean locked = false;
+        // R4-00317：锁是否已委托事务同步释放（afterCompletion 在事务提交/回滚后执行）。
+        // 为 true 时 finally 不再主动释放，保证锁生命周期覆盖整个事务提交过程。
+        boolean unlockAfterCommitRegistered = false;
         String orderNo = "RENW-" + UUID.randomUUID().toString().replace("-", "");
 
         try {
@@ -256,6 +377,24 @@ public class AutoRenewService {
                 writeBillingLog(userId, orderNo, DEFAULT_RENEW_AMOUNT_CENTS, "FAILED");
                 return new RenewResultView(orderNo, DEFAULT_RENEW_AMOUNT_CENTS, "FAILED",
                         "已有续费任务在执行");
+            }
+
+            // R4-00317：注册事务同步——锁在事务提交（或回滚）完成后再释放。
+            // 原实现在 finally 中释放锁，早于代理层事务提交：并发二次续费可读到
+            // 未提交数据再次扣款+再次顺延 VIP（双扣费）。注册后锁生命周期覆盖
+            // 「扣款 + 顺延 VIP + 写流水」的完整事务。
+            try {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        releaseLockQuietly(lock, lockKey);
+                    }
+                });
+                unlockAfterCommitRegistered = true;
+            } catch (IllegalStateException e) {
+                // 无活动事务（理论不发生——renewVip 经代理调用必有事务；防御处理）：
+                // 不注册同步，退化为 finally 立即释放（旧行为）。
+                log.warn("无活动事务，退化为方法返回时释放锁：userId={}, lockKey={}", userId, lockKey);
             }
 
             // 2. 校验用户存在且已开启自动续费
@@ -325,8 +464,11 @@ public class AutoRenewService {
             writeBillingLog(userId, orderNo, DEFAULT_RENEW_AMOUNT_CENTS, "FAILED");
             throw new RuntimeException("自动续费失败，请稍后重试", e);
         } finally {
-            // 5. 释放锁：仅当持有锁时才释放，避免 IllegalMonitorStateException
-            if (locked && lock.isHeldByCurrentThread()) {
+            // 5. 释放锁：仅当持有锁且未委托事务同步时才释放，避免 IllegalMonitorStateException。
+            // R4-00317：正常路径（unlockAfterCommitRegistered=true）锁由
+            // TransactionSynchronization.afterCompletion 在事务提交/回滚后释放，
+            // finally 不再提前解锁——锁生命周期完整覆盖事务提交。
+            if (!unlockAfterCommitRegistered && locked && lock.isHeldByCurrentThread()) {
                 try {
                     lock.unlock();
                 } catch (IllegalMonitorStateException e) {
@@ -334,6 +476,24 @@ public class AutoRenewService {
                     log.debug("锁已被自动释放：userId={}, lockKey={}", userId, lockKey);
                 }
             }
+        }
+    }
+
+    /**
+     * 安静释放分布式锁（R4-00317 事务同步回调专用）。
+     * 仅当当前线程仍持有锁时释放，异常仅记录日志不向上抛出（回调环境不传播异常）。
+     */
+    private void releaseLockQuietly(RLock lock, String lockKey) {
+        try {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+                log.debug("自动续费锁已释放（事务提交后）：lockKey={}", lockKey);
+            }
+        } catch (IllegalMonitorStateException e) {
+            // 锁已被自动释放（持锁超时），忽略
+            log.debug("锁已被自动释放：lockKey={}", lockKey);
+        } catch (RuntimeException e) {
+            log.warn("释放自动续费锁异常（不影响业务结果）：lockKey={}, error={}", lockKey, e.getMessage());
         }
     }
 
@@ -354,7 +514,7 @@ public class AutoRenewService {
             log.debug("vipBillRepository 未注入，跳过 VIP 到期时间延长（仅测试/降级场景）: userId={}", userId);
             return;
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         LocalDateTime newExpiry = now.plusDays(RENEW_PERIOD_DAYS);
 
         // 优先基于最近一笔 SUCCESS 账单顺延，避免丢失剩余权益天数
@@ -426,7 +586,7 @@ public class AutoRenewService {
             logEntry.setOrderNo(orderNo);
             logEntry.setAmount(amount);
             logEntry.setStatus(status);
-            logEntry.setCreatedAt(LocalDateTime.now());
+            logEntry.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
             vipBillingLogRepository.save(logEntry);
         } catch (DataAccessException e) {
             // 流水写入失败不影响主流程，但需记录 ERROR 便于排查

@@ -17,6 +17,9 @@ import { useI18n } from "vue-i18n";
 import { useCampusStore, CERT_STATUS_MAP, type CertificationStatus } from "../../stores/campus";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+// R4-00056: 学生证图片先上传换取 URL 再提交（real 模式后端无法访问本地临时路径）
+import { clientApi } from "../../services/api";
+import { useMock } from "../../stores/helpers/use-mock";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
@@ -110,10 +113,21 @@ async function submitCert() {
 
   isSubmitting.value = true;
   try {
+    // 修复（R4-00056）：real 模式下学生证本地临时路径（tempFilePath）先经
+    // /media/upload 上传换取可访问 URL 再提交，否则审核人员无法查看学生证。
+    // mock 模式下保持本地路径（clientApi.uploadPostImage 内部 mock 分支返回原路径）。
+    let uploadUrl = studentCardUrl.value;
+    if (!useMock() && !/^https?:\/\//.test(uploadUrl)) {
+      const uploaded = await clientApi.uploadPostImage({
+        name: "studentCard.jpg",
+        path: uploadUrl,
+      });
+      uploadUrl = uploaded?.url ?? uploadUrl;
+    }
     await campusStore.submitCertification({
       schoolName: schoolName.value.trim(),
       major: major.value.trim(),
-      studentCardUrl: studentCardUrl.value,
+      studentCardUrl: uploadUrl,
     });
     // P1-36：提交成功后重新拉取认证状态，刷新状态卡片（审核中/已认证）
     void campusStore.fetchCertificationStatus();

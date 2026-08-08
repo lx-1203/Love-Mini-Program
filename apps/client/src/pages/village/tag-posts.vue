@@ -12,6 +12,8 @@ import { appEnv } from "../../services/env";
 import { IMAGE_PATHS } from "../../config/images";
 // 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
 import { useVillageStore, formatRelativeTime, type PostItem } from "../../stores/village";
+// R4-batch2: mock 标签帖子数据源（仅 apiMode === "mock" 分支使用，real 模式不读取）
+import { mockTagPosts } from "../../stores/village/mock-data";
 
 /** 状态/互动图标（emoji 实体替换为 SVG） */
 const stateIcons = {
@@ -199,61 +201,14 @@ function onLoadMore() {
 
 /**
  * Mock 标签帖子数据
+ *
+ * R4-batch2：mock 作者 ID（1001-1006）与帖子数据已移入
+ * stores/village/mock-data.ts 的 mockTagPosts（mock-only 数据源），
+ * 本函数仅在 appEnv.apiMode === "mock" 分支被调用。
  */
 function getMockTagPosts(tag: string): PostItem[] {
-  const allMockPosts: PostItem[] = [
-    {
-      id: "mock-tag-post-1",
-      author: { userId: "1001", name: "星野", avatar: "", headline: "北京·985硕士", campusName: "北京大学" },
-      categoryId: "sincere", title: "", content: "今天在图书馆遇到一个认真学习的女生，感觉好有气质！",
-      images: [], tags: ["#校园日常", "#表白墙"], likes: 32, comments: 8, shares: 3,
-      isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
-      favorites: 10, isFavorite: false, views: 320, createdAt: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: "mock-tag-post-2",
-      author: { userId: "1002", name: "阿泽", avatar: "", headline: "上海·互联网大厂", campusName: "复旦大学" },
-      categoryId: "interest", title: "", content: "有没有一起打羽毛球的？周末约起来！求搭子！",
-      images: [], tags: ["#找搭子", "#兴趣分享"], likes: 18, comments: 12, shares: 4,
-      isLiked: true, isFollowed: false, isShared: false, isAlumni: false,
-      favorites: 6, isFavorite: false, views: 180, createdAt: new Date(Date.now() - 10800000).toISOString(),
-    },
-    {
-      id: "mock-tag-post-3",
-      author: { userId: "1003", name: "橙子", avatar: "", headline: "杭州·设计师", campusName: "浙江大学" },
-      categoryId: "activity", title: "", content: "急！计算机组成原理期末怎么复习？求大佬带带",
-      images: [], tags: ["#求助", "#技术交流"], likes: 45, comments: 23, shares: 6,
-      isLiked: false, isFollowed: true, isShared: false, isAlumni: false,
-      favorites: 15, isFavorite: true, views: 450, createdAt: new Date(Date.now() - 18000000).toISOString(),
-    },
-    {
-      id: "mock-tag-post-4",
-      author: { userId: "1004", name: "北岛", avatar: "", headline: "成都·创业者", campusName: "四川大学" },
-      categoryId: "sincere", title: "", content: "毕业5年了，想问问学弟学妹们学校现在变化大吗？",
-      images: [], tags: ["#校友动态", "#生活记录"], likes: 67, comments: 19, shares: 10,
-      isLiked: false, isFollowed: false, isShared: true, isAlumni: false,
-      favorites: 22, isFavorite: false, views: 670, createdAt: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      id: "mock-tag-post-5",
-      author: { userId: "1005", name: "南风", avatar: "", headline: "深圳·产品经理", campusName: "北京大学" },
-      categoryId: "life", title: "", content: "记录一下今天在食堂吃到的好吃的！麻辣香锅绝了",
-      images: [], tags: ["#生活记录", "#校园日常"], likes: 23, comments: 5, shares: 2,
-      isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
-      favorites: 7, isFavorite: false, views: 230, createdAt: new Date(Date.now() - 90000000).toISOString(),
-    },
-    {
-      id: "mock-tag-post-6",
-      author: { userId: "1006", name: "小鹿", avatar: "", headline: "北京·Java开发", campusName: "清华大学" },
-      categoryId: "interest", title: "", content: "想找个一起刷 LeetCode 的队友，每天互相监督",
-      images: [], tags: ["#技术交流", "#找搭子"], likes: 15, comments: 7, shares: 3,
-      isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
-      favorites: 5, isFavorite: false, views: 150, createdAt: new Date(Date.now() - 172800000).toISOString(),
-    },
-  ];
-
   // 过滤匹配的帖子
-  return allMockPosts.filter((p) =>
+  return mockTagPosts.filter((p) =>
     p.tags.some((t) => t.toLowerCase().includes(tag.toLowerCase()))
   );
 }

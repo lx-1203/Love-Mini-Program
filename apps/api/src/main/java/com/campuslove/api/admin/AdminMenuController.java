@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -147,7 +148,7 @@ public class AdminMenuController {
 
         Menu menu = new Menu();
         applyRequest(menu, req);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         menu.setCreatedAt(now);
         menu.setUpdatedAt(now);
         Menu saved = menuRepository.save(menu);
@@ -193,7 +194,7 @@ public class AdminMenuController {
         }
 
         applyRequest(menu, req);
-        menu.setUpdatedAt(LocalDateTime.now());
+        menu.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         Menu saved = menuRepository.save(menu);
         return ResponseEntity.ok(toDetailView(saved));
     }

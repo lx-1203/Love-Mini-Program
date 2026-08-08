@@ -3,7 +3,7 @@
     class="safe-image"
     :class="[rootClass, { 'safe-image--loading': isLoading, 'safe-image--failed': allFailed }]"
     role="img"
-    :aria-label="alt || '图片'"
+    :aria-label="alt || t('common.imageAria')"
     :aria-busy="isLoading"
   >
     <image
@@ -52,6 +52,10 @@ import { computed, ref, watch } from 'vue';
 import { resolveMediaUrl } from '../../utils/media';
 // 2026-08-08：pexels 外链本地化兜底（mp 端无法加载外链，见 image-local.ts）
 import { toLocalImage } from '../../utils/image-local';
+// R4-batch2: aria-label 兜底文案 i18n 化
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = withDefaults(defineProps<{
   src: string;

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.event.ConfigUpdatedEvent;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.entity.AdminAppConfig;
@@ -123,7 +124,7 @@ public class RealAdminConfigService implements AdminConfigService {
             config.setDescription(description);
         }
         config.setUpdatedBy(operatorId);
-        config.setUpdatedAt(LocalDateTime.now());
+        config.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         AdminAppConfig saved = configRepository.save(config);
 
@@ -180,7 +181,7 @@ public class RealAdminConfigService implements AdminConfigService {
             rule.setDescription(description);
         }
         rule.setUpdatedBy(operatorId);
-        rule.setUpdatedAt(LocalDateTime.now());
+        rule.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         AdminAppRule saved = ruleRepository.save(rule);
         return toRuleView(saved);
@@ -209,7 +210,7 @@ public class RealAdminConfigService implements AdminConfigService {
 
         sw.setEnabled(enabled);
         sw.setUpdatedBy(operatorId);
-        sw.setUpdatedAt(LocalDateTime.now());
+        sw.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         AdminAppSwitch saved = switchRepository.save(sw);
         return toSwitchView(saved);

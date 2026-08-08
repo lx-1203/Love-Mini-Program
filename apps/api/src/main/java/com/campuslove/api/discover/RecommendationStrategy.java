@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.DailyAnswer;
@@ -496,7 +497,7 @@ public class RecommendationStrategy {
         }
         try {
             int recentDays = recommendationConfig.getActivityRecentDays();
-            LocalDateTime since = LocalDateTime.now().minusDays(recentDays);
+            LocalDateTime since = LocalDateTime.now(TimeZones.BUSINESS).minusDays(recentDays);
             List<Object[]> rows = postRepository.countRecentPostsByAuthorIds(
                     candidateIds, PostStatus.active, since);
             Map<Long, Long> result = new HashMap<>(rows.size());

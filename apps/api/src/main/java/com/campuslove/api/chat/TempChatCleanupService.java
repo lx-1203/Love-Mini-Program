@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.TempChatContactExchange;
 import com.campuslove.api.entity.TempChatSession;
 import com.campuslove.api.entity.TempChatSession.SessionPhase;
@@ -106,7 +107,7 @@ public class TempChatCleanupService {
             return;
         }
         try {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
             int cleaned = 0;
             for (SessionPhase phase : new SessionPhase[]{SessionPhase.matching, SessionPhase.active}) {
                 try {
@@ -184,7 +185,7 @@ public class TempChatCleanupService {
         // 获取或创建联系交换记录
         TempChatContactExchange exchange = contactExchangeRepository.findBySessionId(session.getId())
                 .orElseGet(() -> {
-                    LocalDateTime now = LocalDateTime.now();
+                    LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
                     TempChatContactExchange newExchange = new TempChatContactExchange();
                     newExchange.setSession(session);
                     newExchange.setStatus("idle");
@@ -199,7 +200,7 @@ public class TempChatCleanupService {
 
         exchange.setProposer(proposer);
         exchange.setStatus(newStatus);
-        exchange.setUpdatedAt(LocalDateTime.now());
+        exchange.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         contactExchangeRepository.save(exchange);
 
         // 完成时通知双方

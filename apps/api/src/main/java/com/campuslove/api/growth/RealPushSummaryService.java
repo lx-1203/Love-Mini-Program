@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Comment;
 import com.campuslove.api.entity.Like;
@@ -106,7 +107,7 @@ public class RealPushSummaryService implements PushSummaryService {
         }
 
         // 检查今日是否已生成过社交动态摘要，避免重复
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TimeZones.BUSINESS);
         LocalDateTime todayStart = today.atStartOfDay();
         List<PushSummary> todaySummaries = pushSummaryRepository
                 .findByUserIdAndGeneratedAtAfter(userId, todayStart);
@@ -120,7 +121,7 @@ public class RealPushSummaryService implements PushSummaryService {
         }
 
         // 计算最近 24 小时的起始时间
-        LocalDateTime since24h = LocalDateTime.now().minusHours(24);
+        LocalDateTime since24h = LocalDateTime.now(TimeZones.BUSINESS).minusHours(24);
 
         // 1. 统计最近 24 小时的访客数
         List<Visitor> allVisitors = visitorRepository.findByVisitedUserIdOrderByCreatedAtDesc(userId);
@@ -188,7 +189,7 @@ public class RealPushSummaryService implements PushSummaryService {
         summary.setContent(contentBuilder.toString());
         summary.setActionUrl(actionUrl);
         summary.setIsSent(false);
-        summary.setGeneratedAt(LocalDateTime.now());
+        summary.setGeneratedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         PushSummary saved = pushSummaryRepository.save(summary);
         log.info("用户[{}]社交动态摘要已生成: visitor={}, like={}, interaction={}",
@@ -221,7 +222,7 @@ public class RealPushSummaryService implements PushSummaryService {
         }
 
         // 检查今日是否已生成过推荐刷新通知
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TimeZones.BUSINESS);
         LocalDateTime todayStart = today.atStartOfDay();
         List<PushSummary> todaySummaries = pushSummaryRepository
                 .findByUserIdAndGeneratedAtAfter(userId, todayStart);
@@ -242,7 +243,7 @@ public class RealPushSummaryService implements PushSummaryService {
                 .orElse("12:00");
 
         // 判断当前时间是否已达到或超过偏好时间
-        LocalTime now = LocalTime.now();
+        LocalTime now = LocalTime.now(TimeZones.BUSINESS);
         LocalTime prefTime;
         try {
             prefTime = LocalTime.parse(preferredTime, TIME_FORMATTER);
@@ -269,7 +270,7 @@ public class RealPushSummaryService implements PushSummaryService {
         summary.setContent(content);
         summary.setActionUrl(actionUrl);
         summary.setIsSent(false);
-        summary.setGeneratedAt(LocalDateTime.now());
+        summary.setGeneratedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         PushSummary saved = pushSummaryRepository.save(summary);
         log.info("用户[{}]推荐刷新通知已生成: preferredTime={}", userId, preferredTime);
@@ -312,7 +313,7 @@ public class RealPushSummaryService implements PushSummaryService {
         }
 
         summary.setIsSent(true);
-        summary.setSentAt(LocalDateTime.now());
+        summary.setSentAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         PushSummary saved = pushSummaryRepository.save(summary);
         log.debug("推送摘要[{}]已标记为已发送", summaryId);

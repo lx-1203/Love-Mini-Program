@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.TimeZones;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,37 +102,37 @@ public class MockPostTagService implements PostTagService {
                 2001L, "今天在图书馆遇到一个认真学习的女生，感觉好有气质！",
                 List.of("校园日常", "表白墙"), "sincere",
                 32, 8, 3, 1002L, "林安", "南校区",
-                LocalDateTime.now().minusHours(1)
+                LocalDateTime.now(TimeZones.BUSINESS).minusHours(1)
         ));
         taggedPosts.add(new MockTaggedPost(
                 2002L, "有没有一起打羽毛球的？周末约起来！求搭子！",
                 List.of("找搭子", "兴趣分享"), "interest",
                 18, 12, 4, 1003L, "周沐", "北校区",
-                LocalDateTime.now().minusHours(3)
+                LocalDateTime.now(TimeZones.BUSINESS).minusHours(3)
         ));
         taggedPosts.add(new MockTaggedPost(
                 2003L, "急！计算机组成原理期末怎么复习？求大佬带带",
                 List.of("求助", "技术交流"), "help",
                 45, 23, 6, 1004L, "许诺", "东校区",
-                LocalDateTime.now().minusHours(5)
+                LocalDateTime.now(TimeZones.BUSINESS).minusHours(5)
         ));
         taggedPosts.add(new MockTaggedPost(
                 2004L, "毕业5年了，想问问学弟学妹们学校现在变化大吗？",
                 List.of("校友动态", "生活记录"), "sincere",
                 67, 19, 10, 1005L, "北岛", "南校区",
-                LocalDateTime.now().minusDays(1)
+                LocalDateTime.now(TimeZones.BUSINESS).minusDays(1)
         ));
         taggedPosts.add(new MockTaggedPost(
                 2005L, "记录一下今天在食堂吃到的好吃的！麻辣香锅绝了",
                 List.of("生活记录", "校园日常"), "life",
                 23, 5, 2, 1006L, "南风", "北校区",
-                LocalDateTime.now().minusDays(1).minusHours(3)
+                LocalDateTime.now(TimeZones.BUSINESS).minusDays(1).minusHours(3)
         ));
         taggedPosts.add(new MockTaggedPost(
                 2006L, "想找个一起刷 LeetCode 的队友，每天互相监督",
                 List.of("技术交流", "找搭子"), "interest",
                 15, 7, 3, 1007L, "橙子", "东校区",
-                LocalDateTime.now().minusDays(2)
+                LocalDateTime.now(TimeZones.BUSINESS).minusDays(2)
         ));
     }
 

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -235,7 +236,7 @@ public class AdminPromoCodeController {
                     .append('\n');
         }
 
-        String filename = "promo_codes_" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now()) + ".csv";
+        String filename = "promo_codes_" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now(TimeZones.BUSINESS)) + ".csv";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("text", "csv", StandardCharsets.UTF_8));
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename, StandardCharsets.UTF_8).build());

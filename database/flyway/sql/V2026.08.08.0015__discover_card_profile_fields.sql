@@ -21,7 +21,9 @@ ALTER TABLE user_basic_profile
   ADD COLUMN expected_partner VARCHAR(255) NULL COMMENT '期待的人物画像描述',
   ADD COLUMN birth_year INT NULL COMMENT '出生年份（年龄=当前年-birth_year）';
 
--- 种子数据：真实账号（1/8/47）+ 虚拟用户（10001-10056）确定性填充
+-- 种子数据（R4-00423 环境守卫）：仅演示环境（demo_seed=true）且仅限虚拟用户 ID 区间
+-- （10001-10056）确定性填充——原实现按 ELT(MOD) 随机覆盖 user_id IN (1, 8, 47)，
+-- 其中 id=1 为超级管理员，真实账号资料会被演示数据覆盖污染。
 UPDATE user_basic_profile SET
   occupation = ELT(1 + (user_id MOD 6), '产品经理', '互联网运营', '研究生在读', '程序员', '设计', '自媒体'),
   income_range = ELT(1 + (user_id MOD 4), '3k-8k', '8k-15k', '15k-30k', '30k+'),
@@ -36,4 +38,4 @@ UPDATE user_basic_profile SET
     ELT(1 + (user_id MOD 5), '阳光开朗', '慢热但真诚', '理性务实', '温柔细腻', '幽默健谈'),
     -- 循环取模：第二个标签索引 = 1 + ((MOD + 1) MOD 5)，避免 MOD=4 时 ELT 越界返回 NULL
     ELT(1 + ((user_id MOD 5) + 1) % 5, '行动力强', '共情力强', '安静专注', '靠谱', '爱探索'))
-WHERE user_id IN (1, 8, 47) OR (user_id BETWEEN 10001 AND 10056);
+WHERE '${demo_seed}' = 'true' AND user_id BETWEEN 10001 AND 10056;

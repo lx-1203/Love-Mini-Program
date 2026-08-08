@@ -67,6 +67,35 @@ public class VideoCallController {
     }
 
     /**
+     * 接听视频通话（R4-00324）。
+     * <p>仅被叫方可接听；RINGING → ONGOING 并记录 startedAt
+     * （R4-00323：此前 startedAt 无赋值，通话时长恒 0、CONNECTED 不可达）。</p>
+     *
+     * @param request 接听请求体（含 roomId）
+     * @return 通话视图（status=ONGOING，startedAt 已填充）
+     */
+    @PostMapping("/accept")
+    @PreAuthorize("hasRole('USER')")
+    public VideoCallView acceptCall(@Valid @RequestBody RoomIdRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return videoCallService.acceptCall(request.roomId(), userId);
+    }
+
+    /**
+     * 拒绝视频通话（R4-00324）。
+     * <p>仅被叫方可拒绝；RINGING → REJECTED，通话记录状态置为 REJECTED。</p>
+     *
+     * @param request 拒绝请求体（含 roomId）
+     * @return 通话视图（status=REJECTED）
+     */
+    @PostMapping("/reject")
+    @PreAuthorize("hasRole('USER')")
+    public VideoCallView rejectCall(@Valid @RequestBody RoomIdRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return videoCallService.rejectCall(request.roomId(), userId);
+    }
+
+    /**
      * 结束视频通话。
      *
      * @param request 结束通话请求体（含 roomId 与结束原因）
@@ -101,6 +130,18 @@ public class VideoCallController {
  */
 record StartCallRequest(
         @NotNull @Positive Long calleeId
+) {
+}
+
+/**
+ * 视频通话房间 ID 请求体（R4-00324：接听/拒绝共用）。
+ *
+ * @param roomId 通话房间 ID（必填，最长 64 字符）
+ */
+record RoomIdRequest(
+        @NotNull
+        @Size(max = 64)
+        String roomId
 ) {
 }
 

@@ -15,6 +15,7 @@
  * 故「支付时间」与「创建时间」两列均展示 createdAt。
  */
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   listVipBills,
   getVipBill,
@@ -25,6 +26,8 @@ import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+
+const { t } = useI18n();
 
 /** 账单列表数据 */
 const bills = ref<VipBillView[]>([]);
@@ -60,27 +63,27 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 套餐类型选项（后端 planId 取值） */
 const PLAN_TYPE_OPTIONS = [
-  { value: "monthly", label: "月度套餐" },
-  { value: "quarterly", label: "季度套餐" },
-  { value: "yearly", label: "年度套餐" },
+  { value: "monthly", labelKey: "vipBills.planMonthly" },
+  { value: "quarterly", labelKey: "vipBills.planQuarterly" },
+  { value: "yearly", labelKey: "vipBills.planYearly" },
 ];
 
 /** 账单状态选项 */
 const BILL_STATUS_OPTIONS = [
-  { value: "SUCCESS", label: "支付成功" },
-  { value: "FAILED", label: "支付失败" },
-  { value: "REFUNDED", label: "已退款" },
+  { value: "SUCCESS", labelKey: "vipBills.statusSuccess" },
+  { value: "FAILED", labelKey: "vipBills.statusFailed" },
+  { value: "REFUNDED", labelKey: "vipBills.statusRefunded" },
 ];
 
 /** 账单类型文案 */
 function typeLabel(type: string): string {
   switch (type) {
     case "SUBSCRIBE":
-      return "订阅";
+      return t("vipBills.typeSubscribe");
     case "RENEW":
-      return "续费";
+      return t("vipBills.typeRenew");
     case "REFUND":
-      return "退款";
+      return t("vipBills.typeRefund");
     default:
       return type;
   }
@@ -103,7 +106,7 @@ function statusBadgeClass(status: string): string {
 /** 状态文案 */
 function statusLabel(status: string): string {
   const found = BILL_STATUS_OPTIONS.find((o) => o.value === status);
-  return found ? found.label : status;
+  return found ? t(found.labelKey) : status;
 }
 
 /** 分转元展示（保留两位小数），空值返回占位符 */
@@ -133,7 +136,7 @@ async function fetchBills() {
     totalPages.value = result.totalPages;
   } catch (err) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载 VIP 账单列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("vipBills.loadFailed");
     bills.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -183,7 +186,7 @@ async function handleViewDetail(bill: VipBillView) {
   try {
     detailBill.value = await getVipBill(bill.id);
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "加载账单详情失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("vipBills.detailLoadFailed");
     detailVisible.value = false;
   } finally {
     detailLoading.value = false;
@@ -211,8 +214,8 @@ onBeforeUnmount(() => {
 <template>
   <view class="vip-bills-page">
     <view class="page-header">
-      <text class="page-title">VIP 账单</text>
-      <text class="page-subtitle">查询与查看用户 VIP 订单与支付记录</text>
+      <text class="page-title">{{ t("vipBills.title") }}</text>
+      <text class="page-subtitle">{{ t("vipBills.subtitle") }}</text>
     </view>
 
     <!-- 筛选工具栏 -->
@@ -222,19 +225,19 @@ onBeforeUnmount(() => {
         class="search-input"
         type="number"
         min="1"
-        placeholder="用户 ID"
+        :placeholder="t('vipBills.userIdPlaceholder')"
         @keyup.enter="handleSearch"
       />
       <select v-model="planTypeFilter" class="filter-select" @change="scheduleSearch">
-        <option value="">全部套餐</option>
-        <option v-for="p in PLAN_TYPE_OPTIONS" :key="p.value" :value="p.value">{{ p.label }}</option>
+        <option value="">{{ t("vipBills.allPlans") }}</option>
+        <option v-for="p in PLAN_TYPE_OPTIONS" :key="p.value" :value="p.value">{{ t(p.labelKey) }}</option>
       </select>
       <select v-model="statusFilter" class="filter-select" @change="scheduleSearch">
-        <option value="">全部状态</option>
-        <option v-for="s in BILL_STATUS_OPTIONS" :key="s.value" :value="s.value">{{ s.label }}</option>
+        <option value="">{{ t("vipBills.allStatus") }}</option>
+        <option v-for="s in BILL_STATUS_OPTIONS" :key="s.value" :value="s.value">{{ t(s.labelKey) }}</option>
       </select>
-      <button class="primary-button" @click="handleSearch">搜索</button>
-      <button class="ghost-button" @click="handleReset">重置</button>
+      <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
+      <button class="ghost-button" @click="handleReset">{{ t("common.reset") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchBills" />
@@ -244,22 +247,22 @@ onBeforeUnmount(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">账单 ID</th>
-            <th scope="col">用户 ID</th>
-            <th scope="col">套餐</th>
-            <th scope="col">金额（元）</th>
-            <th scope="col">状态</th>
-            <th scope="col">支付时间</th>
-            <th scope="col">创建时间</th>
-            <th scope="col">操作</th>
+            <th scope="col">{{ t("vipBills.columnBillId") }}</th>
+            <th scope="col">{{ t("vipBills.columnUserId") }}</th>
+            <th scope="col">{{ t("vipBills.columnPlan") }}</th>
+            <th scope="col">{{ t("vipBills.columnAmount") }}</th>
+            <th scope="col">{{ t("vipBills.columnStatus") }}</th>
+            <th scope="col">{{ t("vipBills.columnPaidAt") }}</th>
+            <th scope="col">{{ t("vipBills.columnCreatedAt") }}</th>
+            <th scope="col">{{ t("vipBills.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="8" class="empty-cell">加载中...</td>
+            <td colspan="8" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="bills.length === 0">
-            <td colspan="8" class="empty-cell">暂无 VIP 账单数据</td>
+            <td colspan="8" class="empty-cell">{{ t("vipBills.noData") }}</td>
           </tr>
           <tr v-for="bill in bills" :key="bill.id">
             <td>{{ bill.id }}</td>
@@ -277,7 +280,7 @@ onBeforeUnmount(() => {
             <td class="time-cell">{{ formatDateTime(bill.createdAt) }}</td>
             <td class="time-cell">{{ formatDateTime(bill.createdAt) }}</td>
             <td class="action-cell">
-              <button class="action-button view" @click="handleViewDetail(bill)">查看</button>
+              <button class="action-button view" @click="handleViewDetail(bill)">{{ t("vipBills.actionView") }}</button>
             </td>
           </tr>
         </tbody>
@@ -295,60 +298,60 @@ onBeforeUnmount(() => {
     <!-- 账单详情弹窗 -->
     <view v-if="detailVisible" class="modal-mask" @click.self="closeDetail">
       <view class="modal detail-modal">
-        <text class="modal-title">账单详情</text>
-        <view v-if="detailLoading" class="detail-loading">加载中...</view>
+        <text class="modal-title">{{ t("vipBills.detailTitle") }}</text>
+        <view v-if="detailLoading" class="detail-loading">{{ t("common.loading") }}</view>
         <view v-else-if="detailBill" class="detail-body">
           <view class="detail-row">
-            <text class="detail-label">账单 ID:</text>
+            <text class="detail-label">{{ t("vipBills.detailBillId") }}</text>
             <text>{{ detailBill.id }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">用户 ID:</text>
+            <text class="detail-label">{{ t("vipBills.detailUserId") }}</text>
             <text>{{ detailBill.userId }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">套餐:</text>
+            <text class="detail-label">{{ t("vipBills.detailPlan") }}</text>
             <text>{{ detailBill.planName || detailBill.planId }}（{{ detailBill.planId }}）</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">金额（元）:</text>
+            <text class="detail-label">{{ t("vipBills.detailAmount") }}</text>
             <text>{{ formatYuan(detailBill.amount) }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">原价（元）:</text>
+            <text class="detail-label">{{ t("vipBills.detailOriginalAmount") }}</text>
             <text>{{ formatYuan(detailBill.originalAmount) }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">账单类型:</text>
+            <text class="detail-label">{{ t("vipBills.detailType") }}</text>
             <text>{{ typeLabel(detailBill.type) }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">状态:</text>
+            <text class="detail-label">{{ t("vipBills.detailStatus") }}</text>
             <text>{{ statusLabel(detailBill.status) }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">支付方式:</text>
+            <text class="detail-label">{{ t("vipBills.detailPaymentMethod") }}</text>
             <text>{{ detailBill.paymentMethod || "-" }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">交易号:</text>
+            <text class="detail-label">{{ t("vipBills.detailTransactionId") }}</text>
             <text>{{ detailBill.transactionId || "-" }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">有效期起:</text>
+            <text class="detail-label">{{ t("vipBills.detailPeriodStart") }}</text>
             <text>{{ formatDateTime(detailBill.periodStart) }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">有效期止:</text>
+            <text class="detail-label">{{ t("vipBills.detailPeriodEnd") }}</text>
             <text>{{ formatDateTime(detailBill.periodEnd) }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">创建时间:</text>
+            <text class="detail-label">{{ t("vipBills.detailCreatedAt") }}</text>
             <text>{{ formatDateTime(detailBill.createdAt) }}</text>
           </view>
         </view>
         <view class="modal-actions">
-          <button class="ghost-button" @click="closeDetail">关闭</button>
+          <button class="ghost-button" @click="closeDetail">{{ t("vipBills.close") }}</button>
         </view>
       </view>
     </view>

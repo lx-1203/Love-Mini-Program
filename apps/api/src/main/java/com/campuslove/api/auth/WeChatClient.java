@@ -8,11 +8,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
+import jakarta.annotation.PostConstruct;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -49,9 +52,57 @@ public class WeChatClient {
     private final WeChatConfig weChatConfig;
     private final RestClient restClient;
 
+    /**
+     * Spring 环境（R4-00270：生产 profile 启动强校验）。
+     * 用于读取激活 profile（spring.profiles.active）判断是否生产环境；
+     * 可选注入，测试直接 new 场景为 null 时跳过校验。
+     */
+    @Autowired(required = false)
+    private Environment environment;
+
     public WeChatClient(WeChatConfig weChatConfig, RestClient.Builder restClientBuilder) {
         this.weChatConfig = weChatConfig;
         this.restClient = restClientBuilder.build();
+    }
+
+    /**
+     * 生产环境 dev-fallback 强校验（R4-00270）。
+     *
+     * <p>devFallbackEnabled 开启时任意 code 派生固定 openid（dev-wechat-{code}）直接走
+     * 真实登录/注册链路——生产误开 WECHAT_DEV_FALLBACK_ENABLED=true 即可无凭据伪造微信身份
+     * 登录任意新账号。本项目生产 profile 约定为 prod / real（见
+     * GlobalExceptionHandler.isProductionProfile 口径），激活生产 profile 时
+     * 该开关必须为 false，否则拒绝启动（fail-fast）。</p>
+     *
+     * <p>本地开发请使用 mock profile（内存演示登录链路，不依赖微信）；
+     * 确需以 real profile 联调时需配置真实 WECHAT_APPID/WECHAT_SECRET。</p>
+     */
+    @PostConstruct
+    public void validateDevFallbackDisabledInProduction() {
+        if (!weChatConfig.isDevFallbackEnabled()) {
+            return;
+        }
+        if (environment != null && isProductionProfile()) {
+            throw new IllegalStateException(
+                    "WECHAT_DEV_FALLBACK_ENABLED=true 禁止在生产环境（profile 含 prod/real）开启："
+                    + "任意 code 可派生固定 openid 伪造微信身份。请关闭该开关（生产必须接入真实微信配置），"
+                    + "本地联调请使用 mock profile。");
+        }
+    }
+
+    /** 判断激活 profile 是否为生产环境（prod / real，与 GlobalExceptionHandler 口径一致）。 */
+    private boolean isProductionProfile() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        if (activeProfiles == null || activeProfiles.length == 0) {
+            // 无显式 profile 时按默认 profile 判断（spring.profiles.default）
+            activeProfiles = environment.getDefaultProfiles();
+        }
+        for (String profile : activeProfiles) {
+            if ("prod".equals(profile) || "real".equals(profile)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

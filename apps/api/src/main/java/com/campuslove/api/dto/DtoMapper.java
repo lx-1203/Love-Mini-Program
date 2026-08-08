@@ -1,5 +1,6 @@
 package com.campuslove.api.dto;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.PrivateMessage;
 import com.campuslove.api.entity.User;
@@ -8,7 +9,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
  * <p><strong>时间类型转换：</strong>
  * Entity 使用 {@link LocalDateTime}（数据库本地时间），
  * DTO 使用 {@link Instant}（UTC），通过 {@link #toInstant(LocalDateTime)} 统一转换，
- * 时区取系统默认时区（{@link ZoneId#systemDefault()}）。</p>
+ * 时区显式指定 {@link com.campuslove.api.common.TimeZones#BUSINESS}（Asia/Shanghai，
+ * R4-00293 修复：与 DB serverTimezone 对齐，避免 JVM 默认时区漂移导致时间偏移 8 小时）。</p>
  *
  * <p><strong>敏感字段脱敏：</strong>
  * 涉及 openid、手机号、邮箱等敏感字段的映射，必须调用
@@ -251,7 +252,8 @@ public final class DtoMapper {
     // ------------------------------------------------------------------
 
     /**
-     * LocalDateTime -&gt; Instant 转换（使用系统默认时区）。
+     * LocalDateTime -&gt; Instant 转换（R4-00293：显式使用业务时区 Asia/Shanghai，
+     * 与 DB serverTimezone 对齐，不依赖 JVM 默认时区）。
      *
      * @param ldt 待转换时间，null 时返回 null
      * @return UTC Instant
@@ -260,7 +262,7 @@ public final class DtoMapper {
         if (ldt == null) {
             return null;
         }
-        return ldt.atZone(ZoneId.systemDefault()).toInstant();
+        return ldt.atZone(TimeZones.BUSINESS).toInstant();
     }
 
     /**

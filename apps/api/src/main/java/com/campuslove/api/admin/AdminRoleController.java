@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -129,7 +130,7 @@ public class AdminRoleController {
 
         Role role = new Role();
         applyRequest(role, req, code);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         role.setCreatedAt(now);
         role.setUpdatedAt(now);
         Role saved = roleRepository.save(role);
@@ -166,7 +167,7 @@ public class AdminRoleController {
         }
 
         applyRequest(role, req, code);
-        role.setUpdatedAt(LocalDateTime.now());
+        role.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         Role saved = roleRepository.save(role);
         return ResponseEntity.ok(toView(saved));
     }

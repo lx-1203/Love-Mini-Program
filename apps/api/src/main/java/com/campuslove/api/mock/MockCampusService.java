@@ -1,5 +1,6 @@
 package com.campuslove.api.mock;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.campus.CampusService;
 import com.campuslove.api.campus.CampusTopicReplyView;
 import com.campuslove.api.campus.CampusTopicView;
@@ -58,7 +59,7 @@ public class MockCampusService implements CampusService {
         MockTopicData topic = new MockTopicData(
                 id, schoolId, category, title, content, List.of(), userId,
                 "Mock校友", null, 0, 0, false,
-                LocalDateTime.now(), LocalDateTime.now()
+                LocalDateTime.now(TimeZones.BUSINESS), LocalDateTime.now(TimeZones.BUSINESS)
         );
         topics.add(0, topic);
         return toTopicView(topic);
@@ -71,7 +72,7 @@ public class MockCampusService implements CampusService {
         findTopic(topicId); // 确保话题存在
         long id = replyIdGen.incrementAndGet();
         MockReplyData reply = new MockReplyData(
-                id, topicId, userId, "Mock校友", null, content, false, LocalDateTime.now()
+                id, topicId, userId, "Mock校友", null, content, false, LocalDateTime.now(TimeZones.BUSINESS)
         );
         repliesByTopic.computeIfAbsent(topicId, k -> new ArrayList<>()).add(reply);
         return toReplyView(reply);
@@ -98,7 +99,7 @@ public class MockCampusService implements CampusService {
                         101L, null, "今天在图书馆遇到一个特别的人，想在校园墙上分享一下...",
                         new PostAuthorView(1001L, "星野", null, "南校区"),
                         "life", List.of("校园生活"), 128, 45, 12,
-                        LocalDateTime.now().minusHours(2).toString(), true, true, false,
+                        LocalDateTime.now(TimeZones.BUSINESS).minusHours(2).toString(), true, true, false,
                         42, false, 1280,
                         // 2026-08-09 帖子关联活动 + 评论预览：mock 校园流无上下文，按 null/空列表兜底
                         null, null, false, List.of()
@@ -107,7 +108,7 @@ public class MockCampusService implements CampusService {
                         102L, null, "高数考试自救小组招人啦！大二以上，认真不摸鱼。",
                         new PostAuthorView(1002L, "林安", null, "南校区"),
                         "study", List.of("学习", "高数"), 67, 23, 5,
-                        LocalDateTime.now().minusHours(5).toString(), false, true, false,
+                        LocalDateTime.now(TimeZones.BUSINESS).minusHours(5).toString(), false, true, false,
                         22, false, 670,
                         // 2026-08-09 帖子关联活动 + 评论预览：mock 校园流无上下文，按 null/空列表兜底
                         null, null, false, List.of()
@@ -116,7 +117,7 @@ public class MockCampusService implements CampusService {
                         103L, null, "周末一起去后山看日出吧！记得带外套~",
                         new PostAuthorView(1003L, "周沐", null, "北校区"),
                         "activity", List.of("活动", "后山"), 89, 31, 8,
-                        LocalDateTime.now().minusDays(1).toString(), false, false, false,
+                        LocalDateTime.now(TimeZones.BUSINESS).minusDays(1).toString(), false, false, false,
                         29, false, 890,
                         // 2026-08-09 帖子关联活动 + 评论预览：mock 校园流无上下文，按 null/空列表兜底
                         null, null, false, List.of()
@@ -135,17 +136,17 @@ public class MockCampusService implements CampusService {
                 new ActivityView(
                         201L, "图书馆南门咖啡散步", "南门咖啡馆", "周四 19:00-20:00",
                         "在安静的咖啡馆里，和志同道合的朋友一起聊天放松",
-                        12, List.of(), "upcoming", LocalDate.now().plusDays(2)
+                        12, List.of(), "upcoming", LocalDate.now(TimeZones.BUSINESS).plusDays(2)
                 ),
                 new ActivityView(
                         202L, "电影社轻松线下碰面", "影像楼 B 厅", "周六 15:00-17:00",
                         "一起看电影，认识新朋友",
-                        8, List.of(), "upcoming", LocalDate.now().plusDays(4)
+                        8, List.of(), "upcoming", LocalDate.now(TimeZones.BUSINESS).plusDays(4)
                 ),
                 new ActivityView(
                         203L, "周末篮球友谊赛", "体育馆", "周日 10:00-12:00",
                         "篮球爱好者集合，友谊第一比赛第二",
-                        20, List.of(), "ongoing", LocalDate.now().plusDays(5)
+                        20, List.of(), "ongoing", LocalDate.now(TimeZones.BUSINESS).plusDays(5)
                 )
         );
     }
@@ -192,55 +193,55 @@ public class MockCampusService implements CampusService {
                 2001L, 1L, "course_exchange", "高数A期末考试复习资料共享",
                 "整理了近三年的高数A期末考试真题和答案，需要的同学留言邮箱，我统一发送。也欢迎大家补充自己的复习笔记~",
                 null, 1001L, "星野", "/uploads/mock/avatar-xingye.jpg", 15, 256, false,
-                LocalDateTime.now().minusDays(1), LocalDateTime.now().minusHours(1)
+                LocalDateTime.now(TimeZones.BUSINESS).minusDays(1), LocalDateTime.now(TimeZones.BUSINESS).minusHours(1)
         ));
         topics.add(new MockTopicData(
                 2002L, 1L, "club_recruitment", "摄影社新学期招新啦！",
                 "无论你是摄影老手还是刚入门的新人，都欢迎加入我们！每周组织一次外拍活动，器材可以共享。报名截止下周五。",
                 List.of("/uploads/mock/topic-photo-1.jpg"), 1002L, "林安", "/uploads/mock/avatar-linan.jpg", 32, 480, false,
-                LocalDateTime.now().minusDays(2), LocalDateTime.now().minusHours(2)
+                LocalDateTime.now(TimeZones.BUSINESS).minusDays(2), LocalDateTime.now(TimeZones.BUSINESS).minusHours(2)
         ));
         topics.add(new MockTopicData(
                 2003L, 1L, "campus_activity", "本周末校园音乐节志愿者招募",
                 "校园音乐节需要招募20名志愿者，负责场地布置、引导和后勤。提供志愿者证书和午餐。",
                 null, 1003L, "周沐", "/uploads/mock/avatar-zhoumu.jpg", 8, 180, false,
-                LocalDateTime.now().minusDays(3), LocalDateTime.now().minusDays(1)
+                LocalDateTime.now(TimeZones.BUSINESS).minusDays(3), LocalDateTime.now(TimeZones.BUSINESS).minusDays(1)
         ));
         topics.add(new MockTopicData(
                 2004L, 1L, "study_help", "有没有一起备考四六级的小伙伴？",
                 "想找几个英语搭子，每天早上7点在图书馆门口晨读30分钟，然后互相抽查单词。目前已有3人~",
                 null, 1004L, "许诺", "/uploads/mock/avatar-xunuo.jpg", 22, 320, false,
-                LocalDateTime.now().minusDays(4), LocalDateTime.now().minusDays(2)
+                LocalDateTime.now(TimeZones.BUSINESS).minusDays(4), LocalDateTime.now(TimeZones.BUSINESS).minusDays(2)
         ));
         topics.add(new MockTopicData(
                 2005L, 1L, "life_service", "学校周边美食探店合集（持续更新）",
                 "作为一个资深吃货，分享学校周边值得一试的美食！从南门小吃街到北门商业区，价格亲民~",
                 List.of("/uploads/mock/topic-food-1.jpg", "/uploads/mock/topic-food-2.jpg"),
                 1001L, null, null, 45, 520, true,
-                LocalDateTime.now().minusDays(5), LocalDateTime.now().minusDays(3)
+                LocalDateTime.now(TimeZones.BUSINESS).minusDays(5), LocalDateTime.now(TimeZones.BUSINESS).minusDays(3)
         ));
 
         // 模拟回复
         repliesByTopic.put(2001L, new ArrayList<>(List.of(
                 new MockReplyData(3001L, 2001L, 1002L, "林安", "/uploads/mock/avatar-linan.jpg",
                         "太感谢了！我的邮箱是 xxx@campus.edu，麻烦发一下~", false,
-                        LocalDateTime.now().minusHours(22)),
+                        LocalDateTime.now(TimeZones.BUSINESS).minusHours(22)),
                 new MockReplyData(3002L, 2001L, 1003L, "周沐", "/uploads/mock/avatar-zhoumu.jpg",
                         "已收到，整理得很棒！我也补充了一些概率论的资料，要不要合并？", false,
-                        LocalDateTime.now().minusHours(20)),
+                        LocalDateTime.now(TimeZones.BUSINESS).minusHours(20)),
                 // FIN-00044 修复：匿名回复 authorId 置 null，避免泄漏真实用户 ID
                 new MockReplyData(3003L, 2001L, null, null, null,
                         "求一份，谢谢学长！", true,
-                        LocalDateTime.now().minusHours(18))
+                        LocalDateTime.now(TimeZones.BUSINESS).minusHours(18))
         )));
 
         repliesByTopic.put(2002L, new ArrayList<>(List.of(
                 new MockReplyData(3004L, 2002L, 1004L, "许诺", "/uploads/mock/avatar-xunuo.jpg",
                         "请问器材共享是免费的吗？", false,
-                        LocalDateTime.now().minusDays(1).minusHours(2)),
+                        LocalDateTime.now(TimeZones.BUSINESS).minusDays(1).minusHours(2)),
                 new MockReplyData(3005L, 2002L, 1001L, "星野", "/uploads/mock/avatar-xingye.jpg",
                         "免费的！社内器材大家轮流使用，需要提前预约就行~", false,
-                        LocalDateTime.now().minusDays(1).minusHours(1))
+                        LocalDateTime.now(TimeZones.BUSINESS).minusDays(1).minusHours(1))
         )));
     }
 

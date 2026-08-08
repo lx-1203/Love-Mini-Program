@@ -1,5 +1,6 @@
 package com.campuslove.api.user;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.UserOnlineStatus;
 import com.campuslove.api.entity.UserOnlineStatus.OnlineStatus;
 import com.campuslove.api.repository.UserOnlineStatusRepository;
@@ -50,7 +51,7 @@ public class RealOnlineStatusService implements OnlineStatusService {
             throw new IllegalArgumentException("userId 不能为空");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         Optional<UserOnlineStatus> existing = userOnlineStatusRepository.findByUserId(userId);
         if (existing.isPresent()) {
@@ -151,7 +152,7 @@ public class RealOnlineStatusService implements OnlineStatusService {
     @Override
     @Transactional
     public int checkAndMarkOfflineUsers() {
-        LocalDateTime threshold = LocalDateTime.now().minusMinutes(HEARTBEAT_TIMEOUT_MINUTES);
+        LocalDateTime threshold = LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(HEARTBEAT_TIMEOUT_MINUTES);
         int updatedCount = userOnlineStatusRepository.updateStatusByLastHeartbeatBefore(threshold);
 
         if (updatedCount > 0) {

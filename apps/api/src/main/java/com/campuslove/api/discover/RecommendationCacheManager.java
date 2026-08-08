@@ -1,8 +1,11 @@
 package com.campuslove.api.discover;
 
 import com.campuslove.api.config.CacheNames;
+import com.campuslove.api.growth.RecommendQuotaService;
+import com.campuslove.api.growth.SocialProgressService;
 import com.campuslove.api.monitor.MatchMetrics;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
@@ -33,6 +36,21 @@ public class RecommendationCacheManager {
     private final RecommendationRanker recommendationRanker;
     private final MatchMetrics matchMetrics;
 
+    /**
+     * 每日推荐配额服务（R4-00325：配额扣减移入缓存 miss 路径）。
+     * real profile 由 Spring 注入；单元测试 / mock 场景为 null 时跳过配额限制。
+     * 采用字段注入（required=false）而非构造器参数，避免破坏既有单测构造器。
+     */
+    @Autowired(required = false)
+    private RecommendQuotaService recommendQuotaService;
+
+    /**
+     * 社交升温漏斗服务（R4-00327：推荐曝光埋点）。
+     * real profile 注入；单元测试 / mock 场景为 null 时跳过埋点。
+     */
+    @Autowired(required = false)
+    private SocialProgressService socialProgressService;
+
     public RecommendationCacheManager(
             RecommendationStrategy recommendationStrategy,
             RecommendationRanker recommendationRanker,
@@ -54,6 +72,11 @@ public class RecommendationCacheManager {
      * 再委托 {@link RecommendationRanker#rankAndConvert(RecommendationStrategy.RecommendResult)}
      * 完成排序与视图转换，复用 Strategy 预加载的 Map 避免重复查询。</p>
      *
+     * <p>R4-00325 配额语义：本方法体仅在缓存 miss（真实计算新推荐）时执行，
+     * 在此处扣减推荐配额即「每次真实计算扣一次」——首页/聊天概览/发现页等入口
+     * 在缓存 TTL 内共享一次计算、只扣一次配额；配额耗尽返回空列表（前端已有
+     * 空态兜底），服务未注入（单元测试 / mock 场景）时跳过配额限制。</p>
+     *
      * <p>监控：记录推荐算法耗时（match.recommend.latency 指标），
      * finally 块保证异常也能记录耗时。</p>
      *
@@ -63,13 +86,31 @@ public class RecommendationCacheManager {
     @Cacheable(cacheNames = CacheNames.MATCH_RECOMMEND, key = "'v2:' + #userId",
             unless = "#result == null || #result.isEmpty()")
     public List<RecommendedPersonView> getCachedRecommendations(Long userId) {
+        // R4-00325：配额扣减仅发生在缓存 miss（真实计算）路径。
+        // 注意：配额耗尽返回空列表且不缓存（unless 空结果），下次调用重新走本路径
+        // 再次 tryConsume（超限时原子回滚递增，不会把配额扣成负数）。
+        if (recommendQuotaService != null && !recommendQuotaService.tryConsume(userId)) {
+            return List.of();
+        }
         long startNanos = System.nanoTime();
         try {
             // 委托 Strategy 进行推荐算法计算（返回评分结果 + 预加载的 Map）
             RecommendationStrategy.RecommendResult result = recommendationStrategy.doRecommend(userId);
 
-            // 通过 Ranker 完成排序与视图转换（直接复用 Strategy 预加载的 Map）
-            return recommendationRanker.rankAndConvert(result);
+            // 通过 Ranker 完成排序与视图转换（直接复用 Strategy 预加载的 Map）；
+            // R4-00315：携带当前用户 ID，allowMessage / whisperSent 按解锁集合据实返回
+            List<RecommendedPersonView> views = recommendationRanker.rankAndConvert(result, userId);
+
+            // R4-00327：社交升温漏斗埋点——发现曝光（L1_EXPOSURE 默认层级计数）。
+            // 仅在缓存 miss（真实计算新推荐）时记录一次；埋点失败不影响主流程
+            if (socialProgressService != null && !views.isEmpty()) {
+                try {
+                    socialProgressService.recordExposure(userId);
+                } catch (RuntimeException e) {
+                    // 埋点失败仅记录日志，不阻断推荐返回
+                }
+            }
+            return views;
         } finally {
             try {
                 long durationMs = (System.nanoTime() - startNanos) / 1_000_000;

@@ -176,10 +176,10 @@ onUnmounted(() => {
           <text class="history-item__title">{{ item.post.title || t("village.history.untitled") }}</text>
           <text class="history-item__summary">{{ item.post.content }}</text>
           <view class="history-item__stats">
-            <text class="history-item__stat">赞 {{ item.post.likes }}</text>
-            <text class="history-item__stat">藏 {{ item.post.favorites }}</text>
-            <text class="history-item__stat">看 {{ item.post.views }}</text>
-            <text v-if="item.post.comments > 0" class="history-item__stat">评 {{ item.post.comments }}</text>
+            <text class="history-item__stat">{{ t("village.history.likes", { n: item.post.likes }) }}</text>
+            <text class="history-item__stat">{{ t("village.history.favorites", { n: item.post.favorites }) }}</text>
+            <text class="history-item__stat">{{ t("village.history.views", { n: item.post.views }) }}</text>
+            <text v-if="item.post.comments > 0" class="history-item__stat">{{ t("village.history.comments", { n: item.post.comments }) }}</text>
           </view>
         </view>
       </view>

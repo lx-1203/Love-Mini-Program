@@ -95,6 +95,10 @@ spring:
       # 未配置时占位符注入空字符串：管理员账号无法登录（安全锁定），
       # 且 AdminPasswordValidator（real profile）检测到空哈希直接拒绝启动（fail-fast）。
       admin_password_hash: ${ADMIN_INITIAL_PASSWORD_HASH:}
+      # R4-00420/00422/00423：演示种子数据环境守卫——虚拟用户/演示私信/画像随机种子
+      # 迁移仅在 demo_seed=true 时写入（默认 false，生产不灌入虚拟用户与演示数据）。
+      # 演示/验收环境通过 DEMO_SEED=true 环境变量开启。
+      demo_seed: ${DEMO_SEED:false}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -104,14 +108,15 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
   # ============ RabbitMQ 消息队列配置 ============
   # 通过环境变量外部化：RABBITMQ_HOST / RABBITMQ_PORT / RABBITMQ_USERNAME / RABBITMQ_PASSWORD / RABBITMQ_VIRTUAL_HOST
-  # 默认值适配本地开发环境（127.0.0.1:5672, guest/guest, virtual-host=/）。
+  # R4-01777：密码无默认值（生产必须显式注入 RABBITMQ_PASSWORD；本地开发如需
+  # 连接本地 RabbitMQ 请显式设置 RABBITMQ_USERNAME/RABBITMQ_PASSWORD=guest）。
   # RabbitMQ 不可用时不影响应用启动：RabbitConfig 仅在 real profile 激活，
   # MessagingFallback 会在启动时检测连接可用性并降级为日志记录模式。
   rabbitmq:
     host: ${RABBITMQ_HOST:127.0.0.1}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    password: ${RABBITMQ_PASSWORD:}
     virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
     # 监听器（消费者）重试配置：消费失败时自动重试，避免瞬时故障导致消息丢失
     listener:

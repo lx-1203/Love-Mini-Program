@@ -56,9 +56,15 @@ function getCardDetail(cardId: string) {
     return currentCard;
   }
 
-  // 从 viewedCards 中查找 userId，构建简略信息
+  // 从 viewedCards 中查找记录
   const viewedRecord = discoverStore.viewedCards.find((v) => v.cardId === cardId);
   if (viewedRecord) {
+    // 修复（R4-00012）：swipe 时已持久化完整卡片快照（昵称/头像/简介等），
+    // 优先返回快照，避免历史记录页展示"默认昵称"+空头像的占位数据；
+    // 仅快照缺失（旧版本数据或外部写入）时回退到占位对象。
+    if (viewedRecord.card) {
+      return viewedRecord.card;
+    }
     return {
       id: viewedRecord.cardId,
       userId: viewedRecord.userId,

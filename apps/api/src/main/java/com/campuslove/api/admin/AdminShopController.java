@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -142,7 +143,7 @@ public class AdminShopController {
             item.setCampusName(normalize(req.campusName()));
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         item.setCreatedAt(now);
         item.setUpdatedAt(now);
         ShopItem saved = shopItemRepository.save(item);
@@ -197,7 +198,7 @@ public class AdminShopController {
         if (req.sortOrder() != null) {
             item.setSortOrder(req.sortOrder());
         }
-        item.setUpdatedAt(LocalDateTime.now());
+        item.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         ShopItem saved = shopItemRepository.save(item);
         return ResponseEntity.ok(toView(saved));
     }
@@ -222,7 +223,7 @@ public class AdminShopController {
         ShopItem item = itemOpt.get();
         adminDataScope.assertCampusAccess(item.getCampusName());
         item.setPublished(true);
-        item.setUpdatedAt(LocalDateTime.now());
+        item.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         ShopItem saved = shopItemRepository.save(item);
         return ResponseEntity.ok(toView(saved));
     }
@@ -247,7 +248,7 @@ public class AdminShopController {
         ShopItem item = itemOpt.get();
         adminDataScope.assertCampusAccess(item.getCampusName());
         item.setPublished(false);
-        item.setUpdatedAt(LocalDateTime.now());
+        item.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         ShopItem saved = shopItemRepository.save(item);
         return ResponseEntity.ok(toView(saved));
     }

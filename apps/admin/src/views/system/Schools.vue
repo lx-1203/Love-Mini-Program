@@ -11,6 +11,7 @@
  * 说明：停用高校后该校管理员将无法登录后台（页面顶部展示提示文案）。
  */
 import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   listSchools,
   createSchool,
@@ -27,6 +28,8 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+
+const { t } = useI18n();
 
 // ===== 列表数据 =====
 const schools = ref<SchoolView[]>([]);
@@ -55,7 +58,7 @@ async function fetchSchools() {
     total.value = result.total;
     totalPages.value = result.totalPages || 1;
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "加载高校列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("schools.loadFailed");
     schools.value = [];
     total.value = 0;
   } finally {
@@ -119,11 +122,11 @@ function closeForm() {
 async function handleSubmit() {
   if (saving.value) return;
   if (!form.value.name.trim()) {
-    formError.value = "高校名称不能为空";
+    formError.value = t("schools.nameRequired");
     return;
   }
   if (!form.value.code.trim()) {
-    formError.value = "高校编码不能为空";
+    formError.value = t("schools.codeRequired");
     return;
   }
 
@@ -144,7 +147,7 @@ async function handleSubmit() {
     formVisible.value = false;
     await fetchSchools();
   } catch (err) {
-    formError.value = err instanceof ApiError ? err.message : "保存失败，请重试";
+    formError.value = err instanceof ApiError ? err.message : t("schools.saveFailed");
   } finally {
     saving.value = false;
   }
@@ -173,7 +176,7 @@ async function confirmToggle() {
     toggleTarget.value = null;
     await fetchSchools();
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "状态切换失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("schools.toggleFailed");
     toggleVisible.value = false;
   } finally {
     toggling.value = false;
@@ -201,7 +204,7 @@ async function confirmDelete() {
     await fetchSchools();
   } catch (err) {
     // 存在关联管理员时后端返回 409，透出后端错误信息
-    errorMsg.value = err instanceof ApiError ? err.message : "删除失败，请重试";
+    errorMsg.value = err instanceof ApiError ? err.message : t("schools.deleteFailed");
     deleteVisible.value = false;
   } finally {
     deleting.value = false;
@@ -216,8 +219,8 @@ onMounted(() => {
 <template>
   <view class="schools-page">
     <view class="page-header">
-      <text class="page-title">学校管理</text>
-      <text class="page-subtitle">维护接入平台的高校列表，为每个高校创建校区管理员</text>
+      <text class="page-title">{{ t("schools.title") }}</text>
+      <text class="page-subtitle">{{ t("schools.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
@@ -225,21 +228,21 @@ onMounted(() => {
         v-model="keyword"
         class="search-input"
         type="text"
-        placeholder="搜索高校名称 / 编码"
+        :placeholder="t('schools.searchPlaceholder')"
         @keyup.enter="handleSearch"
       />
       <select v-model="statusFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部状态</option>
-        <option value="enabled">已启用</option>
-        <option value="disabled">已停用</option>
+        <option value="">{{ t("schools.filterStatusAll") }}</option>
+        <option value="enabled">{{ t("schools.statusEnabled") }}</option>
+        <option value="disabled">{{ t("schools.statusDisabled") }}</option>
       </select>
-      <button class="primary-button" @click="handleSearch">搜索</button>
-      <button class="secondary-button" @click="handleReset">重置</button>
-      <button class="primary-button" @click="openCreate">新增高校</button>
+      <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
+      <button class="secondary-button" @click="handleReset">{{ t("common.reset") }}</button>
+      <button class="primary-button" @click="openCreate">{{ t("schools.createTitle") }}</button>
     </view>
 
     <!-- 停用说明文案：停用高校后该校管理员无法登录 -->
-    <view class="notice-banner">停用高校后，该校管理员将无法登录后台；启用后恢复登录。</view>
+    <view class="notice-banner">{{ t("schools.noticeBanner") }}</view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchSchools" />
 
@@ -247,21 +250,21 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">高校名称</th>
-            <th scope="col">编码</th>
-            <th scope="col">状态</th>
-            <th scope="col">排序</th>
-            <th scope="col">创建时间</th>
-            <th scope="col">操作</th>
+            <th scope="col">{{ t("schools.columnId") }}</th>
+            <th scope="col">{{ t("schools.columnName") }}</th>
+            <th scope="col">{{ t("schools.columnCode") }}</th>
+            <th scope="col">{{ t("schools.columnStatus") }}</th>
+            <th scope="col">{{ t("schools.columnSort") }}</th>
+            <th scope="col">{{ t("schools.columnCreatedAt") }}</th>
+            <th scope="col">{{ t("schools.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="7" class="empty-row">加载中...</td>
+            <td colspan="7" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="schools.length === 0">
-            <td colspan="7" class="empty-row">暂无高校，点击「新增高校」创建</td>
+            <td colspan="7" class="empty-row">{{ t("schools.noData") }}</td>
           </tr>
           <tr v-for="school in schools" :key="school.id">
             <td>{{ school.id }}</td>
@@ -269,22 +272,22 @@ onMounted(() => {
             <td class="text-mono">{{ school.code }}</td>
             <td>
               <span class="status-badge" :class="school.status === 'enabled' ? 'status-active' : 'status-disabled'">
-                {{ school.status === "enabled" ? "已启用" : "已停用" }}
+                {{ school.status === "enabled" ? t("schools.statusEnabled") : t("schools.statusDisabled") }}
               </span>
             </td>
             <td>{{ school.sortOrder }}</td>
             <td>{{ formatDateTime(school.createdAt) }}</td>
             <td>
               <view class="action-cell">
-                <button class="action-button edit" @click="openEdit(school)">编辑</button>
+                <button class="action-button edit" @click="openEdit(school)">{{ t("schools.actionEdit") }}</button>
                 <button
                   class="action-button"
                   :class="school.status === 'enabled' ? 'delete' : 'enable'"
                   @click="askToggle(school)"
                 >
-                  {{ school.status === "enabled" ? "停用" : "启用" }}
+                  {{ school.status === "enabled" ? t("schools.actionDisable") : t("schools.actionEnable") }}
                 </button>
-                <button class="action-button delete" @click="askDelete(school)">删除</button>
+                <button class="action-button delete" @click="askDelete(school)">{{ t("schools.actionDelete") }}</button>
               </view>
             </td>
           </tr>
@@ -303,29 +306,29 @@ onMounted(() => {
     <!-- 新增/编辑高校弹窗 -->
     <view v-if="formVisible" class="modal-mask" @click.self="closeForm">
       <view class="modal">
-        <text class="modal-title">{{ formMode === "create" ? "新增高校" : "编辑高校" }}</text>
+        <text class="modal-title">{{ formMode === "create" ? t("schools.createTitle") : t("schools.editTitle") }}</text>
 
         <view class="form-row">
-          <text class="form-label">高校名称 <text class="required">*</text></text>
-          <input v-model="form.name" class="form-input" type="text" placeholder="如：南京大学" />
+          <text class="form-label">{{ t("schools.nameLabel") }} <text class="required">*</text></text>
+          <input v-model="form.name" class="form-input" type="text" :placeholder="t('schools.namePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">高校编码 <text class="required">*</text></text>
-          <input v-model="form.code" class="form-input" type="text" placeholder="如：nju（唯一，建议英文小写）" />
+          <text class="form-label">{{ t("schools.codeLabel") }} <text class="required">*</text></text>
+          <input v-model="form.code" class="form-input" type="text" :placeholder="t('schools.codePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">排序号</text>
-          <input v-model.number="form.sortOrder" class="form-input" type="number" placeholder="0（越小越靠前）" />
+          <text class="form-label">{{ t("schools.sortLabel") }}</text>
+          <input v-model.number="form.sortOrder" class="form-input" type="number" :placeholder="t('schools.sortPlaceholder')" />
         </view>
 
         <text v-if="formError" class="modal-error">{{ formError }}</text>
 
         <view class="modal-actions">
-          <button class="ghost-button" :disabled="saving" @click="closeForm">取消</button>
+          <button class="ghost-button" :disabled="saving" @click="closeForm">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="saving" @click="handleSubmit">
-            {{ saving ? "保存中..." : "保存" }}
+            {{ saving ? t("schools.saving") : t("common.save") }}
           </button>
         </view>
       </view>
@@ -334,15 +337,15 @@ onMounted(() => {
     <!-- 启用/停用确认 -->
     <ConfirmDialog
       v-model:visible="toggleVisible"
-      :title="toggleTo === 'disabled' ? '停用高校' : '启用高校'"
+      :title="toggleTo === 'disabled' ? t('schools.disableTitle') : t('schools.enableTitle')"
       :message="
         toggleTo === 'disabled'
-          ? `确定要停用「${toggleTarget?.name ?? ''}」吗？停用后该校管理员将无法登录后台。`
-          : `确定要启用「${toggleTarget?.name ?? ''}」吗？`
+          ? t('schools.disableConfirm', { name: toggleTarget?.name ?? '' })
+          : t('schools.enableConfirm', { name: toggleTarget?.name ?? '' })
       "
       :danger="toggleTo === 'disabled'"
       :confirming="toggling"
-      :confirm-text="toggleTo === 'disabled' ? '停用' : '启用'"
+      :confirm-text="toggleTo === 'disabled' ? t('schools.actionDisable') : t('schools.actionEnable')"
       @confirm="confirmToggle"
       @cancel="toggleVisible = false"
     />
@@ -350,11 +353,11 @@ onMounted(() => {
     <!-- 删除确认 -->
     <ConfirmDialog
       v-model:visible="deleteVisible"
-      title="删除高校"
-      :message="`确定要删除「${deleteTarget?.name ?? ''}」吗？存在关联管理员时后端将拒绝删除。`"
+      :title="t('schools.deleteTitle')"
+      :message="t('schools.deleteMessage', { name: deleteTarget?.name ?? '' })"
       :danger="true"
       :confirming="deleting"
-      confirm-text="删除"
+      :confirm-text="t('schools.deleteButton')"
       @confirm="confirmDelete"
       @cancel="deleteVisible = false"
     />

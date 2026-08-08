@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.PushPreference;
 import com.campuslove.api.repository.PushPreferenceRepository;
 import java.time.LocalDateTime;
@@ -94,7 +95,7 @@ public class RealPushPreferenceService implements PushPreferenceService {
         if (activeHours != null) {
             preference.setActiveHours(activeHours);
         }
-        preference.setUpdatedAt(LocalDateTime.now());
+        preference.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         PushPreference saved = pushPreferenceRepository.save(preference);
         log.debug("用户[{}]推送偏好已更新: enabled={}, frequency={}, activeHours={}",

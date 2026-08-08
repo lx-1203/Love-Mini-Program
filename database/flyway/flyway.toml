@@ -11,6 +11,11 @@ baselineOnMigrate = false
 [flyway.placeholders]
 admin_openid = "admin-default-openid-change-me"
 admin_nickname = "系统管理员"
+# R4-00420/00422/00423：演示种子数据环境守卫——虚拟用户/演示私信/画像随机种子等
+# 迁移仅在 demo_seed=true 时写入数据（默认 false，生产不会灌入虚拟用户/演示数据）。
+# CLI 运行时可覆盖：flyway -placeholders.demo_seed=true migrate
+# （Spring Boot 侧由 application-real.yml 的 spring.flyway.placeholders.demo-seed 注入）
+demo_seed = "false"
 # Task 22（FIN-00268）：移除 admin_password_hash 默认值 "change_me"，强制通过环境变量注入。
 # flyway.toml 不支持原生环境变量占位符（${VAR} 语法仅在 Spring Boot 的 application*.yml 中生效），
 # 因此此处不写入任何默认值，生产环境必须通过以下两种方式之一注入真实 BCrypt 哈希：

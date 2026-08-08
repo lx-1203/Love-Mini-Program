@@ -1,5 +1,6 @@
 package com.campuslove.api.mq;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.Notification.NotificationType;
 import com.campuslove.api.entity.Notification.ReferenceType;
@@ -125,7 +126,7 @@ public class NotificationConsumer {
             data.put("thing2", new WeChatPushService.TemplateDataItem(
                     truncate(message.getContent(), 20)));
             data.put("time3", new WeChatPushService.TemplateDataItem(
-                    LocalDateTime.now().format(
+                    LocalDateTime.now(TimeZones.BUSINESS).format(
                             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
 
             // 调用微信订阅消息接口（使用 socialDigestTemplateId 作为通用通知模板）
@@ -174,18 +175,33 @@ public class NotificationConsumer {
             Notification entity = new Notification();
             entity.setUserId(message.getUserId());
             entity.setType(mapType(message.getType()));
-            // TODO(FIN-00047): sourceUserId 恒为 0（系统虚拟用户）。NotificationMessage 消息体
-            // 未携带真实来源用户 ID，导致站内通知「谁互动了我」语义缺失、前端无法跳转来源用户主页。
-            // 补偿方案：在 NotificationMessage 中增加 sourceUserId 字段，由 MessageProducer 调用方
-            // （点赞/评论/关注等业务侧）在构造消息时填充真实来源用户；此处改为使用
-            // message.getSourceUserId()（null/缺省时回退 SYSTEM_SOURCE_USER_ID）。
-            entity.setSourceUserId(SYSTEM_SOURCE_USER_ID);
-            entity.setReferenceType(ReferenceType.user);
+            // R4-00371（FIN-00047 收尾）：sourceUserId 由生产者（点赞/评论/关注等业务侧）
+            // 经 NotificationMessage.sourceUserId 填充，站内通知「谁互动了我」语义恢复、
+            // 前端可跳转来源用户主页；null/缺省时回退系统虚拟用户。
+            entity.setSourceUserId(message.getSourceUserId() != null
+                    ? message.getSourceUserId() : SYSTEM_SOURCE_USER_ID);
+            // R4-00371：关联业务实体（如被点赞的帖子 ID）与关联类型（user/post/comment）
+            // 随消息透传持久化；referenceType 非法/缺省时回退 user
+            entity.setReferenceId(message.getReferenceId());
+            String refType = message.getReferenceType();
+            if (refType != null && !refType.isBlank()) {
+                try {
+                    entity.setReferenceType(ReferenceType.valueOf(refType));
+                } catch (IllegalArgumentException e) {
+                    log.warn("通知 referenceType 非法，回退 user：userId={}, referenceType={}",
+                            message.getUserId(), refType);
+                    entity.setReferenceType(ReferenceType.user);
+                }
+            } else {
+                entity.setReferenceType(ReferenceType.user);
+            }
             entity.setIsRead(false);
             entity.setCreatedAt(toLocalDateTime(message.getCreatedAt()));
 
             notificationRepository.save(entity);
-            log.debug("通知已持久化：userId={}, type={}", message.getUserId(), message.getType());
+            log.debug("通知已持久化：userId={}, type={}, sourceUserId={}, referenceId={}, referenceType={}",
+                    message.getUserId(), message.getType(), entity.getSourceUserId(),
+                    entity.getReferenceId(), entity.getReferenceType());
         } catch (org.springframework.dao.DataAccessException e) {
             log.warn("通知持久化失败，不抛出异常以避免消息重投：userId={}, error={}",
                     message.getUserId(), e.getMessage());
@@ -220,9 +236,9 @@ public class NotificationConsumer {
      */
     private LocalDateTime toLocalDateTime(java.time.Instant instant) {
         if (instant == null) {
-            return LocalDateTime.now();
+            return LocalDateTime.now(TimeZones.BUSINESS);
         }
-        return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        return LocalDateTime.ofInstant(instant, TimeZones.BUSINESS);
     }
 
     /**

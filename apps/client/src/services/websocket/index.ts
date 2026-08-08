@@ -792,6 +792,12 @@ class WebSocketClient {
    */
   private setupUserSubscriptions(): void {
     // 用户私有频道及其回调
+    // 修复（R4-00175）：补订后端实际推送的 6 类队列中的 matches / temp-chat /
+    // temp-chat/messages / checkin（原实现仅订阅 messages/signals/notifications，
+    // 匹配成功、临时会话新消息、签到事件实时推送全部丢失）。
+    // 队列名与后端对齐：/queue/matches（MatchRecorder）、/queue/temp-chat 与
+    // /queue/temp-chat/messages（TempChatSessionService/TempChatMessageService）、
+    // /queue/checkin（CheckInEventConsumer）。
     const userQueues: Array<{ dest: string; cb: MessageCallback }> = [
       {
         dest: "/user/queue/messages",
@@ -804,6 +810,22 @@ class WebSocketClient {
       {
         dest: "/user/queue/notifications",
         cb: (data) => dispatchToStore("/user/queue/notifications", data),
+      },
+      {
+        dest: "/user/queue/matches",
+        cb: (data) => dispatchToStore("/user/queue/matches", data),
+      },
+      {
+        dest: "/user/queue/temp-chat",
+        cb: (data) => dispatchToStore("/user/queue/temp-chat", data),
+      },
+      {
+        dest: "/user/queue/temp-chat/messages",
+        cb: (data) => dispatchToStore("/user/queue/temp-chat/messages", data),
+      },
+      {
+        dest: "/user/queue/checkin",
+        cb: (data) => dispatchToStore("/user/queue/checkin", data),
       },
     ];
 

@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.VideoCall;
 import com.campuslove.api.entity.VideoCallRecord;
 import com.campuslove.api.repository.UserRepository;
@@ -95,7 +96,7 @@ public class VideoCallService {
         try {
             // 生成唯一 roomId（UUID v4，无连字符）
             String roomId = UUID.randomUUID().toString().replace("-", "");
-            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            java.time.LocalDateTime now = java.time.LocalDateTime.now(TimeZones.BUSINESS);
 
             // 写入实时状态表 VideoCall
             VideoCall call = new VideoCall();
@@ -125,6 +126,120 @@ public class VideoCallService {
             // 数据库访问异常（save 失败、约束冲突等）
             log.error("视频通话发起失败：callerId={}, calleeId={}", callerId, calleeId, e);
             throw new RuntimeException("视频通话发起失败，请稍后重试", e);
+        }
+    }
+
+    /**
+     * 接听视频通话（R4-00323/00324）。
+     *
+     * <p>仅被叫方（calleeId）可接听；RINGING → ONGOING，记录 startedAt（此前
+     * startedAt 全仓无赋值，endCall 时长恒 0、CONNECTED 状态不可达），
+     * 同步将 VideoCallRecord 状态置为 CONNECTED。</p>
+     *
+     * @param roomId 通话房间 ID
+     * @param userId 操作用户 ID（必须为被叫方）
+     * @return 通话视图（status=ONGOING，startedAt 已填充）
+     * @throws IllegalArgumentException roomId 不存在、非被叫方操作或通话不在 RINGING 状态时抛出
+     */
+    @Transactional
+    public VideoCallView acceptCall(String roomId, Long userId) {
+        if (roomId == null || roomId.isBlank()) {
+            throw new IllegalArgumentException("通话房间 ID 不能为空");
+        }
+        if (userId == null) {
+            throw new IllegalArgumentException("操作用户 ID 不能为空");
+        }
+        VideoCall call = videoCallRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("通话记录不存在"));
+        // 仅被叫方可接听
+        if (!call.getCalleeId().equals(userId)) {
+            throw new IllegalArgumentException("仅接收方可接听此通话");
+        }
+        if (!"RINGING".equals(call.getStatus())) {
+            throw new IllegalArgumentException("通话不在响铃状态，无法接听");
+        }
+        try {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now(TimeZones.BUSINESS);
+            // R4-00323：接听时记录 startedAt，endCall 才能计算真实通话时长
+            call.setStartedAt(now);
+            call.setStatus("ONGOING");
+            call.setUpdatedAt(now);
+            VideoCall saved = videoCallRepository.save(call);
+
+            // 同步更新 VideoCallRecord 状态为 CONNECTED（此前 CONNECTED 不可达）
+            try {
+                videoCallRecordRepository.findByRoomId(roomId).ifPresent(record -> {
+                    record.setStatus("CONNECTED");
+                    record.setUpdatedAt(now);
+                    videoCallRecordRepository.save(record);
+                });
+            } catch (DataAccessException rex) {
+                log.warn("更新通话历史记录状态失败：roomId={}", roomId, rex);
+            }
+
+            log.info("视频通话已接听：roomId={}, calleeId={}, startedAt={}",
+                    roomId, userId, now);
+            return toView(saved);
+        } catch (DataAccessException e) {
+            log.error("视频通话接听失败：roomId={}, userId={}", roomId, userId, e);
+            throw new RuntimeException("视频通话接听失败，请稍后重试", e);
+        }
+    }
+
+    /**
+     * 拒绝视频通话（R4-00324）。
+     *
+     * <p>仅被叫方可拒绝；RINGING → REJECTED，记录 endedAt，同步将
+     * VideoCallRecord 状态置为 REJECTED。</p>
+     *
+     * @param roomId 通话房间 ID
+     * @param userId 操作用户 ID（必须为被叫方）
+     * @return 通话视图（status=REJECTED）
+     * @throws IllegalArgumentException roomId 不存在、非被叫方操作或通话不在 RINGING 状态时抛出
+     */
+    @Transactional
+    public VideoCallView rejectCall(String roomId, Long userId) {
+        if (roomId == null || roomId.isBlank()) {
+            throw new IllegalArgumentException("通话房间 ID 不能为空");
+        }
+        if (userId == null) {
+            throw new IllegalArgumentException("操作用户 ID 不能为空");
+        }
+        VideoCall call = videoCallRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("通话记录不存在"));
+        if (!call.getCalleeId().equals(userId)) {
+            throw new IllegalArgumentException("仅接收方可拒绝此通话");
+        }
+        if (!"RINGING".equals(call.getStatus())) {
+            throw new IllegalArgumentException("通话不在响铃状态，无法拒绝");
+        }
+        try {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now(TimeZones.BUSINESS);
+            call.setEndedAt(now);
+            call.setEndReason("REJECTED");
+            call.setStatus("REJECTED");
+            call.setDurationSec(0);
+            call.setUpdatedAt(now);
+            VideoCall saved = videoCallRepository.save(call);
+
+            final String finalEndReason = "REJECTED";
+            try {
+                videoCallRecordRepository.findByRoomId(roomId).ifPresent(record -> {
+                    record.setEndTime(now);
+                    record.setDuration(0);
+                    record.setStatus(mapRecordStatus(finalEndReason, 0));
+                    record.setUpdatedAt(now);
+                    videoCallRecordRepository.save(record);
+                });
+            } catch (DataAccessException rex) {
+                log.warn("更新通话历史记录状态失败：roomId={}", roomId, rex);
+            }
+
+            log.info("视频通话已拒绝：roomId={}, calleeId={}", roomId, userId);
+            return toView(saved);
+        } catch (DataAccessException e) {
+            log.error("视频通话拒绝失败：roomId={}, userId={}", roomId, userId, e);
+            throw new RuntimeException("视频通话拒绝失败，请稍后重试", e);
         }
     }
 
@@ -169,7 +284,7 @@ public class VideoCallService {
         }
 
         try {
-            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            java.time.LocalDateTime now = java.time.LocalDateTime.now(TimeZones.BUSINESS);
             call.setEndedAt(now);
             call.setEndReason(endReason != null ? endReason : "CALLER_HANGUP");
             call.setStatus("ENDED");

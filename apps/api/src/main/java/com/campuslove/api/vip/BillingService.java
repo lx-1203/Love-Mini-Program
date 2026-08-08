@@ -1,9 +1,13 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.PaymentCallbackLog;
 import com.campuslove.api.entity.VipBill;
 import com.campuslove.api.repository.PaymentCallbackLogRepository;
 import com.campuslove.api.repository.VipBillRepository;
+import com.campuslove.api.wallet.InsufficientBalanceException;
+import com.campuslove.api.wallet.WalletService;
+import com.campuslove.api.wallet.WalletTransactionLog;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -11,8 +15,10 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
@@ -52,10 +58,126 @@ public class BillingService {
     private final VipBillRepository vipBillRepository;
     private final PaymentCallbackLogRepository paymentCallbackLogRepository;
 
+    /**
+     * 优惠码服务（R4-00320：VIP 购买链路消费折扣）。
+     * 采用 required=false 字段注入，避免破坏既有单测构造器；未注入时购买请求
+     * 携带 promoCode 会返回「优惠码服务不可用」业务错误。
+     */
+    @Autowired(required = false)
+    private PromoCodeService promoCodeService;
+
+    /**
+     * 钱包服务（R4-00320：VIP 购买钱包扣费）。
+     * 采用 required=false 字段注入，避免破坏既有单测构造器；未注入时购买请求报错。
+     */
+    @Autowired(required = false)
+    private WalletService walletService;
+
     public BillingService(VipBillRepository vipBillRepository,
                           PaymentCallbackLogRepository paymentCallbackLogRepository) {
         this.vipBillRepository = vipBillRepository;
         this.paymentCallbackLogRepository = paymentCallbackLogRepository;
+    }
+
+    /**
+     * VIP 购买（钱包支付，R4-00320：优惠码折扣消费方）。
+     *
+     * <p>背景：PromoCodeService.redeem 兑换的折扣金额此前无任何消费方——兑换成功
+     * 但购买时无人读取折扣，营销链路断裂。本方法将折扣接入支付/下单链路：</p>
+     * <ol>
+     *   <li>携带 promoCode 时调用 {@link PromoCodeService#redeem} 真实消耗优惠码
+     *       （原子扣减剩余次数 + 写入使用记录），得到折扣金额与折后价</li>
+     *   <li>按折后价调用 {@link WalletService#deduct} 扣减钱包（orderId 唯一索引幂等）</li>
+     *   <li>写入 VIP 账单（amount=实付、originalAmount=原价，type=SUBSCRIBE，
+     *       paymentMethod=WALLET）并顺延 VIP 到期时间 30 天</li>
+     * </ol>
+     *
+     * <p>余额不足抛 {@link InsufficientBalanceException}（HTTP 409）；
+     * 优惠码无效/过期/已用完抛 IllegalArgumentException（HTTP 400）。
+     * 全部操作在同一事务内，任一步失败整体回滚（优惠码使用记录一并回滚）。</p>
+     *
+     * @param userId     购买用户 ID
+     * @param planId     套餐 ID
+     * @param planName   套餐名称
+     * @param baseAmount 原价（分）
+     * @param promoCode  优惠码（可空，空表示不参与优惠）
+     * @return 购买结果视图（订单号 / 原价 / 折扣 / 实付 / 扣费后余额 / 新 VIP 到期时间）
+     */
+    @Transactional
+    public PurchaseResultView purchaseVip(Long userId, String planId, String planName,
+                                          Integer baseAmount, String promoCode) {
+        if (userId == null) {
+            throw new IllegalArgumentException("用户 ID 不能为空");
+        }
+        if (baseAmount == null || baseAmount < 0) {
+            throw new IllegalArgumentException("套餐价格不能为负数");
+        }
+        if (planId == null || planId.isBlank()) {
+            throw new IllegalArgumentException("套餐 ID 不能为空");
+        }
+
+        // 1. 优惠码折扣消费（R4-00320）：redeem 原子消耗使用次数并返回折扣
+        int discountAmount = 0;
+        String usedCode = null;
+        if (promoCode != null && !promoCode.isBlank()) {
+            if (promoCodeService == null) {
+                throw new IllegalStateException("优惠码服务不可用，请稍后重试");
+            }
+            PromoCodeService.RedeemResultView redeem = promoCodeService.redeem(promoCode, userId, baseAmount);
+            discountAmount = redeem.discountAmount();
+            usedCode = redeem.code();
+        }
+        int finalAmount = Math.max(0, baseAmount - discountAmount);
+
+        // 2. 钱包扣费（折后价；orderId 唯一索引幂等防重复扣款）
+        String orderNo = "VIP-PURCHASE-" + UUID.randomUUID().toString().replace("-", "");
+        Long balanceAfter = null;
+        if (finalAmount > 0) {
+            if (walletService == null) {
+                throw new IllegalStateException("钱包服务不可用，请稍后重试");
+            }
+            balanceAfter = walletService.deduct(
+                    userId,
+                    (long) finalAmount,
+                    orderNo,
+                    WalletTransactionLog.RELATED_TYPE_VIP_PURCHASE,
+                    orderNo);
+        }
+
+        // 3. 写入账单并顺延 VIP 到期时间（与支付回调开通逻辑对齐：max(now, 当前 periodEnd) + 30 天）
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
+        LocalDateTime newExpiry = grantVipExpiry(userId, now);
+        BillView bill = createBill(userId, planId, planName != null ? planName : "月度会员",
+                finalAmount, baseAmount, "SUBSCRIBE", "SUCCESS", "WALLET",
+                orderNo, now.toString(), newExpiry.toString(),
+                usedCode != null
+                        ? "VIP 购买（钱包支付），优惠码 " + usedCode + " 抵扣 " + discountAmount + " 分"
+                        : "VIP 购买（钱包支付）");
+        log.debug("VIP 购买账单已写入：billId={}, orderNo={}", bill.id(), orderNo);
+
+        log.info("VIP 购买成功：userId={}, orderNo={}, baseAmount={}, discount={}, finalAmount={}",
+                userId, orderNo, baseAmount, discountAmount, finalAmount);
+        return new PurchaseResultView(orderNo, baseAmount, discountAmount, finalAmount,
+                balanceAfter, newExpiry.toString());
+    }
+
+    /**
+     * 计算并返回购买后 VIP 到期时间（max(now, 最近一笔 SUCCESS 账单 periodEnd) + 30 天）。
+     * 与 {@link #handlePaymentCallback} 的开通规则一致，保证续购不丢失剩余权益天数。
+     */
+    private LocalDateTime grantVipExpiry(Long userId, LocalDateTime now) {
+        List<VipBill> bills = vipBillRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        LocalDateTime base = now;
+        if (bills != null) {
+            for (VipBill bill : bills) {
+                if ("SUCCESS".equals(bill.getStatus()) && bill.getPeriodEnd() != null
+                        && bill.getPeriodEnd().isAfter(base)) {
+                    base = bill.getPeriodEnd();
+                    break;
+                }
+            }
+        }
+        return base.plusDays(VIP_GRANT_DAYS);
     }
 
     /**
@@ -148,7 +270,7 @@ public class BillingService {
             bill.setPaymentMethod(paymentMethod != null ? paymentMethod : "WECHAT");
             bill.setTransactionId(transactionId);
             bill.setRemark(remark);
-            bill.setCreatedAt(java.time.LocalDateTime.now());
+            bill.setCreatedAt(java.time.LocalDateTime.now(TimeZones.BUSINESS));
             // 简化处理：periodStart/periodEnd 仅在字符串非空时尝试解析
             if (periodStart != null && !periodStart.isBlank()) {
                 try {
@@ -221,13 +343,15 @@ public class BillingService {
             return "FAIL";
         }
 
-        // 2. 幂等键检查：若已处理过该 notification_id，直接返回 SUCCESS 不重复开通
-        // 注意（R2 review MED）：幂等仅按 notification_id 维度。同一 orderNo 若以
-        // 不同 notificationId 重复回调，会绕过此检查重复开通/顺延 VIP。
-        // 账单表 transaction_id 当前仅为普通 INDEX（非唯一约束），接入真实支付前
-        // 必须：a) 为 vip_bills.transaction_id 建唯一约束；b) 增加按 orderNo 的幂等检查。
+        // 2. 幂等键检查：若已处理过该 (notification_id, order_no) 组合，直接返回
+        // SUCCESS 不重复开通。
+        // R4-00319 修复：幂等键从「仅 notification_id」升级为双键 (notificationId, orderNo)。
+        // 原实现同一 orderNo 以不同 notificationId 重复回调会绕过检查，重复开通/
+        // 无限顺延 VIP（注释自认）。双键检查保证：同一订单的任何重复通知均被幂等拦截；
+        // findByNotificationId 单键查询保留用于兼容历史日志数据（旧数据无 orderNo 场景）。
         Optional<PaymentCallbackLog> existing = paymentCallbackLogRepository
-                .findByNotificationId(notificationId);
+                .findByNotificationIdAndOrderNo(notificationId, orderNo)
+                .or(() -> paymentCallbackLogRepository.findByNotificationId(notificationId));
         if (existing.isPresent()) {
             log.info("支付回调重复通知，已处理过：notificationId={}, orderNo={}, status={}",
                     notificationId, orderNo, existing.get().getStatus());
@@ -267,7 +391,7 @@ public class BillingService {
             //    保证新订阅/续费均正确顺延，不会因续费时间点丢失剩余天数。
             bill.setStatus("SUCCESS");
             bill.setTransactionId(orderNo);
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
             LocalDateTime base = (bill.getPeriodEnd() != null && bill.getPeriodEnd().isAfter(now))
                     ? bill.getPeriodEnd() : now;
             bill.setPeriodEnd(base.plusDays(VIP_GRANT_DAYS));
@@ -310,7 +434,7 @@ public class BillingService {
             logEntry.setOrderNo(orderNo);
             logEntry.setAmount(amount);
             logEntry.setStatus(status);
-            logEntry.setCreatedAt(LocalDateTime.now());
+            logEntry.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
             paymentCallbackLogRepository.save(logEntry);
         } catch (DataAccessException e) {
             // 日志写入失败不影响主流程，但需记录 ERROR 便于排查
@@ -359,6 +483,26 @@ public class BillingService {
             String periodEnd,
             String remark,
             String createdAt
+    ) {
+    }
+
+    /**
+     * VIP 购买结果视图（R4-00320）。
+     *
+     * @param orderNo      订单号（钱包流水 order_id 幂等键）
+     * @param baseAmount   原价（分）
+     * @param discountAmount 优惠码折扣金额（分，未使用优惠码为 0）
+     * @param finalAmount  实付金额（分）
+     * @param balanceAfter 扣费后钱包余额（分；折后价为 0 未扣费时为 null）
+     * @param newExpiry    新 VIP 到期时间（ISO 字符串）
+     */
+    public record PurchaseResultView(
+            String orderNo,
+            Integer baseAmount,
+            Integer discountAmount,
+            Integer finalAmount,
+            Long balanceAfter,
+            String newExpiry
     ) {
     }
 

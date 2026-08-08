@@ -66,7 +66,7 @@ async function fetchCircles(): Promise<void> {
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载兴趣圈失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("interestCircles.loadFailed");
     circles.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -143,7 +143,7 @@ async function handleSave(): Promise<void> {
   if (saving.value) return;
   const f = form.value;
   if (editingId.value === null && !f.name.trim()) {
-    modalError.value = "圈名不能为空";
+    modalError.value = t("interestCircles.nameRequired");
     return;
   }
   // sortOrder 允许为空（后端缺省 0）；非空时必须为合法整数
@@ -152,7 +152,7 @@ async function handleSave(): Promise<void> {
   if (sortTrim !== "") {
     const n = Number(sortTrim);
     if (!Number.isInteger(n)) {
-      modalError.value = "排序权重必须为整数";
+      modalError.value = t("interestCircles.sortMustBeInteger");
       return;
     }
     sortOrder = n;
@@ -175,7 +175,7 @@ async function handleSave(): Promise<void> {
     formVisible.value = false;
     await fetchCircles();
   } catch (err: unknown) {
-    modalError.value = err instanceof ApiError ? err.message : "保存失败";
+    modalError.value = err instanceof ApiError ? err.message : t("interestCircles.saveFailed");
   } finally {
     saving.value = false;
   }
@@ -205,9 +205,9 @@ async function handleConfirmDelete(): Promise<void> {
     // 409：圈子下存在话题，展示后端 error 字段提示（http.ts 只透传 message，需自行读取 body）
     if (err instanceof ApiError && err.status === 409) {
       const body = err.body as { error?: string } | null;
-      errorMsg.value = body?.error || "该圈子下存在话题，请先处理话题后再删除";
+      errorMsg.value = body?.error || t("interestCircles.circleHasTopics");
     } else {
-      errorMsg.value = err instanceof ApiError ? err.message : "删除失败";
+      errorMsg.value = err instanceof ApiError ? err.message : t("interestCircles.deleteFailed");
     }
   } finally {
     deleting.value = false;
@@ -233,7 +233,7 @@ onMounted(() => {
   <view class="interest-circles-page">
     <view class="page-header">
       <text class="page-title">{{ t("layout.navInterestCircles") }}</text>
-      <text class="page-subtitle">维护兴趣圈基本信息与排序，管理圈内话题</text>
+      <text class="page-subtitle">{{ t("interestCircles.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
@@ -241,11 +241,11 @@ onMounted(() => {
         v-model="keyword"
         class="search-input"
         type="text"
-        placeholder="搜索圈名 / 描述..."
+        :placeholder="t('interestCircles.searchPlaceholder')"
         @keyup.enter="handleSearch"
       />
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
-      <button class="primary-button" @click="openCreate">新增圈子</button>
+      <button class="primary-button" @click="openCreate">{{ t("interestCircles.createButton") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchCircles" />
@@ -254,13 +254,13 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">圈名</th>
-            <th scope="col">图标</th>
-            <th scope="col">描述</th>
-            <th scope="col">成员数</th>
-            <th scope="col">排序</th>
-            <th scope="col">创建时间</th>
+            <th scope="col">{{ t("interestCircles.columnId") }}</th>
+            <th scope="col">{{ t("interestCircles.columnName") }}</th>
+            <th scope="col">{{ t("interestCircles.columnIcon") }}</th>
+            <th scope="col">{{ t("interestCircles.columnDescription") }}</th>
+            <th scope="col">{{ t("interestCircles.columnMembers") }}</th>
+            <th scope="col">{{ t("interestCircles.columnSort") }}</th>
+            <th scope="col">{{ t("interestCircles.columnCreatedAt") }}</th>
             <th scope="col">{{ t("common.actions") }}</th>
           </tr>
         </thead>
@@ -269,7 +269,7 @@ onMounted(() => {
             <td colspan="8" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="circles.length === 0">
-            <td colspan="8" class="empty-row">暂无兴趣圈数据</td>
+            <td colspan="8" class="empty-row">{{ t("interestCircles.noData") }}</td>
           </tr>
           <tr v-for="circle in circles" :key="circle.id">
             <td>{{ circle.id }}</td>
@@ -281,7 +281,7 @@ onMounted(() => {
             <td class="time-cell">{{ formatDateTime(circle.createdAt) }}</td>
             <td class="action-cell">
               <button class="action-button edit" @click="openEdit(circle)">{{ t("common.edit") }}</button>
-              <button class="action-button handle" @click="viewTopics(circle)">查看话题</button>
+              <button class="action-button handle" @click="viewTopics(circle)">{{ t("interestCircles.actionViewTopics") }}</button>
               <button class="action-button delete" @click="askDelete(circle)">{{ t("common.delete") }}</button>
             </td>
           </tr>
@@ -300,23 +300,25 @@ onMounted(() => {
     <!-- 新增/编辑兴趣圈弹窗 -->
     <view v-if="formVisible" class="modal-mask" @click.self="closeForm">
       <view class="modal circle-form-modal">
-        <text class="modal-title">{{ editingId === null ? "新增圈子" : `编辑圈子 #${editingId}` }}</text>
+        <text class="modal-title">
+          {{ editingId === null ? t("interestCircles.createTitle") : t("interestCircles.editTitle", { id: editingId }) }}
+        </text>
 
         <view class="form-row">
-          <text class="form-label">圈名</text>
-          <input v-model="form.name" class="form-input" type="text" maxlength="64" placeholder="请输入圈名（新增必填）" />
+          <text class="form-label">{{ t("interestCircles.nameLabel") }}</text>
+          <input v-model="form.name" class="form-input" type="text" maxlength="64" :placeholder="t('interestCircles.namePlaceholder')" />
         </view>
         <view class="form-row">
-          <text class="form-label">图标（emoji）</text>
-          <input v-model="form.icon" class="form-input" type="text" maxlength="16" placeholder="如：📋（留空默认 📋）" />
+          <text class="form-label">{{ t("interestCircles.iconLabel") }}</text>
+          <input v-model="form.icon" class="form-input" type="text" maxlength="16" :placeholder="t('interestCircles.iconPlaceholder')" />
         </view>
         <view class="form-row">
-          <text class="form-label">圈子描述</text>
-          <textarea v-model="form.description" class="form-textarea" rows="3" maxlength="256" placeholder="请输入圈子描述（可选）" />
+          <text class="form-label">{{ t("interestCircles.descriptionLabel") }}</text>
+          <textarea v-model="form.description" class="form-textarea" rows="3" maxlength="256" :placeholder="t('interestCircles.descriptionPlaceholder')" />
         </view>
         <view class="form-row">
-          <text class="form-label">排序权重（升序，越小越靠前）</text>
-          <input v-model="form.sortOrder" class="form-input" type="number" placeholder="如：0" />
+          <text class="form-label">{{ t("interestCircles.sortLabel") }}</text>
+          <input v-model="form.sortOrder" class="form-input" type="number" :placeholder="t('interestCircles.sortPlaceholder')" />
         </view>
 
         <text v-if="modalError" class="modal-error">{{ modalError }}</text>
@@ -333,8 +335,8 @@ onMounted(() => {
     <!-- 删除确认弹窗 -->
     <ConfirmDialog
       v-model:visible="deleteVisible"
-      title="删除兴趣圈"
-      :message="deleteTarget ? `确定要删除圈子「${deleteTarget.name}」吗？圈下存在话题时无法删除。` : ''"
+      :title="t('interestCircles.deleteTitle')"
+      :message="deleteTarget ? t('interestCircles.deleteConfirmMessage', { name: deleteTarget.name }) : ''"
       :danger="true"
       :confirming="deleting"
       @confirm="handleConfirmDelete"

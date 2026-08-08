@@ -10,6 +10,10 @@ import { discoverPageRequirements } from "../../../config/page-access";
 import { usePageAccess } from "../../../composables/usePageAccess";
 import { clientApi } from "../../../services/api";
 import { openAppPath } from "../../../utils/navigation";
+// R4-batch2: 页面文案 i18n 化
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const discussions = ref<Awaited<ReturnType<typeof clientApi.getDiscussionRecommendations>>>([]);
 const loading = ref(false);
@@ -43,19 +47,19 @@ function openPath(url: string) {
 
 <template>
   <AppShell
-    title="讨论圈"
-    subtitle="先看大家最近真的在聊什么，再决定从哪里开始建立联系。"
+    :title="t('discussions.title')"
+    :subtitle="t('discussions.subtitle')"
     current-tab="likes"
   >
-    <SectionCard title="正在讨论" subtitle="先看大家最近真正在聊什么。">
-      <view v-if="loading" class="empty-state">正在加载讨论内容...</view>
+    <SectionCard :title="t('discussions.hotSectionTitle')" :subtitle="t('discussions.hotSectionSubtitle')">
+      <view v-if="loading" class="empty-state">{{ t('discussions.loadingContent') }}</view>
       <view v-else-if="error" class="empty-state">
         {{ error }}
-        <text class="retry-link" @tap="loadDiscussions">点击重试</text>
+        <text class="retry-link" @tap="loadDiscussions">{{ t('discussions.retry') }}</text>
       </view>
       <EmptyState
         v-else-if="!discussions.length"
-        :title="'暂时还没有新的讨论推荐'"
+        :title="t('discussions.empty')"
         type="no-data"
       />
       <view v-else class="section-stack">
@@ -67,10 +71,10 @@ function openPath(url: string) {
       </view>
     </SectionCard>
 
-    <SectionCard title="下一步" subtitle="看到合适的话题后，可以直接去匹配或反馈新的讨论建议。">
+    <SectionCard :title="t('discussions.nextTitle')" :subtitle="t('discussions.nextSubtitle')">
       <BottomActionBar
-        primary-label="去寻觅"
-        secondary-label="反馈讨论建议"
+        :primary-label="t('discussions.goExplore')"
+        :secondary-label="t('discussions.feedbackSuggestion')"
         @primary="openPath('/pages/discover/index')"
         @secondary="openPath('/subpackages/support/feedback/index')"
       />

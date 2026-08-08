@@ -66,7 +66,7 @@ async function fetchTopics(): Promise<void> {
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载校园话题失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("campusTopics.loadFailed");
     topics.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -125,7 +125,7 @@ async function handleSaveAudit(): Promise<void> {
   const topic = auditingTopic.value;
   if (!topic || savingAudit.value) return;
   if (auditDecision.value === "rejected" && !auditRemark.value.trim()) {
-    auditError.value = "拒绝时必须填写备注（拒绝原因）";
+    auditError.value = t("campusTopics.rejectRemarkRequired");
     return;
   }
   savingAudit.value = true;
@@ -139,7 +139,7 @@ async function handleSaveAudit(): Promise<void> {
     auditRemark.value = "";
     await fetchTopics();
   } catch (err: unknown) {
-    auditError.value = err instanceof ApiError ? err.message : "审核失败";
+    auditError.value = err instanceof ApiError ? err.message : t("campusTopics.auditFailed");
   } finally {
     savingAudit.value = false;
   }
@@ -165,7 +165,7 @@ async function handleConfirmDelete(): Promise<void> {
     deleteTarget.value = null;
     await fetchTopics();
   } catch (err: unknown) {
-    errorMsg.value = err instanceof ApiError ? err.message : "删除失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("campusTopics.deleteFailed");
   } finally {
     deleting.value = false;
   }
@@ -179,19 +179,19 @@ function handleCancelDelete(): void {
 // ===== 展示辅助 =====
 /** 作者昵称兜底展示（匿名帖直接展示匿名标识） */
 function authorDisplay(topic: CampusTopicSummary): string {
-  if (topic.isAnonymous) return "匿名用户";
-  return topic.authorNickname || `用户#${topic.authorId}`;
+  if (topic.isAnonymous) return t("campusTopics.anonymousUser");
+  return topic.authorNickname || t("campusTopics.authorFallback", { id: topic.authorId });
 }
 
 /** 话题状态文案 */
 function topicStatusLabel(status: string | null): string {
   switch (status) {
     case "active":
-      return "正常";
+      return t("campusTopics.statusActive");
     case "deleted":
-      return "已删除";
+      return t("campusTopics.statusDeleted");
     case "hidden":
-      return "已隐藏";
+      return t("campusTopics.statusHidden");
     default:
       return status ?? "—";
   }
@@ -201,11 +201,11 @@ function topicStatusLabel(status: string | null): string {
 function auditStatusLabel(status: string | null): string {
   switch (status) {
     case "pending":
-      return "待审核";
+      return t("campusTopics.auditStatusPending");
     case "approved":
-      return "已通过";
+      return t("campusTopics.auditStatusApproved");
     case "rejected":
-      return "已拒绝";
+      return t("campusTopics.auditStatusRejected");
     default:
       return status ?? "—";
   }
@@ -220,28 +220,28 @@ onMounted(() => {
   <view class="campus-topics-page">
     <view class="page-header">
       <text class="page-title">{{ t("layout.navCampusTopics") }}</text>
-      <text class="page-subtitle">审核与管理校园圈话题，支持按学校与状态筛选</text>
+      <text class="page-subtitle">{{ t("campusTopics.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
       <select v-model="statusFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部状态</option>
-        <option value="active">正常</option>
-        <option value="hidden">已隐藏</option>
-        <option value="deleted">已删除</option>
+        <option value="">{{ t("campusTopics.filterStatusAll") }}</option>
+        <option value="active">{{ t("campusTopics.statusActive") }}</option>
+        <option value="hidden">{{ t("campusTopics.statusHidden") }}</option>
+        <option value="deleted">{{ t("campusTopics.statusDeleted") }}</option>
       </select>
       <input
         v-model="keyword"
         class="search-input"
         type="text"
-        placeholder="搜索标题 / 内容..."
+        :placeholder="t('campusTopics.keywordPlaceholder')"
         @keyup.enter="handleSearch"
       />
       <input
         v-model="campusName"
         class="filter-input"
         type="text"
-        placeholder="学校名（全局管理员可用）"
+        :placeholder="t('campusTopics.campusPlaceholder')"
         @keyup.enter="handleSearch"
       />
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
@@ -253,13 +253,13 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">标题</th>
-            <th scope="col">作者</th>
-            <th scope="col">学校</th>
-            <th scope="col">状态</th>
-            <th scope="col">审核状态</th>
-            <th scope="col">创建时间</th>
+            <th scope="col">{{ t("campusTopics.columnId") }}</th>
+            <th scope="col">{{ t("campusTopics.columnTitle") }}</th>
+            <th scope="col">{{ t("campusTopics.columnAuthor") }}</th>
+            <th scope="col">{{ t("campusTopics.columnSchool") }}</th>
+            <th scope="col">{{ t("campusTopics.columnStatus") }}</th>
+            <th scope="col">{{ t("campusTopics.columnAuditStatus") }}</th>
+            <th scope="col">{{ t("campusTopics.columnCreatedAt") }}</th>
             <th scope="col">{{ t("common.actions") }}</th>
           </tr>
         </thead>
@@ -268,7 +268,7 @@ onMounted(() => {
             <td colspan="8" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="topics.length === 0">
-            <td colspan="8" class="empty-row">暂无校园话题数据</td>
+            <td colspan="8" class="empty-row">{{ t("campusTopics.noData") }}</td>
           </tr>
           <tr v-for="topic in topics" :key="topic.id">
             <td>{{ topic.id }}</td>
@@ -291,7 +291,7 @@ onMounted(() => {
                 v-if="topic.auditStatus === 'pending'"
                 class="action-button audit"
                 @click="openAudit(topic)"
-              >审核</button>
+              >{{ t("campusTopics.auditButton") }}</button>
               <button class="action-button delete" @click="askDelete(topic)">{{ t("common.delete") }}</button>
             </td>
           </tr>
@@ -310,8 +310,8 @@ onMounted(() => {
     <!-- 删除确认弹窗 -->
     <ConfirmDialog
       v-model:visible="deleteVisible"
-      title="删除校园话题"
-      :message="deleteTarget ? `确定要删除话题「${deleteTarget.title}」吗？（软删除，可在数据库恢复）` : ''"
+      :title="t('campusTopics.deleteTitle')"
+      :message="deleteTarget ? t('campusTopics.deleteConfirmMessage', { title: deleteTarget.title }) : ''"
       :danger="true"
       :confirming="deleting"
       @confirm="handleConfirmDelete"
@@ -326,36 +326,36 @@ onMounted(() => {
       @keydown.esc="onAuditKeydown"
     >
       <view class="modal">
-        <text class="modal-title">审核话题 #{{ auditingTopic.id }}</text>
+        <text class="modal-title">{{ t("campusTopics.auditTitle", { id: auditingTopic.id }) }}</text>
         <view class="post-content-box">{{ auditingTopic.title }}</view>
         <view class="form-row">
-          <text class="form-label">审核决定</text>
+          <text class="form-label">{{ t("campusTopics.auditDecisionLabel") }}</text>
           <view class="radio-group radio-horizontal">
             <label class="radio-item">
               <input v-model="auditDecision" type="radio" value="approved" />
-              <span>通过</span>
+              <span>{{ t("campusTopics.auditApprovedOption") }}</span>
             </label>
             <label class="radio-item">
               <input v-model="auditDecision" type="radio" value="rejected" />
-              <span>拒绝（自动隐藏）</span>
+              <span>{{ t("campusTopics.auditRejectedOption") }}</span>
             </label>
           </view>
         </view>
         <view class="form-row">
-          <text class="form-label">审核备注（拒绝原因必填）</text>
+          <text class="form-label">{{ t("campusTopics.auditRemarkLabel") }}</text>
           <textarea
             v-model="auditRemark"
             class="form-textarea"
             rows="3"
             :maxlength="REMARK_MAX_LENGTH"
-            :placeholder="auditDecision === 'rejected' ? '请输入拒绝原因...' : '可填写备注（可选）'"
+            :placeholder="auditDecision === 'rejected' ? t('campusTopics.rejectReasonPlaceholder') : t('campusTopics.remarkPlaceholder')"
           />
         </view>
         <text v-if="auditError" class="audit-error">{{ auditError }}</text>
         <view class="modal-actions">
           <button class="ghost-button" :disabled="savingAudit" @click="closeAudit">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="savingAudit" @click="handleSaveAudit">
-            {{ savingAudit ? t("common.saving") : "提交审核" }}
+            {{ savingAudit ? t("common.saving") : t("campusTopics.submitAudit") }}
           </button>
         </view>
       </view>

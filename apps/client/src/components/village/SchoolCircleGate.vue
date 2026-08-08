@@ -4,10 +4,15 @@
  *
  * 2026-08-08 频道化重构：学校认证聊天圈门槛。
  * 未认证用户进入学校圈频道时展示：渐变引导卡 + 「去认证」主按钮 + 「模拟认证一键通过（演示）」次按钮。
- * 模拟按钮仅在非纯前端 mock 模式显示（后端 mock/real 均走 /campus/certification/simulate 接口）。
+ *
+ * 修复（R4-00055）：模拟按钮不再无条件渲染——真实生产模式任意用户可一键绕过校园认证，
+ * 认证信任体系与合规风险。现仅开发环境（isDev）显示；生产构建完全移除。
+ * 纯前端 mock 模式下 mock 会话初始即 campusVerified=true，认证门本不会出现。
  */
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
+// R4-00055: 模拟认证按钮仅限开发环境（生产移除）
+import { isDev } from "../../config/env";
 
 const emit = defineEmits<{
   (e: "go-certification"): void;
@@ -54,8 +59,9 @@ const { t } = useI18n();
         <text class="school-gate__btn-text">{{ t('village.schoolGateBtn') }}</text>
       </view>
 
-      <!-- 次按钮：模拟认证一键通过（演示；useMock 纯前端 mock 模式初始即已认证，不显示） -->
+      <!-- 次按钮：模拟认证一键通过（演示；R4-00055 仅开发环境显示，生产构建移除） -->
       <view
+        v-if="isDev"
         class="school-gate__simulate press-feedback"
         hover-class="school-gate__simulate--pressed"
         hover-stay-time="120"

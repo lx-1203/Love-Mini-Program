@@ -1,5 +1,6 @@
 package com.campuslove.api.match;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.chat.PrivateMessageService;
 import com.campuslove.api.common.DailyLimitExceededException;
@@ -21,6 +22,7 @@ import com.campuslove.api.repository.HeartSignalRepository;
 import com.campuslove.api.repository.LikeRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
+import com.campuslove.api.growth.SocialProgressService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.Set;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -72,6 +75,14 @@ public class RealMatchService implements MatchService {
      * 消息页即时可见新会话，无需用户手动发起。幂等（已存在则直接返回）。
      */
     private final PrivateMessageService privateMessageService;
+
+    /**
+     * 社交升温漏斗服务（R4-00327：like/match 主链路埋点）。
+     * real profile 注入；单元测试 / mock 场景为 null 时跳过埋点。
+     * 采用字段注入（required=false）而非构造器参数，避免破坏既有单测构造器。
+     */
+    @Autowired(required = false)
+    private SocialProgressService socialProgressService;
 
     public RealMatchService(
             MatchConfig matchConfig,
@@ -251,7 +262,7 @@ public class RealMatchService implements MatchService {
             throw new IllegalArgumentException("userId and targetUserId are required");
         }
         matchPolicy.requireNotSelf(userId, targetUserId);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         Optional<Like> existingLike = matchRecorder.findExistingLike(userId, targetUserId);
         if (existingLike.isPresent()) {
             Like like = existingLike.get();
@@ -271,7 +282,13 @@ public class RealMatchService implements MatchService {
         }
         matchRecorder.recordNewLikeEvent(targetUserId, userId);
 
+        // R4-00327：社交升温漏斗埋点——表达喜欢（L2_ATTENTION 计数）
+        recordSocialProgressLike(userId);
+
         if (matchRecorder.findReverseActiveLike(targetUserId, userId).isPresent()) {
+            // R4-00327：双向匹配成功（L3_MATCH 计数，双方都记录）
+            recordSocialProgressMatch(userId);
+            recordSocialProgressMatch(targetUserId);
             HeartSignal signal = matchRecorder.createMutualSignal(userId, targetUserId, now, matchType);
             HeartSignalView signalView = matchRecorder.toHeartSignalView(signal);
             matchRecorder.pushHeartSignalNotification(userId, targetUserId, signalView);
@@ -282,6 +299,36 @@ public class RealMatchService implements MatchService {
             return signalView;
         }
         return null;
+    }
+
+    /**
+     * R4-00327：社交升温埋点——表达喜欢（L2_ATTENTION）。
+     * 埋点失败不影响匹配主流程（仅记录日志）。
+     */
+    private void recordSocialProgressLike(Long userId) {
+        if (socialProgressService == null) {
+            return;
+        }
+        try {
+            socialProgressService.recordLike(userId);
+        } catch (RuntimeException e) {
+            log.debug("社交升温埋点（like）失败：userId={}, error={}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * R4-00327：社交升温埋点——双向匹配（L3_MATCH）。
+     * 埋点失败不影响匹配主流程（仅记录日志）。
+     */
+    private void recordSocialProgressMatch(Long userId) {
+        if (socialProgressService == null) {
+            return;
+        }
+        try {
+            socialProgressService.recordMatch(userId);
+        } catch (RuntimeException e) {
+            log.debug("社交升温埋点（match）失败：userId={}, error={}", userId, e.getMessage());
+        }
     }
 
     /**
@@ -353,6 +400,13 @@ public class RealMatchService implements MatchService {
             // 2026-08-08 走查 P1：前 2 条免费展示（其余按解锁集合判定）；
             // unlockTargetType 为 null（我喜欢的列表）时恒可见
             boolean unlocked = unlockTargetType == null || unlockedIds.contains(otherId) || i < 2;
+            // R4-00313：解锁墙服务端保护——未解锁条目脱敏下发（昵称占位/头像置空/校区置空），
+            // 不依赖前端 unlocked 标志打码；付费前无法从接口拿到真实昵称头像。
+            if (!unlocked) {
+                nickname = DisplayConstants.LOCKED_NICKNAME;
+                avatarUrl = null;
+                campusName = "";
+            }
             result.add(new LikedUserView(otherId, nickname, avatarUrl, campusName,
                     like.getCreatedAt().toString(), unlocked));
         }
@@ -380,6 +434,12 @@ public class RealMatchService implements MatchService {
             UserCampusProfile campus = campusMap.get(v.getVisitorId());
             String campusName = campus != null ? campus.getCampusName() : "";
             boolean unlocked = unlockedIds.contains(v.getVisitorId()) || i < 2;
+            // R4-00313：解锁墙服务端保护——未解锁条目脱敏下发（昵称占位/头像置空/校区置空）
+            if (!unlocked) {
+                nickname = DisplayConstants.LOCKED_NICKNAME;
+                avatarUrl = null;
+                campusName = "";
+            }
             result.add(new VisitorView(v.getVisitorId(), nickname, avatarUrl, campusName,
                     v.getCreatedAt().toString(), unlocked));
         }
@@ -404,7 +464,7 @@ public class RealMatchService implements MatchService {
         // P0-25：查询加 expiresAt > now 过滤——已过期（含尚未被定时任务标记）的信号不进入列表；
         // 2026-08-08 走查 P0-3：pending + accepted 一并下发（「已接受」Tab 的「开聊」入口依赖）
         List<HeartSignal> signals = heartSignalRepository.findByUserAIdOrUserBIdAndStatusInNotExpired(
-                userId, userId, java.util.List.of(SignalStatus.pending, SignalStatus.accepted), LocalDateTime.now());
+                userId, userId, java.util.List.of(SignalStatus.pending, SignalStatus.accepted), LocalDateTime.now(TimeZones.BUSINESS));
         List<Long> userAIds = signals.stream()
                 .map(HeartSignal::getUserAId)
                 .filter(java.util.Objects::nonNull)
@@ -429,7 +489,7 @@ public class RealMatchService implements MatchService {
     @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 3_600_000L, initialDelay = 3_600_000L)
     @Transactional
     public void expireOverdueHeartSignals() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         int updated;
         try {
             updated = heartSignalRepository.expirePendingSignalsBefore(

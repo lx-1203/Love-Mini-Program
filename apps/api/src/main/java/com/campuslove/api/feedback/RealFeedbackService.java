@@ -1,5 +1,6 @@
 package com.campuslove.api.feedback;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Feedback;
 import com.campuslove.api.media.MediaStorageService;
@@ -71,7 +72,7 @@ public class RealFeedbackService implements FeedbackService {
     @Transactional
     public SubmissionRecordView submit(FeedbackTicketType type, FeedbackSubmissionRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         Feedback feedback = new Feedback();
         feedback.setUserId(currentUserId);
@@ -162,7 +163,7 @@ public class RealFeedbackService implements FeedbackService {
 
         // 更新状态为 CONVERTED，暂时不创建 Activity 记录（仅更新状态）
         feedback.setStatus(SubmissionStatus.CONVERTED);
-        feedback.setUpdatedAt(LocalDateTime.now());
+        feedback.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         Feedback saved = feedbackRepository.save(feedback);
         log.info("活动提案 {} 已转换为活动，convertedActivityId: {}", proposalId, saved.getConvertedActivityId());
@@ -300,7 +301,7 @@ public class RealFeedbackService implements FeedbackService {
                 ? reply.trim().substring(0, 200) + "…"
                 : reply.trim();
         feedback.setLatestReplySummary(summary);
-        feedback.setUpdatedAt(LocalDateTime.now());
+        feedback.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         Feedback saved = feedbackRepository.save(feedback);
         log.info("管理员回复反馈完成, id={}, 状态={}", id, saved.getStatus());

@@ -211,7 +211,7 @@ onMounted(() => {
 
     <!-- 校区管理员只读提示：新增/删除敏感词仅超级管理员可用 -->
     <view v-if="!isSuperAdmin" class="readonly-tip" role="status">
-      <text>仅超级管理员可新增/删除敏感词，当前账号（校区管理员）为只读。</text>
+      <text>{{ t("sensitiveWords.readonlyTip") }}</text>
     </view>
 
     <!-- 顶部工具栏：分类筛选 + 新增表单 -->

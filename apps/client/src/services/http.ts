@@ -12,6 +12,8 @@ import {
 import { STORAGE_KEYS, LOGIN_TOAST_DURATION_MS, LOGIN_REDIRECT_DELAY_MS } from "../constants/app";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
+// R4-batch2: 错误/提示文案 i18n 化（apiErrors.* 键集）
+import { t } from "@/i18n";
 
 /* ========== 模块级常量 ========== */
 
@@ -223,12 +225,27 @@ addRequestInterceptor((config) => {
  * {@code Idempotency-Key} 请求头（缺失返回 400「缺少 Idempotency-Key 请求头」），
  * 但客户端大量调用点未手动设置该头，real 模式下会被后端拒绝。
  *
- * 此拦截器在请求发出前为写操作自动生成唯一幂等键（每次请求唯一），
- * 兼容性设计：
+ * 此拦截器在请求发出前为写操作自动生成幂等键，兼容性设计：
  * - 调用方已手动设置 Idempotency-Key 的请求（签到 / 充值 / 活动报名 / 解锁等）不覆盖，
  *   保留业务语义（如同一用户当日签到固定 key，重复点击被后端幂等去重）；
  * - GET 请求不加（幂等键仅用于写操作去重）。
+ *
+ * 修复（R4-00168）：原实现每次请求生成全新随机 key（idem-{ts}-{random}），
+ * 双击/重试产生的不同 key 无法被后端 {@code @Idempotent} 按 key 去重，
+ * 写操作重复提交防护形同虚设。现改为按业务语义生成稳定 key——
+ * method + 归一化 URL + body 内容哈希。相同操作（同 URL 同 body）的重试
+ * 命中同一 key，被后端幂等去重；不同操作（body 不同）key 不同，互不影响。
  */
+function hashString(input: string): string {
+  // FNV-1a 32 位哈希（非加密用途：仅用于幂等键稳定性，无需强哈希）
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return hash.toString(36);
+}
+
 addRequestInterceptor((config) => {
   const method = String(config.method || "GET").toUpperCase();
   if (method === "POST" || method === "PUT" || method === "DELETE" || method === "PATCH") {
@@ -238,7 +255,18 @@ addRequestInterceptor((config) => {
     const header = config.header as Record<string, string>;
     // 已有手动设置的幂等键不覆盖（签到/充值/解锁等固定 key 场景）
     if (!header["Idempotency-Key"]) {
-      header["Idempotency-Key"] = `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      let bodySig = "";
+      try {
+        bodySig =
+          config.data !== undefined
+            ? JSON.stringify(config.data)
+            : "";
+      } catch (_e) {
+        // 序列化失败（如循环引用）：body 不参与签名，仍保证 URL+method 维度稳定
+        bodySig = "";
+      }
+      const stableKey = `idem-${method}-${hashString(String(config.url) + "|" + bodySig)}`;
+      header["Idempotency-Key"] = stableKey;
     }
   }
   return config;
@@ -439,7 +467,7 @@ function redirectToLogin(): void {
   // 清除失效的本地 token，避免后续请求继续携带
   clearTokens();
   // 友好提示
-  uni.showToast({ title: "登录已过期，请重新登录", icon: "none", duration: LOGIN_TOAST_DURATION_MS });
+  uni.showToast({ title: t("apiErrors.unauthorized"), icon: "none", duration: LOGIN_TOAST_DURATION_MS });
   // 修复（Task 18.1）：保存 timer 引用到模块级变量，
   // 在 setToken（用户重新登录）或 cancelLoginRedirect（页面 onUnload）时清理，
   // 避免离开页面或恢复会话后仍触发跳转
@@ -574,14 +602,14 @@ function buildNetworkError(error: unknown): EnhancedApiError {
     return new EnhancedApiError({
       status: 0,
       error: "network_error",
-      message: error.message || "网络请求失败",
+      message: error.message || t("apiErrors.networkFailed"),
       category: "network",
     });
   }
   return new EnhancedApiError({
     status: 0,
     error: "network_error",
-    message: "网络请求失败",
+    message: t("apiErrors.networkFailed"),
     details: error,
     category: "network",
   });
@@ -653,7 +681,7 @@ function doRequest<TResponse, TBody>(
           if (retry401Count >= MAX_401_RETRY_COUNT) {
             redirectToLogin();
             reject(
-              buildError(401, { error: "unauthorized", message: "登录已过期，请重新登录" })
+              buildError(401, { error: "unauthorized", message: t("apiErrors.unauthorized") })
             );
             return;
           }
@@ -673,7 +701,7 @@ function doRequest<TResponse, TBody>(
             })
             .catch(() => {
               reject(
-                buildError(401, { error: "unauthorized", message: "登录已过期，请重新登录" })
+                buildError(401, { error: "unauthorized", message: t("apiErrors.unauthorized") })
               );
             });
           return;

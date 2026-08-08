@@ -74,7 +74,7 @@ async function fetchPosts(): Promise<void> {
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载村落动态失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("villagePosts.loadFailed");
     posts.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -139,7 +139,7 @@ async function handleSaveAudit(): Promise<void> {
   const post = auditingPost.value;
   if (!post || savingAudit.value) return;
   if (auditDecision.value === "rejected" && !auditRemark.value.trim()) {
-    auditError.value = "拒绝时必须填写备注（拒绝原因）";
+    auditError.value = t("villagePosts.rejectRemarkRequired");
     return;
   }
   savingAudit.value = true;
@@ -153,7 +153,7 @@ async function handleSaveAudit(): Promise<void> {
     auditRemark.value = "";
     await fetchPosts();
   } catch (err: unknown) {
-    auditError.value = err instanceof ApiError ? err.message : "审核失败";
+    auditError.value = err instanceof ApiError ? err.message : t("villagePosts.auditFailed");
   } finally {
     savingAudit.value = false;
   }
@@ -174,7 +174,7 @@ async function togglePin(post: VillagePostSummary): Promise<void> {
     }
     await fetchPosts();
   } catch (err: unknown) {
-    errorMsg.value = err instanceof ApiError ? err.message : "置顶操作失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("villagePosts.pinFailed");
   } finally {
     pinningId.value = null;
   }
@@ -200,7 +200,7 @@ async function handleConfirmDelete(): Promise<void> {
     deleteTarget.value = null;
     await fetchPosts();
   } catch (err: unknown) {
-    errorMsg.value = err instanceof ApiError ? err.message : "删除失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("villagePosts.deleteFailed");
   } finally {
     deleting.value = false;
   }
@@ -251,7 +251,7 @@ async function fetchComments(): Promise<void> {
     cTotalPages.value = result.totalPages;
   } catch (err: unknown) {
     if (seq !== commentsReqSeq) return;
-    commentsError.value = err instanceof ApiError ? err.message : "加载评论失败";
+    commentsError.value = err instanceof ApiError ? err.message : t("villagePosts.commentsLoadFailed");
   } finally {
     if (seq === commentsReqSeq) {
       commentsLoading.value = false;
@@ -310,7 +310,7 @@ async function fetchViewers(): Promise<void> {
     vTotalPages.value = result.totalPages;
   } catch (err: unknown) {
     if (seq !== viewersReqSeq) return;
-    viewersError.value = err instanceof ApiError ? err.message : "加载浏览记录失败";
+    viewersError.value = err instanceof ApiError ? err.message : t("villagePosts.viewersLoadFailed");
   } finally {
     if (seq === viewersReqSeq) {
       viewersLoading.value = false;
@@ -332,26 +332,26 @@ function closeViewers(): void {
 // ===== 展示辅助 =====
 /** 作者昵称兜底展示 */
 function authorDisplay(post: VillagePostSummary): string {
-  return post.authorNickname || `用户#${post.authorId}`;
+  return post.authorNickname || t("villagePosts.authorFallback", { id: post.authorId });
 }
 
 /** 分类文案（对应 PostCategory 枚举） */
 function categoryLabel(category: string | null): string {
   switch (category) {
     case "interest":
-      return "兴趣";
+      return t("villagePosts.categoryInterest");
     case "sincere":
-      return "真诚";
+      return t("villagePosts.categorySincere");
     case "hometown":
-      return "家乡";
+      return t("villagePosts.categoryHometown");
     case "anonymous":
-      return "匿名";
+      return t("villagePosts.categoryAnonymous");
     case "campus":
-      return "校园";
+      return t("villagePosts.categoryCampus");
     case "latest":
-      return "最新";
+      return t("villagePosts.categoryLatest");
     case "all":
-      return "全部";
+      return t("villagePosts.categoryAll");
     default:
       return category ?? "—";
   }
@@ -361,11 +361,11 @@ function categoryLabel(category: string | null): string {
 function auditStatusLabel(status: string | null): string {
   switch (status) {
     case "pending":
-      return "待审核";
+      return t("villagePosts.statusPending");
     case "approved":
-      return "已通过";
+      return t("villagePosts.statusApproved");
     case "rejected":
-      return "已拒绝";
+      return t("villagePosts.statusRejected");
     default:
       return status ?? "—";
   }
@@ -375,11 +375,11 @@ function auditStatusLabel(status: string | null): string {
 function postStatusLabel(status: string | null): string {
   switch (status) {
     case "active":
-      return "正常";
+      return t("villagePosts.statusActive");
     case "deleted":
-      return "已删除";
+      return t("villagePosts.statusDeleted");
     case "hidden":
-      return "已隐藏";
+      return t("villagePosts.statusHidden");
     default:
       return status ?? "—";
   }
@@ -394,27 +394,27 @@ onMounted(() => {
   <view class="village-posts-page">
     <view class="page-header">
       <text class="page-title">{{ t("layout.navVillagePosts") }}</text>
-      <text class="page-subtitle">审核与管理用户发布的村落动态，支持置顶与评论查看</text>
+      <text class="page-subtitle">{{ t("villagePosts.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
       <select v-model="auditStatusFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部审核状态</option>
-        <option value="pending">待审核</option>
-        <option value="approved">已通过</option>
-        <option value="rejected">已拒绝</option>
+        <option value="">{{ t("villagePosts.filterAuditStatusAll") }}</option>
+        <option value="pending">{{ t("villagePosts.statusPending") }}</option>
+        <option value="approved">{{ t("villagePosts.statusApproved") }}</option>
+        <option value="rejected">{{ t("villagePosts.statusRejected") }}</option>
       </select>
       <select v-model="statusFilter" class="filter-select" @change="handleSearch">
-        <option value="">全部帖子状态</option>
-        <option value="active">正常</option>
-        <option value="hidden">已隐藏</option>
-        <option value="deleted">已删除</option>
+        <option value="">{{ t("villagePosts.filterPostStatusAll") }}</option>
+        <option value="active">{{ t("villagePosts.statusActive") }}</option>
+        <option value="hidden">{{ t("villagePosts.statusHidden") }}</option>
+        <option value="deleted">{{ t("villagePosts.statusDeleted") }}</option>
       </select>
       <input
         v-model="keyword"
         class="search-input"
         type="text"
-        placeholder="搜索内容..."
+        :placeholder="t('villagePosts.searchPlaceholder')"
         @keyup.enter="handleSearch"
       />
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
@@ -426,14 +426,14 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">内容摘要</th>
-            <th scope="col">作者</th>
-            <th scope="col">分类</th>
-            <th scope="col">互动（赞/藏/看）</th>
-            <th scope="col">审核状态</th>
-            <th scope="col">帖子状态</th>
-            <th scope="col">创建时间</th>
+            <th scope="col">{{ t("villagePosts.columnId") }}</th>
+            <th scope="col">{{ t("villagePosts.columnContent") }}</th>
+            <th scope="col">{{ t("villagePosts.columnAuthor") }}</th>
+            <th scope="col">{{ t("villagePosts.columnCategory") }}</th>
+            <th scope="col">{{ t("villagePosts.columnStats") }}</th>
+            <th scope="col">{{ t("villagePosts.columnAuditStatus") }}</th>
+            <th scope="col">{{ t("villagePosts.columnPostStatus") }}</th>
+            <th scope="col">{{ t("villagePosts.columnCreatedAt") }}</th>
             <th scope="col">{{ t("common.actions") }}</th>
           </tr>
         </thead>
@@ -442,20 +442,20 @@ onMounted(() => {
             <td colspan="9" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="posts.length === 0">
-            <td colspan="9" class="empty-row">暂无村落动态数据</td>
+            <td colspan="9" class="empty-row">{{ t("villagePosts.noData") }}</td>
           </tr>
           <tr v-for="post in posts" :key="post.id">
             <td>{{ post.id }}</td>
             <td class="content-cell">
               <text>{{ post.contentPreview }}</text>
-              <text v-if="post.isPinned" class="pin-tag">置顶</text>
+              <text v-if="post.isPinned" class="pin-tag">{{ t("villagePosts.pinnedTag") }}</text>
             </td>
             <td>{{ authorDisplay(post) }}</td>
             <td>{{ categoryLabel(post.category) }}</td>
             <td class="stats-cell">
-              <span class="stats-item">赞 {{ post.likesCount ?? 0 }}</span>
-              <span class="stats-item">藏 {{ post.favoriteCount ?? 0 }}</span>
-              <span class="stats-item">看 {{ post.viewCount ?? 0 }}</span>
+              <span class="stats-item">{{ t("villagePosts.statsLikes", { n: post.likesCount ?? 0 }) }}</span>
+              <span class="stats-item">{{ t("villagePosts.statsFavorites", { n: post.favoriteCount ?? 0 }) }}</span>
+              <span class="stats-item">{{ t("villagePosts.statsViews", { n: post.viewCount ?? 0 }) }}</span>
             </td>
             <td>
               <span class="status-badge" :class="`audit-${post.auditStatus ?? 'none'}`">
@@ -473,14 +473,14 @@ onMounted(() => {
                 v-if="post.auditStatus === 'pending'"
                 class="action-button audit"
                 @click="openAudit(post)"
-              >审核</button>
+              >{{ t("villagePosts.actionAudit") }}</button>
               <button
                 class="action-button pin"
                 :disabled="pinningId !== null"
                 @click="togglePin(post)"
-              >{{ post.isPinned ? "取消置顶" : "置顶" }}</button>
-              <button class="action-button handle" @click="openComments(post)">查看评论</button>
-              <button class="action-button handle" @click="openViewers(post)">浏览记录</button>
+              >{{ post.isPinned ? t("villagePosts.actionUnpin") : t("villagePosts.actionPin") }}</button>
+              <button class="action-button handle" @click="openComments(post)">{{ t("villagePosts.actionComments") }}</button>
+              <button class="action-button handle" @click="openViewers(post)">{{ t("villagePosts.actionViewers") }}</button>
               <button class="action-button delete" @click="askDelete(post)">{{ t("common.delete") }}</button>
             </td>
           </tr>
@@ -499,8 +499,8 @@ onMounted(() => {
     <!-- 删除确认弹窗 -->
     <ConfirmDialog
       v-model:visible="deleteVisible"
-      title="删除村落动态"
-      :message="deleteTarget ? `确定要删除帖子 #${deleteTarget.id} 吗？（软删除，可在数据库恢复）` : ''"
+      :title="t('villagePosts.deleteTitle')"
+      :message="deleteTarget ? t('villagePosts.deleteConfirmMessage', { id: deleteTarget.id }) : ''"
       :danger="true"
       :confirming="deleting"
       @confirm="handleConfirmDelete"
@@ -515,36 +515,36 @@ onMounted(() => {
       @keydown.esc="onAuditKeydown"
     >
       <view class="modal">
-        <text class="modal-title">审核帖子 #{{ auditingPost.id }}</text>
+        <text class="modal-title">{{ t("villagePosts.auditTitle", { id: auditingPost.id }) }}</text>
         <view class="post-content-box">{{ auditingPost.contentPreview }}</view>
         <view class="form-row">
-          <text class="form-label">审核决定</text>
+          <text class="form-label">{{ t("villagePosts.auditDecisionLabel") }}</text>
           <view class="radio-group radio-horizontal">
             <label class="radio-item">
               <input v-model="auditDecision" type="radio" value="approved" />
-              <span>通过</span>
+              <span>{{ t("villagePosts.auditApprovedOption") }}</span>
             </label>
             <label class="radio-item">
               <input v-model="auditDecision" type="radio" value="rejected" />
-              <span>拒绝（自动隐藏）</span>
+              <span>{{ t("villagePosts.auditRejectedOption") }}</span>
             </label>
           </view>
         </view>
         <view class="form-row">
-          <text class="form-label">审核备注（拒绝原因必填）</text>
+          <text class="form-label">{{ t("villagePosts.auditRemarkLabel") }}</text>
           <textarea
             v-model="auditRemark"
             class="form-textarea"
             rows="3"
             :maxlength="REMARK_MAX_LENGTH"
-            :placeholder="auditDecision === 'rejected' ? '请输入拒绝原因...' : '可填写备注（可选）'"
+            :placeholder="auditDecision === 'rejected' ? t('villagePosts.rejectReasonPlaceholder') : t('villagePosts.remarkPlaceholder')"
           />
         </view>
         <text v-if="auditError" class="audit-error">{{ auditError }}</text>
         <view class="modal-actions">
           <button class="ghost-button" :disabled="savingAudit" @click="closeAudit">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="savingAudit" @click="handleSaveAudit">
-            {{ savingAudit ? t("common.saving") : "提交审核" }}
+            {{ savingAudit ? t("common.saving") : t("villagePosts.submitAudit") }}
           </button>
         </view>
       </view>
@@ -553,17 +553,17 @@ onMounted(() => {
     <!-- 帖子评论弹窗（分页展示） -->
     <view v-if="commentsVisible" class="modal-mask" @click.self="closeComments">
       <view class="modal comments-modal">
-        <text class="modal-title">帖子 #{{ commentsPost?.id }} 的评论</text>
+        <text class="modal-title">{{ t("villagePosts.commentsTitle", { id: commentsPost?.id }) }}</text>
         <text class="comments-subtitle">{{ commentsPost?.contentPreview }}</text>
 
         <view class="comments-body">
           <table class="data-table">
             <thead>
               <tr>
-                <th scope="col">评论ID</th>
-                <th scope="col">作者</th>
-                <th scope="col">内容</th>
-                <th scope="col">评论时间</th>
+                <th scope="col">{{ t("villagePosts.columnCommentId") }}</th>
+                <th scope="col">{{ t("villagePosts.columnCommentAuthor") }}</th>
+                <th scope="col">{{ t("villagePosts.columnCommentContent") }}</th>
+                <th scope="col">{{ t("villagePosts.columnCommentTime") }}</th>
               </tr>
             </thead>
             <tbody>
@@ -571,11 +571,11 @@ onMounted(() => {
                 <td colspan="4" class="empty-row">{{ t("common.loading") }}</td>
               </tr>
               <tr v-else-if="comments.length === 0">
-                <td colspan="4" class="empty-row">暂无评论</td>
+                <td colspan="4" class="empty-row">{{ t("villagePosts.noComments") }}</td>
               </tr>
               <tr v-for="c in comments" :key="c.id">
                 <td>{{ c.id }}</td>
-                <td>{{ c.authorNickname || `用户#${c.authorId}` }}</td>
+                <td>{{ c.authorNickname || t("villagePosts.authorFallback", { id: c.authorId }) }}</td>
                 <td class="comment-content-cell">{{ c.content }}</td>
                 <td class="time-cell">{{ formatDateTime(c.createdAt) }}</td>
               </tr>
@@ -601,16 +601,16 @@ onMounted(() => {
     <!-- 浏览记录弹窗（分页展示浏览者，2026-08-08 论坛互动真实化） -->
     <view v-if="viewersVisible" class="modal-mask" @click.self="closeViewers">
       <view class="modal comments-modal">
-        <text class="modal-title">帖子 #{{ viewersPost?.id }} 的浏览记录</text>
+        <text class="modal-title">{{ t("villagePosts.viewersTitle", { id: viewersPost?.id }) }}</text>
         <text class="comments-subtitle">{{ viewersPost?.contentPreview }}</text>
 
         <view class="comments-body">
           <table class="data-table">
             <thead>
               <tr>
-                <th scope="col">浏览者ID</th>
-                <th scope="col">昵称</th>
-                <th scope="col">最近浏览时间</th>
+                <th scope="col">{{ t("villagePosts.columnViewerId") }}</th>
+                <th scope="col">{{ t("villagePosts.columnViewerNickname") }}</th>
+                <th scope="col">{{ t("villagePosts.columnViewedAt") }}</th>
               </tr>
             </thead>
             <tbody>
@@ -618,11 +618,11 @@ onMounted(() => {
                 <td colspan="3" class="empty-row">{{ t("common.loading") }}</td>
               </tr>
               <tr v-else-if="viewers.length === 0">
-                <td colspan="3" class="empty-row">暂无浏览记录</td>
+                <td colspan="3" class="empty-row">{{ t("villagePosts.noViewers") }}</td>
               </tr>
               <tr v-for="v in viewers" :key="v.userId">
                 <td>{{ v.userId }}</td>
-                <td>{{ v.nickname || `用户#${v.userId}` }}</td>
+                <td>{{ v.nickname || t("villagePosts.authorFallback", { id: v.userId }) }}</td>
                 <td class="time-cell">{{ formatDateTime(v.viewedAt) }}</td>
               </tr>
             </tbody>

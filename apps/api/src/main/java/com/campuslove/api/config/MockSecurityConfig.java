@@ -66,11 +66,44 @@ public class MockSecurityConfig {
             "/ws/**",
             "/api/v1/content-filter/check",
             "/api/v1/error-reports",
+            // R4-00318：微信支付回调端点（微信服务器调用，无 JWT）
+            "/api/v1/vip/payment-callback",
             "/actuator/health",
             "/actuator/health/**"
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    /**
+     * R4-00279：mock 认证注入的模拟用户 ID（配置 app.mock.principal-user-id，默认 1）。
+     * 替代原硬编码 principal=1L，可通过环境变量 MOCK_PRINCIPAL_USER_ID 覆盖，
+     * 避免 mock 会话数据与超级管理员（id=1）真实数据混淆。
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.mock.principal-user-id:1}")
+    private long mockPrincipalUserId;
+
+    /**
+     * R4-00279：mock profile 环境隔离强校验。
+     *
+     * <p>mock 模式对 /api/v1/admin/** 自动注入 ROLE_ADMIN+ROLE_USER、免真实认证——
+     * 一旦被误带生产（如部署环境显式指定 mock profile），所有管理端点匿名可用、
+     * 鉴权整体失效。本校验在 mock profile 启动时检测生产环境标记
+     * （DEPLOY_ENV=production / PROMETHEUS_ENVIRONMENT=production，见 .env.example
+     * 与 docker-compose.yml），命中即拒绝启动（fail-fast）。</p>
+     */
+    @jakarta.annotation.PostConstruct
+    public void validateMockNotInProduction() {
+        String deployEnv = System.getenv("DEPLOY_ENV");
+        String prometheusEnv = System.getenv("PROMETHEUS_ENVIRONMENT");
+        if ("production".equalsIgnoreCase(deployEnv) || "production".equalsIgnoreCase(prometheusEnv)) {
+            throw new IllegalStateException(
+                    "mock profile 禁止在生产环境启动：检测到 DEPLOY_ENV=" + deployEnv
+                            + " / PROMETHEUS_ENVIRONMENT=" + prometheusEnv
+                            + "，mock 模式免真实认证且自动注入 ROLE_ADMIN，生产误用将导致鉴权整体失效。"
+                            + "请以 real profile 启动（SPRING_PROFILES_ACTIVE=real）。");
+        }
+    }
+
     /**
      * Task 11.1：JWT 认证失败入口点（@Component，无 profile 限制，mock 也可复用）。
      * 与 SecurityConfig 共享同一实现，保证 401 响应格式一致。
@@ -187,8 +220,11 @@ public class MockSecurityConfig {
                         // 其他认证路径仅注入 ROLE_USER
                         authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
                     }
+                    // R4-00279：principal 使用可配置 mock 用户（默认 1，可经
+                    // MOCK_PRINCIPAL_USER_ID / app.mock.principal-user-id 覆盖），
+                    // 避免 mock 会话数据与 id=1 真实账号混淆
                     PreAuthenticatedAuthenticationToken auth =
-                            new PreAuthenticatedAuthenticationToken(1L, "mock", authorities);
+                            new PreAuthenticatedAuthenticationToken(mockPrincipalUserId, "mock", authorities);
                     auth.setAuthenticated(true);
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }

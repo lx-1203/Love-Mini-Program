@@ -145,7 +145,7 @@ function handleRetry(): void {
 </script>
 
 <template>
-  <AppShell title="用户协议" :show-tab-bar="false">
+  <AppShell :title="t('legal.userAgreement.title')" :show-tab-bar="false">
     <view class="legal-page">
       <!-- 顶部标题区 -->
       <view class="legal-header">

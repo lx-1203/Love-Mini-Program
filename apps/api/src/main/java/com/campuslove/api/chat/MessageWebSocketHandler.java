@@ -72,6 +72,15 @@ public class MessageWebSocketHandler {
     @Autowired(required = false)
     private PrivateConversationRepository privateConversationRepository;
 
+    /**
+     * 私信消息服务（real profile Bean；mock 模式为 null）。
+     * R4-00321：WS 私信复用 {@link RealPrivateMessageService#sendMessage} 落库——
+     * 持久化消息 + 更新会话预览/未读计数 + 推送 MessageView，修复「WS 私信仅推送不落库」
+     * 导致的历史消息、未读计数、会话预览缺失与双通道数据不一致。
+     */
+    @Autowired(required = false)
+    private PrivateMessageService privateMessageService;
+
     public MessageWebSocketHandler(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
     }
@@ -201,20 +210,45 @@ public class MessageWebSocketHandler {
             }
         }
 
-        // 2) 尝试解析为私信会话：校验双方关系后按原逻辑推送（不落库）
+        // 2) 尝试解析为私信会话：校验双方关系后复用 PrivateMessageService 落库
+        //    （R4-00321：WS 私信不再仅推送不落库——sendMessage 内部完成持久化、
+        //    会话预览/最后消息时间更新与 /queue/messages 推送，避免双通道数据不一致）。
         if (privateConversationRepository != null) {
             boolean privateValid = false;
+            PrivateConversation privateConv = null;
             try {
                 Optional<PrivateConversation> conv = findPrivateConversation(conversationId);
                 if (conv.isPresent()) {
-                    PrivateConversation pc = conv.get();
-                    privateValid = isPrivatePair(pc, senderLong, recipientLong);
+                    privateConv = conv.get();
+                    privateValid = isPrivatePair(privateConv, senderLong, recipientLong);
                 }
             } catch (RuntimeException e) {
                 log.debug("私信会话校验异常: {}", e.getMessage());
             }
+            if (privateValid && privateMessageService != null) {
+                String content = extractString(payload, "content");
+                String kind = extractString(payload, "kind");
+                if (content == null || content.isBlank()) {
+                    log.warn("WebSocket SEND 拒绝: 缺少 content, senderId={}", senderId);
+                    return;
+                }
+                try {
+                    // 落库 + 推送（sendMessage 内部完成敏感词过滤、会话预览更新与 WS 推送，
+                    // 此处不再重复推送，避免接收方收到两份消息）
+                    privateMessageService.sendMessage(
+                            privateConv.getId(), senderLong, content,
+                            kind != null && !kind.isBlank() ? kind : "text", null);
+                    log.debug("WebSocket SEND 私信已落库并推送: conversationId={}, senderId={}",
+                            conversationId, senderId);
+                    return;
+                } catch (RuntimeException e) {
+                    log.warn("WebSocket SEND 私信落库失败，拒绝转发（避免未落库消息被传播）: conversationId={}, error={}",
+                            conversationId, e.getMessage());
+                    return;
+                }
+            }
             if (privateValid) {
-                // 将认证后的 senderId 覆盖到 payload，确保数据可信
+                // 服务不可用（理论不会发生）：仅校验通过后按原逻辑推送
                 payload.put("senderId", senderId);
                 messagingTemplate.convertAndSendToUser(
                         recipientId,

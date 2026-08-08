@@ -13,6 +13,9 @@ import { useCoinsStore } from "../../stores/coins";
 import { request } from "../../services/http";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+// R4-00067: 演示充值仅限 mock/开发环境（真实模式禁止无限刷余额）
+import { useMock } from "../../stores/helpers/use-mock";
+import { isDev } from "../../config/env";
 
 const { t } = useI18n();
 const coinsStore = useCoinsStore();
@@ -116,7 +119,12 @@ function amountText(item: { type?: string; amount: number }): string {
         <text class="wallet__balance-value">{{ loading ? '--' : balanceYuan.toFixed(0) }}</text>
       </view>
       <text class="wallet__balance-hint">{{ t('wallet.balanceHint') }}</text>
-      <view class="wallet__recharge press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('wallet.recharge')" @tap="handleRecharge">
+      <!-- R4-00067：演示充值无支付流程（直接 POST /wallet/recharge 入账），
+           仅 mock/开发环境展示；真实模式隐藏，避免用户无限刷余额 -->
+      <view
+        v-if="useMock() || isDev"
+        class="wallet__recharge press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('wallet.recharge')" @tap="handleRecharge"
+      >
         <text class="wallet__recharge-text">{{ t('wallet.recharge') }}</text>
       </view>
     </view>

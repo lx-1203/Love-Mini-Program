@@ -1,5 +1,6 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.auth.AdminDisabledException;
 import com.campuslove.api.admin.auth.InvalidCredentialsException;
 import com.campuslove.api.config.AesEncryptor;
@@ -336,7 +337,7 @@ public class RealAuthService implements AuthService {
                 user.setProfileCompletion(0);
                 user.setFollowingCount(0);
                 user.setFollowersCount(0);
-                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
                 user.setCreatedAt(now);
                 user.setUpdatedAt(now);
                 user = userRepository.save(user);
@@ -448,13 +449,20 @@ public class RealAuthService implements AuthService {
         if (nickname == null || nickname.isBlank() || nickname.trim().length() > 20) {
             throw new IllegalArgumentException("昵称长度须为 1-20 字");
         }
-        boolean phoneExists = userRepository.findByPhone(phone).isPresent();
+        // R4-00249：手机号唯一性校验与存储改为加密口径——新注册用户 phone 经
+        // AesEncryptor 加密落库、openid 使用不可逆 SHA-256 派生键（"phone:"+hash），
+        // 数据库泄露不再直接暴露真实手机号（对齐 loginWithPhone 的加密查询）。
+        // 兼容历史明文数据：查询先按密文匹配，未命中再按明文匹配（存量用户登录不受影响）。
+        String phoneCipher = aesEncryptor != null ? aesEncryptor.encrypt(phone) : phone;
+        boolean phoneExists = userRepository.findByPhone(phoneCipher)
+                .or(() -> userRepository.findByPhone(phone))
+                .isPresent();
         if (phoneExists) {
             throw new IllegalArgumentException("该手机号已注册");
         }
         User user = new User();
-        user.setOpenid("phone:" + phone);
-        user.setPhone(phone);
+        user.setOpenid("phone:" + hashOpenid(phone));
+        user.setPhone(phoneCipher);
         user.setPassword(passwordEncoder.encode(password));
         user.setNickname(nickname.trim());
         user.setRole("USER");
@@ -462,8 +470,8 @@ public class RealAuthService implements AuthService {
         user.setProfileCompletion(0);
         user.setFollowingCount(0);
         user.setFollowersCount(0);
-        user.setCreatedAt(java.time.LocalDateTime.now());
-        user.setUpdatedAt(java.time.LocalDateTime.now());
+        user.setCreatedAt(java.time.LocalDateTime.now(TimeZones.BUSINESS));
+        user.setUpdatedAt(java.time.LocalDateTime.now(TimeZones.BUSINESS));
         User saved;
         try {
             saved = userRepository.save(user);
@@ -498,7 +506,16 @@ public class RealAuthService implements AuthService {
             log.warn("黑名单手机号登录被拒绝：phone={}", SensitiveDataMasker.mask(phone));
             throw new IllegalArgumentException("该手机号不可登录");
         }
-        User user = userRepository.findByPhone(phone).orElse(null);
+        // R4-00249：登录查询按加密口径匹配——先按密文（新注册用户），
+        // 未命中再按明文（兼容历史未加密数据），两路均未命中视为账号不存在。
+        User user = null;
+        if (aesEncryptor != null) {
+            user = userRepository.findByPhone(aesEncryptor.encrypt(phone))
+                    .or(() -> userRepository.findByPhone(phone))
+                    .orElse(null);
+        } else {
+            user = userRepository.findByPhone(phone).orElse(null);
+        }
         if (user == null) {
             throw new InvalidCredentialsException("手机号或密码错误");
         }
@@ -519,14 +536,23 @@ public class RealAuthService implements AuthService {
     /**
      * 体验账号一键登录（临时体验号）。
      *
-     * <p>实现要点：</p>
+     * <p>实现要点（R4-00251 会话隔离重构）：</p>
      * <ul>
-     *   <li>首次调用自动创建固定体验账号（手机号 13900000000，昵称「体验用户」），
-     *       后续调用复用同一账号（幂等），保证体验数据可连续积累</li>
-     *   <li>体验账号密码为随机 BCrypt 哈希，无法通过手机号+密码登录，仅体验入口可进入</li>
+     *   <li><b>每次登录创建独立临时账号</b>（openid={@code guest:{UUID}} 全局唯一，
+     *       phone 为空，昵称「体验用户」）：会话身份完全隔离——体验用户的私信/匹配/
+     *       点赞数据互不污染，不再共用固定账号（原 13900000000 固定账号方案已废弃，
+     *       该手机号仍处于注册/登录黑名单防占用）</li>
+     *   <li>体验账号密码为随机 BCrypt 哈希、无手机号，无法通过手机号+密码登录，
+     *       仅体验入口可进入</li>
+     *   <li>一键体验：自动预填完整资料（基本资料/校园认证/课表），
+     *       profile_completion=100，登录后所有页面立即可用</li>
      *   <li>登录方式 guest，同样记录在线会话（与 register/loginWithPhone 一致）</li>
      *   <li>商业化上线前可通过配置 {@code app.guest-login.enabled=false} 关闭该入口</li>
      * </ul>
+     *
+     * <p>已知代价：每次体验登录新增一条用户记录（无手机号、不可再登录），
+     * 由 guest-login 开关（默认关闭）与运营侧定期清理承担；换取会话数据隔离。
+     * 本地演示语义不变。</p>
      */
     @Override
     @Transactional
@@ -535,31 +561,25 @@ public class RealAuthService implements AuthService {
             log.warn("体验账号登录入口已被配置禁用（app.guest-login.enabled=false）");
             throw new IllegalStateException("体验账号入口已关闭，请使用其他方式登录");
         }
-        String guestPhone = GUEST_BLACKLIST_PHONE;
-        User user = userRepository.findByPhone(guestPhone).orElse(null);
-        if (user == null) {
-            // 首次使用：自动创建体验账号（随机密码，防止通过手机号密码登录）
-            user = new User();
-            user.setOpenid("guest:" + guestPhone);
-            user.setPhone(guestPhone);
-            user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-            user.setNickname("体验用户");
-            user.setRole("USER");
-            user.setStatus("active");
-            user.setProfileCompletion(0);
-            user.setFollowingCount(0);
-            user.setFollowersCount(0);
-            user.setCreatedAt(LocalDateTime.now());
-            user.setUpdatedAt(LocalDateTime.now());
-            user = userRepository.save(user);
-            log.info("体验账号首次创建成功: userId={}", user.getId());
-            // 一键体验：自动预填完整资料（基本资料/校园认证/课表），
-            // 使 profile_completion=100，登录后所有页面立即可用
-            provisionGuestProfile(user);
-        }
-        if (user.isDisabled()) {
-            throw new com.campuslove.api.common.OperationForbiddenException("体验账号已被禁用，请联系管理员");
-        }
+        // R4-00251：每次登录创建独立临时账号（openid 全局唯一，phone 为空）
+        User user = new User();
+        user.setOpenid("guest:" + UUID.randomUUID().toString().replace("-", ""));
+        user.setPhone(null);
+        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+        user.setNickname("体验用户");
+        user.setRole("USER");
+        user.setStatus("active");
+        user.setProfileCompletion(0);
+        user.setFollowingCount(0);
+        user.setFollowersCount(0);
+        user.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        user = userRepository.save(user);
+        log.info("体验会话账号创建成功: userId={}", user.getId());
+        // 一键体验：自动预填完整资料（基本资料/校园认证/课表），
+        // 使 profile_completion=100，登录后所有页面立即可用
+        provisionGuestProfile(user);
+
         String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 guest
         recordOnlineSession(user.getId(), token, "guest");
@@ -770,7 +790,7 @@ public class RealAuthService implements AuthService {
                 try {
                     String newHash = passwordEncoder.encode(rawPassword);
                     user.setPassword(newHash);
-                    user.setUpdatedAt(LocalDateTime.now());
+                    user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
                     userRepository.save(user);
                     log.info("历史明文密码已自动迁移为 BCrypt 哈希, userId={}", user.getId());
                 } catch (DataAccessException ex) {

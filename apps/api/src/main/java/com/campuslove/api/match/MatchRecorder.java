@@ -1,5 +1,6 @@
 package com.campuslove.api.match;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.MatchConfig;
@@ -120,7 +121,7 @@ public class MatchRecorder {
         if (existingLike.isPresent()) {
             Like like = existingLike.get();
             like.setStatus(LikeStatus.cancelled);
-            like.setUpdatedAt(LocalDateTime.now());
+            like.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
             likeRepository.save(like);
         }
     }
@@ -179,7 +180,7 @@ public class MatchRecorder {
      */
     @Transactional
     public HeartSignal createMatchSignal(Long userId, Long matchedUserId, String matchType) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         HeartSignal signal = new HeartSignal();
         signal.setUserAId(userId);
         signal.setUserBId(matchedUserId);
@@ -211,7 +212,7 @@ public class MatchRecorder {
         PassRecord record = new PassRecord();
         record.setUserId(userId);
         record.setPassedUserId(passedUserId);
-        record.setCreatedAt(LocalDateTime.now());
+        record.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         passRecordRepository.save(record);
     }
 
@@ -257,14 +258,14 @@ public class MatchRecorder {
      */
     @Transactional
     public void recordVisit(Long visitorId, Long visitedUserId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TimeZones.BUSINESS);
         if (existsTodayVisit(visitorId, visitedUserId, today)) {
             return;
         }
         Visitor visitor = new Visitor();
         visitor.setVisitorId(visitorId);
         visitor.setVisitedUserId(visitedUserId);
-        visitor.setCreatedAt(LocalDateTime.now());
+        visitor.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         visitorRepository.save(visitor);
 
         interactionEventService.recordEvent(
@@ -291,7 +292,7 @@ public class MatchRecorder {
     public void acceptHeartSignal(Long signalId, Long userId) {
         HeartSignal signal = loadSignalAndVerifyParticipant(signalId, userId);
         signal.setStatus(SignalStatus.accepted);
-        signal.setUpdatedAt(LocalDateTime.now());
+        signal.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         heartSignalRepository.save(signal);
     }
 
@@ -302,7 +303,7 @@ public class MatchRecorder {
     public void declineHeartSignal(Long signalId, Long userId) {
         HeartSignal signal = loadSignalAndVerifyParticipant(signalId, userId);
         signal.setStatus(SignalStatus.declined);
-        signal.setUpdatedAt(LocalDateTime.now());
+        signal.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         heartSignalRepository.save(signal);
     }
 

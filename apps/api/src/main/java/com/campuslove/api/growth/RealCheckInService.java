@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CheckInConfig;
 import com.campuslove.api.entity.CheckIn;
 import com.campuslove.api.entity.CircleMembership;
@@ -196,7 +197,7 @@ public class RealCheckInService implements CheckInService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TimeZones.BUSINESS);
 
         // Task 15.1：Redis 日限一次锁（fast path 拒绝重复签到）
         // 使用 SETNX 原子操作：key 存在则说明今日已签到，直接走 DB 查询返回完整响应
@@ -241,7 +242,7 @@ public class RealCheckInService implements CheckInService {
         checkIn.setUserId(userId);
         checkIn.setCheckInDate(today);
         checkIn.setConsecutiveDays(consecutiveDays);
-        checkIn.setCreatedAt(LocalDateTime.now());
+        checkIn.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         try {
             checkInRepository.save(checkIn);
@@ -265,7 +266,7 @@ public class RealCheckInService implements CheckInService {
         benefit.setExtraRecommendQuota(checkInConfig.getExtraQuotaPerCheckIn()); // 5
         benefit.setHotTopicsUnlocked(true);
         benefit.setNewUsersUnlocked(true);
-        benefit.setCreatedAt(LocalDateTime.now());
+        benefit.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         try {
             dailyBenefitRepository.save(benefit);
@@ -335,7 +336,7 @@ public class RealCheckInService implements CheckInService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TimeZones.BUSINESS);
 
         boolean checkedInToday = checkInRepository.findByUserIdAndCheckInDate(userId, today).isPresent();
         int consecutiveDays = calculateConsecutiveDays(userId, today);
@@ -393,7 +394,7 @@ public class RealCheckInService implements CheckInService {
             throw new IllegalArgumentException("日期格式无效，必须为 yyyy-MM-dd");
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TimeZones.BUSINESS);
         LocalDate sevenDaysAgo = today.minusDays(MAKE_UP_MAX_DAYS_BACK);
 
         // 校验：不可补签当天或未来日期
@@ -421,7 +422,7 @@ public class RealCheckInService implements CheckInService {
                     newQuota.setYearMonth(yearMonth);
                     newQuota.setUsedCount(0);
                     newQuota.setLimitCount(MakeUpQuota.DEFAULT_LIMIT);
-                    newQuota.setUpdatedAt(LocalDateTime.now());
+                    newQuota.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
                     return makeUpQuotaRepository.save(newQuota);
                 });
 
@@ -433,6 +434,26 @@ public class RealCheckInService implements CheckInService {
 
         // 计算消耗积分：首次补签免费（used_count=0 时为首次），其后每次 50 积分
         int costPoints = quota.getUsedCount() == 0 ? 0 : MakeUpQuota.COST_POINTS_AFTER_FREE;
+
+        // R4-00326：补签成本真实扣减（契约 check-in.yaml：首次免费，其后每次 50 growth points）。
+        // 原实现仅把 costPoints 返回视图展示，从不调用 walletService.deduct，月 3 次补签全部免费，
+        // 积分经济断链。现按（用户, 日期）幂等扣减（order_id 唯一索引防重复扣费），
+        // 余额不足抛 InsufficientBalanceException → 业务错误提示。
+        if (costPoints > 0) {
+            if (walletService == null) {
+                throw new IllegalStateException("钱包服务不可用，补签扣费失败");
+            }
+            String makeUpOrderId = "CHECKIN-MAKEUP-" + userId + "-" + date;
+            try {
+                walletService.deduct(userId, (long) costPoints, makeUpOrderId,
+                        WalletTransactionLog.RELATED_TYPE_CHECKIN_MAKEUP, targetDate.toString());
+            } catch (com.campuslove.api.wallet.InsufficientBalanceException e) {
+                log.warn("补签扣费失败，积分不足：userId={}, date={}, 需要={} 分",
+                        userId, date, costPoints);
+                throw new IllegalArgumentException("积分不足，本次补签需 " + costPoints + " 积分，请先签到获取积分");
+            }
+            log.info("补签扣费成功：userId={}, date={}, costPoints={}", userId, date, costPoints);
+        }
 
         // 计算补签后的连续签到天数
         // 补签后，从今天开始往前逐天检查，遇到补签日期会视为已签到
@@ -446,7 +467,7 @@ public class RealCheckInService implements CheckInService {
         makeUpCheckIn.setCheckInDate(targetDate);
         makeUpCheckIn.setConsecutiveDays(consecutiveDays);
         makeUpCheckIn.setSource(CheckIn.SOURCE_MAKE_UP);
-        makeUpCheckIn.setCreatedAt(LocalDateTime.now());
+        makeUpCheckIn.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         try {
             checkInRepository.save(makeUpCheckIn);
@@ -459,7 +480,7 @@ public class RealCheckInService implements CheckInService {
 
         // P0-24 修复：配额记录 used_count+1 改为原子 UPDATE（读-改-写竞态修复）。
         // 单条 UPDATE ... WHERE used_count < limit_count，影响行数 0 表示配额已被并发耗尽
-        int affected = makeUpQuotaRepository.incrementUsedCount(quota.getId(), LocalDateTime.now());
+        int affected = makeUpQuotaRepository.incrementUsedCount(quota.getId(), LocalDateTime.now(TimeZones.BUSINESS));
         if (affected == 0) {
             log.warn("用户[{}]补签日期[{}]配额递增失败（并发耗尽或配额不足）", userId, targetDate);
             throw new IllegalArgumentException(
@@ -533,7 +554,7 @@ public class RealCheckInService implements CheckInService {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
-        return calculateConsecutiveDays(userId, LocalDate.now());
+        return calculateConsecutiveDays(userId, LocalDate.now(TimeZones.BUSINESS));
     }
 
     /**
@@ -591,7 +612,7 @@ public class RealCheckInService implements CheckInService {
      */
     @Transactional(readOnly = true)
     public int getHotTopicCount() {
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime todayStart = LocalDate.now(TimeZones.BUSINESS).atStartOfDay();
         LocalDateTime todayEnd = todayStart.plusDays(1);
 
         int count = 0;
@@ -637,7 +658,7 @@ public class RealCheckInService implements CheckInService {
      */
     @Transactional(readOnly = true)
     public int getNewCircleUserCount() {
-        LocalDateTime since = LocalDateTime.now().minusHours(24);
+        LocalDateTime since = LocalDateTime.now(TimeZones.BUSINESS).minusHours(24);
 
         try {
             // FIN-00026 修复：原实现 findAll() 全表加载后内存过滤，

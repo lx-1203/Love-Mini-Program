@@ -19,6 +19,10 @@
  */
 import { ref, watch, onUnmounted } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
+// R4-batch2: 暂停/恢复 aria-label 文案 i18n 化
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 interface Props {
   /** 是否显示粒子动画 */
@@ -156,7 +160,7 @@ function particleStyle(index: number) {
       hover-class="heart-particles__pause--pressed"
       :hover-stay-time="100"
       role="button"
-      :aria-label="paused ? '恢复粒子动画' : '暂停粒子动画'"
+      :aria-label="paused ? t('common.particlesResumeAria') : t('common.particlesPauseAria')"
       :aria-pressed="paused"
       @tap="togglePause"
     >

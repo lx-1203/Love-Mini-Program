@@ -1,5 +1,6 @@
 package com.campuslove.api.entity;
 
+import com.campuslove.api.common.TimeZones;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -61,7 +62,7 @@ public class PostFavorite {
     public PostFavorite(Long userId, Long postId) {
         this.userId = userId;
         this.postId = postId;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(TimeZones.BUSINESS);
     }
 
     public Long getId() {

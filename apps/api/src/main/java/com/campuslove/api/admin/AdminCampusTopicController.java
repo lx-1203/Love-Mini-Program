@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -169,8 +170,8 @@ public class AdminCampusTopicController {
         topic.setAuditStatus(newStatus);
         topic.setAuditRemark(req.remark());
         topic.setAuditorId(auditorId);
-        topic.setAuditedAt(LocalDateTime.now());
-        topic.setUpdatedAt(LocalDateTime.now());
+        topic.setAuditedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        topic.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         // 审核拒绝时同步隐藏，使其在客户端校园圈列表不可见（与 AdminPostController 一致）
         if (newStatus == AuditStatus.rejected && topic.getStatus() == TopicStatus.active) {
@@ -219,7 +220,7 @@ public class AdminCampusTopicController {
         assertTopicCampusAccess(topic);
 
         topic.setStatus(TopicStatus.deleted);
-        topic.setUpdatedAt(LocalDateTime.now());
+        topic.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         campusTopicRepository.save(topic);
 
         Map<String, Object> body = new HashMap<>();

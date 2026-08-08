@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.MatchConfig;
 import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.MatchConfigEntity;
@@ -89,7 +90,7 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
             return getMatchConfig();
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         for (Map.Entry<String, String> entry : values.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
@@ -150,7 +151,7 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
             return getRecommendStrategy();
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         for (Map.Entry<String, String> entry : values.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();

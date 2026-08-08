@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -251,7 +252,7 @@ public class AdminActivityController {
         if (req.published() != null) {
             activity.setPublished(req.published());
         }
-        activity.setUpdatedAt(LocalDateTime.now());
+        activity.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         Activity saved = activityRepository.save(activity);
         return ResponseEntity.ok(toDetailView(saved));
@@ -429,7 +430,7 @@ public class AdminActivityController {
         adminDataScope.assertCampusAccess(activity.getCampusName());
 
         activity.setPublished(published);
-        activity.setUpdatedAt(LocalDateTime.now());
+        activity.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         activityRepository.save(activity);
 
         Map<String, Object> body = new HashMap<>();

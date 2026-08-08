@@ -15,6 +15,7 @@
  * 前端按固定规则展示，实际以客户端签到配置为准）。
  */
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   listCoinTransactions,
   type CoinTransactionView,
@@ -24,6 +25,8 @@ import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+
+const { t } = useI18n();
 
 /** 积分流水列表数据 */
 const flows = ref<CoinTransactionView[]>([]);
@@ -56,13 +59,13 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 来源类型选项 */
 const SOURCE_OPTIONS = [
-  { value: "NORMAL", label: "签到" },
-  { value: "MAKE_UP", label: "补签" },
+  { value: "NORMAL", labelKey: "coins.sourceNormal" },
+  { value: "MAKE_UP", labelKey: "coins.sourceMakeup" },
 ];
 
 /** 来源类型文案 */
 function sourceLabel(source: string): string {
-  return source === "MAKE_UP" ? "补签" : "签到";
+  return source === "MAKE_UP" ? t("coins.sourceMakeup") : t("coins.sourceNormal");
 }
 
 function sourceClass(source: string): string {
@@ -96,7 +99,7 @@ async function fetchFlows() {
     totalPages.value = result.totalPages;
   } catch (err) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载积分流水失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("coins.loadFailed");
     flows.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -152,8 +155,8 @@ onBeforeUnmount(() => {
 <template>
   <view class="coins-page">
     <view class="page-header">
-      <text class="page-title">金币（签到积分）流水</text>
-      <text class="page-subtitle">查询用户签到/补签产生的积分流水</text>
+      <text class="page-title">{{ t("coins.title") }}</text>
+      <text class="page-subtitle">{{ t("coins.subtitle") }}</text>
     </view>
 
     <!-- 筛选工具栏 -->
@@ -163,18 +166,18 @@ onBeforeUnmount(() => {
         class="search-input"
         type="number"
         min="1"
-        placeholder="用户 ID"
+        :placeholder="t('coins.userIdPlaceholder')"
         @keyup.enter="handleSearch"
       />
       <select v-model="typeFilter" class="filter-select" @change="scheduleSearch">
-        <option value="">全部来源</option>
-        <option v-for="o in SOURCE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+        <option value="">{{ t("coins.allSources") }}</option>
+        <option v-for="o in SOURCE_OPTIONS" :key="o.value" :value="o.value">{{ t(o.labelKey) }}</option>
       </select>
       <input v-model="dateFrom" class="search-input date-input" type="date" @change="scheduleSearch" />
-      <text class="range-sep">至</text>
+      <text class="range-sep">{{ t("coins.rangeSep") }}</text>
       <input v-model="dateTo" class="search-input date-input" type="date" @change="scheduleSearch" />
-      <button class="primary-button" @click="handleSearch">搜索</button>
-      <button class="ghost-button" @click="handleReset">重置</button>
+      <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
+      <button class="ghost-button" @click="handleReset">{{ t("common.reset") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchFlows" />
@@ -184,21 +187,21 @@ onBeforeUnmount(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">流水 ID</th>
-            <th scope="col">用户 ID</th>
-            <th scope="col">来源类型</th>
-            <th scope="col">奖励积分</th>
-            <th scope="col">连续签到天数</th>
-            <th scope="col">签到日期</th>
-            <th scope="col">签到时间</th>
+            <th scope="col">{{ t("coins.columnFlowId") }}</th>
+            <th scope="col">{{ t("coins.columnUserId") }}</th>
+            <th scope="col">{{ t("coins.columnSource") }}</th>
+            <th scope="col">{{ t("coins.columnReward") }}</th>
+            <th scope="col">{{ t("coins.columnConsecutiveDays") }}</th>
+            <th scope="col">{{ t("coins.columnCheckInDate") }}</th>
+            <th scope="col">{{ t("coins.columnCheckInTime") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="7" class="empty-cell">加载中...</td>
+            <td colspan="7" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="flows.length === 0">
-            <td colspan="7" class="empty-cell">暂无积分流水数据</td>
+            <td colspan="7" class="empty-cell">{{ t("coins.noData") }}</td>
           </tr>
           <tr v-for="flow in flows" :key="flow.id">
             <td>{{ flow.id }}</td>

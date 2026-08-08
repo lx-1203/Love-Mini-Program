@@ -83,13 +83,13 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 状态选项 */
 const STATUS_OPTIONS = [
-  { value: "ACTIVE", label: "可用" },
-  { value: "DISABLED", label: "已作废" },
+  { value: "ACTIVE", labelKey: "promoCodes.statusActive" },
+  { value: "DISABLED", labelKey: "promoCodes.statusDisabled" },
 ];
 
 /** 折扣类型文案 */
 function discountTypeLabel(type: string): string {
-  return type === "PERCENT" ? "百分比折扣" : "满减金额";
+  return type === "PERCENT" ? t("promoCodes.discountTypePercent") : t("promoCodes.discountTypeAmount");
 }
 
 /** 折扣值展示：PERCENT 显示百分比，AMOUNT 显示元 */
@@ -100,7 +100,7 @@ function discountValueLabel(code: PromoCodeView): string {
 
 /** 最大使用次数展示：0=不限 */
 function maxUsesLabel(code: PromoCodeView): string {
-  return code.maxUses === 0 ? "不限" : String(code.maxUses);
+  return code.maxUses === 0 ? t("promoCodes.unlimited") : String(code.maxUses);
 }
 
 /** 状态徽章 class 后缀 */
@@ -111,7 +111,7 @@ function statusBadgeClass(status: string): string {
 /** 状态文案 */
 function statusLabel(status: string): string {
   const found = STATUS_OPTIONS.find((o) => o.value === status);
-  return found ? found.label : status;
+  return found ? t(found.labelKey) : status;
 }
 
 /** 轻提示（3 秒自动消失） */
@@ -144,7 +144,7 @@ async function fetchPromoCodes() {
     totalPages.value = result.totalPages;
   } catch (err) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载兑换码列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("promoCodes.loadFailed");
     promoCodes.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -214,28 +214,28 @@ async function handleCreate() {
   if (creating.value) return;
   const count = createCount.value;
   if (!Number.isInteger(count) || count < 1 || count > 500) {
-    modalError.value = "生成数量须为 1-500 之间";
+    modalError.value = t("promoCodes.countInvalid");
     return;
   }
   const discountValue = Number(createDiscountValue.value);
   if (!Number.isFinite(discountValue) || discountValue <= 0) {
-    modalError.value = "折扣值必须为正数";
+    modalError.value = t("promoCodes.discountValuePositive");
     return;
   }
   if (createDiscountType.value === "PERCENT" && discountValue > 100) {
-    modalError.value = "百分比折扣值不能超过 100";
+    modalError.value = t("promoCodes.percentExceeded");
     return;
   }
   if (createMaxUses.value < 0) {
-    modalError.value = "最大使用次数不能为负数";
+    modalError.value = t("promoCodes.maxUsesNegative");
     return;
   }
   if (!createValidFrom.value || !createValidTo.value) {
-    modalError.value = "有效期起止时间不能为空";
+    modalError.value = t("promoCodes.validRangeRequired");
     return;
   }
   if (new Date(createValidTo.value) <= new Date(createValidFrom.value)) {
-    modalError.value = "有效期结束时间必须晚于开始时间";
+    modalError.value = t("promoCodes.validToAfterFrom");
     return;
   }
   creating.value = true;
@@ -251,10 +251,10 @@ async function handleCreate() {
       remark: createRemark.value.trim() || undefined,
     });
     createVisible.value = false;
-    showToast(`已生成 ${result.count} 个兑换码（示例：${result.sampleCode}）`);
+    showToast(t("promoCodes.generatedToast", { count: result.count, sampleCode: result.sampleCode }));
     await fetchPromoCodes();
   } catch (err) {
-    modalError.value = err instanceof ApiError ? err.message : "批量生成失败";
+    modalError.value = err instanceof ApiError ? err.message : t("promoCodes.batchCreateFailed");
   } finally {
     creating.value = false;
   }
@@ -275,10 +275,10 @@ async function handleDisableConfirm() {
     await disablePromoCode(target.id);
     disableVisible.value = false;
     disableTarget.value = null;
-    showToast(`兑换码 ${target.code} 已作废`);
+    showToast(t("promoCodes.disabledToast", { code: target.code }));
     await fetchPromoCodes();
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "作废失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("promoCodes.disableFailed");
     disableVisible.value = false;
   } finally {
     disabling.value = false;
@@ -293,7 +293,7 @@ async function handleExport() {
     await exportPromoCodes();
     showToast(t("promoCodes.exportSuccess"));
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "导出失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("promoCodes.exportFailed");
   } finally {
     exporting.value = false;
   }
@@ -318,8 +318,8 @@ onBeforeUnmount(() => {
 <template>
   <view class="promo-codes-page">
     <view class="page-header">
-      <text class="page-title">优惠码管理</text>
-      <text class="page-subtitle">批量生成、作废与导出 VIP 兑换码</text>
+      <text class="page-title">{{ t("layout.navPromoCodes") }}</text>
+      <text class="page-subtitle">{{ t("promoCodes.subtitle") }}</text>
     </view>
 
     <view v-if="toastMessage" class="toast-message" role="status" aria-live="polite">
@@ -332,19 +332,19 @@ onBeforeUnmount(() => {
         v-model="keywordQuery"
         class="search-input"
         type="text"
-        placeholder="搜索兑换码"
+        :placeholder="t('promoCodes.searchPlaceholder')"
         @keyup.enter="handleSearch"
         @input="scheduleSearch"
       />
       <select v-model="statusFilter" class="filter-select" @change="scheduleSearch">
-        <option value="">全部状态</option>
-        <option v-for="s in STATUS_OPTIONS" :key="s.value" :value="s.value">{{ s.label }}</option>
+        <option value="">{{ t("promoCodes.filterStatusAll") }}</option>
+        <option v-for="s in STATUS_OPTIONS" :key="s.value" :value="s.value">{{ t(s.labelKey) }}</option>
       </select>
-      <button class="primary-button" @click="handleSearch">搜索</button>
-      <button class="ghost-button" @click="handleReset">重置</button>
-      <button class="primary-button" @click="openCreate">批量生成</button>
+      <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
+      <button class="ghost-button" @click="handleReset">{{ t("common.reset") }}</button>
+      <button class="primary-button" @click="openCreate">{{ t("promoCodes.batchCreateButton") }}</button>
       <button class="ghost-button" :disabled="exporting || promoCodes.length === 0" @click="handleExport">
-        {{ exporting ? "导出中..." : "导出 CSV" }}
+        {{ exporting ? t("promoCodes.exporting") : t("promoCodes.exportButton") }}
       </button>
     </view>
 
@@ -355,24 +355,24 @@ onBeforeUnmount(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">兑换码</th>
-            <th scope="col">折扣类型</th>
-            <th scope="col">折扣值</th>
-            <th scope="col">最大次数</th>
-            <th scope="col">已用次数</th>
-            <th scope="col">状态</th>
-            <th scope="col">有效期起</th>
-            <th scope="col">有效期止</th>
-            <th scope="col">创建时间</th>
-            <th scope="col">操作</th>
+            <th scope="col">{{ t("promoCodes.columnCode") }}</th>
+            <th scope="col">{{ t("promoCodes.columnDiscountType") }}</th>
+            <th scope="col">{{ t("promoCodes.columnDiscountValue") }}</th>
+            <th scope="col">{{ t("promoCodes.columnMaxUses") }}</th>
+            <th scope="col">{{ t("promoCodes.columnUsedCount") }}</th>
+            <th scope="col">{{ t("promoCodes.columnStatus") }}</th>
+            <th scope="col">{{ t("promoCodes.columnValidFrom") }}</th>
+            <th scope="col">{{ t("promoCodes.columnValidTo") }}</th>
+            <th scope="col">{{ t("promoCodes.columnCreatedAt") }}</th>
+            <th scope="col">{{ t("promoCodes.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="10" class="empty-cell">加载中...</td>
+            <td colspan="10" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="promoCodes.length === 0">
-            <td colspan="10" class="empty-cell">暂无兑换码数据</td>
+            <td colspan="10" class="empty-cell">{{ t("promoCodes.noData") }}</td>
           </tr>
           <tr v-for="code in promoCodes" :key="code.id">
             <td class="code-cell">{{ code.code }}</td>
@@ -393,8 +393,8 @@ onBeforeUnmount(() => {
                 v-if="code.status === 'ACTIVE'"
                 class="action-button danger"
                 @click="askDisable(code)"
-              >作废</button>
-              <text v-else class="disabled-text">已作废</text>
+              >{{ t("promoCodes.actionDisable") }}</button>
+              <text v-else class="disabled-text">{{ t("promoCodes.disabledText") }}</text>
             </td>
           </tr>
         </tbody>
@@ -412,58 +412,60 @@ onBeforeUnmount(() => {
     <!-- 批量生成弹窗 -->
     <view v-if="createVisible" class="modal-mask" @click.self="closeCreate">
       <view class="modal create-modal">
-        <text class="modal-title">批量生成兑换码</text>
+        <text class="modal-title">{{ t("promoCodes.createTitle") }}</text>
 
         <view class="form-row">
-          <text class="form-label">生成数量（1-500）</text>
+          <text class="form-label">{{ t("promoCodes.countLabel") }}</text>
           <input v-model.number="createCount" class="form-input" type="number" min="1" max="500" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">折扣类型</text>
+          <text class="form-label">{{ t("promoCodes.discountTypeLabel") }}</text>
           <view class="radio-group">
             <label class="radio-item">
               <input v-model="createDiscountType" type="radio" value="AMOUNT" />
-              <span>满减金额（元）</span>
+              <span>{{ t("promoCodes.radioAmount") }}</span>
             </label>
             <label class="radio-item">
               <input v-model="createDiscountType" type="radio" value="PERCENT" />
-              <span>百分比折扣（1-100%）</span>
+              <span>{{ t("promoCodes.radioPercent") }}</span>
             </label>
           </view>
         </view>
 
         <view class="form-row">
-          <text class="form-label">{{ createDiscountType === "AMOUNT" ? "折扣金额（元）" : "折扣百分比（%）" }}</text>
+          <text class="form-label">
+            {{ createDiscountType === "AMOUNT" ? t("promoCodes.discountValueAmount") : t("promoCodes.discountValuePercent") }}
+          </text>
           <input v-model="createDiscountValue" class="form-input" type="number" min="0" step="0.01" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">最大使用次数（0 表示不限）</text>
+          <text class="form-label">{{ t("promoCodes.maxUsesLabel") }}</text>
           <input v-model.number="createMaxUses" class="form-input" type="number" min="0" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">有效期开始</text>
+          <text class="form-label">{{ t("promoCodes.validFromLabel") }}</text>
           <input v-model="createValidFrom" class="form-input" type="datetime-local" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">有效期结束</text>
+          <text class="form-label">{{ t("promoCodes.validToLabel") }}</text>
           <input v-model="createValidTo" class="form-input" type="datetime-local" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">备注</text>
-          <textarea v-model="createRemark" class="form-textarea" rows="2" placeholder="可选" />
+          <text class="form-label">{{ t("promoCodes.remarkLabel") }}</text>
+          <textarea v-model="createRemark" class="form-textarea" rows="2" :placeholder="t('promoCodes.remarkPlaceholder')" />
         </view>
 
         <text v-if="modalError" class="modal-error">{{ modalError }}</text>
 
         <view class="modal-actions">
-          <button class="ghost-button" :disabled="creating" @click="closeCreate">取消</button>
+          <button class="ghost-button" :disabled="creating" @click="closeCreate">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="creating" @click="handleCreate">
-            {{ creating ? "生成中..." : "生成" }}
+            {{ creating ? t("promoCodes.generating") : t("promoCodes.generateButton") }}
           </button>
         </view>
       </view>
@@ -472,8 +474,8 @@ onBeforeUnmount(() => {
     <!-- 作废确认弹窗 -->
     <ConfirmDialog
       v-model:visible="disableVisible"
-      :title="'作废兑换码'"
-      :message="disableTarget ? `确定要作废兑换码 ${disableTarget.code} 吗？作废后该码不可再使用。` : ''"
+      :title="t('promoCodes.disableTitle')"
+      :message="disableTarget ? t('promoCodes.disableConfirmMessage', { code: disableTarget.code }) : ''"
       :danger="true"
       :confirming="disabling"
       @confirm="handleDisableConfirm"

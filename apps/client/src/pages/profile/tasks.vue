@@ -19,11 +19,14 @@
  * - 点击其他未完成任务：跳转对应功能页
  */
 import { computed, ref } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
+// R4-00058: 签到任务接入真实 GET/POST /check-in 链路
+import { clientApi } from "../../services/api";
 
 /** 任务项 */
 interface TaskItem {
@@ -106,25 +109,50 @@ function taskIcon(taskId: string): string {
 /**
  * 点击任务项
  * - 已完成：toast 提示
- * - 每日签到：本地立即完成（演示态）
+ * - 每日签到：调用真实签到接口（R4-00058，mock 模式由 clientApi 内部走 mock 数据源）
  * - 其他未完成：跳转对应功能页
  */
-function handleTaskTap(task: TaskItem) {
+async function handleTaskTap(task: TaskItem) {
   lightHaptic();
   if (task.done) {
     uni.showToast({ title: t("profile.taskDone"), icon: "none" });
     return;
   }
   if (task.id === "checkin") {
-    task.done = true;
-    successHaptic();
-    uni.showToast({ title: t("profile.taskCheckinSuccess", { n: task.points }), icon: "success" });
+    try {
+      // R4-00058 修复：不再本地置 done 假完成，调用真实 GET 状态 + POST /check-in
+      const result = await clientApi.checkIn();
+      task.done = true;
+      successHaptic();
+      // 后端返回连续天数时优先展示真实数据（回退任务配置积分）
+      const days = result?.consecutiveDays ?? task.points;
+      uni.showToast({ title: t("profile.taskCheckinSuccess", { n: days }), icon: "success" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      uni.showToast({ title: message, icon: "none" });
+    }
     return;
   }
   if (task.path) {
     openAppPath(task.path);
   }
 }
+
+/**
+ * R4-00058：页面展示时拉取真实签到状态，同步「每日签到」任务的完成态。
+ * 已签到的用户进入页面即为已完成，避免假数据误导。
+ */
+onShow(async () => {
+  try {
+    const status = await clientApi.getCheckInStatus();
+    const checkinTask = tasks.value.find((task) => task.id === "checkin");
+    if (checkinTask && status?.checkedIn === true) {
+      checkinTask.done = true;
+    }
+  } catch (_e) {
+    // 状态拉取失败时保持静态配置（不阻塞页面展示）
+  }
+});
 </script>
 
 <template>

@@ -1,5 +1,6 @@
 package com.campuslove.api.match;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.DailyLimitExceededException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -93,7 +94,7 @@ public class MatchPolicy {
      * @return 今日已 rewind 次数
      */
     public int getTodayRewindCount(Long userId) {
-        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
         String localKey = userId + ":" + dateKey;
 
         try {
@@ -126,7 +127,7 @@ public class MatchPolicy {
      * @deprecated 请使用 {@link #tryIncrementRewind} 原子占用额度，避免限额检查与递增分离
      */
     public void incrementRewindCount(Long userId) {
-        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
         String localKey = userId + ":" + dateKey;
 
         localRewindCount.merge(localKey, 1, Integer::sum);
@@ -154,7 +155,7 @@ public class MatchPolicy {
      * @return true 表示成功占用额度；false 表示已达今日上限
      */
     public boolean tryIncrementRewind(Long userId) {
-        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
         String localKey = userId + ":" + dateKey;
         try {
             if (redisTemplate != null) {
@@ -190,7 +191,7 @@ public class MatchPolicy {
      * @param userId 用户 ID
      */
     public void decrementRewindCount(Long userId) {
-        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
         String localKey = userId + ":" + dateKey;
         try {
             if (redisTemplate != null) {
@@ -213,7 +214,7 @@ public class MatchPolicy {
      * @return true 表示成功占用额度；false 表示已达今日上限
      */
     public boolean tryIncrementLike(Long userId) {
-        String dateKey = LocalDate.now().format(DATE_KEY_FORMATTER);
+        String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
         String localKey = userId + ":" + dateKey;
         try {
             if (redisTemplate != null) {

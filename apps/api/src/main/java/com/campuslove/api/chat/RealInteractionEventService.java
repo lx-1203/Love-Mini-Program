@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.InteractionEvent;
 import com.campuslove.api.entity.User;
@@ -71,7 +72,7 @@ public class RealInteractionEventService implements InteractionEventService {
         event.setReferenceType(referenceType);
         event.setSummary(summary);
         event.setIsRead(false);
-        event.setCreatedAt(LocalDateTime.now());
+        event.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         interactionEventRepository.save(event);
 

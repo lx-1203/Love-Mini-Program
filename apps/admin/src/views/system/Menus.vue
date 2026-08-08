@@ -13,6 +13,7 @@
  * - menuType=DIR 时 component 字段无意义（目录不注册路由），表单隐藏该输入。
  */
 import { ref, computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   listMenus,
   createMenu,
@@ -24,6 +25,8 @@ import {
 import { ApiError } from "../../api/http";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
+
+const { t } = useI18n();
 
 // ===== 列表数据 =====
 const menuTree = ref<MenuTreeNode[]>([]);
@@ -55,7 +58,7 @@ async function fetchMenus() {
   try {
     menuTree.value = await listMenus();
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "加载菜单列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("menus.loadFailed");
     menuTree.value = [];
   } finally {
     loading.value = false;
@@ -171,19 +174,19 @@ async function handleSubmit() {
   if (saving.value) return;
   // 基础校验（title/name/path 必填；MENU 类型 component 必填）
   if (!form.value.title.trim()) {
-    formError.value = "菜单标题不能为空";
+    formError.value = t("menus.titleRequired");
     return;
   }
   if (!form.value.name.trim()) {
-    formError.value = "路由名称（name）不能为空";
+    formError.value = t("menus.nameRequired");
     return;
   }
   if (!form.value.path.trim()) {
-    formError.value = "路由路径（path）不能为空";
+    formError.value = t("menus.pathRequired");
     return;
   }
   if (form.value.menuType === "MENU" && !form.value.component.trim()) {
-    formError.value = "菜单类型必须填写组件路径";
+    formError.value = t("menus.componentRequired");
     return;
   }
 
@@ -211,7 +214,7 @@ async function handleSubmit() {
     formVisible.value = false;
     await fetchMenus();
   } catch (err) {
-    formError.value = err instanceof ApiError ? err.message : "保存失败，请重试";
+    formError.value = err instanceof ApiError ? err.message : t("menus.saveFailed");
   } finally {
     saving.value = false;
   }
@@ -238,7 +241,7 @@ async function confirmDelete() {
     await fetchMenus();
   } catch (err) {
     // 存在子菜单等冲突时后端返回 409，透出后端错误信息
-    errorMsg.value = err instanceof ApiError ? err.message : "删除失败，请重试";
+    errorMsg.value = err instanceof ApiError ? err.message : t("menus.deleteFailed");
     deleteVisible.value = false;
   } finally {
     deleting.value = false;
@@ -247,9 +250,9 @@ async function confirmDelete() {
 
 /** 菜单类型徽章文案 */
 function typeLabel(node: MenuTreeNode): string {
-  if (node.menuType === "DIR") return "目录";
-  if (node.menuType === "MENU") return "菜单";
-  return "按钮";
+  if (node.menuType === "DIR") return t("menus.typeDir");
+  if (node.menuType === "MENU") return t("menus.typeMenu");
+  return t("menus.typeButton");
 }
 
 onMounted(() => {
@@ -260,13 +263,13 @@ onMounted(() => {
 <template>
   <view class="menus-page">
     <view class="page-header">
-      <text class="page-title">菜单管理</text>
-      <text class="page-subtitle">配置后台菜单树与路由（顶级目录 → 子菜单）</text>
+      <text class="page-title">{{ t("menus.title") }}</text>
+      <text class="page-subtitle">{{ t("menus.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
-      <button class="primary-button" @click="openCreateTop">新增顶级菜单</button>
-      <button class="secondary-button" :disabled="loading" @click="fetchMenus">刷新</button>
+      <button class="primary-button" @click="openCreateTop">{{ t("menus.createTopButton") }}</button>
+      <button class="secondary-button" :disabled="loading" @click="fetchMenus">{{ t("common.refresh") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchMenus" />
@@ -275,25 +278,25 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">菜单标题</th>
-            <th scope="col">类型</th>
-            <th scope="col">路由名称</th>
-            <th scope="col">路由路径</th>
-            <th scope="col">组件</th>
-            <th scope="col">图标</th>
-            <th scope="col">排序</th>
-            <th scope="col">权限标识</th>
-            <th scope="col">状态</th>
-            <th scope="col">操作</th>
+            <th scope="col">{{ t("menus.columnId") }}</th>
+            <th scope="col">{{ t("menus.columnTitle") }}</th>
+            <th scope="col">{{ t("menus.columnType") }}</th>
+            <th scope="col">{{ t("menus.columnName") }}</th>
+            <th scope="col">{{ t("menus.columnPath") }}</th>
+            <th scope="col">{{ t("menus.columnComponent") }}</th>
+            <th scope="col">{{ t("menus.columnIcon") }}</th>
+            <th scope="col">{{ t("menus.columnSort") }}</th>
+            <th scope="col">{{ t("menus.columnPermission") }}</th>
+            <th scope="col">{{ t("menus.columnStatus") }}</th>
+            <th scope="col">{{ t("menus.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="11" class="empty-row">加载中...</td>
+            <td colspan="11" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="rows.length === 0">
-            <td colspan="11" class="empty-row">暂无菜单，点击「新增顶级菜单」创建</td>
+            <td colspan="11" class="empty-row">{{ t("menus.noData") }}</td>
           </tr>
           <tr v-for="row in rows" :key="row.node.id" class="menu-row">
             <td>{{ row.node.id }}</td>
@@ -316,16 +319,16 @@ onMounted(() => {
             <td class="text-mono">{{ row.node.permission ?? "-" }}</td>
             <td>
               <span class="status-badge" :class="row.node.hidden ? 'status-disabled' : 'status-active'">
-                {{ row.node.hidden ? "隐藏" : "显示" }}
+                {{ row.node.hidden ? t("menus.statusHidden") : t("menus.statusShown") }}
               </span>
             </td>
             <td>
               <view class="action-cell">
-                <button class="action-button edit" @click="openEdit(row.node)">编辑</button>
+                <button class="action-button edit" @click="openEdit(row.node)">{{ t("menus.actionEdit") }}</button>
                 <button v-if="row.node.menuType === 'DIR'" class="action-button handle" @click="openCreateChild(row.node)">
-                  新增子菜单
+                  {{ t("menus.actionCreateChild") }}
                 </button>
-                <button class="action-button delete" @click="askDelete(row.node)">删除</button>
+                <button class="action-button delete" @click="askDelete(row.node)">{{ t("menus.actionDelete") }}</button>
               </view>
             </td>
           </tr>
@@ -336,78 +339,78 @@ onMounted(() => {
     <!-- 新增/编辑菜单弹窗 -->
     <view v-if="formVisible" class="modal-mask" @click.self="closeForm">
       <view class="modal modal-wide">
-        <text class="modal-title">{{ formMode === "create" ? "新增菜单" : "编辑菜单" }}</text>
+        <text class="modal-title">{{ formMode === "create" ? t("menus.createTitle") : t("menus.editTitle") }}</text>
 
         <!-- 菜单类型切换（DIR / MENU） -->
         <view class="form-row">
-          <text class="form-label">菜单类型</text>
+          <text class="form-label">{{ t("menus.menuTypeLabel") }}</text>
           <view class="role-options">
             <button
               class="role-option"
               :class="{ 'role-option--active': form.menuType === 'DIR' }"
               @click="switchType('DIR')"
             >
-              目录（分组）
+              {{ t("menus.dirOption") }}
             </button>
             <button
               class="role-option"
               :class="{ 'role-option--active': form.menuType === 'MENU' }"
               @click="switchType('MENU')"
             >
-              菜单（页面）
+              {{ t("menus.menuOption") }}
             </button>
           </view>
         </view>
 
         <view class="form-row">
-          <text class="form-label">菜单标题 <text class="required">*</text></text>
-          <input v-model="form.title" class="form-input" type="text" placeholder="如：系统管理" />
+          <text class="form-label">{{ t("menus.titleLabel") }} <text class="required">*</text></text>
+          <input v-model="form.title" class="form-input" type="text" :placeholder="t('menus.titlePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">路由名称 name <text class="required">*</text></text>
-          <input v-model="form.name" class="form-input" type="text" placeholder="如：Menus（唯一）" />
+          <text class="form-label">{{ t("menus.nameLabel") }} <text class="required">*</text></text>
+          <input v-model="form.name" class="form-input" type="text" :placeholder="t('menus.namePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">路由路径 path <text class="required">*</text></text>
-          <input v-model="form.path" class="form-input" type="text" placeholder="如：/system/menus" />
+          <text class="form-label">{{ t("menus.pathLabel") }} <text class="required">*</text></text>
+          <input v-model="form.path" class="form-input" type="text" :placeholder="t('menus.pathPlaceholder')" />
         </view>
 
         <view v-if="form.menuType === 'MENU'" class="form-row">
-          <text class="form-label">组件路径 <text class="required">*</text></text>
-          <input v-model="form.component" class="form-input" type="text" placeholder="如：views/system/Menus.vue" />
-          <text class="modal-hint">目录类型无需填写组件路径</text>
+          <text class="form-label">{{ t("menus.componentLabel") }} <text class="required">*</text></text>
+          <input v-model="form.component" class="form-input" type="text" :placeholder="t('menus.componentPlaceholder')" />
+          <text class="modal-hint">{{ t("menus.componentHint") }}</text>
         </view>
 
         <view class="form-row">
-          <text class="form-label">图标</text>
-          <input v-model="form.icon" class="form-input" type="text" placeholder="图标标识（可选）" />
+          <text class="form-label">{{ t("menus.iconLabel") }}</text>
+          <input v-model="form.icon" class="form-input" type="text" :placeholder="t('menus.iconPlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">排序号</text>
-          <input v-model.number="form.sort" class="form-input" type="number" placeholder="0" />
+          <text class="form-label">{{ t("menus.sortLabel") }}</text>
+          <input v-model.number="form.sort" class="form-input" type="number" :placeholder="t('menus.sortPlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">权限标识</text>
-          <input v-model="form.permission" class="form-input" type="text" placeholder="如：system:menu:add（可选）" />
+          <text class="form-label">{{ t("menus.permissionLabel") }}</text>
+          <input v-model="form.permission" class="form-input" type="text" :placeholder="t('menus.permissionPlaceholder')" />
         </view>
 
         <view class="form-row">
           <label class="radio-item">
             <input v-model="form.hidden" type="checkbox" />
-            <text>在侧边栏隐藏该菜单</text>
+            <text>{{ t("menus.hideInSidebar") }}</text>
           </label>
         </view>
 
         <text v-if="formError" class="modal-error">{{ formError }}</text>
 
         <view class="modal-actions">
-          <button class="ghost-button" :disabled="saving" @click="closeForm">取消</button>
+          <button class="ghost-button" :disabled="saving" @click="closeForm">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="saving" @click="handleSubmit">
-            {{ saving ? "保存中..." : "保存" }}
+            {{ saving ? t("menus.saving") : t("common.save") }}
           </button>
         </view>
       </view>
@@ -416,11 +419,11 @@ onMounted(() => {
     <!-- 删除确认 -->
     <ConfirmDialog
       v-model:visible="deleteVisible"
-      title="删除菜单"
-      :message="`确定要删除菜单「${deleteTarget?.title ?? ''}」吗？目录下存在子菜单时后端将拒绝删除。`"
+      :title="t('menus.deleteTitle')"
+      :message="t('menus.deleteMessage', { title: deleteTarget?.title ?? '' })"
       :danger="true"
       :confirming="deleting"
-      confirm-text="删除"
+      :confirm-text="t('menus.deleteButton')"
       @confirm="confirmDelete"
       @cancel="deleteVisible = false"
     />

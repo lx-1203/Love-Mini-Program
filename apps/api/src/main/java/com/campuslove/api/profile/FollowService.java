@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.Notification.NotificationType;
@@ -73,7 +74,7 @@ public class FollowService {
             throw new IllegalArgumentException("已经关注了该用户");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         UserFollow userFollow = new UserFollow(userId, targetUserId);
         userFollow.setCreatedAt(now);
         userFollowRepository.save(userFollow);
@@ -130,7 +131,7 @@ public class FollowService {
         userFollowRepository.deleteByFollowerIdAndFollowingId(userId, targetUserId);
 
         // infra R2-00263: 计数改为数据库侧原子递减（下限 0），不修改 managed 实体避免脏写覆盖
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         userRepository.decrementFollowingCount(userId, now);
         userRepository.decrementFollowersCount(targetUserId, now);
         Integer followingCount = follower.getFollowingCount() == null

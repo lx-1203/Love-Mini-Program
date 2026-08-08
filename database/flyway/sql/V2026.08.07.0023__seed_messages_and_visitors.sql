@@ -13,7 +13,18 @@
 --   普通私信使用 private_conversations/private_messages
 --
 --   幂等性：固定 conversation_uid / session_uid + WHERE NOT EXISTS。
+--
+--   R4-00422 环境守卫：本迁移整体包在存储过程守卫中，仅当 Flyway 占位符
+--   demo_seed=true（演示/验收环境，DEMO_SEED=true）时执行——生产环境
+--   id=1 真实账号的私信列表不会被灌入假对话，隐私与演示数据不混淆。
 -- ============================================================
+
+-- ========== R4-00422 守卫开始（demo_seed=true 才执行下方全部语句） ==========
+DELIMITER $$
+DROP PROCEDURE IF EXISTS seed_messages_visitors_guard $$
+CREATE PROCEDURE seed_messages_visitors_guard()
+BEGIN
+  IF '${demo_seed}' = 'true' THEN
 
 -- ========== 1. 普通私信会话（private_conversations，超级账号 id=1 与虚拟用户） ==========
 -- 1.1 与「周屿」(10001) 的会话
@@ -172,6 +183,14 @@ WHERE NOT EXISTS (SELECT 1 FROM user_follows f WHERE f.follower_id = 1 AND f.fol
 -- 同步超级账号关注数
 UPDATE users SET following_count = (SELECT COUNT(*) FROM user_follows WHERE follower_id = 1) WHERE id = 1;
 UPDATE users SET followers_count = (SELECT COUNT(*) FROM user_follows WHERE following_id = 1) WHERE id = 1;
+
+  END IF;
+END $$
+DELIMITER ;
+-- ========== R4-00422 守卫结束 ==========
+
+CALL seed_messages_visitors_guard();
+DROP PROCEDURE seed_messages_visitors_guard;
 
 -- ============================================================
 -- DOWN 回滚脚本（手动执行）

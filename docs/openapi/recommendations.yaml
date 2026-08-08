@@ -291,7 +291,99 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  # ---- R4-00314：悄悄话解锁链路（付费可见内容服务端保护） ----
+  # 悄悄话文案不再随推荐列表下发（列表 whisper 恒为 null），
+  # 由以下端点按解锁状态返回。
+  /recommendations/{userId}/whisper:
+    get:
+      summary: Get whisper (paid content) for a user
+      description: |
+        Returns the whisper opening line for the target user only when the
+        current user has unlocked messaging/whisper for them (a MESSAGE_UNLOCK
+        or WHISPER_UNLOCK wallet transaction exists). Otherwise returns
+        `unlocked=false` with `whisper=null` — paid content is never leaked.
+      operationId: getWhisper
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Target user ID.
+      responses:
+        '200':
+          description: Whisper view (unlocked=false when not unlocked)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhisperUnlockView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Unlock and get whisper for a user
+      description: |
+        Idempotently unlocks the whisper for the target user (server-side price
+        `app.unlock-price.whisper`, default 200 cents; orderId
+        `UNLOCK-WHISPER-{userId}` deduped by the wallet order_id unique index)
+        and returns the whisper content.
+      operationId: unlockWhisper
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Target user ID.
+      responses:
+        '200':
+          description: Whisper view (unlocked=true with content after charge)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhisperUnlockView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Insufficient wallet balance (INSUFFICIENT_BALANCE)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    WhisperUnlockView:
+      type: object
+      description: |
+        Whisper view (R4-00314). `whisper` is only populated when `unlocked=true`.
+      properties:
+        unlocked:
+          type: boolean
+        whisper:
+          type: string
+          nullable: true
+        balanceCents:
+          type: integer
+          format: int64
+          nullable: true
+      required:
+        - unlocked
   schemas:
     RecommendationCard:
       type: object

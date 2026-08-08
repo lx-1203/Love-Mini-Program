@@ -128,23 +128,26 @@ const TIER_ACTIONS: Record<string, { icon: string; titleKey: string; descKey: st
   },
 }
 
-/** 层级 label/desc 的 i18n key 映射 */
+/**
+ * 层级 label/desc 的 i18n key 映射（R4-batch2：单一真相源收敛到
+ * stores/social-progress.ts 的 TIER_META.labelKey/descKey，本组件不再重复维护）。
+ */
 const TIER_LABEL_KEYS: Record<string, string> = {
-  L1_EXPOSURE: 'socialProgress.tierL1Label',
-  L2_ATTENTION: 'socialProgress.tierL2Label',
-  L3_MATCH: 'socialProgress.tierL3Label',
-  L4_COMMUNICATION: 'socialProgress.tierL4Label',
-  L5_CIRCLE: 'socialProgress.tierL5Label',
-  L6_SCENE: 'socialProgress.tierL6Label',
+  L1_EXPOSURE: TIER_META.L1_EXPOSURE?.labelKey ?? 'socialProgress.tierL1Label',
+  L2_ATTENTION: TIER_META.L2_ATTENTION?.labelKey ?? 'socialProgress.tierL2Label',
+  L3_MATCH: TIER_META.L3_MATCH?.labelKey ?? 'socialProgress.tierL3Label',
+  L4_COMMUNICATION: TIER_META.L4_COMMUNICATION?.labelKey ?? 'socialProgress.tierL4Label',
+  L5_CIRCLE: TIER_META.L5_CIRCLE?.labelKey ?? 'socialProgress.tierL5Label',
+  L6_SCENE: TIER_META.L6_SCENE?.labelKey ?? 'socialProgress.tierL6Label',
 }
 
 const TIER_DESC_KEYS: Record<string, string> = {
-  L1_EXPOSURE: 'socialProgress.tierL1Desc',
-  L2_ATTENTION: 'socialProgress.tierL2Desc',
-  L3_MATCH: 'socialProgress.tierL3Desc',
-  L4_COMMUNICATION: 'socialProgress.tierL4Desc',
-  L5_CIRCLE: 'socialProgress.tierL5Desc',
-  L6_SCENE: 'socialProgress.tierL6Desc',
+  L1_EXPOSURE: TIER_META.L1_EXPOSURE?.descKey ?? 'socialProgress.tierL1Desc',
+  L2_ATTENTION: TIER_META.L2_ATTENTION?.descKey ?? 'socialProgress.tierL2Desc',
+  L3_MATCH: TIER_META.L3_MATCH?.descKey ?? 'socialProgress.tierL3Desc',
+  L4_COMMUNICATION: TIER_META.L4_COMMUNICATION?.descKey ?? 'socialProgress.tierL4Desc',
+  L5_CIRCLE: TIER_META.L5_CIRCLE?.descKey ?? 'socialProgress.tierL5Desc',
+  L6_SCENE: TIER_META.L6_SCENE?.descKey ?? 'socialProgress.tierL6Desc',
 }
 
 /** 状态文案 i18n 映射（用于 ARIA） */

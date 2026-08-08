@@ -236,7 +236,7 @@ class CacheTest {
         assertNotNull(cacheable, "getTodayQuestion 应添加 @Cacheable 注解");
         assertEquals(CacheNames.DAILY_QUESTION, cacheable.cacheNames()[0]);
         // infra R2-00236:缓存 key 增加日期维度(修复跨零点),断言与实现一致
-        assertEquals("#userId + ':' + T(java.time.LocalDate).now()", cacheable.key());
+        assertEquals("#userId + ':' + T(java.time.LocalDate).now(T(com.campuslove.api.common.TimeZones).BUSINESS)", cacheable.key());
     }
 
     /**
@@ -250,7 +250,7 @@ class CacheTest {
         assertNotNull(evict, "submitAnswer 应添加 @CacheEvict 注解");
         assertEquals(CacheNames.DAILY_QUESTION, evict.cacheNames()[0]);
         // infra R2-00236:submitAnswer 的 @CacheEvict 使用与 @Cacheable 相同的日期维度 key
-        assertEquals("#userId + ':' + T(java.time.LocalDate).now()", evict.key());
+        assertEquals("#userId + ':' + T(java.time.LocalDate).now(T(com.campuslove.api.common.TimeZones).BUSINESS)", evict.key());
     }
 
     /**

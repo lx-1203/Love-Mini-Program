@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.TimeZones;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -139,7 +140,7 @@ public class VoiceMessageService {
         try {
             // 构建存储路径：{storageRoot}/{userId}/{yyyyMM}/{uuid}.{ext}
             // Task 9：移除 voice 子目录，统一为 uploads/{userId}/{yyyyMM}/{uuid}.{ext} 格式
-            String yyyyMM = LocalDate.now().format(MONTH_FMT);
+            String yyyyMM = LocalDate.now(TimeZones.BUSINESS).format(MONTH_FMT);
             String fileName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
             Path targetDir = Paths.get(storageRoot,
                     String.valueOf(userId), yyyyMM);

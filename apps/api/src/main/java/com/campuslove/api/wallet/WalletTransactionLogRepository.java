@@ -60,6 +60,36 @@ public interface WalletTransactionLogRepository extends JpaRepository<WalletTran
     List<WalletTransactionLog> findByRelatedTypeAndRelatedId(String relatedType, String relatedId);
 
     /**
+     * 按用户 + 关联业务类型 + 业务实体 ID 查询流水。
+     *
+     * <p>R4-00314/00315：私信/悄悄话解锁状态凭据——客户端经 POST /wallet/deduct
+     * （relatedType=MESSAGE_UNLOCK / WHISPER_UNLOCK，relatedId=目标用户 ID）扣费后，
+     * 服务端以本方法确认「已解锁」，用于 allowMessage 校验与悄悄话解锁接口。</p>
+     *
+     * @param userId      用户 ID
+     * @param relatedType 关联业务类型（MESSAGE_UNLOCK / WHISPER_UNLOCK）
+     * @param relatedId   关联业务实体 ID（目标用户 ID）
+     * @return 流水列表（非空即表示已解锁）
+     */
+    List<WalletTransactionLog> findByUserIdAndRelatedTypeAndRelatedId(
+            Long userId, String relatedType, String relatedId);
+
+    /**
+     * 按用户 + 关联业务类型集合 + 业务实体 ID 列表批量查询流水。
+     *
+     * <p>R4-00315：推荐列表批量预加载「已解锁私信/悄悄话」的目标用户 ID 集合，
+     * 避免逐候选查询（N+1）。</p>
+     *
+     * @param userId       用户 ID
+     * @param relatedTypes 关联业务类型集合（MESSAGE_UNLOCK / WHISPER_UNLOCK）
+     * @param relatedIds   关联业务实体 ID 列表（目标用户 ID）
+     * @return 流水列表
+     */
+    List<WalletTransactionLog> findByUserIdAndRelatedTypeInAndRelatedIdIn(
+            Long userId, java.util.Collection<String> relatedTypes,
+            java.util.Collection<String> relatedIds);
+
+    /**
      * 管理后台分页查询钱包流水（多条件筛选 + 校区数据隔离）。
      *
      * <p>流水按用户归属校区隔离：campusName 非空时通过 EXISTS 子查询

@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
 
     <!-- 校区管理员只读提示：配置写操作仅超级管理员可用 -->
     <view v-if="!isSuperAdmin" class="readonly-tip" role="status">
-      <text>仅超级管理员可修改配置，当前账号（校区管理员）为只读。</text>
+      <text>{{ t("config.readonlyTip") }}</text>
     </view>
 
     <view class="tabs" role="tablist">

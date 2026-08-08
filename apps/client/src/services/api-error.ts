@@ -4,9 +4,13 @@
  * <p>目的：将后端返回的各种错误体（JSON / 文本 / 空）统一转换为
  * {@link AppApiError} 实例，便于上层捕获与分支处理。</p>
  *
+ * R4-batch2：错误兜底文案统一走 i18n（apiErrors.*，zh/en 同步）。
+ *
  * <p>后端错误体契约（{@code GlobalExceptionHandler} 标准格式）：
  * <pre>{ status, error, message, details? }</pre></p>
  */
+// i18n 翻译函数（非组件场景经全局 composer 解析）
+import { t } from "@/i18n";
 
 /**
  * API 错误体结构（与后端 {@code GlobalExceptionHandler} 返回格式对齐）。
@@ -59,6 +63,9 @@ export class AppApiError extends Error {
  * 兜底文案遵循「友好 + 中性」原则，避免暴露技术细节（如 500 不返回堆栈，
  * 401 不返回 token 字样），与 {@link services/http.normalizeErrorCode} 保持一致。
  *
+ * R4-batch2：兜底文案统一走 i18n（apiErrors.*，zh/en 同步），
+ * 与 http.ts / agnes-video.ts 的错误文案共用同一键集。
+ *
  * @param status HTTP 状态码
  * @returns 兜底错误体
  */
@@ -69,7 +76,7 @@ function fallbackErrorShape(status: number): AppApiErrorShape {
     return {
       status,
       error: "bad_request",
-      message: "请求参数有误，请检查后重试",
+      message: t("apiErrors.badRequest"),
     };
   }
 
@@ -77,7 +84,7 @@ function fallbackErrorShape(status: number): AppApiErrorShape {
     return {
       status,
       error: "unauthorized",
-      message: "登录已过期，请重新登录",
+      message: t("apiErrors.unauthorized"),
     };
   }
 
@@ -85,7 +92,7 @@ function fallbackErrorShape(status: number): AppApiErrorShape {
     return {
       status,
       error: "forbidden",
-      message: "无权限执行此操作",
+      message: t("apiErrors.forbidden"),
     };
   }
 
@@ -93,7 +100,7 @@ function fallbackErrorShape(status: number): AppApiErrorShape {
     return {
       status,
       error: "not_found",
-      message: "请求的资源不存在",
+      message: t("apiErrors.notFound"),
     };
   }
 
@@ -101,14 +108,14 @@ function fallbackErrorShape(status: number): AppApiErrorShape {
     return {
       status,
       error: "server_error",
-      message: "服务暂时不可用，请稍后重试",
+      message: t("apiErrors.serverError"),
     };
   }
 
   return {
     status,
     error: "request_error",
-    message: "请求失败，请稍后重试",
+    message: t("apiErrors.requestError"),
   };
 }
 

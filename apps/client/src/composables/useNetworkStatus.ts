@@ -22,6 +22,8 @@ import { ref, onUnmounted } from "vue";
 import { onLaunch } from "@dcloudio/uni-app";
 // infra R2-00139: 网络恢复/断开 toast 经防抖收敛，避免弱网抖动重复弹提示
 import { debounce } from "../utils/debounce";
+// R4-batch2: 网络 toast 文案 i18n 化
+import { t } from "@/i18n";
 
 /** 全局在线状态（响应式），跨页面共享 */
 const isOnline = ref<boolean>(true);
@@ -40,14 +42,14 @@ const notifyNetworkToast = debounce((isConnected: boolean): void => {
   if (isConnected) {
     // 恢复：正向反馈，鼓励用户继续操作
     uni.showToast({
-      title: "网络已恢复",
+      title: t("common.networkRestored"),
       icon: "success",
       duration: 1500,
     });
   } else {
     // 断网：友好提示，不阻塞用户操作
     uni.showToast({
-      title: "网络已断开，请检查网络设置",
+      title: t("common.networkDisconnectedDetail"),
       icon: "none",
       duration: 2000,
     });

@@ -61,13 +61,13 @@ class RecommendationCacheManagerTest {
         when(recommendationStrategy.doRecommend(userId)).thenReturn(fakeResult);
 
         List<RecommendedPersonView> fakeViews = List.of();
-        when(recommendationRanker.rankAndConvert(fakeResult)).thenReturn(fakeViews);
+        when(recommendationRanker.rankAndConvert(fakeResult, userId)).thenReturn(fakeViews);
 
         List<RecommendedPersonView> result = cacheManager.getCachedRecommendations(userId);
 
         assertEquals(fakeViews, result);
         verify(recommendationStrategy, times(1)).doRecommend(userId);
-        verify(recommendationRanker, times(1)).rankAndConvert(fakeResult);
+        verify(recommendationRanker, times(1)).rankAndConvert(fakeResult, userId);
         verify(matchMetrics, times(1)).recordRecommendLatency(anyLong());
     }
 
@@ -99,7 +99,7 @@ class RecommendationCacheManagerTest {
                 List.of(), "北大", "计算机", Set.of(),
                 Map.of(), Map.of(), Map.of());
         when(recommendationStrategy.doRecommend(userId)).thenReturn(fakeResult);
-        when(recommendationRanker.rankAndConvert(fakeResult)).thenReturn(List.of());
+        when(recommendationRanker.rankAndConvert(fakeResult, userId)).thenReturn(List.of());
         // matchMetrics 抛异常
         org.mockito.Mockito.doThrow(new RuntimeException("metrics error"))
                 .when(matchMetrics).recordRecommendLatency(anyLong());

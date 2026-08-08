@@ -1,5 +1,6 @@
 package com.campuslove.api.wallet;
 
+import com.campuslove.api.common.TimeZones;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
@@ -148,7 +149,7 @@ public class WalletServiceImpl implements WalletService {
             // 扣减余额
             long newBalance = wallet.getBalanceCents() - amountCents;
             wallet.setBalanceCents(newBalance);
-            wallet.setUpdatedAt(LocalDateTime.now());
+            wallet.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
             userWalletRepository.save(wallet);
 
             // 写入流水
@@ -221,7 +222,7 @@ public class WalletServiceImpl implements WalletService {
             long currentBalance = wallet.getBalanceCents() == null ? 0L : wallet.getBalanceCents();
             long newBalance = currentBalance + amountCents;
             wallet.setBalanceCents(newBalance);
-            wallet.setUpdatedAt(LocalDateTime.now());
+            wallet.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
             userWalletRepository.save(wallet);
 
             // 写入流水
@@ -298,7 +299,7 @@ public class WalletServiceImpl implements WalletService {
         wallet.setBalanceCents(0L);
         wallet.setFrozenCents(0L);
         wallet.setVersion(0L);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         wallet.setCreatedAt(now);
         wallet.setUpdatedAt(now);
         return userWalletRepository.save(wallet);
@@ -341,7 +342,7 @@ public class WalletServiceImpl implements WalletService {
         logEntry.setRelatedId(relatedId);
         logEntry.setOrderId(orderId);
         logEntry.setRemark(remark);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         logEntry.setCreatedAt(now);
         logEntry.setUpdatedAt(now);
         transactionLogRepository.save(logEntry);

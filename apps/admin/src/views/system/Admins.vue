@@ -360,13 +360,15 @@ onMounted(() => {
         <view v-if="createRole === 'ADMIN'" class="form-row">
           <text class="form-label">{{ t("admins.createCampus") }} <text class="required">*</text></text>
           <select v-model="createCampus" class="filter-select form-select" :disabled="schoolOptionsLoading">
-            <option value="" disabled>{{ schoolOptionsLoading ? "加载校区中..." : "请选择管辖校区" }}</option>
+            <option value="" disabled>
+              {{ schoolOptionsLoading ? t("admins.createCampusLoading") : t("admins.createCampusSelectPlaceholder") }}
+            </option>
             <option v-for="school in schoolOptions" :key="school.id" :value="school.name">
               {{ school.name }}
             </option>
           </select>
           <text v-if="schoolOptions.length === 0 && !schoolOptionsLoading" class="modal-hint">
-            暂无启用中的高校，请先在「学校管理」中启用高校
+            {{ t("admins.createCampusEmpty") }}
           </text>
         </view>
 

@@ -1,7 +1,8 @@
 [environments.default]
 # Replace this with your real JDBC URL.
-# MySQL example:
-url = "jdbc:mysql://127.0.0.1:3306/your_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai"
+# MySQL example (R4-00411：库名统一为 campus_love，与 application-real.yml DB_URL 默认值一致；
+# 历史曾出现误填另一项目库名 qihang_platform，使用本模板即可避免)：
+url = "jdbc:mysql://127.0.0.1:3306/campus_love?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai"
 
 # PostgreSQL example:
 # url = "jdbc:postgresql://127.0.0.1:5432/your_database"

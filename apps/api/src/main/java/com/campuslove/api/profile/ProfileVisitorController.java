@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
@@ -192,7 +193,7 @@ public class ProfileVisitorController {
             // 自访问不记录，但仍返回一个空视图，保持接口契约一致
             log.debug("用户[{}]访问自己的主页，跳过记录", visitorId);
             return ApiResponse.ok(new ProfileVisitorView(visitorId, null, null, null,
-                    LocalDateTime.now().format(FORMATTER)));
+                    LocalDateTime.now(TimeZones.BUSINESS).format(FORMATTER)));
         }
 
         // 校验目标用户存在
@@ -202,7 +203,7 @@ public class ProfileVisitorController {
         }
 
         // 同一天去重：检查当日是否已记录过该访客对该主页的访问
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TimeZones.BUSINESS);
         LocalDateTime dayStart = today.atStartOfDay();
         LocalDateTime dayEnd = today.plusDays(1).atStartOfDay();
         boolean alreadyVisitedToday = profileVisitorRepository
@@ -217,12 +218,12 @@ public class ProfileVisitorController {
                     target.getNickname(),
                     target.getAvatarUrl(),
                     campus != null ? campus.getCampusName() : null,
-                    LocalDateTime.now().format(FORMATTER)
+                    LocalDateTime.now(TimeZones.BUSINESS).format(FORMATTER)
             ));
         }
 
         // 创建并保存访客记录
-        ProfileVisitor record = new ProfileVisitor(visitorId, userId, LocalDateTime.now());
+        ProfileVisitor record = new ProfileVisitor(visitorId, userId, LocalDateTime.now(TimeZones.BUSINESS));
         try {
             profileVisitorRepository.save(record);
             log.info("用户[{}]访问用户[{}]的主页，已记录访客记录", visitorId, userId);

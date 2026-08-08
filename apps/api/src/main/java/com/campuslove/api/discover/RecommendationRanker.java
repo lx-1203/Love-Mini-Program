@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.CircleMembership;
@@ -21,6 +22,8 @@ import com.campuslove.api.repository.UserScheduleProfileRepository;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.entity.CampusCertification;
 import com.campuslove.api.entity.Post;
+import com.campuslove.api.wallet.WalletTransactionLog;
+import com.campuslove.api.wallet.WalletTransactionLogRepository;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,6 +58,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class RecommendationRanker {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RecommendationRanker.class);
+
     private final RecommendationConfig recommendationConfig;
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final UserBasicProfileRepository userBasicProfileRepository;
@@ -86,6 +91,13 @@ public class RecommendationRanker {
         "我偏爱傍晚的校园散步，灯亮起来的时候最适合认识新朋友。"
     );
 
+    /**
+     * 钱包流水 Repository（R4-00314/00315：私信/悄悄话解锁状态凭据）。
+     * 可为 null（兼容旧测试构造器）：为 null 时 allowMessage 恒为 false、
+     * whisper 恒为空（与修复前行为一致，仅丢失解锁放行能力）。
+     */
+    private final WalletTransactionLogRepository walletTransactionLogRepository;
+
     @org.springframework.beans.factory.annotation.Autowired
     public RecommendationRanker(
             RecommendationConfig recommendationConfig,
@@ -99,7 +111,8 @@ public class RecommendationRanker {
             CampusCertificationService campusCertificationService,
             UserPreferenceCalculator preferenceCalculator,
             CampusCertificationRepository campusCertificationRepository,
-            PostRepository postRepository) {
+            PostRepository postRepository,
+            WalletTransactionLogRepository walletTransactionLogRepository) {
         this.recommendationConfig = recommendationConfig;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userBasicProfileRepository = userBasicProfileRepository;
@@ -112,6 +125,25 @@ public class RecommendationRanker {
         this.preferenceCalculator = preferenceCalculator;
         this.campusCertificationRepository = campusCertificationRepository;
         this.postRepository = postRepository;
+        this.walletTransactionLogRepository = walletTransactionLogRepository;
+    }
+
+    /**
+     * 解析用户悄悄话开场白文案（R4-00314 解锁接口专用）。
+     *
+     * <p>悄悄话内容不再随推荐列表明文下发，仅在本方法被解锁接口
+     * （GET /recommendations/{userId}/whisper，付费解锁后）调用时返回。
+     * 与 {@link MockRecommendationService#WHISPER_POOL} 口径一致：按 userId
+     * 稳定取模，同一用户文案恒定。</p>
+     *
+     * @param userId 目标用户 ID
+     * @return 悄悄话文案；userId 为 null 时返回 null
+     */
+    public String resolveWhisper(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        return WHISPER_POOL.get(Math.abs(userId.hashCode()) % WHISPER_POOL.size());
     }
 
     /**
@@ -135,7 +167,33 @@ public class RecommendationRanker {
         this(recommendationConfig, userCampusProfileRepository, userBasicProfileRepository,
                 userScheduleProfileRepository, circleMembershipRepository, heartSignalRepository,
                 likeRepository, userRepository, campusCertificationService,
-                preferenceCalculator, null, null);
+                preferenceCalculator, null, null, null);
+    }
+
+    /**
+     * 兼容旧测试的构造器（walletTransactionLogRepository 为 null，
+     * allowMessage 恒为 false、whisper 恒为空——与修复前行为一致）。
+     *
+     * @deprecated 仅单元测试使用；Spring 注入请使用带 WalletTransactionLogRepository 的构造器。
+     */
+    @Deprecated
+    public RecommendationRanker(
+            RecommendationConfig recommendationConfig,
+            UserCampusProfileRepository userCampusProfileRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
+            UserScheduleProfileRepository userScheduleProfileRepository,
+            CircleMembershipRepository circleMembershipRepository,
+            HeartSignalRepository heartSignalRepository,
+            LikeRepository likeRepository,
+            UserRepository userRepository,
+            CampusCertificationService campusCertificationService,
+            UserPreferenceCalculator preferenceCalculator,
+            CampusCertificationRepository campusCertificationRepository,
+            PostRepository postRepository) {
+        this(recommendationConfig, userCampusProfileRepository, userBasicProfileRepository,
+                userScheduleProfileRepository, circleMembershipRepository, heartSignalRepository,
+                likeRepository, userRepository, campusCertificationService,
+                preferenceCalculator, campusCertificationRepository, postRepository, null);
     }
 
     // ---- 排序与截断 ----
@@ -159,6 +217,25 @@ public class RecommendationRanker {
             java.util.Map<Long, UserCampusProfile> campusProfileMap,
             java.util.Map<Long, UserBasicProfile> basicProfileMap,
             java.util.Map<Long, List<CircleMembership>> membershipMap) {
+        return rankAndConvert(scoredUsers, myCampusName, myDepartmentName, myCircleIds,
+                campusProfileMap, basicProfileMap, membershipMap, null);
+    }
+
+    /**
+     * 带当前用户上下文的转换（R4-00315）。
+     *
+     * <p>currentUserId 非空且 {@link WalletTransactionLogRepository} 可用时，
+     * 批量预加载「已解锁私信/悄悄话」的目标用户 ID 集合，据实填充
+     * {@code allowMessage}（已解锁=可私信）与 {@code whisperSent}；
+     * 否则与旧行为一致（allowMessage=false / whisperSent=null）。</p>
+     */
+    public List<RecommendedPersonView> rankAndConvert(
+            List<RecommendationStrategy.ScoredUser> scoredUsers,
+            String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
+            java.util.Map<Long, UserCampusProfile> campusProfileMap,
+            java.util.Map<Long, UserBasicProfile> basicProfileMap,
+            java.util.Map<Long, List<CircleMembership>> membershipMap,
+            Long currentUserId) {
         scoredUsers.sort(Comparator.comparingInt(RecommendationStrategy.ScoredUser::score).reversed());
 
         List<RecommendationStrategy.ScoredUser> topResults = scoredUsers.stream()
@@ -176,14 +253,64 @@ public class RecommendationRanker {
         Map<Long, RecommendedPersonView.RecentPostView> recentPostMap =
                 loadRecentPostMap(candidateIds);
 
+        // R4-00315：批量预加载已解锁私信/悄悄话的目标 ID 集合（一次查询）
+        Set<Long> unlockedMessageIds = loadUnlockedMessageIds(currentUserId, candidateIds);
+
         return topResults.stream()
                 .map(su -> toRecommendedPersonView(
                         su.user(), myCampusName, myDepartmentName, myCircleIds,
                         campusProfileMap.get(su.user().getId()),
                         basicProfileMap.get(su.user().getId()),
                         membershipMap.getOrDefault(su.user().getId(), List.of()),
-                        badgeLevelMap, recentPostMap))
+                        badgeLevelMap, recentPostMap, unlockedMessageIds))
                 .toList();
+    }
+
+    /**
+     * 批量查询当前用户对候选用户「已解锁私信/悄悄话」的目标 ID 集合。
+     *
+     * <p>R4-00315：以 wallet_transaction_log 中 relatedType ∈ {MESSAGE_UNLOCK,
+     * WHISPER_UNLOCK} 且 relatedId=目标用户 ID 的流水作为解锁凭据（客户端经
+     * POST /wallet/deduct 扣费写入，order_id 唯一索引保证不重复扣费）。</p>
+     *
+     * @param currentUserId 当前用户 ID（null 时返回空集合）
+     * @param candidateIds  候选用户 ID 列表
+     * @return 已解锁目标用户 ID 集合
+     */
+    private Set<Long> loadUnlockedMessageIds(Long currentUserId, List<Long> candidateIds) {
+        if (currentUserId == null || walletTransactionLogRepository == null
+                || candidateIds == null || candidateIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        List<String> candidateIdStrs = candidateIds.stream()
+                .map(String::valueOf)
+                .distinct()
+                .toList();
+        try {
+            return walletTransactionLogRepository
+                    .findByUserIdAndRelatedTypeInAndRelatedIdIn(
+                            currentUserId,
+                            List.of(WalletTransactionLog.RELATED_TYPE_MESSAGE_UNLOCK,
+                                    WalletTransactionLog.RELATED_TYPE_WHISPER_UNLOCK),
+                            candidateIdStrs)
+                    .stream()
+                    .map(WalletTransactionLog::getRelatedId)
+                    .filter(java.util.Objects::nonNull)
+                    .map(id -> {
+                        try {
+                            return Long.valueOf(id);
+                        } catch (NumberFormatException e) {
+                            return null;
+                        }
+                    })
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toSet());
+        } catch (RuntimeException e) {
+            // 解锁状态查询失败降级为空集合（不阻断推荐主流程）
+            log.warn("查询已解锁私信/悄悄话目标集合失败，降级为空集合：userId={}, error={}",
+                    currentUserId, e.getMessage());
+            return Collections.emptySet();
+        }
     }
 
     /**
@@ -194,6 +321,18 @@ public class RecommendationRanker {
      * @return 推荐人物视图列表（已截断到 dailyLimit）
      */
     public List<RecommendedPersonView> rankAndConvert(RecommendationStrategy.RecommendResult result) {
+        return rankAndConvert(result, null);
+    }
+
+    /**
+     * 简化重载（R4-00315）：携带当前用户 ID，allowMessage / whisperSent 按解锁集合据实返回。
+     *
+     * @param result        推荐算法上下文结果
+     * @param currentUserId 当前用户 ID（null 时 allowMessage 恒为 false）
+     * @return 推荐人物视图列表（已截断到 dailyLimit）
+     */
+    public List<RecommendedPersonView> rankAndConvert(
+            RecommendationStrategy.RecommendResult result, Long currentUserId) {
         return rankAndConvert(
                 result.scoredUsers(),
                 result.myCampusName(),
@@ -201,7 +340,8 @@ public class RecommendationRanker {
                 result.myCircleIds(),
                 result.campusProfileMap(),
                 result.basicProfileMap(),
-                result.membershipMap());
+                result.membershipMap(),
+                currentUserId);
     }
 
     // ---- 推荐历史构建 ----
@@ -326,6 +466,22 @@ public class RecommendationRanker {
             UserCampusProfile campusProfile, UserBasicProfile basicProfile,
             List<CircleMembership> memberships, Map<Long, String> badgeLevelMap,
             Map<Long, RecommendedPersonView.RecentPostView> recentPostMap) {
+        return toRecommendedPersonView(user, myCampusName, myDepartmentName, myCircleIds,
+                campusProfile, basicProfile, memberships, badgeLevelMap, recentPostMap,
+                Collections.emptySet());
+    }
+
+    /**
+     * R4-00315 扩展：携带「已解锁私信/悄悄话」目标 ID 集合。
+     *
+     * @param unlockedMessageIds 当前用户已解锁（MESSAGE_UNLOCK/WHISPER_UNLOCK 流水）的目标用户 ID 集合
+     */
+    public RecommendedPersonView toRecommendedPersonView(User user,
+            String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
+            UserCampusProfile campusProfile, UserBasicProfile basicProfile,
+            List<CircleMembership> memberships, Map<Long, String> badgeLevelMap,
+            Map<Long, RecommendedPersonView.RecentPostView> recentPostMap,
+            Set<Long> unlockedMessageIds) {
         String name = user.getNickname() != null ? user.getNickname() : "";
         String initials = extractInitials(name);
         String headline = user.getBio() != null ? user.getBio() : "";
@@ -391,19 +547,24 @@ public class RecommendationRanker {
                 ? preferenceCalculator.parseStringList(basicProfile.getPersonalityTags())
                 : List.of();
         String mbti = basicProfile != null ? basicProfile.getMbti() : null;
-        // 悄悄话开场白：V2026.08.08.0016 修复——real 链路此前恒为 null，
-        // 前端详情页/悄悄话入口拿不到文案。现按 userId 稳定取模生成默认开场白
-        // （与 MockRecommendationService.WHISPER_POOL 口径一致），卡片/详情可完整展示。
-        String whisper = WHISPER_POOL.get(Math.abs(user.getId().hashCode()) % WHISPER_POOL.size());
-        Boolean whisperSent = null;
+        // R4-00314：悄悄话（付费可见语义）不再随推荐列表明文下发——
+        // whisper 恒为 null，由专用解锁接口（GET /recommendations/{userId}/whisper）在
+        // 用户付费解锁（MESSAGE_UNLOCK/WHISPER_UNLOCK 流水）后单独返回。
+        String whisper = null;
+        // R4-00315：已解锁（含悄悄话解锁）即视为已发送过悄悄话，据实返回
+        boolean messageUnlocked = unlockedMessageIds != null
+                && user.getId() != null && unlockedMessageIds.contains(user.getId());
+        Boolean whisperSent = messageUnlocked ? Boolean.TRUE : null;
         // 动态预览：从批量预加载的 Map 取该用户最新一条动态（空 Map 时为空列表）
         List<RecommendedPersonView.RecentPostView> recentPosts =
                 recentPostMap != null && recentPostMap.containsKey(user.getId())
                         ? List.of(recentPostMap.get(user.getId()))
                         : List.of();
         String expectedPartner = basicProfile != null ? basicProfile.getExpectedPartner() : null;
-        // 私信权限：默认不允许，由解锁服务在后端校验后放行（前端据此展示解锁流程）
-        Boolean allowMessage = Boolean.FALSE;
+        // R4-00315：私信权限据实返回——当前用户已为该目标付费解锁私信/悄悄话
+        // （wallet_transaction_log 存在 MESSAGE_UNLOCK/WHISPER_UNLOCK 流水）则允许，
+        // 否则 false（前端展示解锁流程）；解锁校验在服务端生效，杜绝「扣费无消费方」。
+        Boolean allowMessage = messageUnlocked ? Boolean.TRUE : Boolean.FALSE;
         // IP 属地：由籍贯省/市推导（如 "江苏 · 南京"），与 mock 口径一致
         String ipLocation = deriveIpLocation(basicProfile);
 
@@ -412,7 +573,7 @@ public class RecommendationRanker {
         String incomeRange = basicProfile != null ? basicProfile.getIncomeRange() : null;
         // 年龄：出生年份推导（2026 口径），无出生年份时为空
         Integer age = basicProfile != null && basicProfile.getBirthYear() != null
-                ? Year.now().getValue() - basicProfile.getBirthYear()
+                ? Year.now(TimeZones.BUSINESS).getValue() - basicProfile.getBirthYear()
                 : null;
         // 注册时间：ISO 字符串（供「最新注册」排序）
         String registeredAt = user.getCreatedAt() != null

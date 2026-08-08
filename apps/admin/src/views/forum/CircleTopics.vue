@@ -56,7 +56,7 @@ async function loadCircleOptions(): Promise<void> {
     circleOptions.value = result.items;
   } catch (err: unknown) {
     // 圈下拉为辅助功能，加载失败不阻塞主流程，仅记录错误
-    errorMsg.value = err instanceof ApiError ? err.message : "加载圈子列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("circleTopics.loadCirclesFailed");
   }
 }
 
@@ -87,7 +87,7 @@ async function fetchTopics(): Promise<void> {
     topics.value = [];
     total.value = 0;
     totalPages.value = 1;
-    errorMsg.value = "请先选择或输入有效的圈子 ID";
+    errorMsg.value = t("circleTopics.invalidCircleId");
     return;
   }
   loading.value = true;
@@ -101,7 +101,7 @@ async function fetchTopics(): Promise<void> {
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载话题列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("circleTopics.loadFailed");
     topics.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -136,7 +136,7 @@ async function togglePin(topic: TopicSummary): Promise<void> {
     }
     await fetchTopics();
   } catch (err: unknown) {
-    errorMsg.value = err instanceof ApiError ? err.message : "置顶操作失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("circleTopics.pinFailed");
   } finally {
     pinningId.value = null;
   }
@@ -162,7 +162,7 @@ async function handleConfirmDelete(): Promise<void> {
     deleteTarget.value = null;
     await fetchTopics();
   } catch (err: unknown) {
-    errorMsg.value = err instanceof ApiError ? err.message : "删除失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("circleTopics.deleteFailed");
   } finally {
     deleting.value = false;
   }
@@ -175,7 +175,7 @@ function handleCancelDelete(): void {
 
 /** 作者昵称兜底展示 */
 function authorDisplay(topic: TopicSummary): string {
-  return topic.authorNickname || `用户#${topic.authorId}`;
+  return topic.authorNickname || t("circleTopics.authorFallback", { id: topic.authorId });
 }
 
 // 初始化：加载圈子选项 + 从路由 query 读取 circleId
@@ -186,7 +186,7 @@ onMounted(async () => {
   if (circleIdInput.value) {
     void fetchTopics();
   } else {
-    errorMsg.value = "请先选择或输入有效的圈子 ID";
+    errorMsg.value = t("circleTopics.invalidCircleId");
   }
 });
 
@@ -208,12 +208,12 @@ watch(
   <view class="circle-topics-page">
     <view class="page-header">
       <text class="page-title">{{ t("layout.navCircleTopics") }}</text>
-      <text class="page-subtitle">查看与管理指定兴趣圈内的话题，支持置顶与删除</text>
+      <text class="page-subtitle">{{ t("circleTopics.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
       <select v-model="circleIdInput" class="filter-select" @change="handleCircleSelect">
-        <option value="">请选择圈子...</option>
+        <option value="">{{ t("circleTopics.selectCirclePlaceholder") }}</option>
         <option v-for="c in circleOptions" :key="c.id" :value="String(c.id)">
           {{ c.name }}（#{{ c.id }}）
         </option>
@@ -222,13 +222,15 @@ watch(
         v-model="circleIdInput"
         class="search-input"
         type="text"
-        placeholder="或输入圈子 ID"
+        :placeholder="t('circleTopics.inputCirclePlaceholder')"
         @keyup.enter="handleLoad"
       />
       <button class="primary-button" @click="handleLoad">{{ t("common.search") }}</button>
     </view>
 
-    <view v-if="selectedCircleName" class="circle-name-tip">当前圈子：{{ selectedCircleName }}（#{{ circleIdInput }}）</view>
+    <view v-if="selectedCircleName" class="circle-name-tip">
+      {{ t("circleTopics.currentCircle", { name: selectedCircleName, id: circleIdInput }) }}
+    </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchTopics" />
 
@@ -236,12 +238,12 @@ watch(
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">标题</th>
-            <th scope="col">作者</th>
-            <th scope="col">回复数</th>
-            <th scope="col">是否置顶</th>
-            <th scope="col">创建时间</th>
+            <th scope="col">{{ t("circleTopics.columnId") }}</th>
+            <th scope="col">{{ t("circleTopics.columnTitle") }}</th>
+            <th scope="col">{{ t("circleTopics.columnAuthor") }}</th>
+            <th scope="col">{{ t("circleTopics.columnReplyCount") }}</th>
+            <th scope="col">{{ t("circleTopics.columnPinned") }}</th>
+            <th scope="col">{{ t("circleTopics.columnCreatedAt") }}</th>
             <th scope="col">{{ t("common.actions") }}</th>
           </tr>
         </thead>
@@ -250,7 +252,7 @@ watch(
             <td colspan="7" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="topics.length === 0">
-            <td colspan="7" class="empty-row">暂无话题数据</td>
+            <td colspan="7" class="empty-row">{{ t("circleTopics.noData") }}</td>
           </tr>
           <tr v-for="topic in topics" :key="topic.id">
             <td>{{ topic.id }}</td>
@@ -258,8 +260,8 @@ watch(
             <td>{{ authorDisplay(topic) }}</td>
             <td>{{ topic.replyCount }}</td>
             <td>
-              <span v-if="topic.isPinned" class="status-badge badge-pinned">已置顶</span>
-              <span v-else class="status-badge badge-normal">未置顶</span>
+              <span v-if="topic.isPinned" class="status-badge badge-pinned">{{ t("circleTopics.pinned") }}</span>
+              <span v-else class="status-badge badge-normal">{{ t("circleTopics.notPinned") }}</span>
             </td>
             <td class="time-cell">{{ formatDateTime(topic.createdAt) }}</td>
             <td class="action-cell">
@@ -267,7 +269,7 @@ watch(
                 class="action-button pin"
                 :disabled="pinningId !== null"
                 @click="togglePin(topic)"
-              >{{ topic.isPinned ? "取消置顶" : "置顶" }}</button>
+              >{{ topic.isPinned ? t("circleTopics.actionUnpin") : t("circleTopics.actionPin") }}</button>
               <button class="action-button delete" @click="askDelete(topic)">{{ t("common.delete") }}</button>
             </td>
           </tr>
@@ -286,8 +288,8 @@ watch(
     <!-- 删除确认弹窗 -->
     <ConfirmDialog
       v-model:visible="deleteVisible"
-      title="删除话题"
-      :message="deleteTarget ? `确定要删除话题「${deleteTarget.title}」吗？该操作不可恢复。` : ''"
+      :title="t('circleTopics.deleteTitle')"
+      :message="deleteTarget ? t('circleTopics.deleteConfirmMessage', { title: deleteTarget.title }) : ''"
       :danger="true"
       :confirming="deleting"
       @confirm="handleConfirmDelete"

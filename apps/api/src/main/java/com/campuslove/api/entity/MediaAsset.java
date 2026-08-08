@@ -1,5 +1,6 @@
 package com.campuslove.api.entity;
 
+import com.campuslove.api.common.TimeZones;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -115,7 +116,7 @@ public class MediaAsset {
      */
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(TimeZones.BUSINESS);
     }
 
     public Long getId() {

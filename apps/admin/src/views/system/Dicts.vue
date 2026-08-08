@@ -10,6 +10,7 @@
  *   （listDictItemsByCode 回显，createDictItem / updateDictItem / deleteDictItem 操作）
  */
 import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   listDicts,
   createDict,
@@ -28,6 +29,8 @@ import { ApiError } from "../../api/http";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 
+const { t } = useI18n();
+
 // ===== 字典列表 =====
 const dicts = ref<DictView[]>([]);
 const loading = ref(false);
@@ -39,7 +42,7 @@ async function fetchDicts() {
   try {
     dicts.value = await listDicts();
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "加载字典列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("dicts.loadFailed");
     dicts.value = [];
   } finally {
     loading.value = false;
@@ -85,11 +88,11 @@ function closeDictForm() {
 async function handleDictSubmit() {
   if (dictSaving.value) return;
   if (!dictForm.value.name.trim()) {
-    dictFormError.value = "字典名称不能为空";
+    dictFormError.value = t("dicts.nameRequired");
     return;
   }
   if (!dictForm.value.code.trim()) {
-    dictFormError.value = "字典编码不能为空";
+    dictFormError.value = t("dicts.codeRequired");
     return;
   }
 
@@ -110,7 +113,7 @@ async function handleDictSubmit() {
     dictFormVisible.value = false;
     await fetchDicts();
   } catch (err) {
-    dictFormError.value = err instanceof ApiError ? err.message : "保存失败，请重试";
+    dictFormError.value = err instanceof ApiError ? err.message : t("dicts.saveFailed");
   } finally {
     dictSaving.value = false;
   }
@@ -140,7 +143,7 @@ async function confirmDictDelete() {
     }
     await fetchDicts();
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "删除失败，请重试";
+    errorMsg.value = err instanceof ApiError ? err.message : t("dicts.deleteFailed");
     dictDeleteVisible.value = false;
   } finally {
     dictDeleting.value = false;
@@ -174,7 +177,7 @@ async function loadItems(dict: DictView) {
   try {
     items.value = await listDictItemsByCode(dict.code);
   } catch (err) {
-    itemsError.value = err instanceof ApiError ? err.message : "加载字典条目失败";
+    itemsError.value = err instanceof ApiError ? err.message : t("dicts.itemsLoadFailed");
     items.value = [];
   } finally {
     itemsLoading.value = false;
@@ -223,11 +226,11 @@ async function handleItemSubmit() {
   const dict = expandedDict.value;
   if (!dict || itemSaving.value) return;
   if (!itemForm.value.label.trim()) {
-    itemFormError.value = "条目名称不能为空";
+    itemFormError.value = t("dicts.itemLabelRequired");
     return;
   }
   if (!itemForm.value.value.trim()) {
-    itemFormError.value = "条目值不能为空";
+    itemFormError.value = t("dicts.itemValueRequired");
     return;
   }
 
@@ -250,7 +253,7 @@ async function handleItemSubmit() {
     await loadItems(dict);
     await fetchDicts(); // 刷新 itemCount
   } catch (err) {
-    itemFormError.value = err instanceof ApiError ? err.message : "保存失败，请重试";
+    itemFormError.value = err instanceof ApiError ? err.message : t("dicts.saveFailed");
   } finally {
     itemSaving.value = false;
   }
@@ -278,7 +281,7 @@ async function confirmItemDelete() {
     await loadItems(dict);
     await fetchDicts();
   } catch (err) {
-    itemsError.value = err instanceof ApiError ? err.message : "删除失败，请重试";
+    itemsError.value = err instanceof ApiError ? err.message : t("dicts.deleteFailed");
     itemDeleteVisible.value = false;
   } finally {
     itemDeleting.value = false;
@@ -293,13 +296,13 @@ onMounted(() => {
 <template>
   <view class="dicts-page">
     <view class="page-header">
-      <text class="page-title">字典管理</text>
-      <text class="page-subtitle">维护平台数据字典；点击字典行展开条目管理</text>
+      <text class="page-title">{{ t("dicts.title") }}</text>
+      <text class="page-subtitle">{{ t("dicts.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
-      <button class="primary-button" @click="openDictCreate">新增字典</button>
-      <button class="secondary-button" :disabled="loading" @click="fetchDicts">刷新</button>
+      <button class="primary-button" @click="openDictCreate">{{ t("dicts.createButton") }}</button>
+      <button class="secondary-button" :disabled="loading" @click="fetchDicts">{{ t("common.refresh") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchDicts" />
@@ -308,20 +311,20 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">字典名称</th>
-            <th scope="col">字典编码</th>
-            <th scope="col">描述</th>
-            <th scope="col">条目数</th>
-            <th scope="col">操作</th>
+            <th scope="col">{{ t("dicts.columnId") }}</th>
+            <th scope="col">{{ t("dicts.columnName") }}</th>
+            <th scope="col">{{ t("dicts.columnCode") }}</th>
+            <th scope="col">{{ t("dicts.columnDescription") }}</th>
+            <th scope="col">{{ t("dicts.columnItemCount") }}</th>
+            <th scope="col">{{ t("dicts.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="6" class="empty-row">加载中...</td>
+            <td colspan="6" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="dicts.length === 0">
-            <td colspan="6" class="empty-row">暂无字典，点击「新增字典」创建</td>
+            <td colspan="6" class="empty-row">{{ t("dicts.noData") }}</td>
           </tr>
           <template v-for="dict in dicts" :key="dict.id">
             <!-- 字典行（点击展开/收起条目管理） -->
@@ -334,8 +337,8 @@ onMounted(() => {
                 <span class="item-count-badge">{{ dict.itemCount }}</span>
               </td>
               <td class="action-cell" @click.stop>
-                <button class="action-button edit" @click="openDictEdit(dict)">编辑</button>
-                <button class="action-button delete" @click="askDictDelete(dict)">删除</button>
+                <button class="action-button edit" @click="openDictEdit(dict)">{{ t("dicts.actionEdit") }}</button>
+                <button class="action-button delete" @click="askDictDelete(dict)">{{ t("dicts.actionDelete") }}</button>
               </td>
             </tr>
             <!-- 条目管理子区域（展开行） -->
@@ -344,29 +347,29 @@ onMounted(() => {
                 <view class="items-panel">
                   <view class="items-header">
                     <text class="items-title">
-                      条目管理 - {{ expandedDict?.name ?? "" }}（{{ expandedDict?.code ?? "" }}）
+                      {{ t("dicts.itemsTitle", { name: expandedDict?.name ?? "", code: expandedDict?.code ?? "" }) }}
                     </text>
-                    <button class="primary-button items-add" @click="openItemCreate">新增条目</button>
+                    <button class="primary-button items-add" @click="openItemCreate">{{ t("dicts.addItemButton") }}</button>
                   </view>
 
                   <text v-if="itemsError" class="items-error">{{ itemsError }}</text>
-                  <text v-if="itemsLoading" class="items-tip">加载条目中...</text>
+                  <text v-if="itemsLoading" class="items-tip">{{ t("dicts.itemsLoading") }}</text>
 
                   <view v-else class="items-table-container">
                     <table class="data-table items-table">
                       <thead>
                         <tr>
-                          <th scope="col">ID</th>
-                          <th scope="col">名称</th>
-                          <th scope="col">值</th>
-                          <th scope="col">排序</th>
-                          <th scope="col">状态</th>
-                          <th scope="col">操作</th>
+                          <th scope="col">{{ t("dicts.columnItemId") }}</th>
+                          <th scope="col">{{ t("dicts.columnItemName") }}</th>
+                          <th scope="col">{{ t("dicts.columnItemValue") }}</th>
+                          <th scope="col">{{ t("dicts.columnItemSort") }}</th>
+                          <th scope="col">{{ t("dicts.columnItemStatus") }}</th>
+                          <th scope="col">{{ t("dicts.columnItemActions") }}</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr v-if="items.length === 0">
-                          <td colspan="6" class="empty-row">暂无条目，点击「新增条目」添加</td>
+                          <td colspan="6" class="empty-row">{{ t("dicts.noItems") }}</td>
                         </tr>
                         <tr v-for="item in items" :key="item.id">
                           <td>{{ item.id }}</td>
@@ -375,13 +378,13 @@ onMounted(() => {
                           <td>{{ item.sort }}</td>
                           <td>
                             <span class="status-badge" :class="item.enabled ? 'status-active' : 'status-disabled'">
-                              {{ item.enabled ? "启用" : "停用" }}
+                              {{ item.enabled ? t("dicts.statusEnabled") : t("dicts.statusDisabled") }}
                             </span>
                           </td>
                           <td>
                             <view class="action-cell">
-                              <button class="action-button edit" @click="openItemEdit(item)">编辑</button>
-                              <button class="action-button delete" @click="askItemDelete(item)">删除</button>
+                              <button class="action-button edit" @click="openItemEdit(item)">{{ t("dicts.actionEdit") }}</button>
+                              <button class="action-button delete" @click="askItemDelete(item)">{{ t("dicts.actionDelete") }}</button>
                             </view>
                           </td>
                         </tr>
@@ -399,29 +402,31 @@ onMounted(() => {
     <!-- 字典新增/编辑弹窗 -->
     <view v-if="dictFormVisible" class="modal-mask" @click.self="closeDictForm">
       <view class="modal">
-        <text class="modal-title">{{ dictFormMode === "create" ? "新增字典" : "编辑字典" }}</text>
+        <text class="modal-title">
+          {{ dictFormMode === "create" ? t("dicts.createDictTitle") : t("dicts.editDictTitle") }}
+        </text>
 
         <view class="form-row">
-          <text class="form-label">字典名称 <text class="required">*</text></text>
-          <input v-model="dictForm.name" class="form-input" type="text" placeholder="如：性别" />
+          <text class="form-label">{{ t("dicts.nameLabel") }} <text class="required">*</text></text>
+          <input v-model="dictForm.name" class="form-input" type="text" :placeholder="t('dicts.namePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">字典编码 <text class="required">*</text></text>
-          <input v-model="dictForm.code" class="form-input" type="text" placeholder="如：gender（唯一，建议英文小写）" />
+          <text class="form-label">{{ t("dicts.codeLabel") }} <text class="required">*</text></text>
+          <input v-model="dictForm.code" class="form-input" type="text" :placeholder="t('dicts.codePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">描述</text>
-          <textarea v-model="dictForm.description" class="form-textarea" placeholder="字典用途说明（可选）" />
+          <text class="form-label">{{ t("dicts.descriptionLabel") }}</text>
+          <textarea v-model="dictForm.description" class="form-textarea" :placeholder="t('dicts.descriptionPlaceholder')" />
         </view>
 
         <text v-if="dictFormError" class="modal-error">{{ dictFormError }}</text>
 
         <view class="modal-actions">
-          <button class="ghost-button" :disabled="dictSaving" @click="closeDictForm">取消</button>
+          <button class="ghost-button" :disabled="dictSaving" @click="closeDictForm">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="dictSaving" @click="handleDictSubmit">
-            {{ dictSaving ? "保存中..." : "保存" }}
+            {{ dictSaving ? t("dicts.saving") : t("common.save") }}
           </button>
         </view>
       </view>
@@ -430,36 +435,38 @@ onMounted(() => {
     <!-- 条目新增/编辑弹窗 -->
     <view v-if="itemFormVisible" class="modal-mask" @click.self="closeItemForm">
       <view class="modal">
-        <text class="modal-title">{{ itemFormMode === "create" ? "新增条目" : "编辑条目" }}</text>
+        <text class="modal-title">
+          {{ itemFormMode === "create" ? t("dicts.createItemTitle") : t("dicts.editItemTitle") }}
+        </text>
 
         <view class="form-row">
-          <text class="form-label">条目名称 <text class="required">*</text></text>
-          <input v-model="itemForm.label" class="form-input" type="text" placeholder="展示名称，如：男" />
+          <text class="form-label">{{ t("dicts.itemNameLabel") }} <text class="required">*</text></text>
+          <input v-model="itemForm.label" class="form-input" type="text" :placeholder="t('dicts.itemNamePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">条目值 <text class="required">*</text></text>
-          <input v-model="itemForm.value" class="form-input" type="text" placeholder="存储值，如：male" />
+          <text class="form-label">{{ t("dicts.itemValueLabel") }} <text class="required">*</text></text>
+          <input v-model="itemForm.value" class="form-input" type="text" :placeholder="t('dicts.itemValuePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">排序号</text>
-          <input v-model.number="itemForm.sort" class="form-input" type="number" placeholder="0" />
+          <text class="form-label">{{ t("dicts.itemSortLabel") }}</text>
+          <input v-model.number="itemForm.sort" class="form-input" type="number" :placeholder="t('dicts.itemSortPlaceholder')" />
         </view>
 
         <view class="form-row">
           <label class="radio-item">
             <input v-model="itemForm.enabled" type="checkbox" />
-            <text>启用该条目</text>
+            <text>{{ t("dicts.itemEnabledLabel") }}</text>
           </label>
         </view>
 
         <text v-if="itemFormError" class="modal-error">{{ itemFormError }}</text>
 
         <view class="modal-actions">
-          <button class="ghost-button" :disabled="itemSaving" @click="closeItemForm">取消</button>
+          <button class="ghost-button" :disabled="itemSaving" @click="closeItemForm">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="itemSaving" @click="handleItemSubmit">
-            {{ itemSaving ? "保存中..." : "保存" }}
+            {{ itemSaving ? t("dicts.saving") : t("common.save") }}
           </button>
         </view>
       </view>
@@ -468,11 +475,11 @@ onMounted(() => {
     <!-- 字典删除确认 -->
     <ConfirmDialog
       v-model:visible="dictDeleteVisible"
-      title="删除字典"
-      :message="`确定要删除字典「${dictDeleteTarget?.name ?? ''}」吗？该操作不可撤销。`"
+      :title="t('dicts.deleteDictTitle')"
+      :message="t('dicts.deleteDictMessage', { name: dictDeleteTarget?.name ?? '' })"
       :danger="true"
       :confirming="dictDeleting"
-      confirm-text="删除"
+      :confirm-text="t('dicts.deleteButton')"
       @confirm="confirmDictDelete"
       @cancel="dictDeleteVisible = false"
     />
@@ -480,11 +487,11 @@ onMounted(() => {
     <!-- 条目删除确认 -->
     <ConfirmDialog
       v-model:visible="itemDeleteVisible"
-      title="删除条目"
-      :message="`确定要删除条目「${itemDeleteTarget?.label ?? ''}」吗？`"
+      :title="t('dicts.deleteItemTitle')"
+      :message="t('dicts.deleteItemMessage', { label: itemDeleteTarget?.label ?? '' })"
       :danger="true"
       :confirming="itemDeleting"
-      confirm-text="删除"
+      :confirm-text="t('dicts.deleteButton')"
       @confirm="confirmItemDelete"
       @cancel="itemDeleteVisible = false"
     />

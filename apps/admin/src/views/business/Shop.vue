@@ -95,21 +95,21 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 商品分类选项 */
 const CATEGORY_OPTIONS = [
-  { value: "ticket", label: "门票" },
-  { value: "food", label: "美食" },
-  { value: "goods", label: "商品" },
-  { value: "creative", label: "文创" },
+  { value: "ticket", labelKey: "shop.categoryTicket" },
+  { value: "food", labelKey: "shop.categoryFood" },
+  { value: "goods", labelKey: "shop.categoryGoods" },
+  { value: "creative", labelKey: "shop.categoryCreative" },
 ];
 
 /** 分类文案 */
 function categoryLabel(category: string): string {
   const found = CATEGORY_OPTIONS.find((o) => o.value === category);
-  return found ? found.label : category;
+  return found ? t(found.labelKey) : category;
 }
 
 /** 库存展示：-1=不限 */
 function stockLabel(stock: number): string {
-  return stock === -1 ? "不限" : String(stock);
+  return stock === -1 ? t("shop.stockUnlimited") : String(stock);
 }
 
 /** 分转元展示（保留两位小数） */
@@ -149,7 +149,7 @@ async function fetchItems() {
     totalPages.value = result.totalPages;
   } catch (err) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载商城商品失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("shop.loadFailed");
     items.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -236,23 +236,23 @@ async function handleSave() {
   if (saving.value) return;
   const title = formTitle.value.trim();
   if (!title) {
-    modalError.value = "商品标题不能为空";
+    modalError.value = t("shop.titleRequired");
     return;
   }
   if (title.length > 128) {
-    modalError.value = "商品标题长度须为 1-128 字";
+    modalError.value = t("shop.titleTooLong");
     return;
   }
   const priceYuan = Number(formPriceYuan.value);
   if (!Number.isFinite(priceYuan) || priceYuan < 0) {
-    modalError.value = "请输入有效的积分价格（≥0）";
+    modalError.value = t("shop.priceInvalid");
     return;
   }
   const originalPriceYuan = formOriginalPriceYuan.value.trim()
     ? Number(formOriginalPriceYuan.value.trim())
     : null;
   if (originalPriceYuan !== null && (!Number.isFinite(originalPriceYuan) || originalPriceYuan < 0)) {
-    modalError.value = "划线价必须为 ≥0 的有效数字";
+    modalError.value = t("shop.originalPriceInvalid");
     return;
   }
 
@@ -282,7 +282,7 @@ async function handleSave() {
     editingItem.value = null;
     await fetchItems();
   } catch (err) {
-    modalError.value = err instanceof ApiError ? err.message : "保存商品失败";
+    modalError.value = err instanceof ApiError ? err.message : t("shop.saveFailed");
   } finally {
     saving.value = false;
   }
@@ -302,7 +302,7 @@ async function handleTogglePublished(item: ShopItemView) {
     }
     await fetchItems();
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "操作失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("shop.actionFailed");
   } finally {
     togglingId.value = null;
   }
@@ -326,7 +326,7 @@ async function handleDeleteConfirm() {
     showToast(t("shop.deleted"));
     await fetchItems();
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "删除失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("shop.deleteFailed");
     deleteVisible.value = false;
   } finally {
     deleting.value = false;
@@ -352,8 +352,8 @@ onBeforeUnmount(() => {
 <template>
   <view class="shop-page">
     <view class="page-header">
-      <text class="page-title">商城管理</text>
-      <text class="page-subtitle">维护积分商城商品、上下架与库存</text>
+      <text class="page-title">{{ t("layout.navShop") }}</text>
+      <text class="page-subtitle">{{ t("shop.subtitle") }}</text>
     </view>
 
     <view v-if="toastMessage" class="toast-message" role="status" aria-live="polite">
@@ -366,22 +366,22 @@ onBeforeUnmount(() => {
         v-model="keywordQuery"
         class="search-input"
         type="text"
-        placeholder="搜索商品标题"
+        :placeholder="t('shop.searchPlaceholder')"
         @keyup.enter="handleSearch"
         @input="scheduleSearch"
       />
       <select v-model="categoryFilter" class="filter-select" @change="scheduleSearch">
-        <option value="">全部分类</option>
-        <option v-for="o in CATEGORY_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+        <option value="">{{ t("shop.allCategories") }}</option>
+        <option v-for="o in CATEGORY_OPTIONS" :key="o.value" :value="o.value">{{ t(o.labelKey) }}</option>
       </select>
       <select v-model="publishedFilter" class="filter-select" @change="scheduleSearch">
-        <option value="">全部状态</option>
-        <option value="true">已上架</option>
-        <option value="false">已下架</option>
+        <option value="">{{ t("shop.allStatus") }}</option>
+        <option value="true">{{ t("shop.published") }}</option>
+        <option value="false">{{ t("shop.unpublished") }}</option>
       </select>
-      <button class="primary-button" @click="handleSearch">搜索</button>
-      <button class="ghost-button" @click="handleReset">重置</button>
-      <button class="primary-button" @click="openCreate">新增商品</button>
+      <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
+      <button class="ghost-button" @click="handleReset">{{ t("common.reset") }}</button>
+      <button class="primary-button" @click="openCreate">{{ t("shop.createTitle") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchItems" />
@@ -391,25 +391,25 @@ onBeforeUnmount(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">标题</th>
-            <th scope="col">分类</th>
-            <th scope="col">积分价格</th>
-            <th scope="col">划线价</th>
-            <th scope="col">库存</th>
-            <th scope="col">已售</th>
-            <th scope="col">上架状态</th>
-            <th scope="col">校区</th>
-            <th scope="col">排序</th>
-            <th scope="col">操作</th>
+            <th scope="col">{{ t("shop.columnId") }}</th>
+            <th scope="col">{{ t("shop.columnTitle") }}</th>
+            <th scope="col">{{ t("shop.columnCategory") }}</th>
+            <th scope="col">{{ t("shop.columnPrice") }}</th>
+            <th scope="col">{{ t("shop.columnOriginalPrice") }}</th>
+            <th scope="col">{{ t("shop.columnStock") }}</th>
+            <th scope="col">{{ t("shop.columnSales") }}</th>
+            <th scope="col">{{ t("shop.columnPublished") }}</th>
+            <th scope="col">{{ t("shop.columnCampus") }}</th>
+            <th scope="col">{{ t("shop.columnSort") }}</th>
+            <th scope="col">{{ t("shop.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="11" class="empty-cell">加载中...</td>
+            <td colspan="11" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="items.length === 0">
-            <td colspan="11" class="empty-cell">暂无商品数据</td>
+            <td colspan="11" class="empty-cell">{{ t("shop.noData") }}</td>
           </tr>
           <tr v-for="item in items" :key="item.id">
             <td>{{ item.id }}</td>
@@ -423,21 +423,21 @@ onBeforeUnmount(() => {
             <td>{{ item.salesCount }}</td>
             <td>
               <span class="status-badge" :class="item.published ? 'status-on' : 'status-off'">
-                {{ item.published ? "已上架" : "已下架" }}
+                {{ item.published ? t("shop.published") : t("shop.unpublished") }}
               </span>
             </td>
-            <td>{{ item.campusName || "全局" }}</td>
+            <td>{{ item.campusName || t("shop.campusGlobal") }}</td>
             <td>{{ item.sortOrder }}</td>
             <td class="action-cell">
-              <button class="action-button edit" @click="openEdit(item)">编辑</button>
+              <button class="action-button edit" @click="openEdit(item)">{{ t("shop.actionEdit") }}</button>
               <button
                 class="action-button toggle"
                 :disabled="togglingId === item.id"
                 @click="handleTogglePublished(item)"
               >
-                {{ item.published ? "下架" : "上架" }}
+                {{ item.published ? t("shop.actionUnpublish") : t("shop.actionPublish") }}
               </button>
-              <button class="action-button danger" @click="askDelete(item)">删除</button>
+              <button class="action-button danger" @click="askDelete(item)">{{ t("shop.actionDelete") }}</button>
             </td>
           </tr>
         </tbody>
@@ -455,61 +455,63 @@ onBeforeUnmount(() => {
     <!-- 新增/编辑商品弹窗 -->
     <view v-if="editorVisible" class="modal-mask" @click.self="closeEditor">
       <view class="modal editor-modal">
-        <text class="modal-title">{{ editingItem ? `编辑商品 #${editingItem.id}` : "新增商品" }}</text>
+        <text class="modal-title">
+          {{ editingItem ? t("shop.editTitle", { id: editingItem.id }) : t("shop.createTitle") }}
+        </text>
 
         <view class="form-row">
-          <text class="form-label">商品标题 *</text>
-          <input v-model="formTitle" class="form-input" type="text" maxlength="128" placeholder="请输入商品标题" />
+          <text class="form-label">{{ t("shop.titleLabel") }}</text>
+          <input v-model="formTitle" class="form-input" type="text" maxlength="128" :placeholder="t('shop.titlePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">分类</text>
+          <text class="form-label">{{ t("shop.categoryLabel") }}</text>
           <select v-model="formCategory" class="form-input form-select">
-            <option v-for="o in CATEGORY_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+            <option v-for="o in CATEGORY_OPTIONS" :key="o.value" :value="o.value">{{ t(o.labelKey) }}</option>
           </select>
         </view>
 
         <view class="form-row">
-          <text class="form-label">积分价格（元）*</text>
-          <input v-model="formPriceYuan" class="form-input" type="number" min="0" step="0.01" placeholder="如：10" />
+          <text class="form-label">{{ t("shop.priceLabel") }}</text>
+          <input v-model="formPriceYuan" class="form-input" type="number" min="0" step="0.01" :placeholder="t('shop.pricePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">划线价（元，可空）</text>
-          <input v-model="formOriginalPriceYuan" class="form-input" type="number" min="0" step="0.01" placeholder="如：20" />
+          <text class="form-label">{{ t("shop.originalPriceLabel") }}</text>
+          <input v-model="formOriginalPriceYuan" class="form-input" type="number" min="0" step="0.01" :placeholder="t('shop.originalPricePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">图片 URL</text>
-          <input v-model="formImageUrl" class="form-input" type="text" placeholder="商品图片地址" />
+          <text class="form-label">{{ t("shop.imageUrlLabel") }}</text>
+          <input v-model="formImageUrl" class="form-input" type="text" :placeholder="t('shop.imageUrlPlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">商品描述</text>
-          <textarea v-model="formDescription" class="form-textarea" rows="3" placeholder="商品描述（可选）" />
+          <text class="form-label">{{ t("shop.descriptionLabel") }}</text>
+          <textarea v-model="formDescription" class="form-textarea" rows="3" :placeholder="t('shop.descriptionPlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">库存（-1=不限）</text>
+          <text class="form-label">{{ t("shop.stockLabel") }}</text>
           <input v-model.number="formStock" class="form-input" type="number" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">排序权重（越小越靠前）</text>
+          <text class="form-label">{{ t("shop.sortLabel") }}</text>
           <input v-model.number="formSortOrder" class="form-input" type="number" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">所属校区（可空=全局商品）</text>
-          <input v-model="formCampusName" class="form-input" type="text" placeholder="如：南京大学" />
+          <text class="form-label">{{ t("shop.campusLabel") }}</text>
+          <input v-model="formCampusName" class="form-input" type="text" :placeholder="t('shop.campusPlaceholder')" />
         </view>
 
         <text v-if="modalError" class="modal-error">{{ modalError }}</text>
 
         <view class="modal-actions">
-          <button class="ghost-button" :disabled="saving" @click="closeEditor">取消</button>
+          <button class="ghost-button" :disabled="saving" @click="closeEditor">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="saving" @click="handleSave">
-            {{ saving ? "保存中..." : "保存" }}
+            {{ saving ? t("common.saving") : t("common.save") }}
           </button>
         </view>
       </view>
@@ -518,8 +520,8 @@ onBeforeUnmount(() => {
     <!-- 删除确认弹窗 -->
     <ConfirmDialog
       v-model:visible="deleteVisible"
-      :title="'删除商品'"
-      :message="deleteTarget ? `确定要删除商品「${deleteTarget.title}」吗？此操作不可撤销。` : ''"
+      :title="t('shop.deleteTitle')"
+      :message="deleteTarget ? t('shop.deleteConfirmMessage', { title: deleteTarget.title }) : ''"
       :danger="true"
       :confirming="deleting"
       @confirm="handleDeleteConfirm"

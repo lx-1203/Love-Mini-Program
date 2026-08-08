@@ -1,5 +1,6 @@
 package com.campuslove.api.report;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.entity.ErrorReport;
 import com.campuslove.api.ratelimit.RateLimit;
@@ -66,7 +67,7 @@ public class ErrorReportController {
         report.setName(req.name());
         report.setContext(req.context() != null ? req.context().toString() : null);
         report.setPlatform(req.platform());
-        report.setCreatedAt(LocalDateTime.now());
+        report.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         ErrorReport saved = errorReportRepository.save(report);
 

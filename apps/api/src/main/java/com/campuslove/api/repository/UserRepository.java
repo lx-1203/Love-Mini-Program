@@ -33,6 +33,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByPhone(String phone);
 
     /**
+     * 查询已开启自动续费的全部用户（R4-00316：定时续费扫描）。
+     *
+     * <p>AutoRenewService 的 @Scheduled 任务据此扫描「VIP 24 小时内到期」的用户
+     * 并触发 {@code renewVip}，使自动续费开关真正生效（此前 renewVip 无任何调用方）。</p>
+     *
+     * @return 已开启自动续费的用户列表
+     */
+    java.util.List<User> findByAutoRenewEnabledTrue();
+
+    /**
      * 推荐候选池分页查询（P0-21）。
      *
      * <p>仅返回可被推荐的普通用户：status=active（账号可用）、role=USER

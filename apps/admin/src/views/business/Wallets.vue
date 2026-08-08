@@ -16,6 +16,7 @@
  * 金额单位：分（balanceCents/amount），前端展示/录入统一转元。
  */
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   listWallets,
   listWalletTransactions,
@@ -28,6 +29,8 @@ import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE, TOAST_DURATION_MS } from "../../utils/constants";
+
+const { t } = useI18n();
 
 /** Tab 类型：list=钱包列表 / transactions=钱包流水 */
 type TabKey = "list" | "transactions";
@@ -81,8 +84,8 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 交易类型选项 */
 const TX_TYPE_OPTIONS = [
-  { value: "DEBIT", label: "扣减" },
-  { value: "CREDIT", label: "充值" },
+  { value: "DEBIT", labelKey: "wallets.txTypeDebit" },
+  { value: "CREDIT", labelKey: "wallets.txTypeCredit" },
 ];
 
 /** 分转元展示（保留两位小数） */
@@ -93,7 +96,7 @@ function formatYuan(cents: number | null | undefined): string {
 
 /** 钱包状态列（后端无独立状态字段，按冻结金额派生：有冻结=部分冻结，否则=正常） */
 function walletStatusLabel(wallet: WalletView): string {
-  return wallet.frozenCents > 0 ? "部分冻结" : "正常";
+  return wallet.frozenCents > 0 ? t("wallets.statusFrozen") : t("wallets.statusNormal");
 }
 
 function walletStatusClass(wallet: WalletView): string {
@@ -102,7 +105,7 @@ function walletStatusClass(wallet: WalletView): string {
 
 /** 交易类型文案 */
 function txTypeLabel(type: string): string {
-  return type === "CREDIT" ? "充值" : type === "DEBIT" ? "扣减" : type;
+  return type === "CREDIT" ? t("wallets.txTypeCredit") : type === "DEBIT" ? t("wallets.txTypeDebit") : type;
 }
 
 function txTypeClass(type: string): string {
@@ -147,7 +150,7 @@ async function fetchWallets() {
     totalPages.value = result.totalPages;
   } catch (err) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载钱包列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("wallets.loadFailed");
     wallets.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -194,7 +197,7 @@ async function fetchTransactions() {
     txTotalPages.value = result.totalPages;
   } catch (err) {
     if (seq !== reqSeq) return;
-    txError.value = err instanceof ApiError ? err.message : "加载钱包流水失败";
+    txError.value = err instanceof ApiError ? err.message : t("wallets.txLoadFailed");
     transactions.value = [];
     txTotal.value = 0;
     txTotalPages.value = 1;
@@ -244,12 +247,12 @@ async function handleAdjust() {
   if (adjusting.value) return;
   const userId = Number(adjustUserId.value.trim());
   if (!Number.isInteger(userId) || userId <= 0) {
-    modalError.value = "请输入有效的用户 ID";
+    modalError.value = t("wallets.invalidUserId");
     return;
   }
   const amountYuan = Number(adjustAmount.value.trim());
   if (!Number.isFinite(amountYuan) || amountYuan === 0) {
-    modalError.value = "调整金额不能为空且不能为 0（正数充值、负数扣减）";
+    modalError.value = t("wallets.invalidAmount");
     return;
   }
   adjusting.value = true;
@@ -261,10 +264,10 @@ async function handleAdjust() {
       reason: adjustReason.value.trim() || undefined,
     });
     adjustVisible.value = false;
-    showToast(`调整成功，用户 ${result.userId} 当前余额：¥${formatYuan(result.balanceAfter)}`);
+    showToast(t("wallets.adjustSuccess", { userId: result.userId, balance: formatYuan(result.balanceAfter) }));
     await fetchWallets();
   } catch (err) {
-    modalError.value = err instanceof ApiError ? err.message : "调整余额失败";
+    modalError.value = err instanceof ApiError ? err.message : t("wallets.adjustFailed");
   } finally {
     adjusting.value = false;
   }
@@ -289,8 +292,8 @@ onBeforeUnmount(() => {
 <template>
   <view class="wallets-page">
     <view class="page-header">
-      <text class="page-title">钱包管理</text>
-      <text class="page-subtitle">查看用户钱包余额、流水并支持管理员调整</text>
+      <text class="page-title">{{ t("wallets.title") }}</text>
+      <text class="page-subtitle">{{ t("wallets.subtitle") }}</text>
     </view>
 
     <view v-if="toastMessage" class="toast-message" role="status" aria-live="polite">
@@ -305,14 +308,14 @@ onBeforeUnmount(() => {
         class="tab-button"
         :class="{ 'tab-button--active': activeTab === 'list' }"
         @click="handleTabChange('list')"
-      >钱包列表</button>
+      >{{ t("wallets.tabWallets") }}</button>
       <button
         type="button"
         role="tab"
         class="tab-button"
         :class="{ 'tab-button--active': activeTab === 'transactions' }"
         @click="handleTabChange('transactions')"
-      >钱包流水</button>
+      >{{ t("wallets.tabTransactions") }}</button>
     </view>
 
     <!-- ========== Tab1 钱包列表 ========== -->
@@ -323,7 +326,7 @@ onBeforeUnmount(() => {
           class="search-input"
           type="number"
           min="1"
-          placeholder="用户 ID"
+          :placeholder="t('wallets.userIdPlaceholder')"
           @keyup.enter="handleSearch"
         />
         <input
@@ -332,22 +335,22 @@ onBeforeUnmount(() => {
           type="number"
           min="0"
           step="0.01"
-          placeholder="余额下限（元）"
+          :placeholder="t('wallets.balanceFromPlaceholder')"
           @keyup.enter="handleSearch"
         />
-        <text class="range-sep">至</text>
+        <text class="range-sep">{{ t("wallets.rangeSep") }}</text>
         <input
           v-model="balanceToQuery"
           class="search-input narrow"
           type="number"
           min="0"
           step="0.01"
-          placeholder="余额上限（元）"
+          :placeholder="t('wallets.balanceToPlaceholder')"
           @keyup.enter="handleSearch"
         />
-        <button class="primary-button" @click="handleSearch">搜索</button>
-        <button class="ghost-button" @click="handleReset">重置</button>
-        <button class="primary-button" @click="openAdjust(null)">调整余额</button>
+        <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
+        <button class="ghost-button" @click="handleReset">{{ t("common.reset") }}</button>
+        <button class="primary-button" @click="openAdjust(null)">{{ t("wallets.adjustButton") }}</button>
       </view>
 
       <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchWallets" />
@@ -356,21 +359,21 @@ onBeforeUnmount(() => {
         <table class="data-table">
           <thead>
             <tr>
-              <th scope="col">钱包 ID</th>
-              <th scope="col">用户 ID</th>
-              <th scope="col">可用余额（元）</th>
-              <th scope="col">冻结（元）</th>
-              <th scope="col">状态</th>
-              <th scope="col">更新时间</th>
-              <th scope="col">操作</th>
+              <th scope="col">{{ t("wallets.columnWalletId") }}</th>
+              <th scope="col">{{ t("wallets.columnUserId") }}</th>
+              <th scope="col">{{ t("wallets.columnBalance") }}</th>
+              <th scope="col">{{ t("wallets.columnFrozen") }}</th>
+              <th scope="col">{{ t("wallets.columnStatus") }}</th>
+              <th scope="col">{{ t("wallets.columnUpdatedAt") }}</th>
+              <th scope="col">{{ t("wallets.columnActions") }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="7" class="empty-cell">加载中...</td>
+              <td colspan="7" class="empty-cell">{{ t("common.loading") }}</td>
             </tr>
             <tr v-else-if="wallets.length === 0">
-              <td colspan="7" class="empty-cell">暂无钱包数据</td>
+              <td colspan="7" class="empty-cell">{{ t("wallets.noData") }}</td>
             </tr>
             <tr v-for="wallet in wallets" :key="wallet.id">
               <td>{{ wallet.id }}</td>
@@ -384,7 +387,7 @@ onBeforeUnmount(() => {
               </td>
               <td class="time-cell">{{ formatDateTime(wallet.updatedAt) }}</td>
               <td class="action-cell">
-                <button class="action-button edit" @click="openAdjust(wallet)">调整余额</button>
+                <button class="action-button edit" @click="openAdjust(wallet)">{{ t("wallets.adjustButton") }}</button>
               </td>
             </tr>
           </tbody>
@@ -408,15 +411,15 @@ onBeforeUnmount(() => {
           class="search-input"
           type="number"
           min="1"
-          placeholder="用户 ID"
+          :placeholder="t('wallets.userIdPlaceholder')"
           @keyup.enter="handleTxSearch"
         />
         <select v-model="txTypeFilter" class="filter-select">
-          <option value="">全部类型</option>
-          <option v-for="o in TX_TYPE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+          <option value="">{{ t("wallets.allTypes") }}</option>
+          <option v-for="o in TX_TYPE_OPTIONS" :key="o.value" :value="o.value">{{ t(o.labelKey) }}</option>
         </select>
-        <button class="primary-button" @click="handleTxSearch">搜索</button>
-        <button class="ghost-button" @click="handleTxReset">重置</button>
+        <button class="primary-button" @click="handleTxSearch">{{ t("common.search") }}</button>
+        <button class="ghost-button" @click="handleTxReset">{{ t("common.reset") }}</button>
       </view>
 
       <ErrorState v-if="txError" :message="txError" @retry="fetchTransactions" />
@@ -425,22 +428,22 @@ onBeforeUnmount(() => {
         <table class="data-table">
           <thead>
             <tr>
-              <th scope="col">流水 ID</th>
-              <th scope="col">用户 ID</th>
-              <th scope="col">类型</th>
-              <th scope="col">金额（元）</th>
-              <th scope="col">交易后余额（元）</th>
-              <th scope="col">关联业务</th>
-              <th scope="col">备注</th>
-              <th scope="col">时间</th>
+              <th scope="col">{{ t("wallets.columnTxId") }}</th>
+              <th scope="col">{{ t("wallets.columnUserId") }}</th>
+              <th scope="col">{{ t("wallets.columnType") }}</th>
+              <th scope="col">{{ t("wallets.columnAmount") }}</th>
+              <th scope="col">{{ t("wallets.columnBalanceAfter") }}</th>
+              <th scope="col">{{ t("wallets.columnRelated") }}</th>
+              <th scope="col">{{ t("wallets.columnRemark") }}</th>
+              <th scope="col">{{ t("wallets.columnTime") }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="txLoading">
-              <td colspan="8" class="empty-cell">加载中...</td>
+              <td colspan="8" class="empty-cell">{{ t("common.loading") }}</td>
             </tr>
             <tr v-else-if="transactions.length === 0">
-              <td colspan="8" class="empty-cell">暂无流水数据</td>
+              <td colspan="8" class="empty-cell">{{ t("wallets.noTxData") }}</td>
             </tr>
             <tr v-for="tx in transactions" :key="tx.id">
               <td>{{ tx.id }}</td>
@@ -472,29 +475,29 @@ onBeforeUnmount(() => {
     <!-- 调整余额弹窗 -->
     <view v-if="adjustVisible" class="modal-mask" @click.self="closeAdjust">
       <view class="modal adjust-modal">
-        <text class="modal-title">调整钱包余额</text>
+        <text class="modal-title">{{ t("wallets.adjustTitle") }}</text>
 
         <view class="form-row">
-          <text class="form-label">用户 ID</text>
-          <input v-model="adjustUserId" class="form-input" type="number" min="1" placeholder="请输入用户 ID" />
+          <text class="form-label">{{ t("wallets.adjustUserIdLabel") }}</text>
+          <input v-model="adjustUserId" class="form-input" type="number" min="1" :placeholder="t('wallets.adjustUserIdPlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">调整金额（元，正数充值、负数扣减）</text>
-          <input v-model="adjustAmount" class="form-input" type="number" step="0.01" placeholder="如：10 或 -5" />
+          <text class="form-label">{{ t("wallets.adjustAmountLabel") }}</text>
+          <input v-model="adjustAmount" class="form-input" type="number" step="0.01" :placeholder="t('wallets.adjustAmountPlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">调整原因</text>
-          <textarea v-model="adjustReason" class="form-textarea" rows="2" placeholder="可选" />
+          <text class="form-label">{{ t("wallets.adjustReasonLabel") }}</text>
+          <textarea v-model="adjustReason" class="form-textarea" rows="2" :placeholder="t('wallets.reasonPlaceholder')" />
         </view>
 
         <text v-if="modalError" class="modal-error">{{ modalError }}</text>
 
         <view class="modal-actions">
-          <button class="ghost-button" :disabled="adjusting" @click="closeAdjust">取消</button>
+          <button class="ghost-button" :disabled="adjusting" @click="closeAdjust">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="adjusting" @click="handleAdjust">
-            {{ adjusting ? "提交中..." : "确认调整" }}
+            {{ adjusting ? t("wallets.submitting") : t("wallets.confirmAdjust") }}
           </button>
         </view>
       </view>

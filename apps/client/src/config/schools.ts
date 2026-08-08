@@ -29,15 +29,15 @@ export interface School {
 export const SCHOOLS: School[] = [
   { id: 'pku', name: '北京大学', nameKey: 'config.schools.pku.name', city: '北京', cityKey: 'config.schools.pku.city' },
   { id: 'thu', name: '清华大学', nameKey: 'config.schools.thu.name', city: '北京', cityKey: 'config.schools.thu.city' },
-  { id: 'ruc', name: '中国人民大学', city: '北京' },
+  { id: 'ruc', name: '中国人民大学', nameKey: 'config.schools.ruc.name', city: '北京', cityKey: 'config.schools.ruc.city' },
   { id: 'fudan', name: '复旦大学', nameKey: 'config.schools.fudan.name', city: '上海', cityKey: 'config.schools.fudan.city' },
-  { id: 'sjtu', name: '上海交通大学', city: '上海' },
-  { id: 'tongji', name: '同济大学', city: '上海' },
+  { id: 'sjtu', name: '上海交通大学', nameKey: 'config.schools.sjtu.name', city: '上海', cityKey: 'config.schools.sjtu.city' },
+  { id: 'tongji', name: '同济大学', nameKey: 'config.schools.tongji.name', city: '上海', cityKey: 'config.schools.tongji.city' },
   { id: 'zju', name: '浙江大学', nameKey: 'config.schools.zju.name', city: '杭州', cityKey: 'config.schools.zju.city' },
-  { id: 'nju', name: '南京大学', city: '南京' },
-  { id: 'whu', name: '武汉大学', city: '武汉' },
-  { id: 'sysu', name: '中山大学', city: '广州' },
-  { id: 'szu', name: '深圳大学', city: '深圳' },
+  { id: 'nju', name: '南京大学', nameKey: 'config.schools.nju.name', city: '南京', cityKey: 'config.schools.nju.city' },
+  { id: 'whu', name: '武汉大学', nameKey: 'config.schools.whu.name', city: '武汉', cityKey: 'config.schools.whu.city' },
+  { id: 'sysu', name: '中山大学', nameKey: 'config.schools.sysu.name', city: '广州', cityKey: 'config.schools.sysu.city' },
+  { id: 'szu', name: '深圳大学', nameKey: 'config.schools.szu.name', city: '深圳', cityKey: 'config.schools.szu.city' },
 ];
 
 /** 默认选中的学校 ID */

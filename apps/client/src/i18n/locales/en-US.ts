@@ -30,6 +30,9 @@ export default {
     hoursAgo: "{n} hours ago",
     daysAgo: "{n} days ago",
     networkDisconnected: "Network disconnected",
+    /* R4-batch2: network status change toasts */
+    networkRestored: "Network restored",
+    networkDisconnectedDetail: "Network disconnected, please check your network settings",
     publish: "Publish",
     more: "More",
     clear: "Clear",
@@ -133,8 +136,15 @@ export default {
     schools: {
       pku: { name: "Peking University", city: "Beijing" },
       thu: { name: "Tsinghua University", city: "Beijing" },
+      ruc: { name: "Renmin University of China", city: "Beijing" },
       fudan: { name: "Fudan University", city: "Shanghai" },
+      sjtu: { name: "Shanghai Jiao Tong University", city: "Shanghai" },
+      tongji: { name: "Tongji University", city: "Shanghai" },
       zju: { name: "Zhejiang University", city: "Hangzhou" },
+      nju: { name: "Nanjing University", city: "Nanjing" },
+      whu: { name: "Wuhan University", city: "Wuhan" },
+      sysu: { name: "Sun Yat-sen University", city: "Guangzhou" },
+      szu: { name: "Shenzhen University", city: "Shenzhen" },
     },
     /* config/vip-plans.ts: plan name / period / per-day price / badge (prices are numbers, not translated) */
     vipPlans: {
@@ -342,6 +352,22 @@ export default {
 
   /* ========== Activities (Task E1/E2) ========== */
   activities: {
+    /* R4-batch2: offline activities page (list/calendar views) */
+    sectionTitle: "Offline Activities",
+    sectionSubtitle: "Start with small activities with clear times and locations to ease the pressure of meeting offline.",
+    loadingContent: "Loading activities...",
+    listTab: "List",
+    calendarTab: "Calendar",
+    enrolledLabel: "enrolled",
+    interested: "Interested",
+    interestedDone: "Interested",
+    noMore: "No more activities",
+    nextTitle: "Next Step",
+    nextSubtitle: "Once you find a suitable activity, keep exploring or submit a new activity proposal.",
+    goExplore: "Go Explore",
+    submitProposal: "Submit an activity proposal",
+    peopleCount: "{n} people",
+    activityCount: "{n} activities",
     cardAria: "Activity: {title}",
     emptyForDate: "No activities on this day",
     detailNavTitle: "Activity Details",
@@ -386,6 +412,21 @@ export default {
         desc: "A special Qixi event: meet someone you like under the stars, with games and a confession wall to unlock.",
       },
     },
+  },
+
+  /* ========== Discussions (discover/discussions) ========== */
+  discussions: {
+    title: "Discussions",
+    subtitle: "See what people are actually talking about, then decide where to start.",
+    hotSectionTitle: "Trending Now",
+    hotSectionSubtitle: "See what people are really talking about lately.",
+    loadingContent: "Loading discussions...",
+    retry: "Tap to retry",
+    empty: "No new discussion recommendations yet",
+    nextTitle: "Next Step",
+    nextSubtitle: "Once you find a topic you like, go match or share your feedback.",
+    goExplore: "Go Explore",
+    feedbackSuggestion: "Share discussion feedback",
   },
 
   /* ========== Wallet (Coins) ========== */
@@ -1175,7 +1216,14 @@ export default {
       clearFailed: "Failed to clear, please retry",
       untitled: "(Untitled)",
       backToVillage: "Go to Village",
+      /* R4-batch2: post interaction counters (history list) */
+      likes: "{n} likes",
+      favorites: "{n} saved",
+      views: "{n} views",
+      comments: "{n} comments",
     },
+    /* R4-batch2: reply prefix in thread replies (detail page) */
+    replyToPrefix: "Reply to @{name}: ",
     /* 2026-08-08 forum interaction real: favorite failure */
     favoriteFailed: "Failed to favorite post",
     /* 2026-08-08 refactor: daily question entry (moved from discover) */
@@ -1719,6 +1767,9 @@ export default {
   /* ========== Messages ========== */
   messages: {
     title: "Messages",
+    /* R4-00175: WebSocket /queue/matches real-time match push notification copy */
+    wsNewMatchTitle: "New Match",
+    wsNewMatchContent: "You matched with someone — start chatting now",
     systemMessages: "System",
     interactionMessages: "Interactions",
     emptyTitle: "No messages yet",
@@ -2377,6 +2428,18 @@ export default {
       privacyConfirm: "Got it",
       privacyAria: "View privacy note about verification info",
     },
+    /* R4-batch2: schedule page (subpackages/setup/schedule) */
+    schedule: {
+      pageTitle: "Schedule",
+      pageSubtitle: "This drives your homepage recommendations and chat availability.",
+      prefTitle: "Preferences",
+      placePlaceholder: "Frequent places",
+      timeWindowPlaceholder: "Common free time, e.g. tonight or Wednesday afternoon",
+      timeWindowPlaceholderExtra: "Additional free time, e.g. Sunday afternoon",
+      saveButton: "Save and enter",
+      locationRequired: "Please enter a preferred location",
+      timeWindowRequired: "Please add at least one time window",
+    },
   },
 
   /* ========== Recommendation preferences page (P2-12: subpackages/setup/recommend-pref) ========== */
@@ -2844,6 +2907,19 @@ export default {
     timeout: "Request timed out, please retry",
     unknown: "Unknown error, please retry",
     retry: "Retry",
+  },
+
+  /* ========== API error fallback copy (R4-batch2: api-error.ts / http.ts / agnes-video.ts) ========== */
+  apiErrors: {
+    badRequest: "Invalid request parameters, please check and retry",
+    unauthorized: "Login expired, please log in again",
+    forbidden: "No permission to perform this operation",
+    notFound: "The requested resource does not exist",
+    serverError: "Service temporarily unavailable, please try again later",
+    requestError: "Request failed, please try again later",
+    networkFailed: "Network request failed",
+    aiUnauthorized: "AI service unauthorized, please contact the administrator to check the API Key configuration",
+    aiUnavailable: "AI service temporarily unavailable, please try again later",
   },
 
   /* ========== Store error fallback messages (SubTask 3.3.3: i18n for 14+ stores) ========== */

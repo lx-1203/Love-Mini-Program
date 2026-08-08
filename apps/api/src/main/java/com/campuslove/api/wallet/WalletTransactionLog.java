@@ -74,6 +74,12 @@ public class WalletTransactionLog {
     /** 关联业务类型：VIP 自动续费扣减 */
     public static final String RELATED_TYPE_VIP_RENEW = "VIP_RENEW";
     /**
+     * 关联业务类型：VIP 购买（钱包支付，R4-00320）。
+     * 支付链路会消费优惠码折扣（见 BillingService#purchaseVip），
+     * relatedId 存订单号（orderNo）。
+     */
+    public static final String RELATED_TYPE_VIP_PURCHASE = "VIP_PURCHASE";
+    /**
      * 关联业务类型：红包发送扣减（红包功能已下线，常量保留以兼容历史流水对账）。
      */
     public static final String RELATED_TYPE_RED_PACKET_SEND = "RED_PACKET_SEND";
@@ -85,12 +91,25 @@ public class WalletTransactionLog {
     public static final String RELATED_TYPE_WALLET_RECHARGE = "WALLET_RECHARGE";
     /** 关联业务类型：签到奖励入账（P0-23 签到钱包联动） */
     public static final String RELATED_TYPE_CHECKIN = "CHECKIN";
+    /**
+     * 关联业务类型：补签扣费（R4-00326，relatedId=补签日期 yyyy-MM-dd）。
+     * 契约（check-in.yaml）：首次补签免费，其后每次 50 growth points 真实扣减。
+     */
+    public static final String RELATED_TYPE_CHECKIN_MAKEUP = "CHECKIN_MAKEUP";
     /** 关联业务类型：商业化解锁-喜欢我列表（P0-17，targetId=对方用户 ID） */
     public static final String RELATED_TYPE_UNLOCK_LIKED_ME = "UNLOCK_LIKED_ME";
     /** 关联业务类型：商业化解锁-访客列表（P0-17，targetId=对方用户 ID） */
     public static final String RELATED_TYPE_UNLOCK_VISITOR = "UNLOCK_VISITOR";
     /** 关联业务类型：AI 情话解锁（预留，P0-17 白名单成员） */
     public static final String RELATED_TYPE_SWEET_TALK = "SWEET_TALK";
+    /**
+     * 关联业务类型：私信解锁（R4-00315，relatedId=目标用户 ID）。
+     * 客户端经 POST /wallet/deduct（orderId=UNLOCK-MESSAGE-{targetUserId}）扣费，
+     * 服务端以此流水作为「已解锁私信」的持久化凭据（allowMessage 校验 / 悄悄话解锁）。
+     */
+    public static final String RELATED_TYPE_MESSAGE_UNLOCK = "MESSAGE_UNLOCK";
+    /** 关联业务类型：悄悄话解锁（R4-00314，relatedId=目标用户 ID），流水存在即已解锁 */
+    public static final String RELATED_TYPE_WHISPER_UNLOCK = "WHISPER_UNLOCK";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

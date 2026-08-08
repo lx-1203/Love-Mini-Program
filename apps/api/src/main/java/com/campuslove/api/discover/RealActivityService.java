@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
 import com.campuslove.api.entity.ActivityEnrollment;
@@ -135,7 +136,7 @@ public class RealActivityService implements ActivityService {
         }
 
         // 创建报名记录
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         ActivityEnrollment enrollment = new ActivityEnrollment();
         enrollment.setActivityId(activityId);
         enrollment.setUserId(userId);

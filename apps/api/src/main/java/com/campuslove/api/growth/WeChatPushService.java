@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.Resilience4jConfig;
 import com.campuslove.api.config.WeChatConfig;
 import com.campuslove.api.utils.SensitiveDataMasker;
@@ -265,7 +266,7 @@ public class WeChatPushService {
         Map<String, TemplateDataItem> data = new HashMap<>();
         data.put("thing1", new TemplateDataItem("校园恋爱"));
         data.put("thing2", new TemplateDataItem(buildDigestContent(visitorCount, likeCount, interactionCount)));
-        data.put("time3", new TemplateDataItem(java.time.LocalDateTime.now()
+        data.put("time3", new TemplateDataItem(java.time.LocalDateTime.now(TimeZones.BUSINESS)
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
 
         return sendSubscribeMessage(openId, templateId, "/pages/likes/index", data);
@@ -289,7 +290,7 @@ public class WeChatPushService {
         Map<String, TemplateDataItem> data = new HashMap<>();
         data.put("thing1", new TemplateDataItem("校园恋爱"));
         data.put("number2", new TemplateDataItem(String.valueOf(recommendCount)));
-        data.put("time3", new TemplateDataItem(java.time.LocalDateTime.now()
+        data.put("time3", new TemplateDataItem(java.time.LocalDateTime.now(TimeZones.BUSINESS)
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
 
         return sendSubscribeMessage(openId, templateId, "/pages/discover/index", data);

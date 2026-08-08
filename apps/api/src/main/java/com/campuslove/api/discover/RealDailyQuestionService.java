@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ResourceNotFoundException;
 import com.campuslove.api.common.ResourceConflictException;
 import com.campuslove.api.common.InvalidOperationException;
@@ -73,9 +74,9 @@ public class RealDailyQuestionService implements DailyQuestionService {
     // infra R2-00236: 缓存 key 增加日期维度，修复 1h TTL 跨零点返回昨日问题的问题；
     // submitAnswer 的 @CacheEvict 使用相同 key 表达式保持一致性
     @Cacheable(cacheNames = CacheNames.DAILY_QUESTION,
-            key = "#userId + ':' + T(java.time.LocalDate).now()", unless = "#result == null")
+            key = "#userId + ':' + T(java.time.LocalDate).now(T(com.campuslove.api.common.TimeZones).BUSINESS)", unless = "#result == null")
     public DailyQuestionView getTodayQuestion(Long userId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TimeZones.BUSINESS);
         log.debug("获取今日问题，日期: {}, userId: {}", today, userId);
 
         // 1. 查询当日问题
@@ -122,7 +123,7 @@ public class RealDailyQuestionService implements DailyQuestionService {
     @Override
     @Transactional
     @CacheEvict(cacheNames = CacheNames.DAILY_QUESTION,
-            key = "#userId + ':' + T(java.time.LocalDate).now()")
+            key = "#userId + ':' + T(java.time.LocalDate).now(T(com.campuslove.api.common.TimeZones).BUSINESS)")
     public DailyAnswerView submitAnswer(Long userId, Long questionId, String content, boolean isAnonymous) {
         // 参数校验
         if (userId == null) {
@@ -148,7 +149,7 @@ public class RealDailyQuestionService implements DailyQuestionService {
         }
 
         // 创建回答记录
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         DailyAnswer answer = new DailyAnswer();
         answer.setQuestion(question);
         answer.setUserId(userId);

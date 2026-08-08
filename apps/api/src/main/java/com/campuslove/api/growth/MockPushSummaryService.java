@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.PushSummary;
 import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,7 +53,7 @@ public class MockPushSummaryService implements PushSummaryService {
         summary.setContent("3 人查看了你的主页，1 人喜欢了你，帖子获得 5 次互动");
         summary.setActionUrl("/pages/likes/index");
         summary.setIsSent(false);
-        summary.setGeneratedAt(LocalDateTime.now());
+        summary.setGeneratedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         summaryCache.put(summaryId, summary);
         log.debug("Mock: 用户[{}]社交动态摘要已生成", userId);
@@ -86,7 +87,7 @@ public class MockPushSummaryService implements PushSummaryService {
         summary.setContent("你的每日推荐人选已刷新，快去看看有没有心动的TA吧！");
         summary.setActionUrl("/pages/discover/index");
         summary.setIsSent(false);
-        summary.setGeneratedAt(LocalDateTime.now());
+        summary.setGeneratedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         summaryCache.put(summaryId, summary);
         log.debug("Mock: 用户[{}]推荐刷新通知已生成", userId);
@@ -105,7 +106,7 @@ public class MockPushSummaryService implements PushSummaryService {
         }
 
         summary.setIsSent(true);
-        summary.setSentAt(LocalDateTime.now());
+        summary.setSentAt(LocalDateTime.now(TimeZones.BUSINESS));
         summaryCache.put(summaryId, summary);
         log.debug("Mock: 推送摘要[{}]已标记为已发送", summaryId);
         return summary;

@@ -60,7 +60,7 @@ async function fetchEnrollments(): Promise<void> {
     enrollments.value = [];
     total.value = 0;
     totalPages.value = 1;
-    errorMsg.value = "请先输入有效的活动 ID";
+    errorMsg.value = t("enrollments.invalidActivityId");
     return;
   }
   loading.value = true;
@@ -74,7 +74,7 @@ async function fetchEnrollments(): Promise<void> {
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
     if (seq !== reqSeq) return;
-    errorMsg.value = err instanceof ApiError ? err.message : "加载报名列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("enrollments.loadFailed");
     enrollments.value = [];
     total.value = 0;
     totalPages.value = 1;
@@ -108,7 +108,7 @@ async function handleExport(): Promise<void> {
     await exportEnrollments(id);
     successMsg.value = t("enrollments.exportSuccess");
   } catch (err: unknown) {
-    errorMsg.value = err instanceof ApiError ? err.message : "导出失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("enrollments.exportFailed");
   } finally {
     exporting.value = false;
   }
@@ -116,7 +116,7 @@ async function handleExport(): Promise<void> {
 
 /** 作者昵称兜底展示 */
 function authorLabel(e: ActivityEnrollment): string {
-  return e.nickname || `用户#${e.userId}`;
+  return e.nickname || t("enrollments.authorFallback", { id: e.userId });
 }
 
 // 初始化：从路由 query 读取 activityId（Activities 页跳转进入）
@@ -126,7 +126,7 @@ onMounted(() => {
   if (activityIdInput.value) {
     void fetchEnrollments();
   } else {
-    errorMsg.value = "请先输入有效的活动 ID";
+    errorMsg.value = t("enrollments.invalidActivityId");
   }
 });
 
@@ -148,7 +148,7 @@ watch(
   <view class="enrollments-page">
     <view class="page-header">
       <text class="page-title">{{ t("layout.navEnrollments") }}</text>
-      <text class="page-subtitle">查看指定活动的报名用户列表，支持 CSV 导出</text>
+      <text class="page-subtitle">{{ t("enrollments.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
@@ -156,12 +156,12 @@ watch(
         v-model="activityIdInput"
         class="search-input"
         type="text"
-        placeholder="输入活动 ID（如从活动列表跳转则自动填充）"
+        :placeholder="t('enrollments.inputPlaceholder')"
         @keyup.enter="handleLoad"
       />
       <button class="primary-button" @click="handleLoad">{{ t("common.search") }}</button>
       <button class="ghost-button" :disabled="exporting || currentId() === null" @click="handleExport">
-        {{ exporting ? "导出中..." : "导出 CSV" }}
+        {{ exporting ? t("enrollments.exporting") : t("enrollments.exportButton") }}
       </button>
     </view>
 
@@ -172,12 +172,12 @@ watch(
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">报名ID</th>
-            <th scope="col">用户ID</th>
-            <th scope="col">昵称</th>
-            <th scope="col">头像</th>
-            <th scope="col">报名时间</th>
-            <th scope="col">状态</th>
+            <th scope="col">{{ t("enrollments.columnEnrollmentId") }}</th>
+            <th scope="col">{{ t("enrollments.columnUserId") }}</th>
+            <th scope="col">{{ t("enrollments.columnNickname") }}</th>
+            <th scope="col">{{ t("enrollments.columnAvatar") }}</th>
+            <th scope="col">{{ t("enrollments.columnEnrolledAt") }}</th>
+            <th scope="col">{{ t("enrollments.columnStatus") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -185,19 +185,19 @@ watch(
             <td colspan="6" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="enrollments.length === 0">
-            <td colspan="6" class="empty-row">暂无报名记录</td>
+            <td colspan="6" class="empty-row">{{ t("enrollments.noData") }}</td>
           </tr>
           <tr v-for="e in enrollments" :key="e.id">
             <td>{{ e.id }}</td>
             <td>{{ e.userId }}</td>
             <td>{{ authorLabel(e) }}</td>
             <td>
-              <img v-if="e.avatarUrl" :src="e.avatarUrl" class="avatar" alt="头像" />
+              <img v-if="e.avatarUrl" :src="e.avatarUrl" class="avatar" :alt="t('enrollments.avatarAlt')" />
               <text v-else class="avatar-placeholder">—</text>
             </td>
             <td class="time-cell">{{ formatDateTime(e.enrolledAt) }}</td>
             <td>
-              <span class="status-badge status-joined">已报名</span>
+              <span class="status-badge status-joined">{{ t("enrollments.statusJoined") }}</span>
             </td>
           </tr>
         </tbody>

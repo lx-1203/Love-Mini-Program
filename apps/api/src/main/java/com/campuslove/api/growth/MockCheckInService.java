@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CheckInConfig;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -58,7 +59,7 @@ public class MockCheckInService implements CheckInService {
       throw new IllegalArgumentException("userId is required");
     }
 
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(TimeZones.BUSINESS);
     LocalDate lastDate = lastCheckInDateMap.get(userId);
 
     // 今日已签到
@@ -97,7 +98,7 @@ public class MockCheckInService implements CheckInService {
       throw new IllegalArgumentException("userId is required");
     }
 
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(TimeZones.BUSINESS);
     LocalDate lastDate = lastCheckInDateMap.get(userId);
     boolean checkedInToday = lastDate != null && lastDate.equals(today);
 
@@ -147,7 +148,7 @@ public class MockCheckInService implements CheckInService {
       throw new IllegalArgumentException("日期格式无效，必须为 yyyy-MM-dd");
     }
 
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(TimeZones.BUSINESS);
     LocalDate sevenDaysAgo = today.minusDays(MAKE_UP_MAX_DAYS_BACK);
 
     // 校验：不可补签当天或未来日期

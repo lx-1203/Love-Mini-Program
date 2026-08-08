@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.config.SecurityUtils;
@@ -112,7 +113,7 @@ public class ProfileUpdateService {
     public BasicProfileView saveBasicProfile(BasicProfileRequest request) {
         validateExtendedFields(request);
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         UserBasicProfile profile = userBasicProfileRepository.findByUserId(currentUserId)
                 .orElseGet(() -> {
@@ -202,11 +203,11 @@ public class ProfileUpdateService {
                 .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
         deleteOldMediaQuietly(user.getAvatarUrl());
         user.setAvatarUrl(result.getUrl());
-        user.setUpdatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userRepository.save(user);
         // 返回含头像 URL 的最新资料视图（含自动创建的 basic profile 记录）
         UserBasicProfile profile = ensureBasicProfile(currentUserId);
-        profile.setUpdatedAt(LocalDateTime.now());
+        profile.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         return queryService.toBasicProfileView(profile, user);
     }
 
@@ -221,7 +222,7 @@ public class ProfileUpdateService {
         UserBasicProfile profile = ensureBasicProfile(currentUserId);
         deleteOldMediaQuietly(profile.getProfileBackgroundUrl());
         profile.setProfileBackgroundUrl(result.getUrl());
-        profile.setUpdatedAt(LocalDateTime.now());
+        profile.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userBasicProfileRepository.save(profile);
         return rebuildView(currentUserId, profile);
     }
@@ -249,7 +250,7 @@ public class ProfileUpdateService {
         }
         gallery.set(index, result.getUrl());
         profile.setPhotoGallery(queryService.serializeListToJson(gallery));
-        profile.setUpdatedAt(LocalDateTime.now());
+        profile.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userBasicProfileRepository.save(profile);
         return rebuildView(currentUserId, profile);
     }
@@ -275,7 +276,7 @@ public class ProfileUpdateService {
             deleteOldMediaQuietly(removed);
         }
         profile.setPhotoGallery(queryService.serializeListToJson(gallery));
-        profile.setUpdatedAt(LocalDateTime.now());
+        profile.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userBasicProfileRepository.save(profile);
         return rebuildView(currentUserId, profile);
     }
@@ -291,7 +292,7 @@ public class ProfileUpdateService {
         UserBasicProfile profile = ensureBasicProfile(currentUserId);
         deleteOldMediaQuietly(profile.getPersonalVideoUrl());
         profile.setPersonalVideoUrl(result.getUrl());
-        profile.setUpdatedAt(LocalDateTime.now());
+        profile.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userBasicProfileRepository.save(profile);
         return rebuildView(currentUserId, profile);
     }
@@ -307,7 +308,7 @@ public class ProfileUpdateService {
         UserBasicProfile profile = ensureBasicProfile(currentUserId);
         deleteOldMediaQuietly(profile.getHalfBodyPhotoUrl());
         profile.setHalfBodyPhotoUrl(result.getUrl());
-        profile.setUpdatedAt(LocalDateTime.now());
+        profile.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userBasicProfileRepository.save(profile);
         return rebuildView(currentUserId, profile);
     }
@@ -322,7 +323,7 @@ public class ProfileUpdateService {
     @Transactional
     public CampusProfileView saveCampusProfile(CampusProfileRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         UserCampusProfile profile = userCampusProfileRepository.findByUserId(currentUserId)
                 .orElseGet(() -> {
@@ -364,7 +365,7 @@ public class ProfileUpdateService {
     @Transactional
     public ScheduleProfileView saveScheduleProfile(ScheduleProfileRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         String preferredTimeWindowJson = queryService.serializeListToJson(
                 request.preferredTimeWindows() != null ? request.preferredTimeWindows() : List.of());
@@ -468,7 +469,7 @@ public class ProfileUpdateService {
                     newProfile.setInterestTags("[]");
                     newProfile.setFuturePlanTags("[]");
                     newProfile.setPhotoGallery("[]");
-                    newProfile.setCreatedAt(LocalDateTime.now());
+                    newProfile.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
                     return newProfile;
                 });
     }

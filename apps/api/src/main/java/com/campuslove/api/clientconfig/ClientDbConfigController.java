@@ -1,5 +1,6 @@
 package com.campuslove.api.clientconfig;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.MatchConfig;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.MatchConfigEntity;
@@ -139,7 +140,7 @@ public class ClientDbConfigController {
      * 构建默认通知配置（DB 无数据时降级使用）。
      */
     private List<ClientNotifyConfigView> buildDefaultNotifyConfig() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         return DEFAULT_NOTIFY_TYPES.stream()
                 .map(type -> new ClientNotifyConfigView(type, Boolean.TRUE, null, now.toString()))
                 .toList();

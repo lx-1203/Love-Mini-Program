@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.common.ApiResponse;
@@ -114,7 +115,7 @@ public class AdminAccountController {
 
         // BCrypt 加密新密码并更新（创建/更新路径使用 save 返回值保持一致）
         admin.setPassword(passwordEncoder.encode(req.newPassword()));
-        admin.setUpdatedAt(LocalDateTime.now());
+        admin.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         User saved = userRepository.save(admin);
         log.info("管理员修改密码成功, adminId={}", saved.getId());
 

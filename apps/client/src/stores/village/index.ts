@@ -40,17 +40,23 @@ import {
   mapDetailToPostItem,
   mapToCommentItem,
   mapToPostItem,
-  mockActivities,
-  mockCategories,
-  mockComments,
-  mockPostHistory,
-  mockPosts,
   rollbackFavorite,
   rollbackLike,
   toBackendCategory,
   toggleMockPostFavorite,
   toggleMockPostLike,
 } from "./utils";
+// Mock 数据（R4-batch2：mock 用户/帖子数据自 utils.ts 拆分至 mock-data.ts，
+// 仅 useMock() 分支引用，real 模式不会读取 mock ID）
+import {
+  MOCK_CURRENT_USER_ID,
+  mockActivities,
+  mockCategories,
+  mockComments,
+  mockPostHistory,
+  mockPosts,
+  mockSimilarAuthors,
+} from "./mock-data";
 import {
   clearPostHistoryApi,
   createCommentApi,
@@ -81,6 +87,7 @@ import type {
 export * from "./types";
 export * from "./constants";
 export * from "./utils";
+export * from "./mock-data";
 export * from "./api";
 
 /**
@@ -345,11 +352,12 @@ export const useVillageStore = defineStore("village", {
 
         if (useMock()) {
           // infra R2-00037: mock 作者信息从当前会话生成，避免硬编码 "user-1001" 与真实用户体系割裂
+          // R4-batch2: 兜底 ID 收敛为 mock-data 常量 MOCK_CURRENT_USER_ID（仅 mock 分支可达）
           const me = useSessionStore().userSession;
           const newPost: PostItem = {
             id: `post-${Date.now()}`,
             author: {
-              userId: me?.userId ?? "user-1001",
+              userId: me?.userId ?? MOCK_CURRENT_USER_ID,
               name: me?.displayName ?? "我",
               avatar: IMAGE_PATHS.DEFAULT_AVATAR,
               headline: "",
@@ -688,7 +696,7 @@ export const useVillageStore = defineStore("village", {
             id: `comment-${Date.now()}`,
             postId,
             author: {
-              userId: me?.userId ?? "user-1001",
+              userId: me?.userId ?? MOCK_CURRENT_USER_ID,
               name: me?.displayName ?? "我",
               avatar: IMAGE_PATHS.DEFAULT_AVATAR,
               headline: "",
@@ -1030,29 +1038,9 @@ export const useVillageStore = defineStore("village", {
 
       try {
         if (useMock()) {
-          // Mock 数据：返回 2 个相似作者（infra R2-00039: 仅 mock 演示用，real 分支由后端下发；头像统一 IMAGE_PATHS）
-          this.similarAuthors = [
-            {
-              userId: "user-3004",
-              name: "南风",
-              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
-              campusName: "北京大学",
-              headline: "97年 · 深圳 · 产品经理 · 本科",
-              isAlumni: true,
-              commonInterests: ["阅读", "旅行"],
-              isFollowed: false,
-            },
-            {
-              userId: "user-3005",
-              name: "北岛",
-              avatar: IMAGE_PATHS.DEFAULT_AVATAR,
-              campusName: "四川大学",
-              headline: "93年 · 成都 · 创业者 · 博士",
-              isAlumni: false,
-              commonInterests: ["阅读"],
-              isFollowed: false,
-            },
-          ];
+          // Mock 数据：返回 2 个相似作者（infra R2-00039: 仅 mock 演示用，real 分支由后端下发；
+          // R4-batch2: 数据移入 stores/village/mock-data.ts 的 mockSimilarAuthors）
+          this.similarAuthors = mockSimilarAuthors;
           return;
         }
 

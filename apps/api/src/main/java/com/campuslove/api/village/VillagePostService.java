@@ -1,15 +1,20 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
+import com.campuslove.api.entity.PostTag;
 import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.PostRepository;
+import com.campuslove.api.repository.PostTagRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
@@ -29,6 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class VillagePostService {
 
+    private static final Logger log = LoggerFactory.getLogger(VillagePostService.class);
+
+
     private final PostRepository postRepository;
     private final SensitiveWordFilter sensitiveWordFilter;
     private final VillageQueryService queryService;
@@ -38,6 +46,13 @@ public class VillagePostService {
     private final ActivityRepository activityRepository;
 
     /**
+     * 帖子标签 Repository（R4-00328：createPost 同步写 post_tags，修复「标签功能断链」）。
+     * 可为 null（兼容旧测试构造器）：为 null 时跳过标签落库（posts.tags JSON 仍写入，
+     * 仅标签聚合查询不可用）。
+     */
+    private final PostTagRepository postTagRepository;
+
+    /**
      * Spring 注入构造器（多个构造器时必须显式 @Autowired 指定，
      * 否则 Spring 报 "No default constructor found"）。
      */
@@ -45,11 +60,13 @@ public class VillagePostService {
     public VillagePostService(PostRepository postRepository,
                               SensitiveWordFilter sensitiveWordFilter,
                               VillageQueryService queryService,
-                              ActivityRepository activityRepository) {
+                              ActivityRepository activityRepository,
+                              PostTagRepository postTagRepository) {
         this.postRepository = postRepository;
         this.sensitiveWordFilter = sensitiveWordFilter;
         this.queryService = queryService;
         this.activityRepository = activityRepository;
+        this.postTagRepository = postTagRepository;
     }
 
     /**
@@ -61,7 +78,20 @@ public class VillagePostService {
     public VillagePostService(PostRepository postRepository,
                               SensitiveWordFilter sensitiveWordFilter,
                               VillageQueryService queryService) {
-        this(postRepository, sensitiveWordFilter, queryService, null);
+        this(postRepository, sensitiveWordFilter, queryService, null, null);
+    }
+
+    /**
+     * 兼容旧测试的构造器（postTagRepository 为 null，标签不落库）。
+     *
+     * @deprecated 仅单元测试使用；Spring 注入请使用带 PostTagRepository 的构造器。
+     */
+    @Deprecated
+    public VillagePostService(PostRepository postRepository,
+                              SensitiveWordFilter sensitiveWordFilter,
+                              VillageQueryService queryService,
+                              ActivityRepository activityRepository) {
+        this(postRepository, sensitiveWordFilter, queryService, activityRepository, null);
     }
 
     /**
@@ -103,7 +133,7 @@ public class VillagePostService {
         String filteredContent = sensitiveWordFilter.filterWithLog(content, userId, "POST");
         List<String> filteredTags = filterTagList(tags, userId);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         Post post = new Post();
         post.setAuthorId(userId);
         post.setTitle(filteredTitle);
@@ -134,7 +164,26 @@ public class VillagePostService {
         // （原 save() 在事务提交时才生成主键，实体在构建视图时 getId() 仍为 null；
         //  实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
         post = postRepository.saveAndFlush(post);
+
+        // R4-00328：同步写入 post_tags 关联表——此前 post_tag 表无任何写入方，
+        // 「按标签查帖子 / 热门话题」恒为空，标签功能断链。现发帖时按过滤后标签
+        // 逐条写 PostTag（同一事务；唯一约束冲突（重复标签）仅记录日志不阻断发帖）。
+        if (postTagRepository != null && !filteredTags.isEmpty()) {
+            for (String tag : filteredTags) {
+                try {
+                    postTagRepository.save(new PostTag(post.getId(), tag));
+                } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                    logDuplicateTag(tag);
+                }
+            }
+        }
+
         return queryService.toPostDetailView(post, userId);
+    }
+
+    /** 标签唯一约束冲突日志（R4-00328：重复标签不阻断发帖）。 */
+    private void logDuplicateTag(String tag) {
+        log.warn("post_tags 写入冲突，跳过重复标签：tag={}", tag);
     }
 
     /**

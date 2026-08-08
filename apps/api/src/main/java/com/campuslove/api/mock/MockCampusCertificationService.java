@@ -1,5 +1,6 @@
 package com.campuslove.api.mock;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.campus.CampusCertificationView;
 import java.time.LocalDateTime;
@@ -58,7 +59,7 @@ public class MockCampusCertificationService implements CampusCertificationServic
                 "审核中",
                 null,
                 null,
-                LocalDateTime.now().minusDays(2),
+                LocalDateTime.now(TimeZones.BUSINESS).minusDays(2),
                 null
         );
         store.put(1L, seed);
@@ -84,7 +85,7 @@ public class MockCampusCertificationService implements CampusCertificationServic
             existing.setReviewerId(null);
             existing.setReviewComment(null);
             existing.setReviewedAt(null);
-            existing.setSubmittedAt(LocalDateTime.now());
+            existing.setSubmittedAt(LocalDateTime.now(TimeZones.BUSINESS));
             return existing;
         }
 
@@ -98,7 +99,7 @@ public class MockCampusCertificationService implements CampusCertificationServic
                 CampusCertificationView.toStatusLabel(STATUS_PENDING),
                 null,
                 null,
-                LocalDateTime.now(),
+                LocalDateTime.now(TimeZones.BUSINESS),
                 null
         );
         store.put(userId, view);
@@ -133,7 +134,7 @@ public class MockCampusCertificationService implements CampusCertificationServic
                 view.setStatusLabel(CampusCertificationView.toStatusLabel(status));
                 view.setReviewerId(reviewerId);
                 view.setReviewComment(reviewComment);
-                view.setReviewedAt(LocalDateTime.now());
+                view.setReviewedAt(LocalDateTime.now(TimeZones.BUSINESS));
                 return view;
             }
         }
@@ -164,7 +165,7 @@ public class MockCampusCertificationService implements CampusCertificationServic
             existing.setStatusLabel(CampusCertificationView.toStatusLabel(STATUS_APPROVED));
             existing.setReviewerId(1L);
             existing.setReviewComment("模拟认证：直接通过");
-            existing.setReviewedAt(LocalDateTime.now());
+            existing.setReviewedAt(LocalDateTime.now(TimeZones.BUSINESS));
             view = existing;
         } else {
             view = new CampusCertificationView(
@@ -177,8 +178,8 @@ public class MockCampusCertificationService implements CampusCertificationServic
                     CampusCertificationView.toStatusLabel(STATUS_APPROVED),
                     1L,
                     "模拟认证：直接通过",
-                    LocalDateTime.now().minusMinutes(5),
-                    LocalDateTime.now()
+                    LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(5),
+                    LocalDateTime.now(TimeZones.BUSINESS)
             );
             store.put(userId, view);
         }

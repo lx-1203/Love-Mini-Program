@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.ChatConfig;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.discover.RecommendationService;
@@ -157,7 +158,7 @@ public class TempChatSessionService {
             }
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         String sessionUid = generateSessionUid(currentUserId, partnerUserId);
 
         TempChatSession session = new TempChatSession();
@@ -224,7 +225,7 @@ public class TempChatSessionService {
             return toSessionView(session, currentUserId);
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         session.setPhase(SessionPhase.closed);
         session.setClosedReason("ended");
         session.setUpdatedAt(now);
@@ -249,7 +250,7 @@ public class TempChatSessionService {
         Long currentUserId = resolveCurrentUserId();
         TempChatSession session = resolveSessionForCurrentUser(id);
         session.setIsPinned(true);
-        session.setUpdatedAt(LocalDateTime.now());
+        session.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         sessionRepository.save(session);
         log.debug("会话 {} 已置顶", id);
         return toSummary(session, currentUserId);
@@ -263,7 +264,7 @@ public class TempChatSessionService {
         Long currentUserId = resolveCurrentUserId();
         TempChatSession session = resolveSessionForCurrentUser(id);
         session.setIsPinned(false);
-        session.setUpdatedAt(LocalDateTime.now());
+        session.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         sessionRepository.save(session);
         log.debug("会话 {} 已取消置顶", id);
         return toSummary(session, currentUserId);
@@ -281,7 +282,7 @@ public class TempChatSessionService {
         } else {
             session.setUserBUnreadCount(0);
         }
-        session.setUpdatedAt(LocalDateTime.now());
+        session.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         sessionRepository.save(session);
         log.debug("会话 {} 已被用户 {} 标记为已读", id, currentUserId);
         return toSummary(session, currentUserId);
@@ -384,7 +385,7 @@ public class TempChatSessionService {
 
     /** 检查会话是否已过期（当前时间超过 closesAt）。 */
     public boolean isSessionExpired(TempChatSession session) {
-        return session.getClosesAt() != null && LocalDateTime.now().isAfter(session.getClosesAt());
+        return session.getClosesAt() != null && LocalDateTime.now(TimeZones.BUSINESS).isAfter(session.getClosesAt());
     }
 
     /**
@@ -398,7 +399,7 @@ public class TempChatSessionService {
         if (isSessionExpired(session) && session.getPhase() != SessionPhase.expired) {
             session.setPhase(SessionPhase.expired);
             session.setClosedReason("expired");
-            session.setUpdatedAt(LocalDateTime.now());
+            session.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
             sessionRepository.save(session);
             return true;
         }
@@ -454,13 +455,52 @@ public class TempChatSessionService {
         // 允许用户与任意用户建立临时会话（绕过推荐/匹配体系，对方无接受机制即被拉入）。
         // 现仅保留 matchId 兜底（来自匹配体系的 ID 相对可信），
         // recommendedPersonId 未命中推荐列表时不再回退到任意用户。
-        // TODO(安全): matchId 兜底仍可把任意数字解析为 userId，接入匹配体系后
-        // 应进一步校验 matchId 归属当前用户（需 MatchService 查询支持）。
+        // R4-00322 修复：matchId 兜底不再把任意数字解析为 userId——matchId 按
+        // 心动信号（匹配）ID 查询，必须存在且当前用户是参与者，返回对端用户 ID。
+        // 任意数字/他人匹配 ID 均无法建立会话（越权骚扰修复）。
         if (hasText(matchId)) {
-            Long parsed = parseUserId(matchId);
-            if (parsed != null) return parsed;
+            Long partner = resolvePartnerFromMatch(currentUserId, matchId);
+            if (partner != null) {
+                return partner;
+            }
         }
         return null;
+    }
+
+    /**
+     * 从匹配（心动信号）ID 解析对端用户 ID（R4-00322）。
+     *
+     * <p>校验规则：matchId 对应的心动信号必须存在且当前用户是参与者之一；
+     * 满足条件返回对端用户 ID，否则返回 null（不抛错——matchId 仅作兜底入口，
+     * 未命中时走其他入口语义，避免误伤正常流程）。</p>
+     */
+    private Long resolvePartnerFromMatch(Long currentUserId, String matchId) {
+        Long matchDbId;
+        try {
+            matchDbId = Long.parseLong(matchId);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        try {
+            Optional<HeartSignal> matchOpt = heartSignalRepository.findById(matchDbId);
+            if (matchOpt.isEmpty()) {
+                log.warn("matchId 兜底：匹配记录不存在，拒绝建会话：matchId={}, userId={}", matchId, currentUserId);
+                return null;
+            }
+            HeartSignal match = matchOpt.get();
+            boolean participant = currentUserId.equals(match.getUserAId())
+                    || currentUserId.equals(match.getUserBId());
+            if (!participant) {
+                log.warn("matchId 兜底：当前用户非匹配参与者，拒绝建会话：matchId={}, userId={}",
+                        matchId, currentUserId);
+                return null;
+            }
+            return currentUserId.equals(match.getUserAId()) ? match.getUserBId() : match.getUserAId();
+        } catch (DataAccessException e) {
+            log.warn("matchId 兜底：查询匹配记录失败，拒绝建会话：matchId={}, error={}",
+                    matchId, e.getMessage());
+            return null;
+        }
     }
 
     /** 生成会话唯一标识。 */
@@ -479,18 +519,6 @@ public class TempChatSessionService {
         } catch (DataAccessException e) {
             log.warn("获取推荐人物列表失败: {}", e.getMessage());
             return List.of();
-        }
-    }
-
-    /** 解析字符串用户 ID（支持 user-/person- 前缀和纯数字）。 */
-    private Long parseUserId(String userId) {
-        if (userId == null || userId.isBlank()) return null;
-        try {
-            if (userId.startsWith("user-")) return Long.parseLong(userId.substring(5));
-            if (userId.startsWith("person-")) return Long.parseLong(userId.substring(7));
-            return Long.parseLong(userId);
-        } catch (NumberFormatException e) {
-            return null;
         }
     }
 

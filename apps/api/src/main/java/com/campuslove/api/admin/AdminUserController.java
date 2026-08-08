@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.common.ApiResponse;
@@ -140,7 +141,7 @@ public class AdminUserController {
         user.setProfileCompletion(0);
         user.setFollowingCount(0);
         user.setFollowersCount(0);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         // 创建路径必须使用 save 返回值（@Version 乐观锁 + ID 由 JPA 回填）
@@ -210,7 +211,7 @@ public class AdminUserController {
         user.setProfileCompletion(0);
         user.setFollowingCount(0);
         user.setFollowersCount(0);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         // 创建路径必须使用 save 返回值（@Version 乐观锁 + ID 由 JPA 回填）
@@ -416,7 +417,7 @@ public class AdminUserController {
             }
             user.setStatus(newStatus);
         }
-        user.setUpdatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userRepository.save(user);
 
         // 复用详情查询逻辑返回最新视图
@@ -485,7 +486,7 @@ public class AdminUserController {
         }
 
         user.setStatus(newStatus);
-        user.setUpdatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userRepository.save(user);
 
         Map<String, Object> body = new HashMap<>();

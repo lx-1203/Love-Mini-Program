@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.DisplayConstants;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,7 +30,7 @@ public class MockDailyQuestionService implements DailyQuestionService {
 
   @Override
   public DailyQuestionView getTodayQuestion(Long userId) {
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(TimeZones.BUSINESS);
     for (Map.Entry<Long, QuestionState> entry : questionsById.entrySet()) {
       if (entry.getValue().questionDate().equals(today)) {
         boolean hasAnswered = userId != null && hasAnswered(userId, entry.getKey());
@@ -125,7 +126,7 @@ public class MockDailyQuestionService implements DailyQuestionService {
         "林安",
         "希望是傍晚在校园里散步，聊聊天，去图书馆旁边的咖啡馆坐一坐。不用太复杂，轻松自然就好。",
         false,
-        LocalDateTime.now().minusHours(1),
+        LocalDateTime.now(TimeZones.BUSINESS).minusHours(1),
         null
     ));
 
@@ -135,7 +136,7 @@ public class MockDailyQuestionService implements DailyQuestionService {
         "周沐",
         "一起去逛书店或者看一场展览吧，安静又有话题可以聊。",
         false,
-        LocalDateTime.now().minusHours(2),
+        LocalDateTime.now(TimeZones.BUSINESS).minusHours(2),
         null
     ));
 
@@ -145,7 +146,7 @@ public class MockDailyQuestionService implements DailyQuestionService {
         DisplayConstants.ANONYMOUS_USER,
         "想在操场看星星，带两杯奶茶，随便聊聊各自的专业和兴趣。",
         true,
-        LocalDateTime.now().minusHours(3),
+        LocalDateTime.now(TimeZones.BUSINESS).minusHours(3),
         null
     ));
 
@@ -165,7 +166,7 @@ public class MockDailyQuestionService implements DailyQuestionService {
         displayName,
         state.content,
         state.isAnonymous,
-        LocalDateTime.now(),
+        LocalDateTime.now(TimeZones.BUSINESS),
         null
     );
   }

@@ -1,5 +1,6 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.TimeZones;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -275,7 +276,7 @@ public class OnlineUserService {
 
         /** 登录时间 ISO 格式（时区取系统默认，管理端展示用） */
         public String loginAtIso() {
-            return LocalDateTime.ofInstant(Instant.ofEpochMilli(loginAtEpochMs), ZoneId.systemDefault()).toString();
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(loginAtEpochMs), TimeZones.BUSINESS).toString();
         }
 
         /** 剩余有效秒数（踢下线黑名单 TTL 用）；已过期返回 0 */

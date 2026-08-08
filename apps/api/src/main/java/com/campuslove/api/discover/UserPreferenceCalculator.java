@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.entity.RecommendationPreference;
 import com.campuslove.api.repository.RecommendationPreferenceRepository;
@@ -86,7 +87,7 @@ public class UserPreferenceCalculator {
             throw new IllegalArgumentException("scope is required");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         RecommendationPreference pref = recommendationPreferenceRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     RecommendationPreference newPref = new RecommendationPreference();
@@ -132,7 +133,7 @@ public class UserPreferenceCalculator {
                     "推荐范围(scope)无效，有效值: campus_first, city, unlimited，当前值: " + data.getScope());
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         try {
             RecommendationPreference pref = recommendationPreferenceRepository.findByUserId(userId)
                     .orElseGet(() -> {

@@ -1,5 +1,6 @@
 package com.campuslove.api.mock;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.official.OfficialAccountService;
 import com.campuslove.api.official.OfficialAccountView;
 import com.campuslove.api.official.OfficialMessageView;
@@ -35,38 +36,38 @@ public class MockOfficialAccountService implements OfficialAccountService {
             "official-assistant", List.of(
                     new OfficialMessageView(101L, "text",
                             "你好，我是产品助手 🤖 有任何恋爱困惑、功能使用问题都可以问我～",
-                            null, null, null, null, LocalDateTime.now().minusDays(4)),
+                            null, null, null, null, LocalDateTime.now(TimeZones.BUSINESS).minusDays(4)),
                     new OfficialMessageView(102L, "text",
                             "解锁访客 / 喜欢你：进入消息页点击对应入口，可使用交友币解锁全部内容。",
-                            null, null, null, null, LocalDateTime.now().minusDays(3)),
+                            null, null, null, null, LocalDateTime.now(TimeZones.BUSINESS).minusDays(3)),
                     new OfficialMessageView(103L, "text",
                             "缘分速配玩法：随机匹配后，互发 5 条解锁更多信息，聊满 20 条解锁 TA 的主页。",
-                            null, null, null, null, LocalDateTime.now().minusDays(2)),
+                            null, null, null, null, LocalDateTime.now(TimeZones.BUSINESS).minusDays(2)),
                     new OfficialMessageView(104L, "text",
                             "开通会员后，访客 / 喜欢你 / 私信全部免费解锁，快去看看吧～",
-                            null, null, null, null, LocalDateTime.now().minusDays(1))
+                            null, null, null, null, LocalDateTime.now(TimeZones.BUSINESS).minusDays(1))
             ),
             "official-promoter", List.of(
                     new OfficialMessageView(201L, "text",
                             "每日签到可领交友币，连续签到奖励翻倍！",
-                            null, null, null, null, LocalDateTime.now().minusDays(5)),
+                            null, null, null, null, LocalDateTime.now(TimeZones.BUSINESS).minusDays(5)),
                     new OfficialMessageView(202L, "card",
                             "本周五晚 19:00 校园操场，现场抽幸运观众上台告白～",
                             "校园操场「星空告白夜」",
                             "本周五晚 19:00 · 现场抽幸运观众上台告白",
                             "本周活动",
                             "/pages/activities/detail?id=star-confession",
-                            LocalDateTime.now().minusDays(4)),
+                            LocalDateTime.now(TimeZones.BUSINESS).minusDays(4)),
                     new OfficialMessageView(203L, "text",
                             "七夕特别企划：在星空下认识心动的人，游戏与表白墙等你来解锁。",
-                            null, null, null, null, LocalDateTime.now().minusDays(2)),
+                            null, null, null, null, LocalDateTime.now(TimeZones.BUSINESS).minusDays(2)),
                     new OfficialMessageView(204L, "card",
                             "在星空下认识心动的人，游戏与表白墙等你来解锁。",
                             "七夕特别企划：星空告白夜",
                             "在星空下认识心动的人，游戏与表白墙等你来解锁。",
                             "七夕限定",
                             "/pages/activities/detail?id=qixi-2026",
-                            LocalDateTime.now().minusDays(1))
+                            LocalDateTime.now(TimeZones.BUSINESS).minusDays(1))
             )
     );
 

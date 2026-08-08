@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -134,7 +135,7 @@ public class AdminDictController {
         dict.setName(req.name().trim());
         dict.setCode(code);
         dict.setDescription(req.description() != null ? req.description().trim() : "");
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         dict.setCreatedAt(now);
         dict.setUpdatedAt(now);
         Dict saved = dictRepository.save(dict);
@@ -179,7 +180,7 @@ public class AdminDictController {
         if (req.description() != null) {
             dict.setDescription(req.description().trim());
         }
-        dict.setUpdatedAt(LocalDateTime.now());
+        dict.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         Dict saved = dictRepository.save(dict);
         return ResponseEntity.ok(toDictView(saved));
     }
@@ -234,7 +235,7 @@ public class AdminDictController {
         item.setValue(req.value().trim());
         item.setSort(req.sort() != null ? req.sort() : 0);
         item.setEnabled(req.enabled() != null ? req.enabled() : true);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         item.setCreatedAt(now);
         item.setUpdatedAt(now);
         DictItem saved = dictItemRepository.save(item);
@@ -275,7 +276,7 @@ public class AdminDictController {
         if (req.enabled() != null) {
             item.setEnabled(req.enabled());
         }
-        item.setUpdatedAt(LocalDateTime.now());
+        item.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         DictItem saved = dictItemRepository.save(item);
         return ResponseEntity.ok(toDictItemView(saved));
     }

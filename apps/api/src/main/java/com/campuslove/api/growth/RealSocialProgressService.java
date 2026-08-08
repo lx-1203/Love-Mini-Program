@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.SocialProgress;
 import com.campuslove.api.repository.SocialProgressRepository;
 import java.time.LocalDateTime;
@@ -88,7 +89,7 @@ public class RealSocialProgressService implements SocialProgressService {
 
         SocialProgress progress = getOrCreateProgress(userId);
         progress.setExposureCount(progress.getExposureCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now());
+        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         socialProgressRepository.save(progress);
 
         log.debug("用户[{}]曝光次数+1，当前曝光次数: {}", userId, progress.getExposureCount());
@@ -108,7 +109,7 @@ public class RealSocialProgressService implements SocialProgressService {
 
         SocialProgress progress = getOrCreateProgress(userId);
         progress.setLikeCount(progress.getLikeCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now());
+        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         // 喜欢次数达到阈值后自动升级到 L2
         evaluateAndUpgradeTier(progress);
@@ -132,7 +133,7 @@ public class RealSocialProgressService implements SocialProgressService {
 
         SocialProgress progress = getOrCreateProgress(userId);
         progress.setMatchCount(progress.getMatchCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now());
+        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         evaluateAndUpgradeTier(progress);
         socialProgressRepository.save(progress);
@@ -155,7 +156,7 @@ public class RealSocialProgressService implements SocialProgressService {
 
         SocialProgress progress = getOrCreateProgress(userId);
         progress.setChatCount(progress.getChatCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now());
+        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         evaluateAndUpgradeTier(progress);
         socialProgressRepository.save(progress);
@@ -178,7 +179,7 @@ public class RealSocialProgressService implements SocialProgressService {
 
         SocialProgress progress = getOrCreateProgress(userId);
         progress.setCircleCount(progress.getCircleCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now());
+        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         evaluateAndUpgradeTier(progress);
         socialProgressRepository.save(progress);
@@ -201,7 +202,7 @@ public class RealSocialProgressService implements SocialProgressService {
 
         SocialProgress progress = getOrCreateProgress(userId);
         progress.setActivityCount(progress.getActivityCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now());
+        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         evaluateAndUpgradeTier(progress);
         socialProgressRepository.save(progress);
@@ -233,7 +234,7 @@ public class RealSocialProgressService implements SocialProgressService {
                 newProgress.setChatCount(0);
                 newProgress.setCircleCount(0);
                 newProgress.setActivityCount(0);
-                newProgress.setUpdatedAt(LocalDateTime.now());
+                newProgress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
                 return socialProgressRepository.save(newProgress);
             });
     }

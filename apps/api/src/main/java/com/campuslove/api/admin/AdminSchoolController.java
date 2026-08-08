@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -143,7 +144,7 @@ public class AdminSchoolController {
         school.setCode(req.code().trim().toUpperCase());
         school.setStatus("active");
         school.setSortOrder(req.sortOrder() != null ? req.sortOrder() : 0);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         school.setCreatedAt(now);
         school.setUpdatedAt(now);
         School saved = schoolRepository.save(school);
@@ -191,7 +192,7 @@ public class AdminSchoolController {
         if (req.sortOrder() != null) {
             school.setSortOrder(req.sortOrder());
         }
-        school.setUpdatedAt(LocalDateTime.now());
+        school.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         School saved = schoolRepository.save(school);
         return ResponseEntity.ok(toView(saved));
     }
@@ -221,7 +222,7 @@ public class AdminSchoolController {
         School school = schoolOpt.get();
         String normalized = "active".equalsIgnoreCase(status) ? "active" : "disabled";
         school.setStatus(normalized);
-        school.setUpdatedAt(LocalDateTime.now());
+        school.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         School saved = schoolRepository.save(school);
         return ResponseEntity.ok(toView(saved));
     }

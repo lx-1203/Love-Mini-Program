@@ -36,11 +36,13 @@ spring:
           max-wait: ${REDIS_POOL_MAX_WAIT:-1}
   # RabbitMQ 配置：所有敏感信息（用户名/密码）必须通过环境变量配置。
   # 当 RabbitMQ 不可用时，MessagingFallback 会捕获异常并降级（不阻塞主流程）。
+  # R4-01777：密码无默认值（生产必须显式注入 RABBITMQ_PASSWORD；本地 docker-compose
+  # 显式配置 guest/guest 仅供开发环境，禁止默认凭据进生产）。
   rabbitmq:
     host: ${RABBITMQ_HOST:127.0.0.1}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    password: ${RABBITMQ_PASSWORD:}
     virtual-host: ${RABBITMQ_VHOST:/}
     # 连接超时（毫秒）：默认 5s，超时抛 AmqpIOException
     connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:5000}

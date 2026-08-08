@@ -8,6 +8,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import org.redisson.api.RRateLimiter;
+import org.redisson.api.RateIntervalUnit;
+import org.redisson.api.RateType;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,20 +21,27 @@ import org.springframework.stereotype.Component;
 /**
  * 速率限制令牌桶注册表。
  *
- * <p>基于 Bucket4j 8.10.1 实现的本地内存令牌桶管理器。</p>
+ * <p>基于 Bucket4j 8.10.1 的令牌桶管理器，<b>支持多实例分布式限流</b>（R4-00377）。</p>
  *
  * <p>核心职责：</p>
  * <ol>
- *   <li>使用 {@link ConcurrentHashMap} 缓存每个限流键对应的 {@link Bucket} 实例，
+ *   <li>Redisson 可用时（real profile，Redis 已配置）：走分布式限流
+ *       {@link RRateLimiter}（Redis 侧原子令牌桶），N 实例部署限流阈值不放大；
+ *       Redisson 不可用/调用失败时降级本地 Bucket4j 桶（单实例语义，保证服务可用）。</li>
+ *   <li>使用 {@link ConcurrentHashMap} 缓存每个限流键对应的桶实例，
  *       避免每次请求都重建桶（保证线程安全与高并发性能）。</li>
  *   <li>提供 {@link #tryConsume(String, long, double)} 方法，原子地完成"获取或创建桶 →
  *       尝试消费 1 个令牌"的流程。</li>
  *   <li>通过 {@link Scheduled} 定时任务清理超过 {@link #IDLE_THRESHOLD_MS} 毫秒未使用的桶，
- *       避免长期运行下内存泄漏。</li>
+ *       避免长期运行下内存泄漏（分布式桶同步删除 Redis 键）。</li>
  * </ol>
  *
- * <p>注意：当前实现基于本地内存，适用于单实例部署。多实例场景下应替换为
- * Bucket4j + Redis 分布式令牌桶方案。</p>
+ * <p>分布式语义说明（R4-00377）：原实现为纯本地内存桶，多实例部署时每实例独立桶，
+ * N 实例限流阈值被放大 N 倍，登录爆破等防护被稀释。现优先使用 Redisson RRateLimiter：
+ * 参数映射 {@code (capacity, refillTokens/s)} → {@code rate(capacity, round(capacity/refillTokens) 秒)}
+ * ——即「capacity 个令牌 / 每 {capacity/refill} 秒窗口」，长周期速率等价、突发容量一致。
+ * 精确 Bucket4j greedy 补充语义（令牌连续流入）在 Redis 侧为窗口化补充，防护目标
+ * （阈值不放大）不受影响。</p>
  */
 @Component
 public class RateLimitBucketRegistry {
@@ -50,17 +60,24 @@ public class RateLimitBucketRegistry {
     /** 每秒补充令牌数下限：防止 refillTokens<=0 导致桶永远无法恢复。 */
     private static final double MIN_REFILL_TOKENS_PER_SECOND = 0.0001;
 
-    /** key -> 桶条目映射，线程安全。 */
+    /** 分布式限流 Redis key 前缀（R4-00377）。 */
+    private static final String REDIS_RATE_LIMIT_KEY_PREFIX = "ratelimit:";
+
+    /** key -> 桶条目映射，线程安全（本地桶 + 分布式限流器实例缓存）。 */
     private final ConcurrentHashMap<String, BucketEntry> buckets = new ConcurrentHashMap<>();
 
     /**
-     * Redisson 分布式锁客户端（FIN-00136）。
+     * Redisson 客户端（FIN-00136 / R4-00377）。
      *
-     * <p>用于 {@link #cleanupIdleBuckets()} 定时任务的分布式锁，
-     * 确保多实例部署时仅一个实例执行清理，避免重复扫描与数据竞争。
+     * <p>用途：</p>
+     * <ul>
+     *   <li>分布式限流（R4-00377）：{@link #tryConsumeDistributed} 通过 RRateLimiter
+     *       实现多实例共享的令牌桶，限流阈值不随实例数放大</li>
+     *   <li>清理任务分布式锁：确保多实例部署时仅一个实例执行清理</li>
+     * </ul>
      * 使用 {@link Autowired} 注入并标记 required = false，
      * 确保 mock 模式（无 Redis 配置）下也能正常启动；mock 模式下为 null，
-     * 定时任务跳过分布式锁（单实例无需锁）。</p>
+     * 限流退化为本地桶、定时任务跳过分布式锁（单实例无需锁）。
      */
     @Autowired(required = false)
     private RedissonClient redissonClient;
@@ -70,6 +87,9 @@ public class RateLimitBucketRegistry {
      *
      * <p>桶策略：桶容量为 {@code capacity}，每秒补充 {@code refillTokens} 个令牌（greedy 策略，
      * 尽可能快速恢复）。桶不存在时按参数原子创建；已存在时复用，参数仅作首次创建使用。</p>
+     *
+     * <p>R4-00377：Redisson 可用时优先走分布式限流（多实例阈值不放大）；
+     * Redisson 不可用或调用异常时降级本地 Bucket4j 桶（单实例语义，保证可用性）。</p>
      *
      * <p>说明：任务规范中方法签名标注为 {@code long refillTokens}，但实例值（如 0.1、0.5）
      * 必须使用浮点类型。此处使用 {@code double} 以支持小数速率。</p>
@@ -85,6 +105,16 @@ public class RateLimitBucketRegistry {
             return true;
         }
 
+        // R4-00377：优先分布式限流（多实例阈值不放大）
+        if (redissonClient != null) {
+            try {
+                return tryConsumeDistributed(key, capacity, refillTokens);
+            } catch (RuntimeException e) {
+                // Redis/Redisson 异常：降级本地桶，保证限流能力不因 Redis 故障而完全丢失
+                log.warn("分布式限流不可用，降级本地令牌桶：key={}, error={}", key, e.getMessage());
+            }
+        }
+
         BucketEntry entry = buckets.computeIfAbsent(key, k -> createBucketEntry(k, capacity, refillTokens));
         // 更新最近使用时间（用于定时清理判断）
         entry.lastUsedAt = System.currentTimeMillis();
@@ -92,6 +122,36 @@ public class RateLimitBucketRegistry {
         boolean allowed = entry.bucket.tryConsume(1L);
         if (!allowed) {
             log.warn("限流命中：key={}, capacity={}, refillTokens={}/s", key, capacity, refillTokens);
+        }
+        return allowed;
+    }
+
+    /**
+     * 分布式限流（R4-00377）：Redisson {@link RRateLimiter} 实现多实例共享令牌桶。
+     *
+     * <p>参数映射：本地语义 (capacity 突发, refillTokens/s) → Redis 语义
+     * {@code rate(OVERALL, capacity, round(capacity / refillTokens) 秒)}——
+     * 每窗口补充 capacity 个令牌，长周期速率 = capacity / (capacity/refill) = refill/s，
+     * 突发容量 = capacity。缓存 RRateLimiter 实例避免重复构建（Redisson 按 name 幂等）。</p>
+     *
+     * @param key          限流键
+     * @param capacity     桶容量（突发上限）
+     * @param refillTokens 每秒补充的令牌数
+     * @return true 放行；false 被限流
+     */
+    private boolean tryConsumeDistributed(String key, long capacity, double refillTokens) {
+        long cap = Math.max(MIN_CAPACITY, capacity);
+        double rate = Math.max(MIN_REFILL_TOKENS_PER_SECOND, refillTokens);
+        // 窗口秒数 = capacity / refillTokens（向上取整至少 1 秒）
+        long intervalSeconds = Math.max(1L, Math.round(cap / rate));
+
+        RRateLimiter limiter = redissonClient.getRateLimiter(REDIS_RATE_LIMIT_KEY_PREFIX + key);
+        // trySetRate 幂等：仅首次配置生效（后续调用返回 false，不影响语义）
+        limiter.trySetRate(RateType.OVERALL, cap, intervalSeconds, RateIntervalUnit.SECONDS);
+
+        boolean allowed = limiter.tryAcquire();
+        if (!allowed) {
+            log.warn("分布式限流命中：key={}, capacity={}, refillTokens={}/s", key, cap, rate);
         }
         return allowed;
     }

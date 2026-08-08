@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.TempChatMessage;
 import com.campuslove.api.entity.TempChatSession;
@@ -98,7 +99,7 @@ public class TempChatMessageService {
             session.setPhase(SessionPhase.active);
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         // FIN HIGH-3：sender 由服务端判定，不信任客户端传入值
         String sender = session.getUserAId().equals(currentUserId) ? "self" : "peer";
@@ -265,7 +266,7 @@ public class TempChatMessageService {
 
         // 超过撤回时间窗口
         if (message.getCreatedAt() != null
-                && message.getCreatedAt().isBefore(LocalDateTime.now().minusMinutes(RECALL_WINDOW_MINUTES))) {
+                && message.getCreatedAt().isBefore(LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(RECALL_WINDOW_MINUTES))) {
             log.debug("消息 {} 已超过 {} 分钟撤回时限", messageId, RECALL_WINDOW_MINUTES);
             return session;
         }

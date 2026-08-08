@@ -30,6 +30,9 @@ export default {
     hoursAgo: "{n}小时前",
     daysAgo: "{n}天前",
     networkDisconnected: "网络已断开",
+    /* R4-batch2: 网络状态变化 toast 文案 */
+    networkRestored: "网络已恢复",
+    networkDisconnectedDetail: "网络已断开，请检查网络设置",
     publish: "发布",
     more: "更多",
     clear: "清空",
@@ -133,8 +136,15 @@ export default {
     schools: {
       pku: { name: "北京大学", city: "北京" },
       thu: { name: "清华大学", city: "北京" },
+      ruc: { name: "中国人民大学", city: "北京" },
       fudan: { name: "复旦大学", city: "上海" },
+      sjtu: { name: "上海交通大学", city: "上海" },
+      tongji: { name: "同济大学", city: "上海" },
       zju: { name: "浙江大学", city: "杭州" },
+      nju: { name: "南京大学", city: "南京" },
+      whu: { name: "武汉大学", city: "武汉" },
+      sysu: { name: "中山大学", city: "广州" },
+      szu: { name: "深圳大学", city: "深圳" },
     },
     /* config/vip-plans.ts：套餐名称/周期/日均价/徽章（价格为数字不翻译） */
     vipPlans: {
@@ -342,6 +352,22 @@ export default {
 
   /* ========== 活动（任务 E1/E2） ========== */
   activities: {
+    /* R4-batch2: 线下活动页（list/calendar 双视图） */
+    sectionTitle: "线下活动",
+    sectionSubtitle: "从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。",
+    loadingContent: "正在加载活动内容...",
+    listTab: "列表",
+    calendarTab: "日历",
+    enrolledLabel: "人已报名",
+    interested: "感兴趣",
+    interestedDone: "已感兴趣",
+    noMore: "没有更多活动了",
+    nextTitle: "下一步",
+    nextSubtitle: "看到合适活动后，可以继续去寻觅，也可以提交新的活动提案。",
+    goExplore: "去寻觅",
+    submitProposal: "提交活动提案",
+    peopleCount: "{n}人",
+    activityCount: "{n}个活动",
     cardAria: "活动：{title}",
     emptyForDate: "当日暂无活动",
     detailNavTitle: "活动详情",
@@ -386,6 +412,21 @@ export default {
         desc: "七夕特别企划：在星空下认识心动的人，游戏与表白墙等你来解锁。",
       },
     },
+  },
+
+  /* ========== 讨论圈（discover/discussions） ========== */
+  discussions: {
+    title: "讨论圈",
+    subtitle: "先看大家最近真的在聊什么，再决定从哪里开始建立联系。",
+    hotSectionTitle: "正在讨论",
+    hotSectionSubtitle: "先看大家最近真正在聊什么。",
+    loadingContent: "正在加载讨论内容...",
+    retry: "点击重试",
+    empty: "暂时还没有新的讨论推荐",
+    nextTitle: "下一步",
+    nextSubtitle: "看到合适的话题后，可以直接去匹配或反馈新的讨论建议。",
+    goExplore: "去寻觅",
+    feedbackSuggestion: "反馈讨论建议",
   },
 
   /* ========== 我的钱包（交友币） ========== */
@@ -1175,7 +1216,14 @@ export default {
       clearFailed: "清空失败，请重试",
       untitled: "（无标题）",
       backToVillage: "去广场逛逛",
+      /* R4-batch2: 帖子互动计数（历史列表） */
+      likes: "赞 {n}",
+      favorites: "藏 {n}",
+      views: "看 {n}",
+      comments: "评 {n}",
     },
+    /* R4-batch2: 楼中楼回复前缀（detail 页） */
+    replyToPrefix: "回复 @{name}：",
     /* 2026-08-08 论坛互动真实化：收藏失败提示 */
     favoriteFailed: "收藏操作失败",
     /* 2026-08-08 重构：每日一问轻量入口（自寻觅页迁入） */
@@ -1723,6 +1771,9 @@ export default {
   /* ========== 消息页文案 ========== */
   messages: {
     title: "消息",
+    /* R4-00175: WebSocket /queue/matches 实时匹配推送的通知文案 */
+    wsNewMatchTitle: "新的匹配",
+    wsNewMatchContent: "你和 TA 成功匹配，可以开始聊天了",
     systemMessages: "系统消息",
     interactionMessages: "互动消息",
     emptyTitle: "暂无消息",
@@ -2224,6 +2275,18 @@ export default {
       privacyContent: "你填写的学校与专业信息仅用于同校匹配与圈子推荐，不会在个人主页公开展示，也不会泄露给任何第三方。",
       privacyConfirm: "我知道了",
       privacyAria: "查看认证信息隐私说明",
+    },
+    /* R4-batch2: 时间安排页（subpackages/setup/schedule） */
+    schedule: {
+      pageTitle: "时间安排",
+      pageSubtitle: "这里会驱动首页默认推荐和可聊天时段。",
+      prefTitle: "偏好设置",
+      placePlaceholder: "常去区域",
+      timeWindowPlaceholder: "常用空闲时段，例如今晚或本周三下午",
+      timeWindowPlaceholderExtra: "补充空闲时段，例如周日下午",
+      saveButton: "保存并进入应用",
+      locationRequired: "请输入偏好地点",
+      timeWindowRequired: "请至少添加一个时间窗口",
     },
   },
 
@@ -2850,6 +2913,19 @@ export default {
     timeout: "请求超时，请重试",
     unknown: "未知错误，请重试",
     retry: "重试",
+  },
+
+  /* ========== API 错误兜底文案（R4-batch2：api-error.ts / http.ts / agnes-video.ts 等统一） ========== */
+  apiErrors: {
+    badRequest: "请求参数有误，请检查后重试",
+    unauthorized: "登录已过期，请重新登录",
+    forbidden: "无权限执行此操作",
+    notFound: "请求的资源不存在",
+    serverError: "服务暂时不可用，请稍后重试",
+    requestError: "请求失败，请稍后重试",
+    networkFailed: "网络请求失败",
+    aiUnauthorized: "AI 服务未授权，请联系管理员检查 API Key 配置",
+    aiUnavailable: "AI 服务暂时不可用，请稍后重试",
   },
 
   /* ========== Store 错误回退文案（SubTask 3.3.3：14+ Store 错误消息 i18n 化） ========== */

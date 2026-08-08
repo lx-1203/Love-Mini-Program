@@ -16,6 +16,11 @@ import java.time.Instant;
  *   <li>{@code title}：通知标题</li>
  *   <li>{@code content}：通知正文</li>
  *   <li>{@code createdAt}：消息创建时间（ISO-8601 Instant）</li>
+ *   <li>{@code sourceUserId}：来源用户 ID（R4-00371，点赞/评论/关注等业务侧填充，
+ *       供站内通知「谁互动了我」跳转来源用户主页；null/缺省时消费者回退系统虚拟用户）</li>
+ *   <li>{@code referenceId}：关联业务实体 ID（R4-00371，如被点赞的帖子/动态 ID）</li>
+ *   <li>{@code referenceType}：关联业务类型（R4-00371，user/post/comment 等，
+ *       对应 Notification.ReferenceType）</li>
  * </ul>
  *
  * <p>实现 {@link Serializable} 以兼容 RabbitMQ 默认 Java 序列化机制
@@ -40,6 +45,15 @@ public class NotificationMessage implements Serializable {
     /** 消息创建时间（UTC Instant） */
     private Instant createdAt;
 
+    /** 来源用户 ID（R4-00371：互动发起者；null/缺省时消费者回退系统虚拟用户） */
+    private Long sourceUserId;
+
+    /** 关联业务实体 ID（R4-00371：如被点赞/评论的帖子 ID、被关注的用户 ID） */
+    private Long referenceId;
+
+    /** 关联业务类型（R4-00371：user/post/comment 等，对应 Notification.ReferenceType） */
+    private String referenceType;
+
     /** 默认构造函数：Jackson 反序列化需要 */
     public NotificationMessage() {
     }
@@ -60,6 +74,27 @@ public class NotificationMessage implements Serializable {
         this.title = title;
         this.content = content;
         this.createdAt = createdAt;
+    }
+
+    /**
+     * 带来源上下文的构造函数（R4-00371）。
+     *
+     * @param userId        通知接收者用户 ID
+     * @param type          通知类型（like/match/comment/system）
+     * @param title         通知标题
+     * @param content       通知正文
+     * @param createdAt     消息创建时间
+     * @param sourceUserId  来源用户 ID（互动发起者；可空）
+     * @param referenceId   关联业务实体 ID（可空）
+     * @param referenceType 关联业务类型（user/post/comment；可空）
+     */
+    public NotificationMessage(Long userId, String type, String title,
+                               String content, Instant createdAt,
+                               Long sourceUserId, Long referenceId, String referenceType) {
+        this(userId, type, title, content, createdAt);
+        this.sourceUserId = sourceUserId;
+        this.referenceId = referenceId;
+        this.referenceType = referenceType;
     }
 
     public Long getUserId() {
@@ -100,6 +135,30 @@ public class NotificationMessage implements Serializable {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Long getSourceUserId() {
+        return sourceUserId;
+    }
+
+    public void setSourceUserId(Long sourceUserId) {
+        this.sourceUserId = sourceUserId;
+    }
+
+    public Long getReferenceId() {
+        return referenceId;
+    }
+
+    public void setReferenceId(Long referenceId) {
+        this.referenceId = referenceId;
+    }
+
+    public String getReferenceType() {
+        return referenceType;
+    }
+
+    public void setReferenceType(String referenceType) {
+        this.referenceType = referenceType;
     }
 
     @Override

@@ -13,14 +13,19 @@ import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 import { useProfileStore } from "../../../stores/profile";
 import { replaceAppPath } from "../../../utils/navigation";
 import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
+// R4-batch2: 页面文案 i18n 化
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const profileStore = useProfileStore();
+// R4-00045/46 修复：注册流程表单不再预填示例值（"图书馆和北草坪"/["今晚","本周"]/设计课课表），
+// 全部置空——避免新用户直接保存即提交示例假数据入库；courseBlocks 未在模板渲染，
+// 不随 {...form} 提交后端（以空数组提交，符合 ScheduleProfile 契约）。
 const form = reactive({
-  preferredCampusArea: "图书馆和北草坪",
-  preferredTimeWindows: ["今晚", "本周"],
-  courseBlocks: [
-    { id: "b-1", weekday: "周一", start: "09:00", end: "10:30", label: "设计课" },
-  ],
+  preferredCampusArea: "",
+  preferredTimeWindows: [] as string[],
+  courseBlocks: [] as Array<{ id: string; weekday: string; start: string; end: string; label: string }>,
 });
 
 onMounted(async () => {
@@ -31,13 +36,13 @@ onMounted(async () => {
 async function save() {
   // 修复：添加输入验证
   if (!form.preferredCampusArea.trim()) {
-    uni.showToast({ title: "请输入偏好地点", icon: "none" });
+    uni.showToast({ title: t("setup.schedule.locationRequired"), icon: "none" });
     return;
   }
   // 确保 preferredTimeWindows 至少有一项且非空
   const validWindows = (form.preferredTimeWindows || []).filter((w: string) => w && w.trim());
   if (validWindows.length === 0) {
-    uni.showToast({ title: "请至少添加一个时间窗口", icon: "none" });
+    uni.showToast({ title: t("setup.schedule.timeWindowRequired"), icon: "none" });
     return;
   }
 
@@ -54,9 +59,9 @@ async function save() {
 </script>
 
 <template>
-  <AppShell title="时间安排" subtitle="这里会驱动首页默认推荐和可聊天时段。" :show-tab-bar="false">
-    <SectionCard title="偏好设置" compact>
-      <input v-model="form.preferredCampusArea" class="field" placeholder="常去区域" aria-label="常去区域" />
+  <AppShell :title="t('setup.schedule.pageTitle')" :subtitle="t('setup.schedule.pageSubtitle')" :show-tab-bar="false">
+    <SectionCard :title="t('setup.schedule.prefTitle')" compact>
+      <input v-model="form.preferredCampusArea" class="field" :placeholder="t('setup.schedule.placePlaceholder')" :aria-label="t('setup.schedule.placePlaceholder')" />
       <!-- review #66：原模板仅绑定 preferredTimeWindows[0]，其余时段无法编辑；
            现按数组渲染全部时段输入框，提交时完整保留。 -->
       <view
@@ -68,11 +73,11 @@ async function save() {
           v-model="form.preferredTimeWindows[idx]"
           class="field"
           maxlength="60"
-          :placeholder="idx === 0 ? '常用空闲时段，例如今晚或本周三下午' : '补充空闲时段，例如周日下午'"
-          :aria-label="idx === 0 ? '常用空闲时段，例如今晚或本周三下午' : '补充空闲时段，例如周日下午'"
+          :placeholder="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
+          :aria-label="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
         />
       </view>
-      <BottomActionBar primary-label="保存并进入应用" @primary="save" />
+      <BottomActionBar :primary-label="t('setup.schedule.saveButton')" @primary="save" />
     </SectionCard>
   </AppShell>
 </template>

@@ -51,18 +51,27 @@ export interface TierInfo {
   label: string
   icon: string
   desc: string
+  /** R4-batch2: 层级 label 的 i18n key（socialProgress.tierL{1..6}Label，zh/en 同步） */
+  labelKey: string
+  /** R4-batch2: 层级 desc 的 i18n key（socialProgress.tierL{1..6}Desc，zh/en 同步） */
+  descKey: string
 }
 
 // ==================== 层级数据常量 ====================
 
-/** 6层升温路径的静态描述数据 */
+/**
+ * 6层升温路径的静态描述数据。
+ *
+ * R4-batch2：label/desc 的中文值保留为数据兜底（兼容既有测试与纯数据消费），
+ * 展示层统一经 labelKey/descKey 走 t() 渲染（socialProgress.* 键集，zh/en 同步）。
+ */
 export const TIER_META: Record<string, TierInfo> = {
-  L1_EXPOSURE: { label: '发现心动', icon: TIER_ICONS.L1_EXPOSURE, desc: '浏览推荐卡片' },
-  L2_ATTENTION: { label: '表达喜欢', icon: TIER_ICONS.L2_ATTENTION, desc: '向心仪的人表达喜欢' },
-  L3_MATCH: { label: '双向匹配', icon: TIER_ICONS.L3_MATCH, desc: '等待双向确认' },
-  L4_COMMUNICATION: { label: '开启对话', icon: TIER_ICONS.L4_COMMUNICATION, desc: '发起私信聊天' },
-  L5_CIRCLE: { label: '参与社区', icon: TIER_ICONS.L5_CIRCLE, desc: '加入兴趣圈和话题' },
-  L6_SCENE: { label: '线下见面', icon: TIER_ICONS.L6_SCENE, desc: '参与线下活动' },
+  L1_EXPOSURE: { label: '发现心动', icon: TIER_ICONS.L1_EXPOSURE, desc: '浏览推荐卡片', labelKey: 'socialProgress.tierL1Label', descKey: 'socialProgress.tierL1Desc' },
+  L2_ATTENTION: { label: '表达喜欢', icon: TIER_ICONS.L2_ATTENTION, desc: '向心仪的人表达喜欢', labelKey: 'socialProgress.tierL2Label', descKey: 'socialProgress.tierL2Desc' },
+  L3_MATCH: { label: '双向匹配', icon: TIER_ICONS.L3_MATCH, desc: '等待双向确认', labelKey: 'socialProgress.tierL3Label', descKey: 'socialProgress.tierL3Desc' },
+  L4_COMMUNICATION: { label: '开启对话', icon: TIER_ICONS.L4_COMMUNICATION, desc: '发起私信聊天', labelKey: 'socialProgress.tierL4Label', descKey: 'socialProgress.tierL4Desc' },
+  L5_CIRCLE: { label: '参与社区', icon: TIER_ICONS.L5_CIRCLE, desc: '加入兴趣圈和话题', labelKey: 'socialProgress.tierL5Label', descKey: 'socialProgress.tierL5Desc' },
+  L6_SCENE: { label: '线下见面', icon: TIER_ICONS.L6_SCENE, desc: '参与线下活动', labelKey: 'socialProgress.tierL6Label', descKey: 'socialProgress.tierL6Desc' },
 }
 
 /** 层级有序列表（用于步骤指示器渲染） */

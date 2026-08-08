@@ -9,8 +9,9 @@ import { useI18n } from "vue-i18n";
 import { useCircleStore } from "../../stores/circle";
 import { useVillageStore } from "../../stores/village";
 import { useActivityStore, type ActivityItem } from "../../stores/activity";
-// 图片上传链路（review #2）：真实模式下需先上传拿 URL 再提交，mock 模式保留本地路径
+// 图片上传链路（review #2 / R4-00071）：真实模式下需先上传拿 URL 再提交，mock 模式保留本地路径
 import { useMock } from "../../stores/helpers/use-mock";
+import { clientApi } from "../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
 import { getChannelConfig } from "../../config/channels";
@@ -320,18 +321,29 @@ async function submitTopic() {
     // 修复（review #22）：提交翻译后的标签文本，而不是 i18n key
     const tagTexts = selectedTags.value.map((key) => t(key));
 
-    // 修复（review #2）：图片上传链路缺失。
-    // TODO(后端): services/api.ts 无话题图片上传端点；接口就绪后应在此先上传
-    // tempFilePath 换取 URL 再随话题提交，mock 模式下继续使用本地路径保证可用。
+    // 修复（R4-00071）：话题图片本地临时路径（tempFilePath）在 real 模式
+    // 先经 clientApi.uploadPostImage（/media/upload）逐张上传换取可访问 URL，
+    // 再随 createTopic 提交，避免话题配图在 real 模式全部裂图。
+    // mock 模式下 clientApi.uploadPostImage 内部返回原路径，行为不变。
     const localImages = images.value.filter((img) => !/^https?:\/\//.test(img));
+    let submitImages = images.value;
     if (localImages.length > 0 && !useMock()) {
-      console.warn("[post-topic] 话题图片为本地临时路径，后端无法访问，等待上传接口接入:", localImages);
+      const uploaded: string[] = [];
+      for (const img of images.value) {
+        if (/^https?:\/\//.test(img)) {
+          uploaded.push(img);
+          continue;
+        }
+        const result = await clientApi.uploadPostImage({ name: "topic.jpg", path: img });
+        uploaded.push(result?.url ?? img);
+      }
+      submitImages = uploaded;
     }
 
     await circleStore.createTopic(resolvedCircleId, {
       title: title.value.trim(),
       content: content.value.trim(),
-      images: images.value,
+      images: submitImages,
       tags: tagTexts,
       favorite: favoriteEnabled.value,
     });

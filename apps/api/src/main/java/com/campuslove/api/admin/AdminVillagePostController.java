@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -220,8 +221,8 @@ public class AdminVillagePostController {
         post.setAuditStatus(newStatus);
         post.setAuditRemark(req.remark());
         post.setAuditorId(auditorId);
-        post.setAuditedAt(LocalDateTime.now());
-        post.setUpdatedAt(LocalDateTime.now());
+        post.setAuditedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         // 审核拒绝时同步隐藏，使其在村口列表不可见（与 AdminPostController 一致）
         if (newStatus == AuditStatus.rejected && post.getStatus() == PostStatus.active) {
@@ -288,7 +289,7 @@ public class AdminVillagePostController {
         assertPostCampusAccess(post);
 
         post.setIsPinned(pinned);
-        post.setUpdatedAt(LocalDateTime.now());
+        post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         postRepository.save(post);
 
         Map<String, Object> body = new HashMap<>();
@@ -323,7 +324,7 @@ public class AdminVillagePostController {
         assertPostCampusAccess(post);
 
         post.setStatus(PostStatus.deleted);
-        post.setUpdatedAt(LocalDateTime.now());
+        post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         postRepository.save(post);
 
         Map<String, Object> body = new HashMap<>();

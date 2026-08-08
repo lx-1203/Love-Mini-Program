@@ -1,5 +1,6 @@
 package com.campuslove.api.wallet;
 
+import com.campuslove.api.common.TimeZones;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -123,7 +124,7 @@ public class MockWalletServiceImpl implements WalletService {
                         String orderId, String relatedType, String relatedId, String remark) {
         long id = txIdSeq.incrementAndGet();
         transactions.put(id, new MockTx(id, userId, type, amountCents, balanceAfter,
-                orderId, relatedType, relatedId, remark, LocalDateTime.now()));
+                orderId, relatedType, relatedId, remark, LocalDateTime.now(TimeZones.BUSINESS)));
     }
 
     private void validateParams(Long userId, Long amountCents, String orderId, String relatedType) {

@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.RecommendationPreference;
 import com.campuslove.api.mock.MockRuntimeState;
 import java.time.LocalDate;
@@ -98,7 +99,7 @@ public class MockRecommendationService implements RecommendationService {
         activity.enrollmentCount(),
         activity.participantAvatars(),
         "upcoming",
-        LocalDate.now().plusDays(1),
+        LocalDate.now(TimeZones.BUSINESS).plusDays(1),
         isEnrolled
     );
   }

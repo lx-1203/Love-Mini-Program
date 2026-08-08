@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -115,7 +116,7 @@ public class MockCircleService implements CircleService {
         0,
         authorId,
         "Mock用户",
-        LocalDateTime.now()
+        LocalDateTime.now(TimeZones.BUSINESS)
     );
 
     topicsByCircle.computeIfAbsent(circleId, k -> new ArrayList<>()).add(0, topic);
@@ -167,7 +168,7 @@ public class MockCircleService implements CircleService {
         content,
         authorId,
         "Mock用户",
-        LocalDateTime.now()
+        LocalDateTime.now(TimeZones.BUSINESS)
     );
 
     repliesByTopic.computeIfAbsent(topicId, k -> new ArrayList<>()).add(reply);
@@ -242,23 +243,23 @@ public class MockCircleService implements CircleService {
     map.put(1L, List.of(
         new TopicData(101L, "落日下的图书馆怎么拍最好看？",
             "最近傍晚的光线特别温柔，图书馆西侧的光影很漂亮，大家有没有推荐的机位和参数？",
-            List.of("https://picsum.photos/400/300?1"), 12, 1002L, "林安", LocalDateTime.now().minusHours(2)),
+            List.of("https://picsum.photos/400/300?1"), 12, 1002L, "林安", LocalDateTime.now(TimeZones.BUSINESS).minusHours(2)),
         new TopicData(102L, "手机也能拍出胶片感吗？",
             "分享一些手机调色的思路，不用专业相机也能出片。附上我最近拍的几张。",
             List.of("https://picsum.photos/400/300?2", "https://picsum.photos/400/300?3"), 8, 1003L, "周沐",
-            LocalDateTime.now().minusHours(5))
+            LocalDateTime.now(TimeZones.BUSINESS).minusHours(5))
     ));
 
     map.put(2L, List.of(
         new TopicData(201L, "每周三晚操场夜跑组队",
             "配速6分左右，跑5公里，男女不限，一起互相督促！",
-            null, 23, 1004L, "许诺", LocalDateTime.now().minusHours(1))
+            null, 23, 1004L, "许诺", LocalDateTime.now(TimeZones.BUSINESS).minusHours(1))
     ));
 
     map.put(4L, List.of(
         new TopicData(401L, "推荐一个超适合自习时听的歌单",
             "亲测不催眠，节奏刚好能集中注意力，链接在正文里。",
-            null, 15, 1002L, "林安", LocalDateTime.now().minusDays(1))
+            null, 15, 1002L, "林安", LocalDateTime.now(TimeZones.BUSINESS).minusDays(1))
     ));
 
     return map;
@@ -269,14 +270,14 @@ public class MockCircleService implements CircleService {
 
     map.put(101L, List.of(
         new ReplyData(1001L, "推荐用50mm定焦，光圈开到f2.8，稍微低一点的角度！", 1004L, "许诺",
-            LocalDateTime.now().minusHours(1)),
+            LocalDateTime.now(TimeZones.BUSINESS).minusHours(1)),
         new ReplyData(1002L, "黄金时刻（日落前后半小时）去拍效果最好", 1001L, "星野",
-            LocalDateTime.now().minusMinutes(30))
+            LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(30))
     ));
 
     map.put(201L, List.of(
         new ReplyData(2001L, "我！正好想找人一起跑，一个人太难坚持了。", 1003L, "周沐",
-            LocalDateTime.now().minusMinutes(45))
+            LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(45))
     ));
 
     return map;

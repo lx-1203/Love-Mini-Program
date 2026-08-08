@@ -1,5 +1,6 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.JwtTokenProvider;
@@ -158,6 +159,14 @@ public class ThirdPartyAuthService {
             user = createNewUserAndBind(provider, openIdHash, unionId);
         }
 
+        // R4-00259：禁用用户校验——命中既有绑定记录路径此前未检查 user.isDisabled()，
+        // 管理员封禁可被微信/Apple 第三方登录路径绕过签发 JWT。此处与
+        // RealAuthService.loginWithPhone / loginWithWechat 的禁用拦截语义对齐。
+        if (user.isDisabled()) {
+            log.warn("禁用用户尝试第三方登录, provider={}, userId={}", provider, user.getId());
+            throw new com.campuslove.api.common.OperationForbiddenException("账号已被禁用，请联系管理员");
+        }
+
         // 2. 签发 JWT
         String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         return buildSessionView(user, token, provider.toLowerCase());
@@ -172,7 +181,7 @@ public class ThirdPartyAuthService {
      * @return 新创建的用户实体
      */
     private User createNewUserAndBind(String provider, String openIdHash, String unionId) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         User user = new User();
         // 第三方登录的用户 openid 字段填入 provider:openIdHash 以避免与主微信登录冲突
@@ -249,7 +258,7 @@ public class ThirdPartyAuthService {
         account.setProvider(provider);
         account.setOpenId(openIdHash);
         account.setUnionId(unionId);
-        account.setCreatedAt(LocalDateTime.now());
+        account.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         thirdPartyAccountRepository.save(account);
         log.info("第三方账号绑定成功, userId={}, provider={}", userId, provider);
         return true;

@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.PrivateConversation;
@@ -8,6 +9,7 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.PrivateConversationRepository;
 import com.campuslove.api.repository.PrivateMessageRepository;
 import com.campuslove.api.repository.UserRepository;
+import com.campuslove.api.growth.SocialProgressService;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +46,14 @@ public class RealPrivateMessageService implements PrivateMessageService {
     private final SensitiveWordFilter sensitiveWordFilter;
     /** 活动卡片 JSON 解析（字段名后可能带空格，手写 indexOf 不可靠） */
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+    /**
+     * 社交升温漏斗服务（R4-00327：聊天主链路埋点）。
+     * real profile 注入；单元测试 / mock 场景为 null 时跳过埋点。
+     * 采用字段注入（required=false）而非构造器参数，避免破坏既有单测构造器。
+     */
+    @Autowired(required = false)
+    private SocialProgressService socialProgressService;
 
     public RealPrivateMessageService(
             PrivateConversationRepository conversationRepository,
@@ -132,7 +143,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
         }
 
         // 创建新会话
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         PrivateConversation conversation = new PrivateConversation();
         conversation.setConversationUid(generateConversationUid(userAId, userBId));
         conversation.setUserAId(userAId);
@@ -168,7 +179,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
             throw new IllegalArgumentException("Sender is not a participant of this conversation");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         // 录音修复：kind 统一规范化为小写（客户端发送小写 text/voice，
         // 与临时聊天链路 kind 约定及前端 mapToMessageItem(messageKind === "voice") 映射保持一致）
@@ -216,6 +227,16 @@ public class RealPrivateMessageService implements PrivateMessageService {
                 "/queue/messages",
                 messageView
         );
+
+        // R4-00327：社交升温漏斗埋点——开启对话（L4_COMMUNICATION 计数）；
+        // 埋点失败不影响消息主流程（仅记录日志）
+        if (socialProgressService != null) {
+            try {
+                socialProgressService.recordChat(senderId);
+            } catch (RuntimeException e) {
+                log.debug("社交升温埋点（chat）失败：userId={}, error={}", senderId, e.getMessage());
+            }
+        }
 
         return messageView;
     }
@@ -295,7 +316,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
         }
 
         conversation.setPinned(pinned);
-        conversation.setUpdatedAt(LocalDateTime.now());
+        conversation.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         conversationRepository.save(conversation);
     }
 

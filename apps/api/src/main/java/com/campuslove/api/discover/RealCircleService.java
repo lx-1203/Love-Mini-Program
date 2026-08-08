@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleReply;
 import com.campuslove.api.chat.InteractionEventService;
@@ -13,6 +14,7 @@ import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.InterestCircleRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.config.SensitiveWordFilter;
+import com.campuslove.api.growth.SocialProgressService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -69,6 +72,14 @@ public class RealCircleService implements CircleService {
      * <p>用于圈子话题数批量统计与成员数原子更新。</p>
      */
     private final EntityManager entityManager;
+
+    /**
+     * 社交升温漏斗服务（R4-00327：加入圈子埋点）。
+     * real profile 注入；单元测试 / mock 场景为 null 时跳过埋点。
+     * 采用字段注入（required=false）而非构造器参数，避免破坏既有单测构造器。
+     */
+    @Autowired(required = false)
+    private SocialProgressService socialProgressService;
 
     /**
      * 构造函数，注入所有必要的 Repository 和工具类。
@@ -220,7 +231,7 @@ public class RealCircleService implements CircleService {
         CircleMembership membership = new CircleMembership();
         membership.setCircle(circle);
         membership.setUserId(userId);
-        membership.setJoinedAt(LocalDateTime.now());
+        membership.setJoinedAt(LocalDateTime.now(TimeZones.BUSINESS));
         circleMembershipRepository.save(membership);
 
         // FIN-00038 修复：memberCount 改为数据库侧原子递增，消除并发加入时的丢失更新；
@@ -235,6 +246,16 @@ public class RealCircleService implements CircleService {
             entityManager.clear();
         }
         circle.setMemberCount(circle.getMemberCount() + 1);
+
+        // R4-00327：社交升温漏斗埋点——参与社区（L5_CIRCLE 计数）；
+        // 埋点失败不影响加入圈子主流程（仅记录日志）
+        if (socialProgressService != null) {
+            try {
+                socialProgressService.recordCircleActivity(userId);
+            } catch (RuntimeException e) {
+                log.debug("社交升温埋点（circle）失败：userId={}, error={}", userId, e.getMessage());
+            }
+        }
 
         log.info("用户成功加入圈子, userId={}, circleId={}, 当前成员数={}",
                 userId, circleId, circle.getMemberCount());
@@ -370,7 +391,7 @@ public class RealCircleService implements CircleService {
                 : content;
 
         // 创建话题实体
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         CircleTopic topic = new CircleTopic();
         topic.setCircle(circle);
         topic.setAuthorId(authorId);
@@ -442,7 +463,7 @@ public class RealCircleService implements CircleService {
         CircleTopic topic = findTopicOrThrow(topicId);
 
         // 创建回复实体
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         CircleReply reply = new CircleReply();
         reply.setTopic(topic);
         reply.setAuthorId(authorId);

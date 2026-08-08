@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
@@ -98,7 +99,7 @@ public class PostReportController {
             report.setReason(request.reason());
             report.setDescription(request.description());
             report.setStatus(STATUS_PENDING);
-            report.setCreatedAt(LocalDateTime.now());
+            report.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
             Report saved = reportRepository.save(report);
             log.info("帖子举报创建：reportId={}, postId={}, reporterId={}, reason={}",

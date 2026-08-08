@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.entity.HeartSignal.SignalStatus;
 import com.campuslove.api.repository.FieldCountProjection;
@@ -85,7 +86,7 @@ public class RealAdminStatsService implements AdminStatsService {
         try {
             long total = userRepository.count();
 
-            LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+            LocalDateTime startOfToday = LocalDate.now(TimeZones.BUSINESS).atStartOfDay();
             LocalDateTime startOf7d = startOfToday.minusDays(6);
 
             long newToday = userRepository.countByCreatedAtAfter(startOfToday);
@@ -144,7 +145,7 @@ public class RealAdminStatsService implements AdminStatsService {
     @Override
     public ActiveStatsView getActiveStats() {
         try {
-            LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+            LocalDateTime startOfToday = LocalDate.now(TimeZones.BUSINESS).atStartOfDay();
             LocalDateTime startOf30d = startOfToday.minusDays(29);
 
             long dau = onlineStatusRepository.countByLastHeartbeatAfter(startOfToday);
@@ -176,8 +177,8 @@ public class RealAdminStatsService implements AdminStatsService {
             // 每日趋势：近 30 天
             List<MatchStatsView.DailyCount> trend = new ArrayList<>();
             try {
-                LocalDateTime from = LocalDate.now().atStartOfDay().minusDays(DAILY_TREND_DAYS - 1);
-                LocalDateTime to = LocalDateTime.now();
+                LocalDateTime from = LocalDate.now(TimeZones.BUSINESS).atStartOfDay().minusDays(DAILY_TREND_DAYS - 1);
+                LocalDateTime to = LocalDateTime.now(TimeZones.BUSINESS);
                 List<FieldCountProjection> rows = heartSignalRepository.countDailyBetween(from, to);
                 if (rows != null) {
                     for (FieldCountProjection row : rows) {

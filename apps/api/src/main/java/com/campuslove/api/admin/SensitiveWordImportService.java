@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.SensitiveWord;
@@ -8,7 +9,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +61,16 @@ public class SensitiveWordImportService {
     /** 单批处理数量，平衡内存占用与事务开销 */
     private static final int BATCH_SIZE = 500;
 
+    /**
+     * 任务状态注册表（R4-00382）。
+     *
+     * <p>taskId → 最新进度快照（SensitiveWordImportResult 不可变 record 原子替换）。
+     * 用于支撑客户端轮询 {@code /import/status/{taskId}}（Javadoc 承诺的端点此前不存在）。
+     * 已知局限（与既有设计一致）：状态仅存内存，应用重启/多实例后任务状态丢失——
+     * 如需跨重启追踪应引入 DB 任务表（见 generateTaskId 注释）。</p>
+     */
+    private final Map<String, SensitiveWordImportResult> taskRegistry = new ConcurrentHashMap<>();
+
     private final SensitiveWordRepository sensitiveWordRepository;
     private final SensitiveWordFilter sensitiveWordFilter;
     private final CacheManager cacheManager;
@@ -94,7 +108,10 @@ public class SensitiveWordImportService {
      */
     public SensitiveWordImportResult importBatchAsync(List<String> words, String category, Long operatorId) {
         if (words == null || words.isEmpty()) {
-            return new SensitiveWordImportResult(generateTaskId(), 0, 0, 0, "EMPTY_INPUT", "待导入列表为空");
+            SensitiveWordImportResult empty = new SensitiveWordImportResult(
+                    generateTaskId(), 0, 0, 0, "EMPTY_INPUT", "待导入列表为空");
+            taskRegistry.put(empty.taskId(), empty);
+            return empty;
         }
 
         String taskId = generateTaskId();
@@ -103,11 +120,27 @@ public class SensitiveWordImportService {
         log.info("SubTask 5.3.5 敏感词异步导入任务已受理: taskId={}, total={}, category={}, operatorId={}",
                 taskId, total, category, operatorId);
 
+        // R4-00382：登记任务状态（ACCEPTED），供 /import/status/{taskId} 轮询
+        taskRegistry.put(taskId, new SensitiveWordImportResult(taskId, total, 0, 0, "ACCEPTED",
+                "任务已受理，预计每 500 条/批异步处理"));
+
         // 触发异步执行
         doImportAsync(taskId, new ArrayList<>(words), category, operatorId);
 
-        return new SensitiveWordImportResult(taskId, total, 0, 0, "ACCEPTED",
-                "任务已受理，预计每 500 条/批异步处理");
+        return taskRegistry.get(taskId);
+    }
+
+    /**
+     * 查询任务状态（R4-00382）。
+     *
+     * @param taskId 任务 ID
+     * @return 任务最新状态快照；任务不存在（未受理/已重启丢失）时返回空
+     */
+    public Optional<SensitiveWordImportResult> getTaskStatus(String taskId) {
+        if (taskId == null || taskId.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(taskRegistry.get(taskId));
     }
 
     /**
@@ -135,6 +168,10 @@ public class SensitiveWordImportService {
 
         try {
             int total = words.size();
+            // R4-00382：任务进入执行中状态（RUNNING，进度随批次更新）
+            taskRegistry.put(taskId, new SensitiveWordImportResult(
+                    taskId, total, 0, 0, "RUNNING", "任务执行中，每 500 条/批异步处理"));
+
             for (int from = 0; from < total; from += BATCH_SIZE) {
                 int to = Math.min(from + BATCH_SIZE, total);
                 List<String> batch = words.subList(from, to);
@@ -149,6 +186,11 @@ public class SensitiveWordImportService {
                     log.warn("SubTask 5.3.5 敏感词导入批次失败: taskId={}, batchFrom={}, batchSize={}, error={}",
                             taskId, from, batch.size(), e.getMessage());
                 }
+
+                // R4-00382：每批完成后更新任务进度（供 /import/status/{taskId} 轮询）
+                taskRegistry.put(taskId, new SensitiveWordImportResult(
+                        taskId, total, imported, skipped, "RUNNING",
+                        "任务执行中，已处理 " + Math.min(to, total) + "/" + total + " 条"));
             }
 
             // 失效 Redis/Caffeine 缓存
@@ -172,9 +214,17 @@ public class SensitiveWordImportService {
             }
 
             long costMs = System.currentTimeMillis() - startMs;
+            // R4-00382：任务完成状态（DONE）
+            taskRegistry.put(taskId, new SensitiveWordImportResult(
+                    taskId, total, imported, skipped, "DONE",
+                    "任务完成：导入 " + imported + " 条，跳过 " + skipped + " 条，失败 " + failed + " 条"));
             log.info("SubTask 5.3.5 敏感词异步导入任务完成: taskId={}, total={}, imported={}, skipped={}, failed={}, costMs={}",
                     taskId, total, imported, skipped, failed, costMs);
         } catch (RuntimeException e) {
+            // R4-00382：任务失败状态（FAILED）
+            taskRegistry.put(taskId, new SensitiveWordImportResult(
+                    taskId, words.size(), imported, skipped, "FAILED",
+                    "任务异常：" + (e.getMessage() != null ? e.getMessage() : "未知错误")));
             log.error("SubTask 5.3.5 敏感词异步导入任务异常: taskId={}, error={}",
                     taskId, e.getMessage(), e);
         }
@@ -208,7 +258,7 @@ public class SensitiveWordImportService {
     private int[] importBatch(List<String> batch, String category, Set<String> seen) {
         int imported = 0;
         int skipped = 0;
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         List<SensitiveWord> toSave = new ArrayList<>();
         for (String rawWord : batch) {

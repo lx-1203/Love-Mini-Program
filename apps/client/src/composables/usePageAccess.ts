@@ -13,6 +13,8 @@ import { ROUTES } from "../constants/routes";
 // infra R2-00140: 复用 compat 的 getCurrentPagePath（含 H5/MP 平台差异处理），
 // 消除本文件与 compat/index.ts 的重复实现（原审计项：守卫双实现/重复工具）。
 import { getCurrentPagePath } from "../compat";
+// R4-batch2: 会话过期 toast 文案 i18n 化
+import { t } from "@/i18n";
 
 /**
  * 模块级刷新标志，防止多个页面 onShow 并发触发 refreshSession。
@@ -123,7 +125,7 @@ export function usePageAccess(requirements: PageRequirements) {
     if (!decision.allowed && decision.redirectTo) {
       // 需要登录但本地无 token，说明登录态已失效，给出友好提示而非静默跳转
       if (requirements.requiresAuth && !getToken()) {
-        uni.showToast({ title: "登录已过期，请重新登录", icon: "none" });
+        uni.showToast({ title: t("apiErrors.unauthorized"), icon: "none" });
       }
       replaceAppPath(decision.redirectTo);
     }

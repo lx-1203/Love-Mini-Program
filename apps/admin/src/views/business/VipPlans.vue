@@ -18,6 +18,10 @@
  * - 季度套餐 quarterly：约 ¥45/季
  * - 年度套餐 yearly：约 ¥128/年
  */
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 /** 套餐说明行 */
 interface PlanInfo {
@@ -32,58 +36,53 @@ interface PlanInfo {
 }
 
 /** 套餐说明数据（占位说明，非接口数据） */
-const plans: PlanInfo[] = [
+const plans = computed<PlanInfo[]>(() => [
   {
     id: "monthly",
-    name: "月度套餐",
-    price: "约 ¥18 / 月",
-    benefits: "解锁全部高级功能，月付灵活",
+    name: t("vipPlans.planMonthly"),
+    price: t("vipPlans.priceMonthly"),
+    benefits: t("vipPlans.benefitsMonthly"),
   },
   {
     id: "quarterly",
-    name: "季度套餐",
-    price: "约 ¥45 / 季",
-    benefits: "月度价格基础上享折扣，更适合长期体验",
+    name: t("vipPlans.planQuarterly"),
+    price: t("vipPlans.priceQuarterly"),
+    benefits: t("vipPlans.benefitsQuarterly"),
   },
   {
     id: "yearly",
-    name: "年度套餐",
-    price: "约 ¥128 / 年",
-    benefits: "性价比最高，含全部 VIP 权益",
+    name: t("vipPlans.planYearly"),
+    price: t("vipPlans.priceYearly"),
+    benefits: t("vipPlans.benefitsYearly"),
   },
-];
+]);
 
 /** 配置方式说明列表 */
-const configNotes: string[] = [
-  "套餐由客户端 VIP 配置驱动（定价、周期、权益），后端账单仅记录 planId 冗余字段",
-  "账单金额以「分」为单位存储，本页展示为参考人民币金额",
-  "套餐变更 / 新增套餐需修改客户端 vip 配置，并确保账单侧 planId 保持一致",
-  "支持自动续费（POST /api/v1/vip/auto-renew），由用户主动开启",
-  "运营发放的兑换码（优惠码管理）可抵扣套餐金额：AMOUNT 满减 / PERCENT 百分比折扣",
-];
+const configNotes = computed<string[]>(() => [
+  t("vipPlans.configNote1"),
+  t("vipPlans.configNote2"),
+  t("vipPlans.configNote3"),
+  t("vipPlans.configNote4"),
+  t("vipPlans.configNote5"),
+]);
 </script>
 
 <template>
   <view class="vip-plans-page">
     <view class="page-header">
-      <text class="page-title">VIP 套餐</text>
-      <text class="page-subtitle">套餐结构说明（只读，套餐由客户端 VIP 配置驱动）</text>
+      <text class="page-title">{{ t("vipPlans.title") }}</text>
+      <text class="page-subtitle">{{ t("vipPlans.subtitle") }}</text>
     </view>
 
     <!-- 功能状态说明：VIP 会员暂缓上线 -->
     <view class="planned-notice" role="status">
-      <text class="planned-notice-text">
-        该功能规划中，VIP 会员暂缓上线；当前页面仅展示套餐结构占位说明，不做任何接口请求。
-      </text>
+      <text class="planned-notice-text">{{ t("vipPlans.plannedNotice") }}</text>
     </view>
 
     <!-- 数据来源说明 -->
     <view class="notice-box">
-      <text class="notice-title">数据来源说明</text>
-      <text class="notice-text">
-        当前后端未提供套餐列表管理端点（无 GET /api/v1/vip/plans 或类似接口），
-        套餐由客户端 VIP 配置驱动，此处展示为占位说明页；待后端补充套餐管理端点后可接入真实数据。
-      </text>
+      <text class="notice-title">{{ t("vipPlans.dataSourceTitle") }}</text>
+      <text class="notice-text">{{ t("vipPlans.dataSourceText") }}</text>
     </view>
 
     <!-- 套餐列表 -->
@@ -91,10 +90,10 @@ const configNotes: string[] = [
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">套餐 ID</th>
-            <th scope="col">套餐名称</th>
-            <th scope="col">参考价格</th>
-            <th scope="col">权益说明</th>
+            <th scope="col">{{ t("vipPlans.columnPlanId") }}</th>
+            <th scope="col">{{ t("vipPlans.columnPlanName") }}</th>
+            <th scope="col">{{ t("vipPlans.columnPrice") }}</th>
+            <th scope="col">{{ t("vipPlans.columnBenefits") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -110,7 +109,7 @@ const configNotes: string[] = [
 
     <!-- 配置方式说明 -->
     <view class="config-section">
-      <text class="section-title">配置方式说明</text>
+      <text class="section-title">{{ t("vipPlans.configTitle") }}</text>
       <view v-for="(note, idx) in configNotes" :key="idx" class="note-item">
         <text class="note-index">{{ idx + 1 }}</text>
         <text class="note-text">{{ note }}</text>

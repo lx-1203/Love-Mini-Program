@@ -1,5 +1,6 @@
 package com.campuslove.api.config;
 
+import com.campuslove.api.common.TimeZones;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -162,7 +163,7 @@ public class SensitiveWordFilter {
         // 如果内容发生了变化（即包含敏感词），记录日志
         if (!filtered.equals(content)) {
             log.warn("Sensitive word filtered: userId={}, scene={}, filterTime={}",
-                    userId, scene, java.time.LocalDateTime.now());
+                    userId, scene, java.time.LocalDateTime.now(TimeZones.BUSINESS));
         }
 
         return filtered;

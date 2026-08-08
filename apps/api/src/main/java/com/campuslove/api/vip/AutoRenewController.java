@@ -78,6 +78,22 @@ public class AutoRenewController {
         Long userId = SecurityUtils.getCurrentUserId();
         return autoRenewService.disable(userId);
     }
+
+    /**
+     * 手动触发自动续费扫描（R4-00316）。
+     * <p>POST /api/vip/auto-renew/trigger</p>
+     *
+     * <p>与 {@code @Scheduled} 定时任务同逻辑：扫描全部开启自动续费的用户，
+     * 对 VIP 距到期 24 小时内（含已过期）的用户逐个续费。管理端点，需 ADMIN 角色；
+     * 供运营手动补跑（如定时任务故障后）。</p>
+     *
+     * @return 扫描结果汇总（scanned / renewed / failed）
+     */
+    @PostMapping("/trigger")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AutoRenewService.RenewScanResult triggerRenewScan() {
+        return autoRenewService.runRenewScan();
+    }
 }
 
 /**

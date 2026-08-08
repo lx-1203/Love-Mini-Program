@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
@@ -147,7 +148,7 @@ public class VillageInteractionService {
         Post post = queryService.findPostOrThrow(postId);
 
         boolean alreadyLiked = postLikeRepository.existsByUserIdAndPostId(userId, postId);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         if (alreadyLiked) {
             if (entityManager != null) {
                 // 缺陷修复：bulk DELETE 替代派生删除，避免 pending-removal 实体
@@ -310,7 +311,7 @@ public class VillageInteractionService {
         }
         // 仅登录用户写浏览历史（匿名只累加 view_count）
         if (userId != null) {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
             postViewHistoryRepository.findByUserIdAndPostId(userId, postId)
                     .ifPresentOrElse(h -> h.setViewedAt(now),
                             () -> postViewHistoryRepository.save(new PostViewHistory(userId, postId, now)));
@@ -381,7 +382,7 @@ public class VillageInteractionService {
                 ? sensitiveWordFilter.filterWithLog(content, userId, "POST_COMMENT")
                 : content;
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         Comment comment = new Comment();
         comment.setPost(post);
         comment.setAuthorId(userId);
@@ -436,7 +437,7 @@ public class VillageInteractionService {
 
         Post post = queryService.findPostOrThrow(postId);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         PostShare share = new PostShare();
         share.setPost(post);
         share.setUserId(userId);

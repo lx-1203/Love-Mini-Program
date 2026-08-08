@@ -2,6 +2,8 @@ package com.campuslove.api.mock;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -9,12 +11,25 @@ import org.springframework.stereotype.Component;
 @Profile("mock")
 public class MockRuntimeState {
 
+    /**
+     * 国际化文案资源（R4-00398）。
+     * <p>mock 会话/资料中文文案不再硬编码在 Java 常量中——displayName / loginHero /
+     * basicProfile 等展示文案经 {@link MessageSource} 按请求 Locale 解析
+     * （资源 key 见 i18n/messages*.properties 的 mock.* 分组）。
+     * 单元测试直接 new 本组件时为 null，各 getter 回退到内置默认值。</p>
+     */
+    @Autowired(required = false)
+    private MessageSource messageSource;
+
+    /** 无 MessageSource（单元测试）时的默认展示名 */
+    private static final String DEFAULT_DISPLAY_NAME = "星野";
+
   private boolean loggedIn;
   private boolean phoneBound;
   private boolean profileCompleted;
   private boolean campusVerified;
   private boolean scheduleCompleted;
-  private String displayName = "星野";
+  private String displayName = DEFAULT_DISPLAY_NAME;
   private String campusName;
   private LoginHeroData loginHero = new LoginHeroData(
       "video",
@@ -38,6 +53,11 @@ public class MockRuntimeState {
       "广州市",
       "广州市",
       List.of("摄影", "养猫"),
+      // R4-00398 说明：媒体占位路径（/uploads/mock/*）保留——mock 资料完整度契约
+      // （profile_completion=100）依赖这些字段非空；客户端 SafeImage 对加载失败
+      // 的图片自动回退首字占位，不会展示破图。mock 包已从生产 jar 排除（R4-00367），
+      // 影响面仅限本地演示。推荐卡片（recommendedPeople/activityRecommendations）
+      // 的头像已置空走客户端占位。
       List.of("/uploads/mock/photo-1.jpg"),
       "/uploads/mock/half.jpg",
       "/uploads/mock/intro.mp4",
@@ -70,7 +90,7 @@ public class MockRuntimeState {
           "工业设计大三，偏好低压力的第一轮聊天。",
           "共同兴趣：电影夜和安静的咖啡馆路线",
           "合适时间：今晚 19:00 之后",
-          "/uploads/mock/avatar-linan.jpg",
+          null,
           21,
           168,
           "bachelor",
@@ -88,7 +108,7 @@ public class MockRuntimeState {
           "更适合从音乐话题切入，再配一段短距离校园散步。",
           "节奏接近：更喜欢短时见面和明确时段",
           "合适时间：周五 16:00-18:00",
-          "/uploads/mock/avatar-zhoumu.jpg",
+          null,
           22,
           175,
           "master",
@@ -106,7 +126,7 @@ public class MockRuntimeState {
           "喜欢直接定计划、边界清楚、气氛放松的咖啡聊天。",
           "共同偏好：校园人多时也接受室内兜底",
           "合适时间：周末下午",
-          "/uploads/mock/avatar-xunuo.jpg",
+          null,
           21,
           180,
           "bachelor",
@@ -124,7 +144,7 @@ public class MockRuntimeState {
           "心理学硕士，喜欢深度的对话与长期规划的话题。",
           "共同兴趣：阅读与城市规划",
           "合适时间：周末上午",
-          "/uploads/mock/avatar-suli.jpg",
+          null,
           23,
           162,
           "master",
@@ -142,7 +162,7 @@ public class MockRuntimeState {
           "建筑学大五，未来想去成都定居，喜欢户外运动与城市探索。",
           "共同兴趣：户外运动与城市探索",
           "合适时间：周六全天",
-          "/uploads/mock/avatar-xiaye.jpg",
+          null,
           21,
           185,
           "bachelor",
@@ -178,9 +198,7 @@ public class MockRuntimeState {
           "周四 19:00-20:00",
           "轻松的咖啡散步活动，适合初次见面，环境舒适低压，可以自然地开启对话。",
           12,
-          List.of("/uploads/mock/avatar-linan.jpg",
-              "/uploads/mock/avatar-zhoumu.jpg",
-              "/uploads/mock/avatar-xunuo.jpg")
+          List.of()
       ),
       new ActivityRecommendationData(
           "a-2",
@@ -189,9 +207,7 @@ public class MockRuntimeState {
           "周六 15:00-17:00",
           "电影社组织的线下交流活动，边看电影边聊天，氛围轻松不拘束。",
           8,
-          List.of("/uploads/mock/avatar-suli.jpg",
-              "/uploads/mock/avatar-xiaye.jpg",
-              "/uploads/mock/avatar-linan.jpg")
+          List.of()
       )
   );
 
@@ -200,7 +216,11 @@ public class MockRuntimeState {
         "user-1001",
         loggedIn,
         "wechat",
-        displayName,
+        // R4-00398：展示名仅在仍为内置默认值时经 i18n 资源解析（mock.session.displayName）；
+        // 用户已自定义昵称（saveBasicProfile 更新 displayName）时原样返回，避免覆盖用户修改。
+        DEFAULT_DISPLAY_NAME.equals(displayName)
+            ? resolveText("mock.session.displayName", displayName)
+            : displayName,
         phoneBound,
         profileCompleted,
         campusVerified,
@@ -215,11 +235,55 @@ public class MockRuntimeState {
   }
 
   public synchronized LoginHeroData loginHero() {
-    return loginHero;
+    // R4-00398：标题/副标题经 i18n 资源解析（mock.loginHero.*）
+    return new LoginHeroData(
+        loginHero.heroMode(),
+        loginHero.heroVideoUrl(),
+        loginHero.heroPosterUrl(),
+        loginHero.heroAnimationTheme(),
+        resolveText("mock.loginHero.title", loginHero.heroTitle()),
+        resolveText("mock.loginHero.subtitle", loginHero.heroSubtitle()),
+        loginHero.videoFallbackToAnimation()
+    );
   }
 
   public synchronized BasicProfileData basicProfile() {
-    return basicProfile;
+    // R4-00398：昵称/简介仅在仍为内置默认值时经 i18n 资源解析（mock.profile.*）；
+    // 用户已保存过基本资料（字段被修改）时原样返回，避免覆盖用户编辑内容。
+    boolean profileDefaulted = DEFAULT_DISPLAY_NAME.equals(basicProfile.nickname());
+    return new BasicProfileData(
+        profileDefaulted ? resolveText("mock.profile.nickname", basicProfile.nickname()) : basicProfile.nickname(),
+        profileDefaulted ? resolveText("mock.profile.bio", basicProfile.bio()) : basicProfile.bio(),
+        basicProfile.grade(),
+        basicProfile.pronouns(),
+        basicProfile.height(),
+        basicProfile.educationLevel(),
+        basicProfile.relationshipStatus(),
+        basicProfile.hometownProvince(),
+        basicProfile.hometownCity(),
+        basicProfile.futureCity(),
+        basicProfile.futurePlanTags(),
+        basicProfile.photoGallery(),
+        basicProfile.halfBodyPhotoUrl(),
+        basicProfile.personalVideoUrl(),
+        basicProfile.profileBackgroundUrl()
+    );
+  }
+
+  /**
+   * 按请求 Locale 解析 i18n 文案（R4-00398）。
+   * MessageSource 未注入（单元测试）或解析失败时回退内置默认值。
+   */
+  private String resolveText(String key, String fallback) {
+    if (messageSource == null) {
+      return fallback;
+    }
+    try {
+      return messageSource.getMessage(key, null, fallback,
+              org.springframework.context.i18n.LocaleContextHolder.getLocale());
+    } catch (Exception e) {
+      return fallback;
+    }
   }
 
   public synchronized ProfileStatsData profileStats() {

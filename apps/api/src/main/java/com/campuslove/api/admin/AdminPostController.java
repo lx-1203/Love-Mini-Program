@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.AuditStatus;
@@ -164,8 +165,8 @@ public class AdminPostController {
         post.setAuditStatus(newStatus);
         post.setAuditRemark(req.remark());
         post.setAuditorId(auditorId);
-        post.setAuditedAt(LocalDateTime.now());
-        post.setUpdatedAt(LocalDateTime.now());
+        post.setAuditedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         // 若审核拒绝，同步将帖子状态置为 hidden，使其在村口列表不可见
         // 通过则保持原 status 不变（避免覆盖管理员手动隐藏的场景）
@@ -209,7 +210,7 @@ public class AdminPostController {
         adminDataScope.assertCampusAccess(
                 adminDataScope.resolveUserCampusName(post.getAuthorId()));
         post.setStatus(PostStatus.deleted);
-        post.setUpdatedAt(LocalDateTime.now());
+        post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         postRepository.save(post);
 
         Map<String, Object> body = new HashMap<>();

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.config.SecurityUtils;
@@ -86,7 +87,7 @@ public class AdminNotifyConfigController {
         Map<String, NotifyConfig> existing = notifyConfigRepository.findAllByOrderByTypeAsc().stream()
                 .collect(Collectors.toMap(NotifyConfig::getType, Function.identity()));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         for (NotifyConfigUpdateRequest item : request.configs()) {
             if (item.type() == null || item.type().isBlank()) {
                 continue;

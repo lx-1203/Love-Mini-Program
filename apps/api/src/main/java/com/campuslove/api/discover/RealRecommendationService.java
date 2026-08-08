@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
 import com.campuslove.api.entity.ActivityEnrollment;
@@ -15,7 +16,7 @@ import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
-import com.campuslove.api.growth.RecommendQuotaService;
+import com.campuslove.api.growth.SocialProgressService;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.PageRequest;
@@ -65,13 +67,16 @@ public class RealRecommendationService implements RecommendationService {
      */
     private final EntityManager entityManager;
 
+    // R4-00325：推荐配额扣减已移入 RecommendationCacheManager 的缓存 miss 路径，
+    // 本类不再持有 RecommendQuotaService（配额查询端点走 RecommendationController 注入）。
+
     /**
-     * 每日推荐配额服务（P0-24：签到赠送配额 + 基础额度联动扣减）。
-     * real profile 由 Spring 注入；单元测试 / mock 场景为 null 时跳过配额限制。
+     * 社交升温漏斗服务（R4-00327：活动参与埋点）。
+     * real profile 注入；单元测试 / mock 场景为 null 时跳过埋点。
      * 采用字段注入（required=false）而非构造器参数，避免破坏既有单测构造器。
      */
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private RecommendQuotaService recommendQuotaService;
+    @Autowired(required = false)
+    private SocialProgressService socialProgressService;
 
     @org.springframework.beans.factory.annotation.Autowired
     public RealRecommendationService(
@@ -223,7 +228,7 @@ public class RealRecommendationService implements RecommendationService {
                 return new ActivityEnrollmentView(activityId, true, activity.getEnrollmentCount());
             }
 
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
             ActivityEnrollment enrollment = new ActivityEnrollment();
             enrollment.setActivityId(activityIdLong);
             enrollment.setUserId(userId);
@@ -252,6 +257,16 @@ public class RealRecommendationService implements RecommendationService {
             }
             activity.setUpdatedAt(now);
 
+            // R4-00327：社交升温漏斗埋点——活动参与（L6_SCENE 计数）；
+            // 埋点失败不影响报名主流程（仅记录日志）
+            if (socialProgressService != null) {
+                try {
+                    socialProgressService.recordActivityParticipation(userId);
+                } catch (RuntimeException e) {
+                    log.debug("社交升温埋点（activity）失败：userId={}, error={}", userId, e.getMessage());
+                }
+            }
+
             return new ActivityEnrollmentView(activityId, true, activity.getEnrollmentCount());
         } else {
             Optional<ActivityEnrollment> enrollmentOpt =
@@ -271,7 +286,7 @@ public class RealRecommendationService implements RecommendationService {
                                 "UPDATE Activity a SET a.enrollmentCount = CASE "
                                         + "WHEN a.enrollmentCount > 0 THEN a.enrollmentCount - 1 ELSE 0 END, "
                                         + "a.updatedAt = :now WHERE a.id = :activityId")
-                        .setParameter("now", LocalDateTime.now())
+                        .setParameter("now", LocalDateTime.now(TimeZones.BUSINESS))
                         .setParameter("activityId", activityIdLong)
                         .executeUpdate();
                 entityManager.detach(activity);
@@ -282,7 +297,7 @@ public class RealRecommendationService implements RecommendationService {
             } else {
                 activity.setEnrollmentCount(Math.max(0, activity.getEnrollmentCount() - 1));
             }
-            activity.setUpdatedAt(LocalDateTime.now());
+            activity.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
             return new ActivityEnrollmentView(activityId, false, activity.getEnrollmentCount());
         }
@@ -382,12 +397,11 @@ public class RealRecommendationService implements RecommendationService {
         // 的双重 @Cacheable 冗余。有效缓存层保留在 RecommendationCacheManager（带
         // unless 空结果保护 + 主动失效方法），此处仅做委托，避免同键嵌套缓存。
         //
-        // P0-24 修复：推荐配额消费——每次拉取按次扣减（签到赠送的额外配额与基础
-        // 额度联动，见 RecommendQuotaService）。配额用尽返回空列表（前端已有空态
-        // 兜底）；服务未注入（单元测试 / mock 场景）时跳过配额限制。
-        if (recommendQuotaService != null && !recommendQuotaService.tryConsume(userId)) {
-            return List.of();
-        }
+        // R4-00325 修复：推荐配额扣减移入 RecommendationCacheManager 的缓存 miss 路径
+        // （见 getCachedRecommendations 内 tryConsume 调用）。原实现在此处先扣减再查缓存，
+        // 首页/聊天概览/发现页多个入口每次拉取（含缓存命中）都扣配额，缓存期内翻页
+        // 重复扣减导致配额经济失真。现在仅当真实计算新推荐（缓存 miss）时扣减一次，
+        // 并按入口去重（同一缓存 TTL 内所有入口共享一次计算/一次扣减）。
         return cacheManager.getCachedRecommendations(userId);
     }
 

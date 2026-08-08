@@ -10,6 +10,7 @@
  *   打开时调用 getRoleMenuIds(id) 回显，保存调用 assignRoleMenus(id, checkedIds)
  */
 import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   listRoles,
   createRole,
@@ -27,6 +28,8 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 
+const { t } = useI18n();
+
 // ===== 角色列表 =====
 const roles = ref<RoleView[]>([]);
 const loading = ref(false);
@@ -38,7 +41,7 @@ async function fetchRoles() {
   try {
     roles.value = await listRoles();
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : "加载角色列表失败";
+    errorMsg.value = err instanceof ApiError ? err.message : t("roles.loadFailed");
     roles.value = [];
   } finally {
     loading.value = false;
@@ -49,11 +52,11 @@ async function fetchRoles() {
 function dataScopeLabel(scope: string): string {
   switch (scope) {
     case "ALL":
-      return "全部数据";
+      return t("roles.dataScopeAll");
     case "DEPT":
-      return "本部门数据";
+      return t("roles.dataScopeDept");
     case "CUSTOM":
-      return "自定义数据";
+      return t("roles.dataScopeCustom");
     default:
       return scope || "-";
   }
@@ -83,10 +86,10 @@ const form = ref<RoleForm>({
 });
 
 /** 数据范围候选（eladmin 约定） */
-const DATA_SCOPES: { value: string; label: string }[] = [
-  { value: "ALL", label: "全部数据" },
-  { value: "DEPT", label: "本部门数据" },
-  { value: "CUSTOM", label: "自定义数据" },
+const DATA_SCOPES: { value: string; labelKey: string }[] = [
+  { value: "ALL", labelKey: "roles.dataScopeAll" },
+  { value: "DEPT", labelKey: "roles.dataScopeDept" },
+  { value: "CUSTOM", labelKey: "roles.dataScopeCustom" },
 ];
 
 function openCreate() {
@@ -119,11 +122,11 @@ function closeForm() {
 async function handleSubmit() {
   if (saving.value) return;
   if (!form.value.name.trim()) {
-    formError.value = "角色名称不能为空";
+    formError.value = t("roles.nameRequired");
     return;
   }
   if (!form.value.code.trim()) {
-    formError.value = "角色编码不能为空";
+    formError.value = t("roles.codeRequired");
     return;
   }
 
@@ -146,7 +149,7 @@ async function handleSubmit() {
     formVisible.value = false;
     await fetchRoles();
   } catch (err) {
-    formError.value = err instanceof ApiError ? err.message : "保存失败，请重试";
+    formError.value = err instanceof ApiError ? err.message : t("roles.saveFailed");
   } finally {
     saving.value = false;
   }
@@ -173,7 +176,7 @@ async function confirmDelete() {
     await fetchRoles();
   } catch (err) {
     // 内置角色（SUPER_ADMIN/ADMIN 等）后端返回 409，透出错误信息
-    errorMsg.value = err instanceof ApiError ? err.message : "删除失败，请重试";
+    errorMsg.value = err instanceof ApiError ? err.message : t("roles.deleteFailed");
     deleteVisible.value = false;
   } finally {
     deleting.value = false;
@@ -251,7 +254,7 @@ async function openAssign(role: RoleView) {
     menuTree.value = menus;
     checkedIds.value = new Set(assignedIds);
   } catch (err) {
-    assignError.value = err instanceof ApiError ? err.message : "加载菜单数据失败";
+    assignError.value = err instanceof ApiError ? err.message : t("roles.assignLoadFailed");
     menuTree.value = [];
   } finally {
     assignLoading.value = false;
@@ -276,7 +279,7 @@ async function confirmAssign() {
     assignVisible.value = false;
     assignRole.value = null;
   } catch (err) {
-    assignError.value = err instanceof ApiError ? err.message : "保存菜单分配失败";
+    assignError.value = err instanceof ApiError ? err.message : t("roles.assignSaveFailed");
   } finally {
     savingAssign.value = false;
   }
@@ -290,13 +293,13 @@ onMounted(() => {
 <template>
   <view class="roles-page">
     <view class="page-header">
-      <text class="page-title">角色管理</text>
-      <text class="page-subtitle">管理系统角色与菜单权限分配</text>
+      <text class="page-title">{{ t("roles.title") }}</text>
+      <text class="page-subtitle">{{ t("roles.subtitle") }}</text>
     </view>
 
     <view class="toolbar">
-      <button class="primary-button" @click="openCreate">新增角色</button>
-      <button class="secondary-button" :disabled="loading" @click="fetchRoles">刷新</button>
+      <button class="primary-button" @click="openCreate">{{ t("roles.createButton") }}</button>
+      <button class="secondary-button" :disabled="loading" @click="fetchRoles">{{ t("common.refresh") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchRoles" />
@@ -305,22 +308,22 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">ID</th>
-            <th scope="col">角色名称</th>
-            <th scope="col">角色编码</th>
-            <th scope="col">数据范围</th>
-            <th scope="col">描述</th>
-            <th scope="col">状态</th>
-            <th scope="col">创建时间</th>
-            <th scope="col">操作</th>
+            <th scope="col">{{ t("roles.columnId") }}</th>
+            <th scope="col">{{ t("roles.columnName") }}</th>
+            <th scope="col">{{ t("roles.columnCode") }}</th>
+            <th scope="col">{{ t("roles.columnDataScope") }}</th>
+            <th scope="col">{{ t("roles.columnDescription") }}</th>
+            <th scope="col">{{ t("roles.columnStatus") }}</th>
+            <th scope="col">{{ t("roles.columnCreatedAt") }}</th>
+            <th scope="col">{{ t("roles.columnActions") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="8" class="empty-row">加载中...</td>
+            <td colspan="8" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="roles.length === 0">
-            <td colspan="8" class="empty-row">暂无角色，点击「新增角色」创建</td>
+            <td colspan="8" class="empty-row">{{ t("roles.noData") }}</td>
           </tr>
           <tr v-for="role in roles" :key="role.id">
             <td>{{ role.id }}</td>
@@ -330,15 +333,15 @@ onMounted(() => {
             <td>{{ role.description ?? "-" }}</td>
             <td>
               <span class="status-badge" :class="role.enabled ? 'status-active' : 'status-disabled'">
-                {{ role.enabled ? "启用" : "停用" }}
+                {{ role.enabled ? t("roles.statusEnabled") : t("roles.statusDisabled") }}
               </span>
             </td>
             <td>{{ formatDateTime(role.createdAt) }}</td>
             <td>
               <view class="action-cell">
-                <button class="action-button edit" @click="openEdit(role)">编辑</button>
-                <button class="action-button handle" @click="openAssign(role)">分配菜单</button>
-                <button class="action-button delete" @click="askDelete(role)">删除</button>
+                <button class="action-button edit" @click="openEdit(role)">{{ t("roles.actionEdit") }}</button>
+                <button class="action-button handle" @click="openAssign(role)">{{ t("roles.actionAssign") }}</button>
+                <button class="action-button delete" @click="askDelete(role)">{{ t("roles.actionDelete") }}</button>
               </view>
             </td>
           </tr>
@@ -349,45 +352,45 @@ onMounted(() => {
     <!-- 新增/编辑角色弹窗 -->
     <view v-if="formVisible" class="modal-mask" @click.self="closeForm">
       <view class="modal">
-        <text class="modal-title">{{ formMode === "create" ? "新增角色" : "编辑角色" }}</text>
+        <text class="modal-title">{{ formMode === "create" ? t("roles.createTitle") : t("roles.editTitle") }}</text>
 
         <view class="form-row">
-          <text class="form-label">角色名称 <text class="required">*</text></text>
-          <input v-model="form.name" class="form-input" type="text" placeholder="如：运营管理员" />
+          <text class="form-label">{{ t("roles.nameLabel") }} <text class="required">*</text></text>
+          <input v-model="form.name" class="form-input" type="text" :placeholder="t('roles.namePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">角色编码 <text class="required">*</text></text>
-          <input v-model="form.code" class="form-input" type="text" placeholder="如：OPERATOR（保存时自动转大写）" />
+          <text class="form-label">{{ t("roles.codeLabel") }} <text class="required">*</text></text>
+          <input v-model="form.code" class="form-input" type="text" :placeholder="t('roles.codePlaceholder')" />
         </view>
 
         <view class="form-row">
-          <text class="form-label">数据范围</text>
+          <text class="form-label">{{ t("roles.dataScopeLabel") }}</text>
           <select v-model="form.dataScope" class="filter-select">
             <option v-for="scope in DATA_SCOPES" :key="scope.value" :value="scope.value">
-              {{ scope.label }}
+              {{ t(scope.labelKey) }}
             </option>
           </select>
         </view>
 
         <view class="form-row">
-          <text class="form-label">描述</text>
-          <textarea v-model="form.description" class="form-textarea" placeholder="角色职责说明（可选）" />
+          <text class="form-label">{{ t("roles.descriptionLabel") }}</text>
+          <textarea v-model="form.description" class="form-textarea" :placeholder="t('roles.descriptionPlaceholder')" />
         </view>
 
         <view class="form-row">
           <label class="radio-item">
             <input v-model="form.enabled" type="checkbox" />
-            <text>启用该角色</text>
+            <text>{{ t("roles.enabledLabel") }}</text>
           </label>
         </view>
 
         <text v-if="formError" class="modal-error">{{ formError }}</text>
 
         <view class="modal-actions">
-          <button class="ghost-button" :disabled="saving" @click="closeForm">取消</button>
+          <button class="ghost-button" :disabled="saving" @click="closeForm">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="saving" @click="handleSubmit">
-            {{ saving ? "保存中..." : "保存" }}
+            {{ saving ? t("roles.saving") : t("common.save") }}
           </button>
         </view>
       </view>
@@ -396,11 +399,11 @@ onMounted(() => {
     <!-- 分配菜单弹窗 -->
     <view v-if="assignVisible" class="modal-mask" @click.self="closeAssign">
       <view class="modal modal-assign">
-        <text class="modal-title">分配菜单 - {{ assignRole?.name ?? "" }}</text>
-        <text class="modal-hint">勾选菜单授权给该角色；勾选子菜单将自动联动父目录状态</text>
+        <text class="modal-title">{{ t("roles.assignTitle", { name: assignRole?.name ?? "" }) }}</text>
+        <text class="modal-hint">{{ t("roles.assignHint") }}</text>
 
         <text v-if="assignError" class="modal-error">{{ assignError }}</text>
-        <text v-if="assignLoading" class="assign-loading">加载菜单数据中...</text>
+        <text v-if="assignLoading" class="assign-loading">{{ t("roles.assignLoading") }}</text>
 
         <view v-else class="menu-tree">
           <view v-for="node in menuTree" :key="node.id" class="tree-node">
@@ -413,7 +416,7 @@ onMounted(() => {
               />
               <text class="tree-label">{{ node.title }}</text>
               <text v-if="node.children && node.children.length > 0" class="tree-children-count">
-                （{{ node.children.length }} 个子项）
+                {{ t("roles.childrenCount", { n: node.children.length }) }}
               </text>
             </label>
             <view v-if="node.children && node.children.length > 0" class="tree-children">
@@ -428,13 +431,13 @@ onMounted(() => {
               </label>
             </view>
           </view>
-          <text v-if="menuTree.length === 0" class="assign-empty">暂无菜单数据</text>
+          <text v-if="menuTree.length === 0" class="assign-empty">{{ t("roles.assignEmpty") }}</text>
         </view>
 
         <view class="modal-actions">
-          <button class="ghost-button" :disabled="savingAssign" @click="closeAssign">取消</button>
+          <button class="ghost-button" :disabled="savingAssign" @click="closeAssign">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="savingAssign || assignLoading" @click="confirmAssign">
-            {{ savingAssign ? "保存中..." : "保存" }}
+            {{ savingAssign ? t("roles.saving") : t("common.save") }}
           </button>
         </view>
       </view>
@@ -443,11 +446,11 @@ onMounted(() => {
     <!-- 删除确认 -->
     <ConfirmDialog
       v-model:visible="deleteVisible"
-      title="删除角色"
-      :message="`确定要删除角色「${deleteTarget?.name ?? ''}」吗？内置角色（SUPER_ADMIN/ADMIN）不允许删除。`"
+      :title="t('roles.deleteTitle')"
+      :message="t('roles.deleteMessage', { name: deleteTarget?.name ?? '' })"
       :danger="true"
       :confirming="deleting"
-      confirm-text="删除"
+      :confirm-text="t('roles.deleteButton')"
       @confirm="confirmDelete"
       @cancel="deleteVisible = false"
     />

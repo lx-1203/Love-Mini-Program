@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.Notification.NotificationType;
@@ -260,7 +261,7 @@ public class RealNotificationService implements NotificationService {
             notification.setReferenceType(ReferenceType.valueOf(referenceType));
         }
         notification.setIsRead(false);
-        notification.setCreatedAt(LocalDateTime.now());
+        notification.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
         // 否则下方 toNotificationView 中 notification.getId() 为 null

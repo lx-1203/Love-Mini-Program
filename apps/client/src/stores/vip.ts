@@ -27,7 +27,10 @@ import { isDev } from "../config/env";
 
 export interface VipPlan {
   id: string;
+  /** 套餐名（中文兜底，展示层优先用 nameKey 经 t() 渲染） */
   name: string;
+  /** R4-batch2: 套餐名的 i18n key（config.vipPlans.{id}.name，zh/en 同步） */
+  nameKey?: string;
   price: number;
   originalPrice: number;
   duration: string;
@@ -109,10 +112,12 @@ export const useVipStore = defineStore("vip", () => {
   );
   const expireDate = ref<string | null>(null);
 
+  // R4-batch2: 套餐名经 nameKey 走 i18n（config.vipPlans.*，zh/en 同步），name 保留为兜底
   const plans = ref<VipPlan[]>([
     {
       id: "monthly",
       name: "月度会员",
+      nameKey: "config.vipPlans.monthly.name",
       price: 18,
       originalPrice: 28,
       duration: "1个月",
@@ -121,6 +126,7 @@ export const useVipStore = defineStore("vip", () => {
     {
       id: "quarterly",
       name: "季度会员",
+      nameKey: "config.vipPlans.quarterly.name",
       price: 48,
       originalPrice: 84,
       duration: "3个月",
@@ -130,6 +136,7 @@ export const useVipStore = defineStore("vip", () => {
     {
       id: "yearly",
       name: "年度会员",
+      nameKey: "config.vipPlans.yearly.name",
       price: 128,
       originalPrice: 336,
       duration: "12个月",

@@ -1,5 +1,6 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.PromoCode;
 import com.campuslove.api.entity.PromoCodeUsage;
 import com.campuslove.api.repository.PromoCodeRepository;
@@ -152,7 +153,7 @@ public class PromoCodeService {
             usage.setCode(promo.getCode());
             usage.setUserId(userId);
             usage.setDiscountAmount(discountAmount);
-            usage.setUsedAt(LocalDateTime.now());
+            usage.setUsedAt(LocalDateTime.now(TimeZones.BUSINESS));
             promoCodeUsageRepository.save(usage);
 
             log.info("优惠码兑换成功：code={}, userId={}, discount={}, remainingUses={}",
@@ -201,7 +202,7 @@ public class PromoCodeService {
             throw new IllegalArgumentException("优惠码已被禁用");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         if (promo.getValidFrom() != null && promo.getValidFrom().isAfter(now)) {
             throw new IllegalArgumentException("优惠码尚未生效");
         }
