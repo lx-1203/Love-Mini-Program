@@ -1,7 +1,7 @@
 ﻿<template>
   <view
     class="safe-image"
-    :class="{ 'safe-image--loading': isLoading, 'safe-image--failed': allFailed }"
+    :class="[rootClass, { 'safe-image--loading': isLoading, 'safe-image--failed': allFailed }]"
     role="img"
     :aria-label="alt || '图片'"
     :aria-busy="isLoading"
@@ -56,6 +56,9 @@ const props = withDefaults(defineProps<{
   fallback?: string;
   mode?: string;
   customClass?: string;
+  /** 2026-08-08 走查 P0-1：应用到根容器 <view class="safe-image"> 的类。
+   * 背景大图场景需拉伸根容器（其默认无尺寸，内层 image 填不满 0 高度容器）。 */
+  rootClass?: string;
   customStyle?: string | Record<string, string | number>;
   lazyLoad?: boolean;
   alt?: string;
@@ -64,6 +67,7 @@ const props = withDefaults(defineProps<{
   fallback: '/static/assets/default-avatar.png',
   mode: 'aspectFill',
   customClass: '',
+  rootClass: '',
   customStyle: '',
   lazyLoad: false,
   alt: '',

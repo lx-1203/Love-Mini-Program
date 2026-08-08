@@ -942,6 +942,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
         <SafeImage
           v-if="getDisplayImages(nextCard).length > 0"
           :src="getDisplayImages(nextCard)[0]"
+          root-class="card__bg-wrap"
           custom-class="card__bg"
           mode="aspectFill"
           :lazy-load="true"
@@ -958,6 +959,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
         <SafeImage
           v-if="currentDisplayImages.length === 1"
           :src="currentDisplayImages[0]"
+          root-class="card__bg-wrap"
           :custom-class="bgCustomClass"
           mode="aspectFill"
         />
@@ -978,6 +980,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
             <!-- 性能优化：开启 lazy-load，仅在网络图片进入视口时加载，减少首屏并发请求数 -->
             <SafeImage
               :src="imageUrl"
+              root-class="card__bg-wrap"
               :custom-class="bgCustomClass"
               mode="aspectFill"
               :lazy-load="true"
@@ -1382,14 +1385,32 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 }
 
 /* ========== 背景图片（Phase D5 · brightness + saturate 凸显背景） ========== */
-/* :deep() 必需：custom-class 落在 SafeImage 内部 <image> 上，scoped 属性选择器不落子组件内部元素，
- * 否则 position:absolute/width/height:100% 失效，大图按流内布局渲染 → 卡片大图区空白 */
-:deep(.card__bg) {
+/* :deep() 必需：custom-class 落在 SafeImage 内部 <image>（H5 为 <uni-image> 包装元素）上，
+ * scoped 属性选择器不落子组件内部元素。⚠️ 2026-08-08 运行时验证：
+ * 卡片用 padding-top:125% 撑高，height:100% 百分比在部分环境下解析为 0 →
+ * 必须用 top/right/bottom/left 四边拉伸（inset 模式），不依赖百分比高度 */
+:deep(.card__bg-wrap) {
+  /* 2026-08-08 走查 P0-1：SafeImage 根容器默认无尺寸（height:0），
+   * 必须拉伸容器，内层 .card__bg 才能铺满卡片 */
   position: absolute;
   top: 0;
+  right: 0;
+  bottom: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
+}
+
+:deep(.card__bg) {
+  /* !important：SafeImage 自带 .safe-image__img{width/height:100%} 与拉伸模式冲突，
+   * 若其胜出则 height:100% 在 padding-top 撑高的卡片内解析为 0 → 大图空白 */
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: auto !important;
+  height: auto !important;
   object-fit: cover;
   filter: brightness(1.05) saturate(1.1);
 }
@@ -1462,12 +1483,15 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 }
 
 /* ========== Phase D2 · 照片墙 swiper 大图区（4:5 比例） ========== */
+/* 同 .card__bg：padding-top 撑高的卡片内 height:100% 可能解析为 0，改用四边拉伸 */
 .card__gallery {
   position: absolute;
   top: 0;
+  right: 0;
+  bottom: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
   z-index: 1;
 }
 

@@ -1,0 +1,21 @@
+const puppeteer = require("puppeteer");
+(async () => {
+  const token = await (await fetch("http://127.0.0.1:8080/api/v1/auth/phone-login", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:"19900000000",password:"Admin@12345"})})).json();
+  const browser = await puppeteer.launch({headless:"new",args:["--no-sandbox","--disable-gpu"],defaultViewport:{width:390,height:844,deviceScaleFactor:1}});
+  const page = await browser.newPage();
+  await page.evaluateOnNewDocument((tk)=>{localStorage.setItem("token",tk);localStorage.setItem("uni-storage-token",tk);localStorage.setItem("campus-love:privacy-authorized","1");},token.token);
+  await page.goto("http://localhost:5173/#/pages/discover/index",{waitUntil:"networkidle2",timeout:60000});
+  await page.waitForSelector(".card--current",{timeout:30000});
+  await new Promise(r=>setTimeout(r,8000));
+  const info = await page.evaluate(()=>{
+    const uni = document.querySelector(".card__bg");
+    const img = uni?.querySelector("img");
+    return {wrapperTag: uni?.tagName, wrapperRect: uni ? [uni.getBoundingClientRect().width, uni.getBoundingClientRect().height] : null,
+      imgSrc: img?.getAttribute("src")?.slice(0,110), imgComplete: img?.complete, imgNW: img?.naturalWidth, imgNH: img?.naturalHeight,
+      imgRect: img ? [img.getBoundingClientRect().width, img.getBoundingClientRect().height] : null};
+  });
+  console.log("[bg]", JSON.stringify(info));
+  const shot = await page.screenshot({path:"test-screenshots/verify-card-2.png"});
+  console.log("[shot bytes]", shot.length);
+  await browser.close();
+})();
