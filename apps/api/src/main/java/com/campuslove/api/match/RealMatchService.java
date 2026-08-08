@@ -401,9 +401,10 @@ public class RealMatchService implements MatchService {
     @Transactional(readOnly = true)
     public List<HeartSignalView> getHeartSignals(Long userId) {
         if (userId == null) throw new IllegalArgumentException("userId is required");
-        // P0-25：查询加 expiresAt > now 过滤——已过期（含尚未被定时任务标记）的信号不进入待处理列表
-        List<HeartSignal> signals = heartSignalRepository.findByUserAIdOrUserBIdAndStatusNotExpired(
-                userId, userId, SignalStatus.pending, LocalDateTime.now());
+        // P0-25：查询加 expiresAt > now 过滤——已过期（含尚未被定时任务标记）的信号不进入列表；
+        // 2026-08-08 走查 P0-3：pending + accepted 一并下发（「已接受」Tab 的「开聊」入口依赖）
+        List<HeartSignal> signals = heartSignalRepository.findByUserAIdOrUserBIdAndStatusInNotExpired(
+                userId, userId, java.util.List.of(SignalStatus.pending, SignalStatus.accepted), LocalDateTime.now());
         List<Long> userAIds = signals.stream()
                 .map(HeartSignal::getUserAId)
                 .filter(java.util.Objects::nonNull)

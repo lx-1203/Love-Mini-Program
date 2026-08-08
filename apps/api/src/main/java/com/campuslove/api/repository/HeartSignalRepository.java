@@ -50,6 +50,27 @@ public interface HeartSignalRepository extends JpaRepository<HeartSignal, Long> 
     );
 
     /**
+     * 2026-08-08 走查 P0-3：查询与指定用户相关的未过期 pending/accepted 心动信号。
+     *
+     * <p>已接受信号必须随列表下发（「已接受」Tab 的「开聊」入口依赖），
+     * 因此不能沿用 {@link #findByUserAIdOrUserBIdAndStatusNotExpired} 的单一状态过滤。</p>
+     *
+     * @param userAId  用户 A ID
+     * @param userBId  用户 B ID
+     * @param statuses 状态集合（pending + accepted）
+     * @param now      当前时间（仅返回 expiresAt 晚于该时刻的信号）
+     * @return 匹配的心动信号列表
+     */
+    @Query("SELECT hs FROM HeartSignal hs WHERE (hs.userAId = :userAId OR hs.userBId = :userBId) "
+            + "AND hs.status IN :statuses AND hs.expiresAt > :now")
+    List<HeartSignal> findByUserAIdOrUserBIdAndStatusInNotExpired(
+            @Param("userAId") Long userAId,
+            @Param("userBId") Long userBId,
+            @Param("statuses") java.util.Collection<SignalStatus> statuses,
+            @Param("now") java.time.LocalDateTime now
+    );
+
+    /**
      * P0-25：查询指定状态且已过期的信号（供定时任务扫描置为 expired）。
      *
      * @param status 信号状态（通常为 pending）

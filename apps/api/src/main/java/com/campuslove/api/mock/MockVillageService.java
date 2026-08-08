@@ -266,10 +266,10 @@ public class MockVillageService implements VillageService {
   }
 
   @Override
-  public PostDetailView createPost(Long userId, String content, List<String> images, List<String> tags, String category) {
+  public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category) {
     long id = postIdGen.incrementAndGet();
     PostData post = new PostData(
-        id, null, content, images, tags,
+        id, title, content, images, tags,
         category != null ? category : "all", 0, 0, 0, "active",
         userId, defaultUserName(), null, "南校区",
         LocalDateTime.now(), LocalDateTime.now()
