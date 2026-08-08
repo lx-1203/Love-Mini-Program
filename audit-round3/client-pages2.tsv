@@ -1,0 +1,66 @@
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|212-227|S|P1|“模拟认证一键通过（演示）”按钮无环境门控（SchoolCircleGate 组件无条件渲染 simulate 按钮，与注释“仅在非纯前端 mock 模式显示”矛盾），真实模式任意用户可一键绕过校园认证|认证形同虚设，校园频道/同校推荐数据可信度崩塌，合规风险|simulate 按钮收敛到 mock/演示包，生产移除或加权限守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\campus\certification.vue|113-117|B|P1|学生证照片未先上传：submitCertification 将 chooseImage 本地临时路径（tempFilePath）作为 studentIdCardUrl 直接 POST，real 模式后端无法访问该地址|审核人员无法查看学生证，认证流程功能性失效|先调 uploadFileViaUni 上传换取 URL 再提交|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\album.vue|237-254|F|P1|“设为头像”为纯本地数组重排（splice/unshift 仅改 photoGallery），注释称更新 sessionStore 但代码无任何调用，刷新页面后恢复原状|用户以为已换头像，实际未生效，交互闭环造假|接入 avatar 上传/置换接口或移除入口|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\tasks.vue|118-122|F|P1|任务中心“每日签到”点击即本地置 done=true（“本地立即完成（演示态）”），未调用真实 GET/POST /check-in 接口，积分/连签不发|任务奖励体系虚假，用户签到数据不落库|接入 clientApi.checkIn/getCheckInStatus 真实链路|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\tasks.vue|44-75|F|P2|任务列表为静态本地数据（“示例任务列表，后续可接入后端任务系统”），profile/checkin 两条 done 硬编码 true，进度条基于假数据|任务中心对真实用户无意义，商业化激励缺失|后端任务系统接入或下线页面|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\security\index.vue|79-93|F|P1|“修改密码”仅本地校验 6-20 位+两次一致后 toast 成功，无任何后端调用，密码从未被修改|安全中心核心功能是假的，用户修改密码后旧密码仍有效|接入真实改密接口（含旧密码校验）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\security\index.vue|138-150|F|P1|“注销账号”为演示态：仅弹窗提示客服协助（注释“真实链路调用后端注销接口”未实现）|用户无法注销账号，隐私合规风险|接入 account/deactivate 后端接口|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\security\index.vue|96-117|F|P2|“下线设备”仅从本地 devices 数组 filter 移除，无后端调用，刷新页面设备重现|设备管理形同虚设，无法真正保护账号|接入设备列表/下线接口|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\security\index.vue|29,40-44|H|P3|演示数据硬编码：boundPhone “138****5678” 与 devices（iPhone 15 Pro/小米 14/iPad Air）|生产环境展示假手机号/假设备，误导用户|接入真实账号/设备数据|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|221-247|F|P2|“清除缓存”为演示实现（800ms 后置 cacheSize=“0 KB”），未调用 getStorageInfo/clearStorage，TODO(mock) 注明|用户以为缓存已清，实际占用不降|接入 uni.clearStorage 真实链路|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|250-266|F|P2|“检查更新”为演示实现（延迟后提示“已是最新版本”），未接入 getUpdateManager/版本接口|版本更新提示虚假|接入真实更新检查|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|63-71|F|P3|消息通知/隐私模式开关仅存本地 storage，无后端/系统级消费方，开关不产生任何实际效果|设置项形同虚设|明确消费方或移除入口|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\wallet\index.vue|43-66|F|P1|“演示充值”按钮：无支付流程直接 POST /wallet/recharge 入账 10000 分（订单号 RECHARGE-DEMO-{ts} 仅作幂等键），真实模式用户可无限刷余额|资金风险：等于免费印钞，账单与收入对不上|移除演示充值或接入真实支付回调|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\vip\index.vue|155-177|F|P1|“立即开通”真实模式仅 toast “功能建设中”（支付未接入），mock 模式 setTimeout 假支付成功弹“开通成功”但未真正开通 VIP|VIP 商业化链路断裂，mock 下用户被虚假成功误导|接入微信支付/后端订单闭环|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat\video-call.vue|139-159,383-403|F|P1|视频通话无真实推拉流：pusherUrl/playerUrl 恒为空字符串（“真实环境填入信令服务器返回的推流地址”），live-pusher/live-player v-if 永不渲染，通话全程无视频|核心功能假实现，用户进入通话黑屏|接入信令/RTC 推拉流|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat\video-call.vue|300-310|F|P2|“翻转相机”两端分支均只 uni.showToast，未调用 live-pusher switchCamera|按钮无实际效果，交互欺骗|真实调用 pusher 上下文翻转|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue|324-329|F|P1|话题图片真实模式未上传：仅 console.warn 提示（“等待上传接口接入”），本地临时路径随 createTopic 提交，后端无法访问|话题配图在 real 模式全部裂图|先调 uploadPostImage 上传再提交|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat-session\index.vue|858-874|B|P2|私信会话长按也显示“撤回”菜单项，但撤回端点 POST /temp-chat/sessions/{id}/messages/{mid}/recall 仅临时会话存在，私信撤回必然 404 提示“撤回失败”|私信消息无法撤回，功能不符合预期|撤回菜单按会话类型隐藏或接入私信撤回端点|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat-session\index.vue|357-372|B|P2|syncChatStoreMessagesToMessagesStore 映射仅保留 id/sender/kind/body/sentAt/durationSeconds，丢弃 recalled/deliveryStatus/quoteRef/quoteBody/quoteSender|临时会话撤回态、引用回复、送达状态渲染丢失|映射补充扩展字段|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat-session\index.vue|882-884|T|P2|handleTapQuote 函数体为空（注释称“仅取消引用”但未调用 cancelQuoteReply），点击引用气泡无任何响应|引用消息点击无反馈，交互死点|实现滚动定位或至少取消引用|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat-session\index.vue|1130-1137|F|P3|表情（笑脸）图标按钮无 @tap handler，点击无任何反应|死按钮，误导用户|接入表情面板或移除按钮|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat-session\index.vue|193|H|P3|硬编码路径 “/pages/profile/index?userId=” 未走 ROUTES 常量|路径散落，重构易漏改|改用 ROUTES.PROFILE.INDEX|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat-session\view-models.ts|97|H|P3|formatTempCountdown 返回硬编码中文“已结束”绕过 i18n|en-US 下显示中文|改由调用方 t() 处理|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat-session\view-models.ts|304|H|P3|星期文案 “星期${“日一二三四五六”[d.getDay()]}” 硬编码中文|en-US 下显示中文星期|走 i18n|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat\index.vue|1-10,165|T|P3|聊天旧页已从 pages.json 移除注册（注释自述），页面与 ROUTES.TAB.CHAT 引用已清理，成为死文件|死代码增加维护面|删除文件或恢复注册|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\messages\index.vue|489|B|P3|session.partnerName.charAt(0) 无空值守卫（本文件 91 行注释确认后端 otherUserName 可能为空），null 时抛 TypeError|会话头像字母崩溃，整页渲染中断|(partnerName||“?”).charAt(0)|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\messages\index.vue|315|H|P3|硬编码官方号 code “official-assistant” 拼接跳转路径|code 变更需多处同步|收敛到常量|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\official-chat\index.vue|206-221|S|P2|real 模式加载官方号消息失败时静默回退 mock 本地文案，用户看到与后端不一致的“官方消息”|伪造官方内容展示给真实用户，信任受损|失败态展示错误提示而非 mock 数据|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\official-chat\index.vue|142|H|P3|魔法数字 6*3600*1000 生成 mock 消息时间偏移|可读性差|提常量|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|199,203,208,231,278,283,288,298,325|H|P3|9 处页面路径字面量硬编码（/pages/circles/index、/pages/campus/certification、/pages/village/detail 等）|路径散落，路由调整易漏|统一走 ROUTES|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|634|B|P3|topic.author.name[0] 无空值守卫，昵称空/null 时崩溃或渲染 undefined|话题作者昵称异常时列表渲染中断|(name||“?”)[0]|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|610,753,803,878|B|P3|4 处 author/comment/reply/similar 昵称取首字符 name[0] 均无空值守卫（null 时 TypeError）|昵称异常时评论/作者区渲染中断|统一兜底占位字符|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|558-559,846-850|F|P2|评论仅 fetchComments 拉第一页（store 端 fetchCommentsApi(postId) 无分页参数），契约 CommentListResponse 含 total/page/pageSize，超 20 条评论无法查看|大帖评论区截断，内容不可达|接入分页加载更多|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|84,293,300,410,412,482,484|H|P3|7 处页面路径字面量（/pages/profile/index、/pages/village/tag-posts、/pages/activities/detail、/pages/chat-session/index）|路径散落|统一走 ROUTES|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\history.vue|179-182|H|P2|统计标签 “赞/藏/看/评” 中文硬编码直出，绕过 i18n|en-US 界面显示中文统计|改用 i18n key|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\history.vue|167|B|P3|item.post.author.name[0] 无空值守卫|昵称异常时崩溃|兜底占位|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|203-259|H|P3|getMockTagPosts 内嵌 6 条 mock 帖子（假 ID 1001-1006、中文内容、mock 头像/学校），页面级模拟数据|模拟数据散落页面，污染产物|移入 mock 数据源|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|160-167|F|P2|标签页帖子 isLiked/isFollowed/isShared/isAlumni/isFavorite 全部硬编码 false，后端响应也未映射，点赞/关注状态不回显|用户看到的点赞态与实际不符（“置顶回显”同类问题）|后端返回并映射互动状态|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|130-141|B|P3|GET /post-tags/posts 端点不在 docs/openapi/village.yaml；page 参数 0 基，与 /posts 契约 1 基分页约定不一致|契约漂移，联调/文档失真|补契约并统一分页口径|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|175|H|P3|错误兜底文案 “加载帖子失败” 中文硬编码绕过 i18n|en-US 下显示中文错误|走 i18n|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\post.vue|115-119|B|P2|发帖分类 cat-sincere/hometown/mask/interest 经 toBackendCategory 映射为 sincere/hometown/mask/interest，与 village.yaml CreatePostRequest.category 枚举 [dating,study,life,activity,help] 漂移|契约失配，real 后端按枚举校验时发帖 400 或分类错乱|对齐契约或更新文档|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\post.vue|128-146|H|P3|预置话题标签中文硬编码（mock 与 real 失败兜底同一份）|en-US 下展示中文标签|走 i18n/后端数据|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\post.vue|135-138|B|P3|GET /post-tags 端点不在 docs/openapi 任何契约中，real 模式可能 404|契约缺失，联调风险|补 openapi 或走已有端点|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\index.vue|45-54|H|P2|按分类过滤依赖中文关键词 includes 匹配（“读书”“运动”等，TODO(后端) 注明服务端过滤未实现），en-US 圈子名不命中即回退全量|分类过滤失效/错配，国际化下行为异常|后端支持按分类过滤后移除映射|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\index.vue|244-252|B|P2|加入/退出按钮用 catchtap 绑定，H5 端 catchtap 不生效，点击“加入”冒泡到卡片触发 goToTopics 进话题列表|H5 端无法加入圈子，平台行为不一致|改用 @tap.stop|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\topics.vue|122|B|P2|onLoad 中 decodeURIComponent(q.circleName) 未包 try-catch，URL 含非法 % 序列时抛 URIError 中断页面渲染|直开畸形链接白屏|try-catch 兜底|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\topics.vue|217|B|P3|topic.author.name[0] 无空值守卫|昵称异常时崩溃|兜底占位|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\topic-detail.vue|189,116-127|F|P2|话题回复仅 fetchReplies(topicId,1) 加载第一页，页面无“加载更多回复”交互（store 支持 page 且后端分页）|回复超过一页不可见|接入 onLoadMoreReplies|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\topic-detail.vue|189|B|P3|/circles/topics/{id}/replies 契约漂移：village.yaml 声明返回纯数组，store 按 Spring Page {content,totalElements,number,size} 消费|契约文档与实现不一致，联调误导|统一契约|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\topic-detail.vue|226,286|B|P3|currentTopic.author.name[0]/reply.author.name[0] 无空值守卫|昵称异常时崩溃|兜底占位|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue|406,416|B|P3|标题输入 maxlength=50，但帖子模式后端校验 5-30 字（本页 287 行注释），31-50 字提交必被后端拒绝且前端无提示|标题 31-50 字用户提交失败|前端长度与后端对齐|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue|125,293-297|H|P3|品牌色 #3FCF8E 硬编码（switch 色）|主题切换不生效|从 design tokens 取色|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\campus\post-topic.vue|74|H|P3|品牌色 #3FCF8E 硬编码（switch 色）|主题切换不生效|从 design tokens 取色|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\campus\index.vue|34-41,186-218|F|P3|校园话题列表无空态：空列表时仅渲染空白 scroll-view+底部留白，无提示/引导|空数据页面空洞|补 EmptyState|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\campus\index.vue|38|T|P3|categoryTabs 中 study_help 的 icon 为 “” 且模板未使用 icon 字段，冗余字段|死字段|清理|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\campus\topic-detail.vue|165,213|B|P3|getDisplayName(...)[0] 无空值守卫，昵称为空时渲染 undefined|匿名/空昵称异常显示|兜底占位|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\index.vue|425-428,586,679,976|H|P3|4 处路径字面量（/pages/likes/index、/pages/likes-visitors/index、/pages/official-chat/index?accountId=official-assistant、/pages/chat-session/index）|路径散落|统一走 ROUTES|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\index.vue|1376|H|P3|头像兜底图路径 “/static/generated/images/avatars/default-girl.jpg” 硬编码且默认女性形象|男性用户也显示女孩头像|按性别/通用兜底图|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\index.vue|1181-1187|H|P3|appVersion 兜底硬编码 “v1.0.0”|版本展示失真|从构建注入|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\visitors.vue|60-69|T|P3|visitors computed 恒置 group:“earlier”，随后 groupedVisitors 用 getGroup 覆盖，死字段|冗余逻辑|直接按 getGroup 生成|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\dnd.vue|346,455|H|P3|switch 颜色 #3FCF8E 硬编码两处|主题切换不生效|从 design tokens 取色|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\vip\index.vue|120|H|P3|SWITCH_ACTIVE_COLOR=“#FFD700” 硬编码（注释要求手工与 tokens 同步）|主题变更需双处维护|统一 token 源|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\vip\promo-code.vue|60|H|P3|订单金额默认值 “48” 元硬编码（注释“默认 48 元（季卡）”）|价格调整需改代码|从套餐配置取价|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\support\feedback\index.vue|432|F|P3|反馈内容 textarea maxlength=280，契约 SubmissionRequest.content 上限 5000，前端限制远严于后端|用户长反馈无法提交，体验受限|与契约对齐|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\feedback\history.vue|233-241|T|P3|onMounted 与 onShow 首次进入均调用 loadList，页面打开重复拉取反馈列表|重复请求浪费流量|onShow 单点加载|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat\index.vue|424,437|D|P3|内联兜底色值 #f0fdf9/#ccfbef（var(--c-bg-brand, #f0fdf9)）|token 体系外颜色|改用纯 token|open|batch-4

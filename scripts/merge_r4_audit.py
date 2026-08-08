@@ -27,6 +27,11 @@ SOURCE_FILES = [
     "api-domain.tsv",
     "api-infra.tsv",
     "admin-infra.tsv",
+    # 家族补扫（Phase 1 第二轮）
+    "family-client.tsv",
+    "family-api.tsv",
+    "family-admin.tsv",
+    "family-token.tsv",
 ]
 
 # 既有清单（用于 legacy-link 比对，键 = 文件路径归一化）

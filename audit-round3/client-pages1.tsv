@@ -1,0 +1,54 @@
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|418-420|F|P1|Apple 登录假成功：uni.login(apple) 成功后直接 toast"登录成功"并跳转 discover，注释明示"省略与后端 /api/auth/third-party/apple 的 token 交换"，实际未建立会话（模拟登录）|用户以为 Apple 登录成功，实际未登录，跳转后被守卫踢回登录页，信任受损|接入后端 Apple token 交换，未实现前移除入口|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|588-589|H|P3|展示模式入口中文文案硬编码"以演示者身份进入展示版/超级管理员模式 · 一键体验全部功能"，绕过 i18n（页内其余文案均走 t()）|展示构建文案无法随语言切换|文案迁移到 i18n 资源|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|37|T|P3|验证码倒计时状态机死代码：countdown/pauseCountdown/resumeCountdown（L107-138）与 .send-code-btn 样式（L914-940）无消费方——本页为手机号+密码登录，模板无验证码 UI|维护成本与误导（后人以为有验证码功能）|删除倒计时逻辑与对应样式|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|257-271|F|P1|空闲时段 ActionSheet 三选项（添加课程/活动/自定义）选中后仅 toast"编辑中"（courseEditing 等）无任何后续，功能未闭环|用户无法在首页添加课表安排，入口为假按钮|接入 schedule 编辑链路或移除入口|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|295|H|P2|签到成功 toast 奖励硬编码 n=5（t('home.checkinReward', { n: 5 })），与 L411 earnedPoints（extraRecommendations || 5）动态值可脱节|后端奖励非 5 时 toast 与分享卡片数字矛盾，误导用户|奖励数从 store 结果取|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|835-881|T|P3|死样式集群：.notification-btn/.settings-btn/.notification-dot（L835-881）、.banner-*（L1248-1354）、.recommend-*（L1468-1568）、.post-*（L1746-1967）、.shop-*（L1902-1967）、.fab-*（L2049-2101）模板均无引用（注释已移除对应模块）|产物体积与样式维护成本|删除未引用样式块|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|39-40|T|P3|注释"首页 = 索引 2"与 useTabBar(0) 实参矛盾（discover/index.vue L50 注释称"tab 顺序：首页0/匹配1…"），两页注释互斥|误导 tab 索引维护，改 tab 时易出错|统一修正注释|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|619-650|F|P3|活动横滚区无空态：activityStore.activities 为空时仅渲染空白横向滚动区，无提示|空数据时页面模块显空白|增加空态占位|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\discover\index.vue|113-115|H|P2|匹配成功动画头像硬编码固定占位图 partnerAvatar=AVATAR_1 / myAvatar=AVATAR_2（注释承认"UserSession 无 avatarUrl 字段"）|用户本人与对方头像非真实头像，匹配场景信任受损|会话/卡片数据源补齐真实头像|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\discover\index.vue|376-401|T|P3|[AUTOSHOT] 自动化走查钩子残留生产代码：URL shot 参数可驱动自动打开详情/签到/筛选弹窗|测试专用后门入口，扩大攻击面|移入测试专用构建|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\discover\index.vue|288-289|H|P3|缺省年龄区间魔法数字 18/35（recommendationFilter.ageMin ?? 18 / ageMax ?? 35）|调整默认筛选需改代码|常量提取或配置化|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\discover\history.vue|60-77|F|P1|历史列表对已滑过卡片回退到占位数据：viewedCards 仅存 cardId/userId，getCardDetail 兜底返回"默认昵称"+空头像/签名（模板 L177/184 展示）|历史记录页核心内容不可识别，用户无法回看已滑用户，功能价值缺失|历史记录持久化昵称/头像字段|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\discover\history.vue|204-208|U|P3|挽回按钮无 loading/禁用态：连点可并发重复调用 rewindCard|重复请求浪费与触发每日限流 429|加防抖与禁用态|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes\index.vue|167-173|B|P2|VIP 免费解锁仅前端置位 item.unlocked=true，无服务端调用；若后端 unlocked 以 unlock 表为准，刷新后锁状态回退|VIP 用户解锁体验不稳定、状态不同步|服务端解锁接口或服务端感知 VIP 态|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes\index.vue|614|U|P3|未解锁列表项点击无任何反馈（三元表达式第三分支为 undefined），用户点后无反应|点击无响应，用户不知道如何解锁|未解锁点击弹出解锁引导|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes\index.vue|1155|D|P3|内联硬编码色值 rgba(15,23,42,0.72)（L1510 已有同值 token --c-overlay-strong）与 L1391 color:#ffffff 未用 design token|深色模式/主题适配失效|改用 token|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes\index.vue|1351-1415|T|P3|.likes-batch-bar 选择器被拆为两块重复定义（L1351-1358 与 L1404-1415），bottom 属性两处声明|样式维护隐患，后续修改易漏一侧|合并为单一规则块|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes\index.vue|1021-1071|T|P3|死样式 .likes-loading__spinner/.likes-loading__text/.likes-empty* 模板无引用（已改用 Skeleton/EmptyState 组件）|冗余样式|删除|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes-visitors\index.vue|185-189|B|P2|formatTime 无 isNaN 校验且直接 new Date() 解析：契约（likes.yaml）visitedAt 为 "yyyy-MM-dd HH:mm:ss"，iOS/Safari 解析为 Invalid Date → 显示 NaN/NaN（likes/index.vue 已有 P2-01 同类修复，本页未同步）|iOS 端访客时间显示错乱|加 isNaN 校验 + 格式转换|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes-visitors\index.vue|91-97|B|P2|onShow 加载条件反置：if (profileStore.loading) 时才再 load()，加载完成后（loading=false）永不刷新 profileStats，且加载中重复请求|页面数据陈旧与重复请求并存|改为 !loading 或无条件刷新|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes-visitors\index.vue|121-125|B|P2|VIP 免费解锁 markAllUnlocked(true) 仅本地置位无服务端持久化，刷新后 unlocked 回退为锁定|VIP 解锁不可靠|服务端解锁链路打通|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes-visitors\index.vue|267|U|P3|未解锁列表项 @tap 为 undefined 无任何反馈|点击无响应|弹出解锁引导|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\heart-signals\index.vue|240|B|P2|fromUserAvatar 直接绑定 :src 未走 resolveMediaUrl（likes/home 等页均经 resolveMediaUrl 重写鉴权代理路径）|真实模式用户上传头像 URL 未重写导致 403/404 无法显示|补 resolveMediaUrl 重写|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\heart-signals\index.vue|33-41|B|P2|信号状态机与契约不符：likes.yaml status enum=[pending,accepted,declined]，前端分组 [pending,accepted,expired]——expired tab 契约中不存在（后端按契约返回时恒空），declined 信号无任何展示分支被静默丢弃|已拒绝信号不可见、过期 tab 空置|对齐契约状态机并补 declined 展示|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\heart-signals\index.vue|595|H|P2|倒计时进度条硬编码固定 24h 动画（countdown-shrink 24h linear）与信号实际 expiresAt 无关|信号过期时长非 24h 时进度条失真误导|按 expiresAt 动态计算宽度|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|149-163|F|P1|认证提交为本地模拟：注释明确"无恋爱认证提交接口"，1s 后本地置 pending；学生证图片仅本地临时路径（chooseImage 未上传）|恋爱认证功能未落地，用户上传的学生证永不达审核方，认证信任体系断裂|接入后端提交/图片上传端点|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|22|B|P1|认证状态无任何加载逻辑：status 恒为初始 unverified（无 onLoad/onMounted 拉取），已认证用户进入页面显示"未认证"+表单|认证状态展示错误，用户困惑；注释 L5"mock 默认已认证"亦与实现矛盾|onLoad 拉取真实认证状态|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|191-226|F|P2|resetVerification/removeVerification 仅本地翻转 status，无后端解除认证调用|"解除认证"实际未解除，会话/后端状态不一致|接入后端接口|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|180-188|T|P3|simulateApprove 函数体无 isMockMode 守卫（仅模板 v-if 保护），若未来被其他调用点引用即可在真实模式伪造认证通过|认证信任体系防御性缺口|函数内加环境守卫|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\love-center\index.vue|9|T|P3|头部注释"当前为占位页：各板块点击后提示内容筹备中"与 L56"2026-08-07 落地真实内容源"矛盾（过时注释）|误导开发|修正注释|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\love-center\consulting.vue|41-44|F|P1|课程报名按钮仅 toast"报名成功"（signupSuccess），无报名/支付链路（注释"真实报名/支付链路接入后端"）|商业化付费链路为假按钮，用户付费期望落空|接入真实报名/支付|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\love-center\consulting.vue|30-32|H|P3|课程价格 99/129/159 魔法数字硬编码|调价需改代码|价格配置化|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\love-center\mbti.vue|87-91|F|P2|MBTI 测试结果仅 toast 展示（2.5s 消失），无结果页/记录/保存|测试结果无法回看，无留存价值|结果落地页或存储|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\love-center\nearby.vue|42|F|P3|"附近的人"复用 clientApi.getRecommendations({}) 全量推荐接口，无任何距离/位置参数，功能名不副实|附近维度缺失，用户期望与体验不符|接入距离/定位筛选|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\activities\detail.vue|243-244|B|P3|handleSendToFriend 中 await uni.showActionSheet 无 try/catch（页内其他 ActionSheet 均用回调模式），用户取消时 H5 端 Promise reject → 未捕获异常|取消操作产生未处理 rejection|补 catch 或改回调模式|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\daily-question\index.vue|200|B|P2|回答作者字段契约失配：openapi DailyAnswerView.author.displayName vs 前端 answer.authorName；非匿名时 L200 `answer.authorName[0]` 对 undefined 直接抛 TypeError 页面崩溃|后端按契约返回时回答列表作者名空白甚至崩溃|字段映射对齐（author.displayName）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\shop\index.vue|99-112|F|P1|商品详情页未注册（注释明确断链），全部商品点击仅 toast"开发中"（detailDeveloping），商城无详情/购买链路|逛逛页商业化链路断裂，积分余额无消费场景|注册详情页或隐藏商品入口|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\shop\index.vue|31-92|H|P2|商品数据全为本地硬编码 mock（价格 99/29.9/9.9…、销量、分类、图片路径），无后端数据源|商城数据不可运营，价格销量为假数据|接入后端商品接口|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|39-143|H|P3|展示页全量中文文案硬编码（分组标题"核心旅程"等、欢迎语"超级管理员模式 · 所有功能已解锁"）绕过 i18n|展示构建文案无法国际化|走 i18n 资源|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|18-44|H|P1|超级测试账号明文密码 "Admin@12345" 与一键登录逻辑位于 script 中，未随模板的 #ifdef DEV 条件编译剔除，进入生产产物|生产包携带测试账号凭据与登录后门，可被逆向利用|script 逻辑同样条件编译或移入 dev 专用模块|open|batch-1
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|35-37|T|P3|loginSuperAccount 的跳转 setTimeout 未保存引用清理（同页其他定时器均有 onUnmounted 清理）|dev 页卸载后仍可能触发跳转|保存引用并清理|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|79|T|P3|`void refreshSuperState;` 无意义表达式语句（为绕过 noUnusedLocals 的 hack）|代码异味|删除|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\profile\index.vue|285-291|D|P2|籍贯城市/未来城市默认值直接取校区城市（campus.city），籍贯为出生地与校区无关，用户不修改即提交错误籍贯|用户籍贯数据污染，同乡匹配与推荐失效|移除自动填充，仅保留显式选择|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\campus\index.vue|155|B|P2|补认证场景（"我的→校园认证"进入，L121 注释）保存后统一 replaceAppPath 跳注册流程时间安排页，导航上下文错误|补认证用户被带到注册流程，路径混乱|按来源区分跳转目标|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|18-24|H|P1|注册流程表单预填示例值："图书馆和北草坪"/["今晚","本周"]/courseBlocks 设计课课表，新用户直接保存即提交示例假数据入库|注册用户资料被示例数据污染，课表/偏好失真|默认值置空|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|21-23|B|P1|courseBlocks 示例课表未在模板渲染（用户不可见、无法编辑，review #66 仅修了 timeWindows）却随 {...form}（L45）提交后端|不可见假课表入库或课表功能整体缺失|渲染课表字段或从提交中剔除|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|33-75|H|P2|全页中文文案硬编码（"请输入偏好地点"/"保存并进入应用"/"常去区域"等 toast、标题、占位、按钮）未走 i18n，与其他 setup 页不一致|国际化缺失|接入 i18n|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\recommend-pref\index.vue|85-87|B|P2|接口契约失配：前端 GET/PUT /recommendations/preferences/me（L126-135 PUT body 用 preferredTime 字段），而 docs/openapi/recommendations.yaml 为 /recommendations/preferences 且字段 dailyNotifyTime|契约漂移，后端调整时前端 404 或字段丢失|对齐 openapi 契约（路径与字段名）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\legal\agreement\index.vue|148|H|P3|AppShell title="用户协议" 静态中文未走 i18n（页内其余文案均走 t()）|标题不随语言切换|title 走 i18n|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\legal\agreement\index.vue|1-356|T|P3|agreement 与 privacy 两页 95% 代码重复（仅 LegalTextType 与 i18n key 不同），未抽取共用页面组件|双份维护成本，改一处漏一处|抽取共用法律文本页组件|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\legal\privacy\index.vue|148|H|P3|AppShell title="隐私政策" 静态中文未走 i18n|同上|title 走 i18n|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|46-75|H|P2|全页中文硬编码（"讨论圈"/"正在加载讨论内容..."/"点击重试"/"暂时还没有新的讨论推荐"/"去寻觅"/"反馈讨论建议"及 L32 错误文案）未走 i18n|国际化缺失|接入 i18n|open|batch-3
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|62-66|F|P3|讨论推荐条目仅静态展示 title/summary/heatLabel，无任何点击交互与跳转|讨论推荐无消费路径，功能半成品|条目可点击查看/跳转|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|304-545|H|P2|大量中文文案硬编码与 t() 混用："线下活动"/"正在加载活动内容..."/"列表"/"日历"/"人已报名"/"感兴趣"/"加载中..."/"没有更多活动了"/"下一步"（L128 星期标签亦硬编码）|国际化缺失且同页风格不一致|统一走 i18n|open|batch-3
