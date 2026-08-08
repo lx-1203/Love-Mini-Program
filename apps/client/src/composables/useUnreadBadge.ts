@@ -24,9 +24,15 @@ import { watch } from "vue";
 import { onLaunch } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useMessagesStore } from "../stores/messages";
+// R4-00212：tab 索引由 config/navigation.ts（TabBar 唯一真相源）推导，不再硬编码
+import { appTabs } from "../config/navigation";
 
-/** TabBar 中"消息"tab 的索引（与 custom-tab-bar/index.js 中 tabs 数组顺序一致） */
-const CHAT_TAB_INDEX = 3;
+/**
+ * TabBar 中"消息"tab 的索引。
+ * R4-00212：从 appTabs（config/navigation.ts 单一真相源）按 id 推导，
+ * tab 顺序调整时红点自动跟随，不再依赖人工同步。
+ */
+const CHAT_TAB_INDEX = Math.max(0, appTabs.findIndex((t) => t.id === "chat"));
 
 /** 红点上限：超过 99 显示 "99+" */
 const BADGE_MAX = 99;

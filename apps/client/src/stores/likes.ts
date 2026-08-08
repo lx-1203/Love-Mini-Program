@@ -2,6 +2,9 @@ import { defineStore } from "pinia";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
+// R4-00991：toast 时长走统一常量；R4-00617：通知诊断日志仅开发期输出
+import { TOAST_DURATION } from "../constants/limits";
+import { isDev } from "../config/env";
 // R4-00195：解锁幂等 orderId 统一生成（与 coins.spend 同一键体系）
 import { buildUnlockOrderId } from "./coins";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
@@ -722,18 +725,21 @@ export const useLikesStore = defineStore("likes", {
      */
     notifyHeartSignal(signal: HeartSignal) {
       try {
-        // 使用 uni-app 通知 API
+        // 使用 uni-app 通知 API（R4-00127：文案走 i18n，en 语言下不再显示中文）
         uni.showToast({
-          title: `与 ${signal.fromUserName} 互相喜欢了！`,
+          title: t("likes.mutualLikeToast", { name: signal.fromUserName }),
           icon: "none",
-          duration: 3000,
+          // R4-00991：重要提示 toast 走统一时长常量（3s）
+          duration: TOAST_DURATION.LONG_MS,
         });
 
         // 可选：触发系统通知（需要权限）
         if (typeof uni.requestSubscribeMessage === "function") {
           // 小程序订阅消息（实际项目中使用）
-          // 修复 no-console：双向喜欢通知日志改用 console.warn（允许的方法）
-          console.warn(`[HeartSignal] 双向喜欢通知: ${signal.fromUserName}`);
+          // 修复 no-console：双向喜欢通知日志改用 console.warn（允许的方法）；仅开发期输出
+          if (isDev) {
+            console.warn(`[HeartSignal] 双向喜欢通知: ${signal.fromUserName}`);
+          }
         }
       } catch (error) {
         // 通知失败不应阻塞主流程

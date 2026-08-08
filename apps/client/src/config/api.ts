@@ -28,6 +28,9 @@ import {
   AUTH_HEADER_NAME,
   AUTH_HEADER_PREFIX,
 } from "../constants/api";
+// 上传/长轮询超时复用 constants/limits.ts 的 API_TIMEOUT 唯一真相源，
+// 避免与 config/api.ts 内联数值双源漂移（R4-00230）
+import { API_TIMEOUT } from "../constants/limits";
 
 /**
  * HTTP API 配置聚合对象。
@@ -49,9 +52,9 @@ export const API_CONFIG = {
     /** AI 接口超时（视频/图片生成） */
     aiMs: AI_API_TIMEOUT_MS,
     /** 文件上传超时（大文件 + 弱网） */
-    uploadMs: 60_000,
+    uploadMs: API_TIMEOUT.UPLOAD_MS,
     /** 长轮询接口超时 */
-    longPollMs: 30_000,
+    longPollMs: API_TIMEOUT.LONG_POLL_MS,
   },
 
   /** 网络层重试参数 */

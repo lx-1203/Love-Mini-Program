@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -318,8 +319,8 @@ public class AdminShopController {
  * @param campusName    所属校区（可空，全局商品）
  */
 record AdminShopItemRequest(
-        @NotBlank(message = "商品标题不能为空")
-        @Size(min = 1, max = 128, message = "商品标题长度须为 1-128 字") String title,
+        @NotBlank(message = ErrorMessages.PRODUCT_TITLE_REQUIRED)
+        @Size(min = 1, max = 128, message = ErrorMessages.PRODUCT_TITLE_LENGTH_INVALID) String title,
         String category,
         @Min(0) Integer priceCents,
         @Min(0) Integer originalPrice,

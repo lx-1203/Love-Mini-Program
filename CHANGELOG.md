@@ -22,7 +22,6 @@
 
 ### Added
 - **P9 - 文档与发布**：API 契约文档 `docs/API-CONTRACT.md`，覆盖 50 个 Controller、200+ 端点的契约规范
-- **P9 - 文档与发布**：Storybook 组件文档，覆盖 63+ 个组件的 Props 说明与可视化预览（7+ stories 文件）
 - **P9 - 文档与发布**：架构决策记录（ADR），初始 10 个 MADR 格式决策记录
 - **P9 - 文档与发布**：终端用户使用指南 `docs/USER-GUIDE.md`
 - **P9 - 文档与发布**：Admin 后台运营手册 `docs/ADMIN-GUIDE.md`
@@ -31,6 +30,13 @@
 - **P9 - 文档与发布**：扩展灾难恢复计划 `docs/DR/DRP.md`
 
 ### Changed
+- **2026-08（R4-02085 补登）**：
+  - VIP 会员暂缓上线：`VipPlans.vue` 改为占位说明，客户端 VIP 购买/权益入口下线
+  - 聊天红包功能移除：`ChatRedPacketController` / `RedPackets.vue` / `VipRedPacket` 实体删除
+  - 管理后台动态菜单重构（eladmin 风格：后端下发菜单树 + 动态路由 + 多标签页）
+  - Admin 批量操作/样式修复；`project.config.json` 与审核材料同步更新
+  - seed 数据迁移（flyway 主链重编号 V2026.07.24.0001~0004）
+  - R4 全量审计基建：`audit-round3/` 审计 TSV + 认领表 + 修复批次（B1~B4）
 - **P9**：完善 `docs/release-checklist.md`，覆盖商业化发布全部门禁
 - **R4-batch3（B3-2）**：
   - 客户端环境配置收敛：`services/env.ts` 降级为纯 re-export 兼容层，业务代码统一走 `config/env.ts`（双实现漂移消除，R4-00148/R4-00205）
@@ -193,13 +199,13 @@
 
 #### i18n 框架
 - 客户端 `vue-i18n@9.14.2` + `zh-CN.ts`/`en-US.ts`（100+ keys）
-- Admin `vue-i18n@9.14.2` + `zh-CN.ts`/`en-US.ts`（1300+ keys）
+- Admin `vue-i18n@9.14.2` + `zh-CN.ts`/`en-US.ts`（zh/en 各 1600+ key，R4-00499 修正原「1300+ keys」表述偏差）
 - 后端 `I18nConfig`（MessageSource UTF-8 + AcceptHeaderLocaleResolver）+ `messages*.properties`（150+ keys）
 - `apps/client/src/utils/time.ts` 基于 `Intl.DateTimeFormat` 的 `formatDateTime`/`formatRelativeTime`/`formatChatListTime`
 
 #### 文案与硬编码 token 化
-- 500+ 处硬编码中文迁移到 locale 文件
-- 8 个 Admin 视图 i18n 化
+- 400+ 处硬编码中文迁移到 locale 文件（R4-00499 修正原「500+ 处」表述）
+- 12+ 个 Admin 视图 i18n 化（Coins/Enrollments/CampusTopics/CircleTopics/InterestCircles/Config/AuditLogs/MatchConfig/OfficialAccounts 等；R4-00499 修正原「8 个」表述）
 - 14 个 Store 错误回退消息使用 i18n key
 - 颜色（#fff/#FF6B9D/#333 等）→ CSS 变量
 - 字号（20+ 种）→ 语义化排版 token
@@ -313,7 +319,7 @@
 - `build-mp-weixin.bat` 改用 pnpm + 错误处理
 - 配置 YAML 文件去重，敏感与普通配置分离
 
-### Added - OpenAPI 注解与 Storybook（P9 Task 9.1）
+### Added - OpenAPI 注解（P9 Task 9.1）
 
 #### OpenAPI/Swagger 注解
 - 6 个核心 Controller 已完成全量 `@Operation/@ApiResponse/@Parameter` 注解补全（AuthController/WechatAuthController/MatchController/MediaUploadController/MediaAccessController/ProfileController）
@@ -321,10 +327,8 @@
 - 在线 Swagger UI：`/swagger-ui.html`
 - OpenAPI JSON/YAML：`/v3/api-docs`、`/v3/api-docs.yaml`
 
-#### Storybook 组件文档
-- Storybook 配置 `.storybook/main.ts` + `.storybook/preview.ts`（Vue 3 + Vite + a11y addon）
-- 7+ stories 文件覆盖 63+ 个组件：common.stories.ts（24）/chat.stories.ts（8）/home.stories.ts（8）/discover.stories.ts（5+）/login.stories.ts（5）/social.stories.ts（5）/layout.stories.ts（3）+ profile/setup/village/unlock-guide
-- 每个 Story 包含 argTypes（控制面板）+ args（默认值）+ render 函数
+#### 组件文档
+- 组件使用说明以源码内 JSDoc/注释与 `docs/component-cut-spec.md` 等为准（R4-02084：仓库无 `.storybook` 目录，原 Storybook 组件文档声明不成立，已删除）
 
 ### Security - 全阶段安全修复
 
@@ -404,7 +408,7 @@
 示例：
 ```
 - **P9**：新增 API 契约文档（PR #5678）
-- **P9 - 文档与发布**：完成 Storybook 组件文档（PR #5679）
+- **P9 - 文档与发布**：完成组件文档（PR #5679）
 ```
 
 ### 3. 版本号策略
@@ -419,4 +423,8 @@
 
 ### 5. 自动化校验
 
-CI 中通过 `commitlint` 校验提交信息，自动归类到对应变更类型；通过 `release-please` 自动生成版本 PR。
+> R4-02083：仓库当前未配置 commitlint 与 release-please（ci.yml 无相关 job，
+> package.json 无对应依赖）——历史声明已删除。实际 CI 门禁见 `.github/workflows/ci.yml`：
+> gitleaks 密钥扫描、OpenAPI/Spectral lint、ESLint（产品代码）、客户端 typecheck/构建/单测、
+> Admin typecheck/构建、后端 mvn compile/test、Trivy 扫描、E2E。
+> 变更归类依赖 PR 评审与维护规范人工把关。

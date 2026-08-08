@@ -43,17 +43,22 @@ public class AdminPasswordValidator {
     private static final Logger log = LoggerFactory.getLogger(AdminPasswordValidator.class);
 
     /**
-     * 已知的不安全默认管理员密码哈希/明文清单。
+     * 已知的不安全默认管理员密码哈希清单。
      * 启动时检测到这些值将拒绝启动。
+     *
+     * <p>R4-00309：移除源码中的明文弱密码项（"admin123"/"admin"/"password"——
+     * 弱密码清单公开于源码属低危信息面），改为下方
+     * {@link #BCRYPT_HASH_PATTERN} 格式校验兜底：严格模式下哈希非 BCrypt 格式
+     * （疑似明文误配）同样拒绝启动。</p>
      */
     private static final java.util.Set<String> UNSAFE_DEFAULT_ADMIN_PASSWORDS = java.util.Set.of(
             // application-db.yml 中的占位哈希（对应明文 "password"）
-            ".20cQQubK3.HZWzG3YB1tlRy.fqvM/BG",
-            // 报告中提到的明文默认密码
-            "admin123",
-            "admin",
-            "password"
+            ".20cQQubK3.HZWzG3YB1tlRy.fqvM/BG"
     );
+
+    /** R4-00309：BCrypt 哈希格式（$2a$/$2b$/$2y$ 前缀），严格模式下校验用 */
+    private static final java.util.regex.Pattern BCRYPT_HASH_PATTERN =
+            java.util.regex.Pattern.compile("^\\$2[aby]\\$\\d{2}\\$[./A-Za-z0-9]{53}$");
 
     /**
      * Task 11.2：强密码正则。
@@ -143,6 +148,14 @@ public class AdminPasswordValidator {
             }
             log.warn(msg);
             return;
+        }
+        // R4-00309：严格模式下哈希必须为 BCrypt 格式——明文/其他格式属误配置，
+        // 拒绝启动（替代原源码明文弱密码清单的兜底语义）
+        if (strictPassword && !BCRYPT_HASH_PATTERN.matcher(adminPasswordHash).matches()) {
+            String msg = "ADMIN_PASSWORD_HASH 不是合法的 BCrypt 哈希格式（$2a$/$2b$/$2y$ 前缀，"
+                    + "疑似明文误配）。请通过环境变量 ADMIN_PASSWORD_HASH 设置 BCrypt 哈希，"
+                    + "生成方法：调用 PasswordEncoderConfig.encodePassword(明文密码)。";
+            throw new IllegalStateException(msg);
         }
         log.info("管理员密码哈希校验通过");
     }

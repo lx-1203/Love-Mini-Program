@@ -1,5 +1,6 @@
 package com.campuslove.api.config;
 
+import com.campuslove.api.common.ErrorMessages;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -79,7 +80,7 @@ public class PasswordEncoderConfig {
      */
     public static String encodePassword(String rawPassword) {
         if (rawPassword == null) {
-            throw new IllegalArgumentException("rawPassword 不能为 null");
+            throw new IllegalArgumentException(ErrorMessages.RAW_PASSWORD_NOT_NULL);
         }
         return new BCryptPasswordEncoder(BCRYPT_STRENGTH).encode(rawPassword);
     }

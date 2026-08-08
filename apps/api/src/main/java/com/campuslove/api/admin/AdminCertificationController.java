@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.campus.CampusCertificationService;
@@ -182,7 +183,7 @@ public class AdminCertificationController {
  */
 record ReviewCertificationRequest(
     @NotBlank
-    @Pattern(regexp = "APPROVED|REJECTED|PENDING", message = "status 必须为 APPROVED/REJECTED/PENDING")
+    @Pattern(regexp = "APPROVED|REJECTED|PENDING", message = ErrorMessages.CERT_STATUS_INVALID)
     String status,
     @Size(max = 500) String comment
 ) {}

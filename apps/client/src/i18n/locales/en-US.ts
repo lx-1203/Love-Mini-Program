@@ -920,6 +920,13 @@ export default {
     idleIcebreakerHint: "Not sure what to say? Try the icebreakers above",
     acceptExchangeBtn: "Accept exchange",
     endSessionBtn: "End session",
+    /* R4-00078: Message timebar copy (WeChat-style) */
+    timeBar: {
+      yesterday: "Yesterday {time}",
+      weekday: "{weekday} {time}",
+      date: "{month}/{day}/{year} {time}",
+      weekdayNames: { sun: "Sun", mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat" },
+    },
     /* Task 28: chat-session long press menu */
     longPressMenu: {
       ariaLabel: "Message actions menu",
@@ -948,6 +955,8 @@ export default {
     heartSignal: "Heart signals",
     pageName: "Likes",
     monthDay: "{m}/{d}",
+    /* R4-00127: Mutual-like toast copy via i18n */
+    mutualLikeToast: "You and {name} like each other!",
     /* Feature 1: Batch operations */
     manage: "Manage",
     finish: "Done",
@@ -1189,6 +1198,10 @@ export default {
     changePassword: "Change Password",
     changePasswordDesc: "Change regularly to keep your account safe",
     phoneChangeHint: "Demo environment: contact support to change your phone number",
+    /* R4-00063: Phone display no longer hardcodes a fake number; show bind state */
+    phoneNotBound: "Phone not bound",
+    phoneBoundMask: "Bound (masked)",
+    unknownDevice: "Unknown device",
     deviceTitle: "Login Devices",
     currentDevice: "Current device",
     kickTitle: "Sign Out Device",
@@ -1430,6 +1443,8 @@ export default {
       titleInvalid: "Title must be {min}-{max} characters",
       uploadingImages: "Uploading images...",
       imageUploadFailed: "Failed to upload images, please retry",
+      /* R4-00096: Preset topic tags (shared mock/real fallback; real success uses backend /post-tags) */
+      presetTags: ["Campus daily", "Interest sharing", "Find a buddy", "Help", "Confession wall", "Alumni updates", "Life journal", "Tech talk"],
     },
     /* P1-36: Tag posts page missing param notice */
     tagPostsMissingParam: "Missing tag parameter",
@@ -1450,6 +1465,8 @@ export default {
       likeAria: "Like",
       shareAria: "Share",
       shareHint: "Forwarding enabled, share {author}'s post with friends",
+      /* R4-00094: Error fallback copy via i18n */
+      loadFailed: "Failed to load posts, please try again later",
     },
     /* Task 28: Interest keywords (used by INTEREST_KEYWORDS color mapping; values must match original Chinese to keep includes() matching working) */
     interestKeywords: {
@@ -1547,6 +1564,113 @@ export default {
     phoneField: "Phone",
     codeField: "Code",
     termsAgreePrefix: "By logging in you agree to",
+    /* R4-00002: Showcase entry copy (VITE_SHOWCASE_MODE build only) */
+    showcaseEntryTitle: "Enter showcase as presenter",
+    showcaseEntryDesc: "Super admin mode · One tap to unlock all features",
+  },
+
+  /* ========== Showcase page (VITE_SHOWCASE_MODE build only, R4-00039) ========== */
+  showcase: {
+    title: "Full Showcase",
+    subtitle: "Super admin mode · All features unlocked",
+    noticeTitle: "Welcome to the Showcase",
+    noticeText: "All pages are grouped below; tap any card to try it. Tab pages switch via the bottom bar, other pages can return here to continue browsing.",
+    groupCount: "{n} items",
+    tabTag: "Tab",
+    groups: {
+      journey: {
+        title: "Core Journey",
+        subtitle: "Login · Profile · Verification",
+        items: {
+          login: { title: "Login", desc: "WeChat / Phone / Guest login" },
+          profile: { title: "Basic Profile", desc: "Avatar / Nickname / Gender / Interests" },
+          campus: { title: "School Info", desc: "School / Major / Grade" },
+          recommendPref: { title: "Recommendation Plan", desc: "Match preference setup" },
+          campusCert: { title: "Campus Verification", desc: "Student ID / Edu email verification" },
+          verification: { title: "Identity Verification", desc: "Manual verification · Real person" },
+          schedule: { title: "Schedule", desc: "Routine / class preferences" },
+        },
+      },
+      match: {
+        title: "Matching",
+        subtitle: "Discover · Likes · Heart Signals · Nearby",
+        items: {
+          discover: { title: "Discover · Match", desc: "Swipe cards / Like / Whisper" },
+          history: { title: "Viewed Today", desc: "Today's browsing history" },
+          likes: { title: "Likes", desc: "Who liked me / I liked" },
+          heartSignals: { title: "Heart Signals · Fate Match", desc: "Random match / Progressive unlock" },
+          nearby: { title: "Nearby People", desc: "Same city / Nearby users" },
+        },
+      },
+      home: {
+        title: "Home & Growth",
+        subtitle: "Check-in · Love Center · Daily Question",
+        items: {
+          home: { title: "Home", desc: "Check-in / Match entry / Love consulting" },
+          dailyQuestion: { title: "Daily Question", desc: "A heart-moving question every day" },
+          loveCenter: { title: "Love Center", desc: "Consulting / Courses / Tests" },
+          consulting: { title: "Love Consulting", desc: "4 tracks of love/social courses" },
+          mbti: { title: "MBTI Test", desc: "16-personality test" },
+          activities: { title: "Activities", desc: "Campus activity sign-up" },
+          activityDetail: { title: "Activity Detail", desc: "Activity content / Sign-up" },
+        },
+      },
+      chat: {
+        title: "Chat",
+        subtitle: "Sessions · Video Call",
+        items: {
+          messages: { title: "Messages", desc: "Sessions / Official accounts / Notices" },
+          session: { title: "Chat Session", desc: "Temp anonymous chat / Progressive unlock" },
+          videoCall: { title: "Video Call", desc: "1v1 real-time video (demo)" },
+        },
+      },
+      community: {
+        title: "Community",
+        subtitle: "Village · Circles · Campus",
+        items: {
+          village: { title: "Village · Circles", desc: "Follow / Same city / Discover" },
+          post: { title: "Publish Post", desc: "Post with text & images" },
+          detail: { title: "Post Detail", desc: "Like / Comment / Share" },
+          tagPosts: { title: "Tag Posts", desc: "Browse by tag" },
+          circles: { title: "Interest Circles", desc: "Circle plaza" },
+          topics: { title: "Topic List", desc: "Hot topics" },
+          topicDetail: { title: "Topic Detail", desc: "Topic feed" },
+          postTopic: { title: "Publish Topic", desc: "Join topic interaction" },
+          campus: { title: "Campus", desc: "Campus topics / Activities" },
+          campusPostTopic: { title: "Campus Post", desc: "Publish campus topic" },
+          campusTopicDetail: { title: "Campus Topic Detail", desc: "Campus topic feed" },
+          discussions: { title: "Discussions", desc: "Open-ended discussion" },
+          feedbackHistory: { title: "Feedback History", desc: "My feedback records" },
+        },
+      },
+      commerce: {
+        title: "Monetization",
+        subtitle: "VIP · Promo Codes · Shop",
+        items: {
+          vip: { title: "Get VIP", desc: "Monthly / Quarterly / Yearly" },
+          wallet: { title: "My Wallet", desc: "Coin balance / Bills / Top-up" },
+          promoCode: { title: "Promo Code", desc: "Redeem codes / Offers" },
+          bills: { title: "Bills", desc: "Spending / Renewal records" },
+          shop: { title: "Shop", desc: "Points mall / Goodies" },
+        },
+      },
+      profile: {
+        title: "Profile & Settings",
+        subtitle: "Me · Security · Help",
+        items: {
+          profile: { title: "Me", desc: "Profile / Posts / Menu" },
+          visitors: { title: "Who Viewed Me", desc: "Visitor records" },
+          album: { title: "My Album", desc: "Photo wall management" },
+          tasks: { title: "Task Center", desc: "Daily tasks / Rewards" },
+          privacy: { title: "Privacy Settings", desc: "Same-school recommendation / Notifications" },
+          settings: { title: "Settings", desc: "General settings" },
+          dnd: { title: "Do Not Disturb", desc: "Quiet hours" },
+          feedback: { title: "Feedback Center", desc: "Issues / Suggestions / Complaints" },
+          legalPrivacy: { title: "Privacy Policy", desc: "Personal info protection" },
+          agreement: { title: "User Agreement", desc: "Terms of service" },
+        },
+      },
+    },
   },
 
   /* ========== VIP ========== */
@@ -1916,6 +2040,9 @@ export default {
     officialPromoterMsg3: "Qixi special: meet your match under the stars!",
     /* ========== 2026-08-07 Messages redesign (WeChat-style, chat-only) ========== */
     yesterday: "Yesterday",
+    /* R4-00138: Activity-card message preview prefix/fallback copy */
+    activityCardPrefix: "[Activity]",
+    activityCardFallback: "Activity card",
     searchPlaceholder: "Search by name or chat history",
     noSearchResult: "No conversations found",
     anonymousMatch: "Anonymous match",
@@ -2580,6 +2707,8 @@ export default {
       anonymousAuthor: "Anonymous Alumnus",
       loadingMore: "Loading...",
       noMore: "No more",
+      /* R4-00108: Empty list state copy */
+      emptyTopics: "No topics in this category yet. Be the first to post one!",
     },
     /* post-topic.vue */
     postTopic: {
@@ -2678,6 +2807,8 @@ export default {
     directionSkipped: "Skipped",
     rewindLabel: "Rewind (1/day max)",
     rewindUsedUp: "Today's rewind quota used up",
+    /* R4-00013: Rewind request in-flight button label */
+    rewindingLabel: "Rewinding...",
     emptyTitle: "No browsing history yet",
     emptyDesc: "Go to Discover to find interesting people",
   },
@@ -3030,12 +3161,25 @@ export default {
       submitAnswerFailed: "Failed to submit answer",
       loadAnswersFailed: "Failed to load answers",
     },
+    /* Feedback store (R4-00190: fallback copy via i18n) */
+    feedback: {
+      loadSubmissionsFailed: "Failed to load feedback list",
+      submitIssueFailed: "Failed to submit issue feedback",
+      submitSuggestionFailed: "Failed to submit suggestion",
+      submitActivityProposalFailed: "Failed to submit activity proposal",
+    },
     /* Chat store */
     chat: {
       voiceFilePathEmpty: "Voice file path is empty, cannot upload voice message",
       icebreakerContentEmpty: "Icebreaker content cannot be empty",
       noActiveSession: "No active session",
       sessionIdEmpty: "Chat session ID cannot be empty",
+      /* R4-00192: withErrorHandling errorPrefix fallback copy (non-Error exceptions) */
+      loadOverviewFailed: "Failed to load chat overview",
+      loadSessionFailed: "Failed to load chat detail",
+      updatePinnedFailed: "Failed to update session pin state",
+      loadIcebreakersFailed: "Failed to load icebreakers",
+      sendIcebreakerFailed: "Failed to send icebreaker",
     },
     /* Video call store */
     videoCall: {

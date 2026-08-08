@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
+// R4-00190：兜底错误文案走 i18n（storeErrors.feedback.*）
+import { t } from "@/i18n";
 
 /**
  * 反馈 Store
@@ -26,7 +28,7 @@ export const useFeedbackStore = defineStore("feedback", {
       try {
         this.submissions = await clientApi.listSubmissions(type);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "加载反馈列表失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.feedback.loadSubmissionsFailed");
         console.error("[feedbackStore.load]", error);
       } finally {
         this.loading = false;
@@ -45,7 +47,7 @@ export const useFeedbackStore = defineStore("feedback", {
         await this.load();
         return true;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "提交问题反馈失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.feedback.submitIssueFailed");
         console.error("[feedbackStore.submitIssue]", error);
         return false;
       } finally {
@@ -65,7 +67,7 @@ export const useFeedbackStore = defineStore("feedback", {
         await this.load();
         return true;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "提交建议失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.feedback.submitSuggestionFailed");
         console.error("[feedbackStore.submitSuggestion]", error);
         return false;
       } finally {
@@ -85,7 +87,7 @@ export const useFeedbackStore = defineStore("feedback", {
         await this.load();
         return true;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : "提交活动提案失败";
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.feedback.submitActivityProposalFailed");
         console.error("[feedbackStore.submitActivityProposal]", error);
         return false;
       } finally {

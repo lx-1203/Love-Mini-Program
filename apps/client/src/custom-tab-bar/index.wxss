@@ -17,8 +17,10 @@
   height: calc(112rpx + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   box-sizing: content-box;
-  background: #ffffff;
-  border-top: 1rpx solid rgba(15, 23, 42, 0.06);
+  /* R4-00242：颜色走 design token（page 级 CSS 变量可级联到自定义 tabBar），
+     与 theme/design-variables.scss 双源一致，改品牌色只需改 token 一处 */
+  background: var(--c-bg-container, #ffffff);
+  border-top: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
 }
 
 .tab-bar__item {
@@ -32,14 +34,15 @@
   border: 0;
   background: transparent;
   /* 修复 P2（颜色对比度不足）：#9AA1AB → #6B7280，对比度从 ~2.85:1 提升至 ~4.6:1，达到 WCAG AA 4.5:1 标准 */
-  color: #6B7280;
+  /* R4-00242：颜色走 --c-text-tertiary（= #6B7280）design token */
+  color: var(--c-text-tertiary, #6B7280);
   font-size: 20rpx;
   line-height: 1;
 }
 
-/* 激活态文字主色：青藤绿 #3FCF8E */
+/* 激活态文字主色：青藤绿 #3FCF8E（R4-00242：走 --c-brand token） */
 .tab-bar__item--active {
-  color: #3FCF8E;
+  color: var(--c-brand, #3FCF8E);
 }
 
 .tab-bar__icon {

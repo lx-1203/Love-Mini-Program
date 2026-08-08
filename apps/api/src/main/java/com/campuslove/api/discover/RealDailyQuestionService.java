@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ResourceNotFoundException;
 import com.campuslove.api.common.ResourceConflictException;
@@ -98,7 +99,7 @@ public class RealDailyQuestionService implements DailyQuestionService {
         //    改为 ResourceNotFoundException 返回 404 友好提示）
         if (question == null) {
             log.warn("系统中不存在任何每日一问记录");
-            throw new ResourceNotFoundException("暂无每日一问记录，请稍后再试");
+            throw new ResourceNotFoundException(ErrorMessages.DAILY_QUESTION_NONE_RETRY);
         }
 
         // 4. 判断当前用户是否已回答
@@ -140,12 +141,12 @@ public class RealDailyQuestionService implements DailyQuestionService {
 
         // 查询问题是否存在
         DailyQuestion question = dailyQuestionRepository.findById(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("问题不存在: " + questionId));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.DAILY_QUESTION_NOT_FOUND_PREFIX + questionId));
 
         // 检查是否重复回答（infra R2 修复：原 IllegalStateException 无专属 handler
         // 会落入 500 兜底；改为 ResourceConflictException 返回 409 友好业务错误）
         if (dailyAnswerRepository.existsByQuestionIdAndUserId(questionId, userId)) {
-            throw new ResourceConflictException("您已经回答过该问题，不能重复回答");
+            throw new ResourceConflictException(ErrorMessages.DAILY_QUESTION_ALREADY_ANSWERED);
         }
 
         // 创建回答记录
@@ -189,12 +190,12 @@ public class RealDailyQuestionService implements DailyQuestionService {
         // 权限检查：只有已回答的用户才能查看
         // （infra R2 修复：原 IllegalStateException 落入 500，改为 InvalidOperationException 返回 400）
         if (currentUserId != null && !hasAnswered(currentUserId, questionId)) {
-            throw new InvalidOperationException("请先回答问题才能查看其他人的回答");
+            throw new InvalidOperationException(ErrorMessages.DAILY_QUESTION_ANSWER_REQUIRED);
         }
 
         // 查询问题是否存在
         if (!dailyQuestionRepository.existsById(questionId)) {
-            throw new IllegalArgumentException("问题不存在: " + questionId);
+            throw new IllegalArgumentException(ErrorMessages.DAILY_QUESTION_NOT_FOUND_PREFIX + questionId);
         }
 
         // 分页查询回答列表

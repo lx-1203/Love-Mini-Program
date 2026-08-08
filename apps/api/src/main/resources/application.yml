@@ -219,8 +219,11 @@ app:
     # 启动时若未设置或使用了不安全的默认值，应用将拒绝启动。
     # 生成安全密钥示例：openssl rand -base64 48
     secret: ${JWT_SECRET:}
-    # JWT 令牌有效期（毫秒），默认 86400000 = 24 小时
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    # JWT 令牌有效期（毫秒）。R4-00276：默认从 24h 缩短为 2h（7200000），
+    # 缩小长生命 token 泄露窗口；会话续期走 POST /api/v1/auth/refresh
+    # （滑动会话，客户端在 token 过期前主动刷新）。如需 24h 显式设置
+    # JWT_EXPIRATION_MS=86400000。
+    expiration-ms: ${JWT_EXPIRATION_MS:7200000}
     # 密钥版本号（SubTask 10.2 安全加固）：用于支持密钥轮换。
     # 签发 token 时写入 JWT header kid（Key ID），验证时按 kid 选择对应版本密钥。
     # 轮换时递增版本号并配套更新 KMS/Vault 中的密钥。
@@ -260,6 +263,8 @@ app:
     # Task 9：微信 jscode2session 接口 base URL，原在 WeChatClient.java 硬编码。
     # 默认值为官方文档地址，可通过环境变量 WECHAT_JSCODE2SESSION_URL 覆盖
     # （如需走内网代理或切换微信 API 域名）。
+    # R4-01783：生产（real/wechat profile）必须显式配置 WECHAT_JSCODE2SESSION_URL
+    # （即使值相同也应显式注入），避免隐式依赖代码/配置文件中的官方地址默认值。
     jscode2session-url: ${WECHAT_JSCODE2SESSION_URL:https://api.weixin.qq.com/sns/jscode2session}
   # infra R2-00010：Apple Sign in with Apple identityToken 验签配置
   # - bundle-id：本应用的 Bundle ID / App ID（Apple Developer 后台创建，如 com.campuslove.app）

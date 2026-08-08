@@ -102,9 +102,14 @@ public class ClientDbConfigController {
      * <p>始终先放入内存 {@link MatchConfig} 默认值（保证未持久化的字段也有返回），
      * 再用 {@code match_config} 表的值覆盖，与管理后台读取语义一致。</p>
      *
+     * <p>R4-00361：本端点返回内容含匹配算法权重（campusWeight 等内部调优参数），
+     * 原对全部登录用户开放属内部参数外泄；收敛为仅 ADMIN 可访问
+     * （业务侧如需向客户端下发可配置项，应使用收敛后的白名单字段）。</p>
+     *
      * @return 匹配配置键值映射
      */
     @GetMapping("/match-config")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> getMatchConfig() {
         SecurityUtils.getCurrentUserId();
         Map<String, String> values = new LinkedHashMap<>();

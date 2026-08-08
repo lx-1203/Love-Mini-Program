@@ -100,6 +100,11 @@ jobs:
       - name: Audit dependencies
         run: pnpm audit --prod --audit-level high
 
+      # R4-00517：ESLint 门禁（产品代码：admin/client 源码 + 工具脚本；
+      # 0 errors 即失败；warning 不阻塞——历史 style 债另项清理）
+      - name: Run ESLint (product code)
+        run: npm run lint
+
       - name: Run OpenAPI lint
         run: npm run lint:openapi
 
@@ -351,14 +356,21 @@ jobs:
         if: ${{ secrets.COSIGN_PRIVATE_KEY != '' }}
         uses: sigstore/cosign-installer@v3
 
+      # R4-02098：metadata-action 的 outputs.tags 为逗号/换行分隔的多 tag 串，
+      # cosign sign 只接受单镜像引用——逐 tag 拆分后分别签名，
+      # 避免将整串误作单个镜像引用导致签名必失败
       - name: Sign images
         if: ${{ secrets.COSIGN_PRIVATE_KEY != '' }}
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          API_TAGS: ${{ steps.meta-api.outputs.tags }}
+          ADMIN_TAGS: ${{ steps.meta-admin.outputs.tags }}
         run: |
-          cosign sign --key env://COSIGN_PRIVATE_KEY ${{ steps.meta-api.outputs.tags }}
-          cosign sign --key env://COSIGN_PRIVATE_KEY ${{ steps.meta-admin.outputs.tags }}
+          for tag in ${API_TAGS//,/ } ${ADMIN_TAGS//,/ }; do
+            [ -z "$tag" ] && continue
+            cosign sign --key env://COSIGN_PRIVATE_KEY "$tag"
+          done
 
   # ----------------------------------------------------------------
   # Job 8: Phase 01 综合验证（P1.16 新增）

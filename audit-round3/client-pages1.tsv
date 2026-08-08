@@ -37,7 +37,7 @@ R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\daily-question\index.vue|200
 R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\shop\index.vue|99-112|F|P1|商品详情页未注册（注释明确断链），全部商品点击仅 toast"开发中"（detailDeveloping），商城无详情/购买链路|逛逛页商业化链路断裂，积分余额无消费场景|注册详情页或隐藏商品入口|open|batch-2
 R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\shop\index.vue|31-92|H|P2|商品数据全为本地硬编码 mock（价格 99/29.9/9.9…、销量、分类、图片路径），无后端数据源|商城数据不可运营，价格销量为假数据|接入后端商品接口|open|batch-3
 R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|39-143|H|P3|展示页全量中文文案硬编码（分组标题"核心旅程"等、欢迎语"超级管理员模式 · 所有功能已解锁"）绕过 i18n|展示构建文案无法国际化|走 i18n 资源|open|batch-4
-R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|18-44|H|P1|超级测试账号明文密码 "Admin@12345" 与一键登录逻辑位于 script 中，未随模板的 #ifdef DEV 条件编译剔除，进入生产产物|生产包携带测试账号凭据与登录后门，可被逆向利用|script 逻辑同样条件编译或移入 dev 专用模块|open|batch-1
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|18-44|H|P1|超级测试账号明文密码 "<REDACTED>" 与一键登录逻辑位于 script 中，未随模板的 #ifdef DEV 条件编译剔除，进入生产产物|生产包携带测试账号凭据与登录后门，可被逆向利用|script 逻辑同样条件编译或移入 dev 专用模块|open|batch-1
 R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|35-37|T|P3|loginSuperAccount 的跳转 setTimeout 未保存引用清理（同页其他定时器均有 onUnmounted 清理）|dev 页卸载后仍可能触发跳转|保存引用并清理|open|batch-4
 R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|79|T|P3|`void refreshSuperState;` 无意义表达式语句（为绕过 noUnusedLocals 的 hack）|代码异味|删除|open|batch-4
 R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\profile\index.vue|285-291|D|P2|籍贯城市/未来城市默认值直接取校区城市（campus.city），籍贯为出生地与校区无关，用户不修改即提交错误籍贯|用户籍贯数据污染，同乡匹配与推荐失效|移除自动填充，仅保留显式选择|open|batch-3

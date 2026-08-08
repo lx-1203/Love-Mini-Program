@@ -130,7 +130,8 @@ function goToProfileSetup() {
 /* ========== 径向渐变心动氛围叠加层（M-14） ========== */
 /* R4-02512：以下为品牌色低不透明度氛围光晕（青藤绿/浪漫粉的 alpha 混色），
    品牌色在深色模式下保持不变（tokens.scss 设计约定），
-   低 alpha 光晕在深色底上同样成立，无需暗色覆盖。 */
+   低 alpha 光晕在深色底上同样成立，无需暗色覆盖。
+   R4-02166~169：以下 4 处 rgba 氛围渐变（浪漫粉/绿氛围渐变），无对应 token，保留原值。 */
 .lock-screen__atmosphere {
   position: absolute;
   top: 0;
@@ -162,7 +163,7 @@ function goToProfileSetup() {
   border-radius: var(--r-full);
   /* #ifndef MP-WEIXIN */
   /* H5 / App 端：使用 filter:blur 实现真实模糊效果 */
-  filter: blur(40rpx);
+  filter: blur(40rpx); /* 固定布局尺寸（模糊半径），无对应 token */
   /* #endif */
   /* #ifdef MP-WEIXIN */
   /* mp-weixin 不支持 filter:blur，用半透明遮罩 + 提升 opacity 兜底模拟若隐若现感 */
@@ -181,7 +182,7 @@ function goToProfileSetup() {
   &--2 {
     width: 280rpx;
     height: 280rpx;
-    top: 100rpx;
+    top: 100rpx; /* 固定布局尺寸（装饰头像偏移），无对应 token */
     right: -80rpx;
     background: linear-gradient(135deg, var(--c-romance-200), var(--c-romance-400));
     opacity: 0.12;
@@ -199,7 +200,7 @@ function goToProfileSetup() {
   &--4 {
     width: 240rpx;
     height: 240rpx;
-    bottom: 200rpx;
+    bottom: 200rpx; /* 固定布局尺寸（装饰头像偏移），无对应 token */
     right: -40rpx;
     background: linear-gradient(135deg, var(--c-romance-100), var(--c-romance-300));
     opacity: 0.13;
@@ -243,7 +244,7 @@ function goToProfileSetup() {
 }
 
 .phone-screen {
-  width: 96rpx;
+  width: 96rpx; /* 固定布局尺寸（手机屏幕宽），无对应 token */
   height: 160rpx;
   border-radius: var(--r-md);
   background: var(--c-gradient-page);
@@ -311,7 +312,7 @@ function goToProfileSetup() {
 /* ========== 操作按钮 ========== */
 .lock-screen__action {
   width: 100%;
-  max-width: 480rpx;
+  max-width: 480rpx; /* 固定布局尺寸（按钮最大宽度），无对应 token */
   margin-bottom: var(--sp-8);
   z-index: 1;
 }

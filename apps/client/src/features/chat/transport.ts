@@ -2,6 +2,8 @@ import type { components } from "../../services/generated/api-types";
 import { clientEnv } from "../../config/env";
 import { request } from "../../services/http";
 import { mockFixtures } from "../../services/mocks/fixtures";
+// R4-00223：语音消息 body 文案走 i18n
+import { t } from "@/i18n";
 
 type Schemas = components["schemas"];
 type TempChatSession = Schemas["TempChatSession"];
@@ -44,7 +46,8 @@ class MockChatTransport implements ChatTransport {
     return mockFixtures.sendTempChatMessage(sessionId, {
       sender: "self",
       kind: "voice",
-      body: "语音消息",
+      // R4-00223：body 走 i18n 模板（chat.voiceMessagePlaceholder），随语言切换
+      body: t("chat.voiceMessagePlaceholder", { n: durationSeconds }),
       durationSeconds,
     });
   }
@@ -88,7 +91,8 @@ class RealChatTransport implements ChatTransport {
     return this.pushMessage(sessionId, {
       sender: "self",
       kind: "voice",
-      body: "语音消息",
+      // R4-00223：body 走 i18n 模板（chat.voiceMessagePlaceholder），随语言切换
+      body: t("chat.voiceMessagePlaceholder", { n: durationSeconds }),
       durationSeconds,
     });
   }

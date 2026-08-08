@@ -10,6 +10,7 @@
  * - 会话限制：MAX_UNDO_COUNT_PER_SESSION
  */
 
+import { isDev } from "../../config/env";
 import type { RecommendationFilter } from "../../services/generated/api-types-supplement";
 
 /**
@@ -87,6 +88,15 @@ export const SWIPE_RIGHT_DEBOUNCE_MS = 300;
 export const MAX_UNDO_COUNT_PER_SESSION = 3;
 
 /**
+ * 超级测试账号「无限匹配次数」旁路常量（feature flag）。
+ *
+ * 与 session.isSuperTestAccount（硬编码测试 userId）联动：
+ * 测试账号下 remainingCount 直返该值表示「次数无限」，
+ * 仅用于本地联调，生产账号永远走正常配额计算分支。
+ */
+export const SUPER_TEST_UNLIMITED_REMAINING = 999;
+
+/**
  * SubTask 5.1.4：Mock 模式下右滑匹配成功的概率（0~1）。
  *
  * <p>历史 BUG：原 swipe.ts 在 mock 模式硬编码 {@code Math.random() < 0.3}（30% 匹配率），
@@ -137,9 +147,12 @@ function readMockMatchProbability(): number {
         if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 1) {
           return parsed;
         }
-        console.warn(
-          `[Discover] VITE_MOCK_MATCH_PROBABILITY="${raw}" 无效（应为 0~1 之间的数字），回退到默认值 ${DEFAULT_VALUE}`
-        );
+        // 配置缺失回退诊断仅在开发环境输出（R4-00648）
+        if (isDev) {
+          console.warn(
+            `[Discover] VITE_MOCK_MATCH_PROBABILITY="${raw}" 无效（应为 0~1 之间的数字），回退到默认值 ${DEFAULT_VALUE}`
+          );
+        }
       }
     }
   } catch (_e) {

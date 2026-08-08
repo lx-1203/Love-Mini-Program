@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -351,7 +352,7 @@ public class AdminCampusTopicController {
         try {
             return TopicStatus.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("非法话题状态参数: " + value);
+            throw new IllegalArgumentException(ErrorMessages.ILLEGAL_TOPIC_STATUS_PREFIX + value);
         }
     }
 

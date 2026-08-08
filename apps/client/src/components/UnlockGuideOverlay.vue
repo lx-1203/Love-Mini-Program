@@ -117,7 +117,7 @@ function handleKnown() {
 .unlock-overlay__hint {
   position: relative;
   z-index: 1;
-  width: 600rpx;
+  width: 600rpx; /* 固定布局尺寸（引导卡片宽度），无对应 token */
   max-width: 86%;
   padding: 40rpx 40rpx 32rpx;
   background: var(--c-overlay-white-bg-most, rgba(255, 255, 255, 0.96));
@@ -132,7 +132,7 @@ function handleKnown() {
 @keyframes hint-pop-in {
   from {
     opacity: 0;
-    transform: translateY(40rpx) scale(0.9);
+    transform: translateY(40rpx) scale(0.9); /* 固定布局尺寸（动画位移），无对应 token */
   }
   to {
     opacity: 1;
@@ -149,7 +149,7 @@ function handleKnown() {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24rpx;
+  margin-bottom: var(--sp-6);
   animation: arrow-bounce var(--d-loop, 1400ms) ease-in-out infinite;
 }
 
@@ -183,14 +183,14 @@ function handleKnown() {
   color: var(--c-text-secondary, #5B6470);
   text-align: center;
   line-height: 1.5;
-  margin-bottom: 32rpx;
-  padding: 0 16rpx;
+  margin-bottom: var(--sp-7);
+  padding: 0 var(--sp-4);
 }
 
 /* 「我知道了」按钮 */
 .unlock-overlay__btn {
   width: 100%;
-  height: 84rpx;
+  height: 84rpx; /* 固定布局尺寸（按钮高 84rpx，无对应 token） */
   border-radius: var(--r-xl, 42rpx);
   background: linear-gradient(135deg, var(--c-brand-500, #3FCF8E), var(--c-brand-700, #1D8A5A));
   border: none;

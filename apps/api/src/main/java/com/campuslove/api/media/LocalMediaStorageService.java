@@ -1,5 +1,6 @@
 package com.campuslove.api.media;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.Resilience4jConfig;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -214,10 +215,10 @@ public class LocalMediaStorageService implements MediaStorageService {
     public UploadResult store(Long userId, MultipartFile file, String type) {
         // 入参校验：避免 NPE
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("上传文件不能为空");
+            throw new IllegalArgumentException(ErrorMessages.UPLOAD_FILE_REQUIRED);
         }
         String normalizedType = normalizeType(type);
 
@@ -259,7 +260,7 @@ public class LocalMediaStorageService implements MediaStorageService {
         Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
         if (!absolutePath.startsWith(root)) {
             LOGGER.error("计算存储路径越界，拒绝上传: absolutePath={}, root={}", absolutePath, root);
-            throw new IllegalStateException("上传路径异常，已拒绝");
+            throw new IllegalStateException(ErrorMessages.UPLOAD_PATH_INVALID);
         }
         String url = URL_PREFIX + relativePath.toString().replace('\\', '/');
 
@@ -268,7 +269,7 @@ public class LocalMediaStorageService implements MediaStorageService {
             Files.createDirectories(absolutePath.getParent());
         } catch (IOException ex) {
             LOGGER.error("创建存储目录失败: path={}", absolutePath.getParent(), ex);
-            throw new IllegalStateException("创建存储目录失败: " + ex.getMessage(), ex);
+            throw new IllegalStateException(ErrorMessages.MKDIR_FAILED_PREFIX + ex.getMessage(), ex);
         }
 
         // 写入文件
@@ -276,7 +277,7 @@ public class LocalMediaStorageService implements MediaStorageService {
             Files.copy(in, absolutePath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException ex) {
             LOGGER.error("写入上传文件失败: path={}", absolutePath, ex);
-            throw new IllegalStateException("写入上传文件失败: " + ex.getMessage(), ex);
+            throw new IllegalStateException(ErrorMessages.WRITE_FILE_FAILED_PREFIX + ex.getMessage(), ex);
         }
 
         // 读取图片元信息（音频/视频无宽高）
@@ -376,7 +377,7 @@ public class LocalMediaStorageService implements MediaStorageService {
             }
         } catch (IOException ex) {
             LOGGER.error("删除媒体文件失败: url={}", url, ex);
-            throw new IllegalStateException("删除媒体文件失败: " + ex.getMessage(), ex);
+            throw new IllegalStateException(ErrorMessages.DELETE_FILE_FAILED_PREFIX + ex.getMessage(), ex);
         }
     }
 
@@ -390,7 +391,7 @@ public class LocalMediaStorageService implements MediaStorageService {
      */
     private String normalizeType(String type) {
         if (type == null) {
-            throw new IllegalArgumentException("媒体类型 type 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.MEDIA_TYPE_REQUIRED);
         }
         String lower = type.toLowerCase(Locale.ROOT);
         if ("image".equals(lower) || "background".equals(lower)) {
@@ -402,7 +403,7 @@ public class LocalMediaStorageService implements MediaStorageService {
         if ("audio".equals(lower) || "voice".equals(lower)) {
             return "audio";
         }
-        throw new IllegalArgumentException("不支持的媒体类型: " + type);
+        throw new IllegalArgumentException(ErrorMessages.UNSUPPORTED_MEDIA_TYPE_PREFIX + type);
     }
 
     /**
@@ -414,11 +415,11 @@ public class LocalMediaStorageService implements MediaStorageService {
      */
     private String extractExtension(String originalName) {
         if (originalName == null || originalName.isBlank()) {
-            throw new IllegalArgumentException("文件名无效");
+            throw new IllegalArgumentException(ErrorMessages.FILE_NAME_INVALID);
         }
         int dotIdx = originalName.lastIndexOf('.');
         if (dotIdx < 0 || dotIdx == originalName.length() - 1) {
-            throw new IllegalArgumentException("文件缺少扩展名: " + originalName);
+            throw new IllegalArgumentException(ErrorMessages.FILE_MISSING_EXTENSION_PREFIX + originalName);
         }
         return originalName.substring(dotIdx + 1);
     }
@@ -436,7 +437,7 @@ public class LocalMediaStorageService implements MediaStorageService {
         }
         if (fileSize > MAX_IMAGE_BYTES) {
             throw new MediaSizeLimitExceededException(
-                    "图片大小超过限制（10MB）: 当前 " + (fileSize / 1024 / 1024) + "MB");
+                    ErrorMessages.IMAGE_SIZE_EXCEED_10MB_PREFIX + (fileSize / 1024 / 1024) + "MB");
         }
     }
 
@@ -546,11 +547,11 @@ public class LocalMediaStorageService implements MediaStorageService {
             header = in.readNBytes(maxHeaderBytes);
         } catch (IOException ex) {
             LOGGER.error("读取文件 magic bytes 失败: name={}", file.getOriginalFilename(), ex);
-            throw new IllegalStateException("读取文件内容失败: " + ex.getMessage(), ex);
+            throw new IllegalStateException(ErrorMessages.READ_FILE_FAILED_PREFIX + ex.getMessage(), ex);
         }
 
         if (header.length == 0) {
-            throw new IllegalArgumentException("文件内容为空，无法校验 magic bytes");
+            throw new IllegalArgumentException(ErrorMessages.FILE_CONTENT_EMPTY);
         }
 
         // 按扩展名与类型选择期望的 magic bytes

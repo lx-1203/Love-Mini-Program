@@ -465,29 +465,6 @@ export const clientApi = {
       method: "POST",
     });
   },
-  /**
-   * 触发后端调试错误（仅开发环境可用）。
-   *
-   * @deprecated infra R2-00121: 该接口为 dev 调试用端点（POST /_debug/errors/{status}），
-   * 已由 isDev 守卫短路保护（生产环境调用仅 console.warn 不发起请求）。
-   * 目前仅 tests/error-state.spec.ts 引用；业务代码禁止调用，
-   * 后续收敛 dev 工具面时应移入独立 dev 模块并从 clientApi 移除。
-   */
-  async simulateError(status: 400 | 404 | 500) {
-    // 修复（P1 BUG）：环境守卫——simulateError 是 dev 调试用接口，
-    // 生产环境调用会向后端 /_debug/errors 发无效请求，这里直接短路返回
-    if (!isDev) {
-      console.warn("[api.simulateError] 仅限开发环境调用，已忽略");
-      return;
-    }
-    if (useMock()) {
-      return mockFixtures.simulateError(status);
-    }
-    return request<never>({
-      url: `/_debug/errors/${status}`,
-      method: "POST",
-    });
-  },
   async listSubmissions(type?: SubmissionType) {
     if (useMock()) {
       return mockFixtures.listSubmissions(type);
@@ -591,7 +568,10 @@ export const clientApi = {
       });
     } catch (error) {
       // 后端登出失败仅记录日志，不阻塞本地退出
-      console.warn("[api.logout] 后端登出接口调用失败:", error);
+      // 诊断日志仅在开发环境输出（R4-00661）
+      if (isDev) {
+        console.warn("[api.logout] 后端登出接口调用失败:", error);
+      }
     } finally {
       // 清本地 token + 跳转登录页（无论后端结果如何都执行）
       clearTokens();
@@ -670,7 +650,8 @@ export const clientApi = {
    */
   async uploadAvatar(file: UniUploadFileLike): Promise<{ avatarUrl?: string; url?: string }> {
     if (useMock()) {
-      return mockFixtures.uploadProfileBackground(file);
+      // R4-00153：独立 mock 头像实现（不再复用背景图语义的 uploadProfileBackground）
+      return mockFixtures.uploadAvatar(file);
     }
     return uploadFileViaUni<{ avatarUrl?: string }>(file, "/profile/avatar");
   },
@@ -917,9 +898,11 @@ export const clientApi = {
   },
 };
 
-/** 签到状态响应（GET /api/check-in/status） */
+/** 签到状态响应（GET /api/check-in/status）。
+ * R4-00151：字段名对齐后端契约（checkedInToday），原 checkedIn 与契约不符，
+ * 消费方会静默丢字段。 */
 export interface CheckInStatusResponse {
-  checkedIn: boolean;
+  checkedInToday: boolean;
   consecutiveDays: number;
 }
 

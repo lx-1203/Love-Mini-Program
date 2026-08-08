@@ -22,15 +22,24 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @EnableAsync
 public class AuditAsyncConfig {
 
+    /** 审计日志队列容量（R4-01823 命名常量）：应对突发管理操作 */
+    private static final int AUDIT_QUEUE_CAPACITY = 1000;
+
+    /** 核心线程数：2 */
+    private static final int AUDIT_CORE_POOL_SIZE = 2;
+
+    /** 最大线程数：8 */
+    private static final int AUDIT_MAX_POOL_SIZE = 8;
+
     /**
      * 审计日志写入专用线程池。
      */
     @Bean(name = "auditLogExecutor")
     public Executor auditLogExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(8);
-        executor.setQueueCapacity(1000);
+        executor.setCorePoolSize(AUDIT_CORE_POOL_SIZE);
+        executor.setMaxPoolSize(AUDIT_MAX_POOL_SIZE);
+        executor.setQueueCapacity(AUDIT_QUEUE_CAPACITY);
         executor.setThreadNamePrefix("audit-log-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);

@@ -5,8 +5,7 @@
  * 已知菜单路径判定 isKnownMenuPath（守卫 404 分流逻辑依赖）。
  */
 import { describe, expect, it } from "vitest";
-import { resolveMenuPath, findFirstMenuPath, isKnownMenuPath } from "./menu";
-import type { AdminMenuNode } from "./menu";
+import { resolveMenuPath, findFirstMenuPath, isKnownMenuPath, type AdminMenuNode } from "./menu";
 
 const tree: AdminMenuNode[] = [
   {

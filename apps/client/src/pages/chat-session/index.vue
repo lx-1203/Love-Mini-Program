@@ -82,11 +82,9 @@ const chatMenuIcons = {
   videoCall: IMAGE_PATHS.ICONS_EMOJI.VIDEO,
 } as const;
 
-/** SVG 图标资源路径（语音麦克风图标已随语音功能移除；全部 SVG，无 emoji 字符） */
+/** SVG 图标资源路径（语音麦克风/表情图标已随对应功能移除；全部 SVG，无 emoji 字符） */
 const iconSrc = {
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
-  // Emoji 替换 SVG 图标
-  smile: IMAGE_PATHS.ICONS_EMOJI.SMILE,
   check: IMAGE_PATHS.ICONS_COMMON.CHECK_SVG,
   checkWhite: IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG,
   close: IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG,
@@ -191,7 +189,8 @@ function goSignalProfile() {
   if (!peerId) return;
   // P0-1 修复（2026-08-08）：profile 是 tabBar 页，navigateTo 会 fail（can not navigateTo
   // a tabbar page）→ 改用 openAppPath（switchTab + pending-tab-query 桥接传 userId）
-  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(peerId)}`);
+  // R4-00076：路径走 ROUTES 常量，避免硬编码
+  openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(peerId)}`);
 }
 
 /**
@@ -601,8 +600,8 @@ function updateTempCountdown() {
   const closesAt = Date.parse(session.closesAt);
   const diff = closesAt - now;
 
-  // 使用纯函数格式化倒计时
-  tempCountdown.value = formatTempCountdown(diff);
+  // 使用纯函数格式化倒计时（R4-00077：已结束时返回 null，不再返回硬编码中文）
+  tempCountdown.value = formatTempCountdown(diff) ?? "";
 
   // 已结束时清理计时器并清空倒计时文本（review #51：避免“剩余时间：已结束”文案残留）
   if (diff <= 0) {
@@ -1165,13 +1164,7 @@ defineExpose({ noop });
           />
 
           <template v-if="!inputFocused">
-            <view
-              class="wechat-input-bar__icon-btn press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="120"
-            >
-              <image class="wechat-input-bar__icon-img" :src="iconSrc.smile" mode="aspectFit" alt="" />
-            </view>
+            <!-- R4-00075：原表情按钮无任何消费路径（输入为纯文字模式），已移除 -->
             <view
               class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--more press-feedback"
               hover-class="press-feedback--active"

@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.wallet.InsufficientBalanceException;
 import com.campuslove.api.wallet.WalletService;
@@ -213,17 +214,17 @@ public class RecommendationController {
           "heightMax 必须在 " + MIN_HEIGHT_CM + "-" + MAX_HEIGHT_CM + " 厘米之间");
     }
     if (heightMin != null && heightMax != null && heightMin > heightMax) {
-      throw new IllegalArgumentException("heightMin 不能大于 heightMax");
+      throw new IllegalArgumentException(ErrorMessages.HEIGHT_MIN_GT_MAX);
     }
     // V2026.08.08.0015: 年龄范围校验（18-60，拒绝倒挂），接通前端年龄筛选
     if (ageMin != null && (ageMin < MIN_AGE || ageMin > MAX_AGE)) {
-      throw new IllegalArgumentException("ageMin 必须在 " + MIN_AGE + "-" + MAX_AGE + " 岁之间");
+      throw new IllegalArgumentException(ErrorMessages.AGE_MIN_RANGE_PREFIX + MIN_AGE + "-" + MAX_AGE + " 岁之间");
     }
     if (ageMax != null && (ageMax < MIN_AGE || ageMax > MAX_AGE)) {
-      throw new IllegalArgumentException("ageMax 必须在 " + MIN_AGE + "-" + MAX_AGE + " 岁之间");
+      throw new IllegalArgumentException(ErrorMessages.AGE_MAX_RANGE_PREFIX + MIN_AGE + "-" + MAX_AGE + " 岁之间");
     }
     if (ageMin != null && ageMax != null && ageMin > ageMax) {
-      throw new IllegalArgumentException("ageMin 不能大于 ageMax");
+      throw new IllegalArgumentException(ErrorMessages.AGE_MIN_GT_MAX);
     }
     // infra R2-00205: 教育/感情状态枚举白名单校验，非法值直接 400 而非被静默过滤
     validateEnumFilter("educationLevel", educationLevel, VALID_EDUCATION_LEVELS);
@@ -350,7 +351,7 @@ public class RecommendationController {
   @PreAuthorize("hasRole('USER')")
   public WhisperUnlockView getWhisper(@PathVariable("userId") Long targetUserId) {
     if (targetUserId == null || targetUserId <= 0) {
-      throw new IllegalArgumentException("目标用户 ID 必须为正数");
+      throw new IllegalArgumentException(ErrorMessages.TARGET_USER_ID_POSITIVE);
     }
     Long currentUserId = SecurityUtils.getCurrentUserId();
     if (isMessageOrWhisperUnlocked(currentUserId, targetUserId)) {
@@ -378,7 +379,7 @@ public class RecommendationController {
   @PreAuthorize("hasRole('USER')")
   public WhisperUnlockView unlockWhisper(@PathVariable("userId") Long targetUserId) {
     if (targetUserId == null || targetUserId <= 0) {
-      throw new IllegalArgumentException("目标用户 ID 必须为正数");
+      throw new IllegalArgumentException(ErrorMessages.TARGET_USER_ID_POSITIVE);
     }
     Long currentUserId = SecurityUtils.getCurrentUserId();
     if (currentUserId.equals(targetUserId)) {
@@ -479,8 +480,8 @@ record ActivityRecommendationView(
 }
 
 record RecommendationPreferencesView(
-    @NotBlank(message = "dailyNotifyTime 不能为空") @Size(max = 16) String dailyNotifyTime,
-    @NotBlank(message = "scope 不能为空") @Size(max = 32) String scope,
+    @NotBlank(message = ErrorMessages.DAILY_NOTIFY_TIME_REQUIRED) @Size(max = 16) String dailyNotifyTime,
+    @NotBlank(message = ErrorMessages.SCOPE_REQUIRED) @Size(max = 32) String scope,
     /** 校园优先：同校用户排序靠前 */
     Boolean campusPriority
 ) {

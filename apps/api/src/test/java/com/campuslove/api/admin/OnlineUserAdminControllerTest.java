@@ -29,7 +29,8 @@ import org.springframework.web.client.HttpClientErrorException;
  *
  * <p>覆盖：</p>
  * <ul>
- *   <li>列表：返回在线用户视图（userId/昵称/登录方式/登录时间），昵称批量补全</li>
+ *   <li>列表：返回在线用户视图（userId/昵称/登录方式/登录时间），昵称批量补全；
+ *       传入默认分页（page=0, size=50，R4-00388 分页改造后签名带分页参数）</li>
  *   <li>列表：用户已删除时昵称为 null（不报错）</li>
  *   <li>踢下线：在线 → jti 加入黑名单（TTL=剩余有效期）+ 删除会话</li>
  *   <li>踢下线：用户不在线 → IllegalArgumentException（400）</li>
@@ -71,8 +72,8 @@ class OnlineUserAdminControllerTest extends ControllerTestBase {
         when(userRepository.findByIdIn(any())).thenReturn(List.of(user));
 
         withUserId(ADMIN_ID, () -> {
-            // Act
-            List<OnlineUserView> views = controller.listOnlineUsers().data();
+            // Act：R4-00388 分页改造后签名带分页参数，传默认值（page=0, size=50）
+            List<OnlineUserView> views = controller.listOnlineUsers(0, 50).data();
 
             // Assert
             assertEquals(1, views.size());
@@ -94,7 +95,7 @@ class OnlineUserAdminControllerTest extends ControllerTestBase {
         when(userRepository.findByIdIn(any())).thenReturn(List.of());
 
         withUserId(ADMIN_ID, () -> {
-            List<OnlineUserView> views = controller.listOnlineUsers().data();
+            List<OnlineUserView> views = controller.listOnlineUsers(0, 50).data();
             assertEquals(1, views.size());
             assertEquals(null, views.get(0).nickname(), "用户已删除时昵称为 null");
         });

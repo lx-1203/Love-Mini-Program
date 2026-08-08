@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.ErrorMessages;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -53,13 +54,13 @@ public class MockDoNotDisturbService implements DoNotDisturbService {
         // 业务校验：CUSTOM 模式下 customWeekdays 必填
         if ("CUSTOM".equals(request.repeatMode())) {
             if (request.customWeekdays() == null || request.customWeekdays().isBlank()) {
-                throw new IllegalArgumentException("CUSTOM 模式下必须指定 customWeekdays");
+                throw new IllegalArgumentException(ErrorMessages.DND_CUSTOM_WEEKDAYS_REQUIRED);
             }
         }
 
         // 业务校验：startTime 与 endTime 不能相同
         if (request.startTime().equals(request.endTime())) {
-            throw new IllegalArgumentException("开始时间与结束时间不能相同");
+            throw new IllegalArgumentException(ErrorMessages.DND_START_EQUALS_END);
         }
 
         DoNotDisturbView view = new DoNotDisturbView(

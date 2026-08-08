@@ -45,6 +45,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/error-reports")
 public class ErrorReportController {
 
+    /**
+     * context 序列化字节数上限（R4-00362）：JsonNode 不受 @Size 约束，
+     * 服务端按字节截断校验，防止超大 context 全量落库撑大 error_reports 表。
+     */
+    private static final int MAX_CONTEXT_BYTES = 4096;
+
     private final ErrorReportRepository errorReportRepository;
 
     public ErrorReportController(ErrorReportRepository errorReportRepository) {
@@ -65,7 +71,14 @@ public class ErrorReportController {
         report.setMessage(req.message());
         report.setStack(req.stack());
         report.setName(req.name());
-        report.setContext(req.context() != null ? req.context().toString() : null);
+        // R4-00362：context 为 JsonNode，@Size 注解不生效——按序列化字节数限制
+        // 超大 context，防止全量落库撑大 error_reports 表
+        String contextJson = req.context() != null ? req.context().toString() : null;
+        if (contextJson != null
+                && contextJson.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > MAX_CONTEXT_BYTES) {
+            throw new IllegalArgumentException("context 过大，请截断后重试");
+        }
+        report.setContext(contextJson);
         report.setPlatform(req.platform());
         report.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 

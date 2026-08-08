@@ -92,20 +92,37 @@ public final class DtoMapper {
      * 将 {@link User} 实体转换为轻量版 {@link UserBriefDto}，
      * 用于列表场景下的作者/匹配对象展示。
      *
+     * <p>R4-00294：本重载的 isVerified/isVip 恒为 null（User 主表无关联字段），
+     * 需要认证徽章/权益徽章的调用方请使用
+     * {@link #toUserBriefDto(User, Boolean, Boolean)} 显式补充关联字段
+     * （校园认证状态需批量预加载 user_campus_profile；VIP 已下线，isVip 恒为 null）。</p>
+     *
      * @param entity 用户实体，null 时返回 null
      * @return 用户简要 DTO
      */
     public static UserBriefDto toUserBriefDto(User entity) {
+        return toUserBriefDto(entity, null, null);
+    }
+
+    /**
+     * R4-00294：带关联字段的轻量用户 DTO 转换。
+     * 调用方在批量加载场景下传入认证/VIP 状态，避免列表端徽章缺失。
+     *
+     * @param entity     用户实体，null 时返回 null
+     * @param isVerified 是否已通过校园认证（调用方批量预加载，可 null）
+     * @param isVip      VIP 状态（VIP 已下线，统一传 null）
+     * @return 用户简要 DTO
+     */
+    public static UserBriefDto toUserBriefDto(User entity, Boolean isVerified, Boolean isVip) {
         if (entity == null) {
             return null;
         }
-        // isVerified / isVip 不在 User 主表，暂以 null 占位
         return new UserBriefDto(
                 entity.getId(),
                 entity.getNickname(),
                 entity.getAvatarUrl(),
-                null,
-                null
+                isVerified,
+                isVip
         );
     }
 

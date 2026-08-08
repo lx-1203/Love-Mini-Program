@@ -107,13 +107,24 @@ public class MessagingFallback implements SmartInitializingSingleton {
      * @param cause   失败原因，可为 null（主动降级场景）
      */
     public void discard(Object message, Throwable cause) {
+        // R4-00303：消息体可能含用户隐私，仅记录截断后的摘要（前 200 字符），
+        // 完整内容不落日志
+        String messageSummary = truncateForLog(message);
         if (cause != null) {
             log.warn("消息已丢弃（RabbitMQ 不可用）：message={}, cause={}",
-                    message, cause.getMessage());
+                    messageSummary, cause.getMessage());
         } else {
-            log.warn("消息已丢弃（RabbitMQ 不可用）：message={}", message);
+            log.warn("消息已丢弃（RabbitMQ 不可用）：message={}", messageSummary);
         }
         // 此处可扩展：写入本地落盘队列、写入数据库补偿表等，
         // 当前实现仅记录日志，符合"不阻塞主流程"的要求
+    }
+
+    /**
+     * R4-00303：日志用消息摘要——截断至 200 字符，避免完整消息体（可能含隐私）入日志。
+     */
+    private static String truncateForLog(Object message) {
+        String raw = message != null ? String.valueOf(message) : "null";
+        return raw.length() <= 200 ? raw : raw.substring(0, 200) + "...(truncated)";
     }
 }

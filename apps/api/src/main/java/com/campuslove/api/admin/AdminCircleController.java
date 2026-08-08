@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -130,15 +131,15 @@ public class AdminCircleController {
         // 显式参数校验（@Valid 作为第二道防线，统一中文错误文案）
         String name = normalize(req.name());
         if (name == null) {
-            throw new IllegalArgumentException("圈名不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CIRCLE_NAME_REQUIRED);
         }
         if (name.length() > 64) {
-            throw new IllegalArgumentException("圈名长度不能超过 64 字");
+            throw new IllegalArgumentException(ErrorMessages.CIRCLE_NAME_MAX_LENGTH);
         }
 
         // 圈名唯一性校验（防重复创建）
         if (interestCircleRepository.findByName(name).isPresent()) {
-            throw new IllegalArgumentException("该圈名已存在: " + name);
+            throw new IllegalArgumentException(ErrorMessages.CIRCLE_NAME_EXISTS_PREFIX + name);
         }
 
         InterestCircle circle = new InterestCircle();
@@ -181,12 +182,12 @@ public class AdminCircleController {
         if (req.name() != null && !req.name().isBlank()) {
             String newName = req.name().trim();
             if (newName.length() > 64) {
-                throw new IllegalArgumentException("圈名长度不能超过 64 字");
+                throw new IllegalArgumentException(ErrorMessages.CIRCLE_NAME_MAX_LENGTH);
             }
             // 圈名唯一性校验（排除自身）
             Optional<InterestCircle> nameExists = interestCircleRepository.findByName(newName);
             if (nameExists.isPresent() && !nameExists.get().getId().equals(id)) {
-                throw new IllegalArgumentException("该圈名已存在: " + newName);
+                throw new IllegalArgumentException(ErrorMessages.CIRCLE_NAME_EXISTS_PREFIX + newName);
             }
             circle.setName(newName);
         }
@@ -458,11 +459,11 @@ public class AdminCircleController {
  * @param sortOrder   排序权重（可选，升序；新增缺省 0）
  */
 record AdminCircleRequest(
-        @Size(max = 64, message = "圈名长度不能超过 64 字")
+        @Size(max = 64, message = ErrorMessages.CIRCLE_NAME_MAX_LENGTH)
         String name,
-        @Size(max = 16, message = "图标长度不能超过 16 字符")
+        @Size(max = 16, message = ErrorMessages.CIRCLE_ICON_MAX_LENGTH)
         String icon,
-        @Size(max = 256, message = "圈子描述长度不能超过 256 字")
+        @Size(max = 256, message = ErrorMessages.CIRCLE_DESC_MAX_LENGTH)
         String description,
         Integer sortOrder
 ) {

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -109,19 +110,19 @@ public class AdminUserController {
         // 显式参数校验（与 AuthService.registerUser 语义一致），@Valid 注解作为第二道防线；
         // 显式校验保证单元测试与统一中文错误文案
         if (req.phone() == null || !req.phone().matches("^1[3-9]\\d{9}$")) {
-            throw new IllegalArgumentException("手机号格式不正确");
+            throw new IllegalArgumentException(ErrorMessages.PHONE_FORMAT_INVALID);
         }
         if (req.password() == null || req.password().length() < 6 || req.password().length() > 64) {
-            throw new IllegalArgumentException("密码长度须为 6-64 位");
+            throw new IllegalArgumentException(ErrorMessages.PASSWORD_LENGTH_INVALID);
         }
         if (req.nickname() == null || req.nickname().isBlank() || req.nickname().trim().length() > 20) {
-            throw new IllegalArgumentException("昵称长度须为 1-20 字");
+            throw new IllegalArgumentException(ErrorMessages.NICKNAME_LENGTH_INVALID);
         }
 
         // 手机号唯一性校验（与注册链路 registerUser 一致，防重复创建）
         boolean phoneExists = userRepository.findByPhone(req.phone()).isPresent();
         if (phoneExists) {
-            throw new IllegalArgumentException("该手机号已注册");
+            throw new IllegalArgumentException(ErrorMessages.PHONE_ALREADY_REGISTERED);
         }
 
         User user = new User();
@@ -172,27 +173,27 @@ public class AdminUserController {
 
         // 显式参数校验（与 createUser 语义一致），@Valid 注解作为第二道防线
         if (req.phone() == null || !req.phone().matches("^1[3-9]\\d{9}$")) {
-            throw new IllegalArgumentException("手机号格式不正确");
+            throw new IllegalArgumentException(ErrorMessages.PHONE_FORMAT_INVALID);
         }
         if (req.password() == null || req.password().length() < 6 || req.password().length() > 64) {
-            throw new IllegalArgumentException("密码长度须为 6-64 位");
+            throw new IllegalArgumentException(ErrorMessages.PASSWORD_LENGTH_INVALID);
         }
         if (req.nickname() == null || req.nickname().isBlank() || req.nickname().trim().length() > 20) {
-            throw new IllegalArgumentException("昵称长度须为 1-20 字");
+            throw new IllegalArgumentException(ErrorMessages.NICKNAME_LENGTH_INVALID);
         }
 
         String role = req.normalizedRole();
         // 手机号唯一性校验（与注册链路 registerUser 一致，防重复创建）
         if (userRepository.findByPhone(req.phone()).isPresent()) {
-            throw new IllegalArgumentException("该手机号已注册");
+            throw new IllegalArgumentException(ErrorMessages.PHONE_ALREADY_REGISTERED);
         }
         // 校区管理员必须指定管辖校区（否则与全局管理员语义冲突）
         String campusName = normalize(req.campusName());
         if ("ADMIN".equals(role) && campusName == null) {
-            throw new IllegalArgumentException("校区管理员（ADMIN）必须指定 campusName");
+            throw new IllegalArgumentException(ErrorMessages.CAMPUS_ADMIN_CAMPUS_NAME_REQUIRED);
         }
         if ("SUPER_ADMIN".equals(role) && campusName != null) {
-            throw new IllegalArgumentException("全局管理员（SUPER_ADMIN）不能指定 campusName");
+            throw new IllegalArgumentException(ErrorMessages.SUPER_ADMIN_NO_CAMPUS_NAME);
         }
 
         User user = new User();
@@ -597,10 +598,10 @@ public class AdminUserController {
  * @param nickname 昵称（1-20 字）
  */
 record AdminCreateUserRequest(
-        @NotBlank(message = "手机号不能为空")
-        @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确") String phone,
-        @NotBlank(message = "密码不能为空")
-        @Size(min = 6, max = 64, message = "密码长度须为 6-64 位") String password,
-        @NotBlank(message = "昵称不能为空")
-        @Size(min = 1, max = 20, message = "昵称长度须为 1-20 字") String nickname) {
+        @NotBlank(message = ErrorMessages.PHONE_REQUIRED)
+        @Pattern(regexp = "^1[3-9]\\d{9}$", message = ErrorMessages.PHONE_FORMAT_INVALID) String phone,
+        @NotBlank(message = ErrorMessages.PASSWORD_REQUIRED)
+        @Size(min = 6, max = 64, message = ErrorMessages.PASSWORD_LENGTH_INVALID) String password,
+        @NotBlank(message = ErrorMessages.NICKNAME_REQUIRED)
+        @Size(min = 1, max = 20, message = ErrorMessages.NICKNAME_LENGTH_INVALID) String nickname) {
 }

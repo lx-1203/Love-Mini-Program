@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.config.CacheNames;
@@ -373,7 +374,7 @@ public class VillageInteractionService {
             Comment parent = commentRepository.findById(parentId)
                     .orElseThrow(() -> new IllegalArgumentException("父评论不存在: " + parentId));
             if (parent.getPost() == null || !postId.equals(parent.getPost().getId())) {
-                throw new IllegalArgumentException("父评论不属于该帖子，无法回复");
+                throw new IllegalArgumentException(ErrorMessages.PARENT_COMMENT_MISMATCH);
             }
         }
 

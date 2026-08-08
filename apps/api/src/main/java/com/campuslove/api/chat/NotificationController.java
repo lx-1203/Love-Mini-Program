@@ -92,6 +92,10 @@ public class NotificationController {
   /**
    * 获取未读通知数（Long userId 版本）。
    * GET /api/notifications/count
+   *
+   * <p>R4-00350：本端点为 {@link #getUnreadCount()}（/unread-count）的
+   * 历史别名，返回同一数据源（仅返回类型不同：long vs UnreadCountView）。
+   * 保留以兼容旧客户端；新客户端请使用 /unread-count。</p>
    */
   @GetMapping("/count")
   public long getUnreadCountLong() {

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.admin.audit.AuditOperation;
@@ -147,6 +148,6 @@ record NotifyConfigUpdateRequest(
 
 /** 批量更新通知配置请求 */
 record NotifyConfigBatchUpdateRequest(
-        @NotEmpty(message = "configs 列表不能为空")
+        @NotEmpty(message = ErrorMessages.NOTIFY_CONFIGS_REQUIRED)
         List<@Valid NotifyConfigUpdateRequest> configs
 ) {}

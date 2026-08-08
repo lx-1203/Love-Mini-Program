@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.chat.VoiceMessageService.VoiceUploadResult;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.constraints.Max;
@@ -138,7 +139,7 @@ public class VoiceMessageController {
         // infra R2-00211: 拒绝反斜杠编码 %5C —— Windows 下反斜杠同样被当作路径分隔符，
         // 还原后可能绕过 /uploads/ 前缀校验（依赖 startsWith 兜底），统一仅允许 %2F 路径分隔符
         if (encoded.contains("%5C") || encoded.contains("%5c")) {
-            throw new IllegalArgumentException("URL 包含非法字符（反斜杠）");
+            throw new IllegalArgumentException(ErrorMessages.URL_ILLEGAL_BACKSLASH);
         }
         return encoded
                 .replace("%2F", "/")

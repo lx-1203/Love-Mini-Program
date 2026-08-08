@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
@@ -92,7 +93,7 @@ public class AdminWalletController {
 
         // 余额范围参数自校验：下限不得大于上限
         if (balanceFrom != null && balanceTo != null && balanceFrom > balanceTo) {
-            throw new IllegalArgumentException("余额下限不能大于上限");
+            throw new IllegalArgumentException(ErrorMessages.BALANCE_MIN_GT_MAX);
         }
 
         // 数据隔离：当前管理员为校区管理员时强制按其管辖校区过滤
@@ -187,12 +188,12 @@ public class AdminWalletController {
 
         // 显式参数校验（与 @Valid 双保险，保证统一中文错误文案）
         if (req.amount() == null || req.amount() == 0) {
-            throw new IllegalArgumentException("调整金额不能为空且不能为 0（正数充值、负数扣减）");
+            throw new IllegalArgumentException(ErrorMessages.ADJUST_AMOUNT_INVALID);
         }
 
         // 校验目标用户存在
         if (userRepository.findById(userId).isEmpty()) {
-            throw new IllegalArgumentException("用户不存在: userId=" + userId);
+            throw new IllegalArgumentException(ErrorMessages.ADMIN_USER_NOT_FOUND_PREFIX + userId);
         }
 
         // 数据隔离（写操作越权拦截）：校区管理员只能调整本校区用户余额
@@ -262,7 +263,7 @@ public class AdminWalletController {
                 return t.name();
             }
         }
-        throw new IllegalArgumentException("非法交易类型参数: " + value + "，仅支持 DEBIT/CREDIT");
+        throw new IllegalArgumentException(ErrorMessages.ILLEGAL_TRANSACTION_TYPE_PREFIX + value + "，仅支持 DEBIT/CREDIT");
     }
 
     /**

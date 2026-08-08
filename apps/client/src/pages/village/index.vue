@@ -10,7 +10,7 @@
  * - 底部固定发帖输入条（QQ 频道风格）
  */
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import { onLoad, onHide, onShow } from "@dcloudio/uni-app";
+import { onLoad, onHide, onShow, onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, type PostItem, type PostFilters } from "../../stores/village";
@@ -20,6 +20,8 @@ import { useActivityStore } from "../../stores/activity";
 import { useDailyQuestionStore } from "../../stores/daily-question";
 import { openAppPath, consumeTabQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
+// R4-00084：页面跳转路径统一走 ROUTES 常量
+import { ROUTES } from "../../constants/routes";
 import LockScreen from "../../components/common/LockScreen.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { villagePageRequirements } from "../../config/page-access";
@@ -196,16 +198,16 @@ const INTEREST_CATEGORIES = computed<InterestCategory[]>(() => [
 ]);
 
 function goToInterestCircle(catId: string) {
-  openAppPath(`/pages/circles/index?category=${encodeURIComponent(catId)}`);
+  openAppPath(`${ROUTES.CIRCLES.INDEX}?category=${encodeURIComponent(catId)}`);
 }
 
 function goToTopicDetail(topic: { id: string; circleId: string }) {
-  openAppPath(`/pages/circles/topic-detail?topicId=${topic.id}&circleId=${topic.circleId}`);
+  openAppPath(`${ROUTES.CIRCLES.TOPIC_DETAIL}?topicId=${topic.id}&circleId=${topic.circleId}`);
 }
 
 /* ========== 学校圈认证门 ========== */
 function goToCampusCertification() {
-  openAppPath("/pages/campus/certification");
+  openAppPath(ROUTES.CAMPUS.CERTIFICATION);
 }
 
 /** 模拟认证一键通过（演示）：调后端 simulate 接口，成功后刷新 session */
@@ -228,7 +230,7 @@ async function simulateVerify() {
 
 /* ========== 活动频道 ========== */
 function openActivityDetail(activityId: number | string) {
-  openAppPath(`/pages/activities/detail?id=${encodeURIComponent(String(activityId))}`);
+  openAppPath(`${ROUTES.ACTIVITY_DETAIL}?id=${encodeURIComponent(String(activityId))}`);
 }
 
 async function handleEnrollActivity(activityId: number | string) {
@@ -275,17 +277,17 @@ async function handleFollow(userId: string) {
 /* ========== 跳转 ========== */
 function goToDetail(postId: string) {
   villageStore.setCurrentPost(postId);
-  openAppPath("/pages/village/detail");
+  openAppPath(ROUTES.VILLAGE.DETAIL);
 }
 
 function goToAuthorProfile(authorId: string) {
   if (!authorId) return;
-  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(authorId)}`);
+  openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(authorId)}`);
 }
 
 function goToTagPosts(tagName: string) {
   const cleanTag = tagName.startsWith("#") ? tagName.slice(1) : tagName;
-  openAppPath(`/pages/village/tag-posts?tagName=${encodeURIComponent(cleanTag)}`);
+  openAppPath(`${ROUTES.VILLAGE.TAG_POSTS}?tagName=${encodeURIComponent(cleanTag)}`);
 }
 
 function openActivityFromPost(activityId: number) {
@@ -295,7 +297,7 @@ function openActivityFromPost(activityId: number) {
 /* ========== 发帖（底部输入条 → 发帖页，携带当前频道） ========== */
 function handlePublish() {
   const channelId = currentChannelId.value;
-  openAppPath(`/pages/circles/post-topic?channel=${channelId}`);
+  openAppPath(`${ROUTES.CIRCLES.POST_TOPIC}?channel=${channelId}`);
 }
 
 /** 学校圈未认证：底部输入条锁定，点击引导认证 */
@@ -322,7 +324,7 @@ const composerPlaceholder = computed(() => {
 
 /** 去认识新朋友（学校圈附近的人 banner） */
 function goToDiscover() {
-  openAppPath("/pages/discover/index");
+  openAppPath(ROUTES.TAB.DISCOVER);
 }
 
 /* ========== 下拉刷新 / 加载更多 ========== */
@@ -459,6 +461,11 @@ onUnmounted(() => {
   uni.$off("village:post-created", onPostCreated);
 });
 
+// R4-00159：页面卸载时清理 village store 定时器/请求资源（评论防抖、点赞 in-flight 等）
+onUnload(() => {
+  villageStore.dispose();
+});
+
 // 发帖返回刷新事件（组件挂载后注册，卸载时清理）
 uni.$on("village:post-created", onPostCreated);
 </script>
@@ -521,7 +528,7 @@ uni.$on("village:post-created", onPostCreated);
               hover-stay-time="120"
               role="button"
               :aria-label="t('village.dailyQuestion')"
-              @tap="openAppPath('/pages/daily-question/index')"
+              @tap="openAppPath(ROUTES.DAILY_QUESTION)"
             >
               <image class="village-daily-entry__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL" mode="aspectFit" alt="" />
               <view class="village-daily-entry__info">

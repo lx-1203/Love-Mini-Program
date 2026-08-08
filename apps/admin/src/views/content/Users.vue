@@ -728,7 +728,7 @@ onMounted(() => {
 @import "@/styles/admin-common.css";
 
 .users-page {
-  max-width: 1200px;
+  max-width: var(--admin-page-max-width-narrow);
 }
 
 .page-header {
@@ -759,7 +759,7 @@ onMounted(() => {
 
 .search-input {
   flex: 1;
-  max-width: 320px;
+  max-width: var(--admin-text-ellipsis-width);
   padding: var(--admin-space-md-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-color-border);
   border-radius: var(--admin-radius-lg);
@@ -862,8 +862,8 @@ onMounted(() => {
 }
 
 .user-avatar {
-  width: 28px;
-  height: 28px;
+  width: var(--admin-icon-size-sm);
+  height: var(--admin-icon-size-sm);
   border-radius: 50%;
   object-fit: cover;
 }
@@ -1025,7 +1025,7 @@ onMounted(() => {
 }
 
 .detail-modal {
-  width: 420px;
+  width: var(--admin-dialog-width-sm);
 }
 
 .detail-loading {
@@ -1055,6 +1055,6 @@ onMounted(() => {
   flex-shrink: 0;
   font-weight: 600;
   color: var(--admin-color-text-tertiary);
-  min-width: 90px;
+  min-width: var(--admin-action-min-width);
 }
 </style>

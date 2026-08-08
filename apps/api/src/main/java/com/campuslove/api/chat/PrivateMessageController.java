@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
@@ -170,9 +171,9 @@ record CreateConversationRequest(
  * 伪造 SYSTEM 类型会破坏消息可信度（用户可冒充系统推送）。</p>
  */
 record SendMessageRequest(
-    @NotBlank(message = "content 不能为空") @Size(max = 5000) String content,
+    @NotBlank(message = ErrorMessages.CONTENT_REQUIRED) @Size(max = 5000) String content,
     @Pattern(regexp = "(?i)TEXT|IMAGE|VOICE|VIDEO|EMOJI|ACTIVITY",
-        message = "kind 必须为 TEXT/IMAGE/VOICE/VIDEO/EMOJI/ACTIVITY")
+        message = ErrorMessages.PRIVATE_MSG_KIND_INVALID)
     @Size(max = 32) String kind,
     @Min(0) @Max(60) Integer durationSeconds
 ) {}

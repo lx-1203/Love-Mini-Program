@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -301,10 +302,10 @@ public class AdminRoleController {
  * @param enabled     是否启用
  */
 record AdminRoleRequest(
-        @NotBlank(message = "角色名称不能为空")
-        @Size(min = 1, max = 64, message = "角色名称长度须为 1-64 字") String name,
-        @NotBlank(message = "角色编码不能为空")
-        @Size(min = 1, max = 32, message = "角色编码长度须为 1-32 字") String code,
+        @NotBlank(message = ErrorMessages.ROLE_NAME_REQUIRED)
+        @Size(min = 1, max = 64, message = ErrorMessages.ROLE_NAME_LENGTH_INVALID) String name,
+        @NotBlank(message = ErrorMessages.ROLE_CODE_REQUIRED)
+        @Size(min = 1, max = 32, message = ErrorMessages.ROLE_CODE_LENGTH_INVALID) String code,
         String dataScope,
         String description,
         Boolean enabled) {

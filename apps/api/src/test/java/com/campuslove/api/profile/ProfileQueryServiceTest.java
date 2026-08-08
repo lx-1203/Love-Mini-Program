@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,6 +32,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 /**
  * ProfileQueryService 单元测试（Task 4.2.4）。
@@ -259,8 +262,9 @@ class ProfileQueryServiceTest {
         UserFollow follow1 = new UserFollow(2L, userId);
         UserFollow follow2 = new UserFollow(3L, userId);
 
-        when(userFollowRepository.findByFollowingId(userId))
-                .thenReturn(List.of(follow1, follow2));
+        // R4-00302：粉丝列表改为 SQL 侧分页（findByFollowingId 带 Pageable，返回 Page）
+        when(userFollowRepository.findByFollowingId(anyLong(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(follow1, follow2)));
         when(userRepository.findAllById(List.of(2L, 3L)))
                 .thenReturn(List.of(createUser(2L, "粉丝1"), createUser(3L, "粉丝2")));
 

@@ -220,8 +220,9 @@ services:
       WECHAT_APPID: ${WECHAT_APPID:-}
       WECHAT_SECRET: ${WECHAT_SECRET:-}
       # ---------- CORS ----------
-      # 生产必须通过 .env 配置真实域名；默认值仅保证本地开发可用（infra #41）
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://www.campuslove.example.com,https://admin.campuslove.example.com,http://localhost:5173,http://localhost:5174,http://localhost:5177}
+      # 生产必须通过 .env 注入真实域名；默认值仅保留本地开发地址，
+      # 不含示例生产域名，避免生产 .env 漏配时白名单混入无效 example.com 源（R4-00485/R4-02097）
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174,http://localhost:5177}
       # ---------- AI ----------
       AGNES_API_KEY: ${AGNES_API_KEY:-}
       AGNES_API_BASE: ${AGNES_API_BASE:-https://api.agnes-ai.com/api}
@@ -240,12 +241,13 @@ services:
       # ---------- 媒体存储 ----------
       APP_MEDIA_STORAGE_ROOT: /app/uploads
       # ---------- RabbitMQ（可选）----------
-      # 未部署 MQ 时应用自动降级；若启用 RabbitMQ，必须在 .env 中配置强凭据，
-      # 禁止使用默认 guest/guest 上线（infra #12/#13）：未配置时 compose 直接报错终止
+      # 本编排未部署 rabbitmq 服务，应用在 MQ 不可用时自动降级（R4-02096）；
+      # 故用户名/密码不再强制必填（避免不启用 MQ 也被阻塞）。若后续启用
+      # RabbitMQ，必须在 .env 中配置强凭据，禁止使用默认 guest/guest 上线（infra #12/#13）
       RABBITMQ_HOST: ${RABBITMQ_HOST:-}
       RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
-      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:?RABBITMQ_USERNAME is required (no guest default)}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required (no guest default)}
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-}
       # ---------- Swagger UI ----------
       # infra #11：生产默认关闭 Swagger UI / /v3/api-docs，可通过 .env 覆盖
       SWAGGER_UI_ENABLED: ${SWAGGER_UI_ENABLED:-false}

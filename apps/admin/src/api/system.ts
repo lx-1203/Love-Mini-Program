@@ -505,6 +505,14 @@ export function listAuditLogs(query: AuditLogQuery = {}): Promise<AuditLogPageVi
  * 管理员管理（Admin，商业模式：每个高校一个管理员）
  * ============================================================ */
 
+/** 禁用/启用操作响应（用户与管理员共用同一端点，统一在此定义） */
+export interface AdminUserToggleResponse {
+  id: number;
+  status: "active" | "disabled";
+  operatorId: number;
+  success: boolean;
+}
+
 /** 管理员摘要视图（列表用，对应后端 AdminUserSummaryView） */
 export interface AdminUserSummary {
   id: number;
@@ -565,19 +573,19 @@ export async function createAdmin(req: AdminCreateRequest): Promise<AdminUserSum
 }
 
 /**
- * 禁用管理员。
+ * 禁用用户/管理员（统一端点，R4-00518 收敛唯一实现）。
  * POST /api/v1/admin/users/{id}/disable
  */
-export async function disableAdmin(id: number): Promise<unknown> {
-  return post<unknown>(`/v1/admin/users/${id}/disable`);
+export async function disableAdmin(id: number): Promise<AdminUserToggleResponse> {
+  return post<AdminUserToggleResponse>(`/v1/admin/users/${id}/disable`);
 }
 
 /**
- * 启用管理员。
+ * 启用用户/管理员（统一端点，R4-00518 收敛唯一实现）。
  * POST /api/v1/admin/users/{id}/enable
  */
-export async function enableAdmin(id: number): Promise<unknown> {
-  return post<unknown>(`/v1/admin/users/${id}/enable`);
+export async function enableAdmin(id: number): Promise<AdminUserToggleResponse> {
+  return post<AdminUserToggleResponse>(`/v1/admin/users/${id}/enable`);
 }
 
 /* ============================================================

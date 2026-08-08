@@ -1,5 +1,6 @@
 package com.campuslove.api.config;
 
+import com.campuslove.api.common.ErrorMessages;
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -122,7 +123,7 @@ public class AesEncryptor {
             return keyBytes;
         } catch (java.security.NoSuchAlgorithmException ex) {
             // SHA-256 是 JDK 内置算法，理论上不会缺失
-            throw new IllegalStateException("SHA-256 算法不可用", ex);
+            throw new IllegalStateException(ErrorMessages.SHA256_UNAVAILABLE, ex);
         }
     }
 
@@ -150,7 +151,7 @@ public class AesEncryptor {
             return Base64.getEncoder().encodeToString(combined);
         } catch (java.security.GeneralSecurityException ex) {
             // 加密失败抛运行时异常，避免吞掉错误
-            throw new IllegalStateException("AES 加密失败", ex);
+            throw new IllegalStateException(ErrorMessages.AES_ENCRYPT_FAILED, ex);
         }
     }
 

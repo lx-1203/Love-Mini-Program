@@ -65,14 +65,6 @@ export interface AdminUserListQuery {
   pageSize?: number;
 }
 
-/** 禁用/启用操作响应 */
-export interface AdminUserToggleResponse {
-  id: number;
-  status: "active" | "disabled";
-  operatorId: number;
-  success: boolean;
-}
-
 /** 新增用户请求体（对应后端 AdminCreateUserRequest） */
 export interface AdminCreateUserRequest {
   /** 手机号（11 位，1[3-9] 开头，唯一） */
@@ -110,6 +102,9 @@ export async function createUser(req: AdminCreateUserRequest): Promise<AdminUser
  */
 export { createAdmin, listAdmins } from "./system";
 
+/** 禁用/启用操作响应（类型收敛至 system.ts，R4-00518） */
+export type { AdminUserToggleResponse } from "./system";
+
 /**
  * 查询用户详情。
  * GET /api/v1/admin/users/{id}
@@ -132,15 +127,7 @@ export function updateUser(
 /**
  * 禁用用户。
  * POST /api/v1/admin/users/{id}/disable
+ *
+ * 统一实现见 system.ts disableAdmin（同一端点，R4-00518 收敛一套封装）。
  */
-export function disableUser(id: number): Promise<AdminUserToggleResponse> {
-  return post<AdminUserToggleResponse>(`/v1/admin/users/${id}/disable`);
-}
-
-/**
- * 启用用户。
- * POST /api/v1/admin/users/{id}/enable
- */
-export function enableUser(id: number): Promise<AdminUserToggleResponse> {
-  return post<AdminUserToggleResponse>(`/v1/admin/users/${id}/enable`);
-}
+export { disableAdmin as disableUser, enableAdmin as enableUser } from "./system";

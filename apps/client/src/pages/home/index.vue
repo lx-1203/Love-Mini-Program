@@ -4,6 +4,7 @@
  * 包含：学校选择器、校园圈活动、课表空档、校园墙、逛逛推荐、社交升温进度
  */
 import { ref, computed, onMounted, watch } from "vue";
+import { onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useActivityStore } from "../../stores/activity";
@@ -12,6 +13,7 @@ import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
 import { useScheduleStore, WEEK_DAYS } from "../../stores/schedule";
 import { useSessionStore } from "../../stores/session";
+import { TOAST_DURATION } from "../../constants/limits";
 import { featureFlags } from "../../config/feature-flags";
 import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
@@ -36,7 +38,7 @@ import { useImageFallback } from "../../composables/useImageFallback";
 // infra R2-00044: makeUpCheckIn 失败抛错后页面需按类型提示，导入结果视图类型
 import type { MakeUpCheckInResultView } from "../../services/generated/api-types-supplement";
 
-// 同步自定义 TabBar 选中状态（首页 = 索引 2）
+// 同步自定义 TabBar 选中状态（tab 顺序：首页0/匹配1/圈子2/消息3/我的4）
 useTabBar(0);
 
 // SubTask 5.5.2：列表页图片 @error 占位图 —— 失败 key 集合与判断函数
@@ -294,7 +296,7 @@ async function handleCheckIn() {
     uni.showToast({
       title: t('home.checkinReward', { n: 5 }),
       icon: "success",
-      duration: 2000,
+      duration: TOAST_DURATION.NORMAL_MS,
     });
     // 功能8：签到成功后自动弹出分享卡片
     shareCardVisible.value = true;
@@ -303,7 +305,7 @@ async function handleCheckIn() {
     uni.showToast({
       title: t('home.checkinFailed'),
       icon: "none",
-      duration: 2000,
+      duration: TOAST_DURATION.NORMAL_MS,
     });
   }
 }
@@ -397,7 +399,7 @@ async function confirmMakeUp(date: string) {
   uni.showToast({
     title: t('home.makeUpSuccess'),
     icon: "success",
-    duration: 2000,
+    duration: TOAST_DURATION.NORMAL_MS,
   });
   shareCardVisible.value = true;
 }
@@ -426,6 +428,12 @@ onMounted(() => {
   if (sessionStore.isLoggedIn) {
     loadHomeData();
   }
+});
+
+// R4-00157/00158：页面卸载时清理 store 定时器/请求资源（签到动画、discover 存储防抖等）
+onUnload(() => {
+  checkInStore.dispose();
+  discoverStore.dispose();
 });
 
 // D1 修复：登录成功后补发首页数据（解决「登录回来数据不加载」）
@@ -616,7 +624,7 @@ defineExpose({ noop });
           <text class="section-title section-title-brand">{{ t('home.campusCircleActivity') }}</text>
           <text class="section-more" role="button" :aria-label="t('home.moreArrow')" @tap="openAppPath('/pages/circles/index')">{{ t('home.moreArrow') }}</text>
         </view>
-        <scroll-view scroll-x class="activity-scroll" :show-scrollbar="false">
+        <scroll-view v-if="activityStore.activities.length > 0" scroll-x class="activity-scroll" :show-scrollbar="false">
           <view class="activity-list" role="list">
             <view
               v-for="item in activityStore.activities.slice(0, 5)" :key="item.id"
@@ -648,6 +656,10 @@ defineExpose({ noop });
             </view>
           </view>
         </scroll-view>
+        <!-- R4-00008：活动为空时的空态占位 -->
+        <view v-else class="activity-empty card-base">
+          <text class="activity-empty__text">{{ t('common.noData') }}</text>
+        </view>
       </view>
 
       <!-- Phase Feedback2：为你推荐已移除（反馈明确不需要） -->
@@ -830,54 +842,6 @@ defineExpose({ noop });
   display: flex;
   align-items: center;
   gap: var(--sp-4);
-}
-
-.notification-btn {
-  position: relative;
-  /* 修复 P2（触摸目标过小）：80rpx → 88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
-  width: 88rpx;
-  height: 88rpx;
-  background: var(--c-bg-container);
-  border-radius: var(--r-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--s-md);
-}
-
-.notification-icon {
-  width: 44rpx;
-  height: 44rpx;
-  color: var(--c-text-secondary);
-}
-
-/* 任务 E4：设置入口按钮（与通知按钮同规格，保持顶部视觉一致） */
-.settings-btn {
-  width: 88rpx;
-  height: 88rpx;
-  background: var(--c-bg-container);
-  border-radius: var(--r-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--s-md);
-}
-
-.settings-icon {
-  width: 44rpx;
-  height: 44rpx;
-  color: var(--c-text-secondary);
-}
-
-.notification-dot {
-  position: absolute;
-  top: var(--sp-4);
-  right: var(--sp-4);
-  width: var(--sp-4);
-  height: var(--sp-4);
-  background: var(--c-error);
-  border-radius: var(--r-full);
-  border: 3rpx solid var(--c-bg-container);
 }
 
 /* ========== 搜索框 ========== */
@@ -1244,115 +1208,6 @@ defineExpose({ noop });
   font-weight: 500;
 }
 
-/* ========== Banner轮播 ========== */
-.banner-scroll {
-  width: 100%;
-}
-
-.banner-list {
-  display: flex;
-  gap: var(--sp-5);
-  padding-right: var(--page-padding);
-}
-
-.banner-card {
-  flex-shrink: 0;
-  width: 300rpx;
-  height: 180rpx;
-  border-radius: var(--r-xl);
-  padding: var(--sp-6);
-  display: flex;
-  justify-content: space-between;
-  position: relative;
-  overflow: hidden;
-}
-
-.banner-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 30% 30%, var(--c-overlay-white-bg-tint-strong) 0%, transparent 60%);
-  pointer-events: none;
-}
-
-/* #ifdef H5 */
-.banner-card:active {
-  transform: scale(0.98);
-}
-/* #endif */
-
-.banner-card--romance {
-  background: var(--c-gradient-romance);
-}
-
-.banner-card--green {
-  background: var(--c-gradient-float-btn);
-}
-
-.banner-card--warm {
-  background: linear-gradient(135deg, var(--c-accent-400) 0%, var(--c-warning) 100%);
-}
-
-.banner-card--purple {
-  background: linear-gradient(135deg, var(--c-lavender-500) 0%, var(--c-lavender-500) 100%);
-}
-
-.banner-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  z-index: 1;
-}
-
-.banner-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-  font-size: var(--fs-xs);
-  color: var(--c-overlay-text-secondary);
-  background: var(--c-overlay-bg-light);
-  padding: var(--sp-1) var(--sp-3);
-  border-radius: var(--r-full);
-  align-self: flex-start;
-}
-
-.banner-tag__icon {
-  width: 20rpx;
-  height: 20rpx;
-  color: var(--c-overlay-bg-pure);
-  flex-shrink: 0;
-}
-
-.banner-tag__text {
-  font-size: var(--fs-xs);
-  color: var(--c-overlay-bg-pure);
-  font-weight: 500;
-}
-
-.banner-title {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  color: var(--c-text-inverse);
-}
-
-.banner-desc {
-  font-size: var(--fs-sm);
-  color: var(--c-overlay-white-text-strong);
-}
-
-.banner-emoji {
-  width: 96rpx;
-  height: 96rpx;
-  opacity: 0.4;
-  position: absolute;
-  right: var(--sp-4);
-  bottom: var(--sp-2);
-  color: var(--c-overlay-bg-solid);
-}
-
 /* ========== 活动卡片 ========== */
 .activity-scroll {
   width: 100%;
@@ -1462,109 +1317,6 @@ defineExpose({ noop });
 .activity-card__time-new {
   font-size: var(--fs-xs);
   color: var(--c-text-tertiary);
-}
-
-/* ========== 推荐用户 ========== */
-.recommend-scroll {
-  width: 100%;
-}
-
-.recommend-list {
-  display: flex;
-  gap: var(--sp-5);
-  padding-right: var(--page-padding);
-}
-
-.user-card {
-  flex-shrink: 0;
-  width: 180rpx;
-  background: var(--c-bg-container);
-  border-radius: var(--r-lg);
-  padding: var(--sp-6) var(--sp-4);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-2);
-  box-shadow: var(--s-card-soft);
-}
-
-/* #ifdef H5 */
-.user-card:active {
-  transform: scale(0.97);
-}
-/* #endif */
-
-.user-avatar-wrap {
-  position: relative;
-  margin-bottom: var(--sp-2);
-}
-
-.user-avatar-ring {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: var(--r-full);
-  padding: 6rpx;
-  background: var(--c-gradient-brand);
-}
-
-.user-avatar {
-  width: 100%;
-  height: 100%;
-  border-radius: var(--r-full);
-  background: var(--c-romance-50);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.user-avatar-emoji {
-  font-size: 48rpx;
-}
-
-.online-dot {
-  position: absolute;
-  bottom: 6rpx;
-  right: 6rpx;
-  width: var(--sp-5);
-  height: var(--sp-5);
-  background: var(--c-success);
-  border-radius: var(--r-full);
-  border: 4rpx solid var(--c-bg-container);
-}
-
-.user-nickname {
-  font-size: var(--fs-base);
-  font-weight: 600;
-  color: var(--c-text-primary);
-}
-
-.user-info {
-  font-size: var(--fs-xs);
-  color: var(--c-text-tertiary);
-}
-
-.match-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4rpx;
-  margin-top: var(--sp-2);
-  background: var(--c-romance-50);
-  padding: 6rpx var(--sp-3);
-  border-radius: var(--r-full);
-}
-
-.match-tag__icon {
-  width: 20rpx;
-  height: 20rpx;
-  color: var(--c-romance-500);
-  flex-shrink: 0;
-}
-
-.match-text {
-  font-size: var(--fs-xs);
-  color: var(--c-romance-500);
-  font-weight: 500;
 }
 
 /* ========== 课表卡片 ========== */
@@ -1743,229 +1495,6 @@ defineExpose({ noop });
   font-weight: 500;
 }
 
-/* ========== 帖子列表 ========== */
-.post-list-new {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-5);
-}
-
-.post-card-new {
-  background: var(--c-bg-container);
-  border-radius: var(--r-lg);
-  padding: var(--sp-6);
-  box-shadow: var(--s-card-soft);
-}
-
-/* #ifdef H5 */
-.post-card-new:active {
-  transform: scale(0.99);
-}
-/* #endif */
-
-.post-card__header-new {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  margin-bottom: var(--sp-4);
-}
-
-.post-avatar-wrap {
-  flex-shrink: 0;
-}
-
-.post-avatar {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: var(--r-full);
-  background: var(--c-romance-100);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.post-avatar-emoji {
-  font-size: var(--fs-4xl);
-}
-
-.post-meta-new {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-}
-
-.post-nickname-new {
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--c-text-primary);
-}
-
-.post-school-new {
-  font-size: var(--fs-sm);
-  color: var(--c-text-tertiary);
-}
-
-.post-content-new {
-  font-size: var(--fs-lg);
-  color: var(--c-text-primary);
-  line-height: 1.6;
-  margin-bottom: var(--sp-4);
-}
-
-.post-images-new {
-  display: flex;
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-4);
-}
-
-.post-image-item {
-  width: 160rpx;
-  height: 160rpx;
-  border-radius: var(--r-md);
-  background: linear-gradient(135deg, var(--c-neutral-50), var(--c-neutral-100));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.post-image-emoji {
-  font-size: 48rpx;
-  opacity: 0.5;
-}
-
-.post-footer-new {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: var(--sp-4);
-  border-top: 1rpx solid var(--c-neutral-50);
-}
-
-.post-location-new {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-}
-
-.post-location-emoji {
-  width: 24rpx;
-  height: 24rpx;
-  color: var(--c-text-tertiary);
-  flex-shrink: 0;
-}
-
-.post-location-text {
-  font-size: var(--fs-sm);
-  color: var(--c-text-tertiary);
-}
-
-.post-actions-new {
-  display: flex;
-  gap: 28rpx;
-}
-
-.post-action-new {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-}
-
-/* #ifdef H5 */
-.post-action-new:active {
-  transform: scale(0.9);
-}
-/* #endif */
-
-.post-action-emoji {
-  width: 32rpx;
-  height: 32rpx;
-  color: var(--c-text-tertiary);
-  flex-shrink: 0;
-}
-
-.post-action--liked .post-action-emoji {
-  color: var(--c-romance-500);
-}
-
-.post-action-count {
-  font-size: var(--fs-sm);
-  color: var(--c-text-tertiary);
-}
-
-.post-action--liked .post-action-count {
-  color: var(--c-error);
-}
-
-/* ========== 逛逛推荐 ========== */
-.shop-scroll-new {
-  width: 100%;
-}
-
-.shop-list-new {
-  display: flex;
-  gap: var(--sp-5);
-  padding-right: var(--page-padding);
-}
-
-.shop-card-new {
-  flex-shrink: 0;
-  width: 220rpx;
-  background: var(--c-bg-container);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  box-shadow: var(--s-sm);
-}
-
-/* #ifdef H5 */
-.shop-card-new:active {
-  transform: scale(0.97);
-}
-/* #endif */
-
-.shop-image-wrap {
-  width: 100%;
-  height: 180rpx;
-  background: var(--c-romance-50);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.shop-image-emoji {
-  font-size: 64rpx;
-}
-
-.shop-title-new {
-  font-size: var(--fs-base);
-  color: var(--c-text-primary);
-  padding: var(--sp-4) var(--sp-4) var(--sp-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-}
-
-.shop-bottom-new {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--sp-4) var(--sp-4);
-}
-
-.shop-price-new {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  color: var(--c-error);
-}
-
-.shop-sales-new {
-  font-size: var(--fs-xs);
-  color: var(--c-text-tertiary);
-}
-
 /* ========== 社交升温迷你卡片 ========== */
 .social-mini-card-new {
   display: flex;
@@ -2045,59 +1574,17 @@ defineExpose({ noop });
   height: 200rpx;
 }
 
-/* ========== 悬浮发布按钮 ========== */
-.fab-container {
-  position: fixed;
-  right: var(--page-padding);
-  bottom: calc(env(safe-area-inset-bottom) + 120rpx);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-3);
-  z-index: var(--z-dropdown);
-}
-
-.fab-bubble {
-  background: var(--c-neutral-800);
-  padding: 10rpx var(--sp-5);
-  border-radius: var(--r-full);
-  opacity: 0;
-  transform: translateY(10rpx);
-  animation: fabBubble var(--d-breathe, 3000ms) ease-in-out infinite;
-}
-
-.fab-bubble-text {
-  font-size: var(--fs-sm);
-  color: var(--c-text-inverse);
-}
-
-@keyframes fabBubble {
-  0%, 100% { opacity: 0; transform: translateY(10rpx); }
-  20%, 80% { opacity: 0.8; transform: translateY(0); }
-}
-
-.fab-button {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: var(--r-full);
-  background: var(--c-gradient-float-btn);
+/* ========== 活动空态（R4-00008） ========== */
+.activity-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--s-float-btn);
+  padding: var(--sp-8);
 }
 
-/* #ifdef H5 */
-.fab-button:active {
-  transform: scale(0.92);
-}
-/* #endif */
-
-.fab-icon {
-  font-size: 56rpx;
-  color: var(--c-text-inverse);
-  font-weight: 300;
-  line-height: 1;
+.activity-empty__text {
+  font-size: var(--fs-base);
+  color: var(--c-text-tertiary);
 }
 
 /* ========== 学校选择弹窗 ========== */

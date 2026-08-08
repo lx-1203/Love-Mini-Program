@@ -1,5 +1,6 @@
 package com.campuslove.api.report;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.DailyLimitExceededException;
@@ -75,7 +76,7 @@ public class ReportController {
         LocalDateTime dayStart = LocalDateTime.now(TimeZones.BUSINESS).toLocalDate().atStartOfDay();
         long todayReports = reportRepository.countByReporterIdAndCreatedAtAfter(reporterId, dayStart);
         if (todayReports >= DAILY_REPORT_LIMIT) {
-            throw new DailyLimitExceededException("举报", DAILY_REPORT_LIMIT,
+            throw new DailyLimitExceededException(ErrorMessages.REPORT_SUBJECT_LABEL, DAILY_REPORT_LIMIT,
                     "今日举报次数已达上限（" + DAILY_REPORT_LIMIT + " 次），请明日再试");
         }
 
@@ -113,7 +114,7 @@ public class ReportController {
  */
 record ReportCreateRequest(
         @NotBlank
-        @Pattern(regexp = "POST|COMMENT|USER|TOPIC", message = "targetType 必须为 POST/COMMENT/USER/TOPIC")
+        @Pattern(regexp = "POST|COMMENT|USER|TOPIC", message = ErrorMessages.REPORT_TARGET_TYPE_INVALID)
         String targetType,
         @NotNull @Positive Long targetId,
         @NotBlank

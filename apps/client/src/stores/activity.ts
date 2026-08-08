@@ -275,7 +275,9 @@ export const useActivityStore = defineStore("activity", {
             headers: { "Idempotency-Key": `activity-cancel-${activityId}` },
           });
           activity.isEnrolled = result.enrolled;
+          // R4-00182：enrollCount（列表 UI 消费）与 enrollmentCount（API 消费）兼容别名同步更新
           activity.enrollmentCount = result.enrollmentCount;
+          activity.enrollCount = result.enrollmentCount;
         } else {
           // 报名：调用 POST /api/activities/{activityId}/enroll
           // P2-13: userId 由后端 JWT 获取（ActivityController.enrollActivity 无请求体 userId 字段），删除 body 字段
@@ -285,7 +287,9 @@ export const useActivityStore = defineStore("activity", {
             headers: { "Idempotency-Key": `activity-enroll-${activityId}` },
           });
           activity.isEnrolled = result.enrolled;
+          // R4-00182：两字段同步更新（对齐 mock 分支）
           activity.enrollmentCount = result.enrollmentCount;
+          activity.enrollCount = result.enrollmentCount;
         }
         return activity.isEnrolled;
       } catch (error) {

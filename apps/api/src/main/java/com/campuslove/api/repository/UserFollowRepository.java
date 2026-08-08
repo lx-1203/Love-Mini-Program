@@ -64,10 +64,22 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
     List<UserFollow> findByFollowerId(Long followerId);
 
     /**
+     * R4-00302：关注列表分页查询（SQL 侧分页，粉丝量大时避免全量返回）。
+     */
+    org.springframework.data.domain.Page<UserFollow> findByFollowerId(
+            Long followerId, org.springframework.data.domain.Pageable pageable);
+
+    /**
      * 查询指定用户的所有粉丝关注关系（粉丝列表）。
      *
      * @param followingId 被关注者用户 ID
      * @return 粉丝关注关系列表
      */
     List<UserFollow> findByFollowingId(Long followingId);
+
+    /**
+     * R4-00302：粉丝列表分页查询（SQL 侧分页）。
+     */
+    org.springframework.data.domain.Page<UserFollow> findByFollowingId(
+            Long followingId, org.springframework.data.domain.Pageable pageable);
 }

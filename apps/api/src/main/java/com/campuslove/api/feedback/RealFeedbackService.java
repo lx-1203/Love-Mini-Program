@@ -1,5 +1,6 @@
 package com.campuslove.api.feedback;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Activity;
@@ -43,9 +44,11 @@ public class RealFeedbackService implements FeedbackService {
      * 功能9：反馈图片大小上限（5MB）。
      *
      * <p>注意：MediaStorageService 默认图片上限为 10MB，
-     * 功能9业务规则要求单张 ≤5MB，此处额外校验。</p>
+     * 功能9业务规则要求单张 ≤5MB，此处额外校验。
+     * R4-01850：上限收敛为 {@link FeedbackService#FEEDBACK_IMAGE_MAX_BYTES} 共享常量，
+     * 与 Mock 实现共用，改限时只改一处。</p>
      */
-    private static final long FEEDBACK_IMAGE_MAX_BYTES = 5L * 1024 * 1024;
+    private static final long FEEDBACK_IMAGE_MAX_BYTES = FeedbackService.FEEDBACK_IMAGE_MAX_BYTES;
 
     private final FeedbackRepository feedbackRepository;
     private final ObjectMapper objectMapper;
@@ -165,7 +168,7 @@ public class RealFeedbackService implements FeedbackService {
 
         // 校验提案尚未被转换
         if (feedback.getStatus() == SubmissionStatus.CONVERTED) {
-            throw new IllegalStateException("提案已被转换，无需重复操作，ID: " + proposalId);
+            throw new IllegalStateException(ErrorMessages.PROPOSAL_ALREADY_CONVERTED_PREFIX + proposalId);
         }
 
         // R4-00342：转换时真实创建 Activity 记录（原实现仅改状态、convertedActivityId 恒为
@@ -254,16 +257,25 @@ public class RealFeedbackService implements FeedbackService {
             throw new IllegalArgumentException("userId is required");
         }
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("文件不能为空");
+            throw new IllegalArgumentException(ErrorMessages.FILE_REQUIRED);
         }
         // 功能9 业务规则：单张图片 ≤ 5MB（比 MediaStorageService 默认 10MB 更严格）
+        // R4-01849：错误文案由常量值拼接，改限时文案自动同步（不再硬编码 5MB 文案）
         if (file.getSize() > FEEDBACK_IMAGE_MAX_BYTES) {
-            throw new IllegalArgumentException("图片大小不能超过 5MB");
+            throw new IllegalArgumentException(feedbackImageSizeMessage());
         }
         // 委托 MediaStorageService 上传，type="image" 触发 jpg/png/webp 校验
         MediaStorageService.UploadResult uploadResult = mediaStorageService.store(userId, file, "image");
         log.info("用户[{}]上传反馈图片成功，URL: {}", userId, uploadResult.getUrl());
         return new UploadedImageResult(uploadResult.getUrl());
+    }
+
+    /**
+     * R4-01849：图片超限错误文案——由共享常量动态拼接（"图片大小不能超过 NMB"），
+     * 修改 {@link FeedbackService#FEEDBACK_IMAGE_MAX_BYTES} 时文案自动同步。
+     */
+    private static String feedbackImageSizeMessage() {
+        return "图片大小不能超过 " + (FeedbackService.FEEDBACK_IMAGE_MAX_BYTES / 1024 / 1024) + "MB";
     }
 
     /**
@@ -297,12 +309,12 @@ public class RealFeedbackService implements FeedbackService {
             throw new IllegalArgumentException("userId is required");
         }
         Feedback feedback = feedbackRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("反馈记录不存在，ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.FEEDBACK_NOT_FOUND_PREFIX + id));
         // 校验反馈归属：仅返回属于当前用户的反馈详情，避免越权访问他人反馈
         if (!userId.equals(feedback.getUserId())) {
             log.warn("用户[{}]尝试访问不属于其的反馈记录[ID:{}]，归属用户[{}]",
                     userId, id, feedback.getUserId());
-            throw new IllegalArgumentException("无权访问该反馈记录");
+            throw new IllegalArgumentException(ErrorMessages.FEEDBACK_ACCESS_FORBIDDEN);
         }
         return toDetailView(feedback);
     }
@@ -318,10 +330,10 @@ public class RealFeedbackService implements FeedbackService {
     @Transactional
     public SubmissionRecordView replyFeedback(long id, String reply) {
         if (reply == null || reply.isBlank()) {
-            throw new IllegalArgumentException("回复内容不能为空");
+            throw new IllegalArgumentException(ErrorMessages.REPLY_CONTENT_REQUIRED);
         }
         Feedback feedback = feedbackRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("反馈记录不存在，ID: " + id));
+                .orElseThrow(() -> new NoSuchElementException(ErrorMessages.FEEDBACK_NOT_FOUND_PREFIX + id));
 
         feedback.setStatus(SubmissionStatus.REVIEWED);
         // 截断过长回复（latestReplySummary 列通常为 255 字符，取前 200 并加省略号）

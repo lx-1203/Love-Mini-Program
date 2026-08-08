@@ -920,6 +920,13 @@ export default {
     idleIcebreakerHint: "不知道说什么？试试上面的破冰话题吧",
     acceptExchangeBtn: "同意交换",
     endSessionBtn: "结束会话",
+    /* R4-00078: 消息时间条（微信化时间条）文案 */
+    timeBar: {
+      yesterday: "昨天 {time}",
+      weekday: "星期{weekday} {time}",
+      date: "{year}年{month}月{day}日 {time}",
+      weekdayNames: { sun: "日", mon: "一", tue: "二", wed: "三", thu: "四", fri: "五", sat: "六" },
+    },
     /* Task 28: chat-session 长按菜单文案 */
     longPressMenu: {
       ariaLabel: "消息操作菜单",
@@ -947,6 +954,8 @@ export default {
     likedYou: "喜欢了你",
     heartSignal: "心动信号",
     pageName: "喜欢",
+    /* R4-00127：互相喜欢 toast 文案走 i18n */
+    mutualLikeToast: "与 {name} 互相喜欢了！",
     monthDay: "{m}月{d}日",
     /* 功能1：批量操作 */
     manage: "管理",
@@ -1189,6 +1198,10 @@ export default {
     changePassword: "修改密码",
     changePasswordDesc: "建议定期更换，保护账号安全",
     phoneChangeHint: "当前为演示环境，请联系客服协助更换手机号",
+    /* R4-00063：手机号展示不再硬编码假号码，按绑定状态展示 */
+    phoneNotBound: "未绑定手机号",
+    phoneBoundMask: "已绑定（号码脱敏）",
+    unknownDevice: "未知设备",
     deviceTitle: "登录设备",
     currentDevice: "当前设备",
     kickTitle: "下线设备",
@@ -1430,6 +1443,8 @@ export default {
       titleInvalid: "标题需为 {min}-{max} 个字",
       uploadingImages: "图片上传中...",
       imageUploadFailed: "图片上传失败，请重试",
+      /* R4-00096：预置话题标签（mock 与 real 失败兜底共用；real 成功时以后端 /post-tags 为准） */
+      presetTags: ["校园日常", "兴趣分享", "找搭子", "求助", "表白墙", "校友动态", "生活记录", "技术交流"],
     },
     /* P1-36：标签聚合页缺参提示 */
     tagPostsMissingParam: "缺少标签参数",
@@ -1450,6 +1465,8 @@ export default {
       likeAria: "点赞",
       shareAria: "分享",
       shareHint: "已开启转发，可分享 {author} 的帖子给好友",
+      /* R4-00094：错误兜底文案走 i18n */
+      loadFailed: "加载帖子失败，请稍后重试",
     },
     /* Task 28: 兴趣关键词（用于 INTEREST_KEYWORDS 颜色映射，中文值必须与原字面量一致以保证 includes 匹配不回归） */
     interestKeywords: {
@@ -1551,6 +1568,113 @@ export default {
     phoneField: "手机号",
     codeField: "验证码",
     termsAgreePrefix: "登录即代表您同意",
+    /* R4-00002：展示模式入口文案（VITE_SHOWCASE_MODE 构建显示） */
+    showcaseEntryTitle: "以演示者身份进入展示版",
+    showcaseEntryDesc: "超级管理员模式 · 一键体验全部功能",
+  },
+
+  /* ========== 全功能展示页文案（VITE_SHOWCASE_MODE 展示构建，R4-00039） ========== */
+  showcase: {
+    title: "全功能展示",
+    subtitle: "超级管理员模式 · 所有功能已解锁",
+    noticeTitle: "欢迎使用展示版",
+    noticeText: "以下分组覆盖全部功能页面，点击任意卡片即可体验。Tab 页面使用底部切换，其余页面可返回本页继续浏览。",
+    groupCount: "{n} 项",
+    tabTag: "Tab",
+    groups: {
+      journey: {
+        title: "核心旅程",
+        subtitle: "登录 · 资料 · 认证",
+        items: {
+          login: { title: "登录页", desc: "微信 / 手机号 / 游客登录" },
+          profile: { title: "基础资料", desc: "头像 / 昵称 / 性别 / 兴趣" },
+          campus: { title: "学校信息", desc: "学校 / 专业 / 年级" },
+          recommendPref: { title: "推荐计划", desc: "匹配偏好设置" },
+          campusCert: { title: "校园认证", desc: "学生证 / 教育邮箱认证" },
+          verification: { title: "恋爱认证", desc: "人工认证 · 真人认证" },
+          schedule: { title: "时间安排", desc: "作息 / 课表偏好" },
+        },
+      },
+      match: {
+        title: "匹配",
+        subtitle: "寻觅 · 喜欢 · 心动信号 · 附近",
+        items: {
+          discover: { title: "寻觅 · 匹配", desc: "滑动卡片 / 喜欢 / 悄悄话" },
+          history: { title: "今日已看", desc: "今日浏览记录" },
+          likes: { title: "喜欢", desc: "喜欢我的 / 我喜欢的" },
+          heartSignals: { title: "心动信号 · 缘分速配", desc: "随机匹配 / 渐进解锁" },
+          nearby: { title: "附近的人", desc: "同城 / 附近用户" },
+        },
+      },
+      home: {
+        title: "首页与成长",
+        subtitle: "签到 · 恋爱中心 · 每日一问",
+        items: {
+          home: { title: "首页", desc: "签到 / 匹配入口 / 恋爱咨询" },
+          dailyQuestion: { title: "每日一问", desc: "每天一个心动提问" },
+          loveCenter: { title: "恋爱中心", desc: "咨询 / 课程 / 测试" },
+          consulting: { title: "恋爱咨询", desc: "恋爱 / 社交四板块课程" },
+          mbti: { title: "MBTI 测试", desc: "16 型人格测试" },
+          activities: { title: "活动", desc: "校园活动报名" },
+          activityDetail: { title: "活动详情", desc: "活动内容 / 报名" },
+        },
+      },
+      chat: {
+        title: "聊天",
+        subtitle: "会话 · 视频通话",
+        items: {
+          messages: { title: "消息", desc: "会话 / 官方号 / 通知" },
+          session: { title: "聊天会话", desc: "临时匿名聊天 / 渐进解锁" },
+          videoCall: { title: "视频通话", desc: "1v1 实时视频（展示）" },
+        },
+      },
+      community: {
+        title: "社区",
+        subtitle: "村口 · 兴趣圈 · 校园",
+        items: {
+          village: { title: "村口 · 圈子", desc: "关注 / 同城 / 发现" },
+          post: { title: "发布帖子", desc: "图文动态发布" },
+          detail: { title: "帖子详情", desc: "点赞 / 评论 / 分享" },
+          tagPosts: { title: "标签帖子", desc: "按标签浏览" },
+          circles: { title: "兴趣圈", desc: "圈子广场" },
+          topics: { title: "话题列表", desc: "热门话题" },
+          topicDetail: { title: "话题详情", desc: "话题动态流" },
+          postTopic: { title: "发布话题", desc: "参与话题互动" },
+          campus: { title: "校园", desc: "校园话题 / 活动" },
+          campusPostTopic: { title: "校园发帖", desc: "发布校园话题" },
+          campusTopicDetail: { title: "校园话题详情", desc: "校园话题动态" },
+          discussions: { title: "讨论圈", desc: "开放式讨论" },
+          feedbackHistory: { title: "反馈历史", desc: "我的反馈记录" },
+        },
+      },
+      commerce: {
+        title: "商业化",
+        subtitle: "VIP · 优惠码 · 逛逛",
+        items: {
+          vip: { title: "开通 VIP", desc: "月度 / 季度 / 年度会员" },
+          wallet: { title: "我的钱包", desc: "交友币余额 / 账单 / 充值" },
+          promoCode: { title: "优惠码", desc: "兑换码 / 优惠" },
+          bills: { title: "账单记录", desc: "消费 / 续费记录" },
+          shop: { title: "逛逛", desc: "积分商城 / 好物" },
+        },
+      },
+      profile: {
+        title: "个人中心与设置",
+        subtitle: "我的 · 安全 · 帮助",
+        items: {
+          profile: { title: "我的", desc: "个人信息 / 动态 / 菜单" },
+          visitors: { title: "谁看过我", desc: "访客记录" },
+          album: { title: "我的相册", desc: "照片墙管理" },
+          tasks: { title: "任务中心", desc: "每日任务 / 奖励" },
+          privacy: { title: "权限设置", desc: "同校推荐 / 接收信息" },
+          settings: { title: "设置", desc: "通用设置" },
+          dnd: { title: "免打扰", desc: "勿扰时段" },
+          feedback: { title: "反馈中心", desc: "意见 / 建议 / 投诉" },
+          legalPrivacy: { title: "隐私政策", desc: "个人信息保护" },
+          agreement: { title: "用户协议", desc: "服务条款" },
+        },
+      },
+    },
   },
 
   /* ========== VIP 会员页文案 ========== */
@@ -1920,6 +2044,9 @@ export default {
     officialPromoterMsg3: "七夕特别企划：在星空下认识心动的人，游戏与表白墙等你来解锁。",
     /* ========== 2026-08-07 消息页重构（对标微信：纯聊天属性） ========== */
     yesterday: "昨天",
+    /* R4-00138：活动卡片消息预览前缀/兜底文案 */
+    activityCardPrefix: "[活动]",
+    activityCardFallback: "活动卡片",
     searchPlaceholder: "搜索昵称或聊天记录",
     noSearchResult: "未找到相关会话",
     anonymousMatch: "匿名匹配聊天",
@@ -2585,6 +2712,8 @@ export default {
       anonymousAuthor: "匿名校友",
       loadingMore: "加载中...",
       noMore: "没有更多了",
+      /* R4-00108：空列表空态文案 */
+      emptyTopics: "该分类下还没有话题，快来发布第一个吧",
     },
     /* post-topic.vue 发布话题 */
     postTopic: {
@@ -2683,6 +2812,8 @@ export default {
     directionSkipped: "已跳过",
     rewindLabel: "挽回（每日限1次）",
     rewindUsedUp: "今日挽回次数已用完",
+    /* R4-00013：挽回请求进行中按钮文案 */
+    rewindingLabel: "挽回中...",
     emptyTitle: "还没有浏览记录",
     emptyDesc: "快去寻觅页发现有趣的TA吧",
   },
@@ -3036,12 +3167,25 @@ export default {
       submitAnswerFailed: "提交回答失败",
       loadAnswersFailed: "加载回答失败",
     },
+    /* 反馈 store（R4-00190：兜底文案 i18n 化） */
+    feedback: {
+      loadSubmissionsFailed: "加载反馈列表失败",
+      submitIssueFailed: "提交问题反馈失败",
+      submitSuggestionFailed: "提交建议失败",
+      submitActivityProposalFailed: "提交活动提案失败",
+    },
     /* 聊天 store */
     chat: {
       voiceFilePathEmpty: "录音文件路径为空，无法上传语音消息",
       icebreakerContentEmpty: "破冰话题内容不能为空",
       noActiveSession: "当前没有活跃会话",
       sessionIdEmpty: "聊天会话 ID 不能为空",
+      /* R4-00192：withErrorHandling errorPrefix 兜底文案（非 Error 异常时使用） */
+      loadOverviewFailed: "聊天页加载失败",
+      loadSessionFailed: "聊天详情加载失败",
+      updatePinnedFailed: "会话置顶状态更新失败",
+      loadIcebreakersFailed: "加载破冰话题失败",
+      sendIcebreakerFailed: "发送破冰话题失败",
     },
     /* 视频通话 store */
     videoCall: {

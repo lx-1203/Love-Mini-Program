@@ -1,5 +1,6 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.VipBill;
@@ -80,14 +81,13 @@ public class AutoRenewService {
     private final UserRepository userRepository;
     private final VipBillingLogRepository vipBillingLogRepository;
     /**
-     * VIP 账单 Repository（FIN HIGH-10 新增）。
+     * VIP 账单 Repository（FIN HIGH-10 新增，R4-00347 改构造器注入）。
      *
      * <p>用于扣款成功后延长 {@code vip_bills.period_end}（VIP 有效期结束时间）。
-     * 使用 {@code @Autowired(required = false)} 字段注入：
-     * 保持 4 参数构造器向后兼容（单元测试直接 new 时不注入，此时权益延长降级为仅日志）。</p>
+     * 构造器注入保证生产必注入，不再有"注入失败权益延长静默降级为仅日志"的
+     * 无失败可见性路径（原 @Autowired(required=false) 字段注入已移除）。</p>
      */
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private VipBillRepository vipBillRepository;
+    private final VipBillRepository vipBillRepository;
     private final RedissonClient redissonClient;
     /**
      * Task 2（FIN-00003）：钱包服务，用于真实扣减用户余额。
@@ -118,10 +118,12 @@ public class AutoRenewService {
 
     public AutoRenewService(UserRepository userRepository,
                             VipBillingLogRepository vipBillingLogRepository,
+                            VipBillRepository vipBillRepository,
                             RedissonClient redissonClient,
                             WalletService walletService) {
         this.userRepository = userRepository;
         this.vipBillingLogRepository = vipBillingLogRepository;
+        this.vipBillRepository = vipBillRepository;
         this.redissonClient = redissonClient;
         this.walletService = walletService;
     }
@@ -185,12 +187,9 @@ public class AutoRenewService {
      * 判断用户 VIP 是否处于续费窗口（距到期 24 小时内，含已过期）。
      *
      * <p>以最近一笔 SUCCESS 账单的 periodEnd 为 VIP 到期时间；无 SUCCESS 账单
-     * （从未开通 VIP）或未注入 vipBillRepository（测试/降级场景）时不触发。</p>
+     * （从未开通 VIP）时不触发。</p>
      */
     private boolean isVipExpiringSoon(Long userId) {
-        if (vipBillRepository == null) {
-            return false;
-        }
         try {
             List<VipBill> bills = vipBillRepository.findByUserIdOrderByCreatedAtDesc(userId);
             if (bills == null || bills.isEmpty()) {
@@ -230,11 +229,11 @@ public class AutoRenewService {
     @Transactional(readOnly = true)
     public AutoRenewStatusView getStatus(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         try {
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+                    .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
             boolean enabled = Boolean.TRUE.equals(user.getAutoRenewEnabled());
             return new AutoRenewStatusView(enabled);
         } catch (IllegalArgumentException e) {
@@ -243,7 +242,7 @@ public class AutoRenewService {
         } catch (DataAccessException e) {
             // 数据库查询失败时上报，由 GlobalExceptionHandler 转换为 5xx 响应
             log.error("查询自动续费状态失败：userId={}", userId, e);
-            throw new RuntimeException("查询自动续费状态失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.AUTO_RENEW_QUERY_FAILED_RETRY, e);
         }
     }
 
@@ -258,14 +257,14 @@ public class AutoRenewService {
     @Transactional
     public AutoRenewStatusView enable(Long userId, String planId) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         if (planId == null || planId.isBlank()) {
-            throw new IllegalArgumentException("套餐 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PLAN_ID_REQUIRED);
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
 
         try {
             user.setAutoRenewEnabled(true);
@@ -275,7 +274,7 @@ public class AutoRenewService {
         } catch (DataAccessException e) {
             // 数据库访问异常（save 失败、约束冲突等）
             log.error("开启自动续费失败：userId={}, planId={}", userId, planId, e);
-            throw new RuntimeException("开启自动续费失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.AUTO_RENEW_ENABLE_FAILED_RETRY, e);
         }
     }
 
@@ -289,11 +288,11 @@ public class AutoRenewService {
     @Transactional
     public AutoRenewStatusView disable(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
 
         try {
             user.setAutoRenewEnabled(false);
@@ -303,7 +302,7 @@ public class AutoRenewService {
         } catch (DataAccessException e) {
             // 数据库更新失败时回滚事务并上报
             log.error("关闭自动续费失败：userId={}", userId, e);
-            throw new RuntimeException("关闭自动续费失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.AUTO_RENEW_DISABLE_FAILED_RETRY, e);
         }
     }
 
@@ -317,7 +316,7 @@ public class AutoRenewService {
     @Transactional
     public AutoRenewStatusView setEnabled(Long userId, Boolean enabled) {
         if (enabled == null) {
-            throw new IllegalArgumentException("启用状态不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ENABLED_REQUIRED);
         }
         return enabled ? enable(userId, "default") : disable(userId);
     }
@@ -356,7 +355,7 @@ public class AutoRenewService {
     @Transactional
     public RenewResultView renewVip(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
 
         // 1. 获取分布式锁：auto-renew:{userId}
@@ -401,7 +400,7 @@ public class AutoRenewService {
             User user;
             try {
                 user = userRepository.findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+                        .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
             } catch (IllegalArgumentException e) {
                 log.warn("自动续费失败，用户不存在：userId={}", userId);
                 writeBillingLog(userId, orderNo, DEFAULT_RENEW_AMOUNT_CENTS, "FAILED");
@@ -457,12 +456,12 @@ public class AutoRenewService {
             Thread.currentThread().interrupt();
             log.error("自动续费等待锁时被中断：userId={}", userId, e);
             writeBillingLog(userId, orderNo, DEFAULT_RENEW_AMOUNT_CENTS, "FAILED");
-            throw new RuntimeException("自动续费被中断，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.AUTO_RENEW_INTERRUPTED_RETRY, e);
         } catch (DataAccessException e) {
             // 数据库访问异常：记录失败流水并抛出
             log.error("自动续费数据库异常：userId={}, orderNo={}", userId, orderNo, e);
             writeBillingLog(userId, orderNo, DEFAULT_RENEW_AMOUNT_CENTS, "FAILED");
-            throw new RuntimeException("自动续费失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.AUTO_RENEW_FAILED_RETRY, e);
         } finally {
             // 5. 释放锁：仅当持有锁且未委托事务同步时才释放，避免 IllegalMonitorStateException。
             // R4-00317：正常路径（unlockAfterCommitRegistered=true）锁由
@@ -509,11 +508,7 @@ public class AutoRenewService {
      * @param orderNo 本次续费订单号（用于日志与兜底建单）
      */
     private void extendVipExpiry(Long userId, String orderNo) {
-        // 兼容：单元测试直接 new 构造器时不注入 vipBillRepository，降级为仅日志
-        if (vipBillRepository == null) {
-            log.debug("vipBillRepository 未注入，跳过 VIP 到期时间延长（仅测试/降级场景）: userId={}", userId);
-            return;
-        }
+        // R4-00347：vipBillRepository 已改构造器注入（生产必注入），移除原降级分支
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         LocalDateTime newExpiry = now.plusDays(RENEW_PERIOD_DAYS);
 

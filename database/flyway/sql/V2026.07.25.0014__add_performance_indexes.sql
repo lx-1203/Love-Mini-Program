@@ -16,10 +16,11 @@
 --   * private_messages：私信会话消息分页、未读消息统计
 --
 -- 实现说明：
---   * 每条 CREATE INDEX 使用 IF NOT EXISTS（MySQL 8.0+ 支持），
---     避免重复执行迁移时报错
 --   * 索引命名遵循 idx_{表}_{列1}_{列2} 规范
 --   * 既有 UNIQUE 约束（如 uk_post_likes_user_post）不重复创建
+--   * 幂等性说明（R4-00413 注释修正）：MySQL 不支持 CREATE INDEX IF NOT EXISTS，
+--     本脚本依赖 Flyway 单次执行（validateOnMigrate 校验 checksum），
+--     不要手动重复执行本脚本；如需重放请用下方 DOWN 回滚段先删索引。
 --
 -- 注：原始任务规格中部分列名（如 likes.from_user_id、posts.circle_id、
 --   activities.creator_id/start_time、audit_log.user_id/action、

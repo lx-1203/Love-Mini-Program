@@ -15,26 +15,28 @@
 # ⚠️ 变量注入说明（infra #17）：
 #   prom/alertmanager 官方镜像不含 envsubst，纯 YAML 不支持 ${VAR} 展开。
 #   因此本文件使用「真实默认值 + 部署时替换」策略：
-#   - 下方所有 SMTP / Webhook 地址均为占位默认值（指向 example.com / localhost，
-#     仅保证配置语法有效，不会投递到真实渠道）
-#   - 部署时必须按下表将对应值替换为真实地址，并将变量同步维护到根目录 .env.example
-#     的「11. 告警通知配置」小节：
+#   - 邮件 SMTP 通道默认关闭（R4-02134）：未配置真实 SMTP 时邮件不投递、
+#     也不会静默依赖 example.com 占位地址，避免 critical 告警“看似已发实则丢失”。
+#     部署时按下方说明启用 SMTP 并替换为真实地址，变量同步维护到根目录
+#     .env.example 的「11. 告警通知配置」小节：
 #       SMTP_HOST / SMTP_FROM / SMTP_USER / SMTP_PASSWORD  →  邮件 SMTP
 #       CRITICAL_EMAIL                                     →  critical 收件人
 #       DINGTALK_CRITICAL_WEBHOOK                          →  钉钉机器人
 #       FEISHU_WARNING_WEBHOOK                             →  飞书机器人
 #       DEFAULT_WEBHOOK_URL                                →  默认归档 webhook
-#   未配置渠道时：critical 邮件发往 example.com 会失败并产生错误日志，
-#   warning 走 webhook 失败重试；info 级别直接丢弃（见 null-pager）。
+#   未配置渠道时：critical 仅走钉钉 webhook（未配置时指向本地无效地址，
+#   投递失败重试并记录日志，可被运维感知）；warning 走 webhook 失败重试；
+#   info 级别直接丢弃（见 null-pager）。
 # ============================================================
 
 global:
-  # 发件人 SMTP 配置（邮件通知）：部署时替换为真实 SMTP 服务器与账号
-  smtp_smarthost: 'smtp.example.com:587'
-  smtp_from: 'alert@example.com'
-  smtp_auth_username: ''
-  smtp_auth_password: ''
-  smtp_require_tls: true
+  # 发件人 SMTP 配置（邮件通知）：默认关闭——未配置真实 SMTP 前
+  # 不启用邮件通道（R4-02134）。部署时取消注释并替换为真实 SMTP 服务器与账号
+  # smtp_smarthost: 'smtp.example.com:587'
+  # smtp_from: 'alert@example.com'
+  # smtp_auth_username: ''
+  # smtp_auth_password: ''
+  # smtp_require_tls: true
   # 告警去重窗口：相同告警在该时间内只发一次
   resolve_timeout: 5m
 
@@ -103,14 +105,15 @@ receivers:
         send_resolved: true
         max_alerts: 0
 
-  # critical 级别：邮件 + 钉钉
+  # critical 级别：邮件（默认关闭，R4-02134）+ 钉钉
   - name: critical-email
-    email_configs:
-      # 部署时替换 CRITICAL_EMAIL 为真实收件人
-      - to: 'oncall@example.com'
-        subject: '[CRITICAL] {{ .CommonLabels.alertname }}'
-        html: '{{ template "email.default.html" . }}'
-        send_resolved: true
+    # 邮件通道默认关闭：启用时取消注释并替换 CRITICAL_EMAIL 为真实收件人，
+    # 同时启用上方 global.smtp_* 配置（.env.example 有对应变量说明）
+    # email_configs:
+    #   - to: 'oncall@example.com'
+    #     subject: '[CRITICAL] {{ .CommonLabels.alertname }}'
+    #     html: '{{ template "email.default.html" . }}'
+    #     send_resolved: true
     webhook_configs:
       # 钉钉机器人 webhook：部署时替换 DINGTALK_CRITICAL_WEBHOOK；
       # 未配置时指向本地无效地址（投递失败会重试并记录日志），不影响配置加载

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -528,25 +529,25 @@ public class AdminActivityController {
      */
     private void validateRequiredFields(AdminActivityRequest req) {
         if (req.title() == null || req.title().isBlank()) {
-            throw new IllegalArgumentException("活动标题不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ACTIVITY_TITLE_REQUIRED);
         }
         if (req.title().trim().length() > 128) {
-            throw new IllegalArgumentException("活动标题长度不能超过 128 字");
+            throw new IllegalArgumentException(ErrorMessages.ACTIVITY_TITLE_MAX_LENGTH);
         }
         if (req.location() == null || req.location().isBlank()) {
-            throw new IllegalArgumentException("活动地点不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ACTIVITY_LOCATION_REQUIRED);
         }
         if (req.location().trim().length() > 256) {
-            throw new IllegalArgumentException("活动地点长度不能超过 256 字");
+            throw new IllegalArgumentException(ErrorMessages.ACTIVITY_LOCATION_MAX_LENGTH);
         }
         if (req.scheduleText() == null || req.scheduleText().isBlank()) {
-            throw new IllegalArgumentException("活动时间描述不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ACTIVITY_TIME_DESC_REQUIRED);
         }
         if (req.scheduleText().trim().length() > 128) {
-            throw new IllegalArgumentException("活动时间描述长度不能超过 128 字");
+            throw new IllegalArgumentException(ErrorMessages.ACTIVITY_TIME_DESC_MAX_LENGTH);
         }
         if (req.description() == null || req.description().isBlank()) {
-            throw new IllegalArgumentException("活动描述不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ACTIVITY_DESC_REQUIRED);
         }
     }
 
@@ -565,7 +566,7 @@ public class AdminActivityController {
             return ActivityStatus.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
             // 非法筛选/请求参数直接 400，不再静默转 null 导致条件失效
-            throw new IllegalArgumentException("非法活动状态参数: " + value);
+            throw new IllegalArgumentException(ErrorMessages.ILLEGAL_ACTIVITY_STATUS_PREFIX + value);
         }
     }
 
@@ -617,15 +618,15 @@ public class AdminActivityController {
  * @param published    是否上架（可选，默认 true）
  */
 record AdminActivityRequest(
-        @NotBlank(message = "活动标题不能为空")
-        @Size(max = 128, message = "活动标题长度不能超过 128 字") String title,
-        @NotBlank(message = "活动地点不能为空")
-        @Size(max = 256, message = "活动地点长度不能超过 256 字") String location,
-        @NotBlank(message = "活动时间描述不能为空")
-        @Size(max = 128, message = "活动时间描述长度不能超过 128 字") String scheduleText,
-        @NotBlank(message = "活动描述不能为空") String description,
-        @Size(max = 64, message = "城市名称长度不能超过 64 字") String cityName,
-        @Size(max = 128, message = "校区名称长度不能超过 128 字") String campusName,
+        @NotBlank(message = ErrorMessages.ACTIVITY_TITLE_REQUIRED)
+        @Size(max = 128, message = ErrorMessages.ACTIVITY_TITLE_MAX_LENGTH) String title,
+        @NotBlank(message = ErrorMessages.ACTIVITY_LOCATION_REQUIRED)
+        @Size(max = 256, message = ErrorMessages.ACTIVITY_LOCATION_MAX_LENGTH) String location,
+        @NotBlank(message = ErrorMessages.ACTIVITY_TIME_DESC_REQUIRED)
+        @Size(max = 128, message = ErrorMessages.ACTIVITY_TIME_DESC_MAX_LENGTH) String scheduleText,
+        @NotBlank(message = ErrorMessages.ACTIVITY_DESC_REQUIRED) String description,
+        @Size(max = 64, message = ErrorMessages.CITY_NAME_MAX_LENGTH) String cityName,
+        @Size(max = 128, message = ErrorMessages.CAMPUS_NAME_FULL_MAX_LENGTH) String campusName,
         LocalDate activityDate,
         String status,
         Boolean published) {

@@ -63,7 +63,7 @@ const frameStyle = computed(() => ({
 
 /* 渐变环：多色渐变 + 白内边（QQ 头像框的「白框 + 彩色描边」结构） */
 .avatar-frame__ring {
-  padding: 8rpx;
+  padding: var(--sp-2);
   border-radius: var(--r-full);
   background: var(--af-gradient);
   box-shadow: 0 0 24rpx var(--af-glow);
@@ -90,6 +90,7 @@ const frameStyle = computed(() => ({
 /* 身份角标（右下角，叠在环上；主题渐变圆底 + 白色 SVG 图标，QQ 身份徽章风格） */
 .avatar-frame__badge {
   position: absolute;
+  /* 固定布局尺寸（角标负偏移 -4rpx / 尺寸 46rpx），无对应 token */
   right: -4rpx;
   bottom: -4rpx;
   width: 46rpx;
@@ -105,6 +106,7 @@ const frameStyle = computed(() => ({
 }
 
 .avatar-frame__badge-icon {
+  /* 固定布局尺寸（角标图标 26rpx），无对应 token */
   width: 26rpx;
   height: 26rpx;
   display: block;

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -323,10 +324,10 @@ public class AdminDictController {
  * @param description 字典描述
  */
 record AdminDictRequest(
-        @NotBlank(message = "字典名称不能为空")
-        @Size(min = 1, max = 64, message = "字典名称长度须为 1-64 字") String name,
-        @NotBlank(message = "字典编码不能为空")
-        @Size(min = 1, max = 64, message = "字典编码长度须为 1-64 字") String code,
+        @NotBlank(message = ErrorMessages.DICT_NAME_REQUIRED)
+        @Size(min = 1, max = 64, message = ErrorMessages.DICT_NAME_LENGTH_INVALID) String name,
+        @NotBlank(message = ErrorMessages.DICT_CODE_REQUIRED)
+        @Size(min = 1, max = 64, message = ErrorMessages.DICT_CODE_LENGTH_INVALID) String code,
         String description) {
 }
 
@@ -339,10 +340,10 @@ record AdminDictRequest(
  * @param enabled 是否启用
  */
 record AdminDictItemRequest(
-        @NotBlank(message = "条目显示名不能为空")
-        @Size(min = 1, max = 64, message = "条目显示名长度须为 1-64 字") String label,
-        @NotBlank(message = "条目值不能为空")
-        @Size(min = 1, max = 64, message = "条目值长度须为 1-64 字") String value,
+        @NotBlank(message = ErrorMessages.DICT_ITEM_LABEL_REQUIRED)
+        @Size(min = 1, max = 64, message = ErrorMessages.DICT_ITEM_LABEL_LENGTH_INVALID) String label,
+        @NotBlank(message = ErrorMessages.DICT_ITEM_VALUE_REQUIRED)
+        @Size(min = 1, max = 64, message = ErrorMessages.DICT_ITEM_VALUE_LENGTH_INVALID) String value,
         Integer sort,
         Boolean enabled) {
 }

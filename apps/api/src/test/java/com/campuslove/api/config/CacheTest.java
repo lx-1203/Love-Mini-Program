@@ -14,7 +14,7 @@ import com.campuslove.api.discover.RealRecommendationService;
 import com.campuslove.api.growth.WeChatPushService;
 import com.campuslove.api.repository.SensitiveWordRepository;
 import com.campuslove.api.village.RealPostTagService;
-import com.campuslove.api.village.RealVillageService;
+import com.campuslove.api.village.VillageQueryService;
 import com.github.benmanes.caffeine.cache.Cache;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -269,10 +269,14 @@ class CacheTest {
 
     /**
      * 场景 11：村口热门帖子查询应添加 {@code @Cacheable(VILLAGE_HOT_POSTS)}。
+     *
+     * <p>R4-00357：缓存注解由 {@code RealVillageService.listHotPosts} 迁移至
+     * {@link VillageQueryService#listHotPosts}（同 cacheNames+key，原先双层叠加为死代码，
+     * RealVillageService 保留为轻量委托入口、不再携带注解）——断言跟随实现。</p>
      */
     @Test
-    void realVillageService_listHotPosts_shouldBeCacheable() throws Exception {
-        Method m = RealVillageService.class.getMethod("listHotPosts");
+    void villageQueryService_listHotPosts_shouldBeCacheable() throws Exception {
+        Method m = VillageQueryService.class.getMethod("listHotPosts");
         Cacheable cacheable = m.getAnnotation(Cacheable.class);
         assertNotNull(cacheable, "listHotPosts 应添加 @Cacheable 注解");
         assertEquals(CacheNames.VILLAGE_HOT_POSTS, cacheable.cacheNames()[0]);

@@ -353,23 +353,6 @@ export function supportsRuntimeEsmImport(): boolean {
 }
 
 /**
- * Task 35：当前平台是否支持 uni.vibrateShort 短振动反馈。
- *
- * - H5 / APP-PLUS / MP-WEIXIN 端：支持 uni.vibrateShort（H5 端 type 参数无效但不抛错）
- * - 其他平台：不支持，调用应静默跳过
- *
- * 用于业务代码（utils/haptic.ts）替代散落的 `#ifdef H5 || APP-PLUS || MP-WEIXIN` 块。
- */
-export function supportsHapticFeedback(): boolean {
-  // #ifdef H5 || APP-PLUS || MP-WEIXIN
-  return true;
-  // #endif
-  // #ifndef H5 || APP-PLUS || MP-WEIXIN
-  return false;
-  // #endif
-}
-
-/**
  * 小程序胶囊按钮（右上角菜单）位置信息。
  *
  * 与 wx.getMenuButtonBoundingClientRect 返回结构一致，字段单位为 px。

@@ -20,6 +20,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class MockCircleService implements CircleService {
 
+  /**
+   * R4-01788/01789：mock 种子图片地址统一收敛为常量。
+   * 原硬编码外网图床（https://picsum.photos）在离线/内网环境裂图；
+   * 本地联调可整体替换为本地静态资源地址（如 /static/... 或 /uploads/mock/...）。
+   */
+  private static final String MOCK_TOPIC_IMAGE_1 = "https://picsum.photos/400/300?1";
+  private static final String MOCK_TOPIC_IMAGE_2 = "https://picsum.photos/400/300?2";
+  private static final String MOCK_TOPIC_IMAGE_3 = "https://picsum.photos/400/300?3";
+
+  /**
+   * R4-01857/01858：mock 新建话题/回复的 ID 递增器。
+   * 起始值避开种子 ID（100~600）与用户 ID 段，避免新建数据与种子碰撞。
+   */
+  private static final java.util.concurrent.atomic.AtomicLong MOCK_ID_SEQ =
+          new java.util.concurrent.atomic.AtomicLong(1_000_000L);
+
   private static final List<CircleData> PRESET_CIRCLES = List.of(
       new CircleData(1L, "摄影圈", "\uD83D\uDCF7", "用镜头记录校园的每一刻美好", 328, 1),
       new CircleData(2L, "运动圈", "\u26BD", "一起流汗，一起变强", 512, 2),
@@ -107,7 +123,8 @@ public class MockCircleService implements CircleService {
 
   @Override
   public CircleTopicView createTopic(Long circleId, Long authorId, String title, String content, List<String> images) {
-    long newId = System.currentTimeMillis() % 100000;
+    // R4-01857：AtomicLong 递增替代 System.currentTimeMillis() % 100000（毫秒取模易碰撞）
+    long newId = MOCK_ID_SEQ.incrementAndGet();
     TopicData topic = new TopicData(
         newId,
         title,
@@ -162,7 +179,8 @@ public class MockCircleService implements CircleService {
 
   @Override
   public CircleReplyView replyToTopic(Long topicId, Long authorId, String content) {
-    long newId = System.currentTimeMillis() % 100000;
+    // R4-01858：AtomicLong 递增替代 System.currentTimeMillis() % 100000（毫秒取模易碰撞）
+    long newId = MOCK_ID_SEQ.incrementAndGet();
     ReplyData reply = new ReplyData(
         newId,
         content,
@@ -243,10 +261,10 @@ public class MockCircleService implements CircleService {
     map.put(1L, List.of(
         new TopicData(101L, "落日下的图书馆怎么拍最好看？",
             "最近傍晚的光线特别温柔，图书馆西侧的光影很漂亮，大家有没有推荐的机位和参数？",
-            List.of("https://picsum.photos/400/300?1"), 12, 1002L, "林安", LocalDateTime.now(TimeZones.BUSINESS).minusHours(2)),
+            List.of(MOCK_TOPIC_IMAGE_1), 12, 1002L, "林安", LocalDateTime.now(TimeZones.BUSINESS).minusHours(2)),
         new TopicData(102L, "手机也能拍出胶片感吗？",
             "分享一些手机调色的思路，不用专业相机也能出片。附上我最近拍的几张。",
-            List.of("https://picsum.photos/400/300?2", "https://picsum.photos/400/300?3"), 8, 1003L, "周沐",
+            List.of(MOCK_TOPIC_IMAGE_2, MOCK_TOPIC_IMAGE_3), 8, 1003L, "周沐",
             LocalDateTime.now(TimeZones.BUSINESS).minusHours(5))
     ));
 

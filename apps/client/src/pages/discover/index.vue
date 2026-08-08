@@ -4,7 +4,7 @@
  * 展示个性化用户卡片推荐，支持滑动浏览和每日签到
  */
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
-import { onShow, onLoad } from "@dcloudio/uni-app";
+import { onShow, onLoad, onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useDiscoverStore, type SwipeDirection, type MatchScope, type SortBy } from "../../stores/discover";
@@ -32,6 +32,7 @@ import FilterDrawer from "../../components/discover/FilterDrawer.vue";
 // Task F：全局发帖悬浮按钮组件
 import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { IMAGE_PATHS } from "../../config/images";
+import { TOAST_DURATION } from "../../constants/limits";
 import { lightHaptic } from "../../utils/haptic";
 import { showErrorToast } from "../../utils/error-toast";
 // Sentry 监控：推荐加载 / 滑动失败上报异常，页面切换记录面包屑
@@ -125,7 +126,7 @@ function triggerMatchNavigation(partner?: { name?: string; avatar?: string }) {
   uni.showToast({
     title: t("discover.matchSuccess"),
     icon: "success",
-    duration: 2000,
+    duration: TOAST_DURATION.NORMAL_MS,
   });
 
   // 1.5 秒后跳转 likes 页
@@ -155,6 +156,12 @@ onUnmounted(() => {
     clearTimeout(matchNavReleaseTimer);
     matchNavReleaseTimer = null;
   }
+});
+
+// R4-00157/00158：页面卸载时清理 store 定时器/请求资源（签到动画、discover 存储防抖等）
+onUnload(() => {
+  checkInStore.dispose();
+  discoverStore.dispose();
 });
 
 /**
@@ -290,9 +297,13 @@ const activeMatchScope = computed(() => discoverStore.matchScope);
 /** 当前生效的排序规则 */
 const activeSortBy = computed(() => discoverStore.sortBy);
 
+/** 缺省年龄区间（用户未设置筛选时默认展示 18-35 岁） */
+const DEFAULT_AGE_MIN = 18;
+const DEFAULT_AGE_MAX = 35;
+
 /** 当前生效的年龄区间（缺省 18-35） */
-const activeAgeMin = computed(() => discoverStore.recommendationFilter.ageMin ?? 18);
-const activeAgeMax = computed(() => discoverStore.recommendationFilter.ageMax ?? 35);
+const activeAgeMin = computed(() => discoverStore.recommendationFilter.ageMin ?? DEFAULT_AGE_MIN);
+const activeAgeMax = computed(() => discoverStore.recommendationFilter.ageMax ?? DEFAULT_AGE_MAX);
 
 /** 范围 chip 文案（不限/附近；同城/同校为后续枚举扩展，见 MatchScope 注释） */
 const scopeChipLabel = computed(() =>
@@ -380,15 +391,20 @@ function clearSearch() {
 }
 
 /* ========== [AUTOSHOT] 仅测试钩子：automator 走查驱动弹窗/详情打开 ==========
- * 用法：reLaunch 到 /pages/discover/index?shot=detail&anchor=panel-quick 等。
- * 正常用户路径不带 shot 参数，以下逻辑零影响。 */
+ * R4-00010 修复：仅开发构建（import.meta.env.DEV）生效，生产构建摇树剔除，
+ * 避免测试专用后门入口进入生产产物。
+ * 用法（dev 模式）：reLaunch 到 /pages/discover/index?shot=detail&anchor=panel-quick 等。 */
 
 /** [AUTOSHOT] 是否自动打开详情弹层 */
 const autoOpenDetail = ref(false);
 /** [AUTOSHOT] 详情弹层滚动目标面板 id */
 const detailAnchor = ref("");
 
+// R4-00010：AUTOSHOT 走查钩子仅保留在开发构建（生产环境 import.meta.env.DEV 恒为 false，代码被摇树）
+const isDevShotHookEnabled = import.meta.env.DEV;
+
 onLoad((options) => {
+  if (!isDevShotHookEnabled) return;
   const shot = options?.shot;
   if (!shot) return;
   if (shot === "detail") {

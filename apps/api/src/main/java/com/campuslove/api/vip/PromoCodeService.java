@@ -1,5 +1,6 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.PromoCode;
 import com.campuslove.api.entity.PromoCodeUsage;
@@ -55,15 +56,15 @@ public class PromoCodeService {
     @Transactional(readOnly = true)
     public ValidateResultView validate(String code, Long userId, Integer baseAmount) {
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("优惠码不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_CODE_REQUIRED);
         }
         if (baseAmount == null || baseAmount < 0) {
-            throw new IllegalArgumentException("基础金额不能为负数");
+            throw new IllegalArgumentException(ErrorMessages.BASE_AMOUNT_NOT_NEGATIVE);
         }
 
         String normalizedCode = code.trim().toUpperCase();
         PromoCode promo = promoCodeRepository.findByCode(normalizedCode)
-                .orElseThrow(() -> new IllegalArgumentException("优惠码不存在"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.PROMO_CODE_NOT_FOUND));
 
         // 校验状态、有效期、使用次数
         validatePromoCode(promo, userId);
@@ -113,20 +114,20 @@ public class PromoCodeService {
     @Transactional
     public RedeemResultView redeem(String code, Long userId, Integer baseAmount) {
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("优惠码不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_CODE_REQUIRED);
         }
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         if (baseAmount == null || baseAmount < 0) {
-            throw new IllegalArgumentException("基础金额不能为负数");
+            throw new IllegalArgumentException(ErrorMessages.BASE_AMOUNT_NOT_NEGATIVE);
         }
 
         String normalizedCode = code.trim().toUpperCase();
 
         // 1. 悲观锁查询优惠码（SELECT ... FOR UPDATE），锁住优惠码行防止并发读取到过期状态
         PromoCode promo = promoCodeRepository.findByCodeForUpdate(normalizedCode)
-                .orElseThrow(() -> new IllegalArgumentException("优惠码不存在"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.PROMO_CODE_NOT_FOUND));
 
         // 2. 校验状态、有效期、剩余次数、单用户使用次数
         validatePromoCode(promo, userId);
@@ -141,7 +142,7 @@ public class PromoCodeService {
                 // 影响行数 0：优惠码已被并发用完
                 log.warn("优惠码原子扣减失败，可能被并发用完：code={}, userId={}",
                         normalizedCode, userId);
-                throw new IllegalArgumentException("优惠码已用完");
+                throw new IllegalArgumentException(ErrorMessages.PROMO_CODE_EXHAUSTED);
             }
 
             // 5. 累加 used_count（统计展示用，与 decrementRemaining 在同一事务内）
@@ -168,7 +169,7 @@ public class PromoCodeService {
         } catch (DataAccessException e) {
             // 数据库访问异常（save 失败、约束冲突、并发兑换导致的乐观锁失败等）
             log.error("优惠码兑换失败：code={}, userId={}", normalizedCode, userId, e);
-            throw new RuntimeException("优惠码兑换失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.PROMO_REDEEM_FAILED_RETRY, e);
         }
     }
 
@@ -181,7 +182,7 @@ public class PromoCodeService {
     @Transactional(readOnly = true)
     public List<PromoCodeUsage> listMyUsages(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         return promoCodeUsageRepository.findByUserIdOrderByUsedAtDesc(userId);
     }
@@ -199,21 +200,21 @@ public class PromoCodeService {
      */
     private void validatePromoCode(PromoCode promo, Long userId) {
         if (!"ACTIVE".equals(promo.getStatus())) {
-            throw new IllegalArgumentException("优惠码已被禁用");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_CODE_DISABLED);
         }
 
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         if (promo.getValidFrom() != null && promo.getValidFrom().isAfter(now)) {
-            throw new IllegalArgumentException("优惠码尚未生效");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_CODE_NOT_ACTIVE);
         }
         if (promo.getValidTo() != null && promo.getValidTo().isBefore(now)) {
-            throw new IllegalArgumentException("优惠码已过期");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_CODE_EXPIRED);
         }
 
         // 检查剩余次数（remaining_uses = 0 表示已用完；max_uses = 0 时不限次数，
         // remaining_uses 在 Flyway 迁移时被设为 2147483647，不会触发此分支）
         if (promo.getRemainingUses() != null && promo.getRemainingUses() <= 0) {
-            throw new IllegalArgumentException("优惠码使用次数已达上限");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_CODE_USES_EXCEEDED);
         }
 
         // 检查单用户使用次数限制（maxUsesPerUser 默认 1）

@@ -30,8 +30,8 @@ import org.springframework.data.redis.core.ValueOperations;
  *   <li>revoke 参数校验（jti 为空 / TTL&lt;=0 时跳过）</li>
  *   <li>revoke Redis 写入失败时降级到本地内存</li>
  *   <li>revoke redisTemplate 未注入时仅写本地内存</li>
- *   <li>isRevoked Redis 命中（已撤销）</li>
- *   <li>isRevoked Redis 未命中（未撤销）</li>
+ *   <li>isRevoked 本地优先（R4-00310）：revoke 双写本地+Redis，本地命中即返回 true，
+ *       不再查询 Redis；Redis 可用且本地未命中时才查 Redis（命中=已撤销，未命中=未撤销）</li>
  *   <li>isRevoked jti 为空时返回 false</li>
  *   <li>isRevoked Redis 查询失败时降级查本地内存</li>
  *   <li>幂等性：同一 jti 多次 revoke 不报错</li>
@@ -101,13 +101,15 @@ class RedisTokenBlacklistServiceTest {
     }
 
     /**
-     * 场景 2：revoke 后 isRevoked 应返回 true（Redis 命中）。
+     * 场景 2：revoke 后 isRevoked 应返回 true。
+     *
+     * <p>R4-00310 本地优先：revoke 时本地内存与 Redis 双写，isRevoked 先查本地
+     * 内存命中即返回 true，无需再查询 Redis（hasKey 不再被调用）。</p>
      */
     @Test
-    void isRevoked_afterRevoke_shouldReturnTrueFromRedis() {
+    void isRevoked_afterRevoke_shouldReturnTrue() {
         // Arrange
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(redisTemplate.hasKey("jwt:blacklist:" + TEST_JTI)).thenReturn(true);
 
         // Act
         blacklistService.revoke(TEST_JTI, TEST_TTL_SECONDS);
@@ -115,6 +117,8 @@ class RedisTokenBlacklistServiceTest {
 
         // Assert
         assertTrue(revoked, "revoke 后 isRevoked 应返回 true");
+        // 本地优先命中，Redis hasKey 不应被查询
+        verify(redisTemplate, never()).hasKey(anyString());
     }
 
     /* ========== revoke 参数校验 ========== */
@@ -175,11 +179,12 @@ class RedisTokenBlacklistServiceTest {
         // Act & Assert：不抛异常
         assertDoesNotThrow(() -> blacklistService.revoke(TEST_JTI, TEST_TTL_SECONDS));
 
-        // Assert：本地内存应写入（降级方案），通过 isRevoked 验证
-        // 当 Redis 不可用时，isRevoked 也会降级查本地内存
-        when(redisTemplate.hasKey(anyString())).thenThrow(new RuntimeException("Redis down"));
+        // Assert：本地内存应写入（降级方案），通过 isRevoked 验证。
+        // R4-00310 本地优先：本地命中直接返回 true，不触发 Redis 查询
+        // （即使 Redis 故障，revoke 期间写入的本地记录也能拦截）。
         assertTrue(blacklistService.isRevoked(TEST_JTI),
                 "Redis 故障时本地内存应能查询到已撤销 jti");
+        verify(redisTemplate, never()).hasKey(anyString());
     }
 
     /**
@@ -262,20 +267,20 @@ class RedisTokenBlacklistServiceTest {
      */
     @Test
     void isRevoked_whenRedisThrowsException_shouldFallbackToLocal() {
-        // Arrange：Redis 抛异常，本地内存有该 jti
-        when(redisTemplate.hasKey(anyString())).thenThrow(new RuntimeException("Redis down"));
-        // 先写入本地内存（通过 revoke 触发，revoke 也会失败但本地内存会写入）
+        // Arrange：Redis 抛异常，本地内存有该 jti。
+        // 通过 revoke 触发（revoke 的 Redis 写入失败但本地内存会写入）
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         doThrow(new RuntimeException("Redis down"))
                 .when(valueOperations)
                 .set(anyString(), any(), anyLong(), any(TimeUnit.class));
         blacklistService.revoke(TEST_JTI, TEST_TTL_SECONDS);
 
-        // Act：Redis 故障，应降级查本地内存
+        // Act：R4-00310 本地优先——本地命中直接返回 true，不触发 Redis hasKey 查询
         boolean revoked = blacklistService.isRevoked(TEST_JTI);
 
         // Assert：本地内存命中
         assertTrue(revoked, "Redis 故障时应降级查本地内存，本地命中应返回 true");
+        verify(redisTemplate, never()).hasKey(anyString());
     }
 
     /**

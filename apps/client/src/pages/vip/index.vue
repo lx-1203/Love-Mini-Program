@@ -28,6 +28,8 @@ import { isMockMode } from "../../services/env";
 import { ROUTES } from "../../constants/routes";
 // P1-08：会员功能开关（false 时本页禁用所有购买/续费交互且不发起后端请求）
 import { featureFlags } from "../../config/feature-flags";
+// R4-00116：switch 激活色 / 金色系统一从 designTokens 取色（与 scss --c-gold 双源同步）
+import { designTokens } from "../../theme/tokens";
 
 const { t } = useI18n();
 const autoRenewStore = useAutoRenewStore();
@@ -66,6 +68,12 @@ onLoad(() => {
 function planText(_plan: VipPlan | undefined, key?: string, fallback?: string): string {
   return key ? t(key) : (fallback ?? "");
 }
+
+/**
+ * R4-01002: mock 支付流程模拟耗时（毫秒）——仅 mock 模式使用，
+ * 模拟"拉起支付 → 用户确认"的延迟，抽常量便于调整与复用。
+ */
+const MOCK_PAYMENT_DELAY_MS = 1200;
 
 /**
  * SubTask 1.5.2：mock 支付定时器引用，用于卸载时清理。
@@ -114,10 +122,12 @@ const DEFAULT_PLAN_ID = VIP_PLANS[0]?.id ?? "quarterly";
 const selectedPlanId = ref<VipPlan["id"]>(DEFAULT_PLAN_ID);
 
 /**
- * infra R2-00058: 开关激活色——switch 为原生属性不支持 CSS 变量，
- * 常量与 styles/tokens.scss 的 --c-gold(#FFD700) 保持同步，改品牌色时两处统一调整
+ * R4-00116: 开关激活色——switch 为原生属性不支持 CSS 变量，
+ * 改从 theme/tokens.ts 的 designTokens.color.gold 取色（JS 侧唯一真相源，
+ * 与 design-variables.scss 的 --c-gold(#FFD700) 双源同步），
+ * 改金色只需改 token 一处，不再手工同步。
  */
-const SWITCH_ACTIVE_COLOR = "#FFD700";
+const SWITCH_ACTIVE_COLOR = designTokens.color.gold;
 
 /** 当前选中的套餐对象 */
 const selectedPlan = computed(() =>
@@ -173,7 +183,7 @@ function subscribe() {
       mockPaymentTimer = null;
       // 模拟成功（真实环境调用 uni.requestPayment）
       resolve({ ok: true, cancelled: false });
-    }, 1200);
+    }, MOCK_PAYMENT_DELAY_MS);
   });
 
   mockPayment

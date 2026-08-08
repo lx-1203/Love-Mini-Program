@@ -12,6 +12,8 @@ import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { contentPageUrls } from "../../config/content-pages";
 import { IMAGE_PATHS } from "../../config/images";
+// R4-00976：toast 时长走统一常量（TOAST_DURATION.NORMAL_MS = 2000ms）
+import { TOAST_DURATION } from "../../constants/limits";
 
 const { t } = useI18n();
 
@@ -25,11 +27,21 @@ onLoad(() => {
   webUrl.value = contentPageUrls.consultingUrl ?? "";
 });
 
+/**
+ * R4-00032: 本地示例课程价格（元）集中配置，调价只需改此处。
+ * 后续接入真实报名/支付链路后，价格应改由后端课程配置下发，此常量即移除。
+ */
+const COURSE_PRICES = {
+  communication: 99,   // 恋爱沟通课
+  dating: 129,         // 脱单攻略课
+  intimacyRepair: 159, // 亲密关系修复课
+} as const;
+
 /** 本地示例课程（文案走 i18n contentPages.consulting.course*） */
 const courses = [
-  { id: "c-1", titleKey: "contentPages.consulting.course1.title", lecturerKey: "contentPages.consulting.course1.lecturer", descKey: "contentPages.consulting.course1.desc", price: 99 },
-  { id: "c-2", titleKey: "contentPages.consulting.course2.title", lecturerKey: "contentPages.consulting.course2.lecturer", descKey: "contentPages.consulting.course2.desc", price: 129 },
-  { id: "c-3", titleKey: "contentPages.consulting.course3.title", lecturerKey: "contentPages.consulting.course3.lecturer", descKey: "contentPages.consulting.course3.desc", price: 159 },
+  { id: "c-1", titleKey: "contentPages.consulting.course1.title", lecturerKey: "contentPages.consulting.course1.lecturer", descKey: "contentPages.consulting.course1.desc", price: COURSE_PRICES.communication },
+  { id: "c-2", titleKey: "contentPages.consulting.course2.title", lecturerKey: "contentPages.consulting.course2.lecturer", descKey: "contentPages.consulting.course2.desc", price: COURSE_PRICES.dating },
+  { id: "c-3", titleKey: "contentPages.consulting.course3.title", lecturerKey: "contentPages.consulting.course3.lecturer", descKey: "contentPages.consulting.course3.desc", price: COURSE_PRICES.intimacyRepair },
 ] as const;
 
 /** 课程价格文案（¥{price}） */
@@ -40,7 +52,7 @@ function priceLabel(price: number): string {
 /** 报名课程：toast 提示（真实报名/支付链路接入后端） */
 function handleSignup() {
   lightHaptic();
-  uni.showToast({ title: t("contentPages.consulting.signupSuccess"), icon: "none", duration: 2000 });
+  uni.showToast({ title: t("contentPages.consulting.signupSuccess"), icon: "none", duration: TOAST_DURATION.NORMAL_MS });
 }
 
 /** 返回上一页（右上角固定按钮） */

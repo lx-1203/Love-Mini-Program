@@ -511,7 +511,7 @@ onBeforeUnmount(() => {
 @import "../../styles/admin-common.css";
 
 .wallets-page {
-  max-width: 1400px;
+  max-width: var(--admin-page-max-width);
 }
 
 .tabs {
@@ -525,7 +525,7 @@ onBeforeUnmount(() => {
   padding: var(--admin-space-md) var(--admin-space-xl);
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: var(--admin-underline-width) solid transparent;
   font-size: var(--admin-font-lg);
   color: var(--admin-color-text-tertiary);
   cursor: pointer;
@@ -543,7 +543,7 @@ onBeforeUnmount(() => {
 }
 
 .search-input.narrow {
-  width: 120px;
+  width: var(--admin-control-width);
 }
 
 .range-sep {
@@ -568,7 +568,7 @@ onBeforeUnmount(() => {
 }
 
 .remark-cell {
-  max-width: 200px;
+  max-width: var(--admin-control-max-width);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -648,7 +648,7 @@ onBeforeUnmount(() => {
 }
 
 .adjust-modal {
-  width: 420px;
+  width: var(--admin-dialog-width-sm);
 }
 
 .modal-title {

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -13,7 +14,7 @@ import jakarta.validation.constraints.Size;
  */
 public record AdminPostAuditRequest(
         @NotBlank
-        @Pattern(regexp = "approved|rejected", message = "decision 必须为 approved 或 rejected")
+        @Pattern(regexp = "approved|rejected", message = ErrorMessages.POST_AUDIT_DECISION_INVALID)
         String decision,
         @Size(max = 500) String remark
 ) {

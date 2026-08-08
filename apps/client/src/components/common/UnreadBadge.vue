@@ -38,6 +38,7 @@ defineExpose({ ariaLabel });
 
 <style scoped>
 .badge {
+  /* 固定布局尺寸（徽章 32rpx），无对应 token */
   min-width: 32rpx;
   height: 32rpx;
   border-radius: var(--r-full, 9999rpx);
@@ -48,10 +49,11 @@ defineExpose({ ariaLabel });
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 8rpx;
+  padding: 0 var(--sp-2);
   animation: pulse-badge var(--d-loop-slow, 2000ms) ease-in-out infinite;
 }
 .badge--dot {
+  /* 固定布局尺寸（红点 16rpx），无对应 token */
   width: 16rpx;
   height: 16rpx;
   min-width: 16rpx;

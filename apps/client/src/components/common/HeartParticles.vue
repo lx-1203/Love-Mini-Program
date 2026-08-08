@@ -213,6 +213,7 @@ function particleStyle(index: number) {
    ================================================================ */
 .heart-particles__pause {
   position: absolute;
+  /* 固定布局尺寸（右上角定位偏移 -120rpx / 按钮 56rpx），无对应 token */
   top: -120rpx;
   right: -120rpx;
   width: 56rpx;
@@ -234,6 +235,7 @@ function particleStyle(index: number) {
 }
 
 .heart-particles__pause-icon {
+  /* 固定布局尺寸（图标 22rpx），无对应 token */
   width: 22rpx;
   height: 22rpx;
 }

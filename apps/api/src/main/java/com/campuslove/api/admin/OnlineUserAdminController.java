@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.auth.OnlineUserService;
@@ -8,6 +9,8 @@ import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.UserRepository;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -68,22 +72,30 @@ public class OnlineUserAdminController {
     }
 
     /**
-     * 在线用户列表。
+     * 在线用户列表（R4-00388 加分页，在线用户多时防止响应体膨胀）。
      *
-     * <p>返回全部在线会话（userId/昵称/登录方式/登录时间），昵称通过 UserRepository
+     * <p>返回分页在线会话（userId/昵称/登录方式/登录时间），昵称通过 UserRepository
      * 批量查询补全（避免 N+1），用户已被删除时昵称为 null。</p>
      *
+     * @param page 页码（从 0 开始，默认 0）
+     * @param size 每页大小（默认 50，最大 200）
      * @return 在线用户列表
      */
     @GetMapping
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public ApiResponse<List<OnlineUserView>> listOnlineUsers() {
+    public ApiResponse<List<OnlineUserView>> listOnlineUsers(
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "50") @Min(1) @Max(200) int size) {
         SecurityUtils.getCurrentUserId();
 
         List<OnlineUserService.OnlineSessionEntry> sessions = onlineUserService.listOnlineSessions();
         if (sessions.isEmpty()) {
             return ApiResponse.ok(List.of());
         }
+        // 内存分页（会话源为 Redis SCAN/本地内存，量级受在线用户数限制）
+        int start = Math.min(page * size, sessions.size());
+        int end = Math.min(start + size, sessions.size());
+        sessions = sessions.subList(start, end);
 
         // 批量预取昵称（避免逐条查库）
         List<Long> userIds = sessions.stream()
@@ -128,7 +140,7 @@ public class OnlineUserAdminController {
         Optional<OnlineUserService.OnlineSessionRecord> sessionOpt = onlineUserService.getSession(userId);
         if (sessionOpt.isEmpty()) {
             log.info("踢下线失败：用户当前不在线, userId={}", userId);
-            throw new IllegalArgumentException("该用户当前不在线");
+            throw new IllegalArgumentException(ErrorMessages.USER_NOT_ONLINE);
         }
         OnlineUserService.OnlineSessionRecord session = sessionOpt.get();
 

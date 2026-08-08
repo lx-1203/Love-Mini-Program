@@ -42,16 +42,16 @@ function handleTap() {
 <style scoped lang="scss">
 /* ================================================================
    GlobalPublishFab - 全局发帖悬浮按钮
-   - 104rpx 直径圆形，品牌色渐变背景
-   - 按下：border-radius → 24rpx 方形 + scale 0.9（形态动画，使用 --d-bounce token）
+   - var(--btn-height-lg)（104rpx）直径圆形，品牌色渐变背景
+   - 按下：border-radius → var(--r-xl)（24rpx）方形 + scale 0.9（形态动画，使用 --d-bounce token）
    ================================================================ */
 .global-fab {
   position: fixed;
-  right: 32rpx;
+  right: var(--page-padding);
   bottom: calc(env(safe-area-inset-bottom) + 180rpx);
-  width: 104rpx;
-  height: 104rpx;
-  border-radius: 24rpx;
+  width: var(--btn-height-lg);
+  height: var(--btn-height-lg);
+  border-radius: var(--r-xl);
   background: var(--c-gradient-float-btn);
   display: flex;
   align-items: center;
@@ -65,18 +65,19 @@ function handleTap() {
 
 /* 按压态（mp-weixin hover-class 与 H5 :active 共用形态：方形 → 微圆角 + 缩小） */
 .global-fab--pressed {
-  border-radius: 16rpx;
+  border-radius: var(--r-lg);
   transform: scale(0.9);
 }
 
 /* #ifdef H5 */
 .global-fab:active {
-  border-radius: 16rpx;
+  border-radius: var(--r-lg);
   transform: scale(0.9);
 }
 /* #endif */
 
 .global-fab__icon {
+  /* 固定布局尺寸（图标 56rpx），无对应 token */
   width: 56rpx;
   height: 56rpx;
   color: var(--c-neutral-0);

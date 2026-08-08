@@ -118,7 +118,7 @@ public class IdempotentInterceptor implements HandlerInterceptor {
             if (annotation.required()) {
                 log.warn("幂等性校验失败：缺少 Idempotency-Key 头，method={}",
                         handlerMethod.getMethod().getName());
-                throw new InvalidOperationException("缺少 Idempotency-Key 请求头");
+                throw new InvalidOperationException(ErrorMessages.IDEMPOTENCY_KEY_MISSING);
             }
             // 非强制场景下，缺失 key 时跳过幂等校验
             return true;

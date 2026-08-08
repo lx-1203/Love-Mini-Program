@@ -66,14 +66,20 @@ public class SensitiveWordImportService {
      *
      * <p>taskId → 最新进度快照（SensitiveWordImportResult 不可变 record 原子替换）。
      * 用于支撑客户端轮询 {@code /import/status/{taskId}}（Javadoc 承诺的端点此前不存在）。
-     * 已知局限（与既有设计一致）：状态仅存内存，应用重启/多实例后任务状态丢失——
-     * 如需跨重启追踪应引入 DB 任务表（见 generateTaskId 注释）。</p>
+     * R4-00383：内存为快速路径，同时落库 sensitive_word_import_task 表
+     * （应用重启/多实例后仍可跨实例查询到任务状态，见 {@link #persistTask}）。</p>
      */
     private final Map<String, SensitiveWordImportResult> taskRegistry = new ConcurrentHashMap<>();
 
     private final SensitiveWordRepository sensitiveWordRepository;
     private final SensitiveWordFilter sensitiveWordFilter;
     private final CacheManager cacheManager;
+
+    /**
+     * R4-00383：任务状态落库用的 JDBC 模板（跨重启/多实例状态追踪）。
+     * 可为 null（兼容旧测试构造器）：为 null 时退化为纯内存任务状态（原行为）。
+     */
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     /**
      * 自引用代理（FIN-00044 修复）。
@@ -90,9 +96,20 @@ public class SensitiveWordImportService {
     public SensitiveWordImportService(SensitiveWordRepository sensitiveWordRepository,
                                        SensitiveWordFilter sensitiveWordFilter,
                                        CacheManager cacheManager) {
+        this(sensitiveWordRepository, sensitiveWordFilter, cacheManager, null);
+    }
+
+    /**
+     * R4-00383：带任务表持久化能力的构造器（Spring 注入 JdbcTemplate 时使用）。
+     */
+    public SensitiveWordImportService(SensitiveWordRepository sensitiveWordRepository,
+                                       SensitiveWordFilter sensitiveWordFilter,
+                                       CacheManager cacheManager,
+                                       org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
         this.sensitiveWordRepository = sensitiveWordRepository;
         this.sensitiveWordFilter = sensitiveWordFilter;
         this.cacheManager = cacheManager;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /**
@@ -107,10 +124,12 @@ public class SensitiveWordImportService {
      * @return 任务受理结果（含 taskId）
      */
     public SensitiveWordImportResult importBatchAsync(List<String> words, String category, Long operatorId) {
+        // R4-00383：记录操作者（任务落库用）
+        this.lastOperatorId = operatorId;
         if (words == null || words.isEmpty()) {
             SensitiveWordImportResult empty = new SensitiveWordImportResult(
                     generateTaskId(), 0, 0, 0, "EMPTY_INPUT", "待导入列表为空");
-            taskRegistry.put(empty.taskId(), empty);
+            persistTask(empty);
             return empty;
         }
 
@@ -120,8 +139,8 @@ public class SensitiveWordImportService {
         log.info("SubTask 5.3.5 敏感词异步导入任务已受理: taskId={}, total={}, category={}, operatorId={}",
                 taskId, total, category, operatorId);
 
-        // R4-00382：登记任务状态（ACCEPTED），供 /import/status/{taskId} 轮询
-        taskRegistry.put(taskId, new SensitiveWordImportResult(taskId, total, 0, 0, "ACCEPTED",
+        // R4-00382/00383：登记任务状态（ACCEPTED）并落库，供 /import/status/{taskId} 轮询
+        persistTask(new SensitiveWordImportResult(taskId, total, 0, 0, "ACCEPTED",
                 "任务已受理，预计每 500 条/批异步处理"));
 
         // 触发异步执行
@@ -131,17 +150,90 @@ public class SensitiveWordImportService {
     }
 
     /**
-     * 查询任务状态（R4-00382）。
+     * 查询任务状态（R4-00382/00383）。
+     *
+     * <p>R4-00383：内存为快速路径，未命中时回查 DB 任务表——
+     * 应用重启/多实例后任务状态不再丢失，轮询可跨实例拿到最新快照。</p>
      *
      * @param taskId 任务 ID
-     * @return 任务最新状态快照；任务不存在（未受理/已重启丢失）时返回空
+     * @return 任务最新状态快照；任务不存在（未受理/已清理）时返回空
      */
     public Optional<SensitiveWordImportResult> getTaskStatus(String taskId) {
         if (taskId == null || taskId.isBlank()) {
             return Optional.empty();
         }
-        return Optional.ofNullable(taskRegistry.get(taskId));
+        SensitiveWordImportResult cached = taskRegistry.get(taskId);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+        return loadTaskFromDb(taskId);
     }
+
+    /** R4-00383：从 DB 任务表加载任务快照（jdbcTemplate 未注入时返回空）。 */
+    private Optional<SensitiveWordImportResult> loadTaskFromDb(String taskId) {
+        if (jdbcTemplate == null) {
+            return Optional.empty();
+        }
+        try {
+            java.util.List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT task_id, total, imported, skipped, status, message "
+                            + "FROM sensitive_word_import_task WHERE task_id = ?",
+                    taskId);
+            if (rows.isEmpty()) {
+                return Optional.empty();
+            }
+            Map<String, Object> row = rows.get(0);
+            return Optional.of(new SensitiveWordImportResult(
+                    String.valueOf(row.get("task_id")),
+                    ((Number) row.get("total")).intValue(),
+                    ((Number) row.get("imported")).intValue(),
+                    ((Number) row.get("skipped")).intValue(),
+                    String.valueOf(row.get("status")),
+                    row.get("message") != null ? String.valueOf(row.get("message")) : null));
+        } catch (org.springframework.dao.DataAccessException e) {
+            log.warn("查询敏感词导入任务表失败（降级为任务不存在）: taskId={}, error={}", taskId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * R4-00383：任务快照落库（Upsert）。
+     * jdbcTemplate 未注入（测试场景）时仅更新内存注册表。
+     */
+    private void persistTask(SensitiveWordImportResult result) {
+        taskRegistry.put(result.taskId(), result);
+        if (jdbcTemplate == null) {
+            return;
+        }
+        try {
+            // failed 列按 total - imported - skipped 推算（record 未单独携带失败数，
+            // 精确失败数已含在 message 文案中）
+            int failed = Math.max(0, result.total() - result.imported() - result.skipped());
+            jdbcTemplate.update(
+                    "INSERT INTO sensitive_word_import_task "
+                            + "(task_id, total, imported, skipped, failed, status, message, operator_id, created_at, updated_at) "
+                            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                            + "ON DUPLICATE KEY UPDATE imported = VALUES(imported), skipped = VALUES(skipped), "
+                            + "failed = VALUES(failed), status = VALUES(status), message = VALUES(message), "
+                            + "updated_at = VALUES(updated_at)",
+                    result.taskId(),
+                    result.total(),
+                    result.imported(),
+                    result.skipped(),
+                    failed,
+                    result.status(),
+                    result.message(),
+                    lastOperatorId,
+                    java.sql.Timestamp.valueOf(LocalDateTime.now(TimeZones.BUSINESS)),
+                    java.sql.Timestamp.valueOf(LocalDateTime.now(TimeZones.BUSINESS)));
+        } catch (org.springframework.dao.DataAccessException e) {
+            // 落库失败不影响主流程（内存快照仍可用），记录日志便于排查
+            log.warn("敏感词导入任务落库失败: taskId={}, error={}", result.taskId(), e.getMessage());
+        }
+    }
+
+    /** R4-00383：最近一次受理任务的操作者 ID（仅用于任务落库的 operator_id 列）。 */
+    private volatile Long lastOperatorId;
 
     /**
      * 实际的异步导入逻辑（由 {@code taskExecutor} 调度执行）。
@@ -168,8 +260,8 @@ public class SensitiveWordImportService {
 
         try {
             int total = words.size();
-            // R4-00382：任务进入执行中状态（RUNNING，进度随批次更新）
-            taskRegistry.put(taskId, new SensitiveWordImportResult(
+            // R4-00382/00383：任务进入执行中状态（RUNNING，进度随批次更新并落库）
+            persistTask(new SensitiveWordImportResult(
                     taskId, total, 0, 0, "RUNNING", "任务执行中，每 500 条/批异步处理"));
 
             for (int from = 0; from < total; from += BATCH_SIZE) {
@@ -187,8 +279,8 @@ public class SensitiveWordImportService {
                             taskId, from, batch.size(), e.getMessage());
                 }
 
-                // R4-00382：每批完成后更新任务进度（供 /import/status/{taskId} 轮询）
-                taskRegistry.put(taskId, new SensitiveWordImportResult(
+                // R4-00382/00383：每批完成后更新任务进度并落库（供轮询/跨重启追踪）
+                persistTask(new SensitiveWordImportResult(
                         taskId, total, imported, skipped, "RUNNING",
                         "任务执行中，已处理 " + Math.min(to, total) + "/" + total + " 条"));
             }
@@ -214,15 +306,15 @@ public class SensitiveWordImportService {
             }
 
             long costMs = System.currentTimeMillis() - startMs;
-            // R4-00382：任务完成状态（DONE）
-            taskRegistry.put(taskId, new SensitiveWordImportResult(
+            // R4-00382/00383：任务完成状态（DONE，落库）
+            persistTask(new SensitiveWordImportResult(
                     taskId, total, imported, skipped, "DONE",
                     "任务完成：导入 " + imported + " 条，跳过 " + skipped + " 条，失败 " + failed + " 条"));
             log.info("SubTask 5.3.5 敏感词异步导入任务完成: taskId={}, total={}, imported={}, skipped={}, failed={}, costMs={}",
                     taskId, total, imported, skipped, failed, costMs);
         } catch (RuntimeException e) {
-            // R4-00382：任务失败状态（FAILED）
-            taskRegistry.put(taskId, new SensitiveWordImportResult(
+            // R4-00382/00383：任务失败状态（FAILED，落库）
+            persistTask(new SensitiveWordImportResult(
                     taskId, words.size(), imported, skipped, "FAILED",
                     "任务异常：" + (e.getMessage() != null ? e.getMessage() : "未知错误")));
             log.error("SubTask 5.3.5 敏感词异步导入任务异常: taskId={}, error={}",
@@ -323,9 +415,9 @@ public class SensitiveWordImportService {
      * 不同实例各自计数，均可能产生重复 taskId。现改用 UUID（全局唯一，无状态），
      * 彻底消除撞号风险。</p>
      *
-     * <p>已知局限（任务状态未持久化）：taskId 仅存于内存，应用重启后客户端
-     * 轮询 {@code /import/status/{taskId}} 将查不到任务；如需跨重启/多实例
-     * 状态追踪，应引入 DB 任务表（task_id 主键 + 进度/状态列）。</p>
+     * <p>任务状态已落库（R4-00383，sensitive_word_import_task 表），
+     * 应用重启/多实例后客户端轮询 {@code /import/status/{taskId}}
+     * 仍可从 DB 回查任务快照。</p>
      */
     private static String generateTaskId() {
         return "sw-import-" + java.util.UUID.randomUUID().toString().replace("-", "");

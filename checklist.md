@@ -6,10 +6,13 @@
 - [x] 每个归档目录包含 README.md 说明文档
 
 ## Design Tokens
-- [x] tokens.ts 主色已更新为天蓝 #3B9DE5
-- [x] tokens.ts 辅色已更新为浅青 #5BC0DE
-- [x] tokens.ts 强调色已更新为暖橙 #FF8C42
-- [x] 渐变预设已更新为天蓝色系
+> R4-02133：以下色值描述与当前实现不符——`apps/admin/src/theme/tokens.ts` 实际主色为
+> `#3FCF8E` 薄荷绿（客户端品牌）与 `#667EEA` 靛蓝（Admin 后台品牌），非天蓝 #3B9DE5；
+> 本清单为历史迭代记录，实际以 `apps/client/src/theme/tokens.ts` 为准。
+- [x] tokens.ts 主色已更新（实际：客户端 #3FCF8E 薄荷绿 / Admin #667EEA 靛蓝）
+- [x] tokens.ts 辅色已更新（#EC4899 粉）
+- [x] tokens.ts 强调色已更新（#FF6B9D 浪漫色）
+- [x] 渐变预设已更新
 - [x] 阴影色值已更新
 - [x] dark/warm 主题变体已同步更新
 

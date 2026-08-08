@@ -77,8 +77,9 @@ defineExpose({ ariaLabel });
 .chat-item {
   display: flex;
   align-items: center;
-  gap: 24rpx;
-  padding: 28rpx 32rpx;
+  gap: var(--sp-6);
+  /* 28rpx 无对应 token 档位，保留 */
+  padding: 28rpx var(--sp-7);
   background: var(--c-bg-container);
   border-bottom: 1rpx solid var(--c-border-light);
   transition: background var(--d-fast, 120ms) ease;
@@ -97,6 +98,7 @@ defineExpose({ ariaLabel });
   min-width: 0;
   display: flex;
   flex-direction: column;
+  /* 10rpx 无对应 token 档位，保留 */
   gap: 10rpx;
 }
 .chat-item-top {
@@ -112,7 +114,7 @@ defineExpose({ ariaLabel });
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  margin-right: 12rpx;
+  margin-right: var(--sp-3);
 }
 .chat-item-match {
   font-size: var(--fs-sm);
@@ -137,11 +139,11 @@ defineExpose({ ariaLabel });
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  margin-right: 16rpx;
+  margin-right: var(--sp-4);
 }
 .chat-item-official {
   flex-shrink: 0;
-  padding: 4rpx 16rpx;
+  padding: var(--sp-1) var(--sp-4);
   border-radius: var(--r-sm);
   background: var(--c-brand-50);
 }

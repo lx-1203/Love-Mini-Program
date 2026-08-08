@@ -1,11 +1,9 @@
 package com.campuslove.api.village;
 
-import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Post;
 import jakarta.validation.Valid;
 import java.util.List;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -213,8 +211,9 @@ public class RealVillageService implements VillageService {
 
     // ---- 热门帖子 ----
 
+    // R4-00357：移除外层 @Cacheable——缓存统一由 VillageQueryService.listHotPosts
+    // 承担（同 cacheNames+key，双层叠加为死代码）；本方法保留为轻量委托入口。
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
     public List<PostSummaryView> listHotPosts() {
         return queryService.listHotPosts();
     }

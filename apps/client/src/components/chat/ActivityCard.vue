@@ -67,7 +67,7 @@ function handleTap() {
   max-width: 100%;
   padding: var(--sp-4) var(--sp-5);
   border-radius: var(--r-lg);
-  border-top-left-radius: 4rpx;
+  border-top-left-radius: var(--r-xs);
   background: linear-gradient(135deg, var(--c-brand-50), var(--c-romance-50));
   border: 1rpx solid var(--c-brand-shadow-tint);
   display: flex;
@@ -85,7 +85,8 @@ function handleTap() {
   font-size: var(--fs-xs);
   color: var(--c-text-inverse);
   background: linear-gradient(135deg, var(--c-romance-400), var(--c-romance-500));
-  padding: 2rpx 12rpx;
+  /* 2rpx 无对应 token 档位，保留 */
+  padding: 2rpx var(--sp-3);
   border-radius: var(--r-full);
   flex-shrink: 0;
 }
@@ -111,7 +112,7 @@ function handleTap() {
 .activity-card__cta {
   display: inline-flex;
   align-items: center;
-  gap: 4rpx;
+  gap: var(--sp-1);
   font-size: var(--fs-sm);
   color: var(--c-brand-400);
   font-weight: 600;
@@ -119,6 +120,7 @@ function handleTap() {
 }
 
 .activity-card__cta-arrow {
+  /* 图标固定尺寸（20rpx），无对应 token */
   width: 20rpx;
   height: 20rpx;
   flex-shrink: 0;

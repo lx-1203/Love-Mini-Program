@@ -9,11 +9,15 @@
  * 是否存在来区分是否具备校园身份，二者天然一致：非学生不填写校园资料）。
  */
 
+// R4-00233：存储键统一纳入 constants/storage-keys.ts 管理
+import { STORAGE_KEYS } from "../constants/storage-keys";
+
 /** 身份值类型 */
 export type UserIdentity = "student" | "non_student";
 
-/** 本地持久化 key（与 stores/profile.ts 的 PRIVACY_STORAGE_KEY 同风格） */
-export const USER_IDENTITY_STORAGE_KEY = "campus-love:user-identity";
+/** 本地持久化 key（R4-00233：值统一由 STORAGE_KEYS.USER_IDENTITY 管理） */
+// 与 stores/profile.ts 的 PRIVACY_STORAGE_KEY 同风格
+export const USER_IDENTITY_STORAGE_KEY = STORAGE_KEYS.USER_IDENTITY;
 
 /** 默认身份：学生（产品主受众，且与历史流程兼容） */
 export const DEFAULT_IDENTITY: UserIdentity = "student";

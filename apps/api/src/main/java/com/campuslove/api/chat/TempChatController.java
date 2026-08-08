@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
@@ -19,6 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/temp-chat/sessions")
 public class TempChatController {
+
+  /**
+   * 临时会话语音消息时长上限（秒）（R4-01839）。
+   * 与 {@code TempChatSessionService} 的会话 TTL 语义对齐，调整需同步评估。
+   */
+  public static final int MAX_TEMP_CHAT_DURATION_SECONDS = 3600;
 
   private final TempChatService tempChatService;
 
@@ -143,9 +150,10 @@ record ChatMessageView(
 record ChatMessageRequest(
     @NotBlank @Size(max = 16) String sender,
     @NotBlank @Pattern(regexp = "text|voice|emoji|system",
-        message = "kind 必须为 text/voice/emoji/system") String kind,
+        message = ErrorMessages.CHAT_KIND_INVALID) String kind,
     @NotBlank @Size(max = 5000) String body,
-    @Min(0) @Max(3600) Integer durationSeconds,
+    // R4-01839：临时会话时长上限收敛为共享常量（与 TempChatSessionService TTL 逻辑对齐）
+    @Min(0) @Max(TempChatController.MAX_TEMP_CHAT_DURATION_SECONDS) Integer durationSeconds,
     @Size(max = 64) String quoteRef
 ) {
   /** 兼容旧调用（无 quoteRef） */
@@ -160,6 +168,6 @@ record ContactExchangeStateView(String proposer, String status) {
 record ContactExchangeDecisionRequest(
     @NotBlank @Size(max = 16) String actor,
     @NotBlank @Pattern(regexp = "accept|reject|revoke",
-        message = "decision 必须为 accept/reject/revoke") String decision
+        message = ErrorMessages.CHAT_DECISION_INVALID) String decision
 ) {
 }

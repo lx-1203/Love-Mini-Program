@@ -25,8 +25,14 @@ import type {
   DoNotDisturbView,
 } from "../../services/generated/api-types-supplement";
 import { lightHaptic, successHaptic, errorHaptic } from "../../utils/haptic";
+// R4-00115：switch 为原生属性不支持 CSS 变量，激活色从 designTokens 取色
+// （与 scss --c-brand(#3FCF8E) 双源同步，改品牌色只需改 token 一处）
+import { designTokens } from "../../theme/tokens";
 
 const { t } = useI18n();
+
+/** switch 激活色：品牌绿（designTokens.color.brand[500] == --c-brand） */
+const SWITCH_ACTIVE_COLOR = designTokens.color.brand[500];
 
 /** 重复方式枚举类型 */
 type RepeatMode = "EVERYDAY" | "WEEKDAYS" | "WEEKENDS" | "CUSTOM";
@@ -343,7 +349,7 @@ onMounted(() => {
             </view>
             <switch
               :checked="form.enabled"
-              color="#3FCF8E"
+              :color="SWITCH_ACTIVE_COLOR"
               @change="handleToggleEnabled"
             />
           </view>
@@ -452,7 +458,7 @@ onMounted(() => {
             </view>
             <switch
               :checked="form.allowUrgent"
-              color="#3FCF8E"
+              :color="SWITCH_ACTIVE_COLOR"
               @change="handleToggleAllowUrgent"
             />
           </view>

@@ -18,6 +18,7 @@ import { appEnv } from "../../services/env";
 import { request } from "../../services/http";
 import { openAppPath } from "../../utils/navigation";
 import { ROUTES } from "../../constants/routes";
+import { designTokens } from "../../theme/tokens";
 
 interface HotTopic {
   tagName: string;
@@ -31,6 +32,8 @@ const { t } = useI18n();
 
 const topics = ref<HotTopic[]>([]);
 const loading = ref(false);
+/** Mock 模式模拟网络延迟（R4-batch4：魔法数字提取） */
+const MOCK_LOAD_DELAY_MS = 300;
 
 /** 主话题（列表第一项） */
 const mainTopic = ref<HotTopic | null>(null);
@@ -39,10 +42,12 @@ const mainTopic = ref<HotTopic | null>(null);
 const gridTopics = ref<HotTopic[]>([]);
 
 /** 渐变占位色（按索引轮换，无封面图时使用） */
+/* R4-batch4：前 3 组硬编码色值改为引用 designTokens（brand[500]/brand[300]、romance[400]/romance[300]、warm[400]/warm[300]）；
+   第 4 组蓝色 #60A5FA→#93C5FD 无对应 token，保留原值 */
 const GRADIENT_PLACEHOLDERS = [
-  "linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%)",
-  "linear-gradient(135deg, #F472B6 0%, #F9A8D4 100%)",
-  "linear-gradient(135deg, #FB923C 0%, #FDBA74 100%)",
+  `linear-gradient(135deg, ${designTokens.color.brand[500]} 0%, ${designTokens.color.brand[300]} 100%)`,
+  `linear-gradient(135deg, ${designTokens.color.romance[400]} 0%, ${designTokens.color.romance[300]} 100%)`,
+  `linear-gradient(135deg, ${designTokens.color.warm[400]} 0%, ${designTokens.color.warm[300]} 100%)`,
   "linear-gradient(135deg, #60A5FA 0%, #93C5FD 100%)",
 ] as const;
 
@@ -74,7 +79,7 @@ async function loadTopics(): Promise<void> {
   try {
     if (appEnv.apiMode === "mock") {
       // Mock 模式：本地话题数据（浏览量近似）
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, MOCK_LOAD_DELAY_MS));
       const mockTopics: HotTopic[] = [
         { tagName: "女生请回答", postCount: 12800, coverUrl: "" },
         { tagName: "校园日常", postCount: 9600, coverUrl: "" },

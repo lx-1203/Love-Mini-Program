@@ -338,6 +338,7 @@ onUnmounted(() => {
   height: 100%;
   font-size: 36rpx;
   color: var(--c-text-inverse);
+  /* R4-batch4：品牌红渐变 #ff9a9e→#ff4d6d 无等值 token（近似 --c-romance-400→--c-error），保留原值 */
   background: linear-gradient(135deg, #ff9a9e, #ff4d6d);
 }
 

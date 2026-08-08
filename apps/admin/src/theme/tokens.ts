@@ -6,9 +6,11 @@
 // 避免双套维护导致的视觉漂移。
 //
 // Token 主色（参考 project_memory）：
-//   - 薄荷绿主色：#3FCF8E（brand.400）— 用于交互态、品牌色按钮、链接
-//   - 粉色辅助：#EC4899（pink.400）/ #FF6B9D 浪漫色 — 用于匹配/喜欢/心动
+//   - 薄荷绿主色：#3FCF8E（brand.400）— 客户端品牌主色（匹配/喜欢/心动等交互态）
+//   - 粉色辅助：#EC4899（pink.400）/ #FF6B9D 浪漫色 — 客户端用于匹配/喜欢/心动
 //   - 中性灰：#1F2329 / #5B6470 / #9AA1AB — 三级文本色
+//   - Admin 后台主色：#667EEA（靛蓝）— adminTokens.colors.primary 为后台独立品牌色，
+//     与客户端薄荷绿有意区分（后台视觉自成体系，见 admin-common.css :root 对齐）
 //
 // 使用方式：
 //   import { designTokens, getThemeTokens, adminTokens } from "@/theme/tokens";

@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleReply;
@@ -214,7 +215,7 @@ public class RealCircleService implements CircleService {
         log.info("用户加入圈子, userId={}, circleId={}", userId, circleId);
 
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
 
         // 查找圈子，不存在则抛出异常
@@ -279,7 +280,7 @@ public class RealCircleService implements CircleService {
         log.info("用户退出圈子, userId={}, circleId={}", userId, circleId);
 
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
 
         // 查找圈子，不存在则抛出异常
@@ -369,13 +370,13 @@ public class RealCircleService implements CircleService {
         log.info("创建话题, circleId={}, authorId={}, title={}", circleId, authorId, title);
 
         if (authorId == null) {
-            throw new IllegalArgumentException("authorId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.AUTHOR_ID_REQUIRED);
         }
         if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("标题不能为空");
+            throw new IllegalArgumentException(ErrorMessages.TITLE_REQUIRED_CN);
         }
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("内容不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CONTENT_REQUIRED_CN);
         }
 
         // 验证圈子是否存在
@@ -445,10 +446,10 @@ public class RealCircleService implements CircleService {
         log.info("回复话题, topicId={}, authorId={}", topicId, authorId);
 
         if (authorId == null) {
-            throw new IllegalArgumentException("authorId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.AUTHOR_ID_REQUIRED);
         }
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("回复内容不能为空");
+            throw new IllegalArgumentException(ErrorMessages.REPLY_CONTENT_REQUIRED);
         }
 
         // infra R2-00234: 回复内容补敏感词过滤（createTopic 已有过滤，此前回复可绕过）
@@ -456,7 +457,7 @@ public class RealCircleService implements CircleService {
                 ? sensitiveWordFilter.filterWithLog(content, authorId, "CIRCLE_REPLY")
                 : content;
         if (filteredContent == null || filteredContent.isBlank()) {
-            throw new IllegalArgumentException("回复内容不能为空");
+            throw new IllegalArgumentException(ErrorMessages.REPLY_CONTENT_REQUIRED);
         }
 
         // 查找话题，不存在则抛出异常
@@ -507,24 +508,19 @@ public class RealCircleService implements CircleService {
         // 验证话题是否存在
         findTopicOrThrow(topicId);
 
-        // 查询所有回复（按创建时间倒序）
-        List<CircleReply> allReplies = circleReplyRepository.findByTopicIdOrderByCreatedAtDesc(topicId);
-
-        // 手动分页处理（Repository 返回 List 而非 Page）
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), allReplies.size());
-        List<CircleReply> pageContent = start < allReplies.size()
-                ? allReplies.subList(start, end)
-                : List.of();
+        // R4-00352：SQL 侧分页（替代原全量加载 findByTopicIdOrderByCreatedAtDesc
+        // 后内存分页——高回复话题下内存占用随回复数线性增长）
+        Page<CircleReply> replyPage = circleReplyRepository
+                .findByTopicIdOrderByCreatedAtDesc(topicId, pageable);
 
         // 转换为视图对象（批量预加载作者，避免 N+1 查询）
         Map<Long, User> authorMap = loadAuthorMap(
-                pageContent.stream().map(CircleReply::getAuthorId).toList());
-        List<CircleReplyView> views = pageContent.stream()
+                replyPage.getContent().stream().map(CircleReply::getAuthorId).toList());
+        List<CircleReplyView> views = replyPage.getContent().stream()
                 .map(r -> toReplyView(r, authorMap))
                 .toList();
 
-        return new PageImpl<>(views, pageable, allReplies.size());
+        return new PageImpl<>(views, pageable, replyPage.getTotalElements());
     }
 
     // ==================== 精选话题 ====================
@@ -583,7 +579,7 @@ public class RealCircleService implements CircleService {
      */
     private CircleTopic findTopicOrThrow(Long topicId) {
         return circleTopicRepository.findById(topicId)
-                .orElseThrow(() -> new IllegalArgumentException("话题不存在: " + topicId));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.TOPIC_NOT_FOUND_PREFIX + topicId));
     }
 
     /**

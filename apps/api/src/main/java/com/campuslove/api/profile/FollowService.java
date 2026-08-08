@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.entity.Notification;
@@ -60,19 +61,19 @@ public class FollowService {
     @Transactional
     public FollowView followUser(Long userId, Long targetUserId) {
         if (userId == null || targetUserId == null) {
-            throw new IllegalArgumentException("userId 和 targetUserId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_AND_TARGET_USER_ID_REQUIRED);
         }
         if (userId.equals(targetUserId)) {
-            throw new IllegalArgumentException("不能关注自己");
+            throw new IllegalArgumentException(ErrorMessages.CANNOT_FOLLOW_SELF);
         }
 
         User follower = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("关注者用户不存在: " + userId));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.FOLLOWER_USER_NOT_FOUND_PREFIX + userId));
         User target = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new IllegalArgumentException("目标用户不存在: " + targetUserId));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.TARGET_USER_NOT_FOUND_PREFIX + targetUserId));
 
         if (userFollowRepository.existsByFollowerIdAndFollowingId(userId, targetUserId)) {
-            throw new IllegalArgumentException("已经关注了该用户");
+            throw new IllegalArgumentException(ErrorMessages.ALREADY_FOLLOWING);
         }
 
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
@@ -85,15 +86,17 @@ public class FollowService {
             // 转换为业务异常而非 500
             log.warn("并发重复关注唯一约束冲突: followerId={}, followingId={}: {}",
                     userId, targetUserId, ex.getMessage());
-            throw new IllegalArgumentException("已经关注了该用户");
+            throw new IllegalArgumentException(ErrorMessages.ALREADY_FOLLOWING);
         }
 
         // infra R2-00263: 关注/粉丝计数改为数据库侧原子递增（消除并发丢失更新）；
         // 不再修改 managed 实体计数，避免事务提交时 flush 用陈旧值覆盖原子结果
         userRepository.incrementFollowingCount(userId, now);
         userRepository.incrementFollowersCount(targetUserId, now);
-        Integer followingCount = follower.getFollowingCount() == null ? 1 : follower.getFollowingCount() + 1;
-        Integer followersCount = target.getFollowersCount() == null ? 1 : target.getFollowersCount() + 1;
+        // R4-00296：返回 DB 原子递增后的最新计数（实体陈旧值 +1 与 DB 可能不一致；
+        // 投影查询执行前自动 flush，读到的是递增后的真实值）
+        Integer followingCount = userRepository.findFollowingCountById(userId);
+        Integer followersCount = userRepository.findFollowersCountById(targetUserId);
 
         Notification notification = new Notification();
         notification.setUserId(targetUserId);
@@ -122,20 +125,20 @@ public class FollowService {
     @Transactional
     public FollowView unfollowUser(Long userId, Long targetUserId) {
         if (userId == null || targetUserId == null) {
-            throw new IllegalArgumentException("userId 和 targetUserId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_AND_TARGET_USER_ID_REQUIRED);
         }
         if (userId.equals(targetUserId)) {
-            throw new IllegalArgumentException("不能取消关注自己");
+            throw new IllegalArgumentException(ErrorMessages.CANNOT_UNFOLLOW_SELF);
         }
 
         if (!userFollowRepository.existsByFollowerIdAndFollowingId(userId, targetUserId)) {
-            throw new IllegalArgumentException("未关注该用户，无法取关");
+            throw new IllegalArgumentException(ErrorMessages.NOT_FOLLOWING);
         }
 
         User follower = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("关注者用户不存在: " + userId));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.FOLLOWER_USER_NOT_FOUND_PREFIX + userId));
         User target = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new IllegalArgumentException("目标用户不存在: " + targetUserId));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.TARGET_USER_NOT_FOUND_PREFIX + targetUserId));
 
         userFollowRepository.deleteByFollowerIdAndFollowingId(userId, targetUserId);
 

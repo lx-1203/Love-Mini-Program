@@ -7,17 +7,19 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
+import { useI18n } from "vue-i18n";
 import { isShowcaseMode } from "../../config/showcase";
+
+// R4-00039：展示页文案全部收敛到 i18n 资源（showcase.*），标题随语言切换
+const { t } = useI18n();
 
 interface ShowcaseItem {
   /** 页面路径（switchTab 需要无前导斜杠一致性由 navigate 函数处理） */
   path: string;
-  /** 展示标题 */
-  title: string;
-  /** 副标题说明 */
-  desc: string;
-  /** 图标 chip 字符（取标题首字，视觉占位） */
-  char: string;
+  /** 展示标题 i18n key（showcase.groups.<id>.items.<key>.title） */
+  titleKey: string;
+  /** 副标题说明 i18n key */
+  descKey: string;
   /** chip 背景色 token */
   chipBg: string;
   /** 是否为 TabBar 页面（switchTab 跳转） */
@@ -26,121 +28,128 @@ interface ShowcaseItem {
 
 interface ShowcaseGroup {
   id: string;
-  title: string;
-  subtitle: string;
+  /** 分组标题 i18n key */
+  titleKey: string;
+  /** 分组副标题 i18n key */
+  subtitleKey: string;
   accent: string;
   items: ShowcaseItem[];
 }
 
-/** 分组：按业务模块组织全部页面 */
+/** 分组：按业务模块组织全部页面（文案 key 见 i18n showcase.groups.*） */
 const groups: ShowcaseGroup[] = [
   {
     id: "journey",
-    title: "核心旅程",
-    subtitle: "登录 · 资料 · 认证",
+    titleKey: "showcase.groups.journey.title",
+    subtitleKey: "showcase.groups.journey.subtitle",
     accent: "linear-gradient(135deg, #3B9DE5, #5BC0DE)",
     items: [
-      { path: "/pages/login/index", title: "登录页", desc: "微信 / 手机号 / 游客登录", char: "登", chipBg: "var(--c-tint-blue-soft, #E8F4FF)", isTab: false },
-      { path: "/subpackages/setup/profile/index", title: "基础资料", desc: "头像 / 昵称 / 性别 / 兴趣", char: "资", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
-      { path: "/subpackages/setup/campus/index", title: "学校信息", desc: "学校 / 专业 / 年级", char: "校", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
-      { path: "/subpackages/setup/recommend-pref/index", title: "推荐计划", desc: "匹配偏好设置", char: "荐", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
-      { path: "/pages/campus/certification", title: "校园认证", desc: "学生证 / 教育邮箱认证", char: "证", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
-      { path: "/pages/verification/index", title: "恋爱认证", desc: "人工认证 · 真人认证", char: "认", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
-      { path: "/subpackages/setup/schedule/index", title: "时间安排", desc: "作息 / 课表偏好", char: "时", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
+      { path: "/pages/login/index", titleKey: "showcase.groups.journey.items.login.title", descKey: "showcase.groups.journey.items.login.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)", isTab: false },
+      { path: "/subpackages/setup/profile/index", titleKey: "showcase.groups.journey.items.profile.title", descKey: "showcase.groups.journey.items.profile.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
+      { path: "/subpackages/setup/campus/index", titleKey: "showcase.groups.journey.items.campus.title", descKey: "showcase.groups.journey.items.campus.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
+      { path: "/subpackages/setup/recommend-pref/index", titleKey: "showcase.groups.journey.items.recommendPref.title", descKey: "showcase.groups.journey.items.recommendPref.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
+      { path: "/pages/campus/certification", titleKey: "showcase.groups.journey.items.campusCert.title", descKey: "showcase.groups.journey.items.campusCert.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
+      { path: "/pages/verification/index", titleKey: "showcase.groups.journey.items.verification.title", descKey: "showcase.groups.journey.items.verification.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
+      { path: "/subpackages/setup/schedule/index", titleKey: "showcase.groups.journey.items.schedule.title", descKey: "showcase.groups.journey.items.schedule.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
     ],
   },
   {
     id: "match",
-    title: "匹配",
-    subtitle: "寻觅 · 喜欢 · 心动信号 · 附近",
+    titleKey: "showcase.groups.match.title",
+    subtitleKey: "showcase.groups.match.subtitle",
     accent: "linear-gradient(135deg, #FF8C42, #FFB06A)",
     items: [
-      { path: "/pages/discover/index", title: "寻觅 · 匹配", desc: "滑动卡片 / 喜欢 / 悄悄话", char: "觅", chipBg: "var(--c-tint-orange-50, #FFF4EC)", isTab: true },
-      { path: "/pages/discover/history", title: "今日已看", desc: "今日浏览记录", char: "今", chipBg: "var(--c-tint-orange-50, #FFF4EC)" },
-      { path: "/pages/likes/index", title: "喜欢", desc: "喜欢我的 / 我喜欢的", char: "喜", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
-      { path: "/pages/heart-signals/index", title: "心动信号 · 缘分速配", desc: "随机匹配 / 渐进解锁", char: "缘", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
-      { path: "/pages/love-center/nearby", title: "附近的人", desc: "同城 / 附近用户", char: "近", chipBg: "var(--c-tint-orange-50, #FFF4EC)" },
+      { path: "/pages/discover/index", titleKey: "showcase.groups.match.items.discover.title", descKey: "showcase.groups.match.items.discover.desc", chipBg: "var(--c-tint-orange-50, #FFF4EC)", isTab: true },
+      { path: "/pages/discover/history", titleKey: "showcase.groups.match.items.history.title", descKey: "showcase.groups.match.items.history.desc", chipBg: "var(--c-tint-orange-50, #FFF4EC)" },
+      { path: "/pages/likes/index", titleKey: "showcase.groups.match.items.likes.title", descKey: "showcase.groups.match.items.likes.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
+      { path: "/pages/heart-signals/index", titleKey: "showcase.groups.match.items.heartSignals.title", descKey: "showcase.groups.match.items.heartSignals.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
+      { path: "/pages/love-center/nearby", titleKey: "showcase.groups.match.items.nearby.title", descKey: "showcase.groups.match.items.nearby.desc", chipBg: "var(--c-tint-orange-50, #FFF4EC)" },
     ],
   },
   {
     id: "home",
-    title: "首页与成长",
-    subtitle: "签到 · 恋爱中心 · 每日一问",
+    titleKey: "showcase.groups.home.title",
+    subtitleKey: "showcase.groups.home.subtitle",
     accent: "linear-gradient(135deg, #3FCF8E, #5BC0DE)",
     items: [
-      { path: "/pages/home/index", title: "首页", desc: "签到 / 匹配入口 / 恋爱咨询", char: "首", chipBg: "var(--c-bg-brand, #E8F8F0)", isTab: true },
-      { path: "/pages/daily-question/index", title: "每日一问", desc: "每天一个心动提问", char: "问", chipBg: "var(--c-bg-brand, #E8F8F0)" },
-      { path: "/pages/love-center/index", title: "恋爱中心", desc: "咨询 / 课程 / 测试", char: "恋", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
-      { path: "/pages/love-center/consulting", title: "恋爱咨询", desc: "恋爱 / 社交四板块课程", char: "询", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
-      { path: "/pages/love-center/mbti", title: "MBTI 测试", desc: "16 型人格测试", char: "测", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
-      { path: "/subpackages/discover/activities/index", title: "活动", desc: "校园活动报名", char: "活", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
-      { path: "/pages/activities/detail", title: "活动详情", desc: "活动内容 / 报名", char: "动", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
+      { path: "/pages/home/index", titleKey: "showcase.groups.home.items.home.title", descKey: "showcase.groups.home.items.home.desc", chipBg: "var(--c-bg-brand, #E8F8F0)", isTab: true },
+      { path: "/pages/daily-question/index", titleKey: "showcase.groups.home.items.dailyQuestion.title", descKey: "showcase.groups.home.items.dailyQuestion.desc", chipBg: "var(--c-bg-brand, #E8F8F0)" },
+      { path: "/pages/love-center/index", titleKey: "showcase.groups.home.items.loveCenter.title", descKey: "showcase.groups.home.items.loveCenter.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
+      { path: "/pages/love-center/consulting", titleKey: "showcase.groups.home.items.consulting.title", descKey: "showcase.groups.home.items.consulting.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
+      { path: "/pages/love-center/mbti", titleKey: "showcase.groups.home.items.mbti.title", descKey: "showcase.groups.home.items.mbti.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
+      { path: "/subpackages/discover/activities/index", titleKey: "showcase.groups.home.items.activities.title", descKey: "showcase.groups.home.items.activities.desc", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
+      { path: "/pages/activities/detail", titleKey: "showcase.groups.home.items.activityDetail.title", descKey: "showcase.groups.home.items.activityDetail.desc", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
     ],
   },
   {
     id: "chat",
-    title: "聊天",
-    subtitle: "会话 · 视频通话",
+    titleKey: "showcase.groups.chat.title",
+    subtitleKey: "showcase.groups.chat.subtitle",
     accent: "linear-gradient(135deg, #7C6CF0, #A78BFA)",
     items: [
-      { path: "/pages/messages/index", title: "消息", desc: "会话 / 官方号 / 通知", char: "消", chipBg: "var(--c-tint-purple-soft, #F3EFFF)", isTab: true },
-      { path: "/pages/chat-session/index", title: "聊天会话", desc: "临时匿名聊天 / 渐进解锁", char: "聊", chipBg: "var(--c-tint-purple-soft, #F3EFFF)" },
-      { path: "/pages/chat/video-call", title: "视频通话", desc: "1v1 实时视频（展示）", char: "视", chipBg: "var(--c-tint-purple-soft, #F3EFFF)" },
+      { path: "/pages/messages/index", titleKey: "showcase.groups.chat.items.messages.title", descKey: "showcase.groups.chat.items.messages.desc", chipBg: "var(--c-tint-purple-soft, #F3EFFF)", isTab: true },
+      { path: "/pages/chat-session/index", titleKey: "showcase.groups.chat.items.session.title", descKey: "showcase.groups.chat.items.session.desc", chipBg: "var(--c-tint-purple-soft, #F3EFFF)" },
+      { path: "/pages/chat/video-call", titleKey: "showcase.groups.chat.items.videoCall.title", descKey: "showcase.groups.chat.items.videoCall.desc", chipBg: "var(--c-tint-purple-soft, #F3EFFF)" },
     ],
   },
   {
     id: "community",
-    title: "社区",
-    subtitle: "村口 · 兴趣圈 · 校园",
+    titleKey: "showcase.groups.community.title",
+    subtitleKey: "showcase.groups.community.subtitle",
     accent: "linear-gradient(135deg, #10B981, #34D399)",
     items: [
-      { path: "/pages/village/index", title: "村口 · 圈子", desc: "关注 / 同城 / 发现", char: "村", chipBg: "var(--c-bg-brand, #E8F8F0)", isTab: true },
-      { path: "/pages/village/post", title: "发布帖子", desc: "图文动态发布", char: "发", chipBg: "var(--c-bg-brand, #E8F8F0)" },
-      { path: "/pages/village/detail", title: "帖子详情", desc: "点赞 / 评论 / 分享", char: "帖", chipBg: "var(--c-bg-brand, #E8F8F0)" },
-      { path: "/pages/village/tag-posts", title: "标签帖子", desc: "按标签浏览", char: "标", chipBg: "var(--c-bg-brand, #E8F8F0)" },
-      { path: "/pages/circles/index", title: "兴趣圈", desc: "圈子广场", char: "圈", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
-      { path: "/pages/circles/topics", title: "话题列表", desc: "热门话题", char: "话", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
-      { path: "/pages/circles/topic-detail", title: "话题详情", desc: "话题动态流", char: "题", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
-      { path: "/pages/circles/post-topic", title: "发布话题", desc: "参与话题互动", char: "参", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
-      { path: "/pages/campus/index", title: "校园", desc: "校园话题 / 活动", char: "园", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
-      { path: "/pages/campus/post-topic", title: "校园发帖", desc: "发布校园话题", char: "帖", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
-      { path: "/pages/campus/topic-detail", title: "校园话题详情", desc: "校园话题动态", char: "题", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
-      { path: "/subpackages/discover/discussions/index", title: "讨论圈", desc: "开放式讨论", char: "讨", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
-      { path: "/pages/feedback/history", title: "反馈历史", desc: "我的反馈记录", char: "馈", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
+      { path: "/pages/village/index", titleKey: "showcase.groups.community.items.village.title", descKey: "showcase.groups.community.items.village.desc", chipBg: "var(--c-bg-brand, #E8F8F0)", isTab: true },
+      { path: "/pages/village/post", titleKey: "showcase.groups.community.items.post.title", descKey: "showcase.groups.community.items.post.desc", chipBg: "var(--c-bg-brand, #E8F8F0)" },
+      { path: "/pages/village/detail", titleKey: "showcase.groups.community.items.detail.title", descKey: "showcase.groups.community.items.detail.desc", chipBg: "var(--c-bg-brand, #E8F8F0)" },
+      { path: "/pages/village/tag-posts", titleKey: "showcase.groups.community.items.tagPosts.title", descKey: "showcase.groups.community.items.tagPosts.desc", chipBg: "var(--c-bg-brand, #E8F8F0)" },
+      { path: "/pages/circles/index", titleKey: "showcase.groups.community.items.circles.title", descKey: "showcase.groups.community.items.circles.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
+      { path: "/pages/circles/topics", titleKey: "showcase.groups.community.items.topics.title", descKey: "showcase.groups.community.items.topics.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
+      { path: "/pages/circles/topic-detail", titleKey: "showcase.groups.community.items.topicDetail.title", descKey: "showcase.groups.community.items.topicDetail.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
+      { path: "/pages/circles/post-topic", titleKey: "showcase.groups.community.items.postTopic.title", descKey: "showcase.groups.community.items.postTopic.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
+      { path: "/pages/campus/index", titleKey: "showcase.groups.community.items.campus.title", descKey: "showcase.groups.community.items.campus.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
+      { path: "/pages/campus/post-topic", titleKey: "showcase.groups.community.items.campusPostTopic.title", descKey: "showcase.groups.community.items.campusPostTopic.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
+      { path: "/pages/campus/topic-detail", titleKey: "showcase.groups.community.items.campusTopicDetail.title", descKey: "showcase.groups.community.items.campusTopicDetail.desc", chipBg: "var(--c-tint-blue-soft, #E8F4FF)" },
+      { path: "/subpackages/discover/discussions/index", titleKey: "showcase.groups.community.items.discussions.title", descKey: "showcase.groups.community.items.discussions.desc", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
+      { path: "/pages/feedback/history", titleKey: "showcase.groups.community.items.feedbackHistory.title", descKey: "showcase.groups.community.items.feedbackHistory.desc", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
     ],
   },
   {
     id: "commerce",
-    title: "商业化",
-    subtitle: "VIP · 优惠码 · 逛逛",
+    titleKey: "showcase.groups.commerce.title",
+    subtitleKey: "showcase.groups.commerce.subtitle",
     accent: "linear-gradient(135deg, #F59E0B, #FBBF24)",
     items: [
-      { path: "/pages/vip/index", title: "开通 VIP", desc: "月度 / 季度 / 年度会员", char: "V", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
-      { path: "/pages/wallet/index", title: "我的钱包", desc: "交友币余额 / 账单 / 充值", char: "币", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
-      { path: "/pages/vip/promo-code", title: "优惠码", desc: "兑换码 / 优惠", char: "券", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
-      { path: "/pages/vip/bills", title: "账单记录", desc: "消费 / 续费记录", char: "账", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
-      { path: "/pages/shop/index", title: "逛逛", desc: "积分商城 / 好物", char: "逛", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
+      { path: "/pages/vip/index", titleKey: "showcase.groups.commerce.items.vip.title", descKey: "showcase.groups.commerce.items.vip.desc", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
+      { path: "/pages/wallet/index", titleKey: "showcase.groups.commerce.items.wallet.title", descKey: "showcase.groups.commerce.items.wallet.desc", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
+      { path: "/pages/vip/promo-code", titleKey: "showcase.groups.commerce.items.promoCode.title", descKey: "showcase.groups.commerce.items.promoCode.desc", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
+      { path: "/pages/vip/bills", titleKey: "showcase.groups.commerce.items.bills.title", descKey: "showcase.groups.commerce.items.bills.desc", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
+      { path: "/pages/shop/index", titleKey: "showcase.groups.commerce.items.shop.title", descKey: "showcase.groups.commerce.items.shop.desc", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
     ],
   },
   {
     id: "profile",
-    title: "个人中心与设置",
-    subtitle: "我的 · 安全 · 帮助",
+    titleKey: "showcase.groups.profile.title",
+    subtitleKey: "showcase.groups.profile.subtitle",
     accent: "linear-gradient(135deg, #64748B, #94A3B8)",
     items: [
-      { path: "/pages/profile/index", title: "我的", desc: "个人信息 / 动态 / 菜单", char: "我", chipBg: "var(--c-neutral-100, #F1F5F9)", isTab: true },
-      { path: "/pages/profile/visitors", title: "谁看过我", desc: "访客记录", char: "访", chipBg: "var(--c-neutral-100, #F1F5F9)" },
-      { path: "/pages/profile/album", title: "我的相册", desc: "照片墙管理", char: "相", chipBg: "var(--c-neutral-100, #F1F5F9)" },
-      { path: "/pages/profile/tasks", title: "任务中心", desc: "每日任务 / 奖励", char: "务", chipBg: "var(--c-neutral-100, #F1F5F9)" },
-      { path: "/pages/profile/privacy", title: "权限设置", desc: "同校推荐 / 接收信息", char: "权", chipBg: "var(--c-neutral-100, #F1F5F9)" },
-      { path: "/pages/settings/index", title: "设置", desc: "通用设置", char: "设", chipBg: "var(--c-neutral-100, #F1F5F9)" },
-      { path: "/pages/settings/dnd", title: "免打扰", desc: "勿扰时段", char: "免", chipBg: "var(--c-neutral-100, #F1F5F9)" },
-      { path: "/subpackages/support/feedback/index", title: "反馈中心", desc: "意见 / 建议 / 投诉", char: "反", chipBg: "var(--c-neutral-100, #F1F5F9)" },
-      { path: "/subpackages/legal/privacy/index", title: "隐私政策", desc: "个人信息保护", char: "私", chipBg: "var(--c-neutral-100, #F1F5F9)" },
-      { path: "/subpackages/legal/agreement/index", title: "用户协议", desc: "服务条款", char: "协", chipBg: "var(--c-neutral-100, #F1F5F9)" },
+      { path: "/pages/profile/index", titleKey: "showcase.groups.profile.items.profile.title", descKey: "showcase.groups.profile.items.profile.desc", chipBg: "var(--c-neutral-100, #F1F5F9)", isTab: true },
+      { path: "/pages/profile/visitors", titleKey: "showcase.groups.profile.items.visitors.title", descKey: "showcase.groups.profile.items.visitors.desc", chipBg: "var(--c-neutral-100, #F1F5F9)" },
+      { path: "/pages/profile/album", titleKey: "showcase.groups.profile.items.album.title", descKey: "showcase.groups.profile.items.album.desc", chipBg: "var(--c-neutral-100, #F1F5F9)" },
+      { path: "/pages/profile/tasks", titleKey: "showcase.groups.profile.items.tasks.title", descKey: "showcase.groups.profile.items.tasks.desc", chipBg: "var(--c-neutral-100, #F1F5F9)" },
+      { path: "/pages/profile/privacy", titleKey: "showcase.groups.profile.items.privacy.title", descKey: "showcase.groups.profile.items.privacy.desc", chipBg: "var(--c-neutral-100, #F1F5F9)" },
+      { path: "/pages/settings/index", titleKey: "showcase.groups.profile.items.settings.title", descKey: "showcase.groups.profile.items.settings.desc", chipBg: "var(--c-neutral-100, #F1F5F9)" },
+      { path: "/pages/settings/dnd", titleKey: "showcase.groups.profile.items.dnd.title", descKey: "showcase.groups.profile.items.dnd.desc", chipBg: "var(--c-neutral-100, #F1F5F9)" },
+      { path: "/subpackages/support/feedback/index", titleKey: "showcase.groups.profile.items.feedback.title", descKey: "showcase.groups.profile.items.feedback.desc", chipBg: "var(--c-neutral-100, #F1F5F9)" },
+      { path: "/subpackages/legal/privacy/index", titleKey: "showcase.groups.profile.items.legalPrivacy.title", descKey: "showcase.groups.profile.items.legalPrivacy.desc", chipBg: "var(--c-neutral-100, #F1F5F9)" },
+      { path: "/subpackages/legal/agreement/index", titleKey: "showcase.groups.profile.items.agreement.title", descKey: "showcase.groups.profile.items.agreement.desc", chipBg: "var(--c-neutral-100, #F1F5F9)" },
     ],
   },
 ];
+
+/** 图标 chip 字符（取翻译后标题首字，视觉占位） */
+function itemChar(item: ShowcaseItem): string {
+  return t(item.titleKey).charAt(0);
+}
 
 const pageVisible = ref(false);
 let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
@@ -199,8 +208,8 @@ function goBack() {
         <text class="sc-header__back-icon">←</text>
       </view>
       <view class="sc-header__titles">
-        <text class="sc-header__title">全功能展示</text>
-        <text class="sc-header__subtitle">超级管理员模式 · 所有功能已解锁</text>
+        <text class="sc-header__title">{{ t('showcase.title') }}</text>
+        <text class="sc-header__subtitle">{{ t('showcase.subtitle') }}</text>
       </view>
       <view class="sc-header__badge">
         <text class="sc-header__badge-text">SHOWCASE</text>
@@ -211,9 +220,9 @@ function goBack() {
     <view class="sc-notice card-stagger">
       <view class="sc-notice__dot" />
       <view class="sc-notice__body">
-        <text class="sc-notice__title">欢迎使用展示版</text>
+        <text class="sc-notice__title">{{ t('showcase.noticeTitle') }}</text>
         <text class="sc-notice__text">
-          以下分组覆盖全部功能页面，点击任意卡片即可体验。Tab 页面使用底部切换，其余页面可返回本页继续浏览。
+          {{ t('showcase.noticeText') }}
         </text>
       </view>
     </view>
@@ -226,9 +235,9 @@ function goBack() {
     >
       <view class="sc-group__head">
         <view class="sc-group__accent" :style="{ background: group.accent }" />
-        <text class="sc-group__title">{{ group.title }}</text>
-        <text class="sc-group__subtitle">{{ group.subtitle }}</text>
-        <text class="sc-group__count">{{ group.items.length }} 项</text>
+        <text class="sc-group__title">{{ t(group.titleKey) }}</text>
+        <text class="sc-group__subtitle">{{ t(group.subtitleKey) }}</text>
+        <text class="sc-group__count">{{ t('showcase.groupCount', { n: group.items.length }) }}</text>
       </view>
 
       <view class="sc-group__list" role="list">
@@ -240,18 +249,18 @@ function goBack() {
           hover-class="sc-item--active"
           hover-stay-time="120"
           role="listitem"
-          :aria-label="item.title"
+          :aria-label="t(item.titleKey)"
           @tap="navigate(item)"
         >
           <view class="sc-item__chip" :style="{ background: item.chipBg }">
-            <text class="sc-item__chip-text">{{ item.char }}</text>
+            <text class="sc-item__chip-text">{{ itemChar(item) }}</text>
           </view>
           <view class="sc-item__body">
             <view class="sc-item__title-row">
-              <text class="sc-item__title">{{ item.title }}</text>
-              <text v-if="item.isTab" class="sc-item__tab-tag">Tab</text>
+              <text class="sc-item__title">{{ t(item.titleKey) }}</text>
+              <text v-if="item.isTab" class="sc-item__tab-tag">{{ t('showcase.tabTag') }}</text>
             </view>
-            <text class="sc-item__desc">{{ item.desc }}</text>
+            <text class="sc-item__desc">{{ t(item.descKey) }}</text>
           </view>
           <text class="sc-item__arrow">›</text>
         </view>
@@ -284,6 +293,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   gap: 20rpx;
   padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 28rpx;
+  /* R4 审计：品牌蓝渐变 #3B9DE5/#5BC0DE/#7C6CF0 无对应 design token，保留原值 */
   background: linear-gradient(135deg, #3B9DE5 0%, #5BC0DE 55%, #7C6CF0 115%);
   border-radius: 0 0 36rpx 36rpx;
 }
@@ -302,7 +312,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .sc-header__back-icon {
   font-size: var(--fs-3xl, 36rpx);
-  color: $white;
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -316,7 +326,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .sc-header__title {
   font-size: 36rpx;
   font-weight: 700;
-  color: $white;
+  color: var(--c-text-inverse);
   letter-spacing: 1rpx;
 }
 
@@ -335,7 +345,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .sc-header__badge-text {
   font-size: var(--fs-xs, 20rpx);
   font-weight: 700;
-  color: $white;
+  color: var(--c-text-inverse);
   letter-spacing: 2rpx;
 }
 

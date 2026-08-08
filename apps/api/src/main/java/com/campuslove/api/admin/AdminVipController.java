@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 管理后台 - VIP 商业模块控制器。
- * <p>提供 VIP 账单分页列表、账单详情等管理端点。</p>
+ * 管理后台 - VIP 账单查询控制器（R4-00397 注释更新：VIP 会员已下线，
+ * 红包实体/页面已删，本控制器仅保留账单只读查询能力，供对账/追溯用）。
  * <p>权限说明：URL 层 /api/admin/** 已限制 ADMIN 角色；
  * 方法层 @PreAuthorize 作为深度防御（需 @EnableMethodSecurity 启用后生效）。</p>
  * <p>数据隔离：账单按用户归属校区（{@code UserCampusProfile.campusName}）过滤，

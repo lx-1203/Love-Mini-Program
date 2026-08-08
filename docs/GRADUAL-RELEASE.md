@@ -94,9 +94,15 @@ public ResponseEntity<UserDto> getUser(@PathVariable Long id) {
 
 ## 3. 用户分组策略
 
-### 3.1 分组维度
+> ⚠️ 规划态（R4-02109 ~ R4-02112）：本章 3.1~3.3 描述的灰度分组、
+> 名单管理与客户端判断均为设计方案，当前代码中无对应实现
+> （无 `admin_app_switch` 表、无 `config.refresh` 队列监听、
+> 无 `services/gray-release.ts` / `session.grayReleaseConfig`）。
+> 落地前按本章实现计划推进，相关变更须登记 CHANGELOG。
 
-#### 3.1.1 按用户 ID 哈希（推荐）
+### 3.1 分组维度（规划）
+
+#### 3.1.1 按用户 ID 哈希（推荐，规划）
 
 ```java
 public boolean isUserInGrayRelease(Long userId, int percentage) {
@@ -120,7 +126,7 @@ public boolean isUserInGrayRelease(Long userId, int percentage) {
 - 微信版本分组（基础库版本）
 - 地域分组（按 IP 解析省份）
 
-### 3.2 灰度名单管理
+### 3.2 灰度名单管理（规划）
 
 #### 3.2.1 后端配置
 
@@ -156,10 +162,12 @@ public void onConfigRefresh(ConfigUpdatedEvent event) {
 - 远端缓存：Redis，TTL=5min
 - 配置变更时主动刷新（Pub/Sub）
 
-### 3.3 客户端灰度判断
+### 3.3 客户端灰度判断（规划）
+
+> 规划示例：`services/gray-release.ts` 与 `session.grayReleaseConfig` 当前均不存在（R4-02111）。
 
 ```typescript
-// services/gray-release.ts
+// services/gray-release.ts（规划，尚未实现）
 import { useSessionStore } from '@/stores/session';
 
 export function isGrayReleaseEnabled(featureKey: string): boolean {

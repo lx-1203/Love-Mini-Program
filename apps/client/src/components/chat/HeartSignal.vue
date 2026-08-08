@@ -58,19 +58,20 @@ defineExpose({ ariaLabel });
 
 <style scoped>
 .heart-signal {
-  margin: 20rpx 32rpx;
+  margin: var(--sp-5) var(--sp-7);
   background: var(--c-brand-50);
   border-radius: var(--r-lg);
-  padding: 24rpx;
+  padding: var(--sp-6);
   border: 1rpx solid var(--c-brand-100);
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: var(--sp-5);
   transition: background var(--d-normal, 200ms) ease;
 }
 .heart-signal:active { background: var(--c-brand-100); }
 
 .signal-icon {
+  /* 图标容器固定尺寸（72rpx），无对应 token */
   width: 72rpx;
   height: 72rpx;
   border-radius: var(--r-circle, 50%);
@@ -82,6 +83,7 @@ defineExpose({ ariaLabel });
   animation: heart-pulse var(--d-loop-slow, 2400ms) ease-in-out infinite;
 }
 .signal-img {
+  /* 图标固定尺寸（40rpx），无对应 token */
   width: 40rpx;
   height: 40rpx;
 }
@@ -108,7 +110,7 @@ defineExpose({ ariaLabel });
 .signal-sub {
   font-size: var(--fs-sm);
   color: var(--c-text-quaternary);
-  margin-top: 4rpx;
+  margin-top: var(--sp-1);
 }
 
 .signal-countdown { flex-shrink: 0; }

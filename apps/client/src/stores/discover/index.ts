@@ -31,6 +31,7 @@ import { useSessionStore } from "../session";
 import {
   DAILY_LIMIT_TOTAL,
   EMPTY_RECOMMENDATION_FILTER,
+  SUPER_TEST_UNLIMITED_REMAINING,
 } from "./constants";
 import {
   getNextNoonString,
@@ -143,8 +144,10 @@ const _useDiscoverStore = defineStore("discover", {
     /** 今日剩余数量（含签到额外配额） */
     remainingCount: (state): number => {
       // 2026-08-07 超级测试账号：匹配次数无限（本地联调放行）
+      // dev 旁路常量：超级测试账号直返一个足够大的数值表示「无限」，
+      // 与 session.isSuperTestAccount 的硬编码 userId 联动，仅限本地联调。
       const sessionStore = useSessionStore();
-      if (sessionStore.isSuperTestAccount) return 999;
+      if (sessionStore.isSuperTestAccount) return SUPER_TEST_UNLIMITED_REMAINING;
       return Math.max(0, state.dailyLimit + state.extraQuota - state.viewedCards.length);
     },
     /** 是否达到每日上限 */

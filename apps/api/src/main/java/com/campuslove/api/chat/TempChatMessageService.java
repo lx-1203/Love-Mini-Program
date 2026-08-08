@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.TempChatMessage;
@@ -75,7 +76,7 @@ public class TempChatMessageService {
     @Transactional
     public TempChatSession sendMessage(String id, ChatMessageRequest request, Long currentUserId) {
         if (currentUserId == null) {
-            throw new IllegalArgumentException("当前用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CURRENT_USER_ID_REQUIRED);
         }
         TempChatSession session = sessionService.resolveSession(id);
         // FIN HIGH-1：校验当前用户是会话参与者，防止越权向他人会话发送消息
@@ -220,7 +221,7 @@ public class TempChatMessageService {
     @Transactional
     public TempChatSession recallMessage(String sessionId, String messageId, Long currentUserId) {
         if (currentUserId == null) {
-            throw new IllegalArgumentException("当前用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CURRENT_USER_ID_REQUIRED);
         }
         TempChatSession session = sessionService.resolveSession(sessionId);
         // FIN HIGH-1：校验当前用户是会话参与者

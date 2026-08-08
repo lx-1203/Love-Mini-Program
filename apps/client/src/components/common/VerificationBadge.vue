@@ -138,7 +138,7 @@ function handleClick() {
   align-items: center;
   gap: var(--sp-1);
   border-radius: var(--r-full);
-  border-width: 1rpx;
+  border-width: 1rpx; /* 固定布局尺寸（描边 1rpx），无对应 token */
   border-style: solid;
   white-space: nowrap;
   flex-shrink: 0;
@@ -178,11 +178,13 @@ function handleClick() {
 }
 
 .verification-badge--sm .verification-badge__icon {
+  /* 固定布局尺寸（图标 20rpx），无对应 token */
   width: 20rpx;
   height: 20rpx;
 }
 
 .verification-badge--md .verification-badge__icon {
+  /* 固定布局尺寸（图标 24rpx），无对应 token */
   width: 24rpx;
   height: 24rpx;
 }

@@ -1,5 +1,6 @@
 package com.campuslove.api.wallet;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.common.Idempotent;
@@ -76,6 +77,27 @@ public class WalletController {
     /** 每日演示充值计数 TTL：36 小时（覆盖跨自然日，避免 Redis 无限增长）。 */
     private static final long DEMO_RECHARGE_COUNT_TTL_HOURS = 36L;
 
+    /** 每日演示充值次数上限默认值（R4-01803，配置 app.demo-recharge.daily-limit）。 */
+    private static final int DEFAULT_DEMO_RECHARGE_DAILY_LIMIT = 5;
+
+    /**
+     * 单次充值/扣减金额上限（分）（R4-01841/01842）。
+     * 100_000_000 分 = 100 万元，与请求体 @Max 校验共用同一常量。
+     */
+    public static final long MAX_SINGLE_AMOUNT_CENTS = 100_000_000L;
+
+    /**
+     * R4-00346：/wallet/deduct 客户端直调允许的 relatedType 白名单。
+     * 仅限客户端业务语义的解锁类型；管理语义（ADMIN_ADJUST）与预留类型
+     * （SWEET_TALK、VIP_RENEW、UNLOCK_*）由服务层白名单把关，客户端不可传。
+     */
+    private static final java.util.Set<String> CLIENT_DEDUCT_RELATED_TYPE_WHITELIST = java.util.Set.of(
+            "MESSAGE_UNLOCK",
+            "VISITORS_UNLOCK",
+            "LIKES_UNLOCK",
+            "WHISPER_UNLOCK"
+    );
+
     private final WalletService walletService;
     /**
      * P0-17：商业化解锁服务（喜欢我列表 / 访客列表付费解锁）。
@@ -94,8 +116,8 @@ public class WalletController {
     @Value("${app.demo-recharge.enabled:false}")
     private boolean demoRechargeEnabled;
 
-    /** P0-15：每用户每日演示充值次数上限（配置 app.demo-recharge.daily-limit，默认 5 次）。 */
-    @Value("${app.demo-recharge.daily-limit:5}")
+    /** P0-15：每用户每日演示充值次数上限（配置 app.demo-recharge.daily-limit，默认 5 次，R4-01803）。 */
+    @Value("${app.demo-recharge.daily-limit:" + DEFAULT_DEMO_RECHARGE_DAILY_LIMIT + "}")
     private int demoRechargeDailyLimit;
 
     /**
@@ -178,14 +200,14 @@ public class WalletController {
         // P0-15：演示充值开关——生产环境关闭后禁止直接入账（必须走支付网关回调）
         if (!demoRechargeEnabled) {
             log.warn("演示充值已被配置禁用（app.demo-recharge.enabled=false），userId={}", userId);
-            throw new IllegalStateException("演示充值已关闭，请通过官方充值渠道完成支付");
+            throw new IllegalStateException(ErrorMessages.DEMO_RECHARGE_DISABLED);
         }
         // P0-15：每日演示充值次数上限（原子占用额度，超限回滚递增）
         if (!tryIncrementDemoRechargeCount(userId)) {
             throw new DailyLimitExceededException(
-                    "演示充值",
+                    ErrorMessages.DEMO_RECHARGE_SUBJECT_LABEL,
                     demoRechargeDailyLimit,
-                    "今日演示充值次数已用完（上限 " + demoRechargeDailyLimit + " 次），请明日再来");
+                    ErrorMessages.DEMO_RECHARGE_DAILY_LIMIT_PREFIX + demoRechargeDailyLimit + " 次），请明日再来");
         }
         // 演示充值：服务端生成订单号（UUID）；生产接入支付后，orderId 应由支付回调上下文确定
         String orderId = "WALLET-RECHARGE-" + UUID.randomUUID();
@@ -314,6 +336,13 @@ public class WalletController {
     @PreAuthorize("hasRole('USER')")
     public WalletDeductView deduct(@Valid @RequestBody DeductRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
+        // R4-00346：客户端直调白名单校验——管理语义（ADMIN_ADJUST）与预留类型
+        // （SWEET_TALK 等）禁止客户端伪造，防止账单语义污染
+        if (!CLIENT_DEDUCT_RELATED_TYPE_WHITELIST.contains(request.relatedType())) {
+            log.warn("钱包扣减被拒绝：relatedType 不在客户端白名单, userId={}, relatedType={}",
+                    userId, request.relatedType());
+            throw new IllegalArgumentException("不支持的扣费业务类型: " + request.relatedType());
+        }
         String orderId = request.orderId() != null && !request.orderId().isBlank()
                 ? request.orderId()
                 : "UNLOCK-" + UUID.randomUUID();
@@ -357,12 +386,12 @@ record WalletDeductView(
  * @param relatedId   关联业务实体 ID（如目标用户 ID，可空）
  */
 record DeductRequest(
-        @NotNull(message = "扣减金额不能为空")
-        @Min(value = 1, message = "扣减金额必须大于 0")
-        @Max(value = 100_000_000, message = "单次扣减金额超出上限")
+        @NotNull(message = ErrorMessages.DEDUCT_AMOUNT_REQUIRED)
+        @Min(value = 1, message = ErrorMessages.DEDUCT_AMOUNT_POSITIVE)
+        @Max(value = WalletController.MAX_SINGLE_AMOUNT_CENTS, message = ErrorMessages.DEDUCT_AMOUNT_EXCEEDS_LIMIT)
         Long amountCents,
         String orderId,
-        @NotNull(message = "关联业务类型不能为空")
+        @NotNull(message = ErrorMessages.BIZ_TYPE_REQUIRED)
         String relatedType,
         String relatedId) {
 }
@@ -403,9 +432,9 @@ record WalletRechargeView(
  * @param amountCents 充值金额（分，1 ~ 100_000_000 即 1 分 ~ 100 万元）
  */
 record RechargeRequest(
-        @NotNull(message = "充值金额不能为空")
-        @Min(value = 1, message = "充值金额必须大于 0")
-        @Max(value = 100_000_000, message = "单次充值金额超出上限")
+        @NotNull(message = ErrorMessages.RECHARGE_AMOUNT_REQUIRED)
+        @Min(value = 1, message = ErrorMessages.RECHARGE_AMOUNT_POSITIVE)
+        @Max(value = WalletController.MAX_SINGLE_AMOUNT_CENTS, message = ErrorMessages.RECHARGE_AMOUNT_EXCEEDS_LIMIT)
         Long amountCents) {
 }
 
@@ -416,9 +445,9 @@ record RechargeRequest(
  * @param targetId   解锁目标 ID（对方用户 ID）
  */
 record UnlockRequest(
-        @NotNull(message = "解锁类型不能为空")
+        @NotNull(message = ErrorMessages.UNLOCK_TYPE_REQUIRED)
         String targetType,
-        @NotNull(message = "解锁目标 ID 不能为空")
-        @Min(value = 1, message = "解锁目标 ID 必须为正数")
+        @NotNull(message = ErrorMessages.UNLOCK_TARGET_ID_REQUIRED)
+        @Min(value = 1, message = ErrorMessages.UNLOCK_TARGET_ID_POSITIVE)
         Long targetId) {
 }

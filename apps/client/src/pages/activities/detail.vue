@@ -15,6 +15,7 @@ import { IMAGE_PATHS } from "../../config/images";
 import { useActivityStore, type ActivityItem } from "../../stores/activity";
 import { useMessagesStore } from "../../stores/messages";
 import { ROUTES } from "../../constants/routes";
+import { TOAST_DURATION } from "../../constants/limits";
 import { openAppPath } from "../../utils/navigation";
 
 const { t } = useI18n();
@@ -175,13 +176,13 @@ async function handleSignup() {
     uni.showToast({
       title: ok ? t("activities.signupSuccess") : t("activities.enrollFailedToast"),
       icon: "none",
-      duration: 2000,
+      duration: TOAST_DURATION.NORMAL_MS,
     });
     return;
   }
   // 示例活动（无后端资源）：本地闭环
   isSignedUp.value = true;
-  uni.showToast({ title: t("activities.signupSuccess"), icon: "none", duration: 2000 });
+  uni.showToast({ title: t("activities.signupSuccess"), icon: "none", duration: TOAST_DURATION.NORMAL_MS });
 }
 
 /** 退出报名（收尾轮：已报名态可退出，恢复报名按钮；真实链路走 store DELETE） */
@@ -197,12 +198,12 @@ async function handleQuitSignup() {
     uni.showToast({
       title: ok ? t("activities.enrolledToast") : t("activities.unenrolledToast"),
       icon: "none",
-      duration: 2000,
+      duration: TOAST_DURATION.NORMAL_MS,
     });
     return;
   }
   isSignedUp.value = false;
-  uni.showToast({ title: t("activities.quitSignupSuccess"), icon: "none", duration: 2000 });
+  uni.showToast({ title: t("activities.quitSignupSuccess"), icon: "none", duration: TOAST_DURATION.NORMAL_MS });
 }
 
 /** 返回上一页 */
@@ -240,7 +241,14 @@ async function handleSendToFriend() {
     return;
   }
   const itemList = recentSessions.value.map((s) => s.partnerName);
-  const res = await uni.showActionSheet({ itemList });
+  // R4-00035：用户取消 ActionSheet 时 H5 端 Promise reject，需 catch 静默处理
+  let res: UniApp.ShowActionSheetRes;
+  try {
+    res = await uni.showActionSheet({ itemList });
+  } catch (_e) {
+    // 用户取消选择：静默返回
+    return;
+  }
   const session = recentSessions.value[res.tapIndex ?? -1];
   if (!session) return;
 
@@ -255,7 +263,7 @@ async function handleSendToFriend() {
     uni.showToast({
       title: t("activities.sendToFriendDone", { name: session.partnerName }),
       icon: "none",
-      duration: 2000,
+      duration: TOAST_DURATION.NORMAL_MS,
     });
   } catch (_e) {
     uni.showToast({ title: t("activities.sendToFriendFailed"), icon: "none" });

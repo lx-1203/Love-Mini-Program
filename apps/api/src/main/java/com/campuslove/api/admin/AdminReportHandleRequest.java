@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -15,7 +16,7 @@ import jakarta.validation.constraints.Size;
  */
 public record AdminReportHandleRequest(
         @NotBlank
-        @Pattern(regexp = "HANDLE|REJECT", message = "result 必须为 HANDLE 或 REJECT")
+        @Pattern(regexp = "HANDLE|REJECT", message = ErrorMessages.REPORT_RESULT_INVALID)
         String result,
         @Size(max = 500) String remark
 ) {

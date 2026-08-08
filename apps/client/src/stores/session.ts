@@ -350,7 +350,7 @@ export const useSessionStore = defineStore("session", {
     /**
      * 是否超级测试账号（2026-08-07 本地联调账号体系）。
      *
-     * 种子脚本 V2026.08.07.0004 固定 userId = 100000（openid=local-dev-admin-openid-123456），
+     * 种子脚本 V2026.08.07.0004 固定 userId = 100000（openid=<REDACTED>），
      * 前端据此放行：匹配次数无限 / 付费解锁免费 / dev 页身份切换。
      *
      * 修复（R4-00122）：userId 硬编码前端旁路仅限开发环境生效，生产环境恒为 false，
@@ -420,7 +420,8 @@ export const useSessionStore = defineStore("session", {
         return this.userSession;
       } catch (error) {
         // 修复（P1 BUG）：记录具体错误信息，UI 可据此展示
-        this.errorMessage = error instanceof Error ? error.message : "刷新会话失败";
+        // R4-00124：兜底文案走 i18n（storeErrors.session.refreshFailed）
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.session.refreshFailed");
 
         // 修复（P1 BUG）：区分网络错误与鉴权错误
         // 鉴权错误（401）：清空 userSession，强制重新登录
@@ -470,8 +471,10 @@ export const useSessionStore = defineStore("session", {
      */
     async logout() {
       try {
-        // 1. 调用 clientApi.logout 清除本地 token + 异步通知后端 + 跳转登录页
-        //    clientApi.logout 内部已实现「先清本地 token，再异步通知后端」的安全退出逻辑
+        // 1. 调用 clientApi.logout 清除本地 token + 通知后端 + 跳转登录页
+        //    实际顺序（见 services/api.ts）：先携带 token 请求后端 /auth/logout，
+        //    再在 finally 中清本地 token 并 reLaunch 登录页——保证后端能收到
+        //    有效的认证信息，避免先清 token 导致后端登出请求 401 失效。
         await clientApi.logout();
       } catch (error) {
         // logout 内部已 best-effort 处理后端通知失败，此处仅记录日志

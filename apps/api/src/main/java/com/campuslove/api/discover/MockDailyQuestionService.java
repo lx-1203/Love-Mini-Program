@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.DisplayConstants;
 import java.time.LocalDate;
@@ -82,7 +83,7 @@ public class MockDailyQuestionService implements DailyQuestionService {
 
     // 权限检查：只有已回答的用户才能查看
     if (currentUserId != null && !hasAnswered(currentUserId, questionId)) {
-      throw new IllegalStateException("请先回答问题才能查看其他人的回答");
+      throw new IllegalStateException(ErrorMessages.DAILY_QUESTION_ANSWER_REQUIRED);
     }
 
     List<AnswerState> answers = answersByQuestionId.getOrDefault(questionId, List.of());

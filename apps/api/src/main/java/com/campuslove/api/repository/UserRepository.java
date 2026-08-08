@@ -56,6 +56,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByStatusAndRole(String status, String role, Pageable pageable);
 
     /**
+     * R4-00349：候选用户 ID 投影分页查询（仅取 ID 列）。
+     *
+     * <p>匹配引擎 {@code findAndScoreCandidates} 对候选评分时只依赖 ID 与三类档案
+     * （校区/兴趣/日程，另有批量预加载），无需加载候选 User 实体的大字段；
+     * 仅对最终选中的 Top-N 候选再按 ID 加载完整实体，降低匹配请求的 DB 载荷。</p>
+     *
+     * @param pageable 分页参数
+     * @return 候选用户 ID 分页列表
+     */
+    @Query("SELECT u.id FROM User u")
+    Page<Long> findCandidateIds(Pageable pageable);
+
+    /**
      * 批量按 ID 查询用户（用于列表/详情视图批量预加载作者，避免 N+1 查询）。
      *
      * @param userIds 用户 ID 集合
@@ -202,6 +215,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("UPDATE User u SET u.followingCount = COALESCE(u.followingCount, 0) + 1, "
             + "u.updatedAt = :now WHERE u.id = :id")
     int incrementFollowingCount(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    /**
+     * R4-00296：查询用户最新关注数（JPQL 查询执行前自动 flush，
+     * 返回原子递增后的 DB 值，而非持久化上下文的陈旧实体值）。
+     */
+    @Query("SELECT COALESCE(u.followingCount, 0) FROM User u WHERE u.id = :id")
+    int findFollowingCountById(@Param("id") Long id);
+
+    /**
+     * R4-00296：查询用户最新粉丝数（同上）。
+     */
+    @Query("SELECT COALESCE(u.followersCount, 0) FROM User u WHERE u.id = :id")
+    int findFollowersCountById(@Param("id") Long id);
 
     @Modifying
     @Query("UPDATE User u SET u.followersCount = COALESCE(u.followersCount, 0) + 1, "

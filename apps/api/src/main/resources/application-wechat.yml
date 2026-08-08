@@ -17,5 +17,7 @@ app:
     app-id: ${WECHAT_APPID:}
     app-secret: ${WECHAT_SECRET:}
     # jscode2session 接口 base URL：默认为官方文档地址，
-    # 如需走内网代理或切换微信 API 域名，通过环境变量 WECHAT_JSCODE2SESSION_URL 覆盖
+    # 如需走内网代理或切换微信 API 域名，通过环境变量 WECHAT_JSCODE2SESSION_URL 覆盖。
+    # R4-01784：本 profile 面向生产，必须显式配置 WECHAT_JSCODE2SESSION_URL
+    # （即使值相同也应显式注入），不依赖代码/配置文件默认值。
     jscode2session-url: ${WECHAT_JSCODE2SESSION_URL:https://api.weixin.qq.com/sns/jscode2session}

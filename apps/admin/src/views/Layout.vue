@@ -50,27 +50,23 @@ function menuLabel(title: string): string {
 /* ==================== 角色可见菜单（SUPER_ADMIN 专属过滤） ==================== */
 
 /**
- * SUPER_ADMIN 专属菜单 name 集合（校区管理员不可见）。
- * 真实环境后端菜单树已按角色过滤（ADMIN 不关联系统管理 100-108 菜单），
- * 此处仅兜底本地静态菜单（mock/fallback）场景，避免校区管理员看到系统管理入口。
+ * 当前登录角色是否全局超级管理员。
+ * 真实环境后端菜单树已按角色过滤（ADMIN 不关联系统管理菜单），
+ * 下方过滤仅兜底本地静态菜单（mock/fallback）场景，避免校区管理员看到系统管理入口。
  */
-const SUPER_ADMIN_ONLY_MENU_NAMES = new Set<string>([
-  "Menus", "Roles", "Schools", "Dicts", "Admins", "AuditLogs", "OnlineUsers",
-]);
-
-/** 当前登录角色是否全局超级管理员 */
 const isSuperAdmin = computed(
   () => String(sessionStore.user?.role || "").toUpperCase() === "SUPER_ADMIN",
 );
 
 /**
- * 过滤 SUPER_ADMIN 专属菜单（递归）：删除命中集合的 MENU 节点，
+ * 过滤 SUPER_ADMIN 专属菜单（递归）：删除 superAdminOnly 标记的 MENU 节点
+ * （标记定义在 menu store 的 staticFallbackMenus，新增专属菜单只标记一处），
  * 并移除被清空的 DIR 目录（目录下无可见子菜单时整组隐藏）。
  */
 function filterSuperAdminOnlyMenus(nodes: AdminMenuNode[]): AdminMenuNode[] {
   const visible: AdminMenuNode[] = [];
   for (const node of nodes) {
-    if (node.type === "MENU" && SUPER_ADMIN_ONLY_MENU_NAMES.has(node.name)) {
+    if (node.type === "MENU" && node.superAdminOnly === true) {
       continue;
     }
     if (node.children && node.children.length > 0) {
@@ -197,8 +193,14 @@ function findBreadcrumbChain(
   return null;
 }
 
-/** 菜单中 Dashboard 节点的完整 path（首页 tab / 面包屑首页的跳转目标） */
-const dashboardPath = findNodePathByName(menuStore.menuTree, "Dashboard") ?? "/";
+/**
+ * 菜单中 Dashboard 节点的完整 path（首页 tab / 面包屑首页的跳转目标）。
+ * 用 computed 包裹：菜单树加载完成后自动重算，避免深链直入时
+ * 菜单未加载导致路径退化为 "/"。
+ */
+const dashboardPath = computed<string>(
+  () => findNodePathByName(menuStore.menuTree, "Dashboard") ?? "/",
+);
 
 /**
  * 查找菜单树中第一个可跳转的 MENU（含 name/path/title）。
@@ -223,10 +225,10 @@ function findFirstMenuTab(menus: AdminMenuNode[], parentPath = ""): TabItem | nu
 const breadcrumb = computed<BreadcrumbItem[]>(() => {
   const chain = findBreadcrumbChain(menuStore.menuTree, route.path);
   if (chain) {
-    return [{ title: t("layout.breadcrumbHome"), path: dashboardPath }, ...chain];
+    return [{ title: t("layout.breadcrumbHome"), path: dashboardPath.value }, ...chain];
   }
   const title = typeof route.meta.title === "string" ? route.meta.title : String(route.name ?? "");
-  return [{ title: t("layout.breadcrumbHome"), path: dashboardPath }, { title: menuLabel(title) }];
+  return [{ title: t("layout.breadcrumbHome"), path: dashboardPath.value }, { title: menuLabel(title) }];
 });
 
 /* ==================== 多标签页（tabs-view） ==================== */
@@ -240,14 +242,30 @@ interface TabItem {
   title: string;
 }
 
-/** 已访问标签列表（Dashboard 固定首位且不可关闭；无 Dashboard 权限时用首个菜单占位） */
-const visitedTabs = ref<TabItem[]>([
-  findFirstMenuTab(visibleMenuTree.value) ?? {
-    name: "Dashboard",
-    path: dashboardPath,
-    title: t("layout.navDashboard"),
+/**
+ * 已访问标签列表（Dashboard 固定首位且不可关闭；无 Dashboard 权限时用首个菜单占位）。
+ * 初始为空，待菜单加载完成后由下方 watch 补齐首页标签——
+ * 避免深链直入且菜单尚未加载（loadMenus 完成前）时，初始标签退化为占位 Dashboard
+ * 与后端菜单不一致（R4-00520）。
+ */
+const visitedTabs = ref<TabItem[]>([]);
+
+/** 菜单加载完成后初始化首页标签（首个可跳转菜单；无则 Dashboard 占位） */
+watch(
+  () => menuStore.loaded,
+  (loaded) => {
+    if (!loaded) return;
+    const home = findFirstMenuTab(visibleMenuTree.value) ?? {
+      name: "Dashboard",
+      path: dashboardPath.value,
+      title: t("layout.navDashboard"),
+    };
+    if (!visitedTabs.value.some((tab) => tab.name === home.name)) {
+      visitedTabs.value.unshift(home);
+    }
   },
-]);
+  { immediate: true },
+);
 
 /** 解析路由对应的标签标题：菜单树 → meta.title → 路由 name 兜底 */
 function resolveTabTitle(target: RouteLocationNormalizedLoaded): string {
@@ -369,17 +387,17 @@ function handleCancelLogout(): void {
 </script>
 
 <template>
-  <view class="layout">
+  <div class="layout">
     <!-- 左侧深色侧边栏（eladmin 风格） -->
     <aside class="sidebar" role="navigation" :aria-label="t('layout.navAriaLabel')">
-      <view class="sidebar-logo">
-        <text class="sidebar-logo-text">{{ t("login.title") }}</text>
-      </view>
+      <div class="sidebar-logo">
+        <span class="sidebar-logo-text">{{ t("login.title") }}</span>
+      </div>
 
       <nav class="sidebar-menu">
         <template v-for="node in visibleMenuTree" :key="node.id">
           <!-- 目录：可折叠分组标题 + 子菜单 -->
-          <view v-if="node.type === 'DIR'" class="menu-group">
+          <div v-if="node.type === 'DIR'" class="menu-group">
             <button
               type="button"
               class="menu-group-title"
@@ -391,7 +409,7 @@ function handleCancelLogout(): void {
                 :class="{ 'menu-group-arrow--open': isGroupExpanded(node.id) }"
               >▾</span>
             </button>
-            <view v-if="isGroupExpanded(node.id)" class="menu-group-children">
+            <div v-if="isGroupExpanded(node.id)" class="menu-group-children">
               <router-link
                 v-for="child in node.children ?? []"
                 :key="child.id"
@@ -401,8 +419,8 @@ function handleCancelLogout(): void {
               >
                 <span class="menu-label">{{ menuLabel(child.title) }}</span>
               </router-link>
-            </view>
-          </view>
+            </div>
+          </div>
           <!-- 顶级菜单：直接渲染 -->
           <router-link
             v-else-if="node.type === 'MENU'"
@@ -428,30 +446,29 @@ function handleCancelLogout(): void {
               class="breadcrumb-item"
               :to="item.path"
             >{{ menuLabel(item.title) }}</router-link>
-            <text v-else class="breadcrumb-item breadcrumb-item--current">{{ menuLabel(item.title) }}</text>
-            <text v-if="index < breadcrumb.length - 1" class="breadcrumb-sep">/</text>
+            <span v-else class="breadcrumb-item breadcrumb-item--current">{{ menuLabel(item.title) }}</span>
+            <span v-if="index < breadcrumb.length - 1" class="breadcrumb-sep">/</span>
           </template>
         </nav>
 
-        <view class="header-user">
-          <view class="user-info">
-            <text class="user-name">{{ displayName }}</text>
-            <!-- campusName 为空（全局超级管理员）时不渲染校区徽标；
-                 uni-app 规范 text 不可嵌套非 text 元素，改用 view 包裹多个 text -->
-            <view class="user-role">
-              <text>{{ displayRole }}</text>
-              <text v-if="campusName"> · {{ campusName }}</text>
-            </view>
-          </view>
+        <div class="header-user">
+          <div class="user-info">
+            <span class="user-name">{{ displayName }}</span>
+            <!-- campusName 为空（全局超级管理员）时不渲染校区徽标 -->
+            <div class="user-role">
+              <span>{{ displayRole }}</span>
+              <span v-if="campusName"> · {{ campusName }}</span>
+            </div>
+          </div>
           <button class="logout-button" @click="handleLogoutClick">
             {{ t("common.logout") }}
           </button>
-        </view>
+        </div>
       </header>
 
       <!-- 多标签页（tabs-view） -->
-      <view class="tabs-view" role="tablist">
-        <view
+      <div class="tabs-view" role="tablist">
+        <div
           v-for="tab in visitedTabs"
           :key="tab.name"
           class="tab-item"
@@ -468,8 +485,8 @@ function handleCancelLogout(): void {
             :aria-label="t('layout.tabsClose')"
             @click.stop="closeTab(tab)"
           >×</button>
-        </view>
-      </view>
+        </div>
+      </div>
 
       <!-- 主内容区 -->
       <main class="layout-content">
@@ -487,7 +504,7 @@ function handleCancelLogout(): void {
       @confirm="handleConfirmLogout"
       @cancel="handleCancelLogout"
     />
-  </view>
+  </div>
 </template>
 
 <style scoped>
@@ -502,7 +519,7 @@ function handleCancelLogout(): void {
 /* ========== 深色侧边栏（eladmin 风格） ========== */
 
 .sidebar {
-  width: 220px;
+  width: var(--admin-layout-sidebar-width);
   flex-shrink: 0;
   background: var(--admin-sidebar-bg);
   display: flex;
@@ -511,7 +528,7 @@ function handleCancelLogout(): void {
 }
 
 .sidebar-logo {
-  height: 50px;
+  height: var(--admin-layout-bar-height);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -606,7 +623,7 @@ function handleCancelLogout(): void {
 }
 
 .layout-header {
-  height: 50px;
+  height: var(--admin-layout-bar-height);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -724,8 +741,8 @@ function handleCancelLogout(): void {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: var(--admin-tab-close-size);
+  height: var(--admin-tab-close-size);
   border: none;
   border-radius: 50%;
   background: transparent;

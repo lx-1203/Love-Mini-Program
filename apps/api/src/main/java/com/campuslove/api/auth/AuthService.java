@@ -35,8 +35,8 @@ public interface AuthService {
 
     /**
      * 用户登出（使 token 失效）。
-     * 当前实现使用无状态 JWT，登出仅记录日志；
-     * 生产环境如需 token 黑名单可在此扩展。
+     * R4-00304 注释更新：登出已将 JWT 的 jti 加入黑名单（TokenBlacklistService，
+     * Redis + 本地内存降级），不再是无状态仅记录日志的旧语义。
      *
      * @param token 当前 JWT 令牌
      */

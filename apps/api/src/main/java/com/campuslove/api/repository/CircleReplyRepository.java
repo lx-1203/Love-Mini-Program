@@ -22,6 +22,20 @@ public interface CircleReplyRepository extends JpaRepository<CircleReply, Long> 
     List<CircleReply> findByTopicIdOrderByCreatedAtDesc(Long topicId);
 
     /**
+     * R4-00352：SQL 侧分页查询话题回复（替代全量加载后内存分页）。
+     *
+     * <p>高回复话题下原 {@code findByTopicIdOrderByCreatedAtDesc} 全量加载
+     * 回复再内存分页，内存占用随回复数线性增长；本方法将分页下推到数据库。
+     * 旧 List 版方法保留供内部全量场景使用（如互动统计）。</p>
+     *
+     * @param topicId  话题 ID
+     * @param pageable 分页参数
+     * @return 回复分页（按创建时间倒序）
+     */
+    org.springframework.data.domain.Page<CircleReply> findByTopicIdOrderByCreatedAtDesc(
+            Long topicId, org.springframework.data.domain.Pageable pageable);
+
+    /**
      * Task 2.2.4：根据话题 ID 查询回复列表，并通过 @EntityGraph 一次性预加载 topic 关联。
      * <p>{@link CircleReply#getTopic()} 是 LAZY 加载，
      * 调用方在 View 转换层访问 {@code reply.getTopic().getId()} 等字段时

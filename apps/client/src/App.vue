@@ -268,6 +268,8 @@ onMounted(markAppReady);
 @import "./styles/_mixins.scss";
 // 引入组件级共享样式（修复 P3 样式重复：base-card / base-btn / base-avatar / base-tag 等基础类）
 @import "./styles/_components.scss";
+// R4-00241：全局动画关键帧与工具类（自 uni.scss 迁移，全局引入一次，避免组件 wxss 注入）
+@import "./theme/animations.scss";
 
 page {
   background: var(--c-gradient-page);

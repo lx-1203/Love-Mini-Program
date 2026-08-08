@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SecurityUtils;
@@ -171,7 +172,7 @@ public class VillageQueryService {
             return PostCategory.valueOf(category);
         } catch (IllegalArgumentException | NullPointerException e) {
             // infra R2-00213: 非法分类值转 400（原实现直接 500）
-            throw new IllegalArgumentException("不支持的帖子分类: " + category
+            throw new IllegalArgumentException(ErrorMessages.UNSUPPORTED_POST_CATEGORY_PREFIX + category
                     + ", 仅支持: " + java.util.Arrays.toString(PostCategory.values()));
         }
     }
@@ -523,7 +524,7 @@ public class VillageQueryService {
 
     @Transactional(readOnly = true)
     public CampusFeedView getCampusFeed(Long userId, int page, int size) {
-        if (userId == null) throw new IllegalArgumentException("userId 不能为空");
+        if (userId == null) throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         String campusName = userCampusProfileRepository.findByUserId(userId)
                 .map(UserCampusProfile::getCampusName).orElse("");
         // FIN-00022 修复：page/size 参数对帖子列表分页生效（原实现忽略参数，固定取前 10 条）。

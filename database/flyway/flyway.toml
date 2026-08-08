@@ -17,8 +17,12 @@ baselineOnMigrate = false
 #   1. CLI 参数：flyway -placeholders.admin_openid='oXxxx' -placeholders.admin_nickname='系统管理员' migrate
 #   2. 环境变量：export FLYWAY_PLACEHOLDERS_ADMIN_OPENID='oXxxx' FLYWAY_PLACEHOLDERS_ADMIN_NICKNAME='系统管理员'
 # ⚠️ 未设置时 flyway migrate 将失败（预期行为，杜绝弱默认账号）。
-# 注：Spring Boot 启动路径由 application-real.yml 的 ${ADMIN_OPENID:...} 注入，
-# 与本文件（独立 flyway CLI 用途）独立。
+# 注（R4-00410 占位符单一来源对齐）：Spring Boot 启动路径由 application-real.yml 的
+# ${ADMIN_OPENID:...} 注入，独立 CLI 走本文件 [flyway.placeholders]（通过
+# FLYWAY_PLACEHOLDERS_ADMIN_OPENID 等环境变量注入）。两条路径必须注入【同一份值】
+# （建议在 .env / docker-compose 中统一定义 ADMIN_OPENID，并映射为
+# FLYWAY_PLACEHOLDERS_ADMIN_OPENID），保证两种方式跑迁移得到的管理员 openid 一致。
+# 两处均已 fail-fast（无默认值），不会出现"一处有值一处用占位"的静默差异。
 # R4-00420/00422/00423：演示种子数据环境守卫——虚拟用户/演示私信/画像随机种子等
 # 迁移仅在 demo_seed=true 时写入数据（默认 false，生产不会灌入虚拟用户/演示数据）。
 # CLI 运行时可覆盖：flyway -placeholders.demo_seed=true migrate

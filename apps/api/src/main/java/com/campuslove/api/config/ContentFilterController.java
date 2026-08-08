@@ -1,5 +1,6 @@
 package com.campuslove.api.config;
 
+import com.campuslove.api.common.ErrorMessages;
 import jakarta.validation.Valid;
 import java.util.Map;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,7 +50,7 @@ public class ContentFilterController {
 
         // infra R2-00200: 限制检测内容长度，防止超大文本触发正则扫描
         if (content.length() > MAX_CONTENT_LENGTH) {
-            throw new IllegalArgumentException("content 长度不能超过 " + MAX_CONTENT_LENGTH + " 字符");
+            throw new IllegalArgumentException(ErrorMessages.CONTENT_MAX_LENGTH_PREFIX + MAX_CONTENT_LENGTH + " 字符");
         }
 
         // infra R2-00201: 仅返回 hasSensitiveWords 布尔值，不暴露命中的敏感词字典，

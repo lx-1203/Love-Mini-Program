@@ -3,6 +3,13 @@ import { ref } from "vue";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
+
+/**
+ * R4-00992: mock 视频通话记录时长常量（9 分钟示例通话）——
+ * duration 字段单位秒，endTime 偏移计算用毫秒，双单位由常量注释明确。
+ */
+const MOCK_CALL_DURATION_SECONDS = 540;
+const MOCK_CALL_DURATION_MS = MOCK_CALL_DURATION_SECONDS * 1000;
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
 
@@ -172,13 +179,12 @@ export const useVideoCallStore = defineStore("video-call", () => {
    * 发起视频通话
    *
    * @param payload 请求体
-   * @param callerId 发起方用户 ID（mock 模式下使用）
    * @returns 发起结果（含房间号与 token）
+   *
+   * R4-00142：移除魔法数字 callerId=1 默认参数——mock 分支发起方身份改从
+   * session store 实时解析，与真实 userId 体系一致（页面调用无需传参）。
    */
-  async function startCall(
-    payload: StartCallPayload,
-    callerId = 1
-  ): Promise<StartCallResult> {
+  async function startCall(payload: StartCallPayload): Promise<StartCallResult> {
     if (!payload.calleeId || payload.calleeId <= 0) {
       throw new Error(t("storeErrors.videoCall.calleeIdInvalid"));
     }
@@ -188,10 +194,14 @@ export const useVideoCallStore = defineStore("video-call", () => {
 
     if (useMock()) {
       // mock 模式：生成虚拟房间号与 token
+      // R4-00142：发起方 ID 从 session 解析（真实 userId），不再默认 1
+      const sessionStore = useSessionStore();
+      const currentUserId = sessionStore.userSession?.userId ?? "";
+      const mockCallerId = Number(currentUserId) || 0;
       const mockCall: VideoCallView = {
         id: Math.floor(Math.random() * 100000) + 1,
         roomId: generateMockRoomId(),
-        callerId,
+        callerId: mockCallerId,
         calleeId: payload.calleeId,
         status: "RINGING",
         startedAt: new Date().toISOString(),
@@ -202,7 +212,9 @@ export const useVideoCallStore = defineStore("video-call", () => {
       const mockResult: StartCallResult = {
         call: mockCall,
         roomToken: `mock_token_${mockCall.roomId}_${Date.now()}`,
-        signalingUrl: "wss://mock.example.com/signaling",
+        // R4-00143：mock 不建立真实信令连接，置空信令地址（原 "wss://mock.example.com/signaling"
+        // 指向不存在的域名，易误导联调）；真实模式由后端 /chat/video-call/start 返回
+        signalingUrl: "",
       };
       currentCall.value = mockCall;
       roomToken.value = mockResult.roomToken;
@@ -330,8 +342,8 @@ export const useVideoCallStore = defineStore("video-call", () => {
           callerId: 1,
           receiverId: 2,
           startTime: new Date(now - 60 * 60 * 1000).toISOString(),
-          endTime: new Date(now - 60 * 60 * 1000 + 540 * 1000).toISOString(),
-          duration: 540,
+          endTime: new Date(now - 60 * 60 * 1000 + MOCK_CALL_DURATION_MS).toISOString(),
+          duration: MOCK_CALL_DURATION_SECONDS,
           status: "CONNECTED",
           createdAt: new Date(now - 60 * 60 * 1000).toISOString(),
         },

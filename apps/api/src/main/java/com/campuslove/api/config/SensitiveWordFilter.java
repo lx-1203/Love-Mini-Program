@@ -160,12 +160,18 @@ public class SensitiveWordFilter {
 
         String filtered = filter(content);
 
-        // 如果内容发生了变化（即包含敏感词），记录日志
+        // 如果内容发生了变化（即包含敏感词），记录日志。
+        // R4-00306：降级为 INFO 并带累计计数（原 WARN 级别在批量/高频命中时刷屏）
         if (!filtered.equals(content)) {
-            log.warn("Sensitive word filtered: userId={}, scene={}, filterTime={}",
-                    userId, scene, java.time.LocalDateTime.now(TimeZones.BUSINESS));
+            long total = filteredEventCount.incrementAndGet();
+            log.info("Sensitive word filtered: userId={}, scene={}, filterTime={}, totalHits={}",
+                    userId, scene, java.time.LocalDateTime.now(TimeZones.BUSINESS), total);
         }
 
         return filtered;
     }
+
+    /** R4-00306：敏感词命中累计计数（轻量聚合统计，供日志与监控参考） */
+    private final java.util.concurrent.atomic.AtomicLong filteredEventCount =
+            new java.util.concurrent.atomic.AtomicLong();
 }

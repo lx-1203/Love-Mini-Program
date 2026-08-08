@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.ErrorMessages;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -27,12 +28,12 @@ import jakarta.validation.constraints.Size;
 public record DoNotDisturbRequest(
         @NotNull Boolean enabled,
         @NotNull @Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$",
-                message = "开始时间格式必须为 HH:mm") String startTime,
+                message = ErrorMessages.DND_START_TIME_FORMAT) String startTime,
         @NotNull @Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$",
-                message = "结束时间格式必须为 HH:mm") String endTime,
+                message = ErrorMessages.DND_END_TIME_FORMAT) String endTime,
         @NotNull @Pattern(regexp = "^(EVERYDAY|WEEKDAYS|WEEKENDS|CUSTOM)$",
-                message = "重复方式必须为 EVERYDAY/WEEKDAYS/WEEKENDS/CUSTOM") String repeatMode,
-        @Size(max = 16, message = "自定义星期长度不能超过 16") String customWeekdays,
+                message = ErrorMessages.DND_REPEAT_MODE_INVALID) String repeatMode,
+        @Size(max = 16, message = ErrorMessages.DND_CUSTOM_WEEKDAYS_MAX_LENGTH) String customWeekdays,
         @NotNull Boolean allowUrgent
 ) {
 }

@@ -1,5 +1,6 @@
 package com.campuslove.api.wallet;
 
+import com.campuslove.api.common.ErrorMessages;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -37,12 +38,12 @@ public class RealWalletUnlockService implements WalletUnlockService {
     private final WalletService walletService;
     private final WalletUnlockRepository unlockRepository;
 
-    /** 解锁单价（分）：喜欢我列表（app.unlock-price.liked-me，默认 300 分 = 3 元） */
-    @Value("${app.unlock-price.liked-me:300}")
+    /** 解锁单价（分）：喜欢我列表（app.unlock-price.liked-me，默认 300 分 = 3 元，R4-01804） */
+    @Value("${app.unlock-price.liked-me:" + WalletUnlock.DEFAULT_UNLOCK_PRICE_CENTS + "}")
     private int likedMePriceCents;
 
-    /** 解锁单价（分）：访客列表（app.unlock-price.visitor，默认 300 分 = 3 元） */
-    @Value("${app.unlock-price.visitor:300}")
+    /** 解锁单价（分）：访客列表（app.unlock-price.visitor，默认 300 分 = 3 元，R4-01805） */
+    @Value("${app.unlock-price.visitor:" + WalletUnlock.DEFAULT_UNLOCK_PRICE_CENTS + "}")
     private int visitorPriceCents;
 
     public RealWalletUnlockService(WalletService walletService, WalletUnlockRepository unlockRepository) {
@@ -54,10 +55,10 @@ public class RealWalletUnlockService implements WalletUnlockService {
     @Transactional
     public WalletUnlockView unlock(Long userId, String targetType, Long targetId) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         if (targetId == null || targetId <= 0) {
-            throw new IllegalArgumentException("解锁目标 ID 必须为正数");
+            throw new IllegalArgumentException(ErrorMessages.UNLOCK_TARGET_ID_POSITIVE);
         }
         // P0-17：解锁目标类型白名单校验，拒绝未定义的扣费场景
         String normalizedType = normalizeTargetType(targetType);
@@ -125,7 +126,7 @@ public class RealWalletUnlockService implements WalletUnlockService {
         if (WalletUnlock.TARGET_TYPE_VISITOR.equals(targetType)) {
             return WalletUnlock.TARGET_TYPE_VISITOR;
         }
-        throw new IllegalArgumentException("不支持的解锁类型: " + targetType
+        throw new IllegalArgumentException(ErrorMessages.UNSUPPORTED_UNLOCK_TYPE_PREFIX + targetType
                 + ", 仅支持: " + WalletUnlock.TARGET_TYPE_LIKED_ME + " / " + WalletUnlock.TARGET_TYPE_VISITOR);
     }
 

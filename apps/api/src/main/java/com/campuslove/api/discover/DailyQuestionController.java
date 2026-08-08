@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
@@ -95,5 +96,5 @@ public class DailyQuestionController {
 record DailyAnswerRequest(
     @NotNull @Positive Long questionId,
     @NotBlank @Size(max = 2000) String content,
-    @NotNull(message = "isAnonymous 不能为空") Boolean isAnonymous
+    @NotNull(message = ErrorMessages.IS_ANONYMOUS_REQUIRED) Boolean isAnonymous
 ) {}

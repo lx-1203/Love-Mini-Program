@@ -49,6 +49,29 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
             "sameSchoolBoostPercent", "sameMajorWeight", "commonCircleWeight",
             "commonDailyAnswerWeight", "circleWeight", "sameSchoolBoostEnabled");
 
+    // ---- R4-01844~01848：配置校验边界常量（与文档/前端表单约束对齐） ----
+
+    /** 正数下限：1（所有"必须为正"的配置项） */
+    private static final int MIN_POSITIVE_VALUE = 1;
+
+    /** 权重类下限：0（权重允许为 0） */
+    private static final int MIN_WEIGHT_VALUE = 0;
+
+    /** 心动信号有效期上限（小时）：24*30 = 720 */
+    private static final int MAX_HEART_SIGNAL_EXPIRE_HOURS = 24 * 30;
+
+    /** 候选页大小上限：500 */
+    private static final int MAX_CANDIDATE_PAGE_SIZE = 500;
+
+    /** 默认会话时长上限（分钟）：180 */
+    private static final int MAX_DEFAULT_CHAT_DURATION = 180;
+
+    /** 权重/限额类配置上限：10000 */
+    private static final int MAX_WEIGHT_VALUE = 10000;
+
+    /** 每日/讨论限额上限：1000 */
+    private static final int MAX_LIMIT_VALUE = 1000;
+
     private final MatchConfigEntityRepository matchConfigRepository;
     private final RecommendStrategyRepository recommendStrategyRepository;
     private final MatchConfig matchConfig;
@@ -203,6 +226,7 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
 
     /**
      * 校验 match_config 数值格式与范围（infra R2-00272，先校验后写入）。
+     * R4-01844~01848：校验边界收敛为命名常量，与文档/前端表单约束对齐。
      *
      * @param key   配置键
      * @param value 配置值
@@ -213,19 +237,27 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
             switch (key) {
                 case "heartSignalExpireHours" -> {
                     int v = Integer.parseInt(value);
-                    if (v < 1 || v > 24 * 30) throw new NumberFormatException("range");
+                    if (v < MIN_POSITIVE_VALUE || v > MAX_HEART_SIGNAL_EXPIRE_HOURS) {
+                        throw new NumberFormatException("range");
+                    }
                 }
                 case "candidatePageSize" -> {
                     int v = Integer.parseInt(value);
-                    if (v < 1 || v > 500) throw new NumberFormatException("range");
+                    if (v < MIN_POSITIVE_VALUE || v > MAX_CANDIDATE_PAGE_SIZE) {
+                        throw new NumberFormatException("range");
+                    }
                 }
                 case "defaultChatDuration" -> {
                     int v = Integer.parseInt(value);
-                    if (v < 1 || v > 180) throw new NumberFormatException("range");
+                    if (v < MIN_POSITIVE_VALUE || v > MAX_DEFAULT_CHAT_DURATION) {
+                        throw new NumberFormatException("range");
+                    }
                 }
                 case "campusWeight", "cityWeight", "interestWeight", "scheduleWeight" -> {
                     int v = Integer.parseInt(value);
-                    if (v < 0 || v > 10000) throw new NumberFormatException("range");
+                    if (v < MIN_WEIGHT_VALUE || v > MAX_WEIGHT_VALUE) {
+                        throw new NumberFormatException("range");
+                    }
                 }
                 default -> {
                     // 未知键已由白名单过滤，此处不会到达
@@ -249,17 +281,23 @@ public class RealAdminMatchConfigService implements AdminMatchConfigService {
             switch (key) {
                 case "dailyLimit", "discussionLimit" -> {
                     int v = Integer.parseInt(value);
-                    if (v < 1 || v > 1000) throw new NumberFormatException("range");
+                    if (v < MIN_POSITIVE_VALUE || v > MAX_LIMIT_VALUE) {
+                        throw new NumberFormatException("range");
+                    }
                 }
                 case "candidatePageSize" -> {
                     int v = Integer.parseInt(value);
-                    if (v < 1 || v > 500) throw new NumberFormatException("range");
+                    if (v < MIN_POSITIVE_VALUE || v > MAX_CANDIDATE_PAGE_SIZE) {
+                        throw new NumberFormatException("range");
+                    }
                 }
                 case "campusWeight", "cityWeight", "interestWeight", "scheduleWeight",
                         "sameMajorWeight", "commonCircleWeight", "commonDailyAnswerWeight",
                         "circleWeight" -> {
                     int v = Integer.parseInt(value);
-                    if (v < 0 || v > 10000) throw new NumberFormatException("range");
+                    if (v < MIN_WEIGHT_VALUE || v > MAX_WEIGHT_VALUE) {
+                        throw new NumberFormatException("range");
+                    }
                 }
                 case "sameSchoolBoostPercent" -> {
                     double v = Double.parseDouble(value);

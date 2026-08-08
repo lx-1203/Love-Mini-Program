@@ -11,6 +11,11 @@
 #   - 移除 mysql-exporter / redis-exporter / blackbox-http 抓取任务
 #     （compose 未部署对应服务，target 永久 DOWN 产生无效告警，infra #25/#18）；
 #     如需启用，请先部署对应 exporter 容器再恢复本配置
+#   - node-exporter 抓取任务默认注释：compose 中 node-exporter 服务受
+#     monitoring profile 门控（docker-compose.yml profiles: monitoring），
+#     默认 compose up 不含该容器，常开抓取会使 target 持续 DOWN 产生告警噪音
+#     （与上方 mysql/redis exporter 同一理由，R4-00486）；
+#     启用 monitoring profile 后取消注释即可
 # ============================================================
 
 global:
@@ -55,8 +60,10 @@ scrape_configs:
     # 静态 target 上无效果，属冗余配置）
 
   # ---------- node-exporter 主机指标 ----------
-  - job_name: node-exporter
-    static_configs:
-      - targets: ['node-exporter:9100']
-        labels:
-          service: node-exporter
+  # 默认注释：node-exporter 容器仅随 monitoring profile 部署（R4-00486），
+  # 启用 profile（docker compose --profile monitoring up -d）后取消注释
+  # - job_name: node-exporter
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: node-exporter

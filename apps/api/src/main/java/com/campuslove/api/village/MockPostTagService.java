@@ -84,7 +84,7 @@ public class MockPostTagService implements PostTagService {
                         p.commentsCount,
                         p.shareCount,
                         p.createdAt.toString(),
-                        p.likesCount >= 50,
+                        p.likesCount >= com.campuslove.api.config.ContentThresholds.HOT_POST_LIKES_THRESHOLD,
                         false,
                         false,
                         // 2026-08-08 论坛互动真实化：mock 标签页收藏数 0 / 未收藏；浏览量取 mock 数据

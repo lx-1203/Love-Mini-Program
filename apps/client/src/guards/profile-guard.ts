@@ -1,5 +1,7 @@
 import { useSessionStore } from "../stores/session";
 import { isDev } from "../config/env";
+// R4-00229：锁定页面与 setup 路径统一走 ROUTES / SUBPACKAGE_ROUTES 常量
+import { ROUTES, SUBPACKAGE_ROUTES } from "../constants/routes";
 
 /**
  * 需要资料完善才能访问的页面路径列表
@@ -10,9 +12,9 @@ import { isDev } from "../config/env";
  * likes/village/messages 仍受资料完善硬门槛保护。
  */
 export const LOCKED_PAGES = [
-  "/pages/likes/index",
-  "/pages/village/index",
-  "/pages/messages/index",
+  ROUTES.LIKES.INDEX,
+  ROUTES.TAB.VILLAGE,
+  ROUTES.TAB.CHAT,
 ];
 
 /**
@@ -21,9 +23,9 @@ export const LOCKED_PAGES = [
  * Phase 4 任务 20：用于解锁引导弹窗的文案展示，让用户知道被锁定的具体功能。
  */
 const FEATURE_NAME_MAP: Record<string, string> = {
-  "/pages/likes/index": "喜欢列表",
-  "/pages/village/index": "村口/讨论圈",
-  "/pages/messages/index": "消息",
+  [ROUTES.LIKES.INDEX]: "喜欢列表",
+  [ROUTES.TAB.VILLAGE]: "村口/讨论圈",
+  [ROUTES.TAB.CHAT]: "消息",
 };
 
 /**
@@ -55,7 +57,8 @@ export function getFeatureName(pagePath: string): string | undefined {
  * 此函数保留供 confirm() 跳转使用，避免破坏既有引用。
  */
 export function getProfileSetupPath(): string {
-  return "/subpackages/setup/profile/index";
+  // R4-00229：路径走 SUBPACKAGE_ROUTES 常量
+  return SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE;
 }
 
 /**

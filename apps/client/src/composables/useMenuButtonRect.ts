@@ -10,7 +10,7 @@
  *   const { styleVars } = useMenuButtonRect();
  *   <view class="page" :style="styleVars">…</view>
  *
- *   /* CSS 兜底：JS 测量前/失败时仍有静态预留（96px），测量成功后被变量覆盖 *​/
+ *   /* CSS 兜底：JS 测量前/失败时仍有静态预留（96px），测量成功后被变量覆盖 * /
  *   .page-header { padding-right: calc(var(--capsule-right, 96px) + 24px); }
  */
 import { ref, computed, onMounted, onUnmounted } from "vue";

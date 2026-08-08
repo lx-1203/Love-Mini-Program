@@ -1,5 +1,6 @@
 package com.campuslove.api.utils;
 
+import com.campuslove.api.common.ErrorMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,9 +47,21 @@ public final class SensitiveDataMasker {
     /** null / 空串输入时的统一返回值（用于 token/secret 等更高敏感度字段） */
     private static final String SECRET_EMPTY_MASK = "***";
 
+    /**
+     * 手机号脱敏长度分支阈值（R4-01832~01834，与 dto.MaskingUtils 共用）。
+     * <ul>
+     *   <li>{@link #PHONE_LEN_STANDARD}=11：标准 11 位手机号（前 3 + 4 星 + 后 4）</li>
+     *   <li>{@link #PHONE_LEN_MEDIUM}=8：8-10 位保留前 3 + 后 4</li>
+     *   <li>{@link #PHONE_LEN_SHORT}=4：4-7 位保留首尾各 1 位</li>
+     * </ul>
+     */
+    public static final int PHONE_LEN_STANDARD = 11;
+    public static final int PHONE_LEN_MEDIUM = 8;
+    public static final int PHONE_LEN_SHORT = 4;
+
     /** 私有构造器，禁止实例化 */
     private SensitiveDataMasker() {
-        throw new UnsupportedOperationException("SensitiveDataMasker 是工具类，禁止实例化");
+        throw new UnsupportedOperationException(ErrorMessages.UTILITY_CLASS_INSTANTIATION_FORBIDDEN);
     }
 
     /**
@@ -110,18 +123,19 @@ public final class SensitiveDataMasker {
             return EMPTY_MASK;
         }
         int len = phone.length();
+        // R4-01832~01834：长度分支阈值收敛为共享常量（与 dto.MaskingUtils 共用）
         // 标准 11 位手机号：前 3 + 4 个 * + 后 4
-        if (len >= 11) {
+        if (len >= PHONE_LEN_STANDARD) {
             return phone.substring(0, 3) + "****" + phone.substring(len - 4);
         }
         // 长度 8-10：保留前 3 + 后 4，中间用 * 填充剩余
-        if (len >= 8) {
+        if (len >= PHONE_LEN_MEDIUM) {
             return phone.substring(0, 3)
                     + repeat(MASK_CHAR, len - 7)
                     + phone.substring(len - 4);
         }
         // 长度 4-7：保留首尾各 1 位
-        if (len >= 4) {
+        if (len >= PHONE_LEN_SHORT) {
             return phone.substring(0, 1)
                     + repeat(MASK_CHAR, len - 2)
                     + phone.substring(len - 1);

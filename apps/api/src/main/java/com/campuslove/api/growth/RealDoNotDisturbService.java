@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.DoNotDisturbSetting;
 import com.campuslove.api.repository.DoNotDisturbSettingRepository;
@@ -103,7 +104,7 @@ public class RealDoNotDisturbService implements DoNotDisturbService {
         // 业务校验：CUSTOM 模式下 customWeekdays 必填
         if ("CUSTOM".equals(request.repeatMode())) {
             if (request.customWeekdays() == null || request.customWeekdays().isBlank()) {
-                throw new IllegalArgumentException("CUSTOM 模式下必须指定 customWeekdays");
+                throw new IllegalArgumentException(ErrorMessages.DND_CUSTOM_WEEKDAYS_REQUIRED);
             }
             // 校验每个值在 1-7 范围内
             String[] parts = request.customWeekdays().split(",");
@@ -111,17 +112,17 @@ public class RealDoNotDisturbService implements DoNotDisturbService {
                 try {
                     int day = Integer.parseInt(part.trim());
                     if (day < 1 || day > 7) {
-                        throw new IllegalArgumentException("customWeekdays 的值必须在 1-7 范围内: " + part);
+                        throw new IllegalArgumentException(ErrorMessages.DND_WEEKDAY_RANGE_PREFIX + part);
                     }
                 } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("customWeekdays 必须为数字 CSV: " + part);
+                    throw new IllegalArgumentException(ErrorMessages.DND_WEEKDAY_CSV_PREFIX + part);
                 }
             }
         }
 
         // 业务校验：startTime 与 endTime 不能完全相同（允许跨天，如 22:00-08:00）
         if (request.startTime().equals(request.endTime())) {
-            throw new IllegalArgumentException("开始时间与结束时间不能相同");
+            throw new IllegalArgumentException(ErrorMessages.DND_START_EQUALS_END);
         }
 
         // 查找已有记录或创建新记录

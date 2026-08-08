@@ -44,7 +44,9 @@ public class WeChatClient {
      * <p>原代码硬编码 {@code https://api.weixin.qq.com/sns/jscode2session}，无法适应
      * 微信 API 域名切换或代理转发场景；改为配置注入后，可通过环境变量
      * {@code WECHAT_JSCODE2SESSION_URL} 覆盖（如内网代理地址）。
-     * 默认值为官方文档地址，保证开箱即用。</p>
+     * R4-00271/01782：默认值统一由 application.yml / application-wechat.yml 管理
+     * （{@code app.wechat.jscode2session-url}），此处字面量仅为最终兜底；
+     * 生产（real/wechat profile）必须显式配置 WECHAT_JSCODE2SESSION_URL。</p>
      */
     @Value("${app.wechat.jscode2session-url:${WECHAT_JSCODE2SESSION_URL:https://api.weixin.qq.com/sns/jscode2session}}")
     private String jscode2sessionBaseUrl;

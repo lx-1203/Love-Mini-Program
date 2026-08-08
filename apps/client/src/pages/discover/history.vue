@@ -4,7 +4,7 @@
  * 展示今日已浏览的所有推荐卡片，支持挽回已拒绝的卡片。
  */
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useDiscoverStore } from "../../stores/discover";
 import { IMAGE_PATHS } from "../../config/images";
@@ -24,6 +24,9 @@ const passedCards = computed(() => discoverStore.passedCards);
 
 /** 今日是否已使用挽回 */
 const hasRewoundToday = computed(() => discoverStore.hasRewoundToday);
+
+/** R4-00013：挽回请求进行中（按钮 loading/禁用态，防止连点并发触发每日限流） */
+const rewinding = ref(false);
 
 const pageVisible = ref(false);
 /** 页面进入动画定时器引用，用于卸载时清理 */
@@ -90,6 +93,9 @@ function isLastPassedCard(cardId: string): boolean {
 
 /** 挽回卡片 */
 async function handleRewind(cardId: string) {
+  // R4-00013：请求进行中禁止连点（后端按日限流，并发重复调用会触发 429）
+  if (rewinding.value) return;
+  rewinding.value = true;
   try {
     await discoverStore.rewindCard(cardId);
     uni.showToast({
@@ -106,6 +112,8 @@ async function handleRewind(cardId: string) {
   } catch (error) {
     // infra R2-00069: 不直接展示 store 原始 message（可能含技术细节），按错误分类映射友好文案
     showErrorToast(error, t("discoverHistory.rewindFailed"));
+  } finally {
+    rewinding.value = false;
   }
 }
 
@@ -127,6 +135,11 @@ onUnmounted(() => {
     clearTimeout(pageEnterTimer);
     pageEnterTimer = null;
   }
+});
+
+// R4-00158：页面卸载时清理 discover store 定时器/请求资源
+onUnload(() => {
+  discoverStore.dispose();
 });
 </script>
 
@@ -202,14 +215,14 @@ onUnmounted(() => {
           </view>
         </view>
 
-        <!-- 挽回按钮：仅对已拒绝的最后一张卡片显示 -->
+        <!-- 挽回按钮：仅对已拒绝的最后一张卡片显示；R4-00013：请求进行中禁用防连点 -->
         <view
           v-if="record.direction === 'left' && isLastPassedCard(record.cardId) && !hasRewoundToday"
           class="rewind-action"
         >
-          <button class="rewind-btn" @tap="handleRewind(record.cardId)">
+          <button class="rewind-btn" :class="{ 'rewind-btn--loading': rewinding }" :disabled="rewinding" @tap="handleRewind(record.cardId)">
             <text class="rewind-icon">↩</text>
-            <text class="rewind-label">{{ $t("discoverHistory.rewindLabel") }}</text>
+            <text class="rewind-label">{{ rewinding ? $t("discoverHistory.rewindingLabel") : $t("discoverHistory.rewindLabel") }}</text>
           </button>
         </view>
 
@@ -485,6 +498,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .rewind-btn::after {
   border: none;
+}
+
+/* R4-00013：请求进行中禁用态 */
+.rewind-btn--loading {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .rewind-icon {

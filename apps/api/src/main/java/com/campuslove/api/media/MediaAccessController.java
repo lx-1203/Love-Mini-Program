@@ -1,5 +1,6 @@
 package com.campuslove.api.media;
 
+import com.campuslove.api.common.ErrorMessages;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.constraints.Positive;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -64,6 +65,9 @@ import org.springframework.web.servlet.HandlerMapping;
 public class MediaAccessController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaAccessController.class);
+
+    /** IMAGE 媒体私有缓存时长（秒）（R4-01851）：公开社交图片可缓存 1h */
+    private static final long IMAGE_CACHE_MAX_AGE_SECONDS = 3600L;
 
     /**
      * Task 11.5：审计日志 logger，路由到 logback-spring.xml 中的 AUDIT appender。
@@ -260,8 +264,9 @@ public class MediaAccessController {
         // security_review 修复（R2-LOW-02）：按媒体类型差异化缓存策略——
         // IMAGE（公开社交资源）可私有缓存 1h；VOICE/VIDEO/ID_CARD（仅本人/管理员，
         // 高敏感）禁用缓存，避免共享设备浏览器缓存残留导致隐私泄露
+        // R4-01851：缓存时长收敛为常量，调整无需改字符串字面量
         String cacheControl = mediaType == MediaType.IMAGE
-                ? "private, max-age=3600"
+                ? "private, max-age=" + IMAGE_CACHE_MAX_AGE_SECONDS
                 : "no-store, no-cache, must-revalidate";
         return ResponseEntity.ok()
                 .contentType(mediaFile.getMediaType())
@@ -304,7 +309,7 @@ public class MediaAccessController {
             // 未认证访问尝试
             AUDIT_LOG.warn("media.access.denied.unauthenticated type={} targetUserId={} mediaId={}",
                     mediaType, targetUserId, mediaId);
-            throw new AccessDeniedException("未认证，拒绝访问媒体文件");
+            throw new AccessDeniedException(ErrorMessages.MEDIA_ACCESS_UNAUTHENTICATED);
         }
 
         // 分级授权：IMAGE（头像/帖子图/活动图）为社交公开资源，登录用户均可读；

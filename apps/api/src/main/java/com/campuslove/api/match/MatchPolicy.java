@@ -1,5 +1,6 @@
 package com.campuslove.api.match;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.DailyLimitExceededException;
 import java.time.LocalDate;
@@ -99,7 +100,7 @@ public class MatchPolicy {
             throw new DailyLimitExceededException(
                     "反悔",
                     REWIND_DAILY_LIMIT,
-                    "今日反悔次数已用完（上限 " + REWIND_DAILY_LIMIT + " 次），请明日再来");
+                    ErrorMessages.REWIND_LIMIT_EXCEEDED_PREFIX + REWIND_DAILY_LIMIT + " 次），请明日再来");
         }
     }
 

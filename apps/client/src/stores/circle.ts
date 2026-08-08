@@ -337,13 +337,11 @@ export const useCircleStore = defineStore("circle", {
         }
 
         // 调用后端 API: POST /api/circles/{id}/join
-        // 后端请求体: JoinCircleRequest(userId)
-        const sessionStore = useSessionStore();
-        const currentUserId = sessionStore.userSession?.userId ?? "";
+        // R4-00181：后端 CircleController.join 无请求体（userId 从 JWT 获取），
+        // 删除多余的 data:{userId}，避免契约污染（FAIL_ON_UNKNOWN 开启时 400）
         const result = await request<BackendCircleMembershipView>({
           url: `/circles/${circleId}/join`,
           method: "POST",
-          data: { userId: currentUserId },
         });
 
         // 根据后端返回更新本地状态
@@ -381,13 +379,10 @@ export const useCircleStore = defineStore("circle", {
         }
 
         // 调用后端 API: DELETE /api/circles/{id}/join
-        // 后端请求体: JoinCircleRequest(userId)
-        const sessionStore = useSessionStore();
-        const currentUserId = sessionStore.userSession?.userId ?? "";
+        // R4-00181：后端 CircleController.leave 无请求体（userId 从 JWT 获取），删除多余 body
         const result = await request<BackendCircleMembershipView>({
           url: `/circles/${circleId}/join`,
           method: "DELETE",
-          data: { userId: currentUserId },
         });
 
         // 根据后端返回更新本地状态

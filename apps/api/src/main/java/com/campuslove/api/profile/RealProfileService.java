@@ -65,8 +65,9 @@ public class RealProfileService implements ProfileService {
         this.updateService = updateService;
     }
 
-    /** 内部构造器：用于单元测试直接注入 query/update 组件。 */
-    public RealProfileService(ProfileQueryService queryService, ProfileUpdateService updateService) {
+    /** R4-00300：测试用构造器改为包级可见（不再暴露为 public 生产 API，
+     *  避免 Spring 多构造器混淆；单元测试同包可直接调用）。 */
+    RealProfileService(ProfileQueryService queryService, ProfileUpdateService updateService) {
         this.queryService = queryService;
         this.updateService = updateService;
     }
@@ -179,8 +180,20 @@ public class RealProfileService implements ProfileService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<FollowUserView> getFollowers(Long userId, int page, int size) {
+        return queryService.getFollowers(userId, page, size);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<FollowUserView> getFollowing(Long userId) {
         return queryService.getFollowing(userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FollowUserView> getFollowing(Long userId, int page, int size) {
+        return queryService.getFollowing(userId, page, size);
     }
 
     @Override

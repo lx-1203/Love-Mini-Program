@@ -220,8 +220,10 @@
 }
 
 // ---------- 章节标题（带品牌色竖线装饰） ----------
-// 修复 P3 重复样式问题：原 .section-title-brand 在 App.vue 与 global.scss 中重复定义
-// 现仅保留 _components.scss 中一处定义
+// R4-00239：原 .section-title-brand 在 App.vue 与 global.scss 重复定义的问题已解决——
+// App.vue 中的定义已移除，页面（home/village）实际消费 theme/global.scss 的
+// .section-title-brand（含 ::before 竖条）。本文件提供组件化的 .base-section-title
+// 变体供新组件使用；修改样式时优先复用 global.scss 中的 .section-title-brand。
 .base-section-title {
   position: relative;
   padding-left: var(--sp-5);

@@ -19,11 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>提供自动续费状态查询与开启/关闭接口。
  * 仅在 real profile 下激活，依赖数据库持久化。</p>
  *
- * <p>接口列表：</p>
+ * <p>接口列表（R4-00348 修正 javadoc 路径为实际 /api/v1 前缀）：</p>
  * <ul>
- *   <li>GET /api/vip/auto-renew/status：查询当前用户的自动续费状态</li>
- *   <li>POST /api/vip/auto-renew：开启自动续费</li>
- *   <li>DELETE /api/vip/auto-renew：关闭自动续费</li>
+ *   <li>GET /api/v1/vip/auto-renew/status：查询当前用户的自动续费状态</li>
+ *   <li>POST /api/v1/vip/auto-renew：开启自动续费</li>
+ *   <li>DELETE /api/v1/vip/auto-renew：关闭自动续费</li>
+ *   <li>POST /api/v1/vip/auto-renew/trigger：手动触发续费扫描（ADMIN）</li>
  * </ul>
  *
  * <p>权限说明：/api/** 路径要求已认证，用户 ID 从 JWT 上下文获取，

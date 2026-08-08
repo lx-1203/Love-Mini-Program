@@ -24,6 +24,17 @@ public interface ProfileVisitorRepository extends JpaRepository<ProfileVisitor, 
     List<ProfileVisitor> findByHostIdOrderByVisitedAtDesc(Long hostId);
 
     /**
+     * R4-00292：查询指定访客对该主页最近一次访问记录。
+     * 唯一约束冲突后回查落库视图用（visitedAt 以 DB 值为准）。
+     *
+     * @param visitorId 访客用户 ID
+     * @param hostId    被访用户 ID
+     * @return 最近一次访问记录（不存在时为空）
+     */
+    java.util.Optional<ProfileVisitor> findTopByVisitorIdAndHostIdOrderByVisitedAtDesc(
+            Long visitorId, Long hostId);
+
+    /**
      * 检查指定访客在指定时间区间内是否已访问过指定用户主页。
      * 用于"同一天只记录一次访问"的去重逻辑。
      *

@@ -200,8 +200,7 @@ scroll-view::-webkit-scrollbar {
 .opacity-100 { opacity: 1; }
 
 .pointer-events-none { pointer-events: none; }
-/* mp-weixin 不支持 user-select:none，移除该属性；H5 可通过 :style 内联使用 */
-.user-select-none { }
+/* R4-00240：.user-select-none 空类已删除（mp-weixin 不支持 user-select，H5 可通过 :style 内联使用） */
 
 .text-ellipsis {
   overflow: hidden;

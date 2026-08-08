@@ -16,6 +16,8 @@ import type {
   MessageDeliveryStatus,
   QuoteContext,
 } from "./types";
+// R4-00078：时间条文案走全局 i18n t（非组件场景约定，见 src/i18n/index.ts）
+import { t } from "../../i18n";
 
 /**
  * ChatBubble 组件 deliveryStatus prop 接受的窄类型
@@ -86,15 +88,15 @@ export function resolvePeerUserId(
  * 将剩余毫秒数格式化为 HH:mm:ss
  *
  * 用于临时会话倒计时显示。
- * - diff <= 0 时返回 "已结束"
+ * - diff <= 0 时返回 null（已结束，由调用方按 i18n 文案处理，R4-00077）
  * - diff > 0 时返回 "HH:mm:ss"
  *
  * @param diffMs - 剩余毫秒数（closesAt - now）
- * @returns 格式化后的倒计时文本
+ * @returns 格式化后的倒计时文本；已结束时返回 null
  */
-export function formatTempCountdown(diffMs: number): string {
+export function formatTempCountdown(diffMs: number): string | null {
   if (diffMs <= 0) {
-    return "已结束";
+    return null;
   }
 
   const hours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -283,6 +285,7 @@ export function shouldShowTimeBar(
 /**
  * 微信时间条格式：今天 HH:mm / 昨天 HH:mm / 星期X HH:mm / YYYY年M月D日 HH:mm。
  * 时/分补零，月/日不补位；天数按「日历天」差计算（跨午夜判断用日期边界而非毫秒差）。
+ * R4-00078：文案全部走 i18n（chat.timeBar.*），en-US 下不再显示中文。
  *
  * @param iso - 消息时间（ISO 字符串）
  * @param now - 当前时间戳，默认 Date.now()
@@ -300,9 +303,18 @@ export function formatChatTimeBar(iso: string, now: number = Date.now()): string
       86400000
   );
   if (dayDiff <= 0) return hhmm;
-  if (dayDiff === 1) return `昨天 ${hhmm}`;
-  if (dayDiff <= 7) return `星期${"日一二三四五六"[d.getDay()]} ${hhmm}`;
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${hhmm}`;
+  if (dayDiff === 1) return t("chat.timeBar.yesterday", { time: hhmm });
+  if (dayDiff <= 7) {
+    const names = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+    const weekdayKey = names[d.getDay()] ?? "sun";
+    return t("chat.timeBar.weekday", { weekday: t(`chat.timeBar.weekdayNames.${weekdayKey}`), time: hhmm });
+  }
+  return t("chat.timeBar.date", {
+    year: d.getFullYear(),
+    month: d.getMonth() + 1,
+    day: d.getDate(),
+    time: hhmm,
+  });
 }
 
 /**

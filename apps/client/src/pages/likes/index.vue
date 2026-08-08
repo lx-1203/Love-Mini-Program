@@ -1039,58 +1039,6 @@ function retryLoad(): void {
   z-index: 1;
 }
 
-.likes-loading__spinner {
-  width: var(--sp-10);
-  height: var(--sp-10);
-  border: var(--sp-1) solid var(--c-neutral-100);
-  border-top-color: var(--c-brand);
-  border-radius: var(--r-full);
-  animation: spin var(--d-loop, 1000ms) linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.likes-loading__text {
-  font-size: var(--fs-lg);
-  color: var(--c-text-tertiary);
-}
-
-/* ========== 空状态 ========== */
-.likes-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-5);
-  padding: var(--sp-10) var(--sp-10);
-  margin-top: var(--sp-5);
-  position: relative;
-  z-index: 1;
-}
-
-.likes-empty__icon {
-  width: 120rpx;
-  height: 120rpx;
-  margin-bottom: var(--sp-5);
-  opacity: 0.5;
-}
-
-.likes-empty__title {
-  font-size: var(--fs-3xl);
-  font-weight: 700;
-  color: var(--c-text-primary);
-}
-
-.likes-empty__subtitle {
-  font-size: var(--fs-md);
-  color: var(--c-text-tertiary);
-  text-align: center;
-  line-height: 1.6;
-}
-
 /* ========== 列表 ========== */
 .likes-list {
   display: flex;
@@ -1369,14 +1317,23 @@ function retryLoad(): void {
   font-weight: 700;
 }
 
-/* ========== 功能1：底部批量操作栏 ========== */
+/* ========== 功能1：底部批量操作栏（R4-00017：原拆分两块重复定义，合并为单一规则块） ========== */
 .likes-batch-bar {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
   /* 兼容 iPhone X+ 底部安全区 */
   bottom: calc(env(safe-area-inset-bottom) + 0rpx);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-6);
+  padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
+  background: var(--c-bg-container);
+  border-top: 1rpx solid var(--c-border-light);
+  box-shadow: 0 -4rpx 24rpx var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06));
+  z-index: 100;
 }
 
 /* 2026-08-08 走查 P1：底部「解锁全部」栏（固定，样式对齐 likes-visitors 独立页） */
@@ -1422,20 +1379,6 @@ function retryLoad(): void {
 
 .likes-unlock-bar-spacer {
   height: 200rpx;
-}
-
-/* 功能1：批量操作底部固定栏（原规则体，编辑时被拆开，此处闭合） */
-.likes-batch-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  padding: var(--sp-4) var(--sp-6);
-  padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
-  background: var(--c-bg-container);
-  border-top: 1rpx solid var(--c-border-light);
-  box-shadow: 0 -4rpx 24rpx var(--c-black-shadow-sm, rgba(0, 0, 0, 0.06));
-  z-index: 100;
 }
 
 .likes-batch-bar__left {

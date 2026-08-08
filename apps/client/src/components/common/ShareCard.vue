@@ -320,7 +320,7 @@ async function handleSaveImage() {
 
 .share-card {
   position: relative;
-  width: 580rpx;
+  width: 580rpx; /* 固定布局尺寸（卡片宽度），无对应 token */
   padding: 48rpx 40rpx 40rpx;
   border-radius: var(--r-xl, 32rpx);
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-brand-500) 100%);
@@ -334,6 +334,7 @@ async function handleSaveImage() {
   position: absolute;
   top: 16rpx;
   right: 16rpx;
+  /* 固定布局尺寸（关闭按钮 56rpx），无对应 token */
   width: 56rpx;
   height: 56rpx;
   display: flex;
@@ -360,6 +361,7 @@ async function handleSaveImage() {
 }
 
 .share-header__icon {
+  /* 固定布局尺寸（图标 48rpx），无对应 token */
   width: 48rpx;
   height: 48rpx;
 }
@@ -397,7 +399,7 @@ async function handleSaveImage() {
 }
 
 .share-divider {
-  width: 2rpx;
+  width: 2rpx; /* 固定布局尺寸（分隔线宽度），无对应 token */
   height: 80rpx;
   background: var(--c-overlay-border-strong);
 }
@@ -427,7 +429,7 @@ async function handleSaveImage() {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 88rpx;
+  height: 88rpx; /* 固定布局尺寸（按钮高度 88rpx，无对应 token） */
   border-radius: var(--r-lg, 24rpx);
 }
 

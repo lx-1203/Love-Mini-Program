@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.OperationForbiddenException;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.User;
@@ -116,7 +117,7 @@ public class AdminDataScope {
         if (!myCampus.equalsIgnoreCase(targetCampusName.trim())) {
             log.warn("数据隔离拦截：管理员 userId={} 管辖校区 [{}] 尝试操作校区 [{}] 的资源",
                     userId, myCampus, targetCampusName);
-            throw new OperationForbiddenException("校区管理员无权操作其他校区的数据");
+            throw new OperationForbiddenException(ErrorMessages.CAMPUS_ADMIN_SCOPE_FORBIDDEN);
         }
     }
 

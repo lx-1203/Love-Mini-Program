@@ -89,10 +89,9 @@ public class RealAppConfigService implements AppConfigService {
      * @return 视图对象
      */
     private LoginHeroConfigView mapToView(AppLoginHeroConfig config) {
-        // 当 heroMode 为 video 时，视频加载失败应回退到 animation；其他模式默认为 true
-        boolean videoFallback = "video".equalsIgnoreCase(config.getHeroMode())
-                ? DEFAULT_VIDEO_FALLBACK
-                : DEFAULT_VIDEO_FALLBACK;
+        // R4-00355：移除恒同值三元表达式（两分支均为 DEFAULT_VIDEO_FALLBACK 的死代码），
+        // 直接赋值；video 模式回退动画策略当前统一为默认值
+        boolean videoFallback = DEFAULT_VIDEO_FALLBACK;
 
         return new LoginHeroConfigView(
                 config.getHeroMode(),

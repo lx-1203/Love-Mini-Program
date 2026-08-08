@@ -1,5 +1,6 @@
 package com.campuslove.api.ai;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -116,7 +117,7 @@ public class AiVideoController {
      */
     private void validateParams(Map<String, Object> params) {
         if (params != null && params.size() > MAX_PARAMS_FIELDS) {
-            throw new IllegalArgumentException("请求体字段数量不能超过 " + MAX_PARAMS_FIELDS);
+            throw new IllegalArgumentException(ErrorMessages.REQUEST_FIELD_COUNT_EXCEEDED_PREFIX + MAX_PARAMS_FIELDS);
         }
     }
 

@@ -78,6 +78,8 @@
  */
 
 import { computed } from "vue";
+// R4-batch4: 徽章底色兜底色值统一引自 designTokens（theme/tokens.ts），避免 JS 侧硬编码
+import { designTokens } from "../../theme/tokens";
 
 /** 单个 Tab 配置 */
 export interface BaseTab {
@@ -122,7 +124,7 @@ const emit = defineEmits<{
 /** 当前激活颜色：优先使用 props 传入，否则使用品牌色 CSS 变量 */
 // 修复（严格模式 noUnusedLocals）：activeColorValue 计算属性未被模板/脚本引用，
 // 模板内通过 CSS 类切换激活样式，无需读取 activeColor 值，故移除。
-const badgeColorValue = computed(() => props.badgeColor || "var(--c-brand, #3FCF8E)");
+const badgeColorValue = computed(() => props.badgeColor || `var(--c-brand, ${designTokens.color.brand[500]})`);
 
 /** 徽章内联样式 */
 const badgeStyle = computed(() => ({
@@ -179,7 +181,7 @@ function formatBadge(badge: number | string): string {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 20rpx 24rpx;
+  padding: var(--sp-5) var(--sp-6);
   // 过渡动画
   transition: all var(--d-base, 300ms) ease;
 }
@@ -196,10 +198,11 @@ function formatBadge(badge: number | string): string {
 }
 
 .base-tab-badge {
-  margin-left: 8rpx;
+  margin-left: var(--sp-2);
+  /* 固定布局尺寸（徽章 32rpx），无对应 token */
   min-width: 32rpx;
   height: 32rpx;
-  padding: 0 8rpx;
+  padding: 0 var(--sp-2);
   border-radius: var(--r-lg, 16rpx);
   font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-inverse, #FFFFFF);
@@ -213,7 +216,7 @@ function formatBadge(badge: number | string): string {
   left: 50%;
   transform: translateX(-50%) scaleX(0);
   width: 48rpx;
-  height: 4rpx;
+  height: 4rpx; /* 固定布局尺寸（下划线厚度），无对应 token */
   border-radius: var(--r-xs, 4rpx);
   background: var(--c-brand, #3FCF8E);
   transition: transform var(--d-base, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -232,12 +235,12 @@ function formatBadge(badge: number | string): string {
 /* 胶囊变体（扁平化：避免 4 层嵌套） */
 .base-tabs--pill .base-tabs-list {
   border-bottom: none;
-  gap: 16rpx;
-  padding: 16rpx 24rpx;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-6);
 }
 
 .base-tabs--pill .base-tab-item {
-  padding: 12rpx 32rpx;
+  padding: var(--sp-3) var(--sp-7);
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-page, #F4F6FA);
 }
@@ -257,12 +260,12 @@ function formatBadge(badge: number | string): string {
 /* 块状变体（扁平化：避免 4 层嵌套） */
 .base-tabs--block .base-tabs-list {
   border-bottom: none;
-  gap: 12rpx;
-  padding: 16rpx 24rpx;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-6);
 }
 
 .base-tabs--block .base-tab-item {
-  padding: 16rpx 24rpx;
+  padding: var(--sp-4) var(--sp-6);
   border-radius: var(--r-md, 12rpx);
   background: var(--c-bg-page, #F4F6FA);
 }

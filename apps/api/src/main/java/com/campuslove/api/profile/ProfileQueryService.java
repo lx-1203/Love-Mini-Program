@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SecurityUtils;
@@ -124,7 +125,7 @@ public class ProfileQueryService {
     public BasicProfileView getBasicProfile() {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+                .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
         UserBasicProfile profile = userBasicProfileRepository.findByUserId(currentUserId)
                 .orElseGet(() -> new UserBasicProfile());
         return toBasicProfileView(profile, user);
@@ -182,7 +183,7 @@ public class ProfileQueryService {
     public ProfileStatsView getProfileStats() {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+                .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
 
         int likesCount = calculateTotalLikesCount(currentUserId);
 
@@ -200,20 +201,31 @@ public class ProfileQueryService {
      */
     @Transactional(readOnly = true)
     public List<FollowUserView> getFollowers(Long userId) {
+        return getFollowers(userId, 0, Integer.MAX_VALUE);
+    }
+
+    /**
+     * R4-00302：粉丝列表分页查询（SQL 侧分页，粉丝量大时避免全量返回）。
+     */
+    @Transactional(readOnly = true)
+    public List<FollowUserView> getFollowers(Long userId, int page, int size) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
 
-        List<UserFollow> follows = userFollowRepository.findByFollowingId(userId);
+        org.springframework.data.domain.Page<UserFollow> follows =
+                userFollowRepository.findByFollowingId(userId,
+                        org.springframework.data.domain.PageRequest.of(
+                                Math.max(0, page), Math.min(Math.max(1, size), 200)));
 
-        List<Long> followerIds = follows.stream()
+        List<Long> followerIds = follows.getContent().stream()
                 .map(UserFollow::getFollowerId)
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .toList();
         Map<Long, User> followerMap = batchLoadUsers(followerIds);
 
-        return follows.stream()
+        return follows.getContent().stream()
                 .map(follow -> toFollowUserView(follow.getFollowerId(),
                         followerMap.get(follow.getFollowerId())))
                 .toList();
@@ -225,20 +237,31 @@ public class ProfileQueryService {
      */
     @Transactional(readOnly = true)
     public List<FollowUserView> getFollowing(Long userId) {
+        return getFollowing(userId, 0, Integer.MAX_VALUE);
+    }
+
+    /**
+     * R4-00302：关注列表分页查询（SQL 侧分页）。
+     */
+    @Transactional(readOnly = true)
+    public List<FollowUserView> getFollowing(Long userId, int page, int size) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
 
-        List<UserFollow> follows = userFollowRepository.findByFollowerId(userId);
+        org.springframework.data.domain.Page<UserFollow> follows =
+                userFollowRepository.findByFollowerId(userId,
+                        org.springframework.data.domain.PageRequest.of(
+                                Math.max(0, page), Math.min(Math.max(1, size), 200)));
 
-        List<Long> followingIds = follows.stream()
+        List<Long> followingIds = follows.getContent().stream()
                 .map(UserFollow::getFollowingId)
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .toList();
         Map<Long, User> followingMap = batchLoadUsers(followingIds);
 
-        return follows.stream()
+        return follows.getContent().stream()
                 .map(follow -> toFollowUserView(follow.getFollowingId(),
                         followingMap.get(follow.getFollowingId())))
                 .toList();
@@ -441,40 +464,41 @@ public class ProfileQueryService {
     }
 
     // ---- 仅供 ProfileUpdateService 使用的内部依赖访问器 ----
+    // R4-00301：访问器由 public 改为 package-private——仅供同包内
+    // ProfileUpdateService 复用，杜绝跨包越权使用（封装破坏）。
 
     /**
-     * 内部访问器：暴露 UserRepository 供 ProfileUpdateService 复用。
-     * 该方法仅供同包内 ProfileUpdateService 使用，外部不应调用。
+     * 内部访问器：暴露 UserRepository 供 ProfileUpdateService 复用（包级可见）。
      */
-    public UserRepository getUserRepository() {
+    UserRepository getUserRepository() {
         return userRepository;
     }
 
     /**
-     * 内部访问器：暴露 UserBasicProfileRepository 供 ProfileUpdateService 复用。
+     * 内部访问器：暴露 UserBasicProfileRepository 供 ProfileUpdateService 复用（包级可见）。
      */
-    public UserBasicProfileRepository getUserBasicProfileRepository() {
+    UserBasicProfileRepository getUserBasicProfileRepository() {
         return userBasicProfileRepository;
     }
 
     /**
-     * 内部访问器：暴露 UserCampusProfileRepository 供 ProfileUpdateService 复用。
+     * 内部访问器：暴露 UserCampusProfileRepository 供 ProfileUpdateService 复用（包级可见）。
      */
-    public UserCampusProfileRepository getUserCampusProfileRepository() {
+    UserCampusProfileRepository getUserCampusProfileRepository() {
         return userCampusProfileRepository;
     }
 
     /**
-     * 内部访问器：暴露 UserScheduleProfileRepository 供 ProfileUpdateService 复用。
+     * 内部访问器：暴露 UserScheduleProfileRepository 供 ProfileUpdateService 复用（包级可见）。
      */
-    public UserScheduleProfileRepository getUserScheduleProfileRepository() {
+    UserScheduleProfileRepository getUserScheduleProfileRepository() {
         return userScheduleProfileRepository;
     }
 
     /**
-     * 内部访问器：暴露 UserFollowRepository 供 ProfileUpdateService 复用。
+     * 内部访问器：暴露 UserFollowRepository 供 ProfileUpdateService 复用（包级可见）。
      */
-    public UserFollowRepository getUserFollowRepository() {
+    UserFollowRepository getUserFollowRepository() {
         return userFollowRepository;
     }
 }

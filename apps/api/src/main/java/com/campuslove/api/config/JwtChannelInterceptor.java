@@ -44,6 +44,14 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     private final JwtTokenProvider jwtTokenProvider;
 
     /**
+     * R4-00281：用户状态查询（CONNECT 阶段校验用户未被禁用）。
+     * 可选注入：mock profile 无 JPA Repository（为 null 时跳过禁用检查，
+     * 由 mock 分支先行短路）。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.repository.UserRepository userRepository;
+
+    /**
      * 运行环境（R4-00280）：mock profile 下跳过真实 JWT 校验，
      * 与 MockSecurityConfig 的 mock 认证语义保持一致（mock-token 无法通过 validateToken）。
      */
@@ -153,6 +161,28 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         if (userId == null || userId.isBlank()) {
             log.warn("WebSocket CONNECT 拒绝: 无法从 JWT 提取用户ID, sessionId={}", accessor.getSessionId());
             throw new org.springframework.messaging.MessageDeliveryException("Unauthorized: invalid JWT token");
+        }
+
+        // R4-00281：补查用户状态——被禁用的用户不得建立 WebSocket 长连接
+        // （原实现仅校验签名/过期，禁用用户仍可保持长连接收发消息）
+        if (userRepository != null) {
+            try {
+                Long uid = Long.parseLong(userId);
+                boolean disabled = userRepository.findById(uid)
+                        .map(com.campuslove.api.entity.User::isDisabled)
+                        .orElse(true);
+                if (disabled) {
+                    log.warn("WebSocket CONNECT 拒绝: 用户不存在或已被禁用, userId={}, sessionId={}",
+                            userId, accessor.getSessionId());
+                    throw new org.springframework.messaging.MessageDeliveryException(
+                            "Unauthorized: user disabled");
+                }
+            } catch (NumberFormatException e) {
+                log.warn("WebSocket CONNECT 拒绝: 无法解析用户ID, userId={}, sessionId={}",
+                        userId, accessor.getSessionId());
+                throw new org.springframework.messaging.MessageDeliveryException(
+                        "Unauthorized: invalid user id");
+            }
         }
 
         setAuthenticatedUser(accessor, userId);

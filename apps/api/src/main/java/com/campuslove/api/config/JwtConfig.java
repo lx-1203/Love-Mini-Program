@@ -31,9 +31,13 @@ public class JwtConfig {
     private String secret;
 
     /**
-     * JWT 令牌有效期（毫秒），默认 24 小时。
+     * JWT 令牌有效期（毫秒）。
+     * R4-00276/01837：默认从 24h 缩短为 2h（7200000）——缩小长生命 token 泄露窗口；
+     * 会话续期走 POST /api/v1/auth/refresh（滑动会话）。如需 24h 由配置
+     * app.jwt.expiration-ms（JWT_EXPIRATION_MS）显式设置。与
+     * OnlineUserService 的会话 TTL 兜底引用同一配置源（R4-00289）。
      */
-    private long expirationMs = 86400000L;
+    private long expirationMs = 7200000L;
 
     /**
      * 密钥版本号，用于支持密钥轮换（SubTask 10.2 安全加固）。

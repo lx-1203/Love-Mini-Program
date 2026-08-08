@@ -38,6 +38,13 @@ public class WalletUnlock {
     /** 解锁目标类型：访客列表 */
     public static final String TARGET_TYPE_VISITOR = "VISITOR";
 
+    /**
+     * 解锁单价默认值（分）（R4-01804~01807）：300 分 = 3 元。
+     * Real/Mock 两套实现共用同一默认值，避免改价时只改一处导致双实现漂移；
+     * 实际价格以配置 app.unlock-price.liked-me / app.unlock-price.visitor 为准。
+     */
+    public static final int DEFAULT_UNLOCK_PRICE_CENTS = 300;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

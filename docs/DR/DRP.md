@@ -119,7 +119,7 @@
 | 资源 | 类型 | 频率 | 保留期 | 存储 | 验证频率 |
 |------|------|------|--------|------|----------|
 | MySQL | 全量 | 每天 02:00 | 7 天本地 + 4 周异地 | 本地 + 异地 + OSS | 月度 |
-| MySQL | 增量（binlog） | 实时 | 3 天 | 本地 | 季度 PITR 演练 |
+| MySQL | 增量（binlog） | 实时 | 7 天 | 本地 | 季度 PITR 演练 |
 | Redis | RDB（`--save 60 1000` 规则触发） | 7 天 | 本地 | 月度 |
 | Redis | AOF | 未启用（compose 未配置 --appendonly） | - | - | 规划中 |
 | Elasticsearch | 快照 | 未部署 | - | - | 规划中 |
@@ -469,7 +469,7 @@ watch -n 5 'curl -s http://localhost:8080/actuator/health'
 ### 7.1 技术验证
 
 - [ ] `/actuator/health` 返回 200 + status=UP
-- [ ] 所有组件状态 UP（db/redis/elasticsearch/rabbitmq）
+- [ ] 所有组件状态 UP（db/redis；elasticsearch/rabbitmq 未部署，不纳入本项检查，R4-02122）
 - [ ] 关键接口冒烟通过：
   - [ ] `POST /api/v1/auth/wechat`（登录）
   - [ ] `GET /api/v1/recommendations`（推荐）

@@ -4,12 +4,13 @@
  * 展示指定话题标签下的所有帖子，支持下拉刷新和上拉加载更多
  */
 import { ref, onUnmounted } from "vue";
-import { onLoad, onShow } from "@dcloudio/uni-app";
+import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
 import { IMAGE_PATHS } from "../../config/images";
+import { TOAST_DURATION } from "../../constants/limits";
 // 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
 import { useVillageStore, formatRelativeTime, type PostItem } from "../../stores/village";
 // R4-batch2: mock 标签帖子数据源（仅 apiMode === "mock" 分支使用，real 模式不读取）
@@ -56,7 +57,7 @@ function handleSharePost(post: PostItem): void {
   uni.showToast({
     title: t("village.tagPosts.shareHint", { author: post.author.name }),
     icon: "none",
-    duration: 2000,
+    duration: TOAST_DURATION.NORMAL_MS,
   });
 }
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
@@ -88,6 +89,11 @@ onUnmounted(() => {
   }
 });
 
+// R4-00159：页面卸载时清理 village store 定时器/请求资源
+onUnload(() => {
+  villageStore.dispose();
+});
+
 /** 当前标签名称 */
 const tagName = ref("");
 /** 帖子列表 */
@@ -98,8 +104,11 @@ const loading = ref(false);
 const isRefreshing = ref(false);
 /** 是否正在加载更多 */
 const isLoadingMore = ref(false);
-/** 当前页码 */
-const page = ref(0);
+/**
+ * 当前页码（R4-00093：改为 1 基分页，与 /posts 契约分页口径一致；
+ * 此前 0 基导致与契约约定漂移，联调易出错）
+ */
+const page = ref(1);
 /** 是否还有更多 */
 const hasMore = ref(true);
 /** 错误信息 */
@@ -107,6 +116,10 @@ const errorMessage = ref("");
 
 /** 每页数量 */
 const PAGE_SIZE = 20;
+/** Mock 模式模拟网络延迟（R4-batch4：魔法数字提取） */
+const MOCK_LOAD_DELAY_MS = 600;
+/** 缺失 tagName 参数时提示后返回的延时（R4-batch4：魔法数字提取） */
+const MISSING_PARAM_NAV_DELAY_MS = 600;
 
 /**
  * 加载标签下的帖子列表
@@ -117,12 +130,13 @@ async function loadPosts(reset = true) {
   loading.value = true;
   errorMessage.value = "";
 
-  const currentPageNum = reset ? 0 : page.value + 1;
+  // R4-00093：1 基分页（首页=1），与 /posts 契约一致
+  const currentPageNum = reset ? 1 : page.value + 1;
 
   try {
     if (appEnv.apiMode === "mock") {
       // Mock 模式：模拟标签帖子数据
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, MOCK_LOAD_DELAY_MS));
       const mockTagPosts = getMockTagPosts(tagName.value);
       const from = currentPageNum * PAGE_SIZE;
       const to = Math.min(from + PAGE_SIZE, mockTagPosts.length);
@@ -181,7 +195,8 @@ async function loadPosts(reset = true) {
     hasMore.value = data.length >= PAGE_SIZE;
     page.value = currentPageNum;
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : "加载帖子失败";
+    // R4-00094：兜底文案走 i18n
+    errorMessage.value = error instanceof Error ? error.message : t("village.tagPosts.loadFailed");
   } finally {
     loading.value = false;
     isRefreshing.value = false;
@@ -250,7 +265,7 @@ onLoad((query) => {
     } else {
       uni.switchTab({ url: "/pages/village/index" });
     }
-  }, 600);
+  }, MISSING_PARAM_NAV_DELAY_MS);
 });
 </script>
 

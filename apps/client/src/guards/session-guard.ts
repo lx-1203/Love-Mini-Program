@@ -1,4 +1,6 @@
 import { isDev } from "../config/env";
+// R4-00228：重定向路径统一走 ROUTES / SUBPACKAGE_ROUTES 常量
+import { ROUTES, SUBPACKAGE_ROUTES } from "../constants/routes";
 
 export interface SessionAccessSnapshot {
   isLoggedIn: boolean;
@@ -37,7 +39,7 @@ export function resolveSessionAccess(
       // 修复 no-console：调试日志改用 console.warn（允许的方法）
       console.warn("[session-guard] 拦截：未登录", { requirements });
     }
-    return { allowed: false, redirectTo: "/pages/login/index" };
+    return { allowed: false, redirectTo: ROUTES.LOGIN };
   }
 
   if (requirements.requiresProfile && !snapshot.profileCompleted) {
@@ -49,7 +51,7 @@ export function resolveSessionAccess(
     }
     return {
       allowed: false,
-      redirectTo: "/subpackages/setup/profile/index",
+      redirectTo: SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE,
     };
   }
 
@@ -62,7 +64,7 @@ export function resolveSessionAccess(
     }
     return {
       allowed: false,
-      redirectTo: "/subpackages/setup/campus/index",
+      redirectTo: SUBPACKAGE_ROUTES.SETUP_PROGRESS.CAMPUS,
     };
   }
 
@@ -75,7 +77,7 @@ export function resolveSessionAccess(
     }
     return {
       allowed: false,
-      redirectTo: "/subpackages/setup/schedule/index",
+      redirectTo: SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE,
     };
   }
 
@@ -88,7 +90,7 @@ export function resolveSessionAccess(
     }
     return {
       allowed: false,
-      redirectTo: "/pages/discover/index",
+      redirectTo: ROUTES.TAB.DISCOVER,
     };
   }
 

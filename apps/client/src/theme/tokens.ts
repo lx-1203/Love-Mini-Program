@@ -96,6 +96,9 @@ export const designTokens = {
     error:   '#E5454D',
     errorDark: '#FF6B6B',
     info:    '#3FCF8E',
+    // VIP 金色：与 design-variables.scss 的 --c-gold(#FFD700) 双源同步
+    // （R4-00116：VIP 页 switch 激活色引用此处，改金色只需改这一处）
+    gold:    '#FFD700',
 
     state: {
       signup: {
@@ -360,10 +363,13 @@ export const designTokens = {
 
   component: {
     button: {
+      // 双源同步（R4-00236）：与 theme/design-variables.scss 的
+      // --btn-height-sm/md/lg（80/96/104rpx）对齐，本处为 px 值
+      // （按 750 设计稿 2x 基准换算：rpx / 2）。修改按钮高度必须两端同步。
       height: {
-        sm: 56,
-        md: 72,
-        lg: 88,
+        sm: 40, // == 80rpx
+        md: 48, // == 96rpx
+        lg: 52, // == 104rpx
       },
       paddingX: {
         sm: 24,

@@ -31,8 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
  *     <li>PUT  /api/admin/switches/{key}   - 开关切换</li>
  * </ul>
  *
- * <p>当前实现：任何已认证用户可访问（与 AdminCertificationController 保持一致）。
- * 生产环境应叠加角色校验（如 @PreAuthorize("hasRole('ADMIN')")），但本任务不修改 SecurityConfig。</p>
+ * <p>权限说明（R4-00396 注释修正）：本控制器已标注 {@code @PreAuthorize("hasRole('ADMIN')")}
+ * 且 SecurityConfig 对 /api/v1/admin/** 要求 ADMIN 角色——任何已认证用户可访问的
+ * 过时描述已移除。写操作（更新/切换）另限 SUPER_ADMIN。</p>
  *
  * <p>数据隔离说明：系统参数/业务规则/功能开关均为<b>全局资源</b>（全平台统一生效，
  * 不区分校区），不做校区数据隔离；写操作（更新/切换）仅限 SUPER_ADMIN。</p>

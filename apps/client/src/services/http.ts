@@ -169,18 +169,11 @@ export function setToken(token: string): void {
 }
 
 /**
- * 获取刷新 Token。
- */
-export function getRefreshToken(): string {
-  try {
-    return uni.getStorageSync(STORAGE_KEYS.REFRESH_TOKEN) || "";
-  } catch (_e) {
-    return "";
-  }
-}
-
-/**
  * 保存刷新 Token。
+ *
+ * R4-00150：getRefreshToken 已删除（全仓库零调用——刷新流程改走 Authorization 头，
+ * 无任何消费方读取 refreshToken）。当前 refreshToken 仍为「写入不读取」的预留存储：
+ * 接入真正 refresh 链路（后端签发 refreshToken + 刷新端点）后，再恢复读取并接入。
  */
 export function setRefreshToken(token: string): void {
   try {
@@ -408,7 +401,7 @@ let refreshPromise: Promise<string> | null = null;
  * 请求体字段已废弃——原实现带 { refreshToken } body 且无认证头，real 模式 401。
  * 现改为：取当前访问令牌（getToken()），携带 Authorization: Bearer 头、
  * 不放 body 调用 POST /auth/refresh；成功后 setToken 返回 true，无 token 直接返回 false。
- * （getRefreshToken/setRefreshToken 保留导出供其他引用方使用，本流程不再依赖 refreshToken）
+ * （R4-00150：getRefreshToken 已删除（零调用）；setRefreshToken 仅作预留存储，本流程不依赖 refreshToken）
  */
 async function tryRefreshToken(): Promise<boolean> {
   const token = getToken();
@@ -638,8 +631,8 @@ function doRequest<TResponse, TBody>(
   options: RequestOptions<TBody>,
   requestConfig: UniApp.RequestOptions,
   retry401Count = 0
-): Promise<TResponse> {
-  return new Promise<TResponse>((resolve, reject) => {
+): Promise<{ data: TResponse; statusCode: number }> {
+  return new Promise<{ data: TResponse; statusCode: number }>((resolve, reject) => {
     // 修复：若 signal 已 aborted，立即拒绝，不发请求
     if (options.signal && options.signal.aborted) {
       reject(buildNetworkError(new Error("请求已取消")));
@@ -657,9 +650,9 @@ function doRequest<TResponse, TBody>(
 
         const statusCode = processedResult.statusCode ?? 0;
 
-        // 2xx 成功
+        // 2xx 成功（R4-00170：透传真实状态码，供 Sentry breadcrumb 记录）
         if (statusCode >= 200 && statusCode < 300) {
-          resolve(processedResult.data as TResponse);
+          resolve({ data: processedResult.data as TResponse, statusCode });
           return;
         }
 
@@ -746,7 +739,7 @@ function doRequest<TResponse, TBody>(
           signal.removeEventListener("abort", onAbort);
         }
       };
-      const wrappedResolve = (value: TResponse | PromiseLike<TResponse>) => { removeAbortListener(); originalResolve(value); };
+      const wrappedResolve = (value: { data: TResponse; statusCode: number } | PromiseLike<{ data: TResponse; statusCode: number }>) => { removeAbortListener(); originalResolve(value); };
       const wrappedReject = (err: unknown) => { removeAbortListener(); originalReject(err); };
 
       // 兼容性处理：优先使用 addEventListener，不支持时回退到 onabort
@@ -817,9 +810,9 @@ export async function request<TResponse, TBody = unknown>(
     try {
       const result = await doRequest<TResponse, TBody>(options, requestConfig);
       // 请求成功：记录 http breadcrumb，便于在异常发生时回溯最近的 API 调用
-      // doRequest 仅在 2xx 时 resolve，状态码默认记为 200（多数接口的成功码）
-      addBreadcrumb("http", `${method} ${url}`, { status: 200 });
-      return result;
+      // R4-00170：透传真实状态码（2xx 中的 200/201/204 等），不再恒记 200
+      addBreadcrumb("http", `${method} ${url}`, { status: result.statusCode });
+      return result.data;
     } catch (error) {
       // 非 EnhancedApiError 异常直接抛出（不应发生，防御性处理）
       if (!(error instanceof EnhancedApiError)) {

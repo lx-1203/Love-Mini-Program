@@ -162,7 +162,8 @@ onShow(async () => {
   try {
     void sessionStore.refreshSession();
     const status = await clientApi.getCheckInStatus();
-    if (status?.checkedIn === true) {
+    // R4-00151：字段名对齐后端契约 checkedInToday
+    if (status?.checkedInToday === true) {
       checkinDone.value = true;
     }
   } catch (_e) {

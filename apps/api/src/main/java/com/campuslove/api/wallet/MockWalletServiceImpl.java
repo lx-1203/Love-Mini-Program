@@ -1,5 +1,6 @@
 package com.campuslove.api.wallet;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -129,16 +130,16 @@ public class MockWalletServiceImpl implements WalletService {
 
     private void validateParams(Long userId, Long amountCents, String orderId, String relatedType) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         if (amountCents == null || amountCents <= 0) {
-            throw new IllegalArgumentException("金额必须为正数");
+            throw new IllegalArgumentException(ErrorMessages.AMOUNT_POSITIVE);
         }
         if (orderId == null || orderId.isBlank()) {
-            throw new IllegalArgumentException("订单号不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ORDER_NO_REQUIRED);
         }
         if (relatedType == null || relatedType.isBlank()) {
-            throw new IllegalArgumentException("关联业务类型不能为空");
+            throw new IllegalArgumentException(ErrorMessages.BIZ_TYPE_REQUIRED);
         }
     }
 

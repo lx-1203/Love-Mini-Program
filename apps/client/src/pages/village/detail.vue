@@ -5,7 +5,7 @@
  * 包含作者交互卡片（关注/私信/校友标签）、相似作者推荐和转发功能
  */
 import { ref, computed, onUnmounted } from "vue";
-import { onLoad, onShow } from "@dcloudio/uni-app";
+import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, formatRelativeTime, type CommentItem, type PostAuthor } from "../../stores/village";
@@ -18,6 +18,8 @@ import { useMessagesStore } from "../../stores/messages";
 import { useReportStore } from "../../stores/report";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
 import { openAppPath } from "../../utils/navigation";
+// R4-00088：页面跳转路径统一走 ROUTES 常量
+import { ROUTES } from "../../constants/routes";
 import SafeImage from "../../components/common/SafeImage.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import PostReportDialog from "../../components/social/PostReportDialog.vue";
@@ -133,7 +135,7 @@ async function toggleCollect() {
 /** 2026-08-08 头像点击进主页：统一跳转用户主页 */
 function goToUserProfile(userId: string | number | undefined) {
   if (userId == null || userId === "") return;
-  openAppPath(`/pages/profile/index?userId=${userId}`);
+  openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${userId}`);
 }
 
 /**
@@ -239,6 +241,11 @@ onUnmounted(() => {
   }
 });
 
+// R4-00159：页面卸载时清理 village store 定时器/请求资源（评论防抖、点赞 in-flight 等）
+onUnload(() => {
+  villageStore.dispose();
+});
+
 /**
  * 返回上一页
  */
@@ -342,14 +349,14 @@ async function handleReportComment(comment: { id: string }) {
  */
 function goToTagPosts(tagName: string) {
   const cleanTag = tagName.startsWith("#") ? tagName.slice(1) : tagName;
-  openAppPath(`/pages/village/tag-posts?tagName=${encodeURIComponent(cleanTag)}`);
+  openAppPath(`${ROUTES.VILLAGE.TAG_POSTS}?tagName=${encodeURIComponent(cleanTag)}`);
 }
 
 /**
  * 2026-08-08 频道化重构：跳转活动详情页（帖子内活动卡）
  */
 function goToActivityDetail(activityId: number | string) {
-  openAppPath(`/pages/activities/detail?id=${encodeURIComponent(String(activityId))}`);
+  openAppPath(`${ROUTES.ACTIVITY_DETAIL}?id=${encodeURIComponent(String(activityId))}`);
 }
 
 /**
@@ -459,9 +466,9 @@ function sendMessage() {
     (s) => s.partnerId === targetUserId && s.sessionType === "private"
   );
   if (existingSession) {
-    openAppPath(`/pages/chat-session/index?sessionId=${existingSession.id}`);
+    openAppPath(`${ROUTES.CHAT.SESSION}?sessionId=${existingSession.id}`);
   } else {
-    openAppPath(`/pages/chat-session/index?userId=${targetUserId}`);
+    openAppPath(`${ROUTES.CHAT.SESSION}?userId=${targetUserId}`);
   }
 }
 
@@ -531,9 +538,9 @@ function sendMessageToSimilarAuthor(userId: string) {
     (s) => s.partnerId === userId && s.sessionType === "private"
   );
   if (existingSession) {
-    openAppPath(`/pages/chat-session/index?sessionId=${existingSession.id}`);
+    openAppPath(`${ROUTES.CHAT.SESSION}?sessionId=${existingSession.id}`);
   } else {
-    openAppPath(`/pages/chat-session/index?userId=${userId}`);
+    openAppPath(`${ROUTES.CHAT.SESSION}?userId=${userId}`);
   }
 }
 

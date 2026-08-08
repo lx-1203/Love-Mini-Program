@@ -192,7 +192,7 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   flex-direction: row;
 }
 
-/* 头像：圆形 + 白边（参考微信风格，64rpx 直径） */
+/* 头像：圆形 + 白边（参考微信风格，64rpx 直径；固定布局尺寸，无对应 token） */
 .bubble-avatar {
   width: 64rpx;
   height: 64rpx;
@@ -302,14 +302,17 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   align-items: center;
   gap: var(--sp-2);
   justify-content: flex-end;
+  /* 底部元信息行固定行高，无对应 token */
   height: 24rpx;
 }
 .bubble__status {
   display: flex;
   align-items: center;
+  /* 2rpx 无对应 token 档位，保留 */
   gap: 2rpx;
 }
 .bubble__status-icon {
+  /* 状态图标固定尺寸（20rpx），无对应 token */
   width: 20rpx;
   height: 20rpx;
   opacity: 0.85;

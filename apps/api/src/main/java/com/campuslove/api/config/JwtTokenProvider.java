@@ -18,8 +18,6 @@ import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -41,19 +39,17 @@ public class JwtTokenProvider {
 
     private static final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    /** Redis 中存储黑名单 token 的 key 前缀 */
-    private static final String REDIS_BLACKLIST_KEY_PREFIX = "jwt:blacklist:";
+    /**
+     * R4-01819：清理任务调度周期常量（毫秒）——每小时执行一次，
+     * initialDelay 同值（启动 1 小时后开始第一次清理，避免冷启动开销）。
+     */
+    private static final long CLEANUP_TASK_FIXED_DELAY_MS = 3600000L;
 
     /**
-     * Token 黑名单，存储已撤销但尚未过期的 JWT token。
+     * Token 黑名单（旧完整 token 兼容，R4-00275 后仅本地内存）。
      *
-     * <p>实现说明：
-     * <ul>
-     *   <li>使用 {@link ConcurrentHashMap} 保证线程安全</li>
-     *   <li>Set 包装支持快速 contains 判断</li>
-     *   <li>作为 Redis 不可用时的降级方案，仍受 token 过期时间限制</li>
-     * </ul>
-     * </p>
+     * <p>存储 {@link #revokeToken} 撤销的无 jti 历史 token，供
+     * {@link #isTokenRevoked} 单实例降级查询；常规撤销统一走 jti 黑名单。</p>
      */
     private final Set<String> revokedTokens = ConcurrentHashMap.newKeySet();
 
@@ -68,15 +64,6 @@ public class JwtTokenProvider {
      * 接入 KMS/Vault 后可实现完整的多版本密钥校验逻辑。</p>
      */
     private final int keyVersion;
-
-    /**
-     * Redis 模板，用于持久化 token 黑名单。
-     *
-     * <p>使用 {@link Autowired} 注入而非构造器注入，并标记 required = false，
-     * 确保 mock 模式（无 Redis 配置）下也能正常启动。</p>
-     */
-    @Autowired(required = false)
-    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * Redisson 分布式锁客户端（FIN-00082）。
@@ -342,80 +329,40 @@ public class JwtTokenProvider {
     /**
      * 将 token 加入黑名单，实现登出后立即失效。
      *
-     * <p>实现策略：</p>
-     * <ol>
-     *   <li>同时写入本地内存（兼容单机/降级场景）</li>
-     *   <li>同时写入 Redis（支持多实例共享、自动过期清理）</li>
-     *   <li>Redis 写入失败时仅记录日志，不影响主流程</li>
-     *   <li>Redis 中 TTL = token 剩余有效期，过期后自动清理</li>
-     * </ol>
+     * <p>R4-00275：废弃完整 token 黑名单，统一走 jti 黑名单
+     * （{@link com.campuslove.api.auth.RedisTokenBlacklistService}，支持 Redis + 本地内存双轨）。
+     * 本方法保留仅用于兼容历史无 jti claim 的旧 token：只写入本地内存
+     * （单实例降级场景有效），不再将完整 JWT 写入 Redis——
+     * 避免 Redis 被入侵即拿到全部在册 token，且与 jti 黑名单机制不再重复。</p>
      *
-     * @param token 已签发的 JWT token
+     * @param token 已签发的 JWT token（无 jti 的历史 token 兼容路径）
+     * @deprecated 新代码统一调用 {@link com.campuslove.api.auth.TokenBlacklistService#revoke}（jti 维度）
      */
+    @Deprecated
     public void revokeToken(String token) {
         if (token == null || token.isBlank()) {
             return;
         }
-        // 1. 写入本地内存（降级方案）
+        // 仅写入本地内存（兼容无 jti 旧 token 的单实例撤销；Redis 侧由 jti 黑名单负责）
         revokedTokens.add(token);
-
-        // 2. 写入 Redis（多实例共享方案），通过 try-catch 保护
-        try {
-            if (redisTemplate != null) {
-                Instant expiration = getExpirationFromToken(token);
-                long ttlSeconds;
-                if (expiration != null) {
-                    long remainingMs = expiration.toEpochMilli() - Instant.now().toEpochMilli();
-                    // 兜底：剩余时间 ≤ 0 时给 1 秒 TTL，避免负值导致 Redis 报错
-                    ttlSeconds = Math.max(1, TimeUnit.MILLISECONDS.toSeconds(remainingMs));
-                } else {
-                    // 无法解析过期时间，默认使用应用配置的过期时长
-                    ttlSeconds = TimeUnit.MILLISECONDS.toSeconds(expirationMs);
-                }
-                String redisKey = REDIS_BLACKLIST_KEY_PREFIX + token;
-                redisTemplate.opsForValue().set(redisKey, "1", ttlSeconds, TimeUnit.SECONDS);
-                log.info("Token 已加入 Redis 黑名单，TTL={}秒，长度={}", ttlSeconds, token.length());
-            }
-        } catch (DataAccessException e) {
-            // Redis 不可用时降级到本地内存方案，不影响登出主流程
-            log.warn("写入 Redis 黑名单失败，降级使用本地内存方案：{}", e.getMessage());
-        }
     }
 
     /**
-     * 检查 token 是否已被撤销（在黑名单中）。
+     * 检查 token 是否已被撤销（旧完整 token 黑名单，R4-00275 后仅查本地内存）。
      *
-     * <p>查询优先级：</p>
-     * <ol>
-     *   <li>Redis：key 为 {@code jwt:blacklist:{token}}，存在即视为已撤销</li>
-     *   <li>本地内存：Redis 不可用时降级查询</li>
-     * </ol>
+     * <p>R4-00275：完整 token 黑名单已废弃（不再写 Redis），本方法仅保留
+     * 兼容 {@link #revokeToken} 写入的本地内存条目（无 jti 历史 token 场景）。
+     * 常规撤销/校验统一走 jti 黑名单（{@link com.campuslove.api.auth.TokenBlacklistService}）。</p>
      *
      * @param token JWT token
-     * @return true 表示 token 已被撤销，应拒绝认证
+     * @return true 表示 token 已被撤销（本地内存命中），应拒绝认证
+     * @deprecated 新代码统一使用 jti 黑名单
      */
+    @Deprecated
     public boolean isTokenRevoked(String token) {
         if (token == null || token.isBlank()) {
             return false;
         }
-
-        // 1. 优先查 Redis
-        try {
-            if (redisTemplate != null) {
-                String redisKey = REDIS_BLACKLIST_KEY_PREFIX + token;
-                Boolean exists = redisTemplate.hasKey(redisKey);
-                if (Boolean.TRUE.equals(exists)) {
-                    return true;
-                }
-                // Redis 可用且 key 不存在，直接返回未撤销（以 Redis 为准）
-                return false;
-            }
-        } catch (DataAccessException e) {
-            // Redis 不可用时降级查本地内存
-            log.warn("查询 Redis 黑名单失败，降级使用本地内存方案：{}", e.getMessage());
-        }
-
-        // 2. 降级查本地内存
         return revokedTokens.contains(token);
     }
 
@@ -436,14 +383,17 @@ public class JwtTokenProvider {
      *
      * <p>注：@EnableScheduling 已在 CampusLoveApplication 上启用，本方法自动调度。</p>
      */
-    @Scheduled(fixedDelay = 3600000L, initialDelay = 3600000L)
+    @Scheduled(fixedDelay = CLEANUP_TASK_FIXED_DELAY_MS, initialDelay = CLEANUP_TASK_FIXED_DELAY_MS)
     public void cleanupExpiredRevokedTokens() {
         // FIN-00082: 分布式锁确保多实例部署时仅一个实例执行清理任务
         // mock profile 下 redissonClient 为 null（Redisson 已排除），跳过锁（单实例无需锁）
         if (redissonClient != null) {
             try {
+                // R4-00311：tryLock 不指定 leaseTime 时 Redisson 看门狗自动续期——
+                // 锁在持锁期间持续续期，不会因清理耗时超过 30s 而过期被其他实例抢占，
+                // finally 中的 unlock 因此只会释放本实例持有的锁（不会误释放他实例锁）。
                 if (!redissonClient.getLock("scheduled:cleanupRevokedTokens")
-                        .tryLock(0, 30, TimeUnit.SECONDS)) {
+                        .tryLock(0, TimeUnit.SECONDS)) {
                     log.debug("cleanupRevokedTokens 定时任务已被其他实例持有，跳过本次执行");
                     return;
                 }

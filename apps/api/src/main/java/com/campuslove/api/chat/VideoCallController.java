@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.chat.VideoCallService.VideoCallRecordView;
 import com.campuslove.api.chat.VideoCallService.VideoCallView;
 import com.campuslove.api.config.SecurityUtils;
@@ -156,7 +157,7 @@ record EndCallRequest(
         @Size(max = 64)
         String roomId,
         @Pattern(regexp = "CALLER_HANGUP|CALLEE_HANGUP|TIMEOUT|NETWORK_ERROR",
-                message = "endReason 必须为 CALLER_HANGUP/CALLEE_HANGUP/TIMEOUT/NETWORK_ERROR")
+                message = ErrorMessages.END_REASON_INVALID)
         String endReason
 ) {
 }

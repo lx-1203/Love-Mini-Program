@@ -30,6 +30,17 @@ public interface PostTagRepository extends JpaRepository<PostTag, Long> {
     List<PostTag> findByTagName(String tagName);
 
     /**
+     * R4-00356：按标签名批量查询关联记录（热门标签聚合用）。
+     *
+     * <p>替代 getPopularTags 中每标签一次 findByTagName（8 标签 = 8 次 SQL），
+     * 单条 SQL 拉取全部预置标签的关联记录后在内存分组统计。</p>
+     *
+     * @param tagNames 标签名称集合
+     * @return 标签关联记录列表
+     */
+    List<PostTag> findByTagNameIn(java.util.Collection<String> tagNames);
+
+    /**
      * 删除指定帖子的所有标签关联。
      *
      * @param postId 帖子 ID

@@ -259,12 +259,12 @@ export default {
   z-index: 9999;
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  padding: 20rpx 36rpx;
+  gap: var(--sp-4);
+  padding: var(--sp-5) 36rpx; /* 36rpx 无对应 sp token，固定布局尺寸保留 */
   border-radius: var(--r-xxl, 48rpx);
   box-shadow: 0 8rpx 32rpx var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.12));
   max-width: 640rpx;
-  min-width: 320rpx;
+  min-width: 320rpx; /* 固定布局尺寸（Toast 最小宽度），无对应 token */
   will-change: transform, opacity;
 }
 
@@ -288,6 +288,7 @@ export default {
 
 /* ---- 图标 ---- */
 .toast-notification__icon {
+  /* 固定布局尺寸（图标 32rpx），无对应 token */
   width: 32rpx;
   height: 32rpx;
   flex-shrink: 0;

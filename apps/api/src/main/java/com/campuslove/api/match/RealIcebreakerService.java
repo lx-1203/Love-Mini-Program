@@ -1,5 +1,6 @@
 package com.campuslove.api.match;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.DailyAnswer;
@@ -90,7 +91,7 @@ public class RealIcebreakerService implements IcebreakerService {
     @Transactional(readOnly = true)
     public List<IcebreakerView> getIcebreakers(Long matchId) {
         if (matchId == null) {
-            throw new IllegalArgumentException("matchId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.MATCH_ID_REQUIRED);
         }
 
         // 查询匹配记录，获取双方用户 ID
@@ -127,7 +128,7 @@ public class RealIcebreakerService implements IcebreakerService {
     @Transactional(readOnly = true)
     public List<IcebreakerView> getMatchIcebreakers(Long userId, Long matchUserId) {
         if (userId == null || matchUserId == null) {
-            throw new IllegalArgumentException("userId 和 matchUserId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_AND_MATCH_USER_ID_REQUIRED);
         }
 
         List<IcebreakerView> result = new ArrayList<>();
@@ -165,7 +166,7 @@ public class RealIcebreakerService implements IcebreakerService {
     @Transactional(readOnly = true)
     public List<IcebreakerView> getProfileBasedIcebreakers(Long userId, Long peerUserId) {
         if (userId == null || peerUserId == null) {
-            throw new IllegalArgumentException("userId 和 peerUserId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_AND_PEER_USER_ID_REQUIRED);
         }
 
         List<IcebreakerView> result = new ArrayList<>();

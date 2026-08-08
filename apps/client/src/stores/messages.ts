@@ -1,11 +1,11 @@
 import { defineStore } from "pinia";
-import { request } from "../services/http";
+import { request, withTimeout as withHttpTimeout, EnhancedApiError } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // 修复（严格模式 noUnusedLocals）：components 类型未在本文件引用，已移除。
-import type { InteractionEventView } from "../services/generated/api-types-supplement";
 // 2026-08-07 官方号体系：官方号账号/消息流类型（契约见 docs/openapi/official-accounts.yaml）
 import type {
+  InteractionEventView,
   OfficialAccountView,
   OfficialMessageView,
 } from "../services/generated/api-types-supplement";
@@ -275,11 +275,12 @@ function buildLocalPreview(kind: MessageItem["kind"], content: string): string {
   if (kind === "activity") {
     try {
       const parsed = JSON.parse(content) as { title?: string };
-      if (parsed.title) return `[活动] ${parsed.title}`;
+      if (parsed.title) return `${t("messages.activityCardPrefix")} ${parsed.title}`;
     } catch (_e) {
       // 解析失败走默认文案
     }
-    return "[活动] 活动卡片";
+    // R4-00138：前缀与兜底文案走 i18n（en 语言下不再显示中文）
+    return `${t("messages.activityCardPrefix")} ${t("messages.activityCardFallback")}`;
   }
   return content.length > 50 ? `${content.substring(0, 50)}...` : content;
 }
@@ -340,16 +341,20 @@ function mapToInteractionEvent(item: InteractionEventView): InteractionEvent {
 
 // 注：ASYNC_TIMEOUT_MS 由 constants/growth.ts 统一提供
 
-// 注：本文件曾自带一份 withTimeout 实现（与 services/http.ts 导出的 withTimeout 重复）。
-// 因本地版本签名不同（第三参为自定义错误文案字符串，http.ts 版本第三参为 AbortSignal），
-// 且调用点依赖本地错误文案（如“加载会话列表超时”），为不改变 20+ 处调用点的错误语义，
-// 此处保留本地实现，但超时语义（clearTimeout + reject）与 services/http.ts 保持一致。
-// 后续如需统一，可改为传入 AbortSignal 并迁移调用点错误文案。
+// R4-00156：withTimeout 收敛到 services/http.ts 单一实现（不再本地重复实现超时语义）。
+// 本地签名第三参为自定义错误文案（调用点依赖如“加载会话列表超时”），
+// 通过委托 http.ts 的 withTimeout 保持超时语义一致，超时时将错误转为业务文案。
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
-    promise.then((r) => { clearTimeout(timer); resolve(r); }).catch((e) => { clearTimeout(timer); reject(e); });
-  });
+  try {
+    return await withHttpTimeout(promise, timeoutMs);
+  } catch (error) {
+    // http.ts 超时 reject EnhancedApiError({ error: "timeout" })，转调用点约定的业务文案；
+    // 其余错误（业务/网络/取消）原样透传，与旧实现语义一致
+    if (error instanceof EnhancedApiError && error.error === "timeout") {
+      throw new Error(errorMessage);
+    }
+    throw error;
+  }
 }
 
 /* ========== 模块级请求令牌（修复 P1 BUG：异步竞态条件） ==========
@@ -457,14 +462,17 @@ export const useMessagesStore = defineStore("messages", {
           }
           // P2-13：会话列表接口 userId 由后端 JWT 获取（PrivateMessageController 无 userId 参数），不再携带 query
           const data = await request<ConversationView[]>({ url: "/messages/conversations", method: "GET" });
-          // 2026-08-07 官方号体系：real 模式并行拉取官方号账号 + 消息流，
-          // 映射为 isOfficial 会话与普通会话一起排序（官方未读先置 0，后端暂未计数）
-          const [officialAccounts, ...accountMessages] = await Promise.all([
+          // 2026-08-07 官方号体系：real 模式并行拉取官方号账号，再按响应中的 code 逐个拉取消息流，
+          // 映射为 isOfficial 会话与普通会话一起排序（官方未读先置 0，后端暂未计数）。
+          // R4-00137：官方号列表不再硬编码（后端新增官方号无需发版），以 /official-accounts 响应为准。
+          const [officialAccounts] = await Promise.all([
             request<OfficialAccountView[]>({ url: "/official-accounts", method: "GET" }).catch(() => []),
-            ...["official-assistant", "official-promoter"].map((code) =>
-              request<OfficialMessageView[]>({ url: `/official-accounts/${encodeURIComponent(code)}/messages`, method: "GET" }).catch(() => [])
-            ),
           ]);
+          const accountMessages = await Promise.all(
+            officialAccounts.map((acc) =>
+              request<OfficialMessageView[]>({ url: `/official-accounts/${encodeURIComponent(acc.code)}/messages`, method: "GET" }).catch(() => [])
+            )
+          );
           // 修复：旧请求返回时不再修改状态，避免覆盖新请求结果
           if (token !== fetchSessionsToken) return;
           const officialSessions: MessageSession[] = officialAccounts.map((acc, idx) => {
@@ -857,7 +865,11 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) { n.isRead = true; return; }
         await withTimeout(request<void>({ url: `/notifications/${notificationId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkRead")); // infra R2-00028
         n.isRead = true;
-      } catch (_e) { /* 静默失败 */ }
+      } catch (error) {
+        // R4-00165：标记已读失败不再完全静默——保留未读状态（避免 UI 与服务端不一致反弹），
+        // 至少 console.warn 便于排查；后续可在 UI 提供重试入口
+        console.warn(`[messages.markNotificationRead] 标记已读失败 id=${notificationId}:`, error);
+      }
     },
 
     async markAllNotificationsRead() {
@@ -920,6 +932,11 @@ export const useMessagesStore = defineStore("messages", {
     /**
      * 2026-08-07 消息页重构：设置会话免打扰（左滑操作）。
      * 免打扰仅影响新消息通知提醒，未读红点仍正常展示。
+     *
+     * R4-00184：当前仅本地改状态，无后端同步——刷新/换端后免打扰会还原
+     * （mock 分支 fetchSessions 保留运行期 muted 态；real 分支以服务端会话为准）。
+     * TODO(backend): 后端补充会话元数据同步接口（如 PATCH /messages/sessions/{id}）
+     * 后，此处应 await 后端成功后再改本地状态。
      */
     setSessionMuted(sessionId: string, muted: boolean) {
       const session = this.sessions.find((s) => s.id === sessionId);
@@ -929,6 +946,9 @@ export const useMessagesStore = defineStore("messages", {
     /**
      * 2026-08-07 消息页重构：标为未读（长按菜单）。
      * 将已读会话重新标记为 1 条未读，恢复红色角标。
+     *
+     * R4-00184：当前仅本地改状态，无后端同步（未读计数以服务端会话数据为准，
+     * 刷新后按后端计数还原）。TODO(backend): 后端补充会话未读元数据同步接口。
      */
     markSessionUnread(sessionId: string) {
       const session = this.sessions.find((s) => s.id === sessionId);
@@ -940,6 +960,10 @@ export const useMessagesStore = defineStore("messages", {
     /**
      * 2026-08-07 消息页重构：标为已读（长按菜单）。
      * 手动消除未读红点。
+     *
+     * R4-00184：当前仅本地改状态，无后端同步（真实已读闭环由进入会话时的
+     * 后端 markAsRead 接口完成，长按菜单的标已读为前端即时反馈）。
+     * TODO(backend): 后端补充会话未读元数据同步接口。
      */
     markSessionRead(sessionId: string) {
       const session = this.sessions.find((s) => s.id === sessionId);

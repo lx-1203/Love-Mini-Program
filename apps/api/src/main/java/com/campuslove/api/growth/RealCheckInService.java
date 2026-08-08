@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CheckInConfig;
 import com.campuslove.api.entity.CheckIn;
@@ -254,7 +255,7 @@ public class RealCheckInService implements CheckInService {
             if (redisLockAcquired) {
                 releaseCheckInLock(checkInLockKey);
             }
-            throw new RuntimeException("签到失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.CHECKIN_FAILED_RETRY, e);
         }
 
         // ---- 签到后解锁权益 ----
@@ -391,7 +392,7 @@ public class RealCheckInService implements CheckInService {
         try {
             targetDate = LocalDate.parse(date);
         } catch (java.time.format.DateTimeParseException e) {
-            throw new IllegalArgumentException("日期格式无效，必须为 yyyy-MM-dd");
+            throw new IllegalArgumentException(ErrorMessages.DATE_FORMAT_INVALID);
         }
 
         LocalDate today = LocalDate.now(TimeZones.BUSINESS);
@@ -399,17 +400,17 @@ public class RealCheckInService implements CheckInService {
 
         // 校验：不可补签当天或未来日期
         if (!targetDate.isBefore(today)) {
-            throw new IllegalArgumentException("补签日期必须早于今天");
+            throw new IllegalArgumentException(ErrorMessages.MAKEUP_DATE_BEFORE_TODAY);
         }
         // 校验：不可补签超过 7 天前的日期
         if (targetDate.isBefore(sevenDaysAgo)) {
-            throw new IllegalArgumentException("仅可补签昨日及之前 " + MAKE_UP_MAX_DAYS_BACK + " 天内的日期");
+            throw new IllegalArgumentException(ErrorMessages.MAKEUP_ONLY_YESTERDAY_PREFIX + MAKE_UP_MAX_DAYS_BACK + " 天内的日期");
         }
 
         // 校验：该日期不能已有签到记录
         Optional<CheckIn> existing = checkInRepository.findByUserIdAndCheckInDate(userId, targetDate);
         if (existing.isPresent()) {
-            throw new IllegalArgumentException("该日期已签到，无法重复补签");
+            throw new IllegalArgumentException(ErrorMessages.CHECKIN_ALREADY_DONE);
         }
 
         // 获取或创建当月配额记录
@@ -475,7 +476,7 @@ public class RealCheckInService implements CheckInService {
         } catch (DataIntegrityViolationException e) {
             // 并发补签同一日期，唯一约束冲突
             log.warn("用户[{}]补签日期[{}]时发生唯一约束冲突", userId, targetDate, e);
-            throw new IllegalArgumentException("该日期已签到，无法重复补签");
+            throw new IllegalArgumentException(ErrorMessages.CHECKIN_ALREADY_DONE);
         }
 
         // P0-24 修复：配额记录 used_count+1 改为原子 UPDATE（读-改-写竞态修复）。

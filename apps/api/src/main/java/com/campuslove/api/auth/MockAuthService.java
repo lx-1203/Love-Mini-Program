@@ -1,5 +1,6 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.mock.MockRuntimeState;
 import com.campuslove.api.utils.SensitiveDataMasker;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class MockAuthService implements AuthService {
     public UserSessionView refreshToken(String oldToken) {
         // mock 模式下验证 token 有效性后返回新的模拟会话
         if (oldToken == null || oldToken.isBlank()) {
-            throw new IllegalArgumentException("Token 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.TOKEN_REQUIRED);
         }
         // mock 模式下简单验证 token 格式，然后返回新 token
         return toView(runtimeState.currentSession(), "mock-refreshed-token-" + System.currentTimeMillis());
@@ -76,7 +77,8 @@ public class MockAuthService implements AuthService {
 
     public UserSessionView loginAsAdmin(String username, String password) {
         // mock 模式下忽略凭据，直接返回 mock 会话
-        log.info("mock 管理员登录, username={}", username);
+        // R4-00269：username（管理员 openid）脱敏后输出日志
+        log.info("mock 管理员登录, username={}", SensitiveDataMasker.mask(username));
         return toView(runtimeState.currentSession(), "mock-admin-token-" + System.currentTimeMillis());
     }
 

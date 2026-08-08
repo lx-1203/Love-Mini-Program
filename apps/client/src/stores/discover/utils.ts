@@ -10,6 +10,7 @@
  */
 
 import { useMock } from "../helpers/use-mock";
+import { isDev } from "../../config/env";
 import type { RecommendedPerson } from "../../services/generated/api-types-supplement";
 import { STORAGE_KEY } from "./constants";
 import type { DiscoverCard, ViewedCardRecord, SortBy } from "./types";
@@ -194,10 +195,13 @@ export async function withRetry<T>(
         throw lastError;
       }
       if (attempt < maxRetries) {
-        console.warn(
-          `[DiscoverStore] 第${attempt + 1}次尝试失败，将进行第${attempt + 2}次重试:`,
-          lastError.message
-        );
+        // 诊断日志仅在开发环境输出（R4-00645）
+        if (isDev) {
+          console.warn(
+            `[DiscoverStore] 第${attempt + 1}次尝试失败，将进行第${attempt + 2}次重试:`,
+            lastError.message
+          );
+        }
       }
     }
   }

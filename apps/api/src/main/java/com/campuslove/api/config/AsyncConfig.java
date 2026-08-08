@@ -60,19 +60,20 @@ public class AsyncConfig {
     /** 默认非核心线程空闲存活时间：60 秒 */
     public static final int DEFAULT_KEEP_ALIVE_SECONDS = 60;
 
-    @Value("${app.async.core-pool-size:8}")
+    // R4-01808~01811：@Value 默认值统一引用上方命名常量（原字面量 8/32/200/60 与常量双写）
+    @Value("${app.async.core-pool-size:" + DEFAULT_CORE_POOL_SIZE + "}")
     private int corePoolSize;
 
-    @Value("${app.async.max-pool-size:32}")
+    @Value("${app.async.max-pool-size:" + DEFAULT_MAX_POOL_SIZE + "}")
     private int maxPoolSize;
 
-    @Value("${app.async.queue-capacity:200}")
+    @Value("${app.async.queue-capacity:" + DEFAULT_QUEUE_CAPACITY + "}")
     private int queueCapacity;
 
-    @Value("${app.async.thread-name-prefix:async-}")
+    @Value("${app.async.thread-name-prefix:" + DEFAULT_THREAD_NAME_PREFIX + "}")
     private String threadNamePrefix;
 
-    @Value("${app.async.keep-alive-seconds:60}")
+    @Value("${app.async.keep-alive-seconds:" + DEFAULT_KEEP_ALIVE_SECONDS + "}")
     private int keepAliveSeconds;
 
     /**

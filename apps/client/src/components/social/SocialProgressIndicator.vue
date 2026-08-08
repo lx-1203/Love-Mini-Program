@@ -55,9 +55,10 @@ const currentTierColor = computed(() => {
 /** 6层漏斗颜色，从浅蓝 (var(--c-brand-100)) 到深蓝 (#5B7FFF) */
 const FUNNEL_COLORS = [
   tokens.color.brand[100], // L1: var(--c-brand-100)
-  tokens.color.brand[200], // L2: #BBDAFF
-  tokens.color.brand[300], // L3: #9BB8FF
-  tokens.color.secondary[400], // L4: #7B9CFF
+  // R4-batch4：L2~L4 色值对应 TDesign 品牌色阶（--td-brand-color-3/4/5）
+  tokens.color.brand[200], // L2: == --td-brand-color-3
+  tokens.color.brand[300], // L3: == --td-brand-color-4
+  tokens.color.secondary[400], // L4: == --td-brand-color-5
   tokens.color.brand[400],  // L5: #5B7FFF
   tokens.color.brand[500],  // L6: #4C6EF5
 ] as const

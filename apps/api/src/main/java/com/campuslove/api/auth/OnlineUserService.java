@@ -69,6 +69,30 @@ public class OnlineUserService {
     private RedisTemplate<String, Object> redisTemplate;
 
     /**
+     * R4-00289/01821：JWT 配置——会话 TTL 兜底引用同一配置源（app.jwt.expiration-ms），
+     * 不再与 JwtConfig 双处定义 24h 字面量。可空（兼容单测直接 new 场景），
+     * 为 null 时按常量兜底。
+     */
+    private final com.campuslove.api.config.JwtConfig jwtConfig;
+
+    /** R4-01821：JwtConfig 缺失（单测直接 new）时的兜底会话 TTL：24 小时（毫秒） */
+    private static final long FALLBACK_SESSION_TTL_MS = 24L * 3600 * 1000;
+
+    /**
+     * Spring 注入构造器（R4-00289）。
+     */
+    public OnlineUserService(com.campuslove.api.config.JwtConfig jwtConfig) {
+        this.jwtConfig = jwtConfig;
+    }
+
+    /**
+     * 兼容单测直接 new 的包级构造器（jwtConfig 为 null，TTL 兜底走常量）。
+     */
+    OnlineUserService() {
+        this.jwtConfig = null;
+    }
+
+    /**
      * 记录一次登录会话。
      *
      * @param userId        用户 ID
@@ -82,8 +106,10 @@ public class OnlineUserService {
             return;
         }
         long nowMs = System.currentTimeMillis();
-        // expiresAt 兜底：ttl 非法（<=0）时按 JWT 默认 24h 计算，避免负 TTL 导致 Redis 报错
-        long effectiveTtl = ttlSeconds > 0 ? ttlSeconds : TimeUnit.MILLISECONDS.toSeconds(24L * 3600 * 1000);
+        // R4-00289/01821：expiresAt 兜底引用 JwtConfig 同一配置源（app.jwt.expiration-ms），
+        // 不再与 JwtConfig 双处定义 24h 字面量；JwtConfig 缺失（单测）时按常量兜底
+        long fallbackTtlMs = jwtConfig != null ? jwtConfig.getExpirationMs() : FALLBACK_SESSION_TTL_MS;
+        long effectiveTtl = ttlSeconds > 0 ? ttlSeconds : TimeUnit.MILLISECONDS.toSeconds(fallbackTtlMs);
         OnlineSessionRecord record = new OnlineSessionRecord(
                 jti,
                 loginMethod != null ? loginMethod : "unknown",

@@ -11,6 +11,7 @@
  */
 
 import { AdminPageView, del, get, post, put, downloadFile } from "./http";
+import { buildExportCsvName } from "../utils/export-name";
 
 // ============================================================
 // 类型定义
@@ -248,6 +249,6 @@ export function listEnrollments(
 export async function exportEnrollments(id: number): Promise<void> {
   await downloadFile(
     `/v1/admin/activities/${id}/enrollments/export`,
-    `activity_enrollments_${id}.csv`,
+    buildExportCsvName("activity_enrollments", id),
   );
 }

@@ -1,3 +1,5 @@
+import { isDev } from "./env";
+
 /**
  * 资料编辑标签数据源（功能3：资料编辑标签选择）。
  *
@@ -152,9 +154,12 @@ export function getProfileTagLabel(
     if (translated && translated !== tag.labelKey) {
       return translated;
     }
-    console.warn(
-      `[profile-tags] i18n key 缺失或未翻译: ${tag.labelKey}，回退中文 label`
-    );
+    // 配置缺失回退诊断仅在开发环境输出（R4-00530）
+    if (isDev) {
+      console.warn(
+        `[profile-tags] i18n key 缺失或未翻译: ${tag.labelKey}，回退中文 label`
+      );
+    }
   }
   return tag.label;
 }

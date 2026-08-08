@@ -3,8 +3,11 @@
 -- 用途：本地联调「寻觅」推荐流——体验账号(47)无同校区候选导致推荐为空。
 -- 内容：
 --   1. 修正体验账号(47)的脏校区数据（此前被写入 "1"）
---   2. 为 6 个测试用户补齐校区资料 + 基本资料（同校区「北京大学」）
+--   2. 为 6 个测试用户补齐校区资料 + 基本资料（同校区「北京大学」——
+--      同校区是有意为之：本脚本用途即 campus_first 推荐演示（同校区候选），
+--      换校区会破坏演示场景，R4-00515 保留该设定）
 --   3. 同步更新 users.profile_completion
+-- 性别分散（R4-00515）：pronouns 按 3 她 / 3 他 交替，避免推荐演示内容单一化。
 -- 幂等：重复执行前先清理本脚本创建的行（按固定 user_id 识别）。
 -- ============================================================
 
@@ -34,11 +37,11 @@ INSERT INTO user_basic_profile
    height, education_level, relationship_status, future_plan_tags)
 VALUES
   (5,  '小鹿',   '喜欢图书馆的下午和操场晚风', '大三', '她', JSON_ARRAY('阅读','旅行','摄影'),  165, 'bachelor', 'never',  JSON_ARRAY('旅行','读书')),
-  (6,  '阿禾',   '周末爬山，平时泡实验室',     '研一', '她', JSON_ARRAY('运动','美食','电影'),    168, 'master',   'never',  JSON_ARRAY('健身','美食')),
+  (6,  '阿禾',   '周末爬山，平时泡实验室',     '研一', '他', JSON_ARRAY('运动','美食','电影'),    178, 'master',   'never',  JSON_ARRAY('健身','美食')),
   (7,  '橙子',   '会弹吉他，喜欢民谣',         '大二', '她', JSON_ARRAY('音乐','阅读','手工'),    162, 'bachelor', 'never',  JSON_ARRAY('音乐','旅行')),
-  (8,  '小满',   '心理学在读，擅长倾听',       '大四', '她', JSON_ARRAY('电影','咖啡','写作'),    170, 'bachelor', 'never',  JSON_ARRAY('旅行','写作')),
+  (8,  '小满',   '心理学在读，擅长倾听',       '大四', '他', JSON_ARRAY('电影','咖啡','写作'),    175, 'bachelor', 'never',  JSON_ARRAY('旅行','写作')),
   (9,  '青柠',   '法学院但爱看天文，反差萌',   '研二', '她', JSON_ARRAY('天文','摄影','辩论'),    166, 'master',   'never',  JSON_ARRAY('旅行','摄影')),
-  (10, '桃桃',   '数学系卷王，也爱逛展',       '大三', '她', JSON_ARRAY('艺术','美食','桌游'),    163, 'bachelor', 'never',  JSON_ARRAY('美食','旅行'));
+  (10, '桃桃',   '数学系卷王，也爱逛展',       '大三', '他', JSON_ARRAY('艺术','美食','桌游'),    173, 'bachelor', 'never',  JSON_ARRAY('美食','旅行'));
 
 -- 5. 同步 profile_completion（与后端 basic profile 完善度口径一致，视为已完善）
 UPDATE users SET profile_completion = 100 WHERE id IN (5,6,7,8,9,10);

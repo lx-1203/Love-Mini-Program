@@ -398,8 +398,10 @@ describe("village store", () => {
   // ------------------------------------------------------------------
   // formatRelativeTime utility
   // ------------------------------------------------------------------
-  it("formatRelativeTime returns 刚刚活跃 for recent timestamps", () => {
+  // R4-00131：formatRelativeTime 复用 utils/time.ts 共享实现（文案随语言切换），
+  // 1 分钟内返回「刚刚」（不再有「刚刚活跃」自定义文案）
+  it("formatRelativeTime returns 刚刚 for recent timestamps", () => {
     const now = new Date().toISOString();
-    expect(formatRelativeTime(now)).toBe("刚刚活跃");
+    expect(formatRelativeTime(now)).toBe("刚刚");
   });
 });

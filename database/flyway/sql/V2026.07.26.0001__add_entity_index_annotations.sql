@@ -22,8 +22,10 @@
 --   7. private_messages (delivery_status)               — 按投递状态过滤
 --
 -- 实现说明：
---   * 使用 CREATE INDEX IF NOT EXISTS（MySQL 8.0+ 支持），避免重复执行报错
 --   * 索引命名与 Entity 注解中 @Index(name=...) 完全一致，便于双向维护
+--   * 幂等性说明（R4-00414 注释修正）：MySQL 不支持 CREATE INDEX IF NOT EXISTS，
+--     本脚本依赖 Flyway 单次执行（validateOnMigrate 校验 checksum），
+--     不要手动重复执行本脚本；如需重放请用下方 DOWN 回滚段先删索引。
 --   * 任务规格中部分字段名（session_id/status/order_no/sender_id+receiver_id）
 --     与实际表结构不符，本迁移按实际表结构使用对应列名（详见每条索引注释）
 -- ============================================================

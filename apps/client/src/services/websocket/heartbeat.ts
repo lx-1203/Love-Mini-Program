@@ -20,6 +20,7 @@ import {
   HEARTBEAT_PING_PAYLOAD,
   HEARTBEAT_TIMEOUT_MS,
 } from "./constants";
+import { isDev } from "../../config/env";
 
 /**
  * 心跳管理器
@@ -92,12 +93,16 @@ export class HeartbeatManager {
       this.consecutiveTimeouts += 1;
       if (this.consecutiveTimeouts >= HEARTBEAT_CONSECUTIVE_TIMEOUT_LIMIT) {
         this.consecutiveTimeouts = 0;
-        console.warn("[WebSocket] 心跳连续超时，将重连");
+        if (isDev) {
+          console.warn("[WebSocket] 心跳连续超时，将重连");
+        }
         onTimeout();
       } else {
-        console.warn(
-          `[WebSocket] 心跳超时（${this.consecutiveTimeouts}/${HEARTBEAT_CONSECUTIVE_TIMEOUT_LIMIT}），等待下一轮`
-        );
+        if (isDev) {
+          console.warn(
+            `[WebSocket] 心跳超时（${this.consecutiveTimeouts}/${HEARTBEAT_CONSECUTIVE_TIMEOUT_LIMIT}），等待下一轮`
+          );
+        }
       }
     }, HEARTBEAT_TIMEOUT_MS);
   }

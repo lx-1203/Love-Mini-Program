@@ -25,6 +25,10 @@ import { IMAGE_PATHS } from "../../config/images";
  * - 匿名匹配会话（temp_anonymous，蒙面头像）
  * - 多种消息预览类型：[语音] / [图片] / [表情]
  * 时间基于当前时刻动态生成，保证列表排序与「今天/昨天/更早」展示始终真实。
+ *
+ * R4-00136：对端用户 ID 与昵称与 likes/mock-data.ts 的 mock 用户体系对齐
+ * （user-2001 林夕 / user-2002 陈默 / user-2003 苏晴 / user-2005 顾言 /
+ * user-2006 叶知秋），同一 ID 在不同模块展示同一人物，避免演示数据混淆。
  */
 export const mockSessions: MessageSession[] = [
   {
@@ -48,8 +52,8 @@ export const mockSessions: MessageSession[] = [
     isOfficial: true, officialAccountId: "official-assistant",
   },
   {
-    id: "session-private-4", partnerId: "user-2006", partnerName: "夏言", partnerAvatar: IMAGE_PATHS.DEFAULT_AVATAR,
-    partnerHeadline: "大四 · 周末爬山", lastMessagePreview: "[图片] 给你看看周末拍的风景",
+    id: "session-private-4", partnerId: "user-2006", partnerName: "叶知秋", partnerAvatar: IMAGE_PATHS.DEFAULT_AVATAR,
+    partnerHeadline: "暨南大学 · 大二 · 文学系", lastMessagePreview: "[图片] 给你看看周末拍的风景",
     lastMessageSentAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), unreadCount: 128, pinned: false,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
   },

@@ -380,9 +380,10 @@ class Task12ConcurrencyTest {
                 any(String.class), any(String.class)))
                 .thenReturn(0L);
 
-        // 构造 AutoRenewService（Task 2：新增 walletService 依赖）
+        // 构造 AutoRenewService（Task 2：新增 walletService 依赖；
+        // R4-00316：新增 vipBillRepository 依赖——构造器签名 5 参）
         AutoRenewService service = new AutoRenewService(
-                userRepository, vipBillingLogRepository, redissonClient, walletService);
+                userRepository, vipBillingLogRepository, vipBillRepository, redissonClient, walletService);
 
         // Act：10 个线程并发触发续费
         AtomicInteger successCount = new AtomicInteger(0);

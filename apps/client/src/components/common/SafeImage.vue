@@ -54,6 +54,8 @@ import { resolveMediaUrl } from '../../utils/media';
 import { toLocalImage } from '../../utils/image-local';
 // R4-batch2: aria-label 兜底文案 i18n 化
 import { useI18n } from 'vue-i18n';
+// R4-batch4: 调试日志走环境开关（仅开发环境输出），生产包不保留
+import { isDev } from '../../config/env';
 
 const { t } = useI18n();
 
@@ -130,7 +132,9 @@ function onError() {
     return;
   }
 
-  console.warn(`[SafeImage] 图片加载失败（已重试 ${MAX_RETRY} 次），降级到 fallback: src="${props.src}", fallback="${props.fallback}"`);
+  if (isDev) {
+    console.warn(`[SafeImage] 图片加载失败（已重试 ${MAX_RETRY} 次），降级到 fallback: src="${props.src}", fallback="${props.fallback}"`);
+  }
   if (props.fallback) {
     hasError.value = true;
   } else {
@@ -141,7 +145,9 @@ function onError() {
 
 /** fallback 图片也加载失败：显示纯色占位 */
 function onFallbackError() {
-  console.warn(`[SafeImage] fallback 也加载失败，显示纯色占位: fallback="${props.fallback}"`);
+  if (isDev) {
+    console.warn(`[SafeImage] fallback 也加载失败，显示纯色占位: fallback="${props.fallback}"`);
+  }
   allFailed.value = true;
   isLoading.value = false;
 }

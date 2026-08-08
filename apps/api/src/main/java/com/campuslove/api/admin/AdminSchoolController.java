@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -293,10 +294,10 @@ public class AdminSchoolController {
  * @param sortOrder 排序权重（可选）
  */
 record AdminSchoolRequest(
-        @NotBlank(message = "高校名称不能为空")
-        @Size(min = 1, max = 128, message = "高校名称长度须为 1-128 字") String name,
-        @NotBlank(message = "高校编码不能为空")
-        @Pattern(regexp = "^[A-Za-z0-9]{1,32}$", message = "高校编码须为 1-32 位字母数字")
+        @NotBlank(message = ErrorMessages.SCHOOL_NAME_REQUIRED)
+        @Size(min = 1, max = 128, message = ErrorMessages.SCHOOL_NAME_LENGTH_INVALID) String name,
+        @NotBlank(message = ErrorMessages.SCHOOL_CODE_REQUIRED)
+        @Pattern(regexp = "^[A-Za-z0-9]{1,32}$", message = ErrorMessages.SCHOOL_CODE_LENGTH_INVALID)
         String code,
         Integer sortOrder) {
 }

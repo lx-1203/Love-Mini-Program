@@ -611,12 +611,12 @@ defineExpose({ reset });
 .filter-chip__label-row {
   display: flex;
   align-items: center;
-  gap: 8rpx;
+  gap: var(--sp-2);
 }
 
 .filter-chip__icon {
-  width: 28rpx;
-  height: 28rpx;
+  width: 28rpx; /* 固定布局尺寸，无对应 token */
+  height: 28rpx; /* 固定布局尺寸，无对应 token */
   color: var(--c-text-secondary);
 }
 
@@ -660,18 +660,18 @@ defineExpose({ reset });
 }
 
 .toggle-knob {
-  width: 40rpx;
-  height: 40rpx;
+  width: 40rpx; /* 固定布局尺寸，无对应 token */
+  height: 40rpx; /* 固定布局尺寸，无对应 token */
   border-radius: var(--r-circle, 50%);
   background: var(--c-bg-container);
   position: absolute;
-  top: 3rpx;
-  left: 3rpx;
+  top: 3rpx; /* 固定布局尺寸，无对应 token */
+  left: 3rpx; /* 固定布局尺寸，无对应 token */
   transition: left var(--d-normal, 200ms) ease;
   box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12));
 }
 
 .toggle-switch--on .toggle-knob {
-  left: 44rpx;
+  left: 44rpx; /* 固定布局尺寸，无对应 token */
 }
 </style>

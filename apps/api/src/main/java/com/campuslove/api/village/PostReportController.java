@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
@@ -85,10 +86,10 @@ public class PostReportController {
 
         // 校验帖子存在性
         if (postId == null || postId <= 0) {
-            throw new IllegalArgumentException("帖子 ID 非法");
+            throw new IllegalArgumentException(ErrorMessages.POST_ID_INVALID);
         }
         if (!postRepository.existsById(postId)) {
-            throw new IllegalArgumentException("帖子不存在或已删除");
+            throw new IllegalArgumentException(ErrorMessages.POST_NOT_FOUND_OR_DELETED);
         }
 
         try {
@@ -116,7 +117,7 @@ public class PostReportController {
             ));
         } catch (DataAccessException e) {
             log.error("帖子举报创建失败：postId={}, reporterId={}", postId, reporterId, e);
-            throw new RuntimeException("举报提交失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.REPORT_SUBMIT_FAILED_RETRY, e);
         }
     }
 }

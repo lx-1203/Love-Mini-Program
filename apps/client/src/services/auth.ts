@@ -38,8 +38,6 @@ type UserSession = Schemas["UserSession"];
 
 /** 微信登录超时时间（毫秒），超时后提示用户重试 */
 const WECHAT_LOGIN_TIMEOUT_MS = 15000;
-/** 本地存储中用于 CSRF 防护的 state key */
-const WECHAT_LOGIN_STATE_KEY = "login:wechat:state";
 /** 后端微信登录端点（相对 apiBaseUrl，最终拼成 /api/v1/auth/wechat） */
 const WECHAT_LOGIN_ENDPOINT = "/v1/auth/wechat";
 
@@ -84,43 +82,23 @@ export class WechatLoginError extends Error {
 }
 
 /**
- * 生成随机 state 字符串用于 CSRF 防护。
- *
- * 在 mp-weixin 端 crypto 可能不可用，使用 Math.random 兜底。
- * state 写入本地存储，wx.login 返回后校验一致性，防止中间人伪造登录请求。
- */
-function generateLoginState(): string {
-  try {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-      return crypto.randomUUID();
-    }
-  } catch (_e) {
-    // crypto 不可用时走兜底（mp-weixin 端可能不支持 crypto.randomUUID）
-  }
-  return `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-/**
- * 调用 uni.login 获取微信 code，带 15 秒超时与 state 校验防 CSRF。
+ * 调用 uni.login 获取微信 code，带 15 秒超时。
  *
  * 流程：
- * 1. 生成本地 state 写入 storage
- * 2. 调用 uni.login({provider: "weixin"}) 拉起微信登录
- * 3. 校验返回的 code 与本地 state 一致（防 CSRF）
- * 4. 超时则抛出 WechatLoginError(CLIENT_ERROR)
+ * 1. 调用 uni.login({provider: "weixin"}) 拉起微信登录
+ * 2. 无 code 返回时抛出 CLIENT_ERROR
+ * 3. 超时则抛出 WechatLoginError(CLIENT_ERROR)
+ *
+ * R4-00185：移除「本地生成 state → 本地存储 → 本地比对」的伪 CSRF 防护——
+ * 该流程无服务端参与，校验恒通过，无实际防护效果且误导维护者。
+ * 真实 CSRF 防护需服务端握手：由服务端生成 state 并在 open-type 登录回跳中
+ * 回传校验（或服务端对 code 一次一验），接入时在 services/auth.ts 此处补充。
  *
  * @returns 微信临时登录凭证 code（5 分钟有效）
- * @throws WechatLoginError 当超时 / 用户拒绝 / state 校验失败 / 无 code 返回时抛出
+ * @throws WechatLoginError 当超时 / 用户拒绝 / 无 code 返回时抛出
  */
 function getWxLoginCode(): Promise<string> {
   return new Promise<string>((resolve, reject) => {
-    const state = generateLoginState();
-    try {
-      uni.setStorageSync(WECHAT_LOGIN_STATE_KEY, state);
-    } catch (_e) {
-      // storage 写入失败不阻塞登录，但 state 校验会失败
-    }
-
     const timer = setTimeout(() => {
       // 超时拒绝，提示重试
       reject(
@@ -135,22 +113,6 @@ function getWxLoginCode(): Promise<string> {
       provider: "weixin",
       success: (res) => {
         clearTimeout(timer);
-        // 校验 state 防 CSRF：本地存储的 state 与本次生成必须一致
-        let savedState = "";
-        try {
-          savedState = uni.getStorageSync(WECHAT_LOGIN_STATE_KEY) as string;
-        } catch (_e) {
-          // 读取失败忽略，但 state 校验会失败
-        }
-        if (!savedState || savedState !== state) {
-          reject(
-            new WechatLoginError(
-              WechatLoginErrorCode.CLIENT_ERROR,
-              "登录状态校验失败，请重试"
-            )
-          );
-          return;
-        }
         if (!res.code) {
           reject(
             new WechatLoginError(

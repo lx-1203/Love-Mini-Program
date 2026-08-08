@@ -76,6 +76,22 @@ export const IMAGE_PATHS = {
     HOME: IMAGES + '/posters/home-poster.jpg',
   },
 
+  /**
+   * 生成素材（/static/generated 根目录，R4-00245：image-local.ts 兜底映射引用本组，
+   * 不再散落硬编码 /static/generated/... 路径）。
+   */
+  GENERATED: {
+    CAMPUS_GATE: '/static/generated/images/campus/campus-gate.jpg',
+    CAMPUS_LAKE: '/static/generated/images/campus/campus-lake.jpg',
+    CAMPUS_LIBRARY: '/static/generated/images/campus/campus-library.jpg',
+    CAMPUS_NIGHT: '/static/generated/images/campus/campus-night.jpg',
+    CAMPUS_PLAYGROUND: '/static/generated/images/campus/campus-playground.jpg',
+    CAMPUS_CAFETERIA: '/static/generated/images/campus/campus-cafeteria.jpg',
+    CAMPUS_CLASSROOM: '/static/generated/images/campus/campus-classroom.jpg',
+    CAMPUS_RAIN: '/static/generated/images/campus/campus-rain.jpg',
+    HOME_POSTER: '/static/generated/images/posters/home-poster.jpg',
+  },
+
   BANNERS: {
     VILLAGE: IMAGES + '/banners/village-banner.jpg',
     HOME: IMAGES + '/banners/home-banner.jpg',

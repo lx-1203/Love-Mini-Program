@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.ErrorMessages;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -66,7 +67,7 @@ public class PostTagController {
     @GetMapping("/posts")
     public ResponseEntity<List<PostSummaryView>> getPostsByTag(
             @RequestParam(name = "tagName")
-            @NotBlank(message = "tagName 不能为空") @Size(max = 32, message = "tagName 长度不能超过 32") String tagName,
+            @NotBlank(message = ErrorMessages.TAG_NAME_REQUIRED) @Size(max = 32, message = ErrorMessages.TAG_NAME_MAX_LENGTH) String tagName,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
         List<PostSummaryView> posts = postTagService.getPostsByTag(tagName, page, size);

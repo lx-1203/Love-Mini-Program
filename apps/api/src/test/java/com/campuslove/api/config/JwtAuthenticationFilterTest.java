@@ -30,13 +30,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
  * <p>验证 JWT 认证过滤器在引入 {@link TokenBlacklistService} 后的核心行为：
  * <ul>
  *   <li>场景 1：jti 在黑名单中（用户已登出）→ 清除 SecurityContext，不调用后续认证</li>
- *   <li>场景 2：jti 不在黑名单中 → 走正常认证流程，设置 SecurityContext</li>
+ *   <li>场景 2：jti 不在黑名单中 → 走正常认证流程，设置 SecurityContext；
+ *       R4-00274 黑名单统一为 jti 单轨——不再双轨检查完整 token 黑名单（isTokenRevoked）</li>
  *   <li>场景 3：jti 为 null（旧 token 无 jti claim）→ 跳过黑名单校验，走正常认证</li>
- *   <li>场景 4：permit 路径（/api/auth/**）→ 直接放行，不查黑名单</li>
+ *   <li>场景 4：permit 路径（/ws/**）→ 直接放行，不查黑名单</li>
  *   <li>场景 5：无 Authorization 头 → 不查黑名单，由 SecurityConfig 决定是否拒绝</li>
  *   <li>场景 6：token 无效（getUserIdFromToken 返回 null）→ 清除 SecurityContext</li>
  *   <li>场景 7：管理员用户 token → 注入 ROLE_ADMIN</li>
- *   <li>场景 8：黑名单服务异常 → 不抛异常，清除 SecurityContext（兜底由后续过滤器处理）</li>
+ *   <li>场景 8：黑名单服务返回 false → 正常认证流程不抛异常</li>
  * </ul>
  *
  * <p>测试策略：纯 Mockito，模拟 {@link JwtTokenProvider}、{@link UserRepository}、
@@ -141,15 +142,16 @@ class JwtAuthenticationFilterTest {
         when(request.getHeader("Authorization")).thenReturn("Bearer " + TEST_TOKEN);
         when(jwtTokenProvider.getJtiFromToken(TEST_TOKEN)).thenReturn(TEST_JTI);
         when(tokenBlacklistService.isRevoked(TEST_JTI)).thenReturn(false);
-        when(jwtTokenProvider.isTokenRevoked(TEST_TOKEN)).thenReturn(false);
         when(jwtTokenProvider.getUserIdFromToken(TEST_TOKEN)).thenReturn(String.valueOf(TEST_USER_ID));
         when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(normalUser));
 
         // Act
         filter.doFilterInternal(request, response, filterChain);
 
-        // Assert：黑名单被查询
+        // Assert：黑名单被查询（jti 单轨）
         verify(tokenBlacklistService).isRevoked(TEST_JTI);
+        // R4-00274：不再双轨检查完整 token 黑名单
+        verify(jwtTokenProvider, never()).isTokenRevoked(anyString());
         // Assert：查询用户
         verify(jwtTokenProvider).getUserIdFromToken(TEST_TOKEN);
         verify(userRepository).findById(TEST_USER_ID);
@@ -166,7 +168,8 @@ class JwtAuthenticationFilterTest {
      * 走正常认证流程。
      *
      * <p>兼容性场景：旧版本签发的 token 可能没有 jti claim，过滤器应跳过黑名单校验，
-     * 由后续签名/过期校验兜底。这种 token 仍可被旧 revokeToken（完整 token 黑名单）撤销。</p>
+     * 由后续签名/过期校验兜底。R4-00274 后过滤器不再双轨检查完整 token 黑名单
+     * （revokeToken 仅作为服务层兼容写路径保留）。</p>
      */
     @Test
     void doFilter_whenJtiIsNull_shouldSkipBlacklistAndAuthenticate() throws Exception {
@@ -175,7 +178,6 @@ class JwtAuthenticationFilterTest {
         when(request.getRequestURI()).thenReturn("/api/v1/users/123");
         when(request.getHeader("Authorization")).thenReturn("Bearer " + TEST_TOKEN);
         when(jwtTokenProvider.getJtiFromToken(TEST_TOKEN)).thenReturn(null); // 旧 token 无 jti
-        when(jwtTokenProvider.isTokenRevoked(TEST_TOKEN)).thenReturn(false);
         when(jwtTokenProvider.getUserIdFromToken(TEST_TOKEN)).thenReturn(String.valueOf(TEST_USER_ID));
         when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(normalUser));
 
@@ -192,15 +194,18 @@ class JwtAuthenticationFilterTest {
     }
 
     /**
-     * 场景 4：permit 路径（/api/v1/auth/me）→ 直接放行，不查黑名单，不解析 token。
+     * 场景 4：permit 路径（/ws/**）→ 直接放行，不查黑名单，不解析 token。
      *
-     * <p>permit 路径设计为公开访问（登录入口等），不应执行任何认证逻辑。
-     * 验证过滤器在 permit 路径下短路返回。</p>
+     * <p>permit 路径设计为公开访问（WebSocket 握手、内容过滤检查等），
+     * 不应执行任何认证逻辑。验证过滤器在 permit 路径下短路返回。
+     * 注：R4-00261 后 /api/v1/auth/** 已移出 permit 列表（匿名放行由
+     * SecurityConfig permitAll 承担，携带 token 的请求仍注入认证上下文），
+     * 此处改用仍在 permit 列表内的 /ws/** 验证短路行为。</p>
      */
     @Test
     void doFilter_whenPermitPath_shouldSkipAllAuthLogic() throws Exception {
         // Arrange
-        when(request.getRequestURI()).thenReturn("/api/v1/auth/me");
+        when(request.getRequestURI()).thenReturn("/ws/chat");
 
         // Act
         filter.doFilterInternal(request, response, filterChain);
@@ -254,7 +259,6 @@ class JwtAuthenticationFilterTest {
         when(request.getHeader("Authorization")).thenReturn("Bearer " + TEST_TOKEN);
         when(jwtTokenProvider.getJtiFromToken(TEST_TOKEN)).thenReturn(TEST_JTI);
         when(tokenBlacklistService.isRevoked(TEST_JTI)).thenReturn(false);
-        when(jwtTokenProvider.isTokenRevoked(TEST_TOKEN)).thenReturn(false);
         when(jwtTokenProvider.getUserIdFromToken(TEST_TOKEN)).thenReturn(null); // token 无效
 
         // Act：不应抛异常（过滤器内部捕获 BadCredentialsException）
@@ -281,7 +285,6 @@ class JwtAuthenticationFilterTest {
         when(request.getHeader("Authorization")).thenReturn("Bearer " + TEST_TOKEN);
         when(jwtTokenProvider.getJtiFromToken(TEST_TOKEN)).thenReturn(TEST_JTI);
         when(tokenBlacklistService.isRevoked(TEST_JTI)).thenReturn(false);
-        when(jwtTokenProvider.isTokenRevoked(TEST_TOKEN)).thenReturn(false);
         when(jwtTokenProvider.getUserIdFromToken(TEST_TOKEN)).thenReturn(String.valueOf(TEST_USER_ID));
         when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(adminUser));
 
@@ -313,7 +316,6 @@ class JwtAuthenticationFilterTest {
         when(request.getHeader("Authorization")).thenReturn("Bearer " + TEST_TOKEN);
         when(jwtTokenProvider.getJtiFromToken(TEST_TOKEN)).thenReturn(TEST_JTI);
         when(tokenBlacklistService.isRevoked(TEST_JTI)).thenReturn(false);
-        when(jwtTokenProvider.isTokenRevoked(TEST_TOKEN)).thenReturn(false);
         when(jwtTokenProvider.getUserIdFromToken(TEST_TOKEN)).thenReturn(String.valueOf(TEST_USER_ID));
         when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(normalUser));
 

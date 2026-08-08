@@ -17,6 +17,9 @@ import { ensurePrivacyAuthorized } from "../../utils/privacy";
 import { getChannelConfig } from "../../config/channels";
 import { IMAGE_PATHS } from "../../config/images";
 import ActivityCard from "../../components/village/ActivityCard.vue";
+import { designTokens } from "../../theme/tokens";
+// R4-00105：标题长度对齐后端校验（帖子模式 5-30 字），不再用 50 导致后端拒绝
+import { POST_TITLE_MAX_LENGTH } from "../../constants/village";
 
 const { t } = useI18n();
 const circleStore = useCircleStore();
@@ -118,12 +121,15 @@ function toggleFavorite() {
 const MAX_LENGTH = 500;
 /** 最大图片数 */
 const MAX_IMAGES = 9;
+/** 发布成功 toast 展示后跳转返回的延时（R4-batch4：魔法数字提取） */
+const POST_TOPIC_NAV_DELAY_MS = 800;
 
 /**
  * switch 品牌色：小程序 switch 的 color 为原生属性，不支持 CSS 变量，
  * 此处取 design token --c-brand 的实际色值，与主题保持一致（ui-ux B9 修复）。
+ * R4-batch4：硬编码 #3FCF8E 改为引用 designTokens.color.brand[500]（与 --c-brand 同源）。
  */
-const brandColor = "#3FCF8E";
+const brandColor = designTokens.color.brand[500];
 
 /** 当前字数 */
 const currentLength = computed(() => content.value.length);
@@ -306,7 +312,7 @@ async function submitTopic() {
       postSuccessNavTimer = setTimeout(() => {
         postSuccessNavTimer = null;
         uni.navigateBack();
-      }, 800);
+      }, POST_TOPIC_NAV_DELAY_MS);
       return;
     }
 
@@ -354,7 +360,7 @@ async function submitTopic() {
     postSuccessNavTimer = setTimeout(() => {
       postSuccessNavTimer = null;
       uni.navigateBack();
-    }, 800);
+    }, POST_TOPIC_NAV_DELAY_MS);
   } catch (_e) {
     uni.showToast({
       title: circleStore.errorMessage || t("circle.postTopicPublishFailed"),
@@ -415,7 +421,7 @@ if (options.activityId) {
           v-model="title"
           class="title-input"
           :placeholder="t('circle.postTopicTitlePlaceholder')"
-          maxlength="50" :aria-label="t('circle.postTopicTitleAria')"
+          :maxlength="POST_TITLE_MAX_LENGTH" :aria-label="t('circle.postTopicTitleAria')"
         />
       </view>
 

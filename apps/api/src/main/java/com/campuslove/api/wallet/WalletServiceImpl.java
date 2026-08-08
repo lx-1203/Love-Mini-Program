@@ -1,5 +1,6 @@
 package com.campuslove.api.wallet;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -61,9 +62,10 @@ public class WalletServiceImpl implements WalletService {
      *   <li>VIP_RENEW：VIP 自动续费（AutoRenewService）</li>
      *   <li>ADMIN_ADJUST：管理后台余额调整（AdminWalletController）</li>
      *   <li>MESSAGE_UNLOCK / VISITORS_UNLOCK / LIKES_UNLOCK / WHISPER_UNLOCK：客户端
-     *       旧版解锁扣费（/wallet/deduct 直调，兼容过渡期）</li>
+     *       解锁扣费（/wallet/deduct 直调；R4-00346 起端点侧另设客户端白名单，
+     *       仅放行这 4 个客户端语义类型）</li>
      *   <li>UNLOCK_LIKED_ME / UNLOCK_VISITOR：P0-17 商业化解锁（/wallet/unlock 内部扣费）</li>
-     *   <li>SWEET_TALK：AI 情话解锁（预留）</li>
+     *   <li>SWEET_TALK：AI 情话解锁（预留，仅服务端内部调用，客户端不可传）</li>
      * </ul>
      */
     private static final Set<String> DEDUCT_RELATED_TYPE_WHITELIST = Set.of(
@@ -111,7 +113,7 @@ public class WalletServiceImpl implements WalletService {
         // P0-17：relatedType 白名单校验——未登记的业务类型禁止扣费（返回 400）
         if (!DEDUCT_RELATED_TYPE_WHITELIST.contains(relatedType)) {
             log.warn("钱包扣减被拒绝：relatedType 不在白名单, userId={}, relatedType={}", userId, relatedType);
-            throw new IllegalArgumentException("不支持的扣费业务类型: " + relatedType);
+            throw new IllegalArgumentException(ErrorMessages.UNSUPPORTED_DEDUCT_TYPE_PREFIX + relatedType);
         }
 
         // 幂等校验：orderId 已存在则直接返回已处理结果
@@ -181,10 +183,10 @@ public class WalletServiceImpl implements WalletService {
             log.warn("钱包扣减幂等冲突且重查为空，强制回滚：userId={}, orderId={}", userId, orderId);
             org.springframework.transaction.interceptor.TransactionAspectSupport
                     .currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException("钱包扣减失败且幂等查询无记录，已回滚", e);
+            throw new RuntimeException(ErrorMessages.WALLET_DEDUCT_ROLLBACK, e);
         } catch (DataAccessException e) {
             log.error("钱包扣减数据库异常：userId={}, orderId={}", userId, orderId, e);
-            throw new RuntimeException("钱包扣减失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.WALLET_DEDUCT_FAILED_RETRY, e);
         }
     }
 
@@ -260,10 +262,10 @@ public class WalletServiceImpl implements WalletService {
             log.warn("钱包充值幂等冲突且重查为空，强制回滚：userId={}, orderId={}", userId, orderId);
             org.springframework.transaction.interceptor.TransactionAspectSupport
                     .currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException("钱包充值失败且幂等查询无记录，已回滚", e);
+            throw new RuntimeException(ErrorMessages.WALLET_RECHARGE_ROLLBACK, e);
         } catch (DataAccessException e) {
             log.error("钱包充值数据库异常：userId={}, orderId={}", userId, orderId, e);
-            throw new RuntimeException("钱包充值失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.WALLET_RECHARGE_FAILED_RETRY, e);
         }
     }
 
@@ -276,7 +278,7 @@ public class WalletServiceImpl implements WalletService {
     @Transactional(readOnly = true)
     public Long getBalance(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         return userWalletRepository.findByUserId(userId)
                 .map(UserWallet::getBalanceCents)
@@ -292,7 +294,7 @@ public class WalletServiceImpl implements WalletService {
     @Transactional(readOnly = true)
     public Page<WalletTransactionLog> listTransactions(Long userId, Pageable pageable) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         return transactionLogRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
     }
@@ -324,16 +326,16 @@ public class WalletServiceImpl implements WalletService {
      */
     private void validateParams(Long userId, Long amountCents, String orderId, String relatedType) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         if (amountCents == null || amountCents <= 0) {
-            throw new IllegalArgumentException("金额必须为正数");
+            throw new IllegalArgumentException(ErrorMessages.AMOUNT_POSITIVE);
         }
         if (orderId == null || orderId.isBlank()) {
-            throw new IllegalArgumentException("订单号不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ORDER_NO_REQUIRED);
         }
         if (relatedType == null || relatedType.isBlank()) {
-            throw new IllegalArgumentException("关联业务类型不能为空");
+            throw new IllegalArgumentException(ErrorMessages.BIZ_TYPE_REQUIRED);
         }
     }
 

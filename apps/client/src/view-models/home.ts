@@ -108,14 +108,15 @@ function getRecommendationAction(completion: HomeCompletionState): HomeRecommend
 
   if (tasks.length > 0) {
     return {
-      label: t("homeSetup.completeSetup"),
+      // R4-00221：与 view-models/chat.ts（经 statusCopyMap）统一文案源 config.statusCopy.chatAction.*
+      label: t("config.statusCopy.chatAction.completeSetup"),
       mode: "complete-setup",
       target: tasks[0]!.path,
     };
   }
 
   return {
-    label: t("homeSetup.goChat"),
+    label: t("config.statusCopy.chatAction.goChat"),
     mode: "go-chat",
     // 2026-08-07 消息页重构：tabBar 消息 tab 已切到新版消息列表页
     target: "/pages/messages/index",

@@ -189,7 +189,7 @@ class WebSocketClient {
       this.stateMachine.getState() === "connected" ||
       this.stateMachine.getState() === "connecting"
     ) {
-      console.warn("[WebSocket] 已存在活跃连接或正在连接中，跳过重复连接");
+      wsTrace("已存在活跃连接或正在连接中，跳过重复连接");
       return;
     }
 
@@ -364,7 +364,7 @@ class WebSocketClient {
   unsubscribe(subId: string): void {
     const destination = this.subscriptions.get(subId);
     if (!destination) {
-      console.warn(`[WebSocket] 未找到订阅: ${subId}`);
+      wsTrace("未找到订阅:", subId);
       return;
     }
 
@@ -416,7 +416,7 @@ class WebSocketClient {
    */
   send(destination: string, body: Record<string, unknown> = {}): void {
     if (!this.isConnected() || !this.socketTask) {
-      console.warn("[WebSocket] 未连接，无法发送消息");
+      wsTrace("未连接，无法发送消息");
       return;
     }
 
@@ -919,7 +919,7 @@ class WebSocketClient {
       this.socketTask.send({
         data: pingFrame,
         fail: (err) => {
-          console.warn("[WebSocket] 心跳发送失败:", err);
+          wsTrace("心跳发送失败:", err);
         },
       });
     } catch (_e) {

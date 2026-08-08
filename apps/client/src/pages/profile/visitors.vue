@@ -30,15 +30,13 @@ import { errorHaptic, lightHaptic } from "../../utils/haptic";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 
-/** 前端展示用的访客记录（带分组标签） */
+/** 前端展示用的访客记录（时间分组由 getGroup 推导，R4-00114：不再预置死字段） */
 interface VisitorItem {
   visitorId: number;
   nickname: string;
   avatarUrl: string;
   campusName: string;
   visitedAt: string;
-  /** 时间分组：today / yesterday / earlier */
-  group: "today" | "yesterday" | "earlier";
 }
 
 const { t } = useI18n();
@@ -64,7 +62,6 @@ const visitors = computed<VisitorItem[]>(() =>
     avatarUrl: v.avatar,
     campusName: v.headline,
     visitedAt: v.visitedAt,
-    group: "earlier",
   })),
 );
 
@@ -114,7 +111,8 @@ const groupedVisitors = computed<{ group: "today" | "yesterday" | "earlier"; ite
   };
   for (const v of visitors.value) {
     const group = getGroup(v.visitedAt);
-    groups[group].push({ ...v, group });
+    // R4-00114：group 为派生字段（getGroup 推导），不再冗余存储到 item 上
+    groups[group].push({ ...v });
   }
   const result: { group: "today" | "yesterday" | "earlier"; items: VisitorItem[] }[] = [
     { group: "today", items: groups.today },

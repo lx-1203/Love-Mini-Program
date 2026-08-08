@@ -468,28 +468,43 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /matches/dto:
-    get:
+  /matches/super-like:
+    post:
       tags: [match]
-      summary: Get match DTO list (placeholder)
+      summary: Super-like a user (exempt from daily like limit)
       description: |
-        Returns match DTO list for the current user. Currently returns an
-        empty list because the standalone `Match` entity is not yet
-        introduced; will be populated once MatchRepository is wired up.
-      operationId: getMatchesDto
+        Executes a super-like on the target user. Unlike regular likes, the
+        super-like is not bounded by the daily ordinary-like cap (30/day);
+        since R4-00334 it is subject to its own daily quota
+        (`app.match.super-like-daily-limit`, default 10/day). When the like
+        is mutual, a `HeartSignal` with `matchType=super_like` is created
+        (higher-weight semantics). Idempotent. Rate-limited per client IP.
+      operationId: superLikeUser
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LikeTargetRequest'
+            example:
+              targetUserId: 1234
       responses:
         '200':
-          description: Match DTO list (currently empty)
+          description: |
+            Super-like recorded. `data` is a `HeartSignalView` when the like is
+            mutual (match created), otherwise `null`.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MatchDto'
+                $ref: '#/components/schemas/HeartSignalApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /profile/visitors:
@@ -839,19 +854,6 @@ components:
       required:
         - id
         - prompt
-    MatchDto:
-      type: object
-      description: Match DTO (currently always returned as an empty list).
-      properties:
-        matchId:
-          type: integer
-          format: int64
-        partnerId:
-          type: integer
-          format: int64
-        createdAt:
-          type: string
-          format: date-time
     ProfileVisitorView:
       type: object
       properties:

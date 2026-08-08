@@ -1,5 +1,6 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.monitor.AuthMetrics;
@@ -155,7 +156,7 @@ public class AuthController {
 
     @PostMapping("/wechat-login")
     @Operation(
-            summary = "微信小程序登录（旧路径，建议使用 /auth/wechat）",
+            summary = "微信小程序登录（旧路径别名，R4-00268 收敛为共享实现，建议使用 /auth/wechat）",
             description = "接收前端 wx.login() 返回的临时 code，调用微信 code2session 换取 openId，签发 JWT。速率限制：桶容量 10，每 10 秒补充 1 个令牌（按 IP 限流）。",
             operationId = "loginWithWechatLegacy"
     )
@@ -171,26 +172,9 @@ public class AuthController {
     public UserSessionView loginWithWechat(
             @Parameter(description = "微信登录请求体，包含 wx.login() 返回的 code", required = true)
             @Valid @RequestBody WechatLoginRequest request) {
-        try {
-            UserSessionView session = authService.loginWithWechat(request.code());
-            // 登录成功：记录成功指标（指标失败不影响主流程）
-            try {
-                if (session != null && session.userId() != null) {
-                    authMetrics.recordLoginSuccess(parseUserId(session.userId()));
-                }
-            } catch (RuntimeException ignore) {
-                // 监控逻辑失败忽略，不影响登录主流程
-            }
-            return session;
-        } catch (RuntimeException e) {
-            // 登录失败：记录失败指标，原因取异常类名避免泄露敏感信息
-            try {
-                authMetrics.recordLoginFailure(e.getClass().getSimpleName());
-            } catch (RuntimeException ignore) {
-                // 监控逻辑失败忽略
-            }
-            throw e;
-        }
+        // R4-00268：与 WechatAuthController./wechat（推荐路径）收敛为共享实现，
+        // 本端点保留为兼容别名
+        return WechatLoginSupport.login(authService, authMetrics, request.code());
     }
 
     /**
@@ -424,9 +408,9 @@ public class AuthController {
  * @param password 管理员密码（不可为空）
  */
 record AdminLoginRequest(
-    @NotBlank @Size(max = 128, message = "username 长度不能超过 128") String username,
+    @NotBlank @Size(max = 128, message = ErrorMessages.USERNAME_MAX_LENGTH) String username,
     // infra R2-00207: 密码长度上限，防止超大密码触发 BCrypt 高 CPU 计算
-    @NotBlank @Size(max = 128, message = "password 长度不能超过 128") String password) {
+    @NotBlank @Size(max = 128, message = ErrorMessages.PASSWORD_MAX_LENGTH) String password) {
 }
 
 /**
@@ -437,9 +421,9 @@ record AdminLoginRequest(
  * @param nickname 昵称（1-20 字）
  */
 record RegisterRequest(
-    @NotBlank @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确") String phone,
-    @NotBlank @Size(min = 6, max = 64, message = "密码长度须为 6-64 位") String password,
-    @NotBlank @Size(min = 1, max = 20, message = "昵称长度须为 1-20 字") String nickname) {
+    @NotBlank @Pattern(regexp = "^1[3-9]\\d{9}$", message = ErrorMessages.PHONE_FORMAT_INVALID) String phone,
+    @NotBlank @Size(min = 6, max = 64, message = ErrorMessages.PASSWORD_LENGTH_INVALID) String password,
+    @NotBlank @Size(min = 1, max = 20, message = ErrorMessages.NICKNAME_LENGTH_INVALID) String nickname) {
 }
 
 /**
@@ -449,6 +433,6 @@ record RegisterRequest(
  * @param password 密码
  */
 record PhoneLoginRequest(
-    @NotBlank @Size(max = 32, message = "手机号长度不合法") String phone,
-    @NotBlank @Size(max = 64, message = "密码长度不合法") String password) {
+    @NotBlank @Size(max = 32, message = ErrorMessages.PHONE_LENGTH_ILLEGAL) String phone,
+    @NotBlank @Size(max = 64, message = ErrorMessages.PASSWORD_LENGTH_ILLEGAL) String password) {
 }

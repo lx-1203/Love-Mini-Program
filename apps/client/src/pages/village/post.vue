@@ -5,7 +5,7 @@
  * 新增：预置话题标签选择器，支持横向滚动多选（最多3个）
  */
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVillageStore } from "../../stores/village";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
@@ -100,6 +100,11 @@ onUnmounted(() => {
   }
 });
 
+// R4-00159：页面卸载时清理 village store 定时器/请求资源
+onUnload(() => {
+  villageStore.dispose();
+});
+
 // 注：POST_MAX_LENGTH / POST_MAX_IMAGES / MAX_PRESET_TAGS 由 constants 统一提供
 
 /** 当前字数 */
@@ -140,16 +145,16 @@ function migrateCategory(id: string): string {
 }
 
 /**
- * 加载预置话题标签（从后端获取）
+ * 加载预置话题标签（从后端获取）。
+ * R4-00096：mock 与 real 失败兜底共用 i18n 预置列表（village.post.presetTags），
+ * 不再在页面内硬编码中文标签；real 成功时以后端 /post-tags 返回为准。
  */
 async function loadPresetTags() {
+  const fallbackTags = (): string[] => [...t("village.post.presetTags")];
   try {
     if (appEnv.apiMode === "mock") {
-      // Mock 模式下使用本地预置标签
-      presetTags.value = [
-        "校园日常", "兴趣分享", "找搭子", "求助",
-        "表白墙", "校友动态", "生活记录", "技术交流",
-      ];
+      // Mock 模式下使用 i18n 预置标签
+      presetTags.value = fallbackTags();
       return;
     }
     // Real 模式下从后端 API 获取
@@ -159,11 +164,8 @@ async function loadPresetTags() {
     });
     presetTags.value = data;
   } catch (_e) {
-    // 加载失败时使用默认列表
-    presetTags.value = [
-      "校园日常", "兴趣分享", "找搭子", "求助",
-      "表白墙", "校友动态", "生活记录", "技术交流",
-    ];
+    // 加载失败时使用 i18n 默认列表
+    presetTags.value = fallbackTags();
   }
 }
 

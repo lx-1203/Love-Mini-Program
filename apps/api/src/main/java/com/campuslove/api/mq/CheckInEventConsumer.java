@@ -6,7 +6,6 @@ import com.campuslove.api.entity.Notification.NotificationType;
 import com.campuslove.api.entity.Notification.ReferenceType;
 import com.campuslove.api.repository.NotificationRepository;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -39,8 +38,25 @@ public class CheckInEventConsumer {
     /** WebSocket 推送签到通知的队列路径 */
     private static final String WS_CHECKIN_QUEUE = "/queue/checkin";
 
-    /** 连续签到奖励里程碑天数（达到这些天数时额外推送奖励通知） */
-    private static final int[] REWARD_MILESTONES = {7, 14, 30, 60, 100, 365};
+    /**
+     * 连续签到奖励里程碑天数（达到这些天数时额外推送奖励通知）。
+     * R4-00376：抽为配置项 {@code app.checkin.reward-milestones}（逗号分隔），
+     * 调整奖励规则无需改代码发版；默认 7,14,30,60,100,365。
+     */
+    private int[] rewardMilestones = {7, 14, 30, 60, 100, 365};
+
+    @org.springframework.beans.factory.annotation.Value("${app.checkin.reward-milestones:7,14,30,60,100,365}")
+    public void setRewardMilestones(String csv) {
+        if (csv == null || csv.isBlank()) {
+            this.rewardMilestones = new int[0];
+            return;
+        }
+        this.rewardMilestones = java.util.Arrays.stream(csv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .mapToInt(Integer::parseInt)
+                .toArray();
+    }
 
     /** 通知持久化 Repository */
     @Autowired(required = false)
@@ -127,7 +143,7 @@ public class CheckInEventConsumer {
     /**
      * 检查并推送连续签到奖励通知。
      *
-     * <p>当连续签到天数达到 {@link #REWARD_MILESTONES} 中的里程碑时，
+     * <p>当连续签到天数达到配置的里程碑（{@code app.checkin.reward-milestones}）时，
      * 额外推送奖励通知。</p>
      *
      * @param message 签到事件消息
@@ -137,7 +153,7 @@ public class CheckInEventConsumer {
         int consecutiveDays = message.getConsecutiveDays();
         LocalDateTime createdAt = toLocalDateTime(message.getCreatedAt());
 
-        for (int milestone : REWARD_MILESTONES) {
+        for (int milestone : rewardMilestones) {
             if (consecutiveDays == milestone) {
                 String title = "连续签到奖励";
                 String content = String.format(

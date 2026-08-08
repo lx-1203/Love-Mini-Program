@@ -1,10 +1,13 @@
 package com.campuslove.api.user;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.profile.ProfileService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -72,27 +76,37 @@ public class UserController {
     }
 
     /**
-     * 获取指定用户的粉丝列表。
-     * GET /api/users/{id}/followers
+     * 获取指定用户的粉丝列表（R4-00302 加分页，粉丝量大时避免全量返回）。
+     * GET /api/users/{id}/followers?page=0&size=20
      *
-     * @param id 用户 ID
-     * @return 粉丝用户列表
+     * @param id   用户 ID
+     * @param page 页码（从 0 开始，默认 0）
+     * @param size 每页大小（默认 20，最大 200）
+     * @return 粉丝用户列表（当前页）
      */
     @GetMapping("/{id}/followers")
-    public ApiResponse<List<FollowUserView>> getFollowers(@PathVariable("id") @Positive Long id) {
-        return ApiResponse.ok(profileService.getFollowers(id));
+    public ApiResponse<List<FollowUserView>> getFollowers(
+            @PathVariable("id") @Positive Long id,
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(200) int size) {
+        return ApiResponse.ok(profileService.getFollowers(id, page, size));
     }
 
     /**
-     * 获取指定用户的关注列表。
-     * GET /api/users/{id}/following
+     * 获取指定用户的关注列表（R4-00302 加分页）。
+     * GET /api/users/{id}/following?page=0&size=20
      *
-     * @param id 用户 ID
-     * @return 关注用户列表
+     * @param id   用户 ID
+     * @param page 页码（从 0 开始，默认 0）
+     * @param size 每页大小（默认 20，最大 200）
+     * @return 关注用户列表（当前页）
      */
     @GetMapping("/{id}/following")
-    public ApiResponse<List<FollowUserView>> getFollowing(@PathVariable("id") @Positive Long id) {
-        return ApiResponse.ok(profileService.getFollowing(id));
+    public ApiResponse<List<FollowUserView>> getFollowing(
+            @PathVariable("id") @Positive Long id,
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(200) int size) {
+        return ApiResponse.ok(profileService.getFollowing(id, page, size));
     }
 
     /**
@@ -148,8 +162,8 @@ record IsFollowingView(boolean isFollowing) {
  * 批量在线状态查询请求体。
  */
 record BatchOnlineStatusRequest(
-        @NotEmpty(message = "userIds 列表不能为空")
-        @Size(max = 500, message = "userIds 列表不能超过 500 条")
+        @NotEmpty(message = ErrorMessages.USER_IDS_REQUIRED)
+        @Size(max = 500, message = ErrorMessages.USER_IDS_MAX_COUNT)
         List<@Positive Long> userIds
 ) {
 }

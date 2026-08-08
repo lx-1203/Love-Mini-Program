@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.admin.audit.AuditOperation;
@@ -9,6 +10,8 @@ import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.SensitiveWord;
 import com.campuslove.api.repository.SensitiveWordRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -19,7 +22,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -56,6 +59,9 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminSensitiveWordController {
 
+    /** 敏感词批量导入条数上限（R4-01822，与导入服务分批处理语义一致） */
+    public static final int MAX_IMPORT_WORDS = 10000;
+
     private final SensitiveWordRepository sensitiveWordRepository;
     private final SensitiveWordFilter sensitiveWordFilter;
     private final SensitiveWordImportService importService;
@@ -73,19 +79,27 @@ public class AdminSensitiveWordController {
     }
 
     /**
-     * 查询敏感词列表。
-     * 支持可选 category 过滤；不传 category 返回全部。
+     * 查询敏感词列表（R4-00387 加分页，词库上万条时防止响应体过大）。
+     * 支持可选 category 过滤；不传 category 返回全部（分页）。
+     *
+     * @param category 分类过滤（可选）
+     * @param page     页码（从 0 开始，默认 0）
+     * @param size     每页大小（默认 100，最大 1000）
      */
     @GetMapping
     public ResponseEntity<List<SensitiveWordView>> list(
-            @RequestParam(name = "category", required = false) String category) {
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "100") @Min(1) @Max(1000) int size) {
         SecurityUtils.getCurrentUserId();
+        PageRequest pageable = PageRequest.of(page, size);
         List<SensitiveWord> entities;
         if (category != null && !category.isBlank()) {
-            entities = sensitiveWordRepository.findByCategoryOrderByCreatedAtDesc(category, Pageable.unpaged())
+            entities = sensitiveWordRepository
+                    .findByCategoryOrderByCreatedAtDesc(category, pageable)
                     .getContent();
         } else {
-            entities = sensitiveWordRepository.findAllByOrderByCreatedAtDesc();
+            entities = sensitiveWordRepository.findAllByOrderByCreatedAtDesc(pageable).getContent();
         }
         List<SensitiveWordView> views = entities.stream().map(this::toView).toList();
         return ResponseEntity.ok(views);
@@ -248,21 +262,21 @@ record SensitiveWordView(
 record SensitiveWordCreateRequest(
         @NotBlank @Size(max = 64) String word,
         @Pattern(regexp = "POLITICS|PORN|ABUSE|AD|OTHER",
-                message = "category 必须为 POLITICS/PORN/ABUSE/AD/OTHER")
+                message = ErrorMessages.SENSITIVE_CATEGORY_INVALID)
         String category
 ) {}
 
 /**
  * SubTask 5.3.5：批量导入敏感词请求。
  *
- * @param words    待导入的敏感词列表（最多 10000 条，超过将分批处理）
+ * @param words    待导入的敏感词列表（最多 {@link AdminSensitiveWordController#MAX_IMPORT_WORDS} 条）
  * @param category 敏感词分类（POLITICS/PORN/ABUSE/AD/OTHER），可为 null
  */
 record SensitiveWordBatchImportRequest(
         @jakarta.validation.constraints.NotEmpty
-        @Size(max = 10000, message = "words 列表不能超过 10000 条")
+        @Size(max = AdminSensitiveWordController.MAX_IMPORT_WORDS, message = ErrorMessages.WORDS_MAX_COUNT)
         List<@NotBlank @Size(max = 64) String> words,
         @Pattern(regexp = "POLITICS|PORN|ABUSE|AD|OTHER",
-                message = "category 必须为 POLITICS/PORN/ABUSE/AD/OTHER")
+                message = ErrorMessages.SENSITIVE_CATEGORY_INVALID)
         String category
 ) {}

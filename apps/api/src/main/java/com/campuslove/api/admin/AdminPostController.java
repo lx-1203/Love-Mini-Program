@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Post;
@@ -159,9 +160,13 @@ public class AdminPostController {
         adminDataScope.assertCampusAccess(
                 adminDataScope.resolveUserCampusName(post.getAuthorId()));
 
-        AuditStatus newStatus = "approved".equals(req.decision())
-                ? AuditStatus.approved
-                : AuditStatus.rejected;
+        // R4-00428：显式 switch 校验决策值——仅接受 approved / rejected，
+        // 未来扩展决策值（如 pending）不会被静默当作拒绝
+        AuditStatus newStatus = switch (req.decision()) {
+            case "approved" -> AuditStatus.approved;
+            case "rejected" -> AuditStatus.rejected;
+            default -> throw new IllegalArgumentException("不支持的审核决策: " + req.decision());
+        };
         post.setAuditStatus(newStatus);
         post.setAuditRemark(req.remark());
         post.setAuditorId(auditorId);
@@ -288,7 +293,7 @@ public class AdminPostController {
             return AuditStatus.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
             // infra R2-00269: 非法筛选参数直接 400，不再静默转 null 导致查询条件失效
-            throw new IllegalArgumentException("非法审核状态参数: " + value);
+            throw new IllegalArgumentException(ErrorMessages.ILLEGAL_AUDIT_STATUS_PREFIX + value);
         }
     }
 
@@ -303,7 +308,7 @@ public class AdminPostController {
             return PostStatus.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
             // infra R2-00269: 非法筛选参数直接 400
-            throw new IllegalArgumentException("非法帖子状态参数: " + value);
+            throw new IllegalArgumentException(ErrorMessages.ILLEGAL_POST_STATUS_PREFIX + value);
         }
     }
 
@@ -318,7 +323,7 @@ public class AdminPostController {
             return PostCategory.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
             // infra R2-00269: 非法筛选参数直接 400
-            throw new IllegalArgumentException("非法帖子分类参数: " + value);
+            throw new IllegalArgumentException(ErrorMessages.ILLEGAL_POST_CATEGORY_PREFIX + value);
         }
     }
 }

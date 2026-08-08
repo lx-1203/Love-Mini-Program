@@ -77,6 +77,13 @@ public class LocationService {
         return ip.startsWith("172.") && isPrivate172(ip);
     }
 
+    /**
+     * RFC 1918 私网段 172.16.0.0/12 的第二段范围（R4-01831 命名常量）。
+     * 172.16.0.0 ~ 172.31.255.255 均属私网。
+     */
+    private static final int PRIVATE_172_MIN_SECOND_OCTET = 16;
+    private static final int PRIVATE_172_MAX_SECOND_OCTET = 31;
+
     private boolean isPrivate172(String ip) {
         String[] parts = ip.split("\\.");
         if (parts.length < 2) {
@@ -84,7 +91,7 @@ public class LocationService {
         }
         try {
             int second = Integer.parseInt(parts[1]);
-            return second >= 16 && second <= 31;
+            return second >= PRIVATE_172_MIN_SECOND_OCTET && second <= PRIVATE_172_MAX_SECOND_OCTET;
         } catch (NumberFormatException e) {
             return false;
         }

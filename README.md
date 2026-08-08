@@ -13,7 +13,7 @@
 - **运营治理**：Admin 后台提供审计日志、举报处理、敏感词管理、用户管理、反馈分诊等能力。
 
 > 当前主线聊天仍为 temporary anonymous chat（临时匿名聊天）；持久 IM、社交图谱、AI 回复 UI 不在当前切片范围。
-> 启动-scope AI 计划保留在 `GET /home/dashboard` 的 `aiPlan` 模块中。
+> `GET /home/dashboard` 的 `aiPlan` 卡片位已复用为「每日一问」展示（R4-02081，见 `RealHomeService`）。
 
 ## 技术栈
 
@@ -55,7 +55,7 @@
 │   └── api/                    # Spring Boot 3 + Java 17 后端 API
 │       ├── src/main/resources/
 │       │   ├── application.yml       # 主配置（环境变量外部化）
-│       │   ├── application-db.yml    # real profile：MySQL + Redis + Flyway
+│       │   ├── application-real.yml  # real profile：MySQL + Redis + Flyway
 │       │   └── logback-spring.xml    # 日志配置
 │       └── pom.xml
 ├── database/flyway/            # Flyway 迁移脚本
@@ -70,7 +70,7 @@
 
 - `mock mode`：客户端使用本地 fixtures，API 使用 Spring `mock` profile（不依赖 MySQL/Redis/Flyway）。
 - `real mode`：客户端调用真实后端 API（`apps/client/.env.real`）。
-- `db profile`：API 启用 MySQL + Flyway（`-Dspring-boot.run.profiles=db`）。
+- `real profile`：API 启用 MySQL + Flyway（`-Dspring-boot.run.profiles=real`，配置文件为 `application-real.yml`）。
 
 ## 快速开始
 
@@ -78,7 +78,7 @@
 
 | 工具 | 版本 | 用途 |
 |------|------|------|
-| Node.js | `>=18.0.0 <20.0.0` | 前端构建（见 `engines` 字段） |
+| Node.js | `>=18.0.0 <21.0.0` | 前端构建（与根 `engines`、Dockerfile node:20、CI node 20 一致） |
 | pnpm | `11.x`（见 `packageManager` 字段） | 前端包管理 |
 | JDK | 17+ | 后端构建与运行 |
 | Maven | 3.9+（或使用 `./mvnw` wrapper） | 后端构建 |
@@ -131,9 +131,9 @@ cp .env.example .env
 cp apps/client/.env.example apps/client/.env.real
 # 编辑 apps/client/.env.real：VITE_API_MODE=real、VITE_API_BASE_URL=http://127.0.0.1:8080/api
 
-# 3. 启动后端（db profile）
+# 3. 启动后端（real profile）
 cd apps/api
-./mvnw spring-boot:run -Dspring-boot.run.profiles=db
+./mvnw spring-boot:run -Dspring-boot.run.profiles=real
 
 # 4. 启动客户端（real 模式）
 npm run client:dev:h5:real
@@ -187,8 +187,7 @@ pnpm install
 pnpm dev          # 开发（http://localhost:5177）
 pnpm build        # 生产构建（含 vue-tsc 类型检查）
 pnpm typecheck    # 仅类型检查
-pnpm test:unit    # vitest 单元测试
-pnpm test:coverage # 单元测试 + 覆盖率
+# 注：admin 当前无单元测试文件（R4-00500），vitest 未配置实际用例
 ```
 
 ### 后端 API（apps/api）
@@ -196,7 +195,7 @@ pnpm test:coverage # 单元测试 + 覆盖率
 ```bash
 cd apps/api
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=mock      # mock 模式
-./mvnw spring-boot:run -Dspring-boot.run.profiles=db        # db 模式（MySQL + Flyway）
+./mvnw spring-boot:run -Dspring-boot.run.profiles=real      # real 模式（MySQL + Flyway）
 ./mvnw test                                                  # 单元测试
 ./mvnw clean package -DskipTests                             # 构建 JAR（apps/api/target/campus-love-api-0.1.0.jar）
 ./mvnw flyway:info                                           # 查看迁移状态
@@ -249,7 +248,7 @@ pnpm --filter @campus-love/client run build:mp-weixin
 
 ## 部署指南
 
-参见 `DEPLOYMENT.md` 与 `docker-compose.yml`。生产部署使用 Docker Compose 编排 api / client / admin / mysql / redis / rabbitmq / nginx / prometheus / grafana / alertmanager 服务，每个服务已配置 healthcheck 与日志轮转。
+参见 `DEPLOYMENT.md` 与 `docker-compose.yml`。生产部署使用 Docker Compose 编排 api / client / admin / mysql / redis / prometheus / grafana / alertmanager / node-exporter / backup 服务（R4-02079：编排未包含 rabbitmq 与 nginx——消息队列未部署，应用在 MQ 不可用时自动降级；静态资源由各服务自带容器镜像暴露，域名入口由外层网关/Nginx 配置转发），每个服务已配置 healthcheck 与日志轮转。
 
 ```bash
 # 一键启动全部服务
@@ -406,7 +405,7 @@ chore(ci): bump Trivy to v0.55.0
 ## 注意事项
 
 - 主线聊天仍为 temporary anonymous chat（临时匿名聊天）；持久 IM、社交图谱、AI 回复 UI 不在当前切片范围。
-- 启动-scope AI 计划保留在 `GET /home/dashboard` 的 `aiPlan` 模块中。
+- `GET /home/dashboard` 的 `aiPlan` 卡片位已复用为「每日一问」展示（R4-02081）。
 - `pages/dev/index` 为开发者调试页面，已通过 `// #ifdef DEV` 条件编译包裹，生产构建自动剔除。
 - 所有依赖版本使用 `~`（允许 patch 更新）或完全固定，避免引入破坏性变更（见 `.npmrc`）。
 
@@ -414,4 +413,4 @@ chore(ci): bump Trivy to v0.55.0
 
 本项目为私有项目，版权所有 © 2026 Campus Love Dev Team。未经授权不得复制、分发或商业使用。
 
-如需申请授权或合作，请联系 `dev@campuslove.example.com`。
+如需申请授权或合作，请联系项目负责人获取正式联系方式（示例邮箱 `dev@campuslove.example.com` 仅为占位，R4-02082）。

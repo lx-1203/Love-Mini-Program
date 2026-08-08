@@ -59,6 +59,12 @@ const IMAGE_SIZE_LIMIT = 5 * 1024 * 1024;
 const IMAGE_MAX_COUNT = 3;
 /** 允许的图片扩展名（用于客户端预校验，后端会再次校验） */
 const ALLOWED_EXTS = ["jpg", "jpeg", "png", "webp"];
+/**
+ * 反馈内容最大长度。
+ * R4-00118：对齐契约 SubmissionRequest.content 上限 5000，
+ * 原 maxlength=280 远严于后端，用户长反馈无法提交。
+ */
+const FEEDBACK_CONTENT_MAX = 5000;
 
 const feedbackStore = useFeedbackStore();
 const activeType = ref<FeedbackType>("feedback");
@@ -429,7 +435,7 @@ function goDetail(id: number): void {
         id="feedback-content"
         v-model="form.content"
         class="field field--textarea"
-        maxlength="280"
+        :maxlength="FEEDBACK_CONTENT_MAX"
         :aria-label="t('feedback.labelContent')"
         aria-required="true"
         :aria-describedby="errorMessage ? 'feedback-error' : undefined"

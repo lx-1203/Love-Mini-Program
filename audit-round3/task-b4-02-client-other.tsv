@@ -1,0 +1,111 @@
+R4-00002|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|588-589|H|P3|展示模式入口中文文案硬编码"以演示者身份进入展示版/超级管理员模式 · 一键体验全部功能"，绕过 i18n（页内其余文案均走 t()）|展示构建文案无法随语言切换|文案迁移到 i18n 资源|open|batch-4|
+R4-00003|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|37|T|P3|验证码倒计时状态机死代码：countdown/pauseCountdown/resumeCountdown（L107-138）与 .send-code-btn 样式（L914-940）无消费方——本页为手机号+密码登录，模板无验证码 UI|维护成本与误导（后人以为有验证码功能）|删除倒计时逻辑与对应样式|open|batch-4|
+R4-00006|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|835-881|T|P3|死样式集群：.notification-btn/.settings-btn/.notification-dot（L835-881）、.banner-*（L1248-1354）、.recommend-*（L1468-1568）、.post-*（L1746-1967）、.shop-*（L1902-1967）、.fab-*（L2049-2101）模板均无引用（注释已移除对应模块）|产物体积与样式维护成本|删除未引用样式块|open|batch-4|
+R4-00007|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|39-40|T|P3|注释"首页 = 索引 2"与 useTabBar(0) 实参矛盾（discover/index.vue L50 注释称"tab 顺序：首页0/匹配1…"），两页注释互斥|误导 tab 索引维护，改 tab 时易出错|统一修正注释|open|batch-4|
+R4-00008|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|619-650|F|P3|活动横滚区无空态：activityStore.activities 为空时仅渲染空白横向滚动区，无提示|空数据时页面模块显空白|增加空态占位|open|batch-4|
+R4-00010|d:\6\恋爱小程序\apps\client\src\pages\discover\index.vue|376-401|T|P3|[AUTOSHOT] 自动化走查钩子残留生产代码：URL shot 参数可驱动自动打开详情/签到/筛选弹窗|测试专用后门入口，扩大攻击面|移入测试专用构建|open|batch-4|
+R4-00013|d:\6\恋爱小程序\apps\client\src\pages\discover\history.vue|204-208|U|P3|挽回按钮无 loading/禁用态：连点可并发重复调用 rewindCard|重复请求浪费与触发每日限流 429|加防抖与禁用态|open|batch-4|
+R4-00017|d:\6\恋爱小程序\apps\client\src\pages\likes\index.vue|1351-1415|T|P3|.likes-batch-bar 选择器被拆为两块重复定义（L1351-1358 与 L1404-1415），bottom 属性两处声明|样式维护隐患，后续修改易漏一侧|合并为单一规则块|open|batch-4|
+R4-00018|d:\6\恋爱小程序\apps\client\src\pages\likes\index.vue|1021-1071|T|P3|死样式 .likes-loading__spinner/.likes-loading__text/.likes-empty* 模板无引用（已改用 Skeleton/EmptyState 组件）|冗余样式|删除|open|batch-4|
+R4-00029|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|180-188|T|P3|simulateApprove 函数体无 isMockMode 守卫（仅模板 v-if 保护），若未来被其他调用点引用即可在真实模式伪造认证通过|认证信任体系防御性缺口|函数内加环境守卫|open|batch-4|
+R4-00030|d:\6\恋爱小程序\apps\client\src\pages\love-center\index.vue|9|T|P3|头部注释"当前为占位页：各板块点击后提示内容筹备中"与 L56"2026-08-07 落地真实内容源"矛盾（过时注释）|误导开发|修正注释|open|batch-4|
+R4-00035|d:\6\恋爱小程序\apps\client\src\pages\activities\detail.vue|243-244|B|P3|handleSendToFriend 中 await uni.showActionSheet 无 try/catch（页内其他 ActionSheet 均用回调模式），用户取消时 H5 端 Promise reject → 未捕获异常|取消操作产生未处理 rejection|补 catch 或改回调模式|open|batch-4|
+R4-00039|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|39-143|H|P3|展示页全量中文文案硬编码（分组标题"核心旅程"等、欢迎语"超级管理员模式 · 所有功能已解锁"）绕过 i18n|展示构建文案无法国际化|走 i18n 资源|open|batch-4|
+R4-00041|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|35-37|T|P3|loginSuperAccount 的跳转 setTimeout 未保存引用清理（同页其他定时器均有 onUnmounted 清理）|dev 页卸载后仍可能触发跳转|保存引用并清理|open|batch-4|
+R4-00042|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|79|T|P3|`void refreshSuperState;` 无意义表达式语句（为绕过 noUnusedLocals 的 hack）|代码异味|删除|open|batch-4|
+R4-00049|d:\6\恋爱小程序\apps\client\src\subpackages\legal\agreement\index.vue|148|H|P3|AppShell title="用户协议" 静态中文未走 i18n（页内其余文案均走 t()）|标题不随语言切换|title 走 i18n|open|batch-4|
+R4-00050|d:\6\恋爱小程序\apps\client\src\subpackages\legal\agreement\index.vue|1-356|T|P3|agreement 与 privacy 两页 95% 代码重复（仅 LegalTextType 与 i18n key 不同），未抽取共用页面组件|双份维护成本，改一处漏一处|抽取共用法律文本页组件|open|batch-4|
+R4-00051|d:\6\恋爱小程序\apps\client\src\subpackages\legal\privacy\index.vue|148|H|P3|AppShell title="隐私政策" 静态中文未走 i18n|同上|title 走 i18n|open|batch-4|
+R4-00053|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|62-66|F|P3|讨论推荐条目仅静态展示 title/summary/heatLabel，无任何点击交互与跳转|讨论推荐无消费路径，功能半成品|条目可点击查看/跳转|open|batch-4|
+R4-00063|d:\6\恋爱小程序\apps\client\src\pages\security\index.vue|29,40-44|H|P3|演示数据硬编码：boundPhone “138****5678” 与 devices（iPhone 15 Pro/小米 14/iPad Air）|生产环境展示假手机号/假设备，误导用户|接入真实账号/设备数据|open|batch-4|
+R4-00066|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|63-71|F|P3|消息通知/隐私模式开关仅存本地 storage，无后端/系统级消费方，开关不产生任何实际效果|设置项形同虚设|明确消费方或移除入口|open|batch-4|
+R4-00075|d:\6\恋爱小程序\apps\client\src\pages\chat-session\index.vue|1130-1137|F|P3|表情（笑脸）图标按钮无 @tap handler，点击无任何反应|死按钮，误导用户|接入表情面板或移除按钮|open|batch-4|
+R4-00076|d:\6\恋爱小程序\apps\client\src\pages\chat-session\index.vue|193|H|P3|硬编码路径 “/pages/profile/index?userId=” 未走 ROUTES 常量|路径散落，重构易漏改|改用 ROUTES.PROFILE.INDEX|open|batch-4|
+R4-00077|d:\6\恋爱小程序\apps\client\src\pages\chat-session\view-models.ts|97|H|P3|formatTempCountdown 返回硬编码中文“已结束”绕过 i18n|en-US 下显示中文|改由调用方 t() 处理|open|batch-4|
+R4-00078|d:\6\恋爱小程序\apps\client\src\pages\chat-session\view-models.ts|304|H|P3|星期文案 “星期${“日一二三四五六”[d.getDay()]}” 硬编码中文|en-US 下显示中文星期|走 i18n|open|batch-4|
+R4-00079|d:\6\恋爱小程序\apps\client\src\pages\chat\index.vue|1-10,165|T|P3|聊天旧页已从 pages.json 移除注册（注释自述），页面与 ROUTES.TAB.CHAT 引用已清理，成为死文件|死代码增加维护面|删除文件或恢复注册|open|batch-4|
+R4-00081|d:\6\恋爱小程序\apps\client\src\pages\messages\index.vue|315|H|P3|硬编码官方号 code “official-assistant” 拼接跳转路径|code 变更需多处同步|收敛到常量|open|batch-4|
+R4-00084|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|199,203,208,231,278,283,288,298,325|H|P3|9 处页面路径字面量硬编码（/pages/circles/index、/pages/campus/certification、/pages/village/detail 等）|路径散落，路由调整易漏|统一走 ROUTES|open|batch-4|
+R4-00088|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|84,293,300,410,412,482,484|H|P3|7 处页面路径字面量（/pages/profile/index、/pages/village/tag-posts、/pages/activities/detail、/pages/chat-session/index）|路径散落|统一走 ROUTES|open|batch-4|
+R4-00091|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|203-259|H|P3|getMockTagPosts 内嵌 6 条 mock 帖子（假 ID 1001-1006、中文内容、mock 头像/学校），页面级模拟数据|模拟数据散落页面，污染产物|移入 mock 数据源|open|batch-4|
+R4-00093|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|130-141|B|P3|GET /post-tags/posts 端点不在 docs/openapi/village.yaml；page 参数 0 基，与 /posts 契约 1 基分页约定不一致|契约漂移，联调/文档失真|补契约并统一分页口径|open|batch-4|
+R4-00094|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|175|H|P3|错误兜底文案 “加载帖子失败” 中文硬编码绕过 i18n|en-US 下显示中文错误|走 i18n|open|batch-4|
+R4-00096|d:\6\恋爱小程序\apps\client\src\pages\village\post.vue|128-146|H|P3|预置话题标签中文硬编码（mock 与 real 失败兜底同一份）|en-US 下展示中文标签|走 i18n/后端数据|open|batch-4|
+R4-00097|d:\6\恋爱小程序\apps\client\src\pages\village\post.vue|135-138|B|P3|GET /post-tags 端点不在 docs/openapi 任何契约中，real 模式可能 404|契约缺失，联调风险|补 openapi 或走已有端点|open|batch-4|
+R4-00103|d:\6\恋爱小程序\apps\client\src\pages\circles\topic-detail.vue|189|B|P3|/circles/topics/{id}/replies 契约漂移：village.yaml 声明返回纯数组，store 按 Spring Page {content,totalElements,number,size} 消费|契约文档与实现不一致，联调误导|统一契约|open|batch-4|
+R4-00105|d:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue|406,416|B|P3|标题输入 maxlength=50，但帖子模式后端校验 5-30 字（本页 287 行注释），31-50 字提交必被后端拒绝且前端无提示|标题 31-50 字用户提交失败|前端长度与后端对齐|open|batch-4|
+R4-00106|d:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue|125,293-297|H|P3|品牌色 #3FCF8E 硬编码（switch 色）|主题切换不生效|从 design tokens 取色|open|batch-4|
+R4-00107|d:\6\恋爱小程序\apps\client\src\pages\campus\post-topic.vue|74|H|P3|品牌色 #3FCF8E 硬编码（switch 色）|主题切换不生效|从 design tokens 取色|open|batch-4|
+R4-00108|d:\6\恋爱小程序\apps\client\src\pages\campus\index.vue|34-41,186-218|F|P3|校园话题列表无空态：空列表时仅渲染空白 scroll-view+底部留白，无提示/引导|空数据页面空洞|补 EmptyState|open|batch-4|
+R4-00109|d:\6\恋爱小程序\apps\client\src\pages\campus\index.vue|38|T|P3|categoryTabs 中 study_help 的 icon 为 “” 且模板未使用 icon 字段，冗余字段|死字段|清理|open|batch-4|
+R4-00111|d:\6\恋爱小程序\apps\client\src\pages\profile\index.vue|425-428,586,679,976|H|P3|4 处路径字面量（/pages/likes/index、/pages/likes-visitors/index、/pages/official-chat/index?accountId=official-assistant、/pages/chat-session/index）|路径散落|统一走 ROUTES|open|batch-4|
+R4-00112|d:\6\恋爱小程序\apps\client\src\pages\profile\index.vue|1376|H|P3|头像兜底图路径 “/static/generated/images/avatars/default-girl.jpg” 硬编码且默认女性形象|男性用户也显示女孩头像|按性别/通用兜底图|open|batch-4|
+R4-00113|d:\6\恋爱小程序\apps\client\src\pages\profile\index.vue|1181-1187|H|P3|appVersion 兜底硬编码 “v1.0.0”|版本展示失真|从构建注入|open|batch-4|
+R4-00114|d:\6\恋爱小程序\apps\client\src\pages\profile\visitors.vue|60-69|T|P3|visitors computed 恒置 group:“earlier”，随后 groupedVisitors 用 getGroup 覆盖，死字段|冗余逻辑|直接按 getGroup 生成|open|batch-4|
+R4-00117|d:\6\恋爱小程序\apps\client\src\pages\vip\promo-code.vue|60|H|P3|订单金额默认值 “48” 元硬编码（注释“默认 48 元（季卡）”）|价格调整需改代码|从套餐配置取价|open|batch-4|
+R4-00118|d:\6\恋爱小程序\apps\client\src\subpackages\support\feedback\index.vue|432|F|P3|反馈内容 textarea maxlength=280，契约 SubmissionRequest.content 上限 5000，前端限制远严于后端|用户长反馈无法提交，体验受限|与契约对齐|open|batch-4|
+R4-00119|d:\6\恋爱小程序\apps\client\src\pages\feedback\history.vue|233-241|T|P3|onMounted 与 onShow 首次进入均调用 loadList，页面打开重复拉取反馈列表|重复请求浪费流量|onShow 单点加载|open|batch-4|
+R4-00120|d:\6\恋爱小程序\apps\client\src\pages\chat\index.vue|424,437|D|P3|内联兜底色值 #f0fdf9/#ccfbef（var(--c-bg-brand, #f0fdf9)）|token 体系外颜色|改用纯 token|open|batch-4|
+R4-00124|d:\6\恋爱小程序\apps\client\src\stores\session.ts|394|H|P3|兜底文案硬编码中文「刷新会话失败」（errorMessage 回退）|绕过 i18n，en 语言下仍显示中文|改用 t("storeErrors.session.refreshFailed")|open|batch-4|
+R4-00126|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|632-653|S|P3|mockHeartSignals 的 toUserId 写死 "user-1001"，与 mock 当前用户 "1"（session.ts）及 mock 列表（user-2003/2006）均不匹配|mock 心动信号指向不存在的用户，演示信号列表自洽性差|统一 mock 用户 ID 体系（与 fixtures 对齐）|open|batch-4|
+R4-00127|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|1157|H|P3|uni.showToast 文案硬编码「与 ${fromUserName} 互相喜欢了！」|绕过 i18n，en 语言下显示中文；通知语义重复（后端已推送）|改走 t("likes.mutualLikeToast")|open|batch-4|
+R4-00131|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|630|H|P3|formatRelativeTime 硬编码中文「刚刚活跃」（diff<1 分钟）|绕过 i18n；en 语言显示中文|改走 t() 或复用公共相对时间工具|open|batch-4|
+R4-00132|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|793-814|S|P3|mockActivities 固定活动日期 2026-08-09/2026-08-10（活动卡内嵌数据）|日期过即过期，演示数据随时间失真（活动 store 已改相对日期，此处未同步）|改用相对当前日期生成|open|batch-4|
+R4-00136|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|344-389|H|P3|mockSessions 使用 user-2001~user-2006 与 official-assistant/official-promoter 混合 ID|mock 会话对端 ID 家族与 likes mock 重叠但语义不同，演示数据易混淆|统一 mock 用户体系|open|batch-4|
+R4-00137|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|620-621|H|P3|官方号 code 硬编码数组 ["official-assistant","official-promoter"]（real 模式逐个拉取消息流）|官方号列表写死两份，后端新增官方号需发版|改为从 /official-accounts 响应动态生成|open|batch-4|
+R4-00138|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|271-277|H|P3|buildLocalPreview 硬编码「[活动] 」前缀与「[活动] 活动卡片」兜底|绕过 i18n 的文案前缀|改走 i18n 模板|open|batch-4|
+R4-00139|d:\6\恋爱小程序\apps\client\src\components\discover\FilterDrawer.vue|91-121|H|P3|省/市联动数据表硬编码 31 省市（如 "广东": ["广州","深圳",...]）|城市数据随代码维护，与后端配置/行政区划更新脱节|由后端 /config/filter-options 下发|open|batch-4|
+R4-00140|d:\6\恋爱小程序\apps\client\src\components\discover\CardDetailOverlay.vue|245|H|P3|年龄兜底硬编码 "22"（headline 正则未命中时返回 "22"）|真实资料缺失时展示虚假年龄|改为 "--" 或由后端补全|open|batch-4|
+R4-00142|d:\6\恋爱小程序\apps\client\src\services\video-call.ts|178-181|H|P3|startCall 默认参数 callerId=1（mock 分支使用）|mock 发起方身份魔法数字，与真实 userId 体系割裂|从 session 获取|open|batch-4|
+R4-00143|d:\6\恋爱小程序\apps\client\src\services\video-call.ts|205|H|P3|mock signalingUrl 硬编码 "wss://mock.example.com/signaling"|mock 地址指向不存在的域名，联调误导|改为可配置或本地占位|open|batch-4|
+R4-00144|d:\6\恋爱小程序\apps\client\src\services\http.ts|442|H|P3|401 跳转 toast 硬编码「登录已过期，请重新登录」（656/676 重复出现）|绕过 i18n，en 语言显示中文|抽公共文案常量走 i18n|open|batch-4|
+R4-00150|d:\6\恋爱小程序\apps\client\src\services\http.ts|172-189|T|P3|getRefreshToken 导出但全仓库零调用（setRefreshToken 仅写入从未读取——刷新流程改用 Authorization 头）|refreshToken 存储为写死数据，登录时写入的 refreshToken 永不消费，误导维护者|删除 getRefreshToken/setRefreshToken 或真正接入 refresh 链路|open|batch-4|
+R4-00151|d:\6\恋爱小程序\apps\client\src\services\api.ts|920-924|T|P3|CheckInStatusResponse 声明 checkedIn 字段与后端契约 checkedInToday 不符，且 getCheckInStatus 无任何调用方（checkin store 直接 request）|错误契约类型的死代码，后续误用将静默丢字段|删除或修正为 BackendCheckInStatusView|open|batch-4|
+R4-00153|d:\6\恋爱小程序\apps\client\src\services\api.ts|671-676|T|P3|uploadAvatar mock 分支复用 mockFixtures.uploadProfileBackground（返回背景图语义）|mock 头像返回的 URL 语义错误（背景图 mock 地址），走查时头像展示与上传结果不符|新增 uploadAvatar mock 实现|open|batch-4|
+R4-00154|d:\6\恋爱小程序\apps\client\src\services\api.ts|476-490|T|P3|simulateError（POST /_debug/errors/{status}）为 dev 调试端点，仍保留在 clientApi 生产面（仅 isDev 短路）|dev 工具混入业务 API 面，后续收敛需从 clientApi 移除|移入独立 dev 模块|open|batch-4|
+R4-00155|d:\6\恋爱小程序\apps\client\src\stores\checkin.ts|175-218|T|P3|自带一份 withTimeout 实现（与 services/http.ts 导出重复，签名差异：第三参为文案字符串）|同一超时语义两处实现，修复/演进需同步两处|统一为 services/http.ts withTimeout 并迁移错误文案|open|batch-4|
+R4-00156|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|504-509|T|P3|messages store 再次自带 withTimeout 重复实现（第三处）|三处 withTimeout 并存（http/checkin/messages），超时语义漂移风险|统一收敛到 services/http.ts|open|batch-4|
+R4-00157|d:\6\恋爱小程序\apps\client\src\stores\checkin.ts|554-556|T|P3|dispose() 注释 TODO(dispose-接线)：pages/home、daily-question、discover、shop 均未调用|页面卸载后签到动画定时器可能修改已卸载 store 状态|在页面 onUnload 接线 dispose|open|batch-4|
+R4-00158|d:\6\恋爱小程序\apps\client\src\stores\discover\actions\storage.ts|129-132|T|P3|dispose() 注释 TODO(dispose-接线)：discover/history/home/profile 页面未调用|模块级定时器/请求控制器在页面切换时未清理|页面 onUnload 接线 dispose|open|batch-4|
+R4-00159|d:\6\恋爱小程序\apps\client\src\stores\village\index.ts|1086-1089|T|P3|dispose() 注释 TODO(dispose-接线)：village 各页未调用|评论防抖定时器/点赞 in-flight 集合在页面卸载后残留|页面 onUnload 接线 dispose|open|batch-4|
+R4-00161|d:\6\恋爱小程序\apps\client\src\services\mocks\fixtures.ts|1-1731|T|P3|700+ 行 mock 数据/逻辑随 api.ts 静态 import 进生产产物（非动态加载）|mock 字节码进生产包，增大体积且 mock 文案/ID 暴露在产物中|构建期摇树或动态 import 隔离|open|batch-4|
+R4-00165|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|1014|B|P3|markNotificationRead 失败 catch (_e) 完全静默（含超时）|已读状态丢失无任何提示，用户以为已读|至少 console.warn 或返回失败|open|batch-4|
+R4-00170|d:\6\恋爱小程序\apps\client\src\services\http.ts|793|B|P3|addBreadcrumb 恒记录 status: 200（注释承认多数接口成功码）|Sentry breadcrumb 状态码失真，HTTP 错误聚合不可信|透传真实状态码|open|batch-4|
+R4-00181|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|526-532|B|P3|joinCircle/leaveCircle real 分支发送 data:{userId} 请求体，后端 CircleController join/leave 无请求体（userId 从 JWT 取）|多余请求体字段污染契约（当前被忽略，若后端开 FAIL_ON_UNKNOWN 即 400）|删除 body|open|batch-4|
+R4-00182|d:\6\恋爱小程序\apps\client\src\stores\activity.ts|268-289|B|P3|enrollActivity real 分支仅同步 enrollmentCount，enrollCount 兼容别名未更新|列表 UI（消费 enrollCount）报名后人数显示陈旧|两字段同步更新（对齐 mock 分支）|open|batch-4|
+R4-00184|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|1080-1094|B|P3|setSessionMuted/markSessionUnread/markSessionRead 仅本地改状态，无后端同步|免打扰/标未读在刷新或换端后全部还原，红点语义不持久|后端会话元数据接口同步|open|batch-4|
+R4-00185|d:\6\恋爱小程序\apps\client\src\services\auth.ts|117-153|B|P3|微信登录 state CSRF 防护为「本地生成→本地存储→本地比对」，无服务端参与，校验恒通过|防 CSRF 声明无实际防护效果（真实防护需服务端回传校验），误导读入|移除伪防护或与服务端握手校验|open|batch-4|
+R4-00186|d:\6\恋爱小程序\apps\client\src\services\mocks\fixtures.ts|1469-1545|S|P3|mock 上传返回 mock:// 协议 URL（注释自认「不会被 <image> 真实加载」）|演示模式下上传后的图片不可见，验收链路观感断裂|返回 static 资源路径|open|batch-4|
+R4-00189|d:\6\恋爱小程序\apps\client\src\stores\social-progress.ts|59-66|H|P3|TIER_META 六层升温 label/desc 硬编码中文（「发现心动」「表达喜欢」等）|绕过 i18n；且与后端下发文案无关联|走 i18n key|open|batch-4|
+R4-00190|d:\6\恋爱小程序\apps\client\src\stores\feedback.ts|29|H|P3|load/submitIssue/submitSuggestion/submitActivityProposal 兜底文案硬编码中文（「加载反馈列表失败」等 4 处）|绕过 i18n，en 语言下显示中文|统一 t("storeErrors.feedback.*")|open|batch-4|
+R4-00192|d:\6\恋爱小程序\apps\client\src\stores\chat\higher-order.ts|44|H|P3|withErrorHandling errorPrefix 硬编码中文（「聊天页加载」「聊天详情加载」「会话置顶状态更新」）|非 Error 异常时错误文案中文硬编码|改走 i18n|open|batch-4|
+R4-00193|d:\6\恋爱小程序\apps\client\src\stores\vip-auto-renew.ts|1-223|D|P3|vip-auto-renew store 与 vip.ts 内自动续费逻辑（同端点 /vip/auto-renew*）重复实现两套|同一功能双 store 维护，行为可能漂移|合并为单一 store|open|batch-4|
+R4-00197|d:\6\恋爱小程序\apps\client\src\stores\village\api.ts|212-230|T|P3|/posts/history（GET/DELETE）、/posts/{id}/favorite、/posts/{id}/similar-authors、/posts/comments/{id}/like、/campus/feed 等端点 client 与后端均有实现，但 docs/openapi/village.yaml 均未收录|openapi 契约基准与实现脱节（同 recommendations.yaml 问题），新人对账成本高|补充 openapi 文档|open|batch-4|
+R4-00198|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|1177-1211|T|P3|/notifications/interactions 系列 4 个端点（InteractionEventController 已实现）未收录于 docs/openapi/notifications.yaml|契约文档缺页，互动事件联调无基准|补充 openapi 文档|open|batch-4|
+R4-00207|d:\6\恋爱小程序\apps\client\src\config\app.ts|13|T|P3|APP_VERSION='1.0.0' 与 .env VITE_APP_VERSION=v0.1.0、manifest.json versionName=0.1.0、constants/app.ts VERSION='1.0.0' 三源漂移|版本号展示/上报不一致，排查发版问题困难|统一版本来源，由构建注入|open|batch-4|
+R4-00208|d:\6\恋爱小程序\apps\client\src\config\feature-flags.ts|22-23|T|P3|videoCallEnabled 注释"Phase 4.7：暂时下架，默认 false"与第35行实现 videoCallEnabled: true 矛盾（过时注释）|维护者误以为视频通话已下架，开关状态不可信|更新注释或调整开关值，与走查收尾说明一致|open|batch-4|
+R4-00210|d:\6\恋爱小程序\apps\client\src\composables\useTabBar.ts|12|T|P3|注释"useTabBar(3); // 在 pages/chat/index.vue 中"引用已移除注册的页面|文档误导，索引同步点仍依赖人工核对|更新注释指向 pages/messages/index.vue|open|batch-4|
+R4-00211|d:\6\恋爱小程序\apps\client\src\pages\chat\index.vue|1-17|T|P3|未注册死页面：pages.json 已移除注册，但文件保留并注释称"以防深链/旧缓存访问时兜底"——未注册页面在小程序端不可编译不可直达，兜底不成立|死代码进入源码树，误导维护；注释理由不成立|删除该文件|open|batch-4|
+R4-00212|d:\6\恋爱小程序\apps\client\src\composables\useUnreadBadge.ts|29|T|P3|CHAT_TAB_INDEX=3 硬编码（依赖 custom-tab-bar 顺序），与 useTabBar(index) 参数化索引同属 tab 顺序人工同步点|tab 顺序调整时红点打在错误 tab|由 config/navigation.ts 推导索引或按键值匹配|open|batch-4|
+R4-00221|d:\6\恋爱小程序\apps\client\src\view-models\home.ts|108-119|T|P3|"先完成设置"/"去聊天"文案与 view-models/chat.ts:49-57（经 statusCopyMap）双实现，同文案两处维护|文案调整时两处漂移|统一走 config/status-copy.ts|open|batch-4|
+R4-00222|d:\6\恋爱小程序\apps\client\src\view-models\profile.ts|79-94|T|P3|formatRelativeTime 与 utils/time.ts:265-322 重复实现（"刚刚/N 分钟前…"），行为可能漂移|相对时间格式化两套实现，输出不一致风险|复用 utils/time.ts|open|batch-4|
+R4-00223|d:\6\恋爱小程序\apps\client\src\features\chat\transport.ts|47|H|P3|pushVoice 消息 body 硬编码"语音消息"（mock 与 real 路径均写死，行 47/91）|语音消息内容固定文案无法定制|body 由调用方传入或走 i18n|open|batch-4|
+R4-00224|d:\6\恋爱小程序\apps\client\src\utils\haptic.ts|72-75|T|P3|2026-08-08 全站禁用震动：vibrateWithType 直接 return，但 successHaptic/errorHaptic 仍调度 setTimeout（scheduleHaptic+Set 定时器集合），且注释(122-123)声称"收敛到 vibrateWithType 内部的 supportsHapticFeedback() 检查"实际未调用|53 个文件 import 的模块为 no-op，定时器调度浪费；注释与实现不符|删除 no-op 分支与调度逻辑，或按产品要求恢复|open|batch-4|
+R4-00225|d:\6\恋爱小程序\apps\client\src\compat\index.ts|348-355|T|P3|supportsHapticFeedback 定义后无任何调用方（仅 haptic.ts:122 注释提及）|死导出，平台判断逻辑冗余|删除或由 haptic.ts 实际使用|open|batch-4|
+R4-00226|d:\6\恋爱小程序\apps\client\src\constants\routes.ts|23-24|T|P3|注释"与 src/pages.json 中的 path 字段一一对应"不成立：pages/showcase/index、pages/wallet/index、pages/profile/privacy、pages/profile/tasks、pages/village/history 五个已注册页面缺 ROUTES 常量|页面跳转散落硬编码字符串（如 profile/index.vue），路径变更遗漏风险|补全 5 个页面常量并迁移调用点|open|batch-4|
+R4-00227|d:\6\恋爱小程序\apps\client\src\constants\routes.ts|208|T|P3|DEFAULT_HOME_ROUTE=ROUTES.TAB.HOME 无任何引用，且实际启动页为 pages/discover/index（pages.json 首项），与常量语义不符|误导性死常量|删除或改为取 pages.json 首项|open|batch-4|
+R4-00228|d:\6\恋爱小程序\apps\client\src\guards\session-guard.ts|40-91|D|P3|重定向路径硬编码字符串（"/pages/login/index"、"/subpackages/setup/profile/index" 等 5 处），未用 ROUTES/SUBPACKAGE_ROUTES 常量|路径变更需全局搜索替换|改用 ROUTES 常量|open|batch-4|
+R4-00229|d:\6\恋爱小程序\apps\client\src\guards\profile-guard.ts|12-16|D|P3|LOCKED_PAGES 与 setup 路径硬编码字符串（"/pages/likes/index" 等 4+1 处）|守卫路径与 ROUTES 双源|改用 ROUTES/SUBPACKAGE_ROUTES 常量|open|batch-4|
+R4-00231|d:\6\恋爱小程序\apps\client\src\utils\navigation.ts|99-146|T|P3|PENDING_TAB_QUERY_KEY("campus-love:pending-tab-query")与 TAB_QUERY_KEY("campus-love:tab-query")两套 tab query storage 桥接并存（openAppPath vs switchTabWithQuery）|桥接键双实现，消费方可能读错键|合并为单一桥接实现|open|batch-4|
+R4-00232|d:\6\恋爱小程序\apps\client\src\config\channels.ts|33|T|P3|存储键 "village_last_channel" 未纳入 constants/storage-keys.ts 统一管理|storage key 散落，审计与变更困难|纳入 storage-keys.ts|open|batch-4|
+R4-00233|d:\6\恋爱小程序\apps\client\src\config\identity.ts|16|T|P3|存储键 "campus-love:user-identity" 未纳入 constants/storage-keys.ts 统一管理|同上|纳入 storage-keys.ts|open|batch-4|
+R4-00234|d:\6\恋爱小程序\apps\client\src\pages.json|36|T|P3|globalStyle navigationStyle:custom 下 50+ 个页面 navigationBarTitleText 为死配置（原生导航栏不渲染，各页自绘导航）|标题配置冗余且不随 i18n，易误导|删除或转为 share 配置用途|open|batch-4|
+R4-00235|d:\6\恋爱小程序\apps\client\src\pages.json|262-269|B|P3|pages/dev/index 路由用 // #ifdef DEV 包裹，但 package.json 无 uni-app.scripts 自定义条件定义 DEV（已核实 dist/build 与 dist/dev 产物均不含 dev 页），manifest.json:7-12 注释宣称"生产构建剔除"不准确|dev 调试页在开发构建也不可直达，调试入口失效|在 package.json 定义 DEV 条件或改用 H5 环境变量开关|open|batch-4|
+R4-00237|d:\6\恋爱小程序\apps\client\src\theme\design-variables.scss|423|T|P3|--card-padding 同 page 块内重复定义（行 423 与 519），--section-gap 重复定义（行 326 与 424）|同变量重复声明，后定义覆盖前定义，维护混乱|合并重复定义|open|batch-4|
+R4-00238|d:\6\恋爱小程序\apps\client\src\styles\tokens.scss|196-492|T|P3|dark 主题覆盖块三份整段重复（@media prefers-color-scheme 自动 196-308 / [data-theme] 手动 314-416 / .theme-dark 424-492，各约 60 行相同变量）|三份覆盖易漂移，深色适配改动需同步三处|抽取为 SCSS mixin 或仅保留一份|open|batch-4|
+R4-00239|d:\6\恋爱小程序\apps\client\src\styles\_components.scss|223-224|T|P3|注释称".section-title-brand 在 App.vue 与 global.scss 中重复定义 现仅保留 _components.scss 中一处定义"，但 theme/global.scss:255-271 仍定义 .section-title-brand|注释与实现矛盾，重复样式实际仍存在|删除 global.scss 中的重复定义|open|batch-4|
+R4-00240|d:\6\恋爱小程序\apps\client\src\theme\global.scss|204|T|P3|.user-select-none { } 空类（无任何声明，注释称 mp-weixin 不支持已移除）|死样式|删除|open|batch-4|
+R4-00241|d:\6\恋爱小程序\apps\client\src\uni.scss|12-279|T|P3|自动注入的 uni.scss 仍含约 270 行 CSS 规则（20+ keyframes 与工具类），违反项目约束"uni.scss 禁放 CSS 规则"，每组件编译注入|组件 wxss 体积膨胀、类名全局冲突风险|keyframes/工具类迁移至 theme/ 由 App.vue 引入|open|batch-4|
+R4-00243|d:\6\恋爱小程序\apps\client\src\config\content-pages.ts|23-25|H|P3|mbtiUrl=https://www.16types.com 与 consultingUrl=https://higher.smartedu.cn/... 第三方外链硬编码为默认值|生产包未配置微信 web-view 业务域名白名单时 MBTI/咨询页白屏，且外链无运行时降级|改为空默认 + 运营配置下发，白名单预登记|open|batch-4|
+R4-00245|d:\6\恋爱小程序\apps\client\src\utils\image-local.ts|17-21|T|P3|62 张本地头像映射与背景/帖子素材路径硬编码字符串（"/static/assets/images/avatars/avatar-N.jpg" 等），未走 IMAGE_PATHS 统一入口（images.ts 注释明确"禁止硬编码 /static/..."）|素材路径变更需改本文件，与 images.ts 双源|复用 IMAGE_PATHS/常量生成|open|batch-4|
+R4-02100|d:\6\恋爱小程序\apps\client\.env|1|T|P3|.env 文件被 .gitignore:35 忽略但仍被 git 跟踪（历史遗留提交），与 env 不入库约定冲突|env 文件与 ignore 规则矛盾，后续改动可能被误提交|git rm --cached 并从工作区移除|open|batch-4|

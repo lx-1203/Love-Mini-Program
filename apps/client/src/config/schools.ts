@@ -8,6 +8,7 @@
  * 同步引用 SCHOOLS 仅作为初始渲染兜底。
  */
 import { loadCampuses } from "../services/config";
+import { isDev } from "./env";
 
 export interface School {
   id: string;
@@ -130,7 +131,10 @@ export async function loadSchools(): Promise<School[]> {
     // infra R2-00122: 失败不再完全静默——输出告警便于联调排查与运营感知
     //（学校列表长期缺失时无任何信号，原审计项要求失败上报）；
     // 生产环境的请求错误由 http 层统一错误通道处理。
-    console.warn("[schools] loadSchools 后端拉取失败，回退本地静态列表:", error);
+    // 诊断日志仅在开发环境输出（R4-00529）
+    if (isDev) {
+      console.warn("[schools] loadSchools 后端拉取失败，回退本地静态列表:", error);
+    }
     return SCHOOLS;
   }
 }

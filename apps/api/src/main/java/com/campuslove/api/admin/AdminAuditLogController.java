@@ -40,7 +40,18 @@ public class AdminAuditLogController {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
+    /**
+     * R4-00394：审计视图层二次白名单——敏感字段名匹配模式。
+     * 切面脱敏仅靠字段名单，新增敏感字段易漏；视图层按 key 名兜底脱敏。
+     */
+    private static final java.util.regex.Pattern SENSITIVE_KEY_PATTERN =
+            java.util.regex.Pattern.compile(
+                    "(?i)(password|passwd|secret|token|authorization|credential|"
+                    + "idcard|id_card|idCard|phone|openid|open_id|unionid|session_key|jwt)");
+
     private final AdminAuditLogService auditLogService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+            new com.fasterxml.jackson.databind.ObjectMapper();
 
     public AdminAuditLogController(AdminAuditLogService auditLogService) {
         this.auditLogService = auditLogService;
@@ -105,7 +116,8 @@ public class AdminAuditLogController {
                 entity.getTargetId(),
                 entity.getRequestMethod(),
                 entity.getRequestUrl(),
-                entity.getRequestBody(),
+                // R4-00394：视图层二次白名单（切面脱敏的兜底，防新增敏感字段漏脱敏）
+                sanitizeRequestBody(entity.getRequestBody()),
                 entity.getResponseStatus(),
                 entity.getErrorMessage(),
                 entity.getIp(),
@@ -113,6 +125,43 @@ public class AdminAuditLogController {
                 entity.getDurationMs(),
                 entity.getCreatedAt() != null ? entity.getCreatedAt().toString() : null
         );
+    }
+
+    /**
+     * R4-00394：审计视图层二次白名单——递归剔除 requestBody JSON 中的敏感字段。
+     * 切面脱敏依赖字段名单，新增敏感字段易漏；此处按 key 名兜底（解析失败时
+     * 原样返回，交由切面已做的脱敏兜底）。
+     */
+    private String sanitizeRequestBody(String body) {
+        if (body == null || body.isBlank()) {
+            return body;
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(body);
+            redactSensitiveKeys(node);
+            return objectMapper.writeValueAsString(node);
+        } catch (Exception e) {
+            return body;
+        }
+    }
+
+    private void redactSensitiveKeys(com.fasterxml.jackson.databind.JsonNode node) {
+        if (node == null) {
+            return;
+        }
+        if (node.isObject()) {
+            java.util.Iterator<java.util.Map.Entry<String, com.fasterxml.jackson.databind.JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                java.util.Map.Entry<String, com.fasterxml.jackson.databind.JsonNode> field = fields.next();
+                if (SENSITIVE_KEY_PATTERN.matcher(field.getKey()).matches()) {
+                    field.setValue(com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.textNode("***"));
+                } else {
+                    redactSensitiveKeys(field.getValue());
+                }
+            }
+        } else if (node.isArray()) {
+            node.forEach(this::redactSensitiveKeys);
+        }
     }
 
     private Long parseLong(String s) {

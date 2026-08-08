@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.CheckIn;
 import com.campuslove.api.repository.CheckInRepository;
@@ -72,7 +73,7 @@ public class AdminCoinController {
 
         // 日期范围参数自校验：起始日期不得晚于结束日期
         if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
-            throw new IllegalArgumentException("起始日期不能晚于结束日期");
+            throw new IllegalArgumentException(ErrorMessages.START_DATE_AFTER_END);
         }
 
         // 数据隔离：签到记录按用户归属校区过滤
@@ -126,7 +127,7 @@ public class AdminCoinController {
         if (CheckIn.SOURCE_MAKE_UP.equalsIgnoreCase(trimmed)) {
             return CheckIn.SOURCE_MAKE_UP;
         }
-        throw new IllegalArgumentException("非法流水类型参数: " + value + "，仅支持 NORMAL/MAKE_UP");
+        throw new IllegalArgumentException(ErrorMessages.ILLEGAL_FLOW_TYPE_PREFIX + value + "，仅支持 NORMAL/MAKE_UP");
     }
 
     /**

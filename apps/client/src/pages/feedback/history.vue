@@ -230,8 +230,9 @@ function loadQueryId(): void {
   // #endif
 }
 
-onMounted(async () => {
-  await loadList();
+// R4-00119：首次进入与 Tab 返回统一由 onShow 加载（onShow 覆盖首次展示），
+// 移除 onMounted 的重复 loadList，避免页面打开重复拉取反馈列表。
+onMounted(() => {
   loadQueryId();
 });
 

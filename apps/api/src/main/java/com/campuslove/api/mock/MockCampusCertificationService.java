@@ -1,5 +1,6 @@
 package com.campuslove.api.mock;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.campus.CampusCertificationView;
@@ -22,6 +23,12 @@ public class MockCampusCertificationService implements CampusCertificationServic
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_REJECTED = "REJECTED";
+
+    /** R4-00404：模拟审核人占位 ID（mock 模式无真实审核人身份，统一使用固定占位值）。 */
+    private static final Long MOCK_REVIEWER_ID = 1L;
+
+    /** R4-00404：模拟认证审核备注（mock 演示文案，随 STATUS_APPROVED 一并写入记录）。 */
+    private static final String MOCK_APPROVE_REMARK = "模拟认证：直接通过";
 
     private final AtomicLong idSeq = new AtomicLong(1);
     private final Map<Long, CampusCertificationView> store = new LinkedHashMap<>();
@@ -54,7 +61,7 @@ public class MockCampusCertificationService implements CampusCertificationServic
                 1L,
                 "广州大学",
                 "计算机科学与技术",
-                "/uploads/mock/student-card-1.jpg",
+                MockMediaPaths.STUDENT_CARD_1,
                 STATUS_PENDING,
                 "审核中",
                 null,
@@ -71,10 +78,10 @@ public class MockCampusCertificationService implements CampusCertificationServic
         if (existing != null) {
             String currentStatus = existing.getStatus();
             if (STATUS_PENDING.equals(currentStatus)) {
-                throw new IllegalStateException("您的校园认证正在审核中，请耐心等待");
+                throw new IllegalStateException(ErrorMessages.CAMPUS_CERT_PENDING);
             }
             if (STATUS_APPROVED.equals(currentStatus)) {
-                throw new IllegalStateException("您已完成校园认证，无需重复提交");
+                throw new IllegalStateException(ErrorMessages.CAMPUS_CERT_ALREADY_DONE);
             }
             // REJECTED: 覆盖重新提交
             existing.setSchoolName(schoolName);
@@ -121,7 +128,7 @@ public class MockCampusCertificationService implements CampusCertificationServic
     @Override
     public CampusCertificationView reviewCertification(Long certId, String status, Long reviewerId, String reviewComment) {
         if (!STATUS_APPROVED.equals(status) && !STATUS_REJECTED.equals(status)) {
-            throw new IllegalArgumentException("审核结果无效，仅支持 APPROVED 或 REJECTED");
+            throw new IllegalArgumentException(ErrorMessages.CAMPUS_AUDIT_RESULT_INVALID);
         }
 
         for (CampusCertificationView view : store.values()) {
@@ -143,7 +150,7 @@ public class MockCampusCertificationService implements CampusCertificationServic
         // 掩盖了「审核对象不存在」的事实（调用方无法区分成功与 404）。
         // 现改为抛出 IllegalArgumentException（由 GlobalExceptionHandler 转为 400/404 语义），
         // 与 real 侧「记录不存在即失败」的行为对齐。
-        throw new IllegalArgumentException("认证记录不存在: " + certId);
+        throw new IllegalArgumentException(ErrorMessages.CAMPUS_CERT_NOT_FOUND_PREFIX + certId);
     }
 
     /**
@@ -163,8 +170,8 @@ public class MockCampusCertificationService implements CampusCertificationServic
         if (existing != null) {
             existing.setStatus(STATUS_APPROVED);
             existing.setStatusLabel(CampusCertificationView.toStatusLabel(STATUS_APPROVED));
-            existing.setReviewerId(1L);
-            existing.setReviewComment("模拟认证：直接通过");
+            existing.setReviewerId(MOCK_REVIEWER_ID);
+            existing.setReviewComment(MOCK_APPROVE_REMARK);
             existing.setReviewedAt(LocalDateTime.now(TimeZones.BUSINESS));
             view = existing;
         } else {
@@ -173,11 +180,11 @@ public class MockCampusCertificationService implements CampusCertificationServic
                     userId,
                     "广州大学",
                     "工业设计",
-                    "/uploads/mock/student-card-1.jpg",
+                    MockMediaPaths.STUDENT_CARD_1,
                     STATUS_APPROVED,
                     CampusCertificationView.toStatusLabel(STATUS_APPROVED),
-                    1L,
-                    "模拟认证：直接通过",
+                    MOCK_REVIEWER_ID,
+                    MOCK_APPROVE_REMARK,
                     LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(5),
                     LocalDateTime.now(TimeZones.BUSINESS)
             );
@@ -186,7 +193,7 @@ public class MockCampusCertificationService implements CampusCertificationServic
         // 联动当前 mock 用户校区（南校区 / verified，campusVerified 标志置位）
         if (runtimeState != null) {
             runtimeState.saveCampusProfile(
-                    new MockRuntimeState.CampusProfileData("广州", "南校区", "工业设计", "verified"));
+                    new MockRuntimeState.CampusProfileData("广州", MockDemoConstants.MOCK_CAMPUS_NAME, "工业设计", "verified"));
         }
         return view;
     }

@@ -18,6 +18,8 @@ import { useI18n } from "vue-i18n";
 import { usePromoCodeStore } from "../../stores/promo-code";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+// R4-00117：订单金额默认值从套餐配置取
+import { VIP_PLANS } from "../../config/vip-plans";
 // P1-08：会员功能开关（false 时子页拦截返回）
 import { featureFlags } from "../../config/feature-flags";
 
@@ -56,8 +58,11 @@ function readInputValue(e: Event): string {
 /** 优惠码输入 */
 const codeInput = ref<string>("");
 
-/** 订单金额输入（元），默认 48 元（季卡） */
-const orderAmountInput = ref<string>("48");
+/**
+ * 订单金额输入（元）。
+ * R4-00117：默认值从套餐配置取（VIP_PLANS 季卡 price），不再硬编码 48。
+ */
+const orderAmountInput = ref<string>(String(VIP_PLANS.find((p) => p.id === "quarterly")?.price ?? 48));
 
 /** 订单金额（分） */
 const orderAmountCents = computed(() => {

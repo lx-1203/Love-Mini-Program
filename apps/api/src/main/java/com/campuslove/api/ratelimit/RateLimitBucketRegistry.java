@@ -115,7 +115,17 @@ public class RateLimitBucketRegistry {
             }
         }
 
-        BucketEntry entry = buckets.computeIfAbsent(key, k -> createBucketEntry(k, capacity, refillTokens));
+        // R4-00379：computeIfAbsent 后 capacity/refillTokens 仅首次创建生效；
+        // 改为 compute 原子校验参数——注解限流参数变更（如调大容量）时自动重建桶，
+        // 无需重启应用。桶创建时记录归一化参数用于比对。
+        long cap = Math.max(MIN_CAPACITY, capacity);
+        double rate = Math.max(MIN_REFILL_TOKENS_PER_SECOND, refillTokens);
+        BucketEntry entry = buckets.compute(key, (k, existing) -> {
+            if (existing == null || existing.capacity != cap || existing.refillTokens != rate) {
+                return createBucketEntry(k, capacity, refillTokens);
+            }
+            return existing;
+        });
         // 更新最近使用时间（用于定时清理判断）
         entry.lastUsedAt = System.currentTimeMillis();
 
@@ -229,7 +239,7 @@ public class RateLimitBucketRegistry {
         Bucket bucket = Bucket.builder().addLimit(limit).build();
 
         log.debug("创建限流桶：key={}, capacity={}, refillTokens={}/s", key, cap, rate);
-        return new BucketEntry(bucket, System.currentTimeMillis());
+        return new BucketEntry(bucket, System.currentTimeMillis(), cap, rate);
     }
 
     /**
@@ -272,10 +282,16 @@ public class RateLimitBucketRegistry {
         final Bucket bucket;
         /** 最近一次使用时间（毫秒时间戳） */
         volatile long lastUsedAt;
+        /** 桶容量（归一化后，R4-00379 参数比对用） */
+        final long capacity;
+        /** 每秒补充令牌数（归一化后，R4-00379 参数比对用） */
+        final double refillTokens;
 
-        BucketEntry(Bucket bucket, long lastUsedAt) {
+        BucketEntry(Bucket bucket, long lastUsedAt, long capacity, double refillTokens) {
             this.bucket = bucket;
             this.lastUsedAt = lastUsedAt;
+            this.capacity = capacity;
+            this.refillTokens = refillTokens;
         }
     }
 }

@@ -30,6 +30,12 @@ import type {
 
 const { t } = useI18n();
 
+/**
+ * R4-00083: mock 消息时间戳间隔（6 小时），按序递减生成 mock 消息的 sentAt，
+ * 抽常量提升可读性（原为 6 * 3600 * 1000 魔法数字）。
+ */
+const MOCK_MSG_INTERVAL_MS = 6 * 3600 * 1000;
+
 /** CTA 箭头图标（SVG，替换 › 字符） */
 const chevronRightSrc = IMAGE_PATHS.ICONS_COMMON.CHEVRON_RIGHT_SVG;
 
@@ -145,7 +151,7 @@ async function loadOfficialChat(): Promise<void> {
         cardDesc: null,
         cardTag: null,
         cardTargetUrl: null,
-        sentAt: new Date(Date.now() - (keys.length - idx) * 6 * 3600 * 1000).toISOString(),
+        sentAt: new Date(Date.now() - (keys.length - idx) * MOCK_MSG_INTERVAL_MS).toISOString(),
       }));
       // Mock 活动卡片（仅活动运营号）
       if (accountId.value === "official-promoter") {
@@ -203,7 +209,7 @@ async function loadOfficialChat(): Promise<void> {
     activityCards.value = rawMessages
       .filter((msg) => msg.messageType === "card" && msg.cardTitle && msg.cardTargetUrl)
       .map((msg, idx) => ({
-        id: String(msg.id) ?? `card-${idx}`,
+        id: String(msg.id ?? `card-${idx}`),
         title: msg.cardTitle ?? "",
         desc: msg.cardDesc ?? msg.content,
         tag: msg.cardTag ?? "",

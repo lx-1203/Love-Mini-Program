@@ -1,5 +1,6 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.PaymentCallbackLog;
 import com.campuslove.api.entity.VipBill;
@@ -107,13 +108,13 @@ public class BillingService {
     public PurchaseResultView purchaseVip(Long userId, String planId, String planName,
                                           Integer baseAmount, String promoCode) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         if (baseAmount == null || baseAmount < 0) {
-            throw new IllegalArgumentException("套餐价格不能为负数");
+            throw new IllegalArgumentException(ErrorMessages.PLAN_PRICE_NOT_NEGATIVE);
         }
         if (planId == null || planId.isBlank()) {
-            throw new IllegalArgumentException("套餐 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PLAN_ID_REQUIRED);
         }
 
         // 1. 优惠码折扣消费（R4-00320）：redeem 原子消耗使用次数并返回折扣
@@ -193,13 +194,13 @@ public class BillingService {
     @Transactional(readOnly = true)
     public BillListResponse listBills(Long userId, Integer page, Integer size) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         if (page == null || page < 0) {
-            throw new IllegalArgumentException("页码不能为负数");
+            throw new IllegalArgumentException(ErrorMessages.PAGE_NUM_NOT_NEGATIVE);
         }
         if (size == null || size <= 0) {
-            throw new IllegalArgumentException("每页大小必须大于 0");
+            throw new IllegalArgumentException(ErrorMessages.PAGE_SIZE_POSITIVE);
         }
 
         try {
@@ -221,7 +222,7 @@ public class BillingService {
         } catch (DataAccessException e) {
             // 数据库访问异常
             log.error("账单列表查询失败：userId={}, page={}, size={}", userId, page, size, e);
-            throw new RuntimeException("账单查询失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.BILL_QUERY_FAILED_RETRY, e);
         }
     }
 
@@ -252,10 +253,10 @@ public class BillingService {
                                String paymentMethod, String transactionId,
                                String periodStart, String periodEnd, String remark) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         if (amount == null || amount < 0) {
-            throw new IllegalArgumentException("支付金额不能为负数");
+            throw new IllegalArgumentException(ErrorMessages.PAYMENT_AMOUNT_NOT_NEGATIVE);
         }
 
         try {
@@ -295,7 +296,7 @@ public class BillingService {
         } catch (DataAccessException e) {
             // 数据库写入失败时回滚事务并上报
             log.error("账单创建失败：userId={}, amount={}", userId, amount, e);
-            throw new RuntimeException("账单创建失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.BILL_CREATE_FAILED_RETRY, e);
         }
     }
 

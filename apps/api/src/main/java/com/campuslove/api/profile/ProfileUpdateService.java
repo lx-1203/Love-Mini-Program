@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.config.SensitiveWordFilter;
@@ -127,12 +128,22 @@ public class ProfileUpdateService {
                 });
 
         // infra R2-00254: 昵称/简介补敏感词过滤（防止资料携带违规词）
-        String filteredNickname = sensitiveWordFilter != null
-                ? sensitiveWordFilter.filterWithLog(request.nickname(), currentUserId, "PROFILE_NICKNAME")
-                : request.nickname();
-        String filteredBio = request.bio() != null && sensitiveWordFilter != null
-                ? sensitiveWordFilter.filterWithLog(request.bio(), currentUserId, "PROFILE_BIO")
-                : request.bio();
+        // R4-00298：资料昵称/简介属身份展示字段，命中敏感词直接【拒绝】并记录
+        // （仅替换为 *** 无法阻止拆分/谐音绕过内容审核；拒绝策略保证资料区无违规内容）。
+        // 与社区发帖（村口帖子/评论走替换策略）语义区分：资料字段更接近实名身份，
+        // 从严处理。
+        String filteredNickname = request.nickname();
+        if (sensitiveWordFilter != null && sensitiveWordFilter.containsSensitive(request.nickname())) {
+            // 记录命中（含用户 ID 与场景），随后拒绝保存
+            sensitiveWordFilter.filterWithLog(request.nickname(), currentUserId, "PROFILE_NICKNAME");
+            throw new IllegalArgumentException("资料包含违规内容，请修改后重试");
+        }
+        String filteredBio = request.bio();
+        if (request.bio() != null && sensitiveWordFilter != null
+                && sensitiveWordFilter.containsSensitive(request.bio())) {
+            sensitiveWordFilter.filterWithLog(request.bio(), currentUserId, "PROFILE_BIO");
+            throw new IllegalArgumentException("资料包含违规内容，请修改后重试");
+        }
 
         profile.setNickname(filteredNickname);
         profile.setBio(filteredBio);
@@ -168,7 +179,7 @@ public class ProfileUpdateService {
 
         // 同步更新 User 表
         User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+                .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
         user.setNickname(filteredNickname);
         user.setBio(filteredBio);
         user.setGradeLabel(request.grade());
@@ -240,7 +251,7 @@ public class ProfileUpdateService {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         MediaStorageService.UploadResult result = mediaStorageService.store(currentUserId, file, "avatar");
         User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+                .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
         deleteOldMediaQuietly(user.getAvatarUrl());
         user.setAvatarUrl(result.getUrl());
         user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
@@ -309,7 +320,7 @@ public class ProfileUpdateService {
         UserBasicProfile profile = ensureBasicProfile(currentUserId);
         List<String> gallery = queryService.parseStringList(profile.getPhotoGallery());
         if (index >= gallery.size()) {
-            throw new IllegalArgumentException("指定索引无照片可删除: " + index);
+            throw new IllegalArgumentException(ErrorMessages.PHOTO_INDEX_INVALID_PREFIX + index);
         }
         String removed = gallery.remove(index);
         if (removed != null && !removed.isBlank()) {
@@ -383,7 +394,7 @@ public class ProfileUpdateService {
         userCampusProfileRepository.save(profile);
 
         User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+                .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
         user.setProfileCompletion(queryService.calculateProfileCompletion(currentUserId));
         user.setUpdatedAt(now);
         userRepository.save(user);
@@ -427,7 +438,7 @@ public class ProfileUpdateService {
         userScheduleProfileRepository.save(profile);
 
         User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + currentUserId));
+                .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
         user.setProfileCompletion(queryService.calculateProfileCompletion(currentUserId));
         user.setUpdatedAt(now);
         userRepository.save(user);
@@ -534,7 +545,7 @@ public class ProfileUpdateService {
      */
     public BasicProfileView rebuildView(Long userId, UserBasicProfile profile) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalStateException("用户不存在: " + userId));
+                .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + userId));
         int completion = queryService.calculateProfileCompletion(userId);
         user.setProfileCompletion(completion);
         userRepository.save(user);

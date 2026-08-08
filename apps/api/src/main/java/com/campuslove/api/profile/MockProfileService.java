@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.campus.CampusCertificationView;
 import com.campuslove.api.media.MediaStorageService;
@@ -122,7 +123,7 @@ public class MockProfileService implements ProfileService {
     MockRuntimeState.BasicProfileData current = runtimeState.basicProfile();
     List<String> gallery = new ArrayList<>(current.photoGallery());
     if (index >= gallery.size()) {
-      throw new IllegalArgumentException("指定索引无照片可删除: " + index);
+      throw new IllegalArgumentException(ErrorMessages.PHOTO_INDEX_INVALID_PREFIX + index);
     }
     String removed = gallery.remove(index);
     if (removed != null && !removed.isBlank()) {
@@ -248,7 +249,17 @@ public class MockProfileService implements ProfileService {
   }
 
   @Override
+  public List<FollowUserView> getFollowers(Long userId, int page, int size) {
+    return List.of();
+  }
+
+  @Override
   public List<FollowUserView> getFollowing(Long userId) {
+    return List.of();
+  }
+
+  @Override
+  public List<FollowUserView> getFollowing(Long userId, int page, int size) {
     return List.of();
   }
 
@@ -261,13 +272,16 @@ public class MockProfileService implements ProfileService {
 
   /**
    * 调用 MediaStorageService 完成实际上传，返回访问 URL。
-   * mock 模式下使用 userId=1（与 MockSecurityConfig 默认 principal 一致）。
+   * R4-00299：mock 归属用户收敛为常量（与 MockSecurityConfig 默认 principal
+   * 的 app.mock.principal-user-id 配置一致，两处不再隐性耦合字面量 1L）。
    */
+  private static final long MOCK_PRINCIPAL_USER_ID = 1L;
+
   private String doUpload(MultipartFile file, String type) {
     if (file == null || file.isEmpty()) {
-      throw new IllegalArgumentException("上传文件不能为空");
+      throw new IllegalArgumentException(ErrorMessages.UPLOAD_FILE_REQUIRED);
     }
-    MediaStorageService.UploadResult result = mediaStorageService.store(1L, file, type);
+    MediaStorageService.UploadResult result = mediaStorageService.store(MOCK_PRINCIPAL_USER_ID, file, type);
     return result.getUrl();
   }
 

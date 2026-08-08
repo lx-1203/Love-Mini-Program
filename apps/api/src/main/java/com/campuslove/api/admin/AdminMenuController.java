@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -72,6 +73,13 @@ public class AdminMenuController {
     private final RoleMenuRepository roleMenuRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+
+    /**
+     * R4-00390：新增菜单是否自动授权给 ADMIN 角色（默认 true）。
+     * 关闭后新菜单仅 SUPER_ADMIN 可见，需手动分配。
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.admin.menu-auto-grant-admin:true}")
+    private boolean autoGrantAdminToNewMenu;
 
     public AdminMenuController(MenuRepository menuRepository,
                                RoleMenuRepository roleMenuRepository,
@@ -156,6 +164,14 @@ public class AdminMenuController {
         // 新菜单自动授权给 SUPER_ADMIN（保证全局管理员始终可见）
         roleRepository.findByCode(AdminDataScope.ROLE_SUPER_ADMIN)
                 .ifPresent(role -> roleMenuRepository.save(new RoleMenu(role, saved)));
+
+        // R4-00390：可选自动授权给 ADMIN——否则后台新增菜单校区管理员永远看不到
+        // 直到手动分配（动态菜单体验割裂）。默认开启，可通过
+        // app.admin.menu-auto-grant-admin=false 关闭（需手动分配时）。
+        if (autoGrantAdminToNewMenu) {
+            roleRepository.findByCode(AdminDataScope.ROLE_ADMIN)
+                    .ifPresent(role -> roleMenuRepository.save(new RoleMenu(role, saved)));
+        }
 
         return ResponseEntity.ok(toDetailView(saved));
     }
@@ -437,12 +453,12 @@ record MenuDetailView(
  */
 record MenuRequest(
         Long parentId,
-        @NotBlank(message = "菜单标题不能为空")
-        @Size(min = 1, max = 64, message = "菜单标题长度须为 1-64 字") String title,
-        @NotBlank(message = "路由 name 不能为空")
-        @Size(min = 1, max = 64, message = "路由 name 长度须为 1-64 字") String name,
-        @NotBlank(message = "路由路径不能为空")
-        @Size(min = 1, max = 128, message = "路由路径长度须为 1-128 字") String path,
+        @NotBlank(message = ErrorMessages.MENU_TITLE_REQUIRED)
+        @Size(min = 1, max = 64, message = ErrorMessages.MENU_TITLE_LENGTH_INVALID) String title,
+        @NotBlank(message = ErrorMessages.MENU_ROUTE_NAME_REQUIRED)
+        @Size(min = 1, max = 64, message = ErrorMessages.MENU_ROUTE_NAME_LENGTH_INVALID) String name,
+        @NotBlank(message = ErrorMessages.MENU_ROUTE_PATH_REQUIRED)
+        @Size(min = 1, max = 128, message = ErrorMessages.MENU_ROUTE_PATH_LENGTH_INVALID) String path,
         String component,
         String icon,
         Integer sort,

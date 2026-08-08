@@ -16,6 +16,12 @@
 --   幂等性：UPDATE 本身天然幂等，可安全重跑。
 -- ============================================================
 
+-- ⚠️ 执行前强制备份提示（R4-00427）：
+-- 本迁移会清理 USER 角色残留的 campus_name 值，被清理值无法还原（不可回滚）。
+-- 生产环境执行前必须先备份 users 表：
+--   mysqldump campus_love users > users_before_campus_name_fix.sql
+-- 或至少记录受影响行数（见下方确认查询），便于异常时恢复。
+
 -- ========== 1. 执行前确认（手动核对，勿删） ==========
 -- SELECT role, COUNT(*) AS cnt, SUM(campus_name IS NOT NULL) AS has_campus
 -- FROM users GROUP BY role;

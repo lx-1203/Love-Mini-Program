@@ -13,6 +13,13 @@ import org.springframework.web.multipart.MultipartFile;
 public interface FeedbackService {
 
     /**
+     * 反馈图片大小上限（字节）（R4-01850 双实现共用常量）。
+     * 5MB——功能9业务规则（比 MediaStorageService 默认 10MB 更严格），
+     * Real/Mock 实现共用，改限时只改一处。
+     */
+    long FEEDBACK_IMAGE_MAX_BYTES = 5L * 1024 * 1024;
+
+    /**
      * 提交反馈。
      *
      * @param type    反馈类型

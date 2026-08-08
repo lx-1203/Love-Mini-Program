@@ -18,6 +18,7 @@ import { ref, computed, getCurrentInstance, onMounted, onUnmounted } from "vue";
 import { onLoad, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVideoCallStore, type VideoCallEndReason } from "../../stores/video-call";
+import { isDev } from "../../config/env";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 
@@ -248,9 +249,14 @@ async function endCallWithReason(reason: VideoCallEndReason) {
     });
   } catch (error) {
     // 静默处理：结束通话失败不阻塞返回流程
-    console.warn("[video-call] endCall 失败:", error);
+    if (isDev) {
+      console.warn("[video-call] endCall 失败:", error);
+    }
   }
 }
+
+/** 通话时长计时器步进（毫秒）：每秒累加 1 秒 */
+const DURATION_TICK_MS = 1000;
 
 /**
  * 启动通话时长计时器
@@ -260,7 +266,7 @@ function startDurationTimer() {
   durationSec.value = 0;
   durationTimer = setInterval(() => {
     durationSec.value++;
-  }, 1000);
+  }, DURATION_TICK_MS);
 }
 
 /**

@@ -104,10 +104,12 @@ public class SecurityConfig {
                     .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 // XSS-Protection: 1; mode=block —— 旧版浏览器 XSS 过滤（已废弃但保留兼容）
                 .xssProtection(xss -> {})
-                // Strict-Transport-Security: 强制 HTTPS，包含子域名，1 年
+                // Strict-Transport-Security: 强制 HTTPS，包含子域名。
+                // R4-01817：max-age 收敛为共享常量（1 年 = HSTS preload 要求的最小值，
+                // 审计原文误标为 CORS maxAge，实为 HSTS 头）
                 .httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
-                    .maxAgeInSeconds(31536000)
+                    .maxAgeInSeconds(WebConfig.HSTS_MAX_AGE_SECONDS)
                 )
             )
             // 配置请求授权
@@ -196,19 +198,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 复用 WebConfig.parseOrigins 解析逻辑，保证与 WebMvc CORS 一致
+        // 复用 WebConfig.parseOrigins 解析逻辑，保证与 WebMvc CORS 一致；
+        // R4-00278：allowedMethods/Headers/maxAge 收敛为 WebConfig 共享常量单一来源
+        // （原两处手工维护导致 SecurityConfig 漏含 X-Trace-Id 的配置漂移）
         List<String> origins = WebConfig.parseOrigins(allowedOrigins);
         configuration.setAllowedOriginPatterns(origins);
-        configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of(
-                "Authorization", "Content-Type", "X-Requested-With",
-                // infra 修复(联调):@Idempotent 强制接口(如 admin 登录)要求
-                // Idempotency-Key 请求头,未加入 CORS 允许列表导致浏览器预检被拦
-                // (net::ERR_FAILED),curl 不受 CORS 限制故表现正常。
-                "Idempotency-Key"));
+        configuration.setAllowedMethods(WebConfig.CORS_ALLOWED_METHODS);
+        configuration.setAllowedHeaders(WebConfig.CORS_ALLOWED_HEADERS);
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
+        configuration.setMaxAge(WebConfig.CORS_MAX_AGE_SECONDS);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);

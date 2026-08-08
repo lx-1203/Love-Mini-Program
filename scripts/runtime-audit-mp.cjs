@@ -42,7 +42,7 @@ async function getToken() {
   const res = await fetch(`${API_BASE}/auth/phone-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: '19900000000', password: 'Admin@12345' }),
+    body: JSON.stringify({ phone: process.env.TEST_ADMIN_PHONE ?? "<REDACTED>", password: process.env.TEST_ADMIN_PASSWORD ?? "<REDACTED>" }),
   });
   const data = await res.json();
   if (!data.token) throw new Error('login failed: ' + JSON.stringify(data).slice(0, 200));

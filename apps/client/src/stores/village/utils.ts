@@ -19,6 +19,8 @@ import type {
   PostItem,
   PostSummaryView,
 } from "./types";
+// R4-00131：相对时间复用共享实现（utils/time.ts），文案随语言切换
+import { formatRelativeTime as formatSharedRelativeTime, getCurrentLocale } from "../../utils/time";
 import {
   CATEGORY_ALL_ID,
   CATEGORY_CAMPUS_ID,
@@ -613,20 +615,10 @@ export function rollbackFavorite(
 }
 
 /**
- * 格式化相对时间
+ * 格式化相对时间（R4-00131：复用 utils/time.ts 的共享实现，
+ * 消除「刚刚活跃/N分钟前…」硬编码中文；文案随当前语言切换）。
  */
 export function formatRelativeTime(dateStr: string): string {
-  const now = Date.now();
-  const then = Date.parse(dateStr);
-  const diff = now - then;
-
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-
-  if (diff < minute) return "刚刚活跃";
-  if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
-  if (diff < day) return `${Math.floor(diff / hour)}小时前`;
-  return `${Math.floor(diff / day)}天前`;
+  return formatSharedRelativeTime(Date.parse(dateStr), getCurrentLocale());
 }
 

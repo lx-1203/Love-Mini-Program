@@ -269,7 +269,7 @@ R4-XXXXX|d:\6\恋爱小程序\docs\release-checklist.md|200|F|P3|发布检查项
 R4-XXXXX|d:\6\恋爱小程序\docs\OPENAPI-ANNOTATION-GUIDE.md|62|T|P3|待补全 Controller 清单列出 ChatRedPacketController（/api/v1/chat/red-packets），控制器已删除|清单含已删除控制器，按清单补注解无从下手|移除该行|open|batch-4
 R4-XXXXX|d:\6\恋爱小程序\docs\OPENAPI-ANNOTATION-GUIDE.md|72|T|P3|待补全 Controller 清单列出 VipRedPacketController（/api/v1/vip/red-packets），控制器已删除|清单含已删除控制器|移除该行|open|batch-4
 R4-XXXXX|d:\6\恋爱小程序\docs\OPENAPI-ANNOTATION-GUIDE.md|36-37|F|P3|声称 MatchController 16 端点已完成全量注解补全；MatchController 实际仅 8 处 @Operation|注解完成度声明虚高，OpenAPI 文档覆盖不足|按实际注解数更新或补全注解|open|batch-4
-R4-XXXXX|d:\6\恋爱小程序\docs\wechat-submission-materials-checklist.md|173-181|H|P2|文档明文记录测试账号密码（admin_test/Test@12345、user_test/Test@12345、vip_test/Test@12345）|测试凭证明文入库，若账号在系统真实存在则构成凭据泄露|移除明文密码，改为提审时临时配置|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\docs\wechat-submission-materials-checklist.md|173-181|H|P2|文档明文记录测试账号密码（admin_test/<REDACTED>、user_test/<REDACTED>、vip_test/<REDACTED>）|测试凭证明文入库，若账号在系统真实存在则构成凭据泄露|移除明文密码，改为提审时临时配置|open|batch-4
 R4-XXXXX|d:\6\恋爱小程序\docs\wechat-submission-materials-checklist.md|179-181|F|P3|vip_test 角色描述为已购买月度 VIP（18 元/月）的 VIP 用户，VIP 会员已暂缓上线，演示场景不存在|审核演示账号能力与产品现状不符，审核演示存在偏差|更新为普通用户演示场景|open|batch-4
 R4-XXXXX|d:\6\恋爱小程序\docs\wechat-submission-materials-checklist.md|293,479|H|P3|admin.example.com / api.example.com 等占位域名直接写入提交材料模板|模板占位域名为空不可达，照抄则提审信息错误|统一使用明确占位符并加必改标记|open|batch-4
 R4-XXXXX|d:\6\恋爱小程序\checklist.md|10-13|T|P3|声称 tokens.ts 主色已更新为天蓝 #3B9DE5/浅青 #5BC0DE/暖橙 #FF8C42；当前 tokens.ts brand 为 #3FCF8E 绿色系|设计基线文档与主题实现不一致，新成员按旧色值开发|按当前 tokens.ts 更新或归档该清单|open|batch-4

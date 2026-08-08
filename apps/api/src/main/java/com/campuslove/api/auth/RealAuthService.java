@@ -1,5 +1,6 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.auth.AdminDisabledException;
 import com.campuslove.api.admin.auth.InvalidCredentialsException;
@@ -116,6 +117,28 @@ public class RealAuthService implements AuthService {
      * 更换体验号无需改代码重新发版。与 {@link #loginAsGuest()} 的体验账号创建逻辑保持一致。
      */
     private final String guestBlacklistPhone;
+
+    /**
+     * 并发注册唯一约束冲突重试次数上限（R4-01824）。
+     * 首次尝试 + 重试 1 次，共最多 2 次查询/创建。
+     */
+    private static final int REGISTER_RETRY_MAX_ATTEMPTS = 2;
+
+    /**
+     * 资料完成度阈值（R4-01825）：profile_completion >= 50 视为资料已完成
+     * （P0-34/P0-35 口径：学生=基本30+校园30+日程20=80，非学生=基本30+日程20=50）。
+     * 与客户端/其他服务判定保持一致，变更需同步评估。
+     */
+    private static final int PROFILE_COMPLETION_THRESHOLD = 50;
+
+    /**
+     * R4-00256：自引用代理——Spring AOP 不拦截同类内部调用，
+     * {@link #findOrCreateUserForWechatLogin} 的 {@code @Transactional}
+     * 必须经本代理调用才能生效（保证并发首登「查询 + 创建」的原子性）。
+     */
+    @org.springframework.context.annotation.Lazy
+    @org.springframework.beans.factory.annotation.Autowired
+    private RealAuthService self;
 
     public RealAuthService(
             WeChatClient weChatClient,
@@ -290,8 +313,10 @@ public class RealAuthService implements AuthService {
         // 数据库 openid 字段存储派生 hash（不可逆，但可用于唯一性约束）。
         String openidHash = hashOpenid(openid);
 
-        // 2. 查找或创建用户（事务边界仅覆盖 DB 操作）
-        User user = findOrCreateUserForWechatLogin(openidHash, openid);
+        // 2. 查找或创建用户（事务边界仅覆盖 DB 操作）。
+        //    R4-00256：经 self 代理调用，使方法级 @Transactional 真正生效
+        //    （Spring AOP 不拦截同类内部调用）。
+        User user = self.findOrCreateUserForWechatLogin(openidHash, openid);
 
         // 2.5 用户禁用检查：被管理员禁用的账号禁止登录，返回 USER_DISABLED（403）。
         //     新创建用户 status 默认为 active，此处主要拦截老用户被禁用后再次登录的场景。
@@ -300,7 +325,7 @@ public class RealAuthService implements AuthService {
             log.warn("禁用用户尝试登录, userId={}, openid={}", user.getId(), SensitiveDataMasker.mask(openid));
             throw new WechatLoginException(
                     WechatLoginException.ErrorCode.USER_DISABLED,
-                    "账号已被禁用，请联系管理员");
+                    ErrorMessages.ACCOUNT_DISABLED_CONTACT_ADMIN);
         }
 
         // 3. 生成 JWT 令牌（userId 为 Long 类型，转为 String 存储）
@@ -338,7 +363,7 @@ public class RealAuthService implements AuthService {
      */
     @Transactional
     public User findOrCreateUserForWechatLogin(String openidHash, String openid) {
-        for (int attempt = 1; attempt <= 2; attempt++) {
+        for (int attempt = 1; attempt <= REGISTER_RETRY_MAX_ATTEMPTS; attempt++) {
             try {
                 Optional<User> existingUser = userRepository.findByOpenid(openidHash);
                 if (existingUser.isPresent()) {
@@ -361,31 +386,31 @@ public class RealAuthService implements AuthService {
                 return user;
             } catch (DataIntegrityViolationException ex) {
                 // FIN MED-54：并发首登唯一约束冲突（uk_users_openid）
-                if (attempt >= 2) {
+                if (attempt >= REGISTER_RETRY_MAX_ATTEMPTS) {
                     log.warn("创建用户唯一约束冲突且重试仍失败, openid={}: {}",
                             SensitiveDataMasker.mask(openid), ex.getMessage());
-                    throw new RuntimeException("用户登录处理失败，请稍后重试", ex);
+                    throw new RuntimeException(ErrorMessages.USER_LOGIN_FAILED_RETRY, ex);
                 }
                 log.info("创建用户唯一约束冲突（并发首登），重试查询既有用户: openid={}",
                         SensitiveDataMasker.mask(openid));
             } catch (DataAccessException ex) {
                 log.error("查找/创建用户失败, openid={}: {}", SensitiveDataMasker.mask(openid), ex.getMessage(), ex);
-                throw new RuntimeException("用户登录处理失败，请稍后重试", ex);
+                throw new RuntimeException(ErrorMessages.USER_LOGIN_FAILED_RETRY, ex);
             }
         }
         // 理论不可达：循环最多 2 次
-        throw new RuntimeException("用户登录处理失败，请稍后重试");
+        throw new RuntimeException(ErrorMessages.USER_LOGIN_FAILED_RETRY);
     }
 
     @Override
     public UserSessionView refreshToken(String oldToken) {
         if (oldToken == null || oldToken.isBlank()) {
-            throw new IllegalArgumentException("Token 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.TOKEN_REQUIRED);
         }
 
         // 1. 验证旧令牌有效性
         if (!jwtTokenProvider.isTokenValid(oldToken)) {
-            throw new IllegalArgumentException("Token 无效或已过期");
+            throw new IllegalArgumentException(ErrorMessages.TOKEN_INVALID_OR_EXPIRED);
         }
 
         // 1.5 修复（FIN HIGH-7）：检查 jti 黑名单——用户登出后旧 token 不应能换发新 token。
@@ -393,13 +418,13 @@ public class RealAuthService implements AuthService {
         String jti = jwtTokenProvider.getJtiFromToken(oldToken);
         if (jti != null && !jti.isBlank() && tokenBlacklistService.isRevoked(jti)) {
             log.warn("刷新 Token 被拒绝：jti={} 已在黑名单（用户已登出）", jti);
-            throw new IllegalArgumentException("Token 已被撤销，请重新登录");
+            throw new IllegalArgumentException(ErrorMessages.TOKEN_REVOKED);
         }
 
         // 2. 从旧令牌中提取用户 ID
         String userId = jwtTokenProvider.getUserIdFromToken(oldToken);
         if (userId == null) {
-            throw new IllegalArgumentException("无法从 Token 中提取用户信息");
+            throw new IllegalArgumentException(ErrorMessages.TOKEN_USER_EXTRACTION_FAILED);
         }
 
         // 3. R4-00255：先校验用户存在且未被禁用，再签发新令牌——
@@ -409,13 +434,13 @@ public class RealAuthService implements AuthService {
         try {
             uid = Long.parseLong(userId);
         } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException("用户 ID 格式无效");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_FORMAT_INVALID);
         }
         User user = userRepository.findById(uid).orElseThrow(() ->
-                new IllegalArgumentException("用户不存在"));
+                new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
         if (user.isDisabled()) {
             log.warn("禁用用户尝试刷新令牌，userId={}，拒绝刷新", uid);
-            throw new IllegalArgumentException("账号已被禁用，请联系管理员");
+            throw new IllegalArgumentException(ErrorMessages.ACCOUNT_DISABLED_CONTACT_ADMIN);
         }
 
         // 4. 生成新令牌
@@ -459,18 +484,18 @@ public class RealAuthService implements AuthService {
     @Transactional
     public UserSessionView registerUser(String phone, String password, String nickname) {
         if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
-            throw new IllegalArgumentException("手机号格式不正确");
+            throw new IllegalArgumentException(ErrorMessages.PHONE_FORMAT_INVALID);
         }
         // P0-14：体验账号黑名单——黑名单手机号为体验入口专用，禁止注册新账号
         if (guestBlacklistPhone.equals(phone)) {
             log.warn("黑名单手机号注册被拒绝：phone={}", SensitiveDataMasker.mask(phone));
-            throw new IllegalArgumentException("该手机号不可注册");
+            throw new IllegalArgumentException(ErrorMessages.PHONE_CANNOT_REGISTER);
         }
         if (password == null || password.length() < 6 || password.length() > 64) {
-            throw new IllegalArgumentException("密码长度须为 6-64 位");
+            throw new IllegalArgumentException(ErrorMessages.PASSWORD_LENGTH_INVALID);
         }
         if (nickname == null || nickname.isBlank() || nickname.trim().length() > 20) {
-            throw new IllegalArgumentException("昵称长度须为 1-20 字");
+            throw new IllegalArgumentException(ErrorMessages.NICKNAME_LENGTH_INVALID);
         }
         // R4-00249：手机号唯一性校验与存储改为加密口径——新注册用户 phone 经
         // AesEncryptor 加密落库、openid 使用不可逆 SHA-256 派生键（"phone:"+hash），
@@ -481,7 +506,7 @@ public class RealAuthService implements AuthService {
                 .or(() -> userRepository.findByPhone(phone))
                 .isPresent();
         if (phoneExists) {
-            throw new IllegalArgumentException("该手机号已注册");
+            throw new IllegalArgumentException(ErrorMessages.PHONE_ALREADY_REGISTERED);
         }
         User user = new User();
         user.setOpenid("phone:" + hashOpenid(phone));
@@ -502,7 +527,7 @@ public class RealAuthService implements AuthService {
             // A-34：手机号唯一约束冲突兜底（uk_users_phone / uk_users_openid）
             // 并发注册同一手机号或 openid 派生冲突时，返回友好业务错误而非 500
             log.warn("注册唯一约束冲突：phone={}, error={}", SensitiveDataMasker.mask(phone), ex.getMessage());
-            throw new IllegalArgumentException("该手机号已注册，请直接登录");
+            throw new IllegalArgumentException(ErrorMessages.PHONE_REGISTERED_PLEASE_LOGIN);
         }
         log.info("新用户注册成功: userId={}, phone={}", saved.getId(), SensitiveDataMasker.mask(phone));
         String token = jwtTokenProvider.generateToken(String.valueOf(saved.getId()));
@@ -522,12 +547,12 @@ public class RealAuthService implements AuthService {
     @Transactional(readOnly = true)
     public UserSessionView loginWithPhone(String phone, String password) {
         if (phone == null || phone.isBlank() || password == null || password.isBlank()) {
-            throw new InvalidCredentialsException("手机号或密码错误");
+            throw new InvalidCredentialsException(ErrorMessages.PHONE_OR_PASSWORD_WRONG);
         }
         // P0-14：体验账号黑名单——黑名单手机号仅体验入口可登录，禁止手机号+密码路径占用
         if (guestBlacklistPhone.equals(phone)) {
             log.warn("黑名单手机号登录被拒绝：phone={}", SensitiveDataMasker.mask(phone));
-            throw new IllegalArgumentException("该手机号不可登录");
+            throw new IllegalArgumentException(ErrorMessages.PHONE_CANNOT_LOGIN);
         }
         // R4-00249：登录查询按加密口径匹配——先按密文（新注册用户），
         // 未命中再按明文（兼容历史未加密数据），两路均未命中视为账号不存在。
@@ -540,15 +565,15 @@ public class RealAuthService implements AuthService {
             user = userRepository.findByPhone(phone).orElse(null);
         }
         if (user == null) {
-            throw new InvalidCredentialsException("手机号或密码错误");
+            throw new InvalidCredentialsException(ErrorMessages.PHONE_OR_PASSWORD_WRONG);
         }
         if (user.isDisabled()) {
-            throw new com.campuslove.api.common.OperationForbiddenException("账号已被禁用，请联系管理员");
+            throw new com.campuslove.api.common.OperationForbiddenException(ErrorMessages.ACCOUNT_DISABLED_CONTACT_ADMIN);
         }
         String storedHash = user.getPassword();
         if (storedHash == null || storedHash.isBlank()
                 || !passwordEncoder.matches(password, storedHash)) {
-            throw new InvalidCredentialsException("手机号或密码错误");
+            throw new InvalidCredentialsException(ErrorMessages.PHONE_OR_PASSWORD_WRONG);
         }
         String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 phone
@@ -582,7 +607,7 @@ public class RealAuthService implements AuthService {
     public UserSessionView loginAsGuest() {
         if (!guestLoginEnabled) {
             log.warn("体验账号登录入口已被配置禁用（app.guest-login.enabled=false）");
-            throw new IllegalStateException("体验账号入口已关闭，请使用其他方式登录");
+            throw new IllegalStateException(ErrorMessages.TRIAL_LOGIN_DISABLED);
         }
         // R4-00251：每次登录创建独立临时账号（openid 全局唯一，phone 为空）
         // R4-00252：并发首登/极端碰撞场景捕获 DataIntegrityViolationException（uk_users_openid），
@@ -607,13 +632,13 @@ public class RealAuthService implements AuthService {
             } catch (DataIntegrityViolationException ex) {
                 if (attempt >= 2) {
                     log.warn("体验账号创建唯一约束冲突且重试仍失败: {}", ex.getMessage());
-                    throw new IllegalStateException("体验账号创建失败，请稍后重试", ex);
+                    throw new IllegalStateException(ErrorMessages.TRIAL_ACCOUNT_CREATE_FAILED_RETRY, ex);
                 }
                 log.info("体验账号创建唯一约束冲突（并发首登），更换 UUID 重试");
             }
         }
         if (user == null) {
-            throw new IllegalStateException("体验账号创建失败，请稍后重试");
+            throw new IllegalStateException(ErrorMessages.TRIAL_ACCOUNT_CREATE_FAILED_RETRY);
         }
         log.info("体验会话账号创建成功: userId={}", user.getId());
         // 一键体验：自动预填完整资料（基本资料/校园认证/课表），
@@ -690,14 +715,14 @@ public class RealAuthService implements AuthService {
     public UserSessionView loginAsAdmin(String username, String password) {
         // 1. 校验入参非空，避免空指针；统一返回相同错误信息以防账号枚举
         if (username == null || username.isBlank() || password == null) {
-            throw new InvalidCredentialsException("管理员账号或密码错误");
+            throw new InvalidCredentialsException(ErrorMessages.ADMIN_ACCOUNT_OR_PASSWORD_WRONG);
         }
 
         // 2. 通过 openid 查找用户（约定：管理员 openid 字段存用户名）
         User user = userRepository.findByOpenid(username).orElse(null);
         if (user == null || !user.isAdmin()) {
             // 防账号枚举：账号不存在或非管理员均统一返回凭据无效
-            throw new InvalidCredentialsException("管理员账号或密码错误");
+            throw new InvalidCredentialsException(ErrorMessages.ADMIN_ACCOUNT_OR_PASSWORD_WRONG);
         }
 
         // 3. 校验账号状态：禁用账号拒绝登录并返回明确错误码 ADMIN_DISABLED。
@@ -707,8 +732,8 @@ public class RealAuthService implements AuthService {
         //    注意：User 实体无 enabled 字段，仅有 status（active/disabled），
         //    故按现有数据模型校验 status，与任务要求"禁用账号拒绝登录"语义一致。
         if (user.isDisabled()) {
-            log.warn("禁用管理员账号尝试登录, userId={}, username={}", user.getId(), username);
-            throw new AdminDisabledException("管理员账号已被禁用，请联系超级管理员");
+            log.warn("禁用管理员账号尝试登录, userId={}, username={}", user.getId(), SensitiveDataMasker.mask(username));
+            throw new AdminDisabledException(ErrorMessages.ADMIN_DISABLED_CONTACT_SUPER);
         }
 
         // 3.5 高校状态校验（商业模式：每个高校一个管理员）。
@@ -718,8 +743,8 @@ public class RealAuthService implements AuthService {
             schoolRepository.findByName(user.getCampusName().trim()).ifPresent(school -> {
                 if (!"active".equalsIgnoreCase(school.getStatus())) {
                     log.warn("高校停用，拒绝管理员登录: userId={}, username={}, campus={}",
-                            user.getId(), username, user.getCampusName());
-                    throw new AdminDisabledException("所在高校已被停用，请联系超级管理员");
+                            user.getId(), SensitiveDataMasker.mask(username), user.getCampusName());
+                    throw new AdminDisabledException(ErrorMessages.SCHOOL_DISABLED_CONTACT_SUPER);
                 }
             });
         }
@@ -742,17 +767,18 @@ public class RealAuthService implements AuthService {
         }
         if (storedHash == null || storedHash.isBlank()) {
             // 数据库与环境变量均未配置密码哈希，管理员登录未启用
-            throw new IllegalStateException("管理员登录未启用");
+            throw new IllegalStateException(ErrorMessages.ADMIN_LOGIN_NOT_ENABLED);
         }
         if (!matchesPasswordWithMigration(user, password, storedHash, allowMigration)) {
-            throw new InvalidCredentialsException("管理员账号或密码错误");
+            throw new InvalidCredentialsException(ErrorMessages.ADMIN_ACCOUNT_OR_PASSWORD_WRONG);
         }
 
         // 5. 生成 JWT 令牌并返回会话视图
         String jwtToken = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 admin
         recordOnlineSession(user.getId(), jwtToken, "admin");
-        log.info("管理员登录成功, userId={}, username={}", user.getId(), username);
+        // R4-00258：username 即管理员 openid（账号标识），日志脱敏后输出
+        log.info("管理员登录成功, userId={}, username={}", user.getId(), SensitiveDataMasker.mask(username));
         return buildSessionView(user, jwtToken, "admin");
     }
 
@@ -779,7 +805,7 @@ public class RealAuthService implements AuthService {
      */
     public String encodeAdminPassword(String rawPassword) {
         if (rawPassword == null || rawPassword.isBlank()) {
-            throw new IllegalArgumentException("rawPassword 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.RAW_PASSWORD_REQUIRED);
         }
         return passwordEncoder.encode(rawPassword);
     }
@@ -824,7 +850,9 @@ public class RealAuthService implements AuthService {
 
         // 2. 兼容历史明文：仅在 storedHash 不像 BCrypt 格式时尝试明文比较
         //    BCrypt 哈希格式：$2a$、$2b$、$2y$ 开头
-        if (!isBCryptHash(storedHash) && rawPassword.equals(storedHash)) {
+        //    R4-00257：改用 MessageDigest.isEqual 恒定时间比较，避免
+        //    String.equals 在迁移窗口期的时序侧信道（配合 DB 泄露可探测明文）。
+        if (!isBCryptHash(storedHash) && constantTimeEquals(rawPassword, storedHash)) {
             // 3. 自动迁移：仅当 allowMigration=true（即 storedHash 来自 user.password）时迁移
             if (allowMigration) {
                 try {
@@ -861,6 +889,21 @@ public class RealAuthService implements AuthService {
     }
 
     /**
+     * R4-00257：恒定时间字符串比较。
+     * <p>使用 {@link java.security.MessageDigest#isEqual} 比较 UTF-8 字节，
+     * 执行时间与内容差异无关，避免 equals 短路比较带来的时序侧信道。
+     * 仅用于历史明文密码迁移窗口期的兼容校验（storedHash 非 BCrypt 格式时）。</p>
+     */
+    private boolean constantTimeEquals(String a, String b) {
+        if (a == null || b == null) {
+            return false;
+        }
+        return java.security.MessageDigest.isEqual(
+                a.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                b.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    /**
      * 将明文密码编码为 BCrypt 哈希，供普通用户注册/密码重置场景使用。
      *
      * <p>Phase 3 任务 13 新增：与 {@link #encodeAdminPassword} 逻辑一致，独立方法名以表达语义
@@ -875,7 +918,7 @@ public class RealAuthService implements AuthService {
      */
     public String encodeUserPassword(String rawPassword) {
         if (rawPassword == null || rawPassword.isBlank()) {
-            throw new IllegalArgumentException("rawPassword 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.RAW_PASSWORD_REQUIRED);
         }
         return passwordEncoder.encode(rawPassword);
     }
@@ -985,7 +1028,7 @@ public class RealAuthService implements AuthService {
             return sb.toString();
         } catch (java.security.NoSuchAlgorithmException ex) {
             // SHA-256 是 JDK 内置算法，理论上不会缺失
-            throw new IllegalStateException("SHA-256 算法不可用", ex);
+            throw new IllegalStateException(ErrorMessages.SHA256_UNAVAILABLE, ex);
         }
     }
 
@@ -1009,8 +1052,9 @@ public class RealAuthService implements AuthService {
         // 注册流程走完的最低完成度：学生 = 基本资料30+校园30+日程20 = 80；
         // 非学生（跳过校园认证）= 基本资料30+日程20 = 50。阈值 50 保证两类注册
         // 用户走完流程即解锁全部功能；校园认证/兴趣标签作为注册后的补充加分。
+        // R4-01825：阈值收敛为 PROFILE_COMPLETION_THRESHOLD 常量，与客户端/其他服务判定对齐。
         boolean profileCompleted = user.getProfileCompletion() != null
-                && user.getProfileCompletion() >= 50;
+                && user.getProfileCompletion() >= PROFILE_COMPLETION_THRESHOLD;
 
         // campusVerified: 查询 UserCampusProfile 是否存在且 verificationStatus == "verified"
         boolean campusVerified = false;

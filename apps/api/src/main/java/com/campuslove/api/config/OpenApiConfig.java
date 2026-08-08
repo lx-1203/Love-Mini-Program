@@ -82,8 +82,10 @@ public class OpenApiConfig {
 
     /**
      * 联系人邮箱，可通过环境变量 OPENAPI_CONTACT_EMAIL 覆盖。
+     * R4-00305：默认值清空（原占位邮箱 dev@campuslove.example.com 会进入公开
+     * API 文档）；未配置时不展示联系邮箱。
      */
-    @Value("${app.openapi.contact.email:${OPENAPI_CONTACT_EMAIL:dev@campuslove.example.com}}")
+    @Value("${app.openapi.contact.email:${OPENAPI_CONTACT_EMAIL:}}")
     private String contactEmail;
 
     /**
@@ -147,13 +149,16 @@ public class OpenApiConfig {
         if (licenseUrl != null && !licenseUrl.trim().isEmpty()) {
             license.setUrl(licenseUrl.trim());
         }
+        // R4-00305：邮箱未配置时不设置 email 字段（避免占位邮箱进入公开文档）
+        Contact contact = new Contact().name(contactName);
+        if (contactEmail != null && !contactEmail.trim().isEmpty()) {
+            contact.setEmail(contactEmail.trim());
+        }
         Info info = new Info()
                 .title(apiTitle)
                 .version(apiVersion)
                 .description(apiDescription)
-                .contact(new Contact()
-                        .name(contactName)
-                        .email(contactEmail))
+                .contact(contact)
                 .license(license);
 
         // 2. 构建 JWT Bearer 鉴权方案

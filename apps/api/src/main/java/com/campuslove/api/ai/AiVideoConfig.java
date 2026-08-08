@@ -55,8 +55,13 @@ public class AiVideoConfig {
     /**
      * 调用 Agnes AI 接口的超时时间（毫秒）。
      * 默认 30 秒，覆盖视频生成等耗时接口的最大容忍时长。
+     * R4-01838：默认值收敛为常量（与 application.yml 的 ${AGNES_TIMEOUT_MS:30000}
+     * 兜底一致），避免双通道漂移。
      */
-    private long timeoutMs = 30000L;
+    private long timeoutMs = DEFAULT_TIMEOUT_MS;
+
+    /** AI 调用超时默认值（毫秒）：30 秒（R4-01838） */
+    private static final long DEFAULT_TIMEOUT_MS = 30_000L;
 
     /**
      * 启动时校验必填配置项。

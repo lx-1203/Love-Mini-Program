@@ -10,7 +10,7 @@
 
 ### 软件依赖
 
-- Node.js `>=18.0.0 <20.0.0`（前端构建，见根目录 `engines` 字段）
+- Node.js `>=18.0.0 <21.0.0`（前端构建，与根目录 `engines` 字段、Dockerfile node:20、CI node 20 一致）
 - Java 17+（后端运行）
 - MySQL 8.0+（real profile 必需）
 - Redis 7+（real profile 必需）
@@ -27,7 +27,8 @@
 | 大型（> 10k DAU） | 8+ 核 | 16+ GB | 200+ GB SSD | 必须拆分节点，启用读写分离与对象存储 |
 
 > 磁盘需预留至少 3 倍 MySQL 数据卷大小（用于备份、Flyway 迁移回滚、日志归档）。
-> 监控数据保留：Prometheus 默认 15 天，Grafana 持久化卷 10 GB。
+> 监控数据保留：Prometheus 默认 15 天；Grafana 持久化卷未配置容量限制（R4-02137，
+> 实际占用以运行监控数据量为准，建议部署机预留足够的卷空间）。
 
 ### 网络
 
@@ -112,7 +113,8 @@ VITE_APP_VERSION=v0.1.0
 
 ```bash
 VITE_API_MODE=real
-VITE_API_BASE_URL=https://api.campuslove.example.com/api
+# 本地联调用 http://127.0.0.1:8080/api；生产替换为真实 API 域名（<占位，务必修改>）
+VITE_API_BASE_URL=http://127.0.0.1:8080/api
 VITE_APP_VERSION=v0.1.0
 ```
 
@@ -125,7 +127,7 @@ cp .env.example .env
 # 编辑 .env 文件，至少配置以下必填项（infra #39 补全）：
 # - MYSQL_ROOT_PASSWORD / MYSQL_PASSWORD（数据库密码，compose 强制注入）
 # - REDIS_PASSWORD（Redis 密码，compose 强制注入）
-# - JWT_SECRET（≥ 32 字符，建议 openssl rand -base64 48 生成）
+# - JWT_SECRET（≥ 48 字符，与 docker-compose.yml 校验提示一致，建议 openssl rand -base64 48 生成）
 # - GRAFANA_ADMIN_PASSWORD（Grafana 管理员密码，compose 强制注入）
 # - DB_URL / DB_USERNAME / DB_PASSWORD（非容器化部署时使用）
 # - ADMIN_OPENID（管理员 OpenID，生产部署必填）
@@ -357,14 +359,14 @@ docker compose exec backup /backup.sh
 | `JWT_EXPIRATION_MS` | - | `86400000` | JWT 有效期（毫秒） | api |
 | `WECHAT_APPID` | - | - | 微信小程序 AppID | api |
 | `WECHAT_SECRET` | - | - | 微信小程序 AppSecret | api |
-| `CORS_ALLOWED_ORIGINS` | - | `https://www.campuslove.example.com,https://admin.campuslove.example.com,localhost:5173/5174/5177` | CORS 白名单 | api |
+| `CORS_ALLOWED_ORIGINS` | - | `http://localhost:5173,http://localhost:5174,http://localhost:5177`（仅本地；生产必须注入真实域名，R4-02094） | CORS 白名单 | api |
 | `AGNES_API_KEY` | - | - | Agnes AI 服务密钥 | api |
 | `AGNES_API_BASE` | - | `https://api.agnes-ai.com/api` | Agnes AI 服务地址 | api |
 | `AGNES_TIMEOUT_MS` | - | `30000` | Agnes AI 超时 | api |
 | `ADMIN_OPENID` | ✅（生产） | - | 管理员 OpenID（默认空，生产必填） | api |
 | `ADMIN_NICKNAME` | - | `系统管理员` | 管理员昵称 | api |
 | `ADMIN_INITIAL_PASSWORD_HASH` | - | - | 管理员初始密码 BCrypt 哈希 | api |
-| `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` | - | 默认 guest | RabbitMQ 连接（可选） | api |
+| `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` | - | 空（本编排未部署 MQ，应用自动降级；启用 MQ 时必填强凭据，禁止 guest，R4-02089） | RabbitMQ 连接（可选） | api |
 | `API_PORT` | - | `8080` | API 宿主机端口 | api |
 | `ADMIN_PORT` | - | `5177` | Admin 宿主机端口 | admin |
 | `CLIENT_PORT` | - | `5173` | Client H5 宿主机端口 | client |
@@ -393,15 +395,18 @@ CI 流水线在 `security-scan` job 中使用 [cosign](https://github.com/sigsto
 
 ```bash
 # 1. 安装 cosign（见 https://github.com/sigstore/cosign/releases）
-#    或使用容器：docker run --rm gcr.io/projectsigstore/cosign:latest verify ...
+#    或使用容器（R4-02088：固定版本标签，禁止 latest 不可复现镜像）：
+#    docker run --rm gcr.io/projectsigstore/cosign:v2.4.1 verify ...
 
 # 2. 导入公钥（与 CI 中 COSIGN_PRIVATE_KEY 对应的公钥）
 #    将 cosign.pub 放到部署机（不入库）
 export COSIGN_PUB_PATH=/etc/campus-love/cosign.pub
 
-# 3. 验证镜像签名
-cosign verify --key $COSIGN_PUB_PATH campus-love-api:ci-<commit-sha>
-cosign verify --key $COSIGN_PUB_PATH campus-love-admin:ci-<commit-sha>
+# 3. 验证镜像签名（R4-02087：CI 推送地址为 ghcr.io/<repo>/api 与 /admin，
+#    与 ci.yml metadata-action 镜像地址对齐）
+GHCR_REPO=<your-ghcr-namespace>/<repo>
+cosign verify --key $COSIGN_PUB_PATH ghcr.io/$GHCR_REPO/api:ci-<commit-sha>
+cosign verify --key $COSIGN_PUB_PATH ghcr.io/$GHCR_REPO/admin:ci-<commit-sha>
 # 验证通过返回 0，并在输出中显示签名者与证书信息；失败返回非 0
 ```
 
@@ -410,8 +415,9 @@ cosign verify --key $COSIGN_PUB_PATH campus-love-admin:ci-<commit-sha>
 ```bash
 # 拉取镜像后先验证签名，通过再 docker compose up
 TAG=ci-abc1234
-cosign verify --key /etc/campus-love/cosign.pub campus-love-api:$TAG || exit 1
-cosign verify --key /etc/campus-love/cosign.pub campus-love-admin:$TAG || exit 1
+GHCR_REPO=<your-ghcr-namespace>/<repo>
+cosign verify --key /etc/campus-love/cosign.pub ghcr.io/$GHCR_REPO/api:$TAG || exit 1
+cosign verify --key /etc/campus-love/cosign.pub ghcr.io/$GHCR_REPO/admin:$TAG || exit 1
 TAG=$TAG docker compose up -d api admin
 ```
 
@@ -471,8 +477,8 @@ curl http://localhost:8080/actuator/health
 ### 2. 接口验证
 
 ```bash
-# 无需认证的接口
-curl http://localhost:8080/api/v1/auth/health
+# 无需认证的接口（R4-02086：原 /api/v1/auth/health 不存在，改用 Spring Boot Actuator 健康端点）
+curl http://localhost:8080/actuator/health
 
 # 需要认证的接口（先获取 JWT）
 TOKEN=$(curl -X POST http://localhost:8080/api/v1/auth/admin/login \
@@ -482,6 +488,9 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/profile/me
 ```
 
 ### 3. Swagger UI（仅 ADMIN 可访问）
+
+> R4-02090：生产环境默认关闭 Swagger UI（docker-compose.yml `SWAGGER_UI_ENABLED=false`），
+> 验证前需在 .env 设置 `SWAGGER_UI_ENABLED=true` 并重启 api 服务。
 
 访问 http://localhost:8080/swagger-ui.html，使用管理员账号获取 JWT 后点击 "Authorize" 按钮填入。
 

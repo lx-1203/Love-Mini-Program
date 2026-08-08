@@ -56,6 +56,12 @@ export const STORAGE_KEYS = {
   /* ========== 村口社区模块 ========== */
   /** 帖子草稿（未发布的发帖内容，含标题/正文/标签） */
   VILLAGE_POST_DRAFT: "village:post-draft",
+  /** R4-00232：圈子页当前频道持久化（config/channels.ts 的 LAST_CHANNEL_KEY） */
+  VILLAGE_LAST_CHANNEL: "village_last_channel",
+
+  /* ========== 注册流程 ========== */
+  /** R4-00233：注册身份选择（config/identity.ts 的 USER_IDENTITY_STORAGE_KEY） */
+  USER_IDENTITY: "campus-love:user-identity",
 
   /* ========== 设置与偏好 ========== */
   /** 主题模式（light / dark / warm） */

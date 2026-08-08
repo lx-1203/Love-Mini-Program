@@ -7,6 +7,8 @@ import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCheckInStore } from "../../stores/checkin";
 import { IMAGE_PATHS } from "../../config/images";
+import { TOAST_DURATION } from "../../constants/limits";
+import { isDev } from "../../config/env";
 import SafeImage from "../../components/common/SafeImage.vue";
 
 const { t } = useI18n();
@@ -147,11 +149,13 @@ const filteredItems = computed(() => {
  * TODO(后端/产品): 商品详情页就绪后恢复 openAppPath 跳转并移除 toast。
  */
 function goToDetail(itemId: string) {
-  console.warn("[shop] 商品详情页未注册，暂无法跳转 itemId =", itemId);
+  if (isDev) {
+    console.warn("[shop] 商品详情页未注册，暂无法跳转 itemId =", itemId);
+  }
   uni.showToast({
     title: t("circle.detailDeveloping"),
     icon: "none",
-    duration: 1500,
+    duration: TOAST_DURATION.SHORT_MS,
   });
 }
 </script>
@@ -324,13 +328,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   width: 40rpx;
   height: 40rpx;
   flex-shrink: 0;
-  color: $white;
+  /* R4-02275：金色渐变条上图标，反色文字 token（深色模式自动反转为深色） */
+  color: var(--c-text-inverse);
 }
 
 .shop-points-bar__label {
   font-size: var(--fs-md, 26rpx);
   font-weight: 700;
-  color: $white;
+  /* R4-02276：金色渐变条上文字，反色文字 token */
+  color: var(--c-text-inverse);
 }
 
 .shop-points-bar__right {
@@ -343,7 +349,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .shop-points-bar__value {
   font-size: var(--fs-4xl, 40rpx);
   font-weight: 800;
-  color: $white;
+  /* R4-02277：金色渐变条上数字，反色文字 token */
+  color: var(--c-text-inverse);
   line-height: 1;
 }
 
@@ -374,7 +381,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   flex-shrink: 0;
   padding: 16rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: $white;
+  /* R4-02279：分类 chip 底色，容器背景 token（深色模式转深色面） */
+  background: var(--c-bg-container);
   border: 2rpx solid transparent;
   box-shadow: $card-soft-shadow;
   transition: all var(--d-normal, 200ms) ease;
@@ -399,7 +407,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .category-item--active .category-item__text {
-  color: $white;
+  /* R4-02280：绿色渐变 chip 上文字，反色文字 token */
+  color: var(--c-text-inverse);
   font-weight: 700;
 }
 
@@ -463,7 +472,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .shop-card {
   width: calc(50% - 10rpx);
-  background: $white;
+  /* R4-02281：商品卡底色，容器背景 token（深色模式转深色面） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   overflow: hidden;
   box-shadow: $card-soft-shadow;
@@ -502,7 +512,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .shop-card__tag text {
   font-size: var(--fs-xs, 20rpx);
-  color: $white;
+  /* R4-02282：粉色渐变标签上文字，反色文字 token */
+  color: var(--c-text-inverse);
   font-weight: 700;
 }
 

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.event.ConfigUpdatedEvent;
 import com.campuslove.api.config.CacheNames;
@@ -106,14 +107,14 @@ public class RealAdminConfigService implements AdminConfigService {
     @CacheEvict(cacheNames = CacheNames.SYSTEM_CONFIG, allEntries = true)
     public AdminConfigView updateConfig(String key, String value, String description, Long operatorId) {
         if (key == null || key.isBlank()) {
-            throw new IllegalArgumentException("配置键不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CONFIG_KEY_REQUIRED);
         }
         if (value == null) {
-            throw new IllegalArgumentException("配置值不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CONFIG_VALUE_REQUIRED);
         }
         // infra R2-00274: 配置值长度上限校验
         if (value.length() > MAX_CONFIG_VALUE_LENGTH) {
-            throw new IllegalArgumentException("配置值长度不能超过 " + MAX_CONFIG_VALUE_LENGTH + " 字符");
+            throw new IllegalArgumentException(ErrorMessages.CONFIG_VALUE_MAX_LENGTH_PREFIX + MAX_CONFIG_VALUE_LENGTH + " 字符");
         }
 
         AdminAppConfig config = configRepository.findByConfigKey(key)
@@ -165,7 +166,7 @@ public class RealAdminConfigService implements AdminConfigService {
     @Transactional
     public AdminRuleView updateRule(Long id, String expression, Boolean enabled, String description, Long operatorId) {
         if (id == null) {
-            throw new IllegalArgumentException("规则 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.RULE_ID_REQUIRED);
         }
 
         AdminAppRule rule = ruleRepository.findById(id)
@@ -199,10 +200,10 @@ public class RealAdminConfigService implements AdminConfigService {
     @Transactional
     public AdminSwitchView updateSwitch(String key, Boolean enabled, Long operatorId) {
         if (key == null || key.isBlank()) {
-            throw new IllegalArgumentException("开关键不能为空");
+            throw new IllegalArgumentException(ErrorMessages.SWITCH_KEY_REQUIRED);
         }
         if (enabled == null) {
-            throw new IllegalArgumentException("开关状态不能为空");
+            throw new IllegalArgumentException(ErrorMessages.SWITCH_VALUE_REQUIRED);
         }
 
         AdminAppSwitch sw = switchRepository.findBySwitchKey(key)

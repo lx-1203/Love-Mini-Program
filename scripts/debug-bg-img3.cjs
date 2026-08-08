@@ -1,6 +1,6 @@
 const puppeteer = require("puppeteer");
 (async () => {
-  const token = await (await fetch("http://127.0.0.1:8080/api/v1/auth/phone-login", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:"19900000000",password:"Admin@12345"})})).json();
+  const token = await (await fetch("http://127.0.0.1:8080/api/v1/auth/phone-login", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:process.env.TEST_ADMIN_PHONE ?? "<REDACTED>",password:process.env.TEST_ADMIN_PASSWORD ?? "<REDACTED>"})})).json();
   const browser = await puppeteer.launch({headless:"new",args:["--no-sandbox","--disable-gpu"],defaultViewport:{width:390,height:844,deviceScaleFactor:1}});
   const page = await browser.newPage();
   await page.evaluateOnNewDocument((tk)=>{localStorage.setItem("token",tk);localStorage.setItem("uni-storage-token",tk);localStorage.setItem("campus-love:privacy-authorized","1");},token.token);

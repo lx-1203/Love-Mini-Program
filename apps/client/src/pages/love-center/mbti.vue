@@ -13,6 +13,9 @@ import { useI18n } from "vue-i18n";
 import { contentPageUrls } from "../../config/content-pages";
 import { IMAGE_PATHS } from "../../config/images";
 
+/** R4-00977: MBTI 结果 toast 展示时长（毫秒）——需用户充分阅读结果文案 */
+const MBTI_RESULT_TOAST_MS = 2500;
+
 const { t } = useI18n();
 
 /** 后台配置的 H5 URL（非空时展示 web-view） */
@@ -87,7 +90,9 @@ function submitTest() {
   uni.showToast({
     title: t("contentPages.mbti.resultToast", { type: typeCode }),
     icon: "none",
-    duration: 2500,
+    // R4-00977：结果 toast 需较长展示时间（介于 TOAST_DURATION.NORMAL_MS 与 LONG_MS 之间），
+    // 保留独立常量便于统一调整
+    duration: MBTI_RESULT_TOAST_MS,
   });
 }
 

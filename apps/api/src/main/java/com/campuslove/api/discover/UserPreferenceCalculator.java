@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.entity.RecommendationPreference;
@@ -117,16 +118,16 @@ public class UserPreferenceCalculator {
     @CacheEvict(cacheNames = CacheNames.MATCH_RECOMMEND, key = "'v2:' + #userId")
     public RecommendationPreferencesView updatePreferences(Long userId, RecommendationPreference data) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
         if (data == null) {
-            throw new IllegalArgumentException("偏好数据不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PREFERENCE_DATA_REQUIRED);
         }
         if (data.getPreferredTime() == null || data.getPreferredTime().isBlank()) {
-            throw new IllegalArgumentException("推荐时间偏好(preferredTime)不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PREFERRED_TIME_REQUIRED);
         }
         if (data.getScope() == null || data.getScope().isBlank()) {
-            throw new IllegalArgumentException("推荐范围(scope)不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PREFERENCE_SCOPE_REQUIRED);
         }
         if (!VALID_SCOPES.contains(data.getScope())) {
             throw new IllegalArgumentException(
@@ -154,7 +155,7 @@ public class UserPreferenceCalculator {
             return new RecommendationPreferencesView(
                     pref.getPreferredTime(), pref.getScope(), pref.getCampusPriority());
         } catch (DataAccessException e) {
-            throw new RuntimeException("保存推荐偏好失败，用户ID: " + userId, e);
+            throw new RuntimeException(ErrorMessages.SAVE_PREFERENCE_FAILED_PREFIX + userId, e);
         }
     }
 

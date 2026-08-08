@@ -16,14 +16,40 @@ import { replaceAppPath } from "../../utils/navigation";
 
 const sessionStore = useSessionStore();
 
-/** 超级测试账号手机号（与后端种子 V2026.08.07.0004 一致：userId=100000） */
-const SUPER_ACCOUNT_PHONE = "19900000000";
+/**
+ * 超级测试账号手机号（与后端种子 V2026.08.07.0004 一致：userId=100000）。
+ * R4 凭据清理：不再硬编码真实手机号，改从构建环境变量 VITE_SUPER_TEST_PHONE 读取
+ * （未配置时一键登录不可用，与下方密码读取方式一致）。
+ */
+const SUPER_ACCOUNT_PHONE = readSuperTestPhone();
 /**
  * 超级测试账号密码。
  * 修复（R4-00040）：不再在源码中硬编码明文密码，改为从构建环境变量
  * VITE_SUPER_TEST_PASSWORD 读取（未配置时一键登录不可用）。
  */
 const SUPER_ACCOUNT_PASSWORD = readSuperTestPassword();
+
+/**
+ * 读取超级测试账号手机号（构建环境变量 VITE_SUPER_TEST_PHONE）。
+ * 读取方式与 readSuperTestPassword 保持一致。
+ */
+function readSuperTestPhone(): string {
+  try {
+    const viteEnv = (import.meta as unknown as { env?: Record<string, unknown> }).env;
+    const val = viteEnv?.VITE_SUPER_TEST_PHONE;
+    if (typeof val === "string" && val.length > 0) return val;
+  } catch (_e) {
+    // ignore
+  }
+  try {
+    const proc = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process;
+    const val = proc?.env?.VITE_SUPER_TEST_PHONE;
+    if (typeof val === "string" && val.length > 0) return val;
+  } catch (_e) {
+    // ignore
+  }
+  return "";
+}
 
 /**
  * 读取超级测试账号密码（构建环境变量 VITE_SUPER_TEST_PASSWORD）。
@@ -51,6 +77,9 @@ function readSuperTestPassword(): string {
 /** 超级账号登录中 */
 const superLoginBusy = ref(false);
 
+/** R4-00041：登录成功跳转定时器引用，卸载时清理（防止页面卸载后仍触发跳转） */
+let superLoginNavTimer: ReturnType<typeof setTimeout> | null = null;
+
 /**
  * 一键登录超级测试账号（手机号 + 密码）。
  * 登录成功跳转寻觅页；登录态恢复由 session guard 完成。
@@ -73,8 +102,10 @@ async function loginSuperAccount() {
   try {
     await loginWithPhone(SUPER_ACCOUNT_PHONE, SUPER_ACCOUNT_PASSWORD);
     uni.showToast({ title: "超级账号登录成功", icon: "success" });
-    setTimeout(() => {
+    if (superLoginNavTimer) clearTimeout(superLoginNavTimer);
+    superLoginNavTimer = setTimeout(() => {
       replaceAppPath("/pages/discover/index");
+      superLoginNavTimer = null;
     }, 800);
   } catch (error) {
     const message = error instanceof Error ? error.message : "登录失败";
@@ -124,11 +155,11 @@ function toggleVipSim() {
 
 /** 是否为超级测试账号（当前会话） */
 const isSuperLoggedIn = ref(false);
+/** onShow 中调用刷新登录态与会员模拟状态（R4-00042：移除无意义的 void 引用表达式） */
 function refreshSuperState() {
   isSuperLoggedIn.value = sessionStore.isSuperTestAccount;
   loadVipSim();
 }
-void refreshSuperState;
 
 interface PageItem {
   path: string;
@@ -154,11 +185,16 @@ onShow(() => {
 
 /**
  * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
+ * R4-00041：同时清理超级账号登录跳转定时器。
  */
 onUnmounted(() => {
   if (pageEnterTimer) {
     clearTimeout(pageEnterTimer);
     pageEnterTimer = null;
+  }
+  if (superLoginNavTimer) {
+    clearTimeout(superLoginNavTimer);
+    superLoginNavTimer = null;
   }
 });
 

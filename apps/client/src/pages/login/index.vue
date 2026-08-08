@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from "vue";
-import { onShow, onHide } from "@dcloudio/uni-app";
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { replaceAppPath } from "../../utils/navigation";
+// R4-00226：展示页路径走 ROUTES 常量
+import { ROUTES } from "../../constants/routes";
 import { IMAGE_PATHS } from "../../config/images";
 import { createButtonGuard } from "../../utils/debounce";
 // 触觉反馈：协议链接点击轻触反馈
@@ -14,6 +16,7 @@ import { captureException, addBreadcrumb } from "../../services/sentry";
 import { loginWithPhone, registerUser, loginAsGuest } from "../../services/auth";
 // 展示模式（全功能展示版）：登录页「以演示者身份进入」入口
 import { isShowcaseMode } from "../../config/showcase";
+import { isDev } from "../../config/env";
 
 // 使用 vue-i18n 组合式 API 获取 t 函数（组件内优先使用 useI18n 而非全局 t）
 const { t } = useI18n();
@@ -34,7 +37,6 @@ const password = ref("");
 const nickname = ref("");
 const phoneRegisterMode = ref(false);
 const agreed = ref(false);
-const countdown = ref(0);
 const showPhoneLogin = ref(false);
 
 // 页面进入淡入动画开关
@@ -42,27 +44,13 @@ const pageVisible = ref(false);
 /** 页面进入淡入定时器引用，用于卸载时清理 */
 let pageVisibleTimer: ReturnType<typeof setTimeout> | null = null;
 
-let countdownTimer: ReturnType<typeof setInterval> | null = null;
 /** 登录成功跳转定时器引用，用于卸载时清理 */
 let loginNavTimer: ReturnType<typeof setTimeout> | null = null;
-/**
- * 切后台时记录剩余倒计时秒数，用于恢复。
- * 修复（SubTask 1.5.4）：原实现切后台后 setInterval 仍持续运行，
- * 一方面浪费小程序后台资源（部分平台会限制后台 timer 频率），
- * 另一方面若系统挂起 timer，回到前台时倒计时与实际经过时间不一致。
- * 现切后台时暂停 setInterval，回到前台时按剩余秒数恢复。
- */
-let pausedCountdown: number = 0;
-/** 切后台时间戳（毫秒），用于回到前台时计算应扣除的倒计时秒数 */
-let hiddenAt: number | null = null;
 
 /**
  * onShow 钩子：统一处理页面进入/回到前台逻辑。
  * - 记录面包屑（便于异常回溯）
  * - 触发淡入动画
- * - 恢复验证码倒计时（若有暂停状态）
- *
- * 修复（SubTask 1.5.4）：合并 onShow 钩子，避免多个钩子分散维护。
  */
 onShow(() => {
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
@@ -74,12 +62,6 @@ onShow(() => {
     pageVisible.value = true;
     pageVisibleTimer = null;
   }, 30);
-
-  // 修复（SubTask 1.5.4）：回到前台时恢复验证码倒计时
-  // 仅在 pausedCountdown 标记存在时才恢复（避免初次进入页面误触发）
-  if (hiddenAt !== null) {
-    resumeCountdown();
-  }
 });
 
 // 表单校验计算属性
@@ -101,60 +83,11 @@ const heroSubtitle = computed(() => loginHero.value?.heroSubtitle || t("login.he
 
 
 /**
- * 暂停倒计时：记录当前剩余秒数并清除 setInterval。
- * 切后台时调用，避免后台 timer 浪费资源与时间不同步。
- */
-function pauseCountdown() {
-  if (!countdownTimer) return;
-  pausedCountdown = countdown.value;
-  clearInterval(countdownTimer);
-  countdownTimer = null;
-  hiddenAt = Date.now();
-}
-
-/**
- * 恢复倒计时：根据后台停留时间扣除相应秒数后重建 setInterval。
- * 回到前台时调用，确保倒计时与实际经过时间一致。
- */
-function resumeCountdown() {
-  if (hiddenAt === null || pausedCountdown <= 0) {
-    hiddenAt = null;
-    return;
-  }
-  // 计算后台停留秒数（向上取整，避免少扣 1 秒）
-  const hiddenSeconds = Math.floor((Date.now() - hiddenAt) / 1000);
-  hiddenAt = null;
-  countdown.value = Math.max(0, pausedCountdown - hiddenSeconds);
-  pausedCountdown = 0;
-  if (countdown.value <= 0) return;
-  if (countdownTimer) clearInterval(countdownTimer);
-  countdownTimer = setInterval(() => {
-    countdown.value--;
-    if (countdown.value <= 0) {
-      if (countdownTimer) clearInterval(countdownTimer);
-      countdownTimer = null;
-    }
-  }, 1000);
-}
-
-/**
- * 修复（SubTask 1.5.4）：切后台时暂停验证码倒计时 setInterval，
- * 避免后台运行浪费资源与时间不同步问题。
- */
-onHide(() => {
-  pauseCountdown();
-});
-
-/**
  * 页面卸载时清理所有定时器，避免内存泄漏。
- * 修复（P1 BUG）：原实现缺少 onUnmounted 钩子，countdownTimer / pageVisibleTimer /
+ * 修复（P1 BUG）：原实现缺少 onUnmounted 钩子，pageVisibleTimer /
  * loginNavTimer 在页面销毁后仍可能触发回调，修改已销毁页面的响应式状态。
  */
 onUnmounted(() => {
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
-  }
   if (pageVisibleTimer) {
     clearTimeout(pageVisibleTimer);
     pageVisibleTimer = null;
@@ -163,9 +96,6 @@ onUnmounted(() => {
     clearTimeout(loginNavTimer);
     loginNavTimer = null;
   }
-  // 重置后台暂停状态
-  hiddenAt = null;
-  pausedCountdown = 0;
 });
 
 
@@ -244,7 +174,10 @@ async function onPhoneLogin() {
     // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
     // 消除"登录成功但页面仍认为未登录"的间隙（失败不影响登录，仅记录）
     sessionStore.refreshSession().catch((err: unknown) => {
-      console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
+      // R4-batch4：诊断日志仅开发环境输出
+      if (isDev) {
+        console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
+      }
     });
     if (loginNavTimer) clearTimeout(loginNavTimer);
     loginNavTimer = setTimeout(() => {
@@ -288,7 +221,10 @@ async function onGuestLogin() {
     // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
     // 消除"登录成功但页面仍认为未登录"的间隙（失败不影响登录，仅记录）
     sessionStore.refreshSession().catch((err: unknown) => {
-      console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
+      // R4-batch4：诊断日志仅开发环境输出
+      if (isDev) {
+        console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
+      }
     });
     if (loginNavTimer) clearTimeout(loginNavTimer);
     loginNavTimer = setTimeout(() => {
@@ -317,7 +253,8 @@ async function enterShowcase() {
   }
   try {
     await loginAsGuest();
-    uni.reLaunch({ url: "/pages/showcase/index" });
+    // R4-00226：路径走 ROUTES 常量
+    uni.reLaunch({ url: ROUTES.SHOWCASE });
   } catch (error) {
     captureException(error, { source: "login.showcase" });
     const message = error instanceof Error ? error.message : t("login.guestLoginFailed");
@@ -422,7 +359,10 @@ async function onAppleLogin() {
     // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
     // 消除"登录成功但页面仍认为未登录"的间隙（失败不影响登录，仅记录）
     sessionStore.refreshSession().catch((err: unknown) => {
-      console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
+      // R4-batch4：诊断日志仅开发环境输出
+      if (isDev) {
+        console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
+      }
     });
     if (loginNavTimer) clearTimeout(loginNavTimer);
     loginNavTimer = setTimeout(() => {
@@ -585,8 +525,8 @@ function openAccountBinding() {
           <text class="showcase-entry__badge-text">SHOW</text>
         </view>
         <view class="showcase-entry__body">
-          <text class="showcase-entry__title">以演示者身份进入展示版</text>
-          <text class="showcase-entry__desc">超级管理员模式 · 一键体验全部功能</text>
+          <text class="showcase-entry__title">{{ t('login.showcaseEntryTitle') }}</text>
+          <text class="showcase-entry__desc">{{ t('login.showcaseEntryDesc') }}</text>
         </view>
         <text class="showcase-entry__arrow">›</text>
       </view>
@@ -681,13 +621,14 @@ function openAccountBinding() {
 }
 
 /* 底部白色渐变叠加 —— 增强文字可读性 */
+/* R4-batch4：渐变起点 rgba(255,255,255,0)（透明白）换用透明遮罩 token，终点已用 --c-bg-container */
 .hero-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--c-bg-container) 100%);
+  background: linear-gradient(180deg, var(--c-black-overlay-transparent) 0%, var(--c-bg-container) 100%);
   pointer-events: none;
 }
 
@@ -911,34 +852,6 @@ function openAccountBinding() {
   background: var(--c-neutral-200);
 }
 
-.send-code-btn {
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--r-md);
-  background: var(--c-brand);
-  margin-left: var(--sp-4);
-}
-
-/* #ifdef H5 */
-.send-code-btn:active {
-  transform: scale(0.96);
-}
-/* #endif */
-
-.send-code-btn--disabled {
-  background: var(--c-neutral-200);
-}
-
-.send-code-text {
-  font-size: var(--fs-sm);
-  color: var(--c-text-inverse);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.send-code-btn--disabled .send-code-text {
-  color: var(--c-text-quaternary);
-}
-
 .form-btns {
   display: flex;
   flex-direction: column;
@@ -989,6 +902,7 @@ function openAccountBinding() {
   width: 64rpx;
   height: 64rpx;
   border-radius: var(--r-lg, 18rpx);
+  /* R4-batch4：品牌蓝紫渐变 #3B9DE5→#7C6CF0 无对应 design token（近似 --c-info / --c-romance），保留原值 */
   background: linear-gradient(135deg, #3B9DE5, #7C6CF0);
   display: flex;
   align-items: center;

@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.TempChatContactExchange;
 import com.campuslove.api.entity.TempChatSession;
@@ -166,7 +167,7 @@ public class TempChatCleanupService {
     public TempChatSession respondToContactExchange(String id, ContactExchangeDecisionRequest request,
                                                     Long currentUserId) {
         if (currentUserId == null) {
-            throw new IllegalArgumentException("当前用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CURRENT_USER_ID_REQUIRED);
         }
         TempChatSession session = sessionService.resolveSession(id);
         // FIN HIGH-1：校验当前用户是会话参与者
@@ -264,7 +265,7 @@ public class TempChatCleanupService {
      */
     public String resolveExchangeStatus(String currentStatus, String actor, String decision) {
         if (!"self".equals(actor) && !"peer".equals(actor)) {
-            throw new IllegalArgumentException("非法操作方: " + actor);
+            throw new IllegalArgumentException(ErrorMessages.ILLEGAL_OPERATOR_PREFIX + actor);
         }
         // 修复（R2 review HIGH）：客户端/Controller 枚举为 accept|reject|revoke，
         // 旧实现只匹配 "rejected" 导致"拒绝"被当成"接受"——三种拒绝表达统一处理

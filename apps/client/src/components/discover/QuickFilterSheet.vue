@@ -385,6 +385,6 @@ function ageLabel(age: number): string {
 }
 
 .quick-filter-sheet__btn--confirm .quick-filter-sheet__btn-text {
-  color: #ffffff;
+  color: var(--c-text-inverse);
 }
 </style>

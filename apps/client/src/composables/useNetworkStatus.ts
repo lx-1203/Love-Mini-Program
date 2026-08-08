@@ -34,6 +34,9 @@ const networkType = ref<string>("unknown");
 // infra R2-00139: 网络抖动（短时间内多次断连/恢复）时，toast 提示经防抖收敛，
 // 避免重复弹出“网络已断开/已恢复”打断用户；isOnline 状态更新保持即时。
 const NETWORK_TOAST_DEBOUNCE_MS = 500;
+// R4-01000/01001: toast 时长走统一常量——恢复 1.5s（--d-toast-short）、断网 2s（--d-toast-normal）
+const NETWORK_RESTORED_TOAST_MS = 1500;
+const NETWORK_DISCONNECTED_TOAST_MS = 2000;
 
 /**
  * 网络状态变化 toast 提示（防抖包装，infra R2-00139）。
@@ -44,14 +47,14 @@ const notifyNetworkToast = debounce((isConnected: boolean): void => {
     uni.showToast({
       title: t("common.networkRestored"),
       icon: "success",
-      duration: 1500,
+      duration: NETWORK_RESTORED_TOAST_MS,
     });
   } else {
     // 断网：友好提示，不阻塞用户操作
     uni.showToast({
       title: t("common.networkDisconnectedDetail"),
       icon: "none",
-      duration: 2000,
+      duration: NETWORK_DISCONNECTED_TOAST_MS,
     });
   }
 }, NETWORK_TOAST_DEBOUNCE_MS);

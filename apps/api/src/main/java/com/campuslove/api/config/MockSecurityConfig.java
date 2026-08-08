@@ -60,6 +60,11 @@ public class MockSecurityConfig {
 
     /** 管理端路径前缀，用于 mock filter 自动注入 ROLE_ADMIN */
     private static final String ADMIN_PATH_PATTERN = "/api/v1/admin/**";
+
+    // R4-00432：mock filter 需为 hasRole('ADMIN') 路径注入 ROLE_ADMIN 的补充模式
+    private static final String ADMIN_ONLY_PATH_PATTERN_ACTUATOR = "/actuator/**";
+    private static final String ADMIN_ONLY_PATH_PATTERN_SWAGGER = "/swagger-ui/**";
+    private static final String ADMIN_ONLY_PATH_PATTERN_API_DOCS = "/v3/api-docs/**";
     /** 不需要认证的路径模式（与 SecurityConfig 保持一致） */
     private static final List<String> PERMIT_PATHS = List.of(
             "/api/v1/auth/**",
@@ -147,9 +152,10 @@ public class MockSecurityConfig {
                 .referrerPolicy(referrer -> referrer
                     .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .xssProtection(xss -> {})
+                // R4-01818：HSTS max-age 收敛为 WebConfig 共享常量（1 年）
                 .httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
-                    .maxAgeInSeconds(31536000)
+                    .maxAgeInSeconds(WebConfig.HSTS_MAX_AGE_SECONDS)
                 )
             )
             .authorizeHttpRequests(auth -> auth
@@ -211,8 +217,14 @@ public class MockSecurityConfig {
                 // 仅对需要认证的路径注入 mock 用户，避免污染 permitAll 路径
                 if (!isPermitPath(requestPath)) {
                     List<SimpleGrantedAuthority> authorities;
-                    if (pathMatcher.match(ADMIN_PATH_PATTERN, requestPath)) {
-                        // 管理端路径注入 ROLE_ADMIN
+                    // R4-00432：mock 下 /actuator/** 与 /swagger-ui/** 等 hasRole('ADMIN')
+                    // 路径同样注入 ROLE_ADMIN——原实现仅 /api/v1/admin/** 注入，
+                    // 导致 mock 本地联调 actuator/Swagger 直接 403，与"mock 全放行"预期不符
+                    if (pathMatcher.match(ADMIN_PATH_PATTERN, requestPath)
+                            || pathMatcher.match(ADMIN_ONLY_PATH_PATTERN_ACTUATOR, requestPath)
+                            || pathMatcher.match(ADMIN_ONLY_PATH_PATTERN_SWAGGER, requestPath)
+                            || pathMatcher.match(ADMIN_ONLY_PATH_PATTERN_API_DOCS, requestPath)) {
+                        // 管理端/运维/文档路径注入 ROLE_ADMIN
                         authorities = List.of(
                                 new SimpleGrantedAuthority("ROLE_USER"),
                                 new SimpleGrantedAuthority("ROLE_ADMIN"));

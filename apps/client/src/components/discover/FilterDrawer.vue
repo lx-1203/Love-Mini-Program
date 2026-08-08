@@ -81,48 +81,9 @@ const RELATIONSHIP_OPTIONS = computed(() => [
   { value: "widowed", label: t("discover.relationshipWidowed") },
 ]);
 
-/**
- * 籍贯省/市数据集（精简版，覆盖主要省份与直辖市）。
- *
- * 数据组织：键为省份名，值为该省下城市数组。
- * 直辖市（北京/上海/天津/重庆）的 city 与 province 同名。
- */
-const PROVINCE_CITY_MAP: Record<string, string[]> = {
-  "北京": ["北京"],
-  "上海": ["上海"],
-  "天津": ["天津"],
-  "重庆": ["重庆"],
-  "广东": ["广州", "深圳", "珠海", "佛山", "东莞", "中山"],
-  "江苏": ["南京", "苏州", "无锡", "常州", "徐州", "扬州"],
-  "浙江": ["杭州", "宁波", "温州", "绍兴", "嘉兴", "金华"],
-  "山东": ["济南", "青岛", "烟台", "潍坊", "淄博"],
-  "河南": ["郑州", "洛阳", "开封", "新乡"],
-  "湖北": ["武汉", "宜昌", "襄阳", "荆州"],
-  "湖南": ["长沙", "株洲", "湘潭", "岳阳"],
-  "四川": ["成都", "绵阳", "德阳", "乐山"],
-  "福建": ["福州", "厦门", "泉州", "漳州"],
-  "安徽": ["合肥", "芜湖", "蚌埠", "安庆"],
-  "河北": ["石家庄", "唐山", "保定", "秦皇岛"],
-  "陕西": ["西安", "宝鸡", "咸阳", "延安"],
-  "辽宁": ["沈阳", "大连", "鞍山", "抚顺"],
-  "黑龙江": ["哈尔滨", "齐齐哈尔", "大庆"],
-  "吉林": ["长春", "吉林", "延边"],
-  "江西": ["南昌", "赣州", "九江", "上饶"],
-  "广西": ["南宁", "柳州", "桂林", "北海"],
-  "云南": ["昆明", "大理", "丽江", "曲靖"],
-  "贵州": ["贵阳", "遵义", "六盘水"],
-  "山西": ["太原", "大同", "临汾"],
-  "海南": ["海口", "三亚", "儋州"],
-  "甘肃": ["兰州", "天水", "酒泉"],
-  "青海": ["西宁", "海东"],
-  "宁夏": ["银川", "石嘴山"],
-  "新疆": ["乌鲁木齐", "喀什", "伊犁"],
-  "内蒙古": ["呼和浩特", "包头", "鄂尔多斯"],
-  "西藏": ["拉萨", "日喀则", "林芝"],
-};
-
-/** 省份列表（picker 第一列数据源） */
-const PROVINCE_LIST = Object.keys(PROVINCE_CITY_MAP);
+// R4-00139：省/市数据集收敛到 config/regions.ts（单源维护，后端 /config/filter-options
+// 下发能力就绪后可替换为运行时数据）
+import { PROVINCE_CITY_MAP, PROVINCE_LIST } from "../../config/regions";
 
 /* ========== Draft 状态（用户编辑中的临时筛选条件） ========== */
 
@@ -203,7 +164,8 @@ const hometownPickerValue = ref<[number, number]>([0, 0]);
 const hometownPickerRange = computed<(string[])[]>(() => {
   const province = PROVINCE_LIST[hometownPickerValue.value[0]] ?? "";
   const cities = PROVINCE_CITY_MAP[province] ?? [""];
-  return [PROVINCE_LIST, cities];
+  // PROVINCE_LIST 为 readonly，展开为可变数组满足 picker 二维数组类型
+  return [[...PROVINCE_LIST], cities];
 });
 
 /** 未来城市 picker 单列数据源（所有城市平铺） */
@@ -948,8 +910,8 @@ defineExpose({ onContentTap });
 }
 
 .filter-drawer__close {
-  width: 56rpx;
-  height: 56rpx;
+  width: 56rpx; /* 固定布局尺寸，无对应 token */
+  height: 56rpx; /* 固定布局尺寸，无对应 token */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -958,8 +920,8 @@ defineExpose({ onContentTap });
 }
 
 .filter-drawer__close-icon {
-  width: 32rpx;
-  height: 32rpx;
+  width: 32rpx; /* 固定布局尺寸，无对应 token */
+  height: 32rpx; /* 固定布局尺寸，无对应 token */
 }
 
 /* ========== 滚动内容区 ========== */
@@ -1095,8 +1057,8 @@ defineExpose({ onContentTap });
 }
 
 .keyword-input__icon {
-  width: 28rpx;
-  height: 28rpx;
+  width: 28rpx; /* 固定布局尺寸，无对应 token */
+  height: 28rpx; /* 固定布局尺寸，无对应 token */
   margin-right: var(--sp-3);
   flex-shrink: 0;
 }
@@ -1105,7 +1067,7 @@ defineExpose({ onContentTap });
   flex: 1;
   font-size: var(--fs-base);
   color: var(--c-text-primary);
-  height: 48rpx;
+  height: 48rpx; /* 固定布局尺寸，无对应 token */
 }
 
 .keyword-input__placeholder {
@@ -1113,8 +1075,8 @@ defineExpose({ onContentTap });
 }
 
 .keyword-input__clear {
-  width: 28rpx;
-  height: 28rpx;
+  width: 28rpx; /* 固定布局尺寸，无对应 token */
+  height: 28rpx; /* 固定布局尺寸，无对应 token */
   padding: var(--sp-1) var(--sp-2);
 }
 

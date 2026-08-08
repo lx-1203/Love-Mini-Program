@@ -14,20 +14,24 @@
 // STORAGE_KEYS 已迁移至 storage-keys.ts，此处 re-export 保持向后兼容
 export { STORAGE_KEYS } from "./storage-keys";
 
+// R4-00207：版本号单源化——APP_INFO.VERSION 引用 config/app.ts 的 APP_CONFIG.APP_VERSION
+// （构建环境变量 VITE_APP_VERSION 注入），不再各自维护导致漂移
+import { APP_CONFIG } from "../config/app";
+
 /**
  * 应用基本信息。
  *
- * 与 config/app.ts 的 APP_CONFIG 字段保持一致，作为业务模块的稳定引用入口。
- * 修改时请同步更新 config/app.ts。
+ * 与 config/app.ts 的 APP_CONFIG 保持一致，作为业务模块的稳定引用入口。
+ * 版本号以 config/app.ts（构建注入）为单一来源，勿在此处另写版本字面量。
  */
 export const APP_INFO = {
   /** 应用名称 */
-  NAME: "校园恋爱",
-  /** 应用版本号 */
-  VERSION: "1.0.0",
+  NAME: APP_CONFIG.APP_NAME,
+  /** 应用版本号（R4-00207：单一来源 = config/app.ts APP_CONFIG.APP_VERSION） */
+  VERSION: APP_CONFIG.APP_VERSION,
   /** 调试日志前缀标签 */
-  DEBUG_TAG: "[CampusLove]",
-} as const;
+  DEBUG_TAG: APP_CONFIG.DEBUG_TAG,
+};
 
 /** 跳转登录页的 Toast 显示时长（毫秒） */
 export const LOGIN_TOAST_DURATION_MS = 2000;

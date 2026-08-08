@@ -273,8 +273,8 @@ com.campuslove.api/
 | **发现-兴趣圈** | discover | 圈子列表、话题、加入/退出 | CRUD /circles, /circles/{id}/topics |
 | **匹配** | match | 心跳信号、互相喜欢、匹配 | POST /match/heart-signal, GET /match/mutual |
 | **破冰** | match | 破冰话题推荐 | GET /icebreaker/topics |
-| **聊天-临时** | chat | 匿名聊天、定时过期 | WS /chat/temp, POST /chat/temp/message |
-| **聊天-私信** | chat | 配对成功后私信 | WS /chat/private, GET /chat/conversations |
+| **聊天-临时** | chat | 匿名聊天、定时过期 | POST /api/v1/temp-chat/sessions, POST /api/v1/temp-chat/sessions/{id}/messages（R4-02135 修正旧路径） |
+| **聊天-私信** | chat | 配对成功后私信 | GET /api/v1/messages/conversations, POST /api/v1/messages/conversations/{id}/messages（R4-02135 修正旧路径） |
 | **通知** | chat | 系统/互动通知 | GET /notifications, PUT /notifications/{id}/read |
 | **互动事件** | chat | 互动事件流 | GET /interaction-events |
 | **村口(社区)** | village | 帖子 CRUD、评论、分类、共享 | CRUD /posts, /posts/{id}/comments, /posts/{id}/share |
@@ -595,7 +595,7 @@ database/flyway/sql/
 - 空状态: "暂无消息"
 
 **交互流程**:
-1. 加载会话列表 → `GET /chat/conversations`
+1. 加载会话列表 → `GET /api/v1/messages/conversations`（R4-02135 修正旧路径）
 2. 点击会话 → 跳转聊天页
 3. 长按会话 → 置顶/删除选项
 4. WebSocket 实时更新新消息

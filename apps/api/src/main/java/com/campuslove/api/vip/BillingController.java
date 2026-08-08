@@ -1,5 +1,6 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.vip.BillingService.BillListResponse;
 import jakarta.validation.Valid;
@@ -139,10 +140,10 @@ public class BillingController {
     @GetMapping
     public BillListResponse listBills(
             @RequestParam(value = "page", defaultValue = "0")
-            @Min(value = 0, message = "页码不能小于 0") Integer page,
+            @Min(value = 0, message = ErrorMessages.PAGE_NUM_MIN) Integer page,
             @RequestParam(value = "size", defaultValue = "20")
-            @Min(value = 1, message = "每页大小不能小于 1")
-            @Max(value = 100, message = "每页大小不能超过 100") Integer size
+            @Min(value = 1, message = ErrorMessages.PAGE_SIZE_MIN)
+            @Max(value = 100, message = ErrorMessages.PAGE_SIZE_MAX) Integer size
     ) {
         Long userId = SecurityUtils.getCurrentUserId();
         return billingService.listBills(userId, page, size);
@@ -200,19 +201,19 @@ record VipPurchaseRequest(
  * @param signature 微信签名（验签骨架透传；接入 SDK 后取 Wechatpay-Signature 请求头）
  */
 record WechatPayCallbackRequest(
-        @NotBlank(message = "通知 ID 不能为空")
+        @NotBlank(message = ErrorMessages.NOTIFY_ID_REQUIRED)
         @Size(max = 64) String id,
-        @NotBlank(message = "商户订单号不能为空")
+        @NotBlank(message = ErrorMessages.MERCHANT_ORDER_NO_REQUIRED)
         @Size(max = 128) String orderNo,
-        @NotNull(message = "支付金额不能为空")
-        @DecimalMin(value = "0.01", message = "支付金额必须大于 0")
+        @NotNull(message = ErrorMessages.PAYMENT_AMOUNT_REQUIRED)
+        @DecimalMin(value = "0.01", message = ErrorMessages.PAYMENT_AMOUNT_POSITIVE)
         BigDecimal amount,
-        @NotNull(message = "用户 ID 不能为空")
+        @NotNull(message = ErrorMessages.USER_ID_CN_REQUIRED)
         @Min(1) Long userId,
-        @NotBlank(message = "套餐 ID 不能为空")
+        @NotBlank(message = ErrorMessages.PLAN_ID_REQUIRED)
         @Size(max = 64) String planId,
         @Size(max = 64) String planName,
-        @NotBlank(message = "签名不能为空")
+        @NotBlank(message = ErrorMessages.SIGNATURE_REQUIRED)
         @Size(max = 512) String signature
 ) {
 }

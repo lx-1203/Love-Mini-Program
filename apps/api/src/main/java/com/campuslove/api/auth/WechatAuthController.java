@@ -91,43 +91,7 @@ public class WechatAuthController {
     public UserSessionView loginWithWechat(
             @Parameter(description = "微信登录请求体，包含 wx.login() 返回的 code（不可为空）", required = true)
             @Valid @RequestBody WechatLoginRequest request) {
-        try {
-            UserSessionView session = authService.loginWithWechat(request.code());
-            // 登录成功：记录成功指标（指标失败不影响主流程）
-            try {
-                if (session != null && session.userId() != null) {
-                    authMetrics.recordLoginSuccess(parseUserId(session.userId()));
-                }
-            } catch (RuntimeException ignore) {
-                // 监控逻辑失败忽略，不影响登录主流程
-            }
-            return session;
-        } catch (RuntimeException e) {
-            // 登录失败：记录失败指标，原因取异常类名避免泄露敏感信息
-            try {
-                authMetrics.recordLoginFailure(e.getClass().getSimpleName());
-            } catch (RuntimeException ignore) {
-                // 监控逻辑失败忽略
-            }
-            throw e;
-        }
-    }
-
-    /**
-     * 将会话视图中的 userId 字符串安全转换为 Long。
-     * 转换失败返回 null，避免监控逻辑因数据格式问题影响主流程。
-     *
-     * @param userIdStr 用户 ID 字符串
-     * @return Long 类型用户 ID，或 null
-     */
-    private Long parseUserId(String userIdStr) {
-        if (userIdStr == null || userIdStr.isBlank()) {
-            return null;
-        }
-        try {
-            return Long.parseLong(userIdStr);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        // R4-00268：与 AuthController./wechat-login（旧路径别名）收敛为共享实现
+        return WechatLoginSupport.login(authService, authMetrics, request.code());
     }
 }

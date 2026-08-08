@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.RecommendationPreference;
 import com.campuslove.api.mock.MockRuntimeState;
@@ -446,10 +447,10 @@ public class MockRecommendationService implements RecommendationService {
   public RecommendationPreferencesView updatePreferences(Long userId, RecommendationPreference data) {
     // Mock 实现：不持久化，直接返回传入的偏好数据
     if (userId == null) {
-      throw new IllegalArgumentException("userId 不能为空");
+      throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
     }
     if (data == null) {
-      throw new IllegalArgumentException("偏好数据不能为空");
+      throw new IllegalArgumentException(ErrorMessages.PREFERENCE_DATA_REQUIRED);
     }
     return new RecommendationPreferencesView(data.getPreferredTime(), data.getScope(), data.getCampusPriority());
   }

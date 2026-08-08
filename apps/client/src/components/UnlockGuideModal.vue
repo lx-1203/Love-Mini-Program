@@ -172,7 +172,7 @@ defineExpose({ handleConfirm, noop });
 
 /* 弹窗主体容器 */
 .unlock-modal__container {
-  width: 600rpx;
+  width: 600rpx; /* 固定布局尺寸（弹窗宽度），无对应 token */
   max-width: 86%;
   padding: 56rpx 48rpx 40rpx;
   background: var(--c-text-inverse, #ffffff);
@@ -198,6 +198,7 @@ defineExpose({ handleConfirm, noop });
 
 /* 顶部图标 */
 .unlock-modal__icon-wrap {
+  /* 固定布局尺寸（图标容器 120rpx），无对应 token */
   width: 120rpx;
   height: 120rpx;
   border-radius: var(--r-circle, 50%);
@@ -209,6 +210,7 @@ defineExpose({ handleConfirm, noop });
 }
 
 .unlock-modal__icon {
+  /* 固定布局尺寸（图标 56rpx），无对应 token */
   width: 56rpx;
   height: 56rpx;
   color: var(--c-brand-500);
@@ -230,7 +232,7 @@ defineExpose({ handleConfirm, noop });
   text-align: center;
   line-height: 1.5;
   margin-bottom: 12rpx;
-  padding: 0 16rpx;
+  padding: 0 var(--sp-4);
 }
 
 /* 副文案 */
@@ -253,7 +255,7 @@ defineExpose({ handleConfirm, noop });
 /* 通用按钮样式 */
 .unlock-modal__btn {
   width: 100%;
-  height: 92rpx;
+  height: 92rpx; /* 固定布局尺寸（按钮高 92rpx，无对应 token） */
   border-radius: var(--r-full, 9999rpx);
   border: none;
   display: flex;

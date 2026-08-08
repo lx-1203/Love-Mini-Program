@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.InteractionEvent;
@@ -57,7 +58,7 @@ public class RealInteractionEventService implements InteractionEventService {
     public void recordEvent(Long userId, Long triggerUserId, String eventType,
                             Long referenceId, String referenceType, String summary) {
         if (userId == null || triggerUserId == null) {
-            throw new IllegalArgumentException("userId 和 triggerUserId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_AND_TRIGGER_USER_ID_REQUIRED);
         }
         // 不记录自己对自己的互动
         if (userId.equals(triggerUserId)) {
@@ -92,7 +93,7 @@ public class RealInteractionEventService implements InteractionEventService {
     @Transactional(readOnly = true)
     public List<InteractionEventView> getInteractionEvents(Long userId, int page, int size) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
 
         Page<InteractionEvent> eventPage = interactionEventRepository
@@ -117,7 +118,7 @@ public class RealInteractionEventService implements InteractionEventService {
     @Transactional(readOnly = true)
     public long getUnreadCount(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
         return interactionEventRepository.countByUserIdAndIsRead(userId, false);
     }
@@ -133,12 +134,12 @@ public class RealInteractionEventService implements InteractionEventService {
     @Transactional
     public void markAsRead(Long eventId, Long userId) {
         if (eventId == null || userId == null) {
-            throw new IllegalArgumentException("eventId 和 userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.EVENT_AND_USER_ID_REQUIRED);
         }
 
         List<InteractionEvent> events = interactionEventRepository.findByUserIdAndId(userId, eventId);
         if (events.isEmpty()) {
-            throw new IllegalArgumentException("互动事件不存在或不属于该用户: eventId=" + eventId);
+            throw new IllegalArgumentException(ErrorMessages.INTERACTION_EVENT_NOT_FOUND_PREFIX + eventId);
         }
 
         InteractionEvent event = events.get(0);
@@ -155,7 +156,7 @@ public class RealInteractionEventService implements InteractionEventService {
     @Transactional
     public void markAllAsRead(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
 
         // infra R2-00242: 批量 UPDATE 标记已读，避免全量加载未读事件再逐条 save（写放大）

@@ -26,6 +26,7 @@ import {
   downloadFile,
 } from "./http";
 import { DEFAULT_PAGE_SIZE } from "../utils/constants";
+import { buildExportCsvName, formatDatePart } from "../utils/export-name";
 
 /* ============================================================
  * VIP 账单（AdminVipController）
@@ -218,9 +219,11 @@ export async function disablePromoCode(id: number): Promise<PromoCodeDisableResu
  * 错误映射，文案 i18n 化，R4-00453），失败时抛出 ApiError，由调用方提示。
  */
 export async function exportPromoCodes(): Promise<void> {
-  // 文件名带时间戳，避免覆盖历史导出文件
-  const datePart = new Date().toISOString().slice(0, 10);
-  await downloadFile("/v1/admin/business/promo-codes/export", `promo-codes-${datePart}.csv`);
+  // 文件名带日期切片，避免覆盖历史导出文件（命名统一走 export-name 工具，R4-00454）
+  await downloadFile(
+    "/v1/admin/business/promo-codes/export",
+    buildExportCsvName("promo-codes", formatDatePart()),
+  );
 }
 
 /* ============================================================

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -146,23 +147,23 @@ public class AdminPromoCodeController {
 
         // 显式参数校验（与 @Valid 双保险，保证统一中文错误文案）
         if (req.count() == null || req.count() < 1 || req.count() > MAX_BATCH_COUNT) {
-            throw new IllegalArgumentException("生成数量须为 1-" + MAX_BATCH_COUNT + " 之间");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_GENERATE_COUNT_PREFIX + MAX_BATCH_COUNT + " 之间");
         }
         PromoCode.DiscountType discountType = parseDiscountType(req.discountType());
         if (req.discountValue() == null || req.discountValue() <= 0) {
-            throw new IllegalArgumentException("折扣值必须为正数");
+            throw new IllegalArgumentException(ErrorMessages.DISCOUNT_VALUE_POSITIVE);
         }
         if (discountType == PromoCode.DiscountType.PERCENT && req.discountValue() > MAX_PERCENT) {
-            throw new IllegalArgumentException("百分比折扣值不能超过 " + MAX_PERCENT);
+            throw new IllegalArgumentException(ErrorMessages.DISCOUNT_PERCENT_MAX_PREFIX + MAX_PERCENT);
         }
         if (req.maxUses() == null || req.maxUses() < 0) {
-            throw new IllegalArgumentException("最大使用次数不能为负数");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_MAX_USES_NOT_NEGATIVE);
         }
         if (req.validFrom() == null || req.validTo() == null) {
-            throw new IllegalArgumentException("有效期起止时间不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_VALID_PERIOD_REQUIRED);
         }
         if (!req.validTo().isAfter(req.validFrom())) {
-            throw new IllegalArgumentException("有效期结束时间必须晚于开始时间");
+            throw new IllegalArgumentException(ErrorMessages.PROMO_END_AFTER_START);
         }
 
         String remark = normalize(req.remark());
@@ -295,7 +296,7 @@ public class AdminPromoCodeController {
                 return code;
             }
         }
-        throw new IllegalArgumentException("兑换码生成失败，唯一性冲突，请重试");
+        throw new IllegalArgumentException(ErrorMessages.PROMO_GEN_CONFLICT_RETRY);
     }
 
     /**
@@ -333,7 +334,7 @@ public class AdminPromoCodeController {
                 return s.name();
             }
         }
-        throw new IllegalArgumentException("非法兑换码状态参数: " + value);
+        throw new IllegalArgumentException(ErrorMessages.ILLEGAL_PROMO_STATUS_PREFIX + value);
     }
 
     /**
@@ -341,7 +342,7 @@ public class AdminPromoCodeController {
      */
     private PromoCode.DiscountType parseDiscountType(String value) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("折扣类型不能为空");
+            throw new IllegalArgumentException(ErrorMessages.DISCOUNT_TYPE_REQUIRED);
         }
         String trimmed = value.trim();
         for (PromoCode.DiscountType t : PromoCode.DiscountType.values()) {
@@ -349,7 +350,7 @@ public class AdminPromoCodeController {
                 return t;
             }
         }
-        throw new IllegalArgumentException("非法折扣类型: " + value + "，仅支持 AMOUNT/PERCENT");
+        throw new IllegalArgumentException(ErrorMessages.ILLEGAL_DISCOUNT_TYPE_PREFIX + value + "，仅支持 AMOUNT/PERCENT");
     }
 
     /**
@@ -414,7 +415,8 @@ public class AdminPromoCodeController {
      * @param remark        备注（可空）
      */
     public record AdminBatchPromoCodeRequest(
-            @Min(1) @Max(500) Integer count,
+            // R4-01843：统一使用 MAX_BATCH_COUNT 常量（原为字面量 500，与校验分支易漂移）
+            @Min(1) @Max(AdminPromoCodeController.MAX_BATCH_COUNT) Integer count,
             String discountType,
             @Positive Integer discountValue,
             @Min(0) Integer maxUses,

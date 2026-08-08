@@ -13,6 +13,14 @@
  */
 
 /**
+ * R4-01007~01009: 默认延迟常量（毫秒）抽具名，消除魔法数字。
+ * 语义：搜索/滚动类输入防抖 300ms，按钮防抖 800ms（覆盖常见双击间隔）。
+ */
+const DEFAULT_DEBOUNCE_MS = 300;
+const DEFAULT_THROTTLE_MS = 300;
+const DEFAULT_BUTTON_GUARD_MS = 800;
+
+/**
  * 防抖函数：在最后一次调用后延迟 delay 毫秒再执行 func。
  *
  * 在延迟窗口内再次调用会重置定时器，确保只执行最后一次。
@@ -25,7 +33,7 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 通用函数泛型约束需 any 兼容任意签名业务函数，Parameters<T> 仅能从可调用类型推导
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  delay = 300,
+  delay = DEFAULT_DEBOUNCE_MS,
 ): ((...args: Parameters<T>) => void) & { cancel: () => void } {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -70,7 +78,7 @@ export function debounce<T extends (...args: any[]) => any>(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 通用函数泛型约束需 any 兼容任意签名业务函数，Parameters<T> 仅能从可调用类型推导
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
-  delay = 300,
+  delay = DEFAULT_THROTTLE_MS,
 ): ((...args: Parameters<T>) => void) & { cancel: () => void } {
   let lastExecuted = 0;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -136,7 +144,7 @@ export function throttle<T extends (...args: any[]) => any>(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 通用函数泛型约束需 any 兼容任意签名业务函数，Parameters<T> 仅能从可调用类型推导
 export function createButtonGuard<T extends (...args: any[]) => any>(
   func: T,
-  delay = 800,
+  delay = DEFAULT_BUTTON_GUARD_MS,
 ): (...args: Parameters<T>) => ReturnType<T> | undefined {
   let locked = false;
 

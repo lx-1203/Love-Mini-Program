@@ -190,131 +190,11 @@ page {
 //      或 <body data-theme="dark"> 切换。
 // ============================================================
 
-// ---------- 自动模式：跟随系统偏好 ----------
-// 收尾轮：选择器追加 H5 端 uni-page/uni-page-body（page 元素仅 mp-weixin 存在）
-// review 修复：排除 [data-theme="light"]，保证手动浅色优先级高于系统深色
-@media (prefers-color-scheme: dark) {
-  page:not([data-theme="light"]),
-  html:not([data-theme="light"]) uni-page,
-  html:not([data-theme="light"]) uni-page-body {
-    // 背景色：深色模式使用深中性色
-    --color-bg-page: #0E1116;
-    --color-bg-card: #1A1F26;
-    --color-bg-container: #1A1F26;
-    --color-bg-surface: #222831;
-    --color-bg-elevated: #1A1F26;
-    --color-bg-overlay: rgba(0, 0, 0, 0.65);
-
-    // 文本色：深色模式反色
-    --color-text-primary: #F0F2F5;
-    --color-text-secondary: #B8BEC8;
-    --color-text-tertiary: #8A92A0;
-    --color-text-quaternary: #5A6270;
-    --color-text-inverse: #1A1F26;
-    --color-text-placeholder: #5A6270;
-
-    // 边框色：深色模式使用深灰
-    --color-border-light: #222831;
-    --color-border: #334155;
-    --color-border-strong: #475569;
-    --color-divider: rgba(255, 255, 255, 0.08);
-
-    // 阴影：深色模式下使用更深的阴影
-    --shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
-    --shadow-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
-    --shadow-card: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
-
-    // 同步底层 token，确保使用 var(--c-bg-page) 等的旧代码也获得 dark 适配
-    --c-bg-page: #0E1116;
-    --c-bg-container: #1A1F26;
-    --c-bg-surface: #222831;
-    --c-bg-elevated: #1A1F26;
-    --c-bg-overlay: rgba(0, 0, 0, 0.65);
-
-    --c-text-primary: #F0F2F5;
-    --c-text-secondary: #B8BEC8;
-    --c-text-tertiary: #8A92A0;
-    --c-text-quaternary: #5A6270;
-    --c-text-inverse: #1A1F26;
-    --c-text-placeholder: #5A6270;
-
-    --c-border-light: #222831;
-    --c-border-default: #334155;
-    --c-border-strong: #475569;
-    --c-divider-light: rgba(255, 255, 255, 0.08);
-
-    --s-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
-    --s-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
-    --s-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
-    --s-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
-    --s-card-soft: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
-
-    // 页面渐变：深色模式使用深色渐变
-    --c-gradient-page: linear-gradient(180deg, #0E1116 0%, #1A1F26 100%);
-    --c-gradient-page-romance: linear-gradient(180deg, #1A1F26 0%, #222831 50%, #0E1116 100%);
-
-    // ---- 深色补充（ui-ux-review #22：原全局覆盖仅 bg/text/border/shadow，以下补齐品牌/浪漫/tint/状态/课表/金色/渐变） ----
-    // 品牌/浪漫浅色阶：按色阶加深（对照 tokens.ts darkThemeTokens 的 romance/warm 处理风格）
-    --c-brand-50: #0E2017;
-    --c-brand-100: #12301F;
-    --c-brand-200: #17452C;
-    --c-romance-50: #2D1F24;
-    --c-romance-100: #3D242E;
-    --c-romance-200: #5A2D3D;
-
-    // 品牌/浪漫背景：深色近似色
-    --c-bg-brand: #15744A;
-    --c-bg-secondary: #15744A;
-    --c-bg-romance: #2D1F24;
-    --c-bg-hover: #222831;
-
-    // 浅色 tint：深色模式下加深（背景类用深色近似色）
-    --c-tint-green-50: #14291D;
-    --c-tint-pink-50: #2A1D24;
-    --c-tint-pink-soft: #2B1F27;
-    --c-tint-orange-50: #2A2117;
-    --c-tint-amber-50: #2B2416;
-    --c-tint-cream-50: #2B241A;
-    --c-tint-blue-50: #18232E;
-    --c-tint-blue-soft: #182430;
-    --c-tint-gray-50: #1E232B;
-
-    // 状态徽章：背景用深色近似色、文字用浅色
-    --c-state-signup-bg: #1B4A35;
-    --c-state-signup-text: #7CD9A6;
-    --c-state-ongoing-bg: #4A3A12;
-    --c-state-ongoing-text: #FFD479;
-    --c-state-preview-bg: #2B3150;
-    --c-state-preview-text: #B7C4FF;
-
-    // 课表色块：低饱和深色
-    --c-schedule-mint: #1B2E24;
-    --c-schedule-blue: #1C2736;
-    --c-schedule-purple: #292333;
-    --c-schedule-apricot: #322A21;
-    --c-schedule-green: #1C2E1D;
-    --c-schedule-pink: #2E2330;
-
-    // 金色系：金色在深底可读性好保持原值，tint 略提高可见性
-    --c-gold: #FFD700;
-    --c-gold-bg-tint: rgba(255, 215, 0, 0.22);
-
-    // 渐变：品牌渐变改用深绿阶，页头渐变改深色近似
-    --c-gradient-brand: linear-gradient(135deg, #25A86C 0%, #15744A 100%);
-    --c-gradient-header: linear-gradient(180deg, #222831 0%, #1A1F26 40%, #0E1116 100%);
-  }
-}
-
-// ---------- 手动模式：用户主动切换（优先级更高） ----------
-// 通过设置 page 元素的 data-theme 属性为 "dark" 启用
-// H5 端可在 <html> 或 <body> 上设置 data-theme="dark"
-// 收尾轮：追加 H5 选择器（html[data-theme] 前缀 + uni-page/uni-page-body）
-page[data-theme="dark"],
-html[data-theme="dark"] uni-page,
-html[data-theme="dark"] uni-page-body {
-  // 背景色
+// ---------- 深色主题变量（R4-00238：三份重复覆盖合并为单一 mixin） ----------
+// 原 @media prefers-color-scheme / [data-theme="dark"] / .theme-dark 三份约 60 行
+// 相同变量各自维护，改动需同步三处易漂移；现统一抽取为 mixin，三处选择器复用。
+@mixin dark-theme-vars {
+  // 背景色：深色模式使用深中性色
   --color-bg-page: #0E1116;
   --color-bg-card: #1A1F26;
   --color-bg-container: #1A1F26;
@@ -322,7 +202,7 @@ html[data-theme="dark"] uni-page-body {
   --color-bg-elevated: #1A1F26;
   --color-bg-overlay: rgba(0, 0, 0, 0.65);
 
-  // 文本色
+  // 文本色：深色模式反色
   --color-text-primary: #F0F2F5;
   --color-text-secondary: #B8BEC8;
   --color-text-tertiary: #8A92A0;
@@ -330,20 +210,20 @@ html[data-theme="dark"] uni-page-body {
   --color-text-inverse: #1A1F26;
   --color-text-placeholder: #5A6270;
 
-  // 边框色
+  // 边框色：深色模式使用深灰
   --color-border-light: #222831;
   --color-border: #334155;
   --color-border-strong: #475569;
   --color-divider: rgba(255, 255, 255, 0.08);
 
-  // 阴影
+  // 阴影：深色模式下使用更深的阴影
   --shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
   --shadow-card: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
 
-  // 同步底层 token
+  // 同步底层 token，确保使用 var(--c-bg-page) 等的旧代码也获得 dark 适配
   --c-bg-page: #0E1116;
   --c-bg-container: #1A1F26;
   --c-bg-surface: #222831;
@@ -368,10 +248,12 @@ html[data-theme="dark"] uni-page-body {
   --s-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
   --s-card-soft: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
 
+  // 页面渐变：深色模式使用深色渐变
   --c-gradient-page: linear-gradient(180deg, #0E1116 0%, #1A1F26 100%);
   --c-gradient-page-romance: linear-gradient(180deg, #1A1F26 0%, #222831 50%, #0E1116 100%);
 
-  // ---- 深色补充（ui-ux-review #22，与自动模式块保持一致） ----
+  // ---- 深色补充（ui-ux-review #22：原全局覆盖仅 bg/text/border/shadow，以下补齐品牌/浪漫/tint/状态/课表/金色/渐变） ----
+  // 品牌/浪漫浅色阶：按色阶加深（对照 tokens.ts darkThemeTokens 的 romance/warm 处理风格）
   --c-brand-50: #0E2017;
   --c-brand-100: #12301F;
   --c-brand-200: #17452C;
@@ -379,11 +261,13 @@ html[data-theme="dark"] uni-page-body {
   --c-romance-100: #3D242E;
   --c-romance-200: #5A2D3D;
 
+  // 品牌/浪漫背景：深色近似色
   --c-bg-brand: #15744A;
   --c-bg-secondary: #15744A;
   --c-bg-romance: #2D1F24;
   --c-bg-hover: #222831;
 
+  // 浅色 tint：深色模式下加深（背景类用深色近似色）
   --c-tint-green-50: #14291D;
   --c-tint-pink-50: #2A1D24;
   --c-tint-pink-soft: #2B1F27;
@@ -394,6 +278,7 @@ html[data-theme="dark"] uni-page-body {
   --c-tint-blue-soft: #182430;
   --c-tint-gray-50: #1E232B;
 
+  // 状态徽章：背景用深色近似色、文字用浅色
   --c-state-signup-bg: #1B4A35;
   --c-state-signup-text: #7CD9A6;
   --c-state-ongoing-bg: #4A3A12;
@@ -401,6 +286,7 @@ html[data-theme="dark"] uni-page-body {
   --c-state-preview-bg: #2B3150;
   --c-state-preview-text: #B7C4FF;
 
+  // 课表色块：低饱和深色
   --c-schedule-mint: #1B2E24;
   --c-schedule-blue: #1C2736;
   --c-schedule-purple: #292333;
@@ -408,11 +294,34 @@ html[data-theme="dark"] uni-page-body {
   --c-schedule-green: #1C2E1D;
   --c-schedule-pink: #2E2330;
 
+  // 金色系：金色在深底可读性好保持原值，tint 略提高可见性
   --c-gold: #FFD700;
   --c-gold-bg-tint: rgba(255, 215, 0, 0.22);
 
+  // 渐变：品牌渐变改用深绿阶，页头渐变改深色近似
   --c-gradient-brand: linear-gradient(135deg, #25A86C 0%, #15744A 100%);
   --c-gradient-header: linear-gradient(180deg, #222831 0%, #1A1F26 40%, #0E1116 100%);
+}
+
+// ---------- 自动模式：跟随系统偏好 ----------
+// 收尾轮：选择器追加 H5 端 uni-page/uni-page-body（page 元素仅 mp-weixin 存在）
+// review 修复：排除 [data-theme="light"]，保证手动浅色优先级高于系统深色
+@media (prefers-color-scheme: dark) {
+  page:not([data-theme="light"]),
+  html:not([data-theme="light"]) uni-page,
+  html:not([data-theme="light"]) uni-page-body {
+    @include dark-theme-vars;
+  }
+}
+
+// ---------- 手动模式：用户主动切换（优先级更高） ----------
+// 通过设置 page 元素的 data-theme 属性为 "dark" 启用
+// H5 端可在 <html> 或 <body> 上设置 data-theme="dark"
+// 收尾轮：追加 H5 选择器（html[data-theme] 前缀 + uni-page/uni-page-body）
+page[data-theme="dark"],
+html[data-theme="dark"] uni-page,
+html[data-theme="dark"] uni-page-body {
+  @include dark-theme-vars;
 }
 
 // ============================================================
@@ -422,73 +331,7 @@ html[data-theme="dark"] uni-page-body {
 // ============================================================
 
 .theme-dark {
-  --color-bg-page: #0E1116;
-  --color-bg-card: #1A1F26;
-  --color-bg-container: #1A1F26;
-  --color-bg-surface: #222831;
-  --color-bg-elevated: #1A1F26;
-  --color-bg-overlay: rgba(0, 0, 0, 0.65);
-
-  --color-text-primary: #F0F2F5;
-  --color-text-secondary: #B8BEC8;
-  --color-text-tertiary: #8A92A0;
-  --color-text-quaternary: #5A6270;
-  --color-text-inverse: #1A1F26;
-  --color-text-placeholder: #5A6270;
-
-  --color-border-light: #222831;
-  --color-border: #334155;
-  --color-border-strong: #475569;
-  --color-divider: rgba(255, 255, 255, 0.08);
-
-  --shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.6);
-  --shadow-card: 0 2rpx 12rpx rgba(0, 0, 0, 0.25), 0 1rpx 3rpx rgba(0, 0, 0, 0.2);
-
-  // ---- 深色补充（ui-ux-review #22，与自动/手动模式块保持一致） ----
-  --c-brand-50: #0E2017;
-  --c-brand-100: #12301F;
-  --c-brand-200: #17452C;
-  --c-romance-50: #2D1F24;
-  --c-romance-100: #3D242E;
-  --c-romance-200: #5A2D3D;
-
-  --c-bg-brand: #15744A;
-  --c-bg-secondary: #15744A;
-  --c-bg-romance: #2D1F24;
-  --c-bg-hover: #222831;
-
-  --c-tint-green-50: #14291D;
-  --c-tint-pink-50: #2A1D24;
-  --c-tint-pink-soft: #2B1F27;
-  --c-tint-orange-50: #2A2117;
-  --c-tint-amber-50: #2B2416;
-  --c-tint-cream-50: #2B241A;
-  --c-tint-blue-50: #18232E;
-  --c-tint-blue-soft: #182430;
-  --c-tint-gray-50: #1E232B;
-
-  --c-state-signup-bg: #1B4A35;
-  --c-state-signup-text: #7CD9A6;
-  --c-state-ongoing-bg: #4A3A12;
-  --c-state-ongoing-text: #FFD479;
-  --c-state-preview-bg: #2B3150;
-  --c-state-preview-text: #B7C4FF;
-
-  --c-schedule-mint: #1B2E24;
-  --c-schedule-blue: #1C2736;
-  --c-schedule-purple: #292333;
-  --c-schedule-apricot: #322A21;
-  --c-schedule-green: #1C2E1D;
-  --c-schedule-pink: #2E2330;
-
-  --c-gold: #FFD700;
-  --c-gold-bg-tint: rgba(255, 215, 0, 0.22);
-
-  --c-gradient-brand: linear-gradient(135deg, #25A86C 0%, #15744A 100%);
-  --c-gradient-header: linear-gradient(180deg, #222831 0%, #1A1F26 40%, #0E1116 100%);
+  @include dark-theme-vars;
 }
 
 // ============================================================

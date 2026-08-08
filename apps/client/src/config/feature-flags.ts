@@ -19,7 +19,7 @@ export interface FeatureFlags {
   heartSignalEnabled: boolean;
   /** 圈子页"同城"Tab 是否启用（Phase Feedback4） */
   villageSameCityEnabled: boolean;
-  /** 视频通话功能是否启用（Phase 4.7：暂时下架，默认 false） */
+  /** 视频通话功能是否启用（R4-00208：Phase 4.7 曾下架，2026-08-08 走查收尾已恢复为 true——后端 chat/video-call 端点真实存在） */
   videoCallEnabled: boolean;
 }
 

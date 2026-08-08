@@ -62,9 +62,15 @@ const subText = computed(() => props.description || t(subKey.value));
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* 80rpx/40rpx 无对应 sp token（sp 阶梯为 4/8/12/16/20/24/32/48rpx），固定布局尺寸保留 */
   padding: 80rpx 40rpx;
 }
-.error-icon { width: 120rpx; height: 120rpx; margin-bottom: 16rpx; }
+.error-icon {
+  /* 固定布局尺寸（图标 120rpx），无对应 token */
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: var(--sp-4);
+}
 .error-msg {
   font-size: var(--fs-lg);
   font-weight: 600;
@@ -73,11 +79,11 @@ const subText = computed(() => props.description || t(subKey.value));
 .error-sub {
   font-size: var(--fs-base);
   color: var(--c-text-quaternary);
-  margin-top: 8rpx;
+  margin-top: var(--sp-2);
 }
 .error-btn {
-  margin-top: 32rpx;
-  padding: 16rpx 48rpx;
+  margin-top: var(--sp-7);
+  padding: var(--sp-4) var(--sp-10);
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-brand-400);
 }

@@ -19,6 +19,9 @@ import { onShow } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '@/config/images';
 
+/** R4-00994: 非 H5 端 pageScrollTo 滚动动画时长（毫秒），与 --d-normal 对齐 */
+const PAGE_SCROLL_DURATION_MS = 200;
+
 interface Props {
   /** 布局变体 */
   variant?: 'standard' | 'immersive' | 'minimal';
@@ -151,7 +154,8 @@ function focusMainContent(): void {
   // mp-weixin / APP 端：无 DOM API，使用页面滚动到主体内容
   uni.pageScrollTo({
     scrollTop: 0,
-    duration: 200,
+    // R4-00994：滚动动画时长（毫秒）抽常量，与 --d-normal(200ms) 对齐
+    duration: PAGE_SCROLL_DURATION_MS,
   });
   // #endif
 }

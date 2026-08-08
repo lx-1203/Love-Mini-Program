@@ -36,6 +36,13 @@ export interface AdminMenuNode {
   type: AdminMenuType;
   icon?: string;
   order?: number;
+  /**
+   * 仅超级管理员可见（本地兜底菜单标记）。
+   * 真实环境后端菜单树已按角色过滤（ADMIN 不关联系统管理菜单），
+   * 前端仅在本地静态兜底（mock/fallback）场景按此标记过滤，
+   * 新增 SUPER_ADMIN 专属菜单时只需在 staticFallbackMenus 标记一处。
+   */
+  superAdminOnly?: boolean;
   children?: AdminMenuNode[];
 }
 
@@ -199,40 +206,40 @@ export const useMenuStore = defineStore("menu", () => {
    */
   const staticFallbackMenus: AdminMenuNode[] = [
     {
-      id: 1, parentId: null, title: "数据看板", name: "Dashboard", path: "/dashboard",
+      id: 1, parentId: null, title: "layout.navDashboard", name: "Dashboard", path: "/dashboard",
       component: "views/Dashboard.vue", menuType: "MENU", type: "MENU",
       children: [],
     },
     {
-      id: 10, parentId: null, title: "内容管理", name: "Content", path: "/content",
+      id: 10, parentId: null, title: "layout.groupContent", name: "Content", path: "/content",
       menuType: "DIR", type: "DIR",
       children: [
-        { id: 11, parentId: 10, title: "用户管理", name: "Users", path: "users", component: "views/content/Users.vue", menuType: "MENU", type: "MENU" },
-        { id: 12, parentId: 10, title: "帖子管理", name: "VillagePosts", path: "posts", component: "views/forum/VillagePosts.vue", menuType: "MENU", type: "MENU" },
-        { id: 13, parentId: 10, title: "评论管理", name: "Comments", path: "comments", component: "views/forum/Comments.vue", menuType: "MENU", type: "MENU" },
-        { id: 14, parentId: 10, title: "举报管理", name: "Reports", path: "reports", component: "views/content/Reports.vue", menuType: "MENU", type: "MENU" },
-        { id: 15, parentId: 10, title: "意见反馈", name: "Feedback", path: "feedback", component: "views/content/Feedback.vue", menuType: "MENU", type: "MENU" },
-        { id: 16, parentId: 10, title: "敏感词", name: "SensitiveWords", path: "sensitive-words", component: "views/content/SensitiveWords.vue", menuType: "MENU", type: "MENU" },
-        { id: 17, parentId: 10, title: "校园认证", name: "Certifications", path: "certifications", component: "views/content/Certifications.vue", menuType: "MENU", type: "MENU" },
+        { id: 11, parentId: 10, title: "layout.navUsers", name: "Users", path: "users", component: "views/content/Users.vue", menuType: "MENU", type: "MENU" },
+        { id: 12, parentId: 10, title: "layout.navVillagePosts", name: "VillagePosts", path: "posts", component: "views/forum/VillagePosts.vue", menuType: "MENU", type: "MENU" },
+        { id: 13, parentId: 10, title: "layout.navComments", name: "Comments", path: "comments", component: "views/forum/Comments.vue", menuType: "MENU", type: "MENU" },
+        { id: 14, parentId: 10, title: "layout.navReports", name: "Reports", path: "reports", component: "views/content/Reports.vue", menuType: "MENU", type: "MENU" },
+        { id: 15, parentId: 10, title: "layout.navFeedback", name: "Feedback", path: "feedback", component: "views/content/Feedback.vue", menuType: "MENU", type: "MENU" },
+        { id: 16, parentId: 10, title: "layout.navSensitiveWords", name: "SensitiveWords", path: "sensitive-words", component: "views/content/SensitiveWords.vue", menuType: "MENU", type: "MENU" },
+        { id: 17, parentId: 10, title: "layout.navCertifications", name: "Certifications", path: "certifications", component: "views/content/Certifications.vue", menuType: "MENU", type: "MENU" },
       ],
     },
     {
-      id: 20, parentId: null, title: "系统管理", name: "System", path: "/system",
+      id: 20, parentId: null, title: "layout.groupSystem", name: "System", path: "/system",
       menuType: "DIR", type: "DIR",
       children: [
-        { id: 21, parentId: 20, title: "审计日志", name: "AuditLogs", path: "audit-logs", component: "views/system/AuditLogs.vue", menuType: "MENU", type: "MENU" },
-        { id: 22, parentId: 20, title: "在线用户", name: "OnlineUsers", path: "online-users", component: "views/system/OnlineUsers.vue", menuType: "MENU", type: "MENU" },
-        { id: 23, parentId: 20, title: "管理员", name: "Admins", path: "admins", component: "views/system/Admins.vue", menuType: "MENU", type: "MENU" },
+        { id: 21, parentId: 20, title: "layout.navAuditLogs", name: "AuditLogs", path: "audit-logs", component: "views/system/AuditLogs.vue", menuType: "MENU", type: "MENU", superAdminOnly: true },
+        { id: 22, parentId: 20, title: "layout.navOnlineUsers", name: "OnlineUsers", path: "online-users", component: "views/system/OnlineUsers.vue", menuType: "MENU", type: "MENU", superAdminOnly: true },
+        { id: 23, parentId: 20, title: "layout.navAdmins", name: "Admins", path: "admins", component: "views/system/Admins.vue", menuType: "MENU", type: "MENU", superAdminOnly: true },
       ],
     },
     {
-      id: 30, parentId: null, title: "配置中心", name: "ConfigCenter", path: "/config",
+      id: 30, parentId: null, title: "layout.groupConfigs", name: "ConfigCenter", path: "/config",
       menuType: "DIR", type: "DIR",
       children: [
-        { id: 31, parentId: 30, title: "应用配置", name: "Config", path: "app", component: "views/config/Config.vue", menuType: "MENU", type: "MENU" },
-        { id: 32, parentId: 30, title: "通知配置", name: "NotifyConfig", path: "notify", component: "views/config/NotifyConfig.vue", menuType: "MENU", type: "MENU" },
-        { id: 33, parentId: 30, title: "匹配配置", name: "MatchConfig", path: "match", component: "views/config/MatchConfig.vue", menuType: "MENU", type: "MENU" },
-        { id: 34, parentId: 30, title: "官方账号", name: "OfficialAccounts", path: "official-accounts", component: "views/config/OfficialAccounts.vue", menuType: "MENU", type: "MENU" },
+        { id: 31, parentId: 30, title: "layout.navConfig", name: "Config", path: "app", component: "views/config/Config.vue", menuType: "MENU", type: "MENU" },
+        { id: 32, parentId: 30, title: "layout.navNotifyConfig", name: "NotifyConfig", path: "notify", component: "views/config/NotifyConfig.vue", menuType: "MENU", type: "MENU" },
+        { id: 33, parentId: 30, title: "layout.navMatchConfig", name: "MatchConfig", path: "match", component: "views/config/MatchConfig.vue", menuType: "MENU", type: "MENU" },
+        { id: 34, parentId: 30, title: "layout.navOfficialAccounts", name: "OfficialAccounts", path: "official-accounts", component: "views/config/OfficialAccounts.vue", menuType: "MENU", type: "MENU" },
       ],
     },
   ];

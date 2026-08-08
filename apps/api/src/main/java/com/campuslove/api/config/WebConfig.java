@@ -58,6 +58,24 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    // ---- R4-00278/01816：CORS 共享配置常量（SecurityConfig 与 WebConfig 单一来源，
+    // 避免两处 allowedMethods/Headers/maxAge 手工保持一致导致配置漂移） ----
+
+    /** CORS 允许的 HTTP 方法（单一来源，两处 CORS 实现共用） */
+    public static final List<String> CORS_ALLOWED_METHODS =
+            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH");
+
+    /** CORS 允许的请求头（含 X-Trace-Id 与幂等头，两处实现共用防漂移） */
+    public static final List<String> CORS_ALLOWED_HEADERS = List.of(
+            "Authorization", "Content-Type", "X-Requested-With",
+            "X-Trace-Id", "Idempotency-Key");
+
+    /** CORS 预检缓存时长（秒）（R4-01816）：1 小时 */
+    public static final long CORS_MAX_AGE_SECONDS = 3600L;
+
+    /** HSTS max-age（秒）（R4-01817/01818）：1 年（HSTS preload 要求 >= 31536000） */
+    public static final long HSTS_MAX_AGE_SECONDS = 31536000L;
+
     /** 媒体存储根目录，与 LocalMediaStorageService 共享配置（保留用于其他组件读取） */
     @Value("${app.media.storage-root:./uploads}")
     private String mediaStorageRoot;
@@ -130,12 +148,12 @@ public class WebConfig implements WebMvcConfigurer {
         String[] originArray = origins.toArray(new String[0]);
         registry.addMapping("/api/**")
                 .allowedOriginPatterns(originArray)
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                .allowedHeaders("Authorization", "Content-Type", "X-Requested-With",
-                        "X-Trace-Id", "Idempotency-Key")
+                // R4-00278/01816：方法与请求头/缓存时长收敛为共享常量（与 SecurityConfig 单一来源）
+                .allowedMethods(WebConfig.CORS_ALLOWED_METHODS.toArray(new String[0]))
+                .allowedHeaders(WebConfig.CORS_ALLOWED_HEADERS.toArray(new String[0]))
                 .exposedHeaders("X-Trace-Id")
                 .allowCredentials(true)
-                .maxAge(3600L);
+                .maxAge(WebConfig.CORS_MAX_AGE_SECONDS);
     }
 
     /**

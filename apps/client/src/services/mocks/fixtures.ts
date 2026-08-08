@@ -38,8 +38,10 @@ type SubmissionType = Schemas["SubmissionType"];
 type DiscussionRecommendation = Schemas["DiscussionRecommendation"];
 type ActivityRecommendation = Schemas["ActivityRecommendation"];
 type RecommendedPersonSummary = Schemas["RecommendedPersonSummary"];
+/** R4-00151：mock 签到状态字段名对齐后端契约（checkedInToday），
+ * 与 services/api.ts 的 CheckInStatusResponse 类型一致，避免调用方按契约消费时丢字段 */
 type CheckInStatus = {
-  checkedIn: boolean;
+  checkedInToday: boolean;
   consecutiveDays: number;
 };
 type CheckInResult = {
@@ -797,7 +799,7 @@ let submissions: SubmissionRecord[] = [
 
 /** 签到 mock 状态（默认为未签到） */
 let checkInStatus: CheckInStatus = {
-  checkedIn: false,
+  checkedInToday: false,
   consecutiveDays: 3,
 };
 
@@ -1365,7 +1367,7 @@ export const mockFixtures = {
   },
   checkIn(): CheckInResult {
     checkInStatus = {
-      checkedIn: true,
+      checkedInToday: true,
       consecutiveDays: checkInStatus.consecutiveDays + 1,
     };
     return {
@@ -1480,15 +1482,19 @@ export const mockFixtures = {
   /**
    * 上传个人主页背景图。
    *
-   * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 profileBackgroundUrl 状态。
+   * R4-00186：mock 上传返回可被 <image> 真实加载的 static 资源路径
+   * （原 mock:// 协议 URL 不会被渲染，演示链路观感断裂）；真实环境由后端返回 CDN URL。
    */
-  uploadProfileBackground(file: UniUploadFileLike): { url: string } {
-    // 注（演示限制）：mock:// 协议 URL 不会被 <image>/<video> 组件真实加载，
-    // 仅用于演示“上传成功”的流程与数据回显；真实环境由后端返回可访问的
-    // https CDN URL。若需在 mock 模式看到图片，可改用 static 资源路径。
-    const url = `mock://profile/background/${encodeURIComponent(file.name)}`;
-    // 修复（严格模式 noUnusedLocals）：原 profileBackgroundUrl = url 赋值已移除（变量已删除）。
-    return { url };
+  uploadProfileBackground(_file: UniUploadFileLike): { url: string } {
+    return { url: IMAGE_PATHS.POSTS.CAMPUS_LIBRARY };
+  },
+
+  /**
+   * 上传头像（R4-00153：独立 mock 实现，语义为头像——返回静态头像资源路径，
+   * 不再复用 uploadProfileBackground 的背景图语义）。
+   */
+  uploadAvatar(_file: UniUploadFileLike): { avatarUrl?: string; url?: string } {
+    return { avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_1, url: IMAGE_PATHS.AVATARS.AVATAR_1 };
   },
 
   /**
@@ -1500,13 +1506,12 @@ export const mockFixtures = {
    * @param file - 上传的文件
    * @param index - 照片墙索引（0-5）
    */
-  uploadProfilePhoto(file: UniUploadFileLike, index: number): { url: string } {
+  uploadProfilePhoto(_file: UniUploadFileLike, index: number): { url: string } {
     if (index < 0 || index > 5) {
       throw createMockApiError(400);
     }
-    // 注（演示限制）：mock:// 协议 URL 不会被 <image> 真实加载（演示用），
-    // 真实环境由后端返回 https CDN URL。
-    const url = `mock://profile/photo/${index}/${encodeURIComponent(file.name)}`;
+    // R4-00186：mock 上传返回可加载的 static 资源路径（原 mock:// URL 无法渲染）
+    const url = IMAGE_PATHS.POSTS[`POST_${(index % 8) + 1}` as keyof typeof IMAGE_PATHS.POSTS] as string;
     if (index >= photoGallery.length) {
       photoGallery = [...photoGallery, url];
     } else {
@@ -1541,9 +1546,9 @@ export const mockFixtures = {
    *
    * Mock 模式下不实际上传文件，仅生成 mock URL。
    */
-  uploadProfileVoice(file: UniUploadFileLike): { url: string } {
-    const url = `mock://profile/voice/${encodeURIComponent(file.name)}`;
-    return { url };
+  uploadProfileVoice(_file: UniUploadFileLike): { url: string } {
+    // R4-00186：mock 返回可加载的 static 资源路径（语音预览占位）
+    return { url: IMAGE_PATHS.AVATARS.DEFAULT };
   },
 
   /**
@@ -1551,12 +1556,9 @@ export const mockFixtures = {
    *
    * Mock 模式下不实际上传文件，仅生成 mock URL 并更新 halfBodyPhotoUrl 状态。
    */
-  uploadProfileHalfBody(file: UniUploadFileLike): { url: string } {
-    // 注（演示限制）：mock:// 协议 URL 不会被 <image> 真实加载（演示用），
-    // 真实环境由后端返回 https CDN URL。
-    const url = `mock://profile/half-body/${encodeURIComponent(file.name)}`;
-    // 修复（严格模式 noUnusedLocals）：原 halfBodyPhotoUrl = url 赋值已移除（变量已删除）。
-    return { url };
+  uploadProfileHalfBody(_file: UniUploadFileLike): { url: string } {
+    // R4-00186：mock 返回可加载的 static 资源路径（原 mock:// URL 无法渲染）
+    return { url: IMAGE_PATHS.AVATARS.AVATAR_2 };
   },
 
   /**
@@ -1708,7 +1710,7 @@ export const mockFixtures = {
     makeUpUsedCount++;
     // 模拟连续签到天数 +1
     checkInStatus = {
-      checkedIn: checkInStatus.checkedIn,
+      checkedInToday: checkInStatus.checkedInToday,
       consecutiveDays: checkInStatus.consecutiveDays + 1,
     };
     return {

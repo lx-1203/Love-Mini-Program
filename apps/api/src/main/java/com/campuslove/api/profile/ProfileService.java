@@ -156,12 +156,32 @@ public interface ProfileService {
     List<FollowUserView> getFollowers(Long userId);
 
     /**
+     * R4-00302：粉丝列表分页查询（粉丝量大时避免全量返回）。
+     *
+     * @param userId 用户 ID
+     * @param page   页码（从 0 开始）
+     * @param size   每页大小（最大 200）
+     * @return 粉丝用户视图列表（当前页）
+     */
+    List<FollowUserView> getFollowers(Long userId, int page, int size);
+
+    /**
      * 获取指定用户的关注列表。
      *
      * @param userId 用户 ID
      * @return 关注用户视图列表
      */
     List<FollowUserView> getFollowing(Long userId);
+
+    /**
+     * R4-00302：关注列表分页查询。
+     *
+     * @param userId 用户 ID
+     * @param page   页码（从 0 开始）
+     * @param size   每页大小（最大 200）
+     * @return 关注用户视图列表（当前页）
+     */
+    List<FollowUserView> getFollowing(Long userId, int page, int size);
 
     /**
      * 查询当前用户是否关注了目标用户。

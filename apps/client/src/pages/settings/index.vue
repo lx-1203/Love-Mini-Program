@@ -17,7 +17,8 @@ import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { useSessionStore } from "../../stores/session";
 import { STORAGE_KEYS } from "../../constants/storage-keys";
-import { designTokens } from "../../theme/tokens";
+import { TOAST_DURATION } from "../../constants/limits";
+import { isDev } from "../../config/env";
 // 收尾轮：深色模式三态切换（auto/dark/light）
 import { useThemeStore, type ThemeMode } from "../../stores/theme";
 // Task 33：路由路径常量化，避免硬编码字符串
@@ -54,19 +55,6 @@ interface MenuItem {
   path?: string;
 }
 
-/**
- * 消息通知开关状态
- *
- * <p>SubTask 5.5.1：初始值在 onMounted 中从本地存储读取，避免首次进入设置页时
- * 默认 true 与用户上次关闭的偏好不一致。</p>
- */
-const notifyEnabled = ref(true);
-/**
- * 隐私模式开关状态
- *
- * <p>SubTask 5.5.1：与 notifyEnabled 同理，初始值从本地存储恢复。</p>
- */
-const privacyModeEnabled = ref(false);
 /** 缓存大小（R4-00064：真实读取 uni.getStorageInfo 统计） */
 const cacheSize = ref("0 KB");
 
@@ -96,113 +84,10 @@ function refreshCacheSize(): void {
 }
 
 /**
- * SubTask 5.5.1：从本地存储读取开关初始值。
- *
- * <p>读取失败（如首次启动无 key）时保持默认值，不阻塞页面渲染。</p>
- */
-function loadTogglePreferences(): void {
-  try {
-    const notify = uni.getStorageSync(STORAGE_KEYS.NOTIFY_ENABLED);
-    if (typeof notify === "boolean") {
-      notifyEnabled.value = notify;
-    }
-  } catch (_e) {
-    // 读取失败保持默认值，不影响页面使用
-  }
-  try {
-    const privacy = uni.getStorageSync(STORAGE_KEYS.PRIVACY_MODE_ENABLED);
-    if (typeof privacy === "boolean") {
-      privacyModeEnabled.value = privacy;
-    }
-  } catch (_e) {
-    // 读取失败保持默认值
-  }
-}
-
-/**
- * SubTask 5.5.1：切换消息通知（乐观更新 + 失败回滚）。
- *
- * <p>流程：</p>
- * <ol>
- *   <li>lightHaptic 触发轻反馈</li>
- *   <li>立即更新 notifyEnabled（UI 即时反馈）</li>
- *   <li>toast 提示当前状态</li>
- *   <li>异步 uni.setStorage 持久化</li>
- *   <li>持久化失败时回滚 ref 至切换前的旧值，并提示「保存失败」</li>
- * </ol>
- */
-function toggleNotify(e: Event) {
-  lightHaptic();
-  const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
-  const newValue = !!detail?.value;
-  // 保存旧值用于失败回滚
-  const oldValue = notifyEnabled.value;
-  // 乐观更新：立即生效
-  notifyEnabled.value = newValue;
-  uni.showToast({
-    title: newValue ? t("settings.notifyEnabled") : t("settings.notifyDisabled"),
-    icon: "none",
-    duration: 1200,
-  });
-  // 异步持久化，失败时回滚
-  uni.setStorage({
-    key: STORAGE_KEYS.NOTIFY_ENABLED,
-    data: newValue,
-    fail: () => {
-      // 持久化失败，回滚至旧值
-      notifyEnabled.value = oldValue;
-      uni.showToast({
-        title: t("settings.saveFailed"),
-        icon: "none",
-        duration: 1500,
-      });
-    },
-  });
-}
-
-/**
- * SubTask 5.5.1：切换隐私模式（乐观更新 + 失败回滚）。
- *
- * <p>与 {@link #toggleNotify} 同构，区别仅在持久化的 key 与 toast 文案。</p>
- */
-function togglePrivacyMode(e: Event) {
-  lightHaptic();
-  const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
-  const newValue = !!detail?.value;
-  // 保存旧值用于失败回滚
-  const oldValue = privacyModeEnabled.value;
-  // 乐观更新：立即生效
-  privacyModeEnabled.value = newValue;
-  uni.showToast({
-    title: newValue ? t("settings.privacyModeEnabled") : t("settings.privacyModeDisabled"),
-    icon: "none",
-    duration: 1200,
-  });
-  // 异步持久化，失败时回滚
-  uni.setStorage({
-    key: STORAGE_KEYS.PRIVACY_MODE_ENABLED,
-    data: newValue,
-    fail: () => {
-      // 持久化失败，回滚至旧值
-      privacyModeEnabled.value = oldValue;
-      uni.showToast({
-        title: t("settings.saveFailed"),
-        icon: "none",
-        duration: 1500,
-      });
-    },
-  });
-}
-
-/**
- * SubTask 5.5.1：页面挂载时恢复开关偏好。
- *
- * <p>在 onMounted 中调用 loadTogglePreferences，确保从本地存储读取的最新值
- * 优先于 ref 的默认值，避免「用户关闭通知 → 退出应用 → 重启后开关显示打开」
- * 的不一致体验。</p>
+ * R4-00066：页面挂载时刷新缓存大小统计（消息通知/隐私模式开关已移除——
+ * 原开关仅存本地 storage、无任何消费方，设置项形同虚设，故移除入口）。
  */
 onMounted(() => {
-  loadTogglePreferences();
   // R4-00064：进入设置页时真实统计缓存大小
   refreshCacheSize();
 });
@@ -273,7 +158,7 @@ function clearCache() {
       uni.showToast({
         title: t("settings.cacheCleared"),
         icon: "success",
-        duration: 1500,
+        duration: TOAST_DURATION.SHORT_MS,
       });
     },
   });
@@ -378,7 +263,9 @@ function logout() {
       // 2. 清空 store 状态（userSession / profileBackgroundUrl 等）
       const sessionStore = useSessionStore();
       void sessionStore.logout().catch((error) => {
-        console.warn("[settings] logout 调用异常:", error);
+        if (isDev) {
+          console.warn("[settings] logout 调用异常:", error);
+        }
       });
     },
   });
@@ -401,9 +288,7 @@ function goToFeedbackHelp() {
 
 /** 账号分组菜单项（使用 computed 以响应 locale 切换） */
 const menuIcons = {
-  bell: IMAGE_PATHS.ICONS_EMOJI.BELL,
   moon: IMAGE_PATHS.ICONS_EMOJI.MOON,
-  shield: IMAGE_PATHS.ICONS_EMOJI.SHIELD,
   clipboard: IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD,
   broom: IMAGE_PATHS.ICONS_EMOJI.BROOM,
   megaphone: IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE,
@@ -534,19 +419,6 @@ function handleMenuTap(item: MenuItem) {
         <text class="section__title-text">{{ t('settings.notificationSection') }}</text>
       </view>
       <view class="menu-group">
-        <view class="menu-item list-item">
-          <view class="menu-item__left">
-            <view class="menu-item__icon settings-card--cream">
-              <image class="menu-item__emoji-img" :src="menuIcons.bell" mode="aspectFit" alt="" />
-            </view>
-            <text class="menu-item__label">{{ t('settings.messageNotification') }}</text>
-          </view>
-          <switch
-            :checked="notifyEnabled"
-            :color="designTokens.color.brand[500]"
-            @change="toggleNotify"
-          />
-        </view>
         <!-- 功能6：免打扰入口，点击跳转到 /pages/settings/dnd -->
         <view
           class="menu-item press-feedback list-item"
@@ -564,7 +436,7 @@ function handleMenuTap(item: MenuItem) {
         </view>
         <!-- 收尾轮：深色模式三态切换 -->
         <view
-          class="menu-item list-item press-feedback"
+          class="menu-item list-item press-feedback menu-item--no-border"
           hover-class="menu-item--hover"
           hover-stay-time="100"
           role="button"
@@ -579,19 +451,6 @@ function handleMenuTap(item: MenuItem) {
           </view>
           <text class="menu-item__value">{{ themeModeText }}</text>
           <text class="menu-item__arrow">›</text>
-        </view>
-        <view class="menu-item list-item menu-item--no-border">
-          <view class="menu-item__left">
-            <view class="menu-item__icon settings-card--brand">
-              <image class="menu-item__emoji-img" :src="menuIcons.shield" mode="aspectFit" alt="" />
-            </view>
-            <text class="menu-item__label">{{ t('settings.privacyMode') }}</text>
-          </view>
-          <switch
-            :checked="privacyModeEnabled"
-            :color="designTokens.color.brand[500]"
-            @change="togglePrivacyMode"
-          />
         </view>
       </view>
     </view>
@@ -817,10 +676,6 @@ function handleMenuTap(item: MenuItem) {
 /* 图标背景变体（替换原内联 style 硬编码色） */
 .settings-card--cream {
   background: var(--c-tint-cream-50, #FFF8E7);
-}
-
-.settings-card--brand {
-  background: var(--c-bg-brand, #E8F8F0);
 }
 
 .settings-card--page {

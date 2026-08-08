@@ -33,11 +33,26 @@ public class WeChatPushService {
 
     private static final Logger log = LoggerFactory.getLogger(WeChatPushService.class);
 
-    private static final String ACCESS_TOKEN_URL =
-            "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={appId}&secret={appSecret}";
+    /**
+     * R4-01812：access_token 提前过期余量（秒）。
+     * 微信默认 expires_in=7200，提前 300 秒刷新，避免边界失效。
+     */
+    private static final int ACCESS_TOKEN_EXPIRY_BUFFER_SECONDS = 300;
 
-    private static final String SUBSCRIBE_MESSAGE_URL =
-            "https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={accessToken}";
+    /**
+     * access_token 接口 URL（R4-00353 外部化配置）。
+     * 默认微信官方地址，可通过 {@code app.wechat.access-token-url} 覆盖
+     * （如内网代理/沙箱环境）。
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.wechat.access-token-url:https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={appId}&secret={appSecret}}")
+    private String accessTokenUrl;
+
+    /**
+     * 订阅消息发送 URL（R4-00353 外部化配置）。
+     * 默认微信官方地址，可通过 {@code app.wechat.subscribe-message-url} 覆盖。
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.wechat.subscribe-message-url:https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={accessToken}}")
+    private String subscribeMessageUrl;
 
     private final WeChatConfig weChatConfig;
     private final RestClient restClient;
@@ -89,7 +104,7 @@ public class WeChatPushService {
             return cachedAccessToken;
         }
 
-        String url = ACCESS_TOKEN_URL
+        String url = accessTokenUrl
                 .replace("{appId}", weChatConfig.getAppId())
                 .replace("{appSecret}", weChatConfig.getAppSecret());
 
@@ -118,9 +133,11 @@ public class WeChatPushService {
             }
 
             cachedAccessToken = response.getAccessToken();
-            // 提前 5 分钟过期，避免边界情况
-            tokenExpireTime = nowAfterFetch + (response.getExpiresIn() - 300) * 1000L;
-            log.info("WeChat access_token refreshed, expires_in={}", response.getExpiresIn());
+            // R4-00354：expires_in 判空兜底（微信异常响应缺该字段时按默认 7200s 计算），
+            // 避免 Integer 拆箱 NPE；R4-01812：提前 300 秒过期避免边界情况
+            int expiresIn = response.getExpiresIn() != null ? response.getExpiresIn() : 7200;
+            tokenExpireTime = nowAfterFetch + (expiresIn - ACCESS_TOKEN_EXPIRY_BUFFER_SECONDS) * 1000L;
+            log.info("WeChat access_token refreshed, expires_in={}", expiresIn);
             return cachedAccessToken;
         } catch (RestClientException ex) {
             log.error("Failed to call WeChat access_token API", ex);
@@ -182,7 +199,7 @@ public class WeChatPushService {
         body.put("page", page);
         body.put("data", data);
 
-        String url = SUBSCRIBE_MESSAGE_URL.replace("{accessToken}", accessToken);
+        String url = subscribeMessageUrl.replace("{accessToken}", accessToken);
 
         try {
             SubscribeMessageResponse response = restClient.post()

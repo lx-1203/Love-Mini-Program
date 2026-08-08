@@ -40,6 +40,7 @@ import LongPressMenu from "./LongPressMenu.vue";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { featureFlags } from "../../config/feature-flags";
+import { isDev } from "../../config/env";
 // 悄悄话付费解锁（与 CardDetailOverlay 共用同一套交友币逻辑）
 import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
 import { useVipStore } from "../../stores/vip";
@@ -183,6 +184,8 @@ const animTimers = new Set<ReturnType<typeof setTimeout>>();
 /** 触摸是否已移动（移动超过阈值则取消长按） */
 let hasMovedForLongPress = false;
 // 注：LONG_PRESS_DELAY_MS / LONG_PRESS_MOVE_THRESHOLD 由 constants/match 统一提供
+/** 悄悄话解锁成功后延迟跳转聊天页（ms）：给成功 toast 留出展示时间，避免与页面切换重叠 */
+const MESSAGE_EMIT_DELAY_MS = 500;
 
 /** 触摸起始坐标 */
 let startX = 0;
@@ -550,7 +553,7 @@ function onWhisperTap(): void {
       try {
         await coinsStore.spend("WHISPER", target.userId);
         uni.showToast({ title: t("discover.unlockSuccess"), icon: "success" });
-        setTimeout(() => emit("message", target.userId), 500);
+        setTimeout(() => emit("message", target.userId), MESSAGE_EMIT_DELAY_MS);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         uni.showModal({
@@ -587,7 +590,9 @@ function handleTap() {
     lightHaptic();
   } catch (err) {
     // 振动反馈失败时静默降级
-    console.warn("[CardSwiper] tap haptic failed:", err);
+    if (isDev) {
+      console.warn("[CardSwiper] tap haptic failed:", err);
+    }
   }
   showDetail.value = true;
 }
@@ -636,7 +641,9 @@ function handleNotInterested() {
     lightHaptic();
   } catch (err) {
     // 振动反馈失败时静默降级
-    console.warn("[CardSwiper] not-interested haptic failed:", err);
+    if (isDev) {
+      console.warn("[CardSwiper] not-interested haptic failed:", err);
+    }
   }
   performFlyOut("left");
 }
@@ -668,7 +675,9 @@ function onTouchStart(e: UniTouchEvent) {
       try {
         heavyHaptic();
       } catch (err) {
-        console.warn("[CardSwiper] long-press haptic failed:", err);
+        if (isDev) {
+          console.warn("[CardSwiper] long-press haptic failed:", err);
+        }
       }
       showMenu.value = true;
     }
@@ -798,7 +807,9 @@ function performFlyOut(direction: SwipeDirection) {
   try {
     heavyHaptic();
   } catch (err) {
-    console.warn("[CardSwiper] fly-out haptic failed:", err);
+    if (isDev) {
+      console.warn("[CardSwiper] fly-out haptic failed:", err);
+    }
   }
 
   const cardId = currentCard.value.id;
@@ -845,7 +856,9 @@ function onReject() {
   try {
     lightHaptic(); // 拒绝：轻振动
   } catch (err) {
-    console.warn("[CardSwiper] reject haptic failed:", err);
+    if (isDev) {
+      console.warn("[CardSwiper] reject haptic failed:", err);
+    }
   }
   performFlyOut("left");
 }
@@ -858,7 +871,9 @@ function onLike() {
   try {
     mediumHaptic(); // 喜欢：中等振动
   } catch (err) {
-    console.warn("[CardSwiper] like haptic failed:", err);
+    if (isDev) {
+      console.warn("[CardSwiper] like haptic failed:", err);
+    }
   }
   performFlyOut("right");
 }
@@ -871,7 +886,9 @@ function onSuperLike() {
   try {
     heavyHaptic(); // 超级喜欢：重振动
   } catch (err) {
-    console.warn("[CardSwiper] super-like haptic failed:", err);
+    if (isDev) {
+      console.warn("[CardSwiper] super-like haptic failed:", err);
+    }
   }
   emit("superLike", currentCard.value.id);
 }
@@ -895,7 +912,9 @@ function onVideoBadgeTap() {
   try {
     lightHaptic();
   } catch (err) {
-    console.warn("[CardSwiper] video-badge haptic failed:", err);
+    if (isDev) {
+      console.warn("[CardSwiper] video-badge haptic failed:", err);
+    }
   }
   emit("videoTap", currentCard.value.id, currentCard.value.personalVideoUrl);
 }
@@ -1327,7 +1346,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
    * 即便外部 host-class 的 flex:1 因样式隔离/编译差异未生效，组件根节点也自带
    * 最小高度 860rpx（与 .card-area 同策略），宿主节点随内容自然撑开，
    * 内部 .card-stack flex:1 → .card absolute 四边拉伸的高度链即可恢复。 */
-  min-height: 860rpx;
+  min-height: 860rpx; /* 固定布局尺寸，无对应 token */
   // #endif
   position: relative;
 }
@@ -1653,7 +1672,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   display: flex;
   align-items: center;
   gap: 6rpx;
-  padding: 8rpx 16rpx;
+  padding: var(--sp-2) var(--sp-4);
   background: var(--c-badge-video-bg);
   border-radius: var(--r-full);
   border: 1rpx solid var(--c-badge-video-border);
@@ -1867,6 +1886,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   gap: 6rpx;
   padding: 4rpx 14rpx;
   border-radius: var(--r-full);
+  /* 品牌绿渐变近似 --c-gradient-brand；#2dd4bf→#14b8a6 无精确对应 token，保留原值 */
   background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
   box-shadow: 0 2rpx 10rpx var(--c-black-shadow-xl, rgba(0, 0, 0, 0.24));
 }
@@ -1894,7 +1914,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   color: var(--c-overlay-text-primary);
   background: var(--c-overlay-border-light, rgba(255, 255, 255, 0.18));
   border: 1rpx solid var(--c-overlay-border-mid, rgba(255, 255, 255, 0.25));
-  padding: 6rpx 16rpx;
+  padding: 6rpx var(--sp-4); /* 6rpx 无对应 token，保留原值 */
   border-radius: var(--r-full);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2132,7 +2152,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .action-bar {
   position: absolute;
   left: 24rpx;
-  right: 24rpx;
+  right: 24rpx; /* 固定布局尺寸，无对应 token */
   bottom: 20rpx;
   display: flex;
   align-items: center;
@@ -2309,7 +2329,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   align-self: center;
   min-width: 320rpx;
   text-align: center;
-  padding: 16rpx 0;
+  padding: var(--sp-4) 0;
   border-radius: var(--r-full);
   background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
 }

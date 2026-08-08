@@ -24,6 +24,17 @@ public class MockRuntimeState {
     /** 无 MessageSource（单元测试）时的默认展示名 */
     private static final String DEFAULT_DISPLAY_NAME = "星野";
 
+    /**
+     * mock 会话默认用户 ID（R4-00399 配置化）。
+     * 默认 "user-1001"（历史值），可通过 app.mock.session-user-id 覆盖，
+     * 便于本地演示模拟多用户会话。
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.mock.session-user-id:user-1001}")
+    private String sessionUserId = "user-1001";
+
+    /** mock 媒体占位路径前缀（R4-01799 统一常量，替换本地演示素材时改一处即可） */
+    public static final String MOCK_MEDIA_PATH_PREFIX = "/uploads/mock/";
+
   private boolean loggedIn;
   private boolean phoneBound;
   private boolean profileCompleted;
@@ -58,10 +69,12 @@ public class MockRuntimeState {
       // 的图片自动回退首字占位，不会展示破图。mock 包已从生产 jar 排除（R4-00367），
       // 影响面仅限本地演示。推荐卡片（recommendedPeople/activityRecommendations）
       // 的头像已置空走客户端占位。
-      List.of("/uploads/mock/photo-1.jpg"),
-      "/uploads/mock/half.jpg",
-      "/uploads/mock/intro.mp4",
-      "/uploads/mock/bg.jpg"
+      // R4-01799：占位路径统一收敛为常量（见 MOCK_MEDIA_PATH_PREFIX），
+      // 替换本地演示素材时只需改一处。
+      List.of(MOCK_MEDIA_PATH_PREFIX + "photo-1.jpg"),
+      MOCK_MEDIA_PATH_PREFIX + "half.jpg",
+      MOCK_MEDIA_PATH_PREFIX + "intro.mp4",
+      MOCK_MEDIA_PATH_PREFIX + "bg.jpg"
   );
 
   private ProfileStatsData profileStats = new ProfileStatsData(28, 16, 104);
@@ -213,7 +226,7 @@ public class MockRuntimeState {
 
   public synchronized SessionSnapshot currentSession() {
     return new SessionSnapshot(
-        "user-1001",
+        sessionUserId,
         loggedIn,
         "wechat",
         // R4-00398：展示名仅在仍为内置默认值时经 i18n 资源解析（mock.session.displayName）；
@@ -340,16 +353,68 @@ public class MockRuntimeState {
     return scheduleProfile;
   }
 
-  public List<RecommendedPersonData> recommendedPeople() {
-    return recommendedPeople;
+  public synchronized List<RecommendedPersonData> recommendedPeople() {
+    // R4-00399：推荐池人设文案经 i18n 资源解析（mock.recommended.person{n}.*），
+    // 无 MessageSource（单元测试）或资源缺失时回退内置默认文案，改动文案无需发版。
+    java.util.ArrayList<RecommendedPersonData> out = new java.util.ArrayList<>();
+    for (int i = 0; i < recommendedPeople.size(); i++) {
+      RecommendedPersonData p = recommendedPeople.get(i);
+      int n = i + 1;
+      out.add(new RecommendedPersonData(
+          p.id(),
+          resolveText("mock.recommended.person" + n + ".name", p.name()),
+          p.initials(),
+          resolveText("mock.recommended.person" + n + ".headline", p.headline()),
+          resolveText("mock.recommended.person" + n + ".commonGround", p.commonGround()),
+          resolveText("mock.recommended.person" + n + ".availability", p.availability()),
+          p.avatarUrl(),
+          p.age(),
+          p.height(),
+          p.educationLevel(),
+          p.relationshipStatus(),
+          p.hometownProvince(),
+          p.hometownCity(),
+          p.futureCity(),
+          resolveText("mock.recommended.person" + n + ".bio", p.bio()),
+          p.interestTags()
+      ));
+    }
+    return List.copyOf(out);
   }
 
-  public List<DiscussionRecommendationData> discussionRecommendations() {
-    return discussionRecommendations;
+  public synchronized List<DiscussionRecommendationData> discussionRecommendations() {
+    // R4-00399：讨论推荐文案经 i18n 资源解析（mock.recommended.discussion{n}.*）
+    java.util.ArrayList<DiscussionRecommendationData> out = new java.util.ArrayList<>();
+    for (int i = 0; i < discussionRecommendations.size(); i++) {
+      DiscussionRecommendationData d = discussionRecommendations.get(i);
+      int n = i + 1;
+      out.add(new DiscussionRecommendationData(
+          d.id(),
+          resolveText("mock.recommended.discussion" + n + ".title", d.title()),
+          resolveText("mock.recommended.discussion" + n + ".summary", d.summary()),
+          resolveText("mock.recommended.discussion" + n + ".heatLabel", d.heatLabel())
+      ));
+    }
+    return List.copyOf(out);
   }
 
-  public List<ActivityRecommendationData> activityRecommendations() {
-    return activityRecommendations;
+  public synchronized List<ActivityRecommendationData> activityRecommendations() {
+    // R4-00399：活动推荐文案经 i18n 资源解析（mock.recommended.activity{n}.*）
+    java.util.ArrayList<ActivityRecommendationData> out = new java.util.ArrayList<>();
+    for (int i = 0; i < activityRecommendations.size(); i++) {
+      ActivityRecommendationData a = activityRecommendations.get(i);
+      int n = i + 1;
+      out.add(new ActivityRecommendationData(
+          a.id(),
+          resolveText("mock.recommended.activity" + n + ".title", a.title()),
+          resolveText("mock.recommended.activity" + n + ".location", a.location()),
+          resolveText("mock.recommended.activity" + n + ".scheduleText", a.scheduleText()),
+          resolveText("mock.recommended.activity" + n + ".description", a.description()),
+          a.enrollmentCount(),
+          a.participantAvatars()
+      ));
+    }
+    return List.copyOf(out);
   }
 
   public record SessionSnapshot(

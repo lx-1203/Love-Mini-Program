@@ -32,6 +32,10 @@ public class AdminOpenidValidator {
     /** application-db.yml 中的默认占位值,生产环境禁止使用 */
     private static final String DEFAULT_PLACEHOLDER_OPENID = "admin-default-openid-change-me";
 
+    /** R4-00308：微信小程序 openid 真实格式（o 开头 + 27 位字母数字，共 28 位） */
+    private static final java.util.regex.Pattern WECHAT_OPENID_PATTERN =
+            java.util.regex.Pattern.compile("^o[A-Za-z0-9_-]{27}$");
+
     @Value("${spring.flyway.placeholders.admin_openid:}")
     private String adminOpenid;
 
@@ -40,16 +44,21 @@ public class AdminOpenidValidator {
 
     @PostConstruct
     public void validate() {
+        // R4-00308：严格模式额外校验微信 openid 真实格式（o 开头 + 27 位字母数字/-
+        // _，共 28 位）——原仅长度 >= 16 的弱校验容忍 "aaaaaaaaaaaaaaaa" 等占位串。
+        // 本地开发（如 real profile 联调）可设 APP_ADMIN_STRICT_OPENID=false 跳过格式校验。
         boolean unsafe = adminOpenid == null || adminOpenid.isBlank()
                 || DEFAULT_PLACEHOLDER_OPENID.equals(adminOpenid)
-                || adminOpenid.length() < 16;
+                || adminOpenid.length() < 16
+                || (strictOpenid && !WECHAT_OPENID_PATTERN.matcher(adminOpenid).matches());
         if (!unsafe) {
             log.info("管理员 OpenID 校验通过");
             return;
         }
-        String msg = "ADMIN_OPENID 未配置或仍为默认占位值（admin-default-openid-change-me），"
-                + "将创建可预测的 ADMIN 账号，存在被冒用风险。"
-                + "请通过环境变量 ADMIN_OPENID 配置真实微信 OpenID（长度 ≥ 16）。"
+        String msg = "ADMIN_OPENID 未配置、仍为默认占位值（admin-default-openid-change-me）"
+                + "或不符合微信 openid 格式（o 开头 28 位）"
+                + "，将创建可预测的 ADMIN 账号，存在被冒用风险。"
+                + "请通过环境变量 ADMIN_OPENID 配置真实微信 OpenID。"
                 + "开发环境可通过 APP_ADMIN_STRICT_OPENID=false 临时关闭此校验。";
         if (strictOpenid) {
             throw new IllegalStateException(msg);

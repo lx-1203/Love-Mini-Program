@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -97,14 +98,14 @@ public class AdminAccountController {
         // 显式校验新密码长度（6-64 位），与注册/登录链路密码规则保持一致；
         // @Valid 的 @Size 在 Spring MVC 层生效，此处显式校验保证单元测试与统一错误文案
         if (req.newPassword() == null || req.newPassword().length() < 6 || req.newPassword().length() > 64) {
-            throw new IllegalArgumentException("新密码长度须为 6-64 位");
+            throw new IllegalArgumentException(ErrorMessages.NEW_PASSWORD_LENGTH_INVALID);
         }
 
         // 加载当前管理员账号；理论上必存在（JWT 由登录签发），缺失视为数据异常
         Optional<User> userOpt = userRepository.findById(adminId);
         if (userOpt.isEmpty()) {
             log.warn("修改密码失败：管理员账号不存在, adminId={}", adminId);
-            throw new IllegalArgumentException("管理员账号不存在");
+            throw new IllegalArgumentException(ErrorMessages.ADMIN_ACCOUNT_NOT_FOUND);
         }
         User admin = userOpt.get();
 
@@ -113,7 +114,7 @@ public class AdminAccountController {
         if (storedHash == null || storedHash.isBlank()
                 || !passwordEncoder.matches(req.oldPassword(), storedHash)) {
             log.warn("修改密码失败：旧密码错误, adminId={}", adminId);
-            throw new IllegalArgumentException("旧密码错误");
+            throw new IllegalArgumentException(ErrorMessages.OLD_PASSWORD_WRONG);
         }
 
         // BCrypt 加密新密码并更新（创建/更新路径使用 save 返回值保持一致）
@@ -133,8 +134,8 @@ public class AdminAccountController {
  * @param newPassword 新密码（6-64 位，不可为空）
  */
 record ChangePasswordRequest(
-        @NotBlank(message = "旧密码不能为空")
-        @Size(max = 128, message = "oldPassword 长度不能超过 128") String oldPassword,
-        @NotBlank(message = "新密码不能为空")
-        @Size(min = 6, max = 64, message = "新密码长度须为 6-64 位") String newPassword) {
+        @NotBlank(message = ErrorMessages.OLD_PASSWORD_REQUIRED)
+        @Size(max = 128, message = ErrorMessages.OLD_PASSWORD_MAX_LENGTH) String oldPassword,
+        @NotBlank(message = ErrorMessages.NEW_PASSWORD_REQUIRED)
+        @Size(min = 6, max = 64, message = ErrorMessages.NEW_PASSWORD_LENGTH_INVALID) String newPassword) {
 }

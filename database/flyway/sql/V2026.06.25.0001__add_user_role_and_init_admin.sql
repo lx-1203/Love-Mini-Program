@@ -14,9 +14,11 @@
 --   * 管理员密码不在此脚本中初始化，由应用层通过环境变量 ADMIN_PASSWORD 配置，
 --     详见 RealAuthService#loginAsAdmin。
 --   * 迁移脚本中引用占位符使用 Flyway 占位符语法 ${admin_openid}，
---     与 application-db.yml 的 spring.flyway.placeholders 配合使用。
---   * 注意：为避免与 MySQL 单行注释 # 以及 Spring 属性占位符 $ 花括号 冲突，
---     占位符采用双下划线格式。
+--     与配置（flyway.toml [flyway.placeholders] / application-real.yml
+--     spring.flyway.placeholders）配合使用。
+--   * 注意（R4-00412 注释修正）：占位符统一使用 ${...} 语法（Flyway 默认），
+--     禁止使用双下划线 __xxx__ 格式——迁移文件名中的 __ 会被 Flyway 当作
+--     占位符前缀解析，历史上曾因混用导致启动失败（见 flyway.toml 注释）。
 
 ALTER TABLE users
     ADD COLUMN role VARCHAR(16) NOT NULL DEFAULT 'USER' COMMENT '用户角色: USER/ADMIN';

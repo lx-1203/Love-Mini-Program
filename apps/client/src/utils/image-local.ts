@@ -14,35 +14,46 @@
  * （/uploads/** → /api/v1/media/**），不受影响。
  */
 
-/** 本地人像素材（头像/半身照/照片墙通用，62 张，按 id 轮换） */
-const LOCAL_AVATARS = Array.from(
-  { length: 62 },
-  (_, i) => `/static/assets/images/avatars/avatar-${i + 1}.jpg`
-);
+import { IMAGE_PATHS } from "../config/images";
 
-/** 本地背景素材（主页封面，campus 系列 + 海报） */
-const LOCAL_BACKGROUNDS = [
-  "/static/generated/images/campus/campus-gate.jpg",
-  "/static/generated/images/campus/campus-lake.jpg",
-  "/static/generated/images/campus/campus-library.jpg",
-  "/static/generated/images/campus/campus-night.jpg",
-  "/static/generated/images/campus/campus-playground.jpg",
-  "/static/generated/images/campus/campus-cafeteria.jpg",
-  "/static/generated/images/campus/campus-classroom.jpg",
-  "/static/generated/images/campus/campus-rain.jpg",
-  "/static/generated/images/posters/home-poster.jpg",
+// R4-00245：素材路径统一由 IMAGE_PATHS（config/images.ts 单一入口）生成，
+// 不再散落硬编码 /static/... 字符串（images.ts 注释明确「禁止硬编码 /static/」）
+
+/** 从已知常量推导素材目录前缀（如 AVATAR_1 = ".../avatar-1.jpg" → ".../avatar-"） */
+function deriveBase(sample: string, suffix: string): string {
+  return sample.endsWith(suffix) ? sample.slice(0, -suffix.length) : "";
+}
+
+/** 本地人像素材（头像/半身照/照片墙通用，62 张，按 id 轮换） */
+const LOCAL_AVATARS = (() => {
+  const base = deriveBase(IMAGE_PATHS.AVATARS.AVATAR_1, "avatar-1.jpg");
+  if (!base) return [IMAGE_PATHS.AVATARS.AVATAR_1];
+  return Array.from({ length: 62 }, (_, i) => `${base}avatar-${i + 1}.jpg`);
+})();
+
+/** 本地背景素材（主页封面，campus 系列 + 海报，取自 IMAGE_PATHS.GENERATED） */
+const LOCAL_BACKGROUNDS: readonly string[] = [
+  IMAGE_PATHS.GENERATED.CAMPUS_GATE,
+  IMAGE_PATHS.GENERATED.CAMPUS_LAKE,
+  IMAGE_PATHS.GENERATED.CAMPUS_LIBRARY,
+  IMAGE_PATHS.GENERATED.CAMPUS_NIGHT,
+  IMAGE_PATHS.GENERATED.CAMPUS_PLAYGROUND,
+  IMAGE_PATHS.GENERATED.CAMPUS_CAFETERIA,
+  IMAGE_PATHS.GENERATED.CAMPUS_CLASSROOM,
+  IMAGE_PATHS.GENERATED.CAMPUS_RAIN,
+  IMAGE_PATHS.GENERATED.HOME_POSTER,
 ];
 
-/** 本地动态配图素材（帖子图片） */
-const LOCAL_POSTS = [
-  "/static/assets/images/posts/post-1.jpg",
-  "/static/assets/images/posts/post-2.jpg",
-  "/static/assets/images/posts/post-3.jpg",
-  "/static/assets/images/posts/post-4.jpg",
-  "/static/assets/images/posts/post-5.jpg",
-  "/static/assets/images/posts/post-6.jpg",
-  "/static/assets/images/posts/post-7.jpg",
-  "/static/assets/images/posts/post-8.jpg",
+/** 本地动态配图素材（帖子图片，取自 IMAGE_PATHS.POSTS） */
+const LOCAL_POSTS: readonly string[] = [
+  IMAGE_PATHS.POSTS.POST_1,
+  IMAGE_PATHS.POSTS.POST_2,
+  IMAGE_PATHS.POSTS.POST_3,
+  IMAGE_PATHS.POSTS.POST_4,
+  IMAGE_PATHS.POSTS.POST_5,
+  IMAGE_PATHS.POSTS.POST_6,
+  IMAGE_PATHS.POSTS.POST_7,
+  IMAGE_PATHS.POSTS.POST_8,
 ];
 
 /** pexels 图片 URL 前缀（区分大小写不敏感） */

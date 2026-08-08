@@ -26,6 +26,8 @@ import { messagesPageRequirements } from "../../config/page-access";
 import { useTabBar } from "../../composables/useTabBar";
 import { openAppPath } from "../../utils/navigation";
 import { ROUTES } from "../../constants/routes";
+import { designTokens } from "../../theme/tokens";
+import { OFFICIAL_ACCOUNT_CODES } from "../../config/official-accounts";
 
 // 2026-08-07 消息页重构收尾：新版消息页挂上 tabBar 后需同步选中态（tab 顺序：首页0/匹配1/圈子2/消息3/我的4）
 useTabBar(3);
@@ -200,7 +202,7 @@ function confirmDeleteSession(sessionId: string) {
   uni.showModal({
     title: t("common.delete"),
     content: t("messages.deleteSessionConfirm"),
-    confirmColor: "#E5454D",
+    confirmColor: designTokens.color.error,
     success: (res) => {
       if (!res.confirm) return;
       void messagesStore
@@ -229,7 +231,7 @@ function handleSessionLongPress(session: MessageSession) {
   ];
   uni.showActionSheet({
     itemList,
-    itemColor: "#333333",
+    itemColor: "#333333" /* ≈ --c-text-primary（与 token 值一致，保留字面量） */,
     success: (res) => {
       if (res.tapIndex === 0) {
         messagesStore.toggleSessionPin(session.id);
@@ -312,7 +314,8 @@ function formatTime(isoString: string | null): string {
  */
 onLoad((query) => {
   if (query && query.tab === "notification") {
-    openAppPath(`${ROUTES.MESSAGES.OFFICIAL_CHAT}?accountId=${encodeURIComponent("official-assistant")}`);
+    // R4-00081：官方号 code 收敛到常量，避免散落硬编码
+    openAppPath(`${ROUTES.MESSAGES.OFFICIAL_CHAT}?accountId=${encodeURIComponent(OFFICIAL_ACCOUNT_CODES.ASSISTANT)}`);
   }
 });
 

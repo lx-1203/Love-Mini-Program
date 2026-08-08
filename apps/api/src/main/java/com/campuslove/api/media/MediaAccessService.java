@@ -1,5 +1,6 @@
 package com.campuslove.api.media;
 
+import com.campuslove.api.common.ErrorMessages;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -95,7 +96,7 @@ public class MediaAccessService {
         boolean isAdmin = hasAdminRole(authentication);
         if (currentUserId == null) {
             // 未认证（无 token 或 token 无效）
-            throw new AccessDeniedException("未认证，拒绝访问媒体文件");
+            throw new AccessDeniedException(ErrorMessages.MEDIA_ACCESS_UNAUTHENTICATED);
         }
         MediaCategory detectedType = probeMediaTypeByPath(subPath);
         boolean isOwner = targetUserId.equals(currentUserId);
@@ -103,7 +104,7 @@ public class MediaAccessService {
         if (!isOwner && !isAdmin && !imagePublicRead) {
             LOGGER.warn("媒体访问被拒绝: targetUserId={}, currentUserId={}, isAdmin={}, type={}",
                     targetUserId, currentUserId, isAdmin, detectedType);
-            throw new AccessDeniedException("无权访问该用户的媒体文件");
+            throw new AccessDeniedException(ErrorMessages.MEDIA_ACCESS_FORBIDDEN);
         }
 
         // Path Traversal 防护：subPath 字符级校验

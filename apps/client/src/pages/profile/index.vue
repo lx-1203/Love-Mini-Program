@@ -19,9 +19,13 @@ import { useVillageStore } from "../../stores/village";
 import { isDev } from "../../services/env";
 // Showcase 展示版入口
 import { isShowcaseMode } from "../../config/showcase";
+// R4-00113：版本号展示用统一版本源
+import { APP_CONFIG } from "../../config/app";
 import { openAppPath, switchTabWithQuery, consumePendingTabQuery } from "../../utils/navigation";
 // P2.6：帮助与客服 / 安全中心独立页路由
 import { ROUTES } from "../../constants/routes";
+// R4-00111：官方号 code 常量
+import { OFFICIAL_ACCOUNT_CODES } from "../../config/official-accounts";
 import { useTabBar } from "../../composables/useTabBar";
 import { toProfileView } from "../../view-models/profile";
 import LockScreen from "../../components/common/LockScreen.vue";
@@ -422,10 +426,11 @@ interface StatItem {
 const stats = computed<StatItem[]>(() => {
   const s = profileStore.profileStats;
   return [
-    { label: t("profile.myLikes"), value: likesStore.likes.length, path: "/pages/likes/index" },
-    { label: t("profile.likedMe"), value: likesStore.likedBy.length, locked: true, path: "/pages/likes-visitors/index" },
-    { label: t("profile.recentVisitors"), value: likesStore.visitors.length, locked: true, path: "/pages/likes-visitors/index" },
-    { label: t("profile.likes"), value: s?.likesCount ?? 0, path: "/pages/likes/index" },
+    // R4-00111：路径走 ROUTES 常量
+    { label: t("profile.myLikes"), value: likesStore.likes.length, path: ROUTES.LIKES.INDEX },
+    { label: t("profile.likedMe"), value: likesStore.likedBy.length, locked: true, path: ROUTES.LIKES.VISITORS_LIKES },
+    { label: t("profile.recentVisitors"), value: likesStore.visitors.length, locked: true, path: ROUTES.LIKES.VISITORS_LIKES },
+    { label: t("profile.likes"), value: s?.likesCount ?? 0, path: ROUTES.LIKES.INDEX },
   ];
 });
 
@@ -483,7 +488,8 @@ const menuItems = computed<MenuItem[]>(() => [
           icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
           bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
           label: t("profile.showcaseEntry"),
-          path: "/pages/showcase/index",
+          // R4-00226：路径走 ROUTES 常量
+          path: ROUTES.SHOWCASE,
         } as MenuItem,
       ]
     : []),
@@ -493,7 +499,8 @@ const menuItems = computed<MenuItem[]>(() => [
     bgColor: "var(--c-tint-cream-50, #FFF8E7)",
     label: t("profile.taskCenter"),
     hint: t("profile.earnCoins"),
-    path: "/pages/profile/tasks",
+    // R4-00226：路径走 ROUTES 常量
+    path: ROUTES.PROFILE.TASKS,
   },
   /* 2. 交友币（当前余额） */
   {
@@ -501,7 +508,8 @@ const menuItems = computed<MenuItem[]>(() => [
     bgColor: "var(--c-tint-cream-50, #FFF8E7)",
     label: t("profile.coinBalance"),
     hint: `${coinsStore.balanceYuan} 币`,
-    path: "/pages/wallet/index",
+    // R4-00226：路径走 ROUTES 常量
+    path: ROUTES.WALLET,
   },
   /* 3. 我的圈子（加入的圈子 + 发布的圈子帖子） */
   {
@@ -556,7 +564,8 @@ const menuItems = computed<MenuItem[]>(() => [
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
     bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
     label: t("profile.browseHistory"),
-    path: "/pages/village/history",
+    // R4-00226：路径走 ROUTES 常量
+    path: ROUTES.VILLAGE.HISTORY,
   },
   /* 功能4：相册入口 */
   {
@@ -583,7 +592,8 @@ const menuItems = computed<MenuItem[]>(() => [
     icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
     bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
     label: t("profile.notifications"),
-    path: "/pages/official-chat/index?accountId=official-assistant",
+    // R4-00111：官方号 code 走常量
+    path: `${ROUTES.MESSAGES.OFFICIAL_CHAT}?accountId=${OFFICIAL_ACCOUNT_CODES.ASSISTANT}`,
   },
 ]);
 
@@ -597,7 +607,8 @@ const settingsMenuItems = computed<MenuItem[]>(() => [
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
     bgColor: "var(--c-lavender-100, #EDE9FE)",
     label: t("profile.privacyPermission"),
-    path: "/pages/profile/privacy",
+    // R4-00226：路径走 ROUTES 常量
+    path: ROUTES.PROFILE.PRIVACY,
   },
   /* 2. 安全中心（账号安全、举报记录、黑名单） */
   {
@@ -676,7 +687,8 @@ function handleSayHi() {
   const userId = targetUserId.value;
   if (!userId) return;
   // 收尾轮修复：chat-session 端消费 query.userId（原传 targetUserId 参数被忽略）
-  openAppPath(`/pages/chat-session/index?userId=${encodeURIComponent(userId)}`);
+  // R4-00111：路径走 ROUTES 常量
+  openAppPath(`${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(userId)}`);
 }
 
 /**
@@ -998,7 +1010,10 @@ function handleLogout() {
       // 1. 调用 clientApi.logout() 清除本地 token + 异步通知后端 + 跳转登录页
       // 2. 清空 store 状态（userSession / profileBackgroundUrl 等）
       void sessionStore.logout().catch((error) => {
-        console.warn("[profile] logout 调用异常:", error);
+        // R4-batch4：诊断日志仅开发环境输出
+        if (isDev) {
+          console.warn("[profile] logout 调用异常:", error);
+        }
       });
     },
   });
@@ -1172,20 +1187,10 @@ function handleRemovePhoto(index: number) {
 }
 
 /**
- * 应用版本号（运行时判断，mp-weixin 安全）
- * 修复：原使用条件编译块（ifdef H5 / ifndef H5）声明同名变量，
- * vue-tsc 不识别条件编译注释，会同时处理两个分支导致重复声明错误。
- * 现改为运行时判断（typeof window），H5 下读 Vite 注入，mp-weixin 下使用默认值。
+ * 应用版本号（R4-00113：由构建环境变量注入的单一版本源 APP_CONFIG.APP_VERSION，
+ * 不再兜底硬编码 "v1.0.0"，避免与 .env / manifest.json 漂移）。
  */
-const appVersion: string = (() => {
-  if (typeof window === "undefined") return "v1.0.0";
-  try {
-    const v = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_APP_VERSION;
-    return typeof v === "string" && v.length > 0 ? v : "v1.0.0";
-  } catch (_e) {
-    return "v1.0.0";
-  }
-})();
+const appVersion: string = APP_CONFIG.APP_VERSION;
 
 /**
  * 空间分享（2026-08-08 QQ 主页重构）：右上角分享按钮 + 微信右上角菜单分享。
@@ -1215,10 +1220,16 @@ onShow(() => {
   if (profileRequestedOnce) return;
   profileRequestedOnce = true;
   profileStore.fetchProfile().catch((error) => {
-    console.warn("[ProfilePage] fetchProfile 失败:", error);
+    // R4-batch4：诊断日志仅开发环境输出
+    if (isDev) {
+      console.warn("[ProfilePage] fetchProfile 失败:", error);
+    }
   });
   socialProgressStore.fetchProgress().catch((error) => {
-    console.warn("[ProfilePage] fetchProgress 失败:", error);
+    // R4-batch4：诊断日志仅开发环境输出
+    if (isDev) {
+      console.warn("[ProfilePage] fetchProgress 失败:", error);
+    }
   });
 });
 
@@ -1244,6 +1255,9 @@ onUnload(() => {
     // 销毁失败静默处理
   }
   voiceAudio = null;
+  // R4-00158/00159：页面卸载时清理 discover / village store 的定时器与请求资源
+  discoverStore.dispose();
+  villageStore.dispose();
 });
 </script>
 
@@ -1373,7 +1387,7 @@ onUnload(() => {
                     custom-class="avatar__img"
                     mode="aspectFill"
                     :lazy-load="true"
-                    fallback="/static/generated/images/avatars/default-girl.jpg"
+                    :fallback="IMAGE_PATHS.AVATARS.DEFAULT"
                   />
                   <text v-else class="avatar__text">{{ avatarInitial }}</text>
                   <!-- 自己主页：右上角相机小标 -->
@@ -1962,6 +1976,7 @@ onUnload(() => {
 }
 
 /* 2026-08-08：改为半透明渐变（QQ 封面风格），背景图完整透出，底部轻微压暗保证可读性 */
+/* R4-batch4：渐变端点 rgba(15,23,42,0.32) 无等值 token（最接近 --c-neutral-shadow-xl 0.12/--c-overlay-mid-strong 0.5），保留原值 */
 .profile-bg__overlay {
   position: absolute;
   top: 0;
@@ -2551,6 +2566,7 @@ onUnload(() => {
 }
 
 /* P2.6：录音中红色呼吸灯提示（真实 RecorderManager 录制态） */
+/* R4-batch4：动画呼吸环 rgba(244,63,94,0.35) 无等值 token（最接近 --c-error-bg-tint-strong 0.3），保留原值保证动画视觉一致 */
 .video-cta__icon-wrap--recording {
   animation: video-cta-pulse 1s ease-in-out infinite;
 }

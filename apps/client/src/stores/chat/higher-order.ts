@@ -13,6 +13,8 @@
 import { createChatTransport } from "../../features/chat/transport";
 import { toChatSessionView } from "../../view-models/chat";
 import { useMock } from "./utils";
+// R4-00192：errorPrefix 兜底文案走 i18n
+import { t } from "@/i18n";
 import type {
   ChatStoreLike,
   LoadingKey,
@@ -44,7 +46,7 @@ export const chatTransport = createChatTransport();
  * @param store - ChatStore 实例（传入 this 即可）
  * @param options - 配置选项
  * @param options.loadingKey - loading 状态的键名（可选，不传则不管理 loading 状态）
- * @param options.errorPrefix - 错误消息前缀，用于拼接 "xxx失败"
+ * @param options.errorPrefixKey - 错误兜底文案的 i18n key（R4-00192：非 Error 异常时经 t() 渲染）
  * @param options.rethrow - 是否重新抛出错误（默认 false），sendIcebreaker 等需要上层感知错误时设为 true
  * @param fn - 业务逻辑函数
  * @returns 业务逻辑函数的返回值；出错且不重新抛出时返回 undefined
@@ -53,12 +55,12 @@ export async function withErrorHandling<T>(
   store: ChatStoreLike,
   options: {
     loadingKey?: LoadingKey;
-    errorPrefix: string;
+    errorPrefixKey: string;
     rethrow?: boolean;
   },
   fn: () => Promise<T>
 ): Promise<T | undefined> {
-  const { loadingKey, errorPrefix, rethrow = false } = options;
+  const { loadingKey, errorPrefixKey, rethrow = false } = options;
   // 设置 loading 状态为 true
   if (loadingKey) {
     store[loadingKey] = true;
@@ -68,8 +70,8 @@ export async function withErrorHandling<T>(
   try {
     return await fn();
   } catch (error) {
-    // 统一设置错误消息：优先使用 Error 实例的 message，否则使用前缀拼接
-    store.errorMessage = error instanceof Error ? error.message : `${errorPrefix}失败`;
+    // 统一设置错误消息：优先使用 Error 实例的 message，否则使用 i18n 兜底文案
+    store.errorMessage = error instanceof Error ? error.message : t(errorPrefixKey);
     if (rethrow) {
       // 重新抛出错误，让调用方决定是否需要处理（如 sendIcebreaker 需要向上抛出）
       throw error;

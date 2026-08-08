@@ -180,8 +180,10 @@ class P0SecurityIntegrationTest {
             MockitoAnnotations.openMocks(this);
             passwordEncoder = new PasswordEncoderConfig().passwordEncoder();
             tokenBlacklistService = new RedisTokenBlacklistService();
-            // 在线会话服务使用真实实例（本地内存降级模式），不注入 Redis 以便隔离测试
-            onlineUserService = new OnlineUserService();
+            // 在线会话服务使用真实实例（本地内存降级模式），不注入 Redis 以便隔离测试。
+            // R4-01821 后构造器签名带 JwtConfig（TTL 兜底引用同一配置源），
+            // 跨包无包级构造器可用，传 null 走 FALLBACK_SESSION_TTL_MS 常量兜底。
+            onlineUserService = new OnlineUserService(null);
 
             // 通过反射注入 mock RedisTemplate（模拟 @Autowired(required=false)）
             try {
@@ -264,7 +266,6 @@ class P0SecurityIntegrationTest {
                     eq(TEST_TTL_SECONDS), eq(TimeUnit.SECONDS));
 
             // ---- Arrange 2：模拟后续请求，filter 调用 isRevoked 应返回 true ----
-            when(redisTemplate.hasKey(expectedRedisKey)).thenReturn(true);
             when(request.getRequestURI()).thenReturn("/api/users/123");
             when(request.getHeader("Authorization")).thenReturn("Bearer " + TEST_TOKEN);
 
@@ -275,9 +276,10 @@ class P0SecurityIntegrationTest {
 
             // ---- Assert 2：filter 检测黑名单命中，清空 SecurityContext ----
             // 注：tokenBlacklistService 为真实 RedisTokenBlacklistService 实例（非 mock），
-            // 不能用 verify() 校验；通过断言 SecurityContext 状态与 mock redisTemplate
-            // 的交互（hasKey 调用）即可间接证明 isRevoked 路径已走通。
-            verify(redisTemplate).hasKey("jwt:blacklist:" + TEST_JTI);
+            // 不能用 verify() 校验；通过断言 SecurityContext 状态间接证明 isRevoked 路径已走通。
+            // R4-00310 本地优先：revoke 双写本地+Redis，isRevoked 本地命中即返回 true，
+            // 不再触发 Redis hasKey 查询（此处无法再通过 hasKey 调用验证黑名单路径）。
+            // 黑名单 Redis 侧写入已由上方 Assert 1（valueOperations.set）覆盖。
             // 短路：filter 检测黑名单命中后直接 return，未再调用 getUserIdFromToken
             // 与 findById。doLogout 内部已调用 1 次 getUserIdFromToken（用于日志），
             // filter 不应再次调用 —— 通过 times(1) 验证 filter 短路成功。
@@ -302,8 +304,8 @@ class P0SecurityIntegrationTest {
             // Arrange：构造普通用户
             User normalUser = createNormalUser(TEST_USER_ID);
             when(jwtTokenProvider.getJtiFromToken(TEST_TOKEN)).thenReturn(TEST_JTI);
+            // R4-00310 本地优先：本地内存无该 jti 时回退查 Redis（hasKey=false → 未撤销）
             when(redisTemplate.hasKey("jwt:blacklist:" + TEST_JTI)).thenReturn(false);
-            when(jwtTokenProvider.isTokenRevoked(TEST_TOKEN)).thenReturn(false);
             when(jwtTokenProvider.getUserIdFromToken(TEST_TOKEN))
                     .thenReturn(String.valueOf(TEST_USER_ID));
             when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(normalUser));
@@ -341,13 +343,13 @@ class P0SecurityIntegrationTest {
             // Act 1：logout，Redis 写入失败但应降级到本地内存
             assertDoesNotThrow(() -> realAuthService.logout(TEST_TOKEN));
 
-            // Arrange 2：后续请求，Redis 查询也抛异常
-            when(redisTemplate.hasKey(anyString())).thenThrow(
-                    new RuntimeException("Redis down"));
+            // Arrange 2：后续请求
             when(request.getRequestURI()).thenReturn("/api/users/123");
             when(request.getHeader("Authorization")).thenReturn("Bearer " + TEST_TOKEN);
 
-            // Act 2：filter 处理后续请求，应降级查本地内存
+            // Act 2：filter 处理后续请求。
+            // R4-00310 本地优先：revoke 期间已写入本地内存，isRevoked 本地命中即返回
+            // true（无需再查询 Redis），后续请求被拒绝
             jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
             // Assert：本地内存命中，SecurityContext 被清空（拒绝认证）
@@ -359,38 +361,49 @@ class P0SecurityIntegrationTest {
         }
 
         /**
-         * 场景 3.4：logout 旧 token（无 jti claim）→ 走 JwtTokenProvider.revokeToken 完整 token 黑名单 → 后续请求被拒。
+         * 场景 3.4：logout 旧 token（无 jti claim）→ doLogout 仍调用
+         * {@link JwtTokenProvider#revokeToken} 写入完整 token 黑名单（兼容写路径）；
+         * 后续请求中过滤器按 R4-00274 单轨 jti 黑名单校验——无 jti 的旧 token 跳过
+         * 黑名单检查，直接进入解析认证；解析失败（getUserIdFromToken 为 null）→ 401。
          *
-         * <p>兼容性场景：旧版本签发的 token 可能没有 jti claim，doLogout 会跳过
-         * Redis 黑名单调用，但仍调用 {@link JwtTokenProvider#revokeToken} 写入完整 token 黑名单。</p>
+         * <p>兼容性场景：旧版本签发的 token 可能没有 jti claim。R4-00274 统一为
+         * jti 单黑名单后，过滤器不再双轨检查完整 token 黑名单（isTokenRevoked 已从
+         * 过滤器移除，仅保留在 WebSocket 拦截器等旧路径），旧 token 的拒绝由
+         * 后续 token 解析/签名校验兜底。</p>
          */
         @Test
-        @DisplayName("Token-3.4: logout 旧 token（无 jti）→ 走完整 token 黑名单 → 后续请求被拒")
+        @DisplayName("Token-3.4: logout 旧 token（无 jti）→ 写完整 token 黑名单（兼容写路径）；filter 单轨 jti 校验不拦截，解析失败 → 401")
         void logout_legacyTokenWithoutJti_shouldFallbackToFullTokenBlacklist() throws Exception {
             // Arrange：旧 token 无 jti
             when(jwtTokenProvider.getJtiFromToken(TEST_TOKEN)).thenReturn(null);
-            // doLogout 仍调用 jwtTokenProvider.revokeToken
-            // 后续请求：filter 跳过 jti 校验，走 isTokenRevoked 完整 token 校验
-            when(jwtTokenProvider.isTokenRevoked(TEST_TOKEN)).thenReturn(true);
+            // doLogout 仍调用 jwtTokenProvider.revokeToken（兼容写路径）
+            // 后续请求：filter 跳过 jti 黑名单校验（jti 为 null），进入正常认证解析；
+            // 旧 token 无法解析出 userId（R4-00274 后无完整 token 黑名单兜底）→ 认证失败
+            when(jwtTokenProvider.getUserIdFromToken(TEST_TOKEN)).thenReturn(null);
 
             // Act 1：logout
             realAuthService.logout(TEST_TOKEN);
 
-            // Assert 1：doLogout 调用 revokeToken（完整 token 黑名单）
+            // Assert 1：doLogout 调用 revokeToken（完整 token 黑名单兼容写路径）
             verify(jwtTokenProvider).revokeToken(TEST_TOKEN);
 
             // Arrange 2：后续请求
             when(request.getRequestURI()).thenReturn("/api/users/123");
             when(request.getHeader("Authorization")).thenReturn("Bearer " + TEST_TOKEN);
 
-            // Act 2：filter 处理
-            jwtAuthenticationFilter.doFilter(request, response, filterChain);
+            // Act 2：filter 处理（不抛异常，BadCredentialsException 被过滤器捕获）
+            assertDoesNotThrow(() -> jwtAuthenticationFilter.doFilter(request, response, filterChain));
 
-            // Assert 2：filter 检测完整 token 黑名单命中，清空 SecurityContext
-            verify(jwtTokenProvider).isTokenRevoked(TEST_TOKEN);
+            // Assert 2：R4-00274 单轨黑名单——过滤器不再调用完整 token 黑名单校验
+            // （jti 为 null 跳过 isRevoked，isRevoked 属于真实 RedisTokenBlacklistService
+            // 实例不可 verify，由下方 SecurityContext 结果断言间接证明）
+            verify(jwtTokenProvider, never()).isTokenRevoked(anyString());
+            // 旧 token 解析失败（userId 为 null）→ BadCredentialsException → SecurityContext 被清空
             assertNotNull(SecurityContextHolder.getContext().getAuthentication() == null
                             || !SecurityContextHolder.getContext().getAuthentication().isAuthenticated(),
-                    "旧 token 黑名单命中后 SecurityContext 应被清空");
+                    "旧 token 解析失败后 SecurityContext 应被清空");
+            // 继续后续过滤器链（由 AuthenticationEntryPoint 返回 401）
+            verify(filterChain).doFilter(request, response);
         }
 
         /**

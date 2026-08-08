@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
@@ -187,7 +188,7 @@ public class ProfileVisitorController {
 
         // 参数校验：不能访问自己
         if (userId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "目标用户 ID 不能为空");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ErrorMessages.TARGET_USER_ID_REQUIRED);
         }
         if (userId.equals(visitorId)) {
             // 自访问不记录，但仍返回一个空视图，保持接口契约一致
@@ -199,7 +200,7 @@ public class ProfileVisitorController {
         // 校验目标用户存在
         Optional<User> targetUserOpt = userRepository.findById(userId);
         if (targetUserOpt.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "目标用户不存在");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorMessages.TARGET_USER_NOT_FOUND);
         }
 
         // 同一天去重：检查当日是否已记录过该访客对该主页的访问
@@ -228,9 +229,12 @@ public class ProfileVisitorController {
             profileVisitorRepository.save(record);
             log.info("用户[{}]访问用户[{}]的主页，已记录访客记录", visitorId, userId);
         } catch (DataIntegrityViolationException e) {
-            // 并发场景下唯一约束冲突，视为已记录
+            // 并发场景下唯一约束冲突，视为已记录。
+            // R4-00292：返回既有记录视图——回查 DB 中已存在的访客记录，
+            // visitedAt 以落库时间为准（原实现返回本请求的 now，与 DB 值可能不一致）
             log.warn("用户[{}]访问用户[{}]的主页时发生唯一约束冲突，视为已记录: {}",
                     visitorId, userId, e.getMessage());
+            return buildVisitorView(visitorId, userId, targetUserOpt);
         }
 
         User target = targetUserOpt.orElseThrow(() ->
@@ -242,6 +246,28 @@ public class ProfileVisitorController {
                 target.getAvatarUrl(),
                 campus != null ? campus.getCampusName() : null,
                 record.getVisitedAt().format(FORMATTER)
+        ));
+    }
+
+    /**
+     * R4-00292：构建「既有访客记录」视图——冲突后回查 DB 最近一条记录，
+     * visitedAt 取落库值（与并发先提交者的记录一致）。
+     */
+    private ApiResponse<ProfileVisitorView> buildVisitorView(Long visitorId, Long userId,
+                                                             Optional<User> targetUserOpt) {
+        User target = targetUserOpt.orElseThrow(() ->
+                new IllegalStateException("targetUserOpt 已确认非空但 orElseThrow 触发，数据不一致"));
+        UserCampusProfile campus = userCampusProfileRepository.findByUserId(userId).orElse(null);
+        String visitedAt = profileVisitorRepository
+                .findTopByVisitorIdAndHostIdOrderByVisitedAtDesc(visitorId, userId)
+                .map(r -> r.getVisitedAt().format(FORMATTER))
+                .orElse(LocalDateTime.now(TimeZones.BUSINESS).format(FORMATTER));
+        return ApiResponse.ok(new ProfileVisitorView(
+                visitorId,
+                target.getNickname(),
+                target.getAvatarUrl(),
+                campus != null ? campus.getCampusName() : null,
+                visitedAt
         ));
     }
 

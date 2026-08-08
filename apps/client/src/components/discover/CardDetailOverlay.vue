@@ -71,6 +71,11 @@ const isBioExpanded = ref(false);
 /** 简介「展开」按钮阈值（2026-08-08：超过约 5 行 ≈ 100 字才显示展开交互） */
 const BIO_TOGGLE_THRESHOLD = 100;
 
+/** 私信解锁成功后延迟跳转聊天页（ms）：给成功 toast 留出展示时间，避免与页面切换重叠 */
+const MESSAGE_EMIT_DELAY_MS = 500;
+/** [AUTOSHOT] 测试钩子：开启动画结束后再滚动到指定锚点面板（ms），与入场动画时长对齐 */
+const ANCHOR_SCROLL_DELAY_MS = 360;
+
 /** 简介是否需要「展开」按钮（短文完整展示、无多余交互） */
 const bioNeedsToggle = computed(() => (props.card?.bio?.length ?? 0) > BIO_TOGGLE_THRESHOLD);
 
@@ -236,13 +241,16 @@ const incomeLabel = computed(() => props.card?.incomeRange || "--");
 /** 职业（2026-08-08 验收修复：快速资料卡第四格，缺失时展示占位符） */
 const occupationText = computed(() => props.card?.occupation || "--");
 
-/** 年龄（2026-08-08 优先后端真实 age 字段，缺失时回退 headline 正则） */
+/**
+ * 年龄（2026-08-08 优先后端真实 age 字段，缺失时回退 headline 正则）。
+ * R4-00140：正则未命中时展示 "--"（真实资料缺失时不再伪造 22 岁）。
+ */
 const ageText = computed(() => {
   const card = props.card;
   if (card?.age) return String(card.age);
   const h = card?.headline ?? "";
   const m = h.match(/(\d{2})\s*岁/);
-  return m ? m[1] : "22";
+  return m ? m[1] : "--";
 });
 
 /** 匹配度分数 */
@@ -452,7 +460,7 @@ function handleMessage(): void {
         privateMsgUnlocked.value = true;
         successHaptic();
         uni.showToast({ title: t("discover.unlockSuccess"), icon: "success" });
-        setTimeout(() => emitMessage(), 500);
+        setTimeout(() => emitMessage(), MESSAGE_EMIT_DELAY_MS);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         uni.showModal({
@@ -523,7 +531,7 @@ watch(
       nextTick(() => { animating.value = true; });
       // [AUTOSHOT] 测试钩子：等开启动画结束后滚动到指定面板（scroll-into-view 值变化触发一次）
       if (props.initialAnchor) {
-        setTimeout(() => { anchorId.value = props.initialAnchor as string; }, 360);
+        setTimeout(() => { anchorId.value = props.initialAnchor as string; }, ANCHOR_SCROLL_DELAY_MS);
       }
     } else {
       animating.value = false;
@@ -1232,7 +1240,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   background: var(--c-bg-page);
   display: flex;
   flex-direction: column;
-  transform: scale(0.9) translateY(40rpx);
+  transform: scale(0.9) translateY(40rpx); /* 固定布局尺寸，无对应 token */
   opacity: 0;
   transition: transform var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1), opacity var(--d-fade, 300ms) ease;
   overflow: hidden;
@@ -1471,7 +1479,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 }
 
 .detail-hero__school-icon {
-  width: 26rpx;
+  width: 26rpx; /* 固定布局尺寸，无对应 token */
   height: 26rpx;
   color: var(--c-overlay-text-primary);
 }
@@ -1706,7 +1714,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   border-radius: var(--r-full);
   font-size: var(--fs-base);
   font-weight: 600;
-  border-width: 1rpx;
+  border-width: 1rpx; /* 固定布局尺寸，无对应 token */
   border-style: solid;
   transition: transform var(--d-normal, 200ms) ease;
 }
@@ -1882,7 +1890,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   align-items: center;
   gap: 12rpx;
   margin-top: 12rpx;
-  padding: 8rpx 12rpx;
+  padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-lg);
   background: var(--c-bg-container, #ffffff);
   border: 1rpx solid var(--c-border-light, #e5e7eb);
@@ -2030,8 +2038,8 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 }
 
 .detail-action-bar__btn--pass .detail-action-bar__icon {
-  width: 40rpx;
-  height: 40rpx;
+  width: 40rpx; /* 固定布局尺寸，无对应 token */
+  height: 40rpx; /* 固定布局尺寸，无对应 token */
 }
 
 .detail-action-bar__label {

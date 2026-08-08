@@ -1,5 +1,6 @@
 package com.campuslove.api.campus;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.DisplayConstants;
@@ -128,16 +129,16 @@ public class RealCampusService implements CampusService {
     @Transactional
     public CampusTopicView createCampusTopic(Long userId, Long schoolId, String category, String title, String content) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
         if (schoolId == null) {
-            throw new IllegalArgumentException("schoolId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.SCHOOL_ID_REQUIRED);
         }
         if (category == null || category.isBlank()) {
-            throw new IllegalArgumentException("category 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CATEGORY_REQUIRED);
         }
         if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("title 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.TITLE_REQUIRED);
         }
 
         // 敏感词过滤：过滤话题标题和内容
@@ -170,13 +171,13 @@ public class RealCampusService implements CampusService {
     @Transactional
     public CampusTopicReplyView replyCampusTopic(Long topicId, Long userId, String content) {
         if (topicId == null) {
-            throw new IllegalArgumentException("topicId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.TOPIC_ID_REQUIRED);
         }
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("content 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CONTENT_REQUIRED);
         }
 
         // 敏感词过滤：过滤回复内容
@@ -286,7 +287,7 @@ public class RealCampusService implements CampusService {
                     post.getCommentsCount(),
                     post.getShareCount(),
                     post.getCreatedAt().toString(),
-                    post.getLikesCount() >= 50,
+                    post.getLikesCount() >= com.campuslove.api.config.ContentThresholds.HOT_POST_LIKES_THRESHOLD,
                     false, // isAlumni
                     false, // isFollowed
                     // 2026-08-08 论坛互动真实化：校园流不展示收藏（无收藏上下文，恒 0/false），浏览量取实体
@@ -356,7 +357,7 @@ public class RealCampusService implements CampusService {
      */
     private CampusTopic findTopicOrThrow(Long topicId) {
         return campusTopicRepository.findById(topicId)
-                .orElseThrow(() -> new IllegalArgumentException("话题不存在: " + topicId));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.TOPIC_NOT_FOUND_PREFIX + topicId));
     }
 
     /**

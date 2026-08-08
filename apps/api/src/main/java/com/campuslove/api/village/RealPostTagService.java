@@ -14,7 +14,9 @@ import com.campuslove.api.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
@@ -114,27 +116,43 @@ public class RealPostTagService implements PostTagService {
             return List.of();
         }
 
-        // 遍历预置标签：聚合帖子数 + 取最新带图帖子首图作为封面
-        // 帖子量小，逐标签查询可接受；数据量大后可改为单条聚合 SQL
+        // R4-00356：单条聚合 SQL——一次性拉取全部预置标签的关联记录，
+        // 内存分组统计（替代原每标签 2 次查询 ≈ 16 次 SQL/请求）
+        List<PostTag> allRecords = postTagRepository.findByTagNameIn(PRESET_TAGS);
+        Map<String, List<Long>> postIdsByTag = allRecords.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        PostTag::getTagName,
+                        java.util.stream.Collectors.mapping(
+                                PostTag::getPostId,
+                                java.util.stream.Collectors.collectingAndThen(
+                                        java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new),
+                                        ArrayList::new))));
+
+        // 封面候选：每个标签取最大 postId 的帖子（自增 ID 近似最新），一次批量查询
+        List<Long> coverCandidateIds = postIdsByTag.values().stream()
+                .filter(ids -> !ids.isEmpty())
+                .map(ids -> java.util.Collections.max(ids))
+                .toList();
+        Map<Long, Post> coverById = coverCandidateIds.isEmpty() ? Map.of()
+                : postRepository
+                        .findByIdInAndStatusOrderByCreatedAtDesc(
+                                coverCandidateIds, PostStatus.active, PageRequest.of(0, coverCandidateIds.size()))
+                        .getContent().stream()
+                        .collect(java.util.stream.Collectors.toMap(Post::getId, p -> p));
+
         return PRESET_TAGS.stream()
                 .map(tag -> {
-                    List<PostTag> tagRecords = postTagRepository.findByTagName(tag);
-                    List<Long> postIds = tagRecords.stream()
-                            .map(PostTag::getPostId)
-                            .distinct()
-                            .toList();
+                    List<Long> postIds = postIdsByTag.getOrDefault(tag, List.of());
                     if (postIds.isEmpty()) {
                         return new PopularTagView(tag, 0L, "");
                     }
-                    long count = postIds.size();
-                    String coverUrl = postRepository
-                            .findByIdInAndStatusOrderByCreatedAtDesc(
-                                    postIds, PostStatus.active, PageRequest.of(0, 1))
-                            .getContent().stream()
+                    Post cover = postIds.stream()
+                            .map(coverById::get)
+                            .filter(java.util.Objects::nonNull)
                             .findFirst()
-                            .map(this::firstImage)
-                            .orElse("");
-                    return new PopularTagView(tag, count, coverUrl);
+                            .orElse(null);
+                    return new PopularTagView(tag, (long) postIds.size(),
+                            cover != null ? firstImage(cover) : "");
                 })
                 .sorted((a, b) -> Long.compare(b.postCount(), a.postCount()))
                 .limit(limit)
@@ -168,7 +186,7 @@ public class RealPostTagService implements PostTagService {
                 post.getCommentsCount(),
                 post.getShareCount(),
                 post.getCreatedAt().toString(),
-                post.getLikesCount() >= 50,
+                post.getLikesCount() >= com.campuslove.api.config.ContentThresholds.HOT_POST_LIKES_THRESHOLD,
                 false,
                 false,
                 // 2026-08-08 论坛互动真实化：标签页不注入收藏上下文，收藏数 0 / 未收藏；浏览量取实体

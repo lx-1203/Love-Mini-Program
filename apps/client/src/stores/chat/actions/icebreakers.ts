@@ -40,7 +40,7 @@ export async function loadIcebreakers(
   // loadIcebreakers 不涉及 activeSession 和概览刷新，无需 withMockMode
   await withErrorHandling(
     this,
-    { loadingKey: "loadingIcebreakers", errorPrefix: "加载破冰话题" },
+    { loadingKey: "loadingIcebreakers", errorPrefixKey: "storeErrors.chat.loadIcebreakersFailed" },
     async () => {
       if (useMock()) {
         // Mock 模式：根据 matchId 返回预设的破冰话题
@@ -105,7 +105,7 @@ export async function sendIcebreaker(
   // sendIcebreaker 的 Mock/Real 分支逻辑差异较大（Real 分支调用 sendText），不适合 withMockMode
   await withErrorHandling(
     this,
-    { errorPrefix: "发送破冰话题", rethrow: true },
+    { errorPrefixKey: "storeErrors.chat.sendIcebreakerFailed", rethrow: true },
     async () => {
       // 参数校验
       if (!topic || topic.trim().length === 0) {

@@ -249,13 +249,16 @@ const durationDisplay = computed(() => {
 .voice-bubble {
   display: inline-flex;
   align-items: center;
+  /* 14rpx 无对应 token 档位，保留 */
   gap: 14rpx;
-  padding: 18rpx 24rpx;
+  /* 18rpx 无对应 token 档位，保留 */
+  padding: 18rpx var(--sp-6);
   border-radius: var(--r-xl, 24rpx) var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
   background: var(--c-bg-brand, rgba(63, 207, 142, 0.08));
   color: var(--c-brand-700, #1D8A5A);
   box-shadow: var(--s-sm, 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
   transition: all var(--d-normal, 200ms) ease;
+  /* 气泡固定最小宽度（时长布局值），无对应 token */
   min-width: 140rpx;
 }
 
@@ -285,7 +288,7 @@ const durationDisplay = computed(() => {
 .voice-bubble__wave {
   display: flex;
   align-items: center;
-  gap: 4rpx;
+  gap: var(--sp-1);
   height: 32rpx;
 }
 
@@ -295,6 +298,7 @@ const durationDisplay = computed(() => {
 }
 
 .voice-bubble__bar {
+  /* 波形条固定尺寸（宽 6rpx 高 12rpx），无对应 token */
   width: 6rpx;
   height: 12rpx;
   border-radius: var(--r-xs, 4rpx);
@@ -323,6 +327,7 @@ const durationDisplay = computed(() => {
 }
 
 @keyframes voice-wave {
+  /* 波形动画高度为固定布局值（8rpx→28rpx），无对应 token */
   from {
     height: 8rpx;
   }
@@ -348,6 +353,7 @@ const durationDisplay = computed(() => {
 }
 
 .voice-bubble__icon-emoji {
+  /* 播放图标固定尺寸（32rpx），无对应 token */
   width: 32rpx;
   height: 32rpx;
   color: var(--c-text-secondary);

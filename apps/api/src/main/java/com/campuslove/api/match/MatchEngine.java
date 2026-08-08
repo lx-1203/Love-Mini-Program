@@ -51,6 +51,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class MatchEngine {
 
+    /**
+     * Top-N 高分候选数（R4-00349）：匹配时从前 5 个高分候选中随机选取，
+     * 兼顾匹配质量与随机性；同时作为候选实体加载上限（投影优化用）。
+     */
+    private static final int TOP_CANDIDATE_COUNT = 5;
+
     private final MatchConfig matchConfig;
     private final LikeRepository likeRepository;
     private final HeartSignalRepository heartSignalRepository;
@@ -144,45 +150,58 @@ public class MatchEngine {
                 .map(profile -> parseInterestTags(profile.getInterestTags()))
                 .orElse(Collections.emptySet());
 
-        // 4. 使用分页查询获取候选用户
-        List<User> pagedUsers = userRepository.findAll(
+        // 4. R4-00349：候选 ID 投影查询（仅取 ID 列，避免全量加载候选 User 大字段；
+        //    评分只依赖 ID 与三类档案，无需候选实体）
+        List<Long> candidateIds = userRepository.findCandidateIds(
                 PageRequest.of(0, matchConfig.getCandidatePageSize())).getContent();
+        List<Long> eligibleIds = candidateIds.stream()
+                .filter(id -> !excludedUserIds.contains(id))
+                .toList();
 
         // 5. infra R2-00017 修复：批量预加载候选用户的三类档案，消除评分 N+1
         //   （原实现对每个候选调用 3 次 findByUserId，50 候选 = 150+ 查询/次匹配）
-        List<Long> candidateIds = pagedUsers.stream()
-                .filter(u -> !excludedUserIds.contains(u.getId()))
-                .map(User::getId)
-                .toList();
         Map<Long, UserCampusProfile> campusById = userCampusProfileRepository
-                .findByUserIdIn(candidateIds).stream()
+                .findByUserIdIn(eligibleIds).stream()
                 .collect(java.util.stream.Collectors.toMap(UserCampusProfile::getUserId, p -> p));
         Map<Long, Set<String>> tagsById = userBasicProfileRepository
-                .findByUserIdIn(candidateIds).stream()
+                .findByUserIdIn(eligibleIds).stream()
                 .collect(java.util.stream.Collectors.toMap(
                         com.campuslove.api.entity.UserBasicProfile::getUserId,
                         p -> parseInterestTags(p.getInterestTags())));
         Map<Long, String> scheduleById = userScheduleProfileRepository
-                .findByUserIdIn(candidateIds).stream()
+                .findByUserIdIn(eligibleIds).stream()
                 .collect(java.util.stream.Collectors.toMap(
                         com.campuslove.api.entity.UserScheduleProfile::getUserId,
                         com.campuslove.api.entity.UserScheduleProfile::getPreferredTimeWindowJson));
 
-        // 6. 计算推荐分数（纯内存计算，无数据库访问）
-        List<ScoredCandidate> scoredCandidates = new ArrayList<>();
-        for (User candidate : pagedUsers) {
-            if (excludedUserIds.contains(candidate.getId())) {
-                continue;
-            }
+        // 6. 按 ID 计算推荐分数（纯内存计算，无数据库访问）
+        List<RawCandidateScore> rawScores = new ArrayList<>();
+        for (Long candidateId : eligibleIds) {
             int score = calculateMatchScoreFromMaps(
-                    candidate.getId(), myCampusName, myCityName, myTags, myTimeWindow,
+                    candidateId, myCampusName, myCityName, myTags, myTimeWindow,
                     campusById, tagsById, scheduleById);
-            scoredCandidates.add(new ScoredCandidate(candidate, score));
+            rawScores.add(new RawCandidateScore(candidateId, score));
         }
+        rawScores.sort(Comparator.comparingInt(RawCandidateScore::score).reversed());
 
-        // 7. 按推荐分数降序排序
-        scoredCandidates.sort(Comparator.comparingInt(ScoredCandidate::score).reversed());
+        // 7. R4-00349：仅对 Top-N 候选加载完整 User 实体——
+        //    selectFromTopCandidates 只从前 5 个高分候选中选取，其余候选无需实体。
+        //    相比原全量加载（50 个完整实体/请求），DB 载荷大幅下降。
+        int topN = Math.min(TOP_CANDIDATE_COUNT, rawScores.size());
+        Map<Long, User> userById = userRepository.findByIdIn(
+                        rawScores.subList(0, topN).stream()
+                                .map(RawCandidateScore::userId)
+                                .toList())
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(User::getId, u -> u));
 
+        List<ScoredCandidate> scoredCandidates = new ArrayList<>();
+        for (RawCandidateScore raw : rawScores) {
+            User user = userById.get(raw.userId());
+            if (user != null) {
+                scoredCandidates.add(new ScoredCandidate(user, raw.score()));
+            }
+        }
         return scoredCandidates;
     }
 
@@ -295,7 +314,7 @@ public class MatchEngine {
      * @return 被选中的用户
      */
     public User selectFromTopCandidates(List<ScoredCandidate> scoredCandidates) {
-        int topN = Math.min(5, scoredCandidates.size());
+        int topN = Math.min(TOP_CANDIDATE_COUNT, scoredCandidates.size());
         int selectedIndex = ThreadLocalRandom.current().nextInt(topN);
         return scoredCandidates.get(selectedIndex).user();
     }
@@ -352,4 +371,10 @@ public class MatchEngine {
      * 公开以便 RealMatchService 与 MatchRecorder 复用。
      */
     public record ScoredCandidate(User user, int score) {}
+
+    /**
+     * R4-00349：评分阶段用的轻量候选记录（仅 ID + 分数），
+     * 排序完成后仅对 Top-N 候选加载完整 User 实体。
+     */
+    private record RawCandidateScore(Long userId, int score) {}
 }

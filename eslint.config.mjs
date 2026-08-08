@@ -15,6 +15,27 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import vuePlugin from 'eslint-plugin-vue'
 
+/**
+ * Node.js 脚本全局变量（R4-00517：scripts/tools/tests 与根目录工具脚本为
+ * CommonJS 诊断工具，flat config 不默认注入 Node 全局；内联定义避免新增依赖）。
+ */
+const nodeScriptGlobals = {
+  process: 'readonly',
+  require: 'readonly',
+  module: 'readonly',
+  exports: 'readonly',
+  __dirname: 'readonly',
+  __filename: 'readonly',
+  Buffer: 'readonly',
+  global: 'readonly',
+  setImmediate: 'readonly',
+  clearImmediate: 'readonly',
+  URL: 'readonly',
+  URLSearchParams: 'readonly',
+  TextEncoder: 'readonly',
+  TextDecoder: 'readonly',
+}
+
 export default tseslint.config(
   // 全局忽略
   {
@@ -152,5 +173,28 @@ export default tseslint.config(
     rules: {
       'no-console': 'off',
     },
-  }
+  },
+
+  // 开发/诊断工具脚本（R4-00517）：scripts/ tools/ tests/ 与根目录游离工具脚本
+  // 均为 Node 环境脚本（CommonJS 为主），补充 Node 全局变量与 require 支持，
+  // 并允许 console（诊断工具以 console 输出为唯一交互方式）。
+  // 产品代码（apps/admin/src、apps/client/src）不在此豁免范围内。
+  {
+    files: [
+      'scripts/**/*.{cjs,js,mjs}',
+      'tools/**/*.{cjs,js,mjs}',
+      'tests/**/*.{cjs,js,mjs}',
+      '*.{cjs,js,mjs}',
+    ],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        ...nodeScriptGlobals,
+      },
+    },
+    rules: {
+      'no-console': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
 )

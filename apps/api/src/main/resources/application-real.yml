@@ -148,6 +148,11 @@ management:
 # ⚠️ 生产必须接入支付网关（微信支付/支付宝）+ 回调验签后再入账，严禁直接入账。
 # P0-14：体验账号入口默认关闭（与 application.yml 默认 false 保持一致并显式声明）。
 app:
+  # R4-00358：模拟校园认证端点【默认关闭】——生产 API 面不暴露演示残留端点
+  # （DemoCertificationSimulateController 仅在开启时注册映射）。
+  # 本地 real 联调需要演示一键认证时，可设 APP_CAMPUS_CERT_SIMULATE_ENABLED=true。
+  campus:
+    certification-simulate-enabled: ${APP_CAMPUS_CERT_SIMULATE_ENABLED:false}
   demo-recharge:
     enabled: ${APP_DEMO_RECHARGE_ENABLED:false}
     daily-limit: ${APP_DEMO_RECHARGE_DAILY_LIMIT:5}

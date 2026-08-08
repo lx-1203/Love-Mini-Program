@@ -116,7 +116,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(
             IllegalArgumentException ex) {
         log.warn("非法参数: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage());
+        // R4-00283：生产 profile 不原样透传异常消息（内部实现细节可能随消息外泄），
+        // 统一脱敏为固定文案；开发 profile 保留原始消息便于联调
+        String message = isProductionProfile() ? "请求参数错误" : ex.getMessage();
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", message);
     }
 
     /**
@@ -371,8 +374,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleEntityNotFound(
             EntityNotFoundException ex) {
         log.warn("实体未找到: {}", ex.getMessage());
+        // R4-00284：实体层异常消息（可能含查询线索）不透传客户端，固定文案
         return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found",
-                ex.getMessage() != null ? ex.getMessage() : "请求的资源不存在");
+                "请求的资源不存在");
     }
 
     /**

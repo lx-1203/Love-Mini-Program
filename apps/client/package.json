@@ -16,11 +16,11 @@
     "@campus-love/client/src/App.vue"
   ],
   "scripts": {
-    "dev:h5": "uni --platform h5",
+    "dev:h5": "uni --platform h5 --script dev-debug",
     "dev:h5:real": "uni --platform h5 --mode real",
     "build:h5": "uni build --platform h5",
     "build:h5:real": "node ../../scripts/verify-env-release.mjs && uni build --platform h5 --mode real",
-    "dev:mp-weixin": "uni --platform mp-weixin",
+    "dev:mp-weixin": "uni --platform mp-weixin --script dev-debug",
     "build:mp-weixin": "uni build --platform mp-weixin --mode mp-weixin",
     "build:mp-weixin:showcase": "uni build --platform mp-weixin --mode mp-weixin-showcase",
     "build:mp-weixin:real": "node scripts/inject-wx-appid.mjs && node ../../scripts/verify-env-release.mjs && uni build --platform mp-weixin --mode real",
@@ -37,6 +37,19 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "chromatic": "chromatic --exit-zero-on-changes"
+  },
+  "uni-app": {
+    "scripts": {
+      "dev-debug": {
+        "title": "开发模式（含 dev 调试页）",
+        "env": {
+          "NODE_ENV": "development"
+        },
+        "define": {
+          "DEV": true
+        }
+      }
+    }
   },
   "dependencies": {
     "@dcloudio/types": "3.4.31",

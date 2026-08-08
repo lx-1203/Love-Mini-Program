@@ -193,7 +193,7 @@
 5. **填写测试说明**：在「测试说明」文本框中填写：
    ```
    本小程序提供 3 个测试账号供审核员体验：
-   1. admin_test（管理员）：可登录 Admin 后台（https://admin.example.com）验证内容审核流程
+   1. admin_test（管理员）：可登录 Admin 后台（https://<ADMIN_DOMAIN>，占位）验证内容审核流程
    2. user_test（普通用户）：已通过校园认证，可体验匹配、聊天、社区互动全流程
    3. vip_test（普通用户）：账号名沿用历史命名，可体验匹配、聊天、社区互动全流程
    
@@ -288,7 +288,7 @@
 1. admin_test（管理员）
    密码：提审时线下提供（由环境变量 TEST_ACCOUNT_PASSWORD 配置，不在文档/代码落明文）
    权限：Admin 后台全功能（用户管理、内容审核、举报处理、敏感词配置、数据统计）
-   Admin 后台地址：https://admin.example.com（占位，运营替换为真实域名）
+   Admin 后台地址：https://<ADMIN_DOMAIN>（占位，运营替换为真实域名，R4-02132）
 
 2. user_test（已认证普通用户）
    密码：同上
@@ -474,11 +474,11 @@ P1.18 修复后，三个配置文件的 appid 已统一为 `wxc67cd233d72388d0`�
 
 ### 关键信息摘要
 
-- **request 域名**：`https://api.example.com`（占位，运营替换为真实域名）
-- **uploadFile 域名**：`https://upload.example.com`
-- **downloadFile 域名**：`https://download.example.com`
-- **socket 域名**：`wss://ws.example.com`
-- **业务域名**（如使用 webview）：`https://h5.example.com`
+- **request 域名**：`https://<API_DOMAIN>`（占位，运营替换为真实域名）
+- **uploadFile 域名**：`https://<UPLOAD_DOMAIN>`
+- **downloadFile 域名**：`https://<DOWNLOAD_DOMAIN>`
+- **socket 域名**：`wss://<WS_DOMAIN>`
+- **业务域名**（如使用 webview）：`https://<H5_DOMAIN>`
 - **配置入口**：微信公众平台 > 开发管理 > 开发设置 > 服务器域名
 - **截图存档路径**：`verification_logs/2026-07-28-mp-wechat/domain-config.png`
 - **落实前置条件**：域名必须先完成 ICP 备案（对应「线下落实进度跟踪表」L08）

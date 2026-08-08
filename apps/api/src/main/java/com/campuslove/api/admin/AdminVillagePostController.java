@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
@@ -601,7 +602,7 @@ public class AdminVillagePostController {
         try {
             return AuditStatus.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("非法审核状态参数: " + value);
+            throw new IllegalArgumentException(ErrorMessages.ILLEGAL_AUDIT_STATUS_PREFIX + value);
         }
     }
 
@@ -615,7 +616,7 @@ public class AdminVillagePostController {
         try {
             return PostStatus.valueOf(value.trim().toLowerCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("非法帖子状态参数: " + value);
+            throw new IllegalArgumentException(ErrorMessages.ILLEGAL_POST_STATUS_PREFIX + value);
         }
     }
 

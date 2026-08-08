@@ -420,8 +420,7 @@ page {
   --fs-display: 160rpx;
 
   --page-padding: 32rpx;
-  --card-padding: 32rpx;
-  --section-gap: 24rpx;
+  /* R4-00237：--card-padding / --section-gap 已在下文（卡片尺寸节）统一定义，此处不再重复 */
 
   /* ---------- 课表色块（低饱和同明度，参考 img143_mid.png） ---------- */
   --c-schedule-course: #B7C4FF;

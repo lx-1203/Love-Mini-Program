@@ -47,7 +47,10 @@
 | Video Call | `/api/v1/chat/video-calls/**` | `/api/v1/chat/video-call/{start,end,records}`（`VideoCallController`） | 按 Controller 更新 |
 | Reports | `POST /api/v1/reports` | `POST /api/v1/posts/{id}/report`（`PostReportController`） | 按 Controller 更新（按帖子维度） |
 
-> 修复计划：在后端 Lead 主导的下一次 OpenAPI 同步 PR 中按 YAML 重建本文档第 3 节，并补齐缺失的 OpenAPI YAML（vip / campus / media / config / home / admin 等模块尚未提供 YAML）。
+> 修复计划：R4-02102 已按现有 Controller 映射重建第 3 节接口清单（与代码对齐）；
+> OpenAPI YAML 覆盖仍有缺口（vip / campus / media / config / home / admin 等模块
+> 尚无独立 YAML，docs/openapi 现有 8 个文件，R4-02105），后续由后端 Lead
+> 主导按模块补齐 YAML 后，第 3 节以 YAML 为最高权威源继续同步。
 
 ---
 
@@ -67,7 +70,7 @@
 - API 路径前缀：`/api/v1/**`（v1 为当前主版本）
 - 引入不兼容变更时新增 `/api/v2/**`，v1 至少维持 6 个月兼容期
 - 兼容期内 v1 端点保留，但响应可附加 `deprecation` 字段提示前端迁移
-- AI 接口例外：`/api/ai/**` 不带版本号，因其仍处于实验阶段
+- AI 接口与其他业务接口一致使用 `/api/v1/ai/**` 版本化前缀（`AiVideoController` 实为 `@RequestMapping("/api/v1/ai")`，R4-02103 修正旧版「/api/ai/** 不带版本号」的错误声明）
 
 ### 1.3 响应包装
 
@@ -159,16 +162,25 @@
 
 ### 3.1 认证域（Auth）
 
+> R4-02102：按 `AuthController` / `WechatAuthController` / `ThirdPartyAuthController` 实际映射重建。
+
 | Method | Path | 鉴权 | 描述 | operationId |
 |--------|------|------|------|-------------|
-| POST | `/api/v1/auth/wechat` | ❌ | 微信 code 登录 | `wechatLogin` |
+| POST | `/api/v1/auth/register` | ❌ | 手机号注册 | `register` |
+| POST | `/api/v1/auth/phone-login` | ❌ | 手机号密码登录 | `phoneLogin` |
+| POST | `/api/v1/auth/guest-login` | ❌ | 游客登录 | `guestLogin` |
+| POST | `/api/v1/auth/wechat-login` | ❌ | 微信 code 登录（主入口） | `wechatLogin` |
+| POST | `/api/v1/auth/wechat` | ❌ | 微信登录（WechatAuthController） | `wechatLogin` |
 | POST | `/api/v1/auth/admin/login` | ❌ | 管理员密码登录 | `adminLogin` |
+| POST | `/api/v1/auth/admin/logout` | ✅ | 管理员退出登录 | `adminLogout` |
 | GET | `/api/v1/auth/me` | ✅ | 获取当前会话 | `getCurrentSession` |
 | POST | `/api/v1/auth/refresh` | ✅ | 刷新 Token | `refreshToken` |
 | POST | `/api/v1/auth/logout` | ✅ | 退出登录（撤销 Token） | `logout` |
-| GET | `/api/v1/auth/third-party` | ✅ | 查询第三方绑定 | `getThirdPartyBindings` |
+| GET | `/api/v1/auth/third-party/bindings` | ✅ | 查询第三方绑定 | `getThirdPartyBindings` |
+| POST | `/api/v1/auth/third-party/wechat` | ✅ | 绑定微信 | `bindWechat` |
+| POST | `/api/v1/auth/third-party/apple` | ✅ | 绑定 Apple | `bindApple` |
 | POST | `/api/v1/auth/third-party/bind` | ✅ | 绑定第三方账号 | `bindThirdParty` |
-| DELETE | `/api/v1/auth/third-party/{provider}` | ✅ | 解绑第三方 | `unbindThirdParty` |
+| DELETE | `/api/v1/auth/third-party/unbind` | ✅ | 解绑第三方 | `unbindThirdParty` |
 
 **关键 Schema**：
 
@@ -187,6 +199,8 @@ interface UserSessionView {
 
 ### 3.2 匹配与社交域（Match）
 
+> R4-02102：按 `MatchController`（`/api/v1/matches`）实际映射重建（原 `/matches/icebreakers` 实为 `/matches/{matchId}/icebreakers`）。
+
 | Method | Path | 鉴权 | 描述 |
 |--------|------|------|------|
 | GET | `/api/v1/matches/form-config` | ✅ | 匹配表单配置 |
@@ -194,12 +208,19 @@ interface UserSessionView {
 | POST | `/api/v1/matches/quick` | ✅ | 快速匹配 |
 | GET | `/api/v1/matches/{id}` | ✅ | 匹配详情 |
 | POST | `/api/v1/matches/like` | ✅ | 喜欢用户（右滑） |
+| POST | `/api/v1/matches/super-like` | ✅ | 超级喜欢（不受普通喜欢日上限约束，独立配额默认 10 次/日） |
 | POST | `/api/v1/matches/cancel-like` | ✅ | 取消喜欢 |
+| POST | `/api/v1/matches/pass` | ✅ | 跳过用户（左滑） |
+| POST | `/api/v1/matches/rewind` | ✅ | 反悔上次操作（每日 1 次） |
 | GET | `/api/v1/matches/liked-me` | ✅ | 喜欢我的列表 |
+| GET | `/api/v1/matches/my-likes` | ✅ | 我喜欢的列表 |
 | GET | `/api/v1/matches/visitors` | ✅ | 访客列表 |
 | POST | `/api/v1/matches/visit` | ✅ | 记录访客 |
-| POST | `/api/v1/matches/rewind` | ✅ | 反悔上次操作（每日 1 次） |
-| GET | `/api/v1/matches/icebreakers` | ✅ | 破冰话题 |
+| PUT | `/api/v1/matches/visitors/{id}/read` | ✅ | 访客记录标记已读 |
+| GET | `/api/v1/matches/heart-signals` | ✅ | 心动的信号（匹配结果）列表 |
+| POST | `/api/v1/matches/heart-signals/{id}/accept` | ✅ | 接受信号 |
+| POST | `/api/v1/matches/heart-signals/{id}/decline` | ✅ | 拒绝信号 |
+| GET | `/api/v1/matches/{matchId}/icebreakers` | ✅ | 破冰话题 |
 
 ### 3.3 推荐域（Recommendation）
 
@@ -256,18 +277,61 @@ interface UploadResponse {
 
 ### 3.6 聊天域（Chat）
 
+> R4-02102：按 `PrivateMessageController` / `TempChatController` / `VoiceMessageController` / `NotificationController` / `VideoCallController` 实际映射重建（原 `/chat/sessions/**`、`/chat/temp-sessions/**` 为陈旧路径）。
+
+**私信会话（`PrivateMessageController`，`/api/v1/messages/conversations`）**
+
 | Method | Path | 鉴权 | 描述 |
 |--------|------|------|------|
-| GET | `/api/v1/chat/sessions` | ✅ | 会话列表 |
-| GET | `/api/v1/chat/sessions/{id}/messages` | ✅ | 历史消息（分页） |
-| POST | `/api/v1/chat/sessions/{id}/messages` | ✅ | 发送文本消息 |
-| POST | `/api/v1/chat/sessions/{id}/voice` | ✅ | 上传语音消息 |
-| POST | `/api/v1/chat/temp-sessions` | ✅ | 创建临时会话 |
-| POST | `/api/v1/chat/temp-sessions/{id}/exchange` | ✅ | 交换联系方式 |
-| GET | `/api/v1/chat/notifications` | ✅ | 通知列表 |
-| PUT | `/api/v1/chat/notifications/{id}/read` | ✅ | 标记已读 |
-| POST | `/api/v1/chat/video-calls` | ✅ | 发起视频通话 |
-| POST | `/api/v1/chat/video-calls/{id}/end` | ✅ | 结束通话 |
+| GET | `/api/v1/messages/conversations` | ✅ | 会话列表 |
+| POST | `/api/v1/messages/conversations` | ✅ | 新建会话 |
+| GET | `/api/v1/messages/conversations/{id}/messages` | ✅ | 历史消息（分页） |
+| POST | `/api/v1/messages/conversations/{id}/messages` | ✅ | 发送消息（文本/活动卡片 kind=activity） |
+| PUT | `/api/v1/messages/conversations/{id}/read` | ✅ | 标记会话已读 |
+| PUT | `/api/v1/messages/conversations/{id}/pin` | ✅ | 置顶会话 |
+| DELETE | `/api/v1/messages/conversations/{id}` | ✅ | 删除会话 |
+
+**临时聊天（`TempChatController`，`/api/v1/temp-chat/sessions`）**
+
+| Method | Path | 鉴权 | 描述 |
+|--------|------|------|------|
+| POST | `/api/v1/temp-chat/sessions` | ✅ | 创建临时会话 |
+| GET | `/api/v1/temp-chat/sessions/{id}` | ✅ | 会话详情 |
+| POST | `/api/v1/temp-chat/sessions/{id}/messages` | ✅ | 发送消息 |
+| POST | `/api/v1/temp-chat/sessions/{id}/contact-exchange/respond` | ✅ | 回应联系方式交换 |
+| POST | `/api/v1/temp-chat/sessions/{id}/end` | ✅ | 结束会话 |
+| POST | `/api/v1/temp-chat/sessions/{id}/pin` | ✅ | 置顶会话 |
+| POST | `/api/v1/temp-chat/sessions/{id}/unpin` | ✅ | 取消置顶 |
+| POST | `/api/v1/temp-chat/sessions/{id}/read` | ✅ | 标记已读 |
+| POST | `/api/v1/temp-chat/sessions/{id}/messages/{messageId}/recall` | ✅ | 撤回消息 |
+
+**语音消息（`VoiceMessageController`，`/api/v1/chat/voice`）**
+
+| Method | Path | 鉴权 | 描述 |
+|--------|------|------|------|
+| POST | `/api/v1/chat/voice` | ✅ | 上传语音消息 |
+| DELETE | `/api/v1/chat/voice/{id}` | ✅ | 删除语音消息 |
+
+**通知（`NotificationController`，`/api/v1/notifications`）**
+
+| Method | Path | 鉴权 | 描述 |
+|--------|------|------|------|
+| GET | `/api/v1/notifications/list` | ✅ | 通知列表（分页） |
+| GET | `/api/v1/notifications/unread-count` | ✅ | 未读数 |
+| GET | `/api/v1/notifications/count` | ✅ | 通知总数 |
+| PUT | `/api/v1/notifications/{id}/read` | ✅ | 标记单条已读 |
+| PUT | `/api/v1/notifications/{id}/read-with-user` | ✅ | 标记已读（含用户维度） |
+| PUT | `/api/v1/notifications/read-all` | ✅ | 全部标记已读 |
+
+**视频通话（`VideoCallController`，`/api/v1/chat/video-call`）**
+
+| Method | Path | 鉴权 | 描述 |
+|--------|------|------|------|
+| POST | `/api/v1/chat/video-call/start` | ✅ | 发起视频通话 |
+| POST | `/api/v1/chat/video-call/accept` | ✅ | 接听 |
+| POST | `/api/v1/chat/video-call/reject` | ✅ | 拒绝 |
+| POST | `/api/v1/chat/video-call/end` | ✅ | 结束通话 |
+| GET | `/api/v1/chat/video-call/records` | ✅ | 通话记录 |
 
 **WebSocket 端点**：`/ws/chat?token=<jwt>`
 - 订阅 topic：`/user/queue/messages`、`/user/queue/notifications`
@@ -310,17 +374,21 @@ content 为 JSON（与官方号 card 消息语义一致，点击跳转活动详�
 
 ### 3.8 村落域（Village）
 
+> R4-02102：`VillageController` 实际前缀为 `/api/v1/posts`（原 `/village/posts/**` 为陈旧路径）。
+
 | Method | Path | 鉴权 | 描述 |
 |--------|------|------|------|
-| GET | `/api/v1/village/posts` | ✅ | 帖子列表（分页+筛选） |
-| POST | `/api/v1/village/posts` | ✅ | 发布帖子 |
-| GET | `/api/v1/village/posts/{id}` | ✅ | 帖子详情 |
-| POST | `/api/v1/village/posts/{id}/like` | ✅ | 点赞 |
-| DELETE | `/api/v1/village/posts/{id}/like` | ✅ | 取消点赞 |
-| POST | `/api/v1/village/posts/{id}/comments` | ✅ | 评论 |
-| POST | `/api/v1/village/posts/{id}/share` | ✅ | 分享 |
-| POST | `/api/v1/village/posts/{id}/report` | ✅ | 举报 |
-| GET | `/api/v1/village/tags/popular` | ✅ | 热门标签 |
+| GET | `/api/v1/posts/campus-feed` | ✅ | 校园动态流（分页+筛选） |
+| GET | `/api/v1/posts/{id}` | ✅ | 帖子详情 |
+| GET | `/api/v1/posts/{id}/comments` | ✅ | 评论列表 |
+| POST | `/api/v1/posts/{id}/comments` | ✅ | 发表评论 |
+| POST | `/api/v1/posts/{id}/like` | ✅ | 点赞 |
+| POST | `/api/v1/posts/{id}/favorite` | ✅ | 收藏 |
+| POST | `/api/v1/posts/{id}/share` | ✅ | 分享 |
+| POST | `/api/v1/posts/comments/{commentId}/like` | ✅ | 评论点赞 |
+| GET | `/api/v1/posts/{id}/similar-authors` | ✅ | 相似作者推荐 |
+| GET | `/api/v1/posts/history` | ✅ | 浏览历史 |
+| DELETE | `/api/v1/posts/history` | ✅ | 清空浏览历史 |
 | GET | `/api/v1/post-tags/popular?limit=5` | ✅ | 热门话题（标签聚合，含帖子数与封面图） |
 | GET | `/api/v1/post-tags/posts?tagName=&page=&size=` | ✅ | 按话题标签查询帖子 |
 
@@ -355,17 +423,16 @@ content 为 JSON（与官方号 card 消息语义一致，点击跳转活动详�
 
 ### 3.12 成长域（Growth）
 
+> R4-02102：签到前缀为 `/api/v1/check-in`（`CheckInController`），免打扰为 `/api/v1/dnd`（`DoNotDisturbController`），登录页 Hero 为 `/api/v1/app-config/login-hero`（`AppConfigController`）；push-preferences 端点尚未实现，不列入契约。
+
 | Method | Path | 鉴权 | 描述 |
 |--------|------|------|------|
-| GET | `/api/v1/growth/check-in/status` | ✅ | 签到状态 |
-| POST | `/api/v1/growth/check-in` | ✅ | 签到 |
-| POST | `/api/v1/growth/check-in/make-up` | ✅ | 补签 |
+| GET | `/api/v1/check-in/status` | ✅ | 签到状态 |
+| POST | `/api/v1/check-in/make-up` | ✅ | 补签 |
 | GET | `/api/v1/growth/social-progress` | ✅ | 社交进度 |
-| GET | `/api/v1/growth/push-preferences` | ✅ | 推送偏好 |
-| PUT | `/api/v1/growth/push-preferences` | ✅ | 更新推送偏好 |
-| GET | `/api/v1/growth/do-not-disturb` | ✅ | 免打扰设置 |
-| PUT | `/api/v1/growth/do-not-disturb` | ✅ | 更新免打扰 |
-| GET | `/api/v1/growth/hero-config` | ✅ | 登录页 Hero 配置 |
+| GET | `/api/v1/dnd` | ✅ | 免打扰设置 |
+| PUT | `/api/v1/dnd` | ✅ | 更新免打扰 |
+| GET | `/api/v1/app-config/login-hero` | ✅ | 登录页 Hero 配置 |
 
 ### 3.13 反馈域（Feedback）
 
@@ -482,6 +549,7 @@ content 为 JSON（与官方号 card 消息语义一致，点击跳转活动详�
 |--------|------|------|------|
 | GET | `/api/v1/admin/forum/village-posts` | ADMIN | 村落动态列表 |
 | GET | `/api/v1/admin/forum/village-posts/{id}` | ADMIN | 村落动态详情 |
+| GET | `/api/v1/admin/forum/village-posts/{id}/views` | ADMIN | 动态浏览记录（R4-00489，管理端 api/forum.ts listPostViewers 在用） |
 | POST | `/api/v1/admin/forum/village-posts/{id}/audit` | ADMIN | 审核村落动态 |
 | POST | `/api/v1/admin/forum/village-posts/{id}/pin` | ADMIN | 置顶村落动态 |
 | POST | `/api/v1/admin/forum/village-posts/{id}/unpin` | ADMIN | 取消置顶 |

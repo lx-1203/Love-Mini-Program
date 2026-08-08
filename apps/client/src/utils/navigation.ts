@@ -93,8 +93,9 @@ export function openAppPath(url: string, options: OpenPathOptions = {}) {
  * TabBar 页面带参跳转的 storage 桥接 key（P1-04）。
  *
  * 存 JSON {path, query}：path 用于目标页面匹配自身路径，避免跨 Tab 误消费；
- * query 为解析后的参数对象。与既有 TAB_QUERY_KEY（switchTabWithQuery，无 path 匹配）
- * 互补：本桥接供 openAppPath 通用入口使用，village Tab 的显式 tab=hot/mine 仍走旧键。
+ * query 为解析后的参数对象。
+ * R4-00231：openAppPath 与 switchTabWithQuery 统一走本桥接（原 TAB_QUERY_KEY
+ * 无 path 匹配，消费方可能读错键），TAB_QUERY_KEY 保留为兼容导出指向同一键。
  */
 export const PENDING_TAB_QUERY_KEY = "campus-love:pending-tab-query";
 
@@ -140,31 +141,37 @@ export function consumePendingTabQuery(path: string): Record<string, string> {
   return {};
 }
 
-/** TabBar 页面 query 暂存 key（switchTab 不支持 query，用本地存储桥接） */
+/** TabBar 页面 query 暂存 key（switchTab 不支持 query，用本地存储桥接）。
+ * R4-00231：与 PENDING_TAB_QUERY_KEY 合并为单一桥接实现，本导出保留兼容
+ * （值与 PENDING_TAB_QUERY_KEY 相同），新代码请使用 PENDING_TAB_QUERY_KEY。 */
 // infra R2-00132: 导出供页面（village/index 等）统一引用，
 // 避免 storage 桥接键字符串在多个文件间散落（原审计项：桥接键无常量）。
-export const TAB_QUERY_KEY = "campus-love:tab-query";
+export const TAB_QUERY_KEY = PENDING_TAB_QUERY_KEY;
 
 /**
  * 切换 TabBar 页面并携带 query（收尾轮修复：switchTab 不支持 query string，
  * 原 `openAppPath('/pages/village/index?tab=hot')` 的 query 会被静默丢弃）。
+ *
+ * R4-00231：统一走 PENDING_TAB_QUERY_KEY 桥接（带 path 匹配，防止跨 Tab 误消费）。
  *
  * 用法：源页面调用 `switchTabWithQuery('/pages/village/index', { tab: 'hot' })`；
  * 目标页面在 onLoad/onShow 中调用 `consumeTabQuery()` 读取并消费。
  */
 export function switchTabWithQuery(url: string, query: Record<string, string>): void {
   const normalizedUrl = normalizeUrl(url);
-  try {
-    uni.setStorageSync(TAB_QUERY_KEY, query);
-  } catch (_e) {
-    // 存储失败时静默（query 丢失但不影响页面切换）
-  }
+  storePendingTabQuery(normalizedUrl, query);
   uni.switchTab({
     url: normalizedUrl,
     fail: () => {
-      // 收尾轮 review 修复：切换失败时清理桥接 query，避免残留被下次误消费
+      // 收尾轮 review 修复：切换失败时清理桥接 query（仅当存的是本次目标路径），
+      // 避免残留被下次误消费
       try {
-        uni.removeStorageSync(TAB_QUERY_KEY);
+        const raw = uni.getStorageSync(PENDING_TAB_QUERY_KEY) as
+          | { path?: string }
+          | undefined;
+        if (raw && typeof raw === "object" && raw.path === normalizedUrl) {
+          uni.removeStorageSync(PENDING_TAB_QUERY_KEY);
+        }
       } catch (_e) {
         // 清理失败静默
       }
@@ -172,19 +179,13 @@ export function switchTabWithQuery(url: string, query: Record<string, string>): 
   });
 }
 
-/** 读取并消费 TabBar query（目标页面调用一次） */
+/** 读取并消费 TabBar query（目标页面调用一次；R4-00231：按当前页面路径匹配） */
 export function consumeTabQuery(): Record<string, string> {
-  try {
-    const raw = uni.getStorageSync(TAB_QUERY_KEY) as Record<string, string> | undefined;
-    // security review：typeof 校验需排除数组（typeof [] === "object"）
-    if (raw && !Array.isArray(raw) && typeof raw === "object") {
-      uni.removeStorageSync(TAB_QUERY_KEY);
-      return raw;
-    }
-  } catch (_e) {
-    // 读取失败视为无 query
-  }
-  return {};
+  const pages = getCurrentPages();
+  const current = pages[pages.length - 1];
+  const route = (current as { route?: string } | undefined)?.route ?? "";
+  const path = route.startsWith("/") ? route : `/${route}`;
+  return consumePendingTabQuery(path);
 }
 
 /**

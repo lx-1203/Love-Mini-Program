@@ -10,6 +10,7 @@
  * this 类型，因为 Pinia Option API 的 this 类型推断在拆分到独立文件后失效。
  */
 
+import { isDev } from "../../../config/env";
 import type { RecommendationFilter } from "../../../services/generated/api-types-supplement";
 import {
   EMPTY_RECOMMENDATION_FILTER,
@@ -172,7 +173,10 @@ export function setAdvancedFilter(
 ): void {
   // 参数校验：filter 必须为对象
   if (!filter || typeof filter !== "object") {
-    console.warn("[DiscoverStore] setAdvancedFilter: 无效的 filter 参数");
+    // 诊断日志仅在开发环境输出（R4-00665）
+    if (isDev) {
+      console.warn("[DiscoverStore] setAdvancedFilter: 无效的 filter 参数");
+    }
     return;
   }
 

@@ -1,5 +1,6 @@
 package com.campuslove.api.village;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
@@ -35,6 +36,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class VillagePostService {
 
     private static final Logger log = LoggerFactory.getLogger(VillagePostService.class);
+
+    /** 帖子标题最小长度（字）（R4-01840，2026-08-08 走查 P1：必填 5-30 字） */
+    public static final int POST_TITLE_MIN_LENGTH = 5;
+
+    /** 帖子标题最大长度（字）（R4-01840） */
+    public static final int POST_TITLE_MAX_LENGTH = 30;
 
 
     private final PostRepository postRepository;
@@ -122,8 +129,10 @@ public class VillagePostService {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
-        if (title == null || title.trim().length() < 5 || title.trim().length() > 30) {
-            throw new IllegalArgumentException("帖子标题必填，长度需为 5-30 字");
+        // R4-01840：标题长度阈值收敛为常量，校验与错误文案共用（调整时同步改 ErrorMessages 文案）
+        if (title == null || title.trim().length() < POST_TITLE_MIN_LENGTH
+                || title.trim().length() > POST_TITLE_MAX_LENGTH) {
+            throw new IllegalArgumentException(ErrorMessages.POST_TITLE_REQUIRED_LENGTH);
         }
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("content is required");
@@ -145,7 +154,7 @@ public class VillagePostService {
         try {
             postCategory = category != null ? PostCategory.valueOf(category) : PostCategory.all;
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("不支持的帖子分类: " + category
+            throw new IllegalArgumentException(ErrorMessages.UNSUPPORTED_POST_CATEGORY_PREFIX + category
                     + ", 仅支持: " + java.util.Arrays.toString(PostCategory.values()));
         }
         post.setCategory(postCategory);

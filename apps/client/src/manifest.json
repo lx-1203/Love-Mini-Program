@@ -11,6 +11,10 @@
    *    3. profile/index.vue 中 dev 入口按钮用 `v-if="isDev"` 包裹（生产构建不可见）
    *
    *  相关审计：REAUDIT-REPORT-100+ 第 3.4 节 编号 98
+ *
+ *  DEV 条件定义（R4-00235）：package.json 的 uni-app.scripts.dev-debug 定义
+ *  define.DEV=true；开发构建（dev:h5 / dev:mp-weixin）经 --script dev-debug 注入，
+ *  生产构建（build:*）不注入 → dev 页在生产剔除、开发构建可直达调试入口。
    * ============================================================
    */
   "name": "校园恋爱",

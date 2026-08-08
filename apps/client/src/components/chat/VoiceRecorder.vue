@@ -99,6 +99,9 @@ let touchStartY = 0;
 /** 上滑取消阈值（px）：手指上滑超过此距离视为取消 */
 const CANCEL_THRESHOLD = 80;
 
+/** 录音计时 tick 间隔（ms）：每秒更新一次已录秒数 */
+const RECORDING_TICK_MS = 1000;
+
 /** 录音状态文案 */
 const statusText = computed(() => {
   if (isCancelArea.value) {
@@ -134,7 +137,7 @@ recorder.onStart(() => {
     if (recordingSeconds.value >= props.maxDuration) {
       recorder.stop();
     }
-  }, 1000);
+  }, RECORDING_TICK_MS);
 });
 
 recorder.onStop((result: RecorderStopResult) => {
@@ -308,6 +311,7 @@ onUnmounted(() => {
 }
 
 @keyframes voice-indicator-fade-in {
+  /* 动画位移偏移为固定布局值，无对应 token */
   from {
     opacity: 0;
     transform: translateY(8rpx);
@@ -319,6 +323,7 @@ onUnmounted(() => {
 }
 
 .voice-recorder__indicator-icon {
+  /* 图标容器固定尺寸（80rpx×64rpx），无对应 token */
   width: 80rpx;
   height: 64rpx;
   display: flex;
@@ -329,11 +334,13 @@ onUnmounted(() => {
 .voice-recorder__wave {
   display: flex;
   align-items: center;
+  /* 6rpx 无对应 token 档位，保留 */
   gap: 6rpx;
   height: 56rpx;
 }
 
 .voice-recorder__wave-bar {
+  /* 波形条固定尺寸（宽 8rpx 高 24rpx），无对应 token */
   width: 8rpx;
   height: 24rpx;
   border-radius: var(--r-xs, 4rpx);
@@ -346,6 +353,7 @@ onUnmounted(() => {
 }
 
 @keyframes voice-wave {
+  /* 波形动画高度为固定布局值（12rpx→48rpx），无对应 token */
   0% {
     height: 12rpx;
   }
@@ -363,6 +371,7 @@ onUnmounted(() => {
 .voice-recorder__btn {
   flex: 1;
   width: 100%;
+  /* 按钮固定最小高度（按压面积），无对应 token */
   min-height: 64rpx;
   border-radius: var(--r-md);
   background: var(--c-neutral-50, #f5f5f7);

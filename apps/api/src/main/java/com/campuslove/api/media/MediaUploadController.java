@@ -1,5 +1,6 @@
 package com.campuslove.api.media;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.ratelimit.RateLimit;
@@ -130,7 +131,7 @@ public class MediaUploadController {
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "未认证");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorMessages.UNAUTHENTICATED);
         }
         Object principal = auth.getPrincipal();
         if (principal instanceof Long longValue) {
@@ -143,10 +144,10 @@ public class MediaUploadController {
             try {
                 return Long.parseLong(strValue);
             } catch (NumberFormatException ex) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "未认证");
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorMessages.UNAUTHENTICATED);
             }
         }
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "未认证");
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorMessages.UNAUTHENTICATED);
     }
 
     /**

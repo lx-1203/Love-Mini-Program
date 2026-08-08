@@ -22,6 +22,7 @@ import { useI18n } from "vue-i18n";
 import { useCampusStore, CAMPUS_CATEGORY_MAP, type CampusTopicCategory } from "../../stores/campus";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
 import TopicSelector from "../../components/village/TopicSelector.vue";
+import { designTokens } from "../../theme/tokens";
 
 const campusStore = useCampusStore();
 const { t } = useI18n();
@@ -69,9 +70,9 @@ const isSubmitting = ref(false);
 
 /**
  * switch 品牌色：小程序 switch 的 color 为原生属性，不支持 CSS 变量，
- * 此处取 design token --c-brand 的实际色值（ui-ux B9 修复）。
+ * 此处取 design token --c-brand（designTokens.color.brand[500]）的实际色值（ui-ux B9 修复）。
  */
-const brandColor = "#3FCF8E";
+const brandColor = designTokens.color.brand[500];
 
 /**
  * 功能4：TopicSelector 已选话题列表（不含 # 前缀）。

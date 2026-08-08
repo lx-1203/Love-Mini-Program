@@ -651,11 +651,11 @@ onMounted(() => {
 @import "../../styles/admin-common.css";
 
 .village-posts-page {
-  max-width: 1400px;
+  max-width: var(--admin-page-max-width);
 }
 
 .content-cell {
-  max-width: 280px;
+  max-width: var(--admin-content-max-width);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -741,7 +741,7 @@ onMounted(() => {
   font-size: var(--admin-font-md);
   color: var(--admin-color-text-secondary);
   line-height: 1.6;
-  max-height: 120px;
+  max-height: var(--admin-content-max-height);
   overflow-y: auto;
 }
 
@@ -759,7 +759,7 @@ onMounted(() => {
 
 /* 评论弹窗 */
 .comments-modal {
-  width: 720px;
+  width: var(--admin-dialog-width);
   max-width: 92vw;
 }
 
@@ -782,7 +782,7 @@ onMounted(() => {
 }
 
 .comment-content-cell {
-  max-width: 320px;
+  max-width: var(--admin-text-ellipsis-width);
   word-break: break-all;
 }
 

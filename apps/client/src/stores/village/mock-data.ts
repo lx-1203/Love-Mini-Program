@@ -246,6 +246,22 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
 /* ========== 2026-08-08 频道化重构：Mock 活动摘要（帖子活动卡内嵌用） ========== */
 
 /**
+ * 本周五/本周六日期（yyyy-MM-dd）。
+ * R4-00132：mock 活动日期由固定日期改为相对当前日期生成（活动卡不随
+ * 时间推移过期失真；与活动 store 的相对日期处理保持一致）。
+ */
+function upcomingWeekdayDate(weekday: 5 | 6): string {
+  const now = new Date();
+  const day = now.getDay(); // 0=周日 ... 6=周六
+  let daysAhead = weekday - day;
+  if (daysAhead <= 0) daysAhead += 7; // 已过则取下周
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysAhead);
+  const mm = String(target.getMonth() + 1).padStart(2, "0");
+  const dd = String(target.getDate()).padStart(2, "0");
+  return `${target.getFullYear()}-${mm}-${dd}`;
+}
+
+/**
  * Mock 活动摘要列表（与后端 MockVillageService 的 activity 数据对齐：
  * 201 电影社线下碰面 / 202 周末篮球友谊赛）。
  */
@@ -255,7 +271,7 @@ export const mockActivities: ActivitySummaryView[] = [
     title: "电影社线下碰面",
     location: "影像楼 B 厅",
     scheduleText: "周五 19:00",
-    activityDate: "2026-08-09",
+    activityDate: upcomingWeekdayDate(5),
     status: "upcoming",
     enrollmentCount: 23,
     coverImage: "/static/assets/images/posts/post-2.jpg",
@@ -265,7 +281,7 @@ export const mockActivities: ActivitySummaryView[] = [
     title: "周末篮球友谊赛",
     location: "东区篮球场",
     scheduleText: "周六 15:00",
-    activityDate: "2026-08-10",
+    activityDate: upcomingWeekdayDate(6),
     status: "upcoming",
     enrollmentCount: 12,
     coverImage: "",

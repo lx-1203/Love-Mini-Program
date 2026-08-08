@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.ChatConfig;
 import com.campuslove.api.config.SecurityUtils;
@@ -140,7 +141,7 @@ public class TempChatSessionService {
         Long currentUserId = resolveCurrentUserId();
         Long partnerUserId = resolvePartnerUserId(recommendedPersonId, matchId, signalId);
         if (partnerUserId == null) {
-            throw new IllegalArgumentException("无法解析推荐人信息: recommendedPersonId=" + recommendedPersonId
+            throw new IllegalArgumentException(ErrorMessages.RECOMMENDER_PARSE_FAILED_PREFIX + recommendedPersonId
                     + ", matchId=" + matchId + ", signalId=" + signalId);
         }
 
@@ -333,7 +334,7 @@ public class TempChatSessionService {
     /** 解析会话实体（按 sessionUid 优先，回退到数据库 ID）。 */
     public TempChatSession resolveSession(String id) {
         if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("会话 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.SESSION_ID_REQUIRED);
         }
         Optional<TempChatSession> sessionOpt = sessionRepository.findBySessionUid(id);
         if (sessionOpt.isEmpty()) {
@@ -344,7 +345,7 @@ public class TempChatSessionService {
                 // id 不是数字格式，忽略
             }
         }
-        return sessionOpt.orElseThrow(() -> new IllegalArgumentException("会话不存在: " + id));
+        return sessionOpt.orElseThrow(() -> new IllegalArgumentException(ErrorMessages.SESSION_NOT_FOUND_PREFIX + id));
     }
 
     /**
@@ -374,7 +375,7 @@ public class TempChatSessionService {
      */
     public void requireParticipant(TempChatSession session, Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("当前用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CURRENT_USER_ID_REQUIRED);
         }
         boolean participant = (session.getUserAId() != null && session.getUserAId().equals(userId))
                 || (session.getUserBId() != null && session.getUserBId().equals(userId));
@@ -542,12 +543,12 @@ public class TempChatSessionService {
         }
         Optional<HeartSignal> signalOpt = heartSignalRepository.findById(signalDbId);
         if (signalOpt.isEmpty()) {
-            throw new IllegalArgumentException("心动信号无效或已过期: signalId=" + signalId);
+            throw new IllegalArgumentException(ErrorMessages.SIGNAL_INVALID_OR_EXPIRED_PREFIX + signalId);
         }
         HeartSignal signal = signalOpt.get();
         boolean participant = signal.getUserAId().equals(currentUserId) || signal.getUserBId().equals(currentUserId);
         if (!participant || signal.getStatus() != HeartSignal.SignalStatus.accepted) {
-            throw new IllegalArgumentException("心动信号无效或已过期: signalId=" + signalId);
+            throw new IllegalArgumentException(ErrorMessages.SIGNAL_INVALID_OR_EXPIRED_PREFIX + signalId);
         }
         Long partner = signal.getUserAId().equals(currentUserId) ? signal.getUserBId() : signal.getUserAId();
         log.debug("心动信号 {} 解析对端用户 {}（当前用户 {}）", signalId, partner, currentUserId);

@@ -35,7 +35,7 @@ P9 阶段需在所有 Controller 方法上补全以下注解，使 Swagger UI �
 |------------|----------|-----|--------|------|
 | `AuthController` | `/api/v1/auth` | Auth | 6 | `apps/api/.../auth/AuthController.java` |
 | `WechatAuthController` | `/api/v1/auth` | Auth | 1 | `apps/api/.../auth/WechatAuthController.java` |
-| `MatchController` | `/api/v1/matches` | Match | 16 | `apps/api/.../match/MatchController.java` |
+| `MatchController` | `/api/v1/matches` | Match | 8（实际 @Operation 数；R4-02129 修正原「16 端点全量注解」声明） | `apps/api/.../match/MatchController.java` |
 | `MediaUploadController` | `/api/v1/media` | Media | 1 | `apps/api/.../media/MediaUploadController.java` |
 | `MediaAccessController` | `/api/v1/media` | Media | 1 | `apps/api/.../media/MediaAccessController.java` |
 | `ProfileController` | `/api/v1/profile` | Profile | 6+ | `apps/api/.../profile/ProfileController.java` |
@@ -59,19 +59,19 @@ P9 阶段需在所有 Controller 方法上补全以下注解，使 Swagger UI �
 
 ### 3.3 聊天与通知域
 - `ChatController`（`/api/v1/chat`）
-- `PrivateMessageController`（`/api/v1/private-messages`）
-- `VoiceMessageController`（`/api/v1/voice-messages`）
-- `ChatRedPacketController`（`/api/v1/chat/red-packets`）
-- `VideoCallController`（`/api/v1/video-calls`）
-- `TempChatController`（`/api/v1/temp-chat`）
+- `PrivateMessageController`（`/api/v1/messages/conversations`）
+- `VoiceMessageController`（`/api/v1/chat/voice`）
+- `VideoCallController`（`/api/v1/chat/video-call`）
+- `TempChatController`（`/api/v1/temp-chat/sessions`）
 - `NotificationController`（`/api/v1/notifications`）
 - `InteractionEventController`（`/api/v1/interaction-events`）
 
 ### 3.4 社区域
-- `VillageController`（`/api/v1/village`）
+- `VillageController`（`/api/v1/posts`）
 - `PostReportController`（`/api/v1/posts/reports`）
 - `PostTagController`（`/api/v1/posts/tags`）
 - `CampusController`（`/api/v1/campus`）
+- `CircleController`（`/api/v1/circles`）
 
 ### 3.5 个人与成长域
 - `ProfileVisitorController`（`/api/v1/profile/visitors`）
@@ -83,7 +83,8 @@ P9 阶段需在所有 Controller 方法上补全以下注解，使 Swagger UI �
 - `BillingController`（`/api/v1/vip/billing`）
 - `AutoRenewController`（`/api/v1/vip/auto-renew`）
 - `PromoCodeController`（`/api/v1/vip/promo-codes`）
-- `VipRedPacketController`（`/api/v1/vip/red-packets`）
+
+> R4-02128：`VipRedPacketController` 已随红包功能删除，不再列入待补清单。
 
 ### 3.7 反馈与举报域
 - `FeedbackController`（`/api/v1/feedback`）

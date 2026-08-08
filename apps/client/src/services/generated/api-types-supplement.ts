@@ -1,8 +1,15 @@
 /**
  * 补充 API 类型定义
- * 
+ *
  * 这些类型在已实现的代码中被引用，但尚未纳入 OpenAPI 规范的自动生成。
  * 当对应 OpenAPI spec 补充完毕后，可移除此文件改由自动生成。
+ *
+ * R4-00162（契约漂移风险，待处理）：
+ * 本文件是 OpenAPI 生成类型之外的「第二真相源」，与后端规范之间存在
+ * 漂移风险（token/refreshToken/vipStatus/InteractionEventView 新旧字段别名并存）。
+ * 正确处置路径：先在 OpenAPI 规范中补充对应 schema（token/refreshToken/vipStatus、
+ * InteractionEventView 等），重新生成 api-types 后再删除本文件——
+ * 在此之前禁止向本文件新增类型，新增类型一律先走 OpenAPI 规范。
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

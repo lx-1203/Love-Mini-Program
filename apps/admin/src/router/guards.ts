@@ -92,7 +92,12 @@ export function sanitizeRedirect(redirect: unknown): string {
   if (!redirect.startsWith("/")) return "";
   if (redirect.startsWith("//")) return "";
   // 排除含换行/控制字符的伪装地址（如 "/\nhttps://evil.com"）
-  if (/[\r\n\u0000-\u001f]/.test(redirect)) return "";
+  if (
+    /[\r\n]/.test(redirect)
+    || Array.from(redirect).some((ch) => ch.charCodeAt(0) < 0x20)
+  ) {
+    return "";
+  }
   return redirect;
 }
 

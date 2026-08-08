@@ -123,7 +123,7 @@ function handleRetry(): void {
 <style lang="scss" scoped>
 .page-state-container {
   width: 100%;
-  min-height: 320rpx;
+  min-height: 320rpx; /* 固定布局尺寸（状态区最小高度），无对应 token */
   position: relative;
 }
 
@@ -139,7 +139,7 @@ function handleRetry(): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 320rpx;
+  min-height: 320rpx; /* 固定布局尺寸（状态区最小高度），无对应 token */
   padding: 48rpx 32rpx;
 }
 
@@ -147,9 +147,10 @@ function handleRetry(): void {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24rpx;
+  gap: var(--sp-6);
 
   .loading-spinner {
+    /* 固定布局尺寸（加载转圈 56rpx），无对应 token */
     width: 56rpx;
     height: 56rpx;
     border: 4rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
@@ -167,7 +168,7 @@ function handleRetry(): void {
 @keyframes state-fade-in {
   from {
     opacity: 0;
-    transform: translateY(8rpx);
+    transform: translateY(8rpx); /* 固定布局尺寸（动画位移），无对应 token */
   }
   to {
     opacity: 1;

@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.VideoCall;
 import com.campuslove.api.entity.VideoCallRecord;
@@ -77,20 +78,20 @@ public class VideoCallService {
     public VideoCallView startCall(Long callerId, Long calleeId) {
         // 参数校验
         if (callerId == null) {
-            throw new IllegalArgumentException("发起方用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CALLER_USER_ID_REQUIRED);
         }
         if (calleeId == null) {
-            throw new IllegalArgumentException("接收方用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CALLEE_USER_ID_REQUIRED);
         }
         if (callerId.equals(calleeId)) {
-            throw new IllegalArgumentException("不能与自己进行视频通话");
+            throw new IllegalArgumentException(ErrorMessages.VIDEO_CALL_SELF_NOT_ALLOWED);
         }
         // 校验双方用户存在
         if (!userRepository.existsById(callerId)) {
-            throw new IllegalArgumentException("发起方用户不存在");
+            throw new IllegalArgumentException(ErrorMessages.CALLER_USER_NOT_FOUND);
         }
         if (!userRepository.existsById(calleeId)) {
-            throw new IllegalArgumentException("接收方用户不存在");
+            throw new IllegalArgumentException(ErrorMessages.CALLEE_USER_NOT_FOUND);
         }
 
         try {
@@ -125,7 +126,7 @@ public class VideoCallService {
         } catch (DataAccessException e) {
             // 数据库访问异常（save 失败、约束冲突等）
             log.error("视频通话发起失败：callerId={}, calleeId={}", callerId, calleeId, e);
-            throw new RuntimeException("视频通话发起失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.VIDEO_CALL_START_FAILED_RETRY, e);
         }
     }
 
@@ -144,13 +145,13 @@ public class VideoCallService {
     @Transactional
     public VideoCallView acceptCall(String roomId, Long userId) {
         if (roomId == null || roomId.isBlank()) {
-            throw new IllegalArgumentException("通话房间 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ROOM_ID_REQUIRED);
         }
         if (userId == null) {
-            throw new IllegalArgumentException("操作用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.OPERATOR_USER_ID_REQUIRED);
         }
         VideoCall call = videoCallRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("通话记录不存在"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.VIDEO_CALL_NOT_FOUND));
         // 仅被叫方可接听
         if (!call.getCalleeId().equals(userId)) {
             throw new IllegalArgumentException("仅接收方可接听此通话");
@@ -200,13 +201,13 @@ public class VideoCallService {
     @Transactional
     public VideoCallView rejectCall(String roomId, Long userId) {
         if (roomId == null || roomId.isBlank()) {
-            throw new IllegalArgumentException("通话房间 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ROOM_ID_REQUIRED);
         }
         if (userId == null) {
-            throw new IllegalArgumentException("操作用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.OPERATOR_USER_ID_REQUIRED);
         }
         VideoCall call = videoCallRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("通话记录不存在"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.VIDEO_CALL_NOT_FOUND));
         if (!call.getCalleeId().equals(userId)) {
             throw new IllegalArgumentException("仅接收方可拒绝此通话");
         }
@@ -263,24 +264,24 @@ public class VideoCallService {
     @Transactional
     public VideoCallView endCall(String roomId, Long userId, String endReason) {
         if (roomId == null || roomId.isBlank()) {
-            throw new IllegalArgumentException("通话房间 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.ROOM_ID_REQUIRED);
         }
         if (userId == null) {
-            throw new IllegalArgumentException("操作用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.OPERATOR_USER_ID_REQUIRED);
         }
 
         VideoCall call = videoCallRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("通话记录不存在"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.VIDEO_CALL_NOT_FOUND));
 
         // 权限校验：仅通话双方可结束
         if (!call.getCallerId().equals(userId) && !call.getCalleeId().equals(userId)) {
-            throw new IllegalArgumentException("无权操作此通话");
+            throw new IllegalArgumentException(ErrorMessages.VIDEO_CALL_OPERATION_FORBIDDEN);
         }
 
         // 已结束的通话不可再次结束
         if ("ENDED".equals(call.getStatus()) || "MISSED".equals(call.getStatus())
                 || "REJECTED".equals(call.getStatus())) {
-            throw new IllegalArgumentException("通话已结束，无需重复操作");
+            throw new IllegalArgumentException(ErrorMessages.VIDEO_CALL_ALREADY_ENDED);
         }
 
         try {
@@ -326,7 +327,7 @@ public class VideoCallService {
         } catch (DataAccessException e) {
             // 数据库访问异常（save 失败等）
             log.error("视频通话结束失败：roomId={}, userId={}", roomId, userId, e);
-            throw new RuntimeException("视频通话结束失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.VIDEO_CALL_END_FAILED_RETRY, e);
         }
     }
 
@@ -342,7 +343,7 @@ public class VideoCallService {
     @Transactional(readOnly = true)
     public List<VideoCallRecordView> getRecords(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         try {
             List<VideoCallRecord> records = videoCallRecordRepository
@@ -355,7 +356,7 @@ public class VideoCallService {
         } catch (DataAccessException e) {
             // 数据库访问异常
             log.error("查询通话记录失败：userId={}", userId, e);
-            throw new RuntimeException("查询通话记录失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.VIDEO_CALL_QUERY_FAILED_RETRY, e);
         }
     }
 

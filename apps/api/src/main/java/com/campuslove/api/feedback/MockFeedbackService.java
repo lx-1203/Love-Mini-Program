@@ -1,5 +1,6 @@
 package com.campuslove.api.feedback;
 
+import com.campuslove.api.common.ErrorMessages;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -173,7 +174,7 @@ public class MockFeedbackService implements FeedbackService {
   @Override
   public SubmissionRecordView replyFeedback(long id, String reply) {
     if (reply == null || reply.isBlank()) {
-      throw new IllegalArgumentException("回复内容不能为空");
+      throw new IllegalArgumentException(ErrorMessages.REPLY_CONTENT_REQUIRED);
     }
     return seedRecords.stream()
         .filter(record -> record.id() == id)
@@ -214,11 +215,12 @@ public class MockFeedbackService implements FeedbackService {
       throw new IllegalArgumentException("userId is required");
     }
     if (file == null || file.isEmpty()) {
-      throw new IllegalArgumentException("文件不能为空");
+      throw new IllegalArgumentException(ErrorMessages.FILE_REQUIRED);
     }
-    // 与 RealFeedbackService 一致的 5MB 上限校验
-    if (file.getSize() > 5L * 1024 * 1024) {
-      throw new IllegalArgumentException("图片大小不能超过 5MB");
+    // R4-01850：与 RealFeedbackService 共用同一上限常量（改限时只改一处）
+    if (file.getSize() > FeedbackService.FEEDBACK_IMAGE_MAX_BYTES) {
+      throw new IllegalArgumentException("图片大小不能超过 "
+          + (FeedbackService.FEEDBACK_IMAGE_MAX_BYTES / 1024 / 1024) + "MB");
     }
     // 返回 mock URL，不实际持久化
     long imageId = imageIds.incrementAndGet();
@@ -245,7 +247,7 @@ public class MockFeedbackService implements FeedbackService {
     }
     SubmissionDetailView detail = detailMap.get(id);
     if (detail == null) {
-      throw new IllegalArgumentException("反馈记录不存在，ID: " + id);
+      throw new IllegalArgumentException(ErrorMessages.FEEDBACK_NOT_FOUND_PREFIX + id);
     }
     return detail;
   }

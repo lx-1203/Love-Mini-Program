@@ -9,11 +9,17 @@ import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
+import { TOAST_DURATION } from "../../constants/limits";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
 import { isMockMode } from "../../services/env";
 
 const { t } = useI18n();
+
+/** 即时反馈 toast 时长（毫秒）：隐私授权/图片选择等轻提示，比 SHORT_MS 更短 */
+const QUICK_TOAST_MS = 1200;
+/** 最短反馈 toast 时长（毫秒）：取消类提示，一闪即过 */
+const MIN_TOAST_MS = 1000;
 
 /** 认证状态：unverified | pending | verified | rejected */
 type VerifyStatus = "unverified" | "pending" | "verified" | "rejected";
@@ -94,7 +100,7 @@ async function chooseImage() {
     uni.showToast({
       title: t("verification.privacyRequiredImage"),
       icon: "none",
-      duration: 1200,
+      duration: QUICK_TOAST_MS,
     });
     return;
   }
@@ -109,14 +115,14 @@ async function chooseImage() {
       uni.showToast({
         title: t("verification.imageUploaded"),
         icon: "success",
-        duration: 1200,
+        duration: QUICK_TOAST_MS,
       });
     },
     fail: () => {
       uni.showToast({
         title: t("verification.imageChooseCancelled"),
         icon: "none",
-        duration: 1000,
+        duration: MIN_TOAST_MS,
       });
     },
   });
@@ -157,7 +163,7 @@ function submitVerification() {
     uni.showToast({
       title: t("verification.submitSuccess"),
       icon: "success",
-      duration: 1500,
+      duration: TOAST_DURATION.SHORT_MS,
     });
     submitTimer = null;
   }, 1000);
@@ -176,14 +182,20 @@ onUnmounted(() => {
 });
 
 /** 模拟审核通过（mock 模式演示用）
+ * R4-00029：函数内增加 isMockMode 守卫——仅 mock/演示模式允许伪造认证通过，
+ * 防止未来其他调用点绕过模板 v-if 在真实模式伪造认证状态。
  * TODO(后端): 接入真实审核状态轮询（GET /verification/status）后移除本函数。 */
 function simulateApprove() {
+  if (!isMockMode) {
+    console.warn("[Verification] simulateApprove 仅允许在 mock 模式调用");
+    return;
+  }
   lightHaptic();
   status.value = "verified";
   uni.showToast({
     title: t("verification.approvedTitle"),
     icon: "success",
-    duration: 1500,
+    duration: TOAST_DURATION.SHORT_MS,
   });
 }
 

@@ -278,7 +278,7 @@ onBeforeUnmount(() => {
 @import "../styles/admin-common.css";
 
 .dashboard {
-  max-width: 1200px;
+  max-width: var(--admin-page-max-width-narrow);
 }
 
 /* Dashboard 特有：page-header 间距比通用 24px 略大 */
@@ -314,19 +314,19 @@ onBeforeUnmount(() => {
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(var(--admin-card-hover-offset));
   box-shadow: var(--admin-shadow-lg);
 }
 
 /* 键盘导航聚焦轮廓，避免聚焦后无视觉反馈 */
 .stat-card:focus-visible {
   outline: 2px solid var(--admin-color-primary);
-  outline-offset: 2px;
+  outline-offset: var(--admin-focus-ring-offset);
 }
 
 .stat-icon {
-  width: 56px;
-  height: 56px;
+  width: var(--admin-icon-size);
+  height: var(--admin-icon-size);
   border-radius: var(--admin-radius-xl);
   background: var(--stat-color);
   display: flex;
@@ -335,8 +335,8 @@ onBeforeUnmount(() => {
 }
 
 .stat-icon-img {
-  width: 28px;
-  height: 28px;
+  width: var(--admin-icon-size-sm);
+  height: var(--admin-icon-size-sm);
   /* 内联 SVG 使用 currentColor 填充，置于品牌色底上（与 primary 按钮文字同惯例） */
   color: var(--admin-color-bg-container);
 }

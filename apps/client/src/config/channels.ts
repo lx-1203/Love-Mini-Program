@@ -5,6 +5,8 @@
  * 每个频道对应独立数据源与 UI 内容，学校圈带认证门槛（requiresCampus）。
  */
 import { IMAGE_PATHS } from "./images";
+// R4-00232：存储键统一纳入 constants/storage-keys.ts 管理
+import { STORAGE_KEYS } from "../constants/storage-keys";
 
 /** 频道 ID */
 export type ChannelId = "today" | "interest" | "school" | "activity";
@@ -29,8 +31,8 @@ export interface ChannelConfig {
   defaultSort?: "latest" | "hot";
 }
 
-/** 频道持久化 key（仿 village_last_category 模式） */
-export const LAST_CHANNEL_KEY = "village_last_channel";
+/** 频道持久化 key（R4-00232：值统一由 STORAGE_KEYS.VILLAGE_LAST_CHANNEL 管理） */
+export const LAST_CHANNEL_KEY = STORAGE_KEYS.VILLAGE_LAST_CHANNEL;
 
 /** 频道列表（顺序即展示顺序） */
 export const CHANNEL_CONFIGS: ChannelConfig[] = [

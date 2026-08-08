@@ -82,6 +82,17 @@ public class RedisConfig {
     @Value("${spring.data.redis.lettuce.pool.max-wait:${REDIS_POOL_MAX_WAIT:-1}}")
     private long poolMaxWaitMs;
 
+    // ---- R4-01813~01815：Redisson 手动配置连接超时参数（命名常量） ----
+
+    /** Redisson 操作超时（毫秒）：3s */
+    private static final int REDIS_TIMEOUT_MS = 3000;
+
+    /** Redisson 连接超时（毫秒）：5s */
+    private static final int REDIS_CONNECT_TIMEOUT_MS = 5000;
+
+    /** Redisson 重试间隔（毫秒）：1s */
+    private static final int REDIS_RETRY_INTERVAL_MS = 1000;
+
     /** 默认缓存 TTL：30 分钟，与文档要求保持一致 */
     private static final Duration DEFAULT_CACHE_TTL = Duration.ofMinutes(30);
 
@@ -181,10 +192,11 @@ public class RedisConfig {
                 .setDatabase(redisDatabase)
                 .setConnectionMinimumIdleSize(1)
                 .setConnectionPoolSize(4)
-                .setTimeout(3000)
-                .setConnectTimeout(5000)
+                // R4-01813~01815：连接超时参数收敛为命名常量
+                .setTimeout(REDIS_TIMEOUT_MS)
+                .setConnectTimeout(REDIS_CONNECT_TIMEOUT_MS)
                 .setRetryAttempts(1)
-                .setRetryInterval(1000);
+                .setRetryInterval(REDIS_RETRY_INTERVAL_MS);
         // 关键修复：密码为空白时不设置密码，避免发送 AUTH 导致无密码 Redis 连接失败
         if (redisPassword != null && !redisPassword.isBlank()) {
             config.useSingleServer().setPassword(redisPassword);

@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CheckInConfig;
 import java.time.LocalDate;
@@ -145,7 +146,7 @@ public class MockCheckInService implements CheckInService {
     try {
       targetDate = LocalDate.parse(date);
     } catch (java.time.format.DateTimeParseException e) {
-      throw new IllegalArgumentException("日期格式无效，必须为 yyyy-MM-dd");
+      throw new IllegalArgumentException(ErrorMessages.DATE_FORMAT_INVALID);
     }
 
     LocalDate today = LocalDate.now(TimeZones.BUSINESS);
@@ -153,7 +154,7 @@ public class MockCheckInService implements CheckInService {
 
     // 校验：不可补签当天或未来日期
     if (!targetDate.isBefore(today)) {
-      throw new IllegalArgumentException("补签日期必须早于今天");
+      throw new IllegalArgumentException(ErrorMessages.MAKEUP_DATE_BEFORE_TODAY);
     }
     // 校验：不可补签超过 7 天前的日期
     if (targetDate.isBefore(sevenDaysAgo)) {

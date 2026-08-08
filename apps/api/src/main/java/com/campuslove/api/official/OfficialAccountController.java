@@ -1,5 +1,6 @@
 package com.campuslove.api.official;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -54,8 +55,8 @@ public class OfficialAccountController {
     @RateLimit(capacity = 60, refillTokens = 1, key = "#request.remoteAddr")
     public ResponseEntity<List<OfficialMessageView>> getMessages(
             @PathVariable("code")
-            @NotBlank(message = "code 不能为空")
-            @Size(max = 32, message = "code 长度不能超过 32") String code) {
+            @NotBlank(message = ErrorMessages.CODE_REQUIRED)
+            @Size(max = 32, message = ErrorMessages.CODE_MAX_LENGTH) String code) {
         List<OfficialMessageView> messages = officialAccountService.getMessages(code);
         // 账号不存在：返回空列表（与消息列表官方号会话的静态渲染语义一致）
         return ResponseEntity.ok(messages);

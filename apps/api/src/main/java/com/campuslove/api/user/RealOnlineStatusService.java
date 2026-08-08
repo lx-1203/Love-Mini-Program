@@ -1,5 +1,6 @@
 package com.campuslove.api.user;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.UserOnlineStatus;
 import com.campuslove.api.entity.UserOnlineStatus.OnlineStatus;
@@ -48,7 +49,7 @@ public class RealOnlineStatusService implements OnlineStatusService {
     @Transactional
     public void updateHeartbeat(Long userId, String deviceType) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
 
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
@@ -88,7 +89,7 @@ public class RealOnlineStatusService implements OnlineStatusService {
     @Transactional(readOnly = true)
     public OnlineStatusView getOnlineStatus(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
 
         Optional<UserOnlineStatus> statusOpt = userOnlineStatusRepository.findByUserId(userId);

@@ -23,6 +23,8 @@
  * </ul>
  */
 
+import { isDev } from "../config/env";
+
 /**
  * 隐私授权检查结果。
  *
@@ -166,7 +168,10 @@ export function checkPrivacySetting(): Promise<PrivacySettingResult> {
         },
         fail: (err: { errMsg?: string }) => {
           // getPrivacySetting 调用失败：保守视为未授权，避免静默同意
-          console.warn("[privacy] getPrivacySetting failed:", err?.errMsg);
+          // 诊断日志仅在开发环境输出（R4-00532）
+          if (isDev) {
+            console.warn("[privacy] getPrivacySetting failed:", err?.errMsg);
+          }
           resolve({
             status: "unauthorized",
             needAuthorization: true,
@@ -176,7 +181,10 @@ export function checkPrivacySetting(): Promise<PrivacySettingResult> {
       });
     } catch (e) {
       // 同步异常：视为不支持，避免阻塞主流程
-      console.warn("[privacy] getPrivacySetting exception:", e);
+      // 诊断日志仅在开发环境输出（R4-00533）
+      if (isDev) {
+        console.warn("[privacy] getPrivacySetting exception:", e);
+      }
       resolve({
         status: "unsupported",
         needAuthorization: false,

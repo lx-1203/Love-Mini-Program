@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Comment;
@@ -302,14 +303,14 @@ public class RealPushSummaryService implements PushSummaryService {
             if (!currentUserId.equals(summary.getUserId())) {
                 log.warn("用户[{}]尝试标记非所属摘要[{}]为已发送（摘要所属用户: {}），操作已拒绝",
                         currentUserId, summaryId, summary.getUserId());
-                throw new IllegalArgumentException("无权操作该摘要");
+                throw new IllegalArgumentException(ErrorMessages.PUSH_SUMMARY_FORBIDDEN);
             }
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (HttpClientErrorException e) {
             // 未认证或无法获取用户ID时，拒绝操作
             log.warn("无法获取当前用户ID，拒绝标记推送摘要[{}]为已发送: {}", summaryId, e.getMessage());
-            throw new IllegalStateException("未认证，无法标记推送为已发送", e);
+            throw new IllegalStateException(ErrorMessages.PUSH_MARK_UNAUTHENTICATED, e);
         }
 
         summary.setIsSent(true);

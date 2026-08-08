@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -165,8 +166,15 @@ class MatchEngineTest {
         when(userCampusProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
         when(userScheduleProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
         when(userBasicProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(userRepository.findAll(PageRequest.of(0, 20)))
-                .thenReturn(new PageImpl<>(List.of(candidate1, candidate2)));
+        // R4-00349：候选 ID 投影查询（替代原 findAll 全量实体加载）——仅返回 ID 列表
+        when(userRepository.findCandidateIds(PageRequest.of(0, 20)))
+                .thenReturn(new PageImpl<>(List.of(10L, 11L)));
+        // 批量档案预加载（R2-00017 防 N+1）：测试无档案数据，返回空
+        when(userCampusProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+        when(userBasicProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+        when(userScheduleProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+        // Top-N 候选实体加载（R4-00349：仅加载高分候选的完整 User）
+        when(userRepository.findByIdIn(any())).thenReturn(List.of(candidate1));
 
         // 排除 11L
         Set<Long> excluded = Set.of(1L, 11L);

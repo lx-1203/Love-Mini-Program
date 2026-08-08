@@ -10,6 +10,7 @@ import { useI18n } from "vue-i18n";
 // 修复（严格模式 noUnusedLocals）：mediumHaptic 导入后未使用，仅保留 lightHaptic。
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+import { isDev } from "../../config/env";
 
 const props = defineProps<{
   visible: boolean;
@@ -83,7 +84,9 @@ function handleAction(action: "detail" | "superLike" | "report" | "notInterested
     lightHaptic();
   } catch (err) {
     // 振动反馈失败时静默降级，不影响主流程
-    console.warn("[LongPressMenu] haptic failed:", err);
+    if (isDev) {
+      console.warn("[LongPressMenu] haptic failed:", err);
+    }
   }
   animating.value = false;
   // SubTask 1.5.2：保存分发定时器引用，卸载时统一清理
@@ -256,7 +259,7 @@ function handleClose() {
   width: 100%;
   background: var(--c-bg-container, #FFFFFF);
   border-radius: var(--r-xxl, 28rpx) var(--r-xxl, 28rpx) 0 0;
-  padding: 16rpx 28rpx 28rpx;
+  padding: var(--sp-4) 28rpx 28rpx; /* 28rpx 无对应 token，保留原值 */
   padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
   transform: translateY(100%);
   transition: transform var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -274,7 +277,7 @@ function handleClose() {
 
 .long-press-menu__handle-bar {
   width: 56rpx;
-  height: 6rpx;
+  height: 6rpx; /* 固定布局尺寸，无对应 token */
   border-radius: var(--r-xs, 3rpx);
   background: var(--c-neutral-200);
 }
@@ -302,7 +305,7 @@ function handleClose() {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  padding: 20rpx 16rpx;
+  padding: var(--sp-5) var(--sp-4);
   border-radius: var(--r-lg, 16rpx);
   margin-bottom: 8rpx;
   transition: background var(--d-fast, 150ms) ease;
@@ -346,7 +349,7 @@ function handleClose() {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2rpx;
+  gap: 2rpx; /* 固定布局尺寸，无对应 token */
 }
 
 .long-press-menu__item-title {
@@ -369,7 +372,7 @@ function handleClose() {
 /* ========== 取消 ========== */
 .long-press-menu__cancel {
   margin-top: 12rpx;
-  padding: 22rpx 0;
+  padding: 22rpx 0; /* 固定布局尺寸，无对应 token */
   border-radius: var(--r-lg, 16rpx);
   background: var(--c-neutral-50);
   text-align: center;

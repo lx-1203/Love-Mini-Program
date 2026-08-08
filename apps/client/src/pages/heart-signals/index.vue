@@ -51,6 +51,9 @@ const declinedSignals = computed(() =>
 
 const activeTab = ref<"pending" | "accepted" | "declined">("pending");
 
+/** 倒计时刷新周期（毫秒）：每 30 秒重算一次倒计时文案 */
+const COUNTDOWN_REFRESH_MS = 30000;
+
 /** 倒计时显示 */
 const countdownMap = ref<Record<string, string>>({});
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
@@ -79,7 +82,7 @@ onMounted(() => {
     void likesStore.fetchHeartSignals();
   }
   updateCountdowns();
-  countdownTimer = setInterval(updateCountdowns, 30000);
+  countdownTimer = setInterval(updateCountdowns, COUNTDOWN_REFRESH_MS);
 });
 
 onShow(() => {

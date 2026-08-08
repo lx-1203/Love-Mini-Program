@@ -9,7 +9,7 @@
  *   useTabBar(0);  // 在 pages/home/index.vue 中
  *   useTabBar(1);  // 在 pages/discover/index.vue 中
  *   useTabBar(2);  // 在 pages/village/index.vue 中
- *   useTabBar(3);  // 在 pages/chat/index.vue 中
+ *   useTabBar(3);  // 在 pages/messages/index.vue 中（R4-00210：旧 /pages/chat/index 已移除注册）
  *   useTabBar(4);  // 在 pages/profile/index.vue 中
  */
 import { onShow } from "@dcloudio/uni-app";

@@ -15,6 +15,12 @@ public final class MaskingUtils {
     /** 默认脱敏替换字符 */
     private static final char MASK_CHAR = '*';
 
+    /**
+     * 手机号中长分支阈值（R4-01836）：长度 7-10 时保留前 3 + 后 4。
+     * 与 {@link com.campuslove.api.utils.SensitiveDataMasker} 的脱敏阈值对齐。
+     */
+    private static final int PHONE_LEN_MEDIUM_7 = 7;
+
     /** 私有构造方法，防止实例化 */
     private MaskingUtils() {
         throw new UnsupportedOperationException("工具类不可实例化");
@@ -75,14 +81,16 @@ public final class MaskingUtils {
             return null;
         }
         int len = phone.length();
+        // R4-01835/01836：阈值收敛为共享常量（与 SensitiveDataMasker 共用，
+        // 标准 11 位 / 中长 7 位两个分支阈值）
         // 标准 11 位手机号：前 3 + 4 个 * + 后 4
-        if (len >= 11) {
+        if (len >= com.campuslove.api.utils.SensitiveDataMasker.PHONE_LEN_STANDARD) {
             return phone.substring(0, 3)
                     + "****"
                     + phone.substring(len - 4);
         }
         // 长度 7-10：保留前 3 后 4，中间用 * 填充
-        if (len >= 7) {
+        if (len >= PHONE_LEN_MEDIUM_7) {
             int maskLen = len - 7;
             return phone.substring(0, 3)
                     + repeat(MASK_CHAR, maskLen)

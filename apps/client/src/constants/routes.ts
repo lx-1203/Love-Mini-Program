@@ -21,6 +21,7 @@
  * 所有页面路径常量集合。
  *
  * 与 src/pages.json 中的 path 字段一一对应，新增页面时需同步更新。
+ * R4-00226：已补全 showcase/wallet/profile-privacy/profile-tasks/village-history 五页常量。
  */
 export const ROUTES = {
   /** TabBar 主页面 */
@@ -64,6 +65,8 @@ export const ROUTES = {
     DETAIL: "/pages/village/detail",
     /** 标签帖子列表页 */
     TAG_POSTS: "/pages/village/tag-posts",
+    /** R4-00226：浏览记录页 */
+    HISTORY: "/pages/village/history",
   },
 
   /** 消息模块 */
@@ -90,6 +93,10 @@ export const ROUTES = {
     VISITORS: "/pages/profile/visitors",
     /** 相册页 */
     ALBUM: "/pages/profile/album",
+    /** R4-00226：权限设置页 */
+    PRIVACY: "/pages/profile/privacy",
+    /** R4-00226：任务中心页 */
+    TASKS: "/pages/profile/tasks",
   },
 
   /** 圈子模块 */
@@ -172,6 +179,12 @@ export const ROUTES = {
 
   /** 开发者页面 */
   DEV: "/pages/dev/index",
+
+  /** R4-00226：全功能展示页（VITE_SHOWCASE_MODE 展示构建） */
+  SHOWCASE: "/pages/showcase/index",
+
+  /** R4-00226：我的钱包 */
+  WALLET: "/pages/wallet/index",
 } as const;
 
 /**
@@ -203,9 +216,6 @@ export const SUBPACKAGE_ROUTES = {
     AGREEMENT: "/subpackages/legal/agreement/index",
   },
 } as const;
-
-/** 默认首页路径（应用启动时跳转） */
-export const DEFAULT_HOME_ROUTE = ROUTES.TAB.HOME;
 
 /** 登录页路径 */
 export const LOGIN_ROUTE = ROUTES.LOGIN;

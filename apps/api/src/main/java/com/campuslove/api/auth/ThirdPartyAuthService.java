@@ -1,7 +1,7 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
-import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.entity.ThirdPartyAccount;
@@ -58,7 +58,6 @@ public class ThirdPartyAuthService {
     private final ThirdPartyAccountRepository thirdPartyAccountRepository;
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
-    private final AesEncryptor aesEncryptor;
     private final WeChatClient weChatClient;
     private final AppleIdentityTokenVerifier appleIdentityTokenVerifier;
 
@@ -66,14 +65,12 @@ public class ThirdPartyAuthService {
             ThirdPartyAccountRepository thirdPartyAccountRepository,
             UserRepository userRepository,
             JwtTokenProvider jwtTokenProvider,
-            AesEncryptor aesEncryptor,
             WeChatClient weChatClient,
             AppleIdentityTokenVerifier appleIdentityTokenVerifier
     ) {
         this.thirdPartyAccountRepository = thirdPartyAccountRepository;
         this.userRepository = userRepository;
         this.jwtTokenProvider = jwtTokenProvider;
-        this.aesEncryptor = aesEncryptor;
         this.weChatClient = weChatClient;
         this.appleIdentityTokenVerifier = appleIdentityTokenVerifier;
     }
@@ -95,12 +92,12 @@ public class ThirdPartyAuthService {
     @Transactional
     public UserSessionView loginWithWechat(String code) {
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("code 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.CODE_REQUIRED);
         }
         WeChatClient.WeChatSessionResponse session = weChatClient.code2Session(code);
         if (session == null || session.getOpenid() == null || session.getOpenid().isBlank()) {
             log.warn("微信第三方登录 code2session 返回空 openid");
-            throw new IllegalArgumentException("微信登录凭证无效，请重新登录");
+            throw new IllegalArgumentException(ErrorMessages.WECHAT_CREDENTIAL_INVALID);
         }
         return doLogin(PROVIDER_WECHAT, session.getOpenid(), session.getUnionid());
     }
@@ -164,7 +161,7 @@ public class ThirdPartyAuthService {
         // RealAuthService.loginWithPhone / loginWithWechat 的禁用拦截语义对齐。
         if (user.isDisabled()) {
             log.warn("禁用用户尝试第三方登录, provider={}, userId={}", provider, user.getId());
-            throw new com.campuslove.api.common.OperationForbiddenException("账号已被禁用，请联系管理员");
+            throw new com.campuslove.api.common.OperationForbiddenException(ErrorMessages.ACCOUNT_DISABLED_CONTACT_ADMIN);
         }
 
         // 2. 签发 JWT
@@ -199,7 +196,9 @@ public class ThirdPartyAuthService {
         account.setUserId(user.getId());
         account.setProvider(provider);
         account.setOpenId(openIdHash);
-        account.setUnionId(unionId);
+        // R4-00260：unionId 同为敏感身份标识，与 openId 一致经 SHA-256 派生 hash 后落库，
+        // 避免数据库泄露直接暴露第三方平台关联标识。
+        account.setUnionId(hashIdentifier(unionId));
         account.setCreatedAt(now);
         thirdPartyAccountRepository.save(account);
         return user;
@@ -224,13 +223,13 @@ public class ThirdPartyAuthService {
     @Transactional
     public boolean bindThirdParty(Long userId, String provider, String openId, String unionId) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
         if (provider == null || provider.isBlank()) {
-            throw new IllegalArgumentException("provider 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PROVIDER_REQUIRED);
         }
         if (openId == null || openId.isBlank()) {
-            throw new IllegalArgumentException("openId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.OPEN_ID_REQUIRED);
         }
 
         String openIdHash = hashIdentifier(openId);
@@ -241,7 +240,10 @@ public class ThirdPartyAuthService {
         if (existing.isPresent() && !existing.get().getUserId().equals(userId)) {
             log.warn("第三方账号已被其他用户绑定, provider={}, openIdHash={}, ownerId={}",
                     provider, openIdHash, existing.get().getUserId());
-            return false;
+            // R4-00262：区分业务错误码，客户端可明确提示"该账号已被其他用户绑定"
+            throw new ThirdPartyBindConflictException(
+                    ThirdPartyBindConflictException.CODE_OPENID_TAKEN,
+                    "该第三方账号已被其他用户绑定，请更换账号或联系客服");
         }
 
         // 2. 检查当前用户是否已绑定该平台
@@ -249,7 +251,10 @@ public class ThirdPartyAuthService {
                 .findByUserIdAndProvider(userId, provider);
         if (userBinding.isPresent()) {
             log.warn("用户已绑定该平台, userId={}, provider={}", userId, provider);
-            return false;
+            // R4-00262：区分业务错误码，客户端可明确提示"已绑定该平台"
+            throw new ThirdPartyBindConflictException(
+                    ThirdPartyBindConflictException.CODE_ALREADY_BOUND,
+                    "当前账号已绑定该平台，请先解绑后再操作");
         }
 
         // 3. 写入绑定记录
@@ -257,7 +262,8 @@ public class ThirdPartyAuthService {
         account.setUserId(userId);
         account.setProvider(provider);
         account.setOpenId(openIdHash);
-        account.setUnionId(unionId);
+        // R4-00260：unionId 同为敏感身份标识，与 openId 一致经 SHA-256 派生 hash 后落库
+        account.setUnionId(hashIdentifier(unionId));
         account.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         thirdPartyAccountRepository.save(account);
         log.info("第三方账号绑定成功, userId={}, provider={}", userId, provider);
@@ -275,10 +281,10 @@ public class ThirdPartyAuthService {
     @Transactional
     public boolean unbindThirdParty(Long userId, String provider) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
         if (provider == null || provider.isBlank()) {
-            throw new IllegalArgumentException("provider 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.PROVIDER_REQUIRED);
         }
 
         long deleted = thirdPartyAccountRepository.deleteByUserIdAndProvider(userId, provider);
@@ -299,7 +305,7 @@ public class ThirdPartyAuthService {
      */
     public List<ThirdPartyAccount> listBindings(Long userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("userId 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
         return thirdPartyAccountRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
@@ -326,7 +332,7 @@ public class ThirdPartyAuthService {
             }
             return sb.toString();
         } catch (java.security.NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 算法不可用", ex);
+            throw new IllegalStateException(ErrorMessages.SHA256_UNAVAILABLE, ex);
         }
     }
 

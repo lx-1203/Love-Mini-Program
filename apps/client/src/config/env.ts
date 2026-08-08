@@ -190,10 +190,13 @@ function resolveApiMode(): ApiMode {
     return "mock";
   }
   // 生产环境默认 real（更安全）
-  console.warn(
-    "[ENV] 生产环境未配置 VITE_API_MODE，默认使用 real 模式。" +
-      "如需 mock 模式请显式设置 VITE_API_MODE=mock"
-  );
+  // 配置缺失诊断日志仅在开发环境输出（R4-00526/00527）
+  if (isDev) {
+    console.warn(
+      "[ENV] 生产环境未配置 VITE_API_MODE，默认使用 real 模式。" +
+        "如需 mock 模式请显式设置 VITE_API_MODE=mock"
+    );
+  }
   return "real";
 }
 

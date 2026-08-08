@@ -10,6 +10,8 @@
  */
 import { defineStore } from "pinia";
 
+import { isDev } from "../config/env";
+
 export type ThemeMode = "auto" | "dark" | "light";
 
 const THEME_STORAGE_KEY = "campus-love:theme-mode";
@@ -20,7 +22,10 @@ function readStoredMode(): ThemeMode {
     if (raw === "dark" || raw === "light" || raw === "auto") return raw;
   } catch (_e) {
     // infra R2-00096: 读取失败按 auto 降级，记录告警便于排查存储异常
-    console.warn("[ThemeStore] 读取主题模式失败，按 auto 降级");
+    // 诊断日志仅在开发环境输出（R4-00581）
+    if (isDev) {
+      console.warn("[ThemeStore] 读取主题模式失败，按 auto 降级");
+    }
   }
   return "auto";
 }
@@ -42,7 +47,10 @@ export const useThemeStore = defineStore("theme", {
         }
       } catch (_e) {
         // infra R2-00096: matchMedia 异常时忽略并返回 false（light 语义）
-        console.warn("[ThemeStore] matchMedia 查询失败，按浅色处理");
+        // 诊断日志仅在开发环境输出（R4-00582）
+        if (isDev) {
+          console.warn("[ThemeStore] matchMedia 查询失败，按浅色处理");
+        }
       }
       return false;
     },
@@ -56,7 +64,10 @@ export const useThemeStore = defineStore("theme", {
         uni.setStorageSync(THEME_STORAGE_KEY, mode);
       } catch (_e) {
         // infra R2-00096: 存储失败静默但记录告警
-        console.warn("[ThemeStore] 持久化主题模式失败，本次切换仅内存生效");
+        // 诊断日志仅在开发环境输出（R4-00583）
+        if (isDev) {
+          console.warn("[ThemeStore] 持久化主题模式失败，本次切换仅内存生效");
+        }
       }
       applyThemeAttribute(this.mode);
     },

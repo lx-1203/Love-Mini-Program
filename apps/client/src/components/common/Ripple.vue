@@ -16,13 +16,19 @@
  */
 import { ref, onBeforeUnmount, getCurrentInstance } from 'vue';
 
+/**
+ * R4-00993: 涟漪扩散动画默认时长（毫秒），与 design-variables.scss 的 --d-normal(200ms) 对齐。
+ * 调用方可传入 duration prop 覆盖。
+ */
+const DEFAULT_RIPPLE_DURATION_MS = 200;
+
 const props = withDefaults(defineProps<{
   color?: string;
   duration?: number;
   disabled?: boolean;
 }>(), {
   color: 'rgba(91, 127, 255, 0.15)',
-  duration: 200,
+  duration: DEFAULT_RIPPLE_DURATION_MS,
   disabled: false,
 });
 

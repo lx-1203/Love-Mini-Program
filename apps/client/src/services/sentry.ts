@@ -19,7 +19,8 @@
  * - TypeScript 类型检查阶段（vue-tsc）会忽略条件编译注释，正常解析 @sentry/vue 类型。
  */
 import type { App } from "vue";
-import { appEnv } from "./env";
+import { appEnv, isDev } from "./env";
+import { STORAGE_KEYS } from "../constants/storage-keys";
 
 /* ============================================================
  * 平台与状态标识
@@ -88,7 +89,9 @@ export function initSentry(app: App): void {
   const dsn = readSentryDsn();
   if (!dsn) {
     // 未配置 DSN 时不初始化，避免控制台噪声
-    console.warn("[Sentry] VITE_SENTRY_DSN 未配置，跳过 Sentry 初始化。");
+    if (isDev) {
+      console.warn("[Sentry] VITE_SENTRY_DSN 未配置，跳过 Sentry 初始化。");
+    }
     return;
   }
 
@@ -103,8 +106,10 @@ export function initSentry(app: App): void {
       integrations: [Sentry.browserTracingIntegration()],
     });
     sentryInitialized = true;
-    // 修复 no-console：初始化成功日志改用 console.warn（允许的方法）
-    console.warn("[Sentry] 初始化成功。");
+    // 修复 no-console：初始化成功日志改用 console.warn（允许的方法）；仅开发期输出
+    if (isDev) {
+      console.warn("[Sentry] 初始化成功。");
+    }
   } catch (error) {
     // Sentry 初始化失败不应影响应用启动，仅记录日志
     console.error("[Sentry] 初始化失败：", error);
@@ -272,12 +277,14 @@ export function addBreadcrumb(
   }
   // #endif
 
-  // 降级到 console：面包屑是辅助信息
+  // 降级到 console：面包屑是辅助信息（仅开发期查看）
   // 修复 no-console：使用 console.warn（允许的方法）替代 console.debug
-  if (data !== undefined) {
-    console.warn(`[breadcrumb][${category}]`, message, data);
-  } else {
-    console.warn(`[breadcrumb][${category}]`, message);
+  if (isDev) {
+    if (data !== undefined) {
+      console.warn(`[breadcrumb][${category}]`, message, data);
+    } else {
+      console.warn(`[breadcrumb][${category}]`, message);
+    }
   }
 }
 
@@ -330,9 +337,11 @@ export function setUser(
   }
   // #endif
 
-  // 降级到 console：用户身份变更属于辅助信息
+  // 降级到 console：用户身份变更属于辅助信息（仅开发期排查）
   // 修复 no-console：使用 console.warn（允许的方法）替代 console.debug
-  console.warn("[setUser]", userId, userInfo ?? {});
+  if (isDev) {
+    console.warn("[setUser]", userId, userInfo ?? {});
+  }
 }
 
 /**
@@ -359,8 +368,10 @@ export function clearUser(): void {
   }
   // #endif
 
-  // 修复 no-console：使用 console.warn（允许的方法）替代 console.debug
-  console.warn("[clearUser]");
+  // 修复 no-console：使用 console.warn（允许的方法）替代 console.debug；仅开发期输出
+  if (isDev) {
+    console.warn("[clearUser]");
+  }
 }
 
 /* ============================================================
@@ -450,9 +461,10 @@ async function reportErrorToBackend(
     // 冷启动未登录阶段 /app-config、/auth/me、/recommendations 等请求
     // 必然失败，逐个上报只会产生 401/网络噪音；
     // 且 /v1/error-reports 本身无 permitAll 放行，无 token 上报必然 401 级联。
-    // 直接读 storage（不 import http.ts，避免 http↔sentry 循环 import）。
+    // 直接读 storage（不 import http.ts，避免 http↔sentry 循环 import；
+    // constants/storage-keys.ts 无循环依赖风险）。
     try {
-      const hasToken = !!uni.getStorageSync("token");
+      const hasToken = !!uni.getStorageSync(STORAGE_KEYS.AUTH_TOKEN);
       if (!hasToken) return;
     } catch (_e) {
       // storage 读取异常时按无 token 处理，静默跳过

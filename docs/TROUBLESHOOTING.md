@@ -72,14 +72,18 @@
 ### 2.1 健康检查
 
 ```bash
+# 以下地址为占位符（R4-02121：示例域名不可访问），执行前替换为你的真实域名：
+#   <API_DOMAIN>   → API 域名（本地联调可用 http://127.0.0.1:8080）
+#   <ADMIN_DOMAIN> → Admin 域名
+
 # API 健康
-curl -fsS https://api.campuslove.example.com/actuator/health
+curl -fsS https://<API_DOMAIN>/actuator/health
 
 # Admin 健康
-curl -fsS https://admin.campuslove.example.com/health
+curl -fsS https://<ADMIN_DOMAIN>/health
 
 # 各组件健康
-curl -fsS https://api.campuslove.example.com/actuator/health | jq '.components'
+curl -fsS https://<API_DOMAIN>/actuator/health | jq '.components'
 ```
 
 ### 2.2 服务状态
@@ -156,25 +160,29 @@ docker compose exec redis redis-cli
 
 ### 2.6 网络检查
 
+> 以下地址为占位符，替换为真实域名（R4-02121）。
+
 ```bash
 # 端口连通性
-telnet api.campuslove.example.com 443
+telnet <API_DOMAIN> 443
 
 # DNS 解析
-nslookup api.campuslove.example.com
+nslookup <API_DOMAIN>
 
 # HTTP 头部
-curl -I https://api.campuslove.example.com/actuator/health
+curl -I https://<API_DOMAIN>/actuator/health
 
 # TLS 证书
-openssl s_client -connect api.campuslove.example.com:443 -servername api.campuslove.example.com < /dev/null 2>/dev/null | openssl x509 -noout -dates
+openssl s_client -connect <API_DOMAIN>:443 -servername <API_DOMAIN> < /dev/null 2>/dev/null | openssl x509 -noout -dates
 ```
 
 ### 2.7 监控面板
 
-- **Grafana**：https://grafana.campuslove.example.com
-- **Prometheus**：https://prometheus.campuslove.example.com
-- **Alertmanager**：https://alertmanager.campuslove.example.com
+> 以下地址为占位符，替换为真实域名（R4-02121）。
+
+- **Grafana**：https://<GRAFANA_DOMAIN>
+- **Prometheus**：https://<PROMETHEUS_DOMAIN>
+- **Alertmanager**：https://<ALERTMANAGER_DOMAIN>
 
 ---
 
@@ -297,7 +305,9 @@ openssl s_client -connect api.campuslove.example.com:443 -servername api.campusl
    docker compose exec redis redis-cli PUBSUB CHANNELS "ws:*" | wc -l
    ```
 
-2. **检查消息队列**（如使用 RabbitMQ）：
+2. **检查消息队列**：
+   > R4-02120：本编排未部署 rabbitmq 服务（MQ 未启用时应用自动降级），
+   > 以下命令仅在你自行部署了 RabbitMQ 时适用：
    ```bash
    docker compose exec rabbitmq rabbitmqctl list_queues
    # 查看是否有积压
@@ -360,7 +370,7 @@ openssl s_client -connect api.campuslove.example.com:443 -servername api.campusl
    ```bash
    # 用真实 token 测试
    curl -H "Authorization: Bearer xxx" \
-     https://api.campuslove.example.com/api/v1/media/123/202607/abc.jpg
+     https://<API_DOMAIN>/api/v1/media/123/202607/abc.jpg
    ```
 
 #### 止血方案
@@ -819,7 +829,7 @@ openssl s_client -connect api.campuslove.example.com:443 -servername api.campusl
 
 1. **检查 API 响应时间**：
    ```bash
-   curl -w "@/tmp/curl-format" -o /dev/null -s https://api.campuslove.example.com/actuator/health
+   curl -w "@/tmp/curl-format" -o /dev/null -s https://<API_DOMAIN>/actuator/health
    ```
 
 2. **检查 nginx 超时配置**：
@@ -846,7 +856,7 @@ openssl s_client -connect api.campuslove.example.com:443 -servername api.campusl
 
 1. **检查证书有效期**：
    ```bash
-   echo | openssl s_client -connect api.campuslove.example.com:443 -servername api.campuslove.example.com 2>/dev/null | openssl x509 -noout -dates
+   echo | openssl s_client -connect <API_DOMAIN>:443 -servername <API_DOMAIN> 2>/dev/null | openssl x509 -noout -dates
    ```
 
 #### 止血方案
@@ -996,7 +1006,7 @@ openssl s_client -connect api.campuslove.example.com:443 -servername api.campusl
 1. **检查 WebSocket 端点**：
    ```bash
    # wss 连接测试（用 websocat）
-   echo "test" | websocat wss://api.campuslove.example.com/ws/chat?token=xxx
+   echo "test" | websocat wss://<API_DOMAIN>/ws/chat?token=xxx
    ```
 
 2. **检查 nginx WebSocket 配置**：
@@ -1132,7 +1142,7 @@ openssl s_client -connect api.campuslove.example.com:443 -servername api.campusl
 1. **检查 Token**：
    ```bash
    curl -H "Authorization: Bearer xxx" \
-     https://api.campuslove.example.com/api/v1/media/123/202607/abc.jpg
+     https://<API_DOMAIN>/api/v1/media/123/202607/abc.jpg
    ```
 
 2. **检查权限**：
@@ -1142,7 +1152,7 @@ openssl s_client -connect api.campuslove.example.com:443 -servername api.campusl
 3. **检查路径穿越**：
    ```bash
    curl -H "Authorization: Bearer xxx" \
-     "https://api.campuslove.example.com/api/v1/media/123/202607/../../../etc/passwd"
+     "https://<API_DOMAIN>/api/v1/media/123/202607/../../../etc/passwd"
    # 应返回 400
    ```
 

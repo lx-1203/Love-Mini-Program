@@ -1,11 +1,10 @@
 import { defineStore } from "pinia";
-import { clientApi } from "../services/api";
 import type { MakeUpCheckInResultView } from "../services/generated/api-types-supplement";
-import { request } from "../services/http";
+import { request, withTimeout as withHttpTimeout, EnhancedApiError } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // 幂等键日期工具：与 services/api.ts 的 localDateKey 保持同一实现
-import { localDateKey } from "../services/api";
+import { clientApi, localDateKey } from "../services/api";
 // 统一常量：异步超时、签到成功动画收起延迟、补签上限、签到权益各项默认值
 import {
   ASYNC_TIMEOUT_MS,
@@ -167,54 +166,37 @@ let successAnimationTimer: ReturnType<typeof setTimeout> | null = null;
  * @param errorMessage - 超时错误信息
  * @param controller - 可选的 AbortController，超时后会被 abort，调用方可据此取消后续逻辑
  */
-// 注：本文件曾自带一份 withTimeout 实现（与 services/http.ts 导出的 withTimeout 重复）。
-// 因本地版本多一个 AbortController 参数（超时后 abort，供 IIFE 通过 signal.aborted
-// 跳过后续状态修改），且调用点依赖此行为与自定义错误文案，此处保留本地实现；
-// 超时语义（clearTimeout + reject）与 services/http.ts 保持一致。
-// 后续如需统一，可改为传入 AbortSignal 并迁移调用点错误文案。
+// R4-00155：withTimeout 收敛到 services/http.ts 单一实现（不再本地重复实现超时语义）。
+// 本地签名多一个 AbortController 参数（超时后 abort，供 IIFE 通过 signal.aborted
+// 跳过后续状态修改），通过委托 http.ts 的 withTimeout 保持该行为与超时语义一致。
 async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
   errorMessage: string,
   controller?: AbortController
 ): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    // 修复：若已取消，立即拒绝，避免无谓的定时器与 Promise 执行
-    if (controller?.signal.aborted) {
-      reject(new Error(errorMessage));
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      // 修复：超时后通过 AbortController 取消后续逻辑
-      // IIFE 内部可通过 signal.aborted 判断跳过状态修改
-      if (controller) {
+  try {
+    return await withHttpTimeout(promise, timeoutMs, controller?.signal);
+  } catch (error) {
+    // 超时（EnhancedApiError.error === "timeout"）或已取消（network_error 且 controller 已 abort）：
+    // abort controller 供调用方 IIFE 跳过后续状态修改，并按调用点约定转业务文案；
+    // 其余错误（业务/网络）原样透传，与旧实现语义一致
+    const isTimeoutOrCancel =
+      error instanceof EnhancedApiError &&
+      (error.error === "timeout" ||
+        (error.error === "network_error" && controller?.signal.aborted === true));
+    if (isTimeoutOrCancel) {
+      if (controller && !controller.signal.aborted) {
         try {
           controller.abort();
         } catch (_e) {
-          // abort 失败时忽略，避免阻塞 reject
+          // abort 失败时忽略
         }
       }
-      reject(new Error(errorMessage));
-    }, timeoutMs);
-
-    promise
-      .then((result) => {
-        clearTimeout(timer);
-        // 修复：超时后不再 resolve，避免与超时 reject 冲突
-        if (controller?.signal.aborted) {
-          return;
-        }
-        resolve(result);
-      })
-      .catch((error) => {
-        clearTimeout(timer);
-        if (controller?.signal.aborted) {
-          return;
-        }
-        reject(error);
-      });
-  });
+      throw new Error(errorMessage);
+    }
+    throw error;
+  }
 }
 
 let fetchStatusToken = 0;

@@ -10,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,9 +25,25 @@ import org.springframework.stereotype.Service;
 @Service
 public class MockNotificationService implements NotificationService {
 
+  // R4-01852~01856：mock 种子通知的演示时间偏移（秒），统一命名便于调整
+  private static final long OFFSET_5_MINUTES = 300L;
+  private static final long OFFSET_30_MINUTES = 1800L;
+  private static final long OFFSET_1_HOUR = 3600L;
+  private static final long OFFSET_2_HOURS = 7200L;
+  private static final long OFFSET_4_HOURS = 14400L;
+
   private final AtomicLong notificationIdSeq = new AtomicLong(1);
   /** FIN-00061 修复：按用户隔离的通知存储（key=userId），消除所有用户共享内存状态互相污染 */
   private final Map<String, List<NotificationState>> notificationsByUser = new LinkedHashMap<>();
+
+  /**
+   * 国际化文案资源（R4-00406）。
+   * <p>通知摘要中文文案不再硬编码拼接——经 {@link MessageSource} 按请求 Locale 解析
+   * （资源 key 见 i18n/messages*.properties 的 mock.notify.* 分组）。
+   * 单元测试直接 new 本服务时为 null，buildSummary 回退内置中文拼接。</p>
+   */
+  @Autowired(required = false)
+  private MessageSource messageSource;
 
   @Override
   public List<NotificationView> getNotifications(Long userId) {
@@ -58,44 +76,45 @@ public class MockNotificationService implements NotificationService {
       Instant now = Instant.now();
       List<NotificationState> states = new java.util.ArrayList<>();
       // 推荐池人设：林安(1001)、周沐(1002)、许诺(1003)、苏璃(1004)、夏野(1005)
+      // R4-01852~01856：演示时间偏移收敛为命名常量（5 分钟/30 分钟/1 小时/2 小时/4 小时）
       states.add(new NotificationState(
           notificationIdSeq.getAndIncrement(), uid, "follow",
-          "林安", "/uploads/mock/avatar-linan.jpg",
+          "林安", MockMediaPaths.AVATAR_LINAN,
           1001L, "user", false,
-          now.minusSeconds(300).toString()
+          now.minusSeconds(OFFSET_5_MINUTES).toString()
       ));
 
       states.add(new NotificationState(
           notificationIdSeq.getAndIncrement(), uid, "like",
-          "周沐", "/uploads/mock/avatar-zhoumu.jpg",
+          "周沐", MockMediaPaths.AVATAR_ZHOU_MU,
           2001L, "post", false,
-          now.minusSeconds(1800).toString()
+          now.minusSeconds(OFFSET_30_MINUTES).toString()
       ));
 
       states.add(new NotificationState(
           notificationIdSeq.getAndIncrement(), uid, "comment",
-          "许诺", "/uploads/mock/avatar-xunuo.jpg",
+          "许诺", MockMediaPaths.AVATAR_XUNUO,
           3001L, "comment", true,
-          now.minusSeconds(3600).toString()
+          now.minusSeconds(OFFSET_1_HOUR).toString()
       ));
 
       states.add(new NotificationState(
           notificationIdSeq.getAndIncrement(), uid, "visitor",
-          "苏璃", "/uploads/mock/avatar-suli.jpg",
+          "苏璃", MockMediaPaths.AVATAR_SULI,
           null, null, false,
-          now.minusSeconds(7200).toString()
+          now.minusSeconds(OFFSET_2_HOURS).toString()
       ));
 
       states.add(new NotificationState(
           notificationIdSeq.getAndIncrement(), uid, "match",
-          "夏野", "/uploads/mock/avatar-xiaye.jpg",
+          "夏野", MockMediaPaths.AVATAR_XIAYE,
           5001L, "user", false,
-          now.minusSeconds(14400).toString()
+          now.minusSeconds(OFFSET_4_HOURS).toString()
       ));
 
       states.add(new NotificationState(
           notificationIdSeq.getAndIncrement(), uid, "like",
-          "林安", "/uploads/mock/avatar-linan.jpg",
+          "林安", MockMediaPaths.AVATAR_LINAN,
           2002L, "post", false,
           now.minusSeconds(28800).toString()
       ));
@@ -139,15 +158,35 @@ public class MockNotificationService implements NotificationService {
     );
   }
 
+  /**
+   * 构建通知摘要（R4-00406：文案经 i18n 资源解析，资源 key 见 mock.notify.*）。
+   * 无 MessageSource（单元测试直接 new）时回退内置中文拼接文案。
+   */
   private String buildSummary(String type, String sourceUserName) {
     return switch (type) {
-      case "follow" -> sourceUserName + "关注了你";
-      case "like" -> sourceUserName + "赞了你的帖子";
-      case "comment" -> sourceUserName + "评论了你";
-      case "visitor" -> sourceUserName + "访问了你的主页";
-      case "match" -> "你和" + sourceUserName + "配对成功";
-      default -> sourceUserName + "与你互动";
+      case "follow" -> resolveSummary("mock.notify.follow", sourceUserName + "关注了你", sourceUserName);
+      case "like" -> resolveSummary("mock.notify.like", sourceUserName + "赞了你的帖子", sourceUserName);
+      case "comment" -> resolveSummary("mock.notify.comment", sourceUserName + "评论了你", sourceUserName);
+      case "visitor" -> resolveSummary("mock.notify.visitor", sourceUserName + "访问了你的主页", sourceUserName);
+      case "match" -> resolveSummary("mock.notify.match", "你和" + sourceUserName + "配对成功", sourceUserName);
+      default -> resolveSummary("mock.notify.other", sourceUserName + "与你互动", sourceUserName);
     };
+  }
+
+  /**
+   * 按请求 Locale 解析通知摘要（R4-00406）。
+   * MessageSource 未注入（单元测试）或解析失败时回退内置中文文案。
+   */
+  private String resolveSummary(String key, String fallback, String sourceUserName) {
+    if (messageSource == null) {
+      return fallback;
+    }
+    try {
+      return messageSource.getMessage(key, new Object[]{sourceUserName}, fallback,
+          org.springframework.context.i18n.LocaleContextHolder.getLocale());
+    } catch (Exception e) {
+      return fallback;
+    }
   }
 
   private record NotificationState(

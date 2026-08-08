@@ -1,11 +1,15 @@
 extends:
   - spectral:oas
 
+# R4-00523：逐条评估后恢复全部被关闭的规范规则。
+# 当前 8 个 OpenAPI YAML 上这些规则仅产生 warning（0 error），
+# CI（spectral lint）默认仅 error 失败，恢复后契约元信息/操作描述
+# 缺失以 warning 形式持续可见，便于逐步补齐；已确认规则与既有文档兼容。
 rules:
-  info-contact: off
-  info-description: off
-  info-license: off
-  openapi-tags: off
-  operation-description: off
-  operation-success-response: off
-  operation-tags: off
+  info-contact: warn
+  info-description: warn
+  info-license: warn
+  openapi-tags: warn
+  operation-description: warn
+  operation-success-response: warn
+  operation-tags: warn

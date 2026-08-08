@@ -1,5 +1,6 @@
 package com.campuslove.api.discover;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
@@ -126,7 +127,7 @@ public class RealActivityService implements ActivityService {
 
         // infra R2-00260: 校验活动状态，已结束活动不可报名
         if (activity.getStatus() == ActivityStatus.ended) {
-            throw new IllegalArgumentException("活动已结束，无法报名");
+            throw new IllegalArgumentException(ErrorMessages.ACTIVITY_ENDED_NO_ENROLL);
         }
 
         // 检查是否已报名

@@ -15,6 +15,7 @@
  */
 
 import { appEnv } from "../env";
+import { isDev } from "../../config/env";
 import {
   FRAME_NULL_CHAR,
   LINE_BREAK,
@@ -238,8 +239,9 @@ export function createSocketTask(
       url: wsUrl,
       protocols,
       success: () => {
-        // 修复 no-console：连接请求日志改用 console.warn（允许的方法）
-        console.warn("[WebSocket] 连接请求已发送");
+        if (isDev) {
+          console.warn("[WebSocket] 连接请求已发送");
+        }
       },
       fail: (err) => {
         console.error("[WebSocket] 连接请求失败:", err);

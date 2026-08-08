@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -71,12 +72,14 @@ public class VoiceMessageService {
             DateTimeFormatter.ofPattern("yyyyMM");
 
     /**
-     * URL 前缀，与 WebConfig 静态资源映射一致。
+     * URL 前缀，与 MediaAccessController 鉴权代理路由一致。
      *
      * <p>Task 9：原为硬编码常量 {@code "/uploads/"}，已改为配置注入。
-     * 默认 {@code /uploads/}，可通过 {@code FILE_STORAGE_PREFIX} 环境变量覆盖。</p>
+     * R4-01793：代码默认值与 application.yml 的 {@code file-storage.upload-prefix}
+     * （默认 {@code /api/v1/media/}）对齐，统一到 file-storage 配置中心，
+     * 可通过 {@code FILE_STORAGE_PREFIX} 环境变量覆盖。</p>
      */
-    @Value("${file-storage.upload-prefix:/uploads/}")
+    @Value("${file-storage.upload-prefix:/api/v1/media/}")
     private String urlPrefix;
 
     /**
@@ -106,17 +109,17 @@ public class VoiceMessageService {
     public VoiceUploadResult store(Long userId, MultipartFile file, Integer duration) {
         // 入参校验：userId
         if (userId == null) {
-            throw new IllegalArgumentException("用户 ID 不能为空");
+            throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
         // 文件非空校验
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("语音文件不能为空");
+            throw new IllegalArgumentException(ErrorMessages.VOICE_FILE_REQUIRED);
         }
         // 文件大小校验
         long fileSize = file.getSize();
         if (fileSize > MAX_FILE_SIZE) {
             throw new IllegalArgumentException(
-                    "语音文件超过 " + (MAX_FILE_SIZE / 1024 / 1024) + "MB 限制");
+                    ErrorMessages.VOICE_FILE_EXCEEDS_PREFIX + (MAX_FILE_SIZE / 1024 / 1024) + "MB 限制");
         }
         // 时长校验
         if (duration != null && duration > MAX_DURATION_SECONDS) {
@@ -134,7 +137,7 @@ public class VoiceMessageService {
         String contentType = file.getContentType();
         if (contentType != null && !contentType.isBlank()
                 && !ALLOWED_VOICE_MIME.contains(contentType.toLowerCase(Locale.ROOT))) {
-            throw new IllegalArgumentException("不支持的语音 MIME 类型：" + contentType);
+            throw new IllegalArgumentException(ErrorMessages.VOICE_MIME_UNSUPPORTED + contentType);
         }
 
         try {
@@ -151,7 +154,7 @@ public class VoiceMessageService {
             Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
             if (!targetPath.startsWith(root)) {
                 log.error("语音存储路径越界，拒绝写入: target={}, root={}", targetPath, root);
-                throw new IllegalStateException("语音存储路径异常，已拒绝");
+                throw new IllegalStateException(ErrorMessages.VOICE_STORAGE_PATH_INVALID);
             }
 
             // 写入文件
@@ -170,18 +173,19 @@ public class VoiceMessageService {
             );
         } catch (IOException e) {
             log.error("语音上传 IO 失败：userId={}", userId, e);
-            throw new RuntimeException("语音上传失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.VOICE_UPLOAD_FAILED_RETRY, e);
         } catch (IllegalStateException e) {
             // 媒体存储服务（LocalMediaStorageService）抛出的 IllegalStateException（路径越界/写入失败等）
             log.error("语音上传失败：userId={}", userId, e);
-            throw new RuntimeException("语音上传失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.VOICE_UPLOAD_FAILED_RETRY, e);
         }
     }
 
     /**
      * 删除语音文件。
      *
-     * <p>仅删除受管路径（{@code /uploads/} 前缀）下的文件，防止路径遍历。
+     * <p>仅删除受管路径（{@code file-storage.upload-prefix} 配置前缀，R4-01793 与
+     * 统一媒体配置对齐；原注释中的 /uploads/ 已为历史值）下的文件，防止路径遍历。
      * 文件不存在时静默忽略，IO 异常抛出 {@link RuntimeException}。</p>
      *
      * <p>infra R2-00011 修复：增加归属校验——URL 格式为
@@ -226,7 +230,7 @@ public class VoiceMessageService {
             if (ownerUserId == null || !String.valueOf(ownerUserId).equals(ownerIdSegment)) {
                 log.warn("拒绝删除他人语音文件: ownerIdSegment={}, currentUserId={}",
                         ownerIdSegment, ownerUserId);
-                throw new IllegalArgumentException("无权删除该语音文件");
+                throw new IllegalArgumentException(ErrorMessages.VOICE_DELETE_FORBIDDEN);
             }
             boolean deleted = Files.deleteIfExists(target);
             if (deleted) {
@@ -236,11 +240,11 @@ public class VoiceMessageService {
             }
         } catch (IOException e) {
             log.error("删除语音文件失败: url={}", url, e);
-            throw new RuntimeException("删除语音文件失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.VOICE_DELETE_FAILED_RETRY, e);
         } catch (IllegalStateException e) {
             // 媒体存储服务抛出的非法状态异常（路径越界等）
             log.error("删除语音文件失败: url={}", url, e);
-            throw new RuntimeException("删除语音文件失败，请稍后重试", e);
+            throw new RuntimeException(ErrorMessages.VOICE_DELETE_FAILED_RETRY, e);
         }
     }
 

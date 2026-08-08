@@ -30,14 +30,14 @@ const {
   topicHasMore,
 } = storeToRefs(campusStore);
 
-/** 6个话题分类Tab */
-const categoryTabs: { key: CampusTopicCategory; label: string; icon: string }[] = [
-  { key: "course_exchange", label: CAMPUS_CATEGORY_MAP.course_exchange, icon: IMAGE_PATHS.ICONS_COMMON.SCHOOL },
-  { key: "club_recruitment", label: CAMPUS_CATEGORY_MAP.club_recruitment, icon: IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL },
-  { key: "campus_activity", label: CAMPUS_CATEGORY_MAP.campus_activity, icon: IMAGE_PATHS.ICONS_COMMON.CELEBRATION },
-  { key: "study_help", label: CAMPUS_CATEGORY_MAP.study_help, icon: "" },
-  { key: "life_service", label: CAMPUS_CATEGORY_MAP.life_service, icon: IMAGE_PATHS.ICONS_COMMON.SHOP },
-  { key: "alumni_news", label: CAMPUS_CATEGORY_MAP.alumni_news, icon: IMAGE_PATHS.ICONS_COMMON.NOTIFICATION },
+/** 6个话题分类Tab（R4-00109：模板不使用 icon 字段，删除死字段） */
+const categoryTabs: { key: CampusTopicCategory; label: string }[] = [
+  { key: "course_exchange", label: CAMPUS_CATEGORY_MAP.course_exchange },
+  { key: "club_recruitment", label: CAMPUS_CATEGORY_MAP.club_recruitment },
+  { key: "campus_activity", label: CAMPUS_CATEGORY_MAP.campus_activity },
+  { key: "study_help", label: CAMPUS_CATEGORY_MAP.study_help },
+  { key: "life_service", label: CAMPUS_CATEGORY_MAP.life_service },
+  { key: "alumni_news", label: CAMPUS_CATEGORY_MAP.alumni_news },
 ];
 
 /** 当前Tab滚动位置 */
@@ -181,6 +181,12 @@ onMounted(async () => {
         <view class="campus-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="campusStore.fetchCampusTopics()">
           <text class="campus-state__btn-text">{{ t('campus.index.retry') }}</text>
         </view>
+      </view>
+
+      <!-- R4-00108：空态（无加载/错误时的空列表提示） -->
+      <view v-else-if="topics.length === 0" class="campus-state" role="status" aria-live="polite">
+        <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" custom-class="campus-state__icon" mode="aspectFit" />
+        <text class="campus-state__text">{{ t('campus.index.emptyTopics') }}</text>
       </view>
 
       <!-- 话题列表（@scrolltolower 触发真实分页加载） -->

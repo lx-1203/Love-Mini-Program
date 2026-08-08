@@ -185,7 +185,7 @@ onMounted(fetchAccounts);
 
 <style scoped>
 .official-page {
-  padding: 24px;
+  padding: var(--admin-space-xxl);
 }
 
 .page-header h2 {
@@ -211,7 +211,7 @@ onMounted(fetchAccounts);
 }
 
 .error-box button {
-  margin-left: 12px;
+  margin-left: var(--admin-space-md);
 }
 
 .account-tabs {
@@ -244,7 +244,7 @@ onMounted(fetchAccounts);
 }
 
 .account-tab__desc {
-  font-size: 12px;
+  font-size: var(--admin-font-sm);
   color: var(--admin-color-text-quaternary);
 }
 
@@ -297,7 +297,7 @@ onMounted(fetchAccounts);
   display: inline-block;
   padding: 2px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--admin-font-sm);
   font-weight: 600;
 }
 
@@ -322,7 +322,7 @@ onMounted(fetchAccounts);
   border-radius: 999px;
   background: var(--admin-color-warning-soft);
   color: var(--admin-color-warning);
-  font-size: 12px;
+  font-size: var(--admin-font-sm);
 }
 
 .cell-target a {

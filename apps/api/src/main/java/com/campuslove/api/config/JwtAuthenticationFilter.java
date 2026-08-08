@@ -1,5 +1,6 @@
 package com.campuslove.api.config;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.auth.TokenBlacklistService;
 import com.campuslove.api.auth.TokenRevokedException;
 import com.campuslove.api.entity.User;
@@ -27,7 +28,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * 从 HTTP 请求的 Authorization Header 中提取 Bearer token，
  * 使用 JwtTokenProvider 验证 token 并提取 userId，
  * 验证成功后设置 SecurityContextHolder。
- * 放行 /api/v1/auth/**、/ws/**、/api/v1/content-filter/check 路径。
+ * 放行 /ws/**、/api/v1/content-filter/check 路径。
+ *
+ * <p>R4-00261：/api/v1/auth/** 不再整体跳过——匿名访问仍由 SecurityConfig
+ * permitAll 放行，但携带有效 token 的请求会在此注入认证上下文，
+ * 使 auth 命名空间下需要 @PreAuthorize 的子端点（如
+ * /api/v1/auth/third-party/bindings）能正确鉴权。</p>
  *
  * 修复：根据用户角色注入 ROLE_USER 或 ROLE_ADMIN，
  * 配合 SecurityConfig 中的 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN") 实现权限校验。
@@ -44,9 +50,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    /** 不需要认证的路径模式（Task 2.4.1：统一 /api/v1/** 前缀） */
+    /** 不需要认证的路径模式（Task 2.4.1：统一 /api/v1/** 前缀）。
+     *  <p>R4-00261：/api/v1/auth/** 已从本列表移除——匿名访问由 SecurityConfig permitAll
+     *  放行，携带 token 的请求在本过滤器注入认证上下文，使 auth 命名空间下的
+     *  @PreAuthorize 子端点（如 /api/v1/auth/third-party/bindings）可正常鉴权。</p> */
     private static final List<String> PERMIT_PATHS = List.of(
-            "/api/v1/auth/**",
             "/ws/**",
             "/api/v1/content-filter/check"
     );
@@ -176,9 +184,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            // Task 0.5.3：先从 token 中提取 jti，检查是否在 Redis 黑名单中（用户已登出）
-            // 仅当 jti 存在且黑名单命中时才拒绝认证；旧 token 无 jti 时跳过黑名单校验，
-            // 由后续签名/过期校验兜底。
+            // Task 0.5.3：先从 token 中提取 jti，检查是否在 jti 黑名单中（用户已登出）。
+            // R4-00274：统一为 jti 单黑名单——RedisTokenBlacklistService.isRevoked 已合并
+            // 本地内存降级（Redis 故障期间撤销的 jti 在恢复后仍被本地记录拦截），
+            // 不再双轨检查完整 token 黑名单。
             String jti = jwtTokenProvider.getJtiFromToken(token);
             if (jti != null && !jti.isBlank() && tokenBlacklistService.isRevoked(jti)) {
                 log.warn("JWT jti={} 已被撤销（用户已登出），拒绝认证", jti);
@@ -188,26 +197,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            // 兼容旧黑名单实现：检查完整 token 是否在 JwtTokenProvider 本地/Redis 黑名单中
-            // 此处保留是为了过渡期间兼容旧 revokeToken 调用，未来可统一到 jti 黑名单
-            if (jwtTokenProvider.isTokenRevoked(token)) {
-                log.warn("JWT token 已被撤销（用户已登出，旧黑名单），拒绝认证");
-                SecurityContextHolder.clearContext();
-                filterChain.doFilter(request, response);
-                return;
-            }
-
             // 使用 JwtTokenProvider 验证 token 并提取 userId
             String userIdStr = jwtTokenProvider.getUserIdFromToken(token);
             if (userIdStr == null) {
-                throw new BadCredentialsException("无效或已过期的 JWT token");
+                throw new BadCredentialsException(ErrorMessages.JWT_INVALID_OR_EXPIRED);
             }
 
             Long userId;
             try {
                 userId = Long.parseLong(userIdStr);
             } catch (NumberFormatException e) {
-                throw new BadCredentialsException("JWT token 中的用户ID格式无效: " + userIdStr);
+                throw new BadCredentialsException(ErrorMessages.JWT_USER_ID_FORMAT_INVALID_PREFIX + userIdStr);
             }
 
             // R4-00273：?token= 查询参数路径仅接受媒体访问令牌（scope=media）。
@@ -231,12 +231,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserAuthSnapshot snapshot = userAuthCache.get(userId, this::loadAuthSnapshot);
             if (!snapshot.exists()) {
                 // 修复（R2）：用户已被删除时，旧 token 不得继续访问业务接口
-                throw new BadCredentialsException("用户不存在或已被删除: " + userId);
+                throw new BadCredentialsException(ErrorMessages.USER_NOT_FOUND_OR_DELETED_PREFIX + userId);
             }
             if (snapshot.disabled()) {
                 // 修复（R2 review MED）：disabled 用户（管理后台禁用）同样拒绝，
                 // 旧实现只处理 user==null，被禁用用户的 token 仍可访问接口
-                throw new BadCredentialsException("用户已被禁用: " + userId);
+                throw new BadCredentialsException(ErrorMessages.USER_DISABLED_PREFIX + userId);
             }
             if (snapshot.admin()) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));

@@ -50,6 +50,9 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
     /** Redis 中存储黑名单 jti 的 key 前缀 */
     private static final String REDIS_KEY_PREFIX = "jwt:blacklist:";
 
+    /** 本地黑名单定时清理周期（毫秒）（R4-01820）：每小时执行一次 */
+    private static final long CLEANUP_FIXED_DELAY_MS = 3600000L;
+
     /**
      * 本地内存黑名单，作为 Redis 不可用时的降级方案。
      *
@@ -63,10 +66,11 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
     /**
      * 定时清理本地内存黑名单中的过期条目（FIN MED-49）。
      *
-     * <p>调度策略：每小时执行一次（fixedDelay = 3600000ms），initialDelay = 1 小时。
+     * <p>调度策略：每小时执行一次（fixedDelay = {@value #CLEANUP_FIXED_DELAY_MS}ms，R4-01820），
+     * initialDelay = 1 小时。
      * 正常路径下条目由 {@link #isRevoked} 惰性清理，本任务兜底清理长期未查询的过期条目。</p>
      */
-    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 3600000L, initialDelay = 3600000L)
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = CLEANUP_FIXED_DELAY_MS, initialDelay = CLEANUP_FIXED_DELAY_MS)
     public void cleanupExpiredLocalEntries() {
         long now = System.currentTimeMillis();
         int removed = 0;
@@ -160,7 +164,21 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
             return false;
         }
 
-        // 1. 优先查 Redis
+        // R4-00310：先查本地内存（revoke 时本地与 Redis 双写）——
+        // Redis 故障期间撤销的 jti 在恢复后仍被本地记录拦截（原实现 Redis 可用
+        // 但 key 缺失时直接返回 false，忽略本地记录，撤销跨实例失效）。
+        // 本地记录带过期时间，命中时惰性清理。
+        Long localExpireAt = localBlacklist.get(jti);
+        if (localExpireAt != null) {
+            if (localExpireAt < System.currentTimeMillis()) {
+                // 已过期：移除并视为未撤销（与 Redis TTL 自动清理语义一致）
+                localBlacklist.remove(jti, localExpireAt);
+            } else {
+                return true;
+            }
+        }
+
+        // 再查 Redis（多实例共享事实源）
         try {
             if (redisTemplate != null) {
                 String redisKey = REDIS_KEY_PREFIX + jti;
@@ -168,26 +186,15 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
                 if (Boolean.TRUE.equals(exists)) {
                     return true;
                 }
-                // Redis 可用且 key 不存在，直接返回未撤销（以 Redis 为准）
+                // Redis 可用且 key 不存在，返回未撤销（本地未命中 + Redis 未命中）
                 return false;
             }
         } catch (RuntimeException e) {
-            // Redis 不可用时降级查本地内存
+            // Redis 不可用：本地已查过（未命中），返回 false 不阻塞认证
             // SubTask 10.3：传入异常对象便于运维定位 Redis 故障根因
             log.warn("Redis unavailable, falling back to local memory blacklist (isRevoked jti={})", jti, e);
         }
-
-        // 2. 降级查本地内存（FIN MED-49：惰性清理过期条目，避免内存只增不减）
-        Long expireAt = localBlacklist.get(jti);
-        if (expireAt == null) {
-            return false;
-        }
-        if (expireAt < System.currentTimeMillis()) {
-            // 已过期：移除并视为未撤销（与 Redis TTL 自动清理语义一致）
-            localBlacklist.remove(jti, expireAt);
-            return false;
-        }
-        return true;
+        return false;
     }
 
     /**

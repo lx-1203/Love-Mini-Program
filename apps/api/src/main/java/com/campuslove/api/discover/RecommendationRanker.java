@@ -60,6 +60,12 @@ public class RecommendationRanker {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RecommendationRanker.class);
 
+    /** 热度标签「高参与」阈值（R4-01829）：回复+点赞 >= 100 显示参与人数 */
+    private static final int HEAT_HIGH_THRESHOLD = 100;
+
+    /** 热度标签「上升中」阈值（R4-01830）：回复+点赞 >= 20 显示热度上升 */
+    private static final int HEAT_RISING_THRESHOLD = 20;
+
     private final RecommendationConfig recommendationConfig;
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final UserBasicProfileRepository userBasicProfileRepository;
@@ -143,7 +149,9 @@ public class RecommendationRanker {
         if (userId == null) {
             return null;
         }
-        return WHISPER_POOL.get(Math.abs(userId.hashCode()) % WHISPER_POOL.size());
+        // R4-00351：Math.floorMod 替代 Math.abs(hashCode()) % n——Integer.MIN_VALUE
+        // 取 abs 仍为负数会导致索引越界 500
+        return WHISPER_POOL.get(Math.floorMod(userId.hashCode(), WHISPER_POOL.size()));
     }
 
     /**
@@ -672,9 +680,10 @@ public class RecommendationRanker {
     public String buildHeatLabel(Integer replyCount, int likesCount) {
         int replies = replyCount != null ? replyCount : 0;
         int total = replies + likesCount;
-        if (total >= 100) {
+        // R4-01829/01830：热度分层阈值收敛为命名常量，调优无需改散落字面量
+        if (total >= HEAT_HIGH_THRESHOLD) {
             return total + " 人参与";
-        } else if (total >= 20) {
+        } else if (total >= HEAT_RISING_THRESHOLD) {
             return "热度上升";
         } else if (total > 0) {
             return total + " 人参与";
@@ -772,7 +781,8 @@ public class RecommendationRanker {
         if (id == null) {
             return null;
         }
-        double km = 3.2 + (Math.abs(id.hashCode()) % 120) / 10.0;
+        // R4-00351：Math.floorMod 替代 Math.abs(hashCode()) % n（Integer.MIN_VALUE 时仍为负）
+        double km = 3.2 + Math.floorMod(id.hashCode(), 120) / 10.0;
         return String.format(java.util.Locale.ROOT, "%.1fkm", km);
     }
 
@@ -790,7 +800,8 @@ public class RecommendationRanker {
         if (id == null) {
             return "/static/assets/images/avatars/avatar-1.jpg";
         }
-        return "/static/assets/images/avatars/avatar-" + (1 + Math.abs(id.hashCode()) % 62) + ".jpg";
+        // R4-00351：Math.floorMod 替代 Math.abs(hashCode()) % n（Integer.MIN_VALUE 时仍为负）
+        return "/static/assets/images/avatars/avatar-" + (1 + Math.floorMod(id.hashCode(), 62)) + ".jpg";
     }
 
     /**

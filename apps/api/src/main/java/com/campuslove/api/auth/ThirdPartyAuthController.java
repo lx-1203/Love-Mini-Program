@@ -93,6 +93,7 @@ public class ThirdPartyAuthController {
      * @throws HttpClientErrorException.Unauthorized 未登录时抛出 401
      */
     @GetMapping("/bindings")
+    @PreAuthorize("hasRole('USER')")
     public List<ThirdPartyBindingView> listBindings() {
         Long userId = SecurityUtils.getCurrentUserId();
         return thirdPartyAuthService.listBindings(userId).stream()

@@ -1,5 +1,6 @@
 package com.campuslove.api.growth;
 
+import com.campuslove.api.common.ErrorMessages;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
@@ -12,8 +13,8 @@ import jakarta.validation.constraints.Pattern;
 public record MakeUpCheckInRequest(
 
     /** 补签日期（yyyy-MM-dd），必填 */
-    @NotBlank(message = "补签日期不能为空")
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "日期格式必须为 yyyy-MM-dd")
+    @NotBlank(message = ErrorMessages.MAKEUP_DATE_REQUIRED)
+    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = ErrorMessages.DATE_FORMAT_REQUIRED)
     String date
 ) {
 }

@@ -59,7 +59,7 @@ withDefaults(defineProps<{
 .skeleton {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: var(--sp-4);
 }
 .skeleton-item {
   border-radius: var(--r-xl);
@@ -98,12 +98,13 @@ withDefaults(defineProps<{
 .skeleton-list {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  padding: 24rpx;
+  gap: var(--sp-4);
+  padding: var(--sp-6);
   background: var(--c-bg-container);
   border-radius: var(--r-xl);
 }
 .skeleton-avatar {
+  /* 固定布局尺寸（头像 88rpx），无对应 token */
   width: 88rpx;
   height: 88rpx;
   border-radius: var(--r-circle, 50%);
@@ -131,7 +132,7 @@ withDefaults(defineProps<{
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32rpx;
+  padding: var(--sp-7);
 }
 .skeleton-avatar-lg {
   width: 120rpx;
@@ -143,8 +144,8 @@ withDefaults(defineProps<{
 .skeleton-paragraph {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
-  padding: 32rpx 24rpx;
+  gap: var(--sp-4);
+  padding: var(--sp-7) var(--sp-6);
   background: var(--c-bg-container);
   border-radius: var(--r-xl);
 }
@@ -160,9 +161,9 @@ withDefaults(defineProps<{
   height: 240rpx;
 }
 .skeleton-card-body {
-  padding: 24rpx;
+  padding: var(--sp-6);
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--sp-3);
 }
 </style>

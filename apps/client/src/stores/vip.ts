@@ -2,8 +2,6 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";
-// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
-import { t } from "@/i18n";
 // 展示模式（全功能展示版）：VIP 全亮
 import { isShowcaseMode } from "../config/showcase";
 // 运行时环境判定：dev 模式会员模拟开关守卫（R4-00173）
@@ -12,13 +10,13 @@ import { isDev } from "../config/env";
 /**
  * VIP 会员 Store
  *
- * 提供 VIP 会员基础信息、套餐选择、自动续费与账单记录的入口方法：
+ * 提供 VIP 会员基础信息与套餐选择：
  * - 套餐选择：selectPlan
- * - 自动续费：enableAutoRenew / disableAutoRenew / getAutoRenewStatus
- * - 账单记录：fetchBills（分页查询）
+ * - 账单记录：fetchBills（分页查询，见 vip-billing.ts）
  *
- * 说明：自动续费与账单记录的详细状态分别由 vip-auto-renew.ts / vip-billing.ts
- * 维护，本 store 仅提供面向页面的便捷入口，便于页面通过单一 store 调用。
+ * R4-00193：自动续费逻辑已收敛到 vip-auto-renew.ts 单一 store（本文件原
+ * 自带一份 getAutoRenewStatus / enableAutoRenew / disableAutoRenew 重复实现
+ * 且零消费方——页面统一使用 useAutoRenewStore，已删除避免双实现漂移）。
  *
  * 错误处理：API 调用失败时抛出 EnhancedApiError，由页面层捕获并 toast 提示。
  *
@@ -36,22 +34,6 @@ export interface VipPlan {
   duration: string;
   features: string[];
   isPopular?: boolean;
-}
-
-/** 自动续费状态视图 */
-export interface AutoRenewStatusView {
-  /** 是否已开启自动续费 */
-  enabled: boolean;
-  /** 当前套餐 ID */
-  planId?: string | null;
-  /** 当前套餐名称 */
-  planName?: string | null;
-  /** 下次扣费时间（ISO 字符串，可空） */
-  nextBillingAt?: string | null;
-  /** 下次扣费金额（分） */
-  nextBillingAmount?: number | null;
-  /** 绑定的支付方式（如 WECHAT） */
-  paymentMethod?: string | null;
 }
 
 /** 账单视图 */
@@ -152,121 +134,6 @@ export const useVipStore = defineStore("vip", () => {
 
   function selectPlan(planId: string) {
     selectedPlan.value = planId;
-  }
-
-  /* ========== 自动续费相关 ========== */
-
-  /** 自动续费状态缓存 */
-  const autoRenewStatus = ref<AutoRenewStatusView>({
-    enabled: false,
-    planId: null,
-    planName: null,
-    nextBillingAt: null,
-    nextBillingAmount: null,
-    paymentMethod: null,
-  });
-
-  /** 自动续费状态加载标志 */
-  const autoRenewLoading = ref(false);
-
-  /**
-   * 查询当前用户的自动续费状态。
-   * <p>对应后端 GET /api/vip/auto-renew/status</p>
-   *
-   * @param forceRefresh 是否强制刷新缓存
-   * @returns 自动续费状态视图
-   */
-  async function getAutoRenewStatus(forceRefresh = false): Promise<AutoRenewStatusView> {
-    if (useMock()) {
-      const mock: AutoRenewStatusView = {
-        enabled: false,
-        planId: selectedPlan.value,
-        planName: currentPlan.value?.name ?? null,
-        nextBillingAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        nextBillingAmount: (currentPlan.value?.price ?? 0) * 100,
-        paymentMethod: "WECHAT",
-      };
-      autoRenewStatus.value = mock;
-      return mock;
-    }
-
-    if (autoRenewLoading.value && !forceRefresh) {
-      return autoRenewStatus.value;
-    }
-
-    autoRenewLoading.value = true;
-    try {
-      const result = await request<AutoRenewStatusView, unknown>({
-        url: "/vip/auto-renew/status",
-        method: "GET",
-      });
-      autoRenewStatus.value = result;
-      return result;
-    } finally {
-      autoRenewLoading.value = false;
-    }
-  }
-
-  /**
-   * 开启自动续费。
-   * <p>对应后端 POST /api/vip/auto-renew</p>
-   *
-   * @param planId 套餐 ID（必填）
-   * @returns 更新后的状态视图
-   */
-  async function enableAutoRenew(planId: string): Promise<AutoRenewStatusView> {
-    if (!planId) {
-      throw new Error(t("storeErrors.vip.planRequired"));
-    }
-
-    if (useMock()) {
-      const mock: AutoRenewStatusView = {
-        enabled: true,
-        planId,
-        planName: currentPlan.value?.name ?? null,
-        nextBillingAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        nextBillingAmount: (currentPlan.value?.price ?? 0) * 100,
-        paymentMethod: "WECHAT",
-      };
-      autoRenewStatus.value = mock;
-      return mock;
-    }
-
-    const result = await request<AutoRenewStatusView, { planId: string }>({
-      url: "/vip/auto-renew",
-      method: "POST",
-      data: { planId },
-    });
-    autoRenewStatus.value = result;
-    return result;
-  }
-
-  /**
-   * 关闭自动续费。
-   * <p>对应后端 DELETE /api/vip/auto-renew</p>
-   *
-   * @returns 更新后的状态视图
-   */
-  async function disableAutoRenew(): Promise<AutoRenewStatusView> {
-    if (useMock()) {
-      const mock: AutoRenewStatusView = {
-        enabled: false,
-        planId: autoRenewStatus.value.planId,
-        planName: autoRenewStatus.value.planName,
-        nextBillingAt: null,
-        nextBillingAmount: null,
-        paymentMethod: autoRenewStatus.value.paymentMethod,
-      };
-      autoRenewStatus.value = mock;
-      return mock;
-    }
-
-    const result = await request<AutoRenewStatusView, unknown>({
-      url: "/vip/auto-renew",
-      method: "DELETE",
-    });
-    autoRenewStatus.value = result;
-    return result;
   }
 
   /* ========== 账单记录相关 ========== */
@@ -432,13 +299,7 @@ export const useVipStore = defineStore("vip", () => {
     selectedPlan,
     currentPlan,
     selectPlan,
-    /* 自动续费 */
-    autoRenewStatus,
-    autoRenewLoading,
-    getAutoRenewStatus,
-    enableAutoRenew,
-    disableAutoRenew,
-    /* 账单记录 */
+    /* 账单记录（R4-00193：自动续费已收敛到 vip-auto-renew.ts，不再在此重复导出） */
     bills,
     billsTotal,
     billsPage,

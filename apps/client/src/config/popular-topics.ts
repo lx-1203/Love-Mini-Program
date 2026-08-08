@@ -13,6 +13,8 @@
  * - 数据为纯静态配置，无运行时副作用
  */
 
+import { isDev } from "./env";
+
 /**
  * 热门话题定义。
  */
@@ -72,9 +74,12 @@ export function getTopicDisplayName(
     if (translated && translated !== topic.nameKey) {
       return translated;
     }
-    console.warn(
-      `[popular-topics] i18n key 缺失或未翻译: ${topic.nameKey}，回退中文 name`
-    );
+    // 配置缺失回退诊断仅在开发环境输出（R4-00531）
+    if (isDev) {
+      console.warn(
+        `[popular-topics] i18n key 缺失或未翻译: ${topic.nameKey}，回退中文 name`
+      );
+    }
   }
   return topic.name;
 }

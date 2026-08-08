@@ -178,7 +178,7 @@ function goShop(): void {
   align-items: center;
   justify-content: center;
   z-index: 9000;
-  padding: 40rpx;
+  padding: 40rpx; /* 固定布局尺寸，无对应 token */
 }
 
 .checkin-popup__panel {
@@ -208,8 +208,8 @@ function goShop(): void {
 }
 
 .checkin-popup__close {
-  width: 56rpx;
-  height: 56rpx;
+  width: 56rpx; /* 固定布局尺寸，无对应 token */
+  height: 56rpx; /* 固定布局尺寸，无对应 token */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -217,8 +217,8 @@ function goShop(): void {
 
 /* 成功态 */
 .checkin-popup__success-icon {
-  width: 96rpx;
-  height: 96rpx;
+  width: 96rpx; /* 固定布局尺寸，无对应 token */
+  height: 96rpx; /* 固定布局尺寸，无对应 token */
   margin: var(--sp-2, 12rpx) 0 var(--sp-3, 16rpx);
 }
 
@@ -270,7 +270,7 @@ function goShop(): void {
 
 .checkin-popup__btn {
   width: 100%;
-  height: 88rpx;
+  height: 88rpx; /* 固定布局尺寸，无对应 token */
   border-radius: var(--r-xl, 28rpx);
   display: flex;
   align-items: center;

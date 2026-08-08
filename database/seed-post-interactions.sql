@@ -8,7 +8,9 @@
 -- 执行：mysql --default-character-set=utf8mb4 -h127.0.0.1 -P3307 -uroot -p campus_love < database/seed-post-interactions.sql
 -- 定位规则（防硬编码自增 id）：
 --   * 帖子：作者 id + content 内容指纹（V2026.08.07.0024 种子帖）
---   * 管理员：openid = 'local-dev-admin-openid-123456' 动态解析（旧库 id=1 / 新库 100000）
+--   * 管理员：R4-00514 改为按 role=SUPER_ADMIN 动态解析（取最小 id 的超级管理员），
+--     不再硬编码 openid '<REDACTED>'——换库/换环境后
+--     openid 不存在也不会导致整段静默跳过
 --   * 评论：ROW_NUMBER() 取每帖根评论排行 / 全局排行
 -- ============================================================
 
@@ -50,7 +52,9 @@ JOIN (
     SELECT 10011, '拍到了绝美的城市夜景，分享给大家', 40
 ) m ON 1 = 1
 JOIN posts p ON p.author_id = m.author AND p.content = m.content AND p.status = 'active'
-WHERE u.openid = 'local-dev-admin-openid-123456'
+-- R4-00514：超级管理员动态解析（取最小 id），不再依赖硬编码 openid
+WHERE u.role = 'SUPER_ADMIN'
+  AND u.id = (SELECT MIN(id) FROM users WHERE role = 'SUPER_ADMIN')
   AND NOT EXISTS (SELECT 1 FROM post_likes pl WHERE pl.user_id = u.id AND pl.post_id = p.id);
 
 -- 1.2 虚拟用户 10005-10008 各点 3 条
@@ -84,7 +88,9 @@ JOIN (
     SELECT 10028, '骑行环湖，风景美得像画', 36
 ) m ON 1 = 1
 JOIN posts p ON p.author_id = m.author AND p.content = m.content AND p.status = 'active'
-WHERE u.openid = 'local-dev-admin-openid-123456'
+-- R4-00514：超级管理员动态解析（取最小 id），不再依赖硬编码 openid
+WHERE u.role = 'SUPER_ADMIN'
+  AND u.id = (SELECT MIN(id) FROM users WHERE role = 'SUPER_ADMIN')
   AND NOT EXISTS (SELECT 1 FROM post_favorites pf WHERE pf.user_id = u.id AND pf.post_id = p.id);
 
 -- ========== 3. 浏览历史种子（post_view_history，管理员最近浏览 8 条） ==========
@@ -102,7 +108,9 @@ JOIN (
     SELECT 10014, '新画了一幅水彩，大家觉得怎么样？', 60
 ) m ON 1 = 1
 JOIN posts p ON p.author_id = m.author AND p.content = m.content AND p.status = 'active'
-WHERE u.openid = 'local-dev-admin-openid-123456'
+-- R4-00514：超级管理员动态解析（取最小 id），不再依赖硬编码 openid
+WHERE u.role = 'SUPER_ADMIN'
+  AND u.id = (SELECT MIN(id) FROM users WHERE role = 'SUPER_ADMIN')
   AND NOT EXISTS (SELECT 1 FROM post_view_history pvh WHERE pvh.user_id = u.id AND pvh.post_id = p.id);
 
 -- ========== 4. 浏览量兜底填充（仅补零值行，真实浏览过的行不覆盖） ==========

@@ -1,5 +1,6 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.official.OfficialAccountService;
 import com.campuslove.api.official.OfficialAccountView;
 import com.campuslove.api.official.OfficialMessageView;
@@ -57,8 +58,8 @@ public class AdminOfficialAccountController {
     @GetMapping("/{code}/messages")
     public ResponseEntity<List<OfficialMessageView>> getMessages(
             @PathVariable("code")
-            @NotBlank(message = "code 不能为空")
-            @Size(max = 32, message = "code 长度不能超过 32") String code) {
+            @NotBlank(message = ErrorMessages.CODE_REQUIRED)
+            @Size(max = 32, message = ErrorMessages.CODE_MAX_LENGTH) String code) {
         List<OfficialMessageView> messages = officialAccountService.getMessages(code);
         return ResponseEntity.ok(messages);
     }

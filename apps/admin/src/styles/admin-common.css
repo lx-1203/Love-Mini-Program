@@ -11,7 +11,7 @@
  *   2. 视图特有样式仍在各 .vue 文件 <style scoped> 中维护，
  *      本文件仅抽取重复部分；
  *   3. 颜色与像素尺寸统一通过 :root CSS variables 引用，
- *      token 定义见 `apps/admin-v2/src/theme/tokens.ts` 的 adminTokens。
+ *      token 定义见 `apps/admin/src/theme/tokens.ts` 的 adminTokens。
  *
  * 使用方式：
  *   <style scoped>
@@ -129,6 +129,26 @@
   --admin-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
   --admin-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.16);
   --admin-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+
+  /* —— 布局与页面尺寸（R4-02339~02367 尺寸 token 化收敛） —— */
+  --admin-layout-sidebar-width: 220px;
+  --admin-layout-bar-height: 50px;
+  --admin-tab-close-size: 16px;
+  --admin-page-max-width: 1400px;
+  --admin-page-max-width-narrow: 1200px;
+  --admin-dialog-width: 720px;
+  --admin-dialog-width-sm: 420px;
+  --admin-text-ellipsis-width: 320px;
+  --admin-content-max-width: 280px;
+  --admin-content-max-height: 120px;
+  --admin-action-min-width: 90px;
+  --admin-icon-size: 56px;
+  --admin-icon-size-sm: 28px;
+  --admin-control-width: 120px;
+  --admin-control-max-width: 200px;
+  --admin-underline-width: 2px;
+  --admin-focus-ring-offset: 2px;
+  --admin-card-hover-offset: -4px;
 }
 
 /* ========== 页面容器与页头 ========== */

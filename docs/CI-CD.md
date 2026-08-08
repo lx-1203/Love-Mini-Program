@@ -38,7 +38,7 @@
 | 阶段 | 工具 | 触发条件 | 产物 |
 |------|------|----------|------|
 | 代码托管 | GitHub | push / PR | 代码评审记录 |
-| 持续集成（CI） | GitHub Actions | push 到 main/release/hotfix 分支或 PR | 测试报告、构建产物 |
+| 持续集成（CI） | GitHub Actions | push/PR 到 main/develop 分支，或 v* tag（R4-02106：无 release/* 触发，与 ci.yml 一致） | 测试报告、构建产物 |
 | 容器化 | Docker multi-stage build | CI 通过后 | API/Admin 镜像 |
 | 编排部署 | Docker Compose / K8s | 镜像推送后 | 运行实例 |
 | 监控告警 | Prometheus + Grafana + Alertmanager | 服务启动后 | 监控面板、告警通知 |
@@ -366,7 +366,7 @@ CI 失败时，按以下顺序定位与修复。所有 job 失败均会在 GitHu
 
 ### 4.1 镜像构建
 
-CI 通过后，在 `main` / `release/*` 分支触发镜像构建（实际由 security-scan job 的 build-push-action 完成）：
+CI 通过后，在 `main`/`develop` 分支 push 与 `v*` tag 触发镜像构建（实际由 security-scan job 的 build-push-action 完成；R4-02106：ci.yml 无 `release/*` 事件，此处于 2026-08 修正）
 
 ```bash
 # API 镜像（多阶段构建：Maven build → JRE runtime）
@@ -467,8 +467,12 @@ curl -s http://localhost:9090/api/v1/query?query=up | jq '.data.result[].metric.
 
 ### 5.2 用户分组（按 OpenID 哈希）
 
+> ⚠️ 规划态（R4-02107）：`RealAuthService` 当前无 canary 分流实现，
+> 下列代码为规划示例，落地前不可直接照抄。灰度能力落地依赖
+> `docs/GRADUAL-RELEASE.md` 中的实现计划（含 `admin_app_switch` 表与配置广播链路）。
+
 ```java
-// 在 RealAuthService 中根据 openId 哈希值分流
+// 规划示例（尚未实现）：在 RealAuthService 中根据 openId 哈希值分流
 String openId = user.getOpenId();
 int hash = Math.abs(openId.hashCode()) % 100;
 if (hash < canaryPercent) {
@@ -478,7 +482,9 @@ if (hash < canaryPercent) {
 }
 ```
 
-### 5.3 灰度发布步骤
+### 5.3 灰度发布步骤（规划）
+
+> 以下步骤依赖 5.2 的分流实现，当前为规划流程（R4-02107）。
 
 1. **0% 灰度**：部署到生产环境，但不开放任何流量（canaryPercent=0）
 2. **5% 灰度**：开放 5% 用户，观察 30 分钟（监控错误率、P99 延迟、业务指标）
@@ -501,7 +507,7 @@ if (hash < canaryPercent) {
 - 文件位置：`database/flyway/sql/`
 - 命名规范：`V{yyyy.MM.dd.xxxx}__{description}.sql`（infra R2-00360：实际迁移为点分四段序号，如 V2026.07.25.0001；原文档写 HHmm 时间戳格式与实际不符）
 - 必须幂等：使用 `IF NOT EXISTS` 或 `information_schema` 检查（注：MySQL 8.0 不支持 `CREATE INDEX IF NOT EXISTS`，须用存储过程/information_schema 守卫）
-- 必须包含 `DOWN` 回滚脚本注释
+- 必须包含 `DOWN` 回滚脚本注释（R4-02108：存量 127 个迁移脚本中 81 个缺失 DOWN 注释，历史欠账——新迁移强制要求，存量脚本由后续回滚专项逐步补齐）
 
 ### 6.2 迁移执行顺序
 

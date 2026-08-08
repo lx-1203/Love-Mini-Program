@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.dto.DtoMapper;
@@ -300,10 +301,10 @@ record BasicProfileRequest(
     @Min(120) @Max(250) Integer height,
     /** 学历层级：high_school/bachelor/master/phd，可空 */
     @Pattern(regexp = "high_school|bachelor|master|phd",
-        message = "educationLevel 必须为 high_school/bachelor/master/phd") String educationLevel,
+        message = ErrorMessages.EDUCATION_LEVEL_INVALID) String educationLevel,
     /** 感情状态：never/married_before/divorced/widowed，可空 */
     @Pattern(regexp = "never|married_before|divorced|widowed",
-        message = "relationshipStatus 必须为 never/married_before/divorced/widowed") String relationshipStatus,
+        message = ErrorMessages.RELATIONSHIP_STATUS_INVALID) String relationshipStatus,
     /** 籍贯省份，可空 */
     @Size(max = 32) String hometownProvince,
     /** 籍贯城市，可空 */

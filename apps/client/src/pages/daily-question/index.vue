@@ -4,6 +4,7 @@
  * 展示今日问题，支持回答提交和查看其他人的回答
  */
 import { ref, onMounted } from "vue";
+import { onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useDailyQuestionStore, formatAnswerTime } from "../../stores/daily-question";
@@ -61,6 +62,11 @@ onMounted(async () => {
   if (todayQuestion.value) {
     void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, 1);
   }
+});
+
+// R4-00157：页面卸载时清理签到动画定时器等 store 资源
+onUnload(() => {
+  checkInStore.dispose();
 });
 
 /**

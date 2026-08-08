@@ -47,34 +47,34 @@ class UserControllerTest {
 
     @Test
     void getFollowers_shouldDelegateToProfileService() {
-        // Arrange
+        // Arrange（R4-00302 分页改造后签名带 page/size，传默认值 0/20）
         Long targetUserId = 100L;
         List<FollowUserView> views = List.of(
                 new FollowUserView(1L, "粉丝1", "avatar1.png", "个人简介", 0, 0));
-        when(profileService.getFollowers(targetUserId)).thenReturn(views);
+        when(profileService.getFollowers(targetUserId, 0, 20)).thenReturn(views);
 
         // Act
-        ApiResponse<List<FollowUserView>> result = controller.getFollowers(targetUserId);
+        ApiResponse<List<FollowUserView>> result = controller.getFollowers(targetUserId, 0, 20);
 
         // Assert
         assertSame(views, result.data());
-        verify(profileService).getFollowers(targetUserId);
+        verify(profileService).getFollowers(targetUserId, 0, 20);
     }
 
     @Test
     void getFollowing_shouldDelegateToProfileService() {
-        // Arrange
+        // Arrange（R4-00302 分页改造后签名带 page/size，传默认值 0/20）
         Long targetUserId = 200L;
         List<FollowUserView> views = List.of(
                 new FollowUserView(2L, "关注1", "avatar2.png", "个人简介", 0, 0));
-        when(profileService.getFollowing(targetUserId)).thenReturn(views);
+        when(profileService.getFollowing(targetUserId, 0, 20)).thenReturn(views);
 
         // Act
-        ApiResponse<List<FollowUserView>> result = controller.getFollowing(targetUserId);
+        ApiResponse<List<FollowUserView>> result = controller.getFollowing(targetUserId, 0, 20);
 
         // Assert
         assertSame(views, result.data());
-        verify(profileService).getFollowing(targetUserId);
+        verify(profileService).getFollowing(targetUserId, 0, 20);
     }
 
     @Test

@@ -76,14 +76,16 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OfficialMessageView'
+              # 注意：示例值禁止使用字面量 null（触发 spectral/nimma 0.2.3
+              # 遍历崩溃 R4-PLUS）；text 消息的卡片字段用空字符串表示
               example:
                 - id: 101
                   messageType: text
                   content: 你好，我是产品助手 🤖
-                  cardTitle: null
-                  cardDesc: null
-                  cardTag: null
-                  cardTargetUrl: null
+                  cardTitle: ''
+                  cardDesc: ''
+                  cardTag: ''
+                  cardTargetUrl: ''
                   publishedAt: '2026-08-03T08:00:00'
                 - id: 204
                   messageType: card
@@ -100,6 +102,11 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     OfficialAccountView:
       type: object

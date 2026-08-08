@@ -103,7 +103,7 @@ const { t } = useI18n();
 
 <style scoped lang="scss">
 .icebreaker-suggestions {
-  padding: 20rpx 24rpx;
+  padding: var(--sp-5) var(--sp-6);
   border-radius: var(--r-lg, 20rpx) var(--r-lg, 20rpx) 0 0;
   background: linear-gradient(
     135deg,
@@ -118,7 +118,7 @@ const { t } = useI18n();
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16rpx;
+  margin-bottom: var(--sp-4);
 }
 
 .icebreaker__label {
@@ -131,7 +131,7 @@ const { t } = useI18n();
 .icebreaker__header-right {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: var(--sp-3);
 }
 
 .icebreaker__loading-hint {
@@ -142,8 +142,8 @@ const { t } = useI18n();
 .icebreaker__refresh-btn {
   display: flex;
   align-items: center;
-  gap: 4rpx;
-  padding: 8rpx 16rpx;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-4);
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
   transition: background var(--d-normal, 200ms);
@@ -172,18 +172,21 @@ const { t } = useI18n();
 
 .icebreaker__list {
   display: flex;
-  gap: 16rpx;
-  padding-right: 24rpx;
+  gap: var(--sp-4);
+  padding-right: var(--sp-6);
 }
 
 /* ========== 话题卡片 ========== */
 .icebreaker__card {
   flex-shrink: 0;
+  /* 卡片固定宽度（横向滚动布局），无对应 token */
   width: 360rpx;
   display: flex;
   flex-direction: column;
+  /* 10rpx 无对应 token 档位，保留 */
   gap: 10rpx;
-  padding: 22rpx 24rpx;
+  /* 22rpx 无对应 token 档位，保留 */
+  padding: 22rpx var(--sp-6);
   border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
@@ -200,7 +203,7 @@ const { t } = useI18n();
 .icebreaker__card-badge {
   align-self: flex-start;
   display: inline-flex;
-  padding: 4rpx 12rpx;
+  padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08))), var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))));
 }
@@ -229,16 +232,18 @@ const { t } = useI18n();
 /* ========== 加载骨架 ========== */
 .icebreaker__loading {
   display: flex;
-  gap: 16rpx;
+  gap: var(--sp-4);
 }
 
 .icebreaker__skeleton {
   flex-shrink: 0;
+  /* 骨架卡片固定宽度（横向滚动布局），无对应 token */
   width: 360rpx;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
-  padding: 20rpx 22rpx;
+  gap: var(--sp-3);
+  /* 22rpx 无对应 token 档位，保留 */
+  padding: var(--sp-5) 22rpx;
   border-radius: var(--r-lg, 18rpx);
   background: var(--c-bg-container, #FFFFFF);
   border: 1px solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
@@ -272,7 +277,7 @@ const { t } = useI18n();
 
 /* ========== 空态 ========== */
 .icebreaker__empty {
-  padding: 32rpx 0;
+  padding: var(--sp-7) 0;
   text-align: center;
 }
 

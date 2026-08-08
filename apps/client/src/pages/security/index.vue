@@ -8,7 +8,7 @@
  * - 隐私保护：权限设置 / 隐私政策入口
  * - 注销账号：二次确认 + 提示
  */
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import AppShell from "../../components/layout/AppShell.vue";
 import SectionCard from "../../components/common/SectionCard.vue";
@@ -16,17 +16,27 @@ import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { designTokens } from "../../theme/tokens";
 import { openAppPath } from "../../utils/navigation";
-import { SUBPACKAGE_ROUTES } from "../../constants/routes";
+// R4-00226：隐私权限设置路径走 ROUTES 常量
+import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { profilePageRequirements } from "../../config/page-access";
+import { useSessionStore } from "../../stores/session";
 
 /** 安全中心访问要求（需登录，无需资料完善） */
 usePageAccess(profilePageRequirements);
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
-/** 当前绑定手机号（演示数据，脱敏展示） */
-const boundPhone = ref("138****5678");
+/**
+ * 当前绑定手机号展示。
+ * R4-00063：不再硬编码假手机号——按会话绑定状态展示，
+ * 后端 UserSession 下发真实手机号后在此透出（当前仅展示脱敏态文案）。
+ */
+const boundPhone = computed<string>(() =>
+  // phoneBound 是 UserSession 字段（session store 无顶层同名属性），经 userSession 访问
+  sessionStore.userSession?.phoneBound ? t("security.phoneBoundMask") : t("security.phoneNotBound"),
+);
 
 /** 登录设备列表（演示数据） */
 interface DeviceItem {
@@ -66,12 +76,22 @@ function persistKickedDevice(id: string): void {
   }
 }
 
-/** 初始设备列表（演示数据；已下线设备按持久化记录过滤，避免"刷新后设备重现"） */
+/**
+ * 初始设备列表。
+ * R4-00063：移除伪造设备（iPhone 15 Pro / 小米 14 / iPad Air 等假数据），
+ * 仅展示真实当前设备（uni.getSystemInfoSync 读取型号）；后端设备管理接口
+ * 就绪后可替换为 GET /security/devices 返回的完整设备列表。
+ */
 function buildInitialDevices(): DeviceItem[] {
+  let model = "";
+  try {
+    const sys = uni.getSystemInfoSync();
+    model = sys?.model || sys?.deviceModel || "";
+  } catch (_e) {
+    // 系统信息读取失败时降级为空型号
+  }
   const all: DeviceItem[] = [
-    { id: "d1", device: "iPhone 15 Pro", location: "南京 · 玄武", lastActive: "当前设备", isCurrent: true },
-    { id: "d2", device: "小米 14", location: "南京 · 江宁", lastActive: "2 天前", isCurrent: false },
-    { id: "d3", device: "iPad Air", location: "南京 · 鼓楼", lastActive: "12 天前", isCurrent: false },
+    { id: "d-current", device: model || t("security.unknownDevice"), location: "", lastActive: t("security.currentDevice"), isCurrent: true },
   ];
   const kicked = readKickedDevices();
   return kicked.length > 0 ? all.filter((d) => !kicked.includes(d.id)) : all;
@@ -161,7 +181,8 @@ function kickDevice(id: string): void {
 /** 隐私权限设置 */
 function goPrivacySettings(): void {
   lightHaptic();
-  openAppPath("/pages/profile/privacy");
+  // R4-00226：路径走 ROUTES 常量
+  openAppPath(ROUTES.PROFILE.PRIVACY);
 }
 
 /** 隐私政策 */
@@ -251,7 +272,7 @@ function confirmDeleteAccount(): void {
               <text class="sec-item__label">{{ device.device }}</text>
               <text v-if="device.isCurrent" class="sec-item__badge">{{ t('security.currentDevice') }}</text>
             </view>
-            <text class="sec-item__desc">{{ device.location }} · {{ device.lastActive }}</text>
+            <text class="sec-item__desc">{{ device.location ? `${device.location} · ` : '' }}{{ device.lastActive }}</text>
           </view>
           <view
             v-if="!device.isCurrent"

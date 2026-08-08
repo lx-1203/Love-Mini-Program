@@ -195,7 +195,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         @Override
         public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                        WebSocketHandler wsHandler, Map<String, Object> attributes) {
-            String token = extractTokenFromRequest(request);
+            ExtractedToken extracted = extractTokenFromRequest(request);
+            String token = extracted.token();
+
+            // R4-00282：浏览器原生 WebSocket 要求服务端在响应头回显所选子协议
+            // （Sec-WebSocket-Protocol），否则子协议协商失败、连接可能被拒。
+            // 仅在成功认证后回显客户端提供的 bearer.{token} 子协议。
+            if (extracted.selectedSubProtocol() != null) {
+                response.getHeaders().set(SEC_WEBSOCKET_PROTOCOL_HEADER,
+                        extracted.selectedSubProtocol());
+            }
 
             // R4-00280：mock profile 跳过真实 JWT 校验（mock-token 无法通过 validateToken），
             // 与 JwtChannelInterceptor 的 mock 分支保持一致；有 token 时尽力解析 userId，
@@ -258,7 +267,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         }
 
         /**
-         * 从 HTTP 请求中提取 JWT 令牌。
+         * 从 HTTP 请求中提取 JWT 令牌（R4-00282 同时返回匹配的子协议值用于回显）。
          *
          * 提取优先级（Phase 3 任务 15 重构，移除 URL 参数支持）:
          * 1. Sec-WebSocket-Protocol 子协议头（格式: bearer.{token}）
@@ -270,7 +279,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
          * 安全说明:
          * - 不再从 URL 查询参数 token 提取，避免 token 泄漏到日志/Referer/浏览器历史
          */
-        private String extractTokenFromRequest(ServerHttpRequest request) {
+        private ExtractedToken extractTokenFromRequest(ServerHttpRequest request) {
             // 1. 优先从 Sec-WebSocket-Protocol 子协议头提取 token
             //    客户端通过 protocols: [earer.{token}] 设置，服务端从该头读取
             List<String> protocolHeaders = request.getHeaders().get(SEC_WEBSOCKET_PROTOCOL_HEADER);
@@ -284,7 +293,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         if (trimmed.startsWith(BEARER_PROTOCOL_PREFIX)) {
                             String token = trimmed.substring(BEARER_PROTOCOL_PREFIX.length()).trim();
                             if (!token.isBlank()) {
-                                return token;
+                                // R4-00282：记录匹配的子协议原文，握手成功后在响应头回显
+                                return new ExtractedToken(token, trimmed);
                             }
                         }
                     }
@@ -296,9 +306,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 String authHeader = servletRequest.getServletRequest().getHeader(AUTH_HEADER);
                 if (authHeader != null && !authHeader.isBlank()) {
                     if (authHeader.startsWith(BEARER_PREFIX)) {
-                        return authHeader.substring(BEARER_PREFIX.length()).trim();
+                        return new ExtractedToken(authHeader.substring(BEARER_PREFIX.length()).trim(), null);
                     }
-                    return authHeader.trim();
+                    return new ExtractedToken(authHeader.trim(), null);
                 }
             } else {
                 // 非 Servlet 环境下从 header 提取
@@ -306,15 +316,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 if (authHeaders != null && !authHeaders.isEmpty()) {
                     String authValue = authHeaders.get(0);
                     if (authValue != null && authValue.startsWith(BEARER_PREFIX)) {
-                        return authValue.substring(BEARER_PREFIX.length()).trim();
+                        return new ExtractedToken(authValue.substring(BEARER_PREFIX.length()).trim(), null);
                     }
                     if (authValue != null && !authValue.isBlank()) {
-                        return authValue.trim();
+                        return new ExtractedToken(authValue.trim(), null);
                     }
                 }
             }
 
-            return null;
+            return new ExtractedToken(null, null);
+        }
+
+        /**
+         * R4-00282：提取结果（token + 需回显的子协议值）。
+         *
+         * @param token               JWT 令牌（未提供时为 null）
+         * @param selectedSubProtocol 匹配到的 Sec-WebSocket-Protocol 子协议原文
+         *                            （Authorization 头来源时为 null，无需回显）
+         */
+        record ExtractedToken(String token, String selectedSubProtocol) {
         }
     }
 }

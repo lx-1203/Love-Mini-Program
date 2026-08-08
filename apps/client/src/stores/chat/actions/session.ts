@@ -41,7 +41,7 @@ export async function loadOverview(this: ChatStoreThis): Promise<void> {
   // 使用 withErrorHandling 统一处理 loading 状态和错误消息
   await withErrorHandling(
     this,
-    { loadingKey: "loadingOverview", errorPrefix: "聊天页加载" },
+    { loadingKey: "loadingOverview", errorPrefixKey: "storeErrors.chat.loadOverviewFailed" },
     async () => {
       const sessionStore = useSessionStore();
       // 使用 withMockMode 统一处理 Mock/Real 切换
@@ -190,7 +190,7 @@ export async function loadSession(
   // 组合使用 withErrorHandling 和 withMockMode，统一处理错误、loading、模式切换
   await withErrorHandling(
     this,
-    { loadingKey: "loadingSession", errorPrefix: "聊天详情加载" },
+    { loadingKey: "loadingSession", errorPrefixKey: "storeErrors.chat.loadSessionFailed" },
     async () => {
       const session = await withMockMode(
         this,
@@ -236,7 +236,7 @@ export async function setSessionPinned(
   // setSessionPinned 不涉及 activeSession 更新，仅刷新概览
   await withErrorHandling(
     this,
-    { errorPrefix: "会话置顶状态更新" },
+    { errorPrefixKey: "storeErrors.chat.updatePinnedFailed" },
     async () => {
       await withMockMode(
         this,
