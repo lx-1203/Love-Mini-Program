@@ -60,7 +60,6 @@ const componentMap: Record<string, ComponentLoader> = {
   "views/business/PromoCodes.vue": () => import("../views/business/PromoCodes.vue"),
   "views/business/Wallets.vue": () => import("../views/business/Wallets.vue"),
   "views/business/Coins.vue": () => import("../views/business/Coins.vue"),
-  "views/business/RedPackets.vue": () => import("../views/business/RedPackets.vue"),
   "views/business/Shop.vue": () => import("../views/business/Shop.vue"),
   /* —— 配置中心（config） —— */
   "views/config/NotifyConfig.vue": () => import("../views/config/NotifyConfig.vue"),

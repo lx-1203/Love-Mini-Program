@@ -14,19 +14,6 @@
 
 // 统一常量：振动反馈间隔
 import { HAPTIC_INTERVAL_MS } from "../constants/ui";
-// Task 35：平台判断收敛到 compat/index.ts，避免业务代码散落 #ifdef 条件编译
-import { supportsHapticFeedback } from "../compat";
-
-/**
- * 带类型强度的短振动参数。
- *
- * uni-app 官方类型 `VibrateShortOptions` 未声明 `type` 字段，
- * 但 mp-weixin / App 平台实际支持 `type: 'light' | 'medium' | 'heavy'`，
- * 此处通过接口扩展补齐字段，避免使用 `as any` 绕过类型检查。
- */
-interface TypedVibrateShortOptions extends UniApp.VibrateShortOptions {
-  type?: "light" | "medium" | "heavy";
-}
 
 /** 振动强度枚举（与 mp-weixin / App 平台 type 参数对齐） */
 type VibrateIntensity = "light" | "medium" | "heavy";
@@ -76,19 +63,15 @@ function scheduleHaptic(callback: () => void): ReturnType<typeof setTimeout> {
 /**
  * 触发一次短振动（带类型强度）。
  *
- * H5 端 `uni.vibrateShort` 不支持 `type` 参数或不存在，调用会静默失败；
- * mp-weixin / App 端按 type 触发对应强度的短振动。
+ * 2026-08-08 产品要求：全站禁用震动。保留函数签名（40+ 文件 import），
+ * 实现直接返回 no-op，避免点赞/收藏/评论等互动操作触发震动。
+ * 若后续需要恢复，删除下方 return 即可（H5 端本身静默失败）。
  *
- * @param intensity - 振动强度：light / medium / heavy
+ * @param intensity - 振动强度：light / medium / heavy（已禁用，不生效）
  */
-function vibrateWithType(intensity: VibrateIntensity): void {
-  // Task 35：平台判断收敛到 compat/index.ts 的 supportsHapticFeedback()
-  if (!supportsHapticFeedback()) return;
-  try {
-    uni.vibrateShort({ type: intensity } as TypedVibrateShortOptions);
-  } catch (_e) {
-    // 静默失败：H5 端不支持 type 参数或 uni.vibrateShort 不存在
-  }
+function vibrateWithType(_intensity: VibrateIntensity): void {
+  // 2026-08-08 产品要求禁用震动：直接返回，不触发 uni.vibrateShort
+  return;
 }
 
 /**

@@ -149,6 +149,9 @@ export const IMAGE_PATHS = {
     BOX_SVG: ICONS_BASE + '/common/box.svg',
     PIN_SVG: ICONS_BASE + '/common/pin.svg',
     CHECK_CIRCLE_SVG: ICONS_BASE + '/common/check-circle.svg',
+    CHECK_SVG: ICONS_BASE + '/common/check.svg',
+    CHECK_WHITE_SVG: ICONS_BASE + '/common/check-white.svg',
+    CLOSE_SVG: ICONS_BASE + '/common/close.svg',
     X_CIRCLE_SVG: ICONS_BASE + '/common/x-circle.svg',
     GRADUATION_CAP_SVG: ICONS_BASE + '/common/graduation-cap.svg',
     CHEVRON_RIGHT_SVG: ICONS_BASE + '/common/chevron-right.svg',
@@ -163,6 +166,11 @@ export const IMAGE_PATHS = {
     LOG_IN_SVG: ICONS_BASE + '/common/log-in.svg',
     DOWNLOAD_SVG: ICONS_BASE + '/common/download.svg',
     VIDEO_SVG: ICONS_BASE + '/common/video.svg',
+    BRIEFCASE_SVG: ICONS_BASE + '/common/briefcase.svg', // 💼 职业
+    RING_SVG: ICONS_BASE + '/common/ring.svg',           // 💍 感情状态
+    PLAY_SVG: ICONS_BASE + '/common/play.svg',           // ▶ 播放
+    PAUSE_SVG: ICONS_BASE + '/common/pause.svg',         // ❚❚ 暂停
+    CLOSE_WHITE_SVG: ICONS_BASE + '/common/close-white.svg', // 白色 ✕（深色背景关闭）
   },
 
   /** 社交图标（social 目录）

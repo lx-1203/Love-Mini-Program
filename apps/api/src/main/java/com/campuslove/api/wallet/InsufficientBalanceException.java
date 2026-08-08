@@ -9,8 +9,6 @@ package com.campuslove.api.wallet;
  * <ul>
  *   <li>VIP 自动续费：余额不足时，AutoRenewService 捕获本异常，写入 vip_billing_log FAILED
  *       并通过 WeChatPushService 通知用户，不向上抛出</li>
- *   <li>红包发送：余额不足时，VipRedPacketService.createRedPacket 向上抛出本异常，
- *       由 GlobalExceptionHandler 转换为 HTTP 400 响应，红包创建失败回滚</li>
  * </ul>
  *
  * <p>异常处理：GlobalExceptionHandler 将本异常映射为 HTTP 400 Bad Request，

@@ -29,6 +29,9 @@ import type {
 
 const { t } = useI18n();
 
+/** CTA 箭头图标（SVG，替换 › 字符） */
+const chevronRightSrc = IMAGE_PATHS.ICONS_COMMON.CHEVRON_RIGHT_SVG;
+
 /** 官方号会话要求（复用聊天页访问要求） */
 usePageAccess(chatPageRequirements);
 
@@ -292,9 +295,10 @@ function officialIcon(id: string): string {
                 <text class="official-msg__card-title">{{ msg.cardTitle }}</text>
               </view>
               <text class="official-msg__card-desc">{{ msg.cardDesc || msg.body }}</text>
-              <text v-if="msg.cardTargetUrl" class="official-msg__card-cta" @tap.stop="handleActivityTap(msg.cardTargetUrl!)">
-                {{ t('messages.officialActivityCta') }} ›
-              </text>
+              <view v-if="msg.cardTargetUrl" class="official-msg__card-cta" @tap.stop="handleActivityTap(msg.cardTargetUrl!)">
+                <text>{{ t('messages.officialActivityCta') }}</text>
+                <image class="official-msg__card-arrow" :src="chevronRightSrc" mode="aspectFit" alt="" />
+              </view>
             </view>
             <!-- text 类型：普通气泡 -->
             <view v-else class="official-msg__bubble">
@@ -323,7 +327,10 @@ function officialIcon(id: string): string {
             <text class="activity-card__title">{{ card.title }}</text>
           </view>
           <text class="activity-card__desc">{{ card.desc }}</text>
-          <text class="activity-card__cta">{{ t('messages.officialActivityCta') }} ›</text>
+          <view class="activity-card__cta">
+            <text>{{ t('messages.officialActivityCta') }}</text>
+            <image class="activity-card__cta-arrow" :src="chevronRightSrc" mode="aspectFit" alt="" />
+          </view>
         </view>
       </view>
     </SectionCard>
@@ -415,10 +422,19 @@ function officialIcon(id: string): string {
 }
 
 .official-msg__card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
   font-size: var(--fs-sm);
   color: var(--c-brand-400);
   font-weight: 600;
   align-self: flex-end;
+}
+
+.official-msg__card-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  flex-shrink: 0;
 }
 
 .official-msg__content {
@@ -499,9 +515,18 @@ function officialIcon(id: string): string {
 }
 
 .activity-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
   font-size: var(--fs-sm);
   color: var(--c-brand-400);
   font-weight: 600;
   align-self: flex-end;
+}
+
+.activity-card__cta-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  flex-shrink: 0;
 }
 </style>

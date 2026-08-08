@@ -32,7 +32,19 @@ public class MockCampusCertificationService implements CampusCertificationServic
      */
     private final Map<Long, boolean[]> verificationFlags = new LinkedHashMap<>();
 
+    /**
+     * 2026-08-09 模拟认证：运行时状态（联动 mock 用户校区 南校区/verified）。
+     * 兼容单元测试直接 new 的场景，为 null 时模拟认证仅写认证记录不联动校区。
+     */
+    private final MockRuntimeState runtimeState;
+
+    /** 兼容既有单元测试的无参构造器（runtimeState 为 null，联动逻辑跳过）。 */
     public MockCampusCertificationService() {
+        this(null);
+    }
+
+    public MockCampusCertificationService(MockRuntimeState runtimeState) {
+        this.runtimeState = runtimeState;
         // 预置一条模拟认证记录：用户 1 正在审核中
         // FIN-00039 修复：编造校名"模拟大学"改为真实存在的学校名；
         // 学生证图片 example.com 假链接改为本地 mock 资源路径（避免必 404）
@@ -131,6 +143,51 @@ public class MockCampusCertificationService implements CampusCertificationServic
         // 现改为抛出 IllegalArgumentException（由 GlobalExceptionHandler 转为 400/404 语义），
         // 与 real 侧「记录不存在即失败」的行为对齐。
         throw new IllegalArgumentException("认证记录不存在: " + certId);
+    }
+
+    /**
+     * 模拟校园认证直接通过（P3 演示接口，2026-08-09）。
+     *
+     * <p>直接写入/覆盖一条 APPROVED 认证记录，并联动当前 mock 用户校区
+     * （南校区 / verified，campusVerified 标志置位），演示环境可快速获得
+     * 校园认证徽章与同校内容可见性。</p>
+     *
+     * @param userId 用户 ID
+     * @return 认证视图（APPROVED）
+     */
+    @Override
+    public CampusCertificationView simulateApprove(Long userId) {
+        CampusCertificationView existing = store.get(userId);
+        CampusCertificationView view;
+        if (existing != null) {
+            existing.setStatus(STATUS_APPROVED);
+            existing.setStatusLabel(CampusCertificationView.toStatusLabel(STATUS_APPROVED));
+            existing.setReviewerId(1L);
+            existing.setReviewComment("模拟认证：直接通过");
+            existing.setReviewedAt(LocalDateTime.now());
+            view = existing;
+        } else {
+            view = new CampusCertificationView(
+                    idSeq.getAndIncrement(),
+                    userId,
+                    "广州大学",
+                    "工业设计",
+                    "/uploads/mock/student-card-1.jpg",
+                    STATUS_APPROVED,
+                    CampusCertificationView.toStatusLabel(STATUS_APPROVED),
+                    1L,
+                    "模拟认证：直接通过",
+                    LocalDateTime.now().minusMinutes(5),
+                    LocalDateTime.now()
+            );
+            store.put(userId, view);
+        }
+        // 联动当前 mock 用户校区（南校区 / verified，campusVerified 标志置位）
+        if (runtimeState != null) {
+            runtimeState.saveCampusProfile(
+                    new MockRuntimeState.CampusProfileData("广州", "南校区", "工业设计", "verified"));
+        }
+        return view;
     }
 
     /**

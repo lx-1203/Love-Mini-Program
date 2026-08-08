@@ -190,7 +190,7 @@ class P2PerformanceBenchmark {
     void chatHistory_concurrent10_shouldMeetSlo() throws InterruptedException {
         // Arrange：构造 20 条消息数据
         List<MessageView> mockMessages = buildMockMessages(20);
-        when(privateMessageService.getMessages(anyLong(), anyLong(), any(Pageable.class)))
+        when(privateMessageService.getMessages(anyLong(), anyLong(), any(Pageable.class), any(String.class)))
                 .thenReturn(mockMessages);
 
         PrivateMessageController controller = new PrivateMessageController(privateMessageService);
@@ -198,7 +198,7 @@ class P2PerformanceBenchmark {
         // Warm up
         SecurityUtils.getCurrentUserId();
         for (int i = 0; i < 5; i++) {
-            controller.getMessages(1L, 0, 20);
+            controller.getMessages(1L, 0, 20, "desc");
         }
 
         // Act：10 并发测量
@@ -221,7 +221,7 @@ class P2PerformanceBenchmark {
 
                     startLatch.await();
                     long start = System.nanoTime();
-                    ApiResponse<List<MessageView>> result = controller.getMessages(conversationId, 0, 20);
+                    ApiResponse<List<MessageView>> result = controller.getMessages(conversationId, 0, 20, "desc");
                     long elapsed = System.nanoTime() - start;
                     elapsedNanos.add(elapsed);
                     if (result != null && result.data() != null && result.data().size() == 20) {
@@ -267,21 +267,21 @@ class P2PerformanceBenchmark {
     void chatHistory_singleRequest_shouldMeetSlo() {
         // Arrange
         List<MessageView> mockMessages = buildMockMessages(20);
-        when(privateMessageService.getMessages(anyLong(), anyLong(), any(Pageable.class)))
+        when(privateMessageService.getMessages(anyLong(), anyLong(), any(Pageable.class), any(String.class)))
                 .thenReturn(mockMessages);
 
         PrivateMessageController controller = new PrivateMessageController(privateMessageService);
 
         // Warm up
         for (int i = 0; i < 5; i++) {
-            controller.getMessages(1L, 0, 20);
+            controller.getMessages(1L, 0, 20, "desc");
         }
 
         // Act
         long totalNanos = 0L;
         for (int i = 0; i < ITERATIONS; i++) {
             long start = System.nanoTime();
-            ApiResponse<List<MessageView>> result = controller.getMessages(1L, 0, 20);
+            ApiResponse<List<MessageView>> result = controller.getMessages(1L, 0, 20, "desc");
             long elapsed = System.nanoTime() - start;
             totalNanos += elapsed;
 

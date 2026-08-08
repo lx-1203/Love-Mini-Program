@@ -5,10 +5,12 @@ import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
+import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.PostRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -30,13 +32,36 @@ public class VillagePostService {
     private final PostRepository postRepository;
     private final SensitiveWordFilter sensitiveWordFilter;
     private final VillageQueryService queryService;
+    /**
+     * 2026-08-09 帖子关联活动：活动存在性校验（无效 activityId 宽松置 null，不抛错）。
+     */
+    private final ActivityRepository activityRepository;
 
+    /**
+     * Spring 注入构造器（多个构造器时必须显式 @Autowired 指定，
+     * 否则 Spring 报 "No default constructor found"）。
+     */
+    @Autowired
     public VillagePostService(PostRepository postRepository,
                               SensitiveWordFilter sensitiveWordFilter,
-                              VillageQueryService queryService) {
+                              VillageQueryService queryService,
+                              ActivityRepository activityRepository) {
         this.postRepository = postRepository;
         this.sensitiveWordFilter = sensitiveWordFilter;
         this.queryService = queryService;
+        this.activityRepository = activityRepository;
+    }
+
+    /**
+     * 兼容旧测试的构造器（activityRepository 为 null，activityId 校验跳过、不落库）。
+     *
+     * @deprecated 仅单元测试使用；Spring 注入请使用带 ActivityRepository 的构造器。
+     */
+    @Deprecated
+    public VillagePostService(PostRepository postRepository,
+                              SensitiveWordFilter sensitiveWordFilter,
+                              VillageQueryService queryService) {
+        this(postRepository, sensitiveWordFilter, queryService, null);
     }
 
     /**
@@ -57,12 +82,13 @@ public class VillagePostService {
      * @param images   图片 URL 列表（可为 null）
      * @param tags     标签列表（可为 null，将进行敏感词过滤）
      * @param category 分类（可为 null，默认 PostCategory.all）
+     * @param activityId 关联活动 ID（2026-08-09 可选；活动不存在时宽松置 null 不抛错）
      * @return 帖子详情视图（isAuthor=true）
      * @throws IllegalArgumentException 当 userId/content/title 为空或 title 长度不合法时
      */
     @Transactional
     @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
-    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category) {
+    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category, Long activityId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
@@ -93,6 +119,10 @@ public class VillagePostService {
                     + ", 仅支持: " + java.util.Arrays.toString(PostCategory.values()));
         }
         post.setCategory(postCategory);
+        // 2026-08-09 帖子关联活动：activityId 无效（活动不存在）时宽松置 null，不抛错
+        if (activityId != null && activityRepository != null && activityRepository.existsById(activityId)) {
+            post.setActivityId(activityId);
+        }
         post.setLikesCount(0);
         post.setCommentsCount(0);
         post.setShareCount(0);

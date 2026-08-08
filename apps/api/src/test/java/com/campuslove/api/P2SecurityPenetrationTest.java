@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -359,18 +360,20 @@ class P2SecurityPenetrationTest {
         com.campuslove.api.chat.MessageView mockView = new com.campuslove.api.chat.MessageView(
                 1L, 1L, USER_A_ID, xssContent, "text", false,
                 "2026-07-26T10:00:00");
+        // 2026-08-08 存量修复：接口新增 durationSeconds（语音时长）参数，文本消息传 null
         when(privateMessageService.sendMessage(
-                eq(1L), eq(USER_A_ID), eq(xssContent), eq("text")))
+                eq(1L), eq(USER_A_ID), eq(xssContent), eq("text"), isNull()))
                 .thenReturn(mockView);
 
         PrivateMessageController controller = new PrivateMessageController(privateMessageService);
 
         // Act：通过反射构造 SendMessageRequest（package-private）并调用 sendMessage
+        // 2026-08-08 存量修复：record 新增 durationSeconds 参数（语音时长，文本消息传 null）
         Class<?> requestClass = Class.forName("com.campuslove.api.chat.SendMessageRequest");
         java.lang.reflect.Constructor<?> constructor =
-                requestClass.getDeclaredConstructor(String.class, String.class);
+                requestClass.getDeclaredConstructor(String.class, String.class, Integer.class);
         constructor.setAccessible(true);
-        Object requestObj = constructor.newInstance(xssContent, "text");
+        Object requestObj = constructor.newInstance(xssContent, "text", null);
 
         java.lang.reflect.Method sendMethod = PrivateMessageController.class.getMethod(
                 "sendMessage", Long.class, requestClass);
@@ -384,7 +387,7 @@ class P2SecurityPenetrationTest {
         assertNotNull(result.data());
         assertEquals(xssContent, result.data().content(),
                 "Controller 不应转义 content，由 Service 层 / 前端防御 XSS");
-        verify(privateMessageService).sendMessage(eq(1L), eq(USER_A_ID), eq(xssContent), eq("text"));
+        verify(privateMessageService).sendMessage(eq(1L), eq(USER_A_ID), eq(xssContent), eq("text"), isNull());
     }
 
     // ========================================================================

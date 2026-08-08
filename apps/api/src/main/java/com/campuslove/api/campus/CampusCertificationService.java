@@ -58,4 +58,16 @@ public interface CampusCertificationService {
      * @return 徽章级别字符串（school/email/idcard/none）
      */
     String getVerificationBadgeLevel(Long userId);
+
+    /**
+     * 模拟校园认证直接通过（P3 演示接口，仅 mock profile 可用）。
+     *
+     * <p>直接写入一条 APPROVED 认证记录，并联动 mock 用户校区（南校区/verified），
+     * 用于演示环境快速获得校园认证与同校内容可见性。</p>
+     *
+     * @param userId 用户 ID
+     * @return 认证视图（APPROVED）
+     * @throws UnsupportedOperationException real profile 下不支持（仅 mock 演示）
+     */
+    CampusCertificationView simulateApprove(Long userId);
 }

@@ -11,6 +11,7 @@ import com.campuslove.api.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +41,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final SensitiveWordFilter sensitiveWordFilter;
+    /** 活动卡片 JSON 解析（字段名后可能带空格，手写 indexOf 不可靠） */
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public RealPrivateMessageService(
             PrivateConversationRepository conversationRepository,
@@ -52,6 +55,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
         this.sensitiveWordFilter = sensitiveWordFilter;
+        this.objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
     }
 
     /**
@@ -147,7 +151,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
      */
     @Override
     @Transactional
-    public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind) {
+    public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
+                                   Integer durationSeconds) {
         if (conversationId == null || senderId == null) {
             throw new IllegalArgumentException("conversationId and senderId are required");
         }
@@ -165,7 +170,9 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        String resolvedKind = kind != null ? kind : "text";
+        // 录音修复：kind 统一规范化为小写（客户端发送小写 text/voice，
+        // 与临时聊天链路 kind 约定及前端 mapToMessageItem(messageKind === "voice") 映射保持一致）
+        String resolvedKind = kind != null ? kind.toLowerCase(Locale.ROOT) : "text";
 
         // 敏感词过滤：过滤私信内容
         String filteredContent = sensitiveWordFilter.filterWithLog(content, senderId, "MESSAGE");
@@ -176,6 +183,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
         message.setSenderId(senderId);
         message.setContent(filteredContent);
         message.setMessageKind(resolvedKind);
+        message.setDurationSeconds(durationSeconds);
         message.setIsRead(false);
         message.setCreatedAt(now);
 
@@ -183,10 +191,12 @@ public class RealPrivateMessageService implements PrivateMessageService {
         // （实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
         message = messageRepository.saveAndFlush(message);
 
-        // 更新会话的最后消息信息：quote 类型提取纯文本摘要
+        // 更新会话的最后消息信息：quote 类型提取纯文本摘要；activity 卡片提取标题
         String preview;
         if ("quote".equals(resolvedKind)) {
             preview = buildQuotePreview(filteredContent);
+        } else if ("activity".equals(resolvedKind)) {
+            preview = buildActivityPreview(filteredContent);
         } else {
             preview = filteredContent.length() > 50 ? filteredContent.substring(0, 50) + "..." : filteredContent;
         }
@@ -212,10 +222,16 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
     /**
      * 获取指定会话的消息列表（分页），同时标记消息为已读。
+     *
+     * <p>2026-08-08 微信化重构：新增 order 参数。</p>
+     * <ul>
+     *   <li>desc（默认）：倒序分页，最新在前（首屏进入）</li>
+     *   <li>asc：正序分页，最早在前（上拉加载更早历史，page+1 取下一段旧消息）</li>
+     * </ul>
      */
     @Override
     @Transactional
-    public List<MessageView> getMessages(Long conversationId, Long userId, Pageable pageable) {
+    public List<MessageView> getMessages(Long conversationId, Long userId, Pageable pageable, String order) {
         if (conversationId == null || userId == null) {
             throw new IllegalArgumentException("conversationId and userId are required");
         }
@@ -228,9 +244,12 @@ public class RealPrivateMessageService implements PrivateMessageService {
             throw new IllegalArgumentException("User is not a participant of this conversation");
         }
 
-        // 获取消息列表（倒序分页，最新消息在前）
-        Page<PrivateMessage> messagePage = messageRepository.findByConversationIdOrderByCreatedAtDesc(
-                conversationId, pageable);
+        boolean asc = "asc".equalsIgnoreCase(order);
+        // asc：正序分页（最早在前，@EntityGraph 预加载 conversation 避免 N+1）；
+        // desc：倒序分页（最新在前）
+        Page<PrivateMessage> messagePage = asc
+                ? messageRepository.findWithConversationByConversationIdOrderByCreatedAtAscPage(conversationId, pageable)
+                : messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
 
         // 标记非自己的未读消息为已读
         markAsRead(conversationId, userId);
@@ -423,7 +442,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
                 message.getMessageKind(),
                 message.getIsRead(),
                 message.getCreatedAt().toString(),
-                message.getQuoteContext()
+                message.getQuoteContext(),
+                message.getDurationSeconds()
         );
     }
 
@@ -455,6 +475,28 @@ public class RealPrivateMessageService implements PrivateMessageService {
             // 手动解析 JSON 字符串时索引越界（字段缺失或格式异常），回退到截取
         }
         return content.length() > 50 ? content.substring(0, 50) + "..." : content;
+    }
+
+    /**
+     * 构建 activity 卡片类型消息的预览文本。
+     * content 为 JSON：{"title","desc","tag","targetUrl"}，
+     * 会话列表展示「[活动] 标题」，解析失败回退「[活动] 活动卡片」。
+     *
+     * @param content 消息内容（JSON）
+     * @return 预览文本
+     */
+    private String buildActivityPreview(String content) {
+        try {
+            var node = objectMapper.readTree(content);
+            var title = node.path("title").asText("");
+            if (!title.isBlank()) {
+                String preview = "[活动] " + title;
+                return preview.length() > 50 ? preview.substring(0, 50) + "..." : preview;
+            }
+        } catch (Exception e) {
+            // JSON 解析失败（非 JSON 内容/字段缺失），回退默认文案
+        }
+        return "[活动] 活动卡片";
     }
 
     /**

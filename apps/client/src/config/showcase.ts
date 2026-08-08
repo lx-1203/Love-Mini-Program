@@ -3,7 +3,7 @@
  *
  * 用于「全功能展示版」：以演示者身份看到并使用所有功能。
  * - 仅当构建时注入 VITE_SHOWCASE_MODE=true 才激活（独立包，与正式版严格隔离）
- * - 激活后：功能开关全开（含 VIP/红包/视频通话）、守卫旁路、展示入口可见
+ * - 激活后：功能开关全开（含 VIP/视频通话）、守卫旁路、展示入口可见
  * - 正式构建无该变量 → 完全不包含展示逻辑
  *
  * 实现要点：
@@ -60,7 +60,7 @@ function readShowcaseFlag(): boolean {
 export const isShowcaseMode: boolean = readShowcaseFlag();
 
 /**
- * 应用展示模式：将功能开关全部置 true，使所有功能（含 VIP/红包/视频通话等）
+ * 应用展示模式：将功能开关全部置 true，使所有功能（含 VIP/视频通话等）
  * 在展示版中可见可用。仅展示构建调用，正式包不包含。
  */
 export function applyShowcaseMode(): void {
@@ -71,7 +71,6 @@ export function applyShowcaseMode(): void {
   featureFlags.heartSignalEnabled = true;
   featureFlags.villageSameCityEnabled = true;
   featureFlags.videoCallEnabled = true;
-  featureFlags.redPacketEnabled = true;
 
   // 仅开发环境输出诊断日志，生产环境不泄露
   if (isDev) {

@@ -49,14 +49,16 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
         // (作者 ID, 创建时间) 复合索引：作者主页帖子分页查询
         @Index(name = "idx_posts_author_created_at", columnList = "author_id, created_at"),
         // (状态, 创建时间) 复合索引：按状态筛选并按时间排序
-        @Index(name = "idx_posts_status_created_at", columnList = "status, created_at")
+        @Index(name = "idx_posts_status_created_at", columnList = "status, created_at"),
+        // 活动关联索引：按活动查帖子（V2026.08.09.0004 迁移新增）
+        @Index(name = "idx_posts_activity", columnList = "activity_id")
     }
 )
 public class Post {
 
     /** 帖子分类枚举 */
     public enum PostCategory {
-        all, interest, sincere, hometown, anonymous, latest, campus
+        all, interest, sincere, hometown, anonymous, latest, campus, activity
     }
 
     /** 帖子状态枚举 */
@@ -103,7 +105,7 @@ public class Post {
 
     /** 分类 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "category", nullable = false, columnDefinition = "ENUM('all','interest','sincere','hometown','anonymous','latest','campus') DEFAULT 'all'")
+    @Column(name = "category", nullable = false, columnDefinition = "ENUM('all','interest','sincere','hometown','anonymous','latest','campus','activity') DEFAULT 'all'")
     private PostCategory category = PostCategory.all;
 
     /** 点赞数 */
@@ -118,6 +120,13 @@ public class Post {
     @Column(name = "share_count", nullable = false)
     private Integer shareCount = 0;
 
+    /**
+     * 浏览量（2026-08-08 论坛互动真实化：详情读取时原子 +1，匿名也计）。
+     * 对应 posts.view_count 列（Flyway V2026.08.09.0001 迁移新增）。
+     */
+    @Column(name = "view_count", nullable = false)
+    private Integer viewCount = 0;
+
     /** 状态 */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "ENUM('active','deleted','hidden') DEFAULT 'active'")
@@ -129,6 +138,14 @@ public class Post {
      */
     @Column(name = "is_pinned", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean isPinned = false;
+
+    /**
+     * 关联活动 ID（2026-08-09 帖子关联活动）。
+     * <p>对应 posts.activity_id 列（V2026.08.09.0004 迁移新增），可为 null；
+     * 非空时列表/详情下发 {@code ActivitySummaryView} 活动卡片。</p>
+     */
+    @Column(name = "activity_id")
+    private Long activityId;
 
     /**
      * 审核状态。
@@ -261,6 +278,14 @@ public class Post {
         this.shareCount = shareCount;
     }
 
+    public Integer getViewCount() {
+        return viewCount;
+    }
+
+    public void setViewCount(Integer viewCount) {
+        this.viewCount = viewCount;
+    }
+
     public PostStatus getStatus() {
         return status;
     }
@@ -275,6 +300,14 @@ public class Post {
 
     public void setIsPinned(Boolean isPinned) {
         this.isPinned = isPinned;
+    }
+
+    public Long getActivityId() {
+        return activityId;
+    }
+
+    public void setActivityId(Long activityId) {
+        this.activityId = activityId;
     }
 
     public AuditStatus getAuditStatus() {

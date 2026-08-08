@@ -29,27 +29,37 @@ import {
   PAGE_SIZE,
 } from "./constants";
 import {
+  applyOptimisticFavorite,
   applyOptimisticLike,
+  applyServerFavoriteResult,
   applyServerLikeResult,
+  captureFavoriteSnapshot,
   captureLikeSnapshot,
   filterAndSortPosts,
   mapCampusFeedPost,
   mapDetailToPostItem,
   mapToCommentItem,
   mapToPostItem,
+  mockActivities,
   mockCategories,
   mockComments,
+  mockPostHistory,
   mockPosts,
+  rollbackFavorite,
   rollbackLike,
   toBackendCategory,
+  toggleMockPostFavorite,
   toggleMockPostLike,
 } from "./utils";
 import {
+  clearPostHistoryApi,
   createCommentApi,
   createPostApi,
+  favoritePostApi,
   fetchCampusFeedApi,
   fetchCommentsApi,
   fetchPostDetailApi,
+  fetchPostHistoryApi,
   fetchPostsApi,
   fetchSimilarAuthorsApi,
   followUserApi,
@@ -61,6 +71,7 @@ import type {
   CommentItem,
   CommentItemView,
   PostFilters,
+  PostHistoryItem,
   PostItem,
   SimilarAuthor,
   VillageState,
@@ -108,6 +119,11 @@ const commentDebounceTimers: Map<
 const likingPostIds: Set<string> = new Set();
 /** 点赞中的评论 ID 集合（幂等守卫：同一评论在途请求未完成时拒绝重复触发） */
 const likingCommentIds: Set<string> = new Set();
+/**
+ * 正在收藏中的帖子 ID 集合（2026-08-08 论坛互动真实化，幂等守卫）。
+ * 与 likingPostIds 同语义：同一帖子的并发收藏请求直接跳过，避免后端重复 toggle。
+ */
+const favoritingPostIds: Set<string> = new Set();
 
 /**
  * 村口社区 Store
@@ -130,6 +146,9 @@ export const useVillageStore = defineStore("village", {
     loadingCampusFeed: false,
     similarAuthors: [],
     loadingSimilarAuthors: false,
+    // 2026-08-08 论坛互动真实化：浏览记录
+    historyPosts: [],
+    loadingHistory: false,
   }),
 
   getters: {
@@ -295,6 +314,8 @@ export const useVillageStore = defineStore("village", {
       content: string;
       images?: string[];
       tags?: string[];
+      /** 2026-08-08 频道化重构：关联活动 ID（可选，帖子活动卡） */
+      activityId?: string;
     }) {
       this.errorMessage = null;
 
@@ -345,6 +366,15 @@ export const useVillageStore = defineStore("village", {
             isFollowed: false,
             isShared: false,
             isAlumni: false,
+            // 2026-08-08 论坛互动真实化：新帖收藏/浏览从 0 起步
+            favorites: 0,
+            isFavorite: false,
+            views: 0,
+            // 2026-08-08 频道化重构：新帖活动关联透传（mock 活动摘要查表）
+            activityId: data.activityId,
+            activity: data.activityId
+              ? mockActivities.find((a) => String(a.id) === data.activityId) ?? null
+              : null,
             createdAt: new Date().toISOString(),
           };
           this.posts.unshift(newPost);
@@ -358,6 +388,7 @@ export const useVillageStore = defineStore("village", {
           content: data.content,
           images: data.images ?? [],
           tags: data.tags ?? [],
+          activityId: data.activityId,
         });
         // 将后端 PostDetailView 映射为前端 PostItem
         const newPost = mapDetailToPostItem(result);
@@ -440,6 +471,78 @@ export const useVillageStore = defineStore("village", {
       } finally {
         // 修复（P1 BUG）：清理 in-flight 标记
         likingPostIds.delete(postId);
+      }
+    },
+
+    /**
+     * 收藏/取消收藏帖子（2026-08-08 论坛互动真实化）。
+     *
+     * 与 likePost 同模式：幂等守卫 + 乐观更新 + 失败回滚，
+     * 以后端 FavoriteResponse{success, favorited, favoriteCount} 为权威状态校正。
+     * 同时更新列表（this.posts）与当前详情页（this.currentPost），保持两处状态一致。
+     *
+     * @param postId - 帖子 ID
+     */
+    async toggleFavorite(postId: string) {
+      this.errorMessage = null;
+
+      // postId 校验
+      if (!postId || postId.trim().length === 0) {
+        this.errorMessage = t("storeErrors.village.postIdInvalid");
+        throw new Error(t("storeErrors.village.postIdInvalid"));
+      }
+
+      // 幂等守卫：同一帖子的并发收藏请求直接跳过
+      if (favoritingPostIds.has(postId)) {
+        return;
+      }
+
+      try {
+        if (useMock()) {
+          // Mock 模式：toggle 行为，无后端调用
+          try {
+            toggleMockPostFavorite(this.posts, this.currentPost, postId);
+          } catch (error) {
+            this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.postNotFound"); // infra R2-00038
+            throw error;
+          }
+          return;
+        }
+
+        // 标记 in-flight，防止并发请求
+        favoritingPostIds.add(postId);
+
+        // 保存原始状态用于失败回滚
+        const post = this.posts.find((p) => p.id === postId);
+        const currentPostSnapshot =
+          this.currentPost?.id === postId ? this.currentPost : null;
+        const snapshot = captureFavoriteSnapshot(post, currentPostSnapshot);
+
+        // 乐观更新，先本地预测状态
+        applyOptimisticFavorite(post, currentPostSnapshot);
+
+        try {
+          // 调用后端 API: POST /api/posts/{postId}/favorite
+          const result = await favoritePostApi(postId);
+
+          // 根据后端返回的权威状态校正本地状态
+          applyServerFavoriteResult(
+            post,
+            currentPostSnapshot,
+            result.favorited,
+            result.favoriteCount
+          );
+        } catch (error) {
+          // 失败回滚到原始状态
+          rollbackFavorite(post, currentPostSnapshot, snapshot);
+          throw error;
+        }
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.favoritePostFailed"); // infra R2-00038
+        throw error;
+      } finally {
+        // 清理 in-flight 标记
+        favoritingPostIds.delete(postId);
       }
     },
 
@@ -761,6 +864,56 @@ export const useVillageStore = defineStore("village", {
     },
 
     /**
+     * 分页获取当前用户的帖子浏览历史（2026-08-08 论坛互动真实化）。
+     *
+     * @param reset - 是否重置列表（默认 true，传 false 则追加数据）
+     */
+    async fetchPostHistory(reset: boolean = true) {
+      this.loadingHistory = true;
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          // Mock 模式：直接使用内置浏览历史
+          this.historyPosts = [...mockPostHistory];
+          return;
+        }
+
+        const page = reset ? 1 : Math.floor(this.historyPosts.length / PAGE_SIZE) + 1;
+        const data = await fetchPostHistoryApi(page, PAGE_SIZE);
+        // 后端 PostHistoryItemView -> 前端 PostHistoryItem（post 复用 mapToPostItem）
+        const items: PostHistoryItem[] = data.items.map((raw) => ({
+          post: mapToPostItem(raw.post),
+          viewedAt: raw.viewedAt,
+        }));
+        this.historyPosts = reset ? items : [...this.historyPosts, ...items];
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.loadHistoryFailed"); // infra R2-00038
+      } finally {
+        this.loadingHistory = false;
+      }
+    },
+
+    /**
+     * 清空当前用户的帖子浏览历史（2026-08-08 论坛互动真实化）。
+     */
+    async clearPostHistory() {
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          this.historyPosts = [];
+          return;
+        }
+        await clearPostHistoryApi();
+        this.historyPosts = [];
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.clearHistoryFailed"); // infra R2-00038
+        throw error;
+      }
+    },
+
+    /**
      * 设置当前查看的帖子
      * Real 模式下调用 GET /api/posts/{id} 获取完整详情
      * @param postId - 帖子 ID
@@ -956,6 +1109,8 @@ export const useVillageStore = defineStore("village", {
       // 清理点赞 in-flight 集合
       likingPostIds.clear();
       likingCommentIds.clear();
+      // 2026-08-08 论坛互动真实化：清理收藏 in-flight 集合
+      favoritingPostIds.clear();
     },
   },
 });

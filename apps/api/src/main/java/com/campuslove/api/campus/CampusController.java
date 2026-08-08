@@ -25,9 +25,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -252,6 +254,28 @@ public class CampusController {
         CampusCertificationView cert = certService.submitCertification(
                 userId, req.schoolName(), req.major(), req.studentIdCardUrl());
         return ApiResponse.ok(cert);
+    }
+
+    /**
+     * 模拟校园认证直接通过（P3 演示接口，2026-08-09）。
+     *
+     * <p>与 {@link #submitCertification} 同为登录后写操作（用户 ID 取自 JWT 上下文）。
+     * real profile 下真实认证服务不支持模拟（防止绕过真实审核流程），
+     * 由 {@code UnsupportedOperationException} 转 501 Not Implemented；
+     * mock profile 下由 MockCampusCertificationService 直接写 APPROVED 并联动 mock 校区。</p>
+     */
+    @PostMapping("/certification/simulate")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse<CampusCertificationView>> simulateCertification() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        try {
+            CampusCertificationView cert = certService.simulateApprove(userId);
+            return ResponseEntity.ok(ApiResponse.ok(cert));
+        } catch (UnsupportedOperationException e) {
+            // real profile：模拟认证仅 mock 演示可用
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                    .body(ApiResponse.error(501, e.getMessage()));
+        }
     }
 
     // ── 校园活动 ──

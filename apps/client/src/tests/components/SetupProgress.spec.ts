@@ -105,11 +105,10 @@ describe("SetupProgress component - 引导流程进度条组件", () => {
   // ------------------------------------------------------------------
   // 渲染：completed 圆点显示对勾
   // ------------------------------------------------------------------
-  it("completed 圆点显示对勾 ✓", () => {
+  it("completed 圆点显示对勾图标", () => {
     const wrapper = mountProgress({ currentStep: 3 });
     const completedDot = wrapper.findAll(".setup-progress__dot")[0];
     expect(completedDot.find(".setup-progress__check").exists()).toBe(true);
-    expect(completedDot.find(".setup-progress__check").text()).toBe("✓");
   });
 
   it("current/upcoming 圆点显示步骤序号", () => {

@@ -116,7 +116,7 @@ class VillageInteractionServiceTest {
 
         VillageInteractionService serviceWithEm = new VillageInteractionService(
                 postRepository, commentRepository, postLikeRepository,
-                postShareRepository, null, interactionEventService, queryService, em, null);
+                postShareRepository, null, null, null, interactionEventService, queryService, em, null);
 
         when(queryService.findPostOrThrow(postId)).thenReturn(post);
         when(postLikeRepository.existsByUserIdAndPostId(userId, postId)).thenReturn(true);

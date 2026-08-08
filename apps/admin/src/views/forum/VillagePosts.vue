@@ -22,7 +22,9 @@ import {
   unpinVillagePost,
   deleteVillagePost,
   listPostComments,
+  listPostViewers,
   type PostCommentView,
+  type PostViewer,
   type VillagePostSummary,
 } from "../../api/forum";
 import { ApiError } from "../../api/http";
@@ -268,6 +270,65 @@ function closeComments(): void {
   comments.value = [];
 }
 
+// ===== 浏览记录弹窗（listPostViewers 分页，2026-08-08 论坛互动真实化） =====
+const viewersVisible = ref(false);
+const viewersPost = ref<VillagePostSummary | null>(null);
+const viewers = ref<PostViewer[]>([]);
+const viewersLoading = ref(false);
+const viewersError = ref("");
+const vPage = ref(1);
+const vTotal = ref(0);
+const vTotalPages = ref(1);
+
+/** 浏览记录请求竞态防护 */
+let viewersReqSeq = 0;
+
+/** 打开浏览记录弹窗并加载第一页 */
+async function openViewers(post: VillagePostSummary): Promise<void> {
+  viewersPost.value = post;
+  viewers.value = [];
+  vPage.value = 1;
+  vTotal.value = 0;
+  vTotalPages.value = 1;
+  viewersError.value = "";
+  viewersVisible.value = true;
+  await fetchViewers();
+}
+
+/** 加载当前帖子的浏览记录分页 */
+async function fetchViewers(): Promise<void> {
+  const post = viewersPost.value;
+  if (!post) return;
+  viewersLoading.value = true;
+  viewersError.value = "";
+  const seq = ++viewersReqSeq;
+  try {
+    const result = await listPostViewers(post.id, { page: vPage.value, pageSize: pageSize.value });
+    if (seq !== viewersReqSeq) return;
+    viewers.value = result.items;
+    vTotal.value = result.total;
+    vTotalPages.value = result.totalPages;
+  } catch (err: unknown) {
+    if (seq !== viewersReqSeq) return;
+    viewersError.value = err instanceof ApiError ? err.message : "加载浏览记录失败";
+  } finally {
+    if (seq === viewersReqSeq) {
+      viewersLoading.value = false;
+    }
+  }
+}
+
+function handleViewersPageChange(): void {
+  void fetchViewers();
+}
+
+/** 关闭浏览记录弹窗并清理状态 */
+function closeViewers(): void {
+  viewersVisible.value = false;
+  viewersPost.value = null;
+  viewers.value = [];
+}
+
 // ===== 展示辅助 =====
 /** 作者昵称兜底展示 */
 function authorDisplay(post: VillagePostSummary): string {
@@ -369,6 +430,7 @@ onMounted(() => {
             <th scope="col">内容摘要</th>
             <th scope="col">作者</th>
             <th scope="col">分类</th>
+            <th scope="col">互动（赞/藏/看）</th>
             <th scope="col">审核状态</th>
             <th scope="col">帖子状态</th>
             <th scope="col">创建时间</th>
@@ -377,10 +439,10 @@ onMounted(() => {
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="8" class="empty-row">{{ t("common.loading") }}</td>
+            <td colspan="9" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="posts.length === 0">
-            <td colspan="8" class="empty-row">暂无村落动态数据</td>
+            <td colspan="9" class="empty-row">暂无村落动态数据</td>
           </tr>
           <tr v-for="post in posts" :key="post.id">
             <td>{{ post.id }}</td>
@@ -390,6 +452,11 @@ onMounted(() => {
             </td>
             <td>{{ authorDisplay(post) }}</td>
             <td>{{ categoryLabel(post.category) }}</td>
+            <td class="stats-cell">
+              <span class="stats-item">赞 {{ post.likesCount ?? 0 }}</span>
+              <span class="stats-item">藏 {{ post.favoriteCount ?? 0 }}</span>
+              <span class="stats-item">看 {{ post.viewCount ?? 0 }}</span>
+            </td>
             <td>
               <span class="status-badge" :class="`audit-${post.auditStatus ?? 'none'}`">
                 {{ auditStatusLabel(post.auditStatus) }}
@@ -413,6 +480,7 @@ onMounted(() => {
                 @click="togglePin(post)"
               >{{ post.isPinned ? "取消置顶" : "置顶" }}</button>
               <button class="action-button handle" @click="openComments(post)">查看评论</button>
+              <button class="action-button handle" @click="openViewers(post)">浏览记录</button>
               <button class="action-button delete" @click="askDelete(post)">{{ t("common.delete") }}</button>
             </td>
           </tr>
@@ -529,6 +597,52 @@ onMounted(() => {
         </view>
       </view>
     </view>
+
+    <!-- 浏览记录弹窗（分页展示浏览者，2026-08-08 论坛互动真实化） -->
+    <view v-if="viewersVisible" class="modal-mask" @click.self="closeViewers">
+      <view class="modal comments-modal">
+        <text class="modal-title">帖子 #{{ viewersPost?.id }} 的浏览记录</text>
+        <text class="comments-subtitle">{{ viewersPost?.contentPreview }}</text>
+
+        <view class="comments-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">浏览者ID</th>
+                <th scope="col">昵称</th>
+                <th scope="col">最近浏览时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="viewersLoading">
+                <td colspan="3" class="empty-row">{{ t("common.loading") }}</td>
+              </tr>
+              <tr v-else-if="viewers.length === 0">
+                <td colspan="3" class="empty-row">暂无浏览记录</td>
+              </tr>
+              <tr v-for="v in viewers" :key="v.userId">
+                <td>{{ v.userId }}</td>
+                <td>{{ v.nickname || `用户#${v.userId}` }}</td>
+                <td class="time-cell">{{ formatDateTime(v.viewedAt) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <text v-if="viewersError" class="comments-error">{{ viewersError }}</text>
+        </view>
+
+        <Pagination
+          v-model:page="vPage"
+          :total-pages="vTotalPages"
+          :total="vTotal"
+          :disabled="viewersLoading"
+          @change="handleViewersPageChange"
+        />
+
+        <view class="modal-actions">
+          <button class="ghost-button" @click="closeViewers">{{ t("common.close") }}</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -558,6 +672,17 @@ onMounted(() => {
 .time-cell {
   color: var(--admin-color-text-quaternary);
   white-space: nowrap;
+}
+
+/* 互动统计列（赞/藏/看） */
+.stats-cell {
+  white-space: nowrap;
+}
+
+.stats-item {
+  margin-right: var(--admin-space-sm);
+  color: var(--admin-color-text-secondary);
+  font-size: var(--admin-font-xs);
 }
 
 /* 审核状态徽章 */

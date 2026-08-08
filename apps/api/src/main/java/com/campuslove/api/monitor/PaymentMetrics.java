@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
  * <ul>
  *   <li>{@code payment.vip.purchased}：VIP 套餐购买计数（标签 planId 标识套餐）</li>
  *   <li>{@code payment.vip.cancelled}：VIP 取消计数</li>
- *   <li>{@code payment.red_packet.sent}：红包发送计数</li>
  *   <li>{@code payment.callback.latency}：支付回调耗时（Timer，支持百分位统计）</li>
  * </ul>
  *
@@ -30,8 +29,6 @@ public class PaymentMetrics {
     private static final String METRIC_VIP_PURCHASED = "payment.vip.purchased";
     /** VIP 取消计数器指标名 */
     private static final String METRIC_VIP_CANCELLED = "payment.vip.cancelled";
-    /** 红包发送计数器指标名 */
-    private static final String METRIC_RED_PACKET_SENT = "payment.red_packet.sent";
     /** 支付回调耗时计时器指标名 */
     private static final String METRIC_CALLBACK_LATENCY = "payment.callback.latency";
 
@@ -41,8 +38,6 @@ public class PaymentMetrics {
 
     /** VIP 取消计数器（无标签，单例） */
     private final Counter vipCancelledCounter;
-    /** 红包发送计数器（无标签，单例） */
-    private final Counter redPacketSentCounter;
     /** 支付回调耗时计时器 */
     private final Timer callbackLatencyTimer;
 
@@ -51,9 +46,6 @@ public class PaymentMetrics {
         // 无标签计数器预先注册单例
         this.vipCancelledCounter = Counter.builder(METRIC_VIP_CANCELLED)
                 .description("VIP 套餐取消次数")
-                .register(meterRegistry);
-        this.redPacketSentCounter = Counter.builder(METRIC_RED_PACKET_SENT)
-                .description("红包发送次数")
                 .register(meterRegistry);
         // 回调耗时计时器，发布 p50/p95/p99 百分位
         this.callbackLatencyTimer = Timer.builder(METRIC_CALLBACK_LATENCY)
@@ -87,20 +79,6 @@ public class PaymentMetrics {
             vipCancelledCounter.increment();
         } catch (RuntimeException e) {
             log.warn("记录 payment.vip.cancelled 指标失败: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * 记录一次红包发送。
-     *
-     * @param amount 红包金额（保留参数，便于未来扩展为金额分布统计）
-     */
-    public void recordRedPacketSent(Number amount) {
-        try {
-            // infra R2-00221: 清理注释掉的 DistributionSummary 埋点残留（死代码）
-            redPacketSentCounter.increment();
-        } catch (RuntimeException e) {
-            log.warn("记录 payment.red_packet.sent 指标失败, amount={}: {}", amount, e.getMessage());
         }
     }
 

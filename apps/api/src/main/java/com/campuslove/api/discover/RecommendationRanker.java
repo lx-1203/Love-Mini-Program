@@ -78,6 +78,14 @@ public class RecommendationRanker {
      */
     private final PostRepository postRepository;
 
+    /** 悄悄话开场白候选池（V2026.08.08.0016：real 链路 whisper 兜底，与 mock 口径一致） */
+    private static final List<String> WHISPER_POOL = List.of(
+        "第一次见面可以从一杯咖啡开始，紧张也没关系。",
+        "比起闲聊，我更想听听你今天真正在想什么。",
+        "希望第一段对话能留下点想象空间。",
+        "我偏爱傍晚的校园散步，灯亮起来的时候最适合认识新朋友。"
+    );
+
     @org.springframework.beans.factory.annotation.Autowired
     public RecommendationRanker(
             RecommendationConfig recommendationConfig,
@@ -383,7 +391,10 @@ public class RecommendationRanker {
                 ? preferenceCalculator.parseStringList(basicProfile.getPersonalityTags())
                 : List.of();
         String mbti = basicProfile != null ? basicProfile.getMbti() : null;
-        String whisper = null;
+        // 悄悄话开场白：V2026.08.08.0016 修复——real 链路此前恒为 null，
+        // 前端详情页/悄悄话入口拿不到文案。现按 userId 稳定取模生成默认开场白
+        // （与 MockRecommendationService.WHISPER_POOL 口径一致），卡片/详情可完整展示。
+        String whisper = WHISPER_POOL.get(Math.abs(user.getId().hashCode()) % WHISPER_POOL.size());
         Boolean whisperSent = null;
         // 动态预览：从批量预加载的 Map 取该用户最新一条动态（空 Map 时为空列表）
         List<RecommendedPersonView.RecentPostView> recentPosts =
@@ -416,7 +427,7 @@ public class RecommendationRanker {
                 commonGround,
                 availability,
                 campusName,
-                user.getAvatarUrl(),
+                resolveAvatarUrl(user),
                 tags,
                 bio,
                 images,
@@ -600,6 +611,23 @@ public class RecommendationRanker {
         }
         double km = 3.2 + (Math.abs(id.hashCode()) % 120) / 10.0;
         return String.format(java.util.Locale.ROOT, "%.1fkm", km);
+    }
+
+    /**
+     * 头像兜底（V2026.08.08.0016）：avatarUrl 为空或为外链时，回退到小程序包内
+     * 本地素材路径（62 张按 userId 稳定映射）。mp 端外链（pexels 等）加载不可靠，
+     * 本地包路径保证卡片大图 100% 可显示。
+     */
+    private String resolveAvatarUrl(User user) {
+        String avatarUrl = user.getAvatarUrl();
+        if (avatarUrl != null && (avatarUrl.startsWith("/static") || avatarUrl.startsWith("http"))) {
+            return avatarUrl;
+        }
+        Long id = user.getId();
+        if (id == null) {
+            return "/static/assets/images/avatars/avatar-1.jpg";
+        }
+        return "/static/assets/images/avatars/avatar-" + (1 + Math.abs(id.hashCode()) % 62) + ".jpg";
     }
 
     /**

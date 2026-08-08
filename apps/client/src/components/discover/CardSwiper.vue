@@ -98,6 +98,11 @@ const emojiIcons = {
   chat: IMAGE_PATHS.ICONS_EMOJI.CHAT,
   group: IMAGE_PATHS.ICONS_EMOJI.GROUP,
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
+  lock: IMAGE_PATHS.ICONS_EMOJI.LOCK,
+  ruler: IMAGE_PATHS.ICONS_EMOJI.RULER,
+  briefcase: IMAGE_PATHS.ICONS_COMMON.BRIEFCASE_SVG,
+  money: IMAGE_PATHS.ICONS_EMOJI.MONEY,
+  ring: IMAGE_PATHS.ICONS_COMMON.RING_SVG,
 } as const;
 
 const props = defineProps<{
@@ -517,10 +522,19 @@ const educationLabel = computed(() => {
  * 底部操作栏「悄悄话」：付费私信入口。
  * 优先级：后端已允许（allowMessage）、会员（membershipEnabled 门控）或超级测试账号 → 直接进入会话；
  * 其余 → 交友币扣费（UNLOCK_COST_YUAN.WHISPER）后进入会话。
+ *
+ * 2026-08-08 走查：悄悄话功能暂未开放（WHISPER_ENABLED=false 时按钮置灰，
+ * 点击仅提示，不执行扣费/跳转；开放后置 true 即可恢复原逻辑）。
  */
+const WHISPER_ENABLED = false;
+
 function onWhisperTap(): void {
   const card = currentCard.value;
   if (!card || isFlyingOut.value) return;
+  if (!WHISPER_ENABLED) {
+    uni.showToast({ title: t("discover.whisperComingSoon"), icon: "none" });
+    return;
+  }
   if (card.allowMessage || (featureFlags.membershipEnabled && vipStore.isVip) || isSuperTest.value) {
     emit("message", card.userId);
     return;
@@ -1074,7 +1088,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 
         <!-- 蒙面匿名解锁规则提示（设计改进方案：替代突兀的大号问号，明确解锁条件） -->
         <view v-if="masked" class="card__masked-hint">
-          <text class="card__masked-hint-icon">🔒</text>
+          <image class="card__masked-hint-icon" :src="emojiIcons.lock" mode="aspectFit" alt="" />
           <text class="card__masked-hint-text">{{ t('discover.maskUnlockHint') }}</text>
         </view>
 
@@ -1108,18 +1122,22 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
             v-if="heightText || occupationText || incomeText || relationshipText"
             class="card__basics"
           >
-            <text v-if="heightText" class="card__basics-item">
-              <text class="card__basics-icon">📏</text>{{ heightText }}
-            </text>
-            <text v-if="occupationText" class="card__basics-item">
-              <text class="card__basics-icon">💼</text>{{ occupationText }}
-            </text>
-            <text v-if="incomeText" class="card__basics-item">
-              <text class="card__basics-icon">💰</text>{{ incomeText }}
-            </text>
-            <text v-if="relationshipText" class="card__basics-item">
-              <text class="card__basics-icon">💍</text>{{ relationshipText }}
-            </text>
+            <view v-if="heightText" class="card__basics-item">
+              <image class="card__basics-icon" :src="emojiIcons.ruler" mode="aspectFit" alt="" />
+              <text>{{ heightText }}</text>
+            </view>
+            <view v-if="occupationText" class="card__basics-item">
+              <image class="card__basics-icon" :src="emojiIcons.briefcase" mode="aspectFit" alt="" />
+              <text>{{ occupationText }}</text>
+            </view>
+            <view v-if="incomeText" class="card__basics-item">
+              <image class="card__basics-icon" :src="emojiIcons.money" mode="aspectFit" alt="" />
+              <text>{{ incomeText }}</text>
+            </view>
+            <view v-if="relationshipText" class="card__basics-item">
+              <image class="card__basics-icon" :src="emojiIcons.ring" mode="aspectFit" alt="" />
+              <text>{{ relationshipText }}</text>
+            </view>
           </view>
 
           <!-- ④ 自我描述：3 行截断 + 展开/收起（mp-weixin 不支持 -webkit-line-clamp，用 max-height 实现） -->
@@ -1177,8 +1195,14 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
               <text class="card__post-preview-title">{{ t('discover.latestPostSection') }}</text>
               <text class="card__post-preview-content">{{ latestPost.content }}</text>
               <view class="card__post-preview-stats">
-                <text class="card__post-preview-stat">♥ {{ latestPost.likes }}</text>
-                <text class="card__post-preview-stat">💬 {{ latestPost.comments }}</text>
+                <view class="card__post-preview-stat">
+                  <image class="card__post-preview-stat-icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
+                  <text>{{ latestPost.likes }}</text>
+                </view>
+                <view class="card__post-preview-stat">
+                  <image class="card__post-preview-stat-icon" :src="emojiIcons.chat" mode="aspectFit" alt="" />
+                  <text>{{ latestPost.comments }}</text>
+                </view>
               </view>
             </view>
             <SafeImage
@@ -1216,9 +1240,10 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
       @not-interested="handleNotInterested"
     />
 
-    <!-- 底部固定操作栏（设计需求）：不喜欢 | 悄悄话（中间最大，品牌主色填充）| 喜欢 -->
+    <!-- 底部固定操作栏（参考 QQ 主页改版）：X(关闭) | 小纸条(胶囊) | ❤️(喜欢) 居中排列 -->
     <!-- catchtap 阻止冒泡避免被卡片手势拦截 -->
     <view v-if="currentCard" class="action-bar">
+      <!-- 左侧：X 关闭/不喜欢（小灰圆按钮） -->
       <view
         class="action-btn action-btn--reject press-feedback"
         hover-class="action-btn--pressed"
@@ -1227,20 +1252,21 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
         role="button"
         :aria-label="t('discover.skip')"
       >
-        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.PASS" mode="aspectFit" alt="" />
-        <text class="action-btn__label">{{ t('discover.skip') }}</text>
+        <image class="action-btn__reject-icon" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG" mode="aspectFit" alt="" />
       </view>
+      <!-- 中间：小纸条胶囊按钮（最大，品牌色渐变；2026-08-08 暂未开放，置灰） -->
       <view
-        class="action-btn action-btn--whisper press-feedback"
+        class="action-btn action-btn--whisper action-btn--whisper--disabled press-feedback"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
         @tap.stop="onWhisperTap"
         role="button"
         :aria-label="t('discover.whisperLabel')"
       >
-        <image class="action-btn__icon" :src="emojiIcons.message" mode="aspectFit" alt="" />
+        <image class="action-btn__whisper-icon" :src="emojiIcons.message" mode="aspectFit" alt="" />
         <text class="action-btn__whisper-label">{{ t('discover.whisperLabel') }}</text>
       </view>
+      <!-- 右侧：❤️ 喜欢（粉色心形按钮） -->
       <view
         class="action-btn action-btn--like press-feedback"
         hover-class="action-btn--pressed"
@@ -1249,8 +1275,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
         role="button"
         :aria-label="t('discover.like')"
       >
-        <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
-        <text class="action-btn__label">{{ t('discover.like') }}</text>
+        <image class="action-btn__like-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
       </view>
     </view>
 
@@ -1292,6 +1317,18 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   flex-direction: column;
   width: 100%;
   height: 100%;
+  /* mp-weixin 修复（2026-08-08）：.card-swiper 是 .card-area（flex column）的直接子项，
+   * 用 flex:1 撑满父容器，避免 height:100% 在 mp-weixin WebView 中对 flex item
+   * 父级高度解析不稳定 → 高度链断裂 → .card-stack 高度为 0 → 卡片被裁切不可见 */
+  // #ifndef H5
+  flex: 1;
+  /* 2026-08-08 P0 兜底：微信自定义组件宿主节点（<card-swiper> 标签）是 .card-area
+   * 的 flex 子项，但默认 flex:0 1 auto 高度仅由内容决定（空内容时塌缩为 ~16px）。
+   * 即便外部 host-class 的 flex:1 因样式隔离/编译差异未生效，组件根节点也自带
+   * 最小高度 860rpx（与 .card-area 同策略），宿主节点随内容自然撑开，
+   * 内部 .card-stack flex:1 → .card absolute 四边拉伸的高度链即可恢复。 */
+  min-height: 860rpx;
+  // #endif
   position: relative;
 }
 
@@ -1349,6 +1386,28 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   box-shadow: var(--s-card-soft);
   background: var(--c-bg-container);
 }
+
+/* mp-weixin 修复（2026-08-08，P0）：小程序端全局样式强制 view,text,image{box-sizing:border-box}，
+ * 而 padding-top:125% 撑高 + max-height + min-height 组合在 border-box 下存在冲突：
+ * - max-height 约束 border-box 总高度，但 padding-top 固定占位不可压缩；
+ * - 当 max-height < padding-top 撑出的高度时，卡片被压缩，绝对定位内容
+ *   （.card__content bottom:0 / .card__overlay 等）定位到 padding box 底部
+ *   被 overflow:hidden 裁切，表现为「卡片无法正常显示 / 内容被截断」。
+ * 修复：小程序端弃用 padding-top 撑高，改用 top/left/right/bottom 四边拉伸，
+ * 卡片高度直接由 .card-stack 决定（与 .card__bg-wrap 同一策略，不依赖百分比高度）。
+ * H5 端保持原有 4:5 比例布局不变。 */
+/* #ifndef H5 */
+.card {
+  top: 16rpx;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 16rpx;
+  width: auto;
+  padding-top: 0;
+  max-height: none;
+  min-height: 0;
+}
+/* #endif */
 
 .card--next {
   z-index: 1;
@@ -1448,8 +1507,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 }
 
 .card__masked-hint-icon {
-  font-size: var(--fs-base);
-  line-height: 1;
+  width: 32rpx;
+  height: 32rpx;
 }
 
 .card__masked-hint-text {
@@ -1929,8 +1988,9 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 }
 
 .card__basics-icon {
-  font-size: var(--fs-xs, 20rpx);
-  line-height: 1;
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
 }
 
 /* ⑥ 性格标签 + MBTI 徽标 */
@@ -2028,8 +2088,16 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 }
 
 .card__post-preview-stat {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
   font-size: var(--fs-xs, 20rpx);
   color: var(--c-overlay-text-secondary);
+}
+
+.card__post-preview-stat-icon {
+  width: 20rpx;
+  height: 20rpx;
 }
 
 /* 动态缩略图（SafeImage 内部元素，需 :deep() 穿透） */
@@ -2060,7 +2128,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   border: 1rpx solid rgba(255, 255, 255, 0.6);
 }
 
-/* ========== 底部固定操作栏（设计需求：不喜欢 | 悄悄话 | 喜欢，中间最大） ========== */
+/* ========== 底部固定操作栏（参考 QQ 主页改版：X | 小纸条胶囊 | ❤️ 居中） ========== */
 .action-bar {
   position: absolute;
   left: 24rpx;
@@ -2069,12 +2137,12 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28rpx;
-  padding: 18rpx 28rpx;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 18rpx);
+  gap: 32rpx;
+  padding: 16rpx 28rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16rpx);
   border-radius: var(--r-xxl, 28rpx);
-  background: var(--c-black-overlay-mid, rgba(0, 0, 0, 0.4));
-  border: 1rpx solid var(--c-overlay-border-mid, rgba(255, 255, 255, 0.18));
+  background: var(--c-black-overlay-mid, rgba(0, 0, 0, 0.35));
+  border: 1rpx solid var(--c-overlay-border-mid, rgba(255, 255, 255, 0.15));
   box-shadow: var(--s-card-soft);
   z-index: 6;
   /* H5 端毛玻璃增强；mp-weixin 不支持 backdrop-filter，高不透明度背景降级 */
@@ -2086,11 +2154,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 
 .action-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6rpx;
-  border-radius: var(--r-circle, 50%);
   transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1), filter var(--d-normal, 200ms) ease;
 }
 
@@ -2098,71 +2163,69 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .action-btn--pressed {
   transform: scale(0.88);
   filter: brightness(0.92);
-  box-shadow: var(--s-action-pressed);
 }
 
-/* 不喜欢：灰色图标按钮（最小） */
+/* 左侧 X 关闭/不喜欢：小灰圆按钮（48rpx） */
 .action-btn--reject {
-  width: 96rpx;
-  height: 96rpx;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: var(--r-circle, 50%);
   background: var(--c-bg-container);
-  box-shadow: var(--s-action-reject);
-  border: 3rpx solid var(--c-action-reject-border);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
+  border: 2rpx solid var(--c-neutral-200);
 }
 
 .action-btn--reject.action-btn--pressed {
-  box-shadow: var(--s-action-reject-pressed);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
 }
 
-/* 悄悄话：品牌主色填充按钮（中间、最大、最醒目；规格 64px = 128rpx） */
+.action-btn__reject-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+/* 中间小纸条：胶囊形大按钮（最大，品牌色渐变） */
 .action-btn--whisper {
-  width: 128rpx;
-  height: 128rpx;
+  height: 88rpx;
+  padding: 0 56rpx;
+  border-radius: var(--r-full);
   background: linear-gradient(135deg, var(--c-brand-400, #2dd4bf) 0%, var(--c-brand-500, #3fcf8e) 100%);
-  box-shadow: 0 8rpx 28rpx rgba(63, 207, 142, 0.45), var(--s-action-like);
-  border: 4rpx solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8rpx 28rpx rgba(63, 207, 142, 0.4);
+  border: 3rpx solid rgba(255, 255, 255, 0.85);
+  gap: 10rpx;
 }
 
-/* 喜欢：粉色渐变图标按钮（规格 56px = 112rpx） */
-.action-btn--like {
-  width: 112rpx;
-  height: 112rpx;
-  background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  box-shadow: var(--s-action-like);
+/* 2026-08-08 走查：悄悄话暂未开放 → 按钮置灰（WHISPER_ENABLED=false） */
+.action-btn--whisper--disabled {
+  opacity: 0.55;
+  filter: saturate(0.6);
 }
 
-/* 按钮图标样式（替代 emoji，跨设备渲染一致） */
-.action-btn__icon {
-  width: 44rpx;
-  height: 44rpx;
-}
-
-.action-btn--reject .action-btn__icon {
+.action-btn__whisper-icon {
   width: 40rpx;
   height: 40rpx;
-}
-
-.action-btn--whisper .action-btn__icon {
-  width: 56rpx;
-  height: 56rpx;
   filter: brightness(0) invert(1);
 }
 
-.action-btn--like .action-btn__icon {
-  width: 48rpx;
-  height: 48rpx;
-}
-
-.action-btn__label {
-  font-size: var(--fs-xs, 20rpx);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-}
-
 .action-btn__whisper-label {
-  font-size: var(--fs-base, 24rpx);
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: #ffffff;
+  line-height: 1;
+}
+
+/* 右侧 ❤️ 喜欢：粉色心形圆按钮（88rpx） */
+.action-btn--like {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
+  box-shadow: 0 4rpx 20rpx rgba(244, 63, 94, 0.35);
+}
+
+.action-btn__like-icon {
+  width: 44rpx;
+  height: 44rpx;
 }
 
 /* ========== 认证详情弹窗（设计需求） ========== */

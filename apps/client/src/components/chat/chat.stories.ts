@@ -3,7 +3,6 @@ import ChatBubble from './ChatBubble.vue';
 import ChatItem from './ChatItem.vue';
 import HeartSignal from './HeartSignal.vue';
 import IcebreakerSuggestions from './IcebreakerSuggestions.vue';
-import RedPacketBubble from './RedPacketBubble.vue';
 import VoiceMessageBubble from './VoiceMessageBubble.vue';
 import VoicePill from './VoicePill.vue';
 import VoiceRecorder from './VoiceRecorder.vue';
@@ -60,18 +59,6 @@ export const IcebreakerSuggestionsStory: StoryObj<typeof IcebreakerSuggestions> 
     visible: { control: 'boolean', description: '是否可见' },
   },
   args: { suggestions: ['你最近在追什么剧？', '周末一起去图书馆吗？', '你喜欢吃什么？'], visible: true },
-};
-
-export const RedPacketBubbleStory: StoryObj<typeof RedPacketBubble> = {
-  name: 'RedPacketBubble',
-  render: (args) => ({ components: { RedPacketBubble }, setup: () => ({ args }), template: '<RedPacketBubble v-bind="args" />' }),
-  argTypes: {
-    amount: { control: 'number', description: '金额（分）' },
-    greeting: { control: 'text', description: '祝福语' },
-    direction: { control: 'select', options: ['sent', 'received'], description: '方向' },
-    opened: { control: 'boolean', description: '是否已打开' },
-  },
-  args: { amount: 520, greeting: '一见钟情', direction: 'sent', opened: false },
 };
 
 export const VoiceMessageBubbleStory: StoryObj<typeof VoiceMessageBubble> = {

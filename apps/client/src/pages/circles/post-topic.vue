@@ -7,13 +7,20 @@ import { ref, computed, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCircleStore } from "../../stores/circle";
+import { useVillageStore } from "../../stores/village";
+import { useActivityStore, type ActivityItem } from "../../stores/activity";
 // 图片上传链路（review #2）：真实模式下需先上传拿 URL 再提交，mock 模式保留本地路径
 import { useMock } from "../../stores/helpers/use-mock";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
+import { getChannelConfig } from "../../config/channels";
+import { IMAGE_PATHS } from "../../config/images";
+import ActivityCard from "../../components/village/ActivityCard.vue";
 
 const { t } = useI18n();
 const circleStore = useCircleStore();
+const villageStore = useVillageStore();
+const activityStore = useActivityStore();
 
 /** 话题标题 */
 const title = ref("");
@@ -200,6 +207,58 @@ function removeImage(index: number) {
 /** 是否正在提交（review #22：防重复提交） */
 const isSubmitting = ref(false);
 
+/* ========== 2026-08-08 频道化重构：帖子模式 + 关联活动 ========== */
+
+/** 来源频道（today/school/activity 走帖子模式；interest/空走话题模式） */
+const sourceChannel = ref<string>("");
+/** 帖子模式下是否已发布成功（发布后 emit 事件刷新圈子页） */
+const postedChannel = ref<string>("");
+
+/** 是否帖子模式（发帖进 posts 流：今日广场/学校圈/活动频道） */
+const isPostMode = computed(() =>
+  ["today", "school", "activity"].includes(sourceChannel.value)
+);
+
+/** 帖子模式下的后端分类（由频道配置推导） */
+const postCategory = computed(() => {
+  const cfg = getChannelConfig(sourceChannel.value);
+  return cfg?.postCategory ?? "all";
+});
+
+/** 已选关联活动（帖子模式） */
+const selectedActivity = ref<ActivityItem | null>(null);
+/** 是否显示活动选择弹层 */
+const showActivityPicker = ref(false);
+/** 活动选择列表（前 10 条） */
+const activityOptions = ref<ActivityItem[]>([]);
+/** 活动列表是否加载中 */
+const loadingActivities = ref(false);
+
+/** 打开活动选择弹层（懒加载活动列表） */
+async function openActivityPicker() {
+  if (activityOptions.value.length === 0) {
+    loadingActivities.value = true;
+    try {
+      await activityStore.fetchActivities();
+      activityOptions.value = activityStore.activities.slice(0, 10);
+    } catch (_e) {
+      activityOptions.value = [];
+    } finally {
+      loadingActivities.value = false;
+    }
+  }
+  showActivityPicker.value = true;
+}
+
+function selectActivity(act: ActivityItem) {
+  selectedActivity.value = act;
+  showActivityPicker.value = false;
+}
+
+function removeActivity() {
+  selectedActivity.value = null;
+}
+
 /**
  * 发布话题
  */
@@ -222,6 +281,34 @@ async function submitTopic() {
 
   isSubmitting.value = true;
   try {
+    // 2026-08-08 频道化重构：帖子模式（今日广场/学校圈/活动）→ 走 posts 流，发布后圈子页可见
+    if (isPostMode.value) {
+      // 帖子标题需满足后端 5-30 字校验
+      if (title.value.trim().length < 5) {
+        uni.showToast({ title: t("circle.postTopicErrTitleTooShort"), icon: "none" });
+        isSubmitting.value = false;
+        return;
+      }
+      await villageStore.createPost({
+        categoryId: `cat-${postCategory.value}`,
+        title: title.value.trim(),
+        content: content.value.trim(),
+        images: images.value,
+        tags: selectedTags.value.map((key) => t(key)),
+        activityId: selectedActivity.value ? String(selectedActivity.value.id) : undefined,
+      });
+      // 通知圈子页刷新当前频道（post-topic 发布成功）
+      postedChannel.value = sourceChannel.value;
+      uni.$emit("village:post-created");
+      uni.showToast({ title: t("circle.postTopicPublishSuccess"), icon: "success" });
+      if (postSuccessNavTimer) clearTimeout(postSuccessNavTimer);
+      postSuccessNavTimer = setTimeout(() => {
+        postSuccessNavTimer = null;
+        uni.navigateBack();
+      }, 800);
+      return;
+    }
+
     // Task B5：解析目标圈子 ID —— 优先使用入口参数 circleId；
     // 否则按发布目标推导（兴趣圈 → 兴趣分类 ID；校园圈 → 兜底 "campus-circle"）
     const resolvedCircleId =
@@ -278,6 +365,16 @@ const pages = getCurrentPages();
 const currentPage = pages[pages.length - 1];
 const options = (currentPage as { options?: Record<string, string> })?.options ?? {};
 circleId.value = options.circleId || "";
+// 2026-08-08 频道化重构：帖子模式来源频道 + 预选活动
+sourceChannel.value = options.channel || "";
+if (options.activityId) {
+  const actId = options.activityId;
+  // 预选活动：从活动列表查（懒加载后回填）
+  void activityStore.fetchActivities().then(() => {
+    const found = activityStore.activities.find((a) => String(a.id) === actId);
+    if (found) selectedActivity.value = found;
+  });
+}
 </script>
 
 <template>
@@ -400,6 +497,37 @@ circleId.value = options.circleId || "";
         </view>
       </view>
 
+      <!-- ===== 2026-08-08 频道化重构：关联活动（帖子模式；发活动链接帖） ===== -->
+      <view v-if="isPostMode" class="activity-section">
+        <text class="section-label">{{ t('circle.postTopicActivityLabel') }}</text>
+        <view v-if="!selectedActivity" class="activity-empty">
+          <view
+            class="activity-add press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('circle.postTopicActivityPick')"
+            @tap="openActivityPicker"
+          >
+            <text class="activity-add__icon">+</text>
+            <text class="activity-add__text">{{ t('circle.postTopicActivityPick') }}</text>
+          </view>
+        </view>
+        <view v-else class="activity-selected">
+          <ActivityCard :activity="selectedActivity" compact />
+          <view
+            class="activity-remove press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('circle.postTopicActivityRemove')"
+            @tap="removeActivity"
+          >
+            <text class="activity-remove__text">{{ t('circle.postTopicActivityRemove') }}</text>
+          </view>
+        </view>
+      </view>
+
       <!-- ===== 喜爱标签开关（Task B5） ===== -->
       <view class="favorite-section">
         <view class="favorite-section__left">
@@ -456,6 +584,40 @@ circleId.value = options.circleId || "";
         </view>
       </view>
     </scroll-view>
+
+    <!-- ===== 2026-08-08 频道化重构：活动选择弹层（帖子模式） ===== -->
+    <view v-if="showActivityPicker" class="activity-picker" role="button" :aria-label="t('common.closeAria')" @tap="showActivityPicker = false">
+      <view class="activity-picker__content" catchtap="noop">
+        <view class="activity-picker__header">
+          <text class="activity-picker__title">{{ t('circle.postTopicActivityPick') }}</text>
+          <image class="activity-picker__close" role="button" :aria-label="t('common.closeAria')" @tap="showActivityPicker = false" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG" mode="aspectFit" alt="" />
+        </view>
+        <scroll-view scroll-y class="activity-picker__list" :show-scrollbar="false">
+          <view v-if="loadingActivities" class="activity-picker__loading">
+            <text class="activity-picker__loading-text">{{ t('common.loading') }}</text>
+          </view>
+          <view
+            v-for="act in activityOptions"
+            :key="act.id"
+            class="activity-picker__item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="100"
+            role="button"
+            :aria-label="act.title"
+            @tap="selectActivity(act)"
+          >
+            <view class="activity-picker__item-info">
+              <text class="activity-picker__item-title">{{ act.title }}</text>
+              <text class="activity-picker__item-meta">{{ act.scheduleText }} · {{ act.location }}</text>
+            </view>
+            <text class="activity-picker__item-check">›</text>
+          </view>
+          <view v-if="!loadingActivities && activityOptions.length === 0" class="activity-picker__empty">
+            <text class="activity-picker__empty-text">{{ t('circle.postTopicActivityEmpty') }}</text>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -943,5 +1105,144 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .bottom-submit__btn--disabled .bottom-submit__text {
   color: $text-tertiary;
+}
+
+/* ================================================================
+   2026-08-08 频道化重构：关联活动选择区（帖子模式）
+   ================================================================ */
+.activity-section {
+  margin: var(--sp-5) var(--sp-5) 0;
+}
+
+.activity-add {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-lg);
+  border: 1rpx dashed var(--c-brand-300, #86e8c8);
+  background: var(--c-bg-brand-soft, #f0fdf9);
+}
+
+.activity-add__icon {
+  font-size: 32rpx;
+  color: var(--c-brand-500);
+  font-weight: 600;
+}
+
+.activity-add__text {
+  font-size: var(--fs-base, 28rpx);
+  color: var(--c-brand-500);
+  font-weight: 500;
+}
+
+.activity-selected {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.activity-remove {
+  align-self: flex-end;
+  padding: 6rpx 20rpx;
+  border-radius: var(--r-full);
+  border: 1rpx solid var(--c-neutral-100, #eef1f6);
+}
+
+.activity-remove__text {
+  font-size: 22rpx;
+  color: var(--c-text-tertiary);
+}
+
+/* 活动选择弹层 */
+.activity-picker {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1000);
+  background: var(--c-overlay-bg, rgba(0, 0, 0, 0.45));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-picker__content {
+  width: 640rpx;
+  max-height: 70vh;
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl, 24rpx);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--sp-4);
+  border-bottom: 1rpx solid var(--c-divider-light, #f0f0f0);
+}
+
+.activity-picker__title {
+  font-size: var(--fs-lg, 32rpx);
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.activity-picker__close {
+  width: 32rpx;
+  height: 32rpx;
+  padding: 4rpx 12rpx;
+}
+
+.activity-picker__list {
+  margin-top: var(--sp-4);
+  max-height: 50vh;
+}
+
+.activity-picker__loading,
+.activity-picker__empty {
+  padding: var(--sp-8) 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-picker__loading-text,
+.activity-picker__empty-text {
+  font-size: var(--fs-base, 28rpx);
+  color: var(--c-text-tertiary);
+}
+
+.activity-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-4) var(--sp-3);
+  border-radius: var(--r-lg, 20rpx);
+}
+
+.activity-picker__item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.activity-picker__item-title {
+  font-size: var(--fs-base, 28rpx);
+  color: var(--c-text-primary);
+  font-weight: 500;
+}
+
+.activity-picker__item-meta {
+  font-size: 22rpx;
+  color: var(--c-text-tertiary);
+}
+
+.activity-picker__item-check {
+  color: var(--c-brand-500, #3fcf8e);
+  font-size: 28rpx;
 }
 </style>

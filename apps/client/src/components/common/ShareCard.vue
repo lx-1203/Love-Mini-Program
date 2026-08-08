@@ -245,7 +245,7 @@ async function handleSaveImage() {
         role="button"
         :aria-label="t('common.cancel')"
       >
-        <text class="share-close__icon">✕</text>
+        <image class="share-close__icon" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_WHITE_SVG" mode="aspectFit" alt="" />
       </view>
 
       <!-- 卡片头部：品牌标识 -->
@@ -348,9 +348,8 @@ async function handleSaveImage() {
 }
 
 .share-close__icon {
-  font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse);
-  font-weight: 600;
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .share-header {

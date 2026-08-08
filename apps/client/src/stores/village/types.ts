@@ -58,11 +58,54 @@ export interface PostItem {
   isShared: boolean;
   /** 作者是否与当前用户同校 */
   isAlumni: boolean;
+  /** 2026-08-08 论坛互动真实化：收藏数 */
+  favorites: number;
+  /** 2026-08-08 论坛互动真实化：当前用户是否已收藏 */
+  isFavorite: boolean;
+  /** 2026-08-08 论坛互动真实化：浏览量 */
+  views: number;
   /** Phase Feedback4：帖子所属城市（同城 Tab 过滤用） */
   city?: string;
   /** Phase Feedback4：搭子圈标签（discover-buddy 过滤用，如"运动搭子"） */
   buddyTags?: string[];
+  /** 2026-08-08 频道化重构：是否置顶（今日广场折叠条抽离用） */
+  isPinned?: boolean;
+  /** 2026-08-08 频道化重构：最新 2 条评论预览（QQ 频道风格） */
+  recentComments?: CommentItem[];
+  /** 2026-08-08 频道化重构：关联活动 ID */
+  activityId?: string;
+  /** 2026-08-08 频道化重构：关联活动摘要（活动卡内嵌渲染） */
+  activity?: ActivitySummaryView | null;
   createdAt: string;
+}
+
+/**
+ * 2026-08-08 频道化重构：活动摘要（对应后端 record ActivitySummaryView）。
+ * 帖子卡片内嵌活动卡时使用，点击跳活动详情页。
+ */
+export interface ActivitySummaryView {
+  id: number;
+  title: string;
+  location: string;
+  scheduleText: string;
+  activityDate: string;
+  status: "upcoming" | "ongoing" | "ended" | string;
+  enrollmentCount: number;
+  coverImage: string;
+  /** 活动简短描述（full 卡片展示，可选） */
+  description?: string;
+}
+
+/**
+ * 2026-08-08 频道化重构：评论预览项（对应后端 record CommentPreviewView）。
+ * 帖子列表卡片下方展示的最新 2 条评论。
+ */
+export interface CommentPreviewView {
+  id: number;
+  author: CommentAuthorView;
+  content: string;
+  createdAt: string;
+  replyCount: number;
 }
 
 /**
@@ -147,6 +190,18 @@ export interface VillageState {
   similarAuthors: SimilarAuthor[];
   /** 相似作者推荐是否正在加载 */
   loadingSimilarAuthors: boolean;
+  /** 2026-08-08 论坛互动真实化：浏览记录列表（映射后 PostItem + viewedAt） */
+  historyPosts: PostHistoryItem[];
+  /** 浏览记录是否正在加载 */
+  loadingHistory: boolean;
+}
+
+/**
+ * 2026-08-08 论坛互动真实化：前端浏览记录项（帖子摘要 + 最近浏览时间）。
+ */
+export interface PostHistoryItem {
+  post: PostItem;
+  viewedAt: string;
 }
 
 /**
@@ -168,6 +223,20 @@ export interface PostSummaryView {
   isAlumni: boolean;
   /** Phase Feedback3 P2.5：作者是否被当前用户关注（关注 Tab 打通；后端缺失时回退 false） */
   isFollowed?: boolean;
+  /** 2026-08-08 论坛互动真实化：收藏数 */
+  favoriteCount: number;
+  /** 2026-08-08 论坛互动真实化：当前用户是否已收藏 */
+  isFavorite: boolean;
+  /** 2026-08-08 论坛互动真实化：浏览量 */
+  viewCount: number;
+  /** 2026-08-08 频道化重构：置顶标记 */
+  isPinned?: boolean;
+  /** 2026-08-08 频道化重构：关联活动 ID */
+  activityId?: number;
+  /** 2026-08-08 频道化重构：关联活动摘要 */
+  activity?: ActivitySummaryView | null;
+  /** 2026-08-08 频道化重构：最新 2 条评论预览（QQ 频道风格） */
+  recentComments?: CommentPreviewView[];
 }
 
 /**
@@ -209,6 +278,16 @@ export interface PostDetailView {
   isAlumni: boolean;
   /** Phase Feedback3 P2.5：作者是否被当前用户关注 */
   isFollowed?: boolean;
+  /** 2026-08-08 论坛互动真实化：收藏数 */
+  favoriteCount: number;
+  /** 2026-08-08 论坛互动真实化：当前用户是否已收藏 */
+  isFavorite: boolean;
+  /** 2026-08-08 论坛互动真实化：浏览量 */
+  viewCount: number;
+  /** 2026-08-08 频道化重构：关联活动 ID */
+  activityId?: number;
+  /** 2026-08-08 频道化重构：关联活动摘要 */
+  activity?: ActivitySummaryView | null;
 }
 
 /**
@@ -235,6 +314,8 @@ export interface CommentItemView {
   likeCount: number;
   createdAt: string;
   isAuthor: boolean;
+  /** 2026-08-08 论坛互动真实化：当前用户是否已点赞（后端 CommentItemView 新增） */
+  isLiked: boolean;
   replyTo: string | null;
   /** P1-02 楼中楼：回复子列表（根评论携带，子评论为空列表） */
   replies?: CommentItemView[];
@@ -275,4 +356,31 @@ export interface ShareView {
   id: number;
   postId: number;
   shareCount: number;
+}
+
+/**
+ * 2026-08-08 论坛互动真实化：后端收藏 toggle 响应（对应 record FavoriteResponse）。
+ */
+export interface FavoriteResponse {
+  success: boolean;
+  favorited: boolean;
+  favoriteCount: number;
+}
+
+/**
+ * 2026-08-08 论坛互动真实化：后端浏览历史项视图（对应 record PostHistoryItemView）。
+ */
+export interface PostHistoryItemView {
+  post: PostSummaryView;
+  viewedAt: string;
+}
+
+/**
+ * 2026-08-08 论坛互动真实化：后端浏览历史分页响应（对应 record PostHistoryResponse）。
+ */
+export interface PostHistoryResponse {
+  items: PostHistoryItemView[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

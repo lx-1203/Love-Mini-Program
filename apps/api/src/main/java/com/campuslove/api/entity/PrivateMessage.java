@@ -77,6 +77,13 @@ public class PrivateMessage {
     private String messageKind = "text";
 
     /**
+     * 语音消息时长（秒），仅 voice 消息使用。
+     * 录音修复：私信语音时长持久化（Flyway V2026.08.08.0020）。
+     */
+    @Column(name = "duration_seconds")
+    private Integer durationSeconds;
+
+    /**
      * 引用上下文（JSON 格式）。
      * 当 messageKind 为 "quote" 时，存储引用来源信息。
      * 例如：{"topicTitle":"...","topicId":"...","replyId":"...","replyContent":"...","replyAuthorName":"..."}
@@ -157,6 +164,14 @@ public class PrivateMessage {
 
     public void setMessageKind(String messageKind) {
         this.messageKind = messageKind;
+    }
+
+    public Integer getDurationSeconds() {
+        return durationSeconds;
+    }
+
+    public void setDurationSeconds(Integer durationSeconds) {
+        this.durationSeconds = durationSeconds;
     }
 
     public String getQuoteContext() {

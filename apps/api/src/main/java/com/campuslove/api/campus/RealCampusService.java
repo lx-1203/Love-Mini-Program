@@ -280,7 +280,16 @@ public class RealCampusService implements CampusService {
                     post.getCreatedAt().toString(),
                     post.getLikesCount() >= 50,
                     false, // isAlumni
-                    false // isFollowed
+                    false, // isFollowed
+                    // 2026-08-08 论坛互动真实化：校园流不展示收藏（无收藏上下文，恒 0/false），浏览量取实体
+                    0,
+                    false, // isFavorite
+                    post.getViewCount(),
+                    // 2026-08-09 帖子关联活动：同校流暂无活动/评论预览上下文，按 null / 空列表兜底
+                    post.getActivityId(),
+                    null, // activity
+                    Boolean.TRUE.equals(post.getIsPinned()),
+                    List.of() // recentComments
             ));
         }
         return result;

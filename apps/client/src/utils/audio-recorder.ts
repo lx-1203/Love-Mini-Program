@@ -28,6 +28,9 @@ import {
   RECORDER_ENCODE_BIT_RATE,
   RECORDER_MIN_DURATION_SECONDS,
 } from "../constants/ui";
+// 录音修复：隐私协议守卫（__usePrivacyCheck__ 开启后，隐私接口调用前
+// 必须先通过 wx.requirePrivacyAuthorize 同意《用户隐私保护指引》）
+import { ensurePrivacyAuthorized } from "./privacy";
 
 /** 录音配置选项 */
 export interface RecorderOptions {
@@ -197,10 +200,17 @@ export function createRecorder() {
     // 录音错误事件
     recorderManager.onError((err: RecorderErrorCallbackResult) => {
       state = "error";
-      const error = new Error(
+      const rawMsg =
         typeof err === "string"
           ? err
-          : (err && (err.errMsg || err.message)) || "录音失败，请重试"
+          : (err && (err.errMsg || err.message)) || "录音失败，请重试";
+      // 录音修复：识别"隐私保护指引未声明"错误——
+      // 后台《用户隐私保护指引》未声明麦克风（scope.record）时微信直接拒绝 start，
+      // 该错误只能在小程序管理后台配置修复，代码内给出可操作提示
+      const error = new Error(
+        rawMsg.includes("privacy")
+          ? "麦克风未在小程序隐私保护指引中声明：请在微信公众平台「设置-服务内容声明-用户隐私保护指引」中添加『麦克风（录音）』后重新编译"
+          : rawMsg
       );
       callbacks.error.forEach((cb) => {
         try {
@@ -215,49 +225,73 @@ export function createRecorder() {
   }
 
   /**
+   * 录音权限校验结果。
+   *
+   * 录音修复：区分「隐私协议未同意」与「麦克风授权被拒」两类失败，
+   * 便于 start() 给出可操作的差异化提示（前者引导查看隐私指引，
+   * 后者引导去设置开启麦克风）。
+   */
+  type PermissionResult = "ok" | "privacy-denied" | "scope-denied";
+
+  /**
    * 申请 mp-weixin 录音权限
    *
    * mp-weixin 在用户首次调用录音时会弹出授权框，本方法用于主动触发授权流程，
    * 避免在录音开始时才发现权限缺失。
    *
-   * @returns Promise<boolean> 是否已授权
+   * 录音修复：`__usePrivacyCheck__: true`（manifest.json）开启后，
+   * 调用隐私接口前必须先后退过微信隐私协议校验（wx.requirePrivacyAuthorize，
+   * 弹窗由 App.vue 的 onNeedPrivacyAuthorization 处理）。原实现直接
+   * getSetting → authorize，跳过隐私协议，导致 RecorderManager.start 报
+   * "api scope is not declared in the privacy agreement"。
+   *
+   * @returns "ok" 已授权 / "privacy-denied" 隐私协议未同意 / "scope-denied" 麦克风权限被拒
    */
-  function ensurePermission(): Promise<boolean> {
-    return new Promise((resolve) => {
-      // #ifdef MP-WEIXIN
-      try {
+  async function ensurePermission(): Promise<PermissionResult> {
+    // #ifdef MP-WEIXIN
+    try {
+      // 第 1 步：隐私协议校验（用户同意 App.vue 的协议弹窗后返回）
+      await ensurePrivacyAuthorized();
+    } catch (_e) {
+      // 用户拒绝隐私协议或 requirePrivacyAuthorize 失败（含后台指引未声明 scope）
+      return "privacy-denied";
+    }
+    // 第 2 步：scope.record 授权校验
+    try {
+      return await new Promise<PermissionResult>((resolve) => {
         uni.getSetting({
           success(res: UniApp.GetSettingSuccessResult) {
             const hasPermission = res?.authSetting?.["scope.record"];
             if (hasPermission) {
-              resolve(true);
+              resolve("ok");
               return;
             }
-            // 未授权时主动申请
+            // 未授权时主动申请（scope.record 已声明于 manifest permission，
+            // 授权弹窗会展示 desc 用途说明）
             uni.authorize({
               scope: "scope.record",
               success() {
-                resolve(true);
+                resolve("ok");
               },
               fail() {
-                resolve(false);
+                resolve("scope-denied");
               },
             });
           },
           fail() {
-            resolve(false);
+            resolve("scope-denied");
           },
         });
-      } catch (_e) {
-        // uni.getSetting 调用失败时降级为直接尝试录音
-        resolve(true);
-      }
-      // #endif
-      // #ifndef MP-WEIXIN
-      // 非 mp-weixin 平台默认有权限（H5 通过 getUserMedia 申请）
-      resolve(true);
-      // #endif
-    });
+      });
+    } catch (_e) {
+      // uni.getSetting 调用失败时降级为直接尝试录音
+      return "ok";
+    }
+    // #endif
+    // #ifndef MP-WEIXIN
+    // 非 mp-weixin 平台默认有权限（H5 通过 getUserMedia 申请）
+    return "ok";
+    // #endif
   }
 
   /**
@@ -285,10 +319,14 @@ export function createRecorder() {
       ...options,
     };
 
-    // 申请权限
-    const hasPermission = await ensurePermission();
-    if (!hasPermission) {
-      const error = new Error("麦克风权限被拒绝，请在设置中开启");
+    // 申请权限（录音修复：先过隐私协议，再申请 scope.record，差异化提示失败原因）
+    const permissionResult = await ensurePermission();
+    if (permissionResult !== "ok") {
+      const error = new Error(
+        permissionResult === "privacy-denied"
+          ? "需同意《用户隐私保护指引》后才能使用录音"
+          : "麦克风权限被拒绝，请在设置中开启"
+      );
       callbacks.error.forEach((cb) => {
         try {
           cb(error);

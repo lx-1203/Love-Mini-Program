@@ -22,6 +22,7 @@ import { ref, computed, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useReportStore } from "../../stores/report";
 import { lightHaptic } from "../../utils/haptic";
+import { IMAGE_PATHS } from "../../config/images";
 
 const props = defineProps<{
   /** 是否显示弹窗（v-model:visible） */
@@ -207,7 +208,7 @@ defineExpose({ onContentTap, selectReason, submit });
         >
           <text class="reason-item__label">{{ item.label }}</text>
           <view class="reason-item__radio" :class="{ 'reason-item__radio--on': selectedReason === item.key }">
-            <text v-if="selectedReason === item.key" class="reason-item__radio-icon">✓</text>
+            <image v-if="selectedReason === item.key" class="reason-item__radio-icon" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
           </view>
         </view>
       </view>
@@ -368,10 +369,8 @@ defineExpose({ onContentTap, selectReason, submit });
 }
 
 .reason-item__radio-icon {
-  color: var(--c-text-inverse, #ffffff);
-  font-size: var(--fs-sm, 22rpx);
-  font-weight: 700;
-  line-height: 1;
+  width: 24rpx;
+  height: 24rpx;
 }
 
 /* ==================== 补充描述 ==================== */

@@ -16,6 +16,8 @@ import { openAppPath } from "../../utils/navigation";
 import SafeImage from "../../components/common/SafeImage.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import PostReportDialog from "../../components/social/PostReportDialog.vue";
+// 2026-08-08 频道化重构：帖子详情页活动卡（活动链接帖展开）
+import ActivityCard from "../../components/village/ActivityCard.vue";
 import { IMAGE_PATHS } from "../../config/images";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
@@ -54,35 +56,58 @@ const isSharing = ref(false);
 const showReportDialog = ref(false);
 
 /**
- * 2026-08-08 走查 P1：帖子收藏（主楼互动五件套补全）。
- * 后端暂无收藏表/接口，采用前端本地态（uni storage 按帖子 ID 持久化）：
- * 仅在当前端生效，跨端/换设备不共享（接入后端后替换为接口调用）。
+ * 2026-08-08 论坛互动真实化：帖子收藏已接入后端（post_favorites 表 + toggle 接口），
+ * 由 villageStore.toggleFavorite 维护，收藏态/收藏数以后端为权威。
  */
-const COLLECT_STORAGE_KEY = "village_collected_posts";
-const collectedPosts = ref<Set<string>>(
-  new Set(uni.getStorageSync(COLLECT_STORAGE_KEY) || [])
-);
-const isCollected = computed(() => {
-  const id = currentPost.value?.id;
-  return !!id && collectedPosts.value.has(String(id));
-});
+const isCollected = computed(() => currentPost.value?.isFavorite ?? false);
 
-function toggleCollect() {
+async function toggleCollect() {
   const id = currentPost.value?.id;
   if (!id) return;
-  const key = String(id);
-  const next = new Set(collectedPosts.value);
-  if (next.has(key)) {
-    next.delete(key);
-  } else {
-    next.add(key);
+  try {
+    await villageStore.toggleFavorite(id);
+    uni.showToast({
+      title: isCollected.value ? t("discover.collected") : t("discover.collect"),
+      icon: "none",
+    });
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : t("storeErrors.village.favoritePostFailed"),
+      icon: "none",
+    });
   }
-  collectedPosts.value = next;
-  uni.setStorageSync(COLLECT_STORAGE_KEY, Array.from(next));
-  uni.showToast({
-    title: isCollected.value ? t("discover.collected") : t("discover.collect"),
-    icon: "none",
-  });
+}
+
+/** 2026-08-08 头像点击进主页：统一跳转用户主页 */
+function goToUserProfile(userId: string | number | undefined) {
+  if (userId == null || userId === "") return;
+  openAppPath(`/pages/profile/index?userId=${userId}`);
+}
+
+/**
+ * 2026-08-08 贴吧式楼中楼：根评论的楼中楼回复默认收起（展示"展开 X 条回复"），
+ * 点击展开/收起；replies 超 3 条时默认收起，否则直接展示。
+ */
+const expandedReplies = ref<Set<string>>(new Set());
+
+function isRepliesCollapsed(comment: CommentItem): boolean {
+  const replies = comment.replies ?? [];
+  return replies.length > 3 && !expandedReplies.value.has(comment.id);
+}
+
+function toggleReplies(comment: CommentItem): void {
+  const next = new Set(expandedReplies.value);
+  if (next.has(comment.id)) {
+    next.delete(comment.id);
+  } else {
+    next.add(comment.id);
+  }
+  expandedReplies.value = next;
+}
+
+function visibleReplies(comment: CommentItem): CommentItem[] {
+  const replies = comment.replies ?? [];
+  return isRepliesCollapsed(comment) ? replies.slice(0, 3) : replies;
 }
 
 /**
@@ -266,6 +291,13 @@ async function handleReportComment(comment: { id: string }) {
 function goToTagPosts(tagName: string) {
   const cleanTag = tagName.startsWith("#") ? tagName.slice(1) : tagName;
   openAppPath(`/pages/village/tag-posts?tagName=${encodeURIComponent(cleanTag)}`);
+}
+
+/**
+ * 2026-08-08 频道化重构：跳转活动详情页（帖子内活动卡）
+ */
+function goToActivityDetail(activityId: number | string) {
+  openAppPath(`/pages/activities/detail?id=${encodeURIComponent(String(activityId))}`);
 }
 
 /**
@@ -562,7 +594,11 @@ defineExpose({ handleCommentLike, noop });
       <view class="author-card card-base">
         <!-- 作者基础信息 -->
         <view class="author-card__main">
-          <view class="author-avatar">
+          <!-- 2026-08-08 头像点击进主页：作者头像 -->
+          <view
+            class="author-avatar"
+            @tap="goToUserProfile(currentPost.author.userId)"
+          >
             <image
               v-if="currentPost.author.avatar && !isImageFailed('author')"
               class="author-avatar__img"
@@ -649,6 +685,15 @@ defineExpose({ handleCommentLike, noop });
             />
           </view>
 
+          <!-- 2026-08-08 频道化重构：关联活动卡（活动链接帖展开） -->
+          <view v-if="currentPost.activity" class="post-activity">
+            <ActivityCard
+              :activity="currentPost.activity"
+              compact
+              @open-detail="goToActivityDetail"
+            />
+          </view>
+
           <!-- 话题标签 -->
           <view v-if="currentPost.tags.length > 0" class="post-tags">
             <text
@@ -663,6 +708,7 @@ defineExpose({ handleCommentLike, noop });
         <view class="post-meta">
           <text class="post-time">{{ formatRelativeTime(currentPost.createdAt) }}</text>
           <view class="post-stats">
+            <text class="post-stats__item">{{ currentPost.views }} {{ t("village.detail.statsView") }}</text>
             <text class="post-stats__item">{{ currentPost.shares }} {{ t("village.detail.statsShare") }}</text>
             <text class="post-stats__item">{{ currentPost.comments }} {{ t("village.detail.statsComment") }}</text>
             <text class="post-stats__item">{{ currentPost.likes }} {{ t("village.detail.statsLike") }}</text>
@@ -692,7 +738,11 @@ defineExpose({ handleCommentLike, noop });
             class="comment-item list-item"
             @longpress="handleReportComment(comment)"
           >
-            <view class="comment-avatar">
+            <!-- 2026-08-08 头像点击进主页：根评论作者头像 -->
+            <view
+              class="comment-avatar"
+              @tap="goToUserProfile(comment.author.userId)"
+            >
               <image
                 v-if="comment.author.avatar && !isImageFailed('comment-' + comment.id)"
                 class="comment-avatar__img"
@@ -732,14 +782,17 @@ defineExpose({ handleCommentLike, noop });
                 </view>
               </view>
 
-              <!-- P1-02 楼中楼：缩进子评论（显示"回复 @昵称"） -->
+              <!-- P1-02 楼中楼：缩进子评论（显示"回复 @昵称"；2026-08-08 贴吧式：超 3 条默认收起） -->
               <view v-if="comment.replies && comment.replies.length > 0" class="comment-replies">
                 <view
-                  v-for="reply in comment.replies" :key="reply.id"
+                  v-for="reply in visibleReplies(comment)" :key="reply.id"
                   class="comment-reply list-item"
                   @longpress="handleReportComment(reply)"
                 >
-                  <view class="comment-reply__avatar">
+                  <view
+                    class="comment-reply__avatar"
+                    @tap.stop="goToUserProfile(reply.author.userId)"
+                  >
                     <image
                       v-if="reply.author.avatar && !isImageFailed('reply-' + reply.id)"
                       class="comment-reply__avatar-img"
@@ -770,6 +823,22 @@ defineExpose({ handleCommentLike, noop });
                     </view>
                   </view>
                 </view>
+                <!-- 贴吧式展开/收起（replies 超 3 条时展示切换按钮） -->
+                <view
+                  v-if="isRepliesCollapsed(comment) || (comment.replies && comment.replies.length > 3 && expandedReplies.has(comment.id))"
+                  class="comment-replies__toggle press-feedback"
+                  hover-class="press-feedback--active"
+                  hover-stay-time="120"
+                  role="button"
+                  :aria-label="isRepliesCollapsed(comment) ? t('village.detail.expandReplies', { n: comment.replies.length }) : t('village.detail.collapseReplies')"
+                  @tap.stop="toggleReplies(comment)"
+                >
+                  <text class="comment-replies__toggle-text">
+                    {{ isRepliesCollapsed(comment)
+                        ? t("village.detail.expandReplies", { n: comment.replies.length })
+                        : t("village.detail.collapseReplies") }}
+                  </text>
+                </view>
               </view>
             </view>
           </view>
@@ -794,7 +863,11 @@ defineExpose({ handleCommentLike, noop });
             class="similar-author-card list-item"
           >
             <view class="similar-author-main">
-              <view class="similar-author-avatar">
+              <!-- 2026-08-08 头像点击进主页：相似作者头像 -->
+              <view
+                class="similar-author-avatar"
+                @tap="goToUserProfile(author.userId)"
+              >
                 <image
                   v-if="author.avatar && !isImageFailed('similar-' + author.userId)"
                   class="similar-author-avatar__img"
@@ -894,7 +967,7 @@ defineExpose({ handleCommentLike, noop });
           <text class="footer-action__icon">{{ currentPost.isShared ? t("village.detail.shared") : t("village.detail.shareAction") }}</text>
           <text v-if="currentPost.shares > 0" class="footer-action__count">{{ currentPost.shares }}</text>
         </view>
-        <!-- 收藏按钮（2026-08-08 走查 P1：主楼互动五件套补全；前端本地态，后端接口接入后替换） -->
+        <!-- 收藏按钮（2026-08-08 论坛互动真实化：接入后端 post_favorites，收藏数实时显示） -->
         <view
           class="footer-action press-feedback"
           :class="{ 'footer-action--active': isCollected }"
@@ -905,6 +978,7 @@ defineExpose({ handleCommentLike, noop });
           @tap="toggleCollect"
         >
           <text class="footer-action__icon">{{ isCollected ? t("discover.collected") : t("discover.collect") }}</text>
+          <text v-if="currentPost.favorites > 0" class="footer-action__count">{{ currentPost.favorites }}</text>
         </view>
         <!-- 私信按钮 -->
         <view class="footer-action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.sendMessageAria')" @tap="sendMessage">
@@ -1379,6 +1453,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   flex-wrap: wrap;
   gap: 10rpx;
+  margin-bottom: 20rpx;
+}
+
+/* 2026-08-08 频道化重构：帖子内活动卡间距 */
+.post-activity {
   margin-bottom: 20rpx;
 }
 

@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
  * @param likesCount     点赞数
  * @param commentsCount  评论数
  * @param shareCount     转发数
+ * @param viewCount      浏览量（2026-08-08 论坛互动真实化新增）
  * @param createdAt      创建时间
  * @param auditedAt      审核时间（未审核则为 null）
  */
@@ -30,6 +31,7 @@ public record AdminPostSummaryView(
         Integer likesCount,
         Integer commentsCount,
         Integer shareCount,
+        Integer viewCount,
         LocalDateTime createdAt,
         LocalDateTime auditedAt
 ) {

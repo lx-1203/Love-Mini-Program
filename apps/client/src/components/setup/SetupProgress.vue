@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * SetupProgress - 引导流程进度条组件（功能5）。
  *
@@ -28,6 +28,7 @@
  */
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { IMAGE_PATHS } from "../../config/images";
 
 /**
  * 组件 props。
@@ -179,7 +180,7 @@ const currentStepLabel = computed(() => {
           ]"
         >
           <!-- 已完成：显示对勾 -->
-          <text v-if="step.status === 'completed'" class="setup-progress__check">✓</text>
+          <image v-if="step.status === 'completed'" class="setup-progress__check" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
           <!-- 当前/未到达：显示步骤序号 -->
           <text v-else class="setup-progress__num">{{ step.stepNo }}</text>
         </view>
@@ -314,10 +315,8 @@ const currentStepLabel = computed(() => {
 }
 
 .setup-progress__check {
-  font-size: var(--fs-md);
-  color: var(--c-text-inverse);
-  font-weight: 700;
-  line-height: 1;
+  width: 24rpx;
+  height: 24rpx;
 }
 
 .setup-progress__num {

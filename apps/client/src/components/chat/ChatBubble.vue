@@ -8,7 +8,7 @@ import { resolveMediaUrl } from "../../utils/media";
 const props = withDefaults(
   defineProps<{
     sender: "self" | "peer" | "system";
-    kind: "text" | "voice" | "emoji" | "system";
+    kind: "text" | "voice" | "emoji" | "system" | "activity";
     body: string;
     sentAt: string;
     durationSeconds?: number | null;
@@ -85,19 +85,11 @@ function handleTapQuote() {
 // handleTapQuote 通过 catchtap 绑定到模板，vue-tsc 无法识别 catchtap 语法，需显式暴露。
 defineExpose({ bubbleAriaLabel, handleTapQuote });
 
-/** 格式化时间显示 */
-function formatTime(isoString: string): string {
-  try {
-    const date = new Date(isoString);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    return isToday ? `${hours}:${minutes}` : `${date.getMonth() + 1}/${date.getDate()} ${hours}:${minutes}`;
-  } catch (_e) {
-    return isoString;
-  }
-}
+/**
+ * 送达状态勾（SVG，白色——2026-08-08 微信化重构：时间移出气泡由时间条承载，
+ * 送达状态保留并改为 SVG 图标；自己气泡为品牌绿底，白色勾与微信一致）。
+ */
+const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 </script>
 
 <template>
@@ -116,6 +108,8 @@ function formatTime(isoString: string): string {
     </view>
 
     <!-- 正常消息 -->
+    <!-- 2026-08-08 微信化重构：自己消息不显示头像（微信惯例，仅对方显示），
+         左右区分靠气泡颜色 + 对齐方向 -->
     <view v-else class="bubble-row" :class="[`bubble-row--${sender}`]">
       <!-- 对方头像（左侧） -->
       <image
@@ -126,16 +120,6 @@ function formatTime(isoString: string): string {
         lazy-load
         role="img"
         :aria-label="t('chat.quotePeer')"
-      />
-      <!-- 自己头像（右侧） -->
-      <image
-        v-else-if="isSelfSender"
-        class="bubble-avatar bubble-avatar--self"
-        :src="resolveMediaUrl(selfAvatar)"
-        mode="aspectFill"
-        lazy-load
-        role="img"
-        :aria-label="t('chat.quoteMe')"
       />
 
       <view class="bubble" :class="[`bubble--${sender}`]">
@@ -162,14 +146,15 @@ function formatTime(isoString: string): string {
           <text class="bubble__body">{{ body }}</text>
         </template>
 
-        <!-- 底部元信息：时间 + 送达状态 -->
+        <!-- 底部元信息：送达状态（时间已移出气泡，由父页面微信式时间条承载） -->
         <view class="bubble__footer">
-          <text class="bubble__meta">{{ formatTime(sentAt) }}</text>
-          <!-- 送达状态图标（仅自己发送的消息显示） -->
+          <!-- 送达状态图标（仅自己发送的消息显示；SVG 白色勾，微信风格） -->
           <view v-if="isSelfSender && !recalled" class="bubble__status">
-            <text v-if="deliveryStatus === 'sent'" class="bubble__status-icon">✓</text>
-            <text v-else-if="deliveryStatus === 'delivered'" class="bubble__status-icon">✓✓</text>
-            <text v-else-if="deliveryStatus === 'read'" class="bubble__status-icon bubble__status-icon--read">✓✓</text>
+            <image v-if="deliveryStatus === 'sent'" class="bubble__status-icon" :src="checkWhiteSrc" mode="aspectFit" alt="" />
+            <template v-else-if="deliveryStatus === 'delivered' || deliveryStatus === 'read'">
+              <image class="bubble__status-icon" :src="checkWhiteSrc" mode="aspectFit" alt="" />
+              <image class="bubble__status-icon" :src="checkWhiteSrc" mode="aspectFit" alt="" />
+            </template>
           </view>
         </view>
       </view>
@@ -199,8 +184,9 @@ function formatTime(isoString: string): string {
   align-items: flex-end;
   gap: var(--sp-2);
 }
+/* 2026-08-08 微信化重构：自己消息无头像，气泡直接靠右（不再 row-reverse 占位） */
 .bubble-row--self {
-  flex-direction: row-reverse;
+  justify-content: flex-end;
 }
 .bubble-row--peer {
   flex-direction: row;
@@ -310,27 +296,22 @@ function formatTime(isoString: string): string {
   white-space: nowrap;
 }
 
-/* 底部元信息 */
+/* 底部元信息（仅送达状态，时间已由父页面时间条承载） */
 .bubble__footer {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   justify-content: flex-end;
-}
-.bubble__meta {
-  font-size: var(--fs-xs);
-  opacity: 0.72;
+  height: 24rpx;
 }
 .bubble__status {
   display: flex;
   align-items: center;
+  gap: 2rpx;
 }
 .bubble__status-icon {
-  font-size: var(--fs-xs);
-  opacity: 0.6;
-}
-.bubble__status-icon--read {
-  color: var(--c-bg-container);
-  opacity: 0.9;
+  width: 20rpx;
+  height: 20rpx;
+  opacity: 0.85;
 }
 </style>

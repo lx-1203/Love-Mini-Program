@@ -5,17 +5,22 @@ import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.Comment;
 import com.campuslove.api.entity.Post;
+import com.campuslove.api.entity.PostFavorite;
 import com.campuslove.api.entity.PostLike;
 import com.campuslove.api.entity.PostShare;
+import com.campuslove.api.entity.PostViewHistory;
 import com.campuslove.api.repository.CommentRepository;
+import com.campuslove.api.repository.PostFavoriteRepository;
 import com.campuslove.api.repository.PostLikeRepository;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.PostShareRepository;
+import com.campuslove.api.repository.PostViewHistoryRepository;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -39,6 +44,14 @@ public class VillageInteractionService {
      * M-14：评论点赞 Repository（评论点赞记录持久化 + 计数）。
      */
     private final CommentLikeRepository commentLikeRepository;
+    /**
+     * 2026-08-08 论坛互动真实化：帖子收藏 Repository（收藏 toggle + 计数）。
+     */
+    private final PostFavoriteRepository postFavoriteRepository;
+    /**
+     * 2026-08-08 论坛互动真实化：帖子浏览历史 Repository（浏览记录 upsert）。
+     */
+    private final PostViewHistoryRepository postViewHistoryRepository;
     private final InteractionEventService interactionEventService;
     private final VillageQueryService queryService;
 
@@ -64,6 +77,8 @@ public class VillageInteractionService {
                                      PostLikeRepository postLikeRepository,
                                      PostShareRepository postShareRepository,
                                      CommentLikeRepository commentLikeRepository,
+                                     PostFavoriteRepository postFavoriteRepository,
+                                     PostViewHistoryRepository postViewHistoryRepository,
                                      InteractionEventService interactionEventService,
                                      VillageQueryService queryService,
                                      EntityManager entityManager,
@@ -73,6 +88,8 @@ public class VillageInteractionService {
         this.postLikeRepository = postLikeRepository;
         this.postShareRepository = postShareRepository;
         this.commentLikeRepository = commentLikeRepository;
+        this.postFavoriteRepository = postFavoriteRepository;
+        this.postViewHistoryRepository = postViewHistoryRepository;
         this.interactionEventService = interactionEventService;
         this.queryService = queryService;
         this.entityManager = entityManager;
@@ -81,7 +98,8 @@ public class VillageInteractionService {
 
     /**
      * 兼容旧测试的构造器（entityManager 为 null，走实体级读-改-写回退；
-     * sensitiveWordFilter / commentLikeRepository 为 null，跳过敏感词过滤与评论点赞）。
+     * sensitiveWordFilter / commentLikeRepository / postFavoriteRepository /
+     * postViewHistoryRepository 为 null，跳过敏感词过滤、评论点赞、收藏与浏览历史）。
      *
      * @deprecated 仅单元测试使用；Spring 注入请使用带 EntityManager 的构造器。
      */
@@ -93,7 +111,7 @@ public class VillageInteractionService {
                                      InteractionEventService interactionEventService,
                                      VillageQueryService queryService) {
         this(postRepository, commentRepository, postLikeRepository, postShareRepository,
-                null, interactionEventService, queryService, null, null);
+                null, null, null, interactionEventService, queryService, null, null);
     }
 
     /**
@@ -218,6 +236,97 @@ public class VillageInteractionService {
         }
         long likeCount = commentLikeRepository.countByCommentId(commentId);
         return new PostLikeResponse(true, !alreadyLiked, (int) likeCount);
+    }
+
+    /**
+     * 切换帖子收藏状态（2026-08-08 论坛互动真实化）。
+     *
+     * <p>已收藏 -> 取消收藏（删除 PostFavorite，favoriteCount-1）；
+     * 未收藏 -> 新增收藏（创建 PostFavorite，唯一约束兜底并发重复收藏）。</p>
+     *
+     * <p>收藏数无冗余计数列（与评论点赞一致），响应值通过实时 COUNT 获取，
+     * 保证返回值与持久化状态一致。取消收藏沿用 bulk DELETE 模式（与
+     * {@link #likePost} 同一缺陷修复：派生删除 + clear 会导致 DELETE 不落库）。</p>
+     *
+     * @param userId 当前用户 ID
+     * @param postId 帖子 ID
+     * @return 收藏响应（success=true，favorited 表示当前状态，favoriteCount 为最新计数）
+     * @throws IllegalArgumentException 当 userId 为空时
+     */
+    @Transactional
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    public FavoriteResponse toggleFavorite(Long userId, Long postId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        Post post = queryService.findPostOrThrow(postId);
+
+        boolean alreadyFavorited = postFavoriteRepository.existsByUserIdAndPostId(userId, postId);
+        if (alreadyFavorited) {
+            if (entityManager != null) {
+                // 缺陷修复：bulk DELETE 替代派生删除，避免 pending-removal 实体
+                // 被后续 entityManager.clear() 清出上下文导致 DELETE 不落库
+                entityManager.createQuery(
+                                "DELETE FROM PostFavorite pf WHERE pf.userId = :userId AND pf.postId = :postId")
+                        .setParameter("userId", userId)
+                        .setParameter("postId", postId)
+                        .executeUpdate();
+            } else {
+                postFavoriteRepository.deleteByUserIdAndPostId(userId, postId);
+            }
+        } else {
+            postFavoriteRepository.save(new PostFavorite(userId, postId));
+        }
+        // 收藏数实时统计（无冗余计数列，仿 likeComment）
+        int count = (int) postFavoriteRepository.countByPostId(postId);
+        return new FavoriteResponse(true, !alreadyFavorited, count);
+    }
+
+    /**
+     * 记录帖子浏览（2026-08-08 论坛互动真实化）。
+     *
+     * <p>详情读取时调用（调用方 {@code VillageQueryService.getPost} 为只读事务，
+     * 因此本方法使用 {@code REQUIRES_NEW} 独立读写事务）：</p>
+     * <ol>
+     *   <li>view_count 无条件原子 +1（bulk UPDATE，匿名浏览也计数）</li>
+     *   <li>登录用户写浏览历史（同一用户同一帖子仅一条，重复浏览刷新 viewed_at；
+     *       upsert 竞态由 uk_post_view_history_user_post 唯一约束兜底）</li>
+     * </ol>
+     *
+     * <p>注意：view_count 变更不做缓存失效——浏览量是模糊指标，热门列表
+     * 短暂陈旧可接受；若每次详情都 evict VILLAGE_HOT_POSTS 会击穿缓存。</p>
+     *
+     * @param userId 当前用户 ID（匿名浏览传 null，仅累加 view_count 不写历史）
+     * @param postId 帖子 ID
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordPostView(Long userId, Long postId) {
+        if (entityManager != null) {
+            // 原子 +1（并发浏览不丢计数）
+            entityManager.createQuery(
+                            "UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :postId")
+                    .setParameter("postId", postId)
+                    .executeUpdate();
+        }
+        // 仅登录用户写浏览历史（匿名只累加 view_count）
+        if (userId != null) {
+            LocalDateTime now = LocalDateTime.now();
+            postViewHistoryRepository.findByUserIdAndPostId(userId, postId)
+                    .ifPresentOrElse(h -> h.setViewedAt(now),
+                            () -> postViewHistoryRepository.save(new PostViewHistory(userId, postId, now)));
+        }
+    }
+
+    /**
+     * 清空当前用户的帖子浏览历史（2026-08-08 论坛互动真实化）。
+     *
+     * @param userId 当前用户 ID
+     */
+    @Transactional
+    public void clearPostHistory(Long userId) {
+        if (userId != null) {
+            postViewHistoryRepository.deleteByUserId(userId);
+        }
     }
 
     /**

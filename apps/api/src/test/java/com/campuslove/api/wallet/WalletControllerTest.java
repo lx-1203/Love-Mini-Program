@@ -173,7 +173,7 @@ class WalletControllerTest {
     }
 
     @Test
-    @DisplayName("recharge 演示充值与红包链路兼容：relatedType 使用 WALLET_RECHARGE，可查流水")
+    @DisplayName("recharge 演示充值：relatedType 使用 WALLET_RECHARGE，可查流水")
     void recharge_relatedTypeMatchesWalletRechargeConstant() {
         assertEquals("WALLET_RECHARGE", WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE,
                 "演示充值相关业务类型常量应存在");

@@ -30,13 +30,15 @@ public interface PrivateMessageService {
     /**
      * 在指定会话中发送消息。
      *
-     * @param conversationId 会话 ID
-     * @param senderId       发送者 ID
-     * @param content        消息内容
-     * @param kind           消息类型 (text/image/voice 等)
+     * @param conversationId  会话 ID
+     * @param senderId        发送者 ID
+     * @param content         消息内容
+     * @param kind            消息类型 (text/image/voice 等)
+     * @param durationSeconds 语音消息时长（秒），非语音消息传 null
      * @return 消息视图
      */
-    MessageView sendMessage(Long conversationId, Long senderId, String content, String kind);
+    MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
+                            Integer durationSeconds);
 
     /**
      * 获取指定会话的消息列表（分页），同时标记消息为已读。
@@ -44,9 +46,10 @@ public interface PrivateMessageService {
      * @param conversationId 会话 ID
      * @param userId         当前用户 ID（用于标记已读）
      * @param pageable       分页参数
+     * @param order          排序方向：desc（最新在前，默认）/ asc（最早在前，上拉加载更早历史）
      * @return 消息视图列表
      */
-    List<MessageView> getMessages(Long conversationId, Long userId, Pageable pageable);
+    List<MessageView> getMessages(Long conversationId, Long userId, Pageable pageable, String order);
 
     /**
      * 标记指定会话中所有未读消息为已读。

@@ -42,7 +42,7 @@ class VillagePostServiceTest {
     @Test
     void createPost_nullUserId_throwsException() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> postService.createPost(null, "测试标题五字", "content", List.of(), List.of(), "all"));
+                () -> postService.createPost(null, "测试标题五字", "content", List.of(), List.of(), "all", null));
         assertEquals("userId is required", ex.getMessage());
     }
 
@@ -52,7 +52,7 @@ class VillagePostServiceTest {
     @Test
     void createPost_blankContent_throwsException() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> postService.createPost(1L, "测试标题五字", "  ", List.of(), List.of(), "all"));
+                () -> postService.createPost(1L, "测试标题五字", "  ", List.of(), List.of(), "all", null));
         assertEquals("content is required", ex.getMessage());
     }
 
@@ -82,10 +82,13 @@ class VillagePostServiceTest {
                             List.of("tag"), List.of(),
                             p.getLikesCount(), p.getCommentsCount(), p.getShareCount(),
                             p.getCreatedAt() != null ? p.getCreatedAt().toString() : null,
-                            null, false, true, false);
+                            null, false, true, false,
+                            0, false, p.getViewCount(),
+                            // 2026-08-09 帖子关联活动：详情视图新增字段（测试场景无关联，null）
+                            null, null);
                 });
 
-        PostDetailView view = postService.createPost(userId, "测试标题五字", content, List.of(), List.of("tag"), "all");
+        PostDetailView view = postService.createPost(userId, "测试标题五字", content, List.of(), List.of("tag"), "all", null);
 
         Post saved = captor.getValue();
         assertEquals(userId, saved.getAuthorId());
@@ -110,7 +113,7 @@ class VillagePostServiceTest {
         when(queryService.toJsonString(any())).thenReturn("[]");
         when(postRepository.saveAndFlush(any(Post.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        postService.createPost(userId, "测试标题五字", "content", null, null, null);
+        postService.createPost(userId, "测试标题五字", "content", null, null, null, null);
 
         verify(postRepository).saveAndFlush(any(Post.class));
     }

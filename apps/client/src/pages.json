@@ -209,6 +209,12 @@
       }
     },
     {
+      "path": "pages/village/history",
+      "style": {
+        "navigationBarTitleText": "浏览记录"
+      }
+    },
+    {
       "path": "pages/settings/index",
       "style": {
         "navigationBarTitleText": "设置"
@@ -233,12 +239,6 @@
       }
     },
     {
-      "path": "pages/vip/red-packet",
-      "style": {
-        "navigationBarTitleText": "发红包"
-      }
-    },
-    {
       "path": "pages/vip/promo-code",
       "style": {
         "navigationBarTitleText": "优惠码"
@@ -249,12 +249,6 @@
       "style": {
         "navigationBarTitleText": "账单记录",
         "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/chat/red-packet",
-      "style": {
-        "navigationBarTitleText": "发红包"
       }
     },
     {

@@ -10,6 +10,7 @@
  */
 
 import type {
+  ActivitySummaryView,
   CommentAuthorView,
   CommentItem,
   CommentItemView,
@@ -126,6 +127,28 @@ export function mapToPostItem(raw: PostSummaryView): PostItem {
     isFollowed: raw.isFollowed ?? false,
     isShared: false, // PostSummaryView 无 isShared 字段
     isAlumni: raw.isAlumni ?? false,
+    // 2026-08-08 论坛互动真实化：收藏/浏览量透传，缺失兜底
+    favorites: raw.favoriteCount ?? 0,
+    isFavorite: raw.isFavorite ?? false,
+    views: raw.viewCount ?? 0,
+    // 2026-08-08 频道化重构：置顶 / 活动关联 / 最新评论预览透传（缺失兜底）
+    isPinned: raw.isPinned ?? false,
+    activityId: raw.activityId != null ? String(raw.activityId) : undefined,
+    activity: raw.activity ?? null,
+    recentComments: Array.isArray(raw.recentComments)
+      ? raw.recentComments.map((c) => ({
+          id: String(c.id),
+          postId: "",
+          author: mapCommentAuthorView(c.author),
+          content: c.content,
+          likes: 0,
+          isLiked: false,
+          createdAt: c.createdAt,
+          parentId: null,
+          replyTo: null,
+          replies: [],
+        }))
+      : [],
     createdAt: raw.createdAt,
   };
 }
@@ -150,6 +173,13 @@ export function mapDetailToPostItem(data: PostDetailView): PostItem {
     isFollowed: data.isFollowed ?? false,
     isShared: false,
     isAlumni: data.isAlumni ?? false,
+    // 2026-08-08 论坛互动真实化：收藏/浏览量透传，缺失兜底
+    favorites: data.favoriteCount ?? 0,
+    isFavorite: data.isFavorite ?? false,
+    views: data.viewCount ?? 0,
+    // 2026-08-08 频道化重构：活动关联透传（详情页活动卡）
+    activityId: data.activityId != null ? String(data.activityId) : undefined,
+    activity: data.activity ?? null,
     createdAt: data.createdAt,
   };
 }
@@ -167,7 +197,8 @@ export function mapToCommentItem(raw: CommentItemView): CommentItem {
     author: mapCommentAuthorView(raw.author),
     content: raw.content,
     likes: raw.likeCount,
-    isLiked: false, // CommentItemView 无 isLiked 字段
+    // 2026-08-08 论坛互动真实化：后端 CommentItemView 新增 isLiked 字段，透传
+    isLiked: raw.isLiked ?? false,
     createdAt: raw.createdAt,
     parentId: raw.parentId != null ? String(raw.parentId) : null,
     replyTo: raw.replyTo ?? null,
@@ -208,6 +239,10 @@ export function mapCampusFeedPost(
     isFollowed: Boolean(raw.isFollowed ?? false),
     isShared: Boolean(raw.isShared ?? false),
     isAlumni: Boolean(raw.isAlumni ?? false),
+    // 2026-08-08 论坛互动真实化：收藏/浏览量透传（同校动态流可能无，兜底 0）
+    favorites: toNumber(raw.favoriteCount ?? raw.favorites ?? 0),
+    isFavorite: Boolean(raw.isFavorite ?? false),
+    views: toNumber(raw.viewCount ?? raw.views ?? 0),
     createdAt: String(raw.createdAt ?? new Date().toISOString()),
   };
 }
@@ -462,6 +497,123 @@ export function rollbackLike(
   }
 }
 
+/* ========== 2026-08-08 论坛互动真实化：收藏四件套（仿点赞 helpers） ========== */
+
+/**
+ * 在 Mock 模式下切换帖子收藏状态（toggle 行为）。
+ * 同步更新列表中的帖子与当前详情页帖子（若命中）。
+ *
+ * @param posts - 帖子列表（in-place 修改）
+ * @param currentPost - 当前详情页帖子（可选，命中时同步修改）
+ * @param postId - 目标帖子 ID
+ * @throws 帖子不存在时抛出 Error
+ */
+export function toggleMockPostFavorite(
+  posts: PostItem[],
+  currentPost: PostItem | null,
+  postId: string
+): void {
+  const post = posts.find((p) => p.id === postId);
+  if (!post) {
+    throw new Error(t("storeErrors.village.postNotFound"));
+  }
+  post.isFavorite = !post.isFavorite;
+  post.favorites = Math.max(0, post.favorites + (post.isFavorite ? 1 : -1));
+
+  if (currentPost?.id === postId) {
+    currentPost.isFavorite = !currentPost.isFavorite;
+    currentPost.favorites = Math.max(
+      0,
+      currentPost.favorites + (currentPost.isFavorite ? 1 : -1)
+    );
+  }
+}
+
+/**
+ * 保存帖子收藏的回滚快照，便于失败时恢复。
+ */
+export interface PostFavoriteSnapshot {
+  prevPostIsFavorite: boolean | undefined;
+  prevPostFavorites: number | undefined;
+  prevCurrentIsFavorite: boolean | undefined;
+  prevCurrentFavorites: number | undefined;
+}
+
+/**
+ * 捕获收藏前的本地状态快照，用于失败时回滚。
+ */
+export function captureFavoriteSnapshot(
+  post: PostItem | undefined,
+  currentPost: PostItem | null
+): PostFavoriteSnapshot {
+  return {
+    prevPostIsFavorite: post?.isFavorite,
+    prevPostFavorites: post?.favorites,
+    prevCurrentIsFavorite: currentPost?.isFavorite,
+    prevCurrentFavorites: currentPost?.favorites,
+  };
+}
+
+/**
+ * 乐观应用收藏状态（toggle 行为），返回新的 isFavorite 状态。
+ */
+export function applyOptimisticFavorite(
+  post: PostItem | undefined,
+  currentPost: PostItem | null
+): boolean {
+  let newIsFavorite = false;
+  if (post) {
+    newIsFavorite = !post.isFavorite;
+    post.isFavorite = newIsFavorite;
+    post.favorites = Math.max(0, post.favorites + (newIsFavorite ? 1 : -1));
+  }
+  if (currentPost) {
+    newIsFavorite = !currentPost.isFavorite;
+    currentPost.isFavorite = newIsFavorite;
+    currentPost.favorites = Math.max(
+      0,
+      currentPost.favorites + (newIsFavorite ? 1 : -1)
+    );
+  }
+  return newIsFavorite;
+}
+
+/**
+ * 用后端返回的权威状态校正本地收藏状态。
+ */
+export function applyServerFavoriteResult(
+  post: PostItem | undefined,
+  currentPost: PostItem | null,
+  favorited: boolean,
+  favoriteCount: number
+): void {
+  if (post) {
+    post.isFavorite = favorited;
+    post.favorites = favoriteCount;
+  }
+  if (currentPost) {
+    currentPost.isFavorite = favorited;
+    currentPost.favorites = favoriteCount;
+  }
+}
+
+/**
+ * 用快照回滚本地收藏状态。
+ */
+export function rollbackFavorite(
+  post: PostItem | undefined,
+  currentPost: PostItem | null,
+  snapshot: PostFavoriteSnapshot
+): void {
+  if (post) {
+    post.isFavorite = snapshot.prevPostIsFavorite ?? false;
+    post.favorites = snapshot.prevPostFavorites ?? 0;
+  }
+  if (currentPost) {
+    currentPost.isFavorite = snapshot.prevCurrentIsFavorite ?? false;
+    currentPost.favorites = snapshot.prevCurrentFavorites ?? 0;
+  }
+}
 
 /**
  * 格式化相对时间
@@ -632,8 +784,43 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   },
 ];
 
+/* ========== 2026-08-08 频道化重构：Mock 活动摘要（帖子活动卡内嵌用） ========== */
+
+/**
+ * Mock 活动摘要列表（与后端 MockVillageService 的 activity 数据对齐：
+ * 201 电影社线下碰面 / 202 周末篮球友谊赛）。
+ */
+export const mockActivities: ActivitySummaryView[] = [
+  {
+    id: 201,
+    title: "电影社线下碰面",
+    location: "影像楼 B 厅",
+    scheduleText: "周五 19:00",
+    activityDate: "2026-08-09",
+    status: "upcoming",
+    enrollmentCount: 23,
+    coverImage: "/static/assets/images/posts/post-2.jpg",
+  },
+  {
+    id: 202,
+    title: "周末篮球友谊赛",
+    location: "东区篮球场",
+    scheduleText: "周六 15:00",
+    activityDate: "2026-08-10",
+    status: "upcoming",
+    enrollmentCount: 12,
+    coverImage: "",
+  },
+];
+
 /** Mock 帖子列表 */
-export const mockPosts: PostItem[] = [
+/**
+ * Mock 帖子原始数据（2026-08-08 论坛互动真实化：收藏/浏览量字段由
+ * {@link mockPosts} 归一化派生，避免逐条维护 30 条重复字段）。
+ */
+const mockPostsRaw: Array<
+  Omit<PostItem, "favorites" | "isFavorite" | "views">
+> = [
   {
     id: "post-1",
     author: mockAuthors[0],
@@ -1207,7 +1394,98 @@ export const mockPosts: PostItem[] = [
     city: "西安",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 70).toISOString(),
   },
+  /* ========== 2026-08-08 频道化重构：今日演示帖（置顶 / 活动关联 / 校园） ========== */
+  {
+    id: "post-31",
+    author: mockAuthors[0],
+    categoryId: "cat-interest",
+    title: "本周圈子公告：七夕主题活动预告",
+    content:
+      "本周六晚 7 点，校园东区草坪将举办「七夕星光主题趴」：露天电影、心动配对、荧光手环，现场还有小礼物～心动就来发帖报名，名额有限先到先得！",
+    images: [],
+    tags: ["#圈子公告", "#七夕活动"],
+    likes: 56,
+    comments: 18,
+    shares: 9,
+    isLiked: false,
+    isFollowed: false,
+    isShared: false,
+    isAlumni: false,
+    isPinned: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 40).toISOString(),
+  },
+  {
+    id: "post-32",
+    author: mockAuthors[1],
+    categoryId: "cat-activity",
+    title: "今晚电影社放映《你的名字》，现场报名 ing！",
+    content:
+      "周五 19:00 影像楼 B 厅放映《你的名字》，映后自由讨论，免费入场！已报名 23 人，活动链接点卡片直达～",
+    images: ["/static/assets/images/posts/post-2.jpg"],
+    tags: ["#电影", "#活动"],
+    likes: 42,
+    comments: 11,
+    shares: 6,
+    isLiked: false,
+    isFollowed: false,
+    isShared: false,
+    isAlumni: false,
+    activityId: "201",
+    activity: mockActivities[0],
+    recentComments: [
+      {
+        id: "comment-31",
+        postId: "post-32",
+        author: mockAuthors[2],
+        content: "带我一个！正好周末没安排",
+        likes: 2,
+        isLiked: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+      },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+  },
+  {
+    id: "post-33",
+    author: mockAuthors[3],
+    categoryId: "cat-campus",
+    title: "图书馆四楼新增自习区，环境超棒！",
+    content:
+      "今天去图书馆发现四楼新开了自习区，每个座位都有插座和台灯，还有独立隔板，学习效率直接拉满，推荐给同校的同学们！",
+    images: ["/static/assets/images/posts/post-1.jpg"],
+    tags: ["#校园日常", "#图书馆"],
+    likes: 35,
+    comments: 9,
+    shares: 4,
+    isLiked: false,
+    isFollowed: false,
+    isShared: false,
+    isAlumni: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+  },
 ];
+
+/**
+ * Mock 帖子列表（2026-08-08 论坛互动真实化）：
+ * 收藏数/浏览量派生自点赞数；post-1 / post-4 预置收藏态便于演示初始状态。
+ */
+export const mockPosts: PostItem[] = mockPostsRaw.map((p) => ({
+  ...p,
+  favorites: Math.floor(p.likes / 3),
+  views: p.likes * 10,
+  isFavorite: p.id === "post-1" || p.id === "post-4",
+}));
+
+/**
+ * Mock 帖子浏览历史（2026-08-08 论坛互动真实化）：取前 6 条，浏览时间错开。
+ */
+export const mockPostHistory: { post: PostItem; viewedAt: string }[] =
+  mockPosts.slice(0, 6).map((p, i) => ({
+    post: p,
+    viewedAt: new Date(
+      Date.now() - 1000 * 60 * 60 * (i * 3 + 1)
+    ).toISOString(),
+  }));
 
 /** Mock 评论列表 */
 export const mockComments: CommentItem[] = [
@@ -1248,3 +1526,26 @@ export const mockComments: CommentItem[] = [
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
 ];
+
+// 2026-08-08 论坛互动真实化：mock 评论覆盖全部 mock 帖子
+// （修复 mock 模式下大部分帖子评论区为空——原 mockComments 只覆盖 post-1/post-2/post-4）
+const mockCommentSeed = [
+  "支持一下楼主！",
+  "说得很有道理",
+  "学到了，感谢分享",
+  "路过帮顶",
+  "同感+1",
+];
+mockPosts.slice(4).forEach((p, i) => {
+  const author = mockAuthors[i % mockAuthors.length];
+  if (!author) return; // 防御：mockAuthors 池意外为空时跳过
+  mockComments.push({
+    id: `comment-mock-${i + 1}`,
+    postId: p.id,
+    author,
+    content: mockCommentSeed[i % mockCommentSeed.length] ?? "支持一下楼主！",
+    likes: (i * 3) % 9,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * (i + 1)).toISOString(),
+  });
+});

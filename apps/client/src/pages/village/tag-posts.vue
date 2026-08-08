@@ -9,7 +9,6 @@ import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
 import { appEnv } from "../../services/env";
-import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 // 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
 import { useVillageStore, formatRelativeTime, type PostItem } from "../../stores/village";
@@ -24,18 +23,21 @@ const stateIcons = {
   share: IMAGE_PATHS.ICONS_COMMON.SHARE_ICON_SVG,
 } as const;
 
-/** Phase 4.4 验收 · 帖子点赞（本地状态翻转，计数同步） */
-// TODO(mock)：当前为页面级本地状态翻转（review #40）。真实链路应调用
-// villageStore.likePost(postId) 并以后端返回为准。
-function toggleLike(post: PostItem): void {
-  post.isLiked = !post.isLiked;
-  post.likes += post.isLiked ? 1 : -1;
-  successHaptic();
+/** Phase 4.4 验收 · 帖子点赞（2026-08-08 论坛互动真实化：接入 villageStore.likePost，后端为准） */
+async function toggleLike(post: PostItem): Promise<void> {
+  try {
+    await villageStore.likePost(post.id);
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : t("village.likeFailed"),
+      icon: "none",
+    });
+    console.error("点赞失败:", error);
+  }
 }
 
 /** Phase 4.4 验收 · 帖子分享（引导使用微信转发菜单，H5 提示说明） */
 function handleSharePost(post: PostItem): void {
-  lightHaptic();
   // mp-weixin：开启转发菜单；H5：提示说明（浏览器环境无原生分享）
   try {
     uni.showShareMenu({
@@ -131,6 +133,7 @@ async function loadPosts(reset = true) {
       author: { userId: number; nickname: string; avatarUrl: string; campusName: string };
       category: string; tags: string[];
       likeCount: number; commentCount: number; shareCount: number;
+      favoriteCount?: number; viewCount?: number;
       createdAt: string; isHot: boolean; isAlumni: boolean;
     }>>({
       url: `/post-tags/posts?tagName=${encodeURIComponent(tagName.value)}&page=${currentPageNum}&size=${PAGE_SIZE}`,
@@ -158,6 +161,10 @@ async function loadPosts(reset = true) {
       isFollowed: false,
       isShared: false,
       isAlumni: false,
+      // 2026-08-08 论坛互动真实化：收藏/浏览量透传（标签页后端可能缺失，兜底）
+      favorites: raw.favoriteCount ?? 0,
+      isFavorite: false,
+      views: raw.viewCount ?? 0,
       createdAt: raw.createdAt,
     }));
 
@@ -200,42 +207,48 @@ function getMockTagPosts(tag: string): PostItem[] {
       author: { userId: "1001", name: "星野", avatar: "", headline: "北京·985硕士", campusName: "北京大学" },
       categoryId: "sincere", title: "", content: "今天在图书馆遇到一个认真学习的女生，感觉好有气质！",
       images: [], tags: ["#校园日常", "#表白墙"], likes: 32, comments: 8, shares: 3,
-      isLiked: false, isFollowed: false, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 3600000).toISOString(),
+      isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
+      favorites: 10, isFavorite: false, views: 320, createdAt: new Date(Date.now() - 3600000).toISOString(),
     },
     {
       id: "mock-tag-post-2",
       author: { userId: "1002", name: "阿泽", avatar: "", headline: "上海·互联网大厂", campusName: "复旦大学" },
       categoryId: "interest", title: "", content: "有没有一起打羽毛球的？周末约起来！求搭子！",
       images: [], tags: ["#找搭子", "#兴趣分享"], likes: 18, comments: 12, shares: 4,
-      isLiked: true, isFollowed: false, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 10800000).toISOString(),
+      isLiked: true, isFollowed: false, isShared: false, isAlumni: false,
+      favorites: 6, isFavorite: false, views: 180, createdAt: new Date(Date.now() - 10800000).toISOString(),
     },
     {
       id: "mock-tag-post-3",
       author: { userId: "1003", name: "橙子", avatar: "", headline: "杭州·设计师", campusName: "浙江大学" },
       categoryId: "activity", title: "", content: "急！计算机组成原理期末怎么复习？求大佬带带",
       images: [], tags: ["#求助", "#技术交流"], likes: 45, comments: 23, shares: 6,
-      isLiked: false, isFollowed: true, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 18000000).toISOString(),
+      isLiked: false, isFollowed: true, isShared: false, isAlumni: false,
+      favorites: 15, isFavorite: true, views: 450, createdAt: new Date(Date.now() - 18000000).toISOString(),
     },
     {
       id: "mock-tag-post-4",
       author: { userId: "1004", name: "北岛", avatar: "", headline: "成都·创业者", campusName: "四川大学" },
       categoryId: "sincere", title: "", content: "毕业5年了，想问问学弟学妹们学校现在变化大吗？",
       images: [], tags: ["#校友动态", "#生活记录"], likes: 67, comments: 19, shares: 10,
-      isLiked: false, isFollowed: false, isShared: true, isAlumni: false, createdAt: new Date(Date.now() - 86400000).toISOString(),
+      isLiked: false, isFollowed: false, isShared: true, isAlumni: false,
+      favorites: 22, isFavorite: false, views: 670, createdAt: new Date(Date.now() - 86400000).toISOString(),
     },
     {
       id: "mock-tag-post-5",
       author: { userId: "1005", name: "南风", avatar: "", headline: "深圳·产品经理", campusName: "北京大学" },
       categoryId: "life", title: "", content: "记录一下今天在食堂吃到的好吃的！麻辣香锅绝了",
       images: [], tags: ["#生活记录", "#校园日常"], likes: 23, comments: 5, shares: 2,
-      isLiked: false, isFollowed: false, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 90000000).toISOString(),
+      isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
+      favorites: 7, isFavorite: false, views: 230, createdAt: new Date(Date.now() - 90000000).toISOString(),
     },
     {
       id: "mock-tag-post-6",
       author: { userId: "1006", name: "小鹿", avatar: "", headline: "北京·Java开发", campusName: "清华大学" },
       categoryId: "interest", title: "", content: "想找个一起刷 LeetCode 的队友，每天互相监督",
       images: [], tags: ["#技术交流", "#找搭子"], likes: 15, comments: 7, shares: 3,
-      isLiked: false, isFollowed: false, isShared: false, isAlumni: false, createdAt: new Date(Date.now() - 172800000).toISOString(),
+      isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
+      favorites: 5, isFavorite: false, views: 150, createdAt: new Date(Date.now() - 172800000).toISOString(),
     },
   ];
 

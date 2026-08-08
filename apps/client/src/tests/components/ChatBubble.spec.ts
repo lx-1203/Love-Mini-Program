@@ -116,10 +116,30 @@ describe("ChatBubble component - 聊天气泡组件", () => {
   });
 
   // ------------------------------------------------------------------
-  // 发送时间
+  // 2026-08-08 微信化重构：头像与时间
   // ------------------------------------------------------------------
-  it("渲染 sentAt 时间", () => {
+  it("sender=peer 时渲染对方头像", () => {
+    const wrapper = mountBubble({ sender: "peer" });
+    expect(wrapper.find(".bubble-avatar--peer").exists()).toBe(true);
+  });
+
+  it("sender=self 时不渲染自己头像（微信惯例：自己消息无头像）", () => {
+    const wrapper = mountBubble({ sender: "self" });
+    expect(wrapper.find(".bubble-avatar").exists()).toBe(false);
+  });
+
+  it("气泡内不再渲染时间（时间由父页面微信式时间条承载）", () => {
     const wrapper = mountBubble({ sentAt: "2026-07-26T10:00:00" });
-    expect(wrapper.find(".bubble__meta").exists()).toBe(true);
+    expect(wrapper.find(".bubble__meta").exists()).toBe(false);
+  });
+
+  it("self 消息送达状态渲染 SVG 勾（sent 单勾）", () => {
+    const wrapper = mountBubble({ sender: "self", deliveryStatus: "sent" });
+    expect(wrapper.findAll(".bubble__status-icon").length).toBe(1);
+  });
+
+  it("self 消息已读状态渲染双勾 SVG", () => {
+    const wrapper = mountBubble({ sender: "self", deliveryStatus: "read" });
+    expect(wrapper.findAll(".bubble__status-icon").length).toBe(2);
   });
 });

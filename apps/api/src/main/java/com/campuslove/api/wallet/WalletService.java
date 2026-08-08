@@ -21,9 +21,6 @@ import org.springframework.data.domain.Pageable;
  * <ul>
  *   <li>VIP 自动续费（AutoRenewService.renewVip）：调用 {@link #deduct} 扣减月费，
  *       余额不足时由调用方捕获 {@link InsufficientBalanceException} 处理（写 FAILED 流水 + 推送通知）</li>
- *   <li>红包发送（VipRedPacketService.createRedPacket）：调用 {@link #deduct} 扣减发送方余额，
- *       余额不足时直接抛出异常，事务回滚，红包创建失败</li>
- *   <li>红包领取（VipRedPacketService.claimRedPacket）：调用 {@link #recharge} 充值到领取者钱包</li>
  * </ul>
  */
 public interface WalletService {
@@ -38,8 +35,8 @@ public interface WalletService {
      * @param userId       用户 ID
      * @param amountCents  扣减金额（分，必须 > 0）
      * @param orderId      业务订单号（幂等键，全局唯一）
-     * @param relatedType  关联业务类型（如 VIP_RENEW / RED_PACKET_SEND）
-     * @param relatedId    关联业务实体 ID（如 renewalId / redPacketId，可空）
+     * @param relatedType  关联业务类型（如 VIP_RENEW）
+     * @param relatedId    关联业务实体 ID（如 renewalId，可空）
      * @return 扣减后余额（分）
      * @throws InsufficientBalanceException 余额不足时抛出
      * @throws IllegalArgumentException amountCents <= 0 或 userId 为空时抛出
@@ -56,8 +53,8 @@ public interface WalletService {
      * @param userId       用户 ID
      * @param amountCents  充值金额（分，必须 > 0）
      * @param orderId      业务订单号（幂等键，全局唯一）
-     * @param relatedType  关联业务类型（如 RED_PACKET_CLAIM / RED_PACKET_REFUND）
-     * @param relatedId    关联业务实体 ID（如 redPacketId，可空）
+     * @param relatedType  关联业务类型
+     * @param relatedId    关联业务实体 ID（可空）
      * @return 充值后余额（分）
      * @throws IllegalArgumentException amountCents <= 0 或 userId 为空时抛出
      */

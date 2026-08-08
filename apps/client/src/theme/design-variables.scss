@@ -198,8 +198,6 @@ $shadow-tab-active-md: 0 6rpx 20rpx rgba(63, 207, 142, 0.35);
 // 品牌色变体阴影：用于自定义 tab-bar
 $shadow-brand-soft: 0 4rpx 16rpx rgba(63, 207, 142, 0.10);
 $shadow-brand-mid: 0 6rpx 24rpx rgba(63, 207, 142, 0.20);
-// 红包阴影（红色）：用于红包气泡
-$shadow-red-packet: 0 4rpx 12rpx rgba(236, 72, 72, 0.2);
 $shadow-error: 0 4rpx 16rpx rgba(229, 69, 77, 0.25);
 
 // ============================================================
@@ -382,7 +380,6 @@ page {
   --s-tab-active-md: #{$shadow-tab-active-md};
   --s-brand-soft: #{$shadow-brand-soft};
   --s-brand-mid: #{$shadow-brand-mid};
-  --s-red-packet: #{$shadow-red-packet};
 
   --c-elevation-1: 0 1rpx 4rpx rgba(15, 23, 42, 0.04);
   --c-elevation-2: 0 4rpx 16rpx rgba(15, 23, 42, 0.08);
@@ -434,8 +431,9 @@ page {
   --c-schedule-custom: #FFD479;
   --c-schedule-custom-text: #8A5A00;
 
-  /* profile 头部背景高度 token（Phase D4） */
-  --profile-bg-height: 240rpx;
+  /* profile 头部背景高度 token（Phase D4）
+     2026-08-08：240rpx → 400rpx，QQ 主页风格封面比例（widthFix 图片更高时以图片为准） */
+  --profile-bg-height: 400rpx;
   /* profile 头像尺寸 token（Phase D4） */
   --profile-avatar-size: 128rpx;
   /* 卡片当前态缩放 token（Phase D5） */

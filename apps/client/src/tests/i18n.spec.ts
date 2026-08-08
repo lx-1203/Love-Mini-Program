@@ -554,7 +554,6 @@ describe("Task 3.3.3 - 14 个 Store 错误回退消息 i18n key 存在性", () =
     "storeErrors.videoCall",
     "storeErrors.promoCode",
     "storeErrors.vip",
-    "storeErrors.vipRedPacket",
     "storeErrors.profile",
     "storeErrors.likes",
     "storeErrors.messages",

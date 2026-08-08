@@ -234,7 +234,7 @@ defineExpose({ handleAnonymousMatch, handlePaidEntry });
           <text class="quick-entry__desc">{{ t('chat.likedMeDesc') }}</text>
           <!-- 小锁标识（右下角，付费解锁） -->
           <view class="quick-entry__lock">
-            <text class="quick-entry__lock-text">🔒</text>
+            <image class="quick-entry__lock-text" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" alt="" />
           </view>
         </view>
         <view
@@ -252,7 +252,7 @@ defineExpose({ handleAnonymousMatch, handlePaidEntry });
           <text class="quick-entry__desc">{{ t('chat.myVisitorsDesc') }}</text>
           <!-- 小锁标识（右下角，付费解锁） -->
           <view class="quick-entry__lock">
-            <text class="quick-entry__lock-text">🔒</text>
+            <image class="quick-entry__lock-text" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" alt="" />
           </view>
         </view>
       </view>
@@ -483,8 +483,8 @@ defineExpose({ handleAnonymousMatch, handlePaidEntry });
 }
 
 .quick-entry__lock-text {
-  font-size: var(--fs-sm);
-  line-height: 1;
+  width: 22rpx;
+  height: 22rpx;
 }
 
 /* ========== 滚动区域 ========== */

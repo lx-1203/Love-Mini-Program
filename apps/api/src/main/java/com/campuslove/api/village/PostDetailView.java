@@ -20,6 +20,16 @@ public record PostDetailView(
     String updatedAt,
     boolean isLiked,
     boolean isAuthor,
-    boolean isAlumni
+    boolean isAlumni,
+    /** 2026-08-08 论坛互动真实化：收藏数（实时统计） */
+    int favoriteCount,
+    /** 2026-08-08 论坛互动真实化：当前用户是否已收藏（匿名时 false） */
+    boolean isFavorite,
+    /** 2026-08-08 论坛互动真实化：浏览量（本次读取已 +1） */
+    int viewCount,
+    /** 2026-08-09 帖子关联活动：关联活动 ID（无则 null） */
+    Long activityId,
+    /** 2026-08-09 帖子关联活动：关联活动摘要（无则 null） */
+    ActivitySummaryView activity
 ) {
 }

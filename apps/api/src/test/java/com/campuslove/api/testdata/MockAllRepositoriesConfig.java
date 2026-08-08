@@ -66,8 +66,6 @@ import com.campuslove.api.repository.VideoCallRecordRepository;
 import com.campuslove.api.repository.VideoCallRepository;
 import com.campuslove.api.repository.VisitorRepository;
 import com.campuslove.api.repository.VipBillRepository;
-import com.campuslove.api.repository.VipRedPacketClaimRepository;
-import com.campuslove.api.repository.VipRedPacketRepository;
 
 /**
  * 测试辅助配置：为 mock profile 下的 @SpringBootTest 测试类集中提供所有 JPA Repository 的 @MockBean。
@@ -142,8 +140,7 @@ public class MockAllRepositoriesConfig {
     @MockBean private AppLoginHeroConfigRepository appLoginHeroConfigRepository;
     @MockBean private MediaAssetRepository mediaAssetRepository;
     @MockBean private SocialProgressRepository socialProgressRepository;
-    @MockBean private VipRedPacketRepository vipRedPacketRepository;
-    @MockBean private VipRedPacketClaimRepository vipRedPacketClaimRepository;
+    // VIP 红包已下线（2026-08-09 remove_red_packet）：VipRedPacketRepository/VipRedPacketClaimRepository 已删除，此处不再 mock
     @MockBean private VipBillRepository vipBillRepository;
     @MockBean private VideoCallRepository videoCallRepository;
     @MockBean private VideoCallRecordRepository videoCallRecordRepository;

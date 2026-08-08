@@ -6,7 +6,7 @@
  * 经检索后端代码（apps/api/src/main/java/com/campuslove/api），当前「套餐配置」以
  * 客户端 VIP 配置驱动，<b>不存在套餐列表管理端点</b>：
  * - VIP 相关端点仅：GET /api/v1/vip/bills（客户端账单）、POST /api/v1/vip/auto-renew（自动续费）、
- *   POST /api/v1/vip/promo-codes/validate|redeem（兑换码）、POST /api/v1/vip/red-packets（红包）
+ *   POST /api/v1/vip/promo-codes/validate|redeem（兑换码）
  * - 账单实体 VipBill.planId 仅存套餐标识（monthly/quarterly/yearly），无套餐价格表实体
  *
  * 因此本页不做接口请求，仅展示套餐结构与配置方式的静态说明，供运营参考；

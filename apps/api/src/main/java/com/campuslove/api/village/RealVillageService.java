@@ -70,13 +70,24 @@ public class RealVillageService implements VillageService {
     @Override
     @Transactional(readOnly = true)
     public PostDetailView getPostDetail(Long id) {
+        // 2026-08-08 论坛互动真实化：浏览量原子 +1 + 登录用户写浏览历史。
+        // recordPostView 为 REQUIRES_NEW 独立读写事务，不受本方法只读事务影响；
+        // 匿名浏览（currentUserId=null）仅累加 view_count 不写历史。
+        Long currentUserId = null;
+        try {
+            currentUserId = SecurityUtils.getCurrentUserId();
+        } catch (HttpClientErrorException.Unauthorized ignored) {
+            // 匿名详情浏览：不写浏览历史，仅计浏览量
+        }
+        interactionService.recordPostView(currentUserId, id);
         return queryService.getPost(id);
     }
 
     @Override
     @Transactional
     public PostDetailView createPost(Long userId, @Valid CreatePostRequest request) {
-        return postService.createPost(userId, request.title(), request.content(), request.images(), request.tags(), request.category());
+        return postService.createPost(userId, request.title(), request.content(), request.images(),
+                request.tags(), request.category(), request.activityId());
     }
 
     @Override
@@ -126,6 +137,8 @@ public class RealVillageService implements VillageService {
             // 按设计意图允许未认证用户匿名查看帖子（isLiked/isAuthor 均为 false），
             // 无需 setRollbackOnly 或重新抛出（spec SubTask 10.5/10.6 适用于 DB 异常场景）。
         }
+        // 2026-08-08 论坛互动真实化：浏览量原子 +1 + 登录用户写浏览历史（REQUIRES_NEW）
+        interactionService.recordPostView(currentUserId, postId);
         Post post = queryService.findPostOrThrow(postId);
         // 已下架（hidden）/已删除的帖子详情不可见：返回 404，与列表过滤语义一致
         if (post.getStatus() != Post.PostStatus.active) {
@@ -136,8 +149,8 @@ public class RealVillageService implements VillageService {
 
     @Override
     @Transactional
-    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category) {
-        return postService.createPost(userId, title, content, images, tags, category);
+    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category, Long activityId) {
+        return postService.createPost(userId, title, content, images, tags, category, activityId);
     }
 
     @Override
@@ -168,6 +181,26 @@ public class RealVillageService implements VillageService {
     @Transactional
     public ShareView sharePost(Long userId, Long postId, String comment) {
         return interactionService.sharePost(userId, postId, comment);
+    }
+
+    // ---- 2026-08-08 论坛互动真实化：收藏 / 浏览记录 ----
+
+    @Override
+    @Transactional
+    public FavoriteResponse toggleFavorite(Long userId, Long postId) {
+        return interactionService.toggleFavorite(userId, postId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostHistoryResponse getPostHistory(Long userId, int page, int pageSize) {
+        return queryService.getPostHistory(userId, page, pageSize);
+    }
+
+    @Override
+    @Transactional
+    public void clearPostHistory(Long userId) {
+        interactionService.clearPostHistory(userId);
     }
 
     // ---- 帖子分类 ----

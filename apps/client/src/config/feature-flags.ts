@@ -21,19 +21,16 @@ export interface FeatureFlags {
   villageSameCityEnabled: boolean;
   /** 视频通话功能是否启用（Phase 4.7：暂时下架，默认 false） */
   videoCallEnabled: boolean;
-  /** 红包功能是否启用（Phase 4.7：暂时下架，默认 false） */
-  redPacketEnabled: boolean;
 }
 
 export const featureFlags: FeatureFlags = {
   // 2026-08-08 走查收尾（需求「会员先不上线」）：会员/本周安排关闭显性入口，
   // 后端会员体系与解锁逻辑保留，后期一键开启；解锁功能仅保留交友币入口。
   // 注意：real 模式下 VIP 支付仍提示"建设中"（后端未接入微信支付，见 vip/index.vue subscribe()）；
-  // 红包/视频通话后端端点真实存在（vip/red-packets、chat/video-call）。
+  // 视频通话后端端点真实存在（chat/video-call）。
   membershipEnabled: false,
   weeklyScheduleEnabled: false,
   heartSignalEnabled: true,
   villageSameCityEnabled: true,
   videoCallEnabled: true,
-  redPacketEnabled: true,
 };

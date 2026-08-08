@@ -124,9 +124,10 @@ public interface VillageService {
      * @param images  图片 URL 列表
      * @param tags    标签列表
      * @param category 分类
+     * @param activityId 关联活动 ID（2026-08-09 可选；无效值由服务层宽松置 null）
      * @return 帖子详情视图
      */
-    PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category);
+    PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category, Long activityId);
 
     /**
      * 点赞帖子（切换点赞状态）。
@@ -188,6 +189,46 @@ public interface VillageService {
      * @return 转发视图
      */
     ShareView sharePost(Long userId, Long postId, String comment);
+
+    // ---- 2026-08-08 论坛互动真实化：收藏 / 浏览记录 ----
+
+    /**
+     * 切换帖子收藏状态（幂等 toggle）。
+     *
+     * <p>默认实现：返回未收藏静态响应，供未升级的 mock 实现编译兼容；
+     * real 实现（RealVillageService）覆写为真实收藏记录 + 实时计数。</p>
+     *
+     * @param userId 当前用户 ID
+     * @param postId 帖子 ID
+     * @return 收藏响应（favorited：当前是否已收藏；favoriteCount：最新收藏数）
+     */
+    default FavoriteResponse toggleFavorite(Long userId, Long postId) {
+        return new FavoriteResponse(true, false, 0);
+    }
+
+    /**
+     * 分页查询当前用户的帖子浏览历史。
+     *
+     * <p>默认实现：返回空列表，供未升级的 mock 实现编译兼容；
+     * real 实现（RealVillageService）覆写为真实浏览记录分页。</p>
+     *
+     * @param userId   当前用户 ID
+     * @param page     页码（从 1 开始）
+     * @param pageSize 每页条数
+     * @return 浏览历史分页响应
+     */
+    default PostHistoryResponse getPostHistory(Long userId, int page, int pageSize) {
+        return new PostHistoryResponse(List.of(), 0, page, pageSize);
+    }
+
+    /**
+     * 清空当前用户的帖子浏览历史。
+     *
+     * @param userId 当前用户 ID
+     */
+    default void clearPostHistory(Long userId) {
+        // 默认空操作，供未升级的 mock 实现编译兼容；real 实现覆写为真实删除
+    }
 
     // ---- Phase 2 新增：帖子分类 ----
 

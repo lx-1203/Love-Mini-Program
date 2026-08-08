@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 反馈中心页（功能9 + 功能10 入口）
  *
@@ -487,7 +487,7 @@ function goDetail(id: number): void {
               :hover-stay-time="100"
   @tap.stop="handleRemoveImage(idx)"
             >
-              <text class="image-cell__remove-icon" aria-hidden="true">✕</text>
+              <image class="image-cell__remove-icon" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_WHITE_SVG" mode="aspectFit" alt="" />
             </view>
           </view>
           <!-- 添加图片占位（+ 号按钮） -->
@@ -685,9 +685,8 @@ function goDetail(id: number): void {
 }
 
 .image-cell__remove-icon {
-  color: var(--c-text-inverse, #ffffff);
-  font-size: 28rpx;
-  line-height: 1;
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .image-cell--add {

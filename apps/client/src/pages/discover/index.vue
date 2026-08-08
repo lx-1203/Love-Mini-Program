@@ -647,7 +647,12 @@ defineExpose({ clearSearch });
 
     <!-- 核心匹配卡片区（页面主体核心）：占据页面中间 60%-70% 纵向空间 -->
     <view v-else class="card-area">
+      <!-- 2026-08-08 P0 修复：mp-weixin 中自定义组件宿主节点（<card-swiper> 标签本身）
+           是 .card-area（flex column）的 flex 子项，但默认 flex:0 0 auto 高度只由内容决定，
+           导致内部 .card-swiper 的 height:100% 塌缩为 0 → 卡片不可见。
+           通过 host-class 将 flex:1 样式传入宿主节点，撑满 .card-area。 -->
       <CardSwiper
+        class="card-swiper-host"
         :cards="cards"
         :remaining-count="remainingCount"
         :auto-open-detail="autoOpenDetail"
@@ -705,8 +710,14 @@ defineExpose({ clearSearch });
   min-height: 100%;
   /* 2026-08-07 设计稿：页面背景统一为浅青绿色（实色，非渐变） */
   background: var(--c-bg-brand);
+  /* 2026-08-08 P0 修复：mp-weixin 中 page 元素本身就是滚动容器，
+   * 内部容器加 overflow-y:auto 会使 flex 高度变为 indefinite（内容自适应），
+   * 导致子元素 flex:1 无法继承高度 → 整条高度链断裂 → 卡片区域塌缩为 0。
+   * 小程序端移除 overflow-y:auto，由 page 原生滚动接管。 */
+  // #ifdef H5
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  // #endif
   /* 顶部状态栏安全距离 + 底部底导航留白（含 FAB 与底导航高度） */
   padding-top: env(safe-area-inset-top);
   padding-bottom: 180rpx;
@@ -977,6 +988,21 @@ defineExpose({ clearSearch });
   min-height: 860rpx;
   // #endif
 }
+
+/* ========== CardSwiper 组件宿主节点（小程序端高度链修复） ========== */
+/* 2026-08-08 P0：mp-weixin 中自定义组件宿主节点是 .card-area 的 flex 子项，
+ * 但默认 flex:0 0 auto，高度只由内容决定（组件内部根节点 height:100% 塌缩）。
+ * 给 <CardSwiper> 标签传入该 class，让宿主节点 flex:1 撑满 .card-area，
+ * 再配合组件内部 flex 高度链（.card-swiper flex:1 → .card-stack flex:1）恢复卡片高度。
+ * H5 端 uni-app 组件宿主即组件根节点，已有 height:100% 链，无需该样式。 */
+// #ifndef H5
+.card-swiper-host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+// #endif
 
 /* ========== 错误提示 ========== */
 .error-banner {

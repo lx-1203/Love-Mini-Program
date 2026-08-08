@@ -250,3 +250,78 @@ export function shouldShowIcebreakers(
 ): boolean {
   return userMessageCount <= 1 && !errorMessage;
 }
+
+/* ========== 微信式时间分隔条（2026-08-08 聊天页微信化重构） ========== */
+
+/**
+ * 微信时间戳规则：连续消息 5 分钟内只显示一次时间。
+ *
+ * 首条消息恒显示；跨天或与前一条间隔 > 5 分钟 → 显示时间条。
+ *
+ * @param prevSentAt - 前一条消息时间（ISO 字符串），null 表示首条
+ * @param currSentAt - 当前消息时间（ISO 字符串）
+ * @returns 是否应显示时间分隔条
+ */
+export function shouldShowTimeBar(
+  prevSentAt: string | null,
+  currSentAt: string
+): boolean {
+  if (!prevSentAt) return true;
+  const prev = Date.parse(prevSentAt);
+  const curr = Date.parse(currSentAt);
+  if (Number.isNaN(prev) || Number.isNaN(curr)) return true;
+  const d1 = new Date(prev);
+  const d2 = new Date(curr);
+  const sameDay =
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+  if (!sameDay) return true;
+  return curr - prev > 5 * 60 * 1000;
+}
+
+/**
+ * 微信时间条格式：今天 HH:mm / 昨天 HH:mm / 星期X HH:mm / YYYY年M月D日 HH:mm。
+ * 时/分补零，月/日不补位；天数按「日历天」差计算（跨午夜判断用日期边界而非毫秒差）。
+ *
+ * @param iso - 消息时间（ISO 字符串）
+ * @param now - 当前时间戳，默认 Date.now()
+ * @returns 格式化后的时间条文本
+ */
+export function formatChatTimeBar(iso: string, now: number = Date.now()): string {
+  const d = new Date(iso);
+  const n = new Date(now);
+  if (Number.isNaN(d.getTime())) return iso;
+  const pad2 = (x: number) => String(x).padStart(2, "0");
+  const hhmm = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  const dayDiff = Math.round(
+    (Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) -
+      Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())) /
+      86400000
+  );
+  if (dayDiff <= 0) return hhmm;
+  if (dayDiff === 1) return `昨天 ${hhmm}`;
+  if (dayDiff <= 7) return `星期${"日一二三四五六"[d.getDay()]} ${hhmm}`;
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${hhmm}`;
+}
+
+/**
+ * 聊天消息行模型：在消息流中插入时间分隔条。
+ *
+ * @param messages - 按时间升序排列的消息数组
+ * @returns 扁平行列表（timebar / message 交替）
+ */
+export function buildChatMessageRows<T extends { id: string; sentAt: string }>(
+  messages: T[]
+): Array<{ key: string; type: "timebar" | "message"; text?: string; message?: T }> {
+  const rows: Array<{ key: string; type: "timebar" | "message"; text?: string; message?: T }> = [];
+  let prev: string | null = null;
+  for (const m of messages) {
+    if (shouldShowTimeBar(prev, m.sentAt)) {
+      rows.push({ key: `time-${m.id}`, type: "timebar", text: formatChatTimeBar(m.sentAt) });
+    }
+    rows.push({ key: `msg-${m.id}`, type: "message", message: m });
+    prev = m.sentAt;
+  }
+  return rows;
+}

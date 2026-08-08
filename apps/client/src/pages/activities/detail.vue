@@ -13,6 +13,8 @@ import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { useActivityStore, type ActivityItem } from "../../stores/activity";
+import { useMessagesStore } from "../../stores/messages";
+import { ROUTES } from "../../constants/routes";
 import { openAppPath } from "../../utils/navigation";
 
 const { t } = useI18n();
@@ -212,6 +214,53 @@ function goBack() {
     openAppPath("/subpackages/discover/activities/index");
   }
 }
+
+/* ========== 发给朋友（私聊活动卡片，kind=activity） ========== */
+
+const messagesStore = useMessagesStore();
+
+/** 最近 5 个私信会话（排除官方号），按最后消息时间倒序 */
+const recentSessions = computed(() =>
+  messagesStore.sessions
+    .filter((s) => s.sessionType === "private" && !s.isOfficial)
+    .sort((a, b) => (Date.parse(b.lastMessageSentAt ?? "") || 0) - (Date.parse(a.lastMessageSentAt ?? "") || 0))
+    .slice(0, 5)
+);
+
+/**
+ * 发送活动卡片给好友：ActionSheet 选择最近会话 → sendMessage(kind=activity)。
+ * content 为 JSON {"title","desc","tag","targetUrl"}（见 docs/API-CONTRACT.md）。
+ */
+async function handleSendToFriend() {
+  lightHaptic();
+  const current = activity.value;
+  if (!current) return;
+  if (recentSessions.value.length === 0) {
+    uni.showToast({ title: t("activities.sendToFriendEmpty"), icon: "none" });
+    return;
+  }
+  const itemList = recentSessions.value.map((s) => s.partnerName);
+  const res = await uni.showActionSheet({ itemList });
+  const session = recentSessions.value[res.tapIndex ?? -1];
+  if (!session) return;
+
+  const card = {
+    title: current.title,
+    desc: (current.description || current.scheduleText || "").slice(0, 80),
+    tag: t("activities.sendToFriendTag"),
+    targetUrl: `${ROUTES.ACTIVITY_DETAIL}?id=${encodeURIComponent(current.id)}`,
+  };
+  try {
+    await messagesStore.sendMessage(session.id, JSON.stringify(card), undefined, "activity");
+    uni.showToast({
+      title: t("activities.sendToFriendDone", { name: session.partnerName }),
+      icon: "none",
+      duration: 2000,
+    });
+  } catch (_e) {
+    uni.showToast({ title: t("activities.sendToFriendFailed"), icon: "none" });
+  }
+}
 </script>
 
 <template>
@@ -283,8 +332,18 @@ function goBack() {
       <text class="detail-loading__text">{{ t('common.loading') }}</text>
     </view>
 
-    <!-- 底部报名/退出栏（收尾轮：已报名可退出） -->
+    <!-- 底部报名/退出栏（收尾轮：已报名可退出；左侧「发给朋友」推荐活动卡片） -->
     <view v-if="activity" class="detail-action-bar">
+      <view
+        class="detail-share-btn press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('activities.sendToFriend')"
+        @tap="handleSendToFriend"
+      >
+        <text class="detail-share-btn__text">{{ t('activities.sendToFriend') }}</text>
+      </view>
       <view
         v-if="!isSignedUp"
         class="detail-signup-btn press-feedback"
@@ -514,12 +573,34 @@ function goBack() {
 
 /* ========== 底部报名栏 ========== */
 .detail-action-bar {
+  display: flex;
+  gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-4) calc(env(safe-area-inset-bottom) + var(--sp-4));
   background: var(--c-bg-container, #ffffff);
   box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.06);
 }
 
+/* 发给朋友（次级按钮） */
+.detail-share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  padding: 0 var(--sp-6);
+  border-radius: var(--r-full);
+  background: var(--c-bg-surface, #F1F5F9);
+  border: 1rpx solid var(--c-border-strong, #CBD5E1);
+  flex-shrink: 0;
+}
+
+.detail-share-btn__text {
+  font-size: var(--fs-lg, 32rpx);
+  font-weight: 600;
+  color: var(--c-text-secondary, #475569);
+}
+
 .detail-signup-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -530,6 +611,7 @@ function goBack() {
 
 /* 收尾轮：退出报名按钮（次级样式，避免与报名主按钮混淆） */
 .detail-quit-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;

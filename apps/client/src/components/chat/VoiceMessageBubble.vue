@@ -70,7 +70,8 @@ let progressTimer: ReturnType<typeof setInterval> | null = null;
 
 /** ARIA 标签 */
 const ariaLabel = computed(() => {
-  if (props.expired || !props.audioUrl) {
+  // 录音修复：与播放逻辑一致——仅 expired 或无真实音频 URL 时视为不可播放
+  if (props.expired || !hasRealAudio.value) {
     return t("chat.voiceExpired", { n: props.durationSeconds });
   }
   return isPlaying.value
@@ -91,8 +92,28 @@ const bubbleWidth = computed(() => {
   return Math.min(max, base + props.durationSeconds * perSecond);
 });
 
-/** 是否可播放（未过期且有时频 URL 或处于 mock 模式） */
+/** 是否可播放（未过期） */
 const canPlay = computed(() => !props.expired);
+
+/**
+ * 是否持有可真实播放的音频 URL。
+ *
+ * 录音修复：mock 模式消息 body 为占位文本（如"语音消息"），经 resolveMediaUrl
+ * 透传后仍为普通字符串——若按真值判断会进入真实播放路径，mp-weixin 端
+ * InnerAudioContext 加载非法 src 报错且无模拟反馈。此处仅认可
+ * http(s)/wxfile/blob/鉴权代理 前缀的 URL 为真实音频。
+ */
+const hasRealAudio = computed(() => {
+  const url = props.audioUrl;
+  if (!url) return false;
+  return (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("wxfile://") ||
+    url.startsWith("blob:") ||
+    url.includes("/api/v1/media/")
+  );
+});
 
 /**
  * 切换播放/暂停
@@ -106,8 +127,8 @@ function togglePlay(): void {
     return;
   }
 
-  if (!props.audioUrl) {
-    // mock 模式：仅切换 UI 模拟播放
+  if (!hasRealAudio.value) {
+    // mock 模式（无真实音频 URL）：仅切换 UI 模拟播放
     if (isPlaying.value) {
       stopPlayback();
     } else {
@@ -187,7 +208,11 @@ const durationDisplay = computed(() => {
       `voice-bubble--${sender}`,
       {
         'voice-bubble--playing': isPlaying,
-        'voice-bubble--expired': expired || !audioUrl,
+        // 录音修复：仅 expired 属性触发过期态。
+        // 原 `expired || !audioUrl` 导致 mock 模式（无真实音频 URL）的气泡
+        // 被渲染为过期态（opacity+pointer-events:none），既不能点也没有模拟播放，
+        // 语音消息展示完全不可用。
+        'voice-bubble--expired': expired,
       },
     ]"
     :style="{ minWidth: `${bubbleWidth}rpx` }"
@@ -210,9 +235,9 @@ const durationDisplay = computed(() => {
     <!-- 时长 -->
     <text class="voice-bubble__duration">{{ durationDisplay }}</text>
 
-    <!-- 播放/暂停图标 -->
+    <!-- 播放/暂停图标（录音修复：仅 expired 显示暂停图标，空 URL 的 mock 消息显示播放按钮） -->
     <view class="voice-bubble__icon">
-      <text v-if="expired || !audioUrl" class="voice-bubble__icon-emoji">⏸</text>
+      <image v-if="expired" class="voice-bubble__icon-emoji" :src="IMAGE_PATHS.ICONS_COMMON.PAUSE_SVG" mode="aspectFit" alt="" />
       <image v-else-if="isPlaying" class="voice-bubble__icon-emoji" :src="voiceIcons.speakerOn" mode="aspectFit" alt="" />
       <image v-else class="voice-bubble__icon-emoji" :src="voiceIcons.speakerOff" mode="aspectFit" alt="" />
     </view>

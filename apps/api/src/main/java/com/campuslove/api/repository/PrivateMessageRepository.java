@@ -64,6 +64,19 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
             @Param("conversationId") Long conversationId);
 
     /**
+     * 2026-08-08 微信化重构：正序分页查询（「上拉加载更早历史」用）。
+     * 旧消息在前的分页语义：page=0 返回最早一页；配合 @EntityGraph 预加载 conversation 避免 N+1。
+     *
+     * @param conversationId 会话 ID
+     * @param pageable       分页参数
+     * @return 分页消息列表（conversation 已被预加载，正序）
+     */
+    @EntityGraph(attributePaths = "conversation")
+    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt ASC")
+    Page<PrivateMessage> findWithConversationByConversationIdOrderByCreatedAtAscPage(
+            @Param("conversationId") Long conversationId, Pageable pageable);
+
+    /**
      * 统计指定会话中指定发送者未读消息数量。
      *
      * @param conversationId 会话 ID

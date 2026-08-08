@@ -254,8 +254,6 @@ interface UploadResponse {
 | POST | `/api/v1/chat/sessions/{id}/voice` | ✅ | 上传语音消息 |
 | POST | `/api/v1/chat/temp-sessions` | ✅ | 创建临时会话 |
 | POST | `/api/v1/chat/temp-sessions/{id}/exchange` | ✅ | 交换联系方式 |
-| POST | `/api/v1/chat/red-packets` | ✅ | 发送红包 |
-| POST | `/api/v1/chat/red-packets/{id}/claim` | ✅ | 领取红包 |
 | GET | `/api/v1/chat/notifications` | ✅ | 通知列表 |
 | PUT | `/api/v1/chat/notifications/{id}/read` | ✅ | 标记已读 |
 | POST | `/api/v1/chat/video-calls` | ✅ | 发起视频通话 |
@@ -264,6 +262,23 @@ interface UploadResponse {
 **WebSocket 端点**：`/ws/chat?token=<jwt>`
 - 订阅 topic：`/user/queue/messages`、`/user/queue/notifications`
 - 发送 topic：`/app/chat.send`
+
+**私信活动卡片（`POST /api/v1/messages/conversations/{id}/messages`，`kind=activity`）**：
+
+content 为 JSON（与官方号 card 消息语义一致，点击跳转活动详情）：
+
+```json
+{
+  "title": "校园操场「星空告白夜」",
+  "desc": "本周五晚 19:00 · 现场抽幸运观众上台告白",
+  "tag": "本周活动",
+  "targetUrl": "/pages/activities/detail?id=star-confession"
+}
+```
+
+- 会话列表 preview 显示为「[活动] 标题」（解析失败回退「[活动] 活动卡片」）
+- 前端渲染：`ActivityCard` 组件（绿粉渐变卡片 + 「查看详情」CTA），点击 `openAppPath(targetUrl)`
+- 兼容性：未知 kind 前端回退 text 渲染；JSON 解析失败回退普通文本气泡
 
 ### 3.6.1 官方号域（Official Account）
 

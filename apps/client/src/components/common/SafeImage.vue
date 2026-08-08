@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view
     class="safe-image"
     :class="[rootClass, { 'safe-image--loading': isLoading, 'safe-image--failed': allFailed }]"
@@ -50,6 +50,8 @@
  */
 import { computed, ref, watch } from 'vue';
 import { resolveMediaUrl } from '../../utils/media';
+// 2026-08-08：pexels 外链本地化兜底（mp 端无法加载外链，见 image-local.ts）
+import { toLocalImage } from '../../utils/image-local';
 
 const props = withDefaults(defineProps<{
   src: string;
@@ -78,7 +80,8 @@ const MAX_RETRY = 2;
 
 const hasError = ref(false);
 const isLoading = ref(true);
-const displaySrc = ref(resolveMediaUrl(props.src));
+/** 2026-08-08：pexels 外链先本地化（mp 端无法加载），再走鉴权代理解析 */
+const displaySrc = ref(toLocalImage(resolveMediaUrl(props.src)));
 /** 原 src 重试计数 */
 const retryCount = ref(0);
 /** fallback 是否也加载失败 */
@@ -104,7 +107,8 @@ watch(() => props.src, (newSrc) => {
   hasError.value = false;
   isLoading.value = true;
   // Task 0.3.4：每次 src 变化时重新走鉴权代理 URL 解析，附加最新 token
-  displaySrc.value = resolveMediaUrl(newSrc);
+  // 2026-08-08：同时应用 pexels 外链本地化兜底
+  displaySrc.value = toLocalImage(resolveMediaUrl(newSrc));
   retryCount.value = 0;
   allFailed.value = false;
   fallbackLoaded.value = false;
@@ -116,7 +120,7 @@ function onError() {
     // 重试：通过修改 displaySrc 触发 image 重新加载
     retryCount.value += 1;
     // 拼接 timestamp 避免缓存命中
-    const base = resolveMediaUrl(props.src);
+    const base = toLocalImage(resolveMediaUrl(props.src));
     const sep = base.includes('?') ? '&' : '?';
     displaySrc.value = `${base}${sep}_retry=${retryCount.value}`;
     return;

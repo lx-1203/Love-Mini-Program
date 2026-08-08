@@ -24,7 +24,9 @@ import { toBackendCategory } from "./utils";
 import type {
   CommentItemView,
   CommentListResponse,
+  FavoriteResponse,
   PostDetailView,
+  PostHistoryResponse,
   PostLikeResponse,
   PostListResponse,
   ShareView,
@@ -105,7 +107,7 @@ export async function fetchPostsApi(
 /**
  * 创建新帖子
  *
- * @param data - 帖子数据（categoryId 已转换为后端 category）
+ * @param data - 帖子数据（categoryId 已转换为后端 category；activityId 可选：关联活动）
  * @returns 后端 PostDetailView
  */
 export async function createPostApi(data: {
@@ -114,6 +116,7 @@ export async function createPostApi(data: {
   content: string;
   images: string[];
   tags: string[];
+  activityId?: string;
 }): Promise<PostDetailView> {
   return request<PostDetailView, {
     title: string;
@@ -121,6 +124,7 @@ export async function createPostApi(data: {
     category: string;
     tags: string[];
     images: string[];
+    activityId?: number | null;
   }>({
     url: "/posts",
     method: "POST",
@@ -130,6 +134,7 @@ export async function createPostApi(data: {
       category: data.category,
       tags: data.tags,
       images: data.images,
+      activityId: data.activityId ? Number(data.activityId) : null,
     },
   });
 }
@@ -179,6 +184,48 @@ export async function sharePostApi(
     url: `/posts/${postId}/share`,
     method: "POST",
     data: comment ? { comment } : { comment: "" },
+  });
+}
+
+/**
+ * 2026-08-08 论坛互动真实化：收藏/取消收藏帖子（幂等 toggle）。
+ *
+ * @param postId - 帖子 ID
+ * @returns 后端 FavoriteResponse（包含权威 favorited 与 favoriteCount）
+ */
+export async function favoritePostApi(
+  postId: string
+): Promise<FavoriteResponse> {
+  return request<FavoriteResponse>({
+    url: `/posts/${postId}/favorite`,
+    method: "POST",
+  });
+}
+
+/**
+ * 2026-08-08 论坛互动真实化：分页查询当前用户的帖子浏览历史。
+ *
+ * @param page - 页码（从 1 开始）
+ * @param pageSize - 每页条数
+ * @returns 后端 PostHistoryResponse
+ */
+export async function fetchPostHistoryApi(
+  page: number,
+  pageSize: number
+): Promise<PostHistoryResponse> {
+  return request<PostHistoryResponse>({
+    url: `/posts/history?page=${page}&pageSize=${pageSize}`,
+    method: "GET",
+  });
+}
+
+/**
+ * 2026-08-08 论坛互动真实化：清空当前用户的帖子浏览历史。
+ */
+export async function clearPostHistoryApi(): Promise<void> {
+  await request<void>({
+    url: "/posts/history",
+    method: "DELETE",
   });
 }
 

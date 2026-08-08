@@ -13,6 +13,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -97,7 +98,9 @@ public class VillageController {
   public ApiResponse<PostDetailView> createPost(
       @Valid @RequestBody CreatePostRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    PostDetailView view = villageService.createPost(userId, request.title(), request.content(), request.images(), request.tags(), request.category());
+    // 2026-08-09 帖子关联活动：透传可选 activityId（无效值服务层宽松置 null）
+    PostDetailView view = villageService.createPost(userId, request.title(), request.content(),
+        request.images(), request.tags(), request.category(), request.activityId());
     // 监控：记录帖子创建事件
     try {
       villageMetrics.recordPostCreated();
@@ -113,6 +116,23 @@ public class VillageController {
   @GetMapping("/{id}")
   public ApiResponse<PostDetailView> getPostDetail(@PathVariable("id") @Positive Long id) {
     return ApiResponse.ok(villageService.getPostDetail(id));
+  }
+
+  // ---------- 收藏 ----------
+
+  /**
+   * 收藏/取消收藏帖子（2026-08-08 论坛互动真实化，幂等 toggle）。
+   *
+   * <p>速率限制：桶容量 60，每秒补充 2 个令牌，按客户端 IP 限流，
+   * 与点赞端点同口径，防止自动化脚本批量刷收藏。</p>
+   */
+  @PostMapping("/{id}/favorite")
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
+  @Idempotent
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<FavoriteResponse> toggleFavorite(@PathVariable("id") @Positive Long id) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    return ApiResponse.ok(villageService.toggleFavorite(userId, id));
   }
 
   // ---------- 点赞 ----------
@@ -256,6 +276,33 @@ public class VillageController {
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();
     }
+  }
+
+  // ---------- 浏览记录 ----------
+
+  /**
+   * 分页查询当前用户的帖子浏览历史（2026-08-08 论坛互动真实化）。
+   *
+   * <p>路由说明：/history 为字面量路径，优先于 /{id} 匹配（与 /campus-feed 同模式）。</p>
+   */
+  @GetMapping("/history")
+  @PreAuthorize("hasRole('USER')")
+  public PostHistoryResponse getPostHistory(
+      @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
+      @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    return villageService.getPostHistory(userId, page, pageSize);
+  }
+
+  /**
+   * 清空当前用户的帖子浏览历史（2026-08-08 论坛互动真实化）。
+   */
+  @DeleteMapping("/history")
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<Void> clearPostHistory() {
+    Long userId = SecurityUtils.getCurrentUserId();
+    villageService.clearPostHistory(userId);
+    return ApiResponse.ok(null);
   }
 
   // ---------- DTO 层接入 ----------（infra R2-00218: 废弃端点 GET /posts/dto 已删除，与 getPosts 功能重复）

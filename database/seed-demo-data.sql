@@ -6,7 +6,8 @@
 -- ============================================================
 
 -- 1. 清理旧种子（幂等）
-DELETE FROM post_like WHERE post_id >= 9000;
+-- 修复（2026-08-08）：原表名 post_like 不存在（实际为 post_likes），执行必报错中断
+DELETE FROM post_likes WHERE post_id >= 9000;
 DELETE FROM comments WHERE post_id >= 9000;
 DELETE FROM posts WHERE id >= 9000;
 DELETE FROM user_basic_profile WHERE user_id BETWEEN 20000 AND 20049;

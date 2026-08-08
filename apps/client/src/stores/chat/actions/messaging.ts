@@ -16,6 +16,7 @@ import {
 } from "../higher-order";
 import {
   saveMessageStatus,
+  useMock,
   withSendRetry,
 } from "../utils";
 import { mockSession1, mockSessionMap } from "../mock-data";
@@ -27,86 +28,11 @@ import type {
 import type { ChatStoreThis } from "../store-type";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
-// Task 31：网络请求超时控制
-// P3 联调：normalizeApiPath 补齐 /v1 前缀（语音上传端点原缺 /v1，real 模式 404）
-import { withTimeout, normalizeApiPath } from "@/services/http";
-// infra R2-00022：语音上传 URL 拼接 apiBaseUrl（原硬编码 /api/chat/voice，
-// apiBaseUrl 非根路径或不同域名时上传 404）
-import { appEnv } from "@/services/env";
-
-/** Task 31：语音上传默认超时时间（30s，语音文件较大） */
-const VOICE_UPLOAD_TIMEOUT_MS = 30000;
+// 录音修复：语音上传统一走共享服务（携带 Authorization 头，与 services/api.ts 一致）
+import { uploadVoiceFile } from "@/services/voice-upload";
 
 /** infra R2-00085: 消息 sendId/mock 消息 id 递增计数器（同毫秒连发避免 Date.now() 碰撞） */
 let messageIdSeq = 0;
-
-/**
- * 上传语音文件到后端（Task 1.1.4）。
- *
- * 调用 `uni.uploadFile` 将 mp-weixin 录音器产生的临时文件上传至
- * `POST /api/chat/voice`（由 `VoiceMessageController` 处理），
- * 后端校验大小/格式后存储并返回 `{ url, duration, size }`。
- *
- * Mock 模式下不发起真实网络请求，返回本地占位 URL，
- * 保证 dev 环境流程可走通且不依赖录音文件实际存在。
- *
- * 兼容性：
- * - mp-weixin：tempFilePath 为 wxfile:// 协议，uni.uploadFile 直接支持
- * - H5：tempFilePath 通常为空（H5 端 createRecorder 模拟录音），
- *   调用方应在 H5 端跳过上传，仅以 durationSeconds 占位发送
- *
- * @param tempFilePath 录音文件临时路径
- * @param durationSeconds 语音时长（秒）
- * @returns 上传成功后的语音文件 URL；上传失败抛出 Error
- */
-async function uploadVoiceFile(
-  tempFilePath: string,
-  durationSeconds: number
-): Promise<string> {
-  if (!tempFilePath) {
-    throw new Error(t("storeErrors.chat.voiceFilePathEmpty"));
-  }
-
-  // Task 31：使用 AbortController 实现超时控制
-  const controller = new AbortController();
-  const uploadPromise = new Promise<string>((resolve, reject) => {
-    uni.uploadFile({
-      url: `${appEnv.apiBaseUrl}${normalizeApiPath("/chat/voice")}`,
-      filePath: tempFilePath,
-      name: "file",
-      formData: {
-        duration: String(durationSeconds),
-      },
-      success: (res) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          try {
-            const parsed: unknown = JSON.parse(res.data);
-            const payload = parsed as { url?: string; duration?: number; size?: number };
-            if (typeof payload.url === "string" && payload.url.length > 0) {
-              resolve(payload.url);
-              return;
-            }
-            reject(new Error("语音上传响应缺少 url 字段"));
-          } catch (e) {
-            reject(
-              new Error(
-                `语音上传响应解析失败: ${e instanceof Error ? e.message : String(e)}`
-              )
-            );
-          }
-        } else {
-          reject(new Error(`语音上传失败: HTTP ${res.statusCode}`));
-        }
-      },
-      fail: (err) => {
-        reject(new Error(err.errMsg || "语音上传请求失败"));
-      },
-    });
-  });
-
-  // Task 31：30s 超时控制，超时后调用方收到 EnhancedApiError（category=network, error=timeout）
-  return withTimeout(uploadPromise, VOICE_UPLOAD_TIMEOUT_MS, controller.signal);
-}
 
 /**
  * 发送文本消息（带状态持久化与失败重试）。
@@ -212,8 +138,9 @@ export async function sendVoice(
 
   // Task 1.1.4：Real 模式下先上传录音文件，拿到 URL 后再发送消息
   // Mock 模式或 H5 端（tempFilePath 为空）跳过上传，使用占位 body（infra R2-00086: 走 i18n）
+  // 录音修复：Mock 模式即使有 tempFilePath（mp-weixin 真机 mock）也不发起真实上传
   let voiceBody = t("chat.voicePlaceholder");
-  if (tempFilePath && tempFilePath.length > 0) {
+  if (!useMock() && tempFilePath && tempFilePath.length > 0) {
     try {
       voiceBody = await uploadVoiceFile(tempFilePath, durationSeconds);
     } catch (error) {

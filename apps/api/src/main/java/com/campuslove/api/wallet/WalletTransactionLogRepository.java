@@ -51,7 +51,7 @@ public interface WalletTransactionLogRepository extends JpaRepository<WalletTran
     /**
      * 按关联业务类型 + 业务实体 ID 查询流水。
      *
-     * <p>用于反查：例如红包过期退款时，查询原始 RED_PACKET_SEND 流水获取发送者 ID 与金额。</p>
+     * <p>用于反查业务上下文（如按业务实体 ID 聚合流水）。</p>
      *
      * @param relatedType 关联业务类型
      * @param relatedId   关联业务实体 ID

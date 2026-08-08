@@ -124,9 +124,6 @@ public class GlobalExceptionHandler {
      *
      * <p>触发场景：</p>
      * <ul>
-     *   <li>VIP 红包发送（{@link com.campuslove.api.vip.VipRedPacketService#createRedPacket}）：
-     *       发送方钱包余额不足以支付红包总金额时抛出，由 @Transactional 回滚红包创建事务，
-     *       本 handler 将异常转换为 HTTP 400 响应，前端展示"余额不足，请充值"提示</li>
      *   <li>VIP 自动续费（{@link com.campuslove.api.vip.AutoRenewService#renewVip}）：
      *       内部已捕获并写 FAILED 流水，不会进入本 handler；但若未来有其他钱包扣减场景
      *       未捕获抛出，本 handler 作为兜底返回 400 响应</li>

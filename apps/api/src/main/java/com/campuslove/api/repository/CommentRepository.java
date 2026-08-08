@@ -74,6 +74,26 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByPostIdAndParentIdInOrderByCreatedAtAsc(Long postId, java.util.Collection<Long> parentIds);
 
     /**
+     * 2026-08-09 列表评论预览：批量查询多帖的根评论（parent_id IS NULL），按创建时间倒序。
+     *
+     * <p>帖子列表页每帖取最新 2 条根评论预览，一次批量查询整页帖子的根评论，
+     * 调用方按 postId 分组后取前 2 条，避免逐帖查询（N+1）。</p>
+     *
+     * @param postIds 帖子 ID 集合
+     * @return 根评论列表（按创建时间倒序）
+     */
+    List<Comment> findByPostIdInAndParentIdIsNull(java.util.Collection<Long> postIds);
+
+    /**
+     * 2026-08-09 列表评论预览：批量统计根评论的楼中楼回复数。
+     *
+     * @param rootIds 根评论 ID 集合
+     * @return [parentId, count] 数组列表（parentId 为根评论 ID）
+     */
+    @Query("SELECT c.parentId, COUNT(c) FROM Comment c WHERE c.parentId IN :rootIds GROUP BY c.parentId")
+    List<Object[]> countByParentIdIn(@Param("rootIds") java.util.Collection<Long> rootIds);
+
+    /**
      * 管理后台 - 全量评论分页查询，按创建时间倒序。
      * <p>用于管理后台评论列表展示，不限定帖子。</p>
      *

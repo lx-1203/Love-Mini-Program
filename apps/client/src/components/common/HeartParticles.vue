@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * HeartParticles - 心形粒子撒花动画组件
  *
@@ -160,7 +160,7 @@ function particleStyle(index: number) {
       :aria-pressed="paused"
       @tap="togglePause"
     >
-      <text class="heart-particles__pause-icon">{{ paused ? '▶' : '❚❚' }}</text>
+      <image class="heart-particles__pause-icon" :src="paused ? IMAGE_PATHS.ICONS_COMMON.PLAY_SVG : IMAGE_PATHS.ICONS_COMMON.PAUSE_SVG" mode="aspectFit" alt="" />
     </view>
   </view>
 </template>
@@ -230,9 +230,8 @@ function particleStyle(index: number) {
 }
 
 .heart-particles__pause-icon {
-  font-size: 20rpx;
-  color: var(--c-text-secondary, #5b6470);
-  line-height: 1;
+  width: 22rpx;
+  height: 22rpx;
 }
 
 /* P6 a11y：尊重 prefers-reduced-motion，粒子动画自动暂停 */

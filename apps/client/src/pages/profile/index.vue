@@ -5,7 +5,7 @@
  * 资料未完善时展示 LockScreen 锁定页面
  */
 import { computed, ref } from "vue";
-import { onShow, onUnload } from "@dcloudio/uni-app";
+import { onShow, onUnload, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
@@ -27,6 +27,9 @@ import { toProfileView } from "../../view-models/profile";
 import LockScreen from "../../components/common/LockScreen.vue";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
+// 2026-08-08：QQ 头像框机制（注册表驱动，按身份佩戴不同主题）
+import AvatarFrame from "../../components/common/AvatarFrame.vue";
+import { useAvatarFrame } from "../../composables/useAvatarFrame";
 import MatchCountChip from "../../components/common/MatchCountChip.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
 // Task F：全局发帖悬浮按钮组件
@@ -38,6 +41,8 @@ import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { designTokens } from "../../theme/tokens";
 // P2.6：语音播放 URL 解析（mock:// 演示态 / /api/v1/media/ 鉴权代理真实 URL）
 import { resolveMediaUrl } from "../../utils/media";
+// 2026-08-08：pexels 外链本地化兜底（mp 端无法加载外链图，见 utils/image-local.ts）
+import { toLocalImage } from "../../utils/image-local";
 // 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
 import type { UniUploadFileLike } from "../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
@@ -93,6 +98,9 @@ const coinsStore = useCoinsStore();
 const socialProgressStore = useSocialProgressStore();
 const discoverStore = useDiscoverStore();
 const villageStore = useVillageStore();
+
+/** 2026-08-08：当前用户佩戴的头像框主题（QQ 头像框机制，按身份自动判定） */
+const { frameId: myFrameId } = useAvatarFrame();
 
 /**
  * 个人主页顶部背景图 URL（Phase D4 / Phase E1 上传支持）
@@ -264,6 +272,116 @@ const profileView = computed(() =>
   })
 );
 
+/* ========== 2026-08-08 QQ 主页重构：APP 专属标签行（复用现有字段，不新增 i18n） ========== */
+
+/** 性别代词 · 年级标签（如「她/她 · 大三」，来自 basicProfile） */
+const genderGradeLabel = computed(() => {
+  const b = profileStore.basicProfile;
+  const parts: string[] = [];
+  if (b?.pronouns?.trim()) parts.push(b.pronouns.trim());
+  if (b?.grade?.trim()) parts.push(b.grade.trim());
+  return parts.join(" · ");
+});
+
+/** 位置行文案（家乡城市 → 未来城市，回退校区城市；QQ 主页风格） */
+const locationLabel = computed(() => {
+  const b = profileStore.basicProfile;
+  const home = [b?.hometownProvince, b?.hometownCity]
+    .map((s) => s?.trim())
+    .filter(Boolean)
+    .join("");
+  const future = b?.futureCity?.trim();
+  const prefix = t("discover.futureCityPrefix");
+  if (future) {
+    return home ? `${home} · ${prefix}${future}` : `${prefix}${future}`;
+  }
+  return home || profileStore.campusProfile?.city || "";
+});
+
+/** 学历标签（educationLevel 映射，复用 discover 命名空间文案） */
+const educationTag = computed(() => {
+  const level = profileStore.basicProfile?.educationLevel;
+  if (!level) return "";
+  const map: Record<string, string> = {
+    high_school: t("discover.educationHighSchool"),
+    bachelor: t("discover.educationBachelor"),
+    master: t("discover.educationMaster"),
+    phd: t("discover.educationPhd"),
+  };
+  return map[level] ?? "";
+});
+
+/** 感情状态标签（relationshipStatus 映射） */
+const relationshipTag = computed(() => {
+  const status = profileStore.basicProfile?.relationshipStatus;
+  if (!status) return "";
+  const map: Record<string, string> = {
+    never: t("discover.relationshipNever"),
+    married_before: t("discover.relationshipMarriedBefore"),
+    divorced: t("discover.relationshipDivorced"),
+    widowed: t("discover.relationshipWidowed"),
+  };
+  return map[status] ?? "";
+});
+
+/** QQ 风格：APP 专属标签胶囊行（学历 / 感情状态 / 未来规划标签，最多 4 个） */
+const profileTagChips = computed<string[]>(() => {
+  const chips: string[] = [];
+  const edu = educationTag.value;
+  if (edu) chips.push(edu);
+  const rel = relationshipTag.value;
+  if (rel) chips.push(rel);
+  const plans = profileStore.basicProfile?.futurePlanTags ?? [];
+  for (const p of plans) {
+    if (chips.length >= 4) break;
+    const s = p?.trim();
+    if (s) chips.push(s);
+  }
+  return chips;
+});
+
+/** 是否展示 APP 专属标签行 */
+const showProfileTags = computed(() => profileTagChips.value.length > 0);
+
+/* ========== 2026-08-08 QQ 主页重构：成就卡片（整合社交升温 + 匹配 + 喜欢） ========== */
+
+/** 成就卡 3 格数据：匹配次数 / 喜欢次数 / 社交升温进度 */
+interface AchievementStat {
+  icon: string;
+  value: string;
+  label: string;
+  hint: string;
+  path?: string;
+}
+
+const achievementStats = computed<AchievementStat[]>(() => {
+  const progress = socialProgressStore.progress;
+  const matchCount = progress?.matchCount ?? 0;
+  const likeCount = progress?.likeCount ?? 0;
+  const pct = socialProgressStore.progressPercentage;
+  const tierLabel = progress?.tierLabel ?? t("profile.achievementWarmHint");
+  return [
+    {
+      icon: IMAGE_PATHS.ICONS_SOCIAL.MATCH,
+      value: String(matchCount),
+      label: t("profile.achievementMatch"),
+      hint: t("profile.achievementMatchHint"),
+    },
+    {
+      icon: IMAGE_PATHS.ICONS_EMOJI.HEART,
+      value: String(likeCount),
+      label: t("profile.achievementLike"),
+      hint: t("profile.achievementLikeHint"),
+    },
+    {
+      icon: IMAGE_PATHS.ICONS_EMOJI.FIRE,
+      value: `${pct}%`,
+      label: tierLabel,
+      hint: t("profile.achievementWarmHint"),
+    },
+  ];
+});
+
 /** 是否为VIP（从 profileStore.vipStatus 获取，避免写死） */
 const isVip = computed(() => profileView.value.isVip);
 
@@ -432,6 +550,13 @@ const menuItems = computed<MenuItem[]>(() => [
     bgColor: "var(--c-bg-brand, #E8F8F0)",
     label: t("profile.visitors"),
     path: "/pages/profile/visitors",
+  },
+  /* 2026-08-08 论坛互动真实化：帖子浏览记录入口 */
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
+    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
+    label: t("profile.browseHistory"),
+    path: "/pages/village/history",
   },
   /* 功能4：相册入口 */
   {
@@ -1062,6 +1187,21 @@ const appVersion: string = (() => {
   }
 })();
 
+/**
+ * 空间分享（2026-08-08 QQ 主页重构）：右上角分享按钮 + 微信右上角菜单分享。
+ * 分享目标：自己的主页（无 userId）/ 对方主页（带 userId，被分享者点开即浏览对方主页）。
+ */
+onShareAppMessage(() => {
+  const name = profileView.value.displayName;
+  const path = isOwnProfile.value
+    ? "/pages/profile/index"
+    : `/pages/profile/index?userId=${encodeURIComponent(targetUserId.value)}`;
+  return {
+    title: t("profile.shareProfileTitle", { name }),
+    path,
+  };
+});
+
 /** 是否为开发环境（从 env.ts 导入，mp-weixin 安全） */
 // isDev 已从 services/env 导入
 
@@ -1145,30 +1285,42 @@ onUnload(() => {
         <text class="profile-complete-banner__arrow">&rsaquo;</text>
       </view>
 
-      <!-- 顶部右上角：退出登录按钮 + 匹配次数 chip（Phase C1 · 跨页面复用） -->
+      <!-- 顶部右上角：空间分享 + 退出登录 + 匹配次数 chip（Phase C1 · 跨页面复用） -->
       <view class="profile-top-bar">
-        <view
-          class="profile-logout press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="t('profile.logoutAria')"
-          @tap="handleLogout"
-        >
-          <image class="profile-logout__icon" :src="IMAGE_PATHS.ICONS_COMMON.LOG_OUT_SVG" mode="aspectFit" alt="" />
+        <view class="profile-top-actions">
+          <!-- 空间分享（2026-08-08 QQ 主页重构：右上角分享入口，mp-weixin 原生分享按钮） -->
+          <button
+            class="profile-share"
+            open-type="share"
+            hover-class="profile-share--hover"
+            :aria-label="t('profile.shareProfileAria')"
+          >
+            <image class="profile-share__icon" :src="IMAGE_PATHS.ICONS_PROFILE.SHARE" mode="aspectFit" alt="" />
+          </button>
+          <view
+            class="profile-logout press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('profile.logoutAria')"
+            @tap="handleLogout"
+          >
+            <image class="profile-logout__icon" :src="IMAGE_PATHS.ICONS_COMMON.LOG_OUT_SVG" mode="aspectFit" alt="" />
+          </view>
         </view>
         <MatchCountChip :count="matchCount" />
       </view>
 
       <!-- 个人信息区 -->
       <view class="profile-info">
-        <!-- 顶部背景图（Phase D4 · 可配置，默认品牌色渐变；Phase E1 · 支持上传） -->
+        <!-- 顶部背景图（Phase D4 · 可配置，默认品牌色渐变；Phase E1 · 支持上传）
+             2026-08-08 QQ 主页风格：widthFix 完整展示背景图（下拉可看全图），pexels 外链本地化 -->
         <view class="profile-bg">
           <image
             v-if="profileBackgroundUrl"
             class="profile-bg__img"
-            :src="profileBackgroundUrl"
-            mode="aspectFill" lazy-load alt=""
+            :src="toLocalImage(profileBackgroundUrl)"
+            mode="widthFix" lazy-load alt=""
           />
           <view class="profile-bg__overlay" />
           <!-- Phase E1 / H-10：编辑背景图按钮（仅自己主页显示，右下角相机图标） -->
@@ -1201,83 +1353,97 @@ onUnload(() => {
           </view>
         </view>
 
-        <!-- 头像 + 信息区（设计需求：左侧圆形头像，右侧昵称/认证/签名/编辑资料按钮） -->
-        <view class="profile-info__main">
-        <!-- 头像区域（QQ 主页改造方案：点击头像放大查看；修改头像走编辑资料页） -->
-        <view
-          class="avatar-wrap"
-          role="button"
-          :aria-label="t('profile.avatarPreviewAria')"
-          @tap="handleAvatarPreview"
-        >
-          <view class="avatar-ring" :class="{ 'avatar-ring--vip': featureFlags.membershipEnabled && isVip }">
-            <view class="avatar-ring__inner">
-              <view class="avatar">
-                <SafeImage
-                  v-if="profileView.avatarUrl"
-                  :src="profileView.avatarUrl"
-                  custom-class="avatar__img"
-                  mode="aspectFill"
-                  :lazy-load="true"
-                />
-                <text v-else class="avatar__text">{{ avatarInitial }}</text>
-              </view>
-              <!-- 自己主页：右上角相机小标 -->
-              <view v-if="isOwnProfile" class="avatar-camera press-feedback">
-                <image
-                  v-if="!(isUploading && uploadKind === 'avatar')"
-                  class="avatar-camera__icon"
-                  :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
-                  mode="aspectFit" alt=""
-                />
-                <view v-else class="avatar-camera__spinner" />
+        <!-- QQ 名片卡（2026-08-08 重构）：白色资料卡骑封面下缘，头像 + 昵称/标签/签名 + 整宽按钮 -->
+        <view class="profile-head-card">
+          <!-- 头像 + 信息区 -->
+          <view class="profile-info__main">
+            <!-- 头像区域（QQ 主页方案：点击头像放大查看；修改头像走编辑资料页）
+                 2026-08-08：QQ 头像框机制，按身份佩戴不同主题框 -->
+            <view
+              class="avatar-wrap"
+              role="button"
+              :aria-label="t('profile.avatarPreviewAria')"
+              @tap="handleAvatarPreview"
+            >
+              <AvatarFrame :frame-id="myFrameId">
+                <view class="avatar">
+                  <SafeImage
+                    v-if="profileView.avatarUrl"
+                    :src="profileView.avatarUrl"
+                    custom-class="avatar__img"
+                    mode="aspectFill"
+                    :lazy-load="true"
+                    fallback="/static/generated/images/avatars/default-girl.jpg"
+                  />
+                  <text v-else class="avatar__text">{{ avatarInitial }}</text>
+                  <!-- 自己主页：右上角相机小标 -->
+                  <view v-if="isOwnProfile" class="avatar-camera press-feedback">
+                    <image
+                      v-if="!(isUploading && uploadKind === 'avatar')"
+                      class="avatar-camera__icon"
+                      :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
+                      mode="aspectFit" alt=""
+                    />
+                    <view v-else class="avatar-camera__spinner" />
+                  </view>
+                </view>
+              </AvatarFrame>
+            </view>
+
+            <view class="profile-info__right">
+              <!-- 用户信息 -->
+              <view class="user-info">
+                <view class="user-info__name-row">
+                  <text class="user-info__name">{{ profileView.displayName }}</text>
+                  <!-- QQ 风格：性别代词 · 年级 标签（APP 专属条件） -->
+                  <text v-if="genderGradeLabel" class="user-info__chip">{{ genderGradeLabel }}</text>
+                  <!-- 认证徽章：已认证显示对应徽章，未认证显示"去认证"CTA（仅自己主页） -->
+                  <VerificationBadge
+                    v-if="verificationBadgeLevel !== 'none' || showVerificationCta"
+                    :level="verificationBadgeLevel"
+                    size="md"
+                    :show-cta-when-none="showVerificationCta"
+                    @tap="handleVerificationClick"
+                  />
+                  <!-- VIP 徽章：仅会员功能开启时展示（Phase Feedback6：默认隐藏） -->
+                  <view v-if="featureFlags.membershipEnabled && isVip" class="user-info__vip-badge">
+                    <image class="user-info__vip-badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
+                    <text class="user-info__vip-badge-text">VIP{{ vipPlanName ? " · " + vipPlanName : "" }}</text>
+                  </view>
+                </view>
+                <!-- 学校信息（APP 专属条件） -->
+                <view class="user-info__school-row">
+                  <image class="user-info__school-icon" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG" mode="aspectFit" alt="" />
+                  <text class="user-info__school">{{ school }}</text>
+                </view>
+                <!-- 位置行（QQ 风格：家乡城市 → 未来城市） -->
+                <view v-if="locationLabel" class="user-info__location-row">
+                  <image class="user-info__location-icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+                  <text class="user-info__school">{{ locationLabel }}</text>
+                </view>
+                <!-- APP 专属标签胶囊行（学历 / 感情状态 / 未来规划，QQ 风格） -->
+                <view v-if="showProfileTags" class="user-info__tags">
+                  <text
+                    v-for="(chip, idx) in profileTagChips" :key="idx"
+                    class="user-info__chip"
+                  >{{ chip }}</text>
+                </view>
+                <text class="user-info__bio">{{ bio }}</text>
               </view>
             </view>
           </view>
-          <view v-if="featureFlags.membershipEnabled && isVip" class="vip-crown">
-            <image class="vip-crown__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
-          </view>
-        </view>
 
-        <view class="profile-info__right">
-        <!-- 用户信息 -->
-        <view class="user-info">
-          <view class="user-info__name-row">
-            <text class="user-info__name">{{ profileView.displayName }}</text>
-            <!-- 认证徽章：已认证显示对应徽章，未认证显示"去认证"CTA（仅自己主页） -->
-            <VerificationBadge
-              v-if="verificationBadgeLevel !== 'none' || showVerificationCta"
-              :level="verificationBadgeLevel"
-              size="md"
-              :show-cta-when-none="showVerificationCta"
-              @tap="handleVerificationClick"
-            />
-          <!-- VIP 徽章：仅会员功能开启时展示（Phase Feedback6：默认隐藏） -->
-            <view v-if="featureFlags.membershipEnabled && isVip" class="user-info__vip-badge">
-              <image class="user-info__vip-badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
-              <text class="user-info__vip-badge-text">VIP{{ vipPlanName ? " · " + vipPlanName : "" }}</text>
-            </view>
+          <!-- Task F1 / M-08：按钮根据 isOwnProfile 切换（QQ 风格：资料卡底部整宽按钮） -->
+          <!-- 自己的 profile：显示"编辑资料"按钮 -->
+          <view v-if="isOwnProfile" class="edit-btn press-feedback" role="button" :aria-label="t('profile.editProfileAria')" @tap="goToProfileSetup" hover-class="edit-btn--hover" hover-stay-time="120">
+            <image class="edit-btn__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
+            <text class="edit-btn__text">{{ t('profile.editProfile') }}</text>
           </view>
-          <!-- 学校信息 -->
-          <view class="user-info__school-row">
-            <image class="user-info__school-icon" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG" mode="aspectFit" alt="" />
-            <text class="user-info__school">{{ school }}</text>
+          <!-- 对方 profile：显示"打个招呼"按钮 -->
+          <view v-else class="greet-btn press-feedback" role="button" :aria-label="t('profile.sayHiAria')" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="120">
+            <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" alt="" />
+            <text class="greet-btn__text">{{ t('profile.sayHi') }}</text>
           </view>
-          <text class="user-info__bio">{{ bio }}</text>
-        </view>
-
-        <!-- Task F1 / M-08：按钮根据 isOwnProfile 切换 -->
-        <!-- 自己的 profile：显示"编辑资料"按钮 -->
-        <view v-if="isOwnProfile" class="edit-btn press-feedback" role="button" :aria-label="t('profile.editProfileAria')" @tap="goToProfileSetup" hover-class="edit-btn--hover" hover-stay-time="120">
-          <image class="edit-btn__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
-          <text class="edit-btn__text">{{ t('profile.editProfile') }}</text>
-        </view>
-        <!-- 对方 profile：显示"打个招呼"按钮 -->
-        <view v-else class="greet-btn press-feedback" role="button" :aria-label="t('profile.sayHiAria')" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="120">
-          <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" alt="" />
-          <text class="greet-btn__text">{{ t('profile.sayHi') }}</text>
-        </view>
-        </view>
         </view>
 
         <!-- 核心数据统计栏（QQ 主页改造方案：我喜欢的/喜欢我的🔒/最近来访🔒/获赞，点击进对应页） -->
@@ -1296,10 +1462,30 @@ onUnload(() => {
               <text class="stats-bar__value">{{ stat.value }}</text>
               <!-- 付费解锁项：右上角小锁标识（QQ 主页方案） -->
               <view v-if="stat.locked" class="stats-bar__lock">
-                <text class="stats-bar__lock-text">🔒</text>
+                <image class="stats-bar__lock-text" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" alt="" />
               </view>
             </view>
             <text class="stats-bar__label">{{ stat.label }}</text>
+          </view>
+        </view>
+
+        <!-- 成就卡片（2026-08-08 QQ 主页重构：匹配次数 / 喜欢次数 / 社交升温） -->
+        <view class="achievement-card">
+          <view class="section-header">
+            <view class="section-header__left">
+              <text class="section-header__title">{{ t('profile.achievementTitle') }}</text>
+            </view>
+          </view>
+          <view class="achievement-card__grid">
+            <view
+              v-for="(item, index) in achievementStats" :key="index"
+              class="achievement-card__item"
+            >
+              <image class="achievement-card__icon" :src="item.icon" mode="aspectFit" alt="" />
+              <text class="achievement-card__value">{{ item.value }}</text>
+              <text class="achievement-card__label">{{ item.label }}</text>
+              <text class="achievement-card__hint">{{ item.hint }}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -1348,7 +1534,7 @@ onUnload(() => {
               :aria-label="t('profile.playVoiceAria')"
               @tap="handlePlayVoice"
             >
-              <text class="voice-preview__play-icon">{{ isVoicePlaying ? '⏸' : '▶' }}</text>
+              <image class="voice-preview__play-icon" :src="isVoicePlaying ? IMAGE_PATHS.ICONS_COMMON.PAUSE_SVG : IMAGE_PATHS.ICONS_COMMON.PLAY_SVG" mode="aspectFit" alt="" />
             </view>
             <view class="voice-preview__info">
               <view class="voice-preview__wave">
@@ -1391,7 +1577,7 @@ onUnload(() => {
             :key="cell.index"
             class="photo-grid__cell"
           >
-            <!-- 已上传：显示图片 + 长按删除 -->
+            <!-- 已上传：显示图片 + 长按删除（2026-08-08：pexels 外链本地化兜底） -->
             <view
               v-if="cell.filled"
               class="photo-grid__img-wrap"
@@ -1399,7 +1585,7 @@ onUnload(() => {
             >
               <image
                 class="photo-grid__img"
-                :src="cell.url"
+                :src="toLocalImage(cell.url)"
                 mode="aspectFill"
                 lazy-load alt=""
               />
@@ -1706,13 +1892,25 @@ onUnload(() => {
   padding: 0;
 }
 
-/* 头像 + 信息 横排布局（设计需求：左圆形头像，右昵称/认证/签名/编辑按钮） */
+/* QQ 名片卡（2026-08-08）：白色资料卡骑封面下缘，头像/信息/整宽按钮均位于卡内 */
+.profile-head-card {
+  position: relative;
+  z-index: 2;
+  margin: calc(var(--profile-avatar-size) * -0.5) var(--sp-7) 0;
+  padding: var(--sp-7) var(--sp-8) var(--sp-8);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
+}
+
+/* 头像 + 信息 横排布局（左圆形头像，右昵称/标签/签名） */
 .profile-info__main {
   display: flex;
   align-items: center;
   gap: 28rpx;
   width: 100%;
-  padding: 0 var(--sp-7);
+  padding: 0;
 }
 
 .profile-info__right {
@@ -1722,6 +1920,14 @@ onUnload(() => {
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sp-3);
+}
+
+/* 头像容器（QQ 名片卡：位于资料卡内，不再负 margin 骑封面） */
+.avatar-wrap {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 /* 语音介绍「仅语音 · 无视频」标注（设计需求） */
@@ -1738,11 +1944,13 @@ onUnload(() => {
   color: var(--c-brand-600, #0d9488);
 }
 
-/* 顶部背景图（Phase D4 · 可配置，默认品牌色渐变） */
+/* 顶部背景图（Phase D4 · 可配置，默认品牌色渐变）
+   2026-08-08 QQ 主页风格：widthFix 完整展示背景（下拉可看全图），
+   min-height 兜底保证无背景图/加载中也有品牌渐变底色 */
 .profile-bg {
   position: relative;
   width: 100%;
-  height: var(--profile-bg-height);
+  min-height: var(--profile-bg-height);
   background: var(--c-gradient-brand);
   overflow: hidden;
   flex-shrink: 0;
@@ -1750,17 +1958,17 @@ onUnload(() => {
 
 .profile-bg__img {
   width: 100%;
-  height: 100%;
   display: block;
 }
 
+/* 2026-08-08：改为半透明渐变（QQ 封面风格），背景图完整透出，底部轻微压暗保证可读性 */
 .profile-bg__overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, var(--c-brand-border-tint-stronger) 0%, var(--c-brand-300) 50%, var(--c-brand-400) 100%);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 45%, rgba(15, 23, 42, 0.32) 100%);
   pointer-events: none;
 }
 
@@ -1890,37 +2098,46 @@ onUnload(() => {
   height: 36rpx;
 }
 
-/* 头像容器（Phase D4 · 半遮挡背景） */
-.avatar-wrap {
-  position: relative;
-  z-index: 2;
-  margin-top: calc(var(--profile-avatar-size) * -0.5);
-  margin-bottom: var(--sp-5);
+/* 顶部右上角操作按钮组（分享 + 退出） */
+.profile-top-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-shrink: 0;
 }
 
-/* 光环效果 */
-.avatar-ring {
-  width: 152rpx;
-  height: 152rpx;
+/* 空间分享按钮（2026-08-08 QQ 主页重构：mp-weixin button 原生分享，重置默认样式） */
+.profile-share {
+  width: 64rpx;
+  height: 64rpx;
+  margin: 0;
+  padding: 0;
   border-radius: var(--r-full);
-  padding: var(--sp-1);
-  background: var(--c-gradient-brand);
-  animation: ring-rotate var(--d-rotate-slow, 8000ms) linear infinite;
+  background: var(--c-overlay-bg-light);
+  border: none;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 12;
+  transition: transform var(--d-fast, 120ms) ease;
+  overflow: hidden;
 
-  &--vip {
-    background: var(--c-gradient-vip);
-    box-shadow: 0 0 var(--sp-8) var(--c-vip-border-tint);
+  &::after {
+    border: none;
+  }
+
+  &--hover {
+    transform: scale(0.92);
+    background: var(--c-overlay-bg-light-strong);
   }
 }
 
-.avatar-ring__inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--r-full);
-  padding: 6rpx;
-  background: var(--c-neutral-0);
-  box-shadow: var(--s-sm);
+.profile-share__icon {
+  width: 36rpx;
+  height: 36rpx;
+  display: block;
 }
 
 /* 2026-08-07：头像右上角相机小标（自己主页可编辑） */
@@ -1961,7 +2178,7 @@ onUnload(() => {
 
 /* P3 修复：复用 _components.scss 的 .base-avatar 设计令牌，避免与 Avatar.vue 重复定义
    共享样式位置：src/styles/_components.scss
-   此处保留 .avatar 类名以兼容模板引用，并扩展 profile 页面特有的双层光环效果 */
+   2026-08-08：头像框由 AvatarFrame 组件承载（白框/渐变环/角标），此处仅保留圆形头像本体 */
 .avatar {
   width: var(--profile-avatar-size);
   height: var(--profile-avatar-size);
@@ -1973,7 +2190,6 @@ onUnload(() => {
   overflow: hidden;
   position: relative;
   z-index: 2;
-  box-shadow: 0 0 0 6rpx var(--c-bg-container), 0 0 0 12rpx var(--c-brand-100);
 }
 
 .avatar__img {
@@ -1988,26 +2204,6 @@ onUnload(() => {
   line-height: 1;
 }
 
-.vip-crown {
-  position: absolute;
-  bottom: -8rpx;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 36rpx;
-  height: 36rpx;
-  filter: drop-shadow(0 var(--sp-1) var(--sp-2) var(--c-overlay-text-shadow-mid));
-}
-
-.vip-crown__icon {
-  width: 100%;
-  height: 100%;
-}
-
-@keyframes ring-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 /* 用户信息（设计需求：位于头像右侧，左对齐） */
 .user-info {
   display: flex;
@@ -2016,19 +2212,54 @@ onUnload(() => {
   margin-bottom: var(--sp-2);
 }
 
-/* 昵称行（昵称 + VIP 徽章） */
+/* 昵称行（昵称 + 标签 + 认证 + VIP 徽章；允许换行避免溢出） */
 .user-info__name-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-3);
+  gap: var(--sp-2) var(--sp-3);
   margin-bottom: var(--sp-2);
 }
 
 .user-info__name {
   font-size: var(--fs-2xl);
   font-weight: 700;
-  color: var(--c-neutral-0);
-  text-shadow: 0 var(--sp-1) var(--sp-4) var(--c-black-shadow-md);
+  color: var(--c-text-primary);
+  text-shadow: none;
+}
+
+/* QQ 风格标签胶囊（性别·年级 / 学历 / 感情状态 / 未来规划） */
+.user-info__chip {
+  padding: 4rpx 16rpx;
+  border-radius: var(--r-full);
+  background: var(--c-brand-50, #f0fdf9);
+  border: 1rpx solid var(--c-brand-200, #99f6e0);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-brand-600, #0d9488);
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+/* 标签胶囊行 */
+.user-info__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+/* 位置行（QQ 风格：家乡 → 未来城市） */
+.user-info__location-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-2);
+}
+
+.user-info__location-icon {
+  width: 28rpx;
+  height: 28rpx;
 }
 
 /* VIP 徽章 */
@@ -2055,14 +2286,14 @@ onUnload(() => {
   line-height: 1;
 }
 
-/* 学校信息行 */
+/* 学校信息行（白卡上浅灰胶囊 + 深色字） */
 .user-info__school-row {
   display: flex;
   align-items: center;
   gap: var(--sp-1);
   margin-bottom: var(--sp-2);
   padding: var(--sp-1) var(--sp-4);
-  background: var(--c-overlay-bg-light);
+  background: var(--c-neutral-50);
   border-radius: var(--r-full);
 }
 
@@ -2076,7 +2307,7 @@ onUnload(() => {
 
 .user-info__school {
   font-size: var(--fs-sm);
-  color: var(--c-neutral-0);
+  color: var(--c-text-secondary);
   font-weight: 500;
   max-width: 360rpx;
   overflow: hidden;
@@ -2086,35 +2317,71 @@ onUnload(() => {
 
 .user-info__bio {
   font-size: var(--fs-sm);
-  color: var(--c-overlay-white-text-strong);
-  max-width: 480rpx;
-  text-align: center;
+  color: var(--c-text-tertiary);
+  max-width: 460rpx;
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 编辑资料按钮 */
+/* 编辑资料按钮（QQ 名片卡底部整宽） */
 .edit-btn {
   position: relative;
   /* 修复：z-index 提升到 3，避免被上层元素（头像区域等）遮挡导致无法点击 */
   z-index: 3;
-  /* 修复：扩大点击热区（水平 padding ≥ 80rpx、最小高度 88rpx），同时缩小图标尺寸 */
+  width: 100%;
+  margin-top: var(--sp-7);
   padding: var(--sp-4) var(--sp-11);
   min-height: 88rpx;
   background: var(--c-brand-50);
   border-radius: var(--r-full);
   border: 2rpx solid var(--c-brand-500);
-  margin-bottom: var(--sp-7);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--sp-2);
+  box-sizing: border-box;
 
   &--hover {
     transform: scale(0.96);
     background: var(--c-brand-100);
   }
+}
+
+/* 打个招呼按钮（对方 profile，QQ 名片卡底部整宽，品牌色填充） */
+.greet-btn {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  margin-top: var(--sp-7);
+  padding: var(--sp-4) var(--sp-11);
+  min-height: 88rpx;
+  background: var(--c-gradient-brand);
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  box-sizing: border-box;
+
+  &--hover {
+    transform: scale(0.96);
+    filter: brightness(0.95);
+  }
+}
+
+.greet-btn__icon {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
+  filter: brightness(0) invert(1);
+}
+
+.greet-btn__text {
+  font-size: var(--fs-md);
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .edit-btn__icon {
@@ -2137,10 +2404,61 @@ onUnload(() => {
   background: var(--c-bg-container);
   border-radius: var(--r-xl);
   padding: var(--sp-4);
-  margin: 0 var(--sp-7);
+  margin: var(--sp-5) var(--sp-7) 0;
   box-sizing: border-box;
   border: var(--c-border-card);
   box-shadow: var(--s-card-soft);
+}
+
+/* ==================== 成就卡片（2026-08-08 QQ 主页重构） ==================== */
+.achievement-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: var(--sp-5) var(--sp-7) 0;
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft);
+  border: var(--c-border-card);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.achievement-card__grid {
+  display: flex;
+  padding: 0 var(--sp-4) var(--sp-6);
+}
+
+.achievement-card__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  padding: var(--sp-2) 0;
+}
+
+.achievement-card__icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.achievement-card__value {
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  line-height: 1.2;
+}
+
+.achievement-card__label {
+  font-size: var(--fs-sm);
+  color: var(--c-text-primary);
+  font-weight: 500;
+}
+
+.achievement-card__hint {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
 }
 
 .stats-bar__item {
@@ -2180,8 +2498,8 @@ onUnload(() => {
 }
 
 .stats-bar__lock-text {
-  font-size: var(--fs-xs);
-  line-height: 1;
+  width: 20rpx;
+  height: 20rpx;
 }
 
 .stats-bar__label {
@@ -2373,8 +2691,8 @@ onUnload(() => {
 }
 
 .voice-preview__play-icon {
-  font-size: var(--fs-lg, 32rpx);
-  color: var(--c-text-inverse, #ffffff);
+  width: 32rpx;
+  height: 32rpx;
 }
 
 .voice-preview__info {

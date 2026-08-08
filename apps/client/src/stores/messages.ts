@@ -13,6 +13,8 @@ import type {
 import { ASYNC_TIMEOUT_MS } from "../constants/growth";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
+// 录音修复：私信语音上传复用共享服务（携带 Authorization 头）
+import { uploadVoiceFile } from "../services/voice-upload";
 // infra R2-00028: mock 头像统一走 IMAGE_PATHS 体系
 import { IMAGE_PATHS } from "../config/images";
 
@@ -127,7 +129,7 @@ export interface MessageItem {
   id: string;
   sessionId: string;
   sender: "self" | "peer" | "system";
-  kind: "text" | "voice" | "emoji" | "system";
+  kind: "text" | "voice" | "emoji" | "system" | "activity";
   body: string;
   sentAt: string;
   durationSeconds?: number | null;
@@ -144,6 +146,11 @@ export interface MessagesState {
   interactionEvents: InteractionEvent[];
   interactionEventPage: number;
   interactionEventHasMore: boolean;
+  /** 2026-08-08 微信化重构：上拉加载更早历史的分页游标（正序分页） */
+  messagePage: number;
+  messageHasMore: boolean;
+  /** 2026-08-08 红点修复：当前正在查看的会话 ID（会话内新消息不累加未读数） */
+  activeSessionId: string | null;
   loading: boolean;
   errorMessage: string | null;
   /** 通知筛选类型：all（全部）/ social（社交信号）/ content（内容信号） */
@@ -176,6 +183,8 @@ export interface BackendMessageView {
   messageKind: string;
   isRead: boolean;
   createdAt: string;
+  /** 语音消息时长（秒），非语音消息为 null（录音修复：后端 MessageView 已支持） */
+  durationSeconds?: number | null;
 }
 
 /**
@@ -234,10 +243,38 @@ function mapToMessageItem(raw: BackendMessageView): MessageItem {
     id: String(raw.id),
     sessionId: String(raw.conversationId),
     sender: String(raw.senderId) === currentUserId ? "self" : "peer",
-    kind: raw.messageKind === "voice" ? "voice" : raw.messageKind === "emoji" ? "emoji" : "text",
+    // 2026-08-08 活动卡片：kind=activity（content 为 JSON）；未知 kind 回退 text 容错旧数据
+    kind: raw.messageKind === "voice" ? "voice"
+      : raw.messageKind === "emoji" ? "emoji"
+      : raw.messageKind === "activity" ? "activity"
+      : "text",
     body: raw.content,
     sentAt: raw.createdAt,
+    // 录音修复：语音时长透传（后端 MessageView.durationSeconds）
+    durationSeconds: raw.durationSeconds ?? null,
   };
+}
+
+/**
+ * 本地构造会话列表预览文案（与后端 preview 规则对齐）。
+ * - activity：解析 content JSON 的 title → 「[活动] 标题」；解析失败回退「[活动] 活动卡片」
+ * - 其余类型：直接截取（<= 50 字）
+ *
+ * @param kind 消息类型
+ * @param content 消息内容
+ * @returns 预览文案
+ */
+function buildLocalPreview(kind: MessageItem["kind"], content: string): string {
+  if (kind === "activity") {
+    try {
+      const parsed = JSON.parse(content) as { title?: string };
+      if (parsed.title) return `[活动] ${parsed.title}`;
+    } catch (_e) {
+      // 解析失败走默认文案
+    }
+    return "[活动] 活动卡片";
+  }
+  return content.length > 50 ? `${content.substring(0, 50)}...` : content;
 }
 
 function mapToSystemNotification(raw: BackendNotificationView): SystemNotification {
@@ -362,6 +399,15 @@ const mockMessages: Record<string, MessageItem[]> = {
   ],
   "session-private-3": [
     { id: "msg-5", sessionId: "session-private-3", sender: "peer", kind: "text", body: "上次拍的那组照片发你了", sentAt: "2026-05-18T14:20:00Z" },
+    // 2026-08-08 活动卡片消息（mock 演示）：kind=activity，content 为 JSON
+    {
+      id: "msg-51",
+      sessionId: "session-private-3",
+      sender: "peer",
+      kind: "activity",
+      body: '{"title":"校园春日联谊会","desc":"一场轻松的春日联谊会，有破冰游戏、桌游互动、自由交流。","tag":"本周活动","targetUrl":"/pages/activities/detail?id=sample-weekend-party"}',
+      sentAt: "2026-05-18T14:25:00Z",
+    },
   ],
   "session-temp-1": [
     { id: "msg-6", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "嗨，我是通过匹配进来的", sentAt: "2026-05-20T20:00:00Z" },
@@ -497,13 +543,19 @@ export const useMessagesStore = defineStore("messages", {
     interactionEvents: [],
     interactionEventPage: 1,
     interactionEventHasMore: true,
+    messagePage: 0,
+    messageHasMore: true,
+    activeSessionId: null,
     loading: false,
     errorMessage: null,
     filterType: "all",
   }),
 
   getters: {
-    totalUnreadCount: (state): number => state.sessions.reduce((sum, s) => sum + s.unreadCount, 0),
+    // 2026-08-08 红点修复：免打扰会话不计入 tabBar 总角标
+    // （MessageSession.muted 注释「免打扰会话不再在列表顶栏统计未读数」，原实现未生效）
+    totalUnreadCount: (state): number =>
+      state.sessions.filter((s) => !s.muted).reduce((sum, s) => sum + s.unreadCount, 0),
     unreadNotificationCount: (state): number => state.notifications.filter((n) => !n.isRead).length,
     pinnedSessions: (state): MessageSession[] => state.sessions.filter((s) => s.pinned),
     unpinnedSessions: (state): MessageSession[] => state.sessions.filter((s) => !s.pinned),
@@ -620,6 +672,8 @@ export const useMessagesStore = defineStore("messages", {
             this.currentMessages = mockMessages[sessionId] ? [...mockMessages[sessionId]] : [];
             const s = this.sessions.find((x) => x.id === sessionId);
             if (s) s.unreadCount = 0;
+            this.messagePage = 0;
+            this.messageHasMore = false;
             return;
           }
           // P2-13：会话消息接口 userId 由后端 JWT 获取（PrivateMessageController 无 userId 参数），不再携带 query
@@ -629,6 +683,9 @@ export const useMessagesStore = defineStore("messages", {
           this.currentMessages = data.map(mapToMessageItem);
           const s = this.sessions.find((x) => x.id === sessionId);
           if (s) s.unreadCount = 0;
+          // 重置上拉历史分页游标（新会话上下文）
+          this.messagePage = 0;
+          this.messageHasMore = data.length >= 20;
         })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMessages")); // infra R2-00028
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
@@ -640,6 +697,47 @@ export const useMessagesStore = defineStore("messages", {
           this.loading = false;
         }
       }
+    },
+
+    /**
+     * 2026-08-08 微信化重构：加载更早的历史消息（正序分页，上拉触发）。
+     *
+     * real：GET /messages/conversations/{id}/messages?page=N&size=20&order=asc，
+     * 返回最早在前的下一页，按 id 去重合并到 currentMessages 头部（整体保持 sentAt 升序）。
+     * mock：mock 数据量小，直接置 hasMore=false（不做分片）。
+     *
+     * @param sessionId 会话 ID
+     * @param page 目标页码（正序第 N 页，0 起）
+     */
+    async fetchOlderMessages(sessionId: string, page: number) {
+      if (useMock()) {
+        this.messageHasMore = false;
+        return;
+      }
+      const data = await request<BackendMessageView[]>({
+        url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages?page=${page}&size=20&order=asc`,
+        method: "GET",
+      });
+      const older = data.map(mapToMessageItem);
+      // 按 id 去重（分页边界可能重复），保持 sentAt 升序合并到头部
+      const existingIds = new Set(this.currentMessages.map((m) => m.id));
+      const fresh = older.filter((m) => !existingIds.has(m.id));
+      this.currentMessages = [...fresh, ...this.currentMessages];
+      this.messagePage = page;
+      this.messageHasMore = data.length >= 20;
+    },
+
+    /**
+     * 2026-08-08 红点修复：标记当前正在查看的会话。
+     *
+     * 会话页 onShow 时传入 sessionId，onHide 时传 null：
+     * - 正在查看的会话收到 WS 推送时不累加未读数（读态由后端 markAsRead 闭环）
+     * - 其他会话照常 +1
+     *
+     * @param sessionId 会话 ID 或 null（退出会话页）
+     */
+    setActiveSession(sessionId: string | null) {
+      this.activeSessionId = sessionId;
     },
 
     /**
@@ -731,7 +829,7 @@ export const useMessagesStore = defineStore("messages", {
 
     // 修复（严格模式 noUnusedLocals）：原 quoteRef 参数未在函数体内使用，
     // 加 _ 前缀标识为有意未使用（保留签名以维持调用方兼容性）。
-    async sendMessage(sessionId: string, content: string, _quoteRef?: string) {
+    async sendMessage(sessionId: string, content: string, _quoteRef?: string, kind: MessageItem["kind"] = "text") {
       this.errorMessage = null;
       try {
         if (!content || content.trim().length === 0) { this.errorMessage = t("storeErrors.messages.contentEmpty"); throw new Error(t("storeErrors.messages.contentEmpty")); }
@@ -739,19 +837,63 @@ export const useMessagesStore = defineStore("messages", {
         if (!sessionId || sessionId.trim().length === 0) { this.errorMessage = t("storeErrors.messages.sessionIdInvalid"); throw new Error(t("storeErrors.messages.sessionIdInvalid")); }
         await withTimeout((async () => {
           if (useMock()) {
-            const nm: MessageItem = { id: `msg-${Date.now()}`, sessionId, sender: "self", kind: "text", body: content, sentAt: new Date().toISOString() };
+            const nm: MessageItem = { id: `msg-${Date.now()}`, sessionId, sender: "self", kind, body: content, sentAt: new Date().toISOString() };
             this.currentMessages.push(nm);
             const s = this.sessions.find((x) => x.id === sessionId);
-            if (s) { s.lastMessagePreview = content; s.lastMessageSentAt = nm.sentAt; }
+            if (s) { s.lastMessagePreview = buildLocalPreview(kind, content); s.lastMessageSentAt = nm.sentAt; }
             return nm;
           }
           // 修复（P0-12）：后端 SendMessageRequest 不含 senderId（从 JWT 取当前用户），
           // 请求体仅发送内容与类型，删除多余字段避免后端契约不匹配
-          const result = await request<BackendMessageView, { content: string; kind: string }>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`, method: "POST", data: { content, kind: "text" } });
+          const result = await request<BackendMessageView, { content: string; kind: string }>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`, method: "POST", data: { content, kind } });
           const mr = mapToMessageItem(result);
           this.currentMessages.push(mr);
           const s = this.sessions.find((x) => x.id === sessionId);
-          if (s) { s.lastMessagePreview = content; s.lastMessageSentAt = mr.sentAt; }
+          if (s) { s.lastMessagePreview = buildLocalPreview(kind, content); s.lastMessageSentAt = mr.sentAt; }
+          return mr;
+        })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutSendMessage")); // infra R2-00028
+      } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.sendMessageFailed"); throw error; }
+    },
+
+    /**
+     * 发送语音消息（录音修复：私信链路语音上传 + kind=voice 发送）。
+     *
+     * 流程：
+     * 1. Real 模式：先通过 uploadVoiceFile 上传录音文件到 POST /api/v1/chat/voice，
+     *    拿到音频 URL 后再以 kind="voice" 发送私信消息（body 为音频 URL）；
+     * 2. Mock 模式：跳过上传，以占位 body + durationSeconds 本地追加，保证 dev 流程可走通。
+     *
+     * @param sessionId 私信会话 ID
+     * @param tempFilePath 录音文件临时路径（mp-weixin 由 RecorderManager.onStop 提供）
+     * @param durationSeconds 语音时长（秒）
+     */
+    async sendVoiceMessage(sessionId: string, tempFilePath: string, durationSeconds: number) {
+      this.errorMessage = null;
+      try {
+        if (!sessionId || sessionId.trim().length === 0) { this.errorMessage = t("storeErrors.messages.sessionIdInvalid"); throw new Error(t("storeErrors.messages.sessionIdInvalid")); }
+        await withTimeout((async () => {
+          if (useMock()) {
+            const nm: MessageItem = { id: `msg-${Date.now()}`, sessionId, sender: "self", kind: "voice", body: t("chat.voicePlaceholder"), sentAt: new Date().toISOString(), durationSeconds };
+            this.currentMessages.push(nm);
+            const s = this.sessions.find((x) => x.id === sessionId);
+            if (s) { s.lastMessagePreview = t("chat.voicePlaceholder"); s.lastMessageSentAt = nm.sentAt; }
+            return nm;
+          }
+          // Real：先上传录音文件，再以 kind=voice 发送（body 为音频 URL）。
+          // H5 端 tempFilePath 恒为空（模拟录音，createRecorder 返回空路径），
+          // 降级为占位 body 发送（与 chatStore.sendVoice 行为一致）
+          const voiceUrl = tempFilePath && tempFilePath.trim().length > 0
+            ? await uploadVoiceFile(tempFilePath, durationSeconds)
+            : t("chat.voicePlaceholder");
+          const result = await request<BackendMessageView, { content: string; kind: string; durationSeconds: number }>({
+            url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`,
+            method: "POST",
+            data: { content: voiceUrl, kind: "voice", durationSeconds },
+          });
+          const mr = mapToMessageItem(result);
+          this.currentMessages.push(mr);
+          const s = this.sessions.find((x) => x.id === sessionId);
+          if (s) { s.lastMessagePreview = t("chat.voicePlaceholder"); s.lastMessageSentAt = mr.sentAt; }
           return mr;
         })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutSendMessage")); // infra R2-00028
       } catch (error) { this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.sendMessageFailed"); throw error; }
@@ -998,13 +1140,21 @@ export const useMessagesStore = defineStore("messages", {
     onNewMessage(message: MessageItem): void {
       // 修复：WebSocket 重连重复订阅会导致同一消息被推送多次
       // 此处按 messageId 去重，避免消息列表出现重复项
+      // 2026-08-08 红点修复：仅当前正在查看的会话才进入 currentMessages 消息流，
+      // 其他会话的消息不再污染当前会话流（原实现任意消息都 push 的隐藏 bug）
+      const isActive = message.sessionId === this.activeSessionId;
       const exists = this.currentMessages.some((m) => m.id === message.id);
-      if (exists) {
-        return;
+      if (!exists && isActive) {
+        this.currentMessages.push(message);
       }
-      this.currentMessages.push(message);
       const s = this.sessions.find((x) => x.id === message.sessionId);
-      if (s) { s.lastMessagePreview = message.kind === "text" ? message.body : `[${message.kind}]`; s.lastMessageSentAt = message.sentAt; s.unreadCount += 1; }
+      if (s) {
+        s.lastMessagePreview = message.kind === "text" ? message.body : `[${message.kind}]`;
+        s.lastMessageSentAt = message.sentAt;
+        // 正在查看该会话时不累加未读数（读态由后端 markAsRead 闭环）；
+        // 其他会话（含免打扰语义外的会话）照常 +1
+        if (!isActive) s.unreadCount += 1;
+      }
     },
 
     clearCurrentMessages() { this.currentMessages = []; },

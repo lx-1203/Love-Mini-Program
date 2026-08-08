@@ -33,8 +33,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  *   <li>type：交易类型 DEBIT(扣减) / CREDIT(充值)</li>
  *   <li>amount：交易金额（分，Long 避免溢出）</li>
  *   <li>balanceAfter：交易后余额（分，便于审计追溯）</li>
- *   <li>relatedType：关联业务类型 VIP_RENEW / RED_PACKET_SEND / RED_PACKET_CLAIM / RED_PACKET_REFUND</li>
- *   <li>relatedId：关联业务实体 ID（如 renewalId / redPacketId）</li>
+ *   <li>relatedType：关联业务类型（如 VIP_RENEW；历史流水保留 RED_PACKET_* 字符串）</li>
+ *   <li>relatedId：关联业务实体 ID（如 renewalId）</li>
  *   <li>orderId：业务订单号（幂等键，唯一索引）</li>
  *   <li>remark：备注</li>
  *   <li>createdAt / updatedAt：审计时间</li>
@@ -73,9 +73,11 @@ public class WalletTransactionLog {
 
     /** 关联业务类型：VIP 自动续费扣减 */
     public static final String RELATED_TYPE_VIP_RENEW = "VIP_RENEW";
-    /** 关联业务类型：红包发送扣减 */
+    /**
+     * 关联业务类型：红包发送扣减（红包功能已下线，常量保留以兼容历史流水对账）。
+     */
     public static final String RELATED_TYPE_RED_PACKET_SEND = "RED_PACKET_SEND";
-    /** 关联业务类型：红包领取充值 */
+    /** 关联业务类型：红包领取充值（红包功能已下线，常量保留以兼容历史流水对账） */
     public static final String RELATED_TYPE_RED_PACKET_CLAIM = "RED_PACKET_CLAIM";
     /** 关联业务类型：红包过期退款 */
     public static final String RELATED_TYPE_RED_PACKET_REFUND = "RED_PACKET_REFUND";
@@ -110,11 +112,11 @@ public class WalletTransactionLog {
     @Column(name = "balance_after")
     private Long balanceAfter;
 
-    /** 关联业务类型 VIP_RENEW / RED_PACKET_SEND / RED_PACKET_CLAIM / RED_PACKET_REFUND */
+    /** 关联业务类型（如 VIP_RENEW；历史流水含 RED_PACKET_*） */
     @Column(name = "related_type", nullable = false, length = 32)
     private String relatedType;
 
-    /** 关联业务实体 ID（如 renewalId / redPacketId，字符串便于跨业务通用） */
+    /** 关联业务实体 ID（如 renewalId，字符串便于跨业务通用） */
     @Column(name = "related_id", length = 64)
     private String relatedId;
 

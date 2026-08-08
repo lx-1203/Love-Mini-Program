@@ -9,8 +9,11 @@ import com.campuslove.api.entity.Post.AuditStatus;
 import com.campuslove.api.entity.Post.PostStatus;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserCampusProfile;
+import com.campuslove.api.entity.PostViewHistory;
 import com.campuslove.api.repository.CommentRepository;
+import com.campuslove.api.repository.PostFavoriteRepository;
 import com.campuslove.api.repository.PostRepository;
+import com.campuslove.api.repository.PostViewHistoryRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
@@ -72,18 +75,30 @@ public class AdminVillagePostController {
     private final CommentRepository commentRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final AdminDataScope adminDataScope;
+    /**
+     * 2026-08-08 论坛互动真实化：帖子收藏 Repository（后台展示收藏数）。
+     */
+    private final PostFavoriteRepository postFavoriteRepository;
+    /**
+     * 2026-08-08 论坛互动真实化：帖子浏览历史 Repository（后台浏览记录查询）。
+     */
+    private final PostViewHistoryRepository postViewHistoryRepository;
 
     public AdminVillagePostController(
             PostRepository postRepository,
             UserRepository userRepository,
             CommentRepository commentRepository,
             UserCampusProfileRepository userCampusProfileRepository,
-            AdminDataScope adminDataScope) {
+            AdminDataScope adminDataScope,
+            PostFavoriteRepository postFavoriteRepository,
+            PostViewHistoryRepository postViewHistoryRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.adminDataScope = adminDataScope;
+        this.postFavoriteRepository = postFavoriteRepository;
+        this.postViewHistoryRepository = postViewHistoryRepository;
     }
 
     /**
@@ -130,8 +145,15 @@ public class AdminVillagePostController {
         Map<Long, User> authorMap = loadAuthorMap(
                 result.getContent().stream().map(Post::getAuthorId).toList());
 
+        // 2026-08-08 论坛互动真实化：批量预加载收藏数（postId -> count），防 N+1
+        List<Long> postIds = result.getContent().stream().map(Post::getId).toList();
+        Map<Long, Integer> favoriteCountMap = postIds.isEmpty() ? Map.of()
+                : postFavoriteRepository.countByPostIds(postIds).stream()
+                        .collect(java.util.stream.Collectors.toMap(
+                                r -> (Long) r[0], r -> ((Number) r[1]).intValue()));
+
         List<AdminVillagePostSummaryView> items = result.getContent().stream()
-                .map(post -> toSummaryView(post, authorMap))
+                .map(post -> toSummaryView(post, authorMap, favoriteCountMap))
                 .toList();
 
         return new AdminPageView<>(
@@ -348,6 +370,65 @@ public class AdminVillagePostController {
     }
 
     /**
+     * 分页查询帖子的浏览记录（2026-08-08 论坛互动真实化，后台可见）。
+     *
+     * <p>返回浏览者昵称/头像/最近浏览时间，按 viewed_at 倒序；
+     * 帖子不存在返回 404。</p>
+     *
+     * @param id       帖子 ID
+     * @param page     页码，1-based，默认 1
+     * @param pageSize 每页大小，默认 20，最大 100
+     * @return 分页浏览者列表
+     */
+    @GetMapping("/{id}/views")
+    public AdminPageView<AdminPostViewerView> listPostViewers(
+            @PathVariable("id") @Positive Long id,
+            @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
+            @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
+        SecurityUtils.getCurrentUserId();
+
+        if (postRepository.findById(id).isEmpty()) {
+            throw new com.campuslove.api.common.ResourceNotFoundException("Post not found: " + id);
+        }
+
+        int safePage = Math.max(1, page);
+        int safeSize = Math.max(1, Math.min(100, pageSize));
+        Pageable pageable = PageRequest.of(safePage - 1, safeSize);
+
+        Page<PostViewHistory> result = postViewHistoryRepository.findByPostIdOrderByViewedAtDesc(id, pageable);
+
+        // 批量预加载浏览者昵称/头像，避免 N+1 查询
+        List<Long> viewerIds = result.getContent().stream()
+                .map(PostViewHistory::getUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, User> viewerMap = viewerIds.isEmpty() ? Map.of()
+                : userRepository.findByIdIn(viewerIds).stream()
+                        .collect(java.util.stream.Collectors.toMap(User::getId, u -> u));
+
+        List<AdminPostViewerView> items = result.getContent().stream()
+                .map(h -> {
+                    User viewer = viewerMap.get(h.getUserId());
+                    return new AdminPostViewerView(
+                            h.getUserId(),
+                            viewer != null ? viewer.getNickname() : null,
+                            viewer != null ? viewer.getAvatarUrl() : null,
+                            h.getViewedAt()
+                    );
+                })
+                .toList();
+
+        return new AdminPageView<>(
+                items,
+                result.getTotalElements(),
+                safePage,
+                safeSize,
+                AdminPageView.calculateTotalPages(result.getTotalElements(), safeSize)
+        );
+    }
+
+    /**
      * 校验当前管理员对目标帖子的校区访问权（写操作越权拦截）。
      * <p>posts 表无 campus_name 列，帖子所属校区按作者校区判定：
      * 优先取 user_campus_profile.campus_name（普通用户校区），
@@ -443,8 +524,11 @@ public class AdminVillagePostController {
 
     /**
      * Entity 转列表 SummaryView。
+     *
+     * @param favoriteCountMap 收藏数批量预加载 Map（postId -> count）
      */
-    private AdminVillagePostSummaryView toSummaryView(Post post, Map<Long, User> authorMap) {
+    private AdminVillagePostSummaryView toSummaryView(Post post, Map<Long, User> authorMap,
+                                                      Map<Long, Integer> favoriteCountMap) {
         User author = authorMap.get(post.getAuthorId());
         return new AdminVillagePostSummaryView(
                 post.getId(),
@@ -459,6 +543,8 @@ public class AdminVillagePostController {
                 post.getLikesCount(),
                 post.getCommentsCount(),
                 post.getShareCount(),
+                post.getViewCount(),
+                favoriteCountMap.getOrDefault(post.getId(), 0),
                 post.getCreatedAt(),
                 post.getAuditedAt()
         );
@@ -486,6 +572,8 @@ public class AdminVillagePostController {
                 post.getLikesCount(),
                 post.getCommentsCount(),
                 post.getShareCount(),
+                post.getViewCount(),
+                (int) postFavoriteRepository.countByPostId(post.getId()),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
@@ -553,6 +641,8 @@ public class AdminVillagePostController {
  * @param likesCount     点赞数
  * @param commentsCount  评论数
  * @param shareCount     转发数
+ * @param viewCount      浏览量（2026-08-08 论坛互动真实化新增）
+ * @param favoriteCount  收藏数（2026-08-08 论坛互动真实化新增）
  * @param createdAt      创建时间
  * @param auditedAt      审核时间（未审核则为 null）
  */
@@ -569,6 +659,8 @@ record AdminVillagePostSummaryView(
         Integer likesCount,
         Integer commentsCount,
         Integer shareCount,
+        Integer viewCount,
+        Integer favoriteCount,
         LocalDateTime createdAt,
         LocalDateTime auditedAt
 ) {
@@ -606,6 +698,8 @@ record AdminVillagePostSummaryView(
  * @param likesCount     点赞数
  * @param commentsCount  评论数
  * @param shareCount     转发数
+ * @param viewCount      浏览量（2026-08-08 论坛互动真实化新增）
+ * @param favoriteCount  收藏数（2026-08-08 论坛互动真实化新增）
  * @param createdAt      创建时间
  * @param updatedAt      最近更新时间
  */
@@ -627,7 +721,25 @@ record AdminVillagePostDetailView(
         Integer likesCount,
         Integer commentsCount,
         Integer shareCount,
+        Integer viewCount,
+        Integer favoriteCount,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
+) {
+}
+
+/**
+ * 管理后台 - 帖子浏览者视图（2026-08-08 论坛互动真实化新增）。
+ *
+ * @param userId    浏览者用户 ID
+ * @param nickname  浏览者昵称
+ * @param avatarUrl 浏览者头像 URL
+ * @param viewedAt  最近浏览时间
+ */
+record AdminPostViewerView(
+        Long userId,
+        String nickname,
+        String avatarUrl,
+        LocalDateTime viewedAt
 ) {
 }

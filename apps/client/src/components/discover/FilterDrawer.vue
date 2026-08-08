@@ -838,11 +838,14 @@ defineExpose({ onContentTap });
                 :value="keywordDraft"
                 @input="onKeywordInput" :aria-label="t('filterDrawer.keywordPlaceholder')"
               />
-              <text
+              <image
                 v-if="keywordDraft"
                 class="keyword-input__clear"
                 @tap="clearKeyword"
-              >✕</text>
+                :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG"
+                mode="aspectFit"
+                alt=""
+              />
             </view>
           </view>
         </view>
@@ -1110,8 +1113,8 @@ defineExpose({ onContentTap });
 }
 
 .keyword-input__clear {
-  font-size: var(--fs-base);
-  color: var(--c-text-tertiary);
+  width: 28rpx;
+  height: 28rpx;
   padding: var(--sp-1) var(--sp-2);
 }
 

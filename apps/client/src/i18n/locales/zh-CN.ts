@@ -356,6 +356,12 @@ export default {
     enrollFailedToast: "操作失败，请重试",
     quitSignup: "退出报名",
     quitSignupSuccess: "已退出报名",
+    /* 发给朋友（私聊活动卡片） */
+    sendToFriend: "发给朋友",
+    sendToFriendTag: "活动推荐",
+    sendToFriendEmpty: "暂无会话，去消息页聊聊吧",
+    sendToFriendDone: "已发送给 {name}",
+    sendToFriendFailed: "发送失败，请重试",
     statusOpen: "报名中",
     statusOngoing: "进行中",
     statusUpcoming: "预告",
@@ -574,6 +580,8 @@ export default {
     personalityLabel: "性格",
     mbtiLabel: "MBTI",
     whisperLabel: "悄悄话",
+    /* 2026-08-08 走查：悄悄话功能暂未开放提示 */
+    whisperComingSoon: "悄悄话功能暂未开放",
     whisperEmpty: "还没有悄悄话",
     whisperSend: "发悄悄话",
     whisperSent: "已发送悄悄话",
@@ -747,6 +755,9 @@ export default {
     pageName: "聊天",
     recalledBySelf: "你撤回了一条消息",
     recalledByPeer: "对方撤回了一条消息",
+    /* 活动卡片消息（私聊 kind=activity） */
+    activityCardCta: "查看详情",
+    activityCardAria: "查看活动：{title}",
     quoteMe: "我",
     quotePeer: "对方",
     selfTextMessage: "我发送的文本消息",
@@ -926,6 +937,8 @@ export default {
     earnReward: "得奖励",
     myCircles: "我的圈子",
     visitors: "访客记录",
+    /* 2026-08-08 论坛互动真实化：帖子浏览记录入口 */
+    browseHistory: "浏览记录",
     verification: "恋爱认证",
     verificationSchool: "已认证",
     verificationEmail: "邮箱认证",
@@ -1023,6 +1036,16 @@ export default {
     voiceStatusHint: "最长 60 秒，让 TA 听到真实的你",
     voiceOnlyTag: "仅语音 · 无视频",
     statComingSoon: "列表页开发中，敬请期待",
+    /* ========== 2026-08-08 QQ 主页重构：成就卡片 ========== */
+    achievementTitle: "我的成就",
+    achievementMatch: "匹配",
+    achievementMatchHint: "累计成功匹配",
+    achievementLike: "喜欢",
+    achievementLikeHint: "累计表达喜欢",
+    achievementWarmHint: "社交升温",
+    /* 2026-08-08 QQ 主页重构：空间分享 */
+    shareProfileTitle: "快来认识 {name}，在校园恋爱遇见心动的 TA",
+    shareProfileAria: "分享个人主页",
     voiceRecord: "录制语音状态",
     voiceRecordStart: "开始录制",
     voiceRecordStop: "停止录制",
@@ -1140,6 +1163,21 @@ export default {
   village: {
     title: "圈子",
     subtitle: "校园恋爱社区",
+    /* 2026-08-08 论坛互动真实化：浏览记录页 */
+    history: {
+      title: "浏览记录",
+      empty: "还没有浏览记录",
+      count: "共 {n} 条记录",
+      clear: "清空记录",
+      clearTitle: "清空浏览记录",
+      clearDesc: "确定要清空全部浏览记录吗？此操作不可恢复",
+      cleared: "浏览记录已清空",
+      clearFailed: "清空失败，请重试",
+      untitled: "（无标题）",
+      backToVillage: "去广场逛逛",
+    },
+    /* 2026-08-08 论坛互动真实化：收藏失败提示 */
+    favoriteFailed: "收藏操作失败",
     /* 2026-08-08 重构：每日一问轻量入口（自寻觅页迁入） */
     dailyQuestion: "每日一问",
     dailyQuestionDesc: "回答今日话题，看看大家的想法",
@@ -1229,6 +1267,7 @@ export default {
       /* 作者交互卡片 */
       message: "私信",
       /* 帖子统计 */
+      statsView: "浏览",
       statsShare: "转发",
       statsComment: "评论",
       statsLike: "赞",
@@ -1246,6 +1285,9 @@ export default {
       cancelReply: "取消回复",
       /* 2026-08-08 走查 P1：贴吧式楼层号（1F/2F/...） */
       floorLabel: "{n}F",
+      /* 2026-08-08 论坛互动真实化：贴吧式楼中楼展开/收起 */
+      expandReplies: "展开{n}条回复",
+      collapseReplies: "收起回复",
       /* 相似作者推荐 */
       similarTitle: "你可能还想认识",
       similarSubtitle: "兴趣相投的同学",
@@ -1358,6 +1400,43 @@ export default {
     postItemAria: "帖子：{title}",
     followSimilarAria: "关注相似作者",
     sendMessageSimilarAria: "给相似作者发消息",
+    /* ========== 2026-08-08 频道化重构：QQ 频道风格频道 Tab ========== */
+    channelToday: "今日广场",
+    channelInterest: "兴趣圈",
+    channelSchool: "学校圈",
+    channelActivity: "活动",
+    channelInterestFeatured: "精选话题",
+    activityChannelTitle: "推荐活动",
+    activityChannelSub: "点击卡片报名或查看详情",
+    schoolChannelEmpty: "学校圈还没有新动态",
+    activityChannelEmpty: "还没有活动相关帖子",
+    /* 学校圈认证门 */
+    schoolGateTitle: "学校认证聊天圈",
+    schoolGateDesc: "仅限本校同学进入，完成校园认证后即可解锁学校圈发帖与互动",
+    schoolGatePoint1: "认证后可进入学校圈发帖聊天",
+    schoolGatePoint2: "同校同学的动态都在这里",
+    schoolGateBtn: "去认证",
+    schoolGateSimulate: "模拟认证一键通过（演示）",
+    schoolGateSimulateSuccess: "模拟认证成功，已进入学校圈",
+    schoolGateSimulateFailed: "模拟认证失败，请重试",
+    /* 底部发帖输入条占位 */
+    composerToday: "在今日广场发帖...",
+    composerInterest: "在兴趣圈发帖...",
+    composerSchool: "在校园圈发帖...",
+    composerSchoolLocked: "完成校园认证后在校园圈发帖",
+    composerActivity: "发帖推荐活动...",
+    /* 置顶折叠条 */
+    pinnedCount: "置顶 {n} 条",
+    pinnedBadge: "置顶",
+    pinnedToggle: "展开置顶 {n} 条",
+    /* 活动卡 */
+    activityOngoing: "进行中",
+    activityEnded: "已结束",
+    activityUpcoming: "预告",
+    activityEnrolledCount: "{n}人已报名",
+    activityEnroll: "报名",
+    activityEnrolled: "已报名",
+    activityCardAria: "活动：{title}",
   },
 
   /* ========== 登录页文案 ========== */
@@ -1461,43 +1540,6 @@ export default {
     autoRenewOffSuccess: "已关闭自动续费",
     autoRenewToggleFailed: "自动续费设置失败",
 
-    /* ----- VIP 红包 ----- */
-    redPacketNavTitle: "发红包",
-    redPacketHeroTitle: "VIP 专属红包",
-    redPacketHeroSubtitle: "心意传递 · 红包传情",
-    redPacketTypeTitle: "红包类型",
-    redPacketTypeNormal: "普通红包",
-    redPacketTypeNormalDesc: "等额分发，每人相同",
-    redPacketTypeLucky: "拼手气红包",
-    redPacketTypeLuckyDesc: "随机金额，拼手气",
-    redPacketAmountTitle: "总金额",
-    redPacketAmountPlaceholder: "输入金额（元）",
-    redPacketPerPacket: "单个 ¥{amount}",
-    redPacketCountTitle: "红包个数",
-    redPacketCountPlaceholder: "输入个数",
-    redPacketCountUnit: "个",
-    redPacketBlessingTitle: "祝福语（选填）",
-    redPacketBlessingPlaceholder: "写下你的祝福...",
-    redPacketTotalLabel: "合计",
-    redPacketSendBtn: "塞钱进红包",
-    redPacketCreating: "正在创建...",
-    redPacketFormInvalid: "请检查金额与个数：金额 1-1000 元，个数 1-100，普通红包金额需能被个数整除",
-    redPacketCreateSuccess: "红包已创建",
-    redPacketCreateFailed: "红包创建失败",
-    redPacketCreatedTitle: "红包已发送",
-    redPacketCreatedContent: "红包 ID：{id}，可分享给好友领取",
-    redPacketShare: "分享红包",
-    redPacketShareTip: "请复制红包链接分享给好友",
-    redPacketClaimTitle: "领取红包",
-    redPacketClaimDesc: "点击下方按钮领取红包",
-    redPacketClaimBtn: "领取",
-    redPacketClaiming: "领取中...",
-    redPacketClaimSuccess: "已领取 ¥{amount}",
-    redPacketClaimFailed: "领取失败",
-    redPacketClaimDone: "已存入钱包",
-    /* infra R2-00061: 非法红包链接提示 */
-    redPacketInvalidLink: "红包链接无效",
-
     /* ----- VIP 优惠码 ----- */
     promoCodeNavTitle: "优惠码",
     promoCodeHeroTitle: "VIP 优惠码",
@@ -1560,44 +1602,8 @@ export default {
     billsCardCreatedAt: "创建时间",
     billsPayWechat: "微信支付",
 
-    /* ----- 分组键（vip.redPacket.* / vip.promoCode.* / vip.autoRenew.* / vip.bills.*）----- */
-    /* 提供嵌套结构以便页面使用 vip.redPacket.navTitle 等访问；与上方扁平键保持同步。 */
-    redPacket: {
-      navTitle: "发红包",
-      heroTitle: "VIP 专属红包",
-      heroSubtitle: "心意传递 · 红包传情",
-      typeTitle: "红包类型",
-      typeNormal: "普通红包",
-      typeNormalDesc: "等额分发，每人相同",
-      typeLucky: "拼手气红包",
-      typeLuckyDesc: "随机金额，拼手气",
-      amountTitle: "总金额",
-      amountPlaceholder: "输入金额（元）",
-      perPacket: "单个 ¥{amount}",
-      countTitle: "红包个数",
-      countPlaceholder: "输入个数",
-      countUnit: "个",
-      blessingTitle: "祝福语（选填）",
-      blessingPlaceholder: "写下你的祝福...",
-      totalLabel: "合计",
-      sendBtn: "塞钱进红包",
-      creating: "正在创建...",
-      formInvalid: "请检查金额与个数：金额 1-1000 元，个数 1-100，普通红包金额需能被个数整除",
-      createSuccess: "红包已创建",
-      createFailed: "红包创建失败",
-      createdTitle: "红包已发送",
-      createdContent: "红包 ID：{id}，可分享给好友领取",
-      share: "分享红包",
-      shareTip: "请复制红包链接分享给好友",
-      claimTitle: "领取红包",
-      claimDesc: "点击下方按钮领取红包",
-      claimBtn: "领取",
-      claiming: "领取中...",
-      claimSuccess: "已领取 ¥{amount}",
-      claimFailed: "领取失败",
-      claimDone: "已存入钱包",
-    },
-
+    /* ----- 分组键（vip.promoCode.* / vip.autoRenew.* / vip.bills.*）----- */
+    /* 提供嵌套结构以便页面使用 vip.promoCode.navTitle 等访问；与上方扁平键保持同步。 */
     promoCode: {
       navTitle: "优惠码",
       heroTitle: "VIP 优惠码",
@@ -1968,42 +1974,6 @@ export default {
     resetAria: "重置筛选条件",
     confirmAria: "确认筛选条件",
     unlimited: "不限",
-  },
-
-  /* ========== 聊天红包（场景化） ========== */
-  chatRedPacket: {
-    navTitle: "发红包",
-    heroTitle: "送TA一个红包",
-    heroSubtitle: "心意满满，红包传情",
-    amountLabel: "金额",
-    amountPlaceholder: "输入金额（元）",
-    countLabel: "个数",
-    countPlaceholder: "1",
-    countUnit: "个",
-    blessingLabel: "祝福语（选填）",
-    blessingPlaceholder: "写下你的祝福...",
-    sendBtn: "发送红包",
-    sending: "发送中...",
-    formInvalid: "请检查金额与个数：金额 1-1000 元",
-    sendSuccess: "红包已发送",
-    sendFailed: "红包发送失败",
-    entryLabel: "红包",
-    entryAria: "发送红包",
-    pickEntryLabel: "领取红包",
-    pickEntryAria: "领取对方发送的红包",
-    /* 红包气泡相关文案（RedPacketBubble 组件使用） */
-    bubbleTitle: "微信红包",
-    bubbleDefaultBlessing: "恭喜发财，大吉大利",
-    bubbleStatusPending: "未领取",
-    bubbleStatusDepleted: "已被领完",
-    bubbleStatusExpired: "已过期",
-    bubbleStatusClaimed: "已领取",
-    bubbleViewDetail: "查看领取详情",
-    bubbleClaimedHint: "{n}/{total} 已领取，共 ¥{amount}",
-    bubbleSelfSent: "你发送的红包",
-    bubblePeerSent: "对方发送的红包",
-    bubbleLoadFailed: "红包信息加载失败",
-    bubbleTapToClaim: "点击领取红包",
   },
 
   /* ========== 聊天视频通话 ========== */
@@ -2674,10 +2644,16 @@ export default {
     postTopicMaxImages: "最多上传{max}张图片",
     postTopicPrivacyRequired: "需同意隐私协议后才能选择图片",
     postTopicErrTitle: "请输入标题",
+    postTopicErrTitleTooShort: "帖子标题至少 5 个字",
     postTopicErrContent: "请输入内容",
     postTopicErrContentTooLong: "内容不能超过{max}字",
     postTopicPublishSuccess: "发布成功",
     postTopicPublishFailed: "发布失败",
+    /* ========== 2026-08-08 频道化重构：帖子模式关联活动 ========== */
+    postTopicActivityLabel: "关联活动（发活动链接帖）",
+    postTopicActivityPick: "选择要推荐的活动",
+    postTopicActivityRemove: "移除关联",
+    postTopicActivityEmpty: "暂无可用活动",
     /* ========== Task B2/B5：兴趣分类 & 发帖编辑页增强 ========== */
     catStudy: "学习",
     catSports: "运动",
@@ -2959,15 +2935,6 @@ export default {
     vip: {
       planRequired: "开启自动续费时必须指定套餐",
     },
-    /* VIP 红包 store */
-    vipRedPacket: {
-      amountTooSmall: "红包总金额不能少于 100 分（1 元）",
-      amountTooLarge: "红包总金额不能超过 100000 分（1000 元）",
-      countTooSmall: "红包个数至少为 1",
-      countTooLarge: "红包个数不能超过 100",
-      amountNotDivisible: "普通红包总金额必须能被个数整除",
-      redPacketIdInvalid: "红包 ID 非法",
-    },
     /* 个人资料 store */
     profile: {
       photoIndexOutOfRange: "照片索引超出范围（0-5）",
@@ -3078,6 +3045,10 @@ export default {
       loadCommentsFailed: "加载评论失败",
       loadCampusFeedFailed: "加载同校动态失败",
       loadSimilarAuthorsFailed: "加载相似作者失败",
+      /* 2026-08-08 论坛互动真实化：收藏 / 浏览记录错误 */
+      favoritePostFailed: "收藏操作失败",
+      loadHistoryFailed: "加载浏览记录失败",
+      clearHistoryFailed: "清空浏览记录失败",
     },
     /* 活动 store */
     activity: {

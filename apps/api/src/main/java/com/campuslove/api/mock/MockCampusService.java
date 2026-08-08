@@ -98,19 +98,28 @@ public class MockCampusService implements CampusService {
                         101L, null, "今天在图书馆遇到一个特别的人，想在校园墙上分享一下...",
                         new PostAuthorView(1001L, "星野", null, "南校区"),
                         "life", List.of("校园生活"), 128, 45, 12,
-                        LocalDateTime.now().minusHours(2).toString(), true, true, false
+                        LocalDateTime.now().minusHours(2).toString(), true, true, false,
+                        42, false, 1280,
+                        // 2026-08-09 帖子关联活动 + 评论预览：mock 校园流无上下文，按 null/空列表兜底
+                        null, null, false, List.of()
                 ),
                 new PostSummaryView(
                         102L, null, "高数考试自救小组招人啦！大二以上，认真不摸鱼。",
                         new PostAuthorView(1002L, "林安", null, "南校区"),
                         "study", List.of("学习", "高数"), 67, 23, 5,
-                        LocalDateTime.now().minusHours(5).toString(), false, true, false
+                        LocalDateTime.now().minusHours(5).toString(), false, true, false,
+                        22, false, 670,
+                        // 2026-08-09 帖子关联活动 + 评论预览：mock 校园流无上下文，按 null/空列表兜底
+                        null, null, false, List.of()
                 ),
                 new PostSummaryView(
                         103L, null, "周末一起去后山看日出吧！记得带外套~",
                         new PostAuthorView(1003L, "周沐", null, "北校区"),
                         "activity", List.of("活动", "后山"), 89, 31, 8,
-                        LocalDateTime.now().minusDays(1).toString(), false, false, false
+                        LocalDateTime.now().minusDays(1).toString(), false, false, false,
+                        29, false, 890,
+                        // 2026-08-09 帖子关联活动 + 评论预览：mock 校园流无上下文，按 null/空列表兜底
+                        null, null, false, List.of()
                 )
         );
     }

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 每日一问页面
  * 展示今日问题，支持回答提交和查看其他人的回答
@@ -154,7 +154,7 @@ function onAnswersScrollLower(): void {
           <view class="answer-actions">
             <view class="anonymous-toggle press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="isAnonymous = !isAnonymous">
               <view class="anonymous-toggle__check" :class="{ 'anonymous-toggle__check--active': isAnonymous }">
-                <text v-if="isAnonymous" class="check-mark">✓</text>
+                <image v-if="isAnonymous" class="check-mark" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
               </view>
               <text class="anonymous-toggle__label">{{ $t("dailyQuestion.anonymousLabel") }}</text>
             </view>
@@ -495,9 +495,8 @@ function onAnswersScrollLower(): void {
 }
 
 .check-mark {
-  font-size: var(--fs-sm);
-  color: var(--c-text-inverse);
-  font-weight: 700;
+  width: 26rpx;
+  height: 26rpx;
 }
 
 .anonymous-toggle__label {

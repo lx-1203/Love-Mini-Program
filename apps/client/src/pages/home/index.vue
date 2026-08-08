@@ -450,7 +450,7 @@ defineExpose({ noop });
       <view class="school-picker__content" catchtap="noop">
         <view class="school-picker__header">
           <text class="school-picker__title">{{ t('home.selectSchool') }}</text>
-          <text class="school-picker__close" role="button" :aria-label="t('common.closeAria')" @tap="showSchoolPicker = false">✕</text>
+          <image class="school-picker__close" role="button" :aria-label="t('common.closeAria')" @tap="showSchoolPicker = false" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG" mode="aspectFit" alt="" />
         </view>
         <view class="school-picker__list" role="list">
           <view
@@ -463,7 +463,7 @@ defineExpose({ noop });
             @tap="selectSchool(school)"
           >
             <text class="school-picker__item-name">{{ school }}</text>
-            <text v-if="school === currentSchool" class="school-picker__item-check">✓</text>
+            <image v-if="school === currentSchool" class="school-picker__item-check" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_SVG" mode="aspectFit" alt="" />
           </view>
         </view>
       </view>
@@ -2135,8 +2135,8 @@ defineExpose({ noop });
 }
 
 .school-picker__close {
-  font-size: var(--fs-2xl);
-  color: var(--c-text-tertiary);
+  width: 40rpx;
+  height: 40rpx;
   padding: var(--sp-2);
 }
 
@@ -2165,9 +2165,8 @@ defineExpose({ noop });
 }
 
 .school-picker__item-check {
-  font-size: var(--fs-lg);
-  color: var(--c-brand-500);
-  font-weight: 700;
+  width: 36rpx;
+  height: 36rpx;
 }
 
 /* ========== 页面进入动画 ========== */

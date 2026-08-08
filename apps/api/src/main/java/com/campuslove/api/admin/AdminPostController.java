@@ -256,6 +256,7 @@ public class AdminPostController {
                 post.getLikesCount(),
                 post.getCommentsCount(),
                 post.getShareCount(),
+                post.getViewCount(),
                 post.getCreatedAt(),
                 post.getAuditedAt()
         );

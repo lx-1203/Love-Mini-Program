@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 喜欢页 - 双向喜欢 / 访客
  * 展示「喜欢我的」用户列表和「访客」记录，支持切换标签页
@@ -619,7 +619,7 @@ function retryLoad(): void {
               class="likes-card__checkbox"
               :class="{ 'likes-card__checkbox--checked': selectedIds.includes(item.userId) }"
             >
-              <text v-if="selectedIds.includes(item.userId)" class="likes-card__check-icon">✓</text>
+              <image v-if="selectedIds.includes(item.userId)" class="likes-card__check-icon" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
             </view>
             <!-- 2026-08-08 走查 P1：未解锁 → 头像模糊 + 锁标识，昵称/签名隐藏 -->
             <view class="likes-card__avatar-wrap">
@@ -695,7 +695,7 @@ function retryLoad(): void {
               class="likes-card__checkbox"
               :class="{ 'likes-card__checkbox--checked': selectedIds.includes(item.userId) }"
             >
-              <text v-if="selectedIds.includes(item.userId)" class="likes-card__check-icon">✓</text>
+              <image v-if="selectedIds.includes(item.userId)" class="likes-card__check-icon" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
             </view>
             <view class="likes-card__avatar-wrap">
               <image
@@ -763,7 +763,7 @@ function retryLoad(): void {
               class="likes-card__checkbox"
               :class="{ 'likes-card__checkbox--checked': selectedIds.includes(item.userId) }"
             >
-              <text v-if="selectedIds.includes(item.userId)" class="likes-card__check-icon">✓</text>
+              <image v-if="selectedIds.includes(item.userId)" class="likes-card__check-icon" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
             </view>
             <!-- 2026-08-08 走查 P1：未解锁 → 头像模糊 + 锁标识，昵称/签名隐藏 -->
             <view class="likes-card__avatar-wrap">
@@ -818,7 +818,7 @@ function retryLoad(): void {
             class="likes-batch-bar__checkbox"
             :class="{ 'likes-batch-bar__checkbox--checked': isAllSelected }"
           >
-            <text v-if="isAllSelected" class="likes-batch-bar__check-icon">✓</text>
+            <image v-if="isAllSelected" class="likes-batch-bar__check-icon" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
           </view>
           <text class="likes-batch-bar__select-text">
             {{ isAllSelected ? t('common.cancel') : t('likes.selectAll') }}
@@ -1294,10 +1294,8 @@ function retryLoad(): void {
 }
 
 .likes-card__check-icon {
-  font-size: 28rpx;
-  /* 反色文字：使用 token 替代硬编码 #ffffff */
-  color: var(--c-text-inverse);
-  font-weight: 700;
+  width: 28rpx;
+  height: 28rpx;
 }
 
 /* ========== 功能2：搜索框样式 ========== */
@@ -1440,10 +1438,8 @@ function retryLoad(): void {
 }
 
 .likes-batch-bar__check-icon {
-  font-size: 28rpx;
-  /* 反色文字：使用 token 替代硬编码 #ffffff */
-  color: var(--c-text-inverse);
-  font-weight: 700;
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .likes-batch-bar__select-text {

@@ -68,15 +68,19 @@ public class PrivateMessageController {
     /**
      * 获取指定会话的消息列表。
      * GET /api/messages/conversations/{id}/messages
+     *
+     * <p>2026-08-08 微信化重构：新增 order 参数——
+     * desc（默认）最新在前（首屏）；asc 最早在前（上拉加载更早历史，page+1 取下一段）。</p>
      */
     @GetMapping("/conversations/{id}/messages")
     public ApiResponse<List<MessageView>> getMessages(
             @PathVariable("id") @Positive Long conversationId,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
-            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(name = "order", defaultValue = "desc") String order) {
         Long userId = SecurityUtils.getCurrentUserId();
         Pageable pageable = PageRequest.of(page, size);
-        return ApiResponse.ok(privateMessageService.getMessages(conversationId, userId, pageable));
+        return ApiResponse.ok(privateMessageService.getMessages(conversationId, userId, pageable, order));
     }
 
     /**
@@ -95,7 +99,8 @@ public class PrivateMessageController {
             @Valid @RequestBody SendMessageRequest request) {
         Long senderId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(privateMessageService.sendMessage(
-                conversationId, senderId, request.content(), request.kind()));
+                conversationId, senderId, request.content(), request.kind(),
+                request.durationSeconds()));
     }
 
     /**
@@ -155,10 +160,16 @@ record CreateConversationRequest(
 /**
  * 发送消息请求体。
  * senderId 由 SecurityUtils 自动获取，只需传入内容和类型。
+ *
+ * <p>录音修复：kind 允许大小写（(?i) 前缀），客户端统一发送小写
+ * （text/voice/emoji），服务层规范化存储为小写；语音消息携带 durationSeconds。</p>
+ * <p>活动卡片：kind=activity，content 为 JSON
+ * {"title","desc","tag","targetUrl"}（见 docs/API-CONTRACT.md 聊天域）。</p>
  */
 record SendMessageRequest(
     @NotBlank(message = "content 不能为空") @Size(max = 5000) String content,
-    @Pattern(regexp = "TEXT|IMAGE|VOICE|VIDEO|SYSTEM|EMOJI",
-        message = "kind 必须为 TEXT/IMAGE/VOICE/VIDEO/SYSTEM/EMOJI")
-    @Size(max = 32) String kind
+    @Pattern(regexp = "(?i)TEXT|IMAGE|VOICE|VIDEO|SYSTEM|EMOJI|ACTIVITY",
+        message = "kind 必须为 TEXT/IMAGE/VOICE/VIDEO/SYSTEM/EMOJI/ACTIVITY")
+    @Size(max = 32) String kind,
+    @Min(0) @Max(60) Integer durationSeconds
 ) {}

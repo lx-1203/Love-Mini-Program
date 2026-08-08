@@ -1,11 +1,16 @@
 package com.campuslove.api.village;
 
 import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Comment;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
+import com.campuslove.api.repository.ActivityRepository;
+import com.campuslove.api.repository.CommentRepository;
+import com.campuslove.api.repository.PostFavoriteRepository;
 import com.campuslove.api.repository.PostLikeRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
@@ -16,8 +21,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 /**
@@ -42,19 +49,40 @@ public class VillageViewMapper {
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final UserBasicProfileRepository userBasicProfileRepository;
     private final PostLikeRepository postLikeRepository;
+    /**
+     * 2026-08-08 论坛互动真实化：帖子收藏 Repository（收藏数与已收藏判断）。
+     */
+    private final PostFavoriteRepository postFavoriteRepository;
+    /**
+     * 2026-08-08 论坛互动真实化：评论点赞 Repository（评论点赞数与已点赞判断）。
+     */
+    private final CommentLikeRepository commentLikeRepository;
     private final ObjectMapper objectMapper;
+    /**
+     * 2026-08-09 帖子关联活动 + 列表评论预览：评论/活动 Repository（最新评论预览、活动摘要单查）。
+     */
+    private final CommentRepository commentRepository;
+    private final ActivityRepository activityRepository;
 
     public VillageViewMapper(
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
             UserBasicProfileRepository userBasicProfileRepository,
             PostLikeRepository postLikeRepository,
-            ObjectMapper objectMapper) {
+            PostFavoriteRepository postFavoriteRepository,
+            CommentLikeRepository commentLikeRepository,
+            ObjectMapper objectMapper,
+            CommentRepository commentRepository,
+            ActivityRepository activityRepository) {
         this.userRepository = userRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userBasicProfileRepository = userBasicProfileRepository;
         this.postLikeRepository = postLikeRepository;
+        this.postFavoriteRepository = postFavoriteRepository;
+        this.commentLikeRepository = commentLikeRepository;
         this.objectMapper = objectMapper;
+        this.commentRepository = commentRepository;
+        this.activityRepository = activityRepository;
     }
 
     PostSummaryView toPostSummaryView(Post post) {
@@ -80,10 +108,21 @@ public class VillageViewMapper {
         String summary = truncate(post.getContent(), 120);
         boolean isAlumni = !myCampusName.isEmpty() && isSameCampus(post.getAuthorId(), myCampusName);
         boolean isFollowed = followedUserIds != null && followedUserIds.contains(post.getAuthorId());
+        // 2026-08-08 论坛互动真实化：收藏数与已收藏状态（单帖场景单查可接受）
+        int favoriteCount = (int) postFavoriteRepository.countByPostId(post.getId());
+        boolean isFavorite = false;
+        if (SecurityUtils.isAuthenticated()) {
+            isFavorite = postFavoriteRepository.existsByUserIdAndPostId(
+                    SecurityUtils.getCurrentUserId(), post.getId());
+        }
+        // 2026-08-09 帖子关联活动 + 评论预览（单帖场景单查可接受）
+        ActivitySummaryView activity = loadActivitySummary(post.getActivityId());
+        List<CommentPreviewView> recentComments = loadRecentCommentPreviews(post.getId());
         return new PostSummaryView(post.getId(), post.getTitle(), summary, author, post.getCategory().name(),
                 tags, post.getLikesCount(), post.getCommentsCount(), post.getShareCount(),
                 post.getCreatedAt().toString(), post.getLikesCount() >= HOT_POST_THRESHOLD, isAlumni,
-                isFollowed);
+                isFollowed, favoriteCount, isFavorite, post.getViewCount(),
+                post.getActivityId(), activity, Boolean.TRUE.equals(post.getIsPinned()), recentComments);
     }
 
     /**
@@ -102,18 +141,27 @@ public class VillageViewMapper {
     List<PostSummaryView> toPostSummaryViews(List<Post> posts, String myCampusName,
                                               Map<Long, User> authorMap,
                                               Map<Long, UserCampusProfile> campusMap) {
-        return toPostSummaryViews(posts, myCampusName, authorMap, campusMap, java.util.Collections.emptySet());
+        return toPostSummaryViews(posts, myCampusName, authorMap, campusMap,
+                java.util.Collections.emptySet(), java.util.Collections.emptyMap(),
+                java.util.Collections.emptyMap());
     }
 
     /**
      * 批量转换帖子摘要视图（带关注上下文，Phase Feedback3 P2.5）。
      *
+     * <p>2026-08-09 扩展：activityMap / recentCommentsByPost 由调用方（VillageQueryService）
+     * 批量预加载传入（防 N+1）；为空 Map 时对应字段按 null / 空列表兜底。</p>
+     *
      * @param followedUserIds 当前用户关注的作者 ID 集合（为空时所有帖子 isFollowed=false）
+     * @param activityMap     关联活动批量映射（activityId -> ActivitySummaryView，可为空 Map）
+     * @param recentCommentsByPost 最新评论预览批量映射（postId -> List<CommentPreviewView>，可为空 Map）
      */
     List<PostSummaryView> toPostSummaryViews(List<Post> posts, String myCampusName,
                                               Map<Long, User> authorMap,
                                               Map<Long, UserCampusProfile> campusMap,
-                                              java.util.Set<Long> followedUserIds) {
+                                              java.util.Set<Long> followedUserIds,
+                                              Map<Long, ActivitySummaryView> activityMap,
+                                              Map<Long, List<CommentPreviewView>> recentCommentsByPost) {
         // P1-16：批量预加载作者基础资料（一次查询），避免逐帖查库（N+1），
         // 供 age/education 字段映射使用
         List<Long> authorIds = posts.stream()
@@ -125,20 +173,42 @@ public class VillageViewMapper {
                 ? java.util.Collections.emptyMap()
                 : userBasicProfileRepository.findByUserIdIn(authorIds).stream()
                         .collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p, (a, b) -> a));
+        // 2026-08-08 论坛互动真实化：批量预加载收藏数与当前用户已收藏集合（防 N+1）
+        List<Long> postIds = posts.stream().map(Post::getId).filter(Objects::nonNull).toList();
+        Map<Long, Integer> favoriteCountMap = postIds.isEmpty() ? java.util.Collections.emptyMap()
+                : postFavoriteRepository.countByPostIds(postIds).stream()
+                        .collect(Collectors.toMap(r -> (Long) r[0], r -> ((Number) r[1]).intValue()));
+        Set<Long> favoritedPostIds;
+        if (postIds.isEmpty() || !SecurityUtils.isAuthenticated()) {
+            favoritedPostIds = java.util.Collections.emptySet();
+        } else {
+            favoritedPostIds = Set.copyOf(postFavoriteRepository
+                    .findPostIdsByUserIdAndPostIdIn(SecurityUtils.getCurrentUserId(), postIds));
+        }
         return posts.stream()
                 .map(post -> toPostSummaryView(post, myCampusName, authorMap, campusMap,
-                        basicProfileMap, followedUserIds))
+                        basicProfileMap, followedUserIds, favoriteCountMap, favoritedPostIds,
+                        activityMap, recentCommentsByPost))
                 .toList();
     }
 
     /**
      * 批量转换单条帖子摘要视图（预加载数据版，供 {@link #toPostSummaryViews} 内部使用）。
+     *
+     * @param favoriteCountMap 收藏数批量预加载 Map（postId -> count，可为空则按 0 处理）
+     * @param favoritedPostIds 当前用户已收藏的帖子 ID 集合（可为空则全部 false）
+     * @param activityMap      关联活动批量映射（activityId -> ActivitySummaryView，可为空 Map）
+     * @param recentCommentsByPost 最新评论预览批量映射（postId -> List<CommentPreviewView>，可为空 Map）
      */
     private PostSummaryView toPostSummaryView(Post post, String myCampusName,
                                               Map<Long, User> authorMap,
                                               Map<Long, UserCampusProfile> campusMap,
                                               Map<Long, UserBasicProfile> basicProfileMap,
-                                              java.util.Set<Long> followedUserIds) {
+                                              java.util.Set<Long> followedUserIds,
+                                              Map<Long, Integer> favoriteCountMap,
+                                              Set<Long> favoritedPostIds,
+                                              Map<Long, ActivitySummaryView> activityMap,
+                                              Map<Long, List<CommentPreviewView>> recentCommentsByPost) {
         User author = authorMap != null ? authorMap.get(post.getAuthorId()) : null;
         String nickname = author != null && author.getNickname() != null
                 ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
@@ -165,10 +235,19 @@ public class VillageViewMapper {
         String summary = truncate(post.getContent(), 120);
         boolean isAlumni = !myCampusName.isEmpty() && myCampusName.equals(campusName);
         boolean isFollowed = followedUserIds != null && followedUserIds.contains(post.getAuthorId());
+        // 2026-08-08 论坛互动真实化：收藏数/已收藏状态（批量预加载 Map，无 N+1）
+        int favoriteCount = favoriteCountMap != null
+                ? favoriteCountMap.getOrDefault(post.getId(), 0) : 0;
+        boolean isFavorite = favoritedPostIds != null && favoritedPostIds.contains(post.getId());
+        // 2026-08-09 帖子关联活动 + 评论预览（批量预加载 Map，无 N+1；空 Map 按 null/空列表兜底）
+        ActivitySummaryView activity = activityMap != null ? activityMap.get(post.getActivityId()) : null;
+        List<CommentPreviewView> recentComments = recentCommentsByPost != null
+                ? recentCommentsByPost.getOrDefault(post.getId(), List.of()) : List.of();
         return new PostSummaryView(post.getId(), post.getTitle(), summary, authorView, post.getCategory().name(),
                 tags, post.getLikesCount(), post.getCommentsCount(), post.getShareCount(),
                 post.getCreatedAt().toString(), post.getLikesCount() >= HOT_POST_THRESHOLD, isAlumni,
-                isFollowed);
+                isFollowed, favoriteCount, isFavorite, post.getViewCount(),
+                post.getActivityId(), activity, Boolean.TRUE.equals(post.getIsPinned()), recentComments);
     }
 
     PostDetailView toPostDetailView(Post post, Long currentUserId) {
@@ -188,10 +267,18 @@ public class VillageViewMapper {
                     .map(UserCampusProfile::getCampusName).orElse("");
             isAlumni = !currentUserCampus.isBlank() && currentUserCampus.equals(authorCampus);
         }
+        // 2026-08-08 论坛互动真实化：收藏数/已收藏状态（详情单帖，单查可接受）
+        int favoriteCount = (int) postFavoriteRepository.countByPostId(post.getId());
+        boolean isFavorite = currentUserId != null
+                && postFavoriteRepository.existsByUserIdAndPostId(currentUserId, post.getId());
+        // 2026-08-09 帖子关联活动：详情单查活动摘要（无关联则为 null）
+        ActivitySummaryView activity = loadActivitySummary(post.getActivityId());
         return new PostDetailView(post.getId(), post.getTitle(), post.getContent(), author,
                 post.getCategory().name(), tags, images, post.getLikesCount(),
                 post.getCommentsCount(), post.getShareCount(), post.getCreatedAt().toString(),
-                post.getUpdatedAt().toString(), isLiked, isAuthor, isAlumni);
+                post.getUpdatedAt().toString(), isLiked, isAuthor, isAlumni,
+                favoriteCount, isFavorite, post.getViewCount(),
+                post.getActivityId(), activity);
     }
 
     PostDetailView toPostDetailView(Post post) {
@@ -199,12 +286,9 @@ public class VillageViewMapper {
     }
 
     CommentItemView toCommentItemView(Comment comment) {
-        User author = userRepository.findById(comment.getAuthorId()).orElse(null);
-        CommentAuthorView authorView = new CommentAuthorView(comment.getAuthorId(),
-                author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER,
-                author != null ? author.getAvatarUrl() : null);
-        return new CommentItemView(comment.getId(), comment.getPost().getId(), comment.getParentId(), authorView,
-                comment.getContent(), 0, comment.getCreatedAt().toString(), false, null);
+        // 2026-08-08：点赞数真实统计（单查）；isAuthor/isLiked 无当前用户上下文时 false
+        int likeCount = (int) commentLikeRepository.countByCommentId(comment.getId());
+        return toCommentItemView(comment, null, null, java.util.List.of(), likeCount, false);
     }
 
     CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap) {
@@ -213,6 +297,7 @@ public class VillageViewMapper {
 
     /**
      * P1-02 / A-12 楼中楼：转换为评论项视图（带回复对象昵称与楼中楼回复列表）。
+     * 2026-08-08：likeCount 真实统计、isLiked 单查（无 currentUserId 上下文时 false）。
      *
      * @param comment  评论实体
      * @param authorMap 作者批量预加载 Map
@@ -221,13 +306,51 @@ public class VillageViewMapper {
      */
     CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap,
                                       String replyTo, java.util.List<CommentItemView> replies) {
+        int likeCount = (int) commentLikeRepository.countByCommentId(comment.getId());
+        return toCommentItemView(comment, authorMap, replyTo, replies, likeCount, false);
+    }
+
+    /**
+     * 批量预加载版评论项视图（2026-08-08 评论区点赞数真实化，防 N+1）。
+     *
+     * <p>评论区列表场景（根评论 + 楼中楼回复）一次性批量查询点赞数与已点赞集合，
+     * 再逐条组装，避免每条评论 2 次单查。</p>
+     *
+     * @param comment   评论实体
+     * @param authorMap 作者批量预加载 Map
+     * @param replyTo   回复对象昵称（楼中楼回复场景）
+     * @param replies   楼中楼回复列表（根评论携带，子评论为空）
+     * @param currentUserId 当前用户 ID（null 时 isLiked=false）
+     * @param likeCountMap  评论点赞数批量预加载 Map（commentId -> count）
+     * @param likedCommentIds 当前用户已点赞的评论 ID 集合
+     */
+    CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap,
+                                      String replyTo, java.util.List<CommentItemView> replies,
+                                      Long currentUserId, Map<Long, Integer> likeCountMap,
+                                      Set<Long> likedCommentIds) {
+        int likeCount = likeCountMap != null
+                ? likeCountMap.getOrDefault(comment.getId(), 0)
+                : (int) commentLikeRepository.countByCommentId(comment.getId());
+        boolean isLiked = currentUserId != null
+                && (likedCommentIds != null
+                        ? likedCommentIds.contains(comment.getId())
+                        : commentLikeRepository.existsByUserIdAndCommentId(currentUserId, comment.getId()));
+        return toCommentItemView(comment, authorMap, replyTo, replies, likeCount, isLiked);
+    }
+
+    /**
+     * 最终组装版评论项视图。
+     */
+    private CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap,
+                                              String replyTo, java.util.List<CommentItemView> replies,
+                                              int likeCount, boolean isLiked) {
         User author = authorMap != null ? authorMap.get(comment.getAuthorId()) : null;
         CommentAuthorView authorView = new CommentAuthorView(comment.getAuthorId(),
                 author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER,
                 author != null ? author.getAvatarUrl() : null);
         return new CommentItemView(comment.getId(), comment.getPost().getId(), comment.getParentId(), authorView,
-                comment.getContent(), 0, comment.getCreatedAt().toString(), false, replyTo,
-                replies != null ? replies : java.util.List.of());
+                comment.getContent(), likeCount, comment.getCreatedAt().toString(), false, isLiked,
+                replyTo, replies != null ? replies : java.util.List.of());
     }
 
     PostAuthorView getPostAuthorView(Long authorId) {
@@ -267,6 +390,81 @@ public class VillageViewMapper {
         if (myCampusName == null || myCampusName.isEmpty()) return false;
         return userCampusProfileRepository.findByUserId(authorId)
                 .map(campus -> myCampusName.equals(campus.getCampusName())).orElse(false);
+    }
+
+    // ---- 2026-08-09 帖子关联活动 + 列表评论预览（单帖场景辅助） ----
+
+    /**
+     * 加载活动摘要视图（单帖场景单查可接受；无关联或活动不存在返回 null）。
+     */
+    private ActivitySummaryView loadActivitySummary(Long activityId) {
+        if (activityId == null) {
+            return null;
+        }
+        return activityRepository.findById(activityId)
+                .map(this::toActivitySummaryView)
+                .orElse(null);
+    }
+
+    /**
+     * 将活动实体转换为活动摘要视图（coverImage 实体暂无字段，恒 null 兜底）。
+     */
+    ActivitySummaryView toActivitySummaryView(Activity activity) {
+        return new ActivitySummaryView(
+                activity.getId(),
+                activity.getTitle(),
+                activity.getLocation(),
+                activity.getScheduleText(),
+                activity.getActivityDate() != null ? activity.getActivityDate().toString() : null,
+                activity.getStatus() != null ? activity.getStatus().name() : null,
+                activity.getEnrollmentCount() != null ? activity.getEnrollmentCount() : 0,
+                null);
+    }
+
+    /**
+     * 加载单帖最新 2 条根评论预览（单帖场景单查可接受）。
+     */
+    private List<CommentPreviewView> loadRecentCommentPreviews(Long postId) {
+        if (postId == null) {
+            return List.of();
+        }
+        List<Comment> roots = commentRepository
+                .findByPostIdAndParentIdIsNullOrderByCreatedAtDesc(postId, PageRequest.of(0, 2))
+                .getContent();
+        return buildCommentPreviews(roots);
+    }
+
+    /**
+     * 组装评论预览视图列表（作者昵称/头像批量预加载 + 楼中楼回复数批量统计，防 N+1）。
+     *
+     * @param roots 根评论列表（最新在前）
+     */
+    List<CommentPreviewView> buildCommentPreviews(List<Comment> roots) {
+        if (roots == null || roots.isEmpty()) {
+            return List.of();
+        }
+        List<Long> rootIds = roots.stream().map(Comment::getId).toList();
+        Map<Long, Integer> replyCountMap = rootIds.isEmpty() ? java.util.Collections.emptyMap()
+                : commentRepository.countByParentIdIn(rootIds).stream()
+                        .collect(Collectors.toMap(r -> (Long) r[0], r -> ((Number) r[1]).intValue()));
+        List<Long> authorIds = roots.stream().map(Comment::getAuthorId)
+                .filter(Objects::nonNull).distinct().toList();
+        Map<Long, User> authorMap = authorIds.isEmpty() ? java.util.Collections.emptyMap()
+                : userRepository.findAllById(authorIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
+        return roots.stream()
+                .map(c -> {
+                    User author = authorMap.get(c.getAuthorId());
+                    String nickname = author != null && author.getNickname() != null
+                            ? author.getNickname() : DisplayConstants.UNKNOWN_USER;
+                    return new CommentPreviewView(c.getId(),
+                            new CommentAuthorView(c.getAuthorId(), nickname,
+                                    author != null ? author.getAvatarUrl() : null),
+                            c.getContent(),
+                            c.getCreatedAt().toString(),
+                            replyCountMap.getOrDefault(c.getId(), 0));
+                })
+                .toList();
     }
 
     List<String> parseJsonToList(String json) {

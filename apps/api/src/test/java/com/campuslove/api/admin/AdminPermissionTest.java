@@ -227,12 +227,6 @@ class AdminPermissionTest {
         private com.campuslove.api.repository.SocialProgressRepository socialProgressRepository;
 
         @org.springframework.boot.test.mock.mockito.MockBean
-        private com.campuslove.api.repository.VipRedPacketRepository vipRedPacketRepository;
-
-        @org.springframework.boot.test.mock.mockito.MockBean
-        private com.campuslove.api.repository.VipRedPacketClaimRepository vipRedPacketClaimRepository;
-
-        @org.springframework.boot.test.mock.mockito.MockBean
         private com.campuslove.api.repository.VipBillRepository vipBillRepository;
 
         @org.springframework.boot.test.mock.mockito.MockBean

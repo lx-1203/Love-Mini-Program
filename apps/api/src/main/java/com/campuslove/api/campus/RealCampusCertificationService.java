@@ -218,6 +218,18 @@ public class RealCampusCertificationService implements CampusCertificationServic
     }
 
     /**
+     * 模拟校园认证直接通过（P3 演示接口）。
+     *
+     * <p>仅 mock profile 的演示语义；real profile 直接抛出
+     * {@link UnsupportedOperationException}（由 Controller 转 501 Not Implemented），
+     * 防止绕过真实认证流程。</p>
+     */
+    @Override
+    public CampusCertificationView simulateApprove(Long userId) {
+        throw new UnsupportedOperationException("simulateApprove only for mock profile");
+    }
+
+    /**
      * 将 Entity 转换为 View。
      */
     private CampusCertificationView toView(CampusCertification entity) {

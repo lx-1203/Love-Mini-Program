@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -20,21 +19,15 @@ import com.campuslove.api.entity.PromoCodeUsage;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.VipBill;
 import com.campuslove.api.entity.VipBillingLog;
-import com.campuslove.api.entity.VipRedPacket;
-import com.campuslove.api.entity.VipRedPacketClaim;
 import com.campuslove.api.repository.PaymentCallbackLogRepository;
 import com.campuslove.api.repository.PromoCodeRepository;
 import com.campuslove.api.repository.PromoCodeUsageRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.VipBillRepository;
 import com.campuslove.api.repository.VipBillingLogRepository;
-import com.campuslove.api.repository.VipRedPacketClaimRepository;
-import com.campuslove.api.repository.VipRedPacketRepository;
 import com.campuslove.api.wallet.WalletService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -56,7 +49,7 @@ import org.redisson.api.RedissonClient;
  *
  * <p>验证 Task 12.1-12.4 实现的幂等键、分布式锁、悲观锁、原子扣减在并发场景下的正确性，
  * 覆盖 REAUDIT-REPORT-100+ 编号 38（支付回调幂等）、39（自动续费分布式锁）、
- * 40（红包悲观锁+原子扣减）、41（优惠码原子扣减）四大问题。</p>
+ * 41（优惠码原子扣减）三大问题。（红包悲观锁+原子扣减场景已随红包功能下线移除）</p>
  *
  * <p>测试策略：</p>
  * <ul>
@@ -79,10 +72,6 @@ class Task12ConcurrencyTest {
     private static final long AWAIT_TIMEOUT_SECONDS = 15L;
 
     @Mock
-    private VipRedPacketRepository redPacketRepository;
-    @Mock
-    private VipRedPacketClaimRepository claimRepository;
-    @Mock
     private UserRepository userRepository;
     @Mock
     private PromoCodeRepository promoCodeRepository;
@@ -101,306 +90,11 @@ class Task12ConcurrencyTest {
     /**
      * Task 2 / Task 15：钱包服务 Mock。
      *
-     * <p>AutoRenewService.renewVip 与 VipRedPacketService.createRedPacket/claimRedPacket
-     * 现已集成 WalletService，单元测试通过 Mock 注入，验证并发场景下：
-     * <ul>
-     *   <li>红包领取：100 并发仅 10 次进入钱包充值（与原子扣减次数一致）</li>
-     *   <li>自动续费：仅 1 个持锁线程调用钱包扣减，9 个未持锁线程快速失败不调用</li>
-     * </ul>
-     * </p>
+     * <p>AutoRenewService.renewVip 集成 WalletService，单元测试通过 Mock 注入，
+     * 验证并发场景下：仅 1 个持锁线程调用钱包扣减，9 个未持锁线程快速失败不调用。</p>
      */
     @Mock
     private WalletService walletService;
-
-    /**
-     * 场景 1：红包并发领取 —— 100 个用户并发领取一个 10 份的红包。
-     *
-     * <p>验证 Task 12.3（REAUDIT-REPORT-100+ 编号 40）：</p>
-     * <ul>
-     *   <li>成功领取数 ≤ totalCount（不超发）</li>
-     *   <li>原子扣减 SQL（decrementRemaining）正确保证并发安全</li>
-     *   <li>失败线程收到"红包已被领完"异常</li>
-     *   <li>总领取金额 = 红包总金额（无超发）</li>
-     * </ul>
-     */
-    @Test
-    @DisplayName("并发场景 1：100 个用户并发领取 10 份红包 → 成功数 = 10，无超发")
-    void redPacketConcurrentClaim_noOversell() throws InterruptedException {
-        // Arrange：构造一个 10 份的普通红包，总金额 1000 分（每人 100 分）
-        final long redPacketId = 1L;
-        final long senderId = 1000L;
-        final int totalCount = 10;
-        final int totalAmount = 1000;
-
-        VipRedPacket packet = new VipRedPacket();
-        packet.setId(redPacketId);
-        packet.setSenderId(senderId);
-        packet.setTotalAmount(totalAmount);
-        packet.setTotalCount(totalCount);
-        packet.setClaimedCount(0);
-        packet.setClaimedAmount(0);
-        packet.setRemainingAmount(totalAmount);
-        packet.setRemainingCount(totalCount);
-        packet.setType("NORMAL");
-        packet.setStatus("PENDING");
-        packet.setExpireAt(LocalDateTime.now().plusHours(24));
-
-        // 模拟原子扣减：使用 AtomicInteger CAS 保证仅 totalCount 个线程扣减成功
-        AtomicInteger remainingCount = new AtomicInteger(totalCount);
-        AtomicInteger remainingAmount = new AtomicInteger(totalAmount);
-
-        // 悲观锁查询返回同一红包对象
-        when(redPacketRepository.findByIdForUpdate(redPacketId))
-                .thenReturn(Optional.of(packet));
-
-        // 模拟原子扣减：CAS remainingCount，成功则返回 1，失败返回 0
-        // 使用正确的 CAS 循环：读取 -> 校验 -> CAS，CAS 失败则重试
-        when(redPacketRepository.decrementRemaining(eq(redPacketId), anyInt()))
-                .thenAnswer(invocation -> {
-                    int amount = invocation.getArgument(1);
-                    while (true) {
-                        int currentCount = remainingCount.get();
-                        int currentAmount = remainingAmount.get();
-                        if (currentCount <= 0 || currentAmount < amount) {
-                            return 0; // 影响行数 0：扣减失败
-                        }
-                        if (remainingCount.compareAndSet(currentCount, currentCount - 1)) {
-                            remainingAmount.addAndGet(-amount);
-                            return 1; // 影响行数 1：扣减成功
-                        }
-                        // CAS 失败，重试
-                    }
-                });
-
-        // markDepletedIfEmpty 可能在 newRemainingCount <= 0 时被调用，使用 lenient 避免严格存根报错
-        lenient().when(redPacketRepository.markDepletedIfEmpty(redPacketId))
-                .thenReturn(0);
-
-        // 模拟 findByRedPacketIdAndClaimerId：每个用户首次查询返回空（未领取过）
-        when(claimRepository.findByRedPacketIdAndClaimerId(eq(redPacketId), anyLong()))
-                .thenReturn(Optional.empty());
-
-        // 模拟 save：返回传入的 claim 对象
-        when(claimRepository.save(any(VipRedPacketClaim.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Task 15：模拟 WalletService.recharge 始终成功返回固定余额
-        // 仅在原子扣减成功（affected=1）的线程才会调用 recharge
-        lenient().when(walletService.recharge(anyLong(), anyLong(), any(String.class),
-                any(String.class), any(String.class)))
-                .thenReturn(1000L);
-
-        // Task 14（P1.12）：模拟 Redisson 分布式锁 red-packet-claim:{redPacketId}
-        // 所有线程都能获取锁（串行化由原子扣减 CAS 保证），不影响 10 成功 / 90 失败的业务语义
-        when(redissonClient.getLock("red-packet-claim:" + redPacketId)).thenReturn(rLock);
-        when(rLock.tryLock(anyLong(), anyLong(), any())).thenReturn(true);
-        lenient().when(rLock.isHeldByCurrentThread()).thenReturn(true);
-        lenient().doNothing().when(rLock).unlock();
-
-        // 构造 VipRedPacketService（Task 14：新增 redissonClient 依赖）
-        // 2026-08-08 守卫：红包创建/领取要求有效 VIP（requireVip）
-        when(vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
-                anyLong(), eq("SUCCESS"), any(LocalDateTime.class))).thenReturn(true);
-        VipRedPacketService service = new VipRedPacketService(
-                redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
-
-        // Act：100 个用户并发领取
-        AtomicInteger successCount = new AtomicInteger(0);
-        AtomicInteger failureCount = new AtomicInteger(0);
-        AtomicInteger totalClaimedAmount = new AtomicInteger(0);
-        CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch doneLatch = new CountDownLatch(CONCURRENCY);
-        ExecutorService executor = Executors.newFixedThreadPool(CONCURRENCY);
-
-        for (int i = 0; i < CONCURRENCY; i++) {
-            final long claimerId = 2000L + i; // 不同用户 ID
-            executor.submit(() -> {
-                try {
-                    startLatch.await();
-                    try {
-                        VipRedPacketService.ClaimResultView result =
-                                service.claimRedPacket(redPacketId, claimerId);
-                        successCount.incrementAndGet();
-                        totalClaimedAmount.addAndGet(result.amount());
-                    } catch (RuntimeException e) {
-                        // IllegalArgumentException 是 RuntimeException 的子类，统一捕获即可
-                        failureCount.incrementAndGet();
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } finally {
-                    doneLatch.countDown();
-                }
-            });
-        }
-
-        startLatch.countDown();
-        boolean finished = doneLatch.await(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        executor.shutdownNow();
-
-        // Assert：所有线程都完成
-        assertTrue(finished, "所有并发线程应在超时前完成");
-
-        // Assert：成功领取数 ≤ totalCount（不超发）
-        assertTrue(successCount.get() <= totalCount,
-                "成功领取数应 ≤ " + totalCount + "，实际: " + successCount.get());
-        assertEquals(totalCount, successCount.get(),
-                "正好 " + totalCount + " 个用户应成功领取，实际: " + successCount.get());
-        assertEquals(CONCURRENCY - totalCount, failureCount.get(),
-                "剩余 " + (CONCURRENCY - totalCount) + " 个用户应失败，实际: " + failureCount.get());
-
-        // Assert：总领取金额 = 红包总金额（无超发）
-        assertEquals(totalAmount, totalClaimedAmount.get(),
-                "总领取金额应等于红包总金额 " + totalAmount + "，实际: " + totalClaimedAmount.get());
-
-        // Assert：原子扣减被调用至少 CONCURRENCY 次（每个并发领取都尝试扣减）
-        verify(redPacketRepository, atLeastOnce()).decrementRemaining(eq(redPacketId), anyInt());
-    }
-
-    /**
-     * 场景 1b：红包并发领取（单份红包）—— 100 个用户并发领取一个 1 份的红包。
-     *
-     * <p>验证 Task 14（P1.12）：单份红包并发领取场景下的 Redisson 锁 + 原子扣减多重保障：</p>
-     * <ul>
-     *   <li>仅 1 个用户成功领取（不超发）</li>
-     *   <li>其余 99 个用户快速失败（红包已被领完）</li>
-     *   <li>总领取金额 = 红包总金额（无超发）</li>
-     * </ul>
-     *
-     * <p>测试策略：与场景 1 相同，所有线程都能获取 Redisson 锁（mock tryLock 返回 true），
-     * 串行化由原子扣减 CAS 保证。仅 1 个线程的 CAS 成功（remainingCount 1→0），
-     * 其余 99 个线程 CAS 失败（remainingCount=0）后快速失败。</p>
-     */
-    @Test
-    @DisplayName("并发场景 1b：100 个用户并发领取 1 份红包 → 仅 1 次成功，99 次快速失败")
-    void redPacketConcurrentClaim_singleShare_onlyOneSucceeds() throws InterruptedException {
-        // Arrange：构造一个 1 份的普通红包，总金额 100 分
-        final long redPacketId = 2L;
-        final long senderId = 1001L;
-        final int totalCount = 1;
-        final int totalAmount = 100;
-
-        VipRedPacket packet = new VipRedPacket();
-        packet.setId(redPacketId);
-        packet.setSenderId(senderId);
-        packet.setTotalAmount(totalAmount);
-        packet.setTotalCount(totalCount);
-        packet.setClaimedCount(0);
-        packet.setClaimedAmount(0);
-        packet.setRemainingAmount(totalAmount);
-        packet.setRemainingCount(totalCount);
-        packet.setType("NORMAL");
-        packet.setStatus("PENDING");
-        packet.setExpireAt(LocalDateTime.now().plusHours(24));
-
-        // 模拟原子扣减：使用 AtomicInteger CAS 保证仅 1 个线程扣减成功
-        AtomicInteger remainingCount = new AtomicInteger(totalCount);
-        AtomicInteger remainingAmount = new AtomicInteger(totalAmount);
-
-        // 悲观锁查询返回同一红包对象
-        when(redPacketRepository.findByIdForUpdate(redPacketId))
-                .thenReturn(Optional.of(packet));
-
-        // 模拟原子扣减：CAS remainingCount，成功则返回 1，失败返回 0
-        when(redPacketRepository.decrementRemaining(eq(redPacketId), anyInt()))
-                .thenAnswer(invocation -> {
-                    int amount = invocation.getArgument(1);
-                    while (true) {
-                        int currentCount = remainingCount.get();
-                        int currentAmount = remainingAmount.get();
-                        if (currentCount <= 0 || currentAmount < amount) {
-                            return 0; // 影响行数 0：扣减失败
-                        }
-                        if (remainingCount.compareAndSet(currentCount, currentCount - 1)) {
-                            remainingAmount.addAndGet(-amount);
-                            return 1; // 影响行数 1：扣减成功
-                        }
-                        // CAS 失败，重试
-                    }
-                });
-
-        // markDepletedIfEmpty 在最后一个领取者时被调用
-        lenient().when(redPacketRepository.markDepletedIfEmpty(redPacketId))
-                .thenReturn(1);
-
-        // 模拟 findByRedPacketIdAndClaimerId：每个用户首次查询返回空（未领取过）
-        when(claimRepository.findByRedPacketIdAndClaimerId(eq(redPacketId), anyLong()))
-                .thenReturn(Optional.empty());
-
-        // 模拟 save：返回传入的 claim 对象
-        when(claimRepository.save(any(VipRedPacketClaim.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Task 15：模拟 WalletService.recharge 始终成功返回固定余额
-        // 仅在原子扣减成功（affected=1）的线程才会调用 recharge
-        lenient().when(walletService.recharge(anyLong(), anyLong(), any(String.class),
-                any(String.class), any(String.class)))
-                .thenReturn(1000L);
-
-        // Task 14（P1.12）：模拟 Redisson 分布式锁 red-packet-claim:{redPacketId}
-        // 所有线程都能获取锁（串行化由原子扣减 CAS 保证），仅 1 个线程 CAS 成功
-        when(redissonClient.getLock("red-packet-claim:" + redPacketId)).thenReturn(rLock);
-        when(rLock.tryLock(anyLong(), anyLong(), any())).thenReturn(true);
-        lenient().when(rLock.isHeldByCurrentThread()).thenReturn(true);
-        lenient().doNothing().when(rLock).unlock();
-
-        // 构造 VipRedPacketService（Task 14：新增 redissonClient 依赖）
-        // 2026-08-08 守卫：红包创建/领取要求有效 VIP（requireVip）
-        when(vipBillRepository.existsByUserIdAndStatusAndPeriodEndAfter(
-                anyLong(), eq("SUCCESS"), any(LocalDateTime.class))).thenReturn(true);
-        VipRedPacketService service = new VipRedPacketService(
-                redPacketRepository, claimRepository, userRepository, vipBillRepository, walletService, redissonClient);
-
-        // Act：100 个用户并发领取
-        AtomicInteger successCount = new AtomicInteger(0);
-        AtomicInteger failureCount = new AtomicInteger(0);
-        AtomicInteger totalClaimedAmount = new AtomicInteger(0);
-        CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch doneLatch = new CountDownLatch(CONCURRENCY);
-        ExecutorService executor = Executors.newFixedThreadPool(CONCURRENCY);
-
-        for (int i = 0; i < CONCURRENCY; i++) {
-            final long claimerId = 5000L + i; // 不同用户 ID
-            executor.submit(() -> {
-                try {
-                    startLatch.await();
-                    try {
-                        VipRedPacketService.ClaimResultView result =
-                                service.claimRedPacket(redPacketId, claimerId);
-                        successCount.incrementAndGet();
-                        totalClaimedAmount.addAndGet(result.amount());
-                    } catch (RuntimeException e) {
-                        // IllegalArgumentException / IllegalStateException 都是 RuntimeException 子类
-                        failureCount.incrementAndGet();
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } finally {
-                    doneLatch.countDown();
-                }
-            });
-        }
-
-        startLatch.countDown();
-        boolean finished = doneLatch.await(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        executor.shutdownNow();
-
-        // Assert：所有线程都完成
-        assertTrue(finished, "所有并发线程应在超时前完成");
-
-        // Assert：仅 1 个用户成功领取（不超发）
-        assertEquals(1, successCount.get(),
-                "仅 1 个用户应成功领取 1 份红包，实际: " + successCount.get());
-        assertEquals(CONCURRENCY - 1, failureCount.get(),
-                "其余 99 个用户应快速失败，实际: " + failureCount.get());
-
-        // Assert：总领取金额 = 红包总金额（无超发）
-        assertEquals(totalAmount, totalClaimedAmount.get(),
-                "总领取金额应等于红包总金额 " + totalAmount + "，实际: " + totalClaimedAmount.get());
-
-        // Assert：原子扣减被调用至少 CONCURRENCY 次
-        verify(redPacketRepository, atLeastOnce()).decrementRemaining(eq(redPacketId), anyInt());
-    }
 
     /**
      * 场景 2：优惠码并发兑换 —— 100 个用户并发兑换一个剩余 5 次的优惠码。

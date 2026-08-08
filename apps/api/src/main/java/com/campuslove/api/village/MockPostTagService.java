@@ -85,7 +85,13 @@ public class MockPostTagService implements PostTagService {
                         p.createdAt.toString(),
                         p.likesCount >= 50,
                         false,
-                        false
+                        false,
+                        // 2026-08-08 论坛互动真实化：mock 标签页收藏数 0 / 未收藏；浏览量取 mock 数据
+                        0,
+                        false,
+                        p.viewCount,
+                        // 2026-08-09 帖子关联活动 + 评论预览：mock 标签页无上下文，按 null/空列表兜底
+                        null, null, false, List.of()
                 ))
                 .toList();
     }
@@ -142,6 +148,8 @@ public class MockPostTagService implements PostTagService {
         int likesCount;
         int commentsCount;
         int shareCount;
+        /** 2026-08-08 论坛互动真实化：mock 浏览量（构造器派生，无收藏上下文） */
+        int viewCount;
         Long authorId;
         String authorName;
         String authorCampus;
@@ -158,6 +166,7 @@ public class MockPostTagService implements PostTagService {
             this.likesCount = likesCount;
             this.commentsCount = commentsCount;
             this.shareCount = shareCount;
+            this.viewCount = likesCount * 10;
             this.authorId = authorId;
             this.authorName = authorName;
             this.authorCampus = authorCampus;

@@ -602,7 +602,7 @@ function openAccountBinding() {
           :aria-checked="agreed ? 'true' : 'false'"
           :aria-label="t('login.agreedPrefix')"
         >
-          <text v-if="agreed" class="checkbox-check" aria-hidden="true">✓</text>
+          <image v-if="agreed" class="checkbox-check" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
         </view>
         <view class="terms-text-wrap">
           <text class="terms-text">{{ t('login.agreedPrefix') }}</text>
@@ -1045,9 +1045,8 @@ function openAccountBinding() {
 }
 
 .checkbox-check {
-  font-size: var(--fs-sm);
-  color: var(--c-text-inverse);
-  font-weight: 700;
+  width: 26rpx;
+  height: 26rpx;
 }
 
 .terms-text-wrap {

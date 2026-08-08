@@ -170,7 +170,16 @@ public class RealPostTagService implements PostTagService {
                 post.getCreatedAt().toString(),
                 post.getLikesCount() >= 50,
                 false,
-                false
+                false,
+                // 2026-08-08 论坛互动真实化：标签页不注入收藏上下文，收藏数 0 / 未收藏；浏览量取实体
+                0,
+                false,
+                post.getViewCount(),
+                // 2026-08-09 帖子关联活动 + 评论预览：标签页暂无活动/评论预览上下文，按 null/空列表兜底
+                post.getActivityId(),
+                null, // activity
+                Boolean.TRUE.equals(post.getIsPinned()),
+                List.of() // recentComments
         );
     }
 

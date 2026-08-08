@@ -86,12 +86,15 @@ function goShop(): void {
     <view class="checkin-popup__panel" @tap.stop>
       <view class="checkin-popup__header">
         <text class="checkin-popup__title">{{ t("discover.checkinPopupTitle") }}</text>
-        <text
+        <image
           class="checkin-popup__close"
           role="button"
           :aria-label="t('common.closeAria')"
           @tap="emit('close')"
-        >✕</text>
+          :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG"
+          mode="aspectFit"
+          alt=""
+        />
       </view>
 
       <!-- 成功态：积分 +N + 连续天数 + 撒花动画 -->
@@ -210,8 +213,6 @@ function goShop(): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--fs-lg, 32rpx);
-  color: var(--c-text-tertiary);
 }
 
 /* 成功态 */

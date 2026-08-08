@@ -36,7 +36,6 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>余额不足抛 {@link InsufficientBalanceException}，由调用方决定如何处理：
  *     <ul>
  *       <li>VIP 续费：捕获并写 FAILED 流水 + 推送通知</li>
- *       <li>红包发送：向上抛出，事务回滚，红包创建失败</li>
  *     </ul>
  *   </li>
  *   <li>数据库异常包装为 RuntimeException 抛出，避免泄漏堆栈</li>
@@ -59,7 +58,6 @@ public class WalletServiceImpl implements WalletService {
      * （业务上每个扣费场景必须走对应入口/下单链路）。集合依据现有调用方确定：</p>
      * <ul>
      *   <li>VIP_RENEW：VIP 自动续费（AutoRenewService）</li>
-     *   <li>RED_PACKET_SEND：红包发送（VipRedPacketService）</li>
      *   <li>ADMIN_ADJUST：管理后台余额调整（AdminWalletController）</li>
      *   <li>MESSAGE_UNLOCK / VISITORS_UNLOCK / LIKES_UNLOCK / WHISPER_UNLOCK：客户端
      *       旧版解锁扣费（/wallet/deduct 直调，兼容过渡期）</li>
@@ -69,7 +67,6 @@ public class WalletServiceImpl implements WalletService {
      */
     private static final Set<String> DEDUCT_RELATED_TYPE_WHITELIST = Set.of(
             WalletTransactionLog.RELATED_TYPE_VIP_RENEW,
-            WalletTransactionLog.RELATED_TYPE_RED_PACKET_SEND,
             WalletTransactionLog.RELATED_TYPE_UNLOCK_LIKED_ME,
             WalletTransactionLog.RELATED_TYPE_UNLOCK_VISITOR,
             WalletTransactionLog.RELATED_TYPE_SWEET_TALK,

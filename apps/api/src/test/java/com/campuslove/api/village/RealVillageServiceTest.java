@@ -42,19 +42,19 @@ class RealVillageServiceTest {
     }
 
     /**
-     * 场景：createPost(Long, title, content, images, tags, category) 应委托 VillagePostService.createPost。
+     * 场景：createPost(Long, title, content, images, tags, category, activityId) 应委托 VillagePostService.createPost。
      */
     @Test
     void createPost_fullArgsVersion_delegatesToPostService() {
         Long userId = 100L;
         PostDetailView expected = buildPostDetailView(1L, userId);
-        when(postService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all"))
+        when(postService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all", null))
                 .thenReturn(expected);
 
-        PostDetailView result = realService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all");
+        PostDetailView result = realService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all", null);
 
         assertSame(expected, result);
-        verify(postService, times(1)).createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all");
+        verify(postService, times(1)).createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all", null);
     }
 
     /**
@@ -63,17 +63,17 @@ class RealVillageServiceTest {
     @Test
     void createPost_requestVersion_unwrapsAndDelegates() {
         Long userId = 100L;
-        // CreatePostRequest(title, content, category, tags, images)
+        // CreatePostRequest(title, content, category, tags, images, activityId)
         CreatePostRequest request = new CreatePostRequest(
-                "标题", "hello", "all", List.of("tag"), List.of("img"));
+                "标题", "hello", "all", List.of("tag"), List.of("img"), null);
         PostDetailView expected = buildPostDetailView(1L, userId);
-        when(postService.createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all"))
+        when(postService.createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null))
                 .thenReturn(expected);
 
         PostDetailView result = realService.createPost(userId, request);
 
         assertSame(expected, result);
-        verify(postService, times(1)).createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all");
+        verify(postService, times(1)).createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null);
     }
 
     /**
@@ -235,12 +235,12 @@ class RealVillageServiceTest {
 
         assertSame(expected, result);
         verify(queryService, times(1)).getPosts("all", null, "new", 0, 10, 100L);
-        verify(postService, times(0)).createPost(anyLong(), any(), any(), any(), any(), any());
+        verify(postService, times(0)).createPost(anyLong(), any(), any(), any(), any(), any(), any());
     }
 
     // ---- 工具方法 ----
 
-    /** 构造测试用 PostDetailView（15 个字段全填，便于复用）。 */
+    /** 构造测试用 PostDetailView（20 个字段全填，便于复用）。 */
     private PostDetailView buildPostDetailView(Long postId, Long userId) {
         return new PostDetailView(
                 postId, "标题", "内容",
@@ -248,7 +248,10 @@ class RealVillageServiceTest {
                 "all", List.of("tag"), List.of("img"),
                 0, 0, 0,
                 "2026-07-27T10:00:00", "2026-07-27T10:00:00",
-                false, true, false);
+                false, true, false,
+                0, false, 0,
+                // 2026-08-09 帖子关联活动：详情视图新增字段（测试场景无关联，null）
+                null, null);
     }
 
     /** 构造测试用 CommentItemView。 */

@@ -78,8 +78,6 @@ export const ROUTES = {
   CHAT: {
     /** 聊天会话页 */
     SESSION: "/pages/chat-session/index",
-    /** 红包页 */
-    RED_PACKET: "/pages/chat/red-packet",
     /** 视频通话页 */
     VIDEO_CALL: "/pages/chat/video-call",
   },
@@ -148,8 +146,6 @@ export const ROUTES = {
   VIP: {
     /** VIP 主页 */
     INDEX: "/pages/vip/index",
-    /** 红包页 */
-    RED_PACKET: "/pages/vip/red-packet",
     /** 兑换码 */
     PROMO_CODE: "/pages/vip/promo-code",
     /** 账单 */

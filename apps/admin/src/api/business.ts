@@ -2,7 +2,7 @@
  * Admin v2 商业模式域 API 封装（eladmin 风格「商业运营」域）。
  *
  * 覆盖接口前缀（对应后端 com.campuslove.api.admin 下各 Controller）：
- * - VIP 账单/红包：/api/v1/admin/business/vip/bills、/bills/{id}、/red-packets
+ * - VIP 账单：/api/v1/admin/business/vip/bills、/bills/{id}
  * - 兑换码：/api/v1/admin/business/promo-codes（列表 / batch / {id}/disable / export）
  * - 钱包：/api/v1/admin/business/wallets（列表 / transactions / {userId}/adjust）
  * - 签到积分流水：/api/v1/admin/business/coins
@@ -12,7 +12,7 @@
  * 本模块对写操作（create/update/delete/adjust）与批量生成统一通过 unwrapApiData 解包；
  * 分页列表（AdminPageView）为直出形态，get 原样返回。
  *
- * 金额单位：钱包/VIP 账单/红包等金额一律以「分」为整数（balanceCents/amount），
+ * 金额单位：钱包/VIP 账单等金额一律以「分」为整数（balanceCents/amount），
  * 视图层负责分转元展示。
  */
 
@@ -29,7 +29,7 @@ import {
 import { DEFAULT_PAGE_SIZE } from "../utils/constants";
 
 /* ============================================================
- * VIP 账单 / 红包（AdminVipController）
+ * VIP 账单（AdminVipController）
  * ============================================================ */
 
 /** VIP 账单视图（对应后端 AdminVipBillView） */
@@ -72,42 +72,6 @@ export interface VipBillListQuery {
   pageSize?: number;
 }
 
-/** VIP 红包视图（对应后端 AdminRedPacketView） */
-export interface VipRedPacketView {
-  id: number;
-  /** 发送者用户 ID */
-  senderId: number;
-  /** 红包总金额（分） */
-  totalAmount: number;
-  /** 红包总个数 */
-  totalCount: number;
-  /** 已领取个数 */
-  claimedCount: number;
-  /** 已领取金额（分） */
-  claimedAmount: number;
-  /** 红包类型：NORMAL / LUCKY */
-  type: string;
-  /** 状态：PENDING 待领取 / EXPIRED 已过期 / DEPLETED 已抢完 */
-  status: string;
-  /** 祝福语 */
-  blessing: string;
-  /** 过期时间 */
-  expireAt: string | null;
-  createdAt: string;
-}
-
-/** VIP 红包列表查询参数 */
-export interface VipRedPacketListQuery {
-  /** 红包状态（PENDING/EXPIRED/DEPLETED） */
-  status?: string;
-  /** 创建起始时间 */
-  createdAtFrom?: string;
-  /** 创建结束时间 */
-  createdAtTo?: string;
-  page?: number;
-  pageSize?: number;
-}
-
 /**
  * 分页查询 VIP 账单列表。
  * GET /api/v1/admin/business/vip/bills
@@ -128,20 +92,6 @@ export function listVipBills(query: VipBillListQuery = {}): Promise<AdminPageVie
  */
 export function getVipBill(id: number): Promise<VipBillView> {
   return get<VipBillView>(`/v1/admin/business/vip/bills/${id}`);
-}
-
-/**
- * 分页查询 VIP 红包列表。
- * GET /api/v1/admin/business/vip/red-packets
- */
-export function listRedPackets(query: VipRedPacketListQuery = {}): Promise<AdminPageView<VipRedPacketView>> {
-  return get<AdminPageView<VipRedPacketView>>("/v1/admin/business/vip/red-packets", {
-    status: query.status || undefined,
-    createdAtFrom: query.createdAtFrom || undefined,
-    createdAtTo: query.createdAtTo || undefined,
-    page: query.page ?? 1,
-    pageSize: query.pageSize ?? DEFAULT_PAGE_SIZE,
-  });
 }
 
 /* ============================================================

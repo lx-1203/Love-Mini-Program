@@ -28,14 +28,16 @@ public class MockPrivateMessageService implements PrivateMessageService {
     }
 
     @Override
-    public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind) {
+    public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
+                                   Integer durationSeconds) {
         return new MessageView(
-            1L, conversationId, senderId, content, kind, false, "2026-01-01T00:00:00"
+            1L, conversationId, senderId, content, kind, false, "2026-01-01T00:00:00",
+            null, durationSeconds
         );
     }
 
     @Override
-    public List<MessageView> getMessages(Long conversationId, Long userId, Pageable pageable) {
+    public List<MessageView> getMessages(Long conversationId, Long userId, Pageable pageable, String order) {
         return List.of();
     }
 

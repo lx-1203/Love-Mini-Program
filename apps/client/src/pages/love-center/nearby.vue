@@ -103,6 +103,7 @@ function handleVideoTap() {
     <!-- 附近的人 = 匿名匹配场景：masked 蒙面模式，头像模糊 + 「互发喜欢解锁头像」规则提示 -->
     <view v-else class="nearby-card-area">
       <CardSwiper
+        class="card-swiper-host"
         :cards="cards"
         :remaining-count="0"
         :masked="true"
@@ -158,6 +159,18 @@ function handleVideoTap() {
   min-height: 0;
   padding: var(--sp-2) 0;
 }
+
+/* 2026-08-08 P0：微信自定义组件宿主节点默认 flex:0 1 auto 高度仅由内容决定，
+ * 与 discover/index.vue 同款修复——让 CardSwiper 宿主节点 flex:1 撑满父容器。
+ * H5 端组件宿主即根节点，已有高度链，无需该样式。 */
+// #ifndef H5
+.card-swiper-host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+// #endif
 
 .nearby-loading,
 .nearby-error,

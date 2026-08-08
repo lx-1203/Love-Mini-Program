@@ -80,13 +80,12 @@ const groups: ShowcaseGroup[] = [
   {
     id: "chat",
     title: "聊天",
-    subtitle: "会话 · 视频通话 · 红包",
+    subtitle: "会话 · 视频通话",
     accent: "linear-gradient(135deg, #7C6CF0, #A78BFA)",
     items: [
       { path: "/pages/messages/index", title: "消息", desc: "会话 / 官方号 / 通知", char: "消", chipBg: "var(--c-tint-purple-soft, #F3EFFF)", isTab: true },
       { path: "/pages/chat-session/index", title: "聊天会话", desc: "临时匿名聊天 / 渐进解锁", char: "聊", chipBg: "var(--c-tint-purple-soft, #F3EFFF)" },
       { path: "/pages/chat/video-call", title: "视频通话", desc: "1v1 实时视频（展示）", char: "视", chipBg: "var(--c-tint-purple-soft, #F3EFFF)" },
-      { path: "/pages/chat/red-packet", title: "聊天红包", desc: "会话内发红包", char: "红", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
     ],
   },
   {
@@ -113,12 +112,11 @@ const groups: ShowcaseGroup[] = [
   {
     id: "commerce",
     title: "商业化",
-    subtitle: "VIP · 红包 · 优惠码 · 逛逛",
+    subtitle: "VIP · 优惠码 · 逛逛",
     accent: "linear-gradient(135deg, #F59E0B, #FBBF24)",
     items: [
       { path: "/pages/vip/index", title: "开通 VIP", desc: "月度 / 季度 / 年度会员", char: "V", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
       { path: "/pages/wallet/index", title: "我的钱包", desc: "交友币余额 / 账单 / 充值", char: "币", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
-      { path: "/pages/vip/red-packet", title: "VIP 红包", desc: "会员专属红包", char: "包", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
       { path: "/pages/vip/promo-code", title: "优惠码", desc: "兑换码 / 优惠", char: "券", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
       { path: "/pages/vip/bills", title: "账单记录", desc: "消费 / 续费记录", char: "账", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
       { path: "/pages/shop/index", title: "逛逛", desc: "积分商城 / 好物", char: "逛", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },

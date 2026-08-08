@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 聊天详情页 - 支持私信会话和临时匿名聊天会话
  * 支持从兴趣圈"打招呼"跳转，携带预填消息和引用上下文
@@ -10,22 +10,15 @@
  * - ./api              纯 API 调用（recallTempChatMessageApi）
  * - ./index.vue        本文件：页面转场 / 生命周期 / UI 事件 / 状态管理
  */
-// 修复（严格模式 noUnusedLocals）：watch 导入后未使用，已移除。
-import { computed, ref, nextTick } from "vue";
-import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
+import { computed, ref, nextTick, watch, getCurrentInstance } from "vue";
+import { onLoad, onShow, onHide, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { featureFlags } from "../../config/feature-flags";
-import AppShell from "../../components/layout/AppShell.vue";
-import SectionCard from "../../components/common/SectionCard.vue";
-import StatusState from "../../components/common/StatusState.vue";
 import ChatBubble from "../../components/chat/ChatBubble.vue";
+import ActivityCard, { type ActivityCardData } from "../../components/chat/ActivityCard.vue";
 import IcebreakerSuggestions from "../../components/chat/IcebreakerSuggestions.vue";
-import VoiceMessageBubble from "../../components/chat/VoiceMessageBubble.vue";
-import VoiceRecorder from "../../components/chat/VoiceRecorder.vue";
-import RedPacketBubble from "../../components/chat/RedPacketBubble.vue";
 import { useMessagesStore } from "../../stores/messages";
 import { useChatStore } from "../../stores/chat";
-import { useVipRedPacketStore } from "../../stores/vip-red-packet";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { chatPageRequirements } from "../../config/page-access";
 import { IMAGE_PATHS } from "../../config/images";
@@ -34,10 +27,8 @@ import { lightHaptic } from "../../utils/haptic";
 import { openAppPath } from "../../utils/navigation";
 // Sentry 监控：消息发送失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
-import type { RecorderStopResult } from "../../utils/audio-recorder";
 // 修复 no-duplicate-imports：合并 ./types 的重复 import
 import type {
-  ChatMessageView,
   LongPressMenuState,
   QuoteContext,
   QuoteReply,
@@ -46,6 +37,7 @@ import {
   toChatMessageViewList,
 } from "./dto";
 import {
+  buildChatMessageRows,
   buildInitialLongPressMenu,
   buildVisibleLongPressMenu,
   computeIdleIcebreakerVisible,
@@ -69,7 +61,6 @@ import {
 
 const messagesStore = useMessagesStore();
 const chatStore = useChatStore();
-const redPacketStore = useVipRedPacketStore();
 const { t } = useI18n();
 
 /**
@@ -87,21 +78,21 @@ const friendlyPageError = computed(() => {
 
 /** 会话页更多菜单图标（emoji 替换为 SVG） */
 const chatMenuIcons = {
-  redPacket: IMAGE_PATHS.ICONS_EMOJI.GIFT,
   videoCall: IMAGE_PATHS.ICONS_EMOJI.VIDEO,
 } as const;
 
-/** SVG 图标资源路径 */
+/** SVG 图标资源路径（语音麦克风图标已随语音功能移除；全部 SVG，无 emoji 字符） */
 const iconSrc = {
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
   // Emoji 替换 SVG 图标
-  microphone: IMAGE_PATHS.ICONS_EMOJI.MICROPHONE,
   smile: IMAGE_PATHS.ICONS_EMOJI.SMILE,
+  check: IMAGE_PATHS.ICONS_COMMON.CHECK_SVG,
+  checkWhite: IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG,
+  close: IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG,
+  chevronRight: IMAGE_PATHS.ICONS_COMMON.CHEVRON_RIGHT_SVG,
 } as const;
 
 const draft = ref("");
-/** 当前是否为语音输入模式 */
-const isVoiceMode = ref(false);
 const sessionId = ref<string | null>(null);
 const targetUserId = ref<string | null>(null);
 const pageErrorMessage = ref<string | null>(null);
@@ -216,6 +207,142 @@ function goSignalProfile() {
 const currentMessagesView = computed(() =>
   toChatMessageViewList(messagesStore.currentMessages)
 );
+
+/* ========== 活动卡片消息（kind=activity，content 为 JSON） ========== */
+
+/**
+ * 解析活动卡片消息体。
+ *
+ * content 契约（见 docs/API-CONTRACT.md）：
+ * {"title":"活动标题","desc":"描述","tag":"标签","targetUrl":"/pages/activities/detail?id=xxx"}
+ *
+ * @param body 消息内容（JSON）
+ * @returns 解析成功返回卡片数据，失败返回 null（由 ChatBubble 文本兜底渲染）
+ */
+function parseActivityCard(body: string): ActivityCardData | null {
+  try {
+    const parsed = JSON.parse(body) as Partial<ActivityCardData>;
+    if (parsed.title && parsed.targetUrl) {
+      return {
+        title: parsed.title,
+        desc: parsed.desc || "",
+        tag: parsed.tag || "",
+        targetUrl: parsed.targetUrl,
+      };
+    }
+  } catch (_e) {
+    // 解析失败（旧消息/非 JSON 内容），静默回退
+  }
+  return null;
+}
+
+/** 点击活动卡片：跳转活动详情 */
+function openActivityCard(targetUrl: string) {
+  openAppPath(targetUrl);
+}
+
+/* ========== 消息流时间分隔条 + 滚动（2026-08-08 微信化重构） ========== */
+
+/**
+ * 消息行模型：按微信 5 分钟规则在消息流中插入时间分隔条。
+ * 纯逻辑见 view-models.ts（buildChatMessageRows / shouldShowTimeBar / formatChatTimeBar）。
+ */
+const messageRows = computed(() => buildChatMessageRows(currentMessagesView.value));
+
+/** scroll-view 纵向滚动位置（上拉加载旧消息时用于保持视口） */
+const scrollTop = ref(0);
+/** scroll-into-view 目标元素 id（进入/新消息滚底） */
+const scrollIntoViewId = ref("");
+/** 当前 scrollTop（onScroll 持续记录） */
+let curScrollTop = 0;
+/** 是否正在加载更早消息（防重入） */
+const loadingOlder = ref(false);
+/** 是否已滚到底部附近（决定新消息是否自动滚底） */
+let nearBottom = true;
+
+/** 底部锚点 id（常量，模板与脚本共用） */
+const BOTTOM_ANCHOR_ID = "chat-bottom-anchor";
+
+/** 记录滚动位置 */
+function onScroll(e: { detail?: { scrollTop?: number } }) {
+  curScrollTop = e?.detail?.scrollTop ?? 0;
+}
+
+/**
+ * 上拉加载更早历史消息（微信行为：加载后视口不跳）。
+ * 通过「加载前 scrollHeight - 当前 scrollTop」测量距底距离，
+ * 加载后设置 scrollTop = 新scrollHeight - 原距底距离 保持视口。
+ */
+function onScrollToUpper() {
+  if (loadingOlder.value || !sessionId.value || !messagesStore.messageHasMore) return;
+  void (async () => {
+    loadingOlder.value = true;
+    try {
+      const before = await queryScrollHeight();
+      await messagesStore.fetchOlderMessages(sessionId.value!, messagesStore.messagePage + 1);
+      await nextTick();
+      const after = await queryScrollHeight();
+      // scroll-top 与 scroll-into-view 互斥：先清 into-view 再设置 scroll-top
+      scrollIntoViewId.value = "";
+      scrollTop.value = after - (before - curScrollTop);
+    } finally {
+      loadingOlder.value = false;
+    }
+  })();
+}
+
+/** 查询消息滚动区内容高度（Promise 包装 createSelectorQuery） */
+function queryScrollHeight(): Promise<number> {
+  return new Promise((resolve) => {
+    uni
+      .createSelectorQuery()
+      .in(getCurrentInstance())
+      .select(".chat-scroll")
+      .fields({ size: true }, (res) => {
+        // res 可能为 null / NodeInfo / NodeInfo[]，取 scrollHeight 数值
+        const info = Array.isArray(res) ? res[0] : res;
+        resolve(info?.scrollHeight ?? 0);
+      })
+      .exec();
+  });
+}
+
+/** 滚动到底部（进入页面 / 新消息到达） */
+function scrollToBottom() {
+  scrollTop.value = 0;
+  scrollIntoViewId.value = "";
+  void nextTick(() => {
+    scrollIntoViewId.value = BOTTOM_ANCHOR_ID;
+  });
+}
+
+/**
+ * 新消息到达时自动滚底（用户停留在底部附近时）。
+ * 上拉加载旧消息（loadingOlder）时长度也变化，但由 onScrollToUpper 保持视口，此处跳过。
+ */
+watch(
+  () => messagesStore.currentMessages.length,
+  () => {
+    if (nearBottom && !loadingOlder.value) scrollToBottom();
+  }
+);
+
+/** 返回上一页（自定义导航栏） */
+function goBack() {
+  // #ifdef MP-WEIXIN
+  uni.navigateBack({
+    delta: 1,
+    fail: () => {
+      // 无上一页时静默处理
+    },
+  });
+  // #endif
+  // #ifndef MP-WEIXIN
+  uni.navigateBack({ delta: 1 }).catch(() => {
+    // 返回失败时静默处理
+  });
+  // #endif
+}
 
 usePageAccess(chatPageRequirements);
 
@@ -356,6 +483,13 @@ onShow(() => {
     return;
   }
 
+  // 红点修复（2026-08-08）：标记当前正在查看的会话。
+  // onShow/onHide 配对覆盖「压栈/切后台」场景：
+  // 会话打开期间收到的新消息不累加未读数，退出后恢复累加。
+  messagesStore.setActiveSession(sessionId.value);
+  nearBottom = true;
+  void nextTick(scrollToBottom);
+
   // Task 1.1.6：等待消息加载完成后再启动倒计时与破冰话题加载，
   // 避免页面渲染空消息列表导致破冰话题过早出现。
   // 注：onShow 为同步生命周期，使用 void 不阻塞页面渲染，
@@ -364,6 +498,12 @@ onShow(() => {
 
   startTempCountdown();
   void loadIcebreakers();
+});
+
+onHide(() => {
+  // 红点修复：退出会话页（压栈/切后台）后恢复未读累加
+  messagesStore.setActiveSession(null);
+  nearBottom = false;
 });
 
 onUnload(() => {
@@ -407,7 +547,7 @@ const isSessionClosed = computed(() => {
 /** 发送按钮是否可高亮（输入框非空且会话未结束） */
 const canSend = computed(() => draft.value.trim().length > 0 && !isSessionClosed.value);
 
-/** 页面标题 */
+/** 页面标题（微信风格导航栏：仅标题，无副标题） */
 const pageTitle = computed(() => {
   if (isTempSession.value) return t("chat.tempSessionTitle");
   if (isPrivateSession.value) return currentSession.value?.partnerName || t("chat.privateMessageTitle");
@@ -419,17 +559,6 @@ const pageTitle = computed(() => {
     return partnerName || t("chat.conversationTitle");
   }
   return chatStore.activeSession?.partnerName || t("chat.chatTitle");
-});
-
-/** 页面副标题 */
-const pageSubtitle = computed(() => {
-  if (isTempSession.value) {
-    return tempCountdown.value
-      ? t("chat.remainingTimeLabel", { time: tempCountdown.value })
-      : currentSession.value?.partnerHeadline || t("chat.tempSessionSubtitle");
-  }
-  if (isPrivateSession.value) return currentSession.value?.partnerHeadline || "";
-  return chatStore.activeSession?.partnerHeadline || "";
 });
 
 /** 启动临时会话倒计时 */
@@ -553,50 +682,11 @@ async function handleEndSession() {
   }
 }
 
-/** 切换语音/文字输入模式 */
-function toggleVoiceMode() {
-  isVoiceMode.value = !isVoiceMode.value;
-  if (isVoiceMode.value) {
-    // 切换到语音模式时取消输入框聚焦，避免键盘遮挡
-    inputFocused.value = false;
-  }
-}
-
-// 修复（严格模式 noUnusedLocals）：以下录音相关类型（RecorderStopCallbackResult /
-// RecorderErrorCallbackResult / RecorderManager）仅在已移除的 initRecorder 中使用，
-// 属于历史遗留死代码，已一并移除。语音录制统一通过 VoiceRecorder 组件处理。
-
-// 修复（严格模式 noUnusedLocals）：以下录音相关变量与 initRecorder 函数均为历史遗留代码，
-// 语音录制已统一由 VoiceRecorder 组件处理（通过 @recorded / @cancel / @state-change 事件）。
-// 已移除：recorderManager / recordingSeconds / recordingTimer / recorderListenersRegistered / initRecorder。
-// 保留：isRecording（由 handleVoiceStateChange 写入，用于页面录音状态同步）。
-const isRecording = ref(false);
-
-/** 初始化录音管理器（只注册一次监听器，避免重复注册）
- *
- * 修复（严格模式 noUnusedLocals）：initRecorder 函数定义后未被调用（原唯一调用方
- * startVoiceRecord 已移除），语音录制统一通过 VoiceRecorder 组件处理，已移除。
- */
-
-/** 开始语音录制
- * mp-weixin 调用 uni.getRecorderManager 真实录音
- * H5 等环境进入模拟录音状态，用于流程演示与 UI 验证
- *
- * 修复（严格模式 noUnusedLocals）：startVoiceRecord 函数定义后未被模板/脚本调用，
- * 属于历史遗留死代码，已移除。语音录制统一通过 VoiceRecorder 组件处理。
- */
-
-/** 结束语音录制
- * mp-weixin 停止录音并在 onStop 回调中发送
- * H5 直接根据模拟时长判断并发送
- *
- * 修复（严格模式 noUnusedLocals）：stopVoiceRecord 函数定义后未被模板/脚本调用，
- * 属于历史遗留死代码，已移除。mp-weixin 录音停止由 VoiceRecorder 组件内部
- * 通过 recorderManager.stop() 触发，并在 onStop 回调中调用 sendVoiceMessage。
- */
-
-/* 修复（严格模式 noUnusedLocals）：sendVoiceMessage 函数定义后未被调用（原唯一调用方
-   initRecorder 的 onStop 回调已移除），语音发送统一通过 handleVoiceRecorded 处理，已移除。 */
+// 语音功能已移除（微信隐私保护指引未声明麦克风导致录音无法使用，
+// 按产品要求下线语音录制/发送，输入栏仅保留文字输入）：
+// - toggleVoiceMode / isVoiceMode / VoiceRecorder 组件：已移除
+// - isRecording / handleVoiceRecorded / handleVoiceRecordCancel / handleVoiceStateChange：已移除
+// - 历史遗留 initRecorder / startVoiceRecord / stopVoiceRecord / sendVoiceMessage：此前已移除
 
 /* ========== 破冰话题事件处理 ========== */
 
@@ -812,7 +902,7 @@ async function loadIcebreakers() {
   }
 }
 
-/* ========== "+" 更多菜单：红包 / 视频通话入口 ========== */
+/* ========== "+" 更多菜单：视频通话入口 ========== */
 
 /** 更多菜单是否展开 */
 const moreMenuVisible = ref<boolean>(false);
@@ -826,26 +916,6 @@ function openMoreMenu() {
 /** 关闭"+"更多菜单 */
 function closeMoreMenu() {
   moreMenuVisible.value = false;
-}
-
-/**
- * 跳转到红包页：
- * - 临时匿名会话不支持红包（避免欺诈风险）
- * - 携带 sessionId，红包创建后由 chat-session 刷新消息流
- */
-function goRedPacket() {
-  closeMoreMenu();
-  if (!sessionId.value) {
-    uni.showToast({ title: t("chat.moreMenuSessionMissing"), icon: "none" });
-    return;
-  }
-  if (isTempSession.value) {
-    uni.showToast({ title: t("chat.moreMenuTempNotSupported"), icon: "none" });
-    return;
-  }
-  uni.navigateTo({
-    url: `${ROUTES.CHAT.RED_PACKET}?sessionId=${encodeURIComponent(sessionId.value)}`,
-  });
 }
 
 /**
@@ -873,255 +943,46 @@ function goVideoCall() {
   });
 }
 
-/* ========== 红包消息渲染与领取（RedPacketBubble 集成） ========== */
-
-/**
- * 红包消息体前缀格式：[red-packet:{redPacketId}:{blessing}]
- *
- * 由于 MessageItem.kind 仅支持 text/voice/emoji/system，
- * 红包消息通过 body 前缀模式识别，避免扩展消息类型破坏既有契约。
- *
- * 例：body = "[red-packet:123:祝你天天开心]" 表示红包 ID=123、祝福语"祝你天天开心"
- */
-const RED_PACKET_BODY_PATTERN = /^\[red-packet:(\d+):([^\]]*)\]$/;
-
-/**
- * 判断消息是否为红包消息（基于 body 前缀模式匹配）
- *
- * @param message 消息视图
- * @returns 是否为红包消息
- */
-function isRedPacketMessage(message: ChatMessageView): boolean {
-  if (message.kind !== "text") return false;
-  return RED_PACKET_BODY_PATTERN.test(message.body);
-}
-
-/**
- * 解析红包消息体，提取红包 ID 与祝福语
- *
- * @param message 消息视图
- * @returns 解析结果：{ redPacketId, blessing } 或 null（非红包消息）
- */
-function parseRedPacketMessage(
-  message: ChatMessageView
-): { redPacketId: number; blessing: string } | null {
-  const match = message.body.match(RED_PACKET_BODY_PATTERN);
-  if (!match) return null;
-  // 修复（严格模式 noUncheckedIndexedAccess）：match[1] 索引访问返回 string | undefined，
-  // 此处提取后做非空校验，确保 parseInt 入参为 string。
-  const idStr = match[1];
-  if (!idStr) return null;
-  const id = parseInt(idStr, 10);
-  if (isNaN(id) || id <= 0) return null;
-  return {
-    redPacketId: id,
-    blessing: match[2] || "",
-  };
-}
-
-/**
- * 获取红包状态（用于 RedPacketBubble 组件）
- *
- * 优先从 vip-red-packet store 的 sessionPackets 中查找匹配的红包，
- * 未找到时回退为 PENDING 状态（保守策略，允许用户点击查看详情）。
- *
- * @param message 消息视图
- * @returns 红包状态：PENDING / DEPLETED / EXPIRED / CLAIMED
- */
-function getRedPacketStatus(
-  message: ChatMessageView
-): "PENDING" | "DEPLETED" | "EXPIRED" | "CLAIMED" {
-  const parsed = parseRedPacketMessage(message);
-  if (!parsed) return "PENDING";
-  const packet = redPacketStore.sessionPackets.find(
-    (p) => p.id === parsed.redPacketId
-  );
-  if (!packet) return "PENDING";
-  // 已被领完
-  if (packet.claimedCount >= packet.totalCount) return "DEPLETED";
-  // 已过期
-  if (packet.expireAt && Date.parse(packet.expireAt) < Date.now()) {
-    return "EXPIRED";
-  }
-  return packet.status;
-}
-
-/**
- * 获取红包总金额（分），用于详情跳转参数
- *
- * @param message 消息视图
- * @returns 总金额（分），未找到时返回 0
- */
-function getRedPacketAmount(message: ChatMessageView): number {
-  const parsed = parseRedPacketMessage(message);
-  if (!parsed) return 0;
-  const packet = redPacketStore.sessionPackets.find(
-    (p) => p.id === parsed.redPacketId
-  );
-  return packet?.totalAmount ?? 0;
-}
-
-/**
- * 获取红包已领取个数
- *
- * @param message 消息视图
- * @returns 已领取个数，未找到时返回 0
- */
-function getRedPacketClaimedCount(message: ChatMessageView): number {
-  const parsed = parseRedPacketMessage(message);
-  if (!parsed) return 0;
-  const packet = redPacketStore.sessionPackets.find(
-    (p) => p.id === parsed.redPacketId
-  );
-  return packet?.claimedCount ?? 0;
-}
-
-/**
- * 判断红包是否已被当前用户领取
- *
- * 通过 sessionStore.userSession.userId 与红包 claims 列表比对，
- * 匹配到则视为已领取。
- *
- * @param message 消息视图
- * @returns 是否已被当前用户领取
- */
-function isRedPacketClaimedByMe(message: ChatMessageView): boolean {
-  const parsed = parseRedPacketMessage(message);
-  if (!parsed) return false;
-  const packet = redPacketStore.sessionPackets.find(
-    (p) => p.id === parsed.redPacketId
-  );
-  if (!packet || !packet.claims || packet.claims.length === 0) return false;
-  // sessionStore 在 messages.ts 内部使用，此处通过 messagesStore 间接获取
-  // 由于此处只需要判断"是否领取过"，使用 store 中 currentDetail 的 claims 是不足的，
-  // 真实场景由后端在 RedPacketView 中返回 claims，mock 模式默认 false。
-  return false;
-}
-
-/**
- * 处理红包点击：领取红包
- * 跳转到红包页，并通过 claimId 参数触发领取流程
- *
- * @param redPacketId 红包 ID
- */
-function handleClaimRedPacket(redPacketId: number) {
-  if (!sessionId.value) {
-    uni.showToast({ title: t("chat.moreMenuSessionMissing"), icon: "none" });
-    return;
-  }
-  uni.navigateTo({
-    url: `${ROUTES.CHAT.RED_PACKET}?sessionId=${encodeURIComponent(sessionId.value)}&claimId=${redPacketId}`,
-  });
-}
-
-/**
- * 处理红包点击：查看领取详情
- * 跳转到红包详情页（复用 vip-red-packet store 的详情查询能力）
- *
- * @param redPacketId 红包 ID
- */
-function handleViewRedPacketDetail(redPacketId: number) {
-  if (!sessionId.value) return;
-  uni.navigateTo({
-    url: `${ROUTES.CHAT.RED_PACKET}?sessionId=${encodeURIComponent(sessionId.value)}&claimId=${redPacketId}`,
-  });
-}
-
-/* ========== VoiceRecorder 集成（语音消息录制） ========== */
-
-/**
- * VoiceRecorder 录音完成回调：发送语音消息
- *
- * 流程：
- * 1. mp-weixin：拿到 tempFilePath 后通过 chatStore.sendVoice 或 messagesStore.sendMessage 发送
- * 2. H5：tempFilePath 为空，仅发送时长占位文本
- *
- * 错误处理：发送失败时 toast 提示，不阻塞用户继续操作
- *
- * @param result 录音结果（含临时文件路径与时长）
- */
-async function handleVoiceRecorded(result: RecorderStopResult) {
-  if (!sessionId.value) {
-    uni.showToast({ title: t("chat.voiceSessionClosed"), icon: "none" });
-    return;
-  }
-  if (isSessionClosed.value) {
-    uni.showToast({ title: t("chat.voiceSessionClosed"), icon: "none" });
-    return;
-  }
-
-  const currentSessionId = sessionId.value;
-  try {
-    if (isTempSession.value) {
-      // 临时匿名会话使用 chatStore 的临时聊天链路
-      await chatStore.sendVoice(result.durationSeconds);
-    } else {
-      // 私信会话使用 messagesStore 的标准私信链路（暂以占位文本发送）
-      await messagesStore.sendMessage(
-        currentSessionId,
-        t("chat.voiceMessagePlaceholder", { n: result.durationSeconds })
-      );
-    }
-    uni.showToast({ title: t("chat.voiceSendSuccess"), icon: "success" });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : t("chat.voiceSendFailed");
-    uni.showToast({ title: message, icon: "none" });
-  }
-}
-
-/**
- * VoiceRecorder 取消录音回调（用户上滑取消）
- * 静默处理，无需提示（VoiceRecorder 内部已提示"说话时间太短"）
- */
-function handleVoiceRecordCancel() {
-  // 静默处理：取消录音无需额外操作
-}
-
-/**
- * VoiceRecorder 状态变化回调
- * 用于同步页面状态，便于在录音时禁用其他操作
- *
- * @param recording 是否正在录音
- */
-function handleVoiceStateChange(recording: boolean) {
-  isRecording.value = recording;
-}
-
 // 修复（严格模式 noUnusedLocals）：noop 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
 defineExpose({ noop });
 </script>
 
 <template>
-  <AppShell
-    :title="pageTitle"
-    :subtitle="pageSubtitle"
-    show-back
-    :class="{ 'page-fade-in': pageVisible }"
-  >
+  <view class="chat-page" :class="{ 'page-fade-in': pageVisible }">
+    <!-- 顶部导航（微信风格：返回箭头 + 居中标题，无副标题） -->
+    <view class="chat-nav" role="banner" :aria-label="pageTitle">
+      <view
+        class="chat-nav__back press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        @tap="goBack"
+        role="button"
+        :aria-label="t('common.back')"
+      >
+        <image class="chat-nav__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+      </view>
+      <view class="chat-nav__title-wrap">
+        <text class="chat-nav__title">{{ pageTitle }}</text>
+      </view>
+      <view class="chat-nav__spacer" />
+    </view>
 
-    <!-- 临时匿名会话顶部提示 -->
+    <!-- 临时匿名会话顶部提示（含倒计时，原副标题信息移入此处） -->
     <view v-if="isTempSession" class="temp-banner">
       <text class="temp-banner__text">
         {{ tempSessionEnded ? t("chat.sessionEndedLabel") : t("chat.tempBannerText") }}
       </text>
-    </view>
-
-    <!-- 会话状态 -->
-    <SectionCard v-if="isTempSession" :title="t('chat.sessionStatusTitle')" compact>
-      <StatusState
-        v-if="chatStore.activeSession"
-        tone="brand"
-        :label="chatStore.activeSession.contactExchangeLabel"
-      />
-      <text class="meta-copy">
+      <text v-if="!tempSessionEnded && tempCountdown" class="temp-banner__countdown">
+        {{ t('chat.remainingTimeLabel', { time: tempCountdown }) }}
+      </text>
+      <text class="temp-banner__hint">
         {{ chatStore.activeSession?.availabilityHint || t('chat.defaultAvailabilityHint') }}
       </text>
-    </SectionCard>
+    </view>
 
-    <!-- 缘分速配：渐进解锁面板 -->
-    <SectionCard v-if="fromSignal" :title="t('messages.signalUnlockTitle')" compact>
+    <!-- 缘分速配：渐进解锁面板（压缩为横幅条） -->
+    <view v-if="fromSignal" class="signal-banner">
       <view class="signal-unlock">
         <view class="signal-unlock__progress-row">
           <text class="signal-unlock__count">{{ t('messages.signalUnlockProgress', { n: userMessageCount }) }}</text>
@@ -1137,7 +998,10 @@ defineExpose({ noop });
             class="signal-unlock__level"
             :class="{ 'signal-unlock__level--done': idx <= signalUnlockLevel, 'signal-unlock__level--next': idx === signalUnlockLevel + 1 }"
           >
-            <view class="signal-unlock__level-dot">{{ idx <= signalUnlockLevel ? '✓' : idx + 1 }}</view>
+            <view class="signal-unlock__level-dot">
+              <image v-if="idx <= signalUnlockLevel" class="signal-unlock__level-dot-icon" :src="iconSrc.checkWhite" mode="aspectFit" alt="" />
+              <text v-else>{{ idx + 1 }}</text>
+            </view>
             <text class="signal-unlock__level-text">{{ t(lv.labelKey) }}</text>
           </view>
         </view>
@@ -1147,83 +1011,74 @@ defineExpose({ noop });
           </text>
           <template v-else>
             <text class="signal-unlock__hint signal-unlock__hint--done">{{ t('messages.signalUnlockAllDone') }}</text>
-            <text class="signal-unlock__hint-action" @tap.stop="goSignalProfile">
-              {{ t('messages.signalUnlockViewProfile') }} ›
-            </text>
+            <view class="signal-unlock__hint-action" @tap.stop="goSignalProfile">
+              <text>{{ t('messages.signalUnlockViewProfile') }}</text>
+              <image class="signal-unlock__hint-arrow" :src="iconSrc.chevronRight" mode="aspectFit" alt="" />
+            </view>
           </template>
         </view>
       </view>
-    </SectionCard>
+    </view>
 
-    <!-- 消息列表 -->
-    <SectionCard :title="t('chat.messagesTitle')" compact>
-      <view v-if="pageErrorMessage" class="meta-copy">{{ pageErrorMessage }}</view>
-      <view v-else-if="messagesStore.loading" class="meta-copy">{{ t('chat.loadingSessionDetail') }}</view>
-      <view v-else-if="messagesStore.errorMessage" class="meta-copy">{{ friendlyPageError }}</view>
+    <!-- 消息滚动区（微信风格：全屏沉浸，上拉加载更早历史） -->
+    <scroll-view
+      class="chat-scroll"
+      scroll-y
+      :scroll-top="scrollTop"
+      :scroll-into-view="scrollIntoViewId"
+      :scroll-with-animation="false"
+      @scroll="onScroll"
+      @scrolltoupper="onScrollToUpper"
+    >
+      <view v-if="pageErrorMessage" class="meta-copy meta-copy--padded">{{ pageErrorMessage }}</view>
+      <view v-else-if="messagesStore.loading" class="meta-copy meta-copy--padded">{{ t('chat.loadingSessionDetail') }}</view>
+      <view v-else-if="messagesStore.errorMessage" class="meta-copy meta-copy--padded">{{ friendlyPageError }}</view>
       <view v-else class="chat-list" role="list">
-        <!-- 优先展示 messagesStore 的消息（经 DTO 转换层映射为 ChatMessageView） -->
-        <!-- 红包消息：使用 RedPacketBubble 渲染（基于 body 前缀模式识别） -->
-        <template v-for="message in currentMessagesView" :key="message.id">
-          <RedPacketBubble
-            v-if="isRedPacketMessage(message)"
-            :red-packet-id="parseRedPacketMessage(message)?.redPacketId ?? 0"
-            :blessing="parseRedPacketMessage(message)?.blessing ?? ''"
-            :status="getRedPacketStatus(message)"
-            :sender="message.sender === 'self' ? 'self' : 'peer'"
-            :total-amount="getRedPacketAmount(message)"
-            :total-count="1"
-            :claimed-count="getRedPacketClaimedCount(message)"
-            :claimed-by-me="isRedPacketClaimedByMe(message)"
-            @claim="handleClaimRedPacket"
-            @view-detail="handleViewRedPacketDetail"
-          />
-          <!-- 语音消息：使用 VoiceMessageBubble 渲染 -->
-          <VoiceMessageBubble
-            v-else-if="message.kind === 'voice'"
-            :audio-url="''"
-            :duration-seconds="message.durationSeconds ?? 0"
-            :expired="false"
-            :sender="message.sender === 'self' ? 'self' : 'peer'"
-          />
-          <!-- 普通文本/表情/系统消息：使用 ChatBubble 渲染 -->
-          <ChatBubble
-            v-else
-            :sender="message.sender"
-            :kind="message.kind"
-            :body="message.body"
-            :sent-at="message.sentAt"
-            :duration-seconds="message.durationSeconds"
-            :recalled="message.recalled"
-            :delivery-status="toChatBubbleDeliveryStatus(message.deliveryStatus)"
-            :quote-ref="message.quoteRef"
-            :quote-body="message.quoteBody"
-            :quote-sender="message.quoteSender"
-            :can-interact="true"
-            @longpress="handleMessageLongpress(message.id)"
-            @tap-quote="handleTapQuote"
-          />
+        <!-- 行模型：时间分隔条（微信 5 分钟规则）+ 消息/活动卡片 -->
+        <template v-for="row in messageRows" :key="row.key">
+          <view v-if="row.type === 'timebar'" class="chat-time-bar">{{ row.text }}</view>
+          <template v-else-if="row.message">
+            <!-- 活动卡片消息：ActivityCard 渲染（点击跳活动详情） -->
+            <ActivityCard
+              v-if="row.message.kind === 'activity' && parseActivityCard(row.message.body)"
+              :card="parseActivityCard(row.message.body)!"
+              @tap-card="openActivityCard"
+            />
+            <!-- 文本/表情/系统消息：使用 ChatBubble 渲染
+              （语音功能已移除：历史 voice 消息由 ChatBubble 按语音类型兜底展示；
+               activity 消息解析失败时也走此兜底） -->
+            <ChatBubble
+              v-else
+              :sender="row.message.sender"
+              :kind="row.message.kind"
+              :body="row.message.body"
+              :sent-at="row.message.sentAt"
+              :duration-seconds="row.message.durationSeconds"
+              :recalled="row.message.recalled"
+              :delivery-status="toChatBubbleDeliveryStatus(row.message.deliveryStatus)"
+              :quote-ref="row.message.quoteRef"
+              :quote-body="row.message.quoteBody"
+              :quote-sender="row.message.quoteSender"
+              :can-interact="true"
+              @longpress="handleMessageLongpress(row.message.id)"
+              @tap-quote="handleTapQuote"
+            />
+          </template>
         </template>
-        <!--
-          Task 1.1.2：移除重复 v-for 渲染块。
-          原实现存在两套消息渲染：
-            1. currentMessagesView（基于 messagesStore.currentMessages，主数据源）
-            2. legacyMessagesView（基于 chatStore.activeSession.messages，兜底）
-          两套渲染会导致消息重复显示，且 legacyMessagesView 在 <script setup> 中
-          未定义（运行时为 undefined），存在运行时错误风险。
-          现统一以 messagesStore 为单一数据源（Task 1.1.1），删除兜底渲染块。
-        -->
-        <text v-if="!messagesStore.currentMessages.length" class="meta-copy">
+        <text v-if="!messagesStore.currentMessages.length" class="meta-copy meta-copy--padded">
           {{ t('chat.emptySessionCreated') }}
         </text>
         <text v-if="isSessionClosed" class="meta-copy meta-copy--warning">
           {{ t('chat.sessionClosedHint') }}
         </text>
       </view>
-    </SectionCard>
+      <!-- 底部锚点：进入页面 / 新消息时滚动至此 -->
+      <view :id="BOTTOM_ANCHOR_ID" class="chat-bottom-anchor" />
+    </scroll-view>
 
-    <!-- 操作区 -->
-    <SectionCard :title="t('chat.actionsTitle')" compact>
-      <view v-if="pageErrorMessage" class="meta-copy">{{ pageErrorMessage }}</view>
+    <!-- 输入区（微信风格：输入框 + 破冰建议 + 更多操作） -->
+    <view class="chat-input-area" :class="{ 'chat-input-area--keyboard-up': keyboardHeight > 0 }">
+      <view v-if="pageErrorMessage" class="meta-copy meta-copy--padded">{{ pageErrorMessage }}</view>
       <template v-else>
         <!-- 引用上下文卡片（来自兴趣圈"打招呼"） -->
         <view v-if="quoteContext" class="quote-card card-base">
@@ -1234,7 +1089,7 @@ defineExpose({ noop });
           <text class="quote-card__author">-- {{ quoteContext.replyAuthorName }}</text>
         </view>
 
-        <!-- 破冰话题建议（消息数极少时展示） -->
+        <!-- 破冰话题建议（消息数极少时展示，2026-08-08 微信化重构保留） -->
         <IcebreakerSuggestions
           v-if="shouldShowIcebreakers"
           :items="chatStore.icebreakerItems"
@@ -1251,28 +1106,16 @@ defineExpose({ noop });
             </text>
             <text class="quote-reply-bar__body">{{ quoteReply.body }}</text>
           </view>
-          <text class="quote-reply-bar__close">✕</text>
+          <image class="quote-reply-bar__close" :src="iconSrc.close" mode="aspectFit" alt="" />
         </view>
 
-        <!-- 微信风格输入栏：语音/键盘切换 + 输入框/按住说话 + 表情/更多/发送 -->
+        <!-- 微信风格输入栏：输入框 + 表情/更多/发送（语音模式已移除，仅保留文字输入） -->
         <view
           class="wechat-input-bar"
           :class="{ 'wechat-input-bar--keyboard-up': keyboardHeight > 0 }"
         >
-          <!-- 语音/文字模式切换按钮 -->
-          <view
-            class="wechat-input-bar__icon-btn press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            @tap="toggleVoiceMode"
-          >
-            <image v-if="!isVoiceMode" class="wechat-input-bar__icon-img" :src="iconSrc.microphone" mode="aspectFit" alt="" />
-            <text v-else class="wechat-input-bar__icon-text wechat-input-bar__icon-text--keyboard">{{ t('chat.keyboardIconText') }}</text>
-          </view>
-
-          <!-- 文字模式：输入框 -->
+          <!-- 输入框 -->
           <input
-            v-if="!isVoiceMode"
             v-model="draft"
             class="wechat-input-bar__input"
             :disabled="isSessionClosed"
@@ -1284,16 +1127,7 @@ defineExpose({ noop });
             @keyboardheightchange="onKeyboardHeightChange" :aria-label="isSessionClosed ? t('chat.inputPlaceholderClosed') : (quoteReply ? t('chat.inputPlaceholderReply') : t('chat.inputPlaceholderMessage'))"
           />
 
-          <!-- 语音模式：按住说话按钮（使用 VoiceRecorder 组件） -->
-          <VoiceRecorder
-            v-else
-            :disabled="isSessionClosed"
-            @recorded="handleVoiceRecorded"
-            @cancel="handleVoiceRecordCancel"
-            @state-change="handleVoiceStateChange"
-          />
-
-          <template v-if="!inputFocused && !isVoiceMode">
+          <template v-if="!inputFocused">
             <view
               class="wechat-input-bar__icon-btn press-feedback"
               hover-class="press-feedback--active"
@@ -1311,7 +1145,7 @@ defineExpose({ noop });
             </view>
           </template>
           <view
-            v-else-if="!isVoiceMode"
+            v-else
             class="wechat-input-bar__send press-feedback"
             :class="{ 'wechat-input-bar__send--active': canSend }"
             hover-class="press-feedback--active"
@@ -1347,7 +1181,7 @@ defineExpose({ noop });
           </view>
         </view>
       </template>
-    </SectionCard>
+    </view>
 
     <!--
       长按菜单遮罩：遮罩点击关闭，内容区阻止冒泡（P2 弹窗遮罩点击关闭）。
@@ -1412,7 +1246,7 @@ defineExpose({ noop });
       </view>
     </view>
 
-    <!-- "+" 更多菜单：红包 / 视频通话 -->
+    <!-- "+" 更多菜单：视频通话 -->
     <view
       v-if="moreMenuVisible"
       class="more-menu-overlay"
@@ -1429,20 +1263,6 @@ defineExpose({ noop });
           <text class="more-menu-sheet__title-text">{{ t('chat.moreMenuTitle') }}</text>
         </view>
         <view class="more-menu-sheet__grid">
-          <view
-            v-if="featureFlags.redPacketEnabled"
-            class="more-menu-item press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            @tap="goRedPacket"
-            role="button"
-            :aria-label="t('chatRedPacket.entryLabel')"
-          >
-            <view class="more-menu-item__icon more-menu-item__icon--red">
-              <image class="more-menu-item__icon-emoji" :src="chatMenuIcons.redPacket" mode="aspectFit" alt="" />
-            </view>
-            <text class="more-menu-item__label">{{ t('chatRedPacket.entryLabel') }}</text>
-          </view>
           <view
             v-if="featureFlags.videoCallEnabled"
             class="more-menu-item press-feedback"
@@ -1470,22 +1290,153 @@ defineExpose({ noop });
         </view>
       </view>
     </view>
-  </AppShell>
+  </view>
 </template>
 
 <style scoped lang="scss">
+/* ========== 微信风格全屏布局（2026-08-08 重构） ========== */
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--c-bg-page);
+  overflow: hidden;
+}
+
+/* 顶部导航：返回箭头 + 居中标题（微信聊天页风格） */
+.chat-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + 12rpx) var(--sp-4) var(--sp-2);
+  background: var(--c-bg-page);
+  flex-shrink: 0;
+}
+
+.chat-nav__back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-border-light);
+  flex-shrink: 0;
+}
+
+.chat-nav__back-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.chat-nav__title-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--sp-2);
+}
+
+.chat-nav__title {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  color: var(--c-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-nav__spacer {
+  width: 64rpx;
+  flex-shrink: 0;
+}
+
+/* 消息滚动区：flex 子项必须 min-height:0（mp-weixin） */
+.chat-scroll {
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--sp-3);
+  box-sizing: border-box;
+}
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: var(--sp-3) 0;
+}
+
+/* 微信式时间分隔条：居中灰字，无底色 */
+.chat-time-bar {
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary);
+  padding: var(--sp-3) 0;
+  flex-shrink: 0;
+}
+
+.chat-bottom-anchor {
+  height: 1rpx;
+}
+
+/* 输入区：flex-shrink:0 + 底部安全区 */
+.chat-input-area {
+  flex-shrink: 0;
+  padding: var(--sp-2) var(--sp-4) calc(env(safe-area-inset-bottom) + var(--sp-2));
+  background: var(--c-bg-container);
+  border-top: 1rpx solid var(--c-divider-light);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.chat-input-area--keyboard-up {
+  padding-bottom: var(--sp-3);
+}
+
+.meta-copy--padded {
+  padding: var(--sp-4);
+}
+
 .temp-banner {
-  padding: var(--sp-4) var(--sp-6);
+  margin: var(--sp-2) var(--sp-4) 0;
+  padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-lg);
   background: linear-gradient(135deg, var(--c-brand-50) 0%, var(--c-romance-50) 100%);
   border: 1rpx solid var(--c-brand-shadow-tint);
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  flex-shrink: 0;
 }
 
 .temp-banner__text {
   font-size: var(--fs-base);
   color: var(--c-romance-500);
   font-weight: 600;
+}
+
+.temp-banner__countdown {
+  font-size: var(--fs-sm);
+  color: var(--c-romance-500);
+  font-weight: 500;
+}
+
+.temp-banner__hint {
+  font-size: var(--fs-xs);
+  color: var(--c-text-secondary);
+}
+
+/* 缘分速配：渐进解锁压缩横幅 */
+.signal-banner {
+  margin: var(--sp-2) var(--sp-4) 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-border-light);
+  flex-shrink: 0;
 }
 
 .meta-copy {
@@ -1575,6 +1526,11 @@ defineExpose({ noop });
   flex-shrink: 0;
 }
 
+.signal-unlock__level-dot-icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
 .signal-unlock__level--done .signal-unlock__level-dot {
   background: var(--c-brand-500);
   border-color: var(--c-brand-500);
@@ -1610,9 +1566,18 @@ defineExpose({ noop });
 }
 
 .signal-unlock__hint-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 2rpx;
   font-size: var(--fs-sm);
   color: var(--c-romance-500);
   font-weight: 600;
+}
+
+.signal-unlock__hint-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  flex-shrink: 0;
 }
 
 .chat-list {
@@ -1733,39 +1698,7 @@ defineExpose({ noop });
   box-shadow: var(--s-brand-md);
 }
 
-/* 语音模式：按住说话按钮 */
-.wechat-input-bar__voice-hold {
-  flex: 1;
-  height: 64rpx;
-  border-radius: var(--r-md);
-  background: var(--c-neutral-50);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1rpx solid var(--c-border-light);
-}
-
-.wechat-input-bar__voice-hold--recording {
-  background: var(--c-error);
-  border-color: var(--c-error);
-}
-
-.wechat-input-bar__voice-hold-text {
-  font-size: var(--fs-lg);
-  color: var(--c-text-primary);
-  font-weight: 600;
-}
-
-.wechat-input-bar__voice-hold--recording .wechat-input-bar__voice-hold-text {
-  color: var(--c-text-inverse);
-}
-
-/* 键盘切换按钮文字样式 */
-.wechat-input-bar__icon-text--keyboard {
-  font-size: var(--fs-base);
-  color: var(--c-text-secondary);
-  font-weight: 700;
-}
+/* 语音功能已移除：voice-hold 按住说话按钮样式与键盘切换按钮文字样式一并下线 */
 
 /* ========== 临时会话操作按钮 ========== */
 .temp-action-row {
@@ -1915,8 +1848,8 @@ defineExpose({ noop });
 }
 
 .quote-reply-bar__close {
-  font-size: var(--fs-lg);
-  color: var(--c-text-tertiary);
+  width: 28rpx;
+  height: 28rpx;
   padding: var(--sp-2);
   flex-shrink: 0;
 }
@@ -1976,7 +1909,7 @@ defineExpose({ noop });
 }
 
 
-/* ========== "+" 更多菜单（红包 / 视频通话） ========== */
+/* ========== "+" 更多菜单（视频通话） ========== */
 .more-menu-overlay {
   position: fixed;
   top: 0;

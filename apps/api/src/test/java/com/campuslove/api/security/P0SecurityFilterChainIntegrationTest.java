@@ -109,8 +109,7 @@ class P0SecurityFilterChainIntegrationTest {
     @MockBean private com.campuslove.api.repository.UserBasicProfileRepository userBasicProfileRepository;
     @MockBean private com.campuslove.api.repository.MediaAssetRepository mediaAssetRepository;
     @MockBean private com.campuslove.api.repository.SocialProgressRepository socialProgressRepository;
-    @MockBean private com.campuslove.api.repository.VipRedPacketRepository vipRedPacketRepository;
-    @MockBean private com.campuslove.api.repository.VipRedPacketClaimRepository vipRedPacketClaimRepository;
+    // VIP 红包已下线（2026-08-09 remove_red_packet）：两个 Repository 已删除，不再 mock
     @MockBean private com.campuslove.api.repository.VipBillRepository vipBillRepository;
     @MockBean private com.campuslove.api.repository.VideoCallRepository videoCallRepository;
 

@@ -14,6 +14,8 @@ public record CreatePostRequest(
     @NotBlank @Size(max = 5000) String content,
     @NotBlank String category,
     @Size(max = 20) List<@Size(max = 20) String> tags,
-    @Size(max = 9) List<String> images
+    @Size(max = 9) List<String> images,
+    // 2026-08-09 帖子关联活动：可选的活动 ID（无效值由服务层宽松置 null）
+    Long activityId
 ) {
 }

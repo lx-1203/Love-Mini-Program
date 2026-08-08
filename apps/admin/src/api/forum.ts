@@ -86,6 +86,10 @@ export interface VillagePostSummary {
   commentsCount: number;
   /** 转发数 */
   shareCount: number;
+  /** 浏览量（2026-08-08 论坛互动真实化新增） */
+  viewCount: number;
+  /** 收藏数（2026-08-08 论坛互动真实化新增） */
+  favoriteCount: number;
   /** 创建时间 */
   createdAt: string;
   /** 审核时间（未审核为 null） */
@@ -130,10 +134,42 @@ export interface VillagePostDetail {
   commentsCount: number;
   /** 转发数 */
   shareCount: number;
+  /** 浏览量（2026-08-08 论坛互动真实化新增） */
+  viewCount: number;
+  /** 收藏数（2026-08-08 论坛互动真实化新增） */
+  favoriteCount: number;
   /** 创建时间 */
   createdAt: string;
   /** 最近更新时间 */
   updatedAt: string;
+}
+
+/**
+ * 帖子浏览者视图（对应后端 AdminPostViewerView，2026-08-08 新增）。
+ */
+export interface PostViewer {
+  /** 浏览者用户 ID */
+  userId: number;
+  /** 浏览者昵称 */
+  nickname: string | null;
+  /** 浏览者头像 URL */
+  avatarUrl: string | null;
+  /** 最近浏览时间 */
+  viewedAt: string;
+}
+
+/**
+ * 分页查询帖子的浏览记录（后台可见）。
+ * GET /api/v1/admin/forum/village-posts/{id}/views
+ */
+export function listPostViewers(
+  id: number,
+  query: { page?: number; pageSize?: number } = {}
+): Promise<AdminPageView<PostViewer>> {
+  return get<AdminPageView<PostViewer>>(
+    `/v1/admin/forum/village-posts/${id}/views`,
+    query as Record<string, unknown>
+  );
 }
 
 /** 村落动态列表查询参数 */

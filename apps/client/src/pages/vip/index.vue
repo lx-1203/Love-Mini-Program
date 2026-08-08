@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * VIP 开通页
  * 展示 VIP 权益 + 套餐选择 + 立即开通
@@ -6,7 +6,7 @@
  *
  * 增量功能（首批 VIP 相关）：
  * - 自动续费开关：调用 useAutoRenewStore 查询与切换
- * - 入口跳转：VIP 红包 / 优惠码 / 账单记录
+ * - 入口跳转：优惠码 / 账单记录
  *
  * mp-weixin 兼容：
  * - 使用 @tap / hover-class 而非 click / :hover
@@ -88,7 +88,6 @@ onUnmounted(() => {
 
 /** VIP 权益列表 */
 const vipEntryIcons = {
-  redPacket: IMAGE_PATHS.ICONS_EMOJI.GIFT,
   ticket: IMAGE_PATHS.ICONS_EMOJI.TICKET,
   bills: IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD,
 } as const;
@@ -324,12 +323,6 @@ async function toggleAutoRenew() {
 
 /* ========== VIP 相关功能入口 ========== */
 
-/** 跳转到 VIP 红包页 */
-function goRedPacket() {
-  lightHaptic();
-  uni.navigateTo({ url: ROUTES.VIP.RED_PACKET });
-}
-
 /** 跳转到 VIP 优惠码页 */
 function goPromoCode() {
   lightHaptic();
@@ -433,7 +426,7 @@ onMounted(() => {
 
           <!-- 选中标记 -->
           <view v-if="plan.id === selectedPlanId" class="plan-card__check">
-            <text class="plan-card__check-icon">✓</text>
+            <image class="plan-card__check-icon" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_SVG" mode="aspectFit" alt="" />
           </view>
 
           <!-- 套餐名称 -->
@@ -488,16 +481,6 @@ onMounted(() => {
     <!-- VIP 相关功能入口 -->
     <view class="section">
       <view class="entry-list" role="list">
-        <view
-          class="entry-item press-feedback"
-          @tap="goRedPacket"
-          hover-class="entry-item--hover"
-          hover-stay-time="100"
-        >
-          <image class="entry-item__icon" :src="vipEntryIcons.redPacket" mode="aspectFit" alt="" />
-          <text class="entry-item__label">{{ t('vip.redPacketNavTitle') }}</text>
-          <text class="entry-item__arrow">›</text>
-        </view>
         <view
           class="entry-item press-feedback"
           @tap="goPromoCode"
@@ -813,10 +796,8 @@ onMounted(() => {
 }
 
 .plan-card__check-icon {
-  font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-vip-dark);
-  font-weight: 700;
-  line-height: 1;
+  width: 22rpx;
+  height: 22rpx;
 }
 
 .plan-card__name {

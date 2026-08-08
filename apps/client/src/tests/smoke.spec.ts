@@ -153,8 +153,9 @@ describe("haptic - 不抛错契约", () => {
     expect(() => errorHaptic()).not.toThrow();
   });
 
-  it("haptic 调用 uni.vibrateShort 失败时不应影响调用方", () => {
-    // 模拟 uni.vibrateShort 抛错，验证 try/catch 生效
+  it("2026-08-08 产品要求禁用震动：haptic 不再调用 uni.vibrateShort", () => {
+    // 产品要求全站禁用震动（vibrateWithType 直接 return）：
+    // 即使 uni.vibrateShort 存在也不得被调用，调用方不受影响
     const originalVibrate = (globalThis as any).uni?.vibrateShort;
     const mockVibrate = vi.fn(() => {
       throw new Error("not supported");
@@ -164,7 +165,7 @@ describe("haptic - 不抛错契约", () => {
 
     try {
       expect(() => lightHaptic()).not.toThrow();
-      expect(mockVibrate).toHaveBeenCalled();
+      expect(mockVibrate).not.toHaveBeenCalled();
     } finally {
       // 还原：若原方法存在则还原，否则删除 mock
       if (originalVibrate) {
