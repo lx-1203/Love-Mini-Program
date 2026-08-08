@@ -1,0 +1,4 @@
+# R4 修复认领表（Phase 2 使用）
+# 每批开始前，修复代理把「将编辑的文件」登记在此表；冲突由主代理裁决。
+# 格式：批次|代理代号|文件路径|R4 条目范围|状态(claimed/done)
+batch-1|B1-1|apps/api/src/main/resources/application.yml|R4-P0-安全|claimed
