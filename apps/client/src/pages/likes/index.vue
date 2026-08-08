@@ -31,12 +31,18 @@ import { lightHaptic, successHaptic, errorHaptic } from "../../utils/haptic";
 import { showErrorToast } from "../../utils/error-toast";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
+// 2026-08-08 走查 P1：喜欢页「前 2 条免费 + 其余打码 + 解锁全部」（与喜欢与访客独立页规则统一）
+import { useVipStore } from "../../stores/vip";
+import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
+import { featureFlags } from "../../config/feature-flags";
 
 type TabType = "likedBy" | "myLikes" | "visitors";
 
 const { t } = useI18n();
 const likesStore = useLikesStore();
 const sessionStore = useSessionStore();
+const vipStore = useVipStore();
+const coinsStore = useCoinsStore();
 
 // Phase 4 任务 20：接入页面访问守卫，触发 UnlockGuideModal 引导（替代静默重定向）
 usePageAccess(likesPageRequirements);
@@ -122,6 +128,82 @@ function handleClearSearch(): void {
 
 /** 当前激活的标签页（提前声明，便于 visibleUserIds / watch 引用） */
 const activeTab = ref<TabType>("likedBy");
+
+/* ========== 2026-08-08 走查 P1：前 2 条免费 + 解锁全部（与喜欢与访客独立页规则统一） ========== */
+
+/** 单条记录是否已解锁（服务端 unlocked 字段；缺失按未解锁处理） */
+function isItemUnlocked(item: { unlocked?: boolean }): boolean {
+  return item.unlocked === true;
+}
+
+/** 当前 Tab（喜欢我的/访客）是否仍有未解锁项（驱动底部「解锁全部」按钮显隐；我喜欢的恒可看） */
+const hasLockedItems = computed(() => {
+  if (activeTab.value === "likedBy") {
+    return displayLikedBy.value.some((item) => item.unlocked !== true);
+  }
+  if (activeTab.value === "visitors") {
+    return displayVisitors.value.some((item) => item.unlocked !== true);
+  }
+  return false;
+});
+
+/** 当前 Tab 解锁单价（元，仅用于文案展示；实际扣费由服务端 /wallet/unlock 定价） */
+const unlockCost = computed(() =>
+  UNLOCK_COST_YUAN[activeTab.value === "likedBy" ? "LIKES" : "VISITORS"],
+);
+
+/**
+ * 解锁当前 Tab 全部未解锁记录（与 likes-visitors 独立页同一套逻辑）。
+ * VIP 免费放行（受 featureFlags.membershipEnabled 门控）；非 VIP 逐条调用
+ * POST /api/v1/wallet/unlock（服务端幂等），成功后更新 unlocked 并刷新余额。
+ */
+async function handleUnlock() {
+  const lockedItems = activeTab.value === "likedBy"
+    ? displayLikedBy.value.filter((item) => item.unlocked !== true)
+    : displayVisitors.value.filter((item) => item.unlocked !== true);
+  if (lockedItems.length === 0) return;
+
+  // VIP 免费放行：仅当会员功能启用时生效
+  if (featureFlags.membershipEnabled && vipStore.isVip) {
+    for (const item of lockedItems) {
+      item.unlocked = true;
+    }
+    uni.showToast({ title: t("likesVisitors.unlockVipFree"), icon: "success" });
+    return;
+  }
+
+  const confirmed = await new Promise<boolean>((resolve) => {
+    uni.showModal({
+      title: t("likesVisitors.unlockTitle"),
+      content: t("likesVisitors.unlockConfirm", { coins: unlockCost.value, count: lockedItems.length }),
+      confirmText: t("likesVisitors.unlockConfirmBtn"),
+      cancelText: t("common.cancel"),
+      success: (res) => resolve(!!res.confirm),
+      fail: () => resolve(false),
+    });
+  });
+  if (!confirmed) return;
+
+  const targetType = activeTab.value === "likedBy" ? "LIKED_ME" : "VISITOR";
+  let lastBalance = 0;
+  try {
+    for (const item of lockedItems) {
+      const result = await likesStore.unlockUser(targetType, item.userId);
+      lastBalance = result.balance ?? lastBalance;
+      item.unlocked = true;
+    }
+    // 解锁成功后刷新余额显示
+    void coinsStore.fetchBalance(true).catch(() => {
+      // 余额刷新失败不阻塞（下次进入钱包页自动重取）
+    });
+    uni.showToast({ title: t("likesVisitors.unlockSuccess"), icon: "success" });
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : t("likesVisitors.unlockFail"),
+      icon: "none",
+    });
+  }
+}
 
 /* ========== 功能1：批量操作相关状态 ========== */
 /**
@@ -528,8 +610,8 @@ function retryLoad(): void {
             hover-stay-time="120"
             :style="{ animationDelay: idx * 60 + 'ms' }"
             role="button"
-            :aria-label="item.name || item.userId"
-            @tap="batchMode ? handleToggleSelect(item.userId) : handleItemClick(item.userId)"
+            :aria-label="isItemUnlocked(item) ? (item.name || item.userId) : t('likesVisitors.nameHidden')"
+            @tap="batchMode ? handleToggleSelect(item.userId) : (isItemUnlocked(item) ? handleItemClick(item.userId) : undefined)"
           >
             <!-- 功能1：批量模式下的 checkbox -->
             <view
@@ -539,24 +621,31 @@ function retryLoad(): void {
             >
               <text v-if="selectedIds.includes(item.userId)" class="likes-card__check-icon">✓</text>
             </view>
+            <!-- 2026-08-08 走查 P1：未解锁 → 头像模糊 + 锁标识，昵称/签名隐藏 -->
             <view class="likes-card__avatar-wrap">
               <image
                 v-if="item.avatar"
                 class="likes-card__avatar"
+                :class="{ 'likes-card__avatar--blur': !isItemUnlocked(item) }"
                 :src="resolveMediaUrl(item.avatar)"
                 mode="aspectFill"
                 lazy-load alt=""
               />
               <view v-else class="likes-card__avatar-placeholder">
-                <text class="likes-card__avatar-initial">{{ (item.name || '?').charAt(0) }}</text>
+                <text class="likes-card__avatar-initial">{{ isItemUnlocked(item) ? (item.name || '?').charAt(0) : '?' }}</text>
+              </view>
+              <view v-if="!isItemUnlocked(item)" class="likes-card__lock">
+                <image class="likes-card__lock-icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" alt="" />
               </view>
             </view>
             <view class="likes-card__info">
               <view class="likes-card__row">
                 <view class="likes-card__name-wrap">
-                  <text class="likes-card__name">{{ item.name }}</text>
+                  <text class="likes-card__name" :class="{ 'likes-card__name--hidden': !isItemUnlocked(item) }">
+                    {{ isItemUnlocked(item) ? item.name : t("likesVisitors.nameHidden") }}
+                  </text>
                   <VerificationBadge
-                    v-if="item.verificationBadgeLevel && item.verificationBadgeLevel !== 'none'"
+                    v-if="isItemUnlocked(item) && item.verificationBadgeLevel && item.verificationBadgeLevel !== 'none'"
                     :level="(item.verificationBadgeLevel as 'school' | 'email' | 'idcard')"
                     size="sm"
                     :show-cta-when-none="false"
@@ -564,7 +653,7 @@ function retryLoad(): void {
                 </view>
                 <text class="likes-card__time">{{ formatTime(item.likedAt) }}</text>
               </view>
-              <text class="likes-card__headline">{{ item.headline }}</text>
+              <text v-if="isItemUnlocked(item)" class="likes-card__headline">{{ item.headline }}</text>
             </view>
             <view v-if="!batchMode" class="likes-card__arrow">
               <text class="likes-card__arrow-icon">›</text>
@@ -665,8 +754,8 @@ function retryLoad(): void {
             hover-stay-time="120"
             :style="{ animationDelay: idx * 60 + 'ms' }"
             role="button"
-            :aria-label="item.name || item.userId"
-            @tap="batchMode ? handleToggleSelect(item.userId) : handleItemClick(item.userId)"
+            :aria-label="isItemUnlocked(item) ? (item.name || item.userId) : t('likesVisitors.nameHidden')"
+            @tap="batchMode ? handleToggleSelect(item.userId) : (isItemUnlocked(item) ? handleItemClick(item.userId) : undefined)"
           >
             <!-- 功能1：批量模式下的 checkbox -->
             <view
@@ -676,26 +765,33 @@ function retryLoad(): void {
             >
               <text v-if="selectedIds.includes(item.userId)" class="likes-card__check-icon">✓</text>
             </view>
+            <!-- 2026-08-08 走查 P1：未解锁 → 头像模糊 + 锁标识，昵称/签名隐藏 -->
             <view class="likes-card__avatar-wrap">
               <image
                 v-if="item.avatar"
                 class="likes-card__avatar"
+                :class="{ 'likes-card__avatar--blur': !isItemUnlocked(item) }"
                 :src="resolveMediaUrl(item.avatar)"
                 mode="aspectFill"
                 lazy-load alt=""
               />
               <view v-else class="likes-card__avatar-placeholder">
-                <text class="likes-card__avatar-initial">{{ (item.name || '?').charAt(0) }}</text>
+                <text class="likes-card__avatar-initial">{{ isItemUnlocked(item) ? (item.name || '?').charAt(0) : '?' }}</text>
               </view>
               <!-- 新访客标记 -->
               <view v-if="item.isNew" class="likes-card__new-dot" />
+              <view v-if="!isItemUnlocked(item)" class="likes-card__lock">
+                <image class="likes-card__lock-icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" alt="" />
+              </view>
             </view>
             <view class="likes-card__info">
               <view class="likes-card__row">
                 <view class="likes-card__name-wrap">
-                  <text class="likes-card__name">{{ item.name }}</text>
+                  <text class="likes-card__name" :class="{ 'likes-card__name--hidden': !isItemUnlocked(item) }">
+                    {{ isItemUnlocked(item) ? item.name : t("likesVisitors.nameHidden") }}
+                  </text>
                   <VerificationBadge
-                    v-if="item.verificationBadgeLevel && item.verificationBadgeLevel !== 'none'"
+                    v-if="isItemUnlocked(item) && item.verificationBadgeLevel && item.verificationBadgeLevel !== 'none'"
                     :level="(item.verificationBadgeLevel as 'school' | 'email' | 'idcard')"
                     size="sm"
                     :show-cta-when-none="false"
@@ -703,7 +799,7 @@ function retryLoad(): void {
                 </view>
                 <text class="likes-card__time">{{ formatTime(item.visitedAt) }}</text>
               </view>
-              <text class="likes-card__headline">{{ item.headline }}</text>
+              <text v-if="isItemUnlocked(item)" class="likes-card__headline">{{ item.headline }}</text>
             </view>
             <view v-if="!batchMode" class="likes-card__arrow">
               <text class="likes-card__arrow-icon">›</text>
@@ -777,6 +873,20 @@ function retryLoad(): void {
           {{ t('likes.selectedCount', { n: selectedCount }) }}
         </text>
       </view>
+
+      <!-- 2026-08-08 走查 P1：底部固定「解锁全部」按钮（非批量模式 + 存在未解锁项时显示） -->
+      <view v-if="hasLockedItems && !batchMode" class="likes-unlock-bar">
+        <button
+          class="likes-unlock-bar__btn"
+          :aria-label="t('likesVisitors.unlockBtn', { coins: unlockCost })"
+          @tap="handleUnlock"
+        >
+          <text class="likes-unlock-bar__btn-text">{{ t('likesVisitors.unlockBtn', { coins: unlockCost }) }}</text>
+        </button>
+        <text class="likes-unlock-bar__hint">{{ t('likesVisitors.unlockHint') }}</text>
+      </view>
+      <!-- 底部安全区占位（避免内容被固定按钮遮挡） -->
+      <view v-if="hasLockedItems && !batchMode" class="likes-unlock-bar-spacer" />
     </template>
   </view>
 </template>
@@ -1026,6 +1136,34 @@ function retryLoad(): void {
   border: var(--sp-1) solid var(--c-bg-brand);
 }
 
+/* 2026-08-08 走查 P1：未解锁 → 头像模糊 + 昵称隐藏 */
+.likes-card__avatar--blur {
+  filter: blur(14rpx);
+}
+
+.likes-card__name--hidden {
+  color: var(--c-text-tertiary);
+}
+
+.likes-card__lock {
+  position: absolute;
+  right: -4rpx;
+  bottom: -4rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: var(--r-full);
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.likes-card__lock-icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
 .likes-card__avatar-placeholder {
   width: 104rpx;
   height: 104rpx;
@@ -1219,6 +1357,50 @@ function retryLoad(): void {
   bottom: 0;
   /* 兼容 iPhone X+ 底部安全区 */
   bottom: calc(env(safe-area-inset-bottom) + 0rpx);
+}
+
+/* 2026-08-08 走查 P1：底部「解锁全部」栏（固定，样式对齐 likes-visitors 独立页） */
+.likes-unlock-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 0rpx);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-8) var(--sp-5);
+  background: var(--c-bg-container);
+  border-top: 1rpx solid var(--c-neutral-100);
+  box-shadow: 0 -8rpx 32rpx rgba(0, 0, 0, 0.08);
+}
+
+.likes-unlock-bar__btn {
+  width: 100%;
+  height: 88rpx;
+  border-radius: var(--r-full);
+  background: var(--c-gradient-brand);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.likes-unlock-bar__btn-text {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.likes-unlock-bar__hint {
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-text-tertiary);
+}
+
+.likes-unlock-bar-spacer {
+  height: 200rpx;
+}
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -52,29 +52,35 @@ public class VillagePostService {
      * </ol>
      *
      * @param userId   作者用户 ID
+     * @param title    帖子标题（2026-08-08 走查 P1：必填 5-30 字）
      * @param content  帖子正文
      * @param images   图片 URL 列表（可为 null）
      * @param tags     标签列表（可为 null，将进行敏感词过滤）
      * @param category 分类（可为 null，默认 PostCategory.all）
      * @return 帖子详情视图（isAuthor=true）
-     * @throws IllegalArgumentException 当 userId 或 content 为空时
+     * @throws IllegalArgumentException 当 userId/content/title 为空或 title 长度不合法时
      */
     @Transactional
     @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
-    public PostDetailView createPost(Long userId, String content, List<String> images, List<String> tags, String category) {
+    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
+        }
+        if (title == null || title.trim().length() < 5 || title.trim().length() > 30) {
+            throw new IllegalArgumentException("帖子标题必填，长度需为 5-30 字");
         }
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("content is required");
         }
 
+        String filteredTitle = sensitiveWordFilter.filterWithLog(title.trim(), userId, "POST");
         String filteredContent = sensitiveWordFilter.filterWithLog(content, userId, "POST");
         List<String> filteredTags = filterTagList(tags, userId);
 
         LocalDateTime now = LocalDateTime.now();
         Post post = new Post();
         post.setAuthorId(userId);
+        post.setTitle(filteredTitle);
         post.setContent(filteredContent);
         post.setImages(queryService.toJsonString(images));
         post.setTags(queryService.toJsonString(filteredTags));

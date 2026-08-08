@@ -80,7 +80,7 @@ public class VillageViewMapper {
         String summary = truncate(post.getContent(), 120);
         boolean isAlumni = !myCampusName.isEmpty() && isSameCampus(post.getAuthorId(), myCampusName);
         boolean isFollowed = followedUserIds != null && followedUserIds.contains(post.getAuthorId());
-        return new PostSummaryView(post.getId(), null, summary, author, post.getCategory().name(),
+        return new PostSummaryView(post.getId(), post.getTitle(), summary, author, post.getCategory().name(),
                 tags, post.getLikesCount(), post.getCommentsCount(), post.getShareCount(),
                 post.getCreatedAt().toString(), post.getLikesCount() >= HOT_POST_THRESHOLD, isAlumni,
                 isFollowed);
@@ -188,7 +188,7 @@ public class VillageViewMapper {
                     .map(UserCampusProfile::getCampusName).orElse("");
             isAlumni = !currentUserCampus.isBlank() && currentUserCampus.equals(authorCampus);
         }
-        return new PostDetailView(post.getId(), null, post.getContent(), author,
+        return new PostDetailView(post.getId(), post.getTitle(), post.getContent(), author,
                 post.getCategory().name(), tags, images, post.getLikesCount(),
                 post.getCommentsCount(), post.getShareCount(), post.getCreatedAt().toString(),
                 post.getUpdatedAt().toString(), isLiked, isAuthor, isAlumni);

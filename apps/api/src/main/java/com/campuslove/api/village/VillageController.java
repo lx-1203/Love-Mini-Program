@@ -97,7 +97,7 @@ public class VillageController {
   public ApiResponse<PostDetailView> createPost(
       @Valid @RequestBody CreatePostRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    PostDetailView view = villageService.createPost(userId, request.content(), request.images(), request.tags(), request.category());
+    PostDetailView view = villageService.createPost(userId, request.title(), request.content(), request.images(), request.tags(), request.category());
     // 监控：记录帖子创建事件
     try {
       villageMetrics.recordPostCreated();

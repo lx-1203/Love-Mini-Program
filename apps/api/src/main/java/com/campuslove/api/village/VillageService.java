@@ -116,16 +116,17 @@ public interface VillageService {
     PostDetailView getPost(Long postId);
 
     /**
-     * 创建新帖子。
+     * 创建新帖子（Phase 1 兼容签名，title 为 null 时由服务层校验拒绝）。
      *
      * @param userId  作者用户 ID
+     * @param title   帖子标题（2026-08-08 走查 P1：必填 5-30 字）
      * @param content 帖子内容
      * @param images  图片 URL 列表
      * @param tags    标签列表
      * @param category 分类
      * @return 帖子详情视图
      */
-    PostDetailView createPost(Long userId, String content, List<String> images, List<String> tags, String category);
+    PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category);
 
     /**
      * 点赞帖子（切换点赞状态）。

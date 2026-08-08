@@ -1244,6 +1244,8 @@ export default {
       replyToPlaceholder: "回复 @{name}",
       replyingTo: "正在回复 {name}",
       cancelReply: "取消回复",
+      /* 2026-08-08 走查 P1：贴吧式楼层号（1F/2F/...） */
+      floorLabel: "{n}F",
       /* 相似作者推荐 */
       similarTitle: "你可能还想认识",
       similarSubtitle: "兴趣相投的同学",

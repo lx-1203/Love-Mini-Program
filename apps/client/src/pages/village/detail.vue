@@ -54,6 +54,38 @@ const isSharing = ref(false);
 const showReportDialog = ref(false);
 
 /**
+ * 2026-08-08 走查 P1：帖子收藏（主楼互动五件套补全）。
+ * 后端暂无收藏表/接口，采用前端本地态（uni storage 按帖子 ID 持久化）：
+ * 仅在当前端生效，跨端/换设备不共享（接入后端后替换为接口调用）。
+ */
+const COLLECT_STORAGE_KEY = "village_collected_posts";
+const collectedPosts = ref<Set<string>>(
+  new Set(uni.getStorageSync(COLLECT_STORAGE_KEY) || [])
+);
+const isCollected = computed(() => {
+  const id = currentPost.value?.id;
+  return !!id && collectedPosts.value.has(String(id));
+});
+
+function toggleCollect() {
+  const id = currentPost.value?.id;
+  if (!id) return;
+  const key = String(id);
+  const next = new Set(collectedPosts.value);
+  if (next.has(key)) {
+    next.delete(key);
+  } else {
+    next.add(key);
+  }
+  collectedPosts.value = next;
+  uni.setStorageSync(COLLECT_STORAGE_KEY, Array.from(next));
+  uni.showToast({
+    title: isCollected.value ? t("discover.collected") : t("discover.collect"),
+    icon: "none",
+  });
+}
+
+/**
  * SubTask 5.5.2：图片加载失败 key 集合。
  *
  * <p>记录已触发 @error 的图片唯一 key，模板通过 contains 判断切换为占位元素，
@@ -656,7 +688,7 @@ defineExpose({ handleCommentLike, noop });
         <!-- 评论列表（P1-02 楼中楼：根评论 + 缩进子评论） -->
         <view v-else-if="comments.length > 0" class="comments-list" role="list">
           <view
-            v-for="comment in comments" :key="comment.id"
+            v-for="(comment, idx) in comments" :key="comment.id"
             class="comment-item list-item"
             @longpress="handleReportComment(comment)"
           >
@@ -672,6 +704,8 @@ defineExpose({ handleCommentLike, noop });
             </view>
             <view class="comment-content">
               <view class="comment-header">
+                <!-- 2026-08-08 走查 P1：贴吧式楼层号（1F/2F/...） -->
+                <text class="comment-floor">{{ t("village.detail.floorLabel", { n: idx + 1 }) }}</text>
                 <text class="comment-author">{{ comment.author.name }}</text>
                 <text class="comment-time">{{ formatRelativeTime(comment.createdAt) }}</text>
               </view>
@@ -859,6 +893,18 @@ defineExpose({ handleCommentLike, noop });
         >
           <text class="footer-action__icon">{{ currentPost.isShared ? t("village.detail.shared") : t("village.detail.shareAction") }}</text>
           <text v-if="currentPost.shares > 0" class="footer-action__count">{{ currentPost.shares }}</text>
+        </view>
+        <!-- 收藏按钮（2026-08-08 走查 P1：主楼互动五件套补全；前端本地态，后端接口接入后替换） -->
+        <view
+          class="footer-action press-feedback"
+          :class="{ 'footer-action--active': isCollected }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="isCollected ? t('discover.collected') : t('discover.collect')"
+          @tap="toggleCollect"
+        >
+          <text class="footer-action__icon">{{ isCollected ? t("discover.collected") : t("discover.collect") }}</text>
         </view>
         <!-- 私信按钮 -->
         <view class="footer-action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.sendMessageAria')" @tap="sendMessage">
@@ -1726,6 +1772,17 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   gap: 16rpx;
   margin-bottom: 8rpx;
+}
+
+/* 2026-08-08 走查 P1：贴吧式楼层号（1F/2F/...） */
+.comment-floor {
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 700;
+  color: var(--c-brand-600);
+  background: var(--c-brand-50);
+  padding: 2rpx 10rpx;
+  border-radius: var(--r-full, 999rpx);
+  line-height: 1.4;
 }
 
 .comment-author {

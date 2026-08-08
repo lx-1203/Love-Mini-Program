@@ -22,6 +22,7 @@ import com.campuslove.api.repository.LikeRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -340,18 +341,22 @@ public class RealMatchService implements MatchService {
         java.util.Set<Long> unlockedIds = unlockTargetType == null
                 ? java.util.Set.of()
                 : walletUnlockService.findUnlockedTargetIds(currentUserId, unlockTargetType, userIds);
-        return likes.stream()
-                .map(like -> {
-                    Long otherId = targetIdExtractor.apply(like);
-                    User u = userMap.get(otherId);
-                    String nickname = u != null ? u.getNickname() : DisplayConstants.UNKNOWN_USER;
-                    String avatarUrl = u != null ? u.getAvatarUrl() : null;
-                    UserCampusProfile campus = campusMap.get(otherId);
-                    String campusName = campus != null ? campus.getCampusName() : "";
-                    return new LikedUserView(otherId, nickname, avatarUrl, campusName,
-                            like.getCreatedAt().toString(), unlockedIds.contains(otherId));
-                })
-                .toList();
+        List<LikedUserView> result = new ArrayList<>(likes.size());
+        for (int i = 0; i < likes.size(); i++) {
+            Like like = likes.get(i);
+            Long otherId = targetIdExtractor.apply(like);
+            User u = userMap.get(otherId);
+            String nickname = u != null ? u.getNickname() : DisplayConstants.UNKNOWN_USER;
+            String avatarUrl = u != null ? u.getAvatarUrl() : null;
+            UserCampusProfile campus = campusMap.get(otherId);
+            String campusName = campus != null ? campus.getCampusName() : "";
+            // 2026-08-08 走查 P1：前 2 条免费展示（其余按解锁集合判定）；
+            // unlockTargetType 为 null（我喜欢的列表）时恒可见
+            boolean unlocked = unlockTargetType == null || unlockedIds.contains(otherId) || i < 2;
+            result.add(new LikedUserView(otherId, nickname, avatarUrl, campusName,
+                    like.getCreatedAt().toString(), unlocked));
+        }
+        return result;
     }
 
     @Override
@@ -365,17 +370,20 @@ public class RealMatchService implements MatchService {
         // P0-17：批量查询已解锁的访客 ID 集合（unlocked 状态随列表下发）
         java.util.Set<Long> unlockedIds = walletUnlockService.findUnlockedTargetIds(
                 userId, WalletUnlock.TARGET_TYPE_VISITOR, visitorIds);
-        return visitors.stream()
-                .map(v -> {
-                    User u = userMap.get(v.getVisitorId());
-                    String nickname = u != null ? u.getNickname() : DisplayConstants.UNKNOWN_USER;
-                    String avatarUrl = u != null ? u.getAvatarUrl() : null;
-                    UserCampusProfile campus = campusMap.get(v.getVisitorId());
-                    String campusName = campus != null ? campus.getCampusName() : "";
-                    return new VisitorView(v.getVisitorId(), nickname, avatarUrl, campusName,
-                            v.getCreatedAt().toString(), unlockedIds.contains(v.getVisitorId()));
-                })
-                .toList();
+        // 2026-08-08 走查 P1：访客列表前 2 条免费展示（与喜欢页规则统一）
+        List<VisitorView> result = new ArrayList<>(visitors.size());
+        for (int i = 0; i < visitors.size(); i++) {
+            Visitor v = visitors.get(i);
+            User u = userMap.get(v.getVisitorId());
+            String nickname = u != null ? u.getNickname() : DisplayConstants.UNKNOWN_USER;
+            String avatarUrl = u != null ? u.getAvatarUrl() : null;
+            UserCampusProfile campus = campusMap.get(v.getVisitorId());
+            String campusName = campus != null ? campus.getCampusName() : "";
+            boolean unlocked = unlockedIds.contains(v.getVisitorId()) || i < 2;
+            result.add(new VisitorView(v.getVisitorId(), nickname, avatarUrl, campusName,
+                    v.getCreatedAt().toString(), unlocked));
+        }
+        return result;
     }
 
     @Override

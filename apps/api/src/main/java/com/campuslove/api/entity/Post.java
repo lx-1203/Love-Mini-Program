@@ -85,6 +85,10 @@ public class Post {
     @Column(name = "author_id", nullable = false)
     private Long authorId;
 
+    /** 帖子标题（2026-08-08 走查 P1：发帖必填 5-30 字，落库） */
+    @Column(name = "title", length = 200)
+    private String title;
+
     /** 帖子内容 */
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -191,6 +195,14 @@ public class Post {
 
     public void setAuthorId(Long authorId) {
         this.authorId = authorId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getContent() {

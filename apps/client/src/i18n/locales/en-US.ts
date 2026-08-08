@@ -1244,6 +1244,8 @@ export default {
       replyToPlaceholder: "Reply to @{name}",
       replyingTo: "Replying to {name}",
       cancelReply: "Cancel reply",
+      /* 2026-08-08 walkthrough P1: floor number (1F/2F/...) */
+      floorLabel: "{n}F",
       /* Similar authors */
       similarTitle: "You might also want to meet",
       similarSubtitle: "People with similar interests",

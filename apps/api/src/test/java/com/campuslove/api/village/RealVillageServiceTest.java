@@ -42,19 +42,19 @@ class RealVillageServiceTest {
     }
 
     /**
-     * 场景：createPost(Long, content, images, tags, category) 应委托 VillagePostService.createPost。
+     * 场景：createPost(Long, title, content, images, tags, category) 应委托 VillagePostService.createPost。
      */
     @Test
     void createPost_fullArgsVersion_delegatesToPostService() {
         Long userId = 100L;
         PostDetailView expected = buildPostDetailView(1L, userId);
-        when(postService.createPost(userId, "content", List.of("img"), List.of("tag"), "all"))
+        when(postService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all"))
                 .thenReturn(expected);
 
-        PostDetailView result = realService.createPost(userId, "content", List.of("img"), List.of("tag"), "all");
+        PostDetailView result = realService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all");
 
         assertSame(expected, result);
-        verify(postService, times(1)).createPost(userId, "content", List.of("img"), List.of("tag"), "all");
+        verify(postService, times(1)).createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all");
     }
 
     /**
@@ -67,13 +67,13 @@ class RealVillageServiceTest {
         CreatePostRequest request = new CreatePostRequest(
                 "标题", "hello", "all", List.of("tag"), List.of("img"));
         PostDetailView expected = buildPostDetailView(1L, userId);
-        when(postService.createPost(userId, "hello", List.of("img"), List.of("tag"), "all"))
+        when(postService.createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all"))
                 .thenReturn(expected);
 
         PostDetailView result = realService.createPost(userId, request);
 
         assertSame(expected, result);
-        verify(postService, times(1)).createPost(userId, "hello", List.of("img"), List.of("tag"), "all");
+        verify(postService, times(1)).createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all");
     }
 
     /**
@@ -235,7 +235,7 @@ class RealVillageServiceTest {
 
         assertSame(expected, result);
         verify(queryService, times(1)).getPosts("all", null, "new", 0, 10, 100L);
-        verify(postService, times(0)).createPost(anyLong(), any(), any(), any(), any());
+        verify(postService, times(0)).createPost(anyLong(), any(), any(), any(), any(), any());
     }
 
     // ---- 工具方法 ----

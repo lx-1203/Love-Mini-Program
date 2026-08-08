@@ -76,7 +76,7 @@ public class RealVillageService implements VillageService {
     @Override
     @Transactional
     public PostDetailView createPost(Long userId, @Valid CreatePostRequest request) {
-        return postService.createPost(userId, request.content(), request.images(), request.tags(), request.category());
+        return postService.createPost(userId, request.title(), request.content(), request.images(), request.tags(), request.category());
     }
 
     @Override
@@ -136,8 +136,8 @@ public class RealVillageService implements VillageService {
 
     @Override
     @Transactional
-    public PostDetailView createPost(Long userId, String content, List<String> images, List<String> tags, String category) {
-        return postService.createPost(userId, content, images, tags, category);
+    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category) {
+        return postService.createPost(userId, title, content, images, tags, category);
     }
 
     @Override
